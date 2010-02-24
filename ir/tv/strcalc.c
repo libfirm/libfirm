@@ -817,15 +817,7 @@ void sign_extend(void *buffer, ir_mode *mode)
  * The C-standard does theoretically allow otherwise. */
 static inline void check_ascii(void)
 {
-	assert('1'-'0' == 1
-		&& '2'-'0' == 2
-		&& '3'-'0' == 3
-		&& '4'-'0' == 4
-		&& '5'-'0' == 5
-		&& '6'-'0' == 6
-		&& '7'-'0' == 7
-		&& '8'-'0' == 8
-		&& '9'-'0' == 9);
+	/* C standard guarantees that '0'-'9' is a range */
 	assert('b'-'a' == 1
 		&& 'c'-'a' == 2
 		&& 'd'-'a' == 3
@@ -865,10 +857,10 @@ int sc_val_from_str(char sign, unsigned base, const char *str,
 		unsigned v;
 		if (c >= '0' && c <= '9')
 			v = c - '0';
-		else if (c >= 'A' && c <= 'Z')
-			v = c - 'A';
-		else if (c >= 'a' && c <= 'z')
-			v = c - 'z';
+		else if (c >= 'A' && c <= 'F')
+			v = c - 'A' + 10;
+		else if (c >= 'a' && c <= 'f')
+			v = c - 'a' + 10;
 		else
 			return 0;
 

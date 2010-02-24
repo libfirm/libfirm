@@ -103,6 +103,26 @@
 tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode);
 
 /**
+ * Construct a new tarval from a given string.
+ *
+ * @param str   The string representing the target value
+ * @param len   The length of the string
+ * @param sign  is -1 or 1 depending on the numbers sign
+ * @param base  number system base.
+ *              binary(2), octal(8), decimal(10) and hexadecimal(16) numbers
+ *              are supported.
+ * @param mode  The mode requested for the result tarval
+ *
+ * @return
+ *   A tarval with the given mode. If overflow settings are set to
+ *   TV_OVERFLOW_BAD then a tarval_bad is returned if the number can't be
+ *   represented in the given mode.
+ *   Return bad if the number couldn't successfully be parsed.
+ */
+tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
+                                    unsigned char base, ir_mode *mode);
+
+/**
  * Constructor function for new tarvals
  *
  * @param l     The long representing the value

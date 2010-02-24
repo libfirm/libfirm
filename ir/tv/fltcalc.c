@@ -43,6 +43,11 @@
 
 #include "xmalloc.h"
 
+#if defined(HAVE_LONG_DOUBLE) && !defined(__CYGWIN__)
+/* No strtold on windows and no replacement yet */
+#define strtold(s, e) strtod(s, e)
+#endif
+
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
@@ -837,211 +842,26 @@ int fc_get_buffer_length(void)
 
 void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result)
 {
-#if 0
-	enum {
-		START,
-		LEFT_OF_DOT,
-		RIGHT_OF_DOT,
-		EXP_START,
-		EXPONENT,
-		END
-	};
+	char *buffer;
 
-	char exp_sign;
-	int exp_int, hsb, state;
-
-	const char *old_str;
-
-	int pos;
-	char *mant_str, *exp_val, *power_val;
-
-	(void) len;
-	if (result == NULL) result = calc_buffer;
-
-	exp_val = alloca(value_size);
-	power_val = alloca(calc_buffer_size);
-	mant_str = alloca((len)?(len):(strlen(str)));
-
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = NORMAL;
-
-	old_str = str;
-	pos = 0;
-	exp_int = 0;
-	state = START;
-
-	while (len == 0 || str-old_str < len) {
-		switch (state) {
-		case START:
-			switch (*str) {
-			case '+':
-				result->sign = 0;
-				state = LEFT_OF_DOT;
-				str++;
-				break;
-
-			case '-':
-				result->sign = 1;
-				state = LEFT_OF_DOT;
-				str++;
-				break;
-
-			case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-				result->sign = 0;
-				state = LEFT_OF_DOT;
-				break;
-
-			case '.':
-				result->sign = 0;
-				state = RIGHT_OF_DOT;
-				str++;
-				break;
-
-			case 'n':
-			case 'N':
-			case 'i':
-			case 'I':
-				break;
-
-			default:
-				fail_char(old_str, len, str - old_str);
-			}
-			break;
-
-		case LEFT_OF_DOT:
-			switch (*str) {
-			case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-				mant_str[pos++] = *(str++);
-				break;
-
-			case '.':
-				state = RIGHT_OF_DOT;
-				str++;
-				break;
-
-			case 'e':
-			case 'E':
-				state = EXP_START;
-				str++;
-				break;
-
-			case '\0':
-				mant_str[pos] = '\0';
-				goto done;
-
-			default:
-				fail_char(old_str, len, str - old_str);
-			}
-			break;
-
-		case RIGHT_OF_DOT:
-			switch (*str) {
-			case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-				mant_str[pos++] = *(str++);
-				exp_int++;
-				break;
-
-			case 'e':
-			case 'E':
-				state = EXP_START;
-				str++;
-				break;
-
-			case '\0':
-				mant_str[pos] = '\0';
-				goto done;
-
-			default:
-				fail_char(old_str, len, str - old_str);
-			}
-			break;
-
-		case EXP_START:
-			switch (*str) {
-			case '-':
-				exp_sign = 1;
-				/* fall through */
-			case '+':
-				if (*(str-1) != 'e' && *(str-1) != 'E') fail_char(old_str, len, str - old_str);
-				str++;
-				break;
-
-			case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-				mant_str[pos] = '\0';
-				pos = 1;
-				str++;
-				state = EXPONENT;
-				break;
-
-			default:
-				fail_char(old_str, len, str - old_str);
-			}
-			break;
-
-		case EXPONENT:
-			switch (*str) {
-			case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': case '8': case '9':
-				pos++;
-				str++;
-				break;
-
-			case '\0': goto done;
-
-			default:
-				fail_char(old_str, len, str - old_str);
-			}
-		}
-	} /*  switch (state) */
-
-done:
-	sc_val_from_str(mant_str, strlen(mant_str), _mant(result));
-
-	/* shift to put value left of radix point */
-	sc_val_from_ulong(mant_size + ROUNDING_BITS, exp_val);
-
-	_shift_left(_mant(result), exp_val, _mant(result));
-
-	sc_val_from_ulong((1 << (exp_size - 1)) - 1, _exp(result));
-
-	_normalize(result, result, 0);
-
-	if (state == EXPONENT) {
-		exp_int -= atoi(str-pos);
-	}
-
-	_power_of_ten(exp_int, &result->desc, power_val);
-
-	_fdiv(result, power_val, result);
-
-	return result;
-#else
 	/* XXX excuse of an implementation to make things work */
 	LLDBL             val;
 	fp_value          *tmp = alloca(calc_buffer_size);
 	ieee_descriptor_t tmp_desc;
-	(void) len;
 
-#if defined(HAVE_LONG_DOUBLE) && !defined(__CYGWIN__)
-	val = strtold(str, NULL);
+	buffer = alloca(len+1);
+	memcpy(buffer, str, len);
+	buffer[len] = '\0';
+	val = strtold(buffer, NULL);
+
 	DEBUGPRINTF(("val_from_str(%s)\n", str));
 	tmp_desc.exponent_size = 15;
 	tmp_desc.mantissa_size = 63;
 	tmp_desc.explicit_one  = 1;
 	tmp_desc.clss          = NORMAL;
 	fc_val_from_ieee754(val, &tmp_desc, tmp);
-#else
-	val = strtod(str, NULL);
-	DEBUGPRINTF(("val_from_str(%s)\n", str));
-	tmp_desc.exponent_size = 11;
-	tmp_desc.mantissa_size = 52;
-	tmp_desc.explicit_one  = 0;
-	tmp_desc.clss          = NORMAL;
-	fc_val_from_ieee754(val, &tmp_desc, tmp);
-#endif /* HAVE_LONG_DOUBLE */
+
 	return fc_cast(tmp, desc, result);
-#endif
 }
 
 fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result)

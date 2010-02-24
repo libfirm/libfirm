@@ -58,9 +58,6 @@
     target values */
 #define N_CONSTANTS 2048
 
-/* get the integer overflow mode */
-#define GET_OVERFLOW_MODE() int_overflow_mode
-
 /* unused, float to int doesn't work yet */
 enum float_to_int_mode {
 	TRUNCATE,
@@ -236,7 +233,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 
 	case irms_int_number:
 		if (sc_comp(value, get_mode_max(mode)->value) == 1) {
-			switch (GET_OVERFLOW_MODE()) {
+			switch (tarval_get_integer_overflow_mode()) {
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_max(mode);
 			case TV_OVERFLOW_WRAP:
@@ -253,7 +250,7 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 			}
 		}
 		if (sc_comp(value, get_mode_min(mode)->value) == -1) {
-			switch (GET_OVERFLOW_MODE()) {
+			switch (tarval_get_integer_overflow_mode()) {
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_min(mode);
 			case TV_OVERFLOW_WRAP: {
@@ -321,9 +318,20 @@ static const ieee_descriptor_t *get_descriptor(const ir_mode *mode)
 	}
 }
 
-/*
- *   public functions declared in tv.h
- */
+tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
+                                    unsigned char base, ir_mode *mode)
+{
+	void *buffer;
+	int   ok;
+
+	buffer = alloca(sc_get_buffer_length());
+
+	ok = sc_val_from_str(sign, base, str, len, buffer);
+	if (!ok)
+		return tarval_bad;
+
+	return get_tarval_overflow(buffer, sc_get_buffer_length(), mode);
+}
 
 static tarval *new_tarval_from_str_int(const char *str, size_t len,
                                        ir_mode *mode)
@@ -372,7 +380,6 @@ static tarval *new_tarval_from_str_int(const char *str, size_t len,
 	ok = sc_val_from_str(sign, base, str, len, buffer);
 	if (!ok)
 		return tarval_bad;
-	sign_extend(buffer, mode);
 
 	return get_tarval_overflow(buffer, sc_get_buffer_length(), mode);
 }
@@ -905,6 +912,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode)
 	char                    *buffer;
 	fp_value                *res;
 	const ieee_descriptor_t *desc;
+	int                      len;
 
 	carry_flag = -1;
 
@@ -979,11 +987,11 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode)
 			buffer = alloca(100);
 			/* decimal string representation because hexadecimal output is
 			 * interpreted unsigned by fc_val_from_str, so this is a HACK */
-			snprintf(buffer, 100, "%s",
+			len = snprintf(buffer, 100, "%s",
 				sc_print(src->value, get_mode_size_bits(src->mode), SC_DEC, mode_is_signed(src->mode)));
 			buffer[100 - 1] = '\0';
 			desc = get_descriptor(dst_mode);
-			fc_val_from_str(buffer, 0, desc, NULL);
+			fc_val_from_str(buffer, len, desc, NULL);
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		default:
