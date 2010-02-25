@@ -66,9 +66,6 @@
 
 int isleaf;
 
-/* TODO: ugly, but we need it to get access to the registers assigned to Phi nodes */
-static set *cur_reg_set = NULL;
-
 /**************************************************
  *                         _ _              _  __
  *                        | | |            (_)/ _|
@@ -427,8 +424,6 @@ static void ppc32_emit_and_done(void *self)
 	dump_ir_block_graph_sched(irg, "-ppc-finished");
 	ppc32_gen_routine(cg, irg);
 
-	cur_reg_set = NULL;
-
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
 	free(self);
@@ -468,8 +463,6 @@ static void *ppc32_cg_init(be_irg_t *birg)
 	cg->start_succ_block = NULL;
 	cg->blk_sched = NULL;
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.ppc.cg");
-
-	cur_reg_set = cg->reg_set;
 
 	return (arch_code_generator_t *)cg;
 }

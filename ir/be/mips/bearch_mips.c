@@ -68,9 +68,6 @@
 
 #define DEBUG_MODULE "firm.be.mips.isa"
 
-/* TODO: ugly, but we need it to get access to the registers assigned to Phi nodes */
-static set *cur_reg_set = NULL;
-
 /**************************************************
  *                         _ _              _  __
  *                        | | |            (_)/ _|
@@ -254,8 +251,6 @@ static void mips_emit_and_done(void *self)
 
 	mips_gen_routine(cg, irg);
 
-	cur_reg_set = NULL;
-
 	/* de-allocate code generator */
 	del_set(cg->reg_set);
 	free(cg);
@@ -289,8 +284,6 @@ static void *mips_cg_init(be_irg_t *birg)
 	cg->reg_set  = new_set(mips_cmp_irn_reg_assoc, 1024);
 	cg->isa      = isa;
 	cg->birg     = birg;
-
-	cur_reg_set = cg->reg_set;
 
 	isa->cg = cg;
 
