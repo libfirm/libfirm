@@ -530,7 +530,6 @@ void set_atomic_ent_value(ir_entity *entity, ir_node *val)
 	ir_initializer_t *initializer;
 
 	assert(is_atomic_entity(entity));
-	assert(get_entity_peculiarity(entity) != peculiarity_description);
 
 	assert(is_Dummy(val) || get_irn_mode(val) == get_type_mode(entity->type));
 	initializer = create_initializer_const(val);
