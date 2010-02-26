@@ -396,6 +396,11 @@ static be_gas_section_t determine_section(be_gas_decl_env_t *env,
 		return section | GAS_SECTION_FLAG_TLS;
 	}
 
+	/* the java frontend keeps some functions inside classes */
+	if (is_Class_type(owner)) {
+		return determine_basic_section(entity);
+	}
+
 	panic("Couldn't determine section for %+F?!?", entity);
 }
 
