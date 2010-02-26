@@ -327,7 +327,6 @@
  *    All ir_nodes are defined by a common data structure.  They are distinguished
  *    by their opcode and differ in the number of their attributes.
  *
- *    The constructor for the block node sets current_block to itself.
  *    Const nodes are always added to the start block.
  *    All other constructors add the created node to the current_block.
  *    swich_block(block) allows to set the current block to block.
@@ -1153,11 +1152,7 @@ typedef enum ir_cons_flags {
 
 /** Constructor for a Block node.
  *
- * Constructs a mature block with the given predecessors.  Use Unknown
- * nodes as predecessors to construct a block if the number of
- * predecessors is known, but not the predecessors themselves.  This
- * constructor does not set current_block.  It not be used with
- * automatic Phi node construction.
+ * Constructs a mature block with the given predecessors.
  *
  * @param *db    A Pointer for  debug information.
  * @param irg    The IR graph the block belongs to.
@@ -2804,17 +2799,10 @@ void     set_cur_block(ir_node *target);
 /** Returns the current block of the current graph. */
 ir_node *get_cur_block(void);
 
-/** Returns the fixed nodes  of the current graph. */
-#define get_cur_end_block()   get_irg_end_block(current_ir_graph)
-#define get_cur_end()         get_irg_end(current_ir_graph)
-#define get_cur_start_block() get_irg_start_block(current_ir_graph)
-#define get_cur_start()       get_irg_start(current_ir_graph)
-
 /** Constructor for a Block node.
  *
  * Adds the block to the graph in current_ir_graph. Constructs a Block
- * with a fixed number of predecessors.  Does set current_block.  Can
- * be used with automatic Phi node construction.
+ * with a fixed number of predecessors.
  *
  * @param *db    A Pointer for debug information.
  * @param arity  The number of control predecessors.
@@ -3604,15 +3592,10 @@ ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *in
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
 
-/* Needed from the interface with debug support:
-void set_cur_block (ir_node *target);   */
-
 /** Constructor for a Block node.
  *
  * Constructor for a Block node. Adds the block to the graph in
- * current_ir_graph.  Constructs a Block with a fixed number of
- * predecessors.  Does set current_block.  Can be used with automatic
- * Phi node construction.
+ * current_ir_graph. Constructs a Block with a fixed number of predecessors.
  *
  * @param arity  The number of control predecessors.
  * @param in     An array of control predecessors.  The length of
@@ -4439,18 +4422,6 @@ ir_node *get_value(int pos, ir_mode *mode);
  * @param *value The new value written to the local variable.
  */
 void set_value(int pos, ir_node *value);
-
-/** Find the value number for a node in the current block.
- *
- * This function searches all values in the current block for
- * a given value and returns its value number if it was found, else
- * -1.
- * Note that this does not mean that the value does not exists,
- * it's just not equal the node (for instance behind a Phi/Confirm ...)
- *
- * @param *value The value to find.
- */
-int find_value(ir_node *value);
 
 /** Get the current memory state.
  *

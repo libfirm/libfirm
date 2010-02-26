@@ -130,32 +130,12 @@ class Block(Op):
 
 	set_Block_matured(res, 1);
 	set_Block_block_visited(res, 0);
-	'''
 
-	d_pre = '''
-	int i;
-	int has_unknown = 0;
-	'''
-
-	d_post = '''
 	/* Create and initialize array for Phi-node construction. */
-	if (get_irg_phase_state(current_ir_graph) == phase_building) {
-		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, current_ir_graph->obst,
-		                                      current_ir_graph->n_loc);
-		memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
+	if (get_irg_phase_state(irg) == phase_building) {
+		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
+		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
 	}
-
-	for (i = arity - 1; i >= 0; i--)
-		if (is_Unknown(in[i])) {
-			has_unknown = 1;
-			break;
-		}
-
-	if (!has_unknown) res = optimize_node(res);
-
-	current_ir_graph->current_block = res;
-
-	IRN_VRFY_IRG(res, current_ir_graph);
 	'''
 
 	java_add   = '''
