@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -43,7 +43,7 @@
 
 #include "xmalloc.h"
 
-#if defined(HAVE_LONG_DOUBLE) && !defined(__CYGWIN__)
+#if !defined(HAVE_LONG_DOUBLE) || defined(__CYGWIN__)
 /* No strtold on windows and no replacement yet */
 #define strtold(s, e) strtod(s, e)
 #endif
