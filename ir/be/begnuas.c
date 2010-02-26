@@ -335,6 +335,7 @@ static bool entity_is_null(const ir_entity *entity)
 	} else if (entity_has_compound_ent_values(entity)) {
 		/* I'm too lazy to implement this case as compound graph paths will be
 		 * remove anyway in the future */
+		return false;
 	}
 	/* uninitialized, NULL is fine */
 	return true;
