@@ -37,6 +37,7 @@
 #include "trouts.h"
 #include "irgwalk.h"
 #include "tv_t.h"
+#include "vrp.h"
 #include "irprintf.h"
 #include "error.h"
 
@@ -97,9 +98,10 @@ static FILE *text_open(const char *basename, const char * suffix1, const char *s
 /* Write the irnode and all its attributes to the file passed. */
 int dump_irnode_to_file(FILE *F, ir_node *n)
 {
-	int i, bad = 0;
-	char comma;
+	int      i, bad = 0;
+	char     comma;
 	ir_graph *irg;
+	vrp_attr *vrp_info;
 
 	dump_node_opcode(F, n);
 	fprintf(F, " %ld\n", get_irn_node_nr(n));
@@ -392,10 +394,12 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "\n  volatile");
 		fprintf(F, "\n");
 	} break;
-	default: ;
+
+	default:
+		break;
 	}
 
-	vrp_attr *vrp_info = vrp_get_info(n);
+	vrp_info = vrp_get_info(n);
 	if (vrp_info) {
 		dump_vrp_info(F, n);
 	}
