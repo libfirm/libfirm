@@ -2321,6 +2321,7 @@ static ir_node *transform_node_Add(ir_node *n)
 {
 	ir_mode *mode;
 	ir_node *a, *b, *c, *oldn = n;
+	vrp_attr *a_vrp, *b_vrp;
 
 	n = transform_node_AddSub(n);
 
@@ -2412,10 +2413,8 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
-	vrp_attr *a_vrp, *b_vrp;
 	a_vrp = vrp_get_info(a);
 	b_vrp = vrp_get_info(b);
-
 
 	if (a_vrp && b_vrp) {
 		tarval *c = tarval_and(
@@ -3470,6 +3469,7 @@ static ir_node *transform_node_And(ir_node *n)
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
 	ir_mode *mode;
+	vrp_attr *a_vrp, *b_vrp;
 
 	mode = get_irn_mode(n);
 	HANDLE_BINOP_PHI((eval_func) tarval_and, a, b, c, mode);
@@ -3590,21 +3590,17 @@ static ir_node *transform_node_And(ir_node *n)
 		return n;
 	}
 
-	vrp_attr *a_vrp, *b_vrp;
-	a_vrp = vrp_get_info(a);
 	b_vrp = vrp_get_info(b);
-
-	if (is_Const(a) && b_vrp && (tarval_is_all_one(tarval_or(get_Const_tarval(a),
-						b_vrp->bits_not_set)))) {
-		return new_rd_Id(get_irn_dbg_info(n), get_nodes_block(n),
-							b, get_irn_mode(n));
+	if (b_vrp && is_Const(a) &&
+	    (tarval_is_all_one(tarval_or(get_Const_tarval(a), b_vrp->bits_not_set)))) {
+		return b;
 
 	}
 
-	if (is_Const(b) && a_vrp && (tarval_is_all_one(tarval_or(get_Const_tarval(b),
-						a_vrp->bits_not_set)))) {
-		return new_rd_Id(get_irn_dbg_info(n), get_nodes_block(n),
-							a, get_irn_mode(n));
+	a_vrp = vrp_get_info(a);
+	if (a_vrp &&is_Const(b) &&
+	    (tarval_is_all_one(tarval_or(get_Const_tarval(b), a_vrp->bits_not_set)))) {
+		return a;
 
 	}
 
