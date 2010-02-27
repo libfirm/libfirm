@@ -47,8 +47,6 @@
 #include "obst.h"
 #include "vrp.h"
 
-struct ir_phase;
-
 /** The type of an ir_op. */
 struct ir_op {
 	unsigned code;          /**< The unique opcode of the op. */
