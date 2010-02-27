@@ -37,12 +37,6 @@ enum range_types {
 	VRP_VARYING /* information can not be derived */
 };
 
-enum range_ops {
-	VRP_NONE, /* range is defined absolute */
-	VRP_ADD, /* range + range_node are the possible values */
-	VRP_SUB /* range - range_node are the possible values */
-};
-
 /** VRP information */
 typedef struct {
 	int valid; /**< This node has valid vrp information */
@@ -50,13 +44,8 @@ typedef struct {
 									0: may be not set, 1: definitely set*/
 	tarval *bits_not_set;  /**< The bits which by analysis are definitely
 							 not set, 1 for may be set, 0: definitely not set  */
-	ir_node *bits_node;                     /**< The node, from which the rest of the bits
-											  are set */
 	enum range_types range_type;/**< The range represented by range_top,  range_bottom */
 	tarval *range_bottom, *range_top;
-	ir_node *range_node;            /**< The node to which the range is relative */
-	enum range_ops range_op;            /**< The op which describes the relation
-                                                                 between range_node and range */
 } vrp_attr;
 
 /**

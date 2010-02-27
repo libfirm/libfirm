@@ -1260,11 +1260,6 @@ int dump_vrp_info(FILE *F, ir_node *n)
 	}
 	ir_fprintf(F, "bits_set: %T\n", vrp->bits_set);
 	ir_fprintf(F, "bits_not_set: %T\n", vrp->bits_not_set);
-	if (vrp->bits_node == NULL) {
-		fprintf(F, "bits_node: None");
-	} else {
-		fprintf(F, "bits_node: #%ld\n", get_irn_node_nr(vrp->bits_node));
-	}
 
 	return 0;
 }
