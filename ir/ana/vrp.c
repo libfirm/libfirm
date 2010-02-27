@@ -23,6 +23,7 @@
  * @author 	Jonas Fietz
  * @version	$Id$
  */
+#include "config.h"
 
 #include "irtypes.h"
 #include "vrp.h"
