@@ -43,6 +43,22 @@ enum range_ops {
 	VRP_SUB /* range - range_node are the possible values */
 };
 
+/** VRP information */
+typedef struct {
+	int valid; /**< This node has valid vrp information */
+	tarval *bits_set;          /**< The bits which, by analysis, are  definitely set.
+									0: may be not set, 1: definitely set*/
+	tarval *bits_not_set;  /**< The bits which by analysis are definitely
+							 not set, 1 for may be set, 0: definitely not set  */
+	ir_node *bits_node;                     /**< The node, from which the rest of the bits
+											  are set */
+	enum range_types range_type;/**< The range represented by range_top,  range_bottom */
+	tarval *range_bottom, *range_top;
+	ir_node *range_node;            /**< The node to which the range is relative */
+	enum range_ops range_op;            /**< The op which describes the relation
+                                                                 between range_node and range */
+} vrp_attr;
+
 /**
  * Set vrp data on the graph irg
  * @param irg graph on which to set vrp data
@@ -64,6 +80,15 @@ ir_graph_pass_t *set_vrp_pass(const char *name);
  *
  * @return the pn_Cmp, if one can be derived
  */
-pn_Cmp vrp_cmp(ir_node *left, ir_node *right);
+pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
+
+/*
+ * Return the vrp data for this node
+ *
+ * @param n: the node for which to return the vrp information
+ *
+ * @return a pointer to the vrp data or NULL if there is none
+ */
+vrp_attr *vrp_get_info(const ir_node *n);
 
 #endif

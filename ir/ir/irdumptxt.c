@@ -395,7 +395,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 	default: ;
 	}
 
-	if (n->vrp.valid) {
+	vrp_attr *vrp_info = vrp_get_info(n);
+	if (vrp_info) {
 		dump_vrp_info(F, n);
 	}
 

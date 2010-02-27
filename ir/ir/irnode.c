@@ -199,26 +199,6 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	if (get_irg_phase_state(irg) == phase_backend) {
 		be_info_new_node(res);
 	}
-	/* Init the VRP structures */
-	res->vrp.range_type = VRP_UNDEFINED;
-	res->vrp.valid = 0;
-	if (mode_is_int(mode)) {
-		/* We are assuming that 0 is always represented by this modes 0 */
-		res->vrp.bits_set =
-		res->vrp.bits_not_set = get_mode_null(mode);
-		res->vrp.range_bottom =
-		res->vrp.range_top = get_tarval_top();
-	} else {
-		res->vrp.bits_set =
-		res->vrp.bits_not_set =
-		res->vrp.range_bottom =
-		res->vrp.range_top = get_tarval_bad();
-	}
-
-	res->vrp.bits_node = NULL;
-	res->vrp.range_node = NULL;
-	res->vrp.range_op = VRP_NONE;
-
 
 	return res;
 }

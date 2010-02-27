@@ -7,6 +7,7 @@ PH(NOT_IRG_MANAGED,               "A phase not managed by an IRG")
 PH(BE_ARCH,                       "Backend architecture abstraction")
 PH(BE_SCHED,                      "Scheduler")
 PH(BE_REG_ALLOC,                  "Register allocation")
+PH(VRP,                  		  "Value Range Propagation")
 
 /* END Enter your phases here */
 

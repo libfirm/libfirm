@@ -305,21 +305,6 @@ typedef struct {
 	ident             **clobber;  /**< List of clobbered registers. */
 } asm_attr;
 
-/** VRP information */
-typedef struct {
-	int valid;				/**< 0: VRP info invalid, 1: VRP info valid (not
-							  neccessarily updated) */
-	tarval *bits_set;          /**< The bits which, by analysis, are  definitely set */
-	tarval *bits_not_set;  /**< The bits which by analysis are definitely  not set */
-	ir_node *bits_node;                     /**< The node, from which the rest of the bits
-											  are set */
-	enum range_types range_type;/**< The range represented by range_top,  range_bottom */
-	tarval *range_bottom, *range_top;
-	ir_node *range_node;            /**< The node to which the range is relative */
-	enum range_ops range_op;            /**< The op which describes the relation
-                                                                 between range_node and range */
-} vrp_attr;
-
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union {
@@ -398,7 +383,6 @@ struct ir_node {
 	struct ir_node **deps;   /**< Additional dependencies induced by state. */
 	void            *backend_info;
 	irn_edges_info_t edge_info;  /**< Everlasting out edges. */
-	vrp_attr           vrp;                   /**< Information supplied by VRP */
 
 	/* ------- Opcode depending fields -------- */
 	attr attr;               /**< The set of attributes of this node. Depends on opcode.
