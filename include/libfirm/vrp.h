@@ -30,16 +30,17 @@
 #define VRP_H
 
 enum range_types {
-	VRP_UNDEFINED,
-	VRP_RANGE,
-	VRP_ANTIRANGE,
-	VRP_VARYING
+	VRP_UNDEFINED, /* No information could be derived so far */
+	VRP_RANGE, /* bottom and top form a range, including both values */
+	VRP_ANTIRANGE, /* range from bottom to top can not be, but borders might
+					  be */
+	VRP_VARYING /* information can not be derived */
 };
 
 enum range_ops {
-	VRP_NONE,
-	VRP_ADD,
-	VRP_SUB
+	VRP_NONE, /* range is defined absolute */
+	VRP_ADD, /* range + range_node are the possible values */
+	VRP_SUB /* range - range_node are the possible values */
 };
 
 /**
