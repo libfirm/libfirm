@@ -106,9 +106,9 @@ ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned gro
  * The returned phase object will be inserted in the phase slot of the @p irg designated by the phase ID (@p id).
  * Note that you cannot allocate phases with an ID <code>PHASE_NOT_IRG_MANAGED</code>.
  *
- * @param ph        The memory of the phase to initialize.
  * @param irg       The irg.
  * @param id        The ID of the irg-managed phase (see irphaselist.h).
+ * @param size      The size of the phase
  * @param data_init The node data initialization function.
  * @return          The allocated phase object.
  */
