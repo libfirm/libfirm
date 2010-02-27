@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2009 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -96,11 +96,11 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Add: {
+		int overflow_top, overflow_bottom;
+		tarval *new_top, *new_bottom;
 		vrp_attr *vrp_left, *vrp_right;
 		vrp_left = phase_get_or_set_irn_data(phase, get_Add_left(node));
 		vrp_right = phase_get_or_set_irn_data(phase, get_Add_right(node));
-		int overflow_top, overflow_bottom;
-		tarval *new_top, *new_bottom;
 
 		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
 				VRP_UNDEFINED || vrp_left->range_type == VRP_VARYING ||
@@ -128,11 +128,11 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Sub: {
+		int overflow_top, overflow_bottom;
+		tarval *new_top, *new_bottom;
 		vrp_attr *vrp_left, *vrp_right;
 		vrp_left = phase_get_or_set_irn_data(phase, get_Sub_left(node));
 		vrp_right = phase_get_or_set_irn_data(phase, get_Sub_right(node));
-		int overflow_top, overflow_bottom;
-		tarval *new_top, *new_bottom;
 
 		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
 				VRP_UNDEFINED) {
@@ -268,12 +268,12 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Eor: {
+		tarval *bits_set, *bits_not_set;
 		vrp_attr *vrp_left, *vrp_right;
 
 		vrp_left = phase_get_or_set_irn_data(phase, get_Eor_left(node));
 		vrp_right = phase_get_or_set_irn_data(phase, get_Eor_right(node));
 
-		tarval *bits_set, *bits_not_set;
 		bits_not_set = tarval_or(
 							tarval_and(vrp_left->bits_set, vrp_right->bits_set),
 							tarval_and(vrp_left->bits_not_set,
@@ -377,6 +377,10 @@ static int vrp_update_node(ir_node *node)
 	case iro_Phi: {
 		/* combine all ranges*/
 
+		int num = get_Phi_n_preds(node);
+		pn_Cmp cmp;
+		int i;
+
 		ir_node *pred = get_Phi_pred(node,0);
 		vrp_attr *vrp_pred = phase_get_or_set_irn_data(phase, pred);
 		new_range_top = vrp_pred->range_top;
@@ -384,10 +388,6 @@ static int vrp_update_node(ir_node *node)
 		new_range_type = vrp_pred->range_type;
 		new_bits_set = vrp_pred->bits_set;
 		new_bits_not_set = vrp_pred->bits_not_set;
-
-		int num = get_Phi_n_preds(node);
-		pn_Cmp cmp;
-		int i;
 
 		assert(num > 0);
 
@@ -541,12 +541,14 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 static void *vrp_init_node(ir_phase *phase, const ir_node *n, void *old)
 {
-	ir_printf("initialized node nr: %d\n", get_irn_node_nr(n));
 	ir_mode *mode;
+	vrp_attr *vrp;
+
+	ir_printf("initialized node nr: %d\n", get_irn_node_nr(n));
 	if (old) {
 		assert(1==0 && "init called for node already initialized");
 	}
-	vrp_attr *vrp = phase_alloc(phase, sizeof(vrp_attr));
+	vrp = phase_alloc(phase, sizeof(vrp_attr));
 
 	memset(vrp, 0, sizeof(vrp_attr));
 	/* Initialize the vrp information to default */
@@ -559,22 +561,22 @@ static void *vrp_init_node(ir_phase *phase, const ir_node *n, void *old)
 	 * vrp space for non-int nodes. (currently caught by vrp_update_node)
 	 */
 	if (mode_is_int(mode)) {
-		// We are assuming that 0 is always represented as 0x0000
+		/* We are assuming that 0 is always represented as this modes null */
 		vrp->valid = 1;
-		vrp->bits_set = new_tarval_from_long(0, mode);
-		vrp->bits_not_set = new_tarval_from_long(0, mode);
-		vrp->range_bottom = get_tarval_top();
+		vrp->bits_set =
+		vrp->bits_not_set = get_mode_null(mode);
+		vrp->range_bottom =
 		vrp->range_top = get_tarval_top();
 	} else {
 		vrp->valid = 0;
-		vrp->bits_set = get_tarval_bad();
-		vrp->bits_not_set = get_tarval_bad();
-		vrp->range_bottom = get_tarval_bad();
+		vrp->bits_set =
+		vrp->bits_not_set =
+		vrp->range_bottom =
 		vrp->range_top = get_tarval_bad();
 	}
 
 	/* TODO: We might be able to set better vrp info at this time, if this is
-	 * a node which is newly created in an already initalized irg
+	 * a node which is newly created in an already initialized irg
 	 *
 	 * maybe just call vrp_update_node and if it returns one, iterate over
 	 * successors

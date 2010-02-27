@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2009 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -30,21 +30,21 @@
 #define VRP_H
 
 enum range_types {
-	VRP_UNDEFINED, /* No information could be derived so far */
-	VRP_RANGE, /* bottom and top form a range, including both values */
-	VRP_ANTIRANGE, /* range from bottom to top can not be, but borders might
-					  be */
-	VRP_VARYING /* information can not be derived */
+	VRP_UNDEFINED, /**< No information could be derived so far */
+	VRP_RANGE,     /**< bottom and top form a range, including both values */
+	VRP_ANTIRANGE, /**< range from bottom to top can not be, but borders might
+	                  be */
+	VRP_VARYING    /**< information can not be derived */
 };
 
 /** VRP information */
 typedef struct {
-	int valid; /**< This node has valid vrp information */
-	tarval *bits_set;          /**< The bits which, by analysis, are  definitely set.
-									0: may be not set, 1: definitely set*/
-	tarval *bits_not_set;  /**< The bits which by analysis are definitely
-							 not set, 1 for may be set, 0: definitely not set  */
-	enum range_types range_type;/**< The range represented by range_top,  range_bottom */
+	int valid;                   /**< This node has valid vrp information */
+	tarval *bits_set;            /**< The bits which, by analysis, are  definitely set.
+	                                  0: may be not set, 1: definitely set*/
+	tarval *bits_not_set;        /**< The bits which by analysis are definitely
+	                                  not set, 1 for may be set, 0: definitely not set  */
+	enum range_types range_type; /**< The range represented by range_top, range_bottom */
 	tarval *range_bottom, *range_top;
 } vrp_attr;
 
