@@ -127,6 +127,15 @@ void init_irnode(void)
 	forbid_new_data = 1;
 }
 
+struct struct_align {
+	char c;
+	struct s {
+		int i;
+		float f;
+		double d;
+	} s;
+};
+
 /*
  * irnode constructor.
  * Create a new irnode in irg, with an op, mode, arity and
@@ -137,7 +146,9 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
                      ir_mode *mode, int arity, ir_node **in)
 {
 	ir_node *res;
-	size_t node_size = offsetof(ir_node, attr) + op->attr_size + firm_add_node_size;
+	unsigned align = offsetof(struct struct_align, s) - 1;
+	unsigned add_node_size = (firm_add_node_size + align) & ~align;
+	size_t node_size = offsetof(ir_node, attr) + op->attr_size + add_node_size;
 	char *p;
 	int i;
 
@@ -146,7 +157,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	assert(mode);
 	p = obstack_alloc(irg->obst, node_size);
 	memset(p, 0, node_size);
-	res = (ir_node *)(p + firm_add_node_size);
+	res = (ir_node *)(p + add_node_size);
 
 	res->kind     = k_ir_node;
 	res->op       = op;
@@ -188,21 +199,22 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	if (get_irg_phase_state(irg) == phase_backend) {
 		be_info_new_node(res);
 	}
-	// Init the VRP structures
+	/* Init the VRP structures */
 	res->vrp.range_type = VRP_UNDEFINED;
 	res->vrp.valid = 0;
 	if (mode_is_int(mode)) {
-		// We are assuming that 0 is always represented as 0x0000
-		res->vrp.bits_set = new_tarval_from_long(0, mode);
-		res->vrp.bits_not_set = new_tarval_from_long(0, mode);
-		res->vrp.range_bottom = get_tarval_top();
+		/* We are assuming that 0 is always represented by this modes 0 */
+		res->vrp.bits_set =
+		res->vrp.bits_not_set = get_mode_null(mode);
+		res->vrp.range_bottom =
 		res->vrp.range_top = get_tarval_top();
 	} else {
-		res->vrp.bits_set = get_tarval_bad();
-		res->vrp.bits_not_set = get_tarval_bad();
-		res->vrp.range_bottom = get_tarval_bad();
+		res->vrp.bits_set =
+		res->vrp.bits_not_set =
+		res->vrp.range_bottom =
 		res->vrp.range_top = get_tarval_bad();
 	}
+
 	res->vrp.bits_node = NULL;
 	res->vrp.range_node = NULL;
 	res->vrp.range_op = VRP_NONE;
