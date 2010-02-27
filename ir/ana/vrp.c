@@ -25,7 +25,6 @@
  */
 #include "config.h"
 
-#include "config.h"
 #include "irtypes.h"
 #include "vrp.h"
 #include "irouts.h"
