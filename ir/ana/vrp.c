@@ -35,6 +35,7 @@
 #include "irgwalk.h"
 #include "iredges.h"
 #include "tv.h"
+#include "irop.h"
 
 
 static char v;
@@ -62,6 +63,12 @@ int update_vrp_data(ir_node *node)
 	enum range_types new_range_type = VRP_UNDEFINED;
 	enum range_ops new_range_op = VRP_NONE;
 	int something_changed = 0;
+	tarval *tmp_tv, *tv;
+	ir_node *left, *right, *pred, *bound;
+	int overflow_top, overflow_bottom;
+	tarval *new_top, *new_bottom;
+
+	pn_Cmp cmp;
 
 	node->vrp.valid = 1;
 	/* TODO: Check if all predecessors have valid VRP information*/
@@ -71,53 +78,56 @@ int update_vrp_data(ir_node *node)
 		return 0; /* we don't optimize for non-int-nodes*/
 	}
 
-	if (is_Const(node)) {
-		tarval *tv = get_Const_tarval(node);
+	switch (get_irn_opcode(node)) {
+	case iro_Const:
+		tv = get_Const_tarval(node);
 
 		new_bits_set = tv;
 		new_bits_not_set = tarval_not(tv);
 		new_range_bottom = tv;
 		new_range_top = tv;
 		new_range_type = VRP_RANGE;
-	} else if (is_And(node)) {
-		ir_node *pred0 = get_And_left(node);
-		ir_node *pred1 = get_And_right(node);
-		tarval *tmp;
+		break;
 
-		new_bits_set = tarval_and(pred0->vrp.bits_set, pred1->vrp.bits_set);
-		new_bits_not_set = tarval_or(pred0->vrp.bits_not_set, pred1->vrp.bits_not_set);
+	case iro_And:
+		left = get_And_left(node);
+		right = get_And_right(node);
 
-		tmp = tarval_not(pred0->vrp.bits_set);
-		tmp = tarval_eor(pred0->vrp.bits_not_set, tmp);
+		new_bits_set = tarval_and(left->vrp.bits_set, right->vrp.bits_set);
+		new_bits_not_set = tarval_or(left->vrp.bits_not_set, right->vrp.bits_not_set);
+
+		tmp_tv = tarval_not(left->vrp.bits_set);
+		tmp_tv = tarval_eor(left->vrp.bits_not_set, tmp_tv);
 		/*check if one of the predecessors is completely determined*/
-		if (tarval_is_null(tmp)) {
-			new_bits_node = pred1;
+		if (tarval_is_null(tmp_tv)) {
+			new_bits_node = right;
 		}
 
-		tmp = tarval_not(pred1->vrp.bits_set);
-		tmp = tarval_eor(pred1->vrp.bits_not_set, tmp);
-		if (tarval_is_null(tmp)) {
-			new_bits_node = pred0;
+		tmp_tv = tarval_not(right->vrp.bits_set);
+		tmp_tv = tarval_eor(right->vrp.bits_not_set, tmp_tv);
+		if (tarval_is_null(tmp_tv)) {
+			new_bits_node = left;
 		}
-	} else if (is_Add(node)) {
-		ir_node *pred0 = get_Add_left(node);
-		ir_node *pred1 = get_Add_right(node);
-		int overflow_top, overflow_bottom;
-		tarval *new_top, *new_bottom;
+		break;
 
-		if (pred0->vrp.range_type == VRP_UNDEFINED || pred1->vrp.range_type ==
-				VRP_UNDEFINED || pred0->vrp.range_type == VRP_VARYING ||
-				pred1->vrp.range_type == VRP_VARYING) {
+	case iro_Add:
+		left = get_Add_left(node);
+		right = get_Add_right(node);
+
+
+		if (left->vrp.range_type == VRP_UNDEFINED || right->vrp.range_type ==
+				VRP_UNDEFINED || left->vrp.range_type == VRP_VARYING ||
+				right->vrp.range_type == VRP_VARYING) {
 			return 0;
 		}
 
-		new_top = tarval_add(pred0->vrp.range_top, pred1->vrp.range_top);
+		new_top = tarval_add(left->vrp.range_top, right->vrp.range_top);
 		overflow_top = tarval_carry();
-		new_bottom = tarval_add(pred0->vrp.range_bottom, pred1->vrp.range_bottom);
+		new_bottom = tarval_add(left->vrp.range_bottom, right->vrp.range_bottom);
 		overflow_bottom = tarval_carry();
 
-		if (!overflow_top && !overflow_bottom && pred0->vrp.range_type == VRP_RANGE
-				&&pred1->vrp.range_type == VRP_RANGE) {
+		if (!overflow_top && !overflow_bottom && left->vrp.range_type == VRP_RANGE
+				&&right->vrp.range_type == VRP_RANGE) {
 			new_range_bottom = new_bottom;
 			new_range_top = new_top;
 			new_range_type = VRP_RANGE;
@@ -127,24 +137,24 @@ int update_vrp_data(ir_node *node)
 			/* TODO Implement overflow handling*/
 			new_range_type = VRP_UNDEFINED;
 		}
-	} else if (is_Sub(node)) {
-		ir_node *pred0 = get_Sub_left(node);
-		ir_node *pred1 = get_Sub_right(node);
-		int overflow_top, overflow_bottom;
-		tarval *new_top, *new_bottom;
+		break;
 
-		if (pred0->vrp.range_type == VRP_UNDEFINED || pred1->vrp.range_type ==
+	case iro_Sub:
+		left = get_Sub_left(node);
+		right = get_Sub_right(node);
+
+		if (left->vrp.range_type == VRP_UNDEFINED || right->vrp.range_type ==
 				VRP_UNDEFINED) {
 			return 0;
 		}
 
-		new_top = tarval_sub(pred0->vrp.range_top, pred1->vrp.range_top, NULL);
+		new_top = tarval_sub(left->vrp.range_top, right->vrp.range_top, NULL);
 		overflow_top = tarval_carry();
-		new_bottom = tarval_sub(pred0->vrp.range_bottom, pred1->vrp.range_bottom, NULL);
+		new_bottom = tarval_sub(left->vrp.range_bottom, right->vrp.range_bottom, NULL);
 		overflow_bottom = tarval_carry();
 
-		if (!overflow_top && !overflow_bottom && pred0->vrp.range_type == VRP_RANGE
-				&&pred1->vrp.range_type == VRP_RANGE) {
+		if (!overflow_top && !overflow_bottom && left->vrp.range_type == VRP_RANGE
+				&&right->vrp.range_type == VRP_RANGE) {
 			new_range_bottom = new_bottom;
 			new_range_top = new_top;
 			new_range_type = VRP_RANGE;
@@ -153,137 +163,145 @@ int update_vrp_data(ir_node *node)
 		if (overflow_top || overflow_bottom) {
 			/* TODO Implement overflow handling*/
 		}
-	} else if (is_Or(node)) {
-		ir_node *a = get_Or_left(node);
-		ir_node *b = get_Or_right(node);
-		tarval *tmp;
+		break;
 
-		new_bits_set = tarval_or(a->vrp.bits_set, b->vrp.bits_set);
-		new_bits_not_set = tarval_and(a->vrp.bits_not_set, b->vrp.bits_not_set);
+	case iro_Or:
+		left = get_Or_left(node);
+		right = get_Or_right(node);
 
-		tmp = tarval_not(a->vrp.bits_set);
-		tmp = tarval_eor(a->vrp.bits_not_set, tmp);
+		new_bits_set = tarval_or(left->vrp.bits_set, right->vrp.bits_set);
+		new_bits_not_set = tarval_and(left->vrp.bits_not_set, right->vrp.bits_not_set);
+
+		tmp_tv = tarval_not(left->vrp.bits_set);
+		tmp_tv = tarval_eor(left->vrp.bits_not_set, tmp_tv);
 		/*check if one of the predecessors is completely determined*/
-		if (tarval_is_null(tmp)) {
-			new_bits_node = b;
+		if (tarval_is_null(tmp_tv)) {
+			new_bits_node = right;
 		}
 
-		tmp = tarval_not(b->vrp.bits_set);
-		tmp = tarval_eor(b->vrp.bits_not_set, tmp);
-		if (tarval_is_null(tmp)) {
-			new_bits_node = a;
+		tmp_tv = tarval_not(right->vrp.bits_set);
+		tmp_tv = tarval_eor(right->vrp.bits_not_set, tmp_tv);
+		if (tarval_is_null(tmp_tv)) {
+			new_bits_node = left;
 		}
+		break;
 
-	} else if (is_Rotl(node)) {
-		ir_node *a = get_Rotl_left(node);
-		ir_node *b = get_Rotl_right(node);
+	case iro_Rotl:
+		left = get_Rotl_left(node);
+		right = get_Rotl_right(node);
 
 		/* We can only compute this if the right value is a constant*/
-		if (is_Const(b)) {
+		if (is_Const(right)) {
 			tarval *bits_set, *bits_not_set;
-			bits_set = tarval_rotl(a->vrp.bits_set, get_Const_tarval(b));
-			bits_not_set = tarval_rotl(a->vrp.bits_not_set, get_Const_tarval(b));
+			bits_set = tarval_rotl(left->vrp.bits_set, get_Const_tarval(right));
+			bits_not_set = tarval_rotl(left->vrp.bits_not_set, get_Const_tarval(right));
 
 			new_bits_set = tarval_or(bits_set, node->vrp.bits_set);
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 		}
+		break;
 
-	} else if (is_Shl(node)) {
-		ir_node *a = get_Shl_left(node);
-		ir_node *b = get_Shl_right(node);
+	case iro_Shl:
+		left = get_Shl_left(node);
+		right = get_Shl_right(node);
 
 		/* We can only compute this if the right value is a constant*/
-		if (is_Const(b)) {
+		if (is_Const(right)) {
 			tarval *bits_set, *bits_not_set;
 			ir_mode *m = get_tarval_mode(node->vrp.bits_not_set);
-			bits_set = tarval_shl(a->vrp.bits_set, get_Const_tarval(b));
-			bits_not_set = tarval_shl(a->vrp.bits_not_set, get_Const_tarval(b));
+			bits_set = tarval_shl(left->vrp.bits_set, get_Const_tarval(right));
+			bits_not_set = tarval_shl(left->vrp.bits_not_set, get_Const_tarval(right));
 
 			new_bits_set = tarval_or(bits_set, node->vrp.bits_set);
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 
 			bits_not_set = tarval_not( tarval_shl(
 										get_mode_all_one(m),
-										get_Const_tarval(b)));
+										get_Const_tarval(right)));
 			new_bits_not_set = tarval_or(bits_not_set, new_bits_not_set);
 
 		}
+		break;
 
-	} else if (is_Shr(node)) {
-		ir_node *a = get_Shr_left(node);
-		ir_node *b = get_Shr_right(node);
+	case iro_Shr:
+		left = get_Shr_left(node);
+		right = get_Shr_right(node);
 
 		/* We can only compute this if the right value is a constant*/
-		if (is_Const(b)) {
+		if (is_Const(right)) {
 			tarval *bits_set, *bits_not_set;
 			ir_mode *m = get_tarval_mode(node->vrp.bits_not_set);
-			bits_set = tarval_shr(a->vrp.bits_set, get_Const_tarval(b));
-			bits_not_set = tarval_shr(a->vrp.bits_not_set, get_Const_tarval(b));
+			bits_set = tarval_shr(left->vrp.bits_set, get_Const_tarval(right));
+			bits_not_set = tarval_shr(left->vrp.bits_not_set, get_Const_tarval(right));
 
 			new_bits_set = tarval_or(bits_set, node->vrp.bits_set);
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 
 			bits_not_set = tarval_not( tarval_shr(
 										get_mode_all_one(m),
-										get_Const_tarval(b)));
+										get_Const_tarval(right)));
 			new_bits_not_set = tarval_or(bits_not_set, new_bits_not_set);
 		}
+		break;
 
-	} else if (is_Shrs(node)) {
-		ir_node *a = get_Shrs_left(node);
-		ir_node *b = get_Shrs_right(node);
+	case iro_Shrs:
+		left = get_Shrs_left(node);
+		right = get_Shrs_right(node);
 
 		/* We can only compute this if the right value is a constant*/
-		if (is_Const(b)) {
+		if (is_Const(right)) {
 			tarval *bits_set, *bits_not_set;
 			ir_mode *m = get_tarval_mode(node->vrp.bits_not_set);
-			bits_set = tarval_shrs(a->vrp.bits_set, get_Const_tarval(b));
-			bits_not_set = tarval_shrs(a->vrp.bits_not_set, get_Const_tarval(b));
+			bits_set = tarval_shrs(left->vrp.bits_set, get_Const_tarval(right));
+			bits_not_set = tarval_shrs(left->vrp.bits_not_set, get_Const_tarval(right));
 
 			new_bits_set = tarval_or(bits_set, node->vrp.bits_set);
 			new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
 
 			bits_not_set = tarval_not( tarval_shrs(
 										get_mode_all_one(m),
-										get_Const_tarval(b)));
+										get_Const_tarval(right)));
 			new_bits_not_set = tarval_or(bits_not_set, new_bits_not_set);
 		}
+		break;
 
-	} else if (is_Eor(node)) {
-		ir_node *a = get_Eor_left(node);
-		ir_node *b = get_Eor_right(node);
+	case iro_Eor:
+		left = get_Eor_left(node);
+		right = get_Eor_right(node);
 
 		tarval *bits_set, *bits_not_set;
 		bits_not_set = tarval_or(
-							tarval_and(a->vrp.bits_set, b->vrp.bits_set),
-							tarval_and(a->vrp.bits_not_set,
-								b->vrp.bits_not_set));
+							tarval_and(left->vrp.bits_set, right->vrp.bits_set),
+							tarval_and(left->vrp.bits_not_set,
+								right->vrp.bits_not_set));
 
 		bits_set = tarval_or(
-						tarval_and(a->vrp.bits_set, b->vrp.bits_not_set),
-						tarval_and(a->vrp.bits_not_set, b->vrp.bits_set));
+						tarval_and(left->vrp.bits_set, right->vrp.bits_not_set),
+						tarval_and(left->vrp.bits_not_set, right->vrp.bits_set));
 
 		new_bits_set = tarval_or(bits_set, node->vrp.bits_set);
 		new_bits_not_set = tarval_or(bits_not_set, node->vrp.bits_not_set);
+		break;
 
-	} else if (is_Id(node)) {
-		ir_node *pred = get_Id_pred(node);
+	case iro_Id:
+		pred = get_Id_pred(node);
 		new_bits_set = pred->vrp.bits_set;
 		new_bits_not_set = pred->vrp.bits_not_set;
 		new_range_top = pred->vrp.range_top;
 		new_range_bottom = pred->vrp.range_bottom;
 		new_range_type = pred->vrp.range_type;
+		break;
 
-	} else if (is_Not(node)) {
-		ir_node *pred = get_Not_op(node);
+	case iro_Not:
+		pred = get_Not_op(node);
 		new_bits_set = tarval_or(pred->vrp.bits_not_set, node->vrp.bits_set);
 		new_bits_not_set = tarval_or(pred->vrp.bits_set, node->vrp.bits_not_set);
+		break;
 
-	} else if (is_Conv(node)) {
-		ir_node *pred = get_Conv_op(node);
+	case iro_Conv:
+		pred = get_Conv_op(node);
 		ir_mode *old_mode = get_irn_mode(pred);
 		ir_mode *new_mode;
-		tarval *bits_not_set;
 
 		if (!mode_is_int(old_mode))
 			return 0;
@@ -307,10 +325,11 @@ int update_vrp_data(ir_node *node)
 		if (tarval_cmp(pred->vrp.range_bottom, get_mode_min(new_mode)) == pn_Cmp_Ge) {
 			node->vrp.range_bottom = pred->vrp.range_bottom;
 		}
+		break;
 
-	} else if (is_Confirm(node)) {
-		pn_Cmp cmp = get_Confirm_cmp(node);
-		ir_node *bound = get_Confirm_bound(node);
+	case iro_Confirm:
+		cmp = get_Confirm_cmp(node);
+		bound = get_Confirm_bound(node);
 
 		/** @todo: Handle non-Const bounds */
 
@@ -341,50 +360,49 @@ int update_vrp_data(ir_node *node)
 				}
 			}
 		}
+		break;
 
-	} else if (is_Phi(node)) {
+	case iro_Phi:
 		/* combine all ranges*/
-		ir_node *pred;
+
+		pred = get_Phi_pred(node,0);
+		new_range_top = pred->vrp.range_top;
+		new_range_bottom = pred->vrp.range_bottom;
+		new_range_type = pred->vrp.range_type;
+		new_bits_set = pred->vrp.bits_set;
+		new_bits_not_set = pred->vrp.bits_not_set;
+
 		int num = get_Phi_n_preds(node);
 		pn_Cmp cmp;
 		int i;
-		tarval *range_top, *range_bottom, *bits_set, *bits_not_set;
-		enum range_types range_type;
 
 		assert(num > 0);
 
-		pred = get_Phi_pred(node,0);
-		range_top = pred->vrp.range_top;
-		range_bottom = pred->vrp.range_bottom;
-		range_type = pred->vrp.range_type;
-		bits_set = pred->vrp.bits_set;
-		bits_not_set = pred->vrp.bits_not_set;
 
 		for (i = 1; i < num; i++) {
 			pred = get_Phi_pred(node, i);
-			if (range_type == VRP_RANGE && pred->vrp.range_type ==
+			if (new_range_type == VRP_RANGE && pred->vrp.range_type ==
 					VRP_RANGE) {
-				cmp = tarval_cmp(range_top, pred->vrp.range_top);
+				cmp = tarval_cmp(new_range_top, pred->vrp.range_top);
 				if (cmp == pn_Cmp_Lt) {
-					range_top = pred->vrp.range_top;
+					new_range_top = pred->vrp.range_top;
 				}
-				cmp = tarval_cmp(range_bottom, pred->vrp.range_bottom);
+				cmp = tarval_cmp(new_range_bottom, pred->vrp.range_bottom);
 				if (cmp == pn_Cmp_Gt) {
-					range_bottom = pred->vrp.range_bottom;
+					new_range_bottom = pred->vrp.range_bottom;
 				}
 			} else {
-				range_type = VRP_VARYING;
+				new_range_type = VRP_VARYING;
 				break;
 			}
 		}
 
-		new_range_type = range_type;
-		new_range_top = range_top;
-		new_range_bottom = range_bottom;
+		break;
 
-	} else {
-		/* unhandled, therefore never updated*/
-		return 0;
+
+	default:
+		/* unhandled, therefore never updated */
+		break;
 	}
 
 
