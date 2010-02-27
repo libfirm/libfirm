@@ -62,6 +62,7 @@
 #include "irtools.h"
 #include "iropt_dbg.h"
 #include "irpass_t.h"
+#include "irphase_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -84,6 +85,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * Check if a new node was set.
  */
 #define has_new_node(n) (get_new_node(n) != NULL)
+
+/** a pointer to the new phases */
+static ir_phase *new_phases[PHASE_LAST];
 
 /**
  * We use the block_visited flag to mark that we have computed the
@@ -131,7 +135,8 @@ static inline int compute_new_arity(ir_node *b)
 static void copy_node(ir_node *n, void *env)
 {
 	ir_node *nn, *block;
-	int new_arity;
+	int new_arity, i;
+	ir_phase *old_ph;
 	ir_op *op = get_irn_op(n);
 	(void) env;
 
@@ -165,6 +170,16 @@ static void copy_node(ir_node *n, void *env)
 		set_Block_MacroBlock(nn, get_Block_MacroBlock(n));
 	}
 	copy_node_attr(n, nn);
+
+	/* preserve the phase information for this node */
+	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
+		old_ph = get_irg_phase(current_ir_graph, i);
+		if (old_ph != NULL) {
+			if(phase_get_irn_data(old_ph, n)) {
+				phase_set_irn_data(new_phases[i], nn, phase_get_irn_data(old_ph, n));
+			}
+		}
+	}
 
 	if (env != NULL) {
 		/* for easier debugging, we want to copy the node numbers too */
@@ -388,7 +403,21 @@ static void copy_graph_env(int copy_node_nr)
 {
 	ir_graph *irg = current_ir_graph;
 	ir_node *old_end, *new_anchor;
+	ir_phase *old_ph;
 	int i;
+
+	/* init the new_phases array */
+	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
+		old_ph = get_irg_phase(irg, i);
+		if (old_ph == NULL) {
+			new_phases[i] = NULL;
+		} else {
+			new_phases[i] = xmalloc(sizeof(ir_phase));
+			phase_init(new_phases[i], "", irg, old_ph->growth_factor,
+					old_ph->data_init, old_ph->priv);
+		}
+	}
+
 
 	/* remove end_except and end_reg nodes */
 	old_end = get_irg_end(irg);
@@ -415,9 +444,20 @@ static void copy_graph_env(int copy_node_nr)
 
 	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
 		ir_node *n = get_irg_anchor(irg, i);
-		if (n)
+		if (n) {
 			set_irn_n(new_anchor, i, get_new_node(n));
+		}
 	}
+
+	/* copy the new phases into the irg */
+	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
+		old_ph = get_irg_phase(irg, i);
+		if (old_ph != NULL) {
+			free_irg_phase(irg, i);
+			irg->phases[i] = new_phases[i];
+		}
+	}
+
 	free_End(old_end);
 	irg->anchor = new_anchor;
 
