@@ -31,24 +31,18 @@
 #include "irouts.h"
 #include "irgraph_t.h"
 #include "irpass.h"
-#include "list.h"
 #include "irgwalk.h"
 #include "iredges.h"
 #include "tv.h"
 #include "irop.h"
+#include "pdeq.h"
 
 
 static char v;
 static void *VISITED = &v;
 
-typedef struct worklist_t worklist_t;
-struct worklist_t {
-	 struct list_head nodes;
-	ir_node *node;
-};
-
 struct vrp_env_t {
-	worklist_t *worklist;
+	waitq *workqueue;
 };
 
 static int update_vrp_data(ir_node *node)
@@ -561,7 +555,6 @@ static int update_vrp_data(ir_node *node)
 static void vrp_first_pass(ir_node *n, void *e)
 {
 	ir_node *succ;
-	worklist_t *tmp_entry;
 	int i;
 	struct vrp_env_t *env = e;
 
@@ -576,12 +569,7 @@ static void vrp_first_pass(ir_node *n, void *e)
 		succ =  get_irn_out(n, i);
 		if (get_irn_link(succ) == VISITED) {
 			/* we found a loop*/
-
-			tmp_entry = XMALLOC(worklist_t);
-			tmp_entry->node = n;
-			list_add(&(tmp_entry->nodes), &(env->worklist->nodes));
-
-
+			waitq_put(env->workqueue, n);
 		}
 	}
 }
@@ -590,10 +578,8 @@ static void vrp_first_pass(ir_node *n, void *e)
 void set_vrp_data(ir_graph *irg)
 {
 
-	ir_node *succ;
+	ir_node *succ, *node;
 	int i;
-	worklist_t worklist;
-	worklist_t *tmp_entry, *tmp_entry2;
 	struct vrp_env_t env;
 
 	if (!irg) {
@@ -603,38 +589,22 @@ void set_vrp_data(ir_graph *irg)
 
 	assure_irg_outs(irg); /* ensure that out edges are consistent*/
 
-/*	edges_activate(irg);*/
-
-	INIT_LIST_HEAD(&worklist.nodes);
-
-	env.worklist = &worklist;
+	env.workqueue = new_waitq();
 	irg_walk_graph(irg, NULL, vrp_first_pass, &env);
 
-
-
 	/* while there are entries in the worklist, continue*/
-	while ( !list_empty(&worklist.nodes) ) {
+	while (!waitq_empty(env.workqueue)) {
+		node = waitq_get(env.workqueue);
 
-		list_head *pos, *next;
-		list_for_each_safe(pos, next, &worklist.nodes) {
-
-			tmp_entry = list_entry(pos, worklist_t, nodes);
-
-			if (update_vrp_data(tmp_entry->node)) {
-				/* if something changed, add successors to worklist*/
-				for (i = get_irn_n_outs(tmp_entry->node) - 1; i >=0; --i) {
-					succ =  get_irn_out(tmp_entry->node, i);
-
-					tmp_entry2 = XMALLOC(worklist_t);
-					tmp_entry2->node = succ;
-					list_add(&(tmp_entry2->nodes), &worklist.nodes);
-				}
+		if (update_vrp_data(node)) {
+			/* if something changed, add successors to worklist*/
+			for (i = get_irn_n_outs(node) - 1; i >=0; --i) {
+				succ =  get_irn_out(node, i);
+				waitq_put(env.workqueue, node);
 			}
-
-			list_del(pos);
-			xfree(tmp_entry);
 		}
 	}
+	del_waitq(env.workqueue);
 }
 
 
