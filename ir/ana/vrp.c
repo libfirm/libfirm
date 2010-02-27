@@ -51,7 +51,7 @@ struct vrp_env_t {
 	worklist_t *worklist;
 };
 
-int update_vrp_data(ir_node *node)
+static int update_vrp_data(ir_node *node)
 {
 
 	tarval *new_bits_set = get_tarval_bad();
@@ -558,7 +558,7 @@ int update_vrp_data(ir_node *node)
 	return something_changed;
 }
 
-void vrp_first_pass(ir_node *n, void *e)
+static void vrp_first_pass(ir_node *n, void *e)
 {
 	ir_node *succ;
 	worklist_t *tmp_entry;
