@@ -297,7 +297,7 @@ static inline void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 
 	/* make the maximum index at least as big as the largest index in the graph. */
 	max_idx = MAX(max_idx, last_irg_idx);
-	new_cap = old_cap + (size_t) (max_idx * phase->growth_factor / 256);
+	new_cap = (size_t) (max_idx * phase->growth_factor / 256);
 
 	phase->data_ptr = XREALLOC(phase->data_ptr, void*, new_cap);
 
@@ -323,7 +323,7 @@ static inline void *_phase_set_irn_data(ir_phase *ph, const ir_node *irn, void *
 	void *res;
 
 	/* Assure that there's a sufficient amount of slots. */
-	_private_phase_assure_capacity(ph, idx);
+	_private_phase_assure_capacity(ph, idx + 1);
 
 	res = ph->data_ptr[idx];
 	ph->data_ptr[idx] = data;
@@ -338,7 +338,7 @@ static inline void *_phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
 	void *res;
 
 	/* Assure that there's a sufficient amount of slots. */
-	_private_phase_assure_capacity(ph, idx);
+	_private_phase_assure_capacity(ph, idx + 1);
 
 	res = ph->data_ptr[idx];
 
