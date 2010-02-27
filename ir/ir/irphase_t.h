@@ -297,7 +297,7 @@ static inline void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 
 	/* make the maximum index at least as big as the largest index in the graph. */
 	max_idx = MAX(max_idx, last_irg_idx);
-	new_cap = (size_t) (max_idx * phase->growth_factor / 256);
+	new_cap = old_cap + (size_t) (max_idx * phase->growth_factor / 256);
 
 	phase->data_ptr = XREALLOC(phase->data_ptr, void*, new_cap);
 
