@@ -25,6 +25,7 @@
  */
 #include "config.h"
 
+#include "config.h"
 #include "irtypes.h"
 #include "vrp.h"
 #include "irouts.h"
@@ -49,7 +50,7 @@ struct vrp_env_t {
 	worklist_t *worklist;
 };
 
-int update_vrp_data( ir_node *node)
+int update_vrp_data(ir_node *node)
 {
 
 	tarval *new_bits_set = get_tarval_bad();
