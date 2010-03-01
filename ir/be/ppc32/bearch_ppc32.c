@@ -351,7 +351,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 
 		set_ppc32_frame_entity(store, be_get_frame_entity(node));
 
-		proj = new_rd_Proj(dbg, block, store, mode_M, pn_Store_M);
+		proj = new_rd_Proj(dbg, store, mode_M, pn_Store_M);
 
 		if (sched_is_scheduled(node)) {
 			sched_add_after(sched_prev(node), store);
@@ -385,7 +385,7 @@ static void ppc32_transform_spill(ir_node *node, void *env)
 
 		set_ppc32_frame_entity(load, be_get_frame_entity(node));
 
-		proj = new_rd_Proj(dbg, block, load, mode, pn_Load_res);
+		proj = new_rd_Proj(dbg, load, mode, pn_Load_res);
 
 		if (sched_is_scheduled(node)) {
 			sched_add_after(sched_prev(node), load);

@@ -245,7 +245,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *zero_cmp = new_d_Const(dbgi, tv_zeroc);
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
-		ir_node *proj     = new_rd_Proj(dbgi, block, cmp, mode_b, pn_Cmp_Lg);
+		ir_node *proj     = new_rd_Proj(dbgi, cmp, mode_b, pn_Cmp_Lg);
 		res = create_set(proj);
 		break;
 	}

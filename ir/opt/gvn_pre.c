@@ -120,7 +120,7 @@ static ir_node *add(ir_node *e, ir_node *v)
 
 		if (v_pred != pred) {
 			/* must create a new value here */
-			v = new_r_Proj(get_nodes_block(v_pred), v_pred, get_irn_mode(v), get_Proj_proj(v));
+			v = new_r_Proj(v_pred, get_irn_mode(v), get_Proj_proj(v));
 		}
 	}
 	v = identify_remember(value_table, v);

@@ -177,7 +177,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 			sched_add_before(irn, adc);
 
 			set_irn_mode(adc, mode_T);
-			adc_flags = new_r_Proj(block, adc, mode_Iu, pn_ia32_Adc_flags);
+			adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
 			arch_set_irn_register(adc_flags, &ia32_flags_regs[REG_EFLAGS]);
 
 			cmc = new_bd_ia32_Cmc(dbg, block, adc_flags);
@@ -365,8 +365,8 @@ static void assure_should_be_same_requirements(ir_node *node)
 		in[1] = uses_out_reg;
 		perm  = be_new_Perm(cls, block, 2, in);
 
-		perm_proj0 = new_r_Proj(block, perm, get_irn_mode(in[0]), 0);
-		perm_proj1 = new_r_Proj(block, perm, get_irn_mode(in[1]), 1);
+		perm_proj0 = new_r_Proj(perm, get_irn_mode(in[0]), 0);
+		perm_proj1 = new_r_Proj(perm, get_irn_mode(in[1]), 1);
 
 		arch_set_irn_register(perm_proj0, out_reg);
 		arch_set_irn_register(perm_proj1, in_reg);

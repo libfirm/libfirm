@@ -286,7 +286,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 			/* If there are other users, reroute them to result proj */
 			if (get_irn_n_edges(left) != 2) {
-				ir_node *res = new_r_Proj(block, left, mode_Iu, pn_ia32_res);
+				ir_node *res = new_r_Proj(left, mode_Iu, pn_ia32_res);
 
 				edges_reroute(left, res, current_ir_graph);
 				/* Reattach the result proj to left */
@@ -295,7 +295,7 @@ static void peephole_ia32_Test(ir_node *node)
 		}
 
 		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-		flags_proj = new_r_Proj(block, left, flags_mode, pn_ia32_flags);
+		flags_proj = new_r_Proj(left, flags_mode, pn_ia32_flags);
 		arch_set_irn_register(flags_proj, &ia32_flags_regs[REG_EFLAGS]);
 
 		assert(get_irn_mode(node) != mode_T);
@@ -502,11 +502,11 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		sched_add_after(skip_Proj(curr_sp), push);
 
 		/* create stackpointer Proj */
-		curr_sp = new_r_Proj(block, push, spmode, pn_ia32_Push_stack);
+		curr_sp = new_r_Proj(push, spmode, pn_ia32_Push_stack);
 		arch_set_irn_register(curr_sp, spreg);
 
 		/* create memory Proj */
-		mem_proj = new_r_Proj(block, push, mode_M, pn_ia32_Push_M);
+		mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
 		/* use the memproj now */
 		be_peephole_exchange(store, mem_proj);
@@ -768,7 +768,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		copy_mark(load, pop);
 
 		/* create stackpointer Proj */
-		pred_sp = new_r_Proj(block, pop, mode_Iu, pn_ia32_Pop_stack);
+		pred_sp = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_stack);
 		arch_set_irn_register(pred_sp, esp);
 
 		sched_add_before(irn, pop);
@@ -832,9 +832,9 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 
 	pop   = new_bd_ia32_Pop(dbgi, block, new_NoMem(), stack);
 
-	stack = new_r_Proj(block, pop, mode_Iu, pn_ia32_Pop_stack);
+	stack = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
-	val   = new_r_Proj(block, pop, mode_Iu, pn_ia32_Pop_res);
+	val   = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_res);
 	arch_set_irn_register(val, reg);
 
 	sched_add_before(schedpoint, pop);
@@ -868,7 +868,7 @@ static ir_node *create_push(dbg_info *dbgi, ir_node *block,
 	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
 	sched_add_before(schedpoint, push);
 
-	stack = new_r_Proj(block, push, mode_Iu, pn_ia32_Push_stack);
+	stack = new_r_Proj(push, mode_Iu, pn_ia32_Push_stack);
 	arch_set_irn_register(stack, esp);
 
 	return stack;

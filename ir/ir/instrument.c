@@ -90,7 +90,7 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 	adr = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
 
 	call    = new_r_Call(first_block, get_irg_no_mem(irg), adr, 0, NULL, get_entity_type(ent));
-	new_mem = new_r_Proj(first_block, call, mode_M, pn_Call_M);
+	new_mem = new_r_Proj(call, mode_M, pn_Call_M);
 
 	initial_mem = get_irg_initial_mem(irg);
 	edges_reroute(initial_mem, new_mem, irg);

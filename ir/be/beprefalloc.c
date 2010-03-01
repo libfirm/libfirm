@@ -1021,12 +1021,12 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 		DB((dbg, LEVEL_2, "Perm %+F (perm %+F,%+F, before %+F)\n",
 		    perm, in[0], in[1], before));
 
-		proj0 = new_r_Proj(block, perm, get_irn_mode(in[0]), 0);
+		proj0 = new_r_Proj(perm, get_irn_mode(in[0]), 0);
 		mark_as_copy_of(proj0, in[0]);
 		reg = arch_register_for_index(cls, old_r);
 		use_reg(proj0, reg);
 
-		proj1 = new_r_Proj(block, perm, get_irn_mode(in[1]), 1);
+		proj1 = new_r_Proj(perm, get_irn_mode(in[1]), 1);
 		mark_as_copy_of(proj1, in[1]);
 		reg = arch_register_for_index(cls, r2);
 		use_reg(proj1, reg);

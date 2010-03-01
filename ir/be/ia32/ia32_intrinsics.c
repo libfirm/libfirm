@@ -201,10 +201,10 @@ static int map_Add(ir_node *call, void *ctx)
 	/* h_res = a_h + b_h + carry */
 
 	add_low  = new_bd_ia32_l_Add(dbg, block, a_l, b_l, mode_T);
-	flags    = new_r_Proj(block, add_low, mode_flags, pn_ia32_flags);
+	flags    = new_r_Proj(add_low, mode_flags, pn_ia32_flags);
 	add_high = new_bd_ia32_l_Adc(dbg, block, a_h, b_h, flags, h_mode);
 
-	l_res = new_r_Proj(block, add_low, l_mode, pn_ia32_res);
+	l_res = new_r_Proj(add_low, l_mode, pn_ia32_res);
 	h_res = add_high;
 
 	resolve_call(call, l_res, h_res, current_ir_graph, block);
@@ -235,10 +235,10 @@ static int map_Sub(ir_node *call, void *ctx)
 	/* h_res = a_h - b_h - carry */
 
 	sub_low  = new_bd_ia32_l_Sub(dbg, block, a_l, b_l, mode_T);
-	flags    = new_r_Proj(block, sub_low, mode_flags, pn_ia32_flags);
+	flags    = new_r_Proj(sub_low, mode_flags, pn_ia32_flags);
 	sub_high = new_bd_ia32_l_Sbb(dbg, block, a_h, b_h, flags, h_mode);
 
-	l_res = new_r_Proj( block, sub_low, l_mode, pn_ia32_res);
+	l_res = new_r_Proj(sub_low, l_mode, pn_ia32_res);
 	h_res = sub_high;
 
 	resolve_call(call, l_res, h_res, current_ir_graph, block);
@@ -300,11 +300,11 @@ static int map_Shl(ir_node *call, void *ctx)
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, upper, cnt, irn, c_mode);
 	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
-	irn    = new_r_Proj(upper, irn, mode_b, pn_Cmp_Eq);
+	irn    = new_r_Proj(irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, upper, irn);
 
-	in[0]  = new_r_Proj(upper, cond, mode_X, pn_Cond_true);
-	in[1]  = new_r_Proj(upper, cond, mode_X, pn_Cond_false);
+	in[0]  = new_r_Proj(cond, mode_X, pn_Cond_true);
+	in[1]  = new_r_Proj(cond, mode_X, pn_Cond_false);
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
@@ -387,11 +387,11 @@ static int map_Shr(ir_node *call, void *ctx)
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, upper, cnt, irn, c_mode);
 	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
-	irn    = new_r_Proj(upper, irn, mode_b, pn_Cmp_Eq);
+	irn    = new_r_Proj(irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, upper, irn);
 
-	in[0]  = new_r_Proj(upper, cond, mode_X, pn_Cond_true);
-	in[1]  = new_r_Proj(upper, cond, mode_X, pn_Cond_false);
+	in[0]  = new_r_Proj(cond, mode_X, pn_Cond_true);
+	in[1]  = new_r_Proj(cond, mode_X, pn_Cond_false);
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
@@ -476,11 +476,11 @@ static int map_Shrs(ir_node *call, void *ctx)
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, upper, cnt, irn, c_mode);
 	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
-	irn    = new_r_Proj(upper, irn, mode_b, pn_Cmp_Eq);
+	irn    = new_r_Proj(irn, mode_b, pn_Cmp_Eq);
 	cond   = new_rd_Cond(dbg, upper, irn);
 
-	in[0]  = new_r_Proj(upper, cond, mode_X, pn_Cond_true);
-	in[1]  = new_r_Proj(upper, cond, mode_X, pn_Cond_false);
+	in[0]  = new_r_Proj(cond, mode_X, pn_Cond_true);
+	in[1]  = new_r_Proj(cond, mode_X, pn_Cond_false);
 
 	/* the block for cnt >= 32 */
 	n_block = new_rd_Block(dbg, irg, 1, &in[1]);
@@ -577,13 +577,13 @@ static int map_Mul(ir_node *call, void *ctx)
 	/* handle the often used case of 32x32=64 mul */
 	if (is_sign_extend(a_l, a_h) && is_sign_extend(b_l, b_h)) {
 		mul   = new_bd_ia32_l_IMul(dbg, block, a_l, b_l);
-		h_res = new_rd_Proj(dbg, block, mul, h_mode, pn_ia32_l_IMul_res_high);
-		l_res = new_rd_Proj(dbg, block, mul, l_mode, pn_ia32_l_IMul_res_low);
+		h_res = new_rd_Proj(dbg, mul, h_mode, pn_ia32_l_IMul_res_high);
+		l_res = new_rd_Proj(dbg, mul, l_mode, pn_ia32_l_IMul_res_low);
 	} else {
 		/* note that zero extension is handled hare efficiently */
 		mul   = new_bd_ia32_l_Mul(dbg, block, a_l, b_l);
-		pEDX  = new_rd_Proj(dbg, block, mul, h_mode, pn_ia32_l_Mul_res_high);
-		l_res = new_rd_Proj(dbg, block, mul, l_mode, pn_ia32_l_Mul_res_low);
+		pEDX  = new_rd_Proj(dbg, mul, h_mode, pn_ia32_l_Mul_res_high);
+		l_res = new_rd_Proj(dbg, mul, l_mode, pn_ia32_l_Mul_res_low);
 
 		b_l   = new_rd_Conv(dbg, block, b_l, h_mode);
 		mul   = new_rd_Mul( dbg, block, a_h, b_l, h_mode);
@@ -614,8 +614,8 @@ static int map_Minus(ir_node *call, void *ctx)
 	(void) ctx;
 
 	res   = new_bd_ia32_Minus64Bit(dbg, block, a_l, a_h);
-	l_res = new_r_Proj(block, res, l_mode, pn_ia32_Minus64Bit_low_res);
-	h_res = new_r_Proj(block, res, h_mode, pn_ia32_Minus64Bit_high_res);
+	l_res = new_r_Proj(res, l_mode, pn_ia32_Minus64Bit_low_res);
+	h_res = new_r_Proj(res, h_mode, pn_ia32_Minus64Bit_high_res);
 
 	resolve_call(call, l_res, h_res, current_ir_graph, block);
 
@@ -663,8 +663,8 @@ static int map_Abs(ir_node *call, void *ctx)
 	sub_h  = new_rd_Eor(dbg, block, a_h, sign,   h_mode);
 
 	l_sub  = new_bd_ia32_l_Sub(dbg, block, sub_l, sign_l, mode_T);
-	l_res  = new_r_Proj(block, l_sub, l_mode,     pn_ia32_res);
-	flags  = new_r_Proj(block, l_sub, mode_flags, pn_ia32_flags);
+	l_res  = new_r_Proj(l_sub, l_mode,     pn_ia32_res);
+	flags  = new_r_Proj(l_sub, mode_flags, pn_ia32_flags);
 	h_res  = new_bd_ia32_l_Sbb(dbg, block, sub_h, sign, flags, h_mode);
 
 	resolve_call(call, l_res, h_res, current_ir_graph, block);
@@ -784,9 +784,9 @@ static int map_Conv(ir_node *call, void *ctx)
 			/* convert from float to signed 64bit */
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, block, a_f);
 
-			l_res = new_r_Proj(block, float_to_ll, l_res_mode,
-							   pn_ia32_l_FloattoLL_res_low);
-			h_res = new_r_Proj(block, float_to_ll, h_res_mode,
+			l_res = new_r_Proj(float_to_ll, l_res_mode,
+			                   pn_ia32_l_FloattoLL_res_low);
+			h_res = new_r_Proj(float_to_ll, h_res_mode,
 							   pn_ia32_l_FloattoLL_res_high);
 		} else {
 			/* convert from float to signed 64bit */
@@ -802,10 +802,10 @@ static int map_Conv(ir_node *call, void *ctx)
 			upper_blk = get_nodes_block(call);
 
 			cmp   = new_rd_Cmp(dbg, upper_blk, a_f, flt_corr);
-			proj  = new_r_Proj(upper_blk, cmp, mode_b, pn_Cmp_Lt);
+			proj  = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
 			cond  = new_rd_Cond(dbg, upper_blk, proj);
-			in[0] = new_r_Proj(upper_blk, cond, mode_X, pn_Cond_true);
-			in[1] = new_r_Proj(upper_blk, cond, mode_X, pn_Cond_false);
+			in[0] = new_r_Proj(cond, mode_X, pn_Cond_true);
+			in[1] = new_r_Proj(cond, mode_X, pn_Cond_false);
 			blk   = new_r_Block(irg, 1, &in[1]);
 			in[1] = new_r_Jmp(blk);
 
@@ -829,9 +829,9 @@ static int map_Conv(ir_node *call, void *ctx)
 
 			float_to_ll = new_bd_ia32_l_FloattoLL(dbg, lower_blk, flt_phi);
 
-			l_res = new_r_Proj(lower_blk, float_to_ll, l_res_mode,
+			l_res = new_r_Proj(float_to_ll, l_res_mode,
 							   pn_ia32_l_FloattoLL_res_low);
-			h_res = new_r_Proj(lower_blk, float_to_ll, h_res_mode,
+			h_res = new_r_Proj(float_to_ll, h_res_mode,
 							   pn_ia32_l_FloattoLL_res_high);
 
 			h_res = new_rd_Add(dbg, lower_blk, h_res, int_phi, h_res_mode);

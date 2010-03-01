@@ -213,7 +213,7 @@ static void lower_sel(ir_node *sel)
 #else /* normal code */
 			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, 0);
 #endif
-			newn = new_r_Proj(bl, newn, ent_mode, pn_Load_res);
+			newn = new_r_Proj(newn, ent_mode, pn_Load_res);
 
 		} else if (get_entity_owner(ent) != get_glob_type()) {
 			int offset;
@@ -383,7 +383,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 	/* create new proj, switch off CSE or we may get the old one back */
 	old_cse = get_opt_cse();
 	set_opt_cse(0);
-	res = n_proj = new_r_Proj(block, load, mode, pn_Load_res);
+	res = n_proj = new_r_Proj(load, mode, pn_Load_res);
 	set_opt_cse(old_cse);
 
 	if (mode_is_signed(mode)) { /* signed */
@@ -473,9 +473,9 @@ static void lower_bitfields_stores(ir_node *store)
 
 	if (neg_mask) {
 		/* there are some bits, normal case */
-		irn  = new_r_Load( block, mem, ptr, mode, 0);
-		mem  = new_r_Proj( block, irn, mode_M, pn_Load_M);
-		irn  = new_r_Proj( block, irn, mode, pn_Load_res);
+		irn  = new_r_Load(block, mem, ptr, mode, 0);
+		mem  = new_r_Proj(irn, mode_M, pn_Load_M);
+		irn  = new_r_Proj(irn, mode, pn_Load_res);
 
 		irn = new_r_And(block, irn, new_Const_long(mode, neg_mask), mode);
 

@@ -1186,12 +1186,12 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		}
 		/* memory output for some exceptions is directly connected to End */
 		if (is_Call(ret)) {
-			cf_pred[n_mem_phi++] = new_r_Proj(get_nodes_block(ret), ret, mode_M, 3);
+			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 3);
 		} else if (is_fragile_op(ret)) {
 			/* We rely that all cfops have the memory output at the same position. */
-			cf_pred[n_mem_phi++] = new_r_Proj(get_nodes_block(ret), ret, mode_M, 0);
+			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 0);
 		} else if (is_Raise(ret)) {
-			cf_pred[n_mem_phi++] = new_r_Proj(get_nodes_block(ret), ret, mode_M, 1);
+			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
 		}
 	}
 	phi = new_Phi(n_mem_phi, cf_pred, mode_M);

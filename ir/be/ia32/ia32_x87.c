@@ -1267,8 +1267,8 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				set_ia32_am_sc(vfld, get_ia32_am_sc(n));
 				set_ia32_ls_mode(vfld, get_ia32_ls_mode(n));
 
-				rproj = new_r_Proj(block, vfld, get_ia32_ls_mode(vfld), pn_ia32_vfld_res);
-				mproj = new_r_Proj(block, vfld, mode_M, pn_ia32_vfld_M);
+				rproj = new_r_Proj(vfld, get_ia32_ls_mode(vfld), pn_ia32_vfld_res);
+				mproj = new_r_Proj(vfld, mode_M, pn_ia32_vfld_M);
 				mem   = get_irn_Proj_for_mode(n, mode_M);
 
 				assert(mem && "Store memory not found");

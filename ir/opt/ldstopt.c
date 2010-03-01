@@ -981,7 +981,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 				if (info->projs[pn_Load_res]) {
 					if (pred_info->projs[pn_Load_res] == NULL) {
 						/* create a new Proj again */
-						pred_info->projs[pn_Load_res] = new_r_Proj(get_nodes_block(pred), pred, get_Load_mode(pred), pn_Load_res);
+						pred_info->projs[pn_Load_res] = new_r_Proj(pred, get_Load_mode(pred), pn_Load_res);
 					}
 					value = pred_info->projs[pn_Load_res];
 
@@ -1640,14 +1640,14 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	co_set_irn_name(store, co_get_irn_ident(old_store));
 #endif
 
-	projM = new_rd_Proj(NULL, block, store, mode_M, pn_Store_M);
+	projM = new_rd_Proj(NULL, store, mode_M, pn_Store_M);
 
 	info = get_ldst_info(store, &wenv->obst);
 	info->projs[pn_Store_M] = projM;
 
 	/* fifths step: repair exception flow */
 	if (exc) {
-		ir_node *projX = new_rd_Proj(NULL, block, store, mode_X, pn_Store_X_except);
+		ir_node *projX = new_rd_Proj(NULL, store, mode_X, pn_Store_X_except);
 
 		info->projs[pn_Store_X_except] = projX;
 		info->exc_block                = exc;
@@ -1938,10 +1938,10 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					pe->load = irn;
 					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
 
-					ninfo->projs[pn_Load_M] = mem = new_r_Proj(pred, irn, mode_M, pn_Load_M);
+					ninfo->projs[pn_Load_M] = mem = new_r_Proj(irn, mode_M, pn_Load_M);
 					set_Phi_pred(phi, pos, mem);
 
-					ninfo->projs[pn_Load_res] = new_r_Proj(pred, irn, load_mode, pn_Load_res);
+					ninfo->projs[pn_Load_res] = new_r_Proj(irn, load_mode, pn_Load_res);
 				}
 
 				/* now kill the old Load */

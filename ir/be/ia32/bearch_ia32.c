@@ -325,8 +325,8 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 		/* push ebp */
 		push    = new_bd_ia32_Push(NULL, bl, noreg, noreg, *mem, curr_bp, curr_sp);
-		curr_sp = new_r_Proj(bl, push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
-		*mem    = new_r_Proj(bl, push, mode_M, pn_ia32_Push_M);
+		curr_sp = new_r_Proj(push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
+		*mem    = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
 		/* the push must have SP out register */
 		arch_set_irn_register(curr_sp, arch_env->sp);
@@ -381,8 +381,8 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* leave */
 			leave   = new_bd_ia32_Leave(NULL, bl, curr_bp);
-			curr_bp = new_r_Proj(bl, leave, mode_bp, pn_ia32_Leave_frame);
-			curr_sp = new_r_Proj(bl, leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
+			curr_bp = new_r_Proj(leave, mode_bp, pn_ia32_Leave_frame);
+			curr_sp = new_r_Proj(leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
 		} else {
 			ir_node *pop;
 
@@ -398,10 +398,10 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 
 			/* pop ebp */
 			pop     = new_bd_ia32_PopEbp(NULL, bl, *mem, curr_sp);
-			curr_bp = new_r_Proj(bl, pop, mode_bp, pn_ia32_Pop_res);
-			curr_sp = new_r_Proj(bl, pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
+			curr_bp = new_r_Proj(pop, mode_bp, pn_ia32_Pop_res);
+			curr_sp = new_r_Proj(pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
 
-			*mem = new_r_Proj(bl, pop, mode_M, pn_ia32_Pop_M);
+			*mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
 		}
 		arch_set_irn_register(curr_sp, arch_env->sp);
 		arch_set_irn_register(curr_bp, arch_env->bp);
@@ -930,7 +930,7 @@ ir_node *turn_back_am(ir_node *node)
 	ir_node  *noreg;
 
 	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, index, mem);
-	ir_node  *load_res = new_rd_Proj(dbgi, block, load, mode_Iu, pn_ia32_Load_res);
+	ir_node  *load_res = new_rd_Proj(dbgi, load, mode_Iu, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
@@ -1076,7 +1076,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node)
 
 	DBG_OPT_RELOAD2LD(node, new_op);
 
-	proj = new_rd_Proj(dbg, block, new_op, mode, pn_ia32_Load_res);
+	proj = new_rd_Proj(dbg, new_op, mode, pn_ia32_Load_res);
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
@@ -1200,12 +1200,11 @@ static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoi
 static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 {
 	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_node *block = get_nodes_block(node);
 	ir_mode *spmode = mode_Iu;
 	const arch_register_t *spreg = &ia32_gp_regs[REG_ESP];
 	ir_node *sp;
 
-	sp = new_rd_Proj(dbg, block, pred, spmode, pos);
+	sp = new_rd_Proj(dbg, pred, spmode, pos);
 	arch_set_irn_register(sp, spreg);
 
 	return sp;
@@ -2389,17 +2388,17 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 
 	/* mov  ecx,<env> */
 	st  = new_r_Store(block, mem, p, new_Const_long(mode_Bu, 0xb9), 0);
-	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 1), mode);
 	st  = new_r_Store(block, mem, p, env, 0);
-	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 4), mode);
 	/* jmp  <callee> */
 	st  = new_r_Store(block, mem, p, new_Const_long(mode_Bu, 0xe9), 0);
-	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 1), mode);
 	st  = new_r_Store(block, mem, p, callee, 0);
-	mem = new_r_Proj(block, st, mode_M, pn_Store_M);
+	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 4), mode);
 
 	return mem;

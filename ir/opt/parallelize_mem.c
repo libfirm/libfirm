@@ -213,7 +213,7 @@ static void walker(ir_node *proj, void *env)
 		exchange(proj, sync);
 
 		assert(pn_Load_M == pn_Store_M);
-		proj = new_r_Proj(block, mem_op, mode_M, pn_Load_M);
+		proj = new_r_Proj(mem_op, mode_M, pn_Load_M);
 		set_Sync_pred(sync, 0, proj);
 
 		n = ir_nodeset_size(&pi.this_mem);

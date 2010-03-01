@@ -556,11 +556,11 @@ class Or(Binop):
 	flags = [ "commutative" ]
 
 class Phi(Op):
-	pinned      = "yes"
-	arity       = "variable"
-	flags       = []
-	attr_struct = "phi_attr"
-	custom_is   = True
+	pinned        = "yes"
+	arity         = "variable"
+	flags         = []
+	attr_struct   = "phi_attr"
+	custom_is     = True
 	java_noconstr = True
 	init = '''
 	/* Memory Phis in endless loops must be kept alive.
@@ -576,10 +576,14 @@ class Pin(Op):
 	pinned   = "yes"
 
 class Proj(Op):
-	ins      = [ "pred" ]
-	flags    = []
-	pinned   = "no"
-	attrs    = [
+	ins        = [ "pred" ]
+	flags      = []
+	pinned     = "no"
+	knownBlock = True
+	knownGraph = True
+	block      = "get_nodes_block(irn_pred)"
+	graph      = "get_irn_irg(irn_pred)"
+	attrs      = [
 		dict(
 			type = "long",
 			name = "proj",

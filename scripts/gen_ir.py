@@ -6,49 +6,46 @@ from jinja2.filters import do_dictsort
 from spec_util import is_dynamic_pinned, verify_node, isAbstract, setdefault
 from ir_spec import nodes
 
-def format_argdecls(node, first = False, voidwhenempty = False):
-	if len(node.arguments) == 0:
-		if voidwhenempty:
-			return "void"
-		else:
-			return ""
+def format_parameterlist(parameterlist):
+	return "\n".join(parameterlist)
 
-	arguments = map(lambda arg: arg["type"] + " " + arg["name"], node.arguments)
-	res = ""
-	if not first:
-		res = ", "
-	res += ", ".join(arguments)
-	return res
-
-def format_args(node, first = False):
-	res = ""
-	if not first and node.arguments != []:
-		res = ", "
-
+def format_nodearguments(node):
 	arguments = map(lambda arg: arg["name"], node.arguments)
-	res += ", ".join(arguments)
-	return res
+	return format_parameterlist(arguments)
 
-def format_blockdecl(node):
+def format_nodeparameters(node):
+	parameters = map(lambda arg: arg["type"] + " " + arg["name"], node.arguments)
+	return format_parameterlist(parameters)
+
+def format_blockparameter(node):
 	if hasattr(node, "knownBlock"):
+		if hasattr(node, "knownGraph"):
+			return ""
 		return "ir_graph *irg"
 	else:
 		return "ir_node *block"
 
+def format_blockargument(node):
+	if hasattr(node, "knownBlock"):
+		if hasattr(node, "knownGraph"):
+			return ""
+		return "irg"
+	else:
+		return "block"
+
 def format_irgassign(node):
+	if hasattr(node, "knownGraph"):
+		return "ir_graph *irg = %s;\n" % node.graph
+
 	if hasattr(node, "knownBlock"):
 		return ""
 	else:
 		return "ir_graph *irg = get_Block_irg(block);\n"
 
-def format_block(node):
-	if hasattr(node, "knownBlock"):
-		return "irg"
-	else:
-		return "block"
-
 def format_curblock(node):
 	if hasattr(node, "knownBlock"):
+		if hasattr(node, "knownGraph"):
+			return ""
 		return "current_ir_graph"
 	else:
 		return "current_ir_graph->current_block"
@@ -144,21 +141,37 @@ def filter_isnot(list, flag):
 		result.append(node)
 	return result
 
+def format_arguments(string, voidwhenempty = False):
+	args = re.split('\s*\n\s*', string)
+	if args[0] == '':
+		args = args[1:]
+	if len(args) > 0 and args[-1] == '':
+		args = args[:-1]
+	if len(args) == 0 and voidwhenempty:
+		return "void"
+	return ", ".join(args)
+
+def format_parameters(string):
+	return format_arguments(string, voidwhenempty = True)
+
 env = Environment()
-env.filters['argdecls']      = format_argdecls
-env.filters['args']          = format_args
-env.filters['blockdecl']     = format_blockdecl
-env.filters['irgassign']     = format_irgassign
-env.filters['block']         = format_block
-env.filters['curblock']      = format_curblock
-env.filters['insdecl']       = format_insdecl
-env.filters['arity_and_ins'] = format_arity_and_ins
-env.filters['arity']         = format_arity
-env.filters['pinned']        = format_pinned
-env.filters['flags']         = format_flags
-env.filters['attr_size']     = format_attr_size
-env.filters['isnot']         = filter_isnot
-env.filters['opindex']       = format_opindex
+env.filters['parameterlist']  = format_parameterlist
+env.filters['nodearguments']  = format_nodearguments
+env.filters['nodeparameters'] = format_nodeparameters
+env.filters['blockparameter'] = format_blockparameter
+env.filters['blockargument']  = format_blockargument
+env.filters['irgassign']      = format_irgassign
+env.filters['curblock']       = format_curblock
+env.filters['insdecl']        = format_insdecl
+env.filters['arity_and_ins']  = format_arity_and_ins
+env.filters['arity']          = format_arity
+env.filters['pinned']         = format_pinned
+env.filters['flags']          = format_flags
+env.filters['attr_size']      = format_attr_size
+env.filters['opindex']        = format_opindex
+env.filters['isnot']          = filter_isnot
+env.filters['arguments']      = format_arguments
+env.filters['parameters']     = format_parameters
 
 def prepare_attr(attr):
 	if "init" in attr:
@@ -257,14 +270,27 @@ def preprocess_node(node):
 
 constructor_template = env.from_string('''
 
-ir_node *new_rd_{{node.constrname}}(dbg_info *dbgi, {{node|blockdecl}}{{node|argdecls}})
+ir_node *new_rd_{{node.constrname}}(
+	{%- filter parameters %}
+		dbg_info *dbgi
+		{{node|blockparameter}}
+		{{node|nodeparameters}}
+	{% endfilter %})
 {
 	ir_node *res;
 	ir_graph *rem = current_ir_graph;
 	{{node|irgassign}}
 	{{node|insdecl}}
 	current_ir_graph = irg;
-	res = new_ir_node(dbgi, irg, {{node.block}}, op_{{node.name}}, {{node.mode}}, {{node|arity_and_ins}});
+	res = new_ir_node(
+		{%- filter arguments %}
+			dbgi
+			irg
+			{{node.block}}
+			op_{{node.name}}
+			{{node.mode}}
+			{{node|arity_and_ins}}
+		{% endfilter %});
 	{% for attr in node.attrs -%}
 		res->attr.{{node.attrs_name}}{{attr["initname"]}} =
 		{%- if "init" in attr %} {{ attr["init"] -}};
@@ -283,23 +309,48 @@ ir_node *new_rd_{{node.constrname}}(dbg_info *dbgi, {{node|blockdecl}}{{node|arg
 	return res;
 }
 
-ir_node *new_r_{{node.constrname}}({{node|blockdecl}}{{node|argdecls}})
+ir_node *new_r_{{node.constrname}}(
+		{%- filter parameters %}
+			{{node|blockparameter}}
+			{{node|nodeparameters}}
+		{% endfilter %})
 {
-	return new_rd_{{node.constrname}}(NULL, {{node|block}}{{node|args}});
+	return new_rd_{{node.constrname}}(
+		{%- filter arguments %}
+			NULL
+			{{node|blockargument}}
+			{{node|nodearguments}}
+		{% endfilter %});
 }
 
-ir_node *new_d_{{node.constrname}}(dbg_info *dbgi{{node|argdecls}})
+ir_node *new_d_{{node.constrname}}(
+		{%- filter parameters %}
+			dbg_info *dbgi
+			{{node|nodeparameters}}
+		{% endfilter %})
 {
 	ir_node *res;
 	{{ node.d_pre }}
-	res = new_rd_{{node.constrname}}(dbgi, {{node|curblock}}{{node|args}});
+	res = new_rd_{{node.constrname}}(
+		{%- filter parameters %}
+			dbgi
+			{{node|curblock}}
+			{{node|nodearguments}}
+		{% endfilter %});
 	{{ node.d_post }}
 	return res;
 }
 
-ir_node *new_{{node.constrname}}({{node|argdecls(True, True)}})
+ir_node *new_{{node.constrname}}(
+		{%- filter parameters %}
+			{{node|nodeparameters}}
+		{% endfilter %})
 {
-	return new_d_{{node.constrname}}(NULL{{node|args}});
+	return new_d_{{node.constrname}}(
+		{%- filter arguments %}
+			NULL
+			{{node|nodearguments}}
+		{% endfilter %});
 }
 ''')
 
@@ -352,7 +403,17 @@ ir_op *op_{{node.name}}; ir_op *get_op_{{node.name}}(void) { return op_{{node.na
 void init_op(void)
 {
 	{% for node in nodes %}
-	op_{{node.name}} = new_ir_op(iro_{{node.name}}, "{{node.name}}", {{node|pinned}}, {{node|flags}}, {{node|arity}}, {{node|opindex}}, {{node|attr_size}}, NULL);
+	op_{{node.name}} = new_ir_op(
+		{%- filter arguments %}
+			iro_{{node.name}}
+			"{{node.name}}"
+			{{node|pinned}}
+			{{node|flags}}
+			{{node|arity}}
+			{{node|opindex}}
+			{{node|attr_size}}
+			NULL
+		{% endfilter %});
 	{%- endfor %}
 
 	be_init_op();

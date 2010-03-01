@@ -383,7 +383,7 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env)
 	/* create two loads */
 	dbg  = get_irn_dbg_info(node);
 	low  = new_rd_Load(dbg, block, mem,  low,  low_mode, volatility);
-	proj = new_r_Proj(block, low, mode_M, pn_Load_M);
+	proj = new_r_Proj(low, mode_M, pn_Load_M);
 	high = new_rd_Load(dbg, block, proj, high, mode, volatility);
 
 	idx = get_irn_idx(node);
@@ -405,8 +405,8 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env)
 			break;
 		case pn_Load_res:       /* Result of load operation. */
 			assert(idx < env->n_entries);
-			env->entries[idx]->low_word  = new_r_Proj(block, low,  low_mode, pn_Load_res);
-			env->entries[idx]->high_word = new_r_Proj(block, high, mode,     pn_Load_res);
+			env->entries[idx]->low_word  = new_r_Proj(low,  low_mode, pn_Load_res);
+			env->entries[idx]->high_word = new_r_Proj(high, mode,     pn_Load_res);
 			break;
 		default:
 			assert(0 && "unexpected Proj number");
@@ -458,7 +458,7 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env)
 	/* create two Stores */
 	dbg = get_irn_dbg_info(node);
 	low  = new_rd_Store(dbg, block, mem, low,  entry->low_word, volatility);
-	proj = new_r_Proj(block, low, mode_M, pn_Store_M);
+	proj = new_r_Proj(low, mode_M, pn_Store_M);
 	high = new_rd_Store(dbg, block, proj, high, entry->high_word, volatility);
 
 	idx = get_irn_idx(node);
@@ -573,7 +573,7 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env)
 	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, env);
 	call = new_rd_Call(dbg, block, get_Div_mem(node), irn, 4, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
-	irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
+	irn = new_r_Proj(call, mode_T, pn_Call_T_result);
 
 	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
@@ -590,8 +590,8 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env)
 		case pn_Div_res:       /* Result of computation. */
 			idx = get_irn_idx(proj);
 			assert(idx < env->n_entries);
-			env->entries[idx]->low_word  = new_r_Proj(block, irn, env->params->low_unsigned, 0);
-			env->entries[idx]->high_word = new_r_Proj(block, irn, mode,                      1);
+			env->entries[idx]->low_word  = new_r_Proj(irn, env->params->low_unsigned, 0);
+			env->entries[idx]->high_word = new_r_Proj(irn, mode,                      1);
 			break;
 		default:
 			assert(0 && "unexpected Proj number");
@@ -651,7 +651,7 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env)
 	irn = get_intrinsic_address(mtp, get_irn_op(node), opmode, opmode, env);
 	call = new_rd_Call(dbg, block, get_Mod_mem(node), irn, 4, in, mtp);
 	set_irn_pinned(call, get_irn_pinned(node));
-	irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
+	irn = new_r_Proj(call, mode_T, pn_Call_T_result);
 
 	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
@@ -668,8 +668,8 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env)
 		case pn_Mod_res:       /* Result of computation. */
 			idx = get_irn_idx(proj);
 			assert(idx < env->n_entries);
-			env->entries[idx]->low_word  = new_r_Proj(block, irn, env->params->low_unsigned, 0);
-			env->entries[idx]->high_word = new_r_Proj(block, irn, mode,                      1);
+			env->entries[idx]->low_word  = new_r_Proj(irn, env->params->low_unsigned, 0);
+			env->entries[idx]->high_word = new_r_Proj(irn, mode,                      1);
 			break;
 		default:
 			assert(0 && "unexpected Proj number");
@@ -745,16 +745,16 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env)
 		irn = get_intrinsic_address(mtp, op_Div, opmode, opmode, env);
 		callDiv = new_rd_Call(dbg, block, mem, irn, 4, in, mtp);
 		set_irn_pinned(callDiv, get_irn_pinned(node));
-		resDiv = new_r_Proj(block, callDiv, mode_T, pn_Call_T_result);
+		resDiv = new_r_Proj(callDiv, mode_T, pn_Call_T_result);
 	}  /* if */
 	if (flags & 2) {
 		if (flags & 1)
-			mem = new_r_Proj(block, callDiv, mode_M, pn_Call_M);
+			mem = new_r_Proj(callDiv, mode_M, pn_Call_M);
 		opmode = get_irn_op_mode(node);
 		irn = get_intrinsic_address(mtp, op_Mod, opmode, opmode, env);
 		callMod = new_rd_Call(dbg, block, mem, irn, 4, in, mtp);
 		set_irn_pinned(callMod, get_irn_pinned(node));
-		resMod = new_r_Proj(block, callMod, mode_T, pn_Call_T_result);
+		resMod = new_r_Proj(callMod, mode_T, pn_Call_T_result);
 	}  /* if */
 
 	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
@@ -772,13 +772,13 @@ static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env)
 		case pn_DivMod_res_div:   /* Result of Div. */
 			idx = get_irn_idx(proj);
 			assert(idx < env->n_entries);
-			env->entries[idx]->low_word  = new_r_Proj(block, resDiv, env->params->low_unsigned, 0);
-			env->entries[idx]->high_word = new_r_Proj(block, resDiv, mode,                      1);
+			env->entries[idx]->low_word  = new_r_Proj(resDiv, env->params->low_unsigned, 0);
+			env->entries[idx]->high_word = new_r_Proj(resDiv, mode,                      1);
 			break;
 		case pn_DivMod_res_mod:   /* Result of Mod. */
 			idx = get_irn_idx(proj);
-			env->entries[idx]->low_word  = new_r_Proj(block, resMod, env->params->low_unsigned, 0);
-			env->entries[idx]->high_word = new_r_Proj(block, resMod, mode,                      1);
+			env->entries[idx]->low_word  = new_r_Proj(resMod, env->params->low_unsigned, 0);
+			env->entries[idx]->high_word = new_r_Proj(resMod, mode,                      1);
 			break;
 		default:
 			assert(0 && "unexpected Proj number");
@@ -839,12 +839,12 @@ static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env)
 	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
 		irn, 4, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
-	irn = new_r_Proj(block, irn, mode_T, pn_Call_T_result);
+	irn = new_r_Proj(irn, mode_T, pn_Call_T_result);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_r_Proj(block, irn, env->params->low_unsigned, 0);
-	env->entries[idx]->high_word = new_r_Proj(block, irn, mode,                      1);
+	env->entries[idx]->low_word  = new_r_Proj(irn, env->params->low_unsigned, 0);
+	env->entries[idx]->high_word = new_r_Proj(irn, mode,                      1);
 }  /* lower_Binop */
 
 /**
@@ -889,12 +889,12 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env)
 	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
 		irn, 3, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
-	irn = new_r_Proj(block, irn, mode_T, pn_Call_T_result);
+	irn = new_r_Proj(irn, mode_T, pn_Call_T_result);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_r_Proj(block, irn, env->params->low_unsigned, 0);
-	env->entries[idx]->high_word = new_r_Proj(block, irn, mode,                      1);
+	env->entries[idx]->low_word  = new_r_Proj(irn, env->params->low_unsigned, 0);
+	env->entries[idx]->high_word = new_r_Proj(irn, mode,                      1);
 }  /* lower_Shiftop */
 
 /**
@@ -1137,12 +1137,12 @@ static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env)
 	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
 		irn, 2, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
-	irn = new_r_Proj(block, irn, mode_T, pn_Call_T_result);
+	irn = new_r_Proj(irn, mode_T, pn_Call_T_result);
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
-	env->entries[idx]->low_word  = new_r_Proj(block, irn, env->params->low_unsigned, 0);
-	env->entries[idx]->high_word = new_r_Proj(block, irn, mode,                      1);
+	env->entries[idx]->low_word  = new_r_Proj(irn, env->params->low_unsigned, 0);
+	env->entries[idx]->high_word = new_r_Proj(irn, mode,                      1);
 }  /* lower_Unop */
 
 /**
@@ -1319,7 +1319,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 				ir_node *or   = new_rd_Or(dbg, block, low, high, mode);
 				ir_node *cmp  = new_rd_Cmp(dbg, block, or, new_Const_long(mode, 0));
 
-				ir_node *proj = new_r_Proj(block, cmp, mode_b, pnc);
+				ir_node *proj = new_r_Proj(cmp, mode_b, pnc);
 				set_Cond_selector(node, proj);
 				return;
 			}
@@ -1334,30 +1334,30 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 			assert(entry);
 			dst_blk = entry->value;
 
-			irn = new_r_Proj(block, cmpH, mode_b, pn_Cmp_Eq);
+			irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Eq);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, block, irn);
 
-			projHF = new_r_Proj(block, irn, mode_X, pn_Cond_false);
+			projHF = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(projHF);
 			exchange(projF, projHF);
 
-			projHT = new_r_Proj(block, irn, mode_X, pn_Cond_true);
+			projHT = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(projHT);
 
 			new_bl = new_r_Block(irg, 1, &projHT);
 
 			dbg   = get_irn_dbg_info(cmp);
 			cmpL = new_rd_Cmp(dbg, new_bl, lentry->low_word, rentry->low_word);
-			irn = new_r_Proj(new_bl, cmpL, mode_b, pn_Cmp_Eq);
+			irn = new_r_Proj(cmpL, mode_b, pn_Cmp_Eq);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, new_bl, irn);
 
-			proj = new_r_Proj(new_bl, irn, mode_X, pn_Cond_false);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(proj);
 			add_block_cf_input(dst_blk, projHF, proj);
 
-			proj = new_r_Proj(new_bl, irn, mode_X, pn_Cond_true);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(proj);
 			exchange(projT, proj);
 		} else if (pnc == pn_Cmp_Lg) {
@@ -1367,30 +1367,30 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 			assert(entry);
 			dst_blk = entry->value;
 
-			irn = new_r_Proj(block, cmpH, mode_b, pn_Cmp_Lg);
+			irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Lg);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, block, irn);
 
-			projHT = new_r_Proj(block, irn, mode_X, pn_Cond_true);
+			projHT = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(projHT);
 			exchange(projT, projHT);
 
-			projHF = new_r_Proj(block, irn, mode_X, pn_Cond_false);
+			projHF = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(projHF);
 
 			new_bl = new_r_Block(irg, 1, &projHF);
 
 			dbg   = get_irn_dbg_info(cmp);
 			cmpL = new_rd_Cmp(dbg, new_bl, lentry->low_word, rentry->low_word);
-			irn = new_r_Proj(new_bl, cmpL, mode_b, pn_Cmp_Lg);
+			irn = new_r_Proj(cmpL, mode_b, pn_Cmp_Lg);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, new_bl, irn);
 
-			proj = new_r_Proj(new_bl, irn, mode_X, pn_Cond_true);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(proj);
 			add_block_cf_input(dst_blk, projHT, proj);
 
-			proj = new_r_Proj(new_bl, irn, mode_X, pn_Cond_false);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(proj);
 			exchange(projF, proj);
 		} else {
@@ -1406,44 +1406,44 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 			assert(entry);
 			dstF = entry->value;
 
-			irn = new_r_Proj(block, cmpH, mode_b, pnc & ~pn_Cmp_Eq);
+			irn = new_r_Proj(cmpH, mode_b, pnc & ~pn_Cmp_Eq);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, block, irn);
 
-			projHT = new_r_Proj(block, irn, mode_X, pn_Cond_true);
+			projHT = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(projHT);
 			exchange(projT, projHT);
 			projT = projHT;
 
-			projHF = new_r_Proj(block, irn, mode_X, pn_Cond_false);
+			projHF = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(projHF);
 
 			newbl_eq = new_r_Block(irg, 1, &projHF);
 
-			irn = new_r_Proj(block, cmpH, mode_b, pn_Cmp_Eq);
+			irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Eq);
 			irn = new_rd_Cond(dbg, newbl_eq, irn);
 
-			proj = new_r_Proj(newbl_eq, irn, mode_X, pn_Cond_false);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(proj);
 			exchange(projF, proj);
 			projF = proj;
 
-			proj = new_r_Proj(newbl_eq, irn, mode_X, pn_Cond_true);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(proj);
 
 			newbl_l = new_r_Block(irg, 1, &proj);
 
 			dbg   = get_irn_dbg_info(cmp);
 			cmpL = new_rd_Cmp(dbg, newbl_l, lentry->low_word, rentry->low_word);
-			irn = new_r_Proj(newbl_l, cmpL, mode_b, pnc);
+			irn = new_r_Proj(cmpL, mode_b, pnc);
 			dbg = get_irn_dbg_info(node);
 			irn = new_rd_Cond(dbg, newbl_l, irn);
 
-			proj = new_r_Proj(newbl_l, irn, mode_X, pn_Cond_true);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_true);
 			mark_irn_visited(proj);
 			add_block_cf_input(dstT, projT, proj);
 
-			proj = new_r_Proj(newbl_l, irn, mode_X, pn_Cond_false);
+			proj = new_r_Proj(irn, mode_X, pn_Cond_false);
 			mark_irn_visited(proj);
 			add_block_cf_input(dstF, projF, proj);
 		}  /* if */
@@ -1533,10 +1533,10 @@ static void lower_Conv_to_Ll(ir_node *node, lower_env_t *env)
 		irn = get_intrinsic_address(mtp, get_irn_op(node), imode, omode, env);
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 1, &op, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
-		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
+		irn = new_r_Proj(call, mode_T, pn_Call_T_result);
 
-		entry->low_word  = new_r_Proj(block, irn, low_unsigned, 0);
-		entry->high_word = new_r_Proj(block, irn, low_signed, 1);
+		entry->low_word  = new_r_Proj(irn, low_unsigned, 0);
+		entry->high_word = new_r_Proj(irn, low_signed, 1);
 	}
 }
 
@@ -1586,9 +1586,9 @@ static void lower_Conv_from_Ll(ir_node *node, lower_env_t *env)
 
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
-		irn = new_r_Proj(block, call, mode_T, pn_Call_T_result);
+		irn = new_r_Proj(call, mode_T, pn_Call_T_result);
 
-		exchange(node, new_r_Proj(block, irn, omode, 0));
+		exchange(node, new_r_Proj(irn, omode, 0));
 	}
 }
 
@@ -1890,9 +1890,9 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 			dbg = get_irn_dbg_info(proj);
 			env->entries[idx]->low_word  =
-				new_rd_Proj(dbg, get_nodes_block(proj), args, low_mode, new_projs[proj_nr]);
+				new_rd_Proj(dbg, args, low_mode, new_projs[proj_nr]);
 			env->entries[idx]->high_word =
-				new_rd_Proj(dbg, get_nodes_block(proj), args, mode, new_projs[proj_nr] + 1);
+				new_rd_Proj(dbg, args, mode, new_projs[proj_nr] + 1);
 		}  /* if */
 	}  /* for */
 	set_optimize(rem);
@@ -2023,9 +2023,9 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 					dbg = get_irn_dbg_info(proj);
 					env->entries[idx]->low_word  =
-						new_rd_Proj(dbg, get_nodes_block(proj), results, low_mode, res_numbers[proj_nr]);
+						new_rd_Proj(dbg, results, low_mode, res_numbers[proj_nr]);
 					env->entries[idx]->high_word =
-						new_rd_Proj(dbg, get_nodes_block(proj), results, mode, res_numbers[proj_nr] + 1);
+						new_rd_Proj(dbg, results, mode, res_numbers[proj_nr] + 1);
 				}  /* if */
 				mark_irn_visited(proj);
 			}  /* if */
@@ -2277,23 +2277,23 @@ static ir_node *lower_boolean_Proj_Cmp(ir_node *proj, ir_node *cmp, lower_env_t 
 	if (pnc == pn_Cmp_Eq) {
 		/* simple case:a == b <==> a_h == b_h && a_l == b_l */
 		res = new_rd_And(db, blk,
-			new_r_Proj(blk, low, mode_b, pnc),
-			new_r_Proj(blk, high, mode_b, pnc),
+			new_r_Proj(low, mode_b, pnc),
+			new_r_Proj(high, mode_b, pnc),
 			mode_b);
 	} else if (pnc == pn_Cmp_Lg) {
 		/* simple case:a != b <==> a_h != b_h || a_l != b_l */
 		res = new_rd_Or(db, blk,
-			new_r_Proj(blk, low, mode_b, pnc),
-			new_r_Proj(blk, high, mode_b, pnc),
+			new_r_Proj(low, mode_b, pnc),
+			new_r_Proj(high, mode_b, pnc),
 			mode_b);
 	} else {
 		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
 		t = new_rd_And(db, blk,
-			new_r_Proj(blk, low, mode_b, pnc),
-			new_r_Proj(blk, high, mode_b, pn_Cmp_Eq),
+			new_r_Proj(low, mode_b, pnc),
+			new_r_Proj(high, mode_b, pn_Cmp_Eq),
 			mode_b);
 		res = new_rd_Or(db, blk,
-			new_r_Proj(blk, high, mode_b, pnc & ~pn_Cmp_Eq),
+			new_r_Proj(high, mode_b, pnc & ~pn_Cmp_Eq),
 			t,
 			mode_b);
 	}  /* if */

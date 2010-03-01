@@ -219,7 +219,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 	/* build the memory phi */
 	i = 0;
-	in[i] = new_r_Proj(get_irg_start_block(irg), get_irg_start(irg), mode_M, pn_Start_M);
+	in[i] = new_r_Proj(get_irg_start(irg), mode_M, pn_Start_M);
 	set_irg_initial_mem(irg, in[i]);
 	++i;
 
@@ -251,7 +251,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		for (i = 0; i < n_params; ++i) {
 			ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
 
-			in[0] = new_r_Proj(args_bl, args, mode, i);
+			in[0] = new_r_Proj(args, mode, i);
 			for (j = 0; j < env->n_tail_calls; ++j)
 				in[j + 1] = call_params[j][i];
 

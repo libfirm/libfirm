@@ -173,7 +173,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			p     = new_r_And(dst_block, lol, hil, mode);
 			c     = new_Const(tv_lo);
 			cmp   = new_r_Cmp(dst_block, p, c);
-			p     = new_r_Proj(dst_block, cmp, mode_b, pn_Cmp_Eq);
+			p     = new_r_Proj(cmp, mode_b, pn_Cmp_Eq);
 			return p;
 		}
 	}
@@ -203,14 +203,12 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
 		if (pnc_lo == pn_Cmp_Ge && pnc_hi == pn_Cmp_Lt) {
 			/* x >= c && x < c + 1 ==> x == c */
-			ir_node  *const block = get_nodes_block(cmp_lo);
-			ir_node  *const p = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Eq);
+			ir_node  *const p = new_r_Proj(cmp_lo, mode_b, pn_Cmp_Eq);
 			return p;
 		} else if (pnc_lo == pn_Cmp_Gt) {
 			if (pnc_hi == pn_Cmp_Lg) {
 				/* x > c && x != c + 1 ==> x > c + 1 */
-				ir_node  *const block = get_nodes_block(cmp_hi);
-				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Gt);
+				ir_node  *const p = new_r_Proj(cmp_hi, mode_b, pn_Cmp_Gt);
 				return p;
 			} else if (pnc_hi == pn_Cmp_Lt) {
 				/* x > c && x < c + 1 ==> false */
@@ -218,14 +216,12 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 				return t;
 			} else if (pnc_hi == pn_Cmp_Le) {
 				/* x > c && x <= c + 1 ==> x != c + 1 */
-				ir_node  *const block = get_nodes_block(cmp_hi);
-				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Eq);
+				ir_node  *const p = new_r_Proj(cmp_hi, mode_b, pn_Cmp_Eq);
 				return p;
 			}
 		} else if (pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lt) {
 			/* x != c && c < c + 1 ==> x < c */
-			ir_node  *const block = get_nodes_block(cmp_lo);
-			ir_node  *const p     = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Lt);
+			ir_node  *const p     = new_r_Proj(cmp_lo, mode_b, pn_Cmp_Lt);
 			return p;
 		}
 	} else if ((pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Ge) &&
@@ -265,7 +261,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			sub  = new_r_Sub(block, x, c, mode);
 			subc = new_r_Sub(block, new_Const(tv_hi), c, mode);
 			cmp  = new_r_Cmp(block, sub, subc);
-			p    = new_r_Proj(block, cmp, mode_b, pnc_hi);
+			p    = new_r_Proj(cmp, mode_b, pnc_hi);
 			return p;
 		}
 	}
@@ -309,7 +305,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			p     = new_r_Or(dst_block, lol, hil, mode);
 			c     = new_Const(tv_lo);
 			cmp   = new_r_Cmp(dst_block, p, c);
-			p     = new_r_Proj(dst_block, cmp, mode_b, pn_Cmp_Lg);
+			p     = new_r_Proj(cmp, mode_b, pn_Cmp_Lg);
 			return p;
 		}
 	}
@@ -339,14 +335,12 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	} else if (tarval_is_one(tarval_sub(tv_hi, tv_lo, NULL))) { /* lo + 1 == hi */
 		if (pnc_lo == pn_Cmp_Lt && pnc_hi == pn_Cmp_Ge) {
 			/* x < c || x >= c + 1 ==> x != c */
-			ir_node  *const block = get_nodes_block(cmp_lo);
-			ir_node  *const p = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Lg);
+			ir_node  *const p = new_r_Proj(cmp_lo, mode_b, pn_Cmp_Lg);
 			return p;
 		} else if (pnc_lo == pn_Cmp_Le) {
 			if (pnc_hi == pn_Cmp_Eq) {
 				/* x <= c || x == c + 1 ==> x <= c + 1 */
-				ir_node  *const block = get_nodes_block(cmp_hi);
-				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Le);
+				ir_node  *const p = new_r_Proj(cmp_hi, mode_b, pn_Cmp_Le);
 				return p;
 			} else if (pnc_hi == pn_Cmp_Ge) {
 				/* x <= c || x >= c + 1 ==> true */
@@ -354,14 +348,12 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 				return t;
 			} else if (pnc_hi == pn_Cmp_Gt) {
 				/* x <= c || x > c + 1 ==> x != c + 1 */
-				ir_node  *const block = get_nodes_block(cmp_hi);
-				ir_node  *const p = new_r_Proj(block, cmp_hi, mode_b, pn_Cmp_Lg);
+				ir_node  *const p = new_r_Proj(cmp_hi, mode_b, pn_Cmp_Lg);
 				return p;
 			}
 		} else if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Ge) {
 			/* x == c || x >= c + 1 ==> x >= c */
-			ir_node  *const block = get_nodes_block(cmp_lo);
-			ir_node  *const p     = new_r_Proj(block, cmp_lo, mode_b, pn_Cmp_Ge);
+			ir_node  *const p     = new_r_Proj(cmp_lo, mode_b, pn_Cmp_Ge);
 			return p;
 		}
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le) &&
@@ -401,7 +393,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			sub  = new_r_Sub(block, x, c, mode);
 			subc = new_r_Sub(block, new_Const(tv_hi), c, mode);
 			cmp  = new_r_Cmp(block, sub, subc);
-			p    = new_r_Proj(block, cmp, mode_b, pnc_hi);
+			p    = new_r_Proj(cmp, mode_b, pnc_hi);
 			return p;
 		}
 	}
@@ -671,32 +663,28 @@ restart:
 				if (cpair.proj_lo == cond_selector) {
 					ir_mode *mode  = get_tarval_mode(cpair.tv_lo);
 					ir_node *cmp   = get_Proj_pred(cpair.proj_lo);
-					ir_node *block = get_nodes_block(cmp);
 					cpair.pnc_lo   = get_negated_pnc(cpair.pnc_lo, mode);
-					cpair.proj_lo  = new_r_Proj(block, cmp, mode_b, cpair.pnc_lo);
+					cpair.proj_lo  = new_r_Proj(cmp, mode_b, cpair.pnc_lo);
 				} else {
 					ir_mode *mode  = get_tarval_mode(cpair.tv_hi);
 					ir_node *cmp   = get_Proj_pred(cpair.proj_hi);
-					ir_node *block = get_nodes_block(cmp);
 					assert(cpair.proj_hi == cond_selector);
 					cpair.pnc_hi   = get_negated_pnc(cpair.pnc_hi, mode);
-					cpair.proj_hi  = new_r_Proj(block, cmp, mode_b, cpair.pnc_hi);
+					cpair.proj_hi  = new_r_Proj(cmp, mode_b, cpair.pnc_hi);
 				}
 			}
 			if (get_Proj_proj(upper_cf) == pn_Cond_false) {
 				if (cpair.proj_lo == upper_cond_selector) {
 					ir_mode *mode  = get_tarval_mode(cpair.tv_lo);
 					ir_node *cmp   = get_Proj_pred(cpair.proj_lo);
-					ir_node *block = get_nodes_block(cmp);
 					cpair.pnc_lo   = get_negated_pnc(cpair.pnc_lo, mode);
-					cpair.proj_lo  = new_r_Proj(block, cmp, mode_b, cpair.pnc_lo);
+					cpair.proj_lo  = new_r_Proj(cmp, mode_b, cpair.pnc_lo);
 				} else {
 					ir_mode *mode  = get_tarval_mode(cpair.tv_hi);
 					ir_node *cmp   = get_Proj_pred(cpair.proj_hi);
-					ir_node *block = get_nodes_block(cmp);
 					assert(cpair.proj_hi == upper_cond_selector);
 					cpair.pnc_hi   = get_negated_pnc(cpair.pnc_hi, mode);
-					cpair.proj_hi  = new_r_Proj(block, cmp, mode_b, cpair.pnc_hi);
+					cpair.proj_hi  = new_r_Proj(cmp, mode_b, cpair.pnc_hi);
 				}
 			}
 

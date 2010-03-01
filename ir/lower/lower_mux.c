@@ -85,8 +85,8 @@ static void lower_mux_node(ir_node* mux)
 	 * block in-between, so that the phi can be used to select the result
 	 * value from the old mux node in the lower block. */
 	cond        = new_r_Cond(upper_block, get_Mux_sel(mux));
-	trueProj    = new_r_Proj(upper_block, cond, mode_X, pn_Cond_true);
-	falseProj   = new_r_Proj(upper_block, cond, mode_X, pn_Cond_false);
+	trueProj    = new_r_Proj(cond, mode_X, pn_Cond_true);
+	falseProj   = new_r_Proj(cond, mode_X, pn_Cond_false);
 	falseBlock  = new_r_Block(irg, 1, &falseProj);
 	mux_jmps[0] = trueProj;
 	mux_jmps[1] = new_r_Jmp(falseBlock);

@@ -436,9 +436,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_Div:
 		switch (pn) {
 		case pn_Div_M:
-			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
+			return new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_M);
 		case pn_Div_res:
-			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mflo(dbgi, block, proj);
 		default:
 			break;
@@ -446,9 +446,9 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_Mod:
 		switch (pn) {
 		case pn_Mod_M:
-			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
+			return new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_M);
 		case pn_Mod_res:
-			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mfhi(dbgi, block, proj);
 		default:
 			break;
@@ -457,12 +457,12 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 	case iro_DivMod:
 		switch (pn) {
 		case pn_Div_M:
-			return new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_M);
+			return new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_M);
 		case pn_DivMod_res_div:
-			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mflo(dbgi, block, proj);
 		case pn_DivMod_res_mod:
-			proj = new_rd_Proj(dbgi, block, new_div, mode_M, pn_mips_div_lohi);
+			proj = new_rd_Proj(dbgi, new_div, mode_M, pn_mips_div_lohi);
 			return new_bd_mips_mfhi(dbgi, block, proj);
 		default:
 			break;
@@ -516,10 +516,9 @@ static ir_node *gen_Proj(ir_node *node)
 		assert(get_irn_mode(node) != mode_T);
 		if (mode_needs_gp_reg(get_irn_mode(node))) {
 			ir_node *new_pred = be_transform_node(pred);
-			ir_node *block    = be_transform_node(get_nodes_block(node));
 			long     pn       = get_Proj_proj(node);
 
-			return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn);
+			return new_rd_Proj(dbgi, new_pred, mode_Iu, pn);
 		}
 		break;
 	}
@@ -637,7 +636,7 @@ static ir_node *gen_node_for_SwitchCond(mips_transform_env_t *env)
 	attr->modes.load_store_mode = mode_Iu;
 	attr->tv = new_tarval_from_long(0, mode_Iu);
 
-	proj = new_rd_Proj(dbg, block, load, mode_Iu, pn_Load_res);
+	proj = new_rd_Proj(dbg, load, mode_Iu, pn_Load_res);
 
 	switchjmp = new_bd_mips_SwitchJump(dbg, block, proj, mode_T);
 	attr = get_mips_attr(switchjmp);
@@ -937,7 +936,7 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node)
 			attr->modes.load_store_mode = mode_Iu;
 			attr->tv = new_tarval_from_long(i * 4, mode_Iu);
 
-			ld[i] = new_rd_Proj(dbg, irg, new_bl, load, mode_Iu, pn_Load_res);
+			ld[i] = new_rd_Proj(dbg, irg, load, mode_Iu, pn_Load_res);
 		}
 
 		/* create 4 parallel stores */
@@ -949,7 +948,7 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node)
 			attr->modes.load_store_mode = mode_Iu;
 			attr->tv = new_tarval_from_long(i * 4, mode_Iu);
 
-			mm[i] = new_rd_Proj(dbg, irg, new_bl, store, mode_M, pn_Store_M);
+			mm[i] = new_rd_Proj(dbg, irg, store, mode_M, pn_Store_M);
 		}
 		mem = new_r_Sync(irg, new_bl, 4, mm);
 		result = mem;
@@ -978,14 +977,14 @@ ir_node *gen_code_for_CopyB(ir_node *block, ir_node *node)
 		attr->modes.load_store_mode = mode;
 		attr->tv = new_tarval_from_long(offset, mode_Iu);
 
-		projv = new_rd_Proj(dbg, irg, block, load, mode, pn_Load_res);
+		projv = new_rd_Proj(dbg, irg, load, mode, pn_Load_res);
 
 		store = new_bd_mips_store_r(dbg, block, mem, dst, projv, mode_T);
 		attr = get_mips_attr(store);
 		attr->modes.load_store_mode = mode;
 		attr->tv = new_tarval_from_long(offset, mode_Iu);
 
-		mm[n] = new_rd_Proj(dbg, irg, block, store, mode_M, pn_Store_M);
+		mm[n] = new_rd_Proj(dbg, irg, store, mode_M, pn_Store_M);
 		n++;
 	}
 
@@ -1053,7 +1052,7 @@ static void mips_transform_Reload(mips_transform_env_t* env)
 
 	load = new_bd_mips_lw(env->dbg, env->block, ptr, mem, ent, 0);
 
-	proj = new_rd_Proj(env->dbg, env->block, load, mode_Iu, pn_mips_lw_res);
+	proj = new_rd_Proj(env->dbg, load, mode_Iu, pn_mips_lw_res);
 
 	if (sched_point) {
 		sched_add_after(sched_point, load);

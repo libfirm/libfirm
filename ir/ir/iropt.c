@@ -3480,13 +3480,12 @@ static ir_node *transform_node_And(ir_node *n)
 		ir_node *pred_b = get_Proj_pred(b);
 		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
-			ir_node  *block = get_nodes_block(pred_a);
 			pn_Cmp pn_a     = get_Proj_proj(a);
 			pn_Cmp pn_b     = get_Proj_proj(b);
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a & pn_b;
 
-			return new_rd_Proj(dbgi, block, pred_a, mode_b, new_pnc);
+			return new_rd_Proj(dbgi, pred_a, mode_b, new_pnc);
 		}
 	}
 	if (is_Or(a)) {
@@ -3627,13 +3626,12 @@ static ir_node *transform_node_Eor(ir_node *n)
 		ir_node *pred_b = get_Proj_pred(b);
 		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
-			ir_node  *block = get_nodes_block(pred_a);
 			pn_Cmp pn_a     = get_Proj_proj(a);
 			pn_Cmp pn_b     = get_Proj_proj(b);
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a ^ pn_b;
 
-			return new_rd_Proj(dbgi, block, pred_a, mode_b, new_pnc);
+			return new_rd_Proj(dbgi, pred_a, mode_b, new_pnc);
 		}
 	}
 
@@ -3677,9 +3675,8 @@ static ir_node *transform_node_Not(ir_node *n)
 	if (mode == mode_b && is_Proj(a)) {
 		ir_node *a_pred = get_Proj_pred(a);
 		if (is_Cmp(a_pred)) {
-			ir_node *cmp_block = get_nodes_block(a_pred);
 			/* We negate a Cmp. The Cmp has the negated result anyways! */
-			n = new_r_Proj(cmp_block, get_Proj_pred(a),
+			n = new_r_Proj(get_Proj_pred(a),
 			               mode_b, get_negated_pnc(get_Proj_proj(a), mode_b));
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_CMP);
 			return n;
@@ -4793,7 +4790,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 
 		/* create a new compare */
 		n = new_rd_Cmp(get_irn_dbg_info(n), block, left, right);
-		proj = new_rd_Proj(get_irn_dbg_info(proj), block, n, get_irn_mode(proj), proj_nr);
+		proj = new_rd_Proj(get_irn_dbg_info(proj), n, get_irn_mode(proj), proj_nr);
 	}
 
 	return proj;
@@ -5176,13 +5173,12 @@ static ir_node *transform_node_Or(ir_node *n)
 		ir_node *pred_b = get_Proj_pred(b);
 		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
-			ir_node  *block = get_nodes_block(pred_a);
 			pn_Cmp pn_a     = get_Proj_proj(a);
 			pn_Cmp pn_b     = get_Proj_proj(b);
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a | pn_b;
 
-			return new_rd_Proj(dbgi, block, pred_a, mode_b, new_pnc);
+			return new_rd_Proj(dbgi, pred_a, mode_b, new_pnc);
 		}
 	}
 
@@ -5719,7 +5715,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 				/* Mux(x, 0, y) => Mux(x, y, 0) */
 				pn_Cmp pnc = get_Proj_proj(sel);
-				sel = new_r_Proj(get_nodes_block(cmp), cmp, mode_b,
+				sel = new_r_Proj(cmp, mode_b,
 					get_negated_pnc(pnc, get_irn_mode(get_Cmp_left(cmp))));
 				n        = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, t, f, mode);
 				tmp = t;

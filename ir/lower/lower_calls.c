@@ -772,7 +772,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 
 			if (is_compound_type(tp)) {
 				ir_node *arg = get_irg_args(irg);
-				arg = new_r_Proj(get_nodes_block(arg), arg, mode_P_data, env.first_hidden + k);
+				arg = new_r_Proj(arg, mode_P_data, env.first_hidden + k);
 				++k;
 
 				if (is_Unknown(pred)) {
@@ -799,7 +799,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 							pred,
 							tp
 							);
-						mem = new_r_Proj(bl, copy, mode_M, pn_CopyB_M);
+						mem = new_r_Proj(copy, mode_M, pn_CopyB_M);
 					}
 				}
 				if (lp->flags & LF_RETURN_HIDDEN) {

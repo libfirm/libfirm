@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import sys
+import re
 from jinja2 import Environment, Template
 from jinja2.filters import do_dictsort
 from spec_util import is_dynamic_pinned, verify_node, isAbstract
@@ -14,10 +15,7 @@ def warning(msg):
 	sys.stderr.write("Warning: " + msg + "\n");
 
 def format_args(arglist):
-	s = ", ".join(arglist)
-	if len(s) == 0:
-	  return ""
-	return ", " + s
+	return "\n".join(arglist)
 
 def format_ifnset(string, node, key):
 	if hasattr(node, key):
@@ -26,14 +24,25 @@ def format_ifnset(string, node, key):
 
 def format_block(node):
 	if hasattr(node, "knownBlock"):
+		if hasattr(node, "knownGraph"):
+			return ""
 		return "current_ir_graph"
 	else:
 		return "get_node(env, preds[0])"
 
+def format_arguments(string):
+	args = re.split('\s*\n\s*', string)
+	if args[0] == '':
+		args = args[1:]
+	if len(args) > 0 and args[-1] == '':
+		args = args[:-1]
+	return ", ".join(args)
+
 env = Environment()
-env.filters['args']   = format_args
-env.filters['ifnset'] = format_ifnset
-env.filters['block']  = format_block
+env.filters['args']      = format_args
+env.filters['ifnset']    = format_ifnset
+env.filters['block']     = format_block
+env.filters['arguments'] = format_arguments
 
 def get_io_type(type, attrname, node):
 	if type == "tarval*":
@@ -182,19 +191,31 @@ export_attrs_template = env.from_string('''
 		{% endfor %}break;''')
 
 import_attrs_template = env.from_string('''
-	case iro_{{node.name}}:
-	{
+	case iro_{{node.name}}:	{
 		{{"ir_mode *mode = read_mode(env);"|ifnset(node,"mode")}}
-		{% for attr in node.attrs %}{{attr.importcmd}}
-		{% endfor %}
-		{% for attr in node.constructor_args %}{{attr.importcmd}}
-		{% endfor %}
-		{% for special in node.special_constructors %}if({{special.attrname}} == {{special.value}})
-			newnode = new_r_{{special.constrname}}({{node|block}}{{node.arguments|args}});
-		else{% endfor %}
-		newnode = new_r_{{node.name}}({{node|block}}{{node.arguments|args}});
-		{% for (initarg, initfunc) in node.initargs %}{{initfunc}}(newnode, {{initarg}});
-		{% endfor %}
+		{% for attr in node.attrs %}
+		{{attr.importcmd}}
+		{% endfor -%}
+		{% for attr in node.constructor_args %}
+		{{attr.importcmd}}
+		{% endfor -%}
+		{% for special in node.special_constructors %}
+		if ({{special.attrname}} == {{special.value}})
+			newnode = new_r_{{special.constrname}}(
+{%- filter arguments %}
+{{node|block}}
+{{node.arguments|args}}
+{% endfilter %});
+		else
+		{% endfor -%}
+		newnode = new_r_{{node.name}}(
+{%- filter arguments %}
+{{node|block}}
+{{node.arguments|args}}
+{% endfilter %});
+		{% for (initarg, initfunc) in node.initargs %}
+		{{initfunc}}(newnode, {{initarg}});
+		{% endfor -%}
 		break;
 	}
 ''')

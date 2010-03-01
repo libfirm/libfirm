@@ -435,7 +435,7 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 			attr->load_store_mode = mode_Iu;
 			attr->tv = new_tarval_from_long(i * 4, mode_Is);
 
-			mm[i] = new_r_Proj(irg, block, store, mode_M, pn_Store_M);
+			mm[i] = new_r_Proj(irg, store, mode_M, pn_Store_M);
 		}
 		*/
 
@@ -502,8 +502,8 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	                      fp_save_offset - initial_frame_size);
 	panic("FIXME register requirement with ignore");
 
-	fp = new_r_Proj(block, load, mode_Iu, pn_mips_lw_res);
-	*mem = new_r_Proj(block, load, mode_Iu, pn_mips_lw_M);
+	fp = new_r_Proj(load, mode_Iu, pn_mips_lw_res);
+	*mem = new_r_Proj(load, mode_Iu, pn_mips_lw_M);
 	arch_set_irn_register(fp, &mips_gp_regs[REG_FP]);
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);

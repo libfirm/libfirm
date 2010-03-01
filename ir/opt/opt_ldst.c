@@ -2113,11 +2113,11 @@ static int insert_Load(block_t *bl)
 						assert(last_mem != NULL);
 						adr  = phi_translate(op->value.address, block, i);
 						load = new_rd_Load(db, pred, last_mem, adr, mode, cons_none);
-						def  = new_r_Proj(pred, load, mode, pn_Load_res);
+						def  = new_r_Proj(load, mode, pn_Load_res);
 						DB((dbg, LEVEL_1, "Created new %+F in %+F for party redundant %+F\n", load, pred, op->node));
 
 						new_op                = alloc_memop(load);
-						new_op->mem           = new_r_Proj(pred, load, mode_M, pn_Load_M);
+						new_op->mem           = new_r_Proj(load, mode_M, pn_Load_M);
 						new_op->value.address = adr;
 						new_op->value.id      = op->value.id;
 						new_op->value.mode    = mode;

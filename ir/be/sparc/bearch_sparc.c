@@ -215,7 +215,7 @@ static void transform_Reload(ir_node *node)
 	sched_add_after(sched_point, load);
 	sched_remove(node);
 
-	proj = new_rd_Proj(dbgi, block, load, mode, pn_sparc_Load_res);
+	proj = new_rd_Proj(dbgi, load, mode, pn_sparc_Load_res);
 
 	reg = arch_get_irn_register(node);
 	arch_set_irn_register(proj, reg);

@@ -428,7 +428,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 						int pidx = get_pairidx_for_in_regidx(pairs, n, cycle.elems[i]->index);
 
 						/* create intermediate proj */
-						res1 = new_r_Proj(block, cpyxchg, get_irn_mode(res1), 0);
+						res1 = new_r_Proj(cpyxchg, get_irn_mode(res1), 0);
 
 						/* set as in for next Perm */
 						pairs[pidx].in_node = res1;

@@ -182,7 +182,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 */
 			insert_after = perm;
 			for (pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
-				ir_node *proj = new_r_Proj(pred_bl, perm, get_irn_mode(pp->arg), pp->pos);
+				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(get_reg(pp->arg));
 				set_reg(proj, get_reg(pp->arg));

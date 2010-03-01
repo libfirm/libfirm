@@ -555,14 +555,14 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				ir_node *store;
 				ir_node *mem_input = do_seq ? curr_mem : new_NoMem();
 				store = new_rd_Store(dbgi, bl, mem_input, addr, param, 0);
-				mem   = new_r_Proj(bl, store, mode_M, pn_Store_M);
+				mem   = new_r_Proj(store, mode_M, pn_Store_M);
 			} else {
 				/* Make a mem copy for compound arguments. */
 				ir_node *copy;
 
 				assert(mode_is_reference(get_irn_mode(param)));
 				copy = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type);
-				mem = new_r_Proj(bl, copy, mode_M, pn_CopyB_M_regular);
+				mem = new_r_Proj(copy, mode_M, pn_CopyB_M_regular);
 			}
 
 			curr_ofs += param_size;
@@ -691,7 +691,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ARR_APP1(ir_node *, env->calls, low_call);
 
 	/* create new stack pointer */
-	curr_sp = new_r_Proj(bl, low_call, get_irn_mode(curr_sp), pn_be_Call_sp);
+	curr_sp = new_r_Proj(low_call, get_irn_mode(curr_sp), pn_be_Call_sp);
 	be_set_constr_single_reg_out(low_call, pn_be_Call_sp, sp,
 			arch_register_req_type_ignore | arch_register_req_type_produces_sp);
 	arch_set_irn_register(curr_sp, sp);
@@ -715,7 +715,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		if (proj == NULL) {
 			ir_type *res_type = get_method_res_type(call_tp, i);
 			ir_mode *mode     = get_type_mode(res_type);
-			proj              = new_r_Proj(bl, low_call, mode, pn);
+			proj              = new_r_Proj(low_call, mode, pn);
 			res_projs[i]      = proj;
 		} else {
 			set_Proj_pred(proj, low_call);
@@ -781,7 +781,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		in[n++] = curr_sp;
 
 		foreach_pset_new(&destroyed_regs, reg, iter) {
-			ir_node *proj = new_r_Proj(bl, low_call, reg->reg_class->mode, curr_res_proj);
+			ir_node *proj = new_r_Proj(low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
 			be_set_constr_single_reg_out(low_call, curr_res_proj, reg, 0);
@@ -824,7 +824,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 
 		if (! mem_proj) {
-			mem_proj = new_r_Proj(bl, low_call, mode_M, pn_be_Call_M_regular);
+			mem_proj = new_r_Proj(low_call, mode_M, pn_be_Call_M_regular);
 			keep_alive(mem_proj);
 		}
 	}
@@ -948,7 +948,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		ir_node *addsp_mem;
 		ir_node *sync;
 
-		addsp_mem = new_r_Proj(block, new_alloc, mode_M, pn_be_AddSP_M);
+		addsp_mem = new_r_Proj(new_alloc, mode_M, pn_be_AddSP_M);
 
 		/* We need to sync the output mem of the AddSP with the input mem
 		   edge into the alloc node. */
@@ -965,8 +965,7 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	set_Proj_proj(alloc_res, pn_be_AddSP_res);
 
 	addr    = alloc_res;
-	curr_sp = new_r_Proj(block, new_alloc,  get_irn_mode(curr_sp),
-	                     pn_be_AddSP_sp);
+	curr_sp = new_r_Proj(new_alloc,  get_irn_mode(curr_sp), pn_be_AddSP_sp);
 
 	return curr_sp;
 }
@@ -1014,8 +1013,8 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	subsp = be_new_SubSP(env->arch_env->sp, block, curr_sp, size);
 	set_irn_dbg_info(subsp, dbg);
 
-	mem = new_r_Proj(block, subsp, mode_M, pn_be_SubSP_M);
-	res = new_r_Proj(block, subsp, sp_mode, pn_be_SubSP_sp);
+	mem = new_r_Proj(subsp, mode_M, pn_be_SubSP_M);
+	res = new_r_Proj(subsp, sp_mode, pn_be_SubSP_sp);
 
 	/* we need to sync the memory */
 	in[0] = get_Free_mem(free);
@@ -1325,7 +1324,7 @@ static ir_node *create_barrier(ir_node *bl, ir_node **mem, pmap *regs,
 				add_type |= arch_register_req_type_produces_sp;
 		}
 
-		proj = new_r_Proj(bl, irn, get_irn_mode(pred), n);
+		proj = new_r_Proj(irn, get_irn_mode(pred), n);
 		be_node_set_reg_class_in(irn, n, reg->reg_class);
 		if (in_req)
 			be_set_constr_single_reg_in(irn, n, reg, 0);
@@ -1336,7 +1335,7 @@ static ir_node *create_barrier(ir_node *bl, ir_node **mem, pmap *regs,
 	}
 
 	if (mem) {
-		*mem = new_r_Proj(bl, irn, mode_M, n);
+		*mem = new_r_Proj(irn, mode_M, n);
 	}
 
 	return irn;
@@ -1612,7 +1611,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 
 		save_optimization_state(&state);
 		set_optimize(0);
-		nmem = new_r_Proj(start_bl, get_irg_start(irg), mode_M, pn_Start_M);
+		nmem = new_r_Proj(get_irg_start(irg), mode_M, pn_Start_M);
 		restore_optimization_state(&state);
 
 		/* reroute all edges to the new memory source */
@@ -1632,11 +1631,11 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 			addr = be_new_FrameAddr(env->arch_env->sp->reg_class, first_bl, frame, entry->ent);
 
 			if (store)
-				mem = new_r_Proj(first_bl, store, mode_M, pn_Store_M);
+				mem = new_r_Proj(store, mode_M, pn_Store_M);
 
 			/* the backing store itself */
 			store = new_r_Store(first_bl, mem, addr,
-			                    new_r_Proj(args_bl, args, mode, i), 0);
+			                    new_r_Proj(args, mode, i), 0);
 		}
 		/* the new memory Proj gets the last Proj from store */
 		set_Proj_pred(nmem, store);
@@ -1945,7 +1944,7 @@ static void modify_irg(be_abi_irg_t *env)
 			add_type |= arch_register_req_type_produces_sp | arch_register_req_type_ignore;
 
 		assert(nr >= 0);
-		proj = new_r_Proj(start_bl, env->start, mode, nr + 1);
+		proj = new_r_Proj(env->start, mode, nr + 1);
 		pmap_insert(env->regs, (void *) reg, proj);
 		be_set_constr_single_reg_out(env->start, nr + 1, reg, add_type);
 		arch_set_irn_register(proj, reg);
@@ -1956,7 +1955,7 @@ static void modify_irg(be_abi_irg_t *env)
 	/* create a new initial memory proj */
 	assert(is_Proj(old_mem));
 	arch_set_out_register_req(env->start, 0, arch_no_register_req);
-	new_mem_proj = new_r_Proj(start_bl, env->start, mode_M, 0);
+	new_mem_proj = new_r_Proj(env->start, mode_M, 0);
 	mem = new_mem_proj;
 	set_irg_initial_mem(irg, mem);
 
@@ -2012,7 +2011,7 @@ static void modify_irg(be_abi_irg_t *env)
 					ir_mode *load_mode = arg->load_mode;
 
 					ir_node *load = new_r_Load(start_bl, new_NoMem(), addr, load_mode, cons_floats);
-					repl = new_r_Proj(start_bl, load, load_mode, pn_Load_res);
+					repl = new_r_Proj(load, load_mode, pn_Load_res);
 
 					if (mode != load_mode) {
 						repl = new_r_Conv(start_bl, repl, mode);
@@ -2238,7 +2237,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		   module. The loads are always safe and can therefore float
 		   and need no memory input */
 		load     = new_r_Load(block, new_NoMem(), add, mode, cons_floats);
-		load_res = new_r_Proj(block, load, mode, pn_Load_res);
+		load_res = new_r_Proj(load, mode, pn_Load_res);
 
 		set_irn_n(node, i, load_res);
 	}

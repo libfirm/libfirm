@@ -252,14 +252,13 @@ static ir_node *new_bd_Const_long(dbg_info *db, ir_mode *mode, long value)
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }  /* new_bd_Const_long */
 
-static ir_node *new_bd_defaultProj(dbg_info *db, ir_node *block, ir_node *arg,
-                                   long max_proj)
+static ir_node *new_bd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
 	ir_node  *res;
 
 	assert(arg->op == op_Cond);
 	arg->attr.cond.default_proj = max_proj;
-	res = new_rd_Proj(db, block, arg, mode_X, max_proj);
+	res = new_rd_Proj(db, arg, mode_X, max_proj);
 	return res;
 }  /* new_bd_defaultProj */
 
@@ -439,16 +438,9 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode, long valu
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
 }  /* new_rd_Const_long */
 
-ir_node *new_rd_defaultProj(dbg_info *db, ir_node *block, ir_node *arg, long max_proj)
+ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = get_Block_irg(block);
-	res = new_bd_defaultProj(db, block, arg, max_proj);
-	current_ir_graph = rem;
-
-	return res;
+	return new_bd_defaultProj(db, arg, max_proj);
 }  /* new_rd_defaultProj */
 
 ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *store,
@@ -609,9 +601,9 @@ ir_node *new_r_Sync(ir_node *block, int arity, ir_node *in[])
 {
 	return new_rd_Sync(NULL, block, arity, in);
 }
-ir_node *new_r_defaultProj(ir_node *block, ir_node *arg, long max_proj)
+ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 {
-	return new_rd_defaultProj(NULL, block, arg, max_proj);
+	return new_rd_defaultProj(NULL, arg, max_proj);
 }
 ir_node *new_r_Bad(ir_graph *irg)
 {

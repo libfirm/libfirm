@@ -1807,13 +1807,11 @@ ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[]);
  * position of the value within the tuple.
  *
  * @param *db    A pointer for debug information.
- * @param *block The IR block the node belongs to.
  * @param arg    A node producing a tuple.  The node must have mode_T.
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
-ir_node *new_rd_Proj(dbg_info *db, ir_node *block, ir_node *arg,
-                     ir_mode *mode, long proj);
+ir_node *new_rd_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
 
 /** Constructor for a defaultProj node.
  *
@@ -1824,8 +1822,7 @@ ir_node *new_rd_Proj(dbg_info *db, ir_node *block, ir_node *arg,
  * @param arg       A node producing a tuple.
  * @param max_proj  The end position of the value in the tuple.
  */
-ir_node *new_rd_defaultProj(dbg_info *db, ir_node *block,
-                            ir_node *arg, long max_proj);
+ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
 
 /** Constructor for a Tuple node.
  *
@@ -2560,13 +2557,11 @@ ir_node *new_r_Sync(ir_node *block, int arity, ir_node *in[]);
  * Projects a single value out of a tuple.  The parameter proj gives the
  * position of the value within the tuple.
  *
- * @param *block The IR block the node belongs to.
  * @param arg    A node producing a tuple.
- * @param *mode  The mode of the value to project.
+ * @param mode   The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
-ir_node *new_r_Proj(ir_node *block, ir_node *arg,
-                    ir_mode *mode, long proj);
+ir_node *new_r_Proj(ir_node *arg, ir_mode *mode, long proj);
 
 /** Constructor for a defaultProj node.
  *
@@ -2576,7 +2571,7 @@ ir_node *new_r_Proj(ir_node *block, ir_node *arg,
  * @param arg       A node producing a tuple.
  * @param max_proj  The end  position of the value in the tuple.
  */
-ir_node *new_r_defaultProj(ir_node *block, ir_node *arg, long max_proj);
+ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
 
 
 /** Constructor for a Tuple node.

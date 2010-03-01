@@ -654,7 +654,6 @@ static ir_node *gen_Phi(ir_node *node)
  */
 static ir_node *gen_Proj_Load(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
@@ -665,9 +664,9 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		case iro_sparc_Load:
 			/* handle all gp loads equal: they have the same proj numbers. */
 			if (proj == pn_Load_res) {
-				return new_rd_Proj(dbgi, block, new_load, mode_Iu, pn_sparc_Load_res);
+				return new_rd_Proj(dbgi, new_load, mode_Iu, pn_sparc_Load_res);
 			} else if (proj == pn_Load_M) {
-				return new_rd_Proj(dbgi, block, new_load, mode_M, pn_sparc_Load_M);
+				return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Load_M);
 			}
 		break;
 	/*
@@ -687,7 +686,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
  */
 static ir_node *gen_Proj_be_AddSP(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
@@ -695,15 +693,15 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 
 	if (proj == pn_be_AddSP_sp) {
 		// TODO: check for correct pn_sparc_* flags
-		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
+		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
 		                           pn_sparc_SubSP_stack);
 		arch_set_irn_register(res, &sparc_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_AddSP_res) {
 		// TODO: check for correct pn_sparc_* flags
-		return new_rd_Proj(dbgi, block, new_pred, mode_Iu, pn_sparc_SubSP_stack);
+		return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_sparc_SubSP_stack);
 	} else if (proj == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, block, new_pred, mode_M, pn_sparc_SubSP_M);
+		return new_rd_Proj(dbgi, new_pred, mode_M, pn_sparc_SubSP_M);
 	}
 
 	panic("Unsupported Proj from AddSP");
@@ -714,19 +712,18 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
  */
 static ir_node *gen_Proj_be_SubSP(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_SubSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, block, new_pred, mode_Iu,
+		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
 		                           pn_sparc_AddSP_stack);
 		arch_set_irn_register(res, &sparc_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
-		return new_rd_Proj(dbgi,  block, new_pred, mode_M, pn_sparc_AddSP_M);
+		return new_rd_Proj(dbgi,  new_pred, mode_M, pn_sparc_AddSP_M);
 	}
 
 	panic("Unsupported Proj from SubSP");
@@ -792,8 +789,7 @@ static ir_node *gen_Proj(ir_node *node)
 		ir_node *new_pred = be_transform_node(pred);
 		ir_mode *mode     = get_irn_mode(node);
 		if (mode_needs_gp_reg(mode)) {
-			ir_node *block    = be_transform_node(get_nodes_block(node));
-			ir_node *new_proj = new_r_Proj(block, new_pred, mode_Iu, get_Proj_proj(node));
+			ir_node *new_proj = new_r_Proj(new_pred, mode_Iu, get_Proj_proj(node));
 			new_proj->node_nr = node->node_nr;
 			return new_proj;
 		}

@@ -822,11 +822,10 @@ ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[])
 
 ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node)
 {
-	ir_node *block = get_nodes_block(barrier);
 	ir_mode *mode = get_irn_mode(node);
 	int n = add_irn_n(barrier, node);
 
-	ir_node *proj = new_r_Proj(block, barrier, mode, n);
+	ir_node *proj = new_r_Proj(barrier, mode, n);
 	add_register_req_in(barrier);
 	add_register_req_out(barrier);
 
