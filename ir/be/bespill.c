@@ -29,7 +29,7 @@
 #include "irtools.h"
 #include "debug.h"
 #include "iredges_t.h"
-#include "adt/raw_bitset.h"
+#include "raw_bitset.h"
 #include "statev.h"
 #include "irgwalk.h"
 

@@ -25,8 +25,6 @@
  */
 #include "config.h"
 
-#include <adt/raw_bitset.h>
-
 #include "opt_init.h"
 
 #include "irnode_t.h"
@@ -43,6 +41,7 @@
 #include "iroptimize.h"
 #include "analyze_irg_args.h"
 #include "irhooks.h"
+#include "raw_bitset.h"
 #include "debug.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
