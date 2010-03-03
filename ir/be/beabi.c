@@ -888,7 +888,11 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	dbg_info *dbg;
 
 	const ir_edge_t *edge;
-	ir_node *new_alloc, *size, *addr, *ins[2];
+	ir_node *new_alloc;
+	ir_node *count;
+	ir_node *size;
+	ir_node *addr;
+	ir_node *ins[2];
 	unsigned stack_alignment;
 
 	assert(get_Alloc_where(alloc) == stack_alloc);
@@ -923,16 +927,18 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 		return curr_sp;
 	}
 
-	dbg  = get_irn_dbg_info(alloc);
-	size = get_Alloc_size(alloc);
+	dbg   = get_irn_dbg_info(alloc);
+	count = get_Alloc_count(alloc);
 
-	/* we might need to multiply the size with the element size */
+	/* we might need to multiply the count with the element size */
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
-		ir_mode *mode = get_irn_mode(size);
+		ir_mode *mode = get_irn_mode(count);
 		tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
 		                                     mode);
 		ir_node *cnst = new_rd_Const(dbg, irg, tv);
-		size          = new_rd_Mul(dbg, block, size, cnst, mode);
+		size          = new_rd_Mul(dbg, block, count, cnst, mode);
+	} else {
+		size = count;
 	}
 
 	/* The stack pointer will be modified in an unknown manner.

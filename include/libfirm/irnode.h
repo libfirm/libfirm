@@ -969,8 +969,8 @@ typedef enum {
 
 ir_node *get_Alloc_mem(const ir_node *node);
 void     set_Alloc_mem(ir_node *node, ir_node *mem);
-ir_node *get_Alloc_size(const ir_node *node);
-void     set_Alloc_size(ir_node *node, ir_node *size);
+ir_node *get_Alloc_count(const ir_node *node);
+void     set_Alloc_count(ir_node *node, ir_node *count);
 ir_type *get_Alloc_type(ir_node *node);
 void     set_Alloc_type(ir_node *node, ir_type *tp);
 

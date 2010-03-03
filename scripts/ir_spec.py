@@ -27,7 +27,7 @@ class Add(Binop):
 	flags = ["commutative"]
 
 class Alloc(Op):
-	ins   = [ "mem", "size" ]
+	ins   = [ "mem", "count" ]
 	outs  = [ "M", "X_regular", "X_except", "res" ]
 	flags = [ "fragile", "uses_memory" ]
 	attrs = [

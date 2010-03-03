@@ -1791,7 +1791,7 @@ static int verify_node_Alloc(ir_node *n, ir_graph *irg)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Alloc_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Alloc_size(n));
+	ir_mode *op2mode = get_irn_mode(get_Alloc_count(n));
 	(void) irg;
 
 	ASSERT_AND_RET_DBG(

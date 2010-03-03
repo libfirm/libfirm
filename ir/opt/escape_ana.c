@@ -404,7 +404,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   ftp = get_irg_frame_type(irg);
   for (alloc = env->found_allocs; alloc; alloc = next) {
     next = get_irn_link(alloc);
-    size = get_Alloc_size(alloc);
+    size = get_Alloc_count(alloc);
     atp  = get_Alloc_type(alloc);
 
     tp = NULL;

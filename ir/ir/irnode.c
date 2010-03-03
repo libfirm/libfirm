@@ -2054,16 +2054,16 @@ void set_Alloc_mem(ir_node *node, ir_node *mem)
 	set_irn_n(node, 0, mem);
 }
 
-ir_node *get_Alloc_size(const ir_node *node)
+ir_node *get_Alloc_count(const ir_node *node)
 {
 	assert(is_Alloc(node));
 	return get_irn_n(node, 1);
 }
 
-void set_Alloc_size(ir_node *node, ir_node *size)
+void set_Alloc_count(ir_node *node, ir_node *count)
 {
 	assert(is_Alloc(node));
-	set_irn_n(node, 1, size);
+	set_irn_n(node, 1, count);
 }
 
 ir_type *get_Alloc_type(ir_node *node)
