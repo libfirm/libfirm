@@ -51,7 +51,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
- * Transforms a Sub or xSub into Neg--Add iff OUT_REG == SRC2_REG.
+ * Transforms a Sub or xSub into Neg--Add iff OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
  */
 static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
@@ -77,6 +77,9 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 
 	irg     = cg->irg;
 	block   = get_nodes_block(irn);
+
+	if (out_reg == in1_reg)
+		return;
 
 	/* in case of sub and OUT == SRC2 we can transform the sequence into neg src2 -- add */
 	if (out_reg != in2_reg)
