@@ -725,13 +725,17 @@ static void check_entity_initializer(ir_entity *entity)
 {
 #ifndef NDEBUG
 	ir_initializer_t *initializer = entity->initializer;
+	ir_type          *entity_tp   = get_entity_type(entity);
 	switch (initializer->kind) {
 	case IR_INITIALIZER_COMPOUND:
-		assert(is_compound_entity(entity));
+		assert(is_compound_type(entity_tp));
 		break;
 	case IR_INITIALIZER_CONST:
+		/* methods are initialized by a SymConst */
+		assert(is_atomic_type(entity_tp) || is_Method_type(entity_tp));
+		break;
 	case IR_INITIALIZER_TARVAL:
-		assert(is_atomic_entity(entity));
+		assert(is_atomic_type(entity_tp));
 		break;
 	case IR_INITIALIZER_NULL:
 		break;
