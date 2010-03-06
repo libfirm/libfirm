@@ -75,9 +75,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	in2_reg  = arch_get_irn_register(in2);
 	out_reg  = arch_irn_get_register(irn, 0);
 
-	irg     = cg->irg;
-	block   = get_nodes_block(irn);
-
 	if (out_reg == in1_reg)
 		return;
 
@@ -85,7 +82,9 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	if (out_reg != in2_reg)
 		return;
 
-	dbg = get_irn_dbg_info(irn);
+	irg   = cg->irg;
+	block = get_nodes_block(irn);
+	dbg   = get_irn_dbg_info(irn);
 
 	/* generate the neg src2 */
 	if (is_ia32_xSub(irn)) {
