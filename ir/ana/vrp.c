@@ -37,7 +37,7 @@
 #include "irop.h"
 #include "pdeq.h"
 #include "irphase_t.h"
-
+#include "irprintf.h"
 
 static char v;
 static void *VISITED = &v;
