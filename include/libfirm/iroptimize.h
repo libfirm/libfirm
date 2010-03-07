@@ -506,7 +506,7 @@ ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 
 
 /** A default threshold. */
-#define DEFAULT_CLONE_THRESHOLD 300
+#define DEFAULT_CLONE_THRESHOLD 20
 
 /**
  * Do procedure cloning. Evaluate a heuristic weight for every
@@ -977,5 +977,99 @@ void garbage_collect_entities(void);
 
 /** Pass for garbage_collect_entities */
 ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
+
+/** Performs dead node elimination by copying the ir graph to a new obstack.
+ *
+ *  The major intention of this pass is to free memory occupied by
+ *  dead nodes and outdated analyzes information.  Further this
+ *  function removes Bad predecessors from Blocks and the corresponding
+ *  inputs to Phi nodes.  This opens optimization potential for other
+ *  optimizations.  Further this phase reduces dead Block<->Jmp
+ *  self-cycles to Bad nodes.
+ *
+ *  Dead_node_elimination is only performed if options `optimize' and
+ *  `opt_dead_node_elimination' are set.  The graph may
+ *  not be in state phase_building.  The outs datasturcture is freed,
+ *  the outs state set to outs_none.  Backedge information is conserved.
+ *  Removes old attributes of nodes.  Sets link field to NULL.
+ *  Callee information must be freed (irg_callee_info_none).
+ *
+ * @param irg  The graph to be optimized.
+ */
+void dead_node_elimination(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for dead_node_elimination().
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *dead_node_elimination_pass(const char *name);
+
+/** Inlines a method at the given call site.
+ *
+ *  Removes the call node and splits the basic block the call node
+ *  belongs to.  Inserts a copy of the called graph between these nodes.
+ *  Assumes that call is a Call node in current_ir_graph and that
+ *  the type in the Call nodes type attribute is the same as the
+ *  type of the called graph.
+ *  Further it assumes that all Phi nodes in a block of current_ir_graph
+ *  are assembled in a "link" list in the link field of the corresponding
+ *  block nodes.  Further assumes that all Proj nodes are in a "link" list
+ *  in the nodes producing the tuple.  (This is only an optical feature
+ *  for the graph.)  Conserves this feature for the old
+ *  nodes of the graph.  This precondition can be established by a call to
+ *  collect_phisprojs(), see irgmod.h.
+ *  As dead_node_elimination this function reduces dead Block<->Jmp
+ *  self-cycles to Bad nodes.
+ *
+ *  Called_graph must be unequal to current_ir_graph.   Will not inline
+ *  if they are equal.
+ *  Sets visited masterflag in current_ir_graph to the max of the flag in
+ *  current and called graph.
+ *  Assumes that both, the called and the calling graph are in state
+ *  "op_pin_state_pinned".
+ *  It is recommended to call local_optimize_graph() after inlining as this
+ *  function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
+ *  combination as control flow operation.
+ *
+ *  @param call          the call node that should be inlined
+ *  @param called_graph  the IR-graph that is called at call
+ *
+ *  @return zero if method could not be inlined (recursion for instance),
+ *          non-zero if all went ok
+ */
+int inline_method(ir_node *call, ir_graph *called_graph);
+
+/** Code Placement.
+ *
+ * Pins all floating nodes to a block where they
+ * will be executed only if needed.   Depends on the flag opt_global_cse.
+ * Graph may not be in phase_building.  Does not schedule control dead
+ * code.  Uses dominator information which it computes if the irg is not
+ * in state dom_consistent.  Destroys the out information as it moves nodes
+ * to other blocks.  Optimizes Tuples in Control edges.
+ * @todo This is not tested!
+ *
+ * Call remove_critical_cf_edges() before place_code().  This normalizes
+ * the control flow graph so that for all operations a basic block exists
+ * where they can be optimally placed.
+ *
+ * @todo A more powerful code placement would move operations past Phi nodes
+ * out of loops.
+ */
+void place_code(ir_graph *irg);
+
+/**
+ * Creates an ir_graph pass for place_code().
+ * This pass enables GCSE, runs optimize_graph_df() and finally
+ * place_code();
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *place_code_pass(const char *name);
 
 #endif

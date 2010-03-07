@@ -723,19 +723,20 @@ static void handle_load_update(ir_node *load)
  */
 static void reduce_adr_usage(ir_node *ptr)
 {
-	if (is_Proj(ptr)) {
-		if (get_irn_n_edges(ptr) <= 0) {
-			/* this Proj is dead now */
-			ir_node *pred = get_Proj_pred(ptr);
+	ir_node *pred;
+	if (!is_Proj(ptr))
+		return;
+	if (get_irn_n_edges(ptr) > 0)
+		return;
 
-			if (is_Load(pred)) {
-				ldst_info_t *info = get_irn_link(pred);
-				info->projs[get_Proj_proj(ptr)] = NULL;
+	/* this Proj is dead now */
+	pred = get_Proj_pred(ptr);
+	if (is_Load(pred)) {
+		ldst_info_t *info = get_irn_link(pred);
+		info->projs[get_Proj_proj(ptr)] = NULL;
 
-				/* this node lost its result proj, handle that */
-				handle_load_update(pred);
-			}
-		}
+		/* this node lost its result proj, handle that */
+		handle_load_update(pred);
 	}
 }  /* reduce_adr_usage */
 
@@ -1110,8 +1111,9 @@ static unsigned optimize_load(ir_node *load)
 	/* The mem of the Load. Must still be returned after optimization. */
 	mem = get_Load_mem(load);
 
-	if (! info->projs[pn_Load_res] && ! info->projs[pn_Load_X_except]) {
-		/* a Load which value is neither used nor exception checked, remove it */
+	if (info->projs[pn_Load_res] == NULL
+			&& info->projs[pn_Load_X_except] == NULL) {
+		/* the value is never used and we don't care about exceptions, remove */
 		exchange(info->projs[pn_Load_M], mem);
 
 		if (info->projs[pn_Load_X_regular]) {

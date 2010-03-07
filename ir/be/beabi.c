@@ -39,6 +39,7 @@
 #include "irprintf_t.h"
 #include "irgopt.h"
 #include "irbitset.h"
+#include "iropt_t.h"
 #include "height.h"
 #include "pdeq.h"
 #include "irtools.h"

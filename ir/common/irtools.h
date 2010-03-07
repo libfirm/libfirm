@@ -82,6 +82,33 @@ void firm_clear_link(ir_node *n, void *env);
 void firm_clear_node_and_phi_links(ir_node *n, void *env);
 
 /**
+ * Creates an exact copy of a node with same inputs and attributes in the
+ * same block.
+ *
+ * @param node   the node to copy
+ */
+ir_node *exact_copy(const ir_node *node);
+
+/**
+ * Create an exact copy of a node with same inputs and attributes in the same
+ * block but puts the node on a graph which might be different than the graph
+ * of the original node.
+ * Note: You have to fixup the inputs/block later
+ */
+ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg);
+
+/**
+ * This is a helper function used by some routines copying irg graphs
+ * This assumes that we have "old" nodes which have been copied to "new"
+ * nodes; The inputs of the new nodes still point to old nodes.
+ *
+ * Given an old(!) node this function rewires the matching new_node
+ * so that all its inputs point to new nodes afterwards.
+ */
+void irn_rewire_inputs(ir_node *node);
+
+/**
+ * @deprecated
  * Copies a node to a new irg. The Ins of the new node point to
  * the predecessors on the old irg.  n->link points to the new node.
  *
@@ -93,16 +120,5 @@ void firm_clear_node_and_phi_links(ir_node *n, void *env);
  * Note further, that the new nodes have no block.
  */
 void copy_irn_to_irg(ir_node *n, ir_graph *irg);
-
-/**
- * Creates an exact copy of a node.
- * The copy resists on the same graph in the same block.
- *
- * @param n   the node to copy
- *
- * @note If the copy is not changed, the next CSE operation will
- *       replace it by the original, so beware.
- */
-ir_node *exact_copy(const ir_node *n);
 
 #endif

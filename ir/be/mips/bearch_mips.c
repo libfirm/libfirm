@@ -30,7 +30,7 @@
 #include "irprog.h"
 #include "irprintf.h"
 #include "ircons.h"
-#include "irgmod.h"
+#include "iroptimize.h"
 #include "irgopt.h"
 #include "irgwalk.h"
 #include "iredges.h"

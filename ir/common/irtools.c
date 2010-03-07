@@ -33,15 +33,14 @@
 #include "irtools.h"
 #include "irprintf.h"
 #include "irpass_t.h"
+#include "iropt_t.h"
 
-/* the famous clear_link implementation. */
 void firm_clear_link(ir_node *n, void *env)
 {
 	(void) env;
 	set_irn_link(n, NULL);
 }
 
-/* the famous clear_node_and_phi_links() implementation. */
 void firm_clear_node_and_phi_links(ir_node *n, void *env)
 {
 	(void) env;
@@ -52,14 +51,6 @@ void firm_clear_node_and_phi_links(ir_node *n, void *env)
 		set_Phi_next(n, NULL);
 }
 
-/*
- * Copies a node to a new irg. The Ins of the new node point to
- * the predecessors on the old irg.  n->link points to the new node.
- *
- * Does NOT copy standard nodes like Start, End etc that are fixed
- * in an irg. Instead, the corresponding nodes of the new irg are returned.
- * Note further, that the new nodes have no block.
- */
 void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 {
 	ir_op *op = get_irn_op(n);
@@ -125,41 +116,93 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 	}
 }
 
-/*
- * Creates an exact copy of a node.
- * The copy resides in the same graph in the same block.
- */
-ir_node *exact_copy(const ir_node *n)
+ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 {
-	ir_graph *irg = get_irn_irg(n);
-	ir_node *res, *block = NULL;
+	ir_node  *block = NULL;
+	ir_op    *op    = get_irn_op(node);
+	int       arity = get_irn_arity(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_mode  *mode  = get_irn_mode(node);
+	ir_node  *res;
+	int       n_deps;
+	int       i;
 
-	if (is_no_Block(n))
-		block = get_nodes_block(n);
+	if (op != op_Block)
+		block = get_nodes_block(node);
 
-	res = new_ir_node(get_irn_dbg_info(n),
-		irg,
-		block,
-		get_irn_op(n),
-		get_irn_mode(n),
-		get_irn_arity(n),
-		get_irn_in(n) + 1);
-
-
-	/* Copy the attributes.  These might point to additional data.  If this
-	   was allocated on the old obstack the pointers now are dangling.  This
-	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-	copy_node_attr(irg, n, res);
-
-	if (is_Block(n)) {
-		set_Block_MacroBlock(res, get_Block_MacroBlock(n));
+	if (op->opar == oparity_dynamic) {
+		int i;
+		res = new_ir_node(dbgi, irg, block, op, mode, -1, NULL);
+		for (i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(node, i);
+			add_irn_n(res, in);
+		}
+	} else {
+		ir_node **ins = get_irn_in(node)+1;
+		res = new_ir_node(dbgi, irg, block, op, mode, arity, ins);
 	}
+
+	/* copy the attributes */
+	copy_node_attr(irg, node, res);
+	if (op == op_Block) {
+		set_Block_MacroBlock(res, get_Block_MacroBlock(node));
+	}
+
+	/* duplicate dependency edges */
+	n_deps = get_irn_deps(node);
+	for (i = 0; i < n_deps; ++i) {
+		ir_node *dep = get_irn_dep(node, i);
+		add_irn_dep(res, dep);
+	}
+
 	return res;
 }
 
-/*
- * Dump a pset containing Firm objects.
- */
+ir_node *exact_copy(const ir_node *node)
+{
+	return irn_copy_into_irg(node, get_irn_irg(node));
+}
+
+static ir_node *get_new_node(const ir_node *old_node)
+{
+	return (ir_node*) get_irn_link(old_node);
+}
+
+void irn_rewire_inputs(ir_node *node)
+{
+	ir_graph *new_irg;
+	ir_node  *new_node;
+	int       arity;
+	int       i;
+
+	new_node = get_new_node(node);
+
+	if (is_Block(node)) {
+		/* copy the macro block header */
+		ir_node *mbh = get_Block_MacroBlock(node);
+
+		/* get the macro block header */
+		ir_node *nmbh = get_new_node(mbh);
+		assert(nmbh != NULL);
+		set_Block_MacroBlock(new_node, nmbh);
+	} else {
+		ir_node *block     = get_nodes_block(node);
+		ir_node *new_block = get_new_node(block);
+		set_nodes_block(new_node, new_block);
+	}
+
+	arity = get_irn_arity(new_node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *in     = get_irn_n(node, i);
+		ir_node *new_in = get_new_node(in);
+		set_irn_n(new_node, i, new_in);
+	}
+
+	/* Now the new node is complete. We can add it to the hash table for CSE. */
+	new_irg = get_irn_irg(new_node);
+	add_identities(new_irg->value_table, new_node);
+}
+
 void firm_pset_dump(pset *set)
 {
 	void *obj;

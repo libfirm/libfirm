@@ -392,36 +392,17 @@ ir_graph *new_const_code_irg(void)
  * @param n    A node from the original method graph.
  * @param env  The copied graph.
  */
-static void copy_all_nodes(ir_node *n, void *env)
+static void copy_all_nodes(ir_node *node, void *env)
 {
-	ir_graph *irg = env;
-	ir_op    *op  = get_irn_op(n);
-	ir_node  *nn;
+	ir_graph *irg      = env;
+	ir_node  *new_node = irn_copy_into_irg(node, irg);
 
-	nn = new_ir_node(get_irn_dbg_info(n),
-	                 irg,
-	                 NULL,            /* no block yet, will be set later */
-	                 op,
-	                 get_irn_mode(n),
-	                 get_irn_arity(n),
-	                 get_irn_in(n) + 1);
-
-
-	/* Copy the attributes.  These might point to additional data.  If this
-	   was allocated on the old obstack the pointers now are dangling.  This
-	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-	copy_node_attr(irg, n, nn);
-	set_irn_link(n, nn);
-
-	/* fix the irg for Blocks: as Bad nodes are NOT copied, no
-	   need t fix them */
-	if (is_Block(nn))
-		nn->attr.block.irg.irg = irg;
+	set_irn_link(node, new_node);
 
 	/* fix access to entities on the stack frame */
-	if (is_Sel(nn)) {
-		ir_entity *ent = get_Sel_entity(nn);
-		ir_type   *tp = get_entity_owner(ent);
+	if (is_Sel(new_node)) {
+		ir_entity *ent = get_Sel_entity(new_node);
+		ir_type   *tp  = get_entity_owner(ent);
 
 		if (is_frame_type(tp)) {
 			/* replace by the copied entity */
@@ -429,7 +410,7 @@ static void copy_all_nodes(ir_node *n, void *env)
 
 			assert(is_entity(ent));
 			assert(get_entity_owner(ent) == get_irg_frame_type(irg));
-			set_Sel_entity(nn, ent);
+			set_Sel_entity(new_node, ent);
 		}
 	}
 }
@@ -439,32 +420,16 @@ static void copy_all_nodes(ir_node *n, void *env)
  * The copied nodes are set as link of their original nodes. The links of
  * "irn" predecessors are the predecessors of copied node.
  */
-static void set_all_preds(ir_node *irn, void *env)
+static void rewire(ir_node *irn, void *env)
 {
-	int      i;
-	ir_node  *nn, *pred;
 	(void) env;
-
-	nn = get_irn_link(irn);
-
-	if (is_Block(irn)) {
-		ir_node *mbh = get_Block_MacroBlock(irn);
-		set_Block_MacroBlock(nn, get_irn_link(mbh));
-		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--) {
-			pred = get_Block_cfgpred(irn, i);
-			set_Block_cfgpred(nn, i, get_irn_link(pred));
-		}
-	} else {
-		/* First we set the block our copy if it is not a block.*/
-		set_nodes_block(nn, get_irn_link(get_nodes_block(irn)));
-		for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
-			pred = get_irn_n(irn, i);
-			set_irn_n(nn, i, get_irn_link(pred));
-		}
-	}
+	irn_rewire_inputs(irn);
 }
 
-#define NN(irn)  get_irn_link(irn)
+static ir_node *get_new_node(const ir_node *old_node)
+{
+	return (ir_node*) get_irn_link(old_node);
+}
 
 /*
  * Create a new graph that is a copy of a given one.
@@ -500,25 +465,25 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* copy all nodes from the graph irg to the new graph res */
-	irg_walk_anchors(irg, copy_all_nodes, set_all_preds, res);
+	irg_walk_anchors(irg, copy_all_nodes, rewire, res);
 
 	/* copy the Anchor node */
-	res->anchor = NN(irg->anchor);
+	res->anchor = get_new_node(irg->anchor);
 
 	/* -- The end block -- */
-	set_irg_end_block (res, NN(get_irg_end_block(irg)));
-	set_irg_end       (res, NN(get_irg_end(irg)));
-	set_irg_end_reg   (res, NN(get_irg_end_reg(irg)));
-	set_irg_end_except(res, NN(get_irg_end_except(irg)));
+	set_irg_end_block (res, get_new_node(get_irg_end_block(irg)));
+	set_irg_end       (res, get_new_node(get_irg_end(irg)));
+	set_irg_end_reg   (res, get_new_node(get_irg_end_reg(irg)));
+	set_irg_end_except(res, get_new_node(get_irg_end_except(irg)));
 
 	/* -- The start block -- */
-	set_irg_start_block(res, NN(get_irg_start_block(irg)));
-	set_irg_bad        (res, NN(get_irg_bad(irg)));
-	set_irg_no_mem     (res, NN(get_irg_no_mem(irg)));
-	set_irg_start      (res, NN(get_irg_start(irg)));
+	set_irg_start_block(res, get_new_node(get_irg_start_block(irg)));
+	set_irg_bad        (res, get_new_node(get_irg_bad(irg)));
+	set_irg_no_mem     (res, get_new_node(get_irg_no_mem(irg)));
+	set_irg_start      (res, get_new_node(get_irg_start(irg)));
 
 	/* Proj results of start node */
-	set_irg_initial_mem(res, NN(get_irg_initial_mem(irg)));
+	set_irg_initial_mem(res, get_new_node(get_irg_initial_mem(irg)));
 
 	/* Copy the node count estimation. Would be strange if this
 	   is different from the original one. */
@@ -529,8 +494,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 	return res;
 }
-#undef NN
-
 
 /* Frees the passed irgraph.
    Deallocates all nodes in this graph and the ir_graph structure.
