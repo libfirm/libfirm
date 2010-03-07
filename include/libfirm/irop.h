@@ -304,7 +304,7 @@ typedef int (*reassociate_func)(ir_node **n);
  * The copy attribute operation.
  * Copy the node attributes from an 'old' node to a 'new' one.
  */
-typedef void (*copy_attr_func)(const ir_node *old_node, ir_node *new_node);
+typedef void (*copy_attr_func)(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
 /**
  * The get_type operation.

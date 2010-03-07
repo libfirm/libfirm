@@ -496,14 +496,14 @@ static int cmp_attr_arm_cmp(ir_node *a, ir_node *b)
 }
 
 /** copies the ARM attributes of a node. */
-static void arm_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void arm_copy_attr(ir_graph *irg, const ir_node *old_node,
+                          ir_node *new_node)
 {
-	ir_graph          *irg     = get_irn_irg(new_node);
-	struct obstack    *obst    = get_irg_obstack(irg);
+	struct obstack   *obst    = get_irg_obstack(irg);
 	const arm_attr_t *attr_old = get_arm_attr_const(old_node);
 	arm_attr_t       *attr_new = get_arm_attr(new_node);
-	backend_info_t    *old_info = be_get_info(old_node);
-	backend_info_t    *new_info = be_get_info(new_node);
+	backend_info_t   *old_info = be_get_info(old_node);
+	backend_info_t   *new_info = be_get_info(new_node);
 
 	/* copy the attributes */
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));

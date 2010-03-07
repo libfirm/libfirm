@@ -47,9 +47,11 @@ static unsigned next_iro = iro_MaxOpcode;
  * Copies all attributes stored in the old node to the new node.
  * Assumes both have the same opcode and sufficient size.
  */
-void default_copy_attr(const ir_node *old_node, ir_node *new_node)
+void default_copy_attr(ir_graph *irg, const ir_node *old_node,
+                       ir_node *new_node)
 {
 	unsigned size = firm_add_node_size;
+	(void) irg;
 
 	assert(get_irn_op(old_node) == get_irn_op(new_node));
 	memcpy(&new_node->attr, &old_node->attr, get_op_attr_size(get_irn_op(old_node)));
@@ -58,39 +60,46 @@ void default_copy_attr(const ir_node *old_node, ir_node *new_node)
 		/* copy additional node data */
 		memcpy(get_irn_data(new_node, void, size), get_irn_data(old_node, void, size), size);
 	}
-}  /* default_copy_attr */
+}
 
 /**
  * Copies all Call attributes stored in the old node to the new node.
  */
-static void call_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void call_copy_attr(ir_graph *irg, const ir_node *old_node,
+                           ir_node *new_node)
 {
-	default_copy_attr(old_node, new_node);
+	default_copy_attr(irg, old_node, new_node);
 	remove_Call_callee_arr(new_node);
-}  /* call_copy_attr */
+}
 
 /**
  * Copies all Block attributes stored in the old node to the new node.
  */
-static void block_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void block_copy_attr(ir_graph *irg, const ir_node *old_node,
+                            ir_node *new_node)
 {
-	ir_graph *irg = current_ir_graph;
-
-	default_copy_attr(old_node, new_node);
-	new_node->attr.block.phis        = NULL;
-	new_node->attr.block.cg_backedge = NULL;
-	new_node->attr.block.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
+	default_copy_attr(irg, old_node, new_node);
+	new_node->attr.block.irg.irg       = irg;
+	new_node->attr.block.phis          = NULL;
+	new_node->attr.block.cg_backedge   = NULL;
+	new_node->attr.block.backedge      = new_backedge_arr(irg->obst, get_irn_arity(new_node));
+	new_node->attr.block.block_visited = 0;
+	memset(&new_node->attr.block.dom, 0, sizeof(new_node->attr.block.dom));
+	memset(&new_node->attr.block.pdom, 0, sizeof(new_node->attr.block.pdom));
+	/* TODO: we should probably create a new entity. But we somehow have to
+	 * patch the stuff at the same time */
+	new_node->attr.block.entity            = NULL;
+	new_node->attr.block.phis              = NULL;
 	INIT_LIST_HEAD(&new_node->attr.block.succ_head);
-}  /* block_copy_attr */
+}
 
 /**
  * Copies all phi attributes stored in old node to the new node
  */
-static void phi_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void phi_copy_attr(ir_graph *irg, const ir_node *old_node,
+                          ir_node *new_node)
 {
-	ir_graph *irg = current_ir_graph;
-
-	default_copy_attr(old_node, new_node);
+	default_copy_attr(irg, old_node, new_node);
 	new_node->attr.phi.next       = NULL;
 	new_node->attr.phi.u.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
 }
@@ -98,22 +107,20 @@ static void phi_copy_attr(const ir_node *old_node, ir_node *new_node)
 /**
  * Copies all filter attributes stored in old node to the new node
  */
-static void filter_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void filter_copy_attr(ir_graph *irg, const ir_node *old_node,
+                             ir_node *new_node)
 {
-	ir_graph *irg = current_ir_graph;
-
-	default_copy_attr(old_node, new_node);
+	default_copy_attr(irg, old_node, new_node);
 	new_node->attr.filter.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
 }
 
 /**
  * Copies all ASM attributes stored in old node to the new node
  */
-static void ASM_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
+                          ir_node *new_node)
 {
-	ir_graph *irg = current_ir_graph;
-
-	default_copy_attr(old_node, new_node);
+	default_copy_attr(irg, old_node, new_node);
 	new_node->attr.assem.inputs  = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.inputs);
 	new_node->attr.assem.outputs = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.outputs);
 	new_node->attr.assem.clobber = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.clobber);

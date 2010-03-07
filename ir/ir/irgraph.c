@@ -410,8 +410,7 @@ static void copy_all_nodes(ir_node *n, void *env)
 	/* Copy the attributes.  These might point to additional data.  If this
 	   was allocated on the old obstack the pointers now are dangling.  This
 	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-	copy_node_attr(n, nn);
-	new_backedge_info(nn);
+	copy_node_attr(irg, n, nn);
 	set_irn_link(n, nn);
 
 	/* fix the irg for Blocks: as Bad nodes are NOT copied, no

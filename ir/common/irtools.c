@@ -113,8 +113,7 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 	/* Copy the attributes.  These might point to additional data.  If this
 	   was allocated on the old obstack the pointers now are dangling.  This
 	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-	copy_node_attr(n, nn);
-	new_backedge_info(nn);
+	copy_node_attr(irg, n, nn);
 	set_irn_link(n, nn);
 
 	/* fix the irg for blocks */
@@ -150,8 +149,7 @@ ir_node *exact_copy(const ir_node *n)
 	/* Copy the attributes.  These might point to additional data.  If this
 	   was allocated on the old obstack the pointers now are dangling.  This
 	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
-	copy_node_attr(n, res);
-	new_backedge_info(res);
+	copy_node_attr(irg, n, res);
 
 	if (is_Block(n)) {
 		set_Block_MacroBlock(res, get_Block_MacroBlock(n));

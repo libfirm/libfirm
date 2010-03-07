@@ -1304,8 +1304,9 @@ int is_irn_forking(const ir_node *node);
 /**
  * Copies all attributes stored in the old node  to the new node.
  * Assumes both have the same opcode and sufficient size.
+ * @param irg     The irg of the new_node (get_irn_irg on it might not work yet)
  */
-void copy_node_attr(const ir_node *old_node, ir_node *new_node);
+void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
 /** Return the type associated with the value produced by n
  *  if the node remarks this type as it is the case for

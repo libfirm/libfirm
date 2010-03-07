@@ -294,14 +294,14 @@ static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
 /**
  * copies sparc attributes of  node
  */
-static void sparc_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void sparc_copy_attr(ir_graph *irg, const ir_node *old_node,
+                            ir_node *new_node)
 {
-	ir_graph          *irg     = get_irn_irg(new_node);
-	struct obstack    *obst    = get_irg_obstack(irg);
-	 const sparc_attr_t *attr_old = get_sparc_attr_const(old_node);
+	struct obstack     *obst    = get_irg_obstack(irg);
+	const sparc_attr_t *attr_old = get_sparc_attr_const(old_node);
 	sparc_attr_t       *attr_new = get_sparc_attr(new_node);
-	backend_info_t    *old_info = be_get_info(old_node);
-	backend_info_t    *new_info = be_get_info(new_node);
+	backend_info_t     *old_info = be_get_info(old_node);
+	backend_info_t     *new_info = be_get_info(new_node);
 
 	/* copy the attributes */
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));

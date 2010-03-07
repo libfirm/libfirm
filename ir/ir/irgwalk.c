@@ -144,11 +144,11 @@ static void collect_irgs(ir_node * node, pset_new_t *irg_set)
  *
  * @return number of visited nodes
  */
-static unsigned irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env)
+static unsigned irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void *env)
 {
 	int i;
 	unsigned cnt = 1;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
 
@@ -172,11 +172,11 @@ static unsigned irg_walk_2_pre(ir_node *node, irg_walk_func *pre, void * env)
  *
  * @return number of visited nodes
  */
-static unsigned irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env)
+static unsigned irg_walk_2_post(ir_node *node, irg_walk_func *post, void *env)
 {
 	int i;
 	unsigned cnt = 1;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
 
@@ -201,11 +201,12 @@ static unsigned irg_walk_2_post(ir_node *node, irg_walk_func *post, void * env)
  *
  * @return number of visited nodes
  */
-static unsigned irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
+static unsigned irg_walk_2_both(ir_node *node, irg_walk_func *pre,
+                                irg_walk_func *post, void *env)
 {
 	int i;
 	unsigned cnt = 1;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
 
@@ -235,21 +236,19 @@ static unsigned irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func
 unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                     void *env)
 {
-	if (node->visited < current_ir_graph->visited) {
-		if      (!post) return irg_walk_2_pre (node, pre, env);
-		else if (!pre)  return irg_walk_2_post(node, post, env);
-		else            return irg_walk_2_both(node, pre, post, env);
-	}
-	return 0;
+	if (irn_visited(node))
+		return 0;
+
+	if      (!post) return irg_walk_2_pre (node, pre, env);
+	else if (!pre)  return irg_walk_2_post(node, post, env);
+	else            return irg_walk_2_both(node, pre, post, env);
 }
 
 /* a counter */
 static unsigned nodes_touched = 0;
 
-/*
- * generic graph walker
- */
-void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+void irg_walk_core(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                   void *env)
 {
 	assert(is_ir_node(node));
 
@@ -275,13 +274,20 @@ void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 		pset_new_destroy(&irg_set);
 	} else {
 #endif
-		ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
-		inc_irg_visited(current_ir_graph);
 		nodes_touched = irg_walk_2(node, pre, post, env);
-		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 #ifdef INTERPROCEDURAL_VIEW
 	}
 #endif
+}
+
+void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+              void *env)
+{
+	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(current_ir_graph);
+	assert(current_ir_graph == get_irn_irg(node));
+	irg_walk_core(node, pre, post, env);
+	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 }
 
 /*
@@ -323,7 +329,7 @@ static unsigned irg_walk_in_or_dep_2_pre(ir_node *node, irg_walk_func *pre, void
 {
 	int i;
 	unsigned cnt = 1;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
 
@@ -351,7 +357,7 @@ static unsigned irg_walk_in_or_dep_2_post(ir_node *node, irg_walk_func *post, vo
 {
 	int i;
 	unsigned cnt = 1;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
 
@@ -380,7 +386,7 @@ static unsigned irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg
 {
 	int i;
 	unsigned cnt = 1;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 
 	set_irn_visited(node, irg->visited);
 
@@ -409,12 +415,12 @@ static unsigned irg_walk_in_or_dep_2_both(ir_node *node, irg_walk_func *pre, irg
  */
 static unsigned irg_walk_in_or_dep_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	if (node->visited < current_ir_graph->visited) {
-		if      (! post) return irg_walk_in_or_dep_2_pre (node, pre, env);
-		else if (! pre)  return irg_walk_in_or_dep_2_post(node, post, env);
-		else             return irg_walk_in_or_dep_2_both(node, pre, post, env);
-	}
-	return 0;
+	if (irn_visited(node))
+		return 0;
+
+	if      (! post) return irg_walk_in_or_dep_2_pre (node, pre, env);
+	else if (! pre)  return irg_walk_in_or_dep_2_post(node, post, env);
+	else             return irg_walk_in_or_dep_2_both(node, pre, post, env);
 }
 
 /*
@@ -573,30 +579,32 @@ static ir_node *get_cf_op(ir_node *n)
 	return n;
 }
 
-static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+static void irg_block_walk_2(ir_node *node, irg_walk_func *pre,
+                             irg_walk_func *post, void *env)
 {
 	int i;
 
-	if (!Block_block_visited(node)) {
-		mark_Block_block_visited(node);
+	if (Block_block_visited(node))
+		return;
+	mark_Block_block_visited(node);
 
-		if (pre) pre(node, env);
+	if (pre)
+		pre(node, env);
 
-		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
-			/* find the corresponding predecessor block. */
-			ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
-			pred = get_nodes_block(pred);
-			if (get_irn_opcode(pred) == iro_Block) {
-				/* recursion */
-				irg_block_walk_2(pred, pre, post, env);
-			}
-			else {
-				assert(get_irn_opcode(pred) == iro_Bad);
-			}
+	for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
+		/* find the corresponding predecessor block. */
+		ir_node *pred = get_cf_op(get_Block_cfgpred(node, i));
+		pred = get_nodes_block(pred);
+		if (get_irn_opcode(pred) == iro_Block) {
+			/* recursion */
+			irg_block_walk_2(pred, pre, post, env);
+		} else {
+			assert(get_irn_opcode(pred) == iro_Bad);
 		}
-
-		if (post) post(node, env);
 	}
+
+	if (post)
+		post(node, env);
 }
 
 
@@ -604,7 +612,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *p
    flag, so that it can be interleaved with the other walker.         */
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
 	ir_node *block, *pred;
 	int i;
 

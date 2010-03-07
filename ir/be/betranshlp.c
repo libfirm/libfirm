@@ -123,7 +123,7 @@ ir_node *be_duplicate_node(ir_node *node)
 		new_node = new_ir_node(dbgi, irg, block, op, mode, arity, ins);
 	}
 
-	copy_node_attr(node, new_node);
+	copy_node_attr(irg, node, new_node);
 	be_duplicate_deps(node, new_node);
 
 	new_node->node_nr = node->node_nr;
@@ -358,7 +358,7 @@ static ir_node *gen_Block(ir_node *node)
 
 	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
 	                    get_irn_arity(node), get_irn_in(node) + 1);
-	copy_node_attr(node, block);
+	copy_node_attr(irg, node, block);
 	block->node_nr = node->node_nr;
 
 	if (node == macroblock) {
@@ -385,7 +385,7 @@ static ir_node *gen_End(ir_node *node)
 	ir_node  *new_end;
 
 	new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
-	copy_node_attr(node, new_end);
+	copy_node_attr(irg, node, new_end);
 	be_duplicate_deps(node, new_end);
 
 	set_irg_end(irg, new_end);

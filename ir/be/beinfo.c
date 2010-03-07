@@ -62,14 +62,15 @@ void be_info_new_node(ir_node *node)
 	}
 }
 
-static void new_Phi_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void new_Phi_copy_attr(ir_graph *irg, const ir_node *old_node,
+                              ir_node *new_node)
 {
 	backend_info_t *old_info = be_get_info(old_node);
 	backend_info_t *new_info = be_get_info(new_node);
 
 	*new_info = *old_info;
 
-	old_phi_copy_attr(old_node, new_node);
+	old_phi_copy_attr(irg, old_node, new_node);
 }
 
 int be_infos_equal(const backend_info_t *info1, const backend_info_t *info2)

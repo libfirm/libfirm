@@ -1436,11 +1436,10 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
  * ir_op-Operation:
  * Copies the backend specific attributes from old node to new node.
  */
-static void copy_attr(const ir_node *old_node, ir_node *new_node)
+static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 {
 	const be_node_attr_t *old_attr = get_irn_attr_const(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
-	ir_graph       *irg      = get_irn_irg(new_node);
 	struct obstack *obst     = be_get_birg_obst(irg);
 	backend_info_t *old_info = be_get_info(old_node);
 	backend_info_t *new_info = be_get_info(new_node);

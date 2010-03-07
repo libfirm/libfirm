@@ -1145,9 +1145,9 @@ static int ia32_compare_climbframe_attr(ir_node *a, ir_node *b)
 }
 
 /* copies the ia32 attributes */
-static void ia32_copy_attr(const ir_node *old_node, ir_node *new_node)
+static void ia32_copy_attr(ir_graph *irg, const ir_node *old_node,
+                           ir_node *new_node)
 {
-	ir_graph          *irg      = get_irn_irg(new_node);
 	struct obstack    *obst     = get_irg_obstack(irg);
 	const ia32_attr_t *attr_old = get_ia32_attr_const(old_node);
 	ia32_attr_t       *attr_new = get_ia32_attr(new_node);

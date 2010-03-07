@@ -48,7 +48,8 @@ void finish_op(void);
  * @param old_node  the old node from which the attributes are read
  * @param new_node  the new node to which the attributes are written
  */
-void default_copy_attr(const ir_node *old_node, ir_node *new_node);
+void default_copy_attr(ir_graph *irg, const ir_node *old_node,
+                       ir_node *new_node);
 
 /**
  * Returns the attribute size of nodes of this opcode.

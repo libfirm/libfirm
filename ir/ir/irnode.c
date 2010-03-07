@@ -2682,18 +2682,9 @@ ident **get_ASM_clobbers(const ir_node *node)
 }
 
 /* returns the graph of a node */
-ir_graph *get_irn_irg(const ir_node *node)
+ir_graph *(get_irn_irg)(const ir_node *node)
 {
-	/*
-	 * Do not use get_nodes_Block() here, because this
-	 * will check the pinned state.
-	 * However even a 'wrong' block is always in the proper
-	 * irg.
-	 */
-	if (! is_Block(node))
-		node = get_irn_n(node, -1);
-	/* note that get_Block_irg() can handle Bad nodes */
-	return get_Block_irg(node);
+	return _get_irn_irg(node);
 }
 
 
@@ -2931,9 +2922,9 @@ int (is_irn_forking)(const ir_node *node)
 	return _is_irn_forking(node);
 }
 
-void (copy_node_attr)(const ir_node *old_node, ir_node *new_node)
+void (copy_node_attr)(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 {
-	_copy_node_attr(old_node, new_node);
+	_copy_node_attr(irg, old_node, new_node);
 }
 
 /* Return the type associated with the value produced by n

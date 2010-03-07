@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include <limits.h>
+#include <stdbool.h>
 #include <assert.h>
 
 #include "irnode_t.h"
@@ -74,321 +75,128 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 /**
  * Remember the new node in the old node by using a field all nodes have.
  */
-#define set_new_node(oldn, newn)  set_irn_link(oldn, newn)
+static void set_new_node(ir_node *node, ir_node *new_node)
+{
+	set_irn_link(node, new_node);
+}
 
 /**
  * Get this new node, before the old node is forgotten.
  */
-#define get_new_node(oldn) get_irn_link(oldn)
-
-/**
- * Check if a new node was set.
- */
-#define has_new_node(n) (get_new_node(n) != NULL)
+static inline ir_node *get_new_node(ir_node *old_node)
+{
+	assert(irn_visited(old_node));
+	return (ir_node*) get_irn_link(old_node);
+}
 
 /** a pointer to the new phases */
 static ir_phase *new_phases[PHASE_LAST];
 
 /**
- * We use the block_visited flag to mark that we have computed the
- * number of useful predecessors for this block.
- * Further we encode the new arity in this flag in the old blocks.
- * Remembering the arity is useful, as it saves a lot of pointer
- * accesses.  This function is called for all Phi and Block nodes
- * in a Block.
- */
-static inline int compute_new_arity(ir_node *b)
-{
-	int i, res, irn_arity;
-	int irg_v, block_v;
-
-	irg_v = get_irg_block_visited(current_ir_graph);
-	block_v = get_Block_block_visited(b);
-	if (block_v >= irg_v) {
-		/* we computed the number of preds for this block and saved it in the
-		   block_v flag */
-		return block_v - irg_v;
-	} else {
-		/* compute the number of good predecessors */
-		res = irn_arity = get_irn_arity(b);
-		for (i = 0; i < irn_arity; i++)
-			if (is_Bad(get_irn_n(b, i))) res--;
-			/* save it in the flag. */
-			set_Block_block_visited(b, irg_v + res);
-			return res;
-	}
-}
-
-/**
  * Copies the node to the new obstack. The Ins of the new node point to
  * the predecessors on the old obstack.  For block/phi nodes not all
  * predecessors might be copied.  n->link points to the new node.
- * For Phi and Block nodes the function allocates in-arrays with an arity
- * only for useful predecessors.  The arity is determined by counting
- * the non-bad predecessors of the block.
  *
  * @param n    The node to be copied
- * @param env  if non-NULL, the node number attribute will be copied to the new node
- *
- * Note: Also used for loop unrolling.
+ * @param irg  The irg onto which the node should be copied
  */
-static void copy_node(ir_node *n, void *env)
+static ir_node *copy_node(ir_node *n, ir_graph *irg)
 {
-	ir_node *nn, *block;
-	int new_arity, i;
-	ir_phase *old_ph;
-	ir_op *op = get_irn_op(n);
-	(void) env;
+	ir_op    *op    = get_irn_op(n);
+	int       arity = get_irn_arity(n);
+	dbg_info *dbgi  = get_irn_dbg_info(n);
+	ir_mode  *mode  = get_irn_mode(n);
+	ir_node  *nn;
+	ir_node  *block;
+	int       i;
 
-	if (op == op_Bad) {
-		/* node copied already */
-		return;
-	} else if (op == op_Block) {
+	if (op == op_Block) {
 		block = NULL;
-		new_arity = compute_new_arity(n);
 		n->attr.block.graph_arr = NULL;
 	} else {
 		block = get_nodes_block(n);
-		if (op == op_Phi) {
-			new_arity = compute_new_arity(block);
-		} else {
-			new_arity = get_irn_arity(n);
-		}
 	}
-	nn = new_ir_node(get_irn_dbg_info(n),
-		current_ir_graph,
-		block,
-		op,
-		get_irn_mode(n),
-		new_arity,
-		get_irn_in(n) + 1);
+	if (op->opar == oparity_dynamic) {
+		nn = new_ir_node(dbgi, irg, block, op, mode, -1, NULL);
+		for (i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(n, i);
+			add_irn_n(nn, in);
+		}
+	} else {
+		ir_node **ins = get_irn_in(n)+1;
+		nn = new_ir_node(dbgi, irg, block, op, mode, arity, ins);
+	}
+
 	/* Copy the attributes.  These might point to additional data.  If this
-	   was allocated on the old obstack the pointers now are dangling.  This
-	   frees e.g. the memory of the graph_arr allocated in new_immBlock. */
+	   was allocated on the old obstack the pointers now are dangling. */
+	copy_node_attr(irg, n, nn);
 	if (op == op_Block) {
 		/* we cannot allow blocks WITHOUT macroblock input */
 		set_Block_MacroBlock(nn, get_Block_MacroBlock(n));
 	}
-	copy_node_attr(n, nn);
 
-	/* preserve the phase information for this node */
+	/* copy phase information for this node */
 	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
-		old_ph = get_irg_phase(current_ir_graph, i);
-		if (old_ph != NULL) {
-			if(phase_get_irn_data(old_ph, n)) {
-				phase_set_irn_data(new_phases[i], nn, phase_get_irn_data(old_ph, n));
-			}
-		}
-	}
-
-	if (env != NULL) {
-		/* for easier debugging, we want to copy the node numbers too */
-		nn->node_nr = n->node_nr;
+		ir_graph *old_irg = get_irn_irg(n);
+		ir_phase *old_ph  = get_irg_phase(old_irg, i);
+		if (old_ph == NULL)
+			continue;
+		if (!phase_get_irn_data(old_ph, n))
+			continue;
+		phase_set_irn_data(new_phases[i], nn, phase_get_irn_data(old_ph, n));
 	}
 
 	set_new_node(n, nn);
 	hook_dead_node_elim_subst(current_ir_graph, n, nn);
+
+	return nn;
+}
+
+static void copy_node_with_number(ir_node *node, void *env)
+{
+	ir_graph *new_irg  = (ir_graph*) env;
+	ir_node  *new_node = copy_node(node, new_irg);
+
+	/* preserve the node numbers for easier debugging */
+	new_node->node_nr = node->node_nr;
 }
 
 /**
- * Copies new predecessors of old node to new node remembered in link.
- * Spare the Bad predecessors of Phi and Block nodes.
+ * Reroute the inputs of a node from nodes in the old graph to copied nodes in
+ * the new graph
  */
-static void copy_preds(ir_node *n, void *env)
+static void set_preds(ir_node *node, void *env)
 {
-	ir_node *nn, *block;
-	int i, j, irn_arity;
-	(void) env;
+	ir_graph *new_irg = (ir_graph*) env;
+	ir_node  *new_node;
+	int       arity;
+	int       i;
 
-	nn = get_new_node(n);
+	new_node = get_new_node(node);
 
-	if (is_Block(n)) {
+	if (is_Block(node)) {
 		/* copy the macro block header */
-		ir_node *mbh = get_Block_MacroBlock(n);
+		ir_node *mbh = get_Block_MacroBlock(node);
 
-		if (mbh == n) {
-			/* this block is a macroblock header */
-			set_Block_MacroBlock(nn, nn);
-		} else {
-			/* get the macro block header */
-			ir_node *nmbh = get_new_node(mbh);
-			assert(nmbh != NULL);
-			set_Block_MacroBlock(nn, nmbh);
-		}
-
-		/* Don't copy Bad nodes. */
-		j = 0;
-		irn_arity = get_irn_arity(n);
-		for (i = 0; i < irn_arity; i++) {
-			if (! is_Bad(get_irn_n(n, i))) {
-				ir_node *pred = get_irn_n(n, i);
-				set_irn_n(nn, j, get_new_node(pred));
-				j++;
-			}
-		}
-		/* repair the block visited flag from above misuse. Repair it in both
-		   graphs so that the old one can still be used. */
-		set_Block_block_visited(nn, 0);
-		set_Block_block_visited(n, 0);
-		/* Local optimization could not merge two subsequent blocks if
-		   in array contained Bads.  Now it's possible.
-		   We don't call optimize_in_place as it requires
-		   that the fields in ir_graph are set properly. */
-		if (!has_Block_entity(nn) &&
-		    get_opt_control_flow_straightening() &&
-		    get_Block_n_cfgpreds(nn) == 1 &&
-		    is_Jmp(get_Block_cfgpred(nn, 0))) {
-			ir_node *old = get_nodes_block(get_Block_cfgpred(nn, 0));
-			if (nn == old) {
-				/* Jmp jumps into the block it is in -- deal self cycle. */
-				assert(is_Bad(get_new_node(get_irg_bad(current_ir_graph))));
-				exchange(nn, get_new_node(get_irg_bad(current_ir_graph)));
-			} else {
-				exchange(nn, old);
-			}
-		}
-	} else if (is_Phi(n) && get_irn_arity(n) > 0) {
-		/* Don't copy node if corresponding predecessor in block is Bad.
-		   The Block itself should not be Bad. */
-		block = get_nodes_block(n);
-		set_nodes_block(nn, get_new_node(block));
-		j = 0;
-		irn_arity = get_irn_arity(n);
-		for (i = 0; i < irn_arity; i++) {
-			if (! is_Bad(get_irn_n(block, i))) {
-				ir_node *pred = get_irn_n(n, i);
-				set_irn_n(nn, j, get_new_node(pred));
-				/*if (is_backedge(n, i)) set_backedge(nn, j);*/
-				j++;
-			}
-		}
-		/* If the pre walker reached this Phi after the post walker visited the
-		   block block_visited is > 0. */
-		set_Block_block_visited(get_nodes_block(n), 0);
-		/* Compacting the Phi's ins might generate Phis with only one
-		   predecessor. */
-		if (get_irn_arity(nn) == 1)
-			exchange(nn, get_irn_n(nn, 0));
+		/* get the macro block header */
+		ir_node *nmbh = get_new_node(mbh);
+		assert(nmbh != NULL);
+		set_Block_MacroBlock(new_node, nmbh);
 	} else {
-		irn_arity = get_irn_arity(n);
-		for (i = -1; i < irn_arity; i++)
-			set_irn_n(nn, i, get_new_node(get_irn_n(n, i)));
-	}
-	/* Now the new node is complete.  We can add it to the hash table for CSE.
-	   @@@ inlining aborts if we identify End. Why? */
-	if (!is_End(nn))
-		add_identities(current_ir_graph->value_table, nn);
-}
-
-/**
- * Copies the graph recursively, compacts the keep-alives of the end node.
- *
- * @param irg           the graph to be copied
- * @param copy_node_nr  If non-zero, the node number will be copied
- */
-static void copy_graph(ir_graph *irg, int copy_node_nr)
-{
-	ir_node *oe, *ne, *ob, *nb, *om, *nm; /* old end, new end, old bad, new bad, old NoMem, new NoMem */
-	ir_node *ka;      /* keep alive */
-	int i, irn_arity;
-	unsigned long vfl;
-
-	/* Some nodes must be copied by hand, sigh */
-	vfl = get_irg_visited(irg);
-	set_irg_visited(irg, vfl + 1);
-
-	oe = get_irg_end(irg);
-	mark_irn_visited(oe);
-	/* copy the end node by hand, allocate dynamic in array! */
-	ne = new_ir_node(get_irn_dbg_info(oe),
-		irg,
-		NULL,
-		op_End,
-		mode_X,
-		-1,
-		NULL);
-	/* Copy the attributes.  Well, there might be some in the future... */
-	copy_node_attr(oe, ne);
-	set_new_node(oe, ne);
-
-	/* copy the Bad node */
-	ob = get_irg_bad(irg);
-	mark_irn_visited(ob);
-	nb = new_ir_node(get_irn_dbg_info(ob),
-		irg,
-		NULL,
-		op_Bad,
-		mode_T,
-		0,
-		NULL);
-	copy_node_attr(ob, nb);
-	set_new_node(ob, nb);
-
-	/* copy the NoMem node */
-	om = get_irg_no_mem(irg);
-	mark_irn_visited(om);
-	nm = new_ir_node(get_irn_dbg_info(om),
-		irg,
-		NULL,
-		op_NoMem,
-		mode_M,
-		0,
-		NULL);
-	copy_node_attr(om, nm);
-	set_new_node(om, nm);
-
-	/* copy the live nodes */
-	set_irg_visited(irg, vfl);
-	irg_walk(get_nodes_block(oe), copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
-
-	/* Note: from yet, the visited flag of the graph is equal to vfl + 1 */
-
-	/* visit the anchors as well */
-	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
-		ir_node *n = get_irg_anchor(irg, i);
-
-		if (n && (get_irn_visited(n) <= vfl)) {
-			set_irg_visited(irg, vfl);
-			irg_walk(n, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
-		}
+		ir_node *block     = get_nodes_block(node);
+		ir_node *new_block = get_new_node(block);
+		set_nodes_block(new_node, new_block);
 	}
 
-	/* copy_preds for the end node ... */
-	set_nodes_block(ne, get_new_node(get_nodes_block(oe)));
-
-	/*- ... and now the keep alives. -*/
-	/* First pick the not marked block nodes and walk them.  We must pick these
-	   first as else we will oversee blocks reachable from Phis. */
-	irn_arity = get_End_n_keepalives(oe);
-	for (i = 0; i < irn_arity; i++) {
-		ka = get_End_keepalive(oe, i);
-		if (is_Block(ka)) {
-			if (get_irn_visited(ka) <= vfl) {
-				/* We must keep the block alive and copy everything reachable */
-				set_irg_visited(irg, vfl);
-				irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
-			}
-			add_End_keepalive(ne, get_new_node(ka));
-		}
+	arity = get_irn_arity(new_node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *in     = get_irn_n(node, i);
+		ir_node *new_in = get_new_node(in);
+		set_irn_n(new_node, i, new_in);
 	}
 
-	/* Now pick other nodes.  Here we will keep all! */
-	irn_arity = get_End_n_keepalives(oe);
-	for (i = 0; i < irn_arity; i++) {
-		ka = get_End_keepalive(oe, i);
-		if (!is_Block(ka)) {
-			if (get_irn_visited(ka) <= vfl) {
-				/* We didn't copy the node yet.  */
-				set_irg_visited(irg, vfl);
-				irg_walk(ka, copy_node, copy_preds, INT_TO_PTR(copy_node_nr));
-			}
-			add_End_keepalive(ne, get_new_node(ka));
-		}
-	}
-
-	/* start block sometimes only reached after keep alives */
-	set_nodes_block(nb, get_new_node(get_nodes_block(ob)));
-	set_nodes_block(nm, get_new_node(get_nodes_block(om)));
+	/* Now the new node is complete. We can add it to the hash table for CSE. */
+	add_identities(new_irg->value_table, new_node);
 }
 
 /**
@@ -399,10 +207,10 @@ static void copy_graph(ir_graph *irg, int copy_node_nr)
  *
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
-static void copy_graph_env(int copy_node_nr)
+static void copy_graph_env(ir_graph *irg)
 {
-	ir_graph *irg = current_ir_graph;
-	ir_node *old_end, *new_anchor;
+	ir_node  *old_end;
+	ir_node  *new_anchor;
 	ir_phase *old_ph;
 	int i;
 
@@ -418,51 +226,30 @@ static void copy_graph_env(int copy_node_nr)
 		}
 	}
 
-
 	/* remove end_except and end_reg nodes */
 	old_end = get_irg_end(irg);
-	set_irg_end_except (irg, old_end);
-	set_irg_end_reg    (irg, old_end);
+	set_irg_end_except(irg, old_end);
+	set_irg_end_reg   (irg, old_end);
 
-	/* Not all nodes remembered in irg might be reachable
-	   from the end node.  Assure their link is set to NULL, so that
-	   we can test whether new nodes have been computed. */
-	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
-		ir_node *n = get_irg_anchor(irg, i);
-		if (n != NULL)
-			set_new_node(n, NULL);
-	}
-	/* we use the block walk flag for removing Bads from Blocks ins. */
-	inc_irg_block_visited(irg);
-
-	/* copy the graph */
-	copy_graph(irg, copy_node_nr);
+	/* copy nodes */
+	irg_walk(irg->anchor, copy_node_with_number, set_preds, irg);
 
 	/* fix the anchor */
-	old_end    = get_irg_end(irg);
-	new_anchor = new_Anchor(irg);
-
-	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {
-		ir_node *n = get_irg_anchor(irg, i);
-		if (n) {
-			set_irn_n(new_anchor, i, get_new_node(n));
-		}
-	}
+	new_anchor = get_new_node(irg->anchor);
+	assert(new_anchor != NULL);
+	irg->anchor = new_anchor;
 
 	/* copy the new phases into the irg */
 	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
 		old_ph = get_irg_phase(irg, i);
-		if (old_ph != NULL) {
-			free_irg_phase(irg, i);
-			irg->phases[i] = new_phases[i];
-		}
+		if (old_ph == NULL)
+			continue;
+
+		free_irg_phase(irg, i);
+		irg->phases[i] = new_phases[i];
 	}
 
 	free_End(old_end);
-	irg->anchor = new_anchor;
-
-	/* ensure the new anchor is placed in the endblock */
-	set_nodes_block(new_anchor, get_irg_end_block(irg));
 }
 
 /**
@@ -500,10 +287,7 @@ void dead_node_elimination(ir_graph *irg)
 	free_callee_info(irg);
 	free_irg_outs(irg);
 	free_trouts();
-
-	/* @@@ so far we loose loops when copying */
 	free_loop_information(irg);
-
 	set_irg_doms_inconsistent(irg);
 
 	/* A quiet place, where the old obstack can rest in peace,
@@ -521,7 +305,7 @@ void dead_node_elimination(ir_graph *irg)
 	irg->value_table = new_identities();
 
 	/* Copy the graph from the old to the new obstack */
-	copy_graph_env(/*copy_node_nr=*/1);
+	copy_graph_env(irg);
 
 	/* Free memory from old unoptimized obstack */
 	obstack_free(graveyard_obst, 0);  /* First empty the obstack ... */
@@ -540,115 +324,6 @@ ir_graph_pass_t *dead_node_elimination_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "dce", dead_node_elimination);
 }
-
-/**
- * Relink bad predecessors of a block and store the old in array to the
- * link field. This function is called by relink_bad_predecessors().
- * The array of link field starts with the block operand at position 0.
- * If block has bad predecessors, create a new in array without bad preds.
- * Otherwise let in array untouched.
- */
-static void relink_bad_block_predecessors(ir_node *n, void *env)
-{
-	ir_node **new_in, *irn;
-	int i, new_irn_n, old_irn_arity, new_irn_arity = 0;
-	(void) env;
-
-	/* if link field of block is NULL, look for bad predecessors otherwise
-	   this is already done */
-	if (is_Block(n) && get_irn_link(n) == NULL) {
-		/* save old predecessors in link field (position 0 is the block operand)*/
-		set_irn_link(n, get_irn_in(n));
-
-		/* count predecessors without bad nodes */
-		old_irn_arity = get_irn_arity(n);
-		for (i = 0; i < old_irn_arity; i++)
-			if (!is_Bad(get_irn_n(n, i)))
-				++new_irn_arity;
-
-		/* arity changing: set new predecessors without bad nodes */
-		if (new_irn_arity < old_irn_arity) {
-			/* Get new predecessor array. We do not resize the array, as we must
-			   keep the old one to update Phis. */
-			new_in = NEW_ARR_D(ir_node *, current_ir_graph->obst, (new_irn_arity+1));
-
-			/* set new predecessors in array */
-			new_in[0] = NULL;
-			new_irn_n = 1;
-			for (i = 0; i < old_irn_arity; i++) {
-				irn = get_irn_n(n, i);
-				if (!is_Bad(irn)) {
-					new_in[new_irn_n] = irn;
-					is_backedge(n, i) ? set_backedge(n, new_irn_n-1) : set_not_backedge(n, new_irn_n-1);
-					++new_irn_n;
-				}
-			}
-			/* ARR_SETLEN(int, n->attr.block.backedge, new_irn_arity); */
-			ARR_SHRINKLEN(n->attr.block.backedge, new_irn_arity);
-			n->in = new_in;
-		} /* ir node has bad predecessors */
-	} /* Block is not relinked */
-}
-
-/**
- * Relinks Bad predecessors from Blocks and Phis called by walker
- * remove_bad_predecesors(). If n is a Block, call
- * relink_bad_block_redecessors(). If n is a Phi-node, call also the relinking
- * function of Phi's Block. If this block has bad predecessors, relink preds
- * of the Phi-node.
- */
-static void relink_bad_predecessors(ir_node *n, void *env)
-{
-	ir_node *block, **old_in;
-	int i, old_irn_arity, new_irn_arity;
-
-	/* relink bad predecessors of a block */
-	if (is_Block(n))
-		relink_bad_block_predecessors(n, env);
-
-	/* If Phi node relink its block and its predecessors */
-	if (is_Phi(n)) {
-		/* Relink predecessors of phi's block */
-		block = get_nodes_block(n);
-		if (get_irn_link(block) == NULL)
-			relink_bad_block_predecessors(block, env);
-
-		old_in = (ir_node **)get_irn_link(block); /* Of Phi's Block */
-		old_irn_arity = ARR_LEN(old_in);
-
-		/* Relink Phi predecessors if count of predecessors changed */
-		if (old_irn_arity != ARR_LEN(get_irn_in(block))) {
-			/* set new predecessors in array
-			   n->in[0] remains the same block */
-			new_irn_arity = 1;
-			for (i = 1; i < old_irn_arity; i++)
-				if (!is_Bad(old_in[i])) {
-					n->in[new_irn_arity] = n->in[i];
-					is_backedge(n, i) ? set_backedge(n, new_irn_arity) : set_not_backedge(n, new_irn_arity);
-					++new_irn_arity;
-				}
-
-				ARR_SETLEN(ir_node *, n->in, new_irn_arity);
-				ARR_SETLEN(int, n->attr.phi.u.backedge, new_irn_arity);
-		}
-	} /* n is a Phi node */
-}
-
-/*
- * Removes Bad Bad predecessors from Blocks and the corresponding
- * inputs to Phi nodes as in dead_node_elimination but without
- * copying the graph.
- * On walking up set the link field to NULL, on walking down call
- * relink_bad_predecessors() (This function stores the old in array
- * to the link field and sets a new in array if arity of predecessors
- * changes).
- */
-void remove_bad_predecessors(ir_graph *irg)
-{
-	panic("Fix backedge handling first");
-	irg_walk_graph(irg, firm_clear_link, relink_bad_predecessors, NULL);
-}
-
 
 /*
    __                      _  __ __
@@ -778,44 +453,40 @@ void survive_dce_register_irn(survive_dce_t *sd, ir_node **place)
  * inlined procedure. The new entities must be in the link field of
  * the entities.
  */
-static void copy_node_inline(ir_node *n, void *env)
+static void copy_node_inline(ir_node *node, void *env)
 {
-	ir_node *nn;
-	ir_type *frame_tp = (ir_type *)env;
+	ir_graph *new_irg = (ir_graph*) env;
+	ir_node  *new_node;
 
-	copy_node(n, NULL);
-	if (is_Sel(n)) {
-		nn = get_new_node(n);
-		assert(is_Sel(nn));
+	new_node = copy_node(node, new_irg);
+	if (is_Sel(node)) {
+		ir_graph  *old_irg        = get_irn_irg(node);
+		ir_type   *old_frame_type = get_irg_frame_type(old_irg);
+		ir_entity *old_entity     = get_Sel_entity(node);
+		assert(is_Sel(new_node));
 		/* use copied entities from the new frame */
-		if (get_entity_owner(get_Sel_entity(n)) == frame_tp) {
-			set_Sel_entity(nn, get_entity_link(get_Sel_entity(n)));
+		if (get_entity_owner(old_entity) == old_frame_type) {
+			ir_entity *new_entity = get_entity_link(old_entity);
+			assert(new_entity != NULL);
+			set_Sel_entity(new_node, new_entity);
 		}
-	} else if (is_Block(n)) {
-		nn = get_new_node(n);
-		nn->attr.block.irg.irg = current_ir_graph;
+	} else if (is_Block(new_node)) {
+		new_node->attr.block.irg.irg = new_irg;
 	}
 }
 
-/**
- * Copies new predecessors of old node and move constants to
- * the Start Block.
- */
-static void copy_preds_inline(ir_node *n, void *env)
+static void set_preds_inline(ir_node *node, void *env)
 {
-	ir_node *nn;
+	ir_node *new_node;
 
-	copy_preds(n, env);
-	nn = skip_Id(get_new_node(n));
-	if (is_irn_constlike(nn)) {
-		/* move Constants into the start block */
-		set_nodes_block(nn, get_irg_start_block(current_ir_graph));
+	set_preds(node, env);
 
-		n = identify_remember(current_ir_graph->value_table, nn);
-		if (nn != n) {
-			DBG_OPT_CSE(nn, n);
-			exchange(nn, n);
-		}
+	/* move constants into start block */
+	new_node = get_new_node(node);
+	if (is_irn_constlike(new_node)) {
+		ir_graph *new_irg     = (ir_graph *) env;
+		ir_node  *start_block = get_irg_start_block(new_irg);
+		set_nodes_block(new_node, start_block);
 	}
 }
 
@@ -824,7 +495,8 @@ static void copy_preds_inline(ir_node *n, void *env)
  */
 static void find_addr(ir_node *node, void *env)
 {
-	int *allow_inline = env;
+	bool *allow_inline = env;
+
 	if (is_Sel(node)) {
 		ir_graph *irg = current_ir_graph;
 		if (get_Sel_ptr(node) == get_irg_frame(irg)) {
@@ -832,7 +504,7 @@ static void find_addr(ir_node *node, void *env)
 			ir_entity *ent = get_Sel_entity(node);
 			if (get_entity_owner(ent) != get_irg_frame_type(irg)) {
 				/* access to value_type */
-				*allow_inline = 0;
+				*allow_inline = false;
 			}
 		}
 	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
@@ -843,14 +515,16 @@ static void find_addr(ir_node *node, void *env)
 		 * into schedule_block cause it to require 2GB of ram instead of 256MB.
 		 *
 		 * Sorrily this is true with our implementation also.
-		 * Moreover, we cannot differentiate between alloca() and VLA yet, so this
-		 * disables inlining of functions using VLA (with are completely save).
+		 * Moreover, we cannot differentiate between alloca() and VLA yet, so
+		 * this disables inlining of functions using VLA (which are completely
+		 * save).
 		 *
 		 * 2 Solutions:
 		 * - add a flag to the Alloc node for "real" alloca() calls
-		 * - add a new Stack-Restore node at the end of a function using alloca()
+		 * - add a new Stack-Restore node at the end of a function using
+		 *   alloca()
 		 */
-		*allow_inline = 0;
+		*allow_inline = false;
 	}
 }
 
@@ -862,32 +536,86 @@ static void find_addr(ir_node *node, void *env)
  *
  * check these conditions here
  */
-static int can_inline(ir_node *call, ir_graph *called_graph)
+static bool can_inline(ir_node *call, ir_graph *called_graph)
 {
-	ir_type *call_type = get_Call_type(call);
-	int params, ress, i, res;
-	assert(is_Method_type(call_type));
+	ir_entity          *called      = get_irg_entity(called_graph);
+	ir_type            *called_type = get_entity_type(called);
+	ir_type            *call_type   = get_Call_type(call);
+	int                 n_params    = get_method_n_params(called_type);
+	int                 n_arguments = get_method_n_params(call_type);
+	int                 n_res       = get_method_n_ress(called_type);
+	irg_inline_property prop        = get_irg_inline_property(called_graph);
+	int                 i;
+	bool                res;
 
-	params = get_method_n_params(call_type);
-	ress   = get_method_n_ress(call_type);
+	if (prop == irg_inline_forbidden)
+		return false;
+
+	if (n_arguments != n_params) {
+		/* this is a bad feature of C: without a prototype, we can
+		 * call a function with less parameters than needed. Currently
+		 * we don't support this, although we could use Unknown than. */
+		return false;
+	}
+	if (n_res != get_method_n_ress(call_type)) {
+		return false;
+	}
+
+	/* Argh, compiling C has some bad consequences:
+	 * It is implementation dependent what happens in that case.
+	 * We support inlining, if the bitsize of the types matches AND
+	 * the same arithmetic is used. */
+	for (i = n_params - 1; i >= 0; --i) {
+		ir_type *param_tp = get_method_param_type(called_type, i);
+		ir_type *arg_tp   = get_method_param_type(call_type, i);
+
+		if (param_tp != arg_tp) {
+			ir_mode *pmode = get_type_mode(param_tp);
+			ir_mode *amode = get_type_mode(arg_tp);
+
+			if (pmode == NULL || amode == NULL)
+				return false;
+			if (get_mode_size_bits(pmode) != get_mode_size_bits(amode))
+				return false;
+			if (get_mode_arithmetic(pmode) != get_mode_arithmetic(amode))
+				return false;
+			/* otherwise we can simply "reinterpret" the bits */
+		}
+	}
+	for (i = n_res - 1; i >= 0; --i) {
+		ir_type *decl_res_tp = get_method_res_type(called_type, i);
+		ir_type *used_res_tp = get_method_res_type(call_type, i);
+
+		if (decl_res_tp != used_res_tp) {
+			ir_mode *decl_mode = get_type_mode(decl_res_tp);
+			ir_mode *used_mode = get_type_mode(used_res_tp);
+			if (decl_mode == NULL || used_mode == NULL)
+				return false;
+			if (get_mode_size_bits(decl_mode) != get_mode_size_bits(used_mode))
+				return false;
+			if (get_mode_arithmetic(decl_mode) != get_mode_arithmetic(used_mode))
+				return false;
+			/* otherwise we can "reinterpret" the bits */
+		}
+	}
 
 	/* check parameters for compound arguments */
-	for (i = 0; i < params; ++i) {
+	for (i = 0; i < n_params; ++i) {
 		ir_type *p_type = get_method_param_type(call_type, i);
 
 		if (is_compound_type(p_type))
-			return 0;
+			return false;
 	}
 
 	/* check results for compound arguments */
-	for (i = 0; i < ress; ++i) {
+	for (i = 0; i < n_res; ++i) {
 		ir_type *r_type = get_method_res_type(call_type, i);
 
 		if (is_compound_type(r_type))
-			return 0;
+			return false;
 	}
 
-	res = 1;
+	res = true;
 	irg_walk_graph(called_graph, find_addr, NULL, &res);
 
 	return res;
@@ -898,106 +626,67 @@ enum exc_mode {
 	exc_no_handler  /**< Exception handling not represented. */
 };
 
+/**
+ * copy all entities on the stack frame on 1 irg to the stackframe of another.
+ * Sets entity links of the old entities to the copies
+ */
+static void copy_frame_entities(ir_graph *from, ir_graph *to)
+{
+	ir_type *from_frame = get_irg_frame_type(from);
+	ir_type *to_frame   = get_irg_frame_type(to);
+	int      n_members  = get_class_n_members(from_frame);
+	int      i;
+	assert(from_frame != to_frame);
+
+	for (i = 0; i < n_members; ++i) {
+		ir_entity *old_ent = get_class_member(from_frame, i);
+		ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
+		set_entity_link(old_ent, new_ent);
+	}
+}
+
 /* Inlines a method at the given call site. */
 int inline_method(ir_node *call, ir_graph *called_graph)
 {
-	ir_node             *pre_call;
-	ir_node             *post_call, *post_bl;
-	ir_node             *in[pn_Start_max];
-	ir_node             *end, *end_bl, *block;
-	ir_node             **res_pred;
-	ir_node             **cf_pred;
-	ir_node             **args_in;
-	ir_node             *ret, *phi;
-	int                 arity, n_ret, n_exc, n_res, i, n, j, rem_opt, irn_arity, n_params;
-	int                 n_mem_phi;
-	enum exc_mode       exc_handling;
-	ir_type             *called_frame, *curr_frame, *mtp, *ctp;
-	ir_entity           *ent;
-	ir_graph            *rem, *irg;
-	irg_inline_property prop = get_irg_inline_property(called_graph);
-	unsigned long       visited;
+	ir_node       *pre_call;
+	ir_node       *post_call, *post_bl;
+	ir_node       *in[pn_Start_max];
+	ir_node       *end, *end_bl, *block;
+	ir_node       **res_pred;
+	ir_node       **cf_pred;
+	ir_node       **args_in;
+	ir_node       *ret, *phi;
+	int           arity, n_ret, n_exc, n_res, i, j, rem_opt;
+	int           irn_arity, n_params;
+	int           n_mem_phi;
+	enum exc_mode exc_handling;
+	ir_type       *mtp;
+	ir_type       *ctp;
+	ir_entity     *ent;
+	ir_graph      *rem;
+	ir_graph      *irg = get_irn_irg(call);
 
-	if (prop == irg_inline_forbidden)
+	/* we cannot inline some types of calls */
+	if (! can_inline(call, called_graph))
 		return 0;
 
-	ent = get_irg_entity(called_graph);
-
-	mtp = get_entity_type(ent);
-	ctp = get_Call_type(call);
-	n_params = get_method_n_params(mtp);
-	n_res    = get_method_n_ress(mtp);
-	if (n_params > get_method_n_params(ctp)) {
-		/* this is a bad feature of C: without a prototype, we can
-		 * call a function with less parameters than needed. Currently
-		 * we don't support this, although we could use Unknown than. */
-		return 0;
-	}
-	if (n_res != get_method_n_ress(ctp)) {
-		return 0;
-	}
-
-	/* Argh, compiling C has some bad consequences:
-	 * It is implementation dependent what happens in that case.
-	 * We support inlining, if the bitsize of the types matches AND
-	 * the same arithmetic is used. */
-	for (i = n_params - 1; i >= 0; --i) {
-		ir_type *param_tp = get_method_param_type(mtp, i);
-		ir_type *arg_tp   = get_method_param_type(ctp, i);
-
-		if (param_tp != arg_tp) {
-			ir_mode *pmode = get_type_mode(param_tp);
-			ir_mode *amode = get_type_mode(arg_tp);
-
-			if (pmode == NULL || amode == NULL)
-				return 0;
-			if (get_mode_size_bits(pmode) != get_mode_size_bits(amode))
-				return 0;
-			if (get_mode_arithmetic(pmode) != get_mode_arithmetic(amode))
-				return 0;
-			/* otherwise we can simply "reinterpret" the bits */
-		}
-	}
-	for (i = n_res - 1; i >= 0; --i) {
-		ir_type *decl_res_tp = get_method_res_type(mtp, i);
-		ir_type *used_res_tp = get_method_res_type(ctp, i);
-
-		if (decl_res_tp != used_res_tp) {
-			ir_mode *decl_mode = get_type_mode(decl_res_tp);
-			ir_mode *used_mode = get_type_mode(used_res_tp);
-			if (decl_mode == NULL || used_mode == NULL)
-				return 0;
-			if (get_mode_size_bits(decl_mode) != get_mode_size_bits(used_mode))
-				return 0;
-			if (get_mode_arithmetic(decl_mode) != get_mode_arithmetic(used_mode))
-				return 0;
-			/* otherwise we can "reinterpret" the bits */
-		}
-	}
-
-	irg = get_irn_irg(call);
-
-	/*
-	 * We cannot inline a recursive call. The graph must be copied before
-	 * the call the inline_method() using create_irg_copy().
-	 */
+	/* We cannot inline a recursive call. The graph must be copied before
+	 * the call the inline_method() using create_irg_copy(). */
 	if (called_graph == irg)
 		return 0;
 
-	/*
-	 * currently, we cannot inline two cases:
-	 * - call with compound arguments
-	 * - graphs that take the address of a parameter
-	 */
-	if (! can_inline(call, called_graph))
-		return 0;
+	ent      = get_irg_entity(called_graph);
+	mtp      = get_entity_type(ent);
+	ctp      = get_Call_type(call);
+	n_params = get_method_n_params(mtp);
+	n_res    = get_method_n_ress(mtp);
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
 
 	DB((dbg, LEVEL_1, "Inlining %+F(%+F) into %+F\n", call, called_graph, irg));
 
-	/* --  Turn off optimizations, this can cause problems when allocating new nodes. -- */
+	/* optimizations can cause problems when allocating new nodes */
 	rem_opt = get_opt_optimize();
 	set_optimize(0);
 
@@ -1011,9 +700,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	set_irg_loopinfo_inconsistent(irg);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 	set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-
-	/* -- Check preconditions -- */
-	assert(is_Call(call));
+	edges_deactivate(irg);
 
 	/* here we know we WILL inline, so inform the statistics */
 	hook_inline(call, called_graph);
@@ -1034,7 +721,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	}
 
 	/* create the argument tuple */
-	NEW_ARR_A(ir_type *, args_in, n_params);
+	args_in = ALLOCAN(ir_node*, n_params);
 
 	block = get_nodes_block(call);
 	for (i = n_params - 1; i >= 0; --i) {
@@ -1048,19 +735,17 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		args_in[i] = arg;
 	}
 
-	/* --
-	   the procedure and later replaces the Start node of the called graph.
-	   Post_call is the old Call node and collects the results of the called
-	   graph. Both will end up being a tuple.  -- */
+	/* the procedure and later replaces the Start node of the called graph.
+	 * Post_call is the old Call node and collects the results of the called
+	 * graph. Both will end up being a tuple. */
 	post_bl = get_nodes_block(call);
-	set_irg_current_block(irg, post_bl);
 	/* XxMxPxPxPxT of Start + parameter of Call */
-	in[pn_Start_X_initial_exec]   = new_Jmp();
-	in[pn_Start_M]                = get_Call_mem(call);
-	in[pn_Start_P_frame_base]     = get_irg_frame(irg);
-	in[pn_Start_P_tls]            = get_irg_tls(irg);
-	in[pn_Start_T_args]           = new_Tuple(n_params, args_in);
-	pre_call = new_Tuple(pn_Start_max, in);
+	in[pn_Start_M]              = get_Call_mem(call);
+	in[pn_Start_X_initial_exec] = new_r_Jmp(post_bl);
+	in[pn_Start_P_frame_base]   = get_irg_frame(irg);
+	in[pn_Start_P_tls]          = get_irg_tls(irg);
+	in[pn_Start_T_args]         = new_r_Tuple(post_bl, n_params, args_in);
+	pre_call = new_r_Tuple(post_bl, pn_Start_max, in);
 	post_call = call;
 
 	/* --
@@ -1068,63 +753,49 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	   predecessors and all Phi nodes. -- */
 	part_block(pre_call);
 
-	/* -- Prepare state for dead node elimination -- */
-	/* Visited flags in calling irg must be >= flag in called irg.
-	   Else walker and arity computation will not work. */
-	if (get_irg_visited(irg) <= get_irg_visited(called_graph))
-		set_irg_visited(irg, get_irg_visited(called_graph) + 1);
-	if (get_irg_block_visited(irg) < get_irg_block_visited(called_graph))
-		set_irg_block_visited(irg, get_irg_block_visited(called_graph));
-	visited = get_irg_visited(irg);
+	/* increment visited flag for later walk */
+	inc_irg_visited(called_graph);
 
-	/* Set pre_call as new Start node in link field of the start node of
-	   calling graph and pre_calls block as new block for the start block
-	   of calling graph.
-	   Further mark these nodes so that they are not visited by the
-	   copying. */
-	set_irn_link(get_irg_start(called_graph), pre_call);
-	set_irn_visited(get_irg_start(called_graph), visited);
-	set_irn_link(get_irg_start_block(called_graph), get_nodes_block(pre_call));
-	set_irn_visited(get_irg_start_block(called_graph), visited);
+	/* link some nodes to nodes in the current graph so instead of copying
+	 * the linked nodes will get used.
+	 * So the copier will use the created Tuple instead of copying the start
+	 * node, similar for singleton nodes like NoMem and Bad.
+	 * Note: this will prohibit predecessors to be copied - only do it for
+	 *       nodes without predecessors */
+	{
+		ir_node *start_block;
+		ir_node *start;
+		ir_node *bad;
+		ir_node *nomem;
 
-	set_irn_link(get_irg_bad(called_graph), get_irg_bad(current_ir_graph));
-	set_irn_visited(get_irg_bad(called_graph), visited);
+		start_block = get_irg_start_block(called_graph);
+		set_new_node(start_block, get_nodes_block(pre_call));
+		mark_irn_visited(start_block);
 
-	set_irn_link(get_irg_no_mem(called_graph), get_irg_no_mem(current_ir_graph));
-	set_irn_visited(get_irg_no_mem(called_graph), visited);
+		start = get_irg_start(called_graph);
+		set_new_node(start, pre_call);
+		mark_irn_visited(start);
 
-	/* Initialize for compaction of in arrays */
-	inc_irg_block_visited(irg);
+		bad = get_irg_bad(called_graph);
+		set_new_node(bad, get_irg_bad(irg));
+		mark_irn_visited(bad);
 
-	/* -- Replicate local entities of the called_graph -- */
-	/* copy the entities. */
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
-	called_frame = get_irg_frame_type(called_graph);
-	curr_frame   = get_irg_frame_type(irg);
-	for (i = 0, n = get_class_n_members(called_frame); i < n; ++i) {
-		ir_entity *new_ent, *old_ent;
-		old_ent = get_class_member(called_frame, i);
-		new_ent = copy_entity_own(old_ent, curr_frame);
-		set_entity_link(old_ent, new_ent);
+		nomem = get_irg_no_mem(called_graph);
+		set_new_node(nomem, get_irg_no_mem(irg));
+		mark_irn_visited(nomem);
 	}
 
-	/* visited is > than that of called graph.  With this trick visited will
-	   remain unchanged so that an outer walker, e.g., searching the call nodes
-	    to inline, calling this inline will not visit the inlined nodes. */
-	set_irg_visited(irg, get_irg_visited(irg)-1);
+	/* entitiy link is used to link entities on old stackframe to the
+	 * new stackframe */
+	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
-	/* -- Performing dead node elimination inlines the graph -- */
-	/* Copies the nodes to the obstack of current_ir_graph. Updates links to new
-	   entities. */
-	irg_walk(get_irg_end(called_graph), copy_node_inline, copy_preds_inline,
-	         get_irg_frame_type(called_graph));
+	/* copy entities and nodes */
+	assert(!irn_visited(get_irg_end(called_graph)));
+	copy_frame_entities(called_graph, irg);
+	irg_walk_core(get_irg_end(called_graph), copy_node_inline, set_preds_inline,
+	              irg);
 
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
-
-	/* Repair called_graph */
-	set_irg_visited(called_graph, get_irg_visited(irg));
-	set_irg_block_visited(called_graph, get_irg_block_visited(irg));
-	set_Block_block_visited(get_irg_start_block(called_graph), 0);
 
 	/* -- Merge the end of the inlined procedure with the call site -- */
 	/* We will turn the old Call node into a Tuple with the following
@@ -1140,18 +811,16 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	   memories.
 	*/
 
-	/* -- Precompute some values -- */
+	/* Precompute some values */
 	end_bl = get_new_node(get_irg_end_block(called_graph));
-	end = get_new_node(get_irg_end(called_graph));
-	arity = get_Block_n_cfgpreds(end_bl);    /* arity = n_exc + n_ret  */
-	n_res = get_method_n_ress(get_Call_type(call));
+	end    = get_new_node(get_irg_end(called_graph));
+	arity  = get_Block_n_cfgpreds(end_bl);    /* arity = n_exc + n_ret  */
+	n_res  = get_method_n_ress(get_Call_type(call));
 
 	res_pred = XMALLOCN(ir_node*, n_res);
 	cf_pred  = XMALLOCN(ir_node*, arity);
 
-	set_irg_current_block(irg, post_bl); /* just to make sure */
-
-	/* -- archive keepalives -- */
+	/* archive keepalives */
 	irn_arity = get_irn_arity(end);
 	for (i = 0; i < irn_arity; i++) {
 		ir_node *ka = get_End_keepalive(end, i);
@@ -1159,23 +828,21 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 			add_End_keepalive(get_irg_end(irg), ka);
 	}
 
-	/* The new end node will die.  We need not free as the in array is on the obstack:
-	   copy_node() only generated 'D' arrays. */
-
-	/* -- Replace Return nodes by Jump nodes. -- */
+	/* replace Return nodes by Jump nodes */
 	n_ret = 0;
 	for (i = 0; i < arity; i++) {
 		ir_node *ret;
 		ret = get_Block_cfgpred(end_bl, i);
 		if (is_Return(ret)) {
-			cf_pred[n_ret] = new_r_Jmp(get_nodes_block(ret));
+			ir_node *block = get_nodes_block(ret);
+			cf_pred[n_ret] = new_r_Jmp(block);
 			n_ret++;
 		}
 	}
 	set_irn_in(post_bl, n_ret, cf_pred);
 
-	/* -- Build a Tuple for all results of the method.
-	   Add Phi node if there was more than one Return.  -- */
+	/* build a Tuple for all results of the method.
+	 * add Phi node if there was more than one Return. */
 	turn_into_tuple(post_call, pn_Call_max);
 	/* First the Memory-Phi */
 	n_mem_phi = 0;
@@ -1194,7 +861,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 			cf_pred[n_mem_phi++] = new_r_Proj(ret, mode_M, 1);
 		}
 	}
-	phi = new_Phi(n_mem_phi, cf_pred, mode_M);
+	phi = new_r_Phi(post_bl, n_mem_phi, cf_pred, mode_M);
 	set_Tuple_pred(call, pn_Call_M, phi);
 	/* Conserve Phi-list for further inlinings -- but might be optimized */
 	if (get_nodes_block(phi) == post_bl) {
@@ -1203,6 +870,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	}
 	/* Now the real results */
 	if (n_res > 0) {
+		ir_node *result_tuple;
 		for (j = 0; j < n_res; j++) {
 			ir_type *res_type = get_method_res_type(ctp, j);
 			ir_mode *res_mode = get_type_mode(res_type);
@@ -1219,10 +887,12 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 					n_ret++;
 				}
 			}
-			if (n_ret > 0)
-				phi = new_Phi(n_ret, cf_pred, get_irn_mode(cf_pred[0]));
-			else
-				phi = new_Bad();
+			if (n_ret > 0) {
+				ir_mode *mode = get_irn_mode(cf_pred[0]);
+				phi = new_r_Phi(post_bl, n_ret, cf_pred, mode);
+			} else {
+				phi = new_r_Bad(irg);
+			}
 			res_pred[j] = phi;
 			/* Conserve Phi-list for further inlinings -- but might be optimized */
 			if (get_nodes_block(phi) == post_bl) {
@@ -1230,15 +900,16 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				set_Block_phis(post_bl, phi);
 			}
 		}
-		set_Tuple_pred(call, pn_Call_T_result, new_Tuple(n_res, res_pred));
+		result_tuple = new_r_Tuple(post_bl, n_res, res_pred);
+		set_Tuple_pred(call, pn_Call_T_result, result_tuple);
 	} else {
-		set_Tuple_pred(call, pn_Call_T_result, new_Bad());
+		set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg));
 	}
 	/* handle the regular call */
-	set_Tuple_pred(call, pn_Call_X_regular, new_Jmp());
+	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(post_bl));
 
 	/* For now, we cannot inline calls with value_base */
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+	set_Tuple_pred(call, pn_Call_P_value_res_base, new_r_Bad(irg));
 
 	/* Finally the exception control flow.
 	   We have two possible situations:
@@ -1267,12 +938,11 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				/* simple fix */
 				set_Tuple_pred(call, pn_Call_X_except, cf_pred[0]);
 			} else {
-				ir_node *block = new_Block(n_exc, cf_pred);
-				set_cur_block(block);
-				set_Tuple_pred(call, pn_Call_X_except, new_Jmp());
+				ir_node *block = new_r_Block(irg, n_exc, cf_pred);
+				set_Tuple_pred(call, pn_Call_X_except, new_r_Jmp(block));
 			}
 		} else {
-			set_Tuple_pred(call, pn_Call_X_except, new_Bad());
+			set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
 		}
 	} else {
 		ir_node *main_end_bl;
@@ -1299,7 +969,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		for (i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-		set_Tuple_pred(call, pn_Call_X_except, new_Bad());
+		set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
 		free(end_preds);
 	}
 	free(res_pred);

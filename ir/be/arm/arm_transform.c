@@ -1501,7 +1501,7 @@ static ir_node *gen_Phi(ir_node *node)
 	 * and fix this later */
 	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node),
 	                  get_irn_in(node) + 1);
-	copy_node_attr(node, phi);
+	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
 
 	arch_set_out_register_req(phi, 0, req);

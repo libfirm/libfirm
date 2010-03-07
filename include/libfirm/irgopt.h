@@ -116,18 +116,6 @@ void free_survive_dce(survive_dce_t *sd);
  */
 void survive_dce_register_irn(survive_dce_t *sd, ir_node **place);
 
-/**  Cleans the control flow from Bad predecessors.
- *
- * Removes Bad predecessors from Blocks and the corresponding
- * inputs to Phi nodes as in dead_node_elimination but without
- * copying the graph.
- *
- * Conserves loop information.
- *
- * @param irg  The graph to be optimized.
- */
-void remove_bad_predecessors(ir_graph *irg);
-
 /** Inlines a method at the given call site.
  *
  *  Removes the call node and splits the basic block the call node

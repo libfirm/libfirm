@@ -401,7 +401,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		get_irn_in(node));
 	/* We need the attribute copy here, because the Hash value of a
 	   node might depend on that. */
-	copy_node_attr(node, nn);
+	copy_node_attr(current_ir_graph, node, nn);
 
 	set_nodes_block(nn, get_nodes_block(node));
 	for (i = 0; i < arity; ++i) {
@@ -660,7 +660,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 								mode,
 								get_irn_arity(pred),
 								get_irn_in(pred) + 1);
-							copy_node_attr(pred, nn);
+							copy_node_attr(current_ir_graph, pred, nn);
 
 							DB((dbg, LEVEL_1, "New node %+F in block %+F created\n", nn, pred_blk));
 							proj_pred = nn;
@@ -673,7 +673,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 							mode,
 							get_irn_arity(e_prime),
 							get_irn_in(e_prime) + 1);
-						copy_node_attr(e_prime, nn);
+						copy_node_attr(current_ir_graph, e_prime, nn);
 						if (proj_pred != NULL) {
 							set_Proj_pred(nn, proj_pred);
 						}

@@ -512,7 +512,7 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
 	int i;
 
 	assert(is_Block(bl));
-	if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
+	if (Block_block_visited(bl))
 	  return;
 	mark_Block_block_visited(bl);
 	set_Block_dom_pre_num(bl, *used);
@@ -649,46 +649,11 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env)
  */
 static int init_construction(ir_graph *irg, irg_walk_func *pre)
 {
-	ir_graph *rem = current_ir_graph;
-	ir_node *end;
-	int arity;
 	int n_blocks = 0;
 
-	current_ir_graph = irg;
-
 	/* this visits only the reachable blocks */
-	irg_block_walk(get_irg_end_block(irg), pre, NULL, &n_blocks);
+	irg_block_walk_graph(irg, pre, NULL, &n_blocks);
 
-	/* now visit the unreachable (from End) Blocks and remove unnecessary keep-alives */
-	end   = get_irg_end(irg);
-	arity = get_End_n_keepalives(end);
-	if (arity) {    /* we have keep-alives */
-		ir_node **in;
-		int i, j;
-
-		NEW_ARR_A(ir_node *, in, arity);
-		for (i = j = 0; i < arity; i++) {
-			ir_node *pred = get_End_keepalive(end, i);
-
-			if (!is_Block(pred)) {
-				pred = get_nodes_block(pred);
-				if (!is_Block(pred)) {
-					/* a node which has a bad block input: kill it */
-					continue;
-				}
-			}
-			dec_irg_block_visited(irg);
-			irg_block_walk(pred, pre, NULL, &n_blocks);
-			in[j++] = pred;
-		}
-		if (j != arity) {
-			/* we kill some keep-alives */
-			set_End_keepalives(end, j, in);
-			set_irg_outs_inconsistent(irg);
-		}
-	}
-
-	current_ir_graph = rem;
 	return n_blocks;
 }
 

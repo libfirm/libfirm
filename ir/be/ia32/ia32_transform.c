@@ -3981,7 +3981,7 @@ static ir_node *gen_be_Return(ir_node *node)
 	new_barrier = new_ir_node(dbgi, irg, block,
 	                          get_irn_op(barrier), get_irn_mode(barrier),
 	                          arity, in);
-	copy_node_attr(barrier, new_barrier);
+	copy_node_attr(irg, barrier, new_barrier);
 	be_duplicate_deps(barrier, new_barrier);
 	be_set_transformed_node(barrier, new_barrier);
 
@@ -4047,7 +4047,7 @@ static ir_node *gen_Phi(ir_node *node)
 	 * and fix this later */
 	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node),
 	                  get_irn_in(node) + 1);
-	copy_node_attr(node, phi);
+	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
 
 	arch_set_out_register_req(phi, 0, req);

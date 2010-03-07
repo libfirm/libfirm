@@ -137,12 +137,13 @@ static inline void _set_irn_op(ir_node *node, ir_op *op)
 
 /** Copies all attributes stored in the old node  to the new node.
     Assumes both have the same opcode and sufficient size. */
-static inline void _copy_node_attr(const ir_node *old_node, ir_node *new_node)
+static inline void _copy_node_attr(ir_graph *irg, const ir_node *old_node,
+                                   ir_node *new_node)
 {
 	ir_op *op = _get_irn_op(old_node);
 
 	/* must always exist */
-	op->ops.copy_attr(old_node, new_node);
+	op->ops.copy_attr(irg, old_node, new_node);
 }
 
 /**
@@ -308,6 +309,20 @@ static inline void _set_irn_mode(ir_node *node, ir_mode *mode)
 	node->mode = mode;
 }
 
+static inline ir_graph *_get_irn_irg(const ir_node *node)
+{
+	/*
+	 * Do not use get_nodes_Block() here, because this
+	 * will check the pinned state.
+	 * However even a 'wrong' block is always in the proper
+	 * irg.
+	 */
+	if (! is_Block(node))
+		node = get_irn_n(node, -1);
+	/* note that get_Block_irg() can handle Bad nodes */
+	return get_Block_irg(node);
+}
+
 /**
  * Gets the visited counter of a node.
  * Intern version for libFirm.
@@ -334,8 +349,7 @@ static inline void _set_irn_visited(ir_node *node, ir_visited_t visited)
  */
 static inline void _mark_irn_visited(ir_node *node)
 {
-	assert(node);
-	node->visited = current_ir_graph->visited;
+	node->visited = get_irn_irg(node)->visited;
 }
 
 /**
@@ -344,8 +358,8 @@ static inline void _mark_irn_visited(ir_node *node)
  */
 static inline int _irn_visited(const ir_node *node)
 {
-	assert(node);
-	return (node->visited >= current_ir_graph->visited);
+	ir_graph *irg = get_irn_irg(node);
+	return node->visited >= irg->visited;
 }
 
 static inline int _irn_visited_else_mark(ir_node *node)
@@ -503,14 +517,14 @@ static inline void _set_Block_block_visited(ir_node *node, ir_visited_t visit)
 /* For this current_ir_graph must be set. */
 static inline void _mark_Block_block_visited(ir_node *node)
 {
-	assert(node->op == op_Block);
-	node->attr.block.block_visited = get_irg_block_visited(current_ir_graph);
+	ir_graph *irg = get_Block_irg(node);
+	node->attr.block.block_visited = get_irg_block_visited(irg);
 }
 
 static inline int _Block_block_visited(const ir_node *node)
 {
-	assert(node->op == op_Block);
-	return (node->attr.block.block_visited >= get_irg_block_visited(current_ir_graph));
+	ir_graph *irg = get_Block_irg(node);
+	return node->attr.block.block_visited >= get_irg_block_visited(irg);
 }
 
 static inline ir_node *_set_Block_dead(ir_node *block)
@@ -716,6 +730,7 @@ static inline int _is_arg_Proj(const ir_node *node)
 #define get_irn_n(node, n)                    _get_irn_n(node, n)
 #define get_irn_mode(node)                    _get_irn_mode(node)
 #define set_irn_mode(node, mode)              _set_irn_mode(node, mode)
+#define get_irn_irg(node)                     _get_irn_irg(node)
 #define get_irn_op(node)                      _get_irn_op(node)
 #define set_irn_op(node, op)                  _set_irn_op(node, op)
 #define get_irn_opcode(node)                  _get_irn_opcode(node)
@@ -750,7 +765,7 @@ static inline int _is_arg_Proj(const ir_node *node)
 #define is_Const_one(node)                    _is_Const_one(node)
 #define is_Const_all_one(node)                _is_Const_all_one(node)
 #define is_irn_forking(node)                  _is_irn_forking(node)
-#define copy_node_attr(oldn,newn)             _copy_node_attr(oldn,newn)
+#define copy_node_attr(irg,oldn,newn)         _copy_node_attr(irg,oldn,newn)
 #define get_irn_type(node)                    _get_irn_type(node)
 #define get_irn_type_attr(node)               _get_irn_type_attr(node)
 #define get_irn_entity_attr(node)             _get_irn_entity_attr(node)

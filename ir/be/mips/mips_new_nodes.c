@@ -257,9 +257,9 @@ static int mips_compare_load_store_attr(ir_node *node_a, ir_node *node_b)
 	return 0;
 }
 
-static void mips_copy_attr(const ir_node *old_node , ir_node *new_node)
+static void mips_copy_attr(ir_graph *irg, const ir_node *old_node,
+                           ir_node *new_node)
 {
-	ir_graph          *irg      = get_irn_irg(new_node);
 	struct obstack    *obst     = get_irg_obstack(irg);
 	const mips_attr_t *attr_old = get_mips_attr_const(old_node);
 	mips_attr_t       *attr_new = get_mips_attr(new_node);

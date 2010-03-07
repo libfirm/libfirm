@@ -53,7 +53,15 @@
  * @param env   environment, passed to pre and post
  *
  */
-void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
+void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+              void *env);
+
+/**
+ * core walker function. Does NOT touch current_ir_graph and does not call
+ * inc_irg_visited before walking
+ */
+void irg_walk_core(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                   void *env);
 
 /**
  * Walks over all reachable nodes in the ir graph.

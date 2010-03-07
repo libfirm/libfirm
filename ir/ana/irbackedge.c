@@ -225,21 +225,3 @@ unsigned *new_backedge_arr(struct obstack *obst, unsigned size)
 {
 	return rbitset_w_size_obstack_alloc(obst, size);
 }
-
-/* TODO: add an ir_op operation */
-void new_backedge_info(ir_node *n)
-{
-	switch (get_irn_opcode(n)) {
-	case iro_Block:
-		n->attr.block.cg_backedge = NULL;
-		n->attr.block.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-		break;
-	case iro_Phi:
-		n->attr.phi.u.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-		break;
-	case iro_Filter:
-		n->attr.filter.backedge = new_backedge_arr(current_ir_graph->obst, get_irn_arity(n));
-		break;
-	default: ;
-	}
-}
