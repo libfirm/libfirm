@@ -192,11 +192,20 @@ int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 			n = skip_Cast(get_Sel_ptr(n));
 		}
 	}
+	while (1) {
+		if (is_Cast(n)) { n = get_Cast_op(n); continue; }
+		if (is_Proj(n)) { n = get_Proj_pred(n); continue; }
+		break;
+	}
+
 	if (is_Global(n)) {
 		/* global references are never NULL */
 		return 1;
 	} else if (n == get_irg_frame(current_ir_graph)) {
 		/* local references are never NULL */
+		return 1;
+	} else if (is_Alloc(n)) {
+		/* alloc never returns NULL (it throws an exception instead) */
 		return 1;
 	} else {
 		/* check for more Confirms */

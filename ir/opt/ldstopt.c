@@ -1107,34 +1107,6 @@ static unsigned optimize_load(ir_node *load)
 	/* the address of the load to be optimized */
 	ptr = get_Load_ptr(load);
 
-	/*
-	 * Check if we can remove the exception from a Load:
-	 * This can be done, if the address is from an Sel(Alloc) and
-	 * the Sel type is a subtype of the allocated type.
-	 *
-	 * This optimizes some often used OO constructs,
-	 * like x = new O; x->t;
-	 */
-	if (info->projs[pn_Load_X_except]) {
-		ir_node *addr = ptr;
-
-		/* find base address */
-		while (is_Sel(addr))
-			addr = get_Sel_ptr(addr);
-		if (is_Alloc(skip_Proj(skip_Cast(addr)))) {
-			/* simple case: a direct load after an Alloc. Firm Alloc throw
-			 * an exception in case of out-of-memory. So, there is no way for an
-			 * exception in this load.
-			 * This code is constructed by the "exception lowering" in the Jack compiler.
-			 */
-			exchange(info->projs[pn_Load_X_except], new_Bad());
-			info->projs[pn_Load_X_except] = NULL;
-			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
-			info->projs[pn_Load_X_regular] = NULL;
-			res |= CF_CHANGED;
-		}
-	}
-
 	/* The mem of the Load. Must still be returned after optimization. */
 	mem = get_Load_mem(load);
 
