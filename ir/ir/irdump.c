@@ -853,8 +853,13 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		fprintf(F, "%s", get_irn_opname(n));
 		break;
 	case iro_Block:
-		fprintf(F, "%s%s%s",
-			is_Block_dead(n) ? "Dead " : "", get_irn_opname(n),
+		if (is_Block_dead(n))
+			fputs("Dead ", F);
+		if (n == get_irg_start_block(get_irn_irg(n)))
+			fputs("Start ", F);
+		if (n == get_irg_end_block(get_irn_irg(n)))
+			fputs("End ", F);
+		fprintf(F, "%s%s", get_irn_opname(n),
 			dump_block_marker ? (get_Block_mark(n) ? "*" : "") : "");
 		break;
 	case iro_Conv:
