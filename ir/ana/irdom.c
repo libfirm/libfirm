@@ -468,6 +468,10 @@ static void assign_tree_postdom_pre_order_max(ir_node *bl, void *data)
 static void count_and_init_blocks_pdom(ir_node *bl, void *env)
 {
 	int *n_blocks = (int *) env;
+
+	if (is_Block_dead(bl))
+		return;
+
 	(*n_blocks) ++;
 
 	memset(get_pdom_info(bl), 0, sizeof(ir_dom_info));
@@ -510,6 +514,9 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
 {
 	tmp_dom_info *tdi;
 	int i;
+
+	if (is_Block_dead(bl))
+		return;
 
 	assert(is_Block(bl));
 	if (Block_block_visited(bl))
@@ -628,6 +635,9 @@ inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w)
 static void count_and_init_blocks_dom(ir_node *bl, void *env)
 {
 	int *n_blocks = (int *) env;
+	if (is_Block_dead(bl))
+		return;
+
 	(*n_blocks) ++;
 
 	memset(get_dom_info(bl), 0, sizeof(ir_dom_info));
@@ -635,28 +645,6 @@ static void count_and_init_blocks_dom(ir_node *bl, void *env)
 	set_Block_dom_pre_num(bl, -1);
 	set_Block_dom_depth(bl, -1);
 }
-
-/**
- * Initialize the dominance/postdominance construction:
- *
- * - count the number of blocks
- * - clear the dominance info
- * - remove Block-keepalives of live blocks to reduce
- *   the number of "phantom" block edges
- *
- * @param irg  the graph
- * @param pre  a walker function that will be called for every block in the graph
- */
-static int init_construction(ir_graph *irg, irg_walk_func *pre)
-{
-	int n_blocks = 0;
-
-	/* this visits only the reachable blocks */
-	irg_block_walk_graph(irg, pre, NULL, &n_blocks);
-
-	return n_blocks;
-}
-
 
 /* Computes the dominator trees.  Sets a flag in irg to "dom_consistent".
    If the control flow of the graph is changed this flag must be set to
@@ -674,7 +662,8 @@ void compute_doms(ir_graph *irg)
 	irg->dom_state = dom_consistent;
 
 	/* Count the number of blocks in the graph. */
-	n_blocks = init_construction(irg, count_and_init_blocks_dom);
+	n_blocks = 0;
+	irg_block_walk_graph(irg, count_and_init_blocks_dom, NULL, &n_blocks);
 
 	/* Memory for temporary information. */
 	tdi_list = XMALLOCNZ(tmp_dom_info, n_blocks);
@@ -816,7 +805,8 @@ void compute_postdoms(ir_graph *irg)
 	irg->pdom_state = dom_consistent;
 
 	/* Count the number of blocks in the graph. */
-	n_blocks = init_construction(irg, count_and_init_blocks_pdom);
+	n_blocks = 0;
+	irg_block_walk_graph(irg, count_and_init_blocks_pdom, NULL, &n_blocks);
 
 	/* Memory for temporary information. */
 	tdi_list = XMALLOCNZ(tmp_dom_info, n_blocks);
