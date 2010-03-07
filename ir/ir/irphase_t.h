@@ -146,7 +146,17 @@ void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block);
  * @param phase  The phase.
  * @param irn    The irn.
  */
-#define phase_reinit_single_irn_data(phase, irn) _phase_reinit_single_irn_data((phase), (irn))
+static inline void phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
+{
+	int idx;
+
+	if (! phase->data_init)
+		return;
+
+	idx = get_irn_idx(irn);
+	if (phase->data_ptr[idx])
+		phase->data_init(phase, irn, phase->data_ptr[idx]);
+}
 
 /**
  * Returns the first node of the phase having some data assigned.
@@ -182,21 +192,30 @@ ir_node *phase_get_next_node(const ir_phase *phase, ir_node *start);
  *
  * @param phase  The phase.
  */
-#define phase_get_name(phase)                 ((phase)->name)
+static inline const char *phase_get_name(const ir_phase *phase)
+{
+	return phase->name;
+}
 
 /**
  * Get the irg the phase runs on.
  *
  * @param phase  The phase.
  */
-#define phase_get_irg(phase)                  ((phase)->irg)
+static inline ir_graph *phase_get_irg(const ir_phase *phase)
+{
+	return phase->irg;
+}
 
 /**
  * Get private data pointer as passed on creating the phase.
  *
  * @param phase  The phase.
  */
-#define phase_get_private(phase)              ((phase)->priv)
+static inline void *phase_get_private(const ir_phase *phase)
+{
+	return phase->priv;
+}
 
 /**
  * Allocate memory in the phase's memory pool.
@@ -204,14 +223,20 @@ ir_node *phase_get_next_node(const ir_phase *phase, ir_node *start);
  * @param phase  The phase.
  * @param size   Number of bytes to allocate.
  */
-#define phase_alloc(phase, size)              obstack_alloc(phase_obst(phase), (size))
+static inline void *phase_alloc(ir_phase *phase, size_t size)
+{
+	return obstack_alloc(&phase->obst, size);
+}
 
 /**
  * Get the obstack of a phase.
  *
  * @param phase  The phase.
  */
-#define phase_obst(phase)                     (&(phase)->obst)
+static inline struct obstack *phase_obst(ir_phase *phase)
+{
+	return &phase->obst;
+}
 
 /**
  * Get the phase node data for an irn.
@@ -221,75 +246,16 @@ ir_node *phase_get_next_node(const ir_phase *phase, ir_node *start);
  *
  * @return A pointer to the node data or NULL if the irn has no phase data allocated yet.
  */
-#define phase_get_irn_data(phase, irn)        _phase_get_irn_data((phase), (irn))
-
-/**
- * Get or set phase data for an irn.
- *
- * @param phase  The phase.
- * @param irn    The irn to get (or set) node data for.
- *
- * @return A (non-NULL) pointer to phase data for the irn. Either existent one or newly allocated one.
- */
-#define phase_get_or_set_irn_data(phase, irn) _phase_get_or_set_irn_data((phase), (irn))
-
-/**
- * Set the node data for an irn.
- *
- * @param phase  The phase.
- * @param irn    The node.
- * @param data   The node data.
- *
- * @return The old data or NULL if there was none.
- */
-#define phase_set_irn_data(phase, irn, data)  _phase_set_irn_data((phase), (irn), (data))
-
-/**
- * Get the irg-managed phase for a givedn phase ID.
- * @param irg The irg.
- * @param id  The ID.
- * @return The corresponding phase, or NULL if there is none.
- */
-#define get_irg_phase(irg, id)                _get_irg_phase((irg), (id))
-
-/**
- * Get the information a phase holds about a node.
- * @param irn The node.
- * @param id  The ID of the phase.
- */
-#define get_irn_phase_info(irn, id)           _get_phase_irn_info((irn), (id))
-
-/**
- * Get or set information a phase holds about a node.
- * If the given phase does not hold information of the node,
- * the information structure will be created, initialized (see the data_init function of ir_phase), and returned.
- * @param irn The node.
- * @param id  The ID of the phase.
- */
-#define get_or_set_irn_phase_info(irn, id)    _get_or_set_irn_phase_info((irn), (id))
-
-#define set_irn_phase_info(irn, id)           _set_irn_phase_info((irn), (id))
-
-/**
- * This is private and only here for performance reasons.
- */
-static inline void _phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
+static inline void *phase_get_irn_data(const ir_phase *ph, const ir_node *irn)
 {
-	int idx;
-
-	if (! phase->data_init)
-		return;
-
-	idx = get_irn_idx(irn);
-	if (phase->data_ptr[idx])
-		phase->data_init(phase, irn, phase->data_ptr[idx]);
+	unsigned idx = get_irn_idx(irn);
+	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
 }
-
 
 /**
  * This is private and just here for performance reasons.
  */
-static inline void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
+static inline void private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 {
 	unsigned last_irg_idx = get_irg_last_idx(phase->irg);
 	size_t old_cap        = phase->n_data_ptr;
@@ -306,39 +272,31 @@ static inline void _private_phase_enlarge(ir_phase *phase, unsigned max_idx)
 	phase->n_data_ptr = new_cap;
 }
 
-/**
+/*
  * This is private and only here for performance reasons.
  */
-#define _private_phase_assure_capacity(ph, max_idx) ((max_idx) >= (ph)->n_data_ptr ? (_private_phase_enlarge((ph), (max_idx)), 1) : 1)
-
-static inline void *_phase_get_irn_data(const ir_phase *ph, const ir_node *irn)
+static inline void private_phase_assure_capacity(ir_phase *ph, unsigned max_idx)
 {
-	unsigned idx = get_irn_idx(irn);
-	return idx < ph->n_data_ptr ? ph->data_ptr[idx] : NULL;
+	if (max_idx >= ph->n_data_ptr)
+		private_phase_enlarge(ph, max_idx);
 }
 
-static inline void *_phase_set_irn_data(ir_phase *ph, const ir_node *irn, void *data)
+
+/**
+ * Get or set phase data for an irn.
+ *
+ * @param phase  The phase.
+ * @param irn    The irn to get (or set) node data for.
+ *
+ * @return A (non-NULL) pointer to phase data for the irn. Either existent one or newly allocated one.
+ */
+static inline void *phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
 {
 	unsigned idx = get_irn_idx(irn);
 	void *res;
 
 	/* Assure that there's a sufficient amount of slots. */
-	_private_phase_assure_capacity(ph, idx + 1);
-
-	res = ph->data_ptr[idx];
-	ph->data_ptr[idx] = data;
-
-	return res;
-}
-
-
-static inline void *_phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
-{
-	unsigned idx = get_irn_idx(irn);
-	void *res;
-
-	/* Assure that there's a sufficient amount of slots. */
-	_private_phase_assure_capacity(ph, idx + 1);
+	private_phase_assure_capacity(ph, idx + 1);
 
 	res = ph->data_ptr[idx];
 
@@ -353,34 +311,70 @@ static inline void *_phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
 	return res;
 }
 
-static inline ir_phase *_get_irg_phase(const ir_graph *irg, ir_phase_id id)
+/**
+ * Set the node data for an irn.
+ *
+ * @param phase  The phase.
+ * @param irn    The node.
+ * @param data   The node data.
+ *
+ * @return The old data or NULL if there was none.
+ */
+static inline void *phase_set_irn_data(ir_phase *ph, const ir_node *irn,
+                                       void *data)
+{
+	unsigned idx = get_irn_idx(irn);
+	void *res;
+
+	/* Assure that there's a sufficient amount of slots. */
+	private_phase_assure_capacity(ph, idx + 1);
+
+	res = ph->data_ptr[idx];
+	ph->data_ptr[idx] = data;
+
+	return res;
+}
+
+/**
+ * Get the irg-managed phase for a given phase ID.
+ * @param irg The irg.
+ * @param id  The ID.
+ * @return The corresponding phase, or NULL if there is none.
+ */
+static inline ir_phase *get_irg_phase(const ir_graph *irg, ir_phase_id id)
 {
 	return irg->phases[id];
 }
 
-static inline void *_get_irn_phase_info(const ir_node *irn, ir_phase_id id)
+static inline void *get_irn_phase_info(const ir_node *irn, ir_phase_id id)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	const ir_phase *ph  = get_irg_phase(irg, id);
 	assert(ph && "phase info has to be computed");
-	return _phase_get_irn_data(ph, irn);
+	return phase_get_irn_data(ph, irn);
 }
 
-static inline void *_get_or_set_irn_phase_info(const ir_node *irn, ir_phase_id id)
+/**
+ * Get or set information a phase holds about a node.
+ * If the given phase does not hold information of the node,
+ * the information structure will be created, initialized (see the data_init function of ir_phase), and returned.
+ * @param irn The node.
+ * @param id  The ID of the phase.
+ */
+static inline void *get_or_set_irn_phase_info(const ir_node *irn, ir_phase_id id)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	ir_phase *ph  = get_irg_phase(irg, id);
 	assert(ph && "phase info has to be computed");
-	return _phase_get_or_set_irn_data(ph, irn);
+	return phase_get_or_set_irn_data(ph, irn);
 }
 
-static inline void *_set_irn_phase_info(const ir_node *irn, ir_phase_id id, void *data)
+static inline void *set_irn_phase_info(const ir_node *irn, ir_phase_id id, void *data)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	ir_phase *ph  = get_irg_phase(irg, id);
 	assert(ph && "phase info has to be computed");
-	return _phase_set_irn_data(ph, irn, data);
+	return phase_set_irn_data(ph, irn, data);
 }
-
 
 #endif
