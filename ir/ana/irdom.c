@@ -557,6 +557,9 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 	tmp_dom_info *tdi;
 	int i;
 
+	if (is_Block_dead(bl))
+		return;
+
 	assert(is_Block(bl));
 	if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
 	  return;
