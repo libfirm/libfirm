@@ -547,7 +547,7 @@ static void sparc_register_emitters(void)
 /**
  * Emits code for a node.
  */
-void sparc_emit_node(const ir_node *node)
+static void sparc_emit_node(const ir_node *node)
 {
 	ir_op               *op       = get_irn_op(node);
 
@@ -565,7 +565,7 @@ void sparc_emit_node(const ir_node *node)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void sparc_gen_block(ir_node *block, void *data)
+static void sparc_gen_block(ir_node *block, void *data)
 {
 	ir_node *node;
 	(void) data;
@@ -586,7 +586,7 @@ void sparc_gen_block(ir_node *block, void *data)
 /**
  * Emits code for function start.
  */
-void sparc_emit_func_prolog(ir_graph *irg)
+static void sparc_emit_func_prolog(ir_graph *irg)
 {
 	ir_entity *ent = get_irg_entity(irg);
 
@@ -601,7 +601,7 @@ void sparc_emit_func_prolog(ir_graph *irg)
 /**
  * Emits code for function end
  */
-void sparc_emit_func_epilog(ir_graph *irg)
+static void sparc_emit_func_epilog(ir_graph *irg)
 {
 	ir_entity *ent = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(ent);
@@ -620,7 +620,7 @@ void sparc_emit_func_epilog(ir_graph *irg)
  * TODO: Sets labels for control flow nodes (jump target).
  * Links control predecessors to there destination blocks.
  */
-void sparc_gen_labels(ir_node *block, void *env)
+static void sparc_gen_labels(ir_node *block, void *env)
 {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);

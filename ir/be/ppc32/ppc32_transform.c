@@ -69,7 +69,7 @@ static inline ir_node *get_succ_Proj(ir_node *node, long proj)
 /**
  * Returns a singleton condition mode
  */
-ir_mode *get_ppc32_mode_Cond(void)
+static ir_mode *get_ppc32_mode_Cond(void)
 {
 	if (ppc32_mode_Cond)
 		return ppc32_mode_Cond;
@@ -130,7 +130,7 @@ ppc32_modecode get_nice_modecode(ir_mode *irmode)
  * Returns true, if the given node is a Const node and it's value fits into
  * a signed 16-bit variable
  */
-int is_16bit_signed_const(ir_node *node)
+static int is_16bit_signed_const(ir_node *node)
 {
 	tarval *tv_const;
 
@@ -191,7 +191,7 @@ int is_16bit_signed_const(ir_node *node)
  * Returns true, if the given node is a Const node and it's value fits into
  * a unsigned 16-bit variable
  */
-int is_16bit_unsigned_const(ir_node *node)
+static int is_16bit_unsigned_const(ir_node *node)
 {
 	tarval *tv_const;
 

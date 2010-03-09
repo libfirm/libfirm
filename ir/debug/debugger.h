@@ -27,6 +27,8 @@
 #ifndef FIRM_DEBUG_DEBUGGER_H
 #define FIRM_DEBUG_DEBUGGER_H
 
+#include "firm_types.h"
+
 /** Break into the debugger. */
 void firm_debug_break(void);
 
@@ -41,5 +43,44 @@ void firm_break(const char *cmd);
 
 /** Creates the debugger tables. */
 void firm_init_debugger(void);
+
+/**
+ * @defgroup external_debug    helper functions for debuggers
+ *
+ * @{
+ */
+
+/**
+ * Returns non-zero, if the debug extension is active
+ */
+int firm_debug_active(void);
+
+/**
+ * Return the content of the debug text buffer.
+ *
+ * To be called from the debugger.
+ */
+const char *firm_debug_text(void);
+
+/**
+ * A gdb helper function to print tarvals.
+ */
+const char *gdb_tarval_helper(void *tv_object);
+
+/**
+ * A gdb helper to print all (new-style-) out edges of a node
+ */
+const char *gdb_out_edge_helper(const ir_node *node);
+
+/**
+ * High level function to use from debugger interface
+ *
+ * See show_commands() for supported commands.
+ */
+void firm_debug(const char *cmd);
+
+/**
+ * @}
+ */
 
 #endif

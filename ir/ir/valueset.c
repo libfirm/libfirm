@@ -52,9 +52,12 @@ static ir_valueset_entry_t null_valueset_entry;
 #define hashset_init            ir_valueset_init
 #define hashset_init_size       ir_valueset_init_size
 #define hashset_destroy         ir_valueset_destroy
-#define hashset_insert          _ir_valueset_insert
+ir_valueset_entry_t *ir_valueset_insert_(ir_valueset_t *self, ir_node *value);
+#define hashset_insert          ir_valueset_insert_
 #define hashset_remove          ir_valueset_remove
-#define hashset_find            _ir_valueset_find
+ir_valueset_entry_t *ir_valueset_find_(const ir_valueset_t *self,
+                                       const ir_node *value);
+#define hashset_find            ir_valueset_find_
 #define hashset_size            ir_valueset_size
 
 #define ADDITIONAL_INIT         INIT_LIST_HEAD(&self->elem_list); INIT_LIST_HEAD(&self->all_iters);
@@ -109,7 +112,7 @@ static void resize(HashSet *self, size_t new_size)
 
 int ir_valueset_insert(ir_valueset_t *valueset, ir_node *value, ir_node *expr)
 {
-	ir_valueset_entry_t *entry = _ir_valueset_insert(valueset, value);
+	ir_valueset_entry_t *entry = ir_valueset_insert_(valueset, value);
 
 	if (entry->list.next != NULL) {
 		/* this value is already inserted, do nothing */
@@ -125,7 +128,7 @@ int ir_valueset_insert(ir_valueset_t *valueset, ir_node *value, ir_node *expr)
 int ir_valueset_replace(ir_valueset_t *valueset, ir_node *value, ir_node *expr)
 {
 	int res = 0;
-	ir_valueset_entry_t *entry = _ir_valueset_insert(valueset, value);
+	ir_valueset_entry_t *entry = ir_valueset_insert_(valueset, value);
 
 	if (entry->expr != expr) {
 		entry->expr = expr;
@@ -141,7 +144,7 @@ int ir_valueset_replace(ir_valueset_t *valueset, ir_node *value, ir_node *expr)
 
 void *ir_valueset_lookup(const ir_valueset_t *valueset, const ir_node *value)
 {
-	ir_valueset_entry_t *entry = _ir_valueset_find(valueset, value);
+	ir_valueset_entry_t *entry = ir_valueset_find_(valueset, value);
 	if (entry != NULL)
 		return entry->expr;
 	return NULL;

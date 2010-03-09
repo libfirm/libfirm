@@ -56,6 +56,8 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node);
 arm_load_store_attr_t *get_arm_load_store_attr(ir_node *node);
 const arm_load_store_attr_t *get_arm_load_store_attr_const(const ir_node *node);
 
+arm_shifter_operand_t *get_arm_shifter_operand_attr(ir_node *node);
+
 /**
  * Returns the argument register requirements of an arm node.
  */

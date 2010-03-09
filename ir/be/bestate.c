@@ -599,9 +599,8 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	obstack_free(&env.obst, NULL);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_state);
 void be_init_state(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.state");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_state);

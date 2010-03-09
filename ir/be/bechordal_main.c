@@ -161,14 +161,13 @@ void be_register_chordal_coloring(const char *name, be_ra_chordal_coloring_t *co
 	be_add_module_to_list(&colorings, name, coloring);
 }
 
-void be_ra_chordal_coloring(be_chordal_env_t *env)
+static void be_ra_chordal_coloring(be_chordal_env_t *env)
 {
 	assert(selected_coloring != NULL);
 	if (selected_coloring != NULL) {
 		selected_coloring->allocate(env);
 	}
 }
-
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
@@ -488,6 +487,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	be_timer_pop(T_RA_OTHER);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main);
 void be_init_chordal_main(void)
 {
 	static be_ra_t be_ra_chordal_allocator = {
@@ -503,5 +503,3 @@ void be_init_chordal_main(void)
 	lc_opt_add_table(chordal_grp, be_chordal_options);
 	be_add_module_list_opt(chordal_grp, "coloring", "select coloring methode", &colorings, (void**) &selected_coloring);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main);

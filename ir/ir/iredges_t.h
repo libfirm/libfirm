@@ -195,6 +195,12 @@ void edges_init_dbg(int do_dbg);
 
 void edges_invalidate_all(ir_node *irn, ir_graph *irg);
 
+/**
+ * Helper function to dump the edge set of a graph,
+ * unused in normal code.
+ */
+void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind);
+
 #define get_irn_n_edges_kind(irn, kind)   _get_irn_n_edges_kind(irn, kind)
 #define get_edge_src_irn(edge)            _get_edge_src_irn(edge)
 #define get_edge_src_pos(edge)            _get_edge_src_pos(edge)

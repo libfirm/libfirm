@@ -202,8 +202,8 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 /**
  * Dump the names of all registered module options.
  */
-int dump_opt_module(char *buf, size_t buflen, const char *name,
-                    lc_opt_type_t type, void *data, size_t length)
+static int dump_opt_module(char *buf, size_t buflen, const char *name,
+                           lc_opt_type_t type, void *data, size_t length)
 {
 	module_opt_data_t            *moddata = data;
 	const be_module_list_entry_t *module;
@@ -225,8 +225,8 @@ int dump_opt_module(char *buf, size_t buflen, const char *name,
 /**
  * Dump the values of all register module options.
  */
-int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
-                         lc_opt_type_t type, void *data, size_t len)
+static int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
+                                lc_opt_type_t type, void *data, size_t len)
 {
 	module_opt_data_t            *moddata = data;
 	char                         *p       = buf;

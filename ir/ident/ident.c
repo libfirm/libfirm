@@ -112,7 +112,7 @@ static int set_get_id_strlen(void *handle, ident *id)
 /**
  * Default implementation using libfirm sets.
  */
-void set_finish_ident(void *handle)
+static void set_finish_ident(void *handle)
 {
   set *id_set = handle;
 

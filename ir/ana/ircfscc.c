@@ -788,6 +788,7 @@ int construct_ip_cf_backedges (void)
 }
 #endif
 
+#if 0
 /**
  * Clear the intra- and the interprocedural
  * backedge information pf a block.
@@ -828,7 +829,7 @@ static void loop_reset_backedges(ir_loop *l)
 
 /* Removes all cfloop information.
    Resets all backedges */
-void free_cfloop_information(ir_graph *irg)
+static void free_cfloop_information(ir_graph *irg)
 {
 	ir_loop *loop = get_irg_loop(irg);
 	if (loop != NULL) {
@@ -854,3 +855,5 @@ void free_all_cfloop_information(void)
 	set_interprocedural_view(rem);
 #endif
 }
+
+#endif

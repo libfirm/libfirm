@@ -105,7 +105,6 @@ static inline firm_verification_t get_node_verification_mode(void)
 #define get_optimize()                           _get_optimize()
 #define get_opt_cse()                            _get_opt_cse()
 #define get_opt_dyn_meth_dispatch()              _get_opt_dyn_meth_dispatch()
-#define get_opt_optimize_class_casts()           _get_opt_optimize_class_casts()
 #define get_opt_suppress_downcast_optimization() _get_opt_suppress_downcast_optimization()
 
 #endif

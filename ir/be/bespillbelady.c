@@ -118,15 +118,6 @@ static int loc_compare(const void *a, const void *b)
 	return p->time - q->time;
 }
 
-void workset_print(const workset_t *w)
-{
-	int i;
-
-	for (i = 0; i < w->len; ++i) {
-		ir_fprintf(stderr, "%+F %d\n", w->vals[i].node, w->vals[i].time);
-	}
-}
-
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
  */
@@ -1003,6 +994,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	obstack_free(&obst, NULL);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);
 void be_init_spillbelady(void)
 {
 	static be_spiller_t belady_spiller = {
@@ -1015,5 +1007,3 @@ void be_init_spillbelady(void)
 	be_register_spiller("belady", &belady_spiller);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);

@@ -26,18 +26,17 @@
  */
 #include "config.h"
 
+#include "height.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "list.h"
-
 #include "irdump.h"
 #include "irgwalk.h"
 #include "irtools.h"
 #include "irphase_t.h"
 #include "iredges_t.h"
-
-typedef struct _heights_t heights_t;
 
 struct _heights_t {
 	ir_phase ph;

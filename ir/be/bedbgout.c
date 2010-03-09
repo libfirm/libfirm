@@ -50,7 +50,7 @@ void be_dbg_main_program(void)
 		handle->ops->main_program(handle);
 }
 
-void be_dbg_method_begin(ir_entity *ent, const be_stack_layout_t *layout)
+void be_dbg_method_begin(const ir_entity *ent, const be_stack_layout_t *layout)
 {
 	if (handle->ops->method_begin)
 		handle->ops->method_begin(handle, ent, layout);
@@ -68,7 +68,7 @@ void be_dbg_types(void)
 		handle->ops->types(handle);
 }
 
-void be_dbg_variable(ir_entity *ent)
+void be_dbg_variable(const ir_entity *ent)
 {
 	if (handle->ops->variable)
 		handle->ops->variable(handle, ent);
@@ -103,6 +103,7 @@ static dbg_handle *create_null_dbgout_module(void)
 	return &null_handle;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dbgout);
 void be_init_dbgout(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -111,5 +112,3 @@ void be_init_dbgout(void)
 	                       &dbgout_modules, (void**) &selected_dbgout_module);
 	be_register_dbgout_module("none", create_null_dbgout_module);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dbgout);

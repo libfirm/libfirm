@@ -1388,18 +1388,6 @@ void set_value(int pos, ir_node *value)
 	irg->current_block->attr.block.graph_arr[pos + 1] = value;
 }  /* set_value */
 
-/* Find the value number for a node in the current block.*/
-int find_value(ir_node *value)
-{
-	int i;
-	ir_node *bl = current_ir_graph->current_block;
-
-	for (i = ARR_LEN(bl->attr.block.graph_arr) - 1; i >= 1; --i)
-		if (bl->attr.block.graph_arr[i] == value)
-			return i - 1;
-	return -1;
-}  /* find_value */
-
 /* get the current store */
 ir_node *get_store(void)
 {

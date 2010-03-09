@@ -51,9 +51,12 @@ static ir_lnk_nodemap_entry_t null_nodemap_entry;
 #define hashset_init            ir_lnk_nodemap_init
 #define hashset_init_size       ir_lnk_nodemap_init_size
 #define hashset_destroy         ir_lnk_nodemap_destroy
-#define hashset_insert          _ir_lnk_nodemap_insert
+ir_lnk_nodemap_entry_t *ir_lnk_nodemap_insert_(ir_lnk_nodemap_t *self, ir_node *node);
+#define hashset_insert          ir_lnk_nodemap_insert_
 #define hashset_remove          ir_lnk_nodemap_remove
-#define hashset_find            _ir_lnk_nodemap_find
+ir_lnk_nodemap_entry_t *ir_lnk_nodemap_find_(const ir_lnk_nodemap_t *self,
+                                             const ir_node *node);
+#define hashset_find            ir_lnk_nodemap_find_
 #define hashset_size            ir_lnk_nodemap_size
 
 #define ADDITIONAL_INIT         INIT_LIST_HEAD(&self->elem_list); INIT_LIST_HEAD(&self->all_iters);
@@ -109,7 +112,7 @@ static void resize(HashSet *self, size_t new_size)
 
 int ir_lnk_nodemap_put(ir_lnk_nodemap_t *nodemap, ir_node *node, void *data)
 {
-	ir_lnk_nodemap_entry_t *entry = _ir_lnk_nodemap_insert(nodemap, node);
+	ir_lnk_nodemap_entry_t *entry = ir_lnk_nodemap_insert_(nodemap, node);
 
 	entry->data = data;
 	if (entry->list.next == NULL) {
@@ -122,7 +125,7 @@ int ir_lnk_nodemap_put(ir_lnk_nodemap_t *nodemap, ir_node *node, void *data)
 
 void *ir_lnk_nodemap_get(const ir_lnk_nodemap_t *nodemap, const ir_node *node)
 {
-	ir_lnk_nodemap_entry_t *entry = _ir_lnk_nodemap_find(nodemap, node);
+	ir_lnk_nodemap_entry_t *entry = ir_lnk_nodemap_find_(nodemap, node);
 	return entry->data;
 }
 

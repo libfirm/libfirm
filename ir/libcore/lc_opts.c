@@ -563,7 +563,7 @@ char *lc_opt_value_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 	return buf;
 }
 
-char *lc_opt_values_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
+static char *lc_opt_values_to_string(char *buf, size_t len, const lc_opt_entry_t *ent)
 {
 	const lc_opt_special_t *s = lc_get_opt_special(ent);
 	if (s->dump_vals)

@@ -122,7 +122,8 @@ static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_fu
 /**
  * Traverse a block in post order.
  */
-void traverse_block_post(ir_node *block, block_entry_t *entry, irg_walk_func *post, void *env)
+static void traverse_block_post(ir_node *block, block_entry_t *entry,
+                                irg_walk_func *post, void *env)
 {
 	int j, n;
 

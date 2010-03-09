@@ -2068,7 +2068,7 @@ int dump_type_node(FILE *F, ir_type *tp)
 }
 
 
-void dump_entity_node(FILE *F, ir_entity *ent)
+static void dump_entity_node(FILE *F, ir_entity *ent)
 {
 	fprintf(F, "node: {title: \"");
 	PRINT_ENTID(ent); fprintf(F, "\"");
@@ -3104,7 +3104,7 @@ ir_prog_pass_t *dump_all_ir_graph_pass(const char *name,
  * packed together in one subgraph/box                                            *
  *--------------------------------------------------------------------------------*/
 
-void dump_loops_standalone(FILE *F, ir_loop *loop)
+static void dump_loops_standalone(FILE *F, ir_loop *loop)
 {
 	int i = 0, loop_node_started = 0, son_number = 0, first = 0;
 	loop_element le;
@@ -3226,7 +3226,7 @@ void dump_callgraph_loop_tree(const char *suffix)
 /* Dumps the firm nodes in the loop tree to a graph along with the loop nodes.*/
 /*----------------------------------------------------------------------------*/
 
-void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
+static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
 {
 	int i, son_number = 0, node_number = 0;
 
@@ -3245,7 +3245,8 @@ void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
 	}
 }
 
-void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes, eset *extnodes)
+static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
+                                            eset *extnodes)
 {
 	int i, j, start;
 

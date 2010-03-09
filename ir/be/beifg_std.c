@@ -41,6 +41,7 @@
 #include "belive_t.h"
 #include "bera.h"
 #include "beifg_t.h"
+#include "beifg_impl.h"
 #include "bechordal_t.h"
 #include "beirg.h"
 #include "beintlive_t.h"

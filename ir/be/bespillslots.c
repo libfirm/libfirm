@@ -838,9 +838,8 @@ void be_coalesce_spillslots(be_irg_t *birg)
 	be_free_frame_entity_coalescer(env);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillslots);
 void be_init_spillslots(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.spillslots");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillslots);

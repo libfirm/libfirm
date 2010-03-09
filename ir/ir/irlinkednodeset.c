@@ -51,9 +51,11 @@ static ir_lnk_nodeset_entry_t null_nodeset_entry;
 #define hashset_init            ir_lnk_nodeset_init
 #define hashset_init_size       ir_lnk_nodeset_init_size
 #define hashset_destroy         ir_lnk_nodeset_destroy
-#define hashset_insert          _ir_lnk_nodeset_insert
+ir_lnk_nodeset_entry_t *ir_lnk_nodeset_insert_(ir_lnk_nodeset_t *nodeset, ir_node *node);
+#define hashset_insert          ir_lnk_nodeset_insert_
 #define hashset_remove          ir_lnk_nodeset_remove
-#define hashset_find            _ir_lnk_nodeset_find
+ir_lnk_nodeset_entry_t *ir_lnk_nodeset_find_(const ir_lnk_nodeset_t *nodeset, const ir_node *node);
+#define hashset_find            ir_lnk_nodeset_find_
 #define hashset_size            ir_lnk_nodeset_size
 
 #define ADDITIONAL_INIT         INIT_LIST_HEAD(&self->elem_list); INIT_LIST_HEAD(&self->all_iters);
@@ -110,7 +112,7 @@ static void resize(HashSet *self, size_t new_size)
 /* Inserts a node into a linked nodeset. */
 int ir_lnk_nodeset_insert(ir_lnk_nodeset_t *nodeset, ir_node *node)
 {
-	ir_lnk_nodeset_entry_t *entry = _ir_lnk_nodeset_insert(nodeset, node);
+	ir_lnk_nodeset_entry_t *entry = ir_lnk_nodeset_insert_(nodeset, node);
 
 	if (entry->list.next == NULL) {
 		/* we have added a new element */
@@ -122,7 +124,7 @@ int ir_lnk_nodeset_insert(ir_lnk_nodeset_t *nodeset, ir_node *node)
 
 int ir_lnk_nodeset_contains(const ir_lnk_nodeset_t *nodeset, const ir_node *node)
 {
-	return _ir_lnk_nodeset_find(nodeset, node) != NULL;
+	return ir_lnk_nodeset_find_(nodeset, node) != NULL;
 }
 
 /**

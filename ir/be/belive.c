@@ -77,16 +77,6 @@ static inline int is_liveness_node(const ir_node *irn)
 	}
 }
 
-int (be_lv_next_irn)(const struct _be_lv_t *lv, const ir_node *bl, unsigned flags, int i)
-{
-	return _be_lv_next_irn(lv, bl, flags, i);
-}
-
-const ir_node * (be_lv_get_irn)(const struct _be_lv_t *lv, const ir_node *bl, int i)
-{
-	return _be_lv_get_irn(lv, bl, i);
-}
-
 int (be_is_live_in)(const be_lv_t *lv, const ir_node *block, const ir_node *irn)
 {
 	return _be_is_live_xxx(lv, block, irn, be_lv_state_in);
@@ -915,9 +905,8 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 	obstack_free(&obst, NULL);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_live);
 void be_init_live(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.liveness");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_live);

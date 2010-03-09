@@ -1196,79 +1196,11 @@ void free_all_loop_information(void)
 #endif
 }
 
-
-
-
-
-/* Debug stuff *************************************************/
-
-static int test_loop_node(ir_loop *l)
-{
-	int i, has_node = 0, found_problem = 0;
-	loop_element le;
-
-	assert(l && l->kind == k_ir_loop);
-
-	if (get_loop_n_elements(l) == 0) {
-		found_problem = 1;
-		dump_loop(l, "-ha");
-	}
-
-	le = get_loop_element(l, 0);
-	if (*(le.kind) != k_ir_node) {
-		assert(le.kind && *(le.kind) == k_ir_loop);
-
-		found_problem = 1;
-		dump_loop(l, "-ha");
-	}
-
-	if ((*(le.kind) == k_ir_node) && !is_possible_loop_head(le.node)) {
-		found_problem = 1;
-		dump_loop(l, "-ha");
-	}
-
-	if ((get_loop_depth(l) != 0) &&
-		(*(le.kind) == k_ir_node) && !has_backedges(le.node)) {
-			found_problem = 1;
-			dump_loop(l, "-ha");
-	}
-
-	/* Recur */
-	has_node = 0;
-	for (i = 0; i < get_loop_n_elements(l); ++i) {
-		le = get_loop_element(l, i);
-		if (*(le.kind) == k_ir_node)
-			has_node++;
-		else
-			if (test_loop_node(le.son)) found_problem = 1;
-	}
-
-	if (has_node == 0) {
-		found_problem = 1;
-		dump_loop(l, "-ha");
-	}
-
-	return found_problem;
-}
-
-/** Prints all loop nodes that
- *  - do not have any firm nodes, only loop sons
- *  - the header is not a Phi, Block or Filter.
- */
-void find_strange_loop_nodes(ir_loop *l)
-{
-	int found_problem = 0;
-	found_problem = test_loop_node(l);
-	printf("Finished Test\n\n");
-	if (found_problem) exit(0);
-
-}
-
 /* ------------------------------------------------------------------- */
 /* Simple analyses based on the loop information                       */
 /* ------------------------------------------------------------------- */
 
-int is_loop_variant(ir_loop *l, ir_loop *b)
+static int is_loop_variant(ir_loop *l, ir_loop *b)
 {
 	int i, n_elems;
 

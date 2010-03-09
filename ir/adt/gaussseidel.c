@@ -325,18 +325,3 @@ void gs_matrix_dump(const gs_matrix_t *m, int a, int b, FILE *out)
 
 	xfree(elems);
 }
-
-void gs_matrix_self_test(int d)
-{
-	int i, o;
-	gs_matrix_t *m = gs_new_matrix(10, 10);
-
-	for (i=0; i<d; ++i)
-		for (o=0; o<d; ++o)
-			gs_matrix_set(m, i, o, i*o);
-
-	for (i=0; i<d; ++i)
-		for (o=0; o<d; ++o)
-			assert(gs_matrix_get(m, i, o) == i*o);
-	gs_delete_matrix(m);
-}

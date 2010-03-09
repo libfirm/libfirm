@@ -195,7 +195,7 @@ typedef void (*emit_func_ptr) (const ir_node *);
 /**
  * Emits code for a node.
  */
-void TEMPLATE_emit_node(const ir_node *node)
+static void TEMPLATE_emit_node(const ir_node *node)
 {
 	ir_op               *op       = get_irn_op(node);
 
@@ -211,7 +211,7 @@ void TEMPLATE_emit_node(const ir_node *node)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void TEMPLATE_gen_block(ir_node *block, void *data)
+static void TEMPLATE_gen_block(ir_node *block, void *data)
 {
 	ir_node *node;
 	(void) data;
@@ -232,7 +232,7 @@ void TEMPLATE_gen_block(ir_node *block, void *data)
 /**
  * Emits code for function start.
  */
-void TEMPLATE_emit_func_prolog(ir_graph *irg)
+static void TEMPLATE_emit_func_prolog(ir_graph *irg)
 {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
@@ -246,7 +246,7 @@ void TEMPLATE_emit_func_prolog(ir_graph *irg)
 /**
  * Emits code for function end
  */
-void TEMPLATE_emit_func_epilog(ir_graph *irg)
+static void TEMPLATE_emit_func_epilog(ir_graph *irg)
 {
 	const char *irg_name = get_entity_name(get_irg_entity(irg));
 
@@ -259,9 +259,8 @@ void TEMPLATE_emit_func_epilog(ir_graph *irg)
 
 /**
  * Sets labels for control flow nodes (jump target)
- * TODO: Jump optimization
  */
-void TEMPLATE_gen_labels(ir_node *block, void *env)
+static void TEMPLATE_gen_labels(ir_node *block, void *env)
 {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);

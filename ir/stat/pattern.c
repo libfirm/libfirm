@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include "pattern.h"
 #include "ident.h"
 #include "irnode_t.h"
 #include "irgwalk.h"

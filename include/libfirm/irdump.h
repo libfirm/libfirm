@@ -270,6 +270,13 @@ void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out);
  */
 void dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix);
 
+/**
+ * same as @see dump_ir_block_graph_w_types() but dumps to a stream
+ * @param irg  the graph to dump
+ * @param out  stream to dump to
+ */
+void dump_ir_block_graph_w_types_file(ir_graph *irg, FILE *out);
+
 /** The type of a dump function that is called for each graph.
  *
  *  @param irg     current visited graph

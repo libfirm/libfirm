@@ -280,9 +280,8 @@ int be_remove_empty_blocks(ir_graph *irg)
 	return blocks_removed;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_irgmod);
 void be_init_irgmod(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.irgmod");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_irgmod);

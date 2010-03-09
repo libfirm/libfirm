@@ -207,6 +207,7 @@ void *ir_arr_resize(void *elts, int nelts, size_t eltsize)
  * Do NOT use is in code, use ARR_LEN() macro!
  * This function is intended to be called from a debugger.
  */
+int array_len(const void *arr);
 int array_len(const void *arr)
 {
 	return ARR_LEN(arr);
@@ -217,6 +218,7 @@ int array_len(const void *arr)
  * Do NOT use is in code!.
  * This function is intended to be called from a debugger.
  */
+ir_arr_descr *array_descr(const void *arr);
 ir_arr_descr *array_descr(const void *arr)
 {
 	if (! arr)

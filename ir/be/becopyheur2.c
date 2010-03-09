@@ -228,7 +228,7 @@ static int col_cost_pair_lt(const void *a, const void *b)
 	return QSORT_CMP(c, d);
 }
 
-int cmp_edges(const void *a, const void *b)
+static int cmp_edges(const void *a, const void *b)
 {
 	const edge_t *p = a;
 	const edge_t *q = b;
@@ -1265,6 +1265,7 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	return 0;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);
 void be_init_copyheur2(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -1279,5 +1280,3 @@ void be_init_copyheur2(void)
 	lc_opt_add_table(co2_grp, options);
 	be_register_copyopt("heur2", &copyheur);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);

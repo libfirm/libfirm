@@ -50,8 +50,6 @@
 #include "mips_new_nodes.h"
 #include "mips_map_regs.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
 #define SNPRINTF_BUF_LEN 128
 
 /**
@@ -679,7 +677,7 @@ static void mips_emit_node(const ir_node *node)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-void mips_gen_block(const ir_node *block)
+static void mips_gen_block(const ir_node *block)
 {
 	ir_node *node;
 
@@ -701,7 +699,7 @@ void mips_gen_block(const ir_node *block)
 /**
  * Emits code for function start.
  */
-void mips_emit_func_prolog(ir_graph *irg)
+static void mips_emit_func_prolog(ir_graph *irg)
 {
 	ident *irg_ident = get_entity_ld_ident(get_irg_entity(irg));
 
@@ -736,7 +734,7 @@ void mips_emit_func_prolog(ir_graph *irg)
 /**
  * Emits code for function end
  */
-void mips_emit_func_epilog(ir_graph *irg)
+static void mips_emit_func_epilog(ir_graph *irg)
 {
 	ident *irg_ident = get_entity_ident(get_irg_entity(irg));
 
@@ -749,7 +747,7 @@ void mips_emit_func_epilog(ir_graph *irg)
 /**
  * Sets labels for control flow nodes (jump target)
  */
-void mips_gen_labels(ir_node *block, void *env)
+static void mips_gen_labels(ir_node *block, void *env)
 {
 	ir_node *pred;
 	int n = get_Block_n_cfgpreds(block);
@@ -781,9 +779,4 @@ void mips_gen_routine(mips_code_gen_t *mips_cg, ir_graph *irg)
 	}
 
 	mips_emit_func_epilog(irg);
-}
-
-void mips_init_emitter(void)
-{
-	FIRM_DBG_REGISTER(dbg, "firm.be.mips.emitter");
 }

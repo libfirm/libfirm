@@ -975,7 +975,7 @@ void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
  ***************************************************************************************/
 
 /* default compare operation to compare attributes */
-int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
+static int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 {
 	if (a->data.tp != b->data.tp)
 		return 1;

@@ -58,6 +58,10 @@ optimization_state_t libFIRM_running = 0;
 /* verbose is always off on default */
 optimization_state_t libFIRM_verb = 0;
 
+/* silence warnings */
+void set_opt_optimize(int value);
+int get_opt_optimize(void);
+
 /* an external flag can be set and get from outside */
 #define E_FLAG(name, value, def)           \
 void set_opt_##name(int flag) {            \
@@ -87,8 +91,7 @@ void set_opt_##name(int flag) {           \
 /* for compatibility reasons */
 void set_optimize(int value)
 {
-	if (value) libFIRM_opt |= irf_optimize;
-	else       libFIRM_opt &= ~irf_optimize;
+	set_opt_optimize(value);
 }
 
 int (get_optimize)(void)

@@ -175,33 +175,6 @@ int (be_ifg_degree)(const be_ifg_t *ifg, const ir_node *irn)
 }
 
 
-int be_ifg_is_simplicial(const be_ifg_t *ifg, const ir_node *irn)
-{
-	int degree = be_ifg_degree(ifg, irn);
-	void *iter = be_ifg_neighbours_iter_alloca(ifg);
-
-	ir_node **neighbours = XMALLOCN(ir_node*, degree);
-
-	ir_node *curr;
-	int i, j;
-
-	i = 0;
-	be_ifg_foreach_neighbour(ifg, iter, irn, curr)
-		neighbours[i++] = curr;
-
-	for (i = 0; i < degree; ++i) {
-		for (j = 0; j < i; ++j)
-			if (!be_ifg_connected(ifg, neighbours[i], neighbours[j])) {
-				free(neighbours);
-				return 0;
-			}
-	}
-
-
-	free(neighbours);
-	return 1;
-}
-
 void be_ifg_check(const be_ifg_t *ifg)
 {
 	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
@@ -238,7 +211,7 @@ void be_ifg_check(const be_ifg_t *ifg)
 	ir_printf("\n\nFound %d nodes in the 'check neighbour section'\n", neighbours_count);
 }
 
-int be_ifg_check_get_node_count(const be_ifg_t *ifg)
+static int be_ifg_check_get_node_count(const be_ifg_t *ifg)
 {
 	void *iter = be_ifg_nodes_iter_alloca(ifg);
 	int node_count = 0;
@@ -731,6 +704,7 @@ static const lc_opt_table_entry_t be_ifg_options[] = {
 	LC_OPT_LAST
 };
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ifg);
 void be_init_ifg(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -739,7 +713,6 @@ void be_init_ifg(void)
 	lc_opt_add_table(ifg_grp, be_ifg_options);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ifg);
 
 static FILE *be_ifg_open(const be_chordal_env_t *env, const char *prefix)
 {

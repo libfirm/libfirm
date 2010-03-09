@@ -2665,9 +2665,8 @@ int be_abi_omit_fp(const be_abi_irg_t *abi)
 	return abi->call->flags.bits.try_omit_fp;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);
 void be_init_abi(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.abi");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);

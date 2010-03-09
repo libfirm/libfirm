@@ -71,7 +71,7 @@ const arch_register_t *ppc32_get_firm_reg(const ir_node *irn, set *reg_set)
 }
 
 
-int is_ppc32_Load(const ir_node *n)
+static int is_ppc32_Load(const ir_node *n)
 {
 	ir_op *op = get_irn_op(n);
 	if (op == op_ppc32_Lbz) return 1;
@@ -84,7 +84,7 @@ int is_ppc32_Load(const ir_node *n)
 	return 0;
 }
 
-int is_ppc32_Store(const ir_node *n)
+static int is_ppc32_Store(const ir_node *n)
 {
 	ir_op *op = get_irn_op(n);
 	if (op == op_ppc32_Stb) return 1;

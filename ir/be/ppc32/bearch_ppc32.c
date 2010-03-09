@@ -596,7 +596,7 @@ static const arch_register_class_t *ppc32_get_reg_class(unsigned i)
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *ppc32_get_reg_class_for_mode(const ir_mode *mode)
+static const arch_register_class_t *ppc32_get_reg_class_for_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode))
 		return &ppc32_reg_classes[CLASS_ppc32_fp];
@@ -686,7 +686,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 	}
 }
 
-int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn)
+static int ppc32_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
 	if (!is_ppc32_irn(irn))
@@ -816,9 +816,8 @@ const arch_isa_if_t ppc32_isa_if = {
 	ppc32_is_valid_clobber
 };
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ppc32);
 void be_init_arch_ppc32(void)
 {
 	be_register_isa_if("ppc32", &ppc32_isa_if);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ppc32);

@@ -26,6 +26,8 @@
  */
 #include "config.h"
 
+#include "bepressurestat.h"
+
 #include <math.h>
 
 #include "hashptr.h"

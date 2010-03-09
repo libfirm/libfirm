@@ -244,9 +244,8 @@ void be_free_loop_pressure(be_loopana_t *loop_ana)
 	xfree(loop_ana);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_loopana);
 void be_init_loopana(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.loopana");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_loopana);

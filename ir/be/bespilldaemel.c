@@ -377,7 +377,7 @@ static void spill_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
+static void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
 {
 	ir_graph     *irg    = be_get_birg_irg(birg);
 	n_regs = new_cls->n_regs - be_put_ignore_regs(birg, new_cls, NULL);
@@ -405,6 +405,7 @@ void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
 	spill_env = NULL;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill);
 void be_init_daemelspill(void)
 {
 	static be_spiller_t daemel_spiller = {
@@ -414,5 +415,3 @@ void be_init_daemelspill(void)
 	be_register_spiller("daemel", &daemel_spiller);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spilldaemel");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill);

@@ -719,6 +719,8 @@ static inline int _is_arg_Proj(const ir_node *node)
 	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
 }
 
+/** initialize ir_node module */
+void init_irnode(void);
 
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)

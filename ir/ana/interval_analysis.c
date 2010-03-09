@@ -131,7 +131,7 @@ int get_region_n_exc_outs(void *region)
 	return get_region_attr(region)->n_exc_outs;
 }
 
-void inc_region_n_exc_outs(void *region)
+static void inc_region_n_exc_outs(void *region)
 {
 	(get_region_attr(region)->n_exc_outs)++;
 }
@@ -463,7 +463,7 @@ void free_intervals(void)
 /*                                                                  */
 /*------------------------------------------------------------------*/
 
-void dump_region_edges(FILE *F, void *reg)
+static void dump_region_edges(FILE *F, void *reg)
 {
 	int i, n_ins = get_region_n_ins(reg);
 

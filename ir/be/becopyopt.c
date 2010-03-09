@@ -136,6 +136,7 @@ void be_register_copyopt(const char *name, co_algo_info *copyopt)
 	be_add_module_to_list(&copyopts, name, copyopt);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyopt);
 void be_init_copyopt(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -148,14 +149,13 @@ void be_init_copyopt(void)
 		                       &copyopts, (void**) &selected_copyopt);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyopt);
-
 static int void_algo(copy_opt_t *co)
 {
 	(void) co;
 	return 0;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copynone);
 void be_init_copynone(void)
 {
 	static co_algo_info copyheur = {
@@ -164,8 +164,6 @@ void be_init_copynone(void)
 
 	be_register_copyopt("none", &copyheur);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copynone);
 
 #undef QUICK_AND_DIRTY_HACK
 

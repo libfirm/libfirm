@@ -37,7 +37,6 @@
 #include "ident_t.h"
 #include "firm.h"
 #include "irflag_t.h"
-/* init functions are not public */
 #include "tv_t.h"
 #include "tpop_t.h"
 #include "irprog_t.h"
@@ -55,6 +54,7 @@
 #include "opt_init.h"
 #include "debugger.h"
 #include "be_t.h"
+#include "irtools.h"
 
 /* returns the firm root */
 lc_opt_entry_t *firm_opt_get_root(void)
@@ -136,6 +136,8 @@ void ir_init(const firm_parameter_t *param)
 	/* Init architecture dependent optimizations. */
 	arch_dep_init(arch_dep_default_factory);
 	arch_dep_set_opts(0);
+
+	init_irnode();
 
 #ifdef DEBUG_libfirm
 	/* integrated debugger extension */

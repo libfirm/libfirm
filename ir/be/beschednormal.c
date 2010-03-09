@@ -421,7 +421,7 @@ static void *normal_init_block(void *graph_env, ir_node *block)
 	return inst;
 }
 
-void normal_finish_graph(void *env)
+static void normal_finish_graph(void *env)
 {
 	instance_t *inst = env;
 

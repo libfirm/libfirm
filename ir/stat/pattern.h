@@ -26,6 +26,8 @@
 #ifndef FIRM_STAT_PATTERN_H
 #define FIRM_STAT_PATTERN_H
 
+#include "firm_types.h"
+
 /**
  * Calculates the pattern history.
  *

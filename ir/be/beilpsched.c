@@ -69,6 +69,7 @@
 #include "beirg.h"
 #include "bemachine.h"
 #include "belistsched.h"
+#include "bemodule.h"
 
 typedef struct _ilpsched_options_t {
 	unsigned regpress;
@@ -2072,6 +2073,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 /**
  * Register ILP scheduler options.
  */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ilpsched);
 void be_init_ilpsched(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

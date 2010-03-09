@@ -40,7 +40,6 @@
 #define get_irg_params        get_irg_n_locs
 #define get_irg_n_loc         get_irg_n_locs
 #define set_irg_ent(X, Y)     set_irg_entity(X, Y)
-#define set_irg_params        set_irg_n_loc
 #define no_dom                dom_none
 #define no_outs               outs_none
 

@@ -645,7 +645,8 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 		fprintf(F, " hidden_user");
 }
 
-void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned verbosity)
+static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
+                                       unsigned verbosity)
 {
 	int i, j;
 	ir_type *owner, *type;
@@ -941,7 +942,7 @@ void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix, unsigned 
 	}
 }
 
-void    dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity)
+void dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity)
 {
 	dump_entity_to_file_prefix (F, ent, "", verbosity);
 	fprintf(F, "\n");

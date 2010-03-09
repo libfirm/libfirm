@@ -738,16 +738,6 @@ int get_irg_n_locs(ir_graph *irg)
 		return irg->n_loc - 1;
 }
 
-void set_irg_n_loc(ir_graph *irg, int n_loc)
-{
-	if (get_opt_precise_exc_context())
-		irg->n_loc = n_loc + 1 + 1;
-	else
-		irg->n_loc = n_loc + 1;
-}
-
-
-
 /* Returns the obstack associated with the graph. */
 struct obstack *
 (get_irg_obstack)(const ir_graph *irg) {

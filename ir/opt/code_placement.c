@@ -27,6 +27,7 @@
  */
 #include "config.h"
 
+#include "iroptimize.h"
 #include "adt/pdeq.h"
 #include "irnode_t.h"
 #include "irouts.h"

@@ -734,6 +734,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
  * |_|  |_|\__,_|_|_| |_|
  *
  */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched);
 void be_init_blocksched(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -743,8 +744,6 @@ void be_init_blocksched(void)
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched);
 
 ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 {

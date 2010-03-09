@@ -1048,6 +1048,7 @@ static void be_spill_belady3(be_irg_t *birg, const arch_register_class_t *ncls)
 	be_delete_spill_env(senv);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady3);
 void be_init_spillbelady3(void)
 {
 	static be_spiller_t belady3_spiller = {
@@ -1057,5 +1058,3 @@ void be_init_spillbelady3(void)
 	be_register_spiller("belady3", &belady3_spiller);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady3");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady3);

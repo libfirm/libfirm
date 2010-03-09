@@ -242,10 +242,10 @@ void set_sparc_req_in(ir_node *node, const arch_register_req_t *req, int pos)
 /**
  * Initializes the nodes attributes.
  */
-void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
-				const arch_register_req_t **in_reqs,
-				const be_execution_unit_t ***execution_units,
-				int n_res)
+static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
+                                  const arch_register_req_t **in_reqs,
+                                  const be_execution_unit_t ***execution_units,
+                                  int n_res)
 {
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);

@@ -162,6 +162,12 @@ void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph
 int edges_verify(ir_graph *irg);
 
 /**
+ * veriy a certrain kind of out edges of graph @p irg.
+ * @returns 1 if a problem was found, 0 otherwise
+ */
+int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind);
+
+/**
  * Set edge verification flag.
  */
 void edges_init_dbg(int do_dbg);

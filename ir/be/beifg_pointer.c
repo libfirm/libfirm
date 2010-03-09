@@ -40,6 +40,7 @@
 #include "be_t.h"
 #include "bera.h"
 #include "beifg_t.h"
+#include "beifg_impl.h"
 #include "bechordal_t.h"
 
 typedef struct _ptr_element_t ptr_element_t;

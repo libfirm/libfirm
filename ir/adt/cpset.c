@@ -41,8 +41,10 @@
 #define SCALAR_RETURN
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof(cpset_hashset_entry_t))
 
-#define hashset_init            _cpset_init
-#define hashset_init_size       _cpset_init_size
+void cpset_init_(cpset_t *self);
+#define hashset_init            cpset_init_
+void cpset_init_size_(cpset_t *self, size_t expected_elems);
+#define hashset_init_size       cpset_init_size_
 #define hashset_destroy         cpset_destroy
 #define hashset_insert          cpset_insert
 #define hashset_remove          cpset_remove
@@ -59,7 +61,7 @@ void cpset_init(cpset_t *this, cpset_hash_function hash_function,
 {
 	this->hash_function = hash_function;
 	this->cmp_function = cmp_function;
-	_cpset_init(this);
+	cpset_init_(this);
 }
 
 void cpset_init_size(cpset_t *this, cpset_hash_function hash_function,
@@ -67,5 +69,5 @@ void cpset_init_size(cpset_t *this, cpset_hash_function hash_function,
 {
 	this->hash_function = hash_function;
 	this->cmp_function = cmp_function;
-	_cpset_init_size(this, expected_elems);
+	cpset_init_size_(this, expected_elems);
 }

@@ -27,6 +27,7 @@
  */
 #include "config.h"
 
+#include "iroptimize.h"
 #include "irflag.h"
 #include "irdom.h"
 #include "irouts.h"

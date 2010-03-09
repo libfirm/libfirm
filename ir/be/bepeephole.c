@@ -136,7 +136,8 @@ void be_peephole_new_node(ir_node * nw)
  * Note: killing a node and rewiring os only allowed if new_node produces
  * the same registers as old_node.
  */
-void be_peephole_before_exchange(const ir_node *old_node, ir_node *new_node)
+static void be_peephole_before_exchange(const ir_node *old_node,
+                                        ir_node *new_node)
 {
 	const arch_register_t       *reg;
 	const arch_register_class_t *cls;
@@ -402,14 +403,8 @@ void be_peephole_opt(be_irg_t *birg)
 	irg_block_walk_graph(irg, process_block, NULL, NULL);
 }
 
-void be_peephole_init(void)
-{
-	clear_irp_opcodes_generic_func();
-}
-
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole);
 void be_init_peephole(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.peephole");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole);

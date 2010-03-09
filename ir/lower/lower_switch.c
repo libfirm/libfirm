@@ -35,6 +35,7 @@
 #include "irnode_t.h"
 #include "irouts.h"
 #include "irpass_t.h"
+#include "lowering.h"
 
 #define foreach_out_irn(irn, i, outirn) for (i = get_irn_n_outs(irn) - 1;\
 	i >= 0 && (outirn = get_irn_out(irn, i)); --i)

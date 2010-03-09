@@ -176,7 +176,7 @@ static ir_node *gen_Conv(ppc32_transform_env_t *env, ir_node *op)
 	panic("Mode for Conv not supported: %F -> %F", from_mode, to_mode);
 }
 
-int search_from_node_in_block(ir_node *from, ir_node *to)
+static int search_from_node_in_block(ir_node *from, ir_node *to)
 {
 	int n = get_irn_arity(from), i;
 	for (i=0;i<n;i++)
@@ -191,14 +191,14 @@ int search_from_node_in_block(ir_node *from, ir_node *to)
 	return 0;
 }
 
-int nodes_dependency_order(ir_node **a, ir_node **b)
+static int nodes_dependency_order(ir_node **a, ir_node **b)
 {
 	if (search_from_node_in_block(*a,*b)) return 1;
 	if (search_from_node_in_block(*b,*a)) return -1;
 	return 0;
 }
 
-void finalize_block(ppc32_code_gen_t *cgenv)
+static void finalize_block(ppc32_code_gen_t *cgenv)
 {
 	int i;
 	ir_node *current_conv;
@@ -238,7 +238,7 @@ void finalize_block(ppc32_code_gen_t *cgenv)
 	}
 }
 
-void init_block(void)
+static void init_block(void)
 {
 	cw_block_attr *attr = XMALLOC(cw_block_attr);
 	attr->first_conv    = NULL;

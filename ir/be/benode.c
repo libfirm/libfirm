@@ -832,15 +832,15 @@ ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node)
 	return proj;
 }
 
-int be_has_frame_entity(const ir_node *irn)
+static bool be_has_frame_entity(const ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
 	case beo_Spill:
 	case beo_Reload:
 	case beo_FrameAddr:
-		return 1;
+		return true;
 	default:
-		return 0;
+		return false;
 	}
 }
 

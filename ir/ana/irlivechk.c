@@ -314,6 +314,7 @@ void lv_chk_free(lv_chk_t *lv)
 	xfree(lv);
 }
 
+#if 0
 /**
  * Check if a node is live at the end of a block.
  * This function is for internal use as its code is shared between
@@ -483,6 +484,7 @@ unsigned lv_chk_bl_end_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node
 end:
 	return res;
 }
+#endif
 
 /**
  * Check a nodes liveness situation of a block.

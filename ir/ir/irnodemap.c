@@ -50,12 +50,16 @@ static ir_nodemap_entry_t null_nodemap_entry = { NULL, NULL };
 #define EntryIsEmpty(value)       ((value).node == NULL)
 #define EntryIsDeleted(value)     ((value).node == (ir_node*)-1)
 
-#define hashset_init            _ir_nodemap_init
+void ir_nodemap_init_(ir_nodemap_t *self);
+#define hashset_init            ir_nodemap_init_
 #define hashset_init_size       ir_nodemap_init_size
 #define hashset_destroy         ir_nodemap_destroy
-#define hashset_insert          _ir_nodemap_insert
+ir_nodemap_entry_t *ir_nodemap_insert_(ir_nodemap_t *self, ir_node *node);
+#define hashset_insert          ir_nodemap_insert_
 #define hashset_remove          ir_nodemap_remove
-#define hashset_find            _ir_nodemap_find
+ir_nodemap_entry_t *ir_nodemap_find_(const ir_nodemap_t *self,
+                                     const ir_node *node);
+#define hashset_find            ir_nodemap_find_
 #define hashset_size            ir_nodemap_size
 #define hashset_iterator_init   ir_nodemap_iterator_init
 #define hashset_iterator_next   ir_nodemap_iterator_next
@@ -70,12 +74,12 @@ void ir_nodemap_init(ir_nodemap_t *nodemap)
 
 void *ir_nodemap_get(const ir_nodemap_t *self, const ir_node *node)
 {
-	ir_nodemap_entry_t *entry = _ir_nodemap_find(self, node);
+	ir_nodemap_entry_t *entry = ir_nodemap_find_(self, node);
 	return entry->data;
 }
 
 void ir_nodemap_insert(ir_nodemap_t *self, ir_node *node, void *data)
 {
-	ir_nodemap_entry_t *entry = _ir_nodemap_insert(self, node);
+	ir_nodemap_entry_t *entry = ir_nodemap_insert_(self, node);
 	entry->data               = data;
 }

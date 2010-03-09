@@ -26,6 +26,8 @@
  */
 #include "config.h"
 
+#include "bessadestr.h"
+
 #include "debug.h"
 #include "set.h"
 #include "pmap.h"

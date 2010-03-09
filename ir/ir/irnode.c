@@ -780,18 +780,6 @@ int (Block_block_visited)(const ir_node *node)
 	return _Block_block_visited(node);
 }
 
-ir_node *get_Block_graph_arr(ir_node *node, int pos)
-{
-	assert(is_Block(node));
-	return node->attr.block.graph_arr[pos+1];
-}
-
-void set_Block_graph_arr(ir_node *node, int pos, ir_node *value)
-{
-	assert(is_Block(node));
-	node->attr.block.graph_arr[pos+1] = value;
-}
-
 #ifdef INTERPROCEDURAL_VIEW
 void set_Block_cg_cfgpred_arr(ir_node *node, int arity, ir_node *in[])
 {
@@ -1470,7 +1458,7 @@ ir_node *get_Builtin_mem(const ir_node *node)
 	return get_irn_n(node, 0);
 }
 
-void set_Builin_mem(ir_node *node, ir_node *mem)
+void set_Builtin_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_Builtin(node));
 	set_irn_n(node, 0, mem);
@@ -2827,17 +2815,6 @@ ir_node *skip_Id(ir_node *node)
 	} else {
 		return node;
 	}
-}
-
-void skip_Id_and_store(ir_node **node)
-{
-	ir_node *n = *node;
-
-	if (!n || (n->op != op_Id)) return;
-
-	/* Don't use get_Id_pred():  We get into an endless loop for
-	   self-referencing Ids. */
-	*node = skip_Id(n);
 }
 
 int (is_strictConv)(const ir_node *node)

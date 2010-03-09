@@ -33,6 +33,8 @@
 #include <windows.h>
 #endif
 
+#include "debugger.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
@@ -188,9 +190,6 @@ do {                                        \
 static const char firm_debug_info_string[] =
 	API_VERSION(FIRM_DBG_MAJOR, FIRM_DBG_MINOR);
 
-/**
- * Returns non-zero, if the debug extension is active
- */
 int firm_debug_active(void)
 {
 	return is_active;
@@ -204,19 +203,11 @@ static void reset_dbg_buf(void)
 	firm_dbg_msg_buf[0] = '\0';
 }  /* reset_dbg_buf */
 
-/**
- * Add text to the debug text buffer.
- */
 static void add_to_dbg_buf(const char *buf)
 {
 	strncat(firm_dbg_msg_buf, buf, sizeof(firm_dbg_msg_buf));
 }  /* add_to_dbg_buf */
 
-/**
- * Return the content of the debug text buffer.
- *
- * To be called from the debugger.
- */
 const char *firm_debug_text(void)
 {
 	firm_dbg_msg_buf[sizeof(firm_dbg_msg_buf) - 1] = '\0';
@@ -1058,11 +1049,6 @@ static unsigned get_token(void)
 	return c;
 }  /* get_token */
 
-/**
- * High level function to use from debugger interface
- *
- * See show_commands() for supported commands.
- */
 void firm_debug(const char *cmd)
 {
 	char name[1024], fname[1024];
@@ -1277,7 +1263,6 @@ leave:
 	;
 }  /* firm_debug */
 
-/* creates the debugger tables */
 void firm_init_debugger(void)
 {
 	char *env;
@@ -1306,9 +1291,6 @@ const char *gdb_node_helper(void *firm_object)
 	return buf;
 }
 
-/**
- * A gdb helper function to print tarvals.
- */
 const char *gdb_tarval_helper(void *tv_object)
 {
 	static char buf[1024];

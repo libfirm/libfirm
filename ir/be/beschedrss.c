@@ -30,6 +30,8 @@
  */
 #include "config.h"
 
+#include "beschedrss.h"
+
 #include <limits.h>
 
 #include "obst.h"
@@ -2174,9 +2176,7 @@ static void process_block(ir_node *block, void *env)
 	phase_free(&rss->ph);
 }
 
-/**
- * Register the options.
- */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);
 void be_init_schedrss(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -2185,8 +2185,6 @@ void be_init_schedrss(void)
 
 	lc_opt_add_table(rss_grp, rss_option_table);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);
 
 /**
  * Preprocess the irg for scheduling.

@@ -415,7 +415,7 @@ static const arch_register_class_t *sparc_get_reg_class(unsigned i)
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *sparc_get_reg_class_for_mode(const ir_mode *mode)
+static const arch_register_class_t *sparc_get_reg_class_for_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode))
 		return &sparc_reg_classes[CLASS_sparc_fp];
@@ -501,8 +501,8 @@ static const be_abi_callbacks_t sparc_abi_callbacks = {
  * @param method_type The type of the method (procedure) in question.
  * @param abi         The abi object to be modified
  */
-void sparc_get_call_abi(const void *self, ir_type *method_type,
-                           be_abi_call_t *abi)
+static void sparc_get_call_abi(const void *self, ir_type *method_type,
+                               be_abi_call_t *abi)
 {
 	ir_type  *tp;
 	ir_mode  *mode;
@@ -545,7 +545,7 @@ void sparc_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-int sparc_to_appear_in_schedule(void *block_env, const ir_node *irn)
+static int sparc_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
 
@@ -676,6 +676,7 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_is_valid_clobber
 };
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc);
 void be_init_arch_sparc(void)
 {
 	be_register_isa_if("sparc", &sparc_isa_if);
@@ -683,4 +684,3 @@ void be_init_arch_sparc(void)
 	sparc_init_transform();
 	sparc_init_emitter();
 }
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc);

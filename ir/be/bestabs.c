@@ -116,7 +116,7 @@ enum stabs_types {
  */
 typedef struct stabs_handle {
 	dbg_handle              base;         /**< the base class */
-	ir_entity               *cur_ent;     /**< current method entity */
+	const ir_entity               *cur_ent;     /**< current method entity */
 	const be_stack_layout_t *layout;      /**< current stack layout */
 	unsigned                next_type_nr; /**< next type number */
 	pmap                    *type_map;    /**< a map from type to type number */
@@ -292,7 +292,7 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp)
 /**
  * print a pointer type
  */
-void print_pointer_type(stabs_handle *h, ir_type *tp, int local)
+static void print_pointer_type(stabs_handle *h, ir_type *tp, int local)
 {
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
 	ir_type      *el_tp   = get_pointer_points_to_type(tp);
@@ -677,7 +677,7 @@ static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 /**
  * dump the stabs for a method begin
  */
-static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stack_layout_t *layout)
+static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent, const be_stack_layout_t *layout)
 {
 	stabs_handle *h = (stabs_handle *)handle;
 	ir_type      *mtp, *rtp;
@@ -749,7 +749,7 @@ static void stabs_method_begin(dbg_handle *handle, ir_entity *ent, const be_stac
 static void stabs_method_end(dbg_handle *handle)
 {
 	stabs_handle            *h = (stabs_handle *)handle;
-	ir_entity               *ent = h->cur_ent;
+	const ir_entity         *ent = h->cur_ent;
 	const be_stack_layout_t *layout = h->layout;
 	const char              *ld_name = get_entity_ld_name(ent);
 	int                     i, n, frame_size;
@@ -807,7 +807,7 @@ static void stabs_types(dbg_handle *handle)
 /**
  * dump a variable in the global type
  */
-static void stabs_variable(dbg_handle *handle, ir_entity *ent)
+static void stabs_variable(dbg_handle *handle, const ir_entity *ent)
 {
 	stabs_handle *h = (stabs_handle *)handle;
 	unsigned tp_num = get_type_number(h, get_entity_type(ent));
@@ -855,7 +855,7 @@ static const debug_ops stabs_ops = {
 };
 
 /* Opens a stabs handler */
-dbg_handle *be_stabs_open(void)
+static dbg_handle *be_stabs_open(void)
 {
 	stabs_handle *h = XMALLOCZ(stabs_handle);
 
@@ -865,9 +865,8 @@ dbg_handle *be_stabs_open(void)
 	return &h->base;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_stabs);
 void be_init_stabs(void)
 {
 	be_register_dbgout_module("stabs", be_stabs_open);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_stabs);

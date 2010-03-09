@@ -81,7 +81,6 @@ I_FLAG(precise_exc_context                , 15, OFF)
 I_FLAG(fragile_ops                        , 16, OFF)
 
 /** Optimize cast nodes. */
-E_FLAG(optimize_class_casts               , 21, ON)
 E_FLAG(suppress_downcast_optimization     , 22, OFF)
 
 /** Not really an optimization, removes Confirm nodes. */

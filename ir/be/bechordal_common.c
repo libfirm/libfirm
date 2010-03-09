@@ -24,8 +24,10 @@
  * @date        08.12.2004
  * @version     $Id: bechordal.c 26750 2009-11-27 09:37:43Z bersch $
  */
-
 #include "config.h"
+
+#include "bechordal_common.h"
+
 #include "debug.h"
 
 #include "iredges.h"
@@ -292,9 +294,8 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	return perm;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_common);
 void be_init_chordal_common(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.chordal_common");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_common);

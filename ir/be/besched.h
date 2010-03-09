@@ -54,6 +54,7 @@ void    sched_add_before(ir_node *before, ir_node *irn);
 void    sched_add_after(ir_node *after, ir_node *irn);
 void    sched_init_block(ir_node *block);
 void    sched_reset(ir_node *node);
+int     sched_comes_after(const ir_node *n1, const ir_node *n2);
 void    sched_remove(ir_node *irn);
 
 #define sched_is_end(irn)   is_Block(irn)

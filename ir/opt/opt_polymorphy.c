@@ -27,6 +27,7 @@
  */
 #include "config.h"
 
+#include "opt_polymorphy.h"
 #include "iroptimize.h"
 #include "irprog_t.h"
 #include "entity_t.h"
@@ -45,7 +46,7 @@
  *
  * The default implementation hecks for Alloc nodes only.
  */
-ir_type *default_firm_get_Alloc(ir_node *n)
+static ir_type *default_firm_get_Alloc(ir_node *n)
 {
 	n = skip_Proj(n);
 	if (is_Alloc(n)) {

@@ -39,6 +39,7 @@
 #include "irtools.h"
 #include "array.h"
 #include "error.h"
+#include "pattern_dmp.h"
 
 /** Obstack to hold all modes. */
 static struct obstack modes;

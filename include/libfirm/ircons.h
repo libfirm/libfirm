@@ -1270,7 +1270,8 @@ ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg,
  */
 ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con);
 
-/** Constructor for a Const node.
+/**
+ * Constructor for a Const node.
  *
  * Adds the node to the start block.
  *
@@ -2902,6 +2903,15 @@ ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp);
  */
 ir_node *new_d_Const(dbg_info *db, tarval *con);
 
+/**
+ * @see new_rd_Const_long()
+ *
+ * @param *db    A pointer for debug information.
+ * @param *mode  The mode of the operands and results.
+ * @param value  A value from which the tarval is made.
+ */
+ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
+
 /** Constructor for a SymConst_type node.
  *
  *  This is the constructor for a symbolic constant.
@@ -4343,15 +4353,41 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_outs, ir_asm_constraint *outputs,
                  int n_clobber, ident *clobber[], ident *asm_text);
 
-/** Constructor for a Dummy node.
+/**
+ * @brief Constructor for a Dummy node.
+ *
+ * @param *db       debug info for the node
+ * @param *mode     The mode of the node.
+ * @param *irg      the graph to put the node into
+ * @returns         the newly created note
+ */
+ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode);
+
+/**
+ * @copybrief new_rd_Dummy()
  *
  * @param *mode     The mode of the node.
+ * @param *irg      the graph to put the node into
+ * @returns         the newly created note
  */
-ir_node *new_Dummy(ir_mode *mode);
-
 ir_node *new_r_Dummy(ir_graph *irg, ir_mode *mode);
 
-ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode);
+/**
+ * @copybrief new_rd_Dummy()
+ *
+ * @param *db       debug info for the node
+ * @param *mode     The mode of the node.
+ * @returns         the newly created note
+ */
+ir_node *new_d_Dummy(dbg_info *db, ir_mode *mode);
+
+/**
+ * @copybrief new_rd_Dummy()
+ *
+ * @param *mode     The mode of the node.
+ * @returns         the newly created note
+ */
+ir_node *new_Dummy(ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

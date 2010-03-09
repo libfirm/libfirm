@@ -551,6 +551,7 @@ static void ilp2_apply(ilp_env_t *ienv)
 #endif
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2);
 void be_init_copyilp2(void)
 {
 	static co_algo_info copyheur = {
@@ -559,8 +560,6 @@ void be_init_copyilp2(void)
 
 	be_register_copyopt("ilp", &copyheur);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2);
 
 int co_solve_ilp2(copy_opt_t *co)
 {

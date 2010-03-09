@@ -160,7 +160,8 @@ void ir_prog_pass_mgr_add_graph_mgr(
 /**
  * Create a suffix for dumping.
  */
-void create_suffix(char *suffix, size_t n, const char *pass_name, unsigned index)
+static void create_suffix(char *suffix, size_t n, const char *pass_name,
+                          unsigned index)
 {
 	snprintf(suffix, n, "-%02u_%s", index, pass_name);
 }

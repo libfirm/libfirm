@@ -1471,7 +1471,7 @@ static void collect_blocks(ir_node *bl, void *data)
  * @param birg  The backend graph
  * @param cls   The register class to spill
  */
-void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
+static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 {
 	ir_graph *irg = be_get_birg_irg(birg);
 	belady_env_t env;
@@ -1534,6 +1534,7 @@ void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	obstack_free(&env.ob, NULL);
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady2);
 void be_init_spillbelady2(void)
 {
 	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -1548,5 +1549,3 @@ void be_init_spillbelady2(void)
 	be_register_spiller("belady2", &belady_spiller);
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill.belady2");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady2);

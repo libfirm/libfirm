@@ -668,7 +668,7 @@ static void ppc32_emit_end(ir_graph *irg)
  * Sets labels for control flow nodes (jump target)
  * TODO: Jump optimization
  */
-void ppc32_gen_labels(ir_node *block, void *env)
+static void ppc32_gen_labels(ir_node *block, void *env)
 {
 	ir_node *pred;
 	int n;

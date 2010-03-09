@@ -42,15 +42,10 @@
 #define hashset_destroy         pset_new_destroy
 #define hashset_insert          pset_new_insert
 #define hashset_remove          pset_new_remove
-#define hashset_find            pset_new_find
+#define hashset_find            pset_new_contains
 #define hashset_size            pset_new_size
 #define hashset_iterator_init   pset_new_iterator_init
 #define hashset_iterator_next   pset_new_iterator_next
 #define hashset_remove_iterator pset_new_remove_iterator
 
 #include "hashset.c"
-
-int pset_new_contains(const pset_new_t *pset_new, const ValueType val)
-{
-	return pset_new_find(pset_new, val);
-}

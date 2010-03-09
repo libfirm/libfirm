@@ -2024,9 +2024,7 @@ static void be_pref_alloc(be_irg_t *new_birg)
 	obstack_free(&obst, NULL);
 }
 
-/**
- * Initializes this module.
- */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc);
 void be_init_pref_alloc(void)
 {
 	static be_ra_t be_ra_pref = {
@@ -2039,5 +2037,3 @@ void be_init_pref_alloc(void)
 	be_register_allocator("pref", &be_ra_pref);
 	FIRM_DBG_REGISTER(dbg, "firm.be.prefalloc");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc);

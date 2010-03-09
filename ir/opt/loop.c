@@ -26,6 +26,8 @@
  */
 #include "config.h"
 
+#include "iroptimize.h"
+#include "opt_init.h"
 #include "irnode.h"
 #include "debug.h"
 
@@ -36,9 +38,9 @@
 #include "irouts.h"
 #include "iredges.h"
 #include "irtools.h"
-#include "array_t.h"	/* automatic array */
-#include "beutil.h"		/* get_block */
-#include "irloop_t.h"	/* set_irn_loop*/
+#include "array_t.h"
+#include "beutil.h"
+#include "irloop_t.h"
 #include "irpass.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
@@ -253,7 +255,7 @@ static unsigned is_nodesblock_marked(ir_node* node)
 }
 
 /* Returns the number of blocks in a loop. */
-int get_loop_n_blocks(ir_loop *loop)
+static int get_loop_n_blocks(ir_loop *loop)
 {
 	int elements, e;
 	int blocks = 0;
@@ -568,7 +570,7 @@ static void construct_ssa_n(ir_node *def, ir_node *user)
 /**
  * Construct SSA for all definitions in arr.
  */
-void construct_ssa_foreach(ir_node **arr, int arr_n)
+static void construct_ssa_foreach(ir_node **arr, int arr_n)
 {
 	int i;
 	for (i = 0; i < arr_n ; ++i) {
@@ -1113,7 +1115,7 @@ static void inversion_walk(out_edge *head_entries)
 }
 
 /* Loop peeling */
-void loop_peeling(void)
+static void loop_peeling(void)
 {
 	cur_loop_outs = NEW_ARR_F(out_edge, 0);
 	irg_walk_graph( current_ir_graph, get_loop_outs, NULL, NULL );
@@ -1131,7 +1133,7 @@ void loop_peeling(void)
 }
 
 /* Loop inversion */
-void loop_inversion(void)
+static void loop_inversion(void)
 {
 	unsigned do_inversion = 1;
 
@@ -1190,7 +1192,7 @@ void loop_inversion(void)
  * Returns last element of linked list of copies by
  * walking the linked list.
  */
-ir_node *get_last_copy(ir_node *node)
+static ir_node *get_last_copy(ir_node *node)
 {
 	ir_node *copy, *cur;
 	cur = node;
@@ -1203,7 +1205,7 @@ ir_node *get_last_copy(ir_node *node)
 /**
  * Rewire floating copies of the current loop.
  */
-void unrolling_fix_cf(void)
+static void unrolling_fix_cf(void)
 {
 	ir_node *loophead = loop_cf_head;
 	int headarity = 	get_irn_arity(loophead);
@@ -1306,7 +1308,7 @@ static ir_node *add_phi(ir_node *node, int phi_pos)
  * Loop unrolling
  * Could be improved with variable range informations.
  */
-void loop_unrolling(void)
+static void loop_unrolling(void)
 {
 	int i, j;
 

@@ -113,6 +113,7 @@ int curr_vals[ASIZE];
 static ir_nodeset_t *all_phi_nodes;
 static ir_nodeset_t *all_copy_nodes;
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
 void be_init_copystat(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
@@ -121,14 +122,13 @@ void be_init_copystat(void)
 	all_copy_nodes = ir_nodeset_new(64);
 	memset(curr_vals, 0, sizeof(curr_vals));
 }
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
 
+BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
 void be_quit_copystat(void)
 {
 	ir_nodeset_del(all_phi_nodes);
 	ir_nodeset_del(all_copy_nodes);
 }
-BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
 
 /**
  * @return 1 if the block at pos @p pos removed a critical edge

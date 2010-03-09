@@ -26,12 +26,12 @@
  */
 #include "config.h"
 
-#include "irnode.h"
 #include "trouts.h"
 
 #include "array.h"
 #include "pmap.h"
 
+#include "irnode_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
 #include "irnode.h"
@@ -196,7 +196,7 @@ static ir_type **get_type_arraytype_array(const ir_type *tp)
 	return res;
 }
 
-void set_type_arraytype_array(const ir_type *tp, ir_type **pts)
+static void set_type_arraytype_array(const ir_type *tp, ir_type **pts)
 {
 	ir_type **old = pmap_get(type_arraytype_map, tp);
 	if (old != pts)
@@ -245,6 +245,7 @@ static void add_entity_access(const ir_entity *ent, ir_node *n)
 	set_entity_access_array(ent, accs);
 }
 
+#if 0
 void set_entity_access(const ir_entity *ent, int pos, ir_node *n)
 {
 	ir_node ** accs;
@@ -255,6 +256,7 @@ void set_entity_access(const ir_entity *ent, int pos, ir_node *n)
 	accs = get_entity_access_array(ent);
 	accs[pos] = n;
 }
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -290,6 +292,7 @@ static void add_entity_reference(const ir_entity *ent, ir_node *n)
 	set_entity_reference_array(ent, refs);
 }
 
+#if 0
 void set_entity_reference(const ir_entity *ent, int pos, ir_node *n)
 {
 	ir_node ** refs;
@@ -300,7 +303,7 @@ void set_entity_reference(const ir_entity *ent, int pos, ir_node *n)
 	refs = get_entity_reference_array(ent);
 	refs[pos] = n;
 }
-
+#endif
 
 /**------------------------------------------------------------------*/
 /*   Access routines for types                                       */
@@ -339,6 +342,7 @@ static void add_type_alloc(const ir_type *tp, ir_node *n)
 	set_type_alloc_array(tp, allocs);
 }
 
+#if 0
 void set_type_alloc(const ir_type *tp, int pos, ir_node *n)
 {
 	ir_node **allocs;
@@ -349,6 +353,7 @@ void set_type_alloc(const ir_type *tp, int pos, ir_node *n)
 	allocs = get_type_alloc_array(tp);
 	allocs[pos] = n;
 }
+#endif
 
 /* Number of Cast nodes that create an instance of this type */
 int get_type_n_casts(const ir_type *tp)
@@ -408,6 +413,7 @@ void add_type_cast(const ir_type *tp, ir_node *n)
 	set_type_cast_array(tp, casts);
 }
 
+#if 0
 void set_type_cast(const ir_type *tp, int pos, ir_node *n)
 {
 	ir_node **casts;
@@ -418,6 +424,7 @@ void set_type_cast(const ir_type *tp, int pos, ir_node *n)
 	casts = get_type_cast_array(tp);
 	casts[pos] = n;
 }
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -453,6 +460,7 @@ void add_type_pointertype_to(const ir_type *tp, ir_type *ptp)
 	set_type_pointertype_array(tp, pts);
 }
 
+#if 0
 void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp)
 {
 	ir_type ** pts;
@@ -463,7 +471,7 @@ void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp)
 	pts = get_type_pointertype_array(tp);
 	pts[pos] = ptp;
 }
-
+#endif
 
 /*------------------------------------------------------------------*/
 
@@ -499,6 +507,7 @@ void  add_type_arraytype_of(const ir_type *tp, ir_type *atp)
 	set_type_arraytype_array(tp, pts);
 }
 
+#if 0
 void  set_type_arraytype_of(const ir_type *tp, int pos, ir_type *atp)
 {
 	ir_type ** pts;
@@ -509,6 +518,7 @@ void  set_type_arraytype_of(const ir_type *tp, int pos, ir_type *atp)
 	pts = get_type_arraytype_array(tp);
 	pts[pos] = atp;
 }
+#endif
 
 /*------------------------------------------------------------------*/
 /* Building and Removing the out datastructure                      */

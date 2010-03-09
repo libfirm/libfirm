@@ -662,9 +662,7 @@ void list_sched_single_block(const be_irg_t *birg, ir_node *block,
 	DEL_ARR_F(env.sched_info);
 }
 
-/**
- * Register list scheduler options.
- */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched);
 void be_init_listsched(void)
 {
 	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -674,5 +672,3 @@ void be_init_listsched(void)
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.sched");
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched);

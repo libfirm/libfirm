@@ -57,11 +57,14 @@
 #define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof((ptr)[0]))
 
 #define hashset_init            ir_edgeset_init
+void ir_edgeset_init_size(ir_edgeset_t *self, size_t size);
 #define hashset_init_size       ir_edgeset_init_size
 #define hashset_destroy         ir_edgeset_destroy
 #define hashset_insert          ir_edgeset_insert
 #define hashset_remove          ir_edgeset_remove
+ir_edge_t *ir_edgeset_find(const ir_edgeset_t *self, const ir_edge_t*);
 #define hashset_find            ir_edgeset_find
+size_t ir_edgeset_size(const ir_edgeset_t *self);
 #define hashset_size            ir_edgeset_size
 #define hashset_iterator_init   ir_edgeset_iterator_init
 #define hashset_iterator_next   ir_edgeset_iterator_next
@@ -324,11 +327,6 @@ static inline void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind)
 	assert(err == 0);
 }
 
-#ifdef DEBUG_libfirm
-/**
- * Helper function to dump the edge set of a graph,
- * unused in normal code.
- */
 void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	irg_edge_info_t *info;
@@ -345,7 +343,6 @@ void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind)
 		ir_printf("%+F %d %d\n", e->src, e->pos, e->invalid);
 	}
 }
-#endif
 
 /* The edge from (src, pos) -> old_tgt is redirected to tgt */
 void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
@@ -1075,19 +1072,6 @@ int (get_edge_src_pos)(const ir_edge_t *edge)
 int (get_irn_n_edges_kind)(const ir_node *irn, ir_edge_kind_t kind)
 {
 	return _get_irn_n_edges_kind(irn, kind);
-}
-
-void dump_all_out_edges(ir_node *irn)
-{
-	int i;
-	for (i = 0; i < EDGE_KIND_LAST; ++i) {
-		const ir_edge_t *edge;
-
-		printf("kind \"%s\"\n", get_kind_str(i));
-		foreach_out_edge_kind(irn, edge, i) {
-			ir_printf("\t%+F(%d)\n", edge->src, edge->pos);
-		}
-	}
 }
 
 static void irg_block_edges_walk2(ir_node *bl, irg_walk_func *pre,

@@ -1771,7 +1771,7 @@ static const arch_register_class_t *ia32_get_reg_class(unsigned i)
  * @param mode The mode in question.
  * @return A register class which can hold values of the given mode.
  */
-const arch_register_class_t *ia32_get_reg_class_for_mode(const ir_mode *mode)
+static const arch_register_class_t *ia32_get_reg_class_for_mode(const ir_mode *mode)
 {
 	if (mode_is_float(mode)) {
 		return ia32_cg_config.use_sse2 ? &ia32_reg_classes[CLASS_ia32_xmm] : &ia32_reg_classes[CLASS_ia32_vfp];
@@ -1975,7 +1975,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
+static int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
 
@@ -2505,6 +2505,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_is_valid_clobber
 };
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);
 void be_init_arch_ia32(void)
 {
 	lc_opt_entry_t *be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -2522,5 +2523,3 @@ void be_init_arch_ia32(void)
 	ia32_init_x87();
 	ia32_init_architecture();
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);

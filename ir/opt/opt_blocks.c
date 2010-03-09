@@ -27,8 +27,9 @@
  * Two block are congruent, if they contains only equal calculations.
  */
 #include "config.h"
-#include "ircons.h"
+
 #include "iroptimize.h"
+#include "ircons.h"
 #include "irgmod.h"
 #include "irgraph_t.h"
 #include "irnode_t.h"
@@ -650,7 +651,7 @@ static void *live_throughs(const block_t *bl, const ir_node *phi)
  * @param part  the partition
  * @param env   the environment
  */
-void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
+static void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
 {
 	const ir_node   *meet_block = part->meet_block;
 	block_t         *bl, *next;
@@ -705,7 +706,7 @@ void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
  *
  * @param env    the environment
  */
-void propagate_live_troughs(environment_t *env)
+static void propagate_live_troughs(environment_t *env)
 {
 	partition_t *part, *next;
 

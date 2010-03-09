@@ -137,7 +137,7 @@ static void ps_box(plotter_t *_self, const rect_t *rect)
 		rect->x, rect->y, rect->w, rect->h);
 }
 
-void ps_text(plotter_t *_self, int x, int y, const char *str)
+static void ps_text(plotter_t *_self, int x, int y, const char *str)
 {
 	decl_self(ps_plotter_t, _self);
 

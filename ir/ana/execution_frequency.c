@@ -130,7 +130,7 @@ static int just_passed_a_Raise = 0;
 static ir_node *Cond_list = NULL;
 
 /* We do not use an extra set, as Projs are not yet in the existing one. */
-void set_ProjX_probability(ir_node *n, Cond_prob prob)
+static void set_ProjX_probability(ir_node *n, Cond_prob prob)
 {
   reg_exec_freq ef;
   ef.reg  = n;
@@ -138,7 +138,7 @@ void set_ProjX_probability(ir_node *n, Cond_prob prob)
   set_insert(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
 }
 
-Cond_prob get_ProjX_probability(ir_node *n)
+static Cond_prob get_ProjX_probability(ir_node *n)
 {
   reg_exec_freq ef, *found;
   ef.reg  = n;
@@ -245,7 +245,7 @@ static void walk_post(ir_node *n, void *env)
 /** Precompute which Conds test for an exception.
  *
  *  Operates on current_ir_graph. */
-void precompute_cond_evaluation(void)
+static void precompute_cond_evaluation(void)
 {
   ir_node *c;
 

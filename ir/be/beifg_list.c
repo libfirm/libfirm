@@ -34,12 +34,12 @@
 #include "irgraph_t.h"
 #include "irgwalk.h"
 
+#include "beifg_impl.h"
 #include "bearch.h"
 #include "be_t.h"
 #include "bera.h"
 #include "beifg_t.h"
 #include "bechordal_t.h"
-
 
 typedef struct _adj_head_t adj_head_t;
 

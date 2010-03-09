@@ -25,10 +25,11 @@
  */
 #include "config.h"
 
-#include "bitset.h"
+#include "irargs_t.h"
 
 #include <ctype.h>
 
+#include "bitset.h"
 #include "lc_printf.h"
 #include "firm_common.h"
 #include "irnode_t.h"

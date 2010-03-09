@@ -193,21 +193,6 @@ void arm_emit_mode(const ir_node *node)
 	arm_emit_fpa_postfix(mode);
 }
 
-/**
- * Emit a const or SymConst value.
- */
-void arm_emit_immediate(const ir_node *node)
-{
-	const arm_attr_t *attr = get_arm_attr_const(node);
-
-	if (ARM_GET_FPA_IMM(attr)) {
-		/* TODO */
-		//be_emit_irprintf("#%s", arm_get_fpa_imm_name(get_arm_imm_value(node)));
-	} else {
-		assert(!"not a Constant");
-	}
-}
-
 void arm_emit_load_mode(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);

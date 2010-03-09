@@ -43,9 +43,11 @@ int      is_pseudo_ir_graph(ir_graph *irg);
 /** Returns the number of pseudo graphs in the program. */
 int get_irp_n_pseudo_irgs(void);
 
+/** Add a graph as pseudo irg */
+void add_irp_pseudo_irg(ir_graph *irg);
+
 /** Returns the pos'th  pseudo graph in the program. */
 ir_graph *get_irp_pseudo_irg(int pos);
-
 
 /** If set, get_irp_n_irgs() and get_irp_irg() behave as if all pseudo
     graphs are in the irg list. If not set, get_entity_irg() returns

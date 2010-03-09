@@ -38,6 +38,8 @@
 #include <stdlib.h>
 #include "xmalloc.h"
 
+#include "gaussjordan.h"
+
 #define SMALL 0.00001
 
 int firm_gaussjordansolve(double *A, double *vec, int nsize)

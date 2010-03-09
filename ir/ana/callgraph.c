@@ -204,8 +204,7 @@ int get_irg_callee_loop_depth(const ir_graph *irg, int pos)
 	return -1;
 }
 
-
-double get_irg_callee_execution_frequency(const ir_graph *irg, int pos)
+static double get_irg_callee_execution_frequency(const ir_graph *irg, int pos)
 {
 	ir_node **arr = irg->callees[pos]->call_list;
 	int i, n_Calls = ARR_LEN(arr);
@@ -217,22 +216,22 @@ double get_irg_callee_execution_frequency(const ir_graph *irg, int pos)
 	return freq;
 }
 
-double get_irg_callee_method_execution_frequency(const ir_graph *irg, int pos)
+static double get_irg_callee_method_execution_frequency(const ir_graph *irg,
+                                                        int pos)
 {
 	double call_freq = get_irg_callee_execution_frequency(irg, pos);
 	double meth_freq = get_irg_method_execution_frequency(irg);
 	return call_freq * meth_freq;
 }
 
-
-double get_irg_caller_method_execution_frequency(const ir_graph *irg, int pos)
+static double get_irg_caller_method_execution_frequency(const ir_graph *irg,
+                                                        int pos)
 {
 	ir_graph *caller     = get_irg_caller(irg, pos);
 	int       pos_callee = reverse_pos(irg, pos);
 
 	return get_irg_callee_method_execution_frequency(caller, pos_callee);
 }
-
 
 
 /* --------------------- Compute the callgraph ------------------------ */

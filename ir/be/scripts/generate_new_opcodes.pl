@@ -1108,6 +1108,7 @@ EOF
 print OUT @obst_enum_op;
 print OUT <<EOF;
 int is_${arch}_irn(const ir_node *node);
+int is_${arch}_op(const ir_op *op);
 
 int get_${arch}_opcode_first(void);
 int get_${arch}_opcode_last(void);

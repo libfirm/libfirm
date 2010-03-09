@@ -30,10 +30,7 @@
 #include "lc_parser_t.h"
 #include "lc_config_parser.h"
 
-static int _lc_opt_wrap(void)
-{
-	return 1;
-}
+static int _lc_opt_wrap(void);
 
 %}
 
@@ -105,3 +102,11 @@ nl              \n
 .                   return yytext[0];
 
 %%
+
+static int _lc_opt_wrap(void)
+{
+	/* avoid warning */
+	(void) yyunput;
+	(void) input;
+	return 1;
+}
