@@ -64,10 +64,6 @@ void set_opt_##name(int flag) {            \
   if (flag) libFIRM_opt |= irf_##name;     \
   else      libFIRM_opt &= ~irf_##name;    \
 }                                          \
-void set_opt_##name##_verbose(int flag) {  \
-  if (flag) libFIRM_verb |= irf_##name;    \
-  else      libFIRM_verb &= ~irf_##name;   \
-}                                          \
 int (get_opt_##name)(void) {               \
   return _get_opt_##name();                \
 }
@@ -78,10 +74,6 @@ void set_opt_##name(int flag) {           \
   if (flag) libFIRM_opt |= irf_##name;    \
   else      libFIRM_opt &= ~irf_##name;   \
 }                                         \
-void set_opt_##name##_verbose(int flag) { \
-  if (flag) libFIRM_verb |= irf_##name;   \
-  else      libFIRM_verb &= ~irf_##name;  \
-}
 
 #define R_FLAG(name, value)
 
