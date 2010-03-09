@@ -48,10 +48,11 @@ void ir_export(const char *filename);
 void ir_export_file(FILE *output, const char *outputname);
 
 /**
- * Exports the given ir graph to the given file in a textual form.
+ * Write the given ir graph to a stream in a textual format
  *
- * @param irg       the ir graph
- * @param filename  the name of the resulting file
+ * @param irg         the ir graph
+ * @param output      output stream the irg is written to
+ * @param outputname  a name for the output stream (used for error messages)
  *
  * Exports the type graph used by the given graph and the graph itself.
  */

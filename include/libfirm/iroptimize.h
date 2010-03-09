@@ -872,8 +872,12 @@ void inline_functions(unsigned maxsize, int inline_threshold,
  * @param name               the name of this pass or NULL
  * @param maxsize            Do not inline any calls if a method has more than
  *                           maxsize firm nodes.  It may reach this limit by
-       *                     inlineing.
+ *                           inlineing.
  * @param inline_threshold   inlining threshold
+ * @param after_inline_opt   a function that is called after inlining a
+ *                           procedure. You should run fast local optimisations
+ *                           here which cleanup the graph before further
+ *                           inlining
  *
  * @return  the newly created ir_prog pass
  */

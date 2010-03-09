@@ -79,6 +79,7 @@ void set_Block_postdom_pre_num(ir_node *bl, int num);
  * @return The pre-order number.
  */
 unsigned get_Block_dom_tree_pre_num(const ir_node *bl);
+unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
 
 /**
  * Get the largest pre-order number found in the subtree of the
@@ -87,6 +88,7 @@ unsigned get_Block_dom_tree_pre_num(const ir_node *bl);
  * @return The largest pre-order number of block's dominator subtree.
  */
 unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
+unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
 
 /**
  * Get the first node in the list of nodes dominated by a given block.
@@ -100,6 +102,7 @@ unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
  * @return The first node dominated by @p bl.
  */
 ir_node *get_Block_dominated_first(const ir_node *bl);
+ir_node *get_Block_postdominated_first(const ir_node *bl);
 
 /**
  * Get the next node in a list of nodes which are dominated by some
@@ -109,6 +112,7 @@ ir_node *get_Block_dominated_first(const ir_node *bl);
  * @return The next node in this list or NULL if it was the last.
  */
 ir_node *get_Block_dominated_next(const ir_node *dom);
+ir_node *get_Block_postdominated_next(const ir_node *dom);
 
 /**
  * Iterate over all nodes which are immediately dominated by a given

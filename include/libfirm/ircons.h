@@ -1818,7 +1818,6 @@ ir_node *new_rd_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
  * Represents the default control flow of a Switch-Cond node.
  *
  * @param *db       A pointer for debug information.
- * @param *block    The IR block the node belongs to.
  * @param arg       A node producing a tuple.
  * @param max_proj  The end position of the value in the tuple.
  */
@@ -1886,7 +1885,8 @@ ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
  *
  * @param *db     A pointer for debug information.
  * @param *block  The block the node belong to.
- * @param *callee The call node visible in the intra procedural view.
+ * @param *ptr    pointer to the called function
+ * @param *call   associated call operation
  */
 ir_node *new_rd_CallBegin(dbg_info *db, ir_node *block, ir_node *ptr, ir_node *call);
 
@@ -2567,7 +2567,6 @@ ir_node *new_r_Proj(ir_node *arg, ir_mode *mode, long proj);
  *
  * Represents the default control flow of a Switch-Cond node.
  *
- * @param *block    The IR block the node belongs to.
  * @param arg       A node producing a tuple.
  * @param max_proj  The end  position of the value in the tuple.
  */
@@ -2638,7 +2637,8 @@ ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
  * node.
  *
  * @param *block  The block the node belong to.
- * @param *callee The call node visible in the  intra procedural view.
+ * @param *ptr    pointer to the called function
+ * @param *call   associated call operation
  */
 ir_node *new_r_CallBegin(ir_node *block, ir_node *ptr, ir_node *call);
 
@@ -3451,7 +3451,8 @@ ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
  * node.Adds the node to the block in current_ir_block.
  *
  * @param *db     A pointer for debug information.
- * @param *callee The call node visible in the  intra procedural view.
+ * @param *ptr    pointer to the called function
+ * @param *call   associated call operation
  */
 ir_node *new_d_CallBegin(dbg_info *db, ir_node *ptr, ir_node *call);
 
@@ -3846,7 +3847,8 @@ ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
  * constructor copies the method pointer input from the passed Call
  * node. Adds the node to the block in current_ir_block.
  *
- * @param   *callee A pointer to the called procedure.
+ * @param *ptr    pointer to the called function
+ * @param *call   associated call operation
  */
 ir_node *new_CallBegin(ir_node *ptr, ir_node *call);
 

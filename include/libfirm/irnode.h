@@ -1180,6 +1180,12 @@ int      is_Bad(const ir_node *node);
 int      is_NoMem(const ir_node *node);
 /** Returns true if node is a Start node. */
 int      is_Start(const ir_node *node);
+/** Returns true if node is an End node. */
+int      is_End(const ir_node *node);
+/** Returns true if node is an EndExcept node. */
+int      is_EndExcept(const ir_node *node);
+/** Returns true if node is an EndReg node. */
+int      is_EndReg(const ir_node *node);
 /** Returns true if node is a Minus node. */
 int      is_Minus(const ir_node *node);
 /** Returns true if node is a Abs node. */
@@ -1274,8 +1280,16 @@ int      is_IJmp(const ir_node *node);
 int      is_Raise(const ir_node *node);
 /** Returns true if a node is an ASM node. */
 int      is_ASM(const ir_node *node);
-/** Returns true if a node is an Dummy node. */
+/** Returns true if a node is a Dummy node. */
 int      is_Dummy(const ir_node *node);
+/** Returns true if a node is an Anchor node */
+int      is_Anchor(const ir_node *node);
+/** Returns true if a node is a Borrow node */
+int      is_Borrow(const ir_node *node);
+/** Returns true if a node is a Break node */
+int      is_Break(const ir_node *node);
+/** Returns true if a node is an instff node */
+int      is_InstOf(const ir_node *node);
 /** Returns true if node is a Proj node or a Filter node in INTRA-procedural view. */
 int      is_Proj(const ir_node *node);
 /** Returns true if node is a Filter node. */
@@ -1302,9 +1316,17 @@ ir_mode *get_divop_resmod(const ir_node *node);
 int is_irn_forking(const ir_node *node);
 
 /**
- * Copies all attributes stored in the old node  to the new node.
+ * Copies attributes stored in the old node to a new node.
  * Assumes both have the same opcode and sufficient size.
- * @param irg     The irg of the new_node (get_irn_irg on it might not work yet)
+ *
+ * @param irg       The irg of the new_node (get_irn_irg on it might not work
+ *                  yet)
+ * @param old_node  the node where the attributes are copied from
+ * @param new_node  node the attributes get copies to.
+ *
+ * This copies all essential information to the new node. It does not copy
+ * temporal or calculated information like visited flags or results of dominance
+ * or loop calculations
  */
 void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 

@@ -299,6 +299,7 @@ const char *get_volatility_name(ir_volatility var);
 unsigned get_entity_alignment(const ir_entity *entity);
 
 /** Allows you to override the type alignment for an entity.
+ * @param entity      the entity
  * @param alignment   alignment in bytes
  */
 void set_entity_alignment(ir_entity *entity, unsigned alignment);
@@ -1607,7 +1608,6 @@ int is_Struct_type(const ir_type *strct);
 
 /** Create a new method type.
  *
- * @param name      the name (ident) of this type
  * @param n_param   the number of parameters
  * @param n_res     the number of results
  *
@@ -1618,7 +1618,6 @@ ir_type *new_type_method(int n_param, int n_res);
 
 /** Create a new method type with debug information.
  *
- * @param name      the name (ident) of this type
  * @param n_param   the number of parameters
  * @param n_res     the number of results
  * @param db        user defined debug information

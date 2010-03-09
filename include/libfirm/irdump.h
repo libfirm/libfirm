@@ -191,11 +191,17 @@ void dump_ir_graph_file(ir_graph *irg, FILE *out);
  * @see turn_off_edge_labels()
  */
 void dump_ir_block_graph(ir_graph *irg, const char *suffix);
+
+/**
+ * Does the same as dump_ir_block_graph but dumps to a stream
+ * @see dump_ir_block_graph()
+ */
 void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes but grouped in extended blocks.
  *
- *  @param irg   The firm graph to be dumped.
+ *  @param irg     The firm graph to be dumped.
+ *  @param suffix  suffix to append after the irgname (but before the .vcg)
  *
  *  @return
  *     A file containing the firm graph in vcg format.
@@ -210,6 +216,11 @@ void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
  * @see turn_off_edge_labels()
  */
 void dump_ir_extblock_graph(ir_graph *irg, const char *suffix);
+
+/**
+ * Does the same as dump_ir_extrblock_graph but dumps to a stream
+ * @see dump_ir_extblock_graph()
+ */
 void dump_ir_extblock_graph_file(ir_graph *irg, FILE *out);
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs\<suffix\>.vcg.
@@ -234,6 +245,11 @@ void dump_all_cg_block_graph(const char *suffix);
  * @see turn_off_edge_labels()
  */
 void dump_ir_graph_w_types(ir_graph *irg, const char *suffix);
+
+/**
+ * Does the same as dump_ir_graph_w_types but dumps to a stream
+ * @see dump_ir_graph_w_types()
+ */
 void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out);
 
 /** Dumps a firm graph and  all the type information needed for Calls,
@@ -549,7 +565,8 @@ void dump_types_as_text(unsigned verbosity, const char *suffix);
 
 /** Dumps all global variables as text.
  *
- * @param suffix  A suffix for the file name.
+ * @param verbosity   verbosity flag
+ * @param suffix      A suffix for the file name.
  *
  * Dumps a text representation of the entities in the global type.
  *
@@ -645,6 +662,11 @@ void dump_backedge_information(int flag);
  *  else it is output as info.
  */
 void set_opt_dump_analysed_type_info(int flag);
+
+/**
+ * dump iredges (new style out edges)
+ */
+void dump_new_edges(int flag);
 
 /** Write the address of a node into the vcg info.
  *

@@ -27,6 +27,8 @@
 #ifndef FIRM_ANA_HEIGHTS_H
 #define FIRM_ANA_HEIGHTS_H
 
+#include "firm_types.h"
+
 typedef struct _heights_t heights_t;
 
 /**
