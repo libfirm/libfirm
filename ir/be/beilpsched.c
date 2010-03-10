@@ -2003,7 +2003,6 @@ static void create_ilp(ir_node *block, void *walk_env)
 void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 {
 	be_ilpsched_env_t          env;
-	const char                 *name     = "be ilp scheduling";
 	ir_graph                   *irg      = be_get_birg_irg(birg);
 	const arch_env_t           *arch_env = be_get_birg_arch_env(birg);
 	const ilp_sched_selector_t *sel      = arch_env->impl->get_ilp_sched_selector(arch_env);
@@ -2024,7 +2023,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 	env.opts       = &ilp_opts;
 	env.birg       = birg;
 	env.be_opts    = be_opts;
-	phase_init(&env.ph, name, env.irg, PHASE_DEFAULT_GROWTH, init_ilpsched_irn, NULL);
+	phase_init(&env.ph, env.irg, init_ilpsched_irn);
 
 	/* assign a unique per block number to all interesting nodes */
 	irg_walk_in_or_dep_graph(env.irg, NULL, build_block_idx, &env);
@@ -2061,7 +2060,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 	irg_block_walk_graph(env.irg, NULL, clear_unwanted_data, &env);
 
 	/* free all allocated object */
-	phase_free(&env.ph);
+	phase_deinit(&env.ph);
 	heights_free(env.height);
 
 	/* notify backend */

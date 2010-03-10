@@ -2231,13 +2231,13 @@ static int optimize_loops(ir_graph *irg)
 	env.nextDFSnum    = 0;
 	env.POnum         = 0;
 	env.changes       = 0;
-	phase_init(&env.ph, "ldstopt", irg, PHASE_DEFAULT_GROWTH, init_loop_data, NULL);
+	phase_init(&env.ph, irg, init_loop_data);
 
 	/* calculate the SCC's and drive loop optimization. */
 	do_dfs(irg, &env);
 
 	DEL_ARR_F(env.stack);
-	phase_free(&env.ph);
+	phase_deinit(&env.ph);
 
 	return env.changes;
 }  /* optimize_loops */

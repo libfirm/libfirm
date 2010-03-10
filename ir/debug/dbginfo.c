@@ -30,6 +30,7 @@
 #include "irnode_t.h"
 #include "type_t.h"
 #include "entity_t.h"
+#include "error.h"
 
 merge_pair_func *__dbg_info_merge_pair = default_dbg_info_merge_pair;
 merge_sets_func *__dbg_info_merge_sets = default_dbg_info_merge_sets;
@@ -72,8 +73,7 @@ const char *dbg_action_2_str(dbg_action a)
 		if (a <= dbg_max)
 			return "string conversion not implemented";
 		else
-			assert(!"Missing debug action in dbg_action_2_str()");
-		return NULL;
+			panic("Missing debug action in dbg_action_2_str()");
 	}
 #undef CASE
 }

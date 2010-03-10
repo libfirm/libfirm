@@ -243,7 +243,7 @@ void heights_recompute(heights_t *h)
 heights_t *heights_new(ir_graph *irg)
 {
 	heights_t *res = XMALLOC(heights_t);
-	phase_init(&res->ph, "heights", irg, PHASE_DEFAULT_GROWTH, irn_height_init, NULL);
+	phase_init(&res->ph, irg, irn_height_init);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
 	heights_recompute(res);
 
@@ -252,7 +252,7 @@ heights_t *heights_new(ir_graph *irg)
 
 void heights_free(heights_t *h)
 {
-	phase_free(&h->ph);
+	phase_deinit(&h->ph);
 	dump_remv_node_info_callback(h->dump_handle);
 	xfree(h);
 }

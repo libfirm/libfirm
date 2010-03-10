@@ -42,6 +42,7 @@
 #include "irflag_t.h"
 #include "iredges_t.h"
 #include "irflag_t.h"
+#include "error.h"
 
 /* when we need verifying */
 #ifdef NDEBUG
@@ -916,8 +917,7 @@ static int is_exception_flow(ir_node *cf_pred, ir_node *prev_cf_op)
 			return 1;
 		}
 		/* Hmm, exception but not a Proj? */
-		assert(!"unexpected condition: fragile op without a proj");
-		return 1;
+		panic("unexpected condition: fragile op without a proj");
 	}
 	return 0;
 }  /* is_exception_flow */

@@ -218,10 +218,8 @@ static ir_node *gen_Conv(ir_node *node)
 			}
 		} else if (USE_VFP(env_cg->isa)) {
 			panic("VFP not supported yet");
-			return NULL;
 		} else {
 			panic("Softfloat not supported yet");
-			return NULL;
 		}
 	} else { /* complete in gp registers */
 		int src_bits = get_mode_size_bits(src_mode);
@@ -403,11 +401,9 @@ static ir_node *gen_Add(ir_node *node)
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-			return NULL;
 		}
 		else {
 			panic("Softfloat not supported yet");
-			return NULL;
 		}
 	} else {
 #if 0
@@ -462,11 +458,9 @@ static ir_node *gen_Mul(ir_node *node)
 		else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-			return NULL;
 		}
 		else {
 			panic("Softfloat not supported yet");
-			return NULL;
 		}
 	}
 	assert(mode_is_data(mode));
@@ -506,7 +500,6 @@ static ir_node *gen_Quot(ir_node *node)
 	}
 	else {
 		panic("Softfloat not supported yet");
-		return NULL;
 	}
 }
 
@@ -572,10 +565,8 @@ static ir_node *gen_Sub(ir_node *node)
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-			return NULL;
 		} else {
 			panic("Softfloat not supported yet");
-			return NULL;
 		}
 	} else {
 		return gen_int_binop(node, MATCH_SIZE_NEUTRAL,

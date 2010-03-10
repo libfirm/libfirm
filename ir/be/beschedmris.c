@@ -316,11 +316,8 @@ static int fuse_two_lineages(mris_env_t *env, mris_irn_t *u, mris_irn_t *v)
 		return 0;
 
 	if (get_irn_mode(last) == mode_T) {
-		const ir_edge_t *edge;
-		foreach_out_edge(last, edge) {
-			last = get_edge_src_irn(edge);
-			break;
-		}
+		const ir_edge_t *edge = get_irn_out_edge_first(last);
+		last = get_edge_src_irn(edge);
 	}
 
 	/* irn now points to the last node in lineage u; mi has the info for the node _before_ the terminator of the lineage. */
@@ -406,7 +403,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 	mris_env_t *env = XMALLOC(mris_env_t);
 	ir_graph   *irg = be_get_birg_irg(birg);
 
-	phase_init(&env->ph, "mris", irg, 2 * PHASE_DEFAULT_GROWTH, mris_irn_data_init, NULL);
+	phase_init(&env->ph, irg, mris_irn_data_init);
 	env->irg      = irg;
 	env->visited  = 0;
 	env->heights  = heights_new(irg);
@@ -422,7 +419,7 @@ mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
 
 void be_sched_mris_free(mris_env_t *env)
 {
-	phase_free(&env->ph);
+	phase_deinit(&env->ph);
 	heights_free(env->heights);
 	free(env);
 }

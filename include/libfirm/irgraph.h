@@ -126,8 +126,6 @@ void      set_current_ir_graph(ir_graph *graph);
  * (get_irn_*, set_irn_*) is influenced by this flag. */
 int get_interprocedural_view(void);
 void set_interprocedural_view(int state);
-#else
-#define get_interprocedural_view()  0
 #endif
 
 /**

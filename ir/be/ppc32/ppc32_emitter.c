@@ -403,7 +403,6 @@ static void emit_be_Copy(const ir_node *irn)
 	} else if (regclass == &ppc32_reg_classes[CLASS_ppc32_condition]) {
 		be_emit_cstring("\tmcrf ");
 	} else {
-		assert(0 && "Illegal register class for Copy");
 		panic("ppc32 Emitter: Illegal register class for Copy");
 	}
 	ppc32_emit_dest_register(irn, 0);
@@ -483,7 +482,6 @@ static void emit_be_Perm(const ir_node *irn)
 		ppc32_emit_source_register(irn, 1);
 		be_emit_cstring(", cr7");
 	} else {
-		assert(0 && "Illegal register class for Perm");
 		panic("ppc32 Emitter: Illegal register class for Perm");
 	}
 	be_emit_finish_line_gas(irn);

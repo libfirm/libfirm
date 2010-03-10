@@ -4398,7 +4398,6 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 static ir_node *bad_transform(ir_node *node)
 {
 	panic("No transform function for %+F available.", node);
-	return NULL;
 }
 
 static ir_node *gen_Proj_l_FloattoLL(ir_node *node)

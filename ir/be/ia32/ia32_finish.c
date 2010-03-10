@@ -240,8 +240,7 @@ static int get_first_same(const arch_register_req_t* req)
 	for (i = 0; i < 32; ++i) {
 		if (other & (1U << i)) return i;
 	}
-	assert(! "same position not found");
-	return 32;
+	panic("same position not found");
 }
 
 static inline bool is_unknown_reg(const arch_register_t *reg)

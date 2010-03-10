@@ -568,7 +568,7 @@ static void ifg_pointer_free(void *self)
 {
 	ifg_pointer_t *ifg = self;
 	obstack_free(&ifg->obst, NULL);
-	phase_free(&ifg->ph);
+	phase_deinit(&ifg->ph);
 
 	free(self);
 }
@@ -672,7 +672,7 @@ be_ifg_t *be_ifg_pointer_new(const be_chordal_env_t *env)
 	ifg->impl     		= &ifg_pointer_impl;
 	ifg->env			= env;
 
-	phase_init(&ifg->ph, "ptr_map", env->irg, PHASE_DEFAULT_GROWTH, ptr_irn_data_init, NULL);
+	phase_init(&ifg->ph, env->irg, ptr_irn_data_init);
 	obstack_init(&ifg->obst);
 
 	dom_tree_walk_irg(env->irg, find_neighbour_walker, NULL, ifg);

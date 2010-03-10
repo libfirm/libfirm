@@ -47,6 +47,7 @@
 #include "ircons.h"
 #include "irprintf.h"
 #include "debug.h"
+#include "error.h"
 
 /**
  * walker environment
@@ -91,16 +92,14 @@ static int is_method_leaving_raise(ir_node *raise)
     /* Hmm: no ProjX from a Raise? This should be a verification
      * error. For now we just assert and return.
      */
-    assert(! "No ProjX after Raise found");
-    return 1;
+    panic("No ProjX after Raise found");
   }
 
   if (get_irn_n_outs(proj) != 1) {
     /* Hmm: more than one user of ProjX: This is a verification
      * error.
      */
-    assert(! "More than one user of ProjX");
-    return 1;
+    panic("More than one user of ProjX");
   }
 
   n = get_irn_out(proj, 0);

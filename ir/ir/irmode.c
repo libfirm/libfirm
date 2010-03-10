@@ -347,8 +347,7 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
 	}
 
 	if (num_of_elem <= 1) {
-		assert(0 && "vector modes should have at least 2 elements");
-		return NULL;
+		panic("vector modes should have at least 2 elements");
 	}
 
 	/* sanity checks */

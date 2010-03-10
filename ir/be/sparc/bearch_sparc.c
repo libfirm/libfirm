@@ -623,16 +623,14 @@ static const be_execution_unit_t ***sparc_get_allowed_execution_units(
 {
 	(void) irn;
 	/* TODO */
-	assert(0);
-	return NULL;
+	panic("sparc_get_allowed_execution_units not implemented yet");
 }
 
 static const be_machine_t *sparc_get_machine(const void *self)
 {
 	(void) self;
 	/* TODO */
-	assert(0);
-	return NULL;
+	panic("sparc_get_machine not implemented yet");
 }
 
 static ir_graph **sparc_get_backend_irg_list(const void *self,

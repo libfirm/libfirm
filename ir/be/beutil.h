@@ -154,4 +154,10 @@ ir_node **be_get_cfgpostorder(ir_graph *irg);
  */
 FILE *be_ffopen(const char *base, const char *ext, const char *mode);
 
-#endif /* FIRM_BE_BEUTIL_H */
+/**
+ * convenience function to return the first successor block
+ * (it is often known that there is exactly 1 successor anyway)
+ */
+ir_node *get_first_block_succ(const ir_node *block);
+
+#endif

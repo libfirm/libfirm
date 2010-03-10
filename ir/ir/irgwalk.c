@@ -430,14 +430,15 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 {
 	assert(is_ir_node(node));
 
+#ifdef INTERPROCEDURAL_VIEW
 	if (get_interprocedural_view()) {
-		assert(0 && "This is not yet implemented.");
-	} else {
-		ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
-		inc_irg_visited(current_ir_graph);
-		nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
-		ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+		panic("This is not yet implemented.");
 	}
+#endif
+	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(current_ir_graph);
+	nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
+	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 }
 
 /*
@@ -456,6 +457,7 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
 
 /***************************************************************************/
 
+#ifdef INTERPROCEDURAL_VIEW
 /**
  * Returns current_ir_graph and sets it to the irg of predecessor index
  * of node n.
@@ -479,7 +481,6 @@ static inline ir_graph * switch_irg(ir_node *n, int index)
 	return old_current;
 }
 
-#ifdef INTERPROCEDURAL_VIEW
 static void cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
 {
 	int i;
@@ -619,8 +620,10 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 	hook_irg_block_walk(irg, node, (generic_func *)pre, (generic_func *)post);
 
 	assert(node);
+#ifdef INTERPROCEDURAL_VIEW
 	assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it
 	                                        * interleaves with irg_walk */
+#endif
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 	block = is_Block(node) ? node : get_nodes_block(node);

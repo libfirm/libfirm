@@ -95,6 +95,16 @@ static FILE *text_open(const char *basename, const char * suffix1, const char *s
 	return F;
 }
 
+static inline int is_ip_Filter(ir_node *n)
+{
+#ifdef INTERPROCEDURAL_VIEW
+	return is_Filter(n) && get_interprocedural_view();
+#else
+	(void) n;
+	return 0;
+#endif
+}
+
 /* Write the irnode and all its attributes to the file passed. */
 int dump_irnode_to_file(FILE *F, ir_node *n)
 {
@@ -177,7 +187,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 	/* This is not nice, output it as a marker in the predecessor list. */
 	if (is_Block(n)             ||
 	    get_irn_op(n) == op_Phi ||
-	    (is_Filter(n) && get_interprocedural_view())) {
+	    (is_ip_Filter(n))) {
 		fprintf(F, "  backedges:");
 		comma = ' ';
 		for (i = 0; i < get_irn_arity(n); i++)
@@ -304,14 +314,18 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 		ir_fprintf(F, "  cast to type: %+F\n", get_Cast_type(n));
 	} break;
 	case iro_Return: {
+#ifdef INTERPROCEDURAL_VIEW
 		if (!get_interprocedural_view()) {
+#endif
 			ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
 			ir_fprintf(F, "  return in method of type %+F\n", tp);
 			for (i = 0; i < get_method_n_ress(tp); ++i) {
 				ir_fprintf(F, "    result %d type: %+F\n", i,
 				           get_method_res_type(tp, i));
 			}
+#ifdef INTERPROCEDURAL_VIEW
 		}
+#endif
 	} break;
 	case iro_Const: {
 		assert(get_Const_type(n) != firm_none_type);

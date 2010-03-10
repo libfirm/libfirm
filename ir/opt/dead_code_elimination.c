@@ -70,8 +70,8 @@ static void copy_node_dce(ir_node *node, void *env)
 	new_node->node_nr = node->node_nr;
 
 	/* copy phase information for this node */
-	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
-		ir_phase *phase = get_irg_phase(irg, i);
+	for (i = 0; i <= PHASE_LAST; i++) {
+		ir_phase *phase = irg_get_phase(irg, i);
 		if (phase == NULL)
 			continue;
 		if (!phase_get_irn_data(phase, node))
@@ -94,18 +94,19 @@ static void copy_node_dce(ir_node *node, void *env)
  */
 static void copy_graph_env(ir_graph *irg)
 {
-	ir_node  *new_anchor;
+	ir_node *new_anchor;
 	int i;
 
 	/* init the new_phases array */
-	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
-		ir_phase *old_ph = get_irg_phase(irg, i);
+	/* TODO: this is wrong, it should only allocate a new data_ptr inside
+	 * the phase! */
+	for (i = 0; i <= PHASE_LAST; i++) {
+		ir_phase *old_ph = irg_get_phase(irg, i);
 		if (old_ph == NULL) {
 			new_phases[i] = NULL;
 		} else {
-			new_phases[i] = xmalloc(sizeof(ir_phase));
-			phase_init(new_phases[i], "", irg, old_ph->growth_factor,
-					old_ph->data_init, old_ph->priv);
+			new_phases[i] = new_phase(irg, old_ph->data_init);
+			new_phases[i]->priv = old_ph->priv;
 		}
 	}
 
@@ -118,12 +119,12 @@ static void copy_graph_env(ir_graph *irg)
 	irg->anchor = new_anchor;
 
 	/* copy the new phases into the irg */
-	for (i = PHASE_NOT_IRG_MANAGED+1; i < PHASE_LAST; i++) {
-		ir_phase *old_ph = get_irg_phase(irg, i);
+	for (i = 0; i <= PHASE_LAST; i++) {
+		ir_phase *old_ph = irg_get_phase(irg, i);
 		if (old_ph == NULL)
 			continue;
 
-		free_irg_phase(irg, i);
+		phase_free(old_ph);
 		irg->phases[i] = new_phases[i];
 	}
 }

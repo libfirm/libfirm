@@ -348,7 +348,7 @@ static void build_next_uses(block_info_t *bi)
 
 	sched_renumber(bi->bl);
 
-	phase_init(&bi->next_uses, "next uses", bi->bel->irg, PHASE_DEFAULT_GROWTH, next_use_init, NULL);
+	phase_init(&bi->next_uses, bi->bel->irg, next_use_init);
 	sched_foreach_reverse(bi->bl, irn) {
 		int i;
 
@@ -744,7 +744,7 @@ static void belady(belady_env_t *env, int id)
 		env->instr_nr++;
 	}
 
-	phase_free(&block_info->next_uses);
+	phase_deinit(&block_info->next_uses);
 
 	/* Remember end-workset for this block */
 	block_info->ws_end = workset_clone(env, &env->ob, env->ws);

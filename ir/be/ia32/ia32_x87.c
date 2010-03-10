@@ -1834,7 +1834,6 @@ static int sim_Copy(x87_state *state, ir_node *n)
 	const arch_register_t       *op1;
 	const arch_register_class_t *cls;
 	ir_node                     *node, *next;
-	ia32_x87_attr_t             *attr;
 	int                         op1_idx, out_idx;
 	unsigned                    live;
 
@@ -1898,10 +1897,12 @@ static int sim_Copy(x87_state *state, ir_node *n)
 
 		if (out_idx >= 0 && out_idx != op1_idx) {
 			/* Matze: out already on stack? how can this happen? */
-			assert(0);
+			panic("invalid stack state in x87 simulator");
 
+#if 0
 			/* op1 must be killed and placed where out is */
 			if (out_idx == 0) {
+				ia32_x87_attr_t *attr;
 				/* best case, simple remove and rename */
 				x87_patch_insn(n, op_ia32_Pop);
 				attr = get_ia32_x87_attr(n);
@@ -1910,6 +1911,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 				x87_pop(state);
 				x87_set_st(state, arch_register_get_index(out), n, op1_idx - 1);
 			} else {
+				ia32_x87_attr_t *attr;
 				/* move op1 to tos, store and pop it */
 				if (op1_idx != 0) {
 					x87_create_fxch(state, n, op1_idx);
@@ -1923,6 +1925,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 				x87_set_st(state, arch_register_get_index(out), n, out_idx - 1);
 			}
 			DB((dbg, LEVEL_1, "<<< %+F %s\n", n, op1->name));
+#endif
 		} else {
 			/* just a virtual copy */
 			x87_set_st(state, arch_register_get_index(out), get_unop_op(n), op1_idx);
@@ -2006,34 +2009,6 @@ end_call:
 
 	return NO_NODE_ADDED;
 }  /* sim_Call */
-
-/**
- * Simulate a be_Spill.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- *
- * Should not happen, spills are lowered before x87 simulator see them.
- */
-static int sim_Spill(x87_state *state, ir_node *n)
-{
-	panic("Spill not lowered before x87 simulator run");
-	return sim_fst(state, n);
-}  /* sim_Spill */
-
-/**
- * Simulate a be_Reload.
- *
- * @param state  the x87 state
- * @param n      the node that should be simulated (and patched)
- *
- * Should not happen, reloads are lowered before x87 simulator see them.
- */
-static int sim_Reload(x87_state *state, ir_node *n)
-{
-	panic("Reload not lowered before x87 simulator run");
-	return sim_fld(state, n);
-}  /* sim_Reload */
 
 /**
  * Simulate a be_Return.
@@ -2432,8 +2407,6 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	register_sim(op_ia32_vFucomFnstsw, sim_Fucom);
 	register_sim(op_ia32_vFucomi,      sim_Fucom);
 	register_sim(op_be_Copy,           sim_Copy);
-	register_sim(op_be_Spill,          sim_Spill);
-	register_sim(op_be_Reload,         sim_Reload);
 	register_sim(op_be_Return,         sim_Return);
 	register_sim(op_be_Perm,           sim_Perm);
 	register_sim(op_be_Keep,           sim_Keep);

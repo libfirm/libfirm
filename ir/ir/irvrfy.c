@@ -423,10 +423,6 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p)
 		ASSERT_AND_RET(
 			!is_NoMem(get_Call_mem(n)),
 			"Exception Proj from FunctionCall", 0);
-	else if (proj == pn_Call_M)
-		ASSERT_AND_RET(
-			(!is_NoMem(get_Call_mem(n)) || 1),
-			"Memory Proj from FunctionCall", 0);
 	return 1;
 }
 
@@ -918,7 +914,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 	}
 
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
-		ir_node *pred =  get_Block_cfgpred(n, i);
+		ir_node *pred = get_Block_cfgpred(n, i);
 		ASSERT_AND_RET(
 			is_Bad(pred) ||	(get_irn_mode(pred) == mode_X),
 			"Block node must have a mode_X predecessor", 0);
@@ -940,9 +936,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 				"End Block node", 0);
 		}
 		/*  irg attr must == graph we are in. */
-		if (! get_interprocedural_view()) {
-			ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "Block node has wrong irg attribute", 0);
-		}
+		ASSERT_AND_RET(((get_irn_irg(n) && get_irn_irg(n) == irg)), "Block node has wrong irg attribute", 0);
 		return 1;
 }
 
@@ -2002,28 +1996,27 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 	if (!get_node_verification_mode())
 		return 1;
 
-	if (!get_interprocedural_view()) {
-		/*
-		 * do NOT check placement in interprocedural view, as we don't always know
-		 * the "right" graph ...
-		 */
+	/*
+	 * do NOT check placement in interprocedural view, as we don't always
+	 * know the "right" graph ...
+	 */
 
 #ifndef NDEBUG
-		/* this seems to be an expensive check in VS compile (9% over all runtime),
-		   so do NOT run it in release mode */
-		ASSERT_AND_RET_DBG(
-			node_is_in_irgs_storage(irg, n),
-			"Node is not stored on proper IR graph!", 0,
-			show_node_on_graph(irg, n);
-		);
+	/* this is an expensive check for large graphs (it has a quadratic
+	 * runtime but with a small constant); so do NOT run it in release mode
+	 */
+	ASSERT_AND_RET_DBG(
+		node_is_in_irgs_storage(irg, n),
+		"Node is not stored on proper IR graph!", 0,
+		show_node_on_graph(irg, n);
+	);
 #endif
-		assert(get_irn_irg(n) == irg);
-		{
-			unsigned idx           = get_irn_idx(n);
-			ir_node *node_from_map = get_idx_irn(irg, idx);
-			ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0,
-				ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map));
-		}
+	assert(get_irn_irg(n) == irg);
+	{
+		unsigned idx           = get_irn_idx(n);
+		ir_node *node_from_map = get_idx_irn(irg, idx);
+		ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0,
+			ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map));
 	}
 
 	op = get_irn_op(n);

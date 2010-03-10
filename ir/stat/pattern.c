@@ -39,6 +39,7 @@
 #include "counter.h"
 #include "pattern_dmp.h"
 #include "hashptr.h"
+#include "error.h"
 
 #ifdef FIRM_STATISTICS
 
@@ -331,9 +332,7 @@ static unsigned get_code(CODE_BUFFER *buf)
 		return code;
 	}  /* if */
 	/* should not happen */
-	assert(0 && "Wrong code in buffer");
-
-	return 0;
+	panic("Wrong code in buffer");
 }  /* get_code */
 
 /**

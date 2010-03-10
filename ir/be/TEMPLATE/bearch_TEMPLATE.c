@@ -481,7 +481,6 @@ static const be_execution_unit_t ***TEMPLATE_get_allowed_execution_units(
 {
 	(void) irn;
 	/* TODO */
-	assert(0);
 	return NULL;
 }
 
@@ -489,7 +488,6 @@ static const be_machine_t *TEMPLATE_get_machine(const void *self)
 {
 	(void) self;
 	/* TODO */
-	assert(0);
 	return NULL;
 }
 

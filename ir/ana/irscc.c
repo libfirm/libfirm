@@ -396,6 +396,16 @@ static int is_outermost_Start(ir_node *n)
 	return 0;
 }
 
+static inline int is_ip_Filter(ir_node *n)
+{
+#ifdef INTERPROCEDURAL_VIEW
+	return is_Filter(n) && get_interprocedural_view();
+#else
+	(void) n;
+	return 0;
+#endif
+}
+
 /* When to walk from nodes to blocks. Only for Control flow operations? */
 static inline int get_start_index(ir_node *n)
 {
@@ -405,13 +415,13 @@ static inline int get_start_index(ir_node *n)
 #if BLOCK_BEFORE_NODE
 
 	/* This version assures, that all nodes are ordered absolutely.  This allows
-	   to undef all nodes in the heap analysis if the block is false, which means
-	   not reachable.
-	   I.e., with this code, the order on the loop tree is correct. But a (single)
-	   test showed the loop tree is deeper.   */
-	if (get_irn_op(n) == op_Phi                      ||
-	    is_Block(n)                                  ||
-	    (is_Filter(n) && get_interprocedural_view()) || (
+	   to undef all nodes in the heap analysis if the block is false, which
+	   means not reachable.
+	   I.e., with this code, the order on the loop tree is correct. But a
+	   (single) test showed the loop tree is deeper. */
+	if (get_irn_op(n) == op_Phi  ||
+	    is_Block(n)              ||
+	    (is_ip_Filter(n))        || (
 	      get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
 	      get_irn_pinned(n)              == op_pin_state_floats
 	    ))
@@ -446,7 +456,7 @@ static inline int is_possible_loop_head(ir_node *n)
 	ir_op *op = get_irn_op(n);
 	return ((op == op_Block) ||
 	        (op == op_Phi) ||
-	        ((op == op_Filter) && get_interprocedural_view()));
+	        (is_ip_Filter(n)));
 }
 
 /**
@@ -947,8 +957,10 @@ int construct_backedges(ir_graph *irg)
 	ir_loop *head_rem;
 	struct obstack temp;
 
+#ifdef INTERPROCEDURAL_VIEW
 	assert(!get_interprocedural_view() &&
 	       "not implemented, use construct_ip_backedges()");
+#endif
 
 	max_loop_depth = 0;
 	current_ir_graph   = irg;

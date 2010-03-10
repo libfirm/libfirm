@@ -76,12 +76,12 @@ typedef struct _bl_info_t {
 #define get_block_info(lv, bl) ((bl_info_t *) phase_get_irn_data(&(lv)->ph, bl))
 
 struct _lv_chk_t {
-	ir_phase ph;
+	ir_phase     ph;
 	const dfs_t *dfs;
-	int n_blocks;
-	bitset_t *back_edge_src;
-	bitset_t *back_edge_tgt;
-	bl_info_t **map;
+	int          n_blocks;
+	bitset_t    *back_edge_src;
+	bitset_t    *back_edge_tgt;
+	bl_info_t  **map;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
@@ -251,7 +251,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	compute_doms(irg);
 
 	stat_ev_tim_push();
-	phase_init(&res->ph, "liveness check", irg, PHASE_DEFAULT_GROWTH, init_block_data, NULL);
+	phase_init(&res->ph, irg, init_block_data);
 	obst = phase_obst(&res->ph);
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
@@ -310,7 +310,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 
 void lv_chk_free(lv_chk_t *lv)
 {
-	phase_free(&lv->ph);
+	phase_deinit(&lv->ph);
 	xfree(lv);
 }
 

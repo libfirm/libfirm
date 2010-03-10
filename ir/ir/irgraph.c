@@ -48,6 +48,7 @@
 #include "iredges_t.h"
 #include "type_t.h"
 #include "irmemory.h"
+#include "irphase.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 
@@ -119,8 +120,7 @@ static ir_graph *alloc_graph(void)
 {
 	ir_graph *res;
 	size_t   size = sizeof(ir_graph) + additional_graph_data_size;
-	char     *ptr = xmalloc(size);
-	memset(ptr, 0, size);
+	char     *ptr = XMALLOCNZ(char, size);
 
 	res = (ir_graph *)(ptr + additional_graph_data_size);
 	res->kind = k_ir_graph;
@@ -1002,6 +1002,26 @@ void *get_irg_loc_description(ir_graph *irg, int n)
 {
 	assert(0 <= n && n < irg->n_loc);
 	return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
+}
+
+void irg_register_phase(ir_graph *irg, ir_phase_id id, ir_phase *phase)
+{
+	assert(id <= PHASE_LAST);
+	assert(irg->phases[id] == NULL);
+	irg->phases[id] = phase;
+}
+
+void irg_invalidate_phases(ir_graph *irg)
+{
+	int p;
+	for (p = 0; p <= PHASE_LAST; ++p) {
+		ir_phase *phase = irg->phases[p];
+		if (phase == NULL)
+			continue;
+
+		phase_free(phase);
+		irg->phases[p] = NULL;
+	}
 }
 
 #ifndef NDEBUG

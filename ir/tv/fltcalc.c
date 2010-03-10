@@ -28,6 +28,7 @@
 
 #include "fltcalc.h"
 #include "strcalc.h"
+#include "error.h"
 
 #include <math.h>
 /* undef some reused constants defined by math.h */
@@ -1547,10 +1548,7 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result)
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 	TRACEPRINTF(("rounded to integer "));
 
-	assert(!"fc_rnd() not yet implemented");
-
-	TRACEPRINTF(("= %s\n", fc_print(result, buffer, sizeof(buffer), FC_PACKED)));
-	return result;
+	panic("fc_rnd() not yet implemented");
 }
 
 /*

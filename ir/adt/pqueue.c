@@ -27,6 +27,7 @@
 
 #include "array.h"
 #include "pqueue.h"
+#include "error.h"
 
 /*
  * Implements a heap.
@@ -131,13 +132,10 @@ void *pqueue_pop_front(pqueue_t *q)
 {
 	switch (ARR_LEN(q->elems)) {
 		case 0:
-			assert(0 && "Attempt to retrieve element from empty priority queue.");
-			return NULL;
-			break;
+			panic("Attempt to retrieve element from empty priority queue.");
 		case 1:
 			ARR_SHRINKLEN(q->elems, 0);
 			return q->elems[0].data;
-			break;
 		default: {
 			void *data = q->elems[0].data;
 			int  len   = ARR_LEN(q->elems) - 1;

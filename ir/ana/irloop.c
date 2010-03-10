@@ -31,8 +31,10 @@
 
 #include "irloop_t.h"
 #include "irprog_t.h"
+#include "error.h"
 
-void add_loop_son(ir_loop *loop, ir_loop *son) {
+void add_loop_son(ir_loop *loop, ir_loop *son)
+{
 	loop_element lson;
 	assert(loop && loop->kind == k_ir_loop);
 	assert(get_kind(son) == k_ir_loop);
@@ -42,7 +44,8 @@ void add_loop_son(ir_loop *loop, ir_loop *son) {
 	loop->flags |= loop_outer_loop;
 }
 
-void add_loop_node(ir_loop *loop, ir_node *n) {
+void add_loop_node(ir_loop *loop, ir_node *n)
+{
 	loop_element ln;
 	ln.node = n;
 	assert(loop && loop->kind == k_ir_loop);
@@ -50,7 +53,8 @@ void add_loop_node(ir_loop *loop, ir_node *n) {
 	loop->n_nodes++;
 }
 
-void add_loop_irg(ir_loop *loop, ir_graph *irg) {
+void add_loop_irg(ir_loop *loop, ir_graph *irg)
+{
 	loop_element ln;
 	ln.irg = irg;
 	assert(loop && loop->kind == k_ir_loop);
@@ -64,7 +68,8 @@ void add_loop_irg(ir_loop *loop, ir_graph *irg) {
  * @param loop  the loop to mature
  * @param obst  an obstack, where the new arrays are allocated on
  */
-void mature_loops(ir_loop *loop, struct obstack *obst) {
+void mature_loops(ir_loop *loop, struct obstack *obst)
+{
 	loop_element *new_children = DUP_ARR_D(loop_element, obst, loop->children);
 	DEL_ARR_F(loop->children);
 	loop->children = new_children;
@@ -84,24 +89,28 @@ void mature_loops(ir_loop *loop, struct obstack *obst) {
 }
 
 /* Returns outer loop, itself if outermost. */
-ir_loop *(get_loop_outer_loop)(const ir_loop *loop) {
+ir_loop *(get_loop_outer_loop)(const ir_loop *loop)
+{
 	return _get_loop_outer_loop(loop);
 }
 
 /* Returns nesting depth of this loop */
-int (get_loop_depth)(const ir_loop *loop) {
+int (get_loop_depth)(const ir_loop *loop)
+{
 	return _get_loop_depth(loop);
 }
 
 /* Returns the number of inner loops */
-int (get_loop_n_sons)(const ir_loop *loop) {
+int (get_loop_n_sons)(const ir_loop *loop)
+{
 	return _get_loop_n_sons(loop);
 }
 
 /* Returns the pos`th loop_node-child              *
  * TODO: This method isn`t very efficient !        *
  * Returns NULL if there isn`t a pos`th loop_node */
-ir_loop *get_loop_son(ir_loop *loop, int pos) {
+ir_loop *get_loop_son(ir_loop *loop, int pos)
+{
 	int child_nr = 0, loop_nr = -1;
 
 	assert(loop && loop->kind == k_ir_loop);
@@ -116,7 +125,8 @@ ir_loop *get_loop_son(ir_loop *loop, int pos) {
 }
 
 /* Returns the number of nodes in the loop */
-int get_loop_n_nodes(const ir_loop *loop) {
+int get_loop_n_nodes(const ir_loop *loop)
+{
 	assert(loop); assert(loop->kind == k_ir_loop);
 	return loop->n_nodes;
 }
@@ -124,7 +134,8 @@ int get_loop_n_nodes(const ir_loop *loop) {
 /* Returns the pos'th ir_node-child                *
  * TODO: This method isn't very efficient !        *
  * Returns NULL if there isn't a pos'th ir_node   */
-ir_node *get_loop_node(const ir_loop *loop, int pos) {
+ir_node *get_loop_node(const ir_loop *loop, int pos)
+{
 	int child_nr, node_nr = -1;
 
 	assert(loop && loop->kind == k_ir_loop);
@@ -137,12 +148,12 @@ ir_node *get_loop_node(const ir_loop *loop, int pos) {
 			return loop -> children[child_nr].node;
 	}
 
-	assert(0 && "no child at pos found");
-	return NULL;
+	panic("no child at pos found");
 }
 
 /* Returns the number of elements contained in loop.  */
-int get_loop_n_elements(const ir_loop *loop) {
+int get_loop_n_elements(const ir_loop *loop)
+{
 	assert(loop && loop->kind == k_ir_loop);
 	return(ARR_LEN(loop->children));
 }
@@ -153,12 +164,14 @@ This may be a loop_node or a ir_node. The caller of this function has
 to check the *(loop_element.kind) field for "k_ir_node" or "k_ir_loop"
 and then select the appropriate "loop_element.node" or "loop_element.son".
 */
-loop_element get_loop_element(const ir_loop *loop, int pos) {
+loop_element get_loop_element(const ir_loop *loop, int pos)
+{
 	assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
 	return(loop -> children[pos]);
 }
 
-int get_loop_element_pos(const ir_loop *loop, void *le) {
+int get_loop_element_pos(const ir_loop *loop, void *le)
+{
 	int i, n;
 	assert(loop && loop->kind == k_ir_loop);
 
@@ -173,15 +186,18 @@ int get_loop_element_pos(const ir_loop *loop, void *le) {
 /**
  * Sets the loop for a node.
  */
-void set_irn_loop(ir_node *n, ir_loop *loop) {
+void set_irn_loop(ir_node *n, ir_loop *loop)
+{
 	n->loop = loop;
 }
 
-ir_loop *(get_irn_loop)(const ir_node *n) {
+ir_loop *(get_irn_loop)(const ir_node *n)
+{
 	return _get_irn_loop(n);
 }
 
-int get_loop_loop_nr(const ir_loop *loop) {
+int get_loop_loop_nr(const ir_loop *loop)
+{
 	assert(loop && loop->kind == k_ir_loop);
 #ifdef DEBUG_libfirm
 	return loop->loop_nr;
@@ -190,26 +206,32 @@ int get_loop_loop_nr(const ir_loop *loop) {
 #endif
 }
 
-void set_loop_link(ir_loop *loop, void *link) {
+void set_loop_link(ir_loop *loop, void *link)
+{
 	assert(loop && loop->kind == k_ir_loop);
 	loop->link = link;
 }
-void *get_loop_link(const ir_loop *loop) {
+
+void *get_loop_link(const ir_loop *loop)
+{
 	assert(loop && loop->kind == k_ir_loop);
 	return loop->link;
 }
 
-int (is_ir_loop)(const void *thing) {
+int (is_ir_loop)(const void *thing)
+{
 	return _is_ir_loop(thing);
 }
 
 /* The outermost loop is remarked in the surrounding graph. */
-void (set_irg_loop)(ir_graph *irg, ir_loop *loop) {
+void (set_irg_loop)(ir_graph *irg, ir_loop *loop)
+{
 	_set_irg_loop(irg, loop);
 }
 
 /* Returns the root loop info (if exists) for an irg. */
-ir_loop *(get_irg_loop)(const ir_graph *irg) {
+ir_loop *(get_irg_loop)(const ir_graph *irg)
+{
 	return _get_irg_loop(irg);
 }
 
@@ -217,7 +239,8 @@ ir_loop *(get_irg_loop)(const ir_graph *irg) {
  * Allocates a new loop as son of father on the given obstack.
  * If father is equal NULL, a new root loop is created.
  */
-ir_loop *alloc_loop(ir_loop *father, struct obstack *obst) {
+ir_loop *alloc_loop(ir_loop *father, struct obstack *obst)
+{
 	ir_loop *son;
 
 	son = OALLOCZ(obst, ir_loop);

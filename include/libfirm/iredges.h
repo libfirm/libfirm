@@ -182,10 +182,6 @@ void edges_init_dbg(int do_dbg);
  */
 ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem);
 
-/************************************************************************/
-/* Begin Old Interface                                                  */
-/************************************************************************/
-
 const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
 
 #define edges_reroute(old, nw, irg)                     edges_reroute_kind(old, nw, EDGE_KIND_NORMAL, irg)
@@ -271,9 +267,5 @@ void irg_block_edges_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *pos
  * @param size    length of the private data inside the edge
  */
 void edges_reset_private_data(ir_graph *irg, int offset, unsigned size);
-
-/************************************************************************/
-/* End Old Interface                                                    */
-/************************************************************************/
 
 #endif

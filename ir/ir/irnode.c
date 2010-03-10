@@ -39,6 +39,7 @@
 #include "iredgekinds.h"
 #include "iredges_t.h"
 #include "ircons.h"
+#include "error.h"
 
 #include "irhooks.h"
 #include "irtools.h"
@@ -2873,9 +2874,8 @@ ir_node *get_fragile_op_mem(ir_node *node)
 	case iro_Bad   :
 	case iro_Unknown:
 		return node;
-	default: ;
-		assert(0 && "should not be reached");
-		return NULL;
+	default:
+		panic("should not be reached");
 	}
 }
 
@@ -2887,9 +2887,8 @@ ir_mode *get_divop_resmod(const ir_node *node)
 	case iro_DivMod: return get_DivMod_resmode(node);
 	case iro_Div   : return get_Div_resmode(node);
 	case iro_Mod   : return get_Mod_resmode(node);
-	default: ;
-		assert(0 && "should not be reached");
-		return NULL;
+	default:
+		panic("should not be reached");
 	}
 }
 

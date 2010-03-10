@@ -480,7 +480,6 @@ static ir_node *build_graph(mul_env *env, instruction *inst)
 		return inst->irn = new_Const(get_mode_null(env->mode));
 	default:
 		panic("Unsupported instruction kind");
-		return NULL;
 	}
 }
 

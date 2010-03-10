@@ -527,6 +527,33 @@ static inline void set_irg_anchor(ir_graph *irg, int idx, ir_node *irn)
 	set_irn_n(irg->anchor, idx, irn);
 }
 
+
+
+/**
+ * Register a phase on an irg.
+ * The phase will then be managed by the irg. This means you can easily
+ * access the phase when you only have a graph handle, the memory will be
+ * freed when the graph is freed and some care is taken that the phase data
+ * will be invalidated/preserved on events like dead code elemination and
+ * code selection.
+ */
+void irg_register_phase(ir_graph *irg, ir_phase_id id, ir_phase *phase);
+
+/**
+ * Frees all phase infos attached to an irg
+ */
+void irg_invalidate_phases(ir_graph *irg);
+
+/**
+ * return phase with given id
+ */
+static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
+{
+	assert(id <= PHASE_LAST);
+	return irg->phases[id];
+}
+
+
 #ifdef INTERPROCEDURAL_VIEW
 extern int firm_interprocedural_view;
 

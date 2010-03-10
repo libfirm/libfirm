@@ -472,7 +472,6 @@ static void emit_be_Copy(const ir_node *irn)
 		sparc_emit_dest_register(irn, 0);
 		be_emit_finish_line_gas(irn);
 	} else {
-		assert(0 && "move not supported for this mode");
 		panic("emit_be_Copy: move not supported for this mode");
 	}
 }

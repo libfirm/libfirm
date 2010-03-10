@@ -31,6 +31,7 @@
 #include "set.h"
 #include "pdeq.h"
 #include "hashptr.h"
+#include "error.h"
 
 #include "irprog_t.h"
 #include "irgraph_t.h"
@@ -265,10 +266,12 @@ static void precompute_cond_evaluation(void)
     /* both are exceptions */
     if ((get_ProjX_probability(p0) == Cond_prob_exception_taken) &&
         (get_ProjX_probability(p1) == Cond_prob_exception_taken)   ) {
-      assert(0 && "I tried to avoid these!");
+      panic("I tried to avoid these!");
+#if 0
       /* It's a */
       set_ProjX_probability(p0, Cond_prob_normal);
       set_ProjX_probability(p1, Cond_prob_normal);
+#endif
     }
 
     /* p0 is exception */

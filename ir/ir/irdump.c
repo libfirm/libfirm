@@ -804,12 +804,14 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		}
 		break;
 
+#ifdef INTERPROCEDURAL_VIEW
 	case iro_Filter:
 		if (!get_interprocedural_view())
 			fprintf(F, "Proj'");
 		else
 			goto default_case;
 		break;
+#endif
 
 	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(n);
@@ -821,6 +823,8 @@ int dump_node_opcode(FILE *F, ir_node *n)
 		else
 			goto default_case;
 	} break;
+
+#ifdef INTERPROCEDURAL_VIEW
 	case iro_Start:
 	case iro_End:
 	case iro_EndExcept:
@@ -830,6 +834,7 @@ int dump_node_opcode(FILE *F, ir_node *n)
 			break;
 		} else
 			goto default_case;
+#endif
 
 	case iro_CallBegin: {
 		ir_node *addr = get_CallBegin_ptr(n);
@@ -1134,12 +1139,6 @@ static int dump_node_nodeattr(FILE *F, ir_node *n)
 		return ops->dump_node(n, F, dump_node_nodeattr_txt);
 
 	switch (get_irn_opcode(n)) {
-	case iro_Start:
-		if (0 && get_interprocedural_view()) {
-			fprintf(F, "%s ", get_ent_dump_name(get_irg_entity(current_ir_graph)));
-		}
-		break;
-
 	case iro_Const:
 		ir_fprintf(F, "%T ", get_Const_tarval(n));
 		break;
@@ -1147,7 +1146,9 @@ static int dump_node_nodeattr(FILE *F, ir_node *n)
 	case iro_Proj:
 		pred    = get_Proj_pred(n);
 		proj_nr = get_Proj_proj(n);
+#ifdef INTERPROCEDURAL_VIEW
 handle_lut:
+#endif
 		code    = get_irn_opcode(pred);
 
 		if (code == iro_Cmp)
@@ -1183,11 +1184,13 @@ handle_lut:
 		break;
 	case iro_Filter:
 		proj_nr = get_Filter_proj(n);
+#ifdef INTERPROCEDURAL_VIEW
 		if (! get_interprocedural_view()) {
 			/* it's a Proj' */
 			pred    = get_Filter_pred(n);
 			goto handle_lut;
 		} else
+#endif
 			fprintf(F, "%ld ", proj_nr);
 		break;
 	case iro_Sel:
@@ -1643,7 +1646,6 @@ static void print_edge_vcgattr(FILE *F, ir_node *from, int to)
 static void dump_ir_data_edges(FILE *F, ir_node *n)
 {
 	int i, num;
-	ir_visited_t visited = get_irn_visited(n);
 
 	if (!dump_keepalive && is_End(n)) {
 		/* the End node has only keep-alive edges */
@@ -1677,8 +1679,10 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)
 		ir_node *pred = get_irn_n(n, i);
 		assert(pred);
 
-		if ((get_interprocedural_view() && get_irn_visited(pred) < visited))
+#ifdef INTERPROCEDURAL_VIEW
+		if ((get_interprocedural_view() && get_irn_visited(pred) < get_irn_visited(n)))
 			continue; /* pred not dumped */
+#endif
 
 		if (dump_backedge_information_flag && is_backedge(n, i))
 			fprintf(F, "backedge: {sourcename: \"");
@@ -2558,9 +2562,12 @@ static void do_dump(ir_graph *irg, const char *suffix, const char *suffix_ip,
 
 	rem = current_ir_graph;
 	current_ir_graph = irg;
+	(void) suffix_ip;
+#ifdef INTERPROCEDURAL_VIEW
 	if (get_interprocedural_view())
 		suffix1 = suffix_ip;
 	else
+#endif
 		suffix1 = suffix_nonip;
 	current_ir_graph = rem;
 

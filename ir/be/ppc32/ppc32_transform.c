@@ -563,10 +563,7 @@ static ir_node *gen_Mod(ppc32_transform_env_t *env)
 			break;
 
 		default:
-			fprintf(stderr, "Mode for Mod not supported: %s\n", get_mode_name(res_mode));
-			assert(0);
-			return NULL;
-
+			panic("Mode for Mod not supported: %s\n", get_mode_name(res_mode));
 	}
 
 	proj_div = new_rd_Proj(env->dbg, div_result, res_mode, pn_DivMod_res_div);
@@ -914,7 +911,6 @@ static ir_node *gen_Abs(ppc32_transform_env_t *env)
 			break;
 	}
 	panic("Mode for Abs not supported: %F", env->mode);
-	return NULL;
 }
 
 /**

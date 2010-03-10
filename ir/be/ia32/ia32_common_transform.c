@@ -869,7 +869,8 @@ ir_node *gen_Proj_tls(ir_node *node)
 			break;
 #endif
 
-		default: panic("invalid transformer");
+		default:
+			panic("invalid transformer");
 	}
 
 	res = new_bd_ia32_LdTls(dbgi, block, mode_Iu);
@@ -899,7 +900,6 @@ ir_node *gen_Unknown(ir_node *node)
 	} else {
 		panic("unsupported Unknown-Mode");
 	}
-	return NULL;
 }
 
 const arch_register_req_t *make_register_req(const constraint_t *constraint,

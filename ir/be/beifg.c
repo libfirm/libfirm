@@ -85,7 +85,7 @@ static void *regs_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
 
 static coloring_t *coloring_init(coloring_t *c, ir_graph *irg)
 {
-	phase_init(&c->ph, "regs_map", irg, PHASE_DEFAULT_GROWTH, regs_irn_data_init, NULL);
+	phase_init(&c->ph, irg, regs_irn_data_init);
 	c->irg = irg;
 	return c;
 }
@@ -764,8 +764,7 @@ be_ifg_t *be_create_ifg(const be_chordal_env_t *chordal_env)
 
 	switch (ifg_flavor) {
 		default:
-			assert(0);
-			fprintf(stderr, "no valid ifg flavour selected. falling back to std\n");
+			panic("invalid ifg flavour selected");
 		case BE_IFG_STD:
 		case BE_IFG_FAST:
 			ifg = be_ifg_std_new(chordal_env);

@@ -59,12 +59,12 @@
 #define N_CONSTANTS 2048
 
 /* unused, float to int doesn't work yet */
-enum float_to_int_mode {
+typedef enum float_to_int_mode {
 	TRUNCATE,
 	ROUND
-};
+} float_to_int_mode;
 
-#define GET_FLOAT_TO_INT_MODE() TRUNCATE
+static float_to_int_mode current_float_to_int_mode = TRUNCATE;
 
 #define SWITCH_NOINFINITY 0
 #define SWITCH_NODENORMALS 0
@@ -268,15 +268,19 @@ static tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
 		break;
 
 	case irms_float_number:
-		if (SWITCH_NOINFINITY && fc_is_inf(value)) {
+#ifdef SWITCH_NOINFINITY
+		if (fc_is_inf(value)) {
 			/* clip infinity to maximum value */
 			return fc_is_negative(value) ? get_mode_min(mode) : get_mode_max(mode);
 		}
+#endif
 
-		if (SWITCH_NODENORMALS && fc_is_subnormal(value)) {
+#ifdef SWITCH_NODENORMALS
+		if (fc_is_subnormal(value)) {
 			/* clip denormals to zero */
 			return get_mode_null(mode);
 		}
+#endif
 		break;
 
 	default:
@@ -314,7 +318,6 @@ static const ieee_descriptor_t *get_descriptor(const ir_mode *mode)
 	/* case 128: return &quad_desc; */
 	default:
 		panic("Unsupported mode in get_descriptor()");
-		return NULL;
 	}
 }
 
@@ -448,9 +451,8 @@ tarval *new_tarval_from_long(long l, ir_mode *mode)
 		return new_tarval_from_double((long double)l, mode);
 
 	default:
-		assert(0 && "unsupported mode sort");
+		panic("unsupported mode sort");
 	}
-	return NULL;
 }
 
 /* returns non-zero if can be converted to long */
@@ -852,7 +854,6 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
 
 	if (a == tarval_bad || b == tarval_bad) {
 		panic("Comparison with tarval_bad");
-		return pn_Cmp_False;
 	}
 
 	if (a == tarval_undefined || b == tarval_undefined)
@@ -863,7 +864,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
-		assert(0 && "cmp not implemented for vector modes");
+		panic("cmp not implemented for vector modes");
 	}
 
 	/* Here the two tarvals are unequal and of the same mode */
@@ -942,15 +943,12 @@ tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode)
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		case irms_int_number:
-			switch (GET_FLOAT_TO_INT_MODE()) {
+			switch (current_float_to_int_mode) {
 			case TRUNCATE:
 				res = fc_int(src->value, NULL);
 				break;
 			case ROUND:
 				res = fc_rnd(src->value, NULL);
-				break;
-			default:
-				panic("Unsupported float to int conversion mode in tarval_convert_to()");
 				break;
 			}
 			buffer = alloca(sc_get_buffer_length());
@@ -1044,8 +1042,7 @@ tarval *tarval_not(tarval *a)
 		return tarval_bad;
 
 	default:
-		assert(0 && "bitwise negation is only allowed for integer and boolean");
-		return tarval_bad;
+		panic("bitwise negation is only allowed for integer and boolean");
 	}
 }
 
@@ -1336,7 +1333,7 @@ tarval *tarval_abs(tarval *a)
 		return a;
 
 	default:
-		return tarval_bad;
+		break;
 	}
 	return tarval_bad;
 }
@@ -1360,8 +1357,7 @@ tarval *tarval_and(tarval *a, tarval *b)
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
 	default:
-		assert(0 && "operation not defined on mode");
-		return tarval_bad;
+		panic("operation not defined on mode");
 	}
 }
 
@@ -1381,8 +1377,7 @@ tarval *tarval_andnot(tarval *a, tarval *b)
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
 	default:
-		assert(0 && "operation not defined on mode");
-		return tarval_bad;
+		panic("operation not defined on mode");
 	}
 }
 
@@ -1405,8 +1400,7 @@ tarval *tarval_or(tarval *a, tarval *b)
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
 	default:
-		assert(0 && "operation not defined on mode");
-		return tarval_bad;
+		panic("operation not defined on mode");
 	}
 }
 
@@ -1429,8 +1423,7 @@ tarval *tarval_eor(tarval *a, tarval *b)
 		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
 
 	default:
-		assert(0 && "operation not defined on mode");
-		return tarval_bad;;
+		panic("operation not defined on mode");
 	}
 }
 

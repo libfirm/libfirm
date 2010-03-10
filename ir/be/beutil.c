@@ -38,7 +38,7 @@
 #include "irgopt.h"
 #include "irtools.h"
 #include "irprintf.h"
-#include "iredges.h"
+#include "iredges_t.h"
 
 #include "beutil.h"
 #include "besched.h"
@@ -190,4 +190,11 @@ ir_node **be_get_cfgpostorder(ir_graph *irg)
 	                     &list);
 
 	return list;
+}
+
+ir_node *get_first_block_succ(const ir_node *block)
+{
+	const ir_edge_t *edge = get_irn_out_edge_first_kind(block, EDGE_KIND_BLOCK);
+	assert(edge != NULL);
+	return get_edge_src_irn(edge);
 }

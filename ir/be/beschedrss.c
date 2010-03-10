@@ -799,9 +799,6 @@ static int is_potential_killer(rss_t *rss, rss_irn_t *v, rss_irn_t *u)
 	plist_element_t *el;
 	(void) rss;
 
-	assert(is_Sink(v->irn) || ((plist_count(v->descendant_list) > 0 && v->descendants) || 1));
-	assert(is_Sink(u->irn) || ((plist_count(u->consumer_list)   > 0 && u->consumer)    || 1));
-
 	/* as we loop over the list: loop over the shorter one */
 	if (plist_count(v->descendant_list) > plist_count(u->consumer_list)) {
 		list = u->consumer_list;
@@ -2087,7 +2084,7 @@ static void process_block(ir_node *block, void *env)
 	int   i, n;
 	const ir_edge_t *edge;
 
-	phase_init(&rss->ph, "rss block preprocessor", rss->irg, PHASE_DEFAULT_GROWTH, init_rss_irn, NULL);
+	phase_init(&rss->ph, rss->irg, init_rss_irn);
 
 	DBG((rss->dbg, LEVEL_1, "preprocessing block %+F\n", block));
 	rss->block = block;
@@ -2173,7 +2170,7 @@ static void process_block(ir_node *block, void *env)
 		ir_nodeset_destroy(&rss->live_block);
 	}
 
-	phase_free(&rss->ph);
+	phase_deinit(&rss->ph);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_schedrss);

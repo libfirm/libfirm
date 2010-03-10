@@ -609,9 +609,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n)
 	case iro_Unknown:
 		nn = new_Unknown(m); break;
 	default:
-		assert(0 && "opcode invalid or not implemented");
-		nn = NULL;
-		break;
+		panic("opcode invalid or not implemented");
 	}
 	return nn;
 }  /* copy_const_value */

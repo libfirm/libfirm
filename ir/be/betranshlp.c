@@ -130,9 +130,6 @@ ir_node *be_duplicate_node(ir_node *node)
 	return new_node;
 }
 
-/**
- * Calls transformation function for given node and marks it visited.
- */
 ir_node *be_transform_node(ir_node *node)
 {
 	ir_op   *op;
@@ -158,9 +155,6 @@ ir_node *be_transform_node(ir_node *node)
 	return new_node;
 }
 
-/**
- * enqueue all inputs into the transform queue.
- */
 void be_enqueue_preds(ir_node *node)
 {
 	int i, arity;
@@ -442,6 +436,7 @@ void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func)
 	free_trouts();
 	free_loop_information(irg);
 	set_irg_doms_inconsistent(irg);
+	irg_invalidate_phases(irg);
 
 	be_liveness_invalidate(be_get_birg_liveness(birg));
 	/* Hack for now, something is buggy with invalidate liveness... */

@@ -545,7 +545,7 @@ static void emit_arm_CopyB(const ir_node *irn)
 	assert(size > 0 && "CopyB needs size > 0" );
 
 	if (size & 3) {
-		assert(!"strange hack enabled: copy more bytes than needed!");
+		fprintf(stderr, "strange hack enabled: copy more bytes than needed!");
 		size += 4;
 	}
 
@@ -788,7 +788,6 @@ static void emit_be_Copy(const ir_node *irn)
 			arm_emit_source_register(irn, 0);
 			be_emit_finish_line_gas(irn);
 		} else {
-			assert(0 && "move not supported for this mode");
 			panic("emit_be_Copy: move not supported for this mode");
 		}
 	} else if (mode_is_data(mode)) {
@@ -796,9 +795,8 @@ static void emit_be_Copy(const ir_node *irn)
 		arm_emit_dest_register(irn, 0);
 		be_emit_cstring(", ");
 		arm_emit_source_register(irn, 0);
-			be_emit_finish_line_gas(irn);
+		be_emit_finish_line_gas(irn);
 	} else {
-		assert(0 && "move not supported for this mode");
 		panic("emit_be_Copy: move not supported for this mode");
 	}
 }

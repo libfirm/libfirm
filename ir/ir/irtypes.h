@@ -39,13 +39,22 @@
 #include "callgraph.h"
 #include "irprog.h"
 #include "field_temperature.h"
-#include "irphases_t.h"
+#include "irphase.h"
 
 #include "pset.h"
 #include "set.h"
 #include "list.h"
 #include "obst.h"
 #include "vrp.h"
+
+/**
+ * List of phases. (We will add a register/unregister interface if managing
+ * this gets too tedious)
+ */
+typedef enum ir_phase_id {
+	PHASE_VRP,
+	PHASE_LAST = PHASE_VRP
+} ir_phase_id;
 
 /** The type of an ir_op. */
 struct ir_op {
@@ -508,7 +517,7 @@ struct ir_graph {
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 	int index;                         /**< a unique number for each graph */
-	ir_phase *phases[PHASE_LAST];      /**< Phase information. */
+	ir_phase *phases[PHASE_LAST+1];    /**< Phase information. */
 	void     *be_data;                 /**< backend can put in private data here */
 #ifdef DEBUG_libfirm
 	int   n_outs;                      /**< Size wasted for outs */

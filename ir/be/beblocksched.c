@@ -758,5 +758,4 @@ ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
 	}
 
 	panic("unknown blocksched algo");
-	return NULL;
 }

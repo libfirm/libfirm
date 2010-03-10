@@ -541,7 +541,7 @@ void be_liveness_assure_sets(be_lv_t *lv)
 		be_timer_push(T_LIVE);
 
 		lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
-		phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
+		phase_init(&lv->ph, lv->irg, lv_phase_data_init);
 		compute_liveness(lv);
 		/* be_live_chk_compare(lv, lv->lvc); */
 
@@ -564,7 +564,7 @@ void be_liveness_invalidate(be_lv_t *lv)
 {
 	if (lv && lv->nodes) {
 		unregister_hook(hook_node_info, &lv->hook_info);
-		phase_free(&lv->ph);
+		phase_deinit(&lv->ph);
 		bitset_free(lv->nodes);
 		lv->nodes = NULL;
 	}
@@ -598,8 +598,8 @@ void be_liveness_recompute(be_lv_t *lv)
 	} else
 		bitset_clear_all(lv->nodes);
 
-	phase_free(&lv->ph);
-	phase_init(&lv->ph, "liveness", lv->irg, PHASE_DEFAULT_GROWTH, lv_phase_data_init, NULL);
+	phase_deinit(&lv->ph);
+	phase_init(&lv->ph, lv->irg, lv_phase_data_init);
 	compute_liveness(lv);
 
 	be_timer_pop(T_LIVE);

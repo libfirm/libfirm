@@ -330,7 +330,6 @@ static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op
 		break;
 	default:
 		panic("Unsupported opcode");
-		result = NULL;
 	}
 	return result;
 }  /* do_apply */
@@ -1159,7 +1158,6 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			break;
 		default:
 			panic("Unsupported opcode");
-			tv = tarval_bad;
 		}
 
 		if (pscc->code == iro_Add) {

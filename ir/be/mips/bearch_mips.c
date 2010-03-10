@@ -424,7 +424,6 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		sp = new_bd_mips_addu(NULL, block, sp,
 		                      mips_create_Immediate(initialstackframesize));
 		arch_set_irn_register(sp, &mips_gp_regs[REG_SP]);
-		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		/* TODO: where to get an edge with a0-a3
 		int i;
@@ -462,7 +461,6 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 		sp = new_bd_mips_addu(NULL, block, sp,
 		                      mips_create_Immediate(-initialstackframesize));
 		arch_set_irn_register(sp, &mips_gp_regs[REG_SP]);
-		panic("FIXME Use IncSP or set register requirement with ignore");
 
 		reg = be_abi_reg_map_get(reg_map, &mips_gp_regs[REG_FP]);
 		store = new_bd_mips_sw(NULL, block, sp, reg, *mem, NULL, 0);
@@ -474,7 +472,6 @@ static const arch_register_t *mips_abi_prologue(void *self, ir_node** mem, pmap 
 	fp = new_bd_mips_addu(NULL, block, sp,
 	                      mips_create_Immediate(-initialstackframesize));
 	arch_set_irn_register(fp, &mips_gp_regs[REG_FP]);
-	panic("FIXME Use IncSP or set register requirement with ignore");
 
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_FP], fp);
 	be_abi_reg_map_set(reg_map, &mips_gp_regs[REG_SP], sp);
@@ -495,12 +492,10 @@ static void mips_abi_epilogue(void *self, ir_node *block, ir_node **mem, pmap *r
 	// copy fp to sp
 	sp = new_bd_mips_or(NULL, block, fp, mips_create_zero());
 	arch_set_irn_register(sp, &mips_gp_regs[REG_SP]);
-	panic("FIXME Use be_Copy or set register requirement with ignore");
 
 	// 1. restore fp
 	load = new_bd_mips_lw(NULL, block, sp, *mem, NULL,
 	                      fp_save_offset - initial_frame_size);
-	panic("FIXME register requirement with ignore");
 
 	fp = new_r_Proj(load, mode_Iu, pn_mips_lw_res);
 	*mem = new_r_Proj(load, mode_Iu, pn_mips_lw_M);

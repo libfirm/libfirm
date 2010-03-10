@@ -42,57 +42,35 @@ void *phase_irn_init_default(ir_phase *ph, const ir_node *irn, void *old)
 	return NULL;
 }
 
-ir_phase *init_irg_phase(ir_graph *irg, ir_phase_id id, size_t size, phase_irn_init *data_init)
+void phase_init(ir_phase *phase, ir_graph *irg, phase_irn_init *data_init)
 {
-	ir_phase *ph;
+	memset(phase, 0, sizeof(*phase));
 
-	size = MAX(sizeof(*ph), size);
-	assert(id != PHASE_NOT_IRG_MANAGED && id < PHASE_LAST);
-	assert(irg->phases[id] == NULL && "you cannot overwrite another irg managed phase");
-
-	ph = xmalloc(size);
-	memset(ph, 0, size);
-	obstack_init(&ph->obst);
-	ph->id            = id;
-	ph->growth_factor = PHASE_DEFAULT_GROWTH;
-	ph->data_init     = data_init;
-	ph->irg           = irg;
-	ph->n_data_ptr    = 0;
-	ph->data_ptr      = NULL;
-
-	irg->phases[id] = ph;
-
-	return ph;
+	obstack_init(&phase->obst);
+	phase->data_init  = data_init;
+	phase->irg        = irg;
+	phase->n_data_ptr = 0;
+	phase->data_ptr   = NULL;
 }
 
-void free_irg_phase(ir_graph *irg, ir_phase_id id)
+ir_phase *new_phase(ir_graph *irg, phase_irn_init *data_init)
 {
-	ir_phase *ph = get_irg_phase(irg, id);
-	phase_free(ph);
-	xfree(ph);
-	irg->phases[id] = NULL;
+	ir_phase *phase = xmalloc(sizeof(*phase));
+	phase_init(phase, irg, data_init);
+	return phase;
 }
 
-ir_phase *phase_init(ir_phase *ph, const char *name, ir_graph *irg, unsigned growth_factor, phase_irn_init *data_init, void *priv)
-{
-	obstack_init(&ph->obst);
-
-	(void) name;
-	ph->id            = PHASE_NOT_IRG_MANAGED;
-	ph->growth_factor = growth_factor;
-	ph->data_init     = data_init;
-	ph->irg           = irg;
-	ph->n_data_ptr    = 0;
-	ph->data_ptr      = NULL;
-	ph->priv          = priv;
-	return ph;
-}
-
-void phase_free(ir_phase *phase)
+void phase_deinit(ir_phase *phase)
 {
 	obstack_free(&phase->obst, NULL);
 	if (phase->data_ptr)
 		xfree(phase->data_ptr);
+}
+
+void phase_free(ir_phase *phase)
+{
+	phase_deinit(phase);
+	xfree(phase);
 }
 
 phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)

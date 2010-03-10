@@ -666,8 +666,10 @@ int construct_cf_backedges(ir_graph *irg)
 	struct obstack temp;
 	int i;
 
+#ifdef INTERPROCEDURAL_VIEW
 	assert(!get_interprocedural_view() &&
 		"use construct_ip_cf_backedges()");
+#endif
 	max_loop_depth = 0;
 
 	current_ir_graph   = irg;

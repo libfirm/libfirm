@@ -1597,16 +1597,11 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 	if (new_list != NULL) {
 		/* ok, change the graph */
 		ir_node *start_bl = get_irg_start_block(irg);
-		ir_node *first_bl = NULL;
+		ir_node *first_bl = get_first_block_succ(start_bl);
 		ir_node *frame, *imem, *nmem, *store, *mem, *args, *args_bl;
-		const ir_edge_t *edge;
 		optimization_state_t state;
 		unsigned offset;
 
-		foreach_block_succ(start_bl, edge) {
-			first_bl = get_edge_src_irn(edge);
-			break;
-		}
 		assert(first_bl && first_bl != start_bl);
 		/* we had already removed critical edges, so the following
 		   assertion should be always true. */

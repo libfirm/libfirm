@@ -658,9 +658,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
-			be_verify_out_edges(irg);
 		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
-			assert(be_verify_out_edges(irg));
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
@@ -673,9 +671,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
-			be_verify_out_edges(irg);
 		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
-			assert(be_verify_out_edges(irg));
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
@@ -798,12 +794,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			irg_verify(irg, VRFY_ENFORCE_SSA);
 			be_check_dominance(irg);
-			be_verify_out_edges(irg);
 			be_verify_schedule(birg);
 			be_verify_register_allocation(birg);
 		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
-			assert(be_verify_out_edges(irg) && "out edge verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 			assert(be_verify_schedule(birg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(birg)

@@ -558,6 +558,13 @@ static int ia32_get_op_estimated_cost(const ir_node *irn)
  */
 static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obst)
 {
+	(void) irn;
+	(void) i;
+	(void) inverse;
+	(void) obst;
+	return NULL;
+
+#if 0
 	ir_mode  *mode;
 	ir_mode  *irn_mode;
 	ir_node  *block, *noreg, *nomem;
@@ -670,6 +677,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 	}
 
 	return inverse;
+#endif
 }
 
 static ir_mode *get_spill_mode_mode(const ir_mode *mode)

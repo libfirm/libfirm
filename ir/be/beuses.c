@@ -121,7 +121,6 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
 	ir_node *node;
 	ir_node *succ_block = NULL;
-	const ir_edge_t *edge;
 	int arity, i;
 
 #if 1
@@ -131,10 +130,7 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 #endif
 		return 0;
 
-	foreach_block_succ(block, edge) {
-		succ_block = get_edge_src_irn(edge);
-		break;
-	}
+	succ_block = get_first_block_succ(block);
 
 	arity = get_Block_n_cfgpreds(succ_block);
 	if (arity <= 1)

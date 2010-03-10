@@ -64,7 +64,8 @@ const char *get_ir_alias_relation_name(ir_alias_relation rel)
 	X(ir_no_alias);
 	X(ir_may_alias);
 	X(ir_sure_alias);
-	default: assert(0); return "UNKNOWN";
+	default:
+		panic("UNKNOWN alias relation");
 	}
 #undef X
 }

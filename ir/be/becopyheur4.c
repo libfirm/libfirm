@@ -1425,7 +1425,8 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	stat_ev_tim_push();
 
 	/* init phase */
-	phase_init(&mst_env.ph, "co_mst", co->irg, PHASE_DEFAULT_GROWTH, co_mst_irn_init, &mst_env);
+	phase_init(&mst_env.ph, co->irg, co_mst_irn_init);
+	phase_set_private(&mst_env.ph, &mst_env);
 
 	k = be_put_ignore_regs(co->cenv->birg, co->cls, ignore_regs);
 	k = n_regs - k;
@@ -1491,7 +1492,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 
 	/* free allocated memory */
 	del_pqueue(mst_env.chunks);
-	phase_free(&mst_env.ph);
+	phase_deinit(&mst_env.ph);
 	del_pset(mst_env.chunkset);
 
 	stat_ev_tim_pop("heur4_total");

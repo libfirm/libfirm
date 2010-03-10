@@ -49,25 +49,29 @@ static unsigned *mere_get_backarray(ir_node *n)
 	switch (get_irn_opcode(n)) {
 	case iro_Block:
 		if (!get_Block_matured(n)) return NULL;
+#ifdef INTERPROCEDURAL_VIEW
 		if (get_interprocedural_view() && n->attr.block.in_cg) {
 			assert(n->attr.block.cg_backedge && "backedge array not allocated!");
 			return n->attr.block.cg_backedge;
-		} else {
-			assert(n->attr.block.backedge && "backedge array not allocated!");
-			return n->attr.block.backedge;
 		}
-		break;
+#endif
+
+		assert(n->attr.block.backedge && "backedge array not allocated!");
+		return n->attr.block.backedge;
 	case iro_Phi:
 		assert(n->attr.phi.u.backedge && "backedge array not allocated!");
 		return n->attr.phi.u.backedge;
 		break;
 	case iro_Filter:
+#ifdef INTERPROCEDURAL_VIEW
 		if (get_interprocedural_view()) {
 			assert(n->attr.filter.backedge && "backedge array not allocated!");
 			return n->attr.filter.backedge;
 		}
+#endif
 		break;
-	default: ;
+	default:
+		break;
 	}
 	return NULL;
 }
@@ -122,9 +126,11 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 		if (opc == iro_Phi)
 			n->attr.phi.u.backedge = arr;
 		else if (opc == iro_Block) {
+#ifdef INTERPROCEDURAL_VIEW
 			if (!get_interprocedural_view())
 				n->attr.block.backedge = arr;
 			else
+#endif
 				n->attr.block.cg_backedge = arr;
 		}
 		else if (opc == iro_Filter)
