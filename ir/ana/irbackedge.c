@@ -127,11 +127,11 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 			n->attr.phi.u.backedge = arr;
 		else if (opc == iro_Block) {
 #ifdef INTERPROCEDURAL_VIEW
-			if (!get_interprocedural_view())
-				n->attr.block.backedge = arr;
+			if (get_interprocedural_view())
+				n->attr.block.cg_backedge = arr;
 			else
 #endif
-				n->attr.block.cg_backedge = arr;
+				n->attr.block.backedge = arr;
 		}
 		else if (opc == iro_Filter)
 			n->attr.filter.backedge = arr;
