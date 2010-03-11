@@ -47,7 +47,7 @@
 #include "pmap.h"
 
 /** a pointer to the new phases */
-static ir_phase *new_phases[PHASE_LAST];
+static ir_phase *new_phases[PHASE_LAST + 1];
 
 /**
  * Reroute the inputs of a node from nodes in the old graph to copied nodes in
