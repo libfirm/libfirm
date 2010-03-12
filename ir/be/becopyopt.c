@@ -363,7 +363,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 		/* Exact Algorithm: Brute force */
 		curr = bitset_alloca(unsafe_count);
 		bitset_set_all(curr);
-		while ((max = bitset_popcnt(curr)) != 0) {
+		while ((max = bitset_popcount(curr)) != 0) {
 			/* check if curr is a stable set */
 			for (i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
 				for (o=bitset_next_set(curr, i+1); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to qnode_max_ind_set(): NOT (curr, i) */

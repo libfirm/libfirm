@@ -1743,7 +1743,7 @@ int tarval_is_single_bit(tarval *tv)
 /*
  * Return the number of set bits in a given (integer) tarval.
  */
-int get_tarval_popcnt(tarval *tv)
+int get_tarval_popcount(tarval *tv)
 {
 	int i, l;
 	int bits;
@@ -1755,7 +1755,7 @@ int get_tarval_popcnt(tarval *tv)
 	for (bits = 0, i = l - 1; i >= 0; --i) {
 		unsigned char v = get_tarval_sub_bits(tv, (unsigned)i);
 
-		bits += popcnt(v);
+		bits += popcount(v);
 	}
 	return bits;
 }

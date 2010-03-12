@@ -73,14 +73,18 @@ static inline int add_saturated(int x, int y)
  * @param x A 32-bit word.
  * @return The number of bits set in x.
  */
-static inline unsigned popcnt(unsigned x)
+static inline unsigned popcount(unsigned x)
 {
+#if defined(__GNUC__) && __GNUC__ >= 4
+	return __builtin_popcount(x);
+#else
 	x -= ((x >> 1) & 0x55555555);
 	x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
 	x = (x + (x >> 4)) & 0x0f0f0f0f;
 	x += x >> 8;
 	x += x >> 16;
 	return x & 0x3f;
+#endif
 }
 
 /**
@@ -90,15 +94,10 @@ static inline unsigned popcnt(unsigned x)
  */
 static inline unsigned nlz(unsigned x)
 {
-#ifdef USE_X86_ASSEMBLY
-	unsigned res;
+#if defined(__GNUC__) && __GNUC__ >= 4
 	if(x == 0)
 		return 32;
-
-	__asm__("bsrl %1,%0"
-			: "=r" (res)
-			: "r" (x));
-	return 31 - res;
+	return __builtin_clz(x);
 #else
    unsigned y;
    int n = 32;
@@ -119,15 +118,10 @@ static inline unsigned nlz(unsigned x)
  */
 static inline unsigned ntz(unsigned x)
 {
-#ifdef USE_X86_ASSEMBLY
-	unsigned res;
+#if defined(__GNUC__) && __GNUC__ >= 4
 	if(x == 0)
 		return 32;
-
-	__asm__("bsfl %1,%0"
-			: "=r" (res)
-			: "r" (x));
-	return  res;
+	return __builtin_ctz(x);
 #else
 	return HACKDEL_WORDSIZE - nlz(~x & (x - 1));
 #endif
@@ -163,7 +157,7 @@ static inline unsigned ntz(unsigned x)
  */
 static inline unsigned floor_po2(unsigned x)
 {
-#ifdef USE_X86_ASSEMBLY // in this case nlz is fast
+#if defined(__GNUC__) && __GNUC__ >= 4 // in this case nlz is fast
 	if(x == 0)
 		return 0;
 	// note that x != 0 here, so nlz(x) < 32!
@@ -189,7 +183,7 @@ static inline unsigned ceil_po2(unsigned x)
 		return 0;
 	assert(x < (1U << 31));
 
-#ifdef USE_X86_ASSEMBLY // in this case nlz is fast
+#if defined(__GNUC__) && __GNUC__ >= 4 // in this case nlz is fast
 	// note that x != 0 here!
 	return 0x80000000U >> (nlz(x-1) - 1);
 #else

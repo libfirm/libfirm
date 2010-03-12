@@ -110,7 +110,7 @@ static inline unsigned _bitset_std_inside_ntz(bitset_unit_t *unit_ptr)
  * @param unit_ptr The pointer to a unit.
  * @return The number of bits set in the unit.
  */
-#define _bitset_inside_pop(unit_ptr) (popcnt(*unit_ptr))
+#define _bitset_inside_pop(unit_ptr) (popcount(*unit_ptr))
 
 #define _BITSET_BINOP_UNITS_INC 1
 

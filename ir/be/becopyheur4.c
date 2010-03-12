@@ -174,7 +174,7 @@ static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *n
 	bitset_pos_t idx;
 	(void) env;
 
-	if (bitset_popcnt(node->adm_colors) < 1)
+	if (bitset_popcount(node->adm_colors) < 1)
 		fprintf(stderr, "no admissible colors?!?");
 	else {
 		bitset_foreach(node->adm_colors, idx) {
@@ -405,7 +405,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old)
 		bitset_andnot(res->adm_colors, env->ignore_regs);
 
 		/* compute the constraint factor */
-		res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcnt(res->adm_colors)) / env->n_regs;
+		res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
 
 		/* set the number of interfering affinity neighbours to -1, they are calculated later */
 		res->int_aff_neigh = -1;
@@ -588,7 +588,7 @@ static void aff_chunk_assure_weight(co_mst_env_t *env, aff_chunk_t *c)
 			c->color_affinity[i].cost *= (REAL(1.0) / ARR_LEN(c->n));
 
 		c->weight            = w;
-		// c->weight            = bitset_popcnt(c->nodes);
+		// c->weight            = bitset_popcount(c->nodes);
 		c->weight_consistent = 1;
 	}
 }

@@ -770,7 +770,7 @@ int tarval_is_single_bit(tarval *tv);
  *
  * @return number of set bits or -1 on error
  */
-int get_tarval_popcnt(tarval *tv);
+int get_tarval_popcount(tarval *tv);
 
 /**
  * Return the number of the lowest set bit in a given (integer) tarval.

@@ -167,7 +167,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			bitset_clear_all(bs);
 			bitset_copy(bs, op->regs);
 			bitset_and(bs, out_op->regs);
-			n_total = bitset_popcnt(op->regs) + bitset_popcnt(out_op->regs);
+			n_total = bitset_popcount(op->regs) + bitset_popcount(out_op->regs);
 
 			if (!bitset_is_empty(bs) && n_total < smallest_n_regs) {
 				smallest = i;

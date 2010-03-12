@@ -256,7 +256,7 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 			last_element.element = get_last_sub_clique(ifg, live, my_live, irn);
 
 			/* check and add still living nodes */
-			if (bitset_popcnt(my_live) > 1)
+			if (bitset_popcount(my_live) > 1)
 			{
 				if (last_element.element)
 				{
@@ -309,7 +309,7 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 			}
 			else
 			{
-				if (bitset_popcnt(my_live) == 1) /* there is only one node left */
+				if (bitset_popcount(my_live) == 1) /* there is only one node left */
 				{
 					if (last_element.element)
 					{

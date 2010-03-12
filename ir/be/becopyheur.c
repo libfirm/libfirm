@@ -477,7 +477,7 @@ no_stable_set:
 	}
 
 	/* transfer the best set into the qn */
-	qn->mis_size = 1+safe_count+bitset_popcnt(best);
+	qn->mis_size = 1+safe_count+bitset_popcount(best);
 	qn->mis_costs = safe_costs+best_weight;
 	qn->mis[0] = ou->nodes[0]; /* the root is always in a max stable set */
 	next = 1;

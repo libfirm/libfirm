@@ -930,5 +930,5 @@ unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *c
 	bitset_flip_all(bs);
 	be_abi_put_ignore_regs(birg->abi, cls, bs);
 
-	return bitset_popcnt(bs);
+	return bitset_popcount(bs);
 }

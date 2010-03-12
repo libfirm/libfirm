@@ -252,7 +252,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 		return;
 
 	penalty   *= NEIGHBOR_FACTOR;
-	n_allowed  = rbitset_popcnt(limited, n_regs);
+	n_allowed  = rbitset_popcount(limited, n_regs);
 	if (n_allowed > 1) {
 		/* only create a very weak penalty if multiple regs are allowed */
 		penalty = (penalty * 0.8f) / n_allowed;
@@ -314,7 +314,7 @@ static void check_defs(const ir_nodeset_t *live_nodes, float weight,
 		int                arity = get_irn_arity(insn);
 		int                i;
 
-		float factor = 1.0f / rbitset_popcnt(&req->other_same, arity);
+		float factor = 1.0f / rbitset_popcount(&req->other_same, arity);
 		for (i = 0; i < arity; ++i) {
 			ir_node           *op;
 			unsigned           r;

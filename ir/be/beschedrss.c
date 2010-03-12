@@ -1894,14 +1894,14 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 						be simultaneously alive with u
 					*/
 					bitset_copy(bs_tmp, bs_vdesc);
-					mu1 = bitset_popcnt(bitset_and(bs_tmp, bs_sv));
+					mu1 = bitset_popcount(bitset_and(bs_tmp, bs_sv));
 
 					/*
 						mu2 = | accum_desc_all_pkiller(u) without descendants(v) |
 					*/
 					if (is_pkiller) {
 						bitset_copy(bs_tmp, bs_ukilldesc);
-						mu2 = bitset_popcnt(bitset_andnot(bs_tmp, bs_vdesc));
+						mu2 = bitset_popcount(bitset_andnot(bs_tmp, bs_vdesc));
 					}
 					else {
 						mu2 = 0;
@@ -2000,7 +2000,7 @@ static void perform_value_serialization_heuristic(rss_t *rss)
 	arch_put_non_ignore_regs(rss->cls, arch_nonign_bs);
 	be_abi_put_ignore_regs(rss->abi, rss->cls, abi_ign_bs);
 	bitset_andnot(arch_nonign_bs, abi_ign_bs);
-	available_regs  = bitset_popcnt(arch_nonign_bs);
+	available_regs  = bitset_popcount(arch_nonign_bs);
 	//num_live = pset_count(rss->live_block);
 	//available_regs -= num_live < available_regs ? num_live : 0;
 

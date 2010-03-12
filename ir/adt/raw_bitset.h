@@ -42,6 +42,7 @@
 
 #include <assert.h>
 #include "bitset.h"
+#include "bitfiddle.h"
 #include "obst.h"
 
 /** The base type for raw bitsets. */
@@ -218,16 +219,14 @@ static inline int rbitset_is_set(const unsigned *bitset, unsigned pos)
  * @param bitset  the bitset
  * @param size    size of the bitset
  */
-static inline unsigned rbitset_popcnt(const unsigned *bitset, unsigned size)
+static inline unsigned rbitset_popcount(const unsigned *bitset, unsigned size)
 {
 	unsigned pos;
 	unsigned n = BITSET_SIZE_ELEMS(size);
 	unsigned res = 0;
-	const unsigned *elem = bitset;
 
 	for (pos = 0; pos < n; ++pos) {
-		res += _bitset_inside_pop(elem);
-		elem++;
+		res += popcount(bitset[pos]);
 	}
 
 	return res;
@@ -264,7 +263,7 @@ static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int se
 	if (!set)
 		mask = ~mask;
 	elem ^= mask;
-	p = _bitset_inside_ntz_value(elem & ~in_elem_mask);
+	p = ntz(elem & ~in_elem_mask);
 
 	/* If there is a bit set in the current elem, exit. */
 	if (p < BITS_PER_ELEM) {
@@ -276,7 +275,7 @@ static inline unsigned rbitset_next(const unsigned *bitset, unsigned pos, int se
 		elem_pos++;
 		elem = bitset[elem_pos] ^ mask;
 
-		p = _bitset_inside_ntz_value(elem);
+		p = ntz(elem);
 		if (p < BITS_PER_ELEM) {
 			return elem_pos * BITS_PER_ELEM + p;
 		}

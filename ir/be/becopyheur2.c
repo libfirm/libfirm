@@ -300,7 +300,7 @@ static void incur_constraint_costs(co2_t *env, const ir_node *irn, col_cost_pair
 		unsigned n_constr = 0;
 		unsigned i;
 
-		n_constr = rbitset_popcnt(req->limited, n_regs);
+		n_constr = rbitset_popcount(req->limited, n_regs);
 		for (i = 0; i < n_regs; ++i) {
 			if (rbitset_is_set(req->limited, i)) {
 				col_costs[i].costs = add_saturated(col_costs[i].costs, costs / n_constr);
@@ -629,7 +629,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 		co2_irn_t *ni = get_co2_irn(env, irn);
 
 		admissible_colors(env, ni, bs);
-		if (bitset_popcnt(bs) == 1) {
+		if (bitset_popcount(bs) == 1) {
 			bitset_pos_t c = bitset_next_set(bs, 0);
 			badness[c] += ci->costs;
 		}
@@ -796,7 +796,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 	ci->costs          = costs;
 	cloud->costs      += costs;
 	cloud->n_constr   += is_constrained(env, &ci->inh);
-	cloud->freedom    += bitset_popcnt(get_adm(env, &ci->inh));
+	cloud->freedom    += bitset_popcount(get_adm(env, &ci->inh));
 	cloud->max_degree  = MAX(cloud->max_degree, ci->inh.aff->degree);
 	cloud->n_memb++;
 
