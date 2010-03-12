@@ -327,7 +327,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 	bitset_t *forb     = bitset_alloca(n_regs);
 	affinity_node_t *a = ci->aff;
 
-	bitset_pos_t elm;
+	unsigned elm;
 	const ir_node *pos;
 	void *it;
 	int i;
@@ -614,7 +614,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 	be_ifg_t *ifg  = env->co->cenv->ifg;
 	bitset_t *bs   = bitset_alloca(n_regs);
 
-	bitset_pos_t elm;
+	unsigned elm;
 	const ir_node *irn;
 	void *it;
 
@@ -630,7 +630,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 
 		admissible_colors(env, ni, bs);
 		if (bitset_popcount(bs) == 1) {
-			bitset_pos_t c = bitset_next_set(bs, 0);
+			unsigned c = bitset_next_set(bs, 0);
 			badness[c] += ci->costs;
 		}
 

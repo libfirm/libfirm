@@ -136,7 +136,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 
 			/* if the constraint is the same, no copy is necessary
 			 * TODO generalise unequal but overlapping constraints */
-			if (rbitset_equal(req->limited, req2->limited, cls->n_regs))
+			if (rbitsets_equal(req->limited, req2->limited, cls->n_regs))
 				continue;
 
 			copy = be_new_Copy(cls, block, in);

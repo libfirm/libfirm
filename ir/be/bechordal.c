@@ -84,25 +84,6 @@ typedef struct _be_chordal_alloc_env_t {
 	int colors_n;          /**< The number of colors. */
 } be_chordal_alloc_env_t;
 
-#if 0
-static void check_border_list(struct list_head *head)
-{
-	border_t *x;
-	list_for_each_entry(border_t, x, head, list) {
-		assert(x->magic == BORDER_FOURCC);
-	}
-}
-
-static void check_heads(be_chordal_env_t *env)
-{
-	pmap_entry *ent;
-	for (ent = pmap_first(env->border_heads); ent; ent = pmap_next(env->border_heads)) {
-		/* ir_printf("checking border list of block %+F\n", ent->key); */
-		check_border_list(ent->value);
-	}
-}
-#endif
-
 static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *colors)
 {
 	bitset_t *tmp = alloc_env->tmp_colors;
@@ -198,7 +179,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	int *assignment;
 	pmap *partners;
 	int i, n_alloc;
-	bitset_pos_t col;
+	unsigned col;
 	const ir_edge_t *edge;
 	ir_node *perm = NULL;
 	//int match_res, cost;

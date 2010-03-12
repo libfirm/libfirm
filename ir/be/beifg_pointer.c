@@ -108,8 +108,8 @@ static ptr_head_t *ptr_get_new_head(ifg_pointer_t *ifg)
 
 static void write_pointers(bitset_t *live, ifg_pointer_t *ifg)
 {
-	ir_node      *live_irn;
-	bitset_pos_t  elm;
+	ir_node  *live_irn;
+	unsigned  elm;
 
 	bitset_foreach_irn(ifg->env->irg, live, elm, live_irn) {
 		ptr_head_t *head    = phase_get_or_set_irn_data(&ifg->ph, live_irn);
@@ -182,7 +182,7 @@ static void find_neighbour_walker(ir_node *bl, void *data)
 	ir_node          *first    = NULL;
 	bitset_t         *live     = bitset_malloc(get_irg_last_idx(ifg->env->irg));
 	bitset_t         *my_live;
-	bitset_pos_t     my_elm;
+	unsigned         my_elm;
 	border_t         *b;
 	ir_node          *my_irn;
 	element_content  last_irn;

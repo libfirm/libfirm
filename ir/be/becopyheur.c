@@ -397,7 +397,7 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
-	bitset_pos_t pos;
+	unsigned pos;
 	int next, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
@@ -552,8 +552,8 @@ static void ou_optimize(unit_t *ou)
 	qnode_t                     *tmp;
 	const arch_register_req_t   *req;
 	bitset_t const*              ignore;
-	bitset_pos_t                 n_regs;
-	bitset_pos_t                 idx;
+	unsigned                     n_regs;
+	unsigned                     idx;
 	int                          i;
 
 	DBG((dbg, LEVEL_1, "\tOptimizing unit:\n"));
@@ -567,7 +567,7 @@ static void ou_optimize(unit_t *ou)
 	ignore  = ou->co->cenv->ignore_colors;
 	n_regs  = req->cls->n_regs;
 	if (arch_register_req_is(req, limited)) {
-		rawbs_base_t const* limited = req->limited;
+		unsigned const* limited = req->limited;
 
 		for (idx = 0; idx != n_regs; ++idx) {
 			if (bitset_is_set(ignore, idx))

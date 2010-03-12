@@ -310,7 +310,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
-	bitset_pos_t pos;
+	unsigned  pos;
 	int max, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.

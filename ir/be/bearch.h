@@ -333,7 +333,7 @@ static inline int reg_reqs_equal(const arch_register_req_t *req1,
 			return 0;
 
 		n_regs = arch_register_class_n_regs(req1->cls);
-		if (!rbitset_equal(req1->limited, req2->limited, n_regs))
+		if (!rbitsets_equal(req1->limited, req2->limited, n_regs))
 			return 0;
 	}
 

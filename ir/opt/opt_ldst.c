@@ -1690,7 +1690,7 @@ static int backward_antic(block_t *bl)
 	}
 
 	memcpy(bl->id_2_memop_antic, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
-	if (! rbitset_equal(bl->anticL_in, env.curr_set, env.rbs_size)) {
+	if (! rbitsets_equal(bl->anticL_in, env.curr_set, env.rbs_size)) {
 		/* changed */
 		rbitset_copy(bl->anticL_in, env.curr_set, env.rbs_size);
 		dump_curr(bl, "AnticL_in*");
@@ -2166,7 +2166,7 @@ static int insert_Load(block_t *bl)
 	/* always update the map after gen/kill, as values might have been changed due to RAR/WAR/WAW */
 	memcpy(bl->id_2_memop_avail, env.curr_id_2_memop, env.rbs_size * sizeof(env.curr_id_2_memop[0]));
 
-	if (!rbitset_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
+	if (!rbitsets_equal(bl->avail_out, env.curr_set, env.rbs_size)) {
 		/* the avail set has changed */
 		rbitset_copy(bl->avail_out, env.curr_set, env.rbs_size);
 		dump_curr(bl, "Avail_out*");

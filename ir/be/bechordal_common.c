@@ -120,7 +120,7 @@ void create_borders(ir_node *block, void *env_ptr)
 	be_lv_t *lv                       = env->birg->lv;
 
 	int i, n;
-	bitset_pos_t elm;
+	unsigned elm;
 	unsigned step = 0;
 	unsigned pressure = 0;
 	struct list_head *head;

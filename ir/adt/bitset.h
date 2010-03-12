@@ -19,9 +19,9 @@
 
 /**
  * @file
- * @brief   A bitset implementation.
- * @author  Sebastian Hack
- * @date    15.10.2004
+ * @brief   convenience layer over raw_bitsets (stores number of bits
+ *          with the bitfield)
+ * @author  Matthias Braun
  * @version $Id$
  */
 #ifndef FIRM_ADT_BITSET_H
@@ -34,84 +34,34 @@
 
 #include "xmalloc.h"
 #include "bitfiddle.h"
+#include "raw_bitset.h"
 
-typedef unsigned int bitset_pos_t;
-
-#include "bitset_std.h"
-
-#if defined(__GNUC__) && defined(__i386__)
-#include "bitset_ia32.h"
-#endif
-
-typedef struct _bitset_t {
-	bitset_pos_t units;
-	bitset_pos_t size;
+typedef struct bitset_t {
+	unsigned size;     /**< size of the bitset in bits */
+	unsigned data[1];  /**< data (should be declared data[] but this is only
+	                        allowed in C99) */
 } bitset_t;
 
-#define BS_UNIT_SIZE         sizeof(bitset_unit_t)
-#define BS_UNIT_SIZE_BITS    (BS_UNIT_SIZE * 8)
-#define BS_UNIT_MASK         (BS_UNIT_SIZE_BITS - 1)
-
-#define BS_DATA(bs)          ((bitset_unit_t *) ((char *) (bs) + sizeof(bitset_t)))
-#define BS_UNITS(bits)       (round_up2(bits, BS_UNIT_SIZE_BITS) / BS_UNIT_SIZE_BITS)
-#define BS_TOTAL_SIZE(bits)  (sizeof(bitset_t) + BS_UNITS(bits) * BS_UNIT_SIZE)
-
 /**
- * Initialize a bitset.
- * This functions should not be called.
- *
- * Note that this function needs three macros which must be provided by the
- * bitfield implementor:
- * - _bitset_overall_size(size) The overall size that must be
- *   allocated for the bitfield in bytes.
- * - _bitset_units(size) The number of units that will be
- *   present in the bitfield for a given highest bit.
- * - _bitset_data_ptr(data, size) This produces as pointer to the
- *   first unit in the allocated memory area. The main reason for this
- *   macro is, that some bitset implementors want control over memory
- *   alignment.
- *
- * @param area A pointer to memory reserved for the bitset.
- * @param size The size of the bitset in bits.
- * @return A pointer to the initialized bitset.
+ * return the number of bytes a bitset would need
  */
-static inline bitset_t *_bitset_prepare(void *area, bitset_pos_t size)
+static inline size_t bitset_total_size(unsigned n_bits)
 {
-	bitset_t *ptr = area;
-	memset(ptr, 0, BS_TOTAL_SIZE(size));
-	ptr->units = BS_UNITS(size);
-	ptr->size  = size;
-	return ptr;
+	return sizeof(bitset_t) - sizeof(((bitset_t*)0)->data)
+		+ BITSET_SIZE_BYTES(n_bits);
 }
 
 /**
- * Mask out all bits, which are only there, because the number
- * of bits in the set didn't match a unit size boundary.
- * @param bs The bitset.
- * @return The masked bitset.
+ * initialize a bitset for bitsize size (bitset should point to memory
+ * with a size calculated by bitset_total_size)
  */
-static inline bitset_t *_bitset_mask_highest(bitset_t *bs)
+static inline bitset_t *bitset_init(void *memory, unsigned size)
 {
-	bitset_pos_t rest = bs->size & BS_UNIT_MASK;
-	if (rest)
-		BS_DATA(bs)[bs->units - 1] &= (1 << rest) - 1;
-	return bs;
+	bitset_t *result = (bitset_t*) memory;
+	result->size = size;
+	rbitset_clear_all(result->data, size);
+	return result;
 }
-
-/**
- * Get the capacity of the bitset in bits.
- * @param bs The bitset.
- * @return The capacity in bits of the bitset.
- */
-#define bitset_capacity(bs) ((bs)->units * BS_UNIT_SIZE_BITS)
-
-/**
- * Get the size of the bitset in bits.
- * @note Note the difference between capacity and size.
- * @param bs The bitset.
- * @return The highest bit which can be set or cleared plus 1.
- */
-#define bitset_size(bs)  ((bs)->size)
 
 /**
  * Allocate a bitset on an obstack.
@@ -119,22 +69,34 @@ static inline bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.
  */
-#define bitset_obstack_alloc(obst,size) \
-	_bitset_prepare(obstack_alloc(obst, BS_TOTAL_SIZE(size)), size)
+static inline bitset_t *bitset_obstack_alloc(struct obstack *obst,
+                                             unsigned n_bits)
+{
+	size_t size   = bitset_total_size(n_bits);
+	void  *memory = obstack_alloc(obst, size);
+	return bitset_init(memory, n_bits);
+}
 
 /**
  * Allocate a bitset via malloc.
  * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.
  */
-#define bitset_malloc(size) \
-	_bitset_prepare(xmalloc(BS_TOTAL_SIZE(size)), size)
+static inline bitset_t *bitset_malloc(unsigned n_bits)
+{
+	size_t  size   = bitset_total_size(n_bits);
+	void   *memory = xmalloc(size);
+	return bitset_init(memory, n_bits);
+}
 
 /**
  * Free a bitset allocated with bitset_malloc().
  * @param bs The bitset.
  */
-#define bitset_free(bs) free(bs)
+static inline void bitset_free(bitset_t *bitset)
+{
+	xfree(bitset);
+}
 
 /**
  * Allocate a bitset on the stack via alloca.
@@ -142,20 +104,17 @@ static inline bitset_t *_bitset_mask_highest(bitset_t *bs)
  * @return A pointer to an empty initialized bitset.
  */
 #define bitset_alloca(size) \
-	_bitset_prepare(alloca(BS_TOTAL_SIZE(size)), size)
-
+	bitset_init(alloca(bitset_total_size(size)), (size))
 
 /**
- * Get the unit which contains a specific bit.
- * This function is internal.
+ * Get the size of the bitset in bits.
+ * @note Note the difference between capacity and size.
  * @param bs The bitset.
- * @param bit The bit.
- * @return A pointer to the unit containing the bit.
+ * @return The highest bit which can be set or cleared plus 1.
  */
-static inline bitset_unit_t *_bitset_get_unit(const bitset_t *bs, bitset_pos_t bit)
+static inline unsigned bitset_size(const bitset_t *bitset)
 {
-	assert(bit <= bs->size && "Bit to large");
-	return BS_DATA(bs) + bit / BS_UNIT_SIZE_BITS;
+	return bitset->size;
 }
 
 /**
@@ -163,10 +122,10 @@ static inline bitset_unit_t *_bitset_get_unit(const bitset_t *bs, bitset_pos_t b
  * @param bs The bitset.
  * @param bit The bit to set.
  */
-static inline void bitset_set(bitset_t *bs, bitset_pos_t bit)
+static inline void bitset_set(bitset_t *bs, unsigned bit)
 {
-	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
-	_bitset_inside_set(unit, bit & BS_UNIT_MASK);
+	assert(bit < bs->size);
+	rbitset_set(bs->data, bit);
 }
 
 /**
@@ -174,10 +133,10 @@ static inline void bitset_set(bitset_t *bs, bitset_pos_t bit)
  * @param bs The bitset.
  * @param bit The bit to clear.
  */
-static inline void bitset_clear(bitset_t *bs, bitset_pos_t bit)
+static inline void bitset_clear(bitset_t *bs, unsigned bit)
 {
-	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
-	_bitset_inside_clear(unit, bit & BS_UNIT_MASK);
+	assert(bit < bs->size);
+	rbitset_clear(bs->data, bit);
 }
 
 /**
@@ -186,10 +145,10 @@ static inline void bitset_clear(bitset_t *bs, bitset_pos_t bit)
  * @param bit The bit to check for.
  * @return 1, if the bit was set, 0 if not.
  */
-static inline int bitset_is_set(const bitset_t *bs, bitset_pos_t bit)
+static inline bool bitset_is_set(const bitset_t *bs, unsigned bit)
 {
-	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
-	return _bitset_inside_is_set(unit, bit & BS_UNIT_MASK);
+	assert(bit < bs->size);
+	return rbitset_is_set(bs->data, bit);
 }
 
 /**
@@ -197,10 +156,10 @@ static inline int bitset_is_set(const bitset_t *bs, bitset_pos_t bit)
  * @param bs The bitset.
  * @param bit The bit to flip.
  */
-static inline void bitset_flip(bitset_t *bs, bitset_pos_t bit)
+static inline void bitset_flip(bitset_t *bs, unsigned bit)
 {
-	bitset_unit_t *unit = _bitset_get_unit(bs, bit);
-	_bitset_inside_flip(unit, bit & BS_UNIT_MASK);
+	assert(bit < bs->size);
+	rbitset_flip(bs->data, bit);
 }
 
 /**
@@ -209,27 +168,35 @@ static inline void bitset_flip(bitset_t *bs, bitset_pos_t bit)
  */
 static inline void bitset_flip_all(bitset_t *bs)
 {
-	bitset_pos_t i;
-	for(i = 0; i < bs->units; i++)
-		_bitset_inside_flip_unit(&BS_DATA(bs)[i]);
-	_bitset_mask_highest(bs);
+	rbitset_flip_all(bs->data, bs->size);
 }
 
 /**
- * Copy a bitset to another.
+ * Copy a bitset to another. Both bitset must be initialized and have the same
+ * number of bits.
  * @param tgt The target bitset.
  * @param src The source bitset.
  * @return The target bitset.
  */
-static inline bitset_t *bitset_copy(bitset_t *tgt, const bitset_t *src)
+static inline void bitset_copy(bitset_t *tgt, const bitset_t *src)
 {
-	bitset_pos_t tu = tgt->units;
-	bitset_pos_t su = src->units;
-	bitset_pos_t min_units = tu < su ? tu : su;
-	memcpy(BS_DATA(tgt), BS_DATA(src), min_units * BS_UNIT_SIZE);
-	if(tu > min_units)
-		memset(BS_DATA(tgt) + min_units, 0, BS_UNIT_SIZE * (tu - min_units));
-	return _bitset_mask_highest(tgt);
+	assert(tgt->size == src->size);
+	rbitset_copy(tgt->data, src->data, src->size);
+}
+
+/**
+ * Find the next unset bit from a given bit.
+ * @note Note that if pos is unset, pos is returned.
+ * @param bs The bitset.
+ * @param pos The bit from which to search for the next set bit.
+ * @return The next set bit from pos on, or (unsigned)-1, if no unset bit was
+ * found after pos.
+ */
+static inline unsigned bitset_next_clear(const bitset_t *bs, unsigned pos)
+{
+	if (pos >= bs->size)
+		return (unsigned)-1;
+	return rbitset_next_max(bs->data, pos, bs->size, false);
 }
 
 /**
@@ -237,63 +204,15 @@ static inline bitset_t *bitset_copy(bitset_t *tgt, const bitset_t *src)
  * @note Note that if pos is set, pos is returned.
  * @param bs The bitset.
  * @param pos The bit from which to search for the next set bit.
- * @return The next set bit from pos on, or -1, if no set bit was found
- * after pos.
+ * @return The next set bit from pos on, or (unsigned)-1, if no set bit was
+ * found after pos.
  */
-static inline bitset_pos_t _bitset_next(const bitset_t *bs,
-		bitset_pos_t pos, int set)
+static inline unsigned bitset_next_set(const bitset_t *bs, unsigned pos)
 {
-	bitset_pos_t unit_number = pos / BS_UNIT_SIZE_BITS;
-	bitset_pos_t res;
-
-	if(pos >= bs->size)
-		return -1;
-
-	{
-		bitset_pos_t bit_in_unit = pos & BS_UNIT_MASK;
-		bitset_pos_t in_unit_mask = (1 << bit_in_unit) - 1;
-
-		/*
-		 * Mask out the bits smaller than pos in the current unit.
-		 * We are only interested in bits set higher than pos.
-		 */
-		bitset_unit_t curr_unit = BS_DATA(bs)[unit_number];
-
-		/*
-		 * Find the next bit set in the unit.
-		 * Mind that this function returns 0, if the unit is -1 and
-		 * counts the bits from 1 on.
-		 */
-		bitset_pos_t next_in_this_unit =
-			_bitset_inside_ntz_value((set ? curr_unit : ~curr_unit) & ~in_unit_mask);
-
-		/* If there is a bit set in the current unit, exit. */
-		if (next_in_this_unit < BS_UNIT_SIZE_BITS) {
-			res = next_in_this_unit + unit_number * BS_UNIT_SIZE_BITS;
-			return res < bs->size ? res : (bitset_pos_t) -1;
-		}
-
-		/* Else search for set bits in the next units. */
-		else {
-			bitset_pos_t i;
-			for(i = unit_number + 1; i < bs->units; ++i) {
-				bitset_unit_t data = BS_DATA(bs)[i];
-				bitset_pos_t first_set =
-					_bitset_inside_ntz_value(set ? data : ~data);
-
-				if (first_set < BS_UNIT_SIZE_BITS) {
-					res = first_set + i * BS_UNIT_SIZE_BITS;
-					return res < bs->size ? res : (bitset_pos_t) -1;
-				}
-			}
-		}
-	}
-
-	return -1;
+	if (pos >= bs->size)
+		return (unsigned)-1;
+	return rbitset_next_max(bs->data, pos, bs->size, true);
 }
-
-#define bitset_next_clear(bs,pos) _bitset_next((bs), (pos), 0)
-#define bitset_next_set(bs,pos) _bitset_next((bs), (pos), 1)
 
 /**
  * Convenience macro for bitset iteration.
@@ -301,11 +220,11 @@ static inline bitset_pos_t _bitset_next(const bitset_t *bs,
  * @param elm A unsigned long variable.
  */
 #define bitset_foreach(bitset,elm) \
-	for(elm = bitset_next_set(bitset,0); elm != (bitset_pos_t) -1; elm = bitset_next_set(bitset,elm+1))
+	for(elm = bitset_next_set(bitset,0); elm != (unsigned) -1; elm = bitset_next_set(bitset,elm+1))
 
 
 #define bitset_foreach_clear(bitset,elm) \
-	for(elm = bitset_next_clear(bitset,0); elm != (bitset_pos_t) -1; elm = bitset_next_clear(bitset,elm+1))
+	for(elm = bitset_next_clear(bitset,0); elm != (unsigned) -1; elm = bitset_next_clear(bitset,elm+1))
 
 /**
  * Count the bits set.
@@ -315,14 +234,7 @@ static inline bitset_pos_t _bitset_next(const bitset_t *bs,
  */
 static inline unsigned bitset_popcount(const bitset_t *bs)
 {
-	bitset_pos_t  i;
-	bitset_unit_t *unit;
-	unsigned      pop = 0;
-
-	for (i = 0, unit = BS_DATA(bs); i < bs->units; ++i, ++unit)
-		pop += _bitset_inside_pop(unit);
-
-	return pop;
+	return rbitset_popcount(bs->data, bs->size);
 }
 
 /**
@@ -330,10 +242,9 @@ static inline unsigned bitset_popcount(const bitset_t *bs)
  * This sets all bits to zero.
  * @param bs The bitset.
  */
-static inline bitset_t *bitset_clear_all(bitset_t *bs)
+static inline void bitset_clear_all(bitset_t *bs)
 {
-	memset(BS_DATA(bs), 0, BS_UNIT_SIZE * bs->units);
-	return bs;
+	rbitset_clear_all(bs->data, bs->size);
 }
 
 /**
@@ -341,10 +252,9 @@ static inline bitset_t *bitset_clear_all(bitset_t *bs)
  * This sets all bits to one.
  * @param bs The bitset.
  */
-static inline bitset_t *bitset_set_all(bitset_t *bs)
+static inline void bitset_set_all(bitset_t *bs)
 {
-	memset(BS_DATA(bs), -1, bs->units * BS_UNIT_SIZE);
-	return _bitset_mask_highest(bs);
+	rbitset_set_all(bs->data, bs->size);
 }
 
 /**
@@ -354,31 +264,10 @@ static inline bitset_t *bitset_set_all(bitset_t *bs)
  * @param rhs Another bitset.
  * @return 1, if all bits in lhs are also set in rhs, 0 otherwise.
  */
-static inline int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
+static inline bool bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
 {
-	bitset_pos_t n = lhs->units < rhs->units ? lhs->units : rhs->units;
-	bitset_pos_t i;
-
-	for(i = 0; i < n; ++i) {
-		bitset_unit_t lu = BS_DATA(lhs)[i];
-		bitset_unit_t ru = BS_DATA(rhs)[i];
-
-		if((lu | ru) & ~ru)
-			return 0;
-	}
-
-	/*
-	 * If the left hand sinde is a larger bitset than rhs,
-	 * we have to check, that all extra bits in lhs are 0
-	 */
-	if(lhs->units > n) {
-		for(i = n; i < lhs->units; ++i) {
-			if(BS_DATA(lhs)[i] != 0)
-				return 0;
-		}
-	}
-
-	return 1;
+	assert(lhs->size == rhs->size);
+	return rbitset_contains(lhs->data, rhs->data, lhs->size);
 }
 
 /**
@@ -388,20 +277,7 @@ static inline int bitset_contains(const bitset_t *lhs, const bitset_t *rhs)
  */
 static inline void bitset_minus1(bitset_t *bs)
 {
-#define _SH (sizeof(bitset_unit_t) * 8 - 1)
-
-	bitset_pos_t i;
-
-	for(i = 0; i < bs->units; ++i) {
-		bitset_unit_t unit = BS_DATA(bs)[i];
-		bitset_unit_t um1  = unit - 1;
-
-		BS_DATA(bs)[i] = um1;
-
-		if(((unit >> _SH) ^ (um1 >> _SH)) == 0)
-			break;
-	}
-#undef _SH
+	rbitset_minus1(bs->data, bs->size);
 }
 
 /**
@@ -410,16 +286,10 @@ static inline void bitset_minus1(bitset_t *bs)
  * @param b The second bitset.
  * @return 1 if they have a bit in common, 0 if not.
  */
-static inline int bitset_intersect(const bitset_t *a, const bitset_t *b)
+static inline bool bitset_intersect(const bitset_t *a, const bitset_t *b)
 {
-	bitset_pos_t n = a->units < b->units ? a->units : b->units;
-	bitset_pos_t i;
-
-	for (i = 0; i < n; ++i)
-		if (BS_DATA(a)[i] & BS_DATA(b)[i])
-			return 1;
-
-	return 0;
+	assert(a->size == b->size);
+	return rbitsets_have_common(a->data, b->data, a->size);
 }
 
 /**
@@ -429,16 +299,14 @@ static inline int bitset_intersect(const bitset_t *a, const bitset_t *b)
  * @param to     The last index plus one to set to one.
  * @param do_set If 1 the bits are set, if 0, they are cleared.
  */
-static inline void bitset_mod_range(bitset_t *a, bitset_pos_t from, bitset_pos_t to, int do_set)
+static inline void bitset_mod_range(bitset_t *a, unsigned from, unsigned to,
+                                    bool do_set)
 {
-	bitset_pos_t from_unit, to_unit, i;
-	bitset_unit_t from_unit_mask, to_unit_mask;
-
 	if (from == to)
 	    return;
 
 	if (to < from) {
-		bitset_pos_t tmp = from;
+		unsigned tmp = from;
 		from = to;
 		to = tmp;
 	}
@@ -446,53 +314,7 @@ static inline void bitset_mod_range(bitset_t *a, bitset_pos_t from, bitset_pos_t
 	if (to > a->size)
 		to = a->size;
 
-	/*
-	 * A small example (for cleaning bits in the same unit).
-	 * from   = 7
-	 * to     = 19
-	 * do_set = 0
-	 * result:         xxxxxxx000000000000xxxxxxxxxxxxx
-	 * from_unit_mask: 00000001111111111111111111111111
-	 * to_unit_mask:   11111111111111111110000000000000
-	 * scale:          01234567890123456789012345678901
-	 *                           1         2         3
-	 */
-
-	from_unit      = from / BS_UNIT_SIZE_BITS;
-	from_unit_mask = ~((1 << from) - 1);
-	from           = from & BS_UNIT_MASK;
-
-	to_unit        = to / BS_UNIT_SIZE_BITS;
-	to_unit_mask   = (1 << to) - 1;
-	to             = to & BS_UNIT_MASK;
-
-	/* do we want to set the bits in the range? */
-	if (do_set) {
-		/* If from and to are in the same unit: */
-		if (from_unit == to_unit)
-			BS_DATA(a)[from_unit] |= from_unit_mask & to_unit_mask;
-
-		/* Else, we have to treat the from and to units seperately */
-		else {
-			BS_DATA(a)[from_unit] |= from_unit_mask;
-			BS_DATA(a)[to_unit]   |= to_unit_mask;
-			for (i = from_unit + 1; i < to_unit; i++)
-				BS_DATA(a)[i] = BITSET_UNIT_ALL_ONE;
-		}
-	}
-
-	/* ... or clear them? */
-	else {
-		if (from_unit == to_unit)
-			BS_DATA(a)[from_unit] &= ~(from_unit_mask & to_unit_mask);
-
-		else {
-			BS_DATA(a)[from_unit] &= ~from_unit_mask;
-			BS_DATA(a)[to_unit]   &= ~to_unit_mask;
-			for (i = from_unit + 1; i < to_unit; i++)
-				BS_DATA(a)[i] = 0;
-		}
-	}
+	rbitset_set_range(a->data, from, to, do_set);
 }
 
 #define bitset_set_range(bs, from, to)   bitset_mod_range((bs), (from), (to), 1)
@@ -503,13 +325,9 @@ static inline void bitset_mod_range(bitset_t *a, bitset_pos_t from, bitset_pos_t
  * @param a The bitset.
  * @return 1, if the bitset is empty, 0 if not.
  */
-static inline int bitset_is_empty(const bitset_t *a)
+static inline bool bitset_is_empty(const bitset_t *bs)
 {
-	bitset_pos_t i;
-	for (i = 0; i < a->units; ++i)
-		if (BS_DATA(a)[i] != 0)
-			return 0;
-	return 1;
+	return rbitset_is_empty(bs->data, bs->size);
 }
 
 /**
@@ -525,28 +343,35 @@ static inline void bitset_fprint(FILE *file, const bitset_t *bs)
 
 	putc('{', file);
 	for(i = bitset_next_set(bs, 0); i != -1; i = bitset_next_set(bs, i + 1)) {
-		fprintf(file, "%s%u", prefix, i);
+		fprintf(file, "%s%d", prefix, i);
 		prefix = ",";
 	}
 	putc('}', file);
 }
 
-static inline void bitset_debug_fprint(FILE *file, const bitset_t *bs)
-{
-	bitset_pos_t i;
-
-	fprintf(file, "%u:", bs->units);
-	for(i = 0; i < bs->units; ++i)
-		fprintf(file, " " BITSET_UNIT_FMT, BS_DATA(bs)[i]);
-}
-
 /**
- * Perform tgt = tgt \ src operation.
+ * Perform tgt = tgt & src operation.
  * @param tgt  The target bitset.
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline bitset_t *bitset_andnot(bitset_t *tgt, const bitset_t *src);
+static inline void bitset_and(bitset_t *tgt, const bitset_t *src)
+{
+	assert(tgt->size == src->size);
+	rbitset_and(tgt->data, src->data, src->size);
+}
+
+/**
+ * Perform tgt = tgt & ~src operation.
+ * @param tgt  The target bitset.
+ * @param src  The source bitset.
+ * @return the tgt set.
+ */
+static inline void bitset_andnot(bitset_t *tgt, const bitset_t *src)
+{
+	assert(tgt->size == src->size);
+	rbitset_andnot(tgt->data, src->data, src->size);
+}
 
 /**
  * Perform Union, tgt = tgt u src operation.
@@ -554,48 +379,31 @@ static inline bitset_t *bitset_andnot(bitset_t *tgt, const bitset_t *src);
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline bitset_t *bitset_or(bitset_t *tgt, const bitset_t *src);
+static inline void bitset_or(bitset_t *tgt, const bitset_t *src)
+{
+	assert(tgt->size == src->size);
+	rbitset_or(tgt->data, src->data, src->size);
+}
 
 /**
- * Perform tgt = tgt ^ ~src operation.
+ * Perform tgt = tgt ^ src operation.
  * @param tgt  The target bitset.
  * @param src  The source bitset.
  * @return the tgt set.
  */
-static inline bitset_t *bitset_xor(bitset_t *tgt, const bitset_t *src);
-
-/*
- * Here, the binary operations follow.
- * And, Or, And Not, Xor are available.
- */
-#define BINARY_OP(op) \
-static inline bitset_t *bitset_ ## op(bitset_t *tgt, const bitset_t *src) \
-{ \
-	bitset_pos_t i; \
-	bitset_pos_t n = tgt->units > src->units ? src->units : tgt->units; \
-	for(i = 0; i < n; i += _BITSET_BINOP_UNITS_INC) \
-		_bitset_inside_binop_ ## op(&BS_DATA(tgt)[i], &BS_DATA(src)[i]); \
-	if(n < tgt->units) \
-		_bitset_clear_rest(&BS_DATA(tgt)[i], tgt->units - i); \
-	return _bitset_mask_highest(tgt); \
+static inline void bitset_xor(bitset_t *tgt, const bitset_t *src)
+{
+	assert(tgt->size == src->size);
+	rbitset_xor(tgt->data, src->data, src->size);
 }
 
-/*
- * Define the clear rest macro for the and, since it is the only case,
- * were non existed (treated as 0) units in the src must be handled.
- * For all other operations holds: x Op 0 = x for Op in { Andnot, Or, Xor }
- *
- * For and, each bitset implementer has to provide the macro
- * _bitset_clear_units(data, n), which clears n units from the pointer
- * data on.
+/**
+ * Copy a raw bitset into an bitset.
  */
-#define _bitset_clear_rest(data,n) _bitset_inside_clear_units(data, n)
-BINARY_OP(and)
-#undef _bitset_clear_rest
-#define _bitset_clear_rest(data,n) do { } while(0)
-
-BINARY_OP(andnot)
-BINARY_OP(or)
-BINARY_OP(xor)
+static inline void rbitset_copy_to_bitset(const unsigned *rbitset,
+                                          bitset_t *bitset)
+{
+	rbitset_copy(bitset->data, rbitset, bitset->size);
+}
 
 #endif

@@ -1894,14 +1894,16 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
 						be simultaneously alive with u
 					*/
 					bitset_copy(bs_tmp, bs_vdesc);
-					mu1 = bitset_popcount(bitset_and(bs_tmp, bs_sv));
+					bitset_and(bs_tmp, bs_sv);
+					mu1 = bitset_popcount(bs_tmp);
 
 					/*
 						mu2 = | accum_desc_all_pkiller(u) without descendants(v) |
 					*/
 					if (is_pkiller) {
 						bitset_copy(bs_tmp, bs_ukilldesc);
-						mu2 = bitset_popcount(bitset_andnot(bs_tmp, bs_vdesc));
+						bitset_andnot(bs_tmp, bs_vdesc);
+						mu2 = bitset_popcount(bs_tmp);
 					}
 					else {
 						mu2 = 0;

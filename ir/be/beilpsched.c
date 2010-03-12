@@ -1207,7 +1207,7 @@ static void create_assignment_and_precedence_constraints(be_ilpsched_env_t *env,
 
 		/* the precedence constraints */
 		stat_ev_tim_push();
-		bs_block_irns = bitset_clear_all(bs_block_irns);
+		bitset_clear_all(bs_block_irns);
 
 		sta_collect_in_deps(irn, &deps);
 		foreach_ir_nodeset(&deps, pred, iter) {
