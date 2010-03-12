@@ -9,7 +9,7 @@
 
     The behavior can be changed by subclassing the environment.
 
-    :copyright: Copyright 2008 by Armin Ronacher.
+    :copyright: (c) 2010 by the Jinja Team.
     :license: BSD.
 """
 import operator
@@ -31,13 +31,34 @@ UNSAFE_FUNCTION_ATTRIBUTES = set(['func_closure', 'func_code', 'func_dict',
 UNSAFE_METHOD_ATTRIBUTES = set(['im_class', 'im_func', 'im_self'])
 
 
+import warnings
+
+# make sure we don't warn in python 2.6 about stuff we don't care about
+warnings.filterwarnings('ignore', 'the sets module', DeprecationWarning,
+                        module='jinja2.sandbox')
+
 from collections import deque
-from sets import Set, ImmutableSet
-from UserDict import UserDict, DictMixin
-from UserList import UserList
-_mutable_set_types = (ImmutableSet, Set, set)
-_mutable_mapping_types = (UserDict, DictMixin, dict)
-_mutable_sequence_types = (UserList, list)
+
+_mutable_set_types = (set,)
+_mutable_mapping_types = (dict,)
+_mutable_sequence_types = (list,)
+
+
+# on python 2.x we can register the user collection types
+try:
+    from UserDict import UserDict, DictMixin
+    from UserList import UserList
+    _mutable_mapping_types += (UserDict, DictMixin)
+    _mutable_set_types += (UserList,)
+except ImportError:
+    pass
+
+# if sets is still available, register the mutable set from there as well
+try:
+    from sets import Set
+    _mutable_set_types += (Set,)
+except ImportError:
+    pass
 
 #: register Python 2.6 abstract base classes
 try:

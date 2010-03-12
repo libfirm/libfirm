@@ -5,24 +5,31 @@
 
     Runtime helpers.
 
-    :copyright: Copyright 2008 by Armin Ronacher.
+    :copyright: (c) 2010 by the Jinja Team.
     :license: BSD.
 """
 import sys
 from itertools import chain, imap
 from jinja2.utils import Markup, partial, soft_unicode, escape, missing, \
-     concat, MethodType, FunctionType
-from jinja2.exceptions import UndefinedError, TemplateRuntimeError
+     concat, MethodType, FunctionType, internalcode, next
+from jinja2.exceptions import UndefinedError, TemplateRuntimeError, \
+     TemplateNotFound
 
 
 # these variables are exported to the template runtime
-__all__ = ['LoopContext', 'Context', 'TemplateReference', 'Macro', 'Markup',
+__all__ = ['LoopContext', 'TemplateReference', 'Macro', 'Markup',
            'TemplateRuntimeError', 'missing', 'concat', 'escape',
-           'markup_join', 'unicode_join']
+           'markup_join', 'unicode_join', 'to_string',
+           'TemplateNotFound']
 
 
 #: the types we support for context functions
 _context_function_types = (FunctionType, MethodType)
+
+#: the name of the function that is used to convert something into
+#: a string.  2to3 will adopt that automatically and the generated
+#: code can take advantage of it.
+to_string = unicode
 
 
 def markup_join(seq):
@@ -39,6 +46,45 @@ def markup_join(seq):
 def unicode_join(seq):
     """Simple args to unicode conversion and concatenation."""
     return concat(imap(unicode, seq))
+
+
+def new_context(environment, template_name, blocks, vars=None,
+                shared=None, globals=None, locals=None):
+    """Internal helper to for context creation."""
+    if vars is None:
+        vars = {}
+    if shared:
+        parent = vars
+    else:
+        parent = dict(globals or (), **vars)
+    if locals:
+        # if the parent is shared a copy should be created because
+        # we don't want to modify the dict passed
+        if shared:
+            parent = dict(parent)
+        for key, value in locals.iteritems():
+            if key[:2] == 'l_' and value is not missing:
+                parent[key[2:]] = value
+    return Context(environment, parent, template_name, blocks)
+
+
+class TemplateReference(object):
+    """The `self` in templates."""
+
+    def __init__(self, context):
+        self.__context = context
+
+    def __getitem__(self, name):
+        blocks = self.__context.blocks[name]
+        wrap = self.__context.environment.autoescape and \
+               Markup or (lambda x: x)
+        return BlockReference(name, self.__context, blocks, 0)
+
+    def __repr__(self):
+        return '<%s %r>' % (
+            self.__class__.__name__,
+            self.__context.name
+        )
 
 
 class Context(object):
@@ -65,7 +111,7 @@ class Context(object):
 
     def __init__(self, environment, parent, name, blocks):
         self.parent = parent
-        self.vars = vars = {}
+        self.vars = {}
         self.environment = environment
         self.exported_vars = set()
         self.name = name
@@ -116,6 +162,7 @@ class Context(object):
         """
         return dict(self.parent, **self.vars)
 
+    @internalcode
     def call(__self, __obj, *args, **kwargs):
         """Call the callable with the arguments and keyword arguments
         provided but inject the active context or environment as first
@@ -131,6 +178,13 @@ class Context(object):
                 args = (__self.environment,) + args
         return __obj(*args, **kwargs)
 
+    def derived(self, locals=None):
+        """Internal helper function to create a derived context."""
+        context = new_context(self.environment, self.name, {},
+                              self.parent, True, None, locals)
+        context.blocks.update((k, list(v)) for k, v in self.blocks.iteritems())
+        return context
+
     def _all(meth):
         proxy = lambda self: getattr(self.get_all(), meth)()
         proxy.__doc__ = getattr(dict, meth).__doc__
@@ -140,9 +194,12 @@ class Context(object):
     keys = _all('keys')
     values = _all('values')
     items = _all('items')
-    iterkeys = _all('iterkeys')
-    itervalues = _all('itervalues')
-    iteritems = _all('iteritems')
+
+    # not available on python 3
+    if hasattr(dict, 'iterkeys'):
+        iterkeys = _all('iterkeys')
+        itervalues = _all('itervalues')
+        iteritems = _all('iteritems')
     del _all
 
     def __contains__(self, name):
@@ -173,25 +230,6 @@ except ImportError:
     pass
 
 
-class TemplateReference(object):
-    """The `self` in templates."""
-
-    def __init__(self, context):
-        self.__context = context
-
-    def __getitem__(self, name):
-        blocks = self.__context.blocks[name]
-        wrap = self.__context.environment.autoescape and \
-               Markup or (lambda x: x)
-        return BlockReference(name, self.__context, blocks, 0)
-
-    def __repr__(self):
-        return '<%s %r>' % (
-            self.__class__.__name__,
-            self.__context.name
-        )
-
-
 class BlockReference(object):
     """One block on a template reference."""
 
@@ -211,6 +249,7 @@ class BlockReference(object):
         return BlockReference(self.name, self._context, self._stack,
                               self._depth + 1)
 
+    @internalcode
     def __call__(self):
         rv = concat(self._stack[self._depth](self._context))
         if self._context.environment.autoescape:
@@ -253,6 +292,7 @@ class LoopContext(object):
     def __iter__(self):
         return LoopContextIterator(self)
 
+    @internalcode
     def loop(self, iterable):
         if self._recurse is None:
             raise TypeError('Tried to call non recursive loop.  Maybe you '
@@ -296,7 +336,7 @@ class LoopContextIterator(object):
     def next(self):
         ctx = self.context
         ctx.index0 += 1
-        return ctx._iterator.next(), ctx
+        return next(ctx._iterator), ctx
 
 
 class Macro(object):
@@ -314,6 +354,7 @@ class Macro(object):
         self.catch_varargs = catch_varargs
         self.caller = caller
 
+    @internalcode
     def __call__(self, *args, **kwargs):
         arguments = []
         for idx, name in enumerate(self.arguments):
@@ -343,7 +384,7 @@ class Macro(object):
             arguments.append(kwargs)
         elif kwargs:
             raise TypeError('macro %r takes no keyword argument %r' %
-                            (self.name, iter(kwargs).next()))
+                            (self.name, next(iter(kwargs))))
         if self.catch_varargs:
             arguments.append(args[self._argument_count:])
         elif len(args) > self._argument_count:
@@ -381,6 +422,7 @@ class Undefined(object):
         self._undefined_name = name
         self._undefined_exception = exc
 
+    @internalcode
     def _fail_with_undefined_error(self, *args, **kwargs):
         """Regular callback function for undefined objects that raises an
         `UndefinedError` on call.
@@ -412,6 +454,10 @@ class Undefined(object):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
+    # unicode goes after __str__ because we configured 2to3 to rename
+    # __unicode__ to __str__.  because the 2to3 tree is not designed to
+    # remove nodes from it, we leave the above __str__ around and let
+    # it override at runtime.
     def __unicode__(self):
         return u''
 
@@ -475,8 +521,8 @@ class StrictUndefined(Undefined):
     UndefinedError: 'foo' is undefined
     """
     __slots__ = ()
-    __iter__ = __unicode__ = __len__ = __nonzero__ = __eq__ = __ne__ = \
-        Undefined._fail_with_undefined_error
+    __iter__ = __unicode__ = __str__ = __len__ = __nonzero__ = __eq__ = \
+        __ne__ = Undefined._fail_with_undefined_error
 
 
 # remove remaining slots attributes, after the metaclass did the magic they

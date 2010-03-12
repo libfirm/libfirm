@@ -5,7 +5,7 @@
 
     Jinja default filters and tags.
 
-    :copyright: 2007-2008 by Armin Ronacher.
+    :copyright: (c) 2010 by the Jinja Team.
     :license: BSD, see LICENSE for more details.
 """
 from jinja2.utils import generate_lorem_ipsum, Cycler, Joiner
@@ -19,15 +19,22 @@ VARIABLE_END_STRING = '}}'
 COMMENT_START_STRING = '{#'
 COMMENT_END_STRING = '#}'
 LINE_STATEMENT_PREFIX = None
+LINE_COMMENT_PREFIX = None
 TRIM_BLOCKS = False
 NEWLINE_SEQUENCE = '\n'
+
+
+try:
+    range_func = xrange
+except NameError:
+    range_func = range
 
 
 # default filters, tests and namespace
 from jinja2.filters import FILTERS as DEFAULT_FILTERS
 from jinja2.tests import TESTS as DEFAULT_TESTS
 DEFAULT_NAMESPACE = {
-    'range':        xrange,
+    'range':        range_func,
     'dict':         lambda **kw: kw,
     'lipsum':       generate_lorem_ipsum,
     'cycler':       Cycler,
@@ -36,4 +43,4 @@ DEFAULT_NAMESPACE = {
 
 
 # export all constants
-__all__ = tuple(x for x in locals() if x.isupper())
+__all__ = tuple(x for x in locals().keys() if x.isupper())

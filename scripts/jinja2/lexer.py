@@ -11,14 +11,14 @@
     operators we don't allow in templates. On the other hand it separates
     template code and python code in expressions.
 
-    :copyright: 2007-2008 by Armin Ronacher.
+    :copyright: (c) 2010 by the Jinja Team.
     :license: BSD, see LICENSE for more details.
 """
 import re
 from operator import itemgetter
 from collections import deque
 from jinja2.exceptions import TemplateSyntaxError
-from jinja2.utils import LRUCache
+from jinja2.utils import LRUCache, next
 
 
 # cache for the lexers. Exists in order to be able to have multiple
@@ -30,38 +30,100 @@ whitespace_re = re.compile(r'\s+', re.U)
 string_re = re.compile(r"('([^'\\]*(?:\\.[^'\\]*)*)'"
                        r'|"([^"\\]*(?:\\.[^"\\]*)*)")', re.S)
 integer_re = re.compile(r'\d+')
-name_re = re.compile(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b')
+
+# we use the unicode identifier rule if this python version is able
+# to handle unicode identifiers, otherwise the standard ASCII one.
+try:
+    compile('föö', '<unknown>', 'eval')
+except SyntaxError:
+    name_re = re.compile(r'\b[a-zA-Z_][a-zA-Z0-9_]*\b')
+else:
+    from jinja2 import _stringdefs
+    name_re = re.compile(r'[%s][%s]*' % (_stringdefs.xid_start,
+                                         _stringdefs.xid_continue))
+
 float_re = re.compile(r'(?<!\.)\d+\.\d+')
 newline_re = re.compile(r'(\r\n|\r|\n)')
 
+# internal the tokens and keep references to them
+TOKEN_ADD = intern('add')
+TOKEN_ASSIGN = intern('assign')
+TOKEN_COLON = intern('colon')
+TOKEN_COMMA = intern('comma')
+TOKEN_DIV = intern('div')
+TOKEN_DOT = intern('dot')
+TOKEN_EQ = intern('eq')
+TOKEN_FLOORDIV = intern('floordiv')
+TOKEN_GT = intern('gt')
+TOKEN_GTEQ = intern('gteq')
+TOKEN_LBRACE = intern('lbrace')
+TOKEN_LBRACKET = intern('lbracket')
+TOKEN_LPAREN = intern('lparen')
+TOKEN_LT = intern('lt')
+TOKEN_LTEQ = intern('lteq')
+TOKEN_MOD = intern('mod')
+TOKEN_MUL = intern('mul')
+TOKEN_NE = intern('ne')
+TOKEN_PIPE = intern('pipe')
+TOKEN_POW = intern('pow')
+TOKEN_RBRACE = intern('rbrace')
+TOKEN_RBRACKET = intern('rbracket')
+TOKEN_RPAREN = intern('rparen')
+TOKEN_SEMICOLON = intern('semicolon')
+TOKEN_SUB = intern('sub')
+TOKEN_TILDE = intern('tilde')
+TOKEN_WHITESPACE = intern('whitespace')
+TOKEN_FLOAT = intern('float')
+TOKEN_INTEGER = intern('integer')
+TOKEN_NAME = intern('name')
+TOKEN_STRING = intern('string')
+TOKEN_OPERATOR = intern('operator')
+TOKEN_BLOCK_BEGIN = intern('block_begin')
+TOKEN_BLOCK_END = intern('block_end')
+TOKEN_VARIABLE_BEGIN = intern('variable_begin')
+TOKEN_VARIABLE_END = intern('variable_end')
+TOKEN_RAW_BEGIN = intern('raw_begin')
+TOKEN_RAW_END = intern('raw_end')
+TOKEN_COMMENT_BEGIN = intern('comment_begin')
+TOKEN_COMMENT_END = intern('comment_end')
+TOKEN_COMMENT = intern('comment')
+TOKEN_LINESTATEMENT_BEGIN = intern('linestatement_begin')
+TOKEN_LINESTATEMENT_END = intern('linestatement_end')
+TOKEN_LINECOMMENT_BEGIN = intern('linecomment_begin')
+TOKEN_LINECOMMENT_END = intern('linecomment_end')
+TOKEN_LINECOMMENT = intern('linecomment')
+TOKEN_DATA = intern('data')
+TOKEN_INITIAL = intern('initial')
+TOKEN_EOF = intern('eof')
+
 # bind operators to token types
 operators = {
-    '+':            'add',
-    '-':            'sub',
-    '/':            'div',
-    '//':           'floordiv',
-    '*':            'mul',
-    '%':            'mod',
-    '**':           'pow',
-    '~':            'tilde',
-    '[':            'lbracket',
-    ']':            'rbracket',
-    '(':            'lparen',
-    ')':            'rparen',
-    '{':            'lbrace',
-    '}':            'rbrace',
-    '==':           'eq',
-    '!=':           'ne',
-    '>':            'gt',
-    '>=':           'gteq',
-    '<':            'lt',
-    '<=':           'lteq',
-    '=':            'assign',
-    '.':            'dot',
-    ':':            'colon',
-    '|':            'pipe',
-    ',':            'comma',
-    ';':            'semicolon'
+    '+':            TOKEN_ADD,
+    '-':            TOKEN_SUB,
+    '/':            TOKEN_DIV,
+    '//':           TOKEN_FLOORDIV,
+    '*':            TOKEN_MUL,
+    '%':            TOKEN_MOD,
+    '**':           TOKEN_POW,
+    '~':            TOKEN_TILDE,
+    '[':            TOKEN_LBRACKET,
+    ']':            TOKEN_RBRACKET,
+    '(':            TOKEN_LPAREN,
+    ')':            TOKEN_RPAREN,
+    '{':            TOKEN_LBRACE,
+    '}':            TOKEN_RBRACE,
+    '==':           TOKEN_EQ,
+    '!=':           TOKEN_NE,
+    '>':            TOKEN_GT,
+    '>=':           TOKEN_GTEQ,
+    '<':            TOKEN_LT,
+    '<=':           TOKEN_LTEQ,
+    '=':            TOKEN_ASSIGN,
+    '.':            TOKEN_DOT,
+    ':':            TOKEN_COLON,
+    '|':            TOKEN_PIPE,
+    ',':            TOKEN_COMMA,
+    ';':            TOKEN_SEMICOLON
 }
 
 reverse_operators = dict([(v, k) for k, v in operators.iteritems()])
@@ -69,12 +131,79 @@ assert len(operators) == len(reverse_operators), 'operators dropped'
 operator_re = re.compile('(%s)' % '|'.join(re.escape(x) for x in
                          sorted(operators, key=lambda x: -len(x))))
 
+ignored_tokens = frozenset([TOKEN_COMMENT_BEGIN, TOKEN_COMMENT,
+                            TOKEN_COMMENT_END, TOKEN_WHITESPACE,
+                            TOKEN_WHITESPACE, TOKEN_LINECOMMENT_BEGIN,
+                            TOKEN_LINECOMMENT_END, TOKEN_LINECOMMENT])
+ignore_if_empty = frozenset([TOKEN_WHITESPACE, TOKEN_DATA,
+                             TOKEN_COMMENT, TOKEN_LINECOMMENT])
+
+
+def _describe_token_type(token_type):
+    if token_type in reverse_operators:
+        return reverse_operators[token_type]
+    return {
+        TOKEN_COMMENT_BEGIN:        'begin of comment',
+        TOKEN_COMMENT_END:          'end of comment',
+        TOKEN_COMMENT:              'comment',
+        TOKEN_LINECOMMENT:          'comment',
+        TOKEN_BLOCK_BEGIN:          'begin of statement block',
+        TOKEN_BLOCK_END:            'end of statement block',
+        TOKEN_VARIABLE_BEGIN:       'begin of print statement',
+        TOKEN_VARIABLE_END:         'end of print statement',
+        TOKEN_LINESTATEMENT_BEGIN:  'begin of line statement',
+        TOKEN_LINESTATEMENT_END:    'end of line statement',
+        TOKEN_DATA:                 'template data / text',
+        TOKEN_EOF:                  'end of template'
+    }.get(token_type, token_type)
+
+
+def describe_token(token):
+    """Returns a description of the token."""
+    if token.type == 'name':
+        return token.value
+    return _describe_token_type(token.type)
+
+
+def describe_token_expr(expr):
+    """Like `describe_token` but for token expressions."""
+    if ':' in expr:
+        type, value = expr.split(':', 1)
+        if type == 'name':
+            return value
+    else:
+        type = expr
+    return _describe_token_type(type)
+
 
 def count_newlines(value):
     """Count the number of newline characters in the string.  This is
     useful for extensions that filter a stream.
     """
     return len(newline_re.findall(value))
+
+
+def compile_rules(environment):
+    """Compiles all the rules from the environment into a list of rules."""
+    e = re.escape
+    rules = [
+        (len(environment.comment_start_string), 'comment',
+         e(environment.comment_start_string)),
+        (len(environment.block_start_string), 'block',
+         e(environment.block_start_string)),
+        (len(environment.variable_start_string), 'variable',
+         e(environment.variable_start_string))
+    ]
+
+    if environment.line_statement_prefix is not None:
+        rules.append((len(environment.line_statement_prefix), 'linestatement',
+                      r'^\s*' + e(environment.line_statement_prefix)))
+    if environment.line_comment_prefix is not None:
+        rules.append((len(environment.line_comment_prefix), 'linecomment',
+                      r'(?:^|(?<=\S))[^\S\r\n]*' +
+                      e(environment.line_comment_prefix)))
+
+    return [x[1:] for x in sorted(rules, reverse=True)]
 
 
 class Failure(object):
@@ -101,7 +230,7 @@ class Token(tuple):
     def __str__(self):
         if self.type in reverse_operators:
             return reverse_operators[self.type]
-        elif self.type is 'name':
+        elif self.type == 'name':
             return self.value
         return self.type
 
@@ -146,10 +275,10 @@ class TokenStreamIterator(object):
 
     def next(self):
         token = self.stream.current
-        if token.type == 'eof':
+        if token.type is TOKEN_EOF:
             self.stream.close()
             raise StopIteration()
-        self.stream.next()
+        next(self.stream)
         return token
 
 
@@ -165,17 +294,16 @@ class TokenStream(object):
         self.name = name
         self.filename = filename
         self.closed = False
-        self.current = Token(1, 'initial', '')
-        self.next()
+        self.current = Token(1, TOKEN_INITIAL, '')
+        next(self)
 
     def __iter__(self):
         return TokenStreamIterator(self)
 
     def __nonzero__(self):
-        """Are we at the end of the stream?"""
-        return bool(self._pushed) or self.current.type != 'eof'
+        return bool(self._pushed) or self.current.type is not TOKEN_EOF
 
-    eos = property(lambda x: not x.__nonzero__(), doc=__nonzero__.__doc__)
+    eos = property(lambda x: not x, doc="Are we at the end of the stream?")
 
     def push(self, token):
         """Push a token back to the stream."""
@@ -183,7 +311,7 @@ class TokenStream(object):
 
     def look(self):
         """Look at the next token."""
-        old_token = self.next()
+        old_token = next(self)
         result = self.current
         self.push(result)
         self.current = old_token
@@ -192,14 +320,14 @@ class TokenStream(object):
     def skip(self, n=1):
         """Got n tokens ahead."""
         for x in xrange(n):
-            self.next()
+            next(self)
 
     def next_if(self, expr):
         """Perform the token test and return the token if it matched.
         Otherwise the return value is `None`.
         """
         if self.current.test(expr):
-            return self.next()
+            return next(self)
 
     def skip_if(self, expr):
         """Like :meth:`next_if` but only returns `True` or `False`."""
@@ -210,7 +338,7 @@ class TokenStream(object):
         rv = self.current
         if self._pushed:
             self.current = self._pushed.popleft()
-        elif self.current.type is not 'eof':
+        elif self.current.type is not TOKEN_EOF:
             try:
                 self.current = self._next()
             except StopIteration:
@@ -219,7 +347,7 @@ class TokenStream(object):
 
     def close(self):
         """Close the stream."""
-        self.current = Token(self.current.lineno, 'eof', '')
+        self.current = Token(self.current.lineno, TOKEN_EOF, '')
         self._next = None
         self.closed = True
 
@@ -228,21 +356,20 @@ class TokenStream(object):
         argument as :meth:`jinja2.lexer.Token.test`.
         """
         if not self.current.test(expr):
-            if ':' in expr:
-                expr = expr.split(':')[1]
-            if self.current.type is 'eof':
+            expr = describe_token_expr(expr)
+            if self.current.type is TOKEN_EOF:
                 raise TemplateSyntaxError('unexpected end of template, '
                                           'expected %r.' % expr,
                                           self.current.lineno,
                                           self.name, self.filename)
             raise TemplateSyntaxError("expected token %r, got %r" %
-                                      (expr, str(self.current)),
+                                      (expr, describe_token(self.current)),
                                       self.current.lineno,
                                       self.name, self.filename)
         try:
             return self.current
         finally:
-            self.next()
+            next(self)
 
 
 def get_lexer(environment):
@@ -254,6 +381,7 @@ def get_lexer(environment):
            environment.comment_start_string,
            environment.comment_end_string,
            environment.line_statement_prefix,
+           environment.line_comment_prefix,
            environment.trim_blocks,
            environment.newline_sequence)
     lexer = _lexer_cache.get(key)
@@ -278,12 +406,12 @@ class Lexer(object):
 
         # lexing rules for tags
         tag_rules = [
-            (whitespace_re, 'whitespace', None),
-            (float_re, 'float', None),
-            (integer_re, 'integer', None),
-            (name_re, 'name', None),
-            (string_re, 'string', None),
-            (operator_re, 'operator', None)
+            (whitespace_re, TOKEN_WHITESPACE, None),
+            (float_re, TOKEN_FLOAT, None),
+            (integer_re, TOKEN_INTEGER, None),
+            (name_re, TOKEN_NAME, None),
+            (string_re, TOKEN_STRING, None),
+            (operator_re, TOKEN_OPERATOR, None)
         ]
 
         # assamble the root lexing rule. because "|" is ungreedy
@@ -292,22 +420,7 @@ class Lexer(object):
         # <%= for variables. (if someone wants asp like syntax)
         # variables are just part of the rules if variable processing
         # is required.
-        root_tag_rules = [
-            ('comment',     environment.comment_start_string),
-            ('block',       environment.block_start_string),
-            ('variable',    environment.variable_start_string)
-        ]
-        root_tag_rules.sort(key=lambda x: -len(x[1]))
-
-        # now escape the rules.  This is done here so that the escape
-        # signs don't count for the lengths of the tags.
-        root_tag_rules = [(a, e(b)) for a, b in root_tag_rules]
-
-        # if we have a line statement prefix we need an extra rule for
-        # that.  We add this rule *after* all the others.
-        if environment.line_statement_prefix is not None:
-            prefix = e(environment.line_statement_prefix)
-            root_tag_rules.insert(0, ('linestatement', '^\s*' + prefix))
+        root_tag_rules = compile_rules(environment)
 
         # block suffix if trimming is enabled
         block_suffix_re = environment.trim_blocks and '\\n?' or ''
@@ -319,56 +432,61 @@ class Lexer(object):
             'root': [
                 # directives
                 (c('(.*?)(?:%s)' % '|'.join(
-                    ['(?P<raw_begin>(?:\s*%s\-|%s)\s*raw\s*%s)' % (
+                    [r'(?P<raw_begin>(?:\s*%s\-|%s)\s*raw\s*%s)' % (
                         e(environment.block_start_string),
                         e(environment.block_start_string),
                         e(environment.block_end_string)
                     )] + [
-                        '(?P<%s_begin>\s*%s\-|%s)' % (n, r, r)
+                        r'(?P<%s_begin>\s*%s\-|%s)' % (n, r, r)
                         for n, r in root_tag_rules
-                    ])), ('data', '#bygroup'), '#bygroup'),
+                    ])), (TOKEN_DATA, '#bygroup'), '#bygroup'),
                 # data
-                (c('.+'), 'data', None)
+                (c('.+'), TOKEN_DATA, None)
             ],
             # comments
-            'comment_begin': [
+            TOKEN_COMMENT_BEGIN: [
                 (c(r'(.*?)((?:\-%s\s*|%s)%s)' % (
                     e(environment.comment_end_string),
                     e(environment.comment_end_string),
                     block_suffix_re
-                )), ('comment', 'comment_end'), '#pop'),
+                )), (TOKEN_COMMENT, TOKEN_COMMENT_END), '#pop'),
                 (c('(.)'), (Failure('Missing end of comment tag'),), None)
             ],
             # blocks
-            'block_begin': [
+            TOKEN_BLOCK_BEGIN: [
                 (c('(?:\-%s\s*|%s)%s' % (
                     e(environment.block_end_string),
                     e(environment.block_end_string),
                     block_suffix_re
-                )), 'block_end', '#pop'),
+                )), TOKEN_BLOCK_END, '#pop'),
             ] + tag_rules,
             # variables
-            'variable_begin': [
+            TOKEN_VARIABLE_BEGIN: [
                 (c('\-%s\s*|%s' % (
                     e(environment.variable_end_string),
                     e(environment.variable_end_string)
-                )), 'variable_end', '#pop')
+                )), TOKEN_VARIABLE_END, '#pop')
             ] + tag_rules,
             # raw block
-            'raw_begin': [
+            TOKEN_RAW_BEGIN: [
                 (c('(.*?)((?:\s*%s\-|%s)\s*endraw\s*(?:\-%s\s*|%s%s))' % (
                     e(environment.block_start_string),
                     e(environment.block_start_string),
                     e(environment.block_end_string),
                     e(environment.block_end_string),
                     block_suffix_re
-                )), ('data', 'raw_end'), '#pop'),
+                )), (TOKEN_DATA, TOKEN_RAW_END), '#pop'),
                 (c('(.)'), (Failure('Missing end of raw directive'),), None)
             ],
             # line statements
-            'linestatement_begin': [
-                (c(r'\s*(\n|$)'), 'linestatement_end', '#pop')
-            ] + tag_rules
+            TOKEN_LINESTATEMENT_BEGIN: [
+                (c(r'\s*(\n|$)'), TOKEN_LINESTATEMENT_END, '#pop')
+            ] + tag_rules,
+            # line comments
+            TOKEN_LINECOMMENT_BEGIN: [
+                (c(r'(.*?)()(?=\n|$)'), (TOKEN_LINECOMMENT,
+                 TOKEN_LINECOMMENT_END), '#pop')
+            ]
         }
 
     def _normalize_newlines(self, value):
@@ -386,8 +504,7 @@ class Lexer(object):
         every token in a :class:`Token` and converts the value.
         """
         for lineno, token, value in stream:
-            if token in ('comment_begin', 'comment', 'comment_end',
-                         'whitespace'):
+            if token in ignored_tokens:
                 continue
             elif token == 'linestatement_begin':
                 token = 'block_begin'
@@ -413,7 +530,8 @@ class Lexer(object):
                     raise TemplateSyntaxError(msg, lineno, name, filename)
                 # if we can express it as bytestring (ascii only)
                 # we do that for support of semi broken APIs
-                # as datetime.datetime.strftime
+                # as datetime.datetime.strftime.  On python 3 this
+                # call becomes a noop thanks to 2to3
                 try:
                     value = str(value)
                 except UnicodeError:
@@ -484,7 +602,7 @@ class Lexer(object):
                         # normal group
                         else:
                             data = m.group(idx + 1)
-                            if data:
+                            if data or token not in ignore_if_empty:
                                 yield lineno, token, data
                             lineno += data.count('\n')
 
@@ -501,18 +619,19 @@ class Lexer(object):
                             balancing_stack.append(']')
                         elif data in ('}', ')', ']'):
                             if not balancing_stack:
-                                raise TemplateSyntaxError('unexpected "%s"' %
+                                raise TemplateSyntaxError('unexpected \'%s\'' %
                                                           data, lineno, name,
                                                           filename)
                             expected_op = balancing_stack.pop()
                             if expected_op != data:
-                                raise TemplateSyntaxError('unexpected "%s", '
-                                                          'expected "%s"' %
+                                raise TemplateSyntaxError('unexpected \'%s\', '
+                                                          'expected \'%s\'' %
                                                           (data, expected_op),
                                                           lineno, name,
                                                           filename)
                     # yield items
-                    yield lineno, tokens, data
+                    if data or tokens not in ignore_if_empty:
+                        yield lineno, tokens, data
                     lineno += data.count('\n')
 
                 # fetch new position into new variable so that we can check

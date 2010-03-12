@@ -11,7 +11,7 @@
     Situations where this is useful are often forking web applications that
     are initialized on the first request.
 
-    :copyright: Copyright 2008 by Armin Ronacher.
+    :copyright: (c) 2010 by the Jinja Team.
     :license: BSD.
 """
 from os import path, listdir
@@ -28,7 +28,7 @@ from jinja2.utils import open_if_exists
 
 
 bc_version = 1
-bc_magic = 'j2' + pickle.dumps(bc_version, 2)
+bc_magic = 'j2'.encode('ascii') + pickle.dumps(bc_version, 2)
 
 
 class Bucket(object):
@@ -108,12 +108,12 @@ class BytecodeCache(object):
             def load_bytecode(self, bucket):
                 filename = path.join(self.directory, bucket.key)
                 if path.exists(filename):
-                    with file(filename, 'rb') as f:
+                    with open(filename, 'rb') as f:
                         bucket.load_bytecode(f)
 
             def dump_bytecode(self, bucket):
                 filename = path.join(self.directory, bucket.key)
-                with file(filename, 'wb') as f:
+                with open(filename, 'wb') as f:
                     bucket.write_bytecode(f)
 
     A more advanced version of a filesystem based bytecode cache is part of
@@ -202,7 +202,7 @@ class FileSystemBytecodeCache(BytecodeCache):
                 f.close()
 
     def dump_bytecode(self, bucket):
-        f = file(self._get_cache_filename(bucket), 'wb')
+        f = open(self._get_cache_filename(bucket), 'wb')
         try:
             bucket.write_bytecode(f)
         finally:

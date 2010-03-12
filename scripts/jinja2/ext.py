@@ -7,7 +7,7 @@
     tags work.  By default two example extensions exist: an i18n and a cache
     extension.
 
-    :copyright: Copyright 2008 by Armin Ronacher.
+    :copyright: (c) 2010 by the Jinja Team.
     :license: BSD.
 """
 from collections import deque
@@ -16,7 +16,7 @@ from jinja2.defaults import *
 from jinja2.environment import get_spontaneous_environment
 from jinja2.runtime import Undefined, concat
 from jinja2.exceptions import TemplateAssertionError, TemplateSyntaxError
-from jinja2.utils import contextfunction, import_string, Markup
+from jinja2.utils import contextfunction, import_string, Markup, next
 
 
 # the only real useful gettext functions for a Jinja template.  Note
@@ -167,14 +167,14 @@ class InternationalizationExtension(Extension):
 
     def parse(self, parser):
         """Parse a translatable tag."""
-        lineno = parser.stream.next().lineno
+        lineno = next(parser.stream).lineno
 
         # find all the variables referenced.  Additionally a variable can be
         # defined in the body of the trans block too, but this is checked at
         # a later state.
         plural_expr = None
         variables = {}
-        while parser.stream.current.type is not 'block_end':
+        while parser.stream.current.type != 'block_end':
             if variables:
                 parser.stream.expect('comma')
 
@@ -189,8 +189,8 @@ class InternationalizationExtension(Extension):
                             exc=TemplateAssertionError)
 
             # expressions
-            if parser.stream.current.type is 'assign':
-                parser.stream.next()
+            if parser.stream.current.type == 'assign':
+                next(parser.stream)
                 variables[name.value] = var = parser.parse_expression()
             else:
                 variables[name.value] = var = nodes.Name(name.value, 'load')
@@ -213,8 +213,8 @@ class InternationalizationExtension(Extension):
         # if we have a pluralize block, we parse that too
         if parser.stream.current.test('name:pluralize'):
             have_plural = True
-            parser.stream.next()
-            if parser.stream.current.type is not 'block_end':
+            next(parser.stream)
+            if parser.stream.current.type != 'block_end':
                 name = parser.stream.expect('name')
                 if name.value not in variables:
                     parser.fail('unknown variable %r for pluralization' %
@@ -223,10 +223,10 @@ class InternationalizationExtension(Extension):
                 plural_expr = variables[name.value]
             parser.stream.expect('block_end')
             plural_names, plural = self._parse_block(parser, False)
-            parser.stream.next()
+            next(parser.stream)
             referenced.update(plural_names)
         else:
-            parser.stream.next()
+            next(parser.stream)
 
         # register free names as simple name expressions
         for var in referenced:
@@ -259,17 +259,17 @@ class InternationalizationExtension(Extension):
         referenced = []
         buf = []
         while 1:
-            if parser.stream.current.type is 'data':
+            if parser.stream.current.type == 'data':
                 buf.append(parser.stream.current.value.replace('%', '%%'))
-                parser.stream.next()
-            elif parser.stream.current.type is 'variable_begin':
-                parser.stream.next()
+                next(parser.stream)
+            elif parser.stream.current.type == 'variable_begin':
+                next(parser.stream)
                 name = parser.stream.expect('name').value
                 referenced.append(name)
                 buf.append('%%(%s)s' % name)
                 parser.stream.expect('variable_end')
-            elif parser.stream.current.type is 'block_begin':
-                parser.stream.next()
+            elif parser.stream.current.type == 'block_begin':
+                next(parser.stream)
                 if parser.stream.current.test('name:endtrans'):
                     break
                 elif parser.stream.current.test('name:pluralize'):
@@ -320,7 +320,7 @@ class ExprStmtExtension(Extension):
     tags = set(['do'])
 
     def parse(self, parser):
-        node = nodes.ExprStmt(lineno=parser.stream.next().lineno)
+        node = nodes.ExprStmt(lineno=next(parser.stream).lineno)
         node.node = parser.parse_tuple()
         return node
 
@@ -330,10 +330,31 @@ class LoopControlExtension(Extension):
     tags = set(['break', 'continue'])
 
     def parse(self, parser):
-        token = parser.stream.next()
+        token = next(parser.stream)
         if token.value == 'break':
             return nodes.Break(lineno=token.lineno)
         return nodes.Continue(lineno=token.lineno)
+
+
+class WithExtension(Extension):
+    """Adds support for a django-like with block."""
+    tags = set(['with'])
+
+    def parse(self, parser):
+        node = nodes.Scope(lineno=next(parser.stream).lineno)
+        assignments = []
+        while parser.stream.current.type != 'block_end':
+            lineno = parser.stream.current.lineno
+            if assignments:
+                parser.stream.expect('comma')
+            target = parser.parse_assign_target()
+            parser.stream.expect('assign')
+            expr = parser.parse_expression()
+            assignments.append(nodes.Assign(target, expr, lineno=lineno))
+        node.body = assignments + \
+            list(parser.parse_statements(('name:endwith',),
+                                         drop_needle=True))
+        return node
 
 
 def extract_from_ast(node, gettext_functions=GETTEXT_FUNCTIONS,
@@ -367,6 +388,10 @@ def extract_from_ast(node, gettext_functions=GETTEXT_FUNCTIONS,
       string was extracted from embedded Python code), and
     *  ``message`` is the string itself (a ``unicode`` object, or a tuple
        of ``unicode`` objects for functions with multiple string arguments).
+
+    This extraction function operates on the AST and is because of that unable
+    to extract any comments.  For comment support you have to use the babel
+    extraction interface or extract comments yourself.
     """
     for node in node.find_all(nodes.Call):
         if not isinstance(node.node, nodes.Name) or \
@@ -400,14 +425,59 @@ def extract_from_ast(node, gettext_functions=GETTEXT_FUNCTIONS,
         yield node.lineno, node.node.name, strings
 
 
+class _CommentFinder(object):
+    """Helper class to find comments in a token stream.  Can only
+    find comments for gettext calls forwards.  Once the comment
+    from line 4 is found, a comment for line 1 will not return a
+    usable value.
+    """
+
+    def __init__(self, tokens, comment_tags):
+        self.tokens = tokens
+        self.comment_tags = comment_tags
+        self.offset = 0
+        self.last_lineno = 0
+
+    def find_backwards(self, offset):
+        try:
+            for _, token_type, token_value in \
+                    reversed(self.tokens[self.offset:offset]):
+                if token_type in ('comment', 'linecomment'):
+                    try:
+                        prefix, comment = token_value.split(None, 1)
+                    except ValueError:
+                        continue
+                    if prefix in self.comment_tags:
+                        return [comment.rstrip()]
+            return []
+        finally:
+            self.offset = offset
+
+    def find_comments(self, lineno):
+        if not self.comment_tags or self.last_lineno > lineno:
+            return []
+        for idx, (token_lineno, _, _) in enumerate(self.tokens[self.offset:]):
+            if token_lineno > lineno:
+                return self.find_backwards(self.offset + idx)
+        return self.find_backwards(len(self.tokens))
+
+
 def babel_extract(fileobj, keywords, comment_tags, options):
     """Babel extraction method for Jinja templates.
+
+    .. versionchanged:: 2.3
+       Basic support for translation comments was added.  If `comment_tags`
+       is now set to a list of keywords for extraction, the extractor will
+       try to find the best preceeding comment that begins with one of the
+       keywords.  For best results, make sure to not have more than one
+       gettext call in one line of code and the matching comment in the
+       same line or the line before.
 
     :param fileobj: the file-like object the messages should be extracted from
     :param keywords: a list of keywords (i.e. function names) that should be
                      recognized as translation functions
     :param comment_tags: a list of translator tags to search for and include
-                         in the results.  (Unused)
+                         in the results.
     :param options: a dictionary of additional options (optional)
     :return: an iterator over ``(lineno, funcname, message, comments)`` tuples.
              (comments will be empty currently)
@@ -429,6 +499,7 @@ def babel_extract(fileobj, keywords, comment_tags, options):
         options.get('comment_start_string', COMMENT_START_STRING),
         options.get('comment_end_string', COMMENT_END_STRING),
         options.get('line_statement_prefix') or LINE_STATEMENT_PREFIX,
+        options.get('line_comment_prefix') or LINE_COMMENT_PREFIX,
         str(options.get('trim_blocks', TRIM_BLOCKS)).lower() in \
             ('1', 'on', 'yes', 'true'),
         NEWLINE_SEQUENCE, frozenset(extensions),
@@ -443,14 +514,18 @@ def babel_extract(fileobj, keywords, comment_tags, options):
     source = fileobj.read().decode(options.get('encoding', 'utf-8'))
     try:
         node = environment.parse(source)
+        tokens = list(environment.lex(environment.preprocess(source)))
     except TemplateSyntaxError, e:
         # skip templates with syntax errors
         return
+
+    finder = _CommentFinder(tokens, comment_tags)
     for lineno, func, message in extract_from_ast(node, keywords):
-        yield lineno, func, message, []
+        yield lineno, func, message, finder.find_comments(lineno)
 
 
 #: nicer import names
 i18n = InternationalizationExtension
 do = ExprStmtExtension
 loopcontrols = LoopControlExtension
+with_ = WithExtension
