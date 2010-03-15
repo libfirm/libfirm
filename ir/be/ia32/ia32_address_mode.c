@@ -87,6 +87,9 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 			return 0;
 
 		return 1;
+	case iro_Unknown:
+		/* we can use '0' for Unknowns */
+		return 1;
 	case iro_Add:
 	case iro_Sub:
 		/* Add's and Sub's are typically supported as long as both operands are
@@ -172,6 +175,8 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 		assert(!negate);
 #endif
 		addr->symconst_sign = negate;
+		break;
+	case iro_Unknown:
 		break;
 	case iro_Add:
 		assert(!ia32_is_non_address_mode_node(node));

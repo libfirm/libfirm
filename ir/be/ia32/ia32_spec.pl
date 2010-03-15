@@ -117,7 +117,6 @@ $arch = "ia32";
 		{ name => "ebp", type => 2 },
 		{ name => "esp", type => 4 },
 		{ name => "gp_NOREG", type => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
-		{ name => "gp_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ mode => "mode_Iu" }
 	],
 	mmx => [
@@ -141,7 +140,6 @@ $arch = "ia32";
 		{ name => "xmm6", type => 1 },
 		{ name => "xmm7", type => 1 },
 		{ name => "xmm_NOREG", type => 4 | 16 },     # we need a dummy register for NoReg nodes
-		{ name => "xmm_UKNWN", type => 4 | 8 | 16},  # we need a dummy register for Unknown nodes
 		{ mode => "mode_E" }
 	],
 	vfp => [
@@ -154,7 +152,6 @@ $arch = "ia32";
 		{ name => "vf6", type => 1 },
 		{ name => "vf7", type => 1 },
 		{ name => "vfp_NOREG", type => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
-		{ name => "vfp_UKNWN", type => 4 | 8 | 16 },  # we need a dummy register for Unknown nodes
 		{ mode => "mode_E" }
 	],
 	st => [
@@ -1206,37 +1203,6 @@ GetEIP => {
 	latency  => 5,
 	mode     => $mode_gp,
 	modified_flags => $status_flags,
-},
-
-Unknown_GP => {
-	state     => "pinned",
-	op_flags  => "c|NB",
-	reg_req   => { out => [ "gp_UKNWN:I" ] },
-	units     => [],
-	emit      => "",
-	latency   => 0,
-	mode      => $mode_gp
-},
-
-Unknown_VFP => {
-	state     => "pinned",
-	op_flags  => "c|NB",
-	reg_req   => { out => [ "vfp_UKNWN:I" ] },
-	units     => [],
-	emit      => "",
-	mode      => "mode_E",
-	latency   => 0,
-	attr_type => "ia32_x87_attr_t",
-},
-
-Unknown_XMM => {
-	state     => "pinned",
-	op_flags  => "c|NB",
-	reg_req   => { out => [ "xmm_UKNWN:I" ] },
-	units     => [],
-	emit      => "",
-	latency   => 0,
-	mode      => $mode_xmm
 },
 
 NoReg_GP => {

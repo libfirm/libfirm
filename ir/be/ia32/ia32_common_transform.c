@@ -448,10 +448,23 @@ static bool can_match(const arch_register_req_t *in,
 	return (*in->limited & *out->limited) != 0;
 }
 
+static inline ir_node *get_new_node(ir_node *node)
+{
+#ifdef FIRM_GRGEN_BE
+	if (be_transformer == TRANSFORMER_DEFAULT) {
+		return be_transform_node(node);
+	} else {
+		return node;
+	}
+#else
+	return be_transform_node(node);
+#endif
+}
+
 ir_node *gen_ASM(ir_node *node)
 {
-	ir_node                    *block = NULL;
-	ir_node                    *new_block = NULL;
+	ir_node                    *block     = get_nodes_block(node);
+	ir_node                    *new_block = get_new_node(block);
 	dbg_info                   *dbgi      = get_irn_dbg_info(node);
 	int                         i, arity;
 	int                         out_idx;
@@ -474,23 +487,6 @@ ir_node *gen_ASM(ir_node *node)
 	backend_info_t             *info;
 
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
-
-	switch (be_transformer) {
-	case TRANSFORMER_DEFAULT:
-		block     = get_nodes_block(node);
-		new_block = be_transform_node(block);
-		break;
-
-#ifdef FIRM_GRGEN_BE
-	case TRANSFORMER_PBQP:
-	case TRANSFORMER_RAND:
-		new_block = get_nodes_block(node);
-		break;
-#endif
-
-	default:
-		panic("invalid transformer");
-	}
 
 	/* workaround for lots of buggy code out there as most people think volatile
 	 * asm is enough for everything and forget the flags (linux kernel, etc.)
@@ -604,22 +600,8 @@ ir_node *gen_ASM(ir_node *node)
 		}
 
 		if (input == NULL) {
-			ir_node *pred = NULL;
-			switch (be_transformer) {
-			case TRANSFORMER_DEFAULT:
-				pred  = get_irn_n(node, i);
-				input = be_transform_node(pred);
-				break;
-
-#ifdef FIRM_GRGEN_BE
-			case TRANSFORMER_PBQP:
-			case TRANSFORMER_RAND:
-				input = get_irn_n(node, i);
-				break;
-#endif
-
-			default: panic("invalid transformer");
-			}
+			ir_node *pred = get_irn_n(node, i);
+			input = get_new_node(pred);
 
 			if (parsed_constraint.cls == NULL
 					&& parsed_constraint.same_as < 0) {
@@ -792,41 +774,17 @@ ir_node *gen_ASM(ir_node *node)
 
 ir_node *gen_CopyB(ir_node *node)
 {
-	ir_node  *block    = NULL;
-	ir_node  *src      = NULL;
-	ir_node  *new_src  = NULL;
-	ir_node  *dst      = NULL;
-	ir_node  *new_dst  = NULL;
-	ir_node  *mem      = NULL;
-	ir_node  *new_mem  = NULL;
+	ir_node  *block    = get_new_node(get_nodes_block(node));
+	ir_node  *src      = get_CopyB_src(node);
+	ir_node  *new_src  = get_new_node(src);
+	ir_node  *dst      = get_CopyB_dst(node);
+	ir_node  *new_dst  = get_new_node(dst);
+	ir_node  *mem      = get_CopyB_mem(node);
+	ir_node  *new_mem  = get_new_node(mem);
 	ir_node  *res      = NULL;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	int      size      = get_type_size_bytes(get_CopyB_type(node));
 	int      rem;
-
-	switch (be_transformer) {
-		case TRANSFORMER_DEFAULT:
-			block    = be_transform_node(get_nodes_block(node));
-			src      = get_CopyB_src(node);
-			new_src  = be_transform_node(src);
-			dst      = get_CopyB_dst(node);
-			new_dst  = be_transform_node(dst);
-			mem      = get_CopyB_mem(node);
-			new_mem  = be_transform_node(mem);
-			break;
-
-#ifdef FIRM_GRGEN_BE
-		case TRANSFORMER_PBQP:
-		case TRANSFORMER_RAND:
-			block    = get_nodes_block(node);
-			new_src  = get_CopyB_src(node);
-			new_dst  = get_CopyB_dst(node);
-			new_mem  = get_CopyB_mem(node);
-			break;
-#endif
-
-		default: panic("invalid transformer");
-	}
 
 	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
 	/* then we need the size explicitly in ECX.                    */
@@ -853,53 +811,36 @@ ir_node *gen_CopyB(ir_node *node)
 
 ir_node *gen_Proj_tls(ir_node *node)
 {
-	ir_node  *block = NULL;
-	dbg_info *dbgi  = NULL;
-	ir_node  *res   = NULL;
+	ir_node *block = get_new_node(get_nodes_block(node));
+	ir_node *res   = NULL;
 
-	switch (be_transformer) {
-		case TRANSFORMER_DEFAULT:
-			block = be_transform_node(get_nodes_block(node));
-			break;
-
-#ifdef FIRM_GRGEN_BE
-		case TRANSFORMER_PBQP:
-		case TRANSFORMER_RAND:
-			block = get_nodes_block(node);
-			break;
-#endif
-
-		default:
-			panic("invalid transformer");
-	}
-
-	res = new_bd_ia32_LdTls(dbgi, block, mode_Iu);
+	res = new_bd_ia32_LdTls(NULL, block, mode_Iu);
 
 	return res;
 }
 
 ir_node *gen_Unknown(ir_node *node)
 {
-	ir_mode *mode = get_irn_mode(node);
+	ir_mode  *mode  = get_irn_mode(node);
+	ir_graph *irg   = current_ir_graph;
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_irg_start_block(irg);
+	ir_node  *res   = NULL;
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			return ia32_new_Unknown_xmm(env_cg);
+			res = new_bd_ia32_xZero(dbgi, block);
 		} else {
-			/* Unknown nodes are buggy in x87 simulator, use zero for now... */
-			ir_graph *irg   = current_ir_graph;
-			dbg_info *dbgi  = get_irn_dbg_info(node);
-			ir_node  *block = get_irg_start_block(irg);
-			ir_node  *ret   = new_bd_ia32_vfldz(dbgi, block);
-
-			be_dep_on_frame(ret);
-			return ret;
+			res = new_bd_ia32_vfldz(dbgi, block);
 		}
 	} else if (ia32_mode_needs_gp_reg(mode)) {
-		return ia32_new_Unknown_gp(env_cg);
+		res = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, 0);
 	} else {
 		panic("unsupported Unknown-Mode");
 	}
+
+	be_dep_on_frame(res);
+	return res;
 }
 
 const arch_register_req_t *make_register_req(const constraint_t *constraint,

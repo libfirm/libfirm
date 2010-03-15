@@ -243,16 +243,6 @@ static int get_first_same(const arch_register_req_t* req)
 	panic("same position not found");
 }
 
-static inline bool is_unknown_reg(const arch_register_t *reg)
-{
-	if (reg == &ia32_gp_regs[REG_GP_UKNWN]
-			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
-			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
-		return true;
-
-	return false;
-}
-
 /**
  * Insert copies for all ia32 nodes where the should_be_same requirement
  * is not fulfilled.
@@ -292,9 +282,6 @@ static void assure_should_be_same_requirements(ir_node *node)
 
 		/* requirement already fulfilled? */
 		if (in_reg == out_reg)
-			continue;
-		/* unknowns can be changed to any register we want on emitting */
-		if (is_unknown_reg(in_reg))
 			continue;
 		cls = arch_register_get_class(in_reg);
 		assert(cls == arch_register_get_class(out_reg));

@@ -66,9 +66,6 @@ struct ia32_code_gen_t {
 	unsigned                       do_x87_sim:1;   /**< set to 1 if x87 simulation should be enforced */
 	unsigned                       dump:1;         /**< set to 1 if graphs should be dumped */
 	unsigned                       gprof:1;        /**< set to 1 grof profiling is in use */
-	ir_node                        *unknown_gp;     /**< unique Unknown_GP node */
-	ir_node                        *unknown_vfp;    /**< unique Unknown_VFP node */
-	ir_node                        *unknown_xmm;    /**< unique Unknown_XMM node */
 	ir_node                        *noreg_gp;       /**< unique NoReg_GP node */
 	ir_node                        *noreg_vfp;      /**< unique NoReg_VFP node */
 	ir_node                        *noreg_xmm;      /**< unique NoReg_XMM node */
@@ -136,14 +133,6 @@ extern ia32_code_gen_t *ia32_current_cg;
 ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg);
 ir_node *ia32_new_NoReg_xmm(ia32_code_gen_t *cg);
 ir_node *ia32_new_NoReg_vfp(ia32_code_gen_t *cg);
-
-/**
- * Returns the unique per irg GP Unknown node.
- * (warning: cse has to be activated)
- */
-ir_node *ia32_new_Unknown_gp(ia32_code_gen_t *cg);
-ir_node *ia32_new_Unknown_xmm(ia32_code_gen_t *cg);
-ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg);
 
 /**
  * Returns the unique per irg FPU truncation mode node.

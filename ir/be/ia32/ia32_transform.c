@@ -5783,9 +5783,6 @@ static void ia32_pretransform_node(void)
 {
 	ia32_code_gen_t *cg = env_cg;
 
-	cg->unknown_gp  = be_pre_transform_node(cg->unknown_gp);
-	cg->unknown_vfp = be_pre_transform_node(cg->unknown_vfp);
-	cg->unknown_xmm = be_pre_transform_node(cg->unknown_xmm);
 	cg->noreg_gp    = be_pre_transform_node(cg->noreg_gp);
 	cg->noreg_vfp   = be_pre_transform_node(cg->noreg_vfp);
 	cg->noreg_xmm   = be_pre_transform_node(cg->noreg_xmm);

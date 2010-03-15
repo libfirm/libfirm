@@ -162,24 +162,6 @@ ir_node *ia32_new_NoReg_xmm(ia32_code_gen_t *cg)
 	                    &ia32_xmm_regs[REG_XMM_NOREG]);
 }
 
-ir_node *ia32_new_Unknown_gp(ia32_code_gen_t *cg)
-{
-	return create_const(cg, &cg->unknown_gp, new_bd_ia32_Unknown_GP,
-	                    &ia32_gp_regs[REG_GP_UKNWN]);
-}
-
-ir_node *ia32_new_Unknown_vfp(ia32_code_gen_t *cg)
-{
-	return create_const(cg, &cg->unknown_vfp, new_bd_ia32_Unknown_VFP,
-	                    &ia32_vfp_regs[REG_VFP_UKNWN]);
-}
-
-ir_node *ia32_new_Unknown_xmm(ia32_code_gen_t *cg)
-{
-	return create_const(cg, &cg->unknown_xmm, new_bd_ia32_Unknown_XMM,
-	                    &ia32_xmm_regs[REG_XMM_UKNWN]);
-}
-
 ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg)
 {
 	return create_const(cg, &cg->fpu_trunc_mode, new_bd_ia32_ChangeCW,
@@ -894,23 +876,25 @@ static void ia32_prepare_graph(void *self)
 {
 	ia32_code_gen_t *cg = self;
 
+#ifdef FIRM_GRGEN_BE
 	switch (be_transformer) {
 	case TRANSFORMER_DEFAULT:
 		/* transform remaining nodes into assembler instructions */
 		ia32_transform_graph(cg);
 		break;
 
-#ifdef FIRM_GRGEN_BE
 	case TRANSFORMER_PBQP:
 	case TRANSFORMER_RAND:
 		/* transform nodes into assembler instructions by PBQP magic */
 		ia32_transform_graph_by_pbqp(cg);
 		break;
-#endif
 
 	default:
 		panic("invalid transformer");
 	}
+#else
+	ia32_transform_graph(cg);
+#endif
 
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(cg->irg);
@@ -1120,18 +1104,6 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node)
 
 	if (sched_is_scheduled(node)) {
 		sched_point = sched_prev(node);
-	}
-
-	/* No need to spill unknown values... */
-	if (is_ia32_Unknown_GP(val) ||
-		is_ia32_Unknown_VFP(val) ||
-		is_ia32_Unknown_XMM(val)) {
-		store = nomem;
-		if (sched_point)
-			sched_remove(node);
-
-		exchange(node, store);
-		return;
 	}
 
 	if (mode_is_float(mode)) {
@@ -1992,9 +1964,7 @@ static int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
 	}
 
 	if (is_ia32_NoReg_GP(irn) || is_ia32_NoReg_VFP(irn) || is_ia32_NoReg_XMM(irn)
-		|| is_ia32_Unknown_GP(irn) || is_ia32_Unknown_XMM(irn)
-		|| is_ia32_Unknown_VFP(irn) || is_ia32_ChangeCW(irn)
-		|| is_ia32_Immediate(irn))
+	    || is_ia32_ChangeCW(irn) || is_ia32_Immediate(irn))
 		return 0;
 
 	return 1;

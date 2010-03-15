@@ -157,20 +157,6 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 	if (reg == &ia32_gp_regs[REG_GP_NOREG])
 		panic("trying to emit noreg for %+F input %d", irn, pos);
 
-	/* in case of unknown register: just return a valid register */
-	if (reg == &ia32_gp_regs[REG_GP_UKNWN]) {
-		const arch_register_req_t *req = arch_get_register_req(irn, pos);
-
-		if (arch_register_req_is(req, limited)) {
-			/* in case of limited requirements: get the first allowed register */
-			unsigned idx = rbitset_next(req->limited, 0, 1);
-			reg = arch_register_for_index(req->cls, idx);
-		} else {
-			/* otherwise get first register in class */
-			reg = arch_register_for_index(req->cls, 0);
-		}
-	}
-
 	return reg;
 }
 
@@ -1683,16 +1669,6 @@ static void emit_be_IncSP(const ir_node *node)
 	}
 }
 
-static inline bool is_unknown_reg(const arch_register_t *reg)
-{
-	if (reg == &ia32_gp_regs[REG_GP_UKNWN]
-			|| reg == &ia32_xmm_regs[REG_XMM_UKNWN]
-			|| reg == &ia32_vfp_regs[REG_VFP_UKNWN])
-		return true;
-
-	return false;
-}
-
 /**
  * Emits code for Copy/CopyKeep.
  */
@@ -1704,8 +1680,6 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	if (in == out) {
 		return;
 	}
-	if (is_unknown_reg(in))
-		return;
 	/* copies of vf nodes aren't real... */
 	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
@@ -2726,7 +2700,7 @@ static void bemit_copy(const ir_node *copy)
 	const arch_register_t *in  = get_in_reg(copy, 0);
 	const arch_register_t *out = get_out_reg(copy, 0);
 
-	if (in == out || is_unknown_reg(in))
+	if (in == out)
 		return;
 	/* copies of vf nodes aren't real... */
 	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])

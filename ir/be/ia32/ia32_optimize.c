@@ -232,12 +232,8 @@ static void peephole_ia32_Test(ir_node *node)
 			left = get_Proj_pred(left);
 		}
 
-		/* happens rarely, but if it does code will panic' */
-		if (is_ia32_Unknown_GP(left))
-			return;
-
-		/* walk schedule up and abort when we find left or some other node destroys
-			 the flags */
+		/* walk schedule up and abort when we find left or some other node
+		 * destroys the flags */
 		schedpoint = node;
 		for (;;) {
 			schedpoint = sched_prev(schedpoint);
@@ -862,7 +858,7 @@ static ir_node *create_push(dbg_info *dbgi, ir_node *block,
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
 
-	ir_node *val   = ia32_new_Unknown_gp(cg);
+	ir_node *val   = ia32_new_NoReg_gp(cg);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_node *nomem = new_NoMem();
 	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
