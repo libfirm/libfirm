@@ -301,6 +301,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	return 0;
 }
 
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copypbqp);
 void be_init_copypbqp(void)
 {
 	static co_algo_info copyheur = {
@@ -309,7 +310,5 @@ void be_init_copypbqp(void)
 
 	be_register_copyopt("pbqp", &copyheur);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copypbqp);
 
 #endif

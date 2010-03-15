@@ -471,7 +471,7 @@ static void insert_perms(ir_node *block, void *data)
 	}
 }
 
-void be_pbqp_coloring(be_chordal_env_t *env)
+static void be_pbqp_coloring(be_chordal_env_t *env)
 {
 	ir_graph                      *irg  = env->irg;
 	be_irg_t                      *birg = env->birg;
@@ -625,6 +625,7 @@ void be_pbqp_coloring(be_chordal_env_t *env)
 /**
  * Initializes this module.
  */
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pbqp_coloring);
 void be_init_pbqp_coloring(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
@@ -640,7 +641,5 @@ void be_init_pbqp_coloring(void)
 	lc_opt_add_table(pbqp_grp, options);
 	be_register_chordal_coloring("pbqp", &coloring);
 }
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_pbqp_alloc);
 
 #endif
