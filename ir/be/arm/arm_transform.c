@@ -1582,10 +1582,6 @@ static void arm_register_transformers(void)
  */
 static void arm_pretransform_node(void)
 {
-	arm_code_gen_t *cg = env_cg;
-
-	cg->unknown_gp  = be_pre_transform_node(cg->unknown_gp);
-	cg->unknown_fpa = be_pre_transform_node(cg->unknown_fpa);
 }
 
 /**

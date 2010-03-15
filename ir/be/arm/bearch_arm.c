@@ -520,8 +520,6 @@ static void *arm_cg_init(be_irg_t *birg)
 	cg->birg         = birg;
 	cg->int_tp       = int_tp;
 	cg->have_fp_insn = 0;
-	cg->unknown_gp   = NULL;
-	cg->unknown_fpa  = NULL;
 	cg->dump         = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
