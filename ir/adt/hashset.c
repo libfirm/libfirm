@@ -84,7 +84,7 @@
 
 #ifdef DO_REHASH
 #define HashSetEntry                   ValueType
-#define EntrySetHash(entry,new_hash)
+#define EntrySetHash(entry,new_hash)   (void)0
 #define EntryGetHash(self,entry)       Hash(self, GetKey(entry))
 #define EntryGetValue(entry)           (entry)
 #else /* ! DO_REHASH */

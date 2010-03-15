@@ -136,7 +136,7 @@ static inline void stat_chain_len(SET *table, int chain_len)
 
 #else /* !STATS */
 
-# define stat_chain_len(table, chain_len) ((void)0)
+# define stat_chain_len(table, chain_len) ((void)chain_len)
 # define stat_access(table) ((void)0)
 # define stat_dup(table) ((void)0)
 
@@ -187,7 +187,8 @@ SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, int nslots)
   else {
     assert (nslots >= 0);
     /* Adjust nslots up to next power of 2, minimum SEGMENT_SIZE */
-    for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1);
+    for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1) {
+	}
     nslots = i >> SEGMENT_SIZE_SHIFT;
   }
 

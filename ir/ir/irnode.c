@@ -1517,7 +1517,7 @@ void set_Builtin_type(ir_node *node, ir_type *tp)
 /* Returns a human readable string for the ir_builtin_kind. */
 const char *get_builtin_kind_name(ir_builtin_kind kind)
 {
-#define X(a)    case a: return #a;
+#define X(a)    case a: return #a
 	switch (kind) {
 		X(ir_bk_trap);
 		X(ir_bk_debugbreak);
@@ -2974,7 +2974,7 @@ int (is_irn_cse_neutral)(const ir_node *node)
 /* Gets the string representation of the jump prediction .*/
 const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 {
-#define X(a)    case a: return #a;
+#define X(a)    case a: return #a
 	switch (pred) {
 		X(COND_JMP_PRED_NONE);
 		X(COND_JMP_PRED_TRUE);

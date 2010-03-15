@@ -224,14 +224,14 @@ static void lineage_formation(mris_env_t *env)
 		while (lowest_desc) {
 			mris_irn_t *lowest_mi  = get_mris_irn(env, lowest_desc);
 			mris_irn_t *highest_mi = get_mris_irn(env, highest_node);
-			int highest_is_tuple   = get_irn_mode(highest_node) == mode_T;
 
 			int n_desc;
 
 			DBG((dbg, LEVEL_2, "\tlowest descendant %+F height %d\n", lowest_desc, get_irn_height(env->heights, lowest_desc)));
 
 			/* count the number of all descendants which are not the lowest descendant */
-			for (n_desc = 0; in[n_desc]; ++n_desc);
+			for (n_desc = 0; in[n_desc]; ++n_desc) {
+			}
 
 			/*
 			we insert a CopyKeep node to express the artificial dependencies from the lowest
@@ -242,12 +242,7 @@ static void lineage_formation(mris_env_t *env)
 				int i, n;
 
 				for (i = 0, n = get_irn_ins_or_deps(lowest_desc); i < n; ++i) {
-					ir_node *cmp;
-
-					op  = get_irn_in_or_dep(lowest_desc, i);
-					cmp = highest_is_tuple ? skip_Projs(op) : op;
-
-					// if (cmp == highest_node)
+					op = get_irn_in_or_dep(lowest_desc, i);
 					if (op == highest_node)
 						break;
 				}

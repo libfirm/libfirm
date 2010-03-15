@@ -353,10 +353,6 @@ static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg)
 		v = (v << 8) | get_tarval_sub_bits(tv, 1);
 		v = (v << 8) | get_tarval_sub_bits(tv, 0);
 		return new_Const_long(mode_Is, v);
-	} else if (is_Load(skip_Proj(arg))) {
-		ir_node *load;
-
-		load = skip_Proj(arg);
 	}
 	panic("Unimplemented convert_sng_to_int() case");
 }

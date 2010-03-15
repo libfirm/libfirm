@@ -311,7 +311,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
 	unsigned  pos;
-	int max, curr_weight, best_weight = 0;
+	int curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
 	 * safe: node has no interference, hence it is in every max stable set.
@@ -363,7 +363,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 		/* Exact Algorithm: Brute force */
 		curr = bitset_alloca(unsafe_count);
 		bitset_set_all(curr);
-		while ((max = bitset_popcount(curr)) != 0) {
+		while (bitset_popcount(curr) != 0) {
 			/* check if curr is a stable set */
 			for (i=bitset_next_set(curr, 0); i!=-1; i=bitset_next_set(curr, i+1))
 				for (o=bitset_next_set(curr, i+1); o!=-1; o=bitset_next_set(curr, o+1)) /* !!!!! difference to qnode_max_ind_set(): NOT (curr, i) */
@@ -1068,7 +1068,7 @@ static void ifg_dump_at_end(FILE *file, void *self)
 
 			if (aidx < nidx) {
 				const char *color = nr == ar ? "blue" : "red";
-				fprintf(file, "\tn%d -- n%d [weight=0.01 ", aidx, nidx);
+				fprintf(file, "\tn%u -- n%u [weight=0.01 ", aidx, nidx);
 				if (env->flags & CO_IFG_DUMP_LABELS)
 					fprintf(file, "label=\"%d\" ", n->costs);
 				if (env->flags & CO_IFG_DUMP_COLORS)
@@ -1223,7 +1223,7 @@ void co_driver(be_chordal_env_t *cenv)
 	/* Dump the interference graph in Appel's format. */
 	if (dump_flags & DUMP_APPEL) {
 		FILE *f = my_open(cenv, "", ".apl");
-		fprintf(f, "# %lld %lld\n", after.costs, after.unsatisfied_edges);
+		fprintf(f, "# %llu %llu\n", after.costs, after.unsatisfied_edges);
 		co_dump_appel_graph(co, f);
 		fclose(f);
 	}

@@ -35,7 +35,7 @@
  */
 #define COMPILETIME_ASSERT(x, name) \
     static __attribute__((unused)) void compiletime_assert_##name (int h) { \
-        switch(h) { case 0: case (x): ; } \
+        switch(h) { case 0: case (x): {} } \
     }
 
 #ifdef __GNUC__

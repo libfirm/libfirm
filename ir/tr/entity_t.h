@@ -396,8 +396,6 @@ static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
 	ent->dbi = db;
 }
 
-int is_entity_final(const ir_entity *entity);
-
 #define is_entity(thing)                         _is_entity(thing)
 #define get_entity_name(ent)                     _get_entity_name(ent)
 #define get_entity_ident(ent)                    _get_entity_ident(ent)

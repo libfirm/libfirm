@@ -237,7 +237,7 @@ static inline const loc_t *workset_contains(const workset_t *ws,
 #define workset_set_length(ws, length) (ws)->len = length
 #define workset_get_length(ws) ((ws)->len)
 #define workset_get_val(ws, i) ((ws)->vals[i].node)
-#define workset_sort(ws) qsort((ws)->vals, (ws)->len, sizeof((ws)->vals[0]), loc_compare);
+#define workset_sort(ws) do { qsort((ws)->vals, (ws)->len, sizeof((ws)->vals[0]), loc_compare); } while(0)
 
 typedef struct _block_info_t
 {
@@ -336,14 +336,6 @@ static void displace(workset_t *new_vals, int is_usage)
 
 	/* Only make more free room if we do not have enough */
 	if (spills_needed > 0) {
-		ir_node   *curr_bb  = NULL;
-		workset_t *ws_start = NULL;
-
-		if (move_spills) {
-			curr_bb  = get_nodes_block(instr);
-			ws_start = get_block_info(curr_bb)->start_workset;
-		}
-
 		DB((dbg, DBG_DECIDE, "    disposing %d values\n", spills_needed));
 
 		/* calculate current next-use distance for live values */

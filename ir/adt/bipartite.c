@@ -150,7 +150,8 @@ void bipartite_matching(const bipartite_t *gr, int *matching)
 	bitset_t *matched_right = bitset_alloca(gr->n_right);
 
 	memset(matching, -1, gr->n_left * sizeof(int));
-	while (apply_alternating_path(gr, matching, matched_left, matched_right));
+	while (apply_alternating_path(gr, matching, matched_left, matched_right)) {
+	}
 }
 
 void bipartite_dump_f(FILE *f, const bipartite_t *gr)

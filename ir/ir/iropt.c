@@ -754,7 +754,8 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE_PROJ(Quot);
 	CASE(Proj);
 	default:
-		/* leave NULL */;
+		/* leave NULL */
+		break;
 	}
 
 	return ops;
@@ -1699,7 +1700,7 @@ static ir_node *equivalent_node_Proj_Bound(ir_node *proj)
 			break;
 		default:
 			/* cannot optimize pn_Bound_X_regular, handled in transform ... */
-			;
+			break;
 		}
 	}
 	return proj;
@@ -1980,7 +1981,8 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Mux);
 	CASE(Confirm);
 	default:
-		/* leave NULL */;
+		/* leave NULL */
+		break;
 	}
 
 	return ops;
@@ -2279,6 +2281,7 @@ static ir_node *transform_node_AddSub(ir_node *n)
 }  /* transform_node_AddSub */
 
 #define HANDLE_BINOP_PHI(eval, a, b, c, mode)                     \
+  do {                                                            \
   c = NULL;                                                       \
   if (is_Const(b) && is_const_Phi(a)) {                           \
     /* check for Op(Phi, Const) */                                \
@@ -2295,9 +2298,11 @@ static ir_node *transform_node_AddSub(ir_node *n)
   if (c) {                                                        \
     DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI);                   \
     return c;                                                     \
-  }
+  }                                                               \
+  } while(0)
 
 #define HANDLE_UNOP_PHI(eval, a, c)               \
+  do {                                            \
   c = NULL;                                       \
   if (is_const_Phi(a)) {                          \
     /* check for Op(Phi) */                       \
@@ -2306,7 +2311,8 @@ static ir_node *transform_node_AddSub(ir_node *n)
       DBG_OPT_ALGSIM0(oldn, c, FS_OPT_CONST_PHI); \
       return c;                                   \
     }                                             \
-  }
+  }                                               \
+  } while(0)
 
 /**
  * Do the AddSub optimization, then Transform
@@ -2333,7 +2339,7 @@ static ir_node *transform_node_Add(ir_node *n)
 	if (mode_is_reference(mode)) {
 		ir_mode *lmode = get_irn_mode(a);
 
-	       	if (is_Const(b) && is_Const_null(b) && mode_is_int(lmode)) {
+		if (is_Const(b) && is_Const_null(b) && mode_is_int(lmode)) {
 			/* an Add(a, NULL) is a hidden Conv */
 			dbg_info *dbg = get_irn_dbg_info(n);
 			return new_rd_Conv(dbg, get_nodes_block(n), a, mode);
@@ -5363,7 +5369,6 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 	ir_node  *left;
 	ir_node  *right = get_binop_right(n);
 	ir_node  *x;
-	ir_graph *irg;
 	ir_node  *block;
 	ir_mode  *mode;
 	dbg_info *dbgi;
@@ -5428,7 +5433,6 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 	assert(tv_mask != tarval_bad);
 	assert(get_tarval_mode(tv_mask) == mode);
 
-	irg   = get_irn_irg(n);
 	block = get_nodes_block(n);
 	dbgi  = get_irn_dbg_info(n);
 
@@ -6412,7 +6416,8 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Dummy);
 	/* FIXME CopyB */
 	default:
-	  /* leave NULL */;
+		/* leave NULL */
+		break;
 	}
 
 	return ops;

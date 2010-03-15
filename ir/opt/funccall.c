@@ -240,7 +240,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 			break;
 		}
 		default:
-			;
+			break;
 		}
 	}
 
@@ -379,7 +379,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 			break;
 		}
 		default:
-			;
+			break;
 		}
 	}
 
@@ -403,7 +403,6 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 
 /* forward */
 static unsigned check_const_or_pure_function(ir_graph *irg, int top);
-static unsigned check_nothrow_or_malloc(ir_graph *irg, int top);
 
 /**
  * Calculate the bigger property of two. Handle the temporary flag right.

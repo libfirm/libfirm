@@ -252,7 +252,6 @@ static int cancel_out_casts(ir_node *cast)
 {
 	ir_node *orig, *pred = get_Cast_op(cast);
 	ir_type *tp_cast, *tp_pred, *tp_orig;
-	int ref_depth = 0;
 
 	if (!is_Cast(pred)) return 0;
 	orig = get_Cast_op(pred);
@@ -267,7 +266,6 @@ static int cancel_out_casts(ir_node *cast)
 		tp_cast = get_pointer_points_to_type(tp_cast);
 		tp_pred = get_pointer_points_to_type(tp_pred);
 		tp_orig = get_pointer_points_to_type(tp_orig);
-		ref_depth++;
 	}
 
 	if (!is_Class_type(tp_cast) || !is_Class_type(tp_pred) || !is_Class_type(tp_orig))

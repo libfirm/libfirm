@@ -462,18 +462,18 @@ struct ir_graph {
 	unsigned additional_properties;          /**< Additional graph properties. */
 
 	/* -- Fields indicating different states of irgraph -- */
-	unsigned        state;
-	irg_phase_state phase_state;       /**< Compiler phase. */
-	op_pin_state irg_pinned_state;     /**< Flag for status of nodes. */
-	irg_outs_state outs_state;         /**< Out edges. */
-	irg_dom_state dom_state;           /**< Dominator state information. */
-	irg_dom_state pdom_state;          /**< Post Dominator state information. */
-	ir_typeinfo_state typeinfo_state;        /**< Validity of type information. */
+	ir_graph_state_t      state;
+	irg_phase_state       phase_state;       /**< Compiler phase. */
+	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
+	irg_outs_state        outs_state;        /**< Out edges. */
+	irg_dom_state         dom_state;         /**< Dominator state information. */
+	irg_dom_state         pdom_state;        /**< Post Dominator state information. */
+	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
-	irg_loopinfo_state loopinfo_state;       /**< State of loop information. */
-	ir_class_cast_state class_cast_state;    /**< Kind of cast operations in code. */
+	irg_loopinfo_state    loopinfo_state;    /**< State of loop information. */
+	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
 	irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
-	exec_freq_state execfreq_state;          /**< Execution frequency state. */
+	exec_freq_state       execfreq_state;    /**< Execution frequency state. */
 	ir_entity_usage_computed_state entity_usage_state;
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */

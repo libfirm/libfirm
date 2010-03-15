@@ -112,7 +112,8 @@ static inline int is_liveness_node(const ir_node *irn)
 	case iro_End:
 	case iro_Anchor:
 		return 0;
-	default:;
+	default:
+		break;
 	}
 
 	return 1;

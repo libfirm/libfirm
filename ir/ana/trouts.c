@@ -675,8 +675,9 @@ void free_trouts(void)
 		ir_node **accs;
 		for (accs = (ir_node **)pmap_first(entity_access_map);
 			accs;
-			accs = (ir_node **)pmap_next(entity_access_map))
-			; //DEL_ARR_F(accs);
+			accs = (ir_node **)pmap_next(entity_access_map)) {
+			/* DEL_ARR_F(accs); */
+		}
 		pmap_destroy(entity_access_map);
 		entity_access_map = NULL;
 	}
@@ -685,8 +686,9 @@ void free_trouts(void)
 		ir_node **refs;
 		for (refs = (ir_node **)pmap_first(entity_reference_map);
 			refs;
-			refs = (ir_node **)pmap_next(entity_reference_map))
-			; //DEL_ARR_F(refs);
+			refs = (ir_node **)pmap_next(entity_reference_map)) {
+			/* DEL_ARR_F(refs); */
+		}
 		pmap_destroy(entity_reference_map);
 		entity_reference_map = NULL;
 	}
@@ -695,8 +697,9 @@ void free_trouts(void)
 		ir_node **alls;
 		for (alls = (ir_node **)pmap_first(type_alloc_map);
 			alls;
-			alls = (ir_node **)pmap_next(type_alloc_map))
-			; //DEL_ARR_F(alls);
+			alls = (ir_node **)pmap_next(type_alloc_map)) {
+			/* DEL_ARR_F(alls); */
+		}
 		pmap_destroy(type_alloc_map);
 		type_alloc_map = NULL;
 	}
@@ -705,8 +708,9 @@ void free_trouts(void)
 		ir_node **casts;
 		for (casts = (ir_node **)pmap_first(type_cast_map);
 			casts;
-			casts = (ir_node **)pmap_next(type_cast_map))
-			; //DEL_ARR_F(alls);
+			casts = (ir_node **)pmap_next(type_cast_map)) {
+			/* DEL_ARR_F(alls); */
+		}
 		pmap_destroy(type_cast_map);
 		type_cast_map = NULL;
 	}
@@ -715,8 +719,9 @@ void free_trouts(void)
 		ir_node **pts;
 		for (pts = (ir_node **)pmap_first(type_pointertype_map);
 			pts;
-			pts = (ir_node **)pmap_next(type_pointertype_map))
-			; //DEL_ARR_F(pts);
+			pts = (ir_node **)pmap_next(type_pointertype_map)) {
+			/* DEL_ARR_F(pts); */
+		}
 		pmap_destroy(type_pointertype_map);
 		type_pointertype_map = NULL;
 	}
@@ -725,8 +730,9 @@ void free_trouts(void)
 		ir_node **pts;
 		for (pts = (ir_node **)pmap_first(type_arraytype_map);
 			pts;
-			pts = (ir_node **)pmap_next(type_arraytype_map))
-			; //DEL_ARR_F(pts);
+			pts = (ir_node **)pmap_next(type_arraytype_map)) {
+			/* DEL_ARR_F(pts); */
+		}
 		pmap_destroy(type_arraytype_map);
 		type_arraytype_map = NULL;
 	}

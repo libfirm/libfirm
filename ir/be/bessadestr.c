@@ -363,7 +363,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
 				/* skip the Perm's Projs and insert the copies behind. */
-				for (ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins));
+				for (ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins)) {
+				}
 				sched_add_before(ins, dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);

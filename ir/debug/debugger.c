@@ -187,7 +187,7 @@ do {                                        \
 #define FIRM_DBG_MINOR  0
 
 /** for automatic detection of the debug extension */
-static const char firm_debug_info_string[] =
+static const char __attribute__((used)) firm_debug_info_string[] =
 	API_VERSION(FIRM_DBG_MAJOR, FIRM_DBG_MINOR);
 
 int firm_debug_active(void)
@@ -464,7 +464,7 @@ static void update_hooks(breakpoint *bp)
 		CASE_ON(BP_ON_NEW_ENT, new_entity);
 		CASE_ON(BP_ON_NEW_TYPE, new_type);
 		default:
-			;
+			break;
 		}
 	}
 	else {
@@ -477,7 +477,7 @@ static void update_hooks(breakpoint *bp)
 		CASE_OFF(BP_ON_NEW_ENT, new_entity);
 		CASE_OFF(BP_ON_NEW_TYPE, new_type);
 		default:
-			;
+			break;
 		}
 	}
 #undef CASE_ON

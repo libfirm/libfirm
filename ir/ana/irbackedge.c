@@ -61,7 +61,6 @@ static unsigned *mere_get_backarray(ir_node *n)
 	case iro_Phi:
 		assert(n->attr.phi.u.backedge && "backedge array not allocated!");
 		return n->attr.phi.u.backedge;
-		break;
 	case iro_Filter:
 #ifdef INTERPROCEDURAL_VIEW
 		if (get_interprocedural_view()) {

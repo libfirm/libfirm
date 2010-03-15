@@ -128,8 +128,6 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 		basic block, so create a new one here.
 	*/
 	if (get_block_n_succs(block) > 2) {
-		const ir_edge_t *edge;
-
 		foreach_block_succ(block, edge) {
 			ir_node *succ = get_edge_src_irn(edge);
 			create_extblk(succ, env);

@@ -372,7 +372,6 @@ void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block,
 void be_spill_phi(spill_env_t *env, ir_node *node)
 {
 	ir_node *block;
-	spill_info_t* spill;
 	int i, arity;
 
 	assert(is_Phi(node));
@@ -381,11 +380,9 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 
 	/* create spills for the phi arguments */
 	block = get_nodes_block(node);
-	spill = get_spillinfo(env, node);
 	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 		ir_node *arg = get_irn_n(node, i);
 		ir_node *insert;
-		//get_spillinfo(env, arg);
 
 		/* some backends have virtual noreg/unknown nodes that are not scheduled
 		 * and simply always available. */

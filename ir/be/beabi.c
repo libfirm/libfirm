@@ -892,7 +892,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	ir_node *new_alloc;
 	ir_node *count;
 	ir_node *size;
-	ir_node *addr;
 	ir_node *ins[2];
 	unsigned stack_alignment;
 
@@ -971,7 +970,6 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 	/* fix projnum of alloca res */
 	set_Proj_proj(alloc_res, pn_be_AddSP_res);
 
-	addr    = alloc_res;
 	curr_sp = new_r_Proj(new_alloc,  get_irn_mode(curr_sp), pn_be_AddSP_sp);
 
 	return curr_sp;
@@ -1163,7 +1161,6 @@ static void process_ops_in_block(ir_node *bl, void *data)
 				break;
 			default:
 				panic("invalid call");
-				break;
 			}
 		}
 
@@ -1598,7 +1595,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 		/* ok, change the graph */
 		ir_node *start_bl = get_irg_start_block(irg);
 		ir_node *first_bl = get_first_block_succ(start_bl);
-		ir_node *frame, *imem, *nmem, *store, *mem, *args, *args_bl;
+		ir_node *frame, *imem, *nmem, *store, *mem, *args;
 		optimization_state_t state;
 		unsigned offset;
 
@@ -1622,7 +1619,6 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 		store   = NULL;
 		mem     = imem;
 		args    = get_irg_args(irg);
-		args_bl = get_nodes_block(args);
 		for (entry = new_list; entry != NULL; entry = entry->next) {
 			int     i     = entry->pos;
 			ir_type *tp   = get_entity_type(entry->ent);

@@ -134,7 +134,7 @@ struct ia32_attr_t {
 	unsigned          attr_type;      /**< bitfield indicating the attribute type */
 #endif
 };
-COMPILETIME_ASSERT(sizeof(struct ia32_attr_data_bitfield) <= 4, attr_bitfield);
+COMPILETIME_ASSERT(sizeof(struct ia32_attr_data_bitfield) <= 4, attr_bitfield)
 
 /**
  * The attributes for a Call node.

@@ -174,7 +174,6 @@ static cli_head_t *get_next_cli_head(const ir_node *irn, cli_iter_t *it) /* ...c
 	cli_element_t *element;
 
 	int is_dominated_by_max;
-	//int dominates_min;
 
 	if (it->curr_cli_head == NULL || it->curr_cli_head->next_cli_head == NULL) /* way back of recursion or this is the last clique */
 	{
@@ -185,7 +184,6 @@ static cli_head_t *get_next_cli_head(const ir_node *irn, cli_iter_t *it) /* ...c
 	head = it->curr_cli_head->next_cli_head;
 
 	is_dominated_by_max = value_dominates(head->max, irn);
-	//dominates_min = value_dominates(irn, head->min);
 
 	if ((is_dominated_by_max) || (irn == head->max)) /* node could be in clique */
 	{
@@ -364,7 +362,6 @@ static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const 
 	bitset_t      *bitset_visneighbours = bitset_malloc(get_irg_last_idx(ifg->env->irg));
 
 	int is_dominated_by_max = 0;
-	int dominates_min = 0;
 	int is_in_clique = 0;
 
 	it->curr_cli_head = cli_head;
@@ -374,7 +371,6 @@ static void find_first_neighbour(const ifg_clique_t *ifg, cli_iter_t *it, const 
 	assert(cli_head && "There is no root entry for a cli_head.");
 
 	is_dominated_by_max = value_dominates(cli_head->max, irn);
-	dominates_min = value_dominates(irn, cli_head->min);
 
 	if ((is_dominated_by_max) || (irn == cli_head->max))  /* node could be in clique */
 	{

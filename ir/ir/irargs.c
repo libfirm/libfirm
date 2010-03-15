@@ -186,7 +186,7 @@ static int firm_emit(lc_appendable_t *app,
 				snprintf(buf, sizeof(buf), "%s%s %s", A("irn"), get_irn_opname(X),
 				get_mode_name(get_irn_mode(X)));
 			}
-			snprintf(add, sizeof(add), "[%ld:%d]", get_irn_node_nr(X), get_irn_idx(X));
+			snprintf(add, sizeof(add), "[%ld:%u]", get_irn_node_nr(X), get_irn_idx(X));
 		}
 		break;
 	case k_ir_mode:

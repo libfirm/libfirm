@@ -135,7 +135,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
  */
 static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *env)
 {
-	ir_node *cond, *old, *cond_block = NULL, *other_blk = NULL, *con = NULL;
+	ir_node *cond, *old, *other_blk = NULL, *con = NULL;
 	ir_node *c_b = NULL, *c_o = NULL;
 	const ir_edge_t *edge, *next;
 
@@ -168,7 +168,6 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 			if (other_blk == NULL) {
 				/* we have already tested, that block has only ONE Cond predecessor */
 				cond = get_Proj_pred(get_Block_cfgpred(block, 0));
-				cond_block = get_nodes_block(cond);
 				foreach_out_edge(cond, edge) {
 					ir_node *proj = get_edge_src_irn(edge);
 					if (get_Proj_proj(proj) == (long)pnc)

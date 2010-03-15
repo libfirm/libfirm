@@ -592,9 +592,9 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 	/* count number of succs */
 	n_succ = 0;
 	for (j = 0; j < len; ++j) {
-		ir_region *c = reg->parts[j].region;
-		for (i = get_region_n_succs(c) - 1; i >= 0; --i) {
-			ir_region *succ = get_region_succ(c, i);
+		ir_region *pc = reg->parts[j].region;
+		for (i = get_region_n_succs(pc) - 1; i >= 0; --i) {
+			ir_region *succ = get_region_succ(pc, i);
 			if (succ->parent != reg)
 				++n_succ;
 		}
@@ -602,9 +602,9 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 	reg->succ = NEW_ARR_D(ir_region *, obst, n_succ);
 	k = 0;
 	for (j = 0; j < len; ++j) {
-		ir_region *c = reg->parts[j].region;
-		for (i = get_region_n_succs(c) - 1; i >= 0; --i) {
-			ir_region *succ = get_region_succ(c, i);
+		ir_region *pc = reg->parts[j].region;
+		for (i = get_region_n_succs(pc) - 1; i >= 0; --i) {
+			ir_region *succ = get_region_succ(pc, i);
 			if (succ->parent != reg)
 				reg->succ[k++] = succ;
 		}
@@ -843,7 +843,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 	}
 	/* check for Switch, case */
 	if (k > 0) {
-		ir_region *exit = NULL;
+		ir_region *rexit = NULL;
 		nset = NULL; nset_len = 0;
 		p = 0;
 		for (i = k - 1; i >= 0; --i) {
@@ -851,7 +851,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			ADD_LIST(nset, n);
 			if (get_region_n_succs(n) != 1) {
 				/* must be the exit */
-				exit = n;
+				rexit = n;
 				++p;
 				if (p > 1)
 					break;
@@ -866,22 +866,22 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			for (m = nset; m != NULL; m = m->link) {
 				if (get_region_n_succs(m) != 1) {
 					/* must be the exit block */
-					if (exit == NULL) {
-						exit = m;
-					} else if (exit != m) {
+					if (rexit == NULL) {
+						rexit = m;
+					} else if (rexit != m) {
 						/* two exits */
-						exit = NULL;
+						rexit = NULL;
 						break;
 					}
 				} else {
 					ir_region *succ = get_region_succ(m, 0);
 
 					if (succ->link == NULL) {
-						if (exit == NULL) {
+						if (rexit == NULL) {
 							if (succ == pos_exit_1)
-								exit = succ;
+								rexit = succ;
 							else if (succ == pos_exit_2)
-								exit = succ;
+								rexit = succ;
 							else if (pos_exit_1 == NULL)
 								pos_exit_1 = succ;
 							else if (pos_exit_2 == NULL)
@@ -890,24 +890,24 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 								/* more than two possible exits */
 								break;
 							}
-						} else if (exit != succ) {
+						} else if (rexit != succ) {
 							/* two exits */
-							exit = NULL;
+							rexit = NULL;
 							break;
 						}
 					}
 				}
 			}
-			if (exit != NULL) {
+			if (rexit != NULL) {
 				/* do the checks */
 				for (n = nset; n != NULL; n = n->link) {
 					ir_region *succ;
-					if (n == exit) {
+					if (n == rexit) {
 						/* good, default fall through */
 						continue;
 					}
 					succ = get_region_succ(n, 0);
-					if (succ == exit) {
+					if (succ == rexit) {
 						/* good, switch to exit */
 						continue;
 					}
@@ -922,7 +922,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 
 				if (n == NULL) {
 					/* detected */
-					return new_SwitchCase(obst, kind, node, exit, nset, nset_len);
+					return new_SwitchCase(obst, kind, node, rexit, nset, nset_len);
 				}
 			}
 		}

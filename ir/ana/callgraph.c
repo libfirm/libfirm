@@ -49,7 +49,6 @@
 static ir_visited_t master_cg_visited = 0;
 static inline int cg_irg_visited      (ir_graph *n);
 static inline void mark_cg_irg_visited(ir_graph *n);
-static inline void set_cg_irg_visited (ir_graph *n, ir_visited_t i);
 
 /** Returns the callgraph state of the program representation. */
 irp_callgraph_state get_irp_callgraph_state(void)

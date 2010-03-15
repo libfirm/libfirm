@@ -288,7 +288,6 @@ void arm_emit_shifter_operand(const ir_node *node)
 	case ARM_SHF_RRX:
 		arm_emit_source_register(node, get_irn_arity(node) - 1);
 		panic("RRX shifter emitter TODO");
-		return;
 
 	case ARM_SHF_INVALID:
 		break;

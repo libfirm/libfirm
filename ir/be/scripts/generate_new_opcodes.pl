@@ -445,6 +445,7 @@ EOF
 	${attr_init_code}
 	${custominit}
 	info = be_get_info(res);
+	(void) info; /* avoid potential warning */
 	${set_out_reqs}
 
 EOF

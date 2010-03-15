@@ -306,7 +306,6 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 /* Create an address mode for a given node. */
 void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_am_flags_t flags)
 {
-	int      res = 0;
 	ir_node *eat_imms;
 
 	if (is_immediate(addr, node, 0)) {
@@ -334,7 +333,6 @@ void ia32_create_address_mode(ia32_address_t *addr, ir_node *node, ia32_create_a
 			eat_imms = ia32_skip_downconv(eat_imms);
 		}
 
-		res  = 1;
 		node = eat_imms;
 #ifndef AGGRESSIVE_AM
 		if (get_irn_n_edges(node) > 1) {

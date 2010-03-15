@@ -255,7 +255,6 @@ static inline ir_node *pop(void)
 static inline void pop_scc_to_loop(ir_node *n)
 {
 	ir_node *m;
-	int i = 0;
 
 	do {
 		m = pop();
@@ -264,13 +263,7 @@ static inline void pop_scc_to_loop(ir_node *n)
 		set_irn_dfn(m, loop_node_cnt);
 		add_loop_node(current_loop, m);
 		set_irn_loop(m, current_loop);
-		++i;
 	} while (m != n);
-
-	/* i might be bigger than 1 for dead (and that's why bad) loops */
-	/* if (i > 1)
-		printf("Mehr als eine Iteration!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111\n");
-	 */
 }
 
 /* GL ??? my last son is my grandson???  Removes loops with no

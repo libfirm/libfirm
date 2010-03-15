@@ -133,17 +133,6 @@ static inline void _edges_assure_kind(ir_graph *irg, int kind)
 void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
-* Notify of a edge change.
-* The edge from (src, pos) -> old_tgt is redirected to tgt
-*/
-void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
-
-/**
-* A node is deleted.
-*/
-void edges_node_deleted(ir_node *old, ir_graph *irg);
-
-/**
  * A node might be revivaled by CSE.
  */
 void edges_node_revival(ir_node *node, ir_graph *irg);
@@ -187,11 +176,6 @@ static inline int _get_edge_src_pos(const ir_edge_t *edge)
 * This must be called before firm is initialized.
 */
 extern void init_edges(void);
-
-/**
- * Set dbg information for edges.
- */
-void edges_init_dbg(int do_dbg);
 
 void edges_invalidate_all(ir_node *irn, ir_graph *irg);
 

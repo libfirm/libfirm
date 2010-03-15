@@ -1066,7 +1066,7 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
  */
 static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 {
-	int op1_idx, out_idx;
+	int op1_idx;
 	x87_simulator         *sim = state->sim;
 	const arch_register_t *op1 = x87_get_irn_register(get_irn_n(n, UNOP_IDX));
 	const arch_register_t *out = x87_get_irn_register(n);
@@ -1092,7 +1092,6 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 	}
 
 	x87_set_tos(state, arch_register_get_index(out), x87_patch_insn(n, op));
-	out_idx = 0;
 	attr = get_ia32_x87_attr(n);
 	attr->x87[0] = op1 = &ia32_st_regs[0];
 	attr->x87[2] = out = &ia32_st_regs[0];
@@ -1318,14 +1317,12 @@ static int sim_fisttp(x87_state *state, ir_node *n)
 	ir_node               *val = get_irn_n(n, n_ia32_vfst_val);
 	const arch_register_t *op2 = x87_get_irn_register(val);
 	ia32_x87_attr_t *attr;
-	int op2_reg_idx, op2_idx, depth;
+	int op2_reg_idx, op2_idx;
 
 	op2_reg_idx = arch_register_get_index(op2);
 	op2_idx     = x87_on_stack(state, op2_reg_idx);
 	DB((dbg, LEVEL_1, ">>> %+F %s ->\n", n, arch_register_get_name(op2)));
 	assert(op2_idx >= 0);
-
-	depth = x87_get_depth(state);
 
 	/* Note: although the value is still live here, it is destroyed because
 	   of the pop. The register allocator is aware of that and introduced a copy

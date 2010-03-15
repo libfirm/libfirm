@@ -1244,7 +1244,7 @@ int dump_node_label(FILE *F, ir_node *n)
 	bad |= dump_node_typeinfo(F, n);
 	bad |= dump_node_nodeattr(F, n);
 	if (dump_node_idx_labels) {
-		fprintf(F, "%ld:%d", get_irn_node_nr(n), get_irn_idx(n));
+		fprintf(F, "%ld:%u", get_irn_node_nr(n), get_irn_idx(n));
 	} else {
 		fprintf(F, "%ld", get_irn_node_nr(n));
 	}
@@ -1260,7 +1260,7 @@ int dump_vrp_info(FILE *F, ir_node *n)
 		return 1;
 	}
 
-	fprintf(F, "range_type: %d\n", vrp->range_type);
+	fprintf(F, "range_type: %d\n", (int) vrp->range_type);
 	if (vrp->range_type == VRP_RANGE || vrp->range_type ==
 			VRP_ANTIRANGE) {
 		ir_fprintf(F, "range_bottom: %F\n",vrp->range_bottom);
@@ -1345,8 +1345,6 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 			print_vcg_color(F, ird_color_uses_memory);
 		} else if (is_op_cfopcode(op) || is_op_forking(op)) {
 			print_vcg_color(F, ird_color_controlflow);
-		} else {
-			PRINT_DEFAULT_NODE_ATTR;
 		}
 	}
 	}
@@ -2076,8 +2074,7 @@ static void dump_entity_node(FILE *F, ir_entity *ent)
 {
 	fprintf(F, "node: {title: \"");
 	PRINT_ENTID(ent); fprintf(F, "\"");
-	fprintf(F, DEFAULT_TYPE_ATTRIBUTE);
-	fprintf(F, "label: ");
+	fprintf(F, " label: ");
 	fprintf(F, "\"%s\" ", get_ent_dump_name(ent));
 
 	print_vcg_color(F, ird_color_entity);
@@ -2103,8 +2100,7 @@ static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 		strncpy(buf, "<not set>", sizeof(buf));
 	fprintf(F, "node: {title: \"");
 	PRINT_ITEMID(tp, pos); fprintf(F, "\"");
-	fprintf(F, DEFAULT_ENUM_ITEM_ATTRIBUTE);
-	fprintf(F, "label: ");
+	fprintf(F, " label: ");
 	fprintf(F, "\"enum item %s\" " ENUM_ITEM_NODE_ATTR, get_id_str(id));
 	fprintf(F, "\n info1: \"value: %s\"}\n", buf);
 }

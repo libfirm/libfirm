@@ -153,11 +153,6 @@ static void TEMPLATE_emit_cfop_target(const ir_node *node)
  */
 static void emit_Jmp(const ir_node *node)
 {
-	ir_node *block;
-
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
 	be_emit_cstring("\tjmp ");
 	TEMPLATE_emit_cfop_target(node);
 	be_emit_finish_line_gas(node);

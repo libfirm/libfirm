@@ -341,7 +341,6 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 	ir_type *loc_type = NULL;
 	ir_type *charptr_type;
 	ir_type *gtp;
-	ir_node *start_block;
 	tarval **tarval_array;
 	tarval **tarval_string;
 	tarval *tv;
@@ -460,7 +459,6 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 		wd.symconst  = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
-		start_block = get_irg_start_block(irg);
 		env.end_block   = get_irg_end_block(irg);
 		irg_block_walk_graph(irg, fix_ssa, NULL, &env);
 		for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
@@ -524,6 +522,7 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 			add_compound_ent_value_w_path(ent_locations, n, path);
 		}
 		pmap_destroy(wd.fname_map);
+		current_ir_graph = rem;
 	}
 	return gen_initializer_irg(ent_filename, bblock_id, bblock_counts, n_blocks);
 }

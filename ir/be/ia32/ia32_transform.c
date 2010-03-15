@@ -2004,7 +2004,6 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *index;
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_mode  *mode    = get_Load_mode(node);
-	ir_mode  *res_mode;
 	ir_node  *new_node;
 	ia32_address_t addr;
 
@@ -2030,11 +2029,9 @@ static ir_node *gen_Load(ir_node *node)
 		if (ia32_cg_config.use_sse2) {
 			new_node = new_bd_ia32_xLoad(dbgi, block, base, index, new_mem,
 			                             mode);
-			res_mode = mode_xmm;
 		} else {
 			new_node = new_bd_ia32_vfld(dbgi, block, base, index, new_mem,
 			                            mode);
-			res_mode = mode_vfp;
 		}
 	} else {
 		assert(mode != mode_b);
@@ -2046,7 +2043,6 @@ static ir_node *gen_Load(ir_node *node)
 		} else {
 			new_node = new_bd_ia32_Load(dbgi, block, base, index, new_mem);
 		}
-		res_mode = mode_Iu;
 	}
 
 	set_irn_pinned(new_node, get_irn_pinned(node));
@@ -2210,7 +2206,6 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 	ir_node        *mux_true  = get_Mux_true(node);
 	ir_node        *mux_false = get_Mux_false(node);
 	ir_node        *cond;
-	ir_node        *new_mem;
 	dbg_info       *dbgi;
 	ir_node        *block;
 	ir_node        *new_block;
@@ -2244,7 +2239,6 @@ static ir_node *try_create_SetMem(ir_node *node, ir_node *ptr, ir_node *mem)
 	dbgi      = get_irn_dbg_info(node);
 	block     = get_nodes_block(node);
 	new_block = be_transform_node(block);
-	new_mem   = be_transform_node(mem);
 	new_node  = new_bd_ia32_SetccMem(dbgi, new_block, addr.base,
 	                                 addr.index, addr.mem, flags, pnc);
 	set_address(new_node, &addr);
@@ -3442,13 +3436,6 @@ static ir_node *gen_Mux(ir_node *node)
 			setcc_transform_t res;
 			int step;
 
-			/* check if flags is a cmp node and we are the only user,
-			   i.e no other user yet */
-			int permutate_allowed = 0;
-			if (is_ia32_Cmp(flags) && get_irn_n_edges(flags) == 0) {
-				/* yes, we can permutate its inputs */
-				permutate_allowed = 1;
-			}
 			find_const_transform(pnc, tv_true, tv_false, &res);
 			new_node = node;
 			if (res.permutate_cmp_ins) {
@@ -5557,7 +5544,7 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
  */
 static ir_node *gen_Proj_Bound(ir_node *node)
 {
-	ir_node *new_node, *block;
+	ir_node *new_node;
 	ir_node *pred = get_Proj_pred(node);
 
 	switch (get_Proj_proj(node)) {
@@ -5565,11 +5552,9 @@ static ir_node *gen_Proj_Bound(ir_node *node)
 		return be_transform_node(get_Bound_mem(pred));
 	case pn_Bound_X_regular:
 		new_node = be_transform_node(pred);
-		block    = get_nodes_block(new_node);
 		return new_r_Proj(new_node, mode_X, pn_ia32_Jcc_true);
 	case pn_Bound_X_except:
 		new_node = be_transform_node(pred);
-		block    = get_nodes_block(new_node);
 		return new_r_Proj(new_node, mode_X, pn_ia32_Jcc_false);
 	case pn_Bound_res:
 		return be_transform_node(get_Bound_index(pred));
@@ -5686,91 +5671,91 @@ static void register_transformers(void)
 	clear_irp_opcodes_generic_func();
 
 #define GEN(a)   { be_transform_func *func = gen_##a; op_##a->ops.generic = (op_func) func; }
-#define BAD(a)   op_##a->ops.generic = (op_func)bad_transform
+#define BAD(a)   { op_##a->ops.generic = (op_func)bad_transform; }
 
-	GEN(Add);
-	GEN(Sub);
-	GEN(Mul);
-	GEN(Mulh);
-	GEN(And);
-	GEN(Or);
-	GEN(Eor);
+	GEN(Add)
+	GEN(Sub)
+	GEN(Mul)
+	GEN(Mulh)
+	GEN(And)
+	GEN(Or)
+	GEN(Eor)
 
-	GEN(Shl);
-	GEN(Shr);
-	GEN(Shrs);
-	GEN(Rotl);
+	GEN(Shl)
+	GEN(Shr)
+	GEN(Shrs)
+	GEN(Rotl)
 
-	GEN(Quot);
+	GEN(Quot)
 
-	GEN(Div);
-	GEN(Mod);
-	GEN(DivMod);
+	GEN(Div)
+	GEN(Mod)
+	GEN(DivMod)
 
-	GEN(Minus);
-	GEN(Conv);
-	GEN(Abs);
-	GEN(Not);
+	GEN(Minus)
+	GEN(Conv)
+	GEN(Abs)
+	GEN(Not)
 
-	GEN(Load);
-	GEN(Store);
-	GEN(Cond);
+	GEN(Load)
+	GEN(Store)
+	GEN(Cond)
 
-	GEN(Cmp);
-	GEN(ASM);
-	GEN(CopyB);
-	GEN(Mux);
-	GEN(Proj);
-	GEN(Phi);
-	GEN(Jmp);
-	GEN(IJmp);
-	GEN(Bound);
+	GEN(Cmp)
+	GEN(ASM)
+	GEN(CopyB)
+	GEN(Mux)
+	GEN(Proj)
+	GEN(Phi)
+	GEN(Jmp)
+	GEN(IJmp)
+	GEN(Bound)
 
 	/* transform ops from intrinsic lowering */
-	GEN(ia32_l_Add);
-	GEN(ia32_l_Adc);
-	GEN(ia32_l_Mul);
-	GEN(ia32_l_IMul);
-	GEN(ia32_l_ShlDep);
-	GEN(ia32_l_ShrDep);
-	GEN(ia32_l_SarDep);
-	GEN(ia32_l_ShlD);
-	GEN(ia32_l_ShrD);
-	GEN(ia32_l_Sub);
-	GEN(ia32_l_Sbb);
-	GEN(ia32_l_LLtoFloat);
-	GEN(ia32_l_FloattoLL);
+	GEN(ia32_l_Add)
+	GEN(ia32_l_Adc)
+	GEN(ia32_l_Mul)
+	GEN(ia32_l_IMul)
+	GEN(ia32_l_ShlDep)
+	GEN(ia32_l_ShrDep)
+	GEN(ia32_l_SarDep)
+	GEN(ia32_l_ShlD)
+	GEN(ia32_l_ShrD)
+	GEN(ia32_l_Sub)
+	GEN(ia32_l_Sbb)
+	GEN(ia32_l_LLtoFloat)
+	GEN(ia32_l_FloattoLL)
 
-	GEN(Const);
-	GEN(SymConst);
-	GEN(Unknown);
+	GEN(Const)
+	GEN(SymConst)
+	GEN(Unknown)
 
 	/* we should never see these nodes */
-	BAD(Raise);
-	BAD(Sel);
-	BAD(InstOf);
-	BAD(Cast);
-	BAD(Free);
-	BAD(Tuple);
-	BAD(Id);
-	//BAD(Bad);
-	BAD(Confirm);
-	BAD(Filter);
-	BAD(CallBegin);
-	BAD(EndReg);
-	BAD(EndExcept);
+	BAD(Raise)
+	BAD(Sel)
+	BAD(InstOf)
+	BAD(Cast)
+	BAD(Free)
+	BAD(Tuple)
+	BAD(Id)
+	//BAD(Bad)
+	BAD(Confirm)
+	BAD(Filter)
+	BAD(CallBegin)
+	BAD(EndReg)
+	BAD(EndExcept)
 
 	/* handle builtins */
-	GEN(Builtin);
+	GEN(Builtin)
 
 	/* handle generic backend nodes */
-	GEN(be_FrameAddr);
-	GEN(be_Call);
-	GEN(be_IncSP);
-	GEN(be_Return);
-	GEN(be_AddSP);
-	GEN(be_SubSP);
-	GEN(be_Copy);
+	GEN(be_FrameAddr)
+	GEN(be_Call)
+	GEN(be_IncSP)
+	GEN(be_Return)
+	GEN(be_AddSP)
+	GEN(be_SubSP)
+	GEN(be_Copy)
 
 #undef GEN
 #undef BAD

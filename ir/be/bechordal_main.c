@@ -53,6 +53,7 @@
 #include "debug.h"
 #include "execfreq.h"
 #include "iredges_t.h"
+#include "error.h"
 
 #include "bechordal_t.h"
 #include "beabi.h"
@@ -143,10 +144,13 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 	&options.vrfy_option, be_ch_vrfy_items
 };
 
+static char minir_file[256] = "";
+
 static const lc_opt_table_entry_t be_chordal_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_PTR ("verify",        "verify options", &be_ch_vrfy_var),
+	LC_OPT_ENT_STR      ("minirout",      "dump MinIR to file", minir_file, sizeof(minir_file)),
 	LC_OPT_LAST
 };
 
@@ -336,6 +340,24 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		}
 
 		be_timer_push(T_RA_COPYMIN);
+		if (minir_file[0] != '\0') {
+			extern void be_export_minir(const arch_env_t *arch_env, FILE *out,
+			                            ir_graph *irg);
+			FILE *out;
+
+			if (strcmp(minir_file, "-") == 0) {
+				out = stdout;
+			} else {
+				out = fopen(minir_file, "w");
+				if (out == NULL) {
+					panic("Cound't open minir output '%s'", minir_file);
+				}
+			}
+
+			be_export_minir(chordal_env->birg->main_env->arch_env, out, irg);
+			if (out != stdout)
+				fclose(out);
+		}
 		co_driver(chordal_env);
 		be_timer_pop(T_RA_COPYMIN);
 

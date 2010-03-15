@@ -1046,7 +1046,6 @@ static void emit_ia32_Jcc(const ir_node *node)
 	int            need_parity_label = 0;
 	const ir_node *proj_true;
 	const ir_node *proj_false;
-	const ir_node *block;
 	pn_Cmp         pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, 0, pnc);
@@ -1057,8 +1056,6 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 	proj_false = get_proj(node, pn_ia32_Jcc_false);
 	assert(proj_false && "Jcc without false Proj");
-
-	block      = get_nodes_block(node);
 
 	if (can_be_fallthrough(proj_true)) {
 		/* exchange both proj's so the second one can be omitted */

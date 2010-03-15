@@ -390,7 +390,6 @@ default_code:
 		}
 
 		panic(" not implemented: %+F", n);
-		break;
 	} /* end switch */
 
 	return tp;

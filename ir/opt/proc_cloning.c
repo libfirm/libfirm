@@ -459,7 +459,6 @@ static ir_entity *clone_method(quadruple_t *q)
 static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
 {
 	ir_node **in;
-	ir_type *mtp;
 	int i, n_params, new_params = 0;
 	ir_node *callee;
 	symconst_symbol sym;
@@ -469,7 +468,6 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
 	sym.entity_p = new_entity;
 	callee = new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);
 
-	mtp      = get_entity_type(new_entity);
 	n_params = get_Call_n_params(call);
 	NEW_ARR_A(ir_node *, in, n_params - 1);
 

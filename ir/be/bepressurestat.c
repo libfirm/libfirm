@@ -141,7 +141,7 @@ void be_analyze_regpressure(be_irg_t *birg, const arch_register_class_t *cls, co
 	irg_block_walk_graph(irg, regpressureanawalker, NULL, &ra);
 
 	for (i = 0; i <= MAXPRESSURE; ++i) {
-		fprintf(f, "%d\n", stat[i]);
+		fprintf(f, "%u\n", stat[i]);
 	}
 
 	fclose(f);

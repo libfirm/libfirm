@@ -226,7 +226,8 @@ double gs_matrix_get(const gs_matrix_t *m, int row, int col)
 		return the_row->diag != 0.0 ? 1.0 / the_row->diag : 0.0;
 
 	// Search for correct column
-	for (c = 0; c < the_row->n_cols && the_row->cols[c].col_idx < col; ++c);
+	for (c = 0; c < the_row->n_cols && the_row->cols[c].col_idx < col; ++c) {
+	}
 
 	if (c >= the_row->n_cols || the_row->cols[c].col_idx > col)
 		return 0.0;

@@ -26,6 +26,6 @@
 #ifndef FIRM_BE_MIPS_MIPS_UTIL_H
 #define FIRM_BE_MIPS_MIPS_UTIL_H
 
-#define ASSERT_NO_FLOAT(mode) { assert(  (!mode_is_float(mode)) && "floating point not supported (yet)"); }
+#define ASSERT_NO_FLOAT(mode) do { assert(  (!mode_is_float(mode)) && "floating point not supported (yet)"); } while(0)
 
 #endif

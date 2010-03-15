@@ -90,7 +90,7 @@ static void prepare_nodes(ir_node *irn, void *env)
 		firm_alloc_frag_arr(irn, op_Bound, &irn->attr.bound.exc.frag_arr);
 		break;
 	default:
-		;
+		break;
 	}
 }
 

@@ -159,10 +159,6 @@ static int vrp_update_node(ir_node *node)
 
 	case iro_Or: {
 		vrp_attr *vrp_left, *vrp_right;
-		ir_node *left, *right;
-
-		left = get_Or_left(node);
-		right = get_Or_right(node);
 
 		vrp_left = get_vrp_attr(get_Or_left(node));
 		vrp_right = get_vrp_attr(get_Or_right(node));

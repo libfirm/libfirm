@@ -921,7 +921,8 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 		tarval *tv, *ntv;
 		dbg_info *dbg;
 		int n, bits;
-		int k, n_flag;
+		int k;
+		int n_flag = 0;
 
 		if (! is_Const(c))
 			return irn;
@@ -1113,7 +1114,8 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 		tarval *tv, *ntv;
 		dbg_info *dbg;
 		int n, bits;
-		int k, n_flag;
+		int k;
+		int n_flag = 0;
 
 		if (! is_Const(c))
 			return;
