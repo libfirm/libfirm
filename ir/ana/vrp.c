@@ -559,15 +559,15 @@ static void *vrp_init_node(ir_phase *phase, const ir_node *n, void *old)
 	if (mode_is_int(mode)) {
 		/* We are assuming that 0 is always represented as this modes null */
 		vrp->valid = 1;
-		vrp->bits_set =
+		vrp->bits_set = get_mode_null(mode);
 		vrp->bits_not_set = get_mode_null(mode);
-		vrp->range_bottom =
+		vrp->range_bottom = get_tarval_top();
 		vrp->range_top = get_tarval_top();
 	} else {
 		vrp->valid = 0;
-		vrp->bits_set =
-		vrp->bits_not_set =
-		vrp->range_bottom =
+		vrp->bits_set = get_tarval_bad();
+		vrp->bits_not_set = get_tarval_bad();
+		vrp->range_bottom = get_tarval_bad();
 		vrp->range_top = get_tarval_bad();
 	}
 
