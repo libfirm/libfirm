@@ -451,19 +451,17 @@ static inline void rbitset_xor(unsigned *dst, const unsigned *src, unsigned size
 static inline void rbitset_set_range(unsigned *bitset, unsigned from,
                                      unsigned to, bool val)
 {
-	assert(from < to);
-
-    /*
-     * A small example (for cleaning bits in the same unit).
-     * from   = 7
-     * to     = 19
-     * do_set = 0
-     * result:         xxxxxxx000000000000xxxxxxxxxxxxx
-     * from_unit_mask: 00000001111111111111111111111111
-     * to_unit_mask:   11111111111111111110000000000000
-     * scale:          01234567890123456789012345678901
-     *                           1         2         3
-     */
+	/*
+	 * A small example (for cleaning bits in the same unit).
+	 * from   = 7
+	 * to     = 19
+	 * do_set = 0
+	 * result:         xxxxxxx000000000000xxxxxxxxxxxxx
+	 * from_unit_mask: 00000001111111111111111111111111
+	 * to_unit_mask:   11111111111111111110000000000000
+	 * scale:          01234567890123456789012345678901
+	 *                           1         2         3
+	 */
 
 	unsigned from_bit       = from % BITS_PER_ELEM;
 	unsigned from_pos       = from / BITS_PER_ELEM;
@@ -472,6 +470,8 @@ static inline void rbitset_set_range(unsigned *bitset, unsigned from,
 	unsigned to_bit         = to % BITS_PER_ELEM;
 	unsigned to_pos         = to / BITS_PER_ELEM;
 	unsigned to_unit_mask   = (1 << to_bit) - 1;
+
+	assert(from < to);
 
 	/* do we want to set the bits in the range? */
 	if (val) {
