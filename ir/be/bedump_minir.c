@@ -180,10 +180,10 @@ static void print_regclasses(void)
 
 static void dump_block(ir_node *block, void *data)
 {
+	ir_graph *irg = get_irn_irg(block);
 	(void) data;
 
 	block_sequence_item();
-	ir_graph *irg = get_irn_irg(block);
 	if (block == get_irg_start_block(irg)) {
 		key_value("label", "start");
 	} else if (block == get_irg_end_block(irg)) {
