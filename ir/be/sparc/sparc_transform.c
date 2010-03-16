@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -71,7 +71,7 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 	ir_node *result;
 
 	// TODO: find a better solution for this
-	if (value < -4096 || value > 4096) {
+	if (value < -4096 || value > 4095) {
 		panic("FIXME: immediate value exceeds max. size of simm13 (13 bits signed)");
 	}
 
@@ -124,7 +124,7 @@ static bool is_imm_encodeable(const ir_node *node)
 
 	val = get_tarval_long(get_Const_tarval(node));
 
-	return !(val < -4096 || val > 4096);
+	return !(val < -4096 || val > 4095);
 }
 
 /**
