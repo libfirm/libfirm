@@ -1056,7 +1056,6 @@ void set_class_size(ir_type *tp, unsigned size)
 ir_type *new_d_type_struct(ident *name, type_dbg_info *db)
 {
 	ir_type *res = new_type(type_struct, NULL, db);
-	assert(name != NULL);
 	res->name = name;
 
 	res->attr.sa.members = NEW_ARR_F(ir_entity *, 0);
