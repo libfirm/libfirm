@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief    declarations for emit functions
- * @version  $Id: TEMPLATE_emitter.h 26317 2009-08-05 10:53:46Z matze $
+ * @version  $Id$
  */
 #ifndef FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
 #define FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H

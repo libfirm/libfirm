@@ -21,7 +21,7 @@
  * @file
  * @brief   Register mapping for firm nodes. Stolen from bearch_firm :)
  * @author  Hannes Rapp
- * @version $Id: sparc_map_regs.c 22754 2008-10-11 20:49:37Z matze $
+ * @version $Id$
  */
 #include "config.h"
 

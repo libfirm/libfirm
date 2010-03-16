@@ -21,7 +21,7 @@
  * @file
  * @brief  declarations for SPARC register allocation
  * @author Hannes Rapp
- * @version $Id: sparc_map_regs.h 26317 2009-08-05 10:53:46Z matze $
+ * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_SPARC_MAP_REGS_H
 #define FIRM_BE_SPARC_SPARC_MAP_REGS_H

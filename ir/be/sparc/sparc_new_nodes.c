@@ -22,7 +22,7 @@
  * @brief   This file implements the creation of the achitecture specific firm
  *          opcodes and the coresponding node constructors for the sparc
  *          assembler irg.
- * @version $Id: TEMPLATE_new_nodes.c 26673 2009-10-01 16:43:13Z matze $
+ * @version $Id$
  */
 #include "config.h"
 

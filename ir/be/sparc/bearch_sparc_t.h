@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   declarations for SPARC backend -- private header
- * @version $Id: bearch_TEMPLATE_t.h 26542 2009-09-18 09:18:32Z matze $
+ * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_BEARCH_TEMPLATE_T_H
 #define FIRM_BE_SPARC_BEARCH_TEMPLATE_T_H

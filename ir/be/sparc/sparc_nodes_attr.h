@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   attributes attached to all sparc nodes
- * @version $Id: TEMPLATE_nodes_attr.h 26317 2009-08-05 10:53:46Z matze $
+ * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 #define FIRM_BE_SPARC_SPARC_NODES_ATTR_H

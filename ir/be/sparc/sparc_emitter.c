@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   emit assembler for a backend graph
- * @version $Id: sparc_emitter.c 26542 2009-09-18 09:18:32Z matze $
+ * @version $Id$
  */
 #include "config.h"
 

@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief    The main sparc backend driver file.
- * @version  $Id: bearch_TEMPLATE.c 26673 2009-10-01 16:43:13Z matze $
+ * @version  $Id$
  */
 
 #include "config.h"

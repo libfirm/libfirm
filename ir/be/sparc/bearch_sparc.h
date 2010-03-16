@@ -21,7 +21,7 @@
  * @file
  * @brief   declarations for arm backend
  * @author  Hannes Rapp
- * @version $Id: bearch_arm.h 26317 2009-08-05 10:53:46Z matze $
+ * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_BEARCH_SPARC_H
 #define FIRM_BE_SPARC_BEARCH_SPARC_H

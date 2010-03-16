@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   Function prototypes for the assembler ir node constructors.
- * @version $Id: TEMPLATE_new_nodes.h 26549 2009-09-18 17:48:23Z matze $
+ * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_SPARC_NEW_NODES_H
 #define FIRM_BE_SPARC_SPARC_NEW_NODES_H

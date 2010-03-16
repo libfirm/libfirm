@@ -1,5 +1,5 @@
 # Creation: 2006/02/13
-# $Id: TEMPLATE_spec.pl 24066 2008-11-27 14:51:14Z mallon $
+# $Id$
 # This is a template specification for the Firm-Backend
 
 $new_emit_syntax = 1;
