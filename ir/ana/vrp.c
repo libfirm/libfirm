@@ -338,33 +338,19 @@ static int vrp_update_node(ir_node *node)
 		pn_Cmp cmp = get_Confirm_cmp(node);
 		ir_node *bound = get_Confirm_bound(node);
 
-		/** @todo: Handle non-Const bounds */
 
 		if (cmp == pn_Cmp_Lg) {
-			/** @todo: Is there some way to preserve the information? */
-			new_range_type = VRP_ANTIRANGE;
+			/** @todo: Handle non-Const bounds */
 			if (is_Const(bound)) {
+				new_range_type = VRP_ANTIRANGE;
 				new_range_top = get_Const_tarval(bound);
 				new_range_bottom = get_Const_tarval(bound);
 			}
 		} else if (cmp == pn_Cmp_Le) {
-			if (vrp->range_type == VRP_UNDEFINED) {
+			if (is_Const(bound)) {
 				new_range_type = VRP_RANGE;
-				if (is_Const(bound)) {
-					new_range_top = get_Const_tarval(bound);
-				}
+				new_range_top = get_Const_tarval(bound);
 				new_range_bottom = get_tarval_min(get_irn_mode(node));
-			} else if (vrp->range_type == VRP_RANGE) {
-				if (is_Const(bound)) {
-					if (tarval_cmp(vrp->range_top,
-								get_Const_tarval(bound)) == pn_Cmp_Le) {
-						new_range_top = get_Const_tarval(bound);
-					}
-					new_range_bottom = get_tarval_min(get_irn_mode(node));
-
-				} else if (vrp->range_type == VRP_ANTIRANGE) {
-					/** @todo: How do we manage not to get a never ending loop? */
-				}
 			}
 		}
 		break;
