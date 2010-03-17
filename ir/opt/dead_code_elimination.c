@@ -124,7 +124,10 @@ static void copy_graph_env(ir_graph *irg)
 		if (old_ph == NULL)
 			continue;
 
-		phase_free(old_ph);
+		/* Matze: commented out for now: This is a memory leak, but for a real
+		 * fix we must not create new phases here, but reuse the old phases
+		 * and just create a new data array */
+		/* phase_free(old_ph); */
 		irg->phases[i] = new_phases[i];
 	}
 }
