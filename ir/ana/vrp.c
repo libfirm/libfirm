@@ -81,8 +81,8 @@ static int vrp_update_node(ir_node *node)
 		break;
 	}
 	case iro_And: {
-		vrp_attr *vrp_left, *vrp_right;
-		ir_node *left, *right;
+		const vrp_attr *vrp_left, *vrp_right;
+		const ir_node *left, *right;
 
 		left = get_And_left(node);
 		right = get_And_right(node);
@@ -97,7 +97,7 @@ static int vrp_update_node(ir_node *node)
 	case iro_Add: {
 		int overflow_top, overflow_bottom;
 		tarval *new_top, *new_bottom;
-		vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left, *vrp_right;
 		vrp_left = get_vrp_attr(get_Add_left(node));
 		vrp_right = get_vrp_attr(get_Add_right(node));
 
@@ -129,7 +129,7 @@ static int vrp_update_node(ir_node *node)
 	case iro_Sub: {
 		int overflow_top, overflow_bottom;
 		tarval *new_top, *new_bottom;
-		vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left, *vrp_right;
 		vrp_left = get_vrp_attr(get_Sub_left(node));
 		vrp_right = get_vrp_attr(get_Sub_right(node));
 
@@ -158,7 +158,7 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Or: {
-		vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left, *vrp_right;
 
 		vrp_left = get_vrp_attr(get_Or_left(node));
 		vrp_right = get_vrp_attr(get_Or_right(node));
@@ -170,8 +170,8 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Rotl: {
-		vrp_attr *vrp_left, *vrp_right;
-		ir_node *right = get_Rotl_right(node);
+		const vrp_attr *vrp_left, *vrp_right;
+		const ir_node *right = get_Rotl_right(node);
 
 		vrp_left = get_vrp_attr(get_Rotl_left(node));
 		vrp_right = get_vrp_attr(get_Rotl_right(node));
@@ -186,8 +186,8 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Shl: {
-		vrp_attr *vrp_left, *vrp_right;
-		ir_node *right = get_Shl_right(node);
+		const vrp_attr *vrp_left, *vrp_right;
+		const ir_node *right = get_Shl_right(node);
 		vrp_left = get_vrp_attr(get_Shl_left(node));
 		vrp_right = get_vrp_attr(get_Shl_right(node));
 
@@ -200,8 +200,8 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Shr: {
-		vrp_attr *vrp_left, *vrp_right;
-		ir_node *right = get_Shr_right(node);
+		const vrp_attr *vrp_left, *vrp_right;
+		const ir_node *right = get_Shr_right(node);
 
 		vrp_left = get_vrp_attr(get_Shr_left(node));
 		vrp_right = get_vrp_attr(get_Shr_right(node));
@@ -215,8 +215,8 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Shrs: {
-		vrp_attr *vrp_left, *vrp_right;
-		ir_node *right = get_Shrs_right(node);
+		const vrp_attr *vrp_left, *vrp_right;
+		const ir_node *right = get_Shrs_right(node);
 
 		vrp_left = get_vrp_attr(get_Shrs_left(node));
 		vrp_right = get_vrp_attr(get_Shrs_right(node));
@@ -230,7 +230,7 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Eor: {
-		vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left, *vrp_right;
 
 		vrp_left = get_vrp_attr(get_Eor_left(node));
 		vrp_right = get_vrp_attr(get_Eor_right(node));
@@ -248,7 +248,7 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Id: {
-		vrp_attr *vrp_pred = get_vrp_attr(get_Id_pred(node));
+		const vrp_attr *vrp_pred = get_vrp_attr(get_Id_pred(node));
 		new_bits_set = vrp_pred->bits_set;
 		new_bits_not_set = vrp_pred->bits_not_set;
 		new_range_top = vrp_pred->range_top;
@@ -258,16 +258,16 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Not: {
-		vrp_attr *vrp_pred = get_vrp_attr(get_Not_op(node));
+		const vrp_attr *vrp_pred = get_vrp_attr(get_Not_op(node));
 		new_bits_set = tarval_not(vrp_pred->bits_not_set);
 		new_bits_not_set = tarval_not(vrp_pred->bits_set);
 		break;
 	}
 
 	case iro_Conv: {
-		ir_node *pred = get_Conv_op(node);
+		const ir_node *pred = get_Conv_op(node);
 		ir_mode *old_mode = get_irn_mode(pred);
-		vrp_attr *vrp_pred = get_vrp_attr(pred);
+		const vrp_attr *vrp_pred = get_vrp_attr(pred);
 
 		ir_mode *new_mode;
 
@@ -293,8 +293,8 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Confirm: {
-		pn_Cmp cmp = get_Confirm_cmp(node);
-		ir_node *bound = get_Confirm_bound(node);
+		const pn_Cmp cmp = get_Confirm_cmp(node);
+		const ir_node *bound = get_Confirm_bound(node);
 
 
 		if (cmp == pn_Cmp_Lg) {
@@ -321,8 +321,8 @@ static int vrp_update_node(ir_node *node)
 		pn_Cmp cmp;
 		int i;
 
-		ir_node *pred = get_Phi_pred(node,0);
-		vrp_attr *vrp_pred = get_vrp_attr(pred);
+		const ir_node *pred = get_Phi_pred(node,0);
+		const vrp_attr *vrp_pred = get_vrp_attr(pred);
 		new_range_top = vrp_pred->range_top;
 		new_range_bottom = vrp_pred->range_bottom;
 		new_range_type = vrp_pred->range_type;
