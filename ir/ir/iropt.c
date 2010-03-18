@@ -697,8 +697,7 @@ static tarval *computed_value_Proj(const ir_node *proj)
 tarval *computed_value(const ir_node *n)
 {
 	vrp_attr *vrp = vrp_get_info(n);
-	if (vrp && tarval_is_all_one(
-				tarval_or(vrp->bits_set, vrp->bits_not_set))) {
+	if (vrp && vrp->valid && tarval_cmp(vrp->bits_set, vrp->bits_not_set) == pn_Cmp_Eq) {
 		return vrp->bits_set;
 	}
 	if (n->op->ops.computed_value)
@@ -2424,8 +2423,8 @@ static ir_node *transform_node_Add(ir_node *n)
 
 	if (a_vrp && b_vrp) {
 		tarval *c = tarval_and(
-					tarval_not(a_vrp->bits_not_set),
-					tarval_not(b_vrp->bits_not_set)
+					a_vrp->bits_not_set,
+					b_vrp->bits_not_set
 					);
 
 		if (tarval_is_null(c)) {
@@ -3596,17 +3595,17 @@ static ir_node *transform_node_And(ir_node *n)
 	}
 
 	b_vrp = vrp_get_info(b);
-	if (b_vrp && is_Const(a) &&
-	    (tarval_is_all_one(tarval_or(get_Const_tarval(a), b_vrp->bits_not_set)))) {
+	if (is_Const(a) && b_vrp && (tarval_cmp(tarval_or(get_Const_tarval(a),
+						b_vrp->bits_not_set), get_Const_tarval(a)) == pn_Cmp_Eq)) {
+
 		return b;
 
 	}
 
 	a_vrp = vrp_get_info(a);
-	if (a_vrp &&is_Const(b) &&
-	    (tarval_is_all_one(tarval_or(get_Const_tarval(b), a_vrp->bits_not_set)))) {
+	if (is_Const(b) && a_vrp && (tarval_cmp(tarval_or(get_Const_tarval(b),
+						a_vrp->bits_not_set), get_Const_tarval(b)) == pn_Cmp_Eq)) {
 		return a;
-
 	}
 
 	n = transform_bitwise_distributive(n, transform_node_And);
@@ -4104,16 +4103,16 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 						pn_Cmp cmp_result = tarval_cmp(b_vrp->range_bottom, tp);
 						pn_Cmp cmp_result2 = tarval_cmp(b_vrp->range_top, tp);
 
-						if ((cmp_result & pn_Cmp_Lt) == cmp_result && (cmp_result2
-									& pn_Cmp_Gt) == cmp_result2) {
+						if ((cmp_result & pn_Cmp_Gt) == cmp_result && (cmp_result2
+									& pn_Cmp_Lt) == cmp_result2) {
 							return get_irg_bad(current_ir_graph);
 						}
 					} else if (b_vrp->range_type == VRP_ANTIRANGE) {
 						pn_Cmp cmp_result = tarval_cmp(b_vrp->range_bottom, tp);
 						pn_Cmp cmp_result2 = tarval_cmp(b_vrp->range_top, tp);
 
-						if ((cmp_result & pn_Cmp_Ge) == cmp_result && (cmp_result2
-									& pn_Cmp_Le) == cmp_result2) {
+						if ((cmp_result & pn_Cmp_Le) == cmp_result && (cmp_result2
+									& pn_Cmp_Ge) == cmp_result2) {
 							return get_irg_bad(current_ir_graph);
 						}
 					}
@@ -4129,8 +4128,8 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 					if (!(tarval_cmp(
 									tarval_and(
 										tarval_not(tp),
-										b_vrp->bits_not_set),
-									b_vrp->bits_not_set)
+										tarval_not(b_vrp->bits_not_set)),
+									tarval_not(b_vrp->bits_not_set))
 									 == pn_Cmp_Eq)) {
 
 						return get_irg_bad(current_ir_graph);
