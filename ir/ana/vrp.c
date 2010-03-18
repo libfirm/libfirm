@@ -230,7 +230,6 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Eor: {
-		tarval *bits_set, *bits_not_set;
 		vrp_attr *vrp_left, *vrp_right;
 
 		vrp_left = get_vrp_attr(get_Eor_left(node));
