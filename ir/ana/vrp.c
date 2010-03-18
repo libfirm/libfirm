@@ -375,6 +375,23 @@ static int vrp_update_node(ir_node *node)
 	is_SymConst(node) is_Sync(node) is_Tuple(node)
 	*/
 
+	/* @todo: At this place, we check if the mode of the variable changed. A
+	 * better place for this might be in the convopt.c file
+	 */
+
+	if (new_bits_set != tarval_bad && get_tarval_mode(new_bits_set) != get_tarval_mode(vrp->bits_set)) {
+		vrp->bits_set = tarval_convert_to(vrp->bits_set, get_irn_mode(node));
+	}
+	if (new_bits_not_set != tarval_bad && get_tarval_mode(new_bits_not_set) != get_tarval_mode(vrp->bits_not_set)) {
+		vrp->bits_not_set = tarval_convert_to(vrp->bits_not_set, get_irn_mode(node));
+	}
+
+	if (vrp->range_type != VRP_UNDEFINED && new_range_type != VRP_UNDEFINED && get_tarval_mode(new_range_top) != get_tarval_mode(vrp->range_top)) {
+		/* @todo: We might be able to preserve this range information if it
+		 * fits in */
+		vrp->range_type = VRP_VARYING;
+	}
+
 	/* Merge the newly calculated values with those that might already exist*/
 	if (new_bits_set != tarval_bad) {
 		new_bits_set = tarval_or(new_bits_set, vrp->bits_set);
