@@ -279,8 +279,6 @@ static int vrp_update_node(ir_node *node)
 						tarval_and(vrp_left->bits_set, vrp_right->bits_not_set),
 						tarval_and(vrp_left->bits_not_set, vrp_right->bits_set));
 
-		new_bits_set = tarval_or(bits_set, vrp->bits_set);
-		new_bits_not_set = tarval_or(bits_not_set, vrp->bits_not_set);
 		break;
 	}
 
