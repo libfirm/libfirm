@@ -134,7 +134,8 @@ static int vrp_update_node(ir_node *node)
 		vrp_right = get_vrp_attr(get_Sub_right(node));
 
 		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
-				VRP_UNDEFINED) {
+				VRP_UNDEFINED || vrp_left->range_type == VRP_VARYING ||
+				vrp_right->range_type == VRP_VARYING) {
 			return 0;
 		}
 
@@ -331,7 +332,6 @@ static int vrp_update_node(ir_node *node)
 
 		assert(num > 0);
 
-
 		for (i = 1; i < num; i++) {
 			pred = get_Phi_pred(node, i);
 			vrp_pred = get_vrp_attr(pred);
@@ -471,11 +471,12 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 	vrp_update_node(n);
 
+	assure_irg_outs(get_current_ir_graph());
 	for (i = get_irn_n_outs(n) - 1; i >=0; --i) {
 		succ =  get_irn_out(n, i);
 		if (get_irn_link(succ) == VISITED) {
 			/* we found a loop*/
-			waitq_put(env->workqueue, n);
+			waitq_put(env->workqueue, succ);
 		}
 	}
 }
@@ -608,5 +609,10 @@ vrp_attr *vrp_get_info(const ir_node *node)
 		return NULL;
 	}
 
-	return phase_get_irn_data(phase, node);
+
+	vrp_attr *vrp = phase_get_irn_data(phase, node);
+	if (vrp && vrp->valid) {
+		return vrp;
+	}
+	return NULL;
 }
