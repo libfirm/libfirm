@@ -37,13 +37,14 @@
 #include "irop.h"
 #include "pdeq.h"
 #include "irphase_t.h"
-#include "irprintf.h"
+#include "debug.h"
 
 static char v;
 static void *VISITED = &v;
 
 struct vrp_env_t {
 	waitq *workqueue;
+	DEBUG_ONLY(firm_dbg_module_t *dbg);
 };
 
 static vrp_attr *get_vrp_attr(const ir_node *node)
@@ -65,7 +66,6 @@ static int vrp_update_node(ir_node *node)
 		return 0; /* we don't optimize for non-int-nodes*/
 	}
 
-	ir_printf("update_vrp for %d called\n", get_irn_node_nr(node));
 	vrp = get_vrp_attr(node);
 
 	/* TODO: Check if all predecessors have valid VRP information*/
@@ -485,11 +485,10 @@ static void *vrp_init_node(ir_phase *phase, const ir_node *n, void *old)
 {
 	ir_mode *mode;
 	vrp_attr *vrp;
+	struct vrp_env_t *env = phase->priv;
 
-	ir_printf("initialized node nr: %d\n", get_irn_node_nr(n));
-	if (old) {
-		assert(1==0 && "init called for node already initialized");
-	}
+	DBG((env->dbg, LEVEL_2, "initialized node nr: %d\n", get_irn_node_nr(n)));
+	assert(old==NULL && "init called for node already initialized");
 	vrp = phase_alloc(phase, sizeof(vrp_attr));
 
 	memset(vrp, 0, sizeof(vrp_attr));
@@ -540,6 +539,7 @@ void set_vrp_data(ir_graph *irg)
 		phase = new_phase(irg, vrp_init_node);
 		irg_register_phase(irg, PHASE_VRP, phase);
 		env = phase_alloc(phase, sizeof(*env));
+		FIRM_DBG_REGISTER(env->dbg, "ir.ana.vrp");
 		phase->priv = env;
 	} else {
 		env = phase->priv;
