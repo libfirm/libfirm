@@ -128,7 +128,7 @@ void fill_node_buckets(pbqp *pbqp)
 	#endif
 }
 
-static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
+static void normalize_towards_source(pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
 	pbqp_node      *src_node;
@@ -139,7 +139,6 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 	int             tgt_len;
 	int             src_index;
 
-	assert(pbqp);
 	assert(edge);
 
 	src_node = edge->src;
@@ -188,7 +187,7 @@ static void normalize_towards_source(pbqp *pbqp, pbqp_edge *edge)
 	}
 }
 
-static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
+static void normalize_towards_target(pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
 	pbqp_node      *src_node;
@@ -199,7 +198,6 @@ static void normalize_towards_target(pbqp *pbqp, pbqp_edge *edge)
 	int             tgt_len;
 	int             tgt_index;
 
-	assert(pbqp);
 	assert(edge);
 
 	src_node = edge->src;
@@ -421,8 +419,8 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	}
 #endif
 
-	normalize_towards_source(pbqp, edge);
-	normalize_towards_target(pbqp, edge);
+	normalize_towards_source(edge);
+	normalize_towards_target(edge);
 
 #if	KAPS_DUMP
 	if (pbqp->dump_file) {
@@ -730,6 +728,7 @@ void apply_RI(pbqp *pbqp)
 	int          is_src     = edge->src == node;
 	pbqp_node   *other_node;
 
+	(void ) pbqp;
 	assert(pbqp_node_get_degree(node) == 1);
 
 	if (is_src) {
@@ -753,10 +752,10 @@ void apply_RI(pbqp *pbqp)
 
 	if (is_src) {
 		pbqp_matrix_add_to_all_cols(mat, node->costs);
-		normalize_towards_target(pbqp, edge);
+		normalize_towards_target(edge);
 	} else {
 		pbqp_matrix_add_to_all_rows(mat, node->costs);
-		normalize_towards_source(pbqp, edge);
+		normalize_towards_source(edge);
 	}
 	disconnect_edge(other_node, edge);
 
