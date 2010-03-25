@@ -140,6 +140,21 @@ AC_C_INLINE
 AC_C_BIGENDIAN(,,,)
 AC_C_LONG_DOUBLE
 
+dnl Checks for library functions.
+dnl =============================
+
+dnl check for strerror
+
+AC_CHECK_FUNC(strerror,,
+  AC_MSG_ERROR("need strerror function")
+)
+
+dnl we use the gnu extension obstack_printf
+AC_DEFINE([_GNU_SOURCE], [], [we use gnu extensions])
+AC_CHECK_FUNC(strerror,,
+  AC_MSG_ERROR("need obstack_printf function")
+)
+
 dnl Error messaging
 dnl ===============
 
