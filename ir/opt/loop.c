@@ -73,6 +73,7 @@ typedef unsigned walker_condition(ir_node *);
 typedef struct out_edge {
 	ir_node *node;
 	int pos;
+	ir_node *pred;
 } out_edge;
 
 /**/
@@ -132,11 +133,13 @@ static ir_phase *phase;
 
 
 
-/* TODO */
+/*  */
 static unsigned head_inversion_node_count;
 static unsigned inversion_head_node_limit;
 static unsigned head_inversion_block_count;
 
+/* As the preconditions are the same, these flags,
+ * set depending on which function called, are used to determine what to do. */
 static unsigned enable_peeling;
 static unsigned enable_inversion;
 static unsigned enable_unrolling;
@@ -306,45 +309,52 @@ static int get_loop_n_blocks(ir_loop *loop)
 	return blocks;
 }
 
-/* */
-static void extend_ins_by_copy(ir_node *block, int pos)
+/**/
+static int extend_irn(ir_node *n, ir_node *new)
 {
 	ir_node **ins;
-	ir_node *phi;
 	int i;
-	int arity = get_irn_arity(block);
+	int arity = get_irn_arity(n);
 	int new_arity = arity + 1;
-	assert(is_Block(block));
 
 	NEW_ARR_A(ir_node *, ins, new_arity);
 
-	/* Extend block by copy of definition at pos */
 	for(i = 0; i < arity; ++i) {
-		ins[i] = get_irn_n(block, i);
+		ins[i] = get_irn_n(n, i);
 	}
-	ins[i] = get_inversion_copy(get_irn_n(block, pos));
+	ins[i] = new;
 
-	DB((dbg, LEVEL_5, "Extend block %N by %N\n", block, ins[i]));
+	set_irn_in(n, new_arity, ins);
+	/* arity equals the position of the new node */
+	return arity;
+}
 
-	/* Fixes backedges. We rely on correct backedges. */
-	set_irn_in(block, new_arity, ins);
+/* */
+static void extend_ins_by_copy(ir_node *block, int pos)
+{
+	ir_node *new_in;
+	ir_node *phi;
+	assert(is_Block(block));
+
+	/* Extend block by copy of definition at pos */
+	new_in = get_inversion_copy(get_irn_n(block, pos));
+	extend_irn(block, new_in);
 
 	/* Extend block phis by copy of definition at pos */
 	for_each_phi(block, phi) {
-		ir_node *cp, *pred;
-		for(i = 0; i < arity; ++i)
-			ins[i] = get_irn_n(phi, i);
+		ir_node *pred, *cp;
+
 		pred = get_irn_n(phi, pos);
 		cp = get_inversion_copy(pred);
 		/* If the phis in is not in the condition chain (eg. a constant),
 		 * there is no copy. */
 		if (cp == NULL)
-			ins[i] = pred;
+			new_in = pred;
 		else
-			ins[i] = cp;
+			new_in = cp;
 
-		DB((dbg, LEVEL_5, "Extend phi %N by %N\n", phi, ins[i]));
-		set_irn_in(phi, new_arity, ins);
+		DB((dbg, LEVEL_5, "Extend phi %N by %N\n", phi, new_in));
+		extend_irn(phi, new_in);
 	}
 }
 
@@ -554,7 +564,9 @@ static void get_loop_info(ir_node *node, void *env)
 		}
 	}
 }
-/**/
+
+#if 0
+/*  */
 static void correct_phis(ir_node *node, void *env)
 {
 	(void)env;
@@ -574,6 +586,7 @@ static void correct_phis(ir_node *node, void *env)
 
 
 }
+#endif
 
 /* Adds all nodes pointing into the loop to loop_entries and also finds the loops head */
 static void get_loop_outs(ir_node *node, void *env)
@@ -663,7 +676,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 
-
 	/* Important: always keep block phi list up to date. */
 	add_Block_phi(block, phi);
 
@@ -683,6 +695,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode)
 		DB((dbg, LEVEL_5, "ssa phi pred:phi %N, pred %N\n", phi, pred_val));
 		set_irn_n(phi, i, pred_val);
 	}
+
 	return phi;
 }
 
@@ -738,7 +751,10 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 			newval = search_def_and_create_phis(user_block, mode);
 		}
 
-		/* If we get a bad node the user keeps the original in. No second definition needed. */
+		assert(!is_Bad(newval));
+
+		/* If we get a bad node the user keeps the original in.
+		 * No second definition needed. */
 		if (newval != user && !is_Bad(newval))
 			set_irn_n(user, j, newval);
 	}
@@ -774,7 +790,6 @@ static ir_node *construct_ssa_n(ir_node *def, ir_node *user, int copies)
 		DB((dbg, LEVEL_5, "ssa mark cp %N of def %N  usr %N\n", cp, def, user));
 	}
 
-	/* TODO BUG BUG */
 	newval = user;
 	user_arity = get_irn_arity(user);
 	for (i = 0; i < user_arity; ++i) {
@@ -865,6 +880,7 @@ static ir_node *copy_node_inversion(ir_node *node)
  * This walker copies all walked nodes.
  * If the walk_condition is true for a node, it is copied.
  * All nodes node_info copy attributes have to be NULL prior to every walk.
+ * TODO temporary nodes not necessary anymore.
  */
 static void copy_walk(ir_node *node, walker_condition *walk_condition,
 		ir_loop *set_loop)
@@ -967,11 +983,9 @@ static ir_node *copy_node_changed(
 			arity,
 			ins);
 
-	/* By any means, keep the blocks phi list up-to-date,
-	   because regaining it would destroy the links. */
 	if (is_Phi(cp))
 		add_Block_phi(block, cp);
-/* TODO */
+	/* TODO */
 	if (get_irn_op(node) == get_irn_op(cp))
 		copy_node_attr(get_irn_irg(node), node, cp);
 
@@ -1138,7 +1152,6 @@ static void get_head_outs(ir_node *node, void *env)
 		/* node is not in the head, but the predecessor is.
 		 * (head or loop chain nodes are marked) */
 
-		DB((dbg, LEVEL_5, "... "));
 		DB((dbg, LEVEL_5, "node %N  marked %d (0)  pred %d marked %d (1) \n",
 					node, is_nodes_block_marked(node), i,
 					is_nodes_block_marked(get_irn_n(node, i))));
@@ -1147,6 +1160,7 @@ static void get_head_outs(ir_node *node, void *env)
 			out_edge entry;
 			entry.node = node;
 			entry.pos = i;
+			entry.pred = get_irn_n(node, i);
 			ARR_APP1(out_edge, cur_head_outs, entry);
 
 			if (is_in_loop(node) && is_Block(node)) {
@@ -1155,6 +1169,34 @@ static void get_head_outs(ir_node *node, void *env)
 			}
 		}
 	}
+#if 0
+	if (is_Phi(node) && get_nodes_block(node) == loop_head)
+	{
+		unsigned needs_ssa = 1;
+		unsigned loop_invar = 1;
+		for (i = 0; i < arity; ++i) {
+			if (is_own_backedge(node, i)) {
+				if (get_irn_n(node, i) != node)
+					loop_invar = 0;
+
+				if (is_nodes_block_marked(get_irn_n(node, i)))
+					needs_ssa = 0;
+			}
+		}
+		/* Construct ssa for all uses of this phi, as there will be a copy of it. */
+		if(needs_ssa && !loop_invar) {
+			const ir_edge_t *edge;
+			DB((dbg, LEVEL_5, "NEEDS SSA users of phi %N\n", node));
+			foreach_out_edge(node, edge) {
+				out_edge entry;
+				entry.node = get_edge_src_irn(edge);
+				DB((dbg, LEVEL_5, "NEEDS SSA user %N\n", entry.node));
+				entry.pos = get_edge_src_pos(edge);
+				ARR_APP1(out_edge, cur_head_outs, entry);
+			}
+		}
+	}
+#endif
 }
 
 /**
@@ -1166,6 +1208,7 @@ static unsigned find_condition_chains(ir_node *block)
 {
 	const ir_edge_t *edge;
 	unsigned mark = 0;
+	unsigned has_backedge = 0;
 	int nodes_n = 0;
 
 	DB((dbg, LEVEL_5, "condition_chains for block %N\n", block));
@@ -1197,10 +1240,23 @@ static unsigned find_condition_chains(ir_node *block)
 			entry.pos = pos;
 			ARR_APP1(out_edge, cond_chain_entries, entry);
 			mark_irn_visited(src);
+		} else if (is_backedge(src, pos)) {
+			/* Inverting blocks with backedge outs leads to a cf edge
+			 * from the inverted head, into the inverted head (skipping the body).
+			 * As the body becomes the new loop head,
+			 * this would introduce another loop in the existing loop.
+			 * This loop inversion cannot cope with this complex case. */
+			out_edge entry;
+
+			has_backedge = 1;
+			entry.node = src;
+			entry.pos = pos;
+			ARR_APP1(out_edge, cond_chain_entries, entry);
+			mark_irn_visited(src);
 		}
 	}
 
-	if (mark == 0) {
+	if (mark == 0 || has_backedge) {
 		set_Block_mark(block, 0);
 		return 0;
 	} else {
@@ -1293,7 +1349,28 @@ static void fix_copy_inversion(void)
 	DEL_ARR_F(phis);
 }
 
-/**/
+/* Takes a phi from the inverted loop head and its pred
+ * which is assigned in the condition chain.
+ *
+ * Returns new phi, created in the new loop head.
+ * If there is an assignment in the condition chain
+ * with a user also in the condition chain,
+ * the dominance frontier is in the new loop head.
+ * The dataflow loop is completely in the condition chain.
+ * Goal:
+ *
+ *  | ,--.   |
+ * Phi_cp |  | copied condition chain
+ *  | |   |  |
+ *  | ?__/   |
+ *  | ,-.
+ *  Phi* |   | new loop head
+ *   |   |
+ *  Phi  |   | original, inverted condition chain
+ *   |   |   |
+ *   ?__/    |
+ *
+ */
 static ir_node *fix_inner_cc_definitions(ir_node *phi, ir_node *pred)
 {
 	int i;
@@ -1308,12 +1385,24 @@ static ir_node *fix_inner_cc_definitions(ir_node *phi, ir_node *pred)
 	for(i = 0; i < new_loop_head_arity; ++i) {
 		/* Rely on correct backedge info for the new loop head
 		 * is set by extend_ins_by_copy. */
+
+		DB((dbg, LEVEL_5, "CHECK mark of pred of %N @%d  %N\n",
+					new_loop_head, i, get_irn_n(new_loop_head, i)));
+
 		if(is_nodes_block_marked(get_irn_n(new_loop_head, i))) {
 			head_phi_ins[i] = pred;
+			DB((dbg, LEVEL_5, "NEW HEAD %N pred %d %N is in cc\n", new_loop_head, i, pred));
 		} else {
-			head_phi_ins[i] = get_inversion_copy(pred);
+			ir_node *cp = get_inversion_copy(pred);
+			/* As pred is in the condition chain there has to be a copy. */
+			assert(cp);
+			head_phi_ins[i] = cp;
+
+			DB((dbg, LEVEL_5, "NEW HEAD %N pred %d %N is in not in cc so get copy %N\n",
+						new_loop_head, i, pred, head_phi_ins[i] ));
 		}
-		DB((dbg, LEVEL_5, "NEW HEAD %N in %N %N\n", new_loop_head, head_phi_ins[i], current_ir_graph));
+		DB((dbg, LEVEL_5, "NEW HEAD %N in %N %N\n",
+					new_loop_head, head_phi_ins[i], current_ir_graph));
 	}
 
 	head_phi= new_r_Phi(new_loop_head,
@@ -1330,7 +1419,8 @@ static ir_node *fix_inner_cc_definitions(ir_node *phi, ir_node *pred)
 }
 
 
-/* Puts the original condition chain at the end of the loop, subsequently to the body.
+/* Puts the original condition chain at the end of the loop,
+ * subsequently to the body.
  * Relies on block phi list and correct backedges.
  */
 static void fix_head_inversion(void)
@@ -1364,20 +1454,22 @@ static void fix_head_inversion(void)
 		NEW_ARR_A(ir_node *, ins, new_arity);
 
 		pos = 0;
-		for(i = 0; i < arity; ++i) {
+		for (i = 0; i < arity; ++i) {
 			ir_node *pred = get_irn_n(phi, i);
 
 			if (is_own_backedge(loop_head, i)) {
-				DB((dbg, LEVEL_5, " !!! PHI not useful %N\n", phi));
-
-				/* If definition is in the condition chain,
-				 * we need to create a phi in the new loop head */
-				if (is_nodes_block_marked(pred))
+				/* If assignment is in the condition chain,
+				 * we need to create a phi in the new loop head.
+				 * This can only happen for df, not cf. See find_condition_chains. */
+				if (is_nodes_block_marked(pred)) {
 					ins[pos++] = fix_inner_cc_definitions(phi, pred);
-				else
+				} else {
 					ins[pos++] = pred;
+				}
 			}
 		}
+
+		/**/
 		new_phi = new_rd_Phi(get_irn_dbg_info(phi),
 			new_head, new_arity, ins,
 			get_irn_mode(phi));
@@ -1427,7 +1519,7 @@ static void inversion_walk(out_edge *head_entries)
 	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 
 	/* 2. Extends the head control flow successors ins
-	 *    by the definitions of the copied head node. */
+	 *    with the definitions of the copied head node. */
 	for (i = 0; i < ARR_LEN(head_entries); ++i) {
 		out_edge head_out = head_entries[i];
 
@@ -1439,17 +1531,21 @@ static void inversion_walk(out_edge *head_entries)
 	 *    as there is now a second definition. */
 	for (i = 0; i < ARR_LEN(head_entries); ++i) {
 		out_edge head_out = head_entries[i];
+
 		/* Ignore keepalives */
 		if (is_End(head_out.node))
 			continue;
 
-		ir_node *is_in_cc = get_nodes_block(get_irn_n(head_out.node, head_out.pos));
+		/*if (!is_Block(head_out.node))
+			assert(is_nodes_block_marked(head_out.pred) && "damn");*/
+
 		/* Construct ssa for definitions in the condition chain. */
-		/* TODO Why do we need the check for is_in_cc? All definitions should be there... */
-		if (!is_Block(head_out.node) && is_nodes_block_marked(is_in_cc)) {
+		if (!is_Block(head_out.node)) {
 			ir_node *pred, *cppred, *block, *cpblock;
 
-			pred = get_irn_n(head_out.node, head_out.pos);
+			/* May not use get_irn_n(head_out.node, head_out.pos)
+			 * as it can be changed by construct_ssa. */
+			pred = head_out.pred;
 			cppred = get_inversion_copy(pred);
 			block = get_nodes_block(pred);
 			cpblock = get_nodes_block(cppred);
@@ -1457,7 +1553,7 @@ static void inversion_walk(out_edge *head_entries)
 		}
 	}
 
-	/* 4. Remove the ins which are no backedges from the original condition chain,
+	/* 4. Remove the ins which are no backedges from the original condition chain
 	 *    as the cc is now subsequently to the body. */
 	fix_head_inversion();
 
@@ -1527,7 +1623,7 @@ static void loop_inversion(void)
 		set_irg_doms_inconsistent(current_ir_graph);
 		/* Loop content changed */
 		set_irg_loopinfo_inconsistent(current_ir_graph);
-		/* TODO are they? */
+		/* TODO are they? Depends on set_irn_in and set_irn_n exchange and new_node. */
 		set_irg_outs_inconsistent(current_ir_graph);
 	}
 
@@ -1643,7 +1739,7 @@ static void create_duffs_device(int unroll_number)
 	(void)unroll_number;
 }
 
-#if 1
+#if 0
 
 static unsigned is_loop_invariant_val(ir_node *node)
 {
@@ -1718,7 +1814,7 @@ static unsigned get_unroll_decision(out_edge *cur_loop_outs)
 	projres = get_irn_n(cond, 0);
 	loop_condition = get_irn_n(projres, 0);
 
-	DB((dbg, LEVEL_2, " loop condition %N\n", loop_condition));
+	DB((dbg, LEVEL_2, " loop condition %N in graph %N\n", loop_condition, current_ir_graph));
 
 	/* One in of the loop condition needs to be loop invariant.
 	 * The other in is assigned by an add.
@@ -1734,6 +1830,8 @@ static unsigned get_unroll_decision(out_edge *cur_loop_outs)
 	*/
 
 	end_val = NULL;
+	iteration = NULL;
+
 	/* Find the loop invariant in */
 	/* Assumption that condition is cmp or mod.
 	   TODO other? */
@@ -1757,6 +1855,7 @@ static unsigned get_unroll_decision(out_edge *cur_loop_outs)
 
 	DB((dbg, LEVEL_2, " end_val %N\n", end_val));
 
+	add = NULL;
 	/* Check for constraint of remaining in. */
 	add = is_loop_iteration(iteration);
 	if (! add)
@@ -1767,10 +1866,15 @@ static unsigned get_unroll_decision(out_edge *cur_loop_outs)
 	add_in0 = get_irn_n(add, 0);
 	add_in1 = get_irn_n(add, 1);
 
+	step = NULL;
+	iteration_phi = NULL;
+
 	if (is_loop_invariant_val(add_in0)) {
 		step = add_in0;
 		iteration_phi = add_in1;
 	}
+
+	DB((dbg, LEVEL_2, "seems step %N iter_phi %N\n", step, iteration_phi));
 
 	if (is_loop_invariant_val(add_in1)) {
 		if (step != NULL)
@@ -1788,7 +1892,8 @@ static unsigned get_unroll_decision(out_edge *cur_loop_outs)
 			return 0;
 	}
 
-	DB((dbg, LEVEL_2, " #### COUNTING LOOP step %N end %N phi %N\n", step, end_val, iteration_phi));
+	DB((dbg, LEVEL_2, " #### COUNTING LOOP in graph %N step %N end %N phi %N\n",
+				current_ir_graph, step, end_val, iteration_phi));
 
 #if 0
 	phi for startval
@@ -1800,7 +1905,7 @@ static unsigned get_unroll_decision(out_edge *cur_loop_outs)
 
 	/*TODO*/
 	unroll_mod_const = new_Const(unroll_number);
-	module = new_r_Mod(block, new_NoMem(), end_val, step, mode, op_pin_state_pinned);
+	module = new_d_Mod(block, new_NoMem(), end_val, step, mode, op_pin_state_pinned);
 	/*new_Proj();*/
 
 
@@ -1822,7 +1927,8 @@ static void unroll_loop(void)
 	/* Get loop outs */
 	irg_walk_graph(current_ir_graph, get_loop_outs, NULL, NULL);
 
-	unroll_number = get_unroll_decision(cur_loop_outs);
+	/*unroll_number = get_unroll_decision(cur_loop_outs);*/
+	unroll_number = 2;
 
 	/*dump_ir_block_graph(current_ir_graph, "-pre");*/
 
@@ -1867,7 +1973,7 @@ static void unroll_loop(void)
 		/* FREE */
 		free_node_info();
 
-		irg_walk_graph(current_ir_graph, correct_phis, NULL, NULL);
+		/*irg_walk_graph(current_ir_graph, correct_phis, NULL, NULL);*/
 
 		DEL_ARR_F(ssa_outs);
 
