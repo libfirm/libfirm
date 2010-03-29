@@ -310,21 +310,21 @@ typedef void (*copy_attr_func)(ir_graph *irg, const ir_node *old_node, ir_node *
  * The get_type operation.
  * Return the type of the node self.
  */
-typedef ir_type *(*get_type_func)(ir_node *self);
+typedef ir_type *(*get_type_func)(const ir_node *self);
 
 /**
  * The get_type_attr operation. Used to traverse all types that can be
  * accessed from an ir_graph.
  * Return the type attribute of the node self.
  */
-typedef ir_type *(*get_type_attr_func)(ir_node *self);
+typedef ir_type *(*get_type_attr_func)(const ir_node *self);
 
 /**
  * The get_entity_attr operation. Used to traverse all entities that can be
  * accessed from an ir_graph.
  * Return the entity attribute of the node self.
  */
-typedef ir_entity *(*get_entity_attr_func)(ir_node *self);
+typedef ir_entity *(*get_entity_attr_func)(const ir_node *self);
 
 /**
  * The verify_node operation.

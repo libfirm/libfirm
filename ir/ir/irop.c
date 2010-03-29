@@ -121,9 +121,9 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
                           ir_node *new_node)
 {
 	default_copy_attr(irg, old_node, new_node);
-	new_node->attr.assem.inputs  = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.inputs);
-	new_node->attr.assem.outputs = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.outputs);
-	new_node->attr.assem.clobber = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.clobber);
+	new_node->attr.assem.input_constraints  = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.input_constraints);
+	new_node->attr.assem.output_constraints = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.output_constraints);
+	new_node->attr.assem.clobbers = DUP_ARR_D(ir_asm_constraint, irg->obst, old_node->attr.assem.clobbers);
 }
 
 /**

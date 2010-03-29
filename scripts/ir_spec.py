@@ -61,9 +61,10 @@ class ASM(Op):
 	mode          = "mode_T"
 	arity         = "variable"
 	flags         = [ "keep", "uses_memory" ]
-	attr_struct   = "asm_attr"
 	pinned        = "memory"
 	pinned_init   = "op_pin_state_pinned"
+	attr_struct   = "asm_attr"
+	attrs_name    = "assem"
 	attrs = [
 		dict(
 			name = "input_constraints",
@@ -72,6 +73,7 @@ class ASM(Op):
 		dict(
 			name = "n_output_constraints",
 			type = "int",
+			noprop = True,
 		),
 		dict(
 			name = "output_constraints",
@@ -80,6 +82,7 @@ class ASM(Op):
 		dict(
 			name = "n_clobbers",
 			type = "int",
+			noprop = True,
 		),
 		dict(
 			name = "clobbers",
@@ -175,6 +178,7 @@ class Bound(Op):
 	pinned = "exception"
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "bound_attr"
+	attrs_name  = "bound"
 	d_post = '''
 	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
 	'''
@@ -298,6 +302,7 @@ class Confirm(Op):
 		),
 	]
 	attr_struct = "confirm_attr"
+	attrs_name  = "confirm"
 
 class Const(Op):
 	mode       = ""
@@ -327,6 +332,7 @@ class Conv(Unop):
 		)
 	]
 	attr_struct = "conv_attr"
+	attrs_name  = "conv"
 
 class CopyB(Op):
 	ins   = [ "mem", "dst", "src" ]
@@ -339,6 +345,7 @@ class CopyB(Op):
 		)
 	]
 	attr_struct = "copyb_attr"
+	attrs_name  = "copyb"
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
 	d_post = '''
@@ -435,6 +442,7 @@ class Filter(Op):
 	]
 	pinned      = "yes"
 	attr_struct = "filter_attr"
+	attrs_name  = "filter"
 	java_noconstr = True
 
 class Free(Op):
@@ -587,7 +595,8 @@ class Proj(Op):
 		dict(
 			type = "long",
 			name = "proj",
-			initname = ""
+			initname = "",
+			noprop = False,
 		)
 	]
 	attr_struct = "long"
@@ -685,7 +694,8 @@ class SymConst(Op):
 	attrs      = [
 		dict(
 			type = "ir_entity*",
-			name = "entity"
+			name = "entity",
+			noprop = True
 		)
 	]
 	attr_struct = "symconst_attr"

@@ -6966,7 +6966,7 @@ static unsigned hash_Const(const ir_node *node)
 	unsigned h;
 
 	/* special value for const, as they only differ in their tarval. */
-	h = HASH_PTR(node->attr.con.tv);
+	h = HASH_PTR(node->attr.con.tarval);
 
 	return h;
 }  /* hash_Const */

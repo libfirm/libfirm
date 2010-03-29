@@ -170,8 +170,8 @@ typedef struct {
 
 /** Const attributes. */
 typedef struct {
-	tarval  *tv;       /**< the target value */
-	ir_type *tp;       /**< the source type, for analyses. default: type_unknown. */
+	tarval  *tarval;  /**< the target value */
+	ir_type *tp;      /**< the source type, for analyses. default: type_unknown. */
 } const_attr;
 
 /** SymConst attributes. */
@@ -305,11 +305,11 @@ typedef struct {
 /** Inline Assembler support attribute. */
 typedef struct {
 	/* BEWARE: pin state MUST be the first attribute */
-	op_pin_state      pin_state;  /**< the pin state for operations that might generate a exception */
-	ident             *asm_text;  /**< The inline assembler text. */
-	ir_asm_constraint *inputs;    /**< Input constraints. */
-	ir_asm_constraint *outputs;   /**< Output constraints. */
-	ident             **clobber;  /**< List of clobbered registers. */
+	op_pin_state      pin_state;            /**< the pin state for operations that might generate a exception */
+	ident             *text;                /**< The inline assembler text. */
+	ir_asm_constraint *input_constraints;   /**< Input constraints. */
+	ir_asm_constraint *output_constraints;  /**< Output constraints. */
+	ident             **clobbers;           /**< List of clobbered registers. */
 } asm_attr;
 
 /** Some IR-nodes just have one attribute, these are stored here,

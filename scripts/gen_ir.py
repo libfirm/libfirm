@@ -134,12 +134,10 @@ def format_opindex(node):
 	return "-1"
 
 def filter_isnot(list, flag):
-	result = []
-	for node in list:
-		if hasattr(node, flag):
-			continue
-		result.append(node)
-	return result
+	return filter(lambda x: not hasattr(x, flag), list)
+
+def filter_hasnot(list, flag):
+	return filter(lambda x: flag not in x, list)
 
 def format_arguments(string, voidwhenempty = False):
 	args = re.split('\s*\n\s*', string)
@@ -170,6 +168,7 @@ env.filters['flags']          = format_flags
 env.filters['attr_size']      = format_attr_size
 env.filters['opindex']        = format_opindex
 env.filters['isnot']          = filter_isnot
+env.filters['hasnot']         = filter_hasnot
 env.filters['arguments']      = format_arguments
 env.filters['parameters']     = format_parameters
 
@@ -370,13 +369,13 @@ ir_node *new_{{node.constrname}}(
 irnode_h_template = env.from_string('''
 /* Warning: automatically generated code */
 
-{% for node in nodes|isnot('custom_is') %}
+{%- for node in nodes|isnot('custom_is') %}
 static inline int _is_{{node.name}}(const ir_node *node)
 {
 	assert(node != NULL);
 	return _get_irn_op(node) == op_{{node.name}};
 }
-{% endfor %}
+{%- endfor -%}
 
 {% for node in nodes %}
 #define is_{{node.name}}(node)    _is_{{node.name}}(node)
@@ -391,6 +390,38 @@ int (is_{{node.name}})(const ir_node *node)
 {
 	return _is_{{node.name}}(node);
 }
+{% endfor %}
+
+{%- for node in nodes %}
+{%- for attr in node.attrs|hasnot("noprop") %}
+{{attr.type}} (get_{{node.name}}_{{attr.name}})(const ir_node *node)
+{
+	assert(is_{{node.name}}(node));
+	return node->attr.{{node.attrs_name}}.{{attr.name}};
+}
+
+void (set_{{node.name}}_{{attr.name}})(ir_node *node, {{attr.type}} {{attr.name}})
+{
+	assert(is_{{node.name}}(node));
+	node->attr.{{node.attrs_name}}.{{attr.name}} = {{attr.name}};
+}
+{% endfor -%}
+{% endfor -%}
+
+{%- for node in nodes %}
+{%- for in in node.ins %}
+ir_node *(get_{{node.name}}_{{in}})(const ir_node *node)
+{
+	assert(is_{{node.name}}(node));
+	return get_irn_n(node, {{node.ins.index(in)}});
+}
+
+void (set_{{node.name}}_{{in}})(ir_node *node, ir_node *{{in}})
+{
+	assert(is_{{node.name}}(node));
+	set_irn_n(node, {{node.ins.index(in)}}, {{in}});
+}
+{% endfor %}
 {% endfor %}
 ''')
 

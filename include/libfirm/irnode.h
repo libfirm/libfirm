@@ -491,7 +491,7 @@ int is_Const_all_one(const ir_node *node);
 /** Returns the source language type of a Const node.
  * Must be an atomic type.  Mode of type must be mode of node.
  */
-ir_type  *get_Const_type(ir_node *node);
+ir_type  *get_Const_type(const ir_node *node);
 
 /** Sets the source language type of a Const node. */
 void     set_Const_type(ir_node *node, ir_type *tp);
@@ -532,7 +532,7 @@ void                  set_SymConst_symbol(ir_node *node,
 /** Access the type of the value represented by the SymConst.
  *
  *  Example: primitive type int for SymConst size. */
-ir_type *get_SymConst_value_type(ir_node *node);
+ir_type *get_SymConst_value_type(const ir_node *node);
 void    set_SymConst_value_type(ir_node *node, ir_type *tp);
 
 ir_node   *get_Sel_mem(const ir_node *node);
@@ -575,7 +575,7 @@ ir_node *get_Call_param(const ir_node *node, int pos);
 /** Sets the call parameter at position pos. */
 void     set_Call_param(ir_node *node, int pos, ir_node *param);
 /** Gets the type of a call. */
-ir_type *get_Call_type(ir_node *node);
+ir_type *get_Call_type(const ir_node *node);
 /** Sets the type of a call. */
 void     set_Call_type(ir_node *node, ir_type *tp);
 /** Returns non-zero if this call can be a tail-call. */
@@ -637,7 +637,7 @@ ir_node         *get_Builtin_param(const ir_node *node, int pos);
 /** Sets the Builtin parameter at position pos. */
 void            set_Builtin_param(ir_node *node, int pos, ir_node *param);
 /** Gets the type of a builtin. */
-ir_type         *get_Builtin_type(ir_node *node);
+ir_type         *get_Builtin_type(const ir_node *node);
 /** Sets the type of a Builtin. */
 void            set_Builtin_type(ir_node *node, ir_type *tp);
 /** Returns a human readable string for the ir_builtin_kind. */
@@ -854,7 +854,7 @@ void     set_Conv_strict(ir_node *node, int flag);
  */
 ir_node *get_Cast_op(const ir_node *node);
 void     set_Cast_op(ir_node *node, ir_node *op);
-ir_type *get_Cast_type(ir_node *node);
+ir_type *get_Cast_type(const ir_node *node);
 void     set_Cast_type(ir_node *node, ir_type *to_tp);
 
 /** Checks for upcast.
@@ -891,16 +891,16 @@ void      set_Phi_pred(ir_node *node, int pos, ir_node *pred);
 ir_node  *get_Phi_next(const ir_node *phi);
 void      set_Phi_next(ir_node *phi, ir_node *next);
 
-ir_node  *get_Filter_pred(ir_node *node);
+ir_node  *get_Filter_pred(const ir_node *node);
 void      set_Filter_pred(ir_node *node, ir_node *pred);
-long      get_Filter_proj(ir_node *node);
+long      get_Filter_proj(const ir_node *node);
 void      set_Filter_proj(ir_node *node, long proj);
 /* set the interprocedural predecessors, ...d_arr uses current_ir_graph.
  * @@@ Maybe better:  arity is zero if no cg preds. */
 void     set_Filter_cg_pred_arr(ir_node * node, int arity, ir_node ** in);
 void     set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
-int      get_Filter_n_cg_preds(ir_node *node);
-ir_node *get_Filter_cg_pred(ir_node *node, int pos);
+int      get_Filter_n_cg_preds(const ir_node *node);
+ir_node *get_Filter_cg_pred(const ir_node *node, int pos);
 
 /** Return true if parameter is a memory operation.
  *
@@ -971,7 +971,7 @@ ir_node *get_Alloc_mem(const ir_node *node);
 void     set_Alloc_mem(ir_node *node, ir_node *mem);
 ir_node *get_Alloc_count(const ir_node *node);
 void     set_Alloc_count(ir_node *node, ir_node *count);
-ir_type *get_Alloc_type(ir_node *node);
+ir_type *get_Alloc_type(const ir_node *node);
 void     set_Alloc_type(ir_node *node, ir_type *tp);
 
 ir_where_alloc get_Alloc_where(const ir_node *node);
@@ -983,7 +983,7 @@ ir_node *get_Free_ptr(const ir_node *node);
 void     set_Free_ptr(ir_node *node, ir_node *ptr);
 ir_node *get_Free_size(const ir_node *node);
 void     set_Free_size(ir_node *node, ir_node *size);
-ir_type *get_Free_type(ir_node *node);
+ir_type *get_Free_type(const ir_node *node);
 void     set_Free_type(ir_node *node, ir_type *tp);
 
 ir_where_alloc get_Free_where(const ir_node *node);
@@ -998,7 +998,7 @@ void      add_Sync_pred(ir_node *node, ir_node *pred);
 /** Returns the source language type of a Proj node.
  * Must be an atomic type.  Mode of type must be mode of node.
  */
-ir_type  *get_Proj_type(ir_node *node);
+ir_type  *get_Proj_type(const ir_node *node);
 
 /** Return the predecessor of a Proj node. */
 ir_node  *get_Proj_pred(const ir_node *node);
@@ -1059,7 +1059,7 @@ ir_node *get_CopyB_dst(const ir_node *node);
 void     set_CopyB_dst(ir_node *node, ir_node *dst);
 ir_node *get_CopyB_src(const ir_node *node);
 void     set_CopyB_src(ir_node *node, ir_node *src);
-ir_type *get_CopyB_type(ir_node *node);
+ir_type *get_CopyB_type(const ir_node *node);
 void     set_CopyB_type(ir_node *node, ir_type *data_type);
 
 /**
@@ -1075,7 +1075,7 @@ typedef enum {
 #define pn_InstOf_M pn_InstOf_M_regular
 
 /** InstOf access. */
-ir_type *get_InstOf_type(ir_node *node);
+ir_type *get_InstOf_type(const ir_node *node);
 void    set_InstOf_type(ir_node *node, ir_type *type);
 ir_node *get_InstOf_store(const ir_node *node);
 void    set_InstOf_store(ir_node *node, ir_node *obj);
@@ -1129,18 +1129,27 @@ void     set_Pin_op(ir_node *pin, ir_node *node);
 
 /** Return the assembler text of an ASM pseudo node. */
 ident *get_ASM_text(const ir_node *node);
+/** Set assembler text of ASM node */
+void set_ASM_text(ir_node *node, ident *text);
 /** Return the number of input constraints for an ASM node. */
 int get_ASM_n_input_constraints(const ir_node *node);
 /** Return the input constraints for an ASM node. */
-const ir_asm_constraint *get_ASM_input_constraints(const ir_node *node);
+ir_asm_constraint *get_ASM_input_constraints(const ir_node *node);
+/** Set input constraints for ASM node. */
+void set_ASM_input_constraints(ir_node *node, ir_asm_constraint *constraints);
 /** Return the number of output constraints for an ASM node.  */
 int get_ASM_n_output_constraints(const ir_node *node);
 /** Return the output constraints for an ASM node. */
-const ir_asm_constraint *get_ASM_output_constraints(const ir_node *node);
+ir_asm_constraint *get_ASM_output_constraints(const ir_node *node);
+/** Set output constraints for ASM node. (note: has to be a firm array) */
+void set_ASM_output_constraints(ir_node *node, ir_asm_constraint *constraints);
 /** Return the number of clobbered registers for an ASM node.  */
 int get_ASM_n_clobbers(const ir_node *node);
 /** Return the list of clobbered registers for an ASM node. */
 ident **get_ASM_clobbers(const ir_node *node);
+/** Set list of clobbered register for ASM node (note: has to be a firm
+ *  array) */
+void set_ASM_clobbers(ir_node *node, ident **clobbers);
 
 /*
  *

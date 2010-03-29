@@ -555,7 +555,7 @@ static inline ir_graph *_get_Block_irg(const ir_node *block)
 
 static inline tarval *_get_Const_tarval(const ir_node *node) {
 	assert(_get_irn_op(node) == op_Const);
-	return node->attr.con.tv;
+	return node->attr.con.tarval;
 }
 
 static inline int _is_Const_null(const ir_node *node) {

@@ -88,6 +88,8 @@ static int dump_backedge_information_flag = 1;
 static int dump_const_local = 1;
 /** An option to dump the node index number. */
 static int dump_node_idx_labels = 0;
+/** An option to dump the node number */
+static int dump_node_nr = 0;
 /** An option to dump all graph anchors */
 static int dump_anchors = 0;
 /** An option to dump the macro block edges. */
@@ -1243,10 +1245,11 @@ int dump_node_label(FILE *F, ir_node *n)
 	fprintf(F, " ");
 	bad |= dump_node_typeinfo(F, n);
 	bad |= dump_node_nodeattr(F, n);
-	if (dump_node_idx_labels) {
-		fprintf(F, "%ld:%u", get_irn_node_nr(n), get_irn_idx(n));
-	} else {
+	if (dump_node_nr) {
 		fprintf(F, "%ld", get_irn_node_nr(n));
+	}
+	if (dump_node_idx_labels) {
+		fprintf(F, ":%u", get_irn_idx(n));
 	}
 
 	return bad;
