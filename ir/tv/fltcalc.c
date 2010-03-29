@@ -44,8 +44,7 @@
 
 #include "xmalloc.h"
 
-#if !defined(HAVE_LONG_DOUBLE) || defined(__CYGWIN__)
-/* No strtold on windows and no replacement yet */
+#ifndef HAVE_STRTOLD
 #define strtold(s, e) strtod(s, e)
 #endif
 
