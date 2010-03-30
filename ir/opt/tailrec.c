@@ -581,11 +581,12 @@ int opt_tail_rec_irg(ir_graph *irg)
 	ir_type           *mtd_type, *call_type;
 	ir_entity         *ent;
 
+	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
+
 	assure_irg_outs(irg);
 
 	if (! check_lifetime_of_locals(irg))
 		return 0;
-
 
 	ent      = get_irg_entity(irg);
 	mtd_type = get_entity_type(ent);
@@ -720,8 +721,6 @@ void opt_tail_recursion(void)
 	int i;
 	int n_opt_applications = 0;
 	ir_graph *irg;
-
-	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
