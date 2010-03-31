@@ -59,9 +59,6 @@ typedef enum loop_flags {
  * the loop within the nesting.  Further it contains a list of the
  * loops with nesting depth -1.  Finally it contains a list of all
  * nodes in the loop.
- *
- * @todo We could add a field pointing from a node to the containing loop,
- * this would cost a lot of memory, though.
  */
 struct ir_loop {
 	firm_kind kind;                   /**< A type tag, set to k_ir_loop. */
