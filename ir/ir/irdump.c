@@ -87,9 +87,9 @@ static int dump_backedge_information_flag = 1;
 /** An option to dump const-like nodes locally. */
 static int dump_const_local = 1;
 /** An option to dump the node index number. */
-static int dump_node_idx_labels = 0;
+static int dump_node_idx_labels = 1;
 /** An option to dump the node number */
-static int dump_node_nr = 0;
+static int dump_node_nr = 1;
 /** An option to dump all graph anchors */
 static int dump_anchors = 0;
 /** An option to dump the macro block edges. */
