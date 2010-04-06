@@ -1196,6 +1196,15 @@ Const => {
 	mode      => $mode_gp,
 },
 
+Unknown => {
+	op_flags  => "c",
+	irn_flags => "R",
+	reg_req   => { out => [ "gp" ] },
+	latency   => 0,
+	emit      => '',
+	mode      => $mode_gp,
+},
+
 GetEIP => {
 	op_flags => "c",
 	reg_req  => { out => [ "gp" ] },
@@ -1699,6 +1708,15 @@ xZero => {
 	emit      => '. xorp%XSD %D0, %D0',
 	latency   => 3,
 	units     => [ "SSE" ],
+	mode      => $mode_xmm
+},
+
+xUnknown => {
+	op_flags  => "c",
+	irn_flags => "R",
+	reg_req   => { out => [ "xmm" ] },
+	emit      => '',
+	latency   => 0,
 	mode      => $mode_xmm
 },
 

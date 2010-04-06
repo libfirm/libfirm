@@ -829,12 +829,12 @@ ir_node *gen_Unknown(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			res = new_bd_ia32_xZero(dbgi, block);
+			res = new_bd_ia32_xUnknown(dbgi, block);
 		} else {
 			res = new_bd_ia32_vfldz(dbgi, block);
 		}
 	} else if (ia32_mode_needs_gp_reg(mode)) {
-		res = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, 0);
+		res = new_bd_ia32_Unknown(dbgi, block);
 	} else {
 		panic("unsupported Unknown-Mode");
 	}
