@@ -6142,7 +6142,7 @@ static int node_cmp_attr_Const(ir_node *a, ir_node *b)
 /** Compares the attributes of two Proj nodes. */
 static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
 {
-	return get_irn_proj_attr(a) != get_irn_proj_attr(b);
+	return a->attr.proj != b->attr.proj;
 }  /* node_cmp_attr_Proj */
 
 /** Compares the attributes of two Filter nodes. */
@@ -6154,24 +6154,24 @@ static int node_cmp_attr_Filter(ir_node *a, ir_node *b)
 /** Compares the attributes of two Alloc nodes. */
 static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
 {
-	const alloc_attr *pa = get_irn_alloc_attr(a);
-	const alloc_attr *pb = get_irn_alloc_attr(b);
+	const alloc_attr *pa = &a->attr.alloc;
+	const alloc_attr *pb = &b->attr.alloc;
 	return (pa->where != pb->where) || (pa->type != pb->type);
 }  /* node_cmp_attr_Alloc */
 
 /** Compares the attributes of two Free nodes. */
 static int node_cmp_attr_Free(ir_node *a, ir_node *b)
 {
-	const free_attr *pa = get_irn_free_attr(a);
-	const free_attr *pb = get_irn_free_attr(b);
+	const free_attr *pa = &a->attr.free;
+	const free_attr *pb = &b->attr.free;
 	return (pa->where != pb->where) || (pa->type != pb->type);
 }  /* node_cmp_attr_Free */
 
 /** Compares the attributes of two SymConst nodes. */
 static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 {
-	const symconst_attr *pa = get_irn_symconst_attr(a);
-	const symconst_attr *pb = get_irn_symconst_attr(b);
+	const symconst_attr *pa = &a->attr.symc;
+	const symconst_attr *pb = &b->attr.symc;
 	return (pa->kind       != pb->kind)
 	    || (pa->sym.type_p != pb->sym.type_p)
 	    || (pa->tp         != pb->tp);
@@ -6180,8 +6180,8 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 /** Compares the attributes of two Call nodes. */
 static int node_cmp_attr_Call(ir_node *a, ir_node *b)
 {
-	const call_attr *pa = get_irn_call_attr(a);
-	const call_attr *pb = get_irn_call_attr(b);
+	const call_attr *pa = &a->attr.call;
+	const call_attr *pb = &b->attr.call;
 	return (pa->type != pb->type)
 		|| (pa->tail_call != pb->tail_call);
 }  /* node_cmp_attr_Call */
@@ -6191,16 +6191,6 @@ static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
 {
 	const ir_entity *a_ent = get_Sel_entity(a);
 	const ir_entity *b_ent = get_Sel_entity(b);
-#if 0
-	return
-		(a_ent->kind    != b_ent->kind)    ||
-		(a_ent->name    != b_ent->name)    ||
-		(a_ent->owner   != b_ent->owner)   ||
-		(a_ent->ld_name != b_ent->ld_name) ||
-		(a_ent->type    != b_ent->type);
-#endif
-	/* Matze: inlining of functions can produce 2 entities with same type,
-	 * name, etc. */
 	return a_ent != b_ent;
 }  /* node_cmp_attr_Sel */
 
@@ -6211,7 +6201,7 @@ static int node_cmp_attr_Phi(ir_node *a, ir_node *b)
 	   hence it is enough to check if one of them is a Phi0 */
 	if (is_Phi0(a)) {
 		/* check the Phi0 pos attribute */
-		return get_irn_phi_attr(a)->u.pos != get_irn_phi_attr(b)->u.pos;
+		return a->attr.phi.u.pos != b->attr.phi.u.pos;
 	}
 	return 0;
 }  /* node_cmp_attr_Phi */
@@ -6257,8 +6247,8 @@ static int node_cmp_attr_Store(ir_node *a, ir_node *b)
 /** Compares two exception attributes */
 static int node_cmp_exception(ir_node *a, ir_node *b)
 {
-	const except_attr *ea = get_irn_except_attr(a);
-	const except_attr *eb = get_irn_except_attr(b);
+	const except_attr *ea = &a->attr.except;
+	const except_attr *eb = &b->attr.except;
 
 	return ea->pin_state != eb->pin_state;
 }
@@ -6268,8 +6258,8 @@ static int node_cmp_exception(ir_node *a, ir_node *b)
 /** Compares the attributes of two Div nodes. */
 static int node_cmp_attr_Div(ir_node *a, ir_node *b)
 {
-	const divmod_attr *ma = get_irn_divmod_attr(a);
-	const divmod_attr *mb = get_irn_divmod_attr(b);
+	const divmod_attr *ma = &a->attr.divmod;
+	const divmod_attr *mb = &b->attr.divmod;
 	return ma->exc.pin_state != mb->exc.pin_state ||
 		   ma->resmode       != mb->resmode ||
 		   ma->no_remainder  != mb->no_remainder;
@@ -6278,8 +6268,8 @@ static int node_cmp_attr_Div(ir_node *a, ir_node *b)
 /** Compares the attributes of two DivMod nodes. */
 static int node_cmp_attr_DivMod(ir_node *a, ir_node *b)
 {
-	const divmod_attr *ma = get_irn_divmod_attr(a);
-	const divmod_attr *mb = get_irn_divmod_attr(b);
+	const divmod_attr *ma = &a->attr.divmod;
+	const divmod_attr *mb = &b->attr.divmod;
 	return ma->exc.pin_state != mb->exc.pin_state ||
 		   ma->resmode       != mb->resmode;
 }  /* node_cmp_attr_DivMod */
@@ -6287,19 +6277,13 @@ static int node_cmp_attr_DivMod(ir_node *a, ir_node *b)
 /** Compares the attributes of two Mod nodes. */
 static int node_cmp_attr_Mod(ir_node *a, ir_node *b)
 {
-	const divmod_attr *ma = get_irn_divmod_attr(a);
-	const divmod_attr *mb = get_irn_divmod_attr(b);
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode;
+	return node_cmp_attr_DivMod(a, b);
 }  /* node_cmp_attr_Mod */
 
 /** Compares the attributes of two Quot nodes. */
 static int node_cmp_attr_Quot(ir_node *a, ir_node *b)
 {
-	const divmod_attr *ma = get_irn_divmod_attr(a);
-	const divmod_attr *mb = get_irn_divmod_attr(b);
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode;
+	return node_cmp_attr_DivMod(a, b);
 }  /* node_cmp_attr_Quot */
 
 /** Compares the attributes of two Confirm nodes. */
@@ -6312,11 +6296,8 @@ static int node_cmp_attr_Confirm(ir_node *a, ir_node *b)
 /** Compares the attributes of two Builtin nodes. */
 static int node_cmp_attr_Builtin(ir_node *a, ir_node *b)
 {
-	const builtin_attr *ma = get_irn_builtin_attr(a);
-	const builtin_attr *mb = get_irn_builtin_attr(b);
-
 	/* no need to compare the type, equal kind means equal type */
-	return ma->kind != mb->kind;
+	return get_Builtin_kind(a) != get_Builtin_kind(b);
 }  /* node_cmp_attr_Builtin */
 
 /** Compares the attributes of two ASM nodes. */

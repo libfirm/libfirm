@@ -41,24 +41,6 @@
  */
 ir_node     **get_irn_in            (const ir_node *node);
 
-/** @{ */
-/** access attributes directly */
-const_attr    *get_irn_const_attr    (ir_node *node);
-long          get_irn_proj_attr      (ir_node *node);
-alloc_attr    *get_irn_alloc_attr    (ir_node *node);
-free_attr     *get_irn_free_attr     (ir_node *node);
-symconst_attr *get_irn_symconst_attr (ir_node *node);
-call_attr     *get_irn_call_attr     (ir_node *node);
-sel_attr      *get_irn_sel_attr      (ir_node *node);
-phi_attr      *get_irn_phi_attr      (ir_node *node);
-block_attr    *get_irn_block_attr    (ir_node *node);
-load_attr     *get_irn_load_attr     (ir_node *node);
-store_attr    *get_irn_store_attr    (ir_node *node);
-except_attr   *get_irn_except_attr   (ir_node *node);
-divmod_attr   *get_irn_divmod_attr   (ir_node *node);
-builtin_attr  *get_irn_builtin_attr  (ir_node *node);
-/** @} */
-
 /**
  * The amount of additional space for custom data to be allocated upon creating a new node.
  */
