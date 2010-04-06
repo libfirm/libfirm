@@ -284,7 +284,7 @@ static void register_node(be_lv_t *lv, const ir_node *irn)
 	unsigned idx = get_irn_idx(irn);
 	if (idx >= bitset_size(lv->nodes)) {
 		bitset_t *nw = bitset_malloc(2 * idx);
-		bitset_copy(nw, lv->nodes);
+		bitset_copy_into(nw, lv->nodes);
 		bitset_free(lv->nodes);
 		lv->nodes = nw;
 	}
