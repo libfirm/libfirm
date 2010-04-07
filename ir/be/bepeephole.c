@@ -69,7 +69,7 @@ static void clear_reg_value(ir_node *node)
 	cls_idx = arch_register_class_index(cls);
 
 	//assert(register_values[cls_idx][reg_idx] != NULL);
-	DBG((dbg, LEVEL_1, "Clear Register %s\n", reg->name));
+	DB((dbg, LEVEL_1, "Clear Register %s\n", reg->name));
 	register_values[cls_idx][reg_idx] = NULL;
 }
 
@@ -93,7 +93,7 @@ static void set_reg_value(ir_node *node)
 	reg_idx = arch_register_get_index(reg);
 	cls_idx = arch_register_class_index(cls);
 
-	DBG((dbg, LEVEL_1, "Set Register %s: %+F\n", reg->name, node));
+	DB((dbg, LEVEL_1, "Set Register %s: %+F\n", reg->name, node));
 	register_values[cls_idx][reg_idx] = node;
 }
 
@@ -144,7 +144,7 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 	unsigned                     reg_idx;
 	unsigned                     cls_idx;
 
-	DBG((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
+	DB((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
 
 	if (current_node == old_node) {
 		/* next node to be processed will be killed. Its scheduling predecessor
@@ -201,12 +201,12 @@ static void process_block(ir_node *block, void *data)
 	}
 
 	assert(lv->nodes && "live sets must be computed");
-	DBG((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
+	DB((dbg, LEVEL_1, "\nProcessing block %+F (from end)\n", block));
 	be_lv_foreach(lv, block, be_lv_state_end, l) {
 		ir_node *node = be_lv_get_irn(lv, block, l);
 		set_reg_value(node);
 	}
-	DBG((dbg, LEVEL_1, "\nstart processing\n"));
+	DB((dbg, LEVEL_1, "\nstart processing\n"));
 
 	/* walk the block from last insn to the first */
 	current_node = sched_last(block);
@@ -227,6 +227,7 @@ static void process_block(ir_node *block, void *data)
 		if (peephole_node == NULL)
 			continue;
 
+		DB((dbg, LEVEL_2, "optimize %+F\n", current_node));
 		peephole_node(current_node);
 		assert(!is_Bad(current_node));
 	}
@@ -393,14 +394,19 @@ void be_peephole_opt(be_irg_t *birg)
 	lv       = be_get_birg_liveness(birg);
 
 	n_classes = arch_env_get_n_reg_class(arch_env);
-	register_values = ALLOCAN(ir_node**, n_classes);
+	register_values = XMALLOCN(ir_node**, n_classes);
 	for (i = 0; i < n_classes; ++i) {
 		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
-		register_values[i] = ALLOCAN(ir_node*, n_regs);
+		register_values[i] = XMALLOCN(ir_node*, n_regs);
 	}
 
 	irg_block_walk_graph(irg, process_block, NULL, NULL);
+
+	for (i = 0; i < n_classes; ++i) {
+		xfree(register_values[i]);
+	}
+	xfree(register_values);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole);
