@@ -768,11 +768,10 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 */
 static ir_node *construct_ssa_n(ir_node *def, ir_node *user, int copies)
 {
-	ir_graph *irg;
 	ir_mode *mode;
-	irg = get_irn_irg(def);
 	int i, user_arity;
 	ir_node *newval;
+	ir_graph *irg = get_irn_irg(def);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(current_ir_graph);

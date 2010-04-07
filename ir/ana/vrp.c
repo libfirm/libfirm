@@ -619,14 +619,14 @@ vrp_attr *vrp_get_info(const ir_node *node)
 {
 	const ir_graph *irg   = get_irn_irg(node);
 	const ir_phase *phase = irg_get_phase(irg, PHASE_VRP);
+	vrp_attr       *vrp;
 
 	if (phase == NULL) {
 		/* phase has not yet been initialized */
 		return NULL;
 	}
 
-
-	vrp_attr *vrp = phase_get_irn_data(phase, node);
+	vrp = phase_get_irn_data(phase, node);
 	if (vrp && vrp->valid) {
 		return vrp;
 	}
