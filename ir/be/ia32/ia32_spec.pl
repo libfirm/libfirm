@@ -1363,6 +1363,17 @@ Push => {
 	units     => [ "GP" ],
 },
 
+Push0 => {
+	state   => "exc_pinned",
+	reg_req => { in => [ "esp" ], out => [ "esp:I|S" ] },
+	ins     => [ "stack" ],
+	outs    => [ "stack" ],
+	emit    => '. pushl %%eax',
+	latency => 2,
+	units   => [ "GP" ],
+	mode    => $mode_gp,
+},
+
 Pop => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "none", "esp" ], out => [ "gp", "none", "none", "esp:I|S" ] },

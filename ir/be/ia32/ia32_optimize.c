@@ -524,6 +524,34 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 }
 
 #if 0
+/**
+ * Creates a Push instruction before the given schedule point.
+ *
+ * @param dbgi        debug info
+ * @param block       the block
+ * @param stack       the previous stack value
+ * @param schedpoint  the new node is added before this node
+ * @param reg         the register to pop
+ *
+ * @return the new stack value
+ */
+static ir_node *create_push(dbg_info *dbgi, ir_node *block,
+                            ir_node *stack, ir_node *schedpoint)
+{
+	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+
+	ir_node *val   = ia32_new_NoReg_gp(cg);
+	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *nomem = new_NoMem();
+	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
+	sched_add_before(schedpoint, push);
+
+	stack = new_r_Proj(push, mode_Iu, pn_ia32_Push_stack);
+	arch_set_irn_register(stack, esp);
+
+	return stack;
+}
+
 static void peephole_store_incsp(ir_node *store)
 {
 	dbg_info *dbgi;
@@ -843,34 +871,6 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
 }
 
 /**
- * Creates a Push instruction before the given schedule point.
- *
- * @param dbgi        debug info
- * @param block       the block
- * @param stack       the previous stack value
- * @param schedpoint  the new node is added before this node
- * @param reg         the register to pop
- *
- * @return the new stack value
- */
-static ir_node *create_push(dbg_info *dbgi, ir_node *block,
-                            ir_node *stack, ir_node *schedpoint)
-{
-	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
-
-	ir_node *val   = ia32_new_NoReg_gp(cg);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *nomem = new_NoMem();
-	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
-	sched_add_before(schedpoint, push);
-
-	stack = new_r_Proj(push, mode_Iu, pn_ia32_Push_stack);
-	arch_set_irn_register(stack, esp);
-
-	return stack;
-}
-
-/**
  * Optimize an IncSp by replacing it with Push/Pop.
  */
 static void peephole_be_IncSP(ir_node *node)
@@ -921,10 +921,14 @@ static void peephole_be_IncSP(ir_node *node)
 		dbgi  = get_irn_dbg_info(node);
 		block = get_nodes_block(node);
 		stack = be_get_IncSP_pred(node);
-		stack = create_push(dbgi, block, stack, node);
+		stack = new_bd_ia32_Push0(dbgi, block, stack);
+		arch_set_irn_register(stack, esp);
+		sched_add_before(node, stack);
 
 		if (offset == +8) {
-			stack = create_push(dbgi, block, stack, node);
+			stack = new_bd_ia32_Push0(dbgi, block, stack);
+			arch_set_irn_register(stack, esp);
+			sched_add_before(node, stack);
 		}
 	}
 
