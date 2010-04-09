@@ -31,7 +31,7 @@ typedef unsigned long ir_exc_region_t;
 typedef unsigned long ir_label_t;
 
 typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
-typedef struct type_dbg_info        type_dbg_info;
+typedef struct type_dbg_info        type_dbg_info,       *type_dbg_info_ptr;
 typedef const struct _ident         ident,               *ir_ident_ptr;
 typedef struct ir_node              ir_node,             *ir_node_ptr;
 typedef struct ir_op                ir_op,               *ir_op_ptr;
