@@ -214,6 +214,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				if (c_b == NULL) {
 					ir_node *c_true  = new_Const(tarval_b_true);
 					ir_node *c_false = new_Const(tarval_b_false);
+					env->num_consts += 2;
 					if (pnc == pn_Cond_true) {
 						c_b = c_true;
 						c_o = c_false;
@@ -232,6 +233,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				}
 				phi = new_r_Phi(user_blk, n, in, mode_b);
 				set_irn_n(user, pos, phi);
+				env->num_eq += 1;
 			}
 		}
 	}
