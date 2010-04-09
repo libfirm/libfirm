@@ -4456,6 +4456,16 @@ ir_node *get_value(int pos, ir_mode *mode);
  */
 void set_value(int pos, ir_node *value);
 
+/**
+ * Find the value number for a node in the current block.
+ *
+ * @param value  the searched value
+ *
+ * @return the value number of the value or -1 if this value has
+ * no value number in the current block.
+ */
+int find_value(ir_node *value);
+
 /** Get the current memory state.
  *
  * Use this function to obtain the last definition of the memory
