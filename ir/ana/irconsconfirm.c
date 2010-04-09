@@ -298,39 +298,40 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 				DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, user, right));
 
 				env->num_eq += 1;
-			} else if (block_dominates(blk, cond_block)) {
-				if (is_Const(right) && get_irn_pinned(user) == op_pin_state_floats) {
-					/*
-					 * left == Const and we found a movable user of left in a
-					 * dominator of the Cond block
-					 */
-					const ir_edge_t *edge, *next;
-					for (edge = get_irn_out_edge_first(user); edge; edge = next) {
-						ir_node *usr_of_usr = get_edge_src_irn(edge);
-						int      npos = get_edge_src_pos(edge);
-						ir_node *blk  = get_effective_use_block(usr_of_usr, npos);
+			} else if (block_dominates(blk, cond_block)
+					&& is_Const(right)
+					&& get_irn_pinned(user) == op_pin_state_floats) {
+				/*
+				 * left == Const and we found a movable user of left in a
+				 * dominator of the Cond block
+				 */
+				const ir_edge_t *edge, *next;
+				for (edge = get_irn_out_edge_first(user); edge; edge = next) {
+					ir_node *usr_of_usr = get_edge_src_irn(edge);
+					int      npos = get_edge_src_pos(edge);
+					ir_node *blk  = get_effective_use_block(usr_of_usr, npos);
 
-						next = get_irn_out_edge_next(user, edge);
-						if (block_dominates(block, blk)) {
-							/*
-							 * The user of the user is dominated by our true/false
-							 * block. So, create a copy of user WITH the constant
-							 * replacing it's pos'th input.
-							 *
-							 * This is always good for unop's and might be good
-							 * for binops.
-							 *
-							 * If user has other user in the false/true block, code
-							 * placement will move it down.
-							 * If there are users in cond block or upper, we create
-							 * "redundant ops", because one will have a const op,
-							 * the other no const ...
-							 */
-							ir_node *new_op = exact_copy(user);
-							set_nodes_block(new_op, block);
-							set_irn_n(new_op, pos, right);
-							set_irn_n(usr_of_usr, npos, new_op);
-						}
+					next = get_irn_out_edge_next(user, edge);
+					if (block_dominates(block, blk)) {
+						/*
+						 * The user of the user is dominated by our true/false
+						 * block. So, create a copy of user WITH the constant
+						 * replacing it's pos'th input.
+						 *
+						 * This is always good for unop's and might be good
+						 * for binops.
+						 *
+						 * If user has other user in the false/true block, code
+						 * placement will move it down.
+						 * If there are users in cond block or upper, we create
+						 * "redundant ops", because one will have a const op,
+						 * the other no const ...
+						 */
+						ir_node *new_op = exact_copy(user);
+						set_nodes_block(new_op, block);
+						set_irn_n(new_op, pos, right);
+						set_irn_n(usr_of_usr, npos, new_op);
+						env->num_eq += 1;
 					}
 				}
 			}
@@ -563,7 +564,6 @@ void construct_confirms(ir_graph *irg)
 {
 	env_t env;
 	int edges_active = edges_activated(irg);
-
 
 	FIRM_DBG_REGISTER(dbg, "firm.ana.confirm");
 
