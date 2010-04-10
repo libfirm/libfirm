@@ -2291,6 +2291,43 @@ static void compute_Eor(node_t *node)
 }  /* compute_Eor */
 
 /**
+ * (Re-)compute the type for Cmp.
+ *
+ * @param node  the node
+ */
+static void compute_Cmp(node_t *node)
+{
+	ir_node        *cmp  = node->node;
+	node_t         *l    = get_irn_node(get_Cmp_left(cmp));
+	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
+	lattice_elem_t a     = l->type;
+	lattice_elem_t b     = r->type;
+	ir_mode        *mode = get_irn_mode(get_Cmp_left(cmp));
+
+	if (a.tv == tarval_top || b.tv == tarval_top) {
+		node->type.tv = tarval_top;
+	} else if (r->part == l->part) {
+		/* both nodes congruent, we can probably do something */
+		if (mode_is_float(mode)) {
+			/* beware of NaN's */
+			node->type.tv = tarval_bottom;
+		} else {
+			node->type.tv = tarval_b_true;
+		}
+	} else if (is_con(a) && is_con(b)) {
+		/* both nodes are constants, we can probably do something */
+		if (mode_is_float(mode)) {
+			/* beware of NaN's */
+			node->type.tv = tarval_bottom;
+		} else {
+			node->type.tv = tarval_b_true;
+		}
+	} else {
+		node->type.tv = tarval_bottom;
+	}
+}  /* compute_Cmp */
+
+/**
  * (Re-)compute the type for a Proj(Cmp).
  *
  * @param node  the node
@@ -3491,6 +3528,7 @@ static void set_compute_functions(void)
 	SET(Sub);
 	SET(Eor);
 	SET(SymConst);
+	SET(Cmp);
 	SET(Proj);
 	SET(Confirm);
 	SET(Return);
