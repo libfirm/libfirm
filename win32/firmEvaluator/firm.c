@@ -254,8 +254,14 @@ static HRESULT format_type(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
     _tcsncat(pResult, " ", max);
   }
 
-  if (format_ident(pHelper, tp.name, name, sizeof(name)) != S_OK)
-    return E_FAIL;
+  name[0] = '\0';
+  if (tp.name) {
+    if (format_ident(pHelper, tp.name, name, sizeof(name)) != S_OK)
+      return E_FAIL;
+  } else {
+    if (format_mode(pHelper, tp.mode, name, sizeof(name)) != S_OK)
+      return E_FAIL;
+  }
 
   _tcsncat(pResult, name, max);
   switch (nBase) {
