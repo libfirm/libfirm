@@ -921,12 +921,12 @@ static void peephole_be_IncSP(ir_node *node)
 		dbgi  = get_irn_dbg_info(node);
 		block = get_nodes_block(node);
 		stack = be_get_IncSP_pred(node);
-		stack = new_bd_ia32_Push0(dbgi, block, stack);
+		stack = new_bd_ia32_PushEax(dbgi, block, stack);
 		arch_set_irn_register(stack, esp);
 		sched_add_before(node, stack);
 
 		if (offset == +8) {
-			stack = new_bd_ia32_Push0(dbgi, block, stack);
+			stack = new_bd_ia32_PushEax(dbgi, block, stack);
 			arch_set_irn_register(stack, esp);
 			sched_add_before(node, stack);
 		}

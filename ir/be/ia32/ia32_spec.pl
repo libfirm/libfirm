@@ -1363,7 +1363,7 @@ Push => {
 	units     => [ "GP" ],
 },
 
-Push0 => {
+PushEax => {
 	state   => "exc_pinned",
 	reg_req => { in => [ "esp" ], out => [ "esp:I|S" ] },
 	ins     => [ "stack" ],
