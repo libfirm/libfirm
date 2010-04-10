@@ -585,9 +585,16 @@ static void move_nodes_to_block(ir_node *jmp, ir_node *to_block)
 static void find_cf_and_or_walker(ir_node *block, void *ctx)
 {
 	int low_idx, up_idx;
-	int n_cfgpreds = get_Block_n_cfgpreds(block);
+	int n_cfgpreds;
 	bool_opt_env_t *env = ctx;
 
+	/* because we modify the graph in regions we might not visited yet,
+	 * Id nodes might arise here. Ignore them.
+	 */
+	if (is_Id(block))
+		return;
+
+	n_cfgpreds = get_Block_n_cfgpreds(block);
 restart:
 	if (n_cfgpreds < 2)
 		return;
