@@ -722,6 +722,8 @@ void opt_tail_recursion(void)
 	int n_opt_applications = 0;
 	ir_graph *irg;
 
+	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
+
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
 
