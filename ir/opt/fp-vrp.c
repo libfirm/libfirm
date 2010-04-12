@@ -438,7 +438,7 @@ result_unknown_X:
 					o = f->o;
 				} else {
 					z = tarval_or( f->z, t->z);
-					z = tarval_and(f->o, t->o);
+					o = tarval_and(f->o, t->o);
 				}
 			}
 
