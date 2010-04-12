@@ -1076,4 +1076,11 @@ void place_code(ir_graph *irg);
  */
 ir_graph_pass_t *place_code_pass(const char *name);
 
+/**
+ * Determine information about the values of nodes and perform simplications
+ * using this information.  This optimization performs a data-flow analysis to
+ * find the minimal fixpoint.
+ */
+void fixpoint_vrp(ir_graph*);
+
 #endif
