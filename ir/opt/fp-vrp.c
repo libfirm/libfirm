@@ -440,6 +440,7 @@ result_unknown_X:
 					z = tarval_or( f->z, t->z);
 					o = tarval_and(f->o, t->o);
 				}
+				break;
 			}
 
 			case iro_Phi: {
