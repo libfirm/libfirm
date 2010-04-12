@@ -40,6 +40,7 @@
 #include "iroptimize.h"
 #include "irtools.h"
 #include "tv.h"
+#include "irpass.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -314,8 +315,8 @@ result_unknown_X:
 					 * range the addition is disjoint and therefore Add behaves like Or.
 					 */
 					tarval* const low_zero_mask = tarval_or(no_c_in_no_c_out, tarval_neg(no_c_in_no_c_out));
-					z = tarval_or( tarval_or(lz, rz), low_zero_mask);
 					tarval* const low_one_mask  = tarval_not(low_zero_mask);
+					z = tarval_or( tarval_or(lz, rz), low_zero_mask);
 					o = tarval_and(tarval_or(lo, ro), low_one_mask);
 				}
 				break;
@@ -683,4 +684,9 @@ void fixpoint_vrp(ir_graph* const irg)
 	irg_walk_graph(irg, NULL, apply_result, NULL);
 
 	obstack_free(&obst, NULL);
+}
+
+ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name)
+{
+	return def_graph_pass(name ? name : "fixpoint_vrp", fixpoint_vrp);
 }

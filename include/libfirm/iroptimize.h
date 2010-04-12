@@ -1083,4 +1083,17 @@ ir_graph_pass_t *place_code_pass(const char *name);
  */
 void fixpoint_vrp(ir_graph*);
 
+/**
+ * Creates an ir_graph pass for fixpoint_vrp().
+ * This pass dDetermines information about the values of nodes
+ * and perform simplications using this information.
+ * This optimization performs a data-flow analysis to
+ * find the minimal fixpoint.
+ *
+ * @param name     the name of this pass or NULL
+ *
+ * @return  the newly created ir_graph pass
+ */
+ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
+
 #endif
