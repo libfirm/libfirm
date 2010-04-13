@@ -64,7 +64,7 @@ static int default_allow_ifconv(ir_node *sel, ir_node *mux_false,
 	(void) sel;
 	(void) mux_false;
 	(void) mux_true;
-	return 1;
+	return 0;
 }
 
 /**
