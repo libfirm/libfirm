@@ -175,9 +175,11 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode  *mode = get_irn_mode(node);
 	size_t    arity;
+	size_t    conv_arity;
 	size_t    i;
 	ir_node  *new_node;
-	ir_graph *irg = get_irn_irg(node);
+	ir_graph *irg;
+	ir_node **ins;
 
 	if (mode == dest_mode)
 		return node;
@@ -220,28 +222,36 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return place_conv(node, dest_mode);
 	}
 
-	// Create a new node with the right mode
-	new_node = new_ir_node(get_irn_dbg_info(node),
-				irg,
-				get_nodes_block(node),
-				get_irn_op(node),
-				dest_mode,
-				get_irn_arity(node),
-				get_irn_in(node) + 1);
-	copy_node_attr(irg, node, new_node);
+	// We want to create a new node with the right mode
+	arity = get_irn_arity(node);
+	irg = get_irn_irg(node);
+	ins = ALLOCAN(ir_node *, arity);
 
 	// The shift count does not participate in the conv optimisation
-	arity = is_Shl(new_node) ? 1 : get_irn_arity(new_node);
-	for (i = 0; i < arity; i++) {
-		ir_node *pred = get_irn_n(new_node, i);
+	conv_arity = is_Shl(node) ? 1 : arity;
+	for (i = 0; i < conv_arity; i++) {
+		ir_node *pred = get_irn_n(node, i);
 		ir_node *transformed;
 		if (get_conv_costs(pred, dest_mode) > 0) {
 			transformed = place_conv(pred, dest_mode);
 		} else {
 			transformed = conv_transform(pred, dest_mode);
 		}
-		set_irn_n(new_node, i, transformed);
+		ins[i] = transformed;
 	}
+
+	for (i = conv_arity; i < arity; i++) {
+		ins[i] = get_irn_n(node, i);
+	}
+
+	new_node = new_ir_node(get_irn_dbg_info(node),
+				irg,
+				get_nodes_block(node),
+				get_irn_op(node),
+				dest_mode,
+				arity,
+				ins);
+	copy_node_attr(irg, node, new_node);
 
 	return new_node;
 }
