@@ -476,8 +476,8 @@ static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
 	ir_node *save = new_bd_sparc_Save(NULL, block, sp_proj, *mem, SPARC_MIN_STACKSIZE);
 
 	*stack_bias -= SPARC_MIN_STACKSIZE;
-	sp_proj = new_r_Proj(block, save, sp->reg_class->mode, pn_sparc_Save_stack);
-	*mem    = new_r_Proj(block, save, mode_M, pn_sparc_Save_mem);
+	sp_proj = new_r_Proj(save, sp->reg_class->mode, pn_sparc_Save_stack);
+	*mem    = new_r_Proj(save, mode_M, pn_sparc_Save_mem);
 
 	arch_set_irn_register(sp_proj, sp);
 	be_abi_reg_map_set(reg_map, sp, sp_proj);

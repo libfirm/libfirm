@@ -293,7 +293,7 @@ static ir_node *gen_Mul(ir_node *node) {
 	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
 
 	// TODO: throws an error - check why
-	proj_res_low = new_rd_Proj(dbgi, block, mul, mode_Iu, pn_sparc_UMul_low);
+	proj_res_low = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UMul_low);
 	return proj_res_low;
 
 	//return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
