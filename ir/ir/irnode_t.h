@@ -651,7 +651,7 @@ static inline ir_node *_get_Block_phis(const ir_node *block)
 }
 
 /**
- * Sets the next link of a Phi.
+ * Sets the next link of a Phi block list.
  */
 static inline void _set_Phi_next(ir_node *phi, ir_node *next)
 {
@@ -660,8 +660,7 @@ static inline void _set_Phi_next(ir_node *phi, ir_node *next)
 }
 
 /**
- * Returns the link of a node.
- * Intern version of libFirm.
+ * Returns the next phi of a phi block list.
  */
 static inline ir_node *_get_Phi_next(const ir_node *phi)
 {
