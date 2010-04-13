@@ -114,37 +114,37 @@ $mode_fp      = "mode_D";
 		{ name => "g4", realname => "g4", type => 1 },
 		{ name => "g5", realname => "g5", type => 4 }, # reserved by SPARC ABI
 		{ name => "g6", realname => "g6", type => 4 }, # reserved by SPARC ABI
-		{ name => "g7", realname => "g7", type => 2 }, # reserved by SPARC ABI
+		{ name => "g7", realname => "g7", type => 4 }, # reserved by SPARC ABI
 
 		# window's out registers
-		{ name => "o0", realname => "o0", type => 1 }, # param 1 / return value from callee
-		{ name => "o1", realname => "o1", type => 1 }, # param 2
-		{ name => "o2", realname => "o2", type => 1 }, # param 3
-		{ name => "o3", realname => "o3", type => 1 }, # param 4
-		{ name => "o4", realname => "o4", type => 1 }, # param 5
-		{ name => "o5", realname => "o5", type => 1 }, # param 6
+		{ name => "o0", realname => "o0", type => 0 }, # param 1 / return value from callee
+		{ name => "o1", realname => "o1", type => 0 }, # param 2
+		{ name => "o2", realname => "o2", type => 0 }, # param 3
+		{ name => "o3", realname => "o3", type => 0 }, # param 4
+		{ name => "o4", realname => "o4", type => 0 }, # param 5
+		{ name => "o5", realname => "o5", type => 0 }, # param 6
 		{ name => "sp", realname => "sp", type => 4 }, # our stackpointer
-		{ name => "o7", realname => "o6", type => 1 }, # temp. value / address of CALL instr.
+		{ name => "o7", realname => "o6", type => 4 }, # temp. value / address of CALL instr.
 
 		# window's local registers
-		{ name => "l0", realname => "l0", type => 2 },
-		{ name => "l1", realname => "l1", type => 2 },
-		{ name => "l2", realname => "l2", type => 2 },
-		{ name => "l3", realname => "l3", type => 2 },
-		{ name => "l4", realname => "l4", type => 2 },
-		{ name => "l5", realname => "l5", type => 2 },
-		{ name => "l6", realname => "l6", type => 2 },
-		{ name => "l7", realname => "l7", type => 2 },
+		{ name => "l0", realname => "l0", type => 0 },
+		{ name => "l1", realname => "l1", type => 0 },
+		{ name => "l2", realname => "l2", type => 0 },
+		{ name => "l3", realname => "l3", type => 0 },
+		{ name => "l4", realname => "l4", type => 0 },
+		{ name => "l5", realname => "l5", type => 0 },
+		{ name => "l6", realname => "l6", type => 0 },
+		{ name => "l7", realname => "l7", type => 0 },
 
 		# window's in registers
-		{ name => "i0", realname => "i0", type => 2 }, # incoming param1 / return value to caller
-		{ name => "i1", realname => "i1", type => 2 }, # param 2
-		{ name => "i2", realname => "i2", type => 2 }, # param 3
-		{ name => "i3", realname => "i3", type => 2 }, # param 4
-		{ name => "i4", realname => "i4", type => 2 }, # param 5
-		{ name => "i5", realname => "i5", type => 2 }, # param 6
-		{ name => "fp", realname => "i6", type => 4 }, # our framepointer
-		{ name => "i7", realname => "i7", type => 2 }, # return address - 8
+		{ name => "i0", realname => "i0", type => 1 }, # incoming param1 / return value to caller
+		{ name => "i1", realname => "i1", type => 1 }, # param 2
+		{ name => "i2", realname => "i2", type => 1 }, # param 3
+		{ name => "i3", realname => "i3", type => 1 }, # param 4
+		{ name => "i4", realname => "i4", type => 1 }, # param 5
+		{ name => "i5", realname => "i5", type => 1 }, # param 6
+		{ name => "fp", realname => "fp", type => 4 }, # our framepointer
+		{ name => "i7", realname => "i7", type => 4 }, # return address - 8
 		{ mode => $mode_gp }
 	],
 	flags => [
@@ -240,24 +240,26 @@ $default_copy_attr = "sparc_copy_attr";
 
 
 %init_attr = (
-		    sparc_attr_t           			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-		    sparc_load_store_attr_t         => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		sparc_attr_t				=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+		sparc_load_store_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		    									"\tinit_sparc_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
-		    sparc_symconst_attr_t  			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-												"\tinit_sparc_symconst_attributes(res, entity);",
-			sparc_cmp_attr_t 				=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n",
-			sparc_jmp_cond_attr_t   		=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-			sparc_jmp_switch_attr_t 		=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+		sparc_symconst_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+								"\tinit_sparc_symconst_attributes(res, entity);",
+		sparc_cmp_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n",
+		sparc_jmp_cond_attr_t   		=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+		sparc_jmp_switch_attr_t 		=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+		sparc_save_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 
 );
 
 %compare_attr = (
-		    sparc_attr_t            => "cmp_attr_sparc",
-		    sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-		    sparc_symconst_attr_t   => "cmp_attr_sparc_symconst",
-		    sparc_jmp_cond_attr_t	=> "cmp_attr_sparc_jmp_cond",
-		    sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
-		    sparc_cmp_attr_t		=> "cmp_attr_sparc_cmp",
+		sparc_attr_t            => "cmp_attr_sparc",
+		sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
+		sparc_symconst_attr_t   => "cmp_attr_sparc_symconst",
+		sparc_jmp_cond_attr_t	=> "cmp_attr_sparc_jmp_cond",
+		sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
+		sparc_cmp_attr_t	=> "cmp_attr_sparc_cmp",
+		sparc_save_attr_t	=> "cmp_attr_sparc_save",
 );
 
 
@@ -271,10 +273,10 @@ my %cmp_operand_constructors = (
         custominit => "sparc_set_attr_imm(res, immediate_value);" .
 						"\tinit_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
         reg_req    => { in => [ "gp" ], out => [ "flags" ] },
-		ins        => [ "left" ],
+	ins        => [ "left" ],
     },
     reg => {
-		attr       => "bool ins_permuted, bool is_unsigned",
+	attr       => "bool ins_permuted, bool is_unsigned",
         custominit => "init_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
         reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
         ins        => [ "left", "right" ],
@@ -288,7 +290,6 @@ my %unop_operand_constructors = (
         reg_req    => { in => [], out => [ "gp" ] },
     },
     reg => {
-		# custominit => "set_sparc_attr_values(res, immediate_value);",
         reg_req    => { in => [ "gp" ], out => [ "gp" ] },
     },
 );
@@ -301,7 +302,6 @@ my %binop_operand_constructors = (
         ins        => [ "left" ],
     },
     reg => {
-		# custominit => "set_sparc_attr_values(res, immediate_value);",
         reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
         ins        => [ "left", "right" ],
     },
@@ -362,7 +362,34 @@ LoadHi => {
   reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
   attr_type => "sparc_load_store_attr_t",
   attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-  emit      => '. sethi %%hi(%S1), %D1'
+  emit      => '. sethi %%hi(%S1), %D1',
+},
+
+HiImm => {
+  op_flags  => "R",
+  comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
+  state     => "exc_pinned",
+  outs      => [ "res" ],
+  mode      => $mode_gp,
+  reg_req   => { in => [], out => [ "gp" ] },
+  #attr_type => "sparc_load_store_attr_t",
+  attr       => "int immediate_value",
+  custominit => "sparc_set_attr_imm(res, immediate_value);",
+
+},
+
+LoImm => {
+  op_flags  => "R",
+  comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
+  state     => "exc_pinned",
+  ins       => [ "hireg" ],
+  outs      => [ "res" ],
+  mode      => $mode_gp,
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+  #attr_type => "sparc_load_store_attr_t",
+  attr       => "int immediate_value",
+  custominit => "sparc_set_attr_imm(res, immediate_value);",
+
 },
 
 LoadLo => {
@@ -397,6 +424,19 @@ Mov => {
   emit      => '. mov %R1I, %D1',
   mode      => $mode_gp,
   constructors => \%unop_operand_constructors,
+},
+
+Save => {
+	comment => "function prolog instruction. autom. saves sp & shifts the register window. previous out regs become the new in regs",
+	reg_req   => {
+			in => [ "sp", "none"],
+			out => [ "sp:I|S","none" ]
+	},
+	ins       => [ "stack", "mem" ],
+	outs      => [ "stack", "mem" ],
+	attr      => "int initial_stacksize",
+	attr_type => "sparc_save_attr_t",
+        init_attr => "\tinit_sparc_save_attr(res, initial_stacksize);",
 },
 
 AddSP => {
@@ -527,13 +567,40 @@ Or => {
   constructors => \%binop_operand_constructors,
 },
 
-#Mul => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      =>'. mul %S1, %S2, %D1'
-#},
+Xor => {
+  irn_flags => "R",
+  comment   => "construct logical xor",
+  mode		=> $mode_gp,
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  emit      => '. xor %S1, %R2I, %D1',
+  constructors => \%binop_operand_constructors,
+},
+
+UMul => {
+  state     => "exc_pinned",
+  comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+  outs      => [ "low", "high" ],
+  constructors => \%binop_operand_constructors,
+  emit      =>'. umul %S1, %R2I, %D1'
+},
+
+Minus => {
+  irn_flags => "R",
+  mode	    => $mode_gp,
+  comment   => "construct Minus: Minus(a) = -a",
+  #reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+  emit      => ". sub %%g0, %S1, %D1"
+},
+
+Not => {
+  irn_flags   => "R",
+  mode	      => $mode_gp,
+  comment     => "construct Not: Not(a) = !a",
+  reg_req     => { in => [ "gp" ], out => [ "gp" ] },
+  emit        => '. xnor %S1, %%g0, %D1'
+},
 
 #Mul_i => {
 #  irn_flags => "R",

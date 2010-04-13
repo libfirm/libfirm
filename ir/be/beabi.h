@@ -121,6 +121,16 @@ void be_abi_call_set_pop(be_abi_call_t *call, int pop);
 void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_register_class_t *cls);
 
 /**
+ * The ABI can change when we call a function vs. when we have
+ * been called.
+ */
+typedef enum {
+	ABI_CONTEXT_CALLEE = 1 << 0,
+	ABI_CONTEXT_CALLER = 1 << 1,
+	ABI_CONTEXT_BOTH   = ABI_CONTEXT_CALLEE | ABI_CONTEXT_CALLER
+} be_abi_context_t;
+
+/**
  * Record the that ABI transmits call argument pos on the stack. Modifies the abi object.
  *
  * @param call          the abi call object
@@ -130,7 +140,9 @@ void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_regi
  * @param space_before  size of allocated additional space before the parameter
  * @param space_after   size of allocated additional space after the parameter
  */
-void be_abi_call_param_stack(be_abi_call_t *call, int pos, ir_mode *load_mode, unsigned alignment, unsigned space_before, unsigned space_after);
+void be_abi_call_param_stack(be_abi_call_t *call, int pos, ir_mode *load_mode,
+                             unsigned alignment, unsigned space_before,
+                             unsigned space_after, be_abi_context_t context);
 
 /**
  * Record the that ABI transmits call argument pos in the given register.
@@ -139,7 +151,9 @@ void be_abi_call_param_stack(be_abi_call_t *call, int pos, ir_mode *load_mode, u
  * @param pos           the parameter position
  * @param reg           the register used
  */
-void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
+void be_abi_call_param_reg(be_abi_call_t *call, int pos,
+                           const arch_register_t *reg,
+                           be_abi_context_t context);
 
 /**
  * Record the that ABI transmits return value pos in the given register.
@@ -148,7 +162,9 @@ void be_abi_call_param_reg(be_abi_call_t *call, int pos, const arch_register_t *
  * @param pos           the return value position
  * @param reg           the register used
  */
-void be_abi_call_res_reg(be_abi_call_t *call, int pos, const arch_register_t *reg);
+void be_abi_call_res_reg(be_abi_call_t *call, int pos,
+                         const arch_register_t *reg,
+                         be_abi_context_t context);
 
 /**
  * Get the flags of a ABI call object.

@@ -63,6 +63,7 @@ typedef struct _be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
 	unsigned in_reg   : 1;  /**< 1: this argument is transmitted in registers. */
 	unsigned on_stack : 1;	/**< 1: this argument is transmitted on the stack. */
+	unsigned callee   : 1;  /**< 1: someone called us. 0: We call another function */
 
 	int                    pos;
 	const arch_register_t *reg;
@@ -141,7 +142,7 @@ static int cmp_call_arg(const void *a, const void *b, size_t n)
 {
 	const be_abi_call_arg_t *p = a, *q = b;
 	(void) n;
-	return !(p->is_res == q->is_res && p->pos == q->pos);
+	return !(p->is_res == q->is_res && p->pos == q->pos && p->callee == q->callee);
 }
 
 /**
@@ -150,8 +151,9 @@ static int cmp_call_arg(const void *a, const void *b, size_t n)
  * @param call      the abi call
  * @param is_res    true for call results, false for call arguments
  * @param pos       position of the argument
+ * @param callee	context type - if we are callee or caller
  */
-static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
+static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos, int callee)
 {
 	be_abi_call_arg_t arg;
 	unsigned hash;
@@ -159,6 +161,7 @@ static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
 	memset(&arg, 0, sizeof(arg));
 	arg.is_res = is_res;
 	arg.pos    = pos;
+	arg.callee = callee;
 
 	hash = is_res * 128 + pos;
 
@@ -167,23 +170,18 @@ static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos)
 
 /**
  * Set an ABI call object argument.
- *
- * @param call      the abi call
- * @param is_res    true for call results, false for call arguments
- * @param pos       position of the argument
  */
-static be_abi_call_arg_t *create_call_arg(be_abi_call_t *call, int is_res, int pos)
+static void remember_call_arg(be_abi_call_arg_t *arg, be_abi_call_t *call, be_abi_context_t context)
 {
-	be_abi_call_arg_t arg;
-	unsigned hash;
-
-	memset(&arg, 0, sizeof(arg));
-	arg.is_res = is_res;
-	arg.pos    = pos;
-
-	hash = is_res * 128 + pos;
-
-	return set_insert(call->params, &arg, sizeof(arg), hash);
+	unsigned hash = arg->is_res * 128 + arg->pos;
+	if (context & ABI_CONTEXT_CALLEE) {
+		arg->callee = 1;
+		set_insert(call->params, arg, sizeof(*arg), hash);
+	}
+	if (context & ABI_CONTEXT_CALLER) {
+		arg->callee = 0;
+		set_insert(call->params, arg, sizeof(*arg), hash);
+	}
 }
 
 /* Set the flags for a call. */
@@ -207,29 +205,49 @@ void be_abi_call_set_call_address_reg_class(be_abi_call_t *call, const arch_regi
 }
 
 
-void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos, ir_mode *load_mode, unsigned alignment, unsigned space_before, unsigned space_after)
+void be_abi_call_param_stack(be_abi_call_t *call, int arg_pos,
+                             ir_mode *load_mode, unsigned alignment,
+                             unsigned space_before, unsigned space_after,
+                             be_abi_context_t context)
 {
-	be_abi_call_arg_t *arg = create_call_arg(call, 0, arg_pos);
-	arg->on_stack     = 1;
-	arg->load_mode    = load_mode;
-	arg->alignment    = alignment;
-	arg->space_before = space_before;
-	arg->space_after  = space_after;
+	be_abi_call_arg_t arg;
+	memset(&arg, 0, sizeof(arg));
 	assert(alignment > 0 && "Alignment must be greater than 0");
+	arg.on_stack     = 1;
+	arg.load_mode    = load_mode;
+	arg.alignment    = alignment;
+	arg.space_before = space_before;
+	arg.space_after  = space_after;
+	arg.is_res       = 0;
+	arg.pos          = arg_pos;
+
+	remember_call_arg(&arg, call, context);
 }
 
-void be_abi_call_param_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg)
+void be_abi_call_param_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg, be_abi_context_t context)
 {
-	be_abi_call_arg_t *arg = create_call_arg(call, 0, arg_pos);
-	arg->in_reg = 1;
-	arg->reg = reg;
+	be_abi_call_arg_t arg;
+	memset(&arg, 0, sizeof(arg));
+
+	arg.in_reg = 1;
+	arg.reg    = reg;
+	arg.is_res = 0;
+	arg.pos    = arg_pos;
+
+	remember_call_arg(&arg, call, context);
 }
 
-void be_abi_call_res_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg)
+void be_abi_call_res_reg(be_abi_call_t *call, int arg_pos, const arch_register_t *reg, be_abi_context_t context)
 {
-	be_abi_call_arg_t *arg = create_call_arg(call, 1, arg_pos);
-	arg->in_reg = 1;
-	arg->reg = reg;
+	be_abi_call_arg_t arg;
+	memset(&arg, 0, sizeof(arg));
+
+	arg.in_reg = 1;
+	arg.reg    = reg;
+	arg.is_res = 1;
+	arg.pos    = arg_pos;
+
+	remember_call_arg(&arg, call, context);
 }
 
 /* Get the flags of a ABI call object. */
@@ -379,16 +397,6 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	return frame;
 }
 
-/**
- * Returns non-zero if the call argument at given position
- * is transfered on the stack.
- */
-static inline int is_on_stack(be_abi_call_t *call, int pos)
-{
-	be_abi_call_arg_t *arg = get_call_arg(call, 0, pos);
-	return arg && !arg->in_reg;
-}
-
 /*
    ____      _ _
   / ___|__ _| | |___
@@ -456,7 +464,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	assert(obstack_object_size(obst) == 0);
 	stack_param_idx = ALLOCAN(int, n_params);
 	for (i = 0; i < n_params; ++i) {
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 0);
 		assert(arg);
 		if (arg->on_stack) {
 			int arg_size = get_type_size_bytes(get_method_param_type(call_tp, i));
@@ -472,7 +480,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Collect all arguments which are passed in registers. */
 	reg_param_idxs = ALLOCAN(int, n_params);
 	for (i = 0; i < n_params; ++i) {
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 0);
 		if (arg && arg->in_reg) {
 			reg_param_idxs[n_reg_params++] = i;
 		}
@@ -519,7 +527,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		for (i = 0; i < n_stack_params; ++i) {
 			int p                  = stack_param_idx[i];
-			be_abi_call_arg_t *arg = get_call_arg(call, 0, p);
+			be_abi_call_arg_t *arg = get_call_arg(call, 0, p, 0);
 			ir_node *param         = get_Call_param(irn, p);
 			ir_node *addr          = curr_sp;
 			ir_node *mem           = NULL;
@@ -701,7 +709,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (i = 0; i < n_res; ++i) {
 		int pn;
 		ir_node           *proj = res_projs[i];
-		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i);
+		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i, 0);
 
 		/* returns values on stack not supported yet */
 		assert(arg->in_reg);
@@ -739,7 +747,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Set the register classes and constraints of the Call parameters. */
 	for (i = 0; i < n_reg_params; ++i) {
 		int index = reg_param_idxs[i];
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, index);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, index, 0);
 		assert(arg->reg != NULL);
 
 		be_set_constr_single_reg_in(low_call, be_pos_Call_first_arg + i,
@@ -749,7 +757,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Set the register constraints of the results. */
 	for (i = 0; i < n_res; ++i) {
 		ir_node                 *proj = res_projs[i];
-		const be_abi_call_arg_t *arg  = get_call_arg(call, 1, i);
+		const be_abi_call_arg_t *arg  = get_call_arg(call, 1, i, 0);
 		int                      pn   = get_Proj_proj(proj);
 
 		assert(arg->in_reg);
@@ -1226,7 +1234,7 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
 	res = new_type_struct(id_mangle_u(id, new_id_from_chars("arg_type", 8)));
 	for (i = 0; i < n; ++i, curr += inc) {
 		ir_type *param_type    = get_method_param_type(method_type, curr);
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, curr);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, curr, 1);
 
 		map[i] = NULL;
 		if (arg->on_stack) {
@@ -1388,7 +1396,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	/* Insert results for Return into the register map. */
 	for (i = 0; i < n_res; ++i) {
 		ir_node *res           = get_Return_res(irn, i);
-		be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 1, i, 1);
 		assert(arg->in_reg && "return value must be passed in register");
 		pmap_insert(reg_map, (void *) arg->reg, res);
 	}
@@ -1424,7 +1432,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	/* clear SP entry, since it has already been grown. */
 	pmap_insert(reg_map, (void *) arch_env->sp, NULL);
 	for (i = 0; i < n_res; ++i) {
-		be_abi_call_arg_t *arg = get_call_arg(call, 1, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 1, i, 1);
 
 		in[n]     = be_abi_reg_map_get(reg_map, arg->reg);
 		regs[n++] = arg->reg;
@@ -1583,7 +1591,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 	new_list = NULL;
 	for (i = 0; i < n; ++i) {
 		int               pos  = value_param_list[i].pos;
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, pos);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, pos, 1);
 
 		if (arg->in_reg) {
 			DBG((dbg, LEVEL_2, "\targ #%d need backing store\n", pos));
@@ -1890,7 +1898,7 @@ static void modify_irg(be_abi_irg_t *env)
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for (i = 0; i < n_params; ++i) {
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 1);
 		if (arg->in_reg && args[i]) {
 			assert(arg->reg != sp && "cannot use stack pointer as parameter register");
 			assert(i == get_Proj_proj(args[i]));
@@ -1995,7 +2003,7 @@ static void modify_irg(be_abi_irg_t *env)
 			ir_mode *mode;
 
 			nr         = MIN(nr, n_params);
-			arg        = get_call_arg(call, 0, nr);
+			arg        = get_call_arg(call, 0, nr, 1);
 			param_type = get_method_param_type(method_type, nr);
 
 			if (arg->in_reg) {

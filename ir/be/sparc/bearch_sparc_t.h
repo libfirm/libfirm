@@ -31,6 +31,11 @@
 #include "../beemitter.h"
 #include "set.h"
 
+// sparc ABI requires a min stacksize to
+// save registers in case of a trap etc.
+// by now we assume only non-leaf procedures: 92 + 4 (padding)
+#define SPARC_MIN_STACKSIZE 96
+
 typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct _sparc_isa_t sparc_isa_t;
 
@@ -61,5 +66,7 @@ struct sparc_transform_env_t {
 	ir_node  *irn;      /**< The irn, to be transformed */
 	ir_mode  *mode;     /**< The mode of the irn */
 };
+
+void sparc_finish_irg(sparc_code_gen_t *cg);
 
 #endif

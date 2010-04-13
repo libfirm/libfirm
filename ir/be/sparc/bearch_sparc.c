@@ -60,6 +60,7 @@
 #include "../beflags.h"
 
 #include "bearch_sparc_t.h"
+#include "bearch_sparc.h"
 
 #include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
@@ -121,7 +122,7 @@ static void sparc_set_frame_offset(ir_node *irn, int offset)
 static int sparc_get_sp_bias(const ir_node *irn)
 {
 	(void) irn;
-	return 0;
+	return SPARC_MIN_STACKSIZE;
 }
 
 /* fill register allocator interface */
@@ -156,18 +157,6 @@ static void sparc_prepare_graph(void *self)
 		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
 }
 
-
-
-/**
- * Called immediatly before emit phase.
- */
-static void sparc_finish_irg(void *self)
-{
-	sparc_code_gen_t *cg = self;
-	ir_graph            *irg = cg->irg;
-
-	dump_ir_block_graph_sched(irg, "-sparc-finished");
-}
 
 
 static ir_node *sparc_flags_remat(ir_node *node, ir_node *after)
@@ -302,7 +291,7 @@ static const arch_code_generator_if_t sparc_code_gen_if = {
 	NULL,                    /* spill hook */
 	sparc_before_ra,      /* before register allocation hook */
 	sparc_after_ra,       /* after register allocation hook */
-	sparc_finish_irg,
+	NULL,
 	sparc_emit_and_done
 };
 
@@ -459,6 +448,7 @@ static ir_type *sparc_get_between_type(void *self)
 	return between_type;
 }
 
+
 /**
  * Build the prolog, return the BASE POINTER register
  */
@@ -466,15 +456,34 @@ static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
                                                     pmap *reg_map, int *stack_bias)
 {
 	sparc_abi_env_t *env = self;
+	ir_node *block = get_irg_start_block(env->irg);
+	const arch_register_t *fp = &sparc_gp_regs[REG_FP];
+	const arch_register_t *sp = &sparc_gp_regs[REG_SP];
+
+	// sp
+	ir_node *sp_proj = be_abi_reg_map_get(reg_map, sp);
+
+
+	//ir_type *frame_type = get_irg_frame_type(env->irg);
+	//frame_alloc_area(frame_type, reserved_stack_size, 1, 1);
+
 	(void) reg_map;
 	(void) mem;
 	(void) stack_bias;
 
-	if (env->flags.try_omit_fp)
-		return env->arch_env->sp;
+	// alloc min required stack space
+	// TODO: the min stacksize depends on wether this is a leaf procedure or not
+	ir_node *save = new_bd_sparc_Save(NULL, block, sp_proj, *mem, SPARC_MIN_STACKSIZE);
 
-	//panic("framepointer not implemented yet");
-	return env->arch_env->bp;
+	*stack_bias -= SPARC_MIN_STACKSIZE;
+	sp_proj = new_r_Proj(block, save, sp->reg_class->mode, pn_sparc_Save_stack);
+	*mem    = new_r_Proj(block, save, mode_M, pn_sparc_Save_mem);
+
+	arch_set_irn_register(sp_proj, sp);
+	be_abi_reg_map_set(reg_map, sp, sp_proj);
+
+	// we always have a framepointer
+	return fp;
 }
 
 /* Build the epilog */
@@ -513,7 +522,8 @@ static void sparc_get_call_abi(const void *self, ir_type *method_type,
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;
 	call_flags.bits.store_args_sequential = 1;
-	call_flags.bits.try_omit_fp           = 1;
+	/* */
+	call_flags.bits.try_omit_fp           = 0;
 	call_flags.bits.fp_free               = 0;
 	call_flags.bits.call_has_imm          = 1;
 
@@ -524,24 +534,28 @@ static void sparc_get_call_abi(const void *self, ir_type *method_type,
 		/* reg = get reg for param i;          */
 		/* be_abi_call_param_reg(abi, i, reg); */
 
-		/* pass args 0-5 via registers, remaining via stack */
+		/* pass outgoing params 0-5 via registers, remaining via stack */
+		/* on sparc we need to set the ABI context since register names of parameters change to i0-i5 if we are the callee */
 		if (i < 6) {
-			be_abi_call_param_reg(abi, i, sparc_get_RegParam_reg(i));
+			be_abi_call_param_reg(abi, i, sparc_get_RegParamOut_reg(i), ABI_CONTEXT_CALLER);
+			be_abi_call_param_reg(abi, i, sparc_get_RegParamIn_reg(i), ABI_CONTEXT_CALLEE);
 		} else {
 			tp   = get_method_param_type(method_type, i);
 			mode = get_type_mode(tp);
-			be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
+			be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH); /*< stack args have no special context >*/
 		}
 	}
 
-	/* TODO: set correct return register */
-	/* default: return value is in O0 resp. F0 */
+	/* set return value register: return value is in i0 resp. f0 */
 	if (get_method_n_ress(method_type) > 0) {
 		tp   = get_method_res_type(method_type, 0);
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &sparc_fp_regs[REG_F0] : &sparc_gp_regs[REG_O0]);
+			mode_is_float(mode) ? &sparc_fp_regs[REG_F0] : &sparc_gp_regs[REG_I0], ABI_CONTEXT_CALLEE); /*< return has no special context >*/
+
+		be_abi_call_res_reg(abi, 0,
+					mode_is_float(mode) ? &sparc_fp_regs[REG_F0] : &sparc_gp_regs[REG_O0], ABI_CONTEXT_CALLER); /*< return has no special context >*/
 	}
 }
 

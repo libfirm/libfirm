@@ -71,16 +71,30 @@ static int sparc_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			}
 		break;
 
+		case dump_node_info_txt:
+					arch_dump_reqs_and_registers(F, n);
+		break;
+
 		case dump_node_nodeattr_txt:
 
 			/* TODO: dump some attributes which should show up */
 			/* in node name in dump (e.g. consts or the like)  */
+			fputs("\n", F);
+
+			if (is_sparc_FrameAddr(n)) {
+				const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(n);
+				fprintf(F, "fp_offset: 0x%X\n", attr->fp_offset);
+			}
+
+			if (is_sparc_Load(n) || is_sparc_Store(n)) {
+				const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
+				fprintf(F, "offset: 0x%lX\n", attr->offset);
+				fprintf(F, "is_frame_entity: %s\n", attr->is_frame_entity == true ? "true" : "false");
+			}
 
 		break;
 
-		case dump_node_info_txt:
-			arch_dump_reqs_and_registers(F, n);
-		break;
+
 	}
 
 	return 0;
@@ -199,7 +213,6 @@ const sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr_const(const ir_node *no
 	return (const sparc_jmp_switch_attr_t *)get_irn_generic_attr_const(node);
 }
 
-
 sparc_cmp_attr_t *get_sparc_cmp_attr(ir_node *node)
 {
 	assert(is_sparc_irn(node) && "need sparc node to get attributes");
@@ -210,6 +223,19 @@ const sparc_cmp_attr_t *get_sparc_cmp_attr_const(const ir_node *node)
 {
 	assert(is_sparc_irn(node) && "need sparc node to get attributes");
 	return (const sparc_cmp_attr_t *)get_irn_generic_attr_const(node);
+}
+
+
+sparc_save_attr_t *get_sparc_save_attr(ir_node *node)
+{
+	assert(is_sparc_Save(node) && "need sparc Save node to get attributes");
+	return (sparc_save_attr_t *)get_irn_generic_attr_const(node);
+}
+
+const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node)
+{
+	assert(is_sparc_Save(node) && "need sparc Save node to get attributes");
+	return (const sparc_save_attr_t *)get_irn_generic_attr_const(node);
 }
 
 /**
@@ -289,6 +315,12 @@ static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
 	sparc_symconst_attr_t *attr = get_irn_generic_attr(res);
 	attr->entity    = entity;
 	attr->fp_offset = 0;
+}
+
+static void init_sparc_save_attr(ir_node *res, int initial_stacksize)
+{
+	sparc_save_attr_t *attr = get_irn_generic_attr(res);
+	attr->initial_stacksize = initial_stacksize;
 }
 
 /**
@@ -385,6 +417,17 @@ static int cmp_attr_sparc_cmp(ir_node *a, ir_node *b)
 
 	return attr_a->ins_permuted != attr_b->ins_permuted
 			|| attr_a->is_unsigned != attr_b->is_unsigned;
+}
+
+static int cmp_attr_sparc_save(ir_node *a, ir_node *b)
+{
+	const sparc_save_attr_t *attr_a = get_sparc_save_attr_const(a);
+	const sparc_save_attr_t *attr_b = get_sparc_save_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+			return 1;
+
+	return attr_a->initial_stacksize != attr_b->initial_stacksize;
 }
 
 /* Include the generated constructor functions */

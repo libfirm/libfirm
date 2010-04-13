@@ -949,11 +949,11 @@ static void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call
 		/* reg = get reg for param i;          */
 		/* be_abi_call_param_reg(abi, i, reg); */
 		if (i < 4) {
-			be_abi_call_param_reg(abi, i, arm_get_RegParam_reg(i));
+			be_abi_call_param_reg(abi, i, arm_get_RegParam_reg(i), ABI_CONTEXT_BOTH);
 		} else {
 			tp   = get_method_param_type(method_type, i);
 			mode = get_type_mode(tp);
-			be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
+			be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH);
 		}
 	}
 
@@ -974,8 +974,8 @@ static void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call
 
 		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
 
-		be_abi_call_res_reg(abi, 0, &arm_gp_regs[REG_R0]);
-		be_abi_call_res_reg(abi, 1, &arm_gp_regs[REG_R1]);
+		be_abi_call_res_reg(abi, 0, &arm_gp_regs[REG_R0], ABI_CONTEXT_BOTH);
+		be_abi_call_res_reg(abi, 1, &arm_gp_regs[REG_R1], ABI_CONTEXT_BOTH);
 	} else if (n == 1) {
 		const arch_register_t *reg;
 
@@ -984,7 +984,7 @@ static void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call
 		mode = get_type_mode(tp);
 
 		reg = mode_is_float(mode) ? &arm_fpa_regs[REG_F0] : &arm_gp_regs[REG_R0];
-		be_abi_call_res_reg(abi, 0, reg);
+		be_abi_call_res_reg(abi, 0, reg, ABI_CONTEXT_BOTH);
 	}
 }
 

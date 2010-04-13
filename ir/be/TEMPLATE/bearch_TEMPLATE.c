@@ -384,12 +384,12 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 	for (i = 0; i < n; i++) {
 		/* TODO: implement register parameter: */
 		/* reg = get reg for param i;          */
-		/* be_abi_call_param_reg(abi, i, reg); */
+		/* be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH); */
 
 		/* default: all parameters on stack */
 		tp   = get_method_param_type(method_type, i);
 		mode = get_type_mode(tp);
-		be_abi_call_param_stack(abi, i, mode, 4, 0, 0);
+		be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH);
 	}
 
 	/* TODO: set correct return register */
@@ -399,7 +399,7 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &TEMPLATE_fp_regs[REG_F0] : &TEMPLATE_gp_regs[REG_R0]);
+			mode_is_float(mode) ? &TEMPLATE_fp_regs[REG_F0] : &TEMPLATE_gp_regs[REG_R0], ABI_CONTEXT_BOTH);
 	}
 }
 

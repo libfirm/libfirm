@@ -603,10 +603,10 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 		// first 4 params in $a0-$a3, the others on the stack
 		if (i < 4) {
 			reg = &mips_gp_regs[REG_A0 + i];
-			be_abi_call_param_reg(abi, i, reg);
+			be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH);
 		} else {
 			/* default: all parameters on stack */
-			be_abi_call_param_stack(abi, i, modes[i], 4, 0, 0);
+			be_abi_call_param_stack(abi, i, modes[i], 4, 0, 0, ABI_CONTEXT_BOTH);
 		}
 	}
 
@@ -621,7 +621,7 @@ static void mips_get_call_abi(const void *self, ir_type *method_type,
 		ASSERT_NO_FLOAT(mode);
 
 		reg = &mips_gp_regs[REG_V0 + i];
-		be_abi_call_res_reg(abi, i, reg);
+		be_abi_call_res_reg(abi, i, reg, ABI_CONTEXT_BOTH);
 	}
 }
 

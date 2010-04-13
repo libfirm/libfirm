@@ -32,6 +32,8 @@
 #include "../bearch.h"
 #include "sparc_nodes_attr.h"
 
-const arch_register_t *sparc_get_RegParam_reg(int n);
+const arch_register_t *sparc_get_RegParamIn_reg(int n);
+
+const arch_register_t *sparc_get_RegParamOut_reg(int n);
 
 #endif

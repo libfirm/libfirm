@@ -70,12 +70,16 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 {
 	ir_node *result;
 
-	// TODO: find a better solution for this
+	// we need to load hi & lo separately
 	if (value < -4096 || value > 4095) {
-		panic("FIXME: immediate value exceeds max. size of simm13 (13 bits signed)");
+		ir_node *hi = new_bd_sparc_HiImm(dbgi, block, (int) value);
+		result = new_bd_sparc_LoImm(dbgi, block, hi, value);
+		be_dep_on_frame(hi);
+	} else {
+		result = new_bd_sparc_Mov_imm(dbgi, block, (int) value);
+		be_dep_on_frame(result);
 	}
 
-	result = new_bd_sparc_Mov_imm(dbgi, block, (int) value);
 	return result;
 }
 
@@ -89,15 +93,18 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 {
 	tarval  *tv = get_Const_tarval(irn);
 	ir_mode *mode = get_tarval_mode(tv);
+	dbg_info *dbgi = get_irn_dbg_info(irn);
 	long value;
+
 
 	if (mode_is_reference(mode)) {
 		/* SPARC V8 is 32bit, so we can safely convert a reference tarval into Iu */
 		assert(get_mode_size_bits(mode) == get_mode_size_bits(mode_Iu));
 		tv = tarval_convert_to(tv, mode_Iu);
 	}
+
 	value = get_tarval_long(tv);
-	return create_const_graph_value(get_irn_dbg_info(irn), block, value);
+	return create_const_graph_value(dbgi, block, value);
 }
 
 
@@ -111,8 +118,7 @@ typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node 
 typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, int simm13);
 
 /**
- * checks wether a node's value can be encoded as a immediate
- * TODO: pass a result pointer to fetch the encoded immediate
+ * checks if a node's value can be encoded as a immediate
  *
  */
 static bool is_imm_encodeable(const ir_node *node)
@@ -177,14 +183,8 @@ static ir_node *gen_Add(ir_node *node)
 {
 	ir_mode  *mode    = get_irn_mode(node);
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Add_left(node);
-	ir_node  *op2     = get_Add_right(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *new_op2 = be_transform_node(op2);
 
-	(void) new_op1;
-	(void) new_op2;
 	(void) block;
 	(void) dbgi;
 
@@ -205,14 +205,8 @@ static ir_node *gen_Sub(ir_node *node)
 {
 	ir_mode  *mode    = get_irn_mode(node);
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Add_left(node);
-	ir_node  *op2     = get_Add_right(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *new_op2 = be_transform_node(op2);
 
-	(void) new_op1;
-    (void) new_op2;
     (void) block;
     (void) dbgi;
 
@@ -278,9 +272,109 @@ static ir_node *gen_Store(ir_node *node)
 	return new_store;
 }
 
+/**
+ * Creates an sparc Mul.
+ *
+ * @return the created sparc Mul node
+ */
+static ir_node *gen_Mul(ir_node *node) {
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_mode  *mode    = get_irn_mode(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
 
+	ir_node *mul;
+	ir_node *proj_res_low;
+
+	if (mode_is_float(mode))
+		panic("FP not supported yet");
+
+
+	assert(mode_is_data(mode));
+	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
+
+	// TODO: throws an error - check why
+	proj_res_low = new_rd_Proj(dbgi, block, mul, mode_Iu, pn_sparc_UMul_low);
+	return proj_res_low;
+
+	//return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
+}
+
+/**
+ * transform abs node:
+ * mov a, b
+ * sra b, 31, b
+ * xor a, b
+ * sub a, b
+ *
+ * @return
+ */
+static ir_node *gen_Abs(ir_node *node) {
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_mode  *mode    = get_irn_mode(node);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node   *op     = get_Abs_op(node);
+
+	ir_node *mov, *sra, *xor, *sub, *new_op;
+
+	if (mode_is_float(mode))
+		panic("FP not supported yet");
+
+	new_op = be_transform_node(op);
+
+	mov = new_bd_sparc_Mov_reg(dbgi, block, new_op);
+	sra = new_bd_sparc_ShiftRA_imm(dbgi, block, mov, 31);
+	xor = new_bd_sparc_Xor_reg(dbgi, block, new_op, sra);
+	sub = new_bd_sparc_Sub_reg(dbgi, block, sra, xor);
+
+	return sub;
+}
+
+/**
+ * Transforms a Not node.
+ *
+ * @return the created ARM Not node
+ */
+static ir_node *gen_Not(ir_node *node)
+{
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *op      = get_Not_op(node);
+	ir_node  *new_op  = be_transform_node(op);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+
+	return new_bd_sparc_Not(dbgi, block, new_op);
+}
+
+static ir_node *gen_Shl(ir_node *node)
+{
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLL_reg, new_bd_sparc_ShiftLL_imm);
+}
+
+static ir_node *gen_Shr(ir_node *node)
+{
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLR_reg, new_bd_sparc_ShiftLR_imm);
+}
 
 /****** TRANSFORM GENERAL BACKEND NODES ********/
+
+/**
+ * Transforms a Minus node.
+ *
+ */
+static ir_node *gen_Minus(ir_node *node)
+{
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *op      = get_Minus_op(node);
+	ir_node  *new_op  = be_transform_node(op);
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_mode  *mode    = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		panic("FP not implemented yet");
+	}
+
+	assert(mode_is_data(mode));
+	return new_bd_sparc_Minus(dbgi, block, new_op);
+}
 
 /**
  * Transforms a Const node.
@@ -484,6 +578,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	is_unsigned = !mode_is_signed(cmp_mode);
 
 	/* compare with 0 can be done with Tst */
+	/*
 	if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
 		new_op1 = be_transform_node(op1);
 		return new_bd_sparc_Tst(dbgi, block, new_op1, false,
@@ -495,6 +590,7 @@ static ir_node *gen_Cmp(ir_node *node)
 		return new_bd_sparc_Tst(dbgi, block, new_op2, true,
 		                          is_unsigned);
 	}
+	*/
 
 	/* integer compare */
 	new_op1 = be_transform_node(op1);
@@ -614,6 +710,25 @@ static ir_node *gen_Conv(ir_node *node)
 			return gen_zero_extension(dbg, block, new_op, min_bits);
 		}
 	}
+}
+
+static ir_node *gen_Unknown(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	/* just produce a 0 */
+	ir_mode *mode = get_irn_mode(node);
+	if (mode_is_float(mode)) {
+		panic("FP not implemented");
+		be_dep_on_frame(node);
+		return node;
+	} else if (mode_needs_gp_reg(mode)) {
+		return create_const_graph_value(dbgi, new_block, 0);
+	}
+
+	panic("Unexpected Unknown mode");
 }
 
 /**
@@ -798,6 +913,7 @@ static ir_node *gen_Proj(ir_node *node)
     return be_duplicate_node(node);
 }
 
+
 /**
  * transform a Jmp
  */
@@ -855,29 +971,26 @@ void sparc_register_transformers(void)
 	set_transformer(op_Conv,         gen_Conv);
 	set_transformer(op_Jmp,          gen_Jmp);
 
+	set_transformer(op_Mul,          gen_Mul);
+	set_transformer(op_Abs,          gen_Abs);
+	set_transformer(op_Shl,          gen_Shl);
+	set_transformer(op_Shr,          gen_Shr);
+
+	set_transformer(op_Minus,        gen_Minus);
+	set_transformer(op_Not,          gen_Not);
+
+	set_transformer(op_Unknown,      gen_Unknown);
+
 	/* node list */
 	/*
-	set_transformer(op_Abs,          gen_Abs);
-	set_transformer(op_Add,          gen_Add);
 	set_transformer(op_And,          gen_And);
-	set_transformer(op_Const,        gen_Const);
-	set_transformer(op_Conv,         gen_Conv);
 	set_transformer(op_CopyB,        gen_CopyB);
 	set_transformer(op_Eor,          gen_Eor);
-	set_transformer(op_Jmp,          gen_Jmp);
-	set_transformer(op_Load,         gen_Load);
-	set_transformer(op_Minus,        gen_Minus);
 	set_transformer(op_Mul,          gen_Mul);
-	set_transformer(op_Not,          gen_Not);
 	set_transformer(op_Or,           gen_Or);
 	set_transformer(op_Quot,         gen_Quot);
 	set_transformer(op_Rotl,         gen_Rotl);
-	set_transformer(op_Shl,          gen_Shl);
-	set_transformer(op_Shr,          gen_Shr);
 	set_transformer(op_Shrs,         gen_Shrs);
-	set_transformer(op_Store,        gen_Store);
-	set_transformer(op_Sub,          gen_Sub);
-	set_transformer(op_Unknown,      gen_Unknown);
 	*/
 
 	set_transformer(op_ASM,       bad_transform);

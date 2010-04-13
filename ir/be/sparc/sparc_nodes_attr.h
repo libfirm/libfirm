@@ -42,6 +42,15 @@ struct sparc_attr_t
 
 
 /**
+ * attribute for save instruction
+ */
+typedef struct sparc_save_attr_t sparc_save_attr_t;
+struct sparc_save_attr_t {
+	sparc_attr_t  	base;    /**< generic attribute */
+	int 			initial_stacksize; /* the min. stack size required by the sparc ABI */
+};
+
+/**
  * attributes for load/store adressing modes
  */
 typedef struct sparc_load_store_attr_t sparc_load_store_attr_t;

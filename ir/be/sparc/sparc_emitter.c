@@ -56,6 +56,13 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
+ * attribute of SAVE node which follows immediatelly after the START node
+ * we need this to correct all offsets since SPARC expects
+ * some reserved stack space after the stackpointer
+ */
+const sparc_save_attr_t *save_attr;
+
+/**
  * Returns the register at in position pos.
  */
 static const arch_register_t *get_in_reg(const ir_node *node, int pos)
@@ -124,6 +131,9 @@ void sparc_emit_immediate(const ir_node *node)
 {
 	// TODO: make sure it's a valid simm13 ?
 	const sparc_attr_t *attr = get_sparc_attr_const(node);
+
+	assert(!(attr->immediate_value < -4096 || attr->immediate_value > 4096));
+
 	be_emit_irprintf("%d", attr->immediate_value);
 }
 
@@ -164,9 +174,11 @@ void sparc_emit_offset(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
 	assert(attr->base.is_load_store);
+
 	if (attr->offset > 0)
-		be_emit_irprintf("+0x%X", attr->offset);
+		be_emit_irprintf("+%ld", attr->offset);
 }
+
 
 /**
  *  Emit load mode char
@@ -244,37 +256,63 @@ static void emit_be_IncSP(const ir_node *irn)
 {
 	int offs = -be_get_IncSP_offset(irn);
 
-	if (offs != 0) {
-		/* SPARC stack grows downwards */
-		if (offs < 0) {
-			be_emit_cstring("\tsub ");
-			offs = -offs;
-		} else {
-			be_emit_cstring("\tadd ");
-		}
+	if (offs == 0)
+			return;
 
-		sparc_emit_source_register(irn, 0);
-		be_emit_irprintf(", %d", offs);
-		be_emit_cstring(", ");
-		sparc_emit_dest_register(irn, 0);
-		be_emit_finish_line_gas(irn);
+	/* SPARC stack grows downwards */
+	if (offs < 0) {
+		be_emit_cstring("\tsub ");
+		offs = -offs;
 	} else {
-		// ignore IncSP(0)
-		//be_emit_cstring("\t/* IncSP(0) skipped */");
-
-//		be_emit_cstring("\t/* ");
-//		be_emit_cstring("sub ");
-//		offs = -offs;
-//		sparc_emit_source_register(irn, 0);
-//		be_emit_irprintf(", %d", offs);
-//		be_emit_cstring(", ");
-//		sparc_emit_dest_register(irn, 0);
-//		be_emit_cstring(" ignored */ ");
-//		be_emit_finish_line_gas(irn);
+		be_emit_cstring("\tadd ");
 	}
 
-
+	sparc_emit_source_register(irn, 0);
+	be_emit_irprintf(", %d", offs);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
 }
+
+/**
+ * emits code for save instruction
+ * and sets the current save_attr pointer
+ */
+static void emit_sparc_Save(const ir_node *irn)
+{
+	save_attr = get_sparc_save_attr_const(irn);
+	be_emit_cstring("\tsave ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_irprintf(", %d, ", -save_attr->initial_stacksize);
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * emits code to load hi 22 bit of a constant
+ */
+static void emit_sparc_HiImm(const ir_node *irn)
+{
+	const sparc_attr_t *attr = get_sparc_attr_const(irn);
+	be_emit_cstring("\tsethi ");
+	be_emit_irprintf("%%hi(%d), ", attr->immediate_value);
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * emits code to load lo 10bits of a constant
+ */
+static void emit_sparc_LoImm(const ir_node *irn)
+{
+	const sparc_attr_t *attr = get_sparc_attr_const(irn);
+	be_emit_cstring("\tor ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_irprintf(", %%lo(%d), ", attr->immediate_value);
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
 
 /**
  * Emits code for return node
@@ -282,6 +320,8 @@ static void emit_be_IncSP(const ir_node *irn)
 static void emit_be_Return(const ir_node *irn)
 {
 	be_emit_cstring("\tret");
+	be_emit_finish_line_gas(irn);
+	be_emit_cstring("\trestore");
 	be_emit_finish_line_gas(irn);
 }
 
@@ -308,12 +348,41 @@ static void emit_be_Call(const ir_node *irn)
 }
 
 /**
+ * TODO: check if this is correct
+ */
+static void emit_be_Perm(const ir_node *irn)
+{
+	be_emit_cstring("\txor ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_finish_line_gas(NULL);
+
+	be_emit_cstring("\txor ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_finish_line_gas(NULL);
+
+	be_emit_cstring("\txor ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
  * Emit a SymConst.
  */
 static void emit_sparc_SymConst(const ir_node *irn)
 {
 	const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(irn);
-	//const char *entity_name = get_entity_ld_name(attr->entity);
 	ident *id_symconst = get_entity_ident(attr->entity);
 	const char *label = get_id_str(id_symconst);
 
@@ -323,6 +392,8 @@ static void emit_sparc_SymConst(const ir_node *irn)
 	be_emit_irprintf("\tsethi %%hi(%s), ", label);
 	sparc_emit_dest_register(irn, 0);
 	be_emit_cstring("\n ");
+
+	// TODO: could be combined with the following load/store instruction
 	be_emit_cstring("\tor ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_irprintf(", %%lo(%s), ", label);
@@ -337,10 +408,20 @@ static void emit_sparc_SymConst(const ir_node *irn)
 static void emit_sparc_FrameAddr(const ir_node *irn)
 {
 	const sparc_symconst_attr_t *attr = get_irn_generic_attr_const(irn);
-	be_emit_cstring("\tadd ");
-	sparc_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	be_emit_irprintf("0x%X", attr->fp_offset);
+
+	// no need to fix offset as we are adressing via the framepointer
+	if (attr->fp_offset >= 0) {
+		be_emit_cstring("\tadd ");
+		sparc_emit_source_register(irn, 0);
+		be_emit_cstring(", ");
+		be_emit_irprintf("%ld", attr->fp_offset + save_attr->initial_stacksize);
+	} else {
+		be_emit_cstring("\tsub ");
+		sparc_emit_source_register(irn, 0);
+		be_emit_cstring(", ");
+		be_emit_irprintf("%ld", -attr->fp_offset);
+	}
+
 	be_emit_cstring(", ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
@@ -397,6 +478,7 @@ static void emit_sparc_Branch(const ir_node *irn)
 		proj_num   = get_negated_pnc(proj_num, mode_Iu);
 	}
 
+
 	switch (proj_num) {
 		case pn_Cmp_Eq:  suffix = "e"; break;
 		case pn_Cmp_Lt:  suffix = "l"; break;
@@ -426,13 +508,13 @@ static void emit_sparc_Branch(const ir_node *irn)
 		be_emit_cstring("\tba ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
-		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */");
-		be_emit_write_line();
+		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */\n");
+		be_emit_finish_line_gas(proj_false);
 	}
 }
 
 /**
- * emit Jmp (which actually is a branch always)
+ * emit Jmp (which actually is a branch always (ba) instruction)
  */
 static void emit_sparc_Jmp(const ir_node *node)
 {
@@ -446,6 +528,8 @@ static void emit_sparc_Jmp(const ir_node *node)
 	if (get_irn_link(node) != next_block) {
 		be_emit_cstring("\tba ");
 		sparc_emit_cfop_target(node);
+		be_emit_finish_line_gas(node);
+		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */\n");
 	} else {
 		be_emit_cstring("\t/* fallthrough to ");
 		sparc_emit_cfop_target(node);
@@ -454,6 +538,9 @@ static void emit_sparc_Jmp(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
+/**
+ * emit copy node
+ */
 static void emit_be_Copy(const ir_node *irn)
 {
 	ir_mode *mode = get_irn_mode(irn);
@@ -521,9 +608,15 @@ static void sparc_register_emitters(void)
     set_emitter(op_sparc_Branch,   emit_sparc_Branch);
     set_emitter(op_sparc_SymConst,   emit_sparc_SymConst);
     set_emitter(op_sparc_Jmp,        emit_sparc_Jmp);
+    set_emitter(op_sparc_Save,        emit_sparc_Save);
+
+    set_emitter(op_sparc_HiImm,        emit_sparc_HiImm);
+    set_emitter(op_sparc_LoImm,        emit_sparc_LoImm);
 
     set_emitter(op_be_Copy,        emit_be_Copy);
     set_emitter(op_be_CopyKeep,    emit_be_Copy);
+
+    set_emitter(op_be_Perm,        emit_be_Perm);
 
 /*
     set_emitter(op_arm_B,          emit_arm_B);
@@ -533,7 +626,7 @@ static void sparc_register_emitters(void)
     set_emitter(op_arm_LdTls,      emit_arm_LdTls);
     set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
     set_emitter(op_be_MemPerm,     emit_be_MemPerm);
-    set_emitter(op_be_Perm,        emit_be_Perm);
+
 */
     /* no need to emit anything for the following nodes */
 	set_emitter(op_Phi,            emit_nothing);
@@ -588,12 +681,7 @@ static void sparc_gen_block(ir_node *block, void *data)
 static void sparc_emit_func_prolog(ir_graph *irg)
 {
 	ir_entity *ent = get_irg_entity(irg);
-
 	be_gas_emit_function_prolog(ent, 4);
-	// TODO: fetch reg names via API func
-	// TODO: move value to SPARC_MIN_STACKSIZE const
-	be_emit_cstring("\tsave %sp, -64, %sp");
-	be_emit_cstring("\t/* incr CWP and alloc min. required stack space */\n");
 	be_emit_write_line();
 }
 
@@ -604,9 +692,7 @@ static void sparc_emit_func_epilog(ir_graph *irg)
 {
 	ir_entity *ent = get_irg_entity(irg);
 	const char *irg_name = get_entity_ld_name(ent);
-
-	be_emit_cstring("\trestore");
-	be_emit_cstring("\t/* decr CWP */\n");
+	be_emit_write_line();
 	be_emit_irprintf("\t.size  %s, .-%s\n", irg_name, irg_name);
 	be_emit_cstring("# -- End ");
 	be_emit_string(irg_name);

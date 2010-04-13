@@ -1899,7 +1899,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 			reg  = ia32_get_RegParam_reg(cc, regnum, mode);
 		}
 		if (reg != NULL) {
-			be_abi_call_param_reg(abi, i, reg);
+			be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH);
 			++regnum;
 		} else {
 			/* Micro optimisation: if the mode is shorter than 4 bytes, load 4 bytes.
@@ -1916,7 +1916,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 				if (size < 4) load_mode = mode_Iu;
 			}
 
-			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0);
+			be_abi_call_param_stack(abi, i, load_mode, 4, 0, 0, ABI_CONTEXT_BOTH);
 		}
 	}
 
@@ -1939,8 +1939,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 
 		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
 
-		be_abi_call_res_reg(abi, 0, &ia32_gp_regs[REG_EAX]);
-		be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EDX]);
+		be_abi_call_res_reg(abi, 0, &ia32_gp_regs[REG_EAX], ABI_CONTEXT_BOTH);
+		be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EDX], ABI_CONTEXT_BOTH);
 	}
 	else if (n == 1) {
 		const arch_register_t *reg;
@@ -1951,7 +1951,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 
 		reg = mode_is_float(mode) ? &ia32_vfp_regs[REG_VF0] : &ia32_gp_regs[REG_EAX];
 
-		be_abi_call_res_reg(abi, 0, reg);
+		be_abi_call_res_reg(abi, 0, reg, ABI_CONTEXT_BOTH);
 	}
 }
 

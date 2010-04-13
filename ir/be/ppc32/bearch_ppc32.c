@@ -660,17 +660,17 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 			}
 
 			if (reg)
-				be_abi_call_param_reg(abi, i, reg);
+				be_abi_call_param_reg(abi, i, reg, ABI_CONTEXT_BOTH);
 			else
 			{
-				be_abi_call_param_stack(abi, i, mode, 4, stackoffs - lastoffs, 0);
+				be_abi_call_param_stack(abi, i, mode, 4, stackoffs - lastoffs, 0, ABI_CONTEXT_BOTH);
 				lastoffs = stackoffs+stackparamsize;
 			}
 			stackoffs += stackparamsize;
 		}
 		else
 		{
-			be_abi_call_param_stack(abi, i, mode, 4, stackoffs - lastoffs, 0);
+			be_abi_call_param_stack(abi, i, mode, 4, stackoffs - lastoffs, 0, ABI_CONTEXT_BOTH);
 			stackoffs += (get_type_size_bytes(tp)+3) & -4;
 			lastoffs = stackoffs;
 		}
@@ -682,7 +682,7 @@ static void ppc32_get_call_abi(const void *self, ir_type *method_type, be_abi_ca
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &ppc32_fp_regs[REG_F1] : &ppc32_gp_regs[REG_R3]);
+			mode_is_float(mode) ? &ppc32_fp_regs[REG_F1] : &ppc32_gp_regs[REG_R3], ABI_CONTEXT_BOTH);
 	}
 }
 

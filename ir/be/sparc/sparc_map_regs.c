@@ -33,7 +33,7 @@
 #include "gen_sparc_regalloc_if.h"
 
 
-static const arch_register_t *gp_param_regs[] = {
+static const arch_register_t *gp_param_out_regs[] = {
 	&sparc_gp_regs[REG_O0],
 	&sparc_gp_regs[REG_O1],
 	&sparc_gp_regs[REG_O2],
@@ -42,9 +42,29 @@ static const arch_register_t *gp_param_regs[] = {
 	&sparc_gp_regs[REG_O5],
 };
 
+static const arch_register_t *gp_param_in_regs[] = {
+	&sparc_gp_regs[REG_I0],
+	&sparc_gp_regs[REG_I1],
+	&sparc_gp_regs[REG_I2],
+	&sparc_gp_regs[REG_I3],
+	&sparc_gp_regs[REG_I4],
+	&sparc_gp_regs[REG_I5],
+};
 
-const arch_register_t *sparc_get_RegParam_reg(int n)
+/**
+ * get register for outgoing parameters 1-6
+ */
+const arch_register_t *sparc_get_RegParamOut_reg(int n)
 {
-	assert(n < 6 && n >=0 && "trying to get register for param >= 6");
-	return gp_param_regs[n];
+	assert(n < 6 && n >=0 && "trying to get (out) register for param >= 6");
+	return gp_param_out_regs[n];
+}
+
+/**
+ * get register for incoming parameters 1-6
+ */
+const arch_register_t *sparc_get_RegParamIn_reg(int n)
+{
+	assert(n < 6 && n >=0 && "trying to get (in) register for param >= 6");
+	return gp_param_in_regs[n];
 }
