@@ -41,6 +41,7 @@
 #include "irtools.h"
 #include "tv.h"
 #include "irpass.h"
+#include "irmemory.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -126,6 +127,10 @@ typedef struct bitinfo
 	tarval* z; // safe zeroes, 0 = bit is zero,       1 = bit maybe is 1
 	tarval* o; // safe ones,   0 = bit maybe is zero, 1 = bit is 1
 } bitinfo;
+
+typedef struct environment_t {
+	unsigned modified:1;     /**< Set, if the graph was modified. */
+} environment_t;
 
 static inline bitinfo* get_bitinfo(ir_node const* const irn)
 {
@@ -542,12 +547,12 @@ static void first_round(ir_node* const irn, void* const env)
 	}
 }
 
-static void apply_result(ir_node* const irn, void* const env)
+static void apply_result(ir_node* const irn, void* ctx)
 {
 	bitinfo* const b = get_bitinfo(irn);
 	tarval*        z;
 	tarval*        o;
-	(void)env;
+	environment_t* env = ctx;
 
 	if (!b) return;
 	if (is_Const(irn)) return; // It cannot get any better than a Const.
@@ -583,6 +588,7 @@ static void apply_result(ir_node* const irn, void* const env)
 		set_irn_link(n, b);
 exchange_only:
 		exchange(irn, n);
+		env->modified = 1;
 	}
 
 	switch (get_irn_opcode(irn)) {
@@ -595,11 +601,13 @@ exchange_only:
 				if (tarval_is_null(tarval_andnot(br->z, bl->z))) {
 					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
 					exchange(irn, r);
+					env->modified = 1;
 				}
 			} else if (br->z == br->o) {
 				if (tarval_is_null(tarval_andnot(bl->z, br->z))) {
 					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
 					exchange(irn, l);
+					env->modified = 1;
 				}
 			}
 			break;
@@ -614,11 +622,13 @@ exchange_only:
 				if (tarval_is_null(tarval_andnot(bl->o, br->o))) {
 					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
 					exchange(irn, r);
+					env->modified = 1;
 				}
 			} else if (br->z == br->o) {
 				if (tarval_is_null(tarval_andnot(br->o, bl->o))) {
 					DB((dbg, LEVEL_2, "%+F(%+F, %+F) is superfluous\n", irn, l, r));
 					exchange(irn, l);
+					env->modified = 1;
 				}
 			}
 			break;
@@ -635,12 +645,12 @@ static void queue_users(pdeq* const q, ir_node* const n)
 		ir_edge_t const* e;
 		foreach_out_edge(n, e) {
 			ir_node*  const  src = get_edge_src_irn(e);
-			ir_edge_t const* src_e;
 			pdeq_putr(q, src);
-			foreach_out_edge(src, src_e) {
-				ir_node* const src_src = get_edge_src_irn(src_e);
-				if (is_Phi(src_src))
-					pdeq_putr(q, src_src);
+			/* should always be a block */
+			if (is_Block(src)) {
+				ir_node *phi;
+				for (phi = get_Block_phis(src); phi; phi = get_Phi_next(phi))
+					pdeq_putr(q, phi);
 			}
 		}
 	} else {
@@ -656,8 +666,24 @@ static void queue_users(pdeq* const q, ir_node* const n)
 	}
 }
 
+static void clear_links(ir_node *irn, void *env)
+{
+	(void) env;
+	set_irn_link(irn, NULL);
+	if (is_Block(irn))
+		set_Block_phis(irn, NULL);
+}
+
+static void build_phi_lists(ir_node *irn, void *env)
+{
+	if (is_Phi(irn))
+		add_Block_phi(get_nodes_block(irn), irn);
+}
+
 void fixpoint_vrp(ir_graph* const irg)
 {
+	environment_t env;
+
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F\n", irg));
 
@@ -666,7 +692,14 @@ void fixpoint_vrp(ir_graph* const irg)
 	edges_assure(irg);
 	assure_doms(irg);
 
-	{ pdeq* const q = new_pdeq();
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
+
+	{
+		pdeq* const q = new_pdeq();
+
+		/* We need this extra step because the dom tree does not contain unreachable
+		   blocks in Firm. Moreover build phi list. */
+		irg_walk_graph(irg, clear_links, build_phi_lists, NULL);
 
 		/* TODO Improve iteration order. Best is reverse postorder in data flow
 		 * direction and respecting loop nesting for fastest convergence. */
@@ -682,7 +715,19 @@ void fixpoint_vrp(ir_graph* const irg)
 	}
 
 	DB((dbg, LEVEL_2, "---> Applying analysis results\n"));
-	irg_walk_graph(irg, NULL, apply_result, NULL);
+	env.modified = 0;
+	irg_walk_graph(irg, NULL, apply_result, &env);
+
+	if (env.modified) {
+		/* control flow might changed */
+		set_irg_outs_inconsistent(irg);
+		set_irg_extblk_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
+		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+	}
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	obstack_free(&obst, NULL);
 }
