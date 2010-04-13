@@ -888,7 +888,13 @@ ir_node **get_Phi_preds_arr(ir_node *node);
 int       get_Phi_n_preds(const ir_node *node);
 ir_node  *get_Phi_pred(const ir_node *node, int pos);
 void      set_Phi_pred(ir_node *node, int pos, ir_node *pred);
+/**
+ * Returns the next element of a block phi list.
+ */
 ir_node  *get_Phi_next(const ir_node *phi);
+/**
+ * Sets the next link of a block Phi list.
+ */
 void      set_Phi_next(ir_node *phi, ir_node *next);
 
 ir_node  *get_Filter_pred(const ir_node *node);

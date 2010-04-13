@@ -650,18 +650,12 @@ static inline ir_node *_get_Block_phis(const ir_node *block)
 	return block->attr.block.phis;
 }
 
-/**
- * Sets the next link of a Phi block list.
- */
 static inline void _set_Phi_next(ir_node *phi, ir_node *next)
 {
 	assert(_is_Phi(phi));
 	phi->attr.phi.next = next;
 }
 
-/**
- * Returns the next phi of a phi block list.
- */
 static inline ir_node *_get_Phi_next(const ir_node *phi)
 {
 	assert(_is_Phi(phi));
