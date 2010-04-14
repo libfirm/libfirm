@@ -2315,13 +2315,7 @@ static void compute_Cmp(node_t *node)
 			node->type.tv = tarval_b_true;
 		}
 	} else if (is_con(a) && is_con(b)) {
-		/* both nodes are constants, we can probably do something */
-		if (mode_is_float(mode)) {
-			/* beware of NaN's */
-			node->type.tv = tarval_bottom;
-		} else {
-			node->type.tv = tarval_b_true;
-		}
+		node->type.tv = tarval_b_true;
 	} else {
 		node->type.tv = tarval_bottom;
 	}
@@ -2347,13 +2341,16 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 		node->type.tv = tarval_undefined;
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
-	} else if (r->part == l->part &&
-	           (!mode_is_float(get_irn_mode(l->node)) || pnc == pn_Cmp_Lt || pnc == pn_Cmp_Gt)) {
+
 		/*
 		 * BEWARE: a == a is NOT always True for floating Point values, as
 		 * NaN != NaN is defined, so we must check this here.
+		 * (while for some pnc we could still optimize we have to stay
+		 *  consistent with compute_Cmp, so don't do anything for floats)
 		 */
-		tv = pnc & pn_Cmp_Eq ? tarval_b_true: tarval_b_false;
+	} else if (r->part == l->part && !mode_is_float(get_irn_mode(l->node))) {
+
+		tv = pnc & pn_Cmp_Eq ? tarval_b_true : tarval_b_false;
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breaks AND we get from the argument partitions a different
