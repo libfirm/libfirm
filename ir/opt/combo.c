@@ -2342,12 +2342,12 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 	} else if (is_con(a) && is_con(b)) {
 		default_compute(node);
 
-		/*
-		 * BEWARE: a == a is NOT always True for floating Point values, as
-		 * NaN != NaN is defined, so we must check this here.
-		 * (while for some pnc we could still optimize we have to stay
-		 *  consistent with compute_Cmp, so don't do anything for floats)
-		 */
+	/*
+	 * BEWARE: a == a is NOT always True for floating Point values, as
+	 * NaN != NaN is defined, so we must check this here.
+	 * (while for some pnc we could still optimize we have to stay
+	 *  consistent with compute_Cmp, so don't do anything for floats)
+	 */
 	} else if (r->part == l->part && !mode_is_float(get_irn_mode(l->node))) {
 
 		tv = pnc & pn_Cmp_Eq ? tarval_b_true : tarval_b_false;
