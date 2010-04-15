@@ -169,9 +169,12 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		be_emit_char('T');
 	if (flags & GAS_SECTION_FLAG_COMDAT)
 		be_emit_char('G');
-	be_emit_cstring("\",");
-	be_emit_char(be_gas_elf_type_char);
-	be_emit_string(type[base]);
+	/* section type */
+	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF) {
+		be_emit_cstring("\",");
+		be_emit_char(be_gas_elf_type_char);
+		be_emit_string(type[base]);
+	}
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
 		be_emit_char(',');
