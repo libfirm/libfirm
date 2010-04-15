@@ -348,16 +348,19 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	int affinity_edge_count;
 	bitset_t **interferences;
 	int* spillslot_unionfind;
+	struct obstack data;
 
 	spillcount = set_count(env->spills);
 	if (spillcount == 0)
 		return;
 
+	obstack_init(&data);
+
 	DB((dbg, DBG_COALESCING, "Coalescing %d spillslots\n", spillcount));
 
-	interferences       = ALLOCAN(bitset_t*, spillcount);
-	spillslot_unionfind = ALLOCAN(int,       spillcount);
-	spilllist           = ALLOCAN(spill_t*,  spillcount);
+	interferences       = OALLOCN(&data, bitset_t*, spillcount);
+	spillslot_unionfind = OALLOCN(&data, int,       spillcount);
+	spilllist           = OALLOCN(&data, spill_t*,  spillcount);
 
 	uf_init(spillslot_unionfind, spillcount);
 
@@ -372,7 +375,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	}
 
 	for (i = 0; i < spillcount; ++i) {
-		interferences[i] = bitset_alloca(spillcount);
+		interferences[i] = bitset_obstack_alloc(&data, spillcount);
 	}
 
 	/* construct interferences */
@@ -462,6 +465,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 	}
 
 	/*dump_interference_graph(env, interferences, "after");*/
+	obstack_free(&data, 0);
 }
 
 
