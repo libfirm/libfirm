@@ -10,7 +10,7 @@ dnl
 AC_PREREQ([2.54])
 AC_REVISION([$Id$])
 m4_define([firm_major_version], [1])
-m4_define([firm_minor_version], [17])
+m4_define([firm_minor_version], [18])
 m4_define([firm_micro_version], [0])
 m4_define([firm_version],
           [firm_major_version.firm_minor_version.firm_micro_version])
@@ -162,7 +162,7 @@ AC_DEFINE([INLINE], [inline], [define inline to compiler inline keyword])
 
 BACKENDS=""
 if test "$enable_backend" = yes; then
-	BACKENDS="arm ia32 mips ppc32"
+	BACKENDS="arm ia32 mips ppc32 sparc"
 fi
 AC_SUBST([BACKENDS])
 

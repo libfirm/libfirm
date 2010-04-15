@@ -1,6 +1,7 @@
 ====== libFirm 1.18.0 (2010-??) ======
 * Includes "Preference Guided Register Assignment" algorithm
-* Experimental Value Range Propagation, Loop Inversion and Loop Unrolling code
+* Experimental Value Range Propagation
+* Experimental Loop Inversion and Loop Unrolling code
 * Simplified construction interface. Most node constructors don't need graph/block arguments anymore.
 * Reworked type interface. Type names are optional now. Support for additional linkage types that among others support C++ 'linkonce' semantics now.
 * Small changes in constructors and node getters/setters (mostly adding 'const' to some getters)

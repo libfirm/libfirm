@@ -1,28 +1,27 @@
 libfirmincludedir=$(includedir)/libfirm
 libfirminclude_HEADERS = \
-	absgraph.h \
 	analyze_irg_args.h \
 	be.h \
 	callgraph.h \
 	cdep.h \
 	cgana.h \
+	compound_path.h \
 	dbginfo.h \
-	dfs.h \
 	execfreq.h \
 	execution_frequency.h \
 	field_temperature.h \
-	firm.h \
 	firm_common.h \
-	firm_types.h \
+	firm.h \
 	firmstat.h \
+	firm_types.h \
 	height.h \
 	ident.h \
 	interval_analysis.h \
 	irarch.h \
 	ircgcons.h \
 	ircgopt.h \
-	ircons.h \
 	irconsconfirm.h \
+	ircons.h \
 	irdom.h \
 	irdump.h \
 	iredgekinds.h \
@@ -35,14 +34,12 @@ libfirminclude_HEADERS = \
 	irgwalk.h \
 	irhooks.h \
 	irio.h \
-	irlivechk.h \
 	irloop.h \
 	irmemory.h \
 	irmode.h \
 	irnode.h \
 	irop.h \
 	iropt.h \
-	iropt_dbg.h \
 	iroptimize.h \
 	irouts.h \
 	irpass.h \
@@ -53,7 +50,6 @@ libfirminclude_HEADERS = \
 	irvrfy.h \
 	lowering.h \
 	old_fctnames.h \
-	phiclass.h \
 	pseudo_irg.h \
 	rta.h \
 	seqnumbers.h \
@@ -61,7 +57,8 @@ libfirminclude_HEADERS = \
 	timing.h \
 	trouts.h \
 	tv.h \
-	typerep.h
+	typerep.h \
+	vrp.h
 
 libfirminclude_adtdir=$(includedir)/libfirm/adt
 libfirminclude_adt_HEADERS = \
@@ -79,8 +76,8 @@ libfirminclude_adt_HEADERS = \
 	adt/impl.h \
 	adt/iterator.h \
 	adt/list.h \
-	adt/obst.h \
 	adt/obstack.h \
+	adt/obst.h \
 	adt/offset.h \
 	adt/pdeq.h \
 	adt/plist.h \
@@ -88,7 +85,6 @@ libfirminclude_adt_HEADERS = \
 	adt/pqueue.h \
 	adt/pset.h \
 	adt/pset_new.h \
-	adt/raw_bitset.h \
 	adt/set.h \
 	adt/unionfind.h \
 	adt/util.h \
