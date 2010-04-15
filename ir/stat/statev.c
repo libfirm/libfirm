@@ -39,6 +39,8 @@
 
 #include "config.h"
 
+#if defined(FIRM_STATISTICS) && !defined(DISABLE_STATEV)
+
 #ifdef HAVE_REGEX_H
 #define FIRM_HAVE_REGEX
 #endif
@@ -150,3 +152,5 @@ void stat_ev_end(void)
 #endif
 	}
 }
+
+#endif
