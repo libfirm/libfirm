@@ -487,10 +487,8 @@ static tarval *computed_value_Proj_Cmp(const ir_node *n)
 	/*
 	 * BEWARE: a == a is NOT always True for floating Point values, as
 	 * NaN != NaN is defined, so we must check this here.
-	 * (Note: Some pnc do still allow optimisations but we don't do them
-	 *  here because we would get inconsistent with combos compute_Cmp then)
 	 */
-	if (left == right && !mode_is_float(mode)) {
+	if (left == right && (!mode_is_float(mode) || pn_cmp == pn_Cmp_Lt ||  pn_cmp == pn_Cmp_Gt)) {
 		/* This is a trick with the bits used for encoding the Cmp
 		   Proj numbers, the following statement is not the same:
 		return new_tarval_from_long(pn_cmp == pn_Cmp_Eq, mode_b) */
