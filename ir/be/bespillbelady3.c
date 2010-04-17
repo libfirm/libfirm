@@ -524,6 +524,7 @@ static void do_spilling(ir_node *block, worklist_t *worklist)
 #endif
 }
 
+#ifdef DEBUG_libfirm
 static bool worklists_equal(const worklist_t *wl1, const worklist_t *wl2)
 {
 	const struct list_head *i1 = &wl1->live_values;
@@ -543,6 +544,7 @@ static bool worklists_equal(const worklist_t *wl1, const worklist_t *wl2)
 
 	return true;
 }
+#endif
 
 static bool fill_start_worklist(worklist_t *new_worklist, ir_node *block)
 {
@@ -926,7 +928,7 @@ static void process_loop(ir_loop *loop)
 		process_block_or_loop(loop_blocks[i]);
 	}
 
-#ifndef NDEBUG
+#ifdef DEBUG_libfirm
 	/* run3: tentative phase - check fixpoint */
 	tentative_mode               = true;
 	should_have_reached_fixpoint = true;
