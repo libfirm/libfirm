@@ -45,7 +45,7 @@
 #include "obst.h"
 
 #define BITS_PER_ELEM                (sizeof(unsigned) * 8)
-#define BITSET_SIZE_ELEMS(size_bits) ((size_bits+31)/BITS_PER_ELEM)
+#define BITSET_SIZE_ELEMS(size_bits) ((size_bits+BITS_PER_ELEM-1)/BITS_PER_ELEM)
 #define BITSET_SIZE_BYTES(size_bits) (BITSET_SIZE_ELEMS(size_bits) * sizeof(unsigned))
 #define BITSET_ELEM(bitset,pos)      bitset[pos / BITS_PER_ELEM]
 
