@@ -256,15 +256,23 @@ static void kill_node_and_preds(ir_node *node)
 /**
  * Walk through the block schedule and skip all barrier nodes.
  */
-static void skip_barrier(ir_node *ret_blk, ir_graph *irg)
+static void skip_barrier(ir_node *block, ir_graph *irg)
 {
 	ir_node *irn;
 
-	sched_foreach_reverse(ret_blk, irn) {
+	sched_foreach_reverse(block, irn) {
+		int       arity;
+		unsigned *used;
+		unsigned  n_used;
 		const ir_edge_t *edge, *next;
 
 		if (!be_is_Barrier(irn))
 			continue;
+
+		/* track which outputs are actually used, as we have to create
+		 * keep nodes for unused outputs */
+		arity = get_irn_arity(irn);
+		rbitset_alloca(used, arity);
 
 		foreach_out_edge_safe(irn, edge, next) {
 			ir_node *proj = get_edge_src_irn(edge);
@@ -277,8 +285,30 @@ static void skip_barrier(ir_node *ret_blk, ir_graph *irg)
 			pn   = (int) get_Proj_proj(proj);
 			pred = get_irn_n(irn, pn);
 
+			rbitset_set(used, pn);
+
 			edges_reroute_kind(proj, pred, EDGE_KIND_NORMAL, irg);
 			edges_reroute_kind(proj, pred, EDGE_KIND_DEP, irg);
+		}
+
+		/* the barrier also had the effect of a Keep for unused inputs.
+		 * we now have to create an explicit Keep for them */
+		n_used = rbitset_popcount(used, arity);
+		if (n_used < (unsigned) arity) {
+			int       n_in = arity - (int) n_used;
+			ir_node **in   = ALLOCAN(ir_node*, n_in);
+			int       i    = 0;
+			int       n    = 0;
+			ir_node  *keep;
+
+			for (i = 0; i < arity; ++i) {
+				if (rbitset_is_set(used, i))
+					continue;
+				assert(n < n_in);
+				in[n++] = get_irn_n(irn, i);
+			}
+			keep = be_new_Keep(get_nodes_block(irn), n_in, in);
+			sched_add_before(irn, keep);
 		}
 
 		kill_node_and_preds(irn);
