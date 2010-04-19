@@ -45,7 +45,7 @@
 #include "obst.h"
 
 #define BITS_PER_ELEM                (sizeof(unsigned) * 8)
-#define BITSET_SIZE_ELEMS(size_bits) ((size_bits)/BITS_PER_ELEM + 1)
+#define BITSET_SIZE_ELEMS(size_bits) ((size_bits+31)/BITS_PER_ELEM)
 #define BITSET_SIZE_BYTES(size_bits) (BITSET_SIZE_ELEMS(size_bits) * sizeof(unsigned))
 #define BITSET_ELEM(bitset,pos)      bitset[pos / BITS_PER_ELEM]
 
@@ -197,6 +197,9 @@ static inline void rbitset_set_all(unsigned *bitset, unsigned size)
 	unsigned i;
 	unsigned n = BITSET_SIZE_ELEMS(size);
 
+	if (n == 0)
+		return;
+
 	for (i = 0; i < n-1; ++i) {
 		bitset[i] = ~0u;
 	}
@@ -235,7 +238,11 @@ static inline void rbitset_clear_all(unsigned *bitset, unsigned size)
 static inline void rbitset_flip_all(unsigned *bitset, unsigned size)
 {
 	unsigned pos;
-	unsigned n    = BITSET_SIZE_ELEMS(size);
+	unsigned n = BITSET_SIZE_ELEMS(size);
+
+	if (n == 0)
+		return;
+
 	for (pos = 0; pos < n-1; ++pos) {
 		bitset[pos] ^= ~0u;
 	}
