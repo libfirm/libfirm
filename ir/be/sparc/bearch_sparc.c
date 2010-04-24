@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -467,13 +467,13 @@ static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
 	//ir_type *frame_type = get_irg_frame_type(env->irg);
 	//frame_alloc_area(frame_type, reserved_stack_size, 1, 1);
 
-	(void) reg_map;
-	(void) mem;
-	(void) stack_bias;
-
 	// alloc min required stack space
 	// TODO: the min stacksize depends on wether this is a leaf procedure or not
 	ir_node *save = new_bd_sparc_Save(NULL, block, sp_proj, *mem, SPARC_MIN_STACKSIZE);
+
+	(void) reg_map;
+	(void) mem;
+	(void) stack_bias;
 
 	*stack_bias -= SPARC_MIN_STACKSIZE;
 	sp_proj = new_r_Proj(save, sp->reg_class->mode, pn_sparc_Save_stack);

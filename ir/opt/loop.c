@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -2063,11 +2063,9 @@ static unsigned get_unroll_decision(void)
 /* Initialize unrolling phase. TODO alloc array here? */
 void *init_unrolling_phase(ir_phase *ph, const ir_node *n, void *old)
 {
-	(void)old;
-	ir_node **arr;
-
 	unrolling_node_info *info = XMALLOCZ(unrolling_node_info);
-	arr = NEW_ARR_F(ir_node *, unroll_number - 1);
+	ir_node **arr = NEW_ARR_F(ir_node *, unroll_number - 1);
+	(void)old;
 	memset(info->copies, 0, (unroll_number - 1) * sizeof(ir_node *));
 
 	info->copies = arr;
