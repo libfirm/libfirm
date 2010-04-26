@@ -737,7 +737,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 		apref_delta  = i+1 < n_regs ? apref - prefs[i+1].pref : 0;
 		apref_delta += pref_delta - split_threshold;
 
-		/* our source register isn't a usefull destination for recursive
+		/* our source register isn't a useful destination for recursive
 		   splits */
 		old_source_state = rbitset_is_set(forbidden_regs, from_r);
 		rbitset_set(forbidden_regs, from_r);

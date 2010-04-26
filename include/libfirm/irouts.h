@@ -91,7 +91,7 @@ void irg_out_block_walk(ir_node *node,
 /**
  * returns 1 if outs have been computed for a node, 0 otherwise.
  *
- *  this is usefull to detect newly created nodes that have no outs set yet
+ *  this is useful to detect newly created nodes that have no outs set yet
  */
 int get_irn_outs_computed(const ir_node *node);
 

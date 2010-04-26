@@ -341,7 +341,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		const arch_register_t *reg;
 		ir_node *irn;
 
-		assert(assignment[i] >= 0 && "there must have been a register assigned (node not register pressure faithfull?)");
+		assert(assignment[i] >= 0 && "there must have been a register assigned (node not register pressure faithful?)");
 		reg = arch_register_for_index(env->cls, assignment[i]);
 		assert(! (reg->type & arch_register_type_ignore));
 

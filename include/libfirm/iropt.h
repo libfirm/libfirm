@@ -52,7 +52,7 @@
  *     Fastest mode. Associative and distributive law allowed at the expense
  *     of floating point accuracy and correctness. Explicit rounding is disabled.
  * - fp_no_float_fold:
- *     Avoid floating point constant folding. Usefull for frontends which do not
+ *     Avoid floating point constant folding. Useful for frontends which do not
  *     create arithmetic operations in the backends arithmetic mode.
  */
 typedef enum _fp_model_t {
