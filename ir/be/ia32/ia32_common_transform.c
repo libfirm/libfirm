@@ -467,6 +467,7 @@ ir_node *gen_ASM(ir_node *node)
 	ir_node                    *new_block = get_new_node(block);
 	dbg_info                   *dbgi      = get_irn_dbg_info(node);
 	int                         i, arity;
+	int                         value_arity;
 	int                         out_idx;
 	ir_node                   **in;
 	ir_node                    *new_node;
@@ -529,7 +530,7 @@ ir_node *gen_ASM(ir_node *node)
 			reg_map_size = constraint->pos;
 	}
 	for (i = 0; i < arity; ++i) {
-		const ir_asm_constraint   *constraint = &in_constraints[i];
+		const ir_asm_constraint *constraint = &in_constraints[i];
 		if (constraint->pos > reg_map_size)
 			reg_map_size = constraint->pos;
 	}
@@ -632,6 +633,15 @@ ir_node *gen_ASM(ir_node *node)
 		++out_idx;
 	}
 
+	/* count inputs which are real values (and not memory) */
+	value_arity = 0;
+	for (i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(node, i);
+		if (get_irn_mode(in) == mode_M)
+			continue;
+		++value_arity;
+	}
+
 	/* Attempt to make ASM node register pressure faithful.
 	 * (This does not work for complicated cases yet!)
 	 *
@@ -644,7 +654,7 @@ ir_node *gen_ASM(ir_node *node)
 	 *        before...
 	 * FIXME: need to do this per register class...
 	 */
-	if (out_arity <= arity) {
+	if (out_arity <= value_arity) {
 		int       orig_arity = arity;
 		int       in_size    = arity;
 		int       o;
