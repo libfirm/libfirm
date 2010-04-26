@@ -332,6 +332,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	match_res = hungarian_solve(bp, assignment, &cost, 1);
 	assert(match_res == 0 && "matching failed");
 #else
+	bipartite_dump_f(stderr, bp);
 	bipartite_matching(bp, assignment);
 #endif
 
@@ -340,7 +341,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		const arch_register_t *reg;
 		ir_node *irn;
 
-		assert(assignment[i] >= 0 && "there must have been a register assigned");
+		assert(assignment[i] >= 0 && "there must have been a register assigned (node not register pressure faithfull?)");
 		reg = arch_register_for_index(env->cls, assignment[i]);
 		assert(! (reg->type & arch_register_type_ignore));
 
