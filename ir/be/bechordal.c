@@ -332,7 +332,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	match_res = hungarian_solve(bp, assignment, &cost, 1);
 	assert(match_res == 0 && "matching failed");
 #else
-	bipartite_dump_f(stderr, bp);
+	/*bipartite_dump_f(stderr, bp);*/
 	bipartite_matching(bp, assignment);
 #endif
 
