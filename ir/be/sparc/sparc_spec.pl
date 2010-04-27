@@ -117,12 +117,12 @@ $mode_fp      = "mode_D";
 		{ name => "g7", realname => "g7", type => 4 }, # reserved by SPARC ABI
 
 		# window's out registers
-		{ name => "o0", realname => "o0", type => 0 }, # param 1 / return value from callee
-		{ name => "o1", realname => "o1", type => 0 }, # param 2
-		{ name => "o2", realname => "o2", type => 0 }, # param 3
-		{ name => "o3", realname => "o3", type => 0 }, # param 4
-		{ name => "o4", realname => "o4", type => 0 }, # param 5
-		{ name => "o5", realname => "o5", type => 0 }, # param 6
+		{ name => "o0", realname => "o0", type => 1 }, # param 1 / return value from callee
+		{ name => "o1", realname => "o1", type => 1 }, # param 2
+		{ name => "o2", realname => "o2", type => 1 }, # param 3
+		{ name => "o3", realname => "o3", type => 1 }, # param 4
+		{ name => "o4", realname => "o4", type => 1 }, # param 5
+		{ name => "o5", realname => "o5", type => 1 }, # param 6
 		{ name => "sp", realname => "sp", type => 4 }, # our stackpointer
 		{ name => "o7", realname => "o6", type => 4 }, # temp. value / address of CALL instr.
 
@@ -137,12 +137,12 @@ $mode_fp      = "mode_D";
 		{ name => "l7", realname => "l7", type => 0 },
 
 		# window's in registers
-		{ name => "i0", realname => "i0", type => 1 }, # incoming param1 / return value to caller
-		{ name => "i1", realname => "i1", type => 1 }, # param 2
-		{ name => "i2", realname => "i2", type => 1 }, # param 3
-		{ name => "i3", realname => "i3", type => 1 }, # param 4
-		{ name => "i4", realname => "i4", type => 1 }, # param 5
-		{ name => "i5", realname => "i5", type => 1 }, # param 6
+		{ name => "i0", realname => "i0", type => 0 }, # incoming param1 / return value to caller
+		{ name => "i1", realname => "i1", type => 0 }, # param 2
+		{ name => "i2", realname => "i2", type => 0 }, # param 3
+		{ name => "i3", realname => "i3", type => 0 }, # param 4
+		{ name => "i4", realname => "i4", type => 0 }, # param 5
+		{ name => "i5", realname => "i5", type => 0 }, # param 6
 		{ name => "fp", realname => "fp", type => 4 }, # our framepointer
 		{ name => "i7", realname => "i7", type => 4 }, # return address - 8
 		{ mode => $mode_gp }
@@ -583,6 +583,16 @@ UMul => {
   outs      => [ "low", "high" ],
   constructors => \%binop_operand_constructors,
   emit      =>'. umul %S1, %R2I, %D1'
+},
+
+UDiv => {
+  irn_flags => "R",
+  mode	    => $mode_gp,
+  comment   => "construct Div: Div(a, b) = a / b",
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+  outs      => [ "res" ],
+  constructors => \%binop_operand_constructors,
+  emit      =>'. udiv %S1, %R2I, %D1'
 },
 
 Minus => {

@@ -102,6 +102,55 @@ static void emit_section_macho(be_gas_section_t section)
 	}
 }
 
+static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity)
+{
+	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
+	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
+	static const char *const basename[] = {
+		"text", "data", "rodata", "bss", "ctors", "dtors"
+	};
+
+	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
+		return;
+	current_section = section;
+
+	be_emit_cstring("\t.section\t\".");
+
+	/* Part1: section-name */
+	if (flags & GAS_SECTION_FLAG_TLS)
+		be_emit_char('t');
+	assert(base < sizeof(basename)/sizeof(basename[0]));
+	be_emit_string(basename[base]);
+
+	if (flags & GAS_SECTION_FLAG_COMDAT) {
+		be_emit_char('.');
+		be_gas_emit_entity(entity);
+	}
+	be_emit_char('"');
+
+	/* for the simple sections we're done here */
+	if (flags == 0)
+		goto end;
+
+	be_emit_cstring(",#alloc");
+
+	switch (base) {
+	case GAS_SECTION_TEXT: be_emit_cstring(",#execinstr"); break;
+	case GAS_SECTION_DATA:
+	case GAS_SECTION_BSS:  be_emit_cstring(",#write"); break;
+	default:
+		/* nothing */
+		break;
+	}
+	if (flags & GAS_SECTION_FLAG_TLS) {
+		be_emit_cstring(",#tls");
+	}
+
+end:
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
 static void emit_section(be_gas_section_t section, const ir_entity *entity)
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
@@ -115,6 +164,9 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
 		emit_section_macho(section);
+		return;
+	} else if(be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF_SPARC) {
+		emit_section_sparc(section, entity);
 		return;
 	}
 
@@ -184,6 +236,8 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	be_emit_char('\n');
 	be_emit_write_line();
 }
+
+
 
 void be_gas_emit_switch_section(be_gas_section_t section)
 {
@@ -470,6 +524,7 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_ELF:
+	case OBJECT_FILE_FORMAT_ELF_SPARC:
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
 		be_emit_cstring(", ");
@@ -1316,6 +1371,7 @@ static void emit_common(const ir_entity *entity)
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
+	case OBJECT_FILE_FORMAT_ELF_SPARC:
 		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u,%u\n", size, alignment);
@@ -1348,6 +1404,7 @@ static void emit_local_common(const ir_entity *entity)
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
+	case OBJECT_FILE_FORMAT_ELF_SPARC:
 		be_emit_cstring("\t.local ");
 		be_gas_emit_entity(entity);
 		be_emit_cstring("\n");

@@ -278,7 +278,6 @@ static ir_node *gen_Store(ir_node *node)
  * @return the created sparc Mul node
  */
 static ir_node *gen_Mul(ir_node *node) {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_mode  *mode    = get_irn_mode(node);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
@@ -292,9 +291,30 @@ static ir_node *gen_Mul(ir_node *node) {
 	assert(mode_is_data(mode));
 	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
 
-	// TODO: throws an error - check why
 	proj_res_low = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UMul_low);
 	return proj_res_low;
+
+	//return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
+}
+
+/**
+ * Creates an sparc Div.
+ *
+ * @return the created sparc Div node
+ */
+static ir_node *gen_Div(ir_node *node) {
+	ir_mode  *mode    = get_irn_mode(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+
+	//ir_node *proj_res_low;
+
+	if (mode_is_float(mode))
+		panic("FP not supported yet");
+
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_UDiv_reg, new_bd_sparc_UDiv_imm);
+
+	//proj_res = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UDiv_res);
+	//return proj_res;
 
 	//return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
 }
@@ -972,6 +992,7 @@ void sparc_register_transformers(void)
 	set_transformer(op_Jmp,          gen_Jmp);
 
 	set_transformer(op_Mul,          gen_Mul);
+	set_transformer(op_Div,          gen_Div);
 	set_transformer(op_Abs,          gen_Abs);
 	set_transformer(op_Shl,          gen_Shl);
 	set_transformer(op_Shr,          gen_Shr);

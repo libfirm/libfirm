@@ -235,7 +235,7 @@ static void sparc_emit_cfop_target(const ir_node *node)
  */
 static void sparc_emit_entity(ir_entity *entity)
 {
-	be_emit_ident(get_entity_ld_ident(entity));
+	be_gas_emit_entity(entity);
 }
 
 /***********************************************************************************
@@ -383,20 +383,22 @@ static void emit_be_Perm(const ir_node *irn)
 static void emit_sparc_SymConst(const ir_node *irn)
 {
 	const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(irn);
-	ident *id_symconst = get_entity_ident(attr->entity);
-	const char *label = get_id_str(id_symconst);
 
 	//sethi %hi(const32),%reg
 	//or    %reg,%lo(const32),%reg
 
-	be_emit_irprintf("\tsethi %%hi(%s), ", label);
+	be_emit_cstring("\tsethi %hi(");
+	be_gas_emit_entity(attr->entity);
+	be_emit_cstring("), ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_cstring("\n ");
 
 	// TODO: could be combined with the following load/store instruction
 	be_emit_cstring("\tor ");
 	sparc_emit_dest_register(irn, 0);
-	be_emit_irprintf(", %%lo(%s), ", label);
+	be_emit_cstring(", %lo(");
+	be_gas_emit_entity(attr->entity);
+	be_emit_cstring("), ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
@@ -729,6 +731,7 @@ void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg)
 	int i, n;
 
 	be_gas_elf_type_char = '#';
+	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF_SPARC;
 
 	/* register all emitter functions */
 	sparc_register_emitters();
