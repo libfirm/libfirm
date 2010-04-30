@@ -5,6 +5,12 @@
 
 $arch = "TEMPLATE";
 
+#
+# Modes
+#
+$mode_gp  = "mode_Iu"; # mode used by general purpose registers
+$mode_fp  = "mode_E";  # mode used by floatingpoint registers
+
 # The node description is done as a perl hash initializer with the
 # following structure:
 #
@@ -114,7 +120,7 @@ $arch = "TEMPLATE";
 		{ name => "r13", type => 2 },
 		{ name => "sp", realname => "r14", type => 4 },  # stackpointer
 		{ name => "bp", realname => "r15", type => 4 },  # basepointer
-		{ mode => "mode_Iu" }
+		{ mode => $mode_gp }
 	],
 	fp => [
 		{ name => "f0", type => 1 },
@@ -133,7 +139,7 @@ $arch = "TEMPLATE";
 		{ name => "f13", type => 1 },
 		{ name => "f14", type => 1 },
 		{ name => "f15", type => 1 },
-		{ mode => "mode_D" }
+		{ mode => $mode_fp }
 	]
 );
 
@@ -161,157 +167,91 @@ Add => {
 	op_flags  => "C",
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. add %S1, %S2, %D1'
-},
-
-Add_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. add %S1, %C, %D1'
+	emit      => '. add %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
 Mul => {
 	op_flags  => "C",
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      =>'. mul %S1, %S2, %D1'
-},
-
-Mul_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. mul %S1, %C, %D1'
+	emit      =>'. mul %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
 And => {
 	op_flags  => "C",
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. and %S1, %S2, %D1'
-},
-
-And_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. and %S1, %C, %D1'
+	emit      => '. and %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
 Or => {
 	op_flags  => "C",
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. or %S1, %S2, %D1'
+	emit      => '. or %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
-Or_i => {
-	op_flags  => "C",
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. or %S1, %C, %D1'
-},
-
-Eor => {
+Xor => {
 	op_flags  => "C",
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. xor %S1, %S2, %D1'
-},
-
-Eor_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. xor %S1, %C, %D1'
+	emit      => '. xor %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
 Sub => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sub %S1, %S2, %D1'
-},
-
-Sub_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. subl %S1, %C, %D1'
+	emit      => '. sub %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
 Shl => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. shl %S1, %S2, %D1'
-},
-
-Shl_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. shl %S1, %C, %D1'
+	emit      => '. shl %S1, %S2, %D1',
+	mode      => $mode_gp,
 },
 
 Shr => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
-	emit      => '. shr %S2, %D1'
-},
-
-Shr_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. shr %S1, %C, %D1'
-},
-
-RotR => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. ror %S1, %S2, %D1'
-},
-
-RotL => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. rol %S1, %S2, %D1'
-},
-
-RotL_i => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. rol %S1, %C, %D1'
+	emit      => '. shr %S2, %D1',
+	mode      => $mode_gp,
 },
 
 Minus => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. neg %S1, %D1'
-},
-
-Inc => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. inc %S1, %D1'
-},
-
-Dec => {
-	irn_flags => "R",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. dec %S1, %D1'
+	emit      => '. neg %S1, %D1',
+	mode      => $mode_gp,
 },
 
 Not => {
-	arity       => 1,
-	remat       => 1,
-	reg_req     => { in => [ "gp" ], out => [ "gp" ] },
-	emit        => '. not %S1, %D1'
+	arity   => 1,
+	remat   => 1,
+	reg_req => { in => [ "gp" ], out => [ "gp" ] },
+	emit    => '. not %S1, %D1',
+	mode    => $mode_gp,
 },
 
 Const => {
-	op_flags  => "c",
-	irn_flags => "R",
-	reg_req   => { out => [ "gp" ] },
-	emit      => '. mov %C, %D1',
-	cmp_attr  =>
+	op_flags   => "c",
+	irn_flags  => "R",
+	attr       => "tarval *value",
+	custominit => "set_TEMPLATE_value(res, value);",
+	reg_req    => { out => [ "gp" ] },
+	emit       => '. mov %C, %D1',
+	cmp_attr   =>
 '
 	/* TODO: compare Const attributes */
     return 1;
-'
+',
+	mode    => $mode_gp,
 },
 
 # Control Flow
@@ -331,7 +271,7 @@ Load => {
 	irn_flags => "R",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
-	emit      => '. mov (%S1), %D1'
+	emit      => '. mov (%S1), %D1',
 },
 
 Store => {
@@ -339,7 +279,7 @@ Store => {
 	irn_flags => "R",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ] },
-	emit      => '. movl %S2, (%S1)'
+	emit      => '. movl %S2, (%S1)',
 },
 
 # Floating Point operations
@@ -348,44 +288,35 @@ fAdd => {
 	op_flags  => "C",
 	irn_flags => "R",
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fadd %S1, %S2, %D1'
+	emit      => '. fadd %S1, %S2, %D1',
+	mode    => $mode_fp,
 },
 
 fMul => {
 	op_flags  => "C",
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fmul %S1, %S2, %D1'
-},
-
-fMax => {
-	op_flags  => "C",
-	irn_flags => "R",
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fmax %S1, %S2, %D1'
-},
-
-fMin => {
-	op_flags  => "C",
-	irn_flags => "R",
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fmin %S1, %S2, %D1'
+	emit      =>'. fmul %S1, %S2, %D1',
+	mode      => $mode_fp,
 },
 
 fSub => {
 	irn_flags => "R",
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fsub %S1, %S2, %D1'
+	emit      => '. fsub %S1, %S2, %D1',
+	mode      => $mode_fp,
 },
 
 fDiv => {
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fdiv %S1, %S2, %D1'
+	emit      => '. fdiv %S1, %S2, %D1',
+	mode      => $mode_fp,
 },
 
 fMinus => {
 	irn_flags => "R",
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      => '. fneg %S1, %D1'
+	emit      => '. fneg %S1, %D1',
+	mode      => $mode_fp,
 },
 
 fConst => {
@@ -397,7 +328,8 @@ fConst => {
 '
 	/* TODO: compare fConst attributes */
 	return 1;
-'
+',
+	mode      => $mode_fp,
 },
 
 # Load / Store
@@ -407,7 +339,7 @@ fLoad => {
 	irn_flags => "R",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
-	emit      => '. fmov (%S1), %D1'
+	emit      => '. fmov (%S1), %D1',
 },
 
 fStore => {
@@ -415,7 +347,7 @@ fStore => {
 	irn_flags => "R",
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "fp", "none" ] },
-	emit      => '. fmov %S2, (%S1)'
+	emit      => '. fmov %S2, (%S1)',
 },
 
 );

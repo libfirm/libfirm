@@ -5979,7 +5979,7 @@ void ia32_transform_graph(ia32_code_gen_t *cg)
 
 	call_list  = NEW_ARR_F(ir_node *, 0);
 	call_types = NEW_ARR_F(ir_type *, 0);
-	be_transform_graph(cg->birg, ia32_pretransform_node);
+	be_transform_graph(cg->irg, ia32_pretransform_node);
 
 	if (ia32_cg_config.use_sse2)
 		postprocess_fp_call_results();

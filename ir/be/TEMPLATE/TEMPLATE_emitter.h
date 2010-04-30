@@ -38,10 +38,6 @@ void TEMPLATE_emit_source_register(const ir_node *node, int pos);
 void TEMPLATE_emit_dest_register(const ir_node *node, int pos);
 void TEMPLATE_emit_immediate(const ir_node *node);
 
-int get_TEMPLATE_reg_nr(ir_node *irn, int posi, int in_out);
-const char *get_TEMPLATE_in_reg_name(ir_node *irn, int pos);
-
-
-void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg);
+void TEMPLATE_emit_routine(ir_graph *irg);
 
 #endif

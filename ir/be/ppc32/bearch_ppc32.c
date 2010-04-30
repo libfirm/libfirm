@@ -322,7 +322,7 @@ static void ppc32_finish_irg(void *self)
 static void ppc32_before_ra(void *self)
 {
 	ppc32_code_gen_t *cg = self;
-	cg->blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
+	cg->blk_sched = be_create_block_schedule(cg->irg);
 }
 
 static void ppc32_transform_spill(ir_node *node, void *env)

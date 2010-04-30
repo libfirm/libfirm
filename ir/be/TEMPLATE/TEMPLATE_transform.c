@@ -33,8 +33,10 @@
 #include "ircons.h"
 #include "iropt_t.h"
 #include "debug.h"
+#include "error.h"
 
 #include "../benode.h"
+#include "../betranshlp.h"
 #include "bearch_TEMPLATE_t.h"
 
 #include "TEMPLATE_nodes_attr.h"
@@ -45,359 +47,271 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/**
- * Creates an TEMPLATE Add.
- *
- * @param env   The transformation environment
- * @param op1   first operator
- * @param op2   second operator
- * @return the created TEMPLATE Add node
- */
-static ir_node *gen_Add(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+typedef ir_node* (*new_binop_func)(dbg_info *dbgi, ir_node *block,
+                                   ir_node *left, ir_node *right);
+
+static ir_node *transform_binop(ir_node *node, new_binop_func new_func)
 {
-	return new_bd_TEMPLATE_Add(env->dbg, env->block, op1, op2, env->mode);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *left      = get_binop_left(node);
+	ir_node  *new_left  = be_transform_node(left);
+	ir_node  *right     = get_binop_right(node);
+	ir_node  *new_right = be_transform_node(right);
+
+	return new_func(dbgi, new_block, new_left, new_right);
+}
+
+static ir_node *gen_And(ir_node *node)
+{
+	return transform_binop(node, new_bd_TEMPLATE_And);
+}
+
+static ir_node *gen_Or(ir_node *node)
+{
+	return transform_binop(node, new_bd_TEMPLATE_Or);
+}
+
+static ir_node *gen_Eor(ir_node *node)
+{
+	return transform_binop(node, new_bd_TEMPLATE_Xor);
+}
+
+static ir_node *gen_Quot(ir_node *node)
+{
+	return transform_binop(node, new_bd_TEMPLATE_fDiv);
+}
+
+static ir_node *gen_Shl(ir_node *node)
+{
+	return transform_binop(node, new_bd_TEMPLATE_Shl);
+}
+
+static ir_node *gen_Shr(ir_node *node)
+{
+	return transform_binop(node, new_bd_TEMPLATE_Shr);
+}
+
+static ir_node *gen_Add(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return transform_binop(node, new_bd_TEMPLATE_fAdd);
+	}
+	return transform_binop(node, new_bd_TEMPLATE_Add);
+}
+
+static ir_node *gen_Sub(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return transform_binop(node, new_bd_TEMPLATE_fSub);
+	}
+	return transform_binop(node, new_bd_TEMPLATE_Sub);
+}
+
+static ir_node *gen_Mul(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return transform_binop(node, new_bd_TEMPLATE_fMul);
+	}
+	return transform_binop(node, new_bd_TEMPLATE_Mul);
 }
 
 
+typedef ir_node* (*new_unop_func)(dbg_info *dbgi, ir_node *block, ir_node *op);
+
+static ir_node *transform_unop(ir_node *node, new_unop_func new_func)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *op        = get_unop_op(node);
+	ir_node  *new_op    = be_transform_node(op);
+
+	return new_func(dbgi, new_block, new_op);
+}
+
+static ir_node *gen_Minus(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return transform_unop(node, new_bd_TEMPLATE_fMinus);
+	}
+	return transform_unop(node, new_bd_TEMPLATE_Minus);
+}
+
+static ir_node *gen_Not(ir_node *node)
+{
+	return transform_unop(node, new_bd_TEMPLATE_Not);
+}
+
+static ir_node *gen_Const(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	tarval   *value     = get_Const_tarval(node);
+	ir_node  *result;
+
+	result = new_bd_TEMPLATE_Const(dbgi, new_block, value);
+
+	/* make sure the node does not float above the barrier into the prologue */
+	be_dep_on_frame(result);
+
+	return result;
+}
+
+static ir_node *gen_Load(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *ptr       = get_Load_ptr(node);
+	ir_node  *new_ptr   = be_transform_node(ptr);
+	ir_node  *mem       = get_Load_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_mode  *mode      = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return new_bd_TEMPLATE_fLoad(dbgi, new_block, new_ptr, new_mem, mode);
+	}
+	return new_bd_TEMPLATE_Load(dbgi, new_block, new_ptr, new_mem, mode);
+}
+
+static ir_node *gen_Store(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *ptr       = get_Store_ptr(node);
+	ir_node  *new_ptr   = be_transform_node(ptr);
+	ir_node  *val       = get_Store_value(node);
+	ir_node  *new_val   = be_transform_node(val);
+	ir_node  *mem       = get_Store_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_mode  *mode      = get_irn_mode(node);
+
+	if (mode_is_float(mode)) {
+		return new_bd_TEMPLATE_fStore(dbgi, new_block, new_ptr, new_val, new_mem, mode);
+	}
+	return new_bd_TEMPLATE_Store(dbgi, new_block, new_ptr, new_mem, new_val, mode);
+}
+
+static ir_node *gen_Jmp(ir_node *node)
+{
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+
+	return new_bd_TEMPLATE_Jmp(dbgi, new_block);
+}
 
 /**
- * Creates an TEMPLATE Mul.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE Mul node
+ * returns true if mode should be stored in a general purpose register
  */
-static ir_node *gen_Mul(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
+static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
-	if (mode_is_float(env->mode)) {
-		return new_bd_TEMPLATE_fMul(env->dbg, env->block, op1, op2, env->mode);
+	return mode_is_int(mode) || mode_is_reference(mode);
+}
+
+static ir_node *gen_Phi(ir_node *node)
+{
+	const arch_register_req_t *req;
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_mode  *mode      = get_irn_mode(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *phi;
+
+	if (mode_needs_gp_reg(mode)) {
+		mode = mode_Iu;
+		req  = TEMPLATE_reg_classes[CLASS_TEMPLATE_gp].class_req;
 	} else {
-		return new_bd_TEMPLATE_Mul(env->dbg, env->block, op1, op2, env->mode);
-	}
-}
-
-
-
-/**
- * Creates an TEMPLATE And.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE And node
- */
-static ir_node *gen_And(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	return new_bd_TEMPLATE_And(env->dbg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
- * Creates an TEMPLATE Or.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE Or node
- */
-static ir_node *gen_Or(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	return new_bd_TEMPLATE_Or(env->dbg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
- * Creates an TEMPLATE Eor.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE Eor node
- */
-static ir_node *gen_Eor(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	return new_bd_TEMPLATE_Eor(env->dbg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
- * Creates an TEMPLATE Sub.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE Sub node
- */
-static ir_node *gen_Sub(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	if (mode_is_float(env->mode)) {
-		return new_bd_TEMPLATE_fSub(env->dbg, env->block, op1, op2, env->mode);
-	} else {
-		return new_bd_TEMPLATE_Sub(env->dbg, env->block, op1, op2, env->mode);
-	}
-}
-
-
-
-/**
- * Creates an TEMPLATE floating Div.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE fDiv node
- */
-static ir_node *gen_Quot(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	return new_bd_TEMPLATE_fDiv(env->dbg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
- * Creates an TEMPLATE Shl.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE Shl node
- */
-static ir_node *gen_Shl(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	return new_bd_TEMPLATE_Shl(env->dbg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
- * Creates an TEMPLATE Shr.
- *
- * @param dbg       firm node dbg
- * @param block     the block the new node should belong to
- * @param op1       first operator
- * @param op2       second operator
- * @param mode      node mode
- * @return the created TEMPLATE Shr node
- */
-static ir_node *gen_Shr(TEMPLATE_transform_env_t *env, ir_node *op1, ir_node *op2)
-{
-	return new_bd_TEMPLATE_Shr(env->dbg, env->block, op1, op2, env->mode);
-}
-
-
-
-/**
- * Transforms a Minus node.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Minus node
- * @param op      operator
- * @param mode    node mode
- * @return the created TEMPLATE Minus node
- */
-static ir_node *gen_Minus(TEMPLATE_transform_env_t *env, ir_node *op)
-{
-	if (mode_is_float(env->mode)) {
-		return new_bd_TEMPLATE_fMinus(env->dbg, env->block, op, env->mode);
-	}
-	return new_bd_TEMPLATE_Minus(env->dbg, env->block, op, env->mode);
-}
-
-
-
-/**
- * Transforms a Not node.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Not node
- * @param op      operator
- * @param mode    node mode
- * @return the created TEMPLATE Not node
- */
-static ir_node *gen_Not(TEMPLATE_transform_env_t *env, ir_node *op)
-{
-	return new_bd_TEMPLATE_Not(env->dbg, env->block, op, env->mode);
-}
-
-
-
-/**
- * Transforms a Load.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Load node
- * @param mode    node mode
- * @return the created TEMPLATE Load node
- */
-static ir_node *gen_Load(TEMPLATE_transform_env_t *env)
-{
-	ir_node *node = env->irn;
-
-	if (mode_is_float(env->mode)) {
-		return new_bd_TEMPLATE_fLoad(env->dbg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
-	}
-	return new_bd_TEMPLATE_Load(env->dbg, env->block, get_Load_ptr(node), get_Load_mem(node), env->mode);
-}
-
-
-
-/**
- * Transforms a Store.
- *
- * @param mod     the debug module
- * @param block   the block the new node should belong to
- * @param node    the ir Store node
- * @param mode    node mode
- * @return the created TEMPLATE Store node
- */
-static ir_node *gen_Store(TEMPLATE_transform_env_t *env)
-{
-	ir_node *node = env->irn;
-
-	if (mode_is_float(env->mode)) {
-		return new_bd_TEMPLATE_fStore(env->dbg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
-	}
-	return new_bd_TEMPLATE_Store(env->dbg, env->block, get_Store_ptr(node), get_Store_value(node), get_Store_mem(node), env->mode);
-}
-
-static ir_node *gen_Jmp(TEMPLATE_transform_env_t *env)
-{
-	return new_bd_TEMPLATE_Jmp(env->dbg, env->block);
-}
-
-
-
-
-/**
- * Transforms the given firm node (and maybe some other related nodes)
- * into one or more assembler nodes.
- *
- * @param node    the firm node
- * @param env     the debug module
- */
-void TEMPLATE_transform_node(ir_node *node, void *env)
-{
-	ir_opcode code             = get_irn_opcode(node);
-	ir_node *asm_node          = NULL;
-	TEMPLATE_transform_env_t tenv;
-	(void) env;
-
-	if (is_Block(node))
-		return;
-
-	tenv.block    = get_nodes_block(node);
-	tenv.dbg      = get_irn_dbg_info(node);
-	tenv.irg      = current_ir_graph;
-	tenv.irn      = node;
-	tenv.mode     = get_irn_mode(node);
-
-#define UNOP(a)        case iro_##a: asm_node = gen_##a(&tenv, get_##a##_op(node)); break
-#define BINOP(a)       case iro_##a: asm_node = gen_##a(&tenv, get_##a##_left(node), get_##a##_right(node)); break
-#define GEN(a)         case iro_##a: asm_node = gen_##a(&tenv); break
-#define IGN(a)         case iro_##a: break
-#define BAD(a)         case iro_##a: goto bad
-
-	DBG((dbg, LEVEL_1, "check %+F ... ", node));
-
-	switch (code) {
-		BINOP(Add);
-		BINOP(Mul);
-		BINOP(And);
-		BINOP(Or);
-		BINOP(Eor);
-
-		BINOP(Sub);
-		BINOP(Shl);
-		BINOP(Shr);
-		BINOP(Quot);
-
-
-		UNOP(Minus);
-		UNOP(Not);
-
-		GEN(Load);
-		GEN(Store);
-		GEN(Jmp);
-
-		/* TODO: implement these nodes */
-		IGN(Shrs);
-		IGN(Div);
-		IGN(Mod);
-		IGN(DivMod);
-		IGN(Const);
-		IGN(SymConst);
-		IGN(Conv);
-		IGN(Abs);
-		IGN(Cond);
-		IGN(Mux);
-		IGN(Mulh);
-		IGN(CopyB);
-		IGN(Unknown);
-		IGN(Cmp);
-
-		/* You probably don't need to handle the following nodes */
-
-		IGN(Call);
-		IGN(Proj);
-		IGN(Alloc);
-
-		IGN(Block);
-		IGN(Start);
-		IGN(End);
-		IGN(NoMem);
-		IGN(Phi);
-		IGN(IJmp);
-		IGN(Break);
-		IGN(Sync);
-
-		BAD(Raise);
-		BAD(Sel);
-		BAD(InstOf);
-		BAD(Cast);
-		BAD(Free);
-		BAD(Tuple);
-		BAD(Id);
-		BAD(Bad);
-		BAD(Confirm);
-		BAD(Filter);
-		BAD(CallBegin);
-		BAD(EndReg);
-		BAD(EndExcept);
-
-		default:
-			break;
-bad:
-		fprintf(stderr, "Not implemented: %s\n", get_irn_opname(node));
-		assert(0);
+		req = arch_no_register_req;
 	}
 
-	if (asm_node) {
-		exchange(node, asm_node);
-		DB((dbg, LEVEL_1, "created node %+F[%p]\n", asm_node, asm_node));
-	} else {
-		DB((dbg, LEVEL_1, "ignored\n"));
-	}
+	phi = new_ir_node(dbgi, irg, new_block, op_Phi, mode, get_irn_arity(node),
+	                  get_irn_in(node)+1);
+	copy_node_attr(irg, node, phi);
+	be_duplicate_deps(node, phi);
+
+	arch_set_out_register_req(phi, 0, req);
+	be_enqueue_preds(node);
+	return phi;
+}
+
+static ir_node *bad_transform(ir_node *node)
+{
+	panic("TEMPLATE backend: unexpected node %+F", node);
+}
+
+
+
+static void set_transformer(ir_op *op, be_transform_func transform_func)
+{
+	op->ops.generic = (op_func)transform_func;
+}
+
+static void TEMPLATE_register_transformers(void)
+{
+	/* first clear the generic function pointer for all ops */
+	clear_irp_opcodes_generic_func();
+
+	set_transformer(op_Add,       gen_Add);
+	set_transformer(op_And,       gen_And);
+	set_transformer(op_Const,     gen_Const);
+	set_transformer(op_Eor,       gen_Eor);
+	set_transformer(op_Jmp,       gen_Jmp);
+	set_transformer(op_Load,      gen_Load);
+	set_transformer(op_Minus,     gen_Minus);
+	set_transformer(op_Mul,       gen_Mul);
+	set_transformer(op_Not,       gen_Not);
+	set_transformer(op_Or,        gen_Or);
+	set_transformer(op_Phi,       gen_Phi);
+	set_transformer(op_Quot,      gen_Quot);
+	set_transformer(op_Shl,       gen_Shl);
+	set_transformer(op_Shr,       gen_Shr);
+	set_transformer(op_Store,     gen_Store);
+	set_transformer(op_Sub,       gen_Sub);
+
+	/* TODO: implement missing nodes */
+
+
+	/* you should not see the following nodes */
+	set_transformer(op_ASM,       bad_transform);
+	set_transformer(op_Builtin,   bad_transform);
+	set_transformer(op_CallBegin, bad_transform);
+	set_transformer(op_Cast,      bad_transform);
+	set_transformer(op_Confirm,   bad_transform);
+	set_transformer(op_DivMod,    bad_transform);
+	set_transformer(op_EndExcept, bad_transform);
+	set_transformer(op_EndReg,    bad_transform);
+	set_transformer(op_Filter,    bad_transform);
+	set_transformer(op_Free,      bad_transform);
+	set_transformer(op_Id,        bad_transform);
+	set_transformer(op_InstOf,    bad_transform);
+	set_transformer(op_Mulh,      bad_transform);
+	set_transformer(op_Mux,       bad_transform);
+	set_transformer(op_Raise,     bad_transform);
+	set_transformer(op_Sel,       bad_transform);
+	set_transformer(op_Tuple,     bad_transform);
+}
+
+/**
+ * Transform generic IR-nodes into TEMPLATE machine instructions
+ */
+void TEMPLATE_transform_graph(TEMPLATE_code_gen_t *cg)
+{
+	TEMPLATE_register_transformers();
+	be_transform_graph(cg->irg, NULL);
 }
 
 void TEMPLATE_init_transform(void)

@@ -1052,7 +1052,7 @@ void sparc_transform_graph(sparc_code_gen_t *cg)
 {
 	sparc_register_transformers();
 	env_cg = cg;
-	be_transform_graph(cg->birg, sparc_pretransform_node);
+	be_transform_graph(cg->irg, sparc_pretransform_node);
 }
 
 void sparc_init_transform(void)

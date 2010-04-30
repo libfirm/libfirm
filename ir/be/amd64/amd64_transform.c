@@ -137,7 +137,7 @@ void amd64_transform_graph(amd64_code_gen_t *cg)
 {
 	amd64_register_transformers();
 	env_cg = cg;
-	be_transform_graph(cg->birg, amd64_pretransform_node);
+	be_transform_graph(cg->irg, amd64_pretransform_node);
 }
 
 void amd64_init_transform(void)

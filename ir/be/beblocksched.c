@@ -745,8 +745,11 @@ void be_init_blocksched(void)
 	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
 }
 
-ir_node **be_create_block_schedule(ir_graph *irg, ir_exec_freq *execfreqs)
+ir_node **be_create_block_schedule(ir_graph *irg)
 {
+	const be_irg_t *birg      = be_birg_from_irg(irg);
+	ir_exec_freq   *execfreqs = be_get_birg_exec_freq(birg);
+
 	switch (algo) {
 	case BLOCKSCHED_GREEDY:
 	case BLOCKSCHED_NAIV:

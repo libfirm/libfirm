@@ -27,6 +27,6 @@
 
 void TEMPLATE_init_transform(void);
 
-void TEMPLATE_transform_node(ir_node *node, void *env);
+void TEMPLATE_transform_graph(TEMPLATE_code_gen_t *cg);
 
 #endif

@@ -147,6 +147,12 @@ static void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
 	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
+static void set_TEMPLATE_value(ir_node *node, tarval *value)
+{
+	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
+	attr->value = value;
+}
+
 static int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
 {
 	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);

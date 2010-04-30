@@ -82,6 +82,6 @@ void be_enqueue_preds(ir_node *node);
 /**
  * Transform a graph. Transformers must be registered first.
  */
-void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func);
+void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func);
 
-#endif /* FIRM_BE_BETRANSHLP_H */
+#endif

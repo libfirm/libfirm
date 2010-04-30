@@ -1138,7 +1138,7 @@ static void register_transformers(void)
 void mips_transform_graph(mips_code_gen_t *cg)
 {
 	register_transformers();
-	be_transform_graph(cg->birg, NULL);
+	be_transform_graph(cg->irg, NULL);
 }
 
 /**

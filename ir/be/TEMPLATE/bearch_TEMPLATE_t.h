@@ -39,7 +39,6 @@ struct TEMPLATE_code_gen_t {
 	const arch_code_generator_if_t *impl;           /**< implementation */
 	ir_graph                       *irg;            /**< current irg */
 	TEMPLATE_isa_t                 *isa;            /**< the isa instance */
-	const be_irg_t                 *birg;           /**< The be-irg (contains additional information about the irg) */
 };
 
 struct TEMPLATE_isa_t {

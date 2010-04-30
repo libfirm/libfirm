@@ -1420,7 +1420,7 @@ static void ia32_finish(void *self)
 
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
-	cg->blk_sched = be_create_block_schedule(irg, cg->birg->exec_freq);
+	cg->blk_sched = be_create_block_schedule(irg);
 }
 
 /**

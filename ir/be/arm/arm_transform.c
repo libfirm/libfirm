@@ -1507,7 +1507,7 @@ static ir_node *gen_Phi(ir_node *node)
  */
 static ir_node *bad_transform(ir_node *irn)
 {
-	panic("ARM backend: Not implemented: %+F", irn);
+	panic("ARM backend: unexpected node %+F", irn);
 }
 
 /**
@@ -1578,13 +1578,6 @@ static void arm_register_transformers(void)
 }
 
 /**
- * Pre-transform all unknown nodes.
- */
-static void arm_pretransform_node(void)
-{
-}
-
-/**
  * Initialize fpa Immediate support.
  */
 static void arm_init_fpa_immediate(void)
@@ -1631,7 +1624,7 @@ void arm_transform_graph(arm_code_gen_t *cg)
 	}
 	arm_register_transformers();
 	env_cg = cg;
-	be_transform_graph(cg->birg, arm_pretransform_node);
+	be_transform_graph(cg->irg, NULL);
 }
 
 void arm_init_transform(void)

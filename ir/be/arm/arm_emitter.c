@@ -1116,8 +1116,8 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 
 	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
 
-	/* create the block schedule. For now, we don't need it earlier. */
-	blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
+	/* create the block schedule */
+	blk_sched = be_create_block_schedule(irg);
 
 	be_gas_emit_function_prolog(entity, 4);
 

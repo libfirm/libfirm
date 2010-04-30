@@ -115,7 +115,8 @@ static void TEMPLATE_prepare_graph(void *self)
 {
 	TEMPLATE_code_gen_t *cg = self;
 
-	irg_walk_blkwise_graph(cg->irg, NULL, TEMPLATE_transform_node, cg);
+	/* transform nodes into assembler instructions */
+	TEMPLATE_transform_graph(cg);
 }
 
 
@@ -155,7 +156,7 @@ static void TEMPLATE_emit_and_done(void *self)
 	TEMPLATE_code_gen_t *cg = self;
 	ir_graph           *irg = cg->irg;
 
-	TEMPLATE_gen_routine(cg, irg);
+	TEMPLATE_emit_routine(irg);
 
 	/* de-allocate code generator */
 	free(cg);
@@ -187,7 +188,6 @@ static void *TEMPLATE_cg_init(be_irg_t *birg)
 	cg->impl     = &TEMPLATE_code_gen_if;
 	cg->irg      = be_get_birg_irg(birg);
 	cg->isa      = isa;
-	cg->birg     = birg;
 
 	return (arch_code_generator_t *)cg;
 }

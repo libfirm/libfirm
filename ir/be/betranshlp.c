@@ -396,12 +396,12 @@ static ir_node *gen_End(ir_node *node)
 	return new_end;
 }
 
-void be_transform_graph(be_irg_t *birg, arch_pretrans_nodes *func)
+void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 {
-	ir_graph *irg = birg->irg;
 	ir_graph *old_current_ir_graph = current_ir_graph;
 	struct obstack *old_obst = NULL;
 	struct obstack *new_obst = NULL;
+	be_irg_t       *birg     = be_birg_from_irg(irg);
 
 	current_ir_graph = irg;
 

@@ -221,7 +221,7 @@ static void mips_finish_irg(void *self)
 
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
-   	cg->block_schedule = be_create_block_schedule(irg, cg->birg->exec_freq);
+   	cg->block_schedule = be_create_block_schedule(irg);
 
 	dump_ir_block_graph_sched(irg, "-mips-finished");
 }

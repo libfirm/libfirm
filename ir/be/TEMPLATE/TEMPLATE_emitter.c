@@ -38,6 +38,8 @@
 
 #include "../besched.h"
 #include "../begnuas.h"
+#include "../beblocksched.h"
+#include "../benode.h"
 
 #include "TEMPLATE_emitter.h"
 #include "gen_TEMPLATE_emitter.h"
@@ -113,8 +115,8 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void TEMPLATE_emit_immediate(const ir_node *node)
 {
-	(void) node;
-	/* TODO */
+	const TEMPLATE_attr_t *attr = get_irn_generic_attr_const(node);
+	be_emit_tarval(attr->value);
 }
 
 void TEMPLATE_emit_source_register(const ir_node *node, int pos)
@@ -151,11 +153,53 @@ static void TEMPLATE_emit_cfop_target(const ir_node *node)
 /**
  * Emits code for a unconditional jump.
  */
-static void emit_Jmp(const ir_node *node)
+static void emit_TEMPLATE_Jmp(const ir_node *node)
 {
 	be_emit_cstring("\tjmp ");
 	TEMPLATE_emit_cfop_target(node);
 	be_emit_finish_line_gas(node);
+}
+
+static void emit_be_IncSP(const ir_node *node)
+{
+	int offset = be_get_IncSP_offset(node);
+
+	if (offset == 0)
+		return;
+
+	/* downwards growing stack */
+	if (offset > 0) {
+		be_emit_cstring("\tsub ");
+	} else {
+		be_emit_cstring("\tadd ");
+		offset = -offset;
+	}
+
+	TEMPLATE_emit_source_register(node, 0);
+	be_emit_irprintf(", %d, ", offset);
+	TEMPLATE_emit_dest_register(node, 0);
+	be_emit_finish_line_gas(node);
+}
+
+static void emit_be_Return(const ir_node *node)
+{
+	be_emit_cstring("\tret");
+	be_emit_finish_line_gas(node);
+}
+
+static void emit_nothing(const ir_node *node)
+{
+	(void) node;
+}
+
+/**
+ * The type of a emitter function.
+ */
+typedef void (emit_func)(const ir_node *node);
+
+static inline void set_emitter(ir_op *op, emit_func func)
+{
+	op->ops.generic = (op_func)func;
 }
 
 /**
@@ -164,25 +208,22 @@ static void emit_Jmp(const ir_node *node)
  */
 static void TEMPLATE_register_emitters(void)
 {
-
-/* some convienience macros to register additional emitter functions
-   (other than the generated ones) */
-#define TEMPLATE_EMIT(a) op_TEMPLATE_##a->ops.generic = (op_func)emit_TEMPLATE_##a
-#define EMIT(a)          op_##a->ops.generic = (op_func)emit_##a
-#define BE_EMIT(a)       op_be_##a->ops.generic = (op_func)emit_be_##a
-
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	TEMPLATE_register_spec_emitters();
 
-	/* register addtional emitter functions if needed */
-	EMIT(Jmp);
+	/* custom emitters not provided by the spec */
+	set_emitter(op_TEMPLATE_Jmp,   emit_TEMPLATE_Jmp);
+	set_emitter(op_be_Return,      emit_be_Return);
+	set_emitter(op_be_IncSP,       emit_be_IncSP);
 
-#undef TEMPLATE_EMIT
-#undef BE_EMIT
-#undef EMIT
+	/* no need to emit anything for the following nodes */
+	set_emitter(op_Phi,            emit_nothing);
+	set_emitter(op_be_Keep,        emit_nothing);
+	set_emitter(op_be_Start,       emit_nothing);
+	set_emitter(op_be_Barrier,     emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);
@@ -206,13 +247,9 @@ static void TEMPLATE_emit_node(const ir_node *node)
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void TEMPLATE_gen_block(ir_node *block, void *data)
+static void TEMPLATE_emit_block(ir_node *block)
 {
 	ir_node *node;
-	(void) data;
-
-	if (! is_Block(block))
-		return;
 
 	be_gas_emit_block_name(block);
 	be_emit_cstring(":\n");
@@ -221,35 +258,6 @@ static void TEMPLATE_gen_block(ir_node *block, void *data)
 	sched_foreach(block, node) {
 		TEMPLATE_emit_node(node);
 	}
-}
-
-
-/**
- * Emits code for function start.
- */
-static void TEMPLATE_emit_func_prolog(ir_graph *irg)
-{
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
-
-	/* TODO: emit function header */
-	be_emit_cstring("/* start of ");
-	be_emit_string(irg_name);
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
-}
-
-/**
- * Emits code for function end
- */
-static void TEMPLATE_emit_func_epilog(ir_graph *irg)
-{
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
-
-	/* TODO: emit function end */
-	be_emit_cstring("/* end of ");
-	be_emit_string(irg_name);
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
 }
 
 /**
@@ -270,15 +278,29 @@ static void TEMPLATE_gen_labels(ir_node *block, void *env)
 /**
  * Main driver
  */
-void TEMPLATE_gen_routine(const TEMPLATE_code_gen_t *cg, ir_graph *irg)
+void TEMPLATE_emit_routine(ir_graph *irg)
 {
-	(void)cg;
+	ir_node   **block_schedule;
+	ir_entity  *entity = get_irg_entity(irg);
+	int         i;
+	int         n;
 
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();
 
-	TEMPLATE_emit_func_prolog(irg);
+	/* create the block schedule */
+	block_schedule = be_create_block_schedule(irg);
+
+	/* emit assembler prolog */
+	be_gas_emit_function_prolog(entity, 4);
+
+	/* populate jump link fields with their destinations */
 	irg_block_walk_graph(irg, TEMPLATE_gen_labels, NULL, NULL);
-	irg_walk_blkwise_graph(irg, NULL, TEMPLATE_gen_block, NULL);
-	TEMPLATE_emit_func_epilog(irg);
+
+	n = ARR_LEN(block_schedule);
+	for (i = 0; i < n; ++i) {
+		ir_node *block = block_schedule[i];
+		TEMPLATE_emit_block(block);
+	}
+	be_gas_emit_function_epilog(entity);
 }
