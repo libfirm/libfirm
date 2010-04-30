@@ -121,7 +121,7 @@ static inline void be_emit32(const uint32_t u32)
 }
 
 /** leave space where an entity reference is put at the finish stage */
-void bemit_entity(ir_entity *entity, bool entity_sign, int offset,
-                  bool is_relative);
+void be_emit_entity(ir_entity *entity, bool entity_sign, int offset,
+                    bool is_relative);
 
 #endif

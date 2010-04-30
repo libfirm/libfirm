@@ -32,6 +32,7 @@
 #include "beemitter_binary.h"
 #include "obst.h"
 #include "pdeq.h"
+#include "error.h"
 
 static code_fragment_t *first_fragment;
 static code_fragment_t *last_fragment;
@@ -174,6 +175,16 @@ static void determine_offsets(const binary_emiter_interface_t *interface)
 		   don't converge fast enough. We could simply use a pessimistic
 		   solution after a few iterations... */
 	} while (changed);
+}
+
+void be_emit_entity(ir_entity *entity, bool entity_sign, int offset,
+                    bool is_relative)
+{
+	(void) entity;
+	(void) entity_sign;
+	(void) offset;
+	(void) is_relative;
+	panic("not implemented yet");
 }
 
 void be_emit_code(FILE *output, const binary_emiter_interface_t *interface)
