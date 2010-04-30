@@ -37,6 +37,9 @@
 #include "irprog.h"
 
 #include "../besched.h"
+#include "../begnuas.h"
+#include "../beblocksched.h"
+#include "../be_dbgout.h"
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
@@ -44,6 +47,8 @@
 #include "amd64_new_nodes.h"
 
 #define SNPRINTF_BUF_LEN 128
+
+#include "../benode.h"
 
 /**
  * Returns the register at in position pos.
@@ -131,12 +136,14 @@ void amd64_emit_dest_register(const ir_node *node, int pos)
 /**
  * Returns the target label for a control flow node.
  */
+/*
 static void amd64_emit_cfop_target(const ir_node *node)
 {
 	ir_node *block = get_irn_link(node);
 
 	be_emit_irprintf("BLOCK_%ld", get_irn_node_nr(block));
 }
+*/
 
 /***********************************************************************************
  *                  _          __                                             _
@@ -149,18 +156,33 @@ static void amd64_emit_cfop_target(const ir_node *node)
  ***********************************************************************************/
 
 /**
- * Emits code for a unconditional jump.
+ * Default emitter for anything that we don't want to generate code for.
  */
-static void emit_Jmp(const ir_node *node)
+static void emit_nothing(const ir_node *node)
 {
-	ir_node *block;
+	(void) node;
+}
 
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
-	be_emit_cstring("\tjmp ");
-	amd64_emit_cfop_target(node);
+/**
+ * Emits code for a return.
+ */
+static void emit_be_Return(const ir_node *node)
+{
+	be_emit_cstring("\tret");
 	be_emit_finish_line_gas(node);
+}
+
+/**
+ * The type of a emitter function.
+ */
+typedef void (emit_func)(const ir_node *irn);
+
+/**
+ * Set a node emitter. Make it a bit more type safe.
+ */
+static inline void set_emitter(ir_op *op, emit_func arm_emit_node)
+{
+	op->ops.generic = (op_func)arm_emit_node;
 }
 
 /**
@@ -169,25 +191,16 @@ static void emit_Jmp(const ir_node *node)
  */
 static void amd64_register_emitters(void)
 {
-
-/* some convienience macros to register additional emitter functions
-   (other than the generated ones) */
-#define amd64_EMIT(a) op_amd64_##a->ops.generic = (op_func)emit_amd64_##a
-#define EMIT(a)          op_##a->ops.generic = (op_func)emit_##a
-#define BE_EMIT(a)       op_be_##a->ops.generic = (op_func)emit_be_##a
-
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
 
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	/* register addtional emitter functions if needed */
-	EMIT(Jmp);
-
-#undef amd64_EMIT
-#undef BE_EMIT
-#undef EMIT
+	set_emitter(op_be_Return, emit_be_Return);
+	set_emitter(op_be_Start,    emit_nothing);
+	set_emitter(op_be_Barrier,  emit_nothing);
+	set_emitter(op_be_IncSP,    emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);
@@ -219,8 +232,9 @@ static void amd64_gen_block(ir_node *block, void *data)
 	if (! is_Block(block))
 		return;
 
-	be_emit_cstring("BLOCK_");
-	be_emit_irprintf("%ld:\n", get_irn_node_nr(block));
+	be_gas_emit_block_name(block);
+	be_emit_char(':');
+
 	be_emit_write_line();
 
 	sched_foreach(block, node) {
@@ -228,34 +242,6 @@ static void amd64_gen_block(ir_node *block, void *data)
 	}
 }
 
-
-/**
- * Emits code for function start.
- */
-static void amd64_emit_func_prolog(ir_graph *irg)
-{
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
-
-	/* TODO: emit function header */
-	be_emit_cstring("/* start of ");
-	be_emit_string(irg_name);
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
-}
-
-/**
- * Emits code for function end
- */
-static void amd64_emit_func_epilog(ir_graph *irg)
-{
-	const char *irg_name = get_entity_name(get_irg_entity(irg));
-
-	/* TODO: emit function end */
-	be_emit_cstring("/* end of ");
-	be_emit_string(irg_name);
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
-}
 
 /**
  * Sets labels for control flow nodes (jump target)
@@ -279,12 +265,36 @@ static void amd64_gen_labels(ir_node *block, void *env)
 void amd64_gen_routine(const amd64_code_gen_t *cg, ir_graph *irg)
 {
 	(void)cg;
+	ir_entity *entity = get_irg_entity(irg);
+	ir_node  **blk_sched;
+	int i, n;
 
 	/* register all emitter functions */
 	amd64_register_emitters();
 
-	amd64_emit_func_prolog(irg);
+	blk_sched = be_create_block_schedule(cg->irg, cg->birg->exec_freq);
+
+	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
+	be_gas_emit_function_prolog(entity, 4);
+
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
-	irg_walk_blkwise_graph(irg, NULL, amd64_gen_block, NULL);
-	amd64_emit_func_epilog(irg);
+
+	n = ARR_LEN(blk_sched);
+	for (i = 0; i < n; ++i) {
+		ir_node *block = blk_sched[i];
+		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
+
+		set_irn_link(block, prev);
+	}
+
+	for (i = 0; i < n; ++i) {
+		ir_node *block = blk_sched[i];
+
+		amd64_gen_block(block, 0);
+	}
+
+	be_gas_emit_function_epilog(entity);
+	be_dbg_method_end();
+	be_emit_char('\n');
+	be_emit_write_line();
 }

@@ -177,6 +177,16 @@ Push => {
 	latency   => 2,
 #	units     => [ "GP" ],
 },
+Add => {
+	irn_flags  => "R",
+	state      => "exc_pinned",
+	reg_req    => { in => [ "gp", "gp" ],
+	                out => [ "in_r1" ] },
+	in         => [ "left", "right" ],
+	emit       => ". add %S1, %D1",
+	outs       => [ "res" ],
+	mode       => "mode_Iu",
+},
 Immediate => {
 	op_flags  => "c",
 	attr      => "unsigned imm_value",

@@ -80,7 +80,7 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 /**
  * Transforms a Const node.
  *
- * @return The transformed ARM node.
+ * @return The transformed AMD64 node.
  */
 static ir_node *gen_Const(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -93,6 +93,24 @@ static ir_node *gen_Const(ir_node *node) {
 	return res;
 }
 
+/**
+ * Transforms an Add node.
+ *
+ * @return The transformed AMD64 node.
+ */
+static ir_node *gen_Add(ir_node *node) {
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	/* ir_mode  *mode  = get_irn_mode(node); */
+	ir_node  *op1   = get_Add_left(node);
+	ir_node  *op2   = get_Add_right(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *new_op1 = be_transform_node(op1);
+	ir_node  *new_op2 = be_transform_node(op2);
+
+	ir_node *res = new_bd_amd64_Add(dbgi, block, new_op1, new_op2);
+	be_dep_on_frame (res);
+	return res;
+}
 /* Boilerplate code for transformation: */
 
 static void amd64_pretransform_node(void)
@@ -111,6 +129,7 @@ static void amd64_register_transformers(void)
 	clear_irp_opcodes_generic_func();
 
 	set_transformer(op_Const,        gen_Const);
+	set_transformer(op_Add,          gen_Add);
 }
 
 
