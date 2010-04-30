@@ -71,6 +71,7 @@
 #include "be_t.h"
 #include "bera.h"
 #include "beirg.h"
+#include "bedump_minir.h"
 
 #include "bespillslots.h"
 #include "bespill.h"
@@ -341,8 +342,6 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 
 		be_timer_push(T_RA_COPYMIN);
 		if (minir_file[0] != '\0') {
-			extern void be_export_minir(const arch_env_t *arch_env, FILE *out,
-			                            ir_graph *irg);
 			FILE *out;
 
 			if (strcmp(minir_file, "-") == 0) {
