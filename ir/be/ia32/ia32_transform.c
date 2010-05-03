@@ -750,7 +750,7 @@ static bool is_sameconv(ir_node *node)
 /** Skip all signedness convs */
 static ir_node *ia32_skip_sameconv(ir_node *node)
 {
-	while (is_downconv(node))
+	while (is_sameconv(node))
 		node = get_Conv_op(node);
 
 	return node;
