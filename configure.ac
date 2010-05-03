@@ -162,7 +162,7 @@ AC_DEFINE([INLINE], [inline], [define inline to compiler inline keyword])
 
 BACKENDS=""
 if test "$enable_backend" = yes; then
-	BACKENDS="arm ia32 mips ppc32 sparc"
+	BACKENDS="arm ia32 mips ppc32 sparc amd64"
 fi
 AC_SUBST([BACKENDS])
 

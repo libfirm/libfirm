@@ -322,6 +322,7 @@ EXTRA_DIST = \
 	be/becopystat.h \
 	be/bemodule_t.h \
 	be/bechordal.h \
+	be/bedump_minir.h \
 	be/bearch.h \
 	be/beschedrss.h \
 	be/beirg.h \
@@ -669,6 +670,51 @@ $(srcdir)/be/sparc/gen_sparc_machine.c $(srcdir)/be/sparc/gen_sparc_machine.h: \
 $(srcdir)/be/sparc/gen_sparc_regalloc_if.c $(srcdir)/be/sparc/gen_sparc_regalloc_if.h: \
 		be/sparc/sparc_spec.pl be/scripts/generate_machine.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/sparc/sparc_spec.pl $(srcdir)/be/sparc
+
+# amd64 backend
+
+amd64_sources = \
+	be/amd64/amd64_emitter.c \
+	be/amd64/amd64_new_nodes.c \
+	be/amd64/amd64_transform.c \
+	be/amd64/bearch_amd64.c
+amd64_built_sources = \
+	be/amd64/gen_amd64_emitter.c \
+	be/amd64/gen_amd64_emitter.h \
+	be/amd64/gen_amd64_machine.c \
+	be/amd64/gen_amd64_machine.h \
+	be/amd64/gen_amd64_new_nodes.c.inl \
+	be/amd64/gen_amd64_new_nodes.h \
+	be/amd64/gen_amd64_regalloc_if.c \
+	be/amd64/gen_amd64_regalloc_if.h
+MAINTAINERCLEANFILES += $(amd64_built_sources)
+BUILT_SOURCES += $(amd64_built_sources)
+libfirm_la_SOURCES += $(amd64_sources) $(amd64_built_sources)
+
+EXTRA_DIST += \
+	be/amd64/amd64_emitter.h \
+	be/amd64/amd64_new_nodes.h \
+	be/amd64/amd64_nodes_attr.h \
+	be/amd64/amd64_spec.pl \
+	be/amd64/amd64_transform.h \
+	be/amd64/bearch_amd64_t.h
+
+$(srcdir)/be/amd64/gen_amd64_new_nodes.c.inl $(srcdir)/be/amd64/gen_amd64_new_nodes.h: \
+		be/amd64/amd64_spec.pl be/scripts/generate_new_opcodes.pl
+	$(PERL) $(srcdir)/be/scripts/generate_new_opcodes.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
+
+$(srcdir)/be/amd64/gen_amd64_emitter.c $(srcdir)/be/amd64/gen_amd64_emitter.h: \
+		be/amd64/amd64_spec.pl be/scripts/generate_emitter.pl
+	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
+
+$(srcdir)/be/amd64/gen_amd64_machine.c $(srcdir)/be/amd64/gen_amd64_machine.h: \
+		be/amd64/amd64_spec.pl be/scripts/generate_machine.pl
+	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
+
+$(srcdir)/be/amd64/gen_amd64_regalloc_if.c $(srcdir)/be/amd64/gen_amd64_regalloc_if.h: \
+		be/amd64/amd64_spec.pl be/scripts/generate_machine.pl
+	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/amd64/amd64_spec.pl $(srcdir)/be/amd64
+
 
 # TEMPLATE backend
 
