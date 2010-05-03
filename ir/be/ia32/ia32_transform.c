@@ -722,8 +722,33 @@ static int is_downconv(const ir_node *node)
 		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
-/* Skip all Down-Conv's on a given node and return the resulting node. */
+/** Skip all Down-Conv's on a given node and return the resulting node. */
 ir_node *ia32_skip_downconv(ir_node *node)
+{
+	while (is_downconv(node))
+		node = get_Conv_op(node);
+
+	return node;
+}
+
+static bool is_sameconv(ir_node *node)
+{
+	ir_mode *src_mode;
+	ir_mode *dest_mode;
+
+	if (!is_Conv(node))
+		return 0;
+
+	src_mode  = get_irn_mode(get_Conv_op(node));
+	dest_mode = get_irn_mode(node);
+	return
+		ia32_mode_needs_gp_reg(src_mode)  &&
+		ia32_mode_needs_gp_reg(dest_mode) &&
+		get_mode_size_bits(dest_mode) == get_mode_size_bits(src_mode);
+}
+
+/** Skip all signedness convs */
+static ir_node *ia32_skip_sameconv(ir_node *node)
 {
 	while (is_downconv(node))
 		node = get_Conv_op(node);
@@ -797,6 +822,11 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		op2 = ia32_skip_downconv(op2);
 		if (op1 != NULL) {
 			op1 = ia32_skip_downconv(op1);
+		}
+	} else {
+		op2 = ia32_skip_sameconv(op2);
+		if (op1 != NULL) {
+			op1 = ia32_skip_sameconv(op1);
 		}
 	}
 
