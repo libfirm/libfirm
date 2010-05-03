@@ -307,7 +307,8 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 				assert(n < n_in);
 				in[n++] = get_irn_n(irn, i);
 			}
-			keep = be_new_Keep(get_nodes_block(irn), n_in, in);
+			keep = be_new_Barrier(get_nodes_block(irn), n_in, in);
+			keep_alive(keep);
 			sched_add_before(irn, keep);
 		}
 
@@ -322,13 +323,16 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 static void	kill_barriers(ir_graph *irg)
 {
 	ir_node *end_blk = get_irg_end_block(irg);
-	ir_node *start_blk;
+	ir_node *start_blk = get_irg_start_block(irg);
 	int i;
 
 	/* skip the barrier on all return blocks */
 	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *be_ret = get_Block_cfgpred(end_blk, i);
 		ir_node *ret_blk = get_nodes_block(be_ret);
+
+		if (ret_blk == start_blk)
+			continue;
 
 		skip_barrier(ret_blk, irg);
 	}
