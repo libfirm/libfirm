@@ -213,10 +213,6 @@ const char *lc_opt_get_type_name(const lc_opt_entry_t *ent)
 	return get_type_name(lc_get_opt_special(ent)->type);
 }
 
-
-lc_opt_entry_t *lc_opt_find_grp(const lc_opt_entry_t *grp, const char *name, lc_opt_err_info_t *err);
-lc_opt_entry_t *lc_opt_find_opt(const lc_opt_entry_t *grp, const char *name, lc_opt_err_info_t *err);
-
 lc_opt_entry_t *lc_opt_get_grp(lc_opt_entry_t *parent, const char *name)
 {
 	lc_opt_entry_t *ent = lc_opt_find_grp(parent, name, NULL);
@@ -429,7 +425,7 @@ int lc_opt_std_dump(char *buf, size_t n, UNUSED(const char *name), lc_opt_type_t
 		switch (type) {
 		case lc_opt_type_bit:
 		case lc_opt_type_negbit:
-			res = snprintf(buf, n, "%x", *((int *) data));
+			res = snprintf(buf, n, "%x", *((unsigned *) data));
 			break;
 		case lc_opt_type_boolean:
 		case lc_opt_type_negboolean:
@@ -571,8 +567,6 @@ static char *lc_opt_values_to_string(char *buf, size_t len, const lc_opt_entry_t
 
 	return buf;
 }
-
-static lc_opt_entry_t *resolve_up_to_last_str(lc_opt_entry_t *root, const char *path, const char **last_name);
 
 int lc_opt_add_table(lc_opt_entry_t *root, const lc_opt_table_entry_t *table)
 {

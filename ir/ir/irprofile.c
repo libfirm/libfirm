@@ -274,11 +274,11 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			int     i, len = strlen(fname) + 1;
 			tarval  **tarval_string;
 
-			snprintf(buf, sizeof(buf), "firm_name_arr.%d", nr);
+			snprintf(buf, sizeof(buf), "firm_name_arr.%u", nr);
 			arr = new_type_array(1, wd->tp_char);
 			set_array_bounds_int(arr, 0, 0, len);
 
-			snprintf(buf, sizeof(buf), "__firm_name.%d", nr++);
+			snprintf(buf, sizeof(buf), "__firm_name.%u", nr++);
 			id = new_id_from_str(buf);
 			ent = new_entity(get_glob_type(), id, arr);
 			set_entity_ld_ident(ent, id);

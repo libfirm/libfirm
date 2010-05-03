@@ -911,7 +911,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b)
 tarval *tarval_convert_to(tarval *src, ir_mode *dst_mode)
 {
 	char                    *buffer;
-	fp_value                *res;
+	fp_value                *res = NULL;
 	const ieee_descriptor_t *desc;
 	int                      len;
 

@@ -55,13 +55,6 @@ typedef struct {
 void set_vrp_data(ir_graph *irg);
 
 /**
- * Creates an ir_prog_pass for vrp
- *
- * @param name the name of this pass or NULL
- */
-ir_graph_pass_t *set_vrp_pass(const char *name);
-
-/**
  * Test, if the two nodes can be compared with their vrp information
  *
  * @param left: the left node

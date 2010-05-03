@@ -639,7 +639,7 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp)
 		return NULL;
 
 	if (!has_entity_initializer(ent)) {
-		int len;
+		int len = 0;
 		int n;
 		int i = -1;
 
@@ -753,6 +753,7 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp)
 		n_r = get_compound_ent_n_values(right);
 		if (n_r < n)
 			n = n_r;
+		res = 0;
 		for (i = 0; i < n; ++i) {
 			ir_node *irn;
 			long v_l, v_r;

@@ -121,7 +121,8 @@ static inline void cnt_add_i(counter_t *dst, int src)
 static inline int cnt_cmp(const counter_t *a, const counter_t *b)
 {
 	int i;
-	unsigned va, vb;
+	unsigned va = 0;
+	unsigned vb = 0;
 
 	for (i = STAT_CNT_NUM - 1 ; i >= 0; --i) {
 		va = a->cnt[i];

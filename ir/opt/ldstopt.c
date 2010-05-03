@@ -1882,7 +1882,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				/* only Phis and pure Calls are allowed here, so ignore them */
 			}
 			if (other == NULL) {
-				ldst_info_t *ninfo;
+				ldst_info_t *ninfo = NULL;
 				phi_entry   *pe;
 				dbg_info    *db;
 

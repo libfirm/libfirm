@@ -294,7 +294,7 @@ static void simple_dump_be_block_reg_pressure(dumper_t *dmp, graph_entry_t *entr
 static void simple_dump_distrib_entry(const distrib_entry_t *entry, void *env)
 {
 	dumper_t *dmp = env;
-	fprintf(dmp->f, "%12d", cnt_to_uint(&entry->cnt));
+	fprintf(dmp->f, "%12u", cnt_to_uint(&entry->cnt));
 }  /* simple_dump_distrib_entry */
 
 /**
@@ -464,7 +464,7 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
 	if (! dmp->f)
 		return;
 
-	fprintf(dmp->f, "%-16s %8d\n", "Edges", cnt_to_uint(cnt));
+	fprintf(dmp->f, "%-16s %8u\n", "Edges", cnt_to_uint(cnt));
 }  /* simple_dump_edges */
 
 /**
@@ -795,7 +795,7 @@ static void csv_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 		csv_count_nodes(dmp, entry, cnt);
 
-		fprintf(dmp->f, "%-40s, %p, %d, %d, %d, %d\n",
+		fprintf(dmp->f, "%-40s, %p, %u, %u, %u, %u\n",
 			name,
 			(void *)entry->irg,
 			cnt_to_uint(&cnt[0]),

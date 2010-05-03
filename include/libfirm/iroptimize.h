@@ -954,13 +954,6 @@ typedef ir_type *(*get_Alloc_func)(ir_node *n);
 get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
 
 /**
- * sets value ranges through value range propagation
- * @param irg	The IR-graph on which to work
- *
- */
-void set_vrp_data(ir_graph *irg);
-
-/**
  * Creates an ir_graph pass for set_vrp_data()
  *
  * @param name The name of this pass or NULL

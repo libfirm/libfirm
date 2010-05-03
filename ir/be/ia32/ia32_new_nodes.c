@@ -193,7 +193,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			}
 
 			/* dump AM scale */
-			fprintf(F, "AM scale = %d\n", get_ia32_am_scale(n));
+			fprintf(F, "AM scale = %u\n", get_ia32_am_scale(n));
 
 			/* dump pn code */
 			if (is_ia32_SwitchJmp(n)) {
@@ -201,7 +201,8 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			} else if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
 				ia32_attr_t *attr = get_ia32_attr(n);
 				long pnc = get_ia32_condcode(n);
-				fprintf(F, "pn_code = 0x%lX (%s)\n", pnc, get_pnc_string(pnc & pn_Cmp_True));
+				fprintf(F, "pn_code = 0x%X (%s)\n", (unsigned) pnc,
+				        get_pnc_string(pnc & pn_Cmp_True));
 				fprintf(F, "ins_permuted = %u \n", attr->data.ins_permuted);
 				fprintf(F, "cmp_unsigned = %u \n", attr->data.cmp_unsigned);
 			}
@@ -213,7 +214,7 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			fprintf(F, "commutative = %d\n",   is_ia32_commutative(n));
 			fprintf(F, "need stackent = %d\n", is_ia32_need_stackent(n));
 			fprintf(F, "is reload = %d\n",     is_ia32_is_reload(n));
-			fprintf(F, "latency = %d\n",       get_ia32_latency(n));
+			fprintf(F, "latency = %u\n",       get_ia32_latency(n));
 
 			/* dump frame entity */
 			fprintf(F, "frame entity = ");

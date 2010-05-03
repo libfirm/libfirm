@@ -381,7 +381,7 @@ static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 
 	case IR_INITIALIZER_COMPOUND: {
 		unsigned i, n = get_initializer_compound_n_entries(ini);
-		fprintf(f, "%d ", n);
+		fprintf(f, "%u ", n);
 		for (i = 0; i < n; i++)
 			write_initializer(env, get_initializer_compound_value(ini, i));
 		break;
@@ -415,7 +415,7 @@ static void write_volatility(io_env_t *env, ir_node *irn)
 
 static void export_type_common(io_env_t *env, ir_type *tp)
 {
-	fprintf(env->file, "\ttype %ld %s %u %u %s %d ",
+	fprintf(env->file, "\ttype %ld %s %u %u %s %u ",
 	        get_type_nr(tp),
 	        get_type_tpop_name(tp),
 	        get_type_size_bytes(tp),
@@ -713,7 +713,7 @@ static void export_modes(io_env_t *env)
 			break;
 		}
 
-		fprintf(env->file, "\tmode \"%s\" %s %d %d %s %d %d ",
+		fprintf(env->file, "\tmode \"%s\" %s %u %d %s %u %u ",
 		        get_mode_name(mode), get_mode_sort_name(get_mode_sort(mode)),
 		        get_mode_size_bits(mode), get_mode_sign(mode),
 		        get_mode_arithmetic_name(get_mode_arithmetic(mode)),

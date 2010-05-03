@@ -3478,7 +3478,7 @@ static void apply_result(ir_node *irn, void *ctx)
 static void apply_end(ir_node *end, environment_t *env)
 {
 	int i, j,  n = get_End_n_keepalives(end);
-	ir_node **in;
+	ir_node **in = NULL;
 
 	if (n > 0)
 		NEW_ARR_A(ir_node *, in, n);
