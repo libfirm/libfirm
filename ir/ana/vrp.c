@@ -27,6 +27,7 @@
 
 #include "irtypes.h"
 #include "vrp.h"
+#include "iroptimize.h"
 #include "irouts.h"
 #include "irgraph_t.h"
 #include "irgopt.h"
