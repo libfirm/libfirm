@@ -1,2 +1,5 @@
 This is an obstack implementation adapted from the glibc one. It should work on
 all ANSI C89 compliant environments.
+
+We think of this as an independent library. Please try to keep this independent
+of other libfirm calls. (So no xmalloc, panic, etc.)
