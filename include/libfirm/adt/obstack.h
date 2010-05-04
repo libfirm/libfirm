@@ -140,6 +140,7 @@ extern "C" {
 		P, A)
 
 #include <string.h>
+#include <stdarg.h>
 
 struct _obstack_chunk		/* Lives at front of each chunk. */
 {
@@ -502,6 +503,7 @@ __extension__								\
 
 #endif /* not __GNUC__ or not __STDC__ */
 
+int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap);
 int obstack_printf(struct obstack *obst, const char *fmt, ...);
 
 #ifdef __cplusplus

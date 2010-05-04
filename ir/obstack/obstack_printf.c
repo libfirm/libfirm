@@ -8,18 +8,15 @@
 #define vsnprintf _vsnprintf
 #endif
 
-int obstack_printf(struct obstack *obst, const char *fmt, ...)
+int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 {
 	char    buf[128];
 	char   *buffer = buf;
 	size_t  size   = sizeof(buf);
-	va_list ap;
 	int     len;
 
 	for (;;) {
-		va_start(ap, fmt);
 		len = vsnprintf(buffer, sizeof(buffer), fmt, ap);
-		va_end(ap);
 
 		/* snprintf should return -1 only in the error case, but older glibcs
 		 * and probably other systems are buggy in this respect and return -1 if
@@ -46,4 +43,16 @@ int obstack_printf(struct obstack *obst, const char *fmt, ...)
 		free(buffer);
 
 	return len;
+}
+
+int obstack_printf(struct obstack *obst, const char *fmt, ...)
+{
+	va_list ap;
+	int     res;
+
+	va_start(ap, fmt);
+	res = obstack_vprintf(obst, fmt, ap);
+	va_end(ap);
+
+	return res;
 }
