@@ -1,6 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include "obstack.h"
 
 #ifdef _WIN32
@@ -11,7 +12,7 @@ int obstack_printf(struct obstack *obst, const char *fmt, ...)
 {
 	char    buf[128];
 	char   *buffer = buf;
-	size_t  size   = lengthof(buf);
+	size_t  size   = sizeof(buf);
 	va_list ap;
 	int     len;
 
@@ -37,7 +38,7 @@ int obstack_printf(struct obstack *obst, const char *fmt, ...)
 		} else {
 			break;
 		}
-		buffer = malloc(buffer, size);
+		buffer = malloc(size);
 	}
 
 	obstack_grow(obst, buffer, len);
