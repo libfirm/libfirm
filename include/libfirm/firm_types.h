@@ -197,7 +197,6 @@ typedef enum {
 	pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
 	pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
 	pn_Cmp_True  = 15                             /**< true */
-	/* not_mask = Leg*/   /* bits to flip to negate comparison * @@ hack for JNI interface */
 } pn_Cmp;   /* Projection numbers for Cmp */
 
 /** The allocation place. */

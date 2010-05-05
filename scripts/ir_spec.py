@@ -268,7 +268,24 @@ class Cast(Unop):
 	init     = "assert(is_atomic_type(type));"
 
 class Cmp(Binop):
-	outs  = [ "False", "Eq", "Lt", "Le", "Gt", "Ge", "Lg", "Leg", "Uo", "Ue", "Ul", "Ule", "Ug", "Uge", "Ne", "True" ]
+	outs  = [
+		("False", "always false"),
+		("Eq",    "equal"),
+		("Lt",    "less"),
+		("Le",    "less or equal"),
+		("Gt",    "greater"),
+		("Ge",    "greater or equal"),
+		("Lg",    "less or greater"),
+		("Leg",   "less, equal or greater ('not equal' for integer numbers)"),
+		("Uo",    "unordered"),
+		("Ue",    "unordered or equal"),
+		("Ul",    "unordered or less"),
+		("Ule",   "unordered, less or equal"),
+		("Ug",    "unordered or greater"),
+		("Uge",   "onordered, greater or equal"),
+		("Ne",    "unordered, less, greater or equal ('not equal' for floatingpoint numbers)"),
+		("True",  "always true"),
+	]
 	flags = []
 
 class Cond(Op):
