@@ -1,4 +1,4 @@
-====== libFirm 1.18.1 (1010-05-03) ======
+====== libFirm 1.18.1 (1010-05-05) ======
 * Fix bug where stackframe was not always setup for -fno-omit-frame-pointer
 * smaller bugfixes in Asm handling
 
