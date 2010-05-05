@@ -70,6 +70,7 @@
 #include "../be_dbgout.h"
 
 #include "ia32_emitter.h"
+#include "ia32_common_transform.h"
 #include "gen_ia32_emitter.h"
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_nodes_attr.h"
@@ -429,7 +430,7 @@ void ia32_emit_x87_mode_suffix(const ir_node *node)
 			case 128: be_emit_char('t'); return;
 		}
 	} else {
-		assert(mode_is_int(mode));
+		assert(mode_is_int(mode) || mode_is_reference(mode));
 		switch (get_mode_size_bits(mode)) {
 			case 16: be_emit_char('s');     return;
 			case 32: be_emit_char('l');     return;
