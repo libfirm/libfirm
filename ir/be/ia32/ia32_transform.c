@@ -709,8 +709,8 @@ static int is_downconv(const ir_node *node)
 		return 0;
 
 	/* we only want to skip the conv when we're the only user
-	 * (not optimal but for now...)
-	 */
+	 * (because this test is used in the context of address-mode selection
+	 *  and we don't want to use address mode for multiple users) */
 	if (get_irn_n_edges(node) > 1)
 		return 0;
 
@@ -737,6 +737,12 @@ static bool is_sameconv(ir_node *node)
 	ir_mode *dest_mode;
 
 	if (!is_Conv(node))
+		return 0;
+
+	/* we only want to skip the conv when we're the only user
+	 * (because this test is used in the context of address-mode selection
+	 *  and we don't want to use address mode for multiple users) */
+	if (get_irn_n_edges(node) > 1)
 		return 0;
 
 	src_mode  = get_irn_mode(get_Conv_op(node));
