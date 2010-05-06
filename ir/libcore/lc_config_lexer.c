@@ -534,6 +534,8 @@ char *_lc_opt_text;
 #include "lc_parser_t.h"
 #include "lc_config_parser.h"
 
+#define YY_NO_UNISTD_H
+
 static int _lc_opt_wrap(void);
 
 
@@ -541,7 +543,7 @@ static int _lc_opt_wrap(void);
 
 
 
-#line 545 "lc_config_lexer.c"
+#line 547 "lc_config_lexer.c"
 
 #define INITIAL 0
 #define LINE_COMMENT 1
@@ -733,10 +735,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
 
-#line 52 "lc_config_lexer.l"
+#line 54 "lc_config_lexer.l"
 
 
-#line 740 "lc_config_lexer.c"
+#line 742 "lc_config_lexer.c"
 
 	if ( !(yy_init) )
 		{
@@ -821,65 +823,65 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 54 "lc_config_lexer.l"
+#line 56 "lc_config_lexer.l"
 { BEGIN(BIG_COMMENT); }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 55 "lc_config_lexer.l"
+#line 57 "lc_config_lexer.l"
 { BEGIN(INITIAL); }
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 56 "lc_config_lexer.l"
+#line 58 "lc_config_lexer.l"
 PMANGLE(linenr)++;
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 57 "lc_config_lexer.l"
+#line 59 "lc_config_lexer.l"
 ;
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 59 "lc_config_lexer.l"
+#line 61 "lc_config_lexer.l"
 { BEGIN(LINE_COMMENT); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 60 "lc_config_lexer.l"
+#line 62 "lc_config_lexer.l"
 { BEGIN(INITIAL); PMANGLE(linenr)++; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 61 "lc_config_lexer.l"
+#line 63 "lc_config_lexer.l"
 ;
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 64 "lc_config_lexer.l"
+#line 66 "lc_config_lexer.l"
 { BEGIN(DAT); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 65 "lc_config_lexer.l"
+#line 67 "lc_config_lexer.l"
 { BEGIN(STR); }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 66 "lc_config_lexer.l"
+#line 68 "lc_config_lexer.l"
 { BEGIN(DAT_CONT); }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 67 "lc_config_lexer.l"
+#line 69 "lc_config_lexer.l"
 { _lc_opt_add_to_data_char(PMANGLE(text)[0]); }
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
 YY_RULE_SETUP
-#line 68 "lc_config_lexer.l"
+#line 70 "lc_config_lexer.l"
 {
 						BEGIN(INITIAL);
 						PMANGLE(linenr)++;
@@ -890,17 +892,17 @@ YY_RULE_SETUP
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 74 "lc_config_lexer.l"
+#line 76 "lc_config_lexer.l"
 { BEGIN(DAT); PMANGLE(linenr)++; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 75 "lc_config_lexer.l"
+#line 77 "lc_config_lexer.l"
 ;
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 78 "lc_config_lexer.l"
+#line 80 "lc_config_lexer.l"
 {
 						BEGIN(INITIAL);
 						_lc_opt_add_to_data_char('\0');
@@ -909,43 +911,43 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 84 "lc_config_lexer.l"
+#line 86 "lc_config_lexer.l"
 _lc_opt_add_to_data_char('\n');
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 85 "lc_config_lexer.l"
+#line 87 "lc_config_lexer.l"
 _lc_opt_add_to_data_char('\r');
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 86 "lc_config_lexer.l"
+#line 88 "lc_config_lexer.l"
 _lc_opt_add_to_data_char('\t');
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 87 "lc_config_lexer.l"
+#line 89 "lc_config_lexer.l"
 _lc_opt_add_to_data_char('\b');
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 88 "lc_config_lexer.l"
+#line 90 "lc_config_lexer.l"
 _lc_opt_add_to_data_char('\f');
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 89 "lc_config_lexer.l"
+#line 91 "lc_config_lexer.l"
 _lc_opt_add_to_data_char(_lc_opt_text[1]);
 	YY_BREAK
 case 22:
 /* rule 22 can match eol */
 YY_RULE_SETUP
-#line 90 "lc_config_lexer.l"
+#line 92 "lc_config_lexer.l"
 _lc_opt_add_to_data_char(_lc_opt_text[0]);
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 92 "lc_config_lexer.l"
+#line 94 "lc_config_lexer.l"
 {
 						PMANGLE(lval).text.str = PMANGLE(text);
 						PMANGLE(lval).text.len = PMANGLE(leng);
@@ -954,31 +956,31 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 97 "lc_config_lexer.l"
+#line 99 "lc_config_lexer.l"
 { return SEP; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 99 "lc_config_lexer.l"
+#line 101 "lc_config_lexer.l"
 ;
 	YY_BREAK
 case 26:
 /* rule 26 can match eol */
 YY_RULE_SETUP
-#line 100 "lc_config_lexer.l"
+#line 102 "lc_config_lexer.l"
 PMANGLE(linenr)++;
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 102 "lc_config_lexer.l"
+#line 104 "lc_config_lexer.l"
 return _lc_opt_text[0];
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 104 "lc_config_lexer.l"
+#line 106 "lc_config_lexer.l"
 ECHO;
 	YY_BREAK
-#line 982 "lc_config_lexer.c"
+#line 984 "lc_config_lexer.c"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(LINE_COMMENT):
 case YY_STATE_EOF(BIG_COMMENT):
@@ -1981,7 +1983,7 @@ void _lc_opt_free (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 104 "lc_config_lexer.l"
+#line 106 "lc_config_lexer.l"
 
 
 

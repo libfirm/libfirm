@@ -30,6 +30,8 @@
 #include "lc_parser_t.h"
 #include "lc_config_parser.h"
 
+#define YY_NO_UNISTD_H
+
 static int _lc_opt_wrap(void);
 
 %}
