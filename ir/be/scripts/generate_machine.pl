@@ -150,27 +150,37 @@ print OUT<<EOF;
  */
 #include "config.h"
 
+#include <stdlib.h>
+
 #include "gen_$arch\_machine.h"
 
 EOF
 
 print OUT @obst_execunits;
 
+if ($num_unit_types > 0) {
 print OUT<<EOF;
 
 be_execution_unit_type_t $arch\_execution_unit_types[] = {
 EOF
+}
 
 print OUT @obst_init_unit_types;
 
-print OUT<<EOF;
-};
+my $types;
+if ($num_unit_types > 0) {
+	print OUT "};\n\n";
+	$types = "$arch\_execution_unit_types";
+} else {
+	$types = "NULL";
+}
 
+print OUT<<EOF;
 be_machine_t $arch\_cpu = {
 	$bundle_size,
 	$bundles_per_cycle,
 	$num_unit_types,
-	$arch\_execution_unit_types
+	$types
 };
 
 /**
