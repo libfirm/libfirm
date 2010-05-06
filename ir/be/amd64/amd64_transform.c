@@ -85,10 +85,10 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 static ir_node *gen_Const(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_mode  *mode  = get_irn_mode(node);
+	ir_node *res = create_const_graph(node, block);
 	(void) mode;
 
-	ir_node *res = create_const_graph(node, block);
-	be_dep_on_frame (res);
+	be_dep_on_frame(res);
 
 	return res;
 }

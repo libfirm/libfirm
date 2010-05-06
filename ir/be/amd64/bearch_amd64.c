@@ -388,6 +388,8 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 	ir_mode  *mode;
 	int       i, n = get_method_n_params(method_type);
 	be_abi_call_flags_t call_flags;
+	int no_reg = 0;
+
 	(void) self;
 
 	/* set abi flags for calls */
@@ -399,8 +401,6 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &amd64_abi_callbacks);
-
-	int no_reg = 0;
 
 	for (i = 0; i < n; i++) {
 		tp   = get_method_param_type(method_type, i);

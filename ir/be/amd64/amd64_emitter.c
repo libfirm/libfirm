@@ -297,10 +297,10 @@ static void amd64_gen_labels(ir_node *block, void *env)
  */
 void amd64_gen_routine(const amd64_code_gen_t *cg, ir_graph *irg)
 {
-	(void)cg;
 	ir_entity *entity = get_irg_entity(irg);
 	ir_node  **blk_sched;
 	int i, n;
+	(void)cg;
 
 	/* register all emitter functions */
 	amd64_register_emitters();
