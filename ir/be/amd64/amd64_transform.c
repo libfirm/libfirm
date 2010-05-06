@@ -149,6 +149,7 @@ static void amd64_register_transformers(void)
 	clear_irp_opcodes_generic_func();
 
 	set_transformer(op_Const,        gen_Const);
+	set_transformer(op_SymConst,     gen_SymConst);
 	set_transformer(op_Add,          gen_Add);
 }
 

@@ -228,10 +228,12 @@ static void amd64_register_emitters(void)
 	/* register all emitter functions defined in spec */
 	amd64_register_spec_emitters();
 
-	set_emitter(op_be_Return, emit_be_Return);
-	set_emitter(op_be_Start,    emit_nothing);
-	set_emitter(op_be_Barrier,  emit_nothing);
-	set_emitter(op_be_IncSP,    emit_nothing);
+	set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
+	set_emitter(op_be_Return,        emit_be_Return);
+
+	set_emitter(op_be_Start,         emit_nothing);
+	set_emitter(op_be_Barrier,       emit_nothing);
+	set_emitter(op_be_IncSP,         emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);
