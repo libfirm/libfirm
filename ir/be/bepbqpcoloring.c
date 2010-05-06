@@ -62,15 +62,18 @@
 #include "vector.h"
 #include "vector_t.h"
 #include "heuristical_co.h"
+#include "heuristical_co_ld.h"
 #include "pbqp_t.h"
 #include "html_dumper.h"
 #include "pbqp_node_t.h"
 #include "pbqp_node.h"
 
-#define TIMER 0
+#define TIMER 		0
+#define PRINT_RPEO 	0
 
 
-static bool use_exec_freq = true;
+static int use_exec_freq 		= true;
+static int use_late_decision 	= true;
 
 typedef struct _be_pbqp_alloc_env_t {
 	pbqp 						*pbqp_inst;			/**< PBQP instance for register allocation */
@@ -101,6 +104,7 @@ static inline int is_2addr_code(const arch_register_req_t *req)
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL      ("exec_freq", "use exec_freq",  &use_exec_freq),
+	LC_OPT_ENT_BOOL      ("late_decision", "use late decision for register allocation",  &use_late_decision),
 	LC_OPT_LAST
 };
 
@@ -305,8 +309,11 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	pqueue_t  					*queue             	= new_pqueue();
 	pqueue_t  					*restr_nodes_queue 	= new_pqueue();
 	plist_t						*temp_list         	= plist_new();
+	plist_t						*sorted_list       	= plist_new();
 	ir_node                     *irn;
 	ir_nodeset_t                 live_nodes;
+	plist_element_t *el;
+	ir_node *last_element = NULL;
 
 	/* first, determine the pressure */
 	/* (this is only for compatibility with copymin optimization, it's not needed for pbqp coloring) */
@@ -381,9 +388,8 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 		/* order nodes for perfect elimination order */
 		if (get_irn_mode(irn) == mode_T) {
-			plist_element_t *first = plist_first(temp_list);
-			const ir_edge_t *edge;
 
+			const ir_edge_t *edge;
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				if (!arch_irn_consider_in_reg_alloc(cls, proj))
@@ -398,35 +404,48 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				}
 			}
 
+			if(last_element != NULL)
+			{
+				ir_node *proj = last_element;
+				// insert proj node into priority queue (descending by the number of interference edges)
+				if (get_free_regs(restr_nodes, cls, proj) <= 4/*bitset_is_set(restr_nodes, get_irn_idx(proj))*/) {
+					pqueue_put(restr_nodes_queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
+				}
+				else {
+					pqueue_put(queue,proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
+				}
+				plist_erase(temp_list, plist_find_value(temp_list, get_node(pbqp_inst, last_element->node_idx)));
+				//printf("Reordered Node: %u für %u\n", last_element->node_idx, irn->node_idx);
+				last_element = NULL;
+			}
+
 			/* first insert all restricted nodes */
 			while (!pqueue_empty(restr_nodes_queue)) {
-				if (first == NULL) {
-					plist_insert_back(temp_list, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(restr_nodes_queue))));
-					first = plist_first(temp_list);
-				} else {
-					plist_insert_before(temp_list, first, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(restr_nodes_queue))));
-				}
+				plist_insert_front(sorted_list, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(restr_nodes_queue))));
 			}
 
 			/* insert proj nodes descending by their number of interference edges */
 			while (!pqueue_empty(queue)) {
-				if (first == NULL) {
-					plist_insert_back(temp_list, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(queue))));
-					first = plist_first(temp_list);
-				} else {
-					plist_insert_before(temp_list, first, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(queue))));
-				}
+				plist_insert_front(sorted_list, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(queue))));
 			}
+
+			/* invert sorted list */
+			foreach_plist(sorted_list, el) {
+				plist_insert_front(temp_list, el->data);
+			}
+
+			plist_clear(sorted_list);
+
 		}
 		else {
 			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
+				last_element = irn;
 				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
 			}
 		}
 	}
 
 	/* insert nodes into reverse perfect elimination order */
-	plist_element_t *el;
 	foreach_plist(temp_list, el) {
 		plist_insert_back(rpeo, el->data);
 	}
@@ -434,6 +453,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	/* free reserved memory */
 	ir_nodeset_destroy(&live_nodes);
 	plist_free(temp_list);
+	plist_free(sorted_list);
 	del_pqueue(queue);
 	del_pqueue(restr_nodes_queue);
 }
@@ -574,12 +594,27 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	set_dumpfile(pbqp_alloc_env.pbqp_inst, file_before);
 #endif
 
+	/* print out reverse perfect eleminiation order */
+#if PRINT_RPEO
+	plist_element_t *elements;
+	foreach_plist(pbqp_alloc_env.rpeo, elements) {
+		pbqp_node *node			   = elements->data;
+		printf(" %d(%lu);", node->index, get_idx_irn(irg, node->index)->node_nr);
+	}
+	printf("\n");
+#endif
+
 
 	/* solve pbqp instance */
 #if TIMER
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_solve);
 #endif
-	solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
+	if(use_late_decision) {
+		solve_pbqp_heuristical_co_ld(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
+	}
+	else {
+		solve_pbqp_heuristical_co(pbqp_alloc_env.pbqp_inst,pbqp_alloc_env.rpeo);
+	}
 #if TIMER
 	ir_timer_stop(t_ra_pbqp_alloc_solve);
 #endif
