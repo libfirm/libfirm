@@ -245,7 +245,7 @@ static void normalize_towards_target(pbqp_edge *edge)
 	}
 }
 
-static void reorder_node(pbqp_node *node)
+void reorder_node(pbqp_node *node)
 {
 	unsigned    degree     = pbqp_node_get_degree(node);
 	/* Assume node lost one incident edge. */
