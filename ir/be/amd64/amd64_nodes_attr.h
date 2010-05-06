@@ -29,6 +29,7 @@
 
 typedef struct amd64_attr_t            amd64_attr_t;
 typedef struct amd64_immediate_attr_t  amd64_immediate_attr_t;
+typedef struct amd64_SymConst_attr_t   amd64_SymConst_attr_t;
 
 struct amd64_attr_t
 {
@@ -39,6 +40,11 @@ struct amd64_attr_t
 struct amd64_immediate_attr_t
 {
 	unsigned imm_value; /**< the immediate value to load */
+};
+
+struct amd64_SymConst_attr_t
+{
+	ir_entity *entity;
 };
 
 #define CAST_AMD64_ATTR(type,ptr)        ((type *)(ptr))

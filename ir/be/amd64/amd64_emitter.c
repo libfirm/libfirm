@@ -117,19 +117,22 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void amd64_emit_immediate(const ir_node *node)
 {
-	(void) node;
-	/* TODO */
+	const amd64_immediate_attr_t *attr = get_amd64_immediate_attr_const (node);
+	be_emit_char('$');
+	be_emit_irprintf("0x%X", attr->imm_value);
 }
 
 void amd64_emit_source_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_in_reg(node, pos);
+	be_emit_char('%');
 	be_emit_string(arch_register_get_name(reg));
 }
 
 void amd64_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_out_reg(node, pos);
+	be_emit_char('%');
 	be_emit_string(arch_register_get_name(reg));
 }
 
@@ -162,6 +165,34 @@ static void emit_nothing(const ir_node *node)
 {
 	(void) node;
 }
+
+/**
+ * Emit a SymConst.
+ */
+static void emit_amd64_SymConst(const ir_node *irn)
+{
+	const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(irn);
+//	sym_or_tv_t key, *entry;
+//	unsigned label;
+//
+//	key.u.id     = get_entity_ld_ident(attr->entity);
+//	key.is_ident = 1;
+//	key.label    = 0;
+//	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+//	if (entry->label == 0) {
+//		/* allocate a label */
+//		entry->label = get_unique_label();
+//	}
+//	label = entry->label;
+
+
+	be_gas_emit_entity(attr->entity);
+	be_emit_char(':');
+	be_emit_finish_line_gas(irn);
+	be_emit_cstring("\t.long 0x0");
+	be_emit_finish_line_gas(irn);
+}
+
 
 /**
  * Emits code for a return.

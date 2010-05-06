@@ -400,15 +400,24 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &amd64_abi_callbacks);
 
-	for (i = 0; i < n; i++) {
-		/* TODO: implement register parameter: */
-		/* reg = get reg for param i;          */
-		/* be_abi_call_param_reg(abi, i, reg); */
+	int no_reg = 0;
 
-		/* default: all parameters on stack */
+	for (i = 0; i < n; i++) {
 		tp   = get_method_param_type(method_type, i);
 		mode = get_type_mode(tp);
-		be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH);
+		printf ("MODE %p %p XX %d\n", mode, mode_Iu, i);
+
+		if (!no_reg && (i == 0 || i == 1) && mode == mode_Iu) {
+			printf("TEST%d\n", i);
+			be_abi_call_param_reg(abi, i,
+			                      i == 0 ? &amd64_gp_regs[REG_RDI]
+			                             : &amd64_gp_regs[REG_RSI],
+			                      ABI_CONTEXT_BOTH);
+		/* default: all parameters on stack */
+		} else {
+			no_reg = 1;
+			be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH);
+		}
 	}
 
 	/* TODO: set correct return register */

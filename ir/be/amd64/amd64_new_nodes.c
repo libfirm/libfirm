@@ -98,7 +98,7 @@ amd64_attr_t *get_amd64_attr(ir_node *node)
 	return (amd64_attr_t *)get_irn_generic_attr(node);
 }
 
-static const amd64_immediate_attr_t *get_amd64_immediate_attr_const(const ir_node *node)
+const amd64_immediate_attr_t *get_amd64_immediate_attr_const(const ir_node *node)
 {
 	const amd64_attr_t           *attr     = get_amd64_attr_const(node);
 	const amd64_immediate_attr_t *imm_attr = CONST_CAST_AMD64_ATTR(amd64_immediate_attr_t, attr);
@@ -115,6 +115,14 @@ static amd64_immediate_attr_t *get_amd64_immediate_attr(ir_node *node)
 	return imm_attr;
 }
 */
+
+const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node)
+{
+	const amd64_attr_t           *attr     = get_amd64_attr_const(node);
+	const amd64_SymConst_attr_t  *sym_attr = CONST_CAST_AMD64_ATTR(amd64_SymConst_attr_t, attr);
+
+	return sym_attr;
+}
 
 
 /**
@@ -174,6 +182,28 @@ static void init_amd64_immediate_attributes(ir_node *node, unsigned imm_value)
 	amd64_immediate_attr_t *attr = get_irn_generic_attr (node);
 	attr->imm_value = imm_value;
 }
+
+/**
+ * Initialize SymConst attributes.
+ */
+static void init_amd64_SymConst_attributes(ir_node *node, ir_entity *entity)
+{
+	amd64_SymConst_attr_t *attr = get_irn_generic_attr (node);
+	attr->entity = entity;
+}
+
+/** Compare node attributes for SymConst. */
+static int cmp_amd64_attr_SymConst(ir_node *a, ir_node *b)
+{
+	const amd64_SymConst_attr_t *attr_a = get_amd64_SymConst_attr_const(a);
+	const amd64_SymConst_attr_t *attr_b = get_amd64_SymConst_attr_const(b);
+
+	if (attr_a->entity != attr_b->entity)
+		return 1;
+
+	return 0;
+}
+
 
 /** Compare node attributes for Immediates. */
 static int cmp_amd64_attr_immediate(ir_node *a, ir_node *b)

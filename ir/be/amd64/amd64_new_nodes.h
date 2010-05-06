@@ -44,6 +44,8 @@
 amd64_attr_t *get_amd64_attr(ir_node *node);
 
 const amd64_attr_t *get_amd64_attr_const(const ir_node *node);
+const amd64_immediate_attr_t *get_amd64_immediate_attr_const(const ir_node *node);
+const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node);
 
 /**
  * Returns the argument register requirements of an amd64 node.

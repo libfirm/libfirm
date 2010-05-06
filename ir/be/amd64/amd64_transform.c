@@ -94,6 +94,23 @@ static ir_node *gen_Const(ir_node *node) {
 }
 
 /**
+ * Transforms a SymConst node.
+ *
+ * @return The transformed ARM node.
+ */
+static ir_node *gen_SymConst(ir_node *node)
+{
+	ir_node   *block  = be_transform_node(get_nodes_block(node));
+	ir_entity *entity = get_SymConst_entity(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *new_node;
+
+	new_node = new_bd_amd64_SymConst(dbgi, block, entity);
+	be_dep_on_frame(new_node);
+	return new_node;
+}
+
+/**
  * Transforms an Add node.
  *
  * @return The transformed AMD64 node.
@@ -111,6 +128,9 @@ static ir_node *gen_Add(ir_node *node) {
 	be_dep_on_frame (res);
 	return res;
 }
+
+
+
 /* Boilerplate code for transformation: */
 
 static void amd64_pretransform_node(void)

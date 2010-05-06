@@ -159,11 +159,15 @@ $arch = "amd64";
 	amd64_immediate_attr_t =>
 		"\tinit_amd64_attributes(res, flags, in_reqs, exec_units, n_res);"
 		. "\tinit_amd64_immediate_attributes(res, imm_value);",
+	amd64_SymConst_attr_t =>
+		"\tinit_amd64_attributes(res, flags, in_reqs, exec_units, n_res);"
+		. "\tinit_amd64_SymConst_attributes(res, entity);",
 );
 
 %compare_attr = (
 	amd64_attr_t           => "cmp_amd64_attr",
 	amd64_immediate_attr_t => "cmp_amd64_attr_immediate",
+	amd64_SymConst_attr_t  => "cmp_amd64_attr_SymConst",
 );
 
 %nodes = (
@@ -194,5 +198,13 @@ Immediate => {
 	reg_req   => { out => [ "gp" ] },
 	emit      => '. movq %C, %D1',
 	mode      => "mode_Iu",
+},
+SymConst => {
+	op_flags  => "c",
+	irn_flags => "R",
+	attr      => "ir_entity *entity",
+	attr_type => "amd64_SymConst_attr_t",
+	reg_req   => { out => [ "gp" ] },
+	mode      => 'mode_Iu',
 },
 );
