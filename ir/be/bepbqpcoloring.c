@@ -388,6 +388,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 		/* order nodes for perfect elimination order */
 		if (get_irn_mode(irn) == mode_T) {
+			bool allHaveIFEdges = true;
 
 			const ir_edge_t *edge;
 			foreach_out_edge(irn, edge) {
@@ -395,31 +396,36 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				if (!arch_irn_consider_in_reg_alloc(cls, proj))
 					continue;
 
-				// insert proj node into priority queue (descending by the number of interference edges)
-				if (get_free_regs(restr_nodes, cls, proj) <= 4/*bitset_is_set(restr_nodes, get_irn_idx(proj))*/) {
+				/* insert proj node into priority queue (descending by the number of interference edges) */
+				if (get_free_regs(restr_nodes, cls, proj) <= 4) {
 					pqueue_put(restr_nodes_queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
 				}
 				else {
-					pqueue_put(queue,proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
+					pqueue_put(queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
+				}
+
+				/* skip last step if there is no last_element */
+				if(last_element == NULL)
+					continue;
+
+				/* check if proj has an if edge to last_element (at this time pbqp contains only if edges) */
+				if(get_edge(pbqp_inst, proj->node_idx, last_element->node_idx) == NULL && get_edge(pbqp_inst, last_element->node_idx, proj->node_idx) == NULL) {
+					allHaveIFEdges = false; /* there is no if edge between proj and last_element */
 				}
 			}
 
-			if(last_element != NULL)
-			{
-				ir_node *proj = last_element;
-				// insert proj node into priority queue (descending by the number of interference edges)
-				if (get_free_regs(restr_nodes, cls, proj) <= 4/*bitset_is_set(restr_nodes, get_irn_idx(proj))*/) {
-					pqueue_put(restr_nodes_queue, proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
+			if(last_element != NULL && allHaveIFEdges) {
+				if (get_free_regs(restr_nodes, cls, last_element) <= 4) {
+					pqueue_put(restr_nodes_queue, last_element, pbqp_alloc_env->ife_edge_num[get_irn_idx(last_element)]);
 				}
 				else {
-					pqueue_put(queue,proj, pbqp_alloc_env->ife_edge_num[get_irn_idx(proj)]);
+					pqueue_put(queue, last_element, pbqp_alloc_env->ife_edge_num[get_irn_idx(last_element)]);
 				}
 				plist_erase(temp_list, plist_find_value(temp_list, get_node(pbqp_inst, last_element->node_idx)));
-				//printf("Reordered Node: %u für %u\n", last_element->node_idx, irn->node_idx);
 				last_element = NULL;
 			}
 
-			/* first insert all restricted nodes */
+			/* first insert all restricted proj nodes */
 			while (!pqueue_empty(restr_nodes_queue)) {
 				plist_insert_front(sorted_list, get_node(pbqp_inst, get_irn_idx(pqueue_pop_front(restr_nodes_queue))));
 			}
@@ -493,13 +499,15 @@ static void insert_perms(ir_node *block, void *data)
 
 static void be_pbqp_coloring(be_chordal_env_t *env)
 {
-	ir_graph                      *irg  = env->irg;
-	be_irg_t                      *birg = env->birg;
-	const arch_register_class_t   *cls  = env->cls;
-	unsigned colors_n				    = arch_register_class_n_regs(cls);
-	be_pbqp_alloc_env_t pbqp_alloc_env;
-	unsigned idx, row, col;
-	be_lv_t *lv;
+	ir_graph                   	*irg  			= env->irg;
+	be_irg_t                   	*birg 			= env->birg;
+	const arch_register_class_t *cls  			= env->cls;
+	be_lv_t 					*lv				= NULL;
+	plist_element_t 		  	*element		= NULL;
+	unsigned 					 colors_n 		= arch_register_class_n_regs(cls);
+	be_pbqp_alloc_env_t 		 pbqp_alloc_env;
+	unsigned 					 row, col;
+
 
 #if TIMER
 	ir_timer_t *t_ra_pbqp_alloc_create     = ir_timer_new();
@@ -576,11 +584,10 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if TIMER
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_create_aff);
 #endif
-	plist_element_t *el;
-	foreach_plist(pbqp_alloc_env.rpeo, el) {
-		pbqp_node *node			   = el->data;
-		idx			               = node->index;
-		ir_node *irn               = get_idx_irn(irg, idx);
+	foreach_plist(pbqp_alloc_env.rpeo, element) {
+		pbqp_node 	*node	= element->data;
+		ir_node 	*irn    = get_idx_irn(irg, node->index);
+
 		create_affinity_edges(irn, &pbqp_alloc_env);
 	}
 #if TIMER
@@ -623,13 +630,11 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 	/* assign colors */
-	plist_element_t *element;
 	foreach_plist(pbqp_alloc_env.rpeo, element) {
-		pbqp_node *node			   = element->data;
-		idx			               = node->index;
-		ir_node *irn               = get_idx_irn(irg, idx);
-		num color                  = get_node_solution(pbqp_alloc_env.pbqp_inst, idx);
-		const arch_register_t *reg = arch_register_for_index(cls, color);
+		pbqp_node 				*node	= element->data;
+		ir_node 				*irn    = get_idx_irn(irg, node->index);
+		num 					 color  = get_node_solution(pbqp_alloc_env.pbqp_inst, node->index);
+		const arch_register_t 	*reg 	= arch_register_for_index(cls, color);
 
 		arch_set_irn_register(irn, reg);
 	}
