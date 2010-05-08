@@ -265,8 +265,8 @@ static void peephole_ia32_Test(ir_node *node)
 					int      pnc  = get_ia32_condcode(user);
 
 					switch (pnc) {
-						case pn_Cmp_Eq: pnc = pn_Cmp_Ge | ia32_pn_Cmp_unsigned; break;
-						case pn_Cmp_Lg: pnc = pn_Cmp_Lt | ia32_pn_Cmp_unsigned; break;
+						case pn_Cmp_Eq: pnc = ia32_pn_Cmp_no_carry; break;
+						case pn_Cmp_Lg: pnc = ia32_pn_Cmp_carry;    break;
 						default: panic("unexpected pn");
 					}
 					set_ia32_condcode(user, pnc);
