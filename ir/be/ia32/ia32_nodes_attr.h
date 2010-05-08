@@ -36,8 +36,8 @@ enum {
 	ia32_pn_Cmp_float     = 0x2000,
 	ia32_pn_Cmp_parity    = 0x4000,
 	/* The unsigned Lt/Ge comparisons test the carry bit. */
-	ia32_pn_Cmp_carry     = pn_Cmp_Lt | ia32_pn_Cmp_unsigned
-	ia32_pn_Cmp_not_carry = pn_Cmp_Ge | ia32_pn_Cmp_unsigned,
+	ia32_pn_Cmp_carry     = pn_Cmp_Lt | ia32_pn_Cmp_unsigned,
+	ia32_pn_Cmp_not_carry = pn_Cmp_Ge | ia32_pn_Cmp_unsigned
 };
 
 typedef enum {
