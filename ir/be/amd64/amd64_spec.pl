@@ -185,9 +185,10 @@ Add => {
 	irn_flags  => "R",
 	state      => "exc_pinned",
 	reg_req    => { in => [ "gp", "gp" ],
-	                out => [ "in_r1" ] },
+	                out => [ "gp" ] },
 	in         => [ "left", "right" ],
-	emit       => ". add %S1, %D1",
+	emit       => ". mov %S2, %D1\n"
+                    . ". add %S1, %D1\n",
 	outs       => [ "res" ],
 	mode       => "mode_Iu",
 },
