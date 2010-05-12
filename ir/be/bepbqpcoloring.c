@@ -68,8 +68,8 @@
 #include "pbqp_node_t.h"
 #include "pbqp_node.h"
 
-#define TIMER 		1
-#define PRINT_RPEO 	1
+#define TIMER 		0
+#define PRINT_RPEO 	0
 
 
 static int use_exec_freq 		= true;
