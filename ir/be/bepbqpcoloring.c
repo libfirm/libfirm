@@ -68,8 +68,8 @@
 #include "pbqp_node_t.h"
 #include "pbqp_node.h"
 
-#define TIMER 		0
-#define PRINT_RPEO 	0
+#define TIMER 		1
+#define PRINT_RPEO 	1
 
 
 static int use_exec_freq 		= true;
@@ -445,8 +445,13 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 		}
 		else {
 			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
+				// remember last colorable node
 				last_element = irn;
 				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
+			}
+			else {
+				// node not colorable, so ignore it
+				last_element = NULL;
 			}
 		}
 	}
