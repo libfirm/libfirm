@@ -53,9 +53,10 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /* DBG print stats for every procedure.  */
-#define LOOP_OPT_STATS
+#define LOOP_OPT_STATS 0
+
 /* DBG: Ignore node limits and process every possible loop. */
-#define LOOP_IGNORE_NODE_LIMITS 1
+#define LOOP_IGNORE_NODE_LIMITS 0
 
 /**
  * Convenience macro for iterating over every phi node of the given block.
@@ -103,7 +104,7 @@ static unsigned loop_head_valid = 1;
 /* List of all inner loops, that are processed. */
 static ir_loop **loops;
 
-#ifdef LOOP_OPT_STATS
+#if LOOP_OPT_STATS
 
 #define count_stats(val) (++val)
 #define print_stats() (do_print_stats())
@@ -1265,7 +1266,7 @@ static void loop_inversion(void)
 	unmark_not_allowed_cc_blocks();
 	DEL_ARR_F(cc_blocks);
 
-#if IGNORE_NODE_LIMITS
+#if LOOP_IGNORE_NODE_LIMITS
 	(void) unmark_cc_blocks;
 #else
 	/* Condition chain too large.
@@ -2498,6 +2499,7 @@ static void init_analyze(ir_loop *loop)
 	int      loop_depth;
 	unsigned max_loop_nodes = opt_params.max_loop_size;
 	unsigned max_loop_nodes_adapted;
+	int      max_calls = opt_params.allowed_calls;
 	int      depth_adaption = opt_params.depth_adaption;
 
 	cur_loop = loop;
