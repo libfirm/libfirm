@@ -2062,7 +2062,15 @@ int dump_type_node(FILE *F, ir_type *tp)
 
 	fprintf(F, "node: {title: ");
 	PRINT_TYPEID(tp);
-	ir_fprintf(F, " label: \"%s %+F\" info1: \"", get_type_tpop_name(tp), tp);
+	fprintf(F, " label: \"%s ", get_type_tpop_name(tp));
+	if (tp->dbi != NULL) {
+		char buf[256];
+		ir_print_type(buf, sizeof(buf), tp);
+		fprintf(F, "'%s'", buf);
+	} else {
+		ir_fprintf(F, "%+F", tp);
+	}
+	fputs("\" info1: \"", F);
 	dump_type_to_file(F, tp, dump_verbosity_max);
 	fprintf(F, "\"\n");
 	print_type_dbg_info(F, get_type_dbg_info(tp));

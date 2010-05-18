@@ -130,7 +130,7 @@ void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
 	if (retrieve_type_dbg)
 		retrieve_type_dbg(buffer, buffer_size, tdbgi);
 	assert(buffer_size > 0);
-	buffer[0] = 0;
+	buffer[buffer_size-1] = 0;
 }
 
 void ir_dbg_info_snprint(char *buf, size_t bufsize, const dbg_info *dbg)
