@@ -29,7 +29,6 @@
 #include <stdlib.h>
 
 #include "pset.h"
-#include "impl.h"
 
 #include "irnode.h"
 #include "irmode.h"

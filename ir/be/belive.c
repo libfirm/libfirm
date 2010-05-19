@@ -29,7 +29,6 @@
 /* statev is expensive here, only enable when needed */
 #define DISABLE_STATEV
 
-#include "impl.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf_t.h"

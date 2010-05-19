@@ -27,7 +27,6 @@
 
 #include <stdlib.h>
 
-#include "impl.h"
 #include "irprintf.h"
 #include "irgwalk.h"
 #include "firm_types.h"
@@ -44,22 +43,6 @@
 #include "beutil.h"
 #include "belistsched.h"
 #include "belive.h"
-
-FIRM_IMPL1(have_sched_info, int, const ir_graph *)
-FIRM_IMPL1(sched_get_time_step, int, const ir_node *)
-FIRM_IMPL1(sched_has_next, int, const ir_node *)
-FIRM_IMPL1(sched_has_prev, int, const ir_node *)
-FIRM_IMPL1(sched_next, ir_node *, const ir_node *)
-FIRM_IMPL1(sched_prev, ir_node *, const ir_node *)
-FIRM_IMPL1(sched_is_scheduled, int, const ir_node *)
-FIRM_IMPL1(sched_first, ir_node *, const ir_node *)
-FIRM_IMPL1(sched_last, ir_node *, const ir_node *)
-FIRM_IMPL2_VOID(sched_add_after, ir_node *, ir_node *)
-FIRM_IMPL2_VOID(sched_add_before, ir_node *, ir_node *)
-FIRM_IMPL1_VOID(sched_init_block, ir_node *)
-FIRM_IMPL1_VOID(sched_remove, ir_node *)
-FIRM_IMPL1_VOID(sched_reset, ir_node *)
-FIRM_IMPL2(sched_comes_after, int, const ir_node *, const ir_node *)
 
 size_t sched_irn_data_offset = 0;
 
@@ -187,4 +170,79 @@ void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
 
 	// walk schedule and remove non-marked nodes
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
+}
+
+int (have_sched_info)(const ir_graph *irg)
+{
+	return _have_sched_info(irg);
+}
+
+int (sched_get_time_step)(const ir_node *node)
+{
+	return _sched_get_time_step(node);
+}
+
+int (sched_has_next)(const ir_node *node)
+{
+	return _sched_has_next(node);
+}
+
+int (sched_has_prev)(const ir_node *node)
+{
+	return _sched_has_prev(node);
+}
+
+ir_node *(sched_next)(const ir_node *node)
+{
+	return _sched_next(node);
+}
+
+ir_node *(sched_prev)(const ir_node *node)
+{
+	return _sched_prev(node);
+}
+
+int (sched_is_scheduled)(const ir_node *node)
+{
+	return _sched_is_scheduled(node);
+}
+
+ir_node *(sched_first)(const ir_node *node)
+{
+	return _sched_first(node);
+}
+
+ir_node *(sched_last)(const ir_node *node)
+{
+	return _sched_last(node);
+}
+
+void (sched_add_after)(ir_node *after, ir_node *node)
+{
+	_sched_add_after(after, node);
+}
+
+void (sched_add_before)(ir_node *before, ir_node *node)
+{
+	_sched_add_before(before, node);
+}
+
+void (sched_init_block)(ir_node *block)
+{
+	_sched_init_block(block);
+}
+
+void (sched_remove)(ir_node *node)
+{
+	_sched_remove(node);
+}
+
+void (sched_reset)(ir_node *node)
+{
+	_sched_reset(node);
+}
+
+int (sched_comes_after)(const ir_node *n1, const ir_node *n2)
+{
+	return _sched_comes_after(n1, n2);
 }
