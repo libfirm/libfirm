@@ -40,11 +40,6 @@
 /* The number of array elements we assume if not both bounds are given. */
 #define DEFAULT_N_ARRAY_ELEMENTS 1
 
-/** The entities that can be accessed by this Sel node. *
-int       get_Sel_n_accessed_entities(ir_node *sel);
-ir_entity *get_Sel_accessed_entity    (ir_node *sel, int pos);
-*/
-
 int get_irn_loop_call_depth(ir_node *n);
 /** Return loop depth of node.
  *
