@@ -36,10 +36,4 @@ enum _ir_edge_kind_t {
 
 typedef enum _ir_edge_kind_t ir_edge_kind_t;
 
-/*
- * It's ugly but we need this forward ref.
- */
-
-void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
-
 #endif

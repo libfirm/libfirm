@@ -32,6 +32,7 @@
 #include "irgraph_t.h"
 #include "irflag_t.h"
 #include "array.h"
+#include "iredges_t.h"
 
 /**
  * Returns the array with the ins.  The content of the array may not be
@@ -247,6 +248,9 @@ static inline ir_node *_get_irn_dep(const ir_node *node, int pos) {
 	assert(pos >= 0 && pos < ARR_LEN(node->deps) && "dependency index out of range");
 	return node->deps[pos];
 }
+
+/* forward declaration outside iredges_t.h to avoid circular include problems */
+void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_edge_kind_t kind, ir_graph *irg);
 
 static inline void _set_irn_dep(ir_node *node, int pos, ir_node *dep)
 {
