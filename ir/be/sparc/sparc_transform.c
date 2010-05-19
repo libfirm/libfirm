@@ -277,7 +277,8 @@ static ir_node *gen_Store(ir_node *node)
  *
  * @return the created sparc Mul node
  */
-static ir_node *gen_Mul(ir_node *node) {
+static ir_node *gen_Mul(ir_node *node)
+{
 	ir_mode  *mode    = get_irn_mode(node);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
@@ -302,9 +303,10 @@ static ir_node *gen_Mul(ir_node *node) {
  *
  * @return the created sparc Div node
  */
-static ir_node *gen_Div(ir_node *node) {
+static ir_node *gen_Div(ir_node *node)
+{
 	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
+	//dbg_info *dbgi     = get_irn_dbg_info(node);
 
 	//ir_node *proj_res_low;
 
@@ -328,7 +330,8 @@ static ir_node *gen_Div(ir_node *node) {
  *
  * @return
  */
-static ir_node *gen_Abs(ir_node *node) {
+static ir_node *gen_Abs(ir_node *node)
+{
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_mode  *mode    = get_irn_mode(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);

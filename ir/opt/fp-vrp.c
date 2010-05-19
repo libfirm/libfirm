@@ -23,7 +23,6 @@
  * @author  Christoph Mallon
  * @version $Id$
  */
-
 #include "config.h"
 
 #include "adt/pdeq.h"
@@ -676,6 +675,7 @@ static void clear_links(ir_node *irn, void *env)
 
 static void build_phi_lists(ir_node *irn, void *env)
 {
+	(void) env;
 	if (is_Phi(irn))
 		add_Block_phi(get_nodes_block(irn), irn);
 }
