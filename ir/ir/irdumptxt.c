@@ -1229,8 +1229,6 @@ void dump_types_as_text(unsigned verbosity, const char *suffix)
 	for (i = 0; i < n_types; ++i) {
 		ir_type *t = get_irp_type(i);
 
-		//if (is_jack_rts_class(t)) continue;
-
 		dump_type_to_file(F, t, verbosity);
 	}
 

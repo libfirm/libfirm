@@ -381,49 +381,4 @@ double get_entity_estimated_n_dyncalls(ir_entity *ent)
   return n_calls;
 }
 
-#if 0
-/* Move this to the jack compiler */
-
-/* ------------------------------------------------------------------------- */
-/* Auxiliary                                                                 */
-/* ------------------------------------------------------------------------- */
-
-int is_jack_rts_name(ident *name)
-{
-  if (id_is_suffix(new_id_from_str("Exception"), name)) return 1;
-  if (id_is_suffix(new_id_from_str("Throwable"), name)) return 1;
-  if (id_is_suffix(new_id_from_str("Error"),     name)) return 1;
-
-  return  0;
-
-  if (id_is_prefix(new_id_from_str("java/"), name)) return 1;
-  if (id_is_prefix(new_id_from_str("["),     name)) return 1;
-  if (id_is_prefix(new_id_from_str("gnu/"),  name)) return 1;
-  if (id_is_prefix(new_id_from_str("java/"), name)) return 1;
-  if (id_is_prefix(new_id_from_str("CStringToCoreString"), name)) return 1;
-
-  return 0;
-}
-
-
-int is_jack_rts_class(ir_type *t)
-{
-  ident *name = get_type_ident(t);
-  return is_jack_rts_name(name);
-}
-
-#include "entity_t.h"  // for the assertion.
-
-int is_jack_rts_entity(ir_entity *e)
-{
-  ident *name;
-
-  assert(e->ld_name);
-  name = get_entity_ld_ident(e);
-
-  return is_jack_rts_name(name);
-}
-
-#endif /* if 0 */
-
 #endif
