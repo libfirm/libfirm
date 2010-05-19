@@ -34,7 +34,6 @@
 #include "fourcc.h"
 #include "pdeq.h"
 #include "xmalloc.h"
-#include "align.h"
 
 /* Pointer Double Ended Queue */
 #define PDEQ_MAGIC1	FOURCC('P','D','E','1')
