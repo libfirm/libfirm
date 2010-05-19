@@ -503,7 +503,6 @@ static int addr_is_alloc(ir_node *acc)
 			break;
 
 		default:
-			//DDMN(addr);
 			//assert(0 && "unexpected address node");
 			;
 		}

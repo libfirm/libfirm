@@ -84,7 +84,4 @@ void free_intervals(void);
 /** dump a graph with the intervals. File name suffix "-interval". */
 void dump_interval_graph(ir_graph *irg, const char *suffix);
 
-
-#define DDMR(X) if(is_ir_node(X)) DDMN(X); else DDML(X)
-
 #endif

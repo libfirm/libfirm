@@ -204,7 +204,6 @@ static ir_type *find_type_for_node(ir_node *n)
 		ir_type *ana_res_type = get_irn_type(get_Return_res(n, i));
 		if (ana_res_type == firm_unknown_type) continue;
 		if (res_type != ana_res_type && "return value has wrong type") {
-		DDMN(n);
 		assert(res_type == ana_res_type && "return value has wrong type");
 		}
 		}
@@ -418,7 +417,6 @@ static void compute_type(ir_node *n, void *env)
 	ir_type *tp = get_irn_typeinfo_type(n);
 	(void) env;
 	if (tp ==  phi_cycle_type) {
-		/* printf(" recomputing for phi_cycle_type "); DDMN(n); */
 		set_irn_typeinfo_type(n, initial_type);
 	}
 	compute_irn_type(n);

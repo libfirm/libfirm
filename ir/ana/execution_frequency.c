@@ -351,8 +351,6 @@ static inline void compute_region_freqency(void *reg, double head_weight)
   int i, n_ins = get_region_n_ins(reg);
   double my_freq = 0;
 
-  //printf("head weight %lf: ", head_weight); DDMR(reg);
-
   for (i = 0; i < n_ins; ++i) {
     void *pred_reg = get_region_in(reg, i);
     if (pred_reg) {

@@ -751,18 +751,11 @@ static int is_ip_head(ir_graph *n, ir_graph *pred)
 		ir_node *sblock = get_irg_start_block(n);
 		int i, arity = get_Block_n_cfgpreds(sblock);
 
-		//printf(" edge from "); DDMG(n);
-		//printf(" to pred   "); DDMG(pred);
-		//printf(" sblock    "); DDMN(sblock);
-
 		for (i = 0; i < arity; i++) {
 			ir_node *pred_cfop = skip_Proj(get_Block_cfgpred(sblock, i));
-			//printf("  "); DDMN(pred_cfop);
 			if (is_CallBegin(pred_cfop)) { /* could be Unknown */
 				ir_graph *ip_pred = get_irn_irg(pred_cfop);
-				//printf("   "); DDMG(ip_pred);
 				if ((ip_pred == pred) && is_backedge(sblock, i)) {
-					//printf("   found\n");
 					is_be = 1;
 				}
 			}
@@ -886,8 +879,6 @@ static ir_graph *find_tail(ir_graph *n)
 	ir_graph *ip_in_and_out = NULL;
 	ir_graph *ip_only_in    = NULL;
 
-	//printf("find tail for "); DDMG(n);
-
 	for (i = tos-1; i >= 0; --i) {
 		ir_graph *pred = (i < tos -1) ? stack[i+1] : n;
 		m = stack[i];
@@ -931,15 +922,12 @@ static ir_graph *find_tail(ir_graph *n)
 	if (!m)
 		m = (in_and_out) ? in_and_out : only_in;
 
-	//printf("*** head is "); DDMG(m);
-
 	res_index = smallest_dfn_pred(m, get_irg_dfn(m) + 1);
 	if (res_index == -2)  /* no smallest dfn pred found. */
 		res_index = largest_dfn_pred(m);
 
 	set_irg_callee_backedge(m, res_index);
 	res = get_irg_callee(m, res_index);
-	//printf("*** tail is "); DDMG(res);
 	return res;
 }
 #endif /* INTERPROCEDURAL_VIEW */
@@ -1059,9 +1047,6 @@ static void compute_loop_depth(ir_graph *irg, void *env)
 	if (cg_irg_visited(irg)) return;
 
 	mark_cg_irg_visited(irg);
-
-	//printf(" old: %d new %d master %d", old_visited, get_cg_irg_visited(irg), master_cg_visited); DDMG(irg);
-
 
 	if (old_nesting < current_nesting)
 		irg->callgraph_loop_depth = current_nesting;
@@ -1325,21 +1310,18 @@ void compute_performance_estimates(void)
 	current_nesting = 0;
 	irp->max_callgraph_loop_depth = 0;
 	master_cg_visited += 2;
-	//printf(" ** starting at      "); DDMG(get_irp_main_irg());
 	compute_loop_depth(get_irp_main_irg(), &current_nesting);
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
 			get_irg_n_callers(irg) == 0) {
 				compute_loop_depth(irg, &current_nesting);
-				//printf(" ** starting at      "); DDMG(irg);
 		}
 	}
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		if (get_cg_irg_visited(irg) < master_cg_visited-1) {
 			compute_loop_depth(irg, &current_nesting);
-			//printf(" ** starting at      "); DDMG(irg);
 		}
 	}
 
@@ -1353,20 +1335,17 @@ void compute_performance_estimates(void)
 
 	master_cg_visited += 2;
 	compute_rec_depth(get_irp_main_irg(), &e);
-	//printf(" ++ starting at "); DDMG(get_irp_main_irg());
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		if ((get_cg_irg_visited(irg) < master_cg_visited-1) &&
 			get_irg_n_callers(irg) == 0) {
 				compute_rec_depth(irg, &e);
-				//printf(" ++ starting at "); DDMG(irg);
 		}
 	}
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg = get_irp_irg(i);
 		if (get_cg_irg_visited(irg) < master_cg_visited-1) {
 			compute_rec_depth(irg, &e);
-			//printf(" ++ starting at "); DDMG(irg);
 		}
 	}
 
