@@ -19,20 +19,14 @@
 
 /**
  * @file
- * @brief  Implementation of offset_of and container_of
  * @date   31.05.2005
  * @author Sebastian Hack
+ * @brief  Some utility macros.
  */
-#ifndef FIRM_ADT_OFFSET_H
-#define FIRM_ADT_OFFSET_H
+#ifndef FIRM_ADT_UTIL_H
+#define FIRM_ADT_UTIL_H
 
-/**
- * Get the offset of a member of a struct.
- * @param type   The type of the struct member is in.
- * @param member The name of the member.
- * @return       The offset of member in type in bytes.
- */
-#define firm_offset_of(type, member)		((char *) &((type *) 0)->member - (char *) 0)
+#include <stddef.h>
 
 /**
  * Make pointer to the struct from a pointer to a member of that struct.
@@ -41,6 +35,15 @@
  * @param member  The name of the member.
  * @return        A pointer to the struct member is in.
  */
-#define firm_container_of(ptr, type, member)		((type *) ((char *) (ptr) - firm_offset_of(type, member)))
+#define firm_container_of(ptr, type, member) \
+	((type *) ((char *) (ptr) - offsetof(type, member)))
+
+/**
+ * Returns size of a static array. Warning: This returns invalid values for
+ * dynamically allocated arrays.
+ *
+ * @param a    static array
+ */
+#define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
 
 #endif

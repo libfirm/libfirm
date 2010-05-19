@@ -60,6 +60,7 @@
 #include "pmap.h"
 #include "eset.h"
 #include "pset.h"
+#include "util.h"
 
 /** Dump only irgs with names that start with this prefix. */
 static ident *dump_file_filter_id = NULL;
@@ -967,8 +968,6 @@ typedef struct _proj_lookup {
 	const pns_lookup_t *data;     /**< the data */
 } proj_lookup_t;
 
-#define ARR_SIZE(a)       (sizeof(a)/sizeof(a[0]))
-
 /** the lookup table for Proj(Start) names */
 static const pns_lookup_t start_lut[] = {
 #define X(a)    { pn_Start_##a, #a }
@@ -1107,7 +1106,7 @@ static const pns_lookup_t bound_lut[] = {
 
 /** the Proj lookup table */
 static const proj_lookup_t proj_lut[] = {
-#define E(a)  ARR_SIZE(a), a
+#define E(a)  ARRAY_SIZE(a), a
 	{ iro_Start,   E(start_lut) },
 	{ iro_Cond,    E(cond_lut) },
 	{ iro_Call,    E(call_lut) },
@@ -1162,7 +1161,7 @@ handle_lut:
 		else {
 			unsigned i, j, f = 0;
 
-			for (i = 0; i < ARR_SIZE(proj_lut); ++i) {
+			for (i = 0; i < ARRAY_SIZE(proj_lut); ++i) {
 				if (code == proj_lut[i].code) {
 					for (j = 0; j < proj_lut[i].num_data; ++j) {
 						if (proj_nr == proj_lut[i].data[j].nr) {

@@ -87,7 +87,7 @@ struct _lv_chk_t {
 
 static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
 {
-	lv_chk_t *lv      = container_of(ph, lv_chk_t, ph);
+	lv_chk_t *lv      = firm_container_of(ph, lv_chk_t, ph);
 	bl_info_t *bi     = phase_alloc(ph, sizeof(bi[0]));
 
 	bi->id            = get_Block_dom_tree_pre_num(irn);

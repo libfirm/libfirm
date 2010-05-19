@@ -38,9 +38,6 @@
 #include "counter.h"
 #include "irhooks.h"
 
-/* some useful macro. */
-#define ARR_SIZE(a)   (sizeof(a)/sizeof((a)[0]))
-
 /*
  * just be make some things clear :-), the
  * poor man "generics"

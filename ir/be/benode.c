@@ -37,7 +37,6 @@
 #include "util.h"
 #include "debug.h"
 #include "fourcc.h"
-#include "offset.h"
 #include "bitfiddle.h"
 #include "raw_bitset.h"
 #include "error.h"

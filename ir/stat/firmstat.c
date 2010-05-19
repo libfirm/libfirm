@@ -41,6 +41,7 @@
 #include "stat_dmp.h"
 #include "xmalloc.h"
 #include "irhooks.h"
+#include "util.h"
 
 /*
  * need this to be static:
@@ -2232,7 +2233,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		stat_dump_param_tbl(status->dist_param_cnt, global);
 
 		/* dump the optimization counter and clear them */
-		stat_dump_opt_cnt(status->num_opts, ARR_SIZE(status->num_opts));
+		stat_dump_opt_cnt(status->num_opts, ARRAY_SIZE(status->num_opts));
 		clear_optimization_counter();
 
 		stat_dump_finish();

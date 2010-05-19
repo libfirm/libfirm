@@ -28,6 +28,7 @@
 #include "stat_dmp.h"
 #include "irtools.h"
 #include "irhooks.h"
+#include "util.h"
 
 /**
  * names of the optimizations
@@ -234,7 +235,7 @@ static void simple_dump_opcode_hash(dumper_t *dmp, pset *set)
  */
 static const char *get_opt_name(int index)
 {
-	assert(index < (int) ARR_SIZE(opt_names) && "index out of range");
+	assert(index < (int) ARRAY_SIZE(opt_names) && "index out of range");
 	assert((int) opt_names[index].kind == index && "opt_names broken");
 	return opt_names[index].name;
 }  /* get_opt_name */
@@ -624,7 +625,7 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 	fprintf(dmp->f, "\nBit usage for integer constants\n");
 	fprintf(dmp->f, "-------------------------------\n");
 
-	for (i = 0; i < ARR_SIZE(tbl->int_bits_count); ++i) {
+	for (i = 0; i < ARRAY_SIZE(tbl->int_bits_count); ++i) {
 		fprintf(dmp->f, "%5u %12u\n", (unsigned) (i + 1), cnt_to_uint(&tbl->int_bits_count[i]));
 		cnt_add(&sum, &tbl->int_bits_count[i]);
 	}  /* for */
@@ -632,7 +633,7 @@ static void simple_dump_const_tbl(dumper_t *dmp, const constant_info_t *tbl)
 
 	fprintf(dmp->f, "\nFloating point constants classification\n");
 	fprintf(dmp->f, "--------------------------------------\n");
-	for (i = 0; i < ARR_SIZE(tbl->floats); ++i) {
+	for (i = 0; i < ARRAY_SIZE(tbl->floats); ++i) {
 		fprintf(dmp->f, "%-10s %12u\n", stat_fc_name(i), cnt_to_uint(&tbl->floats[i]));
 		cnt_add(&sum, &tbl->floats[i]);
 	}  /* for */

@@ -29,10 +29,7 @@
 #include "dbginfo_t.h"
 #include "irhooks.h"
 #include "firmstat.h"
-
-/* This file contains makros that generate the calls to
-   update the debug information after a transformation. */
-#define SIZ(x)  sizeof(x)/sizeof(x[0])
+#include "util.h"
 
 /**
  * Merge the debug info due to dead block elimination.
@@ -54,13 +51,13 @@
  * @param oldn  the old block
  * @param n     the new block the merges with oldn
  */
-#define DBG_OPT_STG(oldn, n)                                   \
-	do {                                                       \
-	  ir_node *ons[2];                                         \
-	  ons[0] = oldn;                                           \
-	  ons[1] = get_Block_cfgpred(oldn, 0);                     \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_STG);    \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_straightening); \
+#define DBG_OPT_STG(oldn, n)                                                 \
+	do {                                                                     \
+	  ir_node *ons[2];                                                       \
+	  ons[0] = oldn;                                                         \
+	  ons[1] = get_Block_cfgpred(oldn, 0);                                   \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_STG);           \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_straightening); \
 	} while(0)
 
 /**
@@ -71,15 +68,15 @@
  * @param proj2  the second ProjX predecessor
  * @param n      the new Block
  */
-#define DBG_OPT_IFSIM1(oldn, proj1, proj2, n)                     \
-	do {                                                          \
-	  ir_node *ons[4];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = proj1;                                             \
-	  ons[2] = proj2;                                             \
-	  ons[3] = get_Proj_pred(proj1);                              \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_IFSIM);     \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_if_simplification); \
+#define DBG_OPT_IFSIM1(oldn, proj1, proj2, n)                        \
+	do {                                                             \
+	  ir_node *ons[4];                                               \
+	  ons[0] = oldn;                                                 \
+	  ons[1] = proj1;                                                \
+	  ons[2] = proj2;                                                \
+	  ons[3] = get_Proj_pred(proj1);                                 \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_IFSIM); \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_if_simplification); \
 	} while(0)
 
 /**
@@ -134,8 +131,8 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), flag);               \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), flag);        \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 /**
@@ -152,8 +149,8 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = pred;                                              \
 	  ons[2] = n;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), flag);               \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), flag);        \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 /**
@@ -164,8 +161,8 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), flag);               \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_algebraic_simplification); \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), flag);        \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_algebraic_simplification); \
 	} while(0)
 
 /**
@@ -203,13 +200,13 @@
  * @param oldst  the old store that will be removed
  * @param st     the other store that overwrites oldst
  */
-#define DBG_OPT_WAW(oldst, st)                                    \
-	do {                                                          \
-	  ir_node *ons[2];                                            \
-	  ons[0] = oldst;                                             \
-	  ons[1] = st;                                                \
-	  hook_merge_nodes(&st, 1, ons, SIZ(ons), HOOK_OPT_WAW);      \
-	  __dbg_info_merge_sets(&st, 1, ons, SIZ(ons), dbg_write_after_write); \
+#define DBG_OPT_WAW(oldst, st)                                      \
+	do {                                                            \
+	  ir_node *ons[2];                                              \
+	  ons[0] = oldst;                                               \
+	  ons[1] = st;                                                  \
+	  hook_merge_nodes(&st, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_WAW); \
+	  __dbg_info_merge_sets(&st, 1, ons, ARRAY_SIZE(ons), dbg_write_after_write); \
 	} while(0)
 
 /**
@@ -219,13 +216,13 @@
  * @param store  the store that will be removed
  * @param load   the load that produces the value that store will write back
  */
-#define DBG_OPT_WAR(store, load)                                  \
-	do {                                                          \
-	  ir_node *ons[2];                                            \
-	  ons[0] = store;                                             \
-	  ons[1] = load;                                              \
-	  hook_merge_nodes(&load, 1, ons, SIZ(ons), HOOK_OPT_WAR);    \
-	  __dbg_info_merge_sets(&load, 1, ons, SIZ(ons), dbg_write_after_read); \
+#define DBG_OPT_WAR(store, load)                                      \
+	do {                                                              \
+	  ir_node *ons[2];                                                \
+	  ons[0] = store;                                                 \
+	  ons[1] = load;                                                  \
+	  hook_merge_nodes(&load, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_WAR); \
+	  __dbg_info_merge_sets(&load, 1, ons, ARRAY_SIZE(ons), dbg_write_after_read); \
 	} while(0)
 
 /**
@@ -235,13 +232,13 @@
  * @param load   the load that will be replaced
  * @param value  the value that will replace the load
  */
-#define DBG_OPT_RAW(load, value)                                  \
-	do {                                                          \
-	  ir_node *ons[2];                                            \
-	  ons[0] = load;                                              \
-	  ons[1] = value;                                             \
-	  hook_merge_nodes(&value, 1, ons, SIZ(ons), HOOK_OPT_RAW);   \
-	  __dbg_info_merge_sets(&value, 1, ons, SIZ(ons), dbg_read_after_write); \
+#define DBG_OPT_RAW(load, value)                                       \
+	do {                                                               \
+	  ir_node *ons[2];                                                 \
+	  ons[0] = load;                                                   \
+	  ons[1] = value;                                                  \
+	  hook_merge_nodes(&value, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_RAW); \
+	  __dbg_info_merge_sets(&value, 1, ons, ARRAY_SIZE(ons), dbg_read_after_write); \
 	} while(0)
 
 /**
@@ -251,13 +248,13 @@
  * @param oldld  the old load that can be replaced
  * @param ld     the load that produces the same values
  */
-#define DBG_OPT_RAR(oldld, ld)                                    \
-	do {                                                          \
-	  ir_node *ons[2];                                            \
-	  ons[0] = oldld;                                             \
-	  ons[1] = ld;                                                \
-	  hook_merge_nodes(&ld, 1, ons, SIZ(ons), HOOK_OPT_RAR);      \
-	  __dbg_info_merge_sets(&ld, 1, ons, SIZ(ons), dbg_read_after_read); \
+#define DBG_OPT_RAR(oldld, ld)                                      \
+	do {                                                            \
+	  ir_node *ons[2];                                              \
+	  ons[0] = oldld;                                               \
+	  ons[1] = ld;                                                  \
+	  hook_merge_nodes(&ld, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_RAR); \
+	  __dbg_info_merge_sets(&ld, 1, ons, ARRAY_SIZE(ons), dbg_read_after_read); \
 	} while(0)
 
 /**
@@ -273,8 +270,8 @@
 	  ir_node *ons[2];                                            \
 	  ons[0] = ld;                                                \
 	  ons[1] = c;                                                 \
-	  hook_merge_nodes(&c, 1, ons, SIZ(ons), HOOK_OPT_RC);        \
-	  __dbg_info_merge_sets(&ld, 1, ons, SIZ(ons), dbg_read_a_const); \
+	  hook_merge_nodes(&c, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_RC); \
+	  __dbg_info_merge_sets(&ld, 1, ons, ARRAY_SIZE(ons), dbg_read_a_const); \
 	} while(0)
 
 /**
@@ -285,14 +282,14 @@
  * @param tuple  the Tuple node
  * @param n      the Proj(Tuple) value
  */
-#define DBG_OPT_TUPLE(proj, tuple, n)                             \
-	do {                                                          \
-	  ir_node *ons[3];                                            \
-	  ons[0] = proj;                                              \
-	  ons[1] = tuple;                                             \
-	  ons[2] = n;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_TUPLE);     \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
+#define DBG_OPT_TUPLE(proj, tuple, n)                                      \
+	do {                                                                   \
+	  ir_node *ons[3];                                                     \
+	  ons[0] = proj;                                                       \
+	  ons[1] = tuple;                                                      \
+	  ons[2] = n;                                                          \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_TUPLE);       \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_opt_auxnode); \
 	} while(0)
 
 /**
@@ -302,13 +299,13 @@
  * @param id  the Id node
  * @param n   the predecessor
  */
-#define DBG_OPT_ID(id, n)                                         \
-	do {                                                          \
-	  ir_node *ons[2];                                            \
-	  ons[0] = id;                                                \
-	  ons[1] = n;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_ID);        \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_auxnode);      \
+#define DBG_OPT_ID(id, n)                                                  \
+	do {                                                                   \
+	  ir_node *ons[2];                                                     \
+	  ons[0] = id;                                                         \
+	  ons[1] = n;                                                          \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_ID);          \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_opt_auxnode); \
 	} while(0)
 
 /**
@@ -317,13 +314,13 @@
  * @param oldn  the old node
  * @param n     the node that replaces oldn
  */
-#define DBG_OPT_CSE(oldn, n)                                      \
-	do {                                                          \
-	  ir_node *ons[2];                                            \
-	  ons[0] = oldn;                                              \
-	  ons[1] = n;                                                 \
-	  hook_merge_nodes(&n, 1, ons, SIZ(ons), HOOK_OPT_CSE);       \
-	  __dbg_info_merge_sets(&n, 1, ons, SIZ(ons), dbg_opt_cse);   \
+#define DBG_OPT_CSE(oldn, n)                                           \
+	do {                                                               \
+	  ir_node *ons[2];                                                 \
+	  ons[0] = oldn;                                                   \
+	  ons[1] = n;                                                      \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_CSE);     \
+	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_opt_cse); \
 	} while(0)
 
 /**
@@ -333,14 +330,14 @@
  * @param sel   the Sel node that will be replaced.
  * @param c     the constant node that replaces sel
  */
-#define DBG_OPT_POLY(sel, c)                                          \
-	do {                                                              \
-	  ir_node *ons[3];                                                \
-	  ons[0] = sel;                                                   \
-	  ons[1] = skip_Proj(get_Sel_ptr(sel));                           \
-	  ons[2] = c;                                                     \
-	  hook_merge_nodes(&c, 1, ons, SIZ(ons), HOOK_OPT_POLY_CALL);     \
-	  __dbg_info_merge_sets(&c, 1, ons, SIZ(ons), dbg_rem_poly_call); \
+#define DBG_OPT_POLY(sel, c)                                                 \
+	do {                                                                     \
+	  ir_node *ons[3];                                                       \
+	  ons[0] = sel;                                                          \
+	  ons[1] = skip_Proj(get_Sel_ptr(sel));                                  \
+	  ons[2] = c;                                                            \
+	  hook_merge_nodes(&c, 1, ons, ARRAY_SIZE(ons), HOOK_OPT_POLY_CALL);     \
+	  __dbg_info_merge_sets(&c, 1, ons, ARRAY_SIZE(ons), dbg_rem_poly_call); \
 	} while(0)
 
 /**

@@ -26,7 +26,6 @@
 #include "config.h"
 
 #include "obst.h"
-#include "offset.h"
 
 #include "irgopt.h"
 

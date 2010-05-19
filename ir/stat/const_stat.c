@@ -27,6 +27,7 @@
 
 #include "firmstat_t.h"
 #include "tv_t.h"
+#include "util.h"
 
 /**
  * calculated the dual logarithm of |value|
@@ -117,8 +118,8 @@ void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 
 		bits = log2abs(get_tarval_long(tv));
 
-		if (bits > ARR_SIZE(status->const_info.int_bits_count))
-			bits = ARR_SIZE(status->const_info.int_bits_count);
+		if (bits > ARRAY_SIZE(status->const_info.int_bits_count))
+			bits = ARRAY_SIZE(status->const_info.int_bits_count);
 
 		cnt_inc(&status->const_info.int_bits_count[bits]);
 	} else if (mode_is_float(mode)) {
@@ -136,10 +137,10 @@ void stat_const_clear(stat_info_t *status)
 {
 	size_t i;
 
-	for (i = 0; i < ARR_SIZE(status->const_info.int_bits_count); ++i)
+	for (i = 0; i < ARRAY_SIZE(status->const_info.int_bits_count); ++i)
 		cnt_clr(&status->const_info.int_bits_count[i]);
 
-	for (i = 0; i < ARR_SIZE(status->const_info.floats); ++i)
+	for (i = 0; i < ARRAY_SIZE(status->const_info.floats); ++i)
 		cnt_clr(&status->const_info.floats[i]);
 
 	cnt_clr(&status->const_info.others);
