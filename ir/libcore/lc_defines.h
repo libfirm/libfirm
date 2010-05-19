@@ -36,15 +36,4 @@
 #define LC_FOURCC(a,b,c,d)        ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
 #define LC_FOURCC_STR(str)			  LC_FOURCC(str[0], str[1], str[2], str[3])
 
-#define LC_OFFSETOF(type,memb)	  ((char *) &((type *) 0)->memb - (char *) 0)
-
-#ifdef __GNUC__
-#define LC_ALIGNOF(type)				  __alignof__(type)
-#else
-#define LC_ALIGNOF(type)				  LC_OFFSETOF(struct { char c; type d; }, d)
-#endif
-
-#define LC_PTR2INT(x) (((char *)(x)) - (char *)0)
-#define LC_INT2PTR(x) (((char *)(x)) + (char *)0)
-
 #endif

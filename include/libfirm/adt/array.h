@@ -31,7 +31,6 @@
 
 #include "obst.h"
 #include "fourcc.h"
-#include "align.h"
 #include "xmalloc.h"
 
 /**
@@ -220,6 +219,12 @@
     assert((0 <= (idx)) && ((idx) < ARR_LEN((arr))))
 #endif
 
+/** A type that has most constrained alignment.  */
+typedef union {
+  long double d;
+  void *p;
+  long l;
+} aligned_type;
 
 /**
  * Construct an array header.

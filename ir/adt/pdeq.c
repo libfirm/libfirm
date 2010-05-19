@@ -43,6 +43,9 @@
 /** Size of pdeq block cache. */
 #define TUNE_NSAVED_PDEQS 16
 
+/** A size handled efficiently by malloc(), at least 1K.  */
+#define PREF_MALLOC_SIZE 2048
+
 /**
  * Maximal number of data items in a pdeq chunk.
  */
