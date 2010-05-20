@@ -29,6 +29,7 @@
 
 #include "firm_types.h"
 #include "iredgekinds.h"
+#include "begin.h"
 
 /**
  * Get the first edge pointing to some node.
@@ -38,7 +39,8 @@
  * @param kind The kind of the edge.
  * @return The first out edge that points to this node.
  */
-const ir_edge_t *get_irn_out_edge_first_kind(const ir_node *irn, ir_edge_kind_t kind);
+FIRM_DLL const ir_edge_t *get_irn_out_edge_first_kind(const ir_node *irn,
+                                                      ir_edge_kind_t kind);
 
 /**
  * Get the next edge in the out list of some node.
@@ -46,7 +48,8 @@ const ir_edge_t *get_irn_out_edge_first_kind(const ir_node *irn, ir_edge_kind_t 
  * @param last The last out edge you have seen.
  * @return The next out edge in @p irn 's out list after @p last.
  */
-const ir_edge_t *get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last);
+FIRM_DLL const ir_edge_t *get_irn_out_edge_next(const ir_node *irn,
+                                                const ir_edge_t *last);
 
 /**
  * A convenience iteration macro over all out edges of a node.
@@ -91,14 +94,14 @@ const ir_edge_t *get_irn_out_edge_next(const ir_node *irn, const ir_edge_t *last
  * @param edge The edge.
  * @return The source node of that edge.
  */
-ir_node *get_edge_src_irn(const ir_edge_t *edge);
+FIRM_DLL ir_node *get_edge_src_irn(const ir_edge_t *edge);
 
 /**
  * Get the position of an edge.
  * @param edge The edge.
  * @return The position in the in array of that edges source.
  */
-int get_edge_src_pos(const ir_edge_t *edge);
+FIRM_DLL int get_edge_src_pos(const ir_edge_t *edge);
 
 /**
  * Get the edge object of an outgoing edge at a node.
@@ -109,14 +112,15 @@ int get_edge_src_pos(const ir_edge_t *edge);
  * @return      The corresponding edge object or NULL,
  *              if no such edge exists.
  */
-const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *irn, int pos, ir_edge_kind_t kind);
+FIRM_DLL const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *irn,
+                                            int pos, ir_edge_kind_t kind);
 
 /**
  * Get the number of registered out edges for a specific kind.
  * @param irn The node.
  * @param kind The kind.
  */
-int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
+FIRM_DLL int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
 
 /**
  * Check, if the out edges are activated.
@@ -126,7 +130,7 @@ int get_irn_n_edges_kind(const ir_node *irn, ir_edge_kind_t kind);
  *
  * @return 1, if the edges are present for the given irg, 0 if not.
  */
-int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
+FIRM_DLL int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Activate the edges for an irg.
@@ -134,7 +138,7 @@ int edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind);
  * @param irg   The graph to activate the edges for.
  * @param kind  The edge kind.
  */
-void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
+FIRM_DLL void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Deactivate the edges for an irg.
@@ -142,7 +146,7 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind);
  * @param irg   The graph.
  * @param kind  The edge kind.
  */
-void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
+FIRM_DLL void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Reroute edges of a specified kind from an old node to
@@ -153,24 +157,25 @@ void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
  * @param kind  the edge kind
  * @param irg   the graph on which the rerouting occurs
  */
-void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind, ir_graph *irg);
+FIRM_DLL void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind,
+                                 ir_graph *irg);
 
 /**
  * Verifies the out edges of graph @p irg.
  * @return 1 if a problem was found, 0 otherwise
  */
-int edges_verify(ir_graph *irg);
+FIRM_DLL int edges_verify(ir_graph *irg);
 
 /**
  * veriy a certrain kind of out edges of graph @p irg.
  * @returns 1 if a problem was found, 0 otherwise
  */
-int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind);
+FIRM_DLL int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind);
 
 /**
  * Set edge verification flag.
  */
-void edges_init_dbg(int do_dbg);
+FIRM_DLL void edges_init_dbg(int do_dbg);
 
 /**
  * Creates an ir_graph pass for edges_verify().
@@ -180,9 +185,11 @@ void edges_init_dbg(int do_dbg);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_problem);
+FIRM_DLL ir_graph_pass_t *irg_verify_edges_pass(const char *name,
+                                                unsigned assert_on_problem);
 
-const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
+FIRM_DLL const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src,
+                                       int pos);
 
 #define edges_reroute(old, nw, irg)                     edges_reroute_kind(old, nw, EDGE_KIND_NORMAL, irg)
 #define edges_activated(irg)                            (edges_activated_kind(irg, EDGE_KIND_NORMAL) && edges_activated_kind(irg, EDGE_KIND_BLOCK))
@@ -210,7 +217,7 @@ const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos);
  *
  * @param irg  The graph to activate the edges for.
  */
-void edges_activate(ir_graph *irg);
+FIRM_DLL void edges_activate(ir_graph *irg);
 
 /**
  * Deactivate data and block edges for an irg.
@@ -218,7 +225,7 @@ void edges_activate(ir_graph *irg);
  * additionally deactivated.
  * @param irg  The graph.
  */
-void edges_deactivate(ir_graph *irg);
+FIRM_DLL void edges_deactivate(ir_graph *irg);
 
 /**
  * Ensure that edges are activated.
@@ -227,7 +234,7 @@ void edges_deactivate(ir_graph *irg);
  *
  * @return 0 if edges was deactivated before the call, 1 else
  */
-int edges_assure(ir_graph *irg);
+FIRM_DLL int edges_assure(ir_graph *irg);
 
 /**
  * Ensure that edges of a given kind are activated.
@@ -237,14 +244,15 @@ int edges_assure(ir_graph *irg);
  *
  * @return 0 if edges was deactivated before the call, 1 else
  */
-int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
+FIRM_DLL int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
 
-void edges_node_deleted(ir_node *irn, ir_graph *irg);
+FIRM_DLL void edges_node_deleted(ir_node *irn, ir_graph *irg);
 
 /**
  * Notify normal and block edges.
  */
-void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg);
+FIRM_DLL void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
+                                ir_node *old_tgt, ir_graph *irg);
 
 /**
  * Walks only over Block nodes in the graph. Uses the block visited
@@ -255,7 +263,8 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
  * @param post   the post visit function
  * @param env    the environment for the walker
  */
-void irg_block_edges_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_block_edges_walk(ir_node *block, irg_walk_func *pre,
+                                   irg_walk_func *post, void *env);
 
 /**
  * Reset the user's private data at offset 'offset'
@@ -266,6 +275,9 @@ void irg_block_edges_walk(ir_node *block, irg_walk_func *pre, irg_walk_func *pos
  * @param offset  offset of the private data inside the edge
  * @param size    length of the private data inside the edge
  */
-void edges_reset_private_data(ir_graph *irg, int offset, unsigned size);
+FIRM_DLL void edges_reset_private_data(ir_graph *irg, int offset,
+                                       unsigned size);
+
+#include "end.h"
 
 #endif

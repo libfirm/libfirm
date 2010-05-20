@@ -29,6 +29,7 @@
 
 #include "firm_types.h"
 #include "execfreq.h"
+#include "begin.h"
 
 /** Flags for extended basic block state. */
 typedef enum {
@@ -53,36 +54,36 @@ typedef void extbb_walk_func(ir_extblk *blk, void *env);
  * Checks whether a pointer points to a extended basic block.
  * Intern version for libFirm.
  */
-int is_ir_extbb(const void *thing);
+FIRM_DLL int is_ir_extbb(const void *thing);
 
 /**
  * Compute the extended basic blocks for a graph.
  */
-void compute_extbb(ir_graph *irg);
+FIRM_DLL void compute_extbb(ir_graph *irg);
 
 /**
  * Compute the extended basic blocks for a graph based on execution frequencies.
  */
-void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
+FIRM_DLL void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
 
 /**
  * free all extended block info.
  */
-void free_extbb(ir_graph *irg);
+FIRM_DLL void free_extbb(ir_graph *irg);
 
 /**
  * Return the extended block of a node.
  *
  * @param node  the node
  */
-ir_extblk *get_nodes_extbb(const ir_node *node);
+FIRM_DLL ir_extblk *get_nodes_extbb(const ir_node *node);
 
 /**
  * Gets the visited counter of an extended block.
  *
  * @param blk  the extended basic block
  */
-ir_visited_t get_extbb_visited(const ir_extblk *blk);
+FIRM_DLL ir_visited_t get_extbb_visited(const ir_extblk *blk);
 
 /**
  * Sets the visited counter of an extended block.
@@ -90,7 +91,7 @@ ir_visited_t get_extbb_visited(const ir_extblk *blk);
  * @param blk      the extended basic block
  * @param visited  new value for the visited counter
  */
-void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
+FIRM_DLL void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
 
 /**
  * Mark an extended block as visited in a graph.
@@ -98,7 +99,7 @@ void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
  *
  * @param blk  the extended basic block
  */
-void mark_extbb_visited(ir_extblk *blk);
+FIRM_DLL void mark_extbb_visited(ir_extblk *blk);
 
 /**
  * Returns non-zero if an extended was visited.
@@ -106,7 +107,7 @@ void mark_extbb_visited(ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-int extbb_visited(const ir_extblk *blk);
+FIRM_DLL int extbb_visited(const ir_extblk *blk);
 
 /**
  * Returns non-zero if an extended block was NOT visited.
@@ -114,14 +115,14 @@ int extbb_visited(const ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-int extbb_not_visited(const ir_extblk *blk);
+FIRM_DLL int extbb_not_visited(const ir_extblk *blk);
 
 /**
  * Returns the link field of an extended block.
  *
  * @param blk  the extended basic block
  */
-void *get_extbb_link(const ir_extblk *blk);
+FIRM_DLL void *get_extbb_link(const ir_extblk *blk);
 
 /**
  * Sets the link field of an extended block.
@@ -129,14 +130,14 @@ void *get_extbb_link(const ir_extblk *blk);
  * @param blk  the extended basic block
  * @param link the new link value
  */
-void set_extbb_link(ir_extblk *blk, void *link);
+FIRM_DLL void set_extbb_link(ir_extblk *blk, void *link);
 
 /**
  * Return the number of basic blocks of an extended block.
  *
  * @param blk  the extended basic block
  */
-int get_extbb_n_blocks(const ir_extblk *blk);
+FIRM_DLL int get_extbb_n_blocks(const ir_extblk *blk);
 
 /**
  * Return the i'th basic block of an extended block.
@@ -144,14 +145,14 @@ int get_extbb_n_blocks(const ir_extblk *blk);
  * @param blk  the extended basic block
  * @param pos  the position
  */
-ir_node *get_extbb_block(const ir_extblk *blk, int pos);
+FIRM_DLL ir_node *get_extbb_block(const ir_extblk *blk, int pos);
 
 /**
  * Return the leader basic block of an extended block.
  *
  * @param blk  the extended basic block
  */
-ir_node *get_extbb_leader(const ir_extblk *blk);
+FIRM_DLL ir_node *get_extbb_leader(const ir_extblk *blk);
 
 /**
  * Return the node number of an extended block.
@@ -159,14 +160,16 @@ ir_node *get_extbb_leader(const ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-long get_extbb_node_nr(const ir_extblk *blk);
+FIRM_DLL long get_extbb_node_nr(const ir_extblk *blk);
 
 /**
  * Walks only over Extended Basic Block nodes in the graph.
  *
  * @param blk  - the start extended block node
- * @param pre  - walker function, executed before the predecessor of a node are visited
- * @param post - walker function, executed after the predecessor of a node are visited
+ * @param pre  - walker function, executed before the predecessor of a node are
+ *               visited
+ * @param post - walker function, executed after the predecessor of a node are
+ *               visited
  * @param env  - environment, passed to pre and post
  *
  * This function Walks only over Block nodes in the graph. Has it's own visited
@@ -174,7 +177,8 @@ long get_extbb_node_nr(const ir_extblk *blk);
  * If a none block is passed, starts at the block this node belongs to.
  * If end is passed also visits kept alive blocks. Does not use the link field.
  */
-void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env);
+FIRM_DLL void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre,
+                                extbb_walk_func *post, void *env);
 
 /**
  * Walks only over reachable Extended Basic Block nodes in the graph.
@@ -182,10 +186,15 @@ void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *po
  * and the block containing Start visited first (in post order).
  *
  * @param irg  - the irg graph
- * @param pre  - walker function, executed before the predecessor of a block are visited
- * @param post - walker function, executed after the predecessor of a block are visited
+ * @param pre  - walker function, executed before the predecessor of a block
+ *               are visited
+ * @param post - walker function, executed after the predecessor of a block
+ *               are visited
  * @param env  - environment, passed to pre and post
  */
-void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre, extbb_walk_func *post, void *env);
+FIRM_DLL void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre,
+                                      extbb_walk_func *post, void *env);
+
+#include "end.h"
 
 #endif

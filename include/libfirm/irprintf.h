@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include "begin.h"
 
 /* forward definition */
 struct obstack;
@@ -78,36 +79,40 @@ struct obstack;
  * The @c it_pset is an iterator interface (of type
  * @c iterator_t that allows the dumper to traverse the set.
  */
-void ir_printf(const char *fmt, ...);
+FIRM_DLL void ir_printf(const char *fmt, ...);
 
 /**
  * @see irn_printf.
  */
-void ir_fprintf(FILE *f, const char *fmt, ...);
+FIRM_DLL void ir_fprintf(FILE *f, const char *fmt, ...);
 
 /**
  * @see irn_printf.
  */
-void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
+FIRM_DLL void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
 
 /**
  * @see irn_printf.
  */
-void ir_vprintf(const char *fmt, va_list args);
+FIRM_DLL void ir_vprintf(const char *fmt, va_list args);
 
 /**
  * @see irn_printf.
  */
-void ir_vfprintf(FILE *f, const char *fmt, va_list args);
+FIRM_DLL void ir_vfprintf(FILE *f, const char *fmt, va_list args);
 
 /**
  * @see irn_printf.
  */
-void ir_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
+FIRM_DLL void ir_vsnprintf(char *buf, size_t len, const char *fmt,
+                           va_list args);
 
 /**
  * @see irn_printf.
  */
-void ir_obst_vprintf(struct obstack *obst, const char *fmt, va_list args);
+FIRM_DLL void ir_obst_vprintf(struct obstack *obst, const char *fmt,
+                              va_list args);
+
+#include "end.h"
 
 #endif

@@ -53,6 +53,8 @@
 #include "firm_types.h"
 #include "irnode.h"
 
+#include "begin.h"
+
 /* ************************ Constructors for tarvals ************************ */
 
 /**
@@ -100,7 +102,8 @@
  *   new_tarval_from_long()
  *   new_tarval_from_double()
  */
-tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode);
+FIRM_DLL tarval *new_tarval_from_str(const char *str, size_t len,
+                                     ir_mode *mode);
 
 /**
  * Construct a new tarval from a given string.
@@ -119,8 +122,9 @@ tarval *new_tarval_from_str(const char *str, size_t len, ir_mode *mode);
  *   represented in the given mode.
  *   Return bad if the number couldn't successfully be parsed.
  */
-tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
-                                    unsigned char base, ir_mode *mode);
+FIRM_DLL tarval *new_integer_tarval_from_str(const char *str, size_t len,
+                                             char sign, unsigned char base,
+                                             ir_mode *mode);
 
 /**
  * Constructor function for new tarvals
@@ -149,7 +153,7 @@ tarval *new_integer_tarval_from_str(const char *str, size_t len, char sign,
  *   new_tarval_from_double()
  *
  */
-tarval *new_tarval_from_long(long l, ir_mode *mode);
+FIRM_DLL tarval *new_tarval_from_long(long l, ir_mode *mode);
 
 /** Return value as long if possible.
  *
@@ -161,7 +165,7 @@ tarval *new_tarval_from_long(long l, ir_mode *mode);
  * you are doing! (better check with tarval_is_long()...)
  * Works only for int modes, even not for character modes!
  */
-long get_tarval_long(tarval *tv);
+FIRM_DLL long get_tarval_long(tarval *tv);
 
 /**
  * This validates if get_tarval_long() will return a satisfying
@@ -170,7 +174,7 @@ long get_tarval_long(tarval *tv);
  *
  * @param tv    the tarval
  */
-int tarval_is_long(tarval *tv);
+FIRM_DLL int tarval_is_long(tarval *tv);
 
 /**
  * Constructor function for new tarvals.
@@ -199,7 +203,7 @@ int tarval_is_long(tarval *tv);
  *   new_tarval_from_str()
  *   new_tarval_from_long()
  */
-tarval *new_tarval_from_double(long double d, ir_mode *mode);
+FIRM_DLL tarval *new_tarval_from_double(long double d, ir_mode *mode);
 
 /**
  * This returns a double with the value represented value, or
@@ -210,7 +214,7 @@ tarval *new_tarval_from_double(long double d, ir_mode *mode);
  *
  * @param tv    the tarval
  */
-long double get_tarval_double(tarval *tv);
+FIRM_DLL long double get_tarval_double(tarval *tv);
 
 /**
  * This validates if tarval_to_double() will return a satisfying
@@ -219,7 +223,7 @@ long double get_tarval_double(tarval *tv);
  *
  * @param tv    the tarval
  */
-int tarval_is_double(tarval *tv);
+FIRM_DLL int tarval_is_double(tarval *tv);
 
 
 /** ********** Access routines for tarval fields ********** **/
@@ -252,7 +256,7 @@ int tarval_is_double(tarval *tv);
  *
  * @param tv    the tarval
  */
-ir_mode *get_tarval_mode(const tarval *tv);
+FIRM_DLL ir_mode *get_tarval_mode(const tarval *tv);
 
 /** Returns the contents of the 'link' field of the tarval */
 /* void *get_tarval_link (tarval*); */
@@ -264,69 +268,69 @@ ir_mode *get_tarval_mode(const tarval *tv);
  *
  * @param tv    the tarval
  */
-int tarval_is_negative(tarval *tv);
+FIRM_DLL int tarval_is_negative(tarval *tv);
 
 /**
  * Returns 1 if tv is null
  *
  * @param tv    the tarval
  */
-int tarval_is_null(tarval *tv);
+FIRM_DLL int tarval_is_null(tarval *tv);
 
 /**
  * Returns 1 if tv is the "one"
  *
  * @param tv    the tarval
  */
-int tarval_is_one(tarval *tv);
+FIRM_DLL int tarval_is_one(tarval *tv);
 
 /**
  * Returns 1 if tv is the "minus one"
  *
  * @param tv    the tarval
  */
-int tarval_is_minus_one(tarval *tv);
+FIRM_DLL int tarval_is_minus_one(tarval *tv);
 
 /**
  * returns non-zero if all bits in the tarval are set
  */
-int tarval_is_all_one(tarval *tv);
+FIRM_DLL int tarval_is_all_one(tarval *tv);
 
 /**
  * Return non-zero if the tarval is a constant (ie. NOT
  * a reserved tarval like bad, undef, reachable etc.)
  */
-int tarval_is_constant(tarval *tv);
+FIRM_DLL int tarval_is_constant(tarval *tv);
 
 /** The 'bad' tarval. */
-extern tarval *tarval_bad;
+FIRM_DLL tarval *tarval_bad;
 /** Returns the 'bad' tarval. */
-tarval *get_tarval_bad(void);
+FIRM_DLL tarval *get_tarval_bad(void);
 
 /** The 'undefined' tarval. */
-extern tarval *tarval_undefined;
+FIRM_DLL tarval *tarval_undefined;
 /** Returns the 'undefined' tarval. */
-tarval *get_tarval_undefined(void);
+FIRM_DLL tarval *get_tarval_undefined(void);
 
 /** The mode_b tarval 'false'. */
-extern tarval *tarval_b_false;
+FIRM_DLL tarval *tarval_b_false;
 /** Returns the mode_b tarval 'false'. */
-tarval *get_tarval_b_false(void);
+FIRM_DLL tarval *get_tarval_b_false(void);
 
 /** The mode_b tarval 'true'. */
-extern tarval *tarval_b_true;
+FIRM_DLL tarval *tarval_b_true;
 /** Returns the mode_b tarval 'true'. */
-tarval *get_tarval_b_true(void);
+FIRM_DLL tarval *get_tarval_b_true(void);
 
 /** The mode_X tarval 'unreachable'. */
-extern tarval *tarval_unreachable;
+FIRM_DLL tarval *tarval_unreachable;
 /** Returns the mode_X tarval 'unreachable'. */
-tarval *get_tarval_unreachable(void);
+FIRM_DLL tarval *get_tarval_unreachable(void);
 
 /** The mode_X tarval 'reachable'. */
-extern tarval *tarval_reachable;
+FIRM_DLL tarval *tarval_reachable;
 /** Returns the mode_X tarval 'reachable'. */
-tarval *get_tarval_reachable(void);
+FIRM_DLL tarval *get_tarval_reachable(void);
 
 /** The 'top' tarval. This is just another name for the 'undefined' tarval. */
 #define tarval_top          tarval_undefined
@@ -345,34 +349,34 @@ tarval *get_tarval_reachable(void);
  * therefore the irmode functions should be preferred to the functions below. */
 
 /** Returns the maximum value of a given mode. */
-tarval *get_tarval_max(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_max(ir_mode *mode);
 
 /** Returns the minimum value of a given mode. */
-tarval *get_tarval_min(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_min(ir_mode *mode);
 
 /** Returns the 0 value (additive neutral) of a given mode.
     For reference modes, the NULL value is returned (old tarval_P_void) */
-tarval *get_tarval_null(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_null(ir_mode *mode);
 
 /** Returns the 1 value (multiplicative neutral) of a given mode. */
-tarval *get_tarval_one(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_one(ir_mode *mode);
 
 /** Returns the -1 value (multiplicative neutral) of a given mode.
  *  Returns tarval bad for unsigned modes */
-tarval *get_tarval_minus_one(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_minus_one(ir_mode *mode);
 
 /** returns the value where all bits are 1 of a given mode.
  * returns tarval_bad for float modes */
-tarval *get_tarval_all_one(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_all_one(ir_mode *mode);
 
 /** Return quite nan for float_number modes. */
-tarval *get_tarval_nan(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_nan(ir_mode *mode);
 
 /** Return +inf for float_number modes. */
-tarval *get_tarval_plus_inf(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_plus_inf(ir_mode *mode);
 
 /** Return -inf for float_number modes. */
-tarval *get_tarval_minus_inf(ir_mode *mode);
+FIRM_DLL tarval *get_tarval_minus_inf(ir_mode *mode);
 
 /* ******************** Arithmetic operations on tarvals ******************** */
 
@@ -387,12 +391,12 @@ typedef enum _tarval_int_overflow_mode_t {
  *
  * @param ov_mode  one of teh overflow modes
  */
-void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
+FIRM_DLL void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
 
 /**
  * Get the overflow mode for integer operations.
  */
-tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
+FIRM_DLL tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
 
 /**
  * Compares two tarvals
@@ -413,7 +417,7 @@ tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
  * @sa
  *    irnode.h for the definition of pn_Cmp
  */
-pn_Cmp tarval_cmp(tarval *a, tarval *b);
+FIRM_DLL pn_Cmp tarval_cmp(tarval *a, tarval *b);
 
 /**
  * Converts a tarval to another mode.
@@ -437,7 +441,7 @@ pn_Cmp tarval_cmp(tarval *a, tarval *b);
  *    FIRM documentation for conversion rules
  *    mode_is_smaller defined in irmode.h
  */
-tarval *tarval_convert_to(tarval *src, ir_mode *mode);
+FIRM_DLL tarval *tarval_convert_to(tarval *src, ir_mode *mode);
 
 /*
  * These function implement basic computations representable as opcodes
@@ -471,7 +475,7 @@ tarval *tarval_convert_to(tarval *src, ir_mode *mode);
  *
  * @return ~a or tarval_bad
  */
-tarval *tarval_not(tarval *a);
+FIRM_DLL tarval *tarval_not(tarval *a);
 
 /**
  * Arithmetic Negation of a tarval.
@@ -480,7 +484,7 @@ tarval *tarval_not(tarval *a);
  *
  * @return -a or tarval_bad
  */
-tarval *tarval_neg(tarval *a);
+FIRM_DLL tarval *tarval_neg(tarval *a);
 
 /**
  * Addition of two tarvals.
@@ -490,7 +494,7 @@ tarval *tarval_neg(tarval *a);
  *
  * @return a + b or tarval_bad
  */
-tarval *tarval_add(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_add(tarval *a, tarval *b);
 
 /**
  * Subtraction from a tarval.
@@ -501,7 +505,7 @@ tarval *tarval_add(tarval *a, tarval *b);
  *
  * @return a - b or tarval_bad
  */
-tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode);
+FIRM_DLL tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode);
 
 /**
  * Multiplication of tarvals.
@@ -511,7 +515,7 @@ tarval *tarval_sub(tarval *a, tarval *b, ir_mode *dst_mode);
  *
  * @return a * b or tarval_bad
  */
-tarval *tarval_mul(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_mul(tarval *a, tarval *b);
 
 /**
  * Division of two floating point tarvals.
@@ -521,7 +525,7 @@ tarval *tarval_mul(tarval *a, tarval *b);
  *
  * @return a / b or tarval_bad
  */
-tarval *tarval_quo(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_quo(tarval *a, tarval *b);
 
 /**
  * Integer division of two tarvals.
@@ -531,7 +535,7 @@ tarval *tarval_quo(tarval *a, tarval *b);
  *
  * @return a / b or tarval_bad
  */
-tarval *tarval_div(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_div(tarval *a, tarval *b);
 
 /**
  * Remainder of integer division.
@@ -541,7 +545,7 @@ tarval *tarval_div(tarval *a, tarval *b);
  *
  * @return a % b or tarval_bad
  */
-tarval *tarval_mod(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_mod(tarval *a, tarval *b);
 
 /**
  * Integer division AND remainder.
@@ -552,7 +556,7 @@ tarval *tarval_mod(tarval *a, tarval *b);
  *
  * @return a / b or tarval_bad
  */
-tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod_res);
+FIRM_DLL tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod_res);
 
 /**
  * Absolute value of a tarval.
@@ -561,7 +565,7 @@ tarval *tarval_divmod(tarval *a, tarval *b, tarval **mod_res);
  *
  * @return |a| or tarval_bad
  */
-tarval *tarval_abs(tarval *a);
+FIRM_DLL tarval *tarval_abs(tarval *a);
 
 /**
  * Bitwise and of two integer tarvals.
@@ -571,7 +575,7 @@ tarval *tarval_abs(tarval *a);
  *
  * @return a & b or tarval_bad
  */
-tarval *tarval_and(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_and(tarval *a, tarval *b);
 
 /**
  * Bitwise and not of two integer tarvals.
@@ -581,7 +585,7 @@ tarval *tarval_and(tarval *a, tarval *b);
  *
  * @return a & ~b or tarval_bad
  */
-tarval *tarval_andnot(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_andnot(tarval *a, tarval *b);
 
 /**
  * Bitwise or of two integer tarvals.
@@ -591,7 +595,7 @@ tarval *tarval_andnot(tarval *a, tarval *b);
  *
  * @return a | b or tarval_bad
  */
-tarval *tarval_or(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_or(tarval *a, tarval *b);
 
 /**
  * Bitwise exclusive or of two integer tarvals.
@@ -601,7 +605,7 @@ tarval *tarval_or(tarval *a, tarval *b);
  *
  * @return a ^ b or tarval_bad
  */
-tarval *tarval_eor(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_eor(tarval *a, tarval *b);
 
 /**
  * Logical Left shift.
@@ -611,7 +615,7 @@ tarval *tarval_eor(tarval *a, tarval *b);
  *
  * @return a << b or tarval_bad
  */
-tarval *tarval_shl(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_shl(tarval *a, tarval *b);
 
 /**
  * Unsigned (logical) right shift.
@@ -621,7 +625,7 @@ tarval *tarval_shl(tarval *a, tarval *b);
  *
  * @return a >>u b or tarval_bad
  */
-tarval *tarval_shr(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_shr(tarval *a, tarval *b);
 
 /**
  * Signed (arithmetic) right shift.
@@ -631,7 +635,7 @@ tarval *tarval_shr(tarval *a, tarval *b);
  *
  * @return a >>s b or tarval_bad
  */
-tarval *tarval_shrs(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_shrs(tarval *a, tarval *b);
 
 /**
  * Rotation to left.
@@ -641,12 +645,12 @@ tarval *tarval_shrs(tarval *a, tarval *b);
  *
  * @return a \<\<L\>\> b or tarval_bad
  */
-tarval *tarval_rotl(tarval *a, tarval *b);
+FIRM_DLL tarval *tarval_rotl(tarval *a, tarval *b);
 
 /**
  * Returns the carry flag of the last operation.
  */
-int tarval_carry(void);
+FIRM_DLL int tarval_carry(void);
 
 /* *********** Output of tarvals *********** */
 
@@ -690,7 +694,8 @@ typedef struct tarval_mode_info {
  *
  * @return zero on success.
  */
-int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modeinfo);
+FIRM_DLL int set_tarval_mode_output_option(ir_mode *mode,
+                                           const tarval_mode_info *modeinfo);
 
 /**
  * Returns the output options of one mode.
@@ -701,7 +706,7 @@ int  set_tarval_mode_output_option(ir_mode *mode, const tarval_mode_info *modein
  *
  * @return the output option
  */
-const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode);
+FIRM_DLL const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode);
 
 /**
  * Returns Bit representation of a tarval value, as string of '0' and '1'
@@ -726,7 +731,7 @@ const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode);
  *    irmode.h for the definition of the ir_mode struct
  *    the size member of aforementioned struct
  */
-char *get_tarval_bitpattern(tarval *tv);
+FIRM_DLL char *get_tarval_bitpattern(tarval *tv);
 
 /**
  * Returns the bitpattern of the bytes_ofs byte.
@@ -753,7 +758,7 @@ char *get_tarval_bitpattern(tarval *tv);
  * @note
  *   The result of this function is undefined if the mode is neither integer nor float.
  */
-unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
+FIRM_DLL unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
 
 /**
  * Returns non-zero if a given (integer) tarval has only one single bit
@@ -761,7 +766,7 @@ unsigned char get_tarval_sub_bits(tarval *tv, unsigned byte_ofs);
  *
  * @param tv    the tarval
  */
-int tarval_is_single_bit(tarval *tv);
+FIRM_DLL int tarval_is_single_bit(tarval *tv);
 
 /**
  * Return the number of set bits in a given (integer) tarval.
@@ -770,7 +775,7 @@ int tarval_is_single_bit(tarval *tv);
  *
  * @return number of set bits or -1 on error
  */
-int get_tarval_popcount(tarval *tv);
+FIRM_DLL int get_tarval_popcount(tarval *tv);
 
 /**
  * Return the number of the lowest set bit in a given (integer) tarval.
@@ -779,7 +784,7 @@ int get_tarval_popcount(tarval *tv);
  *
  * @return number of lowest set bit or -1 on error
  */
-int get_tarval_lowest_bit(tarval *tv);
+FIRM_DLL int get_tarval_lowest_bit(tarval *tv);
 
 /**
  * Output a tarval to a string buffer.
@@ -788,14 +793,14 @@ int get_tarval_lowest_bit(tarval *tv);
  * @param buflen  the length of the buffer
  * @param tv      the tarval
  */
-int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
+FIRM_DLL int tarval_snprintf(char *buf, size_t buflen, tarval *tv);
 
 /**
  * Output a tarval to stdio.
  *
  * @param tv    the tarval
  */
-int tarval_printf(tarval *tv);
+FIRM_DLL int tarval_printf(tarval *tv);
 
 /**
  * Returns non-zero if the mantissa of a floating point IEEE-754
@@ -803,7 +808,7 @@ int tarval_printf(tarval *tv);
  *
  * @param tv    the tarval
  */
-int tarval_ieee754_zero_mantissa(tarval *tv);
+FIRM_DLL int tarval_ieee754_zero_mantissa(tarval *tv);
 
 /**
  * Returns the exponent of a floating point IEEE-754
@@ -811,7 +816,7 @@ int tarval_ieee754_zero_mantissa(tarval *tv);
  *
  * @param tv    the tarval
  */
-int tarval_ieee754_get_exponent(tarval *tv);
+FIRM_DLL int tarval_ieee754_get_exponent(tarval *tv);
 
 /**
  * Check if the tarval can be converted to the given mode without
@@ -820,7 +825,7 @@ int tarval_ieee754_get_exponent(tarval *tv);
  * @param tv    the tarval
  * @param mode  the mode to convert to
  */
-int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode);
+FIRM_DLL int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode);
 
 /**
  * Set the immediate precision for IEEE-754 results. Set this to
@@ -829,54 +834,54 @@ int tarval_ieee754_can_conv_lossless(tarval *tv, ir_mode *mode);
  *
  * @return the old setting
  */
-unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
+FIRM_DLL unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
 
 /**
  *  Returns non-zero if the result of the last IEEE-754 operation was exact.
  */
-unsigned tarval_ieee754_get_exact(void);
+FIRM_DLL unsigned tarval_ieee754_get_exact(void);
 
 /**
  * Return the size of the mantissa in bits (including possible
  * implicit bits) for the given mode.
  */
-unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode);
+FIRM_DLL unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode);
 
 /**
  * Enable/Disable floating point constant folding.
  */
-void tarval_enable_fp_ops(int enable);
+FIRM_DLL void tarval_enable_fp_ops(int enable);
 
 /** returns 0/1 if floating point folding is enable/disabled */
-int tarval_fp_ops_enabled(void);
+FIRM_DLL int tarval_fp_ops_enabled(void);
 
 /**
  * Check if its the a floating point NaN.
  *
  * @param tv    the tarval
  */
-int tarval_is_NaN(tarval *tv);
+FIRM_DLL int tarval_is_NaN(tarval *tv);
 
 /**
  * Check if its the a floating point +inf.
  *
  * @param tv    the tarval
  */
-int tarval_is_plus_inf(tarval *tv);
+FIRM_DLL int tarval_is_plus_inf(tarval *tv);
 
 /**
  * Check if its the a floating point -inf.
  *
  * @param tv    the tarval
  */
-int tarval_is_minus_inf(tarval *tv);
+FIRM_DLL int tarval_is_minus_inf(tarval *tv);
 
 /**
  * Check if the tarval represents a finite value, ie neither NaN nor inf.
  *
  * @param tv    the tarval
  */
-int tarval_is_finite(tarval *tv);
+FIRM_DLL int tarval_is_finite(tarval *tv);
 
 /**
  *   Checks whether a pointer points to a tarval.
@@ -886,6 +891,8 @@ int tarval_is_finite(tarval *tv);
  *   @return
  *       true if the thing is a tarval, else false
  */
-int is_tarval(const void *thing);
+FIRM_DLL int is_tarval(const void *thing);
 
-#endif  /* FIRM_TV_TV_H */
+#include "end.h"
+
+#endif

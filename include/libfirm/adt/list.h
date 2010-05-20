@@ -16,6 +16,8 @@
 
 #include <stdlib.h>
 
+#include "../begin.h"
+
 typedef struct list_head list_head;
 struct list_head {
 	struct list_head *next, *prev;
@@ -277,5 +279,6 @@ static inline void list_splice_init(struct list_head *list,
 	     &pos->member != (head); 					\
 	     pos = n, n = list_entry(n->member.next, type, member))
 
+#include "../end.h"
 
 #endif

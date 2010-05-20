@@ -28,6 +28,8 @@
 
 #include <stddef.h>
 
+#include "../begin.h"
+
 /**
  * The abstract type of a set.
  *
@@ -241,5 +243,7 @@ extern const char *set_tag;
 #else /* !(DEBUG && HAVE_GNU_MALLOC) */
 #   define SET_TRACE
 #endif /* !(DEBUG && HAVE_GNU_MALLOC) */
+
+#include "../end.h"
 
 #endif

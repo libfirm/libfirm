@@ -28,13 +28,19 @@
 #ifndef FIRM_ADT_XMALLOC_H
 #define FIRM_ADT_XMALLOC_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+
+/* Includes for alloca() */
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+#ifdef HAVE_ALLOCA_H
+#include <alloca.h>
+#endif
+
+#include "../begin.h"
 
 /* xmalloc() & friends. */
 
@@ -123,16 +129,6 @@ char *xstrdup(const char *str);
 #define OALLOCFZ(obst, type, member, n) ((type*)memset(OALLOCF((obst), type, member, (n)), 0, offsetof(type, member) + sizeof(*((type*)0)->member) * (n)))
 
 
-/* Includes for alloca() */
-#ifdef _WIN32
-#include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
-
-#ifdef __cplusplus
-}
-#endif
+#include "../end.h"
 
 #endif

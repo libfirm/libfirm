@@ -24,10 +24,11 @@
  * @version $Id$
  *
  */
-#include "firm_types.h"
-
 #ifndef VRP_H
 #define VRP_H
+
+#include "firm_types.h"
+#include "begin.h"
 
 enum range_types {
 	VRP_UNDEFINED, /**< No information could be derived so far */
@@ -52,7 +53,7 @@ typedef struct {
  * Set vrp data on the graph irg
  * @param irg graph on which to set vrp data
  */
-void set_vrp_data(ir_graph *irg);
+FIRM_DLL void set_vrp_data(ir_graph *irg);
 
 /**
  * Test, if the two nodes can be compared with their vrp information
@@ -62,7 +63,7 @@ void set_vrp_data(ir_graph *irg);
  *
  * @return the pn_Cmp, if one can be derived
  */
-pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
+FIRM_DLL pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
 
 /*
  * Return the vrp data for this node
@@ -71,6 +72,8 @@ pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
  *
  * @return a pointer to the vrp data or NULL if there is none
  */
-vrp_attr *vrp_get_info(const ir_node *n);
+FIRM_DLL vrp_attr *vrp_get_info(const ir_node *n);
+
+#include "end.h"
 
 #endif

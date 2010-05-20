@@ -27,6 +27,8 @@
 #ifndef FIRM_ADT_CPSET_H
 #define FIRM_ADT_CPSET_H
 
+#include "../begin.h"
+
 /**
  * The type of a cpset compare function.
  *
@@ -150,4 +152,6 @@ void *cpset_iterator_next(cpset_iterator_t *iterator);
  */
 void cpset_remove_iterator(cpset_t *cpset, const cpset_iterator_t *iterator);
 
-#endif /* FIRM_ADT_CPSET_H */
+#include "../end.h"
+
+#endif

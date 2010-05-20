@@ -5,6 +5,8 @@
 #ifndef FIRM_ADT_GAUSSJORDAN_H
 #define FIRM_ADT_GAUSSJORDAN_H
 
+#include "../begin.h"
+
 /**
  * solves a system of linear equations and returns 0 if successful
  *
@@ -13,5 +15,7 @@
  * @param nsize   the size of the equation system
  */
 int firm_gaussjordansolve(double *A, double *b, int nsize);
+
+#include "../end.h"
 
 #endif

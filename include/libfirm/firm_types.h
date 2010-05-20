@@ -26,6 +26,8 @@
 #ifndef FIRM_COMMON_FIRM_TYPES_H
 #define FIRM_COMMON_FIRM_TYPES_H
 
+#include "begin.h"
+
 typedef unsigned long ir_visited_t;
 typedef unsigned long ir_exc_region_t;
 typedef unsigned long ir_label_t;
@@ -229,5 +231,7 @@ typedef enum {
 	ir_bk_outport,                /**< out port */
 	ir_bk_inner_trampoline,       /**< address of a trampoline for GCC inner functions */
 } ir_builtin_kind;
+
+#include "end.h"
 
 #endif

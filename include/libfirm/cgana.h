@@ -35,6 +35,7 @@
 #define FIRM_ANA_CGANA_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /* Methoden sind "frei", wenn ihr Funktionszeiger (potentiell)
  * "explizit" bekannt ist, d.h.:
@@ -75,7 +76,7 @@
  *    - Replace (Sel-method(Alloc)) by SymConst-entity.
  *    - Replaces Sel-method by SymConst-entity if the method is never overwritten.
  */
-void cgana(int *len, ir_entity ***free_methods);
+FIRM_DLL void cgana(int *len, ir_entity ***free_methods);
 
 /** Free callee information.
  *
@@ -83,11 +84,13 @@ void cgana(int *len, ir_entity ***free_methods);
  *  in all call nodes to NULL.  Else it happens that the field contains
  *  pointers to other than firm arrays.
  */
-void free_callee_info(ir_graph *irg);
-void free_irp_callee_info(void);
+FIRM_DLL void free_callee_info(ir_graph *irg);
+FIRM_DLL void free_irp_callee_info(void);
 
 /* Optimize the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana. */
-void opt_call_addrs(void);
+FIRM_DLL void opt_call_addrs(void);
+
+#include "end.h"
 
 #endif

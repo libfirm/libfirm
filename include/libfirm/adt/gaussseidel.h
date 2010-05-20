@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#include "../begin.h"
+
 typedef struct _gs_matrix_t gs_matrix_t;
 
 /**
@@ -53,4 +55,6 @@ int gs_matrix_get_sizeof_allocated_memory(const gs_matrix_t *m);
 
 void gs_matrix_export(const gs_matrix_t *m, double *nw, int size);
 
-#endif /*MATRIX_H_*/
+#include "../end.h"
+
+#endif

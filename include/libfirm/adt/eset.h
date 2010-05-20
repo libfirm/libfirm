@@ -28,6 +28,8 @@
 #ifndef FIRM_ADT_ESET_H
 #define FIRM_ADT_ESET_H
 
+#include "../begin.h"
+
 /**
  * "eset" is a set of addresses. The addresses are used for element
  * compare and hash calculation.
@@ -72,5 +74,7 @@ void *eset_next(eset *s);
 
 /** Inserts all elements of source into target (union).  Does NOT work if NULL is contained in source. */
 void eset_insert_all(eset *target, eset *source);
+
+#include "../end.h"
 
 #endif

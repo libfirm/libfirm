@@ -27,6 +27,8 @@
 #ifndef FIRM_ADT_PMAP_H
 #define FIRM_ADT_PMAP_H
 
+#include "../begin.h"
+
 /**  A map which maps addresses to addresses. */
 typedef struct pmap pmap;
 
@@ -82,5 +84,7 @@ pmap_entry *pmap_next(pmap *);
  *  Must be called, if a iteration ends before p_map_next() returns NULL.
  */
 void pmap_break(pmap *map);
+
+#include "../end.h"
 
 #endif

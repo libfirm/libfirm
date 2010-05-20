@@ -34,6 +34,7 @@
 #define FIRM_IR_IRGWALK_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /**
  * Walks over the ir graph.
@@ -53,15 +54,15 @@
  * @param env   environment, passed to pre and post
  *
  */
-void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
-              void *env);
+FIRM_DLL void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                       void *env);
 
 /**
  * core walker function. Does NOT touch current_ir_graph and does not call
  * inc_irg_visited before walking
  */
-void irg_walk_core(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
-                   void *env);
+FIRM_DLL void irg_walk_core(ir_node *node, irg_walk_func *pre,
+                            irg_walk_func *post, void *env);
 
 /**
  * Walks over all reachable nodes in the ir graph.
@@ -76,7 +77,8 @@ void irg_walk_core(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
  * is set to irg.  Does not use the link field.  If interprocedural_view
  * is set, visits all reachable irgs.
  */
-void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_graph(ir_graph *irg, irg_walk_func *pre,
+                             irg_walk_func *post, void *env);
 
 /**
  * Walks over the ir graph.
@@ -97,7 +99,8 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void
  * @param env   environment, passed to pre and post
  *
  */
-void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre,
+                                 irg_walk_func *post, void *env);
 
 /**
  * Walks over all reachable nodes in the ir graph.
@@ -113,7 +116,8 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
  * This walker also follows additional dependency egdes.
  * interprocedural_view is not yet supported.
  */
-void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
+                                       irg_walk_func *post, void *env);
 
 /**
  * Executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
@@ -127,7 +131,7 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
  * current_ir_graph.  In interprocedural view nodes can be visited several
  * times.  Does not use the link field.
  */
-void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 
 #ifdef INTERPROCEDURAL_VIEW
 /**
@@ -140,7 +144,7 @@ void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  * This function walks all irgs in interprocedural view.
  * Visits each node only once.  Sets current_ir_graph properly. Does not use the link field.
  */
-void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
 #endif
 
 /** Walks only over Block nodes in the graph.
@@ -155,7 +159,8 @@ void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  * If a none block is passed, starts at the block this node belongs to.
  * If end is passed also visits kept alive blocks. Does not use the link field.
  */
-void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_block_walk(ir_node *node, irg_walk_func *pre,
+                             irg_walk_func *post, void *env);
 
 /**
  * Walks only over reachable Block nodes in the graph.
@@ -168,7 +173,8 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
  * Like irg_block_walk(), but walks over all reachable blocks in the
  * ir graph, starting at the end block. Does not use the link field.
  */
-void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre,
+                                   irg_walk_func *post, void *env);
 
 /**
  * Walks over all code in const_code_irg.
@@ -180,7 +186,8 @@ void irg_block_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post
  * This function walks over all code in const_code_irg.
  * Uses visited flag in const_code_irg.  Does not use the link field.
  */
-void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void walk_const_code(irg_walk_func *pre, irg_walk_func *post,
+                              void *env);
 
 /**
  * Walks over reachable nodes in block-wise topological order, i.e. visit
@@ -199,7 +206,8 @@ void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env);
  * @param post  walker function, executed after the predecessor of a node are visited
  * @param env   environment, passed to pre and post
  */
-void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
+                                     irg_walk_func *post, void *env);
 
 /**
  * Walks over reachable nodes in block-wise topological order, i.e. visit
@@ -219,7 +227,9 @@ void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *po
  * @param post  walker function, executed after the predecessor of a node are visited
  * @param env   environment, passed to pre and post
  */
-void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg,
+                                               irg_walk_func *pre,
+                                               irg_walk_func *post, void *env);
 
 /**
  * Walks over reachable nodes in block-wise topological order, i.e. visit
@@ -239,7 +249,8 @@ void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg, irg_walk_func *pre, irg_wal
  * @param post  walker function, executed after the predecessor of a node are visited
  * @param env   environment, passed to pre and post
  */
-void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre,
+                                            irg_walk_func *post, void *env);
 
 /**
  * Additionally walk over all anchors.
@@ -251,7 +262,8 @@ void irg_walk_blkwise_dom_top_down(ir_graph *irg, irg_walk_func *pre, irg_walk_f
  * @param post  walker function, executed after the predecessor of a node are visited
  * @param env   environment, passed to pre and post
  */
-void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void *env);
+FIRM_DLL void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre,
+                               irg_walk_func *post, void *env);
 
 /**
  * Walker function which does not increase the visited flag before walking.
@@ -259,5 +271,7 @@ void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, vo
  */
 unsigned irg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                     void *env);
+
+#include "end.h"
 
 #endif

@@ -28,6 +28,7 @@
 #define FIRM_ANA_IRCONSCONFIRM_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /**
  * Inject Confirm nodes into a graph.
@@ -49,7 +50,7 @@
  * nodes too. The current solution is to remove Confirms at a later
  * pass.
  */
-void construct_confirms(ir_graph *irg);
+FIRM_DLL void construct_confirms(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for construct_confirms().
@@ -58,7 +59,7 @@ void construct_confirms(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *construct_confirms_pass(const char *name);
+FIRM_DLL ir_graph_pass_t *construct_confirms_pass(const char *name);
 
 /**
  * Remove all Confirm nodes from a graph.
@@ -66,7 +67,7 @@ ir_graph_pass_t *construct_confirms_pass(const char *name);
  * Note that local_optimize() can handle this if
  * the remove Confirm node setting is on (set_opt_remove_Confirm(1)).
  */
-void remove_confirms(ir_graph *irg);
+FIRM_DLL void remove_confirms(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for remove_confirms().
@@ -75,6 +76,8 @@ void remove_confirms(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *remove_confirms_pass(const char *name);
+FIRM_DLL ir_graph_pass_t *remove_confirms_pass(const char *name);
+
+#include "end.h"
 
 #endif

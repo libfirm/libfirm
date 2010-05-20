@@ -27,6 +27,7 @@
 #define FIRM_IR_IROPT_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /**
  * The Floating point model.
@@ -82,7 +83,7 @@ typedef enum _fp_model_t {
 /** If the expression referenced can be evaluated statically
  *  computed_value returns a tarval representing the result.
  *  Else returns tarval_bad. */
-tarval *computed_value(const ir_node *n);
+FIRM_DLL tarval *computed_value(const ir_node *n);
 
 /** Applies all optimizations to n that are expressible as a pattern
  *  in Firm, i.e., they need not a walk of the graph.
@@ -92,6 +93,8 @@ tarval *computed_value(const ir_node *n);
  *  An equivalent optimization is applied in the constructors defined in
  *  ircons.ch.  There n is freed if a better node could be found.
  */
-ir_node *optimize_in_place(ir_node *n);
+FIRM_DLL ir_node *optimize_in_place(ir_node *n);
+
+#include "end.h"
 
 #endif

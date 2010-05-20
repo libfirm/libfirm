@@ -29,6 +29,7 @@
 #include "irgraph.h"
 #include "firm_types.h"
 #include "typerep.h"
+#include "begin.h"
 
 /**
  * Returns for a method with pointer parameter
@@ -41,7 +42,7 @@
  * If the pos'th parameter is NOT of a pointer type, ptr_access_none
  * is returned;
  */
-ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
+FIRM_DLL ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
 
 /**
  * Analyze how pointer arguments of a given
@@ -49,7 +50,7 @@ ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
  *
  * @param irg   The ir graph to analyze.
  */
-void analyze_irg_args(ir_graph *irg);
+FIRM_DLL void analyze_irg_args(ir_graph *irg);
 
 /**
  * Returns for a method the 'weight' that every parameter
@@ -58,13 +59,15 @@ void analyze_irg_args(ir_graph *irg);
  *
  * The values are calculation on demand only.
  */
-unsigned get_method_param_weight(ir_entity *ent, int pos);
+FIRM_DLL unsigned get_method_param_weight(ir_entity *ent, int pos);
 
 /**
  * Analyze the parameters of a given ir graph.
  *
  * @param irg The ir graph to analyze.
  */
-void analyze_irg_args_weight(ir_graph *irg);
+FIRM_DLL void analyze_irg_args_weight(ir_graph *irg);
+
+#include "end.h"
 
 #endif

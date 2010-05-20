@@ -27,6 +27,7 @@
 #define FIRM_STAT_FIRMSTAT_H
 
 #include "irhooks.h"
+#include "begin.h"
 
 /**
  * Statistic options, can be or'ed.
@@ -171,7 +172,7 @@ enum firmstat_optimizations_t {
  * @param fname  base name of the statistic output file
  * @param phase  a phase name. Prefix will be firmstat-\<phase\>-
  */
-void stat_dump_snapshot(const char *fname, const char *phase);
+FIRM_DLL void stat_dump_snapshot(const char *fname, const char *phase);
 
 /**
  * Creates an ir_prog pass for stat_dump_snapshot().
@@ -182,7 +183,7 @@ void stat_dump_snapshot(const char *fname, const char *phase);
  *
  * @return  the newly created ir_prog pass
  */
-ir_prog_pass_t *stat_dump_snapshot_pass(
+FIRM_DLL ir_prog_pass_t *stat_dump_snapshot_pass(
 	const char *name, const char *fname, const char *phase);
 
 /**
@@ -190,16 +191,18 @@ ir_prog_pass_t *stat_dump_snapshot_pass(
  *
  * @param enable_options  a bitmask containing the statistic options
  */
-void firm_init_stat(unsigned enable_options);
+FIRM_DLL void firm_init_stat(unsigned enable_options);
 
 /**
  * terminates the statistics module, frees all memory
  */
-void stat_term(void);
+FIRM_DLL void stat_term(void);
 
 /**
  * returns 1 if statistic module is active, 0 otherwise
  */
-int stat_is_active(void);
+FIRM_DLL int stat_is_active(void);
 
-#endif /* FIRM_STAT_FIRMSTAT_H */
+#include "end.h"
+
+#endif

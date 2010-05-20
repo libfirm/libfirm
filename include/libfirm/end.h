@@ -19,25 +19,20 @@
 
 /**
  * @file
- * @brief  Declares different kind of edges between nodes
- * @date   29.08.2006
- * @author Sebastian Hack
+ * @brief       Should be included in all public firm headers at the end
+ * @author      Matthias Braun
+ * @version     $Id$
  */
-#ifndef FIRM_IR_IREDGEKINDS_H
-#define FIRM_IR_IREDGEKINDS_H
+#ifndef FIRM_END_H
+#define FIRM_END_H
 
-#include "begin.h"
+#ifndef FIRM_BEGIN_H
+#error "end.h included without begin.h?"
+#endif
 
-/** Supported Edge kinds. */
-enum _ir_edge_kind_t {
-	EDGE_KIND_NORMAL,  /**< Normal data flow edges. */
-	EDGE_KIND_BLOCK,   /**< Block to Block control flow edges. */
-	EDGE_KIND_DEP,     /**< Dependency edges. */
-	EDGE_KIND_LAST
-};
-
-typedef enum _ir_edge_kind_t ir_edge_kind_t;
-
-#include "end.h"
+/* close extern "C" block from begin.h */
+#ifdef __cplusplus
+}
+#endif
 
 #endif

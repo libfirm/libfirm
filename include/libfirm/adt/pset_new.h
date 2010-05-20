@@ -32,6 +32,8 @@
 #ifndef FIRM_ADT_PSET_NEW_H
 #define FIRM_ADT_PSET_NEW_H
 
+#include "../begin.h"
+
 #define HashSet          pset_new_t
 #define HashSetIterator  pset_new_iterator_t
 #define ValueType        void*
@@ -138,5 +140,7 @@ void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iterator_t *i
 	for(pset_new_iterator_init(&iter, pset_new), \
 		ptr = pset_new_iterator_next(&iter);     \
 		ptr != NULL; ptr = pset_new_iterator_next(&iter))
+
+#include "../end.h"
 
 #endif

@@ -37,6 +37,8 @@
 #include <stddef.h>
 #include "obst.h"
 
+#include "../begin.h"
+
 typedef struct _plist_element plist_element_t;
 typedef struct _plist plist_t;
 
@@ -243,4 +245,6 @@ void plist_clear(plist_t *list);
 #define foreach_plist(list, el) \
 	for (el = plist_first(list); el; el = plist_element_get_next(el))
 
-#endif /*_PLIST_H_*/
+#include "../end.h"
+
+#endif

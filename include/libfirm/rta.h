@@ -46,29 +46,33 @@
 
 #include "firm_types.h"
 
+#include "begin.h"
+
 /**
  * Initialise the RTA data structures and perform RTA.
  * Expects that all allocations are done by Alloc nodes.
  */
-void rta_init(void);
+FIRM_DLL void rta_init(void);
 
 /**
  * Delete all graphs that have been found to be dead.
  */
-void rta_delete_dead_graphs (void);
+FIRM_DLL void rta_delete_dead_graphs (void);
 
 /** Clean up our data structures.
  * Finishes the RTA.
  */
-void rta_cleanup(void);
+FIRM_DLL void rta_cleanup(void);
 
 /** Returns non-zero if the given class is alive. */
-int rta_is_alive_class(ir_type *clazz);
+FIRM_DLL int rta_is_alive_class(ir_type *clazz);
 
 /** Returns non-zero if the given graph is alive. */
-int rta_is_alive_graph(ir_graph *graph);
+FIRM_DLL int rta_is_alive_graph(ir_graph *graph);
 
 /** report for all graphs and types whether they are alive */
-void rta_report(void);
+FIRM_DLL void rta_report(void);
+
+#include "end.h"
 
 #endif

@@ -27,6 +27,9 @@
 #define FIRM_LOWERING_H
 
 #include "firm_types.h"
+
+#include "begin.h"
+
 /**
  * A type telling where to add hidden parameters.
  */
@@ -142,12 +145,13 @@ typedef struct {
  * If params->find_pointer_type is NULL, new pointer types
  * are always created automatically.
  */
-void lower_calls_with_compounds(const lower_params_t *params);
+FIRM_DLL void lower_calls_with_compounds(const lower_params_t *params);
 
 /**
- *  * Lower CopyB nodes of size smaller that max_size into Loads/Stores
+ * Lower CopyB nodes of size smaller that max_size into Loads/Stores
  */
-void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes);
+FIRM_DLL void lower_CopyB(ir_graph *irg, unsigned max_size,
+                          unsigned native_mode_bytes);
 
 /**
  * Lowers all Switches (Cond nodes with non-boolean mode) depending on spare_size.
@@ -157,7 +161,7 @@ void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes);
  * @param spare_size Allowed spare size for table switches in machine words.
  *                   (Default in edgfe: 128)
  */
-void lower_switch(ir_graph *irg, unsigned spare_size);
+FIRM_DLL void lower_switch(ir_graph *irg, unsigned spare_size);
 
 /**
  * Creates an ir_graph pass for lower_switch().
@@ -168,7 +172,8 @@ void lower_switch(ir_graph *irg, unsigned spare_size);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *lower_switch_pass(const char *name, unsigned spare_size);
+FIRM_DLL ir_graph_pass_t *lower_switch_pass(const char *name,
+                                            unsigned spare_size);
 
 /**
  * A callback type for creating an intrinsic entity for a given opcode.
@@ -204,7 +209,7 @@ typedef struct _lwrdw_param_t {
  *
  * @param param  parameter for lowering
  */
-void lower_dw_ops(const lwrdw_param_t *param);
+FIRM_DLL void lower_dw_ops(const lwrdw_param_t *param);
 
 /**
  * Creates an ir_prog pass for lower_dw_ops().
@@ -214,14 +219,16 @@ void lower_dw_ops(const lwrdw_param_t *param);
  *
  * @return  the newly created ir_prog pass
  */
-ir_prog_pass_t *lower_dw_ops_pass(const char *name, const lwrdw_param_t *param);
+FIRM_DLL ir_prog_pass_t *lower_dw_ops_pass(const char *name,
+                                           const lwrdw_param_t *param);
 
 /**
  * Default implementation. Context is unused.
  */
-ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                    const ir_mode *imode, const ir_mode *omode,
-                                    void *context);
+FIRM_DLL ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
+                                             const ir_mode *imode,
+                                             const ir_mode *omode,
+                                             void *context);
 
 /**
  * Replaces SymConsts by a real constant if possible.
@@ -235,7 +242,7 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
  * @note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
-void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
+FIRM_DLL void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
 
 /**
  * Creates an ir_graph pass for lower_highlevel_graph().
@@ -246,7 +253,8 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields);
+FIRM_DLL ir_graph_pass_t *lower_highlevel_graph_pass(const char *name,
+                                                     int lower_bitfields);
 
 /**
  * Replaces SymConsts by a real constant if possible.
@@ -257,12 +265,12 @@ ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfield
  * @note There is NO lowering of objects oriented types. This is highly compiler
  *       and ABI specific and should be placed directly in the compiler.
  */
-void lower_highlevel(int lower_bitfields);
+FIRM_DLL void lower_highlevel(int lower_bitfields);
 
 /**
  * does the same as lower_highlevel for all nodes on the const code irg
  */
-void lower_const_code(void);
+FIRM_DLL void lower_const_code(void);
 
 /**
  * Creates an ir_prog pass for lower_const_code().
@@ -271,7 +279,7 @@ void lower_const_code(void);
  *
  * @return  the newly created ir_prog pass
  */
-ir_prog_pass_t *lower_const_code_pass(const char *name);
+FIRM_DLL ir_prog_pass_t *lower_const_code_pass(const char *name);
 
 typedef struct lower_mode_b_config_t {
 	/* mode that is used to transport 0/1 values */
@@ -292,7 +300,8 @@ typedef struct lower_mode_b_config_t {
  * @param irg      the firm graph to lower
  * @param config   configuration for mode_b lowerer
  */
-void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *config);
+FIRM_DLL void ir_lower_mode_b(ir_graph *irg,
+                              const lower_mode_b_config_t *config);
 
 /**
  * Creates an ir_graph pass for ir_lower_mode_b().
@@ -302,8 +311,8 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *config);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *ir_lower_mode_b_pass(
-	const char *name, const lower_mode_b_config_t *config);
+FIRM_DLL ir_graph_pass_t *ir_lower_mode_b_pass(const char *name,
+                                           const lower_mode_b_config_t *config);
 
 /**
  * Used as callback, whenever a lowerable mux is found. The return value
@@ -323,7 +332,7 @@ typedef int lower_mux_callback(ir_node* mux);
  * @param cb_func  The callback function for mux selection. Can be NULL,
  *                 to lower all mux nodes.
  */
-void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
+FIRM_DLL void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
 
 /**
  * Creates an ir_graph pass for lower_mux().
@@ -334,7 +343,8 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func);
  *
  * @return  the newly created ir_graph pass
  */
-ir_graph_pass_t *lower_mux_pass(const char *name, lower_mux_callback *cb_func);
+FIRM_DLL ir_graph_pass_t *lower_mux_pass(const char *name,
+                                         lower_mux_callback *cb_func);
 
 /**
  * An intrinsic mapper function.
@@ -395,7 +405,8 @@ typedef union _i_record {
  *
  * @return number of found intrinsics.
  */
-unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
+FIRM_DLL unsigned lower_intrinsics(i_record *list, int length,
+                                   int part_block_used);
 
 /**
  * Creates an irprog pass for lower_intrinsics.
@@ -405,9 +416,8 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used);
  * @param length           the length of the array
  * @param part_block_used  set to true if part_block() must be using during lowering
  */
-ir_prog_pass_t *lower_intrinsics_pass(
-	const char *name,
-	i_record *list, int length, int part_block_used);
+FIRM_DLL ir_prog_pass_t *lower_intrinsics_pass(const char *name, i_record *list,
+                                               int length, int part_block_used);
 
 /**
  * A mapper for the integer/float absolute value: type abs(type v).
@@ -415,7 +425,7 @@ ir_prog_pass_t *lower_intrinsics_pass(
  *
  * @return always 1
  */
-int i_mapper_abs(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_abs(ir_node *call, void *ctx);
 
 /**
  * A mapper for the integer byte swap value: type bswap(type v).
@@ -423,35 +433,35 @@ int i_mapper_abs(ir_node *call, void *ctx);
  *
  * @return always 1
  */
-int i_mapper_bswap(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_bswap(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sqrt(v): floattype sqrt(floattype v);
  *
  * @return 1 if the sqrt call was removed, 0 else.
  */
-int i_mapper_sqrt(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_sqrt(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point cbrt(v): floattype sqrt(floattype v);
  *
  * @return 1 if the cbrt call was removed, 0 else.
  */
-int i_mapper_cbrt(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_cbrt(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point pow(a, b): floattype pow(floattype a, floattype b);
  *
  * @return 1 if the pow call was removed, 0 else.
  */
-int i_mapper_pow(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_pow(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point exp(a): floattype exp(floattype a);
  *
  * @return 1 if the exp call was removed, 0 else.
  */
-int i_mapper_exp(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_exp(ir_node *call, void *ctx);
 
 #define i_mapper_exp2   i_mapper_exp
 #define i_mapper_exp10  i_mapper_exp
@@ -461,7 +471,7 @@ int i_mapper_exp(ir_node *call, void *ctx);
  *
  * @return 1 if the log call was removed, 0 else.
  */
-int i_mapper_log(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_log(ir_node *call, void *ctx);
 
 #define i_mapper_log2   i_mapper_log
 #define i_mapper_log10  i_mapper_log
@@ -471,126 +481,126 @@ int i_mapper_log(ir_node *call, void *ctx);
  *
  * @return 1 if the sin call was removed, 0 else.
  */
-int i_mapper_sin(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_sin(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sin(a): floattype cos(floattype a);
  *
  * @return 1 if the cos call was removed, 0 else.
  */
-int i_mapper_cos(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_cos(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point tan(a): floattype tan(floattype a);
  *
  * @return 1 if the tan call was removed, 0 else.
  */
-int i_mapper_tan(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_tan(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point asin(a): floattype asin(floattype a);
  *
  * @return 1 if the asin call was removed, 0 else.
  */
-int i_mapper_asin(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_asin(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point acos(a): floattype acos(floattype a);
  *
  * @return 1 if the tan call was removed, 0 else.
  */
-int i_mapper_acos(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_acos(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point atan(a): floattype atan(floattype a);
  *
  * @return 1 if the atan call was removed, 0 else.
  */
-int i_mapper_atan(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_atan(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point sinh(a): floattype sinh(floattype a);
  *
  * @return 1 if the sinh call was removed, 0 else.
  */
-int i_mapper_sinh(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_sinh(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point cosh(a): floattype cosh(floattype a);
  *
  * @return 1 if the cosh call was removed, 0 else.
  */
-int i_mapper_cosh(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_cosh(ir_node *call, void *ctx);
 
 /**
  * A mapper for the floating point tanh(a): floattype tanh(floattype a);
  *
  * @return 1 if the tanh call was removed, 0 else.
  */
-int i_mapper_tanh(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_tanh(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strcmp-Function: inttype strcmp(char pointer a, char pointer b);
  *
  * @return 1 if the strcmp call was removed, 0 else.
  */
-int i_mapper_strcmp(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_strcmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strncmp-Function: inttype strncmp(char pointer a, char pointer b, inttype len);
  *
  * @return 1 if the strncmp call was removed, 0 else.
  */
-int i_mapper_strncmp(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_strncmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strcpy-Function: char pointer strcpy(char pointer a, char pointer b);
  *
  * @return 1 if the strcpy call was removed, 0 else.
  */
-int i_mapper_strcpy(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_strcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strlen-Function: inttype strlen(char pointer a);
  *
  * @return 1 if the strlen call was removed, 0 else.
  */
-int i_mapper_strlen(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_strlen(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memcpy-Function: void pointer memcpy(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the memcpy call was removed, 0 else.
  */
-int i_mapper_memcpy(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_memcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the mempcpy-Function: void pointer mempcpy(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the mempcpy call was removed, 0 else.
  */
-int i_mapper_mempcpy(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_mempcpy(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memmove-Function: void pointer memmove(void pointer d, void pointer s, inttype c);
  *
  * @return 1 if the memmove call was removed, 0 else.
  */
-int i_mapper_memmove(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_memmove(ir_node *call, void *ctx);
 
 /**
  * A mapper for the memset-Function: void pointer memset(void pointer d, inttype C, inttype len);
  *
  * @return 1 if the memset call was removed, 0 else.
  */
-int i_mapper_memset(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_memset(ir_node *call, void *ctx);
 
 /**
  * A mapper for the strncmp-Function: inttype memcmp(void pointer a, void pointer b, inttype len);
  *
  * @return 1 if the strncmp call was removed, 0 else.
  */
-int i_mapper_memcmp(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_memcmp(ir_node *call, void *ctx);
 
 /**
  * A mapper for the alloca() function: pointer alloca(inttype size)
@@ -598,7 +608,7 @@ int i_mapper_memcmp(ir_node *call, void *ctx);
  *
  * @return always 1
  */
-int i_mapper_alloca(ir_node *call, void *ctx);
+FIRM_DLL int i_mapper_alloca(ir_node *call, void *ctx);
 
 /**
  * A runtime routine description.
@@ -673,6 +683,8 @@ typedef struct _runtime_rt {
   };
   @endcode
  */
-int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt);
+FIRM_DLL int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt);
 
-#endif /* FIRM_LOWERING_H */
+#include "end.h"
+
+#endif

@@ -27,6 +27,8 @@
 
 #include <stdlib.h>
 
+#include "begin.h"
+
 typedef struct _ir_timer_t ir_timer_t;
 
 /**
@@ -36,57 +38,57 @@ typedef struct _ir_timer_t ir_timer_t;
  * @note You could need special user privileges.
  * @return 0 on success, else UNIX error code.
  */
-int ir_timer_enter_high_priority(void);
+FIRM_DLL int ir_timer_enter_high_priority(void);
 
 /**
  * Leave the high priority mode.
  * @see ir_timer_enter_high_priority()
  * @return 0 on success, else UNIX error code.
  */
-int ir_timer_leave_high_priority(void);
+FIRM_DLL int ir_timer_leave_high_priority(void);
 
 /**
  * Get the amount of bytes allocated on the heap.
  * @return The number of bytes allocated on the heap.
  */
-size_t ir_get_heap_used_bytes(void);
+FIRM_DLL size_t ir_get_heap_used_bytes(void);
 
 /**
  * Create a new timer
  * @return The timer.
  */
-ir_timer_t *ir_timer_new(void);
+FIRM_DLL ir_timer_t *ir_timer_new(void);
 
 /**
  * free memory occupied by a timer
  * @param timer The timer
  */
-void ir_timer_free(ir_timer_t *timer);
+FIRM_DLL void ir_timer_free(ir_timer_t *timer);
 
 /**
  * Start a timer.
  * @param timer The timer.
  */
-void ir_timer_start(ir_timer_t *timer);
+FIRM_DLL void ir_timer_start(ir_timer_t *timer);
 
 /**
  * Reset a timer and start it.
  * @param timer The timer.
  */
-void ir_timer_reset_and_start(ir_timer_t *timer);
+FIRM_DLL void ir_timer_reset_and_start(ir_timer_t *timer);
 
 /**
  * Reset a timer.
  * @param timer The timer.
  */
-void ir_timer_reset(ir_timer_t *timer);
+FIRM_DLL void ir_timer_reset(ir_timer_t *timer);
 
 /**
  * Stop a timer.
  * Stopping a stopped timer has no effect.
  * @param timer The timer.
  */
-void ir_timer_stop(ir_timer_t *timer);
+FIRM_DLL void ir_timer_stop(ir_timer_t *timer);
 
 /**
  * Push a timer of the timer stack. This automatically
@@ -95,41 +97,43 @@ void ir_timer_stop(ir_timer_t *timer);
  * @param timer   The timer to push on stack.
  * @return non-zero on succes, zero if the timer is already on the stack.
  */
-int ir_timer_push(ir_timer_t *timer);
+FIRM_DLL int ir_timer_push(ir_timer_t *timer);
 
 /**
  * Pop the current timer. This automatically stops it and
  * start the timer that is now on the stack.
  * @return the popped timer
  */
-ir_timer_t *ir_timer_pop(void);
+FIRM_DLL ir_timer_t *ir_timer_pop(void);
 
 /**
  * Get the number of milliseconds, the timer has elapsed.
  * @param timer The timer.
  * @return The number of milliseconds the timer is (was) running.
  */
-unsigned long ir_timer_elapsed_msec(const ir_timer_t *timer);
+FIRM_DLL unsigned long ir_timer_elapsed_msec(const ir_timer_t *timer);
 
 /**
  * Get the number of microseconds, the timer has elapsed.
  * @param timer The timer.
  * @return The number of milliseconds the timer is (was) running.
  */
-unsigned long ir_timer_elapsed_usec(const ir_timer_t *timer);
+FIRM_DLL unsigned long ir_timer_elapsed_usec(const ir_timer_t *timer);
 
 /**
  * Get name of given timer.
  * @param timer The timer.
  * @return The name of the timer.
  */
-const char *ir_timer_get_name(const ir_timer_t *timer);
+FIRM_DLL const char *ir_timer_get_name(const ir_timer_t *timer);
 
 /**
  * Get description of given timer.
  * @param timer The timer.
  * @return The description of the timer.
  */
-const char *ir_timer_get_description(const ir_timer_t *timer);
+FIRM_DLL const char *ir_timer_get_description(const ir_timer_t *timer);
+
+#include "end.h"
 
 #endif

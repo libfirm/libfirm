@@ -33,6 +33,8 @@
 #include "fourcc.h"
 #include "xmalloc.h"
 
+#include "../begin.h"
+
 /**
  * Creates a flexible array.
  *
@@ -366,4 +368,6 @@ do { \
  */
 #define ARR_SET_CLEAR(arr) ARR_SHRINKLEN(arr, 0)
 
-#endif /* FIRM_ADT_ARRAY_H */
+#include "../end.h"
+
+#endif

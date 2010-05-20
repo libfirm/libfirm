@@ -31,11 +31,12 @@
 #ifdef INTERPROCEDURAL_VIEW
 
 #include "firm_types.h"
+#include "begin.h"
 
 /** Return the current state of the interprocedural view. */
-ip_view_state get_irp_ip_view_state(void);
+FIRM_DLL ip_view_state get_irp_ip_view_state(void);
 /** Set the state of the interprocedural view to invalid. */
-void set_irp_ip_view_invalid(void);
+FIRM_DLL void set_irp_ip_view_invalid(void);
 
 /** Construction of the interprocedural view.
  *
@@ -47,12 +48,14 @@ void set_irp_ip_view_invalid(void);
  *                        are external visible.  These methods get an 'Unknown'
  *                        caller.
  * @arg arr_len           The number of free methods. */
-void cg_construct(int arr_len, ir_entity *free_methods_arr[]);
+FIRM_DLL void cg_construct(int arr_len, ir_entity *free_methods_arr[]);
 
 
 /** Deconstruction of the interprocedural view.  Reduces memory consumption of
     the ir. Sets ip_view_no in irp. */
-void cg_destruct(void);
+FIRM_DLL void cg_destruct(void);
+
+#include "end.h"
 
 #endif
 

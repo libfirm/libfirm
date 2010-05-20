@@ -34,6 +34,7 @@
 #define FIRM_ANA_IRTYPEINFO_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /* ------------ Auxiliary type. --------------------------------------- */
 
@@ -43,7 +44,7 @@
  *  variable is initialized by init_irtypeinfo().  The type is freed by
  *  free_irtypeinfo().
  */
-extern ir_type *initial_type;
+FIRM_DLL ir_type *initial_type;
 
 
 
@@ -56,8 +57,8 @@ extern ir_type *initial_type;
  *  Calling set/get_irn_typeinfo_type() is invalid before calling init. Requires memory
  *  in the order of MIN(\<calls to set_irn_typeinfo_type\>, \#irnodes).
  */
-void init_irtypeinfo(void);
-void free_irtypeinfo(void);
+FIRM_DLL void init_irtypeinfo(void);
+FIRM_DLL void free_irtypeinfo(void);
 
 /* ------------ Irgraph state handling. ------------------------------- */
 
@@ -70,8 +71,8 @@ typedef enum {
 	                              because of other transformations. */
 } ir_typeinfo_state;
 
-void              set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s);
-ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg);
+FIRM_DLL void set_irg_typeinfo_state(ir_graph *irg, ir_typeinfo_state s);
+FIRM_DLL ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg);
 
 /** Returns accumulated type information state information.
  *
@@ -79,10 +80,10 @@ ir_typeinfo_state get_irg_typeinfo_state(const ir_graph *irg);
  * consistent.  Returns ir_typeinfo_inconsistent if at least one irg has inconsistent
  * or no type information.  Returns ir_typeinfo_none if no irg contains type information.
  */
-ir_typeinfo_state get_irp_typeinfo_state(void);
-void              set_irp_typeinfo_state(ir_typeinfo_state s);
+FIRM_DLL ir_typeinfo_state get_irp_typeinfo_state(void);
+FIRM_DLL void              set_irp_typeinfo_state(ir_typeinfo_state s);
 /** If typeinfo is consistent, sets it to inconsistent. */
-void              set_irp_typeinfo_inconsistent(void);
+FIRM_DLL void              set_irp_typeinfo_inconsistent(void);
 
 /* ------------ Irnode type information. ------------------------------ */
 
@@ -92,7 +93,9 @@ void              set_irp_typeinfo_inconsistent(void);
  * ir_typeinfo_consistent or ir_typeinfo_inconsistent.  They
  * assume current_ir_graph set properly.
  */
-ir_type *get_irn_typeinfo_type(const ir_node *n);
-void    set_irn_typeinfo_type(ir_node *n, ir_type *tp);
+FIRM_DLL ir_type *get_irn_typeinfo_type(const ir_node *n);
+FIRM_DLL void     set_irn_typeinfo_type(ir_node *n, ir_type *tp);
+
+#include "end.h"
 
 #endif

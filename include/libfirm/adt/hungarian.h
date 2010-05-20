@@ -33,6 +33,8 @@
 #ifndef FIRM_ADT_HUNGARIAN_H
 #define FIRM_ADT_HUNGARIAN_H
 
+#include "../begin.h"
+
 #define HUNGARIAN_MODE_MINIMIZE_COST 0
 #define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
 
@@ -94,4 +96,6 @@ int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, in
  */
 void hungarian_print_cost_matrix(hungarian_problem_t *p, int cost_width);
 
-#endif /* _HUNGARIAN_H_ */
+#include "../end.h"
+
+#endif

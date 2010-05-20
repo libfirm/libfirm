@@ -1135,6 +1135,7 @@
 #define FIRM_IR_IRCONS_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /**
  * constrained flags for memory operations.
@@ -1160,7 +1161,7 @@ typedef enum ir_cons_flags {
  * @param in[]   An array of control predecessors.  The length of
  *               the array must be 'arity'.  The constructor copies this array.
  */
-ir_node *new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node *in[]);
 
 /** Constructor for a Start node.
  *
@@ -1168,7 +1169,7 @@ ir_node *new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node *in[]);
  * @param *irg   The IR graph the node belongs to.
  * @param *block The IR block the node belongs to.
  */
-ir_node *new_rd_Start(dbg_info *db, ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_rd_Start(dbg_info *db, ir_graph *irg, ir_node *block);
 
 /** Constructor for a End node.
  *
@@ -1176,7 +1177,7 @@ ir_node *new_rd_Start(dbg_info *db, ir_graph *irg, ir_node *block);
  * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  */
-ir_node *new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block);
 
 /** Constructor for a Jmp node.
  *
@@ -1185,7 +1186,7 @@ ir_node *new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block);
  * @param *db     A pointer for debug information.
  * @param *block  The IR block the node belongs to.
  */
-ir_node *new_rd_Jmp(dbg_info *db, ir_node *block);
+FIRM_DLL ir_node *new_rd_Jmp(dbg_info *db, ir_node *block);
 
 /** Constructor for an IJmp node.
  *
@@ -1196,7 +1197,7 @@ ir_node *new_rd_Jmp(dbg_info *db, ir_node *block);
  * @param *block  The IR block the node belongs to.
  * @param *tgt    The IR node representing the target address.
  */
-ir_node *new_rd_IJmp(dbg_info *db, ir_node *block, ir_node *tgt);
+FIRM_DLL ir_node *new_rd_IJmp(dbg_info *db, ir_node *block, ir_node *tgt);
 
 /** Constructor for a Break node.
  *
@@ -1208,7 +1209,7 @@ ir_node *new_rd_IJmp(dbg_info *db, ir_node *block, ir_node *tgt);
  * @param *db     A pointer for debug information.
  * @param *block  The block the node belong to.
  */
-ir_node *new_rd_Break(dbg_info *db, ir_node *block);
+FIRM_DLL ir_node *new_rd_Break(dbg_info *db, ir_node *block);
 
 /** Constructor for a Cond node.
  *
@@ -1223,7 +1224,7 @@ ir_node *new_rd_Break(dbg_info *db, ir_node *block);
  * @param *block The IR block the node belongs to.
  * @param *c     The conditions parameter. Can be of mode b or I_u.
  */
-ir_node *new_rd_Cond(dbg_info *db, ir_node *block, ir_node *c);
+FIRM_DLL ir_node *new_rd_Cond(dbg_info *db, ir_node *block, ir_node *c);
 
 /** Constructor for a Return node.
  *
@@ -1236,8 +1237,8 @@ ir_node *new_rd_Cond(dbg_info *db, ir_node *block, ir_node *c);
  * @param arity  Number of return values.
  * @param *in    Array of length arity with return values.  The constructor copies this array.
  */
-ir_node *new_rd_Return(dbg_info *db, ir_node *block,
-                       ir_node *store, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_rd_Return(dbg_info *db, ir_node *block,
+                                ir_node *store, int arity, ir_node *in[]);
 
 /** Constructor for a Const_type node.
  *
@@ -1252,8 +1253,8 @@ ir_node *new_rd_Return(dbg_info *db, ir_node *block,
  * @param *con   Points to an entry in the constant table.
  * @param *tp    The type of the constant.
  */
-ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg,
-                            tarval *con, ir_type *tp);
+FIRM_DLL ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg,
+                                    tarval *con, ir_type *tp);
 
 /** Constructor for a Const node.
  *
@@ -1268,7 +1269,7 @@ ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg,
  * @param *irg   The IR graph the node  belongs to.
  * @param *con   Points to an entry in the constant table.
  */
-ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con);
+FIRM_DLL ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con);
 
 /**
  * Constructor for a Const node.
@@ -1284,8 +1285,8 @@ ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con);
  * @param *mode  The mode of the operands and results.
  * @param value  A value from which the tarval is made.
  */
-ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
-		                   ir_mode *mode, long value);
+FIRM_DLL ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
+                                    ir_mode *mode, long value);
 
 /** Constructor for a SymConst_type node.
  *
@@ -1318,29 +1319,31 @@ ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  * @param *db     A pointer for debug information.
  * @param *irg    The IR graph the node  belongs to.
  * @param mode    The mode for the SymConst.
- * @param value   A type, ident, entity or enum constant depending on the
+ * @param val     A type, ident, entity or enum constant depending on the
  *                SymConst kind.
  * @param kind    The kind of the symbolic constant, see the list above
  * @param tp      The source type of the constant.
  */
-ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                              union symconst_symbol value, symconst_kind kind,
-                              ir_type *tp);
+FIRM_DLL ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg,
+                                       ir_mode *mode, union symconst_symbol val,
+                                       symconst_kind kind, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
  *  Same as new_rd_SymConst_type, except that it sets the type to type_unknown.
  */
-ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                         union symconst_symbol value, symconst_kind kind);
+FIRM_DLL ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
+                                  union symconst_symbol value,
+                                  symconst_kind kind);
 
 /** Constructor for a SymConst addr_ent node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_addr_ent.
  * Adds the SymConst to the start block of irg. */
-ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                                  ir_entity *symbol, ir_type *tp);
+FIRM_DLL ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg,
+                                           ir_mode *mode, ir_entity *symbol,
+                                           ir_type *tp);
 
 /** Constructor for a SymConst ofs_ent node.
  *
@@ -1348,8 +1351,9 @@ ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
  * symconst_ofs_ent.
  * Adds the SymConst to the start block of irg.
  */
-ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                                 ir_entity *symbol, ir_type *tp);
+FIRM_DLL ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg,
+                                          ir_mode *mode, ir_entity *symbol,
+                                          ir_type *tp);
 
 /** Constructor for a SymConst type_tag node.
  *
@@ -1357,16 +1361,18 @@ ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode,
  * symconst_type_tag.
  * Adds the SymConst to the start block of irg.
  */
-ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                                  ir_type *symbol, ir_type *tp);
+FIRM_DLL ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg,
+                                           ir_mode *mode, ir_type *symbol,
+                                           ir_type *tp);
 
 /** Constructor for a SymConst size node.
  *
  * Same as new_rd_SymConst_type, except that the constructor is tailored for
  * symconst_type_size.
  * Adds the SymConst to the start block of irg. */
-ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                              ir_type *symbol, ir_type *tp);
+FIRM_DLL ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg,
+                                       ir_mode *mode, ir_type *symbol,
+                                       ir_type *tp);
 
 /** Constructor for a SymConst size node.
  *
@@ -1374,8 +1380,9 @@ ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode,
  * symconst_type_align.
  * Adds the SymConst to the start block of irg.
  */
-ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                               ir_type *symbol, ir_type *tp);
+FIRM_DLL ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg,
+                                        ir_mode *mode, ir_type *symbol,
+                                        ir_type *tp);
 
 /** Constructor for a simpleSel node.
  *
@@ -1391,8 +1398,8 @@ ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode,
  *                     single attribute out.
  * @param   *ent       The entity to select.
  */
-ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block,
-                          ir_node *store, ir_node *objptr, ir_entity *ent);
+FIRM_DLL ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *store,
+                                   ir_node *objptr, ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -1413,8 +1420,9 @@ ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block,
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
-ir_node *new_rd_Sel(dbg_info *db, ir_node *block, ir_node *store,
-                    ir_node *objptr, int n_index, ir_node *index[], ir_entity *ent);
+FIRM_DLL ir_node *new_rd_Sel(dbg_info *db, ir_node *block, ir_node *store,
+                             ir_node *objptr, int n_index, ir_node *index[],
+                             ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -1428,8 +1436,9 @@ ir_node *new_rd_Sel(dbg_info *db, ir_node *block, ir_node *store,
  * @param   *in[]   An array with the procedure parameters. The constructor copies this array.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_rd_Call(dbg_info *db, ir_node *block, ir_node *store,
-                     ir_node *callee, int arity, ir_node *in[], ir_type *tp);
+FIRM_DLL ir_node *new_rd_Call(dbg_info *db, ir_node *block, ir_node *store,
+                              ir_node *callee, int arity, ir_node *in[],
+                              ir_type *tp);
 
 /** Constructor for a Builtin node.
  *
@@ -1443,8 +1452,9 @@ ir_node *new_rd_Call(dbg_info *db, ir_node *block, ir_node *store,
  * @param   kind    The kind of the called builtin.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_rd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
-                        int arity, ir_node *in[], ir_builtin_kind kind, ir_type *tp);
+FIRM_DLL ir_node *new_rd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
+                                 int arity, ir_node *in[], ir_builtin_kind kind,
+                                 ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -1454,8 +1464,8 @@ ir_node *new_rd_Builtin(dbg_info *db, ir_node *block, ir_node *store,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Add(dbg_info *db, ir_node *block,
-                    ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Add(dbg_info *db, ir_node *block, ir_node *op1,
+                             ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Sub node.
  *
@@ -1465,8 +1475,8 @@ ir_node *new_rd_Add(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Sub(dbg_info *db, ir_node *block,
-                    ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Sub(dbg_info *db, ir_node *block,
+                             ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
@@ -1475,8 +1485,8 @@ ir_node *new_rd_Sub(dbg_info *db, ir_node *block,
  * @param   *op    The operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_rd_Minus(dbg_info *db, ir_node *block,
-                      ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Minus(dbg_info *db, ir_node *block,
+                               ir_node *op, ir_mode *mode);
 
 /** Constructor for a Mul node.
  *
@@ -1486,8 +1496,8 @@ ir_node *new_rd_Minus(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Mul(dbg_info *db, ir_node *block,
-                    ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Mul(dbg_info *db, ir_node *block,
+                             ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Mulh node.
  *
@@ -1497,8 +1507,8 @@ ir_node *new_rd_Mul(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Mulh(dbg_info *db, ir_node *block,
-                     ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Mulh(dbg_info *db, ir_node *block,
+                              ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Quot node.
  *
@@ -1510,8 +1520,9 @@ ir_node *new_rd_Mulh(dbg_info *db, ir_node *block,
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_rd_Quot(dbg_info *db, ir_node *block, ir_node *memop,
-                     ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_rd_Quot(dbg_info *db, ir_node *block, ir_node *memop,
+                              ir_node *op1, ir_node *op2, ir_mode *mode,
+                              op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -1523,8 +1534,9 @@ ir_node *new_rd_Quot(dbg_info *db, ir_node *block, ir_node *memop,
  * @param   *mode  The mode of the results.
  * @param   state  The pinned state.
  */
-ir_node *new_rd_DivMod(dbg_info *db, ir_node *block, ir_node *memop,
-                       ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_rd_DivMod(dbg_info *db, ir_node *block, ir_node *memop,
+                                ir_node *op1, ir_node *op2, ir_mode *mode,
+                                op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -1536,8 +1548,9 @@ ir_node *new_rd_DivMod(dbg_info *db, ir_node *block, ir_node *memop,
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_rd_Div(dbg_info *db, ir_node *block, ir_node *memop,
-                    ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_rd_Div(dbg_info *db, ir_node *block, ir_node *memop,
+                             ir_node *op1, ir_node *op2, ir_mode *mode,
+                             op_pin_state state);
 
 /** Constructor for a remainderless Div node.
  *
@@ -1549,8 +1562,9 @@ ir_node *new_rd_Div(dbg_info *db, ir_node *block, ir_node *memop,
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
-                      ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
+                               ir_node *op1, ir_node *op2, ir_mode *mode,
+                               op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -1562,8 +1576,9 @@ ir_node *new_rd_DivRL(dbg_info *db, ir_node *block, ir_node *memop,
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_rd_Mod(dbg_info *db, ir_node *block, ir_node *memop,
-                    ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_rd_Mod(dbg_info *db, ir_node *block, ir_node *memop,
+                             ir_node *op1, ir_node *op2, ir_mode *mode,
+                             op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -1572,7 +1587,8 @@ ir_node *new_rd_Mod(dbg_info *db, ir_node *block, ir_node *memop,
  * @param   *op    The operand
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Abs(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Abs(dbg_info *db, ir_node *block, ir_node *op,
+                             ir_mode *mode);
 
 /** Constructor for a And node.
  *
@@ -1582,8 +1598,8 @@ ir_node *new_rd_Abs(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_And(dbg_info *db, ir_node *block,
-                    ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_And(dbg_info *db, ir_node *block,
+                             ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Or node.
  *
@@ -1593,8 +1609,8 @@ ir_node *new_rd_And(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Or(dbg_info *db, ir_node *block,
-                   ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Or(dbg_info *db, ir_node *block,
+                            ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Eor node.
  *
@@ -1604,8 +1620,8 @@ ir_node *new_rd_Or(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
-ir_node *new_rd_Eor(dbg_info *db, ir_node *block,
-                    ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Eor(dbg_info *db, ir_node *block,
+                             ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Not node.
  *
@@ -1614,7 +1630,8 @@ ir_node *new_rd_Eor(dbg_info *db, ir_node *block,
  * @param   *op    The operand.
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_rd_Not(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Not(dbg_info *db, ir_node *block, ir_node *op,
+                             ir_mode *mode);
 
 /** Constructor for a Cmp node.
  *
@@ -1623,7 +1640,8 @@ ir_node *new_rd_Not(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  */
-ir_node *new_rd_Cmp(dbg_info *db, ir_node *block, ir_node *op1, ir_node *op2);
+FIRM_DLL ir_node *new_rd_Cmp(dbg_info *db, ir_node *block,
+                             ir_node *op1, ir_node *op2);
 
 /** Constructor for a Shl node.
  *
@@ -1633,8 +1651,8 @@ ir_node *new_rd_Cmp(dbg_info *db, ir_node *block, ir_node *op1, ir_node *op2);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_rd_Shl(dbg_info *db, ir_node *block,
-                    ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Shl(dbg_info *db, ir_node *block,
+                             ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Shr node.
  *
@@ -1644,8 +1662,8 @@ ir_node *new_rd_Shl(dbg_info *db, ir_node *block,
  * @param   *k     The number of bits to shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_rd_Shr(dbg_info *db, ir_node *block,
-                    ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Shr(dbg_info *db, ir_node *block,
+                             ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Shrs node.
  *
@@ -1655,8 +1673,8 @@ ir_node *new_rd_Shr(dbg_info *db, ir_node *block,
  * @param   *k     The number of bits to shift the operand.
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_rd_Shrs(dbg_info *db, ir_node *block,
-                     ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Shrs(dbg_info *db, ir_node *block,
+                              ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Rotl node.
  *
@@ -1666,8 +1684,8 @@ ir_node *new_rd_Shrs(dbg_info *db, ir_node *block,
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_rd_Rotl(dbg_info *db, ir_node *block,
-                     ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Rotl(dbg_info *db, ir_node *block,
+                              ir_node *op, ir_node *k, ir_mode *mode);
 
 
 /** Constructor for a Conv node.
@@ -1677,7 +1695,8 @@ ir_node *new_rd_Rotl(dbg_info *db, ir_node *block,
  * @param   *op    The operand.
  * @param   *mode  The mode of this the operand muss be converted .
  */
-ir_node *new_rd_Conv(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Conv(dbg_info *db, ir_node *block, ir_node *op,
+                              ir_mode *mode);
 
 /** Constructor for a strictConv node.
  *
@@ -1686,8 +1705,8 @@ ir_node *new_rd_Conv(dbg_info *db, ir_node *block, ir_node *op, ir_mode *mode);
  * @param   *op    The operand.
  * @param   *mode  The mode of this the operand muss be converted .
  */
-ir_node *new_rd_strictConv(dbg_info *db, ir_node *block,
-                           ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_strictConv(dbg_info *db, ir_node *block,
+                                    ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *
@@ -1698,8 +1717,8 @@ ir_node *new_rd_strictConv(dbg_info *db, ir_node *block,
  * @param   *op    The operand.
  * @param   *to_tp The type of this the operand muss be casted .
  */
-ir_node *new_rd_Cast(dbg_info *db, ir_node *block,
-                     ir_node *op, ir_type *to_tp);
+FIRM_DLL ir_node *new_rd_Cast(dbg_info *db, ir_node *block,
+                              ir_node *op, ir_type *to_tp);
 
 /** Constructor for a Carry node.
  *
@@ -1709,8 +1728,8 @@ ir_node *new_rd_Cast(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Carry(dbg_info *db, ir_node *block,
-                      ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Carry(dbg_info *db, ir_node *block,
+                               ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Borrow node.
  *
@@ -1720,8 +1739,8 @@ ir_node *new_rd_Carry(dbg_info *db, ir_node *block,
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_rd_Borrow(dbg_info *db, ir_node *block,
-                       ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Borrow(dbg_info *db, ir_node *block,
+                                ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Phi node.
  *
@@ -1731,8 +1750,8 @@ ir_node *new_rd_Borrow(dbg_info *db, ir_node *block,
  * @param *in[]  Array with predecessors.  The constructor copies this array.
  * @param *mode  The mode of it's inputs and output.
  */
-ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity,
-                    ir_node *in[], ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity,
+                             ir_node *in[], ir_mode *mode);
 
 /** Constructor for a Load node.
  *
@@ -1743,8 +1762,8 @@ ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity,
  * @param *mode  The mode of the value to be loaded.
  * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_rd_Load(dbg_info *db, ir_node *block, ir_node *store,
-                     ir_node *adr, ir_mode *mode, ir_cons_flags flags);
+FIRM_DLL ir_node *new_rd_Load(dbg_info *db, ir_node *block, ir_node *store,
+                              ir_node *adr, ir_mode *mode, ir_cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -1755,8 +1774,8 @@ ir_node *new_rd_Load(dbg_info *db, ir_node *block, ir_node *store,
  * @param *val   The value to write to this variable.
  * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_rd_Store(dbg_info *db, ir_node *block, ir_node *store,
-                      ir_node *adr, ir_node *val, ir_cons_flags flags);
+FIRM_DLL ir_node *new_rd_Store(dbg_info *db, ir_node *block, ir_node *store,
+                               ir_node *adr, ir_node *val, ir_cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -1769,8 +1788,9 @@ ir_node *new_rd_Store(dbg_info *db, ir_node *block, ir_node *store,
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
-ir_node *new_rd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
-                      ir_node *count, ir_type *alloc_type, ir_where_alloc where);
+FIRM_DLL ir_node *new_rd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
+                               ir_node *count, ir_type *alloc_type,
+                               ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -1785,8 +1805,9 @@ ir_node *new_rd_Alloc(dbg_info *db, ir_node *block, ir_node *store,
  * @param *free_type  The type of the freed variable.
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
-ir_node *new_rd_Free(dbg_info *db, ir_node *block, ir_node *store,
-                     ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where);
+FIRM_DLL ir_node *new_rd_Free(dbg_info *db, ir_node *block, ir_node *store,
+                              ir_node *ptr, ir_node *size, ir_type *free_type,
+                              ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -1800,7 +1821,8 @@ ir_node *new_rd_Free(dbg_info *db, ir_node *block, ir_node *store,
  * @param  *in[]    An array of pointers to nodes that produce an output of type
  *                  memory.  The constructor copies this array.
  */
-ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity,
+                              ir_node *in[]);
 
 /** Constructor for a Proj node.
  *
@@ -1812,7 +1834,8 @@ ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[]);
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
-ir_node *new_rd_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_rd_Proj(dbg_info *db, ir_node *arg, ir_mode *mode,
+                              long proj);
 
 /** Constructor for a defaultProj node.
  *
@@ -1822,7 +1845,7 @@ ir_node *new_rd_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
  * @param arg       A node producing a tuple.
  * @param max_proj  The end position of the value in the tuple.
  */
-ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
+FIRM_DLL ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
 
 /** Constructor for a Tuple node.
  *
@@ -1835,8 +1858,8 @@ ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
  * @param *in[]   An array containing pointers to the nodes producing the tuple
  *                elements. The constructor copies this array.
  */
-ir_node *new_rd_Tuple(dbg_info *db, ir_node *block,
-                      int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_rd_Tuple(dbg_info *db, ir_node *block,
+                               int arity, ir_node *in[]);
 
 /** Constructor for a Id node.
  *
@@ -1848,8 +1871,8 @@ ir_node *new_rd_Tuple(dbg_info *db, ir_node *block,
  * @param *val    The value
  * @param *mode   The mode of *val.
  */
-ir_node *new_rd_Id(dbg_info *db, ir_node *block,
-                   ir_node *val, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Id(dbg_info *db, ir_node *block,
+                            ir_node *val, ir_mode *mode);
 
 /** Constructor for a Confirm node.
  *
@@ -1864,8 +1887,8 @@ ir_node *new_rd_Id(dbg_info *db, ir_node *block,
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
  */
-ir_node *new_rd_Confirm(dbg_info *db, ir_node *block,
-                        ir_node *val, ir_node *bound, pn_Cmp cmp);
+FIRM_DLL ir_node *new_rd_Confirm(dbg_info *db, ir_node *block,
+                                 ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 /** Constructor for an Unknown node.
  *
@@ -1875,7 +1898,7 @@ ir_node *new_rd_Confirm(dbg_info *db, ir_node *block,
  * @param *irg    The IR graph the node  belongs to.
  * @param *m      The mode of the unknown value.
  */
-ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
+FIRM_DLL ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
 
 /** Constructor for a CallBegin node.
  *
@@ -1889,7 +1912,8 @@ ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
  * @param *ptr    pointer to the called function
  * @param *call   associated call operation
  */
-ir_node *new_rd_CallBegin(dbg_info *db, ir_node *block, ir_node *ptr, ir_node *call);
+FIRM_DLL ir_node *new_rd_CallBegin(dbg_info *db, ir_node *block, ir_node *ptr,
+                                   ir_node *call);
 
 /** Constructor for a EndReg node.
  *
@@ -1899,7 +1923,7 @@ ir_node *new_rd_CallBegin(dbg_info *db, ir_node *block, ir_node *ptr, ir_node *c
  * @param *irg    The IR graph the node belong to.
  * @param *block  The block the node belong to.
  */
-ir_node *new_rd_EndReg(dbg_info *db, ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_rd_EndReg(dbg_info *db, ir_graph *irg, ir_node *block);
 
 /** Constructor for a EndExcept node.
  *
@@ -1909,7 +1933,7 @@ ir_node *new_rd_EndReg(dbg_info *db, ir_graph *irg, ir_node *block);
  * @param *irg    The IR graph the node belong to.
  * @param *block  The block the node belong to.
  */
-ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
 
 /** Constructor for a Filter node.
  *
@@ -1928,8 +1952,8 @@ ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
  * @param *mode The mode of the projected value.
  * @param proj  The position in the tuple to project from.
  */
-ir_node *new_rd_Filter(dbg_info *db,ir_node *block, ir_node *arg,
-                       ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_rd_Filter(dbg_info *db,ir_node *block, ir_node *arg,
+                                ir_mode *mode, long proj);
 
 /** Constructor for a Mux node.
  *
@@ -1940,8 +1964,9 @@ ir_node *new_rd_Filter(dbg_info *db,ir_node *block, ir_node *arg,
  * @param *ir_false The ir_node that calculates the false result.
  * @param *mode     The mode of the node (and it_true and ir_false).
  */
-ir_node *new_rd_Mux(dbg_info *db, ir_node *block, ir_node *sel,
-                    ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Mux(dbg_info *db, ir_node *block, ir_node *sel,
+                             ir_node *ir_false, ir_node *ir_true,
+                             ir_mode *mode);
 
 /** Constructor for a CopyB node.
  *
@@ -1952,8 +1977,8 @@ ir_node *new_rd_Mux(dbg_info *db, ir_node *block, ir_node *sel,
  * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
-ir_node *new_rd_CopyB(dbg_info *db, ir_node *block, ir_node *store,
-                      ir_node *dst, ir_node *src, ir_type *data_type);
+FIRM_DLL ir_node *new_rd_CopyB(dbg_info *db, ir_node *block, ir_node *store,
+                               ir_node *dst, ir_node *src, ir_type *data_type);
 
 /** Constructor for a InstOf node.
  *
@@ -1966,8 +1991,8 @@ ir_node *new_rd_CopyB(dbg_info *db, ir_node *block, ir_node *store,
  * @param   *objptr    A pointer to a object of a class type.
  * @param   *type      The type of which objptr must be.
  */
-ir_node *new_rd_InstOf(dbg_info *db, ir_node *block, ir_node *store,
-                       ir_node *objptr, ir_type *type);
+FIRM_DLL ir_node *new_rd_InstOf(dbg_info *db, ir_node *block, ir_node *store,
+                                ir_node *objptr, ir_type *type);
 
 /** Constructor for a Raise node.
  *
@@ -1978,7 +2003,8 @@ ir_node *new_rd_InstOf(dbg_info *db, ir_node *block, ir_node *store,
  * @param *store The current memory.
  * @param *obj   A pointer to the Except variable.
  */
-ir_node *new_rd_Raise(dbg_info *db, ir_node *block, ir_node *store, ir_node *obj);
+FIRM_DLL ir_node *new_rd_Raise(dbg_info *db, ir_node *block, ir_node *store,
+                               ir_node *obj);
 
 /** Constructor for a Bound node.
  *
@@ -1991,8 +2017,9 @@ ir_node *new_rd_Raise(dbg_info *db, ir_node *block, ir_node *store, ir_node *obj
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
-ir_node *new_rd_Bound(dbg_info *db, ir_node *block,
-                      ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+FIRM_DLL ir_node *new_rd_Bound(dbg_info *db, ir_node *block,
+                               ir_node *store, ir_node *idx, ir_node *lower,
+                               ir_node *upper);
 
 /** Constructor for a Pin node.
  *
@@ -2000,7 +2027,7 @@ ir_node *new_rd_Bound(dbg_info *db, ir_node *block,
  * @param *block      The block the node belong to.
  * @param *node       The node which value should be pinned.
  */
-ir_node *new_rd_Pin(dbg_info *db, ir_node *block, ir_node *node);
+FIRM_DLL ir_node *new_rd_Pin(dbg_info *db, ir_node *block, ir_node *node);
 
 /** Constructor for an ASM pseudo node.
  *
@@ -2015,10 +2042,10 @@ ir_node *new_rd_Pin(dbg_info *db, ir_node *block, ir_node *node);
  * @param *clobber    The array of length n_clobber of clobbered registers.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
-                    int arity, ir_node *in[], ir_asm_constraint *inputs,
-                    int n_outs, ir_asm_constraint *outputs,
-                    int n_clobber, ident *clobber[], ident *asm_text);
+FIRM_DLL ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
+                            int arity, ir_node *in[], ir_asm_constraint *inputs,
+                            int n_outs, ir_asm_constraint *outputs,
+                            int n_clobber, ident *clobber[], ident *asm_text);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -2038,21 +2065,21 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
  * @param in[]   An array of control predecessors.  The length of
  *               the array must be 'arity'. The constructor copies this array.
  */
-ir_node *new_r_Block(ir_graph *irg, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_r_Block(ir_graph *irg, int arity, ir_node *in[]);
 
 /** Constructor for a Start node.
  *
  * @param *irg   The IR graph the node belongs to.
  * @param *block The IR block the node belongs to.
  */
-ir_node *new_r_Start(ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_r_Start(ir_graph *irg, ir_node *block);
 
 /** Constructor for a End node.
  *
  * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  */
-ir_node *new_r_End(ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_r_End(ir_graph *irg, ir_node *block);
 
 /** Constructor for a Jmp node.
  *
@@ -2060,7 +2087,7 @@ ir_node *new_r_End(ir_graph *irg, ir_node *block);
  *
  * @param *block  The IR block the node belongs to.
  */
-ir_node *new_r_Jmp(ir_node *block);
+FIRM_DLL ir_node *new_r_Jmp(ir_node *block);
 
 /** Constructor for an IJmp node.
  *
@@ -2070,7 +2097,7 @@ ir_node *new_r_Jmp(ir_node *block);
  * @param *block  The IR block the node belongs to.
  * @param *tgt    The IR node representing the target address.
  */
-ir_node *new_r_IJmp(ir_node *block, ir_node *tgt);
+FIRM_DLL ir_node *new_r_IJmp(ir_node *block, ir_node *tgt);
 
 /** Constructor for a Cond node.
  *
@@ -2084,7 +2111,7 @@ ir_node *new_r_IJmp(ir_node *block, ir_node *tgt);
  * @param *block The IR block the node belongs to.
  * @param *c     The conditions parameter.Can be of mode b or I_u.
  */
-ir_node *new_r_Cond(ir_node *block, ir_node *c);
+FIRM_DLL ir_node *new_r_Cond(ir_node *block, ir_node *c);
 
 /** Constructor for a Return node.
  *
@@ -2096,7 +2123,8 @@ ir_node *new_r_Cond(ir_node *block, ir_node *c);
  * @param arity  Number of array indices.
  * @param *in[]   Array with index inputs to the node. The constructor copies this array.
  */
-ir_node *new_r_Return(ir_node *block, ir_node *store, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_r_Return(ir_node *block, ir_node *store,
+                               int arity, ir_node *in[]);
 
 /** Constructor for a Const node.
  *
@@ -2110,7 +2138,7 @@ ir_node *new_r_Return(ir_node *block, ir_node *store, int arity, ir_node *in[]);
  * @param *irg   The IR graph the node  belongs to.
  * @param *con   Points to an entry in the constant table.
  */
-ir_node *new_r_Const(ir_graph *irg, tarval *con);
+FIRM_DLL ir_node *new_r_Const(ir_graph *irg, tarval *con);
 
 /** Constructor for a Const node.
  *
@@ -2124,7 +2152,7 @@ ir_node *new_r_Const(ir_graph *irg, tarval *con);
  * @param *mode  The mode of the operands and the results.
  * @param value  A value from which the tarval is made.
  */
-ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
+FIRM_DLL ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
 
 /** Constructor for a Const_type node.
  *
@@ -2138,7 +2166,7 @@ ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
  * @param *con   Points to an entry in the constant table.
  * @param *tp    The type of the constant.
  */
-ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp);
+FIRM_DLL ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
@@ -2174,8 +2202,9 @@ ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp);
  *                SymConst kind.
  * @param kind    The kind of the symbolic constant, see the list above
  */
-ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode,
-                        union symconst_symbol value, symconst_kind kind);
+FIRM_DLL ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode,
+                                 union symconst_symbol value,
+                                 symconst_kind kind);
 
 /** Constructor for a simpleSel node.
  *
@@ -2190,8 +2219,8 @@ ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode,
  *                   single attribute out.
  * @param *ent       The entity to select.
  */
-ir_node *new_r_simpleSel(ir_node *block, ir_node *store,
-                         ir_node *objptr, ir_entity *ent);
+FIRM_DLL ir_node *new_r_simpleSel(ir_node *block, ir_node *store,
+                                  ir_node *objptr, ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -2211,9 +2240,9 @@ ir_node *new_r_simpleSel(ir_node *block, ir_node *store,
  *                   element entity.  The constructor copies this array.
  * @param *ent       The entity to select.
  */
-ir_node *new_r_Sel(ir_node *block, ir_node *store,
-                   ir_node *objptr, int n_index, ir_node *index[],
-                   ir_entity *ent);
+FIRM_DLL ir_node *new_r_Sel(ir_node *block, ir_node *store,
+                            ir_node *objptr, int n_index, ir_node *index[],
+                            ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -2226,8 +2255,9 @@ ir_node *new_r_Sel(ir_node *block, ir_node *store,
  * @param *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param *tp     Type information of the procedure called.
  */
-ir_node *new_r_Call(ir_node *block, ir_node *store,
-                    ir_node *callee, int arity, ir_node *in[], ir_type *tp);
+FIRM_DLL ir_node *new_r_Call(ir_node *block, ir_node *store,
+                             ir_node *callee, int arity, ir_node *in[],
+                             ir_type *tp);
 
 /** Constructor for a Builtin node.
  *
@@ -2240,8 +2270,9 @@ ir_node *new_r_Call(ir_node *block, ir_node *store,
  * @param kind    The kind of the called builtin.
  * @param *tp     Type information of the procedure called.
  */
-ir_node *new_r_Builtin(ir_node *block, ir_node *store,
-                       int arity, ir_node *in[], ir_builtin_kind kind, ir_type *tp);
+FIRM_DLL ir_node *new_r_Builtin(ir_node *block, ir_node *store,
+                                int arity, ir_node *in[], ir_builtin_kind kind,
+                                ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -2250,7 +2281,8 @@ ir_node *new_r_Builtin(ir_node *block, ir_node *store,
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_Add(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Add(ir_node *block, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /**
  * Constructor for a Sub node.
@@ -2260,7 +2292,8 @@ ir_node *new_r_Add(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the results.
  */
-ir_node *new_r_Sub(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Sub(ir_node *block, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
@@ -2268,7 +2301,7 @@ ir_node *new_r_Sub(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op    The operand.
  * @param *mode  The mode of the operand and the result.
  */
-ir_node *new_r_Minus(ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Minus(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a Mul node.
  *
@@ -2277,7 +2310,8 @@ ir_node *new_r_Minus(ir_node *block, ir_node *op, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_Mul(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Mul(ir_node *block, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Mulh node.
  *
@@ -2286,7 +2320,8 @@ ir_node *new_r_Mul(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_Mulh(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Mulh(ir_node *block, ir_node *op1, ir_node *op2,
+                             ir_mode *mode);
 
 /** Constructor for a Quot node.
  *
@@ -2297,8 +2332,9 @@ ir_node *new_r_Mulh(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *mode  The mode of the result.
  * @param state  The pinned state.
  */
-ir_node *new_r_Quot(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
-                    ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_r_Quot(ir_node *block, ir_node *memop,
+                             ir_node *op1, ir_node *op2, ir_mode *mode,
+                             op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -2309,8 +2345,9 @@ ir_node *new_r_Quot(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param *mode  The mode of the results.
  * @param state  The pinned state.
  */
-ir_node *new_r_DivMod(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
-                      ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_r_DivMod(ir_node *block, ir_node *memop,
+                               ir_node *op1, ir_node *op2, ir_mode *mode,
+                               op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -2321,8 +2358,9 @@ ir_node *new_r_DivMod(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2
  * @param *mode  The mode of the result.
  * @param state  The pinned state.
  */
-ir_node *new_r_Div(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
-                   ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_r_Div(ir_node *block, ir_node *memop,
+                            ir_node *op1, ir_node *op2, ir_mode *mode,
+                            op_pin_state state);
 
 /** Constructor for a remainderless Div node.
  *
@@ -2333,8 +2371,9 @@ ir_node *new_r_Div(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param *mode  The mode of the result.
  * @param state  The pinned state.
  */
-ir_node *new_r_DivRL(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
-                     ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
+                              ir_node *op1, ir_node *op2, ir_mode *mode,
+                              op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -2345,8 +2384,9 @@ ir_node *new_r_DivRL(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param *mode  The mode of the result.
  * @param state  The pinned state.
  */
-ir_node *new_r_Mod(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
-                   ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_r_Mod(ir_node *block, ir_node *memop,
+                            ir_node *op1, ir_node *op2, ir_mode *mode,
+                            op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -2354,7 +2394,7 @@ ir_node *new_r_Mod(ir_node *block, ir_node *memop, ir_node *op1, ir_node *op2,
  * @param *op    The operand
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_Abs(ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Abs(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a And node.
  *
@@ -2363,7 +2403,8 @@ ir_node *new_r_Abs(ir_node *block, ir_node *op, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_And(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_And(ir_node *block, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Or node.
  *
@@ -2372,7 +2413,8 @@ ir_node *new_r_And(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_Or(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Or(ir_node *block, ir_node *op1, ir_node *op2,
+                           ir_mode *mode);
 
 /** Constructor for a Eor node.
  *
@@ -2381,7 +2423,8 @@ ir_node *new_r_Or(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the results.
  */
-ir_node *new_r_Eor(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Eor(ir_node *block, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Not node.
  *
@@ -2389,7 +2432,7 @@ ir_node *new_r_Eor(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op    The operand.
  * @param *mode  The mode of the operand and the result.
  */
-ir_node *new_r_Not(ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Not(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cmp node.
  *
@@ -2397,7 +2440,7 @@ ir_node *new_r_Not(ir_node *block, ir_node *op, ir_mode *mode);
  * @param *op1   The first operand.
  * @param *op2   The second operand.
  */
-ir_node *new_r_Cmp(ir_node *block, ir_node *op1, ir_node *op2);
+FIRM_DLL ir_node *new_r_Cmp(ir_node *block, ir_node *op1, ir_node *op2);
 
 /** Constructor for a Shl node.
  *
@@ -2406,7 +2449,8 @@ ir_node *new_r_Cmp(ir_node *block, ir_node *op1, ir_node *op2);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_r_Shl(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Shl(ir_node *block, ir_node *op, ir_node *k,
+                            ir_mode *mode);
 
 /** Constructor for a Shr node.
  *
@@ -2415,7 +2459,8 @@ ir_node *new_r_Shl(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
  * @param *k     The number of bits to shift the operand .
  * @param *mode  The mode of the operand and the result.
  */
-ir_node *new_r_Shr(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Shr(ir_node *block, ir_node *op, ir_node *k,
+                            ir_mode *mode);
 
 /**
  * Constructor for a Shrs node.
@@ -2425,7 +2470,8 @@ ir_node *new_r_Shr(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
  * @param  *k     The number of bits to shift the operand.
  * @param  *mode  The mode of the operand and the result.
  */
-ir_node *new_r_Shrs(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Shrs(ir_node *block, ir_node *op, ir_node *k,
+                             ir_mode *mode);
 
 /** Constructor for a Rotl node.
  *
@@ -2434,7 +2480,8 @@ ir_node *new_r_Shrs(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
  * @param *k     The number of bits to rotate the operand.
  * @param *mode  The mode of the operand.
  */
-ir_node *new_r_Rotl(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Rotl(ir_node *block, ir_node *op, ir_node *k,
+                             ir_mode *mode);
 
 /** Constructor for a Conv node.
  *
@@ -2442,7 +2489,7 @@ ir_node *new_r_Rotl(ir_node *block, ir_node *op, ir_node *k, ir_mode *mode);
  * @param *op    The operand.
  * @param *mode  The mode of this the operand muss be converted .
  */
-ir_node *new_r_Conv(ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Conv(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a strict Conv node.
  *
@@ -2450,7 +2497,7 @@ ir_node *new_r_Conv(ir_node *block, ir_node *op, ir_mode *mode);
  * @param *op    The operand.
  * @param *mode  The mode of this the operand muss be converted .
  */
-ir_node *new_r_strictConv(ir_node *block, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_r_strictConv(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *
@@ -2460,7 +2507,7 @@ ir_node *new_r_strictConv(ir_node *block, ir_node *op, ir_mode *mode);
  * @param *op    The operand.
  * @param *to_tp The type of this the operand muss be casted .
  */
-ir_node *new_r_Cast(ir_node *block, ir_node *op, ir_type *to_tp);
+FIRM_DLL ir_node *new_r_Cast(ir_node *block, ir_node *op, ir_type *to_tp);
 
 /** Constructor for a Carry node.
  *
@@ -2469,7 +2516,8 @@ ir_node *new_r_Cast(ir_node *block, ir_node *op, ir_type *to_tp);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the result.
  */
-ir_node *new_r_Carry(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Carry(ir_node *block, ir_node *op1, ir_node *op2,
+                              ir_mode *mode);
 
 /**
  * Constructor for a Borrow node.
@@ -2479,7 +2527,8 @@ ir_node *new_r_Carry(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *op2   The second operand.
  * @param *mode  The mode of the operands and the results.
  */
-ir_node *new_r_Borrow(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Borrow(ir_node *block, ir_node *op1, ir_node *op2,
+                               ir_mode *mode);
 
 /** Constructor for a Phi node.
  *
@@ -2488,7 +2537,8 @@ ir_node *new_r_Borrow(ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode)
  * @param *in[]  Array with predecessors. The constructor copies this array.
  * @param *mode  The mode of it's inputs and output.
  */
-ir_node *new_r_Phi(ir_node *block, int arity, ir_node *in[], ir_mode *mode);
+FIRM_DLL ir_node *new_r_Phi(ir_node *block, int arity, ir_node *in[],
+                            ir_mode *mode);
 
 /** Constructor for a Load node.
  *
@@ -2498,8 +2548,8 @@ ir_node *new_r_Phi(ir_node *block, int arity, ir_node *in[], ir_mode *mode);
  * @param *mode  The mode of the value to be loaded.
  * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_r_Load(ir_node *block, ir_node *store,
-                    ir_node *adr, ir_mode *mode, ir_cons_flags flags);
+FIRM_DLL ir_node *new_r_Load(ir_node *block, ir_node *store,
+                             ir_node *adr, ir_mode *mode, ir_cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -2509,8 +2559,8 @@ ir_node *new_r_Load(ir_node *block, ir_node *store,
  * @param *val   The value to write to this variable.
  * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_r_Store(ir_node *block, ir_node *store,
-                     ir_node *adr, ir_node *val, ir_cons_flags flags);
+FIRM_DLL ir_node *new_r_Store(ir_node *block, ir_node *store,
+                              ir_node *adr, ir_node *val, ir_cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -2522,8 +2572,9 @@ ir_node *new_r_Store(ir_node *block, ir_node *store,
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
-ir_node *new_r_Alloc(ir_node *block, ir_node *store,
-                     ir_node *count, ir_type *alloc_type, ir_where_alloc where);
+FIRM_DLL ir_node *new_r_Alloc(ir_node *block, ir_node *store,
+                              ir_node *count, ir_type *alloc_type,
+                              ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -2537,8 +2588,9 @@ ir_node *new_r_Alloc(ir_node *block, ir_node *store,
  * @param *free_type  The type of the freed variable.
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
-ir_node *new_r_Free(ir_node *block, ir_node *store,
-                    ir_node *ptr, ir_node *size, ir_type *free_type, ir_where_alloc where);
+FIRM_DLL ir_node *new_r_Free(ir_node *block, ir_node *store, ir_node *ptr,
+                             ir_node *size, ir_type *free_type,
+                             ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -2551,7 +2603,7 @@ ir_node *new_r_Free(ir_node *block, ir_node *store,
  * @param *in[]    An array of pointers to nodes that produce an output of  type memory.
  *                 The constructor copies this array.
  */
-ir_node *new_r_Sync(ir_node *block, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_r_Sync(ir_node *block, int arity, ir_node *in[]);
 
 /** Constructor for a Proj node.
  *
@@ -2562,7 +2614,7 @@ ir_node *new_r_Sync(ir_node *block, int arity, ir_node *in[]);
  * @param mode   The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
-ir_node *new_r_Proj(ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_r_Proj(ir_node *arg, ir_mode *mode, long proj);
 
 /** Constructor for a defaultProj node.
  *
@@ -2571,7 +2623,7 @@ ir_node *new_r_Proj(ir_node *arg, ir_mode *mode, long proj);
  * @param arg       A node producing a tuple.
  * @param max_proj  The end  position of the value in the tuple.
  */
-ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
+FIRM_DLL ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
 
 
 /** Constructor for a Tuple node.
@@ -2584,7 +2636,7 @@ ir_node *new_r_defaultProj(ir_node *arg, long max_proj);
  * @param *in[]   An array containing pointers to the nodes producing the tuple elements.
  *                The constructor copies this array.
  */
-ir_node *new_r_Tuple(ir_node *block, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_r_Tuple(ir_node *block, int arity, ir_node *in[]);
 
 /** Constructor for a Id node.
  *
@@ -2595,7 +2647,7 @@ ir_node *new_r_Tuple(ir_node *block, int arity, ir_node *in[]);
  * @param *val    The operand to Id.
  * @param *mode   The mode of *val.
  */
-ir_node *new_r_Id(ir_node *block, ir_node *val, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Id(ir_node *block, ir_node *val, ir_mode *mode);
 
 /** Constructor for a Bad node.
  *
@@ -2604,7 +2656,7 @@ ir_node *new_r_Id(ir_node *block, ir_node *val, ir_mode *mode);
  *
  * @param *irg    The IR graph the node  belongs to.
  */
-ir_node *new_r_Bad(ir_graph *irg);
+FIRM_DLL ir_node *new_r_Bad(ir_graph *irg);
 
 /** Constructor for a Confirm node.
  *
@@ -2618,7 +2670,8 @@ ir_node *new_r_Bad(ir_graph *irg);
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
  */
-ir_node *new_r_Confirm(ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp);
+FIRM_DLL ir_node *new_r_Confirm(ir_node *block, ir_node *val, ir_node *bound,
+                                pn_Cmp cmp);
 
 /** Constructor for a Unknown node.
  *
@@ -2628,7 +2681,7 @@ ir_node *new_r_Confirm(ir_node *block, ir_node *val, ir_node *bound, pn_Cmp cmp)
  * @param *irg    The IR graph the node  belongs to.
  * @param *m      The mode of the unknown value.
  */
-ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
+FIRM_DLL ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
 
 /** Constructor for a CallBegin node.
  *
@@ -2641,7 +2694,7 @@ ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
  * @param *ptr    pointer to the called function
  * @param *call   associated call operation
  */
-ir_node *new_r_CallBegin(ir_node *block, ir_node *ptr, ir_node *call);
+FIRM_DLL ir_node *new_r_CallBegin(ir_node *block, ir_node *ptr, ir_node *call);
 
 /** Constructor for a EndReg node.
  *
@@ -2650,7 +2703,7 @@ ir_node *new_r_CallBegin(ir_node *block, ir_node *ptr, ir_node *call);
  * @param *irg    The IR graph the node belong to.
  * @param *block  The block the node belong to.
  */
-ir_node *new_r_EndReg(ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_r_EndReg(ir_graph *irg, ir_node *block);
 
 /** Constructor for a EndExcept node.
  *
@@ -2659,7 +2712,7 @@ ir_node *new_r_EndReg(ir_graph *irg, ir_node *block);
  * @param *irg    The IR graph the node belong to.
  * @param *block  The block the node belong to.
  */
-ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
+FIRM_DLL ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
 
 /** Constructor for a Break node.
  *
@@ -2670,7 +2723,7 @@ ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
  *
  * @param *block  The block the node belong to.
  */
-ir_node *new_r_Break(ir_node *block);
+FIRM_DLL ir_node *new_r_Break(ir_node *block);
 
 /** Constructor for a Filter node.
  *
@@ -2688,7 +2741,8 @@ ir_node *new_r_Break(ir_node *block);
  * @param *mode   The mode of the projected value.
  * @param proj    The position in the tuple to project from.
  */
-ir_node *new_r_Filter(ir_node *block, ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_r_Filter(ir_node *block, ir_node *arg, ir_mode *mode,
+                               long proj);
 
 /** Constructor for a NoMem node.
  *
@@ -2697,7 +2751,7 @@ ir_node *new_r_Filter(ir_node *block, ir_node *arg, ir_mode *mode, long proj);
  *
  * @param *irg    The IR graph the node belongs to.
  */
-ir_node *new_r_NoMem(ir_graph *irg);
+FIRM_DLL ir_node *new_r_NoMem(ir_graph *irg);
 
 /** Constructor for a Mux node.
  *
@@ -2707,8 +2761,8 @@ ir_node *new_r_NoMem(ir_graph *irg);
  * @param *ir_false The ir_node that calculates the false result.
  * @param *mode     The mode of the node (and it_true and ir_false).
  */
-ir_node *new_r_Mux(ir_node *block, ir_node *sel,
-                   ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Mux(ir_node *block, ir_node *sel,
+                            ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
 /** Constructor for a CopyB node.
  *
@@ -2718,8 +2772,8 @@ ir_node *new_r_Mux(ir_node *block, ir_node *sel,
  * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
-ir_node *new_r_CopyB(ir_node *block, ir_node *store,
-                     ir_node *dst, ir_node *src, ir_type *data_type);
+FIRM_DLL ir_node *new_r_CopyB(ir_node *block, ir_node *store,
+                              ir_node *dst, ir_node *src, ir_type *data_type);
 
 /** Constructor for a InstOf node.
  *
@@ -2731,8 +2785,8 @@ ir_node *new_r_CopyB(ir_node *block, ir_node *store,
  * @param *objptr    A pointer to a object of a class type.
  * @param *type      The type of which objptr must be.
  */
-ir_node *new_r_InstOf(ir_node *block, ir_node *store,
-                      ir_node *objptr, ir_type *type);
+FIRM_DLL ir_node *new_r_InstOf(ir_node *block, ir_node *store,
+                               ir_node *objptr, ir_type *type);
 
 /** Constructor for a Raise node.
  *
@@ -2742,7 +2796,7 @@ ir_node *new_r_InstOf(ir_node *block, ir_node *store,
  * @param *store The current memory.
  * @param *obj   A pointer to the Except variable.
  */
-ir_node *new_r_Raise(ir_node *block, ir_node *store, ir_node *obj);
+FIRM_DLL ir_node *new_r_Raise(ir_node *block, ir_node *store, ir_node *obj);
 
 /** Constructor for a Bound node.
  *
@@ -2754,15 +2808,15 @@ ir_node *new_r_Raise(ir_node *block, ir_node *store, ir_node *obj);
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
-ir_node *new_r_Bound(ir_node *block, ir_node *store,
-                     ir_node *idx, ir_node *lower, ir_node *upper);
+FIRM_DLL ir_node *new_r_Bound(ir_node *block, ir_node *store,
+                              ir_node *idx, ir_node *lower, ir_node *upper);
 
 /** Constructor for a Pin node.
  *
  * @param *block      The block the node belong to.
  * @param *node       The node which value should be pinned.
  */
-ir_node *new_r_Pin(ir_node *block, ir_node *node);
+FIRM_DLL ir_node *new_r_Pin(ir_node *block, ir_node *node);
 
 /** Constructor for an ASM pseudo node.
  *
@@ -2776,10 +2830,10 @@ ir_node *new_r_Pin(ir_node *block, ir_node *node);
  * @param *clobber    The array of length n_clobber of clobbered registers.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_r_ASM(ir_node *block,
-                   int arity, ir_node *in[], ir_asm_constraint *inputs,
-                   int n_outs, ir_asm_constraint *outputs,
-                   int n_clobber, ident *clobber[], ident *asm_text);
+FIRM_DLL ir_node *new_r_ASM(ir_node *block,
+                            int arity, ir_node *in[], ir_asm_constraint *inputs,
+                            int n_outs, ir_asm_constraint *outputs,
+                            int n_clobber, ident *clobber[], ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -2790,10 +2844,10 @@ ir_node *new_r_ASM(ir_node *block,
  *
  *  @param target  The new current block.
  */
-void     set_cur_block(ir_node *target);
+FIRM_DLL void set_cur_block(ir_node *target);
 
 /** Returns the current block of the current graph. */
-ir_node *get_cur_block(void);
+FIRM_DLL ir_node *get_cur_block(void);
 
 /** Constructor for a Block node.
  *
@@ -2805,7 +2859,7 @@ ir_node *get_cur_block(void);
  * @param in[]   An array of control predecessors.  The length of
  *               the array must be 'arity'.
  */
-ir_node *new_d_Block(dbg_info *db, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_d_Block(dbg_info *db, int arity, ir_node *in[]);
 
 /** Constructor for a Start node.
  *
@@ -2813,7 +2867,7 @@ ir_node *new_d_Block(dbg_info *db, int arity, ir_node *in[]);
  *
  * @param *db    A pointer for debug information.
  */
-ir_node *new_d_Start(dbg_info *db);
+FIRM_DLL ir_node *new_d_Start(dbg_info *db);
 
 /** Constructor for a End node.
  *
@@ -2821,7 +2875,7 @@ ir_node *new_d_Start(dbg_info *db);
  *
  * @param *db     A pointer for debug information.
  */
-ir_node *new_d_End(dbg_info *db);
+FIRM_DLL ir_node *new_d_End(dbg_info *db);
 
 /** Constructor for a Jmp node.
  *
@@ -2831,7 +2885,7 @@ ir_node *new_d_End(dbg_info *db);
  *
  * @param *db     A pointer for debug information.
  */
-ir_node *new_d_Jmp(dbg_info *db);
+FIRM_DLL ir_node *new_d_Jmp(dbg_info *db);
 
 /** Constructor for an IJmp node.
  *
@@ -2841,7 +2895,7 @@ ir_node *new_d_Jmp(dbg_info *db);
  * @param *db     A pointer for debug information.
  * @param *tgt    The IR node representing the target address.
  */
-ir_node *new_d_IJmp(dbg_info *db, ir_node *tgt);
+FIRM_DLL ir_node *new_d_IJmp(dbg_info *db, ir_node *tgt);
 
 /** Constructor for a Cond node.
  *
@@ -2857,7 +2911,7 @@ ir_node *new_d_IJmp(dbg_info *db, ir_node *tgt);
  * @param *db    A pointer for debug information.
  * @param *c     The conditions parameter.Can be of mode b or I_u.
  */
-ir_node *new_d_Cond(dbg_info *db, ir_node *c);
+FIRM_DLL ir_node *new_d_Cond(dbg_info *db, ir_node *c);
 
 /** Constructor for a Return node.
  *
@@ -2871,7 +2925,8 @@ ir_node *new_d_Cond(dbg_info *db, ir_node *c);
  * @param arity  Number of array indices.
  * @param *in    Array with index inputs to the node.
  */
-ir_node *new_d_Return(dbg_info *db, ir_node *store, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_d_Return(dbg_info *db, ir_node *store,
+                               int arity, ir_node *in[]);
 
 /** Constructor for a Const_type node.
  *
@@ -2886,7 +2941,7 @@ ir_node *new_d_Return(dbg_info *db, ir_node *store, int arity, ir_node *in[]);
                  added to the attributes of the node.
  * @param *tp    The type of the constant.
  */
-ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp);
+FIRM_DLL ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp);
 
 /** Constructor for a Const node.
  *
@@ -2901,7 +2956,7 @@ ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp);
  * @param *con   Points to an entry in the constant table. This pointer is added
  *               to the attributes of the node.
  */
-ir_node *new_d_Const(dbg_info *db, tarval *con);
+FIRM_DLL ir_node *new_d_Const(dbg_info *db, tarval *con);
 
 /**
  * @see new_rd_Const_long()
@@ -2910,7 +2965,7 @@ ir_node *new_d_Const(dbg_info *db, tarval *con);
  * @param *mode  The mode of the operands and results.
  * @param value  A value from which the tarval is made.
  */
-ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
+FIRM_DLL ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
 
 /** Constructor for a SymConst_type node.
  *
@@ -2947,15 +3002,17 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
  * @param kind    The kind of the symbolic constant, see the list above
  * @param tp      The source type of the constant.
  */
-ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode,
-                             union symconst_symbol value, symconst_kind kind, ir_type *tp);
+FIRM_DLL ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode,
+                                      union symconst_symbol value,
+                                      symconst_kind kind, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
  *  Same as new_d_SymConst_type, except that it sets the type to type_unknown.
  */
-ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode,
-                        union symconst_symbol value, symconst_kind kind);
+FIRM_DLL ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode,
+                                 union symconst_symbol value,
+                                 symconst_kind kind);
 
 /** Constructor for a simpleSel node.
  *
@@ -2970,7 +3027,8 @@ ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode,
  *                     single attribute out.
  * @param   *ent       The entity to select.
  */
-ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, ir_entity *ent);
+FIRM_DLL ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
+                                  ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -2991,8 +3049,8 @@ ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, ir_entit
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
-ir_node *new_d_Sel(dbg_info *db, ir_node *store, ir_node *objptr, int arity, ir_node *in[],
-                   ir_entity *ent);
+FIRM_DLL ir_node *new_d_Sel(dbg_info *db, ir_node *store, ir_node *objptr,
+                            int arity, ir_node *in[], ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -3006,8 +3064,8 @@ ir_node *new_d_Sel(dbg_info *db, ir_node *store, ir_node *objptr, int arity, ir_
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir_node *in[],
-                    ir_type *tp);
+FIRM_DLL ir_node *new_d_Call(dbg_info *db, ir_node *store, ir_node *callee,
+                             int arity, ir_node *in[], ir_type *tp);
 
 /** Constructor for a Builtin node.
  *
@@ -3021,7 +3079,9 @@ ir_node *new_d_Call(dbg_info *db, ir_node *store, ir_node *callee, int arity, ir
  * @param   kind    The kind of the called builtin.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_d_Builtin(dbg_info *db, ir_node *store, int arity, ir_node *in[], ir_builtin_kind kind, ir_type *tp);
+FIRM_DLL ir_node *new_d_Builtin(dbg_info *db, ir_node *store,
+                                int arity, ir_node *in[],
+                                ir_builtin_kind kind, ir_type *tp);
 
 /** Constructor for a Add node.
  *
@@ -3032,7 +3092,8 @@ ir_node *new_d_Builtin(dbg_info *db, ir_node *store, int arity, ir_node *in[], i
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Add(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Add(dbg_info *db, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Sub node.
  *
@@ -3043,7 +3104,8 @@ ir_node *new_d_Add(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Sub(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Sub(dbg_info *db, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
@@ -3053,7 +3115,7 @@ ir_node *new_d_Sub(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op    The operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_d_Minus(dbg_info *db, ir_node *op,  ir_mode *mode);
+FIRM_DLL ir_node *new_d_Minus(dbg_info *db, ir_node *op,  ir_mode *mode);
 
 /** Constructor for a Mul node.
  *
@@ -3064,7 +3126,8 @@ ir_node *new_d_Minus(dbg_info *db, ir_node *op,  ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Mul(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Mul(dbg_info *db, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Mulh node.
  *
@@ -3075,7 +3138,8 @@ ir_node *new_d_Mul(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Mulh(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Mulh(dbg_info *db, ir_node *op1, ir_node *op2,
+                             ir_mode *mode);
 
 /** Constructor for a Quot node.
  *
@@ -3088,7 +3152,9 @@ ir_node *new_d_Mulh(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_d_Quot(dbg_info *db, ir_node *memop,
+                             ir_node *op1, ir_node *op2, ir_mode *mode,
+                             op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -3101,7 +3167,8 @@ ir_node *new_d_Quot(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir
  * @param   *mode  The mode of the results.
  * @param   state  The pinned state.
  */
-ir_node *new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1,
+                               ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -3114,7 +3181,8 @@ ir_node *new_d_DivMod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, 
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1,
+                            ir_node *op2, ir_mode *mode, op_pin_state state);
 
 /** Constructor for a remainderless Div node.
  *
@@ -3127,7 +3195,9 @@ ir_node *new_d_Div(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_d_DivRL(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_d_DivRL(dbg_info *db, ir_node *memop,
+                              ir_node *op1, ir_node *op2, ir_mode *mode,
+                              op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -3140,7 +3210,9 @@ ir_node *new_d_DivRL(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, i
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_d_Mod(dbg_info *db, ir_node *memop,
+                            ir_node *op1, ir_node *op2, ir_mode *mode,
+                            op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -3150,7 +3222,7 @@ ir_node *new_d_Mod(dbg_info *db, ir_node *memop, ir_node *op1, ir_node *op2, ir_
  * @param   *op    The operand
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Abs(dbg_info *db, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Abs(dbg_info *db, ir_node *op, ir_mode *mode);
 
 /** Constructor for a And node.
  *
@@ -3161,7 +3233,8 @@ ir_node *new_d_Abs(dbg_info *db, ir_node *op, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_And(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_And(dbg_info *db, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Or node.
  *
@@ -3172,7 +3245,8 @@ ir_node *new_d_And(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Or(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Or(dbg_info *db, ir_node *op1, ir_node *op2,
+                           ir_mode *mode);
 
 /** Constructor for a Eor node.
  *
@@ -3183,7 +3257,8 @@ ir_node *new_d_Or(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
-ir_node *new_d_Eor(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Eor(dbg_info *db, ir_node *op1, ir_node *op2,
+                            ir_mode *mode);
 
 /** Constructor for a Not node.
  *
@@ -3193,7 +3268,7 @@ ir_node *new_d_Eor(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op    The operand.
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_d_Not(dbg_info *db, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Not(dbg_info *db, ir_node *op, ir_mode *mode);
 
 /** Constructor for a Shl node.
  *
@@ -3204,7 +3279,8 @@ ir_node *new_d_Not(dbg_info *db, ir_node *op, ir_mode *mode);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_d_Shl(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Shl(dbg_info *db, ir_node *op, ir_node *k,
+                            ir_mode *mode);
 
 /** Constructor for a Shr node.
  *
@@ -3215,7 +3291,8 @@ ir_node *new_d_Shl(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_d_Shr(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Shr(dbg_info *db, ir_node *op, ir_node *k,
+                            ir_mode *mode);
 
 /** Constructor for a Shrs node.
  *
@@ -3226,7 +3303,8 @@ ir_node *new_d_Shr(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_d_Shrs(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Shrs(dbg_info *db, ir_node *op, ir_node *k,
+                             ir_mode *mode);
 
 /** Constructor for a Rotl node.
  *
@@ -3237,7 +3315,8 @@ ir_node *new_d_Shrs(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_d_Rotl(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Rotl(dbg_info *db, ir_node *op, ir_node *k,
+                             ir_mode *mode);
 
 /** Constructor for a Cmp node.
  *
@@ -3247,7 +3326,7 @@ ir_node *new_d_Rotl(dbg_info *db, ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  */
-ir_node *new_d_Cmp(dbg_info *db, ir_node *op1, ir_node *op2);
+FIRM_DLL ir_node *new_d_Cmp(dbg_info *db, ir_node *op1, ir_node *op2);
 
 /** Constructor for a Conv node.
  *
@@ -3257,7 +3336,7 @@ ir_node *new_d_Cmp(dbg_info *db, ir_node *op1, ir_node *op2);
  * @param   *op    The operand.
  * @param   *mode  The mode of this the operand muss be converted .
  */
-ir_node *new_d_Conv(dbg_info *db, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Conv(dbg_info *db, ir_node *op, ir_mode *mode);
 
 /** Constructor for a strict Conv node.
  *
@@ -3267,7 +3346,7 @@ ir_node *new_d_Conv(dbg_info *db, ir_node *op, ir_mode *mode);
  * @param   *op    The operand.
  * @param   *mode  The mode of this the operand muss be converted .
  */
-ir_node *new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *
@@ -3278,7 +3357,7 @@ ir_node *new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode);
  * @param   *op    The operand.
  * @param   *to_tp The type of this the operand muss be casted .
  */
-ir_node *new_d_Cast(dbg_info *db, ir_node *op, ir_type *to_tp);
+FIRM_DLL ir_node *new_d_Cast(dbg_info *db, ir_node *op, ir_type *to_tp);
 
 /** Constructor for a Carry node.
  *
@@ -3289,7 +3368,8 @@ ir_node *new_d_Cast(dbg_info *db, ir_node *op, ir_type *to_tp);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Carry(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Carry(dbg_info *db, ir_node *op1, ir_node *op2,
+                              ir_mode *mode);
 
 /** Constructor for a Borrow node.
  *
@@ -3300,7 +3380,8 @@ ir_node *new_d_Carry(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_d_Borrow(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Borrow(dbg_info *db, ir_node *op1, ir_node *op2,
+                               ir_mode *mode);
 
 /** Constructor for a Phi node.
  *
@@ -3311,7 +3392,8 @@ ir_node *new_d_Borrow(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *in    Array with predecessors
  * @param *mode  The mode of it's inputs and output.
  */
-ir_node *new_d_Phi(dbg_info *db, int arity, ir_node *in[], ir_mode *mode);
+FIRM_DLL ir_node *new_d_Phi(dbg_info *db, int arity, ir_node *in[],
+                            ir_mode *mode);
 
 /** Constructor for a Load node.
  *
@@ -3323,7 +3405,8 @@ ir_node *new_d_Phi(dbg_info *db, int arity, ir_node *in[], ir_mode *mode);
  * @param *mode  The mode of the value to be loaded.
  * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_d_Load(dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode, ir_cons_flags flags);
+FIRM_DLL ir_node *new_d_Load(dbg_info *db, ir_node *store, ir_node *addr,
+                             ir_mode *mode, ir_cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -3335,7 +3418,8 @@ ir_node *new_d_Load(dbg_info *db, ir_node *store, ir_node *addr, ir_mode *mode, 
  * @param *val   The value to write to this variable.
  * @param  flags Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val, ir_cons_flags flags);
+FIRM_DLL ir_node *new_d_Store(dbg_info *db, ir_node *store, ir_node *addr,
+                              ir_node *val, ir_cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -3348,8 +3432,8 @@ ir_node *new_d_Store(dbg_info *db, ir_node *store, ir_node *addr, ir_node *val, 
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
-ir_node *new_d_Alloc(dbg_info *db, ir_node *store, ir_node *count, ir_type *alloc_type,
-                     ir_where_alloc where);
+FIRM_DLL ir_node *new_d_Alloc(dbg_info *db, ir_node *store, ir_node *count,
+                              ir_type *alloc_type, ir_where_alloc where);
 
  /** Constructor for a Free node.
  *
@@ -3364,8 +3448,9 @@ ir_node *new_d_Alloc(dbg_info *db, ir_node *store, ir_node *count, ir_type *allo
  * @param *free_type  The type of the freed variable.
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
-ir_node *new_d_Free(dbg_info *db, ir_node *store, ir_node *ptr, ir_node *size,
-                    ir_type *free_type, ir_where_alloc where);
+FIRM_DLL ir_node *new_d_Free(dbg_info *db, ir_node *store, ir_node *ptr,
+                             ir_node *size, ir_type *free_type,
+                             ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -3379,7 +3464,7 @@ ir_node *new_d_Free(dbg_info *db, ir_node *store, ir_node *ptr, ir_node *size,
  * @param  **in     An array of pointers to nodes that produce an output of type
  *                  memory.  The constructor copies this array.
  */
-ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[]);
 
 /** Constructor for a Proj node.
  *
@@ -3392,7 +3477,8 @@ ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[]);
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
-ir_node *new_d_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_d_Proj(dbg_info *db, ir_node *arg, ir_mode *mode,
+                             long proj);
 
 /** Constructor for a defaultProj node.
  *
@@ -3403,7 +3489,7 @@ ir_node *new_d_Proj(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
  * @param arg       A node producing a tuple.
  * @param max_proj  The end  position of the value in the tuple.
  */
-ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
+FIRM_DLL ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
 
 /** Constructor for a Tuple node.
  *
@@ -3415,7 +3501,7 @@ ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj);
  * @param arity   The number of tuple elements.
  * @param **in    An array containing pointers to the nodes producing the tuple elements.
  */
-ir_node *new_d_Tuple(dbg_info *db, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_d_Tuple(dbg_info *db, int arity, ir_node *in[]);
 
 /** Constructor for a Id node.
  *
@@ -3426,7 +3512,7 @@ ir_node *new_d_Tuple(dbg_info *db, int arity, ir_node *in[]);
  * @param *val    The operand to Id.
  * @param *mode   The mode of *val.
  */
-ir_node *new_d_Id(dbg_info *db, ir_node *val, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Id(dbg_info *db, ir_node *val, ir_mode *mode);
 
 /** Constructor for a Confirm node.
  *
@@ -3441,7 +3527,8 @@ ir_node *new_d_Id(dbg_info *db, ir_node *val, ir_mode *mode);
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
  */
-ir_node *new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
+FIRM_DLL ir_node *new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound,
+                                pn_Cmp cmp);
 
 /** Constructor for an Unknown node.
  *
@@ -3451,7 +3538,7 @@ ir_node *new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound, pn_Cmp cmp);
  * @param *db     A pointer for debug information.
  * @param *m      The mode of the unknown value.
  */
-ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
+FIRM_DLL ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
 
 /** Constructor for a CallBegin node.
  *
@@ -3464,7 +3551,7 @@ ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
  * @param *ptr    pointer to the called function
  * @param *call   associated call operation
  */
-ir_node *new_d_CallBegin(dbg_info *db, ir_node *ptr, ir_node *call);
+FIRM_DLL ir_node *new_d_CallBegin(dbg_info *db, ir_node *ptr, ir_node *call);
 
 /** Constructor for an EndReg node.
  *
@@ -3472,7 +3559,7 @@ ir_node *new_d_CallBegin(dbg_info *db, ir_node *ptr, ir_node *call);
  *
  * @param *db     A pointer for debug information.
  */
-ir_node *new_d_EndReg(dbg_info *db);
+FIRM_DLL ir_node *new_d_EndReg(dbg_info *db);
 
 /** Constructor for an EndExcept node.
  *
@@ -3481,7 +3568,7 @@ ir_node *new_d_EndReg(dbg_info *db);
  *
  * @param *db     A pointer for debug information.
  */
-ir_node *new_d_EndExcept(dbg_info *db);
+FIRM_DLL ir_node *new_d_EndExcept(dbg_info *db);
 
 /** Constructor for a Break node.
  *
@@ -3495,7 +3582,7 @@ ir_node *new_d_EndExcept(dbg_info *db);
  *
  * @param *db     A pointer for debug information.
  */
-ir_node *new_d_Break(dbg_info *db);
+FIRM_DLL ir_node *new_d_Break(dbg_info *db);
 
 /** Constructor for a Filter node.
  *
@@ -3514,7 +3601,8 @@ ir_node *new_d_Break(dbg_info *db);
  * @param *mode The mode of the projected value.
  * @param proj  The position in the tuple to project from.
  */
-ir_node *new_d_Filter(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_d_Filter(dbg_info *db, ir_node *arg, ir_mode *mode,
+                               long proj);
 
 /** Constructor for a Mux node.
  *
@@ -3524,8 +3612,8 @@ ir_node *new_d_Filter(dbg_info *db, ir_node *arg, ir_mode *mode, long proj);
  * @param *ir_false The ir_node that calculates the false result.
  * @param *mode     The mode of the node (and it_true and ir_false).
  */
-ir_node *new_d_Mux(dbg_info *db, ir_node *sel,
-                   ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Mux(dbg_info *db, ir_node *sel,
+                            ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
 
 /** Constructor for a CopyB node.
  *
@@ -3535,7 +3623,8 @@ ir_node *new_d_Mux(dbg_info *db, ir_node *sel,
  * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
-ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
+FIRM_DLL ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst,
+                              ir_node *src, ir_type *data_type);
 
 /** Constructor for a InstOf node.
  *
@@ -3547,7 +3636,8 @@ ir_node *new_d_CopyB(dbg_info *db, ir_node *store, ir_node *dst, ir_node *src, i
  * @param   *objptr    A pointer to a object of a class type.
  * @param   *type      The type of which objptr must be.
  */
-ir_node *new_d_InstOf(dbg_info *db, ir_node *store, ir_node *objptr, ir_type *type);
+FIRM_DLL ir_node *new_d_InstOf(dbg_info *db, ir_node *store, ir_node *objptr,
+                               ir_type *type);
 
 /** Constructor for a Raise node.
  *
@@ -3557,7 +3647,7 @@ ir_node *new_d_InstOf(dbg_info *db, ir_node *store, ir_node *objptr, ir_type *ty
  * @param *store The current memory.
  * @param *obj   A pointer to the Except variable.
  */
-ir_node *new_d_Raise(dbg_info *db, ir_node *store, ir_node *obj);
+FIRM_DLL ir_node *new_d_Raise(dbg_info *db, ir_node *store, ir_node *obj);
 
 /** Constructor for a Bound node.
  *
@@ -3569,14 +3659,15 @@ ir_node *new_d_Raise(dbg_info *db, ir_node *store, ir_node *obj);
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
-ir_node *new_d_Bound(dbg_info *db, ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+FIRM_DLL ir_node *new_d_Bound(dbg_info *db, ir_node *store, ir_node *idx,
+                              ir_node *lower, ir_node *upper);
 
 /** Constructor for a Pin node.
  *
  * @param *db         A pointer for debug information.
  * @param *node       The node which value should be pinned.
  */
-ir_node *new_d_Pin(dbg_info *db, ir_node *node);
+FIRM_DLL ir_node *new_d_Pin(dbg_info *db, ir_node *node);
 
 /** Constructor for an ASM pseudo node.
  *
@@ -3590,9 +3681,10 @@ ir_node *new_d_Pin(dbg_info *db, ir_node *node);
  * @param *clobber    The array of length n_clobber of clobbered registers.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *inputs,
-                   int n_outs, ir_asm_constraint *outputs,
-                   int n_clobber, ident *clobber[], ident *asm_text);
+FIRM_DLL ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
+                            ir_asm_constraint *inputs,
+                            int n_outs, ir_asm_constraint *outputs,
+                            int n_clobber, ident *clobber[], ident *asm_text);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -3607,34 +3699,34 @@ ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *in
  * @param in     An array of control predecessors.  The length of
  *               the array must be 'arity'.
  */
-ir_node *new_Block(int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_Block(int arity, ir_node *in[]);
 
 /** Constructor for a Start node.
  *
  * Adds the node to the block in current_ir_block.
  *
  */
-ir_node *new_Start(void);
+FIRM_DLL ir_node *new_Start(void);
 
 /** Constructor for an End node.
  *
  * Adds the node to the block in current_ir_block.
  */
-ir_node *new_End(void);
+FIRM_DLL ir_node *new_End(void);
 
 /** Constructor for an EndReg node.
  *
  * Used to represent regular procedure end in interprocedual view.
  * Adds the node to the block in current_ir_block.
  */
-ir_node *new_EndReg(void);
+FIRM_DLL ir_node *new_EndReg(void);
 
 /** Constructor for an EndExpcept node.
  *
  *  Used to represent exceptional procedure end in interprocedural view.
  *  Adds the node to the block in current_ir_block.
  */
-ir_node *new_EndExcept(void);
+FIRM_DLL ir_node *new_EndExcept(void);
 
 /** Constructor for a Jump node.
  *
@@ -3642,7 +3734,7 @@ ir_node *new_EndExcept(void);
  *
  * Jmp represents control flow to a single control successor.
  */
-ir_node *new_Jmp(void);
+FIRM_DLL ir_node *new_Jmp(void);
 
 /** Constructor for an IJmp node.
  *
@@ -3651,7 +3743,7 @@ ir_node *new_Jmp(void);
  *
  * @param *tgt    The IR node representing the target address.
  */
-ir_node *new_IJmp(ir_node *tgt);
+FIRM_DLL ir_node *new_IJmp(ir_node *tgt);
 
 /** Constructor for a Break node.
  * Break represents control flow to a single control successor just as Jmp.
@@ -3660,7 +3752,7 @@ ir_node *new_IJmp(ir_node *tgt);
  * behind Call nodes to represent the control flow to called procedures.
  * Adds the node to the block in current_ir_block.
  */
-ir_node *new_Break(void);
+FIRM_DLL ir_node *new_Break(void);
 
 /** Constructor for a Cond node.
  *
@@ -3674,7 +3766,7 @@ ir_node *new_Break(void);
  *
  * @param *c     The conditions parameter.Can be of mode b or I_u.
  */
-ir_node *new_Cond(ir_node *c);
+FIRM_DLL ir_node *new_Cond(ir_node *c);
 
 /** Constructor for a Return node.
  *
@@ -3685,7 +3777,7 @@ ir_node *new_Cond(ir_node *c);
  * @param arity  Number of array indices.
  * @param *in    Array with index inputs to the node.
  */
-ir_node *new_Return(ir_node *store, int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_Return(ir_node *store, int arity, ir_node *in[]);
 
 /** Constructor for a Const node.
  *
@@ -3698,7 +3790,7 @@ ir_node *new_Return(ir_node *store, int arity, ir_node *in[]);
  * @param *con   Points to an entry in the constant table. This pointer is
  *               added to the attributes of  the node.
  */
-ir_node *new_Const(tarval *con);
+FIRM_DLL ir_node *new_Const(tarval *con);
 
 /**
  * Make a const from a long.
@@ -3711,12 +3803,12 @@ ir_node *new_Const(tarval *con);
  * @param value The value of the constant.
  * @return A new const node.
  */
-ir_node *new_Const_long(ir_mode *mode, long value);
+FIRM_DLL ir_node *new_Const_long(ir_mode *mode, long value);
 
 /** Constructor for a Const node.
  *
  * Derives mode from passed tarval. */
-ir_node *new_Const_type(tarval *con, ir_type *tp);
+FIRM_DLL ir_node *new_Const_type(tarval *con, ir_type *tp);
 
 /** Constructor for a SymConst_type node.
  *
@@ -3752,7 +3844,8 @@ ir_node *new_Const_type(tarval *con, ir_type *tp);
  * @param kind    The kind of the symbolic constant, see the list above
  * @param tp      The source type of the constant.
  */
-ir_node *new_SymConst_type(ir_mode *mode, union symconst_symbol value, symconst_kind kind, ir_type *tp);
+FIRM_DLL ir_node *new_SymConst_type(ir_mode *mode, union symconst_symbol value,
+                                    symconst_kind kind, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *
@@ -3787,7 +3880,8 @@ ir_node *new_SymConst_type(ir_mode *mode, union symconst_symbol value, symconst_
  *                SymConst kind.
  * @param kind    The kind of the symbolic constant, see the list above
  */
-ir_node *new_SymConst(ir_mode *mode, union symconst_symbol value, symconst_kind kind);
+FIRM_DLL ir_node *new_SymConst(ir_mode *mode, union symconst_symbol value,
+                               symconst_kind kind);
 
 /** Constructor for a simpelSel node.
  *
@@ -3799,7 +3893,8 @@ ir_node *new_SymConst(ir_mode *mode, union symconst_symbol value, symconst_kind 
  * @param   *objptr    The object from that the Sel operation selects a single attribute out.
  * @param   *ent       The entity to select.
  */
-ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent);
+FIRM_DLL ir_node *new_simpleSel(ir_node *store, ir_node *objptr,
+                                ir_entity *ent);
 
 /** Constructor for a Sel node.
  *
@@ -3819,8 +3914,8 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent);
  *                     element entity.  The constructor copies this array.
  * @param   *ent       The entity to select.
  */
-ir_node *new_Sel(ir_node *store, ir_node *objptr, int arity, ir_node *in[],
-                 ir_entity *ent);
+FIRM_DLL ir_node *new_Sel(ir_node *store, ir_node *objptr,
+                          int arity, ir_node *in[], ir_entity *ent);
 
 /** Constructor for a Call node.
  *
@@ -3833,8 +3928,8 @@ ir_node *new_Sel(ir_node *store, ir_node *objptr, int arity, ir_node *in[],
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_Call(ir_node *store, ir_node *callee, int arity, ir_node *in[],
-                  ir_type *tp);
+FIRM_DLL ir_node *new_Call(ir_node *store, ir_node *callee,
+                           int arity, ir_node *in[], ir_type *tp);
 
 /** Constructor for a Builtin node.
  *
@@ -3847,8 +3942,8 @@ ir_node *new_Call(ir_node *store, ir_node *callee, int arity, ir_node *in[],
  * @param   *in[]   An array with the pointers to the parameters. The constructor copies this array.
  * @param   *tp     Type information of the procedure called.
  */
-ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
-                     ir_builtin_kind kind, ir_type *tp);
+FIRM_DLL ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
+                              ir_builtin_kind kind, ir_type *tp);
 
 /** Constructor for a CallBegin node.
  *
@@ -3860,7 +3955,7 @@ ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
  * @param *ptr    pointer to the called function
  * @param *call   associated call operation
  */
-ir_node *new_CallBegin(ir_node *ptr, ir_node *call);
+FIRM_DLL ir_node *new_CallBegin(ir_node *ptr, ir_node *call);
 
 /** Constructor for a Add node.
  *
@@ -3870,7 +3965,7 @@ ir_node *new_CallBegin(ir_node *ptr, ir_node *call);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Add(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Add(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Sub node.
  *
@@ -3880,7 +3975,7 @@ ir_node *new_Add(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Sub(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Sub(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Minus node.
  *
@@ -3889,7 +3984,7 @@ ir_node *new_Sub(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op    The operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_Minus(ir_node *op,  ir_mode *mode);
+FIRM_DLL ir_node *new_Minus(ir_node *op,  ir_mode *mode);
 
 /**
  * Constructor for a Mul node. Adds the node to the block in current_ir_block.
@@ -3898,7 +3993,7 @@ ir_node *new_Minus(ir_node *op,  ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Mul(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Mul(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
  * Constructor for a Mulh node. Adds the node to the block in current_ir_block.
@@ -3907,7 +4002,7 @@ ir_node *new_Mul(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Mulh(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Mulh(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Quot node.
  *
@@ -3919,7 +4014,8 @@ ir_node *new_Mulh(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2,
+                           ir_mode *mode, op_pin_state state);
 
 /** Constructor for a DivMod node.
  *
@@ -3931,7 +4027,8 @@ ir_node *new_Quot(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_
  * @param   *mode  The mode of the results.
  * @param   state  The pinned state.
  */
-ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2,
+                             ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Div node.
  *
@@ -3943,7 +4040,8 @@ ir_node *new_DivMod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, o
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2,
+                          ir_mode *mode, op_pin_state state);
 
 /** Constructor for a remainderless Div node.
  *
@@ -3955,7 +4053,8 @@ ir_node *new_Div(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_p
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
+                            ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Mod node.
  *
@@ -3967,7 +4066,8 @@ ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op
  * @param   *mode  The mode of the result.
  * @param   state  The pinned state.
  */
-ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
+FIRM_DLL ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2,
+                          ir_mode *mode, op_pin_state state);
 
 /** Constructor for a Abs node.
  *
@@ -3976,7 +4076,7 @@ ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_p
  * @param   *op    The operand
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Abs(ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_Abs(ir_node *op, ir_mode *mode);
 
 /** Constructor for a And node.
  *
@@ -3986,7 +4086,7 @@ ir_node *new_Abs(ir_node *op, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_And(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_And(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
  * Constructor for a Or node. Adds the node to the block in current_ir_block.
@@ -3995,7 +4095,7 @@ ir_node *new_And(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Or(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Or(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /**
  * Constructor for a Eor node. Adds the node to the block in current_ir_block.
@@ -4004,7 +4104,7 @@ ir_node *new_Or(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the results.
  */
-ir_node *new_Eor(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Eor(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Not node.
  *
@@ -4013,7 +4113,7 @@ ir_node *new_Eor(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op    The operand.
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_Not(ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_Not(ir_node *op, ir_mode *mode);
 
 /** Constructor for a Shl node.
  *
@@ -4023,7 +4123,7 @@ ir_node *new_Not(ir_node *op, ir_mode *mode);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_Shl(ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_Shl(ir_node *op, ir_node *k, ir_mode *mode);
 
 /**
  * Constructor for a Shr node. Adds the node to the block in current_ir_block.
@@ -4032,7 +4132,7 @@ ir_node *new_Shl(ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_Shr(ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_Shr(ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Shrs node.
  *
@@ -4042,7 +4142,7 @@ ir_node *new_Shr(ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *k     The number of bits to  shift the operand .
  * @param   *mode  The mode of the operand and the result.
  */
-ir_node *new_Shrs(ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_Shrs(ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Rotl node.
  *
@@ -4052,7 +4152,7 @@ ir_node *new_Shrs(ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *k     The number of bits to rotate the operand.
  * @param   *mode  The mode of the operand.
  */
-ir_node *new_Rotl(ir_node *op, ir_node *k, ir_mode *mode);
+FIRM_DLL ir_node *new_Rotl(ir_node *op, ir_node *k, ir_mode *mode);
 
 /** Constructor for a Cmp node.
  *
@@ -4061,7 +4161,7 @@ ir_node *new_Rotl(ir_node *op, ir_node *k, ir_mode *mode);
  * @param   *op1   The first operand.
  * @param   *op2   The second operand.
  */
-ir_node *new_Cmp(ir_node *op1, ir_node *op2);
+FIRM_DLL ir_node *new_Cmp(ir_node *op1, ir_node *op2);
 
 /** Constructor for a Conv node.
  *
@@ -4070,7 +4170,7 @@ ir_node *new_Cmp(ir_node *op1, ir_node *op2);
  * @param   *op          The operand.
  * @param   *mode        The mode of this the operand muss be converted.
  */
-ir_node *new_Conv(ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_Conv(ir_node *op, ir_mode *mode);
 
 /** Constructor for a strict Conv node.
  *
@@ -4079,7 +4179,7 @@ ir_node *new_Conv(ir_node *op, ir_mode *mode);
  * @param   *op          The operand.
  * @param   *mode        The mode of this the operand muss be converted.
  */
-ir_node *new_strictConv(ir_node *op, ir_mode *mode);
+FIRM_DLL ir_node *new_strictConv(ir_node *op, ir_mode *mode);
 
 /** Constructor for a Cast node.
  *
@@ -4089,7 +4189,7 @@ ir_node *new_strictConv(ir_node *op, ir_mode *mode);
  * @param   *op    The operand.
  * @param   *to_tp The type of this the operand muss be casted .
  */
-ir_node *new_Cast(ir_node *op, ir_type *to_tp);
+FIRM_DLL ir_node *new_Cast(ir_node *op, ir_type *to_tp);
 
 /** Constructor for a Carry node.
  *
@@ -4099,7 +4199,7 @@ ir_node *new_Cast(ir_node *op, ir_type *to_tp);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Carry(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Carry(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Borrow node.
  *
@@ -4109,7 +4209,7 @@ ir_node *new_Carry(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param   *op2   The second operand.
  * @param   *mode  The mode of the operands and the result.
  */
-ir_node *new_Borrow(ir_node *op1, ir_node *op2, ir_mode *mode);
+FIRM_DLL ir_node *new_Borrow(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Phi node.
  *
@@ -4119,7 +4219,7 @@ ir_node *new_Borrow(ir_node *op1, ir_node *op2, ir_mode *mode);
  * @param *in    Array with predecessors.
  * @param *mode  The mode of it's inputs and output.
  */
-ir_node *new_Phi(int arity, ir_node *in[], ir_mode *mode);
+FIRM_DLL ir_node *new_Phi(int arity, ir_node *in[], ir_mode *mode);
 
 /** Constructor for a Load node.
  *
@@ -4128,7 +4228,8 @@ ir_node *new_Phi(int arity, ir_node *in[], ir_mode *mode);
  * @param *mode   The mode of the value to be loaded.
  * @param  flags  Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode, ir_cons_flags flags);
+FIRM_DLL ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode,
+                           ir_cons_flags flags);
 
 /** Constructor for a Store node.
  *
@@ -4137,7 +4238,8 @@ ir_node *new_Load(ir_node *store, ir_node *addr, ir_mode *mode, ir_cons_flags fl
  * @param *val    The value to write to this variable.
  * @param  flags  Additional flags for alignment, volatility and pin state.
  */
-ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val, ir_cons_flags flags);
+FIRM_DLL ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val,
+                            ir_cons_flags flags);
 
 /** Constructor for a Alloc node.
  *
@@ -4149,8 +4251,8 @@ ir_node *new_Store(ir_node *store, ir_node *addr, ir_node *val, ir_cons_flags fl
  * @param *alloc_type The type of the allocated variable.
  * @param where       Where to allocate the variable, either heap_alloc or stack_alloc.
  */
-ir_node *new_Alloc(ir_node *store, ir_node *count, ir_type *alloc_type,
-                   ir_where_alloc where);
+FIRM_DLL ir_node *new_Alloc(ir_node *store, ir_node *count, ir_type *alloc_type,
+                            ir_where_alloc where);
 
 /** Constructor for a Free node.
  *
@@ -4164,8 +4266,8 @@ ir_node *new_Alloc(ir_node *store, ir_node *count, ir_type *alloc_type,
  * @param *free_type  The type of the freed variable.
  * @param where       Where the variable was allocated, either heap_alloc or stack_alloc.
  */
-ir_node *new_Free(ir_node *store, ir_node *ptr, ir_node *size,
-                  ir_type *free_type, ir_where_alloc where);
+FIRM_DLL ir_node *new_Free(ir_node *store, ir_node *ptr, ir_node *size,
+                           ir_type *free_type, ir_where_alloc where);
 
 /** Constructor for a Sync node.
  *
@@ -4178,7 +4280,7 @@ ir_node *new_Free(ir_node *store, ir_node *ptr, ir_node *size,
  * @param  **in     An array of pointers to nodes that produce an output of type
  *                  memory.  The constructor copies this array.
  */
-ir_node *new_Sync(int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_Sync(int arity, ir_node *in[]);
 
 /** Constructor for a Proj node.
  *
@@ -4190,7 +4292,7 @@ ir_node *new_Sync(int arity, ir_node *in[]);
  * @param *mode  The mode of the value to project.
  * @param proj   The position of the value in the tuple.
  */
-ir_node *new_Proj(ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_Proj(ir_node *arg, ir_mode *mode, long proj);
 
 /** Constructor for a Filter node.
  *
@@ -4207,7 +4309,7 @@ ir_node *new_Proj(ir_node *arg, ir_mode *mode, long proj);
  * @param *mode The mode of the projected value.
  * @param proj  The position in the tuple to project from.
  */
-ir_node *new_Filter(ir_node *arg, ir_mode *mode, long proj);
+FIRM_DLL ir_node *new_Filter(ir_node *arg, ir_mode *mode, long proj);
 
 /** Constructor for a defaultProj node.
  *
@@ -4217,7 +4319,7 @@ ir_node *new_Filter(ir_node *arg, ir_mode *mode, long proj);
  * @param arg       A node producing a tuple.
  * @param max_proj  The end  position of the value in the tuple.
  */
-ir_node *new_defaultProj(ir_node *arg, long max_proj);
+FIRM_DLL ir_node *new_defaultProj(ir_node *arg, long max_proj);
 
 /** Constructor for a Tuple node.
  *
@@ -4228,7 +4330,7 @@ ir_node *new_defaultProj(ir_node *arg, long max_proj);
  * @param arity   The number of tuple elements.
  * @param **in    An array containing pointers to the nodes producing the tuple elements.
  */
-ir_node *new_Tuple(int arity, ir_node *in[]);
+FIRM_DLL ir_node *new_Tuple(int arity, ir_node *in[]);
 
 /** Constructor for an Id node.
  *
@@ -4238,14 +4340,14 @@ ir_node *new_Tuple(int arity, ir_node *in[]);
  * @param *val    The operand to Id.
  * @param *mode   The mode of *val.
  */
-ir_node *new_Id(ir_node *val, ir_mode *mode);
+FIRM_DLL ir_node *new_Id(ir_node *val, ir_mode *mode);
 
 /** Constructor for a Bad node.
  *
  * Returns the unique Bad node of the graph.  The same as
  * get_irg_bad().
  */
-ir_node *new_Bad(void);
+FIRM_DLL ir_node *new_Bad(void);
 
 /** Constructor for a Confirm node.
  *
@@ -4259,7 +4361,7 @@ ir_node *new_Bad(void);
  * @param *bound  The value to compare against. Must be a firm node, typically a constant.
  * @param cmp     The compare operation.
  */
-ir_node *new_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp);
+FIRM_DLL ir_node *new_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp);
 
 /** Constructor for an Unknown node.
  *
@@ -4268,14 +4370,14 @@ ir_node *new_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp);
  *
  * @param *m      The mode of the unknown value.
  */
-ir_node *new_Unknown(ir_mode *m);
+FIRM_DLL ir_node *new_Unknown(ir_mode *m);
 
 /** Constructor for a NoMem node.
  *
  * Returns the unique NoMem node of the graph.  The same as
  * get_irg_no_mem().
  */
-ir_node *new_NoMem(void);
+FIRM_DLL ir_node *new_NoMem(void);
 
 /** Constructor for a Mux node.
  *
@@ -4286,7 +4388,8 @@ ir_node *new_NoMem(void);
  * @param *ir_false The ir_node that calculates the false result.
  * @param *mode     The mode of the node (and it_true and ir_false).
  */
-ir_node *new_Mux(ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mode);
+FIRM_DLL ir_node *new_Mux(ir_node *sel, ir_node *ir_false, ir_node *ir_true,
+                          ir_mode *mode);
 
 /** Constructor for a CopyB node.
  *
@@ -4297,7 +4400,8 @@ ir_node *new_Mux(ir_node *sel, ir_node *ir_false, ir_node *ir_true, ir_mode *mod
  * @param *src        The ir_node that represents the source address.
  * @param *data_type  The type of the copied data
  */
-ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_type);
+FIRM_DLL ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src,
+                            ir_type *data_type);
 
 /** Constructor for a InstOf node.
  *
@@ -4308,7 +4412,7 @@ ir_node *new_CopyB(ir_node *store, ir_node *dst, ir_node *src, ir_type *data_typ
  * @param   *objptr    A pointer to a object of a class type.
  * @param   *type      The type of which objptr must be.
  */
-ir_node *new_InstOf(ir_node *store, ir_node *objptr, ir_type *type);
+FIRM_DLL ir_node *new_InstOf(ir_node *store, ir_node *objptr, ir_type *type);
 
 /**Constructor for a Raise node.
  *
@@ -4317,7 +4421,7 @@ ir_node *new_InstOf(ir_node *store, ir_node *objptr, ir_type *type);
  * @param *store The current memory.
  * @param *obj   A pointer to the Except variable.
  */
-ir_node *new_Raise(ir_node *store, ir_node *obj);
+FIRM_DLL ir_node *new_Raise(ir_node *store, ir_node *obj);
 
 /** Constructor for a Bound node.
  *
@@ -4330,13 +4434,14 @@ ir_node *new_Raise(ir_node *store, ir_node *obj);
  * @param *lower      The ir_node that represents the lower bound for the index.
  * @param *upper      The ir_node that represents the upper bound for the index.
  */
-ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower, ir_node *upper);
+FIRM_DLL ir_node *new_Bound(ir_node *store, ir_node *idx, ir_node *lower,
+                            ir_node *upper);
 
 /** Constructor for a Pin node.
  *
  * @param *node       The node which value should be pinned.
  */
-ir_node *new_Pin(ir_node *node);
+FIRM_DLL ir_node *new_Pin(ir_node *node);
 
 /** Constructor for an ASM pseudo node.
  *
@@ -4349,9 +4454,9 @@ ir_node *new_Pin(ir_node *node);
  * @param *clobber    The array of length n_clobber of clobbered registers.
  * @param *asm_text   The assembler text.
  */
-ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
-                 int n_outs, ir_asm_constraint *outputs,
-                 int n_clobber, ident *clobber[], ident *asm_text);
+FIRM_DLL ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
+                          int n_outs, ir_asm_constraint *outputs,
+                          int n_clobber, ident *clobber[], ident *asm_text);
 
 /**
  * @brief Constructor for a Dummy node.
@@ -4361,7 +4466,7 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
  * @param *irg      the graph to put the node into
  * @returns         the newly created note
  */
-ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode);
+FIRM_DLL ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode);
 
 /**
  * @copybrief new_rd_Dummy()
@@ -4370,7 +4475,7 @@ ir_node *new_rd_Dummy(dbg_info *db, ir_graph *irg, ir_mode *mode);
  * @param *irg      the graph to put the node into
  * @returns         the newly created note
  */
-ir_node *new_r_Dummy(ir_graph *irg, ir_mode *mode);
+FIRM_DLL ir_node *new_r_Dummy(ir_graph *irg, ir_mode *mode);
 
 /**
  * @copybrief new_rd_Dummy()
@@ -4379,7 +4484,7 @@ ir_node *new_r_Dummy(ir_graph *irg, ir_mode *mode);
  * @param *mode     The mode of the node.
  * @returns         the newly created note
  */
-ir_node *new_d_Dummy(dbg_info *db, ir_mode *mode);
+FIRM_DLL ir_node *new_d_Dummy(dbg_info *db, ir_mode *mode);
 
 /**
  * @copybrief new_rd_Dummy()
@@ -4387,7 +4492,7 @@ ir_node *new_d_Dummy(dbg_info *db, ir_mode *mode);
  * @param *mode     The mode of the node.
  * @returns         the newly created note
  */
-ir_node *new_Dummy(ir_mode *mode);
+FIRM_DLL ir_node *new_Dummy(ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
@@ -4406,8 +4511,8 @@ ir_node *new_Dummy(ir_mode *mode);
  * Phi node construction.
  * This constructor can only be used if the graph is in state_building.
  */
-ir_node *new_d_immBlock(dbg_info *db);
-ir_node *new_immBlock(void);
+FIRM_DLL ir_node *new_d_immBlock(dbg_info *db);
+FIRM_DLL ir_node *new_immBlock(void);
 
 /** Create an immature PartBlock.
  *
@@ -4420,14 +4525,14 @@ ir_node *new_immBlock(void);
  * This constructor can only be used if the graph is in
  * state_building.
  */
-ir_node *new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp);
-ir_node *new_immPartBlock(ir_node *pred_jmp);
+FIRM_DLL ir_node *new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp);
+FIRM_DLL ir_node *new_immPartBlock(ir_node *pred_jmp);
 
 /** Add a control flow edge to an immature block. */
-void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
+FIRM_DLL void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
 
 /** Finalize a Block node, when all control flows are known. */
-void mature_immBlock(ir_node *block);
+FIRM_DLL void mature_immBlock(ir_node *block);
 #define mature_cur_block() mature_immBlock(get_cur_block());
 
 
@@ -4441,8 +4546,8 @@ void mature_immBlock(ir_node *block);
  * @param  pos   The position/id of the local variable.
  * @param *mode  The mode of the value to get.
  */
-ir_node *get_d_value(dbg_info *db, int pos, ir_mode *mode);
-ir_node *get_value(int pos, ir_mode *mode);
+FIRM_DLL ir_node *get_d_value(dbg_info *db, int pos, ir_mode *mode);
+FIRM_DLL ir_node *get_value(int pos, ir_mode *mode);
 
 /** Remark a new definition of a variable.
  *
@@ -4454,7 +4559,7 @@ ir_node *get_value(int pos, ir_mode *mode);
  * @param  pos   The position/id of the local variable.
  * @param *value The new value written to the local variable.
  */
-void set_value(int pos, ir_node *value);
+FIRM_DLL void set_value(int pos, ir_node *value);
 
 /**
  * Find the value number for a node in the current block.
@@ -4464,7 +4569,7 @@ void set_value(int pos, ir_node *value);
  * @return the value number of the value or -1 if this value has
  * no value number in the current block.
  */
-int find_value(ir_node *value);
+FIRM_DLL int find_value(ir_node *value);
 
 /** Get the current memory state.
  *
@@ -4472,7 +4577,7 @@ int find_value(ir_node *value);
  * state.  This call automatically inserts Phi nodes for the memory
  * state value.
  */
-ir_node *get_store(void);
+FIRM_DLL ir_node *get_store(void);
 
 /** Remark a new definition of the memory state.
  *
@@ -4481,16 +4586,16 @@ ir_node *get_store(void);
  *
  * @param *store The new memory state.
  */
-void set_store(ir_node *store);
+FIRM_DLL void set_store(ir_node *store);
 
 /** keep this node alive even if End is not control-reachable from it
  *
  * @param ka The node to keep alive.
  */
-void keep_alive(ir_node *ka);
+FIRM_DLL void keep_alive(ir_node *ka);
 
 /** Returns the frame type of the current graph */
-ir_type *get_cur_frame_type(void);
+FIRM_DLL ir_type *get_cur_frame_type(void);
 
 
 /* --- initialize and finalize IR construction --- */
@@ -4502,8 +4607,8 @@ ir_type *get_cur_frame_type(void);
  *
  * This also remarks, the construction of types is finished,
  * e.g., that no more subtypes will be added.  */
-void irp_finalize_cons(void);
+FIRM_DLL void irp_finalize_cons(void);
 
-/* --- Initialization --- */
+#include "end.h"
 
 #endif

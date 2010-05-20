@@ -2,11 +2,13 @@ libfirmincludedir=$(includedir)/libfirm
 libfirminclude_HEADERS = \
 	analyze_irg_args.h \
 	be.h \
+	begin.h \
 	callgraph.h \
 	cdep.h \
 	cgana.h \
 	compound_path.h \
 	dbginfo.h \
+	end.h \
 	execfreq.h \
 	execution_frequency.h \
 	field_temperature.h \
@@ -49,7 +51,6 @@ libfirminclude_HEADERS = \
 	irtypeinfo.h \
 	irvrfy.h \
 	lowering.h \
-	old_fctnames.h \
 	pseudo_irg.h \
 	rta.h \
 	seqnumbers.h \
@@ -62,7 +63,6 @@ libfirminclude_HEADERS = \
 
 libfirminclude_adtdir=$(includedir)/libfirm/adt
 libfirminclude_adt_HEADERS = \
-	adt/align.h \
 	adt/array.h \
 	adt/bipartite.h \
 	adt/cpset.h \
@@ -73,12 +73,10 @@ libfirminclude_adt_HEADERS = \
 	adt/hashptr.h \
 	adt/hashset.h \
 	adt/hungarian.h \
-	adt/impl.h \
 	adt/iterator.h \
 	adt/list.h \
 	adt/obstack.h \
 	adt/obst.h \
-	adt/offset.h \
 	adt/pdeq.h \
 	adt/plist.h \
 	adt/pmap.h \
@@ -87,5 +85,4 @@ libfirminclude_adt_HEADERS = \
 	adt/pset_new.h \
 	adt/set.h \
 	adt/unionfind.h \
-	adt/util.h \
 	adt/xmalloc.h

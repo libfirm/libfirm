@@ -28,27 +28,33 @@
 #define FIRM_ANA_EXECFREQ_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 struct ir_exec_freq;
 
 /**
  * Create execfreq structure (to be used with set_execfreq)
  */
-ir_exec_freq *create_execfreq(ir_graph *irg);
+FIRM_DLL ir_exec_freq *create_execfreq(ir_graph *irg);
 
 /**
  * Set execution frequency of a basic block
  */
-void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
+FIRM_DLL void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
 
 /**
  * Create execfreq structure and initialize with estimated frequencies
  */
-ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
+FIRM_DLL ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
 
-void free_execfreq(ir_exec_freq *ef);
+FIRM_DLL void free_execfreq(ir_exec_freq *ef);
 
-double get_block_execfreq(const ir_exec_freq *ef, const ir_node *block);
-unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef, const ir_node *block);
+FIRM_DLL double get_block_execfreq(const ir_exec_freq *ef,
+                                   const ir_node *block);
+
+FIRM_DLL unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef,
+                                                const ir_node *block);
+
+#include "end.h"
 
 #endif

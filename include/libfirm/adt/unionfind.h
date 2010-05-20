@@ -33,6 +33,8 @@
 
 #include <assert.h>
 
+#include "../begin.h"
+
 /**
  * Call this to initialize an array of @p count elements to be used by the
  * union find functions.
@@ -110,5 +112,7 @@ static inline int uf_find(int* data, int e)
 
 	return repr;
 }
+
+#include "../end.h"
 
 #endif

@@ -27,6 +27,7 @@
 #define FIRM_COMMON_FIRM_COMMON_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /**
  * libFirm initialization parameters.
@@ -90,21 +91,21 @@ typedef struct _firm_parameter_t firm_parameter_t;
  * The parameter struct may be NULL. In that case, the original FIRM behavior
  * is conserved.
  */
-void ir_init(const firm_parameter_t *params);
+FIRM_DLL void ir_init(const firm_parameter_t *params);
 
 /**
  * Frees all memory occupied by the firm library.
  */
-void ir_finish(void);
+FIRM_DLL void ir_finish(void);
 
 /** returns the libFirm major version number */
-unsigned ir_get_version_major(void);
+FIRM_DLL unsigned ir_get_version_major(void);
 /** returns libFirm minor version number */
-unsigned ir_get_version_minor(void);
+FIRM_DLL unsigned ir_get_version_minor(void);
 /** returns string describing libFirm revision */
-const char *ir_get_version_revision(void);
+FIRM_DLL const char *ir_get_version_revision(void);
 /** returns string describing libFirm build */
-const char *ir_get_version_build(void);
+FIRM_DLL const char *ir_get_version_build(void);
 
 
 
@@ -136,12 +137,14 @@ typedef enum {
  *
  * @param firm_thing  pointer representing a firm object
  */
-firm_kind get_kind(const void *firm_thing);
+FIRM_DLL firm_kind get_kind(const void *firm_thing);
 
 /** Returns the kind of a thing as a string. */
-const char *print_firm_kind(void *firm_thing);
+FIRM_DLL const char *print_firm_kind(void *firm_thing);
 
 /** Print an identification of a firm thing. */
-void firm_identify_thing(void *X);
+FIRM_DLL void firm_identify_thing(void *X);
+
+#include "end.h"
 
 #endif

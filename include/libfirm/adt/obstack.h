@@ -106,10 +106,8 @@ Summary:
 #ifndef _OBSTACK_H
 #define _OBSTACK_H 1
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
+#include "../begin.h"
+
 /* We need the type of a pointer subtraction.  If __PTRDIFF_TYPE__ is
    defined, as with GNU C, use that; that way we don't pollute the
    namespace with <stddef.h>'s symbols.  Otherwise, include <stddef.h>
@@ -506,8 +504,6 @@ __extension__								\
 int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap);
 int obstack_printf(struct obstack *obst, const char *fmt, ...);
 
-#ifdef __cplusplus
-}	/* C++ */
-#endif
+#include "../end.h"
 
 #endif /* obstack.h */

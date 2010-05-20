@@ -59,10 +59,6 @@
 #ifndef FIRM_COMMON_FIRM_H
 #define FIRM_COMMON_FIRM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "analyze_irg_args.h"
 #include "be.h"
 #include "callgraph.h"
@@ -119,9 +115,5 @@ extern "C" {
 #include "trouts.h"
 #include "tv.h"
 #include "typerep.h"
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

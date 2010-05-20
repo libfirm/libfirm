@@ -28,6 +28,8 @@
 #ifndef FIRM_ADT_PQUEUE_H
 #define FIRM_ADT_PQUEUE_H
 
+#include "../begin.h"
+
 typedef struct _pqueue_t pqueue_t;
 
 /**
@@ -70,5 +72,7 @@ int pqueue_length(const pqueue_t *q);
  * @return 1 if the queue is empty, 0 otherwise.
  */
 int pqueue_empty(const pqueue_t *q);
+
+#include "../end.h"
 
 #endif

@@ -35,8 +35,7 @@
 #include "irgraph.h"
 #include "irnode.h"
 #include "typerep.h"
-
-
+#include "begin.h"
 
 /* ------------ Building and Removing the type information  ----------- */
 
@@ -57,9 +56,11 @@
  * Uses the link field of types.  Sets this field of each type to point to a
  * pointer type that points to the type (Got it? ;-)).
  */
-void simple_analyse_types(void);
+FIRM_DLL void simple_analyse_types(void);
 
 /** Frees all type information datastructures.  Sets the flag in irg to "???". */
-void free_simple_type_information(void);
+FIRM_DLL void free_simple_type_information(void);
+
+#include "end.h"
 
 #endif

@@ -39,32 +39,33 @@
 #define FIRM_ANA_INTERVAL_ANALYSIS_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /** The ins of regions:  regions are loops or blocks.
  *
  *  @todo: we should make a type for the regions, or reuse loop_element.
  */
-int   get_region_n_ins(void *region);
-void *get_region_in   (void *region, int pos);
-void  add_region_in   (void *region, void *in);
+FIRM_DLL int get_region_n_ins(void *region);
+FIRM_DLL void *get_region_in(void *region, int pos);
+FIRM_DLL void add_region_in(void *region, void *in);
 
 
 /** The number of out edges of a region.
  *
  *  This number is useful for evaluation of execution frequencies.
  */
-int get_region_n_outs(void *region);
+FIRM_DLL int get_region_n_outs(void *region);
 
 /** The number of exception out edges of a region.
  *
  *  This number is useful for evaluation of execution frequencies.
  */
-int get_region_n_exc_outs(void *region);
+FIRM_DLL int get_region_n_exc_outs(void *region);
 
 /** The control flow operation corresponding to the loop-region in at
  *  position pos.
  */
-void *get_loop_cfop(void *region, int pos);
+FIRM_DLL void *get_loop_cfop(void *region, int pos);
 
 
 /** The algorithm to construct the interval graph.
@@ -74,14 +75,14 @@ void *get_loop_cfop(void *region, int pos);
  *  @todo: @@@ add flag that states correctness of interval analysis information
  *  to irg.
  **/
-void construct_intervals(ir_graph *irg);
-
+FIRM_DLL void construct_intervals(ir_graph *irg);
 
 /** frees interval information of all graphs. */
-void free_intervals(void);
-
+FIRM_DLL void free_intervals(void);
 
 /** dump a graph with the intervals. File name suffix "-interval". */
-void dump_interval_graph(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_interval_graph(ir_graph *irg, const char *suffix);
+
+#include "end.h"
 
 #endif

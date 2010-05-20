@@ -26,6 +26,8 @@
 #ifndef FIRM_ADT_HASHPTR_H
 #define FIRM_ADT_HASHPTR_H
 
+#include "../begin.h"
+
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U
 #define _FIRM_FNV_FNV_PRIME 16777619U
 
@@ -101,5 +103,7 @@ static inline unsigned _hash_combine(unsigned x, unsigned y)
  * @return A hash value computed from the both.
  */
 #define HASH_COMBINE(a,b) _hash_combine(a, b)
+
+#include "../end.h"
 
 #endif

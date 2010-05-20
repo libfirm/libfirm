@@ -30,6 +30,8 @@
 
 #include "fourcc.h"
 
+#include "../begin.h"
+
 /**
  * The iterator magic word.
  */
@@ -58,5 +60,7 @@ extern const iterator_t *list_iterator;
  * An iterator implementation for psets.
  */
 extern const iterator_t *pset_iterator;
+
+#include "../end.h"
 
 #endif

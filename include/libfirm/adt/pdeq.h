@@ -26,6 +26,8 @@
 #ifndef FIRM_ADT_PDEQ_H
 #define FIRM_ADT_PDEQ_H
 
+#include "../begin.h"
+
 /**
  * The type of the pointer compare function.
  *
@@ -267,5 +269,7 @@ typedef pdeq stack;
  * @return  non-zero if the stack is empty.
  */
 #define stack_empty(st) pdeq_empty(wq)
+
+#include "../end.h"
 
 #endif

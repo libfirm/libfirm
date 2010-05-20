@@ -44,6 +44,7 @@
 #include <stdio.h>
 
 #include "firm_types.h"
+#include "begin.h"
 
 /**
  * Symbolic names for the different dumping colors.
@@ -121,11 +122,11 @@ typedef int (*DUMP_NODE_VCGATTR_FUNC)(FILE *F, ir_node *node, ir_node *local);
 typedef int (*DUMP_EDGE_VCGATTR_FUNC)(FILE *F, ir_node *node, int to);
 
 /** Set the ir graph dump hook. */
-void set_dump_ir_graph_hook(DUMP_IR_GRAPH_FUNC hook);
+FIRM_DLL void set_dump_ir_graph_hook(DUMP_IR_GRAPH_FUNC hook);
 /** Set the node_vcgattr hook. */
-void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook);
+FIRM_DLL void set_dump_node_vcgattr_hook(DUMP_NODE_VCGATTR_FUNC hook);
 /** Set the edge_vcgattr hook. */
-void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook);
+FIRM_DLL void set_dump_edge_vcgattr_hook(DUMP_EDGE_VCGATTR_FUNC hook);
 
 typedef int (*DUMP_NODE_EDGE_FUNC)(FILE *f, ir_node *node);
 
@@ -133,25 +134,25 @@ typedef int (*DUMP_NODE_EDGE_FUNC)(FILE *f, ir_node *node);
  * Set the hook to be called to dump additional edges to a node.
  * @param func The hook to be called.
  */
-void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func);
+FIRM_DLL void set_dump_node_edge_hook(DUMP_NODE_EDGE_FUNC func);
 
 /**
  * Get the additional edge dump hook.
  * @return The current additional edge dump hook.]
  */
-DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void);
+FIRM_DLL DUMP_NODE_EDGE_FUNC get_dump_node_edge_hook(void);
 
 /**
  * Set the hook to be called to dump additional edges to a block.
  * @param func The hook to be called.
  */
-void set_dump_block_edge_hook(DUMP_NODE_EDGE_FUNC func);
+FIRM_DLL void set_dump_block_edge_hook(DUMP_NODE_EDGE_FUNC func);
 
 /**
  * Get the additional block edge dump hook.
  * @return The current additional block edge dump hook.
  */
-DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void);
+FIRM_DLL DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void);
 
 /** Dump a firm graph.
  *
@@ -170,8 +171,8 @@ DUMP_NODE_EDGE_FUNC get_dump_block_edge_hook(void);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph(ir_graph *irg, const char *suffix);
-void dump_ir_graph_file(ir_graph *irg, FILE *out);
+FIRM_DLL void dump_ir_graph(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_ir_graph_file(ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes.
  *
@@ -190,13 +191,13 @@ void dump_ir_graph_file(ir_graph *irg, FILE *out);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_ir_block_graph(ir_graph *irg, const char *suffix);
 
 /**
  * Does the same as dump_ir_block_graph but dumps to a stream
  * @see dump_ir_block_graph()
  */
-void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
+FIRM_DLL void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
 
 /** Dump a firm graph without explicit block nodes but grouped in extended blocks.
  *
@@ -215,19 +216,19 @@ void dump_ir_block_graph_file(ir_graph *irg, FILE *out);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_extblock_graph(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_ir_extblock_graph(ir_graph *irg, const char *suffix);
 
 /**
  * Does the same as dump_ir_extrblock_graph but dumps to a stream
  * @see dump_ir_extblock_graph()
  */
-void dump_ir_extblock_graph_file(ir_graph *irg, FILE *out);
+FIRM_DLL void dump_ir_extblock_graph_file(ir_graph *irg, FILE *out);
 
 /** Dumps all graphs in interprocedural view to a file named All_graphs\<suffix\>.vcg.
  *
  * @param suffix  A suffix for the file name.
  */
-void dump_all_cg_block_graph(const char *suffix);
+FIRM_DLL void dump_all_cg_block_graph(const char *suffix);
 
 /** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
@@ -244,13 +245,13 @@ void dump_all_cg_block_graph(const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_graph_w_types(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_ir_graph_w_types(ir_graph *irg, const char *suffix);
 
 /**
  * Does the same as dump_ir_graph_w_types but dumps to a stream
  * @see dump_ir_graph_w_types()
  */
-void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out);
+FIRM_DLL void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out);
 
 /** Dumps a firm graph and  all the type information needed for Calls,
  *  Sels, ... in this graph.
@@ -268,14 +269,14 @@ void dump_ir_graph_w_types_file(ir_graph *irg, FILE *out);
  *
  * @see turn_off_edge_labels()
  */
-void dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_ir_block_graph_w_types(ir_graph *irg, const char *suffix);
 
 /**
  * same as @see dump_ir_block_graph_w_types() but dumps to a stream
  * @param irg  the graph to dump
  * @param out  stream to dump to
  */
-void dump_ir_block_graph_w_types_file(ir_graph *irg, FILE *out);
+FIRM_DLL void dump_ir_block_graph_w_types_file(ir_graph *irg, FILE *out);
 
 /** The type of a dump function that is called for each graph.
  *
@@ -303,7 +304,8 @@ typedef void dump_graph_func(ir_graph *irg, const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_ir_graphs(dump_graph_func *dump_graph, const char *suffix);
+FIRM_DLL void dump_all_ir_graphs(dump_graph_func *dump_graph,
+                                 const char *suffix);
 
 /**
  * Creates an ir_prog pass for dump_all_ir_graphs().
@@ -314,7 +316,7 @@ void dump_all_ir_graphs(dump_graph_func *dump_graph, const char *suffix);
  *
  * @return  the newly created ir_prog pass
  */
-ir_prog_pass_t *dump_all_ir_graph_pass(
+FIRM_DLL ir_prog_pass_t *dump_all_ir_graph_pass(
 	const char *name, dump_graph_func *dump_graph, const char *suffix);
 
 /**
@@ -333,7 +335,7 @@ ir_prog_pass_t *dump_all_ir_graph_pass(
  *
  * @see turn_off_edge_labels()
  */
-void dump_cfg(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_cfg(ir_graph *irg, const char *suffix);
 
 /**
  * Dump a node and its predecessors forming a subgraph to a vcg file.
@@ -350,7 +352,7 @@ void dump_cfg(ir_graph *irg, const char *suffix);
  * @return
  *      A file containing the subgraph in vcg format.
  */
-void dump_subgraph(ir_node *root, int depth, const char *suffix);
+FIRM_DLL void dump_subgraph(ir_node *root, int depth, const char *suffix);
 
 /* **************************************************************************** */
 /*                              CALLGRAPH DUMPERS                               */
@@ -365,7 +367,7 @@ void dump_subgraph(ir_node *root, int depth, const char *suffix);
  *
  * @see dump_callgraph_loop_tree(const char *suffix)
  */
-void dump_callgraph(const char *suffix);
+FIRM_DLL void dump_callgraph(const char *suffix);
 
 /* **************************************************************************** */
 /*                              TYPEGRAPH DUMPERS                               */
@@ -387,7 +389,7 @@ void dump_callgraph(const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_type_graph(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_type_graph(ir_graph *irg, const char *suffix);
 
 /**
  * Dumps all type information.
@@ -404,7 +406,7 @@ void dump_type_graph(ir_graph *irg, const char *suffix);
  *
  * @see turn_off_edge_labels()
  */
-void dump_all_types(const char *suffix);
+FIRM_DLL void dump_all_types(const char *suffix);
 
 /**
  * Dumps the class hierarchy with or without entities.
@@ -423,7 +425,7 @@ void dump_all_types(const char *suffix);
  * is dumped along with the entities.
  * Dumps to a file class_hierarchy.vcg
  */
-void dump_class_hierarchy(int entities, const char *suffix);
+FIRM_DLL void dump_class_hierarchy(int entities, const char *suffix);
 
 /* **************************************************************************** */
 /*                              LOOPTREE DUMPERS                                */
@@ -440,7 +442,7 @@ void dump_class_hierarchy(int entities, const char *suffix);
  * @param irg     Dump the loop tree for this graph.
  * @param suffix  A suffix for the file name.
  */
-void dump_loop_tree(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_loop_tree(ir_graph *irg, const char *suffix);
 
 /** Dumps the firm nodes in the sub-loop-tree of loop to a graph.
  *
@@ -450,7 +452,7 @@ void dump_loop_tree(ir_graph *irg, const char *suffix);
  * @param l       Dump the loop tree for this loop.
  * @param suffix  A suffix for the file name.
  */
-void dump_loop(ir_loop *l, const char *suffix);
+FIRM_DLL void dump_loop(ir_loop *l, const char *suffix);
 
 /** Dumps the loop tree over the call graph.
  *
@@ -459,7 +461,7 @@ void dump_loop(ir_loop *l, const char *suffix);
  *
  * @param suffix  A suffix for the file name.
  */
-void dump_callgraph_loop_tree(const char *suffix);
+FIRM_DLL void dump_callgraph_loop_tree(const char *suffix);
 
 
 /* **************************************************************************** */
@@ -467,23 +469,19 @@ void dump_callgraph_loop_tree(const char *suffix);
 /* **************************************************************************** */
 
 
-/** Write the irnode and all its attributes to the file passed.
- * */
-int dump_irnode_to_file(FILE *f, ir_node *n);
+/** Write the irnode and all its attributes to the file passed. */
+FIRM_DLL int dump_irnode_to_file(FILE *f, ir_node *n);
 
-/** Write the irnode and all its attributes to stdout.
- *  */
-void dump_irnode(ir_node *n);
+/** Write the irnode and all its attributes to stdout. */
+FIRM_DLL void dump_irnode(ir_node *n);
 
 /** Write the graph and all its attributes to the file passed.
- *  Does not write the nodes.
- * */
-void dump_graph_to_file(FILE *F, ir_graph *irg);
+ *  Does not write the nodes. */
+FIRM_DLL void dump_graph_to_file(FILE *F, ir_graph *irg);
 
 /** Write the graph and all its attributes to stdout.
- *  Does not write the nodes.
- *  */
-void dump_graph(ir_graph *g);
+ *  Does not write the nodes. */
+FIRM_DLL void dump_graph(ir_graph *g);
 
 
 /** Dump graph information as text.
@@ -495,7 +493,7 @@ void dump_graph(ir_graph *g);
  *  The file name is the graph name (get_entity_name()), appended by
  *  \<suffix\>.txt.
  */
-void dump_graph_as_text(ir_graph *irg, const char *suffix);
+FIRM_DLL void dump_graph_as_text(ir_graph *irg, const char *suffix);
 
 
 /** Verbosity for text dumpers */
@@ -540,20 +538,18 @@ typedef enum {
 
 /** Write the entity and all its attributes to the passed file.
  *  */
-void    dump_entity_to_file(FILE *F, ir_entity *ent, unsigned verbosity);
+FIRM_DLL void dump_entity_to_file(FILE *F, ir_entity *ent, unsigned verbosity);
 
 /** Write the entity and all its attributes to the stdout.
  *
  *  Calls dump_entity_to_file().  */
-void    dump_entity(ir_entity *ent);
+FIRM_DLL void dump_entity(ir_entity *ent);
 
-/** Write the type and all its attributes to the file passed.
- * */
-void    dump_type_to_file(FILE *f, ir_type *tp, dump_verbosity verbosity);
+/** Write the type and all its attributes to the file passed. */
+FIRM_DLL void dump_type_to_file(FILE *f, ir_type *tp, dump_verbosity verbosity);
 
-/** Write the type and all its attributes to stdout.
- *  */
-void    dump_type(ir_type *tp);
+/** Write the type and all its attributes to stdout. */
+void dump_type(ir_type *tp);
 
 
 /** Dump type information as text.
@@ -568,7 +564,7 @@ void    dump_type(ir_type *tp);
  *  if the program name is not set, appended by \<suffix\>-types.txt.
  *  For verbosity see the documentation of the verbosity flags above.
  */
-void dump_types_as_text(unsigned verbosity, const char *suffix);
+FIRM_DLL void dump_types_as_text(unsigned verbosity, const char *suffix);
 
 /** Dumps all global variables as text.
  *
@@ -581,7 +577,7 @@ void dump_types_as_text(unsigned verbosity, const char *suffix);
  * if the program name is not set, appended by \<suffix\>-globals.txt.
  * For verbosity see the documentation of the verbosity flags above.
  */
-void dump_globals_as_text(unsigned verbosity, const char *suffix);
+FIRM_DLL void dump_globals_as_text(unsigned verbosity, const char *suffix);
 
 /* **************************************************************************** */
 /*                                    FLAGS                                     */
@@ -596,21 +592,21 @@ void dump_globals_as_text(unsigned verbosity, const char *suffix);
  * @param name The prefix of the name (not the ld_name) of the method
  *              entity to be dumped.
  */
-void   only_dump_method_with_name(ident *name);
+FIRM_DLL void only_dump_method_with_name(ident *name);
 
 /** Returns the prefix filter set with only_dump_method_with_name(). */
-ident *get_dump_file_filter_ident(void);
+FIRM_DLL ident *get_dump_file_filter_ident(void);
 
 /** Returns true if dump file filter is not set, or if it is a
  *  prefix of name. */
-int is_filtered_dump_name(ident *name);
+FIRM_DLL int is_filtered_dump_name(ident *name);
 
 /** Sets the vcg flag "display_edge_labels" to no.
  *
  * This is necessary as xvcg and aisee both fail to display graphs
  * with self-edges if these edges have labels.
  */
-void turn_off_edge_labels(void);
+FIRM_DLL void turn_off_edge_labels(void);
 
 /**
  * If set to non-zero constants will be replicated for every use. In non
@@ -620,93 +616,92 @@ void turn_off_edge_labels(void);
  * edges are dumped, as outs, loop, ...
  * Default setting: false.
  */
-void dump_consts_local(int flag);
+FIRM_DLL void dump_consts_local(int flag);
 
 /**
  * if set to non-zero node idx will be added to node labels
  */
-void dump_node_idx_label(int flag);
+FIRM_DLL void dump_node_idx_label(int flag);
 
 /**  Turns off dumping the values of constant entities. Makes type graphs
  *   better readable.
  */
-void dump_constant_entity_values(int flag);
+FIRM_DLL void dump_constant_entity_values(int flag);
 
 /**  Turns on dumping the edges from the End node to nodes to be kept
  *   alive.
  */
-void dump_keepalive_edges(int flag);
-int get_opt_dump_keepalive_edges(void);
+FIRM_DLL void dump_keepalive_edges(int flag);
+FIRM_DLL int get_opt_dump_keepalive_edges(void);
 
 /** Turns on dumping the out edges starting from the Start block in
  *  dump_ir_graph.
  *
  *  To test the consistency of the out data structure.
  */
-void dump_out_edges(int flag);
+FIRM_DLL void dump_out_edges(int flag);
 
-/** If this flag is set the dumper dumps edges to immediate dominator in cfg.
- */
-void dump_dominator_information(int flag);
+/** If this flag is set the dumper dumps edges to immediate dominator in cfg. */
+FIRM_DLL void dump_dominator_information(int flag);
 
 /** If this flag is set the dumper dumps loop nodes and edges from
  *  these nodes to the contained ir nodes.
  *
  *  If the loops are interprocedural nodes can be missing.
  */
-void dump_loop_information(int flag);
+FIRM_DLL void dump_loop_information(int flag);
 
 /** If set and backedge info is computed, backedges are dumped dashed
  *  and as vcg 'backedge' construct.
  *
  *  Default: set.
  */
-void dump_backedge_information(int flag);
+FIRM_DLL void dump_backedge_information(int flag);
 
 /** Dump the information of type field specified in ana/irtypeinfo.h.
  *
  *  If the flag is set, the type name is output in [] in the node label,
  *  else it is output as info.
  */
-void set_opt_dump_analysed_type_info(int flag);
+FIRM_DLL void set_opt_dump_analysed_type_info(int flag);
 
 /**
  * dump iredges (new style out edges)
  */
-void dump_new_edges(int flag);
+FIRM_DLL void dump_new_edges(int flag);
 
 /** Write the address of a node into the vcg info.
  *
  *  This is off per default for automatic comparisons of
  *  vcg graphs -- these will differ in the pointer values!
  */
-void dump_pointer_values_to_info(int flag);
+FIRM_DLL void dump_pointer_values_to_info(int flag);
 
 /** Dumps ld_names of entities instead of there names.
  *
  * This option is on per default.
  */
-void dump_ld_names(int flag);
+FIRM_DLL void dump_ld_names(int flag);
 
 /** Dumps all graph anchor nodes, even if they
  * are dead.
  *
  * This option is off per default.
  */
-void dump_all_anchors(int flag);
+FIRM_DLL void dump_all_anchors(int flag);
 
 /** Dumps a MacroBlock edge from every Block to its
  * MacroBlock header.
  *
  * This option is off per default.
  */
-void dump_macroblock_edges(int flag);
+FIRM_DLL void dump_macroblock_edges(int flag);
 
 /** Dumps a marked blocks with a asterisk in the title.
  *
  * This option is off per default.
  */
-void dump_block_marker_in_title(int flag);
+FIRM_DLL void dump_block_marker_in_title(int flag);
 
 /** A node info dumper callback. */
 typedef void (dump_node_info_cb_t)(void *data, FILE *f, const ir_node *n);
@@ -723,13 +718,15 @@ typedef void (dump_node_info_cb_t)(void *data, FILE *f, const ir_node *n);
  *
  * @note This functionality is only available, if Firm hooks are enabled (default).
  */
-void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
+FIRM_DLL void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data);
 
 /**
  * Remove a previously added info dumper callback.
  *
  * @param handle  the callback handle returned from dump_add_node_info_callback()
  */
-void dump_remv_node_info_callback(void *handle);
+FIRM_DLL void dump_remv_node_info_callback(void *handle);
+
+#include "end.h"
 
 #endif

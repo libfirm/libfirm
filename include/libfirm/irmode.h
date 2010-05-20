@@ -36,6 +36,7 @@
 #define FIRM_IR_IRMODE_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /* ********** Predefined modes ********** */
 
@@ -96,7 +97,7 @@ typedef enum ir_mode_arithmetic {
 } ir_mode_arithmetic;
 
 /** Returns the name of the arithmetic type. */
-const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
+FIRM_DLL const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
 
 /* ********** Constructor for user defined modes **************** */
 /**
@@ -123,8 +124,9 @@ const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
  *   It is allowed to construct the default modes. So, a call
  *   new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will return mode_Is.
  */
-ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign,
-                     ir_mode_arithmetic arithmetic, unsigned int modulo_shift);
+FIRM_DLL ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size,
+                              int sign, ir_mode_arithmetic arithmetic,
+                              unsigned int modulo_shift);
 
 /**
  * Creates a new vector mode.
@@ -146,8 +148,10 @@ ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign
  * @return
  *   The new mode or NULL on error.
  */
-ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
-                            ir_mode_arithmetic arithmetic, unsigned int modulo_shift);
+FIRM_DLL ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort,
+                                     int bit_size, unsigned num_of_elem,
+                                     int sign, ir_mode_arithmetic arithmetic,
+                                     unsigned int modulo_shift);
 
 /**
  * Checks whether a pointer points to a mode.
@@ -157,33 +161,33 @@ ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, u
  * @return
  *     true if the thing is a mode, else false
  */
-int is_mode(const void *thing);
+FIRM_DLL int is_mode(const void *thing);
 
 /* ********** Access methods to read mode information *********** */
 
 /** Returns the ident* of the mode */
-ident      *get_mode_ident(const ir_mode *mode);
+FIRM_DLL ident *get_mode_ident(const ir_mode *mode);
 
 /** Returns the null-terminated name of this mode. */
-const char *get_mode_name(const ir_mode *mode);
+FIRM_DLL const char *get_mode_name(const ir_mode *mode);
 
 /** Returns a coarse classification of the mode. */
-ir_mode_sort get_mode_sort(const ir_mode *mode);
+FIRM_DLL ir_mode_sort get_mode_sort(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bits. */
-unsigned get_mode_size_bits(const ir_mode *mode);
+FIRM_DLL unsigned get_mode_size_bits(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bytes.
  *  If the size is not dividable by 8 returns -1. */
-unsigned get_mode_size_bytes(const ir_mode *mode);
+FIRM_DLL unsigned get_mode_size_bytes(const ir_mode *mode);
 
 /** Returns the signess of a mode.
  *
  * Returns the signess of a mode: 1 if mode is signed. */
-int get_mode_sign(const ir_mode *mode);
+FIRM_DLL int get_mode_sign(const ir_mode *mode);
 
 /** Returns the arithmetic of a mode */
-ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
+FIRM_DLL ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
 
 /** Get the modulo shift attribute.
  *
@@ -191,7 +195,7 @@ ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
  *  whether shift applies modulo to value of bits to shift.  Zero for
  *  modes that are not integer.
  */
-unsigned int get_mode_modulo_shift(const ir_mode *mode);
+FIRM_DLL unsigned int get_mode_modulo_shift(const ir_mode *mode);
 
 /** Return the number of vector elements.
  *
@@ -199,13 +203,13 @@ unsigned int get_mode_modulo_shift(const ir_mode *mode);
  *  a vector mode. For non-vector modes it returns 1 for data and 0
  *  for all other modes
  */
-unsigned int get_mode_n_vector_elems(const ir_mode *mode);
+FIRM_DLL unsigned int get_mode_n_vector_elems(const ir_mode *mode);
 
 /** Returns the stored intermediate information. */
-void *get_mode_link(const ir_mode *mode);
+FIRM_DLL void *get_mode_link(const ir_mode *mode);
 
 /** Stores new intermediate information. */
-void  set_mode_link(ir_mode *mode, void *l);
+FIRM_DLL void set_mode_link(ir_mode *mode, void *l);
 
 /**
  * Returns the smallest representable value of a given mode.
@@ -213,7 +217,7 @@ void  set_mode_link(ir_mode *mode, void *l);
  * For modes of the sort float_number this is the most negative value
  * bigger than -infinite.
  */
-tarval *get_mode_min(ir_mode *mode);
+FIRM_DLL tarval *get_mode_min(ir_mode *mode);
 
 /**
  * Returns the biggest representable value o f a given mode.
@@ -221,7 +225,7 @@ tarval *get_mode_min(ir_mode *mode);
  * For modes of the sort float_number this is the largest value lower
  * than infinite.
  */
-tarval *get_mode_max(ir_mode *mode);
+FIRM_DLL tarval *get_mode_max(ir_mode *mode);
 
 /**
  * Returns the value Zero represented in this mode.
@@ -231,7 +235,7 @@ tarval *get_mode_max(ir_mode *mode);
  * op_pin_state_floats and ints, and references (NULL-Pointer)
  * else returns tarval_bad.
  */
-tarval *get_mode_null(ir_mode *mode);
+FIRM_DLL tarval *get_mode_null(ir_mode *mode);
 
 /**
  * Returns the value One, represented in this mode.
@@ -240,7 +244,7 @@ tarval *get_mode_null(ir_mode *mode);
  * is defined only for modes allowing multiplication,
  * i.e. ints and floats.
  */
-tarval *get_mode_one(ir_mode *mode);
+FIRM_DLL tarval *get_mode_one(ir_mode *mode);
 
 /**
  * Returns the value Minus One, represented in this mode.
@@ -248,14 +252,14 @@ tarval *get_mode_one(ir_mode *mode);
  * Minus One is defined only for modes allowing
  * multiplication with signed values, i.e. signed ints and floats.
  */
-tarval *get_mode_minus_one(ir_mode *mode);
+FIRM_DLL tarval *get_mode_minus_one(ir_mode *mode);
 
 /**
  * Returns the value where all bits are One, represented in this mode.
  *
  * All One is defined only for modes integer, reference and boolean modes
  */
-tarval *get_mode_all_one(ir_mode *mode);
+FIRM_DLL tarval *get_mode_all_one(ir_mode *mode);
 
 /**
  * Returns the positive infinite value of a mode.
@@ -263,7 +267,7 @@ tarval *get_mode_all_one(ir_mode *mode);
  * This is only valid for float_numbers, other modes
  * will result in tarval_bad.
  */
-tarval *get_mode_infinite(ir_mode *mode);
+FIRM_DLL tarval *get_mode_infinite(ir_mode *mode);
 
 /**
  * Returns the NAN value of a given mode.
@@ -271,84 +275,83 @@ tarval *get_mode_infinite(ir_mode *mode);
  * This is only valid for float_numbers, other modes
  * will result in tarval_bad.
  */
-tarval *get_mode_NAN(ir_mode *mode);
+FIRM_DLL tarval *get_mode_NAN(ir_mode *mode);
 
-extern ir_mode *mode_M;	 /**< memory */
+ir_mode *mode_M; /**< memory */
 
 /* -- A set of predefined, numerical modes according to Techreport 1999-44 -- */
-extern ir_mode *mode_F;	  /**< signed float(32) */
-extern ir_mode *mode_D;   /**< signed double(64) */
-extern ir_mode *mode_E;   /**< signed extended(80) */
-extern ir_mode *mode_Bs;  /**< signed byte (former char) */
-extern ir_mode *mode_Bu;  /**< unsigned byte (former char) */
-extern ir_mode *mode_Hs;  /**< signed short integer */
-extern ir_mode *mode_Hu;  /**< unsigned short integer */
-extern ir_mode *mode_Is;  /**< signed integer */
-extern ir_mode *mode_Iu;  /**< unsigned integer */
-extern ir_mode *mode_Ls;  /**< signed long integer */
-extern ir_mode *mode_Lu;  /**< unsigned long integer */
-extern ir_mode *mode_LLs; /**< signed long long integer */
-extern ir_mode *mode_LLu; /**< unsigned long long integer */
+FIRM_DLL ir_mode *mode_F;	  /**< signed float(32) */
+FIRM_DLL ir_mode *mode_D;   /**< signed double(64) */
+FIRM_DLL ir_mode *mode_E;   /**< signed extended(80) */
+FIRM_DLL ir_mode *mode_Bs;  /**< signed byte (former char) */
+FIRM_DLL ir_mode *mode_Bu;  /**< unsigned byte (former char) */
+FIRM_DLL ir_mode *mode_Hs;  /**< signed short integer */
+FIRM_DLL ir_mode *mode_Hu;  /**< unsigned short integer */
+FIRM_DLL ir_mode *mode_Is;  /**< signed integer */
+FIRM_DLL ir_mode *mode_Iu;  /**< unsigned integer */
+FIRM_DLL ir_mode *mode_Ls;  /**< signed long integer */
+FIRM_DLL ir_mode *mode_Lu;  /**< unsigned long integer */
+FIRM_DLL ir_mode *mode_LLs; /**< signed long long integer */
+FIRM_DLL ir_mode *mode_LLu; /**< unsigned long long integer */
 
-extern ir_mode *mode_P;   /**< pointer */
-extern ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
+FIRM_DLL ir_mode *mode_P;   /**< pointer */
+FIRM_DLL ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode
                                   represents the pointer size of the target machine code addresses. Is initialized
                                   to mode_P. */
-extern ir_mode *mode_P_data; /**< A pointer mode that is set by the client of libfirm.  This mode
+FIRM_DLL ir_mode *mode_P_data; /**< A pointer mode that is set by the client of libfirm.  This mode
                                   represents the pointer size of the target machine data addresses. Is initialized
                                   to mode_P. */
 
 /* -- Auxiliary modes necessary for the Firm representation -- */
-extern ir_mode *mode_b;  /**< internal boolean */
+FIRM_DLL ir_mode *mode_b;  /**< internal boolean */
 
-extern ir_mode *mode_X;  /**< execution */
-extern ir_mode *mode_BB; /**< block */
+FIRM_DLL ir_mode *mode_X;  /**< execution */
+FIRM_DLL ir_mode *mode_BB; /**< block */
 
-extern ir_mode *mode_T;  /**< tuple (none) */
-extern ir_mode *mode_ANY;/**< undefined mode */
-extern ir_mode *mode_BAD;/**< bad mode */
+FIRM_DLL ir_mode *mode_T;  /**< tuple (none) */
+FIRM_DLL ir_mode *mode_ANY;/**< undefined mode */
+FIRM_DLL ir_mode *mode_BAD;/**< bad mode */
 
 /*@{*/
-/** Access routines for JNI Interface */
-ir_mode *get_modeF(void);
-ir_mode *get_modeD(void);
-ir_mode *get_modeE(void);
-ir_mode *get_modeBs(void);
-ir_mode *get_modeBu(void);
-ir_mode *get_modeHs(void);
-ir_mode *get_modeHu(void);
-ir_mode *get_modeIs(void);
-ir_mode *get_modeIu(void);
-ir_mode *get_modeLs(void);
-ir_mode *get_modeLu(void);
-ir_mode *get_modeLLs(void);
-ir_mode *get_modeLLu(void);
-ir_mode *get_modeP(void);
-ir_mode *get_modeb(void);
-ir_mode *get_modeX(void);
-ir_mode *get_modeBB(void);
-ir_mode *get_modeM(void);
-ir_mode *get_modeT(void);
-ir_mode *get_modeANY(void);
-ir_mode *get_modeBAD(void);
+FIRM_DLL ir_mode *get_modeF(void);
+FIRM_DLL ir_mode *get_modeD(void);
+FIRM_DLL ir_mode *get_modeE(void);
+FIRM_DLL ir_mode *get_modeBs(void);
+FIRM_DLL ir_mode *get_modeBu(void);
+FIRM_DLL ir_mode *get_modeHs(void);
+FIRM_DLL ir_mode *get_modeHu(void);
+FIRM_DLL ir_mode *get_modeIs(void);
+FIRM_DLL ir_mode *get_modeIu(void);
+FIRM_DLL ir_mode *get_modeLs(void);
+FIRM_DLL ir_mode *get_modeLu(void);
+FIRM_DLL ir_mode *get_modeLLs(void);
+FIRM_DLL ir_mode *get_modeLLu(void);
+FIRM_DLL ir_mode *get_modeP(void);
+FIRM_DLL ir_mode *get_modeb(void);
+FIRM_DLL ir_mode *get_modeX(void);
+FIRM_DLL ir_mode *get_modeBB(void);
+FIRM_DLL ir_mode *get_modeM(void);
+FIRM_DLL ir_mode *get_modeT(void);
+FIRM_DLL ir_mode *get_modeANY(void);
+FIRM_DLL ir_mode *get_modeBAD(void);
 
 /** Returns the machine specific pointer mode for code addresses. */
-ir_mode *get_modeP_code(void);
+FIRM_DLL ir_mode *get_modeP_code(void);
 
 /** Returns the machine specific pointer mode for data addresses. */
-ir_mode *get_modeP_data(void);
+FIRM_DLL ir_mode *get_modeP_data(void);
 
 /**
  * Sets the machine specific pointer mode for code addresses.
  * If not set, the predefined mode mode_P will be used.
  */
-void set_modeP_code(ir_mode *p);
+FIRM_DLL void set_modeP_code(ir_mode *p);
 
 /**
  * Sets the machine specific pointer mode for data addresses.
  * If not set, the predefined mode mode_P will be used.
  */
-void set_modeP_data(ir_mode *p);
+FIRM_DLL void set_modeP_data(ir_mode *p);
 
 /*@{*/
 /**
@@ -382,16 +385,16 @@ void set_modeP_data(ir_mode *p);
    Vector "int" and "float" are defined by the arithmetic and vector_elem > 1.
 */
 /* Test for a certain class of modes. */
-int mode_is_signed (const ir_mode *mode);
-int mode_is_float (const ir_mode *mode);
-int mode_is_int (const ir_mode *mode);
-int mode_is_reference (const ir_mode *mode);
-int mode_is_num (const ir_mode *mode);
-int mode_is_data (const ir_mode *mode);
-int mode_is_datab (const ir_mode *mode);
-int mode_is_dataM (const ir_mode *mode);
-int mode_is_float_vector (const ir_mode *mode);
-int mode_is_int_vector (const ir_mode *mode);
+FIRM_DLL int mode_is_signed (const ir_mode *mode);
+FIRM_DLL int mode_is_float (const ir_mode *mode);
+FIRM_DLL int mode_is_int (const ir_mode *mode);
+FIRM_DLL int mode_is_reference (const ir_mode *mode);
+FIRM_DLL int mode_is_num (const ir_mode *mode);
+FIRM_DLL int mode_is_data (const ir_mode *mode);
+FIRM_DLL int mode_is_datab (const ir_mode *mode);
+FIRM_DLL int mode_is_dataM (const ir_mode *mode);
+FIRM_DLL int mode_is_float_vector (const ir_mode *mode);
+FIRM_DLL int mode_is_int_vector (const ir_mode *mode);
 /*@}*/
 
 /**
@@ -402,7 +405,7 @@ int mode_is_int_vector (const ir_mode *mode);
  *
  * @see values_in_mode()
  */
-int smaller_mode(const ir_mode *sm, const ir_mode *lm);
+FIRM_DLL int smaller_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**
  * Returns true if a value of mode sm can be converted into mode lm
@@ -412,36 +415,36 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm);
  *
  * @see smaller_mode()
  */
-int values_in_mode(const ir_mode *sm, const ir_mode *lm);
+FIRM_DLL int values_in_mode(const ir_mode *sm, const ir_mode *lm);
 
 /**
  * Returns a matching unsigned mode for a given integer signed mode.
  * Returns NULL if no matching mode exists.
  */
-ir_mode *find_unsigned_mode(const ir_mode *mode);
+FIRM_DLL ir_mode *find_unsigned_mode(const ir_mode *mode);
 
 /**
  * Returns a matching signed mode for a given integer unsigned mode.
  * Returns NULL if no matching mode exists.
  */
-ir_mode *find_signed_mode(const ir_mode *mode);
+FIRM_DLL ir_mode *find_signed_mode(const ir_mode *mode);
 
 /**
  * Returns an integer mode with 2*n bits for a given integer mode with n bits.
  * Returns NULL if no matching mode exists.
  */
-ir_mode *find_double_bits_int_mode(const ir_mode *mode);
+FIRM_DLL ir_mode *find_double_bits_int_mode(const ir_mode *mode);
 
 /**
  * Returns non-zero if the given mode honors signed zero's, i.e.,
  * a +0 and a -0 exists and handled differently.
  */
-int mode_honor_signed_zeros(const ir_mode *mode);
+FIRM_DLL int mode_honor_signed_zeros(const ir_mode *mode);
 
 /**
  * Returns non-zero if the given mode might overflow on unary Minus.
  */
-int mode_overflow_on_unary_Minus(const ir_mode *mode);
+FIRM_DLL int mode_overflow_on_unary_Minus(const ir_mode *mode);
 
 /**
  * Returns non-zero if the mode has a reversed wrap-around
@@ -449,38 +452,40 @@ int mode_overflow_on_unary_Minus(const ir_mode *mode);
  * This is normally true for integer modes, not for floating
  * point modes.
  */
-int mode_wrap_around(const ir_mode *mode);
+FIRM_DLL int mode_wrap_around(const ir_mode *mode);
 
 /**
  * Return the signed integer equivalent mode for an reference mode.
  */
-ir_mode *get_reference_mode_signed_eq(ir_mode *mode);
+FIRM_DLL ir_mode *get_reference_mode_signed_eq(ir_mode *mode);
 
 /**
  * Sets the signed integer equivalent mode for an reference mode.
  */
-void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode);
+FIRM_DLL void set_reference_mode_signed_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
  * Return the unsigned integer equivalent mode for an reference mode.
  */
-ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
+FIRM_DLL ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
 
 /**
  * Sets the unsigned integer equivalent mode for an reference mode.
  */
-void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
+FIRM_DLL void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
 
 /**
  * Returns non-zero if the cast from mode src to mode dst is a
  * reinterpret cast (ie. only the bit pattern is reinterpreted,
  * no conversion is done)
  */
-int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);
+FIRM_DLL int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst);
 
 /**
  * Returns the primitive type matching the given mode
  */
-ir_type *get_type_for_mode(const ir_mode *mode);
+FIRM_DLL ir_type *get_type_for_mode(const ir_mode *mode);
+
+#include "end.h"
 
 #endif

@@ -33,6 +33,7 @@
 #define FIRM_IR_ICGOPT_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /* Entfernt alle Methoden, die von den Methoden aus "keep_arr"
  * (bezgl. der Abschaetzung get_Call_callee) nicht erreichbar sind. Die
@@ -41,7 +42,7 @@
  * ueberschrieben.
  *
  * Frees all interprocedural loop information. */
-void gc_irgs(int n_keep, ir_entity *keep_arr[]);
+FIRM_DLL void gc_irgs(int n_keep, ir_entity *keep_arr[]);
 
 /**
  * Creates an ir_prog pass for gc_irgs().
@@ -50,6 +51,8 @@ void gc_irgs(int n_keep, ir_entity *keep_arr[]);
  *
  * @return  the newly created ir_graph pass
  */
-ir_prog_pass_t *gc_irgs_pass(const char *name);
+FIRM_DLL ir_prog_pass_t *gc_irgs_pass(const char *name);
+
+#include "end.h"
 
 #endif

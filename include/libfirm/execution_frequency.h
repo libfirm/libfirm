@@ -35,16 +35,17 @@
 #define FIRM_ANA_EXECUTION_FREQUENCY_H
 
 #include "firm_types.h"
+#include "begin.h"
 
 /* A proj from a Cond that goes to an exception handler. */
-int is_fragile_Proj(ir_node *n);
+FIRM_DLL int is_fragile_Proj(ir_node *n);
 
 /** Returns the number of times the block/region is executed according to
  *  our estimate. Gives a number relative to the Start node of the procedure
  *  the block is in, which is weighted with 1. */
-double get_irn_exec_freq   (ir_node *n);
-double get_Block_exec_freq (ir_node *b);
-double get_region_exec_freq(void *reg);
+FIRM_DLL double get_irn_exec_freq(ir_node *n);
+FIRM_DLL double get_Block_exec_freq(ir_node *b);
+FIRM_DLL double get_region_exec_freq(void *reg);
 
 /** Compute the execution frequency for all blocks in the given
  *  graph.
@@ -55,7 +56,7 @@ double get_region_exec_freq(void *reg);
  *
  * Uses link field.
  */
-void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double exception_probability);
+FIRM_DLL void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double exception_probability);
 
 /** Compute the execution frequency for all graphs.
  *
@@ -63,10 +64,10 @@ void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double 
  * @param exception_probability The probability that a fragile operation causes an exception.
  *
  */
-void compute_execution_frequencies(int default_loop_weight, double exception_probability);
+FIRM_DLL void compute_execution_frequencies(int default_loop_weight, double exception_probability);
 
 /** Free occupied memory, reset for all graphs. */
-void free_execution_frequency(void);
+FIRM_DLL void free_execution_frequency(void);
 
 /** State of execution frequencies for graphs and the whole program.
  *
@@ -80,14 +81,16 @@ typedef enum {
 				   changed since. */
 } exec_freq_state;
 
-exec_freq_state get_irg_exec_freq_state(ir_graph *irg);
-void            set_irg_exec_freq_state(ir_graph *irg, exec_freq_state s);
+FIRM_DLL exec_freq_state get_irg_exec_freq_state(ir_graph *irg);
+FIRM_DLL void            set_irg_exec_freq_state(ir_graph *irg,
+                                                 exec_freq_state s);
 /* Sets irg and irp exec freq state to inconsistent if it is set to consistent. */
-void            set_irg_exec_freq_state_inconsistent(ir_graph *irg);
+FIRM_DLL void set_irg_exec_freq_state_inconsistent(ir_graph *irg);
 
-exec_freq_state get_irp_exec_freq_state(void);
+FIRM_DLL exec_freq_state get_irp_exec_freq_state(void);
 /* Sets irp and all irg exec freq states to inconsistent if it is set to consistent. */
-void            set_irp_exec_freq_state_inconsistent(void);
+FIRM_DLL void set_irp_exec_freq_state_inconsistent(void);
 
+#include "end.h"
 
 #endif

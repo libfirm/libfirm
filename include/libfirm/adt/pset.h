@@ -34,6 +34,8 @@
 #include "hashptr.h"
 #include "iterator.h"
 
+#include "../begin.h"
+
 /**
  * The default comparison function for pointers.
  * @param x A pointer.
@@ -268,5 +270,7 @@ extern const char *pset_tag;
 #else /* !(DEBUG && HAVE_GNU_MALLOC) */
 #   define PSET_TRACE
 #endif /* !(DEBUG && HAVE_GNU_MALLOC) */
+
+#include "../end.h"
 
 #endif
