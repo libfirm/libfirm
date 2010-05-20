@@ -38,6 +38,7 @@ AC_SUBST(libfirm_conf_env)
 
 dnl enable visibility hidden
 CFLAGS="-fvisibility=hidden"
+AC_DEFINE([FIRM_BUILD_DLL], [], [Define when firm library is built])
 
 dnl Package options
 dnl ===============
