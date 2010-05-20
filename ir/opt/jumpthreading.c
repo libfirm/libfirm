@@ -385,13 +385,16 @@ static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right)
 static int eval_cmp_vrp(pn_Cmp pnc, ir_node *left, ir_node *right)
 {
 	pn_Cmp cmp_result = vrp_cmp(left, right);
-
 	/* does the compare evaluate to true? */
-	if (cmp_result == pn_Cmp_False)
+	if (cmp_result == pn_Cmp_False) {
 		return -1;
-	if ((cmp_result & pnc) != cmp_result)
+	}
+	if ((cmp_result & pnc) != cmp_result) {
+		if ((cmp_result & pnc) != 0) {
+			return -1;
+		}
 		return 0;
-
+	}
 	return 1;
 }
 /**
