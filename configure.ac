@@ -36,6 +36,9 @@ dnl keep track of the environment set by the user
 libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS -lm'}"
 AC_SUBST(libfirm_conf_env)
 
+dnl enable visibility hidden
+CFLAGS="-fvisibility=hidden"
+
 dnl Package options
 dnl ===============
 
