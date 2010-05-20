@@ -95,7 +95,7 @@ def get_io_type(type, attrname, node):
 		importcmd = "long %s = read_long(env);" % attrname
 		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
 	else:
-		error("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
+		warning("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
 		importcmd = """// BAD: %s %s
 			%s %s = (%s) 0;""" % (type, attrname, type, attrname, type)
 		exportcmd = "// BAD: %s" % type
