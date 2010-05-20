@@ -150,6 +150,9 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\bitset.h">
       <Filter>ir\adt</Filter>
     </ClInclude>
+    <ClInclude Include="$(FirmRoot)\ir\adt\util.h">
+      <Filter>ir\adt</Filter>
+    </ClInclude>
     <ClInclude Include="$(FirmRoot)\ir\adt\compiler.h">
       <Filter>ir\adt</Filter>
     </ClInclude>
@@ -957,18 +960,12 @@
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_switch.c">
        <Filter>ir\lower</Filter>
     </ClCompile>
-    <ClInclude Include="$(FirmRoot)\ir\lower\*.h">
-      <Filter>ir\lower</Filter>
-    </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\obstack\obstack.c">
        <Filter>ir\obstack</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\obstack\obstack_printf.c">
        <Filter>ir\obstack</Filter>
     </ClCompile>
-    <ClInclude Include="$(FirmRoot)\ir\obstack\*.h">
-      <Filter>ir\obstack</Filter>
-    </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\opt\boolopt.c">
        <Filter>ir\opt</Filter>
     </ClCompile>
@@ -1206,13 +1203,13 @@
     <ClInclude Include="$(FirmRoot)\win32\stdint.h">
       <Filter>win32</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\include\libfirm\*.c">
-       <Filter>include\libfirm</Filter>
-    </ClCompile>
     <ClInclude Include="$(FirmRoot)\include\libfirm\analyze_irg_args.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\be.h">
+      <Filter>include\libfirm</Filter>
+    </ClInclude>
+    <ClInclude Include="$(FirmRoot)\include\libfirm\begin.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\callgraph.h">
@@ -1228,6 +1225,9 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\dbginfo.h">
+      <Filter>include\libfirm</Filter>
+    </ClInclude>
+    <ClInclude Include="$(FirmRoot)\include\libfirm\end.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\execfreq.h">
@@ -1356,9 +1356,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\lowering.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\old_fctnames.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\pseudo_irg.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
@@ -1386,9 +1383,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\vrp.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClCompile Include="$(FirmRoot)\include\libfirm\adt\*.c">
-       <Filter>include\libfirm\adt</Filter>
-    </ClCompile>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\align.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
@@ -1422,9 +1416,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hungarian.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\impl.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
@@ -1435,9 +1426,6 @@
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\obst.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\offset.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\pdeq.h">
@@ -1462,9 +1450,6 @@
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\unionfind.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\util.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\xmalloc.h">

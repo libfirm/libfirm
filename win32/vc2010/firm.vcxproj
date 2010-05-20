@@ -16,7 +16,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{7375BFCA-376F-4CB1-BBE6-7C88374BDBD9}</ProjectGuid>
-    <RootNamespace>libfirm</RootNamespace>
+    <RootNamespace>firm</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugJTEST|Win32'" Label="Configuration">
@@ -68,11 +68,11 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <AdditionalIncludeDirectories>$(FirmRoot)/ir;$(FirmRoot)/ir/obstack;$(FirmRoot)/win32;$(FirmRoot)/ir/adt;$(FirmRoot)/ir/ana;$(FirmRoot)/ir/common;$(FirmRoot)/ir/debug;$(FirmRoot)/ir/ident;$(FirmRoot)/ir/ir;$(FirmRoot)/ir/opt;$(FirmRoot)/ir/stat;$(FirmRoot)/ir/tr;$(FirmRoot)/ir/tv;$(FirmRoot)/ir/arch;$(FirmRoot)/ir/lower;$(FirmRoot)/ir/be;$(FirmRoot)/ir/libcore;$(FirmRoot)/include/libfirm;$(FirmRoot)/include/libfirm/adt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NDEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WIN32;_LIB;FIRM_BUILD_DLL;_CRT_SECURE_NO_DEPRECATE;inline=_inline;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PrecompiledHeaderOutputFile>.\Release/libfirm.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Release/firm.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -86,12 +86,12 @@
       <Culture>0x0407</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>..\..\ipd\lib\libfirm.lib</OutputFile>
+      <OutputFile>..\..\ipd\lib\firm.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Release/libfirm.bsc</OutputFile>
+      <OutputFile>.\Release/firm.bsc</OutputFile>
 		</Bscmake>
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -102,11 +102,11 @@
       <AdditionalOptions>/WL %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(FirmRoot)/ir;$(FirmRoot)/ir/obstack;$(FirmRoot)/win32;$(FirmRoot)/ir/adt;$(FirmRoot)/ir/ana;$(FirmRoot)/ir/common;$(FirmRoot)/ir/debug;$(FirmRoot)/ir/ident;$(FirmRoot)/ir/ir;$(FirmRoot)/ir/opt;$(FirmRoot)/ir/stat;$(FirmRoot)/ir/tr;$(FirmRoot)/ir/tv;$(FirmRoot)/ir/arch;$(FirmRoot)/ir/lower;$(FirmRoot)/ir/be;$(FirmRoot)/ir/libcore;$(FirmRoot)/include/libfirm;$(FirmRoot)/include/libfirm/adt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>NO_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NO_DEBUG;WIN32;_LIB;FIRM_BUILD_DLL;_CRT_SECURE_NO_DEPRECATE;inline=_inline;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\Debug/libfirm.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Debug/firm.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -120,12 +120,12 @@
       <Culture>0x0407</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>..\..\ipd\lib\libfirm_g.lib</OutputFile>
+      <OutputFile>..\..\ipd\lib\firm_g.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug/libfirm.bsc</OutputFile>
+      <OutputFile>.\Debug/firm.bsc</OutputFile>
     </Bscmake>
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -136,11 +136,11 @@
       <AdditionalOptions>/WL %(AdditionalOptions)</AdditionalOptions>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(FirmRoot);$(FirmRoot)/ir/obstack;$(FirmRoot)/win32;$(FirmRoot)/ir/adt;$(FirmRoot)/ir/ana;$(FirmRoot)/ir/common;$(FirmRoot)/ir/debug;$(FirmRoot)/ir/ident;$(FirmRoot)/ir/ir;$(FirmRoot)/ir/opt;$(FirmRoot)/ir/stat;$(FirmRoot)/ir/tr;$(FirmRoot)/ir/tv;$(FirmRoot)/ir/arch;$(FirmRoot)/ir/lower;$(FirmRoot)/ir/be;$(FirmRoot)/ir/libcore;$(FirmRoot)/include/libfirm;$(FirmRoot)/include/libfirm/adt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_DEBUG;WIN32;_LIB;HAVE_CONFIG_H;_CRT_SECURE_NO_DEPRECATE;inline=_inline;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;WIN32;_LIB;FIRM_BUILD_DLL;_CRT_SECURE_NO_DEPRECATE;inline=_inline;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PrecompiledHeaderOutputFile>.\Debug/libfirm.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Debug/firm.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
@@ -154,12 +154,12 @@
       <Culture>0x0407</Culture>
     </ResourceCompile>
     <Lib>
-      <OutputFile>..\..\ipd\lib\libfirm_g.lib</OutputFile>
+      <OutputFile>..\..\ipd\lib\firm_g.lib</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
     </Lib>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Debug/libfirm.bsc</OutputFile>
+      <OutputFile>.\Debug/firm.bsc</OutputFile>
 		</Bscmake>
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -187,6 +187,7 @@
     <ClInclude Include="$(FirmRoot)\ir\adt\bitfiddle.h" />
     <ClInclude Include="$(FirmRoot)\ir\adt\bitset.h" />
     <ClInclude Include="$(FirmRoot)\ir\adt\compiler.h" />
+    <ClInclude Include="$(FirmRoot)\ir\adt\util.h" />
     <ClInclude Include="$(FirmRoot)\ir\adt\raw_bitset.h" />
     <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c" />
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c" />
@@ -455,10 +456,8 @@
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_mode_b.c" />
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_mux.c" />
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_switch.c" />
-    <ClInclude Include="$(FirmRoot)\ir\lower\*.h" />
     <ClCompile Include="$(FirmRoot)\ir\obstack\obstack.c" />
     <ClCompile Include="$(FirmRoot)\ir\obstack\obstack_printf.c" />
-    <ClInclude Include="$(FirmRoot)\ir\obstack\*.h" />
     <ClCompile Include="$(FirmRoot)\ir\opt\boolopt.c" />
     <ClCompile Include="$(FirmRoot)\ir\opt\cfopt.c" />
     <ClCompile Include="$(FirmRoot)\ir\opt\code_placement.c" />
@@ -538,14 +537,15 @@
     <ClInclude Include="$(FirmRoot)\win32\inttypes.h" />
     <ClInclude Include="$(FirmRoot)\win32\stdbool.h" />
     <ClInclude Include="$(FirmRoot)\win32\stdint.h" />
-    <ClCompile Include="$(FirmRoot)\include\libfirm\*.c" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\analyze_irg_args.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\be.h" />
+    <ClInclude Include="$(FirmRoot)\include\libfirm\begin.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\callgraph.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\cdep.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\cgana.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\compound_path.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\dbginfo.h" />
+    <ClInclude Include="$(FirmRoot)\include\libfirm\end.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\execfreq.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\execution_frequency.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\field_temperature.h" />
@@ -588,7 +588,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\irvrfy.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\lowering.h" />
-    <ClInclude Include="$(FirmRoot)\include\libfirm\old_fctnames.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\pseudo_irg.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\rta.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\seqnumbers.h" />
@@ -598,8 +597,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\tv.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\typerep.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\vrp.h" />
-    <ClCompile Include="$(FirmRoot)\include\libfirm\adt\*.c" />
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\align.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\array.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\bipartite.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\cpset.h" />
@@ -610,12 +607,10 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashptr.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hashset.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\hungarian.h" />
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\impl.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\iterator.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\list.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\obstack.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\obst.h" />
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\offset.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\pdeq.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\plist.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\pmap.h" />
@@ -624,7 +619,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\pset_new.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\set.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\unionfind.h" />
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\util.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\xmalloc.h" />
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\bearch_ia32.c" />
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\gen_ia32_emitter.c" />
