@@ -1057,15 +1057,6 @@ int check_entity(ir_entity *ent);
 int tr_vrfy(void);
 
 /**
- * If NDEBUG is defined performs nothing, else calls the tr_vrfy() function.
- */
-#ifdef NDEBUG
-#define TR_VRFY()	0
-#else
-#define TR_VRFY()	tr_vrfy()
-#endif
-
-/**
  * @page type   representation of types
  *
  *  Datastructure to hold type information.
