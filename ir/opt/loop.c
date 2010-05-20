@@ -496,9 +496,10 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 /* Assign the copy with index nr to node n */
 static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 {
+	unrolling_node_info *info;
 	assert(nr != 0 && "0 reserved");
 
-	unrolling_node_info *info = (unrolling_node_info *)phase_get_irn_data(phase, n);
+	info = (unrolling_node_info *)phase_get_irn_data(phase, n);
 	if (! info) {
 		ir_node **arr;
 
@@ -518,11 +519,12 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 /* Returns a nodes copy if it exists, else NULL. */
 static ir_node *get_unroll_copy(ir_node *n, int nr)
 {
+	ir_node             *cp;
 	unrolling_node_info *info = (unrolling_node_info *)phase_get_irn_data(phase, n);
 	if (! info)
 		return NULL;
 
-	ir_node *cp = info->copies[nr];
+	cp = info->copies[nr];
 	return cp;
 }
 
