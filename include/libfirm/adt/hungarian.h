@@ -54,17 +54,17 @@ typedef struct _hungarian_problem_t hungarian_problem_t;
  *                   HUNGARIAN_MATCH_NORMAL  - matchings of nodes having no edge getting removed
  * @return The problem object.
  */
-hungarian_problem_t *hungarian_new(int rows, int cols, int match_type);
+FIRM_API hungarian_problem_t *hungarian_new(int rows, int cols, int match_type);
 
 /**
  * Adds an edge from left to right with some costs.
  */
-void hungarian_add(hungarian_problem_t *p, int left, int right, int cost);
+FIRM_API void hungarian_add(hungarian_problem_t *p, int left, int right, int cost);
 
 /**
-* Removes the edge from left to right.
-*/
-void hungarian_remv(hungarian_problem_t *p, int left, int right);
+ * Removes the edge from left to right.
+ */
+FIRM_API void hungarian_remv(hungarian_problem_t *p, int left, int right);
 
 /**
  * Prepares the cost matrix dependent on the given mode.
@@ -72,12 +72,12 @@ void hungarian_remv(hungarian_problem_t *p, int left, int right);
  * @param p     The hungarian object
  * @param mode  HUNGARIAN_MODE_MAXIMIZE_UTIL or HUNGARIAN_MODE_MINIMIZE_COST (default)
  */
-void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode);
+FIRM_API void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode);
 
 /**
  * Destroys the hungarian object.
  */
-void hungarian_free(hungarian_problem_t *p);
+FIRM_API void hungarian_free(hungarian_problem_t *p);
 
 /**
  * This method computes the optimal assignment.
@@ -87,14 +87,14 @@ void hungarian_free(hungarian_problem_t *p);
  * @param cost_threshold Matchings with costs >= this limit will be removed (if limit > 0)
  * @return 0 on success, negative number otherwise
  */
-int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, int cost_threshold);
+FIRM_API int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, int cost_threshold);
 
 /**
  * Print the cost matrix.
  * @param p          The hungarian object
  * @param cost_width The minimum field width of the costs
  */
-void hungarian_print_cost_matrix(hungarian_problem_t *p, int cost_width);
+FIRM_API void hungarian_print_cost_matrix(hungarian_problem_t *p, int cost_width);
 
 #include "../end.h"
 

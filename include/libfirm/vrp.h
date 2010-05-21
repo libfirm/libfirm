@@ -53,7 +53,7 @@ typedef struct {
  * Set vrp data on the graph irg
  * @param irg graph on which to set vrp data
  */
-FIRM_DLL void set_vrp_data(ir_graph *irg);
+FIRM_API void set_vrp_data(ir_graph *irg);
 
 /**
  * Test, if the two nodes can be compared with their vrp information
@@ -63,7 +63,7 @@ FIRM_DLL void set_vrp_data(ir_graph *irg);
  *
  * @return the pn_Cmp, if one can be derived
  */
-FIRM_DLL pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
+FIRM_API pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
 
 /*
  * Return the vrp data for this node
@@ -72,7 +72,7 @@ FIRM_DLL pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
  *
  * @return a pointer to the vrp data or NULL if there is none
  */
-FIRM_DLL vrp_attr *vrp_get_info(const ir_node *n);
+FIRM_API vrp_attr *vrp_get_info(const ir_node *n);
 
 #include "end.h"
 

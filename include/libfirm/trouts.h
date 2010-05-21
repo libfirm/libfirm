@@ -54,47 +54,47 @@
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Load/Store nodes that possibly access this entity. */
-FIRM_DLL int get_entity_n_accesses(const ir_entity *ent);
+FIRM_API int get_entity_n_accesses(const ir_entity *ent);
 /** Load/Store node that possibly access this entity. */
-FIRM_DLL ir_node *get_entity_access(const ir_entity *ent, int pos);
+FIRM_API ir_node *get_entity_access(const ir_entity *ent, int pos);
 
 /** Number of references to an entity, in form of SymConst/Sel.
  *  Including references from constant entities and the like. */
-FIRM_DLL int get_entity_n_references(const ir_entity *ent);
+FIRM_API int get_entity_n_references(const ir_entity *ent);
 /** References to an entity, in form of SymConst/Sel
  *  Including references from constants. */
-FIRM_DLL ir_node *get_entity_reference(const ir_entity *ent, int pos);
+FIRM_API ir_node *get_entity_reference(const ir_entity *ent, int pos);
 
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 /* types                                                           */
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Alloc nodes that create an instance of this type. */
-FIRM_DLL int get_type_n_allocs(const ir_type *tp);
+FIRM_API int get_type_n_allocs(const ir_type *tp);
 /** Alloc node that create an instance of this type. */
-FIRM_DLL ir_node *get_type_alloc(const ir_type *tp, int pos);
+FIRM_API ir_node *get_type_alloc(const ir_type *tp, int pos);
 
 /** Number of Cast nodes that cast a pointer to this type. */
-FIRM_DLL int get_type_n_casts(const ir_type *tp);
+FIRM_API int get_type_n_casts(const ir_type *tp);
 /** Cast node that cast a pointer to this type. */
-FIRM_DLL ir_node *get_type_cast(const ir_type *tp, int pos);
-FIRM_DLL void add_type_cast(const ir_type *tp, ir_node *cast);
+FIRM_API ir_node *get_type_cast(const ir_type *tp, int pos);
+FIRM_API void add_type_cast(const ir_type *tp, ir_node *cast);
 /** Return number of upcasts. O(\#casts). */
-FIRM_DLL int get_class_n_upcasts(const ir_type *clss);
+FIRM_API int get_class_n_upcasts(const ir_type *clss);
 /** Return number of downcasts. O(\#casts). */
-FIRM_DLL int get_class_n_downcasts(const ir_type *clss);
+FIRM_API int get_class_n_downcasts(const ir_type *clss);
 
 /* Access all pointer types that point to tp. */
-FIRM_DLL int     get_type_n_pointertypes_to(const ir_type *tp);
-FIRM_DLL ir_type *get_type_pointertype_to(const ir_type *tp, int pos);
-FIRM_DLL void    add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
+FIRM_API int     get_type_n_pointertypes_to(const ir_type *tp);
+FIRM_API ir_type *get_type_pointertype_to(const ir_type *tp, int pos);
+FIRM_API void    add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
 
 /* Access all array types that contain elements of type tp.
  * Does not find subarrays, e.g., int[] being element of int[][]
  * for multi dimensional arrays. */
-FIRM_DLL int     get_type_n_arraytypes_of(const ir_type *tp);
-FIRM_DLL ir_type *get_type_arraytype_of(const ir_type *tp, int pos);
-FIRM_DLL void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
+FIRM_API int     get_type_n_arraytypes_of(const ir_type *tp);
+FIRM_API ir_type *get_type_arraytype_of(const ir_type *tp, int pos);
+FIRM_API void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
 
 /*------------------------------------------------------------------*/
 /* Building and Removing the trout datastructure                    */
@@ -104,9 +104,9 @@ FIRM_DLL void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
  *
  *  We reuse the enum of irouts.
  *  @see irouts.h. */
-FIRM_DLL irg_outs_state get_trouts_state(void);
+FIRM_API irg_outs_state get_trouts_state(void);
 /** Set the tr out state to inconsistent if it is consistent. */
-FIRM_DLL void           set_trouts_inconsistent(void);
+FIRM_API void           set_trouts_inconsistent(void);
 
 /** Compute the outs of types and entities.
  *
@@ -130,10 +130,10 @@ FIRM_DLL void           set_trouts_inconsistent(void);
  *
  *  Sets trout state to outs_consistent.
  */
-FIRM_DLL void compute_trouts(void);
+FIRM_API void compute_trouts(void);
 
 /** Free trout data. */
-FIRM_DLL void free_trouts(void);
+FIRM_API void free_trouts(void);
 
 #include "end.h"
 

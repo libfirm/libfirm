@@ -126,156 +126,156 @@ typedef enum {
 	iro_MaxOpcode
 } ir_opcode;
 
-FIRM_DLL ir_op *op_Abs;
-FIRM_DLL ir_op *op_Add;
-FIRM_DLL ir_op *op_Alloc;
-FIRM_DLL ir_op *op_Anchor;
-FIRM_DLL ir_op *op_And;
-FIRM_DLL ir_op *op_ASM;
-FIRM_DLL ir_op *op_Bad;
-FIRM_DLL ir_op *op_Block;
-FIRM_DLL ir_op *op_Borrow;
-FIRM_DLL ir_op *op_Bound;
-FIRM_DLL ir_op *op_Break;
-FIRM_DLL ir_op *op_Builtin;
-FIRM_DLL ir_op *op_Call;
-FIRM_DLL ir_op *op_CallBegin;
-FIRM_DLL ir_op *op_Carry;
-FIRM_DLL ir_op *op_Cast;
-FIRM_DLL ir_op *op_Cmp;
-FIRM_DLL ir_op *op_Cond;
-FIRM_DLL ir_op *op_Confirm;
-FIRM_DLL ir_op *op_Const;
-FIRM_DLL ir_op *op_Conv;
-FIRM_DLL ir_op *op_CopyB;
-FIRM_DLL ir_op *op_Div;
-FIRM_DLL ir_op *op_DivMod;
-FIRM_DLL ir_op *op_Dummy;
-FIRM_DLL ir_op *op_End;
-FIRM_DLL ir_op *op_EndExcept;
-FIRM_DLL ir_op *op_EndReg;
-FIRM_DLL ir_op *op_Eor;
-FIRM_DLL ir_op *op_Filter;
-FIRM_DLL ir_op *op_Free;
-FIRM_DLL ir_op *op_Id;
-FIRM_DLL ir_op *op_IJmp;
-FIRM_DLL ir_op *op_InstOf;
-FIRM_DLL ir_op *op_Jmp;
-FIRM_DLL ir_op *op_Load;
-FIRM_DLL ir_op *op_Minus;
-FIRM_DLL ir_op *op_Mod;
-FIRM_DLL ir_op *op_Mul;
-FIRM_DLL ir_op *op_Mulh;
-FIRM_DLL ir_op *op_Mux;
-FIRM_DLL ir_op *op_NoMem;
-FIRM_DLL ir_op *op_Not;
-FIRM_DLL ir_op *op_Or;
-FIRM_DLL ir_op *op_Phi;
-FIRM_DLL ir_op *op_Pin;
-FIRM_DLL ir_op *op_Proj;
-FIRM_DLL ir_op *op_Quot;
-FIRM_DLL ir_op *op_Raise;
-FIRM_DLL ir_op *op_Return;
-FIRM_DLL ir_op *op_Rotl;
-FIRM_DLL ir_op *op_Sel;
-FIRM_DLL ir_op *op_Shl;
-FIRM_DLL ir_op *op_Shrs;
-FIRM_DLL ir_op *op_Shr;
-FIRM_DLL ir_op *op_Start;
-FIRM_DLL ir_op *op_Store;
-FIRM_DLL ir_op *op_Sub;
-FIRM_DLL ir_op *op_SymConst;
-FIRM_DLL ir_op *op_Sync;
-FIRM_DLL ir_op *op_Tuple;
-FIRM_DLL ir_op *op_Unknown;
+FIRM_API ir_op *op_Abs;
+FIRM_API ir_op *op_Add;
+FIRM_API ir_op *op_Alloc;
+FIRM_API ir_op *op_Anchor;
+FIRM_API ir_op *op_And;
+FIRM_API ir_op *op_ASM;
+FIRM_API ir_op *op_Bad;
+FIRM_API ir_op *op_Block;
+FIRM_API ir_op *op_Borrow;
+FIRM_API ir_op *op_Bound;
+FIRM_API ir_op *op_Break;
+FIRM_API ir_op *op_Builtin;
+FIRM_API ir_op *op_Call;
+FIRM_API ir_op *op_CallBegin;
+FIRM_API ir_op *op_Carry;
+FIRM_API ir_op *op_Cast;
+FIRM_API ir_op *op_Cmp;
+FIRM_API ir_op *op_Cond;
+FIRM_API ir_op *op_Confirm;
+FIRM_API ir_op *op_Const;
+FIRM_API ir_op *op_Conv;
+FIRM_API ir_op *op_CopyB;
+FIRM_API ir_op *op_Div;
+FIRM_API ir_op *op_DivMod;
+FIRM_API ir_op *op_Dummy;
+FIRM_API ir_op *op_End;
+FIRM_API ir_op *op_EndExcept;
+FIRM_API ir_op *op_EndReg;
+FIRM_API ir_op *op_Eor;
+FIRM_API ir_op *op_Filter;
+FIRM_API ir_op *op_Free;
+FIRM_API ir_op *op_Id;
+FIRM_API ir_op *op_IJmp;
+FIRM_API ir_op *op_InstOf;
+FIRM_API ir_op *op_Jmp;
+FIRM_API ir_op *op_Load;
+FIRM_API ir_op *op_Minus;
+FIRM_API ir_op *op_Mod;
+FIRM_API ir_op *op_Mul;
+FIRM_API ir_op *op_Mulh;
+FIRM_API ir_op *op_Mux;
+FIRM_API ir_op *op_NoMem;
+FIRM_API ir_op *op_Not;
+FIRM_API ir_op *op_Or;
+FIRM_API ir_op *op_Phi;
+FIRM_API ir_op *op_Pin;
+FIRM_API ir_op *op_Proj;
+FIRM_API ir_op *op_Quot;
+FIRM_API ir_op *op_Raise;
+FIRM_API ir_op *op_Return;
+FIRM_API ir_op *op_Rotl;
+FIRM_API ir_op *op_Sel;
+FIRM_API ir_op *op_Shl;
+FIRM_API ir_op *op_Shrs;
+FIRM_API ir_op *op_Shr;
+FIRM_API ir_op *op_Start;
+FIRM_API ir_op *op_Store;
+FIRM_API ir_op *op_Sub;
+FIRM_API ir_op *op_SymConst;
+FIRM_API ir_op *op_Sync;
+FIRM_API ir_op *op_Tuple;
+FIRM_API ir_op *op_Unknown;
 
-FIRM_DLL ir_op *get_op_Abs       (void);
-FIRM_DLL ir_op *get_op_Add       (void);
-FIRM_DLL ir_op *get_op_Alloc     (void);
-FIRM_DLL ir_op *get_op_Anchor    (void);
-FIRM_DLL ir_op *get_op_And       (void);
-FIRM_DLL ir_op *get_op_ASM       (void);
-FIRM_DLL ir_op *get_op_Bad       (void);
-FIRM_DLL ir_op *get_op_Block     (void);
-FIRM_DLL ir_op *get_op_Borrow    (void);
-FIRM_DLL ir_op *get_op_Bound     (void);
-FIRM_DLL ir_op *get_op_Break     (void);
-FIRM_DLL ir_op *get_op_Builtin   (void);
-FIRM_DLL ir_op *get_op_CallBegin (void);
-FIRM_DLL ir_op *get_op_Call      (void);
-FIRM_DLL ir_op *get_op_Carry     (void);
-FIRM_DLL ir_op *get_op_Cast      (void);
-FIRM_DLL ir_op *get_op_Cmp       (void);
-FIRM_DLL ir_op *get_op_Cond      (void);
-FIRM_DLL ir_op *get_op_Confirm   (void);
-FIRM_DLL ir_op *get_op_Const     (void);
-FIRM_DLL ir_op *get_op_Conv      (void);
-FIRM_DLL ir_op *get_op_CopyB     (void);
-FIRM_DLL ir_op *get_op_DivMod    (void);
-FIRM_DLL ir_op *get_op_Div       (void);
-FIRM_DLL ir_op *get_op_Dummy     (void);
-FIRM_DLL ir_op *get_op_EndExcept (void);
-FIRM_DLL ir_op *get_op_EndReg    (void);
-FIRM_DLL ir_op *get_op_End       (void);
-FIRM_DLL ir_op *get_op_Eor       (void);
-FIRM_DLL ir_op *get_op_Filter    (void);
-FIRM_DLL ir_op *get_op_Free      (void);
-FIRM_DLL ir_op *get_op_Id        (void);
-FIRM_DLL ir_op *get_op_IJmp      (void);
-FIRM_DLL ir_op *get_op_InstOf    (void);
-FIRM_DLL ir_op *get_op_Jmp       (void);
-FIRM_DLL ir_op *get_op_Load      (void);
-FIRM_DLL ir_op *get_op_Minus     (void);
-FIRM_DLL ir_op *get_op_Mod       (void);
-FIRM_DLL ir_op *get_op_Mulh      (void);
-FIRM_DLL ir_op *get_op_Mul       (void);
-FIRM_DLL ir_op *get_op_Mux       (void);
-FIRM_DLL ir_op *get_op_NoMem     (void);
-FIRM_DLL ir_op *get_op_Not       (void);
-FIRM_DLL ir_op *get_op_Or        (void);
-FIRM_DLL ir_op *get_op_Phi       (void);
-FIRM_DLL ir_op *get_op_Pin       (void);
-FIRM_DLL ir_op *get_op_Proj      (void);
-FIRM_DLL ir_op *get_op_Quot      (void);
-FIRM_DLL ir_op *get_op_Raise     (void);
-FIRM_DLL ir_op *get_op_Return    (void);
-FIRM_DLL ir_op *get_op_Rotl      (void);
-FIRM_DLL ir_op *get_op_Sel       (void);
-FIRM_DLL ir_op *get_op_Shl       (void);
-FIRM_DLL ir_op *get_op_Shrs      (void);
-FIRM_DLL ir_op *get_op_Shr       (void);
-FIRM_DLL ir_op *get_op_Start     (void);
-FIRM_DLL ir_op *get_op_Store     (void);
-FIRM_DLL ir_op *get_op_Sub       (void);
-FIRM_DLL ir_op *get_op_SymConst  (void);
-FIRM_DLL ir_op *get_op_Sync      (void);
-FIRM_DLL ir_op *get_op_Tuple     (void);
-FIRM_DLL ir_op *get_op_Unknown   (void);
+FIRM_API ir_op *get_op_Abs       (void);
+FIRM_API ir_op *get_op_Add       (void);
+FIRM_API ir_op *get_op_Alloc     (void);
+FIRM_API ir_op *get_op_Anchor    (void);
+FIRM_API ir_op *get_op_And       (void);
+FIRM_API ir_op *get_op_ASM       (void);
+FIRM_API ir_op *get_op_Bad       (void);
+FIRM_API ir_op *get_op_Block     (void);
+FIRM_API ir_op *get_op_Borrow    (void);
+FIRM_API ir_op *get_op_Bound     (void);
+FIRM_API ir_op *get_op_Break     (void);
+FIRM_API ir_op *get_op_Builtin   (void);
+FIRM_API ir_op *get_op_CallBegin (void);
+FIRM_API ir_op *get_op_Call      (void);
+FIRM_API ir_op *get_op_Carry     (void);
+FIRM_API ir_op *get_op_Cast      (void);
+FIRM_API ir_op *get_op_Cmp       (void);
+FIRM_API ir_op *get_op_Cond      (void);
+FIRM_API ir_op *get_op_Confirm   (void);
+FIRM_API ir_op *get_op_Const     (void);
+FIRM_API ir_op *get_op_Conv      (void);
+FIRM_API ir_op *get_op_CopyB     (void);
+FIRM_API ir_op *get_op_DivMod    (void);
+FIRM_API ir_op *get_op_Div       (void);
+FIRM_API ir_op *get_op_Dummy     (void);
+FIRM_API ir_op *get_op_EndExcept (void);
+FIRM_API ir_op *get_op_EndReg    (void);
+FIRM_API ir_op *get_op_End       (void);
+FIRM_API ir_op *get_op_Eor       (void);
+FIRM_API ir_op *get_op_Filter    (void);
+FIRM_API ir_op *get_op_Free      (void);
+FIRM_API ir_op *get_op_Id        (void);
+FIRM_API ir_op *get_op_IJmp      (void);
+FIRM_API ir_op *get_op_InstOf    (void);
+FIRM_API ir_op *get_op_Jmp       (void);
+FIRM_API ir_op *get_op_Load      (void);
+FIRM_API ir_op *get_op_Minus     (void);
+FIRM_API ir_op *get_op_Mod       (void);
+FIRM_API ir_op *get_op_Mulh      (void);
+FIRM_API ir_op *get_op_Mul       (void);
+FIRM_API ir_op *get_op_Mux       (void);
+FIRM_API ir_op *get_op_NoMem     (void);
+FIRM_API ir_op *get_op_Not       (void);
+FIRM_API ir_op *get_op_Or        (void);
+FIRM_API ir_op *get_op_Phi       (void);
+FIRM_API ir_op *get_op_Pin       (void);
+FIRM_API ir_op *get_op_Proj      (void);
+FIRM_API ir_op *get_op_Quot      (void);
+FIRM_API ir_op *get_op_Raise     (void);
+FIRM_API ir_op *get_op_Return    (void);
+FIRM_API ir_op *get_op_Rotl      (void);
+FIRM_API ir_op *get_op_Sel       (void);
+FIRM_API ir_op *get_op_Shl       (void);
+FIRM_API ir_op *get_op_Shrs      (void);
+FIRM_API ir_op *get_op_Shr       (void);
+FIRM_API ir_op *get_op_Start     (void);
+FIRM_API ir_op *get_op_Store     (void);
+FIRM_API ir_op *get_op_Sub       (void);
+FIRM_API ir_op *get_op_SymConst  (void);
+FIRM_API ir_op *get_op_Sync      (void);
+FIRM_API ir_op *get_op_Tuple     (void);
+FIRM_API ir_op *get_op_Unknown   (void);
 
 /** Returns the ident for the opcode name */
-FIRM_DLL ident *get_op_ident(const ir_op *op);
+FIRM_API ident *get_op_ident(const ir_op *op);
 
 /** Returns the string for the opcode. */
-FIRM_DLL const char *get_op_name(const ir_op *op);
+FIRM_API const char *get_op_name(const ir_op *op);
 
 /** Returns the enum for the opcode */
-FIRM_DLL unsigned get_op_code(const ir_op *op);
+FIRM_API unsigned get_op_code(const ir_op *op);
 
 /** Returns a human readable name of an op_pin_state. */
-FIRM_DLL const char *get_op_pin_state_name(op_pin_state s);
+FIRM_API const char *get_op_pin_state_name(op_pin_state s);
 
 /** Gets pinned state of an opcode. */
-FIRM_DLL op_pin_state get_op_pinned(const ir_op *op);
+FIRM_API op_pin_state get_op_pinned(const ir_op *op);
 
 /** Sets pinned in the opcode.  Setting it to floating has no effect
     for Block, Phi and control flow nodes. */
-FIRM_DLL void set_op_pinned(ir_op *op, op_pin_state pinned);
+FIRM_API void set_op_pinned(ir_op *op, op_pin_state pinned);
 
 /** Returns the next free IR opcode number, allows to register user ops. */
-FIRM_DLL unsigned get_next_ir_opcode(void);
+FIRM_API unsigned get_next_ir_opcode(void);
 
 /** Returns the next free n IR opcode number, allows to register a bunch of user ops. */
-FIRM_DLL unsigned get_next_ir_opcodes(unsigned num);
+FIRM_API unsigned get_next_ir_opcodes(unsigned num);
 
 /**
  * A generic function pointer type.
@@ -288,17 +288,17 @@ typedef void (*op_func)(void);
 /**
  * Returns the generic function pointer from an IR operation.
  */
-FIRM_DLL op_func get_generic_function_ptr(const ir_op *op);
+FIRM_API op_func get_generic_function_ptr(const ir_op *op);
 
 /**
  * Store a generic function pointer into an IR operation.
  */
-FIRM_DLL void set_generic_function_ptr(ir_op *op, op_func func);
+FIRM_API void set_generic_function_ptr(ir_op *op, op_func func);
 
 /**
  * Return the irop flags of an IR opcode.
  */
-FIRM_DLL irop_flags get_op_flags(const ir_op *op);
+FIRM_API irop_flags get_op_flags(const ir_op *op);
 
 /**
  * The hash operation.
@@ -452,12 +452,12 @@ typedef struct {
  * This function can create all standard Firm opcode as well as new ones.
  * The behavior of new opcode depends on the operations \c ops and the \c flags.
  */
-FIRM_DLL ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
+FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                           unsigned flags, op_arity opar, int op_index,
                           size_t attr_size, const ir_op_ops *ops);
 
 /** Returns the ir_op_ops of an ir_op. */
-FIRM_DLL const ir_op_ops *get_op_ops(const ir_op *op);
+FIRM_API const ir_op_ops *get_op_ops(const ir_op *op);
 
 #include "end.h"
 

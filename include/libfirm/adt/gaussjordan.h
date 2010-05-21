@@ -14,7 +14,7 @@
  * @param b       the result vector, will contain the result if successful
  * @param nsize   the size of the equation system
  */
-int firm_gaussjordansolve(double *A, double *b, int nsize);
+FIRM_API int firm_gaussjordansolve(double *A, double *b, int nsize);
 
 #include "../end.h"
 

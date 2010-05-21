@@ -101,12 +101,12 @@ typedef struct backend_params {
 /**
  * Register the Firm backend command line options.
  */
-FIRM_DLL void be_opt_register(void);
+FIRM_API void be_opt_register(void);
 
 /**
  * Parse one backend argument.
  */
-FIRM_DLL int be_parse_arg(const char *arg);
+FIRM_API int be_parse_arg(const char *arg);
 
 /**
  * Return the backend configuration parameter.
@@ -114,23 +114,23 @@ FIRM_DLL int be_parse_arg(const char *arg);
  * @return libFirm configuration parameters for the selected
  *         backend
  */
-FIRM_DLL const backend_params *be_get_backend_param(void);
+FIRM_API const backend_params *be_get_backend_param(void);
 
 /**
  * Main interface to the frontend.
  */
-FIRM_DLL void be_main(FILE *output, const char *compilation_unit_name);
+FIRM_API void be_main(FILE *output, const char *compilation_unit_name);
 
 /**
  * parse assembler constraint strings and returns flags (so the frontend knows
  * which operands are inputs/outputs and whether memory is required)
  */
-FIRM_DLL asm_constraint_flags_t be_parse_asm_constraints(const char *constraints);
+FIRM_API asm_constraint_flags_t be_parse_asm_constraints(const char *constraints);
 
 /**
  * tests whether a string is a valid clobber in an ASM instruction
  */
-FIRM_DLL int be_is_valid_clobber(const char *clobber);
+FIRM_API int be_is_valid_clobber(const char *clobber);
 
 typedef struct be_main_env_t be_main_env_t;
 typedef struct be_options_t  be_options_t;

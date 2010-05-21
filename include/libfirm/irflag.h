@@ -56,8 +56,8 @@ typedef unsigned optimization_state_t;
  * If optimize == 0 no optimizations are performed at all.
  * Default: optimize == 1.
  */
-FIRM_DLL void set_optimize(int value);
-FIRM_DLL int get_optimize(void);
+FIRM_API void set_optimize(int value);
+FIRM_API int get_optimize(void);
 
 /** Enables/Disables constant folding optimization.
  *
@@ -65,7 +65,7 @@ FIRM_DLL int get_optimize(void);
  *  constant expression evaluation (2 + 5 ==> 7, 3 < 2 ==> false)
  * Default: opt_constant_folding == 1.
  */
-FIRM_DLL void set_opt_constant_folding(int value);
+FIRM_API void set_opt_constant_folding(int value);
 
 /** Enables/Disables algebraic simplifications.
  *
@@ -74,17 +74,17 @@ FIRM_DLL void set_opt_constant_folding(int value);
  *  - simplification of tests   ( !(a < b) ==> (a >= b))
  * Default: opt_algebraic_simplification == 1.
  */
-FIRM_DLL void set_opt_algebraic_simplification(int value);
+FIRM_API void set_opt_algebraic_simplification(int value);
 
 /** Enables/Disables common subexpression elimination.
  *
  * If opt_cse == 1 perform common subexpression elimination.
  * Default: opt_cse == 1.
  */
-FIRM_DLL void set_opt_cse(int value);
+FIRM_API void set_opt_cse(int value);
 
 /** Returns constant folding optimization setting. */
-FIRM_DLL int get_opt_cse(void);
+FIRM_API int get_opt_cse(void);
 
 /** Enables/Disables global constant subexpression elimination.
  *
@@ -95,7 +95,7 @@ FIRM_DLL int get_opt_cse(void);
  * right after a call to local_optimize with global cse turned on.
  * Default: opt_global_cse == 0.
  */
-FIRM_DLL void set_opt_global_cse(int value);
+FIRM_API void set_opt_global_cse(int value);
 
 /** Enables/Disables unreachable code elimination.
  *
@@ -106,7 +106,7 @@ FIRM_DLL void set_opt_global_cse(int value);
  * Phi and Tuple) with a Bad predecessor by the Bad node.
  * Default: opt_unreachable_code == 1.
  */
-FIRM_DLL void set_opt_unreachable_code(int value);
+FIRM_API void set_opt_unreachable_code(int value);
 
 /** Enables/Disables control flow optimizations.
  *
@@ -114,16 +114,16 @@ FIRM_DLL void set_opt_unreachable_code(int value);
  * Sets all separate control flow flags (control_flow_straightening,
  * weak_simplification, strong_simplification and critical_edges).
  */
-FIRM_DLL void set_opt_control_flow(int value);
+FIRM_API void set_opt_control_flow(int value);
 
 /** Enables/Disables Straightening. */
-FIRM_DLL void set_opt_control_flow_straightening(int value);
+FIRM_API void set_opt_control_flow_straightening(int value);
 
 /** Enables/Disables if simplifications in local optimizations. */
-FIRM_DLL void set_opt_control_flow_weak_simplification(int value);
+FIRM_API void set_opt_control_flow_weak_simplification(int value);
 
 /** Enables/Disables strong if and loop simplification (in optimize_cf). */
-FIRM_DLL void set_opt_control_flow_strong_simplification(int value);
+FIRM_API void set_opt_control_flow_strong_simplification(int value);
 
 /** Enable/Disable optimization of dynamic method dispatch.
  *
@@ -131,14 +131,14 @@ FIRM_DLL void set_opt_control_flow_strong_simplification(int value);
  * If the flag is turned on Sel nodes can be replaced by Const nodes representing
  * the address of a function.
  */
-FIRM_DLL void set_opt_dyn_meth_dispatch(int value);
-FIRM_DLL int get_opt_dyn_meth_dispatch(void);
+FIRM_API void set_opt_dyn_meth_dispatch(int value);
+FIRM_API int get_opt_dyn_meth_dispatch(void);
 
 /** Enable/Disable type optimization of cast nodes.
  *
  * Controls the optimizations in tropt.h.  Default: on.
  */
-FIRM_DLL void set_opt_optimize_class_casts(int value);
+FIRM_API void set_opt_optimize_class_casts(int value);
 
 /** Restricts the behavior of cast optimization.
  *
@@ -146,8 +146,8 @@ FIRM_DLL void set_opt_optimize_class_casts(int value);
  *  illegal as in (Super)(Sub) (new Super()).  Default:
  *  0 == not suppressed.
  */
-FIRM_DLL void set_opt_suppress_downcast_optimization(int value);
-FIRM_DLL int get_opt_suppress_downcast_optimization(void);
+FIRM_API void set_opt_suppress_downcast_optimization(int value);
+FIRM_API int get_opt_suppress_downcast_optimization(void);
 
 /** Enable/Disable floating of fragile ops.
  *
@@ -156,12 +156,12 @@ FIRM_DLL int get_opt_suppress_downcast_optimization(void);
  * an exception can be place to other basic blocks.
  * Otherwise they remain in the block they were created.
  */
-FIRM_DLL void set_opt_fragile_ops(int value);
+FIRM_API void set_opt_fragile_ops(int value);
 
 /**
  * Enable/Disable Confirm node removal during local optimization.
  */
-FIRM_DLL void set_opt_remove_confirm(int value);
+FIRM_API void set_opt_remove_confirm(int value);
 
 /**
  * Enable/Disable Null exception in Load and Store nodes only.
@@ -174,7 +174,7 @@ FIRM_DLL void set_opt_remove_confirm(int value);
  *
  * This flag is enabled by default.
  */
-FIRM_DLL void set_opt_ldst_only_null_ptr_exceptions(int value);
+FIRM_API void set_opt_ldst_only_null_ptr_exceptions(int value);
 
 /**
  * Enable/Disable Selection based Null pointer check elimination.
@@ -192,7 +192,7 @@ FIRM_DLL void set_opt_ldst_only_null_ptr_exceptions(int value);
  *
  * This flag should be set for Java style languages.
  */
-FIRM_DLL void set_opt_sel_based_null_check_elim(int value);
+FIRM_API void set_opt_sel_based_null_check_elim(int value);
 
 /**
  * Enable/Disable Global Null Pointer Test Elimination.
@@ -203,7 +203,7 @@ FIRM_DLL void set_opt_sel_based_null_check_elim(int value);
  *
  * This flag should be set for C style languages.
  */
-FIRM_DLL void set_opt_global_null_ptr_elimination(int value);
+FIRM_API void set_opt_global_null_ptr_elimination(int value);
 
 /**
  * Enable/Disable Automatic construction of Sync nodes during
@@ -214,7 +214,7 @@ FIRM_DLL void set_opt_global_null_ptr_elimination(int value);
  *
  * This flag should be set for Java style languages.
  */
-FIRM_DLL void set_opt_auto_create_sync(int value);
+FIRM_API void set_opt_auto_create_sync(int value);
 
 /** Enable/Disable normalizations of the firm representation.
  *
@@ -229,13 +229,13 @@ FIRM_DLL void set_opt_auto_create_sync(int value);
  *
  *  @note ATTENTION: not all such transformations are guarded by a flag.
  */
-FIRM_DLL void set_opt_normalize(int value);
+FIRM_API void set_opt_normalize(int value);
 
 /**
  * Enable/Disable ConvB() nodes with a "semantic behavior", i.e. a real
  * operation that must be executed.
  */
-FIRM_DLL void set_opt_allow_conv_b(int value);
+FIRM_API void set_opt_allow_conv_b(int value);
 
 /** Enable/Disable precise exception context.
  *
@@ -252,13 +252,13 @@ FIRM_DLL void set_opt_allow_conv_b(int value);
  * else it might see a == 2.
  * Enable this for languages with strict exception order like Java.
  */
-FIRM_DLL void set_opt_precise_exc_context(int value);
+FIRM_API void set_opt_precise_exc_context(int value);
 
 /** Enable/Disable Alias analysis.
  *
  * If enabled, memory disambiguation by alias analysis is used.
  */
-FIRM_DLL void set_opt_alias_analysis(int value);
+FIRM_API void set_opt_alias_analysis(int value);
 
 /** Enable/Disable closed world assumption.
  *
@@ -266,22 +266,22 @@ FIRM_DLL void set_opt_alias_analysis(int value);
  * external types or callers exist.
  * This enables some powerful optimizations.
  */
-FIRM_DLL void set_opt_closed_world(int value);
+FIRM_API void set_opt_closed_world(int value);
 
 /**
  * Save the current optimization state.
  */
-FIRM_DLL void save_optimization_state(optimization_state_t *state);
+FIRM_API void save_optimization_state(optimization_state_t *state);
 
 /**
  * Restore the current optimization state.
  */
-FIRM_DLL void restore_optimization_state(const optimization_state_t *state);
+FIRM_API void restore_optimization_state(const optimization_state_t *state);
 
 /**
  * Switches ALL optimizations off.
  */
-FIRM_DLL void all_optimizations_off(void);
+FIRM_API void all_optimizations_off(void);
 
 /**
  * Possible verification modes.
@@ -298,7 +298,7 @@ typedef enum _firm_verification_t {
  *  Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
  *  Turn the verification off during development to check partial implementations.
  */
-FIRM_DLL void do_node_verification(firm_verification_t mode);
+FIRM_API void do_node_verification(firm_verification_t mode);
 
 #include "end.h"
 

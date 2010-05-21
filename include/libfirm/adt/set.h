@@ -75,19 +75,21 @@ typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
  * @returns
  *    created set
  */
-set *new_set (set_cmp_fun func, int slots);
+FIRM_API set *new_set(set_cmp_fun func, int slots);
 
 /**
  * Deletes a set and all elements of it.
+ *
+ * @param set  the set to delete
  */
-void del_set (set *set);
+FIRM_API void del_set(set *set);
 
 /**
  * Returns the number of elements in a set.
  *
  * @param set   the set
  */
-int set_count (set *set);
+FIRM_API int set_count(set *set);
 
 /**
  * Searches an element in a set.
@@ -100,7 +102,7 @@ int set_count (set *set);
  * @return
  *    The address of the found element in the set or NULL if it was not found.
  */
-void *set_find (set *set, const void *key, size_t size, unsigned hash);
+FIRM_API void *set_find(set *set, const void *key, size_t size, unsigned hash);
 
 /**
  * Inserts an element into a set.
@@ -117,7 +119,7 @@ void *set_find (set *set, const void *key, size_t size, unsigned hash);
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its pointer.
  */
-void *set_insert (set *set, const void *key, size_t size, unsigned hash);
+FIRM_API void *set_insert(set *set, const void *key, size_t size, unsigned hash);
 
 /**
  * Inserts an element into a set and returns its set_entry.
@@ -134,7 +136,7 @@ void *set_insert (set *set, const void *key, size_t size, unsigned hash);
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */
-set_entry *set_hinsert (set *set, const void *key, size_t size, unsigned hash);
+FIRM_API set_entry *set_hinsert(set *set, const void *key, size_t size, unsigned hash);
 
 /**
  * Inserts an element into a set, zero-terminate it and returns its set_entry.
@@ -151,7 +153,7 @@ set_entry *set_hinsert (set *set, const void *key, size_t size, unsigned hash);
  *    that should be inserted is already in the set, this functions does
  *    nothing but returning its set_entry.
  */
-set_entry *set_hinsert0 (set *set, const void *key, size_t size, unsigned hash);
+FIRM_API set_entry *set_hinsert0(set *set, const void *key, size_t size, unsigned hash);
 
 /**
  * Returns the first element of a set.
@@ -160,7 +162,7 @@ set_entry *set_hinsert0 (set *set, const void *key, size_t size, unsigned hash);
  *
  * @return a pointer to the element or NULL if the set is empty
  */
-void *set_first (set *set);
+FIRM_API void *set_first(set *set);
 
 /**
  * Returns the next element of a set.
@@ -170,7 +172,7 @@ void *set_first (set *set);
  * @return a pointer to the next element or NULL if the
  *         iteration is finished
  */
-void *set_next (set *set);
+FIRM_API void *set_next(set *set);
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -179,7 +181,7 @@ void *set_next (set *set);
  *
  * @param set  the set
  */
-void set_break (set *set);
+FIRM_API void set_break(set *set);
 
 /**
  * Iterates over an set.
@@ -223,7 +225,7 @@ void set_stats (set *set);
  *
  * @param set  the set
  */
-void set_describe (set *set);
+FIRM_API void set_describe (set *set);
 #endif
 
 
@@ -231,7 +233,7 @@ void set_describe (set *set);
 
 typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;
 
-void *_set_search (set *, const void *, size_t, unsigned, _set_action);
+FIRM_API void *_set_search(set *, const void *, size_t, unsigned, _set_action);
 
 #if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
 extern const char *set_tag;

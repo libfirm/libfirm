@@ -27,22 +27,26 @@
 #define FIRM_BEGIN_H
 
 /**
- * @def FIRM_DLL
+ * @def FIRM_API
  * Declaration specifier which marks a function/variable as being publicly
  * visible outside the firm library/dll
  */
-#ifdef FIRM_BUILD_DLL
-	#ifdef _WIN32
-		#define FIRM_DLL extern __declspec(dllexport)
+#ifdef FIRM_DLL
+	#ifdef FIRM_BUILD
+		#ifdef _WIN32
+			#define FIRM_API extern __declspec(dllexport)
+		#else
+			#define FIRM_API extern __attribute__((visibility("default")))
+		#endif
 	#else
-		#define FIRM_DLL extern __attribute__((visibility("default")))
+		#ifdef _WIN32
+			#define FIRM_API extern __declspec(dllimport)
+		#else
+			#define FIRM_API
+		#endif
 	#endif
 #else
-	#ifdef _WIN32
-		#define FIRM_DLL extern __declspec(dllimport)
-	#else
-		#define FIRM_DLL
-	#endif
+	#define  FIRM_API
 #endif
 
 /* mark declarations as C function */

@@ -253,12 +253,12 @@ typedef ARR_STRUCT(aligned_type, 1) ir_arr_descr;
 
 extern ir_arr_descr arr_mt_descr;
 
-void *ir_new_arr_f(int nelts, size_t elts_size);
-void ir_del_arr_f(void *elts);
-void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size);
-void *ir_arr_resize(void *elts, int nelts, size_t elts_size);
-void *ir_arr_setlen(void *elts, int nelts, size_t elts_size);
-void ir_verify_arr(const void *elts);
+FIRM_API void *ir_new_arr_f(int nelts, size_t elts_size);
+FIRM_API void ir_del_arr_f(void *elts);
+FIRM_API void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size);
+FIRM_API void *ir_arr_resize(void *elts, int nelts, size_t elts_size);
+FIRM_API void *ir_arr_setlen(void *elts, int nelts, size_t elts_size);
+FIRM_API void ir_verify_arr(const void *elts);
 
 #define ARR_ELTS_OFFS offsetof(ir_arr_descr, v.elts)
 #define ARR_DESCR(elts) ((ir_arr_descr *)(void *)((char *)(elts) - ARR_ELTS_OFFS))

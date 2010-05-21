@@ -42,7 +42,7 @@
  * ueberschrieben.
  *
  * Frees all interprocedural loop information. */
-FIRM_DLL void gc_irgs(int n_keep, ir_entity *keep_arr[]);
+FIRM_API void gc_irgs(int n_keep, ir_entity *keep_arr[]);
 
 /**
  * Creates an ir_prog pass for gc_irgs().
@@ -51,7 +51,7 @@ FIRM_DLL void gc_irgs(int n_keep, ir_entity *keep_arr[]);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_prog_pass_t *gc_irgs_pass(const char *name);
+FIRM_API ir_prog_pass_t *gc_irgs_pass(const char *name);
 
 #include "end.h"
 

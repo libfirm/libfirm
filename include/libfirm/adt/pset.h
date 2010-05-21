@@ -42,7 +42,7 @@
  * @param y A pointer.
  * @return 0 if @p x and @p y are equal. Some value != 0 otherwise.
  */
-int pset_default_ptr_cmp(const void *x, const void *y);
+FIRM_API int pset_default_ptr_cmp(const void *x, const void *y);
 
 /**
  * The abstract type of a pset (Set of pointers).
@@ -91,7 +91,7 @@ typedef int (*pset_cmp_fun) (const void *elt, const void *key);
  * @returns
  *    created pset
  */
-pset *new_pset (pset_cmp_fun func, int slots);
+FIRM_API pset *new_pset(pset_cmp_fun func, int slots);
 
 /**
  * Deletes a pset.
@@ -101,14 +101,14 @@ pset *new_pset (pset_cmp_fun func, int slots);
  * @note
  *    This does NOT delete the elements of this pset, just it's pointers!
  */
-void del_pset (pset *pset);
+FIRM_API void del_pset(pset *pset);
 
 /**
  * Returns the number of elements in a pset.
  *
  * @param pset   the pset
  */
-int pset_count (pset *pset);
+FIRM_API int pset_count(pset *pset);
 
 /**
  * Searches an element pointer in a pset.
@@ -120,7 +120,7 @@ int pset_count (pset *pset);
  * @return
  *    the pointer of the found element in the pset or NULL if it was not found
  */
-void *pset_find (pset *pset, const void *key, unsigned hash);
+FIRM_API void *pset_find(pset *pset, const void *key, unsigned hash);
 
 /**
  * Inserts an element pointer into a pset.
@@ -137,7 +137,7 @@ void *pset_find (pset *pset, const void *key, unsigned hash);
  *    nothing but returning its already existing set_entry.
 
  */
-void *pset_insert (pset *pset, const void *key, unsigned hash);
+FIRM_API void *pset_insert(pset *pset, const void *key, unsigned hash);
 
 /**
  * Inserts an element pointer into a pset and returns its pset_entry.
@@ -153,7 +153,7 @@ void *pset_insert (pset *pset, const void *key, unsigned hash);
  *    that should be inserted is already in the pset, this functions does
  *    nothing but returning its pset_entry.
  */
-pset_entry *pset_hinsert (pset *pset, const void *key, unsigned hash);
+FIRM_API pset_entry *pset_hinsert(pset *pset, const void *key, unsigned hash);
 
 /**
  * Removes an element from a pset.
@@ -171,7 +171,7 @@ pset_entry *pset_hinsert (pset *pset, const void *key, unsigned hash);
  *    Further, it is allowed to remove elements during an iteration
  *    including the current one.
  */
-void *pset_remove (pset *pset, const void *key, unsigned hash);
+FIRM_API void *pset_remove(pset *pset, const void *key, unsigned hash);
 
 /**
  * Returns the first element of a pset.
@@ -180,7 +180,7 @@ void *pset_remove (pset *pset, const void *key, unsigned hash);
  *
  * @return a pointer to the element or NULL if the set is empty
  */
-void *pset_first (pset *pset);
+FIRM_API void *pset_first(pset *pset);
 
 /**
  * Returns the next element of a pset.
@@ -190,7 +190,7 @@ void *pset_first (pset *pset);
  * @return a pointer to the next element or NULL if the
  *         iteration is finished
  */
-void *pset_next (pset *pset);
+FIRM_API void *pset_next(pset *pset);
 
 /**
  * Breaks the iteration of a set. Must be called before
@@ -199,7 +199,7 @@ void *pset_next (pset *pset);
  *
  * @param pset  the pset
  */
-void pset_break (pset *pset);
+FIRM_API void pset_break(pset *pset);
 
 /**
  * Iterates oven an pset.
@@ -216,7 +216,7 @@ void pset_break (pset *pset);
  * @param target  the target set, will contain the union
  * @param src     a set, will not be changed
  */
-void pset_insert_pset_ptr(pset *target, pset *src);
+FIRM_API void pset_insert_pset_ptr(pset *target, pset *src);
 
 #define new_pset(cmp, slots) (PSET_TRACE (new_pset) ((cmp), (slots)))
 #define pset_find(pset, key, hash) \
@@ -258,7 +258,7 @@ void pset_describe (pset *pset);
 
 typedef enum { _pset_find, _pset_insert, _pset_hinsert } _pset_action;
 
-void *_pset_search (pset *, const void *, unsigned, _pset_action);
+FIRM_API void *_pset_search(pset *, const void *, unsigned, _pset_action);
 
 #if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
 extern const char *pset_tag;

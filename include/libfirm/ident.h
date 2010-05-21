@@ -92,7 +92,7 @@ struct ident_if_t {
  *
  * @see get_id_str(), get_id_strlen()
  */
-FIRM_DLL ident *new_id_from_str(const char *str);
+FIRM_API ident *new_id_from_str(const char *str);
 
 /** Store a string and create an ident.
  *
@@ -106,7 +106,7 @@ FIRM_DLL ident *new_id_from_str(const char *str);
  *
  * @see new_id_from_str(), get_id_strlen()
  */
-FIRM_DLL ident *new_id_from_chars(const char *str, int len);
+FIRM_API ident *new_id_from_chars(const char *str, int len);
 
 /**
  * Returns a string represented by an ident.
@@ -120,7 +120,7 @@ FIRM_DLL ident *new_id_from_chars(const char *str, int len);
  *
  * @see new_id_from_str(), new_id_from_chars(), get_id_strlen()
  */
-FIRM_DLL const char *get_id_str(ident *id);
+FIRM_API const char *get_id_str(ident *id);
 
 /**
  * Returns the length of the string represented by an ident.
@@ -131,7 +131,7 @@ FIRM_DLL const char *get_id_str(ident *id);
  *
  * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
-FIRM_DLL int get_id_strlen(ident *id);
+FIRM_API int get_id_strlen(ident *id);
 
 /**
  * Returns true if prefix is a prefix of an ident.
@@ -141,7 +141,7 @@ FIRM_DLL int get_id_strlen(ident *id);
  *
  * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
-FIRM_DLL int id_is_prefix(ident *prefix, ident *id);
+FIRM_API int id_is_prefix(ident *prefix, ident *id);
 
 /**
  * Returns true if suffix is a suffix of an ident.
@@ -151,7 +151,7 @@ FIRM_DLL int id_is_prefix(ident *prefix, ident *id);
  *
  * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
-FIRM_DLL int id_is_suffix(ident *suffix, ident *id);
+FIRM_API int id_is_suffix(ident *suffix, ident *id);
 
 /**
  * Return true if an ident contains a given character.
@@ -161,37 +161,37 @@ FIRM_DLL int id_is_suffix(ident *suffix, ident *id);
  *
  * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
-FIRM_DLL int id_contains_char(ident *id, char c);
+FIRM_API int id_contains_char(ident *id, char c);
 
 /**
  * helper function for creating unique idents. It contains an internal counter
  * and replaces a "%u" inside the tag with the counter.
  */
-FIRM_DLL ident *id_unique(const char *tag);
+FIRM_API ident *id_unique(const char *tag);
 
 /** initializes the name mangling code */
-FIRM_DLL void firm_init_mangle (void);
+FIRM_API void firm_init_mangle (void);
 
 /** Computes a definite name for this entity by concatenating
    the name of the owner type and the name of the entity with
    a separating "_". */
-FIRM_DLL ident *id_mangle_entity(ir_entity *ent);
+FIRM_API ident *id_mangle_entity(ir_entity *ent);
 
 /** mangle underscore: Returns a new ident that represents first_scnd. */
-FIRM_DLL ident *id_mangle_u(ident *first, ident* scnd);
+FIRM_API ident *id_mangle_u(ident *first, ident* scnd);
 
 /** mangle dot: Returns a new ident that represents first.scnd. */
-FIRM_DLL ident *id_mangle_dot(ident *first, ident* scnd);
+FIRM_API ident *id_mangle_dot(ident *first, ident* scnd);
 
 /** mangle: Returns a new ident that represents firstscnd. */
-FIRM_DLL ident *id_mangle(ident *first, ident* scnd);
+FIRM_API ident *id_mangle(ident *first, ident* scnd);
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-FIRM_DLL ident *id_mangle3(const char *prefix, ident *middle,
+FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
                            const char *suffix);
 
 /** returns a mangled name for a Win32 function using its calling convention */
-FIRM_DLL ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id);
+FIRM_API ident *id_decorate_win32_c_fkt(ir_entity *ent, ident *id);
 
 #include "end.h"
 

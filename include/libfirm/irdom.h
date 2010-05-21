@@ -46,14 +46,14 @@
  *
  * If the block is not reachable from Start, returns a Bad node.
  */
-FIRM_DLL ir_node *get_Block_idom(const ir_node *bl);
-FIRM_DLL void set_Block_idom(ir_node *bl, ir_node *n);
+FIRM_API ir_node *get_Block_idom(const ir_node *bl);
+FIRM_API void set_Block_idom(ir_node *bl, ir_node *n);
 
-FIRM_DLL int get_Block_dom_depth(const ir_node *bl);
-FIRM_DLL void set_Block_dom_depth(ir_node *bl, int depth);
+FIRM_API int get_Block_dom_depth(const ir_node *bl);
+FIRM_API void set_Block_dom_depth(ir_node *bl, int depth);
 
-FIRM_DLL int get_Block_dom_pre_num(const ir_node *bl);
-FIRM_DLL void set_Block_dom_pre_num(ir_node *bl, int num);
+FIRM_API int get_Block_dom_pre_num(const ir_node *bl);
+FIRM_API void set_Block_dom_pre_num(ir_node *bl, int num);
 
 /** Accessing the post dominator data structure.
  *
@@ -62,14 +62,14 @@ FIRM_DLL void set_Block_dom_pre_num(ir_node *bl, int num);
  *
  * If the block is not reachable from End, returns a Bad node.
  */
-FIRM_DLL ir_node *get_Block_ipostdom(const ir_node *bl);
-FIRM_DLL void set_Block_ipostdom(ir_node *bl, ir_node *n);
+FIRM_API ir_node *get_Block_ipostdom(const ir_node *bl);
+FIRM_API void set_Block_ipostdom(ir_node *bl, ir_node *n);
 
-FIRM_DLL int get_Block_postdom_depth(const ir_node *bl);
-FIRM_DLL void set_Block_postdom_depth(ir_node *bl, int depth);
+FIRM_API int get_Block_postdom_depth(const ir_node *bl);
+FIRM_API void set_Block_postdom_depth(ir_node *bl, int depth);
 
-FIRM_DLL int get_Block_postdom_pre_num(const ir_node *bl);
-FIRM_DLL void set_Block_postdom_pre_num(ir_node *bl, int num);
+FIRM_API int get_Block_postdom_pre_num(const ir_node *bl);
+FIRM_API void set_Block_postdom_pre_num(ir_node *bl, int num);
 
 /**
  * Get the pre-order number of a block resulting from a
@@ -78,8 +78,8 @@ FIRM_DLL void set_Block_postdom_pre_num(ir_node *bl, int num);
  * @param bl The block.
  * @return The pre-order number.
  */
-FIRM_DLL unsigned get_Block_dom_tree_pre_num(const ir_node *bl);
-FIRM_DLL unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
+FIRM_API unsigned get_Block_dom_tree_pre_num(const ir_node *bl);
+FIRM_API unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
 
 /**
  * Get the largest pre-order number found in the subtree of the
@@ -87,8 +87,8 @@ FIRM_DLL unsigned get_Block_pdom_tree_pre_num(const ir_node *bl);
  * @param bl The block.
  * @return The largest pre-order number of block's dominator subtree.
  */
-FIRM_DLL unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
-FIRM_DLL unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
+FIRM_API unsigned get_Block_dom_max_subtree_pre_num(const ir_node *bl);
+FIRM_API unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
 
 /**
  * Get the first node in the list of nodes dominated by a given block.
@@ -101,8 +101,8 @@ FIRM_DLL unsigned get_Block_pdom_max_subtree_pre_num(const ir_node *bl);
  * @param bl The block for which to get the first node dominated by @c bl.
  * @return The first node dominated by @p bl.
  */
-FIRM_DLL ir_node *get_Block_dominated_first(const ir_node *bl);
-FIRM_DLL ir_node *get_Block_postdominated_first(const ir_node *bl);
+FIRM_API ir_node *get_Block_dominated_first(const ir_node *bl);
+FIRM_API ir_node *get_Block_postdominated_first(const ir_node *bl);
 
 /**
  * Get the next node in a list of nodes which are dominated by some
@@ -111,8 +111,8 @@ FIRM_DLL ir_node *get_Block_postdominated_first(const ir_node *bl);
  * @param dom The previous node.
  * @return The next node in this list or NULL if it was the last.
  */
-FIRM_DLL ir_node *get_Block_dominated_next(const ir_node *dom);
-FIRM_DLL ir_node *get_Block_postdominated_next(const ir_node *dom);
+FIRM_API ir_node *get_Block_dominated_next(const ir_node *dom);
+FIRM_API ir_node *get_Block_postdominated_next(const ir_node *dom);
 
 /**
  * Iterate over all nodes which are immediately dominated by a given
@@ -142,7 +142,7 @@ FIRM_DLL ir_node *get_Block_postdominated_next(const ir_node *dom);
  *
  * @return 1, if @p a dominates @p b, else 0.
  */
-FIRM_DLL int block_dominates(const ir_node *a, const ir_node *b);
+FIRM_API int block_dominates(const ir_node *a, const ir_node *b);
 
 /**
  * Check, if a block strictly dominates another block, i.e. a != b.
@@ -152,7 +152,7 @@ FIRM_DLL int block_dominates(const ir_node *a, const ir_node *b);
  *
  * @return 1, if @p a strictly dominates @p b, else 0.
  */
-FIRM_DLL int block_strictly_dominates(const ir_node *a, const ir_node *b);
+FIRM_API int block_strictly_dominates(const ir_node *a, const ir_node *b);
 
 /**
  * Returns the smallest common dominator block of two nodes.
@@ -160,7 +160,7 @@ FIRM_DLL int block_strictly_dominates(const ir_node *a, const ir_node *b);
  * @param b Another node.
  * @return The first block dominating @p a and @p b
  */
-FIRM_DLL ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
+FIRM_API ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
 
 /**
  * Returns the smallest common dominator block of all users of a node
@@ -174,7 +174,7 @@ FIRM_DLL ir_node *node_smallest_common_dominator(ir_node *a, ir_node *b);
  * @param handle_phi 1 if Phis should be handled different
  * @return The first block dominating all users of @p irn
  */
-FIRM_DLL ir_node *node_users_smallest_common_dominator(ir_node *irn,
+FIRM_API ir_node *node_users_smallest_common_dominator(ir_node *irn,
                                                        int handle_phi);
 
 /**
@@ -185,7 +185,7 @@ FIRM_DLL ir_node *node_users_smallest_common_dominator(ir_node *irn,
  *
  * @return 1, if @p a post dominates @p b, else 0.
  */
-FIRM_DLL int block_postdominates(const ir_node *a, const ir_node *b);
+FIRM_API int block_postdominates(const ir_node *a, const ir_node *b);
 
 /**
  * Check, if a block strictly post dominates another block, i.e. a != b.
@@ -195,7 +195,7 @@ FIRM_DLL int block_postdominates(const ir_node *a, const ir_node *b);
  *
  * @return 1, if @p a strictly post dominates @p b, else 0.
  */
-FIRM_DLL int block_strictly_postdominates(const ir_node *a, const ir_node *b);
+FIRM_API int block_strictly_postdominates(const ir_node *a, const ir_node *b);
 
 /**
  * Visit all nodes in the dominator subtree of a given node.
@@ -206,7 +206,7 @@ FIRM_DLL int block_strictly_postdominates(const ir_node *a, const ir_node *b);
  * @param post The post-visitor callback.
  * @param env Some custom data passed to the visitors.
  */
-FIRM_DLL void dom_tree_walk(ir_node *n, irg_walk_func *pre,
+FIRM_API void dom_tree_walk(ir_node *n, irg_walk_func *pre,
                             irg_walk_func *post, void *env);
 
 /**
@@ -218,7 +218,7 @@ FIRM_DLL void dom_tree_walk(ir_node *n, irg_walk_func *pre,
  * @param post The post-visitor callback.
  * @param env Some custom data passed to the visitors.
  */
-FIRM_DLL void postdom_tree_walk(ir_node *n, irg_walk_func *pre,
+FIRM_API void postdom_tree_walk(ir_node *n, irg_walk_func *pre,
                                 irg_walk_func *post, void *env);
 
 /**
@@ -228,7 +228,7 @@ FIRM_DLL void postdom_tree_walk(ir_node *n, irg_walk_func *pre,
  * @param post A post-visitor to call.
  * @param env Some private data to give to the visitors.
  */
-FIRM_DLL void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
+FIRM_API void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
                                 irg_walk_func *post, void *env);
 
 /**
@@ -238,7 +238,7 @@ FIRM_DLL void dom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  * @param post A post-visitor to call.
  * @param env Some private data to give to the visitors.
  */
-FIRM_DLL void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
+FIRM_API void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
                                     irg_walk_func *post, void *env);
 
 /* ------------ Building and Removing the dominator data structure ----------- */
@@ -258,10 +258,10 @@ FIRM_DLL void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
  * Also constructs outs information.  As this information is correct after
  * the run does not free the outs information.
  */
-FIRM_DLL void compute_doms(ir_graph *irg);
+FIRM_API void compute_doms(ir_graph *irg);
 
 /** Computes the dominator trees on demand, @see compute_doms(). */
-FIRM_DLL void assure_doms(ir_graph *irg);
+FIRM_API void assure_doms(ir_graph *irg);
 
 /** Computes the post dominator trees.
  *
@@ -278,19 +278,19 @@ FIRM_DLL void assure_doms(ir_graph *irg);
  * Also constructs outs information.  As this information is correct after
  * the run does not free the outs information.
  */
-FIRM_DLL void compute_postdoms(ir_graph *irg);
+FIRM_API void compute_postdoms(ir_graph *irg);
 
 /** Computes the dominator trees on demand */
-FIRM_DLL void assure_postdoms(ir_graph *irg);
+FIRM_API void assure_postdoms(ir_graph *irg);
 
 /** Frees the dominator data structures.  Sets the flag in irg to "dom_none". */
-FIRM_DLL void free_dom(ir_graph *irg);
+FIRM_API void free_dom(ir_graph *irg);
 
 /**
  * Frees the post dominator data structures.
  * Sets the flag in irg to "dom_none".
  */
-FIRM_DLL void free_postdom(ir_graph *irg);
+FIRM_API void free_postdom(ir_graph *irg);
 
 #include "end.h"
 

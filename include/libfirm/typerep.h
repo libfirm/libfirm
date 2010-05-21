@@ -153,12 +153,12 @@ typedef enum {
 /**
  * Return the visibility class of an entity
  */
-FIRM_DLL ir_visibility get_entity_visibility(const ir_entity *entity);
+FIRM_API ir_visibility get_entity_visibility(const ir_entity *entity);
 
 /**
  * Set visibility class of an entity
  */
-FIRM_DLL void set_entity_visibility(ir_entity *entity, ir_visibility visibility);
+FIRM_API void set_entity_visibility(ir_entity *entity, ir_visibility visibility);
 
 /**
  * Return 1 if the entity is visible outside the current compilation unit
@@ -168,13 +168,13 @@ FIRM_DLL void set_entity_visibility(ir_entity *entity, ir_visibility visibility)
  * get_entity_visibility(entity) != ir_visibility_local ||
  * (get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER)
  */
-FIRM_DLL int entity_is_externally_visible(const ir_entity *entity);
+FIRM_API int entity_is_externally_visible(const ir_entity *entity);
 
 /**
  * Return 1 if the entity has a definition (initializer) in the current
  * compilation unit
  */
-FIRM_DLL int entity_has_definition(const ir_entity *entity);
+FIRM_API int entity_has_definition(const ir_entity *entity);
 
 /**
  * Creates a new entity.
@@ -185,7 +185,7 @@ FIRM_DLL int entity_has_definition(const ir_entity *entity);
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-FIRM_DLL ir_entity *new_entity(ir_type *owner, ident *name, ir_type *tp);
+FIRM_API ir_entity *new_entity(ir_type *owner, ident *name, ir_type *tp);
 
 /**
  * Creates a new entity.
@@ -196,7 +196,7 @@ FIRM_DLL ir_entity *new_entity(ir_type *owner, ident *name, ir_type *tp);
  * value is a pointer to the method.
  * Visibility is local, offset -1, and it is not volatile.
  */
-FIRM_DLL ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *tp,
+FIRM_API ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *tp,
                                  dbg_info *db);
 
 /**
@@ -207,7 +207,7 @@ FIRM_DLL ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *tp,
  * Resets the overwrites/overwritten_by fields.
  * Keeps the old atomic value.
  */
-FIRM_DLL ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner);
+FIRM_API ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner);
 
 /**
  * Copies the entity if the new_name is different from the
@@ -217,7 +217,7 @@ FIRM_DLL ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner);
  * The mangled name ld_name is set to NULL.
  * Overwrites relation is copied from old.
  */
-FIRM_DLL ir_entity *copy_entity_name(ir_entity *old, ident *new_name);
+FIRM_API ir_entity *copy_entity_name(ir_entity *old, ident *new_name);
 
 /**
  * Frees the entity.
@@ -225,16 +225,16 @@ FIRM_DLL ir_entity *copy_entity_name(ir_entity *old, ident *new_name);
  * The owner will still contain the pointer to this
  * entity, as well as all other references!
  */
-FIRM_DLL void free_entity(ir_entity *ent);
+FIRM_API void free_entity(ir_entity *ent);
 
 /** Returns the name of an entity. */
-FIRM_DLL const char *get_entity_name(const ir_entity *ent);
+FIRM_API const char *get_entity_name(const ir_entity *ent);
 
 /** Returns the ident of an entity. */
-FIRM_DLL ident *get_entity_ident(const ir_entity *ent);
+FIRM_API ident *get_entity_ident(const ir_entity *ent);
 
 /** Sets the ident of the entity. */
-FIRM_DLL void set_entity_ident(ir_entity *ent, ident *id);
+FIRM_API void set_entity_ident(ir_entity *ent, ident *id);
 
 /** Returns the mangled name of the entity.
  *
@@ -242,37 +242,37 @@ FIRM_DLL void set_entity_ident(ir_entity *ent, ident *id);
  * Else it generates a name with mangle_entity()
  * and remembers this new name internally.
  */
-FIRM_DLL ident *get_entity_ld_ident(const ir_entity *ent);
+FIRM_API ident *get_entity_ld_ident(const ir_entity *ent);
 
 /** Sets the mangled name of the entity. */
-FIRM_DLL void set_entity_ld_ident(ir_entity *ent, ident *ld_ident);
+FIRM_API void set_entity_ld_ident(ir_entity *ent, ident *ld_ident);
 
 /** Returns the mangled name of the entity as a string. */
-FIRM_DLL const char *get_entity_ld_name(const ir_entity *ent);
+FIRM_API const char *get_entity_ld_name(const ir_entity *ent);
 
 /** Returns the owner of the entity. */
-FIRM_DLL ir_type *get_entity_owner(const ir_entity *ent);
+FIRM_API ir_type *get_entity_owner(const ir_entity *ent);
 
 /** Sets the owner field in entity to owner.  Don't forget to add
    ent to owner!! */
-FIRM_DLL void set_entity_owner(ir_entity *ent, ir_type *owner);
+FIRM_API void set_entity_owner(ir_entity *ent, ir_type *owner);
 
 /** Returns the type of an entity. */
-FIRM_DLL ir_type *get_entity_type(const ir_entity *ent);
+FIRM_API ir_type *get_entity_type(const ir_entity *ent);
 
 /** Sets the type of an entity. */
-FIRM_DLL void set_entity_type(ir_entity *ent, ir_type *tp);
+FIRM_API void set_entity_type(ir_entity *ent, ir_type *tp);
 
 /** Returns the linkage of an entity. */
-FIRM_DLL ir_linkage get_entity_linkage(const ir_entity *entity);
+FIRM_API ir_linkage get_entity_linkage(const ir_entity *entity);
 
 /** Sets the linkage of an entity. */
-FIRM_DLL void set_entity_linkage(ir_entity *entity, ir_linkage linkage);
-FIRM_DLL void add_entity_linkage(ir_entity *entity, ir_linkage linkage);
-FIRM_DLL void remove_entity_linkage(ir_entity *entity, ir_linkage linkage);
+FIRM_API void set_entity_linkage(ir_entity *entity, ir_linkage linkage);
+FIRM_API void add_entity_linkage(ir_entity *entity, ir_linkage linkage);
+FIRM_API void remove_entity_linkage(ir_entity *entity, ir_linkage linkage);
 
 /** Returns 1 if the value of a global symbol never changes in a program */
-FIRM_DLL int is_entity_constant(const ir_entity *ent);
+FIRM_API int is_entity_constant(const ir_entity *ent);
 
 /**
  * This enumeration flags the volatility of entities and Loads/Stores.
@@ -287,25 +287,25 @@ typedef enum {
  * Returns the volatility of an entity.
  * @deprecated
  */
-FIRM_DLL ir_volatility get_entity_volatility(const ir_entity *ent);
+FIRM_API ir_volatility get_entity_volatility(const ir_entity *ent);
 
 /**
  * Sets the volatility of an entity.
  * @deprecated
  */
-FIRM_DLL void set_entity_volatility(ir_entity *ent, ir_volatility vol);
+FIRM_API void set_entity_volatility(ir_entity *ent, ir_volatility vol);
 
 /** Return the name of the volatility. */
-FIRM_DLL const char *get_volatility_name(ir_volatility var);
+FIRM_API const char *get_volatility_name(ir_volatility var);
 
 /** Returns alignment of entity in bytes */
-FIRM_DLL unsigned get_entity_alignment(const ir_entity *entity);
+FIRM_API unsigned get_entity_alignment(const ir_entity *entity);
 
 /** Allows you to override the type alignment for an entity.
  * @param entity      the entity
  * @param alignment   alignment in bytes
  */
-FIRM_DLL void set_entity_alignment(ir_entity *entity, unsigned alignment);
+FIRM_API void set_entity_alignment(ir_entity *entity, unsigned alignment);
 
 
 /**
@@ -321,58 +321,58 @@ typedef enum {
  * Returns indication wether entity is aligned in memory.
  * @deprecated
  */
-FIRM_DLL ir_align get_entity_aligned(const ir_entity *ent);
+FIRM_API ir_align get_entity_aligned(const ir_entity *ent);
 
 /**
  * Sets indication wether entity is aligned in memory
  * @deprecated
  */
-FIRM_DLL void set_entity_aligned(ir_entity *ent, ir_align a);
+FIRM_API void set_entity_aligned(ir_entity *ent, ir_align a);
 
 /** Return the name of the alignment. */
-FIRM_DLL const char *get_align_name(ir_align a);
+FIRM_API const char *get_align_name(ir_align a);
 
 /** Returns the offset of an entity (in a compound) in bytes. Only set if layout = fixed. */
-FIRM_DLL int get_entity_offset(const ir_entity *ent);
+FIRM_API int get_entity_offset(const ir_entity *ent);
 
 /** Sets the offset of an entity (in a compound) in bytes. */
-FIRM_DLL void set_entity_offset(ir_entity *ent, int offset);
+FIRM_API void set_entity_offset(ir_entity *ent, int offset);
 
 /** Returns the offset bit remainder of a bitfield entity (in a compound) in bits. Only set if layout = fixed. */
-FIRM_DLL unsigned char get_entity_offset_bits_remainder(const ir_entity *ent);
+FIRM_API unsigned char get_entity_offset_bits_remainder(const ir_entity *ent);
 
 /** Sets the offset bit remainder of a bitfield entity (in a compound) in bits. */
-FIRM_DLL void set_entity_offset_bits_remainder(ir_entity *ent,
+FIRM_API void set_entity_offset_bits_remainder(ir_entity *ent,
                                                unsigned char offset);
 
 /** Returns the stored intermediate information. */
-FIRM_DLL void *get_entity_link(const ir_entity *ent);
+FIRM_API void *get_entity_link(const ir_entity *ent);
 
 /** Stores new intermediate information. */
-FIRM_DLL void set_entity_link(ir_entity *ent, void *l);
+FIRM_API void set_entity_link(ir_entity *ent, void *l);
 
 /* -- Fields of method entities -- */
 /** The entity knows the corresponding irg if the entity is a method.
    This allows to get from a Call to the called irg. */
-FIRM_DLL ir_graph *get_entity_irg(const ir_entity *ent);
-FIRM_DLL void set_entity_irg(ir_entity *ent, ir_graph *irg);
+FIRM_API ir_graph *get_entity_irg(const ir_entity *ent);
+FIRM_API void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
 /** Gets the entity vtable number. */
-FIRM_DLL unsigned get_entity_vtable_number(const ir_entity *ent);
+FIRM_API unsigned get_entity_vtable_number(const ir_entity *ent);
 
 /** Sets the entity vtable number. */
-FIRM_DLL void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number);
+FIRM_API void set_entity_vtable_number(ir_entity *ent, unsigned vtable_number);
 
 /** Set label number of an entity with code type */
-FIRM_DLL void set_entity_label(ir_entity *ent, ir_label_t label);
+FIRM_API void set_entity_label(ir_entity *ent, ir_label_t label);
 /** Return label number of an entity with code type */
-FIRM_DLL ir_label_t get_entity_label(const ir_entity *ent);
+FIRM_API ir_label_t get_entity_label(const ir_entity *ent);
 
 /** Checks if an entity is compiler generated. */
-FIRM_DLL int is_entity_compiler_generated(const ir_entity *ent);
+FIRM_API int is_entity_compiler_generated(const ir_entity *ent);
 
 /** Sets/resets the compiler generated flag. */
-FIRM_DLL void set_entity_compiler_generated(ir_entity *ent, int flag);
+FIRM_API void set_entity_compiler_generated(ir_entity *ent, int flag);
 
 /**
  * Bitfield type indicating the way an entity is used.
@@ -391,17 +391,17 @@ typedef enum {
 } ir_entity_usage;
 
 /** Return the entity usage */
-FIRM_DLL ir_entity_usage get_entity_usage(const ir_entity *ent);
+FIRM_API ir_entity_usage get_entity_usage(const ir_entity *ent);
 
 /** Sets/resets the state of the address taken flag of an entity. */
-FIRM_DLL void set_entity_usage(ir_entity *ent, ir_entity_usage flag);
+FIRM_API void set_entity_usage(ir_entity *ent, ir_entity_usage flag);
 
 /**
  * Returns the debug information of an entity.
  *
  * @param ent The entity.
  */
-FIRM_DLL dbg_info *get_entity_dbg_info(const ir_entity *ent);
+FIRM_API dbg_info *get_entity_dbg_info(const ir_entity *ent);
 
 /**
  * Sets the debug information of an entity.
@@ -409,7 +409,7 @@ FIRM_DLL dbg_info *get_entity_dbg_info(const ir_entity *ent);
  * @param ent The entity.
  * @param db  The debug info.
  */
-FIRM_DLL void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
+FIRM_API void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
 
 /* -- Representation of constant values of entities -- */
 /**
@@ -419,7 +419,7 @@ FIRM_DLL void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
  * @deprecated This function is not used by libFirm and stays here
  *             only as a helper for the old Jack frontend.
  */
-FIRM_DLL int is_irn_const_expression(ir_node *n);
+FIRM_API int is_irn_const_expression(ir_node *n);
 
 /**
  * Copies a Firm subgraph that complies to the restrictions for
@@ -431,11 +431,11 @@ FIRM_DLL int is_irn_const_expression(ir_node *n);
  * Set current_ir_graph to get_const_code_irg() to generate a constant
  * expression.
  */
-FIRM_DLL ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
+FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
 
 /* Set has no effect for existent entities of type method. */
-FIRM_DLL ir_node *get_atomic_ent_value(ir_entity *ent);
-FIRM_DLL void set_atomic_ent_value(ir_entity *ent, ir_node *val);
+FIRM_API ir_node *get_atomic_ent_value(ir_entity *ent);
+FIRM_API void set_atomic_ent_value(ir_entity *ent, ir_node *val);
 
 /** the kind (type) of an initializer */
 typedef enum ir_initializer_kind_t {
@@ -450,54 +450,54 @@ typedef enum ir_initializer_kind_t {
 } ir_initializer_kind_t;
 
 /** returns kind of an initializer */
-FIRM_DLL ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer);
+FIRM_API ir_initializer_kind_t get_initializer_kind(const ir_initializer_t *initializer);
 
 /** Return the name of the initializer kind. */
-FIRM_DLL const char *get_initializer_kind_name(ir_initializer_kind_t ini);
+FIRM_API const char *get_initializer_kind_name(ir_initializer_kind_t ini);
 
 /**
  * returns the null initializer (there's only one instance of it in a program )
  */
-FIRM_DLL ir_initializer_t *get_initializer_null(void);
+FIRM_API ir_initializer_t *get_initializer_null(void);
 
 /**
  * creates an initializer containing a reference to a node on the const-code
  * irg.
  */
-FIRM_DLL ir_initializer_t *create_initializer_const(ir_node *value);
+FIRM_API ir_initializer_t *create_initializer_const(ir_node *value);
 
 /** creates an initializer containing a single tarval value */
-FIRM_DLL ir_initializer_t *create_initializer_tarval(tarval *tv);
+FIRM_API ir_initializer_t *create_initializer_tarval(tarval *tv);
 
 /** return value contained in a const initializer */
-FIRM_DLL ir_node *get_initializer_const_value(const ir_initializer_t *initializer);
+FIRM_API ir_node *get_initializer_const_value(const ir_initializer_t *initializer);
 
 /** return value contained in a tarval initializer */
-FIRM_DLL tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
+FIRM_API tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
 
 /** creates a compound initializer which holds @p n_entries entries */
-FIRM_DLL ir_initializer_t *create_initializer_compound(unsigned n_entries);
+FIRM_API ir_initializer_t *create_initializer_compound(unsigned n_entries);
 
 /** returns the number of entries in a compound initializer */
-FIRM_DLL unsigned get_initializer_compound_n_entries(const ir_initializer_t *initializer);
+FIRM_API unsigned get_initializer_compound_n_entries(const ir_initializer_t *initializer);
 
 /** sets entry with index @p index to the initializer @p value */
-FIRM_DLL void set_initializer_compound_value(ir_initializer_t *initializer,
+FIRM_API void set_initializer_compound_value(ir_initializer_t *initializer,
                                              unsigned index,
                                              ir_initializer_t *value);
 
 /** returns the value with index @p index of a compound initializer */
-FIRM_DLL ir_initializer_t *get_initializer_compound_value(
+FIRM_API ir_initializer_t *get_initializer_compound_value(
 		const ir_initializer_t *initializer, unsigned index);
 
 /** Sets the new style initializers of an entity. */
-FIRM_DLL void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
+FIRM_API void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);
 
 /** Returns true, if an entity has new style initializers. */
-FIRM_DLL int has_entity_initializer(const ir_entity *entity);
+FIRM_API int has_entity_initializer(const ir_entity *entity);
 
 /** Return the new style initializers of an entity. */
-FIRM_DLL ir_initializer_t *get_entity_initializer(const ir_entity *entity);
+FIRM_API ir_initializer_t *get_entity_initializer(const ir_entity *entity);
 
 /* --- Fields of entities with a class type as owner --- */
 /* Overwrites is a field that specifies that an access to the overwritten
@@ -509,18 +509,18 @@ FIRM_DLL ir_initializer_t *get_entity_initializer(const ir_entity *entity);
    that is passed to it.  Lowering of the Sel node must assure this.
    Overwrittenby is the inverse of overwrites.  Both add routines add
    both relations, they only differ in the order of arguments. */
-FIRM_DLL void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
-FIRM_DLL int get_entity_n_overwrites(const ir_entity *ent);
-FIRM_DLL int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten);
-FIRM_DLL ir_entity *get_entity_overwrites(const ir_entity *ent, int pos);
-FIRM_DLL void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten);
-FIRM_DLL void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
+FIRM_API void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
+FIRM_API int get_entity_n_overwrites(const ir_entity *ent);
+FIRM_API int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten);
+FIRM_API ir_entity *get_entity_overwrites(const ir_entity *ent, int pos);
+FIRM_API void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten);
+FIRM_API void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
 
-FIRM_DLL int get_entity_n_overwrittenby(const ir_entity *ent);
-FIRM_DLL int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites);
-FIRM_DLL ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos);
-FIRM_DLL void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites);
-FIRM_DLL void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
+FIRM_API int get_entity_n_overwrittenby(const ir_entity *ent);
+FIRM_API int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites);
+FIRM_API ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos);
+FIRM_API void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites);
+FIRM_API void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
 
 /**
  *   Checks whether a pointer points to an entity.
@@ -530,40 +530,40 @@ FIRM_DLL void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
  *   @return
  *       true if the thing is an entity, else false
  */
-FIRM_DLL int is_entity(const void *thing);
+FIRM_API int is_entity(const void *thing);
 
 /** Returns true if the type of the entity is a primitive, pointer
  * enumeration or method type.
  *
  * @note This is a different classification than from is_primitive_type().
  */
-FIRM_DLL int is_atomic_entity(const ir_entity *ent);
+FIRM_API int is_atomic_entity(const ir_entity *ent);
 /** Returns true if the type of the entity is a class, structure,
    array or union type. */
-FIRM_DLL int is_compound_entity(const ir_entity *ent);
+FIRM_API int is_compound_entity(const ir_entity *ent);
 /** Returns true if the type of the entity is a Method type. */
-FIRM_DLL int is_method_entity(const ir_entity *ent);
+FIRM_API int is_method_entity(const ir_entity *ent);
 
 /** Outputs a unique number for this entity if libfirm is compiled for
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-FIRM_DLL long get_entity_nr(const ir_entity *ent);
+FIRM_API long get_entity_nr(const ir_entity *ent);
 
 /** Returns the entities visited count. */
-FIRM_DLL ir_visited_t get_entity_visited(const ir_entity *ent);
+FIRM_API ir_visited_t get_entity_visited(const ir_entity *ent);
 
 /** Sets the entities visited count. */
-FIRM_DLL void set_entity_visited(ir_entity *ent, ir_visited_t num);
+FIRM_API void set_entity_visited(ir_entity *ent, ir_visited_t num);
 
 /** Sets visited field in entity to entity_visited. */
-FIRM_DLL void mark_entity_visited(ir_entity *ent);
+FIRM_API void mark_entity_visited(ir_entity *ent);
 
 /** Returns true if this entity was visited. */
-FIRM_DLL int entity_visited(const ir_entity *ent);
+FIRM_API int entity_visited(const ir_entity *ent);
 
 /** Returns true if this entity was not visited. */
-FIRM_DLL int entity_not_visited(const ir_entity *ent);
+FIRM_API int entity_not_visited(const ir_entity *ent);
 
 /**
  * Returns the mask of the additional entity properties.
@@ -572,19 +572,19 @@ FIRM_DLL int entity_not_visited(const ir_entity *ent);
  * set_entity_additional_properties() or
  * set_entity_additional_property().
  */
-FIRM_DLL unsigned get_entity_additional_properties(const ir_entity *ent);
+FIRM_API unsigned get_entity_additional_properties(const ir_entity *ent);
 
 /** Sets the mask of the additional graph properties. */
-FIRM_DLL void set_entity_additional_properties(ir_entity *ent,
+FIRM_API void set_entity_additional_properties(ir_entity *ent,
                                                unsigned property_mask);
 
 /** Sets one additional graph property. */
-FIRM_DLL void set_entity_additional_property(ir_entity *ent,
+FIRM_API void set_entity_additional_property(ir_entity *ent,
                                              mtp_additional_property flag);
 
 /** Returns the class type that this type info entity represents or NULL
     if ent is no type info entity. */
-FIRM_DLL ir_type *get_entity_repr_class(const ir_entity *ent);
+FIRM_API ir_type *get_entity_repr_class(const ir_entity *ent);
 
 /**
  * @page unknown_entity  The Unknown entity
@@ -620,10 +620,10 @@ FIRM_DLL ir_type *get_entity_repr_class(const ir_entity *ent);
  */
 
 /** A variable that contains the only unknown entity. */
-FIRM_DLL ir_entity *unknown_entity;
+FIRM_API ir_entity *unknown_entity;
 
 /** Returns the @link unknown_entity unknown entity @endlink. */
-FIRM_DLL ir_entity *get_unknown_entity(void);
+FIRM_API ir_entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */
 typedef enum acc_bits {
@@ -686,7 +686,7 @@ typedef struct tp_op tp_op;
  * @param op  The type opcode to get the string from.
  * @return a string.  (@todo Null terminated?)
  */
-FIRM_DLL const char *get_tpop_name(const tp_op *op);
+FIRM_API const char *get_tpop_name(const tp_op *op);
 
 /**
  * Returns an enum for the type opcode.
@@ -694,7 +694,7 @@ FIRM_DLL const char *get_tpop_name(const tp_op *op);
  * @param op   The type opcode to get the enum from.
  * @return the enum.
  */
-FIRM_DLL tp_opcode get_tpop_code(const tp_op *op);
+FIRM_API tp_opcode get_tpop_code(const tp_op *op);
 
 /**
  * This type opcode marks that the corresponding type is a class type.
@@ -705,8 +705,8 @@ FIRM_DLL tp_opcode get_tpop_code(const tp_op *op);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_class;
-FIRM_DLL const tp_op *get_tpop_class(void);
+FIRM_API const tp_op *type_class;
+FIRM_API const tp_op *get_tpop_class(void);
 
 /**
  * This type opcode marks that the corresponding type is a compound type
@@ -717,8 +717,8 @@ FIRM_DLL const tp_op *get_tpop_class(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_struct;
-FIRM_DLL const tp_op *get_tpop_struct(void);
+FIRM_API const tp_op *type_struct;
+FIRM_API const tp_op *get_tpop_struct(void);
 
 /**
  * This type opcode marks that the corresponding type is a method type.
@@ -727,8 +727,8 @@ FIRM_DLL const tp_op *get_tpop_struct(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_method;
-FIRM_DLL const tp_op *get_tpop_method(void);
+FIRM_API const tp_op *type_method;
+FIRM_API const tp_op *get_tpop_method(void);
 
 /**
  * This type opcode marks that the corresponding type is a union type.
@@ -737,8 +737,8 @@ FIRM_DLL const tp_op *get_tpop_method(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_union;
-FIRM_DLL const tp_op *get_tpop_union(void);
+FIRM_API const tp_op *type_union;
+FIRM_API const tp_op *get_tpop_union(void);
 
 /**
  * This type opcode marks that the corresponding type is an array type.
@@ -748,8 +748,8 @@ FIRM_DLL const tp_op *get_tpop_union(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_array;
-FIRM_DLL const tp_op *get_tpop_array(void);
+FIRM_API const tp_op *type_array;
+FIRM_API const tp_op *get_tpop_array(void);
 
 /**
  * This type opcode marks that the corresponding type is an enumeration type.
@@ -760,8 +760,8 @@ FIRM_DLL const tp_op *get_tpop_array(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_enumeration;
-FIRM_DLL const tp_op *get_tpop_enumeration(void);
+FIRM_API const tp_op *type_enumeration;
+FIRM_API const tp_op *get_tpop_enumeration(void);
 
 /**
  * This type opcode marks that the corresponding type is a pointer type.
@@ -770,8 +770,8 @@ FIRM_DLL const tp_op *get_tpop_enumeration(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_pointer;
-FIRM_DLL const tp_op *get_tpop_pointer(void);
+FIRM_API const tp_op *type_pointer;
+FIRM_API const tp_op *get_tpop_pointer(void);
 
 /**
  * This type opcode marks that the corresponding type is a primitive type.
@@ -781,14 +781,14 @@ FIRM_DLL const tp_op *get_tpop_pointer(void);
  * This struct is dynamically allocated but constant for the lifetime
  * of the library.
  */
-FIRM_DLL const tp_op *type_primitive;
-FIRM_DLL const tp_op *get_tpop_primitive(void);
+FIRM_API const tp_op *type_primitive;
+FIRM_API const tp_op *get_tpop_primitive(void);
 
 /**
  * The code type is used to mark pieces of code (basic blocks)
  */
-FIRM_DLL const tp_op *tpop_code;
-FIRM_DLL const tp_op *get_tpop_code_type(void);
+FIRM_API const tp_op *tpop_code;
+FIRM_API const tp_op *get_tpop_code_type(void);
 
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
@@ -798,8 +798,8 @@ FIRM_DLL const tp_op *get_tpop_code_type(void);
  * contain a type or that are initialized for an analysis. There exists exactly
  * one type with this opcode.
  */
-FIRM_DLL const tp_op *tpop_none;
-FIRM_DLL const tp_op *get_tpop_none(void);
+FIRM_API const tp_op *tpop_none;
+FIRM_API const tp_op *get_tpop_none(void);
 
 /**
  * This type opcode is an auxiliary opcode dedicated to support type analyses.
@@ -809,8 +809,8 @@ FIRM_DLL const tp_op *get_tpop_none(void);
  * yet) or to represent the top of a lattice (could not be determined).  There exists
  * exactly one type with this opcode.
  */
-FIRM_DLL const tp_op *tpop_unknown;
-FIRM_DLL const tp_op *get_tpop_unknown(void);
+FIRM_API const tp_op *tpop_unknown;
+FIRM_API const tp_op *get_tpop_unknown(void);
 
 /* ----------------------------------------------------------------------- */
 /* Classify pairs of types/entities in the inheritance relations.          */
@@ -822,7 +822,7 @@ FIRM_DLL const tp_op *get_tpop_unknown(void);
  *  a subclass of high.  I.e, we search in all subtypes of high for low.
  *  @@@ this can be implemented more efficient if we know the set of all
  *  subclasses of high.  */
-FIRM_DLL int is_SubClass_of(ir_type *low, ir_type *high);
+FIRM_API int is_SubClass_of(ir_type *low, ir_type *high);
 
 /** Subclass check for pointers to classes.
  *
@@ -830,7 +830,7 @@ FIRM_DLL int is_SubClass_of(ir_type *low, ir_type *high);
  *  many as possible).  If the remaining types are both class types
  *  and subclasses, returns true, else false.  Can also be called with
  *  two class types.  */
-FIRM_DLL int is_SubClass_ptr_of(ir_type *low, ir_type *high);
+FIRM_API int is_SubClass_ptr_of(ir_type *low, ir_type *high);
 
 /** Returns true if high is superclass of low.
  *
@@ -851,14 +851,14 @@ FIRM_DLL int is_SubClass_ptr_of(ir_type *low, ir_type *high);
 /** Returns true if high is (transitive) overwritten by low.
  *
  *  Returns false if high == low. */
-FIRM_DLL int is_overwritten_by(ir_entity *high, ir_entity *low);
+FIRM_API int is_overwritten_by(ir_entity *high, ir_entity *low);
 
 /** Resolve polymorphism in the inheritance relation.
  *
  *  Returns the dynamically referenced entity if the static entity and the
  *  dynamic type are given.
  *  Searches downwards in overwritten tree. */
-FIRM_DLL ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class,
+FIRM_API ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class,
                                            ir_entity* static_ent);
 
 /* ----------------------------------------------------------------------- */
@@ -869,7 +869,7 @@ FIRM_DLL ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class,
  *
  *  Returns an ident that consists of the name of type followed by an
  *  underscore and the name (not ld_name) of the entity. */
-FIRM_DLL ident *default_mangle_inherited_name(const ir_entity *ent,
+FIRM_API ident *default_mangle_inherited_name(const ir_entity *ent,
                                               const ir_type *clss);
 
 /** Type of argument functions for inheritance resolver.
@@ -896,7 +896,7 @@ typedef ident *mangle_inherited_name_func(const ir_entity *ent,
  *  If the function is NULL, the default_mangle_inherited_name() is
  *  used.
  */
-FIRM_DLL void resolve_inheritance(mangle_inherited_name_func *mfunc);
+FIRM_API void resolve_inheritance(mangle_inherited_name_func *mfunc);
 
 
 /* ----------------------------------------------------------------------- */
@@ -925,9 +925,9 @@ typedef enum {
 	inh_transitive_closure_max         /**<  Invalid value. */
 } inh_transitive_closure_state;
 
-FIRM_DLL void set_irp_inh_transitive_closure_state(inh_transitive_closure_state s);
-FIRM_DLL void invalidate_irp_inh_transitive_closure_state(void);
-FIRM_DLL inh_transitive_closure_state get_irp_inh_transitive_closure_state(void);
+FIRM_API void set_irp_inh_transitive_closure_state(inh_transitive_closure_state s);
+FIRM_API void invalidate_irp_inh_transitive_closure_state(void);
+FIRM_API inh_transitive_closure_state get_irp_inh_transitive_closure_state(void);
 
 
 /** Compute transitive closure of the subclass/superclass and
@@ -935,36 +935,36 @@ FIRM_DLL inh_transitive_closure_state get_irp_inh_transitive_closure_state(void)
  *
  * This function walks over the ir (O(\#types+\#entities)) to compute the
  * transitive closure.    */
-FIRM_DLL void compute_inh_transitive_closure(void);
+FIRM_API void compute_inh_transitive_closure(void);
 
 /** Free memory occupied by the transitive closure information. */
-FIRM_DLL void free_inh_transitive_closure(void);
+FIRM_API void free_inh_transitive_closure(void);
 
 
 /* - subtype ------------------------------------------------------------- */
 
 /** Iterate over all transitive subtypes. */
-FIRM_DLL ir_type *get_class_trans_subtype_first(const ir_type *tp);
-FIRM_DLL ir_type *get_class_trans_subtype_next(const ir_type *tp);
-FIRM_DLL int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp);
+FIRM_API ir_type *get_class_trans_subtype_first(const ir_type *tp);
+FIRM_API ir_type *get_class_trans_subtype_next(const ir_type *tp);
+FIRM_API int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp);
 
 /* - supertype ----------------------------------------------------------- */
 
 /** Iterate over all transitive supertypes. */
-FIRM_DLL ir_type *get_class_trans_supertype_first(const ir_type *tp);
-FIRM_DLL ir_type *get_class_trans_supertype_next(const ir_type *tp);
+FIRM_API ir_type *get_class_trans_supertype_first(const ir_type *tp);
+FIRM_API ir_type *get_class_trans_supertype_next(const ir_type *tp);
 
 /* - overwrittenby ------------------------------------------------------- */
 
 /** Iterate over all entities that transitive overwrite this entities. */
-FIRM_DLL ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent);
-FIRM_DLL ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent);
+FIRM_API ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent);
+FIRM_API ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent);
 
 /* - overwrites ---------------------------------------------------------- */
 
 /** Iterate over all transitive overwritten entities. */
-FIRM_DLL ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent);
-FIRM_DLL ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
+FIRM_API ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent);
+FIRM_API ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
 
 
 /* ----------------------------------------------------------------------- */
@@ -1001,20 +1001,20 @@ typedef enum {
 	ir_class_casts_normalized = 2, /**< Class casts conform to inheritance edges. */
 	ir_class_casts_state_max
 } ir_class_cast_state;
-FIRM_DLL const char *get_class_cast_state_string(ir_class_cast_state s);
+FIRM_API const char *get_class_cast_state_string(ir_class_cast_state s);
 
-FIRM_DLL void                set_irg_class_cast_state(ir_graph *irg,
+FIRM_API void                set_irg_class_cast_state(ir_graph *irg,
                                                       ir_class_cast_state s);
-FIRM_DLL ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg);
-FIRM_DLL void                set_irp_class_cast_state(ir_class_cast_state s);
-FIRM_DLL ir_class_cast_state get_irp_class_cast_state(void);
+FIRM_API ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg);
+FIRM_API void                set_irp_class_cast_state(ir_class_cast_state s);
+FIRM_API ir_class_cast_state get_irp_class_cast_state(void);
 
 /** Verify the class cast state of an irg.
  *
  *  Asserts if state is to high, outputs debug warning if state is to low
  *  and firm verbosity is set.
  */
-FIRM_DLL void verify_irg_class_cast_state(ir_graph *irg);
+FIRM_API void verify_irg_class_cast_state(ir_graph *irg);
 
 /**
  * possible trvrfy() error codes
@@ -1038,7 +1038,7 @@ enum trvrfy_error_codes {
  * @return
  *  0   if no error encountered
  */
-FIRM_DLL int check_type(ir_type *tp);
+FIRM_API int check_type(ir_type *tp);
 
 /**
  * Check an entity. Currently, we check only if initialized constants
@@ -1048,7 +1048,7 @@ FIRM_DLL int check_type(ir_type *tp);
  *  0   if no error encountered
  *  != 0    a trvrfy_error_codes code
  */
-FIRM_DLL int check_entity(ir_entity *ent);
+FIRM_API int check_entity(ir_entity *ent);
 
 /**
  * Walks the type information and performs a set of sanity checks.
@@ -1062,7 +1062,7 @@ FIRM_DLL int check_entity(ir_entity *ent);
  *    0 if graph is correct
  *    else error code.
  */
-FIRM_DLL int tr_vrfy(void);
+FIRM_API int tr_vrfy(void);
 
 /**
  * @page type   representation of types
@@ -1089,7 +1089,7 @@ FIRM_DLL int tr_vrfy(void);
  *  Does not free the array entity.
  *  Warning: ensure these entities are not referenced anywhere else.
  */
-FIRM_DLL void free_type_entities(ir_type *tp);
+FIRM_API void free_type_entities(ir_type *tp);
 
 /** Frees the memory used by the type.
  *
@@ -1099,12 +1099,12 @@ FIRM_DLL void free_type_entities(ir_type *tp);
  * param subtypes of method types!!! Make sure these are not
  * referenced any more.  Further make sure there is no pointer type
  * that refers to this type.                           */
-FIRM_DLL void free_type(ir_type *tp);
+FIRM_API void free_type(ir_type *tp);
 
-FIRM_DLL const tp_op *get_type_tpop(const ir_type *tp);
-FIRM_DLL ident *get_type_tpop_nameid(const ir_type *tp);
-FIRM_DLL const char *get_type_tpop_name(const ir_type *tp);
-FIRM_DLL tp_opcode get_type_tpop_code(const ir_type *tp);
+FIRM_API const tp_op *get_type_tpop(const ir_type *tp);
+FIRM_API ident *get_type_tpop_nameid(const ir_type *tp);
+FIRM_API const char *get_type_tpop_name(const ir_type *tp);
+FIRM_API tp_opcode get_type_tpop_code(const ir_type *tp);
 
 /**
  * construct a string representing the type.
@@ -1115,7 +1115,7 @@ FIRM_DLL tp_opcode get_type_tpop_code(const ir_type *tp);
  * might abstract away some details. The main intention of this is creating
  * human redable strings giving an idea of the type.
  */
-FIRM_DLL void ir_print_type(char *buffer, size_t buffer_size,
+FIRM_API void ir_print_type(char *buffer, size_t buffer_size,
                             const ir_type *tp);
 
 /** The state of the type layout. */
@@ -1134,42 +1134,42 @@ typedef enum {
 } ir_type_state;
 
 /** Returns a human readable string for the enum entry. */
-FIRM_DLL const char *get_type_state_name(ir_type_state s);
+FIRM_API const char *get_type_state_name(ir_type_state s);
 
 /** Returns the type layout state of a type. */
-FIRM_DLL ir_type_state get_type_state(const ir_type *tp);
+FIRM_API ir_type_state get_type_state(const ir_type *tp);
 
 /** Sets the type layout state of a type.
  *
  * For primitives, pointer and method types the layout is always fixed.
  * This call is legal but has no effect.
  */
-FIRM_DLL void set_type_state(ir_type *tp, ir_type_state state);
+FIRM_API void set_type_state(ir_type *tp, ir_type_state state);
 
 /** Returns the mode of a type.
  *
  * Returns NULL for all non atomic types.
  */
-FIRM_DLL ir_mode *get_type_mode(const ir_type *tp);
+FIRM_API ir_mode *get_type_mode(const ir_type *tp);
 
 /** Sets the mode of a type.
  *
  * Only has an effect on primitive, enumeration and pointer types.
  */
-FIRM_DLL void set_type_mode(ir_type *tp, ir_mode* m);
+FIRM_API void set_type_mode(ir_type *tp, ir_mode* m);
 
 /** Returns the size of a type in bytes. */
-FIRM_DLL unsigned get_type_size_bytes(const ir_type *tp);
+FIRM_API unsigned get_type_size_bytes(const ir_type *tp);
 
 /** Sets the size of a type in bytes.
  *
  * For primitive, enumeration, pointer and method types the size
  * is always fixed. This call is legal but has no effect.
  */
-FIRM_DLL void set_type_size_bytes(ir_type *tp, unsigned size);
+FIRM_API void set_type_size_bytes(ir_type *tp, unsigned size);
 
 /** Returns the alignment of a type in bytes. */
-FIRM_DLL unsigned get_type_alignment_bytes(ir_type *tp);
+FIRM_API unsigned get_type_alignment_bytes(ir_type *tp);
 
 /** Returns the alignment of a type in bits.
  *
@@ -1181,23 +1181,23 @@ FIRM_DLL unsigned get_type_alignment_bytes(ir_type *tp);
  *  -#.) method types return 0 here.
  *  -#.) all other types return 1 here (i.e. aligned at byte).
  */
-FIRM_DLL void set_type_alignment_bytes(ir_type *tp, unsigned align);
+FIRM_API void set_type_alignment_bytes(ir_type *tp, unsigned align);
 
 /** Returns the visited count of a type. */
-FIRM_DLL ir_visited_t get_type_visited(const ir_type *tp);
+FIRM_API ir_visited_t get_type_visited(const ir_type *tp);
 /** Sets the visited count of a type to num. */
-FIRM_DLL void set_type_visited(ir_type *tp, ir_visited_t num);
+FIRM_API void set_type_visited(ir_type *tp, ir_visited_t num);
 /** Sets visited field in type to type_visited. */
-FIRM_DLL void mark_type_visited(ir_type *tp);
+FIRM_API void mark_type_visited(ir_type *tp);
 /** Returns non-zero if the type is already visited */
-FIRM_DLL int type_visited(const ir_type *tp);
+FIRM_API int type_visited(const ir_type *tp);
 /** Returns non-zero if the type is not yet visited */
-FIRM_DLL int type_not_visited(const ir_type *tp);
+FIRM_API int type_not_visited(const ir_type *tp);
 
 /** Returns the associated link field of a type. */
-FIRM_DLL void *get_type_link(const ir_type *tp);
+FIRM_API void *get_type_link(const ir_type *tp);
 /** Sets the associated link field of a type. */
-FIRM_DLL void set_type_link(ir_type *tp, void *l);
+FIRM_API void set_type_link(ir_type *tp, void *l);
 
 /**
  * Visited flag to traverse the type information.
@@ -1211,9 +1211,9 @@ FIRM_DLL void set_type_link(ir_type *tp, void *l);
  *
  * @see  typewalk
  */
-FIRM_DLL void         set_master_type_visited(ir_visited_t val);
-FIRM_DLL ir_visited_t get_master_type_visited(void);
-FIRM_DLL void         inc_master_type_visited(void);
+FIRM_API void         set_master_type_visited(ir_visited_t val);
+FIRM_API ir_visited_t get_master_type_visited(void);
+FIRM_API void         inc_master_type_visited(void);
 
 /**
  * Sets the debug information of a type.
@@ -1221,14 +1221,14 @@ FIRM_DLL void         inc_master_type_visited(void);
  * @param tp  The type.
  * @param db  The debug info.
  */
-FIRM_DLL void set_type_dbg_info(ir_type *tp, type_dbg_info *db);
+FIRM_API void set_type_dbg_info(ir_type *tp, type_dbg_info *db);
 
 /**
  * Returns the debug information of a type.
  *
  * @param tp  The type.
  */
-FIRM_DLL type_dbg_info *get_type_dbg_info(const ir_type *tp);
+FIRM_API type_dbg_info *get_type_dbg_info(const ir_type *tp);
 
 /**
  * Checks whether a pointer points to a type.
@@ -1238,7 +1238,7 @@ FIRM_DLL type_dbg_info *get_type_dbg_info(const ir_type *tp);
  * @return
  *     true if the thing is a type, else false
  */
-FIRM_DLL int is_type(const void *thing);
+FIRM_API int is_type(const void *thing);
 
 /**
  *   Checks whether two types are structurally equal.
@@ -1275,7 +1275,7 @@ FIRM_DLL int is_type(const void *thing);
  *       This is to avoid endless recursions; with pointer types cyclic
  *       type graphs are possible.)
  */
-FIRM_DLL int equal_type(ir_type *typ1, ir_type *typ2);
+FIRM_API int equal_type(ir_type *typ1, ir_type *typ2);
 
 /**
  *   Checks whether two types are structural comparable.
@@ -1312,7 +1312,7 @@ FIRM_DLL int equal_type(ir_type *typ1, ir_type *typ2);
  *      @return smaller than the points_to type of lt.
  *
  */
-FIRM_DLL int smaller_type(ir_type *st, ir_type *lt);
+FIRM_API int smaller_type(ir_type *st, ir_type *lt);
 
 /**
  *  @page class_type    Representation of a class type
@@ -1361,70 +1361,70 @@ FIRM_DLL int smaller_type(ir_type *st, ir_type *lt);
  */
 
 /** Creates a new class type. */
-FIRM_DLL ir_type *new_type_class(ident *name);
+FIRM_API ir_type *new_type_class(ident *name);
 
 /** Creates a new class type with debug information. */
-FIRM_DLL ir_type *new_d_type_class(ident *name, type_dbg_info *db);
+FIRM_API ir_type *new_d_type_class(ident *name, type_dbg_info *db);
 
 /* --- manipulate private fields of class type  --- */
 
 /** return identifier of the class type */
-FIRM_DLL ident *get_class_ident(const ir_type *clss);
+FIRM_API ident *get_class_ident(const ir_type *clss);
 
 /** return identifier of the class type */
-FIRM_DLL const char *get_class_name(const ir_type *clss);
+FIRM_API const char *get_class_name(const ir_type *clss);
 
 /** Returns the number of members of this class. */
-FIRM_DLL int get_class_n_members(const ir_type *clss);
+FIRM_API int get_class_n_members(const ir_type *clss);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-FIRM_DLL ir_entity *get_class_member(const ir_type *clss, int pos);
+FIRM_API ir_entity *get_class_member(const ir_type *clss, int pos);
 
 /** Returns index of mem in clss, -1 if not contained. */
-FIRM_DLL int get_class_member_index(const ir_type *clss, ir_entity *mem);
+FIRM_API int get_class_member_index(const ir_type *clss, ir_entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same
  *  name returns one of them.  Returns NULL if no member found. */
-FIRM_DLL ir_entity *get_class_member_by_name(ir_type *clss, ident *name);
+FIRM_API ir_entity *get_class_member_by_name(ir_type *clss, ident *name);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
  *  the passed entity. */
-FIRM_DLL void set_class_member(ir_type *clss, ir_entity *member, int pos);
+FIRM_API void set_class_member(ir_type *clss, ir_entity *member, int pos);
 
 /** Replaces complete member list in class type by the list passed.
  *
  *  Copies the list passed. This function is necessary to reduce the number of members.
  *  members is an array of entities, num the size of this array.  Sets all
  *  owners of the members passed to clss. */
-FIRM_DLL void set_class_members(ir_type *clss, ir_entity *members[], int arity);
+FIRM_API void set_class_members(ir_type *clss, ir_entity *members[], int arity);
 
 
 /** Adds subtype as subtype to clss.
  *
  *  Checks whether clss is a supertype of subtype.  If not
  *  adds also clss as supertype to subtype.  */
-FIRM_DLL void add_class_subtype(ir_type *clss, ir_type *subtype);
+FIRM_API void add_class_subtype(ir_type *clss, ir_type *subtype);
 
 /** Returns the number of subtypes */
-FIRM_DLL int get_class_n_subtypes(const ir_type *clss);
+FIRM_API int get_class_n_subtypes(const ir_type *clss);
 
 /** Gets the subtype at position pos, 0 <= pos < n_subtype. */
-FIRM_DLL ir_type *get_class_subtype(ir_type *clss, int pos);
+FIRM_API ir_type *get_class_subtype(ir_type *clss, int pos);
 
 /** Returns the index to access subclass as subtype of class.
  *
  *  If subclass is no direct subtype of class returns -1.
  */
-FIRM_DLL int get_class_subtype_index(ir_type *clss, const ir_type *subclass);
+FIRM_API int get_class_subtype_index(ir_type *clss, const ir_type *subclass);
 
 /** Sets the subtype at position pos, 0 <= pos < n_subtype.
  *
  *  Does not set the corresponding supertype relation for subtype: this might
  *  be a different position! */
-FIRM_DLL void set_class_subtype(ir_type *clss, ir_type *subtype, int pos);
+FIRM_API void set_class_subtype(ir_type *clss, ir_type *subtype, int pos);
 
 /** Finds subtype in the list of subtypes and removes it  */
-FIRM_DLL void remove_class_subtype(ir_type *clss, ir_type *subtype);
+FIRM_API void remove_class_subtype(ir_type *clss, ir_type *subtype);
 
 /* Convenience macros */
 #define add_class_derived_type(clss, drvtype)       add_class_subtype(clss, drvtype)
@@ -1438,28 +1438,28 @@ FIRM_DLL void remove_class_subtype(ir_type *clss, ir_type *subtype);
  *
  *  Checks whether clss is a subtype of supertype.  If not
  *  adds also clss as subtype to supertype.  */
-FIRM_DLL void add_class_supertype(ir_type *clss, ir_type *supertype);
+FIRM_API void add_class_supertype(ir_type *clss, ir_type *supertype);
 
 /** Returns the number of supertypes */
-FIRM_DLL int get_class_n_supertypes(const ir_type *clss);
+FIRM_API int get_class_n_supertypes(const ir_type *clss);
 
 /** Returns the index to access superclass as supertype of class.
  *
  *  If superclass is no direct supertype of class returns -1.
  */
-FIRM_DLL int get_class_supertype_index(ir_type *clss, ir_type *super_clss);
+FIRM_API int get_class_supertype_index(ir_type *clss, ir_type *super_clss);
 
 /** Gets the supertype at position pos,  0 <= pos < n_supertype. */
-FIRM_DLL ir_type *get_class_supertype(ir_type *clss, int pos);
+FIRM_API ir_type *get_class_supertype(ir_type *clss, int pos);
 
 /** Sets the supertype at position pos, 0 <= pos < n_supertype.
  *
  *  Does not set the corresponding subtype relation for supertype: this might
  *  be at a different position! */
-FIRM_DLL void set_class_supertype(ir_type *clss, ir_type *supertype, int pos);
+FIRM_API void set_class_supertype(ir_type *clss, ir_type *supertype, int pos);
 
 /** Finds supertype in the list of supertypes and removes it */
-FIRM_DLL void remove_class_supertype(ir_type *clss, ir_type *supertype);
+FIRM_API void remove_class_supertype(ir_type *clss, ir_type *supertype);
 
 /** Convenience macro */
 #define add_class_base_type(clss, basetype)        add_class_supertype(clss, basetype)
@@ -1470,42 +1470,42 @@ FIRM_DLL void remove_class_supertype(ir_type *clss, ir_type *supertype);
 #define remove_class_base_type(clss, basetype)     remove_class_supertype(clss, basetype)
 
 /** Returns the type info entity of a class. */
-FIRM_DLL ir_entity *get_class_type_info(const ir_type *clss);
+FIRM_API ir_entity *get_class_type_info(const ir_type *clss);
 
 /** Set a type info entity for the class. */
-FIRM_DLL void set_class_type_info(ir_type *clss, ir_entity *ent);
+FIRM_API void set_class_type_info(ir_type *clss, ir_entity *ent);
 
 /** Returns the size of the virtual function table. */
-FIRM_DLL unsigned get_class_vtable_size(const ir_type *clss);
+FIRM_API unsigned get_class_vtable_size(const ir_type *clss);
 
 /** Sets a new size of the virtual function table. */
-FIRM_DLL void set_class_vtable_size(ir_type *clss, unsigned size);
+FIRM_API void set_class_vtable_size(ir_type *clss, unsigned size);
 
 /** Returns non-zero if a class is final. */
-FIRM_DLL int is_class_final(const ir_type *clss);
+FIRM_API int is_class_final(const ir_type *clss);
 
 /** Sets the class final flag. */
-FIRM_DLL void set_class_final(ir_type *clss, int flag);
+FIRM_API void set_class_final(ir_type *clss, int flag);
 
 /** Return non-zero if a class is an interface */
-FIRM_DLL int is_class_interface(const ir_type *clss);
+FIRM_API int is_class_interface(const ir_type *clss);
 
 /** Sets the class interface flag. */
-FIRM_DLL void set_class_interface(ir_type *clss, int flag);
+FIRM_API void set_class_interface(ir_type *clss, int flag);
 
 /** Return non-zero if a class is an abstract class. */
-FIRM_DLL int is_class_abstract(const ir_type *clss);
+FIRM_API int is_class_abstract(const ir_type *clss);
 
 /** Sets the class abstract flag. */
-FIRM_DLL void set_class_abstract(ir_type *clss, int flag);
+FIRM_API void set_class_abstract(ir_type *clss, int flag);
 
 /** Set and get a class' dfn --
    @todo This is an undocumented field, subject to change! */
-FIRM_DLL void set_class_dfn(ir_type *clss, int dfn);
-FIRM_DLL int  get_class_dfn(const ir_type *clss);
+FIRM_API void set_class_dfn(ir_type *clss, int dfn);
+FIRM_API int  get_class_dfn(const ir_type *clss);
 
 /** Returns true if a type is a class type. */
-FIRM_DLL int is_Class_type(const ir_type *clss);
+FIRM_API int is_Class_type(const ir_type *clss);
 
 /**
  *  @page struct_type   Representation of a struct type
@@ -1524,33 +1524,33 @@ FIRM_DLL int is_Class_type(const ir_type *clss);
  *             but not shrinked.
  */
 /** Creates a new type struct */
-FIRM_DLL ir_type *new_type_struct(ident *name);
+FIRM_API ir_type *new_type_struct(ident *name);
 /** Creates a new type struct with debug information. */
-FIRM_DLL ir_type *new_d_type_struct(ident *name, type_dbg_info* db);
+FIRM_API ir_type *new_d_type_struct(ident *name, type_dbg_info* db);
 
 /* --- manipulate private fields of struct --- */
 
 /** return struct identifier */
-FIRM_DLL ident *get_struct_ident(const ir_type *strct);
+FIRM_API ident *get_struct_ident(const ir_type *strct);
 
 /** return struct identifier as c-string*/
-FIRM_DLL const char *get_struct_name(const ir_type *strct);
+FIRM_API const char *get_struct_name(const ir_type *strct);
 
 /** Returns the number of members of this struct. */
-FIRM_DLL int get_struct_n_members(const ir_type *strct);
+FIRM_API int get_struct_n_members(const ir_type *strct);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-FIRM_DLL ir_entity *get_struct_member(const ir_type *strct, int pos);
+FIRM_API ir_entity *get_struct_member(const ir_type *strct, int pos);
 
 /** Returns index of member in strct, -1 if not contained. */
-FIRM_DLL int get_struct_member_index(const ir_type *strct, ir_entity *member);
+FIRM_API int get_struct_member_index(const ir_type *strct, ir_entity *member);
 
 /** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
-FIRM_DLL void set_struct_member(ir_type *strct, int pos, ir_entity *member);
+FIRM_API void set_struct_member(ir_type *strct, int pos, ir_entity *member);
 
 /** Returns true if a type is a struct type. */
-FIRM_DLL int is_Struct_type(const ir_type *strct);
+FIRM_API int is_Struct_type(const ir_type *strct);
 
 /**
  * @page method_type    Representation of a method type
@@ -1599,7 +1599,7 @@ FIRM_DLL int is_Struct_type(const ir_type *strct);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_DLL ir_type *new_type_method(int n_param, int n_res);
+FIRM_API ir_type *new_type_method(int n_param, int n_res);
 
 /** Create a new method type with debug information.
  *
@@ -1610,56 +1610,56 @@ FIRM_DLL ir_type *new_type_method(int n_param, int n_res);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_DLL ir_type *new_d_type_method(int n_param, int n_res, type_dbg_info *db);
+FIRM_API ir_type *new_d_type_method(int n_param, int n_res, type_dbg_info *db);
 
 /* -- manipulate private fields of method. -- */
 
 /** Returns the number of parameters of this method. */
-FIRM_DLL int get_method_n_params(const ir_type *method);
+FIRM_API int get_method_n_params(const ir_type *method);
 
 /** Returns the type of the parameter at position pos of a method. */
-FIRM_DLL ir_type *get_method_param_type(ir_type *method, int pos);
+FIRM_API ir_type *get_method_param_type(ir_type *method, int pos);
 /** Sets the type of the parameter at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
-FIRM_DLL void set_method_param_type(ir_type *method, int pos, ir_type *tp);
+FIRM_API void set_method_param_type(ir_type *method, int pos, ir_type *tp);
 /** Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-FIRM_DLL ir_entity *get_method_value_param_ent(ir_type *method, int pos);
+FIRM_API ir_entity *get_method_value_param_ent(ir_type *method, int pos);
 /**
  * Sets the type that represents the copied value arguments.
  */
-FIRM_DLL void set_method_value_param_type(ir_type *method, ir_type *tp);
+FIRM_API void set_method_value_param_type(ir_type *method, ir_type *tp);
 /**
  * Returns a type that represents the copied value arguments if one
  * was allocated, else NULL.
  */
-FIRM_DLL ir_type *get_method_value_param_type(const ir_type *method);
+FIRM_API ir_type *get_method_value_param_type(const ir_type *method);
 /** Returns an ident representing the parameters name. Returns NULL if not set.
     For debug support only. */
-FIRM_DLL ident *get_method_param_ident(ir_type *method, int pos);
+FIRM_API ident *get_method_param_ident(ir_type *method, int pos);
 /** Returns a string representing the parameters name. Returns NULL if not set.
     For debug support only. */
-FIRM_DLL const char *get_method_param_name(ir_type *method, int pos);
+FIRM_API const char *get_method_param_name(ir_type *method, int pos);
 /** Sets an ident representing the parameters name. For debug support only. */
-FIRM_DLL void set_method_param_ident(ir_type *method, int pos, ident *id);
+FIRM_API void set_method_param_ident(ir_type *method, int pos, ident *id);
 
 /** Returns the number of results of a method type. */
-FIRM_DLL int get_method_n_ress(const ir_type *method);
+FIRM_API int get_method_n_ress(const ir_type *method);
 /** Returns the return type of a method type at position pos. */
-FIRM_DLL ir_type *get_method_res_type(ir_type *method, int pos);
+FIRM_API ir_type *get_method_res_type(ir_type *method, int pos);
 /** Sets the type of the result at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
-FIRM_DLL void set_method_res_type(ir_type *method, int pos, ir_type *tp);
+FIRM_API void set_method_res_type(ir_type *method, int pos, ir_type *tp);
 /** Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-FIRM_DLL ir_entity *get_method_value_res_ent(ir_type *method, int pos);
+FIRM_API ir_entity *get_method_value_res_ent(ir_type *method, int pos);
 
 /**
  * Returns a type that represents the copied value results.
  */
-FIRM_DLL ir_type *get_method_value_res_type(const ir_type *method);
+FIRM_API ir_type *get_method_value_res_type(const ir_type *method);
 
 /**
  * This enum flags the variadicity of methods (methods with a
@@ -1672,13 +1672,13 @@ typedef enum ir_variadicity {
 } ir_variadicity;
 
 /** Returns the null-terminated name of this variadicity. */
-FIRM_DLL const char *get_variadicity_name(ir_variadicity vari);
+FIRM_API const char *get_variadicity_name(ir_variadicity vari);
 
 /** Returns the variadicity of a method. */
-FIRM_DLL ir_variadicity get_method_variadicity(const ir_type *method);
+FIRM_API ir_variadicity get_method_variadicity(const ir_type *method);
 
 /** Sets the variadicity of a method. */
-FIRM_DLL void set_method_variadicity(ir_type *method, ir_variadicity vari);
+FIRM_API void set_method_variadicity(ir_type *method, ir_variadicity vari);
 
 /**
  * Returns the first variadic parameter index of a type.
@@ -1686,7 +1686,7 @@ FIRM_DLL void set_method_variadicity(ir_type *method, ir_variadicity vari);
  * of the method type plus one is returned for variadic functions.
  * Non-variadic function types always return -1 here.
  */
-FIRM_DLL int get_method_first_variadic_param_index(const ir_type *method);
+FIRM_API int get_method_first_variadic_param_index(const ir_type *method);
 
 /**
  * Sets the first variadic parameter index. This allows to specify
@@ -1694,17 +1694,17 @@ FIRM_DLL int get_method_first_variadic_param_index(const ir_type *method);
  * but still have the knowledge, which parameter must be passed as
  * variadic one.
  */
-FIRM_DLL void set_method_first_variadic_param_index(ir_type *method, int index);
+FIRM_API void set_method_first_variadic_param_index(ir_type *method, int index);
 
 /** Returns the mask of the additional graph properties. */
-FIRM_DLL unsigned get_method_additional_properties(const ir_type *method);
+FIRM_API unsigned get_method_additional_properties(const ir_type *method);
 
 /** Sets the mask of the additional graph properties. */
-FIRM_DLL void set_method_additional_properties(ir_type *method,
+FIRM_API void set_method_additional_properties(ir_type *method,
                                                unsigned property_mask);
 
 /** Sets one additional graph property. */
-FIRM_DLL void set_method_additional_property(ir_type *method,
+FIRM_API void set_method_additional_property(ir_type *method,
                                              mtp_additional_property flag);
 
 /**
@@ -1741,7 +1741,7 @@ typedef enum {
 #define cc_fastcall_set (cc_reg_param|cc_callee_clear_stk)
 
 /** Returns the default calling convention for method types. */
-FIRM_DLL unsigned get_default_cc_mask(void);
+FIRM_API unsigned get_default_cc_mask(void);
 
 /**
  * check for the CDECL calling convention
@@ -1774,19 +1774,19 @@ FIRM_DLL unsigned get_default_cc_mask(void);
 #define SET_FASTCALL(cc_mask) (((cc_mask) & ~cc_bits) | cc_fastcall_set)
 
 /** Returns the calling convention of an entities graph. */
-FIRM_DLL unsigned get_method_calling_convention(const ir_type *method);
+FIRM_API unsigned get_method_calling_convention(const ir_type *method);
 
 /** Sets the calling convention of an entities graph. */
-FIRM_DLL void set_method_calling_convention(ir_type *method, unsigned cc_mask);
+FIRM_API void set_method_calling_convention(ir_type *method, unsigned cc_mask);
 
 /** Returns the number of registers parameters, 0 means default. */
-FIRM_DLL unsigned get_method_n_regparams(ir_type *method);
+FIRM_API unsigned get_method_n_regparams(ir_type *method);
 
 /** Sets the number of registers parameters, 0 means default. */
-FIRM_DLL void set_method_n_regparams(ir_type *method, unsigned n_regs);
+FIRM_API void set_method_n_regparams(ir_type *method, unsigned n_regs);
 
 /** Returns true if a type is a method type. */
-FIRM_DLL int is_Method_type(const ir_type *method);
+FIRM_API int is_Method_type(const ir_type *method);
 
 /**
  *   @page union_type   Representation of a union (variant) type.
@@ -1801,33 +1801,33 @@ FIRM_DLL int is_Method_type(const ir_type *method);
  *                  but not shrinked.
  */
 /** Creates a new type union. */
-FIRM_DLL ir_type *new_type_union(ident *name);
+FIRM_API ir_type *new_type_union(ident *name);
 
 /** Creates a new type union with debug information. */
-FIRM_DLL ir_type *new_d_type_union(ident *name, type_dbg_info* db);
+FIRM_API ir_type *new_d_type_union(ident *name, type_dbg_info* db);
 
 /* --- manipulate private fields of struct --- */
 
 /** return union identifier */
-FIRM_DLL ident *get_union_ident(const ir_type *uni);
+FIRM_API ident *get_union_ident(const ir_type *uni);
 
 /** return union identifier as c-string */
-FIRM_DLL const char *get_union_name(const ir_type *uni);
+FIRM_API const char *get_union_name(const ir_type *uni);
 
 /** Returns the number of unioned types of this union */
-FIRM_DLL int get_union_n_members(const ir_type *uni);
+FIRM_API int get_union_n_members(const ir_type *uni);
 
 /** Returns the entity at position pos of a union */
-FIRM_DLL ir_entity *get_union_member(const ir_type *uni, int pos);
+FIRM_API ir_entity *get_union_member(const ir_type *uni, int pos);
 
 /** Returns index of member in uni, -1 if not contained. */
-FIRM_DLL int get_union_member_index(const ir_type *uni, ir_entity *member);
+FIRM_API int get_union_member_index(const ir_type *uni, ir_entity *member);
 
 /** Overwrites a entity at position pos in a union type. */
-FIRM_DLL void set_union_member(ir_type *uni, int pos, ir_entity *member);
+FIRM_API void set_union_member(ir_type *uni, int pos, ir_entity *member);
 
 /** Returns true if a type is a union type. */
-FIRM_DLL int is_Union_type(const ir_type *uni);
+FIRM_API int is_Union_type(const ir_type *uni);
 
 /**
  * @page array_type Representation of an array type
@@ -1855,7 +1855,7 @@ FIRM_DLL int is_Union_type(const ir_type *uni);
  * The entity for array elements is built automatically.
  * Set dimension sizes after call to constructor with set_* routines.
  */
-FIRM_DLL ir_type *new_type_array(int n_dims, ir_type *element_type);
+FIRM_API ir_type *new_type_array(int n_dims, ir_type *element_type);
 
 /** Create a new type array with debug information.
  *
@@ -1865,80 +1865,80 @@ FIRM_DLL ir_type *new_type_array(int n_dims, ir_type *element_type);
  * Set dimension sizes after call to constructor with set_* routines.
  * A legal array type must have at least one dimension set.
  */
-FIRM_DLL ir_type *new_d_type_array(int n_dims, ir_type *element_type,
+FIRM_API ir_type *new_d_type_array(int n_dims, ir_type *element_type,
                                    type_dbg_info* db);
 
 /* --- manipulate private fields of array type --- */
 
 /** Returns the number of array dimensions of this type. */
-FIRM_DLL int get_array_n_dimensions(const ir_type *array);
+FIRM_API int get_array_n_dimensions(const ir_type *array);
 
 /**
  * Allocates Const nodes of mode_Is for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
-FIRM_DLL void set_array_bounds_int(ir_type *array, int dimension,
+FIRM_API void set_array_bounds_int(ir_type *array, int dimension,
                                    int lower_bound, int upper_bound);
 /**
  * Sets the bounds for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
-FIRM_DLL void set_array_bounds(ir_type *array, int dimension,
+FIRM_API void set_array_bounds(ir_type *array, int dimension,
                                ir_node *lower_bound, ir_node *upper_bound);
 /** Sets the lower bound for one array dimension, i.e. [lower,upper[ */
-FIRM_DLL void set_array_lower_bound(ir_type *array, int dimension,
+FIRM_API void set_array_lower_bound(ir_type *array, int dimension,
                                     ir_node *lower_bound);
 
 /** Allocates Const nodes of mode_Is for the lower bound of an array
     dimension, i.e. [lower,upper[ */
-FIRM_DLL void set_array_lower_bound_int(ir_type *array, int dimension,
+FIRM_API void set_array_lower_bound_int(ir_type *array, int dimension,
                                         int lower_bound);
 
 /** Sets the upper bound for one array dimension, i.e. [lower,upper[ */
-FIRM_DLL void set_array_upper_bound(ir_type *array, int dimension,
+FIRM_API void set_array_upper_bound(ir_type *array, int dimension,
                                     ir_node *upper_bound);
 
 /** Allocates Const nodes of mode_Is for the upper bound of an array
     dimension, i.e. [lower,upper[. */
-FIRM_DLL void set_array_upper_bound_int(ir_type *array, int dimension,
+FIRM_API void set_array_upper_bound_int(ir_type *array, int dimension,
                                         int upper_bound);
 
 /** Returns true if lower bound != Unknown. */
-FIRM_DLL int has_array_lower_bound(const ir_type *array, int dimension);
+FIRM_API int has_array_lower_bound(const ir_type *array, int dimension);
 /** Returns the lower bound of an array. */
-FIRM_DLL ir_node *get_array_lower_bound(const ir_type *array, int dimension);
+FIRM_API ir_node *get_array_lower_bound(const ir_type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_DLL long get_array_lower_bound_int(const ir_type *array, int dimension);
+FIRM_API long get_array_lower_bound_int(const ir_type *array, int dimension);
 /** returns true if lower bound != Unknown */
-FIRM_DLL int has_array_upper_bound(const ir_type *array, int dimension);
+FIRM_API int has_array_upper_bound(const ir_type *array, int dimension);
 /** Returns the upper bound of an array. */
-FIRM_DLL ir_node *get_array_upper_bound(const ir_type *array, int dimension);
+FIRM_API ir_node *get_array_upper_bound(const ir_type *array, int dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_DLL long get_array_upper_bound_int(const ir_type *array, int dimension);
+FIRM_API long get_array_upper_bound_int(const ir_type *array, int dimension);
 
 /** Sets an array dimension to a specific order. */
-FIRM_DLL void set_array_order(ir_type *array, int dimension, int order);
+FIRM_API void set_array_order(ir_type *array, int dimension, int order);
 
 /** Returns the order of an array dimension. */
-FIRM_DLL int get_array_order(const ir_type *array, int dimension);
+FIRM_API int get_array_order(const ir_type *array, int dimension);
 
 /** Find the array dimension that is placed at order order. */
-FIRM_DLL int find_array_dimension(const ir_type *array, int order);
+FIRM_API int find_array_dimension(const ir_type *array, int order);
 
 /** Sets the array element type. */
-FIRM_DLL void set_array_element_type(ir_type *array, ir_type* tp);
+FIRM_API void set_array_element_type(ir_type *array, ir_type* tp);
 
 /** Gets the array element type. */
-FIRM_DLL ir_type *get_array_element_type(const ir_type *array);
+FIRM_API ir_type *get_array_element_type(const ir_type *array);
 
 /** Sets the array element entity. */
-FIRM_DLL void set_array_element_entity(ir_type *array, ir_entity *ent);
+FIRM_API void set_array_element_entity(ir_type *array, ir_entity *ent);
 
 /** Get the array element entity. */
-FIRM_DLL ir_entity *get_array_element_entity(const ir_type *array);
+FIRM_API ir_entity *get_array_element_entity(const ir_type *array);
 
 /** Returns true if a type is an array type. */
-FIRM_DLL int is_Array_type(const ir_type *array);
+FIRM_API int is_Array_type(const ir_type *array);
 
 /**
  * @page enumeration_type   Representation of an enumeration type
@@ -1954,51 +1954,51 @@ FIRM_DLL int is_Array_type(const ir_type *array);
  */
 
 /** Create a new type enumeration -- set the enumerators independently. */
-FIRM_DLL ir_type *new_type_enumeration(ident *name, int n_enums);
+FIRM_API ir_type *new_type_enumeration(ident *name, int n_enums);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-FIRM_DLL ir_type *new_d_type_enumeration(ident *name, int n_enums,
+FIRM_API ir_type *new_d_type_enumeration(ident *name, int n_enums,
                                          type_dbg_info *db);
 
 /* --- manipulate fields of enumeration type. --- */
 
 /** return enumeration identifier */
-FIRM_DLL ident *get_enumeration_ident(const ir_type *enumeration);
+FIRM_API ident *get_enumeration_ident(const ir_type *enumeration);
 
 /** return enumeration identifier as c-string */
-FIRM_DLL const char *get_enumeration_name(const ir_type *enumeration);
+FIRM_API const char *get_enumeration_name(const ir_type *enumeration);
 
 /** Set an enumeration constant to a enumeration type at a given position. */
-FIRM_DLL void set_enumeration_const(ir_type *enumeration, int pos,
+FIRM_API void set_enumeration_const(ir_type *enumeration, int pos,
                                     ident *nameid, tarval *con);
 
 /** Returns the number of enumeration values of this enumeration */
-FIRM_DLL int get_enumeration_n_enums(const ir_type *enumeration);
+FIRM_API int get_enumeration_n_enums(const ir_type *enumeration);
 
 /** Returns the enumeration constant at a given position. */
-FIRM_DLL ir_enum_const *get_enumeration_const(const ir_type *enumeration,
+FIRM_API ir_enum_const *get_enumeration_const(const ir_type *enumeration,
                                               int pos);
 
 /** Returns the enumeration type owner of an enumeration constant. */
-FIRM_DLL ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst);
+FIRM_API ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst);
 
 /** Sets the enumeration constant value. */
-FIRM_DLL void set_enumeration_value(ir_enum_const *enum_cnst, tarval *con);
+FIRM_API void set_enumeration_value(ir_enum_const *enum_cnst, tarval *con);
 
 /** Returns the enumeration constant value. */
-FIRM_DLL tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
+FIRM_API tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
 
 /** Assign an ident to an enumeration constant. */
-FIRM_DLL void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id);
+FIRM_API void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id);
 
 /** Returns the assigned ident of an enumeration constant. */
-FIRM_DLL ident *get_enumeration_const_nameid(const ir_enum_const *enum_cnst);
+FIRM_API ident *get_enumeration_const_nameid(const ir_enum_const *enum_cnst);
 
 /** Returns the assigned name of an enumeration constant. */
-FIRM_DLL const char *get_enumeration_const_name(const ir_enum_const *enum_cnst);
+FIRM_API const char *get_enumeration_const_name(const ir_enum_const *enum_cnst);
 
 /** Returns true if a type is a enumeration type. */
-FIRM_DLL int is_Enumeration_type(const ir_type *enumeration);
+FIRM_API int is_Enumeration_type(const ir_type *enumeration);
 
 /**
  * @page pointer_type   Representation of a pointer type
@@ -2008,26 +2008,26 @@ FIRM_DLL int is_Enumeration_type(const ir_type *enumeration);
  */
 
 /** Creates a new type pointer. */
-FIRM_DLL ir_type *new_type_pointer(ir_type *points_to);
+FIRM_API ir_type *new_type_pointer(ir_type *points_to);
 
 /** Creates a new type pointer with debug information. */
-FIRM_DLL ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info* db);
+FIRM_API ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info* db);
 
 /* --- manipulate fields of type_pointer --- */
 
 /** Sets the type to which a pointer points to. */
-FIRM_DLL void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
+FIRM_API void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
 
 /** Returns the type to which a pointer points to. */
-FIRM_DLL ir_type *get_pointer_points_to_type(const ir_type *pointer);
+FIRM_API ir_type *get_pointer_points_to_type(const ir_type *pointer);
 
 /** Returns true if a type is a pointer type. */
-FIRM_DLL int is_Pointer_type(const ir_type *pointer);
+FIRM_API int is_Pointer_type(const ir_type *pointer);
 
 /** Returns the first pointer type that has as points_to tp.
  *  Not efficient: O(\#types).
  *  If not found returns firm_unknown_type. */
-FIRM_DLL ir_type *find_pointer_type_to_type(ir_type *tp);
+FIRM_API ir_type *find_pointer_type_to_type(ir_type *tp);
 
 /**
  * @page primitive_type Representation of a primitive type
@@ -2037,19 +2037,19 @@ FIRM_DLL ir_type *find_pointer_type_to_type(ir_type *tp);
  * important information they carry is held in the common mode field.
  */
 /** Creates a new primitive type. */
-FIRM_DLL ir_type *new_type_primitive(ir_mode *mode);
+FIRM_API ir_type *new_type_primitive(ir_mode *mode);
 
 /** Creates a new primitive type with debug information. */
-FIRM_DLL ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info* db);
+FIRM_API ir_type *new_d_type_primitive(ir_mode *mode, type_dbg_info* db);
 
 /** Returns true if a type is a primitive type. */
-FIRM_DLL int is_Primitive_type(const ir_type *primitive);
+FIRM_API int is_Primitive_type(const ir_type *primitive);
 
 /** Return the base type of a primitive (bitfield) type or NULL if none. */
-FIRM_DLL ir_type *get_primitive_base_type(const ir_type *tp);
+FIRM_API ir_type *get_primitive_base_type(const ir_type *tp);
 
 /** Sets the base type of a primitive (bitfield) type. */
-FIRM_DLL void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
+FIRM_API void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
 
 /**
  * @page none_type The None type
@@ -2069,15 +2069,15 @@ FIRM_DLL void set_primitive_base_type(ir_type *tp, ir_type *base_tp);
  *    - size:  0
  */
 /** A variable that contains the only none type. */
-FIRM_DLL ir_type *firm_none_type;
+FIRM_API ir_type *firm_none_type;
 
 /** A variable that contains the only code type. */
-FIRM_DLL ir_type *firm_code_type;
+FIRM_API ir_type *firm_code_type;
 
 /** Returns the none type. */
-FIRM_DLL ir_type *get_none_type(void);
+FIRM_API ir_type *get_none_type(void);
 /** Returns the code type. */
-FIRM_DLL ir_type *get_code_type(void);
+FIRM_API ir_type *get_code_type(void);
 
 /**
  * @page unknown_type  The Unknown type
@@ -2097,10 +2097,10 @@ FIRM_DLL ir_type *get_code_type(void);
  *    - size:  0
  */
 /** A variable that contains the only unknown type. */
-FIRM_DLL ir_type *firm_unknown_type;
+FIRM_API ir_type *firm_unknown_type;
 
 /** Returns the unknown type. */
-FIRM_DLL ir_type *get_unknown_type(void);
+FIRM_API ir_type *get_unknown_type(void);
 
 
 /**
@@ -2108,17 +2108,17 @@ FIRM_DLL ir_type *get_unknown_type(void);
  *  @param tp   any type
  *  @return true if type is primitive, pointer or enumeration
  */
-FIRM_DLL int is_atomic_type(const ir_type *tp);
+FIRM_API int is_atomic_type(const ir_type *tp);
 
 /* --- Support for compound types --- */
 
 /**
  * Gets the identifier of a compound type
  */
-FIRM_DLL ident *get_compound_ident(const ir_type *tp);
+FIRM_API ident *get_compound_ident(const ir_type *tp);
 
 /** return compound identifier as c-string */
-FIRM_DLL const char *get_compound_name(const ir_type *tp);
+FIRM_API const char *get_compound_name(const ir_type *tp);
 
 /**
  * Gets the number of elements in a Firm compound type.
@@ -2131,7 +2131,7 @@ FIRM_DLL const char *get_compound_name(const ir_type *tp);
  *
  * @return Number of members in the compound type.
  */
-FIRM_DLL int get_compound_n_members(const ir_type *tp);
+FIRM_API int get_compound_n_members(const ir_type *tp);
 
 /**
  * Gets the member of a Firm compound type at position pos.
@@ -2141,15 +2141,15 @@ FIRM_DLL int get_compound_n_members(const ir_type *tp);
  *
  * @return The member entity at position pos.
  */
-FIRM_DLL ir_entity *get_compound_member(const ir_type *tp, int pos);
+FIRM_API ir_entity *get_compound_member(const ir_type *tp, int pos);
 
 /** Returns index of member in tp, -1 if not contained. */
-FIRM_DLL int get_compound_member_index(const ir_type *tp, ir_entity *member);
+FIRM_API int get_compound_member_index(const ir_type *tp, ir_entity *member);
 
 /**
  * layout members of a struct/union or class type in a default way.
  */
-FIRM_DLL void default_layout_compound_type(ir_type *tp);
+FIRM_API void default_layout_compound_type(ir_type *tp);
 
 /**
  * Checks whether a type is a compound type.
@@ -2158,60 +2158,60 @@ FIRM_DLL void default_layout_compound_type(ir_type *tp);
  *
  * @return true if the type is class, structure, union or array type.
  */
-FIRM_DLL int is_compound_type(const ir_type *tp);
+FIRM_API int is_compound_type(const ir_type *tp);
 
 /**
  * Checks wether a type is a code type.
  */
-FIRM_DLL int is_code_type(const ir_type *tp);
+FIRM_API int is_code_type(const ir_type *tp);
 
 /**
  * Checks, whether a type is a frame type.
  */
-FIRM_DLL int is_frame_type(const ir_type *tp);
+FIRM_API int is_frame_type(const ir_type *tp);
 
 /**
  * Checks, whether a type is a value parameter type.
  */
-FIRM_DLL int is_value_param_type(const ir_type *tp);
+FIRM_API int is_value_param_type(const ir_type *tp);
 
 /**
  * Checks, whether a type is a lowered type.
  */
-FIRM_DLL int is_lowered_type(const ir_type *tp);
+FIRM_API int is_lowered_type(const ir_type *tp);
 
 /**
  * Makes a new value type. Value types are struct types,
  * so all struct access functions work.
  * Value types are not in the global list of types.
  */
-FIRM_DLL ir_type *new_type_value(void);
+FIRM_API ir_type *new_type_value(void);
 
 /**
  * Makes a new frame type. Frame types are class types,
  * so all class access functions work.
  * Frame types are not in the global list of types.
  */
-FIRM_DLL ir_type *new_type_frame(void);
+FIRM_API ir_type *new_type_frame(void);
 
 /**
  * Makes a clone of a frame type.
  * Sets entity links from old frame entities to new onces and
  * vice versa.
  */
-FIRM_DLL ir_type *clone_frame_type(ir_type *type);
+FIRM_API ir_type *clone_frame_type(ir_type *type);
 
 /**
  * Sets a lowered type for a type. This sets both associations
  * and marks lowered_type as a "lowered" one.
  */
-FIRM_DLL void set_lowered_type(ir_type *tp, ir_type *lowered_type);
+FIRM_API void set_lowered_type(ir_type *tp, ir_type *lowered_type);
 
 /**
  * Gets the lowered/unlowered type of a type or NULL if this type
  * has no lowered/unlowered one.
  */
-FIRM_DLL ir_type *get_associated_type(const ir_type *tp);
+FIRM_API ir_type *get_associated_type(const ir_type *tp);
 
 /**
  * Allocate an area of size bytes aligned at alignment
@@ -2225,7 +2225,7 @@ FIRM_DLL ir_type *get_associated_type(const ir_type *tp);
  *
  * @return the entity representing the area
  */
-FIRM_DLL ir_entity *frame_alloc_area(ir_type *frame_type, int size,
+FIRM_API ir_entity *frame_alloc_area(ir_type *frame_type, int size,
                                      unsigned alignment, int at_start);
 
 /*-----------------------------------------------------------------*/
@@ -2237,7 +2237,7 @@ FIRM_DLL ir_entity *frame_alloc_area(ir_type *frame_type, int size,
  *  debugging, (configure with --enable-debug) else returns the address
  *  of the type cast to long.
  */
-FIRM_DLL long get_type_nr(const ir_type *tp);
+FIRM_API long get_type_nr(const ir_type *tp);
 
 /* ------------------------------------------------------------------------ */
 
@@ -2253,13 +2253,13 @@ typedef int (compare_types_func_t)(const void *tp1, const void *tp2);
  * Compares the opcode and the name of the types. If these are
  * equal returns 0, else non-zero.
  */
-FIRM_DLL int compare_names(const void *tp1, const void *tp2);
+FIRM_API int compare_names(const void *tp1, const void *tp2);
 
 /** Compares two types strict.
  *
  * returns 0 if tp1 == tp2, else non-zero
  */
-FIRM_DLL int compare_strict(const void *tp1, const void *tp2);
+FIRM_API int compare_strict(const void *tp1, const void *tp2);
 
 /* ------------------------------------------------------------------------ */
 
@@ -2267,7 +2267,7 @@ FIRM_DLL int compare_strict(const void *tp1, const void *tp2);
  *
  * Uses the name of the type and the type opcode to compute the hash.
  */
-FIRM_DLL int firm_hash_name(ir_type *tp);
+FIRM_API int firm_hash_name(ir_type *tp);
 
 /* ------------------------------------------------------------------------ */
 
@@ -2289,7 +2289,7 @@ FIRM_DLL int firm_hash_name(ir_type *tp);
  *
  * @param tp     The type to mature.
  */
-FIRM_DLL ir_type *mature_type(ir_type *tp);
+FIRM_API ir_type *mature_type(ir_type *tp);
 
 /** Finalize type construction.
  *
@@ -2303,7 +2303,7 @@ FIRM_DLL ir_type *mature_type(ir_type *tp);
  *
  * @param tp     The type to mature.
  */
-FIRM_DLL ir_type *mature_type_free(ir_type *tp);
+FIRM_API ir_type *mature_type_free(ir_type *tp);
 
 /** Finalize type construction.
  *
@@ -2320,7 +2320,7 @@ FIRM_DLL ir_type *mature_type_free(ir_type *tp);
  *
  * @param tp     The type to mature.
  */
-FIRM_DLL ir_type *mature_type_free_entities(ir_type *tp);
+FIRM_API ir_type *mature_type_free_entities(ir_type *tp);
 
 /** A data type to treat types and entities as the same. */
 typedef union {
@@ -2346,11 +2346,11 @@ typedef void class_walk_func(ir_type *clss, void *env);
  *  types/entities are created during the traversal these will
  *  be visited, too.
  *  Does not touch frame types or types for value params ... */
-FIRM_DLL void type_walk(type_walk_func *pre, type_walk_func *post, void *env);
+FIRM_API void type_walk(type_walk_func *pre, type_walk_func *post, void *env);
 
 /** Touches every type, entity, frame type, and value param type in
  *  unspecified order (also all segment types). */
-FIRM_DLL void type_walk_prog(type_walk_func *pre, type_walk_func *post,
+FIRM_API void type_walk_prog(type_walk_func *pre, type_walk_func *post,
                              void *env);
 
 /** Walks over all type information reachable from an ir graph.
@@ -2358,7 +2358,7 @@ FIRM_DLL void type_walk_prog(type_walk_func *pre, type_walk_func *post,
  *  Walks over all type information reachable from irg, i.e., starts a
  *  type walk at the irgs entity, the irgs frame type and all types and
  *  entities that are attributes to firm nodes. */
-FIRM_DLL void type_walk_irg(ir_graph *irg, type_walk_func *pre,
+FIRM_API void type_walk_irg(ir_graph *irg, type_walk_func *pre,
                             type_walk_func *post, void *env);
 
 /**
@@ -2372,7 +2372,7 @@ FIRM_DLL void type_walk_irg(ir_graph *irg, type_walk_func *pre,
 
     @deprecated will be removed?
 */
-FIRM_DLL void type_walk_super2sub(type_walk_func *pre, type_walk_func *post,
+FIRM_API void type_walk_super2sub(type_walk_func *pre, type_walk_func *post,
                                   void *env);
 
 /** Walker for class types in inheritance order.
@@ -2387,7 +2387,7 @@ FIRM_DLL void type_walk_super2sub(type_walk_func *pre, type_walk_func *post,
  * visiting all superclasses.
  *
  * The arguments pre, post, env may be NULL. */
-FIRM_DLL void type_walk_super(type_walk_func *pre, type_walk_func *post,
+FIRM_API void type_walk_super(type_walk_func *pre, type_walk_func *post,
                               void *env);
 
 /** Same as type_walk_super2sub, but visits only class types.
@@ -2396,7 +2396,7 @@ FIRM_DLL void type_walk_super(type_walk_func *pre, type_walk_func *post,
    subclass.
    Does not visit global type, frame types.
 */
-FIRM_DLL void class_walk_super2sub(class_walk_func *pre, class_walk_func *post,
+FIRM_API void class_walk_super2sub(class_walk_func *pre, class_walk_func *post,
                                    void *env);
 
 /**
@@ -2414,7 +2414,7 @@ typedef void entity_walk_func(ir_entity *ent, void *env);
  * @param doit  the entity walker function
  * @param env   environment, will be passed to the walker function
  */
-FIRM_DLL void walk_types_entities(ir_type *tp, entity_walk_func *doit,
+FIRM_API void walk_types_entities(ir_type *tp, entity_walk_func *doit,
                                   void *env);
 
 /**
@@ -2423,12 +2423,12 @@ FIRM_DLL void walk_types_entities(ir_type *tp, entity_walk_func *doit,
  * After this is done, all classes and entities that are not overridden
  * anymore have the final property set.
  */
-FIRM_DLL void types_calc_finalization(void);
+FIRM_API void types_calc_finalization(void);
 
 /** @deprecated */
-FIRM_DLL ir_visibility get_type_visibility(const ir_type *tp);
+FIRM_API ir_visibility get_type_visibility(const ir_type *tp);
 /** @deprecated */
-FIRM_DLL void          set_type_visibility(ir_type *tp, ir_visibility v);
+FIRM_API void          set_type_visibility(ir_type *tp, ir_visibility v);
 
 /** @deprecated */
 typedef enum {
@@ -2438,9 +2438,9 @@ typedef enum {
 	allocation_static
 } ir_allocation;
 /** @deprecated */
-FIRM_DLL ir_allocation get_entity_allocation(const ir_entity *ent);
+FIRM_API ir_allocation get_entity_allocation(const ir_entity *ent);
 /** @deprecated */
-FIRM_DLL void set_entity_allocation(ir_entity *ent, ir_allocation al);
+FIRM_API void set_entity_allocation(ir_entity *ent, ir_allocation al);
 
 /** @deprecated */
 typedef enum {
@@ -2449,19 +2449,19 @@ typedef enum {
 	peculiarity_inherited
 } ir_peculiarity;
 /** @deprecated */
-FIRM_DLL ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
+FIRM_API ir_peculiarity get_entity_peculiarity(const ir_entity *ent);
 /** @deprecated */
-FIRM_DLL void set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
+FIRM_API void set_entity_peculiarity(ir_entity *ent, ir_peculiarity pec);
 
 /** @deprecated */
-FIRM_DLL int is_entity_final(const ir_entity *ent);
+FIRM_API int is_entity_final(const ir_entity *ent);
 /** @deprecated */
-FIRM_DLL void set_entity_final(ir_entity *ent, int final);
+FIRM_API void set_entity_final(ir_entity *ent, int final);
 
 /** @deprecated */
-FIRM_DLL ir_peculiarity get_class_peculiarity(const ir_type *clss);
+FIRM_API ir_peculiarity get_class_peculiarity(const ir_type *clss);
 /** @deprecated */
-FIRM_DLL void set_class_peculiarity(ir_type *clss, ir_peculiarity pec);
+FIRM_API void set_class_peculiarity(ir_type *clss, ir_peculiarity pec);
 
 #include "end.h"
 

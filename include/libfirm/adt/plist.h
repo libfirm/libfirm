@@ -30,6 +30,7 @@
  * @note    Until now the code is entirely untested so it probably contains
  *          plenty of errors. (Matze: Is this still true, the code seems to be
  *          used at some places....)
+ * @deprecated
  */
 #ifndef FIRM_ADT_PLIST_H
 #define FIRM_ADT_PLIST_H
@@ -90,7 +91,7 @@ struct _plist_element {
  * Creates a new pointer list and initializes it.
  * @return The newly created pointer list.
  */
-plist_t *plist_new(void);
+FIRM_API plist_t *plist_new(void);
 
 /**
  * Creates a new pointer list and initializes it.
@@ -98,14 +99,14 @@ plist_t *plist_new(void);
  * @param obst  The obstack to use
  * @return The newly created pointer list.
  */
-plist_t *plist_obstack_new(struct obstack *obst);
+FIRM_API plist_t *plist_obstack_new(struct obstack *obst);
 
 /**
  * Frees the passed pointer list.
  * After a call to this function all references to the list and any of
  * its elements are invalid.
  */
-void plist_free(plist_t *list);
+FIRM_API void plist_free(plist_t *list);
 
 /**
  * Returns the number of elements in a pointer list.
@@ -120,14 +121,14 @@ void plist_free(plist_t *list);
  * @param list the pointer list to append the new element to.
  * @param value the element value to append.
  */
-void plist_insert_back(plist_t *list, void *value);
+FIRM_API void plist_insert_back(plist_t *list, void *value);
 
 /**
  * Inserts an element at the front of a pointer list.
  * @param list the pointer list to prepend the new element to.
  * @param value the element value to prepend.
  */
-void plist_insert_front(plist_t *list, void *value);
+FIRM_API void plist_insert_front(plist_t *list, void *value);
 
 /**
  * Inserts an element into a pointer list before the specified element,
@@ -137,7 +138,7 @@ void plist_insert_front(plist_t *list, void *value);
  * 		be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
-void plist_insert_before(plist_t *list, plist_element_t *element, void *value);
+FIRM_API void plist_insert_before(plist_t *list, plist_element_t *element, void *value);
 
 /**
  * Inserts an element into a pointer list after the specified element,
@@ -147,7 +148,7 @@ void plist_insert_before(plist_t *list, plist_element_t *element, void *value);
  * 		be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
-void plist_insert_after(plist_t *list, plist_element_t *element, void *value);
+FIRM_API void plist_insert_after(plist_t *list, plist_element_t *element, void *value);
 
 /**
  * Checks if list has an element with the given data pointer.
@@ -155,7 +156,7 @@ void plist_insert_after(plist_t *list, plist_element_t *element, void *value);
  * @param value  the data pointer to look for
  * @return 1 if element with data pointer found, 0 otherwise
  */
-int plist_has_value(plist_t *list, void *value);
+FIRM_API int plist_has_value(plist_t *list, void *value);
 
 /**
  * Tries to find list element associated to the given data pointer.
@@ -163,7 +164,7 @@ int plist_has_value(plist_t *list, void *value);
  * @param value  the data pointer to look for
  * @return The first list element associated to data pointer if found, NULL otherwise
  */
-plist_element_t *plist_find_value(plist_t *list, void *value);
+FIRM_API plist_element_t *plist_find_value(plist_t *list, void *value);
 
 /**
  * Erases the specified element from the pointer list.
@@ -171,20 +172,20 @@ plist_element_t *plist_find_value(plist_t *list, void *value);
  * @param element the list element to erase. This element must be a part
  * 		of @p list.
  */
-void plist_erase(plist_t *list, plist_element_t *element);
+FIRM_API void plist_erase(plist_t *list, plist_element_t *element);
 
 /**
  * Erases all elements from the specified pointer list.
  * @param list the pointer list that should be cleared.
  */
-void plist_clear(plist_t *list);
+FIRM_API void plist_clear(plist_t *list);
 
 /**
  * Returns the first element of a pointer list.
  * @param list the pointer list to iterate
  * @return a pointer to the element or NULL if the list is empty
  */
- #define plist_first(list) \
+#define plist_first(list) \
  	((list)->first_element)
 
 /**
@@ -192,7 +193,7 @@ void plist_clear(plist_t *list);
  * @param list the pointer list to iterate
  * @return a pointer to the element or NULL if the list is empty
  */
- #define plist_last(list) \
+#define plist_last(list) \
  	((list)->last_element)
 
 /**

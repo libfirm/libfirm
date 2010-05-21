@@ -38,7 +38,7 @@
  *
  * @return the newly created manager
  */
-FIRM_DLL ir_graph_pass_manager_t *new_graph_pass_mgr(const char *name,
+FIRM_API ir_graph_pass_manager_t *new_graph_pass_mgr(const char *name,
                                                      int verify_all,
                                                      int dump_all);
 
@@ -48,7 +48,7 @@ FIRM_DLL ir_graph_pass_manager_t *new_graph_pass_mgr(const char *name,
  * @param mgr   the ir_graph pass manager
  * @param pass  the pass to add
  */
-FIRM_DLL void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr,
+FIRM_API void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr,
                                     ir_graph_pass_t *pass);
 
 /**
@@ -58,14 +58,14 @@ FIRM_DLL void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr,
  *
  * @return 0 if all passes return 0, else 1
  */
-FIRM_DLL int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr);
+FIRM_API int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr);
 
 /**
  * Terminate an ir_graph pass manager and all owned passes.
  *
  * @param mgr   the manager
  */
-FIRM_DLL void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr);
+FIRM_API void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr);
 
 /**
  * Creates a new ir_prog pass manager.
@@ -76,7 +76,7 @@ FIRM_DLL void term_graph_pass_mgr(ir_graph_pass_manager_t *mgr);
  *
  * @return  the newly created manager
  */
-FIRM_DLL ir_prog_pass_manager_t *new_prog_pass_mgr(const char *name,
+FIRM_API ir_prog_pass_manager_t *new_prog_pass_mgr(const char *name,
                                                    int verify_all,
                                                    int dump_all);
 
@@ -86,7 +86,7 @@ FIRM_DLL ir_prog_pass_manager_t *new_prog_pass_mgr(const char *name,
  * @param mgr   the ir_prog pass manager
  * @param pass  the pass to add
  */
-FIRM_DLL void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr,
+FIRM_API void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr,
                                    ir_prog_pass_t *pass);
 
 /**
@@ -95,7 +95,7 @@ FIRM_DLL void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr,
  * @param mgr        the ir_prog pass manager
  * @param graph_mgr  the ir_graph pass manager to be added
  */
-FIRM_DLL void ir_prog_pass_mgr_add_graph_mgr(ir_prog_pass_manager_t *mgr,
+FIRM_API void ir_prog_pass_mgr_add_graph_mgr(ir_prog_pass_manager_t *mgr,
                                             ir_graph_pass_manager_t *graph_mgr);
 
 /**
@@ -104,7 +104,7 @@ FIRM_DLL void ir_prog_pass_mgr_add_graph_mgr(ir_prog_pass_manager_t *mgr,
  * @param mgr   the ir_prog pass manager
  * @param pass  the ir_graph pass to be added
  */
-FIRM_DLL void ir_prog_pass_mgr_add_graph_pass(ir_prog_pass_manager_t *mgr,
+FIRM_API void ir_prog_pass_mgr_add_graph_pass(ir_prog_pass_manager_t *mgr,
                                               ir_graph_pass_t *pass);
 
 /**
@@ -114,14 +114,14 @@ FIRM_DLL void ir_prog_pass_mgr_add_graph_pass(ir_prog_pass_manager_t *mgr,
  *
  * @return 0 if all passes return 0, else 1
  */
-FIRM_DLL int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr);
+FIRM_API int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr);
 
 /**
  * Terminate an ir_prog pass manager and all owned passes.
  *
  * @param mgr   the manager
  */
-FIRM_DLL void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr);
+FIRM_API void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr);
 
 /**
  * Set the run index for an irgraph pass manager.
@@ -129,7 +129,7 @@ FIRM_DLL void term_prog_pass_mgr(ir_prog_pass_manager_t *mgr);
  * @param mgr      the manager
  * @param run_idx  the index for the first pass of this manager
  */
-FIRM_DLL void ir_graph_pass_mgr_set_run_idx(
+FIRM_API void ir_graph_pass_mgr_set_run_idx(
 	ir_graph_pass_manager_t *mgr, unsigned run_idx);
 
 /**
@@ -142,7 +142,7 @@ FIRM_DLL void ir_graph_pass_mgr_set_run_idx(
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *def_graph_pass(
+FIRM_API ir_graph_pass_t *def_graph_pass(
 	const char *name, void (*function)(ir_graph *irg));
 
 /**
@@ -155,7 +155,7 @@ FIRM_DLL ir_graph_pass_t *def_graph_pass(
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *def_graph_pass_ret(
+FIRM_API ir_graph_pass_t *def_graph_pass_ret(
 	const char *name, int (*function)(ir_graph *irg));
 
 /**
@@ -169,7 +169,7 @@ FIRM_DLL ir_graph_pass_t *def_graph_pass_ret(
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *def_graph_pass_constructor(
+FIRM_API ir_graph_pass_t *def_graph_pass_constructor(
 	ir_graph_pass_t *memory,
 	const char *name, int (*function)(ir_graph *irg, void *context));
 
@@ -181,7 +181,7 @@ FIRM_DLL ir_graph_pass_t *def_graph_pass_constructor(
  * @param pass  the pass
  * @param flag  new flag setting
  */
-FIRM_DLL void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag);
+FIRM_API void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag);
 
 /**
  * Creates an ir_prog pass for running void function().
@@ -193,7 +193,7 @@ FIRM_DLL void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_prog_pass_t *def_prog_pass(
+FIRM_API ir_prog_pass_t *def_prog_pass(
 	const char *name, void (*function)(void));
 
 /**
@@ -207,7 +207,7 @@ FIRM_DLL ir_prog_pass_t *def_prog_pass(
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *def_prog_pass_constructor(
+FIRM_API ir_prog_pass_t *def_prog_pass_constructor(
 	ir_prog_pass_t *memory,
 	const char *name, int (*function)(ir_prog *irp, void *context));
 
@@ -221,7 +221,7 @@ FIRM_DLL ir_prog_pass_t *def_prog_pass_constructor(
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *call_function_pass(
+FIRM_API ir_prog_pass_t *call_function_pass(
 	const char *name, void (*function)(void *context), void *context);
 
 /**
@@ -230,7 +230,7 @@ FIRM_DLL ir_prog_pass_t *call_function_pass(
  * @param mgr      the manager
  * @param run_idx  the index for the first pass of this manager
  */
-FIRM_DLL void ir_prog_pass_mgr_set_run_idx(
+FIRM_API void ir_prog_pass_mgr_set_run_idx(
 	ir_prog_pass_manager_t *mgr, unsigned run_idx);
 
 #include "end.h"

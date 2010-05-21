@@ -52,61 +52,61 @@ typedef enum {
 } irp_callgraph_state;
 
 /** Returns the callgraph state of the program representation. */
-FIRM_DLL irp_callgraph_state get_irp_callgraph_state(void);
+FIRM_API irp_callgraph_state get_irp_callgraph_state(void);
 
 /** Sets the callgraph state of the program representation. */
-FIRM_DLL void set_irp_callgraph_state(irp_callgraph_state s);
+FIRM_API void set_irp_callgraph_state(irp_callgraph_state s);
 
 /** Returns the number of procedures that call the given irg. */
-FIRM_DLL int get_irg_n_callers(const ir_graph *irg);
+FIRM_API int get_irg_n_callers(const ir_graph *irg);
 
 /** Returns the caller at position pos. */
 ir_graph *get_irg_caller(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the caller at position pos is "a backedge", i.e. a recursion. */
-FIRM_DLL int is_irg_caller_backedge(const ir_graph *irg, int pos);
+FIRM_API int is_irg_caller_backedge(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the irg has a backedge caller. */
-FIRM_DLL int has_irg_caller_backedge(const ir_graph *irg);
+FIRM_API int has_irg_caller_backedge(const ir_graph *irg);
 
 /** Returns the maximal loop depth of call nodes that call along this edge. */
-FIRM_DLL int get_irg_caller_loop_depth(const ir_graph *irg, int pos);
+FIRM_API int get_irg_caller_loop_depth(const ir_graph *irg, int pos);
 
 /** Returns the number of procedures that are called by the given irg. */
-FIRM_DLL int get_irg_n_callees(const ir_graph *irg);
+FIRM_API int get_irg_n_callees(const ir_graph *irg);
 
 /** Returns the callee at position pos. */
-FIRM_DLL ir_graph *get_irg_callee(const ir_graph *irg, int pos);
+FIRM_API ir_graph *get_irg_callee(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the callee at position pos is "a backedge", i.e. a recursion. */
-FIRM_DLL int is_irg_callee_backedge(const ir_graph *irg, int pos);
+FIRM_API int is_irg_callee_backedge(const ir_graph *irg, int pos);
 
 /** Returns non-zero if the irg has a backedge callee. */
-FIRM_DLL int has_irg_callee_backedge(const ir_graph *irg);
+FIRM_API int has_irg_callee_backedge(const ir_graph *irg);
 
 /** Returns the maximal loop depth of call nodes that call along this edge. */
-FIRM_DLL int get_irg_callee_loop_depth(const ir_graph *irg, int pos);
+FIRM_API int get_irg_callee_loop_depth(const ir_graph *irg, int pos);
 
 /** Returns the maximal loop depth of all paths from an external visible method to
     this irg. */
-FIRM_DLL int get_irg_loop_depth(const ir_graph *irg);
+FIRM_API int get_irg_loop_depth(const ir_graph *irg);
 
 /** Returns the maximal recursion depth of all paths from an external visible method to
     this irg. */
-FIRM_DLL int get_irg_recursion_depth(const ir_graph *irg);
+FIRM_API int get_irg_recursion_depth(const ir_graph *irg);
 
 /** Returns the method execution frequency of a graph. */
-FIRM_DLL double get_irg_method_execution_frequency(const ir_graph *irg);
+FIRM_API double get_irg_method_execution_frequency(const ir_graph *irg);
 
 /**
  * Construct the callgraph. Expects callee information, i.e.,
  * irg_callee_info_consistent must be set.  This can be computed with
  * cgana().
  */
-FIRM_DLL void compute_callgraph(void);
+FIRM_API void compute_callgraph(void);
 
 /** Destruct the callgraph. */
-FIRM_DLL void free_callgraph(void);
+FIRM_API void free_callgraph(void);
 
 
 /** A function type for functions passed to the callgraph walker. */
@@ -127,13 +127,13 @@ typedef void callgraph_walk_func(ir_graph *g, void *env);
  * @param post - walker function, executed after the predecessor of a node are visited
  * @param env  - environment, passed to pre and post
  */
-FIRM_DLL void callgraph_walk(callgraph_walk_func *pre,
+FIRM_API void callgraph_walk(callgraph_walk_func *pre,
                              callgraph_walk_func *post, void *env);
 
 /**
  * Compute the backedges that represent recursions and a looptree.
  */
-FIRM_DLL void find_callgraph_recursions(void);
+FIRM_API void find_callgraph_recursions(void);
 
 /** Compute interprocedural performance estimates.
  *
@@ -150,7 +150,7 @@ FIRM_DLL void find_callgraph_recursions(void);
  *
  * Expects the main irg is set, see set_irp_main_irg();
  **/
-FIRM_DLL void compute_performance_estimates(void);
+FIRM_API void compute_performance_estimates(void);
 
 /** Computes the interprocedural loop nesting information.
  *
@@ -162,7 +162,7 @@ FIRM_DLL void compute_performance_estimates(void);
  *
  * Expects the main irg is set, see set_irp_main_irg();
  */
-FIRM_DLL void analyse_loop_nesting_depth(void);
+FIRM_API void analyse_loop_nesting_depth(void);
 
 /** The state of loop nesting depth. */
 typedef enum {
@@ -174,13 +174,13 @@ typedef enum {
 } loop_nesting_depth_state;
 
 /** Returns the nesting depth state of the program representation. */
-FIRM_DLL loop_nesting_depth_state get_irp_loop_nesting_depth_state(void);
+FIRM_API loop_nesting_depth_state get_irp_loop_nesting_depth_state(void);
 
 /** Sets the nesting depth state of the program representation. */
-FIRM_DLL void set_irp_loop_nesting_depth_state(loop_nesting_depth_state s);
+FIRM_API void set_irp_loop_nesting_depth_state(loop_nesting_depth_state s);
 
 /** Marks the nesting depth state of the program representation as inconsistent. */
-FIRM_DLL void set_irp_loop_nesting_depth_state_inconsistent(void);
+FIRM_API void set_irp_loop_nesting_depth_state_inconsistent(void);
 
 #include "end.h"
 

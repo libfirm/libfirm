@@ -114,7 +114,7 @@ typedef enum ir_region_kind {
  *
  * @param reg  the region
  */
-FIRM_DLL void *get_region_link(const ir_region *reg);
+FIRM_API void *get_region_link(const ir_region *reg);
 
 /**
  * Sets the link of a region.
@@ -122,14 +122,14 @@ FIRM_DLL void *get_region_link(const ir_region *reg);
  * @param reg   the region
  * @param data  the data
  */
-FIRM_DLL void set_region_link(ir_region *reg, void *data);
+FIRM_API void set_region_link(ir_region *reg, void *data);
 
 /**
  * Get the immediate region of a block.
  *
  * @param block  a block node
  */
-FIRM_DLL ir_region *get_block_region(const ir_node *block);
+FIRM_API ir_region *get_block_region(const ir_node *block);
 
 /**
  * Sets the immediate region of a block.
@@ -137,28 +137,28 @@ FIRM_DLL ir_region *get_block_region(const ir_node *block);
  * @param block  a block node
  * @param reg    the region
  */
-FIRM_DLL void set_block_region(ir_node *block, ir_region *reg);
+FIRM_API void set_block_region(ir_node *block, ir_region *reg);
 
 /**
  * Get the immediate region of a node.
  *
  * @param n  a Firm IR node
  */
-FIRM_DLL ir_region *get_irn_region(ir_node *n);
+FIRM_API ir_region *get_irn_region(ir_node *n);
 
 /**
  * Return non-if a given firm thing is a region.
  *
  * @param thing  a Firm object address
  */
-FIRM_DLL int is_region(const void *thing);
+FIRM_API int is_region(const void *thing);
 
 /**
  * Return the number of predecessors in a region.
  *
  * @param reg  the region
  */
-FIRM_DLL int get_region_n_preds(const ir_region *reg);
+FIRM_API int get_region_n_preds(const ir_region *reg);
 
 /**
  * Return the predecessor region at position pos.
@@ -166,7 +166,7 @@ FIRM_DLL int get_region_n_preds(const ir_region *reg);
  * @param reg  the region
  * @param pos  the position number
  */
-FIRM_DLL ir_region *get_region_pred(const ir_region *reg, int pos);
+FIRM_API ir_region *get_region_pred(const ir_region *reg, int pos);
 
 /**
  * Set the predecessor region at position pos.
@@ -175,14 +175,14 @@ FIRM_DLL ir_region *get_region_pred(const ir_region *reg, int pos);
  * @param pos  the position number
  * @param n    the new predecessor region
  */
-FIRM_DLL void set_region_pred(ir_region *reg, int pos, ir_region *n);
+FIRM_API void set_region_pred(ir_region *reg, int pos, ir_region *n);
 
 /**
  * Return the number of successors in a region.
  *
  * @param reg  the region
  */
-FIRM_DLL int get_region_n_succs(const ir_region *reg);
+FIRM_API int get_region_n_succs(const ir_region *reg);
 
 /**
  * Return the successor region at position pos.
@@ -190,7 +190,7 @@ FIRM_DLL int get_region_n_succs(const ir_region *reg);
  * @param reg  the region
  * @param pos  the position number
  */
-FIRM_DLL ir_region *get_region_succ(const ir_region *reg, int pos);
+FIRM_API ir_region *get_region_succ(const ir_region *reg, int pos);
 
 /**
  * Set the successor region at position pos.
@@ -199,7 +199,7 @@ FIRM_DLL ir_region *get_region_succ(const ir_region *reg, int pos);
  * @param pos  the position number
  * @param n    the new successor region
  */
-FIRM_DLL void set_region_succ(ir_region *reg, int pos, ir_region *n);
+FIRM_API void set_region_succ(ir_region *reg, int pos, ir_region *n);
 
 /**
  * Construct the region tree of a graph by doing
@@ -211,7 +211,7 @@ FIRM_DLL void set_region_succ(ir_region *reg, int pos, ir_region *n);
  *
  * @return the region tree
  */
-FIRM_DLL ir_reg_tree *construct_region_tree(ir_graph *irg);
+FIRM_API ir_reg_tree *construct_region_tree(ir_graph *irg);
 
 /**
  * Walk over the region tree.
@@ -221,7 +221,7 @@ FIRM_DLL ir_reg_tree *construct_region_tree(ir_graph *irg);
  * @param post  walker function, executed after the children of a tree node are visited
  * @param env   environment, passed to pre and post
  */
-FIRM_DLL void region_tree_walk(ir_reg_tree *tree, irg_reg_walk_func *pre,
+FIRM_API void region_tree_walk(ir_reg_tree *tree, irg_reg_walk_func *pre,
                                irg_reg_walk_func *post, void *env);
 
 #include "end.h"

@@ -53,7 +53,7 @@
  *
  * @return  a sequence number for this position.
  */
-FIRM_DLL seqno_t firm_seqno_enter(const char *filename, unsigned lineno);
+FIRM_API seqno_t firm_seqno_enter(const char *filename, unsigned lineno);
 
 /**
  * Create a new sequence number from a filename ident and a line number.
@@ -63,7 +63,7 @@ FIRM_DLL seqno_t firm_seqno_enter(const char *filename, unsigned lineno);
  *
  * @return  a sequence number for this position.
  */
-FIRM_DLL seqno_t firm_seqno_enter_id(ident *filename, unsigned lineno);
+FIRM_API seqno_t firm_seqno_enter_id(ident *filename, unsigned lineno);
 
 /**
  * Retrieve filename and line number from a sequence number.
@@ -73,7 +73,7 @@ FIRM_DLL seqno_t firm_seqno_enter_id(ident *filename, unsigned lineno);
  *
  * @return  the file name of this position.
  */
-FIRM_DLL const char *firm_seqno_retrieve(seqno_t seqno, unsigned *lineno);
+FIRM_API const char *firm_seqno_retrieve(seqno_t seqno, unsigned *lineno);
 
 /**
  * Creates the sequence number pool.
@@ -81,7 +81,7 @@ FIRM_DLL const char *firm_seqno_retrieve(seqno_t seqno, unsigned *lineno);
  * support is optional. Call firm_seqno_init() after init_firm()
  * if sequence numbers should be used.
  */
-FIRM_DLL void firm_seqno_init(void);
+FIRM_API void firm_seqno_init(void);
 
 /**
  * Terminates the sequence number pool.
@@ -89,7 +89,7 @@ FIRM_DLL void firm_seqno_init(void);
  * Call this function to terminate the sequence
  * pool.
  */
-FIRM_DLL void firm_seqno_term(void);
+FIRM_API void firm_seqno_term(void);
 
 #include "end.h"
 

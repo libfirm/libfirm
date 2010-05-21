@@ -223,7 +223,7 @@ typedef enum {
  * @param hook   the hook type
  * @param entry  the hook entry
  */
-FIRM_DLL void register_hook(hook_type_t hook, hook_entry_t *entry);
+FIRM_API void register_hook(hook_type_t hook, hook_entry_t *entry);
 
 /**
  * unregister a hook entry.
@@ -231,9 +231,9 @@ FIRM_DLL void register_hook(hook_type_t hook, hook_entry_t *entry);
  * @param hook   the hook type
  * @param entry  the hook entry
  */
-FIRM_DLL void unregister_hook(hook_type_t hook, hook_entry_t *entry);
+FIRM_API void unregister_hook(hook_type_t hook, hook_entry_t *entry);
 
-FIRM_DLL hook_entry_t *hooks[hook_last];
+FIRM_API hook_entry_t *hooks[hook_last];
 
 /**
  * execute the hook what with the args args

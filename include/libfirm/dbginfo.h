@@ -95,7 +95,7 @@ typedef enum {
  *
  * @param a  the debug action
  */
-FIRM_DLL const char *dbg_action_2_str(dbg_action a);
+FIRM_API const char *dbg_action_2_str(dbg_action a);
 
 /**
  * The type of the debug info merge function.
@@ -144,7 +144,7 @@ typedef void merge_sets_func(ir_node **new_node_array, int new_num_entries, ir_n
  *   Further both functions pass an enumeration indicating the action
  *   performed by the transformation, e.g. the kind of optimization performed.
  */
-FIRM_DLL void dbg_init(merge_pair_func *dbg_info_merge_pair,
+FIRM_API void dbg_init(merge_pair_func *dbg_info_merge_pair,
                        merge_sets_func *dbg_info_merge_sets);
 
 /** @} */
@@ -162,7 +162,7 @@ typedef const char *(*retrieve_dbg_func)(const dbg_info *dbg, unsigned *line);
  *
  * @param func   the debug retriever function.
  */
-FIRM_DLL void ir_set_debug_retrieve(retrieve_dbg_func func);
+FIRM_API void ir_set_debug_retrieve(retrieve_dbg_func func);
 
 /**
  * The type of the type debug info retrieve function.
@@ -175,17 +175,17 @@ typedef void (*retrieve_type_dbg_func)(char *buffer, size_t buffer_size,
 /**
  * Set global print_type_dbg_info function in firm
  */
-FIRM_DLL void ir_set_type_debug_retrieve(retrieve_type_dbg_func func);
+FIRM_API void ir_set_type_debug_retrieve(retrieve_type_dbg_func func);
 
 /**
  * Retrieve the debug info.
  */
-FIRM_DLL const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
+FIRM_API const char *ir_retrieve_dbg_info(const dbg_info *dbg, unsigned *line);
 
 /**
  * Retrieve type debug info
  */
-FIRM_DLL void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
+FIRM_API void ir_retrieve_type_dbg_info(char *buffer, size_t buffer_size,
                                         const type_dbg_info *tdbgi);
 
 #include "end.h"

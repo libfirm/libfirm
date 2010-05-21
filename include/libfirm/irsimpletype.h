@@ -56,10 +56,10 @@
  * Uses the link field of types.  Sets this field of each type to point to a
  * pointer type that points to the type (Got it? ;-)).
  */
-FIRM_DLL void simple_analyse_types(void);
+FIRM_API void simple_analyse_types(void);
 
 /** Frees all type information datastructures.  Sets the flag in irg to "???". */
-FIRM_DLL void free_simple_type_information(void);
+FIRM_API void free_simple_type_information(void);
 
 #include "end.h"
 

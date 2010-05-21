@@ -35,24 +35,24 @@ struct ir_exec_freq;
 /**
  * Create execfreq structure (to be used with set_execfreq)
  */
-FIRM_DLL ir_exec_freq *create_execfreq(ir_graph *irg);
+FIRM_API ir_exec_freq *create_execfreq(ir_graph *irg);
 
 /**
  * Set execution frequency of a basic block
  */
-FIRM_DLL void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
+FIRM_API void set_execfreq(ir_exec_freq *ef, const ir_node *block, double freq);
 
 /**
  * Create execfreq structure and initialize with estimated frequencies
  */
-FIRM_DLL ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
+FIRM_API ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight);
 
-FIRM_DLL void free_execfreq(ir_exec_freq *ef);
+FIRM_API void free_execfreq(ir_exec_freq *ef);
 
-FIRM_DLL double get_block_execfreq(const ir_exec_freq *ef,
+FIRM_API double get_block_execfreq(const ir_exec_freq *ef,
                                    const ir_node *block);
 
-FIRM_DLL unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef,
+FIRM_API unsigned long get_block_execfreq_ulong(const ir_exec_freq *ef,
                                                 const ir_node *block);
 
 #include "end.h"

@@ -44,9 +44,9 @@
 
 /* xmalloc() & friends. */
 
-void *xmalloc(size_t size);
-void *xrealloc(void *ptr, size_t size);
-char *xstrdup(const char *str);
+FIRM_API void *xmalloc(size_t size);
+FIRM_API void *xrealloc(void *ptr, size_t size);
+FIRM_API char *xstrdup(const char *str);
 
 #define xfree(ptr)      free(ptr)
 

@@ -48,7 +48,7 @@ typedef struct pdeq pdeq;
  *
  * @return A new list.
  */
-pdeq *new_pdeq(void);
+FIRM_API pdeq *new_pdeq(void);
 
 /**
  * Creates a new double ended pointer list and puts an initial pointer element in.
@@ -57,21 +57,21 @@ pdeq *new_pdeq(void);
  *
  * @return The new list.
  */
-pdeq *new_pdeq1(const void *x);
+FIRM_API pdeq *new_pdeq1(const void *x);
 
 /**
  * Delete a double ended pointer list.
  *
  * @param dq   The list to be deleted.
  */
-void del_pdeq(pdeq *dq);
+FIRM_API void del_pdeq(pdeq *dq);
 
 /**
- * Returns the lenght of a double ended pointer list.
+ * Returns the length of a double ended pointer list.
  *
  * @param dq   The list.
  */
-int pdeq_len(pdeq *dq);
+FIRM_API int pdeq_len(pdeq *dq);
 
 /**
  * Checks if a list is empty.
@@ -80,7 +80,7 @@ int pdeq_len(pdeq *dq);
  *
  * @return  non-zero if the list is empty.
  */
-int pdeq_empty(pdeq *dq);
+FIRM_API int pdeq_empty(pdeq *dq);
 
 /**
  * Returns non-zero if a double ended pointer list
@@ -89,7 +89,7 @@ int pdeq_empty(pdeq *dq);
  * @param dq  The list.
  * @param x   The pointer to be searched for.
  */
-int pdeq_contains(pdeq *dq, const void *x);
+FIRM_API int pdeq_contains(pdeq *dq, const void *x);
 
 /**
  * Search a key in a double ended pointer list, the search
@@ -104,7 +104,7 @@ int pdeq_contains(pdeq *dq, const void *x);
  * @return The address of the element entry if the key was found,
  *         NULL else.
  */
-void *pdeq_search(pdeq *qp, cmp_fun cmp, const void *key);
+FIRM_API void *pdeq_search(pdeq *qp, cmp_fun cmp, const void *key);
 
 /**
  * Convert the double ended pointer list into a linear array beginning from
@@ -116,7 +116,7 @@ void *pdeq_search(pdeq *qp, cmp_fun cmp, const void *key);
  *
  * @return  dst
  */
-void **pdeq_copyl(pdeq *qp, const void **dst);
+FIRM_API void **pdeq_copyl(pdeq *qp, const void **dst);
 
 /**
  * Convert the double ended pointer list into a linear array beginning from
@@ -128,7 +128,7 @@ void **pdeq_copyl(pdeq *qp, const void **dst);
  *
  * @return  dst
  */
-void **pdeq_copyr(pdeq *qp, const void **dst);
+FIRM_API void **pdeq_copyr(pdeq *qp, const void **dst);
 
 /**
  * Add a pointer to the left side of a double ended pointer list.
@@ -138,7 +138,7 @@ void **pdeq_copyr(pdeq *qp, const void **dst);
  *
  * @return The list.
  */
-pdeq *pdeq_putl(pdeq *dq, const void *x);
+FIRM_API pdeq *pdeq_putl(pdeq *dq, const void *x);
 
 /**
  * Add a pointer to the right side of a double ended pointer list.
@@ -148,7 +148,7 @@ pdeq *pdeq_putl(pdeq *dq, const void *x);
  *
  * @return The list.
  */
-pdeq *pdeq_putr(pdeq *dq, const void *x);
+FIRM_API pdeq *pdeq_putr(pdeq *dq, const void *x);
 
 /**
  * Retrieve (and remove) a pointer from the left site of a double ended pointer
@@ -158,7 +158,7 @@ pdeq *pdeq_putr(pdeq *dq, const void *x);
  * @return The pointer element.
  * @remark This function will fail if the list is empty.
  */
-void *pdeq_getl(pdeq *dq);
+FIRM_API void *pdeq_getl(pdeq *dq);
 
 /**
  * Retrieve (and remove) a pointer from the right site of a double ended pointer
@@ -168,13 +168,13 @@ void *pdeq_getl(pdeq *dq);
  * @return The pointer element.
  * @remark This function will fail if the list is empty.
  */
-void *pdeq_getr(pdeq *dq);
+FIRM_API void *pdeq_getr(pdeq *dq);
 
 #ifdef NDEBUG
 #define PDEQ_VRFY(deq) ((void)0)
 #else
 #define PDEQ_VRFY(deq) _pdeq_vrfy ((deq))
-void _pdeq_vrfy(pdeq *dq);
+FIRM_API void _pdeq_vrfy(pdeq *dq);
 #endif
 
 /**

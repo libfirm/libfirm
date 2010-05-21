@@ -76,7 +76,7 @@
  *    - Replace (Sel-method(Alloc)) by SymConst-entity.
  *    - Replaces Sel-method by SymConst-entity if the method is never overwritten.
  */
-FIRM_DLL void cgana(int *len, ir_entity ***free_methods);
+FIRM_API void cgana(int *len, ir_entity ***free_methods);
 
 /** Free callee information.
  *
@@ -84,12 +84,12 @@ FIRM_DLL void cgana(int *len, ir_entity ***free_methods);
  *  in all call nodes to NULL.  Else it happens that the field contains
  *  pointers to other than firm arrays.
  */
-FIRM_DLL void free_callee_info(ir_graph *irg);
-FIRM_DLL void free_irp_callee_info(void);
+FIRM_API void free_callee_info(ir_graph *irg);
+FIRM_API void free_irp_callee_info(void);
 
 /* Optimize the address expressions passed to call nodes.
  * Performs only the optimizations done by cgana. */
-FIRM_DLL void opt_call_addrs(void);
+FIRM_API void opt_call_addrs(void);
 
 #include "end.h"
 

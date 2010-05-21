@@ -41,12 +41,12 @@
  *
  * Exports all types, all ir graphs, and the constant graph.
  */
-FIRM_DLL void ir_export(const char *filename);
+FIRM_API void ir_export(const char *filename);
 
 /**
  * same as ir_export but writes to a FILE*
  */
-FIRM_DLL void ir_export_file(FILE *output, const char *outputname);
+FIRM_API void ir_export_file(FILE *output, const char *outputname);
 
 /**
  * Write the given ir graph to a stream in a textual format
@@ -57,7 +57,7 @@ FIRM_DLL void ir_export_file(FILE *output, const char *outputname);
  *
  * Exports the type graph used by the given graph and the graph itself.
  */
-FIRM_DLL void ir_export_irg(ir_graph *irg, FILE *output,
+FIRM_API void ir_export_irg(ir_graph *irg, FILE *output,
                             const char *outputname);
 
 /**
@@ -67,12 +67,12 @@ FIRM_DLL void ir_export_irg(ir_graph *irg, FILE *output,
  *
  * Imports any type graphs and ir graphs contained in the file.
  */
-FIRM_DLL void ir_import(const char *filename);
+FIRM_API void ir_import(const char *filename);
 
 /**
  * same as ir_import but imports from a FILE*
  */
-FIRM_DLL void ir_import_file(FILE *input, const char *inputname);
+FIRM_API void ir_import_file(FILE *input, const char *inputname);
 
 #include "end.h"
 

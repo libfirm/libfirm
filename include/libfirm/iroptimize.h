@@ -43,7 +43,7 @@
  *      optimizations.  Call local_optimize_graph() before to remove
  *      Ids.
  */
-FIRM_DLL void optimize_cf(ir_graph *irg);
+FIRM_API void optimize_cf(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_cf().
@@ -52,14 +52,14 @@ FIRM_DLL void optimize_cf(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *optimize_cf_pass(const char *name);
+FIRM_API ir_graph_pass_t *optimize_cf_pass(const char *name);
 
 /**
  * Perform path-sensitive jump threading on the given graph.
  *
  * @param irg  the graph
  */
-FIRM_DLL void opt_jumpthreading(ir_graph* irg);
+FIRM_API void opt_jumpthreading(ir_graph* irg);
 
 /**
  * Creates an ir_graph pass for opt_jumpthreading().
@@ -68,7 +68,7 @@ FIRM_DLL void opt_jumpthreading(ir_graph* irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
 
 /**
  * Creates an ir_graph pass for opt_loopunroll().
@@ -77,7 +77,7 @@ FIRM_DLL ir_graph_pass_t *opt_jumpthreading_pass(const char *name);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_loopunroll_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_loopunroll_pass(const char *name);
 
 
 /**
@@ -86,7 +86,7 @@ FIRM_DLL ir_graph_pass_t *opt_loopunroll_pass(const char *name);
  *
  * @param irg  the graph
  */
-FIRM_DLL void opt_bool(ir_graph *irg);
+FIRM_API void opt_bool(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_bool().
@@ -95,7 +95,7 @@ FIRM_DLL void opt_bool(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_bool_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_bool_pass(const char *name);
 
 /**
  * Try to reduce the number of conv nodes in the given ir graph.
@@ -104,7 +104,7 @@ FIRM_DLL ir_graph_pass_t *opt_bool_pass(const char *name);
  *
  * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_DLL int conv_opt(ir_graph *irg);
+FIRM_API int conv_opt(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for conv_opt().
@@ -113,7 +113,7 @@ FIRM_DLL int conv_opt(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *conv_opt_pass(const char *name);
+FIRM_API ir_graph_pass_t *conv_opt_pass(const char *name);
 
 /**
  * Do the scalar replacement optimization.
@@ -122,7 +122,7 @@ FIRM_DLL ir_graph_pass_t *conv_opt_pass(const char *name);
  *
  * @param irg  the graph which should be optimized
  */
-FIRM_DLL void data_flow_scalar_replacement_opt(ir_graph *irg);
+FIRM_API void data_flow_scalar_replacement_opt(ir_graph *irg);
 
 /**
  * A callback that checks whether a entity is an allocation
@@ -137,7 +137,7 @@ typedef int (*check_alloc_entity_func)(ir_entity *ent);
  * @param callback  a callback function to check whether a
  *                  given entity is a allocation call
  */
-FIRM_DLL void escape_enalysis_irg(ir_graph *irg,
+FIRM_API void escape_enalysis_irg(ir_graph *irg,
                                   check_alloc_entity_func callback);
 
 /**
@@ -162,7 +162,7 @@ FIRM_DLL void escape_enalysis_irg(ir_graph *irg,
  *
  * This is most effective on Java where no other stack variables exists.
  */
-FIRM_DLL void escape_analysis(int run_scalar_replace,
+FIRM_API void escape_analysis(int run_scalar_replace,
                               check_alloc_entity_func callback);
 
 /**
@@ -200,7 +200,7 @@ FIRM_DLL void escape_analysis(int run_scalar_replace,
  *
  * @note This optimization destroys the link fields of nodes.
  */
-FIRM_DLL void optimize_funccalls(int force_run,
+FIRM_API void optimize_funccalls(int force_run,
                                  check_alloc_entity_func callback);
 
 /**
@@ -216,7 +216,7 @@ FIRM_DLL void optimize_funccalls(int force_run,
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *optimize_funccalls_pass(const char *name,
+FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name,
                                                  int force_run,
                                                  check_alloc_entity_func callback);
 
@@ -229,7 +229,7 @@ FIRM_DLL ir_prog_pass_t *optimize_funccalls_pass(const char *name,
  *
  * @param irg  the graph
  */
-FIRM_DLL void do_gvn_pre(ir_graph *irg);
+FIRM_API void do_gvn_pre(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for do_gvn_pre().
@@ -238,7 +238,7 @@ FIRM_DLL void do_gvn_pre(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *do_gvn_pre_pass(const char *name);
+FIRM_API ir_graph_pass_t *do_gvn_pre_pass(const char *name);
 
 /**
  * This function is called to evaluate, if a
@@ -274,7 +274,7 @@ struct ir_settings_if_conv_t {
  * Cannot handle blocks with Bad control predecessors, so call it after control
  * flow optimization.
  */
-FIRM_DLL void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
+FIRM_API void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
 
 /**
  * Creates an ir_graph pass for opt_if_conv().
@@ -284,7 +284,7 @@ FIRM_DLL void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_if_conv_pass(
+FIRM_API ir_graph_pass_t *opt_if_conv_pass(
 	const char *name, const ir_settings_if_conv_t *params);
 
 /**
@@ -292,7 +292,7 @@ FIRM_DLL ir_graph_pass_t *opt_if_conv_pass(
  * them and synchronising with Sync nodes
  * @param irg   the graph where memory operations should be parallelised
  */
-FIRM_DLL void opt_parallelize_mem(ir_graph *irg);
+FIRM_API void opt_parallelize_mem(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_sync().
@@ -301,7 +301,7 @@ FIRM_DLL void opt_parallelize_mem(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
 
 /*
  * Check if we can replace the load by a given const from
@@ -314,7 +314,7 @@ FIRM_DLL ir_graph_pass_t *opt_parallelize_mem_pass(const char *name);
  *         returns a copy of the constant (possibly Conv'ed) on the
  *         current_ir_graph
  */
-FIRM_DLL ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
+FIRM_API ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
 
 /**
  * Load/Store optimization.
@@ -343,7 +343,7 @@ FIRM_DLL ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c);
  *
  * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_DLL int optimize_load_store(ir_graph *irg);
+FIRM_API int optimize_load_store(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_load_store().
@@ -352,14 +352,14 @@ FIRM_DLL int optimize_load_store(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *optimize_load_store_pass(const char *name);
+FIRM_API ir_graph_pass_t *optimize_load_store_pass(const char *name);
 
 /**
  * New experimental alternative to optimize_load_store.
  * Based on a dataflow analysis, so load/stores are moved out of loops
  * where possible
  */
-FIRM_DLL int opt_ldst(ir_graph *irg);
+FIRM_API int opt_ldst(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_ldst().
@@ -368,7 +368,7 @@ FIRM_DLL int opt_ldst(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_ldst_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_ldst_pass(const char *name);
 
 /**
  * Optimize loops by peeling or unrolling them if beneficial.
@@ -379,7 +379,7 @@ FIRM_DLL ir_graph_pass_t *opt_ldst_pass(const char *name);
  * The layout state of the frame type will be set to layout_undefined
  * if entities were removed.
  */
-FIRM_DLL void loop_optimization(ir_graph *irg);
+FIRM_API void loop_optimization(ir_graph *irg);
 
 /**
  * Optimize the frame type of an irg by removing
@@ -391,7 +391,7 @@ FIRM_DLL void loop_optimization(ir_graph *irg);
  * The layout state of the frame type will be set to layout_undefined
  * if entities were removed.
  */
-FIRM_DLL void opt_frame_irg(ir_graph *irg);
+FIRM_API void opt_frame_irg(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_frame_irg().
@@ -400,7 +400,7 @@ FIRM_DLL void opt_frame_irg(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_frame_irg_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_frame_irg_pass(const char *name);
 
 /** Possible flags for the Operator Scalar Replacement. */
 typedef enum osr_flags {
@@ -475,7 +475,7 @@ typedef enum osr_flags {
  *
  * This algorithm destroys the link field of nodes.
  */
-FIRM_DLL void opt_osr(ir_graph *irg, unsigned flags);
+FIRM_API void opt_osr(ir_graph *irg, unsigned flags);
 
 /**
  * Creates an ir_graph pass for remove_phi_cycles().
@@ -485,7 +485,7 @@ FIRM_DLL void opt_osr(ir_graph *irg, unsigned flags);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags);
+FIRM_API ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags);
 
 /**
  * Removes useless Phi cycles, i.e cycles of Phi nodes with only one
@@ -497,7 +497,7 @@ FIRM_DLL ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags);
  *
  * This algorithm destroys the link field of nodes.
  */
-FIRM_DLL void remove_phi_cycles(ir_graph *irg);
+FIRM_API void remove_phi_cycles(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for remove_phi_cycles().
@@ -506,7 +506,7 @@ FIRM_DLL void remove_phi_cycles(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
+FIRM_API ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
 
 
 /** A default threshold. */
@@ -523,7 +523,7 @@ FIRM_DLL ir_graph_pass_t *remove_phi_cycles_pass(const char *name);
  * when executing a cloned method. If threshold is 0.0, every possible
  * call is cloned.
  */
-FIRM_DLL void proc_cloning(float threshold);
+FIRM_API void proc_cloning(float threshold);
 
 /**
  * Creates an ir_prog pass for proc_cloning().
@@ -533,7 +533,7 @@ FIRM_DLL void proc_cloning(float threshold);
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
+FIRM_API ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
 
 /**
  * Reassociation.
@@ -551,7 +551,7 @@ FIRM_DLL ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold);
  *
  * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_DLL int optimize_reassociation(ir_graph *irg);
+FIRM_API int optimize_reassociation(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for optimize_reassociation().
@@ -560,7 +560,7 @@ FIRM_DLL int optimize_reassociation(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *optimize_reassociation_pass(const char *name);
+FIRM_API ir_graph_pass_t *optimize_reassociation_pass(const char *name);
 
 /**
  * Normalize the Returns of a graph by creating a new End block
@@ -582,7 +582,7 @@ FIRM_DLL ir_graph_pass_t *optimize_reassociation_pass(const char *name);
  *   res = c;
  * return res;
  */
-FIRM_DLL void normalize_one_return(ir_graph *irg);
+FIRM_API void normalize_one_return(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for normalize_one_return().
@@ -591,7 +591,7 @@ FIRM_DLL void normalize_one_return(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *normalize_one_return_pass(const char *name);
+FIRM_API ir_graph_pass_t *normalize_one_return_pass(const char *name);
 
 /**
  * Normalize the Returns of a graph by moving
@@ -613,7 +613,7 @@ FIRM_DLL ir_graph_pass_t *normalize_one_return_pass(const char *name);
  * else
  *   return c;
  */
-FIRM_DLL void normalize_n_returns(ir_graph *irg);
+FIRM_API void normalize_n_returns(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for normalize_n_returns().
@@ -622,7 +622,7 @@ FIRM_DLL void normalize_n_returns(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *normalize_n_returns_pass(const char *name);
+FIRM_API ir_graph_pass_t *normalize_n_returns_pass(const char *name);
 
 /**
  * Do the scalar replacement optimization.
@@ -633,7 +633,7 @@ FIRM_DLL ir_graph_pass_t *normalize_n_returns_pass(const char *name);
  *
  * @return non-zero, if at least one entity was replaced
  */
-FIRM_DLL int scalar_replacement_opt(ir_graph *irg);
+FIRM_API int scalar_replacement_opt(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for scalar_replacement_opt().
@@ -642,10 +642,10 @@ FIRM_DLL int scalar_replacement_opt(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
+FIRM_API ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
 
 /** Performs strength reduction for the passed graph. */
-FIRM_DLL void reduce_strength(ir_graph *irg);
+FIRM_API void reduce_strength(ir_graph *irg);
 
 /**
  * Optimizes tail-recursion calls by converting them into loops.
@@ -663,7 +663,7 @@ FIRM_DLL void reduce_strength(ir_graph *irg);
  *
  * @return non-zero if the optimization could be applied, 0 else
  */
-FIRM_DLL int opt_tail_rec_irg(ir_graph *irg);
+FIRM_API int opt_tail_rec_irg(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_tail_rec_irg().
@@ -672,7 +672,7 @@ FIRM_DLL int opt_tail_rec_irg(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name);
+FIRM_API ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name);
 
 /**
  * Optimize tail-recursion calls for all IR-Graphs.
@@ -685,7 +685,7 @@ FIRM_DLL ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name);
  * because it expects the memory edges pointing to calls, which might be
  * removed by optimize_funccalls().
  */
-FIRM_DLL void opt_tail_recursion(void);
+FIRM_API void opt_tail_recursion(void);
 
 /**
  * Creates an ir_prog pass for opt_tail_recursion().
@@ -694,7 +694,7 @@ FIRM_DLL void opt_tail_recursion(void);
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *opt_tail_recursion_pass(const char *name);
+FIRM_API ir_prog_pass_t *opt_tail_recursion_pass(const char *name);
 
 /** This is the type for a method, that returns a pointer type to
  *  tp.  This is needed in the normalization. */
@@ -725,7 +725,7 @@ typedef ir_type *(*gen_pointer_type_to_func)(ir_type *tp);
  *    search to find an existing pointer type.  If it can not find a type,
  *    generates a pointer type with mode_P_mach and suffix "cc_ptr_tp".
  */
-FIRM_DLL void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct);
+FIRM_API void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct);
 
 /**  Insert Casts so that class type casts conform exactly with the type hierarchy
  *   in given graph.
@@ -734,7 +734,7 @@ FIRM_DLL void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct);
  *
  *  This transformation requires that type information is computed. @see irtypeinfo.h.
  */
-FIRM_DLL void normalize_irg_class_casts(ir_graph *irg,
+FIRM_API void normalize_irg_class_casts(ir_graph *irg,
                                         gen_pointer_type_to_func gppt_fct);
 
 /** Optimize casting between class types.
@@ -757,7 +757,7 @@ FIRM_DLL void normalize_irg_class_casts(ir_graph *irg,
  *  Typeinformation is valid after optimization.
  *  Invalidates trout information.
  */
-FIRM_DLL void optimize_class_casts(void);
+FIRM_API void optimize_class_casts(void);
 
 /**
  * CLiff Click's combo algorithm from
@@ -768,7 +768,7 @@ FIRM_DLL void optimize_class_casts(void);
  *
  * @param irg  the graph to run on
  */
-FIRM_DLL void combo(ir_graph *irg);
+FIRM_API void combo(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for combo.
@@ -777,7 +777,7 @@ FIRM_DLL void combo(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *combo_pass(const char *name);
+FIRM_API ir_graph_pass_t *combo_pass(const char *name);
 
 /**
  * Inlines all small methods at call sites where the called address comes
@@ -798,7 +798,7 @@ FIRM_DLL ir_graph_pass_t *combo_pass(const char *name);
  * function leaves a set of obscure Tuple nodes, e.g. a Proj-Tuple-Jmp
  * combination as control flow operation.
  */
-FIRM_DLL void inline_small_irgs(ir_graph *irg, int size);
+FIRM_API void inline_small_irgs(ir_graph *irg, int size);
 
 /**
  * Creates an ir_graph pass for inline_small_irgs().
@@ -808,7 +808,7 @@ FIRM_DLL void inline_small_irgs(ir_graph *irg, int size);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
+FIRM_API ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
 
 /**
  * Inlineing with a different heuristic than inline_small_irgs().
@@ -833,7 +833,7 @@ FIRM_DLL ir_graph_pass_t *inline_small_irgs_pass(const char *name, int size);
  * @param ignore_runtime  count a function only calling runtime functions as
  *                        leave
  */
-FIRM_DLL void inline_leave_functions(unsigned maxsize, unsigned leavesize,
+FIRM_API void inline_leave_functions(unsigned maxsize, unsigned leavesize,
                                      unsigned size, int ignore_runtime);
 
 /**
@@ -851,7 +851,7 @@ FIRM_DLL void inline_leave_functions(unsigned maxsize, unsigned leavesize,
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *inline_leave_functions_pass(const char *name,
+FIRM_API ir_prog_pass_t *inline_leave_functions_pass(const char *name,
 		unsigned maxsize, unsigned leavesize, unsigned size,
 		int ignore_runtime);
 
@@ -868,7 +868,7 @@ typedef void (*opt_ptr)(ir_graph *irg);
  * @param after_inline_opt    optimizations performed immediately after inlining
  *                            some calls
  */
-FIRM_DLL void inline_functions(unsigned maxsize, int inline_threshold,
+FIRM_API void inline_functions(unsigned maxsize, int inline_threshold,
                                opt_ptr after_inline_opt);
 
 /**
@@ -886,7 +886,7 @@ FIRM_DLL void inline_functions(unsigned maxsize, int inline_threshold,
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *inline_functions_pass(const char *name,
+FIRM_API ir_prog_pass_t *inline_functions_pass(const char *name,
 		unsigned maxsize, int inline_threshold, opt_ptr after_inline_opt);
 
 /**
@@ -896,7 +896,7 @@ FIRM_DLL ir_prog_pass_t *inline_functions_pass(const char *name,
  *
  * @return non-zero if the graph was transformed
  */
-FIRM_DLL int shape_blocks(ir_graph *irg);
+FIRM_API int shape_blocks(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for shape_blocks().
@@ -905,26 +905,26 @@ FIRM_DLL int shape_blocks(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *shape_blocks_pass(const char *name);
+FIRM_API ir_graph_pass_t *shape_blocks_pass(const char *name);
 
 /**
  * Perform loop inversion on a given graph.
  * Loop inversion transforms a head controlled loop (like while(...) {} and
  * for(...) {}) into a foot controlled loop (do {} while(...)).
  */
-FIRM_DLL void do_loop_inversion(ir_graph *irg);
+FIRM_API void do_loop_inversion(ir_graph *irg);
 
 /**
  * Perform loop unrolling on a given graph.
  * Loop unrolling multiplies the number loop completely by a number found
  * through a heuristic.
  */
-FIRM_DLL void do_loop_unrolling(ir_graph *irg);
+FIRM_API void do_loop_unrolling(ir_graph *irg);
 
 /**
  * Perform loop peeling on a given graph.
  */
-FIRM_DLL void do_loop_peeling(ir_graph *irg);
+FIRM_API void do_loop_peeling(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for loop inversion.
@@ -933,7 +933,7 @@ FIRM_DLL void do_loop_peeling(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *loop_inversion_pass(const char *name);
+FIRM_API ir_graph_pass_t *loop_inversion_pass(const char *name);
 
 /**
  * Creates an ir_graph pass for loop unrolling.
@@ -942,7 +942,7 @@ FIRM_DLL ir_graph_pass_t *loop_inversion_pass(const char *name);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *loop_unroll_pass(const char *name);
+FIRM_API ir_graph_pass_t *loop_unroll_pass(const char *name);
 
 /**
  * Creates an ir_graph pass for loop peeling.
@@ -951,11 +951,11 @@ FIRM_DLL ir_graph_pass_t *loop_unroll_pass(const char *name);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *loop_peeling_pass(const char *name);
+FIRM_API ir_graph_pass_t *loop_peeling_pass(const char *name);
 
 typedef ir_type *(*get_Alloc_func)(ir_node *n);
 /** Set a new get_Alloc_func and returns the old one. */
-FIRM_DLL get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
+FIRM_API get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
 
 /**
  * Creates an ir_graph pass for set_vrp_data()
@@ -964,7 +964,7 @@ FIRM_DLL get_Alloc_func firm_set_Alloc_func(get_Alloc_func newf);
  *
  * @return the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *set_vrp_pass(const char *name);
+FIRM_API ir_graph_pass_t *set_vrp_pass(const char *name);
 
 /**
  * Removes all entities which are unused.
@@ -974,10 +974,10 @@ FIRM_DLL ir_graph_pass_t *set_vrp_pass(const char *name);
  * This is usually conservative than gc_irgs, but does not respect properties
  * of object-oriented programs.
  */
-FIRM_DLL void garbage_collect_entities(void);
+FIRM_API void garbage_collect_entities(void);
 
 /** Pass for garbage_collect_entities */
-FIRM_DLL ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
+FIRM_API ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
 
 /** Performs dead node elimination by copying the ir graph to a new obstack.
  *
@@ -997,7 +997,7 @@ FIRM_DLL ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
  *
  * @param irg  The graph to be optimized.
  */
-FIRM_DLL void dead_node_elimination(ir_graph *irg);
+FIRM_API void dead_node_elimination(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for dead_node_elimination().
@@ -1006,7 +1006,7 @@ FIRM_DLL void dead_node_elimination(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *dead_node_elimination_pass(const char *name);
+FIRM_API ir_graph_pass_t *dead_node_elimination_pass(const char *name);
 
 /** Inlines a method at the given call site.
  *
@@ -1041,7 +1041,7 @@ FIRM_DLL ir_graph_pass_t *dead_node_elimination_pass(const char *name);
  *  @return zero if method could not be inlined (recursion for instance),
  *          non-zero if all went ok
  */
-FIRM_DLL int inline_method(ir_node *call, ir_graph *called_graph);
+FIRM_API int inline_method(ir_node *call, ir_graph *called_graph);
 
 /** Code Placement.
  *
@@ -1060,7 +1060,7 @@ FIRM_DLL int inline_method(ir_node *call, ir_graph *called_graph);
  * @todo A more powerful code placement would move operations past Phi nodes
  * out of loops.
  */
-FIRM_DLL void place_code(ir_graph *irg);
+FIRM_API void place_code(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for place_code().
@@ -1071,14 +1071,14 @@ FIRM_DLL void place_code(ir_graph *irg);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *place_code_pass(const char *name);
+FIRM_API ir_graph_pass_t *place_code_pass(const char *name);
 
 /**
  * Determine information about the values of nodes and perform simplications
  * using this information.  This optimization performs a data-flow analysis to
  * find the minimal fixpoint.
  */
-FIRM_DLL void fixpoint_vrp(ir_graph*);
+FIRM_API void fixpoint_vrp(ir_graph*);
 
 /**
  * Creates an ir_graph pass for fixpoint_vrp().
@@ -1091,7 +1091,7 @@ FIRM_DLL void fixpoint_vrp(ir_graph*);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
+FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
 
 #include "end.h"
 

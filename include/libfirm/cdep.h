@@ -38,20 +38,20 @@ struct ir_cdep {
 };
 
 /** Compute the control dependence graph for a graph. */
-FIRM_DLL void compute_cdep(ir_graph *irg);
+FIRM_API void compute_cdep(ir_graph *irg);
 
 /** Free the control dependence info. */
-FIRM_DLL void free_cdep(ir_graph *irg);
+FIRM_API void free_cdep(ir_graph *irg);
 
 /**
  * Return a list of all control dependences of a block.
  */
-FIRM_DLL ir_cdep *find_cdep(const ir_node *block);
+FIRM_API ir_cdep *find_cdep(const ir_node *block);
 
 /**
  * Replace the control dependence info of old by the info of nw.
  */
-FIRM_DLL void exchange_cdep(ir_node *old, const ir_node *nw);
+FIRM_API void exchange_cdep(ir_node *old, const ir_node *nw);
 
 /**
  * Check whether dependee is (directly) control dependent on candidate.
@@ -59,7 +59,7 @@ FIRM_DLL void exchange_cdep(ir_node *old, const ir_node *nw);
  * @param dependee   the (possible) dependent block
  * @param candidate  the (possible) block on which dependee is dependent
  */
-FIRM_DLL int is_cdep_on(const ir_node *dependee, const ir_node *candidate);
+FIRM_API int is_cdep_on(const ir_node *dependee, const ir_node *candidate);
 
 /**
  * Check whether dependee is (possible iterated) control dependent on candidate.
@@ -67,21 +67,21 @@ FIRM_DLL int is_cdep_on(const ir_node *dependee, const ir_node *candidate);
  * @param dependee   the (possible) dependent block
  * @param candidate  the (possible) block on which dependee is dependent
  */
-FIRM_DLL int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate);
+FIRM_API int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate);
 
 /**
  * If block is control dependent on exactly one node, return this node, else NULL.
  *
  * @param block  the block to check
  */
-FIRM_DLL ir_node *get_unique_cdep(const ir_node *block);
+FIRM_API ir_node *get_unique_cdep(const ir_node *block);
 
 /**
  * Check if the given block is control dependent of more than one node.
  *
  * @param block   the block to check
  */
-FIRM_DLL int has_multiple_cdep(const ir_node *block);
+FIRM_API int has_multiple_cdep(const ir_node *block);
 
 #include "end.h"
 

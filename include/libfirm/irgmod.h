@@ -31,7 +31,7 @@
 
 /** Exchanges two nodes by conserving edges leaving old (i.e.,
    pointers pointing to old).  Turns the old node into an Id. */
-FIRM_DLL void exchange(ir_node *old, ir_node *nw);
+FIRM_API void exchange(ir_node *old, ir_node *nw);
 
 /** Turns a node into a "useless" Tuple.
  *
@@ -44,7 +44,7 @@ FIRM_DLL void exchange(ir_node *old, ir_node *nw);
  *  @param node The node to be turned into a tuple.
  *  @param arity The number of values formed into a Tuple.
  */
-FIRM_DLL void turn_into_tuple(ir_node *node, int arity);
+FIRM_API void turn_into_tuple(ir_node *node, int arity);
 
 /** Walks over the passed IR graph and collects all Phi nodes as a
   * list in their corresponding block (using get_Block_phis() API).
@@ -54,7 +54,7 @@ FIRM_DLL void turn_into_tuple(ir_node *node, int arity);
   * All partBlocks are linked to its macroblock header.
   * All other link fields are cleared afterwards.
   */
-FIRM_DLL void collect_phiprojs(ir_graph *irg);
+FIRM_API void collect_phiprojs(ir_graph *irg);
 
 /** Parts a block into two.  This is useful to insert other blocks within a
  *  given block.
@@ -71,13 +71,13 @@ FIRM_DLL void collect_phiprojs(ir_graph *irg);
  *
  * @param node   The node were to break the block
  */
-FIRM_DLL void part_block(ir_node *node);
+FIRM_API void part_block(ir_node *node);
 
 /**
  * Kill a node by setting its predecessors to Bad and finally
  * exchange the node by Bad itself.
  */
-FIRM_DLL void kill_node(ir_node *node);
+FIRM_API void kill_node(ir_node *node);
 
 #include "end.h"
 

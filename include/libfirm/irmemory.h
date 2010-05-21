@@ -92,14 +92,14 @@ typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
  * @param irn  the node representing the base address
  * @param ent  the base entity of the base address iff any
  */
-FIRM_DLL ir_storage_class_class_t classify_pointer(const ir_graph *irg,
+FIRM_API ir_storage_class_class_t classify_pointer(const ir_graph *irg,
                                                    const ir_node *irn,
                                                    const ir_entity *ent);
 
 /**
  * Returns a human readable name for an alias relation.
  */
-FIRM_DLL const char *get_ir_alias_relation_name(ir_alias_relation rel);
+FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
 
 /**
  * Determine the alias relation between two addresses.
@@ -135,7 +135,7 @@ FIRM_DLL const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * If none of these rules apply, the points-to framework must be
  * interrogated to detect the alias relation.
  */
-FIRM_DLL ir_alias_relation get_alias_relation(
+FIRM_API ir_alias_relation get_alias_relation(
 	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2);
@@ -145,12 +145,12 @@ FIRM_DLL ir_alias_relation get_alias_relation(
  *
  * @param func  The callback.
  */
-FIRM_DLL void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func);
+FIRM_API void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func);
 
 /**
  * Initialize the relation cache.
  */
-FIRM_DLL void mem_disambig_init(void);
+FIRM_API void mem_disambig_init(void);
 
 /*
  * Determine the alias relation between two addresses and
@@ -164,7 +164,7 @@ FIRM_DLL void mem_disambig_init(void);
  *
  * @see get_alias_relation()
  */
-FIRM_DLL ir_alias_relation get_alias_relation_ex(
+FIRM_API ir_alias_relation get_alias_relation_ex(
 	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2);
@@ -172,11 +172,11 @@ FIRM_DLL ir_alias_relation get_alias_relation_ex(
 /**
  * Free the relation cache.
  */
-FIRM_DLL void mem_disambig_term(void);
+FIRM_API void mem_disambig_term(void);
 
-FIRM_DLL ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg);
+FIRM_API ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg);
 
-FIRM_DLL void set_irg_entity_usage_state(ir_graph *irg,
+FIRM_API void set_irg_entity_usage_state(ir_graph *irg,
                                          ir_entity_usage_computed_state state);
 
 /**
@@ -191,19 +191,19 @@ FIRM_DLL void set_irg_entity_usage_state(ir_graph *irg,
  * Even then the information is not cleaned from the variables, call
  * assure_irg_entity_usage_computed() again for recomputation.
  */
-FIRM_DLL void assure_irg_entity_usage_computed(ir_graph *irg);
+FIRM_API void assure_irg_entity_usage_computed(ir_graph *irg);
 
 /**
  * Returns the current address taken state of the globals.
  */
-FIRM_DLL ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void);
+FIRM_API ir_entity_usage_computed_state get_irp_globals_entity_usage_state(void);
 
 /**
  * Sets the current address taken state of the globals.
  *
  * @param state  the new state
  */
-FIRM_DLL void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state);
+FIRM_API void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state state);
 
 /**
  * Assure that the address taken flag is computed for the global and TLS entities (variables).
@@ -217,14 +217,14 @@ FIRM_DLL void set_irp_globals_entity_usage_state(ir_entity_usage_computed_state 
  * Even then the information is not cleaned from the variables, call
  * assure_irp_globals_entity_usage_computed() again for recomputation.
  */
-FIRM_DLL void assure_irp_globals_entity_usage_computed(void);
+FIRM_API void assure_irp_globals_entity_usage_computed(void);
 
 /**
  * Get the memory disambiguator options for a graph.
  *
  * @param irg  the graph
  */
-FIRM_DLL unsigned get_irg_memory_disambiguator_options(const ir_graph *irg);
+FIRM_API unsigned get_irg_memory_disambiguator_options(const ir_graph *irg);
 
 /**
  * Set the memory disambiguator options for a graph.
@@ -232,7 +232,7 @@ FIRM_DLL unsigned get_irg_memory_disambiguator_options(const ir_graph *irg);
  * @param irg      the graph
  * @param options  a set of options
  */
-FIRM_DLL void set_irg_memory_disambiguator_options(ir_graph *irg,
+FIRM_API void set_irg_memory_disambiguator_options(ir_graph *irg,
                                                    unsigned options);
 
 /**
@@ -240,14 +240,14 @@ FIRM_DLL void set_irg_memory_disambiguator_options(ir_graph *irg,
  *
  * @param options  a set of options
  */
-FIRM_DLL void set_irp_memory_disambiguator_options(unsigned options);
+FIRM_API void set_irp_memory_disambiguator_options(unsigned options);
 
 /**
  * Mark all private methods, i.e. those of which all call sites are known.
  * We use a very convervative estimation yet: If the address of a method is
  * never taken AND its visibility is visibility_local, then it's private.
  */
-FIRM_DLL void mark_private_methods(void);
+FIRM_API void mark_private_methods(void);
 
 /**
  * Creates an ir_prog pass for mark_private_methods().
@@ -256,7 +256,7 @@ FIRM_DLL void mark_private_methods(void);
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *mark_private_methods_pass(const char *name);
+FIRM_API ir_prog_pass_t *mark_private_methods_pass(const char *name);
 
 #include "end.h"
 

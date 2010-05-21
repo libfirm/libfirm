@@ -36,7 +36,7 @@
  * @return
  * 	NON-zero on success
  */
-FIRM_DLL int irn_vrfy(ir_node *checknode);
+FIRM_API int irn_vrfy(ir_node *checknode);
 
 /**
  * Tests the modes of checknode and its predecessors.
@@ -45,7 +45,7 @@ FIRM_DLL int irn_vrfy(ir_node *checknode);
  * @return
  * 	NON-zero on success
  */
-FIRM_DLL int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
+FIRM_API int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
 
 /**
  * Same as irn_vrfy_irg, but temporary sets verification mode to
@@ -53,7 +53,7 @@ FIRM_DLL int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
  * @return
  * 	NON-zero on success
  */
-FIRM_DLL int irn_vrfy_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
+FIRM_API int irn_vrfy_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
 
 /**
  * Flags for irg_verify().
@@ -73,7 +73,7 @@ typedef enum _irg_verify_flags_t {
  * @return
  * 	NON-zero on success.
  */
-FIRM_DLL int irg_verify(ir_graph *irg, unsigned flags);
+FIRM_API int irg_verify(ir_graph *irg, unsigned flags);
 
 /**
  * Compatibility macro. Deprecated soon.
@@ -88,7 +88,7 @@ FIRM_DLL int irg_verify(ir_graph *irg, unsigned flags);
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_DLL ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags);
+FIRM_API ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags);
 
 /**
  * Possible flags for irg_vrfy_bads().
@@ -108,14 +108,14 @@ enum verify_bad_flags_t {
  *               which Bads are allowed
  * @returns      a value combined of verify_bad_flags_t indicating the problems found.
  */
-FIRM_DLL int irg_vrfy_bads(ir_graph *irg, int flags);
+FIRM_API int irg_vrfy_bads(ir_graph *irg, int flags);
 
 /**
  *  Enable/disable verification of Load/Store nodes with
  *  its entities. If disabled, Store(SymConst(array)) will be allowed
  *  (C-frontend builds this :-)
  */
-FIRM_DLL void vrfy_enable_entity_tests(int enable);
+FIRM_API void vrfy_enable_entity_tests(int enable);
 
 #include "end.h"
 

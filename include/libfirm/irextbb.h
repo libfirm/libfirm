@@ -54,36 +54,36 @@ typedef void extbb_walk_func(ir_extblk *blk, void *env);
  * Checks whether a pointer points to a extended basic block.
  * Intern version for libFirm.
  */
-FIRM_DLL int is_ir_extbb(const void *thing);
+FIRM_API int is_ir_extbb(const void *thing);
 
 /**
  * Compute the extended basic blocks for a graph.
  */
-FIRM_DLL void compute_extbb(ir_graph *irg);
+FIRM_API void compute_extbb(ir_graph *irg);
 
 /**
  * Compute the extended basic blocks for a graph based on execution frequencies.
  */
-FIRM_DLL void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
+FIRM_API void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs);
 
 /**
  * free all extended block info.
  */
-FIRM_DLL void free_extbb(ir_graph *irg);
+FIRM_API void free_extbb(ir_graph *irg);
 
 /**
  * Return the extended block of a node.
  *
  * @param node  the node
  */
-FIRM_DLL ir_extblk *get_nodes_extbb(const ir_node *node);
+FIRM_API ir_extblk *get_nodes_extbb(const ir_node *node);
 
 /**
  * Gets the visited counter of an extended block.
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL ir_visited_t get_extbb_visited(const ir_extblk *blk);
+FIRM_API ir_visited_t get_extbb_visited(const ir_extblk *blk);
 
 /**
  * Sets the visited counter of an extended block.
@@ -91,7 +91,7 @@ FIRM_DLL ir_visited_t get_extbb_visited(const ir_extblk *blk);
  * @param blk      the extended basic block
  * @param visited  new value for the visited counter
  */
-FIRM_DLL void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
+FIRM_API void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
 
 /**
  * Mark an extended block as visited in a graph.
@@ -99,7 +99,7 @@ FIRM_DLL void set_extbb_visited(ir_extblk *blk, ir_visited_t visited);
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL void mark_extbb_visited(ir_extblk *blk);
+FIRM_API void mark_extbb_visited(ir_extblk *blk);
 
 /**
  * Returns non-zero if an extended was visited.
@@ -107,7 +107,7 @@ FIRM_DLL void mark_extbb_visited(ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL int extbb_visited(const ir_extblk *blk);
+FIRM_API int extbb_visited(const ir_extblk *blk);
 
 /**
  * Returns non-zero if an extended block was NOT visited.
@@ -115,14 +115,14 @@ FIRM_DLL int extbb_visited(const ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL int extbb_not_visited(const ir_extblk *blk);
+FIRM_API int extbb_not_visited(const ir_extblk *blk);
 
 /**
  * Returns the link field of an extended block.
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL void *get_extbb_link(const ir_extblk *blk);
+FIRM_API void *get_extbb_link(const ir_extblk *blk);
 
 /**
  * Sets the link field of an extended block.
@@ -130,14 +130,14 @@ FIRM_DLL void *get_extbb_link(const ir_extblk *blk);
  * @param blk  the extended basic block
  * @param link the new link value
  */
-FIRM_DLL void set_extbb_link(ir_extblk *blk, void *link);
+FIRM_API void set_extbb_link(ir_extblk *blk, void *link);
 
 /**
  * Return the number of basic blocks of an extended block.
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL int get_extbb_n_blocks(const ir_extblk *blk);
+FIRM_API int get_extbb_n_blocks(const ir_extblk *blk);
 
 /**
  * Return the i'th basic block of an extended block.
@@ -145,14 +145,14 @@ FIRM_DLL int get_extbb_n_blocks(const ir_extblk *blk);
  * @param blk  the extended basic block
  * @param pos  the position
  */
-FIRM_DLL ir_node *get_extbb_block(const ir_extblk *blk, int pos);
+FIRM_API ir_node *get_extbb_block(const ir_extblk *blk, int pos);
 
 /**
  * Return the leader basic block of an extended block.
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL ir_node *get_extbb_leader(const ir_extblk *blk);
+FIRM_API ir_node *get_extbb_leader(const ir_extblk *blk);
 
 /**
  * Return the node number of an extended block.
@@ -160,7 +160,7 @@ FIRM_DLL ir_node *get_extbb_leader(const ir_extblk *blk);
  *
  * @param blk  the extended basic block
  */
-FIRM_DLL long get_extbb_node_nr(const ir_extblk *blk);
+FIRM_API long get_extbb_node_nr(const ir_extblk *blk);
 
 /**
  * Walks only over Extended Basic Block nodes in the graph.
@@ -177,7 +177,7 @@ FIRM_DLL long get_extbb_node_nr(const ir_extblk *blk);
  * If a none block is passed, starts at the block this node belongs to.
  * If end is passed also visits kept alive blocks. Does not use the link field.
  */
-FIRM_DLL void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre,
+FIRM_API void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre,
                                 extbb_walk_func *post, void *env);
 
 /**
@@ -192,7 +192,7 @@ FIRM_DLL void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre,
  *               are visited
  * @param env  - environment, passed to pre and post
  */
-FIRM_DLL void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre,
+FIRM_API void irg_extblock_walk_graph(ir_graph *irg, extbb_walk_func *pre,
                                       extbb_walk_func *post, void *env);
 
 #include "end.h"

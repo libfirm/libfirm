@@ -42,7 +42,7 @@
  * If the pos'th parameter is NOT of a pointer type, ptr_access_none
  * is returned;
  */
-FIRM_DLL ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
+FIRM_API ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
 
 /**
  * Analyze how pointer arguments of a given
@@ -50,7 +50,7 @@ FIRM_DLL ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
  *
  * @param irg   The ir graph to analyze.
  */
-FIRM_DLL void analyze_irg_args(ir_graph *irg);
+FIRM_API void analyze_irg_args(ir_graph *irg);
 
 /**
  * Returns for a method the 'weight' that every parameter
@@ -59,14 +59,14 @@ FIRM_DLL void analyze_irg_args(ir_graph *irg);
  *
  * The values are calculation on demand only.
  */
-FIRM_DLL unsigned get_method_param_weight(ir_entity *ent, int pos);
+FIRM_API unsigned get_method_param_weight(ir_entity *ent, int pos);
 
 /**
  * Analyze the parameters of a given ir graph.
  *
  * @param irg The ir graph to analyze.
  */
-FIRM_DLL void analyze_irg_args_weight(ir_graph *irg);
+FIRM_API void analyze_irg_args_weight(ir_graph *irg);
 
 #include "end.h"
 

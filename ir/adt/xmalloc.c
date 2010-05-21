@@ -36,28 +36,28 @@
 
 static NORETURN xnomem(void)
 {
-  panic("out of memory");
+	panic("out of memory");
 }
 
 void *xmalloc(size_t size)
 {
-  void *res = malloc(size);
+	void *res = malloc(size);
 
-  if (!res) xnomem();
-  return res;
+	if (!res) xnomem();
+	return res;
 }
 
 void *xrealloc(void *ptr, size_t size)
 {
-  /* ANSI blesses realloc (0, x) but SunOS chokes on it */
-  void *res = ptr ? realloc (ptr, size) : malloc (size);
+	/* ANSI blesses realloc (0, x) but SunOS chokes on it */
+	void *res = ptr ? realloc (ptr, size) : malloc (size);
 
-  if (!res) xnomem();
-  return res;
+	if (!res) xnomem();
+	return res;
 }
 
 char *xstrdup(const char *str)
 {
-  size_t len = strlen (str) + 1;
-  return memcpy((xmalloc) (len), str, len);
+	size_t len = strlen (str) + 1;
+	return memcpy((xmalloc) (len), str, len);
 }

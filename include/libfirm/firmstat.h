@@ -172,7 +172,7 @@ enum firmstat_optimizations_t {
  * @param fname  base name of the statistic output file
  * @param phase  a phase name. Prefix will be firmstat-\<phase\>-
  */
-FIRM_DLL void stat_dump_snapshot(const char *fname, const char *phase);
+FIRM_API void stat_dump_snapshot(const char *fname, const char *phase);
 
 /**
  * Creates an ir_prog pass for stat_dump_snapshot().
@@ -183,7 +183,7 @@ FIRM_DLL void stat_dump_snapshot(const char *fname, const char *phase);
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_DLL ir_prog_pass_t *stat_dump_snapshot_pass(
+FIRM_API ir_prog_pass_t *stat_dump_snapshot_pass(
 	const char *name, const char *fname, const char *phase);
 
 /**
@@ -191,17 +191,17 @@ FIRM_DLL ir_prog_pass_t *stat_dump_snapshot_pass(
  *
  * @param enable_options  a bitmask containing the statistic options
  */
-FIRM_DLL void firm_init_stat(unsigned enable_options);
+FIRM_API void firm_init_stat(unsigned enable_options);
 
 /**
  * terminates the statistics module, frees all memory
  */
-FIRM_DLL void stat_term(void);
+FIRM_API void stat_term(void);
 
 /**
  * returns 1 if statistic module is active, 0 otherwise
  */
-FIRM_DLL int stat_is_active(void);
+FIRM_API int stat_is_active(void);
 
 #include "end.h"
 
