@@ -239,12 +239,13 @@ ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 
 void free_entity(ir_entity *ent)
 {
-	remove_compound_member(ent->owner, ent);
+	if (! is_Array_type(ent->owner))
+		remove_compound_member(ent->owner, ent);
 
 	assert(ent && ent->kind == k_entity);
 	free_entity_attrs(ent);
 	ent->kind = k_BAD;
-	free(ent);
+	xfree(ent);
 }
 
 /* Outputs a unique number for this node */
