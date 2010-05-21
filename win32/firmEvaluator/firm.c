@@ -236,6 +236,20 @@ static HRESULT format_entity(DEBUGHELPER *pHelper, int nBase, const void *addr, 
 }  /* format_entity */
 
 /**
+ * format an ir_mode
+ */
+static HRESULT format_mode(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t max)
+{
+  ir_mode mode;
+
+  if (copy_from_debuggee(addr, pHelper, &mode, sizeof(mode)) != S_OK)
+    return E_FAIL;
+  if (format_ident(pHelper, mode.name, pResult, max) != S_OK)
+    return E_FAIL;
+  return S_OK;
+}  /* format_mode */
+
+/**
  * format a type
  */
 static HRESULT format_type(DEBUGHELPER *pHelper, int nBase, const void *addr, char *pResult, size_t max, int top)
@@ -345,20 +359,6 @@ HRESULT format_op(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t 
     return E_FAIL;
   return S_OK;
 }  /* format_op */
-
-/**
- * format an ir_mode
- */
-static HRESULT format_mode(DEBUGHELPER *pHelper, const void *addr, char *pResult, size_t max)
-{
-  ir_mode mode;
-
-  if (copy_from_debuggee(addr, pHelper, &mode, sizeof(mode)) != S_OK)
-    return E_FAIL;
-  if (format_ident(pHelper, mode.name, pResult, max) != S_OK)
-    return E_FAIL;
-  return S_OK;
-}  /* format_mode */
 
 /** get a temporary string */
 #define get_string(str)                                         \
@@ -507,7 +507,7 @@ static HRESULT format_node(DEBUGHELPER *pHelper, int nBase, const void *addr, ch
   /* show show node attributes */
   switch (op.code) {
   case iro_Const:
-    if (format_tarval(pHelper, nBase, n.attr.con.tv, name, sizeof(name)) != S_OK) {
+    if (format_tarval(pHelper, nBase, n.attr.con.tarval, name, sizeof(name)) != S_OK) {
       _tcsncat(pResult, "<???>", max);
     }
     else {
@@ -1053,14 +1053,14 @@ HRESULT format_pdeq(DEBUGHELPER *pHelper, int nBase, const void *address, char *
 /** show the first 2 units */
 static HRESULT fill_bits(DEBUGHELPER *pHelper, bitset_t *bs, char *pResult)
 {
-  bitset_pos_t i, units = bs->units;
+  unsigned i, units = bs->size;
   int l = 0, o = 0, breaked = 0;
   unsigned j;
 
   for (i = 0; i < units; ++i) {
-    bitset_unit_t data;
+    unsigned data;
 
-    if (copy_from_debuggee((void *)(BS_DATA(bs)[i]), pHelper, &data, sizeof(data)) != S_OK)
+    if (copy_from_debuggee((void *)(&bs->data[i]), pHelper, &data, sizeof(data)) != S_OK)
       return E_FAIL;
 
     for (j = 0; j < 32; ++j) {
@@ -1091,7 +1091,7 @@ HRESULT format_bitset(DEBUGHELPER *pHelper, int nBase, const void *address, char
 {
   bitset_t bs;
   char name[256];
-  bitset_pos_t l;
+  unsigned l;
 
   if (copy_from_debuggee(address, pHelper, &bs, sizeof(bs)) != S_OK)
     return E_FAIL;
