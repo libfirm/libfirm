@@ -924,7 +924,7 @@ static unsigned find_condition_chain(ir_node *block)
 	unsigned mark = 0;
 	unsigned has_be = 0;
 	unsigned jmp_only;
-	unsigned nodes_n;
+	unsigned nodes_n = 0;
 
 	mark_irn_visited(block);
 
