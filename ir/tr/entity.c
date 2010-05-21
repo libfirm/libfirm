@@ -60,42 +60,8 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
-/**
- * Add an entity to it's already set owner type.
- */
-static inline void insert_entity_in_owner(ir_entity *ent)
-{
-	ir_type *owner = ent->owner;
-	switch (get_type_tpop_code(owner)) {
-	case tpo_class:
-		add_class_member(owner, ent);
-		break;
-	case tpo_struct:
-		add_struct_member(owner, ent);
-		break;
-	case tpo_union:
-		add_union_member(owner, ent);
-		break;
-	case tpo_array:
-		set_array_element_entity(owner, ent);
-		break;
-	default:
-		panic("Unsupported type kind");
-	}
-}  /* insert_entity_in_owner */
-
-/**
- * Creates a new entity. This entity is NOT inserted in the owner type.
- *
- * @param db     debug info for this entity
- * @param owner  the owner type of the new entity
- * @param name   the name of the new entity
- * @param type   the type of the new entity
- *
- * @return the new created entity
- */
-static inline ir_entity *new_rd_entity(dbg_info *db, ir_type *owner,
-                                       ident *name, ir_type *type)
+ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
+                        dbg_info *db)
 {
 	ir_entity *res;
 	ir_graph *rem;
@@ -142,33 +108,26 @@ static inline ir_entity *new_rd_entity(dbg_info *db, ir_type *owner,
 		res->attr.code_attr.label = (ir_label_t) -1;
 	}
 
+	/* Remember entity in it's owner. */
+	if (owner != NULL)
+		add_compound_member(owner, res);
+
 #ifdef DEBUG_libfirm
 	res->nr = get_irp_new_node_nr();
-#endif /* DEBUG_libfirm */
+#endif
 
 	res->visit = 0;
 	set_entity_dbg_info(res, db);
 
-	return res;
-}  /* new_rd_entity */
-
-ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type, dbg_info *db)
-{
-	ir_entity *res;
-
-	assert(is_compound_type(owner));
-	res = new_rd_entity(db, owner, name, type);
-	/* Remember entity in it's owner. */
-	insert_entity_in_owner(res);
-
 	hook_new_entity(res);
+
 	return res;
-}  /* new_d_entity */
+}
 
 ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 {
 	return new_d_entity(owner, name, type, NULL);
-}  /* new_entity */
+}
 
 /**
  * Free entity attributes.
@@ -177,7 +136,6 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
  */
 static void free_entity_attrs(ir_entity *ent)
 {
-	int i;
 	if (ent->overwrites != NULL) {
 		DEL_ARR_F(ent->overwrites);
 		ent->overwrites = NULL;
@@ -190,20 +148,11 @@ static void free_entity_attrs(ir_entity *ent)
 	if (ent->initializer != NULL) {
 		/* TODO: free initializers */
 	} else if (entity_has_compound_ent_values(ent)) {
-		if (ent->attr.cmpd_attr.val_paths) {
-			for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i)
-				if (ent->attr.cmpd_attr.val_paths[i]) {
-					/* free_compound_graph_path(ent->attr.cmpd_attr.val_paths[i]) ;  * @@@ warum nich? */
-					/* Geht nich: wird mehrfach verwendet!!! ==> mehrfach frei gegeben. */
-					/* DEL_ARR_F(ent->attr.cmpd_attr.val_paths); */
-				}
-				ent->attr.cmpd_attr.val_paths = NULL;
-		}
+		/* can't free compound graph path as it might be used
+		 * multiple times */
+		ent->attr.cmpd_attr.val_paths = NULL;
 	}
 	if (is_compound_entity(ent)) {
-		if (ent->attr.cmpd_attr.values) {
-			/*DEL_ARR_F(ent->attr.cmpd_attr.values)*/;
-		}
 		ent->attr.cmpd_attr.values = NULL;
 	} else if (is_method_entity(ent)) {
 		if (ent->attr.mtd_attr.param_access) {
@@ -215,7 +164,7 @@ static void free_entity_attrs(ir_entity *ent)
 			ent->attr.mtd_attr.param_weight = NULL;
 		}
 	}
-}  /* free_entity_attrs */
+}
 
 /**
  * Creates a deep copy of an entity.
@@ -249,6 +198,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 #endif
 	return newe;
 }
+
 /*
  * Copies the entity if the new_owner is different from the
  * owner of the old entity,  else returns the old entity.
@@ -266,32 +216,36 @@ ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 	/* create a deep copy so we are safe of aliasing and double-freeing. */
 	newe        = deep_entity_copy(old);
 	newe->owner = new_owner;
+	add_compound_member(new_owner, newe);
 
-	insert_entity_in_owner(newe);
 	return newe;
-}  /* copy_entity_own */
+}
 
 ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 {
 	ir_entity *newe;
 	assert(old && old->kind == k_entity);
 
-	if (old->name == new_name) return old;
+	if (old->name == new_name)
+		return old;
+
 	newe       = deep_entity_copy(old);
 	newe->name = new_name;
 	newe->ld_name = NULL;
-	insert_entity_in_owner(newe);
+	add_compound_member(old->owner, newe);
 
 	return newe;
-}  /* copy_entity_name */
+}
 
 void free_entity(ir_entity *ent)
 {
+	remove_compound_member(ent->owner, ent);
+
 	assert(ent && ent->kind == k_entity);
 	free_entity_attrs(ent);
 	ent->kind = k_BAD;
 	free(ent);
-}  /* free_entity */
+}
 
 /* Outputs a unique number for this node */
 long get_entity_nr(const ir_entity *ent)
@@ -302,7 +256,7 @@ long get_entity_nr(const ir_entity *ent)
 #else
 	return (long)PTR_TO_INT(ent);
 #endif
-}  /* get_entity_nr */
+}
 
 const char *(get_entity_name)(const ir_entity *ent)
 {
@@ -328,6 +282,9 @@ void set_entity_owner(ir_entity *ent, ir_type *owner)
 {
 	assert(is_entity(ent));
 	assert(is_compound_type(owner));
+
+	remove_compound_member(ent->owner, ent);
+	add_compound_member(owner, ent);
 	ent->owner = owner;
 }
 
@@ -376,7 +333,7 @@ const char *get_volatility_name(ir_volatility var)
     default: return "BAD VALUE";
 	}
 #undef X
-}  /* get_volatility_name */
+}
 
 ir_align (get_entity_aligned)(const ir_entity *ent)
 {
@@ -408,7 +365,7 @@ const char *get_align_name(ir_align a)
 	default: return "BAD VALUE";
 	}
 #undef X
-}  /* get_align_name */
+}
 
 void set_entity_label(ir_entity *ent, ir_label_t label)
 {
@@ -463,13 +420,13 @@ void remove_entity_linkage(ir_entity *entity, ir_linkage linkage)
 int (is_entity_compiler_generated)(const ir_entity *ent)
 {
 	return _is_entity_compiler_generated(ent);
-}  /* is_entity_compiler_generated */
+}
 
 /* Sets/resets the compiler generated flag */
 void (set_entity_compiler_generated)(ir_entity *ent, int flag)
 {
 	_set_entity_compiler_generated(ent, flag);
-}  /* set_entity_compiler_generated */
+}
 
 ir_entity_usage (get_entity_usage)(const ir_entity *ent)
 {
@@ -547,7 +504,7 @@ int is_irn_const_expression(ir_node *n)
 		break;
 	}
 	return 0;
-}  /* is_irn_const_expression */
+}
 
 /*
  * Copies a firm subgraph that complies to the restrictions for
@@ -598,7 +555,7 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n)
 		panic("opcode invalid or not implemented");
 	}
 	return nn;
-}  /* copy_const_value */
+}
 
 /** Return the name of the initializer kind. */
 const char *get_initializer_kind_name(ir_initializer_kind_t ini)
@@ -712,7 +669,7 @@ static void check_entity_initializer(ir_entity *entity)
 	ir_type          *entity_tp   = get_entity_type(entity);
 	switch (initializer->kind) {
 	case IR_INITIALIZER_COMPOUND:
-		assert(is_compound_type(entity_tp));
+		assert(is_compound_type(entity_tp) || is_Array_type(entity_tp));
 		break;
 	case IR_INITIALIZER_CONST:
 		/* methods are initialized by a SymConst */
@@ -1002,8 +959,8 @@ void set_entity_additional_property(ir_entity *ent, mtp_additional_property flag
 		if (mask & mtp_property_inherited)
 			mask = get_method_additional_properties(get_entity_type(ent));
 
-			/* do not allow to set the mtp_property_inherited flag or
-		* the automatic inheritance of flags will not work */
+		/* do not allow to set the mtp_property_inherited flag or
+		 * the automatic inheritance of flags will not work */
 		ent->attr.mtd_attr.irg_add_properties = mask | (flag & ~mtp_property_inherited);
 	}
 }
@@ -1045,7 +1002,8 @@ void firm_init_entity(void)
 	assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
 	assert(!unknown_entity && "Call firm_init_entity() only once!");
 
-	unknown_entity = new_rd_entity(NULL, firm_unknown_type, new_id_from_str(UNKNOWN_ENTITY_NAME), firm_unknown_type);
+	unknown_entity = new_d_entity(NULL, new_id_from_str(UNKNOWN_ENTITY_NAME),
+	                              firm_unknown_type, NULL);
 	set_entity_visibility(unknown_entity, ir_visibility_external);
 
 	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));

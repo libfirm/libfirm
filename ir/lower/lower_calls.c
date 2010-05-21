@@ -819,7 +819,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 			irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
 
 			for (i = ARR_LEN(cr_opt) - 1; i >= 0; --i) {
-				remove_class_member(ft, cr_opt[i].ent);
+				free_entity(cr_opt[i].ent);
 			}
 		}
 	} /* if (n_ret_com) */

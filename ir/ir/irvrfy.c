@@ -1903,7 +1903,7 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg)
 	}
 
 	ASSERT_AND_RET(
-		is_compound_type(t),
+		is_compound_type(t) || is_Array_type(t),
 		"CopyB node should copy compound types only", 0 );
 
 	/* NoMem nodes are only allowed as memory input if the CopyB is NOT pinned.

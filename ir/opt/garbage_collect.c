@@ -144,8 +144,7 @@ static void garbage_collect_in_segment(ir_type *segment)
 
 		DB((dbg, LEVEL_1, "  removing entity %+F\n", entity));
 
-		/* TODO: this is O(n^2) improve our interfaces! */
-		remove_class_member(get_entity_owner(entity), entity);
+		free_entity(entity);
 	}
 }
 

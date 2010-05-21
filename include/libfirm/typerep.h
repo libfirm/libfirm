@@ -1374,9 +1374,6 @@ FIRM_DLL ident *get_class_ident(const ir_type *clss);
 /** return identifier of the class type */
 FIRM_DLL const char *get_class_name(const ir_type *clss);
 
-/** Adds the entity as member of the class.  */
-FIRM_DLL void add_class_member(ir_type *clss, ir_entity *member);
-
 /** Returns the number of members of this class. */
 FIRM_DLL int get_class_n_members(const ir_type *clss);
 
@@ -1400,12 +1397,6 @@ FIRM_DLL void set_class_member(ir_type *clss, ir_entity *member, int pos);
  *  members is an array of entities, num the size of this array.  Sets all
  *  owners of the members passed to clss. */
 FIRM_DLL void set_class_members(ir_type *clss, ir_entity *members[], int arity);
-
-/** Finds member in the list of members and removes it.
- *
- *  Shrinks the member list, so iterate from the end!!!
- *  Does not deallocate the entity.  */
-FIRM_DLL void remove_class_member(ir_type *clss, ir_entity *member);
 
 
 /** Adds subtype as subtype to clss.
@@ -1545,9 +1536,6 @@ FIRM_DLL ident *get_struct_ident(const ir_type *strct);
 /** return struct identifier as c-string*/
 FIRM_DLL const char *get_struct_name(const ir_type *strct);
 
-/** Adds the entity as member of the struct.  */
-FIRM_DLL void add_struct_member(ir_type *strct, ir_entity *member);
-
 /** Returns the number of members of this struct. */
 FIRM_DLL int get_struct_n_members(const ir_type *strct);
 
@@ -1560,9 +1548,6 @@ FIRM_DLL int get_struct_member_index(const ir_type *strct, ir_entity *member);
 /** Overwrites the member at position pos, 0 <= pos < n_member with
    the passed entity. */
 FIRM_DLL void set_struct_member(ir_type *strct, int pos, ir_entity *member);
-
-/** Finds member in the list of members and removes it. */
-FIRM_DLL void remove_struct_member(ir_type *strct, ir_entity *member);
 
 /** Returns true if a type is a struct type. */
 FIRM_DLL int is_Struct_type(const ir_type *strct);
@@ -1832,9 +1817,6 @@ FIRM_DLL const char *get_union_name(const ir_type *uni);
 /** Returns the number of unioned types of this union */
 FIRM_DLL int get_union_n_members(const ir_type *uni);
 
-/** Adds a new entity to a union type */
-FIRM_DLL void add_union_member(ir_type *uni, ir_entity *member);
-
 /** Returns the entity at position pos of a union */
 FIRM_DLL ir_entity *get_union_member(const ir_type *uni, int pos);
 
@@ -1843,9 +1825,6 @@ FIRM_DLL int get_union_member_index(const ir_type *uni, ir_entity *member);
 
 /** Overwrites a entity at position pos in a union type. */
 FIRM_DLL void set_union_member(ir_type *uni, int pos, ir_entity *member);
-
-/** Finds member in the list of members and removes it. */
-FIRM_DLL void remove_union_member(ir_type *uni, ir_entity *member);
 
 /** Returns true if a type is a union type. */
 FIRM_DLL int is_Union_type(const ir_type *uni);

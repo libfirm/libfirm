@@ -75,7 +75,6 @@ typedef struct _path_t {
 
 typedef struct _scalars_t {
 	ir_entity *ent;              /**< A entity for scalar replacement. */
-	ir_type *ent_owner;          /**< The owner of this entity. */
 } scalars_t;
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -730,7 +729,6 @@ int scalar_replacement_opt(ir_graph *irg)
 				ent_type = get_entity_type(ent);
 
 				key.ent       = ent;
-				key.ent_owner = get_entity_owner(ent);
 				set_insert(set_ent, &key, sizeof(key), HASH_PTR(key.ent));
 
 #ifdef DEBUG_libfirm
@@ -756,7 +754,7 @@ int scalar_replacement_opt(ir_graph *irg)
 			do_scalar_replacements(sels, nvals, modes);
 
 			foreach_set(set_ent, value) {
-				remove_class_member(value->ent_owner, value->ent);
+				free_entity(value->ent);
 			}
 
 			/*

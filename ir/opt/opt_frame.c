@@ -102,7 +102,7 @@ void opt_frame_irg(ir_graph *irg)
 		/* delete list members */
 		for (ent = list; ent; ent = list) {
 			list = get_entity_link(ent);
-			remove_class_member(frame_tp, ent);
+			free_entity(ent);
 		}
 		/* we changed the frame type, it's layout should be redefined */
 		set_type_state(frame_tp, layout_undefined);

@@ -1656,9 +1656,10 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 		for (entry = new_list; entry != NULL; entry = entry->next) {
 			ir_entity *ent = entry->ent;
 
-			/* If the entity is still on the argument type, move it to the frame type.
-			   This happens if the value_param type was build due to compound
-			   params. */
+			/* If the entity is still on the argument type, move it to the
+			 * frame type.
+			 * This happens if the value_param type was build due to compound
+			 * params. */
 			if (get_entity_owner(ent) != frame_tp) {
 				ir_type  *tp   = get_entity_type(ent);
 				unsigned align = get_type_alignment_bytes(tp);
@@ -1666,7 +1667,6 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *val
 				offset += align - 1;
 				offset &= ~(align - 1);
 				set_entity_owner(ent, frame_tp);
-				add_class_member(frame_tp, ent);
 				/* must be automatic to set a fixed layout */
 				set_entity_offset(ent, offset);
 				offset += get_type_size_bytes(tp);

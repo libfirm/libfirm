@@ -776,7 +776,7 @@ const char *get_class_name(const ir_type *clss)
 	return get_id_str(get_class_ident(clss));
 }
 
-void add_class_member(ir_type *clss, ir_entity *member)
+static void add_class_member(ir_type *clss, ir_entity *member)
 {
 	assert(clss && (clss->type_op == type_class));
 	assert(clss != get_entity_type(member) && "recursive type");
@@ -834,7 +834,7 @@ void set_class_members(ir_type *clss, ir_entity **members, int arity)
 	}
 }
 
-void remove_class_member(ir_type *clss, ir_entity *member)
+static void remove_class_member(ir_type *clss, ir_entity *member)
 {
 	int i;
 	assert(clss && (clss->type_op == type_class));
@@ -1101,7 +1101,7 @@ int get_struct_n_members(const ir_type *strct)
 	return ARR_LEN(strct->attr.sa.members);
 }
 
-void add_struct_member(ir_type *strct, ir_entity *member)
+static void add_struct_member(ir_type *strct, ir_entity *member)
 {
 	assert(strct && (strct->type_op == type_struct));
 	assert(get_type_tpop(get_entity_type(member)) != type_method);
@@ -1134,7 +1134,7 @@ void set_struct_member(ir_type *strct, int pos, ir_entity *member)
 	strct->attr.sa.members[pos] = member;
 }
 
-void remove_struct_member(ir_type *strct, ir_entity *member)
+static void remove_struct_member(ir_type *strct, ir_entity *member)
 {
 	int i;
 	assert(strct && (strct->type_op == type_struct));
@@ -1566,7 +1566,7 @@ int get_union_n_members(const ir_type *uni)
 	return ARR_LEN(uni->attr.ua.members);
 }
 
-void add_union_member(ir_type *uni, ir_entity *member)
+static void add_union_member(ir_type *uni, ir_entity *member)
 {
 	assert(uni && (uni->type_op == type_union));
 	assert(uni != get_entity_type(member) && "recursive type");
@@ -1598,7 +1598,7 @@ void set_union_member(ir_type *uni, int pos, ir_entity *member)
 	uni->attr.ua.members[pos] = member;
 }
 
-void remove_union_member(ir_type *uni, ir_entity *member)
+static void remove_union_member(ir_type *uni, ir_entity *member)
 {
 	int i;
 	assert(uni && (uni->type_op == type_union));
@@ -1650,7 +1650,10 @@ ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
 	current_ir_graph = rem;
 
 	res->attr.aa.element_type = element_type;
-	new_entity(res, new_id_from_chars("elem_ent", 8), element_type);
+	res->attr.aa.element_ent
+		= new_entity(NULL, new_id_from_chars("elem_ent", 8), element_type);
+	res->attr.aa.element_ent->owner = res;
+
 	hook_new_type(res);
 	return res;
 }
@@ -2141,6 +2144,30 @@ const char *get_compound_name(const ir_type *tp)
 		return NULL;
 	return get_id_str(get_compound_ident(tp));
 }
+
+void remove_compound_member(ir_type *compound, ir_entity *entity)
+{
+	switch (get_type_tpop_code(compound)) {
+	case tpo_class:  remove_class_member(compound, entity);  break;
+	case tpo_struct: remove_struct_member(compound, entity); break;
+	case tpo_union:  remove_union_member(compound, entity);  break;
+	default:
+		panic("argument for remove_compound_member not a compound type");
+	}
+}
+
+void add_compound_member(ir_type *compound, ir_entity *entity)
+{
+	switch (get_type_tpop_code(compound)) {
+	case tpo_class:  add_class_member(compound, entity);  break;
+	case tpo_struct: add_struct_member(compound, entity); break;
+	case tpo_union:  add_union_member(compound, entity);  break;
+	default:
+		panic("argument for add_compound_member not a compound type");
+	}
+}
+
+
 
 int is_code_type(const ir_type *tp)
 {

@@ -130,7 +130,7 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr)
 		DB((dbg, LEVEL_1, "  freeing method %+F\n",	ent));
 		remove_irp_irg(irg);
 
-		remove_class_member(get_entity_owner(ent), ent);
+		free_entity(ent);
 	}
 }
 

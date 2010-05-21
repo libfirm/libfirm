@@ -278,6 +278,9 @@ void set_union_size(ir_type *tp, unsigned bytes);
 void set_array_size(ir_type *tp, unsigned bytes);
 void set_default_size(ir_type *tp, unsigned bytes);
 
+void add_compound_member(ir_type *compound, ir_entity *entity);
+void remove_compound_member(ir_type *compound, ir_entity *entity);
+
 /**
  * Initialize the type module.
  *
