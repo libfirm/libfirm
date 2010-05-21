@@ -142,14 +142,6 @@ static inline ir_entity *new_rd_entity(dbg_info *db, ir_type *owner,
 		res->attr.code_attr.label = (ir_label_t) -1;
 	}
 
-	if (is_Class_type(owner)) {
-		res->overwrites    = NEW_ARR_F(ir_entity *, 0);
-		res->overwrittenby = NEW_ARR_F(ir_entity *, 0);
-	} else {
-		res->overwrites    = NULL;
-		res->overwrittenby = NULL;
-	}
-
 #ifdef DEBUG_libfirm
 	res->nr = get_irp_new_node_nr();
 #endif /* DEBUG_libfirm */
@@ -186,13 +178,15 @@ ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 static void free_entity_attrs(ir_entity *ent)
 {
 	int i;
-	if (get_type_tpop(get_entity_owner(ent)) == type_class) {
-		DEL_ARR_F(ent->overwrites);    ent->overwrites = NULL;
-		DEL_ARR_F(ent->overwrittenby); ent->overwrittenby = NULL;
-	} else {
-		assert(ent->overwrites == NULL);
-		assert(ent->overwrittenby == NULL);
+	if (ent->overwrites != NULL) {
+		DEL_ARR_F(ent->overwrites);
+		ent->overwrites = NULL;
 	}
+	if (ent->overwrittenby != NULL) {
+		DEL_ARR_F(ent->overwrittenby);
+		ent->overwrittenby = NULL;
+	}
+
 	if (ent->initializer != NULL) {
 		/* TODO: free initializers */
 	} else if (entity_has_compound_ent_values(ent)) {
@@ -247,6 +241,8 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 		newe->attr.mtd_attr.param_access = NULL;
 		newe->attr.mtd_attr.param_weight = NULL;
 	}
+	newe->overwrites    = NULL;
+	newe->overwrittenby = NULL;
 
 #ifdef DEBUG_libfirm
 	newe->nr = get_irp_new_node_nr();
@@ -268,13 +264,8 @@ ir_entity *copy_entity_own(ir_entity *old, ir_type *new_owner)
 		return old;
 
 	/* create a deep copy so we are safe of aliasing and double-freeing. */
-	newe = deep_entity_copy(old);
+	newe        = deep_entity_copy(old);
 	newe->owner = new_owner;
-
-	if (is_Class_type(new_owner)) {
-		newe->overwrites    = NEW_ARR_F(ir_entity *, 0);
-		newe->overwrittenby = NEW_ARR_F(ir_entity *, 0);
-	}
 
 	insert_entity_in_owner(newe);
 	return newe;
@@ -286,14 +277,9 @@ ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 	assert(old && old->kind == k_entity);
 
 	if (old->name == new_name) return old;
-	newe = deep_entity_copy(old);
+	newe       = deep_entity_copy(old);
 	newe->name = new_name;
 	newe->ld_name = NULL;
-
-	if (is_Class_type(newe->owner)) {
-		newe->overwrites    = DUP_ARR_F(ir_entity *, old->overwrites);
-		newe->overwrittenby = DUP_ARR_F(ir_entity *, old->overwrittenby);
-	}
 	insert_entity_in_owner(newe);
 
 	return newe;
@@ -779,27 +765,26 @@ void (set_entity_offset_bits_remainder)(ir_entity *ent, unsigned char offset)
 
 void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 {
-#ifndef NDEBUG
-	ir_type *owner     = get_entity_owner(ent);
-	ir_type *ovw_ovner = get_entity_owner(overwritten);
-	assert(is_Class_type(owner));
-	assert(is_Class_type(ovw_ovner));
-	assert(! is_class_final(ovw_ovner));
-#endif /* NDEBUG */
+	if (ent->overwrites == NULL) {
+		ent->overwrites = NEW_ARR_F(ir_entity*, 0);
+	}
 	ARR_APP1(ir_entity *, ent->overwrites, overwritten);
+	if (overwritten->overwrittenby == NULL) {
+		overwritten->overwrittenby = NEW_ARR_F(ir_entity*, 0);
+	}
 	ARR_APP1(ir_entity *, overwritten->overwrittenby, ent);
 }
 
 int get_entity_n_overwrites(const ir_entity *ent)
 {
-	assert(is_Class_type(get_entity_owner(ent)));
-	return (ARR_LEN(ent->overwrites));
+	if (ent->overwrites == NULL)
+		return 0;
+	return ARR_LEN(ent->overwrites);
 }
 
 int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten)
 {
 	int i, n;
-	assert(is_Class_type(get_entity_owner(ent)));
 	n = get_entity_n_overwrites(ent);
 	for (i = 0; i < n; ++i) {
 		if (get_entity_overwrites(ent, i) == overwritten)
@@ -810,14 +795,12 @@ int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten)
 
 ir_entity *get_entity_overwrites(const ir_entity *ent, int pos)
 {
-	assert(is_Class_type(get_entity_owner(ent)));
 	assert(pos < get_entity_n_overwrites(ent));
 	return ent->overwrites[pos];
 }
 
 void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten)
 {
-	assert(is_Class_type(get_entity_owner(ent)));
 	assert(pos < get_entity_n_overwrites(ent));
 	ent->overwrites[pos] = overwritten;
 }
@@ -825,8 +808,7 @@ void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten)
 void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 {
 	int i, n;
-	assert(is_Class_type(get_entity_owner(ent)));
-	n = ARR_LEN(ent->overwrites);
+	n = get_entity_n_overwrites(ent);
 	for (i = 0; i < n; ++i) {
 		if (ent->overwrites[i] == overwritten) {
 			for (; i < n - 1; i++)
@@ -837,21 +819,17 @@ void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 	}
 }
 
-void add_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
-{
-	add_entity_overwrites(overwrites, ent);
-}
 
 int get_entity_n_overwrittenby(const ir_entity *ent)
 {
-	assert(is_Class_type(get_entity_owner(ent)));
+	if (ent->overwrittenby == NULL)
+		return 0;
 	return ARR_LEN(ent->overwrittenby);
 }
 
 int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites)
 {
 	int i, n;
-	assert(is_Class_type(get_entity_owner(ent)));
 	n = get_entity_n_overwrittenby(ent);
 	for (i = 0; i < n; ++i) {
 		if (get_entity_overwrittenby(ent, i) == overwrites)
@@ -862,14 +840,12 @@ int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites)
 
 ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos)
 {
-	assert(is_Class_type(get_entity_owner(ent)));
 	assert(pos < get_entity_n_overwrittenby(ent));
 	return ent->overwrittenby[pos];
 }
 
 void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites)
 {
-	assert(is_Class_type(get_entity_owner(ent)));
 	assert(pos < get_entity_n_overwrittenby(ent));
 	ent->overwrittenby[pos] = overwrites;
 }
@@ -877,9 +853,8 @@ void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites)
 void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
 {
 	int i, n;
-	assert(is_Class_type(get_entity_owner(ent)));
 
-	n = ARR_LEN(ent->overwrittenby);
+	n = get_entity_n_overwrittenby(ent);
 	for (i = 0; i < n; ++i) {
 		if (ent->overwrittenby[i] == overwrites) {
 			for (; i < n - 1; ++i)

@@ -516,7 +516,6 @@ FIRM_DLL ir_entity *get_entity_overwrites(const ir_entity *ent, int pos);
 FIRM_DLL void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten);
 FIRM_DLL void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
 
-FIRM_DLL void add_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
 FIRM_DLL int get_entity_n_overwrittenby(const ir_entity *ent);
 FIRM_DLL int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites);
 FIRM_DLL ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos);
