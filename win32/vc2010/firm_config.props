@@ -3,12 +3,20 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
     <FirmRoot>..\..</FirmRoot>
+    <FIRM_BUILD />
+    <FIRM_DLL />
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
   <ItemGroup>
     <BuildMacro Include="FirmRoot">
       <Value>$(FirmRoot)</Value>
+    </BuildMacro>
+    <BuildMacro Include="FIRM_BUILD">
+      <Value>$(FIRM_BUILD)</Value>
+    </BuildMacro>
+    <BuildMacro Include="FIRM_DLL">
+      <Value>$(FIRM_DLL)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>

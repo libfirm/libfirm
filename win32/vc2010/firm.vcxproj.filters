@@ -89,57 +89,57 @@
       <UniqueIdentifier>{0202fd19-276f-4039-a974-7f45a34aa2c6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
-	<ItemGroup>
+  <ItemGroup>
     <ClCompile Include="$(FirmRoot)\ir\adt\array.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\bipartite.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\cpset.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\eset.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\gaussjordan.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\gaussseidel.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\hashset.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\hungarian.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\iterator.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\pdeq.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\plist.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\pmap.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\pqueue.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\pset.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\pset_new.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\set.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\adt\xmalloc.c">
-       <Filter>ir\adt</Filter>
+      <Filter>ir\adt</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\adt\array_t.h">
       <Filter>ir\adt</Filter>
@@ -160,88 +160,88 @@
       <Filter>ir\adt</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\ana\absgraph.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\analyze_irg_args.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\callgraph.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\cdep.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\cgana.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\dfs.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\execfreq.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\execution_frequency.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\field_temperature.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\height.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\interval_analysis.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irbackedge.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\ircfscc.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irconsconfirm.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irdom.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irextbb2.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irextbb.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irlivechk.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irloop.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irmemory.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irouts.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irscc.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irsimpletype.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\irtypeinfo.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\rta.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\structure.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\trouts.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ana\vrp.c">
-       <Filter>ir\ana</Filter>
+      <Filter>ir\ana</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\ana\absgraph.h">
       <Filter>ir\ana</Filter>
@@ -271,214 +271,214 @@
       <Filter>ir\ana</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\beabi.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bearch.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beblocksched.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bechordal.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bechordal_common.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bechordal_draw.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bechordal_main.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyheur2.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyheur4.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyheur.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyilp1.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyilp2.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyilp.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopyopt.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopypbqp.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\becopystat.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedbgout.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedomfront.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bedump_minir.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beemitter_binary.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beemitter.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beflags.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\begnuas.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beifg.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beifg_clique.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beifg_list.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beifg_pointer.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beifg_std.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beilpsched.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beinfo.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beinsn.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beirg.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beirgmod.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\belistsched.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\belive.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beloopana.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\belower.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bemachine.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bemain.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bemodule.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\benode.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bepbqpcoloring.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bepeephole.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beprefalloc.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bepressurestat.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bera.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\besched.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschedmris.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschednormal.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschedrand.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschedregpress.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschedrss.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschedtrace.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beschedtrivial.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespillbelady2.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespillbelady3.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespillbelady.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespill.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespilldaemel.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespillslots.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bespillutil.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bessaconstr.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bessadestr.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bestabs.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bestat.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\bestate.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\betranshlp.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beuses.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beutil.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\beverify.c">
-       <Filter>ir\be</Filter>
+      <Filter>ir\be</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\beabi.h">
       <Filter>ir\be</Filter>
@@ -658,22 +658,22 @@
       <Filter>ir\be</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\common\debug.c">
-       <Filter>ir\common</Filter>
+      <Filter>ir\common</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\common\error.c">
-       <Filter>ir\common</Filter>
+      <Filter>ir\common</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\common\firm.c">
-       <Filter>ir\common</Filter>
+      <Filter>ir\common</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\common\firm_common.c">
-       <Filter>ir\common</Filter>
+      <Filter>ir\common</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\common\irtools.c">
-       <Filter>ir\common</Filter>
+      <Filter>ir\common</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\common\timing.c">
-       <Filter>ir\common</Filter>
+      <Filter>ir\common</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\common\debug.h">
       <Filter>ir\common</Filter>
@@ -685,13 +685,13 @@
       <Filter>ir\common</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\debug\dbginfo.c">
-       <Filter>ir\debug</Filter>
+      <Filter>ir\debug</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\debug\debugger.c">
-       <Filter>ir\debug</Filter>
+      <Filter>ir\debug</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\debug\seqnumbers.c">
-       <Filter>ir\debug</Filter>
+      <Filter>ir\debug</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\debug\dbginfo_t.h">
       <Filter>ir\debug</Filter>
@@ -700,112 +700,112 @@
       <Filter>ir\debug</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\ident\ident.c">
-       <Filter>ir\ident</Filter>
+      <Filter>ir\ident</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ident\mangle.c">
-       <Filter>ir\ident</Filter>
+      <Filter>ir\ident</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\ident\ident_t.h">
       <Filter>ir\ident</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\ir\instrument.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irarch.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irargs.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\ircgcons.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\ircons.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irdump.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irdumptxt.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\iredges.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irflag.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irgmod.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irgopt.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irgraph.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irgwalk_blk.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irgwalk.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irhooks.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irio.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodemap.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irlinkednodeset.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irmode.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irnode.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irnodemap.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irnodeset.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irop.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\iropt.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irpass.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irphase.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irprintf.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irprofile.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irprog.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irssacons.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\irvrfy.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\pseudo_irg.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\valueset.c">
-       <Filter>ir\ir</Filter>
+      <Filter>ir\ir</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\ir\gen_irnode.h">
       <Filter>ir\ir</Filter>
@@ -889,22 +889,22 @@
       <Filter>ir\ir</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\libcore\lc_appendable.c">
-       <Filter>ir\libcore</Filter>
+      <Filter>ir\libcore</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\libcore\lc_config_lexer.c">
-       <Filter>ir\libcore</Filter>
+      <Filter>ir\libcore</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\libcore\lc_config_parser.c">
-       <Filter>ir\libcore</Filter>
+      <Filter>ir\libcore</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\libcore\lc_opts.c">
-       <Filter>ir\libcore</Filter>
+      <Filter>ir\libcore</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\libcore\lc_opts_enum.c">
-       <Filter>ir\libcore</Filter>
+      <Filter>ir\libcore</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\libcore\lc_printf.c">
-       <Filter>ir\libcore</Filter>
+      <Filter>ir\libcore</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\libcore\lc_appendable.h">
       <Filter>ir\libcore</Filter>
@@ -937,127 +937,127 @@
       <Filter>ir\libcore</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_calls.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_copyb.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_dw.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_hl.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_intrinsics.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_mode_b.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_mux.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\lower\lower_switch.c">
-       <Filter>ir\lower</Filter>
+      <Filter>ir\lower</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\obstack\obstack.c">
-       <Filter>ir\obstack</Filter>
+      <Filter>ir\obstack</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\obstack\obstack_printf.c">
-       <Filter>ir\obstack</Filter>
+      <Filter>ir\obstack</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\boolopt.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\cfopt.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\code_placement.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\combo.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\convopt.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\critical_edges.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\dead_code_elimination.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\escape_ana.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\fp-vrp.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\funccall.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\garbage_collect.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\gvn_pre.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\ifconv.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\ircgopt.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\jumpthreading.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\ldstopt.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\loop.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_blocks.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_confirms.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_frame.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_inline.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_ldst.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_osr.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\opt_polymorphy.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\parallelize_mem.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\proc_cloning.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\reassoc.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\return.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\scalar_replace.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\tailrec.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\opt\tropt.c">
-       <Filter>ir\opt</Filter>
+      <Filter>ir\opt</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\opt\iropt_dbg.h">
       <Filter>ir\opt</Filter>
@@ -1078,34 +1078,34 @@
       <Filter>ir\opt</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\stat\const_stat.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\dags.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\distrib.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\firmstat.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\pattern.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\pattern_dmp.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\stat_dmp.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\statev.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\stat_liveness.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\stat\stat_timing.c">
-       <Filter>ir\stat</Filter>
+      <Filter>ir\stat</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\stat\counter.h">
       <Filter>ir\stat</Filter>
@@ -1132,28 +1132,28 @@
       <Filter>ir\stat</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\tr\compound_path.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\entity.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\tpop.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\tr_inheritance.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\trvrfy.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\type.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\type_finalization.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tr\typewalk.c">
-       <Filter>ir\tr</Filter>
+      <Filter>ir\tr</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\tr\compound_path_t.h">
       <Filter>ir\tr</Filter>
@@ -1168,13 +1168,13 @@
       <Filter>ir\tr</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\tv\fltcalc.c">
-       <Filter>ir\tv</Filter>
+      <Filter>ir\tv</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tv\strcalc.c">
-       <Filter>ir\tv</Filter>
+      <Filter>ir\tv</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\tv\tv.c">
-       <Filter>ir\tv</Filter>
+      <Filter>ir\tv</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\tv\fltcalc.h">
       <Filter>ir\tv</Filter>
@@ -1186,7 +1186,7 @@
       <Filter>ir\tv</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\win32\math.c">
-       <Filter>win32</Filter>
+      <Filter>win32</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\win32\config.h">
       <Filter>win32</Filter>
@@ -1383,9 +1383,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\vrp.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\adt\align.h">
-      <Filter>include\libfirm\adt</Filter>
-    </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\adt\array.h">
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
@@ -1456,55 +1453,55 @@
       <Filter>include\libfirm\adt</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\bearch_ia32.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\gen_ia32_emitter.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\gen_ia32_machine.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\gen_ia32_regalloc_if.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_address_mode.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_architecture.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_common_transform.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_emitter.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_finish.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_fpu.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_intrinsics.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_map_regs.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_new_nodes.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_optimize.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_transform.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_util.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ia32\ia32_x87.c">
-       <Filter>ir\be\ia32</Filter>
+      <Filter>ir\be\ia32</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\ia32\bearch_ia32_t.h">
       <Filter>ir\be\ia32</Filter>
@@ -1564,31 +1561,31 @@
       <Filter>ir\be\ia32</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\arm_emitter.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\arm_map_regs.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\arm_new_nodes.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\arm_optimize.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\arm_transform.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\bearch_arm.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\gen_arm_emitter.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\gen_arm_machine.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\arm\gen_arm_regalloc_if.c">
-       <Filter>ir\be\arm</Filter>
+      <Filter>ir\be\arm</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\arm\arm_emitter.h">
       <Filter>ir\be\arm</Filter>
@@ -1627,31 +1624,31 @@
       <Filter>ir\be\arm</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\bearch_mips.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\gen_mips_emitter.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\gen_mips_machine.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\gen_mips_regalloc_if.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\mips_emitter.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\mips_map_regs.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\mips_new_nodes.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\mips_scheduler.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\mips\mips_transform.c">
-       <Filter>ir\be\mips</Filter>
+      <Filter>ir\be\mips</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\mips\bearch_mips.h">
       <Filter>ir\be\mips</Filter>
@@ -1693,31 +1690,31 @@
       <Filter>ir\be\mips</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\bearch_ppc32.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\gen_ppc32_emitter.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\gen_ppc32_machine.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\gen_ppc32_regalloc_if.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\ppc32_emitter.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\ppc32_map_regs.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\ppc32_new_nodes.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\ppc32_transform.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\ppc32\ppc32_transform_conv.c">
-       <Filter>ir\be\ppc32</Filter>
+      <Filter>ir\be\ppc32</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\ppc32\bearch_ppc32.h">
       <Filter>ir\be\ppc32</Filter>
@@ -1756,25 +1753,25 @@
       <Filter>ir\be\ppc32</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\amd64_emitter.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\amd64_new_nodes.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\amd64_transform.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\bearch_amd64.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\gen_amd64_emitter.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\gen_amd64_machine.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\amd64\gen_amd64_regalloc_if.c">
-       <Filter>ir\be\amd64</Filter>
+      <Filter>ir\be\amd64</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\amd64\amd64_emitter.h">
       <Filter>ir\be\amd64</Filter>
@@ -1804,28 +1801,28 @@
       <Filter>ir\be\amd64</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\bearch_sparc.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\gen_sparc_emitter.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\gen_sparc_machine.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\gen_sparc_regalloc_if.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\sparc_emitter.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\sparc_map_regs.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\sparc_new_nodes.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\sparc\sparc_transform.c">
-       <Filter>ir\be\sparc</Filter>
+      <Filter>ir\be\sparc</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\sparc\bearch_sparc.h">
       <Filter>ir\be\sparc</Filter>
@@ -1861,25 +1858,25 @@
       <Filter>ir\be\sparc</Filter>
     </ClInclude>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\bearch_TEMPLATE.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_emitter.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_machine.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_regalloc_if.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_emitter.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_new_nodes.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_transform.c">
-       <Filter>ir\be\TEMPLATE</Filter>
+      <Filter>ir\be\TEMPLATE</Filter>
     </ClCompile>
     <ClInclude Include="$(FirmRoot)\ir\be\TEMPLATE\bearch_TEMPLATE_t.h">
       <Filter>ir\be\TEMPLATE</Filter>
@@ -1965,5 +1962,15 @@
     <CustomBuild Include="$(FirmRoot)\scripts\ir_spec.py">
       <Filter>scripts</Filter>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\resource.h">
+      <Filter>win32</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\firmdll.rc">
+      <Filter>win32</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

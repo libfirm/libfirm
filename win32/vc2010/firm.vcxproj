@@ -30,12 +30,10 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="firm_config.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC60.props" />
     <Import Project="firm_config.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -76,7 +74,7 @@
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <OutputFile>.\Release/firm.bsc</OutputFile>
-		</Bscmake>
+    </Bscmake>
     <Link>
       <AdditionalDependencies>winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -98,6 +96,7 @@
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
       <CompileAs>Default</CompileAs>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -721,6 +720,7 @@
     <ClInclude Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_new_nodes.h" />
     <ClInclude Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_nodes_attr.h" />
     <ClInclude Include="$(FirmRoot)\ir\be\TEMPLATE\TEMPLATE_transform.h" />
+    <ClInclude Include="..\resource.h" />
     <None Include="$(FirmRoot)\scripts\gen_init.py" />
     <None Include="$(FirmRoot)\scripts\gen_ir.py" />
     <None Include="$(FirmRoot)\scripts\spec_util.py" />
@@ -820,7 +820,7 @@
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FirmRoot)\ir\be\scripts\generate_emitter.pl;$(FirmRoot)\ir\be\scripts\generate_new_opcodes.pl;$(FirmRoot)\ir\be\scripts\generate_regalloc_if.pl;$(FirmRoot)\ir\be\scripts\generate_machine.pl;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_emitter.c;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_emitter.h;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_new_nodes.c.inl;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_new_nodes.h;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_regalloc_if.c;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_regalloc_if.h;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_machine.c;$(FirmRoot)\ir\be\TEMPLATE\gen_TEMPLATE_machine.h;%(Outputs)</Outputs>
-		</CustomBuild>
+    </CustomBuild>
     <CustomBuild Include="$(FirmRoot)\ir\be\sparc\sparc_spec.pl">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Translate Spec: %(FullPath)</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(FirmRoot)\ir\be\scripts\generate_emitter.pl %(FullPath) $(FirmRoot)\ir\be\sparc
@@ -838,7 +838,7 @@
 </Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FirmRoot)\ir\be\scripts\generate_emitter.pl;$(FirmRoot)\ir\be\scripts\generate_new_opcodes.pl;$(FirmRoot)\ir\be\scripts\generate_regalloc_if.pl;$(FirmRoot)\ir\be\scripts\generate_machine.pl;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FirmRoot)\ir\be\sparc\gen_sparc_emitter.c;$(FirmRoot)\ir\be\sparc\gen_sparc_emitter.h;$(FirmRoot)\ir\be\sparc\gen_sparc_new_nodes.c.inl;$(FirmRoot)\ir\be\sparc\gen_sparc_new_nodes.h;$(FirmRoot)\ir\be\sparc\gen_sparc_regalloc_if.c;$(FirmRoot)\ir\be\sparc\gen_sparc_regalloc_if.h;$(FirmRoot)\ir\be\sparc\gen_sparc_machine.c;$(FirmRoot)\ir\be\sparc\gen_sparc_machine.h;%(Outputs)</Outputs>
-		</CustomBuild>
+    </CustomBuild>
     <CustomBuild Include="$(FirmRoot)\ir\be\amd64\amd64_spec.pl">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Translate Spec: %(FullPath)</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(FirmRoot)\ir\be\scripts\generate_emitter.pl %(FullPath) $(FirmRoot)\ir\be\amd64
@@ -857,7 +857,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FirmRoot)\ir\be\scripts\generate_emitter.pl;$(FirmRoot)\ir\be\scripts\generate_new_opcodes.pl;$(FirmRoot)\ir\be\scripts\generate_regalloc_if.pl;$(FirmRoot)\ir\be\scripts\generate_machine.pl;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(FirmRoot)\ir\be\amd64\gen_amd64_emitter.c;$(FirmRoot)\ir\be\amd64\gen_amd64_emitter.h;$(FirmRoot)\ir\be\amd64\gen_amd64_new_nodes.c.inl;$(FirmRoot)\ir\be\amd64\gen_amd64_new_nodes.h;$(FirmRoot)\ir\be\amd64\gen_amd64_regalloc_if.c;$(FirmRoot)\ir\be\amd64\gen_amd64_regalloc_if.h;$(FirmRoot)\ir\be\amd64\gen_amd64_machine.c;$(FirmRoot)\ir\be\amd64\gen_amd64_machine.h;%(Outputs)</Outputs>
     </CustomBuild>
-
     <CustomBuild Include="$(FirmRoot)\scripts\gen_ir_io.py">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Generating I/O code: %(FullPath)</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">python %(FullPath) ..\scrip..\..\ir_spec.py ..\..\ir\ir</Command>
@@ -878,6 +877,9 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\scripts\gen_ir.py;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\ir\ir\gen_ir_cons.c.inl;%(Outputs)</Outputs>
     </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\firmdll.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
