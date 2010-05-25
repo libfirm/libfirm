@@ -40,7 +40,7 @@ compound_graph_path *new_compound_graph_path(ir_type *tp, int length)
 {
 	compound_graph_path *res;
 
-	assert(is_compound_type(tp));
+	assert(is_compound_type(tp) || is_Array_type(tp));
 	assert(length > 0);
 
 	res = xmalloc(sizeof(*res) + (length-1) * sizeof(res->list[0]));
