@@ -111,7 +111,7 @@ void ir_init(const firm_parameter_t *param)
 	/* initialize all op codes an irnode can consist of */
 	init_op();
 	/* called once for each run of this library */
-	firm_init_cons(def_params.initialize_local_func);
+	ir_set_uninitialized_local_variable_func(def_params.initialize_local_func);
 	/* initialize reassociation */
 	firm_init_reassociation();
 	/* initialize function call optimization */
@@ -124,7 +124,7 @@ void ir_init(const firm_parameter_t *param)
 	   later. */
 	init_irprog_2();
 	/* Initialize the type module and construct some idents needed. */
-	firm_init_type(def_params.cc_mask);
+	firm_init_type();
 	/* initialize the entity module */
 	firm_init_entity();
 	/* class cast optimization */

@@ -1740,9 +1740,6 @@ typedef enum {
 /** fastcall calling convention */
 #define cc_fastcall_set (cc_reg_param|cc_callee_clear_stk)
 
-/** Returns the default calling convention for method types. */
-FIRM_API unsigned get_default_cc_mask(void);
-
 /**
  * check for the CDECL calling convention
  */

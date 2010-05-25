@@ -188,6 +188,7 @@ FIRM_API ir_prog_pass_t *stat_dump_snapshot_pass(
 
 /**
  * initialize the statistics module.
+ * Should be called directly after ir_init
  *
  * @param enable_options  a bitmask containing the statistic options
  */

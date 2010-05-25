@@ -31,16 +31,6 @@
 #include "irgraph_t.h"
 
 /**
- * Initializes the graph construction.
- *
- * @param func  callback that is called if a uninitialized
- *              variable is detected
- *
- * @see uninitialized_local_variable_func_t
- */
-void firm_init_cons(uninitialized_local_variable_func_t *func);
-
-/**
  * Creates a new Anchor node.
  */
 ir_node *new_Anchor(ir_graph *irg);

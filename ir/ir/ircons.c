@@ -1476,10 +1476,11 @@ ir_type *get_cur_frame_type(void)
 /* initialize */
 
 /* call once for each run of the library */
-void firm_init_cons(uninitialized_local_variable_func_t *func)
+void ir_set_uninitialized_local_variable_func(
+		uninitialized_local_variable_func_t *func)
 {
 	default_initialize_local_variable = func;
-}  /* firm_init_cons */
+}
 
 void irp_finalize_cons(void)
 {

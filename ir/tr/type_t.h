@@ -283,10 +283,8 @@ void remove_compound_member(ir_type *compound, ir_entity *entity);
 
 /**
  * Initialize the type module.
- *
- * @param default_cc_mask  default calling conventions for methods
  */
-void firm_init_type(unsigned default_cc_mask);
+void firm_init_type(void);
 
 /** Clone an existing method type.
  *

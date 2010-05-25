@@ -4609,6 +4609,9 @@ FIRM_API ir_type *get_cur_frame_type(void);
  * e.g., that no more subtypes will be added.  */
 FIRM_API void irp_finalize_cons(void);
 
+FIRM_API void ir_set_uninitialized_local_variable_func(
+		uninitialized_local_variable_func_t *func);
+
 #include "end.h"
 
 #endif

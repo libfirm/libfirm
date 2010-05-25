@@ -85,17 +85,8 @@ ir_type *get_unknown_type(void)
 static ident *value_params_suffix = NULL;
 static ident *value_ress_suffix = NULL;
 
-/** The default calling convention for method types. */
-static unsigned default_cc_mask;
-
-unsigned get_default_cc_mask(void)
+void firm_init_type(void)
 {
-	return default_cc_mask;
-}
-
-void firm_init_type(unsigned def_cc_mask)
-{
-	default_cc_mask     = def_cc_mask;
 	value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
 	value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
 
@@ -1215,7 +1206,6 @@ ir_type *new_d_type_method(int n_param, int n_res, type_dbg_info *db)
 	res->attr.ma.variadicity          = variadicity_non_variadic;
 	res->attr.ma.first_variadic_param = -1;
 	res->attr.ma.additional_properties = mtp_no_property;
-	res->attr.ma.irg_calling_conv     = default_cc_mask;
 	hook_new_type(res);
 	return res;
 }

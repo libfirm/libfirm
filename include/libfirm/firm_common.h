@@ -68,7 +68,10 @@ struct _firm_parameter_t {
 	ident_if_t *id_if;
 
 	/**
-	 * The default calling convention.
+	 * dummy parameter
+	 * (this used to hold a default calling convention, but this concept is no
+	 *  more. You should always set the calling convention manually after
+	 *  creating the method entity if you need something else)
 	 */
 	unsigned cc_mask;
 
