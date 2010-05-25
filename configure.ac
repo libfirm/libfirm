@@ -9,25 +9,48 @@ dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 dnl
 AC_PREREQ([2.54])
 AC_REVISION([$Id$])
+
+dnl Firm Versions
+dnl * Increment major/minor/micro version as you see fit. These 3 numbers
+dnl   are intended for humans and are independent from the libtool versions
 m4_define([firm_major_version], [1])
-m4_define([firm_minor_version], [18])
-m4_define([firm_micro_version], [1])
+m4_define([firm_minor_version], [19])
+m4_define([firm_micro_version], [0])
 m4_define([firm_version],
           [firm_major_version.firm_minor_version.firm_micro_version])
+
+dnl Libtool versions
+dnl
+dnl * If any code has changed at all (i.e. bugfixes) increment revision
+dnl * If any interface has been added, removed or changed increment
+dnl   current, set revision to 0
+dnl * If any interface has been added increment age
+dnl * If any interfaces have been remove set age to 0
+dnl * use lt_release if substantial things have been changed. The release can be
+dnl   thought of as part of the library name. So changing the release creates
+dnl   a new library.
+m4_define([lt_current],  [1])
+m4_define([lt_revision], [0])
+m4_define([lt_age],      [0])
+dnl we use firm major version as release
+m4_define([lt_release],  [firm_major_version])
+
 AC_INIT([libfirm], [firm_version], [firm@ipd.info.uni-karlsruhe.de])
 AC_CONFIG_SRCDIR([ir/common/firm.c])
 AM_INIT_AUTOMAKE([foreign dist-bzip2 1.9])
-
-# see libtool manual on what version numbers mean!
-LT_VERSION=0:0:0
-AC_SUBST([LT_VERSION])
 
 AC_DEFINE([libfirm_VERSION_MAJOR], [firm_major_version], [Firms major version number])
 AC_DEFINE([libfirm_VERSION_MINOR], [firm_minor_version], [Firms minor version number])
 AC_DEFINE([libfirm_VERSION_MICRO], [firm_micro_version], [Firms micro version number])
 
+LT_VERSION="lt_current:lt_revision:lt_age"
+AC_SUBST([LT_VERSION])
+LT_RELEASE="lt_release"
+AC_SUBST([LT_RELEASE])
+
 dnl enable libtool
 LT_INIT([win32-dll])
+AC_SUBST([LIBTOOL_DEPS])
 
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
@@ -39,6 +62,7 @@ AC_SUBST(libfirm_conf_env)
 dnl enable visibility hidden
 CFLAGS="-fvisibility=hidden"
 AC_DEFINE([FIRM_BUILD], [], [Defined when firm library is built])
+AC_DEFINE([FIRM_DLL], [], [Define when a dynamically loadable shared library is built])
 
 dnl Package options
 dnl ===============
