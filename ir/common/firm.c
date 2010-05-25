@@ -91,7 +91,8 @@ void ir_init(const firm_parameter_t *param)
 	/* initialize all ident stuff */
 	init_ident(def_params.id_if, 1024);
 	/* enhanced statistics, need idents and hooks */
-	firm_init_stat(def_params.enable_statistics);
+	if (def_params.enable_statistics != 0)
+		firm_init_stat(def_params.enable_statistics);
 	/* Edges need hooks. */
 	init_edges();
 	/* create the type kinds. */
@@ -111,7 +112,9 @@ void ir_init(const firm_parameter_t *param)
 	/* initialize all op codes an irnode can consist of */
 	init_op();
 	/* called once for each run of this library */
-	ir_set_uninitialized_local_variable_func(def_params.initialize_local_func);
+	if (def_params.initialize_local_func != NULL)
+		ir_set_uninitialized_local_variable_func(
+				def_params.initialize_local_func);
 	/* initialize reassociation */
 	firm_init_reassociation();
 	/* initialize function call optimization */
