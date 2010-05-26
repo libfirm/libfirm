@@ -31,6 +31,7 @@
 
 /**
  * libFirm initialization parameters.
+ * @deprecated
  */
 struct _firm_parameter_t {
 	/**
@@ -43,6 +44,7 @@ struct _firm_parameter_t {
 	/**
 	 * Statistic options. If statistic function where enabled, these
 	 * flags configure it, see enum firmstat_options_t.
+	 * @deprecated  call firm_init_stat(options) instead
 	 */
 	unsigned enable_statistics;
 
@@ -51,6 +53,7 @@ struct _firm_parameter_t {
 	 * used before definition. The function should insert a default value,
 	 * and/or raise a compiler error/warning. Note that returning
 	 * an Unknown is allowed here.
+	 * @deprecated  call ir_set_uninitialized_local_variable_func() instead
 	 */
 	uninitialized_local_variable_func_t *initialize_local_func;
 
@@ -89,10 +92,8 @@ typedef struct _firm_parameter_t firm_parameter_t;
  * Initializes the firm library.  Allocates default data structures.
  * Initializes configurable behavior of the library.
  *
- * @param params   A structure containing the parameters of the libFirm.
- *
- * The parameter struct may be NULL. In that case, the original FIRM behavior
- * is conserved.
+ * @param params   should be NULL (you can pass a structure containing
+ *                 initial parameters but this is deprecated)
  */
 FIRM_API void ir_init(const firm_parameter_t *params);
 
@@ -112,8 +113,13 @@ FIRM_API const char *ir_get_version_build(void);
 
 
 
-/** a list of firm kinds
- @@@ not all datatypes are tagged yet. */
+/**
+ * a list of firm kinds
+ * Most important datastructures in firm contain a firm_kind field at the
+ * beginning so given void* pointer you can usually still guess the kind
+ * of thing the pointer points to.
+ * This is used in debug helper functions and printers.
+ */
 typedef enum {
 	k_BAD = 0,                /**< An invalid firm node. */
 	k_entity,                 /**< An entity. */
