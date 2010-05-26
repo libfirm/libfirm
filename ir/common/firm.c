@@ -89,7 +89,7 @@ void ir_init(const firm_parameter_t *param)
 	/* initialize firm flags */
 	firm_init_flags();
 	/* initialize all ident stuff */
-	init_ident(def_params.id_if, 1024);
+	init_ident();
 	/* enhanced statistics, need idents and hooks */
 	if (def_params.enable_statistics != 0)
 		firm_init_stat(def_params.enable_statistics);

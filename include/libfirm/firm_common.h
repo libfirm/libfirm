@@ -62,10 +62,10 @@ struct _firm_parameter_t {
 	type_identify_if_t *ti_if;
 
 	/**
-	 * The interface for the ident module.
-	 * If not set, the default libFirm ident module (using hash sets).
+	 * dummy parameter
+	 * (this used to hold an identifier module structure)
 	 */
-	ident_if_t *id_if;
+	void *id_if;
 
 	/**
 	 * dummy parameter

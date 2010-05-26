@@ -30,24 +30,15 @@
 
 /**
  * Initialize the ident module.
- *
- * @param id_if             The ident module interface, if NULL, the default
- *                          libFirm ident module will be used.
- * @param initial_n_idents  Only used in the default libFirm ident module, initial
- *                          number of entries in the hash table.
  */
-void init_ident (ident_if_t *id_if, int initial_n_idents);
+void init_ident(void);
 
 /**
  * Finishes the ident module, frees all entries.
  */
-void finish_ident (void);
+void finish_ident(void);
 
-/** The hash function of the internal ident module implementation. */
-#define ID_HASH(type, str, len) \
-  (((  ((type *)(str))[0] * 33 \
-     + ((type *)(str))[(len)>>1]) * 31 \
-    + ((type *)(str))[(len)-1]) * 9 \
-   + (len))
+/** initializes the name mangling code */
+void firm_init_mangle(void);
 
 #endif
