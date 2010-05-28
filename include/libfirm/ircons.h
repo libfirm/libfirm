@@ -908,9 +908,11 @@
  *
  *    Parameters:
  *      *store       The memory which shall contain the new variable.
- *      *count       This field is for allocating arrays, i.e., it gives the multiple
- *                   of the size of alloc_type to allocate memory for.
- *      *alloc_type  The type of the allocated variable.
+ *      *count       This field is for allocating arrays, it specifies how
+ *                   many array elements are to be allocated.
+ *      *alloc_type  The type of the allocated variable. In case of allocating
+ *                   arrays this has to be the array type, not the type of the
+ *                   array elements.
  *      where        Where to allocate the variable, either heap_alloc or stack_alloc.
  *
  *    Inputs:
