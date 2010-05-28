@@ -976,7 +976,7 @@ unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	vector      *vec;
 	pbqp_matrix *mat;
 	unsigned     edge_index;
-	unsigned     max_degree   = 0;
+	unsigned     max_degree;
 	unsigned     node_index;
 	unsigned     node_len;
 	unsigned     min_index    = 0;
@@ -985,8 +985,9 @@ unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 
 	assert(pbqp);
 	assert(node);
-	node_vec = node->costs;
-	node_len = node_vec->len;
+	node_vec   = node->costs;
+	node_len   = node_vec->len;
+	max_degree = pbqp_node_get_degree(node);
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		num value = node_vec->entries[node_index].data;
