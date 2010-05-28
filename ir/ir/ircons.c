@@ -1342,6 +1342,7 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 {
 	int n = ARR_LEN(block->in) - 1;
 
+	assert(is_Block(block) && "Error: Must be a Block");
 	assert(!block->attr.block.is_matured && "Error: Block already matured!\n");
 	assert(block->attr.block.is_mb_head && "Error: Cannot add a predecessor to a PartBlock");
 	assert(is_ir_node(jmp));
