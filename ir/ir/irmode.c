@@ -960,6 +960,11 @@ int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
 	return ma == irma_twos_complement || ma == irma_ones_complement;
 }
 
+ir_type *(get_type_for_mode) (const ir_mode *mode)
+{
+	return get_type_for_mode_(mode);
+}
+
 void finish_mode(void)
 {
 	obstack_free(&modes, 0);

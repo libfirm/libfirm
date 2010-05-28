@@ -150,6 +150,11 @@ static inline int _mode_is_int_vector(const ir_mode *mode)
 	return (_get_mode_sort(mode) == irms_int_number) && (_get_mode_vector_elems(mode) > 1);
 }
 
+static inline ir_type *get_type_for_mode_(const ir_mode *mode)
+{
+	return mode->type;
+}
+
 /** mode module initialization, call once before use of any other function **/
 void init_mode(void);
 
@@ -178,5 +183,6 @@ void finish_mode(void);
 #define mode_is_dataM(mode)            _mode_is_dataM(mode)
 #define mode_is_float_vector(mode)     _mode_is_float_vector(mode)
 #define mode_is_int_vector(mode)       _mode_is_int_vector(mode)
+#define get_type_for_mode(mode)        get_type_for_mode_(mode)
 
 #endif
