@@ -7,7 +7,7 @@ dnl CVS-ID:      $Id$
 dnl Copyright:   (c) 2002-2007 University of Karlsruhe
 dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
 dnl
-AC_PREREQ([2.54])
+AC_PREREQ([2.60])
 AC_REVISION([$Id$])
 
 dnl Firm Versions
