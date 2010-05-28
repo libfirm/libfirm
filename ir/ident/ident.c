@@ -58,13 +58,13 @@ ident *new_id_from_str(const char *str)
 	return new_id_from_chars(str, strlen(str));
 }
 
-const char *get_id_str(const ident *id)
+const char *get_id_str(ident *id)
 {
 	struct set_entry *entry = (struct set_entry*) id;
 	return (const char*) entry->dptr;
 }
 
-size_t get_id_strlen(const ident *id)
+size_t get_id_strlen(ident *id)
 {
 	struct set_entry *entry = (struct set_entry*) id;
 	return entry->size;
@@ -76,7 +76,7 @@ void finish_ident(void)
 	id_set = NULL;
 }
 
-int id_is_prefix(const ident *prefix, const ident *id)
+int id_is_prefix(ident *prefix, ident *id)
 {
 	size_t prefix_len = get_id_strlen(prefix);
 	if (prefix_len > get_id_strlen(id))
@@ -84,7 +84,7 @@ int id_is_prefix(const ident *prefix, const ident *id)
   	return 0 == memcmp(get_id_str(prefix), get_id_str(id), prefix_len);
 }
 
-int id_is_suffix(const ident *suffix, const ident *id)
+int id_is_suffix(ident *suffix, ident *id)
 {
 	size_t suflen = get_id_strlen(suffix);
 	size_t idlen  = get_id_strlen(id);
@@ -99,7 +99,7 @@ int id_is_suffix(const ident *suffix, const ident *id)
 	return 0 == memcmp(get_id_str(suffix), part, suflen);
 }
 
-int id_contains_char(const ident *id, char c)
+int id_contains_char(ident *id, char c)
 {
 	return strchr(get_id_str(id), c) != NULL;
 }

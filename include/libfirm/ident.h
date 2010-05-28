@@ -67,7 +67,7 @@ FIRM_API ident *new_id_from_chars(const char *str, size_t len);
  * @return cp   a string
  * @see new_id_from_str(), new_id_from_chars(), get_id_strlen()
  */
-FIRM_API const char *get_id_str(const ident *id);
+FIRM_API const char *get_id_str(ident *id);
 
 /**
  * Returns the length of the string represented by an ident.
@@ -76,7 +76,7 @@ FIRM_API const char *get_id_str(const ident *id);
  * @return len   the length of the string
  * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
-FIRM_API size_t get_id_strlen(const ident *id);
+FIRM_API size_t get_id_strlen(ident *id);
 
 /**
  * Returns true if prefix is a prefix of an ident.
@@ -85,7 +85,7 @@ FIRM_API size_t get_id_strlen(const ident *id);
  * @param id       the ident
  * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
-FIRM_API int id_is_prefix(const ident *prefix, const ident *id);
+FIRM_API int id_is_prefix(ident *prefix, ident *id);
 
 /**
  * Returns true if suffix is a suffix of an ident.
@@ -94,7 +94,7 @@ FIRM_API int id_is_prefix(const ident *prefix, const ident *id);
  * @param id       the ident
  * @see new_id_from_str(), new_id_from_chars(), get_id_str(), id_is_prefix()
  */
-FIRM_API int id_is_suffix(const ident *suffix, const ident *id);
+FIRM_API int id_is_suffix(ident *suffix, ident *id);
 
 /**
  * Return true if an ident contains a given character.
@@ -103,7 +103,7 @@ FIRM_API int id_is_suffix(const ident *suffix, const ident *id);
  * @param c     the character
  * @see new_id_from_str(), new_id_from_chars(), get_id_str()
  */
-FIRM_API int id_contains_char(const ident *id, char c);
+FIRM_API int id_contains_char(ident *id, char c);
 
 /**
  * helper function for creating unique idents. It contains an internal counter
@@ -117,20 +117,20 @@ FIRM_API ident *id_unique(const char *tag);
 FIRM_API ident *id_mangle_entity(const ir_entity *ent);
 
 /** mangle underscore: Returns a new ident that represents first_scnd. */
-FIRM_API ident *id_mangle_u(const ident *first, const ident* scnd);
+FIRM_API ident *id_mangle_u(ident *first, ident* scnd);
 
 /** mangle dot: Returns a new ident that represents first.scnd. */
-FIRM_API ident *id_mangle_dot(const ident *first, const ident* scnd);
+FIRM_API ident *id_mangle_dot(ident *first, ident* scnd);
 
 /** mangle: Returns a new ident that represents firstscnd. */
-FIRM_API ident *id_mangle(const ident *first, const ident* scnd);
+FIRM_API ident *id_mangle(ident *first, ident* scnd);
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-FIRM_API ident *id_mangle3(const char *prefix, const ident *middle,
+FIRM_API ident *id_mangle3(const char *prefix, ident *middle,
                            const char *suffix);
 
 /** returns a mangled name for a Win32 function using its calling convention */
-FIRM_API ident *id_decorate_win32_c_fkt(const ir_entity *ent, const ident *id);
+FIRM_API ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id);
 
 #include "end.h"
 
