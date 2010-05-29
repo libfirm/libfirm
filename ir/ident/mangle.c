@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -55,17 +55,17 @@ ident *id_mangle_entity(const ir_entity *ent)
 	type_id = mangle_type(ent->owner);
 	obstack_grow(&mangle_obst, get_id_str(type_id), get_id_strlen(type_id));
 	obstack_1grow(&mangle_obst,'_');
-	obstack_grow(&mangle_obst,get_id_str(ent->name),get_id_strlen(ent->name));
-	len = obstack_object_size (&mangle_obst);
-	cp = obstack_finish (&mangle_obst);
+	obstack_grow(&mangle_obst, get_id_str(ent->name), get_id_strlen(ent->name));
+	len = obstack_object_size(&mangle_obst);
+	cp = obstack_finish(&mangle_obst);
 	res = new_id_from_chars(cp, len);
-	obstack_free (&mangle_obst, cp);
+	obstack_free(&mangle_obst, cp);
 	return res;
 }
 
 
 /* Returns a new ident that represents 'firstscnd'. */
-ident *id_mangle(const ident *first, const ident *scnd)
+ident *id_mangle(ident *first, ident *scnd)
 {
 	char *cp;
 	int len;
@@ -73,15 +73,15 @@ ident *id_mangle(const ident *first, const ident *scnd)
 
 	obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
 	obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
-	len = obstack_object_size (&mangle_obst);
-	cp = obstack_finish (&mangle_obst);
-	res = new_id_from_chars (cp, len);
-	obstack_free (&mangle_obst, cp);
+	len = obstack_object_size(&mangle_obst);
+	cp = obstack_finish(&mangle_obst);
+	res = new_id_from_chars(cp, len);
+	obstack_free(&mangle_obst, cp);
 	return res;
 }
 
 /** Returns a new ident that represents 'prefixscndsuffix'. */
-ident *id_mangle3(const char *prefix, const ident *scnd, const char *suffix)
+ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
 {
 	char *cp;
 	int len;
@@ -90,15 +90,15 @@ ident *id_mangle3(const char *prefix, const ident *scnd, const char *suffix)
 	obstack_grow(&mangle_obst, prefix, strlen(prefix));
 	obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
 	obstack_grow(&mangle_obst, suffix, strlen(suffix));
-	len = obstack_object_size (&mangle_obst);
-	cp  = obstack_finish (&mangle_obst);
-	res = new_id_from_chars (cp, len);
-	obstack_free (&mangle_obst, cp);
+	len = obstack_object_size(&mangle_obst);
+	cp  = obstack_finish(&mangle_obst);
+	res = new_id_from_chars(cp, len);
+	obstack_free(&mangle_obst, cp);
 	return res;
 }
 
 /** Returns a new ident that represents first<c>scnd. */
-static ident *id_mangle_3(const ident *first, char c, const ident* scnd)
+static ident *id_mangle_3(ident *first, char c, ident *scnd)
 {
 	char *cp;
 	int len;
@@ -107,27 +107,27 @@ static ident *id_mangle_3(const ident *first, char c, const ident* scnd)
 	obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
 	obstack_1grow(&mangle_obst, c);
 	obstack_grow(&mangle_obst,get_id_str(scnd),get_id_strlen(scnd));
-	len = obstack_object_size (&mangle_obst);
-	cp = obstack_finish (&mangle_obst);
-	res = new_id_from_chars (cp, len);
-	obstack_free (&mangle_obst, cp);
+	len = obstack_object_size(&mangle_obst);
+	cp = obstack_finish(&mangle_obst);
+	res = new_id_from_chars(cp, len);
+	obstack_free(&mangle_obst, cp);
 	return res;
 }
 
 /* Returns a new ident that represents first_scnd. */
-ident *id_mangle_u(const ident *first, const ident* scnd)
+ident *id_mangle_u(ident *first, ident* scnd)
 {
 	return id_mangle_3(first, '_', scnd);
 }
 
 /* Returns a new ident that represents first.scnd. */
-ident *id_mangle_dot(const ident *first, const ident* scnd)
+ident *id_mangle_dot(ident *first, ident *scnd)
 {
 	return id_mangle_3(first, '.', scnd);
 }
 
 /* returns a mangled name for a Win32 function using it's calling convention */
-ident *id_decorate_win32_c_fkt(const ir_entity *ent, const ident *id)
+ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id)
 {
 	ir_type *tp      = get_entity_type(ent);
 	unsigned cc_mask = get_method_calling_convention(tp);
