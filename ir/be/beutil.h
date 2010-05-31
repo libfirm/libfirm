@@ -53,12 +53,6 @@ typedef unsigned long long ulong64;
 #define foreach_linked_irns(head, iter) for ((iter) = (head); (iter); (iter) = get_irn_link((iter)))
 
 /**
- * Get an empty set.
- * This function always returns the same set.
- */
-pset *be_empty_set(void);
-
-/**
  * Convenient block getter.
  * Works also, if the given node is a block.
  * @param  irn The node.

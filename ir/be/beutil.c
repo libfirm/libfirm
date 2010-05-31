@@ -44,18 +44,6 @@
 #include "besched.h"
 #include "bearch.h"
 
-/* Get an always empty set. */
-pset *be_empty_set(void)
-{
-	static pset *empty_set = NULL;
-
-	if (!empty_set)
-		empty_set = pset_new_ptr(1);
-
-	assert(pset_count(empty_set) == 0);
-	return empty_set;
-}
-
 /**
  * Edge hook to dump the schedule edges.
  */
