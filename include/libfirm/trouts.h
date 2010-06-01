@@ -29,11 +29,6 @@
  *  Each entity gets two lists:
  *    - one containing all accesses (Load, (Call), Store),
  *    - and one containing all uses to get a reference (Sel, SymConst).
- *
- * @todo
- *   To list all uses of entities of a type, we also should list all
- *   static/automatic allocated entities in types.  The Alloc nodes
- *   represent only the dynamic allocated entities.
  */
 #ifndef FIRM_ANA_TROUTS_H
 #define FIRM_ANA_TROUTS_H

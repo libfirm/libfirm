@@ -41,10 +41,7 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** The ins of regions:  regions are loops or blocks.
- *
- *  @todo: we should make a type for the regions, or reuse loop_element.
- */
+/** The ins of regions:  regions are loops or blocks. */
 FIRM_API int get_region_n_ins(void *region);
 FIRM_API void *get_region_in(void *region, int pos);
 FIRM_API void add_region_in(void *region, void *in);
@@ -71,10 +68,7 @@ FIRM_API void *get_loop_cfop(void *region, int pos);
 /** The algorithm to construct the interval graph.
  *
  *  Constructs the cf loop tree and leaves a valid version of it.
- *
- *  @todo: @@@ add flag that states correctness of interval analysis information
- *  to irg.
- **/
+ */
 FIRM_API void construct_intervals(ir_graph *irg);
 
 /** frees interval information of all graphs. */

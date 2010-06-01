@@ -37,8 +37,8 @@
  * and propagates dead control flow by calling equivalent_node().
  * Independent of compiler flag it removes Tuples from cf edges,
  * Bad predecessors from Blocks and Phis, and unnecessary predecessors of End.
+ * Destroys backedge information.
  *
- * @bug So far destroys backedge information.
  * @bug Chokes on Id nodes if called in a certain order with other
  *      optimizations.  Call local_optimize_graph() before to remove
  *      Ids.
@@ -979,7 +979,8 @@ FIRM_API void garbage_collect_entities(void);
 /** Pass for garbage_collect_entities */
 FIRM_API ir_prog_pass_t *garbage_collect_entities_pass(const char *name);
 
-/** Performs dead node elimination by copying the ir graph to a new obstack.
+/**
+ * Performs dead node elimination by copying the ir graph to a new obstack.
  *
  *  The major intention of this pass is to free memory occupied by
  *  dead nodes and outdated analyzes information.  Further this
@@ -1008,7 +1009,8 @@ FIRM_API void dead_node_elimination(ir_graph *irg);
  */
 FIRM_API ir_graph_pass_t *dead_node_elimination_pass(const char *name);
 
-/** Inlines a method at the given call site.
+/**
+ * Inlines a method at the given call site.
  *
  *  Removes the call node and splits the basic block the call node
  *  belongs to.  Inserts a copy of the called graph between these nodes.
@@ -1043,7 +1045,8 @@ FIRM_API ir_graph_pass_t *dead_node_elimination_pass(const char *name);
  */
 FIRM_API int inline_method(ir_node *call, ir_graph *called_graph);
 
-/** Code Placement.
+/**
+ * Code Placement.
  *
  * Pins all floating nodes to a block where they
  * will be executed only if needed.   Depends on the flag opt_global_cse.
@@ -1051,14 +1054,10 @@ FIRM_API int inline_method(ir_node *call, ir_graph *called_graph);
  * code.  Uses dominator information which it computes if the irg is not
  * in state dom_consistent.  Destroys the out information as it moves nodes
  * to other blocks.  Optimizes Tuples in Control edges.
- * @todo This is not tested!
  *
  * Call remove_critical_cf_edges() before place_code().  This normalizes
  * the control flow graph so that for all operations a basic block exists
  * where they can be optimally placed.
- *
- * @todo A more powerful code placement would move operations past Phi nodes
- * out of loops.
  */
 FIRM_API void place_code(ir_graph *irg);
 

@@ -26,17 +26,6 @@
  * @version $Id$
  */
 
-/**@todo
- Ideas for improvement:
- -# Handle construction of exceptions more comfortable:
-    Add new constructors that pass the exception region (or better the
-    Phi for the memories, the ex. region can be found from there) as parameter,
-    constructor then adds all Proj nodes and returns the pointer
-    to the Proj node that selects the result of the arithmetic operation.
- -# Maybe hide the exception region in a global variable, especially if
-    it is always unambiguous.
-*/
-
 /**
  *  @file
  *

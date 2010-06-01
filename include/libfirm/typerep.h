@@ -684,7 +684,7 @@ typedef struct tp_op tp_op;
  * Returns the string for the type opcode.
  *
  * @param op  The type opcode to get the string from.
- * @return a string.  (@todo Null terminated?)
+ * @return    a string.
  */
 FIRM_API const char *get_tpop_name(const tp_op *op);
 
@@ -914,10 +914,9 @@ FIRM_API void resolve_inheritance(mangle_inherited_name_func *mfunc);
 /* Do the sets contain the node itself?  I assume NOT!                     */
 /* ----------------------------------------------------------------------- */
 
-/** The state of the transitive closure.
- *
- *  @todo: we could manage the state for each relation separately.  Invalidating
- *  the entity relations does not mean invalidating the class relation. */
+/**
+ * The state of the transitive closure.
+ */
 typedef enum {
 	inh_transitive_closure_none,       /**<  Closure is not computed, can not be accessed. */
 	inh_transitive_closure_valid,      /**<  Closure computed and valid. */
@@ -1499,11 +1498,6 @@ FIRM_API int is_class_abstract(const ir_type *clss);
 /** Sets the class abstract flag. */
 FIRM_API void set_class_abstract(ir_type *clss, int flag);
 
-/** Set and get a class' dfn --
-   @todo This is an undocumented field, subject to change! */
-FIRM_API void set_class_dfn(ir_type *clss, int dfn);
-FIRM_API int  get_class_dfn(const ir_type *clss);
-
 /** Returns true if a type is a class type. */
 FIRM_API int is_Class_type(const ir_type *clss);
 
@@ -1839,10 +1833,6 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * - *element_type:   The type of the array elements.
  * - *element_ent:    An entity for the array elements to be used for
  *                      element selection with Sel.
- * @todo
- *   Do we need several entities?  One might want
- *   to select a dimension and not a single element in case of multi
- *   dimensional arrays.
  */
 
 /** Create a new type array.
@@ -2359,16 +2349,14 @@ FIRM_API void type_walk_irg(ir_graph *irg, type_walk_func *pre,
                             type_walk_func *post, void *env);
 
 /**
-    Touches every class in specified order:
-    - first the super class
-    - second the class itself
-    - third the sub classes.  If new classes are created
-    during the traversal these will be visited, too.
-
-    @todo should be named class-walk
-
-    @deprecated will be removed?
-*/
+ * Touches every class in specified order:
+ *    - first the super class
+ *    - second the class itself
+ *    - third the sub classes.  If new classes are created
+ *    during the traversal these will be visited, too.
+ *
+ *    @deprecated will be removed?
+ */
 FIRM_API void type_walk_super2sub(type_walk_func *pre, type_walk_func *post,
                                   void *env);
 

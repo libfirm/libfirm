@@ -278,6 +278,11 @@ void set_union_size(ir_type *tp, unsigned bytes);
 void set_array_size(ir_type *tp, unsigned bytes);
 void set_default_size(ir_type *tp, unsigned bytes);
 
+/** Set and get a class' dfn --
+ * This is an undocumented field, subject to change! */
+void set_class_dfn(ir_type *clss, int dfn);
+int  get_class_dfn(const ir_type *clss);
+
 void add_compound_member(ir_type *compound, ir_entity *entity);
 void remove_compound_member(ir_type *compound, ir_entity *entity);
 
