@@ -1483,6 +1483,11 @@ void ir_set_uninitialized_local_variable_func(
 	default_initialize_local_variable = func;
 }
 
+void irg_finalize_cons(ir_graph *irg)
+{
+	set_irg_phase_state(irg, phase_high);
+}
+
 void irp_finalize_cons(void)
 {
 	int i;
@@ -1490,7 +1495,7 @@ void irp_finalize_cons(void)
 		irg_finalize_cons(get_irp_irg(i));
 	}
 	irp->phase_state = phase_high;
-}  /* irp_finalize_cons */
+}
 
 ir_node *new_Start(void)
 {

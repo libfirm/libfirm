@@ -4603,7 +4603,7 @@ FIRM_API ir_type *get_cur_frame_type(void);
 /* --- initialize and finalize IR construction --- */
 
 /** Puts the graph into state "phase_high" */
-#define irg_finalize_cons(irg) set_irg_phase_state(irg, phase_high)
+FIRM_API void irg_finalize_cons(ir_graph *irg);
 
 /** Puts the program and all graphs into state phase_high.
  *
