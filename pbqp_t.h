@@ -37,7 +37,7 @@
 #define KAPS_ENABLE_VECTOR_NAMES 0
 #define KAPS_STATISTIC 0
 #define KAPS_TIMING 0
-#define KAPS_USE_UNSIGNED 0
+#define KAPS_USE_UNSIGNED 1
 
 #if KAPS_USE_UNSIGNED
 	typedef unsigned num;
