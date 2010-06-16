@@ -127,9 +127,9 @@ void ir_init(const firm_parameter_t *param)
 	   later. */
 	init_irprog_2();
 	/* Initialize the type module and construct some idents needed. */
-	firm_init_type();
+	ir_init_type();
 	/* initialize the entity module */
-	firm_init_entity();
+	ir_init_entity();
 	/* class cast optimization */
 	firm_init_class_casts_opt();
 	/* memory disambiguation */
@@ -165,6 +165,9 @@ void ir_finish(void)
 		free_type(get_irp_type(i));
 
 	free_ir_prog();
+
+	ir_finish_entity();
+	ir_finish_type();
 
 	finish_tarval();
 	finish_mode();

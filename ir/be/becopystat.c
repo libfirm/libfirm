@@ -126,8 +126,14 @@ void be_init_copystat(void)
 BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
 void be_quit_copystat(void)
 {
-	ir_nodeset_del(all_phi_nodes);
-	ir_nodeset_del(all_copy_nodes);
+	if (all_phi_nodes != NULL) {
+		ir_nodeset_del(all_phi_nodes);
+		all_phi_nodes = NULL;
+	}
+	if (all_copy_nodes != NULL) {
+		ir_nodeset_del(all_copy_nodes);
+		all_copy_nodes = NULL;
+	}
 }
 
 /**

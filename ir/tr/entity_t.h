@@ -172,7 +172,9 @@ struct ir_entity {
 };
 
 /** Initialize the entity module. */
-void firm_init_entity(void);
+void ir_init_entity(void);
+/** Cleanup entity module */
+void ir_finish_entity(void);
 
 /* ----------------------- inline functions ------------------------ */
 static inline int _is_entity(const void *thing)

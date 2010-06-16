@@ -85,7 +85,7 @@ ir_type *get_unknown_type(void)
 static ident *value_params_suffix = NULL;
 static ident *value_ress_suffix = NULL;
 
-void firm_init_type(void)
+void ir_init_type(void)
 {
 	value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
 	value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
@@ -104,6 +104,24 @@ void firm_init_type(void)
 	set_type_size_bytes(firm_unknown_type, 0);
 	set_type_state (firm_unknown_type, layout_fixed);
 	remove_irp_type(firm_unknown_type);
+}
+
+void ir_finish_type(void)
+{
+	if (firm_none_type != NULL) {
+		free_type(firm_none_type);
+		firm_none_type = NULL;
+	}
+	if (firm_code_type != NULL) {
+		free_type(firm_code_type);
+		firm_code_type = NULL;
+	}
+	if (firm_unknown_type != NULL) {
+		free_type(firm_unknown_type);
+		firm_unknown_type = NULL;
+	}
+	value_params_suffix = NULL;
+	value_ress_suffix = NULL;
 }
 
 /** the global type visited flag */

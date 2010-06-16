@@ -239,7 +239,7 @@ ir_entity *copy_entity_name(ir_entity *old, ident *new_name)
 
 void free_entity(ir_entity *ent)
 {
-	if (! is_Array_type(ent->owner))
+	if (ent->owner != NULL && !is_Array_type(ent->owner))
 		remove_compound_member(ent->owner, ent);
 
 	assert(ent && ent->kind == k_entity);
@@ -996,21 +996,23 @@ int entity_has_definition(const ir_entity *entity)
 		|| entity_has_compound_ent_values(entity);
 }
 
-void firm_init_entity(void)
+void ir_init_entity(void)
 {
-	symconst_symbol sym;
-
 	assert(firm_unknown_type && "Call init_type() before firm_init_entity()!");
 	assert(!unknown_entity && "Call firm_init_entity() only once!");
 
 	unknown_entity = new_d_entity(NULL, new_id_from_str(UNKNOWN_ENTITY_NAME),
 	                              firm_unknown_type, NULL);
 	set_entity_visibility(unknown_entity, ir_visibility_external);
-
 	set_entity_ld_ident(unknown_entity, get_entity_ident(unknown_entity));
+}
 
-	current_ir_graph = get_const_code_irg();
-	sym.entity_p     = unknown_entity;
+void ir_finish_entity(void)
+{
+	if (unknown_entity != NULL) {
+		free_entity(unknown_entity);
+		unknown_entity = NULL;
+	}
 }
 
 ir_allocation get_entity_allocation(const ir_entity *entity)

@@ -286,10 +286,11 @@ int  get_class_dfn(const ir_type *clss);
 void add_compound_member(ir_type *compound, ir_entity *entity);
 void remove_compound_member(ir_type *compound, ir_entity *entity);
 
-/**
- * Initialize the type module.
- */
-void firm_init_type(void);
+/** Initialize the type module. */
+void ir_init_type(void);
+
+/** free internal datastructures of type module */
+void ir_finish_type(void);
 
 /** Clone an existing method type.
  *
