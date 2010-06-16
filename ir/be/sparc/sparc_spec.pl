@@ -536,7 +536,7 @@ ShiftLR => {
   comment   => "construct shift logical right",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. slr %S1, %R2I, %D1',
+  emit      => '. srl %S1, %R2I, %D1',
   constructors => \%binop_operand_constructors,
 },
 
@@ -587,7 +587,8 @@ UMul => {
 
 UDiv => {
   irn_flags => "R",
-  mode	    => $mode_gp,
+  state     => "exc_pinned",
+#  mode	    => $mode_gp,
   comment   => "construct Div: Div(a, b) = a / b",
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   outs      => [ "res" ],

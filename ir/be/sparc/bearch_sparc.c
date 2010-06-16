@@ -345,6 +345,79 @@ static sparc_isa_t sparc_isa_template = {
 	NULL						/* current code generator */
 };
 
+
+static void sparc_handle_intrinsics(void)
+{
+	ir_type *tp, *int_tp, *uint_tp;
+	i_record records[8];
+	int n_records = 0;
+
+	runtime_rt rt_iMod, rt_uMod;
+
+#define ID(x) new_id_from_chars(x, sizeof(x)-1)
+
+	int_tp  = new_type_primitive(mode_Is);
+	uint_tp = new_type_primitive(mode_Iu);
+
+
+	/* SPARC has no signed mod instruction ... */
+	{
+		i_instr_record *map_Mod = &records[n_records++].i_instr;
+
+		tp = new_type_method(2, 1);
+		set_method_param_type(tp, 0, int_tp);
+		set_method_param_type(tp, 1, int_tp);
+		set_method_res_type(tp, 0, int_tp);
+
+		rt_iMod.ent             = new_entity(get_glob_type(), ID(".rem"), tp);
+		set_entity_ld_ident(rt_iMod.ent, ID(".rem"));
+		rt_iMod.mode            = mode_T;
+		rt_iMod.res_mode        = mode_Is;
+		rt_iMod.mem_proj_nr     = pn_Mod_M;
+		rt_iMod.regular_proj_nr = pn_Mod_X_regular;
+		rt_iMod.exc_proj_nr     = pn_Mod_X_except;
+		rt_iMod.exc_mem_proj_nr = pn_Mod_M;
+		rt_iMod.res_proj_nr     = pn_Mod_res;
+
+		set_entity_visibility(rt_iMod.ent, ir_visibility_external);
+
+		map_Mod->kind     = INTRINSIC_INSTR;
+		map_Mod->op       = op_Mod;
+		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+		map_Mod->ctx      = &rt_iMod;
+	}
+	/* ... nor an unsigned mod. */
+	{
+		i_instr_record *map_Mod = &records[n_records++].i_instr;
+
+		tp = new_type_method(2, 1);
+		set_method_param_type(tp, 0, uint_tp);
+		set_method_param_type(tp, 1, uint_tp);
+		set_method_res_type(tp, 0, uint_tp);
+
+		rt_uMod.ent             = new_entity(get_glob_type(), ID(".urem"), tp);
+		set_entity_ld_ident(rt_uMod.ent, ID(".urem"));
+		rt_uMod.mode            = mode_T;
+		rt_uMod.res_mode        = mode_Iu;
+		rt_uMod.mem_proj_nr     = pn_Mod_M;
+		rt_uMod.regular_proj_nr = pn_Mod_X_regular;
+		rt_uMod.exc_proj_nr     = pn_Mod_X_except;
+		rt_uMod.exc_mem_proj_nr = pn_Mod_M;
+		rt_uMod.res_proj_nr     = pn_Mod_res;
+
+		set_entity_visibility(rt_uMod.ent, ir_visibility_external);
+
+		map_Mod->kind     = INTRINSIC_INSTR;
+		map_Mod->op       = op_Mod;
+		map_Mod->i_mapper = (i_mapper_func)i_mapper_RuntimeCall;
+		map_Mod->ctx      = &rt_uMod;
+	}
+
+	if (n_records > 0)
+		lower_intrinsics(records, n_records, /*part_block_used=*/0);
+}
+
+
 /**
  * Initializes the backend ISA
  */
@@ -364,6 +437,7 @@ static arch_env_t *sparc_init(FILE *outfile)
 
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
+	sparc_handle_intrinsics();
 
 	return &isa->arch_env;
 }

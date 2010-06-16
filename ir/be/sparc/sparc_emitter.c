@@ -320,6 +320,7 @@ static void emit_sparc_LoImm(const ir_node *irn)
 static void emit_be_Return(const ir_node *irn)
 {
 	be_emit_cstring("\tret");
+	//be_emit_cstring("\tjmp %i7+8");
 	be_emit_finish_line_gas(irn);
 	be_emit_cstring("\trestore");
 	be_emit_finish_line_gas(irn);
@@ -335,6 +336,7 @@ static void emit_be_Call(const ir_node *irn)
 	if (entity != NULL) {
 		be_emit_cstring("\tcall ");
 	    sparc_emit_entity(entity);
+		be_emit_cstring(", 0");
 		be_emit_finish_line_gas(irn);
 		be_emit_cstring("\tnop");
 		be_emit_pad_comment();

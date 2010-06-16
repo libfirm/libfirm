@@ -63,6 +63,69 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
 }
 
 /**
+ * Create an And that will zero out upper bits.
+ *
+ * @param dbgi     debug info
+ * @param block    the basic block
+ * @param op       the original node
+ * @param src_bits  number of lower bits that will remain
+ */
+static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                   int src_bits)
+{
+	if (src_bits == 8) {
+		return new_bd_sparc_And_imm(dbgi, block, op, 0xFF);
+	} else if (src_bits == 16) {
+		ir_node *lshift = new_bd_sparc_ShiftLL_imm(dbgi, block, op, 16);
+		ir_node *rshift = new_bd_sparc_ShiftLR_imm(dbgi, block, lshift, 16);
+		return rshift;
+	} else {
+		panic("zero extension only supported for 8 and 16 bits");
+	}
+}
+
+/**
+ * Generate code for a sign extension.
+ */
+static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                                   int src_bits)
+{
+	int shift_width = 32 - src_bits;
+	ir_node *lshift_node = new_bd_sparc_ShiftLL_imm(dbgi, block, op, shift_width);
+	ir_node *rshift_node = new_bd_sparc_ShiftRA_imm(dbgi, block, lshift_node, shift_width);
+	return rshift_node;
+}
+
+/**
+ * returns true if it is assured, that the upper bits of a node are "clean"
+ * which means for a 16 or 8 bit value, that the upper bits in the register
+ * are 0 for unsigned and a copy of the last significant bit for signed
+ * numbers.
+ */
+static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+{
+	(void) transformed_node;
+	(void) mode;
+	/* TODO */
+	return false;
+}
+
+static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
+                              ir_mode *orig_mode)
+{
+	int bits = get_mode_size_bits(orig_mode);
+	if (bits == 32)
+		return op;
+
+	if (mode_is_signed(orig_mode)) {
+		return gen_sign_extension(dbgi, block, op, bits);
+	} else {
+		return gen_zero_extension(dbgi, block, op, bits);
+	}
+}
+
+
+/**
  * Creates a possible DAG for a constant.
  */
 static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
@@ -274,11 +337,11 @@ static ir_node *gen_Store(ir_node *node)
 
 /**
  * Creates an sparc Mul.
+ * returns the lower 32bits of the 64bit multiply result
  *
  * @return the created sparc Mul node
  */
-static ir_node *gen_Mul(ir_node *node)
-{
+static ir_node *gen_Mul(ir_node *node) {
 	ir_mode  *mode    = get_irn_mode(node);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 
@@ -291,11 +354,36 @@ static ir_node *gen_Mul(ir_node *node)
 
 	assert(mode_is_data(mode));
 	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
+	arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
 
 	proj_res_low = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UMul_low);
 	return proj_res_low;
+}
 
-	//return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
+/**
+ * Creates an sparc Mulh.
+ * Mulh returns the upper 32bits of a mul instruction
+ *
+ * @return the created sparc Mulh node
+ */
+static ir_node *gen_Mulh(ir_node *node) {
+	ir_mode  *mode    = get_irn_mode(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+
+	ir_node *mul;
+	ir_node *proj_res_hi;
+
+	if (mode_is_float(mode))
+		panic("FP not supported yet");
+
+
+	assert(mode_is_data(mode));
+	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
+	arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
+
+	proj_res_hi = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UMul_low); // TODO: this actually should be pn_sparc_UMul_high !
+	//arch_set_irn_register(proj_res_hi, &sparc_flags_regs[REG_Y]);
+	return proj_res_hi;
 }
 
 /**
@@ -303,23 +391,20 @@ static ir_node *gen_Mul(ir_node *node)
  *
  * @return the created sparc Div node
  */
-static ir_node *gen_Div(ir_node *node)
-{
-	ir_mode  *mode    = get_irn_mode(node);
-	//dbg_info *dbgi     = get_irn_dbg_info(node);
+static ir_node *gen_Div(ir_node *node) {
 
-	//ir_node *proj_res_low;
+	ir_mode  *mode    = get_irn_mode(node);
+
+	ir_node *div;
 
 	if (mode_is_float(mode))
 		panic("FP not supported yet");
 
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_UDiv_reg, new_bd_sparc_UDiv_imm);
-
-	//proj_res = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UDiv_res);
-	//return proj_res;
-
-	//return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
+	//assert(mode_is_data(mode));
+	div = gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_UDiv_reg, new_bd_sparc_UDiv_imm);
+	return div;
 }
+
 
 /**
  * transform abs node:
@@ -330,8 +415,7 @@ static ir_node *gen_Div(ir_node *node)
  *
  * @return
  */
-static ir_node *gen_Abs(ir_node *node)
-{
+static ir_node *gen_Abs(ir_node *node) {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_mode  *mode    = get_irn_mode(node);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
@@ -367,6 +451,36 @@ static ir_node *gen_Not(ir_node *node)
 	return new_bd_sparc_Not(dbgi, block, new_op);
 }
 
+static ir_node *gen_And(ir_node *node)
+{
+	ir_mode  *mode    = get_irn_mode(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+
+	(void) block;
+	(void) dbgi;
+
+	if (mode_is_float(mode))
+		panic("FP not implemented yet");
+
+	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_And_reg, new_bd_sparc_And_imm);
+}
+
+static ir_node *gen_Or(ir_node *node)
+{
+	ir_mode  *mode    = get_irn_mode(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+
+	(void) block;
+	(void) dbgi;
+
+	if (mode_is_float(mode))
+		panic("FP not implemented yet");
+
+	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Or_reg, new_bd_sparc_Or_imm);
+}
+
 static ir_node *gen_Shl(ir_node *node)
 {
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLL_reg, new_bd_sparc_ShiftLL_imm);
@@ -375,6 +489,11 @@ static ir_node *gen_Shl(ir_node *node)
 static ir_node *gen_Shr(ir_node *node)
 {
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLR_reg, new_bd_sparc_ShiftLR_imm);
+}
+
+static ir_node *gen_Shra(ir_node *node)
+{
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftRA_reg, new_bd_sparc_ShiftRA_imm);
 }
 
 /****** TRANSFORM GENERAL BACKEND NODES ********/
@@ -593,9 +712,11 @@ static ir_node *gen_Cmp(ir_node *node)
 		panic("FloatCmp not implemented");
 	}
 
+	/*
 	if (get_mode_size_bits(cmp_mode) != 32) {
 		panic("CmpMode != 32bit not supported yet");
 	}
+	*/
 
 	assert(get_irn_mode(op2) == cmp_mode);
 	is_unsigned = !mode_is_signed(cmp_mode);
@@ -617,9 +738,9 @@ static ir_node *gen_Cmp(ir_node *node)
 
 	/* integer compare */
 	new_op1 = be_transform_node(op1);
-	//new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
+	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
 	new_op2 = be_transform_node(op2);
-	//new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
+	new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
 	return new_bd_sparc_Cmp_reg(dbgi, block, new_op1, new_op2, false, is_unsigned);
 }
 
@@ -636,54 +757,6 @@ static ir_node *gen_SymConst(ir_node *node)
 	new_node = new_bd_sparc_SymConst(dbgi, block, entity);
 	be_dep_on_frame(new_node);
 	return new_node;
-}
-
-/**
- * Create an And that will zero out upper bits.
- *
- * @param dbgi     debug info
- * @param block    the basic block
- * @param op       the original node
- * @param src_bits  number of lower bits that will remain
- */
-static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
-                                   int src_bits)
-{
-	if (src_bits == 8) {
-		return new_bd_sparc_And_imm(dbgi, block, op, 0xFF);
-	} else if (src_bits == 16) {
-		ir_node *lshift = new_bd_sparc_ShiftLL_imm(dbgi, block, op, 16);
-		ir_node *rshift = new_bd_sparc_ShiftLR_imm(dbgi, block, lshift, 16);
-		return rshift;
-	} else {
-		panic("zero extension only supported for 8 and 16 bits");
-	}
-}
-
-/**
- * Generate code for a sign extension.
- */
-static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
-                                   int src_bits)
-{
-	int shift_width = 32 - src_bits;
-	ir_node *lshift_node = new_bd_sparc_ShiftLL_imm(dbgi, block, op, shift_width);
-	ir_node *rshift_node = new_bd_sparc_ShiftRA_imm(dbgi, block, lshift_node, shift_width);
-	return rshift_node;
-}
-
-/**
- * returns true if it is assured, that the upper bits of a node are "clean"
- * which means for a 16 or 8 bit value, that the upper bits in the register
- * are 0 for unsigned and a copy of the last significant bit for signed
- * numbers.
- */
-static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
-{
-	(void) transformed_node;
-	(void) mode;
-	/* TODO */
-	return false;
 }
 
 /**
@@ -830,13 +903,11 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 	long     proj      = get_Proj_proj(node);
 
 	if (proj == pn_be_AddSP_sp) {
-		// TODO: check for correct pn_sparc_* flags
 		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
 		                           pn_sparc_SubSP_stack);
 		arch_set_irn_register(res, &sparc_gp_regs[REG_SP]);
 		return res;
 	} else if (proj == pn_be_AddSP_res) {
-		// TODO: check for correct pn_sparc_* flags
 		return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_sparc_SubSP_stack);
 	} else if (proj == pn_be_AddSP_M) {
 		return new_rd_Proj(dbgi, new_pred, mode_M, pn_sparc_SubSP_M);
@@ -877,6 +948,27 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 }
 
 
+static ir_node *gen_Proj_Div(ir_node *node)
+{
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_mode  *mode     = get_irn_mode(node);
+	long     proj      = get_Proj_proj(node);
+
+	switch (proj) {
+		case pn_Div_res:
+			if (is_sparc_UDiv(new_pred)) {
+				return new_rd_Proj(dbgi, new_pred, mode, pn_sparc_UDiv_res);
+			}
+		break;
+	default:
+		break;
+	}
+	panic("Unsupported Proj from Div");
+}
+
+
 /**
  * Transform a Proj node.
  */
@@ -907,6 +999,8 @@ static ir_node *gen_Proj(ir_node *node)
 	} else if (is_Cmp(pred)) {
 		//panic("gen_Proj not implemented for Cmp");
 		return gen_Proj_Cmp(node);
+	} else if (is_Div(pred)) {
+		return gen_Proj_Div(node);
 	} else if (is_Start(pred)) {
 	/*
 		if (proj == pn_Start_X_initial_exec) {
@@ -995,26 +1089,27 @@ void sparc_register_transformers(void)
 	set_transformer(op_Jmp,          gen_Jmp);
 
 	set_transformer(op_Mul,          gen_Mul);
+	set_transformer(op_Mulh,         gen_Mulh);
 	set_transformer(op_Div,          gen_Div);
 	set_transformer(op_Abs,          gen_Abs);
 	set_transformer(op_Shl,          gen_Shl);
 	set_transformer(op_Shr,          gen_Shr);
+	set_transformer(op_Shrs,         gen_Shra);
 
 	set_transformer(op_Minus,        gen_Minus);
 	set_transformer(op_Not,          gen_Not);
+	set_transformer(op_And,          gen_And);
+	set_transformer(op_Or,           gen_Or);
 
 	set_transformer(op_Unknown,      gen_Unknown);
 
 	/* node list */
 	/*
-	set_transformer(op_And,          gen_And);
+
 	set_transformer(op_CopyB,        gen_CopyB);
 	set_transformer(op_Eor,          gen_Eor);
-	set_transformer(op_Mul,          gen_Mul);
-	set_transformer(op_Or,           gen_Or);
 	set_transformer(op_Quot,         gen_Quot);
 	set_transformer(op_Rotl,         gen_Rotl);
-	set_transformer(op_Shrs,         gen_Shrs);
 	*/
 
 	set_transformer(op_ASM,       bad_transform);
@@ -1029,7 +1124,7 @@ void sparc_register_transformers(void)
 	set_transformer(op_Free,      bad_transform);
 	set_transformer(op_Id,        bad_transform);
 	set_transformer(op_InstOf,    bad_transform);
-	set_transformer(op_Mulh,      bad_transform);
+
 	set_transformer(op_Mux,       bad_transform);
 	set_transformer(op_Raise,     bad_transform);
 	set_transformer(op_Sel,       bad_transform);

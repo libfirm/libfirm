@@ -79,7 +79,7 @@ static int sparc_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 
 			/* TODO: dump some attributes which should show up */
 			/* in node name in dump (e.g. consts or the like)  */
-			fputs("\n", F);
+			//fputs("\n", F);
 
 			if (is_sparc_FrameAddr(n)) {
 				const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(n);

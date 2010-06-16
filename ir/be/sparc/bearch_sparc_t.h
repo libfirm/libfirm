@@ -34,7 +34,7 @@
 // sparc ABI requires a min stacksize to
 // save registers in case of a trap etc.
 // by now we assume only non-leaf procedures: 92 + 4 (padding)
-#define SPARC_MIN_STACKSIZE 96
+#define SPARC_MIN_STACKSIZE 112
 
 typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct _sparc_isa_t sparc_isa_t;
