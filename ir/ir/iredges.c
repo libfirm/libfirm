@@ -1074,6 +1074,44 @@ int (get_irn_n_edges_kind)(const ir_node *irn, ir_edge_kind_t kind)
 	return _get_irn_n_edges_kind(irn, kind);
 }
 
+static void irg_walk_edges2(ir_node *node, irg_walk_func *pre,
+                            irg_walk_func *post, void *env)
+{
+	const ir_edge_t *edge, *next;
+
+	if (irn_visited(node))
+		return;
+	mark_irn_visited(node);
+
+	if (pre != NULL)
+		pre(node, env);
+
+	foreach_out_edge_kind_safe(node, edge, next, EDGE_KIND_NORMAL) {
+		/* find the corresponding successor block. */
+		ir_node *pred = get_edge_src_irn(edge);
+		irg_walk_edges2(pred, pre, post, env);
+	}
+
+	if (post != NULL)
+		post(node, env);
+}
+
+void irg_walk_edges(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                    void *env)
+{
+	ir_graph *irg = get_irn_irg(node);
+
+	assert(edges_activated(irg));
+	assert(is_Block(node));
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+
+	inc_irg_visited(irg);
+	irg_walk_edges2(node, pre, post, env);
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
+}
+
 static void irg_block_edges_walk2(ir_node *bl, irg_walk_func *pre,
                                   irg_walk_func *post, void *env)
 {
@@ -1099,13 +1137,15 @@ static void irg_block_edges_walk2(ir_node *bl, irg_walk_func *pre,
 void irg_block_edges_walk(ir_node *node, irg_walk_func *pre,
                           irg_walk_func *post, void *env)
 {
-	assert(edges_activated(current_ir_graph));
+	ir_graph *irg = get_irn_irg(node);
+
+	assert(edges_activated(irg));
 	assert(is_Block(node));
 
-	ir_reserve_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
+	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 
-	inc_irg_block_visited(current_ir_graph);
+	inc_irg_block_visited(irg);
 	irg_block_edges_walk2(node, pre, post, env);
 
-	ir_free_resources(current_ir_graph, IR_RESOURCE_BLOCK_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }

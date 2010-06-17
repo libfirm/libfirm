@@ -266,6 +266,9 @@ FIRM_API void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
 FIRM_API void irg_block_edges_walk(ir_node *block, irg_walk_func *pre,
                                    irg_walk_func *post, void *env);
 
+FIRM_API void irg_walk_edges(ir_node *start, irg_walk_func *pre,
+                             irg_walk_func *post, void *env);
+
 /**
  * Reset the user's private data at offset 'offset'
  * The user has to remember his offset and the size of his data!
