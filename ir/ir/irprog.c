@@ -44,6 +44,10 @@
 /* A variable from where everything in the ir can be accessed. */
 ir_prog *irp;
 ir_prog *get_irp(void) { return irp; }
+void set_irp(ir_prog *new_irp)
+{
+	irp = new_irp;
+}
 
 /**
  *  Create a new incomplete ir_prog.

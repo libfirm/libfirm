@@ -94,8 +94,13 @@ FIRM_API ir_resources_t irp_resources_reserved(const ir_prog *irp);
 FIRM_API ir_prog *get_irp(void);
 
 /**
- * Creates a new ir_prog (a module or compilation unit),
- * returns it and sets irp with it.
+ * Set current irp
+ */
+FIRM_API void set_irp(ir_prog *irp);
+
+/**
+ * Creates a new ir_prog (a module or compilation unit).
+ * Note: This does not set irp to the newly created ir_prog
  *
  * @param name  the name of this irp (module)
  */
