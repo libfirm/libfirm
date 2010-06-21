@@ -97,7 +97,7 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		current_ir_graph        = rem;
 		res->linkage            = IR_LINKAGE_CONSTANT;
 		res->attr.mtd_attr.irg_add_properties = mtp_property_inherited;
-		res->attr.mtd_attr.vtable_number      = VTABLE_NUM_NOT_SET;
+		res->attr.mtd_attr.vtable_number      = IR_VTABLE_NUM_NOT_SET;
 		res->attr.mtd_attr.param_access       = NULL;
 		res->attr.mtd_attr.param_weight       = NULL;
 		res->attr.mtd_attr.irg                = NULL;

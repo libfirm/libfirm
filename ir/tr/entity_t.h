@@ -78,9 +78,6 @@ typedef struct compound_ent_attr {
 	                     /**< paths corresponding to constant values. */
 } compound_ent_attr;
 
-/** A reserved value for "not yet set". */
-#define VTABLE_NUM_NOT_SET ((unsigned)(-1))
-
 /** The attributes for methods. */
 typedef struct method_ent_attr {
 	ir_graph *irg;                 /**< The corresponding irg if known.
