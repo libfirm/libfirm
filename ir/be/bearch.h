@@ -105,7 +105,7 @@ void arch_dump_register_reqs(FILE *F, const ir_node *node);
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
 
 /**
- * Node classification. Used for statistics.
+ * Node classification. Used for statistics and for detecting reload nodes.
  */
 typedef enum arch_irn_class_t {
 	arch_irn_class_spill  = 1 << 0,
@@ -198,8 +198,6 @@ void arch_irn_set_register(ir_node *irn, int pos, const arch_register_t *reg);
  * @return A classification of the node.
  */
 arch_irn_class_t arch_irn_classify(const ir_node *irn);
-
-#define arch_irn_class_is(irn, irn_class) ((arch_irn_classify(irn) & arch_irn_class_ ## irn_class) != 0)
 
 /**
  * Get the flags of a node.

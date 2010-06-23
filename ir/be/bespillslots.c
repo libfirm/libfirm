@@ -816,11 +816,7 @@ static void collect_spills_walker(ir_node *node, void *data)
 	const arch_register_class_t *cls;
 	int align;
 
-	/* classify returns classification of the irn the proj is attached to */
-	if (is_Proj(node))
-		return;
-
-	if (!arch_irn_class_is(node, reload))
+	if (! (arch_irn_classify(node) & arch_irn_class_reload))
 		return;
 
 	mode  = get_irn_mode(node);
