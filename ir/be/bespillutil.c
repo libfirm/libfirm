@@ -564,6 +564,9 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 
 	(void)reloader;
 
+	if (get_irn_mode(arg) == mode_T)
+		return 0;
+
 	/*
 	 * Ignore registers are always available
 	 */

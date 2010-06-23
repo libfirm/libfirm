@@ -38,6 +38,7 @@
 #include "beinfo.h"
 #include "be.h"
 #include "beirg.h"
+#include "error.h"
 
 typedef enum arch_register_class_flags_t {
 	arch_register_class_flag_none      = 0,
@@ -774,13 +775,16 @@ static inline const arch_register_req_t *arch_get_register_req_out(
 	int             pos = 0;
 	backend_info_t *info;
 
+	/* you have to query the Proj nodes for the constraints (or use
+	 * arch_get_out_register_req. Querying a mode_T node and expecting
+	 * arch_no_register_req is a bug in your code! */
+	assert(get_irn_mode(irn) != mode_T);
+
 	if (is_Proj(irn)) {
 		pos = get_Proj_proj(irn);
 		irn = get_Proj_pred(irn);
-	} else if (get_irn_mode(irn) == mode_T) {
-		/* TODO: find out who does this and fix the caller! */
-		return arch_no_register_req;
 	}
+
 	info = be_get_info(irn);
 	if (info->out_infos == NULL)
 		return arch_no_register_req;

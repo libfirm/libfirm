@@ -755,9 +755,7 @@ static vfp_liveness vfp_liveness_transfer(ir_node *irn, vfp_liveness live)
 				live &= ~(1 << arch_register_get_index(reg));
 			}
 		}
-	}
-
-	if (arch_irn_consider_in_reg_alloc(cls, irn)) {
+	} else if (arch_irn_consider_in_reg_alloc(cls, irn)) {
 		const arch_register_t *reg = x87_get_irn_register(irn);
 		live &= ~(1 << arch_register_get_index(reg));
 	}

@@ -119,6 +119,9 @@ static int count_result(const ir_node* irn)
 	if (mode == mode_M || mode == mode_X)
 		return 0;
 
+	if (mode == mode_T)
+		return 1;
+
 	if (arch_get_register_req_out(irn)->type & arch_register_req_type_ignore)
 		return 0;
 
@@ -194,9 +197,14 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 	last = 0;
 	for (i = 0; i < arity; ++i) {
 		ir_node* op = fc->costs[i].irn;
-		if (op == last)                 continue;
-		if (get_irn_mode(op) == mode_M) continue;
-		if (arch_irn_is_ignore(op))     continue;
+		ir_mode* mode;
+		if (op == last)
+			continue;
+		mode = get_irn_mode(op);
+		if (mode == mode_M)
+			continue;
+		if (mode != mode_T && arch_irn_is_ignore(op))
+			continue;
 		cost = MAX(fc->costs[i].cost + n_op_res, cost);
 		last = op;
 		++n_op_res;

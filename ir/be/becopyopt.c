@@ -391,10 +391,13 @@ static int ou_max_ind_set_costs(unit_t *ou)
 
 static void co_collect_units(ir_node *irn, void *env)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(irn);
+	const arch_register_req_t *req;
 	copy_opt_t                *co  = env;
 	unit_t *unit;
 
+	if (get_irn_mode(irn) == mode_T)
+		return;
+	req = arch_get_register_req_out(irn);
 	if (req->cls != co->cls)
 		return;
 	if (!co_is_optimizable_root(irn))
@@ -796,11 +799,14 @@ static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs
 
 static void build_graph_walker(ir_node *irn, void *env)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(irn);
+	const arch_register_req_t *req;
 	copy_opt_t                *co  = env;
 	int pos, max;
 	const arch_register_t *reg;
 
+	if (get_irn_mode(irn) == mode_T)
+		return;
+	req = arch_get_register_req_out(irn);
 	if (req->cls != co->cls || arch_irn_is_ignore(irn))
 		return;
 
