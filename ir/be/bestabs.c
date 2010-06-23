@@ -214,8 +214,14 @@ static void be_emit_tv_as_decimal(tarval *tv)
 
 static void emit_type_name(const ir_type *type)
 {
+	char *c;
 	char buf[256];
 	ir_print_type(buf, sizeof(buf), type);
+	/* replace special chars to be on the safe side */
+	for (c = buf; *c != '\0'; ++c) {
+		if (*c == '\n' || *c == '"' || *c == '\\')
+			*c = '?';
+	}
 	be_emit_string(buf);
 }
 
