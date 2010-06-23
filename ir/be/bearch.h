@@ -41,38 +41,54 @@
 
 typedef enum arch_register_class_flags_t {
 	arch_register_class_flag_none      = 0,
-	arch_register_class_flag_manual_ra = 1,  /**< don't do automatic register allocation for this class */
-	arch_register_class_flag_state     = 2
+	/**< don't do automatic register allocation for this class */
+  	arch_register_class_flag_manual_ra = 1U << 0,
+  	/**< the register models an abstract state (example: fpu rounding mode) */
+	arch_register_class_flag_state     = 1U << 1
 } arch_register_class_flags_t;
 
 typedef enum arch_register_type_t {
 	arch_register_type_none         = 0,
-	arch_register_type_caller_save  = 1,  /**< The register must be saved by the caller
-	                                           upon a function call. It thus can be overwritten
-	                                           in the called function. */
-	arch_register_type_callee_save  = 2,  /**< The register must be saved by the caller
-	                                           upon a function call. It thus can be overwritten
-	                                           in the called function. */
-	arch_register_type_ignore       = 4,  /**< Do not consider this register when allocating. */
-	arch_register_type_joker        = 8,  /**< The emitter can choose an arbitrary register */
-	arch_register_type_virtual      = 16, /**< This is just a virtual register.Virtual registers have
-	                                           nearly no constraints, it is a allowed to have multiple
-	                                           definition for the same register at a point) */
-	arch_register_type_state        = 32, /**< The register represents a state that should be handled by
-	                                           bestate code */
+	/** The register must be saved by the caller upon a function call. It thus
+	 * can be overwritten in the called function. */
+	arch_register_type_caller_save  = 1U << 0,
+	/** The register must be saved by the caller upon a function call. It thus
+	 * can be overwritten in the called function. */
+	arch_register_type_callee_save  = 1U << 1,
+	/** Do not consider this register when allocating. */
+	arch_register_type_ignore       = 1U << 2,
+	/** The emitter can choose an arbitrary register. The register fulfills any
+	 * register constraints as long as the register class matches */
+	arch_register_type_joker        = 1U << 3,
+	/** This is just a virtual register. Virtual registers fulfill any register
+	 * constraints as long as the register class matches. It is a allowed to
+	 * have multiple definitions for the same virtual register at a point */
+	arch_register_type_virtual      = 1U << 4,
+	/** The register represents a state that should be handled by bestate
+	 * code */
+	arch_register_type_state        = 1U << 5,
 } arch_register_type_t;
 
 /**
  * Different types of register allocation requirements.
  */
 typedef enum arch_register_req_type_t {
-	arch_register_req_type_none              = 0, /**< No register requirement. */
-	arch_register_req_type_normal            = 1U << 0, /**< All registers in the class are allowed. */
-	arch_register_req_type_limited           = 1U << 1, /**< Only a real subset of the class is allowed. */
-	arch_register_req_type_should_be_same    = 1U << 2, /**< The register should be equal to another one at the node. */
-	arch_register_req_type_must_be_different = 1U << 3, /**< The register must be unequal from some other at the node. */
-	arch_register_req_type_ignore            = 1U << 4, /**< ignore while allocating registers */
-	arch_register_req_type_produces_sp       = 1U << 5, /**< the output produces a new value for the stack pointer */
+	/** No register requirement. */
+ 	arch_register_req_type_none              = 0,
+	/** All registers in the class are allowed. */
+	arch_register_req_type_normal            = 1U << 0,
+	/** Only a real subset of the class is allowed. */
+	arch_register_req_type_limited           = 1U << 1,
+	/** The register should be equal to another one at the node. */
+	arch_register_req_type_should_be_same    = 1U << 2,
+	/** The register must be unequal from some other at the node. */
+	arch_register_req_type_must_be_different = 1U << 3,
+	/** ignore while allocating registers */
+	arch_register_req_type_ignore            = 1U << 4,
+	/** the output produces a new value for the stack pointer
+	 * (this is not really a constraint but a marker to guide the stackpointer
+	 * rewiring logic) */
+	arch_register_req_type_produces_sp       = 1U << 5,
 } arch_register_req_type_t;
 
 extern const arch_register_req_t *arch_no_register_req;
@@ -89,7 +105,7 @@ void arch_dump_register_reqs(FILE *F, const ir_node *node);
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
 
 /**
- * Node classification. Mainly used for statistics.
+ * Node classification. Used for statistics.
  */
 typedef enum arch_irn_class_t {
 	arch_irn_class_spill  = 1 << 0,
@@ -106,9 +122,13 @@ void       arch_set_frame_entity(ir_node *irn, ir_entity *ent);
 int        arch_get_sp_bias(ir_node *irn);
 
 int             arch_get_op_estimated_cost(const ir_node *irn);
-arch_inverse_t *arch_get_inverse(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
-int             arch_possible_memory_operand(const ir_node *irn, unsigned int i);
-void            arch_perform_memory_operand(ir_node *irn, ir_node *spill, unsigned int i);
+arch_inverse_t *arch_get_inverse(const ir_node *irn, int i,
+                                 arch_inverse_t *inverse,
+                                 struct obstack *obstack);
+int             arch_possible_memory_operand(const ir_node *irn,
+                                             unsigned int i);
+void            arch_perform_memory_operand(ir_node *irn, ir_node *spill,
+                                            unsigned int i);
 
 /**
  * Get the register requirements for a node.
@@ -129,7 +149,8 @@ const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
  * @param cls The register class to consider.
  * @param bs  The bit set to put the registers to.
  */
-extern void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs);
+extern void arch_put_non_ignore_regs(const arch_register_class_t *cls,
+                                     bitset_t *bs);
 
 /**
  * Check, if a register is assignable to an operand of a node.
@@ -138,7 +159,8 @@ extern void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t 
  * @param reg The register.
  * @return    1, if the register might be allocated to the operand 0 if not.
  */
-int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *reg);
+int arch_reg_is_allocatable(const ir_node *irn, int pos,
+                            const arch_register_t *reg);
 
 #define arch_reg_out_is_allocatable(irn, reg) arch_reg_is_allocatable(irn, -1, reg)
 
@@ -149,7 +171,8 @@ int arch_reg_is_allocatable(const ir_node *irn, int pos, const arch_register_t *
  * @return    The register class of the operand or NULL, if
  *            operand is a non-register operand.
  */
-const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos);
+const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn,
+                                                    int pos);
 
 #define arch_get_irn_reg_class_out(irn) arch_get_irn_reg_class(irn, -1)
 
@@ -216,14 +239,17 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
  * A register.
  */
 struct arch_register_t {
-	const char                  *name;        /**< The name of the register. */
-	const arch_register_class_t *reg_class;   /**< The class the register belongs to. */
-	unsigned                     index;       /**< The index of the register in the class. */
-	arch_register_type_t         type;        /**< The type of the register. */
+	const char                  *name;       /**< The name of the register. */
+	const arch_register_class_t *reg_class;  /**< The class of the register */
+	unsigned                     index;      /**< The index of the register in
+	                                              the class. */
+	arch_register_type_t         type;       /**< The type of the register. */
+	/** register constraint allowing just this register */
 	const arch_register_req_t   *single_req;
 };
 
-static inline const arch_register_class_t *_arch_register_get_class(const arch_register_t *reg)
+static inline const arch_register_class_t *_arch_register_get_class(
+		const arch_register_t *reg)
 {
 	return reg->reg_class;
 }
@@ -281,7 +307,8 @@ struct arch_register_class_t {
 /** return the register class flags */
 #define arch_register_class_flags(cls) ((cls)->flags)
 
-static inline const arch_register_t *_arch_register_for_index(const arch_register_class_t *cls, unsigned idx)
+static inline const arch_register_t *_arch_register_for_index(
+		const arch_register_class_t *cls, unsigned idx)
 {
 	assert(idx < cls->n_regs);
 	return &cls->regs[idx];
@@ -292,7 +319,8 @@ static inline const arch_register_t *_arch_register_for_index(const arch_registe
 /**
  * Convenience macro to check for set constraints.
  * @param req   A pointer to register requirements.
- * @param kind  The kind of constraint to check for (see arch_register_req_type_t).
+ * @param kind  The kind of constraint to check for
+ *              (see arch_register_req_type_t).
  * @return      1, If the kind of constraint is present, 0 if not.
  */
 #define arch_register_req_is(req, kind) \
@@ -302,11 +330,10 @@ static inline const arch_register_t *_arch_register_for_index(const arch_registe
  * Expresses requirements to register allocation for an operand.
  */
 struct arch_register_req_t {
-	arch_register_req_type_t     type;  /**< The type of the constraint. */
-	const arch_register_class_t *cls;   /**< The register class this constraint belongs to. */
-
+	arch_register_req_type_t     type; /**< The type of the constraint. */
+	const arch_register_class_t *cls;  /**< The register class this constraint
+	                                        belongs to. */
 	const unsigned *limited;            /**< allowed register bitset */
-
 	unsigned other_same;                /**< Bitmask of ins which should use the
 	                                         same register (should_be_same). */
 	unsigned other_different;           /**< Bitmask of ins which shall use a
@@ -347,9 +374,8 @@ struct arch_inverse_t {
 	int      n;       /**< count of nodes returned in nodes array */
 	int      costs;   /**< costs of this remat */
 
-	/**< nodes for this inverse operation. shall be in
-	 *  schedule order. last element is the target value
-	 */
+	/** nodes for this inverse operation. shall be in schedule order.
+	 * last element is the target value */
 	ir_node  **nodes;
 };
 
@@ -362,7 +388,8 @@ struct arch_irn_ops_t {
 	 * @return    The register requirements for the selected operand.
 	 *            The pointer returned is never NULL.
 	 */
-	const arch_register_req_t *(*get_irn_reg_req_in)(const ir_node *irn, int pos);
+	const arch_register_req_t *(*get_irn_reg_req_in)(const ir_node *irn,
+	                                                 int pos);
 
 	/**
 	 * Classify the node.
@@ -374,8 +401,8 @@ struct arch_irn_ops_t {
 	/**
 	 * Get the entity on the stack frame this node depends on.
 	 * @param irn  The node in question.
-	 * @return The entity on the stack frame or NULL, if the node does not have a
-	 *         stack frame entity.
+	 * @return The entity on the stack frame or NULL, if the node does not have
+	 *         a stack frame entity.
 	 */
 	ir_entity *(*get_frame_entity)(const ir_node *irn);
 
@@ -411,28 +438,32 @@ struct arch_irn_ops_t {
 	 * of the given node as result.
 	 *
 	 * @param irn       The original operation
-	 * @param i         Index of the argument we want the inverse operation to yield
+	 * @param i         Index of the argument we want the inverse operation to
+	 *                  yield
 	 * @param inverse   struct to be filled with the resulting inverse op
-	 * @param obstack   The obstack to use for allocation of the returned nodes array
+	 * @param obstack   The obstack to use for allocation of the returned nodes
+	 *                  array
 	 * @return          The inverse operation or NULL if operation invertible
 	 */
-	arch_inverse_t *(*get_inverse)(const ir_node *irn, int i, arch_inverse_t *inverse, struct obstack *obstack);
+	arch_inverse_t *(*get_inverse)(const ir_node *irn, int i,
+	                               arch_inverse_t *inverse,
+	                               struct obstack *obstack);
 
 	/**
 	 * Get the estimated cycle count for @p irn.
 	 *
 	 * @param irn  The node.
-	 *
 	 * @return     The estimated cycle count for this operation
 	 */
 	int (*get_op_estimated_cost)(const ir_node *irn);
 
 	/**
-	 * Asks the backend whether operand @p i of @p irn can be loaded form memory internally
+	 * Asks the backend whether operand @p i of @p irn can be loaded form memory
+	 * internally
 	 *
 	 * @param irn  The node.
-	 * @param i    Index of the argument we would like to know whether @p irn can load it form memory internally
-	 *
+	 * @param i    Index of the argument we would like to know whether @p irn
+	 *             can load it form memory internally
 	 * @return     nonzero if argument can be loaded or zero otherwise
 	 */
 	int (*possible_memory_operand)(const ir_node *irn, unsigned int i);
@@ -444,7 +475,8 @@ struct arch_irn_ops_t {
 	 * @param spill  The spill.
 	 * @param i      The position of the reload.
 	 */
-	void (*perform_memory_operand)(ir_node *irn, ir_node *spill, unsigned int i);
+	void (*perform_memory_operand)(ir_node *irn, ir_node *spill,
+	                               unsigned int i);
 };
 
 /**
@@ -573,7 +605,8 @@ struct arch_isa_if_t {
 	const arch_register_class_t *(*get_reg_class)(unsigned i);
 
 	/**
-	 * Get the register class which shall be used to store a value of a given mode.
+	 * Get the register class which shall be used to store a value of a given
+	 * mode.
 	 * @param self The this pointer.
 	 * @param mode The mode in question.
 	 * @return A register class which can hold values of the given mode.
@@ -586,7 +619,8 @@ struct arch_isa_if_t {
 	 * @param call_type   The call type of the method (procedure) in question.
 	 * @param p           The array of parameter locations to be filled.
 	 */
-	void (*get_call_abi)(const void *self, ir_type *call_type, be_abi_call_t *abi);
+	void (*get_call_abi)(const void *self, ir_type *call_type,
+	                     be_abi_call_t *abi);
 
 	/**
 	 * Get the code generator interface.
@@ -603,7 +637,8 @@ struct arch_isa_if_t {
 	 * @param selector The selector given by options.
 	 * @return         The list scheduler selector.
 	 */
-	const list_sched_selector_t *(*get_list_sched_selector)(const void *self, list_sched_selector_t *selector);
+	const list_sched_selector_t *(*get_list_sched_selector)(const void *self,
+			list_sched_selector_t *selector);
 
 	/**
 	 * Get the ILP scheduler to use.
@@ -641,7 +676,8 @@ struct arch_isa_if_t {
 	 *                       NULL
 	 *                     };
 	 */
-	const be_execution_unit_t ***(*get_allowed_execution_units)(const ir_node *irn);
+	const be_execution_unit_t ***(*get_allowed_execution_units)(
+			const ir_node *irn);
 
 	/**
 	 * Return the abstract machine for this isa.
@@ -654,8 +690,10 @@ struct arch_isa_if_t {
 	 * If NULL is returned, all irg will be taken into account and they will be
 	 * generated in an arbitrary order.
 	 * @param self   The isa object.
-	 * @param irgs   A flexible array ARR_F of length 0 where the backend can append the desired irgs.
-	 * @return A flexible array ARR_F containing all desired irgs in the desired order.
+	 * @param irgs   A flexible array ARR_F of length 0 where the backend can
+	 *               append the desired irgs.
+	 * @return A flexible array ARR_F containing all desired irgs in the
+	 *         desired order.
 	 */
 	ir_graph **(*get_backend_irg_list)(const void *self, ir_graph ***irgs);
 
@@ -703,14 +741,16 @@ struct arch_isa_if_t {
  */
 struct arch_env_t {
 	const arch_isa_if_t   *impl;
-	const arch_register_t *sp;               /** The stack pointer register. */
-	const arch_register_t *bp;               /** The base pointer register. */
-	const arch_register_class_t *link_class; /** The static link pointer register class. */
-	int                    stack_dir;        /** -1 for decreasing, 1 for increasing. */
-	int                    stack_alignment;  /** power of 2 stack alignment */
-	const be_main_env_t   *main_env;         /** the be main environment */
-	int                    spill_cost;       /** cost for a be_Spill node */
-	int                    reload_cost;      /** cost for a be_Reload node */
+	const arch_register_t *sp;               /**< The stack pointer register. */
+	const arch_register_t *bp;               /**< The base pointer register. */
+	const arch_register_class_t *link_class; /**< The static link pointer
+	                                              register class. */
+	int                    stack_dir;        /**< -1 for decreasing, 1 for
+	                                              increasing. */
+	int                    stack_alignment;  /**< power of 2 stack alignment */
+	const be_main_env_t   *main_env;         /**< the be main environment */
+	int                    spill_cost;       /**< cost for a be_Spill node */
+	int                    reload_cost;      /**< cost for a be_Reload node */
 };
 
 static inline unsigned arch_irn_get_n_outs(const ir_node *node)
