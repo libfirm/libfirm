@@ -121,6 +121,22 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
  */
 int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
+#ifdef _MSC_VER
+typedef          __int64 long64;
+typedef unsigned __int64 ulong64;
+
+#define LL_FMT	"i64"
+#define ULL_FMT	"ui64"
+
+#else
+typedef          long long long64;
+typedef unsigned long long ulong64;
+
+#define LL_FMT	"ll"
+#define ULL_FMT	"llu"
+
+#endif
+
 /**
  * Statistics over a copy optimization module.
  */
