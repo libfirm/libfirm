@@ -375,7 +375,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old)
 
 	if (!old) {
 		const arch_register_req_t *req;
-		void     *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
+		neighbours_iter_t nodes_it;
 		ir_node  *neigh;
 		unsigned len;
 
@@ -412,7 +412,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old)
 
 		/* build list of interfering neighbours */
 		len = 0;
-		be_ifg_foreach_neighbour(env->ifg, nodes_it, irn, neigh) {
+		be_ifg_foreach_neighbour(env->ifg, &nodes_it, irn, neigh) {
 			if (!arch_irn_is_ignore(neigh)) {
 				obstack_ptr_grow(phase_obst(ph), neigh);
 				++len;
@@ -631,14 +631,14 @@ static int count_interfering_aff_neighs(co_mst_env_t *env, const affinity_node_t
  */
 static void build_affinity_chunks(co_mst_env_t *env)
 {
-	void        *nodes_it = be_ifg_nodes_iter_alloca(env->ifg);
+	nodes_iter_t nodes_it;
 	aff_edge_t  *edges    = NEW_ARR_F(aff_edge_t, 0);
 	ir_node     *n;
 	int         i, len;
 	aff_chunk_t *curr_chunk;
 
 	/* at first we create the affinity edge objects */
-	be_ifg_foreach_node(env->ifg, nodes_it, n) {
+	be_ifg_foreach_node(env->ifg, &nodes_it, n) {
 		int             n_idx = get_irn_idx(n);
 		co_mst_irn_t    *n1;
 		affinity_node_t *an;

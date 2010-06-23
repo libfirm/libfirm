@@ -163,6 +163,7 @@ static inline void be_timer_pop(be_timer_id_t id)
 
 	tmp = ir_timer_pop();
 	(void) tmp;
+	(void) id;
 	assert(tmp == be_timers[id] && "Attempt to pop wrong timer.");
 }
 

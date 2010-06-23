@@ -50,7 +50,7 @@
 #include "bearch.h"
 #include "benode.h"
 #include "beutil.h"
-#include "beifg_t.h"
+#include "beifg.h"
 #include "beintlive_t.h"
 #include "becopyopt_t.h"
 #include "becopystat.h"
@@ -893,7 +893,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	int      *node_map  = XMALLOCN(int, get_irg_last_idx(co->irg) + 1);
 
 	ir_node *irn;
-	void *it, *nit;
+	nodes_iter_t it;
+	neighbours_iter_t nit;
 	int n, n_regs;
 	unsigned i;
 
@@ -908,11 +909,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	 * the values below n are the pre-colored register nodes
 	 */
 
-	it  = be_ifg_nodes_iter_alloca(ifg);
-	nit = be_ifg_neighbours_iter_alloca(ifg);
-
 	n = n_regs;
-	be_ifg_foreach_node(ifg, it, irn) {
+	be_ifg_foreach_node(ifg, &it, irn) {
 		if (arch_irn_is_ignore(irn))
 			continue;
 		node_map[get_irn_idx(irn)] = n++;
@@ -920,7 +918,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 
 	fprintf(f, "%d %d\n", n, n_regs);
 
-	be_ifg_foreach_node(ifg, it, irn) {
+	be_ifg_foreach_node(ifg, &it, irn) {
 		if (!arch_irn_is_ignore(irn)) {
 			int idx                        = node_map[get_irn_idx(irn)];
 			affinity_node_t           *a   = get_affinity_info(co, irn);
@@ -934,7 +932,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 				}
 			}
 
-			be_ifg_foreach_neighbour(ifg, nit, irn, adj) {
+			be_ifg_foreach_neighbour(ifg, &nit, irn, adj) {
 				if (!arch_irn_is_ignore(adj) &&
 						!co_dump_appel_disjoint_constraints(co, irn, adj)) {
 					int adj_idx = node_map[get_irn_idx(adj)];

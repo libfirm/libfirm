@@ -38,8 +38,7 @@
 #include "irprintf.h"
 #include "irtools.h"
 #include "irbitset.h"
-#include "beifg_t.h"
-#include "beifg_impl.h"
+#include "beifg.h"
 #include "irphase_t.h"
 #include "error.h"
 #include "xmalloc.h"
@@ -48,524 +47,282 @@
 #include "becopyopt.h"
 #include "beirg.h"
 #include "bemodule.h"
+#include "beintlive_t.h"
 
-/** Defines values for the ifg performance test */
-#define BE_CH_PERFORMANCETEST_MIN_NODES (50)
-#define BE_CH_PERFORMANCETEST_COUNT (500)
-
-typedef struct _coloring_t coloring_t;
-
-struct _coloring_t {
-	ir_phase         ph;
-	ir_graph         *irg;
-};
-
-size_t (be_ifg_nodes_iter_size)(const be_ifg_t *ifg)
+void be_ifg_free(be_ifg_t *self)
 {
-	return ifg->impl->nodes_iter_size;
+	free(self);
 }
 
-size_t (be_ifg_neighbours_iter_size)(const be_ifg_t *ifg)
+int be_ifg_connected(const be_ifg_t *ifg, const ir_node *a, const ir_node *b)
 {
-	return ifg->impl->neighbours_iter_size;
+	return be_values_interfere(ifg->env->birg->lv, a, b);
 }
 
-size_t (be_ifg_cliques_iter_size)(const be_ifg_t *ifg)
+static void nodes_walker(ir_node *bl, void *data)
 {
-	return ifg->impl->cliques_iter_size;
-}
+	nodes_iter_t     *it   = data;
+	struct list_head *head = get_block_border_head(it->env, bl);
+	border_t         *b;
 
-static void *regs_irn_data_init(ir_phase *ph, const ir_node *irn, void *data)
-{
-	(void)ph;
-	(void)data;
-
-	return (void*)arch_get_irn_register(irn);
-}
-
-static coloring_t *coloring_init(coloring_t *c, ir_graph *irg)
-{
-	phase_init(&c->ph, irg, regs_irn_data_init);
-	c->irg = irg;
-	return c;
-}
-
-static void get_irn_color(ir_node *irn, void *c)
-{
-	coloring_t *coloring = c;
-	phase_get_or_set_irn_data(&coloring->ph, irn);
-}
-
-static void restore_irn_color(ir_node *irn, void *c)
-{
-	coloring_t *coloring = c;
-	const arch_register_t *reg = phase_get_irn_data(&coloring->ph, irn);
-	if (reg)
-		arch_set_irn_register(irn, reg);
-}
-
-static void coloring_save(coloring_t *c)
-{
-	irg_walk_graph(c->irg, NULL, get_irn_color, c);
-}
-
-static void coloring_restore(coloring_t *c)
-{
-	irg_walk_graph(c->irg, NULL, restore_irn_color, c);
-}
-
-void (be_ifg_free)(be_ifg_t *ifg)
-{
-	ifg->impl->free(ifg);
-}
-
-int (be_ifg_connected)(const be_ifg_t *ifg, const ir_node *a, const ir_node *b)
-{
-	return ifg->impl->connected(ifg, a, b);
-}
-
-ir_node *(be_ifg_neighbours_begin)(const be_ifg_t *ifg, void *iter, const ir_node *irn)
-{
-	return ifg->impl->neighbours_begin(ifg, iter, irn);
-}
-
-ir_node *(be_ifg_neighbours_next)(const be_ifg_t *ifg, void *iter)
-{
-	return ifg->impl->neighbours_next(ifg, iter);
-}
-
-void (be_ifg_neighbours_break)(const be_ifg_t *ifg, void *iter)
-{
-	ifg->impl->neighbours_break(ifg, iter);
-}
-
-ir_node *(be_ifg_nodes_begin)(const be_ifg_t *ifg, void *iter)
-{
-	return ifg->impl->nodes_begin(ifg, iter);
-}
-
-ir_node *(be_ifg_nodes_next)(const be_ifg_t *ifg, void *iter)
-{
-	return ifg->impl->nodes_next(ifg, iter);
-}
-
-void (be_ifg_nodes_break)(const be_ifg_t *ifg, void *iter)
-{
-	ifg->impl->nodes_break(ifg, iter);
-}
-
-int (be_ifg_cliques_begin)(const be_ifg_t *ifg, void *iter, ir_node **buf)
-{
-	return ifg->impl->cliques_begin(ifg, iter, buf);
-}
-
-int (be_ifg_cliques_next)(const be_ifg_t *ifg, void *iter)
-{
-	return ifg->impl->cliques_next(ifg, iter);
-}
-
-void (be_ifg_cliques_break)(const be_ifg_t *ifg, void *iter)
-{
-	ifg->impl->cliques_break(ifg, iter);
-}
-
-int (be_ifg_degree)(const be_ifg_t *ifg, const ir_node *irn)
-{
-	return ifg->impl->degree(ifg, irn);
-}
-
-
-void be_ifg_check(const be_ifg_t *ifg)
-{
-	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
-	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
-
-	ir_node *n, *m;
-	int node_count = 0;
-	int neighbours_count = 0;
-	int degree = 0;
-
-	/* count all nodes */
-	ir_printf("\n\nFound the following nodes in the graph %+F:\n\n", current_ir_graph);
-	be_ifg_foreach_node(ifg,iter1,n)
-	{
-		node_count++;
-		degree = be_ifg_degree(ifg, n);
-		ir_printf("%d. %+F with degree: %d\n", node_count, n, degree);
-	}
-
-	ir_printf("\n\nNumber of nodes: %d\n\n", node_count);
-
-	/* Check, if all neighbours are indeed connected to the node. */
-	be_ifg_foreach_node(ifg, iter1, n)
-	{
-		ir_printf("\n%+F; ", n);
-		be_ifg_foreach_neighbour(ifg, iter2, n, m)
-		{
-			ir_printf("%+F; ", m);
-			neighbours_count++;
-			if (!be_ifg_connected(ifg, n, m))
-				ir_fprintf(stderr, "%+F is a neighbour of %+F but they are not connected!\n", n, m);
+	foreach_border_head(head, b) {
+		if (b->is_def && b->is_real) {
+			obstack_ptr_grow(&it->obst, b->irn);
+			it->n++;
 		}
 	}
-	ir_printf("\n\nFound %d nodes in the 'check neighbour section'\n", neighbours_count);
 }
 
-static int be_ifg_check_get_node_count(const be_ifg_t *ifg)
+static void find_nodes(const be_ifg_t *ifg, nodes_iter_t *iter)
 {
-	void *iter = be_ifg_nodes_iter_alloca(ifg);
-	int node_count = 0;
-	ir_node *n;
+	obstack_init(&iter->obst);
+	iter->n     = 0;
+	iter->curr  = 0;
+	iter->env   = ifg->env;
 
-	be_ifg_foreach_node(ifg, iter, n)
-	{
-		node_count++;
-	}
-
-	return node_count;
+	irg_block_walk_graph(ifg->env->irg, nodes_walker, NULL, iter);
+	obstack_ptr_grow(&iter->obst, NULL);
+	iter->nodes = obstack_finish(&iter->obst);
 }
 
-static int be_ifg_check_cmp_nodes(const void *a, const void *b)
+static inline void node_break(nodes_iter_t *it, int force)
 {
-	const ir_node *node_a = *(ir_node **)a;
-	const ir_node *node_b = *(ir_node **)b;
-
-	long nr_a = get_irn_idx(node_a);
-	long nr_b = get_irn_idx(node_b);
-
-	return QSORT_CMP(nr_a, nr_b);
+	if ((it->curr >= it->n || force) && it->nodes) {
+		obstack_free(&it->obst, NULL);
+		it->nodes = NULL;
+	}
 }
 
-void be_ifg_check_sorted(const be_ifg_t *ifg)
+static ir_node *get_next_node(nodes_iter_t *it)
 {
-	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
-	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
+	ir_node *res = NULL;
 
-	ir_node *n, *m;
-	const int node_count = be_ifg_check_get_node_count(ifg);
-	int i = 0;
+	if (it->curr < it->n)
+		res = it->nodes[it->curr++];
 
-	ir_node **all_nodes = XMALLOCN(ir_node*, node_count);
+	node_break(it, 0);
 
-	be_ifg_foreach_node(ifg, iter1, n)
-	{
-		if (!node_is_in_irgs_storage(ifg->env->irg, n))
-		{
-			ir_printf("+%F is in ifg but not in the current irg!", n);
-			assert (node_is_in_irgs_storage(ifg->env->irg, n));
-		}
-
-		all_nodes[i] = n;
-		i++;
-	}
-
-	qsort(all_nodes, node_count, sizeof(all_nodes[0]), be_ifg_check_cmp_nodes);
-
-	for (i = 0; i < node_count; i++)
-	{
-		ir_node **neighbours = XMALLOCN(ir_node*, node_count);
-		int j = 0;
-		int k = 0;
-		int degree = 0;
-
-		degree = be_ifg_degree(ifg, all_nodes[i]);
-
-		be_ifg_foreach_neighbour(ifg, iter2, all_nodes[i], m)
-		{
-			neighbours[j] = m;
-			j++;
-		}
-
-		qsort(neighbours, j, sizeof(neighbours[0]), be_ifg_check_cmp_nodes);
-
-		ir_printf("%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
-
-		for (k = 0; k < j; k++)
-		{
-			ir_printf("%+F, ", neighbours[k]);
-		}
-
-		ir_printf("\n");
-
-		free(neighbours);
-	}
-
-	free(all_nodes);
-
+	return res;
 }
 
-void be_ifg_check_sorted_to_file(const be_ifg_t *ifg, FILE *f)
+ir_node *be_ifg_nodes_begin(const be_ifg_t *ifg, nodes_iter_t *iter)
 {
-	void *iter1 = be_ifg_nodes_iter_alloca(ifg);
-	void *iter2 = be_ifg_neighbours_iter_alloca(ifg);
-
-	ir_node *n, *m;
-	const int node_count = be_ifg_check_get_node_count(ifg);
-	int i = 0;
-
-	ir_node **all_nodes = XMALLOCN(ir_node*, node_count);
-
-	be_ifg_foreach_node(ifg, iter1, n)
-	{
-		if (!node_is_in_irgs_storage(ifg->env->irg, n))
-		{
-			ir_fprintf (f,"+%F is in ifg but not in the current irg!",n);
-			assert (node_is_in_irgs_storage(ifg->env->irg, n));
-		}
-
-		all_nodes[i] = n;
-		i++;
-	}
-
-	qsort(all_nodes, node_count, sizeof(all_nodes[0]), be_ifg_check_cmp_nodes);
-
-	for (i = 0; i < node_count; i++)
-	{
-		ir_node **neighbours = XMALLOCN(ir_node*, node_count);
-		int j = 0;
-		int k = 0;
-		int degree = 0;
-
-		degree = be_ifg_degree(ifg, all_nodes[i]);
-
-		be_ifg_foreach_neighbour(ifg, iter2, all_nodes[i], m)
-		{
-			neighbours[j] = m;
-			j++;
-		}
-
-		qsort(neighbours, j, sizeof(neighbours[0]), be_ifg_check_cmp_nodes);
-
-		ir_fprintf (f,"%d. %+F's neighbours(%d): ", i+1, all_nodes[i], degree);
-
-		for (k = 0; k < j; k++)
-		{
-			ir_fprintf (f,"%+F, ", neighbours[k]);
-		}
-
-		ir_fprintf (f,"\n");
-
-		free(neighbours);
-	}
-
-	free(all_nodes);
-
+	find_nodes(ifg, iter);
+	return get_next_node(iter);
 }
 
-void be_ifg_check_performance(be_chordal_env_t *chordal_env)
+ir_node *be_ifg_nodes_next(nodes_iter_t *iter)
 {
-	int tests = BE_CH_PERFORMANCETEST_COUNT;
-	coloring_t coloring;
+	return get_next_node(iter);
+}
 
-	int used_memory;
+void be_ifg_nodes_break(nodes_iter_t *iter)
+{
+	node_break(iter, 1);
+}
 
-	int i = 0;
-	int rt;
-	copy_opt_t *co;
-	be_ifg_t *old_if = chordal_env->ifg;
+static void find_neighbour_walker(ir_node *block, void *data)
+{
+	neighbours_iter_t *it    = data;
+	struct list_head  *head  = get_block_border_head(it->env, block);
 
-	ir_timer_t *timer = ir_timer_new();
-	unsigned long elapsed_usec = 0;
+	border_t *b;
+	int has_started = 0;
 
-	if (get_irg_estimated_node_cnt(chordal_env->irg) >= BE_CH_PERFORMANCETEST_MIN_NODES)
-	{
-		coloring_init(&coloring, chordal_env->irg);
-		coloring_save(&coloring);
+	if (!be_is_live_in(it->env->birg->lv, block, it->irn) && block != get_nodes_block(it->irn))
+		return;
 
-		ir_timer_reset(timer);
+	foreach_border_head(head, b) {
+		ir_node *irn = b->irn;
 
-		for (i = 0; i<tests; i++) /* performance test with std */
-		{
-
-			used_memory = ir_get_heap_used_bytes();
-
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
-
-			chordal_env->ifg = be_ifg_std_new(chordal_env);
-
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
-
-			used_memory = ir_get_heap_used_bytes() - used_memory;
-
-			coloring_restore(&coloring);
-
-			co = NULL;
-			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
-			co_build_ou_structure(co);
-			co_build_graph_structure(co);
-
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
-
-			co_solve_heuristic_new(co);
-
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
-
-			co_free_graph_structure(co);
-			co_free_ou_structure(co);
-			free_copy_opt(co);
-			be_ifg_free(chordal_env->ifg);
-
+		if (irn == it->irn) {
+			if (b->is_def)
+				has_started = 1;
+			else
+				break; /* if we reached the end of the node's lifetime we can safely break */
+		}
+		else if (b->is_def) {
+			/* if any other node than the one in question starts living, add it to the set */
+			ir_nodeset_insert(&it->neighbours, irn);
+		}
+		else if (!has_started) {
+			/* we only delete, if the live range in question has not yet started */
+			ir_nodeset_remove(&it->neighbours, irn);
 		}
 
-		elapsed_usec = ir_timer_elapsed_usec(timer);
-		/* calculating average */
-		elapsed_usec = elapsed_usec / tests;
+	}
+}
 
-		ir_printf("\nstd:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
+static void find_neighbours(const be_ifg_t *ifg, neighbours_iter_t *it, const ir_node *irn)
+{
+	it->env         = ifg->env;
+	it->irn         = irn;
+	it->valid       = 1;
+	ir_nodeset_init(&it->neighbours);
 
-		used_memory=0;
-		elapsed_usec=0;
+	dom_tree_walk(get_nodes_block(irn), find_neighbour_walker, NULL, it);
 
-		for (i = 0; i<tests; i++)  /* performance test with clique */
-		{
-			used_memory = ir_get_heap_used_bytes();
+	ir_nodeset_iterator_init(&it->iter, &it->neighbours);
+}
 
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
+static inline void neighbours_break(neighbours_iter_t *it, int force)
+{
+	(void) force;
+	assert(it->valid == 1);
+	ir_nodeset_destroy(&it->neighbours);
+	it->valid = 0;
+}
 
-			chordal_env->ifg = be_ifg_clique_new(chordal_env);
+static ir_node *get_next_neighbour(neighbours_iter_t *it)
+{
+	ir_node *res = ir_nodeset_iterator_next(&it->iter);
 
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
+	if (res == NULL) {
+		ir_nodeset_destroy(&it->neighbours);
+	}
+	return res;
+}
 
-			used_memory = ir_get_heap_used_bytes() - used_memory;
+ir_node *be_ifg_neighbours_begin(const be_ifg_t *ifg, neighbours_iter_t *iter,
+                                 const ir_node *irn)
+{
+	find_neighbours(ifg, iter, irn);
+	return ir_nodeset_iterator_next(&iter->iter);
+}
 
-			coloring_restore(&coloring);
+ir_node *be_ifg_neighbours_next(neighbours_iter_t *iter)
+{
+	return get_next_neighbour(iter);
+}
 
-			co = NULL;
-			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
-			co_build_ou_structure(co);
-			co_build_graph_structure(co);
+void be_ifg_neighbours_break(neighbours_iter_t *iter)
+{
+	neighbours_break(iter, 1);
+}
 
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
+static inline void free_clique_iter(cliques_iter_t *it)
+{
+	it->n_blocks = -1;
+	obstack_free(&it->ob, NULL);
+	del_pset(it->living);
+}
 
-			co_solve_heuristic_new(co);
+static void get_blocks_dom_order(ir_node *blk, void *env)
+{
+	cliques_iter_t *it = env;
+	obstack_ptr_grow(&it->ob, blk);
+}
 
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
+/**
+ * NOTE: Be careful when changing this function!
+ *       First understand the control flow of consecutive calls.
+ */
+static inline int get_next_clique(cliques_iter_t *it)
+{
 
-			co_free_graph_structure(co);
-			co_free_ou_structure(co);
-			free_copy_opt(co);
-			be_ifg_free(chordal_env->ifg);
+	/* continue in the block we left the last time */
+	for (; it->blk < it->n_blocks; it->blk++) {
+		int output_on_shrink = 0;
+		struct list_head *head = get_block_border_head(it->cenv, it->blocks[it->blk]);
 
+		/* on entry to a new block set the first border ... */
+		if (!it->bor)
+			it->bor = head->prev;
+
+		/* ... otherwise continue with the border we left the last time */
+		for (; it->bor != head; it->bor = it->bor->prev) {
+			border_t *b = list_entry(it->bor, border_t, list);
+
+			/* if its a definition irn starts living */
+			if (b->is_def) {
+				pset_insert_ptr(it->living, b->irn);
+				if (b->is_real)
+					output_on_shrink = 1;
+			} else
+
+			/* if its the last usage the irn dies */
+			{
+				/* before shrinking the set, return the current maximal clique */
+				if (output_on_shrink) {
+					int count = 0;
+					ir_node *irn;
+
+					/* fill the output buffer */
+					for (irn = pset_first(it->living); irn != NULL;
+					     irn = pset_next(it->living)) {
+						it->buf[count++] = irn;
+					}
+
+					assert(count > 0 && "We have a 'last usage', so there must be sth. in it->living");
+
+					return count;
+				}
+
+				pset_remove_ptr(it->living, b->irn);
+			}
 		}
 
-		elapsed_usec = ir_timer_elapsed_usec(timer);
-		/* calculating average */
-		elapsed_usec = elapsed_usec / tests;
-
-		ir_printf("\nclique:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
-
-		used_memory=0;
-		elapsed_usec=0;
-
-		for (i = 0; i<tests; i++)  /* performance test with list */
-		{
-			used_memory = ir_get_heap_used_bytes();
-
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
-
-			chordal_env->ifg = be_ifg_list_new(chordal_env);
-
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
-
-			used_memory = ir_get_heap_used_bytes() - used_memory;
-
-			coloring_restore(&coloring);
-
-			co = NULL;
-			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
-			co_build_ou_structure(co);
-			co_build_graph_structure(co);
-
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
-
-			co_solve_heuristic_new(co);
-
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
-
-			co_free_graph_structure(co);
-			co_free_ou_structure(co);
-			free_copy_opt(co);
-			be_ifg_free(chordal_env->ifg);
-
-		}
-
-		elapsed_usec = ir_timer_elapsed_usec(timer);
-		/* calculating average */
-		elapsed_usec = elapsed_usec / tests;
-
-		ir_printf("\nlist:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
-
-		used_memory=0;
-		elapsed_usec=0;
-
-		for (i = 0; i<tests; i++)  /* performance test with pointer */
-		{
-			used_memory = ir_get_heap_used_bytes();
-
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
-
-			chordal_env->ifg = be_ifg_pointer_new(chordal_env);
-
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
-
-			used_memory = ir_get_heap_used_bytes() - used_memory;
-
-			coloring_restore(&coloring);
-
-			co = NULL;
-			co = new_copy_opt(chordal_env, co_get_costs_loop_depth);
-			co_build_ou_structure(co);
-			co_build_graph_structure(co);
-
-			rt = ir_timer_enter_high_priority();
-			ir_timer_start(timer);
-
-			co_solve_heuristic_new(co);
-
-			ir_timer_stop(timer);
-			rt = ir_timer_leave_high_priority();
-
-			co_free_graph_structure(co);
-			co_free_ou_structure(co);
-			free_copy_opt(co);
-			be_ifg_free(chordal_env->ifg);
-
-		}
-
-		elapsed_usec = ir_timer_elapsed_usec(timer);
-		/* calculating average */
-		elapsed_usec = elapsed_usec / tests;
-
-		ir_printf("\npointer:; %+F; %u; %u ",current_ir_graph, used_memory, elapsed_usec);
-
-		i=0;
-		used_memory=0;
-		elapsed_usec=0;
+		it->bor = NULL;
+		assert(0 == pset_count(it->living) && "Something has survived! (At the end of the block it->living must be empty)");
 	}
 
-	chordal_env->ifg = old_if;
+	if (it->n_blocks != -1)
+		free_clique_iter(it);
 
-	ir_timer_free(timer);
+	return -1;
+}
+
+int be_ifg_cliques_begin(const be_ifg_t *ifg, cliques_iter_t *it,
+                         ir_node **buf)
+{
+	ir_node *start_bl = get_irg_start_block(ifg->env->irg);
+
+	obstack_init(&it->ob);
+	dom_tree_walk(start_bl, get_blocks_dom_order, NULL, it);
+
+	it->cenv     = ifg->env;
+	it->buf      = buf;
+	it->n_blocks = obstack_object_size(&it->ob) / sizeof(void *);
+	it->blocks   = obstack_finish(&it->ob);
+	it->blk      = 0;
+	it->bor      = NULL;
+	it->living   = pset_new_ptr(2 * arch_register_class_n_regs(it->cenv->cls));
+
+	return get_next_clique(it);
+}
+
+int be_ifg_cliques_next(cliques_iter_t *iter)
+{
+	return get_next_clique(iter);
+}
+
+void be_ifg_cliques_break(cliques_iter_t *iter)
+{
+	free_clique_iter(iter);
+}
+
+int be_ifg_degree(const be_ifg_t *ifg, const ir_node *irn)
+{
+	neighbours_iter_t it;
+	int degree;
+	find_neighbours(ifg, &it, irn);
+	degree = ir_nodeset_size(&it.neighbours);
+	neighbours_break(&it, 1);
+	return degree;
+}
+
+be_ifg_t *be_create_ifg(const be_chordal_env_t *env)
+{
+	be_ifg_t *ifg = XMALLOC(be_ifg_t);
+	ifg->env = env;
+
+	return ifg;
 }
 
 void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump_dot_cb_t *cb, void *self)
 {
-	void *nodes_it  = be_ifg_nodes_iter_alloca(ifg);
-	void *neigh_it  = be_ifg_neighbours_iter_alloca(ifg);
+	nodes_iter_t nodes_it;
+	neighbours_iter_t neigh_it;
 	bitset_t *nodes = bitset_malloc(get_irg_last_idx(irg));
 
 	ir_node *n, *m;
@@ -578,7 +335,7 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 	if (cb->at_begin)
 		cb->at_begin(file, self);
 
-	be_ifg_foreach_node(ifg, nodes_it, n) {
+	be_ifg_foreach_node(ifg, &nodes_it, n) {
 		if (cb->is_dump_node && cb->is_dump_node(self, n)) {
 			int idx = get_irn_idx(n);
 			bitset_set(nodes, idx);
@@ -590,8 +347,8 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 	}
 
 	/* Check, if all neighbours are indeed connected to the node. */
-	be_ifg_foreach_node(ifg, nodes_it, n) {
-		be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
+	be_ifg_foreach_node(ifg, &nodes_it, n) {
+		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 			int n_idx = get_irn_idx(n);
 			int m_idx = get_irn_idx(m);
 
@@ -613,10 +370,10 @@ void be_ifg_dump_dot(be_ifg_t *ifg, ir_graph *irg, FILE *file, const be_ifg_dump
 
 static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 {
-	void    *neigh_it = be_ifg_neighbours_iter_alloca(ifg);
+	neighbours_iter_t neigh_it;
 	ir_node *m;
 
-	be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
+	be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 		if (bitset_contains_irn(seen, m))
 			continue;
 
@@ -632,12 +389,12 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
 {
 	int      n_comp    = 0;
-	void     *nodes_it = be_ifg_nodes_iter_alloca(ifg);
+	nodes_iter_t nodes_it;
 	bitset_t *seen     = bitset_irg_malloc(birg->irg);
 
 	ir_node *n;
 
-	be_ifg_foreach_node(ifg, nodes_it, n) {
+	be_ifg_foreach_node(ifg, &nodes_it, n) {
 		if (bitset_contains_irn(seen, n))
 			continue;
 
@@ -655,16 +412,16 @@ static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
 
 void be_ifg_stat(be_irg_t *birg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 {
-	void     *nodes_it = be_ifg_nodes_iter_alloca(ifg);
-	void     *neigh_it = be_ifg_neighbours_iter_alloca(ifg);
-	bitset_t *nodes    = bitset_irg_malloc(birg->irg);
-	ir_node  *n, *m;
+	nodes_iter_t      nodes_it;
+	neighbours_iter_t neigh_it;
+	bitset_t         *nodes    = bitset_irg_malloc(birg->irg);
+	ir_node          *n, *m;
 
 	memset(stat, 0, sizeof(stat[0]));
 
-	be_ifg_foreach_node(ifg, nodes_it, n) {
+	be_ifg_foreach_node(ifg, &nodes_it, n) {
 		stat->n_nodes += 1;
-		be_ifg_foreach_neighbour(ifg, neigh_it, n, m) {
+		be_ifg_foreach_neighbour(ifg, &neigh_it, n, m) {
 			bitset_add_irn(nodes, n);
 			stat->n_edges += !bitset_contains_irn(nodes, m);
 		}
@@ -672,118 +429,4 @@ void be_ifg_stat(be_irg_t *birg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 
 	stat->n_comps = int_component_stat(birg, ifg);
 	bitset_free(nodes);
-}
-
-enum {
-	BE_IFG_STD = 1,
-	BE_IFG_FAST = 2,
-	BE_IFG_CLIQUE = 3,
-	BE_IFG_POINTER = 4,
-	BE_IFG_LIST = 5,
-	BE_IFG_CHECK = 6
-};
-
-static int ifg_flavor = BE_IFG_STD;
-
-static const lc_opt_enum_int_items_t ifg_flavor_items[] = {
-	{ "std",     BE_IFG_STD     },
-	{ "fast",    BE_IFG_FAST    },
-	{ "clique",  BE_IFG_CLIQUE  },
-	{ "pointer", BE_IFG_POINTER },
-	{ "list",    BE_IFG_LIST    },
-	{ "check",   BE_IFG_CHECK   },
-	{ NULL,      0              }
-};
-
-static lc_opt_enum_int_var_t ifg_flavor_var = {
-	&ifg_flavor, ifg_flavor_items
-};
-
-static const lc_opt_table_entry_t be_ifg_options[] = {
-	LC_OPT_ENT_ENUM_PTR ("ifg", "interference graph flavour", &ifg_flavor_var),
-	LC_OPT_LAST
-};
-
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ifg);
-void be_init_ifg(void)
-{
-	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *ifg_grp = lc_opt_get_grp(be_grp, "ifg");
-
-	lc_opt_add_table(ifg_grp, be_ifg_options);
-}
-
-
-static FILE *be_ifg_open(const be_chordal_env_t *env, const char *prefix)
-{
-	FILE *result;
-	char buf[1024];
-
-	ir_snprintf(buf, sizeof(buf), "%s%F_%s.log", prefix, env->irg, env->cls->name);
-	result = fopen(buf, "wt");
-	if (result == NULL) {
-		panic("Couldn't open '%s' for writing.", buf);
-	}
-
-	return result;
-}
-
-static void check_ifg_implementations(const be_chordal_env_t *chordal_env)
-{
-	be_ifg_t *ifg;
-	FILE *f;
-
-	f = be_ifg_open(chordal_env, "std");
-	ifg = be_ifg_std_new(chordal_env);
-	be_ifg_check_sorted_to_file(ifg, f);
-	fclose(f);
-	be_ifg_free(ifg);
-
-	f = be_ifg_open(chordal_env, "list");
-	ifg = be_ifg_list_new(chordal_env);
-	be_ifg_check_sorted_to_file(ifg, f);
-	fclose(f);
-	be_ifg_free(ifg);
-
-	f = be_ifg_open(chordal_env, "clique");
-	ifg = be_ifg_clique_new(chordal_env);
-	be_ifg_check_sorted_to_file(ifg, f);
-	fclose(f);
-	be_ifg_free(ifg);
-
-	f = be_ifg_open(chordal_env, "pointer");
-	ifg = be_ifg_pointer_new(chordal_env);
-	be_ifg_check_sorted_to_file(ifg, f);
-	fclose(f);
-	be_ifg_free(ifg);
-};
-
-be_ifg_t *be_create_ifg(const be_chordal_env_t *chordal_env)
-{
-	be_ifg_t *ifg = NULL;
-
-	switch (ifg_flavor) {
-		default:
-			panic("invalid ifg flavour selected");
-		case BE_IFG_STD:
-		case BE_IFG_FAST:
-			ifg = be_ifg_std_new(chordal_env);
-			break;
-		case BE_IFG_CLIQUE:
-			ifg = be_ifg_clique_new(chordal_env);
-			break;
-		case BE_IFG_POINTER:
-			ifg = be_ifg_pointer_new(chordal_env);
-			break;
-		case BE_IFG_LIST:
-			ifg = be_ifg_list_new(chordal_env);
-			break;
-		case BE_IFG_CHECK:
-			check_ifg_implementations(chordal_env);
-			/* Build the interference graph. */
-			ifg = be_ifg_std_new(chordal_env);
-			break;
-	}
-
-	return ifg;
 }

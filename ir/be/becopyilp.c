@@ -78,7 +78,7 @@ void be_init_copyilp(void)
 }
 
 #include "becopyilp_t.h"
-#include "beifg_t.h"
+#include "beifg.h"
 
 /******************************************************************************
     _____ _                        _            _   _
@@ -109,7 +109,7 @@ size_red_t *new_size_red(copy_opt_t *co)
 static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 {
 	be_ifg_t *ifg  = sr->co->cenv->ifg;
-	void     *iter = be_ifg_neighbours_iter_alloca(ifg);
+	neighbours_iter_t iter;
 	ir_node **all  = ALLOCAN(ir_node*, be_ifg_degree(ifg, ifn));
 	ir_node  *curr;
 	int       size = 0;
@@ -117,7 +117,7 @@ static inline int sr_is_simplicial(size_red_t *sr, const ir_node *ifn)
 	int       o;
 
 	/* get all non-removed neighbors */
-	be_ifg_foreach_neighbour(ifg, iter, ifn, curr)
+	be_ifg_foreach_neighbour(ifg, &iter, ifn, curr)
 		if (!sr_is_removed(sr, curr))
 			all[size++] = curr;
 
@@ -136,11 +136,11 @@ void sr_remove(size_red_t *sr)
 	ir_node *irn;
 	int redo = 1;
 	const be_ifg_t *ifg = sr->co->cenv->ifg;
-	void *iter = be_ifg_nodes_iter_alloca(ifg);
+	nodes_iter_t iter;
 
 	while (redo) {
 		redo = 0;
-		be_ifg_foreach_node(ifg, iter, irn) {
+		be_ifg_foreach_node(ifg, &iter, irn) {
 			const arch_register_req_t *req = arch_get_register_req_out(irn);
 
 			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
@@ -165,7 +165,7 @@ void sr_reinsert(size_red_t *sr)
 	coloring_suffix_t *cs;
 	be_ifg_t *ifg        = sr->co->cenv->ifg;
 	bitset_t *used_cols  = bitset_alloca(arch_register_class_n_regs(sr->co->cls));
-	void *iter           = be_ifg_neighbours_iter_alloca(ifg);
+	neighbours_iter_t iter;
 
 	/* color the removed nodes in right order */
 	for (cs = sr->col_suff; cs; cs = cs->next) {
@@ -176,7 +176,7 @@ void sr_reinsert(size_red_t *sr)
 		irn = cs->irn;
 		bitset_clear_all(used_cols);
 
-		be_ifg_foreach_neighbour(ifg, iter, irn, other) {
+		be_ifg_foreach_neighbour(ifg, &iter, irn, other) {
 			if (!sr_is_removed(sr, other)) /* only inspect nodes which are in graph right now */
 				bitset_set(used_cols, get_irn_col(other));
 		}

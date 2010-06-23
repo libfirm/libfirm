@@ -255,7 +255,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	int irn_col = qnode_get_new_color(qn, irn);
 	ir_node *sub_res, *curr;
 	be_ifg_t *ifg = chordal_env->ifg;
-	void *iter = be_ifg_neighbours_iter_alloca(ifg);
+	neighbours_iter_t iter;
 
 
 	DBG((dbg, LEVEL_3, "\t    %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, irn_col, col));
@@ -298,7 +298,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		bitset_clear(free_cols, irn_col);
 
 		/* Exclude all colors used by adjacent nodes */
-		be_ifg_foreach_neighbour(ifg, iter, irn, curr)
+		be_ifg_foreach_neighbour(ifg, &iter, irn, curr)
 			bitset_clear(free_cols, qnode_get_new_color(qn, curr));
 
 		free_col = bitset_next_set(free_cols, 0);
@@ -320,12 +320,12 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	 * If we arrive here changing color may be possible, but there may be conflicts.
 	 * Try to color all conflicting nodes 'curr' with the color of the irn itself.
 	 */
-	be_ifg_foreach_neighbour(ifg, iter, irn, curr) {
+	be_ifg_foreach_neighbour(ifg, &iter, irn, curr) {
 		DBG((dbg, LEVEL_3, "\t      Confl %+F(%d)\n", curr, qnode_get_new_color(qn, curr)));
 		if (qnode_get_new_color(qn, curr) == col && curr != trigger) {
 			sub_res = qnode_color_irn(qn, curr, irn_col, irn);
 			if (sub_res != CHANGE_SAVE) {
-				be_ifg_neighbours_break(ifg, iter);
+				be_ifg_neighbours_break(&iter);
 				return sub_res;
 			}
 		}

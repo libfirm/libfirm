@@ -20,7 +20,7 @@
 
 #include "becopyopt_t.h"
 #include "beifg.h"
-#include "beifg_t.h"
+#include "beifg.h"
 #include "bemodule.h"
 #include "irprintf_t.h"
 
@@ -113,8 +113,8 @@ static void insert_into_reverse_peo(ir_node *block, void *data)
 
 static int co_solve_heuristic_pbqp(copy_opt_t *co)
 {
-	void *nodes_it                       = be_ifg_nodes_iter_alloca(co->cenv->ifg);
-	void *neigh_it                       = be_ifg_neighbours_iter_alloca(co->cenv->ifg);
+	nodes_iter_t nodes_it;
+	neighbours_iter_t neigh_it;
 	unsigned number_registers            = co->cls->n_regs;
 	unsigned number_nodes                = get_irg_last_idx(co->irg);
 	ir_timer_t *t_ra_copymin_pbqp_create = ir_timer_new();
@@ -146,7 +146,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	be_put_ignore_regs(co->cenv->birg, co->cls, pbqp_co.ignore_reg);
 
 	/* add costs vector to nodes */
-	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
+	be_ifg_foreach_node(co->cenv->ifg, &nodes_it, ifg_node) {
 		int cntFreeChoosableRegs = 0;
 
 		/* create costs vector */
@@ -206,9 +206,9 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	}
 
 	/* add pbqp edges and cost matrix */
-	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
+	be_ifg_foreach_node(co->cenv->ifg, &nodes_it, ifg_node) {
 		/* add costs matrix between nodes (interference edge) */
-		be_ifg_foreach_neighbour(co->cenv->ifg, neigh_it, ifg_node, if_neighb_node) {
+		be_ifg_foreach_neighbour(co->cenv->ifg, &neigh_it, ifg_node, if_neighb_node) {
 			if (get_edge(pbqp_co.pbqp,get_irn_idx(ifg_node), get_irn_idx(if_neighb_node)) == NULL) {
 				/* copy matrix */
 				struct pbqp_matrix *matrix = pbqp_matrix_copy(pbqp_co.pbqp, ife_matrix);
@@ -283,7 +283,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	assert(solution != INF_COSTS && "No PBQP solution found");
 
 	/* coloring ifg */
-	be_ifg_foreach_node(co->cenv->ifg, nodes_it, ifg_node) {
+	be_ifg_foreach_node(co->cenv->ifg, &nodes_it, ifg_node) {
 		num index = get_node_solution(pbqp_co.pbqp, get_irn_idx(ifg_node));
 		const arch_register_t *reg = arch_register_for_index(co->cls, index);
 		arch_set_irn_register(ifg_node, reg);

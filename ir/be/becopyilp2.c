@@ -55,7 +55,7 @@
 #include "irtools.h"
 #include "irgwalk.h"
 #include "becopyilp_t.h"
-#include "beifg_t.h"
+#include "beifg.h"
 #include "besched.h"
 #include "bemodule.h"
 
@@ -73,14 +73,14 @@ typedef struct _local_env_t {
 static void build_coloring_cstr(ilp_env_t *ienv)
 {
 	be_ifg_t *ifg     = ienv->co->cenv->ifg;
-	void *iter        = be_ifg_nodes_iter_alloca(ifg);
+	nodes_iter_t iter;
 	bitset_t *colors;
 	ir_node *irn;
 	char buf[16];
 
 	colors = bitset_alloca(arch_register_class_n_regs(ienv->co->cls));
 
-	be_ifg_foreach_node(ifg, iter, irn)
+	be_ifg_foreach_node(ifg, &iter, irn)
 		if (!sr_is_removed(ienv->sr, irn)) {
 			unsigned col;
 			int cst_idx;
@@ -133,7 +133,7 @@ static void build_interference_cstr(ilp_env_t *ienv)
 	local_env_t *lenv     = ienv->env;
 	be_ifg_t    *ifg      = ienv->co->cenv->ifg;
 	int          n_colors = lenv->n_colors;
-	void        *iter     = be_ifg_cliques_iter_alloca(ifg);
+	cliques_iter_t iter;
 	ir_node    **clique   = ALLOCAN(ir_node*, n_colors);
 	int          size;
 	int          col;
@@ -142,7 +142,7 @@ static void build_interference_cstr(ilp_env_t *ienv)
 	char buf[16];
 
 	/* for each maximal clique */
-	be_ifg_foreach_clique(ifg, iter, clique, &size) {
+	be_ifg_foreach_clique(ifg, &iter, clique, &size) {
 		int realsize = 0;
 
 		for (i=0; i<size; ++i)

@@ -62,7 +62,6 @@
 #include "bera.h"
 #include "bechordal_t.h"
 #include "beifg.h"
-#include "beifg_impl.h"
 #include "becopyopt.h"
 #include "becopystat.h"
 #include "bessadestr.h"

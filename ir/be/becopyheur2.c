@@ -329,7 +329,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 
 	unsigned elm;
 	const ir_node *pos;
-	void *it;
+	neighbours_iter_t it;
 	int i;
 
 	/* Put all forbidden colors into the aux bitset. */
@@ -354,8 +354,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 		}
 	}
 
-	it = be_ifg_neighbours_iter_alloca(ifg);
-	be_ifg_foreach_neighbour(ifg, it, irn, pos) {
+	be_ifg_foreach_neighbour(ifg, &it, irn, pos) {
 		col_t col = get_col(env, pos);
 		if (color_is_fix(env, pos)) {
 			col_costs[col].costs  = INT_MAX;
@@ -365,7 +364,7 @@ static void determine_color_costs(co2_t *env, co2_irn_t *ci, col_cost_pair_t *co
 			col_costs[col].costs = add_saturated(col_costs[col].costs, 8 * be_ifg_degree(ifg, pos));
 		}
 	}
-	be_ifg_neighbours_break(ifg, it);
+	be_ifg_neighbours_break(&it);
 
 	/* Set the costs to infinity for each color which is not allowed at this node. */
 	bitset_foreach(forb, elm) {
@@ -430,7 +429,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 
 		struct list_head changed;
 		const ir_node *n;
-		void *it;
+		neighbours_iter_t it;
 
 		DBG((env->dbg, LEVEL_3, "\t\t%2{firm:indent}trying color %d(%d) on %+F\n", depth, tgt_col, costs, irn));
 
@@ -452,8 +451,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 		INIT_LIST_HEAD(&changed);
 		list_add(&ci->changed_list, &changed);
 
-		it = be_ifg_neighbours_iter_alloca(ifg);
-		be_ifg_foreach_neighbour(ifg, it, irn, n) {
+		be_ifg_foreach_neighbour(ifg, &it, irn, n) {
 
 			/* try to re-color the neighbor if it has the target color. */
 			if (get_col(env, n) == tgt_col) {
@@ -472,7 +470,7 @@ static int recolor(co2_t *env, const ir_node *irn, col_cost_pair_t *col_list, st
 					break;
 			}
 		}
-		be_ifg_neighbours_break(ifg, it);
+		be_ifg_neighbours_break(&it);
 
 		/*
 		We managed to assign the target color to all neighbors, so from the perspective
@@ -616,7 +614,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 
 	unsigned elm;
 	const ir_node *irn;
-	void *it;
+	neighbours_iter_t it;
 
 	admissible_colors(env, &ci->inh, bs);
 	bitset_flip_all(bs);
@@ -624,8 +622,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 		badness[elm] = ci->costs;
 
 	/* Use constrained/fixed interfering neighbors to influence the color badness */
-	it = be_ifg_neighbours_iter_alloca(ifg);
-	be_ifg_foreach_neighbour(ifg, it, ir->irn, irn) {
+	be_ifg_foreach_neighbour(ifg, &it, ir->irn, irn) {
 		co2_irn_t *ni = get_co2_irn(env, irn);
 
 		admissible_colors(env, ni, bs);
@@ -639,7 +636,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 			badness[c] += ci->costs;
 		}
 	}
-	be_ifg_neighbours_break(ifg, it);
+	be_ifg_neighbours_break(&it);
 }
 
 /**

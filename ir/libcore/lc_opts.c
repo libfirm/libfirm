@@ -600,7 +600,7 @@ static void lc_opt_print_grp_path_rec(char *buf, size_t len, const lc_opt_entry_
 		}
 	}
 
-	strncat(buf, ent->name, len);
+	strncat(buf, ent->name, len-1);
 }
 
 static char *lc_opt_print_grp_path(char *buf, size_t len, const lc_opt_entry_t *ent, char separator, lc_opt_entry_t *stop_ent)
@@ -904,7 +904,7 @@ void lc_opt_default_configs(const char *ini_name)
 
 	/* <cmnt>.ini */
 	strncpy(local_ini_file, ini_name, sizeof(local_ini_file));
-	strncat(local_ini_file, ".ini", sizeof(local_ini_file));
+	strncat(local_ini_file, ".ini", sizeof(local_ini_file)-1);
 	local_ini_file[sizeof(local_ini_file) - 1] = '\0';
 	path[0] = '\0';
 
@@ -912,7 +912,7 @@ void lc_opt_default_configs(const char *ini_name)
 #if _MSC_VER > 1200
 	/* ARG: need newer SDK to compile this */
 	SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path);
-	strncat(path, "\\", sizeof(path));
+	strncat(path, "\\", sizeof(path)-1);
 #endif
 	strncpy(home_dir_ini_file, local_ini_file, sizeof(home_dir_ini_file));
 	home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
@@ -921,7 +921,7 @@ void lc_opt_default_configs(const char *ini_name)
 		struct passwd *entry = getpwuid(getuid());
 		if (entry != NULL) {
 			strcpy(path, entry->pw_dir);
-			strncat(path, "/", sizeof(path));
+			strncat(path, "/", sizeof(path)-1);
 			/* .<cmnt>rc */
 			snprintf(home_dir_ini_file, sizeof(home_dir_ini_file), ".%src", ini_name);
 			home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
@@ -932,7 +932,7 @@ void lc_opt_default_configs(const char *ini_name)
 	}
 #endif
 
-	strncat(path, home_dir_ini_file, sizeof(path));
+	strncat(path, home_dir_ini_file, sizeof(path)-1);
 	path[sizeof(path) - 1] = '\0';
 
 	/* Process ini file in user's home. */
