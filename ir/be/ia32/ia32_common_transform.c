@@ -74,90 +74,62 @@ static int check_immediate_constraint(long val, char immediate_constraint_type)
 	}
 }
 
-/* creates a unique ident by adding a number to a tag */
-ident *ia32_unique_id(const char *tag)
-{
-	static unsigned id = 0;
-	char str[256];
-
-	snprintf(str, sizeof(str), tag, ++id);
-	return new_id_from_str(str);
-}
-
 /**
  * Get a primitive type for a mode with alignment 16.
  */
 static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 {
-	pmap_entry *e = pmap_find(types, mode);
-	ir_type *res;
+	ir_type *res = pmap_get(types, mode);
+	if (res != NULL)
+		return res;
 
-	if (! e) {
-		res = new_type_primitive(mode);
-		if (get_mode_size_bits(mode) >= 80) {
-			set_type_alignment_bytes(res, 16);
-		}
-		pmap_insert(types, mode, res);
+	res = new_type_primitive(mode);
+	if (get_mode_size_bits(mode) >= 80) {
+		set_type_alignment_bytes(res, 16);
 	}
-	else
-		res = e->value;
+	pmap_insert(types, mode, res);
 	return res;
 }
 
 ir_entity *create_float_const_entity(ir_node *cnst)
 {
-	ia32_isa_t *isa = env_cg->isa;
-	tarval *key     = get_Const_tarval(cnst);
-	pmap_entry *e   = pmap_find(isa->tv_ent, key);
-	ir_entity *res;
-	ir_graph *rem;
+	ia32_isa_t       *isa = env_cg->isa;
+	tarval           *tv  = get_Const_tarval(cnst);
+	ir_entity        *res = pmap_get(isa->tv_ent, tv);
+	ir_initializer_t *initializer;
+	ir_mode          *mode;
+	ir_type          *tp;
 
-	if (e == NULL) {
-		tarval  *tv   = key;
-		ir_mode *mode = get_tarval_mode(tv);
-		ir_type *tp;
+	if (res != NULL)
+		return res;
 
-		if (! ia32_cg_config.use_sse2) {
-			/* try to reduce the mode to produce smaller sized entities */
-			if (mode != mode_F) {
-				if (tarval_ieee754_can_conv_lossless(tv, mode_F)) {
-					mode = mode_F;
+	mode = get_tarval_mode(tv);
+
+	if (! ia32_cg_config.use_sse2) {
+		/* try to reduce the mode to produce smaller sized entities */
+		if (mode != mode_F) {
+			if (tarval_ieee754_can_conv_lossless(tv, mode_F)) {
+				mode = mode_F;
+				tv = tarval_convert_to(tv, mode);
+			} else if (mode != mode_D) {
+				if (tarval_ieee754_can_conv_lossless(tv, mode_D)) {
+					mode = mode_D;
 					tv = tarval_convert_to(tv, mode);
-				} else if (mode != mode_D) {
-					if (tarval_ieee754_can_conv_lossless(tv, mode_D)) {
-						mode = mode_D;
-						tv = tarval_convert_to(tv, mode);
-					}
 				}
 			}
 		}
-
-		if (mode == get_irn_mode(cnst)) {
-			/* mode was not changed */
-			tp = get_Const_type(cnst);
-			if (tp == firm_unknown_type)
-				tp = ia32_get_prim_type(isa->types, mode);
-		} else
-			tp = ia32_get_prim_type(isa->types, mode);
-
-		res = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
-
-		set_entity_ld_ident(res, get_entity_ident(res));
-		set_entity_visibility(res, ir_visibility_local);
-		add_entity_linkage(res, IR_LINKAGE_CONSTANT);
-
-		 /* we create a new entity here: It's initialization must resist on the
-		    const code irg */
-		rem = current_ir_graph;
-		current_ir_graph = get_const_code_irg();
-		set_atomic_ent_value(res, new_Const_type(tv, tp));
-		current_ir_graph = rem;
-
-		pmap_insert(isa->tv_ent, key, res);
-	} else {
-		res = e->value;
 	}
 
+	tp  = ia32_get_prim_type(isa->types, mode);
+	res = new_entity(get_glob_type(), id_unique("C%u"), tp);
+	set_entity_ld_ident(res, get_entity_ident(res));
+	set_entity_visibility(res, ir_visibility_private);
+	add_entity_linkage(res, IR_LINKAGE_CONSTANT);
+
+	initializer = create_initializer_tarval(tv);
+	set_entity_initializer(res, initializer);
+
+	pmap_insert(isa->tv_ent, tv, res);
 	return res;
 }
 

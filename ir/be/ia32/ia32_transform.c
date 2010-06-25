@@ -81,11 +81,11 @@
 #define DFP_INTMAX "9223372036854775807"
 #define ULL_BIAS   "18446744073709551616"
 
-#define ENT_SFP_SIGN ".LC_ia32_sfp_sign"
-#define ENT_DFP_SIGN ".LC_ia32_dfp_sign"
-#define ENT_SFP_ABS  ".LC_ia32_sfp_abs"
-#define ENT_DFP_ABS  ".LC_ia32_dfp_abs"
-#define ENT_ULL_BIAS ".LC_ia32_ull_bias"
+#define ENT_SFP_SIGN "C_ia32_sfp_sign"
+#define ENT_DFP_SIGN "C_ia32_dfp_sign"
+#define ENT_SFP_ABS  "C_ia32_sfp_abs"
+#define ENT_DFP_ABS  "C_ia32_dfp_abs"
+#define ENT_ULL_BIAS "C_ia32_ull_bias"
 
 #define mode_vfp	(ia32_reg_classes[CLASS_ia32_vfp].mode)
 #define mode_xmm    (ia32_reg_classes[CLASS_ia32_xmm].mode)
@@ -520,7 +520,7 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 
 		set_entity_ld_ident(ent, get_entity_ident(ent));
 		add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
-		set_entity_visibility(ent, ir_visibility_local);
+		set_entity_visibility(ent, ir_visibility_private);
 
 		if (kct == ia32_ULLBIAS) {
 			ir_initializer_t *initializer = create_initializer_compound(2);
@@ -3146,10 +3146,10 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **ne
 	tp = ia32_create_float_type(mode, 4);
 	tp = ia32_create_float_array(tp);
 
-	ent = new_entity(get_glob_type(), ia32_unique_id(".LC%u"), tp);
+	ent = new_entity(get_glob_type(), id_unique("C%u"), tp);
 
 	set_entity_ld_ident(ent, get_entity_ident(ent));
-	set_entity_visibility(ent, ir_visibility_local);
+	set_entity_visibility(ent, ir_visibility_private);
 	add_entity_linkage(ent, IR_LINKAGE_CONSTANT);
 
 	initializer = create_initializer_compound(2);

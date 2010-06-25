@@ -1448,9 +1448,7 @@ static void emit_indirect_symbol(const ir_entity *entity, be_gas_section_t secti
 
 char const *be_gas_get_private_prefix(void)
 {
-	return
-		be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O ? "L" :
-		".L";
+	return be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O ? "L" : ".L";
 }
 
 void be_gas_emit_entity(const ir_entity *entity)
