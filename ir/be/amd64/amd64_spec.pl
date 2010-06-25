@@ -101,9 +101,9 @@ $arch = "amd64";
 		{ name => "rax", type => 1 },
 		{ name => "rcx", type => 1 },
 		{ name => "rdx", type => 1 },
+		{ name => "rsi", type => 1 },
+		{ name => "rdi", type => 1 },
 		{ name => "rbx", type => 2 },
-		{ name => "rsi", type => 2 },
-		{ name => "rdi", type => 2 },
 		{ name => "rbp", type => 2 },
 		{ name => "rsp", type => 4 }, # stackpointer?
 		{ name => "r8",  type => 1 },
@@ -114,27 +114,28 @@ $arch = "amd64";
 		{ name => "r13", type => 2 },
 		{ name => "r14", type => 2 },
 		{ name => "r15", type => 2 },
+#		{ name => "gp_NOREG", type => 4 }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Iu" }
 	],
-	fp => [
-		{ name => "xmm0", type => 1 },
-		{ name => "xmm1", type => 1 },
-		{ name => "xmm2", type => 1 },
-		{ name => "xmm3", type => 1 },
-		{ name => "xmm4", type => 1 },
-		{ name => "xmm5", type => 1 },
-		{ name => "xmm6", type => 1 },
-		{ name => "xmm7", type => 1 },
-		{ name => "xmm8", type => 1 },
-		{ name => "xmm9", type => 1 },
-		{ name => "xmm10", type => 1 },
-		{ name => "xmm11", type => 1 },
-		{ name => "xmm12", type => 1 },
-		{ name => "xmm13", type => 1 },
-		{ name => "xmm14", type => 1 },
-		{ name => "xmm15", type => 1 },
-		{ mode => "mode_D" }
-	]
+#	fp => [
+#		{ name => "xmm0", type => 1 },
+#		{ name => "xmm1", type => 1 },
+#		{ name => "xmm2", type => 1 },
+#		{ name => "xmm3", type => 1 },
+#		{ name => "xmm4", type => 1 },
+#		{ name => "xmm5", type => 1 },
+#		{ name => "xmm6", type => 1 },
+#		{ name => "xmm7", type => 1 },
+#		{ name => "xmm8", type => 1 },
+#		{ name => "xmm9", type => 1 },
+#		{ name => "xmm10", type => 1 },
+#		{ name => "xmm11", type => 1 },
+#		{ name => "xmm12", type => 1 },
+#		{ name => "xmm13", type => 1 },
+#		{ name => "xmm14", type => 1 },
+#		{ name => "xmm15", type => 1 },
+#		{ mode => "mode_D" }
+#	]
 );
 
 %emit_templates = (
@@ -188,7 +189,7 @@ Add => {
 	                out => [ "gp" ] },
 	in         => [ "left", "right" ],
 	emit       => ". mov %S2, %D1\n"
-                    . ". add %S1, %D1\n",
+	              . ". add %S1, %D1\n",
 	outs       => [ "res" ],
 	mode       => "mode_Iu",
 },
@@ -208,4 +209,28 @@ SymConst => {
 	reg_req   => { out => [ "gp" ] },
 	mode      => 'mode_Iu',
 },
+Conv => {
+	state     => "exc_pinned",
+	attr      => "ir_mode *smaller_mode",
+	init_attr => "attr->ls_mode = smaller_mode;",
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	ins       => [ "val" ],
+	outs      => [ "res" ],
+	mode      => 'mode_Iu',
+},
+Jmp => {
+	state     => "pinned",
+	op_flags  => "X",
+	reg_req   => { out => [ "none" ] },
+	mode      => "mode_X",
+},
+#NoReg_GP => {
+#	state     => "pinned",
+#	op_flags  => "c|NB|NI",
+#	reg_req   => { out => [ "gp_NOREG:I" ] },
+#	units     => [],
+#	emit      => "",
+#	latency   => 0,
+#	mode      => "mode_Iu",
+#},
 );

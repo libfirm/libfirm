@@ -198,6 +198,27 @@ static void *amd64_cg_init(be_irg_t *birg)
 }
 
 
+typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
+
+/**
+ * Used to create per-graph unique pseudo nodes.
+ */
+static inline ir_node *create_const(amd64_code_gen_t *cg, ir_node **place,
+                                    create_const_node_func func,
+                                    const arch_register_t* reg)
+{
+	ir_node *block, *res;
+
+	if (*place != NULL)
+		return *place;
+
+	block = get_irg_start_block(cg->irg);
+	res = func(NULL, block);
+	arch_set_irn_register(res, reg);
+	*place = res;
+
+	return res;
+}
 
 const arch_isa_if_t amd64_isa_if;
 static amd64_isa_t amd64_isa_template = {
@@ -275,10 +296,8 @@ static const arch_register_class_t *amd64_get_reg_class(unsigned i)
  */
 static const arch_register_class_t *amd64_get_reg_class_for_mode(const ir_mode *mode)
 {
-	if (mode_is_float(mode))
-		return &amd64_reg_classes[CLASS_amd64_fp];
-	else
-		return &amd64_reg_classes[CLASS_amd64_gp];
+	assert(!mode_is_float(mode));
+	return &amd64_reg_classes[CLASS_amd64_gp];
 }
 
 
@@ -406,10 +425,10 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 	for (i = 0; i < n; i++) {
 		tp   = get_method_param_type(method_type, i);
 		mode = get_type_mode(tp);
-		printf ("MODE %p %p XX %d\n", mode, mode_Iu, i);
+		//d// printf ("MODE %p %p XX %d\n", mode, mode_Iu, i);
 
 		if (!no_reg && (i == 0 || i == 1) && mode == mode_Iu) {
-			printf("TEST%d\n", i);
+			//d// printf("TEST%d\n", i);
 			be_abi_call_param_reg(abi, i,
 			                      i == 0 ? &amd64_gp_regs[REG_RDI]
 			                             : &amd64_gp_regs[REG_RSI],

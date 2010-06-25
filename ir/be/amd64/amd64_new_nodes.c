@@ -45,6 +45,12 @@
 #include "amd64_new_nodes.h"
 #include "gen_amd64_regalloc_if.h"
 
+void set_amd64_ls_mode(ir_node *node, ir_mode *mode)
+{
+  amd64_attr_t *attr = get_amd64_attr(node);
+  attr->ls_mode = mode;
+}
+
 /**
  * Dumper interface for dumping amd64 nodes in vcg.
  * @param F        the output file
@@ -120,7 +126,6 @@ const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node)
 
 	return sym_attr;
 }
-
 
 /**
  * Returns the argument register requirements of a amd64 node.

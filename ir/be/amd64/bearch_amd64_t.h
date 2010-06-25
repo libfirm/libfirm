@@ -41,6 +41,7 @@ struct amd64_code_gen_t {
 	amd64_isa_t                    *isa;            /**< the isa instance */
 	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	char                            dump;           /**< set to 1 if graphs should be dumped */
+	ir_node  *noreg_gp;                             /**< unique NoReg_GP node */
 };
 
 struct amd64_isa_t {
@@ -58,5 +59,7 @@ struct amd64_transform_env_t {
 	ir_node  *irn;      /**< The irn, to be transformed */
 	ir_mode  *mode;     /**< The mode of the irn */
 };
+
+ir_node *amd64_new_NoReg_gp(amd64_code_gen_t *cg);
 
 #endif

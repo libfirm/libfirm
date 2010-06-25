@@ -193,6 +193,96 @@ static void emit_amd64_SymConst(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
+/**
+ * Returns the next block in a block schedule.
+ */
+static ir_node *sched_next_block(const ir_node *block)
+{
+    return get_irn_link(block);
+}
+
+/**
+ * Returns the target block for a control flow node.
+ */
+static ir_node *get_cfop_target_block(const ir_node *irn)
+{
+	return get_irn_link(irn);
+}
+
+/**
+ * Emit the target label for a control flow node.
+ */
+static void amd64_emit_cfop_target(const ir_node *irn)
+{
+	ir_node *block = get_cfop_target_block(irn);
+
+	be_gas_emit_block_name(block);
+}
+
+/**
+ * Emit a Jmp.
+ */
+static void emit_amd64_Jmp(const ir_node *node)
+{
+	ir_node *block, *next_block;
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(node);
+
+	/* we have a block schedule */
+	next_block = sched_next_block(block);
+	if (get_cfop_target_block(node) != next_block) {
+		be_emit_cstring("\tjmp ");
+		amd64_emit_cfop_target(node);
+	} else {
+		be_emit_cstring("\t/* fallthrough to ");
+		amd64_emit_cfop_target(node);
+		be_emit_cstring(" */");
+	}
+	be_emit_finish_line_gas(node);
+}
+
+/**
+ * Emits code for a call.
+ */
+static void emit_be_Call(const ir_node *node)
+{
+	ir_entity *entity = be_Call_get_entity (node);
+
+	if (entity) {
+		be_emit_cstring("\tcall ");
+		be_gas_emit_entity (be_Call_get_entity(node));
+		be_emit_finish_line_gas(node);
+	} else {
+		be_emit_pad_comment();
+		be_emit_cstring("/* FIXME: call NULL entity?! */\n");
+	}
+}
+
+/**
+ * emit copy node
+ */
+static void emit_be_Copy(const ir_node *irn)
+{
+	ir_mode *mode = get_irn_mode(irn);
+
+	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
+		/* omitted Copy */
+		return;
+	}
+
+	if (mode_is_float(mode)) {
+		panic("emit_be_Copy: move not supported for FP");
+	} else if (mode_is_data(mode)) {
+		be_emit_cstring("\tmov ");
+		amd64_emit_source_register(irn, 0);
+		be_emit_cstring(", ");
+		amd64_emit_dest_register(irn, 0);
+		be_emit_finish_line_gas(irn);
+	} else {
+		panic("emit_be_Copy: move not supported for this mode");
+	}
+}
 
 /**
  * Emits code for a return.
@@ -229,11 +319,16 @@ static void amd64_register_emitters(void)
 	amd64_register_spec_emitters();
 
 	set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
+	set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
 	set_emitter(op_be_Return,        emit_be_Return);
+	set_emitter(op_be_Call,          emit_be_Call);
+	set_emitter(op_be_Copy,          emit_be_Copy);
 
 	set_emitter(op_be_Start,         emit_nothing);
+	set_emitter(op_be_Keep,          emit_nothing);
 	set_emitter(op_be_Barrier,       emit_nothing);
 	set_emitter(op_be_IncSP,         emit_nothing);
+	set_emitter(op_Phi,              emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);

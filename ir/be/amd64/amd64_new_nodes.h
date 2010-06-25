@@ -39,6 +39,11 @@
  ***************************************************************************************************/
 
 /**
+ * Sets the input mode of the node.
+ */
+void set_amd64_ls_mode(ir_node *n, ir_mode *mode);
+
+/**
  * Returns the attributes of an amd64 node.
  */
 amd64_attr_t *get_amd64_attr(ir_node *node);
