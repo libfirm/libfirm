@@ -42,9 +42,9 @@
 
 typedef enum arch_register_class_flags_t {
 	arch_register_class_flag_none      = 0,
-	/**< don't do automatic register allocation for this class */
+	/** don't do automatic register allocation for this class */
   	arch_register_class_flag_manual_ra = 1U << 0,
-  	/**< the register models an abstract state (example: fpu rounding mode) */
+	/** the register models an abstract state (example: fpu rounding mode) */
 	arch_register_class_flag_state     = 1U << 1
 } arch_register_class_flags_t;
 
