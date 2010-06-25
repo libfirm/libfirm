@@ -54,7 +54,6 @@ void be_init_copystat(void);
 void be_init_daemelspill(void);
 void be_init_dbgout(void);
 void be_init_arch_ia32(void);
-void be_init_arch_ppc32(void);
 void be_init_arch_mips(void);
 void be_init_arch_arm(void);
 void be_init_arch_sparc(void);
@@ -134,7 +133,6 @@ void be_init_modules(void)
 	be_init_stabs();
 
 	be_init_arch_ia32();
-	be_init_arch_ppc32();
 	be_init_arch_mips();
 	be_init_arch_arm();
 	be_init_arch_sparc();

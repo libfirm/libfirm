@@ -575,55 +575,6 @@ $(srcdir)/be/mips/gen_mips_regalloc_if.c $(srcdir)/be/mips/gen_mips_regalloc_if.
 		be/mips/mips_spec.pl be/scripts/generate_machine.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/mips/mips_spec.pl $(srcdir)/be/mips
 
-# ppc32 backend
-
-ppc32_sources = \
-	be/ppc32/bearch_ppc32.c \
-	be/ppc32/ppc32_emitter.c \
-	be/ppc32/ppc32_map_regs.c \
-	be/ppc32/ppc32_new_nodes.c \
-	be/ppc32/ppc32_transform.c \
-	be/ppc32/ppc32_transform_conv.c
-ppc32_built_sources = \
-	be/ppc32/gen_ppc32_emitter.c \
-	be/ppc32/gen_ppc32_emitter.h \
-	be/ppc32/gen_ppc32_machine.c \
-	be/ppc32/gen_ppc32_machine.h \
-	be/ppc32/gen_ppc32_new_nodes.c.inl \
-	be/ppc32/gen_ppc32_new_nodes.h \
-	be/ppc32/gen_ppc32_regalloc_if.c \
-	be/ppc32/gen_ppc32_regalloc_if.h
-MAINTAINERCLEANFILES += $(ppc32_built_sources)
-BUILT_SOURCES += $(ppc32_built_sources)
-libfirm_la_SOURCES += $(ppc32_sources) $(ppc32_built_sources)
-
-EXTRA_DIST += \
-	be/ppc32/bearch_ppc32.h \
-	be/ppc32/bearch_ppc32_t.h \
-	be/ppc32/ppc32_emitter.h \
-	be/ppc32/ppc32_map_regs.h \
-	be/ppc32/ppc32_new_nodes.h \
-	be/ppc32/ppc32_nodes_attr.h \
-	be/ppc32/ppc32_spec.pl \
-	be/ppc32/ppc32_transform.h \
-	be/ppc32/ppc32_transform_conv.h
-
-$(srcdir)/be/ppc32/gen_ppc32_new_nodes.c.inl $(srcdir)/be/ppc32/gen_ppc32_new_nodes.h: \
-		be/ppc32/ppc32_spec.pl be/scripts/generate_new_opcodes.pl
-	$(PERL) $(srcdir)/be/scripts/generate_new_opcodes.pl $(srcdir)/be/ppc32/ppc32_spec.pl $(srcdir)/be/ppc32
-
-$(srcdir)/be/ppc32/gen_ppc32_emitter.c $(srcdir)/be/ppc32/gen_ppc32_emitter.h: \
-		be/ppc32/ppc32_spec.pl be/scripts/generate_emitter.pl
-	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/ppc32/ppc32_spec.pl $(srcdir)/be/ppc32
-
-$(srcdir)/be/ppc32/gen_ppc32_machine.c $(srcdir)/be/ppc32/gen_ppc32_machine.h: \
-		be/ppc32/ppc32_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/ppc32/ppc32_spec.pl $(srcdir)/be/ppc32
-
-$(srcdir)/be/ppc32/gen_ppc32_regalloc_if.c $(srcdir)/be/ppc32/gen_ppc32_regalloc_if.h: \
-		be/ppc32/ppc32_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/ppc32/ppc32_spec.pl $(srcdir)/be/ppc32
-
 # sparc backend
 
 sparc_sources = \
