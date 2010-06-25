@@ -101,24 +101,6 @@ amd64_attr_t *get_amd64_attr(ir_node *node)
 	return (amd64_attr_t *)get_irn_generic_attr(node);
 }
 
-const amd64_immediate_attr_t *get_amd64_immediate_attr_const(const ir_node *node)
-{
-	const amd64_attr_t           *attr     = get_amd64_attr_const(node);
-	const amd64_immediate_attr_t *imm_attr = CONST_CAST_AMD64_ATTR(amd64_immediate_attr_t, attr);
-
-	return imm_attr;
-}
-
-/*
-static amd64_immediate_attr_t *get_amd64_immediate_attr(ir_node *node)
-{
-	amd64_attr_t           *attr     = get_amd64_attr(node);
-	amd64_immediate_attr_t *imm_attr = CAST_AMD64_ATTR(amd64_immediate_attr_t, attr);
-
-	return imm_attr;
-}
-*/
-
 const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node)
 {
 	const amd64_attr_t           *attr     = get_amd64_attr_const(node);
@@ -164,7 +146,8 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 {
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
-	amd64_attr_t *attr = get_amd64_attr(node);
+	amd64_attr_t *attr    = get_amd64_attr(node);
+
 	backend_info_t  *info;
 	(void) execution_units;
 
@@ -174,15 +157,11 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
 	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
-}
 
-/**
- * Initialize immediate attributes.
- */
-static void init_amd64_immediate_attributes(ir_node *node, unsigned imm_value)
-{
-	amd64_immediate_attr_t *attr = get_irn_generic_attr (node);
-	attr->imm_value = imm_value;
+	attr->data.ins_permuted = 0;
+	attr->data.cmp_unsigned = 0;
+	attr->ext.pnc           = 0;
+	attr->ext.imm_value     = 0;
 }
 
 /**
@@ -206,27 +185,13 @@ static int cmp_amd64_attr_SymConst(ir_node *a, ir_node *b)
 	return 0;
 }
 
-
-/** Compare node attributes for Immediates. */
-static int cmp_amd64_attr_immediate(ir_node *a, ir_node *b)
-{
-	const amd64_immediate_attr_t *attr_a = get_amd64_immediate_attr_const(a);
-	const amd64_immediate_attr_t *attr_b = get_amd64_immediate_attr_const(b);
-
-	if (attr_a->imm_value != attr_b->imm_value)
-		return 1;
-
-	return 0;
-}
-
+/** Compare common amd64 node attributes. */
 static int cmp_amd64_attr(ir_node *a, ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);
-	(void) attr_a;
-	(void) attr_b;
 
-	return 0;
+	return attr_a->ext.imm_value != attr_b->ext.imm_value;
 }
 
 /* Include the generated constructor functions */

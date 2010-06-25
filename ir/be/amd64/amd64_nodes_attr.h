@@ -28,7 +28,6 @@
 #include "../bearch.h"
 
 typedef struct amd64_attr_t            amd64_attr_t;
-typedef struct amd64_immediate_attr_t  amd64_immediate_attr_t;
 typedef struct amd64_SymConst_attr_t   amd64_SymConst_attr_t;
 
 struct amd64_attr_t
@@ -36,11 +35,15 @@ struct amd64_attr_t
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
 	const arch_register_req_t **out_req; /**< register requirements for results */
 	ir_mode                    *ls_mode; /**< Stores the "input" mode */
-};
-
-struct amd64_immediate_attr_t
-{
-	unsigned imm_value; /**< the immediate value to load */
+	struct amd64_attr_data_bitfield {
+		unsigned ins_permuted : 1;      /**< inputs of node have been permuted
+		                                     (for commutative nodes) */
+		unsigned cmp_unsigned : 1;      /**< compare should be unsigned */
+	} data;
+	struct amd64_attr_extended {
+		pn_Cmp   pnc;                   /**< type of compare operation >*/
+		unsigned imm_value;             /**< immediate value to use >*/
+	} ext;
 };
 
 struct amd64_SymConst_attr_t

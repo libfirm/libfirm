@@ -136,7 +136,27 @@ $arch = "amd64";
 #		{ name => "xmm15", type => 1 },
 #		{ mode => "mode_D" }
 #	]
+	flags => [
+		{ name => "eflags", type => 0 },
+		{ mode => "mode_Iu", flags => "manual_ra" }
+	],
 );
+
+$mode_gp        = "mode_Iu";
+$mode_flags     = "mode_Iu";
+
+sub amd64_custom_init_attr {
+	my $constr = shift;
+	my $node   = shift;
+	my $name   = shift;
+	my $res    = "";
+
+	if(defined($node->{modified_flags})) {
+		$res .= "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n";
+	}
+	return $res;
+}
+$custom_init_attr_func = \&amd64_custom_init_attr;
 
 %emit_templates = (
 	S1 => "${arch}_emit_source_register(node, 0);",
@@ -157,18 +177,18 @@ $arch = "amd64";
 %init_attr = (
 	amd64_attr_t           =>
 		 "\tinit_amd64_attributes(res, flags, in_reqs, exec_units, n_res);",
-	amd64_immediate_attr_t =>
-		"\tinit_amd64_attributes(res, flags, in_reqs, exec_units, n_res);"
-		. "\tinit_amd64_immediate_attributes(res, imm_value);",
 	amd64_SymConst_attr_t =>
 		"\tinit_amd64_attributes(res, flags, in_reqs, exec_units, n_res);"
 		. "\tinit_amd64_SymConst_attributes(res, entity);",
+	amd64_condcode_attr_t =>
+		"\tinit_amd64_attributes(res, flags, in_reqs, exec_units, n_res);"
+		. "\tinit_amd64_condcode_attributes(res, pnc);",
 );
 
 %compare_attr = (
 	amd64_attr_t           => "cmp_amd64_attr",
-	amd64_immediate_attr_t => "cmp_amd64_attr_immediate",
 	amd64_SymConst_attr_t  => "cmp_amd64_attr_SymConst",
+	amd64_condcode_attr_t  => "cmp_amd64_attr_condcode",
 );
 
 %nodes = (
@@ -191,15 +211,15 @@ Add => {
 	emit       => ". mov %S2, %D1\n"
 	              . ". add %S1, %D1\n",
 	outs       => [ "res" ],
-	mode       => "mode_Iu",
+	mode       => $mode_gp,
 },
 Immediate => {
 	op_flags  => "c",
 	attr      => "unsigned imm_value",
-	attr_type => "amd64_immediate_attr_t",
+	init_attr => "attr->ext.imm_value = imm_value;",
 	reg_req   => { out => [ "gp" ] },
 	emit      => '. movq %C, %D1',
-	mode      => "mode_Iu",
+	mode      => $mode_gp,
 },
 SymConst => {
 	op_flags  => "c",
@@ -207,7 +227,7 @@ SymConst => {
 	attr      => "ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
 	reg_req   => { out => [ "gp" ] },
-	mode      => 'mode_Iu',
+	mode      => $mode_gp,
 },
 Conv => {
 	state     => "exc_pinned",
@@ -216,7 +236,7 @@ Conv => {
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "val" ],
 	outs      => [ "res" ],
-	mode      => 'mode_Iu',
+	mode      => $mode_gp,
 },
 Jmp => {
 	state     => "pinned",
@@ -224,6 +244,31 @@ Jmp => {
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
+Cmp => {
+	irn_flags => "R",
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "gp", "gp" ],
+	               out => [ "flags" ] },
+	ins       => [ "left", "right" ],
+	outs      => [ "eflags" ],
+	emit      => '. cmp %S1, %S2',
+	attr      => "int ins_permuted, int cmp_unsigned",
+	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
+	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	mode      => $mode_flags,
+	modified_flags => 1,
+},
+Jcc => {
+	state     => "pinned",
+	op_flags  => "L|X|Y",
+	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
+	ins       => [ "eflags" ],
+	outs      => [ "false", "true" ],
+	attr      => "pn_Cmp pnc",
+	init_attr => "attr->ext.pnc = pnc;",
+	mode      => "mode_T",
+},
+
 #NoReg_GP => {
 #	state     => "pinned",
 #	op_flags  => "c|NB|NI",
@@ -231,6 +276,6 @@ Jmp => {
 #	units     => [],
 #	emit      => "",
 #	latency   => 0,
-#	mode      => "mode_Iu",
+#	mode      => $mode_gp,
 #},
 );

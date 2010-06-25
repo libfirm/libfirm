@@ -49,7 +49,6 @@ void set_amd64_ls_mode(ir_node *n, ir_mode *mode);
 amd64_attr_t *get_amd64_attr(ir_node *node);
 
 const amd64_attr_t *get_amd64_attr_const(const ir_node *node);
-const amd64_immediate_attr_t *get_amd64_immediate_attr_const(const ir_node *node);
 const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node);
 
 /**

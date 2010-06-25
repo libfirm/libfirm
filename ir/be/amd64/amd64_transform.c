@@ -155,6 +155,57 @@ static ir_node *gen_be_Call(ir_node *node)
 	return res;
 }
 
+static ir_node *gen_Cmp(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *op1      = get_Cmp_left(node);
+	ir_node  *op2      = get_Cmp_right(node);
+	ir_mode  *cmp_mode = get_irn_mode(op1);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *new_op1;
+	ir_node  *new_op2;
+	bool      is_unsigned;
+
+	if (mode_is_float(cmp_mode)) {
+		panic("Floating point not implemented yet (in gen_Cmp)!");
+	}
+
+	assert(get_irn_mode(op2) == cmp_mode);
+	is_unsigned = !mode_is_signed(cmp_mode);
+
+	new_op1 = be_transform_node(op1);
+//	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
+	new_op2 = be_transform_node(op2);
+//	new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
+	return new_bd_amd64_Cmp(dbgi, block, new_op1, new_op2, false,
+	                        is_unsigned);
+}
+
+/**
+ * Transforms a Cond.
+ *
+ * @return the created ARM Cond node
+ */
+static ir_node *gen_Cond(ir_node *node)
+{
+	ir_node  *selector = get_Cond_selector(node);
+	ir_mode  *mode     = get_irn_mode(selector);
+	ir_node  *block;
+	ir_node  *flag_node;
+	dbg_info *dbgi;
+
+	if (mode != mode_b) {
+		panic ("create_Switch not implemented yet!");
+		// return gen_SwitchJmp(node);
+	}
+	assert(is_Proj(selector));
+
+	block     = be_transform_node(get_nodes_block(node));
+	dbgi      = get_irn_dbg_info(node);
+	flag_node = be_transform_node(get_Proj_pred(selector));
+
+	return new_bd_amd64_Jcc(dbgi, block, flag_node, get_Proj_proj(selector));
+}
 
 ///**
 // * Create an And that will zero out upper bits.
@@ -331,6 +382,8 @@ static void amd64_register_transformers(void)
 	set_transformer(op_be_Call,      gen_be_Call);
 	set_transformer(op_Conv,         gen_Conv);
 	set_transformer(op_Jmp,          gen_Jmp);
+	set_transformer(op_Cmp,          gen_Cmp);
+	set_transformer(op_Cond,         gen_Cond);
 	set_transformer(op_Phi,          gen_Phi);
 }
 

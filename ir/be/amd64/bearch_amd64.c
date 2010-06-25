@@ -44,6 +44,7 @@
 #include "../bemodule.h"
 #include "../begnuas.h"
 #include "../belistsched.h"
+#include "../beflags.h"
 
 #include "bearch_amd64_t.h"
 
@@ -135,11 +136,11 @@ static void amd64_finish_irg(void *self)
 	dump_ir_graph(irg, "amd64-finished");
 }
 
-
 static void amd64_before_ra(void *self)
 {
-	(void) self;
-	/* Some stuff you need to do after scheduling but before register allocation */
+	amd64_code_gen_t *cg = self;
+
+	be_sched_fix_flags(cg->birg, &amd64_reg_classes[CLASS_amd64_flags], 0);
 }
 
 static void amd64_after_ra(void *self)

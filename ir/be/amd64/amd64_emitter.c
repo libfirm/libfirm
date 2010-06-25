@@ -117,9 +117,9 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void amd64_emit_immediate(const ir_node *node)
 {
-	const amd64_immediate_attr_t *attr = get_amd64_immediate_attr_const (node);
+	const amd64_attr_t *attr = get_amd64_attr_const (node);
 	be_emit_char('$');
-	be_emit_irprintf("0x%X", attr->imm_value);
+	be_emit_irprintf("0x%X", attr->ext.imm_value);
 }
 
 void amd64_emit_source_register(const ir_node *node, int pos)
@@ -185,7 +185,6 @@ static void emit_amd64_SymConst(const ir_node *irn)
 //	}
 //	label = entry->label;
 
-
 	be_gas_emit_entity(attr->entity);
 	be_emit_char(':');
 	be_emit_finish_line_gas(irn);
@@ -240,6 +239,85 @@ static void emit_amd64_Jmp(const ir_node *node)
 		be_emit_cstring(" */");
 	}
 	be_emit_finish_line_gas(node);
+}
+
+/**
+ * Emit a Compare with conditional branch.
+ */
+static void emit_amd64_Jcc(const ir_node *irn)
+{
+	const ir_edge_t      *edge;
+	const ir_node        *proj_true  = NULL;
+	const ir_node        *proj_false = NULL;
+	const ir_node        *block;
+	const ir_node        *next_block;
+	const char           *suffix;
+	const amd64_attr_t   *attr      = get_irn_generic_attr_const(irn);
+	int                   proj_num  = attr->ext.pnc;
+	ir_node              *op1       = get_irn_n(irn, 0);
+	const amd64_attr_t   *cmp_attr  = get_irn_generic_attr_const(op1);
+	bool                  is_signed = !cmp_attr->data.cmp_unsigned;
+
+	assert(is_amd64_Cmp(op1));
+
+	foreach_out_edge(irn, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long nr = get_Proj_proj(proj);
+		if (nr == pn_Cond_true) {
+			proj_true = proj;
+		} else {
+			proj_false = proj;
+		}
+	}
+
+	if (cmp_attr->data.ins_permuted) {
+		proj_num = get_mirrored_pnc(proj_num);
+	}
+
+	/* for now, the code works for scheduled and non-schedules blocks */
+	block = get_nodes_block(irn);
+
+	/* we have a block schedule */
+	next_block = sched_next_block(block);
+
+	assert(proj_num != pn_Cmp_False);
+	assert(proj_num != pn_Cmp_True);
+
+	if (get_cfop_target_block(proj_true) == next_block) {
+		/* exchange both proj's so the second one can be omitted */
+		const ir_node *t = proj_true;
+
+		proj_true  = proj_false;
+		proj_false = t;
+		proj_num   = get_negated_pnc(proj_num, mode_Iu);
+	}
+
+	switch (proj_num) {
+		case pn_Cmp_Eq:  suffix = "e"; break;
+		case pn_Cmp_Lt:  suffix = is_signed ? "l"  : "b"; break;
+		case pn_Cmp_Le:  suffix = is_signed ? "le" : "be"; break;
+		case pn_Cmp_Gt:  suffix = is_signed ? "g"  : "o"; break;
+		case pn_Cmp_Ge:  suffix = is_signed ? "ge" : "oe"; break;
+		case pn_Cmp_Lg:  suffix = "ne"; break;
+		case pn_Cmp_Leg: suffix = "mp"; break;
+		default: panic("Cmp has unsupported pnc");
+	}
+
+	/* emit the true proj */
+	be_emit_irprintf("\tj%s ", suffix);
+	amd64_emit_cfop_target(proj_true);
+	be_emit_finish_line_gas(proj_true);
+
+	if (get_cfop_target_block(proj_false) == next_block) {
+		be_emit_cstring("\t/* fallthrough to ");
+		amd64_emit_cfop_target(proj_false);
+		be_emit_cstring(" */");
+		be_emit_finish_line_gas(proj_false);
+	} else {
+		be_emit_cstring("\tjmp ");
+		amd64_emit_cfop_target(proj_false);
+		be_emit_finish_line_gas(proj_false);
+	}
 }
 
 /**
@@ -320,6 +398,7 @@ static void amd64_register_emitters(void)
 
 	set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
+	set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
 	set_emitter(op_be_Return,        emit_be_Return);
 	set_emitter(op_be_Call,          emit_be_Call);
 	set_emitter(op_be_Copy,          emit_be_Copy);
@@ -408,11 +487,11 @@ void amd64_gen_routine(const amd64_code_gen_t *cg, ir_graph *irg)
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);
 
 	n = ARR_LEN(blk_sched);
-	for (i = 0; i < n; ++i) {
+	for (i = 0; i < n; i++) {
 		ir_node *block = blk_sched[i];
-		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
+		ir_node *next  = (i + 1) < n ? blk_sched[i+1] : NULL;
 
-		set_irn_link(block, prev);
+		set_irn_link(block, next);
 	}
 
 	for (i = 0; i < n; ++i) {
