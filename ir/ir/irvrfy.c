@@ -2214,7 +2214,7 @@ static void check_bads(ir_node *node, void *env)
 						fprintf(stderr, "irg_vrfy_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-						dump_ir_block_graph_sched(current_ir_graph, "-assert");
+						dump_ir_graph(current_ir_graph, "-assert");
 						assert(0 && "Bad CF detected");
 					}
 				}
@@ -2231,7 +2231,7 @@ static void check_bads(ir_node *node, void *env)
 					fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-					dump_ir_block_graph_sched(current_ir_graph, "-assert");
+					dump_ir_graph(current_ir_graph, "-assert");
 					assert(0 && "Bad CF detected");
 				}
 			}
@@ -2245,7 +2245,7 @@ static void check_bads(ir_node *node, void *env)
 					fprintf(stderr, "irg_vrfy_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-					dump_ir_block_graph_sched(current_ir_graph, "-assert");
+					dump_ir_graph(current_ir_graph, "-assert");
 					assert(0 && "Tuple detected");
 				}
 			}
@@ -2266,7 +2266,7 @@ static void check_bads(ir_node *node, void *env)
 							fprintf(stderr, "irg_vrfy_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
 						}
 						if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-							dump_ir_block_graph_sched(current_ir_graph, "-assert");
+							dump_ir_graph(current_ir_graph, "-assert");
 							assert(0 && "Bad CF detected");
 						}
 					}
@@ -2280,7 +2280,7 @@ static void check_bads(ir_node *node, void *env)
 						fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-						dump_ir_block_graph_sched(current_ir_graph, "-assert");
+						dump_ir_graph(current_ir_graph, "-assert");
 						assert(0 && "Bad NON-CF detected");
 					}
 				}

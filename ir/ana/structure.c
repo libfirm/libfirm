@@ -1047,8 +1047,6 @@ ir_reg_tree *construct_region_tree(ir_graph *irg)
 
 	DB((dbg, LEVEL_1, "Structural analysis on %+F starts...\n", irg));
 
-	dump_ir_block_graph(irg, "-structure_start");
-
 	/* we need dominance info */
 	assure_doms(irg);
 	/* and out edges */

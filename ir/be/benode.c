@@ -1289,7 +1289,7 @@ void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
 	assert(mode_is_datab(get_irn_mode(node)));
 }
 
-int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
+void be_dump_phi_reg_reqs(FILE *F, ir_node *node, dump_reason_t reason)
 {
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -1312,8 +1312,6 @@ int be_dump_phi_reg_reqs(ir_node *node, FILE *F, dump_reason_t reason)
 	default:
 		break;
 	}
-
-	return 0;
 }
 
 static const arch_irn_ops_t phi_irn_ops = {
@@ -1341,7 +1339,7 @@ static const arch_irn_ops_t phi_irn_ops = {
 /**
  * ir_op-Operation: dump a be node to file
  */
-static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
+static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 {
 	be_node_attr_t *at = get_irn_attr(irn);
 
@@ -1427,8 +1425,6 @@ static int dump_node(ir_node *irn, FILE *f, dump_reason_t reason)
 				break;
 			}
 	}
-
-	return 0;
 }
 
 /**

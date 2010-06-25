@@ -41,7 +41,6 @@ void be_sched_dump(FILE *f, ir_graph *irg);
  * unique to that block. a node schedule before another node has a lower
  * timestep than this node.
  */
-int     have_sched_info(const ir_graph *irg);
 int     sched_get_time_step(const ir_node *irn);
 int     sched_has_next(const ir_node *irn);
 int     sched_has_prev(const ir_node *irn);
@@ -98,16 +97,6 @@ void be_remove_dead_nodes_from_schedule(be_irg_t *birg);
 
 #define SCHED_INITIAL_GRANULARITY (1 << 14)
 #define get_irn_sched_info(irn)             (&be_get_info(skip_Proj_const(irn))->sched_info)
-
-/**
- * Returns non-zero if schedule information is available
- * for a given graph.
- * @param irg  The graph.
- */
-static inline int _have_sched_info(const ir_graph *irg)
-{
-	return be_info_initialized(irg);
-}
 
 /**
  * Check, if the node is scheduled.
@@ -411,7 +400,6 @@ int sched_skip_phi_predicator(const ir_node *irn, void *data);
  */
 ir_node *sched_skip(ir_node *from, int forward, sched_predicator_t *predicator, void *data);
 
-#define have_sched_info(irg)            _have_sched_info(irg)
 #define sched_get_time_step(irn)        _sched_get_time_step(irn)
 #define sched_has_next(irn)             _sched_has_next(irn)
 #define sched_has_prev(irn)             _sched_has_prev(irn)

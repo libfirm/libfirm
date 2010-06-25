@@ -1948,7 +1948,7 @@ static void create_ilp(ir_node *block, void *walk_env)
                               fclose(f);
                               snprintf(buf, sizeof(buf), "lpp_block_%lu.infeasible.mps", get_irn_node_nr(block));
                               lpp_dump(lpp, buf);
-                              dump_ir_block_graph(env->irg, "-infeasible");
+                              dump_ir_graph(env->irg, "infeasible");
                            }
 			})
 

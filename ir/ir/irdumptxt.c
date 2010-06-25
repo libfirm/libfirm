@@ -19,8 +19,9 @@
 
 /**
  * @file
- * @brief   Write vcg representation of firm to file.
- * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt
+ * @brief   Write text representation of firm to file.
+ * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Hubert Schmidt,
+ *          Matthias Braun
  * @version $Id$
  */
 #include "config.h"
@@ -28,6 +29,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdbool.h>
 
 #include "irdump_t.h"
 #include "irgraph_t.h"
@@ -44,58 +46,19 @@
 #include "irdom.h"
 #include "field_temperature.h"
 
-#define MY_SIZE 1024     /* Size of an array that actually should be computed. */
+static ir_dump_verbosity_t  verbosity = dump_verbosity_max;
 
-/**
- * Just opens a file, mangling a file name.
- *
- * The file name results from the concatenation of the following parts:
- *
- * @param basename  The basis of the name telling about the content.
- * @param suffix1   The first suffix.
- * @param suffix2   The second suffix.
- * @param suffix3   The third suffix.
- */
-static FILE *text_open(const char *basename, const char * suffix1, const char *suffix2, const char *suffix3)
+void ir_set_dump_verbosity(ir_dump_verbosity_t new_verbosity)
 {
-	FILE *F;
-	int len = strlen(basename), i, j;
-	char *fname;  /* filename to put the vcg information in */
-
-	if (!basename) assert(basename);
-	if (!suffix1) suffix1 = "";
-	if (!suffix2) suffix2 = "";
-	if (!suffix3) suffix3 = ".txt";
-
-	/* open file for vcg graph */
-	fname = XMALLOCN(char, strlen(basename)*2 + strlen(suffix1) + strlen(suffix2) + 5); /* *2: space for escapes. */
-
-	j = 0;
-	for (i = 0; i < len; ++i) {  /* replace '/' in the name: escape by @. */
-		if (basename[i] == '/') {
-			fname[j] = '@'; j++; fname[j] = '1'; j++;
-		} else if (basename[i] == '@') {
-			fname[j] = '@'; j++; fname[j] = '2'; j++;
-		} else {
-			fname[j] = basename[i]; j++;
-		}
-	}
-	fname[j] = '\0';
-	strcat(fname, suffix1);  /* append file suffix */
-	strcat(fname, suffix2);  /* append file suffix */
-	strcat(fname, suffix3);  /* append the .txt suffix */
-
-	F = fopen(fname, "w");   /* open file for writing */
-	if (!F) {
-		perror(fname);
-		abort();
-	}
-	free(fname);
-
-	return F;
+	verbosity = new_verbosity;
 }
 
-static inline int is_ip_Filter(ir_node *n)
+ir_dump_verbosity_t ir_get_dump_verbosity(void)
+{
+	return verbosity;
+}
+
+static inline bool is_ip_Filter(ir_node *n)
 {
 #ifdef INTERPROCEDURAL_VIEW
 	return is_Filter(n) && get_interprocedural_view();
@@ -106,9 +69,9 @@ static inline int is_ip_Filter(ir_node *n)
 }
 
 /* Write the irnode and all its attributes to the file passed. */
-int dump_irnode_to_file(FILE *F, ir_node *n)
+void dump_irnode_to_file(FILE *F, ir_node *n)
 {
-	int      i, bad = 0;
+	int      i;
 	char     comma;
 	ir_graph *irg;
 	vrp_attr *vrp_info;
@@ -117,7 +80,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 	fprintf(F, " %ld\n", get_irn_node_nr(n));
 
 	fprintf(F, "  index: %u\n", get_irn_idx(n));
-	if (opt_dump_pointer_values_to_info)
+	if (ir_get_dump_flags() & ir_dump_flag_analysed_types)
 		fprintf (F, "  addr:    %p\n", (void *)n);
 	fprintf (F, "  mode:    %s\n", get_mode_name(get_irn_mode(n)));
 	fprintf (F, "  visited: %ld\n", get_irn_visited(n));
@@ -276,10 +239,8 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  Selecting entity %s (%ld)\n", get_entity_name(ent), get_entity_nr(ent));
 			ir_fprintf(F, "    of type    %+F\n",  get_entity_type(ent));
 			ir_fprintf(F, "    with owner %+F.\n", get_entity_owner(ent));
-		}
-		else {
+		} else {
 			fprintf(F, "  <NULL entity>\n");
-			bad = 1;
 		}
 	} break;
 	case iro_Call: {
@@ -336,27 +297,27 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 		case symconst_addr_ent:
 			fprintf(F, "  kind:   addr_ent\n");
 			fprintf(F, "  entity: ");
-			dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
+			dump_entity_to_file(F, get_SymConst_entity(n));
 			break;
 		case symconst_ofs_ent:
 			fprintf(F, "  kind:   offset\n");
 			fprintf(F, "  entity: ");
-			dump_entity_to_file(F, get_SymConst_entity(n), dump_verbosity_onlynames);
+			dump_entity_to_file(F, get_SymConst_entity(n));
 			break;
 		case symconst_type_tag:
 			fprintf(F, "  kind: type_tag\n");
 			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+			dump_type_to_file(F, get_SymConst_type(n));
 			break;
 		case symconst_type_size:
 			fprintf(F, "  kind: size\n");
 			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+			dump_type_to_file(F, get_SymConst_type(n));
 			break;
 		case symconst_type_align:
 			fprintf(F, "  kind: alignment\n");
 			fprintf(F, "  type: ");
-			dump_type_to_file(F, get_SymConst_type(n), dump_verbosity_onlynames);
+			dump_type_to_file(F, get_SymConst_type(n));
 			break;
 		case symconst_enum_const:
 			fprintf(F, "  kind: enumeration\n");
@@ -366,7 +327,7 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 		ir_fprintf(F, "  type of value: %+F\n", get_SymConst_value_type(n));
 	} break;
 	case iro_Load:
-		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), &bad));
+		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), NULL));
 		fprintf(F, "  volatility: %s\n", get_volatility_name(get_Load_volatility(n)));
 		fprintf(F, "  align: %s\n", get_align_name(get_Load_align(n)));
 		break;
@@ -422,97 +383,12 @@ int dump_irnode_to_file(FILE *F, ir_node *n)
 		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
 		if (get_irn_typeinfo_type(n) != firm_none_type)
 			ir_fprintf (F, "  Analysed type: %s\n", get_irn_typeinfo_type(n));
-
-	return bad;
 }
 
-
-
-void dump_irnode(ir_node *n)
+void dump_graph_as_text(FILE *out, ir_graph *irg)
 {
-	dump_irnode_to_file(stdout, n);
+	fprintf(out, "graph %s\n", get_irg_dump_name(irg));
 }
-
-
-void dump_graph_to_file(FILE *F, ir_graph *irg)
-{
-	fprintf(F, "graph %s\n", get_irg_dump_name(irg));
-}
-
-void dump_graph(ir_graph *g)
-{
-	dump_graph_to_file(stdout, g);
-}
-
-static void dump_node_to_graph_file(ir_node *n, void *env)
-{
-	FILE *F = (FILE *)env;
-
-	dump_irnode_to_file(F, n);
-	fprintf(F, "\n");
-}
-
-void dump_graph_as_text(ir_graph *irg, const char *suffix)
-{
-	const char *basename = get_irg_dump_name(irg);
-	FILE *F;
-
-	F = text_open(basename, suffix, "", ".txt");
-
-	dump_graph_to_file(F, irg);
-	fprintf(F, "\n\n");
-	irg_walk_graph(irg, NULL, dump_node_to_graph_file, F);
-
-	fclose (F);
-}
-
-#ifdef EXTENDED_ACCESS_STATS
-static int addr_is_alloc(ir_node *acc)
-{
-	ir_node *addr = NULL;
-	ir_opcode addr_op;
-	if (is_memop(acc)) {
-		addr = get_memop_ptr(acc);
-	} else {
-		assert(is_Call(acc));
-		addr = get_Call_ptr(acc);
-	}
-
-	addr_op = get_irn_opcode(addr);
-
-	while (addr_op != iro_Alloc) {
-		switch (addr_op) {
-		case iro_Sel:
-			addr = get_Sel_ptr(addr);
-			break;
-		case iro_Cast:
-			addr = get_Cast_op(addr);
-			break;
-		case iro_Proj:
-			addr = get_Proj_pred(addr);
-			break;
-		case iro_SymConst:
-		case iro_Const:
-			return 0;
-			break;
-		case iro_Phi:
-		case iro_Load:
-		case iro_Call:
-		case iro_Start:
-			return 0;
-			break;
-
-		default:
-			//assert(0 && "unexpected address node");
-			;
-		}
-		addr_op = get_irn_opcode(addr);
-	}
-
-	/* In addition, the alloc must be in the same loop. */
-	return 1;
-}
-#endif
 
 /** dumps something like:
  *
@@ -530,16 +406,12 @@ static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
 
 	fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
 	for (i = 0; i < n_nodes; ++i) {
-		int rem;
 		if (i > 7 && !(i & 7)) { /* line break every eight node. */
 			fprintf(F, ",\n%s   ", prefix);
 			comma = "";
 		}
 		fprintf(F, "%s ", comma);
-		rem = opt_dump_analysed_type_info;
-		opt_dump_analysed_type_info = 0;
 		dump_node_label(F, get_entity_node(k, i));
-		opt_dump_analysed_type_info = rem;
 		comma = ",";
 	}
 	fprintf(F, "\n");
@@ -577,7 +449,8 @@ static int need_nl = 1;
  * Dump initializers.
  */
 static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
-										 const ir_initializer_t *initializer, ir_type *type)
+                                         const ir_initializer_t *initializer,
+                                         ir_type *type)
 {
 	tarval  *tv;
 	ir_node *value;
@@ -658,8 +531,7 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 		fprintf(F, " hidden_user");
 }
 
-static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
-                                       unsigned verbosity)
+static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix)
 {
 	int i, j;
 	ir_type *owner, *type;
@@ -839,108 +711,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 	}
 
 	if (verbosity & dump_verbosity_accessStats) {
-#ifdef EXTENDED_ACCESS_STATS
-		int n_acc = get_entity_n_accesses(ent);
-		int max_depth = 0;
-		int max_L_freq = -1;
-		int max_S_freq = -1;
-		int max_LA_freq = -1;
-		int max_SA_freq = -1;
-		int *L_freq;
-		int *S_freq;
-		int *LA_freq;
-		int *SA_freq;
-
-		/* Find maximal depth */
-		for (i = 0; i < n_acc; ++i) {
-			ir_node *acc = get_entity_access(ent, i);
-			int depth = get_weighted_loop_depth(acc);
-			max_depth = (depth > max_depth) ? depth : max_depth ;
-		}
-
-		L_freq = XMALLOCNZ(int, 4 * max_depth);
-
-		S_freq  = L_freq + 1*max_depth;
-		LA_freq = L_freq + 2*max_depth;
-		SA_freq = L_freq + 3*max_depth;
-
-		for (i = 0; i < n_acc; ++i) {
-			ir_node *acc = get_entity_access(ent, i);
-			int depth = get_weighted_loop_depth(acc);
-			assert(depth < max_depth);
-			if (is_Load(acc) || is_Call(acc)) {
-				L_freq[depth]++;
-				max_L_freq = (depth > max_L_freq) ? depth : max_L_freq;
-				if (addr_is_alloc(acc)) {
-					LA_freq[depth]++;
-					max_LA_freq = (depth > max_LA_freq) ? depth : max_LA_freq;
-				}
-			} else if (is_Store(acc)) {
-				S_freq[depth]++;
-				max_S_freq = (depth > max_S_freq) ? depth : max_S_freq;
-				if (addr_is_alloc(acc)) {
-					SA_freq[depth]++;
-					max_SA_freq = (depth > max_SA_freq) ? depth : max_SA_freq;
-				}
-			} else {
-				assert(0);
-			}
-		}
-
-		if (max_L_freq >= 0) {
-			char comma = ':';
-
-			fprintf(F, "%s  Load  Stats", prefix);
-			for (i = 0; i <= max_L_freq; ++i) {
-				if (L_freq[i])
-					fprintf(F, "%c %d x  L%d", comma, L_freq[i], i);
-				else
-					fprintf(F, "         ");
-				comma = ',';
-			}
-			fprintf(F, "\n");
-		}
-		if (max_LA_freq >= 0) {
-			//fprintf(F, "%s  LoadA Stats", prefix);
-			char comma = ':';
-			for (i = 0; i <= max_LA_freq; ++i) {
-				//if (LA_freq[i])
-				//fprintf(F, "%c %d x LA%d", comma, LA_freq[i], i);
-				//else
-				//fprintf(F, "         ");
-				comma = ',';
-			}
-			fprintf(F, "\n");
-		}
-		if (max_S_freq >= 0) {
-			char comma = ':';
-
-			fprintf(F, "%s  Store Stats", prefix);
-			for (i = 0; i <= max_S_freq; ++i) {
-				if (S_freq[i])
-					fprintf(F, "%c %d x  S%d", comma, S_freq[i], i);
-				else
-					fprintf(F, "         ");
-				comma = ',';
-			}
-			fprintf(F, "\n");
-		}
-		if (max_SA_freq >= 0) {
-			//fprintf(F, "%s  StoreAStats", prefix);
-			char comma = ':';
-			for (i = 0; i <= max_SA_freq; ++i) {
-				//if (SA_freq[i])
-				//fprintf(F, "%c %d x SA%d", comma, SA_freq[i], i);
-				//else
-				//fprintf(F, "         ");
-				comma = ',';
-			}
-			fprintf(F, "\n");
-		}
-
-		/* free allocated space */
-		free(L_freq);
-#endif
 		if (get_trouts_state() != outs_none) {
 #ifdef INTERPROCEDURAL_VIEW
 			if (is_Method_type(get_entity_type(ent))) {
@@ -955,18 +725,13 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix,
 	}
 }
 
-void dump_entity_to_file (FILE *F, ir_entity *ent, unsigned verbosity)
+void dump_entity_to_file(FILE *out, ir_entity *ent)
 {
-	dump_entity_to_file_prefix (F, ent, "", verbosity);
-	fprintf(F, "\n");
+	dump_entity_to_file_prefix(out, ent, "");
+	fprintf(out, "\n");
 }
 
-void dump_entity(ir_entity *ent)
-{
-  dump_entity_to_file(stdout, ent, dump_verbosity_max);
-}
-
-void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
+void dump_type_to_file(FILE *F, ir_type *tp)
 {
 	int i;
 
@@ -993,7 +758,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
 			if (((verbosity & dump_verbosity_methods) &&  is_Method_type(get_entity_type(mem))) ||
 				((verbosity & dump_verbosity_fields)  && !is_Method_type(get_entity_type(mem)))   ) {
 				if (!(verbosity & dump_verbosity_nostatic)) {
-					dump_entity_to_file_prefix(F, mem, "    ", verbosity);
+					dump_entity_to_file_prefix(F, mem, "    ");
 				}
 			}
 		}
@@ -1042,7 +807,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
 		for (i = 0; i < get_compound_n_members(tp); ++i) {
 			ir_entity *mem = get_compound_member(tp, i);
 			if (verbosity & dump_verbosity_fields) {
-				dump_entity_to_file_prefix(F, mem, "    ", verbosity);
+				dump_entity_to_file_prefix(F, mem, "    ");
 			}
 		}
 		break;
@@ -1087,7 +852,7 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
 
 			if (verbosity & dump_verbosity_fields) {
 				dump_entity_to_file_prefix(F, get_array_element_entity(tp),
-					"    ", verbosity);
+				                           "    ");
 			}
 		}
 		break;
@@ -1157,43 +922,6 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
 
 
 	if (verbosity & dump_verbosity_accessStats) {
-#if 0
-		int n_all = get_type_n_allocs(tp);
-		int max_depth = 0;
-		int max_freq = -1;
-		int *freq;
-
-		/* Find maximal depth */
-		for (i = 0; i < n_all; ++i) {
-			ir_node *all = get_type_alloc(tp, i);
-			int depth = get_weighted_loop_depth(all);
-			max_depth = (depth > max_depth) ? depth : max_depth ;
-		}
-
-		freq = XMALLOCNZ(int, max_depth + 1);
-
-		for (i = 0; i < n_all; ++i) {
-			ir_node *all = get_type_alloc(tp, i);
-			int depth = get_weighted_loop_depth(all);
-			assert(depth <= max_depth);
-			freq[depth]++;
-			max_freq = (depth > max_freq) ? depth : max_freq;
-			assert(is_Alloc(all));
-		}
-
-		if (max_freq >= 0) {
-			char comma = ':';
-
-			fprintf(F, "  Alloc Stats");
-			for (i = 0; i <= max_freq; ++i) {
-				fprintf(F, "%c %d x A%d", comma, freq[i], i);
-				comma = ',';
-			}
-			fprintf(F, "\n");
-		}
-
-		free(freq);
-#endif
 #ifdef INTERPROCEDURAL_VIEW
 		if (get_trouts_state() != outs_none) {
 			fprintf(F, "  Estimated #Instances: %lf\n", get_type_estimated_n_instances(tp));
@@ -1211,44 +939,25 @@ void dump_type_to_file(FILE *F, ir_type *tp, dump_verbosity verbosity)
 	fprintf(F, "\n\n");
 }
 
-void dump_type(ir_type *tp)
+void dump_types_as_text(FILE *out)
 {
-	dump_type_to_file (stdout, tp, dump_verbosity_max);
-}
-
-void dump_types_as_text(unsigned verbosity, const char *suffix)
-{
-	const char *basename;
-	FILE *F;
-	int i, n_types = get_irp_n_types();
-
-	basename = irp_prog_name_is_set() ? get_irp_name() : "TextTypes";
-	F = text_open(basename, suffix, "-types", ".txt");
+	int i;
+	int n_types = get_irp_n_types();
 
 	for (i = 0; i < n_types; ++i) {
-		ir_type *t = get_irp_type(i);
-
-		dump_type_to_file(F, t, verbosity);
+		ir_type *type = get_irp_type(i);
+		dump_type_to_file(out, type);
 	}
-
-	fclose(F);
 }
 
-void dump_globals_as_text(unsigned verbosity, const char *suffix)
+void dump_globals_as_text(FILE *out)
 {
-	const char *basename;
-	FILE *F;
-	ir_type *g = get_glob_type();
-	int i, n_mems = get_class_n_members(g);
+	ir_type *global_type = get_glob_type();
+	int      n_members   = get_class_n_members(global_type);
+	int      i;
 
-	basename = irp_prog_name_is_set() ? get_irp_name() : "TextGlobals";
-	F = text_open (basename, suffix, "-globals", ".txt");
-
-	for (i = 0; i < n_mems; ++i) {
-		ir_entity *e = get_class_member(g, i);
-
-		dump_entity_to_file(F, e, verbosity);
+	for (i = 0; i < n_members; ++i) {
+		ir_entity *entity = get_class_member(global_type, i);
+		dump_entity_to_file(out, entity);
 	}
-
-	fclose (F);
 }

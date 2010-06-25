@@ -292,11 +292,11 @@ static void ppc32_prepare_graph(void *self)
 
 	irg_block_walk_graph(cg->irg, NULL, ppc32_search_start_successor, cg);
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_pretransform_walk, cg);
-	be_dump(cg->irg, "-pretransformed", dump_ir_block_graph);
+	dump_ir_graph(cg->irg, "pretransformed");
 
 	ppc32_register_transformers();
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_node, cg);
-	be_dump(cg->irg, "-transformed", dump_ir_block_graph);
+	dump_ir_graph(cg->irg, "transformed");
 	irg_walk_blkwise_graph(cg->irg, NULL, ppc32_transform_const, cg);
 }
 
@@ -421,7 +421,7 @@ static void ppc32_emit_and_done(void *self)
 	ppc32_code_gen_t *cg = self;
 	ir_graph         *irg = cg->irg;
 
-	dump_ir_block_graph_sched(irg, "-ppc-finished");
+	dump_ir_graph(irg, "ppc-finished");
 	ppc32_gen_routine(cg, irg);
 
 	/* de-allocate code generator */

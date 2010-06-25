@@ -175,17 +175,16 @@ static void be_ra_chordal_coloring(be_chordal_env_t *env)
 
 static void dump(unsigned mask, ir_graph *irg,
 				 const arch_register_class_t *cls,
-				 const char *suffix,
-				 void (*dump_func)(ir_graph *, const char *))
+				 const char *suffix)
 {
 	if ((options.dump_flags & mask) == mask) {
 		if (cls) {
 			char buf[256];
-			snprintf(buf, sizeof(buf), "-%s%s", cls->name, suffix);
-			be_dump(irg, buf, dump_func);
+			snprintf(buf, sizeof(buf), "%s-%s", cls->name, suffix);
+			dump_ir_graph(irg, buf);
+		} else {
+			dump_ir_graph(irg, suffix);
 		}
-		else
-			be_dump(irg, suffix, dump_func);
 	}
 }
 
@@ -266,7 +265,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_pre_spill_prepare_constr(chordal_env->birg, chordal_env->cls);
 	be_timer_pop(T_RA_CONSTR);
 
-	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "-constr-pre", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "constr-pre");
 }
 
 /**
@@ -314,7 +313,7 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		be_ra_chordal_coloring(chordal_env);
 		be_timer_pop(T_RA_COLOR);
 
-		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "-color", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_CONSTR, irg, pse->cls, "color");
 
 		/* Create the ifg with the selected flavor */
 		be_timer_push(T_RA_IFG);
@@ -359,14 +358,14 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		co_driver(chordal_env);
 		be_timer_pop(T_RA_COPYMIN);
 
-		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "-copymin", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_COPYMIN, irg, pse->cls, "copymin");
 
 		/* ssa destruction */
 		be_timer_push(T_RA_SSA);
 		be_ssa_destruction(chordal_env);
 		be_timer_pop(T_RA_SSA);
 
-		dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "-ssadestr", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_SSADESTR, irg, pse->cls, "ssadestr");
 
 		if (chordal_env->opts->vrfy_option != BE_CH_VRFY_OFF) {
 			be_timer_push(T_VERIFY);
@@ -447,8 +446,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			be_do_spill(birg, cls);
 			be_timer_pop(T_RA_SPILL);
 
-			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "-spill",
-			     dump_ir_block_graph_sched);
+			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
 
 			post_spill(&pse, 0);
 
@@ -480,7 +478,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 		be_timer_push(T_RA_SPILL);
 		arch_code_generator_spill(birg->cg, birg);
 		be_timer_pop(T_RA_SPILL);
-		dump(BE_CH_DUMP_SPILL, irg, NULL, "-spill", dump_ir_block_graph_sched);
+		dump(BE_CH_DUMP_SPILL, irg, NULL, "spill");
 
 		for (j = 0; j < m; ++j) {
 			post_spill(&pse[j], j);
@@ -498,7 +496,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	be_timer_push(T_RA_EPILOG);
 	lower_nodes_after_ra(birg, options.lower_perm_opt & BE_CH_LOWER_PERM_COPY ? 1 : 0);
-	dump(BE_CH_DUMP_LOWER, irg, NULL, "-belower-after-ra", dump_ir_block_graph_sched);
+	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
 	obstack_free(&obst, NULL);
 	be_liveness_invalidate(be_get_birg_liveness(birg));

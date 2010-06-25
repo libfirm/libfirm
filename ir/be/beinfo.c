@@ -29,8 +29,10 @@
 #include "beinfo.h"
 #include "bearch.h"
 #include "benode.h"
+#include "besched.h"
 #include "irgwalk.h"
 #include "irnode_t.h"
+#include "irdump_t.h"
 #include "error.h"
 
 static copy_attr_func  old_phi_copy_attr;
@@ -75,8 +77,8 @@ static void new_Phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 
 int be_infos_equal(const backend_info_t *info1, const backend_info_t *info2)
 {
-	int             len   = ARR_LEN(info1->out_infos);
-	int             i;
+	int len = ARR_LEN(info1->out_infos);
+	int i;
 
 	if (ARR_LEN(info2->out_infos) != len)
 		return false;
@@ -122,9 +124,31 @@ void be_info_init(void)
 	op_Phi->ops.dump_node = be_dump_phi_reg_reqs;
 }
 
+/**
+ * Edge hook to dump the schedule edges.
+ */
+static void sched_edge_hook(FILE *F, ir_node *irn)
+{
+	if (is_Proj(irn))
+		return;
+	if (get_irn_irg(irn)->be_data == NULL)
+		return;
+
+	if (sched_is_scheduled(irn) && sched_has_prev(irn)) {
+		ir_node *prev = sched_prev(irn);
+		fprintf(F, "edge:{sourcename:\"");
+		PRINT_NODEID(irn);
+		fprintf(F, "\" targetname:\"");
+		PRINT_NODEID(prev);
+		fprintf(F, "\" color:magenta}\n");
+	}
+}
+
 void be_info_init_irg(ir_graph *irg)
 {
 	irg_walk_anchors(irg, init_walker, NULL, NULL);
+
+	set_dump_node_edge_hook(sched_edge_hook);
 }
 
 void be_info_free(void)

@@ -141,29 +141,25 @@ typedef enum {
 #define PRINT_ITEMID(X,Y)     fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
 #define PRINT_EXTBBID(X)      fprintf(F, "x%ld", get_irn_node_nr(X))
 
-extern int dump_dominator_information_flag;
-extern int opt_dump_pointer_values_to_info;
-extern int opt_dump_analysed_type_info;
-
-FILE *vcg_open(const ir_graph *irg, const char * suffix1, const char *suffix2);
-FILE *vcg_open_name(const char *name, const char *suffix);
-void dump_vcg_header(FILE *F, const char *name, const char *layout, const char *orientation);
-void dump_vcg_footer(FILE *F);
+void dump_vcg_header(FILE *out, const char *name, const char *layout, const char *orientation);
+void dump_vcg_footer(FILE *out);
 const char *get_irg_dump_name(const ir_graph *irg);
 
-
 const char *get_ent_dump_name(const ir_entity *ent);
-const char *get_mode_name_ex(const ir_mode *mode, int *bad);
+
 /**
- * dump the name of a node n to the File F.
+ * returns the name of a mode or "<ERROR>" if mode is NOT a mode object.
+ * in the later case, sets bad.
  */
-int dump_node_opcode(FILE *F, ir_node *n);
+const char *get_mode_name_ex(const ir_mode *mode, int *bad);
+/** dump the name of a node n to the File F. */
+void dump_node_opcode(FILE *out, ir_node *n);
 
-int dump_node_label(FILE *F, ir_node *n);
+void dump_node_label(FILE *out, ir_node *n);
 
-int dump_vrp_info(FILE *F, ir_node *n);
+void dump_vrp_info(FILE *out, ir_node *n);
 
 /** Writes vcg representation with title "PRINT_TYPEID(tp)" to file F. */
-int dump_type_node(FILE *F, ir_type *tp);
+void dump_type_node(FILE *out, ir_type *tp);
 
-#endif /* FIRM_IR_IRDUMPT_T_H */
+#endif

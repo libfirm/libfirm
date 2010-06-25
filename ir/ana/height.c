@@ -253,6 +253,6 @@ heights_t *heights_new(ir_graph *irg)
 void heights_free(heights_t *h)
 {
 	phase_deinit(&h->ph);
-	dump_remv_node_info_callback(h->dump_handle);
+	dump_remove_node_info_callback(h->dump_handle);
 	xfree(h);
 }

@@ -42,6 +42,7 @@
 #include "irgopt.h"
 #include "irbitset.h"
 #include "irgopt.h"
+#include "irdump.h"
 #include "pdeq.h"
 #include "pset.h"
 #include "debug.h"
@@ -854,7 +855,7 @@ static void ia32_before_abi(void *self)
 
 	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
 	if (cg->dump)
-		be_dump(cg->irg, "-lower_modeb", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "lower_modeb");
 
 	if (cg->gprof) {
 		if (mcount == NULL) {
@@ -900,7 +901,7 @@ static void ia32_prepare_graph(void *self)
 	optimize_graph_df(cg->irg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "transformed");
 
 	/* optimize address mode */
 	ia32_optimize_graph(cg);
@@ -909,7 +910,7 @@ static void ia32_prepare_graph(void *self)
 	place_code(cg->irg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "place");
 }
 
 ir_node *turn_back_am(ir_node *node)

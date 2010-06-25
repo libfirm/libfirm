@@ -73,10 +73,9 @@
  * @param reason   indicates which kind of information should be dumped
  * @return 0 on success or != 0 on failure
  */
-static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
+static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
-	ir_mode     *mode = NULL;
-	int          bad  = 0;
+	ir_mode *mode = NULL;
 
 	switch (reason) {
 		case dump_node_opcode_txt:
@@ -250,8 +249,6 @@ static int ia32_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 
 			break;
 	}
-
-	return bad;
 }
 
 

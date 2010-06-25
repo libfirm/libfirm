@@ -876,7 +876,6 @@ restart:
 	if (get_irg_pinned(irg) == op_pin_state_pinned) {
 		/* after optimize_cf(), only Bad data flow may remain. */
 		if (irg_vrfy_bads(irg, BAD_DF | BAD_BLOCK | TUPLE)) {
-			dump_ir_block_graph(irg, "-vrfy-cf");
 			dump_ir_graph(irg, "-vrfy-cf");
 			fprintf(stderr, "VRFY_BAD in optimize_cf()\n");
 		}

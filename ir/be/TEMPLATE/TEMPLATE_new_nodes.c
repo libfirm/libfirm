@@ -47,12 +47,11 @@
 
 /**
  * Dumper interface for dumping TEMPLATE nodes in vcg.
- * @param n        the node to dump
  * @param F        the output file
+ * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
- * @return 0 on success or != 0 on failure
  */
-static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
+static void TEMPLATE_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
   	ir_mode *mode = NULL;
 
@@ -82,8 +81,6 @@ static int TEMPLATE_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 		arch_dump_reqs_and_registers(F, n);
 		break;
 	}
-
-	return 0;
 }
 
 const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node)

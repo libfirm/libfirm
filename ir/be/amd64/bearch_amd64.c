@@ -30,6 +30,7 @@
 #include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irdump.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -118,7 +119,7 @@ static void amd64_prepare_graph(void *self)
 	amd64_transform_graph (cg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "transformed");
 }
 
 
@@ -131,7 +132,7 @@ static void amd64_finish_irg(void *self)
 	amd64_code_gen_t *cg = self;
 	ir_graph         *irg = cg->irg;
 
-	dump_ir_block_graph_sched(irg, "-amd64-finished");
+	dump_ir_graph(irg, "amd64-finished");
 }
 
 

@@ -407,7 +407,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	be_liveness_invalidate(lv);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-		be_dump(irg, "-ssa_destr_perms_placed", dump_ir_block_graph_sched);
+		dump_ir_graph(irg, "ssa_destr_perms_placed");
 
 	be_liveness_assure_chk(lv);
 
@@ -418,7 +418,7 @@ void be_ssa_destruction(be_chordal_env_t *chordal_env)
 	be_liveness_invalidate(lv);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_SSADESTR)
-		be_dump(irg, "-ssa_destr_regs_set", dump_ir_block_graph_sched);
+		dump_ir_graph(irg, "ssa_destr_regs_set");
 
 	pmap_destroy(perm_map);
 }

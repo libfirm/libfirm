@@ -2213,5 +2213,5 @@ void rss_schedule_preparation(be_irg_t *birg)
 	be_liveness_free(rss.liveness);
 
 	if (birg->main_env->options->dump_flags & DUMP_SCHED)
-		be_dump(rss.irg, "-rss", dump_ir_block_graph);
+		dump_ir_graph(rss.irg, "rss");
 }

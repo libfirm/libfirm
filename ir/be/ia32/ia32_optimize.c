@@ -37,6 +37,7 @@
 #include "height.h"
 #include "irbitset.h"
 #include "irprintf.h"
+#include "irdump.h"
 #include "error.h"
 
 #include "../be_t.h"
@@ -1477,7 +1478,7 @@ void ia32_optimize_graph(ia32_code_gen_t *cg)
 	irg_walk_blkwise_graph(cg->irg, NULL, optimize_node, cg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-opt", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "opt");
 }
 
 void ia32_init_optimize(void)

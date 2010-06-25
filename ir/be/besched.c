@@ -172,11 +172,6 @@ void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
 }
 
-int (have_sched_info)(const ir_graph *irg)
-{
-	return _have_sched_info(irg);
-}
-
 int (sched_get_time_step)(const ir_node *node)
 {
 	return _sched_get_time_step(node);

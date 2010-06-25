@@ -399,7 +399,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 	/* dump for test */
 	mark_options = root_env.options;
 	set_dump_node_vcgattr_hook(stat_dag_mark_hook);
-	dump_ir_block_graph(graph->irg, "-dag");
+	dump_ir_graph(graph->irg, "-dag");
 	set_dump_node_vcgattr_hook(NULL);
 #endif
 

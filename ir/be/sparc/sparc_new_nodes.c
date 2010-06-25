@@ -47,12 +47,11 @@
 
 /**
  * Dumper interface for dumping sparc nodes in vcg.
- * @param n        the node to dump
  * @param F        the output file
+ * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
- * @return 0 on success or != 0 on failure
  */
-static int sparc_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
+static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
 	ir_mode *mode = NULL;
 
@@ -93,11 +92,7 @@ static int sparc_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 			}
 
 		break;
-
-
 	}
-
-	return 0;
 }
 
 /* ATTRIBUTE INIT SETTERS / HELPERS */

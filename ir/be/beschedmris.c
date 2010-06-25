@@ -368,7 +368,7 @@ static void block_walker(ir_node *bl, void *data)
 	fuse_lineages(env);
 }
 
-static int mris_edge_hook(FILE *F, ir_node *irn)
+static void mris_edge_hook(FILE *F, ir_node *irn)
 {
 	mris_irn_t *mi = get_mris_irn(dump_env, irn);
 
@@ -379,17 +379,15 @@ static int mris_edge_hook(FILE *F, ir_node *irn)
 		PRINT_NODEID(irn);
 		fprintf(F, "\" color:lilac}\n");
 	}
-	return 1;
 }
 
 void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix)
 {
-	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
+	dump_node_edge_func old = get_dump_node_edge_hook();
 
-	dump_consts_local(0);
 	set_dump_node_edge_hook(mris_edge_hook);
 	dump_env = env;
-	dump_ir_block_graph(env->irg, suffix);
+	dump_ir_graph(env->irg, suffix);
 	set_dump_node_edge_hook(old);
 }
 

@@ -21,8 +21,8 @@
  * @file
  * @date    18.04.2007
  * @author  Christian Wuerdig
- * @brief   Implementation of a priority queue. This is the ported version of the
- *          original Java implementation by Matthias Braun.
+ * @brief   Implementation of a priority queue. This is the ported version of
+            the original Java implementation by Matthias Braun.
  * @version $Id$
  */
 #ifndef FIRM_ADT_PQUEUE_H

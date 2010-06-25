@@ -74,8 +74,8 @@ FIRM_API void construct_intervals(ir_graph *irg);
 /** frees interval information of all graphs. */
 FIRM_API void free_intervals(void);
 
-/** dump a graph with the intervals. File name suffix "-interval". */
-FIRM_API void dump_interval_graph(ir_graph *irg, const char *suffix);
+/** dump a vcg graph with the intervals */
+FIRM_API void dump_interval_graph(FILE *out, ir_graph *irg);
 
 #include "end.h"
 

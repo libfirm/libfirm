@@ -126,10 +126,7 @@ static void TEMPLATE_prepare_graph(void *self)
  */
 static void TEMPLATE_finish_irg(void *self)
 {
-	TEMPLATE_code_gen_t *cg = self;
-	ir_graph            *irg = cg->irg;
-
-	dump_ir_block_graph_sched(irg, "-TEMPLATE-finished");
+	(void) self;
 }
 
 

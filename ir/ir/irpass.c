@@ -157,13 +157,9 @@ void ir_prog_pass_mgr_add_graph_mgr(
 	ir_prog_pass_mgr_add(mgr, pass);
 }
 
-/**
- * Create a suffix for dumping.
- */
-static void create_suffix(char *suffix, size_t n, const char *pass_name,
-                          unsigned index)
+static void create_suffix(char *suffix, size_t n, const char *pass_name)
 {
-	snprintf(suffix, n, "-%02u_%s", index, pass_name);
+	snprintf(suffix, n, "%s.svg", pass_name);
 }
 
 /* Run all passes of an ir_graph pass manager. */
@@ -195,9 +191,9 @@ int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 				if (pass->dump_irg) {
 					pass->dump_irg(irg, pass->context, idx);
 				} else {
-					char suffix[1024];
-					create_suffix(suffix, sizeof(suffix), pass->name, idx);
-					dump_ir_block_graph(irg, suffix);
+					char buf[1024];
+					create_suffix(buf, sizeof(buf), pass->name);
+					dump_ir_graph(irg, buf);
 				}
 			}
 			++idx;
@@ -244,9 +240,9 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 			if (pass->dump_irprog) {
 				pass->dump_irprog(irp, pass->context, idx);
 			} else {
-				char suffix[1024];
-				create_suffix(suffix, sizeof(suffix), pass->name, idx);
-				dump_all_ir_graphs(dump_ir_block_graph, suffix);
+				char buf[1024];
+				create_suffix(buf, sizeof(buf), pass->name);
+				dump_all_ir_graphs(buf);
 			}
 		}
 		if (pass->is_wrapper) {

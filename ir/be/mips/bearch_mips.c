@@ -200,7 +200,7 @@ static void mips_prepare_graph(void *self)
 
 	// walk the graph and transform firm nodes into mips nodes where possible
 	mips_transform_graph(cg);
-	dump_ir_block_graph_sched(cg->irg, "-transformed");
+	dump_ir_graph(cg->irg, "transformed");
 
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(cg->irg);
@@ -208,7 +208,7 @@ static void mips_prepare_graph(void *self)
 	/* do code placement, to optimize the position of constants */
 	place_code(cg->irg);
 
-	be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
+	dump_ir_graph(cg->irg, "place");
 }
 
 /**
@@ -223,7 +223,7 @@ static void mips_finish_irg(void *self)
 	 * produce critical edges */
    	cg->block_schedule = be_create_block_schedule(irg);
 
-	dump_ir_block_graph_sched(irg, "-mips-finished");
+	dump_ir_graph(irg, "mips-finished");
 }
 
 

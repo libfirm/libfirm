@@ -36,13 +36,14 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "iroptimize.h"
+#include "irtools.h"
+#include "irdump.h"
 #include "lowering.h"
-#include "error.h"
 
 #include "bitset.h"
 #include "debug.h"
 #include "array_t.h"
-#include "irtools.h"
+#include "error.h"
 
 #include "../bearch.h"
 #include "../benode.h"
@@ -154,7 +155,7 @@ static void sparc_prepare_graph(void *self)
 	sparc_transform_graph(cg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "transformed");
 }
 
 

@@ -519,6 +519,8 @@ struct ir_graph {
 	int index;                         /**< a unique number for each graph */
 	ir_phase *phases[PHASE_LAST+1];    /**< Phase information. */
 	void     *be_data;                 /**< backend can put in private data here */
+
+	unsigned  dump_nr;                 /**< number of graph dumps */
 #ifdef DEBUG_libfirm
 	int   n_outs;                      /**< Size wasted for outs */
 	long graph_nr;                     /**< a unique graph number for each
@@ -594,6 +596,7 @@ struct ir_prog {
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
 	int  max_irg_idx;                    /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
+	unsigned dump_nr;                    /**< number of program info dumps */
 #ifndef NDEBUG
 	ir_resources_t reserved_resources;   /**< Bitset for tracking used global resources. */
 #endif

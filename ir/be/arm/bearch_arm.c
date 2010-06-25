@@ -36,6 +36,7 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "iroptimize.h"
+#include "irdump.h"
 #include "lowering.h"
 #include "error.h"
 
@@ -153,13 +154,13 @@ static void arm_prepare_graph(void *self)
 	local_optimize_graph(cg->irg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-transformed", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "transformed");
 
 	/* do code placement, to optimize the position of constants */
 	place_code(cg->irg);
 
 	if (cg->dump)
-		be_dump(cg->irg, "-place", dump_ir_block_graph_sched);
+		dump_ir_graph(cg->irg, "place");
 }
 
 /**

@@ -70,12 +70,11 @@ const char *arm_get_fpa_imm_name(long imm_value)
 
 /**
  * Dumper interface for dumping arm nodes in vcg.
- * @param n        the node to dump
  * @param F        the output file
+ * @param n        the node to dump
  * @param reason   indicates which kind of information should be dumped
- * @return 0 on success or != 0 on failure
  */
-static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
+static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
 	ir_mode     *mode = NULL;
 	//arm_attr_t  *attr = get_arm_attr(n);
@@ -124,8 +123,6 @@ static int arm_dump_node(ir_node *n, FILE *F, dump_reason_t reason)
 #endif
 			break;
 	}
-
-	return 0;
 }
 
 

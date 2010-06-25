@@ -408,7 +408,7 @@ typedef enum {
  * Writes several informations requested by reason to
  * an output file
  */
-typedef int (*dump_node_func)(ir_node *self, FILE *F, dump_reason_t reason);
+typedef void (*dump_node_func)(FILE *out, ir_node *self, dump_reason_t reason);
 
 /**
  * io_op Operations.

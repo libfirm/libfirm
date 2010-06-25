@@ -677,10 +677,10 @@ static void show_firm_object(void *firm_thing)
 		fprintf(f, "BAD: (%p)\n", firm_thing);
 		break;
 	case k_entity:
-		dump_entity_to_file(f, firm_thing, dump_verbosity_max);
+		dump_entity_to_file(f, firm_thing);
 		break;
 	case k_type:
-		dump_type_to_file(f, firm_thing, dump_verbosity_max);
+		dump_type_to_file(f, firm_thing);
 		break;
 	case k_ir_graph:
 	case k_ir_node:

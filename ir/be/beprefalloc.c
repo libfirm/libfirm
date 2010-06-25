@@ -52,6 +52,7 @@
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irprintf.h"
+#include "irdump.h"
 #include "obst.h"
 #include "raw_bitset.h"
 #include "unionfind.h"
@@ -1920,11 +1921,10 @@ static void be_pref_alloc_cls(void)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
 
-static void dump(int mask, ir_graph *irg, const char *suffix,
-                 void (*dumper)(ir_graph *, const char *))
+static void dump(int mask, ir_graph *irg, const char *suffix)
 {
 	if (birg->main_env->options->dump_flags & mask)
-		be_dump(irg, suffix, dumper);
+		dump_ir_graph(irg, suffix);
 }
 
 /**
@@ -1937,7 +1937,7 @@ static void spill(void)
 	be_pre_spill_prepare_constr(birg, cls);
 	be_timer_pop(T_RA_CONSTR);
 
-	dump(DUMP_RA, irg, "-spillprepare", dump_ir_block_graph_sched);
+	dump(DUMP_RA, irg, "-spillprepare");
 
 	/* spill */
 	be_timer_push(T_RA_SPILL);
@@ -1948,7 +1948,7 @@ static void spill(void)
 	check_for_memory_operands(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
-	dump(DUMP_RA, irg, "-spill", dump_ir_block_graph_sched);
+	dump(DUMP_RA, irg, "-spill");
 }
 
 /**

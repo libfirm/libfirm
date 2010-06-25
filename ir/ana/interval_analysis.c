@@ -546,7 +546,7 @@ static void dump_interval_block(FILE *F, ir_node *block)
 	fprintf(F, " n_exc_outs: %d", get_region_n_exc_outs(block));
 	fprintf(F, "\" ");
 	fprintf(F, "info1:\"");
-	if (dump_dominator_information_flag)
+	if (ir_get_dump_flags() & ir_dump_flag_dominance)
 		fprintf(F, "dom depth %d\n", get_Block_dom_depth(block));
 
 	/* show arity and possible Bad predecessors of the block */
@@ -604,25 +604,14 @@ static void dump_interval_loop(FILE *F, ir_loop *l)
 	fprintf(F, "}\n\n");
 }
 
-
-void dump_interval_graph(ir_graph *irg, const char *suffix)
+void dump_interval_graph(FILE *out, ir_graph *irg)
 {
-	FILE     *f;
-	ir_graph *rem;
-
-	if (!is_filtered_dump_name(get_entity_ident(get_irg_entity(irg))))
-		return;
-
-	f = vcg_open(irg, suffix, "-intervals");
-	dump_vcg_header(f, get_irg_dump_name(irg), NULL, NULL);
-
-	rem              = current_ir_graph;
+	ir_graph *rem    = current_ir_graph;
 	current_ir_graph = irg;
 
-	dump_interval_loop(f, get_irg_loop(irg));
-
-	dump_vcg_footer(f);
-	fclose(f);
+	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
+	dump_interval_loop(out, get_irg_loop(irg));
+	dump_vcg_footer(out);
 
 	current_ir_graph = rem;
 }

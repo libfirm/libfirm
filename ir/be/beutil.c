@@ -44,68 +44,6 @@
 #include "besched.h"
 #include "bearch.h"
 
-/**
- * Edge hook to dump the schedule edges.
- */
-static int sched_edge_hook(FILE *F, ir_node *irn)
-{
-	if (is_Proj(irn))
-		return 1;
-	if (sched_is_scheduled(irn) && sched_has_prev(irn)) {
-		ir_node *prev = sched_prev(irn);
-		fprintf(F, "edge:{sourcename:\"");
-		PRINT_NODEID(irn);
-		fprintf(F, "\" targetname:\"");
-		PRINT_NODEID(prev);
-		fprintf(F, "\" color:magenta}\n");
-	}
-	return 1;
-}
-
-void dump_ir_block_graph_sched(ir_graph *irg, const char *suffix)
-{
-	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
-
-	dump_consts_local(0);
-	if (have_sched_info(irg))
-		set_dump_node_edge_hook(sched_edge_hook);
-	dump_ir_block_graph(irg, suffix);
-	set_dump_node_edge_hook(old);
-}
-
-void dump_ir_extblock_graph_sched(ir_graph *irg, const char *suffix)
-{
-	DUMP_NODE_EDGE_FUNC old = get_dump_node_edge_hook();
-
-	dump_consts_local(0);
-	if (have_sched_info(irg))
-		set_dump_node_edge_hook(sched_edge_hook);
-	dump_ir_extblock_graph(irg, suffix);
-	set_dump_node_edge_hook(old);
-}
-
-/**
- * Dumps a graph and numbers all dumps.
- * @param irg    The graph
- * @param suffix A suffix to its file name.
- * @param dumper The dump function
- */
-void be_dump(ir_graph *irg, const char *suffix, void (*dumper)(ir_graph *, const char *))
-{
-	static ir_graph *last_irg = NULL;
-	static int       nr       = 0;
-	char             buf[128];
-
-	if (irg != last_irg) {
-		last_irg = irg;
-		nr       = strcmp(suffix, "-abi") ? 0 : 1;
-	}
-
-	snprintf(buf, sizeof(buf), "-%02d%s", nr++, suffix);
-	buf[sizeof(buf) - 1] = '\0';
-	dumper(irg, buf);
-}
-
 void be_clear_links(ir_graph *irg)
 {
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
@@ -142,20 +80,6 @@ ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn)
 	}
 
 	return NULL;
-}
-
-FILE *be_ffopen(const char *base, const char *ext, const char *mode)
-{
-	FILE *out;
-	char buf[1024];
-
-	snprintf(buf, sizeof(buf), "%s.%s", base, ext);
-	buf[sizeof(buf) - 1] = '\0';
-	if (! (out = fopen(buf, mode))) {
-		fprintf(stderr, "Cannot open file %s in mode %s\n", buf, mode);
-		return NULL;
-	}
-	return out;
 }
 
 static void add_to_postorder(ir_node *block, void *data)

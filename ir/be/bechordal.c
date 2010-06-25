@@ -563,8 +563,8 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	dom_tree_walk_irg(irg, constraints, NULL, &env);
 
 	if (chordal_env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
-		snprintf(buf, sizeof(buf), "-%s-constr", chordal_env->cls->name);
-		be_dump(chordal_env->irg, buf, dump_ir_block_graph_sched);
+		snprintf(buf, sizeof(buf), "%s-constr", chordal_env->cls->name);
+		dump_ir_graph(chordal_env->irg, buf);
 	}
 
 	be_timer_pop(T_CONSTR);

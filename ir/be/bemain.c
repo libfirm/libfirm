@@ -434,11 +434,10 @@ static void be_done_env(be_main_env_t *env)
  * @param suffix  the suffix for the dumper
  * @param dumper  the dumper to be called
  */
-static void dump(int mask, ir_graph *irg, const char *suffix,
-                 void (*dumper)(ir_graph *, const char *))
+static void dump(int mask, ir_graph *irg, const char *suffix)
 {
 	if (be_options.dump_flags & mask)
-		be_dump(irg, suffix, dumper);
+		dump_ir_graph(irg, suffix);
 }
 
 /**
@@ -446,6 +445,8 @@ static void dump(int mask, ir_graph *irg, const char *suffix,
  */
 static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 {
+	dump(DUMP_INITIAL, irg, "begin");
+
 	irg->be_data = birg;
 
 	memset(birg, 0, sizeof(*birg));
@@ -455,8 +456,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 
 	edges_deactivate_kind(irg, EDGE_KIND_DEP);
 	edges_activate_kind(irg, EDGE_KIND_DEP);
-
-	dump(DUMP_INITIAL, irg, "-begin", dump_ir_block_graph);
 
 	/* set the current graph (this is important for several firm functions) */
 	current_ir_graph = irg;
@@ -477,7 +476,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	set_irg_phase_state(irg, phase_backend);
 	be_info_init_irg(irg);
 
-	dump(DUMP_INITIAL, irg, "-prepared", dump_ir_block_graph);
+	dump(DUMP_INITIAL, irg, "prepared");
 }
 
 #define BE_TIMER_ONLY(code)   do { if (be_timing) { code; } } while (0)
@@ -637,7 +636,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		birg->abi = be_abi_introduce(birg);
 		be_timer_pop(T_ABI);
 
-		dump(DUMP_ABI, irg, "-abi", dump_ir_block_graph);
+		dump(DUMP_ABI, irg, "abi");
 
 		/* do local optimizations */
 		optimize_graph_df(irg);
@@ -653,7 +652,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		edges_deactivate(irg);
 		edges_activate(irg);
 
-		dump(DUMP_PREPARED, irg, "-pre_transform", dump_ir_block_graph_sched);
+		dump(DUMP_PREPARED, irg, "pre_transform");
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
@@ -666,7 +665,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		arch_code_generator_prepare_graph(birg->cg);
 		be_timer_pop(T_CODEGEN);
 
-		dump(DUMP_PREPARED, irg, "-prepared", dump_ir_block_graph);
+		dump(DUMP_PREPARED, irg, "prepared");
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
@@ -708,7 +707,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		};
 		be_timer_pop(T_SCHED);
 
-		dump(DUMP_SCHED, irg, "-sched", dump_ir_block_graph_sched);
+		dump(DUMP_SCHED, irg, "sched");
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
@@ -728,7 +727,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		assure_constraints(birg);
 		be_timer_pop(T_CONSTR);
 
-		dump(DUMP_SCHED, irg, "-assured", dump_ir_block_graph_sched);
+		dump(DUMP_SCHED, irg, "assured");
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		be_timer_push(T_RA_PREPARATION);
@@ -740,7 +739,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_abi_fix_stack_nodes(birg->abi);
 		be_timer_pop(T_ABI);
 
-		dump(DUMP_SCHED, irg, "-fix_stack", dump_ir_block_graph_sched);
+		dump(DUMP_SCHED, irg, "fix_stack");
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
@@ -761,7 +760,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, birg->exec_freq));
 #endif
 
-		dump(DUMP_RA, irg, "-ra", dump_ir_block_graph_sched);
+		dump(DUMP_RA, irg, "ra");
 
 		/* let the code generator prepare the graph for emitter */
 		be_timer_push(T_FINISH);
@@ -775,13 +774,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_abi_fix_stack_bias(birg->abi);
 		be_timer_pop(T_ABI);
 
-		dump(DUMP_SCHED, irg, "-fix_stack_after_ra", dump_ir_block_graph_sched);
+		dump(DUMP_SCHED, irg, "fix_stack_after_ra");
 
 		be_timer_push(T_FINISH);
 		arch_code_generator_finish(birg->cg);
 		be_timer_pop(T_FINISH);
 
-		dump(DUMP_FINAL, irg, "-finish", dump_ir_block_graph_sched);
+		dump(DUMP_FINAL, irg, "finish");
 
 		stat_ev_if {
 			be_stat_ev("bemain_insns_finish", be_count_insns(irg));
@@ -810,7 +809,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		arch_code_generator_done(birg->cg);
 		be_timer_pop(T_EMIT);
 
-		dump(DUMP_FINAL, irg, "-end", dump_ir_block_graph_sched);
+		dump(DUMP_FINAL, irg, "end");
 
 		be_timer_push(T_ABI);
 		be_abi_free(birg->abi);
