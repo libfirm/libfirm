@@ -975,9 +975,9 @@ DecMem => {
 Not => {
 	irn_flags => "R",
 	reg_req   => { in => [ "gp" ],
-	               out => [ "in_r1", "flags" ] },
+	               out => [ "in_r1" ] },
 	ins       => [ "val" ],
-	outs      => [ "res", "flags" ],
+	outs      => [ "res" ],
 	emit      => '. not%M %S0',
 	units     => [ "GP" ],
 	latency   => 1,
