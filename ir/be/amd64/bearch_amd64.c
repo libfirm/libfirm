@@ -63,6 +63,11 @@ static arch_irn_class_t amd64_classify(const ir_node *irn)
 
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
+	if (is_amd64_FrameAddr(node)) {
+		const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(node);
+		return attr->entity;
+	}
+
 	(void) node;
 	/* TODO: return the ir_entity assigned to the frame */
 	return NULL;
@@ -81,9 +86,10 @@ static void amd64_set_frame_entity(ir_node *node, ir_entity *ent)
  */
 static void amd64_set_frame_offset(ir_node *irn, int offset)
 {
-	(void) irn;
-	(void) offset;
-	/* TODO: correct offset if irn accesses the stack */
+	if (is_amd64_FrameAddr(irn)) {
+		amd64_SymConst_attr_t *attr = get_irn_generic_attr(irn);
+		attr->fp_offset += offset;
+	}
 }
 
 static int amd64_get_sp_bias(const ir_node *irn)

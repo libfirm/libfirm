@@ -37,6 +37,7 @@
 
 #include "../benode.h"
 #include "../betranshlp.h"
+#include "../beutil.h"
 #include "bearch_amd64_t.h"
 
 #include "amd64_nodes_attr.h"
@@ -357,6 +358,149 @@ static ir_node *gen_Conv(ir_node *node)
 	}
 }
 
+/**
+ * Transforms a Load.
+ *
+ * @return the created AMD64 Load node
+ */
+static ir_node *gen_Load(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *ptr      = get_Load_ptr(node);
+	ir_node  *new_ptr  = be_transform_node(ptr);
+	ir_node  *mem      = get_Load_mem(node);
+	ir_node  *new_mem  = be_transform_node(mem);
+	ir_mode  *mode     = get_Load_mode(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node  *new_load = NULL;
+
+	if (mode_is_float(mode)) {
+		panic("Float not supported yet");
+	} else {
+		assert(mode_is_data(mode) && "unsupported mode for Load");
+		new_load = new_bd_amd64_Load(dbgi, block, new_ptr, new_mem);
+	}
+	set_irn_pinned(new_load, get_irn_pinned(node));
+
+	/* check for special case: the loaded value might not be used */
+//	if (be_get_Proj_for_pn(node, pn_Load_res) == NULL) {
+//		/* add a result proj and a Keep to produce a pseudo use */
+//		ir_node *proj = new_r_Proj(new_load, mode_Iu, pn_amd64_Load_res);
+//		be_new_Keep(block, 1, &proj);
+//	}
+
+	return new_load;
+}
+
+/**
+ * Transform a Proj from a Load.
+ */
+static ir_node *gen_Proj_Load(ir_node *node)
+{
+	ir_node  *load     = get_Proj_pred(node);
+	ir_node  *new_load = be_transform_node(load);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	long     proj      = get_Proj_proj(node);
+
+	/* renumber the proj */
+	switch (get_amd64_irn_opcode(new_load)) {
+		case iro_amd64_Load:
+			/* handle all gp loads equal: they have the same proj numbers. */
+			if (proj == pn_Load_res) {
+				return new_rd_Proj(dbgi, new_load, mode_Iu, pn_amd64_Load_res);
+			} else if (proj == pn_Load_M) {
+				return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_Load_M);
+			}
+		break;
+	/*
+		case iro_sparc_fpaLoad:
+			panic("FP not implemented yet");
+		break;
+	*/
+		default:
+			panic("Unsupported Proj from Load");
+	}
+
+    return be_duplicate_node(node);
+}
+
+/**
+ * Transform a Proj node.
+ */
+static ir_node *gen_Proj(ir_node *node)
+{
+	ir_graph *irg  = current_ir_graph;
+	dbg_info *dbgi = get_irn_dbg_info(node);
+	ir_node  *pred = get_Proj_pred(node);
+	long     proj  = get_Proj_proj(node);
+
+	(void) irg;
+    (void) dbgi;
+
+	if (is_Store(pred)) {
+		if (proj == pn_Store_M) {
+			return be_transform_node(pred);
+		} else {
+			panic("Unsupported Proj from Store");
+		}
+	} else if (is_Load(pred)) {
+		return gen_Proj_Load(node);
+//	} else if (be_is_SubSP(pred)) {
+//		//panic("gen_Proj not implemented for SubSP");
+//		return gen_Proj_be_SubSP(node);
+//	} else if (be_is_AddSP(pred)) {
+//		//panic("gen_Proj not implemented for AddSP");
+//		return gen_Proj_be_AddSP(node);
+//	} else if (is_Cmp(pred)) {
+//		//panic("gen_Proj not implemented for Cmp");
+//		return gen_Proj_Cmp(node);
+//	} else if (is_Div(pred)) {
+//		return gen_Proj_Div(node);
+	} else if (is_Start(pred)) {
+//	/*
+//		if (proj == pn_Start_X_initial_exec) {
+//			ir_node *block = get_nodes_block(pred);
+//			ir_node *jump;
+//
+//			// we exchange the ProjX with a jump
+//			block = be_transform_node(block);
+//			jump  = new_rd_Jmp(dbgi, block);
+//			return jump;
+//		}
+//
+//		if (node == get_irg_anchor(irg, anchor_tls)) {
+//			return gen_Proj_tls(node);
+//		}
+//	*/
+//	} else {
+//		ir_node *new_pred = be_transform_node(pred);
+//		ir_mode *mode     = get_irn_mode(node);
+//		if (mode_needs_gp_reg(mode)) {
+//			ir_node *new_proj = new_r_Proj(new_pred, mode_Iu, get_Proj_proj(node));
+//			new_proj->node_nr = node->node_nr;
+//			return new_proj;
+//		}
+	}
+
+    return be_duplicate_node(node);
+}
+
+/**
+ * Transforms a FrameAddr into an AMD64 Add.
+ */
+static ir_node *gen_be_FrameAddr(ir_node *node)
+{
+	ir_node   *block  = be_transform_node(get_nodes_block(node));
+	ir_entity *ent    = be_get_frame_entity(node);
+	ir_node   *fp     = be_get_FrameAddr_frame(node);
+	ir_node   *new_fp = be_transform_node(fp);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *new_node;
+
+	new_node = new_bd_amd64_FrameAddr(dbgi, block, new_fp, ent);
+	return new_node;
+}
+
 /* Boilerplate code for transformation: */
 
 static void amd64_pretransform_node(void)
@@ -380,11 +524,14 @@ static void amd64_register_transformers(void)
 	set_transformer(op_SymConst,     gen_SymConst);
 	set_transformer(op_Add,          gen_Add);
 	set_transformer(op_be_Call,      gen_be_Call);
+	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
 	set_transformer(op_Conv,         gen_Conv);
 	set_transformer(op_Jmp,          gen_Jmp);
 	set_transformer(op_Cmp,          gen_Cmp);
 	set_transformer(op_Cond,         gen_Cond);
 	set_transformer(op_Phi,          gen_Phi);
+	set_transformer(op_Load,         gen_Load);
+	set_transformer(op_Proj,         gen_Proj);
 }
 
 

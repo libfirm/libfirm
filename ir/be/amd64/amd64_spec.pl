@@ -208,8 +208,8 @@ Add => {
 	reg_req    => { in => [ "gp", "gp" ],
 	                out => [ "gp" ] },
 	in         => [ "left", "right" ],
-	emit       => ". mov %S2, %D1\n"
-	              . ". add %S1, %D1\n",
+	emit       => ". mov %D1, %S2\n"
+	              . ". add %D1, %S1\n",
 	outs       => [ "res" ],
 	mode       => $mode_gp,
 },
@@ -218,7 +218,7 @@ Immediate => {
 	attr      => "unsigned imm_value",
 	init_attr => "attr->ext.imm_value = imm_value;",
 	reg_req   => { out => [ "gp" ] },
-	emit      => '. movq %C, %D1',
+	emit      => '. movq %D1, %C',
 	mode      => $mode_gp,
 },
 SymConst => {
@@ -268,6 +268,33 @@ Jcc => {
 	init_attr => "attr->ext.pnc = pnc;",
 	mode      => "mode_T",
 },
+Load => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "none" ],
+	               out => [ "gp", "none" ] },
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res",  "M" ],
+	emit      => ". lea %D1, [%S1]"
+},
+FrameAddr => {
+	op_flags  => "c",
+	irn_flags => "R",
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	ins       => [ "base" ],
+	attr      => "ir_entity *entity",
+	attr_type => "amd64_SymConst_attr_t",
+	mode      => $mode_gp,
+},
+#Store => {
+#	op_flags  => "L|F",
+#	state     => "exc_pinned",
+#	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none", "none" ] },
+#	ins       => [ "base", "index", "mem", "val" ],
+#	outs      => [ "M", "X_exc" ],
+#	mode      => "mode_M",
+#},
+
 
 #NoReg_GP => {
 #	state     => "pinned",

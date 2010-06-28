@@ -353,13 +353,30 @@ static void emit_be_Copy(const ir_node *irn)
 		panic("emit_be_Copy: move not supported for FP");
 	} else if (mode_is_data(mode)) {
 		be_emit_cstring("\tmov ");
-		amd64_emit_source_register(irn, 0);
-		be_emit_cstring(", ");
 		amd64_emit_dest_register(irn, 0);
+		be_emit_cstring(", ");
+		amd64_emit_source_register(irn, 0);
 		be_emit_finish_line_gas(irn);
 	} else {
 		panic("emit_be_Copy: move not supported for this mode");
 	}
+}
+
+static void emit_amd64_FrameAddr(const ir_node *irn)
+{
+	const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
+
+	be_emit_cstring("\tmov ");
+	amd64_emit_dest_register(irn, 0);
+	be_emit_cstring(", ");
+	amd64_emit_source_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+
+	be_emit_cstring("\tadd ");
+	amd64_emit_dest_register(irn, 0);
+	be_emit_cstring(", ");
+	be_emit_irprintf("$0x%X", attr->fp_offset);
+	be_emit_finish_line_gas(irn);
 }
 
 /**
@@ -399,6 +416,7 @@ static void amd64_register_emitters(void)
 	set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
 	set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
+	set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
 	set_emitter(op_be_Return,        emit_be_Return);
 	set_emitter(op_be_Call,          emit_be_Call);
 	set_emitter(op_be_Copy,          emit_be_Copy);

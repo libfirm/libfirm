@@ -170,7 +170,8 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 static void init_amd64_SymConst_attributes(ir_node *node, ir_entity *entity)
 {
 	amd64_SymConst_attr_t *attr = get_irn_generic_attr (node);
-	attr->entity = entity;
+	attr->entity    = entity;
+	attr->fp_offset = 0;
 }
 
 /** Compare node attributes for SymConst. */
@@ -179,7 +180,8 @@ static int cmp_amd64_attr_SymConst(ir_node *a, ir_node *b)
 	const amd64_SymConst_attr_t *attr_a = get_amd64_SymConst_attr_const(a);
 	const amd64_SymConst_attr_t *attr_b = get_amd64_SymConst_attr_const(b);
 
-	if (attr_a->entity != attr_b->entity)
+	if (attr_a->entity != attr_b->entity
+	    || attr_a->fp_offset != attr_b->fp_offset)
 		return 1;
 
 	return 0;
