@@ -203,22 +203,43 @@ Push => {
 #	units     => [ "GP" ],
 },
 Add => {
+	op_flags   => "C",
 	irn_flags  => "R",
 	state      => "exc_pinned",
 	reg_req    => { in => [ "gp", "gp" ],
 	                out => [ "gp" ] },
 	in         => [ "left", "right" ],
-	emit       => ". mov %D1, %S2\n"
-	              . ". add %D1, %S1\n",
 	outs       => [ "res" ],
 	mode       => $mode_gp,
+	modified_flags => 1,
+},
+Mul => {
+	op_flags   => "C",
+	irn_flags  => "R",
+	state      => "exc_pinned",
+	reg_req    => { in => [ "gp", "gp" ],
+	                out => [ "gp" ] },
+	in         => [ "left", "right" ],
+	outs       => [ "res" ],
+	mode       => $mode_gp,
+	modified_flags => 1,
+},
+Sub => {
+	irn_flags  => "R",
+	state      => "exc_pinned",
+	reg_req    => { in => [ "gp", "gp" ],
+	                out => [ "gp" ] },
+	in         => [ "left", "right" ],
+	outs       => [ "res" ],
+	mode       => $mode_gp,
+	modified_flags => 1,
 },
 Immediate => {
 	op_flags  => "c",
 	attr      => "unsigned imm_value",
 	init_attr => "attr->ext.imm_value = imm_value;",
 	reg_req   => { out => [ "gp" ] },
-	emit      => '. movq %D1, %C',
+	emit      => '. mov %C, %D1',
 	mode      => $mode_gp,
 },
 SymConst => {
@@ -275,7 +296,7 @@ Load => {
 	               out => [ "gp", "none" ] },
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res",  "M" ],
-	emit      => ". lea %D1, [%S1]"
+	emit      => ". mov (%S1), %D1"
 },
 FrameAddr => {
 	op_flags  => "c",
@@ -286,15 +307,15 @@ FrameAddr => {
 	attr_type => "amd64_SymConst_attr_t",
 	mode      => $mode_gp,
 },
-#Store => {
-#	op_flags  => "L|F",
-#	state     => "exc_pinned",
-#	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none", "none" ] },
-#	ins       => [ "base", "index", "mem", "val" ],
-#	outs      => [ "M", "X_exc" ],
-#	mode      => "mode_M",
-#},
-
+Store => {
+	op_flags  => "L|F",
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	ins       => [ "ptr", "val", "mem" ],
+	outs      => [ "M" ],
+	mode      => "mode_M",
+	emit      => ". mov (%S1), %S2"
+},
 
 #NoReg_GP => {
 #	state     => "pinned",

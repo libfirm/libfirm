@@ -34,6 +34,7 @@
 
 #include "bearch_amd64_t.h"
 
+void amd64_emit_register(const arch_register_t *reg);
 void amd64_emit_source_register(const ir_node *node, int pos);
 void amd64_emit_dest_register(const ir_node *node, int pos);
 void amd64_emit_immediate(const ir_node *node);

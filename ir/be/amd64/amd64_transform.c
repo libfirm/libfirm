@@ -359,6 +359,34 @@ static ir_node *gen_Conv(ir_node *node)
 }
 
 /**
+ * Transforms a Store.
+ *
+ * @return the created AMD64 Store node
+ */
+static ir_node *gen_Store(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *ptr      = get_Store_ptr(node);
+	ir_node  *new_ptr  = be_transform_node(ptr);
+	ir_node  *mem      = get_Store_mem(node);
+	ir_node  *new_mem  = be_transform_node(mem);
+	ir_node  *val      = get_Store_value(node);
+	ir_node  *new_val  = be_transform_node(val);
+	ir_mode  *mode     = get_irn_mode(val);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	ir_node *new_store = NULL;
+
+	if (mode_is_float(mode)) {
+		panic("Float not supported yet");
+	} else {
+		assert(mode_is_data(mode) && "unsupported mode for Store");
+		new_store = new_bd_amd64_Store(dbgi, block, new_ptr, new_val, new_mem);
+	}
+	set_irn_pinned(new_store, get_irn_pinned(node));
+	return new_store;
+}
+
+/**
  * Transforms a Load.
  *
  * @return the created AMD64 Load node
@@ -531,6 +559,7 @@ static void amd64_register_transformers(void)
 	set_transformer(op_Cond,         gen_Cond);
 	set_transformer(op_Phi,          gen_Phi);
 	set_transformer(op_Load,         gen_Load);
+	set_transformer(op_Store,        gen_Store);
 	set_transformer(op_Proj,         gen_Proj);
 }
 

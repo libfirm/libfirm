@@ -115,6 +115,12 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
  * |_|                                       |_|
  *************************************************************/
 
+void amd64_emit_register(const arch_register_t *reg)
+{
+	be_emit_char('%');
+	be_emit_string(arch_register_get_name(reg));
+}
+
 void amd64_emit_immediate(const ir_node *node)
 {
 	const amd64_attr_t *attr = get_amd64_attr_const (node);
@@ -124,16 +130,12 @@ void amd64_emit_immediate(const ir_node *node)
 
 void amd64_emit_source_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_in_reg(node, pos);
-	be_emit_char('%');
-	be_emit_string(arch_register_get_name(reg));
+	amd64_emit_register(get_in_reg(node, pos));
 }
 
 void amd64_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_out_reg(node, pos);
-	be_emit_char('%');
-	be_emit_string(arch_register_get_name(reg));
+	amd64_emit_register(get_out_reg(node, pos));
 }
 
 /**
@@ -367,16 +369,39 @@ static void emit_amd64_FrameAddr(const ir_node *irn)
 	const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
 
 	be_emit_cstring("\tmov ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_cstring(", ");
 	amd64_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	amd64_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 
 	be_emit_cstring("\tadd ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_cstring(", ");
 	be_emit_irprintf("$0x%X", attr->fp_offset);
+	be_emit_cstring(", ");
+	amd64_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * Emits code to increase stack pointer.
+ */
+static void emit_be_IncSP(const ir_node *node)
+{
+	int offs = be_get_IncSP_offset(node);
+
+	if (offs == 0)
+		return;
+
+	if (offs > 0) {
+		be_emit_irprintf("\tsub ");
+		amd64_emit_dest_register(node, 0);
+		be_emit_irprintf(", $%u", offs);
+		be_emit_finish_line_gas(node);
+	} else {
+		be_emit_irprintf("\tadd ");
+		amd64_emit_dest_register(node, 0);
+		be_emit_irprintf(", $%u", -offs);
+		be_emit_finish_line_gas(node);
+	}
 }
 
 /**
@@ -386,6 +411,51 @@ static void emit_be_Return(const ir_node *node)
 {
 	be_emit_cstring("\tret");
 	be_emit_finish_line_gas(node);
+}
+
+
+static void emit_amd64_binop_op(const ir_node *irn, int second_op)
+{
+	if (irn->op == op_amd64_Add) {
+		be_emit_cstring("\tadd ");
+	} else if (irn->op == op_amd64_Mul) {
+		be_emit_cstring("\tmul ");
+	} else if (irn->op == op_amd64_Sub) {
+		be_emit_cstring("\tsub ");
+	}
+
+	amd64_emit_dest_register(irn, 0);
+	be_emit_cstring(", ");
+	amd64_emit_source_register(irn, second_op);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * Emits an arithmetic operation that handles arbitraty input registers.
+ */
+static void emit_amd64_binop(const ir_node *irn)
+{
+	const arch_register_t *reg_s1 = get_in_reg(irn, 0);
+	const arch_register_t *reg_s2 = get_in_reg(irn, 1);
+	const arch_register_t *reg_d1 = get_out_reg(irn, 0);
+
+	int second_op = 0;
+
+	if (reg_d1 != reg_s1 && reg_d1 != reg_s2) {
+		be_emit_cstring("\tmov ");
+		amd64_emit_register(reg_s1);
+		be_emit_cstring(", ");
+		amd64_emit_register(reg_d1);
+		be_emit_finish_line_gas(irn);
+		second_op = 1;
+
+	} else if (reg_d1 == reg_s2 && reg_d1 != reg_s1) {
+		second_op = 0;
+
+	}
+
+	emit_amd64_binop_op(irn, second_op);
+
 }
 
 /**
@@ -420,11 +490,14 @@ static void amd64_register_emitters(void)
 	set_emitter(op_be_Return,        emit_be_Return);
 	set_emitter(op_be_Call,          emit_be_Call);
 	set_emitter(op_be_Copy,          emit_be_Copy);
+	set_emitter(op_be_IncSP,         emit_be_IncSP);
+
+	set_emitter(op_amd64_Add,        emit_amd64_binop);
+	set_emitter(op_amd64_Mul,        emit_amd64_binop);
 
 	set_emitter(op_be_Start,         emit_nothing);
 	set_emitter(op_be_Keep,          emit_nothing);
 	set_emitter(op_be_Barrier,       emit_nothing);
-	set_emitter(op_be_IncSP,         emit_nothing);
 	set_emitter(op_Phi,              emit_nothing);
 }
 

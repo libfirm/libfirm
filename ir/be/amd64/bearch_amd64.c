@@ -402,6 +402,21 @@ static const be_abi_callbacks_t amd64_abi_callbacks = {
 	amd64_abi_epilogue,
 };
 
+static const arch_register_t *gpreg_param_reg_std[] = {
+	&amd64_gp_regs[REG_RDI],
+	&amd64_gp_regs[REG_RSI],
+	&amd64_gp_regs[REG_RDX],
+	&amd64_gp_regs[REG_RCX],
+	&amd64_gp_regs[REG_R8],
+	&amd64_gp_regs[REG_R9],
+};
+
+static const arch_register_t *amd64_get_RegParam_reg(int n)
+{
+	assert(n < 6 && n >=0 && "register param > 6 requested");
+	return gpreg_param_reg_std[n];
+}
+
 /**
  * Get the ABI restrictions for procedure calls.
  * @param self        The this pointer.
@@ -434,11 +449,9 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 		mode = get_type_mode(tp);
 		//d// printf ("MODE %p %p XX %d\n", mode, mode_Iu, i);
 
-		if (!no_reg && (i == 0 || i == 1) && mode == mode_Iu) {
+		if (!no_reg && i < 6 && mode_is_data (mode)) {
 			//d// printf("TEST%d\n", i);
-			be_abi_call_param_reg(abi, i,
-			                      i == 0 ? &amd64_gp_regs[REG_RDI]
-			                             : &amd64_gp_regs[REG_RSI],
+			be_abi_call_param_reg(abi, i, amd64_get_RegParam_reg (i),
 			                      ABI_CONTEXT_BOTH);
 		/* default: all parameters on stack */
 		} else {
