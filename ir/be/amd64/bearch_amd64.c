@@ -235,7 +235,7 @@ static amd64_isa_t amd64_isa_template = {
 		&amd64_gp_regs[REG_RBP],  /* base pointer register */
 		&amd64_reg_classes[CLASS_amd64_gp],  /* link pointer register class */
 		-1,                          /* stack direction */
-		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
+		3,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
@@ -436,7 +436,7 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;
-	call_flags.bits.store_args_sequential = 1;
+	call_flags.bits.store_args_sequential = 0;
 	call_flags.bits.try_omit_fp           = 1;
 	call_flags.bits.fp_free               = 0;
 	call_flags.bits.call_has_imm          = 1;
@@ -456,7 +456,7 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 		/* default: all parameters on stack */
 		} else {
 			no_reg = 1;
-			be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH);
+			be_abi_call_param_stack(abi, i, mode, 8, 0, 0, ABI_CONTEXT_BOTH);
 		}
 	}
 
@@ -542,7 +542,7 @@ static const backend_params *amd64_get_backend_params(void) {
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
-		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
+		8      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
 	return &p;
 }
