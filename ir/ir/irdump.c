@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -2715,13 +2715,12 @@ static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
 
 void dump_loop(FILE *F, ir_loop *l)
 {
-	char name[50];
-	snprintf(name, sizeof(name), "loop_%d", get_loop_loop_nr(l));
-
 	eset *loopnodes = eset_create();
 	eset *extnodes = eset_create();
 	ir_node *n, *b;
+	char name[50];
 
+	snprintf(name, sizeof(name), "loop_%d", get_loop_loop_nr(l));
 	dump_vcg_header(F, name, NULL, NULL);
 
 	/* collect all nodes to dump */
