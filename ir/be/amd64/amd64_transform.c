@@ -139,6 +139,20 @@ static ir_node *gen_Add(ir_node *node) {
 	return res;
 }
 
+static ir_node *gen_Mul(ir_node *node) {
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	/* ir_mode  *mode  = get_irn_mode(node); */
+	ir_node  *op1   = get_Mul_left(node);
+	ir_node  *op2   = get_Mul_right(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *new_op1 = be_transform_node(op1);
+	ir_node  *new_op2 = be_transform_node(op2);
+
+	ir_node *res = new_bd_amd64_Mul(dbgi, block, new_op1, new_op2);
+	be_dep_on_frame (res);
+	return res;
+}
+
 static ir_node *gen_Jmp(ir_node *node)
 {
 	ir_node  *block     = get_nodes_block(node);
@@ -551,6 +565,7 @@ static void amd64_register_transformers(void)
 	set_transformer(op_Const,        gen_Const);
 	set_transformer(op_SymConst,     gen_SymConst);
 	set_transformer(op_Add,          gen_Add);
+	set_transformer(op_Mul,          gen_Mul);
 	set_transformer(op_be_Call,      gen_be_Call);
 	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
 	set_transformer(op_Conv,         gen_Conv);

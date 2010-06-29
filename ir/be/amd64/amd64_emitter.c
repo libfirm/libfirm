@@ -442,8 +442,6 @@ static void emit_amd64_binop_op(const ir_node *irn, int second_op)
 {
 	if (irn->op == op_amd64_Add) {
 		be_emit_cstring("\tadd ");
-	} else if (irn->op == op_amd64_Mul) {
-		be_emit_cstring("\tmul ");
 	} else if (irn->op == op_amd64_Sub) {
 		be_emit_cstring("\tsub ");
 	}
@@ -517,7 +515,6 @@ static void amd64_register_emitters(void)
 	set_emitter(op_be_IncSP,         emit_be_IncSP);
 
 	set_emitter(op_amd64_Add,        emit_amd64_binop);
-	set_emitter(op_amd64_Mul,        emit_amd64_binop);
 
 	set_emitter(op_be_Start,         emit_nothing);
 	set_emitter(op_be_Keep,          emit_nothing);

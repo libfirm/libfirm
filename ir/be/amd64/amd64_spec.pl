@@ -214,15 +214,17 @@ Add => {
 	modified_flags => 1,
 },
 Mul => {
-	op_flags   => "C",
-	irn_flags  => "R",
-	state      => "exc_pinned",
-	reg_req    => { in => [ "gp", "gp" ],
-	                out => [ "gp" ] },
-	in         => [ "left", "right" ],
-	outs       => [ "res" ],
-	mode       => $mode_gp,
-	modified_flags => 1,
+	# we should not rematrialize this node. It produces 2 results and has
+	# very strict constraints
+	state     => "exc_pinned",
+	reg_req   => { in  => [ "rax", "gp" ],
+	               out => [ "rax rdx" ] },
+	ins       => [ "left", "right" ],
+	emit      => '. mul %S2',
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+	am        => "source,binary",
+	modified_flags => $status_flags
 },
 Sub => {
 	irn_flags  => "R",
