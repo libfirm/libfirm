@@ -1,12 +1,5 @@
-dnl
-dnl Project:     libFIRM
-dnl File name:   configure.in
-dnl Purpose:
-dnl Author:      Matthias Braun
-dnl CVS-ID:      $Id$
-dnl Copyright:   (c) 2002-2007 University of Karlsruhe
-dnl Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
-dnl
+dnl configure.ac file for libfirm, author Matthias Braun <matze@braunis.de>
+dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.60])
 AC_REVISION([$Id$])
 
@@ -55,10 +48,6 @@ AC_SUBST([LIBTOOL_DEPS])
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
 
-dnl keep track of the environment set by the user
-libfirm_conf_env="${CC+CC='$CC'} ${CFLAGS+CFLAGS='$CFLAGS'} ${CPP+CPP='$CPP'} ${CPPFLAGS+CPPFLAGS='$CPPFLAGS'} ${LDFLAGS+LDFLAGS='$LDFLAGS'} ${LIBS+LIBS='$LIBS -lm'}"
-AC_SUBST(libfirm_conf_env)
-
 dnl enable visibility hidden
 CFLAGS="-fvisibility=hidden"
 AC_DEFINE([FIRM_BUILD], [], [Defined when firm library is built])
@@ -92,26 +81,6 @@ if test "$enable_assert" = no; then
 fi
 AC_SUBST([enable_assert])
 
-dnl set profiling
-dnl -------------
-AC_ARG_ENABLE([profile],
-[AS_HELP_STRING([--enable-profile], [enable profiling])],
-[enable_profile_libfirm="$enableval"], [enable_profile_libfirm="no"])
-
-AC_SUBST([enable_profile_libfirm])
-
-dnl enable Firm statistics
-dnl -------------
-AC_ARG_ENABLE([statistics],
-[AS_HELP_STRING([--enable-statistics], [enable Firm statistics])],
-[enable_statistics="$enableval"], [enable_statistics="yes"])
-
-if test "$enable_statistics" = yes; then
-	FIRMCONFIG_FIRM_STATISTICS="#define FIRMCONFIG_FIRM_STATISTICS"
-fi
-AC_SUBST([FIRMCONFIG_FIRM_STATISTICS])
-AC_SUBST([enable_statistics])
-
 dnl enable ILP solver support
 dnl --------------------------------
 AC_ARG_ENABLE([ilp],
@@ -119,7 +88,6 @@ AC_ARG_ENABLE([ilp],
 [enable_ilp="$enableval"], [enable_ilp="no"])
 
 if test "$enable_ilp" = yes; then
-  FIRMCONFIG_WITH_ILP="#define FIRMCONFIG_WITH_ILP"
   AC_DEFINE([WITH_ILP], [], [enable to build code using ilp solvers])
 fi
 
@@ -185,9 +153,6 @@ AC_CONFIG_FILES([
 	libfirm.pc
 ])
 
-#always do inlining
-AC_DEFINE([INLINE], [inline], [define inline to compiler inline keyword])
-
 BACKENDS=""
 if test "$enable_backend" = yes; then
 	BACKENDS="arm ia32 mips sparc amd64"
@@ -203,6 +168,5 @@ echo "     backends              $BACKENDS"
 echo "     profiling             $enable_profile_libfirm"
 echo "     debug/verifiers       $enable_debug_libfirm"
 echo "     assertions            $enable_assert"
-echo "     statistics            $enable_statistics"
 echo "     ilp                   $enable_ilp"
 echo ""
