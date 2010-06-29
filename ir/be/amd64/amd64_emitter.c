@@ -187,12 +187,28 @@ static void emit_amd64_SymConst(const ir_node *irn)
 //	}
 //	label = entry->label;
 
+	be_emit_cstring("\tmov $");
 	be_gas_emit_entity(attr->entity);
-	be_emit_char(':');
-	be_emit_finish_line_gas(irn);
-	be_emit_cstring("\t.long 0x0");
+	be_emit_cstring(", ");
+	amd64_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
+
+/**
+ * Emit a Conv.
+ */
+static void emit_amd64_Conv(const ir_node *irn)
+{
+	const amd64_attr_t *attr = get_irn_generic_attr_const(irn);
+	(void) attr;
+
+	be_emit_cstring("\tmov ");
+	amd64_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	amd64_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
 
 /**
  * Returns the next block in a block schedule.
@@ -327,7 +343,15 @@ static void emit_amd64_Jcc(const ir_node *irn)
  */
 static void emit_be_Call(const ir_node *node)
 {
-	ir_entity *entity = be_Call_get_entity (node);
+	ir_entity *entity = be_Call_get_entity(node);
+
+	/* %eax/%rax is used in AMD64 to pass the number of vector parameters for
+	 * variable argument counts */
+	if (get_method_variadicity (be_Call_get_type((ir_node *) node))) {
+		/* But this still is a hack... */
+		be_emit_cstring("\txor %rax, %rax");
+		be_emit_finish_line_gas(node);
+	}
 
 	if (entity) {
 		be_emit_cstring("\tcall ");
@@ -424,9 +448,9 @@ static void emit_amd64_binop_op(const ir_node *irn, int second_op)
 		be_emit_cstring("\tsub ");
 	}
 
-	amd64_emit_dest_register(irn, 0);
-	be_emit_cstring(", ");
 	amd64_emit_source_register(irn, second_op);
+	be_emit_cstring(", ");
+	amd64_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -455,7 +479,6 @@ static void emit_amd64_binop(const ir_node *irn)
 	}
 
 	emit_amd64_binop_op(irn, second_op);
-
 }
 
 /**
@@ -486,6 +509,7 @@ static void amd64_register_emitters(void)
 	set_emitter(op_amd64_SymConst,   emit_amd64_SymConst);
 	set_emitter(op_amd64_Jmp,        emit_amd64_Jmp);
 	set_emitter(op_amd64_Jcc,        emit_amd64_Jcc);
+	set_emitter(op_amd64_Conv,       emit_amd64_Conv);
 	set_emitter(op_amd64_FrameAddr,  emit_amd64_FrameAddr);
 	set_emitter(op_be_Return,        emit_be_Return);
 	set_emitter(op_be_Call,          emit_be_Call);
