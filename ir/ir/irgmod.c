@@ -46,21 +46,16 @@
  */
 void turn_into_tuple(ir_node *node, int arity)
 {
-	assert(node);
-	set_irn_op(node, op_Tuple);
-	if (get_irn_arity(node) == arity) {
-		/* keep old array */
-	} else {
-		ir_graph *irg = get_irn_irg(node);
-		ir_node *block = get_nodes_block(node);
-		edges_node_deleted(node, irg);
-		/* Allocate new array, don't free old in_array, it's on the obstack. */
-		node->in = NEW_ARR_D(ir_node *, irg->obst, arity+1);
-		/* clear the new in array, else edge_notify tries to delete garbage */
-		memset(node->in, 0, (arity+1) * sizeof(node->in[0]));
-		/* set the block back */
-		set_nodes_block(node, block);
+	ir_graph *irg = get_irn_irg(node);
+	ir_node **in  = ALLOCAN(ir_node*, arity);
+	int       i;
+
+	/* construct a new in array, with every input being bad */
+	for (i = 0; i < arity; ++i) {
+		in[i] = new_r_Bad(irg);
 	}
+	set_irn_in(node, arity, in);
+	set_irn_op(node, op_Tuple);
 }
 
 /**
