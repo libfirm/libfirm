@@ -115,7 +115,7 @@ $arch = "amd64";
 		{ name => "r14", type => 2 },
 		{ name => "r15", type => 2 },
 #		{ name => "gp_NOREG", type => 4 }, # we need a dummy register for NoReg nodes
-		{ mode => "mode_Iu" }
+		{ mode => "mode_Lu" }
 	],
 #	fp => [
 #		{ name => "xmm0", type => 1 },
@@ -142,7 +142,7 @@ $arch = "amd64";
 	],
 );
 
-$mode_gp        = "mode_Iu";
+$mode_gp        = "mode_Lu";
 $mode_flags     = "mode_Iu";
 
 sub amd64_custom_init_attr {

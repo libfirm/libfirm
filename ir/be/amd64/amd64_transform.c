@@ -75,8 +75,8 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 
 	if (mode_is_reference(mode)) {
 		/* AMD64 is 64bit, so we can safely convert a reference tarval into Iu */
-		assert(get_mode_size_bits(mode) == get_mode_size_bits(mode_Iu));
-		tv = tarval_convert_to(tv, mode_Iu);
+		assert(get_mode_size_bits(mode) == get_mode_size_bits(mode_Lu));
+		tv = tarval_convert_to(tv, mode_Lu);
 	}
 
 	value = get_tarval_long(tv);
@@ -283,8 +283,8 @@ static ir_node *gen_Phi(ir_node *node)
 	ir_node  *phi;
 
 	if (mode_needs_gp_reg(mode)) {
-		/* all integer operations are on 32bit registers now */
-		mode = mode_Iu;
+		/* all integer operations are on 64bit registers now */
+		mode = mode_Lu;
 		req  = amd64_reg_classes[CLASS_amd64_gp].class_req;
 	} else {
 		req = arch_no_register_req;
@@ -435,7 +435,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		case iro_amd64_Load:
 			/* handle all gp loads equal: they have the same proj numbers. */
 			if (proj == pn_Load_res) {
-				return new_rd_Proj(dbgi, new_load, mode_Iu, pn_amd64_Load_res);
+				return new_rd_Proj(dbgi, new_load, mode_Lu, pn_amd64_Load_res);
 			} else if (proj == pn_Load_M) {
 				return new_rd_Proj(dbgi, new_load, mode_M, pn_amd64_Load_M);
 			}

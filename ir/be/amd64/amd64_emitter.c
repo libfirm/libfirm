@@ -291,7 +291,7 @@ static void emit_amd64_Jcc(const ir_node *irn)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		proj_num   = get_negated_pnc(proj_num, mode_Iu);
+		proj_num   = get_negated_pnc(proj_num, mode_Lu);
 	}
 
 	switch (proj_num) {
