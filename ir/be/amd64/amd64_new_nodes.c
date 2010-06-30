@@ -196,5 +196,23 @@ static int cmp_amd64_attr(ir_node *a, ir_node *b)
 	return attr_a->ext.imm_value != attr_b->ext.imm_value;
 }
 
+/** copies the AMD64 attributes of a node. */
+static void amd64_copy_attr(ir_graph *irg, const ir_node *old_node,
+                          ir_node *new_node)
+{
+	struct obstack   *obst       = get_irg_obstack(irg);
+	const amd64_attr_t *attr_old = get_amd64_attr_const(old_node);
+	amd64_attr_t     *attr_new   = get_amd64_attr(new_node);
+	backend_info_t   *old_info   = be_get_info(old_node);
+	backend_info_t   *new_info   = be_get_info(new_node);
+
+	/* copy the attributes */
+	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
+
+	/* copy out flags */
+	new_info->out_infos =
+		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
+}
+
 /* Include the generated constructor functions */
 #include "gen_amd64_new_nodes.c.inl"

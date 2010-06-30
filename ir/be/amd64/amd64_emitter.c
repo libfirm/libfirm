@@ -43,6 +43,7 @@
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
+#include "gen_amd64_regalloc_if.h"
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"
 
@@ -395,6 +396,30 @@ static void emit_be_Copy(const ir_node *irn)
 	}
 }
 
+static void emit_be_Perm(const ir_node *node)
+{
+	const arch_register_t *in0, *in1;
+	const arch_register_class_t *cls0, *cls1;
+
+	in0 = arch_get_irn_register(get_irn_n(node, 0));
+	in1 = arch_get_irn_register(get_irn_n(node, 1));
+
+	cls0 = arch_register_get_class(in0);
+	cls1 = arch_register_get_class(in1);
+
+	assert(cls0 == cls1 && "Register class mismatch at Perm");
+
+	be_emit_cstring("\txchg ");
+	amd64_emit_register (in0);
+	be_emit_cstring(", ");
+	amd64_emit_register (in1);
+	be_emit_finish_line_gas(node);
+
+	if (cls0 != &amd64_reg_classes[CLASS_amd64_gp]) {
+		panic("unexpected register class in be_Perm (%+F)", node);
+	}
+}
+
 static void emit_amd64_FrameAddr(const ir_node *irn)
 {
 	const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
@@ -530,6 +555,7 @@ static void amd64_register_emitters(void)
 	set_emitter(op_be_Call,          emit_be_Call);
 	set_emitter(op_be_Copy,          emit_be_Copy);
 	set_emitter(op_be_IncSP,         emit_be_IncSP);
+	set_emitter(op_be_Perm,          emit_be_Perm);
 
 	set_emitter(op_amd64_Add,        emit_amd64_binop);
 	set_emitter(op_amd64_Sub,        emit_amd64_binop);

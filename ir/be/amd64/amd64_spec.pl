@@ -158,6 +158,8 @@ sub amd64_custom_init_attr {
 }
 $custom_init_attr_func = \&amd64_custom_init_attr;
 
+$default_copy_attr = "amd64_copy_attr";
+
 %emit_templates = (
 	S1 => "${arch}_emit_source_register(node, 0);",
 	S2 => "${arch}_emit_source_register(node, 1);",
@@ -257,7 +259,7 @@ Immediate => {
 },
 SymConst => {
 	op_flags  => "c",
-#	irn_flags => "R",
+	irn_flags => "R",
 	attr      => "ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
 	reg_req   => { out => [ "gp" ] },
