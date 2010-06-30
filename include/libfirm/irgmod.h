@@ -36,8 +36,8 @@ FIRM_API void exchange(ir_node *old, ir_node *nw);
 /** Turns a node into a "useless" Tuple.
  *
  *  Turns a node into a "useless" Tuple.  The Tuple node just forms a tuple
- *  from several inputs.  The predecessors of the tuple have to be
- *  set by hand.  The block predecessor automatically remains the same.
+ *  from several inputs. All predecessors of the tuple are set to bad and
+ *  should be replaced if necssary. The block predecessor remains the same.
  *  This is useful if a node returning a tuple is removed, but the Projs
  *  extracting values from the tuple are not available.
  *
