@@ -316,7 +316,7 @@ Store => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	mode      => "mode_M",
-	emit      => ". mov (%S1), %S2"
+	emit      => ". mov %S2, (%S1)"
 },
 
 #NoReg_GP => {

@@ -45,6 +45,7 @@
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../beflags.h"
+#include "../bespillslots.h"
 
 #include "bearch_amd64_t.h"
 
@@ -130,7 +131,6 @@ static void amd64_prepare_graph(void *self)
 }
 
 
-
 /**
  * Called immediatly before emit phase.
  */
@@ -149,12 +149,79 @@ static void amd64_before_ra(void *self)
 	be_sched_fix_flags(cg->birg, &amd64_reg_classes[CLASS_amd64_flags], 0);
 }
 
-static void amd64_after_ra(void *self)
+
+static void transform_Reload(ir_node *node)
 {
-	(void) self;
-	/* Some stuff you need to do immediatly after register allocation */
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
+	ir_mode   *mode   = get_irn_mode(node);
+	//ir_entity *entity = be_get_frame_entity(node);
+	const arch_register_t *reg;
+	ir_node   *proj;
+	ir_node   *load;
+
+	ir_node  *sched_point = sched_prev(node);
+
+	load = new_bd_amd64_Load(dbgi, block, ptr, mem);
+	sched_add_after(sched_point, load);
+	sched_remove(node);
+
+	proj = new_rd_Proj(dbgi, load, mode, pn_amd64_Load_res);
+
+	reg = arch_get_irn_register(node);
+	arch_set_irn_register(proj, reg);
+
+	exchange(node, proj);
 }
 
+static void transform_Spill(ir_node *node)
+{
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *mem    = new_NoMem();
+	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
+	//ir_mode   *mode   = get_irn_mode(val);
+	//ir_entity *entity = be_get_frame_entity(node);
+	ir_node   *sched_point;
+	ir_node   *store;
+
+	sched_point = sched_prev(node);
+	store = new_bd_amd64_Store(dbgi, block, ptr, val, mem);
+
+	sched_remove(node);
+	sched_add_after(sched_point, store);
+
+	exchange(node, store);
+}
+
+static void amd64_after_ra_walker(ir_node *block, void *data)
+{
+	ir_node *node, *prev;
+	(void) data;
+
+	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
+		prev = sched_prev(node);
+
+		if (be_is_Reload(node)) {
+			transform_Reload(node);
+		} else if (be_is_Spill(node)) {
+			transform_Spill(node);
+		}
+	}
+}
+
+static void amd64_after_ra(void *self)
+{
+	amd64_code_gen_t *cg = self;
+	be_coalesce_spillslots(cg->birg);
+
+	irg_block_walk_graph(cg->irg, NULL, amd64_after_ra_walker, NULL);
+}
 
 
 /**

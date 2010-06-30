@@ -417,13 +417,13 @@ static void emit_be_IncSP(const ir_node *node)
 
 	if (offs > 0) {
 		be_emit_irprintf("\tsub ");
+		be_emit_irprintf("$%u, ", offs);
 		amd64_emit_dest_register(node, 0);
-		be_emit_irprintf(", $%u", offs);
 		be_emit_finish_line_gas(node);
 	} else {
 		be_emit_irprintf("\tadd ");
+		be_emit_irprintf("$%u, ", -offs);
 		amd64_emit_dest_register(node, 0);
-		be_emit_irprintf(", $%u", -offs);
 		be_emit_finish_line_gas(node);
 	}
 }
