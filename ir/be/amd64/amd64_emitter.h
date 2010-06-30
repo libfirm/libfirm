@@ -38,6 +38,7 @@ void amd64_emit_register(const arch_register_t *reg);
 void amd64_emit_source_register(const ir_node *node, int pos);
 void amd64_emit_dest_register(const ir_node *node, int pos);
 void amd64_emit_immediate(const ir_node *node);
+void amd64_emit_fp_offset(const ir_node *node);
 
 int get_amd64_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_amd64_in_reg_name(ir_node *irn, int pos);

@@ -128,6 +128,13 @@ void amd64_emit_immediate(const ir_node *node)
 	be_emit_irprintf("0x%X", attr->ext.imm_value);
 }
 
+void amd64_emit_fp_offset(const ir_node *node)
+{
+	const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
+	if (attr->fp_offset)
+		be_emit_irprintf("%d", attr->fp_offset);
+}
+
 void amd64_emit_source_register(const ir_node *node, int pos)
 {
 	amd64_emit_register(get_in_reg(node, pos));
@@ -314,8 +321,8 @@ static void emit_amd64_Jcc(const ir_node *irn)
 		case pn_Cmp_Eq:  suffix = "e"; break;
 		case pn_Cmp_Lt:  suffix = is_signed ? "l"  : "b"; break;
 		case pn_Cmp_Le:  suffix = is_signed ? "le" : "be"; break;
-		case pn_Cmp_Gt:  suffix = is_signed ? "g"  : "o"; break;
-		case pn_Cmp_Ge:  suffix = is_signed ? "ge" : "oe"; break;
+		case pn_Cmp_Gt:  suffix = is_signed ? "g"  : "a"; break;
+		case pn_Cmp_Ge:  suffix = is_signed ? "ge" : "ae"; break;
 		case pn_Cmp_Lg:  suffix = "ne"; break;
 		case pn_Cmp_Leg: suffix = "mp"; break;
 		default: panic("Cmp has unsupported pnc");
@@ -442,14 +449,24 @@ static void emit_amd64_binop_op(const ir_node *irn, int second_op)
 {
 	if (irn->op == op_amd64_Add) {
 		be_emit_cstring("\tadd ");
+		amd64_emit_source_register(irn, second_op);
+		be_emit_cstring(", ");
+		amd64_emit_dest_register(irn, 0);
+		be_emit_finish_line_gas(irn);
 	} else if (irn->op == op_amd64_Sub) {
-		be_emit_cstring("\tsub ");
+		be_emit_cstring("\tneg ");
+		amd64_emit_source_register(irn, second_op);
+		be_emit_finish_line_gas(irn);
+		be_emit_cstring("\tadd ");
+		amd64_emit_source_register(irn, second_op);
+		be_emit_cstring(", ");
+		amd64_emit_dest_register(irn, 0);
+		be_emit_finish_line_gas(irn);
+		be_emit_cstring("\tneg ");
+		amd64_emit_source_register(irn, second_op);
+		be_emit_finish_line_gas(irn);
 	}
 
-	amd64_emit_source_register(irn, second_op);
-	be_emit_cstring(", ");
-	amd64_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
 }
 
 /**
@@ -515,6 +532,7 @@ static void amd64_register_emitters(void)
 	set_emitter(op_be_IncSP,         emit_be_IncSP);
 
 	set_emitter(op_amd64_Add,        emit_amd64_binop);
+	set_emitter(op_amd64_Sub,        emit_amd64_binop);
 
 	set_emitter(op_be_Start,         emit_nothing);
 	set_emitter(op_be_Keep,          emit_nothing);

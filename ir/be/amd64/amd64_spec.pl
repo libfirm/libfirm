@@ -171,7 +171,8 @@ $custom_init_attr_func = \&amd64_custom_init_attr;
 	D4 => "${arch}_emit_dest_register(node, 3);",
 	D5 => "${arch}_emit_dest_register(node, 4);",
 	D6 => "${arch}_emit_dest_register(node, 5);",
-	C  => "${arch}_emit_immediate(node);"
+	C  => "${arch}_emit_immediate(node);",
+	O  => "${arch}_emit_fp_offset(node);",
 );
 
 %init_attr = (
@@ -236,6 +237,16 @@ Sub => {
 	mode       => $mode_gp,
 	modified_flags => 1,
 },
+Neg => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp" ],
+	               out => [ "in_r1", "flags" ] },
+	emit      => '. neg %S1',
+	ins       => [ "val" ],
+	outs      => [ "res", "flags" ],
+	mode      => $mode_gp,
+	modified_flags => $status_flags
+},
 Immediate => {
 	op_flags  => "c",
 	attr      => "unsigned imm_value",
@@ -246,10 +257,11 @@ Immediate => {
 },
 SymConst => {
 	op_flags  => "c",
-	irn_flags => "R",
+#	irn_flags => "R",
 	attr      => "ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
 	reg_req   => { out => [ "gp" ] },
+	outs      => [ "res" ],
 	mode      => $mode_gp,
 },
 Conv => {
@@ -298,7 +310,9 @@ Load => {
 	               out => [ "gp", "none" ] },
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res",  "M" ],
-	emit      => ". mov (%S1), %D1"
+	attr      => "ir_entity *entity",
+	attr_type => "amd64_SymConst_attr_t",
+	emit      => ". mov %O(%S1), %D1"
 },
 FrameAddr => {
 	op_flags  => "c",
@@ -315,8 +329,10 @@ Store => {
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
+	attr      => "ir_entity *entity",
+	attr_type => "amd64_SymConst_attr_t",
 	mode      => "mode_M",
-	emit      => ". mov %S2, (%S1)"
+	emit      => ". mov %S2, %O(%S1)"
 },
 
 #NoReg_GP => {

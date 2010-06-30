@@ -139,6 +139,25 @@ static ir_node *gen_Add(ir_node *node) {
 	return res;
 }
 
+/**
+ * Transforms an Sub node.
+ *
+ * @return The transformed AMD64 node.
+ */
+static ir_node *gen_Sub(ir_node *node) {
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	/* ir_mode  *mode  = get_irn_mode(node); */
+	ir_node  *op1   = get_Sub_left(node);
+	ir_node  *op2   = get_Sub_right(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *new_op1 = be_transform_node(op1);
+	ir_node  *new_op2 = be_transform_node(op2);
+
+	ir_node *res = new_bd_amd64_Sub(dbgi, block, new_op1, new_op2);
+	be_dep_on_frame (res);
+	return res;
+}
+
 static ir_node *gen_Mul(ir_node *node) {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	/* ir_mode  *mode  = get_irn_mode(node); */
@@ -151,6 +170,15 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_node *res = new_bd_amd64_Mul(dbgi, block, new_op1, new_op2);
 	be_dep_on_frame (res);
 	return res;
+}
+
+static ir_node *gen_Minus(ir_node *node)
+{
+	ir_node  *block    = be_transform_node(get_nodes_block(node));
+	ir_node  *val      = be_transform_node(get_Minus_op(node));
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+
+	return new_bd_amd64_Neg(dbgi, block, val);
 }
 
 static ir_node *gen_Jmp(ir_node *node)
@@ -358,7 +386,9 @@ static ir_node *gen_Conv(ir_node *node)
 			min_mode = dst_mode;
 		}
 
-		return new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
+
+		ir_node *n = new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
+		return n;
 
 		//if (upper_bits_clean(new_op, min_mode)) {
 		//	return new_op;
@@ -394,7 +424,7 @@ static ir_node *gen_Store(ir_node *node)
 		panic("Float not supported yet");
 	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Store");
-		new_store = new_bd_amd64_Store(dbgi, block, new_ptr, new_val, new_mem);
+		new_store = new_bd_amd64_Store(dbgi, block, new_ptr, new_val, new_mem, 0);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 	return new_store;
@@ -420,7 +450,7 @@ static ir_node *gen_Load(ir_node *node)
 		panic("Float not supported yet");
 	} else {
 		assert(mode_is_data(mode) && "unsupported mode for Load");
-		new_load = new_bd_amd64_Load(dbgi, block, new_ptr, new_mem);
+		new_load = new_bd_amd64_Load(dbgi, block, new_ptr, new_mem, 0);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -565,6 +595,7 @@ static void amd64_register_transformers(void)
 	set_transformer(op_Const,        gen_Const);
 	set_transformer(op_SymConst,     gen_SymConst);
 	set_transformer(op_Add,          gen_Add);
+	set_transformer(op_Sub,          gen_Sub);
 	set_transformer(op_Mul,          gen_Mul);
 	set_transformer(op_be_Call,      gen_be_Call);
 	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
@@ -576,6 +607,7 @@ static void amd64_register_transformers(void)
 	set_transformer(op_Load,         gen_Load);
 	set_transformer(op_Store,        gen_Store);
 	set_transformer(op_Proj,         gen_Proj);
+	set_transformer(op_Minus,        gen_Minus);
 }
 
 
