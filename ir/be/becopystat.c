@@ -177,14 +177,6 @@ void copystat_add_heur_costs(int costs)
 {
 	curr_vals[I_COPIES_HEUR] += costs;
 }
-void copystat_add_ilp_5_sec_costs(int costs)
-{
-	curr_vals[I_COPIES_5SEC] += costs;
-}
-void copystat_add_ilp_30_sec_costs(int costs)
-{
-	curr_vals[I_COPIES_30SEC] += costs;
-}
 void copystat_add_opt_costs(int costs)
 {
 	curr_vals[I_COPIES_OPT] += costs;
@@ -196,6 +188,14 @@ void copystat_add_heur_time(int time)
 
 #ifdef WITH_ILP
 
+void copystat_add_ilp_5_sec_costs(int costs)
+{
+	curr_vals[I_COPIES_5SEC] += costs;
+}
+void copystat_add_ilp_30_sec_costs(int costs)
+{
+	curr_vals[I_COPIES_30SEC] += costs;
+}
 void copystat_add_ilp_time(int time)
 {
 	curr_vals[I_ILP_TIME] += time;
