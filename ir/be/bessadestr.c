@@ -386,9 +386,9 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 void be_ssa_destruction(be_chordal_env_t *chordal_env)
 {
 	insert_all_perms_env_t insert_perms_env;
-	pmap *perm_map = pmap_create();
-	ir_graph *irg  = chordal_env->irg;
-	be_lv_t *lv    = be_assure_liveness(chordal_env->birg);
+	pmap     *perm_map = pmap_create();
+	ir_graph *irg      = chordal_env->irg;
+	be_lv_t  *lv       = be_assure_liveness(irg);
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.ssadestr");
 

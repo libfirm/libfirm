@@ -2004,7 +2004,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 {
 	be_ilpsched_env_t          env;
 	ir_graph                   *irg      = be_get_birg_irg(birg);
-	const arch_env_t           *arch_env = be_get_birg_arch_env(birg);
+	const arch_env_t           *arch_env = be_get_irg_arch_env(irg);
 	const ilp_sched_selector_t *sel      = arch_env->impl->get_ilp_sched_selector(arch_env);
 
 	FIRM_DBG_REGISTER(env.dbg, "firm.be.sched.ilp");

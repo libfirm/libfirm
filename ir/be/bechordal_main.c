@@ -244,17 +244,17 @@ static be_node_stats_t last_node_stats;
  */
 static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 {
-	be_chordal_env_t    *chordal_env = &pse->cenv;
-	be_irg_t            *birg        = pse->birg;
-	ir_graph            *irg         = be_get_birg_irg(birg);
+	be_chordal_env_t *chordal_env = &pse->cenv;
+	be_irg_t         *birg        = pse->birg;
+	ir_graph         *irg         = be_get_birg_irg(birg);
 
 	pse->cls                   = cls;
 	chordal_env->cls           = cls;
 	chordal_env->border_heads  = pmap_create();
 	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
 
-	be_assure_liveness(birg);
-	be_liveness_assure_chk(be_get_birg_liveness(birg));
+	be_assure_liveness(irg);
+	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, birg->exec_freq));
 
@@ -401,7 +401,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 
 	be_timer_push(T_RA_PROLOG);
 
-	be_assure_liveness(birg);
+	be_assure_liveness(irg);
 
 	chordal_env.obst          = &obst;
 	chordal_env.opts          = &options;
@@ -499,7 +499,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
 	obstack_free(&obst, NULL);
-	be_liveness_invalidate(be_get_birg_liveness(birg));
+	be_liveness_invalidate(be_get_irg_liveness(irg));
 	be_timer_pop(T_RA_EPILOG);
 
 	be_timer_pop(T_RA_OTHER);

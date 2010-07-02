@@ -211,7 +211,7 @@ static inline int _strictly_dominates_use(const ir_node *irn, const ir_edge_t *e
  */
 static inline int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
 {
-	const be_lv_t *lv = be_get_birg_liveness(birg);
+	const be_lv_t *lv = be_get_irg_liveness(birg->irg);
 	const ir_edge_t *edge;
 
 	/* the node must strictly dominate the location, else it cannot be live there. */
@@ -246,7 +246,7 @@ static inline int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn
  */
 static inline int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
 {
-	const be_lv_t *lv = be_get_birg_liveness(birg);
+	const be_lv_t *lv = be_get_irg_liveness(birg->irg);
 	const ir_edge_t *edge;
 
 	if (!_value_dominates(irn, where))

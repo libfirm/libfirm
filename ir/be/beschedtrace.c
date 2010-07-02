@@ -632,7 +632,7 @@ static void *muchnik_init_graph(const list_sched_selector_t *vtab, const be_irg_
 {
 	trace_env_t *env  = trace_init(birg);
 	env->selector     = vtab;
-	env->selector_env = (void*) be_get_birg_arch_env(birg);
+	env->selector_env = (void*) be_get_irg_arch_env(birg->irg);
 	return (void *)env;
 }
 

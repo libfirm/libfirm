@@ -32,24 +32,27 @@
 #include "belive.h"
 #include "bedomfront.h"
 
-be_lv_t *be_assure_liveness(be_irg_t *birg)
+be_lv_t *be_assure_liveness(ir_graph *irg)
 {
+	be_irg_t *birg = be_birg_from_irg(irg);
 	if (birg->lv != NULL)
 		return birg->lv;
 
 	return birg->lv = be_liveness(birg->irg);
 }
 
-void be_assure_dom_front(be_irg_t *birg)
+void be_assure_dom_front(ir_graph *irg)
 {
+	be_irg_t *birg = be_birg_from_irg(irg);
 	if (birg->dom_front != NULL)
 		return;
 
 	birg->dom_front = be_compute_dominance_frontiers(birg->irg);
 }
 
-void be_invalidate_dom_front(be_irg_t *birg)
+void be_invalidate_dom_front(ir_graph *irg)
 {
+	be_irg_t *birg = be_birg_from_irg(irg);
 	if (birg->dom_front == NULL)
 		return;
 
@@ -57,8 +60,9 @@ void be_invalidate_dom_front(be_irg_t *birg)
 	birg->dom_front = NULL;
 }
 
-void be_free_birg(be_irg_t *birg)
+void be_free_birg(ir_graph *irg)
 {
+	be_irg_t *birg = be_birg_from_irg(irg);
 	free_execfreq(birg->exec_freq);
 	birg->exec_freq = NULL;
 
@@ -72,5 +76,5 @@ void be_free_birg(be_irg_t *birg)
 	}
 
 	obstack_free(&birg->obst, NULL);
-	birg->irg->be_data = NULL;
+	irg->be_data = NULL;
 }

@@ -379,17 +379,17 @@ static void spill_block(ir_node *block, void *data)
 
 static void be_spill_daemel(be_irg_t *birg, const arch_register_class_t *new_cls)
 {
-	ir_graph     *irg    = be_get_birg_irg(birg);
+	ir_graph *irg = be_get_birg_irg(birg);
 	n_regs = new_cls->n_regs - be_put_ignore_regs(birg, new_cls, NULL);
 
 	if (n_regs == 0)
 		return;
 
-	be_liveness_assure_sets(be_assure_liveness(birg));
+	be_liveness_assure_sets(be_assure_liveness(irg));
 
 	spill_env     = be_new_spill_env(birg);
 	cls           = new_cls;
-	lv            = be_get_birg_liveness(birg);
+	lv            = be_get_irg_liveness(irg);
 	spilled_nodes = bitset_malloc(get_irg_last_idx(irg));
 
 	DBG((dbg, LEVEL_1, "*** RegClass %s\n", cls->name));

@@ -74,7 +74,7 @@ static int cmp_loop_info(const void *a, const void *b, size_t size)
 static unsigned be_compute_block_pressure(const be_irg_t *birg,
 		ir_node *block, const arch_register_class_t *cls)
 {
-	be_lv_t      *lv = be_get_birg_liveness(birg);
+	be_lv_t      *lv = be_get_irg_liveness(birg->irg);
 	ir_nodeset_t  live_nodes;
 	ir_node      *irn;
 	int          max_live;
@@ -186,7 +186,7 @@ be_loopana_t *be_new_loop_pressure(be_irg_t *birg,
 	ir_graph         *irg      = be_get_birg_irg(birg);
 	be_loopana_t     *loop_ana = XMALLOC(be_loopana_t);
 	ir_loop          *irg_loop = get_irg_loop(irg);
-	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	int               i;
 
 	loop_ana->data = new_set(cmp_loop_info, 16);

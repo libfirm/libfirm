@@ -275,7 +275,7 @@ static const arch_code_generator_if_t mips_code_gen_if = {
  */
 static void *mips_cg_init(be_irg_t *birg)
 {
-	const arch_env_t *arch_env = be_get_birg_arch_env(birg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(birg->irg);
 	mips_isa_t       *isa      = (mips_isa_t *) arch_env;
 	mips_code_gen_t  *cg       = XMALLOCZ(mips_code_gen_t);
 

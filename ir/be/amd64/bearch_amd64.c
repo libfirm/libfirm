@@ -275,7 +275,7 @@ static const arch_code_generator_if_t amd64_code_gen_if = {
  */
 static void *amd64_cg_init(be_irg_t *birg)
 {
-	const arch_env_t    *arch_env = be_get_birg_arch_env(birg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(birg->irg);
 	amd64_isa_t      *isa      = (amd64_isa_t *) arch_env;
 	amd64_code_gen_t *cg       = XMALLOC(amd64_code_gen_t);
 

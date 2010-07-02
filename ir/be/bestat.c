@@ -110,8 +110,8 @@ void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls)
 	env.insn_count   = 0;
 	env.max_pressure = 0;
 	env.regpressure  = 0;
-	be_liveness_assure_sets(be_assure_liveness(birg));
-	env.lv           = be_get_birg_liveness(birg);
+	be_liveness_assure_sets(be_assure_liveness(irg));
+	env.lv           = be_get_irg_liveness(irg);
 	env.cls          = cls;
 
 	/* Collect register pressure information for each block */

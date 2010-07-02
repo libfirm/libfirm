@@ -32,16 +32,16 @@
 #include "be_t.h"
 #include "irtypes.h"
 
-be_lv_t *be_assure_liveness(be_irg_t *birg);
+be_lv_t *be_assure_liveness(ir_graph *irg);
 
-void be_assure_dom_front(be_irg_t *birg);
-void be_invalidate_dom_front(be_irg_t *birg);
+void be_assure_dom_front(ir_graph *irg);
+void be_invalidate_dom_front(ir_graph *irg);
 
 /**
  * frees all memory allocated by birg structures (liveness, dom_front, ...).
  * The memory of the birg structure itself is not freed.
  */
-void be_free_birg(be_irg_t *birg);
+void be_free_birg(ir_graph *irg);
 
 /**
  * An ir_graph with additional analysis data about this irg. Also includes some
@@ -61,34 +61,35 @@ struct be_irg_t {
 	                                   during code selection) */
 };
 
-static inline be_lv_t *be_get_birg_liveness(const be_irg_t *birg)
+static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
 {
-	return birg->lv;
+	return (be_irg_t*) irg->be_data;
 }
 
-static inline ir_exec_freq *be_get_birg_exec_freq(const be_irg_t *birg)
+static inline be_lv_t *be_get_irg_liveness(const ir_graph *irg)
 {
-	return birg->exec_freq;
+	return be_birg_from_irg(irg)->lv;
 }
 
-static inline be_dom_front_info_t *be_get_birg_dom_front(const be_irg_t *birg)
+static inline ir_exec_freq *be_get_irg_exec_freq(const ir_graph *irg)
 {
-	return birg->dom_front;
+	return be_birg_from_irg(irg)->exec_freq;
 }
 
+static inline be_dom_front_info_t *be_get_irg_dom_front(const ir_graph *irg)
+{
+	return be_birg_from_irg(irg)->dom_front;
+}
+
+/** deprecated */
 static inline ir_graph *be_get_birg_irg(const be_irg_t *birg)
 {
 	return birg->irg;
 }
 
-static inline const arch_env_t *be_get_birg_arch_env(const be_irg_t *birg)
+static inline const arch_env_t *be_get_irg_arch_env(const ir_graph *irg)
 {
-	return birg->main_env->arch_env;
-}
-
-static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
-{
-	return (be_irg_t*) irg->be_data;
+	return be_birg_from_irg(irg)->main_env->arch_env;
 }
 
 static inline struct obstack *be_get_birg_obst(const ir_graph *irg)

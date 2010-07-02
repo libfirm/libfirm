@@ -521,7 +521,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	printf("#### ----- === Allocating registers of %s (%s) ===\n", cls->name, get_entity_name(get_irg_entity(irg)));
 #endif
-	lv = be_assure_liveness(birg);
+	lv = be_assure_liveness(irg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
 

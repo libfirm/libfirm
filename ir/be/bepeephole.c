@@ -411,9 +411,9 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 
 void be_peephole_opt(be_irg_t *birg)
 {
-	ir_graph   *irg = be_get_birg_irg(birg);
-	unsigned n_classes;
-	unsigned i;
+	ir_graph *irg = be_get_birg_irg(birg);
+	unsigned  n_classes;
+	unsigned  i;
 
 	/* barrier nodes are used for register allocations. They hinders
 	 * peephole optimizations, so remove them here. */
@@ -422,10 +422,10 @@ void be_peephole_opt(be_irg_t *birg)
 	/* we sometimes find BadE nodes in float apps like optest_float.c or
 	 * kahansum.c for example... */
 	be_liveness_invalidate(birg->lv);
-	be_liveness_assure_sets(be_assure_liveness(birg));
+	be_liveness_assure_sets(be_assure_liveness(irg));
 
-	arch_env = be_get_birg_arch_env(birg);
-	lv       = be_get_birg_liveness(birg);
+	arch_env = be_get_irg_arch_env(irg);
+	lv       = be_get_irg_liveness(irg);
 
 	n_classes = arch_env_get_n_reg_class(arch_env);
 	register_values = XMALLOCN(ir_node**, n_classes);

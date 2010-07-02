@@ -523,7 +523,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	minibelady_env_t env;
 	ir_graph *irg = be_get_birg_irg(birg);
 	spill_info_t *info;
-	be_lv_t *lv = be_assure_liveness(birg);
+	be_lv_t *lv = be_assure_liveness(irg);
 
 	be_liveness_assure_sets(lv);
 	/* construct control flow loop tree */
@@ -536,7 +536,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	env.func_env      = func_env;
 	env.create_spill  = create_spill;
 	env.create_reload = create_reload;
-	env.lv            = be_get_birg_liveness(birg);
+	env.lv            = be_get_irg_liveness(irg);
 	env.uses          = be_begin_uses(irg, env.lv);
 	env.spills        = NULL;
 	ir_nodemap_init(&env.spill_infos);

@@ -839,7 +839,7 @@ void assure_constraints(be_irg_t *birg)
 
 	ir_nodemap_destroy(&cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
-	be_liveness_invalidate(be_get_birg_liveness(birg));
+	be_liveness_invalidate(be_get_irg_liveness(irg));
 }
 
 
@@ -1032,8 +1032,8 @@ void lower_nodes_after_ra(be_irg_t *birg, int do_copy)
 	env.do_copy = do_copy;
 
 	/* we will need interference */
-	be_liveness_assure_chk(be_get_birg_liveness(birg));
-
 	irg = be_get_birg_irg(birg);
+	be_liveness_assure_chk(be_get_irg_liveness(irg));
+
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);
 }

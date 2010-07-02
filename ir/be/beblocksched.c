@@ -747,8 +747,7 @@ void be_init_blocksched(void)
 
 ir_node **be_create_block_schedule(ir_graph *irg)
 {
-	const be_irg_t *birg      = be_birg_from_irg(irg);
-	ir_exec_freq   *execfreqs = be_get_birg_exec_freq(birg);
+	ir_exec_freq *execfreqs = be_get_irg_exec_freq(irg);
 
 	switch (algo) {
 	case BLOCKSCHED_GREEDY:

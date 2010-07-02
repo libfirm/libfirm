@@ -1159,7 +1159,7 @@ void co_driver(be_chordal_env_t *cenv)
 	if (selected_copyopt->copyopt == void_algo)
 		return;
 
-	be_liveness_assure_chk(be_get_birg_liveness(cenv->birg));
+	be_liveness_assure_chk(be_get_irg_liveness(cenv->irg));
 
 	co = new_copy_opt(cenv, cost_func);
 	co_build_ou_structure(co);

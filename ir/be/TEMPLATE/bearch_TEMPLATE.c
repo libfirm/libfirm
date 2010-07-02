@@ -178,7 +178,7 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
  */
 static void *TEMPLATE_cg_init(be_irg_t *birg)
 {
-	const arch_env_t    *arch_env = be_get_birg_arch_env(birg);
+	const arch_env_t    *arch_env = be_get_irg_arch_env(birg->irg);
 	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env;
 	TEMPLATE_code_gen_t *cg       = XMALLOC(TEMPLATE_code_gen_t);
 

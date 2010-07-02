@@ -527,7 +527,7 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 void ia32_calculate_non_address_mode_nodes(be_irg_t *birg)
 {
 	ir_graph *irg = be_get_birg_irg(birg);
-	be_lv_t  *lv  = be_assure_liveness(birg);
+	be_lv_t  *lv  = be_assure_liveness(irg);
 
 	non_address_mode_nodes = bitset_malloc(get_irg_last_idx(irg));
 

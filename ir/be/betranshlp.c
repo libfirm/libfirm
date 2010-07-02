@@ -442,10 +442,10 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	free_loop_information(irg);
 	set_irg_doms_inconsistent(irg);
 
-	be_liveness_invalidate(be_get_birg_liveness(birg));
+	be_liveness_invalidate(be_get_irg_liveness(irg));
 	/* Hack for now, something is buggy with invalidate liveness... */
 	birg->lv = NULL;
-	be_invalidate_dom_front(birg);
+	be_invalidate_dom_front(irg);
 
 	/* recalculate edges */
 	edges_deactivate(irg);

@@ -932,7 +932,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	int i;
 	ir_graph *irg = be_get_birg_irg(birg);
 
-	be_liveness_assure_sets(be_assure_liveness(birg));
+	be_liveness_assure_sets(be_assure_liveness(irg));
 
 	stat_ev_tim_push();
 	/* construct control flow loop tree */
@@ -951,7 +951,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	stat_ev_tim_push();
 	obstack_init(&obst);
 	cls       = rcls;
-	lv        = be_get_birg_liveness(birg);
+	lv        = be_get_irg_liveness(irg);
 	n_regs    = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
 	ws        = new_workset();
 	uses      = be_begin_uses(irg, lv);

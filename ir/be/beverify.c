@@ -892,8 +892,8 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 
 int be_verify_register_allocation(const be_irg_t *birg)
 {
-	arch_env      = be_get_birg_arch_env(birg);
 	irg           = be_get_birg_irg(birg);
+	arch_env      = be_get_irg_arch_env(irg);
 	lv            = be_liveness(irg);
 	problem_found = 0;
 

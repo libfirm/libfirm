@@ -2200,7 +2200,7 @@ void rss_schedule_preparation(be_irg_t *birg)
 	init_rss_special_nodes(irg);
 
 	rss.irg      = irg;
-	rss.arch_env = be_get_birg_arch_env(birg);
+	rss.arch_env = be_get_irg_arch_env(irg);
 	rss.abi      = birg->abi;
 	rss.h        = heights_new(irg);
 	rss.nodes    = plist_new();

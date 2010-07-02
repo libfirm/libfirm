@@ -1900,7 +1900,7 @@ static void be_pref_alloc_cls(void)
 {
 	int i;
 
-	lv = be_assure_liveness(birg);
+	lv = be_assure_liveness(irg);
 	be_liveness_assure_sets(lv);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);

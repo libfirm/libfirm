@@ -245,7 +245,7 @@ static void rewire_fpu_mode_nodes(be_irg_t *birg)
 	ir_graph *irg = be_get_birg_irg(birg);
 	ir_node *initial_value;
 	ir_node **phis;
-	be_lv_t *lv = be_get_birg_liveness(birg);
+	be_lv_t *lv = be_get_irg_liveness(irg);
 	int i, len;
 
 	/* do ssa construction for the fpu modes */
@@ -289,7 +289,7 @@ static void rewire_fpu_mode_nodes(be_irg_t *birg)
 	be_ssa_construction_destroy(&senv);
 	DEL_ARR_F(env.state_nodes);
 
-	be_liveness_invalidate(be_get_birg_liveness(birg));
+	be_liveness_invalidate(be_get_irg_liveness(irg));
 }
 
 void ia32_setup_fpu_mode(ia32_code_gen_t *cg)

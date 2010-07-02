@@ -378,7 +378,7 @@ static void draw_block(ir_node *bl, void *data)
 {
 	static const color_t      black    = { 0, 0, 0 };
 	const draw_chordal_env_t  *env     = data;
-	const be_lv_t             *lv      = be_get_birg_liveness(env->chordal_env->birg);
+	const be_lv_t             *lv      = be_get_irg_liveness(env->chordal_env->irg);
 	struct list_head          *head    = get_block_border_head(env->chordal_env, bl);
 	ir_node                   *dom     = get_Block_idom(bl);
 	const draw_chordal_opts_t *opts    = env->opts;
@@ -454,7 +454,7 @@ static void draw(draw_chordal_env_t *env, const rect_t *start_box)
 	bbox.w = start_box->w + 2 * env->opts->x_margin;
 	bbox.h = start_box->h + 2 * env->opts->y_margin;
 
-	lv = be_assure_liveness(env->chordal_env->birg);
+	lv = be_assure_liveness(env->chordal_env->irg);
 	be_liveness_assure_sets(lv);
 	be_liveness_assure_chk(lv);
 

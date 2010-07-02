@@ -150,7 +150,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 	int i, arity;
 	spill_t spill, *res;
 	int hash = hash_irn(node);
-	const ir_exec_freq *exec_freq = be_get_birg_exec_freq(env->birg);
+	const ir_exec_freq *exec_freq = be_get_irg_exec_freq(env->birg->irg);
 
 	assert(is_Phi(node));
 
@@ -244,7 +244,7 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 static int my_values_interfere2(be_irg_t *birg, const ir_node *a,
                                 const ir_node *b)
 {
-	be_lv_t *lv = be_get_birg_liveness(birg);
+	be_lv_t *lv = be_get_irg_liveness(birg->irg);
 
     int a2b = _value_dominates(a, b);
     int b2a = _value_dominates(b, a);
@@ -766,7 +766,7 @@ be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg)
 	const arch_env_t *arch_env = birg->main_env->arch_env;
 	be_fec_env_t     *env      = XMALLOC(be_fec_env_t);
 
-	be_liveness_assure_chk(be_assure_liveness(birg));
+	be_liveness_assure_chk(be_assure_liveness(birg->irg));
 
 	obstack_init(&env->obst);
 	env->arch_env       = arch_env;

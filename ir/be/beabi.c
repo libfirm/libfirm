@@ -2428,7 +2428,8 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	int i, len;
 	ir_node **phis;
 	be_irg_t *birg = env->birg;
-	be_lv_t *lv = be_get_birg_liveness(birg);
+	ir_graph *irg  = env->irg;
+	be_lv_t  *lv   = be_get_irg_liveness(irg);
 	fix_stack_walker_env_t walker_env;
 
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);

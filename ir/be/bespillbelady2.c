@@ -1487,14 +1487,14 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	/* init belady env */
 	obstack_init(&env.ob);
 	env.irg        = irg;
-	env.arch       = be_get_birg_arch_env(birg);
+	env.arch       = be_get_irg_arch_env(irg);
 	env.cls        = cls;
-	env.lv         = be_get_birg_liveness(birg);
+	env.lv         = be_get_irg_liveness(irg);
 	env.dfs        = env.lv->dfs;
 	env.n_regs     = n_regs;
 	env.ws         = new_workset(&env, &env.ob);
 	env.senv       = be_new_spill_env(birg);
-	env.ef         = be_get_birg_exec_freq(birg);
+	env.ef         = be_get_irg_exec_freq(irg);
 	env.spilled    = bitset_irg_obstack_alloc(&env.ob, irg);
 	env.extra_spilled = ir_nodeset_new(64);
 	env.n_blocks   = 0;

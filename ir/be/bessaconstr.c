@@ -254,10 +254,10 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
 	stat_ev_dbl("bessaconstr_n_blocks", n_blocks);
 
 	memset(env, 0, sizeof(env[0]));
-	be_assure_dom_front(birg);
+	be_assure_dom_front(irg);
 
 	env->irg       = irg;
-	env->domfronts = be_get_birg_dom_front(birg);
+	env->domfronts = be_get_irg_dom_front(irg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
 

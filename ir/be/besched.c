@@ -162,7 +162,7 @@ void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
 
 	remove_dead_nodes_env_t env;
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
-	env.lv  = be_get_birg_liveness(birg);
+	env.lv  = be_get_irg_liveness(irg);
 	env.irg = irg;
 
 	// mark all reachable nodes

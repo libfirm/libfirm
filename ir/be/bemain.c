@@ -842,7 +842,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			}
 		}
 
-		be_free_birg(birg);
+		be_free_birg(irg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
 	ir_profile_free();

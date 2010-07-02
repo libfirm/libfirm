@@ -151,16 +151,17 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 spill_env_t *be_new_spill_env(be_irg_t *birg)
 {
 	const arch_env_t *arch_env = birg->main_env->arch_env;
+	ir_graph         *irg      = be_get_birg_irg(birg);
 
 	spill_env_t *env = XMALLOC(spill_env_t);
 	env->spills			= new_set(cmp_spillinfo, 1024);
-	env->irg            = be_get_birg_irg(birg);
+	env->irg            = irg;
 	env->birg           = birg;
 	env->arch_env       = arch_env;
 	ir_nodeset_init(&env->mem_phis);
 	env->spill_cost     = arch_env->spill_cost;
 	env->reload_cost    = arch_env->reload_cost;
-	env->exec_freq      = be_get_birg_exec_freq(birg);
+	env->exec_freq      = be_get_irg_exec_freq(irg);
 	obstack_init(&env->obst);
 
 #ifdef FIRM_STATISTICS
@@ -991,7 +992,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 		 * SSA form for the spilled value */
 		if (ARR_LEN(copies) > 0) {
 			be_ssa_construction_env_t senv;
-			/* be_lv_t *lv = be_get_birg_liveness(env->birg); */
+			/* be_lv_t *lv = be_get_irg_liveness(env->irg); */
 
 			be_ssa_construction_init(&senv, env->birg);
 			be_ssa_construction_add_copy(&senv, to_spill);
