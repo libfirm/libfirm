@@ -156,14 +156,12 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 	}
 }
 
-void be_remove_dead_nodes_from_schedule(be_irg_t *birg)
+void be_remove_dead_nodes_from_schedule(ir_graph *irg)
 {
-	ir_graph *irg = be_get_birg_irg(birg);
-
 	remove_dead_nodes_env_t env;
 	env.reachable = bitset_alloca(get_irg_last_idx(irg));
-	env.lv  = be_get_irg_liveness(irg);
-	env.irg = irg;
+	env.lv        = be_get_irg_liveness(irg);
+	env.irg       = irg;
 
 	// mark all reachable nodes
 	irg_walk_graph(irg, mark_dead_nodes_walker, NULL, &env);

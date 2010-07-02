@@ -560,7 +560,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 		int i, len;
 		ir_node **phis;
 
-		be_ssa_construction_init(&senv, birg);
+		be_ssa_construction_init(&senv, irg);
 		if (sched_is_scheduled(info->value))
 			be_ssa_construction_add_copy(&senv, info->value);
 		be_ssa_construction_add_copies(&senv,
@@ -592,7 +592,7 @@ void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
 	}
 
 	/* some nodes might be dead now. */
-	be_remove_dead_nodes_from_schedule(birg);
+	be_remove_dead_nodes_from_schedule(irg);
 
 	ir_nodemap_destroy(&env.spill_infos);
 	be_end_uses(env.uses);

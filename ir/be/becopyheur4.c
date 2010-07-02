@@ -1428,7 +1428,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	phase_init(&mst_env.ph, co->irg, co_mst_irn_init);
 	phase_set_private(&mst_env.ph, &mst_env);
 
-	k = be_put_ignore_regs(co->cenv->birg, co->cls, ignore_regs);
+	k = be_put_ignore_regs(co->cenv->irg, co->cls, ignore_regs);
 	k = n_regs - k;
 
 	mst_env.n_regs        = n_regs;

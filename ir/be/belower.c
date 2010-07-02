@@ -812,7 +812,7 @@ void assure_constraints(be_irg_t *birg)
 		DB((dbg_constr, LEVEL_1, "\n"));
 
 		/* introduce the copies for the operand and it's copies */
-		be_ssa_construction_init(&senv, birg);
+		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, map_entry.node);
 		be_ssa_construction_add_copies(&senv, nodes, n);
 		be_ssa_construction_fix_users(&senv, map_entry.node);

@@ -1468,17 +1468,16 @@ static void collect_blocks(ir_node *bl, void *data)
  * In the transformed graph, the register pressure never exceeds the number
  * of available registers.
  *
- * @param birg  The backend graph
+ * @param irg   The graph
  * @param cls   The register class to spill
  */
-static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
+static void be_spill_belady(ir_graph *irg, const arch_register_class_t *cls)
 {
-	ir_graph *irg = be_get_birg_irg(birg);
 	belady_env_t env;
 	int i, n_regs;
 
 	/* some special classes contain only ignore regs, nothing to do then */
-	n_regs = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	n_regs = cls->n_regs - be_put_ignore_regs(irg, cls, NULL);
 	if (n_regs == 0)
 		return;
 
@@ -1493,7 +1492,7 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *cls)
 	env.dfs        = env.lv->dfs;
 	env.n_regs     = n_regs;
 	env.ws         = new_workset(&env, &env.ob);
-	env.senv       = be_new_spill_env(birg);
+	env.senv       = be_new_spill_env(irg);
 	env.ef         = be_get_irg_exec_freq(irg);
 	env.spilled    = bitset_irg_obstack_alloc(&env.ob, irg);
 	env.extra_spilled = ir_nodeset_new(64);

@@ -98,13 +98,13 @@ void be_init_default_asm_constraint_flags(void);
 
 /**
  * Put the registers to be ignored in this IRG into a bitset.
- * @param birg The backend IRG data structure.
+ * @param irg  The graph
  * @param cls  The register class.
  * @param bs   The bitset (may be NULL).
  * @return The number of registers to be ignored.
  */
-unsigned be_put_ignore_regs(const be_irg_t *birg,
-		const arch_register_class_t *cls, bitset_t *bs);
+unsigned be_put_ignore_regs(const ir_graph *irg,
+                            const arch_register_class_t *cls, bitset_t *bs);
 
 
 /**

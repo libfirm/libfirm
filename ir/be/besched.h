@@ -93,7 +93,7 @@ void    sched_remove(ir_node *irn);
  * Removes dead nodes from schedule
  * @param irg  the graph
  */
-void be_remove_dead_nodes_from_schedule(be_irg_t *birg);
+void be_remove_dead_nodes_from_schedule(ir_graph *irg);
 
 #define SCHED_INITIAL_GRANULARITY (1 << 14)
 #define get_irn_sched_info(irn)             (&be_get_info(skip_Proj_const(irn))->sched_info)

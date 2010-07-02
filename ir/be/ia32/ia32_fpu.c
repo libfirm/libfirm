@@ -263,7 +263,7 @@ static void rewire_fpu_mode_nodes(be_irg_t *birg)
 		return;
 	}
 
-	be_ssa_construction_init(&senv, birg);
+	be_ssa_construction_init(&senv, irg);
 	be_ssa_construction_add_copies(&senv, env.state_nodes,
 	                               ARR_LEN(env.state_nodes));
 	be_ssa_construction_fix_users(&senv, initial_value);

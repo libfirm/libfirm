@@ -1934,14 +1934,14 @@ static void spill(void)
 {
 	/* make sure all nodes show their real register pressure */
 	be_timer_push(T_RA_CONSTR);
-	be_pre_spill_prepare_constr(birg, cls);
+	be_pre_spill_prepare_constr(irg, cls);
 	be_timer_pop(T_RA_CONSTR);
 
 	dump(DUMP_RA, irg, "-spillprepare");
 
 	/* spill */
 	be_timer_push(T_RA_SPILL);
-	be_do_spill(birg, cls);
+	be_do_spill(irg, cls);
 	be_timer_pop(T_RA_SPILL);
 
 	be_timer_push(T_RA_SPILL_APPLY);
@@ -1987,10 +1987,10 @@ static void be_pref_alloc(be_irg_t *new_birg)
 		be_timer_push(T_VERIFY);
 		if (birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
 			be_verify_schedule(birg);
-			be_verify_register_pressure(birg, cls, irg);
+			be_verify_register_pressure(irg, cls);
 		} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
 			assert(be_verify_schedule(birg) && "Schedule verification failed");
-			assert(be_verify_register_pressure(birg, cls, irg)
+			assert(be_verify_register_pressure(irg, cls)
 				&& "Register pressure verification failed");
 		}
 		be_timer_pop(T_VERIFY);

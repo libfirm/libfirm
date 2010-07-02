@@ -927,10 +927,9 @@ static void fix_block_borders(ir_node *block, void *data)
 	}
 }
 
-static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
+static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 {
 	int i;
-	ir_graph *irg = be_get_birg_irg(birg);
 
 	be_liveness_assure_sets(be_assure_liveness(irg));
 
@@ -952,11 +951,11 @@ static void be_spill_belady(be_irg_t *birg, const arch_register_class_t *rcls)
 	obstack_init(&obst);
 	cls       = rcls;
 	lv        = be_get_irg_liveness(irg);
-	n_regs    = cls->n_regs - be_put_ignore_regs(birg, cls, NULL);
+	n_regs    = cls->n_regs - be_put_ignore_regs(irg, cls, NULL);
 	ws        = new_workset();
 	uses      = be_begin_uses(irg, lv);
-	loop_ana  = be_new_loop_pressure(birg, cls);
-	senv      = be_new_spill_env(birg);
+	loop_ana  = be_new_loop_pressure(irg, cls);
+	senv      = be_new_spill_env(irg);
 	blocklist = be_get_cfgpostorder(irg);
 	stat_ev_tim_pop("belady_time_init");
 

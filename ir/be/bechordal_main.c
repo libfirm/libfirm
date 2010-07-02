@@ -259,10 +259,10 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, birg->exec_freq));
 
 	/* put all ignore registers into the ignore register set. */
-	be_put_ignore_regs(birg, pse->cls, chordal_env->ignore_colors);
+	be_put_ignore_regs(irg, pse->cls, chordal_env->ignore_colors);
 
 	be_timer_push(T_RA_CONSTR);
-	be_pre_spill_prepare_constr(chordal_env->birg, chordal_env->cls);
+	be_pre_spill_prepare_constr(irg, chordal_env->cls);
 	be_timer_pop(T_RA_CONSTR);
 
 	dump(BE_CH_DUMP_CONSTR, birg->irg, pse->cls, "constr-pre");
@@ -277,7 +277,8 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 	be_irg_t            *birg        = pse->birg;
 	ir_graph            *irg         = birg->irg;
 	int                  colors_n    = arch_register_class_n_regs(chordal_env->cls);
-	int             allocatable_regs = colors_n - be_put_ignore_regs(birg, chordal_env->cls, NULL);
+	int             allocatable_regs
+		= colors_n - be_put_ignore_regs(irg, chordal_env->cls, NULL);
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
@@ -300,10 +301,10 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		be_timer_push(T_VERIFY);
 		if (chordal_env->opts->vrfy_option == BE_CH_VRFY_WARN) {
 			be_verify_schedule(birg);
-			be_verify_register_pressure(birg, pse->cls, irg);
+			be_verify_register_pressure(irg, pse->cls);
 		} else if (chordal_env->opts->vrfy_option == BE_CH_VRFY_ASSERT) {
 			assert(be_verify_schedule(birg) && "Schedule verification failed");
-			assert(be_verify_register_pressure(birg, pse->cls, irg)
+			assert(be_verify_register_pressure(irg, pse->cls)
 				&& "Register pressure verification failed");
 		}
 		be_timer_pop(T_VERIFY);
@@ -443,7 +444,7 @@ static void be_ra_chordal_main(be_irg_t *birg)
 			pre_spill(&pse, cls);
 
 			be_timer_push(T_RA_SPILL);
-			be_do_spill(birg, cls);
+			be_do_spill(irg, cls);
 			be_timer_pop(T_RA_SPILL);
 
 			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");

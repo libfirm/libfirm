@@ -39,7 +39,7 @@ typedef struct spill_env_t spill_env_t;
 /**
  * Creates a new spill environment.
  */
-spill_env_t *be_new_spill_env(be_irg_t *birg);
+spill_env_t *be_new_spill_env(ir_graph *irg);
 
 /**
  * Deletes a spill environment.
@@ -160,10 +160,10 @@ void make_spill_locations_dominate_irn(spill_env_t *env, ir_node *irn);
 
 /**
  * Collect spill/reload cost statistics for a graph.
- * @param birg   The backend graph.
+ * @param irg    The graph.
  * @param costs  A struct which will be filled with the costs.
  */
-void be_get_total_spill_costs(be_irg_t *birg, be_total_spill_costs_t *costs);
+void be_get_total_spill_costs(ir_graph *irg, be_total_spill_costs_t *costs);
 
 /**
  * Check, if a node is rematerializable.

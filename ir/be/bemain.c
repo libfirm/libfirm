@@ -770,7 +770,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* fix stack offsets */
 		be_timer_push(T_ABI);
 		be_abi_fix_stack_nodes(birg->abi);
-		be_remove_dead_nodes_from_schedule(birg);
+		be_remove_dead_nodes_from_schedule(irg);
 		be_abi_fix_stack_bias(birg->abi);
 		be_timer_pop(T_ABI);
 
@@ -916,7 +916,8 @@ void be_main(FILE *file_handle, const char *cup_name)
 #endif
 }
 
-unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *cls, bitset_t *bs)
+unsigned be_put_ignore_regs(const ir_graph *irg,
+                            const arch_register_class_t *cls, bitset_t *bs)
 {
 	if (bs == NULL)
 		bs = bitset_alloca(cls->n_regs);
@@ -926,7 +927,7 @@ unsigned be_put_ignore_regs(const be_irg_t *birg, const arch_register_class_t *c
 	assert(bitset_size(bs) == cls->n_regs);
 	arch_put_non_ignore_regs(cls, bs);
 	bitset_flip_all(bs);
-	be_abi_put_ignore_regs(birg->abi, cls, bs);
+	be_abi_put_ignore_regs(be_birg_from_irg(irg)->abi, cls, bs);
 
 	return bitset_popcount(bs);
 }

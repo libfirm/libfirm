@@ -52,7 +52,7 @@ typedef struct _be_loop_info_t {
 
 struct _be_loopana_t {
 	set      *data;
-	be_irg_t *birg;
+	ir_graph *irg;
 };
 
 static int cmp_loop_info(const void *a, const void *b, size_t size)
@@ -66,15 +66,16 @@ static int cmp_loop_info(const void *a, const void *b, size_t size)
 
 /**
  * Compute the highest register pressure in a block.
- * @param birg      The graph.
+ * @param irg       The graph.
  * @param block     The block to compute pressure for.
  * @param cls       The register class to compute pressure for.
  * @return The highest register pressure in the given block.
  */
-static unsigned be_compute_block_pressure(const be_irg_t *birg,
-		ir_node *block, const arch_register_class_t *cls)
+static unsigned be_compute_block_pressure(const ir_graph *irg,
+                                          ir_node *block,
+                                          const arch_register_class_t *cls)
 {
-	be_lv_t      *lv = be_get_irg_liveness(birg->irg);
+	be_lv_t      *lv = be_get_irg_liveness(irg);
 	ir_nodeset_t  live_nodes;
 	ir_node      *irn;
 	int          max_live;
@@ -110,7 +111,8 @@ static unsigned be_compute_block_pressure(const be_irg_t *birg,
  * @param cls       The register class to compute pressure for.
  * @return The highest register pressure in the given loop.
  */
-static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, const arch_register_class_t *cls)
+static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
+                                         const arch_register_class_t *cls)
 {
 	int            i, max;
 	unsigned       pressure;
@@ -126,7 +128,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 		loop_element elem = get_loop_element(loop, i);
 
 		if (*elem.kind == k_ir_node)
-			son_pressure = be_compute_block_pressure(loop_ana->birg, elem.node, cls);
+			son_pressure = be_compute_block_pressure(loop_ana->irg, elem.node, cls);
 		else {
 			assert(*elem.kind == k_ir_loop);
 			son_pressure = be_compute_loop_pressure(loop_ana, elem.son, cls);
@@ -147,19 +149,18 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop, 
 }
 
 /**
- * Compute the register pressure for a class of all loops in the birg.
- * @param birg  The backend irg object
+ * Compute the register pressure for a class of all loops in a graph
+ * @param irg   The graph
  * @param cls   The register class to compute the pressure for
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg,
+be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
                                        const arch_register_class_t *cls)
 {
-	ir_graph     *irg      = be_get_birg_irg(birg);
 	be_loopana_t *loop_ana = XMALLOC(be_loopana_t);
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
-	loop_ana->birg = birg;
+	loop_ana->irg  = irg;
 
 	DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
 	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
@@ -180,17 +181,16 @@ be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg,
  * @param birg  The backend irg object
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure(be_irg_t *birg,
+be_loopana_t *be_new_loop_pressure(ir_graph *irg,
                                    const arch_register_class_t *cls)
 {
-	ir_graph         *irg      = be_get_birg_irg(birg);
 	be_loopana_t     *loop_ana = XMALLOC(be_loopana_t);
 	ir_loop          *irg_loop = get_irg_loop(irg);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	int               i;
 
 	loop_ana->data = new_set(cmp_loop_info, 16);
-	loop_ana->birg = birg;
+	loop_ana->irg  = irg;
 
 	/* construct control flow loop tree */
 	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {

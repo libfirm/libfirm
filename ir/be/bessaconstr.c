@@ -241,9 +241,8 @@ static void introduce_def_at_block(ir_node *block, ir_node *def)
 	}
 }
 
-void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg)
+void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 {
-	ir_graph *irg = be_get_birg_irg(birg);
 	ir_node *sb   = get_irg_start_block(irg);
 	int n_blocks  = get_Block_dom_max_subtree_pre_num(sb);
 

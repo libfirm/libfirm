@@ -303,6 +303,6 @@ void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (changed) {
-		be_remove_dead_nodes_from_schedule(birg);
+		be_remove_dead_nodes_from_schedule(irg);
 	}
 }

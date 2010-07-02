@@ -50,7 +50,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct be_pre_spill_env_t {
-	be_irg_t                    *birg;
+	ir_graph                    *irg;
 	const arch_register_class_t *cls;
 } be_pre_spill_env_t;
 
@@ -58,8 +58,8 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 {
 	const arch_register_class_t *cls = env->cls;
 	ir_node  *block      = get_nodes_block(node);
-	const be_irg_t *birg = env->birg;
-	be_lv_t *lv          = birg->lv;
+	const ir_graph *irg  = env->irg;
+	be_lv_t *lv          = be_get_irg_liveness(irg);
 	unsigned *tmp        = NULL;
 	unsigned *def_constr = NULL;
 	int       arity      = get_irn_arity(node);
@@ -239,14 +239,13 @@ static void pre_spill_prepare_constr_walker(ir_node *block, void *data)
 	}
 }
 
-void be_pre_spill_prepare_constr(be_irg_t *birg,
+void be_pre_spill_prepare_constr(ir_graph *irg,
                                  const arch_register_class_t *cls)
 {
-	ir_graph *irg = birg->irg;
 	be_pre_spill_env_t env;
 	memset(&env, 0, sizeof(env));
-	env.birg = birg;
-	env.cls  = cls;
+	env.irg = irg;
+	env.cls = cls;
 
 	be_assure_liveness(irg);
 
@@ -274,11 +273,11 @@ void be_register_spiller(const char *name, be_spiller_t *spiller)
 	be_add_module_to_list(&spillers, name, spiller);
 }
 
-void be_do_spill(be_irg_t *birg, const arch_register_class_t *cls)
+void be_do_spill(ir_graph *irg, const arch_register_class_t *cls)
 {
 	assert(selected_spiller != NULL);
 
-	selected_spiller->spill(birg, cls);
+	selected_spiller->spill(irg, cls);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spilloptions);

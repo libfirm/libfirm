@@ -74,7 +74,7 @@ typedef struct be_ssa_construction_env_t {
  * @param env    an SSA empty construction environment
  * @param birg
  */
-void be_ssa_construction_init(be_ssa_construction_env_t *env, be_irg_t *birg);
+void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg);
 
 void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
                                   ir_node *value);

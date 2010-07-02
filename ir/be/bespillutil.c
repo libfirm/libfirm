@@ -98,7 +98,6 @@ struct spill_env_t {
 	const arch_env_t *arch_env;
 	ir_graph         *irg;
 	struct obstack    obst;
-	be_irg_t         *birg;
 	int               spill_cost;     /**< the cost of a single spill node */
 	int               reload_cost;    /**< the cost of a reload node */
 	set              *spills;         /**< all spill_info_t's, which must be
@@ -148,15 +147,13 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 	return res;
 }
 
-spill_env_t *be_new_spill_env(be_irg_t *birg)
+spill_env_t *be_new_spill_env(ir_graph *irg)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
-	ir_graph         *irg      = be_get_birg_irg(birg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 
 	spill_env_t *env = XMALLOC(spill_env_t);
 	env->spills			= new_set(cmp_spillinfo, 1024);
 	env->irg            = irg;
-	env->birg           = birg;
 	env->arch_env       = arch_env;
 	ir_nodeset_init(&env->mem_phis);
 	env->spill_cost     = arch_env->spill_cost;
@@ -994,7 +991,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 			be_ssa_construction_env_t senv;
 			/* be_lv_t *lv = be_get_irg_liveness(env->irg); */
 
-			be_ssa_construction_init(&senv, env->birg);
+			be_ssa_construction_init(&senv, env->irg);
 			be_ssa_construction_add_copy(&senv, to_spill);
 			be_ssa_construction_add_copies(&senv, copies, ARR_LEN(copies));
 			be_ssa_construction_fix_users(&senv, to_spill);
@@ -1018,7 +1015,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 			be_ssa_construction_env_t senv;
 
-			be_ssa_construction_init(&senv, env->birg);
+			be_ssa_construction_init(&senv, env->irg);
 			spill = si->spills;
 			for ( ; spill != NULL; spill = spill->next) {
 				/* maybe we rematerialized the value and need no spill */
@@ -1046,9 +1043,9 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 	/* Matze: In theory be_ssa_construction should take care of the liveness...
 	 * try to disable this again in the future */
-	be_liveness_invalidate(env->birg->lv);
+	be_liveness_invalidate(be_get_irg_liveness(env->irg));
 
-	be_remove_dead_nodes_from_schedule(env->birg);
+	be_remove_dead_nodes_from_schedule(env->irg);
 
 	be_timer_pop(T_RA_SPILL_APPLY);
 }

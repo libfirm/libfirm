@@ -2446,7 +2446,7 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 		return;
 	}
 
-	be_ssa_construction_init(&senv, birg);
+	be_ssa_construction_init(&senv, irg);
 	be_ssa_construction_add_copies(&senv, walker_env.sp_nodes,
                                    ARR_LEN(walker_env.sp_nodes));
 	be_ssa_construction_fix_users_array(&senv, walker_env.sp_nodes,

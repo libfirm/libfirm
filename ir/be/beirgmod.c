@@ -129,7 +129,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 
 		curr = proj;
 
-		be_ssa_construction_init(&senv, birg);
+		be_ssa_construction_init(&senv, birg->irg);
 		be_ssa_construction_add_copy(&senv, perm_op);
 		be_ssa_construction_add_copy(&senv, proj);
 		be_ssa_construction_fix_users(&senv, perm_op);

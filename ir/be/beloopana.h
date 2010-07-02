@@ -36,31 +36,33 @@ typedef struct _be_loopana_t be_loopana_t;
 
 /**
  * Compute the register pressure for a class of all loops in the birg.
- * @param birg  The backend irg object
+ * @param irg   The graph
  * @param cls   The register class to compute the pressure for
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure_cls(be_irg_t *birg, const arch_register_class_t *cls);
+be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
+                                       const arch_register_class_t *cls);
 
 /**
  * Compute the register pressure of all loops in the birg.
- * @param birg  The backend irg object
+ * @param irg   The graph
  * @param cls   register class to compute loop pressure for,
  *              if NULL computes for all classes
  * @return The loop analysis object.
  */
-be_loopana_t *be_new_loop_pressure(be_irg_t *birg,
+be_loopana_t *be_new_loop_pressure(ir_graph *irg,
                                    const arch_register_class_t *cls);
 
 /**
  * Returns the computed register pressure for the given class and loop.
  * @return The pressure or INT_MAX if not found
  */
-unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_t *cls, ir_loop *loop);
+unsigned be_get_loop_pressure(be_loopana_t *loop_ana,
+                              const arch_register_class_t *cls, ir_loop *loop);
 
 /**
  * Frees loop analysis object.
  */
 void be_free_loop_pressure(be_loopana_t *loop_ana);
 
-#endif /* FIRM_BE_BELOOPANA_H */
+#endif
