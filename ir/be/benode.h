@@ -83,8 +83,9 @@ enum {
 /**
  * Make a new Spill node.
  */
-ir_node *be_new_Spill(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
-	ir_node *bl, ir_node *frame, ir_node *to_spill);
+ir_node *be_new_Spill(const arch_register_class_t *cls,
+                      const arch_register_class_t *cls_frame, ir_node *block,
+                      ir_node *frame, ir_node *to_spill);
 
 /**
  * Position numbers for the be_Reload inputs.
@@ -97,8 +98,9 @@ enum {
 /**
  * Make a new Reload node.
  */
-ir_node *be_new_Reload(const arch_register_class_t *cls, const arch_register_class_t *cls_frame,
-	ir_node *bl, ir_node *frame, ir_node *mem, ir_mode *mode);
+ir_node *be_new_Reload(const arch_register_class_t *cls,
+                       const arch_register_class_t *cls_frame, ir_node *block,
+                       ir_node *frame, ir_node *mem, ir_mode *mode);
 
 /**
  * Position numbers for the be_Copy inputs.
@@ -110,7 +112,8 @@ enum {
 /**
  * Make a new Copy node.
  */
-ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *block, ir_node *in);
+ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *block,
+                     ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
 /** Sets the Copy Argument. */
@@ -119,7 +122,8 @@ void be_set_Copy_op(ir_node *cpy, ir_node *op);
 /**
  * Make a new Perm node.
  */
-ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *bl, int arity, ir_node *in[]);
+ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *block,
+                     int n, ir_node *in[]);
 
 /**
  * Reduce a Perm.
@@ -127,20 +131,28 @@ ir_node *be_new_Perm(const arch_register_class_t *cls, ir_node *bl, int arity, i
  * map is -1, the argument gets deleted.
  * This function takes care, that the register data and the input array reflects
  * the changes described by the map.
- * This is needed by the Perm optimization/movement in belower.c, see push_through_perm().
+ * This is needed by the Perm optimization/movement in belower.c, see
+ * push_through_perm().
  * @param perm     The perm node.
- * @param new_size The new number of arguments (must be smaller or equal to the current one).
- * @param map      A map assigning each operand a new index (or -1 to indicate deletion).
+ * @param new_size The new number of arguments (must be smaller or equal to the
+ *                 current one).
+ * @param map      A map assigning each operand a new index (or -1 to indicate
+ *                 deletion).
  */
 void be_Perm_reduce(ir_node *perm, int new_size, int *map);
 
 /**
  * Create a new MemPerm node.
+ * A MemPerm node exchanges the values of memory locations. (Typically entities
+ * used as spillslots). MemPerm nodes perform this operation without modifying
+ * any register values.
  */
-ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *block, int n,
+                        ir_node *in[]);
 ir_node *be_new_Keep(ir_node *block, int arity, ir_node *in[]);
 
-void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls, ir_node *node);
+void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
+                      ir_node *node);
 
 /**
  * Position numbers for the be_FrameAddr inputs
@@ -150,7 +162,8 @@ enum {
 };
 
 /** Create a new FrameAddr node. */
-ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame, ir_node *bl, ir_node *frame, ir_entity *ent);
+ir_node *be_new_FrameAddr(const arch_register_class_t *cls_frame,
+                          ir_node *block, ir_node *frame, ir_entity *ent);
 
 /** Return the frame input of a FrameAddr node. */
 ir_node *be_get_FrameAddr_frame(const ir_node *node);
@@ -175,16 +188,18 @@ enum {
 
 /**
  * Make a new AddSP node.
- * An AddSP node expresses an increase of the stack pointer in the direction the stack
- * grows. In contrast to IncSP, the amount of bytes the stack pointer is grown, is not
- * given by a constant but an ordinary Firm node.
+ * An AddSP node expresses an increase of the stack pointer in the direction
+ * the stack grows. In contrast to IncSP, the amount of bytes the stack pointer
+ * is grown, is not given by a constant but an ordinary Firm node.
  * @param sp     The stack pointer register.
- * @param bl     The block.
+ * @param block  The block.
  * @param old_sp The node representing the old stack pointer value.
- * @param sz     The node expressing the size by which the stack pointer shall be grown.
+ * @param size   The node expressing the size by which the stack pointer shall
+ *               be grown.
  * @return       A new AddSP node.
  */
-ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz);
+ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *block,
+                      ir_node *old_sp, ir_node *size);
 
 /**
  * Position numbers for the be_SubSP inputs
@@ -203,29 +218,35 @@ enum {
 
 /**
  * Make a new SubSP node.
- * A SubSP node expresses a decrease of the stack pointer in the direction the stack
- * grows. In contrast to IncSP, the amount of bytes the stack pointer is grown, is not
- * given by a constant but an ordinary Firm node.
+ * A SubSP node expresses a decrease of the stack pointer in the direction the
+ * stack grows. In contrast to IncSP, the amount of bytes the stack pointer is
+ * grown, is not given by a constant but an ordinary Firm node.
  * @param sp     The stack pointer register.
- * @param bl     The block.
+ * @param block  The block.
  * @param old_sp The node representing the old stack pointer value.
- * @param sz     The node expressing the size by which the stack pointer shall be grown.
+ * @param size   The node expressing the size by which the stack pointer shall
+ *               be grown.
  * @return       A new DecSP node.
  */
-ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, ir_node *sz);
+ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *block,
+                      ir_node *old_sp, ir_node *size);
 
 /**
  * Make a stack pointer increase/decrease node.
- * @param sp     The stack pointer register. * @param irg    The graph to insert the node to.
- * @param bl     The block to insert the node into.
+ * @param sp     The stack pointer register.
+ * @param block  The block to insert the node into.
  * @param old_sp The node defining the former stack pointer.
- * @param amount The mount of bytes the stack shall be expanded/shrinked (see set_IncSP_offset)
- * @param dir    The direction in which the stack pointer shall be modified:
- *               Along the stack's growing direction or against.
+ * @param offset amount the stack should expand (positive offset) or shrink
+ *               (negative offset). Note that the offset is independent of the
+ *               natural stack direction of the architecture but just specifies
+ *               abstract expanding/shrinking of the stack area.
+ * @param align  force stack alignment to this power of 2. (ie. specifying 3
+ *               results in a 2^3 = 8byte stack alignment)
  * @return       A new stack pointer increment/decrement node.
- * @note         This node sets a register constraint to the @p sp register on its output.
+ * @note         This node sets a register constraint to the @p sp register on
+ *               its output.
  */
-ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
+ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *block,
                       ir_node *old_sp, int offset, int align);
 
 /** Returns the previous node that computes the stack pointer. */
@@ -275,7 +296,8 @@ enum {
 typedef enum {
 	pn_be_Call_M_regular = pn_Call_M,    /**< The memory result of a be_Call. */
 	pn_be_Call_sp        = pn_Call_max,
-	pn_be_Call_first_res                 /**< The first result proj number of a be_Call. */
+	pn_be_Call_first_res                 /**< The first result proj number of a
+	                                          be_Call. */
 } pn_be_Call;
 
 /**
@@ -283,17 +305,19 @@ typedef enum {
  *
  * @param dbg      debug info
  * @param irg      the graph where the call is placed
- * @param bl       the block where the call is placed
+ * @param block    the block where the call is placed
  * @param mem      the memory input of the call
  * @param sp       the stack pointer input of the call
- * @param ptr      the address of the called function, if immediate call set to sp
+ * @param ptr      the address of the called function, if immediate call set
+ *                 to sp
  * @param n_outs   the number of outcoming values from this call
  * @param n        the number of (register) inputs of this call
  * @param in       the (register) inputs of this call
  * @param call_tp  the call type of this call
  */
-ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *bl, ir_node *mem, ir_node *sp, ir_node *ptr,
-                     int n_outs, int n, ir_node *in[], ir_type *call_tp);
+ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *block, ir_node *mem,
+                     ir_node *sp, ir_node *ptr, int n_outs,
+                     int n, ir_node *in[], ir_type *call_tp);
 
 /**
  * Position numbers for the be_Return inputs.
@@ -309,19 +333,21 @@ enum {
  *
  * @param dbg    debug info
  * @param irg    the graph where the new node will be placed
- * @param bl     the block where the new node will be placed
+ * @param block  the block where the new node will be placed
  * @param n_res  number of "real" results
- * @param n      number of inputs
  * @param pop    pop number of bytes on return
+ * @param n      number of inputs
  * @param in     input array
  */
-ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *bl, int n_res, unsigned pop, int n, ir_node *in[]);
+ir_node *be_new_Return(dbg_info *dbg, ir_graph *irg, ir_node *block, int n_res,
+                       unsigned pop, int n, ir_node *in[]);
 
 /** Returns the number of real returns values */
 int be_Return_get_n_rets(const ir_node *ret);
 
 /**
- * Return the number of bytes that should be popped from stack when executing the Return.
+ * Return the number of bytes that should be popped from stack when executing
+ * the Return.
  *
  * @param ret  the be_Return node
  */
@@ -346,7 +372,7 @@ int be_Return_append_node(ir_node *ret, ir_node *node);
 
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 
-ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[]);
+ir_node *be_new_Barrier(ir_node *block, int n, ir_node *in[]);
 
 /**
  * Appends a node to a barrier, returns the result proj of the node
@@ -357,7 +383,7 @@ ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node);
  * Make a spill node.
  *
  * @param irn       The node to be spilled.
- * @param spill_ctx The context in which the spill is introduced (This is mostly == irn up to the case of Phis).
+ * @param block     the block where the spill should be placed
  * @return          The new spill node.
  */
 ir_node *be_spill(ir_node *block, ir_node *irn);
@@ -366,27 +392,29 @@ ir_node *be_spill(ir_node *block, ir_node *irn);
  * Make a reload and insert it into the schedule.
  *
  * @param cls      The register class of the reloaded value.
- * @param insert   The node in the schedule in front of which the reload is inserted.
+ * @param insert   The node in the schedule in front of which the reload is
+ *                 inserted.
  * @param mode     The mode of the original (spilled) value.
  * @param spill    The spill node corresponding to this reload.
  * @return         A freshly made reload.
  */
-ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill);
+ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert,
+                   ir_mode *mode, ir_node *spill);
 
 enum {
 	be_pos_CopyKeep_op = 0
 };
-ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode);
-ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode);
-ir_node *be_get_CopyKeep_op(const ir_node *cpy);
-void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
+ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *block,
+                         ir_node *src, int n, ir_node *in_keep[],
+                         ir_mode *mode);
 
-/**
- * Get the backend opcode of a backend node.
- * @param irn The node.
- * @return The backend opcode.
- */
-#define be_get_irn_opcode(irn)	get_irn_opcode(irn)
+ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls,
+                                ir_node *block, ir_node *src, ir_node *keep,
+                                ir_mode *mode);
+
+ir_node *be_get_CopyKeep_op(const ir_node *cpy);
+
+void be_set_CopyKeep_op(ir_node *cpy, ir_node *op);
 
 /**
  * Returns the frame entity of a be node.
@@ -418,7 +446,8 @@ int be_get_MemPerm_entity_arity(const ir_node *irn);
  * Impose a register constraint on a backend node.
  * @param irn The node.
  * @param pos The position of the argument.
- * @param reg The register which is admissible for that node, argument/result and position.
+ * @param reg The register which is admissible for that node, argument/result
+ *            and position.
  */
 void be_set_constr_single_reg_in(ir_node *irn, int pos,
 		const arch_register_t *reg, arch_register_req_type_t additional_flags);
@@ -427,8 +456,9 @@ void be_set_constr_single_reg_out(ir_node *irn, int pos,
 
 /**
  * Impose register constraints on a backend node.
- * The register subsets given by the limited function in @p req are copied to the backend node.
- * This requires that the constraint type of the @p req is arch_register_req_type_limited.
+ * The register subsets given by the limited function in @p req are copied to
+ * the backend node. This requires that the constraint type of the @p req is
+ * arch_register_req_type_limited.
  * @param irn The backend node.
  * @param pos The position (@see be_set_constr_single_reg()).
  * @param req The register requirements which shall be transferred.
@@ -442,8 +472,10 @@ void be_set_constr_out(ir_node *irn, int pos, const arch_register_req_t *req);
  * @param pos The position (0..n) for arguments
  * @param flags The register class to set for that node and position.
  */
-void be_node_set_reg_class_in(ir_node *irn, int pos, const arch_register_class_t *cls);
-void be_node_set_reg_class_out(ir_node *irn, int pos, const arch_register_class_t *cls);
+void be_node_set_reg_class_in(ir_node *irn, int pos,
+                              const arch_register_class_t *cls);
+void be_node_set_reg_class_out(ir_node *irn, int pos,
+                               const arch_register_class_t *cls);
 
 /**
  * Set the register requirements for a phi node.
@@ -479,4 +511,4 @@ static inline int be_is_Start    (const ir_node *irn) { return get_irn_opcode(ir
 static inline int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
 static inline int be_is_Barrier  (const ir_node *irn) { return get_irn_opcode(irn) == beo_Barrier  ; }
 
-#endif /* FIRM_BE_BENODE_T_H */
+#endif
