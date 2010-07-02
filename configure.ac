@@ -38,8 +38,8 @@ AC_DEFINE([libfirm_VERSION_MICRO], [firm_micro_version], [Firms micro version nu
 
 LT_VERSION="lt_current:lt_revision:lt_age"
 AC_SUBST([LT_VERSION])
-LT_RELEASE="lt_release"
-AC_SUBST([LT_RELEASE])
+#LT_RELEASE="lt_release"
+#AC_SUBST([LT_RELEASE])
 
 dnl enable libtool
 LT_INIT([win32-dll])
@@ -48,8 +48,6 @@ AC_SUBST([LIBTOOL_DEPS])
 dnl generate the config header file
 AC_CONFIG_HEADER([config.h])
 
-dnl enable visibility hidden
-CFLAGS="-fvisibility=hidden"
 AC_DEFINE([FIRM_BUILD], [], [Defined when firm library is built])
 AC_DEFINE([FIRM_DLL], [], [Define when a dynamically loadable shared library is built])
 
@@ -105,6 +103,10 @@ dnl ====================
 dnl check for a C compiler
 dnl ----------------------
 AC_PROG_CC
+
+dnl enable visibility hidden (if supported)
+AX_CFLAGS_GCC_OPTION([-fvisibility=hidden])
+
 
 AC_PATH_PROGS(PERL, perl perl5)
 

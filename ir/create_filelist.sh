@@ -15,7 +15,7 @@ done
 echo "" >> FILELIST
 echo "" >> FILELIST
 echo "EXTRA_DIST = \\" >> FILELIST
-FILES=`find $DIRS -maxdepth 1 -name "*.h" -o -name "*.def" -o -name "*.sh"`
+FILES=`find $DIRS -maxdepth 1 -name "*.h" -o -name "*.def" -o -name "*.sh" -o -name "*.l" -o -name "*.y"`
 FILES="$FILES `find ir -name "*.inl"`"
 for f in $FILES; do
 	echo -e "\t$f \\" >> FILELIST
