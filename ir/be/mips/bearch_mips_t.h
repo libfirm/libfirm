@@ -42,7 +42,6 @@ struct mips_code_gen_t {
 	ir_graph                       *irg;            /**< current irg */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	mips_isa_t                     *isa;            /**< the isa instance */
-	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **block_schedule;
 };
 

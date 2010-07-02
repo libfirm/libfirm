@@ -258,7 +258,7 @@ static void kill_unused_anchor(int anchor)
 
 static ir_node *new_be_Anchor(ir_graph *irg)
 {
-	struct obstack *obst = be_get_birg_obst(irg);
+	struct obstack *obst = be_get_be_obst(irg);
 	backend_info_t *info;
 	ir_node        *new_anchor;
 
@@ -401,7 +401,6 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	ir_graph *old_current_ir_graph = current_ir_graph;
 	struct obstack *old_obst = NULL;
 	struct obstack *new_obst = NULL;
-	be_irg_t       *birg     = be_birg_from_irg(irg);
 
 	current_ir_graph = irg;
 
@@ -444,15 +443,10 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 
 	be_liveness_invalidate(be_get_irg_liveness(irg));
 	/* Hack for now, something is buggy with invalidate liveness... */
-	birg->lv = NULL;
+	be_birg_from_irg(irg)->lv = NULL;
 	be_invalidate_dom_front(irg);
 
 	/* recalculate edges */
 	edges_deactivate(irg);
 	edges_activate(irg);
-
-	if (birg->lv) {
-		be_liveness_free(birg->lv);
-		birg->lv = be_liveness(irg);
-	}
 }

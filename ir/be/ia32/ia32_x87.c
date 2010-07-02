@@ -2268,14 +2268,13 @@ static void update_liveness_walker(ir_node *block, void *data)
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  */
-void x87_simulate_graph(be_irg_t *birg)
+void x87_simulate_graph(ir_graph *irg)
 {
 	/* TODO improve code quality (less executed fxch) by using execfreqs */
 
 	ir_node       *block, *start_block;
 	blk_state     *bl_state;
 	x87_simulator sim;
-	ir_graph      *irg = be_get_birg_irg(birg);
 
 	/* create the simulator */
 	x87_init_simulator(&sim, irg);

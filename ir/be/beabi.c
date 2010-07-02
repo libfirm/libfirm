@@ -83,10 +83,9 @@ struct _be_abi_call_t {
 };
 
 /**
- * The ABI information for the current birg.
+ * The ABI information for the current graph.
  */
 struct _be_abi_irg_t {
-	be_irg_t             *birg;         /**< The back end IRG. */
 	ir_graph             *irg;
 	const arch_env_t     *arch_env;
 	survive_dce_t        *dce_survivor;
@@ -417,8 +416,8 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
  */
 static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 {
-	ir_graph *irg              = env->birg->irg;
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	ir_graph *irg              = env->irg;
+	const arch_env_t *arch_env = env->arch_env;
 	ir_type *call_tp           = get_Call_type(irn);
 	ir_node *call_ptr          = get_Call_ptr(irn);
 	int n_params               = get_method_n_params(call_tp);
@@ -429,7 +428,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const arch_register_t *sp  = arch_env->sp;
 	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode         = sp->reg_class->mode;
-	struct obstack *obst       = be_get_birg_obst(irg);
+	struct obstack *obst       = be_get_be_obst(irg);
 	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
 	int n_res                  = get_method_n_ress(call_tp);
 	int do_seq                 = call->flags.bits.store_args_sequential && !no_alloc;
@@ -1189,12 +1188,12 @@ static void process_ops_in_block(ir_node *bl, void *data)
  */
 static void process_calls(be_abi_irg_t *env)
 {
-	ir_graph *irg = env->birg->irg;
+	ir_graph *irg = env->irg;
 
 	env->call->flags.bits.irg_is_leaf = 1;
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, env);
 
-	ir_heights = heights_new(env->birg->irg);
+	ir_heights = heights_new(env->irg);
 	irg_block_walk_graph(irg, NULL, process_ops_in_block, env);
 	heights_free(ir_heights);
 }
@@ -1217,16 +1216,16 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, be_abi_call_t *call,
 								 ir_entity ***param_map)
 {
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
-	int inc  = env->birg->main_env->arch_env->stack_dir * dir;
+	int inc  = env->arch_env->stack_dir * dir;
 	int n    = get_method_n_params(method_type);
 	int curr = inc > 0 ? 0 : n - 1;
-	struct obstack *obst = be_get_birg_obst(env->irg);
+	struct obstack *obst = be_get_be_obst(env->irg);
 	int ofs  = 0;
 
 	char buf[128];
 	ir_type *res;
 	int i;
-	ident *id = get_entity_ident(get_irg_entity(env->birg->irg));
+	ident *id = get_entity_ident(get_irg_entity(env->irg));
 	ir_entity **map;
 
 	*param_map = map = OALLOCN(obst, ir_entity*, n);
@@ -1365,7 +1364,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 		ir_node *mem, int n_res)
 {
 	be_abi_call_t    *call     = env->call;
-	const arch_env_t *arch_env = env->birg->main_env->arch_env;
+	const arch_env_t *arch_env = env->arch_env;
 	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
 	ir_node *keep  = pmap_get(env->keep_map, bl);
@@ -1389,7 +1388,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	if (keep) {
 		stack = get_irn_n(keep, 0);
 		kill_node(keep);
-		remove_End_keepalive(get_irg_end(env->birg->irg), keep);
+		remove_End_keepalive(get_irg_end(env->irg), keep);
 	}
 
 	/* Insert results for Return into the register map. */
@@ -1456,7 +1455,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	}
 	/* we have to pop the shadow parameter in in case of struct returns */
 	pop = call->pop;
-	ret = be_new_Return(dbgi, env->birg->irg, bl, n_res, pop, n, in);
+	ret = be_new_Return(dbgi, env->irg, bl, n_res, pop, n, in);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for (i = 0; i < n; ++i) {
@@ -1582,7 +1581,7 @@ static void lower_frame_sels_walker(ir_node *irn, void *data)
 static void fix_address_of_parameter_access(be_abi_irg_t *env, ent_pos_pair *value_param_list)
 {
 	be_abi_call_t *call = env->call;
-	ir_graph      *irg  = env->birg->irg;
+	ir_graph      *irg  = env->irg;
 	ent_pos_pair  *entry, *new_list;
 	ir_type       *frame_tp;
 	int           i, n = ARR_LEN(value_param_list);
@@ -1781,15 +1780,15 @@ static void fix_outer_variable_access(be_abi_irg_t *env,
 static void modify_irg(be_abi_irg_t *env)
 {
 	be_abi_call_t *call       = env->call;
-	const arch_env_t *arch_env= env->birg->main_env->arch_env;
+	const arch_env_t *arch_env= env->arch_env;
 	const arch_register_t *sp = arch_env->sp;
-	ir_graph *irg             = env->birg->irg;
+	ir_graph *irg             = env->irg;
 	ir_node *end;
 	ir_node *old_mem;
 	ir_node *new_mem_proj;
 	ir_node *mem;
 	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
-	struct obstack *obst      = be_get_birg_obst(irg);
+	struct obstack *obst      = be_get_be_obst(irg);
 
 	int n_params;
 	int i, n;
@@ -2182,7 +2181,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 	ir_node      *load_res;
 	be_abi_irg_t *env = data;
 	int           arity, i;
-	be_main_env_t *be = env->birg->main_env;
+	be_main_env_t *be = be_birg_from_irg(env->irg)->main_env;
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
@@ -2218,7 +2217,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 		/* everything else is accessed relative to EIP */
 		mode     = get_irn_mode(pred);
-		pic_base = arch_code_generator_get_pic_base(env->birg->cg);
+		pic_base = arch_code_generator_get_pic_base(be_get_irg_cg(env->irg));
 
 		/* all ok now for locally constructed stuff */
 		if (can_address_relative(entity)) {
@@ -2248,32 +2247,32 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 	}
 }
 
-be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
+be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 {
-	be_abi_irg_t *env  = XMALLOC(be_abi_irg_t);
-	ir_node *old_frame = get_irg_frame(birg->irg);
-	ir_graph *irg      = birg->irg;
-	struct obstack *obst = be_get_birg_obst(irg);
+	be_abi_irg_t     *env       = XMALLOC(be_abi_irg_t);
+	ir_node          *old_frame = get_irg_frame(irg);
+	struct obstack   *obst      = be_get_be_obst(irg);
+	be_options_t     *options   = be_get_irg_options(irg);
+	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
 
 	pmap_entry *ent;
 	ir_node *dummy;
 	unsigned *limited_bitset;
 	arch_register_req_t *sp_req;
 
-	be_omit_fp      = birg->main_env->options->omit_fp;
-	be_omit_leaf_fp = birg->main_env->options->omit_leaf_fp;
+	be_omit_fp      = options->omit_fp;
+	be_omit_leaf_fp = options->omit_leaf_fp;
 
 	obstack_init(obst);
 
-	env->arch_env    = birg->main_env->arch_env;
+	env->arch_env    = arch_env;
 	env->method_type = get_entity_type(get_irg_entity(irg));
-	env->call        = be_abi_call_new(env->arch_env->sp->reg_class);
-	arch_env_get_call_abi(env->arch_env, env->method_type, env->call);
+	env->call        = be_abi_call_new(arch_env->sp->reg_class);
+	arch_env_get_call_abi(arch_env, env->method_type, env->call);
 
 	env->ignore_regs  = pset_new_ptr_default();
 	env->keep_map     = pmap_create();
 	env->dce_survivor = new_survive_dce();
-	env->birg         = birg;
 	env->irg          = irg;
 
 	sp_req = OALLOCZ(obst, arch_register_req_t);
@@ -2281,20 +2280,20 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 
 	sp_req->type = arch_register_req_type_limited
 	             | arch_register_req_type_produces_sp;
-	sp_req->cls  = arch_register_get_class(env->arch_env->sp);
+	sp_req->cls  = arch_register_get_class(arch_env->sp);
 
 	limited_bitset = rbitset_obstack_alloc(obst, sp_req->cls->n_regs);
-	rbitset_set(limited_bitset, arch_register_get_index(env->arch_env->sp));
+	rbitset_set(limited_bitset, arch_register_get_index(arch_env->sp));
 	sp_req->limited = limited_bitset;
-	if (env->arch_env->sp->type & arch_register_type_ignore) {
+	if (arch_env->sp->type & arch_register_type_ignore) {
 		sp_req->type |= arch_register_req_type_ignore;
 	}
 
-	env->init_sp = dummy = new_r_Dummy(irg, env->arch_env->sp->reg_class->mode);
+	env->init_sp = dummy = new_r_Dummy(irg, arch_env->sp->reg_class->mode);
 
 	env->calls = NEW_ARR_F(ir_node*, 0);
 
-	if (birg->main_env->options->pic) {
+	if (options->pic) {
 		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);
 	}
 
@@ -2305,7 +2304,7 @@ be_abi_irg_t *be_abi_introduce(be_irg_t *birg)
 		Beware: init backend abi call object after processing calls,
 		otherwise some information might be not yet available.
 	*/
-	env->cb = env->call->cb->init(env->call, birg->main_env->arch_env, irg);
+	env->cb = env->call->cb->init(env->call, arch_env, irg);
 
 	/* Process the IRG */
 	modify_irg(env);
@@ -2427,14 +2426,13 @@ void be_abi_fix_stack_nodes(be_abi_irg_t *env)
 	be_ssa_construction_env_t senv;
 	int i, len;
 	ir_node **phis;
-	be_irg_t *birg = env->birg;
 	ir_graph *irg  = env->irg;
 	be_lv_t  *lv   = be_get_irg_liveness(irg);
 	fix_stack_walker_env_t walker_env;
 
 	walker_env.sp_nodes = NEW_ARR_F(ir_node*, 0);
 
-	irg_walk_graph(birg->irg, collect_stack_nodes_walker, NULL, &walker_env);
+	irg_walk_graph(irg, collect_stack_nodes_walker, NULL, &walker_env);
 
 	/* nothing to be done if we didn't find any node, in fact we mustn't
 	 * continue, as for endless loops incsp might have had no users and is bad
@@ -2515,11 +2513,11 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		if (be_is_IncSP(irn)) {
 			/* fill in real stack frame size */
 			if (ofs == BE_STACK_FRAME_SIZE_EXPAND) {
-				ir_type *frame_type = get_irg_frame_type(env->birg->irg);
+				ir_type *frame_type = get_irg_frame_type(env->irg);
 				ofs = (int) get_type_size_bytes(frame_type);
 				be_set_IncSP_offset(irn, ofs);
 			} else if (ofs == BE_STACK_FRAME_SIZE_SHRINK) {
-				ir_type *frame_type = get_irg_frame_type(env->birg->irg);
+				ir_type *frame_type = get_irg_frame_type(env->irg);
 				ofs = - (int)get_type_size_bytes(frame_type);
 				be_set_IncSP_offset(irn, ofs);
 			} else {
@@ -2613,7 +2611,7 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 
 void be_abi_fix_stack_bias(be_abi_irg_t *env)
 {
-	ir_graph          *irg = env->birg->irg;
+	ir_graph          *irg = env->irg;
 	ir_type           *frame_tp;
 	int               i;
 	struct bias_walk  bw;

@@ -47,7 +47,7 @@ void be_free_birg(ir_graph *irg);
  * An ir_graph with additional analysis data about this irg. Also includes some
  * backend structures
  */
-struct be_irg_t {
+typedef struct be_irg_t {
 	ir_graph               *irg;
 	be_main_env_t          *main_env;
 	be_abi_irg_t           *abi;
@@ -59,7 +59,7 @@ struct be_irg_t {
 	                                   register constraints which we can't keep
 	                                   in the irg obst, because it gets replace
 	                                   during code selection) */
-};
+} be_irg_t;
 
 static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
 {
@@ -107,7 +107,7 @@ static inline const arch_env_t *be_get_irg_arch_env(const ir_graph *irg)
 	return be_birg_from_irg(irg)->main_env->arch_env;
 }
 
-static inline struct obstack *be_get_birg_obst(const ir_graph *irg)
+static inline struct obstack *be_get_be_obst(const ir_graph *irg)
 {
 	be_irg_t *birg = be_birg_from_irg(irg);
 	return &birg->obst;

@@ -141,7 +141,6 @@ typedef struct _arm_code_gen_t {
 	ir_graph                       *irg;            /**< current irg */
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	arm_isa_t                      *isa;            /**< the isa instance */
-	be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
 	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
 	char                           have_fp_insn;    /**< non-zero, if fp hardware instructions are emitted */
 	char                           dump;            /**< set to 1 if graphs should be dumped */

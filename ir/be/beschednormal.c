@@ -377,10 +377,9 @@ static void normal_sched_block(ir_node* block, void* env)
 
 
 static void *normal_init_graph(const list_sched_selector_t *vtab,
-                               const be_irg_t *birg)
+                               ir_graph *irg)
 {
 	instance_t* inst = XMALLOC(instance_t);
-	ir_graph*   irg = be_get_birg_irg(birg);
 	heights_t*  heights;
 
 	(void)vtab;

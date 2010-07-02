@@ -517,7 +517,7 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
 
 	start_entry = finish_block_schedule(&env);
 	block_list  = create_blocksched_array(&env, start_entry, env.blockcount,
-	                                      be_get_birg_obst(irg));
+	                                      be_get_be_obst(irg));
 
 	DEL_ARR_F(env.edges);
 	obstack_free(&obst, NULL);
@@ -716,7 +716,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 	start_entry = finish_block_schedule(&env.env);
 	block_list  = create_blocksched_array(&env.env, start_entry,
 	                                      env.env.blockcount,
-	                                      be_get_birg_obst(irg));
+	                                      be_get_be_obst(irg));
 
 	DEL_ARR_F(env.ilpedges);
 	free_lpp(env.lpp);

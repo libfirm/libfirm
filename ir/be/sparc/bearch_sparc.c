@@ -180,7 +180,7 @@ static void sparc_before_ra(void *self)
 {
 	sparc_code_gen_t *cg = self;
 	/* fixup flags register */
-	be_sched_fix_flags(cg->birg, &sparc_reg_classes[CLASS_sparc_flags], &sparc_flags_remat);
+	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_flags], &sparc_flags_remat);
 }
 
 /**
@@ -260,7 +260,7 @@ static void sparc_after_ra_walker(ir_node *block, void *data)
 static void sparc_after_ra(void *self)
 {
 	sparc_code_gen_t *cg = self;
-	be_coalesce_spillslots(cg->birg);
+	be_coalesce_spillslots(cg->irg);
 
 	irg_block_walk_graph(cg->irg, NULL, sparc_after_ra_walker, NULL);
 }
@@ -282,7 +282,7 @@ static void sparc_emit_and_done(void *self)
 	free(cg);
 }
 
-static void *sparc_cg_init(be_irg_t *birg);
+static void *sparc_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t sparc_code_gen_if = {
 	sparc_cg_init,
@@ -299,10 +299,10 @@ static const arch_code_generator_if_t sparc_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *sparc_cg_init(be_irg_t *birg)
+static void *sparc_cg_init(ir_graph *irg)
 {
 	static ir_type *int_tp = NULL;
-	sparc_isa_t      *isa = (sparc_isa_t *)birg->main_env->arch_env;
+	sparc_isa_t      *isa = (sparc_isa_t *) be_get_irg_arch_env(irg);
 	sparc_code_gen_t *cg;
 
 	if (! int_tp) {
@@ -312,15 +312,14 @@ static void *sparc_cg_init(be_irg_t *birg)
 
 	cg 				 = XMALLOC(sparc_code_gen_t);
 	cg->impl				= &sparc_code_gen_if;
-	cg->irg				= birg->irg;
+	cg->irg				= irg;
 	//cg->reg_set				= new_set(arm_cmp_irn_reg_assoc, 1024);
 	cg->isa				= isa;
-	cg->birg				= birg;
 	//cg->int_tp				= int_tp;
 	//cg->have_fp_insn	= 0;
 	//cg->unknown_gp		= NULL;
 	//cg->unknown_fpa		= NULL;
-	cg->dump				= (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
+	cg->dump				= (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
 	/* enter the current code generator */
 	isa->cg = cg;

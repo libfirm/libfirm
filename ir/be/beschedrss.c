@@ -2188,9 +2188,8 @@ void be_init_schedrss(void)
 /**
  * Preprocess the irg for scheduling.
  */
-void rss_schedule_preparation(be_irg_t *birg)
+void rss_schedule_preparation(ir_graph *irg)
 {
-	ir_graph *irg = be_get_birg_irg(birg);
 	rss_t rss;
 
 	FIRM_DBG_REGISTER(rss.dbg, "firm.be.sched.rss");
@@ -2201,7 +2200,7 @@ void rss_schedule_preparation(be_irg_t *birg)
 
 	rss.irg      = irg;
 	rss.arch_env = be_get_irg_arch_env(irg);
-	rss.abi      = birg->abi;
+	rss.abi      = be_get_irg_abi(irg);
 	rss.h        = heights_new(irg);
 	rss.nodes    = plist_new();
 	rss.opts     = &rss_options;
@@ -2212,6 +2211,6 @@ void rss_schedule_preparation(be_irg_t *birg)
 	plist_free(rss.nodes);
 	be_liveness_free(rss.liveness);
 
-	if (birg->main_env->options->dump_flags & DUMP_SCHED)
-		dump_ir_graph(rss.irg, "rss");
+	if (be_get_irg_options(irg)->dump_flags & DUMP_SCHED)
+		dump_ir_graph(irg, "rss");
 }

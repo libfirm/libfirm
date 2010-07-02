@@ -194,7 +194,7 @@ static void arm_before_ra(void *self)
 {
 	arm_code_gen_t *cg = self;
 
-	be_sched_fix_flags(cg->birg, &arm_reg_classes[CLASS_arm_flags],
+	be_sched_fix_flags(cg->irg, &arm_reg_classes[CLASS_arm_flags],
 	                   &arm_flags_remat);
 }
 
@@ -267,7 +267,7 @@ static void arm_after_ra_walker(ir_node *block, void *data)
 static void arm_after_ra(void *self)
 {
 	arm_code_gen_t *cg = self;
-	be_coalesce_spillslots(cg->birg);
+	be_coalesce_spillslots(cg->irg);
 
 	irg_block_walk_graph(cg->irg, NULL, arm_after_ra_walker, NULL);
 }
@@ -481,7 +481,7 @@ static void arm_before_abi(void *self)
 }
 
 /* forward */
-static void *arm_cg_init(be_irg_t *birg);
+static void *arm_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_cg_init,
@@ -498,10 +498,10 @@ static const arch_code_generator_if_t arm_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *arm_cg_init(be_irg_t *birg)
+static void *arm_cg_init(ir_graph *irg)
 {
 	static ir_type *int_tp = NULL;
-	arm_isa_t      *isa = (arm_isa_t *)birg->main_env->arch_env;
+	arm_isa_t      *isa = (arm_isa_t *) be_get_irg_arch_env(irg);
 	arm_code_gen_t *cg;
 
 	if (! int_tp) {
@@ -511,13 +511,12 @@ static void *arm_cg_init(be_irg_t *birg)
 
 	cg = XMALLOC(arm_code_gen_t);
 	cg->impl         = &arm_code_gen_if;
-	cg->irg          = birg->irg;
+	cg->irg          = irg;
 	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
 	cg->isa          = isa;
-	cg->birg         = birg;
 	cg->int_tp       = int_tp;
 	cg->have_fp_insn = 0;
-	cg->dump         = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
+	cg->dump         = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
 

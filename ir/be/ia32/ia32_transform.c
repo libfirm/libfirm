@@ -201,7 +201,7 @@ static bool is_simple_sse_Const(ir_node *node)
  */
 static ir_node *get_symconst_base(void)
 {
-	if (env_cg->birg->main_env->options->pic) {
+	if (be_get_irg_options(env_cg->irg)->pic) {
 		return arch_code_generator_get_pic_base(env_cg);
 	}
 
@@ -1036,7 +1036,7 @@ static ir_node *get_fpcw(void)
 	if (initial_fpcw != NULL)
 		return initial_fpcw;
 
-	fpcw         = be_abi_get_ignore_irn(env_cg->birg->abi,
+	fpcw         = be_abi_get_ignore_irn(be_get_irg_abi(env_cg->irg),
 	                                     &ia32_fp_cw_regs[REG_FPCW]);
 	initial_fpcw = be_transform_node(fpcw);
 
@@ -4764,7 +4764,7 @@ static ir_node *gen_be_Call(ir_node *node)
 
 	/* special case for PIC trampoline calls */
 	old_no_pic_adjust = no_pic_adjust;
-	no_pic_adjust     = env_cg->birg->main_env->options->pic;
+	no_pic_adjust     = be_get_irg_options(env_cg->irg)->pic;
 
 	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
 	                match_am | match_immediate);
@@ -5895,8 +5895,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
  */
 void ia32_add_missing_keeps(ia32_code_gen_t *cg)
 {
-	ir_graph *irg = be_get_birg_irg(cg->birg);
-	irg_walk_graph(irg, add_missing_keep_walker, NULL, NULL);
+	irg_walk_graph(cg->irg, add_missing_keep_walker, NULL, NULL);
 }
 
 /**
@@ -6006,7 +6005,7 @@ void ia32_transform_graph(ia32_code_gen_t *cg)
 	be_timer_push(T_HEIGHTS);
 	heights      = heights_new(cg->irg);
 	be_timer_pop(T_HEIGHTS);
-	ia32_calculate_non_address_mode_nodes(cg->birg);
+	ia32_calculate_non_address_mode_nodes(cg->irg);
 
 	/* the transform phase is not safe for CSE (yet) because several nodes get
 	 * attributes set after their creation */

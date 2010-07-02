@@ -637,7 +637,7 @@ void amd64_gen_routine(const amd64_code_gen_t *cg, ir_graph *irg)
 
 	blk_sched = be_create_block_schedule(irg);
 
-	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
+	be_dbg_method_begin(entity, be_abi_get_stack_layout(be_get_irg_abi(cg->irg)));
 	be_gas_emit_function_prolog(entity, 4);
 
 	irg_block_walk_graph(irg, amd64_gen_labels, NULL, NULL);

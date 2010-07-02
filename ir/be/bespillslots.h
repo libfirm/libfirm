@@ -34,7 +34,7 @@ typedef struct _be_fec_env_t be_fec_env_t;
 /**
  * Initializes a new frame entity coalescer environment
  */
-be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg);
+be_fec_env_t *be_new_frame_entity_coalescer(ir_graph *irg);
 
 /**
  * Frees a frame entity coalescer environment
@@ -69,6 +69,6 @@ void be_assign_entities(be_fec_env_t *env);
  * Coalesces spillslots and minimizes the number of memcopies induced by
  * memory-phis.
  */
-void be_coalesce_spillslots(be_irg_t *birg);
+void be_coalesce_spillslots(ir_graph *irg);
 
-#endif /* FIRM_BE_BESPILLSLOTS_H */
+#endif

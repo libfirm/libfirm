@@ -72,7 +72,7 @@ typedef struct be_ssa_construction_env_t {
  * Initializes an SSA construction environment.
  *
  * @param env    an SSA empty construction environment
- * @param birg
+ * @param irg    the graph
  */
 void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg);
 

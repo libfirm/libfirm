@@ -27,7 +27,6 @@
 #define FIRM_BE_TYPES_H
 
 typedef unsigned int sched_timestep_t;
-typedef struct be_irg_t be_irg_t;
 
 typedef struct arch_register_class_t     arch_register_class_t;
 typedef struct arch_register_req_t       arch_register_req_t;

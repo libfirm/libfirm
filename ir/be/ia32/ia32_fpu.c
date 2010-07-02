@@ -237,12 +237,11 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 	}
 }
 
-static void rewire_fpu_mode_nodes(be_irg_t *birg)
+static void rewire_fpu_mode_nodes(ir_graph *irg)
 {
 	collect_fpu_mode_nodes_env_t env;
 	be_ssa_construction_env_t senv;
 	const arch_register_t *reg = &ia32_fp_cw_regs[REG_FPCW];
-	ir_graph *irg = be_get_birg_irg(birg);
 	ir_node *initial_value;
 	ir_node **phis;
 	be_lv_t *lv = be_get_irg_liveness(irg);
@@ -252,7 +251,7 @@ static void rewire_fpu_mode_nodes(be_irg_t *birg)
 	env.state_nodes = NEW_ARR_F(ir_node*, 0);
 	irg_walk_graph(irg, collect_fpu_mode_nodes_walker, NULL, &env);
 
-	initial_value = be_abi_get_ignore_irn(birg->abi, reg);
+	initial_value = be_abi_get_ignore_irn(be_get_irg_abi(irg), reg);
 
 	/* nothing needs to be done, in fact we must not continue as for endless
 	 * loops noone is using the initial_value and it will point to a bad node
@@ -276,7 +275,7 @@ static void rewire_fpu_mode_nodes(be_irg_t *birg)
 			be_liveness_update(lv, env.state_nodes[i]);
 		}
 	} else {
-		be_liveness_invalidate(birg->lv);
+		be_liveness_invalidate(be_get_irg_liveness(irg));
 	}
 
 	/* set registers for the phis */
@@ -295,9 +294,9 @@ static void rewire_fpu_mode_nodes(be_irg_t *birg)
 void ia32_setup_fpu_mode(ia32_code_gen_t *cg)
 {
 	/* do ssa construction for the fpu modes */
-	rewire_fpu_mode_nodes(cg->birg);
+	rewire_fpu_mode_nodes(cg->irg);
 
 	/* ensure correct fpu mode for operations */
-	be_assure_state(cg->birg, &ia32_fp_cw_regs[REG_FPCW],
+	be_assure_state(cg->irg, &ia32_fp_cw_regs[REG_FPCW],
 	                cg, create_fpu_mode_spill, create_fpu_mode_reload);
 }

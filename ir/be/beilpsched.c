@@ -150,11 +150,8 @@ typedef struct {
 	void                 *irg_env;      /**< An environment for the irg scheduling, provided by the backend */
 	void                 *block_env;    /**< An environment for scheduling a block, provided by the backend */
 	const arch_env_t     *arch_env;
-	const be_main_env_t  *main_env;
 	const be_machine_t   *cpu;          /**< the current abstract machine */
 	ilpsched_options_t   *opts;         /**< the ilp options for current irg */
-	const be_irg_t       *birg;         /**< The birg object */
-	be_options_t         *be_opts;      /**< backend options */
 	const ilp_sched_selector_t *sel;    /**< The ILP sched selector provided by the backend */
 	DEBUG_ONLY(firm_dbg_module_t *dbg);
 } be_ilpsched_env_t;
@@ -1861,6 +1858,7 @@ static void create_ilp(ir_node *block, void *walk_env)
 		int    base_num        = ba->n_interesting_nodes * ba->n_interesting_nodes;
 		int    estimated_n_var = (int)((double)base_num * fact_var);
 		int    estimated_n_cst = (int)((double)base_num * fact_cst);
+		be_options_t *options  = be_get_irg_options(env->irg);
 
 		DBG((env->dbg, LEVEL_1, "Creating LPP with estimated numbers: %d vars, %d cst\n",
 			estimated_n_var, estimated_n_cst));
@@ -1930,7 +1928,7 @@ static void create_ilp(ir_node *block, void *walk_env)
 		}
 
 		/* solve the ILP */
-		lpp_solve_net(lpp, env->main_env->options->ilp_server, env->main_env->options->ilp_solver);
+		lpp_solve_net(lpp, options->ilp_server, options->ilp_solver);
 
 		if (logfile)
 			fclose(logfile);
@@ -1975,9 +1973,8 @@ static void create_ilp(ir_node *block, void *walk_env)
 	if (need_heur) {
 			be_stat_ev("time", -1);
 			be_stat_ev_dbl("opt", 0.0);
-		list_sched_single_block(env->birg, block, env->be_opts);
-	}
-	else {
+		list_sched_single_block(env->irg, block, env->be_opts);
+	} else {
 		if (lpp) {
 			double opt = lpp->sol_state == lpp_optimal ? 100.0 : 100.0 * lpp->best_bound / lpp->objval;
 			be_stat_ev_dbl("time", lpp->sol_time);
@@ -2000,10 +1997,9 @@ static void create_ilp(ir_node *block, void *walk_env)
 /**
  * Perform ILP scheduling on the given irg.
  */
-void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
+void be_ilp_sched(ir_graph *irg)
 {
 	be_ilpsched_env_t          env;
-	ir_graph                   *irg      = be_get_birg_irg(birg);
 	const arch_env_t           *arch_env = be_get_irg_arch_env(irg);
 	const ilp_sched_selector_t *sel      = arch_env->impl->get_ilp_sched_selector(arch_env);
 
@@ -2017,11 +2013,9 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 	env.sel        = sel;
 	env.irg        = irg;
 	env.height     = heights_new(irg);
-	env.main_env   = birg->main_env;
 	env.arch_env   = arch_env;
 	env.cpu        = arch_env_get_machine(arch_env);
 	env.opts       = &ilp_opts;
-	env.birg       = birg;
 	env.be_opts    = be_opts;
 	phase_init(&env.ph, env.irg, init_ilpsched_irn);
 
@@ -2064,7 +2058,7 @@ void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts)
 	heights_free(env.height);
 
 	/* notify backend */
-	be_ilp_sched_finish_irg_ilp_schedule(sel, birg->irg, env.irg_env);
+	be_ilp_sched_finish_irg_ilp_schedule(sel, irg, env.irg_env);
 
 	stat_ev_ctx_pop("ilpsched");
 }

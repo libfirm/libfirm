@@ -38,10 +38,10 @@ typedef struct _mris_env_t mris_env_t;
 
 /**
  * Preprocess the irg with the MRIS algorithm.
- * @param birg The backend irg.
+ * @param irg  The graph
  * @return     Private data to be kept.
  */
-mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg);
+mris_env_t *be_sched_mris_preprocess(ir_graph *irg);
 
 /**
  * Cleanup the MRIS preprocessing.
@@ -54,4 +54,4 @@ void be_sched_mris_free(mris_env_t *env);
  */
 void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix);
 
-#endif /* FIRM_BE_BESCHEDMRIS_H */
+#endif

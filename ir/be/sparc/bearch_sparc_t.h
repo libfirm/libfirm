@@ -44,7 +44,6 @@ typedef struct _sparc_code_gen_t {
     ir_graph                       *irg;            /**< current irg */
     set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
     sparc_isa_t                      *isa;            /**< the isa instance */
-    be_irg_t                       *birg;           /**< The be-irg (contains additional information about the irg) */
     char                           dump;            /**< set to 1 if graphs should be dumped */
 } sparc_code_gen_t;
 

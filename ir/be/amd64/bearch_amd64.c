@@ -163,7 +163,7 @@ static void amd64_before_ra(void *self)
 {
 	amd64_code_gen_t *cg = self;
 
-	be_sched_fix_flags(cg->birg, &amd64_reg_classes[CLASS_amd64_flags], 0);
+	be_sched_fix_flags(cg->irg, &amd64_reg_classes[CLASS_amd64_flags], 0);
 }
 
 
@@ -235,7 +235,7 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 static void amd64_after_ra(void *self)
 {
 	amd64_code_gen_t *cg = self;
-	be_coalesce_spillslots(cg->birg);
+	be_coalesce_spillslots(cg->irg);
 
 	irg_block_walk_graph(cg->irg, NULL, amd64_after_ra_walker, NULL);
 }
@@ -256,7 +256,7 @@ static void amd64_emit_and_done(void *self)
 	free(cg);
 }
 
-static void *amd64_cg_init(be_irg_t *birg);
+static void *amd64_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t amd64_code_gen_if = {
 	amd64_cg_init,
@@ -273,17 +273,16 @@ static const arch_code_generator_if_t amd64_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *amd64_cg_init(be_irg_t *birg)
+static void *amd64_cg_init(ir_graph *irg)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(birg->irg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	amd64_isa_t      *isa      = (amd64_isa_t *) arch_env;
 	amd64_code_gen_t *cg       = XMALLOC(amd64_code_gen_t);
 
 	cg->impl     = &amd64_code_gen_if;
-	cg->irg      = be_get_birg_irg(birg);
+	cg->irg      = irg;
 	cg->isa      = isa;
-	cg->birg     = birg;
-	cg->dump     = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
+	cg->dump     = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
 	return (arch_code_generator_t *)cg;
 }

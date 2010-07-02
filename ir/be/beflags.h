@@ -36,7 +36,7 @@ typedef ir_node * (*func_rematerialize) (ir_node *node, ir_node *after);
  * and consumer of flags. It does so by moving down/rematerialising of the
  * nodes. This does not work across blocks.
  */
-void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
+void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
                         func_rematerialize remat_func);
 
 #endif

@@ -104,7 +104,7 @@ static inline int _value_strictly_dominates(const ir_node *a, const ir_node *b)
 
 /**
  * Check, if two values interfere.
- * @param lv Liveness information (in the future we should use a be_irg_t here).
+ * @param lv Liveness information
  * @param a The first value.
  * @param b The second value.
  * @return 1, if a and b interfere, 0 if not.
@@ -131,7 +131,7 @@ static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const
 		const ir_edge_t *edge;
 		ir_node *bb = get_nodes_block(b);
 
-		//stat_ev_dbl("beintlive_ignore", arch_irn_is(lv->birg->main_env->arch_env, a, ignore));
+		//stat_ev_dbl("beintlive_ignore", arch_irn_is(be_get_irg_arch_env(lv->irg), a, ignore));
 
 		/*
 		 * If a is live end in b's block it is
@@ -204,14 +204,15 @@ static inline int _strictly_dominates_use(const ir_node *irn, const ir_edge_t *e
 
 /**
  * Check, if a node is live in front of another.
- * @param birg  The backend irg.
+ * @param irg   The backend irg.
  * @param irn   The node.
  * @param where The location to check for.
  * @return      1, if @p irn is live in front of @p where.
  */
-static inline int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
+static inline int _be_lv_chk_before_irn(ir_graph *irg, const ir_node *irn,
+                                        const ir_node *where)
 {
-	const be_lv_t *lv = be_get_irg_liveness(birg->irg);
+	const be_lv_t *lv = be_get_irg_liveness(irg);
 	const ir_edge_t *edge;
 
 	/* the node must strictly dominate the location, else it cannot be live there. */
@@ -239,14 +240,15 @@ static inline int _be_lv_chk_before_irn(const be_irg_t *birg, const ir_node *irn
 
 /**
  * Check, if a node is live after another node.
- * @param birg  The backend irg.
+ * @param irg   The backend irg.
  * @param irn   The node.
  * @param where The location to check for.
  * @return      1, if @p irn is live after @p where.
  */
-static inline int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn, const ir_node *where)
+static inline int _be_lv_chk_after_irn(ir_graph *irg, const ir_node *irn,
+                                       const ir_node *where)
 {
-	const be_lv_t *lv = be_get_irg_liveness(birg->irg);
+	const be_lv_t *lv = be_get_irg_liveness(irg);
 	const ir_edge_t *edge;
 
 	if (!_value_dominates(irn, where))
@@ -267,7 +269,7 @@ static inline int _be_lv_chk_after_irn(const be_irg_t *birg, const ir_node *irn,
 #define value_dominates(a, b)                    _value_dominates(a, b)
 #define dominates_use(a, e)                      _dominates_use(a, e)
 #define strictly_dominates_use(a, e)             _strictly_dominates_use(a, e)
-#define be_lv_chk_before_irn(birg, a, b)         _be_lv_chk_before_irn(birg, a, b)
-#define be_lv_chk_after_irn(birg, a, b)          _be_lv_chk_after_irn(birg, a, b)
+#define be_lv_chk_before_irn(irg, a, b)         _be_lv_chk_before_irn(irg, a, b)
+#define be_lv_chk_after_irn(irg, a, b)          _be_lv_chk_after_irn(irg, a, b)
 
-#endif /* _BELIVECHK_T_H */
+#endif

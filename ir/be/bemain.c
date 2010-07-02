@@ -626,14 +626,14 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		cg_if = arch_env_get_code_generator_if(arch_env);
 
 		/* get a code generator for this graph. */
-		birg->cg = cg_if->init(birg);
+		birg->cg = cg_if->init(irg);
 
 		/* some transformations need to be done before abi introduce */
 		arch_code_generator_before_abi(birg->cg);
 
 		/* implement the ABI conventions. */
 		be_timer_push(T_ABI);
-		birg->abi = be_abi_introduce(birg);
+		birg->abi = be_abi_introduce(irg);
 		be_timer_pop(T_ABI);
 
 		dump(DUMP_ABI, irg, "abi");
@@ -689,7 +689,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 
 		/* disabled for now, fails for EmptyFor.c and XXEndless.c */
-		/* be_live_chk_compare(birg); */
+		/* be_live_chk_compare(irg); */
 
 		/* schedule the irg */
 		be_timer_push(T_SCHED);
@@ -697,11 +697,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			default:
 				fprintf(stderr, "Warning: invalid scheduler (%d) selected, falling back to list scheduler.\n", be_options.scheduler);
 			case BE_SCHED_LIST:
-				list_sched(birg, &be_options);
+				list_sched(irg);
 				break;
 #ifdef WITH_ILP
 			case BE_SCHED_ILP:
-				be_ilp_sched(birg, &be_options);
+				be_ilp_sched(irg);
 				break;
 #endif /* WITH_ILP */
 		};
@@ -927,7 +927,7 @@ unsigned be_put_ignore_regs(const ir_graph *irg,
 	assert(bitset_size(bs) == cls->n_regs);
 	arch_put_non_ignore_regs(cls, bs);
 	bitset_flip_all(bs);
-	be_abi_put_ignore_regs(be_birg_from_irg(irg)->abi, cls, bs);
+	be_abi_put_ignore_regs(be_get_irg_abi(irg), cls, bs);
 
 	return bitset_popcount(bs);
 }

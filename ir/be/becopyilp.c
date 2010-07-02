@@ -223,7 +223,7 @@ ilp_env_t *new_ilp_env(copy_opt_t *co, ilp_callback build, ilp_callback apply, v
 
 lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 {
-	be_main_env_t *main_env = ienv->co->cenv->birg->main_env;
+	be_options_t *options = be_get_irg_options(ienv->co->irg);
 
 	sr_remove(ienv->sr);
 
@@ -234,7 +234,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 		lpp_set_log(ienv->lp, stdout);
 
 	if (solve_net)
-		lpp_solve_net(ienv->lp, main_env->options->ilp_server, main_env->options->ilp_solver);
+		lpp_solve_net(ienv->lp, options->ilp_server, options->ilp_solver);
 	else {
 #ifdef LPP_SOLVE_NET
 		fprintf(stderr, "can only solve ilp over the net\n");

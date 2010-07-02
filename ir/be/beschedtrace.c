@@ -514,13 +514,12 @@ static void trace_update_time(void *data, ir_node *irn)
 
 /**
  * Allocates memory and initializes trace scheduling environment.
- * @param birg   The backend irg object
+ * @param irg   The backend irg object
  * @return The environment
  */
-static trace_env_t *trace_init(const be_irg_t *birg)
+static trace_env_t *trace_init(ir_graph *irg)
 {
 	trace_env_t *env = XMALLOCZ(trace_env_t);
-	ir_graph    *irg = be_get_birg_irg(birg);
 	int         nn   = get_irg_last_idx(irg);
 
 	env->curr_time  = 0;
@@ -628,11 +627,11 @@ force_mcands:
 	return irn;
 }
 
-static void *muchnik_init_graph(const list_sched_selector_t *vtab, const be_irg_t *birg)
+static void *muchnik_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
 {
-	trace_env_t *env  = trace_init(birg);
+	trace_env_t *env  = trace_init(irg);
 	env->selector     = vtab;
-	env->selector_env = (void*) be_get_irg_arch_env(birg->irg);
+	env->selector_env = (void*) be_get_irg_arch_env(irg);
 	return (void *)env;
 }
 

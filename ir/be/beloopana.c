@@ -177,8 +177,8 @@ be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
 }
 
 /**
- * Compute the register pressure for all classes of all loops in the birg.
- * @param birg  The backend irg object
+ * Compute the register pressure for all classes of all loops in the irg.
+ * @param irg  The graph
  * @return The loop analysis object.
  */
 be_loopana_t *be_new_loop_pressure(ir_graph *irg,

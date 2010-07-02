@@ -391,10 +391,9 @@ void dump_ir_block_graph_mris(mris_env_t *env, const char *suffix)
 	set_dump_node_edge_hook(old);
 }
 
-mris_env_t *be_sched_mris_preprocess(const be_irg_t *birg)
+mris_env_t *be_sched_mris_preprocess(ir_graph *irg)
 {
 	mris_env_t *env = XMALLOC(mris_env_t);
-	ir_graph   *irg = be_get_birg_irg(birg);
 
 	phase_init(&env->ph, irg, mris_irn_data_init);
 	env->irg      = irg;

@@ -38,8 +38,6 @@
 #include "bearch.h"
 #include "irnodeset.h"
 
-struct be_irg_t;
-
 typedef enum {
 	be_lv_state_in  = 1,
 	be_lv_state_end = 2,

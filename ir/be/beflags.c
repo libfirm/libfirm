@@ -286,11 +286,9 @@ static void fix_flags_walker(ir_node *block, void *env)
 	assert(flag_consumers == NULL);
 }
 
-void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
+void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
                         func_rematerialize remat_func)
 {
-	ir_graph *irg = be_get_birg_irg(birg);
-
 	flag_class = flag_cls;
 	flags_reg  = & flag_class->regs[0];
 	remat      = remat_func;
@@ -299,7 +297,7 @@ void be_sched_fix_flags(be_irg_t *birg, const arch_register_class_t *flag_cls,
 		remat = &default_remat;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, fix_flags_walker, NULL, birg->lv);
+	irg_block_walk_graph(irg, fix_flags_walker, NULL, be_get_irg_liveness(irg));
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (changed) {

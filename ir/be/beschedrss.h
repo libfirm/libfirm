@@ -35,8 +35,8 @@
 
 /**
  * Perform RSS schedule preprocessing for the given irg.
- * @param birg  The backend irg object
+ * @param irg   The graph
  */
-void rss_schedule_preparation(be_irg_t *birg);
+void rss_schedule_preparation(ir_graph *irg);
 
-#endif /* FIRM_BE_BESCHEDRSS_H */
+#endif

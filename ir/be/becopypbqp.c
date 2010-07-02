@@ -43,10 +43,11 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	char buf[1024];
 	size_t i, n;
 	char *tu_name;
+	const char *cup_name = be_birg_from_irg(irg)->main_env->cup_name;
 
-	n = strlen(env->birg->main_env->cup_name);
+	n = strlen(cup_name);
 	tu_name = XMALLOCN(char, n + 1);
-	strcpy(tu_name, env->birg->main_env->cup_name);
+	strcpy(tu_name, cup_name);
 	for (i = 0; i < n; ++i)
 		if (tu_name[i] == '.')
 			tu_name[i] = '_';
@@ -143,7 +144,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	bitset_clear_all(pbqp_co.restricted_nodes);
 
 	/* get ignored registers */
-	be_put_ignore_regs(co->cenv->birg, co->cls, pbqp_co.ignore_reg);
+	be_put_ignore_regs(co->cenv->irg, co->cls, pbqp_co.ignore_reg);
 
 	/* add costs vector to nodes */
 	be_ifg_foreach_node(co->cenv->ifg, &nodes_it, ifg_node) {

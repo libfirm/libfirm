@@ -62,10 +62,10 @@ static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
 	return irn;
 }
 
-static void *trivial_init_graph(const list_sched_selector_t *vtab, const be_irg_t *birg)
+static void *trivial_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
 {
 	(void)vtab;
-	(void)birg;
+	(void)irg;
 	return NULL;
 }
 

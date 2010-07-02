@@ -159,7 +159,7 @@ static void TEMPLATE_emit_and_done(void *self)
 	free(cg);
 }
 
-static void *TEMPLATE_cg_init(be_irg_t *birg);
+static void *TEMPLATE_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 	TEMPLATE_cg_init,
@@ -176,15 +176,15 @@ static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *TEMPLATE_cg_init(be_irg_t *birg)
+static void *TEMPLATE_cg_init(ir_graph *irg)
 {
-	const arch_env_t    *arch_env = be_get_irg_arch_env(birg->irg);
+	const arch_env_t    *arch_env = be_get_irg_arch_env(irg);
 	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env;
 	TEMPLATE_code_gen_t *cg       = XMALLOC(TEMPLATE_code_gen_t);
 
-	cg->impl     = &TEMPLATE_code_gen_if;
-	cg->irg      = be_get_birg_irg(birg);
-	cg->isa      = isa;
+	cg->impl = &TEMPLATE_code_gen_if;
+	cg->irg  = irg;
+	cg->isa  = isa;
 
 	return (arch_code_generator_t *)cg;
 }

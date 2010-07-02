@@ -235,7 +235,7 @@ static int Call_cmp_attr(ir_node *a, ir_node *b)
 static arch_register_req_t *allocate_reg_req(const ir_node *node)
 {
 	ir_graph       *irg  = get_irn_irg(node);
-	struct obstack *obst = be_get_birg_obst(irg);
+	struct obstack *obst = be_get_be_obst(irg);
 
 	arch_register_req_t *req = obstack_alloc(obst, sizeof(*req));
 	memset(req, 0, sizeof(*req));
@@ -262,7 +262,7 @@ void be_set_constr_out(ir_node *node, int pos, const arch_register_req_t *req)
 static void *init_node_attr(ir_node *node, int n_inputs, int n_outputs)
 {
 	ir_graph       *irg  = get_irn_irg(node);
-	struct obstack *obst = be_get_birg_obst(irg);
+	struct obstack *obst = be_get_be_obst(irg);
 	be_node_attr_t *a    = get_irn_attr(node);
 	backend_info_t *info = be_get_info(node);
 
@@ -932,7 +932,7 @@ void be_set_constr_single_reg_in(ir_node *node, int pos,
 		req = reg->single_req;
 	} else {
 		ir_graph       *irg  = get_irn_irg(node);
-		struct obstack *obst = be_get_birg_obst(irg);
+		struct obstack *obst = be_get_be_obst(irg);
 		req = get_single_req(obst, reg, additional_types);
 	}
 	be_set_constr_in(node, pos, req);
@@ -952,7 +952,7 @@ void be_set_constr_single_reg_out(ir_node *node, int pos,
 		req = reg->single_req;
 	} else {
 		ir_graph       *irg  = get_irn_irg(node);
-		struct obstack *obst = be_get_birg_obst(irg);
+		struct obstack *obst = be_get_be_obst(irg);
 		req = get_single_req(obst, reg, additional_types);
 	}
 
@@ -1198,7 +1198,7 @@ static const arch_irn_ops_t dummy_be_irn_ops = {
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
                     const arch_register_class_t *cls)
 {
-	struct obstack *obst = be_get_birg_obst(get_irn_irg(block));
+	struct obstack *obst = be_get_be_obst(get_irn_irg(block));
 	backend_info_t *info;
 
 	ir_node *phi = new_r_Phi(block, n_ins, ins, mode);
@@ -1435,7 +1435,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 {
 	const be_node_attr_t *old_attr = get_irn_attr_const(old_node);
 	be_node_attr_t *new_attr = get_irn_attr(new_node);
-	struct obstack *obst     = be_get_birg_obst(irg);
+	struct obstack *obst     = be_get_be_obst(irg);
 	backend_info_t *old_info = be_get_info(old_node);
 	backend_info_t *new_info = be_get_info(new_node);
 

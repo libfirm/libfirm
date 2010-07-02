@@ -79,6 +79,6 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node);
  * backend specific optimisations should be performed based on the
  * register-liveness information.
  */
-void be_peephole_opt(be_irg_t *birg);
+void be_peephole_opt(ir_graph *irg);
 
 #endif

@@ -1265,7 +1265,7 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	if (ia32_cg_config.use_short_sex_eax)
 		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
 
-	be_peephole_opt(cg->birg);
+	be_peephole_opt(cg->irg);
 }
 
 /**

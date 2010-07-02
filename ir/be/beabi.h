@@ -182,7 +182,7 @@ be_abi_call_flags_t be_abi_call_get_flags(const be_abi_call_t *call);
  */
 ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
-be_abi_irg_t *be_abi_introduce(be_irg_t *bi);
+be_abi_irg_t *be_abi_introduce(ir_graph *irg);
 
 /**
  * Fix the stack bias for all nodes accessing the stack frame using the

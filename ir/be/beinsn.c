@@ -189,14 +189,14 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	return insn;
 }
 
-be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, const be_irg_t *birg,
+be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, ir_graph *irg,
                                 const arch_register_class_t *cls,
                                 struct obstack *obst)
 {
 	ie->cls  = cls;
 	ie->obst = obst;
 	ie->ignore_colors = bitset_obstack_alloc(obst, cls->n_regs);
-	be_abi_put_ignore_regs(birg->abi, cls, ie->ignore_colors);
+	be_abi_put_ignore_regs(be_get_irg_abi(irg), cls, ie->ignore_colors);
 
 	return ie;
 }

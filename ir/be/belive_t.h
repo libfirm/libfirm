@@ -44,8 +44,6 @@
 #include "irlivechk.h"
 #endif
 
-struct be_irg_t;
-
 struct _be_lv_t {
 	ir_phase ph;
 	ir_graph *irg;
@@ -140,4 +138,4 @@ static inline pset *_be_lv_pset_put(const struct _be_lv_t *lv, const ir_node *bl
 
 #define be_lv_has_info_about(lv, irn) bitset_is_set((lv)->nodes, get_irn_idx(irn))
 
-#endif /* FIRM_BE_BELIVE_T_H */
+#endif

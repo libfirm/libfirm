@@ -75,10 +75,10 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 	return irn;
 }
 
-static void *random_init_graph(const list_sched_selector_t *vtab, const be_irg_t *birg)
+static void *random_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
 {
 	(void)vtab;
-	(void)birg;
+	(void)irg;
 	/* Using time(NULL) as a seed here gives really random results,
 	   but is NOT deterministic which makes debugging impossible.
 	   Moreover no-one want non-deterministic compilers ... */

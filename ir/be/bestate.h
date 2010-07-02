@@ -52,8 +52,8 @@ typedef ir_node *(*create_reload_func) (void *env, ir_node *value,
  * This functions asserts that the state is switched to fullfill all state
  * requirements of nodes.
  */
-void be_assure_state(be_irg_t *birg, const arch_register_t *reg, void *func_env,
+void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
                      create_spill_func spill_func,
                      create_reload_func reload_func);
 
-#endif /* FIRM_BE_BESTATE_H */
+#endif

@@ -251,7 +251,7 @@ static void ia32_set_frame_offset(ir_node *irn, int bias)
 
 	if (is_ia32_Pop(irn) || is_ia32_PopMem(irn)) {
 		ia32_code_gen_t *cg = ia32_current_cg;
-		int omit_fp = be_abi_omit_fp(cg->birg->abi);
+		int omit_fp = be_abi_omit_fp(be_get_irg_abi(cg->irg));
 		if (omit_fp) {
 			/* Pop nodes modify the stack pointer before calculating the
 			 * destination address, so fix this here
@@ -1019,7 +1019,7 @@ static void ia32_before_ra(void *self)
 	ia32_setup_fpu_mode(cg);
 
 	/* fixup flags */
-	be_sched_fix_flags(cg->birg, &ia32_reg_classes[CLASS_ia32_flags],
+	be_sched_fix_flags(cg->irg, &ia32_reg_classes[CLASS_ia32_flags],
 	                   &flags_remat);
 
 	ia32_add_missing_keeps(cg);
@@ -1199,7 +1199,7 @@ static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 {
 	ir_node         *block = get_nodes_block(node);
-	ir_node         *sp    = be_abi_get_ignore_irn(cg->birg->abi, &ia32_gp_regs[REG_ESP]);
+	ir_node         *sp    = be_abi_get_ignore_irn(be_get_irg_abi(cg->irg), &ia32_gp_regs[REG_ESP]);
 	int              arity = be_get_MemPerm_entity_arity(node);
 	ir_node        **pops  = ALLOCAN(ir_node*, arity);
 	ir_node         *in[1];
@@ -1389,7 +1389,7 @@ static void ia32_after_ra(void *self)
 {
 	ia32_code_gen_t *cg = self;
 	ir_graph *irg = cg->irg;
-	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(cg->birg);
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(cg->irg);
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
@@ -1413,7 +1413,7 @@ static void ia32_finish(void *self)
 
 	/* we might have to rewrite x87 virtual registers */
 	if (cg->do_x87_sim) {
-		x87_simulate_graph(cg->birg);
+		x87_simulate_graph(cg->irg);
 	}
 
 	/* do peephole optimisations */
@@ -1468,7 +1468,7 @@ static ir_node *ia32_get_pic_base(void *self)
 	return get_eip;
 }
 
-static void *ia32_cg_init(be_irg_t *birg);
+static void *ia32_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t ia32_code_gen_if = {
 	ia32_cg_init,
@@ -1485,22 +1485,21 @@ static const arch_code_generator_if_t ia32_code_gen_if = {
 /**
  * Initializes a IA32 code generator.
  */
-static void *ia32_cg_init(be_irg_t *birg)
+static void *ia32_cg_init(ir_graph *irg)
 {
-	ia32_isa_t      *isa = (ia32_isa_t *)birg->main_env->arch_env;
+	ia32_isa_t      *isa = (ia32_isa_t *)be_get_irg_arch_env(irg);
 	ia32_code_gen_t *cg  = XMALLOCZ(ia32_code_gen_t);
 
 	cg->impl      = &ia32_code_gen_if;
-	cg->irg       = birg->irg;
+	cg->irg       = irg;
 	cg->isa       = isa;
-	cg->birg      = birg;
 	cg->blk_sched = NULL;
-	cg->dump      = (birg->main_env->options->dump_flags & DUMP_BE) ? 1 : 0;
-	cg->gprof     = (birg->main_env->options->gprof) ? 1 : 0;
+	cg->dump      = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
+	cg->gprof     = (be_get_irg_options(irg)->gprof) ? 1 : 0;
 
 	if (cg->gprof) {
 		/* Linux gprof implementation needs base pointer */
-		birg->main_env->options->omit_fp = 0;
+		be_get_irg_options(irg)->omit_fp = 0;
 	}
 
 	/* enter it */

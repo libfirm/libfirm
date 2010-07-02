@@ -46,7 +46,7 @@ void be_info_new_node(ir_node *node)
  	if (is_Proj(node))
 		return;
 
-	obst = be_get_birg_obst(current_ir_graph);
+	obst = be_get_be_obst(current_ir_graph);
 	info = OALLOCZ(obst, backend_info_t);
 
 	assert(node->backend_info == NULL);

@@ -235,7 +235,7 @@ static void mips_before_ra(void *self)
 static void mips_after_ra(void* self)
 {
 	mips_code_gen_t *cg = self;
-	be_coalesce_spillslots(cg->birg);
+	be_coalesce_spillslots(cg->irg);
 	irg_walk_blkwise_graph(cg->irg, NULL, mips_after_ra_walker, self);
 }
 
@@ -256,7 +256,7 @@ static void mips_emit_and_done(void *self)
 	free(cg);
 }
 
-static void *mips_cg_init(be_irg_t *birg);
+static void *mips_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t mips_code_gen_if = {
 	mips_cg_init,
@@ -273,17 +273,16 @@ static const arch_code_generator_if_t mips_code_gen_if = {
 /**
  * Initializes the code generator.
  */
-static void *mips_cg_init(be_irg_t *birg)
+static void *mips_cg_init(ir_graph *irg)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(birg->irg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	mips_isa_t       *isa      = (mips_isa_t *) arch_env;
 	mips_code_gen_t  *cg       = XMALLOCZ(mips_code_gen_t);
 
 	cg->impl     = &mips_code_gen_if;
-	cg->irg      = be_get_birg_irg(birg);
+	cg->irg      = irg;
 	cg->reg_set  = new_set(mips_cmp_irn_reg_assoc, 1024);
 	cg->isa      = isa;
-	cg->birg     = birg;
 
 	isa->cg = cg;
 

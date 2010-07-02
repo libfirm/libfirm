@@ -409,9 +409,8 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 	return pred;
 }
 
-void be_peephole_opt(be_irg_t *birg)
+void be_peephole_opt(ir_graph *irg)
 {
-	ir_graph *irg = be_get_birg_irg(birg);
 	unsigned  n_classes;
 	unsigned  i;
 
@@ -421,7 +420,7 @@ void be_peephole_opt(be_irg_t *birg)
 
 	/* we sometimes find BadE nodes in float apps like optest_float.c or
 	 * kahansum.c for example... */
-	be_liveness_invalidate(birg->lv);
+	be_liveness_invalidate(be_get_irg_liveness(irg));
 	be_liveness_assure_sets(be_assure_liveness(irg));
 
 	arch_env = be_get_irg_arch_env(irg);

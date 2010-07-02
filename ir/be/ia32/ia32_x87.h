@@ -35,15 +35,15 @@
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  *
- * @param birg      the graph to simulate and patch
+ * @param irg      the graph to simulate and patch
  *
  * Registers must be allocated.
  */
-void x87_simulate_graph(be_irg_t *birg);
+void x87_simulate_graph(ir_graph *irg);
 
 /**
  * Initializes the x87 simulator.
  */
 void ia32_init_x87(void);
 
-#endif /* FIRM_BE_IA32_IA32_X87_H */
+#endif

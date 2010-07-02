@@ -1006,7 +1006,7 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 	int           n_cfgpreds;
 	int           need_label;
 	int           i, arity;
-	ir_exec_freq  *exec_freq = cg->birg->exec_freq;
+	ir_exec_freq  *exec_freq = be_get_irg_exec_freq(cg->irg);
 
 	need_label = 0;
 	n_cfgpreds = get_Block_n_cfgpreds(block);
@@ -1114,7 +1114,7 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 
 	arm_register_emitters();
 
-	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
+	be_dbg_method_begin(entity, be_abi_get_stack_layout(be_get_irg_abi(cg->irg)));
 
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);

@@ -278,5 +278,5 @@ void arm_peephole_optimization(arm_code_gen_t *new_cg)
 	register_peephole_optimisation(op_arm_Ldr,       peephole_arm_Str_Ldr);
 	register_peephole_optimisation(op_arm_FrameAddr, peephole_arm_FrameAddr);
 
-	be_peephole_opt(cg->birg);
+	be_peephole_opt(cg->irg);
 }

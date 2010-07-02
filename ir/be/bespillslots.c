@@ -54,25 +54,26 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 typedef struct _spill_t {
-	ir_node *spill;
-	const ir_mode *mode;     /**< mode of the spilled value */
-	int alignment;           /**< alignment for the spilled value */
-	int spillslot;           /**< index into spillslot_unionfind structure */
+	ir_node       *spill;
+	const ir_mode *mode;      /**< mode of the spilled value */
+	int            alignment; /**< alignment for the spilled value */
+	int            spillslot; /**< index into spillslot_unionfind structure */
 } spill_t;
 
 typedef struct _affinity_edge_t {
 	double affinity;
-	int slot1, slot2;
+	int    slot1;
+	int    slot2;
 } affinity_edge_t;
 
 struct _be_fec_env_t {
-	struct obstack obst;
+	struct obstack    obst;
 	const arch_env_t *arch_env;
-	be_irg_t *birg;
-	set *spills;
-	ir_node **reloads;
+	ir_graph         *irg;
+	set              *spills;
+	ir_node         **reloads;
 	affinity_edge_t **affinity_edges;
-	set *memperms;
+	set              *memperms;
 };
 
 /** Compare 2 affinity edges (used in quicksort) */
@@ -150,7 +151,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 	int i, arity;
 	spill_t spill, *res;
 	int hash = hash_irn(node);
-	const ir_exec_freq *exec_freq = be_get_irg_exec_freq(env->birg->irg);
+	const ir_exec_freq *exec_freq = be_get_irg_exec_freq(env->irg);
 
 	assert(is_Phi(node));
 
@@ -241,10 +242,10 @@ static int merge_interferences(be_fec_env_t *env, bitset_t** interferences,
 	return res;
 }
 
-static int my_values_interfere2(be_irg_t *birg, const ir_node *a,
+static int my_values_interfere2(ir_graph *irg, const ir_node *a,
                                 const ir_node *b)
 {
-	be_lv_t *lv = be_get_irg_liveness(birg->irg);
+	be_lv_t *lv = be_get_irg_liveness(irg);
 
     int a2b = _value_dominates(a, b);
     int b2a = _value_dominates(b, a);
@@ -309,13 +310,13 @@ static int my_values_interfere2(be_irg_t *birg, const ir_node *a,
 /**
  * same as values_interfere but with special handling for Syncs
  */
-static int my_values_interfere(be_irg_t *birg, ir_node *a, ir_node *b)
+static int my_values_interfere(ir_graph *irg, ir_node *a, ir_node *b)
 {
 	if (is_Sync(a)) {
 		int i, arity = get_irn_arity(a);
 		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(a, i);
-			if (my_values_interfere(birg, in, b))
+			if (my_values_interfere(irg, in, b))
 				return 1;
 		}
 		return 0;
@@ -324,13 +325,13 @@ static int my_values_interfere(be_irg_t *birg, ir_node *a, ir_node *b)
 		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(b, i);
 			/* a is not a sync, so no need for my_values_interfere */
-			if (my_values_interfere2(birg, a, in))
+			if (my_values_interfere2(irg, a, in))
 				return 1;
 		}
 		return 0;
 	}
 
-	return my_values_interfere2(birg, a, b);
+	return my_values_interfere2(irg, a, b);
 }
 
 /**
@@ -391,7 +392,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 			if (is_NoMem(spill2))
 				continue;
 
-			if (my_values_interfere(env->birg, spill1, spill2)) {
+			if (my_values_interfere(env->irg, spill1, spill2)) {
 				DB((dbg, DBG_INTERFERENCES,
 				     "Slot %d and %d interfere\n", i, i2));
 
@@ -520,7 +521,7 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 
 static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
 {
-	ir_graph *irg = be_get_birg_irg(env->birg);
+	ir_graph *irg  = env->irg;
 	ir_type *frame = get_irg_frame_type(irg);
 	/* TODO: backend should be able to specify wether we want spill slots
 	 * at begin or end of frame */
@@ -701,8 +702,8 @@ static ir_node *get_end_of_block_insertion_point(ir_node* block)
 static void create_memperms(be_fec_env_t *env)
 {
 	const arch_env_t *arch_env = env->arch_env;
-	ir_graph *irg = be_get_birg_irg(env->birg);
-	memperm_t *memperm;
+	ir_graph         *irg      = env->irg;
+	memperm_t        *memperm;
 
 	for (memperm = set_first(env->memperms); memperm != NULL; memperm = set_next(env->memperms)) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
@@ -761,16 +762,16 @@ static int count_spillslots(const be_fec_env_t *env)
 	return slotcount;
 }
 
-be_fec_env_t *be_new_frame_entity_coalescer(be_irg_t *birg)
+be_fec_env_t *be_new_frame_entity_coalescer(ir_graph *irg)
 {
-	const arch_env_t *arch_env = birg->main_env->arch_env;
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	be_fec_env_t     *env      = XMALLOC(be_fec_env_t);
 
-	be_liveness_assure_chk(be_assure_liveness(birg->irg));
+	be_liveness_assure_chk(be_assure_liveness(irg));
 
 	obstack_init(&env->obst);
 	env->arch_env       = arch_env;
-	env->birg           = birg;
+	env->irg            = irg;
 	env->spills         = new_set(cmp_spill, 10);
 	env->reloads        = NEW_ARR_F(ir_node*, 0);
 	env->affinity_edges = NEW_ARR_F(affinity_edge_t*, 0);
@@ -826,12 +827,12 @@ static void collect_spills_walker(ir_node *node, void *data)
 	be_node_needs_frame_entity(env, node, mode, align);
 }
 
-void be_coalesce_spillslots(be_irg_t *birg)
+void be_coalesce_spillslots(ir_graph *irg)
 {
-	be_fec_env_t *env = be_new_frame_entity_coalescer(birg);
+	be_fec_env_t *env = be_new_frame_entity_coalescer(irg);
 
 	/* collect reloads */
-	irg_walk_graph(birg->irg, NULL, collect_spills_walker, env);
+	irg_walk_graph(irg, NULL, collect_spills_walker, env);
 
 	be_assign_entities(env);
 

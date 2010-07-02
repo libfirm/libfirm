@@ -2033,7 +2033,7 @@ static void ia32_emit_align_label(void)
 static int should_align_block(const ir_node *block)
 {
 	static const double DELTA = .0001;
-	ir_exec_freq *exec_freq   = cg->birg->exec_freq;
+	ir_exec_freq *exec_freq   = be_get_irg_exec_freq(cg->irg);
 	ir_node      *prev        = get_prev_block_sched(block);
 	double        block_freq;
 	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
@@ -2080,7 +2080,7 @@ static void ia32_emit_block_header(ir_node *block)
 	ir_graph     *irg = current_ir_graph;
 	int           need_label = block_needs_label(block);
 	int           i, arity;
-	ir_exec_freq *exec_freq = cg->birg->exec_freq;
+	ir_exec_freq *exec_freq = be_get_irg_exec_freq(cg->irg);
 
 	if (block == get_irg_end_block(irg))
 		return;
@@ -2216,7 +2216,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	cg       = ia32_cg;
 	isa      = cg->isa;
-	do_pic   = cg->birg->main_env->options->pic;
+	do_pic   = be_get_irg_options(cg->irg)->pic;
 
 	be_gas_elf_type_char = '@';
 
@@ -2224,7 +2224,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
-	be_dbg_method_begin(entity, be_abi_get_stack_layout(cg->birg->abi));
+	be_dbg_method_begin(entity, be_abi_get_stack_layout(be_get_irg_abi(cg->irg)));
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
 
 	/* we use links to point to target blocks */

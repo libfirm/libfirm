@@ -61,7 +61,6 @@ struct ia32_code_gen_t {
 	ir_graph                       *irg;           /**< current irg */
 	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
-	be_irg_t                       *birg;          /**< The be-irg (contains additional information about the irg) */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	unsigned                       do_x87_sim:1;   /**< set to 1 if x87 simulation should be enforced */
 	unsigned                       dump:1;         /**< set to 1 if graphs should be dumped */

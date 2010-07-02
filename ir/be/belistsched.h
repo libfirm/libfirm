@@ -47,10 +47,10 @@ struct _list_sched_selector_t {
 	 * May be NULL.
 	 *
 	 * @param vtab     The selector vtab.
-	 * @param birg     The backend graph.
+	 * @param irg      The backend graph.
 	 * @return         The environment pointer that is passed to all other functions in this struct.
 	 */
-	void *(*init_graph)(const list_sched_selector_t *vtab, const be_irg_t *birg);
+	void *(*init_graph)(const list_sched_selector_t *vtab, ir_graph *irg);
 
 	/**
 	 * Called before scheduling starts on a block.
@@ -186,15 +186,14 @@ extern const list_sched_selector_t normal_selector;
  * head of the schedule. You can walk this list using the functions in
  * list.h.
  *
- * @param birg    The backend irg.
- * @param be_opts The backend options
+ * @param irg     The backend irg.
  */
-void list_sched(be_irg_t *birg, be_options_t *be_opts);
+void list_sched(ir_graph *irg);
 
 /**
  * List schedule a block.
  * Same as list_sched but only for a certain block (needed for ILP fallback).
  */
-void list_sched_single_block(const be_irg_t *birg, ir_node *block, be_options_t *be_opts);
+void list_sched_single_block(ir_graph *irg, ir_node *block);
 
-#endif /* FIRM_BE_BELISTSCHED_H */
+#endif

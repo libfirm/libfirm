@@ -77,7 +77,6 @@ static int use_late_decision 	= true;
 
 typedef struct _be_pbqp_alloc_env_t {
 	pbqp 						*pbqp_inst;			/**< PBQP instance for register allocation */
-	be_irg_t             		*birg;         		/**< Back-end IRG session. */
 	ir_graph             		*irg;          		/**< The graph under examination. */
 	const arch_register_class_t *cls;				/**< Current processed register class */
 	be_lv_t                     *lv;
@@ -115,10 +114,11 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	char buf[1024];
 	size_t i, n;
 	char *tu_name;
+	const char *cup_name = be_birg_from_irg(env->irg)->main_env->cup_name;
 
-	n = strlen(env->birg->main_env->cup_name);
+	n = strlen(cup_name);
 	tu_name = XMALLOCN(char, n + 1);
-	strcpy(tu_name, env->birg->main_env->cup_name);
+	strcpy(tu_name, cup_name);
 	for (i = 0; i < n; ++i)
 		if (tu_name[i] == '.')
 			tu_name[i] = '_';
@@ -210,7 +210,8 @@ static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_nod
 			/* get exec_freq for copy_block */
 			ir_node *root_bl = get_nodes_block(src_node);
 			ir_node *copy_bl = is_Phi(src_node) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
-			unsigned long res = get_block_execfreq_ulong(pbqp_alloc_env->birg->exec_freq, copy_bl);
+			ir_exec_freq *exec_freq = be_get_irg_exec_freq(pbqp_alloc_env->irg);
+			unsigned long res = get_block_execfreq_ulong(exec_freq, copy_bl);
 
 			/* create afe-matrix */
 			unsigned row, col;
@@ -505,7 +506,6 @@ static void insert_perms(ir_node *block, void *data)
 static void be_pbqp_coloring(be_chordal_env_t *env)
 {
 	ir_graph                   	*irg  			= env->irg;
-	be_irg_t                   	*birg 			= env->birg;
 	const arch_register_class_t *cls  			= env->cls;
 	be_lv_t 					*lv				= NULL;
 	plist_element_t 		  	*element		= NULL;
@@ -539,7 +539,6 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 	/* initialize pbqp allocation data structure */
 	pbqp_alloc_env.pbqp_inst    = alloc_pbqp(get_irg_last_idx(irg));		/* initialize pbqp instance */
-	pbqp_alloc_env.birg         = birg;
 	pbqp_alloc_env.cls          = cls;
 	pbqp_alloc_env.irg          = irg;
 	pbqp_alloc_env.lv           = lv;
@@ -548,7 +547,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	pbqp_alloc_env.restr_nodes  = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.ife_edge_num = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.env			= env;
-	be_put_ignore_regs(birg, cls, pbqp_alloc_env.ignored_regs);				/* get ignored registers */
+	be_put_ignore_regs(irg, cls, pbqp_alloc_env.ignored_regs);				/* get ignored registers */
 
 
 	/* create costs matrix template for interference edges */

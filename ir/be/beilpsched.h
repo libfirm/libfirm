@@ -146,8 +146,8 @@ struct _ilp_sched_selector_t {
 	BE_ILP_SCHED_CALL2(node_scheduled, self, irn, cycle, block_env)
 
 /**
- * Perform ILP scheduling on given birg.
+ * Perform ILP scheduling on given irg.
  */
-void be_ilp_sched(const be_irg_t *birg, be_options_t *be_opts);
+void be_ilp_sched(ir_graph *irg, be_options_t *be_opts);
 
-#endif /* FIRM_BE_BEILPSCHED_H */
+#endif

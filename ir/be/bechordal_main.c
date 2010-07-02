@@ -476,7 +476,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 		}
 
 		be_timer_push(T_RA_SPILL);
-		arch_code_generator_spill(be_get_irg_cg(irg), be_birg_from_irg(irg));
+		arch_code_generator_spill(be_get_irg_cg(irg), irg);
 		be_timer_pop(T_RA_SPILL);
 		dump(BE_CH_DUMP_SPILL, irg, NULL, "spill");
 
