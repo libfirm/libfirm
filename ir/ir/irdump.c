@@ -76,7 +76,8 @@ static ir_dump_flags_t flags =
 	ir_dump_flag_back_edges |
 	ir_dump_flag_consts_local |
 	ir_dump_flag_analysed_types |
-	ir_dump_flag_entities_in_hierarchy;
+	ir_dump_flag_entities_in_hierarchy |
+	ir_dump_flag_number_label;
 
 static ird_color_t overrule_nodecolor = ird_color_default_node;
 
