@@ -355,12 +355,12 @@ static const backend_params be_params = {
 };
 
 /* Perform schedule verification if requested. */
-static void be_sched_vrfy(be_irg_t *birg, int vrfy_opt)
+static void be_sched_vrfy(ir_graph *irg, int vrfy_opt)
 {
 	if (vrfy_opt == BE_VRFY_WARN) {
-		be_verify_schedule(birg);
+		be_verify_schedule(irg);
 	} else if (vrfy_opt == BE_VRFY_ASSERT) {
-		assert(be_verify_schedule(birg) && "Schedule verification failed.");
+		assert(be_verify_schedule(irg) && "Schedule verification failed.");
 	}
 }
 
@@ -441,7 +441,7 @@ static void dump(int mask, ir_graph *irg, const char *suffix)
 }
 
 /**
- * Prepare a backend graph for code generation and initialize its birg
+ * Prepare a backend graph for code generation and initialize its irg
  */
 static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 {
@@ -711,7 +711,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
-		be_sched_vrfy(birg, be_options.vrfy_option);
+		be_sched_vrfy(irg, be_options.vrfy_option);
 		be_timer_pop(T_VERIFY);
 
 		/* introduce patterns to assure constraints */
@@ -724,7 +724,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* add Keeps for should_be_different constrained nodes  */
 		/* beware: needs schedule due to usage of be_ssa_constr */
-		assure_constraints(birg);
+		assure_constraints(irg);
 		be_timer_pop(T_CONSTR);
 
 		dump(DUMP_SCHED, irg, "assured");
@@ -743,7 +743,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
-		be_sched_vrfy(birg, be_options.vrfy_option);
+		be_sched_vrfy(irg, be_options.vrfy_option);
 		be_timer_pop(T_VERIFY);
 
 		stat_ev_if {
@@ -754,7 +754,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 
 		/* Do register allocation */
-		be_allocate_registers(birg);
+		be_allocate_registers(irg);
 
 #ifdef FIRM_STATISTICS
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, birg->exec_freq));
@@ -792,13 +792,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			irg_verify(irg, VRFY_ENFORCE_SSA);
 			be_check_dominance(irg);
-			be_verify_schedule(birg);
-			be_verify_register_allocation(birg);
+			be_verify_schedule(irg);
+			be_verify_register_allocation(irg);
 		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
 			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
-			assert(be_verify_schedule(birg) && "Schedule verification failed");
-			assert(be_verify_register_allocation(birg)
+			assert(be_verify_schedule(irg) && "Schedule verification failed");
+			assert(be_verify_register_allocation(irg)
 			       && "register allocation verification failed");
 
 		}

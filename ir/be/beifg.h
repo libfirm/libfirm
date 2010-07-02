@@ -98,7 +98,7 @@ typedef struct {
 	int n_comps;
 } be_ifg_stat_t;
 
-void be_ifg_stat(be_irg_t *birg, be_ifg_t *ifg, be_ifg_stat_t *stat);
+void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat);
 
 be_ifg_t *be_create_ifg(const be_chordal_env_t *env);
 

@@ -48,7 +48,7 @@
 
 typedef struct pressure_walker_env_t pressure_walker_env_t;
 struct pressure_walker_env_t {
-	be_irg_t *birg;
+	ir_graph *irg;
 	be_lv_t  *lv;
 	double    insn_count;
 	double    regpressure;
@@ -60,8 +60,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
                                      ir_node *block,
                                      const arch_register_class_t *cls)
 {
-	be_irg_t     *birg = env->birg;
-	ir_graph     *irg  = be_get_birg_irg(birg);
+	ir_graph     *irg  = env->irg;
 	ir_node      *irn;
 	ir_nodeset_t  live_nodes;
 	int           max_live;
@@ -100,13 +99,12 @@ static void stat_reg_pressure_block(ir_node *block, void *data)
 	check_reg_pressure_class(env, block, env->cls);
 }
 
-void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls)
+void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls)
 {
 	pressure_walker_env_t  env;
-	ir_graph              *irg = be_get_birg_irg(birg);
 	double                 average_pressure;
 
-	env.birg         = birg;
+	env.irg          = irg;
 	env.insn_count   = 0;
 	env.max_pressure = 0;
 	env.regpressure  = 0;
@@ -184,10 +182,10 @@ static void node_stat_walker(ir_node *irn, void *data)
 	}
 }
 
-void be_collect_node_stats(be_node_stats_t *new_stats, be_irg_t *birg)
+void be_collect_node_stats(be_node_stats_t *new_stats, ir_graph *irg)
 {
 	memset(new_stats, 0, sizeof(*new_stats));
-	irg_walk_graph(birg->irg, NULL, node_stat_walker, new_stats);
+	irg_walk_graph(irg, NULL, node_stat_walker, new_stats);
 }
 
 void be_subtract_node_stats(be_node_stats_t *stats, be_node_stats_t *sub)

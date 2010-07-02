@@ -84,7 +84,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static struct obstack               obst;
-static be_irg_t                    *birg;
 static ir_graph                    *irg;
 static const arch_register_class_t *cls;
 static const arch_register_req_t   *default_cls_req;
@@ -1923,7 +1922,7 @@ static void be_pref_alloc_cls(void)
 
 static void dump(int mask, ir_graph *irg, const char *suffix)
 {
-	if (birg->main_env->options->dump_flags & mask)
+	if (be_get_irg_options(irg)->dump_flags & mask)
 		dump_ir_graph(irg, suffix);
 }
 
@@ -1954,17 +1953,16 @@ static void spill(void)
 /**
  * The pref register allocator for a whole procedure.
  */
-static void be_pref_alloc(be_irg_t *new_birg)
+static void be_pref_alloc(ir_graph *new_irg)
 {
-	const arch_env_t *arch_env = new_birg->main_env->arch_env;
+	const arch_env_t *arch_env = be_get_irg_arch_env(new_irg);
 	int   n_cls                = arch_env_get_n_reg_class(arch_env);
 	int   c;
 
 	obstack_init(&obst);
 
-	birg      = new_birg;
-	irg       = be_get_birg_irg(birg);
-	execfreqs = birg->exec_freq;
+	irg       = new_irg;
+	execfreqs = be_get_irg_exec_freq(irg);
 
 	/* determine a good coloring order */
 	determine_block_order();
@@ -1979,17 +1977,17 @@ static void be_pref_alloc(be_irg_t *new_birg)
 
 		n_regs      = arch_register_class_n_regs(cls);
 		normal_regs = rbitset_malloc(n_regs);
-		be_abi_set_non_ignore_regs(birg->abi, cls, normal_regs);
+		be_abi_set_non_ignore_regs(be_get_irg_abi(irg), cls, normal_regs);
 
 		spill();
 
 		/* verify schedule and register pressure */
 		be_timer_push(T_VERIFY);
-		if (birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
-			be_verify_schedule(birg);
+		if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_WARN) {
+			be_verify_schedule(irg);
 			be_verify_register_pressure(irg, cls);
-		} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
-			assert(be_verify_schedule(birg) && "Schedule verification failed");
+		} else if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_ASSERT) {
+			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_pressure(irg, cls)
 				&& "Register pressure verification failed");
 		}
@@ -2009,15 +2007,15 @@ static void be_pref_alloc(be_irg_t *new_birg)
 	}
 
 	be_timer_push(T_RA_SPILL_APPLY);
-	be_abi_fix_stack_nodes(birg->abi);
+	be_abi_fix_stack_nodes(be_get_irg_abi(irg));
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	be_timer_push(T_VERIFY);
-	if (birg->main_env->options->vrfy_option == BE_VRFY_WARN) {
-		be_verify_register_allocation(birg);
-	} else if (birg->main_env->options->vrfy_option == BE_VRFY_ASSERT) {
-		assert(be_verify_register_allocation(birg)
-				&& "Register allocation invalid");
+	if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_WARN) {
+		be_verify_register_allocation(irg);
+	} else if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_ASSERT) {
+		assert(be_verify_register_allocation(irg)
+		       && "Register allocation invalid");
 	}
 	be_timer_pop(T_VERIFY);
 

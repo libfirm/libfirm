@@ -26,6 +26,9 @@
 #ifndef FIRM_BE_BEDUMP_MINIR_H
 #define FIRM_BE_BEDUMP_MINIR_H
 
-void be_export_minir(const arch_env_t *arch_env, FILE *out, ir_graph *irg);
+#include "firm_types.h"
+#include <stdio.h>
+
+void be_export_minir(FILE *out, ir_graph *irg);
 
 #endif

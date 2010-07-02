@@ -33,7 +33,7 @@
 #include "beirg.h"
 
 typedef struct be_ra_t {
-	void (*allocate)(be_irg_t *bi);   /**< allocate registers on a graph */
+	void (*allocate)(ir_graph *irg);   /**< allocate registers on a graph */
 } be_ra_t;
 
 void be_register_allocator(const char *name, be_ra_t *allocator);
@@ -41,6 +41,6 @@ void be_register_allocator(const char *name, be_ra_t *allocator);
 /**
  * Do register allocation with currently selected register allocator
  */
-void be_allocate_registers(be_irg_t *birg);
+void be_allocate_registers(ir_graph *irg);
 
 #endif

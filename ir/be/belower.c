@@ -60,15 +60,15 @@ typedef struct {
 
 /** Environment for constraints. */
 typedef struct {
-	be_irg_t       *birg;
+	ir_graph      *irg;
 	ir_nodemap_t   op_set;
 	struct obstack obst;
 } constraint_env_t;
 
 /** Lowering walker environment. */
 typedef struct _lower_env_t {
-	be_irg_t         *birg;
-	unsigned          do_copy : 1;
+	ir_graph *irg;
+	unsigned  do_copy : 1;
 } lower_env_t;
 
 /** Holds a Perm register pair. */
@@ -502,7 +502,6 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
 {
-	ir_graph                    *irg;
 	ir_nodemap_t                *op_set;
 	ir_node                     *block;
 	const arch_register_class_t *cls;
@@ -515,7 +514,6 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		return;
 	}
 
-	irg    = be_get_birg_irg(env->birg);
 	op_set = &env->op_set;
 	block  = get_nodes_block(irn);
 	cls    = arch_get_irn_reg_class_out(other_different);
@@ -765,21 +763,15 @@ static void melt_copykeeps(constraint_env_t *cenv)
 	}
 }
 
-/**
- * Walks over all nodes to assure register constraints.
- *
- * @param birg  The birg structure containing the irg
- */
-void assure_constraints(be_irg_t *birg)
+void assure_constraints(ir_graph *irg)
 {
-	ir_graph              *irg = be_get_birg_irg(birg);
 	constraint_env_t      cenv;
 	ir_nodemap_iterator_t map_iter;
 	ir_nodemap_entry_t    map_entry;
 
 	FIRM_DBG_REGISTER(dbg_constr, "firm.be.lower.constr");
 
-	cenv.birg = birg;
+	cenv.irg = irg;
 	ir_nodemap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
 
@@ -856,7 +848,7 @@ void assure_constraints(be_irg_t *birg)
  * @return     1, if there is something left to perm over.
  *             0, if removed the complete perm.
  */
-static int push_through_perm(ir_node *perm, lower_env_t *env)
+static int push_through_perm(ir_node *perm)
 {
 	ir_graph *irg     = get_irn_irg(perm);
 	ir_node *bl       = get_nodes_block(perm);
@@ -890,8 +882,9 @@ static int push_through_perm(ir_node *perm, lower_env_t *env)
 	sched_foreach_reverse_from(sched_prev(perm), irn) {
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
+			be_lv_t *lv = be_get_irg_liveness(irg);
 			if (arch_irn_consider_in_reg_alloc(cls, op) &&
-			    !be_values_interfere(env->birg->lv, op, one_proj)) {
+			    !be_values_interfere(lv, op, one_proj)) {
 				frontier = irn;
 				goto found_front;
 			}
@@ -1008,31 +1001,22 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 	if (!be_is_Perm(irn))
 		return;
 
-	perm_stayed = push_through_perm(irn, walk_env);
+	perm_stayed = push_through_perm(irn);
 	if (perm_stayed)
 		lower_perm_node(irn, walk_env);
 }
 
-/**
- * Walks over all blocks in an irg and performs lowering need to be
- * done after register allocation (e.g. perm lowering).
- *
- * @param birg      The birg object
- * @param do_copy   1 == resolve cycles with a free reg if available
- */
-void lower_nodes_after_ra(be_irg_t *birg, int do_copy)
+void lower_nodes_after_ra(ir_graph *irg, int do_copy)
 {
 	lower_env_t env;
-	ir_graph    *irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
 	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
 
-	env.birg    = birg;
+	env.irg     = irg;
 	env.do_copy = do_copy;
 
 	/* we will need interference */
-	irg = be_get_birg_irg(birg);
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, &env);

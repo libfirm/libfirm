@@ -56,7 +56,8 @@ void be_ifg_free(be_ifg_t *self)
 
 int be_ifg_connected(const be_ifg_t *ifg, const ir_node *a, const ir_node *b)
 {
-	return be_values_interfere(ifg->env->birg->lv, a, b);
+	be_lv_t *lv = be_get_irg_liveness(ifg->env->irg);
+	return be_values_interfere(lv, a, b);
 }
 
 static void nodes_walker(ir_node *bl, void *data)
@@ -125,11 +126,12 @@ static void find_neighbour_walker(ir_node *block, void *data)
 {
 	neighbours_iter_t *it    = data;
 	struct list_head  *head  = get_block_border_head(it->env, block);
+	be_lv_t           *lv    = be_get_irg_liveness(it->env->irg);
 
 	border_t *b;
 	int has_started = 0;
 
-	if (!be_is_live_in(it->env->birg->lv, block, it->irn) && block != get_nodes_block(it->irn))
+	if (!be_is_live_in(lv, block, it->irn) && block != get_nodes_block(it->irn))
 		return;
 
 	foreach_border_head(head, b) {
@@ -386,11 +388,11 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 
 }
 
-static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
+static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 {
 	int      n_comp    = 0;
 	nodes_iter_t nodes_it;
-	bitset_t *seen     = bitset_irg_malloc(birg->irg);
+	bitset_t *seen     = bitset_irg_malloc(irg);
 
 	ir_node *n;
 
@@ -410,11 +412,11 @@ static int int_component_stat(be_irg_t *birg, be_ifg_t *ifg)
 	return n_comp;
 }
 
-void be_ifg_stat(be_irg_t *birg, be_ifg_t *ifg, be_ifg_stat_t *stat)
+void be_ifg_stat(ir_graph *irg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 {
 	nodes_iter_t      nodes_it;
 	neighbours_iter_t neigh_it;
-	bitset_t         *nodes    = bitset_irg_malloc(birg->irg);
+	bitset_t         *nodes    = bitset_irg_malloc(irg);
 	ir_node          *n, *m;
 
 	memset(stat, 0, sizeof(stat[0]));
@@ -427,6 +429,6 @@ void be_ifg_stat(be_irg_t *birg, be_ifg_t *ifg, be_ifg_stat_t *stat)
 		}
 	}
 
-	stat->n_comps = int_component_stat(birg, ifg);
+	stat->n_comps = int_component_stat(irg, ifg);
 	bitset_free(nodes);
 }

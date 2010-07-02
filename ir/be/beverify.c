@@ -144,9 +144,9 @@ int be_verify_register_pressure(ir_graph *irg, const arch_register_class_t *cls)
 
 
 typedef struct be_verify_schedule_env_t_ {
-	int      problem_found;     /**< flags indicating if there was a problem */
-	bitset_t *scheduled;        /**< bitset of scheduled nodes */
-	ir_graph *irg;              /**< the irg to check */
+	int       problem_found; /**< flags indicating a problem */
+	bitset_t *scheduled;     /**< bitset of scheduled nodes */
+	ir_graph *irg;           /**< the irg to check */
 } be_verify_schedule_env_t;
 
 /**
@@ -339,17 +339,17 @@ static void check_schedule(ir_node *node, void *data)
 /**
  * Start a walk over the irg and check schedule.
  */
-int be_verify_schedule(const be_irg_t *birg)
+int be_verify_schedule(ir_graph *irg)
 {
 	be_verify_schedule_env_t env;
 
 	env.problem_found = 0;
-	env.irg           = be_get_birg_irg(birg);
+	env.irg           = irg;
 	env.scheduled     = bitset_alloca(get_irg_last_idx(env.irg));
 
-	irg_block_walk_graph(env.irg, verify_schedule_walker, NULL, &env);
+	irg_block_walk_graph(irg, verify_schedule_walker, NULL, &env);
 	/* check if all nodes are scheduled */
-	irg_walk_graph(env.irg, check_schedule, NULL, &env);
+	irg_walk_graph(irg, check_schedule, NULL, &env);
 
 	return ! env.problem_found;
 }
@@ -890,9 +890,9 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	}
 }
 
-int be_verify_register_allocation(const be_irg_t *birg)
+int be_verify_register_allocation(ir_graph *new_irg)
 {
-	irg           = be_get_birg_irg(birg);
+	irg           = new_irg;
 	arch_env      = be_get_irg_arch_env(irg);
 	lv            = be_liveness(irg);
 	problem_found = 0;

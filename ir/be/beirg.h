@@ -81,6 +81,21 @@ static inline be_dom_front_info_t *be_get_irg_dom_front(const ir_graph *irg)
 	return be_birg_from_irg(irg)->dom_front;
 }
 
+static inline be_abi_irg_t *be_get_irg_abi(const ir_graph *irg)
+{
+	return be_birg_from_irg(irg)->abi;
+}
+
+static inline be_options_t *be_get_irg_options(const ir_graph *irg)
+{
+	return be_birg_from_irg(irg)->main_env->options;
+}
+
+static inline arch_code_generator_t *be_get_irg_cg(const ir_graph *irg)
+{
+	return be_birg_from_irg(irg)->cg;
+}
+
 /** deprecated */
 static inline ir_graph *be_get_birg_irg(const be_irg_t *birg)
 {

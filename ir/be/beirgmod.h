@@ -42,7 +42,7 @@
  * @param irn       The node to insert the Perm after.
  * @return          The Perm or NULL if nothing was live before @p irn.
  */
-ir_node *insert_Perm_after(be_irg_t *birg, const arch_register_class_t *cls,
+ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 						   ir_node *irn);
 
 /**
@@ -55,4 +55,4 @@ ir_node *insert_Perm_after(be_irg_t *birg, const arch_register_class_t *cls,
  */
 int be_remove_empty_blocks(ir_graph *irg);
 
-#endif /* FIRM_BE_BEIRGMOD_H */
+#endif

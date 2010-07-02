@@ -117,7 +117,7 @@ void create_borders(ir_node *block, void *env_ptr)
 	be_chordal_env_t *env             = env_ptr;
 	bitset_t *live                    = bitset_malloc(get_irg_last_idx(env->irg));
 	ir_node *irn;
-	be_lv_t *lv                       = env->birg->lv;
+	be_lv_t *lv                       = be_get_irg_liveness(env->irg);
 
 	int i, n;
 	unsigned elm;
@@ -255,7 +255,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	 * Make the Perm, recompute liveness and re-scan the insn since the
 	 * in operands are now the Projs of the Perm.
 	 */
-	perm = insert_Perm_after(env->birg, env->cls, sched_prev(insn->irn));
+	perm = insert_Perm_after(env->irg, env->cls, sched_prev(insn->irn));
 
 	/* Registers are propagated by insert_Perm_after(). Clean them here! */
 	if (perm == NULL)

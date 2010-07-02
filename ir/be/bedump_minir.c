@@ -369,9 +369,9 @@ static void print_function(ir_graph *irg)
 	end_block_mapping(NULL);
 }
 
-void be_export_minir(const arch_env_t *new_arch_env, FILE *out, ir_graph *irg)
+void be_export_minir(FILE *out, ir_graph *irg)
 {
-	arch_env = new_arch_env;
+	arch_env = be_get_irg_arch_env(irg);
 	init_yaml(out);
 
 	print_regclasses();

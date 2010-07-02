@@ -112,7 +112,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 	insert_all_perms_env_t *env = data;
 	be_chordal_env_t *chordal_env = env->chordal_env;
 	pmap *perm_map = env->perm_map;
-	be_lv_t *lv = chordal_env->birg->lv;
+	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
 	int i, n;
 
 	assert(is_Block(bl));
@@ -235,7 +235,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 {
 	be_chordal_env_t *chordal_env = data;
-	be_lv_t *lv = chordal_env->birg->lv;
+	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
 	ir_node *phi;
 
 	/* Consider all phis of this block */

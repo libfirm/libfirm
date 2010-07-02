@@ -79,11 +79,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 */
 
-ir_node *insert_Perm_after(be_irg_t *birg,
-						   const arch_register_class_t *cls,
+ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 						   ir_node *pos)
 {
-	be_lv_t *lv     = birg->lv;
+	be_lv_t *lv     = be_get_irg_liveness(irg);
 	ir_node *bl     = is_Block(pos) ? pos : get_nodes_block(pos);
 	ir_nodeset_t          live;
 	ir_nodeset_iterator_t iter;
@@ -129,7 +128,7 @@ ir_node *insert_Perm_after(be_irg_t *birg,
 
 		curr = proj;
 
-		be_ssa_construction_init(&senv, birg->irg);
+		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, perm_op);
 		be_ssa_construction_add_copy(&senv, proj);
 		be_ssa_construction_fix_users(&senv, perm_op);

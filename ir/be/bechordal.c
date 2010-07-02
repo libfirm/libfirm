@@ -139,10 +139,12 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 		for (i = insn->use_start; i < insn->n_ops; ++i) {
 			int n_total;
 			const be_operand_t *op = &insn->ops[i];
+			be_lv_t            *lv;
 
 			if (op->partner != NULL)
 				continue;
-			if (be_values_interfere(env->birg->lv, op->irn, op->carrier))
+			lv = be_get_irg_liveness(env->irg);
+			if (be_values_interfere(lv, op->irn, op->carrier))
 				continue;
 
 			bitset_clear_all(bs);
@@ -292,11 +294,12 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		foreach_out_edge(perm, edge) {
 			int i;
 			ir_node *proj = get_edge_src_irn(edge);
+			be_lv_t *lv   = be_get_irg_liveness(env->irg);
 
 			assert(is_Proj(proj));
 
-			if (!be_values_interfere(env->birg->lv, proj, irn)
-					|| pmap_contains(partners, proj))
+			if (!be_values_interfere(lv, proj, irn)
+			    || pmap_contains(partners, proj))
 				continue;
 
 			/* don't insert a node twice */
@@ -435,7 +438,7 @@ static void assign(ir_node *block, void *env_ptr)
 	bitset_t *colors            = alloc_env->colors;
 	bitset_t *in_colors         = alloc_env->in_colors;
 	struct list_head *head      = get_block_border_head(env, block);
-	be_lv_t *lv                 = env->birg->lv;
+	be_lv_t *lv                 = be_get_irg_liveness(env->irg);
 
 	const ir_node *irn;
 	border_t *b;

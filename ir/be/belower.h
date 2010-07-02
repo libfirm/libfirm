@@ -19,7 +19,8 @@
 
 /**
  * @file
- * @brief       Performs lowering of perm nodes. Inserts copies to assure register constraints.
+ * @brief       Performs lowering of perm nodes. Inserts copies to assure
+ *              register constraints.
  * @author      Christian Wuerdig
  * @date        14.12.2005
  * @version     $Id$
@@ -29,7 +30,20 @@
 
 #include "beirg.h"
 
-void assure_constraints(be_irg_t *birg);
-void lower_nodes_after_ra(be_irg_t *birg, int do_copy);
+/**
+ * Walks over all nodes to assure register constraints.
+ *
+ * @param irg  The graph
+ */
+void assure_constraints(ir_graph *irg);
 
-#endif /* FIRM_BE_BELOWER_H */
+/**
+ * Walks over all blocks in an irg and performs lowering need to be
+ * done after register allocation (e.g. perm lowering).
+ *
+ * @param irg       The graph
+ * @param do_copy   1 == resolve cycles with a free reg if available
+ */
+void lower_nodes_after_ra(ir_graph *irg, int do_copy);
+
+#endif

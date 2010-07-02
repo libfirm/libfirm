@@ -48,7 +48,7 @@ typedef unsigned long be_node_stats_t[BE_STAT_COUNT];
 /**
  * Collect statistics about node types
  */
-void be_collect_node_stats(be_node_stats_t *stats, be_irg_t *birg);
+void be_collect_node_stats(be_node_stats_t *stats, ir_graph *irg);
 
 void be_subtract_node_stats(be_node_stats_t *stats, be_node_stats_t *sub);
 
@@ -58,9 +58,9 @@ void be_emit_node_stats(be_node_stats_t *stats, const char *prefix);
 
 /**
  * Collects statistics information about register pressure.
- * @param birg The be irg object containing the irg
+ * @param irg    The irg
  */
-void be_do_stat_reg_pressure(be_irg_t *birg, const arch_register_class_t *cls);
+void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls);
 
 /**
  * Gives a cost estimate for the program (based on execution frequencies)

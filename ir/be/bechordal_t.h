@@ -64,7 +64,6 @@ struct border_t {
 struct be_chordal_env_t {
 	struct obstack       *obst;         /**< An obstack for temporary storage. */
 	be_ra_chordal_opts_t *opts;         /**< A pointer to the chordal ra options. */
-	be_irg_t             *birg;         /**< Back-end IRG session. */
 	ir_graph             *irg;          /**< The graph under examination. */
 	const arch_register_class_t *cls;   /**< The current register class. */
 	pmap                 *border_heads; /**< Maps blocks to border heads. */

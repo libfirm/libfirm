@@ -49,7 +49,7 @@ int be_verify_register_pressure(ir_graph *irg,
  * @param irg	The irg to check
  * @return		1 if the schedule is valid, 0 otherwise
  */
-int be_verify_schedule(const be_irg_t *birg);
+int be_verify_schedule(ir_graph *irg);
 
 /**
  * Verify spillslots
@@ -64,9 +64,9 @@ int be_verify_spillslots(ir_graph *irg);
  * register assigned, also checks that each scheduled node has a register
  * assigned.
  *
- * @param birg  The birg to check
+ * @param irg   The graph to check
  * @return      1 if verify succeeded, 0 otherwise
  */
-int be_verify_register_allocation(const be_irg_t *birg);
+int be_verify_register_allocation(ir_graph *irg);
 
 #endif

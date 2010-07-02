@@ -171,8 +171,10 @@ static int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const 
 {
 	if (env->ifg)
 		return be_ifg_connected(env->ifg, a, b);
-	else
-		return be_values_interfere(env->birg->lv, a, b);
+	else {
+		be_lv_t *lv = be_get_irg_liveness(env->irg);
+		return be_values_interfere(lv, a, b);
+	}
 }
 
 
@@ -272,8 +274,9 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
 	int res;
 	ir_node *root_bl = get_nodes_block(root);
 	ir_node *copy_bl = is_Phi(root) ? get_Block_cfgpred_block(root_bl, pos) : root_bl;
+	ir_exec_freq *exec_freq = be_get_irg_exec_freq(co->cenv->irg);
 	(void) arg;
-	res = get_block_execfreq_ulong(co->cenv->birg->exec_freq, copy_bl);
+	res = get_block_execfreq_ulong(exec_freq, copy_bl);
 
 	/* don't allow values smaller than one. */
 	return res < 1 ? 1 : res;
@@ -1127,10 +1130,11 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	char buf[1024];
 	size_t i, n;
 	char *tu_name;
+	const char *cup_name = be_birg_from_irg(env->irg)->main_env->cup_name;
 
-	n = strlen(env->birg->main_env->cup_name);
+	n = strlen(cup_name);
 	tu_name = XMALLOCN(char, n + 1);
-	strcpy(tu_name, env->birg->main_env->cup_name);
+	strcpy(tu_name, cup_name);
 	for (i = 0; i < n; ++i)
 		if (tu_name[i] == '.')
 			tu_name[i] = '_';
