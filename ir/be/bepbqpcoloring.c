@@ -114,7 +114,7 @@ static FILE *my_open(const be_chordal_env_t *env, const char *prefix, const char
 	char buf[1024];
 	size_t i, n;
 	char *tu_name;
-	const char *cup_name = be_birg_from_irg(env->irg)->main_env->cup_name;
+	const char *cup_name = be_get_irg_main_env(env->irg)->cup_name;
 
 	n = strlen(cup_name);
 	tu_name = XMALLOCN(char, n + 1);

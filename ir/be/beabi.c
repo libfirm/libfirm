@@ -2181,7 +2181,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 	ir_node      *load_res;
 	be_abi_irg_t *env = data;
 	int           arity, i;
-	be_main_env_t *be = be_birg_from_irg(env->irg)->main_env;
+	be_main_env_t *be = be_get_irg_main_env(env->irg);
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {

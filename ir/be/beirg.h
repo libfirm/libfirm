@@ -48,22 +48,27 @@ void be_free_birg(ir_graph *irg);
  * backend structures
  */
 typedef struct be_irg_t {
-	ir_graph               *irg;
-	be_main_env_t          *main_env;
-	be_abi_irg_t           *abi;
-	arch_code_generator_t  *cg;
-	ir_exec_freq           *exec_freq;
-	be_dom_front_info_t    *dom_front;
-	be_lv_t                *lv;
-	struct obstack          obst; /**< birg obstack (mainly used to keep
-	                                   register constraints which we can't keep
-	                                   in the irg obst, because it gets replace
-	                                   during code selection) */
+	ir_graph              *irg;
+	be_main_env_t         *main_env;
+	be_abi_irg_t          *abi;
+	arch_code_generator_t *cg;
+	ir_exec_freq          *exec_freq;
+	be_dom_front_info_t   *dom_front;
+	be_lv_t               *lv;
+	struct obstack         obst; /**< birg obstack (mainly used to keep
+	                                  register constraints which we can't keep
+	                                  in the irg obst, because it gets replace
+	                                  during code selection) */
 } be_irg_t;
 
 static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
 {
 	return (be_irg_t*) irg->be_data;
+}
+
+static inline be_main_env_t *be_get_irg_main_env(const ir_graph *irg)
+{
+	return be_birg_from_irg(irg)->main_env;
 }
 
 static inline be_lv_t *be_get_irg_liveness(const ir_graph *irg)
