@@ -2224,7 +2224,7 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
-	be_dbg_method_begin(entity, be_abi_get_stack_layout(be_get_irg_abi(cg->irg)));
+	be_dbg_method_begin(entity);
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
 
 	/* we use links to point to target blocks */

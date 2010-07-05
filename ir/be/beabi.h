@@ -210,40 +210,10 @@ ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 #define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
 #define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))
 
-/** The number of parts of the stack layout. */
-#define N_FRAME_TYPES 3
-
-/**
- * This type describes the stack layout.
- * The stack is divided into 3 parts:
- * - arg_type:     A struct type describing the stack arguments and it's order.
- * - between_type: A struct type describing the stack layout between arguments
- *                 and frame type. In architectures that put the return address
- *                 automatically on the stack, the return address is put here.
- * - frame_type:   A class type describing the frame layout.
- */
-struct _be_stack_layout_t {
-	ir_type *arg_type;                 /**< A type describing the stack argument layout. */
-	ir_type *between_type;             /**< A type describing the "between" layout. */
-	ir_type *frame_type;               /**< The frame type. */
-
-	ir_type *order[N_FRAME_TYPES];     /**< arg, between and frame types ordered. */
-
-	ir_entity **param_map;             /**< An array mapping type parameters to arg_type entries */
-	int initial_offset;                /**< the initial difference between stack pointer and frame pointer */
-	int initial_bias;                  /**< the initial stack bias */
-	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
-};
-
-/**
- * Returns the stack layout from a abi environment.
- */
-const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi);
-
 /**
  * Returns non-zero if the ABI has omitted the frame pointer in
  * the current graph.
  */
 int be_abi_omit_fp(const be_abi_irg_t *abi);
 
-#endif /* FIRM_BE_BEABI_H */
+#endif

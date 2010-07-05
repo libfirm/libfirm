@@ -48,7 +48,7 @@ typedef struct debug_ops {
 	void (*main_program)(dbg_handle *handle);
 
 	/** dumps the stabs for a method begin */
-	void (*method_begin)(dbg_handle *handle, const ir_entity *ent, const be_stack_layout_t *layout);
+	void (*method_begin)(dbg_handle *handle, const ir_entity *ent);
 
 	/** dumps the stabs for a method end */
 	void (*method_end)(dbg_handle *handle);

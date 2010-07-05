@@ -43,6 +43,31 @@ void be_invalidate_dom_front(ir_graph *irg);
  */
 void be_free_birg(ir_graph *irg);
 
+/** The number of parts of the stack layout. */
+#define N_FRAME_TYPES 3
+
+/**
+ * This type describes the stack layout.
+ * The stack is divided into 3 parts:
+ * - arg_type:     A struct type describing the stack arguments and it's order.
+ * - between_type: A struct type describing the stack layout between arguments
+ *                 and frame type. In architectures that put the return address
+ *                 automatically on the stack, the return address is put here.
+ * - frame_type:   A class type describing the frame layout.
+ */
+struct be_stack_layout_t {
+	ir_type *arg_type;                 /**< A type describing the stack argument layout. */
+	ir_type *between_type;             /**< A type describing the "between" layout. */
+	ir_type *frame_type;               /**< The frame type. */
+
+	ir_type *order[N_FRAME_TYPES];     /**< arg, between and frame types ordered. */
+
+	ir_entity **param_map;             /**< An array mapping type parameters to arg_type entries */
+	int initial_offset;                /**< the initial difference between stack pointer and frame pointer */
+	int initial_bias;                  /**< the initial stack bias */
+	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
+};
+
 /**
  * An ir_graph with additional analysis data about this irg. Also includes some
  * backend structures
@@ -55,6 +80,7 @@ typedef struct be_irg_t {
 	ir_exec_freq          *exec_freq;
 	be_dom_front_info_t   *dom_front;
 	be_lv_t               *lv;
+	be_stack_layout_t      stack_layout;
 	struct obstack         obst; /**< birg obstack (mainly used to keep
 	                                  register constraints which we can't keep
 	                                  in the irg obst, because it gets replace
@@ -118,4 +144,9 @@ static inline struct obstack *be_get_be_obst(const ir_graph *irg)
 	return &birg->obst;
 }
 
-#endif /* FIRM_BE_BEIRG_H */
+static inline be_stack_layout_t *be_get_irg_stack_layout(const ir_graph *irg)
+{
+	return &be_birg_from_irg(irg)->stack_layout;
+}
+
+#endif

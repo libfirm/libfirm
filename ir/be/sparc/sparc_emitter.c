@@ -731,13 +731,14 @@ void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg)
 	ir_node *last_block = NULL;
 	ir_entity *entity     = get_irg_entity(irg);
 	int i, n;
+	(void) cg;
 
 	be_gas_elf_type_char = '#';
 	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF_SPARC;
 
 	/* register all emitter functions */
 	sparc_register_emitters();
-	be_dbg_method_begin(entity, be_abi_get_stack_layout(be_get_irg_abi(cg->irg)));
+	be_dbg_method_begin(entity);
 
 	/* create the block schedule. For now, we don't need it earlier. */
 	blk_sched = be_create_block_schedule(irg);

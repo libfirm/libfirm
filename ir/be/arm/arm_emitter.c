@@ -1114,7 +1114,7 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 
 	arm_register_emitters();
 
-	be_dbg_method_begin(entity, be_abi_get_stack_layout(be_get_irg_abi(cg->irg)));
+	be_dbg_method_begin(entity);
 
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);

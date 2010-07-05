@@ -110,8 +110,6 @@ struct _be_abi_irg_t {
 	ir_node              **calls;       /**< flexible array containing all be_Call nodes */
 
 	arch_register_req_t  *sp_req;
-
-	be_stack_layout_t    frame;         /**< The stack frame model. */
 };
 
 static heights_t *ir_heights;
@@ -1789,6 +1787,7 @@ static void modify_irg(be_abi_irg_t *env)
 	ir_node *mem;
 	ir_type *method_type      = get_entity_type(get_irg_entity(irg));
 	struct obstack *obst      = be_get_be_obst(irg);
+	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 
 	int n_params;
 	int i, n;
@@ -1892,7 +1891,8 @@ static void modify_irg(be_abi_irg_t *env)
 	}
 
 	bet_type = call->cb->get_between_type(env->cb);
-	stack_frame_init(&env->frame, arg_type, bet_type, get_irg_frame_type(irg), arch_env->stack_dir, param_map);
+	stack_frame_init(stack_layout, arg_type, bet_type,
+	                 get_irg_frame_type(irg), arch_env->stack_dir, param_map);
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for (i = 0; i < n_params; ++i) {
@@ -1964,7 +1964,7 @@ static void modify_irg(be_abi_irg_t *env)
 	set_irg_initial_mem(irg, mem);
 
 	/* Generate the Prologue */
-	fp_reg = call->cb->prologue(env->cb, &mem, env->regs, &env->frame.initial_bias);
+	fp_reg = call->cb->prologue(env->cb, &mem, env->regs, &stack_layout->initial_bias);
 
 	/* do the stack allocation BEFORE the barrier, or spill code
 	   might be added before it */
@@ -2374,14 +2374,7 @@ void be_abi_set_non_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *
 	}
 }
 
-/* Returns the stack layout from a abi environment. */
-const be_stack_layout_t *be_abi_get_stack_layout(const be_abi_irg_t *abi)
-{
-	return &abi->frame;
-}
-
 /*
-
   _____ _        ____  _             _
  |  ___(_)_  __ / ___|| |_ __ _  ___| | __
  | |_  | \ \/ / \___ \| __/ _` |/ __| |/ /
@@ -2486,6 +2479,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 	int               omit_fp  = env->call->flags.bits.try_omit_fp;
 	ir_node          *irn;
 	int               wanted_bias = real_bias;
+	be_stack_layout_t *layout     = be_get_irg_stack_layout(env->irg);
 
 	sched_foreach(bl, irn) {
 		int ofs;
@@ -2498,7 +2492,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		ir_entity *ent = arch_get_frame_entity(irn);
 		if (ent != NULL) {
 			int bias   = omit_fp ? real_bias : 0;
-			int offset = get_stack_entity_offset(&env->frame, ent, bias);
+			int offset = get_stack_entity_offset(layout, ent, bias);
 			arch_set_frame_offset(irn, offset);
 			DBG((dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
 			     ent, offset, bias));
@@ -2523,7 +2517,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 			} else {
 				if (be_get_IncSP_align(irn)) {
 					/* patch IncSP to produce an aligned stack pointer */
-					ir_type *between_type = env->frame.between_type;
+					ir_type *between_type = layout->between_type;
 					int      between_size = get_type_size_bytes(between_type);
 					int      alignment    = 1 << env->arch_env->stack_alignment;
 					int      delta        = (real_bias + ofs + between_size) & (alignment - 1);
@@ -2584,6 +2578,7 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 	ir_node      *ptr;
 	ir_entity    *ent;
 	ir_type      *owner;
+	be_stack_layout_t *layout;
 
 	if (! is_Sel(sel))
 		return;
@@ -2592,9 +2587,10 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 	owner = get_entity_owner(ent);
 	ptr   = get_Sel_ptr(sel);
 
-	if (owner == env->frame.frame_type || owner == env->frame.arg_type) {
+	layout = be_get_irg_stack_layout(env->irg);
+	if (owner == layout->frame_type || owner == layout->arg_type) {
 		/* found access to outer frame or arguments */
-		int offset = get_stack_entity_offset(&env->frame, ent, 0);
+		int offset = get_stack_entity_offset(layout, ent, 0);
 
 		if (offset != 0) {
 			ir_node  *bl   = get_nodes_block(sel);
@@ -2612,16 +2608,18 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 void be_abi_fix_stack_bias(be_abi_irg_t *env)
 {
 	ir_graph          *irg = env->irg;
+	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	ir_type           *frame_tp;
 	int               i;
 	struct bias_walk  bw;
 
-	stack_frame_compute_initial_offset(&env->frame);
-	// stack_layout_dump(stdout, frame);
+	stack_frame_compute_initial_offset(stack_layout);
+	// stack_layout_dump(stdout, stack_layout);
 
 	/* Determine the stack bias at the end of the start block. */
-	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg), env->frame.initial_bias);
-	bw.between_size     = get_type_size_bytes(env->frame.between_type);
+	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg),
+	                                         stack_layout->initial_bias);
+	bw.between_size     = get_type_size_bytes(stack_layout->between_type);
 
 	/* fix the bias is all other blocks */
 	bw.env = env;

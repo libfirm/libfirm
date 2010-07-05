@@ -683,12 +683,14 @@ static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 /**
  * dump the stabs for a method begin
  */
-static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent, const be_stack_layout_t *layout)
+static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent)
 {
 	stabs_handle *h = (stabs_handle *)handle;
+	ir_graph     *irg = get_entity_irg(ent);
 	ir_type      *mtp, *rtp;
 	unsigned     type_num;
 	int          i, n, between_size;
+	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 
 	h->cur_ent = ent;
 	h->layout  = layout;

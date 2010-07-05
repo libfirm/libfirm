@@ -50,10 +50,10 @@ void be_dbg_main_program(void)
 		handle->ops->main_program(handle);
 }
 
-void be_dbg_method_begin(const ir_entity *ent, const be_stack_layout_t *layout)
+void be_dbg_method_begin(const ir_entity *ent)
 {
 	if (handle->ops->method_begin)
-		handle->ops->method_begin(handle, ent, layout);
+		handle->ops->method_begin(handle, ent);
 }
 
 void be_dbg_method_end(void)
