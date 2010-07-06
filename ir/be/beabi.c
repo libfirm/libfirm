@@ -423,7 +423,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const arch_register_t *sp  = arch_env->sp;
 	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode         = sp->reg_class->mode;
-	struct obstack *obst       = be_get_be_obst(irg);
 	int no_alloc               = call->flags.bits.frame_is_setup_on_call;
 	int n_res                  = get_method_n_ress(call_tp);
 	int do_seq                 = call->flags.bits.store_args_sequential && !no_alloc;
@@ -454,7 +453,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* Insert code to put the stack arguments on the stack. */
 	assert(get_Call_n_params(irn) == n_params);
-	assert(obstack_object_size(obst) == 0);
 	stack_param_idx = ALLOCAN(int, n_params);
 	for (i = 0; i < n_params; ++i) {
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 0);
@@ -653,7 +651,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	 */
 	n_reg_results = n_res;
 
-	assert(obstack_object_size(obst) == 0);
 	n_ins = 0;
 	in    = ALLOCAN(ir_node*, n_reg_params + pset_new_size(&states));
 

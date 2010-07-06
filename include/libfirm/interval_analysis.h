@@ -39,6 +39,7 @@
 #define FIRM_ANA_INTERVAL_ANALYSIS_H
 
 #include "firm_types.h"
+#include <stdio.h>
 #include "begin.h"
 
 /** The ins of regions:  regions are loops or blocks. */

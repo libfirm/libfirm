@@ -191,12 +191,11 @@ void be_delete_spill_env(spill_env_t *env)
 void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 {
 	spill_info_t  *spill_info = get_spillinfo(env, to_spill);
-	const ir_node *insn       = skip_Proj_const(to_spill);
 	spill_t       *spill;
 	spill_t       *s;
 	spill_t       *last;
 
-	assert(!arch_irn_is(insn, dont_spill));
+	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
 	DB((dbg, LEVEL_1, "Add spill of %+F after %+F\n", to_spill, after));
 
 	/* Just for safety make sure that we do not insert the spill in front of a phi */
@@ -261,9 +260,8 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 {
 	spill_info_t  *info;
 	reloader_t    *rel;
-	const ir_node *insn = skip_Proj_const(to_spill);
 
-	assert(!arch_irn_is(insn, dont_spill));
+	assert(!arch_irn_is(skip_Proj_const(to_spill), dont_spill));
 
 	info = get_spillinfo(env, to_spill);
 
