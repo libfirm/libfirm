@@ -633,7 +633,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* implement the ABI conventions. */
 		be_timer_push(T_ABI);
-		birg->abi = be_abi_introduce(irg);
+		be_abi_introduce(irg);
 		be_timer_pop(T_ABI);
 
 		dump(DUMP_ABI, irg, "abi");
@@ -736,7 +736,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* connect all stack modifying nodes together (see beabi.c) */
 		be_timer_push(T_ABI);
-		be_abi_fix_stack_nodes(birg->abi);
+		be_abi_fix_stack_nodes(irg);
 		be_timer_pop(T_ABI);
 
 		dump(DUMP_SCHED, irg, "fix_stack");
@@ -769,9 +769,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* fix stack offsets */
 		be_timer_push(T_ABI);
-		be_abi_fix_stack_nodes(birg->abi);
+		be_abi_fix_stack_nodes(irg);
 		be_remove_dead_nodes_from_schedule(irg);
-		be_abi_fix_stack_bias(birg->abi);
+		be_abi_fix_stack_bias(irg);
 		be_timer_pop(T_ABI);
 
 		dump(DUMP_SCHED, irg, "fix_stack_after_ra");
@@ -812,7 +812,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_FINAL, irg, "end");
 
 		be_timer_push(T_ABI);
-		be_abi_free(birg->abi);
+		be_abi_free(irg);
 		be_timer_pop(T_ABI);
 
 		restore_optimization_state(&state);

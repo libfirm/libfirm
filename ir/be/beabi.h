@@ -188,14 +188,14 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg);
  * Fix the stack bias for all nodes accessing the stack frame using the
  * stack pointer.
  */
-void be_abi_fix_stack_bias(be_abi_irg_t *env);
-void be_abi_free(be_abi_irg_t *abi);
+void be_abi_fix_stack_bias(ir_graph *irg);
+void be_abi_free(ir_graph *irg);
 
 /**
  * Rewire all stack modifying nodes and their users to assure SSA property.
  * @param env   The abi
  */
-void be_abi_fix_stack_nodes(be_abi_irg_t *env);
+void be_abi_fix_stack_nodes(ir_graph *irg);
 
 /**
  * Put the registers which are forbidden specifically for this IRG in a bitset.

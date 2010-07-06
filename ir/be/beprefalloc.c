@@ -2007,7 +2007,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 	}
 
 	be_timer_push(T_RA_SPILL_APPLY);
-	be_abi_fix_stack_nodes(be_get_irg_abi(irg));
+	be_abi_fix_stack_nodes(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	be_timer_push(T_VERIFY);

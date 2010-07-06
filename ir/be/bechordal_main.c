@@ -292,7 +292,7 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		be_timer_push(T_RA_SPILL_APPLY);
 		check_for_memory_operands(irg);
 		if (iteration == 0) {
-			be_abi_fix_stack_nodes(be_get_irg_abi(irg));
+			be_abi_fix_stack_nodes(irg);
 		}
 		be_timer_pop(T_RA_SPILL_APPLY);
 
