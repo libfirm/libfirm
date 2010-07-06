@@ -1341,8 +1341,6 @@ static const arch_irn_ops_t phi_irn_ops = {
  */
 static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 {
-	be_node_attr_t *at = get_irn_attr(irn);
-
 	assert(is_be_node(irn));
 
 	switch (reason) {
@@ -1350,13 +1348,13 @@ static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 			fputs(get_op_name(get_irn_op(irn)), f);
 			break;
 		case dump_node_mode_txt:
-			if (be_is_Perm(irn) || be_is_Copy(irn) || be_is_CopyKeep(irn)) {
-				fprintf(f, " %s", get_mode_name(get_irn_mode(irn)));
+			if (be_is_Copy(irn) || be_is_CopyKeep(irn)) {
+				fprintf(f, "%s", get_mode_name(get_irn_mode(irn)));
 			}
 			break;
 		case dump_node_nodeattr_txt:
 			if (be_is_Call(irn)) {
-				be_call_attr_t *a = (be_call_attr_t *) at;
+				const be_call_attr_t *a = get_irn_generic_attr_const(irn);
 				if (a->ent)
 					fprintf(f, " [%s] ", get_entity_name(a->ent));
 			}
@@ -1375,7 +1373,7 @@ static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 			arch_dump_reqs_and_registers(f, irn);
 
 			if (be_has_frame_entity(irn)) {
-				be_frame_attr_t *a = (be_frame_attr_t *) at;
+				const be_frame_attr_t *a = get_irn_generic_attr_const(irn);
 				if (a->ent) {
 					unsigned size = get_type_size_bytes(get_entity_type(a->ent));
 					ir_fprintf(f, "frame entity: %+F, offset 0x%x (%d), size 0x%x (%d) bytes\n",
@@ -1385,41 +1383,39 @@ static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 			}
 
 			switch (get_irn_opcode(irn)) {
-			case beo_IncSP:
-				{
-					be_incsp_attr_t *a = (be_incsp_attr_t *) at;
-					if (a->offset == BE_STACK_FRAME_SIZE_EXPAND)
-						fprintf(f, "offset: FRAME_SIZE\n");
-					else if (a->offset == BE_STACK_FRAME_SIZE_SHRINK)
-						fprintf(f, "offset: -FRAME SIZE\n");
-					else
-						fprintf(f, "offset: %u\n", a->offset);
-				}
+			case beo_IncSP: {
+				const be_incsp_attr_t *a = get_irn_generic_attr_const(irn);
+				fprintf(f, "align: %d\n", a->align);
+				if (a->offset == BE_STACK_FRAME_SIZE_EXPAND)
+					fprintf(f, "offset: FRAME_SIZE\n");
+				else if (a->offset == BE_STACK_FRAME_SIZE_SHRINK)
+					fprintf(f, "offset: -FRAME SIZE\n");
+				else
+					fprintf(f, "offset: %d\n", a->offset);
 				break;
-			case beo_Call:
-				{
-					be_call_attr_t *a = (be_call_attr_t *) at;
+			}
+			case beo_Call: {
+				const be_call_attr_t *a = get_irn_generic_attr_const(irn);
 
-					if (a->ent)
-						fprintf(f, "\ncalling: %s\n", get_entity_name(a->ent));
-				}
+				if (a->ent)
+					fprintf(f, "\ncalling: %s\n", get_entity_name(a->ent));
 				break;
-			case beo_MemPerm:
-				{
-					int i;
-					for (i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
-						ir_entity *in, *out;
-						in = be_get_MemPerm_in_entity(irn, i);
-						out = be_get_MemPerm_out_entity(irn, i);
-						if (in) {
-							fprintf(f, "\nin[%d]: %s\n", i, get_entity_name(in));
-						}
-						if (out) {
-							fprintf(f, "\nout[%d]: %s\n", i, get_entity_name(out));
-						}
+			}
+			case beo_MemPerm: {
+				int i;
+				for (i = 0; i < be_get_MemPerm_entity_arity(irn); ++i) {
+					ir_entity *in, *out;
+					in = be_get_MemPerm_in_entity(irn, i);
+					out = be_get_MemPerm_out_entity(irn, i);
+					if (in) {
+						fprintf(f, "\nin[%d]: %s\n", i, get_entity_name(in));
+					}
+					if (out) {
+						fprintf(f, "\nout[%d]: %s\n", i, get_entity_name(out));
 					}
 				}
 				break;
+			}
 
 			default:
 				break;
