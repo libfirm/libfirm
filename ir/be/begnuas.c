@@ -569,8 +569,6 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 	be_emit_write_line();
 }
 
-/************************************************************************/
-
 /**
  * Output a tarval.
  *
@@ -843,10 +841,6 @@ static void emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	be_emit_char('\n');
 	be_emit_write_line();
 }
-
-/************************************************************************/
-/* Routines to dump global variables                                    */
-/************************************************************************/
 
 /**
  * Dump a string constant.
@@ -1592,8 +1586,6 @@ static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
 		emit_global(env, ent);
 	}
 }
-
-/************************************************************************/
 
 /* Generate all entities. */
 void be_gas_emit_decls(const be_main_env_t *main_env)
