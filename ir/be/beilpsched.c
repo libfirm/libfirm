@@ -1892,7 +1892,7 @@ static void create_ilp(ir_node *block, void *walk_env)
 			create_pressure_alive_constraint(env, lpp, block_node);
 		}
 
-		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp->var_next, lpp->cst_next));
+		DBG((env->dbg, LEVEL_1, "ILP to solve: %u variables, %u constraints\n", lpp_get_var_count(lpp), lpp_get_cst_count(lpp)));
 
 		/* debug stuff, dump lpp when debugging is on  */
 		DEBUG_ONLY({
@@ -1955,35 +1955,36 @@ static void create_ilp(ir_node *block, void *walk_env)
 		}
 
 		DBG((env->dbg, LEVEL_1, "\nSolution:\n"));
-		DBG((env->dbg, LEVEL_1, "\tsend time: %g sec\n", lpp->send_time / 1000000.0));
-		DBG((env->dbg, LEVEL_1, "\treceive time: %g sec\n", lpp->recv_time / 1000000.0));
-		DBG((env->dbg, LEVEL_1, "\tmatrix: %u elements, density %.2f%%, size %.2fMB\n", lpp->n_elems, lpp->density, (double)lpp->matrix_mem / 1024.0 / 1024.0));
-		DBG((env->dbg, LEVEL_1, "\titerations: %d\n", lpp->iterations));
-		DBG((env->dbg, LEVEL_1, "\tsolution time: %g\n", lpp->sol_time));
-		DBG((env->dbg, LEVEL_1, "\tobjective function: %g\n", LPP_VALUE_IS_0(lpp->objval) ? 0.0 : lpp->objval));
-		DBG((env->dbg, LEVEL_1, "\tbest bound: %g\n", LPP_VALUE_IS_0(lpp->best_bound) ? 0.0 : lpp->best_bound));
+		//DBG((env->dbg, LEVEL_1, "\tsend time: %g sec\n", lpp->send_time / 1000000.0));
+		//DBG((env->dbg, LEVEL_1, "\treceive time: %g sec\n", lpp->recv_time / 1000000.0));
+		//DBG((env->dbg, LEVEL_1, "\tmatrix: %u elements, density %.2f%%, size %.2fMB\n", lpp->n_elems, lpp->density, (double)lpp->matrix_mem / 1024.0 / 1024.0));
+		DBG((env->dbg, LEVEL_1, "\titerations: %d\n", lpp_get_iter_cnt(lpp)));
+		DBG((env->dbg, LEVEL_1, "\tsolution time: %g\n", lpp_get_sol_time(lpp)));
+		//DBG((env->dbg, LEVEL_1, "\tobjective function: %g\n", LPP_VALUE_IS_0(lpp->objval) ? 0.0 : lpp->objval));
+		//DBG((env->dbg, LEVEL_1, "\tbest bound: %g\n", LPP_VALUE_IS_0(lpp->best_bound) ? 0.0 : lpp->best_bound));
 
-		DBG((env->dbg, LEVEL_1, "variables used %u bytes\n", obstack_memory_used(&var_obst)));
+		//DBG((env->dbg, LEVEL_1, "variables used %u bytes\n", obstack_memory_used(&var_obst)));
 	}
 
 	/* apply solution */
 	be_stat_ev("nodes", ba->block_last_idx);
-	be_stat_ev("vars", lpp ? lpp->var_next : 0);
-	be_stat_ev("csts", lpp ? lpp->cst_next : 0);
+	be_stat_ev("vars", lpp ? lpp_get_var_count(lpp) : 0);
+	be_stat_ev("csts", lpp ? lpp_get_cst_count(lpp) : 0);
 	if (need_heur) {
-			be_stat_ev("time", -1);
-			be_stat_ev_dbl("opt", 0.0);
-		list_sched_single_block(env->irg, block, env->be_opts);
+		be_stat_ev("time", -1);
+		be_stat_ev_dbl("opt", 0.0);
+		list_sched_single_block(env->irg, block);
 	} else {
+#if 0
 		if (lpp) {
-			double opt = lpp->sol_state == lpp_optimal ? 100.0 : 100.0 * lpp->best_bound / lpp->objval;
+			double opt = lpp_get_sol_state(lpp) == lpp_optimal ? 100.0 : 100.0 * lpp->best_bound / lpp->objval;
 			be_stat_ev_dbl("time", lpp->sol_time);
 			be_stat_ev_dbl("opt", opt);
-		}
-		else {
+		} else {
 			be_stat_ev_dbl("time", 0.0);
 			be_stat_ev_dbl("opt", 100.0);
 		}
+#endif
 		apply_solution(env, lpp, block);
 	}
 
@@ -2007,8 +2008,6 @@ void be_ilp_sched(ir_graph *irg)
 
 	stat_ev_ctx_push("ilpsched");
 
-//	firm_dbg_set_mask(env.dbg, 1);
-
 	env.irg_env    = be_ilp_sched_init_irg_ilp_schedule(sel, irg);
 	env.sel        = sel;
 	env.irg        = irg;
@@ -2016,7 +2015,6 @@ void be_ilp_sched(ir_graph *irg)
 	env.arch_env   = arch_env;
 	env.cpu        = arch_env_get_machine(arch_env);
 	env.opts       = &ilp_opts;
-	env.be_opts    = be_opts;
 	phase_init(&env.ph, env.irg, init_ilpsched_irn);
 
 	/* assign a unique per block number to all interesting nodes */

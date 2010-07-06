@@ -43,7 +43,6 @@
 #define DUMP_SOL 2
 
 static int time_limit = 60;
-static int solve_net  = 1;
 static int solve_log  = 0;
 static unsigned dump_flags = 0;
 
@@ -59,7 +58,6 @@ static lc_opt_enum_mask_var_t dump_var = {
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_INT      ("limit", "time limit for solving in seconds (0 for unlimited)", &time_limit),
-	LC_OPT_ENT_BOOL     ("net",   "solve over the net", &solve_net),
 	LC_OPT_ENT_BOOL     ("log",   "show ilp solving log",              &solve_log),
 	LC_OPT_ENT_ENUM_MASK("dump",  "dump flags",             &dump_var),
 	LC_OPT_LAST
@@ -233,20 +231,12 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	if (solve_log)
 		lpp_set_log(ienv->lp, stdout);
 
-	if (solve_net)
-		lpp_solve_net(ienv->lp, options->ilp_server, options->ilp_solver);
-	else {
-#ifdef LPP_SOLVE_NET
-		fprintf(stderr, "can only solve ilp over the net\n");
-#else
-		lpp_solve_cplex(ienv->lp);
-#endif
-	}
+	lpp_solve_net(ienv->lp, options->ilp_server, options->ilp_solver);
 
-	be_stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
-	be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);
-	be_stat_ev    ("co_ilp_iter",       ienv->lp->iterations);
-	be_stat_ev_dbl("co_ilp_sol_time",   ienv->lp->sol_time);
+	//be_stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
+	//be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);
+	be_stat_ev    ("co_ilp_iter",       lpp_get_iter_cnt(ienv->lp));
+	be_stat_ev_dbl("co_ilp_sol_time",   lpp_get_sol_time(ienv->lp));
 
 	if (dump_flags & DUMP_ILP) {
 		char buf[128];
