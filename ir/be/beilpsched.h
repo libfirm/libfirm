@@ -148,6 +148,6 @@ struct _ilp_sched_selector_t {
 /**
  * Perform ILP scheduling on given irg.
  */
-void be_ilp_sched(ir_graph *irg, be_options_t *be_opts);
+void be_ilp_sched(ir_graph *irg);
 
 #endif
