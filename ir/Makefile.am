@@ -517,56 +517,6 @@ $(srcdir)/be/arm/gen_arm_regalloc_if.c $(srcdir)/be/arm/gen_arm_regalloc_if.h: \
 		be/arm/arm_spec.pl be/scripts/generate_machine.pl
 	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/arm/arm_spec.pl $(srcdir)/be/arm
 
-# mips backend
-
-mips_sources = \
-	be/mips/bearch_mips.c \
-	be/mips/mips_emitter.c \
-	be/mips/mips_map_regs.c \
-	be/mips/mips_new_nodes.c \
-	be/mips/mips_scheduler.c \
-	be/mips/mips_transform.c
-mips_built_sources = \
-	be/mips/gen_mips_emitter.c \
-	be/mips/gen_mips_emitter.h \
-	be/mips/gen_mips_machine.c \
-	be/mips/gen_mips_machine.h \
-	be/mips/gen_mips_new_nodes.c.inl \
-	be/mips/gen_mips_new_nodes.h \
-	be/mips/gen_mips_regalloc_if.c \
-	be/mips/gen_mips_regalloc_if.h
-MAINTAINERCLEANFILES += $(mips_built_sources)
-BUILT_SOURCES += $(mips_built_sources)
-libfirm_la_SOURCES += $(mips_sources) $(mips_built_sources)
-
-EXTRA_DIST += \
-	be/mips/bearch_mips.h \
-	be/mips/bearch_mips_t.h \
-	be/mips/mips_emitter.h \
-	be/mips/mips_map_regs.h \
-	be/mips/mips_new_nodes.h \
-	be/mips/mips_nodes_attr.h \
-	be/mips/mips_scheduler.h \
-	be/mips/mips_spec.pl \
-	be/mips/mips_transform.h \
-	be/mips/mips_util.h
-
-$(srcdir)/be/mips/gen_mips_new_nodes.c.inl $(srcdir)/be/mips/gen_mips_new_nodes.h: \
-		be/mips/mips_spec.pl be/scripts/generate_new_opcodes.pl
-	$(PERL) $(srcdir)/be/scripts/generate_new_opcodes.pl $(srcdir)/be/mips/mips_spec.pl $(srcdir)/be/mips
-
-$(srcdir)/be/mips/gen_mips_emitter.c $(srcdir)/be/mips/gen_mips_emitter.h: \
-		be/mips/mips_spec.pl be/scripts/generate_emitter.pl
-	$(PERL) $(srcdir)/be/scripts/generate_emitter.pl $(srcdir)/be/mips/mips_spec.pl $(srcdir)/be/mips
-
-$(srcdir)/be/mips/gen_mips_machine.c $(srcdir)/be/mips/gen_mips_machine.h: \
-		be/mips/mips_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_machine.pl $(srcdir)/be/mips/mips_spec.pl $(srcdir)/be/mips
-
-$(srcdir)/be/mips/gen_mips_regalloc_if.c $(srcdir)/be/mips/gen_mips_regalloc_if.h: \
-		be/mips/mips_spec.pl be/scripts/generate_machine.pl
-	$(PERL) $(srcdir)/be/scripts/generate_regalloc_if.pl $(srcdir)/be/mips/mips_spec.pl $(srcdir)/be/mips
-
 # sparc backend
 
 sparc_sources = \

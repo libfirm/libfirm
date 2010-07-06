@@ -157,7 +157,7 @@ AC_CONFIG_FILES([
 
 BACKENDS=""
 if test "$enable_backend" = yes; then
-	BACKENDS="arm ia32 mips sparc amd64"
+	BACKENDS="arm ia32 sparc amd64"
 fi
 AC_SUBST([BACKENDS])
 
