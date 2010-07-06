@@ -719,9 +719,6 @@ static void emit_arm_SwitchJmp(const ir_node *irn)
 	xfree(projs);
 }
 
-/************************************************************************/
-/* emit_be                                                              */
-/************************************************************************/
 
 static void arm_emit_entity(ir_entity *entity)
 {
@@ -876,9 +873,6 @@ static void emit_be_Return(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-/************************************************************************/
-/* emit                                                                 */
-/************************************************************************/
 
 static void emit_arm_Jmp(const ir_node *node)
 {
