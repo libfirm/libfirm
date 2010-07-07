@@ -23,7 +23,7 @@
 #ifndef _LC_OPTS_ENUM_T
 #define _LC_OPTS_ENUM_T
 
-#include <libcore/lc_opts.h>
+#include "lc_opts.h"
 
 #define _LC_OPT_DECL_ENUM(T, N)                 \
 typedef struct {                                \

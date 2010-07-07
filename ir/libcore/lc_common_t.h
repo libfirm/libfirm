@@ -29,12 +29,12 @@
 
 #define bcopy(src,dest,n) memcpy(dest,src,n)
 
-#include <libcore/lc_config.h>
+#include "lc_config.h"
 
 #define FUNCNAME     LC_FUNCNAME
 #define UNUSED(x)    LC_UNUSED(x)
 #define LONGLONG     long /* LC_LONGLONG */
-#define LONGDOUBLE 	 double /* LC_LONGDOUBLE */
+#define LONGDOUBLE   double /* LC_LONGDOUBLE */
 
 #ifdef LC_HAVE_C99
 #define HAVE_C99     LC_HAVE_C99

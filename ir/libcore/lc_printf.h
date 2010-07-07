@@ -28,18 +28,14 @@
 #ifndef _LIBCORE_XPRINTF_H
 #define _LIBCORE_XPRINTF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 #include <stdarg.h>
 #include <stdio.h>
 
 #include <obstack.h>
 
-#include <libcore/lc_config.h>
-#include <libcore/lc_appendable.h>
+#include "lc_config.h"
+#include "lc_appendable.h"
 
 typedef struct _lc_arg_occ_t {
 	int width;								/**< The width, or 0 if not given. */
@@ -122,9 +118,4 @@ int lc_vsnprintf(char *buf, size_t len, const char *fmt, va_list args);
 int lc_vfprintf(FILE *f, const char *fmt, va_list args);
 int lc_voprintf(struct obstack *obst, const char *fmt, va_list args);
 
-#ifdef __cplusplus
-}
 #endif
-
-
-#endif /* _LIBCORE_XPRINTF_H */

@@ -28,7 +28,7 @@
 
 #include <stdio.h>
 
-#include <libcore/lc_printf.h>
+#include "lc_printf.h"
 
 /**
  * The type of an option.
