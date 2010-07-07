@@ -57,11 +57,12 @@ arm_load_store_attr_t *get_arm_load_store_attr(ir_node *node);
 const arm_load_store_attr_t *get_arm_load_store_attr_const(const ir_node *node);
 
 arm_shifter_operand_t *get_arm_shifter_operand_attr(ir_node *node);
+const arm_shifter_operand_t *get_arm_shifter_operand_attr_const(const ir_node *node);
 
-/**
- * Returns the argument register requirements of an arm node.
- */
-const arch_register_req_t **get_arm_in_req_all(const ir_node *node);
+arm_cmp_attr_t *get_arm_cmp_attr(ir_node *node);
+const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node);
+
+void set_arm_in_req_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
  * Returns the argument register requirements of an arm node.
@@ -84,14 +85,14 @@ tarval *get_fpaConst_value(const ir_node *node);
 void set_fpaConst_value(ir_node *node, tarval *tv);
 
 /**
- * Returns the proj num
+ * Returns the compare kind
  */
-int get_arm_CondJmp_proj_num(const ir_node *node);
+pn_Cmp get_arm_CondJmp_pnc(const ir_node *node);
 
 /**
- * Sets the proj num
+ * Set compare type
  */
-void set_arm_CondJmp_proj_num(ir_node *node, int proj_num);
+void set_arm_CondJmp_pnc(ir_node *node, pn_Cmp pnc);
 
 ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
 							      int n_regs, ir_node **regs, ir_mode *mode);

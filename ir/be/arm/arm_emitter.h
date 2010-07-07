@@ -36,6 +36,7 @@
 #include "bearch_arm_t.h"
 
 void arm_emit_mode(const ir_node *node);
+void arm_emit_symconst(const ir_node *node);
 void arm_emit_source_register(const ir_node *node, int pos);
 void arm_emit_dest_register(const ir_node *node, int pos);
 void arm_emit_offset(const ir_node *node);

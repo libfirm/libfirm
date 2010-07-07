@@ -33,7 +33,7 @@
 /**
  * Possible ARM "shifter operand" addressing mode types.
  */
-typedef enum _arm_shift_modifier {
+typedef enum arm_shift_modifier_t {
 	ARM_SHF_INVALID,   /**< invalid shift */
 	ARM_SHF_REG,       /**< simple register operand */
 	ARM_SHF_IMM,       /**< immediate operand with implicit ROR */
@@ -46,7 +46,7 @@ typedef enum _arm_shift_modifier {
 	ARM_SHF_ROR_IMM,   /**< rotate right */
 	ARM_SHF_ROR_REG,   /**< rotate right */
 	ARM_SHF_RRX,       /**< rotate right through carry bits */
-} arm_shift_modifier;
+} arm_shift_modifier_t;
 
 /** fpa immediate bit */
 #define ARM_FPA_IMM  (1 << 3)   /**< fpa floating point immediate */
@@ -69,7 +69,7 @@ enum fpa_immediates {
 };
 
 /** Generic ARM node attributes. */
-typedef struct _arm_attr_t {
+typedef struct arm_attr_t {
 	except_attr      exc;                /**< the exception attribute. MUST be the first one. */
 
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
@@ -84,10 +84,10 @@ typedef struct _arm_attr_t {
  * "data processing operands" also called "shifter operand" addressing modes
  */
 typedef struct arm_shifter_operand_t {
-	arm_attr_t          base;
-	arm_shift_modifier  shift_modifier;
-	unsigned char       immediate_value;
-	unsigned char       shift_immediate;
+	arm_attr_t            base;
+	arm_shift_modifier_t  shift_modifier;
+	unsigned char         immediate_value;
+	unsigned char         shift_immediate;
 } arm_shifter_operand_t;
 
 typedef struct arm_cmp_attr_t {
@@ -117,13 +117,13 @@ typedef struct _arm_SymConst_attr_t {
 } arm_SymConst_attr_t;
 
 /** Attributes for a CondJmp */
-typedef struct _arm_CondJmp_attr_t {
+typedef struct arm_CondJmp_attr_t {
 	arm_attr_t  base;
-	int         proj_num;
+	pn_Cmp      pnc;
 } arm_CondJmp_attr_t;
 
 /** Attributes for a SwitchJmp */
-typedef struct _arm_SwitchJmp_attr_t {
+typedef struct arm_SwitchJmp_attr_t {
 	arm_attr_t  base;
 	int         n_projs;
 	long        default_proj_num;
@@ -136,7 +136,7 @@ typedef struct {
 } arm_CopyB_attr_t;
 
 /** Attributes for a fpaConst */
-typedef struct _arm_fpaConst_attr_t {
+typedef struct arm_fpaConst_attr_t {
 	arm_attr_t  base;
 	tarval     *tv;              /**< the tarval representing the FP const */
 } arm_fpaConst_attr_t;

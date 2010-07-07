@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include <limits.h>
+#include <stdbool.h>
 
 #include "xmalloc.h"
 #include "tv.h"
@@ -193,6 +194,16 @@ void arm_emit_mode(const ir_node *node)
 	arm_emit_fpa_postfix(mode);
 }
 
+void arm_emit_symconst(const ir_node *node)
+{
+	const arm_SymConst_attr_t *symconst = get_arm_SymConst_attr_const(node);
+	ir_entity                 *entity   = symconst->entity;
+
+	be_gas_emit_entity(entity);
+
+	/* TODO do something with offset */
+}
+
 void arm_emit_load_mode(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
@@ -223,7 +234,7 @@ void arm_emit_store_mode(const ir_node *node)
 }
 
 
-static void emit_shf_mod_name(arm_shift_modifier mod)
+static void emit_shf_mod_name(arm_shift_modifier_t mod)
 {
 	switch (mod) {
 	case ARM_SHF_ASR_REG:
@@ -298,12 +309,12 @@ void arm_emit_shifter_operand(const ir_node *node)
 /** An entry in the sym_or_tv set. */
 typedef struct sym_or_tv_t {
 	union {
-		ident  *id;          /**< An ident. */
-		tarval *tv;          /**< A tarval. */
+		ir_entity  *entity;  /**< An entity. */
+		tarval     *tv;      /**< A tarval. */
 		const void *generic; /**< For generic compare. */
 	} u;
 	unsigned label;      /**< the associated label. */
-	char is_ident;       /**< Non-zero if an ident is stored. */
+	bool     is_entity;  /**< true if an entity is stored. */
 } sym_or_tv_t;
 
 /**
@@ -324,9 +335,9 @@ static void emit_arm_SymConst(const ir_node *irn)
 	sym_or_tv_t key, *entry;
 	unsigned label;
 
-	key.u.id     = get_entity_ld_ident(attr->entity);
-	key.is_ident = 1;
-	key.label    = 0;
+	key.u.entity  = attr->entity;
+	key.is_entity = true;
+	key.label     = 0;
 	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
@@ -337,7 +348,7 @@ static void emit_arm_SymConst(const ir_node *irn)
 	/* load the symbol indirect */
 	be_emit_cstring("\tldr ");
 	arm_emit_dest_register(irn, 0);
-	be_emit_irprintf(", .L%u", label);
+	be_emit_irprintf(", %s%u", be_gas_get_private_prefix(), label);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -363,9 +374,9 @@ static void emit_arm_fpaConst(const ir_node *irn)
 	unsigned label;
 	ir_mode *mode;
 
-	key.u.tv     = get_fpaConst_value(irn);
-	key.is_ident = 0;
-	key.label    = 0;
+	key.u.tv      = get_fpaConst_value(irn);
+	key.is_entity = false;
+	key.label     = 0;
 	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
 	if (entry->label == 0) {
 		/* allocate a label */
@@ -380,7 +391,7 @@ static void emit_arm_fpaConst(const ir_node *irn)
 	be_emit_char(' ');
 
 	arm_emit_dest_register(irn, 0);
-	be_emit_irprintf(", .L%u", label);
+	be_emit_irprintf(", %s%u", be_gas_get_private_prefix(), label);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -422,7 +433,7 @@ static void emit_arm_B(const ir_node *irn)
 	const ir_node *next_block;
 	ir_node *op1 = get_irn_n(irn, 0);
 	const char *suffix;
-	int proj_num = get_arm_CondJmp_proj_num(irn);
+	pn_Cmp pnc = get_arm_CondJmp_pnc(irn);
 	const arm_cmp_attr_t *cmp_attr = get_irn_generic_attr_const(op1);
 	bool is_signed = !cmp_attr->is_unsigned;
 
@@ -439,7 +450,7 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	if (cmp_attr->ins_permuted) {
-		proj_num = get_mirrored_pnc(proj_num);
+		pnc = get_mirrored_pnc(pnc);
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -448,8 +459,8 @@ static void emit_arm_B(const ir_node *irn)
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 
-	assert(proj_num != pn_Cmp_False);
-	assert(proj_num != pn_Cmp_True);
+	assert(pnc != pn_Cmp_False);
+	assert(pnc != pn_Cmp_True);
 
 	if (get_cfop_target_block(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
@@ -457,10 +468,10 @@ static void emit_arm_B(const ir_node *irn)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		proj_num   = get_negated_pnc(proj_num, mode_Iu);
+		pnc        = get_negated_pnc(pnc, mode_Iu);
 	}
 
-	switch (proj_num) {
+	switch (pnc) {
 		case pn_Cmp_Eq:  suffix = "eq"; break;
 		case pn_Cmp_Lt:  suffix = is_signed ? "lt" : "lo"; break;
 		case pn_Cmp_Le:  suffix = is_signed ? "le" : "ls"; break;
@@ -1141,11 +1152,12 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 		be_emit_cstring("\t.align 2\n");
 
 		foreach_set(sym_or_tv, entry) {
-			be_emit_irprintf(".L%u:\n", entry->label);
+			be_emit_irprintf("%s%u:\n", be_gas_get_private_prefix(),
+			                 entry->label);
 
-			if (entry->is_ident) {
+			if (entry->is_entity) {
 				be_emit_cstring("\t.word\t");
-				be_emit_ident(entry->u.id);
+				be_gas_emit_entity(entry->u.entity);
 				be_emit_char('\n');
 				be_emit_write_line();
 			} else {

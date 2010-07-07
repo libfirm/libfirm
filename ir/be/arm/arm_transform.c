@@ -575,7 +575,7 @@ static ir_node *gen_Sub(ir_node *node)
 }
 
 static ir_node *make_shift(ir_node *node, match_flags_t flags,
-		arm_shift_modifier shift_modifier)
+		arm_shift_modifier_t shift_modifier)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_binop_left(node);
@@ -1107,7 +1107,7 @@ static ir_node *gen_SymConst(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *new_node;
 
-	new_node = new_bd_arm_SymConst(dbgi, block, entity);
+	new_node = new_bd_arm_SymConst(dbgi, block, entity, 0);
 	be_dep_on_frame(new_node);
 	return new_node;
 }
@@ -1153,7 +1153,7 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *new_node;
 
-	new_node = new_bd_arm_FrameAddr(dbgi, block, new_fp, ent);
+	new_node = new_bd_arm_FrameAddr(dbgi, block, new_fp, ent, 0);
 	return new_node;
 }
 
@@ -1367,10 +1367,9 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
  */
 static ir_node *gen_Proj_tls(ir_node *node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi  = NULL;
+	ir_node *block = be_transform_node(get_nodes_block(node));
 
-	return new_bd_arm_LdTls(dbgi, block, mode_Iu);
+	return new_bd_arm_LdTls(NULL, block);
 }
 
 /**

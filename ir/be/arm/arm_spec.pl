@@ -64,6 +64,7 @@ $state       = 32; # register represents a state
 	SM  => "${arch}_emit_store_mode(node);",
 	SO  => "${arch}_emit_shifter_operand(node);",
 	S0  => "${arch}_emit_source_register(node, 0);",
+	SC  => "${arch}_emit_symconst(node);",
 	S1  => "${arch}_emit_source_register(node, 1);",
 	S2  => "${arch}_emit_source_register(node, 2);",
 	S3  => "${arch}_emit_source_register(node, 3);",
@@ -81,7 +82,7 @@ $default_copy_attr = "arm_copy_attr";
 	arm_attr_t           => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_SymConst_attr_t  =>
 		"\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-		"\tinit_arm_SymConst_attributes(res, entity);",
+		"\tinit_arm_SymConst_attributes(res, entity, symconst_offset);",
 	arm_CondJmp_attr_t   => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_SwitchJmp_attr_t => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
 	arm_fpaConst_attr_t  => "\tinit_arm_attributes(res, flags, in_reqs, exec_units, n_res);",
@@ -120,12 +121,12 @@ my %unop_shifter_operand_constructors = (
 		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
 	},
 	reg_shift_reg => {
-		attr       => "arm_shift_modifier shift_modifier",
+		attr       => "arm_shift_modifier_t shift_modifier",
 		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, 0);",
 		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	},
 	reg_shift_imm => {
-		attr       => "arm_shift_modifier shift_modifier, unsigned shift_immediate",
+		attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, shift_immediate);",
 		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
 	},
@@ -144,13 +145,13 @@ my %binop_shifter_operand_constructors = (
 		ins        => [ "left", "right" ],
 	},
 	reg_shift_reg => {
-		attr       => "arm_shift_modifier shift_modifier",
+		attr       => "arm_shift_modifier_t shift_modifier",
 		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, 0);",
 		reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
 		ins        => [ "left", "right", "shift" ],
 	},
 	reg_shift_imm => {
-		attr       => "arm_shift_modifier shift_modifier, unsigned shift_immediate",
+		attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate",
 		custominit => "init_arm_shifter_operand(res, 0, shift_modifier, shift_immediate);",
 		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
 		ins        => [ "left", "right" ],
@@ -175,7 +176,7 @@ my %cmp_shifter_operand_constructors = (
 		ins        => [ "left", "right" ],
 	},
 	reg_shift_reg => {
-		attr       => "arm_shift_modifier shift_modifier, bool ins_permuted, bool is_unsigned",
+		attr       => "arm_shift_modifier_t shift_modifier, bool ins_permuted, bool is_unsigned",
 		custominit =>
 			"init_arm_shifter_operand(res, 0, shift_modifier, 0);\n".
 			"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
@@ -183,7 +184,7 @@ my %cmp_shifter_operand_constructors = (
 		ins        => [ "left", "right", "shift" ],
 	},
 	reg_shift_imm => {
-		attr       => "arm_shift_modifier shift_modifier, unsigned shift_immediate, bool ins_permuted, bool is_unsigned",
+		attr       => "arm_shift_modifier_t shift_modifier, unsigned shift_immediate, bool ins_permuted, bool is_unsigned",
 		custominit =>
 			"init_arm_shifter_operand(res, 0, shift_modifier, shift_immediate);\n".
 			"\tinit_arm_cmp_attr(res, ins_permuted, is_unsigned);",
@@ -330,7 +331,7 @@ CopyB => {
 FrameAddr => {
 	op_flags  => "c",
 	irn_flags => "R",
-	attr      => "ir_entity *entity",
+	attr      => "ir_entity *entity, int symconst_offset",
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "base" ],
 	attr_type => "arm_SymConst_attr_t",
@@ -340,7 +341,7 @@ FrameAddr => {
 SymConst => {
 	op_flags  => "c",
 	irn_flags => "R",
-	attr      => "ir_entity *entity",
+	attr      => "ir_entity *entity, int symconst_offset",
 	reg_req   => { out => [ "gp" ] },
 	attr_type => "arm_SymConst_attr_t",
 	mode      => $mode_gp,
@@ -367,9 +368,9 @@ B => {
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
-	attr      => "int proj_num",
+	attr      => "pn_Cmp pnc",
 	attr_type => "arm_CondJmp_attr_t",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
 },
 
 Jmp => {
@@ -542,8 +543,8 @@ fpaCmfBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
 	mode      => "mode_T",
-	attr      => "int proj_num",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	attr      => "pn_Cmp pnc",
+	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
@@ -552,8 +553,8 @@ fpaCnfBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
 	mode      => "mode_T",
-	attr      => "int proj_num",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	attr      => "int pnc",
+	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
@@ -562,8 +563,8 @@ fpaCmfeBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
 	mode      => "mode_T",
-	attr      => "int proj_num",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	attr      => "int pnc",
+	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
@@ -572,8 +573,8 @@ fpaCnfeBra => {
 	op_flags  => "L|X|Y",
 	state     => "pinned",
 	mode      => "mode_T",
-	attr      => "int proj_num",
-	init_attr => "\tset_arm_CondJmp_proj_num(res, proj_num);",
+	attr      => "int pnc",
+	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
 	attr_type => "arm_CondJmp_attr_t",
 },
@@ -624,6 +625,7 @@ SubSPandCopy => {
 LdTls => {
 	irn_flags => "R",
 	reg_req   => { out => [ "gp" ] },
+	mode      => $mode_gp,
 },
 
 

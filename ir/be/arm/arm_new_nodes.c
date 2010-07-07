@@ -28,6 +28,7 @@
 #include "config.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "irprog_t.h"
 #include "irgraph_t.h"
@@ -49,9 +50,6 @@
 #include "../beabi.h"
 #include "bearch_arm_t.h"
 
-/**
- * Return the fpa immediate from the encoding.
- */
 const char *arm_get_fpa_imm_name(long imm_value)
 {
 	static const char *fpa_imm[] = {
@@ -67,6 +65,28 @@ const char *arm_get_fpa_imm_name(long imm_value)
 	return fpa_imm[imm_value];
 }
 
+static bool arm_has_immediate(const ir_node *node)
+{
+	return is_arm_SymConst(node) || is_arm_FrameAddr(node);
+}
+
+static bool has_load_store_attr(const ir_node *node)
+{
+	return is_arm_Ldr(node) || is_arm_Str(node);
+}
+
+static bool has_shifter_operand(const ir_node *node)
+{
+	return is_arm_Add(node) || is_arm_And(node) || is_arm_Or(node)
+		|| is_arm_Eor(node) || is_arm_Bic(node) || is_arm_Sub(node)
+		|| is_arm_Rsb(node) || is_arm_Mov(node) || is_arm_Mvn(node)
+		|| is_arm_Cmp(node) || is_arm_Tst(node);
+}
+
+static bool has_cmp_attr(const ir_node *node)
+{
+	return is_arm_Cmp(node) || is_arm_Tst(node);
+}
 
 /**
  * Dumper interface for dumping arm nodes in vcg.
@@ -76,57 +96,99 @@ const char *arm_get_fpa_imm_name(long imm_value)
  */
 static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
-	ir_mode     *mode = NULL;
-	//arm_attr_t  *attr = get_arm_attr(n);
-
 	switch (reason) {
-		case dump_node_opcode_txt:
-			fprintf(F, "%s", get_irn_opname(n));
-			break;
+	case dump_node_opcode_txt:
+		fprintf(F, "%s", get_irn_opname(n));
 
-		case dump_node_mode_txt:
-			mode = get_irn_mode(n);
-
-			if (mode) {
-				fprintf(F, "[%s]", get_mode_name(mode));
+		if (arm_has_immediate(n)) {
+			const arm_SymConst_attr_t *attr	= get_arm_SymConst_attr_const(n);
+			if (attr->entity != NULL) {
+				fputc(' ', F);
+				fputs(get_entity_name(attr->entity), F);
 			}
-			else {
-				fprintf(F, "[?NOMODE?]");
+		}
+		break;
+
+	case dump_node_mode_txt:
+		/* mode isn't relevant in the backend */
+		break;
+
+	case dump_node_nodeattr_txt:
+		/* TODO: dump shift modifiers */
+		break;
+
+	case dump_node_info_txt:
+		arch_dump_reqs_and_registers(F, n);
+
+		if (has_load_store_attr(n)) {
+			const arm_load_store_attr_t *attr
+				= get_arm_load_store_attr_const(n);
+			ir_fprintf(F, "load_store_mode = %+F\n", attr->load_store_mode);
+			ir_fprintf(F, "entity = %+F\n", attr->entity);
+			fprintf(F, "offset = %ld\n", attr->offset);
+			fprintf(F, "is_frame_entity = %s\n",
+					attr->is_frame_entity ? "yes" : "no");
+			fprintf(F, "entity_sign = %s\n",
+					attr->entity_sign ? "yes" : "no");
+		}
+		if (has_shifter_operand(n)) {
+			const arm_shifter_operand_t *attr
+				= get_arm_shifter_operand_attr_const(n);
+			switch (attr->shift_modifier) {
+			case ARM_SHF_REG:
+				break;
+			case ARM_SHF_IMM:
+				fprintf(F, "modifier = imm %d ror %d\n",
+						attr->immediate_value, attr->shift_immediate);
+				break;
+			case ARM_SHF_ASR_IMM:
+				fprintf(F, "modifier = V >>s %d\n", attr->shift_immediate);
+				break;
+			case ARM_SHF_ASR_REG:
+				fprintf(F, "modifier = V >>s R\n");
+				break;
+			case ARM_SHF_LSL_IMM:
+				fprintf(F, "modifier = V << %d\n", attr->shift_immediate);
+				break;
+			case ARM_SHF_LSL_REG:
+				fprintf(F, "modifier = V << R\n");
+				break;
+			case ARM_SHF_LSR_IMM:
+				fprintf(F, "modifier = V >> %d\n", attr->shift_immediate);
+				break;
+			case ARM_SHF_LSR_REG:
+				fprintf(F, "modifier = V >> R\n");
+				break;
+			case ARM_SHF_ROR_IMM:
+				fprintf(F, "modifier = V ROR %d\n", attr->shift_immediate);
+				break;
+			case ARM_SHF_ROR_REG:
+				fprintf(F, "modifier = V ROR R\n");
+				break;
+			case ARM_SHF_RRX:
+				fprintf(F, "modifier = RRX\n");
+				break;
+			default:
+			case ARM_SHF_INVALID:
+				fprintf(F, "modifier = INVALID SHIFT MODIFIER\n");
+				break;
 			}
-			break;
-
-		case dump_node_nodeattr_txt:
-			/* TODO: dump shift modifiers */
-			break;
-
-		case dump_node_info_txt:
-			arch_dump_reqs_and_registers(F, n);
-
-			if (is_arm_CopyB(n)) {
-				//fprintf(F, "size = %lu\n", get_arm_imm_value(n));
-			} else {
-				/* TODO */
-#if 0
-				long v =  get_arm_imm_value(n);
-				if (ARM_GET_FPA_IMM(attr)) {
-					fprintf(F, "immediate float value = %s\n", arm_get_fpa_imm_name(v));
-				} else {
-					fprintf(F, "immediate value = %ld (0x%08lx)\n", v, v);
-				}
-#endif
+		}
+		if (has_cmp_attr(n)) {
+			const arm_cmp_attr_t *attr = get_arm_cmp_attr_const(n);
+			fprintf(F, "cmp_attr =");
+			if (attr->is_unsigned) {
+				fprintf(F, " unsigned");
 			}
-
-#if 0
-			if (is_arm_CmpBra(n) && get_arm_CondJmp_proj_num(n) >= 0) {
-				fprintf(F, "proj_num = (%d)\n", get_arm_CondJmp_proj_num(n));
+			if (attr->ins_permuted) {
+				fprintf(F, " inputs swapped");
 			}
-#endif
-			break;
+			fprintf(F, "\n");
+		}
+		break;
 	}
 }
 
-
-/* Returns the attributes of a generic Arm node. */
 arm_attr_t *get_arm_attr(ir_node *node)
 {
 	assert(is_arm_irn(node) && "need arm node to get attributes");
@@ -139,22 +201,25 @@ const arm_attr_t *get_arm_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-/**
- * Returns the attributes of an ARM SymConst node.
- */
+static bool has_symconst_attr(const ir_node *node)
+{
+	return is_arm_SymConst(node) || is_arm_FrameAddr(node);
+}
+
 arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node)
 {
-	assert(is_arm_SymConst(node) || is_arm_FrameAddr(node));
+	assert(has_symconst_attr(node));
 	return get_irn_generic_attr(node);
 }
 
 const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node)
 {
-	assert(is_arm_SymConst(node) || is_arm_FrameAddr(node));
+	assert(has_symconst_attr(node));
 	return get_irn_generic_attr_const(node);
 }
 
-static const arm_fpaConst_attr_t *get_arm_fpaConst_attr_const(const ir_node *node)
+static const arm_fpaConst_attr_t *get_arm_fpaConst_attr_const(
+		const ir_node *node)
 {
 	const arm_attr_t          *attr     = get_arm_attr_const(node);
 	const arm_fpaConst_attr_t *fpa_attr = CONST_CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
@@ -170,7 +235,6 @@ static arm_fpaConst_attr_t *get_arm_fpaConst_attr(ir_node *node)
 	return fpa_attr;
 }
 
-/* Returns the attributes of a CondJmp node. */
 arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node)
 {
 	assert(is_arm_B(node));
@@ -183,7 +247,6 @@ const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-/* Returns the attributes of a SwitchJmp node. */
 arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node)
 {
 	assert(is_arm_SwitchJmp(node));
@@ -196,99 +259,66 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-/**
- * Returns the argument register requirements of a arm node.
- */
-const arch_register_req_t **get_arm_in_req_all(const ir_node *node)
+void set_arm_in_req_all(ir_node *node, const arch_register_req_t **reqs)
 {
-	const arm_attr_t *attr = get_arm_attr_const(node);
-	return attr->in_req;
+	arm_attr_t *attr = get_arm_attr(node);
+	attr->in_req = reqs;
 }
 
-/**
- * Returns the argument register requirement at position pos of an arm node.
- */
 const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos)
 {
 	const arm_attr_t *attr = get_arm_attr_const(node);
 	return attr->in_req[pos];
 }
 
-/**
- * Sets the IN register requirements at position pos.
- */
 void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos)
 {
 	arm_attr_t *attr  = get_arm_attr(node);
 	attr->in_req[pos] = req;
 }
 
-/**
- * Returns the fpaConst value
- */
 tarval *get_fpaConst_value(const ir_node *node)
 {
 	const arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr_const(node);
 	return attr->tv;
 }
 
-/**
- * Sets the tarval value
- */
 void set_fpaConst_value(ir_node *node, tarval *tv)
 {
 	arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr(node);
 	attr->tv = tv;
 }
 
-/**
- * Returns the proj num
- */
-int get_arm_CondJmp_proj_num(const ir_node *node)
+pn_Cmp get_arm_CondJmp_pnc(const ir_node *node)
 {
 	const arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr_const(node);
-	return attr->proj_num;
+	return attr->pnc;
 }
 
-/**
- * Sets the proj num
- */
-void set_arm_CondJmp_proj_num(ir_node *node, int proj_num)
+void set_arm_CondJmp_pnc(ir_node *node, pn_Cmp pnc)
 {
 	arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr(node);
-	attr->proj_num   = proj_num;
+	attr->pnc = pnc;
 }
 
-/**
- * Returns the number of projs of a SwitchJmp.
- */
 int get_arm_SwitchJmp_n_projs(const ir_node *node)
 {
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
 	return attr->n_projs;
 }
 
-/**
- * Sets the number of projs.
- */
 void set_arm_SwitchJmp_n_projs(ir_node *node, int n_projs)
 {
 	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
 	attr->n_projs = n_projs;
 }
 
-/**
- * Returns the default_proj_num.
- */
 long get_arm_SwitchJmp_default_proj_num(const ir_node *node)
 {
 	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(node);
 	return attr->default_proj_num;
 }
 
-/**
- * Sets the default_proj_num.
- */
 void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num)
 {
 	arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr(node);
@@ -331,7 +361,7 @@ static void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 }
 
 static void init_arm_shifter_operand(ir_node *res, unsigned immediate_value,
-                                     arm_shift_modifier shift_modifier,
+                                     arm_shift_modifier_t shift_modifier,
                                      unsigned shift_immediate)
 {
 	arm_shifter_operand_t *attr = get_irn_generic_attr(res);
@@ -347,11 +377,12 @@ static void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
 	attr->is_unsigned  = is_unsigned;
 }
 
-static void init_arm_SymConst_attributes(ir_node *res, ir_entity *entity)
+static void init_arm_SymConst_attributes(ir_node *res, ir_entity *entity,
+                                         int symconst_offset)
 {
 	arm_SymConst_attr_t *attr = get_irn_generic_attr(res);
 	attr->entity    = entity;
-	attr->fp_offset = 0;
+	attr->fp_offset = symconst_offset;
 }
 
 static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
@@ -440,6 +471,22 @@ arm_shifter_operand_t *get_arm_shifter_operand_attr(ir_node *node)
 	return (arm_shifter_operand_t*) get_irn_generic_attr(node);
 }
 
+const arm_shifter_operand_t *get_arm_shifter_operand_attr_const(
+		const ir_node *node)
+{
+	return (const arm_shifter_operand_t*) get_irn_generic_attr_const(node);
+}
+
+arm_cmp_attr_t *get_arm_cmp_attr(ir_node *node)
+{
+	return (arm_cmp_attr_t*) get_irn_generic_attr(node);
+}
+
+const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node)
+{
+	return (const arm_cmp_attr_t*) get_irn_generic_attr_const(node);
+}
+
 static int cmp_attr_arm_load_store(ir_node *a, ir_node *b)
 {
 	const arm_load_store_attr_t *attr_a;
@@ -509,7 +556,6 @@ static void arm_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 }
-
 
 
 /* Include the generated constructor functions */
