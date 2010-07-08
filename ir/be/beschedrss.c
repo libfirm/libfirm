@@ -597,9 +597,9 @@ static void debug_vcg_dump_dvg_pkiller(rss_t *rss, dvg_t *dvg)
 /**
  * In case there is no rss information for irn, initialize it.
  */
-static void *init_rss_irn(ir_phase *ph, const ir_node *irn, void *old)
+static void *init_rss_irn(ir_phase *ph, const ir_node *irn)
 {
-	rss_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
+	rss_irn_t *res = phase_alloc(ph, sizeof(res[0]));
 
 	res->descendant_list = plist_obstack_new(phase_obst(ph));
 	res->descendants     = NULL;
@@ -760,7 +760,6 @@ static void collect_node_info(rss_t *rss, ir_node *irn)
 	/* check if node info is already available */
 	if (rss_irn->handled)
 		return;
-		//phase_reinit_single_irn_data(&rss->ph, irn);
 
 	DBG((rss->dbg, LEVEL_1, "\tcomputing consumers of %+F:\n", irn));
 

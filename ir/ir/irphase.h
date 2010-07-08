@@ -29,7 +29,9 @@
 #include "firm_types.h"
 
 typedef struct ir_phase ir_phase;
-typedef void *(phase_irn_init)(ir_phase *phase, const ir_node *irn, void *old);
+typedef void *(phase_irn_init)(ir_phase *phase, const ir_node *irn);
+typedef void *(phase_irn_reinit)(ir_phase *phase, const ir_node *irn,
+                                 void *old_data);
 
 /**
  * Allocate and initialize a new phase object
@@ -37,6 +39,7 @@ typedef void *(phase_irn_init)(ir_phase *phase, const ir_node *irn, void *old);
  * @param irg           The graph the phase will run on.
  * @param irn_data_init A callback that is called to initialize newly created
  *                      node data. Must be non-null. You could use
+ *                      phase_irn_init_default
  * @return              A new phase object.
  */
 ir_phase *new_phase(ir_graph *irg, phase_irn_init *data_init);
@@ -60,21 +63,15 @@ void phase_deinit(ir_phase *phase);
 void phase_free(ir_phase *phase);
 
 /**
- * Re-initialize the irn data for all nodes in the node => data map using the given callback.
+ * Re-initialize the irn data for all nodes in the node => data map using the
+ * given callback.
+ * This is mainly used for reusing already allocated memory which could speed
+ * things up a little bit.
  *
- * @param phase  The phase.
+ * @param phase   The phase.
+ * @param called  to reinitialize phase data.
  */
-void phase_reinit_irn_data(ir_phase *phase);
-
-/**
- * Re-initialize the irn data for all nodes having phase data in the given block.
- *
- * @param phase  The phase.
- * @param block  The block.
- *
- * @note Beware: iterates over all nodes in the graph to find the nodes of the given block.
- */
-void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block);
+void phase_reinit_irn_data(ir_phase *phase, phase_irn_reinit *data_reinit);
 
 /**
  * A default node initializer.

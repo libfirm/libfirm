@@ -34,11 +34,10 @@
 #include "irgraph_t.h"
 #include "irphase_t.h"
 
-void *phase_irn_init_default(ir_phase *ph, const ir_node *irn, void *old)
+void *phase_irn_init_default(ir_phase *ph, const ir_node *irn)
 {
 	(void) ph;
 	(void) irn;
-	(void) old;
 	return NULL;
 }
 
@@ -75,7 +74,7 @@ void phase_free(ir_phase *phase)
 
 phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)
 {
-	int i, n;
+	unsigned i, n;
 	memset(stat, 0, sizeof(stat[0]));
 
 	stat->node_map_bytes = phase->n_data_ptr * sizeof(phase->data_ptr[0]);
@@ -89,31 +88,19 @@ phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)
 	return stat;
 }
 
-void phase_reinit_irn_data(ir_phase *phase)
+void phase_reinit_irn_data(ir_phase *phase, phase_irn_reinit *data_reinit)
 {
-	int i, n;
+	unsigned i, n;
+	ir_graph *irg;
 
 	if (! phase->data_init)
 		return;
 
-	for (i = 0, n = phase->n_data_ptr; i < n; ++i) {
-		if (phase->data_ptr[i])
-			phase->data_init(phase, get_idx_irn(phase->irg, i), phase->data_ptr[i]);
-	}
-}
-
-void phase_reinit_block_irn_data(ir_phase *phase, ir_node *block)
-{
-	int i, n;
-
-	if (! phase->data_init)
-		return;
-
+	irg = phase->irg;
 	for (i = 0, n = phase->n_data_ptr; i < n; ++i) {
 		if (phase->data_ptr[i]) {
-			ir_node *irn = get_idx_irn(phase->irg, i);
-			if (! is_Block(irn) && get_nodes_block(irn) == block)
-				phase->data_init(phase, irn, phase->data_ptr[i]);
+			ir_node *node = get_idx_irn(irg, i);
+			data_reinit(phase, node, phase->data_ptr[i]);
 		}
 	}
 }

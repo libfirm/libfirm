@@ -39,7 +39,7 @@ struct ir_phase {
 	void           **data_ptr;      /**< Map node indexes to irn data on the obstack. */
 	ir_graph        *irg;           /**< The irg this phase will we applied to. */
 	phase_irn_init  *data_init;     /**< A callback that is called to initialize newly created node data. */
-	size_t           n_data_ptr;    /**< The length of the data_ptr array. */
+	unsigned         n_data_ptr;    /**< The length of the data_ptr array. */
 	struct obstack   obst;          /**< The obstack where the irn phase data will be stored on. */
 	void            *priv;          /**< Some pointer private to the user of the phase. */
 };
@@ -69,7 +69,8 @@ phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat);
  * @param phase  The phase.
  * @param irn    The irn.
  */
-static inline void phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
+static inline void phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn,
+                                                phase_irn_reinit *reinit)
 {
 	int idx;
 
@@ -78,7 +79,7 @@ static inline void phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn)
 
 	idx = get_irn_idx(irn);
 	if (phase->data_ptr[idx])
-		phase->data_init(phase, irn, phase->data_ptr[idx]);
+		reinit(phase, irn, phase->data_ptr[idx]);
 }
 
 /**
@@ -220,8 +221,7 @@ static inline void *phase_get_or_set_irn_data(ir_phase *ph, const ir_node *irn)
 		phase_irn_init *data_init = ph->data_init;
 
 		/* call the node data structure allocator/constructor. */
-		res = ph->data_ptr[idx] = data_init(ph, irn, NULL);
-
+		res = ph->data_ptr[idx] = data_init(ph, irn);
 	}
 	return res;
 }
@@ -250,7 +250,6 @@ static inline void *phase_set_irn_data(ir_phase *ph, const ir_node *irn,
 	return res;
 }
 
-
 /**
  * convenience function that returns phase information attached to a node
  */
@@ -264,7 +263,8 @@ static inline void *get_irn_phase_info(const ir_node *irn, ir_phase_id id)
 /**
  * Get or set information a phase holds about a node.
  * If the given phase does not hold information of the node,
- * the information structure will be created, initialized (see the data_init function of ir_phase), and returned.
+ * the information structure will be created, initialized (see the data_init
+ * function of ir_phase), and returned.
  * @param irn The node.
  * @param id  The ID of the phase.
  */
@@ -275,14 +275,12 @@ static inline void *get_or_set_irn_phase_info(const ir_node *irn, ir_phase_id id
 	return phase_get_or_set_irn_data(ph, irn);
 }
 
-static inline void *set_irn_phase_info(const ir_node *irn, ir_phase_id id, void *data)
+static inline void *set_irn_phase_info(const ir_node *irn, ir_phase_id id,
+                                       void *data)
 {
 	const ir_graph *irg = get_irn_irg(irn);
 	ir_phase *ph  = irg_get_phase(irg, id);
 	return phase_set_irn_data(ph, irn, data);
 }
-
-
-
 
 #endif

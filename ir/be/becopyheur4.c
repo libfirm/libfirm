@@ -368,59 +368,57 @@ static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node)
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn, void *old)
+static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn)
 {
-	co_mst_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
+	co_mst_irn_t *res = phase_alloc(ph, sizeof(res[0]));
 	co_mst_env_t *env = ph->priv;
 
-	if (!old) {
-		const arch_register_req_t *req;
-		neighbours_iter_t nodes_it;
-		ir_node  *neigh;
-		unsigned len;
+	const arch_register_req_t *req;
+	neighbours_iter_t nodes_it;
+	ir_node  *neigh;
+	unsigned len;
 
-		res->irn           = irn;
-		res->chunk         = NULL;
-		res->fixed         = 0;
-		res->tmp_col       = -1;
-		res->int_neighs    = NULL;
-		res->int_aff_neigh = 0;
-		res->col           = arch_register_get_index(arch_get_irn_register(irn));
-		res->init_col      = res->col;
-		INIT_LIST_HEAD(&res->list);
+	res->irn           = irn;
+	res->chunk         = NULL;
+	res->fixed         = 0;
+	res->tmp_col       = -1;
+	res->int_neighs    = NULL;
+	res->int_aff_neigh = 0;
+	res->col           = arch_register_get_index(arch_get_irn_register(irn));
+	res->init_col      = res->col;
+	INIT_LIST_HEAD(&res->list);
 
-		DB((dbg, LEVEL_4, "Creating phase info for %+F\n", irn));
+	DB((dbg, LEVEL_4, "Creating phase info for %+F\n", irn));
 
-		/* set admissible registers */
-		res->adm_colors = bitset_obstack_alloc(phase_obst(ph), env->n_regs);
+	/* set admissible registers */
+	res->adm_colors = bitset_obstack_alloc(phase_obst(ph), env->n_regs);
 
-		/* Exclude colors not assignable to the irn */
-		req = arch_get_register_req_out(irn);
-		if (arch_register_req_is(req, limited))
-			rbitset_copy_to_bitset(req->limited, res->adm_colors);
-		else
-			bitset_set_all(res->adm_colors);
+	/* Exclude colors not assignable to the irn */
+	req = arch_get_register_req_out(irn);
+	if (arch_register_req_is(req, limited))
+		rbitset_copy_to_bitset(req->limited, res->adm_colors);
+	else
+		bitset_set_all(res->adm_colors);
 
-		/* exclude global ignore registers as well */
-		bitset_andnot(res->adm_colors, env->ignore_regs);
+	/* exclude global ignore registers as well */
+	bitset_andnot(res->adm_colors, env->ignore_regs);
 
-		/* compute the constraint factor */
-		res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
+	/* compute the constraint factor */
+	res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
 
-		/* set the number of interfering affinity neighbours to -1, they are calculated later */
-		res->int_aff_neigh = -1;
+	/* set the number of interfering affinity neighbours to -1, they are calculated later */
+	res->int_aff_neigh = -1;
 
-		/* build list of interfering neighbours */
-		len = 0;
-		be_ifg_foreach_neighbour(env->ifg, &nodes_it, irn, neigh) {
-			if (!arch_irn_is_ignore(neigh)) {
-				obstack_ptr_grow(phase_obst(ph), neigh);
-				++len;
-			}
+	/* build list of interfering neighbours */
+	len = 0;
+	be_ifg_foreach_neighbour(env->ifg, &nodes_it, irn, neigh) {
+		if (!arch_irn_is_ignore(neigh)) {
+			obstack_ptr_grow(phase_obst(ph), neigh);
+			++len;
 		}
-		res->int_neighs = obstack_finish(phase_obst(ph));
-		res->n_neighs   = len;
 	}
+	res->int_neighs = obstack_finish(phase_obst(ph));
+	res->n_neighs   = len;
 	return res;
 }
 

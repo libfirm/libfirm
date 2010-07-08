@@ -498,14 +498,13 @@ static void vrp_first_pass(ir_node *n, void *e)
 	}
 }
 
-static void *vrp_init_node(ir_phase *phase, const ir_node *n, void *old)
+static void *vrp_init_node(ir_phase *phase, const ir_node *n)
 {
 	ir_mode *mode;
 	vrp_attr *vrp;
 	struct vrp_env_t *env = phase->priv;
 
 	DBG((env->dbg, LEVEL_2, "initialized node nr: %d\n", get_irn_node_nr(n)));
-	assert(old==NULL && "init called for node already initialized");
 	vrp = phase_alloc(phase, sizeof(vrp_attr));
 
 	memset(vrp, 0, sizeof(vrp_attr));

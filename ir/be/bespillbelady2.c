@@ -334,21 +334,13 @@ typedef struct _next_use_t {
 								 or NULL. */
 } next_use_t;
 
-static void *next_use_init(ir_phase *phase, const ir_node *irn, void *old)
-{
-	(void) phase;
-	(void) irn;
-	(void) old;
-	return NULL;
-}
-
 static void build_next_uses(block_info_t *bi)
 {
 	ir_node *irn;
 
 	sched_renumber(bi->bl);
 
-	phase_init(&bi->next_uses, bi->bel->irg, next_use_init);
+	phase_init(&bi->next_uses, bi->bel->irg, phase_irn_init_default);
 	sched_foreach_reverse(bi->bl, irn) {
 		int i;
 

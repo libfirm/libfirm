@@ -275,37 +275,37 @@ static int cmp_ilpsched_irn(const void *a, const void *b)
 		return QSORT_CMP(n1_a->sched_point, n2_a->sched_point);
 }
 
+static void *reinit_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old)
+{
+	be_ilpsched_irn_t *res = old;
+
+	/* if we have already some data: check for reinitialization */
+	if (! is_Block(irn)) {
+		ilpsched_node_attr_t *na = get_ilpsched_node_attr(res);
+
+		if (! na->transitive_block_nodes) {
+			ir_node               *block      = get_nodes_block(irn);
+			be_ilpsched_irn_t     *block_node = phase_get_or_set_irn_data(ph, block);
+			ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
+
+			/* we are called after the block indices have been build: create bitset */
+			na->transitive_block_nodes = bitset_obstack_alloc(phase_obst(ph), ba->block_last_idx);
+		} else {
+			/* we are called from reinit block data: clear the bitset */
+			bitset_clear_all(na->transitive_block_nodes);
+			na->visit_idx    = 0;
+			na->alap_changed = 1;
+		}
+	}
+	return res;
+}
+
 /**
  * In case there is no phase information for irn, initialize it.
  */
-static void *init_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old)
+static void *init_ilpsched_irn(ir_phase *phase, const ir_node *irn)
 {
-	be_ilpsched_irn_t *res = old ? old : phase_alloc(ph, sizeof(res[0]));
-
-	if (res == old) {
-		/* if we have already some data: check for reinitialization */
-
-		if (! is_Block(irn)) {
-			ilpsched_node_attr_t *na = get_ilpsched_node_attr(res);
-
-			if (! na->transitive_block_nodes) {
-				ir_node               *block      = get_nodes_block(irn);
-				be_ilpsched_irn_t     *block_node = phase_get_or_set_irn_data(ph, block);
-				ilpsched_block_attr_t *ba         = get_ilpsched_block_attr(block_node);
-
-				/* we are called after the block indices have been build: create bitset */
-				na->transitive_block_nodes = bitset_obstack_alloc(phase_obst(ph), ba->block_last_idx);
-			}
-			else {
-				/* we are called from reinit block data: clear the bitset */
-				bitset_clear_all(na->transitive_block_nodes);
-				na->visit_idx    = 0;
-				na->alap_changed = 1;
-			}
-		}
-		return old;
-	}
-
+	be_ilpsched_irn_t *res = phase_alloc(phase, sizeof(res[0]));
 	res->irn = irn;
 
 	/* set ilpsched irn attributes (either block or irn) */
@@ -318,8 +318,7 @@ static void *init_ilpsched_irn(ir_phase *ph, const ir_node *irn, void *old)
 		ba->head_ilp_nodes      = NULL;
 		ba->livein_nodes        = new_pset(cmp_live_in_nodes, 16);
 		ba->max_steps           = 0;
-	}
-	else {
+	} else {
 		ilpsched_node_attr_t *na = get_ilpsched_node_attr(res);
 		memset(na, 0, sizeof(*na));
 	}
@@ -2025,7 +2024,7 @@ void be_ilp_sched(ir_graph *irg)
 		now we can allocate the bitsets (size depends on block indices)
 		for all nodes.
 	*/
-	phase_reinit_irn_data(&env.ph);
+	phase_reinit_irn_data(&env.ph, reinit_ilpsched_irn);
 
 	/* Collect all root nodes (having no user in their block) and calculate ASAP. */
 	irg_walk_in_or_dep_blkwise_graph(env.irg, collect_alap_root_nodes, calculate_irn_asap, &env);

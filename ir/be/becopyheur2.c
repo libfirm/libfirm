@@ -180,12 +180,12 @@ typedef struct {
 #define get_co2_irn(co2, irn)         ((co2_irn_t *)       phase_get_or_set_irn_data(&co2->ph, irn))
 #define get_co2_cloud_irn(co2, irn)   ((co2_cloud_irn_t *) phase_get_or_set_irn_data(&co2->ph, irn))
 
-static void *co2_irn_init(ir_phase *ph, const ir_node *irn, void *data)
+static void *co2_irn_init(ir_phase *ph, const ir_node *irn)
 {
 	co2_t *env         = (co2_t *) ph;
 	affinity_node_t *a = get_affinity_info(env->co, irn);
 	size_t size        = a ? sizeof(co2_cloud_irn_t) : sizeof(co2_irn_t);
-	co2_irn_t *ci      = data ? data : phase_alloc(ph, size);
+	co2_irn_t *ci      = phase_alloc(ph, size);
 
 	memset(ci, 0, size);
 	INIT_LIST_HEAD(&ci->changed_list);

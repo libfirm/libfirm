@@ -85,7 +85,7 @@ struct _lv_chk_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
-static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
+static void *init_block_data(ir_phase *ph, const ir_node *irn)
 {
 	lv_chk_t *lv      = firm_container_of(ph, lv_chk_t, ph);
 	bl_info_t *bi     = phase_alloc(ph, sizeof(bi[0]));
@@ -95,7 +95,6 @@ static void *init_block_data(ir_phase *ph, const ir_node *irn, void *old)
 	bi->red_reachable = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
 	bi->be_tgt_reach  = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
 	bi->be_tgt_calc   = 0;
-	(void) old;
 	return bi;
 }
 

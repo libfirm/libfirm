@@ -2207,17 +2207,6 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 }  /* do_dfs */
 
 /**
- * Initialize new phase data. We do this always explicit, so return NULL here
- */
-static void *init_loop_data(ir_phase *ph, const ir_node *irn, void *data)
-{
-	(void)ph;
-	(void)irn;
-	(void)data;
-	return NULL;
-}  /* init_loop_data */
-
-/**
  * Optimize Loads/Stores in loops.
  *
  * @param irg  the graph
@@ -2231,7 +2220,7 @@ static int optimize_loops(ir_graph *irg)
 	env.nextDFSnum    = 0;
 	env.POnum         = 0;
 	env.changes       = 0;
-	phase_init(&env.ph, irg, init_loop_data);
+	phase_init(&env.ph, irg, phase_irn_init_default);
 
 	/* calculate the SCC's and drive loop optimization. */
 	do_dfs(irg, &env);
