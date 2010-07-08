@@ -583,31 +583,26 @@ static void amd64_pretransform_node(void)
 //	nomem = get_irg_no_mem(current_ir_graph);
 }
 
-static void set_transformer(ir_op *op, be_transform_func amd64_transform_func)
-{
-	op->ops.generic = (op_func)amd64_transform_func;
-}
-
 static void amd64_register_transformers(void)
 {
-	clear_irp_opcodes_generic_func();
+	be_start_transform_setup();
 
-	set_transformer(op_Const,        gen_Const);
-	set_transformer(op_SymConst,     gen_SymConst);
-	set_transformer(op_Add,          gen_Add);
-	set_transformer(op_Sub,          gen_Sub);
-	set_transformer(op_Mul,          gen_Mul);
-	set_transformer(op_be_Call,      gen_be_Call);
-	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
-	set_transformer(op_Conv,         gen_Conv);
-	set_transformer(op_Jmp,          gen_Jmp);
-	set_transformer(op_Cmp,          gen_Cmp);
-	set_transformer(op_Cond,         gen_Cond);
-	set_transformer(op_Phi,          gen_Phi);
-	set_transformer(op_Load,         gen_Load);
-	set_transformer(op_Store,        gen_Store);
-	set_transformer(op_Proj,         gen_Proj);
-	set_transformer(op_Minus,        gen_Minus);
+	be_set_transform_function(op_Const,        gen_Const);
+	be_set_transform_function(op_SymConst,     gen_SymConst);
+	be_set_transform_function(op_Add,          gen_Add);
+	be_set_transform_function(op_Sub,          gen_Sub);
+	be_set_transform_function(op_Mul,          gen_Mul);
+	be_set_transform_function(op_be_Call,      gen_be_Call);
+	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
+	be_set_transform_function(op_Conv,         gen_Conv);
+	be_set_transform_function(op_Jmp,          gen_Jmp);
+	be_set_transform_function(op_Cmp,          gen_Cmp);
+	be_set_transform_function(op_Cond,         gen_Cond);
+	be_set_transform_function(op_Phi,          gen_Phi);
+	be_set_transform_function(op_Load,         gen_Load);
+	be_set_transform_function(op_Store,        gen_Store);
+	be_set_transform_function(op_Proj,         gen_Proj);
+	be_set_transform_function(op_Minus,        gen_Minus);
 }
 
 

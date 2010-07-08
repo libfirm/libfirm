@@ -64,6 +64,13 @@ void be_dep_on_frame(ir_node *node);
  */
 ir_node *be_duplicate_node(ir_node *node);
 
+/** clear transform functions and sets some virtual nodes like
+ * Start, Sync, Pin to the duplication transformer */
+void be_start_transform_setup(void);
+
+/** register a transform function for a specific node type */
+void be_set_transform_function(ir_op *op, be_transform_func func);
+
 /**
  * Associate an old node with a transformed node. Uses link field.
  */

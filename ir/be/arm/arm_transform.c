@@ -1502,78 +1502,43 @@ static ir_node *gen_Phi(ir_node *node)
 }
 
 /**
- * the BAD transformer.
- */
-static ir_node *bad_transform(ir_node *irn)
-{
-	panic("ARM backend: unexpected node %+F", irn);
-}
-
-/**
- * Set a node emitter. Make it a bit more type safe.
- */
-static void set_transformer(ir_op *op, be_transform_func arm_transform_func)
-{
-	op->ops.generic = (op_func)arm_transform_func;
-}
-
-/**
  * Enters all transform functions into the generic pointer
  */
 static void arm_register_transformers(void)
 {
-	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	be_start_transform_setup();
 
-	set_transformer(op_Abs,          gen_Abs);
-	set_transformer(op_Add,          gen_Add);
-	set_transformer(op_And,          gen_And);
-	set_transformer(op_be_AddSP,     gen_be_AddSP);
-	set_transformer(op_be_Call,      gen_be_Call);
-	set_transformer(op_be_Copy,      gen_be_Copy);
-	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
-	set_transformer(op_be_SubSP,     gen_be_SubSP);
-	set_transformer(op_Cmp,          gen_Cmp);
-	set_transformer(op_Cond,         gen_Cond);
-	set_transformer(op_Const,        gen_Const);
-	set_transformer(op_Conv,         gen_Conv);
-	set_transformer(op_CopyB,        gen_CopyB);
-	set_transformer(op_Eor,          gen_Eor);
-	set_transformer(op_Jmp,          gen_Jmp);
-	set_transformer(op_Load,         gen_Load);
-	set_transformer(op_Minus,        gen_Minus);
-	set_transformer(op_Mul,          gen_Mul);
-	set_transformer(op_Not,          gen_Not);
-	set_transformer(op_Or,           gen_Or);
-	set_transformer(op_Phi,          gen_Phi);
-	set_transformer(op_Proj,         gen_Proj);
-	set_transformer(op_Quot,         gen_Quot);
-	set_transformer(op_Rotl,         gen_Rotl);
-	set_transformer(op_Shl,          gen_Shl);
-	set_transformer(op_Shr,          gen_Shr);
-	set_transformer(op_Shrs,         gen_Shrs);
-	set_transformer(op_Store,        gen_Store);
-	set_transformer(op_Sub,          gen_Sub);
-	set_transformer(op_SymConst,     gen_SymConst);
-	set_transformer(op_Unknown,      gen_Unknown);
-
-	set_transformer(op_ASM,       bad_transform);
-	set_transformer(op_Builtin,   bad_transform);
-	set_transformer(op_CallBegin, bad_transform);
-	set_transformer(op_Cast,      bad_transform);
-	set_transformer(op_Confirm,   bad_transform);
-	set_transformer(op_DivMod,    bad_transform);
-	set_transformer(op_EndExcept, bad_transform);
-	set_transformer(op_EndReg,    bad_transform);
-	set_transformer(op_Filter,    bad_transform);
-	set_transformer(op_Free,      bad_transform);
-	set_transformer(op_Id,        bad_transform);
-	set_transformer(op_InstOf,    bad_transform);
-	set_transformer(op_Mulh,      bad_transform);
-	set_transformer(op_Mux,       bad_transform);
-	set_transformer(op_Raise,     bad_transform);
-	set_transformer(op_Sel,       bad_transform);
-	set_transformer(op_Tuple,     bad_transform);
+	be_set_transform_function(op_Abs,          gen_Abs);
+	be_set_transform_function(op_Add,          gen_Add);
+	be_set_transform_function(op_And,          gen_And);
+	be_set_transform_function(op_be_AddSP,     gen_be_AddSP);
+	be_set_transform_function(op_be_Call,      gen_be_Call);
+	be_set_transform_function(op_be_Copy,      gen_be_Copy);
+	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
+	be_set_transform_function(op_be_SubSP,     gen_be_SubSP);
+	be_set_transform_function(op_Cmp,          gen_Cmp);
+	be_set_transform_function(op_Cond,         gen_Cond);
+	be_set_transform_function(op_Const,        gen_Const);
+	be_set_transform_function(op_Conv,         gen_Conv);
+	be_set_transform_function(op_CopyB,        gen_CopyB);
+	be_set_transform_function(op_Eor,          gen_Eor);
+	be_set_transform_function(op_Jmp,          gen_Jmp);
+	be_set_transform_function(op_Load,         gen_Load);
+	be_set_transform_function(op_Minus,        gen_Minus);
+	be_set_transform_function(op_Mul,          gen_Mul);
+	be_set_transform_function(op_Not,          gen_Not);
+	be_set_transform_function(op_Or,           gen_Or);
+	be_set_transform_function(op_Phi,          gen_Phi);
+	be_set_transform_function(op_Proj,         gen_Proj);
+	be_set_transform_function(op_Quot,         gen_Quot);
+	be_set_transform_function(op_Rotl,         gen_Rotl);
+	be_set_transform_function(op_Shl,          gen_Shl);
+	be_set_transform_function(op_Shr,          gen_Shr);
+	be_set_transform_function(op_Shrs,         gen_Shrs);
+	be_set_transform_function(op_Store,        gen_Store);
+	be_set_transform_function(op_Sub,          gen_Sub);
+	be_set_transform_function(op_SymConst,     gen_SymConst);
+	be_set_transform_function(op_Unknown,      gen_Unknown);
 }
 
 /**

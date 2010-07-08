@@ -42,6 +42,7 @@
 #include "beirg.h"
 #include "betranshlp.h"
 #include "belive.h"
+#include "benode.h"
 
 typedef struct be_transform_env_t {
 	ir_graph *irg;         /**< The irg, the node should be created in */
@@ -95,6 +96,31 @@ void be_dep_on_frame(ir_node* node)
 		add_irn_dep(node, get_irg_frame(irg));
 }
 
+void be_set_transform_function(ir_op *op, be_transform_func func)
+{
+	/* shouldn't be assigned twice (except for exchanging the default
+	 * be_duplicate_node entries) */
+	assert(op->ops.generic == NULL
+			|| op->ops.generic == (op_func) be_duplicate_node);
+	op->ops.generic = (op_func) func;
+}
+
+void be_start_transform_setup(void)
+{
+	clear_irp_opcodes_generic_func();
+
+	be_set_transform_function(op_Bad,         be_duplicate_node);
+	be_set_transform_function(op_NoMem,       be_duplicate_node);
+	be_set_transform_function(op_Start,       be_duplicate_node);
+	be_set_transform_function(op_be_Start,    be_duplicate_node);
+	be_set_transform_function(op_Pin,         be_duplicate_node);
+	be_set_transform_function(op_Sync,        be_duplicate_node);
+	be_set_transform_function(op_be_Barrier,  be_duplicate_node);
+	be_set_transform_function(op_be_Copy,     be_duplicate_node);
+	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
+	be_set_transform_function(op_be_Keep,     be_duplicate_node);
+}
+
 ir_node *be_duplicate_node(ir_node *node)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -141,14 +167,13 @@ ir_node *be_transform_node(ir_node *node)
 	DEBUG_ONLY(be_set_transformed_node(node, NULL));
 
 	op = get_irn_op(node);
-	if (op->ops.generic) {
-		be_transform_func *transform = (be_transform_func *)op->ops.generic;
-
-		new_node = transform(node);
-		assert(new_node != NULL);
-	} else {
-		new_node = be_duplicate_node(node);
+	if (op->ops.generic == NULL) {
+		panic("No transform function registered for node %+F.", node);
 	}
+	be_transform_func *transform = (be_transform_func *)op->ops.generic;
+
+	new_node = transform(node);
+	assert(new_node != NULL);
 
 	be_set_transformed_node(node, new_node);
 	hook_dead_node_elim_subst(current_ir_graph, node, new_node);

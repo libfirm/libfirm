@@ -248,61 +248,26 @@ static ir_node *gen_Phi(ir_node *node)
 	return phi;
 }
 
-static ir_node *bad_transform(ir_node *node)
-{
-	panic("TEMPLATE backend: unexpected node %+F", node);
-}
-
-
-
-static void set_transformer(ir_op *op, be_transform_func transform_func)
-{
-	op->ops.generic = (op_func)transform_func;
-}
-
 static void TEMPLATE_register_transformers(void)
 {
-	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	be_start_transform_setup();
 
-	set_transformer(op_Add,       gen_Add);
-	set_transformer(op_And,       gen_And);
-	set_transformer(op_Const,     gen_Const);
-	set_transformer(op_Eor,       gen_Eor);
-	set_transformer(op_Jmp,       gen_Jmp);
-	set_transformer(op_Load,      gen_Load);
-	set_transformer(op_Minus,     gen_Minus);
-	set_transformer(op_Mul,       gen_Mul);
-	set_transformer(op_Not,       gen_Not);
-	set_transformer(op_Or,        gen_Or);
-	set_transformer(op_Phi,       gen_Phi);
-	set_transformer(op_Quot,      gen_Quot);
-	set_transformer(op_Shl,       gen_Shl);
-	set_transformer(op_Shr,       gen_Shr);
-	set_transformer(op_Store,     gen_Store);
-	set_transformer(op_Sub,       gen_Sub);
-
-	/* TODO: implement missing nodes */
-
-
-	/* you should not see the following nodes */
-	set_transformer(op_ASM,       bad_transform);
-	set_transformer(op_Builtin,   bad_transform);
-	set_transformer(op_CallBegin, bad_transform);
-	set_transformer(op_Cast,      bad_transform);
-	set_transformer(op_Confirm,   bad_transform);
-	set_transformer(op_DivMod,    bad_transform);
-	set_transformer(op_EndExcept, bad_transform);
-	set_transformer(op_EndReg,    bad_transform);
-	set_transformer(op_Filter,    bad_transform);
-	set_transformer(op_Free,      bad_transform);
-	set_transformer(op_Id,        bad_transform);
-	set_transformer(op_InstOf,    bad_transform);
-	set_transformer(op_Mulh,      bad_transform);
-	set_transformer(op_Mux,       bad_transform);
-	set_transformer(op_Raise,     bad_transform);
-	set_transformer(op_Sel,       bad_transform);
-	set_transformer(op_Tuple,     bad_transform);
+	be_set_transform_function(op_Add,   gen_Add);
+	be_set_transform_function(op_And,   gen_And);
+	be_set_transform_function(op_Const, gen_Const);
+	be_set_transform_function(op_Eor,   gen_Eor);
+	be_set_transform_function(op_Jmp,   gen_Jmp);
+	be_set_transform_function(op_Load,  gen_Load);
+	be_set_transform_function(op_Minus, gen_Minus);
+	be_set_transform_function(op_Mul,   gen_Mul);
+	be_set_transform_function(op_Not,   gen_Not);
+	be_set_transform_function(op_Or,    gen_Or);
+	be_set_transform_function(op_Phi,   gen_Phi);
+	be_set_transform_function(op_Quot,  gen_Quot);
+	be_set_transform_function(op_Shl,   gen_Shl);
+	be_set_transform_function(op_Shr,   gen_Shr);
+	be_set_transform_function(op_Store, gen_Store);
+	be_set_transform_function(op_Sub,   gen_Sub);
 }
 
 /**

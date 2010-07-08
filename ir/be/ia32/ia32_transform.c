@@ -4415,14 +4415,6 @@ static ir_node *gen_ia32_l_FloattoLL(ir_node *node)
 	return mem;
 }
 
-/**
- * the BAD transformer.
- */
-static ir_node *bad_transform(ir_node *node)
-{
-	panic("No transform function for %+F available.", node);
-}
-
 static ir_node *gen_Proj_l_FloattoLL(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -5704,10 +5696,10 @@ static ir_node *gen_Proj(ir_node *node)
 static void register_transformers(void)
 {
 	/* first clear the generic function pointer for all ops */
-	clear_irp_opcodes_generic_func();
+	be_start_transform_setup();
 
-#define GEN(a)   { be_transform_func *func = gen_##a; op_##a->ops.generic = (op_func) func; }
-#define BAD(a)   { op_##a->ops.generic = (op_func)bad_transform; }
+#define GEN(a)   { be_set_transform_function(op_##a, gen_##a); }
+#define DUP(a)   { be_set_transform_function(op_##a, be_duplicate_node); }
 
 	GEN(Add)
 	GEN(Sub)
@@ -5766,21 +5758,6 @@ static void register_transformers(void)
 	GEN(SymConst)
 	GEN(Unknown)
 
-	/* we should never see these nodes */
-	BAD(Raise)
-	BAD(Sel)
-	BAD(InstOf)
-	BAD(Cast)
-	BAD(Free)
-	BAD(Tuple)
-	BAD(Id)
-	//BAD(Bad)
-	BAD(Confirm)
-	BAD(Filter)
-	BAD(CallBegin)
-	BAD(EndReg)
-	BAD(EndExcept)
-
 	/* handle builtins */
 	GEN(Builtin)
 
@@ -5793,8 +5770,16 @@ static void register_transformers(void)
 	GEN(be_SubSP)
 	GEN(be_Copy)
 
+	DUP(ia32_Minus64Bit)
+	DUP(ia32_Push)
+	DUP(ia32_PopEbp)
+	DUP(ia32_Leave)
+	DUP(ia32_NoReg_GP)
+	DUP(ia32_NoReg_VFP)
+	DUP(ia32_NoReg_XMM)
+
 #undef GEN
-#undef BAD
+#undef DUP
 }
 
 /**
