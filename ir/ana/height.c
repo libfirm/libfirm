@@ -84,7 +84,7 @@ static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
  * @param tgt  The node we try to reach.
  * @return     1, one of tgt can be reached from curr, 0 else.
  */
-static bool search(heights_t *h, const ir_node *curr, const ir_node *tgt)
+static bool search(const heights_t *h, const ir_node *curr, const ir_node *tgt)
 {
 	irn_height_t *h_curr;
 	irn_height_t *h_tgt;
@@ -124,9 +124,11 @@ static bool search(heights_t *h, const ir_node *curr, const ir_node *tgt)
 }
 
 /**
- * Check, if one node can be reached from another one, according to data dependence.
+ * Check, if one node can be reached from another one, according to data
+ * dependence.
  */
-int heights_reachable_in_block(heights_t *h, const ir_node *n, const ir_node *m)
+int heights_reachable_in_block(heights_t *h, const ir_node *n,
+                               const ir_node *m)
 {
 	int res          = 0;
 	irn_height_t *hn = phase_get_irn_data(&h->phase, n);
@@ -218,9 +220,9 @@ static void compute_heights_in_block_walker(ir_node *block, void *data)
 	compute_heights_in_block(block, h);
 }
 
-unsigned get_irn_height(heights_t *heights, const ir_node *irn)
+unsigned get_irn_height(const heights_t *heights, const ir_node *irn)
 {
-	irn_height_t *h = phase_get_irn_data(&heights->phase, irn);
+	const irn_height_t *h = phase_get_irn_data(&heights->phase, irn);
 	assert(h && "No height information for node");
 	return h->height;
 }

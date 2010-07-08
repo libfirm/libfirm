@@ -34,12 +34,13 @@ typedef struct _heights_t heights_t;
 
 /**
  * Get the height of a node inside a basic block.
- * The height of the node is the maximal number of edges between a sink node in that block and the node itself (plus 1).
+ * The height of the node is the maximal number of edges between a sink node in
+ * that block and the node itself (plus 1).
  * @param h    The heights object.
  * @param irn  The node.
  * @return     The height of the node.
  */
-FIRM_API unsigned get_irn_height(heights_t *h, const ir_node *irn);
+FIRM_API unsigned get_irn_height(const heights_t *h, const ir_node *irn);
 
 /**
  * Check, if a certain node is reachable according to data dependence edges from another node.
