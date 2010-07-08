@@ -5698,88 +5698,68 @@ static void register_transformers(void)
 	/* first clear the generic function pointer for all ops */
 	be_start_transform_setup();
 
-#define GEN(a)   { be_set_transform_function(op_##a, gen_##a); }
-#define DUP(a)   { be_set_transform_function(op_##a, be_duplicate_node); }
-
-	GEN(Add)
-	GEN(Sub)
-	GEN(Mul)
-	GEN(Mulh)
-	GEN(And)
-	GEN(Or)
-	GEN(Eor)
-
-	GEN(Shl)
-	GEN(Shr)
-	GEN(Shrs)
-	GEN(Rotl)
-
-	GEN(Quot)
-
-	GEN(Div)
-	GEN(Mod)
-	GEN(DivMod)
-
-	GEN(Minus)
-	GEN(Conv)
-	GEN(Abs)
-	GEN(Not)
-
-	GEN(Load)
-	GEN(Store)
-	GEN(Cond)
-
-	GEN(Cmp)
-	GEN(ASM)
-	GEN(CopyB)
-	GEN(Mux)
-	GEN(Proj)
-	GEN(Phi)
-	GEN(Jmp)
-	GEN(IJmp)
-	GEN(Bound)
-
-	/* transform ops from intrinsic lowering */
-	GEN(ia32_l_Add)
-	GEN(ia32_l_Adc)
-	GEN(ia32_l_Mul)
-	GEN(ia32_l_IMul)
-	GEN(ia32_l_ShlDep)
-	GEN(ia32_l_ShrDep)
-	GEN(ia32_l_SarDep)
-	GEN(ia32_l_ShlD)
-	GEN(ia32_l_ShrD)
-	GEN(ia32_l_Sub)
-	GEN(ia32_l_Sbb)
-	GEN(ia32_l_LLtoFloat)
-	GEN(ia32_l_FloattoLL)
-
-	GEN(Const)
-	GEN(SymConst)
-	GEN(Unknown)
-
-	/* handle builtins */
-	GEN(Builtin)
-
-	/* handle generic backend nodes */
-	GEN(be_FrameAddr)
-	GEN(be_Call)
-	GEN(be_IncSP)
-	GEN(be_Return)
-	GEN(be_AddSP)
-	GEN(be_SubSP)
-	GEN(be_Copy)
-
-	DUP(ia32_Minus64Bit)
-	DUP(ia32_Push)
-	DUP(ia32_PopEbp)
-	DUP(ia32_Leave)
-	DUP(ia32_NoReg_GP)
-	DUP(ia32_NoReg_VFP)
-	DUP(ia32_NoReg_XMM)
-
-#undef GEN
-#undef DUP
+	be_set_transform_function(op_Abs,              gen_Abs);
+	be_set_transform_function(op_Add,              gen_Add);
+	be_set_transform_function(op_And,              gen_And);
+	be_set_transform_function(op_ASM,              gen_ASM);
+	be_set_transform_function(op_be_AddSP,         gen_be_AddSP);
+	be_set_transform_function(op_be_Call,          gen_be_Call);
+	be_set_transform_function(op_be_Copy,          gen_be_Copy);
+	be_set_transform_function(op_be_FrameAddr,     gen_be_FrameAddr);
+	be_set_transform_function(op_be_IncSP,         gen_be_IncSP);
+	be_set_transform_function(op_be_Return,        gen_be_Return);
+	be_set_transform_function(op_be_SubSP,         gen_be_SubSP);
+	be_set_transform_function(op_Bound,            gen_Bound);
+	be_set_transform_function(op_Builtin,          gen_Builtin);
+	be_set_transform_function(op_Cmp,              gen_Cmp);
+	be_set_transform_function(op_Cond,             gen_Cond);
+	be_set_transform_function(op_Const,            gen_Const);
+	be_set_transform_function(op_Conv,             gen_Conv);
+	be_set_transform_function(op_CopyB,            gen_CopyB);
+	be_set_transform_function(op_Div,              gen_Div);
+	be_set_transform_function(op_DivMod,           gen_DivMod);
+	be_set_transform_function(op_Eor,              gen_Eor);
+	be_set_transform_function(op_ia32_l_Adc,       gen_ia32_l_Adc);
+	be_set_transform_function(op_ia32_l_Add,       gen_ia32_l_Add);
+	be_set_transform_function(op_ia32_Leave,       be_duplicate_node);
+	be_set_transform_function(op_ia32_l_FloattoLL, gen_ia32_l_FloattoLL);
+	be_set_transform_function(op_ia32_l_IMul,      gen_ia32_l_IMul);
+	be_set_transform_function(op_ia32_l_LLtoFloat, gen_ia32_l_LLtoFloat);
+	be_set_transform_function(op_ia32_l_Mul,       gen_ia32_l_Mul);
+	be_set_transform_function(op_ia32_l_SarDep,    gen_ia32_l_SarDep);
+	be_set_transform_function(op_ia32_l_Sbb,       gen_ia32_l_Sbb);
+	be_set_transform_function(op_ia32_l_ShlDep,    gen_ia32_l_ShlDep);
+	be_set_transform_function(op_ia32_l_ShlD,      gen_ia32_l_ShlD);
+	be_set_transform_function(op_ia32_l_ShrDep,    gen_ia32_l_ShrDep);
+	be_set_transform_function(op_ia32_l_ShrD,      gen_ia32_l_ShrD);
+	be_set_transform_function(op_ia32_l_Sub,       gen_ia32_l_Sub);
+	be_set_transform_function(op_ia32_Minus64Bit,  be_duplicate_node);
+	be_set_transform_function(op_ia32_NoReg_GP,    be_duplicate_node);
+	be_set_transform_function(op_ia32_NoReg_VFP,   be_duplicate_node);
+	be_set_transform_function(op_ia32_NoReg_XMM,   be_duplicate_node);
+	be_set_transform_function(op_ia32_PopEbp,      be_duplicate_node);
+	be_set_transform_function(op_ia32_Push,        be_duplicate_node);
+	be_set_transform_function(op_IJmp,             gen_IJmp);
+	be_set_transform_function(op_Jmp,              gen_Jmp);
+	be_set_transform_function(op_Load,             gen_Load);
+	be_set_transform_function(op_Minus,            gen_Minus);
+	be_set_transform_function(op_Mod,              gen_Mod);
+	be_set_transform_function(op_Mul,              gen_Mul);
+	be_set_transform_function(op_Mulh,             gen_Mulh);
+	be_set_transform_function(op_Mux,              gen_Mux);
+	be_set_transform_function(op_Not,              gen_Not);
+	be_set_transform_function(op_Or,               gen_Or);
+	be_set_transform_function(op_Phi,              gen_Phi);
+	be_set_transform_function(op_Proj,             gen_Proj);
+	be_set_transform_function(op_Quot,             gen_Quot);
+	be_set_transform_function(op_Rotl,             gen_Rotl);
+	be_set_transform_function(op_Shl,              gen_Shl);
+	be_set_transform_function(op_Shr,              gen_Shr);
+	be_set_transform_function(op_Shrs,             gen_Shrs);
+	be_set_transform_function(op_Store,            gen_Store);
+	be_set_transform_function(op_Sub,              gen_Sub);
+	be_set_transform_function(op_SymConst,         gen_SymConst);
+	be_set_transform_function(op_Unknown,          gen_Unknown);
 }
 
 /**
