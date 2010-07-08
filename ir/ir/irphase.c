@@ -100,7 +100,7 @@ void phase_reinit_irn_data(ir_phase *phase, phase_irn_reinit *data_reinit)
 	for (i = 0, n = phase->n_data_ptr; i < n; ++i) {
 		if (phase->data_ptr[i]) {
 			ir_node *node = get_idx_irn(irg, i);
-			data_reinit(phase, node, phase->data_ptr[i]);
+			phase->data_ptr[i] = data_reinit(phase, node, phase->data_ptr[i]);
 		}
 	}
 }

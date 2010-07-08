@@ -79,7 +79,7 @@ static inline void phase_reinit_single_irn_data(ir_phase *phase, ir_node *irn,
 
 	idx = get_irn_idx(irn);
 	if (phase->data_ptr[idx])
-		reinit(phase, irn, phase->data_ptr[idx]);
+		phase->data_ptr[idx] = reinit(phase, irn, phase->data_ptr[idx]);
 }
 
 /**
