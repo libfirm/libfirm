@@ -501,9 +501,13 @@ __extension__								\
 
 #endif /* not __GNUC__ or not __STDC__ */
 
-int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap);
+
+/** prints formated string (printf-style format) to an obstack.
+ * This is done by "growing" the obstack with the obstack_*grow*
+ * functions. Note: Does NOT append a null-byte. */
 int obstack_printf(struct obstack *obst, const char *fmt, ...);
+int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap);
 
 #include "../end.h"
 
-#endif /* obstack.h */
+#endif
