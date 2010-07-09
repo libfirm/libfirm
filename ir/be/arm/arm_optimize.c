@@ -21,7 +21,7 @@
  * @file
  * @brief       Implements several optimizations for ARM.
  * @author      Michael Beck
- * @version     $Id: $
+ * @version     $Id$
  */
 #include "config.h"
 

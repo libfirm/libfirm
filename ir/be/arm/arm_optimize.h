@@ -21,7 +21,7 @@
  * @file
  * @brief       Implements several optimizations for ARM.
  * @author      Michael Beck
- * @version     $Id: $
+ * @version     $Id$
  */
 #ifndef FIRM_BE_ARM_ARM_OPTIMIZE_H
 #define FIRM_BE_ARM_ARM_OPTIMIZE_H
