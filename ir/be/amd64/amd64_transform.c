@@ -374,7 +374,7 @@ static ir_node *gen_Conv(ir_node *node)
 		ir_mode *min_mode;
 
 		if (src_bits == dst_bits) {
-			/* kill unneccessary conv */
+			/* kill unnecessary conv */
 			return new_op;
 		}
 
@@ -387,8 +387,7 @@ static ir_node *gen_Conv(ir_node *node)
 		}
 
 
-		ir_node *n = new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
-		return n;
+		return new_bd_amd64_Conv(dbgi, block, new_op, min_mode);
 
 		//if (upper_bits_clean(new_op, min_mode)) {
 		//	return new_op;

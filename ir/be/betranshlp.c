@@ -160,8 +160,9 @@ ir_node *be_duplicate_node(ir_node *node)
 
 ir_node *be_transform_node(ir_node *node)
 {
-	ir_op   *op;
-	ir_node *new_node = be_get_transformed_node(node);
+	ir_op             *op;
+	ir_node           *new_node = be_get_transformed_node(node);
+	be_transform_func *transform;
 
 	if (new_node != NULL)
 		return new_node;
@@ -172,7 +173,7 @@ ir_node *be_transform_node(ir_node *node)
 	if (op->ops.generic == NULL) {
 		panic("No transform function registered for node %+F.", node);
 	}
-	be_transform_func *transform = (be_transform_func *)op->ops.generic;
+	transform = (be_transform_func *)op->ops.generic;
 
 	new_node = transform(node);
 	assert(new_node != NULL);
