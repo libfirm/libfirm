@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -242,7 +242,7 @@ static ir_node *gen_Conv(ir_node *node)
 		ir_mode *min_mode;
 
 		if (src_bits == dst_bits) {
-			/* kill unneccessary conv */
+			/* kill unnecessary conv */
 			return new_op;
 		}
 
@@ -557,6 +557,10 @@ static ir_node *gen_Sub(ir_node *node)
 	}
 }
 
+/**
+ * Checks if a given value can be used as an immediate for the given
+ * ARM shift mode.
+ */
 static bool can_use_shift_constant(unsigned int val,
                                    arm_shift_modifier_t modifier)
 {
@@ -567,6 +571,13 @@ static bool can_use_shift_constant(unsigned int val,
 	return false;
 }
 
+/**
+ * generate an ARM shift instruction.
+ *
+ * @param node            the node
+ * @param flags           matching flags
+ * @param shift_modifier  initial encoding of the desired shift operation
+ */
 static ir_node *make_shift(ir_node *node, match_flags_t flags,
 		arm_shift_modifier_t shift_modifier)
 {
@@ -933,7 +944,7 @@ static ir_node *gen_Cmp(ir_node *node)
 		                          is_unsigned);
 	}
 
-	/* integer compare, TODO: use shifer_op in all its combinations */
+	/* integer compare, TODO: use shifter_op in all its combinations */
 	new_op1 = be_transform_node(op1);
 	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
 	new_op2 = be_transform_node(op2);
@@ -1562,6 +1573,7 @@ static ir_node *gen_Return(ir_node *node)
 	return bereturn;
 }
 
+
 static ir_node *gen_Call(ir_node *node)
 {
 	ir_graph             *irg          = get_irn_irg(node);
@@ -1616,6 +1628,7 @@ static ir_node *gen_Call(ir_node *node)
 		if (reg != NULL) {
 			in[in_arity] = new_value;
 			if (reg == &arm_gp_regs[REG_LR]) {
+				/* this should not happen, LR cannot be a parameter register ... */
 				in_req[in_arity] = be_create_reg_req(obst,
 						reg, arch_register_req_type_ignore);
 			} else {
@@ -1626,6 +1639,7 @@ static ir_node *gen_Call(ir_node *node)
 			ir_mode *mode;
 			ir_node *str;
 			if (incsp == NULL) {
+				/* create a parameter frame */
 				ir_node *new_frame = get_stack_pointer_for(node);
 				incsp = be_new_IncSP(sp_reg, new_block, new_frame, cconv->param_stack_size, 1);
 			}
@@ -1706,9 +1720,9 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* create output register reqs */
 	arch_set_out_register_req(res, 0, arch_no_register_req);
-	for (o = 1; o < n_caller_saves + 1; ++o) {
-		const arch_register_t *reg = caller_saves[o-1];
-		arch_set_out_register_req(res, o, reg->single_req);
+	for (o = 0; o < n_caller_saves; ++o) {
+		const arch_register_t *reg = caller_saves[o];
+		arch_set_out_register_req(res, o+1, reg->single_req);
 	}
 
 	/* copy pinned attribute */
