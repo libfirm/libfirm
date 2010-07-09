@@ -110,15 +110,17 @@ void be_start_transform_setup(void)
 	clear_irp_opcodes_generic_func();
 
 	be_set_transform_function(op_Bad,         be_duplicate_node);
-	be_set_transform_function(op_NoMem,       be_duplicate_node);
-	be_set_transform_function(op_Start,       be_duplicate_node);
-	be_set_transform_function(op_be_Start,    be_duplicate_node);
-	be_set_transform_function(op_Pin,         be_duplicate_node);
-	be_set_transform_function(op_Sync,        be_duplicate_node);
 	be_set_transform_function(op_be_Barrier,  be_duplicate_node);
 	be_set_transform_function(op_be_Copy,     be_duplicate_node);
 	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
+	be_set_transform_function(op_be_IncSP,    be_duplicate_node);
 	be_set_transform_function(op_be_Keep,     be_duplicate_node);
+	be_set_transform_function(op_be_Return,   be_duplicate_node);
+	be_set_transform_function(op_be_Start,    be_duplicate_node);
+	be_set_transform_function(op_NoMem,       be_duplicate_node);
+	be_set_transform_function(op_Pin,         be_duplicate_node);
+	be_set_transform_function(op_Start,       be_duplicate_node);
+	be_set_transform_function(op_Sync,        be_duplicate_node);
 }
 
 ir_node *be_duplicate_node(ir_node *node)
