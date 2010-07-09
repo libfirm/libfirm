@@ -326,6 +326,11 @@ static unsigned get_unique_label(void)
 	return ++id;
 }
 
+static void emit_constant_name(const sym_or_tv_t *entry)
+{
+	be_emit_irprintf("%sC%u", be_gas_get_private_prefix(), entry->label);
+}
+
 /**
  * Emit a SymConst.
  */
@@ -348,7 +353,8 @@ static void emit_arm_SymConst(const ir_node *irn)
 	/* load the symbol indirect */
 	be_emit_cstring("\tldr ");
 	arm_emit_dest_register(irn, 0);
-	be_emit_irprintf(", %s%u", be_gas_get_private_prefix(), label);
+	be_emit_cstring(", ");
+	emit_constant_name(entry);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -391,7 +397,8 @@ static void emit_arm_fpaConst(const ir_node *irn)
 	be_emit_char(' ');
 
 	arm_emit_dest_register(irn, 0);
-	be_emit_irprintf(", %s%u", be_gas_get_private_prefix(), label);
+	be_emit_cstring(", ");
+	emit_constant_name(entry);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -1149,8 +1156,9 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 		be_emit_cstring("\t.align 2\n");
 
 		foreach_set(sym_or_tv, entry) {
-			be_emit_irprintf("%s%u:\n", be_gas_get_private_prefix(),
-			                 entry->label);
+			emit_constant_name(entry);
+			be_emit_cstring(":\n");
+			be_emit_write_line();
 
 			if (entry->is_entity) {
 				be_emit_cstring("\t.word\t");
