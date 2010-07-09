@@ -65,7 +65,7 @@ const char *arm_get_fpa_imm_name(long imm_value)
 	return fpa_imm[imm_value];
 }
 
-static bool arm_has_immediate(const ir_node *node)
+static bool arm_has_symconst_attr(const ir_node *node)
 {
 	return is_arm_SymConst(node) || is_arm_FrameAddr(node);
 }
@@ -100,7 +100,7 @@ static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 	case dump_node_opcode_txt:
 		fprintf(F, "%s", get_irn_opname(n));
 
-		if (arm_has_immediate(n)) {
+		if (arm_has_symconst_attr(n)) {
 			const arm_SymConst_attr_t *attr	= get_arm_SymConst_attr_const(n);
 			if (attr->entity != NULL) {
 				fputc(' ', F);
@@ -183,7 +183,19 @@ static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			if (attr->ins_permuted) {
 				fprintf(F, " inputs swapped");
 			}
-			fprintf(F, "\n");
+			fputc('\n', F);
+		}
+		if (arm_has_symconst_attr(n)) {
+			const arm_SymConst_attr_t *attr	= get_arm_SymConst_attr_const(n);
+
+			fprintf(F, "entity = ");
+			if (attr->entity != NULL) {
+				fprintf(F, "'%s'", get_entity_name(attr->entity));
+			} else {
+				fputs("NULL", F);
+			}
+			fputc('\n', F);
+			fprintf(F, "frame offset = %d\n", attr->fp_offset);
 		}
 		break;
 	}
