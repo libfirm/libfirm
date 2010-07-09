@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -67,19 +67,20 @@ static const arch_register_t* const result_regs[] = {
 /** information about a single parameter or result */
 typedef struct reg_or_stackslot_t
 {
-	const arch_register_t *reg0;
-	const arch_register_t *reg1;
+	const arch_register_t *reg0;   /**< if != NULL, the first register used for this parameter. */
+	const arch_register_t *reg1;   /**< if != NULL, the second register used. */
 	ir_type               *type;   /**< indicates that an entity of the specific
 									    type is needed */
-	int                    offset;
+	int                    offset; /**< if transmitted via stack, the offset for this parameter. */
 	ir_entity             *entity; /**< entity in frame type */
 } reg_or_stackslot_t;
 
+/** The calling convention info for one call site. */
 typedef struct calling_convention_t
 {
-	reg_or_stackslot_t *parameters;
-	int                 param_stack_size;
-	reg_or_stackslot_t *results;
+	reg_or_stackslot_t *parameters;        /**< parameter info. */
+	int                 param_stack_size;  /**< needed stack size for parameters */
+	reg_or_stackslot_t *results;           /**< result info. */
 } calling_convention_t;
 
 /**
