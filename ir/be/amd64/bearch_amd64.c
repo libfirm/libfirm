@@ -322,6 +322,7 @@ static amd64_isa_t amd64_isa_template = {
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
+		false,                       /* no custom abi handling */
 	},
 };
 

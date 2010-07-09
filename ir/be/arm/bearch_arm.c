@@ -667,6 +667,7 @@ static arm_isa_t arm_isa_template = {
 		NULL,                  /* main environment */
 		7,                     /* spill costs */
 		5,                     /* reload costs */
+		false,                 /* no custom abi handling */
 	},
 	0,                     /* use generic register names instead of SP, LR, PC */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */

@@ -1541,6 +1541,7 @@ static ia32_isa_t ia32_isa_template = {
 		NULL,                    /* main environment */
 		7,                       /* costs for a spill instruction */
 		5,                       /* costs for a reload instruction */
+		false,                   /* no custom abi handling */
 	},
 	NULL,                    /* 16bit register names */
 	NULL,                    /* 8bit register names */

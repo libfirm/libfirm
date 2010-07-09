@@ -750,6 +750,9 @@ struct arch_env_t {
 	const be_main_env_t   *main_env;         /**< the be main environment */
 	int                    spill_cost;       /**< cost for a be_Spill node */
 	int                    reload_cost;      /**< cost for a be_Reload node */
+	bool                   custom_abi : 1;   /**< backend does all abi handling
+	                                              and does not need the generic stuff
+	                                              from beabi.h/.c */
 };
 
 static inline unsigned arch_irn_get_n_outs(const ir_node *node)

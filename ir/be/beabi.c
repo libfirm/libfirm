@@ -2279,6 +2279,13 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 		sp_req->type |= arch_register_req_type_ignore;
 	}
 
+	/* break here if backend provides a custom API.
+	 * Note: we shouldn't have to setup any be_abi_irg_t* stuff at all,
+	 * but need more cleanup to make this work
+	 */
+	if (arch_env->custom_abi)
+		return env;
+
 	env->init_sp = dummy = new_r_Dummy(irg, arch_env->sp->reg_class->mode);
 
 	env->calls = NEW_ARR_F(ir_node*, 0);

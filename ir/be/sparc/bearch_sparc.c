@@ -341,6 +341,7 @@ static sparc_isa_t sparc_isa_template = {
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
+		false,                       /* no custom abi handling */
 	},
 	NULL						/* current code generator */
 };
