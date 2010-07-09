@@ -2240,7 +2240,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 {
-	be_abi_irg_t     *env         = XMALLOC(be_abi_irg_t);
+	be_abi_irg_t     *env         = XMALLOCZ(be_abi_irg_t);
 	ir_node          *old_frame   = get_irg_frame(irg);
 	struct obstack   *obst        = be_get_be_obst(irg);
 	be_options_t     *options     = be_get_irg_options(irg);
@@ -2283,13 +2283,12 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	 * Note: we shouldn't have to setup any be_abi_irg_t* stuff at all,
 	 * but need more cleanup to make this work
 	 */
+	be_set_irg_abi(irg, env);
 	if (arch_env->custom_abi)
 		return env;
 
 	env->init_sp = dummy = new_r_Dummy(irg, arch_env->sp->reg_class->mode);
-
-	env->calls = NEW_ARR_F(ir_node*, 0);
-	be_set_irg_abi(irg, env);
+	env->calls   = NEW_ARR_F(ir_node*, 0);
 
 	if (options->pic) {
 		irg_walk_graph(irg, fix_pic_symconsts, NULL, env);
@@ -2339,8 +2338,10 @@ void be_abi_free(ir_graph *irg)
 
 	be_abi_call_free(env->call);
 	free_survive_dce(env->dce_survivor);
-	del_pset(env->ignore_regs);
-	pmap_destroy(env->regs);
+	if (env->ignore_regs != NULL)
+		del_pset(env->ignore_regs);
+	if (env->regs != NULL)
+		pmap_destroy(env->regs);
 	free(env);
 
 	be_set_irg_abi(irg, NULL);

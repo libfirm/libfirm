@@ -20,7 +20,7 @@
 /**
  * @file
  * @brief   The codegenerator (transform FIRM into arm FIRM)
- * @author  Oliver Richter, Tobias Gneist, Michael Beck
+ * @author  Matthias Braun, Oliver Richter, Tobias Gneist, Michael Beck
  * @version $Id$
  */
 #include "config.h"
@@ -42,13 +42,16 @@
 #include "../beirg.h"
 #include "../beutil.h"
 #include "../betranshlp.h"
-#include "bearch_arm_t.h"
+#include "../beabihelper.h"
+#include "../beabi.h"
 
+#include "bearch_arm_t.h"
 #include "arm_nodes_attr.h"
 #include "arm_transform.h"
 #include "arm_optimize.h"
 #include "arm_new_nodes.h"
 #include "arm_map_regs.h"
+#include "arm_cconv.h"
 
 #include "gen_arm_regalloc_if.h"
 
@@ -59,13 +62,20 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /** hold the current code generator during transformation */
 static arm_code_gen_t *env_cg;
 
-static inline int mode_needs_gp_reg(ir_mode *mode)
+static const arch_register_t *sp_reg = &arm_gp_regs[REG_SP];
+static ir_mode               *mode_gp;
+static beabi_helper_env_t    *abihelper;
+static calling_convention_t  *cconv = NULL;
+
+static pmap                  *node_to_stack;
+
+static bool mode_needs_gp_reg(ir_mode *mode)
 {
 	return mode_is_int(mode) || mode_is_reference(mode);
 }
 
 /**
- * Creates a possible DAG for an constant.
+ * create firm graph for a constant
  */
 static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
                                          unsigned int value)
@@ -74,6 +84,12 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 	arm_vals v, vn;
 	int cnt;
 
+	/* We only have 8 bit immediates. So we possibly have to combine several
+	 * operations to construct the desired value.
+	 *
+	 * we can either create the value by adding bits to 0 or by removing bits
+	 * from an register with all bits set. Try which alternative needs fewer
+	 * operations */
 	arm_gen_vals_from_word(value, &v);
 	arm_gen_vals_from_word(~value, &vn);
 
@@ -206,13 +222,11 @@ static ir_node *gen_Conv(ir_node *node)
 				if (mode_is_float(dst_mode)) {
 					/* from float to float */
 					return new_bd_arm_fpaMvf(dbg, block, new_op, dst_mode);
-				}
-				else {
+				} else {
 					/* from float to int */
 					return new_bd_arm_fpaFix(dbg, block, new_op, dst_mode);
 				}
-			}
-			else {
+			} else {
 				/* from int to float */
 				return new_bd_arm_fpaFlt(dbg, block, new_op, dst_mode);
 			}
@@ -401,8 +415,7 @@ static ir_node *gen_Add(ir_node *node)
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 		}
 	} else {
@@ -454,12 +467,10 @@ static ir_node *gen_Mul(ir_node *node)
 				return new_bd_arm_fpaMuf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
 #endif
 			return new_bd_arm_fpaMuf(dbg, block, new_op1, new_op2, mode);
-		}
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 		}
 	}
@@ -467,12 +478,6 @@ static ir_node *gen_Mul(ir_node *node)
 	return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
 }
 
-/**
- * Creates an ARM floating point Div.
- *
- * @param env   The transformation environment
- * @return the created arm fDiv node
- */
 static ir_node *gen_Quot(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -497,51 +502,29 @@ static ir_node *gen_Quot(ir_node *node)
 	} else if (USE_VFP(env_cg->isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
 		panic("VFP not supported yet");
-	}
-	else {
+	} else {
 		panic("Softfloat not supported yet");
 	}
 }
 
-/**
- * Creates an ARM And.
- *
- * @return the created arm And node
- */
 static ir_node *gen_And(ir_node *node)
 {
 	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
 			new_bd_arm_And_reg, new_bd_arm_And_imm);
 }
 
-/**
- * Creates an ARM Orr.
- *
- * @param env   The transformation environment
- * @return the created arm Or node
- */
 static ir_node *gen_Or(ir_node *node)
 {
 	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
 			new_bd_arm_Or_reg, new_bd_arm_Or_imm);
 }
 
-/**
- * Creates an ARM Eor.
- *
- * @return the created arm Eor node
- */
 static ir_node *gen_Eor(ir_node *node)
 {
 	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
 			new_bd_arm_Eor_reg, new_bd_arm_Eor_imm);
 }
 
-/**
- * Creates an ARM Sub.
- *
- * @return the created arm Sub node
- */
 static ir_node *gen_Sub(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -622,41 +605,21 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 	                                    shift_modifier);
 }
 
-/**
- * Creates an ARM Shl.
- *
- * @return the created ARM Shl node
- */
 static ir_node *gen_Shl(ir_node *node)
 {
 	return make_shift(node, MATCH_SIZE_NEUTRAL, ARM_SHF_LSL_REG);
 }
 
-/**
- * Creates an ARM Shr.
- *
- * @return the created ARM Shr node
- */
 static ir_node *gen_Shr(ir_node *node)
 {
 	return make_shift(node, MATCH_NONE, ARM_SHF_LSR_REG);
 }
 
-/**
- * Creates an ARM Shrs.
- *
- * @return the created ARM Shrs node
- */
 static ir_node *gen_Shrs(ir_node *node)
 {
 	return make_shift(node, MATCH_NONE, ARM_SHF_ASR_REG);
 }
 
-/**
- * Creates an ARM Ror.
- *
- * @return the created ARM Ror node
- */
 static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -668,13 +631,6 @@ static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
 	                                    ARM_SHF_ROR_REG);
 }
 
-/**
- * Creates an ARM Rol.
- *
- * @return the created ARM Rol node
- *
- * Note: there is no Rol on arm, we have to use Ror
- */
 static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -682,16 +638,12 @@ static ir_node *gen_Rol(ir_node *node, ir_node *op1, ir_node *op2)
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 	ir_node  *new_op2 = be_transform_node(op2);
 
+	/* Note: there is no Rol on arm, we have to use Ror */
 	new_op2 = new_bd_arm_Rsb_imm(dbgi, block, new_op2, 32, 0);
 	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
 	                                    ARM_SHF_ROR_REG);
 }
 
-/**
- * Creates an ARM ROR from a Firm Rotl.
- *
- * @return the created ARM Ror node
- */
 static ir_node *gen_Rotl(ir_node *node)
 {
 	ir_node *rotate = NULL;
@@ -751,11 +703,6 @@ static ir_node *gen_Rotl(ir_node *node)
 	return rotate;
 }
 
-/**
- * Transforms a Not node.
- *
- * @return the created ARM Not node
- */
 static ir_node *gen_Not(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -768,12 +715,6 @@ static ir_node *gen_Not(ir_node *node)
 	return new_bd_arm_Mvn_reg(dbgi, block, new_op);
 }
 
-/**
- * Transforms an Abs node.
- *
- * @param env   The transformation environment
- * @return the created ARM Abs node
- */
 static ir_node *gen_Abs(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -784,13 +725,12 @@ static ir_node *gen_Abs(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
+		if (USE_FPA(env_cg->isa)) {
 			return new_bd_arm_fpaAbs(dbgi, block, new_op, mode);
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 		}
 	}
@@ -798,11 +738,6 @@ static ir_node *gen_Abs(ir_node *node)
 	return new_bd_arm_Abs(dbgi, block, new_op);
 }
 
-/**
- * Transforms a Minus node.
- *
- * @return the created ARM Minus node
- */
 static ir_node *gen_Minus(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -813,13 +748,12 @@ static ir_node *gen_Minus(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
+		if (USE_FPA(env_cg->isa)) {
 			return new_bd_arm_fpaMvf(dbgi, block, op, mode);
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 		}
 	}
@@ -827,11 +761,6 @@ static ir_node *gen_Minus(ir_node *node)
 	return new_bd_arm_Rsb_imm(dbgi, block, new_op, 0, 0);
 }
 
-/**
- * Transforms a Load.
- *
- * @return the created ARM Load node
- */
 static ir_node *gen_Load(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -845,9 +774,9 @@ static ir_node *gen_Load(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
+		if (USE_FPA(env_cg->isa)) {
 			new_load = new_bd_arm_fpaLdf(dbgi, block, new_ptr, new_mem, mode);
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -870,11 +799,6 @@ static ir_node *gen_Load(ir_node *node)
 	return new_load;
 }
 
-/**
- * Transforms a Store.
- *
- * @return the created ARM Store node
- */
 static ir_node *gen_Store(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -890,10 +814,10 @@ static ir_node *gen_Store(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		env_cg->have_fp_insn = 1;
-		if (USE_FPA(env_cg->isa))
+		if (USE_FPA(env_cg->isa)) {
 			new_store = new_bd_arm_fpaStf(dbgi, block, new_ptr, new_val,
 			                              new_mem, mode);
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -915,14 +839,6 @@ static ir_node *gen_Jmp(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 
 	return new_bd_arm_Jmp(dbgi, new_block);
-}
-
-static ir_node *gen_be_Call(ir_node *node)
-{
-	ir_node *res = be_duplicate_node(node);
-	arch_irn_add_flags(res, arch_irn_flags_modify_flags);
-
-	return res;
 }
 
 static ir_node *gen_SwitchJmp(ir_node *node)
@@ -979,7 +895,12 @@ static ir_node *gen_Cmp(ir_node *node)
 	bool      is_unsigned;
 
 	if (mode_is_float(cmp_mode)) {
-		/* TODO: revivie this code */
+		/* TODO: this is broken... */
+		new_op1 = be_transform_node(op1);
+		new_op2 = be_transform_node(op2);
+
+		return new_bd_arm_Cmfe(dbgi, block, new_op1, new_op2, false);
+
 		panic("FloatCmp NIY");
 #if 0
 		ir_node *new_op2  = be_transform_node(op2);
@@ -1021,11 +942,6 @@ static ir_node *gen_Cmp(ir_node *node)
 	                          is_unsigned);
 }
 
-/**
- * Transforms a Cond.
- *
- * @return the created ARM Cond node
- */
 static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node  *selector = get_Cond_selector(node);
@@ -1082,11 +998,6 @@ static int is_fpa_immediate(tarval *tv)
 }
 #endif
 
-/**
- * Transforms a Const node.
- *
- * @return The transformed ARM node.
- */
 static ir_node *gen_Const(ir_node *node)
 {
 	ir_node  *block = be_transform_node(get_nodes_block(node));
@@ -1101,10 +1012,11 @@ static ir_node *gen_Const(ir_node *node)
 			int imm = is_fpa_immediate(tv);
 
 			if (imm != fpa_max) {
-				if (imm > 0)
+				if (imm > 0) {
 					node = new_bd_arm_fpaMvf_i(dbg, block, mode, imm);
-				else
+				} else {
 					node = new_bd_arm_fpaMnf_i(dbg, block, mode, -imm);
+				}
 			} else {
 #endif
 			{
@@ -1112,23 +1024,16 @@ static ir_node *gen_Const(ir_node *node)
 			}
 			be_dep_on_frame(node);
 			return node;
-		}
-		else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
-		}
-		else {
+		} else {
 			panic("Softfloat not supported yet");
 		}
 	}
 	return create_const_graph(node, block);
 }
 
-/**
- * Transforms a SymConst node.
- *
- * @return The transformed ARM node.
- */
 static ir_node *gen_SymConst(ir_node *node)
 {
 	ir_node   *block  = be_transform_node(get_nodes_block(node));
@@ -1141,11 +1046,6 @@ static ir_node *gen_SymConst(ir_node *node)
 	return new_node;
 }
 
-/**
- * Transforms a CopyB node.
- *
- * @return The transformed ARM node.
- */
 static ir_node *gen_CopyB(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -1163,87 +1063,13 @@ static ir_node *gen_CopyB(ir_node *node)
 	src_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], block, new_src);
 	dst_copy = be_new_Copy(&arm_reg_classes[CLASS_arm_gp], block, new_dst);
 
- 	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
+	return new_bd_arm_CopyB(dbg, block, dst_copy, src_copy,
 			new_bd_arm_EmptyReg(dbg, block),
 			new_bd_arm_EmptyReg(dbg, block),
 			new_bd_arm_EmptyReg(dbg, block),
 			new_mem, size);
 }
 
-/**
- * Transforms a FrameAddr into an ARM Add.
- */
-static ir_node *gen_be_FrameAddr(ir_node *node)
-{
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
-	ir_entity *ent    = be_get_frame_entity(node);
-	ir_node   *fp     = be_get_FrameAddr_frame(node);
-	ir_node   *new_fp = be_transform_node(fp);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *new_node;
-
-	new_node = new_bd_arm_FrameAddr(dbgi, block, new_fp, ent, 0);
-	return new_node;
-}
-
-/**
- * Transform a be_AddSP into an arm_AddSP. Eat up const sizes.
- */
-static ir_node *gen_be_AddSP(ir_node *node)
-{
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *sz     = get_irn_n(node, be_pos_AddSP_size);
-	ir_node  *new_sz = be_transform_node(sz);
-	ir_node  *sp     = get_irn_n(node, be_pos_AddSP_old_sp);
-	ir_node  *new_sp = be_transform_node(sp);
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_node  *nomem  = new_NoMem();
-	ir_node  *new_op;
-
-	/* ARM stack grows in reverse direction, make a SubSPandCopy */
-	new_op = new_bd_arm_SubSPandCopy(dbgi, block, new_sp, new_sz, nomem);
-
-	return new_op;
-}
-
-/**
- * Transform a be_SubSP into an arm_SubSP. Eat up const sizes.
- */
-static ir_node *gen_be_SubSP(ir_node *node)
-{
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *sz     = get_irn_n(node, be_pos_SubSP_size);
-	ir_node  *new_sz = be_transform_node(sz);
-	ir_node  *sp     = get_irn_n(node, be_pos_SubSP_old_sp);
-	ir_node  *new_sp = be_transform_node(sp);
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_node  *nomem  = new_NoMem();
-	ir_node  *new_op;
-
-	/* ARM stack grows in reverse direction, make an AddSP */
-	new_op = new_bd_arm_AddSP(dbgi, block, new_sp, new_sz, nomem);
-
-	return new_op;
-}
-
-/**
- * Transform a be_Copy.
- */
-static ir_node *gen_be_Copy(ir_node *node)
-{
-	ir_node *result = be_duplicate_node(node);
-	ir_mode *mode   = get_irn_mode(result);
-
-	if (mode_needs_gp_reg(mode)) {
-		set_irn_mode(node, mode_Iu);
-	}
-
-	return result;
-}
-
-/**
- * Transform a Proj from a Load.
- */
 static ir_node *gen_Proj_Load(ir_node *node)
 {
 	ir_node  *load     = get_Proj_pred(node);
@@ -1275,9 +1101,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	panic("Unsupported Proj from Load");
 }
 
-/**
- * Transform and renumber the Projs from a CopyB.
- */
 static ir_node *gen_Proj_CopyB(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
@@ -1286,7 +1109,7 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
-	case pn_CopyB_M_regular:
+	case pn_CopyB_M:
 		if (is_arm_CopyB(new_pred)) {
 			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_CopyB_M);
 		}
@@ -1297,9 +1120,6 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	panic("Unsupported Proj from CopyB");
 }
 
-/**
- * Transform and renumber the Projs from a Quot.
- */
 static ir_node *gen_Proj_Quot(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
@@ -1338,67 +1158,134 @@ static ir_node *gen_Proj_Quot(ir_node *node)
 }
 
 /**
- * Transform the Projs of a be_AddSP.
- */
-static ir_node *gen_Proj_be_AddSP(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long     proj      = get_Proj_proj(node);
-
-	if (proj == pn_be_AddSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
-		                           pn_arm_SubSPandCopy_stack);
-		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
-		return res;
-	} else if (proj == pn_be_AddSP_res) {
-		return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_arm_SubSPandCopy_addr);
-	} else if (proj == pn_be_AddSP_M) {
-		return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_SubSPandCopy_M);
-	}
-	panic("Unsupported Proj from AddSP");
-}
-
-/**
- * Transform the Projs of a be_SubSP.
- */
-static ir_node *gen_Proj_be_SubSP(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long     proj      = get_Proj_proj(node);
-
-	if (proj == pn_be_SubSP_sp) {
-		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
-		                           pn_arm_AddSP_stack);
-		arch_set_irn_register(res, &arm_gp_regs[REG_SP]);
-		return res;
-	} else if (proj == pn_be_SubSP_M) {
-		return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_AddSP_M);
-	}
-	panic("Unsupported Proj from SubSP");
-}
-
-/**
  * Transform the Projs from a Cmp.
  */
 static ir_node *gen_Proj_Cmp(ir_node *node)
 {
 	(void) node;
+	/* we should only be here in case of a Mux node */
 	panic("Mux NYI");
 }
 
+static ir_node *gen_Proj_Start(ir_node *node)
+{
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_block = be_transform_node(block);
+	ir_node *barrier   = be_transform_node(get_Proj_pred(node));
+	long     proj      = get_Proj_proj(node);
+
+	switch ((pn_Start) proj) {
+	case pn_Start_X_initial_exec:
+		/* we exchange the ProjX with a jump */
+		return new_bd_arm_Jmp(NULL, new_block);
+
+	case pn_Start_M:
+		return new_r_Proj(barrier, mode_M, 0);
+
+	case pn_Start_T_args:
+		/* TODO */
+		return barrier;
+
+	case pn_Start_P_frame_base:
+		return be_prolog_get_reg_value(abihelper, sp_reg);
+
+	case pn_Start_P_tls:
+		return new_bd_arm_LdTls(NULL, new_block);
+
+	case pn_Start_max:
+		break;
+	}
+	panic("unexpected start proj: %ld\n", proj);
+}
+
+static ir_node *gen_Proj_Proj_Start(ir_node *node)
+{
+	long                      pn = get_Proj_proj(node);
+	const reg_or_stackslot_t *param;
+
+	/* Proj->Proj->Start must be a method argument */
+	assert(get_Proj_proj(get_Proj_pred(node)) == pn_Start_T_args);
+
+	param = &cconv->parameters[pn];
+
+	if (param->reg0 != NULL) {
+		/* argument transmitted in register */
+		return be_prolog_get_reg_value(abihelper, param->reg0);
+	} else {
+		/* argument transmitted on stack */
+		ir_graph *irg       = get_irn_irg(node);
+		ir_node  *block     = get_nodes_block(node);
+		ir_node  *new_block = be_transform_node(block);
+		ir_node  *fp        = get_irg_frame(irg);
+		ir_node  *mem       = be_prolog_get_memory(abihelper);
+		ir_mode  *mode      = get_type_mode(param->type);
+		ir_node  *load      = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode,
+		                                     param->entity, 0, 0, true);
+		ir_node  *value     = new_r_Proj(load, mode_gp, pn_arm_Ldr_res);
+		set_irn_pinned(load, op_pin_state_floats);
+
+		return value;
+	}
+}
 
 /**
- * Transform the Thread Local Storage Proj.
+ * Finds number of output value of a mode_T node which is constrained to
+ * a single specific register.
  */
-static ir_node *gen_Proj_tls(ir_node *node)
+static int find_out_for_reg(ir_node *node, const arch_register_t *reg)
 {
-	ir_node *block = be_transform_node(get_nodes_block(node));
+	int n_outs = arch_irn_get_n_outs(node);
+	int o;
 
-	return new_bd_arm_LdTls(NULL, block);
+	for (o = 0; o < n_outs; ++o) {
+		const arch_register_req_t *req = arch_get_out_register_req(node, o);
+		if (req == reg->single_req)
+			return o;
+	}
+	return -1;
+}
+
+static ir_node *gen_Proj_Proj_Call(ir_node *node)
+{
+	long                  pn            = get_Proj_proj(node);
+	ir_node              *call          = get_Proj_pred(get_Proj_pred(node));
+	ir_node              *new_call      = be_transform_node(call);
+	ir_type              *function_type = get_Call_type(call);
+	calling_convention_t *cconv = decide_calling_convention(function_type);
+	const reg_or_stackslot_t *res = &cconv->results[pn];
+	ir_mode              *mode;
+	int                   regn;
+
+	/* TODO 64bit modes */
+	assert(res->reg0 != NULL && res->reg1 == NULL);
+	regn = find_out_for_reg(new_call, res->reg0);
+	if (regn < 0) {
+		panic("Internal error in calling convention for return %+F", node);
+	}
+	mode = res->reg0->reg_class->mode;
+
+	free_calling_convention(cconv);
+
+	return new_r_Proj(new_call, mode, regn);
+}
+
+static ir_node *gen_Proj_Call(ir_node *node)
+{
+	long     pn        = get_Proj_proj(node);
+	ir_node *call      = get_Proj_pred(node);
+	ir_node *new_call  = be_transform_node(call);
+
+	switch ((pn_Call) pn) {
+	case pn_Call_M:
+		return new_r_Proj(new_call, mode_M, 0);
+	case pn_Call_X_regular:
+	case pn_Call_X_except:
+	case pn_Call_T_result:
+	case pn_Call_P_value_res_base:
+	case pn_Call_max:
+		break;
+	}
+	panic("Unexpected Call proj %ld\n", pn);
 }
 
 /**
@@ -1406,54 +1293,43 @@ static ir_node *gen_Proj_tls(ir_node *node)
  */
 static ir_node *gen_Proj(ir_node *node)
 {
-	ir_graph *irg  = current_ir_graph;
-	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *pred = get_Proj_pred(node);
-	long     proj  = get_Proj_proj(node);
+	long      proj = get_Proj_proj(node);
 
-	if (is_Store(pred)) {
+	switch (get_irn_opcode(pred)) {
+	case iro_Store:
 		if (proj == pn_Store_M) {
 			return be_transform_node(pred);
 		} else {
 			panic("Unsupported Proj from Store");
 		}
-	} else if (is_Load(pred)) {
+	case iro_Load:
 		return gen_Proj_Load(node);
-	} else if (is_CopyB(pred)) {
+	case iro_Call:
+		return gen_Proj_Call(node);
+	case iro_CopyB:
 		return gen_Proj_CopyB(node);
-	} else if (is_Quot(pred)) {
+	case iro_Quot:
 		return gen_Proj_Quot(node);
-	} else if (be_is_SubSP(pred)) {
-		return gen_Proj_be_SubSP(node);
-	} else if (be_is_AddSP(pred)) {
-		return gen_Proj_be_AddSP(node);
-	} else if (is_Cmp(pred)) {
+	case iro_Cmp:
 		return gen_Proj_Cmp(node);
-	} else if (is_Start(pred)) {
-		if (proj == pn_Start_X_initial_exec) {
-			ir_node *block = get_nodes_block(pred);
-			ir_node *jump;
-
-			/* we exchange the ProjX with a jump */
-			block = be_transform_node(block);
-			jump  = new_rd_Jmp(dbgi, block);
-			return jump;
+	case iro_Start:
+		return gen_Proj_Start(node);
+	case iro_Cond:
+		/* nothing to do */
+		return be_duplicate_node(node);
+	case iro_Proj: {
+		ir_node *pred_pred = get_Proj_pred(pred);
+		if (is_Call(pred_pred)) {
+			return gen_Proj_Proj_Call(node);
+		} else if (is_Start(pred_pred)) {
+			return gen_Proj_Proj_Start(node);
 		}
-		if (node == get_irg_anchor(irg, anchor_tls)) {
-			return gen_Proj_tls(node);
-		}
-	} else {
-		ir_node *new_pred = be_transform_node(pred);
-		ir_mode *mode     = get_irn_mode(node);
-		if (mode_needs_gp_reg(mode)) {
-			ir_node *new_proj = new_r_Proj(new_pred, mode_Iu,
-			                               get_Proj_proj(node));
-			new_proj->node_nr = node->node_nr;
-			return new_proj;
-		}
+		/* FALLTHROUGH */
 	}
-
-	return be_duplicate_node(node);
+	default:
+		panic("code selection didn't expect Proj after %+F\n", pred);
+	}
 }
 
 typedef ir_node *(*create_const_node_func)(dbg_info *db, ir_node *block);
@@ -1495,6 +1371,374 @@ static ir_node *gen_Unknown(ir_node *node)
 }
 
 /**
+ * Produces the type which sits between the stack args and the locals on the
+ * stack. It will contain the return address and space to store the old base
+ * pointer.
+ * @return The Firm type modeling the ABI between type.
+ */
+static ir_type *arm_get_between_type(void)
+{
+	static ir_type *between_type = NULL;
+
+	if (between_type == NULL) {
+		between_type = new_type_class(new_id_from_str("arm_between_type"));
+		set_type_size_bytes(between_type, 0);
+	}
+
+	return between_type;
+}
+
+static void create_stacklayout(ir_graph *irg)
+{
+	ir_entity         *entity        = get_irg_entity(irg);
+	ir_type           *function_type = get_entity_type(entity);
+	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
+	ir_type           *arg_type;
+	int                p;
+	int                n_params;
+
+	/* calling conventions must be decided by now */
+	assert(cconv != NULL);
+
+	/* construct argument type */
+	arg_type = new_type_struct(id_mangle_u(get_entity_ident(entity), new_id_from_chars("arg_type", 8)));
+	n_params = get_method_n_params(function_type);
+	for (p = 0; p < n_params; ++p) {
+		reg_or_stackslot_t *param = &cconv->parameters[p];
+		char                buf[128];
+		ident              *id;
+
+		if (param->type == NULL)
+			continue;
+
+		snprintf(buf, sizeof(buf), "param_%d", p);
+		id            = new_id_from_str(buf);
+		param->entity = new_entity(arg_type, id, param->type);
+		set_entity_offset(param->entity, param->offset);
+	}
+
+	/* TODO: what about external functions? we don't know most of the stack
+	 * layout for them. And probably don't need all of this... */
+	memset(layout, 0, sizeof(*layout));
+
+	layout->frame_type     = get_irg_frame_type(irg);
+	layout->between_type   = arm_get_between_type();
+	layout->arg_type       = arg_type;
+	layout->param_map      = NULL; /* TODO */
+	layout->initial_offset = 0;
+	layout->initial_bias   = 0;
+	layout->stack_dir      = -1;
+
+	assert(N_FRAME_TYPES == 3);
+	layout->order[0] = layout->frame_type;
+	layout->order[1] = layout->between_type;
+	layout->order[2] = layout->arg_type;
+}
+
+/**
+ * transform the start node to the prolog code + initial barrier
+ */
+static ir_node *gen_Start(ir_node *node)
+{
+	ir_graph  *irg           = get_irn_irg(node);
+	ir_entity *entity        = get_irg_entity(irg);
+	ir_type   *function_type = get_entity_type(entity);
+	ir_node   *block         = get_nodes_block(node);
+	ir_node   *new_block     = be_transform_node(block);
+	dbg_info  *dbgi          = get_irn_dbg_info(node);
+	ir_node   *start;
+	ir_node   *incsp;
+	ir_node   *sp;
+	ir_node   *barrier;
+	int        i;
+
+	/* stackpointer is important at function prolog */
+	be_prolog_add_reg(abihelper, sp_reg,
+			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
+	/* function parameters in registers */
+	for (i = 0; i < get_method_n_params(function_type); ++i) {
+		const reg_or_stackslot_t *param = &cconv->parameters[i];
+		if (param->reg0 != NULL)
+			be_prolog_add_reg(abihelper, param->reg0, 0);
+		if (param->reg1 != NULL)
+			be_prolog_add_reg(abihelper, param->reg1, 0);
+	}
+	/* announce that we need the values of the callee save regs */
+	for (i = 0; i < (int) (sizeof(callee_saves)/sizeof(callee_saves[0])); ++i) {
+		be_prolog_add_reg(abihelper, callee_saves[i], 0);
+	}
+
+	start = be_prolog_create_start(abihelper, dbgi, new_block);
+	sp    = be_prolog_get_reg_value(abihelper, sp_reg);
+	incsp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
+	be_prolog_set_reg_value(abihelper, sp_reg, incsp);
+	barrier = be_prolog_create_barrier(abihelper, new_block);
+
+	return barrier;
+}
+
+static ir_node *get_stack_pointer_for(ir_node *node)
+{
+	/* get predecessor in stack_order list */
+	ir_node *stack_pred = be_get_stack_pred(abihelper, node);
+	ir_node *stack_pred_transformed;
+	ir_node *stack;
+
+	if (stack_pred == NULL) {
+		/* first stack user in the current block. We can simply use the
+		 * initial sp_proj for it */
+		ir_node *sp_proj = be_prolog_get_reg_value(abihelper, sp_reg);
+		return sp_proj;
+	}
+
+	stack_pred_transformed = be_transform_node(stack_pred);
+	stack                  = pmap_get(node_to_stack, stack_pred);
+	if (stack == NULL) {
+		return get_stack_pointer_for(stack_pred);
+	}
+
+	return stack;
+}
+
+/**
+ * transform a Return node into epilogue code + return statement
+ */
+static ir_node *gen_Return(ir_node *node)
+{
+	ir_node   *block          = get_nodes_block(node);
+	ir_node   *new_block      = be_transform_node(block);
+	dbg_info  *dbgi           = get_irn_dbg_info(node);
+	ir_node   *mem            = get_Return_mem(node);
+	ir_node   *new_mem        = be_transform_node(mem);
+	int        n_callee_saves = sizeof(callee_saves)/sizeof(callee_saves[0]);
+	ir_node   *sp_proj        = get_stack_pointer_for(node);
+	ir_node   *bereturn;
+	ir_node   *incsp;
+	int        i;
+	int        n_res;
+	const arch_register_t *const result_regs[] = {
+		&arm_gp_regs[REG_R0],
+		&arm_gp_regs[REG_R1]
+	};
+
+	be_epilog_begin(abihelper);
+	be_epilog_set_memory(abihelper, new_mem);
+	/* connect stack pointer with initial stack pointer. fix_stack phase
+	   will later serialize all stack pointer adjusting nodes */
+	be_epilog_add_reg(abihelper, sp_reg,
+			arch_register_req_type_produces_sp | arch_register_req_type_ignore,
+			sp_proj);
+
+	/* result values */
+	n_res = get_Return_n_ress(node);
+	if (n_res > (int) (sizeof(result_regs)/sizeof(result_regs[0]))) {
+		panic("Too many return values for arm backend (%+F)", node);
+	}
+	for (i = 0; i < n_res; ++i) {
+		ir_node               *res_value     = get_Return_res(node, i);
+		ir_node               *new_res_value = be_transform_node(res_value);
+		const arch_register_t *reg           = result_regs[i];
+		be_epilog_add_reg(abihelper, reg, 0, new_res_value);
+	}
+
+	/* connect callee saves with their values at the function begin */
+	for (i = 0; i < n_callee_saves; ++i) {
+		const arch_register_t *reg   = callee_saves[i];
+		ir_node               *value = be_prolog_get_reg_value(abihelper, reg);
+		be_epilog_add_reg(abihelper, reg, 0, value);
+	}
+
+	/* create the barrier before the epilog code */
+	be_epilog_create_barrier(abihelper, new_block);
+
+	/* epilog code: an incsp */
+	sp_proj = be_epilog_get_reg_value(abihelper, sp_reg);
+	incsp   = be_new_IncSP(sp_reg, new_block, sp_proj,
+	                       BE_STACK_FRAME_SIZE_SHRINK, 0);
+	be_epilog_set_reg_value(abihelper, sp_reg, incsp);
+
+	bereturn = be_epilog_create_return(abihelper, dbgi, new_block);
+
+	return bereturn;
+}
+
+static ir_node *gen_Call(ir_node *node)
+{
+	ir_graph             *irg          = get_irn_irg(node);
+	ir_node              *callee       = get_Call_ptr(node);
+	ir_node              *block        = get_nodes_block(node);
+	ir_node              *new_block    = be_transform_node(block);
+	ir_node              *mem          = get_Call_mem(node);
+	ir_node              *new_mem      = be_transform_node(mem);
+	dbg_info             *dbgi         = get_irn_dbg_info(node);
+	ir_type              *type         = get_Call_type(node);
+	calling_convention_t *cconv        = decide_calling_convention(type);
+	int                   n_params     = get_Call_n_params(node);
+	int                   n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
+	/* max inputs: memory, callee, register arguments */
+	int                   max_inputs   = 2 + n_param_regs;
+	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
+	ir_node             **sync_ins     = ALLOCAN(ir_node*, max_inputs);
+	struct obstack       *obst         = be_get_be_obst(irg);
+	const arch_register_req_t **in_req
+		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
+	int                   in_arity     = 0;
+	int                   sync_arity   = 0;
+	int                   n_caller_saves
+		= sizeof(caller_saves)/sizeof(caller_saves[0]);
+	ir_entity            *entity       = NULL;
+	ir_node              *incsp        = NULL;
+	int                   mem_pos;
+	ir_node              *res;
+	int                   p;
+	int                   o;
+	int                   out_arity;
+
+	assert(n_params == get_method_n_params(type));
+
+	/* construct arguments */
+
+	/* memory input */
+	in_req[in_arity] = arch_no_register_req;
+	mem_pos          = in_arity;
+	++in_arity;
+	/* parameters */
+	for (p = 0; p < n_params; ++p) {
+		ir_node                  *value     = get_Call_param(node, p);
+		ir_node                  *new_value = be_transform_node(value);
+		const reg_or_stackslot_t *param     = &cconv->parameters[p];
+		const arch_register_t    *reg       = param->reg0;
+
+		/* double not implemented yet */
+		assert(get_mode_size_bits(get_irn_mode(value)) <= 32);
+		assert(param->reg1 == NULL);
+
+		if (reg != NULL) {
+			in[in_arity] = new_value;
+			if (reg == &arm_gp_regs[REG_LR]) {
+				in_req[in_arity] = be_create_reg_req(obst,
+						reg, arch_register_req_type_ignore);
+			} else {
+				in_req[in_arity] = reg->single_req;
+			}
+			++in_arity;
+		} else {
+			ir_mode *mode;
+			ir_node *str;
+			if (incsp == NULL) {
+				ir_node *new_frame = get_stack_pointer_for(node);
+				incsp = be_new_IncSP(sp_reg, new_block, new_frame, cconv->param_stack_size, 1);
+			}
+			mode = get_irn_mode(value);
+			str  = new_bd_arm_Str(dbgi, new_block, incsp, value, new_mem, mode,
+			                      NULL, 0, param->offset, true);
+
+			sync_ins[sync_arity++] = str;
+		}
+	}
+	assert(in_arity <= max_inputs);
+
+	/* construct memory input */
+	if (sync_arity == 0) {
+		in[mem_pos] = new_mem;
+	} else if (sync_arity == 1) {
+		in[mem_pos] = sync_ins[0];
+	} else {
+		in[mem_pos] = new_rd_Sync(NULL, new_block, sync_arity, sync_ins);
+	}
+
+	/* TODO: use a generic symconst matcher here */
+	if (is_SymConst(callee)) {
+		entity = get_SymConst_entity(callee);
+	} else {
+		/* TODO: finish load matcher here */
+#if 0
+		/* callee */
+		if (is_Proj(callee) && is_Load(get_Proj_pred(callee))) {
+			ir_node *load    = get_Proj_pred(callee);
+			ir_node *ptr     = get_Load_ptr(load);
+			ir_node *new_ptr = be_transform_node(ptr);
+			ir_node *mem     = get_Load_mem(load);
+			ir_node *new_mem = be_transform_node(mem);
+			ir_mode *mode    = get_Load_mode(node);
+
+		} else {
+#endif
+			in[in_arity]     = be_transform_node(callee);
+			in_req[in_arity] = arm_reg_classes[CLASS_arm_gp].class_req;
+			++in_arity;
+		//}
+	}
+
+	/* outputs:
+	 *  - memory
+	 *  - caller saves
+	 */
+	out_arity = 1 + n_caller_saves;
+
+	if (entity != NULL) {
+		/* TODO: use a generic symconst matcher here
+		 * so we can also handle entity+offset, etc. */
+		res = new_bd_arm_Bl(dbgi, new_block, in_arity, in, out_arity,entity, 0);
+	} else {
+		/* TODO:
+		 * - use a proper shifter_operand matcher
+		 * - we could also use LinkLdrPC
+		 */
+		res = new_bd_arm_LinkMovPC(dbgi, new_block, in_arity, in, out_arity,
+		                           ARM_SHF_REG, 0, 0);
+	}
+
+	if (incsp != NULL) {
+		/* IncSP to destroy the call stackframe */
+		incsp = be_new_IncSP(sp_reg, new_block, incsp, -cconv->param_stack_size,
+		                     0);
+		/* if we are the last IncSP producer in a block then we have to keep
+		 * the stack value.
+		 * Note: This here keeps all producers which is more than necessary */
+		add_irn_dep(incsp, res);
+		keep_alive(incsp);
+
+		pmap_insert(node_to_stack, node, incsp);
+	}
+
+	set_arm_in_req_all(res, in_req);
+
+	/* create output register reqs */
+	arch_set_out_register_req(res, 0, arch_no_register_req);
+	for (o = 1; o < n_caller_saves + 1; ++o) {
+		const arch_register_t *reg = caller_saves[o-1];
+		arch_set_out_register_req(res, o, reg->single_req);
+	}
+
+	/* copy pinned attribute */
+	set_irn_pinned(res, get_irn_pinned(node));
+
+	free_calling_convention(cconv);
+	return res;
+}
+
+static ir_node *gen_Sel(ir_node *node)
+{
+	dbg_info  *dbgi      = get_irn_dbg_info(node);
+	ir_node   *block     = get_nodes_block(node);
+	ir_node   *new_block = be_transform_node(block);
+	ir_node   *ptr       = get_Sel_ptr(node);
+	ir_node   *new_ptr   = be_transform_node(ptr);
+	ir_entity *entity    = get_Sel_entity(node);
+
+	/* must be the frame pointer all other sels must have been lowered
+	 * already */
+	assert(is_Proj(ptr) && is_Start(get_Proj_pred(ptr)));
+	/* we should not have value types from parameters anymore - they should be
+	   lowered */
+	assert(get_entity_owner(entity) !=
+			get_method_value_param_type(get_entity_type(get_irg_entity(get_irn_irg(node)))));
+
+	return new_bd_arm_FrameAddr(dbgi, new_block, new_ptr, entity, 0);
+}
+
+/**
  * Change some phi modes
  */
 static ir_node *gen_Phi(ir_node *node)
@@ -1530,6 +1774,7 @@ static ir_node *gen_Phi(ir_node *node)
 	return phi;
 }
 
+
 /**
  * Enters all transform functions into the generic pointer
  */
@@ -1537,37 +1782,36 @@ static void arm_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Abs,          gen_Abs);
-	be_set_transform_function(op_Add,          gen_Add);
-	be_set_transform_function(op_And,          gen_And);
-	be_set_transform_function(op_be_AddSP,     gen_be_AddSP);
-	be_set_transform_function(op_be_Call,      gen_be_Call);
-	be_set_transform_function(op_be_Copy,      gen_be_Copy);
-	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
-	be_set_transform_function(op_be_SubSP,     gen_be_SubSP);
-	be_set_transform_function(op_Cmp,          gen_Cmp);
-	be_set_transform_function(op_Cond,         gen_Cond);
-	be_set_transform_function(op_Const,        gen_Const);
-	be_set_transform_function(op_Conv,         gen_Conv);
-	be_set_transform_function(op_CopyB,        gen_CopyB);
-	be_set_transform_function(op_Eor,          gen_Eor);
-	be_set_transform_function(op_Jmp,          gen_Jmp);
-	be_set_transform_function(op_Load,         gen_Load);
-	be_set_transform_function(op_Minus,        gen_Minus);
-	be_set_transform_function(op_Mul,          gen_Mul);
-	be_set_transform_function(op_Not,          gen_Not);
-	be_set_transform_function(op_Or,           gen_Or);
-	be_set_transform_function(op_Phi,          gen_Phi);
-	be_set_transform_function(op_Proj,         gen_Proj);
-	be_set_transform_function(op_Quot,         gen_Quot);
-	be_set_transform_function(op_Rotl,         gen_Rotl);
-	be_set_transform_function(op_Shl,          gen_Shl);
-	be_set_transform_function(op_Shr,          gen_Shr);
-	be_set_transform_function(op_Shrs,         gen_Shrs);
-	be_set_transform_function(op_Store,        gen_Store);
-	be_set_transform_function(op_Sub,          gen_Sub);
-	be_set_transform_function(op_SymConst,     gen_SymConst);
-	be_set_transform_function(op_Unknown,      gen_Unknown);
+	be_set_transform_function(op_Abs,      gen_Abs);
+	be_set_transform_function(op_Add,      gen_Add);
+	be_set_transform_function(op_And,      gen_And);
+	be_set_transform_function(op_Call,     gen_Call);
+	be_set_transform_function(op_Cmp,      gen_Cmp);
+	be_set_transform_function(op_Cond,     gen_Cond);
+	be_set_transform_function(op_Const,    gen_Const);
+	be_set_transform_function(op_Conv,     gen_Conv);
+	be_set_transform_function(op_CopyB,    gen_CopyB);
+	be_set_transform_function(op_Eor,      gen_Eor);
+	be_set_transform_function(op_Jmp,      gen_Jmp);
+	be_set_transform_function(op_Load,     gen_Load);
+	be_set_transform_function(op_Minus,    gen_Minus);
+	be_set_transform_function(op_Mul,      gen_Mul);
+	be_set_transform_function(op_Not,      gen_Not);
+	be_set_transform_function(op_Or,       gen_Or);
+	be_set_transform_function(op_Phi,      gen_Phi);
+	be_set_transform_function(op_Proj,     gen_Proj);
+	be_set_transform_function(op_Quot,     gen_Quot);
+	be_set_transform_function(op_Return,   gen_Return);
+	be_set_transform_function(op_Rotl,     gen_Rotl);
+	be_set_transform_function(op_Sel,      gen_Sel);
+	be_set_transform_function(op_Shl,      gen_Shl);
+	be_set_transform_function(op_Shr,      gen_Shr);
+	be_set_transform_function(op_Shrs,     gen_Shrs);
+	be_set_transform_function(op_Start,    gen_Start);
+	be_set_transform_function(op_Store,    gen_Store);
+	be_set_transform_function(op_Sub,      gen_Sub);
+	be_set_transform_function(op_SymConst, gen_SymConst);
+	be_set_transform_function(op_Unknown,  gen_Unknown);
 }
 
 /**
@@ -1610,6 +1854,11 @@ static void arm_init_fpa_immediate(void)
 void arm_transform_graph(arm_code_gen_t *cg)
 {
 	static int imm_initialized = 0;
+	ir_graph  *irg             = cg->irg;
+	ir_entity *entity          = get_irg_entity(irg);
+	ir_type   *frame_type;
+
+	mode_gp = mode_Iu;
 
 	if (! imm_initialized) {
 		arm_init_fpa_immediate();
@@ -1617,7 +1866,33 @@ void arm_transform_graph(arm_code_gen_t *cg)
 	}
 	arm_register_transformers();
 	env_cg = cg;
+
+	node_to_stack = pmap_create();
+
+	assert(abihelper == NULL);
+	abihelper = be_abihelper_prepare(irg);
+	be_collect_stacknodes(abihelper);
+	assert(cconv == NULL);
+	cconv = decide_calling_convention(get_entity_type(entity));
+	create_stacklayout(irg);
+
 	be_transform_graph(cg->irg, NULL);
+
+	be_abihelper_finish(abihelper);
+	abihelper = NULL;
+
+	free_calling_convention(cconv);
+	cconv = NULL;
+
+	frame_type = get_irg_frame_type(irg);
+	if (get_type_state(frame_type) == layout_undefined) {
+		default_layout_compound_type(frame_type);
+	}
+
+	pmap_destroy(node_to_stack);
+	node_to_stack = NULL;
+
+	be_add_missing_keeps(irg);
 }
 
 void arm_init_transform(void)

@@ -445,6 +445,9 @@ static void dump(int mask, ir_graph *irg, const char *suffix)
  */
 static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 {
+	/* don't duplicate locals in backend when dumping... */
+	ir_remove_dump_flags(ir_dump_flag_consts_local);
+
 	dump(DUMP_INITIAL, irg, "begin");
 
 	irg->be_data = birg;
@@ -629,6 +632,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		birg->cg = cg_if->init(irg);
 
 		/* some transformations need to be done before abi introduce */
+		assert(birg->cg->impl->before_abi == NULL || !arch_env->custom_abi);
 		arch_code_generator_before_abi(birg->cg);
 
 		/* implement the ABI conventions. */
@@ -636,23 +640,24 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_abi_introduce(irg);
 		be_timer_pop(T_ABI);
 
-		dump(DUMP_ABI, irg, "abi");
-
-		/* do local optimizations */
-		optimize_graph_df(irg);
+		if (!arch_env->custom_abi) {
+			dump(DUMP_ABI, irg, "abi");
+			/* do local optimizations */
+			optimize_graph_df(irg);
+		}
 
 		/* we have to do cfopt+remove_critical_edges as we can't have Bad-blocks
 		 * or critical edges in the backend */
 		optimize_cf(irg);
 		remove_critical_cf_edges(irg);
 
-		/* TODO: we often have dead code reachable through out-edges here. So for
-		 * now we rebuild edges (as we need correct user count for code selection)
-		 */
+		/* We often have dead code reachable through out-edges here. So for
+		 * now we rebuild edges (as we need correct user count for code
+		 * selection) */
 		edges_deactivate(irg);
 		edges_activate(irg);
 
-		dump(DUMP_PREPARED, irg, "pre_transform");
+		dump(DUMP_PREPARED, irg, "before-code-selection");
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);
@@ -660,12 +665,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
-		/* generate code */
+		/* perform codeselection */
 		be_timer_push(T_CODEGEN);
 		arch_code_generator_prepare_graph(birg->cg);
 		be_timer_pop(T_CODEGEN);
-
-		dump(DUMP_PREPARED, irg, "prepared");
 
 		if (be_options.vrfy_option == BE_VRFY_WARN) {
 			be_check_dominance(irg);

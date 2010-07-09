@@ -309,6 +309,46 @@ Abs => {
 	mode      => $mode_gp,
 },
 
+# mov lr, pc\n mov pc, XXX -- This combination is used for calls to function
+# pointers
+LinkMovPC => {
+	state        => "exc_pinned",
+	arity        => "variable",
+	out_arity    => "variable",
+	attr_type    => "arm_shifter_operand_t",
+	attr         => "arm_shift_modifier_t shift_modifier, unsigned char immediate_value, unsigned char immediate_rot",
+	custominit   => "init_arm_shifter_operand(res, immediate_value, shift_modifier, immediate_rot);\n".
+	                "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);",
+	emit         => ". mov lr, pc\n".
+	                ". mov pc, %SO",
+	mode         => "mode_T",
+},
+
+# mov lr, pc\n ldr pc, XXX -- This combination is used for calls to function
+# pointers
+LinkLdrPC => {
+	state        => "exc_pinned",
+	arity        => "variable",
+	out_arity    => "variable",
+	attr_type    => "arm_load_store_attr_t",
+	attr         => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	custominit   => "arch_irn_add_flags(res, arch_irn_flags_modify_flags);",
+	emit         => ". mov lr, pc\n".
+	                ". ldr pc, %SO",
+	mode         => "mode_T",
+},
+
+Bl => {
+	state      => "exc_pinned",
+	arity      => "variable",
+	out_arity  => "variable",
+	attr_type  => "arm_SymConst_attr_t",
+	attr       => "ir_entity *entity, int symconst_offset",
+	custominit => "arch_irn_add_flags(res, arch_irn_flags_modify_flags);",
+	emit       => '. bl %SC',
+	mode       => "mode_T",
+},
+
 # this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
 EmptyReg => {
 	op_flags  => "c",
@@ -539,44 +579,24 @@ fpaFix => {
 	emit      => '. fix %D0, %S0',
 },
 
-fpaCmfBra => {
-	op_flags  => "L|X|Y",
-	state     => "pinned",
-	mode      => "mode_T",
-	attr      => "pn_Cmp pnc",
-	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
-	attr_type => "arm_CondJmp_attr_t",
+Cmf => {
+	irn_flags => "R|F",
+	mode      => $mode_flags,
+	attr_type => "arm_cmp_attr_t",
+	attr      => "bool ins_permuted",
+	init_attr => "init_arm_cmp_attr(res, ins_permuted, false);",
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "flags" ] },
+	emit      => '. cmf %S0, %S1',
 },
 
-fpaCnfBra => {
-	op_flags  => "L|X|Y",
-	state     => "pinned",
-	mode      => "mode_T",
-	attr      => "int pnc",
-	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
-	attr_type => "arm_CondJmp_attr_t",
-},
-
-fpaCmfeBra => {
-	op_flags  => "L|X|Y",
-	state     => "pinned",
-	mode      => "mode_T",
-	attr      => "int pnc",
-	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
-	attr_type => "arm_CondJmp_attr_t",
-},
-
-fpaCnfeBra => {
-	op_flags  => "L|X|Y",
-	state     => "pinned",
-	mode      => "mode_T",
-	attr      => "int pnc",
-	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
-	reg_req   => { in => [ "fpa", "fpa" ], out => [ "none", "none"] },
-	attr_type => "arm_CondJmp_attr_t",
+Cmfe => {
+	irn_flags => "R|F",
+	mode      => $mode_flags,
+	attr_type => "arm_cmp_attr_t",
+	attr      => "bool ins_permuted",
+	init_attr => "init_arm_cmp_attr(res, ins_permuted, false);",
+	reg_req   => { in => [ "fpa", "fpa" ], out => [ "flags" ] },
+	emit      => '. cmfe %S0, %S1',
 },
 
 fpaLdf => {

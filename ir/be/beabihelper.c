@@ -33,6 +33,8 @@
 #include "ircons.h"
 #include "iredges.h"
 #include "irgwalk.h"
+#include "irphase_t.h"
+#include "height.h"
 
 typedef struct reg_flag_t {
 	const arch_register_t *reg;   /**< register at an input position.
@@ -58,6 +60,7 @@ struct beabi_helper_env_t {
 	ir_graph                 *irg;
 	register_state_mapping_t  prolog;
 	register_state_mapping_t  epilog;
+	ir_phase                 *stack_order;
 };
 
 static void prepare_rsm(register_state_mapping_t *rsm,
@@ -440,4 +443,139 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 void be_add_missing_keeps(ir_graph *irg)
 {
 	irg_walk_graph(irg, add_missing_keep_walker, NULL, NULL);
+}
+
+
+
+static void collect_node(ir_node *node)
+{
+	ir_node *block = get_nodes_block(node);
+	ir_node *old   = get_irn_link(block);
+
+	set_irn_link(node, old);
+	set_irn_link(block, node);
+}
+
+static void link_ops_in_block_walker(ir_node *node, void *data)
+{
+	(void) data;
+
+	switch (get_irn_opcode(node)) {
+	case iro_Return:
+	case iro_Call:
+		collect_node(node);
+		break;
+	case iro_Alloc:
+		/** all non-stack alloc nodes should be lowered before the backend */
+		assert(get_Alloc_where(node) == stack_alloc);
+		collect_node(node);
+		break;
+	case iro_Free:
+		assert(get_Free_where(node) == stack_alloc);
+		collect_node(node);
+		break;
+	case iro_Builtin:
+		if (get_Builtin_kind(node) == ir_bk_return_address) {
+			ir_node *param = get_Builtin_param(node, 0);
+			tarval  *tv    = get_Const_tarval(param); /* must be Const */
+			long     value = get_tarval_long(tv);
+			if (value > 0) {
+				/* we need esp for the climbframe algo */
+				collect_node(node);
+			}
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+static heights_t *heights;
+
+/**
+ * Check if a node is somehow data dependent on another one.
+ * both nodes must be in the same basic block.
+ * @param n1 The first node.
+ * @param n2 The second node.
+ * @return 1, if n1 is data dependent (transitively) on n2, 0 if not.
+ */
+static int dependent_on(const ir_node *n1, const ir_node *n2)
+{
+	assert(get_nodes_block(n1) == get_nodes_block(n2));
+
+	return heights_reachable_in_block(heights, n1, n2);
+}
+
+static int cmp_call_dependency(const void *c1, const void *c2)
+{
+	const ir_node *n1 = *(const ir_node **) c1;
+	const ir_node *n2 = *(const ir_node **) c2;
+
+	/*
+		Classical qsort() comparison function behavior:
+		0  if both elements are equal
+		1  if second is "smaller" that first
+		-1 if first is "smaller" that second
+	*/
+	if (dependent_on(n1, n2))
+		return 1;
+
+	if (dependent_on(n2, n1))
+		return -1;
+
+	/* The nodes have no depth order, but we need a total order because qsort()
+	 * is not stable. */
+	return get_irn_idx(n2) - get_irn_idx(n1);
+}
+
+static void process_ops_in_block(ir_node *block, void *data)
+{
+	ir_phase *phase = data;
+	unsigned  n;
+	unsigned  n_nodes;
+	ir_node  *node;
+	ir_node **nodes;
+
+	n_nodes = 0;
+	for (node = get_irn_link(block); node != NULL; node = get_irn_link(node)) {
+		++n_nodes;
+	}
+
+	if (n_nodes == 0)
+		return;
+
+	nodes = XMALLOCN(ir_node*, n_nodes);
+	n = 0;
+	for (node = get_irn_link(block); node != NULL; node = get_irn_link(node)) {
+		nodes[n++] = node;;
+	}
+	assert(n == n_nodes);
+
+	/* order nodes according to their data dependencies */
+	qsort(nodes, n_nodes, sizeof(nodes[0]), cmp_call_dependency);
+
+	for (n = n_nodes-1; n > 0; --n) {
+		ir_node *node = nodes[n];
+		ir_node *pred = nodes[n-1];
+
+		phase_set_irn_data(phase, node, pred);
+	}
+}
+
+void be_collect_stacknodes(beabi_helper_env_t *env)
+{
+	ir_graph *irg = env->irg;
+	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, NULL);
+
+	assert(env->stack_order == NULL);
+	env->stack_order = new_phase(irg, phase_irn_init_default);
+
+	heights = heights_new(irg);
+	irg_block_walk_graph(irg, NULL, process_ops_in_block, env->stack_order);
+	heights_free(heights);
+}
+
+ir_node *be_get_stack_pred(const beabi_helper_env_t *env, const ir_node *node)
+{
+	return phase_get_irn_data(env->stack_order, node);
 }

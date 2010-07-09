@@ -108,10 +108,21 @@ ir_node *be_epilog_create_barrier(beabi_helper_env_t *env, ir_node *block);
 ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
                                  ir_node *block);
 
-
 /**
  * Adds a X->Proj->Keep for each output value of X which has no Proj yet
  */
 void be_add_missing_keeps(ir_graph *irg);
+
+/**
+ * Collect firm nodes that will probably modify the stack.
+ * Put them into an order that respects all their dependencies.
+ */
+void be_collect_stacknodes(beabi_helper_env_t *env);
+
+/**
+ * return node that should produce the predecessor stack node in a block.
+ * returns NULL if there's no predecessor in the current block.
+ */
+ir_node *be_get_stack_pred(const beabi_helper_env_t *env, const ir_node *node);
 
 #endif

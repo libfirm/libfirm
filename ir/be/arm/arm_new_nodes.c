@@ -67,12 +67,12 @@ const char *arm_get_fpa_imm_name(long imm_value)
 
 static bool arm_has_symconst_attr(const ir_node *node)
 {
-	return is_arm_SymConst(node) || is_arm_FrameAddr(node);
+	return is_arm_SymConst(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);
 }
 
 static bool has_load_store_attr(const ir_node *node)
 {
-	return is_arm_Ldr(node) || is_arm_Str(node);
+	return is_arm_Ldr(node) || is_arm_Str(node) || is_arm_LinkLdrPC(node);
 }
 
 static bool has_shifter_operand(const ir_node *node)
@@ -80,7 +80,7 @@ static bool has_shifter_operand(const ir_node *node)
 	return is_arm_Add(node) || is_arm_And(node) || is_arm_Or(node)
 		|| is_arm_Eor(node) || is_arm_Bic(node) || is_arm_Sub(node)
 		|| is_arm_Rsb(node) || is_arm_Mov(node) || is_arm_Mvn(node)
-		|| is_arm_Cmp(node) || is_arm_Tst(node);
+		|| is_arm_Cmp(node) || is_arm_Tst(node) || is_arm_LinkMovPC(node);
 }
 
 static bool has_cmp_attr(const ir_node *node)
@@ -215,7 +215,7 @@ const arm_attr_t *get_arm_attr_const(const ir_node *node)
 
 static bool has_symconst_attr(const ir_node *node)
 {
-	return is_arm_SymConst(node) || is_arm_FrameAddr(node);
+	return is_arm_SymConst(node) || is_arm_FrameAddr(node) || is_arm_Bl(node);
 }
 
 arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node)

@@ -72,6 +72,7 @@
 static arch_irn_class_t arm_classify(const ir_node *irn)
 {
 	(void) irn;
+	/* TODO: we should mark reload/spill instructions and classify them here */
 	return 0;
 }
 
@@ -119,7 +120,7 @@ static void arm_set_stack_bias(ir_node *irn, int bias)
 static int arm_get_sp_bias(const ir_node *irn)
 {
 	/* We don't have any nodes changing the stack pointer.
-		TODO: we probably want to support post-/pre increment/decrement later */
+	   We probably want to support post-/pre increment/decrement later */
 	(void) irn;
 	return 0;
 }
@@ -200,10 +201,9 @@ static void arm_before_ra(void *self)
 
 static void transform_Reload(ir_node *node)
 {
-	ir_graph  *irg    = get_irn_irg(node);
 	ir_node   *block  = get_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *ptr    = get_irn_n(node, be_pos_Reload_frame);
 	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
 	ir_mode   *mode   = get_irn_mode(node);
 	ir_entity *entity = be_get_frame_entity(node);
@@ -227,10 +227,9 @@ static void transform_Reload(ir_node *node)
 
 static void transform_Spill(ir_node *node)
 {
-	ir_graph  *irg    = get_irn_irg(node);
 	ir_node   *block  = get_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *ptr    = get_irn_n(node, be_pos_Spill_frame);
 	ir_node   *mem    = new_NoMem();
 	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
 	ir_mode   *mode   = get_irn_mode(val);
@@ -288,205 +287,13 @@ static void arm_emit_and_done(void *self)
 	free(self);
 }
 
-/**
- * Move a double floating point value into an integer register.
- * Place the move operation into block bl.
- *
- * Handle some special cases here:
- * 1.) A constant: simply split into two
- * 2.) A load: simply split into two
- */
-static ir_node *convert_dbl_to_int(ir_node *bl, ir_node *arg, ir_node *mem,
-                                   ir_node **resH, ir_node **resL)
-{
-	if (is_Const(arg)) {
-		tarval *tv = get_Const_tarval(arg);
-		unsigned v;
-
-		/* get the upper 32 bits */
-		v =            get_tarval_sub_bits(tv, 7);
-		v = (v << 8) | get_tarval_sub_bits(tv, 6);
-		v = (v << 8) | get_tarval_sub_bits(tv, 5);
-		v = (v << 8) | get_tarval_sub_bits(tv, 4);
-		*resH = new_Const_long(mode_Is, v);
-
-		/* get the lower 32 bits */
-		v =            get_tarval_sub_bits(tv, 3);
-		v = (v << 8) | get_tarval_sub_bits(tv, 2);
-		v = (v << 8) | get_tarval_sub_bits(tv, 1);
-		v = (v << 8) | get_tarval_sub_bits(tv, 0);
-		*resL = new_Const_long(mode_Is, v);
-	} else if (is_Load(skip_Proj(arg))) {
-		/* FIXME: handling of low/high depends on LE/BE here */
-		panic("Unimplemented convert_dbl_to_int() case");
-	}
-	else {
-		ir_node *conv;
-
-		conv = new_bd_arm_fpaDbl2GP(NULL, bl, arg, mem);
-		/* move high/low */
-		*resL = new_r_Proj(conv, mode_Is, pn_arm_fpaDbl2GP_low);
-		*resH = new_r_Proj(conv, mode_Is, pn_arm_fpaDbl2GP_high);
-		mem   = new_r_Proj(conv, mode_M,  pn_arm_fpaDbl2GP_M);
-	}
-	return mem;
-}
-
-/**
- * Move a single floating point value into an integer register.
- * Place the move operation into block bl.
- *
- * Handle some special cases here:
- * 1.) A constant: simply move
- * 2.) A load: simply load
- */
-static ir_node *convert_sng_to_int(ir_node *bl, ir_node *arg)
-{
-	(void) bl;
-
-	if (is_Const(arg)) {
-		tarval *tv = get_Const_tarval(arg);
-		unsigned v;
-
-		/* get the lower 32 bits */
-		v =            get_tarval_sub_bits(tv, 3);
-		v = (v << 8) | get_tarval_sub_bits(tv, 2);
-		v = (v << 8) | get_tarval_sub_bits(tv, 1);
-		v = (v << 8) | get_tarval_sub_bits(tv, 0);
-		return new_Const_long(mode_Is, v);
-	}
-	panic("Unimplemented convert_sng_to_int() case");
-}
-
-/**
- * Convert the arguments of a call to support the
- * ARM calling convention of general purpose AND floating
- * point arguments.
- */
-static void handle_calls(ir_node *call, void *env)
-{
-	arm_code_gen_t *cg = env;
-	int i, j, n, size, idx, flag, n_param, n_res, first_variadic;
-	ir_type *mtp, *new_mtd, *new_tp[5];
-	ir_node *new_in[5], **in;
-	ir_node *bl;
-
-	if (! is_Call(call))
-		return;
-
-	/* check, if we need conversions */
-	n = get_Call_n_params(call);
-	mtp = get_Call_type(call);
-	assert(get_method_n_params(mtp) == n);
-
-	/* it's always enough to handle the first 4 parameters */
-	if (n > 4)
-		n = 4;
-	flag = size = idx = 0;
-	bl = get_nodes_block(call);
-	for (i = 0; i < n; ++i) {
-		ir_type *param_tp = get_method_param_type(mtp, i);
-
-		if (is_compound_type(param_tp)) {
-			/* an aggregate parameter: bad case */
-			assert(0);
-		}
-		else {
-			/* a primitive parameter */
-			ir_mode *mode = get_type_mode(param_tp);
-
-			if (mode_is_float(mode)) {
-				if (get_mode_size_bits(mode) > 32) {
-					ir_node *mem = get_Call_mem(call);
-
-					/* Beware: ARM wants the high part first */
-					size += 2 * 4;
-					new_tp[idx]   = cg->int_tp;
-					new_tp[idx+1] = cg->int_tp;
-					mem = convert_dbl_to_int(bl, get_Call_param(call, i), mem, &new_in[idx], &new_in[idx+1]);
-					idx += 2;
-					set_Call_mem(call, mem);
-				}
-				else {
-					size += 4;
-					new_tp[idx] = cg->int_tp;
-					new_in[idx] = convert_sng_to_int(bl, get_Call_param(call, i));
-					++idx;
-				}
-				flag = 1;
-			}
-			else {
-				size += 4;
-				new_tp[idx] = param_tp;
-				new_in[idx] = get_Call_param(call, i);
-				++idx;
-			}
-		}
-
-		if (size >= 16)
-			break;
-	}
-
-	/* if flag is NOT set, no need to translate the method type */
-	if (! flag)
-		return;
-
-	/* construct a new method type */
-	n       = i;
-	n_param = get_method_n_params(mtp) - n + idx;
-	n_res   = get_method_n_ress(mtp);
-	new_mtd = new_d_type_method(n_param, n_res, get_type_dbg_info(mtp));
-
-	for (i = 0; i < idx; ++i)
-		set_method_param_type(new_mtd, i, new_tp[i]);
-	for (i = n, j = idx; i < get_method_n_params(mtp); ++i)
-		set_method_param_type(new_mtd, j++, get_method_param_type(mtp, i));
-	for (i = 0; i < n_res; ++i)
-		set_method_res_type(new_mtd, i, get_method_res_type(mtp, i));
-
-	set_method_calling_convention(new_mtd, get_method_calling_convention(mtp));
-	first_variadic = get_method_first_variadic_param_index(mtp);
-	if (first_variadic >= 0)
-		set_method_first_variadic_param_index(new_mtd, first_variadic);
-
-	if (is_lowered_type(mtp)) {
-		mtp = get_associated_type(mtp);
-	}
-	set_lowered_type(mtp, new_mtd);
-
-	set_Call_type(call, new_mtd);
-
-	/* calculate new in array of the Call */
-	NEW_ARR_A(ir_node *, in, n_param + 2);
-	for (i = 0; i < idx; ++i)
-		in[2 + i] = new_in[i];
-	for (i = n, j = idx; i < get_method_n_params(mtp); ++i)
-		in[2 + j++] = get_Call_param(call, i);
-
-	in[0] = get_Call_mem(call);
-	in[1] = get_Call_ptr(call);
-
-	/* finally, change the call inputs */
-	set_irn_in(call, n_param + 2, in);
-}
-
-/**
- * Handle graph transformations before the abi converter does its work.
- */
-static void arm_before_abi(void *self)
-{
-	arm_code_gen_t *cg = self;
-
-	irg_walk_graph(cg->irg, NULL, handle_calls, cg);
-}
-
 /* forward */
 static void *arm_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t arm_code_gen_if = {
 	arm_cg_init,
 	NULL,               /* get_pic_base */
-	arm_before_abi,     /* before abi introduce */
+	NULL,               /* before abi introduce */
 	arm_prepare_graph,
 	NULL,               /* spill */
 	arm_before_ra,      /* before register allocation hook */
@@ -667,7 +474,7 @@ static arm_isa_t arm_isa_template = {
 		NULL,                  /* main environment */
 		7,                     /* spill costs */
 		5,                     /* reload costs */
-		false,                 /* no custom abi handling */
+		true,                  /* we do have custom abi handling */
 	},
 	0,                     /* use generic register names instead of SP, LR, PC */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
@@ -932,7 +739,7 @@ static void arm_get_call_abi(const void *self, ir_type *method_type, be_abi_call
 	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp     don't change this we can handle both */
 	call_flags.bits.fp_free               = 0;
-	call_flags.bits.call_has_imm          = 1;  /* IA32 calls can have immediate address */
+	call_flags.bits.call_has_imm          = 1;
 
 	/* set stack parameter passing style */
 	be_abi_call_set_flags(abi, call_flags, &arm_abi_callbacks);
