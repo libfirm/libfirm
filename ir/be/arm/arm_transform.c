@@ -304,19 +304,19 @@ static bool try_encode_as_immediate(const ir_node *node, arm_immediate_t *res)
 	return false;
 }
 
-static int is_downconv(const ir_node *node)
+static bool is_downconv(const ir_node *node)
 {
 	ir_mode *src_mode;
 	ir_mode *dest_mode;
 
 	if (!is_Conv(node))
-		return 0;
+		return false;
 
 	/* we only want to skip the conv when we're the only user
 	 * (not optimal but for now...)
 	 */
 	if (get_irn_n_edges(node) > 1)
-		return 0;
+		return false;
 
 	src_mode  = get_irn_mode(get_Conv_op(node));
 	dest_mode = get_irn_mode(node);
@@ -574,13 +574,23 @@ static ir_node *gen_Sub(ir_node *node)
 	}
 }
 
+static bool can_use_shift_constant(unsigned int val,
+                                   arm_shift_modifier_t modifier)
+{
+	if (val <= 31)
+		return true;
+	if (val == 32 && modifier != ARM_SHF_LSL_REG && modifier != ARM_SHF_ROR_REG)
+		return true;
+	return false;
+}
+
 static ir_node *make_shift(ir_node *node, match_flags_t flags,
 		arm_shift_modifier_t shift_modifier)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_binop_left(node);
-	ir_node  *op2     = get_binop_right(node);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_node  *op1   = get_binop_left(node);
+	ir_node  *op2   = get_binop_right(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *new_op1;
 	ir_node  *new_op2;
 
@@ -588,9 +598,28 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 		op1 = arm_skip_downconv(op1);
 		op2 = arm_skip_downconv(op2);
 	}
+
 	new_op1 = be_transform_node(op1);
+	if (is_Const(op2)) {
+		tarval      *tv  = get_Const_tarval(op2);
+		unsigned int val = get_tarval_long(tv);
+		assert(tarval_is_long(tv));
+		if (can_use_shift_constant(val, shift_modifier)) {
+			switch (shift_modifier) {
+			case ARM_SHF_LSL_REG: shift_modifier = ARM_SHF_LSL_IMM; break;
+			case ARM_SHF_LSR_REG: shift_modifier = ARM_SHF_LSR_IMM; break;
+			case ARM_SHF_ASR_REG: shift_modifier = ARM_SHF_ASR_IMM; break;
+			case ARM_SHF_ROR_REG: shift_modifier = ARM_SHF_ROR_IMM; break;
+			default: panic("unexpected shift modifier");
+			}
+			return new_bd_arm_Mov_reg_shift_imm(dbgi, block, new_op1,
+			                                    shift_modifier, val);
+		}
+	}
+
 	new_op2 = be_transform_node(op2);
-	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2, shift_modifier);
+	return new_bd_arm_Mov_reg_shift_reg(dbgi, block, new_op1, new_op2,
+	                                    shift_modifier);
 }
 
 /**
