@@ -907,7 +907,7 @@ int be_get_MemPerm_entity_arity(const ir_node *irn)
 	return get_irn_arity(irn) - 1;
 }
 
-static const arch_register_req_t *get_single_req(struct obstack *obst,
+const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
 	arch_register_req_t         *req = obstack_alloc(obst, sizeof(*req));
@@ -933,7 +933,7 @@ void be_set_constr_single_reg_in(ir_node *node, int pos,
 	} else {
 		ir_graph       *irg  = get_irn_irg(node);
 		struct obstack *obst = be_get_be_obst(irg);
-		req = get_single_req(obst, reg, additional_types);
+		req = be_create_reg_req(obst, reg, additional_types);
 	}
 	be_set_constr_in(node, pos, req);
 }
@@ -953,7 +953,7 @@ void be_set_constr_single_reg_out(ir_node *node, int pos,
 	} else {
 		ir_graph       *irg  = get_irn_irg(node);
 		struct obstack *obst = be_get_be_obst(irg);
-		req = get_single_req(obst, reg, additional_types);
+		req = be_create_reg_req(obst, reg, additional_types);
 	}
 
 	arch_irn_set_register(node, pos, reg);

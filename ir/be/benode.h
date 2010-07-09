@@ -454,6 +454,9 @@ void be_set_constr_single_reg_in(ir_node *irn, int pos,
 void be_set_constr_single_reg_out(ir_node *irn, int pos,
 		const arch_register_t *reg, arch_register_req_type_t additional_flags);
 
+const arch_register_req_t *be_create_reg_req(struct obstack *obst,
+		const arch_register_t *reg, arch_register_req_type_t additional_types);
+
 /**
  * Impose register constraints on a backend node.
  * The register subsets given by the limited function in @p req are copied to
