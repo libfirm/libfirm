@@ -1142,9 +1142,6 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 		last_block = block;
 	}
 
-	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
-
 	/* emit SymConst values */
 	if (set_count(sym_or_tv) > 0) {
 		sym_or_tv_t *entry;
@@ -1181,6 +1178,9 @@ void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 		be_emit_write_line();
 	}
 	del_set(sym_or_tv);
+
+	be_gas_emit_function_epilog(entity);
+	be_dbg_method_end();
 }
 
 void arm_init_emitter(void)
