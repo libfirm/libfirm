@@ -1028,7 +1028,7 @@ static ir_node *gen_Const(ir_node *node)
 				} else {
 					node = new_bd_arm_fpaMnf_i(dbg, block, mode, -imm);
 				}
-			} else {
+			} else
 #endif
 			{
 				node = new_bd_arm_fpaConst(dbg, block, tv);
@@ -1627,13 +1627,9 @@ static ir_node *gen_Call(ir_node *node)
 
 		if (reg != NULL) {
 			in[in_arity] = new_value;
-			if (reg == &arm_gp_regs[REG_LR]) {
-				/* this should not happen, LR cannot be a parameter register ... */
-				in_req[in_arity] = be_create_reg_req(obst,
-						reg, arch_register_req_type_ignore);
-			} else {
-				in_req[in_arity] = reg->single_req;
-			}
+			/* this should not happen, LR cannot be a parameter register ... */
+			assert(reg != &arm_gp_regs[REG_LR]);
+			in_req[in_arity] = reg->single_req;
 			++in_arity;
 		} else {
 			ir_mode *mode;
