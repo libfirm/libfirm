@@ -66,6 +66,8 @@ struct be_stack_layout_t {
 	int initial_offset;                /**< the initial difference between stack pointer and frame pointer */
 	int initial_bias;                  /**< the initial stack bias */
 	int stack_dir;                     /**< -1 for decreasing, 1 for increasing. */
+	bool sp_relative : 1;              /**< entities are addressed relative to
+	                                        stack pointer (omit-fp mode) */
 };
 
 /**

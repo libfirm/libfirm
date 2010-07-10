@@ -240,9 +240,9 @@ static void ia32_set_frame_offset(ir_node *irn, int bias)
 		return;
 
 	if (is_ia32_Pop(irn) || is_ia32_PopMem(irn)) {
-		ia32_code_gen_t *cg = ia32_current_cg;
-		int omit_fp = be_abi_omit_fp(be_get_irg_abi(cg->irg));
-		if (omit_fp) {
+		ir_graph          *irg     = get_irn_irg(irn);
+		be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
+		if (layout->sp_relative) {
 			/* Pop nodes modify the stack pointer before calculating the
 			 * destination address, so fix this here
 			 */

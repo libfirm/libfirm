@@ -380,8 +380,7 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	if (stack_dir > 0) {
 		frame->order[0] = args;
 		frame->order[2] = locals;
-	}
-	else {
+	} else {
 		/* typical decreasing stack: locals have the
 		 * lowest addresses, arguments the highest */
 		frame->order[0] = locals;
@@ -1884,6 +1883,7 @@ static void modify_irg(ir_graph *irg)
 	bet_type = call->cb->get_between_type(env->cb);
 	stack_frame_init(stack_layout, arg_type, bet_type,
 	                 get_irg_frame_type(irg), arch_env->stack_dir, param_map);
+	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for (i = 0; i < n_params; ++i) {
@@ -2258,9 +2258,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 
 	obstack_init(obst);
 
-	env->call        = be_abi_call_new(arch_env->sp->reg_class);
-	arch_env_get_call_abi(arch_env, method_type, env->call);
-
 	env->ignore_regs  = pset_new_ptr_default();
 	env->keep_map     = pmap_create();
 	env->dce_survivor = new_survive_dce();
@@ -2286,6 +2283,9 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	be_set_irg_abi(irg, env);
 	if (arch_env->custom_abi)
 		return env;
+
+	env->call        = be_abi_call_new(arch_env->sp->reg_class);
+	arch_env_get_call_abi(arch_env, method_type, env->call);
 
 	env->init_sp = dummy = new_r_Dummy(irg, arch_env->sp->reg_class->mode);
 	env->calls   = NEW_ARR_F(ir_node*, 0);
@@ -2336,7 +2336,8 @@ void be_abi_free(ir_graph *irg)
 {
 	be_abi_irg_t *env = be_get_irg_abi(irg);
 
-	be_abi_call_free(env->call);
+	if (env->call != NULL)
+		be_abi_call_free(env->call);
 	free_survive_dce(env->dce_survivor);
 	if (env->ignore_regs != NULL)
 		del_pset(env->ignore_regs);
@@ -2472,18 +2473,17 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 /**
  * Fix all stack accessing operations in the block bl.
  *
- * @param env        the abi environment
  * @param bl         the block to process
  * @param real_bias  the bias value
  *
  * @return the bias at the end of this block
  */
-static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
+static int process_stack_bias(ir_node *bl, int real_bias)
 {
-	int                omit_fp     = env->call->flags.bits.try_omit_fp;
 	int                wanted_bias = real_bias;
 	ir_graph          *irg         = get_Block_irg(bl);
 	be_stack_layout_t *layout      = be_get_irg_stack_layout(irg);
+	bool               sp_relative = layout->sp_relative;
 	const arch_env_t  *arch_env    = be_get_irg_arch_env(irg);
 	ir_node           *irn;
 
@@ -2497,7 +2497,7 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
 		 */
 		ir_entity *ent = arch_get_frame_entity(irn);
 		if (ent != NULL) {
-			int bias   = omit_fp ? real_bias : 0;
+			int bias   = sp_relative ? real_bias : 0;
 			int offset = get_stack_entity_offset(layout, ent, bias);
 			arch_set_frame_offset(irn, offset);
 			DBG((dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
@@ -2556,7 +2556,6 @@ static int process_stack_bias(be_abi_irg_t *env, ir_node *bl, int real_bias)
  * A helper struct for the bias walker.
  */
 struct bias_walk {
-	be_abi_irg_t *env;     /**< The ABI irg environment. */
 	int           start_block_bias;  /**< The bias at the end of the start block. */
 	int           between_size;
 	ir_node      *start_block;  /**< The start block of the current graph. */
@@ -2570,7 +2569,7 @@ static void stack_bias_walker(ir_node *bl, void *data)
 {
 	struct bias_walk *bw = data;
 	if (bl != bw->start_block) {
-		process_stack_bias(bw->env, bl, bw->start_block_bias);
+		process_stack_bias(bl, bw->start_block_bias);
 	}
 }
 
@@ -2580,9 +2579,9 @@ static void stack_bias_walker(ir_node *bl, void *data)
  */
 static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 {
-	ir_node      *ptr;
-	ir_entity    *ent;
-	ir_type      *owner;
+	ir_node           *ptr;
+	ir_entity         *ent;
+	ir_type           *owner;
 	be_stack_layout_t *layout;
 	ir_graph          *irg;
 	(void) ctx;
@@ -2615,7 +2614,6 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 
 void be_abi_fix_stack_bias(ir_graph *irg)
 {
-	be_abi_irg_t      *env = be_get_irg_abi(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	ir_type           *frame_tp;
 	int               i;
@@ -2625,12 +2623,11 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 	// stack_layout_dump(stdout, stack_layout);
 
 	/* Determine the stack bias at the end of the start block. */
-	bw.start_block_bias = process_stack_bias(env, get_irg_start_block(irg),
+	bw.start_block_bias = process_stack_bias(get_irg_start_block(irg),
 	                                         stack_layout->initial_bias);
 	bw.between_size     = get_type_size_bytes(stack_layout->between_type);
 
 	/* fix the bias is all other blocks */
-	bw.env = env;
 	bw.start_block = get_irg_start_block(irg);
 	irg_block_walk_graph(irg, stack_bias_walker, NULL, &bw);
 
@@ -2642,7 +2639,7 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 		ir_graph  *irg = get_entity_irg(ent);
 
 		if (irg != NULL) {
-			irg_walk_graph(irg, NULL, lower_outer_frame_sels, env);
+			irg_walk_graph(irg, NULL, lower_outer_frame_sels, NULL);
 		}
 	}
 }
@@ -2659,15 +2656,6 @@ ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
 	assert(arch_register_type_is(reg, ignore));
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return pmap_get(abi->regs, (void *) reg);
-}
-
-/**
- * Returns non-zero if the ABI has omitted the frame pointer in
- * the current graph.
- */
-int be_abi_omit_fp(const be_abi_irg_t *abi)
-{
-	return abi->call->flags.bits.try_omit_fp;
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);

@@ -1439,6 +1439,7 @@ static void create_stacklayout(ir_graph *irg)
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
 	layout->stack_dir      = -1;
+	layout->sp_relative    = true;
 
 	assert(N_FRAME_TYPES == 3);
 	layout->order[0] = layout->frame_type;
