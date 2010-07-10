@@ -1194,7 +1194,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_r_Proj(barrier, mode_M, 0);
 
 	case pn_Start_T_args:
-		/* TODO */
 		return barrier;
 
 	case pn_Start_P_frame_base:
