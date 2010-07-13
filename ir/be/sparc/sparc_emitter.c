@@ -51,6 +51,8 @@
 #include "gen_sparc_emitter.h"
 #include "sparc_nodes_attr.h"
 #include "sparc_new_nodes.h"
+#include "gen_sparc_regalloc_if.h"
+
 
 #define SNPRINTF_BUF_LEN 128
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -129,11 +131,8 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void sparc_emit_immediate(const ir_node *node)
 {
-	// TODO: make sure it's a valid simm13 ?
 	const sparc_attr_t *attr = get_sparc_attr_const(node);
-
 	assert(!(attr->immediate_value < -4096 || attr->immediate_value > 4096));
-
 	be_emit_irprintf("%d", attr->immediate_value);
 }
 
@@ -222,6 +221,75 @@ void sparc_emit_store_mode(const ir_node *node)
 }
 
 /**
+ * emit integer signed/unsigned prefix char
+ */
+void sparc_emit_mode_sign_prefix(const ir_node *node)
+{
+    ir_mode *mode      = get_irn_mode(node);
+    bool     is_signed = mode_is_signed(mode);
+    be_emit_string(is_signed ? "s" : "u");
+}
+
+/**
+ * emit FP load mode char
+ */
+void sparc_emit_fp_load_mode(const ir_node *node)
+{
+	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
+    ir_mode *mode      = attr->load_store_mode;
+    int      bits      = get_mode_size_bits(mode);
+
+    assert(mode_is_float(mode));
+
+    if (bits == 32) {
+        be_emit_string("f");
+    } else if (bits == 64) {
+        be_emit_string("df");
+    } else {
+    	panic("FP load mode > 64bits not implemented yet");
+    }
+}
+
+/**
+ * emit FP store mode char
+ */
+void sparc_emit_fp_store_mode(const ir_node *node)
+{
+	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
+    ir_mode *mode      = attr->load_store_mode;
+    int      bits      = get_mode_size_bits(mode);
+
+    assert(mode_is_float(mode));
+
+    if (bits == 32) {
+        be_emit_string("f");
+    } else if (bits == 64) {
+        be_emit_string("df");
+    } else {
+    	panic("FP store mode > 64bits not implemented yet");
+    }
+}
+
+/**
+ * emits the FP mode suffix char
+ */
+void sparc_emit_fp_mode_suffix(const ir_node *node)
+{
+    ir_mode *mode      = get_irn_mode(node);
+    int      bits      = get_mode_size_bits(mode);
+
+    assert(mode_is_float(mode));
+
+    if (bits == 32) {
+    	be_emit_string("s");
+    } else if (bits == 64) {
+    	be_emit_string("d");
+    } else {
+		panic("FP mode > 64bits not implemented yet");
+    }
+}
+
+/**
  * Returns the target label for a control flow node.
  */
 static void sparc_emit_cfop_target(const ir_node *node)
@@ -275,8 +343,7 @@ static void emit_be_IncSP(const ir_node *irn)
 }
 
 /**
- * emits code for save instruction
- * and sets the current save_attr pointer
+ * emits code for save instruction with min. required stack space
  */
 static void emit_sparc_Save(const ir_node *irn)
 {
@@ -313,6 +380,65 @@ static void emit_sparc_LoImm(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
+/**
+ * emit code for div with the correct sign prefix
+ */
+static void emit_sparc_Div(const ir_node *irn)
+{
+	be_emit_cstring("\t");
+	sparc_emit_mode_sign_prefix(irn);
+	be_emit_cstring("div ");
+
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * emit code for mul with the correct sign prefix
+ */
+static void emit_sparc_Mul(const ir_node *irn)
+{
+	be_emit_cstring("\t");
+	sparc_emit_mode_sign_prefix(irn);
+	be_emit_cstring("mul ");
+
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * emits code for mulh
+ */
+static void emit_sparc_Mulh(const ir_node *irn)
+{
+	be_emit_cstring("\t");
+	sparc_emit_mode_sign_prefix(irn);
+	be_emit_cstring("mul ");
+
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+
+	// our result is in the y register now
+	// we just copy it to the assigned target reg
+	be_emit_cstring("\tmov ");
+	be_emit_char('%');
+	be_emit_string(arch_register_get_name(&sparc_flags_regs[REG_Y]));
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(irn, 0);
+	be_emit_finish_line_gas(irn);
+}
 
 /**
  * Emits code for return node
@@ -350,7 +476,7 @@ static void emit_be_Call(const ir_node *irn)
 }
 
 /**
- * TODO: check if this is correct
+ * Emit code for Perm node
  */
 static void emit_be_Perm(const ir_node *irn)
 {
@@ -380,6 +506,54 @@ static void emit_be_Perm(const ir_node *irn)
 }
 
 /**
+ * TODO: not really tested but seems to work with memperm_arity == 1
+ */
+static void emit_be_MemPerm(const ir_node *node)
+{
+	int i;
+	int memperm_arity;
+	int sp_change = 0;
+
+	/* TODO: this implementation is slower than necessary.
+	   The longterm goal is however to avoid the memperm node completely */
+
+	memperm_arity = be_get_MemPerm_entity_arity(node);
+	// we use our local registers - so this is limited to 8 inputs !
+	if (memperm_arity > 8)
+		panic("memperm with more than 8 inputs not supported yet");
+
+	for (i = 0; i < memperm_arity; ++i) {
+		int offset;
+		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
+
+		/* spill register */
+		sp_change += 4;
+		be_emit_irprintf("\tst %%l%d, [%%sp-%d]", i, sp_change);
+		be_emit_finish_line_gas(node);
+
+		/* load from entity */
+		offset = get_entity_offset(entity) + sp_change;
+		be_emit_irprintf("\tld [%%sp+%d], %%l%d", offset, i);
+		be_emit_finish_line_gas(node);
+	}
+
+	for (i = memperm_arity-1; i >= 0; --i) {
+		int        offset;
+		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
+
+		/* store to new entity */
+		offset = get_entity_offset(entity) + sp_change;
+		be_emit_irprintf("\tst %%l%d, [%%sp+%d]", i, offset);
+		be_emit_finish_line_gas(node);
+		/* restore register */
+		be_emit_irprintf("\tld [%%sp-%d], %%l%d", sp_change, i);
+		sp_change -= 4;
+		be_emit_finish_line_gas(node);
+	}
+	assert(sp_change == 0);
+}
+
+/**
  * Emit a SymConst.
  */
 static void emit_sparc_SymConst(const ir_node *irn)
@@ -404,7 +578,6 @@ static void emit_sparc_SymConst(const ir_node *irn)
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
-
 
 /**
  * Emits code for FrameAddr fix
@@ -605,22 +778,26 @@ static void sparc_register_emitters(void)
 	sparc_register_spec_emitters();
 
 	/* custom emitter */
-    set_emitter(op_be_IncSP,       emit_be_IncSP);
-    set_emitter(op_be_Return,      emit_be_Return);
-    set_emitter(op_be_Call,        emit_be_Call);
-    set_emitter(op_sparc_FrameAddr,  emit_sparc_FrameAddr);
-    set_emitter(op_sparc_Branch,   emit_sparc_Branch);
-    set_emitter(op_sparc_SymConst,   emit_sparc_SymConst);
-    set_emitter(op_sparc_Jmp,        emit_sparc_Jmp);
-    set_emitter(op_sparc_Save,        emit_sparc_Save);
+    set_emitter(op_be_IncSP,			emit_be_IncSP);
+    set_emitter(op_be_Return,			emit_be_Return);
+    set_emitter(op_be_Call,				emit_be_Call);
+    set_emitter(op_sparc_FrameAddr,		emit_sparc_FrameAddr);
+    set_emitter(op_sparc_Branch,		emit_sparc_Branch);
+    set_emitter(op_sparc_SymConst,		emit_sparc_SymConst);
+    set_emitter(op_sparc_Jmp,			emit_sparc_Jmp);
+    set_emitter(op_sparc_Save,			emit_sparc_Save);
 
-    set_emitter(op_sparc_HiImm,        emit_sparc_HiImm);
-    set_emitter(op_sparc_LoImm,        emit_sparc_LoImm);
+    set_emitter(op_sparc_HiImm,			emit_sparc_HiImm);
+    set_emitter(op_sparc_LoImm,			emit_sparc_LoImm);
+    set_emitter(op_sparc_Div,			emit_sparc_Div);
+    set_emitter(op_sparc_Mul,			emit_sparc_Mul);
+    set_emitter(op_sparc_Mulh,			emit_sparc_Mulh);
 
-    set_emitter(op_be_Copy,        emit_be_Copy);
-    set_emitter(op_be_CopyKeep,    emit_be_Copy);
+    set_emitter(op_be_Copy,				emit_be_Copy);
+    set_emitter(op_be_CopyKeep,			emit_be_Copy);
 
-    set_emitter(op_be_Perm,        emit_be_Perm);
+    set_emitter(op_be_Perm,				emit_be_Perm);
+    set_emitter(op_be_MemPerm,			emit_be_MemPerm);
 
 /*
     set_emitter(op_arm_B,          emit_arm_B);
@@ -629,7 +806,6 @@ static void sparc_register_emitters(void)
     set_emitter(op_arm_fpaDbl2GP,  emit_arm_fpaDbl2GP);
     set_emitter(op_arm_LdTls,      emit_arm_LdTls);
     set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
-    set_emitter(op_be_MemPerm,     emit_be_MemPerm);
 
 */
     /* no need to emit anything for the following nodes */

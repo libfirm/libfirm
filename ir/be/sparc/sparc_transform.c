@@ -57,6 +57,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static sparc_code_gen_t *env_cg;
 
+static ir_node *gen_SymConst(ir_node *node);
+
+
 static inline int mode_needs_gp_reg(ir_mode *mode)
 {
 	return mode_is_int(mode) || mode_is_reference(mode);
@@ -170,6 +173,15 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 	return create_const_graph_value(dbgi, block, value);
 }
 
+/**
+ * create a DAG to load fp constant. sparc only supports loading from global memory
+ */
+static ir_node *create_fp_const_graph(ir_node *irn, ir_node *block)
+{
+	(void) block;
+	panic("FP constants not implemented");
+}
+
 
 typedef enum {
 	MATCH_NONE         = 0,
@@ -178,6 +190,7 @@ typedef enum {
 } match_flags_t;
 
 typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
+typedef ir_node* (*new_binop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
 typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, int simm13);
 
 /**
@@ -187,6 +200,8 @@ typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node 
 static bool is_imm_encodeable(const ir_node *node)
 {
 	long val;
+
+	//assert(mode_is_float_vector(get_irn_mode(node)));
 
 	if (!is_Const(node))
 		return false;
@@ -234,6 +249,23 @@ static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
 	new_op1 = be_transform_node(op1);
 
 	return new_reg(dbgi, block, new_op1, new_op2);
+}
+
+/**
+ * helper function for FP binop operations
+ */
+static ir_node *gen_helper_binfpop(ir_node *node, new_binop_fp_func new_reg)
+{
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *op1     = get_binop_left(node);
+	ir_node  *new_op1;
+	ir_node  *op2     = get_binop_right(node);
+	ir_node  *new_op2;
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+
+	new_op2 = be_transform_node(op2);
+	new_op1 = be_transform_node(op1);
+	return new_reg(dbgi, block, new_op1, new_op2, get_irn_mode(node));
 }
 
 /**
@@ -348,15 +380,16 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_node *mul;
 	ir_node *proj_res_low;
 
-	if (mode_is_float(mode))
-		panic("FP not supported yet");
-
+	if (mode_is_float(mode)) {
+		mul = gen_helper_binfpop(node, new_bd_sparc_fMul);
+		return mul;
+	}
 
 	assert(mode_is_data(mode));
-	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
+	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
 	arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
 
-	proj_res_low = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UMul_low);
+	proj_res_low = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_Mul_low);
 	return proj_res_low;
 }
 
@@ -378,11 +411,9 @@ static ir_node *gen_Mulh(ir_node *node) {
 
 
 	assert(mode_is_data(mode));
-	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_UMul_reg, new_bd_sparc_UMul_imm);
-	arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
-
-	proj_res_hi = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_UMul_low); // TODO: this actually should be pn_sparc_UMul_high !
-	//arch_set_irn_register(proj_res_hi, &sparc_flags_regs[REG_Y]);
+	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
+	//arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
+	proj_res_hi = new_rd_Proj(dbgi, mul, mode_Iu, pn_sparc_Mulh_low);
 	return proj_res_hi;
 }
 
@@ -401,7 +432,7 @@ static ir_node *gen_Div(ir_node *node) {
 		panic("FP not supported yet");
 
 	//assert(mode_is_data(mode));
-	div = gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_UDiv_reg, new_bd_sparc_UDiv_imm);
+	div = gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Div_reg, new_bd_sparc_Div_imm);
 	return div;
 }
 
@@ -481,6 +512,21 @@ static ir_node *gen_Or(ir_node *node)
 	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Or_reg, new_bd_sparc_Or_imm);
 }
 
+static ir_node *gen_Xor(ir_node *node)
+{
+	ir_mode  *mode    = get_irn_mode(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi    = get_irn_dbg_info(node);
+
+	(void) block;
+	(void) dbgi;
+
+	if (mode_is_float(mode))
+		panic("FP not implemented yet");
+
+	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Xor_reg, new_bd_sparc_Xor_imm);
+}
+
 static ir_node *gen_Shl(ir_node *node)
 {
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLL_reg, new_bd_sparc_ShiftLL_imm);
@@ -521,7 +567,7 @@ static ir_node *gen_Minus(ir_node *node)
 /**
  * Transforms a Const node.
  *
- * @param node    the ir Store node
+ * @param node    the ir Const node
  * @return The transformed sparc node.
  */
 static ir_node *gen_Const(ir_node *node)
@@ -533,8 +579,9 @@ static ir_node *gen_Const(ir_node *node)
 	(void) dbg;
 
 	if (mode_is_float(mode)) {
-		panic("FP not supported yet");
+		return create_fp_const_graph(node, block);
 	}
+
 	return create_const_graph(node, block);
 }
 
@@ -772,14 +819,46 @@ static ir_node *gen_Conv(ir_node *node)
 	ir_mode  *dst_mode = get_irn_mode(node);
 	dbg_info *dbg      = get_irn_dbg_info(node);
 
+	int src_bits = get_mode_size_bits(src_mode);
+	int dst_bits = get_mode_size_bits(dst_mode);
+
 	if (src_mode == dst_mode)
 		return new_op;
 
 	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
-		panic("FP not implemented");
+		assert((src_bits <= 64 && dst_bits <= 64) && "quad FP not implemented");
+
+		if (mode_is_float(src_mode)) {
+			if (mode_is_float(dst_mode)) {
+				// float -> float conv
+				if (src_bits > dst_bits) {
+					return new_bd_sparc_FpDToFpS(dbg, block, new_op, dst_mode);
+				} else {
+					return new_bd_sparc_FpSToFpD(dbg, block, new_op, dst_mode);
+				}
+			} else {
+				// float -> int conv
+				switch (dst_bits) {
+					case 32:
+						return new_bd_sparc_FpSToInt(dbg, block, new_op, dst_mode);
+					case 64:
+						return new_bd_sparc_FpDToInt(dbg, block, new_op, dst_mode);
+					default:
+						panic("quad FP not implemented");
+				}
+			}
+		} else {
+			// int -> float conv
+			switch (dst_bits) {
+				case 32:
+					return new_bd_sparc_IntToFpS(dbg, block, new_op, src_mode);
+				case 64:
+					return new_bd_sparc_IntToFpD(dbg, block, new_op, src_mode);
+				default:
+					panic("quad FP not implemented");
+			}
+		}
 	} else { /* complete in gp registers */
-		int src_bits = get_mode_size_bits(src_mode);
-		int dst_bits = get_mode_size_bits(dst_mode);
 		int min_bits;
 		ir_mode *min_mode;
 
@@ -947,7 +1026,9 @@ static ir_node *gen_Proj_Cmp(ir_node *node)
 	panic("not implemented");
 }
 
-
+/**
+ * transform Projs from a Div
+ */
 static ir_node *gen_Proj_Div(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
@@ -958,8 +1039,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 
 	switch (proj) {
 		case pn_Div_res:
-			if (is_sparc_UDiv(new_pred)) {
-				return new_rd_Proj(dbgi, new_pred, mode, pn_sparc_UDiv_res);
+			if (is_sparc_Div(new_pred)) {
+				return new_rd_Proj(dbgi, new_pred, mode, pn_sparc_Div_res);
 			}
 		break;
 	default:
@@ -1044,58 +1125,103 @@ static ir_node *gen_Jmp(ir_node *node)
 }
 
 /**
+ * the BAD transformer.
+ */
+static ir_node *bad_transform(ir_node *irn)
+{
+	panic("SPARC backend: Not implemented: %+F", irn);
+}
+
+/**
+ * Set a node emitter. Make it a bit more type safe.
+ */
+static void set_transformer(ir_op *op, be_transform_func sparc_transform_func)
+{
+	op->ops.generic = (op_func)sparc_transform_func;
+}
+
+/**
  * configure transformation callbacks
  */
 void sparc_register_transformers(void)
 {
-	be_start_transform_setup();
+	clear_irp_opcodes_generic_func();
+	set_transformer(op_Add,				gen_Add);
+	set_transformer(op_Store,			gen_Store);
+	set_transformer(op_Const,			gen_Const);
+	set_transformer(op_Load,			gen_Load);
+	set_transformer(op_Sub,				gen_Sub);
 
-	be_set_transform_function(op_Add,			gen_Add);
-	be_set_transform_function(op_Store,			gen_Store);
-	be_set_transform_function(op_Const,			gen_Const);
-	be_set_transform_function(op_Load,			gen_Load);
-	be_set_transform_function(op_Sub,			gen_Sub);
+	set_transformer(op_be_AddSP,     gen_be_AddSP);
+	set_transformer(op_be_SubSP,     gen_be_SubSP);
+	set_transformer(op_be_Copy,      gen_be_Copy);
+	set_transformer(op_be_Call,      gen_be_Call);
+	set_transformer(op_be_FrameAddr, gen_be_FrameAddr);
 
-	be_set_transform_function(op_be_AddSP,     gen_be_AddSP);
-	be_set_transform_function(op_be_SubSP,     gen_be_SubSP);
-	be_set_transform_function(op_be_Copy,      gen_be_Copy);
-	be_set_transform_function(op_be_Call,      gen_be_Call);
-	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
+	set_transformer(op_Cond,         gen_Cond);
+	set_transformer(op_Cmp,          gen_Cmp);
 
-	be_set_transform_function(op_Cond,         gen_Cond);
-	be_set_transform_function(op_Cmp,          gen_Cmp);
+	set_transformer(op_SymConst,     gen_SymConst);
 
-	be_set_transform_function(op_SymConst,     gen_SymConst);
+	set_transformer(op_Phi,          gen_Phi);
+	set_transformer(op_Proj,         gen_Proj);
 
-	be_set_transform_function(op_Phi,          gen_Phi);
-	be_set_transform_function(op_Proj,         gen_Proj);
+	set_transformer(op_Conv,         gen_Conv);
+	set_transformer(op_Jmp,          gen_Jmp);
 
-	be_set_transform_function(op_Conv,         gen_Conv);
-	be_set_transform_function(op_Jmp,          gen_Jmp);
+	set_transformer(op_Mul,          gen_Mul);
+	set_transformer(op_Mulh,         gen_Mulh);
+	set_transformer(op_Div,          gen_Div);
+	set_transformer(op_Abs,          gen_Abs);
+	set_transformer(op_Shl,          gen_Shl);
+	set_transformer(op_Shr,          gen_Shr);
+	set_transformer(op_Shrs,         gen_Shra);
 
-	be_set_transform_function(op_Mul,          gen_Mul);
-	be_set_transform_function(op_Mulh,         gen_Mulh);
-	be_set_transform_function(op_Div,          gen_Div);
-	be_set_transform_function(op_Abs,          gen_Abs);
-	be_set_transform_function(op_Shl,          gen_Shl);
-	be_set_transform_function(op_Shr,          gen_Shr);
-	be_set_transform_function(op_Shrs,         gen_Shra);
+	set_transformer(op_Minus,        gen_Minus);
+	set_transformer(op_Not,          gen_Not);
+	set_transformer(op_And,          gen_And);
+	set_transformer(op_Or,           gen_Or);
+	set_transformer(op_Eor,          gen_Xor);
 
-	be_set_transform_function(op_Minus,        gen_Minus);
-	be_set_transform_function(op_Not,          gen_Not);
-	be_set_transform_function(op_And,          gen_And);
-	be_set_transform_function(op_Or,           gen_Or);
-
-	be_set_transform_function(op_Unknown,      gen_Unknown);
+	set_transformer(op_Unknown,      gen_Unknown);
 
 	/* node list */
 	/*
 
-	be_set_transform_function(op_CopyB,        gen_CopyB);
-	be_set_transform_function(op_Eor,          gen_Eor);
-	be_set_transform_function(op_Quot,         gen_Quot);
-	be_set_transform_function(op_Rotl,         gen_Rotl);
+	set_transformer(op_CopyB,        gen_CopyB);
+	set_transformer(op_Quot,         gen_Quot);
+	set_transformer(op_Rotl,         gen_Rotl);
 	*/
+
+	set_transformer(op_ASM,       bad_transform);
+	set_transformer(op_Builtin,   bad_transform);
+	set_transformer(op_CallBegin, bad_transform);
+	set_transformer(op_Cast,      bad_transform);
+	set_transformer(op_Confirm,   bad_transform);
+	set_transformer(op_DivMod,    bad_transform);
+	set_transformer(op_EndExcept, bad_transform);
+	set_transformer(op_EndReg,    bad_transform);
+	set_transformer(op_Filter,    bad_transform);
+	set_transformer(op_Free,      bad_transform);
+	set_transformer(op_Id,        bad_transform);
+	set_transformer(op_InstOf,    bad_transform);
+
+	set_transformer(op_Mux,       bad_transform);
+	set_transformer(op_Raise,     bad_transform);
+	set_transformer(op_Sel,       bad_transform);
+	set_transformer(op_Tuple,     bad_transform);
+}
+
+
+/**
+  * Pre-transform all unknown nodes.
+  */
+static void sparc_pretransform_node(void)
+{
+	sparc_code_gen_t *cg = env_cg;
+	(void) cg;
+	//cg->unknown_gp  = be_pre_transform_node(cg->unknown_gp);
+	//cg->unknown_fpa = be_pre_transform_node(cg->unknown_fpa);
 }
 
 /**
@@ -1105,7 +1231,7 @@ void sparc_transform_graph(sparc_code_gen_t *cg)
 {
 	sparc_register_transformers();
 	env_cg = cg;
-	be_transform_graph(cg->irg, NULL);
+	be_transform_graph(cg->irg, sparc_pretransform_node);
 }
 
 void sparc_init_transform(void)

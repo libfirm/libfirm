@@ -62,7 +62,6 @@ const sparc_cmp_attr_t *get_sparc_cmp_attr_const(const ir_node *node);
 sparc_save_attr_t *get_sparc_save_attr(ir_node *node);
 const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node);
 
-
 /**
  * Returns the argument register requirements of an sparc node.
  */

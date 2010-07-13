@@ -221,6 +221,10 @@ $mode_fp      = "mode_D";
 	C  => "${arch}_emit_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
 	SM  => "${arch}_emit_store_mode(node);",
+	EXTPREF  => "${arch}_emit_mode_sign_prefix(node);",
+	FPM  => "${arch}_emit_fp_mode_suffix(node);",
+	FPLM  => "${arch}_emit_fp_load_mode(node);",
+	FPSM  => "${arch}_emit_fp_store_mode(node);",
 	O  => "${arch}_emit_offset(node);",
 );
 
@@ -576,16 +580,24 @@ Xor => {
   constructors => \%binop_operand_constructors,
 },
 
-UMul => {
+Mul => {
   state     => "exc_pinned",
   comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
   outs      => [ "low", "high" ],
   constructors => \%binop_operand_constructors,
-  emit      =>'. umul %S1, %R2I, %D1'
+#  emit      =>'. mul %S1, %R2I, %D1'
 },
 
-UDiv => {
+Mulh => {
+  state     => "exc_pinned",
+  comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+  reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
+  outs      => [ "low", "high" ],
+  constructors => \%binop_operand_constructors,
+},
+
+Div => {
   irn_flags => "R",
   state     => "exc_pinned",
 #  mode	    => $mode_gp,
@@ -593,7 +605,7 @@ UDiv => {
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
   outs      => [ "res" ],
   constructors => \%binop_operand_constructors,
-  emit      =>'. udiv %S1, %R2I, %D1'
+#  emit      =>'. div %S1, %R2I, %D1'
 },
 
 Minus => {
@@ -611,6 +623,12 @@ Not => {
   comment     => "construct Not: Not(a) = !a",
   reg_req     => { in => [ "gp" ], out => [ "gp" ] },
   emit        => '. xnor %S1, %%g0, %D1'
+},
+
+Nop => {
+	op_flags => "K",
+	reg_req	 => { in => [], out => [ "none" ] },
+	emit     => '. nop',
 },
 
 #Mul_i => {
@@ -755,22 +773,71 @@ Not => {
 #  |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
 #--------------------------------------------------------#
 
-# commutative operations
+fAdd => {
+  op_flags  => "C",
+  irn_flags => "R",
+  comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
+  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+  emit      => '. fadd%FPM %S1, %S2, %D1'
+},
 
-#fAdd => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
-#  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-#  emit      => '. fadd %S1, %S2, %D1'
-#},
-#
-#fMul => {
-#  op_flags  => "C",
-#  comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
-#  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-#  emit      =>'. fmul %S1, %S2, %D1'
-#},
+fMul => {
+  op_flags  => "C",
+  comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
+  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+  emit      =>'. fmul%FPM %S1, %S2, %D1'
+},
+
+fsMuld => {
+  op_flags  => "C",
+  comment   => "construct FP single to double precision Mul: Mul(a, b) = Mul(b, a) = a * b",
+  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+  emit      =>'. fsmuld %S1, %S2, %D1'
+},
+
+FpSToFpD => {
+  irn_flags => "R",
+  comment   => "convert FP (single) to FP (double)",
+  reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+  emit      =>'. FsTOd %S1, %D1'
+},
+
+FpDToFpS => {
+  irn_flags => "R",
+  comment   => "convert FP (double) to FP (single)",
+  reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+  emit      =>'. FdTOs %S1, %D1'
+},
+
+FpSToInt => {
+  irn_flags => "R",
+  comment   => "convert integer to FP",
+  reg_req   => { in => [ "fp" ], out => [ "gp" ] },
+  emit      =>'. FiTOs %S1, %D1'
+},
+
+FpDToInt => {
+  irn_flags => "R",
+  comment   => "convert integer to FP",
+  reg_req   => { in => [ "fp" ], out => [ "gp" ] },
+  emit      =>'. FiTOd %S1, %D1'
+},
+
+IntToFpS => {
+  irn_flags => "R",
+  comment   => "convert FP (single) to integer",
+  reg_req   => { in => [ "gp" ], out => [ "fp" ] },
+  emit      =>'. FsTOi %S1, %D1'
+},
+
+IntToFpD => {
+  irn_flags => "R",
+  comment   => "convert FP (double) to integer",
+  reg_req   => { in => [ "gp" ], out => [ "fp" ] },
+  emit      =>'. FdTOi %S1, %D1'
+},
+
+
 #
 #fMax => {
 #  op_flags  => "C",

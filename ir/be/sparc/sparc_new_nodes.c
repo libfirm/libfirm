@@ -154,8 +154,6 @@ const sparc_attr_t *get_sparc_attr_const(const ir_node *node)
 	return (const sparc_attr_t *)get_irn_generic_attr_const(node);
 }
 
-
-
 sparc_load_store_attr_t *get_sparc_load_store_attr(ir_node *node)
 {
 	assert(is_sparc_irn(node) && "need sparc node to get attributes");

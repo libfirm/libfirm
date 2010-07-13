@@ -40,6 +40,14 @@ struct sparc_attr_t
 	bool						is_load_store;
 };
 
+/**
+ * attribute for FP immediate instruction
+ */
+typedef struct sparc_fp_attr_t sparc_fp_attr_t;
+struct sparc_fp_attr_t {
+	sparc_attr_t  	base;    /**< generic attribute */
+	double 			fp_immediate; /* the FP immediate value */
+};
 
 /**
  * attribute for save instruction
