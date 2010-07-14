@@ -227,7 +227,11 @@ static ir_node *gen_Conv(ir_node *node)
 				}
 			} else {
 				/* from int to float */
-				panic("TODO");
+				if (!mode_is_signed(src_mode)) {
+					panic("TODO");
+				} else {
+					return new_bd_arm_FltX(dbg, block, new_op, dst_mode);
+				}
 			}
 		} else if (USE_VFP(env_cg->isa)) {
 			panic("VFP not supported yet");
@@ -524,7 +528,7 @@ static ir_node *gen_Sub(ir_node *node)
 		}
 	} else {
 		return gen_int_binop(node, MATCH_SIZE_NEUTRAL,
-				new_bd_arm_Sub_reg, new_bd_arm_Sub_imm);
+		                     new_bd_arm_Sub_reg, new_bd_arm_Sub_imm);
 	}
 }
 

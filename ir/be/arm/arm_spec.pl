@@ -515,6 +515,15 @@ Mvf => {
 	mode      => $mode_fp,
 },
 
+FltX => {
+	irn_flags => "R",
+	reg_req   => { in => [ "gp" ], out => [ "fpa" ] },
+	emit      => '. flt%AM %D0, %S0',
+	attr_type => "arm_farith_attr_t",
+	attr      => "ir_mode *op_mode",
+	mode      => $mode_fp,
+},
+
 Cmfe => {
 	irn_flags => "R|F",
 	mode      => $mode_flags,

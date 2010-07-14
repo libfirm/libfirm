@@ -91,7 +91,8 @@ static bool has_cmp_attr(const ir_node *node)
 
 static bool has_farith_attr(const ir_node *node)
 {
-	return is_arm_Dvf(node) || is_arm_Adf(node);
+	return is_arm_Adf(node) || is_arm_Muf(node) || is_arm_Suf(node)
+	    || is_arm_Dvf(node) || is_arm_Mvf(node) || is_arm_FltX(node);
 }
 
 /**
