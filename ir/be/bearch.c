@@ -97,12 +97,6 @@ ir_entity *arch_get_frame_entity(const ir_node *irn)
 	return ops->get_frame_entity(irn);
 }
 
-void arch_set_frame_entity(ir_node *irn, ir_entity *ent)
-{
-	const arch_irn_ops_t *ops = get_irn_ops(irn);
-	ops->set_frame_entity(irn, ent);
-}
-
 int arch_get_sp_bias(ir_node *irn)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(irn);

@@ -93,13 +93,6 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 	return NULL;
 }
 
-static void arm_set_frame_entity(ir_node *irn, ir_entity *ent)
-{
-	(void) irn;
-	(void) ent;
-	panic("arm_set_frame_entity() called. This should not happen.");
-}
-
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -130,7 +123,6 @@ static const arch_irn_ops_t arm_irn_ops = {
 	get_arm_in_req,
 	arm_classify,
 	arm_get_frame_entity,
-	arm_set_frame_entity,
 	arm_set_stack_bias,
 	arm_get_sp_bias,
 	NULL,    /* get_inverse             */

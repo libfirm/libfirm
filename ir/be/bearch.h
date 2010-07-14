@@ -119,7 +119,6 @@ typedef enum arch_irn_class_t {
 void arch_set_frame_offset(ir_node *irn, int bias);
 
 ir_entity *arch_get_frame_entity(const ir_node *irn);
-void       arch_set_frame_entity(ir_node *irn, ir_entity *ent);
 int        arch_get_sp_bias(ir_node *irn);
 
 int             arch_get_op_estimated_cost(const ir_node *irn);
@@ -404,13 +403,6 @@ struct arch_irn_ops_t {
 	 *         a stack frame entity.
 	 */
 	ir_entity *(*get_frame_entity)(const ir_node *irn);
-
-	/**
-	 * Set the entity on the stack frame this node depends on.
-	 * @param irn  The node in question.
-	 * @param ent  The entity to set
-	 */
-	void (*set_frame_entity)(ir_node *irn, ir_entity *ent);
 
 	/**
 	 * Set the offset of a node carrying an entity on the stack frame.

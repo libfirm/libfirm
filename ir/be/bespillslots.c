@@ -53,27 +53,28 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef struct _spill_t {
+typedef struct spill_t {
 	ir_node       *spill;
 	const ir_mode *mode;      /**< mode of the spilled value */
 	int            alignment; /**< alignment for the spilled value */
 	int            spillslot; /**< index into spillslot_unionfind structure */
 } spill_t;
 
-typedef struct _affinity_edge_t {
+typedef struct affinity_edge_t {
 	double affinity;
 	int    slot1;
 	int    slot2;
 } affinity_edge_t;
 
-struct _be_fec_env_t {
-	struct obstack    obst;
-	const arch_env_t *arch_env;
-	ir_graph         *irg;
-	set              *spills;
-	ir_node         **reloads;
-	affinity_edge_t **affinity_edges;
-	set              *memperms;
+struct be_fec_env_t {
+	struct obstack         obst;
+	const arch_env_t      *arch_env;
+	ir_graph              *irg;
+	set                   *spills;
+	ir_node              **reloads;
+	affinity_edge_t      **affinity_edges;
+	set                   *memperms;
+	set_frame_entity_func  set_frame_entity;
 };
 
 /** Compare 2 affinity edges (used in quicksort) */
@@ -556,8 +557,8 @@ static void enlarge_spillslot(spill_slot_t *slot, int otheralign, int othersize)
 	}
 }
 
-
-static void assign_spill_entity(ir_node *node, ir_entity *entity)
+static void assign_spill_entity(be_fec_env_t *env,
+                                ir_node *node, ir_entity *entity)
 {
 	if (is_NoMem(node))
 		return;
@@ -569,7 +570,7 @@ static void assign_spill_entity(ir_node *node, ir_entity *entity)
 			ir_node *in = get_irn_n(node, i);
 			assert(!is_Phi(in));
 
-			assign_spill_entity(in, entity);
+			assign_spill_entity(env, in, entity);
 		}
 		return;
 	}
@@ -578,7 +579,7 @@ static void assign_spill_entity(ir_node *node, ir_entity *entity)
 	   instance */
 	node = skip_Proj(node);
 	assert(arch_get_frame_entity(node) == NULL);
-	arch_set_frame_entity(node, entity);
+	env->set_frame_entity(node, entity);
 }
 
 /**
@@ -660,7 +661,7 @@ static void assign_spillslots(be_fec_env_t *env)
 				}
 			}
 		} else {
-			assign_spill_entity(node, slot->entity);
+			assign_spill_entity(env, node, slot->entity);
 		}
 	}
 
@@ -672,7 +673,7 @@ static void assign_spillslots(be_fec_env_t *env)
 
 		assert(slot->entity != NULL);
 
-		arch_set_frame_entity(reload, slot->entity);
+		env->set_frame_entity(reload, slot->entity);
 	}
 }
 
@@ -791,8 +792,11 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 	free(env);
 }
 
-void be_assign_entities(be_fec_env_t *env)
+void be_assign_entities(be_fec_env_t *env,
+                        set_frame_entity_func set_frame_entity)
 {
+	env->set_frame_entity = set_frame_entity;
+
 	stat_ev_dbl("spillslots", set_count(env->spills));
 
 	if (be_coalesce_spill_slots) {
@@ -834,7 +838,7 @@ void be_coalesce_spillslots(ir_graph *irg)
 	/* collect reloads */
 	irg_walk_graph(irg, NULL, collect_spills_walker, env);
 
-	be_assign_entities(env);
+	be_assign_entities(env, be_node_set_frame_entity);
 
 	be_free_frame_entity_coalescer(env);
 }

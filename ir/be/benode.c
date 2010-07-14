@@ -1078,7 +1078,7 @@ static ir_entity *be_node_get_frame_entity(const ir_node *irn)
 	return be_get_frame_entity(irn);
 }
 
-static void be_node_set_frame_entity(ir_node *irn, ir_entity *ent)
+void be_node_set_frame_entity(ir_node *irn, ir_entity *ent)
 {
 	be_frame_attr_t *a;
 
@@ -1123,7 +1123,6 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	be_node_get_in_reg_req,
 	be_node_classify,
 	be_node_get_frame_entity,
-	be_node_set_frame_entity,
 	be_node_set_frame_offset,
 	be_node_get_sp_bias,
 	NULL,    /* get_inverse             */
@@ -1152,13 +1151,6 @@ static ir_entity* dummy_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-static void dummy_set_frame_entity(ir_node *node, ir_entity *entity)
-{
-	(void) node;
-	(void) entity;
-	panic("dummy_set_frame_entity() should not be called");
-}
-
 static void dummy_set_frame_offset(ir_node *node, int bias)
 {
 	(void) node;
@@ -1177,7 +1169,6 @@ static const arch_irn_ops_t dummy_be_irn_ops = {
 	dummy_reg_req,
 	dummy_classify,
 	dummy_get_frame_entity,
-	dummy_set_frame_entity,
 	dummy_set_frame_offset,
 	dummy_get_sp_bias,
 	NULL,      /* get_inverse           */
@@ -1318,7 +1309,6 @@ static const arch_irn_ops_t phi_irn_ops = {
 	phi_get_irn_reg_req,
 	dummy_classify,
 	dummy_get_frame_entity,
-	dummy_set_frame_entity,
 	dummy_set_frame_offset,
 	dummy_get_sp_bias,
 	NULL,    /* get_inverse             */

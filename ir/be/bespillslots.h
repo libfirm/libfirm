@@ -29,7 +29,7 @@
 
 #include "beirg.h"
 
-typedef struct _be_fec_env_t be_fec_env_t;
+typedef struct be_fec_env_t be_fec_env_t;
 
 /**
  * Initializes a new frame entity coalescer environment
@@ -54,11 +54,13 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env);
 void be_node_needs_frame_entity(be_fec_env_t *env, ir_node *node,
                                 const ir_mode *mode, int alignment);
 
+typedef void (*set_frame_entity_func)(ir_node *node, ir_entity *entity);
+
 /**
  * Assigned frame entities to all the nodes added by be_node_needs_frame_entity.
  * Adds memory perms where needed.
  */
-void be_assign_entities(be_fec_env_t *env);
+void be_assign_entities(be_fec_env_t *env, set_frame_entity_func set_frame);
 
 //-------------------------------------------------------------------
 // Old API

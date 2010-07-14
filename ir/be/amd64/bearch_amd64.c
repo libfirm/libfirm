@@ -82,13 +82,6 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-static void amd64_set_frame_entity(ir_node *node, ir_entity *ent)
-{
-	(void) node;
-	(void) ent;
-	/* TODO: set the ir_entity assigned to the frame */
-}
-
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -122,7 +115,6 @@ static const arch_irn_ops_t amd64_irn_ops = {
 	get_amd64_in_req,
 	amd64_classify,
 	amd64_get_frame_entity,
-	amd64_set_frame_entity,
 	amd64_set_frame_offset,
 	amd64_get_sp_bias,
 	NULL,    /* get_inverse             */

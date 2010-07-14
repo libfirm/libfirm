@@ -66,13 +66,6 @@ static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
 	return NULL;
 }
 
-static void TEMPLATE_set_frame_entity(ir_node *node, ir_entity *ent)
-{
-	(void) node;
-	(void) ent;
-	/* TODO: set the ir_entity assigned to the frame */
-}
-
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -96,7 +89,6 @@ static const arch_irn_ops_t TEMPLATE_irn_ops = {
 	get_TEMPLATE_in_req,
 	TEMPLATE_classify,
 	TEMPLATE_get_frame_entity,
-	TEMPLATE_set_frame_entity,
 	TEMPLATE_set_frame_offset,
 	TEMPLATE_get_sp_bias,
 	NULL,    /* get_inverse             */

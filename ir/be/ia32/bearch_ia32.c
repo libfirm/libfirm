@@ -229,9 +229,12 @@ static ir_entity *ia32_get_frame_entity(const ir_node *irn)
 	return is_ia32_irn(irn) ? get_ia32_frame_ent(irn) : NULL;
 }
 
-static void ia32_set_frame_entity(ir_node *irn, ir_entity *ent)
+static void ia32_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	set_ia32_frame_ent(irn, ent);
+	if (is_be_node(node))
+		be_node_set_frame_entity(node, entity);
+	else
+		set_ia32_frame_ent(node, entity);
 }
 
 static void ia32_set_frame_offset(ir_node *irn, int bias)
@@ -789,7 +792,6 @@ static const arch_irn_ops_t ia32_irn_ops = {
 	get_ia32_in_req,
 	ia32_classify,
 	ia32_get_frame_entity,
-	ia32_set_frame_entity,
 	ia32_set_frame_offset,
 	ia32_get_sp_bias,
 	ia32_get_inverse,
@@ -810,7 +812,6 @@ static const arch_irn_ops_t ia32_SwitchJmp_irn_ops = {
 	get_ia32_SwitchJmp_out_req,
 	ia32_classify,
 	ia32_get_frame_entity,
-	ia32_set_frame_entity,
 	ia32_set_frame_offset,
 	ia32_get_sp_bias,
 	ia32_get_inverse,
@@ -1373,7 +1374,7 @@ static void ia32_after_ra(void *self)
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env);
+	be_assign_entities(fec_env, ia32_set_frame_entity);
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, cg);

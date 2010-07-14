@@ -96,14 +96,6 @@ static ir_entity *sparc_get_frame_entity(const ir_node *irn)
 	return NULL;
 }
 
-static void sparc_set_frame_entity(ir_node *node, ir_entity *ent)
-{
-	(void) node;
-	(void) ent;
-	panic("sparc_set_frame_entity() called. This should not happen.");
-	/* TODO: set the ir_entity assigned to the frame */
-}
-
 /**
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
@@ -132,7 +124,6 @@ static const arch_irn_ops_t sparc_irn_ops = {
 	get_sparc_in_req,
 	sparc_classify,
 	sparc_get_frame_entity,
-	sparc_set_frame_entity,
 	sparc_set_frame_offset,
 	sparc_get_sp_bias,
 	NULL,    /* get_inverse             */
