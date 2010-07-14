@@ -215,8 +215,6 @@ static ir_node *gen_Conv(ir_node *node)
 		return new_op;
 
 	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
-		env_cg->have_fp_insn = 1;
-
 		if (USE_FPA(env_cg->isa)) {
 			if (mode_is_float(src_mode)) {
 				if (mode_is_float(dst_mode)) {
@@ -403,7 +401,6 @@ static ir_node *gen_Add(ir_node *node)
 		dbg_info *dbgi    = get_irn_dbg_info(node);
 		ir_node  *new_op1 = be_transform_node(op1);
 		ir_node  *new_op2 = be_transform_node(op2);
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 #if 0
 			if (is_arm_fpaMvf_i(new_op1))
@@ -458,7 +455,6 @@ static ir_node *gen_Mul(ir_node *node)
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 #if 0
 			if (is_arm_Mov_i(new_op1))
@@ -490,7 +486,6 @@ static ir_node *gen_Quot(ir_node *node)
 
 	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	env_cg->have_fp_insn = 1;
 	if (USE_FPA(env_cg->isa)) {
 #if 0
 		if (is_arm_Mov_i(new_op1))
@@ -536,7 +531,6 @@ static ir_node *gen_Sub(ir_node *node)
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 #if 0
 			if (is_arm_Mov_i(new_op1))
@@ -735,7 +729,6 @@ static ir_node *gen_Abs(ir_node *node)
 	ir_mode  *mode    = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			return new_bd_arm_fpaAbs(dbgi, block, new_op, mode);
 		} else if (USE_VFP(env_cg->isa)) {
@@ -758,7 +751,6 @@ static ir_node *gen_Minus(ir_node *node)
 	ir_mode  *mode    = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			return new_bd_arm_fpaMvf(dbgi, block, op, mode);
 		} else if (USE_VFP(env_cg->isa)) {
@@ -784,7 +776,6 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_load = NULL;
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			new_load = new_bd_arm_fpaLdf(dbgi, block, new_ptr, new_mem, mode);
 		} else if (USE_VFP(env_cg->isa)) {
@@ -824,7 +815,6 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store = NULL;
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			new_store = new_bd_arm_fpaStf(dbgi, block, new_ptr, new_val,
 			                              new_mem, mode);
@@ -1016,7 +1006,6 @@ static ir_node *gen_Const(ir_node *node)
 	dbg_info *dbg = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		env_cg->have_fp_insn = 1;
 		if (USE_FPA(env_cg->isa)) {
 			tarval *tv = get_Const_tarval(node);
 #if 0

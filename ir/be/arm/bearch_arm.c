@@ -321,7 +321,6 @@ static void *arm_cg_init(ir_graph *irg)
 	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
 	cg->isa          = isa;
 	cg->int_tp       = int_tp;
-	cg->have_fp_insn = 0;
 	cg->dump         = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
 	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");

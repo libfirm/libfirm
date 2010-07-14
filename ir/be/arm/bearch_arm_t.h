@@ -142,7 +142,6 @@ typedef struct _arm_code_gen_t {
 	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	arm_isa_t                      *isa;            /**< the isa instance */
 	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
-	char                           have_fp_insn;    /**< non-zero, if fp hardware instructions are emitted */
 	char                           dump;            /**< set to 1 if graphs should be dumped */
 	DEBUG_ONLY(firm_dbg_module_t   *mod;)            /**< debugging module */
 } arm_code_gen_t;
