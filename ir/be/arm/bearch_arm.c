@@ -254,10 +254,60 @@ static void arm_after_ra_walker(ir_node *block, void *data)
 	}
 }
 
+static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
+{
+	be_fec_env_t  *env = data;
+	const ir_mode *mode;
+	int            align;
+	ir_entity     *entity;
+	const arm_load_store_attr_t *attr;
+
+	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
+		mode  = get_irn_mode(node);
+		align = get_mode_size_bytes(mode);
+		be_node_needs_frame_entity(env, node, mode, align);
+		return;
+	}
+
+	switch (get_arm_irn_opcode(node)) {
+	case iro_arm_Ldf:
+	case iro_arm_Ldr:
+		break;
+	default:
+		return;
+	}
+
+	attr   = get_arm_load_store_attr_const(node);
+	entity = attr->entity;
+	mode   = attr->load_store_mode;
+	align  = get_mode_size_bytes(mode);
+	if (entity != NULL)
+		return;
+	if (!attr->is_frame_entity)
+		return;
+	be_node_needs_frame_entity(env, node, mode, align);
+}
+
+static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
+{
+	if (is_be_node(node)) {
+		be_node_set_frame_entity(node, entity);
+	} else {
+		arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
+		attr->entity = entity;
+	}
+}
+
 static void arm_after_ra(void *self)
 {
-	arm_code_gen_t *cg = self;
-	be_coalesce_spillslots(cg->irg);
+	arm_code_gen_t *cg  = self;
+	ir_graph       *irg = cg->irg;
+
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+
+	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
+	be_assign_entities(fec_env, arm_set_frame_entity);
+	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(cg->irg, NULL, arm_after_ra_walker, NULL);
 }

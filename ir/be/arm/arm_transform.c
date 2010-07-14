@@ -64,6 +64,7 @@ static arm_code_gen_t *env_cg;
 
 static const arch_register_t *sp_reg = &arm_gp_regs[REG_SP];
 static ir_mode               *mode_gp;
+static ir_mode               *mode_fp;
 static beabi_helper_env_t    *abihelper;
 static calling_convention_t  *cconv = NULL;
 
@@ -219,14 +220,14 @@ static ir_node *gen_Conv(ir_node *node)
 			if (mode_is_float(src_mode)) {
 				if (mode_is_float(dst_mode)) {
 					/* from float to float */
-					return new_bd_arm_fpaMvf(dbg, block, new_op, dst_mode);
+					return new_bd_arm_Mvf(dbg, block, new_op, dst_mode);
 				} else {
 					/* from float to int */
-					return new_bd_arm_fpaFix(dbg, block, new_op, dst_mode);
+					panic("TODO");
 				}
 			} else {
 				/* from int to float */
-				return new_bd_arm_fpaFlt(dbg, block, new_op, dst_mode);
+				panic("TODO");
 			}
 		} else if (USE_VFP(env_cg->isa)) {
 			panic("VFP not supported yet");
@@ -402,13 +403,7 @@ static ir_node *gen_Add(ir_node *node)
 		ir_node  *new_op1 = be_transform_node(op1);
 		ir_node  *new_op2 = be_transform_node(op2);
 		if (USE_FPA(env_cg->isa)) {
-#if 0
-			if (is_arm_fpaMvf_i(new_op1))
-				return new_bd_arm_fpaAdf_i(dbgi, block, new_op2, mode, get_arm_imm_value(new_op1));
-			if (is_arm_fpaMvf_i(new_op2))
-				return new_bd_arm_fpaAdf_i(dbgi, block, new_op1, mode, get_arm_imm_value(new_op2));
-#endif
-			return new_bd_arm_fpaAdf(dbgi, block, new_op1, new_op2, mode);
+			return new_bd_arm_Adf(dbgi, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -456,13 +451,7 @@ static ir_node *gen_Mul(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa)) {
-#if 0
-			if (is_arm_Mov_i(new_op1))
-				return new_bd_arm_fpaMuf_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
-			if (is_arm_Mov_i(new_op2))
-				return new_bd_arm_fpaMuf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
-#endif
-			return new_bd_arm_fpaMuf(dbg, block, new_op1, new_op2, mode);
+			return new_bd_arm_Muf(dbg, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -487,13 +476,7 @@ static ir_node *gen_Quot(ir_node *node)
 	assert(mode != mode_E && "IEEE Extended FP not supported");
 
 	if (USE_FPA(env_cg->isa)) {
-#if 0
-		if (is_arm_Mov_i(new_op1))
-			return new_bd_arm_fpaRdf_i(dbg, block, new_op2, mode, get_arm_imm_value(new_op1));
-		if (is_arm_Mov_i(new_op2))
-			return new_bd_arm_fpaDvf_i(dbg, block, new_op1, mode, get_arm_imm_value(new_op2));
-#endif
-		return new_bd_arm_fpaDvf(dbg, block, new_op1, new_op2, mode);
+		return new_bd_arm_Dvf(dbg, block, new_op1, new_op2, mode);
 	} else if (USE_VFP(env_cg->isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
 		panic("VFP not supported yet");
@@ -532,13 +515,7 @@ static ir_node *gen_Sub(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa)) {
-#if 0
-			if (is_arm_Mov_i(new_op1))
-				return new_bd_arm_fpaRsf_i(dbgi, block, new_op2, mode, get_arm_imm_value(new_op1));
-			if (is_arm_Mov_i(new_op2))
-				return new_bd_arm_fpaSuf_i(dbgi, block, new_op1, mode, get_arm_imm_value(new_op2));
-#endif
-			return new_bd_arm_fpaSuf(dbgi, block, new_op1, new_op2, mode);
+			return new_bd_arm_Suf(dbgi, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -720,28 +697,6 @@ static ir_node *gen_Not(ir_node *node)
 	return new_bd_arm_Mvn_reg(dbgi, block, new_op);
 }
 
-static ir_node *gen_Abs(ir_node *node)
-{
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op      = get_Abs_op(node);
-	ir_node  *new_op  = be_transform_node(op);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *mode    = get_irn_mode(node);
-
-	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
-			return new_bd_arm_fpaAbs(dbgi, block, new_op, mode);
-		} else if (USE_VFP(env_cg->isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
-			panic("VFP not supported yet");
-		} else {
-			panic("Softfloat not supported yet");
-		}
-	}
-	assert(mode_is_data(mode));
-	return new_bd_arm_Abs(dbgi, block, new_op);
-}
-
 static ir_node *gen_Minus(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -752,7 +707,7 @@ static ir_node *gen_Minus(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa)) {
-			return new_bd_arm_fpaMvf(dbgi, block, op, mode);
+			return new_bd_arm_Mvf(dbgi, block, op, mode);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -777,7 +732,8 @@ static ir_node *gen_Load(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa)) {
-			new_load = new_bd_arm_fpaLdf(dbgi, block, new_ptr, new_mem, mode);
+			new_load = new_bd_arm_Ldf(dbgi, block, new_ptr, new_mem, mode,
+			                          NULL, 0, 0, false);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -816,8 +772,8 @@ static ir_node *gen_Store(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa)) {
-			new_store = new_bd_arm_fpaStf(dbgi, block, new_ptr, new_val,
-			                              new_mem, mode);
+			new_store = new_bd_arm_Stf(dbgi, block, new_ptr, new_val,
+			                           new_mem, mode, NULL, 0, 0, false);
 		} else if (USE_VFP(env_cg->isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
@@ -910,10 +866,10 @@ static ir_node *gen_Cmp(ir_node *node)
 
 		if (pnc & pn_Cmp_Uo) {
 			/* check for unordered, need cmf */
-			return new_bd_arm_fpaCmfBra(dbgi, block, new_op1, new_op2, pnc);
+			return new_bd_arm_CmfBra(dbgi, block, new_op1, new_op2, pnc);
 		}
 		/* Hmm: use need cmfe */
-		return new_bd_arm_fpaCmfeBra(dbgi, block, new_op1, new_op2, pnc);
+		return new_bd_arm_CmfeBra(dbgi, block, new_op1, new_op2, pnc);
 #endif
 	}
 
@@ -1008,20 +964,7 @@ static ir_node *gen_Const(ir_node *node)
 	if (mode_is_float(mode)) {
 		if (USE_FPA(env_cg->isa)) {
 			tarval *tv = get_Const_tarval(node);
-#if 0
-			int imm = is_fpa_immediate(tv);
-
-			if (imm != fpa_max) {
-				if (imm > 0) {
-					node = new_bd_arm_fpaMvf_i(dbg, block, mode, imm);
-				} else {
-					node = new_bd_arm_fpaMnf_i(dbg, block, mode, -imm);
-				}
-			} else
-#endif
-			{
-				node = new_bd_arm_fpaConst(dbg, block, tv);
-			}
+			node       = new_bd_arm_fConst(dbg, block, tv);
 			be_dep_on_frame(node);
 			return node;
 		} else if (USE_VFP(env_cg->isa)) {
@@ -1044,6 +987,83 @@ static ir_node *gen_SymConst(ir_node *node)
 	new_node = new_bd_arm_SymConst(dbgi, block, entity, 0);
 	be_dep_on_frame(new_node);
 	return new_node;
+}
+
+static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
+                               ir_node *node1)
+{
+	/* the good way to do this would be to use the stm (store multiple)
+	 * instructions, since our input is nearly always 2 consecutive 32bit
+	 * registers... */
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *stack = get_irg_frame(irg);
+	ir_node  *nomem = new_NoMem();
+	ir_node  *str0  = new_bd_arm_Str(dbgi, block, stack, node0, nomem, mode_gp,
+	                                 NULL, 0, 0, true);
+	ir_node  *str1  = new_bd_arm_Str(dbgi, block, stack, node1, nomem, mode_gp,
+	                                 NULL, 0, 4, true);
+	ir_node  *in[2] = { str0, str1 };
+	ir_node  *sync  = new_r_Sync(block, 2, in);
+	ir_node  *ldf;
+	set_irn_pinned(str0, op_pin_state_floats);
+	set_irn_pinned(str1, op_pin_state_floats);
+
+	ldf = new_bd_arm_Ldf(dbgi, block, stack, sync, mode_D, NULL, 0, 0, true);
+	set_irn_pinned(ldf, op_pin_state_floats);
+
+	return new_Proj(ldf, mode_fp, pn_arm_Ldf_res);
+}
+
+static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *stack = get_irg_frame(irg);
+	ir_node  *nomem = new_NoMem();
+	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem, mode_gp,
+	                                 NULL, 0, 0, true);
+	ir_node  *ldf;
+	set_irn_pinned(str, op_pin_state_floats);
+
+	ldf = new_bd_arm_Ldf(dbgi, block, stack, str, mode_F, NULL, 0, 0, true);
+	set_irn_pinned(ldf, op_pin_state_floats);
+
+	return new_Proj(ldf, mode_fp, pn_arm_Ldf_res);
+}
+
+static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *stack = get_irg_frame(irg);
+	ir_node  *nomem = new_NoMem();
+	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_F,
+	                                 NULL, 0, 0, true);
+	ir_node  *ldr;
+	set_irn_pinned(stf, op_pin_state_floats);
+
+	ldr = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 0, true);
+	set_irn_pinned(ldr, op_pin_state_floats);
+
+	return new_Proj(ldr, mode_gp, pn_arm_Ldr_res);
+}
+
+static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
+                           ir_node **out_value0, ir_node **out_value1)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *stack = get_irg_frame(irg);
+	ir_node  *nomem = new_NoMem();
+	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_D,
+	                                 NULL, 0, 0, true);
+	ir_node  *ldr0, *ldr1;
+	set_irn_pinned(stf, op_pin_state_floats);
+
+	ldr0 = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 0, true);
+	set_irn_pinned(ldr0, op_pin_state_floats);
+	ldr1 = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 4, true);
+	set_irn_pinned(ldr1, op_pin_state_floats);
+
+	*out_value0 = new_Proj(ldr0, mode_gp, pn_arm_Ldr_res);
+	*out_value1 = new_Proj(ldr1, mode_gp, pn_arm_Ldr_res);
 }
 
 static ir_node *gen_CopyB(ir_node *node)
@@ -1087,12 +1107,12 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldr_M);
 		}
 		break;
-	case iro_arm_fpaLdf:
+	case iro_arm_Ldf:
 		if (proj == pn_Load_res) {
 			ir_mode *mode = get_Load_mode(load);
-			return new_rd_Proj(dbgi, new_load, mode, pn_arm_fpaLdf_res);
+			return new_rd_Proj(dbgi, new_load, mode, pn_arm_Ldf_res);
 		} else if (proj == pn_Load_M) {
-			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_fpaLdf_M);
+			return new_rd_Proj(dbgi, new_load, mode_M, pn_arm_Ldf_M);
 		}
 		break;
 	default:
@@ -1130,25 +1150,13 @@ static ir_node *gen_Proj_Quot(ir_node *node)
 
 	switch (proj) {
 	case pn_Quot_M:
-		if (is_arm_fpaDvf(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_fpaDvf_M);
-		} else if (is_arm_fpaRdf(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_fpaRdf_M);
-		} else if (is_arm_fpaFdv(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_fpaFdv_M);
-		} else if (is_arm_fpaFrd(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_fpaFrd_M);
+		if (is_arm_Dvf(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_Dvf_M);
 		}
 		break;
 	case pn_Quot_res:
-		if (is_arm_fpaDvf(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode, pn_arm_fpaDvf_res);
-		} else if (is_arm_fpaRdf(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode, pn_arm_fpaRdf_res);
-		} else if (is_arm_fpaFdv(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode, pn_arm_fpaFdv_res);
-		} else if (is_arm_fpaFrd(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode, pn_arm_fpaFrd_res);
+		if (is_arm_Dvf(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode, pn_arm_Dvf_res);
 		}
 		break;
 	default:
@@ -1189,7 +1197,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return be_prolog_get_reg_value(abihelper, sp_reg);
 
 	case pn_Start_P_tls:
-		return new_bd_arm_LdTls(NULL, new_block);
+		return new_Bad();
 
 	case pn_Start_max:
 		break;
@@ -1199,7 +1207,12 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	long                      pn = get_Proj_proj(node);
+	long       pn          = get_Proj_proj(node);
+	ir_node   *block       = get_nodes_block(node);
+	ir_node   *new_block   = be_transform_node(block);
+	ir_entity *entity      = get_irg_entity(current_ir_graph);
+	ir_type   *method_type = get_entity_type(entity);
+	ir_type   *param_type  = get_method_param_type(method_type, pn);
 	const reg_or_stackslot_t *param;
 
 	/* Proj->Proj->Start must be a method argument */
@@ -1209,18 +1222,50 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 
 	if (param->reg0 != NULL) {
 		/* argument transmitted in register */
-		return be_prolog_get_reg_value(abihelper, param->reg0);
+		ir_mode *mode  = get_type_mode(param_type);
+		ir_node *value = be_prolog_get_reg_value(abihelper, param->reg0);
+
+		if (mode_is_float(mode)) {
+			ir_node *value1 = NULL;
+
+			if (param->reg1 != NULL) {
+				value1 = be_prolog_get_reg_value(abihelper, param->reg1);
+			} else if (param->entity != NULL) {
+				ir_graph *irg = get_irn_irg(node);
+				ir_node  *fp  = get_irg_frame(irg);
+				ir_node  *mem = be_prolog_get_memory(abihelper);
+				ir_node  *ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
+				                               mode_gp, param->entity,
+				                               0, 0, true);
+				value1 = new_Proj(ldr, mode_gp, pn_arm_Ldr_res);
+			}
+
+			/* convert integer value to float */
+			if (value1 == NULL) {
+				value = int_to_float(NULL, new_block, value);
+			} else {
+				value = ints_to_double(NULL, new_block, value, value1);
+			}
+		}
+		return value;
 	} else {
 		/* argument transmitted on stack */
-		ir_graph *irg       = get_irn_irg(node);
-		ir_node  *block     = get_nodes_block(node);
-		ir_node  *new_block = be_transform_node(block);
-		ir_node  *fp        = get_irg_frame(irg);
-		ir_node  *mem       = be_prolog_get_memory(abihelper);
-		ir_mode  *mode      = get_type_mode(param->type);
-		ir_node  *load      = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode,
-		                                     param->entity, 0, 0, true);
-		ir_node  *value     = new_r_Proj(load, mode_gp, pn_arm_Ldr_res);
+		ir_graph *irg  = get_irn_irg(node);
+		ir_node  *fp   = get_irg_frame(irg);
+		ir_node  *mem  = be_prolog_get_memory(abihelper);
+		ir_mode  *mode = get_type_mode(param->type);
+		ir_node  *load;
+		ir_node  *value;
+
+		if (mode_is_float(mode)) {
+			load  = new_bd_arm_Ldf(NULL, new_block, fp, mem, mode,
+			                       param->entity, 0, 0, true);
+			value = new_r_Proj(load, mode_fp, pn_arm_Ldf_res);
+		} else {
+			load  = new_bd_arm_Ldr(NULL, new_block, fp, mem, mode,
+			                       param->entity, 0, 0, true);
+			value = new_r_Proj(load, mode_gp, pn_arm_Ldr_res);
+		}
 		set_irn_pinned(load, op_pin_state_floats);
 
 		return value;
@@ -1359,7 +1404,7 @@ static ir_node *gen_Unknown(ir_node *node)
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
 		tarval *tv = get_mode_null(mode);
-		ir_node *node = new_bd_arm_fpaConst(dbgi, new_block, tv);
+		ir_node *node = new_bd_arm_fConst(dbgi, new_block, tv);
 		be_dep_on_frame(node);
 		return node;
 	} else if (mode_needs_gp_reg(mode)) {
@@ -1512,14 +1557,10 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node   *new_mem        = be_transform_node(mem);
 	int        n_callee_saves = sizeof(callee_saves)/sizeof(callee_saves[0]);
 	ir_node   *sp_proj        = get_stack_pointer_for(node);
+	int        n_res          = get_Return_n_ress(node);
 	ir_node   *bereturn;
 	ir_node   *incsp;
 	int        i;
-	int        n_res;
-	const arch_register_t *const result_regs[] = {
-		&arm_gp_regs[REG_R0],
-		&arm_gp_regs[REG_R1]
-	};
 
 	be_epilog_begin(abihelper);
 	be_epilog_set_memory(abihelper, new_mem);
@@ -1530,14 +1571,12 @@ static ir_node *gen_Return(ir_node *node)
 			sp_proj);
 
 	/* result values */
-	n_res = get_Return_n_ress(node);
-	if (n_res > (int) (sizeof(result_regs)/sizeof(result_regs[0]))) {
-		panic("Too many return values for arm backend (%+F)", node);
-	}
 	for (i = 0; i < n_res; ++i) {
-		ir_node               *res_value     = get_Return_res(node, i);
-		ir_node               *new_res_value = be_transform_node(res_value);
-		const arch_register_t *reg           = result_regs[i];
+		ir_node                  *res_value     = get_Return_res(node, i);
+		ir_node                  *new_res_value = be_transform_node(res_value);
+		const reg_or_stackslot_t *slot          = &cconv->results[i];
+		const arch_register_t    *reg           = slot->reg0;
+		assert(slot->reg1 == NULL);
 		be_epilog_add_reg(abihelper, reg, 0, new_res_value);
 	}
 
@@ -1605,35 +1644,61 @@ static ir_node *gen_Call(ir_node *node)
 	++in_arity;
 	/* parameters */
 	for (p = 0; p < n_params; ++p) {
-		ir_node                  *value     = get_Call_param(node, p);
-		ir_node                  *new_value = be_transform_node(value);
-		const reg_or_stackslot_t *param     = &cconv->parameters[p];
-		const arch_register_t    *reg       = param->reg0;
+		ir_node                  *value      = get_Call_param(node, p);
+		ir_node                  *new_value  = be_transform_node(value);
+		ir_node                  *new_value1 = NULL;
+		const reg_or_stackslot_t *param      = &cconv->parameters[p];
+		ir_type                  *param_type = get_method_param_type(type, p);
+		ir_mode                  *mode       = get_type_mode(param_type);
+		ir_node                  *str;
 
-		/* double not implemented yet */
-		assert(get_mode_size_bits(get_irn_mode(value)) <= 32);
-		assert(param->reg1 == NULL);
-
-		if (reg != NULL) {
-			in[in_arity] = new_value;
-			/* this should not happen, LR cannot be a parameter register ... */
-			assert(reg != &arm_gp_regs[REG_LR]);
-			in_req[in_arity] = reg->single_req;
-			++in_arity;
-		} else {
-			ir_mode *mode;
-			ir_node *str;
-			if (incsp == NULL) {
-				/* create a parameter frame */
-				ir_node *new_frame = get_stack_pointer_for(node);
-				incsp = be_new_IncSP(sp_reg, new_block, new_frame, cconv->param_stack_size, 1);
+		if (mode_is_float(mode) && param->reg0 != NULL) {
+			unsigned size_bits = get_mode_size_bits(mode);
+			if (size_bits == 64) {
+				double_to_ints(dbgi, new_block, new_value, &new_value,
+				               &new_value1);
+			} else {
+				assert(size_bits == 32);
+				new_value = float_to_int(dbgi, new_block, new_value);
 			}
-			mode = get_irn_mode(value);
-			str  = new_bd_arm_Str(dbgi, new_block, incsp, value, new_mem, mode,
-			                      NULL, 0, param->offset, true);
-
-			sync_ins[sync_arity++] = str;
 		}
+
+		/* put value into registers */
+		if (param->reg0 != NULL) {
+			in[in_arity]     = new_value;
+			in_req[in_arity] = param->reg0->single_req;
+			++in_arity;
+			if (new_value1 == NULL)
+				continue;
+		}
+		if (param->reg1 != NULL) {
+			assert(new_value1 != NULL);
+			in[in_arity]     = new_value1;
+			in_req[in_arity] = param->reg1->single_req;
+			++in_arity;
+			continue;
+		}
+
+		/* we need a store if we're here */
+		if (new_value1 != NULL) {
+			new_value = new_value1;
+			mode      = mode_gp;
+		}
+
+		/* create a parameter frame if necessary */
+		if (incsp == NULL) {
+			ir_node *new_frame = get_stack_pointer_for(node);
+			incsp = be_new_IncSP(sp_reg, new_block, new_frame,
+								 cconv->param_stack_size, 1);
+		}
+		if (mode_is_float(mode)) {
+			str = new_bd_arm_Stf(dbgi, new_block, incsp, new_value, new_mem,
+			                     mode, NULL, 0, param->offset, true);
+		} else {
+			str = new_bd_arm_Str(dbgi, new_block, incsp, new_value, new_mem,
+								 mode, NULL, 0, param->offset, true);
+		}
+		sync_ins[sync_arity++] = str;
 	}
 	assert(in_arity <= max_inputs);
 
@@ -1781,7 +1846,6 @@ static void arm_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Abs,      gen_Abs);
 	be_set_transform_function(op_Add,      gen_Add);
 	be_set_transform_function(op_And,      gen_And);
 	be_set_transform_function(op_Call,     gen_Call);
@@ -1858,6 +1922,7 @@ void arm_transform_graph(arm_code_gen_t *cg)
 	ir_type   *frame_type;
 
 	mode_gp = mode_Iu;
+	mode_fp = mode_E;
 
 	if (! imm_initialized) {
 		arm_init_fpa_immediate();

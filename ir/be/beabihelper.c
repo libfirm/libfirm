@@ -393,17 +393,17 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 
 	assert(n_outs < (int) sizeof(unsigned) * 8);
 	foreach_out_edge(node, edge) {
-		ir_node *node = get_edge_src_irn(edge);
+		ir_node *succ = get_edge_src_irn(edge);
 		int      pn;
 
 		/* The node could be kept */
-		if (is_End(node) || is_Anchor(node))
+		if (is_End(succ) || is_Anchor(succ))
 			continue;
 
-		if (get_irn_mode(node) == mode_M)
+		if (get_irn_mode(succ) == mode_M)
 			continue;
 
-		pn = get_Proj_proj(node);
+		pn = get_Proj_proj(succ);
 		assert(pn < n_outs);
 		found_projs |= 1 << pn;
 	}

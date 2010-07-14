@@ -72,7 +72,8 @@ static bool arm_has_symconst_attr(const ir_node *node)
 
 static bool has_load_store_attr(const ir_node *node)
 {
-	return is_arm_Ldr(node) || is_arm_Str(node) || is_arm_LinkLdrPC(node);
+	return is_arm_Ldr(node) || is_arm_Str(node) || is_arm_LinkLdrPC(node)
+		|| is_arm_Ldf(node) || is_arm_Stf(node);
 }
 
 static bool has_shifter_operand(const ir_node *node)
@@ -86,6 +87,11 @@ static bool has_shifter_operand(const ir_node *node)
 static bool has_cmp_attr(const ir_node *node)
 {
 	return is_arm_Cmp(node) || is_arm_Tst(node);
+}
+
+static bool has_farith_attr(const ir_node *node)
+{
+	return is_arm_Dvf(node) || is_arm_Adf(node);
 }
 
 /**
@@ -197,6 +203,10 @@ static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			fputc('\n', F);
 			fprintf(F, "frame offset = %d\n", attr->fp_offset);
 		}
+		if (has_farith_attr(n)) {
+			const arm_farith_attr_t *attr = get_arm_farith_attr_const(n);
+			ir_fprintf(F, "arithmetic mode = %+F\n", attr->mode);
+		}
 		break;
 	}
 }
@@ -230,21 +240,28 @@ const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-static const arm_fpaConst_attr_t *get_arm_fpaConst_attr_const(
-		const ir_node *node)
+static const arm_fConst_attr_t *get_arm_fConst_attr_const(const ir_node *node)
 {
-	const arm_attr_t          *attr     = get_arm_attr_const(node);
-	const arm_fpaConst_attr_t *fpa_attr = CONST_CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
-
-	return fpa_attr;
+	assert(is_arm_fConst(node));
+	return get_irn_generic_attr_const(node);
 }
 
-static arm_fpaConst_attr_t *get_arm_fpaConst_attr(ir_node *node)
+static arm_fConst_attr_t *get_arm_fConst_attr(ir_node *node)
 {
-	arm_attr_t          *attr     = get_arm_attr(node);
-	arm_fpaConst_attr_t *fpa_attr = CAST_ARM_ATTR(arm_fpaConst_attr_t, attr);
+	assert(is_arm_fConst(node));
+	return get_irn_generic_attr(node);
+}
 
-	return fpa_attr;
+arm_farith_attr_t *get_arm_farith_attr(ir_node *node)
+{
+	assert(has_farith_attr(node));
+	return get_irn_generic_attr(node);
+}
+
+const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node)
+{
+	assert(has_farith_attr(node));
+	return get_irn_generic_attr_const(node);
 }
 
 arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node)
@@ -289,15 +306,15 @@ void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos)
 	attr->in_req[pos] = req;
 }
 
-tarval *get_fpaConst_value(const ir_node *node)
+tarval *get_fConst_value(const ir_node *node)
 {
-	const arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr_const(node);
+	const arm_fConst_attr_t *attr = get_arm_fConst_attr_const(node);
 	return attr->tv;
 }
 
-void set_fpaConst_value(ir_node *node, tarval *tv)
+void set_fConst_value(ir_node *node, tarval *tv)
 {
-	arm_fpaConst_attr_t *attr = get_arm_fpaConst_attr(node);
+	arm_fConst_attr_t *attr = get_arm_fConst_attr(node);
 	attr->tv = tv;
 }
 
@@ -351,7 +368,6 @@ static void init_arm_attributes(ir_node *node, int flags,
 
 	arch_irn_set_flags(node, flags);
 	attr->in_req           = in_reqs;
-	attr->instr_fl         = 0;
 
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
@@ -397,6 +413,12 @@ static void init_arm_SymConst_attributes(ir_node *res, ir_entity *entity,
 	attr->fp_offset = symconst_offset;
 }
 
+static void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
+{
+	arm_farith_attr_t *attr = get_irn_generic_attr(res);
+	attr->mode = mode;
+}
+
 static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
 {
 	arm_CopyB_attr_t *attr = get_irn_generic_attr(res);
@@ -405,9 +427,9 @@ static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
 
 static int cmp_attr_arm(ir_node *a, ir_node *b)
 {
-	arm_attr_t *attr_a = get_irn_generic_attr(a);
-	arm_attr_t *attr_b = get_irn_generic_attr(b);
-	return attr_a->instr_fl != attr_b->instr_fl;
+	(void) a;
+	(void) b;
+	return 0;
 }
 
 static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b)
@@ -453,16 +475,16 @@ static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b)
 	return 1;
 }
 
-static int cmp_attr_arm_fpaConst(ir_node *a, ir_node *b)
+static int cmp_attr_arm_fConst(ir_node *a, ir_node *b)
 {
-	const arm_fpaConst_attr_t *attr_a;
-	const arm_fpaConst_attr_t *attr_b;
+	const arm_fConst_attr_t *attr_a;
+	const arm_fConst_attr_t *attr_b;
 
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_fpaConst_attr_const(a);
-	attr_b = get_arm_fpaConst_attr_const(b);
+	attr_a = get_arm_fConst_attr_const(a);
+	attr_b = get_arm_fConst_attr_const(b);
 
 	return attr_a->tv != attr_b->tv;
 }
@@ -549,6 +571,19 @@ static int cmp_attr_arm_cmp(ir_node *a, ir_node *b)
 			|| attr_a->is_unsigned != attr_b->is_unsigned)
 		return 1;
 	return 0;
+}
+
+static int cmp_attr_arm_farith(ir_node *a, ir_node *b)
+{
+	const arm_farith_attr_t *attr_a;
+	const arm_farith_attr_t *attr_b;
+
+	if (cmp_attr_arm(a, b))
+		return 1;
+
+	attr_a = get_arm_farith_attr_const(a);
+	attr_b = get_arm_farith_attr_const(b);
+	return attr_a->mode != attr_b->mode;
 }
 
 /** copies the ARM attributes of a node. */

@@ -134,27 +134,18 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
     return reg;
 }
 
-/**
- * Emit the name of the source register at given input position.
- */
 void arm_emit_source_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_in_reg(node, pos);
 	be_emit_string(arch_register_get_name(reg));
 }
 
-/**
- * Emit the name of the destination register at given output position.
- */
 void arm_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_out_reg(node, pos);
 	be_emit_string(arch_register_get_name(reg));
 }
 
-/**
- * Emit a node's offset.
- */
 void arm_emit_offset(const ir_node *node)
 {
 	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
@@ -178,20 +169,16 @@ static void arm_emit_fpa_postfix(const ir_mode *mode)
 	be_emit_char(c);
 }
 
-/**
- * Emit the instruction suffix depending on the mode.
- */
-void arm_emit_mode(const ir_node *node)
+void arm_emit_float_load_store_mode(const ir_node *node)
 {
-	ir_mode *mode;
+	const arm_load_store_attr_t *attr = get_arm_load_store_attr_const(node);
+	arm_emit_fpa_postfix(attr->load_store_mode);
+}
 
-	if (is_arm_irn(node)) {
-		const arm_attr_t *attr = get_arm_attr_const(node);
-		mode = attr->op_mode ? attr->op_mode : get_irn_mode(node);
-	} else {
-		mode = get_irn_mode(node);
-	}
-	arm_emit_fpa_postfix(mode);
+void arm_emit_float_arithmetic_mode(const ir_node *node)
+{
+	const arm_farith_attr_t *attr = get_arm_farith_attr_const(node);
+	arm_emit_fpa_postfix(attr->mode);
 }
 
 void arm_emit_symconst(const ir_node *node)
@@ -374,13 +361,13 @@ static void emit_arm_FrameAddr(const ir_node *irn)
 /**
  * Emit a floating point fpa constant.
  */
-static void emit_arm_fpaConst(const ir_node *irn)
+static void emit_arm_fConst(const ir_node *irn)
 {
 	sym_or_tv_t key, *entry;
 	unsigned label;
 	ir_mode *mode;
 
-	key.u.tv      = get_fpaConst_value(irn);
+	key.u.tv      = get_fConst_value(irn);
 	key.is_entity = false;
 	key.label     = 0;
 	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
@@ -795,7 +782,6 @@ static void emit_be_Copy(const ir_node *irn)
 	if (mode_is_float(mode)) {
 		if (USE_FPA(cg->isa)) {
 			be_emit_cstring("\tmvf");
-			arm_emit_mode(irn);
 			be_emit_char(' ');
 			arm_emit_dest_register(irn, 0);
 			be_emit_cstring(", ");
@@ -912,32 +898,6 @@ static void emit_arm_Jmp(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-static void emit_arm_fpaDbl2GP(const ir_node *irn)
-{
-	be_emit_cstring("\tstfd ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", [sp, #-8]!");
-	be_emit_pad_comment();
-	be_emit_cstring("/* Push fp to stack */");
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_cstring("\tldmfd sp!, {");
-	arm_emit_dest_register(irn, 1);
-	be_emit_cstring(", ");
-	arm_emit_dest_register(irn, 0);
-	be_emit_char('}');
-	be_emit_pad_comment();
-	be_emit_cstring("/* Pop destination */");
-	be_emit_finish_line_gas(irn);
-}
-
-static void emit_arm_LdTls(const ir_node *irn)
-{
-	(void) irn;
-	panic("TLS not supported for this target");
-	/* Er... our gcc does not support it... Install a newer toolchain. */
-}
-
 static void emit_nothing(const ir_node *irn)
 {
 	(void) irn;
@@ -969,28 +929,26 @@ static void arm_register_emitters(void)
 	arm_register_spec_emitters();
 
 	/* custom emitter */
-	set_emitter(op_arm_B,          emit_arm_B);
-	set_emitter(op_arm_CopyB,      emit_arm_CopyB);
-	set_emitter(op_arm_fpaConst,   emit_arm_fpaConst);
-	set_emitter(op_arm_fpaDbl2GP,  emit_arm_fpaDbl2GP);
-	set_emitter(op_arm_FrameAddr,  emit_arm_FrameAddr);
-	set_emitter(op_arm_Jmp,        emit_arm_Jmp);
-	set_emitter(op_arm_LdTls,      emit_arm_LdTls);
-	set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
-	set_emitter(op_arm_SymConst,   emit_arm_SymConst);
-	set_emitter(op_be_Call,        emit_be_Call);
-	set_emitter(op_be_Copy,        emit_be_Copy);
-	set_emitter(op_be_CopyKeep,    emit_be_Copy);
-	set_emitter(op_be_IncSP,       emit_be_IncSP);
-	set_emitter(op_be_MemPerm,     emit_be_MemPerm);
-	set_emitter(op_be_Perm,        emit_be_Perm);
-	set_emitter(op_be_Return,      emit_be_Return);
+	set_emitter(op_arm_B,         emit_arm_B);
+	set_emitter(op_arm_CopyB,     emit_arm_CopyB);
+	set_emitter(op_arm_fConst,    emit_arm_fConst);
+	set_emitter(op_arm_FrameAddr, emit_arm_FrameAddr);
+	set_emitter(op_arm_Jmp,       emit_arm_Jmp);
+	set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
+	set_emitter(op_arm_SymConst,  emit_arm_SymConst);
+	set_emitter(op_be_Call,       emit_be_Call);
+	set_emitter(op_be_Copy,       emit_be_Copy);
+	set_emitter(op_be_CopyKeep,   emit_be_Copy);
+	set_emitter(op_be_IncSP,      emit_be_IncSP);
+	set_emitter(op_be_MemPerm,    emit_be_MemPerm);
+	set_emitter(op_be_Perm,       emit_be_Perm);
+	set_emitter(op_be_Return,     emit_be_Return);
 
 	/* no need to emit anything for the following nodes */
-	set_emitter(op_Phi,            emit_nothing);
-	set_emitter(op_be_Keep,        emit_nothing);
-	set_emitter(op_be_Start,       emit_nothing);
-	set_emitter(op_be_Barrier,     emit_nothing);
+	set_emitter(op_Phi,           emit_nothing);
+	set_emitter(op_be_Keep,       emit_nothing);
+	set_emitter(op_be_Start,      emit_nothing);
+	set_emitter(op_be_Barrier,    emit_nothing);
 }
 
 /**
@@ -1109,9 +1067,6 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size)
 	return p1->u.generic != p2->u.generic;
 }
 
-/**
- * Main driver. Emits the code for one routine.
- */
 void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
 {
 	ir_node   **blk_sched;

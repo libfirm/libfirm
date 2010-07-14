@@ -47,7 +47,16 @@ static const arch_register_t *const caller_saves[] = {
 	&arm_gp_regs[REG_R1],
 	&arm_gp_regs[REG_R2],
 	&arm_gp_regs[REG_R3],
-	&arm_gp_regs[REG_LR]
+	&arm_gp_regs[REG_LR],
+
+	&arm_fpa_regs[REG_F0],
+	&arm_fpa_regs[REG_F1],
+	&arm_fpa_regs[REG_F2],
+	&arm_fpa_regs[REG_F3],
+	&arm_fpa_regs[REG_F4],
+	&arm_fpa_regs[REG_F5],
+	&arm_fpa_regs[REG_F6],
+	&arm_fpa_regs[REG_F7],
 };
 
 static const arch_register_t* const param_regs[] = {
@@ -62,6 +71,11 @@ static const arch_register_t* const result_regs[] = {
 	&arm_gp_regs[REG_R1],
 	&arm_gp_regs[REG_R2],
 	&arm_gp_regs[REG_R3]
+};
+
+static const arch_register_t* const float_result_regs[] = {
+	&arm_fpa_regs[REG_F0],
+	&arm_fpa_regs[REG_F1]
 };
 
 /** information about a single parameter or result */

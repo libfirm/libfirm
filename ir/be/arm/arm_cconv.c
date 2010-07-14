@@ -40,10 +40,13 @@ calling_convention_t *decide_calling_convention(ir_type *function_type)
 		= sizeof(param_regs)/sizeof(param_regs[0]);
 	int                   n_result_regs
 		= sizeof(result_regs)/sizeof(result_regs[0]);
+	int                   n_float_result_regs
+		= sizeof(float_result_regs)/sizeof(float_result_regs[0]);
 	int                   n_params;
 	int                   n_results;
 	int                   i;
 	int                   regnum;
+	int                   float_regnum;
 	calling_convention_t *cconv;
 
 	/* determine how parameters are passed */
@@ -56,15 +59,15 @@ calling_convention_t *decide_calling_convention(ir_type *function_type)
 		ir_mode            *mode       = get_type_mode(param_type);
 		int                 bits       = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param      = &params[i];
+		param->type = param_type;
 
 		if (regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[regnum++];
 			param->reg0 = reg;
 		} else {
-			param->type   = param_type;
 			param->offset = stack_offset;
 			/* increase offset 4 bytes so everything is aligned */
-			stack_offset += 4;
+			stack_offset += bits > 32 ? bits/8 : 4;
 			continue;
 		}
 
@@ -81,28 +84,39 @@ calling_convention_t *decide_calling_convention(ir_type *function_type)
 				ir_type *type = get_type_for_mode(mode);
 				param->type   = type;
 				param->offset = stack_offset;
+				assert(get_mode_size_bits(mode) == 32);
 				stack_offset += 4;
 			}
 		}
 	}
 
-	n_results = get_method_n_ress(function_type);
-	regnum    = 0;
-	results   = XMALLOCNZ(reg_or_stackslot_t, n_results);
+	n_results    = get_method_n_ress(function_type);
+	regnum       = 0;
+	float_regnum = 0;
+	results      = XMALLOCNZ(reg_or_stackslot_t, n_results);
 	for (i = 0; i < n_results; ++i) {
 		ir_type            *result_type = get_method_res_type(function_type, i);
 		ir_mode            *result_mode = get_type_mode(result_type);
 		reg_or_stackslot_t *result      = &results[i];
 
-		if (get_mode_size_bits(result_mode) > 32) {
-			panic("Results with more than 32bits not supported by arm backend yet");
-		}
-
-		if (regnum >= n_result_regs) {
-			panic("Too many results for arm backend");
+		if (mode_is_float(result_mode)) {
+			if (float_regnum >= n_float_result_regs) {
+				panic("Too many float results for arm backend");
+			} else {
+				const arch_register_t *reg = float_result_regs[float_regnum++];
+				result->reg0 = reg;
+			}
 		} else {
-			const arch_register_t *reg = result_regs[regnum++];
-			result->reg0 = reg;
+			if (get_mode_size_bits(result_mode) > 32) {
+				panic("Results with more than 32bits not supported by arm backend yet");
+			}
+
+			if (regnum >= n_result_regs) {
+				panic("Too many results for arm backend");
+			} else {
+				const arch_register_t *reg = result_regs[regnum++];
+				result->reg0 = reg;
+			}
 		}
 	}
 

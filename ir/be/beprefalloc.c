@@ -870,6 +870,8 @@ static void assign_reg(const ir_node *block, ir_node *node,
 			break;
 	}
 	if (i >= n_regs) {
+		/* the common reason to hit this panic is when 1 of your nodes is not
+		 * register pressure faithful */
 		panic("No register left for %+F\n", node);
 	}
 

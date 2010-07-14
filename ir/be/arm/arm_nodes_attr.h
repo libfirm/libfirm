@@ -48,13 +48,6 @@ typedef enum arm_shift_modifier_t {
 	ARM_SHF_RRX,       /**< rotate right through carry bits */
 } arm_shift_modifier_t;
 
-/** fpa immediate bit */
-#define ARM_FPA_IMM  (1 << 3)   /**< fpa floating point immediate */
-
-#define ARM_GET_FPA_IMM(attr)        ((attr)->instr_fl & ARM_FPA_IMM)
-#define ARM_SET_FPA_IMM(attr)        ((attr)->instr_fl |= ARM_FPA_IMM)
-#define ARM_CLR_FPA_IMM(attr)        ((attr)->instr_fl &= ~ARM_FPA_IMM)
-
 /** Encoding for fpa immediates */
 enum fpa_immediates {
 	fpa_null = 0,
@@ -70,13 +63,9 @@ enum fpa_immediates {
 
 /** Generic ARM node attributes. */
 typedef struct arm_attr_t {
-	except_attr      exc;                /**< the exception attribute. MUST be the first one. */
-
+	except_attr                 exc;                /**< the exception attribute. MUST be the first one. */
 	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-
-	ir_mode  *op_mode;                   /**< operation mode if different from node's mode (used for fpa nodes) */
-	unsigned  instr_fl;                  /**< deprecated (was sometimes used for shift modifiers) */
-	bool      is_load_store : 1;
+	bool                        is_load_store : 1;
 } arm_attr_t;
 
 /**
@@ -130,16 +119,22 @@ typedef struct arm_SwitchJmp_attr_t {
 } arm_SwitchJmp_attr_t;
 
 /** CopyB attributes */
-typedef struct {
+typedef struct arm_CopyB_attr_t {
 	arm_attr_t  base;
 	unsigned    size;
 } arm_CopyB_attr_t;
 
-/** Attributes for a fpaConst */
-typedef struct arm_fpaConst_attr_t {
+/** Attributes for a fConst */
+typedef struct arm_fConst_attr_t {
 	arm_attr_t  base;
 	tarval     *tv;              /**< the tarval representing the FP const */
-} arm_fpaConst_attr_t;
+} arm_fConst_attr_t;
+
+/** attributes for floatingpoint arithmetic operations */
+typedef struct arm_farith_attr_t {
+	arm_attr_t  base;
+	ir_mode    *mode; /* operation mode */
+} arm_farith_attr_t;
 
 /**
  * Return the fpa immediate from the encoding.

@@ -62,6 +62,9 @@ const arm_shifter_operand_t *get_arm_shifter_operand_attr_const(const ir_node *n
 arm_cmp_attr_t *get_arm_cmp_attr(ir_node *node);
 const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node);
 
+arm_farith_attr_t *get_arm_farith_attr(ir_node *node);
+const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node);
+
 void set_arm_in_req_all(ir_node *node, const arch_register_req_t **reqs);
 
 /**
@@ -75,14 +78,14 @@ const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
 void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos);
 
 /**
-* Return the tarval of a fpaConst
+* Return the tarval of a fConst
 */
-tarval *get_fpaConst_value(const ir_node *node);
+tarval *get_fConst_value(const ir_node *node);
 
 /**
- * Sets the tarval of a fpaConst
+ * Sets the tarval of a fConst
  */
-void set_fpaConst_value(ir_node *node, tarval *tv);
+void set_fConst_value(ir_node *node, tarval *tv);
 
 /**
  * Returns the compare kind
