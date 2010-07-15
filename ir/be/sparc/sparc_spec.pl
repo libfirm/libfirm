@@ -7,82 +7,35 @@ $mode_gp      = "mode_Iu";
 $mode_flags   = "mode_Bu";
 $mode_fp      = "mode_D";
 
-# The node description is done as a perl hash initializer with the
-# following structure:
-#
-# %nodes = (
-#
-# <op-name> => {
-#   arity     => "0|1|2|3 ... |variable|dynamic|any",   # optional
-#   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
-#   args      => [
-#                    { type => "type 1", name => "name 1" },
-#                    { type => "type 2", name => "name 2" },
-#                    ...
-#                  ],
-#   comment   => "any comment for constructor",  # optional
-#   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
-#   cmp_attr  => "c source code for comparing node attributes", # optional
-#   outs      => { "out1", "out2" },# optional, creates pn_op_out1, ... consts
-#   ins       => { "in1", "in2" },  # optional, creates n_op_in1, ... consts
-#   mode      => "mode_Iu",         # optional, predefines the mode
-#   emit      => "emit code with templates",   # optional for virtual nodes
-#   attr      => "additional attribute arguments for constructor", # optional
-#   init_attr => "emit attribute initialization template",         # optional
-#   rd_constructor => "c source code which constructs an ir_node", # optional
-#   hash_func => "name of the hash function for this operation",   # optional, get the default hash function else
-#   latency   => "latency of this operation (can be float)"        # optional
-#   attr_type => "name of the attribute struct",                   # optional
-# },
-#
-# ... # (all nodes you need to describe)
-#
-# ); # close the %nodes initializer
-
-# state: state of the operation, OPTIONAL (default is "floats")
-#
-# arity: arity of the operation, MUST NOT BE OMITTED
-#
-# args:  the OPTIONAL arguments of the node constructor (debug, irg and block
-#        are always the first 3 arguments and are always autmatically
-#        created)
-#        If this key is missing the following arguments will be created:
-#        for i = 1 .. arity: ir_node *op_i
-#        ir_mode *mode
-#
-# outs:  if a node defines more than one output, the names of the projections
-#        nodes having outs having automatically the mode mode_T
-#
-# comment: OPTIONAL comment for the node constructor
-#
-# register types:
-#   0 - no special type
-#   1 - caller save (register must be saved by the caller of a function)
-#   2 - callee save (register must be saved by the called function)
-#   4 - ignore (do not assign this register)
-# NOTE: Last entry of each class is the largest Firm-Mode a register can hold
+$normal      =  0; # no special type
+$caller_save =  1; # caller save (register must be saved by the caller of a function)
+$callee_save =  2; # callee save (register must be saved by the called function)
+$ignore      =  4; # ignore (do not assign this register)
+$arbitrary   =  8; # emitter can choose an arbitrary register of this class
+$virtual     = 16; # the register is a virtual one
+$state       = 32; # register represents a state
 
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
-		{ name => "g0", realname => "g0", type => 4 }, # hardwired 0, behaves like /dev/null
-		{ name => "g1", realname => "g1", type => 1 }, # temp. value
-		{ name => "g2", realname => "g2", type => 1 },
-		{ name => "g3", realname => "g3", type => 1 },
-		{ name => "g4", realname => "g4", type => 1 },
-		{ name => "g5", realname => "g5", type => 4 }, # reserved by SPARC ABI
-		{ name => "g6", realname => "g6", type => 4 }, # reserved by SPARC ABI
-		{ name => "g7", realname => "g7", type => 4 }, # reserved by SPARC ABI
+		{ name => "g0", realname => "g0", type => $ignore }, # hardwired 0, behaves like /dev/null
+		{ name => "g1", realname => "g1", type => $caller_save }, # temp. value
+		{ name => "g2", realname => "g2", type => $caller_save },
+		{ name => "g3", realname => "g3", type => $caller_save },
+		{ name => "g4", realname => "g4", type => $caller_save },
+		{ name => "g5", realname => "g5", type => $ignore }, # reserved by SPARC ABI
+		{ name => "g6", realname => "g6", type => $ignore }, # reserved by SPARC ABI
+		{ name => "g7", realname => "g7", type => $ignore }, # reserved by SPARC ABI
 
 		# window's out registers
-		{ name => "o0", realname => "o0", type => 1 }, # param 1 / return value from callee
-		{ name => "o1", realname => "o1", type => 1 }, # param 2
-		{ name => "o2", realname => "o2", type => 1 }, # param 3
-		{ name => "o3", realname => "o3", type => 1 }, # param 4
-		{ name => "o4", realname => "o4", type => 1 }, # param 5
-		{ name => "o5", realname => "o5", type => 1 }, # param 6
-		{ name => "sp", realname => "sp", type => 4 }, # our stackpointer
-		{ name => "o7", realname => "o6", type => 4 }, # temp. value / address of CALL instr.
+		{ name => "o0", realname => "o0", type => $caller_save }, # param 1 / return value from callee
+		{ name => "o1", realname => "o1", type => $caller_save }, # param 2
+		{ name => "o2", realname => "o2", type => $caller_save }, # param 3
+		{ name => "o3", realname => "o3", type => $caller_save }, # param 4
+		{ name => "o4", realname => "o4", type => $caller_save }, # param 5
+		{ name => "o5", realname => "o5", type => $caller_save }, # param 6
+		{ name => "sp", realname => "sp", type => $ignore }, # our stackpointer
+		{ name => "o7", realname => "o6", type => $ignore }, # temp. value / address of CALL instr.
 
 		# window's local registers
 		{ name => "l0", realname => "l0", type => 0 },
@@ -101,57 +54,48 @@ $mode_fp      = "mode_D";
 		{ name => "i3", realname => "i3", type => 0 }, # param 4
 		{ name => "i4", realname => "i4", type => 0 }, # param 5
 		{ name => "i5", realname => "i5", type => 0 }, # param 6
-		{ name => "fp", realname => "fp", type => 4 }, # our framepointer
-		{ name => "i7", realname => "i7", type => 4 }, # return address - 8
+		{ name => "fp", realname => "fp", type => $ignore }, # our framepointer
+		{ name => "i7", realname => "i7", type => $ignore }, # return address - 8
 		{ mode => $mode_gp }
 	],
 	flags => [
-		{ name => "y", realname => "y", type => 4 },  # the multiply/divide state register
+		{ name => "y", realname => "y", type => $ignore },  # the multiply/divide state register
 		{ mode => $mode_flags, flags => "manual_ra" }
 	],
-#	cpu => [
-#		{ name => "psr", realname => "psr", type => 4 },  # the processor state register
-#		{ name => "wim", realname => "wim", type => 4 },  # the window invalid mask register
-#		{ name => "tbr", realname => "tbr", type => 4 },  # the trap base register
-#		{ name => "pc", realname => "pc", type => 4 },  # the program counter register
-#		{ name => "npc", realname => "npc", type => 4 },  # the next instruction addr. (PC + 1) register
-#		{ mode => "mode_Iu", flags => "manual_ra" }
-#	],
-
 	# fp registers can be accessed any time
 	fp  => [
-		{ name => "f0", type => 1 },
-		{ name => "f1", type => 1 },
-		{ name => "f2", type => 1 },
-		{ name => "f3", type => 1 },
-		{ name => "f4", type => 1 },
-		{ name => "f5", type => 1 },
-		{ name => "f6", type => 1 },
-		{ name => "f7", type => 1 },
-		{ name => "f8", type => 1 },
-		{ name => "f9", type => 1 },
-		{ name => "f10", type => 1 },
-		{ name => "f11", type => 1 },
-		{ name => "f12", type => 1 },
-		{ name => "f13", type => 1 },
-		{ name => "f14", type => 1 },
-		{ name => "f15", type => 1 },
-		{ name => "f16", type => 1 },
-		{ name => "f17", type => 1 },
-		{ name => "f18", type => 1 },
-		{ name => "f19", type => 1 },
-		{ name => "f20", type => 1 },
-		{ name => "f21", type => 1 },
-		{ name => "f22", type => 1 },
-		{ name => "f23", type => 1 },
-		{ name => "f24", type => 1 },
-		{ name => "f25", type => 1 },
-		{ name => "f26", type => 1 },
-		{ name => "f27", type => 1 },
-		{ name => "f28", type => 1 },
-		{ name => "f29", type => 1 },
-		{ name => "f30", type => 1 },
-		{ name => "f31", type => 1 },
+		{ name => "f0",  type => $caller_save },
+		{ name => "f1",  type => $caller_save },
+		{ name => "f2",  type => $caller_save },
+		{ name => "f3",  type => $caller_save },
+		{ name => "f4",  type => $caller_save },
+		{ name => "f5",  type => $caller_save },
+		{ name => "f6",  type => $caller_save },
+		{ name => "f7",  type => $caller_save },
+		{ name => "f8",  type => $caller_save },
+		{ name => "f9",  type => $caller_save },
+		{ name => "f10", type => $caller_save },
+		{ name => "f11", type => $caller_save },
+		{ name => "f12", type => $caller_save },
+		{ name => "f13", type => $caller_save },
+		{ name => "f14", type => $caller_save },
+		{ name => "f15", type => $caller_save },
+		{ name => "f16", type => $caller_save },
+		{ name => "f17", type => $caller_save },
+		{ name => "f18", type => $caller_save },
+		{ name => "f19", type => $caller_save },
+		{ name => "f20", type => $caller_save },
+		{ name => "f21", type => $caller_save },
+		{ name => "f22", type => $caller_save },
+		{ name => "f23", type => $caller_save },
+		{ name => "f24", type => $caller_save },
+		{ name => "f25", type => $caller_save },
+		{ name => "f26", type => $caller_save },
+		{ name => "f27", type => $caller_save },
+		{ name => "f28", type => $caller_save },
+		{ name => "f29", type => $caller_save },
+		{ name => "f30", type => $caller_save },
+		{ name => "f31", type => $caller_save },
 		{ mode => $mode_fp }
 	]
 ); # %reg_classes
@@ -191,32 +135,30 @@ $default_copy_attr = "sparc_copy_attr";
 
 
 %init_attr = (
-		sparc_attr_t				=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-		sparc_load_store_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-		    									"\tinit_sparc_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
-		sparc_symconst_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-								"\tinit_sparc_symconst_attributes(res, entity);",
-		sparc_cmp_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n",
-		sparc_jmp_cond_attr_t   		=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-		sparc_jmp_switch_attr_t 		=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-		sparc_save_attr_t			=> "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+	sparc_attr_t             => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+	                            "\tinit_sparc_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
+	sparc_symconst_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+	                            "\tinit_sparc_symconst_attributes(res, entity);",
+	sparc_cmp_attr_t         => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n",
+	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+	sparc_jmp_switch_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 
 );
 
 %compare_attr = (
-		sparc_attr_t            => "cmp_attr_sparc",
-		sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-		sparc_symconst_attr_t   => "cmp_attr_sparc_symconst",
-		sparc_jmp_cond_attr_t	=> "cmp_attr_sparc_jmp_cond",
-		sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
-		sparc_cmp_attr_t	=> "cmp_attr_sparc_cmp",
-		sparc_save_attr_t	=> "cmp_attr_sparc_save",
+	sparc_attr_t            => "cmp_attr_sparc",
+	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
+	sparc_symconst_attr_t   => "cmp_attr_sparc_symconst",
+	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
+	sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
+	sparc_cmp_attr_t        => "cmp_attr_sparc_cmp",
+	sparc_save_attr_t       => "cmp_attr_sparc_save",
 );
-
 
 # addressing modes: imm, reg, reg +/- imm, reg + reg
 # max. imm = 13 bits signed (-4096 ... 4096)
-
 
 my %cmp_operand_constructors = (
     imm => {
@@ -261,120 +203,118 @@ my %binop_operand_constructors = (
 %nodes = (
 
 Add => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
-  mode		=> $mode_gp,
-  emit      => '. add %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
+	mode		=> $mode_gp,
+	emit      => '. add %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 Sub => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct Sub: Sub(a, b) = a - b",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. sub %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct Sub: Sub(a, b) = a - b",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. sub %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 
 # Load / Store
 Load => {
-  op_flags  => [ "labeled", "fragile" ],
-  comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
-  state     => "exc_pinned",
-  ins       => [ "ptr", "mem" ],
-  outs      => [ "res", "M" ],
-  reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
-  attr_type => "sparc_load_store_attr_t",
-  attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-  emit      => '. ld%LM [%S1%O], %D1'
+	op_flags  => [ "labeled", "fragile" ],
+	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
+	state     => "exc_pinned",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
+	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => '. ld%LM [%S1%O], %D1'
 },
 
 LoadHi => {
-  op_flags  => [ "labeled", "fragile" ],
-  comment   => "construct LoadHi: Load(ptr, mem) = sethi hi(ptr) -> reg",
-  state     => "exc_pinned",
-  ins       => [ "ptr", "mem" ],
-  outs      => [ "res", "M" ],
-  reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
-  attr_type => "sparc_load_store_attr_t",
-  attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-  emit      => '. sethi %%hi(%S1), %D1',
+	op_flags  => [ "labeled", "fragile" ],
+	comment   => "construct LoadHi: Load(ptr, mem) = sethi hi(ptr) -> reg",
+	state     => "exc_pinned",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
+	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => '. sethi %%hi(%S1), %D1',
 },
 
 HiImm => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
-  state     => "exc_pinned",
-  outs      => [ "res" ],
-  mode      => $mode_gp,
-  reg_req   => { in => [], out => [ "gp" ] },
-  #attr_type => "sparc_load_store_attr_t",
-  attr       => "int immediate_value",
-  custominit => "sparc_set_attr_imm(res, immediate_value);",
-
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
+	state     => "exc_pinned",
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+	reg_req   => { in => [], out => [ "gp" ] },
+	#attr_type => "sparc_load_store_attr_t",
+	attr       => "int immediate_value",
+	custominit => "sparc_set_attr_imm(res, immediate_value);",
 },
 
 LoImm => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
-  state     => "exc_pinned",
-  ins       => [ "hireg" ],
-  outs      => [ "res" ],
-  mode      => $mode_gp,
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  #attr_type => "sparc_load_store_attr_t",
-  attr       => "int immediate_value",
-  custominit => "sparc_set_attr_imm(res, immediate_value);",
-
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
+	state     => "exc_pinned",
+	ins       => [ "hireg" ],
+	outs      => [ "res" ],
+	mode      => $mode_gp,
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	#attr_type => "sparc_load_store_attr_t",
+	attr       => "int immediate_value",
+	custominit => "sparc_set_attr_imm(res, immediate_value);",
 },
 
 LoadLo => {
-  op_flags  => [ "labeled", "fragile" ],
-  comment   => "construct LoadLo: Or(in, ptr, mem) = or in lo(ptr) -> reg",
-  state     => "exc_pinned",
-  ins       => [ "hireg", "ptr", "mem" ],
-  outs      => [ "res", "M" ],
-  reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
-  attr_type => "sparc_load_store_attr_t",
-  attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-  emit      => '. or %S1, %%lo(%S2), %D1'
+	op_flags  => [ "labeled", "fragile" ],
+	comment   => "construct LoadLo: Or(in, ptr, mem) = or in lo(ptr) -> reg",
+	state     => "exc_pinned",
+	ins       => [ "hireg", "ptr", "mem" ],
+	outs      => [ "res", "M" ],
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => '. or %S1, %%lo(%S2), %D1'
 },
 
 Store => {
-  op_flags  => [ "labeled", "fragile" ],
-  comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-  mode 		=> "mode_M",
-  state     => "exc_pinned",
-  ins       => [ "ptr", "val", "mem" ],
-  outs      => [ "mem" ],
-  reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
-  attr_type => "sparc_load_store_attr_t",
-  attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-  emit      => '. st%SM %S2, [%S1%O]'
+	op_flags  => [ "labeled", "fragile" ],
+	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
+	mode 		=> "mode_M",
+	state     => "exc_pinned",
+	ins       => [ "ptr", "val", "mem" ],
+	outs      => [ "mem" ],
+	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => '. st%SM %S2, [%S1%O]'
 },
 
 Mov => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct Mov: Mov(src, dest) = MV src,dest",
-  arity     => "variable",
-  emit      => '. mov %R1I, %D1',
-  mode      => $mode_gp,
-  constructors => \%unop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct Mov: Mov(src, dest) = MV src,dest",
+	arity     => "variable",
+	emit      => '. mov %R1I, %D1',
+	mode      => $mode_gp,
+	constructors => \%unop_operand_constructors,
 },
 
 Save => {
 	comment => "function prolog instruction. autom. saves sp & shifts the register window. previous out regs become the new in regs",
 	reg_req   => {
-			in => [ "sp", "none"],
-			out => [ "sp:I|S","none" ]
+		in => [ "sp", "none"],
+		out => [ "sp:I|S","none" ]
 	},
 	ins       => [ "stack", "mem" ],
 	outs      => [ "stack", "mem" ],
 	attr      => "int initial_stacksize",
 	attr_type => "sparc_save_attr_t",
-        init_attr => "\tinit_sparc_save_attr(res, initial_stacksize);",
+	init_attr => "\tinit_sparc_save_attr(res, initial_stacksize);",
 },
 
 AddSP => {
@@ -461,102 +401,102 @@ SwitchJmp => {
 },
 
 ShiftLL => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct shift logical left",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. sll %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct shift logical left",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. sll %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 ShiftLR => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct shift logical right",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. srl %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct shift logical right",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. srl %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 ShiftRA => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct shift right arithmetical",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. sra %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct shift right arithmetical",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. sra %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 And => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct logical and",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. and %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct logical and",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. and %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 Or => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct logical or",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. or %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct logical or",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. or %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 Xor => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct logical xor",
-  mode		=> $mode_gp,
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  emit      => '. xor %S1, %R2I, %D1',
-  constructors => \%binop_operand_constructors,
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct logical xor",
+	mode		=> $mode_gp,
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	emit      => '. xor %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
 },
 
 Mul => {
-  state     => "exc_pinned",
-  comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
-  outs      => [ "low", "high" ],
-  constructors => \%binop_operand_constructors,
-#  emit      =>'. mul %S1, %R2I, %D1'
+	state     => "exc_pinned",
+	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+	outs      => [ "low", "high" ],
+	constructors => \%binop_operand_constructors,
+	#emit      =>'. mul %S1, %R2I, %D1'
 },
 
 Mulh => {
-  state     => "exc_pinned",
-  comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-  outs      => [ "low", "high" ],
-  constructors => \%binop_operand_constructors,
+	state     => "exc_pinned",
+	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
+	outs      => [ "low", "high" ],
+	constructors => \%binop_operand_constructors,
 },
 
 Div => {
-  irn_flags => [ "rematerializable" ],
-  state     => "exc_pinned",
-#  mode	    => $mode_gp,
-  comment   => "construct Div: Div(a, b) = a / b",
-  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-  outs      => [ "res" ],
-  constructors => \%binop_operand_constructors,
-#  emit      =>'. div %S1, %R2I, %D1'
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	comment   => "construct Div: Div(a, b) = a / b",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	outs      => [ "res" ],
+	constructors => \%binop_operand_constructors,
+	#mode      => $mode_gp,
+	#emit      =>'. div %S1, %R2I, %D1'
 },
 
 Minus => {
-  irn_flags => [ "rematerializable" ],
-  mode	    => $mode_gp,
-  comment   => "construct Minus: Minus(a) = -a",
-  #reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
-  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-  emit      => ". sub %%g0, %S1, %D1"
+	irn_flags => [ "rematerializable" ],
+	mode	    => $mode_gp,
+	comment   => "construct Minus: Minus(a) = -a",
+	#reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => ". sub %%g0, %S1, %D1"
 },
 
 Not => {
-  irn_flags   => [ "rematerializable" ],
-  mode	      => $mode_gp,
-  comment     => "construct Not: Not(a) = !a",
-  reg_req     => { in => [ "gp" ], out => [ "gp" ] },
-  emit        => '. xnor %S1, %%g0, %D1'
+	irn_flags   => [ "rematerializable" ],
+	mode	      => $mode_gp,
+	comment     => "construct Not: Not(a) = !a",
+	reg_req     => { in => [ "gp" ], out => [ "gp" ] },
+	emit        => '. xnor %S1, %%g0, %D1'
 },
 
 Nop => {
@@ -565,275 +505,68 @@ Nop => {
 	emit     => '. nop',
 },
 
-#Mul_i => {
-#  irn_flags => "R",
-#  comment   => "construct Mul: Mul(a, const) = Mul(const, a) = a * const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. mul %S1, %C, %D1'
-#},
-#
-#And => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct And: And(a, b) = And(b, a) = a AND b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      => '. and %S1, %S2, %D1'
-#},
-#
-#And_i => {
-#  irn_flags => "R",
-#  comment   => "construct And: And(a, const) = And(const, a) = a AND const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. and %S1, %C, %D1'
-#},
-#
-#Or => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct Or: Or(a, b) = Or(b, a) = a OR b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      => '. or %S1, %S2, %D1'
-#},
-#
-#Or_i => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct Or: Or(a, const) = Or(const, a) = a OR const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. or %S1, %C, %D1'
-#},
-#
-#Eor => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct Eor: Eor(a, b) = Eor(b, a) = a EOR b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      => '. xor %S1, %S2, %D1'
-#},
-#
-#Eor_i => {
-#  irn_flags => "R",
-#  comment   => "construct Eor: Eor(a, const) = Eor(const, a) = a EOR const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. xor %S1, %C, %D1'
-#},
-
-# not commutative operations
-#Shl => {
-#  irn_flags => "R",
-#  comment   => "construct Shl: Shl(a, b) = a << b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      => '. shl %S1, %S2, %D1'
-#},
-#
-#Shl_i => {
-#  irn_flags => "R",
-#  comment   => "construct Shl: Shl(a, const) = a << const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. shl %S1, %C, %D1'
-#},
-#
-#Shr => {
-#  irn_flags => "R",
-#  comment   => "construct Shr: Shr(a, b) = a >> b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
-#  emit      => '. shr %S2, %D1'
-#},
-#
-#Shr_i => {
-#  irn_flags => "R",
-#  comment   => "construct Shr: Shr(a, const) = a >> const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. shr %S1, %C, %D1'
-#},
-#
-#RotR => {
-#  irn_flags => "R",
-#  comment   => "construct RotR: RotR(a, b) = a ROTR b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      => '. ror %S1, %S2, %D1'
-#},
-#
-#RotL => {
-#  irn_flags => "R",
-#  comment   => "construct RotL: RotL(a, b) = a ROTL b",
-#  reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-#  emit      => '. rol %S1, %S2, %D1'
-#},
-#
-#RotL_i => {
-#  irn_flags => "R",
-#  comment   => "construct RotL: RotL(a, const) = a ROTL const",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. rol %S1, %C, %D1'
-#},
-#
-#Minus => {
-#  irn_flags => "R",
-#  comment   => "construct Minus: Minus(a) = -a",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. neg %S1, %D1'
-#},
-#
-#Inc => {
-#  irn_flags => "R",
-#  comment   => "construct Increment: Inc(a) = a++",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. inc %S1, %D1'
-#},
-#
-#Dec => {
-#  irn_flags => "R",
-#  comment   => "construct Decrement: Dec(a) = a--",
-#  reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-#  emit      => '. dec %S1, %D1'
-#},
-#
-#Not => {
-#  arity       => 1,
-#  remat       => 1,
-#  comment     => "construct Not: Not(a) = !a",
-#  reg_req     => { in => [ "gp" ], out => [ "gp" ] },
-#  emit        => '. not %S1, %D1'
-#},
-
 fAdd => {
-  op_flags  => [ "commutative" ],
-  irn_flags => [ "rematerializable" ],
-  comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
-  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-  emit      => '. fadd%FPM %S1, %S2, %D1'
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
+	comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+	emit      => '. fadd%FPM %S1, %S2, %D1'
 },
 
 fMul => {
-  op_flags  => [ "commutative" ],
-  comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
-  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-  emit      =>'. fmul%FPM %S1, %S2, %D1'
+	op_flags  => [ "commutative" ],
+	comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+	emit      =>'. fmul%FPM %S1, %S2, %D1'
 },
 
 fsMuld => {
-  op_flags  => [ "commutative" ],
-  comment   => "construct FP single to double precision Mul: Mul(a, b) = Mul(b, a) = a * b",
-  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-  emit      =>'. fsmuld %S1, %S2, %D1'
+	op_flags  => [ "commutative" ],
+	comment   => "construct FP single to double precision Mul: Mul(a, b) = Mul(b, a) = a * b",
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+	emit      =>'. fsmuld %S1, %S2, %D1'
 },
 
 FpSToFpD => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "convert FP (single) to FP (double)",
-  reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-  emit      =>'. FsTOd %S1, %D1'
+	irn_flags => [ "rematerializable" ],
+	comment   => "convert FP (single) to FP (double)",
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+	emit      =>'. FsTOd %S1, %D1'
 },
 
 FpDToFpS => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "convert FP (double) to FP (single)",
-  reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-  emit      =>'. FdTOs %S1, %D1'
+	irn_flags => [ "rematerializable" ],
+	comment   => "convert FP (double) to FP (single)",
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+	emit      =>'. FdTOs %S1, %D1'
 },
 
 FpSToInt => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "convert integer to FP",
-  reg_req   => { in => [ "fp" ], out => [ "gp" ] },
-  emit      =>'. FiTOs %S1, %D1'
+	irn_flags => [ "rematerializable" ],
+	comment   => "convert integer to FP",
+	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
+	emit      =>'. FiTOs %S1, %D1'
 },
 
 FpDToInt => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "convert integer to FP",
-  reg_req   => { in => [ "fp" ], out => [ "gp" ] },
-  emit      =>'. FiTOd %S1, %D1'
+	irn_flags => [ "rematerializable" ],
+	comment   => "convert integer to FP",
+	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
+	emit      =>'. FiTOd %S1, %D1'
 },
 
 IntToFpS => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "convert FP (single) to integer",
-  reg_req   => { in => [ "gp" ], out => [ "fp" ] },
-  emit      =>'. FsTOi %S1, %D1'
+	irn_flags => [ "rematerializable" ],
+	comment   => "convert FP (single) to integer",
+	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
+	emit      =>'. FsTOi %S1, %D1'
 },
 
 IntToFpD => {
-  irn_flags => [ "rematerializable" ],
-  comment   => "convert FP (double) to integer",
-  reg_req   => { in => [ "gp" ], out => [ "fp" ] },
-  emit      =>'. FdTOi %S1, %D1'
+	irn_flags => [ "rematerializable" ],
+	comment   => "convert FP (double) to integer",
+	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
+	emit      =>'. FdTOi %S1, %D1'
 },
-
-
-#
-#fMax => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct FP Max: Max(a, b) = Max(b, a) = a > b ? a : b",
-#  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-#  emit      =>'. fmax %S1, %S2, %D1'
-#},
-#
-#fMin => {
-#  op_flags  => "C",
-#  irn_flags => "R",
-#  comment   => "construct FP Min: Min(a, b) = Min(b, a) = a < b ? a : b",
-#  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-#  emit      =>'. fmin %S1, %S2, %D1'
-#},
-#
-## not commutative operations
-#
-#fSub => {
-#  irn_flags => "R",
-#  comment   => "construct FP Sub: Sub(a, b) = a - b",
-#  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-#  emit      => '. fsub %S1, %S2, %D1'
-#},
-#
-#fDiv => {
-#  comment   => "construct FP Div: Div(a, b) = a / b",
-#  reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-#  emit      => '. fdiv %S1, %S2, %D1'
-#},
-#
-#fMinus => {
-#  irn_flags => "R",
-#  comment   => "construct FP Minus: Minus(a) = -a",
-#  reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-#  emit      => '. fneg %S1, %D1'
-#},
-#
-## other operations
-#
-#fConst => {
-#  op_flags  => "c",
-#  irn_flags => "R",
-#  comment   => "represents a FP constant",
-#  reg_req   => { out => [ "fp" ] },
-#  emit      => '. fmov %C, %D1',
-#  cmp_attr  =>
-#'
-#	/* TODO: compare fConst attributes */
-#	return 1;
-#'
-#},
-#
-## Load / Store
-#
-#fLoad => {
-#  op_flags  => [ "labeled", "fragile" ],
-#  irn_flags => "R",
-#  state     => "exc_pinned",
-#  comment   => "construct FP Load: Load(ptr, mem) = LD ptr",
-#  reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
-#  emit      => '. fmov (%S1), %D1'
-#},
-#
-#fStore => {
-#  op_flags  => [ "labeled", "fragile" ],
-#  irn_flags => "R",
-#  state     => "exc_pinned",
-#  comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
-#  reg_req   => { in => [ "gp", "fp", "none" ] },
-#  emit      => '. fmov %S2, (%S1)'
-#},
 
 ); # end of %nodes

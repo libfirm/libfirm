@@ -179,6 +179,7 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 static ir_node *create_fp_const_graph(ir_node *irn, ir_node *block)
 {
 	(void) block;
+	(void) irn;
 	panic("FP constants not implemented");
 }
 
