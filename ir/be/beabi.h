@@ -56,11 +56,10 @@ struct _be_abi_callbacks_t {
 	/**
 	 * Initialize the callback object.
 	 * @param call The call object.
-	 * @param aenv The architecture environment.
 	 * @param irg  The graph with the method.
 	 * @return     Some pointer. This pointer is passed to all other callback functions as self object.
 	 */
-	void *(*init)(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg);
+	void *(*init)(const be_abi_call_t *call, ir_graph *irg);
 
 	/**
 	 * Destroy the callback object.

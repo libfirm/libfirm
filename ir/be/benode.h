@@ -147,8 +147,7 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map);
  * used as spillslots). MemPerm nodes perform this operation without modifying
  * any register values.
  */
-ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *block, int n,
-                        ir_node *in[]);
+ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[]);
 ir_node *be_new_Keep(ir_node *block, int arity, ir_node *in[]);
 
 void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,

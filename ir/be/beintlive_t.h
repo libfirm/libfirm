@@ -131,8 +131,6 @@ static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const
 		const ir_edge_t *edge;
 		ir_node *bb = get_nodes_block(b);
 
-		//stat_ev_dbl("beintlive_ignore", arch_irn_is(be_get_irg_arch_env(lv->irg), a, ignore));
-
 		/*
 		 * If a is live end in b's block it is
 		 * live at b's definition (a dominates b)
@@ -160,7 +158,7 @@ static inline int be_values_interfere(const be_lv_t *lv, const ir_node *a, const
 				goto end;
 			}
 		}
-  	}
+	}
 
 end:
 	return res;

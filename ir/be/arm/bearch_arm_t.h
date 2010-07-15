@@ -148,7 +148,7 @@ typedef struct _arm_code_gen_t {
 
 
 struct _arm_isa_t {
-	arch_env_t     arch_env;      /**< must be derived from arch_env_t */
+	arch_env_t     base;      /**< must be derived from arch_env_t */
 	int            gen_reg_names; /**< use generic register names instead of SP, LR, PC */
 	int            fpu_arch;      /**< FPU architecture */
 	arm_code_gen_t *cg;           /**< current code generator */

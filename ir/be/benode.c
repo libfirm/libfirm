@@ -441,9 +441,10 @@ void be_Perm_reduce(ir_node *perm, int new_size, int *map)
 	set_irn_in(perm, new_size, new_in);
 }
 
-ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node *in[])
+ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[])
 {
-	ir_graph                     *irg       = get_Block_irg(bl);
+	ir_graph                     *irg       = get_Block_irg(block);
+	const arch_env_t             *arch_env  = be_get_irg_arch_env(irg);
 	ir_node                      *frame     = get_irg_frame(irg);
 	const arch_register_t        *sp        = arch_env->sp;
 	ir_node                      *irn;
@@ -454,7 +455,7 @@ ir_node *be_new_MemPerm(const arch_env_t *arch_env, ir_node *bl, int n, ir_node 
 	real_in[0] = frame;
 	memcpy(&real_in[1], in, n * sizeof(real_in[0]));
 
-	irn = new_ir_node(NULL, irg, bl, op_be_MemPerm, mode_T, n+1, real_in);
+	irn = new_ir_node(NULL, irg, block, op_be_MemPerm, mode_T, n+1, real_in);
 
 	init_node_attr(irn, n + 1, n);
 	be_node_set_reg_class_in(irn, 0, sp->reg_class);

@@ -218,7 +218,7 @@ static arch_env_t *TEMPLATE_init(FILE *outfile)
 	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
 
-	return &isa->arch_env;
+	return &isa->base;
 }
 
 
@@ -231,7 +231,7 @@ static void TEMPLATE_done(void *self)
 	TEMPLATE_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env);
+	be_gas_emit_decls(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);
@@ -269,17 +269,15 @@ static const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const ir_mod
 
 typedef struct {
 	be_abi_call_flags_bits_t flags;
-	const arch_env_t *arch_env;
-	ir_graph *irg;
+	ir_graph                *irg;
 } TEMPLATE_abi_env_t;
 
-static void *TEMPLATE_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
+static void *TEMPLATE_abi_init(const be_abi_call_t *call, ir_graph *irg)
 {
 	TEMPLATE_abi_env_t *env = XMALLOC(TEMPLATE_abi_env_t);
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags    = fl.bits;
 	env->irg      = irg;
-	env->arch_env = arch_env;
 	return env;
 }
 
@@ -317,14 +315,15 @@ static ir_type *TEMPLATE_get_between_type(void *self)
 static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
                                                     pmap *reg_map, int *stack_bias)
 {
-	TEMPLATE_abi_env_t *env = self;
+	TEMPLATE_abi_env_t *env      = self;
+	const arch_env_t   *arch_env = be_get_irg_arch_env(env->irg);
 	(void) reg_map;
 	(void) mem;
 	(void) stack_bias;
 
 	if (env->flags.try_omit_fp)
-		return env->arch_env->sp;
-	return env->arch_env->bp;
+		return arch_env->sp;
+	return arch_env->bp;
 }
 
 /* Build the epilog */

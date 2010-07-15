@@ -337,7 +337,7 @@ static arch_env_t *amd64_init(FILE *outfile)
 	amd64_register_init();
 	amd64_create_opcodes(&amd64_irn_ops);
 
-	return &isa->arch_env;
+	return &isa->base;
 }
 
 
@@ -350,7 +350,7 @@ static void amd64_done(void *self)
 	amd64_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env);
+	be_gas_emit_decls(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);
@@ -386,17 +386,15 @@ static const arch_register_class_t *amd64_get_reg_class_for_mode(const ir_mode *
 
 typedef struct {
 	be_abi_call_flags_bits_t flags;
-	const arch_env_t *arch_env;
 	ir_graph *irg;
 } amd64_abi_env_t;
 
-static void *amd64_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
+static void *amd64_abi_init(const be_abi_call_t *call, ir_graph *irg)
 {
 	amd64_abi_env_t *env = XMALLOC(amd64_abi_env_t);
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags    = fl.bits;
 	env->irg      = irg;
-	env->arch_env = arch_env;
 	return env;
 }
 
@@ -435,7 +433,7 @@ static const arch_register_t *amd64_abi_prologue(void *self, ir_node **mem,
                                                     pmap *reg_map, int *stack_bias)
 {
 	amd64_abi_env_t  *env  = self;
-	const arch_env_t *aenv = env->arch_env;
+	const arch_env_t *aenv = be_get_irg_arch_env(env->irg);
 	(void) mem;
 	(void) stack_bias;
 	(void) aenv;
@@ -444,10 +442,10 @@ static const arch_register_t *amd64_abi_prologue(void *self, ir_node **mem,
 	if (!env->flags.try_omit_fp) {
 		/* FIXME: maybe later here should be some code to generate
 		 * the usual abi prologue */
-		return env->arch_env->bp;
+		return aenv->bp;
 	}
 
-	return env->arch_env->sp;
+	return aenv->sp;
 }
 
 /* Build the epilog */
@@ -455,7 +453,7 @@ static void amd64_abi_epilogue(void *self, ir_node *bl, ir_node **mem,
                                pmap *reg_map)
 {
 	amd64_abi_env_t  *env  = self;
-	const arch_env_t *aenv = env->arch_env;
+	const arch_env_t *aenv = be_get_irg_arch_env(env->irg);
 	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, aenv->sp);
 	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, aenv->bp);
 	(void) bl;

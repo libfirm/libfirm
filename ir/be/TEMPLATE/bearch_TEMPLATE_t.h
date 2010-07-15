@@ -42,7 +42,7 @@ struct TEMPLATE_code_gen_t {
 };
 
 struct TEMPLATE_isa_t {
-	arch_env_t  arch_env;      /**< must be derived from arch_isa */
+	arch_env_t  base;      /**< must be derived from arch_isa */
 };
 
 /**

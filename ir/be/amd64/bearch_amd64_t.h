@@ -40,11 +40,11 @@ struct amd64_code_gen_t {
 	ir_graph                       *irg;            /**< current irg */
 	amd64_isa_t                    *isa;            /**< the isa instance */
 	char                            dump;           /**< set to 1 if graphs should be dumped */
-	ir_node  *noreg_gp;                             /**< unique NoReg_GP node */
+	ir_node                        *noreg_gp;       /**< unique NoReg_GP node */
 };
 
 struct amd64_isa_t {
-	arch_env_t  arch_env;      /**< must be derived from arch_isa */
+	arch_env_t  base;      /**< must be derived from arch_isa */
 };
 
 /**

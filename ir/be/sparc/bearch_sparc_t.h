@@ -49,8 +49,8 @@ typedef struct _sparc_code_gen_t {
 
 
 struct _sparc_isa_t {
-    arch_env_t     arch_env;      /**< must be derived from arch_env_t */
-    sparc_code_gen_t *cg;           /**< current code generator */
+    arch_env_t        base;      /**< must be derived from arch_env_t */
+    sparc_code_gen_t *cg;        /**< current code generator */
 };
 
 

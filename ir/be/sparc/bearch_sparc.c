@@ -430,7 +430,7 @@ static arch_env_t *sparc_init(FILE *outfile)
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_handle_intrinsics();
 
-	return &isa->arch_env;
+	return &isa->base;
 }
 
 
@@ -443,7 +443,7 @@ static void sparc_done(void *self)
 	sparc_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env);
+	be_gas_emit_decls(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);
@@ -481,17 +481,15 @@ static const arch_register_class_t *sparc_get_reg_class_for_mode(const ir_mode *
 
 typedef struct {
 	be_abi_call_flags_bits_t flags;
-	const arch_env_t *arch_env;
-	ir_graph *irg;
+	ir_graph                *irg;
 } sparc_abi_env_t;
 
-static void *sparc_abi_init(const be_abi_call_t *call, const arch_env_t *arch_env, ir_graph *irg)
+static void *sparc_abi_init(const be_abi_call_t *call, ir_graph *irg)
 {
 	sparc_abi_env_t *env = XMALLOC(sparc_abi_env_t);
 	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
 	env->flags    = fl.bits;
 	env->irg      = irg;
-	env->arch_env = arch_env;
 	return env;
 }
 

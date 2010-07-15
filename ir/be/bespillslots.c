@@ -68,7 +68,6 @@ typedef struct affinity_edge_t {
 
 struct be_fec_env_t {
 	struct obstack         obst;
-	const arch_env_t      *arch_env;
 	ir_graph              *irg;
 	set                   *spills;
 	ir_node              **reloads;
@@ -702,7 +701,6 @@ static ir_node *get_end_of_block_insertion_point(ir_node* block)
 
 static void create_memperms(be_fec_env_t *env)
 {
-	const arch_env_t *arch_env = env->arch_env;
 	ir_graph         *irg      = env->irg;
 	memperm_t        *memperm;
 
@@ -720,8 +718,8 @@ static void create_memperms(be_fec_env_t *env)
 			nodes[i] = arg;
 		}
 
-		mempermnode = be_new_MemPerm(arch_env, memperm->block,
-		                             memperm->entrycount, nodes);
+		mempermnode = be_new_MemPerm(memperm->block, memperm->entrycount,
+		                             nodes);
 
 		/* insert node into schedule */
 		blockend = get_end_of_block_insertion_point(memperm->block);
@@ -765,13 +763,11 @@ static int count_spillslots(const be_fec_env_t *env)
 
 be_fec_env_t *be_new_frame_entity_coalescer(ir_graph *irg)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	be_fec_env_t     *env      = XMALLOC(be_fec_env_t);
+	be_fec_env_t *env = XMALLOCZ(be_fec_env_t);
 
 	be_liveness_assure_chk(be_assure_liveness(irg));
 
 	obstack_init(&env->obst);
-	env->arch_env       = arch_env;
 	env->irg            = irg;
 	env->spills         = new_set(cmp_spill, 10);
 	env->reloads        = NEW_ARR_F(ir_node*, 0);
@@ -816,17 +812,21 @@ void be_assign_entities(be_fec_env_t *env,
  */
 static void collect_spills_walker(ir_node *node, void *data)
 {
-	be_fec_env_t *env = data;
-	const ir_mode *mode;
+	be_fec_env_t                *env = data;
+	const ir_mode               *mode;
 	const arch_register_class_t *cls;
-	int align;
+	int                          align;
+	ir_graph                    *irg;
+	const arch_env_t            *arch_env;
 
 	if (! (arch_irn_classify(node) & arch_irn_class_reload))
 		return;
 
-	mode  = get_irn_mode(node);
-	cls   = arch_get_irn_reg_class_out(node);
-	align = arch_env_get_reg_class_alignment(env->arch_env, cls);
+	mode     = get_irn_mode(node);
+	cls      = arch_get_irn_reg_class_out(node);
+	irg      = get_irn_irg(node);
+	arch_env = be_get_irg_arch_env(irg);
+	align    = arch_env_get_reg_class_alignment(arch_env, cls);
 
 	be_node_needs_frame_entity(env, node, mode, align);
 }

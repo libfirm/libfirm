@@ -79,7 +79,7 @@ struct ia32_code_gen_t {
  * IA32 ISA object
  */
 struct ia32_isa_t {
-	arch_env_t            arch_env;       /**< must be derived from arch_env_t */
+	arch_env_t             base;          /**< must be derived from arch_env_t */
 	pmap                  *regs_16bit;    /**< Contains the 16bits names of the gp registers */
 	pmap                  *regs_8bit;     /**< Contains the 8bits names of the gp registers */
 	pmap                  *regs_8bit_high; /**< contains the high part of the 8 bit names of the gp registers */

@@ -2301,7 +2301,7 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 		Beware: init backend abi call object after processing calls,
 		otherwise some information might be not yet available.
 	*/
-	env->cb = env->call->cb->init(env->call, arch_env, irg);
+	env->cb = env->call->cb->init(env->call, irg);
 
 	/* Process the IRG */
 	modify_irg(irg);

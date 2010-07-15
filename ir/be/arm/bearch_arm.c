@@ -550,7 +550,7 @@ static arch_env_t *arm_init(FILE *file_handle)
 	be_emit_write_line();
 
 	inited = 1;
-	return &isa->arch_env;
+	return &isa->base;
 }
 
 
@@ -562,7 +562,7 @@ static void arm_done(void *self)
 {
 	arm_isa_t *isa = self;
 
-	be_gas_emit_decls(isa->arch_env.main_env);
+	be_gas_emit_decls(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);

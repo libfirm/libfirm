@@ -219,7 +219,6 @@ static arch_irn_class_t ia32_classify(const ir_node *irn)
  */
 typedef struct {
 	be_abi_call_flags_bits_t flags;  /**< The call flags. */
-	const arch_env_t *aenv;          /**< The architecture environment. */
 	ir_graph *irg;                   /**< The associated graph. */
 } ia32_abi_env_t;
 
@@ -284,7 +283,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 {
 	ia32_abi_env_t   *env      = self;
 	ia32_code_gen_t  *cg       = ia32_current_cg;
-	const arch_env_t *arch_env = env->aenv;
+	const arch_env_t *arch_env = be_get_irg_arch_env(env->irg);
 
 	ia32_curr_fp_ommitted = env->flags.try_omit_fp;
 	if (! env->flags.try_omit_fp) {
@@ -341,7 +340,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
 	ia32_abi_env_t   *env      = self;
-	const arch_env_t *arch_env = env->aenv;
+	const arch_env_t *arch_env = be_get_irg_arch_env(env->irg);
 	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, arch_env->sp);
 	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, arch_env->bp);
 
@@ -389,17 +388,15 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 /**
  * Initialize the callback object.
  * @param call The call object.
- * @param aenv The architecture environment.
  * @param irg  The graph with the method.
  * @return     Some pointer. This pointer is passed to all other callback functions as self object.
  */
-static void *ia32_abi_init(const be_abi_call_t *call, const arch_env_t *aenv, ir_graph *irg)
+static void *ia32_abi_init(const be_abi_call_t *call, ir_graph *irg)
 {
 	ia32_abi_env_t      *env = XMALLOC(ia32_abi_env_t);
 	be_abi_call_flags_t  fl  = be_abi_call_get_flags(call);
 	env->flags = fl.bits;
 	env->irg   = irg;
-	env->aenv  = aenv;
 	return env;
 }
 
@@ -1662,7 +1659,7 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	be_emit_irprintf("%stext0:\n", be_gas_get_private_prefix());
 	be_emit_write_line();
 
-	return &isa->arch_env;
+	return &isa->base;
 }
 
 
@@ -1675,7 +1672,7 @@ static void ia32_done(void *self)
 	ia32_isa_t *isa = self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->arch_env.main_env);
+	be_gas_emit_decls(isa->base.main_env);
 
 	pmap_destroy(isa->regs_16bit);
 	pmap_destroy(isa->regs_8bit);
@@ -2428,7 +2425,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 	LC_OPT_ENT_ENUM_INT("transformer", "the transformer used for code selection", &transformer_var),
 #endif
 	LC_OPT_ENT_INT("stackalign", "set power of two stack alignment for calls",
-	               &ia32_isa_template.arch_env.stack_alignment),
+	               &ia32_isa_template.base.stack_alignment),
 	LC_OPT_LAST
 };
 
