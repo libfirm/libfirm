@@ -31,7 +31,6 @@
 #include "typerep.h"
 #include "type_t.h"
 #include "ident.h"
-#include "pseudo_irg.h"
 #include "compound_path.h"
 
 typedef struct ir_initializer_base_t {
@@ -345,10 +344,7 @@ static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 		return NULL;
 	}
 
-	irg = ent->attr.mtd_attr.irg;
-	if (irg != NULL && !get_visit_pseudo_irgs()	&& is_pseudo_ir_graph(irg))
-		return NULL;
-	return irg;
+	return ent->attr.mtd_attr.irg;
 }
 
 static inline ir_visited_t _get_entity_visited(const ir_entity *ent)

@@ -107,7 +107,6 @@
 #include "irtypeinfo.h"
 #include "irvrfy.h"
 #include "lowering.h"
-#include "pseudo_irg.h"
 #include "rta.h"
 #include "seqnumbers.h"
 #include "structure.h"

@@ -352,7 +352,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irprog.c" />
     <ClCompile Include="$(FirmRoot)\ir\ir\irssacons.c" />
     <ClCompile Include="$(FirmRoot)\ir\ir\irvrfy.c" />
-    <ClCompile Include="$(FirmRoot)\ir\ir\pseudo_irg.c" />
     <ClCompile Include="$(FirmRoot)\ir\ir\valueset.c" />
     <ClInclude Include="$(FirmRoot)\ir\ir\gen_irnode.h" />
     <ClInclude Include="$(FirmRoot)\ir\ir\instrument.h" />
@@ -537,7 +536,6 @@
     <ClInclude Include="$(FirmRoot)\include\libfirm\irtypeinfo.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\irvrfy.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\lowering.h" />
-    <ClInclude Include="$(FirmRoot)\include\libfirm\pseudo_irg.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\rta.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\seqnumbers.h" />
     <ClInclude Include="$(FirmRoot)\include\libfirm\structure.h" />

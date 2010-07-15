@@ -178,7 +178,7 @@ FIRM_API void escape_analysis(int run_scalar_replace,
  * This is a rather strong criteria, so do not expect that a
  * lot of functions will be found. Moreover, all of them might
  * already be inlined if inlining is activated.
- * Anyway, it might be good for handling builtin's or pseudo-graphs,
+ * Anyway, it might be good for handling builtin's
  * even if the later read/write memory (but we know how).
  *
  * This optimizations read the irg_const_function property of

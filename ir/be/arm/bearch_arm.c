@@ -28,7 +28,6 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
-#include "pseudo_irg.h"
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"

@@ -315,8 +315,6 @@ static void init_tables(void)
 void rta_init(void)
 {
 	int n_runs = 0;
-	int rem_vpi = get_visit_pseudo_irgs();
-	set_visit_pseudo_irgs(1);
 
 	FIRM_DBG_REGISTER(dbg, "firm.ana.rta");
 
@@ -348,8 +346,6 @@ void rta_init(void)
 		tr_vrfy();
 	}
 # endif /* defined DEBUG_libfirm */
-
-	set_visit_pseudo_irgs(rem_vpi);
 }
 
 /**
@@ -383,9 +379,6 @@ void rta_delete_dead_graphs(void)
 	int      i, n_dead_irgs, n_graphs = get_irp_n_irgs();
 	ir_graph *irg, *next_irg, *dead_irgs;
 
-	int rem_vpi = get_visit_pseudo_irgs();
-	set_visit_pseudo_irgs(1);
-
 	irp_reserve_resources(irp, IR_RESOURCE_IRG_LINK);
 
 	n_dead_irgs = 0;
@@ -410,7 +403,6 @@ void rta_delete_dead_graphs(void)
 	DB((dbg, LEVEL_1, "RTA: dead methods = %i\n", n_dead_irgs));
 
 	irp_free_resources(irp, IR_RESOURCE_IRG_LINK);
-	set_visit_pseudo_irgs(rem_vpi);
 }
 
 /* Clean up the RTA data structures.  Call this after calling rta_init */

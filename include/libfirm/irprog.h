@@ -151,13 +151,6 @@ FIRM_API ir_graph *get_irp_irg(int pos);
 /** Sets the ir graph at position pos. */
 FIRM_API void set_irp_irg(int pos, ir_graph *irg);
 
-/** Gets the number of graphs _and_ pseudo graphs. */
-FIRM_API int get_irp_n_allirgs(void);
-
-/** Returns the ir graph at position pos of all graphs (including
- pseudo graphs).  Visits first graphs, then pseudo graphs. */
-FIRM_API ir_graph *get_irp_allirg(int pos);
-
 /**
  * Returns the type containing the entities for a segment.
  *

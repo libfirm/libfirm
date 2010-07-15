@@ -895,9 +895,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 	}
 #endif
 
-	/* never build code for pseudo irgs */
-	set_visit_pseudo_irgs(0);
-
 	be_main_loop(file_handle, cup_name);
 
 	if (be_options.timing == BE_TIME_ON) {

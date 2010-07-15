@@ -553,7 +553,6 @@ struct ir_prog {
 	ir_graph  *main_irg;            /**< The entry point to the compiled program
 	                                     or NULL if no point exists. */
 	ir_graph **graphs;              /**< A list of all graphs in the ir. */
-	ir_graph **pseudo_graphs;       /**< A list of all pseudo graphs in the ir. See pseudo_irg.c */
 	ir_graph  *const_code_irg;      /**< This ir graph gives the proper environment
 	                                     to allocate nodes the represent values
 	                                     of constant entities. It is not meant as

@@ -24,7 +24,6 @@
  */
 #include "config.h"
 
-#include "pseudo_irg.h"
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"

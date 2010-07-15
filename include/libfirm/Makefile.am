@@ -51,7 +51,6 @@ libfirminclude_HEADERS = \
 	irtypeinfo.h \
 	irvrfy.h \
 	lowering.h \
-	pseudo_irg.h \
 	rta.h \
 	seqnumbers.h \
 	structure.h \

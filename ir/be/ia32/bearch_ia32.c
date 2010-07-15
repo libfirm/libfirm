@@ -30,7 +30,6 @@
 
 #include <math.h>
 
-#include "pseudo_irg.h"
 #include "irarch.h"
 #include "irgwalk.h"
 #include "irprog.h"

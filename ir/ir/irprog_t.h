@@ -29,7 +29,6 @@
 
 #include "irprog.h"
 #include "irtypes.h"
-#include "pseudo_irg.h"
 #include "ircgcons.h"
 #include "irtypeinfo.h"
 #include "irmemory.h"
@@ -63,17 +62,14 @@ static inline ir_type *_get_tls_type(void)
 static inline int _get_irp_n_irgs(void)
 {
 	assert(irp && irp->graphs);
-	if (get_visit_pseudo_irgs()) return get_irp_n_allirgs();
 	return ARR_LEN(irp->graphs);
 }
 
 static inline ir_graph *_get_irp_irg(int pos)
 {
-	if (get_visit_pseudo_irgs()) return get_irp_allirg(pos);
 	assert(0 <= pos && pos <= ARR_LEN(irp->graphs));
 	return irp->graphs[pos];
 }
-
 
 static inline int _get_irp_n_types(void)
 {

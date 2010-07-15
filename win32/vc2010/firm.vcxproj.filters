@@ -801,9 +801,6 @@
     <ClCompile Include="$(FirmRoot)\ir\ir\irvrfy.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
-    <ClCompile Include="$(FirmRoot)\ir\ir\pseudo_irg.c">
-      <Filter>ir\ir</Filter>
-    </ClCompile>
     <ClCompile Include="$(FirmRoot)\ir\ir\valueset.c">
       <Filter>ir\ir</Filter>
     </ClCompile>
@@ -1354,9 +1351,6 @@
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\lowering.h">
-      <Filter>include\libfirm</Filter>
-    </ClInclude>
-    <ClInclude Include="$(FirmRoot)\include\libfirm\pseudo_irg.h">
       <Filter>include\libfirm</Filter>
     </ClInclude>
     <ClInclude Include="$(FirmRoot)\include\libfirm\rta.h">

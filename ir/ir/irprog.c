@@ -31,7 +31,6 @@
 #include "irprog_t.h"
 #include "irgraph_t.h"
 #include "irpass_t.h"
-#include "pseudo_irg.h"
 #include "array.h"
 #include "error.h"
 #include "obst.h"
@@ -58,7 +57,6 @@ static ir_prog *new_incomplete_ir_prog(void)
 
 	res->kind           = k_ir_prog;
 	res->graphs         = NEW_ARR_F(ir_graph *, 0);
-	res->pseudo_graphs  = NEW_ARR_F(ir_graph *, 0);
 	res->types          = NEW_ARR_F(ir_type *, 0);
 	res->modes          = NEW_ARR_F(ir_mode *, 0);
 	res->opcodes        = NEW_ARR_F(ir_op *, 0);
@@ -152,7 +150,6 @@ void free_ir_prog(void)
 
 	free_ir_graph(irp->const_code_irg);
 	DEL_ARR_F(irp->graphs);
-	DEL_ARR_F(irp->pseudo_graphs);
 	DEL_ARR_F(irp->types);
 	DEL_ARR_F(irp->modes);
 
@@ -229,18 +226,6 @@ void remove_irp_irg_from_list(ir_graph *irg)
 			break;
 		}
 	}
-	if (!found) {
-		l = ARR_LEN(irp->pseudo_graphs);
-		for (i = 0; i < l; i++) {
-			if (irp->pseudo_graphs[i] == irg) {
-				for (; i < l - 1; i++) {
-					irp->pseudo_graphs[i] = irp->pseudo_graphs[i+1];
-				}
-				ARR_SETLEN(ir_graph*, irp->pseudo_graphs, l - 1);
-				break;
-			}
-		}
-	}
 }
 
 /* Removes irg from the list or irgs, shrinks the list by one. */
@@ -270,26 +255,6 @@ void set_irp_irg(int pos, ir_graph *irg)
 	assert(irp && irg);
 	assert(pos < (ARR_LEN(irp->graphs)));
 	irp->graphs[pos] = irg;
-}
-
-/* Gets the number of graphs _and_ pseudo graphs. */
-int get_irp_n_allirgs(void)
-{
-	/* We can not call get_irp_n_irgs, as we end up in a recursion ... */
-	return ARR_LEN(irp->graphs) + get_irp_n_pseudo_irgs();
-}
-
-/* Returns the ir graph at position pos of all graphs (including
- pseudo graphs).  Visits first graphs, then pseudo graphs. */
-ir_graph *get_irp_allirg(int pos)
-{
-	int n_irgs = ARR_LEN(irp->graphs);
-	assert(0 <= pos);
-	if (pos < n_irgs) {
-		return irp->graphs[pos];
-	} else {
-		return get_irp_pseudo_irg(pos-n_irgs);
-	}
 }
 
 /* Adds type to the list of types in irp. */

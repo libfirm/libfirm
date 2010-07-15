@@ -31,7 +31,6 @@
 
 #include "irtypes.h"
 #include "irprog.h"
-#include "pseudo_irg.h"
 #include "type_t.h"
 #include "entity_t.h"
 #include "iredgekinds.h"

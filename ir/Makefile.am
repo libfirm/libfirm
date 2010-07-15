@@ -177,7 +177,6 @@ libfirm_la_SOURCES = \
 	ir/irprog.c \
 	ir/irssacons.c \
 	ir/irvrfy.c \
-	ir/pseudo_irg.c \
 	ir/valueset.c \
 	libcore/lc_appendable.c \
 	libcore/lc_config_lexer.c \
