@@ -2,11 +2,6 @@
 # $Id$
 # This is the specification for the ia32 assembler Firm-operations
 
-use File::Basename;
-
-my $myname = $0;
-
-# the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 $arch = "ia32";
 
 # The node description is done as a perl hash initializer with the

@@ -246,7 +246,7 @@ void sparc_emit_fp_load_mode(const ir_node *node)
     } else if (bits == 64) {
         be_emit_string("df");
     } else {
-    	panic("FP load mode > 64bits not implemented yet");
+		panic("FP load mode > 64bits not implemented yet");
     }
 }
 
@@ -266,7 +266,7 @@ void sparc_emit_fp_store_mode(const ir_node *node)
     } else if (bits == 64) {
         be_emit_string("df");
     } else {
-    	panic("FP store mode > 64bits not implemented yet");
+		panic("FP store mode > 64bits not implemented yet");
     }
 }
 
@@ -281,9 +281,9 @@ void sparc_emit_fp_mode_suffix(const ir_node *node)
     assert(mode_is_float(mode));
 
     if (bits == 32) {
-    	be_emit_string("s");
+		be_emit_string("s");
     } else if (bits == 64) {
-    	be_emit_string("d");
+		be_emit_string("d");
     } else {
 		panic("FP mode > 64bits not implemented yet");
     }

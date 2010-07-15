@@ -1,10 +1,5 @@
 # Creation: 2006/02/13
 # $Id$
-# This is a template specification for the Firm-Backend
-
-$new_emit_syntax = 1;
-
-# the cpu architecture (ia32, ia64, mips, sparc, ppc, ...)
 
 $arch = "sparc";
 

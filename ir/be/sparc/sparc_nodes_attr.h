@@ -34,10 +34,10 @@ typedef struct sparc_attr_t  sparc_attr_t;
  */
 struct sparc_attr_t
 {
-	except_attr					exc;				/**< the exception attribute. MUST be the first one. */
-	const arch_register_req_t 	**in_req;  			/**< register requirements for arguments */
-	int							immediate_value;	/* immediate values */
-	bool						is_load_store;
+	except_attr                 exc;                /**< the exception attribute. MUST be the first one. */
+	const arch_register_req_t **in_req;             /**< register requirements for arguments */
+	int                         immediate_value;    /* immediate values */
+	bool                        is_load_store;
 };
 
 /**
@@ -45,8 +45,8 @@ struct sparc_attr_t
  */
 typedef struct sparc_fp_attr_t sparc_fp_attr_t;
 struct sparc_fp_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	double 			fp_immediate; /* the FP immediate value */
+	sparc_attr_t    base;         /**< generic attribute */
+	double          fp_immediate; /* the FP immediate value */
 };
 
 /**
@@ -54,8 +54,8 @@ struct sparc_fp_attr_t {
  */
 typedef struct sparc_save_attr_t sparc_save_attr_t;
 struct sparc_save_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	int 			initial_stacksize; /* the min. stack size required by the sparc ABI */
+	sparc_attr_t  base;              /**< generic attribute */
+	int           initial_stacksize; /* the min. stack size required by the sparc ABI */
 };
 
 /**
@@ -63,12 +63,12 @@ struct sparc_save_attr_t {
  */
 typedef struct sparc_load_store_attr_t sparc_load_store_attr_t;
 struct sparc_load_store_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	ir_mode 		*load_store_mode;
-	ir_entity 		*entity;
-	int 			entity_sign;
-	long 			offset;
-	bool 			is_frame_entity;
+	sparc_attr_t  base;    /**< generic attribute */
+	ir_mode      *load_store_mode;
+	ir_entity    *entity;
+	int           entity_sign;
+	long          offset;
+	bool          is_frame_entity;
 };
 
 /**
@@ -76,9 +76,9 @@ struct sparc_load_store_attr_t {
  */
 typedef struct sparc_symconst_attr_t sparc_symconst_attr_t;
 struct sparc_symconst_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	ir_entity		*entity;
-	int				fp_offset;
+	sparc_attr_t  base;    /**< generic attribute */
+	ir_entity    *entity;
+	int           fp_offset;
 };
 
 /**
@@ -86,8 +86,8 @@ struct sparc_symconst_attr_t {
  */
 typedef struct sparc_jmp_cond_attr_t sparc_jmp_cond_attr_t;
 struct sparc_jmp_cond_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	int				proj_num;
+	sparc_attr_t base;    /**< generic attribute */
+	int          proj_num;
 };
 
 /**
@@ -95,9 +95,9 @@ struct sparc_jmp_cond_attr_t {
  */
 typedef struct sparc_jmp_switch_attr_t sparc_jmp_switch_attr_t;
 struct sparc_jmp_switch_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	int				n_projs;
-	long			default_proj_num;
+	sparc_attr_t  base;    /**< generic attribute */
+	int           n_projs;
+	long          default_proj_num;
 };
 
 /**
@@ -105,9 +105,9 @@ struct sparc_jmp_switch_attr_t {
  */
 typedef struct sparc_cmp_attr_t sparc_cmp_attr_t;
 struct sparc_cmp_attr_t {
-	sparc_attr_t  	base;    /**< generic attribute */
-	bool			ins_permuted : 1;
-	bool			is_unsigned  : 1;
+	sparc_attr_t  base;    /**< generic attribute */
+	bool          ins_permuted : 1;
+	bool          is_unsigned  : 1;
 };
 
 #endif
