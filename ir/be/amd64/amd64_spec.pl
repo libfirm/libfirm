@@ -11,8 +11,6 @@ $arch = "amd64";
 # %nodes = (
 #
 # <op-name> => {
-#   op_flags  => "N|L|C|X|I|F|Y|H|c|K",                 # optional
-#   irn_flags => "R|N|I"                                # optional
 #   arity     => "0|1|2|3 ... |variable|dynamic|any",   # optional
 #   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
 #   args      => [
@@ -39,25 +37,6 @@ $arch = "amd64";
 #
 # ); # close the %nodes initializer
 
-# op_flags: flags for the operation, OPTIONAL (default is "N")
-# the op_flags correspond to the firm irop_flags:
-#   N   irop_flag_none
-#   L   irop_flag_labeled
-#   C   irop_flag_commutative
-#   X   irop_flag_cfopcode
-#   I   irop_flag_ip_cfopcode
-#   F   irop_flag_fragile
-#   Y   irop_flag_forking
-#   H   irop_flag_highlevel
-#   c   irop_flag_constlike
-#   K   irop_flag_keep
-#
-# irn_flags: special node flags, OPTIONAL (default is 0)
-# following irn_flags are supported:
-#   R   rematerializeable
-#   N   not spillable
-#   I   ignore for register allocation
-#
 # state: state of the operation, OPTIONAL (default is "floats")
 #
 # arity: arity of the operation, MUST NOT BE OMITTED
@@ -74,22 +53,6 @@ $arch = "amd64";
 #
 # comment: OPTIONAL comment for the node constructor
 #
-# rd_constructor: for every operation there will be a
-#      new_rd_<arch>_<op-name> function with the arguments from above
-#      which creates the ir_node corresponding to the defined operation
-#      you can either put the complete source code of this function here
-#
-#      This key is OPTIONAL. If omitted, the following constructor will
-#      be created:
-#      if (!op_<arch>_<op-name>) assert(0);
-#      for i = 1 to arity
-#         set in[i] = op_i
-#      done
-#      res = new_ir_node(db, irg, block, op_<arch>_<op-name>, mode, arity, in)
-#      return res
-#
-# NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
-
 # register types:
 #   0 - no special type
 #   1 - caller save (register must be saved by the caller of a function)

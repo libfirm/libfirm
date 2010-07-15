@@ -4,144 +4,76 @@
 
 $arch = "ia32";
 
-# The node description is done as a perl hash initializer with the
-# following structure:
-#
-# %nodes = (
-#
-# <op-name> => {
-#   op_flags  => "N|L|C|X|I|F|Y|H|c|K|n",
-#   irn_flags => "R|N"
-#   arity     => "0|1|2|3 ... |variable|dynamic|any",
-#   state     => "floats|pinned|mem_pinned|exc_pinned",
-#   args      => [
-#                    { type => "type 1", name => "name 1" },
-#                    { type => "type 2", name => "name 2" },
-#                    ...
-#                  ],
-#   comment   => "any comment for constructor",
-#   reg_req   => { in => [ "reg_class|register" ], out => [ "reg_class|register|in_rX" ] },
-#   cmp_attr  => "c source code for comparing node attributes",
-#   outs      => { "out1", "out2" } # optional, creates pn_op_out1, ... consts
-#   ins       => { "in1", "in2" }   # optional, creates n_op_in1, ... consts
-#   mode      => "mode_Iu"          # optional, predefines the mode
-#   emit      => "emit code with templates",
-#   attr      => "additional attribute arguments for constructor",
-#   init_attr => "emit attribute initialization template",
-#   hash_func => "name of the hash function for this operation",
-#   latency   => "latency of this operation (can be float)"
-#   attr_type => "name of the attribute struct",
-#   modified_flags =>  [ "CF", ... ] # optional, list of modified flags
-# },
-#
-# ... # (all nodes you need to describe)
-#
-# ); # close the %nodes initializer
-
-# state: state of the operation, OPTIONAL (default is "floats")
-#
-# arity: arity of the operation, MUST NOT BE OMITTED
-#
-# args:  the OPTIONAL arguments of the node constructor (debug, irg and block
-#        are always the first 3 arguments and are always autmatically
-#        created)
-#        If this key is missing the following arguments will be created:
-#        for i = 1 .. arity: ir_node *op_i
-#        ir_mode *mode
-#
-# outs:  if a node defines more than one output, the names of the projections
-#        nodes having outs having automatically the mode mode_T
-#        example: [ "frame", "stack", "M" ]
-#
-# comment: OPTIONAL comment for the node constructor
-#
-# rd_constructor: for every operation there will be a
-#      new_rd_<arch>_<op-name> function with the arguments from above
-#      which creates the ir_node corresponding to the defined operation
-#      you can either put the complete source code of this function here
-#
-#      This key is OPTIONAL. If omitted, the following constructor will
-#      be created:
-#      if (!op_<arch>_<op-name>) assert(0);
-#      for i = 1 to arity
-#         set in[i] = op_i
-#      done
-#      res = new_ir_node(db, irg, block, op_<arch>_<op-name>, mode, arity, in)
-#      return res
-#
-# NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
-#
-
 # register types:
-#   0 - no special type
-#   1 - caller save (register must be saved by the caller of a function)
-#   2 - callee save (register must be saved by the called function)
-#   4 - ignore (do not automatically assign this register)
-#   8 - emitter can choose an arbitrary register of this class
-#  16 - the register is a virtual one
-#  32 - register represents a state
+$normal      =  0; # no special type
+$caller_save =  1; # caller save (register must be saved by the caller of a function)
+$callee_save =  2; # callee save (register must be saved by the called function)
+$ignore      =  4; # ignore (do not assign this register)
+$arbitrary   =  8; # emitter can choose an arbitrary register of this class
+$virtual     = 16; # the register is a virtual one
+$state       = 32; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "edx", type => 1 },
-		{ name => "ecx", type => 1 },
-		{ name => "eax", type => 1 },
-		{ name => "ebx", type => 2 },
-		{ name => "esi", type => 2 },
-		{ name => "edi", type => 2 },
-		{ name => "ebp", type => 2 },
-		{ name => "esp", type => 4 },
-		{ name => "gp_NOREG", type => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
+		{ name => "edx", type => $caller_save },
+		{ name => "ecx", type => $caller_save },
+		{ name => "eax", type => $caller_save },
+		{ name => "ebx", type => $callee_save },
+		{ name => "esi", type => $callee_save },
+		{ name => "edi", type => $callee_save },
+		{ name => "ebp", type => $callee_save },
+		{ name => "esp", type => $ignore },
+		{ name => "gp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Iu" }
 	],
 	mmx => [
-		{ name => "mm0", type => 4 },
-		{ name => "mm1", type => 4 },
-		{ name => "mm2", type => 4 },
-		{ name => "mm3", type => 4 },
-		{ name => "mm4", type => 4 },
-		{ name => "mm5", type => 4 },
-		{ name => "mm6", type => 4 },
-		{ name => "mm7", type => 4 },
+		{ name => "mm0", type => $ignore },
+		{ name => "mm1", type => $ignore },
+		{ name => "mm2", type => $ignore },
+		{ name => "mm3", type => $ignore },
+		{ name => "mm4", type => $ignore },
+		{ name => "mm5", type => $ignore },
+		{ name => "mm6", type => $ignore },
+		{ name => "mm7", type => $ignore },
 		{ mode => "mode_E", flags => "manual_ra" }
 	],
 	xmm => [
-		{ name => "xmm0", type => 1 },
-		{ name => "xmm1", type => 1 },
-		{ name => "xmm2", type => 1 },
-		{ name => "xmm3", type => 1 },
-		{ name => "xmm4", type => 1 },
-		{ name => "xmm5", type => 1 },
-		{ name => "xmm6", type => 1 },
-		{ name => "xmm7", type => 1 },
-		{ name => "xmm_NOREG", type => 4 | 16 },     # we need a dummy register for NoReg nodes
+		{ name => "xmm0", type => $caller_save },
+		{ name => "xmm1", type => $caller_save },
+		{ name => "xmm2", type => $caller_save },
+		{ name => "xmm3", type => $caller_save },
+		{ name => "xmm4", type => $caller_save },
+		{ name => "xmm5", type => $caller_save },
+		{ name => "xmm6", type => $caller_save },
+		{ name => "xmm7", type => $caller_save },
+		{ name => "xmm_NOREG", type => $ignore | $virtual },     # we need a dummy register for NoReg nodes
 		{ mode => "mode_E" }
 	],
 	vfp => [
-		{ name => "vf0", type => 1 },
-		{ name => "vf1", type => 1 },
-		{ name => "vf2", type => 1 },
-		{ name => "vf3", type => 1 },
-		{ name => "vf4", type => 1 },
-		{ name => "vf5", type => 1 },
-		{ name => "vf6", type => 1 },
-		{ name => "vf7", type => 1 },
-		{ name => "vfp_NOREG", type => 4 | 8 | 16 }, # we need a dummy register for NoReg nodes
+		{ name => "vf0", type => $caller_save },
+		{ name => "vf1", type => $caller_save },
+		{ name => "vf2", type => $caller_save },
+		{ name => "vf3", type => $caller_save },
+		{ name => "vf4", type => $caller_save },
+		{ name => "vf5", type => $caller_save },
+		{ name => "vf6", type => $caller_save },
+		{ name => "vf7", type => $caller_save },
+		{ name => "vfp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_E" }
 	],
 	st => [
-		{ name => "st0", realname => "st",    type => 4 },
-		{ name => "st1", realname => "st(1)", type => 4 },
-		{ name => "st2", realname => "st(2)", type => 4 },
-		{ name => "st3", realname => "st(3)", type => 4 },
-		{ name => "st4", realname => "st(4)", type => 4 },
-		{ name => "st5", realname => "st(5)", type => 4 },
-		{ name => "st6", realname => "st(6)", type => 4 },
-		{ name => "st7", realname => "st(7)", type => 4 },
+		{ name => "st0", realname => "st",    type => $ignore },
+		{ name => "st1", realname => "st(1)", type => $ignore },
+		{ name => "st2", realname => "st(2)", type => $ignore },
+		{ name => "st3", realname => "st(3)", type => $ignore },
+		{ name => "st4", realname => "st(4)", type => $ignore },
+		{ name => "st5", realname => "st(5)", type => $ignore },
+		{ name => "st6", realname => "st(6)", type => $ignore },
+		{ name => "st7", realname => "st(7)", type => $ignore },
 		{ mode => "mode_E", flags => "manual_ra" }
 	],
 	fp_cw => [	# the floating point control word
-		{ name => "fpcw", type => 4|32 },
+		{ name => "fpcw", type => $ignore | $state },
 		{ mode => "mode_fpcw", flags => "manual_ra|state" }
 	],
 	flags => [

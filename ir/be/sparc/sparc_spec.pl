@@ -13,8 +13,6 @@ $mode_fp      = "mode_D";
 # %nodes = (
 #
 # <op-name> => {
-#   op_flags  => "N|L|C|X|I|F|Y|H|c|K",                 # optional
-#   irn_flags => "R|N|I"                                # optional
 #   arity     => "0|1|2|3 ... |variable|dynamic|any",   # optional
 #   state     => "floats|pinned|mem_pinned|exc_pinned", # optional
 #   args      => [
@@ -57,22 +55,6 @@ $mode_fp      = "mode_D";
 #
 # comment: OPTIONAL comment for the node constructor
 #
-# rd_constructor: for every operation there will be a
-#      new_rd_<arch>_<op-name> function with the arguments from above
-#      which creates the ir_node corresponding to the defined operation
-#      you can either put the complete source code of this function here
-#
-#      This key is OPTIONAL. If omitted, the following constructor will
-#      be created:
-#      if (!op_<arch>_<op-name>) assert(0);
-#      for i = 1 to arity
-#         set in[i] = op_i
-#      done
-#      res = new_ir_node(db, irg, block, op_<arch>_<op-name>, mode, arity, in)
-#      return res
-#
-# NOTE: rd_constructor and args are only optional if and only if arity is 0,1,2 or 3
-
 # register types:
 #   0 - no special type
 #   1 - caller save (register must be saved by the caller of a function)
