@@ -338,7 +338,6 @@ static inline void _set_entity_link(ir_entity *ent, void *l)
 
 static inline ir_graph *_get_entity_irg(const ir_entity *ent)
 {
-	ir_graph *irg;
 	assert(ent && ent->kind == k_entity);
 	if (!is_Method_type(ent->type) || ent == unknown_entity) {
 		return NULL;

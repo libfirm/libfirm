@@ -202,7 +202,7 @@ my %cmp_shifter_operand_constructors = (
 %nodes = (
 
 Add => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. add %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -210,21 +210,21 @@ Add => {
 },
 
 Mul => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "!in_r1" ] },
 	emit      =>'. mul %D0, %S0, %S1',
 	mode      => $mode_gp,
 },
 
 Smull => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	emit      =>'. smull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
 },
 
 Umull => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	emit      =>'. umull %D0, %D1, %S0, %S1',
 	outs      => [ "low", "high" ],
@@ -232,14 +232,14 @@ Umull => {
 },
 
 Mla => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp", "gp" ], out => [ "!in_r1" ] },
 	emit      =>'. mla %D0, %S0, %S1, %S2',
 	mode      => $mode_gp,
 },
 
 And => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. and %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -247,7 +247,7 @@ And => {
 },
 
 Or => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. orr %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -255,7 +255,7 @@ Or => {
 },
 
 Eor => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. eor %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -263,7 +263,7 @@ Eor => {
 },
 
 Bic => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. bic %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -271,7 +271,7 @@ Bic => {
 },
 
 Sub => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. sub %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -279,7 +279,7 @@ Sub => {
 },
 
 Rsb => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	emit      => '. rsb %D0, %S0, %SO',
 	mode      => $mode_gp,
 	attr_type => "arm_shifter_operand_t",
@@ -287,7 +287,7 @@ Rsb => {
 },
 
 Mov => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	arity     => "variable",
 	emit      => '. mov %D0, %SO',
 	mode      => $mode_gp,
@@ -296,7 +296,7 @@ Mov => {
 },
 
 Mvn => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	attr_type => "arm_shifter_operand_t",
 	arity     => "variable",
 	emit      => '. mvn %D0, %SO',
@@ -346,8 +346,8 @@ Bl => {
 
 # this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
 EmptyReg => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
 	emit      => '. /* %D0 now available for calculations */',
 	cmp_attr  => 'return 1;',
@@ -355,7 +355,7 @@ EmptyReg => {
 },
 
 CopyB => {
-	op_flags  => "F|H",
+	op_flags  => [ "fragile" ],
 	state     => "pinned",
 	attr      => "unsigned size",
 	attr_type => "arm_CopyB_attr_t",
@@ -364,8 +364,8 @@ CopyB => {
 },
 
 FrameAddr => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity, int symconst_offset",
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "base" ],
@@ -374,8 +374,8 @@ FrameAddr => {
 },
 
 SymConst => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity, int symconst_offset",
 	reg_req   => { out => [ "gp" ] },
 	attr_type => "arm_SymConst_attr_t",
@@ -383,7 +383,7 @@ SymConst => {
 },
 
 Cmp => {
-	irn_flags    => "R|F",
+	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. cmp %S0, %SO',
 	mode         => $mode_flags,
 	attr_type    => "arm_cmp_attr_t",
@@ -391,7 +391,7 @@ Cmp => {
 },
 
 Tst => {
-	irn_flags    => "R|F",
+	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. tst %S0, %SO',
 	mode         => $mode_flags,
 	attr_type    => "arm_cmp_attr_t",
@@ -399,7 +399,7 @@ Tst => {
 },
 
 B => {
-	op_flags  => "L|X|Y",
+	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
@@ -410,14 +410,14 @@ B => {
 
 Jmp => {
 	state     => "pinned",
-	op_flags  => "X",
-	irn_flags => "J",
+	op_flags  => [ "cfopcode" ],
+	irn_flags => [ "simple_jump" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
 
 SwitchJmp => {
-	op_flags  => "L|X|Y",
+	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr      => "int n_projs, long def_proj_num",
@@ -428,7 +428,7 @@ SwitchJmp => {
 },
 
 Ldr => {
-	op_flags  => "L|F",
+	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -439,7 +439,7 @@ Ldr => {
 },
 
 Str => {
-	op_flags  => "L|F",
+	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "mem" ],
@@ -451,8 +451,8 @@ Str => {
 },
 
 StoreStackM4Inc => {
-	op_flags  => "L|F",
-	irn_flags => "R",
+	op_flags  => [ "labeled", "fragile" ],
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "gp", "gp", "gp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
 	emit      => '. stmfd %S0!, {%S1, %S2, %S3, %S4}',
@@ -460,8 +460,8 @@ StoreStackM4Inc => {
 },
 
 LoadStackM3Epilogue => {
-	op_flags  => "L|F",
-	irn_flags => "R",
+	op_flags  => [ "labeled", "fragile" ],
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "sp", "none" ], out => [ "r11:I", "sp:I|S", "pc:I", "none" ] },
 	emit      => '. ldmfd %S0, {%D0, %D1, %D2}',
@@ -471,7 +471,7 @@ LoadStackM3Epilogue => {
 
 
 Adf => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      => '. adf%AM %D0, %S0, %S1',
 	attr_type => "arm_farith_attr_t",
@@ -480,7 +480,7 @@ Adf => {
 },
 
 Muf => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      =>'. muf%AM %D0, %S0, %S1',
 	attr_type => "arm_farith_attr_t",
@@ -489,7 +489,7 @@ Muf => {
 },
 
 Suf => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa", "fpa" ], out => [ "fpa" ] },
 	emit      => '. suf%AM %D0, %S0, %S1',
 	attr_type => "arm_farith_attr_t",
@@ -507,7 +507,7 @@ Dvf => {
 },
 
 Mvf => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fpa" ], out => [ "fpa" ] },
 	emit      => '. mvf%AM %S0, %D0',
 	attr_type => "arm_farith_attr_t",
@@ -516,7 +516,7 @@ Mvf => {
 },
 
 FltX => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "fpa" ] },
 	emit      => '. flt%AM %D0, %S0',
 	attr_type => "arm_farith_attr_t",
@@ -525,7 +525,7 @@ FltX => {
 },
 
 Cmfe => {
-	irn_flags => "R|F",
+	irn_flags => [ "rematerializable", "modify_flags" ],
 	mode      => $mode_flags,
 	attr_type => "arm_cmp_attr_t",
 	attr      => "bool ins_permuted",
@@ -535,7 +535,7 @@ Cmfe => {
 },
 
 Ldf => {
-	op_flags  => "L|F",
+	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -546,7 +546,7 @@ Ldf => {
 },
 
 Stf => {
-	op_flags  => "L|F",
+	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
@@ -561,8 +561,8 @@ Stf => {
 # floating point constants
 #
 fConst => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	attr      => "tarval *tv",
 	init_attr => "attr->tv = tv;",
 	mode      => "get_tarval_mode(tv)",

@@ -407,18 +407,15 @@ EOF
 	# set flags
 	if (exists($n->{"irn_flags"})) {
 		$temp .= "\t/* flags */\n";
-		foreach my $flag (split(/\|/, $n->{"irn_flags"})) {
-			if ($flag eq "R") {
-				$temp .= "\tflags |= arch_irn_flags_rematerializable;\n";
-			} elsif ($flag eq "N") {
-				$temp .= "\tflags |= arch_irn_flags_dont_spill;\n";
-			} elsif ($flag eq "F") {
-				$temp .= "\tflags |= arch_irn_flags_modify_flags;\n";
-			} elsif ($flag eq "J") {
-				$temp .= "\t flags |= arch_irn_flags_simple_jump;\n";
-			} else {
-				die "Fatal error: unknown flag $flag for ${op}\n";
+		my %known_irn_flags = map { $_ => 1 } (
+			"none", "dont_spill", "rematerializable",
+			"modify_flags", "simple_jump"
+		);
+		foreach my $flag (@{$n->{"irn_flags"}}) {
+			if (not defined($known_irn_flags{$flag})) {
+				print STDERR "WARNING: irn_flag '$flag' in opcode $op is unknown\n";
 			}
+			$temp .= "\tflags |= arch_irn_flags_$flag;\n";
 		}
 		$temp .= "\n";
 	}
@@ -637,7 +634,7 @@ EOF
 
 	# set default values for state and flags if not given
 	$n{"state"}    = "floats" if (! exists($n{"state"}));
-	$n{"op_flags"} = "N"      if (! exists($n{"op_flags"}));
+	$n{"op_flags"} = ["none"] if (! exists($n{"op_flags"}));
 
 	push(@obst_new_irop, "\n\tmemset(&ops, 0, sizeof(ops));\n");
 	push(@obst_new_irop, "\tops.be_ops        = be_ops;\n");
@@ -657,9 +654,23 @@ EOF
 		push(@obst_new_irop, "\tops.hash = ${hash_func};\n");
 	}
 
+	my %known_flags = map { $_ => 1 } (
+		"none", "labeled", "commutative", "cfopcode", "op_cfopcode",
+		"fragile", "forking", "highlevel", "constlike", "always_opt",
+		"keep", "start_block", "uses_memory", "dump_noblock",
+		"dump_noinput", "machine", "machine_op", "cse_neutral"
+	);
+	foreach my $flag (@{$n{"op_flags"}}) {
+		if (not defined($known_flags{$flag})) {
+			print STDERR "WARNING: Flag '$flag' in opcode $op is unknown\n";
+		}
+	}
+	my @mapped = map { "irop_flag_$_" } @{$n{"op_flags"}};
+	my $op_flags = join('|', @mapped);
+
 	$n_opcodes++;
-	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", ".$n{"op_flags"};
-	$temp .= "|M, ".translate_arity($arity).", 0, sizeof(${attr_type}), &ops);\n";
+	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
+	$temp .= "|irop_flag_machine, ".translate_arity($arity).", 0, sizeof(${attr_type}), &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
 	if(defined($default_op_attr_type)) {

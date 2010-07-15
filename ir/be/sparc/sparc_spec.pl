@@ -41,25 +41,6 @@ $mode_fp      = "mode_D";
 #
 # ); # close the %nodes initializer
 
-# op_flags: flags for the operation, OPTIONAL (default is "N")
-# the op_flags correspond to the firm irop_flags:
-#   N   irop_flag_none
-#   L   irop_flag_labeled
-#   C   irop_flag_commutative
-#   X   irop_flag_cfopcode
-#   I   irop_flag_ip_cfopcode
-#   F   irop_flag_fragile
-#   Y   irop_flag_forking
-#   H   irop_flag_highlevel
-#   c   irop_flag_constlike
-#   K   irop_flag_keep
-#
-# irn_flags: special node flags, OPTIONAL (default is 0)
-# following irn_flags are supported:
-#   R   rematerializeable
-#   N   not spillable
-#   I   ignore for register allocation
-#
 # state: state of the operation, OPTIONAL (default is "floats")
 #
 # arity: arity of the operation, MUST NOT BE OMITTED
@@ -223,17 +204,6 @@ $mode_fp      = "mode_D";
 	O  => "${arch}_emit_offset(node);",
 );
 
-#--------------------------------------------------#
-#                        _                         #
-#                       (_)                        #
-#  _ __   _____      __  _ _ __    ___  _ __  ___  #
-# | '_ \ / _ \ \ /\ / / | | '__|  / _ \| '_ \/ __| #
-# | | | |  __/\ V  V /  | | |    | (_) | |_) \__ \ #
-# |_| |_|\___| \_/\_/   |_|_|     \___/| .__/|___/ #
-#                                      | |         #
-#                                      |_|         #
-#--------------------------------------------------#
-
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
 
@@ -308,21 +278,8 @@ my %binop_operand_constructors = (
 
 %nodes = (
 
-#-----------------------------------------------------------------#
-#  _       _                                         _            #
-# (_)     | |                                       | |           #
-#  _ _ __ | |_ ___  __ _  ___ _ __   _ __   ___   __| | ___  ___  #
-# | | '_ \| __/ _ \/ _` |/ _ \ '__| | '_ \ / _ \ / _` |/ _ \/ __| #
-# | | | | | ||  __/ (_| |  __/ |    | | | | (_) | (_| |  __/\__ \ #
-# |_|_| |_|\__\___|\__, |\___|_|    |_| |_|\___/ \__,_|\___||___/ #
-#                   __/ |                                         #
-#                  |___/                                          #
-#-----------------------------------------------------------------#
-
-# commutative operations
-
 Add => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
   mode		=> $mode_gp,
   emit      => '. add %S1, %R2I, %D1',
@@ -330,7 +287,7 @@ Add => {
 },
 
 Sub => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct Sub: Sub(a, b) = a - b",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -341,7 +298,7 @@ Sub => {
 
 # Load / Store
 Load => {
-  op_flags  => "L|F",
+  op_flags  => [ "labeled", "fragile" ],
   comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
   state     => "exc_pinned",
   ins       => [ "ptr", "mem" ],
@@ -353,7 +310,7 @@ Load => {
 },
 
 LoadHi => {
-  op_flags  => "L|F",
+  op_flags  => [ "labeled", "fragile" ],
   comment   => "construct LoadHi: Load(ptr, mem) = sethi hi(ptr) -> reg",
   state     => "exc_pinned",
   ins       => [ "ptr", "mem" ],
@@ -365,7 +322,7 @@ LoadHi => {
 },
 
 HiImm => {
-  op_flags  => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
   state     => "exc_pinned",
   outs      => [ "res" ],
@@ -378,7 +335,7 @@ HiImm => {
 },
 
 LoImm => {
-  op_flags  => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
   state     => "exc_pinned",
   ins       => [ "hireg" ],
@@ -392,7 +349,7 @@ LoImm => {
 },
 
 LoadLo => {
-  op_flags  => "L|F",
+  op_flags  => [ "labeled", "fragile" ],
   comment   => "construct LoadLo: Or(in, ptr, mem) = or in lo(ptr) -> reg",
   state     => "exc_pinned",
   ins       => [ "hireg", "ptr", "mem" ],
@@ -404,7 +361,7 @@ LoadLo => {
 },
 
 Store => {
-  op_flags  => "L|F",
+  op_flags  => [ "labeled", "fragile" ],
   comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
   mode 		=> "mode_M",
   state     => "exc_pinned",
@@ -417,7 +374,7 @@ Store => {
 },
 
 Mov => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct Mov: Mov(src, dest) = MV src,dest",
   arity     => "variable",
   emit      => '. mov %R1I, %D1',
@@ -455,8 +412,8 @@ SubSP => {
 },
 
 SymConst => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity",
 	reg_req   => { out => [ "gp" ] },
 	attr_type => "sparc_symconst_attr_t",
@@ -464,8 +421,8 @@ SymConst => {
 },
 
 FrameAddr => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity",
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "base" ],
@@ -474,7 +431,7 @@ FrameAddr => {
 },
 
 Branch => {
-	op_flags  => "L|X|Y",
+	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
@@ -485,14 +442,14 @@ Branch => {
 
 Jmp => {
 	state     => "pinned",
-	op_flags  => "X",
-	irn_flags => "J",
+	op_flags  => [ "cfopcode" ],
+	irn_flags => [ "simple_jump" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
 
 Cmp => {
-	irn_flags    => "R|F",
+	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. cmp %S1, %R2I',
 	mode         => $mode_flags,
 	attr_type    => "sparc_cmp_attr_t",
@@ -500,7 +457,7 @@ Cmp => {
 },
 
 Tst => {
-	irn_flags    => "R|F",
+	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. tst %S1',
 	mode         => $mode_flags,
 	attr_type    => "sparc_cmp_attr_t",
@@ -511,7 +468,7 @@ Tst => {
 },
 
 SwitchJmp => {
-	op_flags  => "L|X|Y",
+	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr      => "int n_projs, long def_proj_num",
@@ -522,7 +479,7 @@ SwitchJmp => {
 },
 
 ShiftLL => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct shift logical left",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -531,7 +488,7 @@ ShiftLL => {
 },
 
 ShiftLR => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct shift logical right",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -540,7 +497,7 @@ ShiftLR => {
 },
 
 ShiftRA => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct shift right arithmetical",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -549,7 +506,7 @@ ShiftRA => {
 },
 
 And => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct logical and",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -558,7 +515,7 @@ And => {
 },
 
 Or => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct logical or",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -567,7 +524,7 @@ Or => {
 },
 
 Xor => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "construct logical xor",
   mode		=> $mode_gp,
   reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -593,7 +550,7 @@ Mulh => {
 },
 
 Div => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   state     => "exc_pinned",
 #  mode	    => $mode_gp,
   comment   => "construct Div: Div(a, b) = a / b",
@@ -604,7 +561,7 @@ Div => {
 },
 
 Minus => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   mode	    => $mode_gp,
   comment   => "construct Minus: Minus(a) = -a",
   #reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
@@ -613,7 +570,7 @@ Minus => {
 },
 
 Not => {
-  irn_flags   => "R",
+  irn_flags   => [ "rematerializable" ],
   mode	      => $mode_gp,
   comment     => "construct Not: Not(a) = !a",
   reg_req     => { in => [ "gp" ], out => [ "gp" ] },
@@ -621,7 +578,7 @@ Not => {
 },
 
 Nop => {
-	op_flags => "K",
+	op_flags => [ "keep" ],
 	reg_req	 => { in => [], out => [ "none" ] },
 	emit     => '. nop',
 },
@@ -758,75 +715,65 @@ Nop => {
 #  emit        => '. not %S1, %D1'
 #},
 
-
-#--------------------------------------------------------#
-#    __ _             _                     _            #
-#   / _| |           | |                   | |           #
-#  | |_| | ___   __ _| |_   _ __   ___   __| | ___  ___  #
-#  |  _| |/ _ \ / _` | __| | '_ \ / _ \ / _` |/ _ \/ __| #
-#  | | | | (_) | (_| | |_  | | | | (_) | (_| |  __/\__ \ #
-#  |_| |_|\___/ \__,_|\__| |_| |_|\___/ \__,_|\___||___/ #
-#--------------------------------------------------------#
-
 fAdd => {
-  op_flags  => "C",
-  irn_flags => "R",
+  op_flags  => [ "commutative" ],
+  irn_flags => [ "rematerializable" ],
   comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
   reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
   emit      => '. fadd%FPM %S1, %S2, %D1'
 },
 
 fMul => {
-  op_flags  => "C",
+  op_flags  => [ "commutative" ],
   comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
   reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
   emit      =>'. fmul%FPM %S1, %S2, %D1'
 },
 
 fsMuld => {
-  op_flags  => "C",
+  op_flags  => [ "commutative" ],
   comment   => "construct FP single to double precision Mul: Mul(a, b) = Mul(b, a) = a * b",
   reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
   emit      =>'. fsmuld %S1, %S2, %D1'
 },
 
 FpSToFpD => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "convert FP (single) to FP (double)",
   reg_req   => { in => [ "fp" ], out => [ "fp" ] },
   emit      =>'. FsTOd %S1, %D1'
 },
 
 FpDToFpS => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "convert FP (double) to FP (single)",
   reg_req   => { in => [ "fp" ], out => [ "fp" ] },
   emit      =>'. FdTOs %S1, %D1'
 },
 
 FpSToInt => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "convert integer to FP",
   reg_req   => { in => [ "fp" ], out => [ "gp" ] },
   emit      =>'. FiTOs %S1, %D1'
 },
 
 FpDToInt => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "convert integer to FP",
   reg_req   => { in => [ "fp" ], out => [ "gp" ] },
   emit      =>'. FiTOd %S1, %D1'
 },
 
 IntToFpS => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "convert FP (single) to integer",
   reg_req   => { in => [ "gp" ], out => [ "fp" ] },
   emit      =>'. FsTOi %S1, %D1'
 },
 
 IntToFpD => {
-  irn_flags => "R",
+  irn_flags => [ "rematerializable" ],
   comment   => "convert FP (double) to integer",
   reg_req   => { in => [ "gp" ], out => [ "fp" ] },
   emit      =>'. FdTOi %S1, %D1'
@@ -890,7 +837,7 @@ IntToFpD => {
 ## Load / Store
 #
 #fLoad => {
-#  op_flags  => "L|F",
+#  op_flags  => [ "labeled", "fragile" ],
 #  irn_flags => "R",
 #  state     => "exc_pinned",
 #  comment   => "construct FP Load: Load(ptr, mem) = LD ptr",
@@ -899,7 +846,7 @@ IntToFpD => {
 #},
 #
 #fStore => {
-#  op_flags  => "L|F",
+#  op_flags  => [ "labeled", "fragile" ],
 #  irn_flags => "R",
 #  state     => "exc_pinned",
 #  comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",

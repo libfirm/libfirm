@@ -164,68 +164,68 @@ $mode_fp  = "mode_E";  # mode used by floatingpoint registers
 # Integer nodes
 
 Add => {
-	op_flags  => "C",
-	irn_flags => "R",
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. add %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Mul => {
-	op_flags  => "C",
-	irn_flags => "R",
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      =>'. mul %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 And => {
-	op_flags  => "C",
-	irn_flags => "R",
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. and %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Or => {
-	op_flags  => "C",
-	irn_flags => "R",
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. or %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Xor => {
-	op_flags  => "C",
-	irn_flags => "R",
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. xor %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Sub => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sub %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Shl => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. shl %S1, %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Shr => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp" ], out => [ "in_r1" ] },
 	emit      => '. shr %S2, %D1',
 	mode      => $mode_gp,
 },
 
 Minus => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => '. neg %S1, %D1',
 	mode      => $mode_gp,
@@ -240,8 +240,8 @@ Not => {
 },
 
 Const => {
-	op_flags   => "c",
-	irn_flags  => "R",
+	op_flags   => [ "constlike" ],
+	irn_flags  => [ "rematerializable" ],
 	attr       => "tarval *value",
 	custominit => "set_TEMPLATE_value(res, value);",
 	reg_req    => { out => [ "gp" ] },
@@ -258,8 +258,8 @@ Const => {
 
 Jmp => {
 	state     => "pinned",
-	op_flags  => "X",
-	irn_flags => "J",
+	op_flags  => [ "cfopcode" ],
+	irn_flags => [ "simple_jump" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
@@ -267,16 +267,16 @@ Jmp => {
 # Load / Store
 
 Load => {
-	op_flags  => "L|F",
-	irn_flags => "R",
+	op_flags  => [ "labeled", "fragile" ],
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
 	emit      => '. mov (%S1), %D1',
 },
 
 Store => {
-	op_flags  => "L|F",
-	irn_flags => "R",
+	op_flags  => [ "labeled", "fragile" ],
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ] },
 	emit      => '. movl %S2, (%S1)',
@@ -285,22 +285,22 @@ Store => {
 # Floating Point operations
 
 fAdd => {
-	op_flags  => "C",
-	irn_flags => "R",
+	op_flags  => [ "commutative" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '. fadd %S1, %S2, %D1',
 	mode    => $mode_fp,
 },
 
 fMul => {
-	op_flags  => "C",
+	op_flags  => [ "commutative" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'. fmul %S1, %S2, %D1',
 	mode      => $mode_fp,
 },
 
 fSub => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '. fsub %S1, %S2, %D1',
 	mode      => $mode_fp,
@@ -313,15 +313,15 @@ fDiv => {
 },
 
 fMinus => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      => '. fneg %S1, %D1',
 	mode      => $mode_fp,
 },
 
 fConst => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "fp" ] },
 	emit      => '. fmov %C, %D1',
 	cmp_attr  =>
@@ -335,16 +335,16 @@ fConst => {
 # Load / Store
 
 fLoad => {
-	op_flags  => "L|F",
-	irn_flags => "R",
+	op_flags  => [ "labeled", "fragile" ],
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
 	emit      => '. fmov (%S1), %D1',
 },
 
 fStore => {
-	op_flags  => "L|F",
-	irn_flags => "R",
+	op_flags  => [ "labeled", "fragile" ],
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "fp", "none" ] },
 	emit      => '. fmov %S2, (%S1)',

@@ -206,8 +206,8 @@ Push => {
 #	units     => [ "GP" ],
 },
 Add => {
-	op_flags   => "C",
-	irn_flags  => "R",
+	op_flags   => [ "commutative" ],
+	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
 	reg_req    => { in => [ "gp", "gp" ],
 	                out => [ "gp" ] },
@@ -230,7 +230,7 @@ Mul => {
 	modified_flags => $status_flags
 },
 Sub => {
-	irn_flags  => "R",
+	irn_flags  => [ "rematerializable" ],
 	state      => "exc_pinned",
 	reg_req    => { in => [ "gp", "gp" ],
 	                out => [ "gp" ] },
@@ -240,7 +240,7 @@ Sub => {
 	modified_flags => 1,
 },
 Neg => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ],
 	               out => [ "in_r1", "flags" ] },
 	emit      => '. neg %S1',
@@ -250,7 +250,7 @@ Neg => {
 	modified_flags => $status_flags
 },
 Immediate => {
-	op_flags  => "c",
+	op_flags  => [ "constlike" ],
 	attr      => "unsigned imm_value",
 	init_attr => "attr->ext.imm_value = imm_value;",
 	reg_req   => { out => [ "gp" ] },
@@ -258,8 +258,8 @@ Immediate => {
 	mode      => $mode_gp,
 },
 SymConst => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	attr      => "ir_entity *entity",
 	attr_type => "amd64_SymConst_attr_t",
 	reg_req   => { out => [ "gp" ] },
@@ -277,12 +277,12 @@ Conv => {
 },
 Jmp => {
 	state     => "pinned",
-	op_flags  => "X",
+	op_flags  => [ "cfopcode" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
 },
 Cmp => {
-	irn_flags => "R",
+	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in  => [ "gp", "gp" ],
 	               out => [ "flags" ] },
@@ -297,7 +297,7 @@ Cmp => {
 },
 Jcc => {
 	state     => "pinned",
-	op_flags  => "L|X|Y",
+	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
@@ -306,7 +306,7 @@ Jcc => {
 	mode      => "mode_T",
 },
 Load => {
-	op_flags  => "L|F",
+	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ],
 	               out => [ "gp", "none" ] },
@@ -317,8 +317,8 @@ Load => {
 	emit      => ". mov %O(%S1), %D1"
 },
 FrameAddr => {
-	op_flags  => "c",
-	irn_flags => "R",
+	op_flags  => [ "constlike" ],
+	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	ins       => [ "base" ],
 	attr      => "ir_entity *entity",
@@ -326,7 +326,7 @@ FrameAddr => {
 	mode      => $mode_gp,
 },
 Store => {
-	op_flags  => "L|F",
+	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],
@@ -339,7 +339,7 @@ Store => {
 
 #NoReg_GP => {
 #	state     => "pinned",
-#	op_flags  => "c|NB|NI",
+#	op_flags  => [ "constlike", "dump_noblcok", "dump_noinput" ],
 #	reg_req   => { out => [ "gp_NOREG:I" ] },
 #	units     => [],
 #	emit      => "",
