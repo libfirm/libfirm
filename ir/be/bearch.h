@@ -43,7 +43,7 @@
 typedef enum arch_register_class_flags_t {
 	arch_register_class_flag_none      = 0,
 	/** don't do automatic register allocation for this class */
-  	arch_register_class_flag_manual_ra = 1U << 0,
+	arch_register_class_flag_manual_ra = 1U << 0,
 	/** the register models an abstract state (example: fpu rounding mode) */
 	arch_register_class_flag_state     = 1U << 1
 } arch_register_class_flags_t;
@@ -75,7 +75,7 @@ typedef enum arch_register_type_t {
  */
 typedef enum arch_register_req_type_t {
 	/** No register requirement. */
- 	arch_register_req_type_none              = 0,
+	arch_register_req_type_none              = 0,
 	/** All registers in the class are allowed. */
 	arch_register_req_type_normal            = 1U << 0,
 	/** Only a real subset of the class is allowed. */
@@ -380,7 +380,7 @@ struct arch_inverse_t {
 struct arch_irn_ops_t {
 
 	/**
-  	 * Get the register requirements for a given operand.
+	 * Get the register requirements for a given operand.
 	 * @param irn The node.
 	 * @param pos The operand's position
 	 * @return    The register requirements for the selected operand.

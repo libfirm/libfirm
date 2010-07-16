@@ -423,7 +423,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 
 		req = arch_get_out_register_req(node, i);
 		cls = req->cls;
-		if (cls == NULL) {
+		if (cls == NULL || (cls->flags & arch_register_class_flag_manual_ra)) {
 			continue;
 		}
 
