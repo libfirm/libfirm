@@ -22,37 +22,28 @@
  * @brief   declarations for SPARC backend -- private header
  * @version $Id$
  */
-#ifndef FIRM_BE_SPARC_BEARCH_TEMPLATE_T_H
-#define FIRM_BE_SPARC_BEARCH_TEMPLATE_T_H
+#ifndef FIRM_BE_SPARC_BEARCH_SPARC_T_H
+#define FIRM_BE_SPARC_BEARCH_SPARC_T_H
 
-#include "debug.h"
+#include <stdbool.h>
 #include "sparc_nodes_attr.h"
 #include "be.h"
-#include "../beemitter.h"
-#include "set.h"
-
-// sparc ABI requires a min stacksize to
-// save registers in case of a trap etc.
-// by now we assume only non-leaf procedures: 92 + 4 (padding)
-#define SPARC_MIN_STACKSIZE 112
 
 typedef struct sparc_transform_env_t  sparc_transform_env_t;
-typedef struct _sparc_isa_t sparc_isa_t;
+typedef struct sparc_isa_t            sparc_isa_t;
 
-typedef struct _sparc_code_gen_t {
-    const arch_code_generator_if_t *impl;           /**< implementation */
-    ir_graph                       *irg;            /**< current irg */
-    set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
-    sparc_isa_t                      *isa;            /**< the isa instance */
-    char                           dump;            /**< set to 1 if graphs should be dumped */
+typedef struct sparc_code_gen_t {
+	const arch_code_generator_if_t *impl;    /**< implementation */
+	ir_graph                       *irg;     /**< current irg */
+	sparc_isa_t                    *isa;     /**< the isa instance */
+	bool                            dump;    /**< set to 1 if graphs should
+	                                              be dumped */
 } sparc_code_gen_t;
 
-
-struct _sparc_isa_t {
-    arch_env_t        base;      /**< must be derived from arch_env_t */
-    sparc_code_gen_t *cg;        /**< current code generator */
+struct sparc_isa_t {
+	arch_env_t        base;      /**< must be derived from arch_env_t */
+	sparc_code_gen_t *cg;        /**< current code generator */
 };
-
 
 /**
  * this is a struct to minimize the number of parameters

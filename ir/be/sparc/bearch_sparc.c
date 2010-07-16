@@ -22,7 +22,6 @@
  * @brief    The main sparc backend driver file.
  * @version  $Id$
  */
-
 #include "config.h"
 
 #include "lc_opts.h"
@@ -60,13 +59,16 @@
 #include "../beflags.h"
 
 #include "bearch_sparc_t.h"
-#include "bearch_sparc.h"
 
 #include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_transform.h"
 #include "sparc_emitter.h"
-#include "sparc_map_regs.h"
+
+// sparc ABI requires a min stacksize to
+// save registers in case of a trap etc.
+// by now we assume only non-leaf procedures: 92 + 4 (padding)
+#define SPARC_MIN_STACKSIZE 112
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -276,10 +278,10 @@ static void *sparc_cg_init(ir_graph *irg);
 
 static const arch_code_generator_if_t sparc_code_gen_if = {
 	sparc_cg_init,
-	NULL,                    /* get_pic_base hook */
-	NULL,                    /* before abi introduce hook */
+	NULL,                 /* get_pic_base hook */
+	NULL,                 /* before abi introduce hook */
 	sparc_prepare_graph,
-	NULL,                    /* spill hook */
+	NULL,                 /* spill hook */
 	sparc_before_ra,      /* before register allocation hook */
 	sparc_after_ra,       /* after register allocation hook */
 	NULL,
@@ -291,38 +293,24 @@ static const arch_code_generator_if_t sparc_code_gen_if = {
  */
 static void *sparc_cg_init(ir_graph *irg)
 {
-	static ir_type *int_tp = NULL;
 	sparc_isa_t      *isa = (sparc_isa_t *) be_get_irg_arch_env(irg);
-	sparc_code_gen_t *cg;
+	sparc_code_gen_t *cg  = XMALLOCZ(sparc_code_gen_t);
 
-	if (! int_tp) {
-		/* create an integer type with machine size */
-		int_tp = new_type_primitive(mode_Is);
-	}
-
-	cg 				 = XMALLOC(sparc_code_gen_t);
-	cg->impl				= &sparc_code_gen_if;
-	cg->irg				= irg;
-	//cg->reg_set				= new_set(arm_cmp_irn_reg_assoc, 1024);
-	cg->isa				= isa;
-	//cg->int_tp				= int_tp;
-	//cg->have_fp_insn	= 0;
-	//cg->unknown_gp		= NULL;
-	//cg->unknown_fpa		= NULL;
-	cg->dump				= (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
+	cg->impl = &sparc_code_gen_if;
+	cg->irg  = irg;
+	cg->isa  = isa;
+	cg->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) != 0;
 
 	/* enter the current code generator */
 	isa->cg = cg;
 
-	return (arch_code_generator_t *)cg;
+	return (arch_code_generator_t*) cg;
 }
-
-
 
 const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	{
-		&sparc_isa_if,             /* isa interface implementation */
+		&sparc_isa_if,           /* isa interface implementation */
 		&sparc_gp_regs[REG_SP],  /* stack pointer register */
 		&sparc_gp_regs[REG_FP],  /* base pointer register */
 		&sparc_reg_classes[CLASS_sparc_gp],  /* link pointer register class */
@@ -516,7 +504,7 @@ static ir_type *sparc_get_between_type(void *self)
  * Build the prolog, return the BASE POINTER register
  */
 static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
-                                                    pmap *reg_map, int *stack_bias)
+                                                 pmap *reg_map, int *stack_bias)
 {
 	sparc_abi_env_t *env = self;
 	ir_node *block = get_irg_start_block(env->irg);
@@ -551,7 +539,7 @@ static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
 
 /* Build the epilog */
 static void sparc_abi_epilogue(void *self, ir_node *bl, ir_node **mem,
-                                  pmap *reg_map)
+                               pmap *reg_map)
 {
 	(void) self;
 	(void) bl;
@@ -566,6 +554,42 @@ static const be_abi_callbacks_t sparc_abi_callbacks = {
 	sparc_abi_prologue,
 	sparc_abi_epilogue,
 };
+
+static const arch_register_t *gp_param_out_regs[] = {
+	&sparc_gp_regs[REG_O0],
+	&sparc_gp_regs[REG_O1],
+	&sparc_gp_regs[REG_O2],
+	&sparc_gp_regs[REG_O3],
+	&sparc_gp_regs[REG_O4],
+	&sparc_gp_regs[REG_O5],
+};
+
+static const arch_register_t *gp_param_in_regs[] = {
+	&sparc_gp_regs[REG_I0],
+	&sparc_gp_regs[REG_I1],
+	&sparc_gp_regs[REG_I2],
+	&sparc_gp_regs[REG_I3],
+	&sparc_gp_regs[REG_I4],
+	&sparc_gp_regs[REG_I5],
+};
+
+/**
+ * get register for outgoing parameters 1-6
+ */
+static const arch_register_t *sparc_get_RegParamOut_reg(int n)
+{
+	assert(n < 6 && n >=0 && "trying to get (out) register for param >= 6");
+	return gp_param_out_regs[n];
+}
+
+/**
+ * get register for incoming parameters 1-6
+ */
+static const arch_register_t *sparc_get_RegParamIn_reg(int n)
+{
+	assert(n < 6 && n >=0 && "trying to get (in) register for param >= 6");
+	return gp_param_in_regs[n];
+}
 
 /**
  * Get the ABI restrictions for procedure calls.
@@ -585,7 +609,6 @@ static void sparc_get_call_abi(const void *self, ir_type *method_type,
 	/* set abi flags for calls */
 	call_flags.bits.left_to_right         = 0;
 	call_flags.bits.store_args_sequential = 1;
-	/* */
 	call_flags.bits.try_omit_fp           = 0;
 	call_flags.bits.fp_free               = 0;
 	call_flags.bits.call_has_imm          = 1;
@@ -711,7 +734,7 @@ static const be_machine_t *sparc_get_machine(const void *self)
 }
 
 static ir_graph **sparc_get_backend_irg_list(const void *self,
-                                                ir_graph ***irgs)
+                                             ir_graph ***irgs)
 {
 	(void) self;
 	(void) irgs;
@@ -742,7 +765,7 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_get_list_sched_selector,
 	sparc_get_ilp_sched_selector,
 	sparc_get_reg_class_alignment,
-    sparc_get_backend_params,
+	sparc_get_backend_params,
 	sparc_get_allowed_execution_units,
 	sparc_get_machine,
 	sparc_get_backend_irg_list,

@@ -28,12 +28,8 @@
 
 #include <stdio.h>
 
-#include "debug.h"
-#include "bearch_arm.h"
 #include "arm_nodes_attr.h"
 #include "be.h"
-#include "../beemitter.h"
-#include "set.h"
 
 typedef struct _arm_isa_t arm_isa_t;
 
@@ -139,17 +135,13 @@ enum arm_processor_types {
 typedef struct _arm_code_gen_t {
 	const arch_code_generator_if_t *impl;           /**< implementation */
 	ir_graph                       *irg;            /**< current irg */
-	set                            *reg_set;        /**< set to memorize registers for FIRM nodes (e.g. phi) */
 	arm_isa_t                      *isa;            /**< the isa instance */
-	ir_type                        *int_tp;         /**< the int type, needed for Call conversion */
-	char                           dump;            /**< set to 1 if graphs should be dumped */
-	DEBUG_ONLY(firm_dbg_module_t   *mod;)            /**< debugging module */
+	char                            dump;           /**< set to 1 if graphs should be dumped */
 } arm_code_gen_t;
 
 
 struct _arm_isa_t {
 	arch_env_t     base;      /**< must be derived from arch_env_t */
-	int            gen_reg_names; /**< use generic register names instead of SP, LR, PC */
 	int            fpu_arch;      /**< FPU architecture */
 	arm_code_gen_t *cg;           /**< current code generator */
 };

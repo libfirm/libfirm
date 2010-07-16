@@ -323,7 +323,6 @@ static void arm_emit_and_done(void *self)
 	arm_gen_routine(cg, irg);
 
 	/* de-allocate code generator */
-	del_set(cg->reg_set);
 	free(self);
 }
 
@@ -347,24 +346,14 @@ static const arch_code_generator_if_t arm_code_gen_if = {
  */
 static void *arm_cg_init(ir_graph *irg)
 {
-	static ir_type *int_tp = NULL;
-	arm_isa_t      *isa = (arm_isa_t *) be_get_irg_arch_env(irg);
+	arm_isa_t      *isa = (arm_isa_t*) be_get_irg_arch_env(irg);
 	arm_code_gen_t *cg;
 
-	if (! int_tp) {
-		/* create an integer type with machine size */
-		int_tp = new_type_primitive(mode_Is);
-	}
-
-	cg = XMALLOC(arm_code_gen_t);
-	cg->impl         = &arm_code_gen_if;
-	cg->irg          = irg;
-	cg->reg_set      = new_set(arm_cmp_irn_reg_assoc, 1024);
-	cg->isa          = isa;
-	cg->int_tp       = int_tp;
-	cg->dump         = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
-
-	FIRM_DBG_REGISTER(cg->mod, "firm.be.arm.cg");
+	cg       = XMALLOCZ(arm_code_gen_t);
+	cg->impl = &arm_code_gen_if;
+	cg->irg  = irg;
+	cg->isa  = isa;
+	cg->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
 	/* enter the current code generator */
 	isa->cg = cg;
@@ -388,8 +377,8 @@ static void arm_handle_intrinsics(void)
 
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
-	int_tp  = new_type_primitive(mode_Is);
-	uint_tp = new_type_primitive(mode_Iu);
+	int_tp  = get_type_for_mode(mode_Is);
+	uint_tp = get_type_for_mode(mode_Iu);
 
 	/* ARM has neither a signed div instruction ... */
 	{
@@ -501,7 +490,7 @@ static void arm_handle_intrinsics(void)
 		lower_intrinsics(records, n_records, /*part_block_used=*/0);
 }
 
-
+const arch_isa_if_t arm_isa_if;
 static arm_isa_t arm_isa_template = {
 	{
 		&arm_isa_if,           /* isa interface */
@@ -515,7 +504,6 @@ static arm_isa_t arm_isa_template = {
 		5,                     /* reload costs */
 		true,                  /* we do have custom abi handling */
 	},
-	0,                     /* use generic register names instead of SP, LR, PC */
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
 	NULL,                  /* current code generator */
 };
@@ -757,7 +745,6 @@ static lc_opt_enum_int_var_t arch_fpu_var = {
 
 static const lc_opt_table_entry_t arm_options[] = {
 	LC_OPT_ENT_ENUM_INT("fpunit",    "select the floating point unit", &arch_fpu_var),
-	LC_OPT_ENT_BOOL("gen_reg_names", "use generic register names", &arm_isa_template.gen_reg_names),
 	LC_OPT_LAST
 };
 

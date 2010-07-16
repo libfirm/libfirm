@@ -228,14 +228,6 @@ static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
 	ir_node  *new_op2;
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 
-/*
-    if (flags & MATCH_SIZE_NEUTRAL) {
-        op1 = arm_skip_downconv(op1);
-        op2 = arm_skip_downconv(op2);
-    } else {
-        assert(get_mode_size_bits(get_irn_mode(node)) == 32);
-    }
-*/
 	if (is_imm_encodeable(op2)) {
 		ir_node *new_op1 = be_transform_node(op1);
 		return new_imm(dbgi, block, new_op1, get_tarval_long(get_Const_tarval(op2)));
@@ -303,8 +295,8 @@ static ir_node *gen_Sub(ir_node *node)
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 
-    (void) block;
-    (void) dbgi;
+	(void) block;
+	(void) dbgi;
 
 	if (mode_is_float(mode))
 		panic("FP not implemented yet");
@@ -969,7 +961,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			panic("Unsupported Proj from Load");
 	}
 
-    return be_duplicate_node(node);
+	return be_duplicate_node(node);
 }
 
 /**
@@ -1062,7 +1054,7 @@ static ir_node *gen_Proj(ir_node *node)
 	long     proj  = get_Proj_proj(node);
 
 	(void) irg;
-    (void) dbgi;
+	(void) dbgi;
 
 	if (is_Store(pred)) {
 		if (proj == pn_Store_M) {
@@ -1109,7 +1101,7 @@ static ir_node *gen_Proj(ir_node *node)
 		}
 	}
 
-    return be_duplicate_node(node);
+	return be_duplicate_node(node);
 }
 
 

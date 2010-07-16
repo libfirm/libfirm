@@ -288,7 +288,7 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 											bool is_frame_entity)
 {
 	sparc_load_store_attr_t *attr = get_irn_generic_attr(res);
-    attr->load_store_mode    = ls_mode;
+	attr->load_store_mode    = ls_mode;
 	attr->entity             = entity;
 	attr->entity_sign        = entity_sign;
 	attr->is_frame_entity    = is_frame_entity;

@@ -160,6 +160,7 @@ print OUT<<EOF;
 #include "irnode.h"
 #include "irop_t.h"
 #include "irprog_t.h"
+#include "../beemitter.h"
 
 #include "gen_${arch}_emitter.h"
 #include "${arch}_new_nodes.h"

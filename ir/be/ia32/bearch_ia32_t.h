@@ -59,7 +59,6 @@ typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;
 struct ia32_code_gen_t {
 	const arch_code_generator_if_t *impl;          /**< implementation */
 	ir_graph                       *irg;           /**< current irg */
-	set                            *reg_set;       /**< set to memorize registers for non-ia32 nodes (e.g. phi nodes) */
 	ia32_isa_t                     *isa;           /**< for fast access to the isa object */
 	ir_node                        **blk_sched;    /**< an array containing the scheduled blocks */
 	unsigned                       do_x87_sim:1;   /**< set to 1 if x87 simulation should be enforced */

@@ -118,17 +118,6 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 	return reg;
 }
 
-/*************************************************************
- *             _       _    __   _          _
- *            (_)     | |  / _| | |        | |
- *  _ __  _ __ _ _ __ | |_| |_  | |__   ___| |_ __   ___ _ __
- * | '_ \| '__| | '_ \| __|  _| | '_ \ / _ \ | '_ \ / _ \ '__|
- * | |_) | |  | | | | | |_| |   | | | |  __/ | |_) |  __/ |
- * | .__/|_|  |_|_| |_|\__|_|   |_| |_|\___|_| .__/ \___|_|
- * | |                                       | |
- * |_|                                       |_|
- *************************************************************/
-
 void sparc_emit_immediate(const ir_node *node)
 {
 	int const val = get_sparc_attr_const(node)->immediate_value;
@@ -185,19 +174,19 @@ void sparc_emit_offset(const ir_node *node)
 void sparc_emit_load_mode(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-    ir_mode *mode      = attr->load_store_mode;
-    int      bits      = get_mode_size_bits(mode);
-    bool     is_signed = mode_is_signed(mode);
+	ir_mode *mode      = attr->load_store_mode;
+	int      bits      = get_mode_size_bits(mode);
+	bool     is_signed = mode_is_signed(mode);
 
-    if (bits == 16) {
-        be_emit_string(is_signed ? "sh" : "uh");
-    } else if (bits == 8) {
-        be_emit_string(is_signed ? "sb" : "ub");
-    } else if (bits == 64) {
-        be_emit_string("d");
-    } else {
-        assert(bits == 32);
-    }
+	if (bits == 16) {
+		be_emit_string(is_signed ? "sh" : "uh");
+	} else if (bits == 8) {
+		be_emit_string(is_signed ? "sb" : "ub");
+	} else if (bits == 64) {
+		be_emit_string("d");
+	} else {
+		assert(bits == 32);
+	}
 }
 
 /**
@@ -206,18 +195,18 @@ void sparc_emit_load_mode(const ir_node *node)
 void sparc_emit_store_mode(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-    ir_mode *mode      = attr->load_store_mode;
-    int      bits      = get_mode_size_bits(mode);
+	ir_mode *mode      = attr->load_store_mode;
+	int      bits      = get_mode_size_bits(mode);
 
-    if (bits == 16) {
-        be_emit_string("h");
-    } else if (bits == 8) {
-        be_emit_string("b");
-    } else if (bits == 64) {
-        be_emit_string("d");
-    } else {
-        assert(bits == 32);
-    }
+	if (bits == 16) {
+		be_emit_string("h");
+	} else if (bits == 8) {
+		be_emit_string("b");
+	} else if (bits == 64) {
+		be_emit_string("d");
+	} else {
+		assert(bits == 32);
+	}
 }
 
 /**
@@ -225,9 +214,9 @@ void sparc_emit_store_mode(const ir_node *node)
  */
 void sparc_emit_mode_sign_prefix(const ir_node *node)
 {
-    ir_mode *mode      = get_irn_mode(node);
-    bool     is_signed = mode_is_signed(mode);
-    be_emit_string(is_signed ? "s" : "u");
+	ir_mode *mode      = get_irn_mode(node);
+	bool     is_signed = mode_is_signed(mode);
+	be_emit_string(is_signed ? "s" : "u");
 }
 
 /**
@@ -236,18 +225,18 @@ void sparc_emit_mode_sign_prefix(const ir_node *node)
 void sparc_emit_fp_load_mode(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-    ir_mode *mode      = attr->load_store_mode;
-    int      bits      = get_mode_size_bits(mode);
+	ir_mode *mode      = attr->load_store_mode;
+	int      bits      = get_mode_size_bits(mode);
 
-    assert(mode_is_float(mode));
+	assert(mode_is_float(mode));
 
-    if (bits == 32) {
-        be_emit_string("f");
-    } else if (bits == 64) {
-        be_emit_string("df");
-    } else {
+	if (bits == 32) {
+		be_emit_string("f");
+	} else if (bits == 64) {
+		be_emit_string("df");
+	} else {
 		panic("FP load mode > 64bits not implemented yet");
-    }
+	}
 }
 
 /**
@@ -256,18 +245,18 @@ void sparc_emit_fp_load_mode(const ir_node *node)
 void sparc_emit_fp_store_mode(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-    ir_mode *mode      = attr->load_store_mode;
-    int      bits      = get_mode_size_bits(mode);
+	ir_mode *mode      = attr->load_store_mode;
+	int      bits      = get_mode_size_bits(mode);
 
-    assert(mode_is_float(mode));
+	assert(mode_is_float(mode));
 
-    if (bits == 32) {
-        be_emit_string("f");
-    } else if (bits == 64) {
-        be_emit_string("df");
-    } else {
+	if (bits == 32) {
+		be_emit_string("f");
+	} else if (bits == 64) {
+		be_emit_string("df");
+	} else {
 		panic("FP store mode > 64bits not implemented yet");
-    }
+	}
 }
 
 /**
@@ -275,18 +264,18 @@ void sparc_emit_fp_store_mode(const ir_node *node)
  */
 void sparc_emit_fp_mode_suffix(const ir_node *node)
 {
-    ir_mode *mode      = get_irn_mode(node);
-    int      bits      = get_mode_size_bits(mode);
+	ir_mode *mode      = get_irn_mode(node);
+	int      bits      = get_mode_size_bits(mode);
 
-    assert(mode_is_float(mode));
+	assert(mode_is_float(mode));
 
-    if (bits == 32) {
+	if (bits == 32) {
 		be_emit_string("s");
-    } else if (bits == 64) {
+	} else if (bits == 64) {
 		be_emit_string("d");
-    } else {
+	} else {
 		panic("FP mode > 64bits not implemented yet");
-    }
+	}
 }
 
 /**
@@ -305,17 +294,6 @@ static void sparc_emit_entity(ir_entity *entity)
 {
 	be_gas_emit_entity(entity);
 }
-
-/***********************************************************************************
- *                  _          __                                             _
- *                 (_)        / _|                                           | |
- *  _ __ ___   __ _ _ _ __   | |_ _ __ __ _ _ __ ___   _____      _____  _ __| | __
- * | '_ ` _ \ / _` | | '_ \  |  _| '__/ _` | '_ ` _ \ / _ \ \ /\ / / _ \| '__| |/ /
- * | | | | | | (_| | | | | | | | | | | (_| | | | | | |  __/\ V  V / (_) | |  |   <
- * |_| |_| |_|\__,_|_|_| |_| |_| |_|  \__,_|_| |_| |_|\___| \_/\_/ \___/|_|  |_|\_\
- *
- ***********************************************************************************/
-
 
 /**
  * Emits code for stack space management
@@ -770,50 +748,35 @@ static inline void set_emitter(ir_op *op, emit_func sparc_emit_node)
  */
 static void sparc_register_emitters(void)
 {
-
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
-
 	/* register all emitter functions defined in spec */
 	sparc_register_spec_emitters();
 
 	/* custom emitter */
-    set_emitter(op_be_IncSP,			emit_be_IncSP);
-    set_emitter(op_be_Return,			emit_be_Return);
-    set_emitter(op_be_Call,				emit_be_Call);
-    set_emitter(op_sparc_FrameAddr,		emit_sparc_FrameAddr);
-    set_emitter(op_sparc_Branch,		emit_sparc_Branch);
-    set_emitter(op_sparc_SymConst,		emit_sparc_SymConst);
-    set_emitter(op_sparc_Jmp,			emit_sparc_Jmp);
-    set_emitter(op_sparc_Save,			emit_sparc_Save);
+	set_emitter(op_be_Call,         emit_be_Call);
+	set_emitter(op_be_Copy,         emit_be_Copy);
+	set_emitter(op_be_CopyKeep,     emit_be_Copy);
+	set_emitter(op_be_IncSP,        emit_be_IncSP);
+	set_emitter(op_be_MemPerm,      emit_be_MemPerm);
+	set_emitter(op_be_Perm,         emit_be_Perm);
+	set_emitter(op_be_Return,       emit_be_Return);
+	set_emitter(op_sparc_Branch,    emit_sparc_Branch);
+	set_emitter(op_sparc_Div,       emit_sparc_Div);
+	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
+	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);
+	set_emitter(op_sparc_Jmp,       emit_sparc_Jmp);
+	set_emitter(op_sparc_LoImm,     emit_sparc_LoImm);
+	set_emitter(op_sparc_Mul,       emit_sparc_Mul);
+	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
+	set_emitter(op_sparc_Save,      emit_sparc_Save);
+	set_emitter(op_sparc_SymConst,  emit_sparc_SymConst);
 
-    set_emitter(op_sparc_HiImm,			emit_sparc_HiImm);
-    set_emitter(op_sparc_LoImm,			emit_sparc_LoImm);
-    set_emitter(op_sparc_Div,			emit_sparc_Div);
-    set_emitter(op_sparc_Mul,			emit_sparc_Mul);
-    set_emitter(op_sparc_Mulh,			emit_sparc_Mulh);
-
-    set_emitter(op_be_Copy,				emit_be_Copy);
-    set_emitter(op_be_CopyKeep,			emit_be_Copy);
-
-    set_emitter(op_be_Perm,				emit_be_Perm);
-    set_emitter(op_be_MemPerm,			emit_be_MemPerm);
-
-/*
-    set_emitter(op_arm_B,          emit_arm_B);
-    set_emitter(op_arm_CopyB,      emit_arm_CopyB);
-    set_emitter(op_arm_fpaConst,   emit_arm_fpaConst);
-    set_emitter(op_arm_fpaDbl2GP,  emit_arm_fpaDbl2GP);
-    set_emitter(op_arm_LdTls,      emit_arm_LdTls);
-    set_emitter(op_arm_SwitchJmp,  emit_arm_SwitchJmp);
-
-*/
-    /* no need to emit anything for the following nodes */
-	set_emitter(op_Phi,            emit_nothing);
-	set_emitter(op_be_Keep,        emit_nothing);
-	set_emitter(op_be_Start,       emit_nothing);
-	set_emitter(op_be_Barrier,     emit_nothing);
-
+	/* no need to emit anything for the following nodes */
+	set_emitter(op_be_Barrier, emit_nothing);
+	set_emitter(op_be_Keep,    emit_nothing);
+	set_emitter(op_be_Start,   emit_nothing);
+	set_emitter(op_Phi,        emit_nothing);
 }
 
 /**
@@ -939,9 +902,6 @@ void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg)
 		sparc_gen_block(block, last_block);
 		last_block = block;
 	}
-
-
-	//irg_walk_blkwise_graph(irg, NULL, sparc_gen_block, NULL);
 
 	// emit function epilog
 	sparc_emit_func_epilog(irg);

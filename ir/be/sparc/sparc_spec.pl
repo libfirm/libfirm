@@ -102,23 +102,23 @@ $state       = 32; # register represents a state
 
 %emit_templates = (
 # emit source reg or imm dep. on node's arity
-    RI => "${arch}_emit_reg_or_imm(node, -1);",
-    R1I => "${arch}_emit_reg_or_imm(node, 0);",
-    R2I => "${arch}_emit_reg_or_imm(node, 1);",
-    R3I => "${arch}_emit_reg_or_imm(node, 2);",
+	RI => "${arch}_emit_reg_or_imm(node, -1);",
+	R1I => "${arch}_emit_reg_or_imm(node, 0);",
+	R2I => "${arch}_emit_reg_or_imm(node, 1);",
+	R3I => "${arch}_emit_reg_or_imm(node, 2);",
 # simple reg emitters
-    S1 => "${arch}_emit_source_register(node, 0);",
-    S2 => "${arch}_emit_source_register(node, 1);",
-    S3 => "${arch}_emit_source_register(node, 2);",
-    S4 => "${arch}_emit_source_register(node, 3);",
-    S5 => "${arch}_emit_source_register(node, 4);",
-    S6 => "${arch}_emit_source_register(node, 5);",
-    D1 => "${arch}_emit_dest_register(node, 0);",
-    D2 => "${arch}_emit_dest_register(node, 1);",
-    D3 => "${arch}_emit_dest_register(node, 2);",
-    D4 => "${arch}_emit_dest_register(node, 3);",
-    D5 => "${arch}_emit_dest_register(node, 4);",
-    D6 => "${arch}_emit_dest_register(node, 5);",
+	S1 => "${arch}_emit_source_register(node, 0);",
+	S2 => "${arch}_emit_source_register(node, 1);",
+	S3 => "${arch}_emit_source_register(node, 2);",
+	S4 => "${arch}_emit_source_register(node, 3);",
+	S5 => "${arch}_emit_source_register(node, 4);",
+	S6 => "${arch}_emit_source_register(node, 5);",
+	D1 => "${arch}_emit_dest_register(node, 0);",
+	D2 => "${arch}_emit_dest_register(node, 1);",
+	D3 => "${arch}_emit_dest_register(node, 2);",
+	D4 => "${arch}_emit_dest_register(node, 3);",
+	D5 => "${arch}_emit_dest_register(node, 4);",
+	D6 => "${arch}_emit_dest_register(node, 5);",
 # more custom emitters
 	C  => "${arch}_emit_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
@@ -161,43 +161,43 @@ $default_copy_attr = "sparc_copy_attr";
 # max. imm = 13 bits signed (-4096 ... 4096)
 
 my %cmp_operand_constructors = (
-    imm => {
-        attr       => "int immediate_value, bool ins_permuted, bool is_unsigned",
-        custominit => "sparc_set_attr_imm(res, immediate_value);" .
+	imm => {
+		attr       => "int immediate_value, bool ins_permuted, bool is_unsigned",
+		custominit => "sparc_set_attr_imm(res, immediate_value);" .
 						"\tinit_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
-        reg_req    => { in => [ "gp" ], out => [ "flags" ] },
+		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
 	ins        => [ "left" ],
-    },
-    reg => {
+	},
+	reg => {
 	attr       => "bool ins_permuted, bool is_unsigned",
-        custominit => "init_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
-        reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
-        ins        => [ "left", "right" ],
-    },
+		custominit => "init_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+		ins        => [ "left", "right" ],
+	},
 );
 
 my %unop_operand_constructors = (
-    imm => {
-        attr       => "int immediate_value",
-        custominit => "sparc_set_attr_imm(res, immediate_value);",
-        reg_req    => { in => [], out => [ "gp" ] },
-    },
-    reg => {
-        reg_req    => { in => [ "gp" ], out => [ "gp" ] },
-    },
+	imm => {
+		attr       => "int immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_value);",
+		reg_req    => { in => [], out => [ "gp" ] },
+	},
+	reg => {
+		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+	},
 );
 
 my %binop_operand_constructors = (
-    imm => {
-        attr       => "int immediate_value",
-        custominit => "sparc_set_attr_imm(res, immediate_value);",
-        reg_req    => { in => [ "gp" ], out => [ "gp" ] },
-        ins        => [ "left" ],
-    },
-    reg => {
-        reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
-        ins        => [ "left", "right" ],
-    },
+	imm => {
+		attr       => "int immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_value);",
+		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+		ins        => [ "left" ],
+	},
+	reg => {
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+		ins        => [ "left", "right" ],
+	},
 );
 
 %nodes = (

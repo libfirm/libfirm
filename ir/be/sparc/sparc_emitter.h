@@ -22,8 +22,8 @@
  * @brief    declarations for emit functions
  * @version  $Id$
  */
-#ifndef FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
-#define FIRM_BE_TEMPLATE_TEMPLATE_EMITTER_H
+#ifndef FIRM_BE_SPARC_EMITTER_H
+#define FIRM_BE_SPARC_EMITTER_H
 
 #include "irargs_t.h"
 #include "irnode.h"
@@ -33,9 +33,6 @@
 #include "../beemitter.h"
 
 #include "bearch_sparc_t.h"
-
-//int get_TEMPLATE_reg_nr(ir_node *irn, int posi, int in_out);
-//const char *get_TEMPLATE_in_reg_name(ir_node *irn, int pos);
 
 void sparc_emit_immediate(const ir_node *node);
 void sparc_emit_mode(const ir_node *node);
