@@ -131,9 +131,9 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void sparc_emit_immediate(const ir_node *node)
 {
-	const sparc_attr_t *attr = get_sparc_attr_const(node);
-	assert(-4096 <= attr->immediate_value && attr->immediate_value < 4096);
-	be_emit_irprintf("%d", attr->immediate_value);
+	int const val = get_sparc_attr_const(node)->immediate_value;
+	assert(-4096 <= val && val < 4096);
+	be_emit_irprintf("%d", val);
 }
 
 void sparc_emit_source_register(const ir_node *node, int pos)
