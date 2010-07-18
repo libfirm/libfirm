@@ -34,6 +34,7 @@
 #include "error.h"
 
 #include "irdom.h"
+#include "irdump.h"
 #include "iredges_t.h"
 #include "irprintf.h"
 #include "irgwalk.h"
@@ -533,7 +534,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	if (env->opts->dump_flags & BE_CH_DUMP_CONSTR) {
 		char buf[256];
 		snprintf(buf, sizeof(buf), "-%s-constr", cls->name);
-		be_dump(irg, buf, dump_ir_block_graph_sched);
+		dump_ir_graph(irg, buf);
 	}
 
 
