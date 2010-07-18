@@ -269,8 +269,8 @@ void reorder_node(pbqp_node *node)
 	node_bucket_insert(&node_buckets[degree], node);
 }
 
-#if 0
-static void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
+#if 1
+void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
 	pbqp_node      *src_node;
@@ -363,7 +363,7 @@ static void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 		allColsOk &= onlyOneZero;
 	}
 
-	if (allRowsOk && allColsOk) {
+	if (allRowsOk || allColsOk) {
 		panic("Hurray");
 	}
 }
@@ -446,6 +446,11 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 		reorder_node(src_node);
 		reorder_node(tgt_node);
 	}
+#if 0
+	else {
+		check_melting_possibility(pbqp, edge);
+	}
+#endif
 }
 
 void initial_simplify_edges(pbqp *pbqp)
