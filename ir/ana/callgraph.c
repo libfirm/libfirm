@@ -301,10 +301,6 @@ void compute_callgraph(void)
 {
 	int i, n_irgs;
 
-#ifdef INTERPROCEDURAL_VIEW
-	assert(! get_interprocedural_view());  /* Else walking will not reach the Call nodes. */
-#endif
-
 	/* initialize */
 	free_callgraph();
 
@@ -736,36 +732,6 @@ static int is_endless_head(ir_graph *n, ir_graph *root)
 	return !some_outof_loop && some_in_loop;
 }
 
-#ifdef INTERPROCEDURAL_VIEW
-/**
- * Check whether there is a parallel edge in the ip control flow.
- * Only
- */
-static int is_ip_head(ir_graph *n, ir_graph *pred)
-{
-	int is_be = 0;
-
-	int iv_rem = get_interprocedural_view();
-	set_interprocedural_view(1);
-	{
-		ir_node *sblock = get_irg_start_block(n);
-		int i, arity = get_Block_n_cfgpreds(sblock);
-
-		for (i = 0; i < arity; i++) {
-			ir_node *pred_cfop = skip_Proj(get_Block_cfgpred(sblock, i));
-			if (is_CallBegin(pred_cfop)) { /* could be Unknown */
-				ir_graph *ip_pred = get_irn_irg(pred_cfop);
-				if ((ip_pred == pred) && is_backedge(sblock, i)) {
-					is_be = 1;
-				}
-			}
-		}
-	}
-	set_interprocedural_view(iv_rem);
-	return is_be;
-}
-#endif /* INTERPROCEDURAL_VIEW */
-
 /**
  * Returns index of the predecessor with the smallest dfn number
  * greater-equal than limit.
@@ -806,7 +772,6 @@ static int largest_dfn_pred(ir_graph *n)
 	return index;
 }
 
-#ifndef INTERPROCEDURAL_VIEW
 static ir_graph *find_tail(ir_graph *n)
 {
 	ir_graph *m;
@@ -867,70 +832,6 @@ static ir_graph *find_tail(ir_graph *n)
 	set_irg_callee_backedge(m, res_index);
 	return get_irg_callee(m, res_index);
 }
-#else
-static ir_graph *find_tail(ir_graph *n)
-{
-	ir_graph *m;
-	int i, res_index = -2;
-
-	ir_graph *res;
-	ir_graph *in_and_out    = NULL;
-	ir_graph *only_in       = NULL;
-	ir_graph *ip_in_and_out = NULL;
-	ir_graph *ip_only_in    = NULL;
-
-	for (i = tos-1; i >= 0; --i) {
-		ir_graph *pred = (i < tos -1) ? stack[i+1] : n;
-		m = stack[i];
-
-		if (is_head(m, n)) {
-			//printf(" found 1a! "); DDM;
-			in_and_out = m;
-			if (is_ip_head(pred, m)) {
-				//printf(" found 1b! "); DDM;
-				ip_in_and_out = m;
-			}
-		} else if (!ip_only_in && is_endless_head(m, n)) {
-			only_in = m;
-			//printf(" found 2a! "); DDM;
-			if (is_ip_head(pred, m)) {
-				//printf(" found 2b! "); DDM;
-				ip_only_in = m;
-			}
-		} else if (is_ip_head(pred, m)) {
-			//printf(" found 3! "); DDM;   This happens for self recursions in the second
-			//assert(0);                   scc iteration (the one to flip the loop.)
-		}
-
-		if (ip_in_and_out) break;    /* That's what we really want. */
-
-		if (m == n) break;   /* Don't walk past n on the stack! */
-	}
-
-
-	if (!in_and_out && !only_in)
-		/* There is no loop */
-		return NULL;
-
-
-	/* Is there a head in the callgraph without a head in the
-	   ip cf graph? */
-	assert(in_and_out || only_in);
-
-	m = (ip_in_and_out) ? ip_in_and_out : ip_only_in;
-
-	if (!m)
-		m = (in_and_out) ? in_and_out : only_in;
-
-	res_index = smallest_dfn_pred(m, get_irg_dfn(m) + 1);
-	if (res_index == -2)  /* no smallest dfn pred found. */
-		res_index = largest_dfn_pred(m);
-
-	set_irg_callee_backedge(m, res_index);
-	res = get_irg_callee(m, res_index);
-	return res;
-}
-#endif /* INTERPROCEDURAL_VIEW */
 
 /*-----------------------------------------------------------*
  *                   The core algorithm.                     *

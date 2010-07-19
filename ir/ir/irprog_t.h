@@ -29,7 +29,6 @@
 
 #include "irprog.h"
 #include "irtypes.h"
-#include "ircgcons.h"
 #include "irtypeinfo.h"
 #include "irmemory.h"
 

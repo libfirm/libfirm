@@ -6145,12 +6145,6 @@ static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
 	return a->attr.proj != b->attr.proj;
 }  /* node_cmp_attr_Proj */
 
-/** Compares the attributes of two Filter nodes. */
-static int node_cmp_attr_Filter(ir_node *a, ir_node *b)
-{
-	return get_Filter_proj(a) != get_Filter_proj(b);
-}  /* node_cmp_attr_Filter */
-
 /** Compares the attributes of two Alloc nodes. */
 static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
 {
@@ -6374,7 +6368,6 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	switch (code) {
 	CASE(Const);
 	CASE(Proj);
-	CASE(Filter);
 	CASE(Alloc);
 	CASE(Free);
 	CASE(SymConst);
@@ -6420,13 +6413,13 @@ int identities_cmp(const void *elt, const void *key)
 	    (get_irn_mode(a) != get_irn_mode(b))) return 1;
 
 	/* compare if a's in and b's in are of equal length */
-	irn_arity_a = get_irn_intra_arity(a);
-	if (irn_arity_a != get_irn_intra_arity(b))
+	irn_arity_a = get_irn_arity(a);
+	if (irn_arity_a != get_irn_arity(b))
 		return 1;
 
 	if (get_irn_pinned(a) == op_pin_state_pinned) {
 		/* for pinned nodes, the block inputs must be equal */
-		if (get_irn_intra_n(a, -1) != get_irn_intra_n(b, -1))
+		if (get_irn_n(a, -1) != get_irn_n(b, -1))
 			return 1;
 	} else if (! get_opt_global_cse()) {
 		/* for block-local CSE both nodes must be in the same MacroBlock */
@@ -6436,8 +6429,8 @@ int identities_cmp(const void *elt, const void *key)
 
 	/* compare a->in[0..ins] with b->in[0..ins] */
 	for (i = 0; i < irn_arity_a; ++i) {
-		ir_node *pred_a = get_irn_intra_n(a, i);
-		ir_node *pred_b = get_irn_intra_n(b, i);
+		ir_node *pred_a = get_irn_n(a, i);
+		ir_node *pred_b = get_irn_n(b, i);
 		if (pred_a != pred_b) {
 			/* if both predecessors are CSE neutral they might be different */
 			if (!is_irn_cse_neutral(pred_a) || !is_irn_cse_neutral(pred_b))

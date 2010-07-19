@@ -28,7 +28,6 @@
 #include "irprog.h"
 #include "irop_t.h"
 #include "irgraph_t.h"
-#include "ircgcons.h"
 #include "irvrfy_t.h"
 #include "irgwalk.h"
 #include "irdump.h"
@@ -768,46 +767,6 @@ static int verify_node_Proj_Tuple(ir_node *n, ir_node *p)
 }
 
 /**
- * verify a Proj(CallBegin) node
- */
-static int verify_node_Proj_CallBegin(ir_node *n, ir_node *p)
-{
-	(void) n;
-	(void) p;
-	return 1;
-}
-
-/**
- * verify a Proj(EndReg) node
- */
-static int verify_node_Proj_EndReg(ir_node *n, ir_node *p)
-{
-	(void) n;
-	(void) p;
-#ifdef INTERPROCEDURAL_VIEW
-	ASSERT_AND_RET(
-		(get_irp_ip_view_state() != ip_view_no),
-		"EndReg may only appear if ip view is constructed.", 0);
-#endif
-	return 1;
-}
-
-/**
- * verify a Proj(EndExcept) node
- */
-static int verify_node_Proj_EndExcept(ir_node *n, ir_node *p)
-{
-	(void) n;
-	(void) p;
-#ifdef INTERPROCEDURAL_VIEW
-	ASSERT_AND_RET(
-		(get_irp_ip_view_state() != ip_view_no),
-		"EndExcept may only appear if ip view is constructed.", 0);
-#endif
-	return 1;
-}
-
-/**
  * verify a Proj(CopyB) node
  */
 static int verify_node_Proj_CopyB(ir_node *n, ir_node *p)
@@ -984,25 +943,6 @@ static int verify_node_IJmp(ir_node *n, ir_graph *irg)
 	ASSERT_AND_RET(
 		/* IJmp: BB x ref --> X */
 		mymode == mode_X && mode_is_reference(op1mode), "IJmp node", 0
-	);
-	return 1;
-}
-
-/**
- * verify a Break node
- */
-static int verify_node_Break(ir_node *n, ir_graph *irg)
-{
-	ir_mode *mymode = get_irn_mode(n);
-	(void) irg;
-
-#ifdef INTERPROCEDURAL_VIEW
-	ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
-		"Break may only appear if ip view is constructed.", 0);
-#endif
-	ASSERT_AND_RET(
-		/* Jmp: BB --> X */
-		mymode == mode_X, "Break node", 0
 	);
 	return 1;
 }
@@ -1701,21 +1641,6 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg)
 }
 
 /**
- * verify a Filter node
- */
-static int verify_node_Filter(ir_node *n, ir_graph *irg)
-{
-	(void) n;
-	(void) irg;
-#ifdef INTERPROCEDURAL_VIEW
-	ASSERT_AND_RET((get_irp_ip_view_state() != ip_view_no),
-		"Filter may only appear if ip view is constructed.", 0);
-#endif
-	/* We should further do tests as for Proj and Phi. */
-	return 1;
-}
-
-/**
  * verify a Load node
  */
 static int verify_node_Load(ir_node *n, ir_graph *irg)
@@ -2320,7 +2245,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Start);
 	CASE(Jmp);
 	CASE(IJmp);
-	CASE(Break);
 	CASE(Cond);
 	CASE(Return);
 	CASE(Raise);
@@ -2351,7 +2275,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Conv);
 	CASE(Cast);
 	CASE(Phi);
-	CASE(Filter);
 	CASE(Load);
 	CASE(Store);
 	CASE(Alloc);
@@ -2387,9 +2310,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Alloc);
 	CASE(Proj);
 	CASE(Tuple);
-	CASE(CallBegin);
-	CASE(EndReg);
-	CASE(EndExcept);
 	CASE(CopyB);
 	CASE(Bound);
 	default:

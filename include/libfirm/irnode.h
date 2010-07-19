@@ -81,8 +81,6 @@ FIRM_API int is_ir_node (const void *thing);
  * @param node   the IR-node
  */
 FIRM_API int get_irn_arity      (const ir_node *node);
-FIRM_API int get_irn_intra_arity(const ir_node *node);
-FIRM_API int get_irn_inter_arity(const ir_node *node);
 
 /** Replaces the old in array by a new one that will contain the ins given in
    the parameters.  Conserves the block predecessor.  It copies the array passed.
@@ -102,7 +100,6 @@ FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *in[]);
 /**
  * Get the n-th predecessor of a node.
  * This function removes Id predecessors.
- * This function automatically handles intra- and interprocedural views.
  */
 FIRM_API ir_node *get_irn_n(const ir_node *node, int n);
 
@@ -149,18 +146,6 @@ FIRM_API ir_node *get_irn_dep(const ir_node *node, int pos);
  * @param dep  The dependency target.
  */
 FIRM_API void set_irn_dep(ir_node *node, int pos, ir_node *dep);
-
-
-/**
- * Get the n-th predecessor of a node in intraprocedural view.
- * Can be used always if it's know that node is not a split one.
- */
-FIRM_API ir_node *get_irn_intra_n(const ir_node *node, int n);
-
-/**
- * Get the n-th predecessor of a node in interprocedural view.
- */
-FIRM_API ir_node *get_irn_inter_n(const ir_node *node, int n);
 
 /** Replace the n-th predecessor of a node with a new one. */
 FIRM_API void set_irn_n(ir_node *node, int n, ir_node *in);
@@ -368,23 +353,6 @@ FIRM_API int is_Block_dead(const ir_node *block);
 /* For this current_ir_graph must be set. */
 FIRM_API void mark_Block_block_visited(ir_node *node);
 FIRM_API int Block_block_visited(const ir_node *node);
-
-#ifdef INTERPROCEDURAL_VIEW
-/* Set and remove interprocedural predecessors. If the interprocedural
- * predecessors are removed, the node has the same predecessors in
- * both views.
- * @@@ Maybe better:  arity is zero if no cg preds. */
-FIRM_API void set_Block_cg_cfgpred_arr(ir_node *node, int arity, ir_node *in[]);
-FIRM_API void set_Block_cg_cfgpred(ir_node *node, int pos, ir_node *pred);
-/* @@@ not supported */
-FIRM_API ir_node **get_Block_cg_cfgpred_arr(ir_node *node);
-/** Returns the number of interprocedural predecessors.  0 if none. */
-FIRM_API int get_Block_cg_n_cfgpreds(const ir_node *node);
-/** Return the interprocedural predecessor at position pos. */
-FIRM_API ir_node *get_Block_cg_cfgpred(const ir_node *node, int pos);
-/** Frees the memory allocated for interprocedural predecessors. */
-FIRM_API void remove_Block_cg_cfgpred_arr(ir_node *node);
-#endif
 
 /** Returns the extended basic block a block belongs to. */
 FIRM_API ir_extblk *get_Block_extbb(const ir_node *block);
@@ -637,15 +605,6 @@ FIRM_API void            set_Builtin_type(ir_node *node, ir_type *tp);
 /** Returns a human readable string for the ir_builtin_kind. */
 FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
 
-/** Retrieve the call address of a CallBegin. */
-FIRM_API ir_node  *get_CallBegin_ptr(const ir_node *node);
-/** Set the call address of a CallBegin. */
-FIRM_API void      set_CallBegin_ptr(ir_node *node, ir_node *ptr);
-/** Retrieve the original Call node of a CallBegin. */
-FIRM_API ir_node  *get_CallBegin_call(const ir_node *node);
-/** Set the original Call node of a CallBegin. */
-FIRM_API void      set_CallBegin_call(ir_node *node, ir_node *call);
-
 /* For unary and binary arithmetic operations the access to the
    operands can be factored out.  Left is the first, right the
    second arithmetic value  as listed in tech report 1999-44.
@@ -870,14 +829,13 @@ FIRM_API int is_Cast_upcast(ir_node *node);
 FIRM_API int is_Cast_downcast(ir_node *node);
 
 
-/** Returns true if n is a Phi or a Filter node in INTER-procedural view.
+/** Returns true if n is a Phi.
    Returns false if irg is in phase phase_building and the Phi has zero
    predecessors: it's a Phi0. */
 FIRM_API int       is_Phi(const ir_node *n);
 /** Returns true if irg in phase phase_building and the Phi has zero
    predecessors. It's a Phi0 then. */
 FIRM_API int       is_Phi0(const ir_node *n);
-/* These routines also work for Filter nodes in INTER-procedural view. */
 FIRM_API ir_node **get_Phi_preds_arr(ir_node *node);
 FIRM_API int       get_Phi_n_preds(const ir_node *node);
 FIRM_API ir_node  *get_Phi_pred(const ir_node *node, int pos);
@@ -890,17 +848,6 @@ FIRM_API ir_node  *get_Phi_next(const ir_node *phi);
  * Sets the next link of a block Phi list.
  */
 FIRM_API void      set_Phi_next(ir_node *phi, ir_node *next);
-
-FIRM_API ir_node  *get_Filter_pred(const ir_node *node);
-FIRM_API void      set_Filter_pred(ir_node *node, ir_node *pred);
-FIRM_API long      get_Filter_proj(const ir_node *node);
-FIRM_API void      set_Filter_proj(ir_node *node, long proj);
-/* set the interprocedural predecessors, ...d_arr uses current_ir_graph.
- * @@@ Maybe better:  arity is zero if no cg preds. */
-FIRM_API void     set_Filter_cg_pred_arr(ir_node *node, int arity, ir_node **in);
-FIRM_API void     set_Filter_cg_pred(ir_node * node, int pos, ir_node * pred);
-FIRM_API int      get_Filter_n_cg_preds(const ir_node *node);
-FIRM_API ir_node *get_Filter_cg_pred(const ir_node *node, int pos);
 
 /** Return true if parameter is a memory operation.
  *
@@ -1247,8 +1194,6 @@ FIRM_API int      is_Return(const ir_node *node);
 FIRM_API int      is_Call(const ir_node *node);
 /** Returns true if node is a Builtin node. */
 FIRM_API int      is_Builtin(const ir_node *node);
-/** Returns true if node is a CallBegin node. */
-FIRM_API int      is_CallBegin(const ir_node *node);
 /** Returns true if node is a Sel node. */
 FIRM_API int      is_Sel(const ir_node *node);
 /** Returns true if node is a Mul node. */
@@ -1299,17 +1244,14 @@ FIRM_API int      is_Borrow(const ir_node *node);
 FIRM_API int      is_Break(const ir_node *node);
 /** Returns true if a node is an instff node */
 FIRM_API int      is_InstOf(const ir_node *node);
-/** Returns true if node is a Proj node or a Filter node in INTRA-procedural view. */
+/** Returns true if node is a Proj node */
 FIRM_API int      is_Proj(const ir_node *node);
-/** Returns true if node is a Filter node. */
-FIRM_API int      is_Filter(const ir_node *node);
 
 /** Returns true if the operation manipulates control flow:
-   Start, End, Jmp, Cond, Return, Raise, Bad, CallBegin, EndReg, EndExcept */
+   Start, End, Jmp, Cond, Return, Raise, Bad, EndReg, EndExcept */
 FIRM_API int is_cfop(const ir_node *node);
 
-/** Returns true if the operation manipulates interprocedural control flow:
-    CallBegin, EndReg, EndExcept */
+/** Returns true if the operation manipulates control flow: EndReg, EndExcept */
 FIRM_API int is_ip_cfop(const ir_node *node);
 /** Returns true if the operation can change the control flow because
     of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,

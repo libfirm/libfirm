@@ -356,18 +356,6 @@ static inline void finish_scc(void)
 	finish_stack();
 }
 
-#ifdef INTERPROCEDURAL_VIEW
-static inline void init_ip_scc(struct obstack *obst)
-{
-	init_scc_common();
-	cg_walk(init_node, NULL, obst);
-
-#if EXPERIMENTAL_LOOP_TREE
-	cg_walk(link_to_reg_end, NULL, NULL);
-#endif
-}
-#endif
-
 /**
  * Check weather a given node represents the outer most Start
  * block. In intra-procedural view this is the start block of the
@@ -389,16 +377,6 @@ static int is_outermost_Start(ir_node *n)
 	return 0;
 }
 
-static inline int is_ip_Filter(ir_node *n)
-{
-#ifdef INTERPROCEDURAL_VIEW
-	return is_Filter(n) && get_interprocedural_view();
-#else
-	(void) n;
-	return 0;
-#endif
-}
-
 /* When to walk from nodes to blocks. Only for Control flow operations? */
 static inline int get_start_index(ir_node *n)
 {
@@ -414,10 +392,8 @@ static inline int get_start_index(ir_node *n)
 	   (single) test showed the loop tree is deeper. */
 	if (get_irn_op(n) == op_Phi  ||
 	    is_Block(n)              ||
-	    (is_ip_Filter(n))        || (
-	      get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
-	      get_irn_pinned(n)              == op_pin_state_floats
-	    ))
+	    (get_irg_pinned(get_irn_irg(n)) == op_pin_state_floats &&
+	      get_irn_pinned(n)              == op_pin_state_floats))
 		// Here we could test for backedge at -1 which is illegal
 		return 0;
 	else
@@ -448,8 +424,7 @@ static inline int is_possible_loop_head(ir_node *n)
 {
 	ir_op *op = get_irn_op(n);
 	return ((op == op_Block) ||
-	        (op == op_Phi) ||
-	        (is_ip_Filter(n)));
+	        (op == op_Phi));
 }
 
 /**
@@ -843,105 +818,6 @@ static void scc(ir_node *n)
 	}
 }
 
-#ifdef INTERPROCEDURAL_VIEW
-static void my_scc(ir_node *n)
-{
-	int i;
-	if (irn_visited_else_mark(n))
-		return;
-
-	/* Initialize the node */
-	set_irn_dfn(n, current_dfn);      /* Depth first number for this node */
-	set_irn_uplink(n, current_dfn);   /* ... is default uplink. */
-	set_irn_loop(n, NULL);
-	current_dfn ++;
-	push(n);
-
-	/* AS: get_start_index might return -1 for Control Flow Nodes, and thus a negative
-	   array index would be passed to is_backedge(). But CFG Nodes dont't have a backedge array,
-	   so is_backedge does not access array[-1] but correctly returns false! */
-
-	if (!is_outermost_Start(n)) {
-		int arity = get_irn_arity(n);
-
-		for (i = get_start_index(n); i < arity; i++) {
-			ir_node *m;
-			if (is_backedge(n, i)) continue;
-			m = get_irn_n(n, i); /* get_irn_ip_pred(n, i); */
-			/* if (!m || is_Unknown(m)) continue; */
-			my_scc(m);
-			if (irn_is_in_stack(m)) {
-				/* Uplink of m is smaller if n->m is a backedge.
-				   Propagate the uplink to mark the loop. */
-				if (get_irn_uplink(m) < get_irn_uplink(n))
-					set_irn_uplink(n, get_irn_uplink(m));
-			}
-		}
-	}
-
-	if (get_irn_dfn(n) == get_irn_uplink(n)) {
-		/* This condition holds for
-		   1) the node with the incoming backedge.
-		      That is: We found a loop!
-		   2) Straight line code, because no uplink has been propagated, so the
-		      uplink still is the same as the dfn.
-
-		   But n might not be a proper loop head for the analysis. Proper loop
-		   heads are Block and Phi nodes. find_tail searches the stack for
-		   Block's and Phi's and takes those nodes as loop heads for the current
-		   loop instead and marks the incoming edge as backedge. */
-
-		ir_node *tail = find_tail(n);
-		if (tail) {
-			/* We have a loop, that is no straight line code,
-			   because we found a loop head!
-			   Next actions: Open a new loop on the loop tree and
-			                 try to find inner loops */
-
-#if NO_LOOPS_WITHOUT_HEAD
-			/* This is an adaption of the algorithm from fiasco / optscc to
-			 * avoid loops without Block or Phi as first node.  This should
-			 * severely reduce the number of evaluations of nodes to detect
-			 * a fixpoint in the heap analysis.
-			 * Further it avoids loops without firm nodes that cause errors
-			 * in the heap analyses. */
-
-			ir_loop *l;
-			int close;
-			if ((get_loop_n_elements(current_loop) > 0) || (is_outermost_loop(current_loop))) {
-				l = new_loop();
-				close = 1;
-			} else {
-				l = current_loop;
-				close = 0;
-			}
-#else
-			ir_loop *l = new_loop();
-#endif
-
-			/* Remove the loop from the stack ... */
-			pop_scc_unmark_visit(n);
-
-			/* The current backedge has been marked, that is temporarily eliminated,
-			   by find tail. Start the scc algorithm
-			   anew on the subgraph that is left (the current loop without the backedge)
-			   in order to find more inner loops. */
-			my_scc(tail);
-
-			assert(irn_visited(n));
-#if NO_LOOPS_WITHOUT_HEAD
-			if (close)
-#endif
-				close_loop(l);
-		} else {
-			/* No loop head was found, that is we have straightline code.
-			   Pop all nodes from the stack to the current loop. */
-			pop_scc_to_loop(n);
-		}
-	}
-}
-#endif /* INTERPROCEDURAL_VIEW */
-
 /* Constructs backedge information for irg. In interprocedural view constructs
    backedges for all methods called by irg, too. */
 int construct_backedges(ir_graph *irg)
@@ -949,11 +825,6 @@ int construct_backedges(ir_graph *irg)
 	ir_graph *rem = current_ir_graph;
 	ir_loop *head_rem;
 	struct obstack temp;
-
-#ifdef INTERPROCEDURAL_VIEW
-	assert(!get_interprocedural_view() &&
-	       "not implemented, use construct_ip_backedges()");
-#endif
 
 	max_loop_depth = 0;
 	current_ir_graph   = irg;
@@ -982,172 +853,12 @@ int construct_backedges(ir_graph *irg)
 	return max_loop_depth;
 }
 
-
-#ifdef INTERPROCEDURAL_VIEW
-int construct_ip_backedges(void)
-{
-	ir_graph *rem = current_ir_graph;
-	int rem_ipv = get_interprocedural_view();
-	int i;
-	strcut obstack temp;
-
-	max_loop_depth = 0;
-	assert(get_irp_ip_view_state() == ip_view_valid);
-
-	outermost_ir_graph = get_irp_main_irg();
-
-	obstack_init(&temp);
-	init_ip_scc(&temp);
-
-	current_loop = NULL;
-	new_loop();  /* sets current_loop */
-	set_interprocedural_view(1);
-
-	inc_max_irg_visited();
-	for (i = 0; i < get_irp_n_irgs(); i++)
-		set_irg_visited(get_irp_irg(i), get_max_irg_visited());
-
-	/** We have to start the walk at the same nodes as cg_walk. **/
-	/* Walk starting at unreachable procedures. Only these
-	 * have End blocks visible in interprocedural view. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *sb;
-		current_ir_graph = get_irp_irg(i);
-
-		sb = get_irg_start_block(current_ir_graph);
-
-		if ((get_Block_n_cfgpreds(sb) > 1) ||
-		    (get_nodes_block(get_Block_cfgpred(sb, 0)) != sb))
-			continue;
-
-		scc(get_irg_end(current_ir_graph));
-	}
-
-	/* Check whether we walked all procedures: there could be procedures
-	   with cyclic calls but no call from the outside. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *sb;
-		current_ir_graph = get_irp_irg(i);
-
-		/* Test start block: if inner procedure end and end block are not
-		 * visible and therefore not marked. */
-		sb = get_irg_start_block(current_ir_graph);
-		if (get_irn_visited(sb) < get_irg_visited(current_ir_graph)) scc(sb);
-	}
-
-	/* Walk all endless loops in inner procedures.
-	 * We recognize an inner procedure if the End node is not visited. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *e;
-		current_ir_graph = get_irp_irg(i);
-
-		e = get_irg_end(current_ir_graph);
-		if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
-			int j;
-			/* Don't visit the End node. */
-			for (j = 0; j < get_End_n_keepalives(e); j++)
-				scc(get_End_keepalive(e, j));
-		}
-	}
-
-	set_irg_loop(outermost_ir_graph, current_loop);
-	set_irg_loopinfo_state(current_ir_graph, loopinfo_ip_consistent);
-	assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
-
-	obstack_free(&temp, NULL);
-	current_ir_graph = rem;
-	set_interprocedural_view(rem_ipv);
-	return max_loop_depth;
-}
-
-void my_construct_ip_backedges(void)
-{
-	ir_graph *rem = current_ir_graph;
-	int rem_ipv = get_interprocedural_view();
-	int i;
-
-	assert(get_irp_ip_view_state() == ip_view_valid);
-
-	outermost_ir_graph = get_irp_main_irg();
-
-	init_ip_scc();
-
-	current_loop = NULL;
-	new_loop();  /* sets current_loop */
-	set_interprocedural_view(1);
-
-	inc_max_irg_visited();
-	for (i = 0; i < get_irp_n_irgs(); i++)
-		set_irg_visited(get_irp_irg(i), get_max_irg_visited());
-
-	/** We have to start the walk at the same nodes as cg_walk. **/
-	/* Walk starting at unreachable procedures. Only these
-	 * have End blocks visible in interprocedural view. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *sb;
-		current_ir_graph = get_irp_irg(i);
-
-		sb = get_irg_start_block(current_ir_graph);
-
-		if ((get_Block_n_cfgpreds(sb) > 1) ||
-		    (get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
-
-		my_scc(get_irg_end(current_ir_graph));
-	}
-
-	/* Check whether we walked all procedures: there could be procedures
-	   with cyclic calls but no call from the outside. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *sb;
-		current_ir_graph = get_irp_irg(i);
-
-		/* Test start block: if inner procedure end and end block are not
-		 * visible and therefore not marked. */
-		sb = get_irg_start_block(current_ir_graph);
-		if (get_irn_visited(sb) < get_irg_visited(current_ir_graph))
-			scc(sb);
-	}
-
-	/* Walk all endless loops in inner procedures.
-	 * We recognize an inner procedure if the End node is not visited. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *e;
-		current_ir_graph = get_irp_irg(i);
-
-		e = get_irg_end(current_ir_graph);
-		if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
-			int j;
-			/* Don't visit the End node. */
-			for (j = 0; j < get_End_n_keepalives(e); j++) scc(get_End_keepalive(e, j));
-		}
-	}
-
-	set_irg_loop(outermost_ir_graph, current_loop);
-	set_irg_loopinfo_state(current_ir_graph, loopinfo_ip_consistent);
-	assert(get_irg_loop(outermost_ir_graph)->kind == k_ir_loop);
-
-	current_ir_graph = rem;
-	set_interprocedural_view(rem_ipv);
-}
-#endif
-
 static void reset_backedges(ir_node *n)
 {
 	if (is_possible_loop_head(n)) {
-#ifdef INTERPROCEDURAL_VIEW
-		int rem = get_interprocedural_view();
-
-		set_interprocedural_view(1);
 		clear_backedges(n);
-		set_interprocedural_view(1);
-		clear_backedges(n);
-		set_interprocedural_view(rem);
-#else
-		clear_backedges(n);
-#endif
 	}
 }
-
 
 /*
 static void loop_reset_backedges(ir_loop *l)
@@ -1169,7 +880,6 @@ static void loop_reset_node(ir_node *n, void *env)
 	reset_backedges(n);
 }
 
-
 /** Removes all loop information.
     Resets all backedges */
 void free_loop_information(ir_graph *irg)
@@ -1185,20 +895,12 @@ void free_loop_information(ir_graph *irg)
 	/* We cannot free the loop nodes, they are on the obstack. */
 }
 
-
 void free_all_loop_information(void)
 {
 	int i;
-#ifdef INTERPROCEDURAL_VIEW
-	int rem = get_interprocedural_view();
-	set_interprocedural_view(1);  /* To visit all filter nodes */
-#endif
 	for (i = 0; i < get_irp_n_irgs(); i++) {
 		free_loop_information(get_irp_irg(i));
 	}
-#ifdef INTERPROCEDURAL_VIEW
-	set_interprocedural_view(rem);
-#endif
 }
 
 /* ------------------------------------------------------------------- */

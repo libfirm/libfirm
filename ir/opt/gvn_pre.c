@@ -373,11 +373,11 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		return node;
 	}
 
-	arity = get_irn_intra_arity(node);
+	arity = get_irn_arity(node);
 
 	/* check if the node has at least one Phi predecessor */
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred    = get_irn_intra_n(node, i);
+		ir_node *pred    = get_irn_n(node, i);
 		ir_node *leader  = lookup(pred);
 		ir_node *trans;
 
@@ -406,7 +406,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 
 	set_nodes_block(nn, get_nodes_block(node));
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred    = get_irn_intra_n(node, i);
+		ir_node *pred    = get_irn_n(node, i);
 		ir_node *leader  = lookup(pred);
 		ir_node *trans;
 
@@ -541,7 +541,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 	pre_env    *env = ctx;
 	ir_node    *value, *expr, *idom, *first_s, *worklist;
 	block_info *curr_info, *idom_info;
-	int        pos, arity = get_irn_intra_arity(block);
+	int        pos, arity = get_irn_arity(block);
 	int        all_same, by_some, updated;
 	ir_valueset_iterator_t iter;
 
@@ -763,7 +763,7 @@ static void eliminate_nodes(elim_pair *pairs)
 			int i;
 			ir_node *res = NULL;
 
-			for (i = get_irn_intra_arity(p->new_node) - 1; i >= 0; --i) {
+			for (i = get_irn_arity(p->new_node) - 1; i >= 0; --i) {
 				ir_node *pred = get_irn_n(p->new_node, i);
 
 				if (pred != p->old_node) {

@@ -580,9 +580,6 @@ static void collect_node(ir_node *node, void *env)
 static ir_node **construct_block_lists(ir_graph *irg)
 {
 	int      i;
-#ifdef INTERPROCEDURAL_VIEW
-	int      rem_view  = get_interprocedural_view();
-#endif
 	int      walk_flag = ir_resources_reserved(irg) & IR_RESOURCE_IRN_VISITED;
 	ir_graph *rem      = current_ir_graph;
 
@@ -596,20 +593,6 @@ static ir_node **construct_block_lists(ir_graph *irg)
 		ird_set_irg_link(get_irp_irg(i), NULL);
 
 	ird_walk_graph(current_ir_graph, clear_link, collect_node, current_ir_graph);
-
-#ifdef INTERPROCEDURAL_VIEW
-	/* Collect also EndReg and EndExcept. We do not want to change the walker. */
-	set_interprocedural_view(0);
-#endif
-
-	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-	irg_walk(get_irg_end_reg(current_ir_graph), clear_link, collect_node, current_ir_graph);
-	set_irg_visited(current_ir_graph, get_irg_visited(current_ir_graph)-1);
-	irg_walk(get_irg_end_except(current_ir_graph), clear_link, collect_node, current_ir_graph);
-
-#ifdef INTERPROCEDURAL_VIEW
-	set_interprocedural_view(rem_view);
-#endif
 
 	if (walk_flag) {
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
@@ -696,15 +679,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		}
 		break;
 
-#ifdef INTERPROCEDURAL_VIEW
-	case iro_Filter:
-		if (!get_interprocedural_view())
-			fprintf(F, "Proj'");
-		else
-			goto default_case;
-		break;
-#endif
-
 	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(n);
 
@@ -716,29 +690,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 			goto default_case;
 	} break;
 
-#ifdef INTERPROCEDURAL_VIEW
-	case iro_Start:
-	case iro_End:
-	case iro_EndExcept:
-	case iro_EndReg:
-		if (get_interprocedural_view()) {
-			fprintf(F, "%s %s", get_irn_opname(n), get_ent_dump_name(get_irg_entity(get_irn_irg(n))));
-			break;
-		} else
-			goto default_case;
-#endif
-
-	case iro_CallBegin: {
-		ir_node *addr = get_CallBegin_ptr(n);
-		ir_entity *ent = NULL;
-		if (is_Sel(addr))
-			ent = get_Sel_entity(addr);
-		else if (is_Global(addr))
-			ent = get_Global_entity(addr);
-		fprintf(F, "%s", get_irn_opname(n));
-		if (ent) fprintf(F, " %s", get_entity_name(ent));
-		break;
-	}
 	case iro_Load:
 		if (get_Load_align(n) == align_non_aligned)
 			fprintf(F, "ua");
@@ -1035,9 +986,6 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 	case iro_Proj:
 		pred    = get_Proj_pred(n);
 		proj_nr = get_Proj_proj(n);
-#ifdef INTERPROCEDURAL_VIEW
-handle_lut:
-#endif
 		code    = get_irn_opcode(pred);
 
 		if (code == iro_Cmp)
@@ -1071,17 +1019,6 @@ handle_lut:
 			}
 		}
 		break;
-	case iro_Filter:
-		proj_nr = get_Filter_proj(n);
-#ifdef INTERPROCEDURAL_VIEW
-		if (! get_interprocedural_view()) {
-			/* it's a Proj' */
-			pred    = get_Filter_pred(n);
-			goto handle_lut;
-		} else
-#endif
-			fprintf(F, "%ld ", proj_nr);
-		break;
 	case iro_Sel:
 		fprintf(F, "%s ", get_ent_dump_name(get_Sel_entity(n)));
 		break;
@@ -1107,14 +1044,6 @@ static void dump_node_ana_vals(FILE *F, ir_node *n)
 {
 	(void) F;
 	(void) n;
-#ifdef INTERPROCEDURAL_VIEW
-	fprintf(F, " %lf*(%2.0lf + %2.0lf) = %2.0lf ",
-		get_irn_exec_freq(n),
-		get_irg_method_execution_frequency(get_irn_irg(n)),
-		pow(5, get_irg_recursion_depth(get_irn_irg(n))),
-		get_irn_exec_freq(n) * (get_irg_method_execution_frequency(get_irn_irg(n)) + pow(5, get_irg_recursion_depth(get_irn_irg(n))))
-	);
-#endif
 	return;
 }
 
@@ -1189,8 +1118,6 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 
 	switch (get_irn_opcode(n)) {
 	case iro_Start:
-	case iro_EndReg:
-	case iro_EndExcept:
 	case iro_End:
 		print_vcg_color(F, ird_color_anchor);
 		break;
@@ -1547,11 +1474,6 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)
 	for (i = 0; i < num; i++) {
 		ir_node *pred = get_irn_n(n, i);
 		assert(pred);
-
-#ifdef INTERPROCEDURAL_VIEW
-		if ((get_interprocedural_view() && get_irn_visited(pred) < get_irn_visited(n)))
-			continue; /* pred not dumped */
-#endif
 
 		if ((flags & ir_dump_flag_back_edges) && is_backedge(n, i)) {
 			fprintf(F, "backedge: {sourcename: \"");
@@ -2497,26 +2419,12 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 
 void dump_cfg(FILE *F, ir_graph *irg)
 {
-#ifdef INTERPROCEDURAL_VIEW
-	int ipv = get_interprocedural_view();
-#endif
-
 	dump_vcg_header(F, get_irg_dump_name(irg), NULL, NULL);
-
-#ifdef INTERPROCEDURAL_VIEW
-	if (ipv) {
-		printf("Warning: dumping cfg not in interprocedural view!\n");
-		set_interprocedural_view(0);
-	}
-#endif
 
 	/* walk over the blocks in the graph */
 	irg_block_walk(get_irg_end(irg), dump_block_to_cfg, NULL, F);
 	dump_node(F, get_irg_bad(irg));
 
-#ifdef INTERPROCEDURAL_VIEW
-	set_interprocedural_view(ipv);
-#endif
 	dump_vcg_footer(F);
 }
 

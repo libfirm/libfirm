@@ -75,7 +75,6 @@
 #include "ident.h"
 #include "interval_analysis.h"
 #include "irarch.h"
-#include "ircgcons.h"
 #include "ircgopt.h"
 #include "irconsconfirm.h"
 #include "ircons.h"

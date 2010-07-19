@@ -26,9 +26,7 @@
 #include "config.h"
 
 #include <string.h>
-#ifdef HAVE_STDDEF_H
-# include <stddef.h>
-#endif
+#include <stddef.h>
 
 #include "xmalloc.h"
 #include "ircons_t.h"
@@ -74,30 +72,6 @@ void set_current_ir_graph(ir_graph *graph)
 {
 	current_ir_graph = graph;
 }
-
-#ifdef INTERPROCEDURAL_VIEW
-int firm_interprocedural_view = 0;
-
-int (get_interprocedural_view)(void)
-{
-	return _get_interprocedural_view();
-}
-
-void (set_interprocedural_view)(int state)
-{
-	firm_interprocedural_view = state;
-
-	/* set function vectors for faster access */
-	if (state) {
-		_get_irn_arity = _get_irn_inter_arity;
-		_get_irn_n     = _get_irn_inter_n;
-	}
-	else {
-		_get_irn_arity = _get_irn_intra_arity;
-		_get_irn_n     = _get_irn_intra_n;
-	}
-}
-#endif
 
 /** contains the suffix for frame type names */
 static ident *frame_type_suffix = NULL;
@@ -251,8 +225,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	set_cur_block(get_irg_end_block(res));
 	end               = new_End();
 	set_irg_end       (res, end);
-	set_irg_end_reg   (res, end);
-	set_irg_end_except(res, end);
 
 	start_block = new_immBlock();
 	set_cur_block(start_block);
@@ -346,8 +318,6 @@ ir_graph *new_const_code_irg(void)
 	set_cur_block(end_block);
 	end = new_End();
 	set_irg_end       (res, end);
-	set_irg_end_reg   (res, end);
-	set_irg_end_except(res, end);
 	mature_immBlock(end_block);
 
 	/* -- The start block -- */
@@ -473,8 +443,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	/* -- The end block -- */
 	set_irg_end_block (res, get_new_node(get_irg_end_block(irg)));
 	set_irg_end       (res, get_new_node(get_irg_end(irg)));
-	set_irg_end_reg   (res, get_new_node(get_irg_end_reg(irg)));
-	set_irg_end_except(res, get_new_node(get_irg_end_except(irg)));
 
 	/* -- The start block -- */
 	set_irg_start_block(res, get_new_node(get_irg_start_block(irg)));
@@ -599,27 +567,6 @@ ir_node *(get_irg_end)(const ir_graph *irg)
 void (set_irg_end)(ir_graph *irg, ir_node *node)
 {
 	_set_irg_end(irg, node);
-}
-
-ir_node *(get_irg_end_reg)(const ir_graph *irg)
-{
-	return _get_irg_end_reg(irg);
-}
-
-void (set_irg_end_reg)(ir_graph *irg, ir_node *node)
-{
-	_set_irg_end_reg(irg, node);
-}
-
-ir_node *(get_irg_end_except)(const ir_graph *irg)
-{
-	return _get_irg_end_except(irg);
-}
-
-void (set_irg_end_except)(ir_graph *irg, ir_node *node)
-{
-	assert(get_irn_op(node) == op_EndExcept || is_End(node));
-	_set_irg_end_except(irg, node);
 }
 
 ir_node *(get_irg_initial_exec)(const ir_graph *irg)

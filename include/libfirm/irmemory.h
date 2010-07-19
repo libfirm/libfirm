@@ -182,8 +182,7 @@ FIRM_API void set_irg_entity_usage_state(ir_graph *irg,
 /**
  * Assure that the entity usage flags have been computed for the given graph.
  *
- * This is an intraprocedural analysis that computes the entity usage state
- * for all local variables.
+ * This analysis computes the entity usage state for all local variables.
  *
  * Note that this is a conservative estimation that by no Firm transformation
  * can be invalidated, so it's only recomputed if manually triggered by calling

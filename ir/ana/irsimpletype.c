@@ -223,15 +223,11 @@ static ir_type *find_type_for_node(ir_node *n)
 	case iro_Tuple:
 	case iro_Bad:
 	case iro_NoMem:
-	case iro_Break:
-	case iro_CallBegin:
-	case iro_EndReg:
-	case iro_EndExcept:
 		break;
 
 		/* compute the type */
 	case iro_Const:
-	     	tp = get_Const_type(n);
+		tp = get_Const_type(n);
 		break;
 	case iro_SymConst:
 		tp = get_SymConst_value_type(n);
@@ -312,9 +308,6 @@ static ir_type *find_type_for_node(ir_node *n)
 		break;
 	case iro_Unknown:
 		tp = firm_unknown_type;
-		break;
-	case iro_Filter:
-		assert(0 && "Filter not implemented");
 		break;
 
 		/* catch special cases with fallthrough to binop/unop cases in default. */

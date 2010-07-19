@@ -36,8 +36,6 @@
  *     program.  It is not the base class of
  *     all classes in a class hierarchy (as, e.g., "object" in java).
  *   - A degenerated graph that contains constant expressions.
- *   - interprocedural outs state.
- *   - a flag indicating validity of the interprocedural representation.
  *   - the output file name
  */
 #ifndef FIRM_IR_IRPROG_H

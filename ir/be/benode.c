@@ -129,7 +129,6 @@ static const ir_op_ops be_node_op_ops;
 #define L   irop_flag_labeled
 #define C   irop_flag_commutative
 #define X   irop_flag_cfopcode
-#define I   irop_flag_ip_cfopcode
 #define F   irop_flag_fragile
 #define Y   irop_flag_forking
 #define H   irop_flag_highlevel

@@ -74,8 +74,7 @@ FIRM_API void irg_walk_core(ir_node *node, irg_walk_func *pre,
  *
  * Like irg_walk(), but walks over all reachable nodes in the ir
  * graph, starting at the end operation. During the walk current_ir_graph
- * is set to irg.  Does not use the link field.  If interprocedural_view
- * is set, visits all reachable irgs.
+ * is set to irg.  Does not use the link field.
  */
 FIRM_API void irg_walk_graph(ir_graph *irg, irg_walk_func *pre,
                              irg_walk_func *post, void *env);
@@ -114,7 +113,6 @@ FIRM_API void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre,
  * graph, starting at the end operation. During the walk current_ir_graph
  * is set to irg.  Does not use the link field.
  * This walker also follows additional dependency egdes.
- * interprocedural_view is not yet supported.
  */
 FIRM_API void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
                                        irg_walk_func *post, void *env);
@@ -128,24 +126,9 @@ FIRM_API void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre,
  *
  * This function executes irg_walk(end, pre, post, env) for all irgraphs in irprog.
  * Sets current_ir_graph properly for each walk.  Conserves current
- * current_ir_graph.  In interprocedural view nodes can be visited several
- * times.  Does not use the link field.
+ * current_ir_graph. Does not use the link field.
  */
 FIRM_API void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
-
-#ifdef INTERPROCEDURAL_VIEW
-/**
- * Walks all irgs in interprocedural view.
- *
- * @param pre   walker function, executed before the predecessor of a node are visited
- * @param post  walker function, executed after the predecessor of a node are visited
- * @param env   environment, passed to pre and post
- *
- * This function walks all irgs in interprocedural view.
- * Visits each node only once.  Sets current_ir_graph properly. Does not use the link field.
- */
-FIRM_API void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
-#endif
 
 /** Walks only over Block nodes in the graph.
  *
@@ -199,7 +182,6 @@ FIRM_API void walk_const_code(irg_walk_func *pre, irg_walk_func *post,
  * flag. It marks the node as visited before executing pre.
  * The void *env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
- * Walks only intraprocedural, even in interprocedural view.
  *
  * @param irg   the irg graph
  * @param pre   walker function, executed before the predecessor of a node are visited
@@ -219,7 +201,6 @@ FIRM_API void irg_walk_blkwise_graph(ir_graph *irg, irg_walk_func *pre,
  * flag. It marks the node as visited before executing pre.
  * The void *env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
- * Walks only intraprocedural, even in interprocedural view.
  * This walker also follows dependency edges.
  *
  * @param irg   the irg graph
@@ -242,7 +223,6 @@ FIRM_API void irg_walk_in_or_dep_blkwise_graph(ir_graph *irg,
  * flag. It marks the node as visited before executing pre.
  * The void *env can be used to pass status information between the
  * pre and post functions.  Does not use the link fields.
- * Walks only intraprocedural, even in interprocedural view.
  *
  * @param irg   the irg graph
  * @param pre   walker function, executed before the predecessor of a node are visited

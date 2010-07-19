@@ -55,28 +55,27 @@ typedef enum {
 
 /** The irop flags */
 typedef enum {
-	irop_flag_none         = 0x00000000, /**< Nothing. */
-	irop_flag_labeled      = 0x00000001, /**< If set, output edge labels on in-edges in vcg graph. */
-	irop_flag_commutative  = 0x00000002, /**< This operation is commutative. */
-	irop_flag_cfopcode     = 0x00000004, /**< This operation is a control flow operation. */
-	irop_flag_ip_cfopcode  = 0x00000008, /**< This operation manipulates the interprocedural control flow. */
-	irop_flag_fragile      = 0x00000010, /**< Set if the operation can change the control flow because
-	                                          of an exception. */
-	irop_flag_forking      = 0x00000020, /**< Forking control flow at this operation. */
-	irop_flag_highlevel    = 0x00000040, /**< This operation is a pure high-level one and can be
-	                                          skipped in low-level optimizations. */
-	irop_flag_constlike    = 0x00000080, /**< This operation has no arguments and is some
-	                                          kind of a constant. */
-	irop_flag_always_opt   = 0x00000100, /**< This operation must always be optimized .*/
-	irop_flag_keep         = 0x00000200, /**< This operation can be kept in End's keep-alive list. */
-	irop_flag_start_block  = 0x00000400, /**< This operation is always placed in the Start block. */
-	irop_flag_uses_memory  = 0x00000800, /**< This operation has a memory input and may change the memory state. */
-	irop_flag_dump_noblock = 0x00001000, /**< node should be dumped outside any blocks */
-	irop_flag_dump_noinput = 0x00002000, /**< node is a placeholder for "no input" */
-	irop_flag_machine      = 0x00010000, /**< This operation is a machine operation. */
-	irop_flag_machine_op   = 0x00020000, /**< This operation is a machine operand. */
-	irop_flag_cse_neutral  = 0x00040000, /**< This operation is CSE neutral to its users. */
-	irop_flag_user         = 0x00080000  /**< This flag and all higher ones are free for machine user. */
+	irop_flag_none         = 0, /**< Nothing. */
+	irop_flag_labeled      = 1U << 0, /**< If set, output edge labels on in-edges in vcg graph. */
+	irop_flag_commutative  = 1U << 1, /**< This operation is commutative. */
+	irop_flag_cfopcode     = 1U << 2, /**< This operation is a control flow operation. */
+	irop_flag_fragile      = 1U << 3, /**< Set if the operation can change the control flow because
+	                               of an exception. */
+	irop_flag_forking      = 1U << 4, /**< Forking control flow at this operation. */
+	irop_flag_highlevel    = 1U << 5, /**< This operation is a pure high-level one and can be
+	                                      skipped in low-level optimizations. */
+	irop_flag_constlike    = 1U << 6, /**< This operation has no arguments and is some
+	                                       kind of a constant. */
+	irop_flag_always_opt   = 1U << 7, /**< This operation must always be optimized .*/
+	irop_flag_keep         = 1U << 8, /**< This operation can be kept in End's keep-alive list. */
+	irop_flag_start_block  = 1U << 9, /**< This operation is always placed in the Start block. */
+	irop_flag_uses_memory  = 1U << 10, /**< This operation has a memory input and may change the memory state. */
+	irop_flag_dump_noblock = 1U << 11, /**< node should be dumped outside any blocks */
+	irop_flag_dump_noinput = 1U << 12, /**< node is a placeholder for "no input" */
+	irop_flag_machine      = 1U << 13, /**< This operation is a machine operation. */
+	irop_flag_machine_op   = 1U << 14, /**< This operation is a machine operand. */
+	irop_flag_cse_neutral  = 1U << 15, /**< This operation is CSE neutral to its users. */
+	irop_flag_user         = 1U << 16, /**< This flag and all higher ones are free for machine user. */
 } irop_flags;
 
 /** The opcodes of the libFirm predefined operations. */
@@ -93,7 +92,7 @@ typedef enum {
 	iro_Phi,
 	iro_Load, iro_Store, iro_Alloc, iro_Free, iro_Sync,
 	iro_Proj, iro_Tuple, iro_Id, iro_Bad, iro_Confirm,
-	iro_Unknown, iro_Filter, iro_Break, iro_CallBegin, iro_EndReg, iro_EndExcept,
+	iro_Unknown,
 	iro_NoMem, iro_Mux, iro_CopyB,
 	iro_InstOf, iro_Raise, iro_Bound,
 	iro_Pin,
@@ -136,10 +135,8 @@ FIRM_API ir_op *op_Bad;
 FIRM_API ir_op *op_Block;
 FIRM_API ir_op *op_Borrow;
 FIRM_API ir_op *op_Bound;
-FIRM_API ir_op *op_Break;
 FIRM_API ir_op *op_Builtin;
 FIRM_API ir_op *op_Call;
-FIRM_API ir_op *op_CallBegin;
 FIRM_API ir_op *op_Carry;
 FIRM_API ir_op *op_Cast;
 FIRM_API ir_op *op_Cmp;
@@ -152,10 +149,7 @@ FIRM_API ir_op *op_Div;
 FIRM_API ir_op *op_DivMod;
 FIRM_API ir_op *op_Dummy;
 FIRM_API ir_op *op_End;
-FIRM_API ir_op *op_EndExcept;
-FIRM_API ir_op *op_EndReg;
 FIRM_API ir_op *op_Eor;
-FIRM_API ir_op *op_Filter;
 FIRM_API ir_op *op_Free;
 FIRM_API ir_op *op_Id;
 FIRM_API ir_op *op_IJmp;
@@ -201,7 +195,6 @@ FIRM_API ir_op *get_op_Borrow    (void);
 FIRM_API ir_op *get_op_Bound     (void);
 FIRM_API ir_op *get_op_Break     (void);
 FIRM_API ir_op *get_op_Builtin   (void);
-FIRM_API ir_op *get_op_CallBegin (void);
 FIRM_API ir_op *get_op_Call      (void);
 FIRM_API ir_op *get_op_Carry     (void);
 FIRM_API ir_op *get_op_Cast      (void);
@@ -214,8 +207,6 @@ FIRM_API ir_op *get_op_CopyB     (void);
 FIRM_API ir_op *get_op_DivMod    (void);
 FIRM_API ir_op *get_op_Div       (void);
 FIRM_API ir_op *get_op_Dummy     (void);
-FIRM_API ir_op *get_op_EndExcept (void);
-FIRM_API ir_op *get_op_EndReg    (void);
 FIRM_API ir_op *get_op_End       (void);
 FIRM_API ir_op *get_op_Eor       (void);
 FIRM_API ir_op *get_op_Filter    (void);

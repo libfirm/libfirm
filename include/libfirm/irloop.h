@@ -27,7 +27,7 @@
  *  Computes backedges in the control and data flow.
  *
  * @note
- *  Only Block and Phi/Filter nodes can have incoming backedges.
+ *  Only Block and Phi nodes can have incoming backedges.
  *  Constructs loops data structure: indicates loop nesting.
  */
 #ifndef FIRM_ANA_IRLOOP_H
@@ -41,20 +41,13 @@
 /*
  * Backedge information.
  *
- * Predecessors of Block, Phi and interprocedural Filter nodes can
- * have  backedges.  If loop information is computed, this
- * information is computed, too.
+ * Predecessors of Block and Phi nodes can have  backedges.
+ * If loop information is computed, this information is computed, too.
  * The backedge information can only be used if the graph is not in
  * phase phase_building.
  */
 /* ------------------------------------------------------------------- */
 
-#ifdef INTERPROCEDURAL_VIEW
-/** Returns true if the predecessor pos is a backedge in the interprocedural view. */
-FIRM_API int is_inter_backedge(ir_node *n, int pos);
-/** Returns true if the predecessor pos is a backedge in the intraprocedural view. */
-FIRM_API int is_intra_backedge(ir_node *n, int pos);
-#endif
 /** Returns non-zero if the predecessor pos is a backedge. */
 FIRM_API int is_backedge(ir_node *n, int pos);
 /** Marks edge pos as a backedge. */
@@ -129,7 +122,7 @@ FIRM_API void *get_loop_link(const ir_loop *loop);
 /* Constructing and destructing the loop/backedge information.         */
 /* ------------------------------------------------------------------- */
 
-/** Constructs backedge information and loop tree for a graph in intraprocedural view.
+/** Constructs backedge information and loop tree for a graph.
  *
  *  The algorithm views the program representation as a pure graph.
  *  It assumes that only block and phi nodes may be loop headers.
@@ -150,22 +143,6 @@ FIRM_API void *get_loop_link(const ir_loop *loop);
  *  backedge!
  */
 FIRM_API int construct_backedges(ir_graph *irg);
-
-#ifdef INTERPROCEDURAL_VIEW
-/** Constructs backedges for all irgs in interprocedural view.
- *
- *  @see As construct_backedges(), but for interprocedural view.
- *
- *  @remark
- *  All loops in the graph will be marked as such, not only
- *  realizeable loops and recursions in the program.  E.g., if the
- *  same funcion is called twice, there is a loop between the first
- *  function return and the second call.
- *
- *  @returns Maximal depth of loop tree.
- */
-FIRM_API int construct_ip_backedges(void);
-#endif
 
 /**
  * Construct Intra-procedural control flow loop tree for a IR-graph.
@@ -191,15 +168,6 @@ FIRM_API int construct_cf_backedges(ir_graph *irg);
  * @param irg  the graph
  */
 FIRM_API void assure_cf_loop(ir_graph *irg);
-
-#ifdef INTERPROCEDURAL_VIEW
-/**
- * Construct Inter-procedural control flow loop tree.
- *
- * @see construct_cf_backedges() and construct_ip_backedges().
- */
-FIRM_API int construct_ip_cf_backedges(void);
-#endif
 
 /**
  * Removes all loop information.

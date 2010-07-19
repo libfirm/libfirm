@@ -409,9 +409,7 @@
  *    is mature.  As other constructors calls optimization and vrfy for the
  *    block.  If one of the predecessors is Unknown (as it has to be filled in
  *    later) optimizations are skipped.  This is necessary to
- *    construct Blocks in loops.  Leaving Unknown in the Block after finishing
- *    the construction may have strange effects, especially for interprocedural
- *    representation and analysis.
+ *    construct Blocks in loops.
  *
  *
  *    CONTROL FLOW OPERATIONS
@@ -831,9 +829,7 @@
  *    of in's of current_block.  This is not checked by the library!
  *    If one of the predecessors is Unknown (as it has to be filled in
  *    later) optimizations are skipped.  This is necessary to
- *    construct Phi nodes in loops.  Leaving Unknown in the Phi after finishing
- *    the construction may have strange effects, especially for interprocedural
- *    representation and analysis.
+ *    construct Phi nodes in loops.
  *
  *    Parameter
  *      arity            number of predecessors
@@ -1189,18 +1185,6 @@ FIRM_API ir_node *new_rd_Jmp(dbg_info *db, ir_node *block);
  * @param *tgt    The IR node representing the target address.
  */
 FIRM_API ir_node *new_rd_IJmp(dbg_info *db, ir_node *block, ir_node *tgt);
-
-/** Constructor for a Break node.
- *
- * Break represents control flow to a single control successor just as Jmp.
- * The blocks separated by a break may not be concatenated by an optimization.
- * It is used for the interprocedural representation where blocks are parted
- * behind Call nodes to represent the control flow to called procedures.
- *
- * @param *db     A pointer for debug information.
- * @param *block  The block the node belong to.
- */
-FIRM_API ir_node *new_rd_Break(dbg_info *db, ir_node *block);
 
 /** Constructor for a Cond node.
  *
@@ -1890,61 +1874,6 @@ FIRM_API ir_node *new_rd_Confirm(dbg_info *db, ir_node *block,
  * @param *m      The mode of the unknown value.
  */
 FIRM_API ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
-
-/** Constructor for a CallBegin node.
- *
- * CallBegin represents control flow depending of the pointer value
- * representing the called method to the called methods.  The
- * constructor copies the method pointer input from the passed Call
- * node.
- *
- * @param *db     A pointer for debug information.
- * @param *block  The block the node belong to.
- * @param *ptr    pointer to the called function
- * @param *call   associated call operation
- */
-FIRM_API ir_node *new_rd_CallBegin(dbg_info *db, ir_node *block, ir_node *ptr,
-                                   ir_node *call);
-
-/** Constructor for a EndReg node.
- *
- * Used to represent regular procedure end in interprocedual view.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The IR graph the node belong to.
- * @param *block  The block the node belong to.
- */
-FIRM_API ir_node *new_rd_EndReg(dbg_info *db, ir_graph *irg, ir_node *block);
-
-/** Constructor for a EndExcept node.
- *
- * Used to represent exceptional procedure end in interprocedural view.
- *
- * @param *db     A pointer for debug information.
- * @param *irg    The IR graph the node belong to.
- * @param *block  The block the node belong to.
- */
-FIRM_API ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block);
-
-/** Constructor for a Filter node.
- *
- * Adds the node to the block in current_ir_block.  Filter is a node
- * with two views used to construct the interprocedural view.  In
- * intraprocedural view its semantics are identical to the Proj node.
- * In interprocedural view the Filter performs the Phi operation on
- * method parameters or results.  Other than a Phi a Filter node may
- * not be removed if it has only a single input.
- *
- * The constructor builds the Filter in intraprocedural view.
- *
- * @param *db     A pointer for debug information.
- * @param *block  The block the node belong to.
- * @param *arg  The tuple value to project from.
- * @param *mode The mode of the projected value.
- * @param proj  The position in the tuple to project from.
- */
-FIRM_API ir_node *new_rd_Filter(dbg_info *db,ir_node *block, ir_node *arg,
-                                ir_mode *mode, long proj);
 
 /** Constructor for a Mux node.
  *
@@ -2673,67 +2602,6 @@ FIRM_API ir_node *new_r_Confirm(ir_node *block, ir_node *val, ir_node *bound,
  * @param *m      The mode of the unknown value.
  */
 FIRM_API ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
-
-/** Constructor for a CallBegin node.
- *
- * CallBegin represents control flow depending of the pointer value
- * representing the called method to the called methods.  The
- * constructor copies the method pointer input from the passed Call
- * node.
- *
- * @param *block  The block the node belong to.
- * @param *ptr    pointer to the called function
- * @param *call   associated call operation
- */
-FIRM_API ir_node *new_r_CallBegin(ir_node *block, ir_node *ptr, ir_node *call);
-
-/** Constructor for a EndReg node.
- *
- * Used to represent regular procedure end in interprocedual view.
- *
- * @param *irg    The IR graph the node belong to.
- * @param *block  The block the node belong to.
- */
-FIRM_API ir_node *new_r_EndReg(ir_graph *irg, ir_node *block);
-
-/** Constructor for a EndExcept node.
- *
- * Used to represent exceptional procedure end in interprocedural view.
- *
- * @param *irg    The IR graph the node belong to.
- * @param *block  The block the node belong to.
- */
-FIRM_API ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block);
-
-/** Constructor for a Break node.
- *
- * Break represents control flow to a single control successor just as Jmp.
- * The blocks separated by a break may not be concatenated by an optimization.
- * It is used for the interprocedural representation where blocks are parted
- * behind Call nodes to represent the control flow to called procedures.
- *
- * @param *block  The block the node belong to.
- */
-FIRM_API ir_node *new_r_Break(ir_node *block);
-
-/** Constructor for a Filter node.
- *
- * Constructor for a Filter node. Adds the node to the block in current_ir_block.
- * Filter is a node with two views used to construct the interprocedural view.
- * In intraprocedural view its semantics are identical to the Proj node.
- * In interprocedural view the Filter performs the Phi operation on method
- * parameters or results.  Other than a Phi a Filter node may not be removed
- * if it has only a single input.
- *
- * The constructor builds the Filter in intraprocedural view.
- *
- * @param *block  The block the node belong to.
- * @param *arg    The tuple value to project from.
- * @param *mode   The mode of the projected value.
- * @param proj    The position in the tuple to project from.
- */
-FIRM_API ir_node *new_r_Filter(ir_node *block, ir_node *arg, ir_mode *mode,
-                               long proj);
 
 /** Constructor for a NoMem node.
  *
@@ -3531,70 +3399,6 @@ FIRM_API ir_node *new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound,
  */
 FIRM_API ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
 
-/** Constructor for a CallBegin node.
- *
- * CallBegin represents control flow depending of the pointer value
- * representing the called method to the called methods.  The
- * constructor copies the method pointer input from the passed Call
- * node.Adds the node to the block in current_ir_block.
- *
- * @param *db     A pointer for debug information.
- * @param *ptr    pointer to the called function
- * @param *call   associated call operation
- */
-FIRM_API ir_node *new_d_CallBegin(dbg_info *db, ir_node *ptr, ir_node *call);
-
-/** Constructor for an EndReg node.
- *
- *Adds the node to the block in current_ir_block.
- *
- * @param *db     A pointer for debug information.
- */
-FIRM_API ir_node *new_d_EndReg(dbg_info *db);
-
-/** Constructor for an EndExcept node.
- *
- * Used to represent regular procedure end in interprocedual view.
- * Adds the node to the block in current_ir_block.
- *
- * @param *db     A pointer for debug information.
- */
-FIRM_API ir_node *new_d_EndExcept(dbg_info *db);
-
-/** Constructor for a Break node.
- *
- * Used to represent exceptional procedure end in interprocedural view.
- * Adds the node to the block in current_ir_block.
- *
- * Break represents control flow to a single control successor just as Jmp.
- * The blocks separated by a break may not be concatenated by an optimization.
- * It is used for the interprocedural representation where blocks are parted
- * behind Call nodes to represent the control flow to called procedures.
- *
- * @param *db     A pointer for debug information.
- */
-FIRM_API ir_node *new_d_Break(dbg_info *db);
-
-/** Constructor for a Filter node.
- *
- * Constructor for a Filter node. Adds the node to the block in
- * current_ir_block.  Filter is a node with two views used to
- * construct the interprocedural view.  In intraprocedural view its
- * semantics are identical to the Proj node.  In interprocedural view
- * the Filter performs the Phi operation on method parameters or
- * results.  Other than a Phi a Filter node may not be removed if it
- * has only a single input.
- *
- * The constructor builds the Filter in intraprocedural view.
- *
- * @param *db   A pointer for debug information.
- * @param *arg  The tuple value to project from.
- * @param *mode The mode of the projected value.
- * @param proj  The position in the tuple to project from.
- */
-FIRM_API ir_node *new_d_Filter(dbg_info *db, ir_node *arg, ir_mode *mode,
-                               long proj);
-
 /** Constructor for a Mux node.
  *
  * @param *db       A pointer for debug information.
@@ -3705,20 +3509,6 @@ FIRM_API ir_node *new_Start(void);
  */
 FIRM_API ir_node *new_End(void);
 
-/** Constructor for an EndReg node.
- *
- * Used to represent regular procedure end in interprocedual view.
- * Adds the node to the block in current_ir_block.
- */
-FIRM_API ir_node *new_EndReg(void);
-
-/** Constructor for an EndExpcept node.
- *
- *  Used to represent exceptional procedure end in interprocedural view.
- *  Adds the node to the block in current_ir_block.
- */
-FIRM_API ir_node *new_EndExcept(void);
-
 /** Constructor for a Jump node.
  *
  * Adds the node to the block in current_ir_block.
@@ -3735,15 +3525,6 @@ FIRM_API ir_node *new_Jmp(void);
  * @param *tgt    The IR node representing the target address.
  */
 FIRM_API ir_node *new_IJmp(ir_node *tgt);
-
-/** Constructor for a Break node.
- * Break represents control flow to a single control successor just as Jmp.
- * The blocks separated by a break may not be concatenated by an optimization.
- * It is used for the interprocedural representation where blocks are parted
- * behind Call nodes to represent the control flow to called procedures.
- * Adds the node to the block in current_ir_block.
- */
-FIRM_API ir_node *new_Break(void);
 
 /** Constructor for a Cond node.
  *
@@ -3935,18 +3716,6 @@ FIRM_API ir_node *new_Call(ir_node *store, ir_node *callee,
  */
 FIRM_API ir_node *new_Builtin(ir_node *store, int arity, ir_node *in[],
                               ir_builtin_kind kind, ir_type *tp);
-
-/** Constructor for a CallBegin node.
- *
- * CallBegin represents control flow depending of the pointer value
- * representing the called method to the called methods.  The
- * constructor copies the method pointer input from the passed Call
- * node. Adds the node to the block in current_ir_block.
- *
- * @param *ptr    pointer to the called function
- * @param *call   associated call operation
- */
-FIRM_API ir_node *new_CallBegin(ir_node *ptr, ir_node *call);
 
 /** Constructor for a Add node.
  *
@@ -4284,23 +4053,6 @@ FIRM_API ir_node *new_Sync(int arity, ir_node *in[]);
  * @param proj   The position of the value in the tuple.
  */
 FIRM_API ir_node *new_Proj(ir_node *arg, ir_mode *mode, long proj);
-
-/** Constructor for a Filter node.
- *
- * Constructor for a Filter node. Adds the node to the block in current_ir_block.
- * Filter is a node with two views used to construct the interprocedural view.
- * In intraprocedural view its semantics are identical to the Proj node.
- * In interprocedural view the Filter performs the Phi operation on method
- * parameters or results.  Other than a Phi a Filter node may not be removed
- * if it has only a single input.
- *
- * The constructor builds the Filter in intraprocedural view.
- *
- * @param *arg  The tuple value to project from.
- * @param *mode The mode of the projected value.
- * @param proj  The position in the tuple to project from.
- */
-FIRM_API ir_node *new_Filter(ir_node *arg, ir_mode *mode, long proj);
 
 /** Constructor for a defaultProj node.
  *

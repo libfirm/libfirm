@@ -144,49 +144,19 @@ static inline unsigned _get_irn_opcode(const ir_node *node)
  * Returns the number of predecessors without the block predecessor.
  * Intern version for libFirm.
  */
-static inline int _get_irn_intra_arity(const ir_node *node)
+static inline int _get_irn_arity(const ir_node *node)
 {
-	assert(node);
 	return ARR_LEN(node->in) - 1;
 }
 
 /**
- * Returns the number of predecessors without the block predecessor.
  * Intern version for libFirm.
  */
-static inline int _get_irn_inter_arity(const ir_node *node)
-{
-	assert(node);
-	if (_get_irn_op(node) == op_Filter) {
-		assert(node->attr.filter.in_cg);
-		return ARR_LEN(node->attr.filter.in_cg) - 1;
-	} else if (_get_irn_op(node) == op_Block && node->attr.block.in_cg) {
-		return ARR_LEN(node->attr.block.in_cg) - 1;
-	}
-	return _get_irn_intra_arity(node);
-}
-
-#ifdef INTERPROCEDURAL_VIEW
-/**
- * Returns the number of predecessors without the block predecessor.
- * Intern version for libFirm.
- */
-extern int (*_get_irn_arity)(const ir_node *node);
-
-#else
-
-#define _get_irn_arity(n) _get_irn_intra_arity(n)
-#endif
-
-/**
- * Intern version for libFirm.
- */
-static inline ir_node *_get_irn_intra_n(const ir_node *node, int n)
+static inline ir_node *_get_irn_n(const ir_node *node, int n)
 {
 	ir_node *nn;
 
-	assert(node);
-	assert(-1 <= n && n < _get_irn_intra_arity(node));
+	assert(-1 <= n && n < _get_irn_arity(node));
 
 	nn = node->in[n + 1];
 	if (nn == NULL) {
@@ -200,44 +170,12 @@ static inline ir_node *_get_irn_intra_n(const ir_node *node, int n)
 }
 
 /**
- * Intern version for libFirm.
- */
-static inline ir_node *_get_irn_inter_n(const ir_node *node, int n)
-{
-	assert(node); assert(-1 <= n && n < _get_irn_inter_arity(node));
-
-	/* handle Filter and Block specially */
-	if (_get_irn_op(node) == op_Filter) {
-		assert(node->attr.filter.in_cg);
-		return (node->attr.filter.in_cg[n + 1] = skip_Id(node->attr.filter.in_cg[n + 1]));
-	} else if (_get_irn_op(node) == op_Block && node->attr.block.in_cg) {
-		return (node->attr.block.in_cg[n + 1] = skip_Id(node->attr.block.in_cg[n + 1]));
-	}
-
-	return _get_irn_intra_n(node, n);
-}
-
-/**
  * returns a hash value for a node
  */
 static inline unsigned hash_irn(const ir_node *node)
 {
 	return (unsigned) get_irn_idx(node);
 }
-
-/**
- * Access to the predecessors of a node.
- * To iterate over the operands iterate from 0 to i < get_irn_arity(),
- * to iterate including the Block predecessor iterate from i = -1 to
- * i < get_irn_arity.
- * If it is a block, the entry -1 is NULL.
- * Intern version for libFirm.
- */
-#ifdef INTERPROCEDURAL_VIEW
-extern ir_node *(*_get_irn_n)(const ir_node *node, int n);
-#else
-#define _get_irn_n(n,i) _get_irn_intra_n(n,i)
-#endif
 
 static inline int _get_irn_deps(const ir_node *node) {
 	return node->deps ? ARR_LEN(node->deps) : 0;
@@ -414,30 +352,6 @@ static inline int _is_binop(const ir_node *node)
 {
 	assert(node && _is_ir_node(node));
 	return (node->op->opar == oparity_binary);
-}
-
-static inline int _is_Phi(const ir_node *node)
-{
-	ir_op *op;
-	assert(node);
-
-	op = get_irn_op(node);
-#ifdef INTERPROCEDURAL_VIEW
-	if (op == op_Filter) return get_interprocedural_view();
-#endif
-	return (op == op_Phi);
-}
-
-static inline int _is_Proj(const ir_node *node)
-{
-	ir_op *op;
-	assert(node);
-
-	op = _get_irn_op(node);
-#ifdef INTERPROCEDURAL_VIEW
-	if (op == op_Filter) return !get_interprocedural_view();
-#endif
-	return (op == op_Proj);
 }
 
 static inline int _is_strictConv(const ir_node *node)
@@ -703,11 +617,7 @@ void init_irnode(void);
 
 /* this section MUST contain all inline functions */
 #define is_ir_node(thing)                     _is_ir_node(thing)
-#define get_irn_intra_arity(node)             _get_irn_intra_arity(node)
-#define get_irn_inter_arity(node)             _get_irn_inter_arity(node)
 #define get_irn_arity(node)                   _get_irn_arity(node)
-#define get_irn_intra_n(node, n)              _get_irn_intra_n(node, n)
-#define get_irn_inter_n(node, n)              _get_irn_inter_n(node, n)
 #define get_irn_n(node, n)                    _get_irn_n(node, n)
 #define get_irn_mode(node)                    _get_irn_mode(node)
 #define set_irn_mode(node, mode)              _set_irn_mode(node, mode)

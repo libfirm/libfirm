@@ -419,8 +419,6 @@ enum irg_anchors {
 	anchor_start_block,      /**< block the start node will belong to */
 	anchor_end,              /**< end node of this ir_graph */
 	anchor_start,            /**< start node of this ir_graph */
-	anchor_end_reg,          /**< end node of this ir_graph */
-	anchor_end_except,       /**< end node of this ir_graph */
 	anchor_initial_exec,     /**< methods initial control flow */
 	anchor_frame,            /**< methods frame */
 	anchor_tls,              /**< pointer to the thread local storage containing all
@@ -565,8 +563,6 @@ struct ir_prog {
 
 	/* -- states of and access to generated information -- */
 	irg_phase_state phase_state;    /**< The state of construction. */
-
-	ip_view_state ip_view;          /**< The state of interprocedural view. */
 
 	irg_outs_state outs_state;      /**< The state of out edges of ir nodes. */
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges

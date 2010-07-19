@@ -317,29 +317,6 @@ static ir_node *new_bd_Sync(dbg_info *db, ir_node *block)
 	return res;
 }  /* new_bd_Sync */
 
-
-static ir_node *new_bd_EndReg(dbg_info *db, ir_node *block)
-{
-	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
-
-	res = new_ir_node(db, irg, block, op_EndReg, mode_T, -1, NULL);
-	set_irg_end_reg(irg, res);
-	IRN_VRFY_IRG(res, irg);
-	return res;
-}  /* new_bd_EndReg */
-
-static ir_node *new_bd_EndExcept(dbg_info *db, ir_node *block)
-{
-	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
-
-	res = new_ir_node(db, irg, block, op_EndExcept, mode_T, -1, NULL);
-	set_irg_end_except(irg, res);
-	IRN_VRFY_IRG (res, irg);
-	return res;
-}  /* new_bd_EndExcept */
-
 static ir_node *new_bd_ASM(dbg_info *db, ir_node *block, int arity,
                            ir_node *in[], ir_asm_constraint *inputs, int n_outs,
 	                         ir_asm_constraint *outputs, int n_clobber,
@@ -531,26 +508,6 @@ ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[])
 	return res;
 }  /* new_rd_Sync */
 
-ir_node *new_rd_EndReg(dbg_info *db, ir_graph *irg, ir_node *block)
-{
-	ir_node *res;
-
-	res = new_ir_node(db, irg, block, op_EndReg, mode_T, -1, NULL);
-	set_irg_end_reg(irg, res);
-	IRN_VRFY_IRG(res, irg);
-	return res;
-}  /* new_rd_EndReg */
-
-ir_node *new_rd_EndExcept(dbg_info *db, ir_graph *irg, ir_node *block)
-{
-	ir_node *res;
-
-	res = new_ir_node(db, irg, block, op_EndExcept, mode_T, -1, NULL);
-	set_irg_end_except(irg, res);
-	IRN_VRFY_IRG (res, irg);
-	return res;
-}  /* new_rd_EndExcept */
-
 ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
                     int arity, ir_node *in[], ir_asm_constraint *inputs,
                     int n_outs, ir_asm_constraint *outputs,
@@ -611,14 +568,6 @@ ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 ir_node *new_r_Bad(ir_graph *irg)
 {
 	return get_irg_bad(irg);
-}
-ir_node *new_r_EndReg(ir_graph *irg, ir_node *block)
-{
-	return new_rd_EndReg(NULL, irg, block);
-}
-ir_node *new_r_EndExcept(ir_graph *irg, ir_node *block)
-{
-	return new_rd_EndExcept(NULL, irg, block);
 }
 ir_node *new_r_NoMem(ir_graph *irg)
 {
@@ -1250,17 +1199,6 @@ ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[])
 	return new_rd_Sync(db, current_ir_graph->current_block, arity, in);
 }  /* new_d_Sync */
 
-ir_node *new_d_EndReg(dbg_info *db)
-{
-	return new_bd_EndReg(db, current_ir_graph->current_block);
-}  /* new_d_EndReg */
-
-ir_node *new_d_EndExcept(dbg_info *db)
-{
-	return new_bd_EndExcept(db, current_ir_graph->current_block);
-}  /* new_d_EndExcept */
-
-
 ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *inputs,
                    int n_outs, ir_asm_constraint *outputs, int n_clobber,
                    ident *clobber[], ident *text)
@@ -1547,14 +1485,6 @@ ir_node *new_defaultProj(ir_node *arg, long max_proj)
 ir_node *new_Bad(void)
 {
 	return get_irg_bad(current_ir_graph);
-}
-ir_node *new_EndReg(void)
-{
-	return new_d_EndReg(NULL);
-}
-ir_node *new_EndExcept(void)
-{
-	return new_d_EndExcept(NULL);
 }
 ir_node *new_NoMem(void)
 {

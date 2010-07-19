@@ -122,13 +122,6 @@ FIRM_API ir_graph *current_ir_graph;
 FIRM_API ir_graph *get_current_ir_graph(void);
 FIRM_API void set_current_ir_graph(ir_graph *graph);
 
-#ifdef INTERPROCEDURAL_VIEW
-/** This flag indicate the current view. The behavior of some methods
- * (get_irn_*, set_irn_*) is influenced by this flag. */
-FIRM_API int get_interprocedural_view(void);
-FIRM_API void set_interprocedural_view(int state);
-#endif
-
 /**
  * Create a new ir graph to build ir for a procedure.
  *
@@ -223,15 +216,6 @@ FIRM_API void set_irg_end_block(ir_graph *irg, ir_node *node);
 FIRM_API ir_node *get_irg_end(const ir_graph *irg);
 /** Sets the End node of an IR graph. */
 FIRM_API void set_irg_end(ir_graph *irg, ir_node *node);
-
-/* The fields end_reg and end_except contain the end nodes of the
-   interprocedural view.  If the view is not constructed they contain
-   the normal end node. */
-FIRM_API ir_node *get_irg_end_reg(const ir_graph *irg);
-FIRM_API void set_irg_end_reg(ir_graph *irg, ir_node *node);
-
-FIRM_API ir_node *get_irg_end_except(const ir_graph *irg);
-FIRM_API void set_irg_end_except(ir_graph *irg, ir_node *node);
 
 /** Returns the node that represents the initial control flow of the given
  * IR graph. */

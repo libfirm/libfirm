@@ -143,9 +143,6 @@ static void copy_graph_env(ir_graph *irg)
 void dead_node_elimination(ir_graph *irg)
 {
 	ir_graph *rem;
-#ifdef INTERPROCEDURAL_VIEW
-	int rem_ipview = get_interprocedural_view();
-#endif
 	struct obstack *graveyard_obst = NULL;
 	struct obstack *rebirth_obst   = NULL;
 
@@ -157,9 +154,6 @@ void dead_node_elimination(ir_graph *irg)
 	/* Remember external state of current_ir_graph. */
 	rem = current_ir_graph;
 	current_ir_graph = irg;
-#ifdef INTERPROCEDURAL_VIEW
-	set_interprocedural_view(0);
-#endif
 
 	assert(get_irg_phase_state(irg) != phase_building);
 
@@ -195,9 +189,6 @@ void dead_node_elimination(ir_graph *irg)
 	hook_dead_node_elim(irg, 0);
 
 	current_ir_graph = rem;
-#ifdef INTERPROCEDURAL_VIEW
-	set_interprocedural_view(rem_ipview);
-#endif
 }
 
 ir_graph_pass_t *dead_node_elimination_pass(const char *name)

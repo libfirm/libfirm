@@ -183,11 +183,6 @@ class Bound(Op):
 	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
 	'''
 
-class Break(Op):
-	mode   = "mode_X"
-	flags  = [ "cfopcode" ]
-	pinned = "yes"
-
 class Builtin(Op):
 	ins      = [ "mem" ]
 	arity    = "variable"
@@ -236,21 +231,6 @@ class Call(Op):
 	d_post = '''
 	firm_alloc_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);
 	'''
-
-class CallBegin(Op):
-	ins   = [ "ptr" ]
-	outs  = [ "" ] # TODO
-	flags         = [ "cfopcode", "ip_cfopcode" ]
-	pinned        = "yes"
-	# TODO: attribute with call...
-	attr_struct   = "callbegin_attr"
-	attrs         = [
-		dict(
-			type = "ir_node*",
-			name = "call"
-		)
-	]
-	java_noconstr = True
 
 class Carry(Binop):
 	flags = [ "commutative" ]
@@ -431,36 +411,8 @@ class End(Op):
 	flags      = [ "cfopcode" ]
 	singleton  = True
 
-class EndExcept(Op):
-	mode      = "mode_X"
-	pinned    = "yes"
-	arity     = "dynamic"
-	flags     = [ "cfopcode", "ip_cfopcode" ]
-	singleton = True
-
-class EndReg(Op):
-	mode      = "mode_X"
-	pinned    = "yes"
-	arity     = "dynamic"
-	flags     = [ "cfopcode", "ip_cfopcode" ]
-	singleton = True
-
 class Eor(Binop):
 	flags    = [ "commutative" ]
-
-class Filter(Op):
-	ins   = [ "pred" ]
-	flags = []
-	attrs = [
-		dict(
-			name = "proj",
-			type = "long"
-		)
-	]
-	pinned      = "yes"
-	attr_struct = "filter_attr"
-	attrs_name  = "filter"
-	java_noconstr = True
 
 class Free(Op):
 	ins    = [ "mem", "ptr", "size" ]
@@ -585,7 +537,6 @@ class Phi(Op):
 	arity         = "variable"
 	flags         = []
 	attr_struct   = "phi_attr"
-	custom_is     = True
 	java_noconstr = True
 	init = '''
 	/* Memory Phis in endless loops must be kept alive.
@@ -617,7 +568,6 @@ class Proj(Op):
 		)
 	]
 	attr_struct = "long"
-	custom_is   = True
 
 class Quot(Op):
 	ins   = [ "mem", "left", "right" ]

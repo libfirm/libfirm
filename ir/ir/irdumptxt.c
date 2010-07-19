@@ -58,16 +58,6 @@ ir_dump_verbosity_t ir_get_dump_verbosity(void)
 	return verbosity;
 }
 
-static inline bool is_ip_Filter(ir_node *n)
-{
-#ifdef INTERPROCEDURAL_VIEW
-	return is_Filter(n) && get_interprocedural_view();
-#else
-	(void) n;
-	return 0;
-#endif
-}
-
 /* Write the irnode and all its attributes to the file passed. */
 void dump_irnode_to_file(FILE *F, ir_node *n)
 {
@@ -95,21 +85,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
 	}
 
-#ifdef INTERPROCEDURAL_VIEW
-	fprintf(F, "  arity:   %d\n", get_irn_intra_arity(n));
-	/* show all predecessor nodes */
-	fprintf(F, "  pred nodes:\n");
-	if (!is_Block(n)) {
-		fprintf(F, "    -1:    ");
-		dump_node_opcode(F, get_irn_n(n, -1));
-		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
-	}
-	for ( i = 0; i < get_irn_intra_arity(n); ++i) {
-		fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
-		dump_node_opcode(F, get_irn_intra_n(n, i));
-		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_intra_n(n, i)));
-	}
-#else
 	fprintf(F, "  arity:   %d\n", get_irn_arity(n));
 	/* show all predecessor nodes */
 	fprintf(F, "  pred nodes:\n");
@@ -123,24 +98,11 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		dump_node_opcode(F, get_irn_n(n, i));
 		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, i)));
 	}
-#endif
 
 	fprintf(F, "  Private Attributes:\n");
 
 	if (is_Proj(n))
 		fprintf(F, "  proj nr: %ld\n", get_Proj_proj(n));
-
-#ifdef INTERPROCEDURAL_VIEW
-	if ((get_irp_ip_view_state() != ip_view_no) && (is_Filter(n) || is_Block(n))) {
-		fprintf(F, "  inter arity: %d\n", get_irn_inter_arity(n));
-		fprintf(F, "  inter pred nodes:\n");
-		for (i = 0; i < get_irn_inter_arity(n); ++i) {
-			fprintf(F, "     %d: %s ", i, is_intra_backedge(n, i) ? "be" : "  ");
-			dump_node_opcode(F, get_irn_inter_n(n, i));
-			fprintf(F, " %ld\n", get_irn_node_nr(get_irn_inter_n(n, i)));
-		}
-	}
-#endif
 
 	if (is_fragile_op(n)) {
 		fprintf(F, "  pinned state: %s\n", get_op_pin_state_name(get_irn_pinned(n)));
@@ -149,8 +111,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 
 	/* This is not nice, output it as a marker in the predecessor list. */
 	if (is_Block(n)             ||
-	    get_irn_op(n) == op_Phi ||
-	    (is_ip_Filter(n))) {
+	    get_irn_op(n) == op_Phi) {
 		fprintf(F, "  backedges:");
 		comma = ' ';
 		for (i = 0; i < get_irn_arity(n); i++)
@@ -184,17 +145,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		fprintf(F, "  Execution frequency statistics:\n");
 		if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
 			fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
-#ifdef INTERPROCEDURAL_VIEW
-		if (get_irp_loop_nesting_depth_state() != loop_nesting_depth_none)
-			fprintf(F, "    call frequency of procedure:   %8.2lf\n",
-			get_irg_method_execution_frequency(get_irn_irg(n)));
-		if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent)
-			fprintf(F, "    recursion depth of procedure: %8.2lf\n", (double)get_irn_recursion_depth(n));
-		if ((get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none) &&
-			(get_irp_loop_nesting_depth_state() != loop_nesting_depth_none) &&
-			(get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent))
-			fprintf(F, "    final evaluation:           **%8.2lf**\n", get_irn_final_cost(n));
-#endif
 
 		/* not dumped: graph_arr */
 		/* not dumped: mature    */
@@ -204,19 +154,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		ir_fprintf(F, "  start of method of type %+F\n", tp);
 		for (i = 0; i < get_method_n_params(tp); ++i)
 			ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
-#ifdef INTERPROCEDURAL_VIEW
-		if ((get_irp_ip_view_state() == ip_view_valid) && !get_interprocedural_view()) {
-			ir_node *sbl = get_nodes_block(n);
-			int i, n_cfgpreds = get_Block_cg_n_cfgpreds(sbl);
-			fprintf(F, "  graph has %d interprocedural predecessors:\n", n_cfgpreds);
-			for (i = 0; i < n_cfgpreds; ++i) {
-				ir_node *cfgpred = get_Block_cg_cfgpred(sbl, i);
-				fprintf(F, "    %d: Call %ld in graph %s\n", i,
-				        get_irn_node_nr(cfgpred),
-				        get_irg_dump_name(get_irn_irg(cfgpred)));
-			}
-		}
-#endif
 	} break;
 	case iro_Cond: {
 		fprintf(F, "  default ProjNr: %ld\n", get_Cond_default_proj(n));
@@ -261,32 +198,16 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			}
 		}
 	} break;
-	case iro_CallBegin: {
-		ir_node *call = get_CallBegin_call(n);
-		fprintf(F, "  Call: %ld\n", get_irn_node_nr(call));
-		if (Call_has_callees(call)) {
-			fprintf(F, "  possible callees:\n");
-			for (i = 0; i < get_Call_n_callees(call); i++) {
-				fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(call, i)));
-			}
-		}
-	} break;
 	case iro_Cast: {
 		ir_fprintf(F, "  cast to type: %+F\n", get_Cast_type(n));
 	} break;
 	case iro_Return: {
-#ifdef INTERPROCEDURAL_VIEW
-		if (!get_interprocedural_view()) {
-#endif
-			ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
-			ir_fprintf(F, "  return in method of type %+F\n", tp);
-			for (i = 0; i < get_method_n_ress(tp); ++i) {
-				ir_fprintf(F, "    result %d type: %+F\n", i,
-				           get_method_res_type(tp, i));
-			}
-#ifdef INTERPROCEDURAL_VIEW
+		ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
+		ir_fprintf(F, "  return in method of type %+F\n", tp);
+		for (i = 0; i < get_method_n_ress(tp); ++i) {
+			ir_fprintf(F, "    result %d type: %+F\n", i,
+					   get_method_res_type(tp, i));
 		}
-#endif
 	} break;
 	case iro_Const: {
 		assert(get_Const_type(n) != firm_none_type);
@@ -689,12 +610,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix)
 		if (is_Method_type(get_entity_type(ent))) {
 			if (get_entity_irg(ent))   /* can be null */ {
 				fprintf(F, "\n%s  irg = %ld", prefix, get_irg_graph_nr(get_entity_irg(ent)));
-#ifdef INTERPROCEDURAL_VIEW
-				if (get_irp_callgraph_state() == irp_callgraph_and_calltree_consistent) {
-					fprintf(F, "\n%s    recursion depth %d", prefix, get_irg_recursion_depth(get_entity_irg(ent)));
-					fprintf(F, "\n%s    loop depth      %d", prefix, get_irg_loop_depth(get_entity_irg(ent)));
-				}
-#endif
 			} else {
 				fprintf(F, "\n%s  irg = NULL", prefix);
 			}
@@ -708,20 +623,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix)
 			(ir_node *(*)(firm_kind *, int))get_entity_access, "Accesses");
 		dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_references,
 			(ir_node *(*)(firm_kind *, int))get_entity_reference, "References");
-	}
-
-	if (verbosity & dump_verbosity_accessStats) {
-		if (get_trouts_state() != outs_none) {
-#ifdef INTERPROCEDURAL_VIEW
-			if (is_Method_type(get_entity_type(ent))) {
-				fprintf(F, "%s  Estimated #Calls:    %lf\n", prefix, get_entity_estimated_n_calls(ent));
-				fprintf(F, "%s  Estimated #dynCalls: %lf\n", prefix, get_entity_estimated_n_calls(ent));
-			} else {
-				fprintf(F, "%s  Estimated #Loads:  %lf\n", prefix, get_entity_estimated_n_loads(ent));
-				fprintf(F, "%s  Estimated #Stores: %lf\n", prefix, get_entity_estimated_n_stores(ent));
-			}
-#endif
-		}
 	}
 }
 
@@ -918,22 +819,6 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 		dump_node_list(F, (firm_kind *)tp, "  ", (int(*)(firm_kind *))get_type_n_casts,
 			(ir_node *(*)(firm_kind *, int))get_type_cast, "Casts");
 		dump_type_list(F, tp, "  ", get_type_n_pointertypes_to, get_type_pointertype_to, "PointerTpsTo");
-	}
-
-
-	if (verbosity & dump_verbosity_accessStats) {
-#ifdef INTERPROCEDURAL_VIEW
-		if (get_trouts_state() != outs_none) {
-			fprintf(F, "  Estimated #Instances: %lf\n", get_type_estimated_n_instances(tp));
-			if (is_Class_type(tp) && (get_irp_typeinfo_state() != ir_typeinfo_none)) {
-				fprintf(F, "  Estimated #dyn Calls: %lf\n", get_class_estimated_n_dyncalls(tp));
-				fprintf(F, "  Estimated #Upcasts:   %lf (#CastOps: %d)\n", get_class_estimated_n_upcasts(tp), get_class_n_upcasts(tp));
-				fprintf(F, "  Estimated #Downcasts: %lf (#CastOps: %d)\n", get_class_estimated_n_downcasts(tp), get_class_n_downcasts(tp));
-				assert(get_class_n_upcasts(tp) + get_class_n_downcasts(tp) == get_type_n_casts(tp));
-			}
-		}
-#endif
-
 	}
 
 	fprintf(F, "\n\n");

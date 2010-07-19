@@ -49,26 +49,12 @@ static unsigned *mere_get_backarray(ir_node *n)
 	switch (get_irn_opcode(n)) {
 	case iro_Block:
 		if (!get_Block_matured(n)) return NULL;
-#ifdef INTERPROCEDURAL_VIEW
-		if (get_interprocedural_view() && n->attr.block.in_cg) {
-			assert(n->attr.block.cg_backedge && "backedge array not allocated!");
-			return n->attr.block.cg_backedge;
-		}
-#endif
 
 		assert(n->attr.block.backedge && "backedge array not allocated!");
 		return n->attr.block.backedge;
 	case iro_Phi:
 		assert(n->attr.phi.u.backedge && "backedge array not allocated!");
 		return n->attr.phi.u.backedge;
-	case iro_Filter:
-#ifdef INTERPROCEDURAL_VIEW
-		if (get_interprocedural_view()) {
-			assert(n->attr.filter.backedge && "backedge array not allocated!");
-			return n->attr.filter.backedge;
-		}
-#endif
-		break;
 	default:
 		break;
 	}
@@ -125,42 +111,12 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 		if (opc == iro_Phi)
 			n->attr.phi.u.backedge = arr;
 		else if (opc == iro_Block) {
-#ifdef INTERPROCEDURAL_VIEW
-			if (get_interprocedural_view())
-				n->attr.block.cg_backedge = arr;
-			else
-#endif
-				n->attr.block.backedge = arr;
+			n->attr.block.backedge = arr;
 		}
-		else if (opc == iro_Filter)
-			n->attr.filter.backedge = arr;
 	}
 
 	assert(legal_backarray(n));
 }
-
-#ifdef INTERPROCEDURAL_VIEW
-int is_inter_backedge(ir_node *n, int pos)
-{
-	int res;
-	int rem = get_interprocedural_view();
-	set_interprocedural_view(0);
-	res = is_backedge(n, pos);
-	set_interprocedural_view(rem);
-	return res;
-}
-
-int is_intra_backedge(ir_node *n, int pos)
-{
-	int res;
-	int rem = get_interprocedural_view();
-	set_interprocedural_view(1);
-	res = is_backedge(n, pos);
-	set_interprocedural_view(rem);
-	return res;
-}
-#endif
-
 
 /* Returns non-zero if the predecessor pos is a backedge. */
 int is_backedge(ir_node *n, int pos)
@@ -175,7 +131,7 @@ int is_backedge(ir_node *n, int pos)
 void set_backedge(ir_node *n, int pos)
 {
 	unsigned *ba = get_backarray(n);
-	assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
+	assert(ba && "can only set backedges at Phi, Block nodes.");
 	rbitset_set(ba, pos);
 }
 
@@ -183,7 +139,7 @@ void set_backedge(ir_node *n, int pos)
 void set_not_backedge(ir_node *n, int pos)
 {
 	unsigned *ba = get_backarray(n);
-	assert(ba && "can only set backedges at Phi, Filter, Block nodes.");
+	assert(ba && "can only set backedges at Phi, Block nodes.");
 	rbitset_clear(ba, pos);
 }
 
@@ -203,26 +159,12 @@ void clear_backedges(ir_node *n)
 {
 	int i, arity;
 	unsigned *ba;
-#ifdef INTERPROCEDURAL_VIEW
-	int rem = get_interprocedural_view();
-	set_interprocedural_view(0);
-#endif
 	ba = get_backarray(n);
 	if (ba) {
 		arity = get_irn_arity(n);
 		for (i = 0; i < arity; i++)
 			rbitset_clear(ba, i);
 	}
-#ifdef INTERPROCEDURAL_VIEW
-	set_interprocedural_view(1);
-	ba = get_backarray (n);
-	if (ba) {
-		arity = get_irn_arity(n);
-		for (i = 0; i < arity; i++)
-			rbitset_clear(ba, i);
-	}
-	set_interprocedural_view(rem);
-#endif
 }
 
 /* Allocate a new backedge array on the obstack for given size. */

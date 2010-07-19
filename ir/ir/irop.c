@@ -105,16 +105,6 @@ static void phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 }
 
 /**
- * Copies all filter attributes stored in old node to the new node
- */
-static void filter_copy_attr(ir_graph *irg, const ir_node *old_node,
-                             ir_node *new_node)
-{
-	default_copy_attr(irg, old_node, new_node);
-	new_node->attr.filter.backedge = new_backedge_arr(irg->obst, get_irn_arity(new_node));
-}
-
-/**
  * Copies all ASM attributes stored in old node to the new node
  */
 static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
@@ -146,9 +136,6 @@ static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops)
 		break;
 	case iro_Phi:
 		ops->copy_attr = phi_copy_attr;
-		break;
-	case iro_Filter:
-		ops->copy_attr = filter_copy_attr;
 		break;
 	case iro_ASM:
 		ops->copy_attr = ASM_copy_attr;

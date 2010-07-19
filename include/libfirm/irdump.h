@@ -313,7 +313,7 @@ typedef enum {
 	 * edges from constant to block are skipped.  Vcg then layouts the graphs
 	 * more compact, this makes them better readable. */
 	ir_dump_flag_consts_local          = 1U << 4,
- 	/** if set node idx will be added to node labels */
+	/** if set node idx will be added to node labels */
 	ir_dump_flag_idx_label             = 1U << 5,
 	/** if set node number will be added to node labels */
 	ir_dump_flag_number_label          = 1U << 6,
@@ -324,7 +324,7 @@ typedef enum {
 	/** if set dumps edges from blocks to their immediate dominator */
 	ir_dump_flag_dominance             = 1U << 9,
 	/** If set the dumper dumps loop nodes and edges from these nodes to the
-	 * contained ir nodes. Nodes can be missing for interprocedural loops */
+	 * contained ir nodes. */
 	ir_dump_flag_loops                 = 1U << 10,
 	/** if set (and backedge info is computed) dump backedges */
 	ir_dump_flag_back_edges            = 1U << 11,

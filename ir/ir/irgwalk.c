@@ -36,108 +36,11 @@
 #include "irprog.h"
 #include "irgwalk.h"
 #include "irhooks.h"
-#include "ircgcons.h"
 #include "entity_t.h"
 
 #include "error.h"
 #include "pset_new.h"
 #include "array.h"
-
-#ifdef INTERPROCEDURAL_VIEW
-/**
- * Walk over an interprocedural graph (callgraph).
- * Visits only graphs in irg_set.
- */
-static void irg_walk_cg(ir_node * node, ir_visited_t visited,
-                        pset_new_t *irg_set, irg_walk_func *pre,
-                        irg_walk_func *post, void * env)
-{
-	int i;
-	ir_graph * rem = current_ir_graph;
-	ir_node * pred;
-
-	assert(node && node->kind == k_ir_node);
-	if (get_irn_visited(node) >= visited) return;
-
-	set_irn_visited(node, visited);
-
-	if (pre) pre(node, env);
-
-	pred = skip_Proj(node);
-	if (is_CallBegin(pred)            ||
-	    get_irn_op(pred) == op_EndReg ||
-	    get_irn_op(pred) == op_EndExcept) {
-		current_ir_graph = get_irn_irg(pred);
-	}
-
-	if (is_no_Block(node)) { /* not block */
-		irg_walk_cg(get_nodes_block(node), visited, irg_set, pre, post, env);
-	}
-
-	if (is_Block(node)) { /* block */
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			ir_node * exec = get_irn_n(node, i);
-			ir_node * pred = skip_Proj(exec);
-			if ((
-			      !is_CallBegin(pred)           &&
-			      get_irn_op(pred) != op_EndReg &&
-			      get_irn_op(pred) != op_EndExcept
-			    ) || pset_new_contains(irg_set, get_irn_irg(pred))) {
-				irg_walk_cg(exec, visited, irg_set, pre, post, env);
-			}
-		}
-	} else if (is_Filter(node)) { /* filter */
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			ir_node * pred = get_irn_n(node, i);
-			if (is_Unknown(pred) || is_Bad(pred)) {
-				irg_walk_cg(pred, visited, irg_set, pre, post, env);
-			} else {
-				ir_node * exec;
-				exec = skip_Proj(get_Block_cfgpred(get_nodes_block(node), i));
-
-				if (is_Bad(exec)) {
-					continue;
-				}
-
-				assert(is_CallBegin(exec)            ||
-				       get_irn_op(exec) == op_EndReg ||
-				       get_irn_op(exec) == op_EndExcept);
-				if (pset_new_contains(irg_set, get_irn_irg(exec))) {
-					current_ir_graph = get_irn_irg(exec);
-					irg_walk_cg(pred, visited, irg_set, pre, post, env);
-					current_ir_graph = rem;
-				}
-			}
-		}
-	} else {                      /* everything else */
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			irg_walk_cg(get_irn_n(node, i), visited, irg_set, pre, post, env);
-		}
-	}
-
-	if (post) post(node, env);
-
-	current_ir_graph = rem;
-}
-
-/**
- * Insert all ir_graphs in irg_set, that are (transitive) reachable.
- */
-static void collect_irgs(ir_node * node, pset_new_t *irg_set)
-{
-	if (is_Call(node)) {
-		int i;
-		for (i = get_Call_n_callees(node) - 1; i >= 0; --i) {
-			ir_entity * ent = get_Call_callee(node, i);
-			ir_graph * irg = get_entity_irg(ent);
-			if (irg && !pset_new_contains(irg_set, irg)) {
-				pset_new_insert(irg_set, irg);
-				irg_walk_graph(irg, (irg_walk_func *) collect_irgs, NULL, irg_set);
-			}
-		}
-	}
-}
-#endif
 
 /**
  * specialized version of irg_walk_2, called if only pre callback exists
@@ -251,33 +154,7 @@ void irg_walk_core(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
                    void *env)
 {
 	assert(is_ir_node(node));
-
-#ifdef INTERPROCEDURAL_VIEW
-	if (get_interprocedural_view()) {
-		pset_new_t           irg_set;
-		pset_new_iterator_t  iter;
-		ir_visited_t         visited;
-		ir_graph            *irg;
-		assert(get_irp_ip_view_state() == ip_view_valid);
-
-		pset_new_init(&irg_set);
-		set_interprocedural_view(0);
-		pset_new_insert(&irg_set, current_ir_graph);
-		irg_walk(node, (irg_walk_func *) collect_irgs, NULL, &irg_set);
-		set_interprocedural_view(1);
-		visited = get_max_irg_visited() + 1;
-
-		foreach_pset_new(&irg_set, irg, iter) {
-			set_irg_visited(irg, visited);
-		}
-		irg_walk_cg(node, visited, &irg_set, pre, post, env);
-		pset_new_destroy(&irg_set);
-	} else {
-#endif
-		nodes_touched = irg_walk_2(node, pre, post, env);
-#ifdef INTERPROCEDURAL_VIEW
-	}
-#endif
+	nodes_touched = irg_walk_2(node, pre, post, env);
 }
 
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
@@ -430,11 +307,6 @@ void irg_walk_in_or_dep(ir_node *node, irg_walk_func *pre, irg_walk_func *post, 
 {
 	assert(is_ir_node(node));
 
-#ifdef INTERPROCEDURAL_VIEW
-	if (get_interprocedural_view()) {
-		panic("This is not yet implemented.");
-	}
-#endif
 	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(current_ir_graph);
 	nodes_touched = irg_walk_in_or_dep_2(node, pre, post, env);
@@ -454,118 +326,6 @@ void irg_walk_in_or_dep_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *
 	irg->estimated_node_count = nodes_touched;
 	current_ir_graph = rem;
 }
-
-/***************************************************************************/
-
-#ifdef INTERPROCEDURAL_VIEW
-/**
- * Returns current_ir_graph and sets it to the irg of predecessor index
- * of node n.
- */
-static inline ir_graph * switch_irg(ir_node *n, int index)
-{
-	ir_graph *old_current = current_ir_graph;
-
-	if (get_interprocedural_view()) {
-		/* Only Filter and Block nodes can have predecessors in other graphs. */
-		if (is_Filter(n))
-			n = get_nodes_block(n);
-		if (is_Block(n)) {
-			ir_node *cfop = skip_Proj(get_Block_cfgpred(n, index));
-			if (is_ip_cfop(cfop)) {
-				current_ir_graph = get_irn_irg(cfop);
-			}
-		}
-	}
-
-	return old_current;
-}
-
-static void cg_walk_2(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void * env)
-{
-	int i;
-	ir_graph *rem = NULL;
-	assert(node);
-
-	if (get_irn_visited(node) < get_irg_visited(current_ir_graph)) {
-		set_irn_visited(node, get_irg_visited(current_ir_graph));
-
-		if (pre) pre(node, env);
-
-		if (is_no_Block(node))
-			cg_walk_2(get_nodes_block(node), pre, post, env);
-		for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-			rem = switch_irg(node, i);  /* @@@ AS: Is this wrong? We do have to
-						    switch to the irg of the predecessor, don't we? */
-			cg_walk_2(get_irn_n(node, i), pre, post, env);
-			current_ir_graph = rem;
-		}
-
-		if (post) post(node, env);
-	}
-}
-
-/* Walks all irgs in interprocedural view.  Visits each node only once. */
-void cg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
-{
-	int i;
-	ir_graph *rem = current_ir_graph;
-	int rem_view = get_interprocedural_view();
-
-	set_interprocedural_view(1);
-
-	inc_max_irg_visited();
-	/* Fix all irg_visited flags */
-	for (i = 0; i < get_irp_n_irgs(); i++)
-		set_irg_visited(get_irp_irg(i), get_max_irg_visited());
-
-	/* Walk starting at unreachable procedures. Only these
-	 * have End blocks visible in interprocedural view. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *sb;
-		current_ir_graph = get_irp_irg(i);
-
-		sb = get_irg_start_block(current_ir_graph);
-
-		if ((get_Block_n_cfgpreds(sb) > 1) ||
-			(get_nodes_block(get_Block_cfgpred(sb, 0)) != sb)) continue;
-
-		cg_walk_2(get_irg_end(current_ir_graph), pre, post, env);
-	}
-
-	/* Check whether we walked all procedures: there could be procedures
-	   with cyclic calls but no call from the outside. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *sb;
-		current_ir_graph = get_irp_irg(i);
-
-		/* Test start block: if inner procedure end and end block are not
-		* visible and therefore not marked. */
-		sb = get_irg_start_block(current_ir_graph);
-		if (get_irn_visited(sb) < get_irg_visited(current_ir_graph)) {
-			cg_walk_2(sb, pre, post, env);
-		}
-	}
-
-	/* Walk all endless loops in inner procedures.
-	 * We recognize an inner procedure if the End node is not visited. */
-	for (i = 0; i < get_irp_n_irgs(); i++) {
-		ir_node *e;
-		current_ir_graph = get_irp_irg(i);
-		e = get_irg_end(current_ir_graph);
-		if (get_irn_visited(e) < get_irg_visited(current_ir_graph)) {
-			int j;
-			/* Don't visit the End node. */
-			for (j = 0; j < get_End_n_keepalives(e); j++)
-				cg_walk_2(get_End_keepalive(e, j), pre, post, env);
-		}
-	}
-
-	set_interprocedural_view(rem_view);
-	current_ir_graph = rem;
-}
-#endif
-
 
 /***************************************************************************/
 
@@ -620,10 +380,6 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 	hook_irg_block_walk(irg, node, (generic_func *)pre, (generic_func *)post);
 
 	assert(node);
-#ifdef INTERPROCEDURAL_VIEW
-	assert(!get_interprocedural_view());   /* interprocedural_view not implemented, because it
-	                                        * interleaves with irg_walk */
-#endif
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 	block = is_Block(node) ? node : get_nodes_block(node);

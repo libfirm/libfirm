@@ -67,14 +67,6 @@ static inline int is_op_cfopcode(const ir_op *op) {
 	return op->flags & irop_flag_cfopcode;
 }
 
-/**
- * Returns non-zero if the operation manipulates interprocedural control flow:
- * CallBegin, EndReg, EndExcept
- */
-static inline int is_ip_cfopcode(const ir_op *op) {
-	return op->flags & irop_flag_ip_cfopcode;
-}
-
 /** Returns non-zero if operation is commutative */
 static inline int is_op_commutative(const ir_op *op) {
 	return op->flags & irop_flag_commutative;
