@@ -74,7 +74,7 @@
 
 
 static int use_exec_freq 		= true;
-static int use_late_decision 	= true;
+static int use_late_decision 	= false;
 
 typedef struct _be_pbqp_alloc_env_t {
 	pbqp 						*pbqp_inst;			/**< PBQP instance for register allocation */
