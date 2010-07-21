@@ -358,6 +358,63 @@ static void remove_blocks(ir_graph *irg)
 	irg_walk_graph(irg, NULL, move_to_block, block);
 }
 
+/**
+ * Unfolds a value in a tree of tupelized gammas. This replicates the tree
+ * along the way with the values mode.
+ */
+static ir_node *extract_gammas(ir_node *irn, int idx, ir_mode *mode)
+{
+	if (is_Gamma(irn))
+	{
+		/* Construct a new gamma for the value. */
+		ir_node *block    = get_nodes_block(irn);
+		ir_node *cond     = get_Gamma_cond(irn);
+		ir_node *ir_true  = extract_gammas(get_Gamma_true(irn),  idx, mode);
+		ir_node *ir_false = extract_gammas(get_Gamma_false(irn), idx, mode);
+		ir_node *gamma    = new_r_Gamma(block, cond, ir_false, ir_true, mode);
+
+		return gamma;
+	}
+	else if (is_Tuple(irn))
+	{
+		/* Extract the appropriate value from the tuple. */
+		ir_node *res = get_Tuple_pred(irn, idx);
+		assert((mode == get_irn_mode(res)) && "Unexpected mode.");
+
+		return res;
+	}
+
+	assert(0 && "Invalid tupelized gamma tree.");
+}
+
+static void unfold_tuples_walk(ir_node *irn, void *ctx)
+{
+	ir_node *gamma, *value;
+	ir_mode *value_mode;
+	int      value_pn;
+
+	(void)ctx;
+
+	/* Search for proj nodes. */
+	if (!is_Proj(irn)) return;
+
+	/* That point to gammas. */
+	gamma = get_Proj_pred(irn);
+	if (!is_Gamma(gamma)) return;
+
+	/* Unfold the value from the tupelized gamma. */
+	value_pn   = get_Proj_proj(irn);
+	value_mode = get_irn_mode(irn);
+	value      = extract_gammas(gamma, value_pn, value_mode);
+
+	exchange(irn, value);
+}
+
+static void unfold_tuples(ir_graph *irg)
+{
+	irg_walk_graph(irg, NULL, unfold_tuples_walk, NULL);
+}
+
 void convert_to_peg(ir_graph *irg)
 {
 	int opt_level = get_optimize();
@@ -376,6 +433,10 @@ void convert_to_peg(ir_graph *irg)
 	/* Remove the existing block structure. */
 	remove_blocks(irg);
 	dump_ir_graph(irg, "nocfg");
+
+	/* Unfold tuples on gammas and thetas. */
+	unfold_tuples(irg);
+	dump_ir_graph(irg, "unfold");
 
 	/* Most data is probably inconsistent now. */
 	set_irg_outs_inconsistent(irg);
