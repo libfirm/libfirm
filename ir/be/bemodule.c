@@ -48,7 +48,6 @@ void be_init_copyheur(void);
 void be_init_copyheur2(void);
 void be_init_copyheur4(void);
 void be_init_copyilp2(void);
-void be_init_copypbqp(void);
 void be_init_copynone(void);
 void be_init_copystat(void);
 void be_init_daemelspill(void);
@@ -115,7 +114,6 @@ void be_init_modules(void)
 #endif
 #ifdef FIRM_KAPS
 	be_init_pbqp_coloring();
-	be_init_copypbqp();
 #endif
 	be_init_copynone();
 	be_init_copystat();
