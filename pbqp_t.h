@@ -66,6 +66,7 @@ struct pbqp {
 	unsigned       num_r0;             /* Number of trivial solved nodes. */
 	unsigned       num_r1;             /* Number of R1 reductions. */
 	unsigned       num_r2;             /* Number of R2 reductions. */
+	unsigned       num_rm;             /* Number of RM reductions. */
 	unsigned       num_rn;             /* Number of RN reductions. */
 #endif
 };

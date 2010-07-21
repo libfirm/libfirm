@@ -51,10 +51,6 @@ pbqp_node **node_buckets[4];
 pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
 
-#if KAPS_STATISTIC
-static int dump = 0;
-#endif
-
 static void insert_into_edge_bucket(pbqp_edge *edge)
 {
 	if (edge_bucket_contains(edge_bucket, edge)) {
@@ -269,7 +265,7 @@ void reorder_node(pbqp_node *node)
 	node_bucket_insert(&node_buckets[degree], node);
 }
 
-#if 1
+#if KAPS_STATISTIC
 void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
@@ -364,7 +360,7 @@ void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 	}
 
 	if (allRowsOk || allColsOk) {
-		panic("Hurray");
+		pbqp->num_rm++;
 	}
 }
 #endif
@@ -437,20 +433,13 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 #endif
 
 #if KAPS_STATISTIC
-		if (dump == 0) {
-			pbqp->num_edges++;
-		}
+		pbqp->num_edges++;
 #endif
 
 		delete_edge(edge);
 		reorder_node(src_node);
 		reorder_node(tgt_node);
 	}
-#if 0
-	else {
-		check_melting_possibility(pbqp, edge);
-	}
-#endif
 }
 
 void initial_simplify_edges(pbqp *pbqp)
@@ -534,9 +523,7 @@ num determine_solution(pbqp *pbqp)
 	node_len = node_bucket_get_length(node_buckets[0]);
 
 #if KAPS_STATISTIC
-	if (dump == 0) {
-		pbqp->num_r0 = node_len;
-	}
+	pbqp->num_r0 = node_len;
 #endif
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
@@ -774,9 +761,7 @@ void apply_RI(pbqp *pbqp)
 	reorder_node(other_node);
 
 #if KAPS_STATISTIC
-	if (dump == 0) {
-		pbqp->num_r1++;
-	}
+	pbqp->num_r1++;
 #endif
 
 	/* Add node to back propagation list. */
@@ -894,9 +879,7 @@ void apply_RII(pbqp *pbqp)
 	disconnect_edge(tgt_node, tgt_edge);
 
 #if KAPS_STATISTIC
-	if (dump == 0) {
-		pbqp->num_r2++;
-	}
+	pbqp->num_r2++;
 #endif
 
 	/* Add node to back propagation list. */

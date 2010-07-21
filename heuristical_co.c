@@ -75,7 +75,7 @@ static void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
 		pbqp_dump_graph(pbqp);
 	}
 #endif
-#if 1
+#if KAPS_STATISTIC
 	/* Check whether we can merge a neighbor into the current node. */
 	for (min_index = 0; min_index < pbqp_node_get_degree(node); ++min_index) {
 		check_melting_possibility(pbqp, node->edges[min_index]);
