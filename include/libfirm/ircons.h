@@ -1260,6 +1260,22 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
                             int n_outs, ir_asm_constraint *outputs,
                             int n_clobber, ident *clobber[], ident *asm_text);
 
+/** Constructor for a Gamma node.
+ *
+ * A value selection node similar to Mux, with lazy evaluation semantics.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *block    The IR block the node belongs to.
+ * @param *cond     The condition used to select the true of false value.
+ * @param *ir_false The false value.
+ * @param *ir_true  The true value.
+ * @param *mode     The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
+                               ir_node *ir_false, ir_node *ir_true,
+                               ir_mode *mode);
+
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
 /*-------------------------------------------------------------------------*/
@@ -1377,6 +1393,20 @@ FIRM_API ir_node *new_r_ASM(ir_node *block,
                             int arity, ir_node *in[], ir_asm_constraint *inputs,
                             int n_outs, ir_asm_constraint *outputs,
                             int n_clobber, ident *clobber[], ident *asm_text);
+
+/** Constructor for a Gamma node.
+ *
+ * A value selection node similar to Mux, with lazy evaluation semantics.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *block    The IR block the node belongs to.
+ * @param *cond     The condition used to select the true of false value.
+ * @param *ir_false The false value.
+ * @param *ir_true  The true value.
+ * @param *mode     The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
+                              ir_node *ir_true, ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1508,6 +1538,20 @@ FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
                             int n_outs, ir_asm_constraint *outputs,
                             int n_clobber, ident *clobber[], ident *asm_text);
 
+/** Constructor for a Gamma node.
+ *
+ * A value selection node similar to Mux, with lazy evaluation semantics.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *db       A pointer for debug information.
+ * @param *cond     The condition used to select the true of false value.
+ * @param *ir_false The false value.
+ * @param *ir_true  The true value.
+ * @param *mode     The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
+                              ir_node *ir_true, ir_mode *mode);
+
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
 /*-----------------------------------------------------------------------*/
@@ -1620,6 +1664,19 @@ FIRM_API ir_node *new_defaultProj(ir_node *arg, long max_proj);
 FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                           int n_outs, ir_asm_constraint *outputs,
                           int n_clobber, ident *clobber[], ident *asm_text);
+
+/** Constructor for a Gamma node.
+ *
+ * A value selection node similar to Mux, with lazy evaluation semantics.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *cond     The condition used to select the true of false value.
+ * @param *ir_false The false value.
+ * @param *ir_true  The true value.
+ * @param *mode     The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
+                            ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

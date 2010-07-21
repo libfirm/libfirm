@@ -937,6 +937,11 @@ class Unknown(Op):
 	block      = "get_irg_start_block(irg)"
 	flags      = [ "start_block", "constlike", "dump_noblock" ]
 
+class Gamma(Op):
+	ins    = [ "cond", "false", "true" ]
+	flags  = []
+	pinned = "no"
+
 # Prepare node list
 
 def getOpList(namespace):
