@@ -1089,7 +1089,11 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
-/** Convert a firm graph to a programm expression graph. */
+/**
+ * Convert a firm graph to a programm expression graph.
+ *
+ * @param irg    The firm graph to convert.
+ */
 FIRM_API void convert_to_peg(ir_graph *irg);
 
 #include "end.h"

@@ -44,28 +44,27 @@
  */
 static int cfg_reachable(ir_node *start, ir_node *end)
 {
-    /* Every node can reach itself. */
-    if (start == end)
-    {
-        return 1;
-    }
+	int i;
 
-    int i;
+	/* Every node can reach itself. */
+	if (start == end) {
+		return 1;
+	}
 
-    assert(is_Block(start));
-    assert(is_Block(end));
+	assert(is_Block(start));
+	assert(is_Block(end));
 
-    /* Iterate all predecessor blocks. */
-    for (i = 0; i < get_Block_n_cfgpreds(end); i++)
-    {
-        ir_node *pred = get_Block_cfgpred(end, i);
-        if (!is_Block(pred)) pred = get_nodes_block(pred);
+	/* Iterate all predecessor blocks. */
+	for (i = 0; i < get_Block_n_cfgpreds(end); i++) {
 
-        /* Unwind if the block has been found. */
-        if (cfg_reachable(start, pred)) return 1;
-    }
+		ir_node *pred = get_Block_cfgpred(end, i);
+		if (!is_Block(pred)) pred = get_nodes_block(pred);
 
-    return 0;
+		/* Unwind if the block has been found. */
+		if (cfg_reachable(start, pred)) return 1;
+	}
+
+	return 0;
 }
 
 /**
@@ -76,33 +75,32 @@ static int cfg_reachable(ir_node *start, ir_node *end)
  */
 static int cfg_rechable_pred(ir_node *start, ir_node *end)
 {
-    int num_found = 0;
-    int num_preds = get_Block_n_cfgpreds(end);
-    int result;
-    int i;
+	int num_found = 0;
+	int num_preds = get_Block_n_cfgpreds(end);
+	int result;
+	int i;
 
-    /* Iterate the predecessor blocks of end. */
-    for (i = 0; i < num_preds; i++)
-    {
-        ir_node *pred = get_Block_cfgpred(end, i);
-        if (!is_Block(pred)) pred = get_nodes_block(pred);
+	/* Iterate the predecessor blocks of end. */
+	for (i = 0; i < num_preds; i++) {
 
-        if (cfg_reachable(start, pred))
-        {
-            num_found++;
-            result = i;
+		ir_node *pred = get_Block_cfgpred(end, i);
+		if (!is_Block(pred)) pred = get_nodes_block(pred);
 
-            /* We can reach multiple predecessors. */
-            if (num_found > 1)
-            {
-                result = num_preds;
-                break;
-            }
-        }
-    }
+		if (cfg_reachable(start, pred)) {
 
-    if (num_found == 0) return -1;
-    return result;
+			num_found++;
+			result = i;
+
+			/* We can reach multiple predecessors. */
+			if (num_found > 1) {
+				result = num_preds;
+				break;
+			}
+		}
+	}
+
+	if (num_found == 0) return -1;
+	return result;
 }
 
 /**
@@ -111,39 +109,44 @@ static int cfg_rechable_pred(ir_node *start, ir_node *end)
  */
 static ir_node *get_pred_in_block(ir_node *block, ir_node *pred_block)
 {
-    int i;
+	int i;
 
-    /* Scan all predecessors and examine their block. */
-    for (i = 0; i < get_Block_n_cfgpreds(block); i++)
-    {
-        ir_node *pred_node = get_Block_cfgpred(block, i);
-        if (get_nodes_block(pred_node) == pred_block)
-        {
-            return pred_node;
-        }
-    }
+	/* Scan all predecessors and examine their block. */
+	for (i = 0; i < get_Block_n_cfgpreds(block); i++){
 
-    assert(0 && "No predecessor in the given block.");
+		ir_node *pred_node = get_Block_cfgpred(block, i);
+
+		if (get_nodes_block(pred_node) == pred_block) {
+			return pred_node;
+		}
+	}
+
+	assert(0 && "No predecessor in the given block.");
 }
 
 static ir_node *get_branch_cond(ir_node *block)
 {
-    assert(is_Block(block));
+	ir_node *succ;
+	ir_node *proj_node;
+	ir_node *cond_node;
+	int      num_outs;
 
-    int num_outs = get_Block_n_cfg_outs(block);
-    assert(num_outs == 2);
+	assert(is_Block(block));
 
-    /* Get one of the two successors. */
-    ir_node *succ = get_Block_cfg_out(block, 0);
+	num_outs = get_Block_n_cfg_outs(block);
+	assert(num_outs == 2);
 
-    ir_node *proj_node = get_pred_in_block(succ, block);
-    assert(is_Proj(proj_node));
+	/* Get one of the two successors. */
+	succ = get_Block_cfg_out(block, 0);
 
-    ir_node *cond_node = get_Proj_pred(proj_node);
-    assert(is_Cond(cond_node));
+	proj_node = get_pred_in_block(succ, block);
+	assert(is_Proj(proj_node));
 
-    /* Return the boolean value. */
-    return get_Cond_selector(cond_node);
+	cond_node = get_Proj_pred(proj_node);
+	assert(is_Cond(cond_node));
+
+	/* Return the boolean value. */
+	return get_Cond_selector(cond_node);
 }
 
 /**
@@ -153,157 +156,168 @@ static ir_node *get_branch_cond(ir_node *block)
  */
 static ir_node *select_value(ir_node *block, ir_node *end, ir_node **values)
 {
-    assert(is_Block(block));
-    assert(is_Block(end));
+	ir_node *block_a, *block_b;
+	ir_node *value_a, *value_b;
+	int      pred_a,   pred_b;
+	int      num_outs, num_preds;
 
-    /* Walk along the CFG tree in execution order. */
-    int num_outs = get_Block_n_cfg_outs(block);
-    assert(num_outs > 0);
+	ir_node *proj_a;
+	int      proj_a_pn;
 
-    /* If the path to take is unambiguous, simply recurse. */
-    if (num_outs == 1)
-    {
-        ir_node *next = get_Block_cfg_out(block, 0);
-        return select_value(next, end, values);
-    }
+	ir_node *cond, *gamma;
 
-    assert((num_outs == 2) && "Branch with more than two alternatives.");
+	assert(is_Block(block));
+	assert(is_Block(end));
 
-    /**
-     * Get the two successor blocks and find out whether they can reach
-     * the given end node.
-     */
-    ir_node *block_a = get_Block_cfg_out(block, 0);
-    ir_node *block_b = get_Block_cfg_out(block, 1);
+	/* Walk along the CFG tree in execution order. */
+	num_outs = get_Block_n_cfg_outs(block);
+	assert(num_outs > 0);
 
-    /**
-     * Analyze which branch can reach which predecessors of end.
-     */
-    int pred_a = cfg_rechable_pred(block_a, end);
-    int pred_b = cfg_rechable_pred(block_b, end);
-    assert(((pred_a >= 0) || (pred_b >= 0)) && "Path leads to nowhere.");
+	/* If the path to take is unambiguous, simply recurse. */
+	if (num_outs == 1) {
+		ir_node *next = get_Block_cfg_out(block, 0);
+		return select_value(next, end, values);
+	}
 
-    if ((pred_a < 0) || (pred_b < 0))
-    {
-        /* If only one branch can reach predecessors of end, skip the other. */
-        return select_value((pred_a < 0) ? block_b : block_a, end, values);
-    }
+	assert((num_outs == 2) && "Branch with more than two alternatives.");
 
-    int num_preds = get_Block_n_cfgpreds(end);
+	/**
+	 * Get the two successor blocks and find out whether they can reach
+	 * the given end node.
+	 */
+	block_a = get_Block_cfg_out(block, 0);
+	block_b = get_Block_cfg_out(block, 1);
 
-    /**
-     * Now select a value for both branches. Either by recursing or by taking
-     * the value corresponding to the predecessor block from the value array.
-     */
-    ir_node *value_a;
-    if (pred_a < num_preds) value_a = values[pred_a];
-    else value_a = select_value(block_a, end, values);
+	/**
+	 * Analyze which branch can reach which predecessors of end.
+	 */
+	pred_a = cfg_rechable_pred(block_a, end);
+	pred_b = cfg_rechable_pred(block_b, end);
+	assert(((pred_a >= 0) || (pred_b >= 0)) && "Path leads to nowhere.");
 
-    ir_node *value_b;
-    if (pred_b < num_preds) value_b = values[pred_b];
-    else value_b = select_value(block_b, end, values);
+	if ((pred_a < 0) || (pred_b < 0)) {
+		/* If only one branch can reach predecessors of end, skip the other. */
+		return select_value((pred_a < 0) ? block_b : block_a, end, values);
+	}
 
-    /* Find the proj node in block that leads to block_a. */
-    ir_node *proj_a = get_pred_in_block(block_a, block);
-    assert(is_Proj(proj_a));
+	num_preds = get_Block_n_cfgpreds(end);
 
-    int proj_a_pn = get_Proj_proj(proj_a);
-    assert((proj_a_pn == pn_Cond_true) || (proj_a_pn == pn_Cond_false));
+	/**
+	 * Now select a value for both branches. Either by recursing or by taking
+	 * the value corresponding to the predecessor block from the value array.
+	 */
+	if (pred_a < num_preds) value_a = values[pred_a];
+	else value_a = select_value(block_a, end, values);
 
-    /* From the projection number determine what is true and false. */
-    if (proj_a_pn != pn_Cond_false)
-    {
-        /* Swap both values if necessary. */
-        ir_node *temp = value_a;
-        value_a = value_b;
-        value_b = temp;
-    }
+	if (pred_b < num_preds) value_b = values[pred_b];
+	else value_b = select_value(block_b, end, values);
 
-    /* Create the gamma node to select the value. */
-    ir_node *cond  = get_branch_cond(block);
-    ir_node *gamma = new_r_Gamma(end, cond, value_a, value_b, mode_T);
+	/* Find the proj node in block that leads to block_a. */
+	proj_a = get_pred_in_block(block_a, block);
+	assert(is_Proj(proj_a));
 
-    return gamma;
+	proj_a_pn = get_Proj_proj(proj_a);
+	assert((proj_a_pn == pn_Cond_true) || (proj_a_pn == pn_Cond_false));
+
+	/* From the projection number determine what is true and false. */
+	if (proj_a_pn != pn_Cond_false) {
+		/* Swap both values if necessary. */
+		ir_node *temp = value_a;
+		value_a = value_b;
+		value_b = temp;
+	}
+
+	/* Create the gamma node to select the value. */
+	cond  = get_branch_cond(block);
+	gamma = new_r_Gamma(end, cond, value_a, value_b, mode_T);
+
+	return gamma;
 }
 
 static void replace_phis_walk(ir_node *block, void *ctx)
 {
-    (void)ctx;
+	int i, j;
+	int num_preds;
 
-    assert(is_Block(block));
+	ir_node **tuples;
+	ir_node **phis;
+	ir_node  *current;
+	ir_node  *idom, *tuple;
 
-    /* Skip blocks without phis. */
-    if (get_Block_phis(block) == NULL)
-    {
-        return;
-    }
+	(void)ctx;
 
-    int i, j;
-    int num_preds = get_Block_n_cfgpreds(block);
+	assert(is_Block(block));
 
-    /* Create an array of phi nodes for this block. */
-    ir_node **phis = NEW_ARR_F(ir_node*, 0);
+	/* Skip blocks without phis. */
+	if (get_Block_phis(block) == NULL) {
+		return;
+	}
 
-    ir_node *current = get_Block_phis(block);
-    while (current != NULL)
-    {
-        ARR_APP1(ir_node*, phis, current);
-        current = get_Phi_next(current);
-    }
+	num_preds = get_Block_n_cfgpreds(block);
 
-    /* For each predecessor create a tuple of values that are selected. */
-    ir_node *tuples[num_preds];
+	/* Create an array of phi nodes for this block. */
+	phis = NEW_ARR_F(ir_node*, 0);
 
-    for (i = 0; i < num_preds; i++)
-    {
-        /* Collect the values of all phis on the given predecessor. */
-        ir_node *values[ARR_LEN(phis)];
+	current = get_Block_phis(block);
+	while (current != NULL) {
+		ARR_APP1(ir_node*, phis, current);
+		current = get_Phi_next(current);
+	}
 
-        for (j = 0; j < ARR_LEN(phis); j++)
-        {
-            values[j] = get_Phi_pred(phis[j], i);
-        }
+	/* For each predecessor create a tuple of values that are selected. */
+	tuples = NEW_ARR_F(ir_node*, num_preds);
 
-        /* Create a tuple from them. */
-        tuples[i] = new_r_Tuple(block, ARR_LEN(phis), values);
-    }
+	for (i = 0; i < num_preds; i++) {
 
-    /**
-     * Get the immediate dominator of this block and analyze the CFG between
-     * both blocks, to create a PEG tree that selects the appropriate tuple
-     * using the branch conditions along the way.
-     */
-    ir_node *idom  = get_Block_idom(block);
-    ir_node *tuple = select_value(idom, block, tuples);
+		/* Collect the values of all phis on the given predecessor. */
+		ir_node **values = NEW_ARR_F(ir_node*, ARR_LEN(phis));
 
-    /* Now from the resulting tuple construct projs to replace the phis. */
+		for (j = 0; j < ARR_LEN(phis); j++)
+		{
+			values[j] = get_Phi_pred(phis[j], i);
+		}
 
-    for (i = 0; i < ARR_LEN(phis); i++)
-    {
-        ir_node *phi  = phis[i];
-        ir_mode *mode = get_irn_mode(phi);
-        ir_node *proj = new_r_Proj(tuple, mode, i);
-        exchange(phi, proj);
-    }
+		/* Create a tuple from them. */
+		tuples[i] = new_r_Tuple(block, ARR_LEN(phis), values);
+		DEL_ARR_F(values);
+	}
 
-    DEL_ARR_F(phis);
+	/**
+	 * Get the immediate dominator of this block and analyze the CFG between
+	 * both blocks, to create a PEG tree that selects the appropriate tuple
+	 * using the branch conditions along the way.
+	 */
+	idom  = get_Block_idom(block);
+	tuple = select_value(idom, block, tuples);
+
+	/* Now from the resulting tuple construct projs to replace the phis. */
+
+	for (i = 0; i < ARR_LEN(phis); i++) {
+		ir_node *phi  = phis[i];
+		ir_mode *mode = get_irn_mode(phi);
+		ir_node *proj = new_r_Proj(tuple, mode, i);
+		exchange(phi, proj);
+	}
+
+	DEL_ARR_F(tuples);
+	DEL_ARR_F(phis);
 }
 
 static void replace_phis(ir_graph *irg)
 {
-    /* We need to walk the CFG in reverse order and access dominators. */
-    assure_doms(irg);
-    assure_irg_outs(irg);
+	/* We need to walk the CFG in reverse order and access dominators. */
+	assure_doms(irg);
+	assure_irg_outs(irg);
 
-    /* Create lists of phi nodes in each block. */
-    ir_resources_t resources = IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST;
-    ir_reserve_resources(irg, resources);
-    collect_phiprojs(irg);
+	/* Create lists of phi nodes in each block. */
+	ir_resources_t resources = IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST;
+	ir_reserve_resources(irg, resources);
+	collect_phiprojs(irg);
 
-    /* Walk along the graph and replace phi nodes by gammas. */
-    irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
+	/* Walk along the graph and replace phi nodes by gammas. */
+	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
 
-    ir_free_resources(irg, resources);
+	ir_free_resources(irg, resources);
 }
 
 /**
@@ -311,55 +325,64 @@ static void replace_phis(ir_graph *irg)
  */
 static void move_to_block(ir_node *irn, void *ctx)
 {
-    if (is_Block(irn)) return;
+	ir_graph *irg;
+	ir_node  *block, *target;
 
-    ir_graph *irg   = get_irn_irg(irn);
-    ir_node  *block = get_nodes_block(irn);
+	if (is_Block(irn)) return;
 
-    if ((block == get_irg_start_block(irg)) ||
-        (block == get_irg_end_block(irg)))
-    {
-        return;
-    }
+	irg   = get_irn_irg(irn);
+	block = get_nodes_block(irn);
 
-    ir_node *target = (ir_node*)ctx;
-    set_nodes_block(irn, target);
+	if ((block == get_irg_start_block(irg)) ||
+	    (block == get_irg_end_block(irg))) {
+
+		return;
+	}
+
+	target = (ir_node*)ctx;
+	set_nodes_block(irn, target);
 }
 
 static void remove_blocks(ir_graph *irg)
 {
-    /* Create a single block to stuff everything else in. */
-    ir_node *start = get_irg_start(irg);
-    ir_node *exec  = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
-    ir_node *block = new_r_Block(irg, 1, &exec);
+	/* Create a single block to stuff everything else in. */
+	ir_node *start = get_irg_start(irg);
+	ir_node *exec  = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
+	ir_node *block = new_r_Block(irg, 1, &exec);
 
-    /**
-     * Move all nodes into that block. The old block structure will vanish,
-     * since it can't be reached from the end block, once the return has been
-     * moved away into the new block.
-     */
-    irg_walk_graph(irg, NULL, move_to_block, block);
+	/**
+	 * Move all nodes into that block. The old block structure will vanish,
+	 * since it can't be reached from the end block, once the return has been
+	 * moved away into the new block.
+	 */
+	irg_walk_graph(irg, NULL, move_to_block, block);
 }
 
 void convert_to_peg(ir_graph *irg)
 {
-    int opt_level = get_optimize();
-    set_optimize(0);
+	int opt_level = get_optimize();
+	set_optimize(0);
 
-    dump_ir_graph(irg, "cfg");
+	dump_ir_graph(irg, "cfg");
 
-    /* Eliminate multiple returns. The program is exactly one value in PEG. */
-    normalize_one_return(irg);
-    dump_ir_graph(irg, "return");
+	/* Eliminate multiple returns. The program is exactly one value in PEG. */
+	normalize_one_return(irg);
+	dump_ir_graph(irg, "return");
 
-    /* Replace phi nodes by gamma trees selecting tuples. */
-    replace_phis(irg);
-    dump_ir_graph(irg, "gamma");
+	/* Replace phi nodes by gamma trees selecting tuples. */
+	replace_phis(irg);
+	dump_ir_graph(irg, "gamma");
 
-    /* Remove the existing block structure. */
-    remove_blocks(irg);
-    dump_ir_graph(irg, "nocfg");
+	/* Remove the existing block structure. */
+	remove_blocks(irg);
+	dump_ir_graph(irg, "nocfg");
 
-    optimize_cf(irg);
-    set_optimize(opt_level);
+	/* Most data is probably inconsistent now. */
+	set_irg_outs_inconsistent(irg);
+	set_irg_doms_inconsistent(irg);
+	set_irg_extblk_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
+
+	optimize_cf(irg);
+	set_optimize(opt_level);
 }
