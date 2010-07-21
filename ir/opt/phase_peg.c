@@ -34,6 +34,7 @@
 #include "irouts.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "lowering.h"
 #include "array_t.h"
 
 /**
@@ -421,6 +422,10 @@ void convert_to_peg(ir_graph *irg)
 	set_optimize(0);
 
 	dump_ir_graph(irg, "cfg");
+
+	/* Eliminate all switch nodes, we can't represent them in a PEG. */
+	lower_switch(irg, 0);
+	dump_ir_graph(irg, "switch");
 
 	/* Eliminate multiple returns. The program is exactly one value in PEG. */
 	normalize_one_return(irg);
