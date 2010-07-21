@@ -1621,6 +1621,28 @@ static int verify_node_Mux(const ir_node *n)
 }
 
 /**
+ * verify a Gamma node
+ */
+static int verify_node_Gamma(ir_node *n, ir_graph *irg)
+{
+	ir_mode *mymode  = get_irn_mode(n);
+	ir_mode *op1mode = get_irn_mode(get_Gamma_cond(n));
+	ir_mode *op2mode = get_irn_mode(get_Gamma_true(n));
+	ir_mode *op3mode = get_irn_mode(get_Gamma_false(n));
+	(void) irg;
+
+	ASSERT_AND_RET(
+		/* Gamma: BB x b x datab|T|M x datab|T|M --> datab|T|M */
+		op1mode == mode_b &&
+		op2mode == mymode &&
+		op3mode == mymode &&
+		(mode_is_datab(mymode) || (mymode == mode_T) || (mymode == mode_M)),
+		"Gamma node", 0
+		);
+	return 1;
+}
+
+/**
  * verify a CopyB node
  */
 static int verify_node_CopyB(const ir_node *n)
@@ -2252,6 +2274,7 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
 	CASE(Sync);
 	CASE(Confirm);
 	CASE(Mux);
+	CASE(Gamma);
 	CASE(CopyB);
 	CASE(Bound);
 	default:
