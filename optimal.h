@@ -43,8 +43,6 @@ void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
 #endif
 
 void back_propagate(pbqp *pbqp);
-
-void back_propagate(pbqp *pbqp);
 num determine_solution(pbqp *pbqp);
 void fill_node_buckets(pbqp *pbqp);
 void free_buckets(void);
