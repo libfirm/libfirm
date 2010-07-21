@@ -270,6 +270,7 @@ static int co_solve_heuristic_pbqp(copy_opt_t *co)
 	printf("Number of trivial solved nodes: %d\n", pbqp_co.pbqp->num_r0);
 	printf("Number of R1 reductions       : %d\n", pbqp_co.pbqp->num_r1);
 	printf("Number of R2 reductions       : %d\n", pbqp_co.pbqp->num_r2);
+	printf("Number of RM reductions       : %d\n", pbqp_co.pbqp->num_rm);
 	printf("Number of RN reductions       : %d\n", pbqp_co.pbqp->num_rn);
     #endif
 
