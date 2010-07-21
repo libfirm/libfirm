@@ -41,7 +41,11 @@ static const char *cost2a(num const cost)
 	static char buf[10];
 
 	if (cost == INF_COSTS) return "inf";
+#if KAPS_USE_UNSIGNED
+	sprintf(buf, "%u", cost);
+#else
 	sprintf(buf, "%10lld", cost);
+#endif
 	return buf;
 }
 
