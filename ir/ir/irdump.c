@@ -1499,10 +1499,27 @@ static void dump_node_wo_blockedge(ir_node *n, void *env)
 /** Dumps a node and its edges. */
 static void dump_node_with_edges(ir_node *n, void *env)
 {
-	FILE *F = (FILE*)env;
+	FILE *F = env;
+
+	/* Do we have to hide (aka skip) control flow nodes? */
+	if (flags & ir_dump_flag_hide_control_flow) {
+
+		/* Skip all blocks and mode X nodes except return. */
+		if (is_Block(n)) return;
+
+		if (get_irn_mode(n) == mode_X) {
+			if (!is_Return(n)) return;
+		}
+	}
+
 	dump_node_wo_blockedge(n, env);
-	if (!node_floats(n))
-		dump_ir_block_edge(F, n);
+
+	if (!node_floats(n)) {
+		/* Do not dump block edges, if control flow is hidden. */
+		if (!(flags & ir_dump_flag_hide_control_flow)) {
+			dump_ir_block_edge(F, n);
+		}
+	}
 }
 
 /** Dumps a const-like node. */
@@ -2287,8 +2304,10 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 {
 	dump_vcg_header(out, get_irg_dump_name(irg), NULL, NULL);
 
-	/* dump nodes */
-	if (flags & ir_dump_flag_blocks_as_subgraphs) {
+	/* Dump nodes. When hiding control flow use dump_node_with_edges. */
+	if ((flags & ir_dump_flag_blocks_as_subgraphs) &&
+	    !(flags & ir_dump_flag_hide_control_flow)) {
+
 		if (flags & ir_dump_flag_group_extbb) {
 			dump_blocks_extbb_grouped(out, irg);
 		} else {

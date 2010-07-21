@@ -343,6 +343,8 @@ typedef enum {
 	ir_dump_flag_ld_names              = 1U << 21,
 	/** dump entities in class hierarchies */
 	ir_dump_flag_entities_in_hierarchy = 1U << 22,
+	/** Hide all control flow nodes and blocks except return nodes. */
+	ir_dump_flag_hide_control_flow     = 1U << 23
 } ir_dump_flags_t;
 ENUM_BITSET(ir_dump_flags_t)
 

@@ -432,6 +432,9 @@ void convert_to_peg(ir_graph *irg)
 
 	/* Remove the existing block structure. */
 	remove_blocks(irg);
+
+	dump_ir_graph(irg, "nocfg-cf");
+	ir_add_dump_flags(ir_dump_flag_hide_control_flow);
 	dump_ir_graph(irg, "nocfg");
 
 	/* Unfold tuples on gammas and thetas. */
