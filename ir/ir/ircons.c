@@ -1318,6 +1318,57 @@ ir_node *get_value(int pos, ir_mode *mode)
 	return get_d_value(NULL, pos, mode);
 }  /* get_value */
 
+/**
+ * helper function for guess_mode: recursively look for a definition for
+ * local variable @p pos, returns its mode if found.
+ */
+static ir_mode *guess_recursively(ir_node *block, int pos)
+{
+	ir_node *value;
+	int      n_preds;
+	int      i;
+
+	if (irn_visited(block))
+		return NULL;
+	mark_irn_visited(block);
+
+	/* already have a defintion -> we can simply look at its mode */
+	value = block->attr.block.graph_arr[pos];
+	if (value != NULL)
+		return get_irn_mode(value);
+
+	/* now we try to guess, by looking at the predecessor blocks */
+	n_preds = get_irn_arity(block);
+	for (i = 0; i < n_preds; ++i) {
+		ir_node *pred_block = get_Block_cfgpred_block(block, i);
+		ir_mode *mode       = guess_recursively(pred_block, pos);
+		if (mode != NULL)
+			return mode;
+	}
+
+	/* no way to guess */
+	return NULL;
+}
+
+ir_mode *ir_guess_mode(int pos)
+{
+	ir_graph *irg   = current_ir_graph;
+	ir_node  *block = irg->current_block;
+	ir_node  *value = block->attr.block.graph_arr[pos+1];
+	ir_mode  *mode;
+
+	/* already have a defintion -> we can simply look at its mode */
+	if (value != NULL)
+		return get_irn_mode(value);
+
+	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(current_ir_graph);
+	mode = guess_recursively(block, pos+1);
+	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+
+	return mode;
+}
+
 /* set a value at position pos in the parameter array from the current block */
 void set_value(int pos, ir_node *value)
 {

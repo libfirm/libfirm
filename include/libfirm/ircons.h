@@ -4292,6 +4292,16 @@ FIRM_API void mature_immBlock(ir_node *block);
 FIRM_API ir_node *get_d_value(dbg_info *db, int pos, ir_mode *mode);
 FIRM_API ir_node *get_value(int pos, ir_mode *mode);
 
+/**
+ * Try to guess the mode of a local variable.
+ * This is done by recursively going up the control flow graph until
+ * we find a definition for the variable. The mode of the first found
+ * definition is returned. NULL in case no definition is found.
+ *
+ * @param  pos   The position/id of the local variable.
+ */
+FIRM_API ir_mode *ir_guess_mode(int pos);
+
 /** Remark a new definition of a variable.
  *
  * Use this function to remember a new definition of the value
