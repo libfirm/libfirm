@@ -140,7 +140,6 @@ $default_copy_attr = "sparc_copy_attr";
 	                            "\tinit_sparc_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
 	sparc_symconst_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_symconst_attributes(res, entity);",
-	sparc_cmp_attr_t         => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_jmp_switch_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
@@ -153,7 +152,6 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_symconst_attr_t   => "cmp_attr_sparc_symconst",
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
 	sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
-	sparc_cmp_attr_t        => "cmp_attr_sparc_cmp",
 	sparc_save_attr_t       => "cmp_attr_sparc_save",
 );
 
@@ -162,15 +160,12 @@ $default_copy_attr = "sparc_copy_attr";
 
 my %cmp_operand_constructors = (
 	imm => {
-		attr       => "int immediate_value, bool ins_permuted, bool is_unsigned",
-		custominit => "sparc_set_attr_imm(res, immediate_value);" .
-						"\tinit_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
+		attr       => "int immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_value);",
 		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
-	ins        => [ "left" ],
+		ins        => [ "left" ],
 	},
 	reg => {
-	attr       => "bool ins_permuted, bool is_unsigned",
-		custominit => "init_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
 		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
 		ins        => [ "left", "right" ],
 	},
@@ -321,9 +316,9 @@ BXX => {
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
-	attr      => "int proj_num",
+	attr      => "int proj_num, bool is_unsigned",
 	attr_type => "sparc_jmp_cond_attr_t",
-	init_attr => "\tset_sparc_jmp_cond_proj_num(res, proj_num);",
+	init_attr => "\tinit_sparc_jmp_cond_attr(res, proj_num, is_unsigned);",
 },
 
 Ba => {
@@ -338,7 +333,6 @@ Cmp => {
 	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. cmp %S1, %R2I',
 	mode         => $mode_flags,
-	attr_type    => "sparc_cmp_attr_t",
 	constructors => \%cmp_operand_constructors,
 },
 
@@ -346,11 +340,8 @@ Tst => {
 	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. tst %S1',
 	mode         => $mode_flags,
-	attr_type    => "sparc_cmp_attr_t",
-	attr         => "bool ins_permuted, bool is_unsigned",
-	custominit   => "init_sparc_cmp_attr(res, ins_permuted, is_unsigned);",
 	reg_req      => { in => [ "gp" ], out => [ "flags" ] },
-	ins          => [ "left" ],
+	ins          => [ "val" ],
 },
 
 SwitchJmp => {

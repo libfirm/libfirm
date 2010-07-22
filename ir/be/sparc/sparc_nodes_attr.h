@@ -88,6 +88,7 @@ typedef struct sparc_jmp_cond_attr_t sparc_jmp_cond_attr_t;
 struct sparc_jmp_cond_attr_t {
 	sparc_attr_t base;    /**< generic attribute */
 	int          proj_num;
+	bool         is_unsigned : 1;
 };
 
 /**
@@ -98,16 +99,6 @@ struct sparc_jmp_switch_attr_t {
 	sparc_attr_t  base;    /**< generic attribute */
 	int           n_projs;
 	long          default_proj_num;
-};
-
-/**
- * attributes for Cmp
- */
-typedef struct sparc_cmp_attr_t sparc_cmp_attr_t;
-struct sparc_cmp_attr_t {
-	sparc_attr_t  base;    /**< generic attribute */
-	bool          ins_permuted : 1;
-	bool          is_unsigned  : 1;
 };
 
 #endif

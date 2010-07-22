@@ -591,22 +591,19 @@ static void emit_sparc_FrameAddr(const ir_node *irn)
 /**
  * Emits code for Branch
  */
-static void emit_sparc_BXX(const ir_node *irn)
+static void emit_sparc_BXX(const ir_node *node)
 {
+	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
+	int              proj_num    = attr->proj_num;
+	bool             is_unsigned = attr->is_unsigned;
+	const ir_node   *proj_true   = NULL;
+	const ir_node   *proj_false  = NULL;
 	const ir_edge_t *edge;
-	const ir_node *proj_true  = NULL;
-	const ir_node *proj_false = NULL;
-	const ir_node *block;
-	const ir_node *next_block;
-	ir_node *op1 = get_irn_n(irn, 0);
-	const char *suffix;
-	int proj_num = get_sparc_jmp_cond_proj_num(irn);
-	const sparc_cmp_attr_t *cmp_attr = get_irn_generic_attr_const(op1);
-	// bool is_signed = !cmp_attr->is_unsigned;
+	const ir_node   *block;
+	const ir_node   *next_block;
+	const char      *suffix;
 
-	assert(is_sparc_Cmp(op1) || is_sparc_Tst(op1));
-
-	foreach_out_edge(irn, edge) {
+	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long nr = get_Proj_proj(proj);
 		if (nr == pn_Cond_true) {
@@ -616,12 +613,8 @@ static void emit_sparc_BXX(const ir_node *irn)
 		}
 	}
 
-	if (cmp_attr->ins_permuted) {
-		proj_num = get_mirrored_pnc(proj_num);
-	}
-
 	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(irn);
+	block = get_nodes_block(node);
 
 	/* we have a block schedule */
 	next_block = get_irn_link(block);
@@ -638,20 +631,32 @@ static void emit_sparc_BXX(const ir_node *irn)
 		proj_num   = get_negated_pnc(proj_num, mode_Iu);
 	}
 
-
-	switch (proj_num) {
-		case pn_Cmp_Eq:  suffix = "e"; break;
-		case pn_Cmp_Lt:  suffix = "l"; break;
-		case pn_Cmp_Le:  suffix = "le"; break;
-		case pn_Cmp_Gt:  suffix = "g"; break;
-		case pn_Cmp_Ge:  suffix = "ge"; break;
-		case pn_Cmp_Lg:  suffix = "ne"; break;
-		case pn_Cmp_Leg: suffix = "a"; break;
-		default: panic("Cmp has unsupported pnc");
+	if (is_unsigned) {
+		switch (proj_num) {
+			case pn_Cmp_Eq:  suffix = "e"; break;
+			case pn_Cmp_Lt:  suffix = "lu"; break;
+			case pn_Cmp_Le:  suffix = "leu"; break;
+			case pn_Cmp_Gt:  suffix = "gu"; break;
+			case pn_Cmp_Ge:  suffix = "geu"; break;
+			case pn_Cmp_Lg:  suffix = "ne"; break;
+			default: panic("Cmp has unsupported pnc");
+		}
+	} else {
+		switch (proj_num) {
+			case pn_Cmp_Eq:  suffix = "e"; break;
+			case pn_Cmp_Lt:  suffix = "l"; break;
+			case pn_Cmp_Le:  suffix = "le"; break;
+			case pn_Cmp_Gt:  suffix = "g"; break;
+			case pn_Cmp_Ge:  suffix = "ge"; break;
+			case pn_Cmp_Lg:  suffix = "ne"; break;
+			default: panic("Cmp has unsupported pnc");
+		}
 	}
 
 	/* emit the true proj */
-	be_emit_irprintf("\tb%s ", suffix);
+	be_emit_cstring("\tb");
+	be_emit_string(suffix);
+	be_emit_char(' ');
 	sparc_emit_cfop_target(proj_true);
 	be_emit_finish_line_gas(proj_true);
 

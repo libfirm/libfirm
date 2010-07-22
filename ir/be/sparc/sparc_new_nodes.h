@@ -45,9 +45,6 @@ const sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr_const(const ir_node *node);
 sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr(ir_node *node);
 const sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr_const(const ir_node *node);
 
-sparc_cmp_attr_t *get_sparc_cmp_attr(ir_node *node);
-const sparc_cmp_attr_t *get_sparc_cmp_attr_const(const ir_node *node);
-
 sparc_save_attr_t *get_sparc_save_attr(ir_node *node);
 const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node);
 
@@ -65,18 +62,6 @@ const arch_register_req_t *get_sparc_in_req(const ir_node *node, int pos);
  * Sets the IN register requirements at position pos.
  */
 void set_sparc_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
-
-/**
- * Returns the proj num
- */
-int get_sparc_jmp_cond_proj_num(const ir_node *node);
-
-/**
- * Sets the proj num
- */
-void set_sparc_jmp_cond_proj_num(ir_node *node, int proj_num);
-
 
 /**
  * Returns the number of projs of a SwitchJmp.

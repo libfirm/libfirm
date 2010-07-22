@@ -55,11 +55,6 @@ static bool has_load_store_attr(const ir_node *node)
 	return is_sparc_Ld(node) || is_sparc_St(node);
 }
 
-static bool has_cmp_attr(const ir_node *node)
-{
-	return is_sparc_Cmp(node) || is_sparc_Tst(node);
-}
-
 static bool has_jmp_cond_attr(const ir_node *node)
 {
 	return is_sparc_BXX(node);
@@ -115,10 +110,12 @@ static void sparc_set_attr_imm(ir_node *res, int immediate_value)
 	attr->immediate_value = immediate_value;
 }
 
-void set_sparc_jmp_cond_proj_num(ir_node *node, int proj_num)
+static void init_sparc_jmp_cond_attr(ir_node *node, int proj_num,
+                                     bool is_unsigned)
 {
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
-	attr->proj_num = proj_num;
+	attr->proj_num    = proj_num;
+	attr->is_unsigned = is_unsigned;
 }
 
 void set_sparc_jmp_switch_n_projs(ir_node *node, int n_projs)
@@ -134,12 +131,6 @@ void set_sparc_jmp_switch_default_proj_num(ir_node *node, long def_proj_num)
 }
 
 
-
-int get_sparc_jmp_cond_proj_num(const ir_node *node)
-{
-	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
-	return attr->proj_num;
-}
 
 int get_sparc_jmp_switch_n_projs(const ir_node *node)
 {
@@ -211,18 +202,6 @@ const sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr_const(const ir_node *no
 {
 	assert(has_jmp_switch_attr(node));
 	return (const sparc_jmp_switch_attr_t*) get_irn_generic_attr_const(node);
-}
-
-sparc_cmp_attr_t *get_sparc_cmp_attr(ir_node *node)
-{
-	assert(has_cmp_attr(node));
-	return (sparc_cmp_attr_t*) get_irn_generic_attr_const(node);
-}
-
-const sparc_cmp_attr_t *get_sparc_cmp_attr_const(const ir_node *node)
-{
-	assert(has_cmp_attr(node));
-	return (const sparc_cmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
 sparc_save_attr_t *get_sparc_save_attr(ir_node *node)
@@ -300,13 +279,6 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 	attr->is_frame_entity    = is_frame_entity;
 	attr->offset             = offset;
 	attr->base.is_load_store = true;
-}
-
-static void init_sparc_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
-{
-	sparc_cmp_attr_t *attr = get_sparc_cmp_attr(res);
-	attr->ins_permuted = ins_permuted;
-	attr->is_unsigned  = is_unsigned;
 }
 
 static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
@@ -390,7 +362,8 @@ static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
 	if (cmp_attr_sparc(a, b))
 			return 1;
 
-	return attr_a->proj_num != attr_b->proj_num;
+	return attr_a->proj_num != attr_b->proj_num
+		|| attr_a->is_unsigned != attr_b->is_unsigned;
 }
 
 static int cmp_attr_sparc_jmp_switch(ir_node *a, ir_node *b)
@@ -403,18 +376,6 @@ static int cmp_attr_sparc_jmp_switch(ir_node *a, ir_node *b)
 
 	return attr_a->default_proj_num != attr_b->default_proj_num
 			|| attr_a->n_projs != attr_b->n_projs;
-}
-
-static int cmp_attr_sparc_cmp(ir_node *a, ir_node *b)
-{
-	const sparc_cmp_attr_t *attr_a = get_sparc_cmp_attr_const(a);
-	const sparc_cmp_attr_t *attr_b = get_sparc_cmp_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-			return 1;
-
-	return attr_a->ins_permuted != attr_b->ins_permuted
-			|| attr_a->is_unsigned != attr_b->is_unsigned;
 }
 
 static int cmp_attr_sparc_save(ir_node *a, ir_node *b)
