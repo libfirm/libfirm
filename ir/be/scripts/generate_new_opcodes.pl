@@ -206,7 +206,9 @@ sub create_constructor {
 	} elsif($out_arity eq "dynamic") {
 		$out_arity = $ARITY_DYNAMIC;
 	}
-
+	if ($out_arity != 0 && $out_arity != 1 && !defined($known_mode)) {
+		$known_mode = "mode_T";
+	}
 
 	my $comment = $n->{"comment"};
 	if(!exists($n->{"comment"})) {

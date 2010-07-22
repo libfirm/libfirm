@@ -316,7 +316,6 @@ LinkMovPC => {
 	                "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);",
 	emit         => ". mov lr, pc\n".
 	                ". mov pc, %SO",
-	mode         => "mode_T",
 },
 
 # mov lr, pc\n ldr pc, XXX -- This combination is used for calls to function
@@ -330,7 +329,6 @@ LinkLdrPC => {
 	custominit   => "arch_irn_add_flags(res, arch_irn_flags_modify_flags);",
 	emit         => ". mov lr, pc\n".
 	                ". ldr pc, %SO",
-	mode         => "mode_T",
 },
 
 Bl => {
@@ -341,7 +339,6 @@ Bl => {
 	attr       => "ir_entity *entity, int symconst_offset",
 	custominit => "arch_irn_add_flags(res, arch_irn_flags_modify_flags);",
 	emit       => '. bl %SC',
-	mode       => "mode_T",
 },
 
 # this node produces ALWAYS an empty (tempary) gp reg and cannot be CSE'd
@@ -442,7 +439,7 @@ Str => {
 	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
-	outs      => [ "mem" ],
+	outs      => [ "M" ],
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	emit      => '. str%SM %S1, [%S0, #%O]',
 	mode      => "mode_M",

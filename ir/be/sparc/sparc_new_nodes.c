@@ -225,6 +225,12 @@ const arch_register_req_t **get_sparc_in_req_all(const ir_node *node)
 	return attr->in_req;
 }
 
+void set_sparc_in_req_all(ir_node *node, const arch_register_req_t **reqs)
+{
+	sparc_attr_t *attr = get_sparc_attr(node);
+	attr->in_req = reqs;
+}
+
 /**
  * Returns the argument register requirement at position pos of an sparc node.
  */

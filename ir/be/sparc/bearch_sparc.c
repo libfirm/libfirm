@@ -48,7 +48,6 @@
 #include "../belower.h"
 #include "../besched.h"
 #include "be.h"
-#include "../beabi.h"
 #include "../bemachine.h"
 #include "../beilpsched.h"
 #include "../bemodule.h"
@@ -182,10 +181,9 @@ static void sparc_before_ra(void *self)
  */
 static void transform_Reload(ir_node *node)
 {
-	ir_graph  *irg    = get_irn_irg(node);
 	ir_node   *block  = get_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *ptr    = get_irn_n(node, be_pos_Spill_frame);
 	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
 	ir_mode   *mode   = get_irn_mode(node);
 	ir_entity *entity = be_get_frame_entity(node);
@@ -212,10 +210,9 @@ static void transform_Reload(ir_node *node)
  */
 static void transform_Spill(ir_node *node)
 {
-	ir_graph  *irg    = get_irn_irg(node);
 	ir_node   *block  = get_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irg_frame(irg);
+	ir_node   *ptr    = get_irn_n(node, be_pos_Spill_frame);
 	ir_node   *mem    = new_NoMem();
 	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
 	ir_mode   *mode   = get_irn_mode(val);
@@ -313,16 +310,17 @@ static void *sparc_cg_init(ir_graph *irg)
 const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	{
-		&sparc_isa_if,           /* isa interface implementation */
-		&sparc_gp_regs[REG_SP],  /* stack pointer register */
-		&sparc_gp_regs[REG_FP],  /* base pointer register */
-		&sparc_reg_classes[CLASS_sparc_gp],  /* link pointer register class */
-		-1,                          /* stack direction */
-		3,                           /* power of two stack alignment for calls, 2^2 == 4 */
-		NULL,                        /* main environment */
-		7,                           /* costs for a spill instruction */
-		5,                           /* costs for a reload instruction */
-		false,                       /* no custom abi handling */
+		&sparc_isa_if,                      /* isa interface implementation */
+		&sparc_gp_regs[REG_SP],             /* stack pointer register */
+		&sparc_gp_regs[REG_FRAME_POINTER],  /* base pointer register */
+		&sparc_reg_classes[CLASS_sparc_gp], /* link pointer register class */
+		-1,                                 /* stack direction */
+		3,                                  /* power of two stack alignment
+		                                       for calls */
+		NULL,                               /* main environment */
+		7,                                  /* costs for a spill instruction */
+		5,                                  /* costs for a reload instruction */
+		true,                               /* custom abi handling */
 	},
 	NULL						/* current code generator */
 };
@@ -468,196 +466,6 @@ static const arch_register_class_t *sparc_get_reg_class_for_mode(const ir_mode *
 		return &sparc_reg_classes[CLASS_sparc_gp];
 }
 
-
-
-typedef struct {
-	be_abi_call_flags_bits_t flags;
-	ir_graph                *irg;
-} sparc_abi_env_t;
-
-static void *sparc_abi_init(const be_abi_call_t *call, ir_graph *irg)
-{
-	sparc_abi_env_t *env = XMALLOC(sparc_abi_env_t);
-	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
-	env->flags    = fl.bits;
-	env->irg      = irg;
-	return env;
-}
-
-/**
- * Get the between type for that call.
- * @param self The callback object.
- * @return The between type of for that call.
- */
-static ir_type *sparc_get_between_type(void *self)
-{
-	static ir_type *between_type = NULL;
-	(void) self;
-
-	if (between_type == NULL) {
-		between_type = new_type_class(new_id_from_str("sparc_between_type"));
-		set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
-	}
-
-	return between_type;
-}
-
-
-/**
- * Build the prolog, return the BASE POINTER register
- */
-static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
-                                                 pmap *reg_map, int *stack_bias)
-{
-	sparc_abi_env_t *env = self;
-	ir_node *block = get_irg_start_block(env->irg);
-	const arch_register_t *fp = &sparc_gp_regs[REG_FP];
-	const arch_register_t *sp = &sparc_gp_regs[REG_SP];
-
-	// sp
-	ir_node *sp_proj = be_abi_reg_map_get(reg_map, sp);
-
-
-	//ir_type *frame_type = get_irg_frame_type(env->irg);
-	//frame_alloc_area(frame_type, reserved_stack_size, 1, 1);
-
-	// alloc min required stack space
-	// TODO: the min stacksize depends on wether this is a leaf procedure or not
-	ir_node *save = new_bd_sparc_Save(NULL, block, sp_proj, *mem, SPARC_MIN_STACKSIZE);
-
-	(void) reg_map;
-	(void) mem;
-	(void) stack_bias;
-
-	sp_proj = new_r_Proj(save, sp->reg_class->mode, pn_sparc_Save_stack);
-	*mem    = new_r_Proj(save, mode_M, pn_sparc_Save_mem);
-
-	arch_set_irn_register(sp_proj, sp);
-	be_abi_reg_map_set(reg_map, sp, sp_proj);
-
-	// we always have a framepointer
-	return fp;
-}
-
-/* Build the epilog */
-static void sparc_abi_epilogue(void *self, ir_node *bl, ir_node **mem,
-                               pmap *reg_map)
-{
-	(void) self;
-	(void) bl;
-	(void) mem;
-	(void) reg_map;
-}
-
-static const be_abi_callbacks_t sparc_abi_callbacks = {
-	sparc_abi_init,
-	free,
-	sparc_get_between_type,
-	sparc_abi_prologue,
-	sparc_abi_epilogue,
-};
-
-static const arch_register_t *gp_param_out_regs[] = {
-	&sparc_gp_regs[REG_O0],
-	&sparc_gp_regs[REG_O1],
-	&sparc_gp_regs[REG_O2],
-	&sparc_gp_regs[REG_O3],
-	&sparc_gp_regs[REG_O4],
-	&sparc_gp_regs[REG_O5],
-};
-
-static const arch_register_t *gp_param_in_regs[] = {
-	&sparc_gp_regs[REG_I0],
-	&sparc_gp_regs[REG_I1],
-	&sparc_gp_regs[REG_I2],
-	&sparc_gp_regs[REG_I3],
-	&sparc_gp_regs[REG_I4],
-	&sparc_gp_regs[REG_I5],
-};
-
-/**
- * get register for outgoing parameters 1-6
- */
-static const arch_register_t *sparc_get_RegParamOut_reg(int n)
-{
-	assert(n < 6 && n >=0 && "trying to get (out) register for param >= 6");
-	return gp_param_out_regs[n];
-}
-
-/**
- * get register for incoming parameters 1-6
- */
-static const arch_register_t *sparc_get_RegParamIn_reg(int n)
-{
-	assert(n < 6 && n >=0 && "trying to get (in) register for param >= 6");
-	return gp_param_in_regs[n];
-}
-
-/**
- * Get the ABI restrictions for procedure calls.
- * @param self        The this pointer.
- * @param method_type The type of the method (procedure) in question.
- * @param abi         The abi object to be modified
- */
-static void sparc_get_call_abi(const void *self, ir_type *method_type,
-                               be_abi_call_t *abi)
-{
-	ir_type  *tp;
-	ir_mode  *mode;
-	int       i, n = get_method_n_params(method_type);
-	be_abi_call_flags_t call_flags;
-	(void) self;
-
-	/* set abi flags for calls */
-	call_flags.bits.left_to_right         = 0;
-	call_flags.bits.store_args_sequential = 1;
-	call_flags.bits.try_omit_fp           = 0;
-	call_flags.bits.fp_free               = 0;
-	call_flags.bits.call_has_imm          = 1;
-
-	/* set stack parameter passing style */
-	be_abi_call_set_flags(abi, call_flags, &sparc_abi_callbacks);
-
-	for (i = 0; i < n; i++) {
-		ir_type *type = get_method_param_type(method_type, i);
-		ir_mode *mode = get_type_mode(type);
-
-		if (mode_is_float(mode) || i >= 6) {
-			unsigned align = get_type_size_bytes(type);
-			be_abi_call_param_stack(abi, i, mode, align, 0, 0,
-			                        ABI_CONTEXT_BOTH);
-			continue;
-		}
-
-		/* pass integer params 0-5 via registers.
-		 * On sparc we need to set the ABI context since register names of
-		 * parameters change to i0-i5 if we are the callee */
-		be_abi_call_param_reg(abi, i, sparc_get_RegParamOut_reg(i),
-		                      ABI_CONTEXT_CALLER);
-		be_abi_call_param_reg(abi, i, sparc_get_RegParamIn_reg(i),
-		                      ABI_CONTEXT_CALLEE);
-	}
-
-	n = get_method_n_ress(method_type);
-	/* more than 1 result not supported */
-	assert(n <= 1);
-	for (i = 0; i < n; ++i) {
-		tp   = get_method_res_type(method_type, i);
-		mode = get_type_mode(tp);
-
-		/* set return value register: return value is in i0 resp. f0 */
-		if (mode_is_float(mode)) {
-			be_abi_call_res_reg(abi, i, &sparc_fp_regs[REG_F0],
-			                    ABI_CONTEXT_BOTH);
-		} else {
-			be_abi_call_res_reg(abi, i, &sparc_gp_regs[REG_I0],
-			                    ABI_CONTEXT_CALLEE);
-			be_abi_call_res_reg(abi, i, &sparc_gp_regs[REG_O0],
-			                    ABI_CONTEXT_CALLER);
-		}
-	}
-}
-
 static int sparc_to_appear_in_schedule(void *block_env, const ir_node *irn)
 {
 	(void) block_env;
@@ -773,7 +581,7 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_get_n_reg_class,
 	sparc_get_reg_class,
 	sparc_get_reg_class_for_mode,
-	sparc_get_call_abi,
+	NULL,
 	sparc_get_code_generator_if,
 	sparc_get_list_sched_selector,
 	sparc_get_ilp_sched_selector,

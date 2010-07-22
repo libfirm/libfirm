@@ -102,11 +102,11 @@ typedef struct calling_convention_t
  * Decides what goes to register or to stack and what stack offsets/
  * datatypes are used.
  */
-calling_convention_t *decide_calling_convention(ir_type *function_type);
+calling_convention_t *arm_decide_calling_convention(ir_type *function_type);
 
 /**
  * free memory used by a calling_convention_t
  */
-void free_calling_convention(calling_convention_t *cconv);
+void arm_free_calling_convention(calling_convention_t *cconv);
 
 #endif

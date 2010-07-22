@@ -53,8 +53,6 @@
 #include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
 
-
-#define SNPRINTF_BUF_LEN 128
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
@@ -438,24 +436,24 @@ static void emit_be_Return(const ir_node *irn)
 /**
  * Emits code for Call node
  */
-static void emit_be_Call(const ir_node *irn)
+static void emit_sparc_Call(const ir_node *node)
 {
-	ir_entity *entity = be_Call_get_entity(irn);
+	const sparc_attr_t *attr   = get_sparc_attr_const(node);
+	ir_entity          *entity = attr->immediate_value_entity;
 
+	be_emit_cstring("\tcall ");
 	if (entity != NULL) {
-		be_emit_cstring("\tcall ");
 	    sparc_emit_entity(entity);
 		be_emit_cstring(", 0");
-		be_emit_finish_line_gas(irn);
-		be_emit_cstring("\tnop");
-		be_emit_pad_comment();
-		be_emit_cstring("/* TODO: use delay slot */\n");
 	} else {
-		be_emit_cstring("\tnop\n");
-		be_emit_pad_comment();
-		be_emit_cstring("/* TODO: Entity == NULL */\n");
-		be_emit_finish_line_gas(irn);
+		int last = get_irn_arity(node);
+		sparc_emit_source_register(node, last-1);
 	}
+	be_emit_finish_line_gas(node);
+
+	/* fill delay slot */
+	be_emit_cstring("\tnop");
+	be_emit_finish_line_gas(node);
 }
 
 /**
@@ -764,7 +762,6 @@ static void sparc_register_emitters(void)
 	sparc_register_spec_emitters();
 
 	/* custom emitter */
-	set_emitter(op_be_Call,         emit_be_Call);
 	set_emitter(op_be_Copy,         emit_be_Copy);
 	set_emitter(op_be_CopyKeep,     emit_be_Copy);
 	set_emitter(op_be_IncSP,        emit_be_IncSP);
@@ -772,6 +769,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_be_Perm,         emit_be_Perm);
 	set_emitter(op_be_Return,       emit_be_Return);
 	set_emitter(op_sparc_BXX,       emit_sparc_BXX);
+	set_emitter(op_sparc_Call,      emit_sparc_Call);
 	set_emitter(op_sparc_Div,       emit_sparc_Div);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);

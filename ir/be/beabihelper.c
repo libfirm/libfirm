@@ -132,8 +132,8 @@ static void rsm_clear_regs(register_state_mapping_t *rsm,
 	}
 }
 
-static void rsm_add_reg(register_state_mapping_t *rsm,
-                        const arch_register_t *reg, arch_irn_flags_t flags)
+static int rsm_add_reg(register_state_mapping_t *rsm,
+                       const arch_register_t *reg, arch_irn_flags_t flags)
 {
 	int        input_idx = ARR_LEN(rsm->regs);
 	int        cls_idx   = reg->reg_class->index;
@@ -144,6 +144,12 @@ static void rsm_add_reg(register_state_mapping_t *rsm,
 	assert(rsm->reg_index_map[cls_idx][reg_idx] == -1);
 	rsm->reg_index_map[cls_idx][reg_idx] = input_idx;
 	ARR_APP1(reg_flag_t, rsm->regs, regflag);
+
+	if (rsm->value_map != NULL) {
+		ARR_APP1(ir_node*, rsm->value_map, NULL);
+		assert(ARR_LEN(rsm->value_map) == ARR_LEN(rsm->regs));
+	}
+	return input_idx;
 }
 
 
@@ -317,8 +323,8 @@ void be_epilog_begin(beabi_helper_env_t *env)
 void be_epilog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
                        arch_irn_flags_t flags, ir_node *value)
 {
-	rsm_add_reg(&env->epilog, reg, flags);
-	ARR_APP1(ir_node*, env->epilog.value_map, value);
+	int index = rsm_add_reg(&env->epilog, reg, flags);
+	rsm_set_value(&env->epilog, index, value);
 }
 
 void be_epilog_set_reg_value(beabi_helper_env_t *env,
@@ -379,7 +385,7 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 static void add_missing_keep_walker(ir_node *node, void *data)
 {
 	int              n_outs, i;
-	unsigned         found_projs = 0;
+	unsigned        *found_projs;
 	const ir_edge_t *edge;
 	ir_mode         *mode = get_irn_mode(node);
 	ir_node         *last_keep;
@@ -391,7 +397,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	if (n_outs <= 0)
 		return;
 
-	assert(n_outs < (int) sizeof(unsigned) * 8);
+	rbitset_alloca(found_projs, n_outs);
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		int      pn;
@@ -405,7 +411,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 
 		pn = get_Proj_proj(succ);
 		assert(pn < n_outs);
-		found_projs |= 1 << pn;
+		rbitset_set(found_projs, pn);
 	}
 
 
@@ -417,7 +423,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		const arch_register_req_t   *req;
 		const arch_register_class_t *cls;
 
-		if (found_projs & (1 << i)) {
+		if (rbitset_is_set(found_projs, i)) {
 			continue;
 		}
 

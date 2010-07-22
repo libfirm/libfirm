@@ -25,21 +25,29 @@
  */
 #include "config.h"
 
-#include "arm_cconv.h"
+#include "sparc_cconv.h"
 #include "irmode.h"
 #include "typerep.h"
 #include "xmalloc.h"
 #include "error.h"
 
-calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
+static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
+{
+	unsigned idx = arch_register_get_index(reg);
+	assert(REG_I0 <= idx && idx <= REG_I7);
+	idx += REG_O0 - REG_I0;
+	assert(REG_O0 <= idx && idx <= REG_O7);
+	return &sparc_gp_regs[idx];
+}
+
+calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
+                                                      bool caller)
 {
 	int                   stack_offset = 0;
 	reg_or_stackslot_t   *params;
 	reg_or_stackslot_t   *results;
 	int                   n_param_regs
 		= sizeof(param_regs)/sizeof(param_regs[0]);
-	int                   n_result_regs
-		= sizeof(result_regs)/sizeof(result_regs[0]);
 	int                   n_float_result_regs
 		= sizeof(float_result_regs)/sizeof(float_result_regs[0]);
 	int                   n_params;
@@ -63,6 +71,8 @@ calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
 
 		if (regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[regnum++];
+			if (caller)
+				reg = map_i_to_o_reg(reg);
 			param->reg0 = reg;
 		} else {
 			param->offset = stack_offset;
@@ -74,10 +84,12 @@ calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
 		/* we might need a 2nd 32bit component (for 64bit or double values) */
 		if (bits > 32) {
 			if (bits > 64)
-				panic("only 32 and 64bit modes supported in arm backend");
+				panic("only 32 and 64bit modes supported in sparc backend");
 
 			if (regnum < n_param_regs) {
 				const arch_register_t *reg = param_regs[regnum++];
+				if (caller)
+					reg = map_i_to_o_reg(reg);
 				param->reg1 = reg;
 			} else {
 				ir_mode *mode = param_regs[0]->reg_class->mode;
@@ -90,6 +102,7 @@ calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
 		}
 	}
 
+	/* determine how results are passed */
 	n_results    = get_method_n_ress(function_type);
 	regnum       = 0;
 	float_regnum = 0;
@@ -101,20 +114,22 @@ calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
 
 		if (mode_is_float(result_mode)) {
 			if (float_regnum >= n_float_result_regs) {
-				panic("Too many float results for arm backend");
+				panic("Too many float results for sparc backend");
 			} else {
 				const arch_register_t *reg = float_result_regs[float_regnum++];
 				result->reg0 = reg;
 			}
 		} else {
 			if (get_mode_size_bits(result_mode) > 32) {
-				panic("Results with more than 32bits not supported by arm backend yet");
+				panic("Results with more than 32bits not supported by sparc backend yet");
 			}
 
-			if (regnum >= n_result_regs) {
-				panic("Too many results for arm backend");
+			if (regnum >= n_param_regs) {
+				panic("Too many results for sparc backend");
 			} else {
-				const arch_register_t *reg = result_regs[regnum++];
+				const arch_register_t *reg = param_regs[regnum++];
+				if (caller)
+					reg = map_i_to_o_reg(reg);
 				result->reg0 = reg;
 			}
 		}
@@ -128,7 +143,7 @@ calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
 	return cconv;
 }
 
-void arm_free_calling_convention(calling_convention_t *cconv)
+void sparc_free_calling_convention(calling_convention_t *cconv)
 {
 	free(cconv->parameters);
 	free(cconv->results);

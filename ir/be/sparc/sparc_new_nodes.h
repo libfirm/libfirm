@@ -53,6 +53,8 @@ const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node);
  */
 const arch_register_req_t **get_sparc_in_req_all(const ir_node *node);
 
+void set_sparc_in_req_all(ir_node *node, const arch_register_req_t **reqs);
+
 /**
  * Returns the argument register requirements of an sparc node.
  */

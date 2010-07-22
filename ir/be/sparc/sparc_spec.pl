@@ -54,7 +54,7 @@ $state       = 32; # register represents a state
 		{ name => "i3", realname => "i3", type => 0 }, # param 4
 		{ name => "i4", realname => "i4", type => 0 }, # param 5
 		{ name => "i5", realname => "i5", type => 0 }, # param 6
-		{ name => "fp", realname => "fp", type => $ignore }, # our framepointer
+		{ name => "frame_pointer", realname => "fp", type => $ignore }, # our framepointer
 		{ name => "i7", realname => "i7", type => $ignore }, # return address - 8
 		{ mode => $mode_gp }
 	],
@@ -63,7 +63,7 @@ $state       = 32; # register represents a state
 		{ mode => $mode_flags, flags => "manual_ra" }
 	],
 	# fp registers can be accessed any time
-	fp  => [
+	fp => [
 		{ name => "f0",  type => $caller_save },
 		{ name => "f1",  type => $caller_save },
 		{ name => "f2",  type => $caller_save },
@@ -102,32 +102,30 @@ $state       = 32; # register represents a state
 
 %emit_templates = (
 # emit source reg or imm dep. on node's arity
-	RI => "${arch}_emit_reg_or_imm(node, -1);",
+	RI  => "${arch}_emit_reg_or_imm(node, -1);",
 	R1I => "${arch}_emit_reg_or_imm(node, 0);",
 	R2I => "${arch}_emit_reg_or_imm(node, 1);",
 	R3I => "${arch}_emit_reg_or_imm(node, 2);",
-# simple reg emitters
-	S1 => "${arch}_emit_source_register(node, 0);",
-	S2 => "${arch}_emit_source_register(node, 1);",
-	S3 => "${arch}_emit_source_register(node, 2);",
-	S4 => "${arch}_emit_source_register(node, 3);",
-	S5 => "${arch}_emit_source_register(node, 4);",
-	S6 => "${arch}_emit_source_register(node, 5);",
-	D1 => "${arch}_emit_dest_register(node, 0);",
-	D2 => "${arch}_emit_dest_register(node, 1);",
-	D3 => "${arch}_emit_dest_register(node, 2);",
-	D4 => "${arch}_emit_dest_register(node, 3);",
-	D5 => "${arch}_emit_dest_register(node, 4);",
-	D6 => "${arch}_emit_dest_register(node, 5);",
-# more custom emitters
-	C  => "${arch}_emit_immediate(node);",
+	S1  => "${arch}_emit_source_register(node, 0);",
+	S2  => "${arch}_emit_source_register(node, 1);",
+	S3  => "${arch}_emit_source_register(node, 2);",
+	S4  => "${arch}_emit_source_register(node, 3);",
+	S5  => "${arch}_emit_source_register(node, 4);",
+	S6  => "${arch}_emit_source_register(node, 5);",
+	D1  => "${arch}_emit_dest_register(node, 0);",
+	D2  => "${arch}_emit_dest_register(node, 1);",
+	D3  => "${arch}_emit_dest_register(node, 2);",
+	D4  => "${arch}_emit_dest_register(node, 3);",
+	D5  => "${arch}_emit_dest_register(node, 4);",
+	D6  => "${arch}_emit_dest_register(node, 5);",
+	IM  => "${arch}_emit_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
 	SM  => "${arch}_emit_store_mode(node);",
-	EXTPREF  => "${arch}_emit_mode_sign_prefix(node);",
+	EXTPREF => "${arch}_emit_mode_sign_prefix(node);",
 	FPM  => "${arch}_emit_fp_mode_suffix(node);",
-	FPLM  => "${arch}_emit_fp_load_mode(node);",
-	FPSM  => "${arch}_emit_fp_store_mode(node);",
-	O  => "${arch}_emit_offset(node);",
+	FPLM => "${arch}_emit_fp_load_mode(node);",
+	FPSM => "${arch}_emit_fp_store_mode(node);",
+	O    => "${arch}_emit_offset(node);",
 );
 
 $default_attr_type = "sparc_attr_t";
@@ -251,7 +249,7 @@ St => {
 	mode 		=> "mode_M",
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
-	outs      => [ "mem" ],
+	outs      => [ "M" ],
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
@@ -269,10 +267,10 @@ Mov => {
 Save => {
 	reg_req   => {
 		in => [ "sp", "none"],
-		out => [ "sp:I|S","none" ]
+		out => [ "sp:I|S", "frame_pointer:I", "none" ]
 	},
 	ins       => [ "stack", "mem" ],
-	outs      => [ "stack", "mem" ],
+	outs      => [ "stack", "frame", "mem" ],
 	attr      => "int initial_stacksize",
 	attr_type => "sparc_save_attr_t",
 	init_attr => "\tinit_sparc_save_attr(res, initial_stacksize);",
@@ -327,6 +325,25 @@ Ba => {
 	irn_flags => [ "simple_jump" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
+},
+
+Call => {
+	irn_flags => [ "modify_flags" ],
+	state     => "exc_pinned",
+	arity     => "variable",
+	out_arity => "variable",
+	constructors => {
+		imm => {
+			attr       => "ir_entity *entity, long offset",
+			custominit => "get_sparc_attr(res)->immediate_value_entity = entity;",
+			arity     => "variable",
+			out_arity => "variable",
+		},
+		reg => {
+			arity     => "variable",
+			out_arity => "variable",
+		}
+	},
 },
 
 Cmp => {
@@ -512,6 +529,18 @@ Ldf => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 	emit      => '. ld [%S1%O], %D1'
+},
+
+Stf => {
+	op_flags  => [ "labeled", "fragile" ],
+	state     => "exc_pinned",
+	ins       => [ "ptr", "val", "mem" ],
+	outs      => [ "M" ],
+	reg_req   => { in => [ "gp", "fp", "none" ], out => [ "none" ] },
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => '. st %S2, [%S1%O]',
+	mode      => 'mode_M',
 },
 
 ); # end of %nodes

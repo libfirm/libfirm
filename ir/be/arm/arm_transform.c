@@ -1299,7 +1299,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_node              *call          = get_Proj_pred(get_Proj_pred(node));
 	ir_node              *new_call      = be_transform_node(call);
 	ir_type              *function_type = get_Call_type(call);
-	calling_convention_t *cconv = decide_calling_convention(function_type);
+	calling_convention_t *cconv = arm_decide_calling_convention(function_type);
 	const reg_or_stackslot_t *res = &cconv->results[pn];
 	ir_mode              *mode;
 	int                   regn;
@@ -1312,7 +1312,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	}
 	mode = res->reg0->reg_class->mode;
 
-	free_calling_convention(cconv);
+	arm_free_calling_convention(cconv);
 
 	return new_r_Proj(new_call, mode, regn);
 }
@@ -1616,7 +1616,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node              *new_mem      = be_transform_node(mem);
 	dbg_info             *dbgi         = get_irn_dbg_info(node);
 	ir_type              *type         = get_Call_type(node);
-	calling_convention_t *cconv        = decide_calling_convention(type);
+	calling_convention_t *cconv        = arm_decide_calling_convention(type);
 	int                   n_params     = get_Call_n_params(node);
 	int                   n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
 	/* max inputs: memory, callee, register arguments */
@@ -1782,7 +1782,7 @@ static ir_node *gen_Call(ir_node *node)
 	/* copy pinned attribute */
 	set_irn_pinned(res, get_irn_pinned(node));
 
-	free_calling_convention(cconv);
+	arm_free_calling_convention(cconv);
 	return res;
 }
 
@@ -1941,7 +1941,7 @@ void arm_transform_graph(arm_code_gen_t *cg)
 	abihelper = be_abihelper_prepare(irg);
 	be_collect_stacknodes(abihelper);
 	assert(cconv == NULL);
-	cconv = decide_calling_convention(get_entity_type(entity));
+	cconv = arm_decide_calling_convention(get_entity_type(entity));
 	create_stacklayout(irg);
 
 	be_transform_graph(cg->irg, NULL);
@@ -1949,7 +1949,7 @@ void arm_transform_graph(arm_code_gen_t *cg)
 	be_abihelper_finish(abihelper);
 	abihelper = NULL;
 
-	free_calling_convention(cconv);
+	arm_free_calling_convention(cconv);
 	cconv = NULL;
 
 	frame_type = get_irg_frame_type(irg);
