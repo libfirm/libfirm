@@ -353,9 +353,9 @@ void solve_pbqp_heuristical_co_ld(pbqp *pbqp, plist_t *rpeo)
 
 	#if KAPS_STATISTIC
 		fh = fopen("solutions.pb", "a");
-		fprintf(fh, ": %lld RE:%u R0:%u R1:%u R2:%u RN/BF:%u\n", pbqp->solution,
+		fprintf(fh, ": %lld RE:%u R0:%u R1:%u R2:%u RM:%u RN/BF:%u\n", pbqp->solution,
 					pbqp->num_edges, pbqp->num_r0, pbqp->num_r1, pbqp->num_r2,
-					pbqp->num_rn);
+					pbqp->num_rm, pbqp->num_rn);
 		fclose(fh);
 	#endif
 

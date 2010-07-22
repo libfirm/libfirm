@@ -89,6 +89,7 @@ pbqp *alloc_pbqp(unsigned number_nodes)
 	pbqp->num_r0 = 0;
 	pbqp->num_r1 = 0;
 	pbqp->num_r2 = 0;
+	pbqp->num_rm = 0;
 	pbqp->num_rn = 0;
 #endif
 
