@@ -65,11 +65,6 @@
 #include "sparc_transform.h"
 #include "sparc_emitter.h"
 
-// sparc ABI requires a min stacksize to
-// save registers in case of a trap etc.
-// by now we assume only non-leaf procedures: 92 + 4 (padding)
-#define SPARC_MIN_STACKSIZE 112
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static arch_irn_class_t sparc_classify(const ir_node *irn)
@@ -113,10 +108,17 @@ static void sparc_set_frame_offset(ir_node *irn, int offset)
 	}
 }
 
-static int sparc_get_sp_bias(const ir_node *irn)
+static int sparc_get_sp_bias(const ir_node *node)
 {
-	(void) irn;
-	return SPARC_MIN_STACKSIZE;
+	if (is_sparc_Save(node)) {
+		const sparc_save_attr_t *attr = get_sparc_save_attr_const(node);
+		/* Note we do not retport the change of the SPARC_MIN_STACKSIZE
+		 * size, since we have additional magic in the emitter which
+		 * calculates that! */
+		assert(attr->initial_stacksize >= SPARC_MIN_STACKSIZE);
+		return attr->initial_stacksize - SPARC_MIN_STACKSIZE;
+	}
+	return 0;
 }
 
 /* fill register allocator interface */
@@ -315,7 +317,7 @@ static sparc_isa_t sparc_isa_template = {
 		&sparc_gp_regs[REG_FP],  /* base pointer register */
 		&sparc_reg_classes[CLASS_sparc_gp],  /* link pointer register class */
 		-1,                          /* stack direction */
-		1,                           /* power of two stack alignment for calls, 2^2 == 4 */
+		3,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
 		5,                           /* costs for a reload instruction */
@@ -493,7 +495,7 @@ static ir_type *sparc_get_between_type(void *self)
 
 	if (between_type == NULL) {
 		between_type = new_type_class(new_id_from_str("sparc_between_type"));
-		set_type_size_bytes(between_type, 0);
+		set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
 	}
 
 	return between_type;
@@ -526,7 +528,6 @@ static const arch_register_t *sparc_abi_prologue(void *self, ir_node **mem,
 	(void) mem;
 	(void) stack_bias;
 
-	*stack_bias -= SPARC_MIN_STACKSIZE;
 	sp_proj = new_r_Proj(save, sp->reg_class->mode, pn_sparc_Save_stack);
 	*mem    = new_r_Proj(save, mode_M, pn_sparc_Save_mem);
 

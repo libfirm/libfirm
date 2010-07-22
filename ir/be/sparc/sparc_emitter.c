@@ -58,13 +58,6 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /**
- * attribute of SAVE node which follows immediatelly after the START node
- * we need this to correct all offsets since SPARC expects
- * some reserved stack space after the stackpointer
- */
-const sparc_save_attr_t *save_attr;
-
-/**
  * Returns the register at in position pos.
  */
 static const arch_register_t *get_in_reg(const ir_node *node, int pos)
@@ -155,16 +148,27 @@ void sparc_emit_reg_or_imm(const ir_node *node, int pos)
 	}
 }
 
+static bool is_stack_pointer_relative(const ir_node *node)
+{
+	const arch_register_t *sp = &sparc_gp_regs[REG_SP];
+	return (is_sparc_St(node) && get_in_reg(node, n_sparc_St_ptr) == sp)
+	    || (is_sparc_Ld(node) && get_in_reg(node, n_sparc_Ld_ptr) == sp);
+}
+
 /**
  * emit SP offset
  */
 void sparc_emit_offset(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-	assert(attr->base.is_load_store);
+	long                           offset = attr->offset;
 
-	if (attr->offset != 0) {
-		be_emit_irprintf("%+ld", attr->offset);
+	/* bad hack: the real stack stuff is behind the always-there spill
+	 * space for the register window and stack */
+	if (is_stack_pointer_relative(node))
+		offset += SPARC_MIN_STACKSIZE;
+	if (offset != 0) {
+		be_emit_irprintf("%+ld", offset);
 	}
 }
 
@@ -326,7 +330,7 @@ static void emit_be_IncSP(const ir_node *irn)
  */
 static void emit_sparc_Save(const ir_node *irn)
 {
-	save_attr = get_sparc_save_attr_const(irn);
+	const sparc_save_attr_t *save_attr = get_sparc_save_attr_const(irn);
 	be_emit_cstring("\tsave ");
 	sparc_emit_source_register(irn, 0);
 	be_emit_irprintf(", %d, ", -save_attr->initial_stacksize);
@@ -570,7 +574,7 @@ static void emit_sparc_FrameAddr(const ir_node *irn)
 		be_emit_cstring("\tadd ");
 		sparc_emit_source_register(irn, 0);
 		be_emit_cstring(", ");
-		be_emit_irprintf("%ld", attr->fp_offset + save_attr->initial_stacksize);
+		be_emit_irprintf("%ld", attr->fp_offset);
 	} else {
 		be_emit_cstring("\tsub ");
 		sparc_emit_source_register(irn, 0);
