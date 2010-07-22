@@ -204,7 +204,6 @@ my %binop_operand_constructors = (
 
 Add => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct Add: Add(a, b) = Add(b, a) = a + b",
 	mode		=> $mode_gp,
 	emit      => '. add %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
@@ -212,7 +211,6 @@ Add => {
 
 Sub => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct Sub: Sub(a, b) = a - b",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sub %S1, %R2I, %D1',
@@ -223,7 +221,6 @@ Sub => {
 # Load / Store
 Load => {
 	op_flags  => [ "labeled", "fragile" ],
-	comment   => "construct Load: Load(ptr, mem) = LD ptr -> reg",
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -235,7 +232,6 @@ Load => {
 
 LoadHi => {
 	op_flags  => [ "labeled", "fragile" ],
-	comment   => "construct LoadHi: Load(ptr, mem) = sethi hi(ptr) -> reg",
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -247,7 +243,6 @@ LoadHi => {
 
 HiImm => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
 	state     => "exc_pinned",
 	outs      => [ "res" ],
 	mode      => $mode_gp,
@@ -259,7 +254,6 @@ HiImm => {
 
 LoImm => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct LoadHi: Load(imm, mem) = sethi hi(imm) -> reg",
 	state     => "exc_pinned",
 	ins       => [ "hireg" ],
 	outs      => [ "res" ],
@@ -272,7 +266,6 @@ LoImm => {
 
 LoadLo => {
 	op_flags  => [ "labeled", "fragile" ],
-	comment   => "construct LoadLo: Or(in, ptr, mem) = or in lo(ptr) -> reg",
 	state     => "exc_pinned",
 	ins       => [ "hireg", "ptr", "mem" ],
 	outs      => [ "res", "M" ],
@@ -284,7 +277,6 @@ LoadLo => {
 
 Store => {
 	op_flags  => [ "labeled", "fragile" ],
-	comment   => "construct Store: Store(ptr, val, mem) = ST ptr,val",
 	mode 		=> "mode_M",
 	state     => "exc_pinned",
 	ins       => [ "ptr", "val", "mem" ],
@@ -297,7 +289,6 @@ Store => {
 
 Mov => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct Mov: Mov(src, dest) = MV src,dest",
 	arity     => "variable",
 	emit      => '. mov %R1I, %D1',
 	mode      => $mode_gp,
@@ -305,7 +296,6 @@ Mov => {
 },
 
 Save => {
-	comment => "function prolog instruction. autom. saves sp & shifts the register window. previous out regs become the new in regs",
 	reg_req   => {
 		in => [ "sp", "none"],
 		out => [ "sp:I|S","none" ]
@@ -318,7 +308,6 @@ Save => {
 },
 
 AddSP => {
-	comment => "alloc stack space",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	outs      => [ "stack", "addr", "M" ],
@@ -326,7 +315,6 @@ AddSP => {
 },
 
 SubSP => {
-	comment => "free stack space",
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	outs      => [ "stack", "M" ],
@@ -402,7 +390,6 @@ SwitchJmp => {
 
 ShiftLL => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct shift logical left",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sll %S1, %R2I, %D1',
@@ -411,7 +398,6 @@ ShiftLL => {
 
 ShiftLR => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct shift logical right",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. srl %S1, %R2I, %D1',
@@ -420,7 +406,6 @@ ShiftLR => {
 
 ShiftRA => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct shift right arithmetical",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sra %S1, %R2I, %D1',
@@ -429,7 +414,6 @@ ShiftRA => {
 
 And => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct logical and",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. and %S1, %R2I, %D1',
@@ -438,7 +422,6 @@ And => {
 
 Or => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct logical or",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. or %S1, %R2I, %D1',
@@ -447,7 +430,6 @@ Or => {
 
 Xor => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct logical xor",
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. xor %S1, %R2I, %D1',
@@ -456,7 +438,6 @@ Xor => {
 
 Mul => {
 	state     => "exc_pinned",
-	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
 	outs      => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,
@@ -465,7 +446,6 @@ Mul => {
 
 Mulh => {
 	state     => "exc_pinned",
-	comment   => "construct Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	outs      => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,
@@ -474,7 +454,6 @@ Mulh => {
 Div => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	comment   => "construct Div: Div(a, b) = a / b",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	outs      => [ "res" ],
 	constructors => \%binop_operand_constructors,
@@ -485,7 +464,6 @@ Div => {
 Minus => {
 	irn_flags => [ "rematerializable" ],
 	mode	    => $mode_gp,
-	comment   => "construct Minus: Minus(a) = -a",
 	#reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => ". sub %%g0, %S1, %D1"
@@ -494,7 +472,6 @@ Minus => {
 Not => {
 	irn_flags   => [ "rematerializable" ],
 	mode	      => $mode_gp,
-	comment     => "construct Not: Not(a) = !a",
 	reg_req     => { in => [ "gp" ], out => [ "gp" ] },
 	emit        => '. xnor %S1, %%g0, %D1'
 },
@@ -508,63 +485,54 @@ Nop => {
 fAdd => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
-	comment   => "construct FP Add: Add(a, b) = Add(b, a) = a + b",
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      => '. fadd%FPM %S1, %S2, %D1'
 },
 
 fMul => {
 	op_flags  => [ "commutative" ],
-	comment   => "construct FP Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'. fmul%FPM %S1, %S2, %D1'
 },
 
 fsMuld => {
 	op_flags  => [ "commutative" ],
-	comment   => "construct FP single to double precision Mul: Mul(a, b) = Mul(b, a) = a * b",
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
 	emit      =>'. fsmuld %S1, %S2, %D1'
 },
 
 FpSToFpD => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "convert FP (single) to FP (double)",
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      =>'. FsTOd %S1, %D1'
 },
 
 FpDToFpS => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "convert FP (double) to FP (single)",
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      =>'. FdTOs %S1, %D1'
 },
 
 FpSToInt => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "convert integer to FP",
 	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
 	emit      =>'. FiTOs %S1, %D1'
 },
 
 FpDToInt => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "convert integer to FP",
 	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
 	emit      =>'. FiTOd %S1, %D1'
 },
 
 IntToFpS => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "convert FP (single) to integer",
 	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
 	emit      =>'. FsTOi %S1, %D1'
 },
 
 IntToFpD => {
 	irn_flags => [ "rematerializable" ],
-	comment   => "convert FP (double) to integer",
 	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
 	emit      =>'. FdTOi %S1, %D1'
 },
