@@ -45,6 +45,36 @@
 #include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
 
+static bool has_symconst_attr(const ir_node *node)
+{
+	return is_sparc_SymConst(node) || is_sparc_FrameAddr(node);
+}
+
+static bool has_load_store_attr(const ir_node *node)
+{
+	return is_sparc_Ld(node) || is_sparc_St(node);
+}
+
+static bool has_cmp_attr(const ir_node *node)
+{
+	return is_sparc_Cmp(node) || is_sparc_Tst(node);
+}
+
+static bool has_jmp_cond_attr(const ir_node *node)
+{
+	return is_sparc_BXX(node);
+}
+
+static bool has_jmp_switch_attr(const ir_node *node)
+{
+	return is_sparc_SwitchJmp(node);
+}
+
+static bool has_save_attr(const ir_node *node)
+{
+	return is_sparc_Save(node);
+}
+
 /**
  * Dumper interface for dumping sparc nodes in vcg.
  * @param F        the output file
@@ -53,49 +83,32 @@
  */
 static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
-	ir_mode *mode = NULL;
-
 	switch (reason) {
-		case dump_node_opcode_txt:
-			fprintf(F, "%s", get_irn_opname(n));
+	case dump_node_opcode_txt:
+		fprintf(F, "%s", get_irn_opname(n));
 		break;
 
-		case dump_node_mode_txt:
-			mode = get_irn_mode(n);
-
-			if (mode) {
-				fprintf(F, "[%s]", get_mode_name(mode));
-			} else {
-				fprintf(F, "[?NOMODE?]");
-			}
+	case dump_node_mode_txt:
 		break;
 
-		case dump_node_info_txt:
-					arch_dump_reqs_and_registers(F, n);
+	case dump_node_info_txt:
+		arch_dump_reqs_and_registers(F, n);
 		break;
 
-		case dump_node_nodeattr_txt:
-
-			/* TODO: dump some attributes which should show up */
-			/* in node name in dump (e.g. consts or the like)  */
-			//fputs("\n", F);
-
-			if (is_sparc_FrameAddr(n)) {
-				const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(n);
-				fprintf(F, "fp_offset: 0x%X\n", attr->fp_offset);
-			}
-
-			if (is_sparc_Ld(n) || is_sparc_St(n)) {
-				const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
-				fprintf(F, "offset: 0x%lX\n", attr->offset);
-				fprintf(F, "is_frame_entity: %s\n", attr->is_frame_entity == true ? "true" : "false");
-			}
-
+	case dump_node_nodeattr_txt:
+		if (has_symconst_attr(n)) {
+			const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(n);
+			fprintf(F, "fp_offset: 0x%X\n", attr->fp_offset);
+		}
+		if (has_load_store_attr(n)) {
+			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
+			fprintf(F, "offset: 0x%lX\n", attr->offset);
+			fprintf(F, "is_frame_entity: %s\n", attr->is_frame_entity == true ? "true" : "false");
+		}
 		break;
 	}
 }
 
-/* ATTRIBUTE INIT SETTERS / HELPERS */
 static void sparc_set_attr_imm(ir_node *res, int immediate_value)
 {
 	sparc_attr_t *attr = get_irn_generic_attr(res);
@@ -140,95 +153,88 @@ long get_sparc_jmp_switch_default_proj_num(const ir_node *node)
 	return attr->default_proj_num;
 }
 
-
-/* ATTRIBUTE GETTERS */
 sparc_attr_t *get_sparc_attr(ir_node *node)
 {
-	assert(is_sparc_irn(node) && "need sparc node to get attributes");
-	return (sparc_attr_t *)get_irn_generic_attr(node);
+	assert(is_sparc_irn(node));
+	return (sparc_attr_t*) get_irn_generic_attr(node);
 }
 
 const sparc_attr_t *get_sparc_attr_const(const ir_node *node)
 {
-	assert(is_sparc_irn(node) && "need sparc node to get attributes");
-	return (const sparc_attr_t *)get_irn_generic_attr_const(node);
+	assert(is_sparc_irn(node));
+	return (const sparc_attr_t*) get_irn_generic_attr_const(node);
 }
 
 sparc_load_store_attr_t *get_sparc_load_store_attr(ir_node *node)
 {
-	assert(is_sparc_irn(node) && "need sparc node to get attributes");
-	return (sparc_load_store_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_load_store_attr(node));
+	return (sparc_load_store_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_load_store_attr_t *get_sparc_load_store_attr_const(const ir_node *node)
 {
-	assert(is_sparc_irn(node) && "need sparc node to get attributes");
-	return (const sparc_load_store_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_load_store_attr(node));
+	return (const sparc_load_store_attr_t*) get_irn_generic_attr_const(node);
 }
-
-
 
 sparc_symconst_attr_t *get_sparc_symconst_attr(ir_node *node)
 {
-	assert((is_sparc_SymConst(node)  || is_sparc_FrameAddr(node)) && "need sparc SymConst/FrameAddr node to get attributes");
-	return (sparc_symconst_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_symconst_attr(node));
+	return (sparc_symconst_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_symconst_attr_t *get_sparc_symconst_attr_const(const ir_node *node)
 {
-	assert((is_sparc_SymConst(node)  || is_sparc_FrameAddr(node)) && "need sparc SymConst/FrameAddr node to get attributes");
-	return (const sparc_symconst_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_symconst_attr(node));
+	return (const sparc_symconst_attr_t*) get_irn_generic_attr_const(node);
 }
-
 
 sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr(ir_node *node)
 {
-	assert(is_sparc_BXX(node) && "need sparc B node to get attributes");
-	return (sparc_jmp_cond_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_jmp_cond_attr(node));
+	return (sparc_jmp_cond_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr_const(const ir_node *node)
 {
-	assert(is_sparc_BXX(node) && "need sparc B node to get attributes");
-	return (const sparc_jmp_cond_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_jmp_cond_attr(node));
+	return (const sparc_jmp_cond_attr_t*) get_irn_generic_attr_const(node);
 }
-
 
 sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr(ir_node *node)
 {
-	assert(is_sparc_SwitchJmp(node) && "need sparc SwitchJmp node to get attributes");
-	return (sparc_jmp_switch_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_jmp_switch_attr(node));
+	return (sparc_jmp_switch_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr_const(const ir_node *node)
 {
-	assert(is_sparc_SwitchJmp(node) && "need sparc SwitchJmp node to get attributes");
-	return (const sparc_jmp_switch_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_jmp_switch_attr(node));
+	return (const sparc_jmp_switch_attr_t*) get_irn_generic_attr_const(node);
 }
 
 sparc_cmp_attr_t *get_sparc_cmp_attr(ir_node *node)
 {
-	assert(is_sparc_irn(node) && "need sparc node to get attributes");
-	return (sparc_cmp_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_cmp_attr(node));
+	return (sparc_cmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_cmp_attr_t *get_sparc_cmp_attr_const(const ir_node *node)
 {
-	assert(is_sparc_irn(node) && "need sparc node to get attributes");
-	return (const sparc_cmp_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_cmp_attr(node));
+	return (const sparc_cmp_attr_t*) get_irn_generic_attr_const(node);
 }
-
 
 sparc_save_attr_t *get_sparc_save_attr(ir_node *node)
 {
-	assert(is_sparc_Save(node) && "need sparc Save node to get attributes");
-	return (sparc_save_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_save_attr(node));
+	return (sparc_save_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node)
 {
-	assert(is_sparc_Save(node) && "need sparc Save node to get attributes");
-	return (const sparc_save_attr_t *)get_irn_generic_attr_const(node);
+	assert(has_save_attr(node));
+	return (const sparc_save_attr_t*) get_irn_generic_attr_const(node);
 }
 
 /**
@@ -287,7 +293,7 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 											int entity_sign, long offset,
 											bool is_frame_entity)
 {
-	sparc_load_store_attr_t *attr = get_irn_generic_attr(res);
+	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(res);
 	attr->load_store_mode    = ls_mode;
 	attr->entity             = entity;
 	attr->entity_sign        = entity_sign;
@@ -298,21 +304,21 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 
 static void init_sparc_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
 {
-	sparc_cmp_attr_t *attr = get_irn_generic_attr(res);
+	sparc_cmp_attr_t *attr = get_sparc_cmp_attr(res);
 	attr->ins_permuted = ins_permuted;
 	attr->is_unsigned  = is_unsigned;
 }
 
 static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
 {
-	sparc_symconst_attr_t *attr = get_irn_generic_attr(res);
+	sparc_symconst_attr_t *attr = get_sparc_symconst_attr(res);
 	attr->entity    = entity;
 	attr->fp_offset = 0;
 }
 
 static void init_sparc_save_attr(ir_node *res, int initial_stacksize)
 {
-	sparc_save_attr_t *attr = get_irn_generic_attr(res);
+	sparc_save_attr_t *attr = get_sparc_save_attr(res);
 	attr->initial_stacksize = initial_stacksize;
 }
 
@@ -334,7 +340,6 @@ static void sparc_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 }
-
 
 /**
  * compare some node's attributes
