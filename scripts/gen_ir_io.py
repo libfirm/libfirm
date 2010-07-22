@@ -229,7 +229,7 @@ def main(argv):
 
 	gendir = argv[2]
 	# these nodes don't work correctly yet for some reasons...
-	niynodes = [ "EndExcept", "EndReg", "ASM" ]
+	niynodes = [ "ASM" ]
 	# these have custom im-/export code
 	customcode = [ "Start", "End", "Anchor", "SymConst", "Block" ]
 

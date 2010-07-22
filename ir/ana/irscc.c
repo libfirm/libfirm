@@ -416,7 +416,7 @@ static inline int get_start_index(ir_node *n)
 
 /**
  * Return non-zero if the given node is a legal loop header:
- * Block, Phi, Filter.
+ * Block, Phi
  *
  * @param n  the node to check
  */
@@ -428,9 +428,8 @@ static inline int is_possible_loop_head(ir_node *n)
 }
 
 /**
- * Returns non-zero if n is a loop header, i.e., it is a Block, Phi
- * or Filter node and has predecessors within the loop and out
- * of the loop.
+ * Returns non-zero if n is a loop header, i.e., it is a Block or Phi
+ * node and has predecessors within the loop and out of the loop.
  *
  * @param n    the node to check
  * @param root only needed for assertion.
@@ -469,7 +468,7 @@ static int is_head(ir_node *n, ir_node *root)
 
 /**
  * Returns non-zero if n is possible loop head of an endless loop.
- * I.e., it is a Block, Phi or Filter node and has only predecessors
+ * I.e., it is a Block or Phi node and has only predecessors
  * within the loop.
  *
  * @param n    the node to check
@@ -630,85 +629,10 @@ static ir_node *find_tail(ir_node *n)
 	return is_outermost_Start(n) ? NULL : get_irn_n(m, res_index);
 }
 
-
-#if EXPERIMENTAL_LOOP_TREE
-
-/*  ----------------------------------------------------------------
-    AS:  This is experimental code to build loop trees suitable for
-    the heap analysis. Does not work correctly right now... :-(
-
-
-    Search in stack for the corresponding first Call-End-ProjX that
-    corresponds to one of the control flow predecessors of the given
-    block, that is the possible callers.
-    returns: the control predecessor to chose\
-    or       -1 if no corresponding Call-End-Node could be found
-             on the stack.
-    - -------------------------------------------------------------- */
-
-int search_endproj_in_stack(ir_node *start_block)
-{
-	int i, j;
-	assert(is_Block(start_block));
-	for (i = tos - 1; i >= 0; --i)
-	{
-		if (get_irn_op(stack[i]) == op_Proj && get_irn_mode(stack[i]) == mode_X &&
-			get_irn_op(get_irn_n(stack[i], 0)) == op_EndReg)
-		{
-			printf("FOUND PROJ!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
-			ir_node *end_projx = stack[i];
-
-			int arity = get_irn_arity(start_block);
-			for (j = 0; j < arity; j++)
-			{
-				ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
-					get_Proj_proj(end_projx));
-				if (get_irn_n(start_block, j) == begin_projx)
-				{
-					printf("FOUND IT!!!!!!!!!!!!!!!!!!\n");
-					return(j);
-				}
-			}
-		}
-	}
-	return(-1);
-}
-
-
-static pmap *projx_link = NULL;
-
-void link_to_reg_end (ir_node *n, void *env)
-{
-	if (get_irn_op(n) == op_Proj &&
-		get_irn_mode(n) == mode_X &&
-		get_irn_op(get_irn_n(n, 0)) == op_EndReg) {
-			/* Reg End Projx -> Find the CallBegin Projx and hash it */
-			ir_node *end_projx = n;
-			ir_node *begin_projx = get_Block_cfgpred(get_irg_start_block(get_irn_irg(end_projx)),
-				get_Proj_proj(end_projx));
-			set_projx_link(begin_projx, end_projx);
-	}
-}
-
-void set_projx_link(ir_node *cb_projx, ir_node *end_projx)
-{
-	if (projx_link == NULL)
-		projx_link = pmap_create();
-	pmap_insert(projx_link, (void *)cb_projx, (void *)end_projx);
-}
-
-ir_node *get_projx_link(ir_node *cb_projx)
-{
-	return((ir_node *) pmap_get(projx_link, (void *)cb_projx));
-}
-
-#endif
-
 static inline int is_outermost_loop(ir_loop *l)
 {
 	return l == get_loop_outer_loop(l);
 }
-
 
 /*-----------------------------------------------------------*
  *                   The core algorithm.                     *

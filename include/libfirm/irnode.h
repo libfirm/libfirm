@@ -1138,10 +1138,6 @@ FIRM_API int      is_NoMem(const ir_node *node);
 FIRM_API int      is_Start(const ir_node *node);
 /** Returns true if node is an End node. */
 FIRM_API int      is_End(const ir_node *node);
-/** Returns true if node is an EndExcept node. */
-FIRM_API int      is_EndExcept(const ir_node *node);
-/** Returns true if node is an EndReg node. */
-FIRM_API int      is_EndReg(const ir_node *node);
 /** Returns true if node is a Minus node. */
 FIRM_API int      is_Minus(const ir_node *node);
 /** Returns true if node is a Abs node. */
@@ -1248,11 +1244,9 @@ FIRM_API int      is_InstOf(const ir_node *node);
 FIRM_API int      is_Proj(const ir_node *node);
 
 /** Returns true if the operation manipulates control flow:
-   Start, End, Jmp, Cond, Return, Raise, Bad, EndReg, EndExcept */
+   Start, End, Jmp, Cond, Return, Raise, Bad */
 FIRM_API int is_cfop(const ir_node *node);
 
-/** Returns true if the operation manipulates control flow: EndReg, EndExcept */
-FIRM_API int is_ip_cfop(const ir_node *node);
 /** Returns true if the operation can change the control flow because
     of an exception: Call, Quot, DivMod, Div, Mod, Load, Store, Alloc,
     Bad. Raise is not fragile, but a unconditional jump. */

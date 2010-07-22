@@ -228,18 +228,6 @@ typedef struct {
 	ir_type *type;                /**< the type of which the object pointer must be */
 } io_attr;
 
-/** Filter attributes. */
-typedef struct {
-	long proj;                 /**< contains the result position to project (Proj) */
-	ir_node **in_cg;           /**< array with interprocedural predecessors (Phi) */
-	unsigned *backedge;        /**< Raw Bitfield n set to true if pred n is backedge. */
-} filter_attr;
-
-/** CallBegin attributes. */
-typedef struct {
-	ir_node *call;                /**< Associated Call-operation. */
-} callbegin_attr;
-
 /** Cast attributes. */
 typedef struct {
 	ir_type *type;                /**< Type of the casted node. */
@@ -323,7 +311,6 @@ typedef union {
 	sel_attr       sel;           /**< For Sel. */
 	call_attr      call;          /**< For Call. */
 	builtin_attr   builtin;       /**< For Builtin. */
-	callbegin_attr callbegin;     /**< For CallBegin. */
 	alloc_attr     alloc;         /**< For Alloc. */
 	free_attr      free;          /**< For Free. */
 	io_attr        instof;        /**< For InstOf */
@@ -333,7 +320,6 @@ typedef union {
 	phi_attr       phi;           /**< For Phi. */
 	long           proj;          /**< For Proj: contains the result position to project */
 	confirm_attr   confirm;       /**< For Confirm: compare operation and region. */
-	filter_attr    filter;        /**< For Filter */
 	except_attr    except;        /**< For Phi node construction in case of exceptions */
 	copyb_attr     copyb;         /**< For CopyB operation */
 	bound_attr     bound;         /**< For Bound operation */

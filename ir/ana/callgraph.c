@@ -705,7 +705,7 @@ static int is_head(ir_graph *n, ir_graph *root)
 
 /**
  * Returns non-zero if n is possible loop head of an endless loop.
- * I.e., it is a Block, Phi or Filter node and has only predecessors
+ * I.e., it is a Block or Phi node and has only predecessors
  * within the loop.
  * @arg root: only needed for assertion.
  */
