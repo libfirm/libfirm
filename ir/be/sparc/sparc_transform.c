@@ -79,8 +79,8 @@ static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 	if (src_bits == 8) {
 		return new_bd_sparc_And_imm(dbgi, block, op, 0xFF);
 	} else if (src_bits == 16) {
-		ir_node *lshift = new_bd_sparc_ShiftLL_imm(dbgi, block, op, 16);
-		ir_node *rshift = new_bd_sparc_ShiftLR_imm(dbgi, block, lshift, 16);
+		ir_node *lshift = new_bd_sparc_Sll_imm(dbgi, block, op, 16);
+		ir_node *rshift = new_bd_sparc_Slr_imm(dbgi, block, lshift, 16);
 		return rshift;
 	} else {
 		panic("zero extension only supported for 8 and 16 bits");
@@ -94,8 +94,8 @@ static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                                    int src_bits)
 {
 	int shift_width = 32 - src_bits;
-	ir_node *lshift_node = new_bd_sparc_ShiftLL_imm(dbgi, block, op, shift_width);
-	ir_node *rshift_node = new_bd_sparc_ShiftRA_imm(dbgi, block, lshift_node, shift_width);
+	ir_node *lshift_node = new_bd_sparc_Sll_imm(dbgi, block, op, shift_width);
+	ir_node *rshift_node = new_bd_sparc_Sra_imm(dbgi, block, lshift_node, shift_width);
 	return rshift_node;
 }
 
@@ -325,7 +325,7 @@ static ir_node *gen_Load(ir_node *node)
 	if (mode_is_float(mode))
 		panic("SPARC: no fp implementation yet");
 
-	new_load = new_bd_sparc_Load(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+	new_load = new_bd_sparc_Ld(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
 	return new_load;
@@ -355,7 +355,7 @@ static ir_node *gen_Store(ir_node *node)
 	if (mode_is_float(mode))
 		panic("SPARC: no fp implementation yet");
 
-	new_store = new_bd_sparc_Store(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
+	new_store = new_bd_sparc_St(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
 
 	return new_store;
 }
@@ -453,7 +453,7 @@ static ir_node *gen_Abs(ir_node *node) {
 	new_op = be_transform_node(op);
 
 	mov = new_bd_sparc_Mov_reg(dbgi, block, new_op);
-	sra = new_bd_sparc_ShiftRA_imm(dbgi, block, mov, 31);
+	sra = new_bd_sparc_Sra_imm(dbgi, block, mov, 31);
 	xor = new_bd_sparc_Xor_reg(dbgi, block, new_op, sra);
 	sub = new_bd_sparc_Sub_reg(dbgi, block, sra, xor);
 
@@ -522,17 +522,17 @@ static ir_node *gen_Xor(ir_node *node)
 
 static ir_node *gen_Shl(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLL_reg, new_bd_sparc_ShiftLL_imm);
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sll_reg, new_bd_sparc_Sll_imm);
 }
 
 static ir_node *gen_Shr(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftLR_reg, new_bd_sparc_ShiftLR_imm);
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Slr_reg, new_bd_sparc_Slr_imm);
 }
 
 static ir_node *gen_Shra(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_ShiftRA_reg, new_bd_sparc_ShiftRA_imm);
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
 /****** TRANSFORM GENERAL BACKEND NODES ********/
@@ -595,7 +595,7 @@ static ir_node *gen_be_AddSP(ir_node *node)
 	ir_node  *new_op;
 
 	/* SPARC stack grows in reverse direction */
-	new_op = new_bd_sparc_AddSP(dbgi, block, new_sp, new_sz, nomem);
+	new_op = new_bd_sparc_SubSP(dbgi, block, new_sp, new_sz, nomem);
 
 	return new_op;
 }
@@ -618,7 +618,7 @@ static ir_node *gen_be_SubSP(ir_node *node)
 	ir_node  *new_op;
 
 	/* SPARC stack grows in reverse direction */
-	new_op = new_bd_sparc_SubSP(dbgi, block, new_sp, new_sz, nomem);
+	new_op = new_bd_sparc_AddSP(dbgi, block, new_sp, new_sz, nomem);
 	return new_op;
 }
 
@@ -731,7 +731,7 @@ static ir_node *gen_Cond(ir_node *node)
 	block     = be_transform_node(get_nodes_block(node));
 	dbgi      = get_irn_dbg_info(node);
 	flag_node = be_transform_node(get_Proj_pred(selector));
-	return new_bd_sparc_Branch(dbgi, block, flag_node, get_Proj_proj(selector));
+	return new_bd_sparc_BXX(dbgi, block, flag_node, get_Proj_proj(selector));
 }
 
 /**
@@ -825,17 +825,17 @@ static ir_node *gen_Conv(ir_node *node)
 			if (mode_is_float(dst_mode)) {
 				// float -> float conv
 				if (src_bits > dst_bits) {
-					return new_bd_sparc_FpDToFpS(dbg, block, new_op, dst_mode);
+					return new_bd_sparc_FsTOd(dbg, block, new_op, dst_mode);
 				} else {
-					return new_bd_sparc_FpSToFpD(dbg, block, new_op, dst_mode);
+					return new_bd_sparc_FdTOs(dbg, block, new_op, dst_mode);
 				}
 			} else {
 				// float -> int conv
 				switch (dst_bits) {
 					case 32:
-						return new_bd_sparc_FpSToInt(dbg, block, new_op, dst_mode);
+						return new_bd_sparc_FsTOi(dbg, block, new_op, dst_mode);
 					case 64:
-						return new_bd_sparc_FpDToInt(dbg, block, new_op, dst_mode);
+						return new_bd_sparc_FdTOi(dbg, block, new_op, dst_mode);
 					default:
 						panic("quad FP not implemented");
 				}
@@ -844,9 +844,9 @@ static ir_node *gen_Conv(ir_node *node)
 			// int -> float conv
 			switch (dst_bits) {
 				case 32:
-					return new_bd_sparc_IntToFpS(dbg, block, new_op, src_mode);
+					return new_bd_sparc_FiTOs(dbg, block, new_op, src_mode);
 				case 64:
-					return new_bd_sparc_IntToFpD(dbg, block, new_op, src_mode);
+					return new_bd_sparc_FiTOd(dbg, block, new_op, src_mode);
 				default:
 					panic("quad FP not implemented");
 			}
@@ -944,19 +944,14 @@ static ir_node *gen_Proj_Load(ir_node *node)
 
 	/* renumber the proj */
 	switch (get_sparc_irn_opcode(new_load)) {
-		case iro_sparc_Load:
+		case iro_sparc_Ld:
 			/* handle all gp loads equal: they have the same proj numbers. */
 			if (proj == pn_Load_res) {
-				return new_rd_Proj(dbgi, new_load, mode_Iu, pn_sparc_Load_res);
+				return new_rd_Proj(dbgi, new_load, mode_Iu, pn_sparc_Ld_res);
 			} else if (proj == pn_Load_M) {
-				return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Load_M);
+				return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
 			}
-		break;
-	/*
-		case iro_sparc_fpaLoad:
-			panic("FP not implemented yet");
-		break;
-	*/
+			break;
 		default:
 			panic("Unsupported Proj from Load");
 	}
@@ -1114,7 +1109,7 @@ static ir_node *gen_Jmp(ir_node *node)
 	ir_node  *new_block = be_transform_node(block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 
-	return new_bd_sparc_Jmp(dbgi, new_block);
+	return new_bd_sparc_Ba(dbgi, new_block);
 }
 
 /**

@@ -219,7 +219,7 @@ Sub => {
 
 
 # Load / Store
-Load => {
+Ld => {
 	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	ins       => [ "ptr", "mem" ],
@@ -228,17 +228,6 @@ Load => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 	emit      => '. ld%LM [%S1%O], %D1'
-},
-
-LoadHi => {
-	op_flags  => [ "labeled", "fragile" ],
-	state     => "exc_pinned",
-	ins       => [ "ptr", "mem" ],
-	outs      => [ "res", "M" ],
-	reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
-	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-	emit      => '. sethi %%hi(%S1), %D1',
 },
 
 HiImm => {
@@ -264,18 +253,7 @@ LoImm => {
 	custominit => "sparc_set_attr_imm(res, immediate_value);",
 },
 
-LoadLo => {
-	op_flags  => [ "labeled", "fragile" ],
-	state     => "exc_pinned",
-	ins       => [ "hireg", "ptr", "mem" ],
-	outs      => [ "res", "M" ],
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
-	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-	emit      => '. or %S1, %%lo(%S2), %D1'
-},
-
-Store => {
+St => {
 	op_flags  => [ "labeled", "fragile" ],
 	mode 		=> "mode_M",
 	state     => "exc_pinned",
@@ -307,14 +285,14 @@ Save => {
 	init_attr => "\tinit_sparc_save_attr(res, initial_stacksize);",
 },
 
-AddSP => {
+SubSP => {
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	outs      => [ "stack", "addr", "M" ],
 	emit      => ". sub %S1, %S2, %D1\n",
 },
 
-SubSP => {
+AddSP => {
 	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
 	ins       => [ "stack", "size", "mem" ],
 	outs      => [ "stack", "M" ],
@@ -340,7 +318,7 @@ FrameAddr => {
 	mode      => $mode_gp,
 },
 
-Branch => {
+BXX => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
@@ -350,7 +328,7 @@ Branch => {
 	init_attr => "\tset_sparc_jmp_cond_proj_num(res, proj_num);",
 },
 
-Jmp => {
+Ba => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
@@ -388,7 +366,7 @@ SwitchJmp => {
 	attr_type => "sparc_jmp_switch_attr_t",
 },
 
-ShiftLL => {
+Sll => {
 	irn_flags => [ "rematerializable" ],
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -396,7 +374,7 @@ ShiftLL => {
 	constructors => \%binop_operand_constructors,
 },
 
-ShiftLR => {
+Slr => {
 	irn_flags => [ "rematerializable" ],
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -404,7 +382,7 @@ ShiftLR => {
 	constructors => \%binop_operand_constructors,
 },
 
-ShiftRA => {
+Sra => {
 	irn_flags => [ "rematerializable" ],
 	mode		=> $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
@@ -464,7 +442,6 @@ Div => {
 Minus => {
 	irn_flags => [ "rematerializable" ],
 	mode	    => $mode_gp,
-	#reg_req   => { in => [ "gp" ], out => [ "in_r1" ] },
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => ". sub %%g0, %S1, %D1"
 },
@@ -501,39 +478,39 @@ fsMuld => {
 	emit      =>'. fsmuld %S1, %S2, %D1'
 },
 
-FpSToFpD => {
+FsTOd => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      =>'. FsTOd %S1, %D1'
 },
 
-FpDToFpS => {
+FdTOs => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      =>'. FdTOs %S1, %D1'
 },
 
-FpSToInt => {
+FiTOs => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
+	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
 	emit      =>'. FiTOs %S1, %D1'
 },
 
-FpDToInt => {
+FiTOd => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
+	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
 	emit      =>'. FiTOd %S1, %D1'
 },
 
-IntToFpS => {
+FsTOi => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
+	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
 	emit      =>'. FsTOi %S1, %D1'
 },
 
-IntToFpD => {
+FdTOi => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
+	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
 	emit      =>'. FdTOi %S1, %D1'
 },
 

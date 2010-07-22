@@ -85,7 +85,7 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 				fprintf(F, "fp_offset: 0x%X\n", attr->fp_offset);
 			}
 
-			if (is_sparc_Load(n) || is_sparc_Store(n)) {
+			if (is_sparc_Ld(n) || is_sparc_St(n)) {
 				const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
 				fprintf(F, "offset: 0x%lX\n", attr->offset);
 				fprintf(F, "is_frame_entity: %s\n", attr->is_frame_entity == true ? "true" : "false");
@@ -183,13 +183,13 @@ const sparc_symconst_attr_t *get_sparc_symconst_attr_const(const ir_node *node)
 
 sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr(ir_node *node)
 {
-	assert(is_sparc_Branch(node) && "need sparc B node to get attributes");
+	assert(is_sparc_BXX(node) && "need sparc B node to get attributes");
 	return (sparc_jmp_cond_attr_t *)get_irn_generic_attr_const(node);
 }
 
 const sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr_const(const ir_node *node)
 {
-	assert(is_sparc_Branch(node) && "need sparc B node to get attributes");
+	assert(is_sparc_BXX(node) && "need sparc B node to get attributes");
 	return (const sparc_jmp_cond_attr_t *)get_irn_generic_attr_const(node);
 }
 

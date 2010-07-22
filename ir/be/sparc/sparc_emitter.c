@@ -586,7 +586,7 @@ static void emit_sparc_FrameAddr(const ir_node *irn)
 /**
  * Emits code for Branch
  */
-static void emit_sparc_Branch(const ir_node *irn)
+static void emit_sparc_BXX(const ir_node *irn)
 {
 	const ir_edge_t *edge;
 	const ir_node *proj_true  = NULL;
@@ -671,7 +671,7 @@ static void emit_sparc_Branch(const ir_node *irn)
 /**
  * emit Jmp (which actually is a branch always (ba) instruction)
  */
-static void emit_sparc_Jmp(const ir_node *node)
+static void emit_sparc_Ba(const ir_node *node)
 {
 	ir_node *block, *next_block;
 
@@ -761,11 +761,11 @@ static void sparc_register_emitters(void)
 	set_emitter(op_be_MemPerm,      emit_be_MemPerm);
 	set_emitter(op_be_Perm,         emit_be_Perm);
 	set_emitter(op_be_Return,       emit_be_Return);
-	set_emitter(op_sparc_Branch,    emit_sparc_Branch);
+	set_emitter(op_sparc_BXX,       emit_sparc_BXX);
 	set_emitter(op_sparc_Div,       emit_sparc_Div);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);
-	set_emitter(op_sparc_Jmp,       emit_sparc_Jmp);
+	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	set_emitter(op_sparc_LoImm,     emit_sparc_LoImm);
 	set_emitter(op_sparc_Mul,       emit_sparc_Mul);
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
