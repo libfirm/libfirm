@@ -505,7 +505,7 @@ static ir_node *gen_Or(ir_node *node)
 	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Or_reg, new_bd_sparc_Or_imm);
 }
 
-static ir_node *gen_Xor(ir_node *node)
+static ir_node *gen_Eor(ir_node *node)
 {
 	ir_mode  *mode    = get_irn_mode(node);
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -530,7 +530,7 @@ static ir_node *gen_Shr(ir_node *node)
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Slr_reg, new_bd_sparc_Slr_imm);
 }
 
-static ir_node *gen_Shra(ir_node *node)
+static ir_node *gen_Shrs(ir_node *node)
 {
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
@@ -1022,14 +1022,13 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_mode  *mode     = get_irn_mode(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
-		case pn_Div_res:
-			if (is_sparc_Div(new_pred)) {
-				return new_rd_Proj(dbgi, new_pred, mode, pn_sparc_Div_res);
-			}
+	case pn_Div_res:
+		if (is_sparc_Div(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_sparc_Div_res);
+		}
 		break;
 	default:
 		break;
@@ -1132,7 +1131,7 @@ void sparc_register_transformers(void)
 	be_set_transform_function(op_Const,        gen_Const);
 	be_set_transform_function(op_Conv,         gen_Conv);
 	be_set_transform_function(op_Div,          gen_Div);
-	be_set_transform_function(op_Eor,          gen_Xor);
+	be_set_transform_function(op_Eor,          gen_Eor);
 	be_set_transform_function(op_Jmp,          gen_Jmp);
 	be_set_transform_function(op_Load,         gen_Load);
 	be_set_transform_function(op_Minus,        gen_Minus);
@@ -1144,7 +1143,7 @@ void sparc_register_transformers(void)
 	be_set_transform_function(op_Proj,         gen_Proj);
 	be_set_transform_function(op_Shl,          gen_Shl);
 	be_set_transform_function(op_Shr,          gen_Shr);
-	be_set_transform_function(op_Shrs,         gen_Shra);
+	be_set_transform_function(op_Shrs,         gen_Shrs);
 	be_set_transform_function(op_Store,        gen_Store);
 	be_set_transform_function(op_Sub,          gen_Sub);
 	be_set_transform_function(op_SymConst,     gen_SymConst);
