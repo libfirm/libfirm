@@ -77,12 +77,10 @@ static void apply_RN(pbqp *pbqp)
 #endif
 
 #if KAPS_STATISTIC
-	if (dump == 0) {
-		FILE *fh = fopen("solutions.pb", "a");
-		fprintf(fh, "[%u]", min_index);
-		fclose(fh);
-		pbqp->num_rn++;
-	}
+	FILE *fh = fopen("solutions.pb", "a");
+	fprintf(fh, "[%u]", min_index);
+	fclose(fh);
+	pbqp->num_rn++;
 #endif
 
 	/* Now that we found the local minimum set all other costs to infinity. */

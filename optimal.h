@@ -39,7 +39,7 @@ void apply_RI(pbqp *pbqp);
 void apply_RII(pbqp *pbqp);
 
 #if KAPS_STATISTIC
-void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge)
+void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge);
 #endif
 
 void back_propagate(pbqp *pbqp);

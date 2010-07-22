@@ -43,6 +43,10 @@
 #include "pbqp_node_t.h"
 #include "vector.h"
 
+#if KAPS_STATISTIC
+static int dump = 0;
+#endif
+
 /* Forward declarations. */
 static void apply_Brute_Force(pbqp *pbqp);
 
