@@ -163,8 +163,9 @@ void sparc_emit_offset(const ir_node *node)
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
 	assert(attr->base.is_load_store);
 
-	if (attr->offset > 0)
-		be_emit_irprintf("+%ld", attr->offset);
+	if (attr->offset != 0) {
+		be_emit_irprintf("%+ld", attr->offset);
+	}
 }
 
 
