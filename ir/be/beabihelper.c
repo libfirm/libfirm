@@ -149,7 +149,7 @@ static void rsm_add_reg(register_state_mapping_t *rsm,
 
 static ir_node *rsm_get_value(register_state_mapping_t *rsm, int index)
 {
-	assert(index < ARR_LEN(rsm->value_map));
+	assert(0 <= index && index < ARR_LEN(rsm->value_map));
 	return rsm->value_map[index];
 }
 
@@ -166,7 +166,7 @@ static ir_node *rsm_get_reg_value(register_state_mapping_t *rsm,
 static void rsm_set_value(register_state_mapping_t *rsm, int index,
                           ir_node *value)
 {
-	assert(index < ARR_LEN(rsm->value_map));
+	assert(0 <= index && index < ARR_LEN(rsm->value_map));
 	rsm->value_map[index] = value;
 }
 
