@@ -38,6 +38,7 @@ typedef struct sparc_code_gen_t {
 	sparc_isa_t                    *isa;     /**< the isa instance */
 	bool                            dump;    /**< set to 1 if graphs should
 	                                              be dumped */
+    pmap                           *constants;
 } sparc_code_gen_t;
 
 struct sparc_isa_t {

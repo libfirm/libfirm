@@ -173,17 +173,6 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 	return create_const_graph_value(dbgi, block, value);
 }
 
-/**
- * create a DAG to load fp constant. sparc only supports loading from global memory
- */
-static ir_node *create_fp_const_graph(ir_node *irn, ir_node *block)
-{
-	(void) block;
-	(void) irn;
-	panic("FP constants not implemented");
-}
-
-
 typedef enum {
 	MATCH_NONE         = 0,
 	MATCH_COMMUTATIVE  = 1 << 0,
@@ -557,6 +546,42 @@ static ir_node *gen_Minus(ir_node *node)
 	return new_bd_sparc_Minus(dbgi, block, new_op);
 }
 
+static ir_node *make_addr(dbg_info *dbgi, ir_entity *entity)
+{
+	ir_node *block = get_irg_start_block(current_ir_graph);
+	ir_node *node  = new_bd_sparc_SymConst(dbgi, block, entity);
+	be_dep_on_frame(node);
+	return node;
+}
+
+/**
+ * Create an entity for a given (floatingpoint) tarval
+ */
+static ir_entity *create_float_const_entity(tarval *tv)
+{
+	ir_entity        *entity = (ir_entity*) pmap_get(env_cg->constants, tv);
+	ir_initializer_t *initializer;
+	ir_mode          *mode;
+	ir_type          *type;
+	ir_type          *glob;
+
+	if (entity != NULL)
+		return entity;
+
+	mode   = get_tarval_mode(tv);
+	type   = get_type_for_mode(mode);
+	glob   = get_glob_type();
+	entity = new_entity(glob, id_unique("C%u"), type);
+	set_entity_visibility(entity, ir_visibility_private);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
+
+	initializer = create_initializer_tarval(tv);
+	set_entity_initializer(entity, initializer);
+
+	pmap_insert(env_cg->constants, tv, entity);
+	return entity;
+}
+
 /**
  * Transforms a Const node.
  *
@@ -565,14 +590,20 @@ static ir_node *gen_Minus(ir_node *node)
  */
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_mode *mode = get_irn_mode(node);
-	dbg_info *dbg = get_irn_dbg_info(node);
-
-	(void) dbg;
+	ir_node *block = be_transform_node(get_nodes_block(node));
+	ir_mode *mode  = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		return create_fp_const_graph(node, block);
+		dbg_info  *dbgi   = get_irn_dbg_info(node);
+		tarval    *tv     = get_Const_tarval(node);
+		ir_entity *entity = create_float_const_entity(tv);
+		ir_node   *addr   = make_addr(dbgi, entity);
+		ir_node   *mem    = new_NoMem();
+		ir_node   *new_op
+			= new_bd_sparc_Ldf(dbgi, block, addr, mem, mode, NULL, 0, 0, false);
+
+		ir_node   *proj   = new_Proj(new_op, mode, pn_sparc_Ldf_res);
+		return proj;
 	}
 
 	return create_const_graph(node, block);
@@ -806,14 +837,10 @@ static ir_node *gen_Cmp(ir_node *node)
  */
 static ir_node *gen_SymConst(ir_node *node)
 {
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
 	ir_entity *entity = get_SymConst_entity(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *new_node;
 
-	new_node = new_bd_sparc_SymConst(dbgi, block, entity);
-	be_dep_on_frame(new_node);
-	return new_node;
+	return make_addr(dbgi, entity);
 }
 
 /**

@@ -298,10 +298,11 @@ static void *sparc_cg_init(ir_graph *irg)
 	sparc_isa_t      *isa = (sparc_isa_t *) be_get_irg_arch_env(irg);
 	sparc_code_gen_t *cg  = XMALLOCZ(sparc_code_gen_t);
 
-	cg->impl = &sparc_code_gen_if;
-	cg->irg  = irg;
-	cg->isa  = isa;
-	cg->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) != 0;
+	cg->impl      = &sparc_code_gen_if;
+	cg->irg       = irg;
+	cg->isa       = isa;
+	cg->dump      = (be_get_irg_options(irg)->dump_flags & DUMP_BE) != 0;
+	cg->constants = pmap_create();
 
 	/* enter the current code generator */
 	isa->cg = cg;
@@ -618,31 +619,42 @@ static void sparc_get_call_abi(const void *self, ir_type *method_type,
 	be_abi_call_set_flags(abi, call_flags, &sparc_abi_callbacks);
 
 	for (i = 0; i < n; i++) {
-		/* reg = get reg for param i;          */
-		/* be_abi_call_param_reg(abi, i, reg); */
+		ir_type *type = get_method_param_type(method_type, i);
+		ir_mode *mode = get_type_mode(type);
 
-		/* pass outgoing params 0-5 via registers, remaining via stack */
-		/* on sparc we need to set the ABI context since register names of parameters change to i0-i5 if we are the callee */
-		if (i < 6) {
-			be_abi_call_param_reg(abi, i, sparc_get_RegParamOut_reg(i), ABI_CONTEXT_CALLER);
-			be_abi_call_param_reg(abi, i, sparc_get_RegParamIn_reg(i), ABI_CONTEXT_CALLEE);
-		} else {
-			tp   = get_method_param_type(method_type, i);
-			mode = get_type_mode(tp);
-			be_abi_call_param_stack(abi, i, mode, 4, 0, 0, ABI_CONTEXT_BOTH); /*< stack args have no special context >*/
+		if (mode_is_float(mode) || i >= 6) {
+			unsigned align = get_type_size_bytes(type);
+			be_abi_call_param_stack(abi, i, mode, align, 0, 0,
+			                        ABI_CONTEXT_BOTH);
+			continue;
 		}
+
+		/* pass integer params 0-5 via registers.
+		 * On sparc we need to set the ABI context since register names of
+		 * parameters change to i0-i5 if we are the callee */
+		be_abi_call_param_reg(abi, i, sparc_get_RegParamOut_reg(i),
+		                      ABI_CONTEXT_CALLER);
+		be_abi_call_param_reg(abi, i, sparc_get_RegParamIn_reg(i),
+		                      ABI_CONTEXT_CALLEE);
 	}
 
-	/* set return value register: return value is in i0 resp. f0 */
-	if (get_method_n_ress(method_type) > 0) {
-		tp   = get_method_res_type(method_type, 0);
+	n = get_method_n_ress(method_type);
+	/* more than 1 result not supported */
+	assert(n <= 1);
+	for (i = 0; i < n; ++i) {
+		tp   = get_method_res_type(method_type, i);
 		mode = get_type_mode(tp);
 
-		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &sparc_fp_regs[REG_F0] : &sparc_gp_regs[REG_I0], ABI_CONTEXT_CALLEE); /*< return has no special context >*/
-
-		be_abi_call_res_reg(abi, 0,
-					mode_is_float(mode) ? &sparc_fp_regs[REG_F0] : &sparc_gp_regs[REG_O0], ABI_CONTEXT_CALLER); /*< return has no special context >*/
+		/* set return value register: return value is in i0 resp. f0 */
+		if (mode_is_float(mode)) {
+			be_abi_call_res_reg(abi, i, &sparc_fp_regs[REG_F0],
+			                    ABI_CONTEXT_BOTH);
+		} else {
+			be_abi_call_res_reg(abi, i, &sparc_gp_regs[REG_I0],
+			                    ABI_CONTEXT_CALLEE);
+			be_abi_call_res_reg(abi, i, &sparc_gp_regs[REG_O0],
+			                    ABI_CONTEXT_CALLER);
+		}
 	}
 }
 

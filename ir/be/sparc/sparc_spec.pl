@@ -503,4 +503,15 @@ FdTOi => {
 	emit      =>'. FdTOi %S1, %D1'
 },
 
+Ldf => {
+	op_flags  => [ "labeled", "fragile" ],
+	state     => "exc_pinned",
+	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
+	reg_req   => { in => [ "gp", "none" ], out => [ "fp", "none" ] },
+	attr_type => "sparc_load_store_attr_t",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	emit      => '. ld [%S1%O], %D1'
+},
+
 ); # end of %nodes
