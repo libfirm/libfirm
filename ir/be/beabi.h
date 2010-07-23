@@ -190,6 +190,9 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg);
 void be_abi_fix_stack_bias(ir_graph *irg);
 void be_abi_free(ir_graph *irg);
 
+int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
+                               int bias);
+
 /**
  * Rewire all stack modifying nodes and their users to assure SSA property.
  * @param env   The abi

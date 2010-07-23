@@ -494,6 +494,11 @@ static void emit_be_MemPerm(const ir_node *node)
 	int i;
 	int memperm_arity;
 	int sp_change = 0;
+	ir_graph          *irg    = get_irn_irg(node);
+	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+
+	/* this implementation only works with frame pointers currently */
+	assert(layout->sp_relative == false);
 
 	/* TODO: this implementation is slower than necessary.
 	   The longterm goal is however to avoid the memperm node completely */
@@ -503,34 +508,40 @@ static void emit_be_MemPerm(const ir_node *node)
 	if (memperm_arity > 8)
 		panic("memperm with more than 8 inputs not supported yet");
 
+	be_emit_irprintf("\tsub %%sp, %d, %%sp", memperm_arity*4);
+	be_emit_finish_line_gas(node);
+
 	for (i = 0; i < memperm_arity; ++i) {
-		int offset;
 		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
+		int        offset = be_get_stack_entity_offset(layout, entity, 0);
 
 		/* spill register */
-		sp_change += 4;
-		be_emit_irprintf("\tst %%l%d, [%%sp-%d]", i, sp_change);
+		be_emit_irprintf("\tst %%l%d, [%%sp%+d]", i, sp_change + SPARC_MIN_STACKSIZE);
 		be_emit_finish_line_gas(node);
 
 		/* load from entity */
-		offset = get_entity_offset(entity) + sp_change;
-		be_emit_irprintf("\tld [%%sp+%d], %%l%d", offset, i);
+		be_emit_irprintf("\tld [%%fp%+d], %%l%d", offset, i);
 		be_emit_finish_line_gas(node);
+		sp_change += 4;
 	}
 
 	for (i = memperm_arity-1; i >= 0; --i) {
-		int        offset;
 		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
+		int        offset = be_get_stack_entity_offset(layout, entity, 0);
+
+		sp_change -= 4;
 
 		/* store to new entity */
-		offset = get_entity_offset(entity) + sp_change;
-		be_emit_irprintf("\tst %%l%d, [%%sp+%d]", i, offset);
+		be_emit_irprintf("\tst %%l%d, [%%fp%+d]", i, offset);
 		be_emit_finish_line_gas(node);
 		/* restore register */
-		be_emit_irprintf("\tld [%%sp-%d], %%l%d", sp_change, i);
-		sp_change -= 4;
+		be_emit_irprintf("\tld [%%sp%+d], %%l%d", sp_change + SPARC_MIN_STACKSIZE, i);
 		be_emit_finish_line_gas(node);
 	}
+
+	be_emit_irprintf("\tadd %%sp, %d, %%sp", memperm_arity*4);
+	be_emit_finish_line_gas(node);
+
 	assert(sp_change == 0);
 }
 

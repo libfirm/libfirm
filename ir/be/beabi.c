@@ -296,8 +296,8 @@ static void be_abi_call_free(be_abi_call_t *call)
      and the spills.
 */
 
-static int get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
-                                   int bias)
+int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
+                               int bias)
 {
 	ir_type *t = get_entity_owner(ent);
 	int ofs    = get_entity_offset(ent);
@@ -346,7 +346,7 @@ static int stack_frame_compute_initial_offset(be_stack_layout_t *frame)
 		frame->initial_offset
 			= frame->stack_dir < 0 ? get_type_size_bytes(frame->frame_type) : get_type_size_bytes(frame->between_type);
 	} else {
-		frame->initial_offset = get_stack_entity_offset(frame, ent, 0);
+		frame->initial_offset = be_get_stack_entity_offset(frame, ent, 0);
 	}
 
 	return frame->initial_offset;
@@ -2498,7 +2498,7 @@ static int process_stack_bias(ir_node *bl, int real_bias)
 		ir_entity *ent = arch_get_frame_entity(irn);
 		if (ent != NULL) {
 			int bias   = sp_relative ? real_bias : 0;
-			int offset = get_stack_entity_offset(layout, ent, bias);
+			int offset = be_get_stack_entity_offset(layout, ent, bias);
 			arch_set_frame_offset(irn, offset);
 			DBG((dbg, LEVEL_2, "%F has offset %d (including bias %d)\n",
 			     ent, offset, bias));
@@ -2597,7 +2597,7 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 
 	if (owner == layout->frame_type || owner == layout->arg_type) {
 		/* found access to outer frame or arguments */
-		int offset = get_stack_entity_offset(layout, ent, 0);
+		int offset = be_get_stack_entity_offset(layout, ent, 0);
 
 		if (offset != 0) {
 			ir_node  *bl   = get_nodes_block(sel);
