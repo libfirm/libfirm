@@ -76,9 +76,9 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
 /**
  * Create an And that will zero out upper bits.
  *
- * @param dbgi     debug info
- * @param block    the basic block
- * @param op       the original node
+ * @param dbgi      debug info
+ * @param block     the basic block
+ * @param op        the original node
  * @param src_bits  number of lower bits that will remain
  */
 static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
@@ -97,6 +97,11 @@ static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 
 /**
  * Generate code for a sign extension.
+ *
+ * @param dbgi      debug info
+ * @param block     the basic block
+ * @param op        the original node
+ * @param src_bits  number of lower bits that will remain
  */
 static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                                    int src_bits)
@@ -121,6 +126,14 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 	return false;
 }
 
+/**
+ * Extend a value to 32 bit signed/unsigned depending on its mode.
+ *
+ * @param dbgi      debug info
+ * @param block     the basic block
+ * @param op        the original node
+ * @param orig_mode the original mode of op
+ */
 static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                               ir_mode *orig_mode)
 {
@@ -144,7 +157,7 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 {
 	ir_node *result;
 
-	// we need to load hi & lo separately
+	/* we need to load hi & lo separately */
 	if (value < -4096 || value > 4095) {
 		ir_node *hi = new_bd_sparc_HiImm(dbgi, block, (int) value);
 		result = new_bd_sparc_LoImm(dbgi, block, hi, value);
@@ -183,7 +196,7 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 
 typedef enum {
 	MATCH_NONE         = 0,
-	MATCH_COMMUTATIVE  = 1 << 0,
+	MATCH_COMMUTATIVE  = 1 << 0, /**< commutative operation. */
 	MATCH_SIZE_NEUTRAL = 1 << 1,
 } match_flags_t;
 
@@ -206,14 +219,14 @@ static bool is_imm_encodeable(const ir_node *node)
 
 	val = get_tarval_long(get_Const_tarval(node));
 
-	return !(val < -4096 || val > 4095);
+	return -4096 <= val && val <= 4095;
 }
 
 /**
  * helper function for binop operations
  *
- * @param new_binop_reg_func register generation function ptr
- * @param new_binop_imm_func immediate generation function ptr
+ * @param new_reg  register generation function ptr
+ * @param new_imm  immediate generation function ptr
  */
 static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
 				new_binop_reg_func new_reg, new_binop_imm_func new_imm)
@@ -266,12 +279,7 @@ static ir_node *gen_helper_binfpop(ir_node *node, new_binop_fp_func new_reg)
  */
 static ir_node *gen_Add(ir_node *node)
 {
-	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-
-	(void) block;
-	(void) dbgi;
+	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode))
 		panic("FP not implemented yet");
@@ -288,13 +296,7 @@ static ir_node *gen_Add(ir_node *node)
  */
 static ir_node *gen_Sub(ir_node *node)
 {
-	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-
-	(void) block;
-	(void) dbgi;
-
+	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode))
 		panic("FP not implemented yet");
 
@@ -364,11 +366,9 @@ static ir_node *gen_Store(ir_node *node)
  * @return the created sparc Mul node
  */
 static ir_node *gen_Mul(ir_node *node) {
-	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-
-	ir_node *mul;
-	ir_node *proj_res_low;
+	ir_mode  *mode = get_irn_mode(node);
+	ir_node  *mul;
+	ir_node  *proj_res_low;
 
 	if (mode_is_float(mode)) {
 		mul = gen_helper_binfpop(node, new_bd_sparc_fMul);
@@ -379,7 +379,7 @@ static ir_node *gen_Mul(ir_node *node) {
 	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
 	arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
 
-	proj_res_low = new_rd_Proj(dbgi, mul, mode_gp, pn_sparc_Mul_low);
+	proj_res_low = new_r_Proj(mul, mode_gp, pn_sparc_Mul_low);
 	return proj_res_low;
 }
 
@@ -390,9 +390,7 @@ static ir_node *gen_Mul(ir_node *node) {
  * @return the created sparc Mulh node
  */
 static ir_node *gen_Mulh(ir_node *node) {
-	ir_mode  *mode    = get_irn_mode(node);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-
+	ir_mode *mode = get_irn_mode(node);
 	ir_node *mul;
 	ir_node *proj_res_hi;
 
@@ -403,7 +401,7 @@ static ir_node *gen_Mulh(ir_node *node) {
 	assert(mode_is_data(mode));
 	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
 	//arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
-	proj_res_hi = new_rd_Proj(dbgi, mul, mode_gp, pn_sparc_Mulh_low);
+	proj_res_hi = new_r_Proj(mul, mode_gp, pn_sparc_Mulh_low);
 	return proj_res_hi;
 }
 
@@ -460,7 +458,7 @@ static ir_node *gen_Abs(ir_node *node) {
 /**
  * Transforms a Not node.
  *
- * @return the created ARM Not node
+ * @return the created sparc Not node
  */
 static ir_node *gen_Not(ir_node *node)
 {
@@ -474,46 +472,16 @@ static ir_node *gen_Not(ir_node *node)
 
 static ir_node *gen_And(ir_node *node)
 {
-	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-
-	(void) block;
-	(void) dbgi;
-
-	if (mode_is_float(mode))
-		panic("FP not implemented yet");
-
 	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_And_reg, new_bd_sparc_And_imm);
 }
 
 static ir_node *gen_Or(ir_node *node)
 {
-	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-
-	(void) block;
-	(void) dbgi;
-
-	if (mode_is_float(mode))
-		panic("FP not implemented yet");
-
 	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Or_reg, new_bd_sparc_Or_imm);
 }
 
 static ir_node *gen_Eor(ir_node *node)
 {
-	ir_mode  *mode    = get_irn_mode(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-
-	(void) block;
-	(void) dbgi;
-
-	if (mode_is_float(mode))
-		panic("FP not implemented yet");
-
 	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Xor_reg, new_bd_sparc_Xor_imm);
 }
 
@@ -563,7 +531,7 @@ static ir_node *make_addr(dbg_info *dbgi, ir_entity *entity)
 }
 
 /**
- * Create an entity for a given (floatingpoint) tarval
+ * Create an entity for a given (floating point) tarval
  */
 static ir_entity *create_float_const_entity(tarval *tv)
 {
@@ -875,14 +843,14 @@ static ir_node *gen_Conv(ir_node *node)
 
 		if (mode_is_float(src_mode)) {
 			if (mode_is_float(dst_mode)) {
-				// float -> float conv
+				/* float -> float conv */
 				if (src_bits > dst_bits) {
 					return new_bd_sparc_FsTOd(dbg, block, new_op, dst_mode);
 				} else {
 					return new_bd_sparc_FdTOs(dbg, block, new_op, dst_mode);
 				}
 			} else {
-				// float -> int conv
+				/* float -> int conv */
 				switch (dst_bits) {
 					case 32:
 						return new_bd_sparc_FsTOi(dbg, block, new_op, dst_mode);
@@ -893,7 +861,7 @@ static ir_node *gen_Conv(ir_node *node)
 				}
 			}
 		} else {
-			// int -> float conv
+			/* int -> float conv */
 			switch (dst_bits) {
 				case 32:
 					return new_bd_sparc_FiTOs(dbg, block, new_op, src_mode);
@@ -908,7 +876,7 @@ static ir_node *gen_Conv(ir_node *node)
 		ir_mode *min_mode;
 
 		if (src_bits == dst_bits) {
-			/* kill unneccessary conv */
+			/* kill unnecessary conv */
 			return new_op;
 		}
 
@@ -1428,13 +1396,12 @@ static ir_node *gen_Proj_Div(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
 	case pn_Div_res:
 		if (is_sparc_Div(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_gp, pn_sparc_Div_res);
+			return new_r_Proj(new_pred, mode_gp, pn_sparc_Div_res);
 		}
 		break;
 	default:
@@ -1452,7 +1419,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 	switch ((pn_Start) pn) {
 	case pn_Start_X_initial_exec:
-		/* excahnge ProjX with a jump */
+		/* exchange ProjX with a jump */
 		return new_bd_sparc_Ba(NULL, new_block);
 	case pn_Start_M:
 		return new_r_Proj(barrier, mode_M, 0);
