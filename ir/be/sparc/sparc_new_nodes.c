@@ -88,18 +88,40 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 
 	case dump_node_info_txt:
 		arch_dump_reqs_and_registers(F, n);
-		break;
-
-	case dump_node_nodeattr_txt:
+		if (has_save_attr(n)) {
+			const sparc_save_attr_t *attr = get_sparc_save_attr_const(n);
+			fprintf(F, "initial stacksize: %d\n", attr->initial_stacksize);
+		}
 		if (has_symconst_attr(n)) {
 			const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(n);
-			fprintf(F, "fp_offset: 0x%X\n", attr->fp_offset);
+			ir_fprintf(F, "entity: %+F\n", attr->entity);
+			fprintf(F, "fp_offset: %d\n", attr->fp_offset);
 		}
 		if (has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
-			fprintf(F, "offset: 0x%lX\n", attr->offset);
-			fprintf(F, "is_frame_entity: %s\n", attr->is_frame_entity == true ? "true" : "false");
+			ir_fprintf(F, "load store mode: %+F\n", attr->load_store_mode);
+			ir_fprintf(F, "entity: (sign %d) %+F\n", attr->entity_sign,
+			           attr->entity);
+			fprintf(F, "offset: %ld\n", attr->offset);
+			fprintf(F, "is frame entity: %s\n",
+			        attr->is_frame_entity ? "true" : "false");
 		}
+		if (has_jmp_cond_attr(n)) {
+			const sparc_jmp_cond_attr_t *attr
+				= get_sparc_jmp_cond_attr_const(n);
+			fprintf(F, "pnc: %d (%s)\n", attr->proj_num,
+			        get_pnc_string(attr->proj_num));
+			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
+		}
+		if (has_jmp_switch_attr(n)) {
+			const sparc_jmp_switch_attr_t *attr
+				= get_sparc_jmp_switch_attr_const(n);
+			fprintf(F, "n projs: %d\n", attr->n_projs);
+			fprintf(F, "default proj: %ld\n", attr->default_proj_num);
+		}
+		break;
+
+	case dump_node_nodeattr_txt:
 		break;
 	}
 }
