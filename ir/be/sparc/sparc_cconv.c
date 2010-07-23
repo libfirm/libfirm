@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -31,6 +31,10 @@
 #include "xmalloc.h"
 #include "error.h"
 
+/**
+ * Maps an input register representing the i'th register input
+ * to the i'th register output.
+ */
 static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
 {
 	unsigned idx = arch_register_get_index(reg);
