@@ -400,13 +400,14 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	rbitset_alloca(found_projs, n_outs);
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
+		ir_mode *mode = get_irn_mode(succ);
 		int      pn;
 
 		/* The node could be kept */
 		if (is_End(succ) || is_Anchor(succ))
 			continue;
 
-		if (get_irn_mode(succ) == mode_M)
+		if (mode == mode_M || mode == mode_X)
 			continue;
 
 		pn = get_Proj_proj(succ);
