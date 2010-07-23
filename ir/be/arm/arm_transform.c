@@ -356,11 +356,22 @@ typedef enum {
 	MATCH_SIZE_NEUTRAL = 1 << 1,
 } match_flags_t;
 
-typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
-typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, unsigned char imm8, unsigned char imm_rot);
+/**
+ * possible binop constructors.
+ */
+typedef struct arm_binop_factory_t {
+	/** normal reg op reg operation. */
+	ir_node *(*new_binop_reg)(dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
+	/** normal reg op imm operation. */
+	ir_node *(*new_binop_imm)(dbg_info *dbgi, ir_node *block, ir_node *op1, unsigned char imm8, unsigned char imm_rot);
+	/** barrel shifter reg op (reg shift reg operation. */
+	ir_node *(*new_binop_reg_shift_reg)(dbg_info *dbgi, ir_node *block, ir_node *left, ir_node *right, ir_node *shift, arm_shift_modifier_t shift_modifier);
+	/** barrel shifter reg op (reg shift imm operation. */
+	ir_node *(*new_binop_reg_shift_imm)(dbg_info *dbgi, ir_node *block, ir_node *left, ir_node *right, arm_shift_modifier_t shift_modifier, unsigned shift_immediate);
+} arm_binop_factory_t;
 
 static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
-		new_binop_reg_func new_reg, new_binop_imm_func new_imm)
+		const arm_binop_factory_t *factory)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_binop_left(node);
@@ -379,15 +390,78 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 
 	if (try_encode_as_immediate(op2, &imm)) {
 		ir_node *new_op1 = be_transform_node(op1);
-		return new_imm(dbgi, block, new_op1, imm.imm_8, imm.rot);
+		return factory->new_binop_imm(dbgi, block, new_op1, imm.imm_8, imm.rot);
 	}
 	new_op2 = be_transform_node(op2);
     if ((flags & MATCH_COMMUTATIVE) && try_encode_as_immediate(op1, &imm)) {
-		return new_imm(dbgi, block, new_op2, imm.imm_8, imm.rot);
+		return factory->new_binop_imm(dbgi, block, new_op2, imm.imm_8, imm.rot);
 	}
 	new_op1 = be_transform_node(op1);
 
-	return new_reg(dbgi, block, new_op1, new_op2);
+	/* check if we can fold in a Mov */
+	if (is_arm_Mov(new_op2)) {
+		const arm_shifter_operand_t *attr = get_arm_shifter_operand_attr_const(new_op2);
+
+		switch (attr->shift_modifier) {
+			ir_node *mov_op, *mov_sft;
+
+		case ARM_SHF_IMM:
+		case ARM_SHF_ASR_IMM:
+		case ARM_SHF_LSL_IMM:
+		case ARM_SHF_LSR_IMM:
+		case ARM_SHF_ROR_IMM:
+			if (factory->new_binop_reg_shift_imm) {
+				mov_op = get_irn_n(new_op2, 0);
+				return factory->new_binop_reg_shift_imm(dbgi, block, new_op1, mov_op,
+					attr->shift_modifier, attr->shift_immediate);
+			}
+			break;
+
+		case ARM_SHF_ASR_REG:
+		case ARM_SHF_LSL_REG:
+		case ARM_SHF_LSR_REG:
+		case ARM_SHF_ROR_REG:
+			if (factory->new_binop_reg_shift_reg) {
+				mov_op  = get_irn_n(new_op2, 0);
+				mov_sft = get_irn_n(new_op2, 1);
+				return factory->new_binop_reg_shift_reg(dbgi, block, new_op1, mov_op, mov_sft,
+					attr->shift_modifier);
+			}
+			break;
+		}
+	}
+	if ((flags & MATCH_COMMUTATIVE) && is_arm_Mov(new_op1)) {
+		const arm_shifter_operand_t *attr = get_arm_shifter_operand_attr_const(new_op1);
+
+		switch (attr->shift_modifier) {
+			ir_node *mov_op, *mov_sft;
+
+		case ARM_SHF_IMM:
+		case ARM_SHF_ASR_IMM:
+		case ARM_SHF_LSL_IMM:
+		case ARM_SHF_LSR_IMM:
+		case ARM_SHF_ROR_IMM:
+			if (factory->new_binop_reg_shift_imm) {
+				mov_op = get_irn_n(new_op1, 0);
+				return factory->new_binop_reg_shift_imm(dbgi, block, new_op2, mov_op,
+					attr->shift_modifier, attr->shift_immediate);
+			}
+			break;
+
+		case ARM_SHF_ASR_REG:
+		case ARM_SHF_LSL_REG:
+		case ARM_SHF_LSR_REG:
+		case ARM_SHF_ROR_REG:
+			if (factory->new_binop_reg_shift_reg) {
+				mov_op  = get_irn_n(new_op1, 0);
+				mov_sft = get_irn_n(new_op1, 1);
+				return factory->new_binop_reg_shift_reg(dbgi, block, new_op2, mov_op, mov_sft,
+					attr->shift_modifier);
+			}
+			break;
+		}
+	}
+	return factory->new_binop_reg(dbgi, block, new_op1, new_op2);
 }
 
 /**
@@ -397,7 +471,14 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
  */
 static ir_node *gen_Add(ir_node *node)
 {
-	ir_mode  *mode    = get_irn_mode(node);
+	static const arm_binop_factory_t add_factory = {
+		new_bd_arm_Add_reg,
+		new_bd_arm_Add_imm,
+		new_bd_arm_Add_reg_shift_reg,
+		new_bd_arm_Add_reg_shift_imm
+	};
+
+	ir_mode *mode = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
 		ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -433,8 +514,7 @@ static ir_node *gen_Add(ir_node *node)
 		}
 #endif
 
-		return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
-				new_bd_arm_Add_reg, new_bd_arm_Add_imm);
+		return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &add_factory);
 	}
 }
 
@@ -491,24 +571,49 @@ static ir_node *gen_Quot(ir_node *node)
 
 static ir_node *gen_And(ir_node *node)
 {
-	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
-			new_bd_arm_And_reg, new_bd_arm_And_imm);
+	static const arm_binop_factory_t and_factory = {
+		new_bd_arm_And_reg,
+		new_bd_arm_And_imm,
+		new_bd_arm_And_reg_shift_reg,
+		new_bd_arm_And_reg_shift_imm
+	};
+
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &and_factory);
 }
 
 static ir_node *gen_Or(ir_node *node)
 {
-	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
-			new_bd_arm_Or_reg, new_bd_arm_Or_imm);
+	static const arm_binop_factory_t or_factory = {
+		new_bd_arm_Or_reg,
+		new_bd_arm_Or_imm,
+		new_bd_arm_Or_reg_shift_reg,
+		new_bd_arm_Or_reg_shift_imm
+	};
+
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &or_factory);
 }
 
 static ir_node *gen_Eor(ir_node *node)
 {
-	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
-			new_bd_arm_Eor_reg, new_bd_arm_Eor_imm);
+	static const arm_binop_factory_t eor_factory = {
+		new_bd_arm_Eor_reg,
+		new_bd_arm_Eor_imm,
+		new_bd_arm_Eor_reg_shift_reg,
+		new_bd_arm_Eor_reg_shift_imm
+	};
+
+	return gen_int_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, &eor_factory);
 }
 
 static ir_node *gen_Sub(ir_node *node)
 {
+	static const arm_binop_factory_t sub_factory = {
+		new_bd_arm_Sub_reg,
+		new_bd_arm_Sub_imm,
+		new_bd_arm_Sub_reg_shift_reg,
+		new_bd_arm_Sub_reg_shift_imm
+	};
+
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_Sub_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
@@ -527,8 +632,7 @@ static ir_node *gen_Sub(ir_node *node)
 			panic("Softfloat not supported yet");
 		}
 	} else {
-		return gen_int_binop(node, MATCH_SIZE_NEUTRAL,
-		                     new_bd_arm_Sub_reg, new_bd_arm_Sub_imm);
+		return gen_int_binop(node, MATCH_SIZE_NEUTRAL, &sub_factory);
 	}
 }
 
