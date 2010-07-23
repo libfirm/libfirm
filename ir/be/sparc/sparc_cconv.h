@@ -114,10 +114,12 @@ typedef struct calling_convention_t
 } calling_convention_t;
 
 /**
- * determine how function parameters and return values are passed.
+ * Determine how function parameters and return values are passed.
  * Decides what goes to register or to stack and what stack offsets/
  * datatypes are used.
- * @param caller   true for convention for the caller, false for callee
+ *
+ * @param function_type  the type of the caller/callee function
+ * @param caller         true for convention for the caller, false for callee
  */
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
                                                       bool caller);
