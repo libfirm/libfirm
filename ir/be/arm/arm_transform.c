@@ -1045,16 +1045,16 @@ static ir_node *gen_Cmp(ir_node *node)
 	is_unsigned = !mode_is_signed(cmp_mode);
 
 	/* compare with 0 can be done with Tst */
-	if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
+	if (is_Const(op2) && is_Const_null(op2)) {
 		new_op1 = be_transform_node(op1);
 		new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
-		return new_bd_arm_Tst_reg(dbgi, block, new_op1, new_op1, false,
+		return new_bd_arm_Tst_reg(dbgi, block, new_op1, new_op1, /*ins_permuted=*/false,
 		                          is_unsigned);
 	}
-	if (is_Const(op1) && tarval_is_null(get_Const_tarval(op1))) {
+	if (is_Const(op1) && is_Const_null(op1)) {
 		new_op2 = be_transform_node(op2);
 		new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
-		return new_bd_arm_Tst_reg(dbgi, block, new_op2, new_op2, true,
+		return new_bd_arm_Tst_reg(dbgi, block, new_op2, new_op2, /*ins_permuted=*/true,
 		                          is_unsigned);
 	}
 
