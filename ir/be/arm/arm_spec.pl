@@ -304,6 +304,13 @@ Mvn => {
 	constructors => \%unop_shifter_operand_constructors,
 },
 
+Clz => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      =>'. clz %D0, %S0',
+	mode      => $mode_gp,
+},
+
 # mov lr, pc\n mov pc, XXX -- This combination is used for calls to function
 # pointers
 LinkMovPC => {

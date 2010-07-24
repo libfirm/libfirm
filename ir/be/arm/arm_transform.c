@@ -1258,6 +1258,82 @@ static ir_node *gen_CopyB(ir_node *node)
 			new_mem, size);
 }
 
+/**
+ * Transform builtin clz.
+ */
+static ir_node *gen_clz(ir_node *node)
+{
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	dbg_info *dbg    = get_irn_dbg_info(node);
+	ir_node  *op     = get_irn_n(node, 1);
+	ir_node  *new_op = be_transform_node(op);
+
+	/* TODO armv5 instruction, otherwise create a call */
+	return new_bd_arm_Clz(dbg, block, new_op);
+}
+
+/**
+ * Transform Builtin node.
+ */
+static ir_node *gen_Builtin(ir_node *node)
+{
+	ir_builtin_kind kind = get_Builtin_kind(node);
+
+	switch (kind) {
+	case ir_bk_trap:
+	case ir_bk_debugbreak:
+	case ir_bk_return_address:
+	case ir_bk_frame_address:
+	case ir_bk_prefetch:
+	case ir_bk_ffs:
+		break;
+	case ir_bk_clz:
+		return gen_clz(node);
+	case ir_bk_ctz:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_bswap:
+	case ir_bk_outport:
+	case ir_bk_inport:
+	case ir_bk_inner_trampoline:
+		break;
+	}
+	panic("Builtin %s not implemented in ARM", get_builtin_kind_name(kind));
+}
+
+/**
+ * Transform Proj(Builtin) node.
+ */
+static ir_node *gen_Proj_Builtin(ir_node *proj)
+{
+	ir_node         *node     = get_Proj_pred(proj);
+	ir_node         *new_node = be_transform_node(node);
+	ir_builtin_kind kind      = get_Builtin_kind(node);
+
+	switch (kind) {
+	case ir_bk_return_address:
+	case ir_bk_frame_address:
+	case ir_bk_ffs:
+	case ir_bk_clz:
+	case ir_bk_ctz:
+	case ir_bk_parity:
+	case ir_bk_popcount:
+	case ir_bk_bswap:
+		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
+		return new_node;
+	case ir_bk_trap:
+	case ir_bk_debugbreak:
+	case ir_bk_prefetch:
+	case ir_bk_outport:
+		assert(get_Proj_proj(proj) == pn_Builtin_M);
+		return new_node;
+	case ir_bk_inport:
+	case ir_bk_inner_trampoline:
+		break;
+	}
+	panic("Builtin %s not implemented in ARM", get_builtin_kind_name(kind));
+}
+
 static ir_node *gen_Proj_Load(ir_node *node)
 {
 	ir_node  *load     = get_Proj_pred(node);
@@ -1539,6 +1615,8 @@ static ir_node *gen_Proj(ir_node *node)
 		}
 		/* FALLTHROUGH */
 	}
+	case iro_Builtin:
+		return gen_Proj_Builtin(node);
 	default:
 		panic("code selection didn't expect Proj after %+F\n", pred);
 	}
@@ -2043,6 +2121,7 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Sub,      gen_Sub);
 	be_set_transform_function(op_SymConst, gen_SymConst);
 	be_set_transform_function(op_Unknown,  gen_Unknown);
+	be_set_transform_function(op_Builtin,  gen_Builtin);
 }
 
 /**
