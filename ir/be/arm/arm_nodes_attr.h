@@ -64,8 +64,8 @@ enum fpa_immediates {
 /** Generic ARM node attributes. */
 typedef struct arm_attr_t {
 	except_attr                 exc;                /**< the exception attribute. MUST be the first one. */
-	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-	bool                        is_load_store : 1;
+	const arch_register_req_t **in_req;             /**< register requirements for arguments */
+	bool                        is_load_store : 1;  /**< if set, this is a load or store instruction */
 } arm_attr_t;
 
 /**

@@ -369,6 +369,7 @@ static void init_arm_attributes(ir_node *node, int flags,
 
 	arch_irn_set_flags(node, flags);
 	attr->in_req           = in_reqs;
+	attr->is_load_store    = false;
 
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
