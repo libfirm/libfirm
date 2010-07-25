@@ -444,6 +444,7 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 			if (onlyOneZero) {
 				DEL_ARR_F(mapping);
 				return;
+			}
 
 			onlyOneZero = 1;
 			mapping[src_index] = tgt_index;
