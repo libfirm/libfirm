@@ -241,6 +241,143 @@ static void normalize_towards_target(pbqp_edge *edge)
 	}
 }
 
+/**
+ * Tries to apply RM for the source node of the given edge.
+ *
+ * Checks whether the source node of edge can be merged into the target node of
+ * edge, and performs the merge, if possible.
+ */
+static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
+{
+	pbqp_matrix    *mat;
+	pbqp_node      *src_node;
+	pbqp_node      *tgt_node;
+	vector         *src_vec;
+	vector         *tgt_vec;
+	unsigned       *mapping;
+	unsigned        src_len;
+	unsigned        tgt_len;
+	unsigned        src_index;
+	unsigned        tgt_index;
+	unsigned        edge_index;
+	unsigned        edge_len;
+
+	assert(pbqp);
+	assert(edge);
+
+	src_node = edge->src;
+	tgt_node = edge->tgt;
+	assert(src_node);
+	assert(tgt_node);
+
+	src_vec = src_node->costs;
+	tgt_vec = tgt_node->costs;
+	assert(src_vec);
+	assert(tgt_vec);
+
+	src_len = src_vec->len;
+	tgt_len = tgt_vec->len;
+
+	/* Matrizes are normalized. */
+	assert(src_len > 1);
+	assert(tgt_len > 1);
+
+	mat = edge->costs;
+	assert(mat);
+
+	mapping = NEW_ARR_F(unsigned, src_len);
+
+	/* Check that each column has at most one zero entry. */
+	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
+		unsigned onlyOneZero = 0;
+		if (tgt_vec->entries[tgt_index].data == INF_COSTS)
+			continue;
+
+		for (src_index = 0; src_index < src_len; ++src_index) {
+			if (src_vec->entries[src_index].data == INF_COSTS)
+				continue;
+
+			if (mat->entries[src_index * tgt_len + tgt_index] == INF_COSTS)
+				continue;
+
+			/* Matrix entry is finite. */
+			if (onlyOneZero) {
+				DEL_ARR_F(mapping);
+				return;
+			}
+
+			onlyOneZero = 1;
+			mapping[tgt_index] = src_index;
+		}
+	}
+
+	/* We know that we can merge the source node into the target node. */
+	edge_len = pbqp_node_get_degree(src_node);
+
+#if KAPS_STATISTIC
+	pbqp->num_rm++;
+#endif
+
+	/* Reconnect the source's edges with the target node. */
+	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+		pbqp_edge   *old_edge = src_node->edges[edge_index];
+		pbqp_matrix *old_matrix;
+		pbqp_matrix *new_matrix;
+		pbqp_node   *other_node;
+		unsigned     other_len;
+		unsigned     other_index;
+		unsigned     tgt_index;
+
+		assert(old_edge);
+
+		if (old_edge == edge)
+			continue;
+
+		old_matrix = old_edge->costs;
+		assert(old_matrix);
+
+		if (old_edge->tgt == src_node) {
+			other_node = edge->src;
+			other_len  = old_matrix->rows;
+		}
+		else {
+			other_node = edge->tgt;
+			other_len = old_matrix->cols;
+		}
+		assert(other_node);
+
+		new_matrix = pbqp_matrix_alloc(pbqp, tgt_len, other_len);
+
+		/* Source node selects the column of the old_matrix. */
+		if (old_edge->tgt == src_node) {
+			for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
+				unsigned old_index = mapping[tgt_index];
+				for (other_index = 0; other_index < other_len; ++other_index) {
+					new_matrix->entries[tgt_index*other_len+other_index] = old_matrix->entries[other_index*src_len+old_index];
+				}
+			}
+		}
+		/* Source node selects the row of the old_matrix. */
+		else {
+			for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
+				unsigned old_index = mapping[tgt_index];
+				for (other_index = 0; other_index < other_len; ++other_index) {
+					new_matrix->entries[tgt_index*other_len+other_index] = old_matrix->entries[old_index*other_len+other_index];
+				}
+			}
+		}
+
+		add_edge_costs(pbqp, tgt_node->index, other_node->index, new_matrix);
+
+		disconnect_edge(src_node, old_edge);
+		disconnect_edge(other_node, old_edge);
+	}
+
+	/* Reduce the remaining source node via RI. */
+	apply_RI(pbqp);
+}
+
+
 void reorder_node(pbqp_node *node)
 {
 	unsigned    degree     = pbqp_node_get_degree(node);
