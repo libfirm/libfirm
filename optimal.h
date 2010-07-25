@@ -38,10 +38,6 @@ void apply_edge(pbqp *pbqp);
 void apply_RI(pbqp *pbqp);
 void apply_RII(pbqp *pbqp);
 
-#if KAPS_STATISTIC
-void check_melting_possibility(pbqp *pbqp, pbqp_edge *edge);
-#endif
-
 void back_propagate(pbqp *pbqp);
 num determine_solution(pbqp *pbqp);
 void fill_node_buckets(pbqp *pbqp);
