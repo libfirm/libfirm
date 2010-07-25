@@ -47,6 +47,7 @@
 #include "timing.h"
 
 pbqp_edge **edge_bucket;
+pbqp_edge **rm_bucket;
 pbqp_node **node_buckets[4];
 pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
@@ -61,11 +62,22 @@ static void insert_into_edge_bucket(pbqp_edge *edge)
 	edge_bucket_insert(&edge_bucket, edge);
 }
 
+static void insert_into_rm_bucket(pbqp_edge *edge)
+{
+	if (edge_bucket_contains(rm_bucket, edge)) {
+		/* Edge is already inserted. */
+		return;
+	}
+
+	edge_bucket_insert(&rm_bucket, edge);
+}
+
 static void init_buckets(void)
 {
 	int i;
 
 	edge_bucket_init(&edge_bucket);
+	edge_bucket_init(&rm_bucket);
 	node_bucket_init(&reduced_bucket);
 
 	for (i = 0; i < 4; ++i) {
@@ -82,6 +94,7 @@ void free_buckets(void)
 	}
 
 	edge_bucket_free(&edge_bucket);
+	edge_bucket_free(&rm_bucket);
 	node_bucket_free(&reduced_bucket);
 
 	buckets_filled = 0;
@@ -322,6 +335,7 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 	/* Reconnect the source's edges with the target node. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 		pbqp_edge   *old_edge = src_node->edges[edge_index];
+		pbqp_edge   *new_edge;
 		pbqp_matrix *old_matrix;
 		pbqp_matrix *new_matrix;
 		pbqp_node   *other_node;
@@ -374,6 +388,9 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 
 		disconnect_edge(src_node, old_edge);
 		disconnect_edge(other_node, old_edge);
+
+		new_edge = get_edge(pbqp, tgt_node->index, other_node->index);
+		insert_into_rm_bucket(new_edge);
 	}
 
 	/* Reduce the remaining source node via RI. */
@@ -461,6 +478,7 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 	/* Reconnect the target's edges with the source node. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 		pbqp_edge   *old_edge = tgt_node->edges[edge_index];
+		pbqp_edge   *new_edge;
 		pbqp_matrix *old_matrix;
 		pbqp_matrix *new_matrix;
 		pbqp_node   *other_node;
@@ -513,10 +531,47 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 
 		disconnect_edge(tgt_node, old_edge);
 		disconnect_edge(other_node, old_edge);
+
+		new_edge = get_edge(pbqp, src_node->index, other_node->index);
+		insert_into_rm_bucket(new_edge);
 	}
 
 	/* Reduce the remaining source node via RI. */
 	apply_RI(pbqp);
+}
+
+/**
+ * Merge neighbors into the given node.
+ */
+void apply_RM(pbqp *pbqp, pbqp_node *node)
+{
+	pbqp_edge **edges;
+	unsigned    edge_index;
+	unsigned    edge_len;
+
+	assert(node);
+	assert(pbqp);
+
+	edges    = node->edges;
+	edge_len = pbqp_node_get_degree(node);
+
+	/* Check all incident edges. */
+	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+		pbqp_edge *edge = edges[edge_index];
+
+		insert_into_rm_bucket(edge);
+	}
+
+	/* ALAP: Merge neighbors into given node. */
+	while(edge_bucket_get_length(rm_bucket) > 0) {
+		pbqp_edge *edge = edge_bucket_pop(&rm_bucket);
+		assert(edge);
+
+		if (edge->src == node)
+			merge_target_into_source(pbqp, edge);
+		else
+			merge_source_into_target(pbqp, edge);
+	}
 }
 
 void reorder_node(pbqp_node *node)

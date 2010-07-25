@@ -37,6 +37,7 @@ void apply_edge(pbqp *pbqp);
 
 void apply_RI(pbqp *pbqp);
 void apply_RII(pbqp *pbqp);
+void apply_RM(pbqp *pbqp, pbqp_node *node);
 
 void back_propagate(pbqp *pbqp);
 num determine_solution(pbqp *pbqp);
