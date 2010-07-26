@@ -1025,38 +1025,10 @@ static ir_node *gen_Cmp(ir_node *node)
 		new_op2 = be_transform_node(op2);
 
 		return new_bd_arm_Cmfe(dbgi, block, new_op1, new_op2, false);
-
-		panic("FloatCmp NIY");
-#if 0
-		ir_node *new_op2  = be_transform_node(op2);
-		/* floating point compare */
-		pn_Cmp pnc = get_Proj_proj(selector);
-
-		if (pnc & pn_Cmp_Uo) {
-			/* check for unordered, need cmf */
-			return new_bd_arm_CmfBra(dbgi, block, new_op1, new_op2, pnc);
-		}
-		/* Hmm: use need cmfe */
-		return new_bd_arm_CmfeBra(dbgi, block, new_op1, new_op2, pnc);
-#endif
 	}
 
 	assert(get_irn_mode(op2) == cmp_mode);
 	is_unsigned = !mode_is_signed(cmp_mode);
-
-	/* compare with 0 can be done with Tst */
-	if (is_Const(op2) && is_Const_null(op2)) {
-		new_op1 = be_transform_node(op1);
-		new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
-		return new_bd_arm_Tst_reg(dbgi, block, new_op1, new_op1, /*ins_permuted=*/false,
-		                          is_unsigned);
-	}
-	if (is_Const(op1) && is_Const_null(op1)) {
-		new_op2 = be_transform_node(op2);
-		new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
-		return new_bd_arm_Tst_reg(dbgi, block, new_op2, new_op2, /*ins_permuted=*/true,
-		                          is_unsigned);
-	}
 
 	/* integer compare, TODO: use shifter_op in all its combinations */
 	new_op1 = be_transform_node(op1);
