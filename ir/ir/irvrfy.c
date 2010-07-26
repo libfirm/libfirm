@@ -881,6 +881,10 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 			"Block node must have a mode_X predecessor", 0);
 	}
 
+	if (n == get_irg_start_block(irg)) {
+		ASSERT_AND_RET(get_Block_n_cfgpreds(n) == 0, "Start Block node", 0);
+	}
+
 	if (n == get_irg_end_block(irg) && get_irg_phase_state(irg) != phase_backend)
 		/* End block may only have Return, Raise or fragile ops as preds. */
 		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
