@@ -942,6 +942,16 @@ class Gamma(Op):
 	flags  = []
 	pinned = "no"
 
+class Theta(Op):
+	ins    = [ "init", "next" ]
+	flags  = []
+	pinned = "no"
+
+class Extract(Op):
+	ins    = [ "list", "cond" ]
+	flags  = []
+	pinned = "no"
+
 # Prepare node list
 
 def getOpList(namespace):

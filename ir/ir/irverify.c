@@ -1643,6 +1643,46 @@ static int verify_node_Gamma(ir_node *n, ir_graph *irg)
 }
 
 /**
+ * verify a Theta node
+ */
+static int verify_node_Theta(ir_node *n, ir_graph *irg)
+{
+	ir_mode *mymode  = get_irn_mode(n);
+	ir_mode *op1mode = get_irn_mode(get_Theta_init(n));
+	ir_mode *op2mode = get_irn_mode(get_Theta_next(n));
+	(void) irg;
+
+	ASSERT_AND_RET(
+		/* Theta: BB x datab|T|M x datab|T|M --> datab|T|M */
+		op1mode == mymode &&
+		op2mode == mymode &&
+		(mode_is_datab(mymode) || (mymode == mode_T) || (mymode == mode_M)),
+		"Theta node", 0
+		);
+	return 1;
+}
+
+/**
+ * verify an Extract node
+ */
+static int verify_node_Extract(ir_node *n, ir_graph *irg)
+{
+	ir_mode *mymode  = get_irn_mode(n);
+	ir_mode *op1mode = get_irn_mode(get_Extract_list(n));
+	ir_mode *op2mode = get_irn_mode(get_Extract_cond(n));
+	(void) irg;
+
+	ASSERT_AND_RET(
+		/* Theta: BB x datab|T|M x b --> datab|T|M */
+		op1mode == mymode &&
+		op2mode == mode_b &&
+		(mode_is_datab(mymode) || (mymode == mode_T) || (mymode == mode_M)),
+		"Extract node", 0
+		);
+	return 1;
+}
+
+/**
  * verify a CopyB node
  */
 static int verify_node_CopyB(const ir_node *n)
@@ -2274,9 +2314,11 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
 	CASE(Sync);
 	CASE(Confirm);
 	CASE(Mux);
-	CASE(Gamma);
 	CASE(CopyB);
 	CASE(Bound);
+	CASE(Gamma);
+	CASE(Theta);
+	CASE(Extract);
 	default:
 		break;
 	}

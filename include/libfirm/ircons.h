@@ -1265,16 +1265,49 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
  * A value selection node similar to Mux, with lazy evaluation semantics.
  * One of the basic nodes of the PEG representation.
  *
- * @param *db       A pointer for debug information.
- * @param *block    The IR block the node belongs to.
- * @param *cond     The condition used to select the true of false value.
- * @param *ir_false The false value.
- * @param *ir_true  The true value.
- * @param *mode     The mode of the node, ir_true and ir_false.
+ * @param *db         A pointer for debug information.
+ * @param *block      The IR block the node belongs to.
+ * @param *cond       The condition used to select the true of false value.
+ * @param *ir_false   The false value.
+ * @param *ir_true    The true value.
+ * @param *mode       The mode of the node, ir_true and ir_false.
  */
 FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
                                ir_node *ir_false, ir_node *ir_true,
                                ir_mode *mode);
+
+/** Constructor for a Theta node.
+ *
+ * Defines data flow inside a loop. The results of nodes that process values
+ * provided by the Theta node appear as infinite loops outside that subgraph.
+ * It can be accessed using an Extract node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *block      The IR block the node belongs to.
+ * @param *init       The initial value of the produced infinite list.
+ * @param *next       The result of a subgraph that calculates the next value.
+ * @param *mode       The mode of the node, init and next.
+ */
+FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
+                               ir_node *next, ir_mode *mode);
+
+/** Constructor for a Extract node.
+ *
+ * Lazily determines the first index, where the infinite condition list
+ * evaluates to true and returns the element at that index from the first
+ * infinite list. The infinite lists are specified by regular nodes in the
+ * subgraph of a Theta node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *block      The IR block the node belongs to.
+ * @param *list       The infinite list to get the value from.
+ * @param *cond       The infinite list of conditions.
+ * @param *mode       The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_rd_Extract(dbg_info *db, ir_node *block, ir_node *list,
+                                 ir_node *cond, ir_mode *mode);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1399,14 +1432,45 @@ FIRM_API ir_node *new_r_ASM(ir_node *block,
  * A value selection node similar to Mux, with lazy evaluation semantics.
  * One of the basic nodes of the PEG representation.
  *
- * @param *block    The IR block the node belongs to.
- * @param *cond     The condition used to select the true of false value.
- * @param *ir_false The false value.
- * @param *ir_true  The true value.
- * @param *mode     The mode of the node, ir_true and ir_false.
+ * @param *block      The IR block the node belongs to.
+ * @param *cond       The condition used to select the true of false value.
+ * @param *ir_false   The false value.
+ * @param *ir_true    The true value.
+ * @param *mode       The mode of the node, ir_true and ir_false.
  */
 FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
                               ir_node *ir_true, ir_mode *mode);
+
+/** Constructor for a Theta node.
+ *
+ * Defines data flow inside a loop. The results of nodes that process values
+ * provided by the Theta node appear as infinite loops outside that subgraph.
+ * It can be accessed using an Extract node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *block      The IR block the node belongs to.
+ * @param *init       The initial value of the produced infinite list.
+ * @param *next       The result of a subgraph that calculates the next value.
+ * @param *mode       The mode of the node, init and next.
+ */
+FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
+                              ir_mode *mode);
+
+/** Constructor for a Extract node.
+ *
+ * Lazily determines the first index, where the infinite condition list
+ * evaluates to true and returns the element at that index from the first
+ * infinite list. The infinite lists are specified by regular nodes in the
+ * subgraph of a Theta node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *block      The IR block the node belongs to.
+ * @param *list       The infinite list to get the value from.
+ * @param *cond       The infinite list of conditions.
+ * @param *mode       The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_r_Extract(ir_node *block, ir_node *list, ir_node *cond,
+                                ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1543,14 +1607,45 @@ FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
  * A value selection node similar to Mux, with lazy evaluation semantics.
  * One of the basic nodes of the PEG representation.
  *
- * @param *db       A pointer for debug information.
- * @param *cond     The condition used to select the true of false value.
- * @param *ir_false The false value.
- * @param *ir_true  The true value.
- * @param *mode     The mode of the node, ir_true and ir_false.
+ * @param *db         A pointer for debug information.
+ * @param *cond       The condition used to select the true of false value.
+ * @param *ir_false   The false value.
+ * @param *ir_true    The true value.
+ * @param *mode       The mode of the node, ir_true and ir_false.
  */
 FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
                               ir_node *ir_true, ir_mode *mode);
+
+/** Constructor for a Theta node.
+ *
+ * Defines data flow inside a loop. The results of nodes that process values
+ * provided by the Theta node appear as infinite loops outside that subgraph.
+ * It can be accessed using an Extract node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *init       The initial value of the produced infinite list.
+ * @param *next       The result of a subgraph that calculates the next value.
+ * @param *mode       The mode of the node, init and next.
+ */
+FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
+                              ir_mode *mode);
+
+/** Constructor for a Extract node.
+ *
+ * Lazily determines the first index, where the infinite condition list
+ * evaluates to true and returns the element at that index from the first
+ * infinite list. The infinite lists are specified by regular nodes in the
+ * subgraph of a Theta node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *list       The infinite list to get the value from.
+ * @param *cond       The infinite list of conditions.
+ * @param *mode       The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_d_Extract(dbg_info *db, ir_node *list, ir_node *cond,
+                                ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1670,13 +1765,40 @@ FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
  * A value selection node similar to Mux, with lazy evaluation semantics.
  * One of the basic nodes of the PEG representation.
  *
- * @param *cond     The condition used to select the true of false value.
- * @param *ir_false The false value.
- * @param *ir_true  The true value.
- * @param *mode     The mode of the node, ir_true and ir_false.
+ * @param *cond       The condition used to select the true of false value.
+ * @param *ir_false   The false value.
+ * @param *ir_true    The true value.
+ * @param *mode       The mode of the node, ir_true and ir_false.
  */
 FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
                             ir_mode *mode);
+
+/** Constructor for a Theta node.
+ *
+ * Defines data flow inside a loop. The results of nodes that process values
+ * provided by the Theta node appear as infinite loops outside that subgraph.
+ * It can be accessed using an Extract node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *init       The initial value of the produced infinite list.
+ * @param *next       The result of a subgraph that calculates the next value.
+ * @param *mode       The mode of the node, init and next.
+ */
+FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode);
+
+/** Constructor for a Extract node.
+ *
+ * Lazily determines the first index, where the infinite condition list
+ * evaluates to true and returns the element at that index from the first
+ * infinite list. The infinite lists are specified by regular nodes in the
+ * subgraph of a Theta node.
+ * One of the basic nodes of the PEG representation.
+ *
+ * @param *list       The infinite list to get the value from.
+ * @param *cond       The infinite list of conditions.
+ * @param *mode       The mode of the node, ir_true and ir_false.
+ */
+FIRM_API ir_node *new_Extract(ir_node *list, ir_node *cond, ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
