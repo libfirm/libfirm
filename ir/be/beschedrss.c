@@ -1486,15 +1486,16 @@ static void build_dvg_pkiller_list(rss_t *rss, dvg_t *dvg)
  */
 static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int iteration)
 {
-	int         n               = ir_nodeset_size(&dvg->nodes);
-	int         *assignment     = ALLOCAN(int, n);
-	int         *assignment_rev = ALLOCAN(int, n);
+	unsigned    n               = ir_nodeset_size(&dvg->nodes);
+	unsigned    *assignment     = ALLOCAN(unsigned, n);
+	unsigned    *assignment_rev = ALLOCAN(unsigned, n);
 	int         *idx_map        = ALLOCAN(int, n);
 	hungarian_problem_t *bp;
 	ir_nodeset_t *values, *temp;
 	ir_nodeset_iterator_t iter;
 	ir_node     *u_irn;
-	int         i, j, cost, cur_chain, res;
+	unsigned    i, j;
+	int         cost, cur_chain, res;
 	rss_edge_t  *dvg_edge;
 
 #define MAP_IDX(irn) bsearch_for_index(get_irn_idx(irn), idx_map,  n,  1)
@@ -1588,8 +1589,8 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 
 	/* build the reverse assignment, ie. foreach i -> j, add j -> i */
 	for (i = 0; i < n; ++i) {
-		if (assignment[i] >= 0) {
-			int j = assignment[i];
+		if (assignment[i] != (unsigned)-1) {
+			unsigned j = assignment[i];
 			assignment_rev[j] = i;
 		}
 	}
@@ -1597,7 +1598,7 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 	DBG((rss->dbg, LEVEL_2, "\t\tgot assignment with cost %d\n", cost));
 	DBG((rss->dbg, LEVEL_3, "\t\t\tassignment   ---   reverse assignment\n", cost));
 	for (i = 0; i < n; ++i) {
-		DBG((rss->dbg, LEVEL_3, "\t\t\t%3d -> %3d         %3d -> %3d\n", i, assignment[i], i, assignment_rev[i]));
+		DBG((rss->dbg, LEVEL_3, "\t\t\t%3u -> %3u         %3u -> %3u\n", i, assignment[i], i, assignment_rev[i]));
 	}
 
 	values    = XMALLOC(ir_nodeset_t);
@@ -1606,12 +1607,12 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 	/* Construction of the minimal chain partition */
 	for (j = 0; j < n; ++j) {
 		/* check nodes, which did not occur as target */
-		if (assignment_rev[j] == -1) {
+		if (assignment_rev[j] == (unsigned)-1) {
 			int       xj      = idx_map[j];
 			ir_node   *xj_irn = get_idx_irn(rss->irg, xj);
 			rss_irn_t *xj_rss = get_rss_irn(rss, xj_irn);
 			chain_t   *c      = OALLOC(phase_obst(&rss->ph), chain_t);
-			int       source;
+			unsigned  source;
 
 			/* there was no source for j -> we have a source of a new chain */
 			ir_nodeset_insert(values, xj_irn);
@@ -1623,11 +1624,11 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 			xj_rss->chain = c;
 
 			DBG((rss->dbg, LEVEL_2, "\t\tstarting chain %d:\n", c->nr));
-			DBG((rss->dbg, LEVEL_2, "\t\t\t%+F (%d)", xj_irn, j));
+			DBG((rss->dbg, LEVEL_2, "\t\t\t%+F (%u)", xj_irn, j));
 
 			/* follow chain, having j as source */
 			source = j;
-			while (assignment[source] >= 0) {
+			while (assignment[source] != (unsigned)-1) {
 				int       target  = assignment[source];
 				int       irn_idx = idx_map[target];
 				ir_node   *irn    = get_idx_irn(rss->irg, irn_idx);
@@ -1666,8 +1667,8 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 			set at the same time. :-(((((
 			TODO Matze: now we can, so rewrite this...
 		*/
-		int     n         = ir_nodeset_size(values);
-		int     i         = 0;
+		unsigned n         = ir_nodeset_size(values);
+		unsigned i         = 0;
 		ir_node **val_arr = NEW_ARR_F(ir_node *, n);
 
 		foreach_ir_nodeset(values, u_irn, iter)

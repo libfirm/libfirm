@@ -35,13 +35,18 @@
 
 #include "../begin.h"
 
-#define HUNGARIAN_MODE_MINIMIZE_COST 0
-#define HUNGARIAN_MODE_MAXIMIZE_UTIL 1
+typedef enum match_type_t {
+	HUNGARIAN_MATCH_NORMAL,   /**< ever nodes matches another node */
+	HUNGARIAN_MATCH_PERFECT   /**< matchings of nodes having no edge getting
+	                               removed */
+} match_type_t;
 
-#define HUNGARIAN_MATCH_NORMAL  0
-#define HUNGARIAN_MATCH_PERFECT 1
+typedef enum hungarian_mode_t {
+	HUNGARIAN_MODE_MINIMIZE_COST,
+	HUNGARIAN_MODE_MAXIMIZE_UTIL
+} hungarian_mode_t;
 
-typedef struct _hungarian_problem_t hungarian_problem_t;
+typedef struct hungarian_problem_t hungarian_problem_t;
 
 /**
  * This method initialize the hungarian_problem structure and init
@@ -49,30 +54,32 @@ typedef struct _hungarian_problem_t hungarian_problem_t;
  *
  * @param rows       Number of rows in the given matrix
  * @param cols       Number of cols in the given matrix
- * @param match_type The type of matching:
- *                   HUNGARIAN_MATCH_PERFECT - every nodes matches another node
- *                   HUNGARIAN_MATCH_NORMAL  - matchings of nodes having no edge getting removed
+ * @param match_type The type of matching
  * @return The problem object.
  */
-FIRM_API hungarian_problem_t *hungarian_new(int rows, int cols, int match_type);
+FIRM_API hungarian_problem_t *hungarian_new(unsigned rows, unsigned cols,
+                                            match_type_t match_type);
 
 /**
  * Adds an edge from left to right with some costs.
  */
-FIRM_API void hungarian_add(hungarian_problem_t *p, int left, int right, int cost);
+FIRM_API void hungarian_add(hungarian_problem_t *p, unsigned left,
+                            unsigned right, int cost);
 
 /**
  * Removes the edge from left to right.
  */
-FIRM_API void hungarian_remv(hungarian_problem_t *p, int left, int right);
+FIRM_API void hungarian_remove(hungarian_problem_t *p, unsigned left,
+                               unsigned right);
 
 /**
  * Prepares the cost matrix dependent on the given mode.
  *
  * @param p     The hungarian object
- * @param mode  HUNGARIAN_MODE_MAXIMIZE_UTIL or HUNGARIAN_MODE_MINIMIZE_COST (default)
+ * @param mode  specify wether to minimize or maximize the costs
  */
-FIRM_API void hungarian_prepare_cost_matrix(hungarian_problem_t *p, int mode);
+FIRM_API void hungarian_prepare_cost_matrix(hungarian_problem_t *p,
+                                            hungarian_mode_t mode);
 
 /**
  * Destroys the hungarian object.
@@ -87,14 +94,16 @@ FIRM_API void hungarian_free(hungarian_problem_t *p);
  * @param cost_threshold Matchings with costs >= this limit will be removed (if limit > 0)
  * @return 0 on success, negative number otherwise
  */
-FIRM_API int hungarian_solve(hungarian_problem_t *p, int *assignment, int *final_cost, int cost_threshold);
+FIRM_API int hungarian_solve(hungarian_problem_t *p, unsigned *assignment,
+                             int *final_cost, int cost_threshold);
 
 /**
  * Print the cost matrix.
  * @param p          The hungarian object
  * @param cost_width The minimum field width of the costs
  */
-FIRM_API void hungarian_print_cost_matrix(hungarian_problem_t *p, int cost_width);
+FIRM_API void hungarian_print_cost_matrix(hungarian_problem_t *p,
+                                          int cost_width);
 
 #include "../end.h"
 

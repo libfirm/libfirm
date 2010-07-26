@@ -1278,7 +1278,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		for (r = 0; r < n_regs; ++r) {
 			if (rbitset_is_set(limited, r))
 				continue;
-			hungarian_remv(bp, r, current_reg);
+			hungarian_remove(bp, r, current_reg);
 		}
 	}
 
@@ -1286,7 +1286,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
 	assignment = ALLOCAN(unsigned, n_regs);
-	res = hungarian_solve(bp, (int*) assignment, NULL, 0);
+	res = hungarian_solve(bp, assignment, NULL, 0);
 	assert(res == 0);
 
 #if 0
@@ -1495,7 +1495,7 @@ static void assign_phi_registers(ir_node *block)
 	int                  n_phis = 0;
 	int                  n;
 	int                  res;
-	int                 *assignment;
+	unsigned            *assignment;
 	ir_node             *node;
 	hungarian_problem_t *bp;
 
@@ -1549,7 +1549,7 @@ static void assign_phi_registers(ir_node *block)
 	//hungarian_print_cost_matrix(bp, 7);
 	hungarian_prepare_cost_matrix(bp, HUNGARIAN_MODE_MAXIMIZE_UTIL);
 
-	assignment = ALLOCAN(int, n_regs);
+	assignment = ALLOCAN(unsigned, n_regs);
 	res        = hungarian_solve(bp, assignment, NULL, 0);
 	assert(res == 0);
 
@@ -1564,7 +1564,7 @@ static void assign_phi_registers(ir_node *block)
 		if (!arch_irn_consider_in_reg_alloc(cls, node))
 			continue;
 
-		r   = assignment[n++];
+		r = assignment[n++];
 		assert(rbitset_is_set(normal_regs, r));
 		reg = arch_register_for_index(cls, r);
 		DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
