@@ -353,11 +353,11 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 		assert(old_matrix);
 
 		if (old_edge->tgt == src_node) {
-			other_node = edge->src;
+			other_node = old_edge->src;
 			other_len  = old_matrix->rows;
 		}
 		else {
-			other_node = edge->tgt;
+			other_node = old_edge->tgt;
 			other_len = old_matrix->cols;
 		}
 		assert(other_node);
@@ -511,11 +511,11 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 		assert(old_matrix);
 
 		if (old_edge->tgt == tgt_node) {
-			other_node = edge->src;
+			other_node = old_edge->src;
 			other_len  = old_matrix->rows;
 		}
 		else {
-			other_node = edge->tgt;
+			other_node = old_edge->tgt;
 			other_len = old_matrix->cols;
 		}
 		assert(other_node);
