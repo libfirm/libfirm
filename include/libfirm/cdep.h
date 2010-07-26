@@ -29,6 +29,14 @@
 #include "firm_types.h"
 #include "begin.h"
 
+/**
+ * An entry in the control dependence list.
+ */
+struct ir_cdep {
+	ir_node *node;  /**< A node on which the current block is control dependent on. */
+	ir_cdep *next;  /**< Link to the next one if any. */
+};
+
 /** Compute the control dependence graph for a graph. */
 FIRM_API void compute_cdep(ir_graph *irg);
 
@@ -41,10 +49,22 @@ FIRM_API ir_node *get_cdep_node(const ir_cdep *cdep);
 /** Get next entry in a list of cdeps */
 FIRM_API ir_cdep *get_cdep_next(const ir_cdep *cdep);
 
+/** Compute the reverse control dependence graph for a graph. Note that this
+ *  requires the normal control dependence graph to be computed first. */
+FIRM_API void compute_rev_cdep(ir_graph *irg);
+
+/** Free the reverse control dependence info. */
+FIRM_API void free_rev_cdep(ir_graph *irg);
+
 /**
  * Return a list of all control dependences of a block.
  */
 FIRM_API ir_cdep *find_cdep(const ir_node *block);
+
+/**
+ * Return a list of all reverse control dependences of a block.
+ */
+FIRM_API ir_cdep *find_rev_cdep(const ir_node *block);
 
 /**
  * Replace the control dependence info of old by the info of nw.

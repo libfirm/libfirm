@@ -36,159 +36,120 @@
 #include "lowering.h"
 #include "array_t.h"
 #include "pmap.h"
+#include "pset_new.h"
 #include "cdep.h"
 #include "irouts.h"
 
-/**
- * Get the predecessor node of the given block that is inside the given
- * predecessor block. Used to select conditions and mode_X projs from the CFG.
- */
-static ir_node *get_pred_in_block(ir_node *block, ir_node *pred_block)
+static int get_pred_index(ir_node *block, ir_node *pred_block)
 {
 	int i;
 
-	/* Scan all predecessors and examine their block. */
-	for (i = 0; i < get_Block_n_cfgpreds(block); i++){
+	/* Get the predecessors of block until the given block is found. */
+	for (i = 0; i < get_Block_n_cfgpreds(block); i++) {
 
-		ir_node *pred_node = get_Block_cfgpred(block, i);
-
-		if (get_nodes_block(pred_node) == pred_block) {
-			return pred_node;
-		}
+		ir_node *pred = get_Block_cfgpred(block, i);
+		if (get_nodes_block(pred) == pred_block) return i;
 	}
 
-	assert(0 && "No predecessor in the given block.");
+	return -1;
 }
 
-typedef struct rev_deps {
+static ir_node *get_pred_in_block(ir_node *block, ir_node *pred_block)
+{
+	int pred_index = get_pred_index(block, pred_block);
+	assert((pred_index >= 0) && "Predecessor not found.");
 
-	ir_node *idom;
-	ir_node *end;
-	pmap    *dep_map;
-
-} rev_deps;
-
-static rev_deps *rev_deps_create(ir_node *end) {
-
-	rev_deps *deps = XMALLOC(rev_deps);
-	deps->idom    = get_Block_idom(end);
-	deps->end     = end;
-	deps->dep_map = pmap_create();
-	return deps;
+	return get_Block_cfgpred(block, pred_index);
 }
 
-static void rev_deps_destroy(rev_deps *deps) {
-
-	/* Delete the edge arrays for each node. */
-	pmap_entry *entry = pmap_first(deps->dep_map);
-	while (entry != NULL) {
-		DEL_ARR_F(entry->value);
-		entry = pmap_next(deps->dep_map);
-	}
-
-	pmap_destroy(deps->dep_map);
-}
-
-static void rev_deps_add_dep(rev_deps *deps, ir_node *src, ir_node *dst) {
-
-	/* Get or create an array for the outgoing deps of src. */
-	ir_node **list = pmap_get(deps->dep_map, src);
-
-	if (list == NULL) {
-		list = NEW_ARR_F(ir_node*, 0);
-	}
-
-	/* Add dst to the array. Update the map (resize changes list). */
-	ARR_APP1(ir_node*, list, dst);
-	pmap_insert(deps->dep_map, src, list);
-}
-
-static void collect_rev_deps(ir_node *block, rev_deps *deps) {
-
-	/* Start at the end. */
-	if (block == NULL) {
-		int i;
-
-		/* Recurse on all predecessors of the end block. */
-		for (i = 0; i < get_Block_n_cfgpreds(deps->end); i++) {
-
-			ir_node *pred = get_Block_cfgpred(deps->end, i);
-			if (!is_Block(pred)) pred = get_nodes_block(pred);
-
-			collect_rev_deps(pred, deps);
-		}
-
-		return;
-	}
-
-	/* Stop at the idom. */
-	if (block == deps->idom) return;
+/* Collect all reachable nodes, stopping at the given end node. */
+static void find_cdep_reach(pset_new_t *reach, ir_node *block, ir_node *idom)
+{
+	ir_cdep *dep;
 
 	assert(is_Block(block));
+	if (block == idom) return;
 
-	/* Collect all reachable dep edges. */
-	ir_cdep *dep = find_cdep(block);
+	pset_new_insert(reach, block);
+	dep = find_cdep(block);
+
+	/* Recurse all unvisited blocks. */
 	while (dep != NULL) {
-
-		/* Recurse only on non-discovered paths. */
-		if (!pmap_contains(deps->dep_map, dep->node)) {
-			collect_rev_deps(dep->node, deps);
+		if (!pset_new_contains(reach, dep->node)) {
+			find_cdep_reach(reach, dep->node, idom);
 		}
 
-		rev_deps_add_dep(deps, dep->node, block);
 		dep = dep->next;
 	}
 }
 
-static ir_node *select_values(ir_node *block, rev_deps *deps, ir_node **values) {
+static ir_node *select_values(pset_new_t *reach, ir_node *block,
+                              ir_node *end, ir_node **values)
+{
+	ir_cdep *dep;
 
-	int     i, succ_req, succ_cur, num_deps;
-	ir_node *ir_true, *ir_false, *cond, *succ, *succ_proj;
-	ir_mode *mode;
+	ir_node *used_deps[2];
+	int     num_used_deps;
+	int     pred_index;
 
-	/* Start at the idom. */
-	if (block == NULL) {
-		block = deps->idom;
-	}
+	/* Get the reverse deps for the block. */
+	dep = find_rev_cdep(block);
 
-	ir_node **list = pmap_get(deps->dep_map, block);
+	/* Collect the deps that can reach the predecessors. */
+	num_used_deps = 0;
+	while (dep != NULL) {
 
-	if (list == NULL) {
+		if (pset_new_contains(reach, dep->node)) {
+			used_deps[num_used_deps] = dep->node;
+			num_used_deps++;
 
-		/* One of the predecessors of end. Find the index. */
-		for (i = 0; i < get_Block_n_cfgpreds(deps->end); i++) {
-
-			ir_node *pred = get_Block_cfgpred(deps->end, i);
-			if (!is_Block(pred)) pred = get_nodes_block(pred);
-
-			if (pred == block) return values[i];
+			/* This won't happen I have proven it! */
+			assert(num_used_deps <= 2);
 		}
 
-		assert(0);
-		return NULL;
+		dep = dep->next;
 	}
 
-	num_deps = ARR_LEN(list);
+	/* Check if this is a predecessor of end and get the index. There should
+	 * always be somewhere to recurse except on a predecessor block. */
+	pred_index = get_pred_index(end, block);
+	assert((pred_index >= 0) || (num_used_deps > 0));
 
-	switch (num_deps) {
-	case 1:
-		/* Simply follow the edge. */
-		return select_values(list[0], deps, values);
+	/* There are four situations that may happen. (1) This is a predecessor
+	 * we have a value for. (2) This is no predecessor but there is one dependee
+	 * to recurse to. (3) This is a branch with two dependees to get the values
+	 * from. (4) This is a branch with one dependee and the block is a
+	 * predecessor itself to get the other value from. */
 
-	case 2:
+	/* Case one. */
+	if ((num_used_deps == 0) && (pred_index >= 0)) {
+		return values[pred_index];
+	}
+
+	/* Case two. */
+	if ((num_used_deps == 1) && (pred_index < 0)) {
+		return select_values(reach, used_deps[0], end, values);
+	}
+
+	/* Case three. */
+	if ((num_used_deps == 2) && (pred_index < 0)) {
+
+		ir_mode *mode;
+		ir_node *cond;
+
 		/* Get the values for the gamma. True/false may still be flipped. */
-		ir_true  = select_values(list[0], deps, values);
-		ir_false = select_values(list[1], deps, values);
+		ir_node *ir_true  = select_values(reach, used_deps[0], end, values);
+		ir_node *ir_false = select_values(reach, used_deps[1], end, values);
 
 		/* Get the first successor and find out which branch it belongs to. */
-		succ      = get_Block_cfg_out(block, 0);
-		succ_proj = get_pred_in_block(succ, block);
+		ir_node *succ      = get_Block_cfg_out(block, 0);
+		ir_node *succ_proj = get_pred_in_block(succ, block);
 
 		/* Determine where the successor should lead to and where it really
 		 * leads. Note that list[0] will postdominate the successor that
 		 * depends on block but not block itself (and the other successor). */
-		succ_req = (get_Proj_proj(succ_proj) == pn_Cond_true);
-		succ_cur = block_postdominates(list[0], succ);
+		int succ_req = (get_Proj_proj(succ_proj) == pn_Cond_true);
+		int succ_cur = block_postdominates(used_deps[0], succ);
 
 		/* If succ_cur is true, succ leads to list[0] and therefore to the
 		 * currently assigned ir_true. This has to match succ_req which is
@@ -203,10 +164,13 @@ static ir_node *select_values(ir_node *block, rev_deps *deps, ir_node **values) 
 		/* Construct the gamma node. */
 		mode = get_irn_mode(ir_true);
 		cond = get_Cond_selector(get_Proj_pred(succ_proj));
-		return new_r_Gamma(deps->end, cond, ir_false, ir_true, mode);
+
+		return new_r_Gamma(end, cond, ir_false, ir_true, mode);
 	}
 
-	assert(0);
+	/* Case four is not handled yet. */
+
+	assert(0 && "Unexpected control dependence graph.");
 	return NULL;
 }
 
@@ -215,10 +179,9 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	int i, j;
 	int num_preds;
 
-	ir_node  **phis, **tuples;
-	ir_node  *current;
-	ir_node  *res;
-	rev_deps *deps;
+	ir_node    **phis, **tuples;
+	ir_node    *current, *idom, *res;
+	pset_new_t reach;
 
 	(void)ctx;
 
@@ -240,16 +203,17 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 		current = get_Phi_next(current);
 	}
 
+	/* Mark all reachable nodes and create the selection graph. */
+	pset_new_init(&reach);
+	idom = get_Block_idom(block);
+
 	/* For each predecessor create a tuple of values that are selected. */
 	for (i = 0; i < num_preds; i++) {
 
 		/* Collect the values of all phis on the given predecessor. */
 		ir_node **values = NEW_ARR_F(ir_node*, ARR_LEN(phis));
-		ir_node  *pred   = get_Block_cfgpred(block, i);
-
-		if (!is_Block(pred)) pred = get_nodes_block(pred);
-
-		for (j = 0; j < ARR_LEN(phis); j++)
+		ir_node  *pred   = get_nodes_block(get_Block_cfgpred(block, i));
+				for (j = 0; j < ARR_LEN(phis); j++)
 		{
 			values[j] = get_Phi_pred(phis[j], i);
 		}
@@ -257,15 +221,13 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 		/* Create a tuple from them. */
 		tuples[i] = new_r_Tuple(block, ARR_LEN(phis), values);
 		DEL_ARR_F(values);
+
+		find_cdep_reach(&reach, pred, idom);
 	}
 
-	/* Collect all reachable reverse control dependencies. */
-	deps = rev_deps_create(block);
-	collect_rev_deps(NULL, deps);
+	res = select_values(&reach, idom, block, tuples);
 
-	/* Create the gamma nodes from there. */
-	res = select_values(NULL, deps, tuples);
-	rev_deps_destroy(deps);
+	pset_new_destroy(&reach);
 
 	/* Now from the resulting tuple construct projs to replace the phis. */
 	for (i = 0; i < ARR_LEN(phis); i++) {
@@ -295,10 +257,12 @@ static void replace_phis(ir_graph *irg)
 
 	/* Create the control dependence graph. */
 	compute_cdep(irg);
+	compute_rev_cdep(irg);
 
 	/* Walk along the graph and replace phi nodes by gammas. */
 	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
 
+	free_rev_cdep(irg);
 	free_cdep(irg);
 	ir_free_resources(irg, resources);
 }
