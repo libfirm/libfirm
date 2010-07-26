@@ -137,7 +137,7 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	if (is_Proj(irn)) {
 		ir_node *pred = get_Proj_pred(irn);
 
-		if (is_CopyB(pred) && get_Proj_proj(irn) != pn_CopyB_M_regular) {
+		if (is_CopyB(pred) && get_Proj_proj(irn) != pn_CopyB_M) {
 			/* found an exception Proj: remove it from the list again */
 			entry = get_irn_link(pred);
 			list_del(&entry->list);

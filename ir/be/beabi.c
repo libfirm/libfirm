@@ -561,7 +561,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 				assert(mode_is_reference(get_irn_mode(param)));
 				copy = new_rd_CopyB(dbgi, bl, curr_mem, addr, param, param_type);
-				mem = new_r_Proj(copy, mode_M, pn_CopyB_M_regular);
+				mem = new_r_Proj(copy, mode_M, pn_CopyB_M);
 			}
 
 			curr_ofs += param_size;

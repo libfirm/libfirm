@@ -163,32 +163,6 @@ typedef union symconst_symbol {
 	ir_enum_const *enum_p;    /**< The enumeration constant of a SymConst. */
 } symconst_symbol;
 
-/**
- * Projection numbers for Cmp are defined several times.
- * The bit patterns are used for various tests, so don't change.
- * The "unordered" values are possible results of comparing
- * floating point numbers.
- * Note that the encoding is imported, so do NOT change the order.
- */
-typedef enum {
-	pn_Cmp_False = 0,                             /**< false */
-	pn_Cmp_Eq    = 1,                             /**< equal */
-	pn_Cmp_Lt    = 2,                             /**< less */
-	pn_Cmp_Le    = pn_Cmp_Eq|pn_Cmp_Lt,           /**< less or equal */
-	pn_Cmp_Gt    = 4,                             /**< greater */
-	pn_Cmp_Ge    = pn_Cmp_Eq|pn_Cmp_Gt,           /**< greater or equal */
-	pn_Cmp_Lg    = pn_Cmp_Lt|pn_Cmp_Gt,           /**< less or greater */
-	pn_Cmp_Leg   = pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt, /**< less, equal or greater = ordered */
-	pn_Cmp_Uo    = 8,                             /**< unordered */
-	pn_Cmp_Ue    = pn_Cmp_Uo|pn_Cmp_Eq,           /**< unordered or equal */
-	pn_Cmp_Ul    = pn_Cmp_Uo|pn_Cmp_Lt,           /**< unordered or less */
-	pn_Cmp_Ule   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Lt, /**< unordered, less or equal */
-	pn_Cmp_Ug    = pn_Cmp_Uo|pn_Cmp_Gt,           /**< unordered or greater */
-	pn_Cmp_Uge   = pn_Cmp_Uo|pn_Cmp_Eq|pn_Cmp_Gt, /**< unordered, greater or equal */
-	pn_Cmp_Ne    = pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt, /**< unordered, less or greater = not equal */
-	pn_Cmp_True  = 15                             /**< true */
-} pn_Cmp;   /* Projection numbers for Cmp */
-
 /** The allocation place. */
 typedef enum {
 	stack_alloc,          /**< Alloc allocates the object on the stack. */

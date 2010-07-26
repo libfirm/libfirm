@@ -28,7 +28,12 @@ class Add(Binop):
 
 class Alloc(Op):
 	ins   = [ "mem", "count" ]
-	outs  = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "pointer to newly allocated memory",     "pn_Generic_other"),
+	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs = [
 		dict(
@@ -173,7 +178,12 @@ class Borrow(Binop):
 
 class Bound(Op):
 	ins    = [ "mem", "index", "lower", "upper" ]
- 	outs   = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "the checked index",                     "pn_Generic_other"),
+	]
  	flags  = [ "fragile", "highlevel" ]
 	pinned = "exception"
 	pinned_init = "op_pin_state_pinned"
@@ -186,7 +196,10 @@ class Bound(Op):
 class Builtin(Op):
 	ins      = [ "mem" ]
 	arity    = "variable"
-	outs     = [ "M", "X_regular", "X_except", "T_result", "P_value_res_base" ]
+	outs     = [
+		("M",        "memory result", "pn_Generic_M"),
+		("1_result", "first result",  "pn_Generic_other"),
+	]
 	flags    = [ "uses_memory" ]
 	attrs    = [
 		dict(
@@ -208,7 +221,13 @@ class Builtin(Op):
 class Call(Op):
 	ins      = [ "mem", "ptr" ]
 	arity    = "variable"
-	outs     = [ "M", "X_regular", "X_except", "T_result", "P_value_res_base" ]
+	outs     = [
+		("M",                "memory result",                         "pn_Generic_M"),
+		("X_regular",        "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",         "control flow when exception occured",   "pn_Generic_X_except"),
+		("T_result",         "tuple containing all results",          "pn_Generic_other"),
+		("P_value_res_base", "pointer to memory register containing copied results passed by value"),
+	]
 	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [
 		dict(
@@ -249,28 +268,31 @@ class Cast(Unop):
 
 class Cmp(Binop):
 	outs  = [
-		("False", "always false"),
-		("Eq",    "equal"),
-		("Lt",    "less"),
-		("Le",    "less or equal"),
-		("Gt",    "greater"),
-		("Ge",    "greater or equal"),
-		("Lg",    "less or greater"),
-		("Leg",   "less, equal or greater ('not equal' for integer numbers)"),
-		("Uo",    "unordered"),
-		("Ue",    "unordered or equal"),
-		("Ul",    "unordered or less"),
-		("Ule",   "unordered, less or equal"),
-		("Ug",    "unordered or greater"),
-		("Uge",   "onordered, greater or equal"),
-		("Ne",    "unordered, less, greater or equal ('not equal' for floatingpoint numbers)"),
-		("True",  "always true"),
+		("False", "always false",                            "0"),
+		("Eq",    "equal",                                   "1"),
+		("Lt",    "less",                                    "2"),
+		("Le",    "less or equal",                           "pn_Cmp_Eq|pn_Cmp_Lt"),
+		("Gt",    "greater",                                 "4"),
+		("Ge",    "greater or equal",                        "pn_Cmp_Eq|pn_Cmp_Gt"),
+		("Lg",    "less or greater ('not equal' for integer numbers)", "pn_Cmp_Lt|pn_Cmp_Gt"),
+		("Leg",   "less, equal or greater ('not unordered')", "pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt"),
+		("Uo",    "unordered",                               "8"),
+		("Ue",    "unordered or equal",                      "pn_Cmp_Uo|pn_Cmp_Eq"),
+		("Ul",    "unordered or less",                       "pn_Cmp_Uo|pn_Cmp_Lt"),
+		("Ule",   "unordered, less or equal",                "pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Eq"),
+		("Ug",    "unordered or greater",                    "pn_Cmp_Uo|pn_Cmp_Gt"),
+		("Uge",   "onordered, greater or equal",             "pn_Cmp_Uo|pn_Cmp_Gt|pn_Cmp_Eq"),
+		("Ne",    "unordered, less or greater ('not equal' for floatingpoint numbers)", "pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt"),
+		("True",  "always true",                             "15"),
 	]
 	flags = []
 
 class Cond(Op):
 	ins      = [ "selector" ]
-	outs     = [ "false", "true" ]
+	outs     = [
+		("false", "control flow if operand is \"false\""),
+		("true",  "control flow if operand is \"true\""),
+	]
 	flags    = [ "cfopcode", "forking" ]
 	pinned   = "yes"
 	attrs    = [
@@ -333,7 +355,11 @@ class Conv(Unop):
 
 class CopyB(Op):
 	ins   = [ "mem", "dst", "src" ]
-	outs  = [ "M", "X_regular", "X_except" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+	]
 	flags = [ "fragile", "highlevel", "uses_memory" ]
 	attrs = [
 		dict(
@@ -351,7 +377,12 @@ class CopyB(Op):
 
 class Div(Op):
 	ins   = [ "mem", "left", "right" ]
-	outs  = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "result of computation",                 "pn_Generic_other"),
+	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "divmod"
 	attrs = [
@@ -379,7 +410,13 @@ class Div(Op):
 
 class DivMod(Op):
 	ins   = [ "mem", "left", "right" ]
-	outs  = [ "M", "X_regular", "X_except", "res_div", "res_mod" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res_div",   "result of computation a/b",             "pn_Generic_other"),
+		("res_mod",   "result of computation a%b"),
+	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "divmod"
 	attrs = [
@@ -444,7 +481,12 @@ class IJmp(Op):
 
 class InstOf(Op):
 	ins   = [ "store", "obj" ]
-	outs  = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "checked object pointer",                "pn_Generic_other"),
+	]
 	flags = [ "highlevel" ]
 	attrs = [
 		dict(
@@ -464,7 +506,12 @@ class Jmp(Op):
 
 class Load(Op):
 	ins      = [ "mem", "ptr" ]
-	outs     = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "result of load operation",              "pn_Generic_other"),
+	]
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
@@ -491,7 +538,12 @@ class Minus(Unop):
 
 class Mod(Op):
 	ins   = [ "mem", "left", "right" ]
-	outs  = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "result of computation",                 "pn_Generic_other"),
+	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "divmod"
 	attrs = [
@@ -571,7 +623,12 @@ class Proj(Op):
 
 class Quot(Op):
 	ins   = [ "mem", "left", "right" ]
-	outs  = [ "M", "X_regular", "X_except", "res" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("res",       "result of computation",                 "pn_Generic_other"),
+	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "divmod"
 	attrs = [
@@ -590,7 +647,10 @@ class Quot(Op):
 
 class Raise(Op):
 	ins    = [ "mem", "exo_ptr" ]
-	outs   = [ "M", "X" ]
+	outs  = [
+		("M", "memory result",                     "pn_Generic_M"),
+		("X", "control flow to exception handler", "pn_Generic_X_regular"),
+	]
 	flags  = [ "highlevel", "cfopcode" ]
 	pinned = "yes"
 
@@ -628,6 +688,13 @@ class Shrs(Binop):
 	flags = []
 
 class Start(Op):
+	outs       = [
+		("X_initial_exec", "control flow"),
+		("M",              "initial memory"),
+		("P_frame_base",   "frame base pointer"),
+		("P_tls",          "pointer to thread local storage segment"),
+		("T_args",         "function arguments")
+	]
 	mode       = "mode_T"
 	pinned     = "yes"
 	flags      = [ "cfopcode" ]
@@ -635,7 +702,11 @@ class Start(Op):
 
 class Store(Op):
 	ins      = [ "mem", "ptr", "value" ]
-	outs     = [ "M", "X_regular", "X_except" ]
+	outs  = [
+		("M",         "memory result",                         "pn_Generic_M"),
+		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
+		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+	]
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"
 	attr_struct = "store_attr"

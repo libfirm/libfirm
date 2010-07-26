@@ -353,19 +353,6 @@ ir_node *new_{{node.constrname}}(
 }
 ''')
 
-# not used - as we have the pn_ declarations in libfirm/irnode.h where they
-# contain informative comments
-# {% for node in nodes %}
-# {% if node.outs %}
-# typedef enum {
-# 	{%- for out in node.outs %}
-# 	pn_{{node.name}}_{{out}},
-# 	{%- endfor %}
-# 	pn_{{node.name}}_max
-# } pn_{{node.name}};
-# {% endif %}
-# {% endfor %}
-
 irnode_h_template = env.from_string('''
 /* Warning: automatically generated code */
 
@@ -459,7 +446,39 @@ void finish_op(void)
 
 ''')
 
+projnumbers_h_template = env.from_string('''
+/* Warning: automatically generated code */
+
+{% for node in nodes -%}
+{% if node.outs %}
+/**
+ * Projection numbers for result of {{node.name}} node (use for Proj nodes)
+ */
+typedef enum {
+	{% for out in node.outs -%}
+	pn_{{node.name}}_{{out[0]}}
+	{%- if out.__len__() > 2 %} = {{out[2]}}{% endif %}, /**< {{out[1]}} */
+	{% endfor -%}
+	pn_{{node.name}}_max
+} pn_{{node.name}};
+{% endif %}
+{%- endfor %}
+
+''')
+
 #############################
+
+def prepare_nodes():
+	real_nodes = []
+	for node in nodes:
+		if isAbstract(node):
+			continue
+		real_nodes.append(node)
+
+	for node in real_nodes:
+		preprocess_node(node)
+
+	return real_nodes
 
 def main(argv):
 	if len(argv) < 3:
@@ -467,20 +486,15 @@ def main(argv):
 		sys.exit(1)
 
 	gendir = argv[2]
+	# hardcoded path to libfirm/include/libfirm
+	gendir2 = argv[2] + "/../../include/libfirm"
 
 	# List of TODOs
 	niymap = [ "ASM", "Const", "Phi", "SymConst", "Sync"]
 
-	real_nodes = []
-	for node in nodes:
-		if isAbstract(node):
-			continue
-		real_nodes.append(node)
-
+	real_nodes = prepare_nodes()
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
 	for node in real_nodes:
-		preprocess_node(node)
-
 		if node.name in niymap:
 			continue
 
@@ -505,6 +519,10 @@ def main(argv):
 
 	file = open(gendir + "/gen_irop.c.inl", "w")
 	file.write(irop_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir2 + "/projnumbers.h", "w")
+	file.write(projnumbers_h_template.render(nodes = real_nodes))
 	file.close()
 
 main(sys.argv)

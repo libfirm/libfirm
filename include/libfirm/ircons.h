@@ -1123,6 +1123,7 @@
 
 #include "firm_types.h"
 #include "begin.h"
+#include "irnode.h"
 
 /**
  * constrained flags for memory operations.

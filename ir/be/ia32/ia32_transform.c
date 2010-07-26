@@ -4671,7 +4671,7 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
-	case pn_CopyB_M_regular:
+	case pn_CopyB_M:
 		if (is_ia32_CopyB_i(new_pred)) {
 			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_CopyB_i_M);
 		} else if (is_ia32_CopyB(new_pred)) {

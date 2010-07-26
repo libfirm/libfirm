@@ -1636,7 +1636,7 @@ static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
 	if (a == b) {
 		/* Turn CopyB into a tuple (mem, jmp, bad, bad) */
 		switch (get_Proj_proj(proj)) {
-		case pn_CopyB_M_regular:
+		case pn_CopyB_M:
 			proj = get_CopyB_mem(copyb);
 			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
 			break;
