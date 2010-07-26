@@ -400,8 +400,9 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 
 		add_edge_costs(pbqp, tgt_node->index, other_node->index, new_matrix);
 
-		disconnect_edge(src_node, old_edge);
-		disconnect_edge(other_node, old_edge);
+		delete_edge(old_edge);
+		reorder_node(src_node);
+		reorder_node(other_node);
 
 		new_edge = get_edge(pbqp, tgt_node->index, other_node->index);
 		insert_into_rm_bucket(new_edge);
@@ -557,8 +558,9 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 
 		add_edge_costs(pbqp, src_node->index, other_node->index, new_matrix);
 
-		disconnect_edge(tgt_node, old_edge);
-		disconnect_edge(other_node, old_edge);
+		delete_edge(old_edge);
+		reorder_node(tgt_node);
+		reorder_node(other_node);
 
 		new_edge = get_edge(pbqp, src_node->index, other_node->index);
 		insert_into_rm_bucket(new_edge);
