@@ -48,14 +48,6 @@ ia32_code_gen_t *env_cg = NULL;
 
 heights_t *heights = NULL;
 
-static const arch_register_req_t no_register_req = {
-	arch_register_req_type_none,
-	NULL,                         /* regclass */
-	NULL,                         /* limit bitset */
-	0,                            /* same pos */
-	0                             /* different pos */
-};
-
 static int check_immediate_constraint(long val, char immediate_constraint_type)
 {
 	switch (immediate_constraint_type) {
@@ -854,7 +846,7 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 
 	/* pure memory ops */
 	if (constraint->cls == NULL) {
-		return &no_register_req;
+		return arch_no_register_req;
 	}
 
 	if (constraint->allowed_registers != 0

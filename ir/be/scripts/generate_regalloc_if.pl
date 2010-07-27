@@ -194,7 +194,8 @@ static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
 	&${arch}_reg_classes[CLASS_${arch}_${old_classname}],
 	NULL,
 	0,
-	0
+	0,
+	1
 };
 EOF
 
@@ -236,7 +237,8 @@ static const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name}
 	${class_ptr},
 	${arch}_limited_${old_classname}_${name},
 	0,
-	0
+	0,
+	1
 };
 EOF
 

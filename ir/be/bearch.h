@@ -84,12 +84,14 @@ typedef enum arch_register_req_type_t {
 	arch_register_req_type_should_be_same    = 1U << 2,
 	/** The register must be unequal from some other at the node. */
 	arch_register_req_type_must_be_different = 1U << 3,
+	/** The registernumber should be aligned (in case of multiregister values)*/
+	arch_register_req_type_must_be_aligned   = 1U << 4,
 	/** ignore while allocating registers */
-	arch_register_req_type_ignore            = 1U << 4,
+	arch_register_req_type_ignore            = 1U << 5,
 	/** the output produces a new value for the stack pointer
 	 * (this is not really a constraint but a marker to guide the stackpointer
 	 * rewiring logic) */
-	arch_register_req_type_produces_sp       = 1U << 5,
+	arch_register_req_type_produces_sp       = 1U << 6,
 } arch_register_req_type_t;
 
 extern const arch_register_req_t *arch_no_register_req;
@@ -337,6 +339,8 @@ struct arch_register_req_t {
 	unsigned other_different;           /**< Bitmask of ins which shall use a
 	                                         different register
 	                                         (must_be_different) */
+	unsigned char width;                /**< specifies how many sequential
+	                                         registers are required */
 };
 
 static inline int reg_reqs_equal(const arch_register_req_t *req1,

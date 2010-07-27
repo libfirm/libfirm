@@ -1282,7 +1282,8 @@ sub generate_requirements {
 	NULL,                         /* regclass */
 	NULL,                         /* limit bitset */
 	0,                            /* same pos */
-	0                             /* different pos */
+	0,                            /* different pos */
+	0                             /* width */
 };
 
 EOF
@@ -1296,7 +1297,8 @@ EOF
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	NULL,        /* limit bitset */
 	0,           /* same pos */
-	0            /* different pos */
+	0,           /* different pos */
+	1            /* width */
 };
 
 EOF
@@ -1331,7 +1333,8 @@ EOF
 	& ${arch}_reg_classes[CLASS_${arch}_${class}],
 	${limit_bitset},
 	${same_pos},        /* same pos */
-	${different_pos}        /* different pos */
+	${different_pos},       /* different pos */
+	1             /* width */
 };
 
 EOF
