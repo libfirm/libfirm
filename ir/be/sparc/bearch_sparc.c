@@ -151,29 +151,12 @@ static void sparc_prepare_graph(void *self)
 		dump_ir_graph(cg->irg, "transformed");
 }
 
-
-
-static ir_node *sparc_flags_remat(ir_node *node, ir_node *after)
-{
-	ir_node *block;
-	ir_node *copy;
-
-	if (is_Block(after)) {
-		block = after;
-	} else {
-		block = get_nodes_block(after);
-	}
-	copy = exact_copy(node);
-	set_nodes_block(copy, block);
-	sched_add_after(after, copy);
-	return copy;
-}
-
 static void sparc_before_ra(void *self)
 {
 	sparc_code_gen_t *cg = self;
 	/* fixup flags register */
-	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_flags], &sparc_flags_remat);
+	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_flags], NULL,
+	                   NULL);
 }
 
 /**

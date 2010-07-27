@@ -54,9 +54,10 @@
 #include "benode.h"
 #include "belive.h"
 
-static const arch_register_class_t *flag_class = NULL;
-static const arch_register_t       *flags_reg  = NULL;
-static func_rematerialize           remat      = NULL;
+static const arch_register_class_t *flag_class;
+static const arch_register_t       *flags_reg;
+static func_rematerialize           remat;
+static check_modifies_flags         check_modify;
 static int                          changed;
 
 static ir_node *default_remat(ir_node *node, ir_node *after)
@@ -72,6 +73,11 @@ static ir_node *default_remat(ir_node *node, ir_node *after)
 	sched_add_after(after, copy);
 
 	return copy;
+}
+
+static bool default_check_modifies(const ir_node *node)
+{
+	return arch_irn_is(node, modify_flags);
 }
 
 /**
@@ -184,11 +190,6 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	}
 }
 
-static bool is_modify_flags(ir_node *node)
-{
-	return arch_irn_is(node, modify_flags);
-}
-
 /**
  * walks up the schedule and makes sure there are no flag-destroying nodes
  * between a flag-consumer -> flag-producer chain. Fixes problematic situations
@@ -223,7 +224,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		if (be_is_Keep(test))
 			test = sched_prev(test);
 
-		if (flags_needed != NULL && is_modify_flags(test)) {
+		if (flags_needed != NULL && check_modify(test)) {
 			/* rematerialize */
 			rematerialize_or_move(flags_needed, node, flag_consumers, pn);
 			flags_needed   = NULL;
@@ -282,14 +283,18 @@ static void fix_flags_walker(ir_node *block, void *env)
 }
 
 void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
-                        func_rematerialize remat_func)
+                        func_rematerialize remat_func,
+                        check_modifies_flags check_modifies_flags_func)
 {
-	flag_class = flag_cls;
-	flags_reg  = & flag_class->regs[0];
-	remat      = remat_func;
-	changed    = 0;
+	flag_class   = flag_cls;
+	flags_reg    = & flag_class->regs[0];
+	remat        = remat_func;
+	check_modify = check_modifies_flags_func;
+	changed      = 0;
 	if (remat == NULL)
 		remat = &default_remat;
+	if (check_modify == NULL)
+		check_modify = &default_check_modifies;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_block_walk_graph(irg, fix_flags_walker, NULL, NULL);

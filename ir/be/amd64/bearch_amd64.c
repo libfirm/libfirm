@@ -154,7 +154,8 @@ static void amd64_before_ra(void *self)
 {
 	amd64_code_gen_t *cg = self;
 
-	be_sched_fix_flags(cg->irg, &amd64_reg_classes[CLASS_amd64_flags], 0);
+	be_sched_fix_flags(cg->irg, &amd64_reg_classes[CLASS_amd64_flags],
+	                   NULL, NULL);
 }
 
 

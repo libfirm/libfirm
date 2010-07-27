@@ -165,28 +165,12 @@ static void arm_finish_irg(void *self)
 	arm_peephole_optimization(cg);
 }
 
-static ir_node *arm_flags_remat(ir_node *node, ir_node *after)
-{
-	ir_node *block;
-	ir_node *copy;
-
-	if (is_Block(after)) {
-		block = after;
-	} else {
-		block = get_nodes_block(after);
-	}
-	copy = exact_copy(node);
-	set_nodes_block(copy, block);
-	sched_add_after(after, copy);
-	return copy;
-}
-
 static void arm_before_ra(void *self)
 {
 	arm_code_gen_t *cg = self;
 
 	be_sched_fix_flags(cg->irg, &arm_reg_classes[CLASS_arm_flags],
-	                   &arm_flags_remat);
+	                   NULL, NULL);
 }
 
 static void transform_Reload(ir_node *node)

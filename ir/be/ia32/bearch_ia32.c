@@ -998,7 +998,7 @@ static void ia32_before_ra(void *self)
 
 	/* fixup flags */
 	be_sched_fix_flags(cg->irg, &ia32_reg_classes[CLASS_ia32_flags],
-	                   &flags_remat);
+	                   &flags_remat, NULL);
 
 	be_add_missing_keeps(cg->irg);
 }
