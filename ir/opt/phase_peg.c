@@ -62,6 +62,27 @@ static ir_node *get_pred_in_block(ir_node *block, ir_node *pred_block)
 	return get_Block_cfgpred(block, pred_index);
 }
 
+static int is_in_loop(ir_node *node, ir_loop *outer_loop)
+{
+	ir_loop *last;
+	ir_loop *loop;
+
+	if (!is_Block(node)) node = get_nodes_block(node);
+	loop = get_irn_loop(node);
+	if (loop == NULL) return 0;
+
+	do {
+		if (loop == outer_loop) return 1;
+
+		/* Stop when get_loop_outer_loop returns loop again. */
+		last = loop;
+		loop = get_loop_outer_loop(loop);
+	}
+	while(loop != last);
+
+	return 0;
+}
+
 /* Collect all reachable nodes, stopping at the given end node. */
 static void find_cdep_reach(pset_new_t *reach, ir_node *block, ir_node *idom)
 {
@@ -136,6 +157,7 @@ static ir_node *select_values_walk(
 	/* Case three. */
 	if ((num_used_deps == 2) && (pred_index < 0)) {
 
+		ir_loop *loop;
 		ir_mode *mode;
 		ir_node *cond, *ir_true, *ir_false, *succ, *succ_proj;
 		int      succ_req, succ_cur;
@@ -167,6 +189,14 @@ static ir_node *select_values_walk(
 		/* Construct the gamma node. */
 		mode = get_irn_mode(ir_true);
 		cond = get_Cond_selector(get_Proj_pred(succ_proj));
+
+		/* Find out if cond is inside some loop that end (where the value is
+		 * actually selected) is not in. */
+		loop = get_irn_loop(cond);
+		if (loop && !is_in_loop(end, loop)) {
+			/* TODO: construct an extract node for the cond. */
+			assert(0);
+		}
 
 		return new_r_Gamma(end, cond, ir_false, ir_true, mode);
 	}
@@ -215,27 +245,6 @@ static ir_node *select_values(pset_new_t *preds, ir_node *block, ir_node **value
 	pset_new_destroy(&reach);
 
 	return result;
-}
-
-static int is_in_loop(ir_node *node, ir_loop *outer_loop)
-{
-	ir_loop *last;
-	ir_loop *loop;
-
-	if (!is_Block(node)) node = get_nodes_block(node);
-	loop = get_irn_loop(node);
-	if (loop == NULL) return 0;
-
-	do {
-		if (loop == outer_loop) return 1;
-
-		/* Stop when get_loop_outer_loop returns loop again. */
-		last = loop;
-		loop = get_loop_outer_loop(loop);
-	}
-	while(loop != last);
-
-	return 0;
 }
 
 static ir_node **get_incoming_values(ir_node *block)
