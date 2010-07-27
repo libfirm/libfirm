@@ -37,6 +37,8 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "irgwalk.h"
 #include "irnode_t.h"
 #include "irtools.h"
@@ -76,7 +78,7 @@ static ir_node *default_remat(ir_node *node, ir_node *after)
  * tests whether we can legally move node node after node after
  * (only works for nodes in same block)
  */
-static int can_move(ir_node *node, ir_node *after)
+static bool can_move(ir_node *node, ir_node *after)
 {
 	const ir_edge_t *edge;
 	assert(get_nodes_block(node) == get_nodes_block(after));
@@ -104,11 +106,11 @@ static int can_move(ir_node *node, ir_node *after)
 							continue;
 						assert(!is_Sync(out3));
 						if (sched_get_time_step(out3) <= sched_get_time_step(after)) {
-							return 0;
+							return false;
 						}
 					}
 				} else if (sched_get_time_step(out2) <= sched_get_time_step(after)) {
-					return 0;
+					return false;
 				}
 			}
 		} else {
@@ -116,12 +118,12 @@ static int can_move(ir_node *node, ir_node *after)
 			if (is_Phi(out))
 				continue;
 			if (sched_get_time_step(out) <= sched_get_time_step(after)) {
-				return 0;
+				return false;
 			}
 		}
 	}
 
-	return 1;
+	return true;
 }
 
 static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
@@ -180,24 +182,9 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	}
 }
 
-static int is_modify_flags(ir_node *node)
+static bool is_modify_flags(ir_node *node)
 {
-	int i, arity;
-
-	if (arch_irn_is(node, modify_flags))
-		return 1;
-	if (!be_is_Keep(node))
-		return 0;
-
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
-		in = skip_Proj(in);
-		if (arch_irn_is(in, modify_flags))
-			return 1;
-	}
-
-	return 0;
+	return arch_irn_is(node, modify_flags);
 }
 
 /**
@@ -217,6 +204,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 	sched_foreach_reverse(block, node) {
 		int i, arity;
 		ir_node *new_flags_needed = NULL;
+		ir_node *test;
 
 		if (is_Phi(node))
 			break;
@@ -228,7 +216,11 @@ static void fix_flags_walker(ir_node *block, void *env)
 		}
 
 		/* test whether node destroys the flags */
-		if (flags_needed != NULL && is_modify_flags(node)) {
+		test = node;
+		if (be_is_Keep(test))
+			test = sched_prev(test);
+
+		if (flags_needed != NULL && is_modify_flags(test)) {
 			/* rematerialize */
 			rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
 			flags_needed   = NULL;
