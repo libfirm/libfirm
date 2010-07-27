@@ -127,7 +127,7 @@ static bool can_move(ir_node *node, ir_node *after)
 }
 
 static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
-                                  ir_node *flag_consumers, int pn, be_lv_t *lv)
+                                  ir_node *flag_consumers, int pn)
 {
 	ir_node *n;
 	ir_node *copy;
@@ -172,7 +172,9 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	 * we have to update the liveness of all operands */
 	if (is_Block(node) ||
 			get_nodes_block(node) != get_nodes_block(flags_needed)) {
-		int i;
+		ir_graph *irg = get_irn_irg(node);
+		be_lv_t  *lv  = be_get_irg_liveness(irg);
+		int       i;
 
 		if (lv != NULL) {
 			for (i = get_irn_arity(copy) - 1; i >= 0; --i) {
@@ -200,6 +202,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 	ir_node *flags_needed   = NULL;
 	ir_node *flag_consumers = NULL;
 	int      pn = -1;
+	(void) env;
 
 	sched_foreach_reverse(block, node) {
 		int i, arity;
@@ -222,7 +225,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 		if (flags_needed != NULL && is_modify_flags(test)) {
 			/* rematerialize */
-			rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
+			rematerialize_or_move(flags_needed, node, flag_consumers, pn);
 			flags_needed   = NULL;
 			flag_consumers = NULL;
 		}
@@ -246,7 +249,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 		if (skip_Proj(new_flags_needed) != flags_needed) {
 			if (flags_needed != NULL) {
 				/* rematerialize node */
-				rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
+				rematerialize_or_move(flags_needed, node, flag_consumers, pn);
 				flags_needed   = NULL;
 				flag_consumers = NULL;
 			}
@@ -269,7 +272,7 @@ static void fix_flags_walker(ir_node *block, void *env)
 
 	if (flags_needed != NULL) {
 		assert(get_nodes_block(flags_needed) != block);
-		rematerialize_or_move(flags_needed, node, flag_consumers, pn, env);
+		rematerialize_or_move(flags_needed, node, flag_consumers, pn);
 		flags_needed   = NULL;
 		flag_consumers = NULL;
 	}
@@ -289,7 +292,7 @@ void be_sched_fix_flags(ir_graph *irg, const arch_register_class_t *flag_cls,
 		remat = &default_remat;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irg_block_walk_graph(irg, fix_flags_walker, NULL, be_get_irg_liveness(irg));
+	irg_block_walk_graph(irg, fix_flags_walker, NULL, NULL);
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (changed) {
