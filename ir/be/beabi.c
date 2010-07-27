@@ -431,21 +431,17 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int n_stack_params = 0;
 	int n_ins;
 
-	pset_new_t              destroyed_regs, states;
-	pset_new_iterator_t     iter;
+	const arch_register_t **states = NEW_ARR_F(const arch_register_t*, 0);
+	const arch_register_t **destroyed_regs = NEW_ARR_F(const arch_register_t*, 0);
 	ir_node                *low_call;
 	ir_node               **in;
 	ir_node               **res_projs;
 	int                     n_reg_results = 0;
-	const arch_register_t  *reg;
 	const ir_edge_t        *edge;
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
 	int                     i, n, destroy_all_regs;
 	dbg_info               *dbgi;
-
-	pset_new_init(&destroyed_regs);
-	pset_new_init(&states);
 
 	/* Let the isa fill out the abi description for that call node. */
 	arch_env_get_call_abi(arch_env, call_tp, call);
@@ -596,28 +592,32 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			destroy_all_regs = 1;
 	}
 
-	/* Put caller save into the destroyed set and state registers in the states set */
+	/* Put caller save into the destroyed set and state registers in the states
+	 * set */
 	for (i = 0, n = arch_env_get_n_reg_class(arch_env); i < n; ++i) {
 		unsigned j;
 		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
 
-			if (destroy_all_regs || arch_register_type_is(reg, caller_save)) {
-				if (! arch_register_type_is(reg, ignore))
-					pset_new_insert(&destroyed_regs, (void *) reg);
-			}
+			/* even if destroyed all is specified, neither SP nor FP are
+			 * destroyed (else bad things will happen) */
+			if (reg == arch_env->sp || reg == arch_env->bp)
+				continue;
+
 			if (arch_register_type_is(reg, state)) {
-				pset_new_insert(&destroyed_regs, (void*) reg);
-				pset_new_insert(&states, (void*) reg);
+				ARR_APP1(const arch_register_t*, destroyed_regs, reg);
+				ARR_APP1(const arch_register_t*, states, reg);
+				/* we're already in the destroyed set so no need for further
+				 * checking */
+				continue;
+			}
+			if (destroy_all_regs || arch_register_type_is(reg, caller_save)) {
+				if (! arch_register_type_is(reg, ignore)) {
+					ARR_APP1(const arch_register_t*, destroyed_regs, reg);
+				}
 			}
 		}
-	}
-
-	if (destroy_all_regs) {
-		/* even if destroyed all is specified, neither SP nor FP are destroyed (else bad things will happen) */
-		pset_new_remove(&destroyed_regs, arch_env->sp);
-		pset_new_remove(&destroyed_regs, arch_env->bp);
 	}
 
 	/* search the largest result proj number */
@@ -651,7 +651,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	n_reg_results = n_res;
 
 	n_ins = 0;
-	in    = ALLOCAN(ir_node*, n_reg_params + pset_new_size(&states));
+	in    = ALLOCAN(ir_node*, n_reg_params + ARR_LEN(states));
 
 	/* make the back end call node and set its register requirements. */
 	for (i = 0; i < n_reg_params; ++i) {
@@ -659,7 +659,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	/* add state registers ins */
-	foreach_pset_new(&states, reg, iter) {
+	for (i = 0; i < ARR_LEN(states); ++i) {
+		const arch_register_t       *reg = states[i];
 		const arch_register_class_t *cls = arch_register_get_class(reg);
 #if 0
 		ir_node *regnode = be_abi_reg_map_get(env->regs, reg);
@@ -668,19 +669,19 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		ir_node *regnode = new_r_Unknown(irg, arch_register_class_mode(cls));
 		in[n_ins++]      = regnode;
 	}
-	assert(n_ins == (int) (n_reg_params + pset_new_size(&states)));
+	assert(n_ins == (int) (n_reg_params + ARR_LEN(states)));
 
 	/* ins collected, build the call */
 	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, curr_sp,
-		                       n_reg_results + pn_be_Call_first_res + pset_new_size(&destroyed_regs),
+		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 		be_Call_set_entity(low_call, get_SymConst_entity(call_ptr));
 	} else {
 		/* indirect call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, call_ptr,
-		                       n_reg_results + pn_be_Call_first_res + pset_new_size(&destroyed_regs),
+		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 	}
 	be_Call_set_pop(low_call, call->pop);
@@ -721,7 +722,16 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 
 		if (arg->in_reg) {
-			pset_new_remove(&destroyed_regs, arg->reg);
+			/* remove register from destroyed regs */
+			int j;
+			int n = ARR_LEN(destroyed_regs);
+			for (j = 0; j < n; ++j) {
+				if (destroyed_regs[j] == arg->reg) {
+					destroyed_regs[j] = destroyed_regs[n-1];
+					ARR_SHRINKLEN(destroyed_regs,n-1);
+					break;
+				}
+			}
 		}
 	}
 
@@ -763,22 +773,21 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Make additional projs for the caller save registers
 	   and the Keep node which keeps them alive. */
 	{
-		const arch_register_t *reg;
 		ir_node               **in, *keep;
 		int                   i;
 		int                   n = 0;
 		int                   curr_res_proj = pn_be_Call_first_res + n_reg_results;
-		pset_new_iterator_t   iter;
 		int                   n_ins;
 
-		n_ins = (int)pset_new_size(&destroyed_regs) + n_reg_results + 1;
+		n_ins = ARR_LEN(destroyed_regs) + n_reg_results + 1;
 		in    = ALLOCAN(ir_node *, n_ins);
 
 		/* also keep the stack pointer */
 		set_irn_link(curr_sp, (void*) sp);
 		in[n++] = curr_sp;
 
-		foreach_pset_new(&destroyed_regs, reg, iter) {
+		for (i = 0; i < ARR_LEN(destroyed_regs); ++i) {
+			const arch_register_t *reg = destroyed_regs[i];
 			ir_node *proj = new_r_Proj(low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
@@ -833,8 +842,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	be_abi_call_free(call);
 
-	pset_new_destroy(&states);
-	pset_new_destroy(&destroyed_regs);
+	DEL_ARR_F(states);
+	DEL_ARR_F(destroyed_regs);
 
 	return curr_sp;
 }

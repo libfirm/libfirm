@@ -43,7 +43,6 @@
 #include "pqueue.h"
 #include "xmalloc.h"
 #include "pdeq.h"
-#include "pset.h"
 #include "irprintf.h"
 #include "irbitset.h"
 #include "error.h"
@@ -94,13 +93,14 @@ typedef struct _col_cost_t {
  * An affinity chunk.
  */
 typedef struct _aff_chunk_t {
-	const ir_node    **n;                   /**< An ARR_F containing all nodes of the chunk. */
+	const ir_node  **n;                     /**< An ARR_F containing all nodes of the chunk. */
 	const ir_node  **interfere;             /**< An ARR_F containing all inference. */
 	int              weight;                /**< Weight of this chunk */
 	unsigned         weight_consistent : 1; /**< Set if the weight is consistent. */
 	unsigned         deleted           : 1; /**< For debugging: Set if the was deleted. */
 	unsigned         id;                    /**< An id of this chunk. */
 	unsigned         visited;
+	list_head        list;
 	col_cost_t       color_affinity[1];
 } aff_chunk_t;
 
@@ -120,7 +120,7 @@ typedef struct _co_mst_env_t {
 	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
 	pqueue_t         *chunks;        /**< priority queue for chunks */
-	pset             *chunkset;      /**< set holding all chunks */
+	list_head         chunklist;     /**< list holding all chunks */
 	be_ifg_t         *ifg;           /**< the interference graph */
 	copy_opt_t       *co;            /**< the copy opt object */
 	unsigned         chunk_visited;
@@ -255,6 +255,9 @@ static int cmp_col_cost_gt(const void *a, const void *b)
 {
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
+	if (c2->cost == c1->cost)
+		return QSORT_CMP(c1->col, c2->col);
+
 	real_t diff = c2->cost - c1->cost;
 	return (diff > 0) - (diff < 0);
 }
@@ -272,16 +275,16 @@ static inline aff_chunk_t *new_aff_chunk(co_mst_env_t *env)
 	c->deleted           = 0;
 	c->id                = ++last_chunk_id;
 	c->visited           = 0;
-	pset_insert(env->chunkset, c, c->id);
+	list_add(&c->list, &env->chunklist);
 	return c;
 }
 
 /**
  * Frees all memory allocated by an affinity chunk.
  */
-static inline void delete_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
+static inline void delete_aff_chunk(aff_chunk_t *c)
 {
-	pset_remove(env->chunkset, c, c->id);
+	list_del(&c->list);
 	DEL_ARR_F(c->interfere);
 	DEL_ARR_F(c->n);
 	c->deleted = 1;
@@ -532,7 +535,7 @@ static int aff_chunk_absorb(co_mst_env_t *env, const ir_node *src, const ir_node
 
 		c1->weight_consistent = 0;
 
-		delete_aff_chunk(env, c2);
+		delete_aff_chunk(c2);
 		goto absorbed;
 	}
 	DB((dbg, LEVEL_4, " ... c1 interferes with c2, skipped\n"));
@@ -696,7 +699,7 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	}
 
 	/* now insert all chunks into a priority queue */
-	foreach_pset(env->chunkset, curr_chunk) {
+	list_for_each_entry(aff_chunk_t, curr_chunk, &env->chunklist, list) {
 		aff_chunk_assure_weight(env, curr_chunk);
 
 		DBG((dbg, LEVEL_1, "entry #%u", curr_chunk->id));
@@ -1315,7 +1318,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	while (! waitq_empty(tmp_chunks)) {
 		aff_chunk_t *tmp = waitq_get(tmp_chunks);
 		if (tmp != best_chunk)
-			delete_aff_chunk(env, tmp);
+			delete_aff_chunk(tmp);
 	}
 	del_waitq(tmp_chunks);
 
@@ -1399,7 +1402,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	}
 
 	/* clear obsolete chunks and free some memory */
-	delete_aff_chunk(env, best_chunk);
+	delete_aff_chunk(best_chunk);
 	bitset_free(visited);
 	if (best_starts)
 		del_waitq(best_starts);
@@ -1435,7 +1438,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	mst_env.co            = co;
 	mst_env.ignore_regs   = ignore_regs;
 	mst_env.ifg           = co->cenv->ifg;
-	mst_env.chunkset      = pset_new_ptr(512);
+	INIT_LIST_HEAD(&mst_env.chunklist);
 	mst_env.chunk_visited = 0;
 	mst_env.single_cols   = phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
 
@@ -1465,7 +1468,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 
 		color_aff_chunk(&mst_env, chunk);
 		DB((dbg, LEVEL_4, "<<<====== Coloring chunk (%u) done\n", chunk->id));
-		delete_aff_chunk(&mst_env, chunk);
+		delete_aff_chunk(chunk);
 	}
 
 	/* apply coloring */
@@ -1491,7 +1494,6 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	/* free allocated memory */
 	del_pqueue(mst_env.chunks);
 	phase_deinit(&mst_env.ph);
-	del_pset(mst_env.chunkset);
 
 	stat_ev_tim_pop("heur4_total");
 
