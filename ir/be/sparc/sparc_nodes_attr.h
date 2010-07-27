@@ -42,6 +42,11 @@ struct sparc_attr_t
 	ir_entity                  *immediate_value_entity; /* hack for now */
 };
 
+enum sparc_arch_irn_flags_t {
+	sparc_arch_irn_flag_modifies_flags    = arch_irn_flags_backend << 0,
+	sparc_arch_irn_flag_modifies_fp_flags = arch_irn_flags_backend << 1,
+};
+
 /**
  * attribute for FP immediate instruction
  */
@@ -96,7 +101,7 @@ struct sparc_symconst_attr_t {
 typedef struct sparc_jmp_cond_attr_t sparc_jmp_cond_attr_t;
 struct sparc_jmp_cond_attr_t {
 	sparc_attr_t base;    /**< generic attribute */
-	int          proj_num;
+	pn_Cmp       pnc;
 	bool         is_unsigned : 1;
 };
 

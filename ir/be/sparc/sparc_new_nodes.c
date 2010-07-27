@@ -58,7 +58,7 @@ static bool has_load_store_attr(const ir_node *node)
 
 static bool has_jmp_cond_attr(const ir_node *node)
 {
-	return is_sparc_BXX(node);
+	return is_sparc_Bicc(node) || is_sparc_fbfcc(node);
 }
 
 static bool has_jmp_switch_attr(const ir_node *node)
@@ -76,7 +76,7 @@ static bool has_fp_attr(const ir_node *node)
 	return is_sparc_fadd(node) || is_sparc_fsub(node)
 	    || is_sparc_fmul(node) || is_sparc_fdiv(node)
 	    || is_sparc_fftoi(node) || is_sparc_fitof(node)
-	    || is_sparc_fneg(node);
+	    || is_sparc_fneg(node) || is_sparc_fcmp(node);
 }
 
 static bool has_fp_conv_attr(const ir_node *node)
@@ -123,8 +123,7 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		if (has_jmp_cond_attr(n)) {
 			const sparc_jmp_cond_attr_t *attr
 				= get_sparc_jmp_cond_attr_const(n);
-			fprintf(F, "pnc: %d (%s)\n", attr->proj_num,
-			        get_pnc_string(attr->proj_num));
+			fprintf(F, "pnc: %d (%s)\n", attr->pnc, get_pnc_string(attr->pnc));
 			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
 		}
 		if (has_jmp_switch_attr(n)) {
@@ -155,11 +154,10 @@ static void sparc_set_attr_imm(ir_node *res, int immediate_value)
 	attr->immediate_value = immediate_value;
 }
 
-static void init_sparc_jmp_cond_attr(ir_node *node, int proj_num,
-                                     bool is_unsigned)
+static void init_sparc_jmp_cond_attr(ir_node *node, int pnc, bool is_unsigned)
 {
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
-	attr->proj_num    = proj_num;
+	attr->pnc         = pnc;
 	attr->is_unsigned = is_unsigned;
 }
 
@@ -448,8 +446,8 @@ static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
 	if (cmp_attr_sparc(a, b))
 		return 1;
 
-	return attr_a->proj_num != attr_b->proj_num
-		|| attr_a->is_unsigned != attr_b->is_unsigned;
+	return attr_a->pnc != attr_b->pnc
+	    || attr_a->is_unsigned != attr_b->is_unsigned;
 }
 
 static int cmp_attr_sparc_jmp_switch(ir_node *a, ir_node *b)

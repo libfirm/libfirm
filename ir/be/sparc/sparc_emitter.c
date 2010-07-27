@@ -576,21 +576,75 @@ static void emit_sparc_FrameAddr(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
+static const char *get_icc_unsigned(pn_Cmp pnc)
+{
+	switch (pnc) {
+	case pn_Cmp_False: return "bn";
+	case pn_Cmp_Eq:    return "be";
+	case pn_Cmp_Lt:    return "blu";
+	case pn_Cmp_Le:    return "bleu";
+	case pn_Cmp_Gt:    return "bgu";
+	case pn_Cmp_Ge:    return "bgeu";
+	case pn_Cmp_Lg:    return "bne";
+	case pn_Cmp_Leg:   return "ba";
+	default: panic("Cmp has unsupported pnc");
+	}
+}
+
+static const char *get_icc_signed(pn_Cmp pnc)
+{
+	switch (pnc) {
+	case pn_Cmp_False: return "bn";
+	case pn_Cmp_Eq:    return "be";
+	case pn_Cmp_Lt:    return "bl";
+	case pn_Cmp_Le:    return "ble";
+	case pn_Cmp_Gt:    return "bg";
+	case pn_Cmp_Ge:    return "bge";
+	case pn_Cmp_Lg:    return "bne";
+	case pn_Cmp_Leg:   return "ba";
+	default: panic("Cmp has unsupported pnc");
+	}
+}
+
+static const char *get_fcc(pn_Cmp pnc)
+{
+	switch (pnc) {
+	case pn_Cmp_False: return "fbn";
+	case pn_Cmp_Eq:    return "fbe";
+	case pn_Cmp_Lt:    return "fbl";
+	case pn_Cmp_Le:    return "fble";
+	case pn_Cmp_Gt:    return "fbg";
+	case pn_Cmp_Ge:    return "fbge";
+	case pn_Cmp_Lg:    return "fblg";
+	case pn_Cmp_Leg:   return "fbo";
+	case pn_Cmp_Uo:    return "fbu";
+	case pn_Cmp_Ue:    return "fbue";
+	case pn_Cmp_Ul:    return "fbul";
+	case pn_Cmp_Ule:   return "fbule";
+	case pn_Cmp_Ug:    return "fbug";
+	case pn_Cmp_Uge:   return "fbuge";
+	case pn_Cmp_Ne:    return "fbne";
+	case pn_Cmp_True:  return "fba";
+	case pn_Cmp_max:
+		break;
+	}
+	panic("invalid pnc");
+}
+
+typedef const char* (*get_cc_func)(pn_Cmp pnc);
 
 /**
  * Emits code for Branch
  */
-static void emit_sparc_BXX(const ir_node *node)
+static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 {
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
-	int              proj_num    = attr->proj_num;
-	bool             is_unsigned = attr->is_unsigned;
+	pn_Cmp           pnc         = attr->pnc;
 	const ir_node   *proj_true   = NULL;
 	const ir_node   *proj_false  = NULL;
 	const ir_edge_t *edge;
 	const ir_node   *block;
 	const ir_node   *next_block;
-	const char      *suffix;
 
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -608,43 +662,22 @@ static void emit_sparc_BXX(const ir_node *node)
 	/* we have a block schedule */
 	next_block = get_irn_link(block);
 
-	assert(proj_num != pn_Cmp_False);
-	assert(proj_num != pn_Cmp_True);
-
 	if (get_irn_link(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
 		const ir_node *t = proj_true;
 
 		proj_true  = proj_false;
 		proj_false = t;
-		proj_num   = get_negated_pnc(proj_num, mode_Iu);
-	}
-
-	if (is_unsigned) {
-		switch (proj_num) {
-			case pn_Cmp_Eq:  suffix = "e"; break;
-			case pn_Cmp_Lt:  suffix = "lu"; break;
-			case pn_Cmp_Le:  suffix = "leu"; break;
-			case pn_Cmp_Gt:  suffix = "gu"; break;
-			case pn_Cmp_Ge:  suffix = "geu"; break;
-			case pn_Cmp_Lg:  suffix = "ne"; break;
-			default: panic("Cmp has unsupported pnc");
-		}
-	} else {
-		switch (proj_num) {
-			case pn_Cmp_Eq:  suffix = "e"; break;
-			case pn_Cmp_Lt:  suffix = "l"; break;
-			case pn_Cmp_Le:  suffix = "le"; break;
-			case pn_Cmp_Gt:  suffix = "g"; break;
-			case pn_Cmp_Ge:  suffix = "ge"; break;
-			case pn_Cmp_Lg:  suffix = "ne"; break;
-			default: panic("Cmp has unsupported pnc");
+		if (is_sparc_fbfcc(node)) {
+			pnc = get_negated_pnc(pnc, mode_F);
+		} else {
+			pnc = get_negated_pnc(pnc, mode_Iu);
 		}
 	}
 
 	/* emit the true proj */
-	be_emit_cstring("\tb");
-	be_emit_string(suffix);
+	be_emit_cstring("\t");
+	be_emit_string(get_cc(pnc));
 	be_emit_char(' ');
 	sparc_emit_cfop_target(proj_true);
 	be_emit_finish_line_gas(proj_true);
@@ -654,7 +687,7 @@ static void emit_sparc_BXX(const ir_node *node)
 	be_emit_cstring("/* TODO: use delay slot */\n");
 
 	if (get_irn_link(proj_false) == next_block) {
-		be_emit_cstring("\t/* false-fallthrough to ");
+		be_emit_cstring("\t/* fallthrough to ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_cstring(" */");
 		be_emit_finish_line_gas(proj_false);
@@ -665,6 +698,18 @@ static void emit_sparc_BXX(const ir_node *node)
 		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */\n");
 		be_emit_finish_line_gas(proj_false);
 	}
+}
+
+static void emit_sparc_Bicc(const ir_node *node)
+{
+	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
+	bool             is_unsigned = attr->is_unsigned;
+	emit_sparc_branch(node, is_unsigned ? get_icc_unsigned : get_icc_signed);
+}
+
+static void emit_sparc_fbfcc(const ir_node *node)
+{
+	emit_sparc_branch(node, get_fcc);
 }
 
 /**
@@ -760,8 +805,9 @@ static void sparc_register_emitters(void)
 	set_emitter(op_be_Perm,         emit_be_Perm);
 	set_emitter(op_be_Return,       emit_be_Return);
 	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
-	set_emitter(op_sparc_BXX,       emit_sparc_BXX);
+	set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
+	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);
 	set_emitter(op_sparc_LoImm,     emit_sparc_LoImm);

@@ -151,12 +151,24 @@ static void sparc_prepare_graph(void *self)
 		dump_ir_graph(cg->irg, "transformed");
 }
 
+static bool sparc_modifies_flags(const ir_node *node)
+{
+	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_flags;
+}
+
+static bool sparc_modifies_fp_flags(const ir_node *node)
+{
+	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
+}
+
 static void sparc_before_ra(void *self)
 {
 	sparc_code_gen_t *cg = self;
 	/* fixup flags register */
 	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_flags_class],
-	                   NULL, NULL);
+	                   NULL, sparc_modifies_flags);
+	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
+	                   NULL, sparc_modifies_fp_flags);
 }
 
 /**

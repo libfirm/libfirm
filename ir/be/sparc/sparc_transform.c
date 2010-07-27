@@ -713,7 +713,7 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	return new_bd_sparc_SwitchJmp(dbgi, block, sub, n_projs, get_Cond_default_proj(node) - translation);
 }
 
-static bool is_cmp_unsigned(ir_node *b_value)
+static ir_mode *get_cmp_mode(ir_node *b_value)
 {
 	ir_node *pred;
 	ir_node *op;
@@ -724,7 +724,7 @@ static bool is_cmp_unsigned(ir_node *b_value)
 	if (!is_Cmp(pred))
 		panic("can't determine cond signednes (no cmp)");
 	op = get_Cmp_left(pred);
-	return !mode_is_signed(get_irn_mode(op));
+	return get_irn_mode(op);
 }
 
 /**
@@ -734,6 +734,7 @@ static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node  *selector = get_Cond_selector(node);
 	ir_mode  *mode     = get_irn_mode(selector);
+	ir_mode  *cmp_mode;
 	ir_node  *block;
 	ir_node  *flag_node;
 	bool      is_unsigned;
@@ -749,12 +750,19 @@ static ir_node *gen_Cond(ir_node *node)
 	assert(is_Proj(selector));
 	assert(is_Cmp(get_Proj_pred(selector)));
 
+	cmp_mode = get_cmp_mode(selector);
+
 	block       = be_transform_node(get_nodes_block(node));
 	dbgi        = get_irn_dbg_info(node);
 	flag_node   = be_transform_node(get_Proj_pred(selector));
 	pnc         = get_Proj_proj(selector);
-	is_unsigned = is_cmp_unsigned(selector);
-	return new_bd_sparc_BXX(dbgi, block, flag_node, pnc, is_unsigned);
+	is_unsigned = !mode_is_signed(cmp_mode);
+	if (mode_is_float(cmp_mode)) {
+		assert(!is_unsigned);
+		return new_bd_sparc_fbfcc(dbgi, block, flag_node, pnc);
+	} else {
+		return new_bd_sparc_Bicc(dbgi, block, flag_node, pnc, is_unsigned);
+	}
 }
 
 /**
@@ -769,27 +777,11 @@ static ir_node *gen_Cmp(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *new_op1  = be_transform_node(op1);
 	ir_node  *new_op2  = be_transform_node(op2);
-
-	if (mode_is_float(cmp_mode)) {
-		panic("FloatCmp not implemented");
-	}
-
 	assert(get_irn_mode(op2) == cmp_mode);
 
-#if 0
-	/* compare with 0 can be done with Tst */
-	if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
-		new_op1 = be_transform_node(op1);
-		return new_bd_sparc_Tst(dbgi, block, new_op1, false,
-		                          is_unsigned);
+	if (mode_is_float(cmp_mode)) {
+		return new_bd_sparc_fcmp(dbgi, block, new_op1, new_op2, cmp_mode);
 	}
-
-	if (is_Const(op1) && tarval_is_null(get_Const_tarval(op1))) {
-		new_op2 = be_transform_node(op2);
-		return new_bd_sparc_Tst(dbgi, block, new_op2, true,
-		                          is_unsigned);
-	}
-#endif
 
 	/* integer compare */
 	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);

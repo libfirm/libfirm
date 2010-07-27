@@ -48,6 +48,7 @@ our $custom_init_attr_func;
 our %compare_attr;
 our %copy_attr;
 our %reg_classes;
+our %custom_irn_flags;
 
 # include spec file
 
@@ -409,15 +410,22 @@ EOF
 	# set flags
 	if (exists($n->{"irn_flags"})) {
 		$temp .= "\t/* flags */\n";
-		my %known_irn_flags = map { $_ => 1 } (
-			"none", "dont_spill", "rematerializable",
-			"modify_flags", "simple_jump"
+		my %known_irn_flags = (
+			"none"             => "arch_irn_flags_none",
+			"dont_spill"       => "arch_irn_flags_dont_spill",
+			"rematerializable" => "arch_irn_flags_rematerializable",
+			"modify_flags"     => "arch_irn_flags_modify_flags",
+			"simple_jump"      => "arch_irn_flags_simple_jump",
 		);
+		if (defined(%custom_irn_flags)) {
+			%known_irn_flags = (%known_irn_flags, %custom_irn_flags);
+		}
 		foreach my $flag (@{$n->{"irn_flags"}}) {
 			if (not defined($known_irn_flags{$flag})) {
 				print STDERR "WARNING: irn_flag '$flag' in opcode $op is unknown\n";
+			} else {
+				$temp .= "\tflags |= " . $known_irn_flags{$flag} . ";\n";
 			}
-			$temp .= "\tflags |= arch_irn_flags_$flag;\n";
 		}
 		$temp .= "\n";
 	}

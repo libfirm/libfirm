@@ -59,7 +59,7 @@ $state       = 32; # register represents a state
 		{ name => "i7", type => $ignore }, # return address - 8
 		{ mode => $mode_gp }
 	],
-	fp_flags => [
+	fpflags_class => [
 		{ name => "fpflags", type => $ignore },
 		{ mode => $mode_fpflags, flags => "manual_ra" }
 	],
@@ -164,6 +164,11 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_save_attr_t       => "cmp_attr_sparc_save",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
+);
+
+%custom_irn_flags = (
+	modifies_flags    => "sparc_arch_irn_flag_modifies_flags",
+	modifies_fp_flags => "sparc_arch_irn_flag_modifies_fp_flags",
 );
 
 # addressing modes: imm, reg, reg +/- imm, reg + reg
@@ -322,14 +327,24 @@ FrameAddr => {
 	mode      => $mode_gp,
 },
 
-BXX => {
+Bicc => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	state     => "pinned",
 	mode      => "mode_T",
-	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
-	attr      => "int proj_num, bool is_unsigned",
 	attr_type => "sparc_jmp_cond_attr_t",
-	init_attr => "\tinit_sparc_jmp_cond_attr(res, proj_num, is_unsigned);",
+	attr      => "pn_Cmp pnc, bool is_unsigned",
+	init_attr => "\tinit_sparc_jmp_cond_attr(res, pnc, is_unsigned);",
+	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
+},
+
+fbfcc => {
+	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	state     => "pinned",
+	mode      => "mode_T",
+	attr_type => "sparc_jmp_cond_attr_t",
+	attr      => "pn_Cmp pnc",
+	init_attr => "\tinit_sparc_jmp_cond_attr(res, pnc, false);",
+	reg_req   => { in => [ "fpflags" ], out => [ "none", "none" ] },
 },
 
 Ba => {
@@ -341,7 +356,7 @@ Ba => {
 },
 
 Call => {
-	irn_flags => [ "modify_flags" ],
+	irn_flags => [ "modifies_flags", "modifies_fp_flags" ],
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
@@ -360,7 +375,7 @@ Call => {
 },
 
 Cmp => {
-	irn_flags    => [ "rematerializable", "modify_flags" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. cmp %S1, %R2I',
 	reg_req      => { in => [ "gp", "gp" ], out => [ "flags" ] },
 	ins          => [ "left", "right" ],
@@ -369,7 +384,7 @@ Cmp => {
 },
 
 Tst => {
-	irn_flags    => [ "rematerializable", "modify_flags" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. tst %S1',
 	mode         => $mode_flags,
 	reg_req      => { in => [ "gp" ], out => [ "flags" ] },
@@ -378,6 +393,7 @@ Tst => {
 
 SwitchJmp => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	irn_flags => [ "modifies_flags" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr      => "int n_projs, long def_proj_num",
@@ -438,7 +454,7 @@ Xor => {
 Mul => {
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "y" ] },
 	constructors => \%binop_operand_constructors,
-	emit      => '. mul %S1, %R2I, %D1',
+	emit      => '. smul %S1, %R2I, %D1',
 	mode      => $mode_gp,
 },
 
@@ -488,6 +504,15 @@ Nop => {
 	op_flags => [ "keep" ],
 	reg_req	 => { in => [], out => [ "none" ] },
 	emit     => '. nop',
+},
+
+fcmp => {
+	irn_flags => [ "rematerializable", "modifies_fp_flags" ],
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fpflags" ] },
+	emit      => '. fcmp%FPM %S1, %S2',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fpflags,
 },
 
 fadd => {
