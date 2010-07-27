@@ -44,8 +44,8 @@ void sparc_emit_load_mode(const ir_node *node);
 void sparc_emit_store_mode(const ir_node *node);
 void sparc_emit_mode_sign_prefix(const ir_node *node);
 void sparc_emit_fp_mode_suffix(const ir_node *node);
-void sparc_emit_fp_load_mode(const ir_node *node);
-void sparc_emit_fp_store_mode(const ir_node *node);
+void sparc_emit_fp_conv_source(const ir_node *node);
+void sparc_emit_fp_conv_destination(const ir_node *node);
 
 void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg);
 

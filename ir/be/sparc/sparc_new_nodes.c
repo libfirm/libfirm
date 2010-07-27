@@ -71,6 +71,19 @@ static bool has_save_attr(const ir_node *node)
 	return is_sparc_Save(node);
 }
 
+static bool has_fp_attr(const ir_node *node)
+{
+	return is_sparc_fadd(node) || is_sparc_fsub(node)
+	    || is_sparc_fmul(node) || is_sparc_fdiv(node)
+	    || is_sparc_fftoi(node) || is_sparc_fitof(node)
+	    || is_sparc_fneg(node);
+}
+
+static bool has_fp_conv_attr(const ir_node *node)
+{
+	return is_sparc_fftof(node);
+}
+
 /**
  * Dumper interface for dumping sparc nodes in vcg.
  * @param F        the output file
@@ -119,6 +132,15 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 				= get_sparc_jmp_switch_attr_const(n);
 			fprintf(F, "n projs: %d\n", attr->n_projs);
 			fprintf(F, "default proj: %ld\n", attr->default_proj_num);
+		}
+		if (has_fp_attr(n)) {
+			const sparc_fp_attr_t *attr = get_sparc_fp_attr_const(n);
+			ir_fprintf(F, "fp_mode: %+F\n", attr->fp_mode);
+		}
+		if (has_fp_conv_attr(n)) {
+			const sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr_const(n);
+			ir_fprintf(F, "conv from: %+F\n", attr->src_mode);
+			ir_fprintf(F, "conv to: %+F\n", attr->dest_mode);
 		}
 		break;
 
@@ -239,6 +261,30 @@ const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node)
 	return (const sparc_save_attr_t*) get_irn_generic_attr_const(node);
 }
 
+sparc_fp_attr_t *get_sparc_fp_attr(ir_node *node)
+{
+	assert(has_fp_attr(node));
+	return (sparc_fp_attr_t*) get_irn_generic_attr(node);
+}
+
+const sparc_fp_attr_t *get_sparc_fp_attr_const(const ir_node *node)
+{
+	assert(has_fp_attr(node));
+	return (const sparc_fp_attr_t*) get_irn_generic_attr_const(node);
+}
+
+sparc_fp_conv_attr_t *get_sparc_fp_conv_attr(ir_node *node)
+{
+	assert(has_fp_conv_attr(node));
+	return (sparc_fp_conv_attr_t*) get_irn_generic_attr(node);
+}
+
+const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node)
+{
+	assert(has_fp_conv_attr(node));
+	return (const sparc_fp_conv_attr_t*) get_irn_generic_attr_const(node);
+}
+
 /**
  * Returns the argument register requirements of a sparc node.
  */
@@ -295,7 +341,6 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
 	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
-/* CUSTOM ATTRIBUTE INIT FUNCTIONS */
 static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 											ir_entity *entity,
 											int entity_sign, long offset,
@@ -317,10 +362,24 @@ static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
 	attr->fp_offset = 0;
 }
 
-static void init_sparc_save_attr(ir_node *res, int initial_stacksize)
+static void init_sparc_save_attributes(ir_node *res, int initial_stacksize)
 {
 	sparc_save_attr_t *attr = get_sparc_save_attr(res);
 	attr->initial_stacksize = initial_stacksize;
+}
+
+static void init_sparc_fp_attributes(ir_node *res, ir_mode *fp_mode)
+{
+	sparc_fp_attr_t *attr = get_sparc_fp_attr(res);
+	attr->fp_mode = fp_mode;
+}
+
+static void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
+                                          ir_mode *dest_mode)
+{
+	sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr(res);
+	attr->src_mode = src_mode;
+	attr->dest_mode = dest_mode;
 }
 
 /**
@@ -354,15 +413,13 @@ static int cmp_attr_sparc(ir_node *a, ir_node *b)
 			|| attr_a->is_load_store != attr_b->is_load_store;
 }
 
-
-/* CUSTOM ATTRIBUTE CMP FUNCTIONS */
 static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)
 {
 	const sparc_load_store_attr_t *attr_a = get_sparc_load_store_attr_const(a);
 	const sparc_load_store_attr_t *attr_b = get_sparc_load_store_attr_const(b);
 
 	if (cmp_attr_sparc(a, b))
-			return 1;
+		return 1;
 
 	return attr_a->entity != attr_b->entity
 			|| attr_a->entity_sign != attr_b->entity_sign
@@ -377,7 +434,7 @@ static int cmp_attr_sparc_symconst(ir_node *a, ir_node *b)
 	const sparc_symconst_attr_t *attr_b = get_sparc_symconst_attr_const(b);
 
 	if (cmp_attr_sparc(a, b))
-			return 1;
+		return 1;
 
 	return attr_a->entity != attr_b->entity
 			|| attr_a->fp_offset != attr_b->fp_offset;
@@ -389,7 +446,7 @@ static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
 	const sparc_jmp_cond_attr_t *attr_b = get_sparc_jmp_cond_attr_const(b);
 
 	if (cmp_attr_sparc(a, b))
-			return 1;
+		return 1;
 
 	return attr_a->proj_num != attr_b->proj_num
 		|| attr_a->is_unsigned != attr_b->is_unsigned;
@@ -401,7 +458,7 @@ static int cmp_attr_sparc_jmp_switch(ir_node *a, ir_node *b)
 	const sparc_jmp_switch_attr_t *attr_b = get_sparc_jmp_switch_attr_const(b);
 
 	if (cmp_attr_sparc(a, b))
-			return 1;
+		return 1;
 
 	return attr_a->default_proj_num != attr_b->default_proj_num
 			|| attr_a->n_projs != attr_b->n_projs;
@@ -413,9 +470,32 @@ static int cmp_attr_sparc_save(ir_node *a, ir_node *b)
 	const sparc_save_attr_t *attr_b = get_sparc_save_attr_const(b);
 
 	if (cmp_attr_sparc(a, b))
-			return 1;
+		return 1;
 
 	return attr_a->initial_stacksize != attr_b->initial_stacksize;
+}
+
+static int cmp_attr_sparc_fp(ir_node *a, ir_node *b)
+{
+	const sparc_fp_attr_t *attr_a = get_sparc_fp_attr_const(a);
+	const sparc_fp_attr_t *attr_b = get_sparc_fp_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+		return 1;
+
+	return attr_a->fp_mode != attr_b->fp_mode;
+}
+
+static int cmp_attr_sparc_fp_conv(ir_node *a, ir_node *b)
+{
+	const sparc_fp_conv_attr_t *attr_a = get_sparc_fp_conv_attr_const(a);
+	const sparc_fp_conv_attr_t *attr_b = get_sparc_fp_conv_attr_const(b);
+
+	if (cmp_attr_sparc(a, b))
+		return 1;
+
+	return attr_a->src_mode != attr_b->src_mode
+	    || attr_a->dest_mode != attr_b->dest_mode;;
 }
 
 /* Include the generated constructor functions */

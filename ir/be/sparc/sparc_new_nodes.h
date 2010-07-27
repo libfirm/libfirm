@@ -48,6 +48,12 @@ const sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr_const(const ir_node *no
 sparc_save_attr_t *get_sparc_save_attr(ir_node *node);
 const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node);
 
+sparc_fp_attr_t *get_sparc_fp_attr(ir_node *node);
+const sparc_fp_attr_t *get_sparc_fp_attr_const(const ir_node *node);
+
+sparc_fp_conv_attr_t *get_sparc_fp_conv_attr(ir_node *node);
+const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node);
+
 /**
  * Returns the argument register requirements of an sparc node.
  */

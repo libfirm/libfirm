@@ -121,11 +121,10 @@ $state       = 32; # register represents a state
 	IM  => "${arch}_emit_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
 	SM  => "${arch}_emit_store_mode(node);",
-	EXTPREF => "${arch}_emit_mode_sign_prefix(node);",
 	FPM  => "${arch}_emit_fp_mode_suffix(node);",
-	FPLM => "${arch}_emit_fp_load_mode(node);",
-	FPSM => "${arch}_emit_fp_store_mode(node);",
-	O    => "${arch}_emit_offset(node);",
+	FCONVS => "${arch}_emit_fp_conv_source(node);",
+	FCONVD => "${arch}_emit_fp_conv_destination(node);",
+	O      => "${arch}_emit_offset(node);",
 );
 
 $default_attr_type = "sparc_attr_t";
@@ -141,7 +140,10 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_jmp_switch_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-
+	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
+	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);".
+	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
 );
 
 %compare_attr = (
@@ -151,6 +153,8 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
 	sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
 	sparc_save_attr_t       => "cmp_attr_sparc_save",
+	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
+	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
 );
 
 # addressing modes: imm, reg, reg +/- imm, reg + reg
@@ -273,7 +277,7 @@ Save => {
 	outs      => [ "stack", "frame", "mem" ],
 	attr      => "int initial_stacksize",
 	attr_type => "sparc_save_attr_t",
-	init_attr => "\tinit_sparc_save_attr(res, initial_stacksize);",
+	init_attr => "\tinit_sparc_save_attributes(res, initial_stacksize);",
 },
 
 SubSP => {
@@ -374,7 +378,7 @@ SwitchJmp => {
 
 Sll => {
 	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sll %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
@@ -382,7 +386,7 @@ Sll => {
 
 Slr => {
 	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. srl %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
@@ -390,7 +394,7 @@ Slr => {
 
 Sra => {
 	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. sra %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
@@ -398,7 +402,7 @@ Sra => {
 
 And => {
 	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. and %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
@@ -406,7 +410,7 @@ And => {
 
 Or => {
 	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. or %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
@@ -414,22 +418,20 @@ Or => {
 
 Xor => {
 	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	emit      => '. xor %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Mul => {
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
-	outs      => [ "low", "high" ],
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
 	constructors => \%binop_operand_constructors,
-	#emit      =>'. mul %S1, %R2I, %D1'
+	emit      => '. mul %S1, %R2I, %D1',
+	mode      => $mode_gp,
 },
 
 Mulh => {
-	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
 	outs      => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,
@@ -438,25 +440,24 @@ Mulh => {
 Div => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	outs      => [ "res" ],
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "none" ] },
+	outs      => [ "res", "M" ],
 	constructors => \%binop_operand_constructors,
-	#mode      => $mode_gp,
-	#emit      =>'. div %S1, %R2I, %D1'
+	emit      => '. div %S1, %R2I, %D1',
 },
 
 Minus => {
 	irn_flags => [ "rematerializable" ],
-	mode	    => $mode_gp,
+	mode      => $mode_gp,
 	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
 	emit      => ". sub %%g0, %S1, %D1"
 },
 
 Not => {
-	irn_flags   => [ "rematerializable" ],
-	mode	      => $mode_gp,
-	reg_req     => { in => [ "gp" ], out => [ "gp" ] },
-	emit        => '. xnor %S1, %%g0, %D1'
+	irn_flags => [ "rematerializable" ],
+	mode      => $mode_gp,
+	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
+	emit      => '. xnor %S1, %%g0, %D1'
 },
 
 Nop => {
@@ -465,59 +466,87 @@ Nop => {
 	emit     => '. nop',
 },
 
-fAdd => {
+fadd => {
 	op_flags  => [ "commutative" ],
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fadd%FPM %S1, %S2, %D1'
+	emit      => '. fadd%FPM %S1, %S2, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fp,
 },
 
-fMul => {
+fsub => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
+	emit      => '. fsub%FPM %S1, %S2, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fp,
+},
+
+fmul => {
+	irn_flags => [ "rematerializable" ],
 	op_flags  => [ "commutative" ],
 	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fmul%FPM %S1, %S2, %D1'
+	emit      =>'. fmul%FPM %S1, %S2, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fp,
 },
 
-fsMuld => {
-	op_flags  => [ "commutative" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fsmuld %S1, %S2, %D1'
+fdiv => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fp", "fp" ], out => [ "fp", "none" ] },
+	emit      => '. fdiv%FPM %S1, %S2, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	outs      => [ "res", "M" ],
 },
 
-FsTOd => {
+fneg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      =>'. FsTOd %S1, %D1'
+	emit      => '. fneg%FPM %S1, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fp,
 },
 
-FdTOs => {
+"fabs" => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      =>'. FdTOs %S1, %D1'
+	emit      => '. fabs%FPM %S1, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fp,
 },
 
-FiTOs => {
+fftof => {
+	irn_flags => [ "rematerializable" ],
+	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
+	emit      => '. f%FCONVS.to%FCONVD %S1, %D1',
+	attr_type => "sparc_fp_conv_attr_t",
+	attr      => "ir_mode *src_mode, ir_mode *dest_mode",
+	mode      => $mode_fp,
+},
+
+fitof => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
-	emit      =>'. FiTOs %S1, %D1'
+	emit      => '. fito%FPM %S1, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_fp,
 },
 
-FiTOd => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
-	emit      =>'. FiTOd %S1, %D1'
-},
-
-FsTOi => {
+fftoi => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
-	emit      =>'. FsTOi %S1, %D1'
-},
-
-FdTOi => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
-	emit      =>'. FdTOi %S1, %D1'
+	emit      => '. f%FPM.toi %S1, %D1',
+	attr_type => "sparc_fp_attr_t",
+	attr      => "ir_mode *fp_mode",
+	mode      => $mode_gp,
 },
 
 Ldf => {

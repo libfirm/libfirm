@@ -222,44 +222,32 @@ void sparc_emit_mode_sign_prefix(const ir_node *node)
 	be_emit_string(is_signed ? "s" : "u");
 }
 
-/**
- * emit FP load mode char
- */
-void sparc_emit_fp_load_mode(const ir_node *node)
+static void emit_fp_suffix(const ir_mode *mode)
 {
-	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-	ir_mode *mode      = attr->load_store_mode;
-	int      bits      = get_mode_size_bits(mode);
-
+	unsigned bits = get_mode_size_bits(mode);
 	assert(mode_is_float(mode));
 
 	if (bits == 32) {
-		be_emit_string("f");
+		be_emit_char('s');
 	} else if (bits == 64) {
-		be_emit_string("df");
+		be_emit_char('d');
+	} else if (bits == 128) {
+		be_emit_char('q');
 	} else {
-		panic("FP load mode > 64bits not implemented yet");
+		panic("invalid FP mode");
 	}
 }
 
-/**
- * emit FP store mode char
- */
-void sparc_emit_fp_store_mode(const ir_node *node)
+void sparc_emit_fp_conv_source(const ir_node *node)
 {
-	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-	ir_mode *mode      = attr->load_store_mode;
-	int      bits      = get_mode_size_bits(mode);
+	const sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr_const(node);
+	emit_fp_suffix(attr->src_mode);
+}
 
-	assert(mode_is_float(mode));
-
-	if (bits == 32) {
-		be_emit_string("f");
-	} else if (bits == 64) {
-		be_emit_string("df");
-	} else {
-		panic("FP store mode > 64bits not implemented yet");
-	}
+void sparc_emit_fp_conv_destination(const ir_node *node)
+{
+	const sparc_fp_conv_attr_t *attr = get_sparc_fp_conv_attr_const(node);
+	emit_fp_suffix(attr->dest_mode);
 }
 
 /**
@@ -267,18 +255,8 @@ void sparc_emit_fp_store_mode(const ir_node *node)
  */
 void sparc_emit_fp_mode_suffix(const ir_node *node)
 {
-	ir_mode *mode      = get_irn_mode(node);
-	int      bits      = get_mode_size_bits(mode);
-
-	assert(mode_is_float(mode));
-
-	if (bits == 32) {
-		be_emit_string("s");
-	} else if (bits == 64) {
-		be_emit_string("d");
-	} else {
-		panic("FP mode > 64bits not implemented yet");
-	}
+	const sparc_fp_attr_t *attr = get_sparc_fp_attr_const(node);
+	emit_fp_suffix(attr->fp_mode);
 }
 
 /**
@@ -357,40 +335,6 @@ static void emit_sparc_LoImm(const ir_node *irn)
 	be_emit_cstring("\tor ");
 	sparc_emit_source_register(irn, 0);
 	be_emit_irprintf(", %%lo(%d), ", attr->immediate_value);
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-}
-
-/**
- * emit code for div with the correct sign prefix
- */
-static void emit_sparc_Div(const ir_node *irn)
-{
-	be_emit_cstring("\t");
-	sparc_emit_mode_sign_prefix(irn);
-	be_emit_cstring("div ");
-
-	sparc_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	sparc_emit_reg_or_imm(irn, 1);
-	be_emit_cstring(", ");
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-}
-
-/**
- * emit code for mul with the correct sign prefix
- */
-static void emit_sparc_Mul(const ir_node *irn)
-{
-	be_emit_cstring("\t");
-	sparc_emit_mode_sign_prefix(irn);
-	be_emit_cstring("mul ");
-
-	sparc_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	sparc_emit_reg_or_imm(irn, 1);
-	be_emit_cstring(", ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
@@ -781,12 +725,10 @@ static void sparc_register_emitters(void)
 	set_emitter(op_be_Return,       emit_be_Return);
 	set_emitter(op_sparc_BXX,       emit_sparc_BXX);
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
-	set_emitter(op_sparc_Div,       emit_sparc_Div);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);
 	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	set_emitter(op_sparc_LoImm,     emit_sparc_LoImm);
-	set_emitter(op_sparc_Mul,       emit_sparc_Mul);
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
 	set_emitter(op_sparc_Save,      emit_sparc_Save);
 	set_emitter(op_sparc_SymConst,  emit_sparc_SymConst);

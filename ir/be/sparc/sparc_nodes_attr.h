@@ -47,8 +47,15 @@ struct sparc_attr_t
  */
 typedef struct sparc_fp_attr_t sparc_fp_attr_t;
 struct sparc_fp_attr_t {
-	sparc_attr_t    base;         /**< generic attribute */
-	double          fp_immediate; /* the FP immediate value */
+	sparc_attr_t  base;         /**< generic attribute */
+	ir_mode      *fp_mode;
+};
+
+typedef struct sparc_fp_conv_attr_t sparc_fp_conv_attr_t;
+struct sparc_fp_conv_attr_t {
+	sparc_attr_t  base;
+	ir_mode      *src_mode;
+	ir_mode      *dest_mode;
 };
 
 /**

@@ -148,7 +148,6 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 	}
 }
 
-
 /**
  * Creates a possible DAG for a constant.
  */
@@ -169,7 +168,6 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 
 	return result;
 }
-
 
 /**
  * Create a DAG constructing a given Const.
@@ -257,18 +255,17 @@ static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
 /**
  * helper function for FP binop operations
  */
-static ir_node *gen_helper_binfpop(ir_node *node, new_binop_fp_func new_reg)
+static ir_node *gen_helper_binfpop(ir_node *node, ir_mode *mode,
+                                   new_binop_fp_func new_func)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
 	ir_node  *op1     = get_binop_left(node);
-	ir_node  *new_op1;
+	ir_node  *new_op1 = be_transform_node(op1);
 	ir_node  *op2     = get_binop_right(node);
-	ir_node  *new_op2;
+	ir_node  *new_op2 = be_transform_node(op2);
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 
-	new_op2 = be_transform_node(op2);
-	new_op1 = be_transform_node(op1);
-	return new_reg(dbgi, block, new_op1, new_op2, get_irn_mode(node));
+	return new_func(dbgi, block, new_op1, new_op2, mode);
 }
 
 /**
@@ -281,12 +278,12 @@ static ir_node *gen_Add(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 
-	if (mode_is_float(mode))
-		panic("FP not implemented yet");
+	if (mode_is_float(mode)) {
+		return gen_helper_binfpop(node, mode, new_bd_sparc_fadd);
+	}
 
 	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
 }
-
 
 /**
  * Creates an sparc Sub.
@@ -297,12 +294,13 @@ static ir_node *gen_Add(ir_node *node)
 static ir_node *gen_Sub(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
-	if (mode_is_float(mode))
-		panic("FP not implemented yet");
+
+	if (mode_is_float(mode)) {
+		return gen_helper_binfpop(node, mode, new_bd_sparc_fsub);
+	}
 
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sub_reg, new_bd_sparc_Sub_imm);
 }
-
 
 /**
  * Transforms a Load.
@@ -321,16 +319,15 @@ static ir_node *gen_Load(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_load = NULL;
 
-	if (mode_is_float(mode))
-		panic("SPARC: no fp implementation yet");
-
-	new_load = new_bd_sparc_Ld(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+	if (mode_is_float(mode)) {
+		new_load = new_bd_sparc_Ldf(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+	} else {
+		new_load = new_bd_sparc_Ld(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
 	return new_load;
 }
-
-
 
 /**
  * Transforms a Store.
@@ -351,10 +348,12 @@ static ir_node *gen_Store(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node *new_store = NULL;
 
-	if (mode_is_float(mode))
-		panic("SPARC: no fp implementation yet");
-
-	new_store = new_bd_sparc_St(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
+	if (mode_is_float(mode)) {
+		new_store = new_bd_sparc_Stf(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
+	} else {
+		new_store = new_bd_sparc_St(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
+	}
+	set_irn_pinned(new_store, get_irn_pinned(node));
 
 	return new_store;
 }
@@ -365,22 +364,16 @@ static ir_node *gen_Store(ir_node *node)
  *
  * @return the created sparc Mul node
  */
-static ir_node *gen_Mul(ir_node *node) {
-	ir_mode  *mode = get_irn_mode(node);
-	ir_node  *mul;
-	ir_node  *proj_res_low;
-
+static ir_node *gen_Mul(ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		mul = gen_helper_binfpop(node, new_bd_sparc_fMul);
-		return mul;
+		return gen_helper_binfpop(node, mode, new_bd_sparc_fmul);
 	}
 
 	assert(mode_is_data(mode));
-	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
-	arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
-
-	proj_res_low = new_r_Proj(mul, mode_gp, pn_sparc_Mul_low);
-	return proj_res_low;
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+	                        new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
 }
 
 /**
@@ -389,7 +382,8 @@ static ir_node *gen_Mul(ir_node *node) {
  *
  * @return the created sparc Mulh node
  */
-static ir_node *gen_Mulh(ir_node *node) {
+static ir_node *gen_Mulh(ir_node *node)
+{
 	ir_mode *mode = get_irn_mode(node);
 	ir_node *mul;
 	ir_node *proj_res_hi;
@@ -410,20 +404,19 @@ static ir_node *gen_Mulh(ir_node *node) {
  *
  * @return the created sparc Div node
  */
-static ir_node *gen_Div(ir_node *node) {
-
-	ir_mode  *mode    = get_irn_mode(node);
-
-	ir_node *div;
-
-	if (mode_is_float(mode))
-		panic("FP not supported yet");
-
-	//assert(mode_is_data(mode));
-	div = gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Div_reg, new_bd_sparc_Div_imm);
-	return div;
+static ir_node *gen_Div(ir_node *node)
+{
+	ir_mode *mode = get_Div_resmode(node);
+	assert(!mode_is_float(mode));
+	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Div_reg, new_bd_sparc_Div_imm);
 }
 
+static ir_node *gen_Quot(ir_node *node)
+{
+	ir_mode *mode = get_Quot_resmode(node);
+	assert(mode_is_float(mode));
+	return gen_helper_binfpop(node, mode, new_bd_sparc_fdiv);
+}
 
 /**
  * transform abs node:
@@ -500,25 +493,21 @@ static ir_node *gen_Shrs(ir_node *node)
 	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
-/****** TRANSFORM GENERAL BACKEND NODES ********/
-
 /**
  * Transforms a Minus node.
- *
  */
 static ir_node *gen_Minus(ir_node *node)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op      = get_Minus_op(node);
-	ir_node  *new_op  = be_transform_node(op);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *mode    = get_irn_mode(node);
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *op     = get_Minus_op(node);
+	ir_node  *new_op = be_transform_node(op);
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_mode  *mode   = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		panic("FP not implemented yet");
+		return new_bd_sparc_fneg(dbgi, block, new_op, mode);
 	}
 
-	assert(mode_is_data(mode));
 	return new_bd_sparc_Minus(dbgi, block, new_op);
 }
 
@@ -606,7 +595,6 @@ static ir_node *gen_be_AddSP(ir_node *node)
 
 	return new_op;
 }
-
 
 /**
  * SubSP
@@ -844,32 +832,18 @@ static ir_node *gen_Conv(ir_node *node)
 		if (mode_is_float(src_mode)) {
 			if (mode_is_float(dst_mode)) {
 				/* float -> float conv */
-				if (src_bits > dst_bits) {
-					return new_bd_sparc_FsTOd(dbg, block, new_op, dst_mode);
-				} else {
-					return new_bd_sparc_FdTOs(dbg, block, new_op, dst_mode);
-				}
+				return new_bd_sparc_fftof(dbg, block, new_op, src_mode, dst_mode);
 			} else {
 				/* float -> int conv */
-				switch (dst_bits) {
-					case 32:
-						return new_bd_sparc_FsTOi(dbg, block, new_op, dst_mode);
-					case 64:
-						return new_bd_sparc_FdTOi(dbg, block, new_op, dst_mode);
-					default:
-						panic("quad FP not implemented");
-				}
+				if (!mode_is_signed(dst_mode))
+					panic("float to unsigned not implemented yet");
+				return new_bd_sparc_fftoi(dbg, block, new_op, src_mode);
 			}
 		} else {
 			/* int -> float conv */
-			switch (dst_bits) {
-				case 32:
-					return new_bd_sparc_FiTOs(dbg, block, new_op, src_mode);
-				case 64:
-					return new_bd_sparc_FiTOd(dbg, block, new_op, src_mode);
-				default:
-					panic("quad FP not implemented");
-			}
+			if (!mode_is_signed(src_mode))
+				panic("unsigned to float not implemented yet");
+			return new_bd_sparc_fitof(dbg, block, new_op, dst_mode);
 		}
 	} else { /* complete in gp registers */
 		int min_bits;
@@ -1352,7 +1326,6 @@ static ir_node *gen_Phi(ir_node *node)
 	return phi;
 }
 
-
 /**
  * Transform a Proj from a Load.
  */
@@ -1361,23 +1334,53 @@ static ir_node *gen_Proj_Load(ir_node *node)
 	ir_node  *load     = get_Proj_pred(node);
 	ir_node  *new_load = be_transform_node(load);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long     proj      = get_Proj_proj(node);
+	long      pn       = get_Proj_proj(node);
 
 	/* renumber the proj */
 	switch (get_sparc_irn_opcode(new_load)) {
-		case iro_sparc_Ld:
-			/* handle all gp loads equal: they have the same proj numbers. */
-			if (proj == pn_Load_res) {
-				return new_rd_Proj(dbgi, new_load, mode_gp, pn_sparc_Ld_res);
-			} else if (proj == pn_Load_M) {
-				return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
-			}
-			break;
-		default:
-			panic("Unsupported Proj from Load");
+	case iro_sparc_Ld:
+		/* handle all gp loads equal: they have the same proj numbers. */
+		if (pn == pn_Load_res) {
+			return new_rd_Proj(dbgi, new_load, mode_gp, pn_sparc_Ld_res);
+		} else if (pn == pn_Load_M) {
+			return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
+		}
+		break;
+	case iro_sparc_Ldf:
+		if (pn == pn_Load_res) {
+			return new_rd_Proj(dbgi, new_load, mode_fp, pn_sparc_Ldf_res);
+		} else if (pn == pn_Load_M) {
+			return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
+		}
+		break;
+	default:
+		break;
 	}
+	panic("Unsupported Proj from Load");
+}
 
-	return be_duplicate_node(node);
+static ir_node *gen_Proj_Store(ir_node *node)
+{
+	ir_node  *store     = get_Proj_pred(node);
+	ir_node  *new_store = be_transform_node(store);
+	long      pn        = get_Proj_proj(node);
+
+	/* renumber the proj */
+	switch (get_sparc_irn_opcode(new_store)) {
+	case iro_sparc_St:
+		if (pn == pn_Store_M) {
+			return new_store;
+		}
+		break;
+	case iro_sparc_Stf:
+		if (pn == pn_Store_M) {
+			return new_store;
+		}
+		break;
+	default:
+		break;
+	}
+	panic("Unsupported Proj from Store");
 }
 
 /**
@@ -1396,18 +1399,36 @@ static ir_node *gen_Proj_Div(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
-	long     proj      = get_Proj_proj(node);
+	long      pn       = get_Proj_proj(node);
 
-	switch (proj) {
+	assert(is_sparc_Div(new_pred));
+	switch (pn) {
 	case pn_Div_res:
-		if (is_sparc_Div(new_pred)) {
-			return new_r_Proj(new_pred, mode_gp, pn_sparc_Div_res);
-		}
-		break;
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_Div_res);
+	case pn_Div_M:
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_Div_M);
 	default:
 		break;
 	}
 	panic("Unsupported Proj from Div");
+}
+
+static ir_node *gen_Proj_Quot(ir_node *node)
+{
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	long      pn       = get_Proj_proj(node);
+
+	assert(is_sparc_fdiv(new_pred));
+	switch (pn) {
+	case pn_Quot_res:
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_fdiv_res);
+	case pn_Quot_M:
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_fdiv_M);
+	default:
+		break;
+	}
+	panic("Unsupported Proj from Quot");
 }
 
 static ir_node *gen_Proj_Start(ir_node *node)
@@ -1551,16 +1572,10 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 static ir_node *gen_Proj(ir_node *node)
 {
 	ir_node *pred = get_Proj_pred(node);
-	long     pn   = get_Proj_proj(node);
 
 	switch (get_irn_opcode(pred)) {
 	case iro_Store:
-		if (pn == pn_Store_M) {
-			return be_transform_node(pred);
-		} else {
-			panic("Unsupported Proj from Store");
-		}
-		break;
+		return gen_Proj_Store(node);
 	case iro_Load:
 		return gen_Proj_Load(node);
 	case iro_Call:
@@ -1571,6 +1586,8 @@ static ir_node *gen_Proj(ir_node *node)
 		return be_duplicate_node(node);
 	case iro_Div:
 		return gen_Proj_Div(node);
+	case iro_Quot:
+		return gen_Proj_Quot(node);
 	case iro_Start:
 		return gen_Proj_Start(node);
 	case iro_Proj: {
@@ -1586,7 +1603,6 @@ static ir_node *gen_Proj(ir_node *node)
 		panic("code selection didn't expect Proj after %+F\n", pred);
 	}
 }
-
 
 /**
  * transform a Jmp
@@ -1631,6 +1647,7 @@ void sparc_register_transformers(void)
 	be_set_transform_function(op_Or,           gen_Or);
 	be_set_transform_function(op_Phi,          gen_Phi);
 	be_set_transform_function(op_Proj,         gen_Proj);
+	be_set_transform_function(op_Quot,         gen_Quot);
 	be_set_transform_function(op_Return,       gen_Return);
 	be_set_transform_function(op_Sel,          gen_Sel);
 	be_set_transform_function(op_Shl,          gen_Shl);
