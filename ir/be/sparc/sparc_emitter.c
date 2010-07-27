@@ -357,12 +357,48 @@ static void emit_sparc_Mulh(const ir_node *irn)
 
 	// our result is in the y register now
 	// we just copy it to the assigned target reg
-	be_emit_cstring("\tmov ");
-	be_emit_char('%');
-	be_emit_string(arch_register_get_name(&sparc_flags_regs[REG_Y]));
-	be_emit_cstring(", ");
+	be_emit_cstring("\tmov %y, ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
+}
+
+static void emit_sparc_Div(const ir_node *node, bool is_signed)
+{
+	/* can we get the delay count of the wr instruction somewhere? */
+	unsigned wry_delay_count = 3;
+	unsigned i;
+
+	be_emit_cstring("\twr ");
+	sparc_emit_source_register(node, 0);
+	be_emit_cstring(", 0, %y");
+	be_emit_finish_line_gas(node);
+
+	for (i = 0; i < wry_delay_count; ++i) {
+		be_emit_cstring("\tnop");
+		be_emit_finish_line_gas(node);
+	}
+
+	be_emit_irprintf("\t%s ", is_signed ? "sdiv" : "udiv");
+	sparc_emit_source_register(node, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(node, 2);
+	be_emit_cstring(", ");
+	sparc_emit_dest_register(node, 0);
+	be_emit_finish_line_gas(node);
+}
+
+static void emit_sparc_SDiv(const ir_node *node)
+{
+	(void) node;
+	/* aehm we would need an aditional register for an sra instruction to
+	 * compute the upper bits... Just panic for now */
+	//emit_sparc_Div(node, true);
+	panic("signed div is wrong");
+}
+
+static void emit_sparc_UDiv(const ir_node *node)
+{
+	emit_sparc_Div(node, false);
 }
 
 /**
@@ -723,15 +759,17 @@ static void sparc_register_emitters(void)
 	set_emitter(op_be_MemPerm,      emit_be_MemPerm);
 	set_emitter(op_be_Perm,         emit_be_Perm);
 	set_emitter(op_be_Return,       emit_be_Return);
+	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	set_emitter(op_sparc_BXX,       emit_sparc_BXX);
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);
-	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	set_emitter(op_sparc_LoImm,     emit_sparc_LoImm);
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
 	set_emitter(op_sparc_Save,      emit_sparc_Save);
+	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SymConst,  emit_sparc_SymConst);
+	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_be_Barrier, emit_nothing);

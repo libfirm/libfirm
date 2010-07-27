@@ -5,6 +5,7 @@ $arch = "sparc";
 
 $mode_gp      = "mode_Iu";
 $mode_flags   = "mode_Bu";
+$mode_fpflags = "mode_Bu";
 $mode_fp      = "mode_D";
 
 $normal      =  0; # no special type
@@ -18,49 +19,57 @@ $state       = 32; # register represents a state
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
-		{ name => "g0", realname => "g0", type => $ignore }, # hardwired 0, behaves like /dev/null
-		{ name => "g1", realname => "g1", type => $caller_save }, # temp. value
-		{ name => "g2", realname => "g2", type => $caller_save },
-		{ name => "g3", realname => "g3", type => $caller_save },
-		{ name => "g4", realname => "g4", type => $caller_save },
-		{ name => "g5", realname => "g5", type => $ignore }, # reserved by SPARC ABI
-		{ name => "g6", realname => "g6", type => $ignore }, # reserved by SPARC ABI
-		{ name => "g7", realname => "g7", type => $ignore }, # reserved by SPARC ABI
+		{ name => "g0", type => $ignore }, # hardwired 0, behaves like /dev/null
+		{ name => "g1", type => $caller_save }, # temp. value
+		{ name => "g2", type => $caller_save },
+		{ name => "g3", type => $caller_save },
+		{ name => "g4", type => $caller_save },
+		{ name => "g5", type => $ignore }, # reserved by SPARC ABI
+		{ name => "g6", type => $ignore }, # reserved by SPARC ABI
+		{ name => "g7", type => $ignore }, # reserved by SPARC ABI
 
 		# window's out registers
-		{ name => "o0", realname => "o0", type => $caller_save }, # param 1 / return value from callee
-		{ name => "o1", realname => "o1", type => $caller_save }, # param 2
-		{ name => "o2", realname => "o2", type => $caller_save }, # param 3
-		{ name => "o3", realname => "o3", type => $caller_save }, # param 4
-		{ name => "o4", realname => "o4", type => $caller_save }, # param 5
-		{ name => "o5", realname => "o5", type => $caller_save }, # param 6
-		{ name => "sp", realname => "sp", type => $ignore }, # our stackpointer
-		{ name => "o7", realname => "o6", type => $ignore }, # temp. value / address of CALL instr.
+		{ name => "o0", type => $caller_save }, # param 1 / return value from callee
+		{ name => "o1", type => $caller_save }, # param 2
+		{ name => "o2", type => $caller_save }, # param 3
+		{ name => "o3", type => $caller_save }, # param 4
+		{ name => "o4", type => $caller_save }, # param 5
+		{ name => "o5", type => $caller_save }, # param 6
+		{ name => "sp", type => $ignore }, # our stackpointer
+		{ name => "o7", type => $ignore }, # temp. value / address of CALL instr.
 
 		# window's local registers
-		{ name => "l0", realname => "l0", type => 0 },
-		{ name => "l1", realname => "l1", type => 0 },
-		{ name => "l2", realname => "l2", type => 0 },
-		{ name => "l3", realname => "l3", type => 0 },
-		{ name => "l4", realname => "l4", type => 0 },
-		{ name => "l5", realname => "l5", type => 0 },
-		{ name => "l6", realname => "l6", type => 0 },
-		{ name => "l7", realname => "l7", type => 0 },
+		{ name => "l0", type => 0 },
+		{ name => "l1", type => 0 },
+		{ name => "l2", type => 0 },
+		{ name => "l3", type => 0 },
+		{ name => "l4", type => 0 },
+		{ name => "l5", type => 0 },
+		{ name => "l6", type => 0 },
+		{ name => "l7", type => 0 },
 
 		# window's in registers
-		{ name => "i0", realname => "i0", type => 0 }, # incoming param1 / return value to caller
-		{ name => "i1", realname => "i1", type => 0 }, # param 2
-		{ name => "i2", realname => "i2", type => 0 }, # param 3
-		{ name => "i3", realname => "i3", type => 0 }, # param 4
-		{ name => "i4", realname => "i4", type => 0 }, # param 5
-		{ name => "i5", realname => "i5", type => 0 }, # param 6
+		{ name => "i0", type => 0 }, # incoming param1 / return value to caller
+		{ name => "i1", type => 0 }, # param 2
+		{ name => "i2", type => 0 }, # param 3
+		{ name => "i3", type => 0 }, # param 4
+		{ name => "i4", type => 0 }, # param 5
+		{ name => "i5", type => 0 }, # param 6
 		{ name => "frame_pointer", realname => "fp", type => $ignore }, # our framepointer
-		{ name => "i7", realname => "i7", type => $ignore }, # return address - 8
+		{ name => "i7", type => $ignore }, # return address - 8
 		{ mode => $mode_gp }
 	],
-	flags => [
-		{ name => "y", realname => "y", type => $ignore },  # the multiply/divide state register
+	fp_flags => [
+		{ name => "fpflags", type => $ignore },
+		{ mode => $mode_fpflags, flags => "manual_ra" }
+	],
+	flags_class => [
+		{ name => "flags", type => $ignore },
 		{ mode => $mode_flags, flags => "manual_ra" }
+	],
+	mul_div_high_res => [
+		{ name => "y", type => $ignore },
+		{ mode => $mode_gp, flags => "manual_ra" }
 	],
 	# fp registers can be accessed any time
 	fp => [
@@ -353,6 +362,8 @@ Call => {
 Cmp => {
 	irn_flags    => [ "rematerializable", "modify_flags" ],
 	emit         => '. cmp %S1, %R2I',
+	reg_req      => { in => [ "gp", "gp" ], out => [ "flags" ] },
+	ins          => [ "left", "right" ],
 	mode         => $mode_flags,
 	constructors => \%cmp_operand_constructors,
 },
@@ -425,7 +436,7 @@ Xor => {
 },
 
 Mul => {
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "y" ] },
 	constructors => \%binop_operand_constructors,
 	emit      => '. mul %S1, %R2I, %D1',
 	mode      => $mode_gp,
@@ -437,13 +448,26 @@ Mulh => {
 	constructors => \%binop_operand_constructors,
 },
 
-Div => {
+# The div instructions are kinda hacky. Things to improve:
+# * Make high-value input explicitely. Either as a gp at first or ideally
+#   as an explicit y-register
+
+SDiv => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "none" ] },
+	ins       => [ "dividend_low", "divisor" ],
 	outs      => [ "res", "M" ],
 	constructors => \%binop_operand_constructors,
-	emit      => '. div %S1, %R2I, %D1',
+},
+
+UDiv => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "none" ] },
+	ins       => [ "dividend_low", "divisor" ],
+	outs      => [ "res", "M" ],
+	constructors => \%binop_operand_constructors,
 },
 
 Minus => {

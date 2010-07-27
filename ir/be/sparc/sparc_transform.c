@@ -407,8 +407,17 @@ static ir_node *gen_Mulh(ir_node *node)
 static ir_node *gen_Div(ir_node *node)
 {
 	ir_mode *mode = get_Div_resmode(node);
+	ir_node *res;
+
 	assert(!mode_is_float(mode));
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Div_reg, new_bd_sparc_Div_imm);
+	if (mode_is_signed(mode)) {
+		res = gen_helper_binop(node, 0, new_bd_sparc_SDiv_reg,
+		                       new_bd_sparc_SDiv_imm);
+	} else {
+		res = gen_helper_binop(node, 0, new_bd_sparc_UDiv_reg,
+		                       new_bd_sparc_UDiv_imm);
+	}
+	return res;
 }
 
 static ir_node *gen_Quot(ir_node *node)
@@ -758,23 +767,17 @@ static ir_node *gen_Cmp(ir_node *node)
 	ir_node  *op2      = get_Cmp_right(node);
 	ir_mode  *cmp_mode = get_irn_mode(op1);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *new_op1;
-	ir_node  *new_op2;
+	ir_node  *new_op1  = be_transform_node(op1);
+	ir_node  *new_op2  = be_transform_node(op2);
 
 	if (mode_is_float(cmp_mode)) {
 		panic("FloatCmp not implemented");
 	}
 
-	/*
-	if (get_mode_size_bits(cmp_mode) != 32) {
-		panic("CmpMode != 32bit not supported yet");
-	}
-	*/
-
 	assert(get_irn_mode(op2) == cmp_mode);
 
+#if 0
 	/* compare with 0 can be done with Tst */
-	/*
 	if (is_Const(op2) && tarval_is_null(get_Const_tarval(op2))) {
 		new_op1 = be_transform_node(op1);
 		return new_bd_sparc_Tst(dbgi, block, new_op1, false,
@@ -786,12 +789,10 @@ static ir_node *gen_Cmp(ir_node *node)
 		return new_bd_sparc_Tst(dbgi, block, new_op2, true,
 		                          is_unsigned);
 	}
-	*/
+#endif
 
 	/* integer compare */
-	new_op1 = be_transform_node(op1);
 	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
-	new_op2 = be_transform_node(op2);
 	new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
 	return new_bd_sparc_Cmp_reg(dbgi, block, new_op1, new_op2);
 }
@@ -1401,12 +1402,14 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *new_pred = be_transform_node(pred);
 	long      pn       = get_Proj_proj(node);
 
-	assert(is_sparc_Div(new_pred));
+	assert(is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred));
+	assert(pn_sparc_SDiv_res == pn_sparc_UDiv_res);
+	assert(pn_sparc_SDiv_M == pn_sparc_UDiv_M);
 	switch (pn) {
 	case pn_Div_res:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_Div_res);
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_res);
 	case pn_Div_M:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_Div_M);
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_M);
 	default:
 		break;
 	}
