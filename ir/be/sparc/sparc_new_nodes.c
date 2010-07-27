@@ -52,7 +52,8 @@ static bool has_symconst_attr(const ir_node *node)
 
 static bool has_load_store_attr(const ir_node *node)
 {
-	return is_sparc_Ld(node) || is_sparc_St(node);
+	return is_sparc_Ld(node) || is_sparc_St(node) || is_sparc_Ldf(node)
+	    || is_sparc_Stf(node);
 }
 
 static bool has_jmp_cond_attr(const ir_node *node)
