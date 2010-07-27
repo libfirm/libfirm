@@ -439,6 +439,11 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 					attr->shift_modifier);
 			}
 			break;
+		case ARM_SHF_REG:
+		case ARM_SHF_RRX:
+			break;
+		case ARM_SHF_INVALID:
+			panic("invalid shift");
 		}
 	}
 	if ((flags & (MATCH_COMMUTATIVE|MATCH_REVERSE)) && is_arm_Mov(new_op1)) {
@@ -446,7 +451,7 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 		int idx = flags & MATCH_REVERSE ? 1 : 0;
 
 		switch (attr->shift_modifier) {
-			ir_node *mov_op, *mov_sft;
+		ir_node *mov_op, *mov_sft;
 
 		case ARM_SHF_IMM:
 		case ARM_SHF_ASR_IMM:
@@ -471,6 +476,12 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 					attr->shift_modifier);
 			}
 			break;
+
+		case ARM_SHF_REG:
+		case ARM_SHF_RRX:
+			break;
+		case ARM_SHF_INVALID:
+			panic("invalid shift");
 		}
 	}
 	return factory->new_binop_reg(dbgi, block, new_op1, new_op2);
@@ -840,7 +851,7 @@ static ir_node *gen_Not(ir_node *node)
 		const arm_shifter_operand_t *attr = get_arm_shifter_operand_attr_const(new_op);
 
 		switch (attr->shift_modifier) {
-			ir_node *mov_op, *mov_sft;
+		ir_node *mov_op, *mov_sft;
 
 		case ARM_SHF_IMM:
 		case ARM_SHF_ASR_IMM:
@@ -859,6 +870,12 @@ static ir_node *gen_Not(ir_node *node)
 			mov_sft = get_irn_n(new_op, 1);
 			return new_bd_arm_Mvn_reg_shift_reg(dbgi, block, mov_op, mov_sft,
 				attr->shift_modifier);
+
+		case ARM_SHF_REG:
+		case ARM_SHF_RRX:
+			break;
+		case ARM_SHF_INVALID:
+			panic("invalid shift");
 		}
 	}
 
