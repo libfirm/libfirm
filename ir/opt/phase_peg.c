@@ -338,7 +338,6 @@ static void create_phi_extracts(ir_node *block)
 
 			/* When someone outside the loop accesses the phi node, construct
 			 * an extract node to get the appropriate value. */
-			dump_ir_graph(get_irn_irg(block), "test");
 			if (!is_in_loop(src, loop)) {
 
 				ir_mode  *mode      = get_irn_mode(phi);
