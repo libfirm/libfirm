@@ -257,6 +257,8 @@ static ir_node **get_incoming_values(ir_node *block)
 
 	/* Count phi nodes in this block. */
 	phi = get_Block_phis(block);
+	num_phis = 0;
+
 	while (phi != NULL) {
 		num_phis++;
 		phi = get_Phi_next(phi);
