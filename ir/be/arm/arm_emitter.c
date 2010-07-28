@@ -220,7 +220,6 @@ void arm_emit_store_mode(const ir_node *node)
 	}
 }
 
-
 static void emit_shf_mod_name(arm_shift_modifier_t mod)
 {
 	switch (mod) {
@@ -724,29 +723,6 @@ static void emit_arm_SwitchJmp(const ir_node *irn)
 	xfree(projs);
 }
 
-
-static void arm_emit_entity(ir_entity *entity)
-{
-	be_emit_ident(get_entity_ld_ident(entity));
-}
-
-static void emit_be_Call(const ir_node *irn)
-{
-	ir_entity *entity = be_Call_get_entity(irn);
-
-	if (entity != NULL) {
-		be_emit_cstring("\tbl ");
-		arm_emit_entity(entity);
-		be_emit_finish_line_gas(irn);
-	} else {
-		be_emit_cstring("\tmov lr, pc");
-		be_emit_finish_line_gas(irn);
-		be_emit_cstring("\tmov pc, ");
-		arm_emit_source_register(irn, be_pos_Call_ptr);
-		be_emit_finish_line_gas(irn);
-	}
-}
-
 /** Emit an IncSP node */
 static void emit_be_IncSP(const ir_node *irn)
 {
@@ -936,7 +912,6 @@ static void arm_register_emitters(void)
 	set_emitter(op_arm_Jmp,       emit_arm_Jmp);
 	set_emitter(op_arm_SwitchJmp, emit_arm_SwitchJmp);
 	set_emitter(op_arm_SymConst,  emit_arm_SymConst);
-	set_emitter(op_be_Call,       emit_be_Call);
 	set_emitter(op_be_Copy,       emit_be_Copy);
 	set_emitter(op_be_CopyKeep,   emit_be_Copy);
 	set_emitter(op_be_IncSP,      emit_be_IncSP);
