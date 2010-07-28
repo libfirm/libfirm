@@ -364,12 +364,6 @@ static inline int _is_SymConst_addr_ent(const ir_node *node)
 	return is_SymConst(node) && get_SymConst_kind(node) == symconst_addr_ent;
 }
 
-static inline int _is_no_Block(const ir_node *node)
-{
-	assert(node && _is_ir_node(node));
-	return (_get_irn_op(node) != op_Block);
-}
-
 static inline int _get_Block_n_cfgpreds(const ir_node *node)
 {
 	assert(_is_Block(node));
@@ -640,7 +634,6 @@ void init_irnode(void);
 #define is_Phi(node)                          _is_Phi(node)
 #define is_strictConv(node)                   _is_strictConv(node)
 #define is_SymConst_addr_ent(node)            _is_SymConst_addr_ent(node)
-#define is_no_Block(node)                     _is_no_Block(node)
 #define get_Block_n_cfgpreds(node)            _get_Block_n_cfgpreds(node)
 #define get_Block_cfgpred(node, pos)          _get_Block_cfgpred(node, pos)
 #define get_Block_cfgpred_block(node, pos)    _get_Block_cfgpred_block(node, pos)

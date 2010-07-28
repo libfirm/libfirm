@@ -589,7 +589,7 @@ static void wq_walker(ir_node *n, void *env)
 	walker_t *wenv = env;
 
 	set_irn_link(n, NULL);
-	if (is_no_Block(n)) {
+	if (!is_Block(n)) {
 		ir_node *blk = get_nodes_block(n);
 
 		if (is_Block_dead(blk) || get_Block_dom_depth(blk) < 0) {

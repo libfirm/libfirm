@@ -6544,7 +6544,7 @@ static inline ir_node *identify_cons(pset *value_table, ir_node *n)
 /* Add a node to the identities value table. */
 void add_identities(pset *value_table, ir_node *node)
 {
-	if (get_opt_cse() && is_no_Block(node))
+	if (get_opt_cse() && !is_Block(node))
 		identify_remember(value_table, node);
 }  /* add_identities */
 

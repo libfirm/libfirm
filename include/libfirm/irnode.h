@@ -1005,8 +1005,6 @@ FIRM_API int      is_Id(const ir_node *node);
 FIRM_API int      is_Tuple(const ir_node *node);
 /** Returns true if node is a Bound node. */
 FIRM_API int      is_Bound(const ir_node *node);
-/** Returns true if the node is not a Block */
-FIRM_API int      is_no_Block(const ir_node *node);
 /** Returns true if the node is a Block */
 FIRM_API int      is_Block(const ir_node *node);
 /** Returns true if node is an Unknown node. */

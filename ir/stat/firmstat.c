@@ -843,7 +843,7 @@ static void stat_update_call(ir_node *call, graph_entry_t *graph)
 		for (; curr != block && get_Block_dom_depth(curr) > depth;) {
 			curr = get_Block_idom(curr);
 
-			if (! curr || is_no_Block(curr))
+			if (! curr || !is_Block(curr))
 				break;
 		}  /* for */
 

@@ -1344,7 +1344,7 @@ static void dump_node(FILE *F, ir_node *n)
 static void dump_ir_block_edge(FILE *F, ir_node *n)
 {
 	if (get_opt_dump_const_local() && is_constlike_node(n)) return;
-	if (is_no_Block(n)) {
+	if (!is_Block(n)) {
 		ir_node *block = get_nodes_block(n);
 
 		if (get_opt_dump_const_local() && is_constlike_node(block)) {

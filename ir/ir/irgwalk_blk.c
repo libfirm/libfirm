@@ -324,7 +324,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 				collect_walk(pred, env);
 
 				/* BEWARE: predecessors of End nodes might be blocks */
-				if (is_no_Block(pred)) {
+				if (!is_Block(pred)) {
 					ir_node *blk  = get_nodes_block(pred);
 
 					/*
@@ -362,7 +362,7 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
 			ir_node *pred = _get_walk_irn_n(env, node, i);
 
 			/* BEWARE: predecessors of End nodes might be blocks */
-			if (is_no_Block(pred)) {
+			if (!is_Block(pred)) {
 				ir_node *blk  = get_nodes_block(pred);
 
 				if (!irn_visited(pred)) {

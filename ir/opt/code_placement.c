@@ -78,7 +78,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 		int depth           = 0;
 		ir_node *b          = NULL;   /* The block to place this node in */
 
-		assert(is_no_Block(n));
+		assert(!is_Block(n));
 
 		if (is_irn_start_block_placed(n)) {
 			/* These nodes will not be placed by the loop below. */

@@ -719,7 +719,7 @@ static void eliminate(ir_node *irn, void *ctx)
 {
 	pre_env *env = ctx;
 
-	if (is_no_Block(irn)) {
+	if (!is_Block(irn)) {
 		ir_node *block = get_nodes_block(irn);
 		block_info *bl = get_block_info(block);
 		ir_node *value = lookup(irn);

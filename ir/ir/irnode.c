@@ -1703,11 +1703,6 @@ int (is_strictConv)(const ir_node *node)
 	return _is_strictConv(node);
 }
 
-int (is_no_Block)(const ir_node *node)
-{
-	return _is_no_Block(node);
-}
-
 /* Returns true if node is a SymConst node with kind symconst_addr_ent. */
 int (is_SymConst_addr_ent)(const ir_node *node)
 {

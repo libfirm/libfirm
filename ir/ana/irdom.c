@@ -713,7 +713,7 @@ void compute_doms(ir_graph *irg)
 				ir_node *pred = get_irn_n(end, j);
 				tmp_dom_info *u;
 
-				if (is_no_Block(pred) || get_Block_dom_pre_num(pred) == -1)
+				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
 					continue;	/* control-dead */
 
 				u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);

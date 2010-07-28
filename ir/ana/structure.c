@@ -113,7 +113,7 @@ void set_block_region(ir_node *block, ir_region *reg)
  */
 ir_region *get_irn_region(ir_node *n)
 {
-	if (is_no_Block(n))
+	if (!is_Block(n))
 		n = get_nodes_block(n);
 	return get_block_region(n);
 }

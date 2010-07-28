@@ -2600,7 +2600,7 @@ static void compute(node_t *node)
 		return;
 #endif
 
-	if (is_no_Block(irn)) {
+	if (!is_Block(irn)) {
 		/* for pinned nodes, check its control input */
 		if (get_irn_pinned(skip_Proj(irn)) == op_pin_state_pinned) {
 			node_t *block = get_irn_node(get_nodes_block(irn));

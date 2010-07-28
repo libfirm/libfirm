@@ -159,7 +159,7 @@ static int firm_emit(lc_appendable_t *app,
 	case k_ir_node:
 		switch (occ->conversion) {
 		case 'B':
-			block = is_no_Block(X) ? get_nodes_block(X) : X;
+			block = !is_Block(X) ? get_nodes_block(X) : X;
 			snprintf(buf, sizeof(buf), "%s%s %s", A("irn"),
 			         get_irn_opname(block), get_mode_name(get_irn_mode(block)));
 			snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(block));
