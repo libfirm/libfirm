@@ -134,6 +134,12 @@ def format_opindex(node):
 		return node.op_index
 	return "-1"
 
+keywords = frozenset([ "true", "false" ])
+def format_escape_keywords(word):
+	if word in keywords:
+		return word + "_"
+	return word
+
 def filter_isnot(list, flag):
 	return filter(lambda x: not hasattr(x, flag), list)
 
@@ -154,24 +160,25 @@ def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
 env = Environment()
-env.filters['parameterlist']  = format_parameterlist
-env.filters['nodearguments']  = format_nodearguments
-env.filters['nodeparameters'] = format_nodeparameters
-env.filters['blockparameter'] = format_blockparameter
-env.filters['blockargument']  = format_blockargument
-env.filters['irgassign']      = format_irgassign
-env.filters['curblock']       = format_curblock
-env.filters['insdecl']        = format_insdecl
-env.filters['arity_and_ins']  = format_arity_and_ins
-env.filters['arity']          = format_arity
-env.filters['pinned']         = format_pinned
-env.filters['flags']          = format_flags
-env.filters['attr_size']      = format_attr_size
-env.filters['opindex']        = format_opindex
-env.filters['isnot']          = filter_isnot
-env.filters['hasnot']         = filter_hasnot
-env.filters['arguments']      = format_arguments
-env.filters['parameters']     = format_parameters
+env.filters['parameterlist']   = format_parameterlist
+env.filters['nodearguments']   = format_nodearguments
+env.filters['nodeparameters']  = format_nodeparameters
+env.filters['blockparameter']  = format_blockparameter
+env.filters['blockargument']   = format_blockargument
+env.filters['irgassign']       = format_irgassign
+env.filters['curblock']        = format_curblock
+env.filters['insdecl']         = format_insdecl
+env.filters['arity_and_ins']   = format_arity_and_ins
+env.filters['arity']           = format_arity
+env.filters['pinned']          = format_pinned
+env.filters['flags']           = format_flags
+env.filters['attr_size']       = format_attr_size
+env.filters['opindex']         = format_opindex
+env.filters['isnot']           = filter_isnot
+env.filters['hasnot']          = filter_hasnot
+env.filters['arguments']       = format_arguments
+env.filters['parameters']      = format_parameters
+env.filters['escape_keywords'] = format_escape_keywords
 
 def prepare_attr(attr):
 	if "init" in attr:
@@ -405,10 +412,10 @@ ir_node *(get_{{node.name}}_{{in}})(const ir_node *node)
 	return get_irn_n(node, {{node.ins.index(in)}});
 }
 
-void (set_{{node.name}}_{{in}})(ir_node *node, ir_node *{{in}})
+void (set_{{node.name}}_{{in}})(ir_node *node, ir_node *{{in|escape_keywords}})
 {
 	assert(is_{{node.name}}(node));
-	set_irn_n(node, {{node.ins.index(in)}}, {{in}});
+	set_irn_n(node, {{node.ins.index(in)}}, {{in|escape_keywords}});
 }
 {% endfor %}
 {% endfor %}
@@ -448,8 +455,17 @@ void finish_op(void)
 
 ''')
 
-projnumbers_h_template = env.from_string('''
+nodeops_h_template = env.from_string('''
 /* Warning: automatically generated code */
+#ifndef FIRM_IR_NODEOPS_H
+#define FIRM_IR_NODEOPS_H
+
+#include "firm_types.h"
+
+/**
+ * @addtogroup ir_node
+ * @{
+ */
 
 {% for node in nodes -%}
 {% if node.outs %}
@@ -466,6 +482,25 @@ typedef enum {
 {% endif %}
 {%- endfor %}
 
+{% for node in nodes %}
+/** Return true of the node is a {{node.name}} node. */
+FIRM_API int is_{{node.name}}(const ir_node *node);
+{%- endfor %}
+
+{% for node in nodes %}
+{% for in in node.ins -%}
+FIRM_API ir_node *get_{{node.name}}_{{in}}(const ir_node *node);
+void set_{{node.name}}_{{in}}(ir_node *node, ir_node *{{in|escape_keywords}});
+{% endfor -%}
+{% for attr in node.attrs|hasnot("noprop") -%}
+FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
+FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{attr.name}});
+{% endfor -%}
+{% endfor -%}
+
+/** @} */
+
+#endif
 ''')
 
 opcodes_h_template = env.from_string('''
@@ -569,12 +604,12 @@ def main(argv):
 	file.write(irop_template.render(nodes = real_nodes))
 	file.close()
 
-	file = open(gendir2 + "/projnumbers.h", "w")
-	file.write(projnumbers_h_template.render(nodes = real_nodes))
-	file.close()
-
 	file = open(gendir2 + "/opcodes.h", "w")
 	file.write(opcodes_h_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir2 + "/nodeops.h", "w")
+	file.write(nodeops_h_template.render(nodes = real_nodes))
 	file.close()
 
 main(sys.argv)

@@ -100,6 +100,15 @@ typedef enum {
 } op_pin_state;
 
 /**
+ * A type to express conditional jump predictions.
+ */
+typedef enum {
+	COND_JMP_PRED_NONE,        /**< No jump prediction. Default. */
+	COND_JMP_PRED_TRUE,        /**< The True case is predicted. */
+	COND_JMP_PRED_FALSE        /**< The False case is predicted. */
+} cond_jmp_predicate;
+
+/**
  * Additional method type properties:
  * Tell about special properties of a method type. Some
  * of these may be discovered by analyses.
@@ -193,6 +202,16 @@ typedef enum {
 	ir_bk_outport,                /**< out port */
 	ir_bk_inner_trampoline,       /**< address of a trampoline for GCC inner functions */
 } ir_builtin_kind;
+
+/**
+ * Some projection numbers must be always equal to support automatic phi construction
+ */
+enum pn_generic {
+	pn_Generic_M         = 0,  /**< The memory result. */
+	pn_Generic_X_regular = 1,  /**< Execution result if no exception occurred. */
+	pn_Generic_X_except  = 2,  /**< The control flow result branching to the exception handler */
+	pn_Generic_other     = 3   /**< First free projection number */
+};
 
 #include "end.h"
 
