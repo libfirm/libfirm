@@ -317,9 +317,10 @@ static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 
 static void create_phi_extracts(ir_node *block)
 {
-	int      i;
-	ir_node *phi;
-	ir_loop *loop = get_irn_loop(block);
+	int       i;
+	ir_node  *phi;
+	ir_loop  *loop = get_irn_loop(block);
+	ir_graph *irg  = get_irn_irg(block);
 
 	/* No extracts needed when accessing phis outside of loops. */
 	if (!loop) return;
@@ -332,8 +333,12 @@ static void create_phi_extracts(ir_node *block)
 		foreach_out_edge_safe(phi, edge, tmp) {
 			ir_node *src = get_edge_src_irn(edge);
 
+			/* End processes no values. These are keep-alive edges. */
+			if (src == get_irg_end(irg)) continue;
+
 			/* When someone outside the loop accesses the phi node, construct
 			 * an extract node to get the appropriate value. */
+			dump_ir_graph(get_irn_irg(block), "test");
 			if (!is_in_loop(src, loop)) {
 
 				ir_mode  *mode      = get_irn_mode(phi);
