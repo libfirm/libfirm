@@ -66,7 +66,7 @@ typedef void (*ir_prog_dump_func)(FILE *out);
  * at @p mime_type.
  * The file is stored into the directory specified by #ir_set_dump_path
  *
- * @param func       Dumper. Usualle one of #dump_callgraph, #dump_type_graph,
+ * @param func       Dumper. Usualle one of #dump_callgraph, #dump_typegraph,
  *                   #dump_class_hierarchy, #dump_types_as_text,
  *                   #dump_globals_as_text
  * @param suffix     Suffix to append to the name
@@ -86,7 +86,7 @@ typedef void (*ir_graph_dump_func)(FILE *out, ir_graph *graph);
  * The file is stored into the directory specified by #ir_set_dump_path
  *
  * @param func      Dumper. Usually one of #dump_cfg, #dump_loop_tree,
- *                  #dump_graph_to_file
+ *                  #dump_ir_graph_file
  * @param graph     the graph to dump
  * @param suffix    suffix
  */
@@ -126,7 +126,6 @@ FIRM_API int ir_should_dump(const char *name);
  * Creates an ir_prog pass for dump_all_ir_graphs().
  *
  * @param name          the name of this pass or NULL
- * @param dump_graph    The dumper to be used for dumping.
  * @param suffix        A suffix for the file name.
  *
  * @return  the newly created ir_prog pass
@@ -185,7 +184,6 @@ FIRM_API void dump_typegraph(FILE *out);
  * Dumps the class hierarchy with or without entities.
  *
  * @param out         Output stream
- * @param entities    Flag whether to dump the entities.
  *
  * Does not dump the global type.
  * Dumps a node for all classes and the sub/supertype relations.  If
@@ -225,7 +223,6 @@ FIRM_API void dump_types_as_text(FILE *out);
  * Dumps all global variables as text.
  *
  * @param out         Output stream
- * @param verbosity   verbosity flag
  *
  * Dumps a text representation of the entities in the global type.
  */
@@ -235,7 +232,7 @@ FIRM_API void dump_globals_as_text(FILE *out);
  * Dumps the firm nodes in the sub-loop-tree of loop to a vcg file.
  *
  * @param out     Output stream
- * @param l       Dump the loop tree for this loop.
+ * @param loop    Dump the loop tree for this loop.
  */
 FIRM_API void dump_loop(FILE *out, ir_loop *loop);
 
