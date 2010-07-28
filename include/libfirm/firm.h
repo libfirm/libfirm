@@ -104,7 +104,7 @@
 #include "irprog.h"
 #include "irsimpletype.h"
 #include "irtypeinfo.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "lowering.h"
 #include "rta.h"
 #include "seqnumbers.h"

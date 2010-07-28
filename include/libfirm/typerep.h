@@ -1019,9 +1019,9 @@ FIRM_API ir_class_cast_state get_irp_class_cast_state(void);
 FIRM_API void verify_irg_class_cast_state(ir_graph *irg);
 
 /**
- * possible trvrfy() error codes
+ * possible trverify() error codes
  */
-enum trvrfy_error_codes {
+enum trverify_error_codes {
 	no_error = 0,                      /**< no error */
 	error_ent_not_cont,                /**< overwritten entity not in superclass */
 	error_null_mem,                    /**< compound contains NULL member */
@@ -1048,7 +1048,7 @@ FIRM_API int check_type(ir_type *tp);
  *
  * @return
  *  0   if no error encountered
- *  != 0    a trvrfy_error_codes code
+ *  != 0    a trverify_error_codes code
  */
 FIRM_API int check_entity(ir_entity *ent);
 
@@ -1064,7 +1064,7 @@ FIRM_API int check_entity(ir_entity *ent);
  *    0 if graph is correct
  *    else error code.
  */
-FIRM_API int tr_vrfy(void);
+FIRM_API int tr_verify(void);
 
 /**
  * @page type   representation of types

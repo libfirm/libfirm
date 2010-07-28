@@ -30,7 +30,6 @@
 #include "irmode_t.h"
 #include "irgmod.h"
 #include "iredges.h"
-#include "irvrfy.h"
 #include "ircons.h"
 #include "irprintf.h"
 #include "dbginfo.h"

@@ -32,7 +32,7 @@
 #include "irnode_t.h"
 #include "irmode_t.h"
 #include "ircons_t.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "irop_t.h"
 #include "iropt_t.h"
 #include "irgmod.h"
@@ -46,123 +46,15 @@
 
 /* when we need verifying */
 #ifdef NDEBUG
-# define IRN_VRFY_IRG(res, irg)
+# define IRN_VERIFY_IRG(res, irg)
 #else
-# define IRN_VRFY_IRG(res, irg)  irn_vrfy_irg(res, irg)
+# define IRN_VERIFY_IRG(res, irg)  irn_verify_irg(res, irg)
 #endif /* NDEBUG */
 
 /**
  * Language dependent variable initialization callback.
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
-
-/* creates a bd constructor for a binop */
-#define NEW_BD_BINOP(instr)                                     \
-static ir_node *                                                \
-new_bd_##instr(dbg_info *db, ir_node *block,                    \
-       ir_node *op1, ir_node *op2, ir_mode *mode)               \
-{                                                               \
-  ir_node  *in[2];                                              \
-  ir_node  *res;                                                \
-  ir_graph *irg = current_ir_graph;                             \
-  in[0] = op1;                                                  \
-  in[1] = op2;                                                  \
-  res = new_ir_node(db, irg, block, op_##instr, mode, 2, in);   \
-  res = optimize_node(res);                                     \
-  IRN_VRFY_IRG(res, irg);                                       \
-  return res;                                                   \
-}
-
-/* creates a bd constructor for an unop */
-#define NEW_BD_UNOP(instr)                                      \
-static ir_node *                                                \
-new_bd_##instr(dbg_info *db, ir_node *block,                    \
-              ir_node *op, ir_mode *mode)                       \
-{                                                               \
-  ir_node  *res;                                                \
-  ir_graph *irg = current_ir_graph;                             \
-  res = new_ir_node(db, irg, block, op_##instr, mode, 1, &op);  \
-  res = optimize_node(res);                                     \
-  IRN_VRFY_IRG(res, irg);                                       \
-  return res;                                                   \
-}
-
-/* creates a bd constructor for an divop */
-#define NEW_BD_DIVOP(instr)                                     \
-static ir_node *                                                \
-new_bd_##instr(dbg_info *db, ir_node *block,                    \
-            ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) \
-{                                                               \
-  ir_node  *in[3];                                              \
-  ir_node  *res;                                                \
-  ir_graph *irg = current_ir_graph;                             \
-  in[0] = memop;                                                \
-  in[1] = op1;                                                  \
-  in[2] = op2;                                                  \
-  res = new_ir_node(db, irg, block, op_##instr, mode_T, 3, in); \
-  res->attr.divmod.exc.pin_state = state;                       \
-  res->attr.divmod.resmode = mode;                              \
-  res->attr.divmod.no_remainder = 0;                            \
-  res = optimize_node(res);                                     \
-  IRN_VRFY_IRG(res, irg);                                       \
-  return res;                                                   \
-}
-
-/* creates a rd constructor for a binop */
-#define NEW_RD_BINOP(instr)                                     \
-ir_node *                                                       \
-new_rd_##instr(dbg_info *db, ir_graph *irg, ir_node *block,     \
-       ir_node *op1, ir_node *op2, ir_mode *mode)               \
-{                                                               \
-  ir_node  *res;                                                \
-  ir_graph *rem = current_ir_graph;                             \
-  current_ir_graph = irg;                                       \
-  res = new_bd_##instr(db, block, op1, op2, mode);              \
-  current_ir_graph = rem;                                       \
-  return res;                                                   \
-}
-
-/* creates a rd constructor for an unop */
-#define NEW_RD_UNOP(instr)                                      \
-ir_node *                                                       \
-new_rd_##instr(dbg_info *db, ir_graph *irg, ir_node *block,     \
-              ir_node *op, ir_mode *mode)                       \
-{                                                               \
-  ir_node  *res;                                                \
-  ir_graph *rem = current_ir_graph;                             \
-  current_ir_graph = irg;                                       \
-  res = new_bd_##instr(db, block, op, mode);                    \
-  current_ir_graph = rem;                                       \
-  return res;                                                   \
-}
-
-/* creates a rd constructor for an divop */
-#define NEW_RD_DIVOP(instr)                                     \
-ir_node *                                                       \
-new_rd_##instr(dbg_info *db, ir_graph *irg, ir_node *block,     \
-            ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state) \
-{                                                               \
-  ir_node  *res;                                                \
-  ir_graph *rem = current_ir_graph;                             \
-  current_ir_graph = irg;                                       \
-  res = new_bd_##instr(db, block, memop, op1, op2, mode, state);\
-  current_ir_graph = rem;                                       \
-  return res;                                                   \
-}
-
-/* creates a d constructor for an binop */
-#define NEW_D_BINOP(instr)                                                    \
-ir_node *                                                                     \
-new_d_##instr(dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode) {      \
-  return new_bd_##instr(db, current_ir_graph->current_block, op1, op2, mode); \
-}
-
-/* creates a d constructor for an unop */
-#define NEW_D_UNOP(instr)                                                     \
-ir_node *                                                                     \
-new_d_##instr(dbg_info *db, ir_node *op, ir_mode *mode) {                     \
-  return new_bd_##instr(db, current_ir_graph->current_block, op, mode);       \
-}
 
 #include "gen_ir_cons.c.inl"
 
@@ -173,7 +65,7 @@ static ir_node *new_bd_Start(dbg_info *db, ir_node *block)
 
 	res = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
 
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Start */
 
@@ -184,7 +76,7 @@ static ir_node *new_bd_End(dbg_info *db, ir_node *block)
 
 	res = new_ir_node(db, irg, block, op_End, mode_X, -1, NULL);
 
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_bd_End */
 
@@ -215,7 +107,7 @@ static ir_node *new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in
 		}
 
 	if (!has_unknown) res = optimize_node(res);
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
@@ -234,7 +126,7 @@ static ir_node *new_bd_Const_type(dbg_info *db, tarval *con, ir_type *tp)
 	set_Const_type(res, tp);  /* Call method because of complex assertion. */
 	res = optimize_node (res);
 	assert(get_Const_type(res) == tp);
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 
 	return res;
 }  /* new_bd_Const_type */
@@ -286,7 +178,7 @@ static ir_node *new_bd_Sel(dbg_info *db, ir_node *block, ir_node *store,
 	res = new_ir_node(db, irg, block, op_Sel, mode, r_arity, r_in);
 	res->attr.sel.entity = ent;
 	res = optimize_node(res);
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Sel */
 
@@ -302,7 +194,7 @@ static ir_node *new_bd_SymConst_type(dbg_info *db, ir_node *block,
 	res->attr.symc.tp   = tp;
 
 	res = optimize_node(res);
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_bd_SymConst_type */
 
@@ -313,7 +205,7 @@ static ir_node *new_bd_Sync(dbg_info *db, ir_node *block)
 
 	res = new_ir_node(db, irg, block, op_Sync, mode_M, -1, NULL);
 	/* no need to call optimize node here, Sync are always created with no predecessors */
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_bd_Sync */
 
@@ -339,7 +231,7 @@ static ir_node *new_bd_ASM(dbg_info *db, ir_node *block, int arity,
 	memcpy(res->attr.assem.clobbers, clobber, sizeof(clobber[0]) * n_clobber);
 
 	res = optimize_node(res);
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_bd_ASM */
 
@@ -593,7 +485,7 @@ ir_node *new_d_Start(dbg_info *db)
 	                  op_Start, mode_T, 0, NULL);
 
 	res = optimize_node(res);
-	IRN_VRFY_IRG(res, current_ir_graph);
+	IRN_VERIFY_IRG(res, current_ir_graph);
 	return res;
 }  /* new_d_Start */
 
@@ -603,7 +495,7 @@ ir_node *new_d_End(dbg_info *db)
 	res = new_ir_node(db, current_ir_graph,  current_ir_graph->current_block,
 	                  op_End, mode_X, -1, NULL);
 	res = optimize_node(res);
-	IRN_VRFY_IRG(res, current_ir_graph);
+	IRN_VERIFY_IRG(res, current_ir_graph);
 
 	return res;
 }  /* new_d_End */
@@ -640,7 +532,7 @@ static inline ir_node *new_rd_Phi0(ir_graph *irg, ir_node *block, ir_mode *mode)
 	ir_node *res;
 
 	res = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	return res;
 }  /* new_rd_Phi0 */
 
@@ -713,7 +605,7 @@ static inline ir_node *new_rd_Phi_in(ir_graph *irg, ir_node *block,
 		}
 	} else {
 		res = optimize_node(res);  /* This is necessary to add the node to the hash table for cse. */
-		IRN_VRFY_IRG(res, irg);
+		IRN_VERIFY_IRG(res, irg);
 		/* Memory Phis in endless loops must be kept alive.
 		   As we can't distinguish these easily we keep all of them alive. */
 		if (is_Phi(res) && mode == mode_M)
@@ -1120,7 +1012,7 @@ void mature_immBlock(ir_node *block)
 		   nodes refer to the unoptimized node.
 		   We can call optimize_in_place_2(), as global cse has no effect on blocks. */
 		block = optimize_in_place_2(block);
-		IRN_VRFY_IRG(block, irg);
+		IRN_VERIFY_IRG(block, irg);
 	}
 }  /* mature_immBlock */
 
@@ -1244,7 +1136,7 @@ ir_node *new_d_immBlock(dbg_info *db)
 	memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
 
 	/* Immature block may not be optimized! */
-	IRN_VRFY_IRG(res, current_ir_graph);
+	IRN_VERIFY_IRG(res, current_ir_graph);
 
 	return res;
 }  /* new_d_immBlock */

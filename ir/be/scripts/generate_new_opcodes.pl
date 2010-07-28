@@ -465,7 +465,7 @@ EOF
 	$temp .= <<EOF;
 	/* optimize node */
 	res = optimize_node(res);
-	irn_vrfy_irg(res, current_ir_graph);
+	irn_verify_irg(res, current_ir_graph);
 
 	return res;
 EOF
@@ -704,7 +704,9 @@ push(@obst_enum_op, "\n} $arch\_opcodes;\n\n");
 
 open(OUT, ">$target_c") || die("Fatal error: Could not open $target_c, reason: $!\n");
 
-print OUT "#include \"gen_$arch\_regalloc_if.h\"\n\n";
+print OUT "#include \"gen_$arch\_regalloc_if.h\"\n";
+print OUT "#include \"irverify_t.h\"\n";
+print OUT "\n";
 print OUT @obst_cmp_attr;
 print OUT "\n";
 print OUT @obst_opvar;

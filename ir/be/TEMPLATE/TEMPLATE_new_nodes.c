@@ -35,7 +35,6 @@
 #include "ircons_t.h"
 #include "iropt_t.h"
 #include "irop.h"
-#include "irvrfy_t.h"
 #include "irprintf.h"
 #include "xmalloc.h"
 
@@ -53,7 +52,7 @@
  */
 static void TEMPLATE_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
-  	ir_mode *mode = NULL;
+	ir_mode *mode = NULL;
 
 	switch (reason) {
 	case dump_node_opcode_txt:

@@ -297,7 +297,7 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
  * Verify the edge list of a node, ie. ensure it's a loop:
  * head -> e_1 -> ... -> e_n -> head
  */
-static inline void vrfy_list_head(ir_node *irn, ir_edge_kind_t kind)
+static inline void verify_list_head(ir_node *irn, ir_edge_kind_t kind)
 {
 	int                    err       = 0;
 	int                    num       = 0;
@@ -455,9 +455,9 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	/* verify list heads */
 	if (edges_dbg) {
 		if (tgt)
-			vrfy_list_head(tgt, kind);
+			verify_list_head(tgt, kind);
 		if (old_tgt)
-			vrfy_list_head(old_tgt, kind);
+			verify_list_head(old_tgt, kind);
 	}
 #endif
 
@@ -751,7 +751,7 @@ static void verify_list_presence(ir_node *irn, void *data)
 	bitset_set(w->reachable, get_irn_idx(irn));
 
 	/* check list heads */
-	vrfy_list_head(irn, w->kind);
+	verify_list_head(irn, w->kind);
 
 	foreach_out_edge_kind(irn, e, w->kind) {
 		ir_node *tgt;

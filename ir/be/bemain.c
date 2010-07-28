@@ -43,7 +43,7 @@
 #include "iredges_t.h"
 #include "irloop_t.h"
 #include "irtools.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "irprintf.h"
 #include "iroptimize.h"
 #include "firmstat.h"
@@ -88,7 +88,7 @@ static be_options_t be_options = {
 	0,                                 /* try to omit leaf frame pointer */
 	0,                                 /* create PIC code */
 	0,                                 /* create gprof compatible profiling code */
-	BE_VRFY_WARN,                      /* verification level: warn */
+	BE_VERIFY_WARN,                    /* verification level: warn */
 	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"linux",                           /* target OS name */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
@@ -118,10 +118,10 @@ static const lc_opt_enum_mask_items_t dump_items[] = {
 };
 
 /* verify options. */
-static const lc_opt_enum_int_items_t vrfy_items[] = {
-	{ "off",    BE_VRFY_OFF    },
-	{ "warn",   BE_VRFY_WARN   },
-	{ "assert", BE_VRFY_ASSERT },
+static const lc_opt_enum_int_items_t verify_items[] = {
+	{ "off",    BE_VERIFY_OFF    },
+	{ "warn",   BE_VERIFY_WARN   },
+	{ "assert", BE_VERIFY_ASSERT },
 	{ NULL,     0 }
 };
 
@@ -138,8 +138,8 @@ static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
 
-static lc_opt_enum_int_var_t vrfy_var = {
-	&be_options.vrfy_option, vrfy_items
+static lc_opt_enum_int_var_t verify_var = {
+	&be_options.verify_option, verify_items
 };
 
 static lc_opt_enum_int_var_t sched_var = {
@@ -153,7 +153,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("omitleaffp", "omit frame pointer in leaf routines",                 &be_options.omit_leaf_fp),
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
 	LC_OPT_ENT_BOOL     ("gprof",      "create gprof profiling code",                         &be_options.gprof),
-	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &vrfy_var),
+	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
 	LC_OPT_ENT_ENUM_PTR ("sched",      "select a scheduler",                                  &sched_var),
@@ -355,11 +355,11 @@ static const backend_params be_params = {
 };
 
 /* Perform schedule verification if requested. */
-static void be_sched_vrfy(ir_graph *irg, int vrfy_opt)
+static void be_sched_verify(ir_graph *irg, int verify_opt)
 {
-	if (vrfy_opt == BE_VRFY_WARN) {
+	if (verify_opt == BE_VERIFY_WARN) {
 		be_verify_schedule(irg);
-	} else if (vrfy_opt == BE_VRFY_ASSERT) {
+	} else if (verify_opt == BE_VERIFY_ASSERT) {
 		assert(be_verify_schedule(irg) && "Schedule verification failed.");
 	}
 }
@@ -616,11 +616,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* Verify the initial graph */
 		be_timer_push(T_VERIFY);
-		if (be_options.vrfy_option == BE_VRFY_WARN) {
-			irg_verify(irg, VRFY_ENFORCE_SSA);
+		if (be_options.verify_option == BE_VERIFY_WARN) {
+			irg_verify(irg, VERIFY_ENFORCE_SSA);
 			be_check_dominance(irg);
-		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
-			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
+			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 		be_timer_pop(T_VERIFY);
@@ -659,9 +659,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_PREPARED, irg, "before-code-selection");
 
-		if (be_options.vrfy_option == BE_VRFY_WARN) {
+		if (be_options.verify_option == BE_VERIFY_WARN) {
 			be_check_dominance(irg);
-		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
@@ -670,9 +670,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		arch_code_generator_prepare_graph(birg->cg);
 		be_timer_pop(T_CODEGEN);
 
-		if (be_options.vrfy_option == BE_VRFY_WARN) {
+		if (be_options.verify_option == BE_VERIFY_WARN) {
 			be_check_dominance(irg);
-		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
+		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
@@ -714,7 +714,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
-		be_sched_vrfy(irg, be_options.vrfy_option);
+		be_sched_verify(irg, be_options.verify_option);
 		be_timer_pop(T_VERIFY);
 
 		/* introduce patterns to assure constraints */
@@ -746,7 +746,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule */
 		be_timer_push(T_VERIFY);
-		be_sched_vrfy(irg, be_options.vrfy_option);
+		be_sched_verify(irg, be_options.verify_option);
 		be_timer_pop(T_VERIFY);
 
 		stat_ev_if {
@@ -792,13 +792,13 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* check schedule and register allocation */
 		be_timer_push(T_VERIFY);
-		if (be_options.vrfy_option == BE_VRFY_WARN) {
-			irg_verify(irg, VRFY_ENFORCE_SSA);
+		if (be_options.verify_option == BE_VERIFY_WARN) {
+			irg_verify(irg, VERIFY_ENFORCE_SSA);
 			be_check_dominance(irg);
 			be_verify_schedule(irg);
 			be_verify_register_allocation(irg);
-		} else if (be_options.vrfy_option == BE_VRFY_ASSERT) {
-			assert(irg_verify(irg, VRFY_ENFORCE_SSA) && "irg verification failed");
+		} else if (be_options.verify_option == BE_VERIFY_ASSERT) {
+			assert(irg_verify(irg, VERIFY_ENFORCE_SSA) && "irg verification failed");
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_allocation(irg)

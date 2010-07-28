@@ -29,7 +29,6 @@
 #include "irmode_t.h"
 #include "irgmod.h"
 #include "iredges.h"
-#include "irvrfy.h"
 #include "ircons.h"
 #include "iropt_t.h"
 #include "error.h"

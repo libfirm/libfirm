@@ -23,8 +23,8 @@
  * @author   Christian Schaefer, Goetz Lindenmaier, Till Riedel
  * @version  $Id$
  */
-#ifndef FIRM_IR_IRVRFY_H
-#define FIRM_IR_IRVRFY_H
+#ifndef FIRM_IR_IRVERIFY_H
+#define FIRM_IR_IRVERIFY_H
 
 #include "firm_types.h"
 #include "begin.h"
@@ -33,52 +33,43 @@
  * Tests the modes of checknode and its predecessors.
  * checknode must be in current_ir_graph.
  *
- * @return
- * 	NON-zero on success
+ * @return NON-zero on success
  */
-FIRM_API int irn_vrfy(ir_node *checknode);
+FIRM_API int irn_verify(ir_node *checknode);
 
 /**
  * Tests the modes of checknode and its predecessors.
  * checknode must be in given ir_graph.
  *
- * @return
- * 	NON-zero on success
+ * @return NON-zero on success
  */
-FIRM_API int irn_vrfy_irg(ir_node *checknode, ir_graph *irg);
+FIRM_API int irn_verify_irg(ir_node *checknode, ir_graph *irg);
 
 /**
- * Same as irn_vrfy_irg, but temporary sets verification mode to
+ * Same as irn_verify_irg, but temporary sets verification mode to
  * NODE_VERIFICATION_ERROR_ONLY.
- * @return
- * 	NON-zero on success
+ * @return NON-zero on success
  */
-FIRM_API int irn_vrfy_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
+FIRM_API int irn_verify_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
 
 /**
  * Flags for irg_verify().
  */
 typedef enum _irg_verify_flags_t {
-	VRFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
-	VRFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
+	VERIFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
+	VERIFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
 } irg_verify_flags_t;
 
 /**
- * Calls irn_vrfy() for each node in irg.
+ * Calls irn_verify() for each node in irg.
  * Graph must be in state "op_pin_state_pinned".
  *
  * @param irg    the IR-graph t check
  * @param flags  one of irg_verify_flags_t
  *
- * @return
- * 	NON-zero on success.
+ * @return NON-zero on success.
  */
 FIRM_API int irg_verify(ir_graph *irg, unsigned flags);
-
-/**
- * Compatibility macro. Deprecated soon.
- */
-#define irg_vrfy(irg) irg_verify(irg, 0)
 
 /**
  * Creates an ir_graph pass for irg_verify().
@@ -91,7 +82,7 @@ FIRM_API int irg_verify(ir_graph *irg, unsigned flags);
 FIRM_API ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags);
 
 /**
- * Possible flags for irg_vrfy_bads().
+ * Possible flags for irg_verify_bads().
  */
 enum verify_bad_flags_t {
 	BAD_CF      = 1,    /**< Bad nodes are allowed as predecessors of Blocks and Phis. */
@@ -108,14 +99,14 @@ enum verify_bad_flags_t {
  *               which Bads are allowed
  * @returns      a value combined of verify_bad_flags_t indicating the problems found.
  */
-FIRM_API int irg_vrfy_bads(ir_graph *irg, int flags);
+FIRM_API int irg_verify_bads(ir_graph *irg, int flags);
 
 /**
  *  Enable/disable verification of Load/Store nodes with
  *  its entities. If disabled, Store(SymConst(array)) will be allowed
  *  (C-frontend builds this :-)
  */
-FIRM_API void vrfy_enable_entity_tests(int enable);
+FIRM_API void verify_enable_entity_tests(int enable);
 
 #include "end.h"
 

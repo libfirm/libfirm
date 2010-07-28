@@ -34,7 +34,7 @@
 #include "iropt_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
@@ -6852,7 +6852,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 	n = gigo(n);
 
 	/* Now we can verify the node, as it has no dead inputs any more. */
-	irn_vrfy(n);
+	irn_verify(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for cse.
 	   Blocks should be unique anyways.  (Except the successor of start:

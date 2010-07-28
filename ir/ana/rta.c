@@ -38,7 +38,7 @@
 #include "pset_new.h"
 #include "irgwalk.h"
 #include "irgmod.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "irprintf.h"
 #include "debug.h"
 #include "error.h"
@@ -313,9 +313,9 @@ void rta_init(void)
 	{
 		int i;
 		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			irg_vrfy(get_irp_irg(i));
+			irg_verify(get_irp_irg(i), 0);
 		}
-		tr_vrfy();
+		tr_verify();
 	}
 # endif /* defined DEBUG_libfirm */
 
@@ -332,9 +332,9 @@ void rta_init(void)
 		int i;
 
 		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			irg_vrfy(get_irp_irg(i));
+			irg_verify(get_irp_irg(i), 0);
 		}
-		tr_vrfy();
+		tr_verify();
 	}
 # endif /* defined DEBUG_libfirm */
 }
@@ -402,9 +402,9 @@ void rta_cleanup(void)
 # ifdef DEBUG_libfirm
 	int i;
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		irg_vrfy(get_irp_irg(i));
+		irg_verify(get_irp_irg(i), 0);
 	}
-	tr_vrfy();
+	tr_verify();
 # endif /* defined DEBUG_libfirm */
 
 	if (_live_classes != NULL) {

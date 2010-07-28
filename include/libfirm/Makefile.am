@@ -49,7 +49,7 @@ libfirminclude_HEADERS = \
 	irprog.h \
 	irsimpletype.h \
 	irtypeinfo.h \
-	irvrfy.h \
+	irverify.h \
 	lowering.h \
 	rta.h \
 	seqnumbers.h \

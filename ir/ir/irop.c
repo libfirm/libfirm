@@ -33,7 +33,7 @@
 #include "irbackedge_t.h"
 
 #include "iropt_t.h"
-#include "irvrfy_t.h"
+#include "irverify_t.h"
 #include "reassoc_t.h"
 
 #include "xmalloc.h"

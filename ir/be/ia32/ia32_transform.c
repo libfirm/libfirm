@@ -38,7 +38,6 @@
 #include "irprog_t.h"
 #include "iredges_t.h"
 #include "irgmod.h"
-#include "irvrfy.h"
 #include "ircons.h"
 #include "irgwalk.h"
 #include "irprintf.h"

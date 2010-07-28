@@ -53,9 +53,9 @@ enum {
 };
 
 enum {
-	BE_VRFY_OFF,
-	BE_VRFY_WARN,
-	BE_VRFY_ASSERT
+	BE_VERIFY_OFF,
+	BE_VERIFY_WARN,
+	BE_VERIFY_ASSERT
 };
 
 enum {
@@ -72,7 +72,7 @@ struct be_options_t {
 	int  omit_leaf_fp;        /**< try to omit the frame pointer in leaf routines */
 	int  pic;                 /**< create position independent code */
 	int  gprof;               /**< create gprof compatible profiling code */
-	int  vrfy_option;         /**< backend verify option */
+	int  verify_option;       /**< backend verify option */
 	int  scheduler;           /**< the scheduler */
 	char target_os[128];      /**< target operating system name */
 	char ilp_server[128];     /**< the ilp server name */

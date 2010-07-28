@@ -23,16 +23,16 @@
  * @author   Michael Beck
  * @version  $Id$
  */
-#ifndef FIRM_IR_IRVRFY_T_H
-#define FIRM_IR_IRVRFY_T_H
+#ifndef FIRM_IR_IRVERIFY_T_H
+#define FIRM_IR_IRVERIFY_T_H
 
 #include "irflag_t.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "irdump.h"
 
 #include "beutil.h"
 
-extern const char *firm_vrfy_failure_msg;
+extern const char *firm_verify_failure_msg;
 
 #ifdef NDEBUG
 /*
@@ -56,7 +56,7 @@ do { \
   if (!(expr)) { \
     if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \
-    firm_vrfy_failure_msg = #expr " && " string; \
+    firm_verify_failure_msg = #expr " && " string; \
     return (ret); \
   } \
 } while(0)
@@ -64,7 +64,7 @@ do { \
 #define ASSERT_AND_RET_DBG(expr, string, ret, blk) \
 do { \
   if (!(expr)) { \
-    firm_vrfy_failure_msg = #expr " && " string; \
+    firm_verify_failure_msg = #expr " && " string; \
     if (opt_do_node_verification != FIRM_VERIFICATION_ERROR_ONLY) { blk; } \
     if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \

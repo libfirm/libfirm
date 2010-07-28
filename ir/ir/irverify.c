@@ -28,7 +28,7 @@
 #include "irprog.h"
 #include "irop_t.h"
 #include "irgraph_t.h"
-#include "irvrfy_t.h"
+#include "irverify_t.h"
 #include "irgwalk.h"
 #include "irdump.h"
 #include "irdom_t.h"
@@ -38,14 +38,14 @@
 #include "irpass_t.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
-static int vrfy_entities = 0;
+static int verify_entities = 0;
 
-const char *firm_vrfy_failure_msg;
+const char *firm_verify_failure_msg;
 
 /* enable verification of Load/Store entities */
-void vrfy_enable_entity_tests(int enable)
+void verify_enable_entity_tests(int enable)
 {
-	vrfy_entities = enable;
+	verify_entities = enable;
 }
 
 #ifndef NDEBUG
@@ -78,7 +78,7 @@ static void show_entity_failure(ir_node *node)
 	last_irg_error = irg;
 
 	if (irg == get_const_code_irg()) {
-		fprintf(stderr, "\nFIRM: irn_vrfy_irg() <of CONST_CODE_IRG> failed\n");
+		fprintf(stderr, "\nFIRM: irn_verify_irg() <of CONST_CODE_IRG> failed\n");
 	} else {
 		ir_entity *ent = get_irg_entity(irg);
 
@@ -86,13 +86,13 @@ static void show_entity_failure(ir_node *node)
 			ir_type *ent_type = get_entity_owner(ent);
 
 			if (ent_type) {
-				ir_fprintf(stderr, "\nFIRM: irn_vrfy_irg() %+F::%s failed\n",
+				ir_fprintf(stderr, "\nFIRM: irn_verify_irg() %+F::%s failed\n",
 				           ent_type, get_entity_name(ent));
 			} else {
-				fprintf(stderr, "\nFIRM: irn_vrfy_irg() <NULL>::%s failed\n", get_entity_name(ent));
+				fprintf(stderr, "\nFIRM: irn_verify_irg() <NULL>::%s failed\n", get_entity_name(ent));
 			}
 		} else {
-			fprintf(stderr, "\nFIRM: irn_vrfy_irg() <IRG %p> failed\n", (void *)irg);
+			fprintf(stderr, "\nFIRM: irn_verify_irg() <IRG %p> failed\n", (void *)irg);
 		}
 	}
 }
@@ -219,7 +219,7 @@ static void show_proj_failure_ent(ir_node *n, ir_entity *ent)
  */
 static void show_node_on_graph(ir_graph *irg, ir_node *n)
 {
-	ir_fprintf(stderr, "\nFIRM: irn_vrfy_irg() of %+F, node %+F\n", irg, n);
+	ir_fprintf(stderr, "\nFIRM: irn_verify_irg() of %+F, node %+F\n", irg, n);
 }
 
 /**
@@ -592,7 +592,7 @@ static int verify_node_Proj_Load(ir_node *n, ir_node *p)
 		ir_node *ptr = get_Load_ptr(n);
 		ir_entity *ent = get_ptr_entity(ptr);
 
-		if (vrfy_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
+		if (verify_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
 			/* do NOT check this for lowered phases, see comment on Store */
 			ASSERT_AND_RET_DBG(
 				(mode == get_type_mode(get_entity_type(ent))),
@@ -1696,7 +1696,7 @@ static int verify_node_Store(ir_node *n, ir_graph *irg)
 	ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
 
 	target = get_ptr_entity(get_Store_ptr(n));
-	if (vrfy_entities && target && get_irg_phase_state(current_ir_graph) == phase_high) {
+	if (verify_entities && target && get_irg_phase_state(current_ir_graph) == phase_high) {
 		/*
 		 * If lowered code, any Sels that add 0 may be removed, causing
 		 * an direct access to entities of array or compound type.
@@ -1919,7 +1919,7 @@ static int check_dominance_for_node(ir_node *use)
 }
 
 /* Tests the modes of n and its predecessors. */
-int irn_vrfy_irg(ir_node *n, ir_graph *irg)
+int irn_verify_irg(ir_node *n, ir_graph *irg)
 {
 	int i;
 	ir_op *op;
@@ -1977,10 +1977,10 @@ int irn_vrfy_irg(ir_node *n, ir_graph *irg)
 	return 1;
 }
 
-int irn_vrfy(ir_node *n)
+int irn_verify(ir_node *n)
 {
 #ifdef DEBUG_libfirm
-	return irn_vrfy_irg(n, current_ir_graph);
+	return irn_verify_irg(n, current_ir_graph);
 #else
 	(void)n;
 	return 1;
@@ -1995,21 +1995,21 @@ int irn_vrfy(ir_node *n)
 /**
  * Walker to check every node
  */
-static void vrfy_wrap(ir_node *node, void *env)
+static void verify_wrap(ir_node *node, void *env)
 {
 	int *res = env;
-	*res = irn_vrfy_irg(node, current_ir_graph);
+	*res = irn_verify_irg(node, current_ir_graph);
 }
 
 /**
  * Walker to check every node including SSA property.
  * Only called if dominance info is available.
  */
-static void vrfy_wrap_ssa(ir_node *node, void *env)
+static void verify_wrap_ssa(ir_node *node, void *env)
 {
 	int *res = env;
 
-	*res = irn_vrfy_irg(node, current_ir_graph);
+	*res = irn_verify_irg(node, current_ir_graph);
 	if (*res) {
 		*res = check_dominance_for_node(node);
 	}
@@ -2018,7 +2018,7 @@ static void vrfy_wrap_ssa(ir_node *node, void *env)
 #endif /* DEBUG_libfirm */
 
 /*
- * Calls irn_vrfy for each node in irg.
+ * Calls irn_verify for each node in irg.
  * Graph must be in state "op_pin_state_pinned".
  * If dominance info is available, check the SSA property.
  */
@@ -2037,13 +2037,13 @@ int irg_verify(ir_graph *irg, unsigned flags)
 
 	assert(get_irg_pinned(irg) == op_pin_state_pinned && "Verification need pinned graph");
 
-	if (flags & VRFY_ENFORCE_SSA)
+	if (flags & VERIFY_ENFORCE_SSA)
 		compute_doms(irg);
 
 	irg_walk_anchors(
 		irg,
 		get_irg_dom_state(irg) == dom_consistent &&
-		get_irg_pinned(irg) == op_pin_state_pinned ? vrfy_wrap_ssa : vrfy_wrap,
+		get_irg_pinned(irg) == op_pin_state_pinned ? verify_wrap_ssa : verify_wrap,
 		NULL, &res
 	);
 
@@ -2098,35 +2098,34 @@ ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
 }
 
 /* create a verify pass */
-int irn_vrfy_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
+int irn_verify_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
 {
 	int res;
 	firm_verification_t old = get_node_verification_mode();
 
-	firm_vrfy_failure_msg = NULL;
+	firm_verify_failure_msg = NULL;
 	do_node_verification(FIRM_VERIFICATION_ERROR_ONLY);
-	res = irn_vrfy_irg(n, irg);
+	res = irn_verify_irg(n, irg);
 	if (res && get_irg_dom_state(irg) == dom_consistent &&
 	    get_irg_pinned(irg) == op_pin_state_pinned)
 		res = check_dominance_for_node(n);
 	do_node_verification(old);
-	*bad_string = firm_vrfy_failure_msg;
+	*bad_string = firm_verify_failure_msg;
 
 	return res;
 }
 
-
-typedef struct _vrfy_bad_env_t {
+typedef struct verify_bad_env_t {
 	int flags;
 	int res;
-} vrfy_bad_env_t;
+} verify_bad_env_t;
 
 /**
  * Pre-Walker: check Bad predecessors of node.
  */
 static void check_bads(ir_node *node, void *env)
 {
-	vrfy_bad_env_t *venv = env;
+	verify_bad_env_t *venv = env;
 	int i, arity = get_irn_arity(node);
 
 	if (is_Block(node)) {
@@ -2140,7 +2139,7 @@ static void check_bads(ir_node *node, void *env)
 					venv->res |= BAD_CF;
 
 					if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-						fprintf(stderr, "irg_vrfy_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
+						fprintf(stderr, "irg_verify_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 						dump_ir_graph(current_ir_graph, "-assert");
@@ -2157,7 +2156,7 @@ static void check_bads(ir_node *node, void *env)
 				venv->res |= BAD_BLOCK;
 
 				if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-					fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
+					fprintf(stderr, "irg_verify_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 					dump_ir_graph(current_ir_graph, "-assert");
@@ -2171,7 +2170,7 @@ static void check_bads(ir_node *node, void *env)
 				venv->res |= TUPLE;
 
 				if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-					fprintf(stderr, "irg_vrfy_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
+					fprintf(stderr, "irg_verify_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 					dump_ir_graph(current_ir_graph, "-assert");
@@ -2192,7 +2191,7 @@ static void check_bads(ir_node *node, void *env)
 						venv->res |= BAD_CF;
 
 						if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-							fprintf(stderr, "irg_vrfy_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
+							fprintf(stderr, "irg_verify_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
 						}
 						if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 							dump_ir_graph(current_ir_graph, "-assert");
@@ -2206,7 +2205,7 @@ static void check_bads(ir_node *node, void *env)
 					venv->res |= BAD_DF;
 
 					if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT) {
-						fprintf(stderr, "irg_vrfy_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
+						fprintf(stderr, "irg_verify_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
 						dump_ir_graph(current_ir_graph, "-assert");
@@ -2221,9 +2220,9 @@ static void check_bads(ir_node *node, void *env)
 /*
  * verify occurrence of bad nodes
  */
-int irg_vrfy_bads(ir_graph *irg, int flags)
+int irg_verify_bads(ir_graph *irg, int flags)
 {
-	vrfy_bad_env_t env;
+	verify_bad_env_t env;
 
 	env.flags = flags;
 	env.res   = 0;

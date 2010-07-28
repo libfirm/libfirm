@@ -1985,10 +1985,10 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 		/* verify schedule and register pressure */
 		be_timer_push(T_VERIFY);
-		if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_WARN) {
+		if (be_get_irg_options(irg)->verify_option == BE_VERIFY_WARN) {
 			be_verify_schedule(irg);
 			be_verify_register_pressure(irg, cls);
-		} else if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_ASSERT) {
+		} else if (be_get_irg_options(irg)->verify_option == BE_VERIFY_ASSERT) {
 			assert(be_verify_schedule(irg) && "Schedule verification failed");
 			assert(be_verify_register_pressure(irg, cls)
 				&& "Register pressure verification failed");
@@ -2013,9 +2013,9 @@ static void be_pref_alloc(ir_graph *new_irg)
 	be_timer_pop(T_RA_SPILL_APPLY);
 
 	be_timer_push(T_VERIFY);
-	if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_WARN) {
+	if (be_get_irg_options(irg)->verify_option == BE_VERIFY_WARN) {
 		be_verify_register_allocation(irg);
-	} else if (be_get_irg_options(irg)->vrfy_option == BE_VRFY_ASSERT) {
+	} else if (be_get_irg_options(irg)->verify_option == BE_VERIFY_ASSERT) {
 		assert(be_verify_register_allocation(irg)
 		       && "Register allocation invalid");
 	}

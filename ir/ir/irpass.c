@@ -31,7 +31,7 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irdump.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "xmalloc.h"
 
 /*Add a graph pass to a graph pass manager. */

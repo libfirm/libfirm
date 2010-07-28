@@ -40,7 +40,7 @@
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "irdump.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "iredges.h"
 
 #include "array_t.h"
@@ -875,9 +875,9 @@ restart:
 	/* the verifier doesn't work yet with floating nodes */
 	if (get_irg_pinned(irg) == op_pin_state_pinned) {
 		/* after optimize_cf(), only Bad data flow may remain. */
-		if (irg_vrfy_bads(irg, BAD_DF | BAD_BLOCK | TUPLE)) {
-			dump_ir_graph(irg, "-vrfy-cf");
-			fprintf(stderr, "VRFY_BAD in optimize_cf()\n");
+		if (irg_verify_bads(irg, BAD_DF | BAD_BLOCK | TUPLE)) {
+			dump_ir_graph(irg, "-verify-cf");
+			fprintf(stderr, "VERIFY_BAD in optimize_cf()\n");
 		}
 	}
 

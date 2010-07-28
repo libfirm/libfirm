@@ -404,7 +404,7 @@
  *    --------------------------------------------
  *
  *    Creates a new Block with the given list of predecessors.  This block
- *    is mature.  As other constructors calls optimization and vrfy for the
+ *    is mature.  As other constructors calls optimization and verify for the
  *    block.  If one of the predecessors is Unknown (as it has to be filled in
  *    later) optimizations are skipped.  This is necessary to
  *    construct Blocks in loops.

@@ -25,7 +25,6 @@
  */
 #include "config.h"
 
-#include "irvrfy.h"
 #include "irflag_t.h"
 #include "irgwalk.h"
 #include "irnode_t.h"

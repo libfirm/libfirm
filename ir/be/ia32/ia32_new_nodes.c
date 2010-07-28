@@ -38,7 +38,7 @@
 #include "ircons_t.h"
 #include "iropt_t.h"
 #include "irop.h"
-#include "irvrfy_t.h"
+#include "irverify_t.h"
 #include "irprintf.h"
 #include "iredges.h"
 #include "error.h"

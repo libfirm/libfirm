@@ -34,7 +34,6 @@
 #include "irgwalk.h"
 #include "irgmod.h"
 #include "ircons.h"
-#include "irvrfy.h"
 #include "irpass_t.h"
 
 typedef struct walk_env {

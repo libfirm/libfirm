@@ -37,7 +37,7 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "trouts.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "pmap.h"
 #include "array_t.h"
 #include "irpass_t.h"
@@ -149,7 +149,7 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
 			set_trouts_inconsistent();
 
 			/* verify here */
-			irg_verify(irg, VRFY_NORMAL);
+			irg_verify(irg, VERIFY_NORMAL);
 
 			/* Optimize it, tuple might be created. */
 			optimize_graph_df(irg);

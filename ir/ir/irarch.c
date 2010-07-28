@@ -38,7 +38,7 @@
 #include "iropt_t.h"
 #include "ircons_t.h"
 #include "irgmod.h"
-#include "irvrfy.h"
+#include "irverify.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
@@ -52,13 +52,6 @@
 #undef DEB
 
 #define MAX_BITSTR 64
-
-/* when we need verifying */
-#ifdef NDEBUG
-# define IRN_VRFY_IRG(res, irg)
-#else
-# define IRN_VRFY_IRG(res, irg)  irn_vrfy_irg(res, irg)
-#endif
 
 /** The params got from the factory in arch_dep_init(...). */
 static const ir_settings_arch_dep_t *params = NULL;

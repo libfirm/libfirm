@@ -53,7 +53,7 @@ do { \
   if (!(expr)) { \
     if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \
-    firm_vrfy_failure_msg = #expr " && " string; \
+    firm_verify_failure_msg = #expr " && " string; \
     return (ret); \
   } \
 } while (0)
@@ -61,7 +61,7 @@ do { \
 #define ASSERT_AND_RET_DBG(expr, string, ret, blk) \
 do { \
   if (!(expr)) { \
-    firm_vrfy_failure_msg = #expr " && " string; \
+    firm_verify_failure_msg = #expr " && " string; \
     if (opt_do_node_verification != FIRM_VERIFICATION_ERROR_ONLY) { blk; } \
     if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \
@@ -76,7 +76,7 @@ do { \
 
 #ifndef NDEBUG
 
-static const char *firm_vrfy_failure_msg;
+static const char *firm_verify_failure_msg;
 
 /**
  * Show diagnostic if an entity overwrites another one not
@@ -349,7 +349,7 @@ static int constants_on_wrong_irg(ir_entity *ent)
  *
  * @return
  *  0   if no error encountered
- *  != 0    a trvrfy_error_codes code
+ *  != 0    a trverify_error_codes code
  */
 int check_entity(ir_entity *ent)
 {
@@ -421,7 +421,7 @@ static void check_tore(type_or_ent tore, void *env)
 /*
  * Verify types and entities.
  */
-int tr_vrfy(void)
+int tr_verify(void)
 {
 	int      res = no_error;
 	ir_type *constructors;

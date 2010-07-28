@@ -35,7 +35,6 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irvrfy.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"

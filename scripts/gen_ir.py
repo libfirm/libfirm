@@ -311,7 +311,7 @@ ir_node *new_rd_{{node.constrname}}(
 	{%- if node.optimize != False %}
 	res = optimize_node(res);
 	{%- endif %}
-	IRN_VRFY_IRG(res, irg);
+	IRN_VERIFY_IRG(res, irg);
 	current_ir_graph = rem;
 	return res;
 }

@@ -31,7 +31,6 @@
 #include "irgraph_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "irvrfy.h"
 #include "dbginfo_t.h"
 #include "irflag_t.h"
 #include "irloop_t.h"

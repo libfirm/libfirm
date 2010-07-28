@@ -56,7 +56,7 @@
 #include "irtools.h"
 #include "irprintf.h"
 
-#include "irvrfy.h"
+#include "irverify.h"
 
 #include "error.h"
 #include "array.h"
@@ -1319,7 +1319,7 @@ static void dump_node(FILE *F, ir_node *n)
 	fputs("\"", F);
 
 	fputs(" label: \"", F);
-	bad = ! irn_vrfy_irg_dump(n, current_ir_graph, &p);
+	bad = ! irn_verify_irg_dump(n, current_ir_graph, &p);
 	dump_node_label(F, n);
 	dump_node_ana_vals(F, n);
 	//dump_node_ana_info(F, n);
