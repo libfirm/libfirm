@@ -173,9 +173,6 @@ class Block(Op):
 	}
 	'''
 
-class Borrow(Binop):
-	flags = []
-
 class Bound(Op):
 	ins    = [ "mem", "index", "lower", "upper" ]
 	outs  = [
@@ -250,9 +247,6 @@ class Call(Op):
 	d_post = '''
 	firm_alloc_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);
 	'''
-
-class Carry(Binop):
-	flags = [ "commutative" ]
 
 class Cast(Unop):
 	mode     = "get_irn_mode(irn_op)"

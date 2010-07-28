@@ -584,16 +584,6 @@ FIRM_API void     set_Add_left(ir_node *node, ir_node *left);
 FIRM_API ir_node *get_Add_right(const ir_node *node);
 FIRM_API void     set_Add_right(ir_node *node, ir_node *right);
 
-FIRM_API ir_node *get_Carry_left(const ir_node *node);
-FIRM_API void     set_Carry_left(ir_node *node, ir_node *left);
-FIRM_API ir_node *get_Carry_right(const ir_node *node);
-FIRM_API void     set_Carry_right(ir_node *node, ir_node *right);
-
-FIRM_API ir_node *get_Borrow_left(const ir_node *node);
-FIRM_API void     set_Borrow_left(ir_node *node, ir_node *left);
-FIRM_API ir_node *get_Borrow_right(const ir_node *node);
-FIRM_API void     set_Borrow_right(ir_node *node, ir_node *right);
-
 FIRM_API ir_node *get_Sub_left(const ir_node *node);
 FIRM_API void     set_Sub_left(ir_node *node, ir_node *left);
 FIRM_API ir_node *get_Sub_right(const ir_node *node);
@@ -991,8 +981,6 @@ FIRM_API int      is_DivMod(const ir_node *node);
 FIRM_API int      is_Quot(const ir_node *node);
 /** Returns true if node is an Add node. */
 FIRM_API int      is_Add(const ir_node *node);
-/** Returns true if node is a Carry node. */
-FIRM_API int      is_Carry(const ir_node *node);
 /** Returns true if node is an And node. */
 FIRM_API int      is_And(const ir_node *node);
 /** Returns true if node is an Or node. */
@@ -1073,8 +1061,6 @@ FIRM_API int      is_ASM(const ir_node *node);
 FIRM_API int      is_Dummy(const ir_node *node);
 /** Returns true if a node is an Anchor node */
 FIRM_API int      is_Anchor(const ir_node *node);
-/** Returns true if a node is a Borrow node */
-FIRM_API int      is_Borrow(const ir_node *node);
 /** Returns true if a node is a Break node */
 FIRM_API int      is_Break(const ir_node *node);
 /** Returns true if a node is an instff node */

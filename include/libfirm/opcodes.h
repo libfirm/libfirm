@@ -13,11 +13,9 @@ typedef enum ir_opcode {
 	iro_And,
 	iro_Bad,
 	iro_Block,
-	iro_Borrow,
 	iro_Bound,
 	iro_Builtin,
 	iro_Call,
-	iro_Carry,
 	iro_Cast,
 	iro_Cmp,
 	iro_Cond,
@@ -96,11 +94,9 @@ FIRM_API ir_op *op_Anchor;
 FIRM_API ir_op *op_And;
 FIRM_API ir_op *op_Bad;
 FIRM_API ir_op *op_Block;
-FIRM_API ir_op *op_Borrow;
 FIRM_API ir_op *op_Bound;
 FIRM_API ir_op *op_Builtin;
 FIRM_API ir_op *op_Call;
-FIRM_API ir_op *op_Carry;
 FIRM_API ir_op *op_Cast;
 FIRM_API ir_op *op_Cmp;
 FIRM_API ir_op *op_Cond;
@@ -155,11 +151,9 @@ FIRM_API ir_op *get_op_Anchor(void);
 FIRM_API ir_op *get_op_And(void);
 FIRM_API ir_op *get_op_Bad(void);
 FIRM_API ir_op *get_op_Block(void);
-FIRM_API ir_op *get_op_Borrow(void);
 FIRM_API ir_op *get_op_Bound(void);
 FIRM_API ir_op *get_op_Builtin(void);
 FIRM_API ir_op *get_op_Call(void);
-FIRM_API ir_op *get_op_Carry(void);
 FIRM_API ir_op *get_op_Cast(void);
 FIRM_API ir_op *get_op_Cmp(void);
 FIRM_API ir_op *get_op_Cond(void);
