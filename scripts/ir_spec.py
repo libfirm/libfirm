@@ -47,9 +47,6 @@ class Alloc(Op):
 	]
 	pinned      = "yes"
 	attr_struct = "alloc_attr"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Alloc, &res->attr.alloc.exc.frag_arr);
-	'''
 
 class Anchor(Op):
 	mode        = "mode_ANY"
@@ -102,7 +99,7 @@ class ASM(Op):
 
 class Bad(Op):
 	mode        = "mode_Bad"
-	flags       = [ "cfopcode", "fragile", "start_block", "dump_noblock" ]
+	flags       = [ "cfopcode", "start_block", "dump_noblock" ]
 	pinned      = "yes"
 	knownBlock  = True
 	singleton   = True
@@ -186,9 +183,6 @@ class Bound(Op):
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "bound_attr"
 	attrs_name  = "bound"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Bound, &res->attr.bound.exc.frag_arr);
-	'''
 
 class Builtin(Op):
 	ins      = [ "mem" ]
@@ -243,9 +237,6 @@ class Call(Op):
 	pinned_init = "op_pin_state_pinned"
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
-	'''
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Call, &res->attr.call.exc.frag_arr);
 	'''
 
 class Cast(Unop):
@@ -365,9 +356,6 @@ class CopyB(Op):
 	attrs_name  = "copyb"
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_CopyB, &res->attr.copyb.exc.frag_arr);
-	'''
 
 class Div(Op):
 	ins   = [ "mem", "left", "right" ]
@@ -398,9 +386,6 @@ class Div(Op):
 	pinned      = "exception"
 	op_index    = 1
 	arity_override = "oparity_binary"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Div, &res->attr.except.frag_arr);
-	'''
 
 class DivMod(Op):
 	ins   = [ "mem", "left", "right" ]
@@ -423,14 +408,10 @@ class DivMod(Op):
 	pinned      = "exception"
 	op_index    = 1
 	arity_override = "oparity_binary"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_DivMod, &res->attr.except.frag_arr);
-	'''
 
 class Dummy(Op):
 	ins   = []
-	flags = [ "cfopcode", "fragile", "start_block", "constlike",
-	          "dump_noblock" ]
+	flags = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
@@ -523,9 +504,6 @@ class Load(Op):
 			name = "flags",
 		),
 	]
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Load, &res->attr.load.exc.frag_arr);
-	'''
 
 class Minus(Unop):
 	flags = []
@@ -550,9 +528,6 @@ class Mod(Op):
 	pinned      = "exception"
 	op_index    = 1
 	arity_override = "oparity_binary"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Mod, &res->attr.except.frag_arr);
-	'''
 
 class Mul(Binop):
 	flags = [ "commutative" ]
@@ -635,9 +610,6 @@ class Quot(Op):
 	pinned      = "exception"
 	op_index    = 1
 	arity_override = "oparity_binary"
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Quot, &res->attr.except.frag_arr);
-	'''
 
 class Raise(Op):
 	ins    = [ "mem", "exo_ptr" ]
@@ -711,9 +683,6 @@ class Store(Op):
 			name = "flags",
 		),
 	]
-	d_post = '''
-	firm_alloc_frag_arr(res, op_Store, &res->attr.store.exc.frag_arr);
-	'''
 
 class Sub(Binop):
 	flags = []
@@ -751,8 +720,7 @@ class Unknown(Op):
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
-	flags      = [ "cfopcode", "fragile", "start_block", "constlike",
-	               "dump_noblock" ]
+	flags      = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
 
 # Prepare node list
 

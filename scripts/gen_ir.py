@@ -57,18 +57,19 @@ def format_insdecl(node):
 
 	if arity == "variable":
 		insarity = len(node.ins)
-		res = "int r_arity = arity + " + `insarity` + ";\n\tir_node **r_in;\n\t" \
-			+ "NEW_ARR_A(ir_node *, r_in, r_arity);\n\t"
+		res  = "int r_arity = arity + " + `insarity` + ";"
+		res += "\n\tir_node **r_in;"
+		res += "\n\tNEW_ARR_A(ir_node *, r_in, r_arity);"
 		i = 0
 		for input in node.ins:
-			res += "r_in[" + `i` + "] = irn_" + input + ";\n\t"
+			res += "\n\tr_in[" + `i` + "] = irn_" + input + ";"
 			i += 1
-		res += "memcpy(&r_in[" + `insarity` + "], in, sizeof(ir_node *) * arity);\n\t"
+		res += "\n\tmemcpy(&r_in[" + `insarity` + "], in, sizeof(ir_node *) * arity);\n\t"
 	else:
-		res = "ir_node *in[" + `arity` + "];\n\t"
+		res = "ir_node *in[" + `arity` + "];"
 		i = 0
 		for input in node.ins:
-			res += "in[" + `i` + "] = irn_" + input + ";\n\t"
+			res += "\n\tin[" + `i` + "] = irn_" + input + ";"
 			i += 1
 	return res
 
@@ -290,19 +291,19 @@ ir_node *new_rd_{{node.constrname}}(
 			{{node.mode}}
 			{{node|arity_and_ins}}
 		{% endfilter %});
-	{% for attr in node.attrs -%}
-		res->attr.{{node.attrs_name}}{{attr["initname"]}} =
+	{%- for attr in node.attrs %}
+	res->attr.{{node.attrs_name}}{{attr["initname"]}} =
 		{%- if "init" in attr %} {{ attr["init"] -}};
 		{%- else              %} {{ attr["name"] -}};
-		{% endif %}
-	{% endfor %}
-	{%- for attr in node.initattrs -%}
-		res->attr.{{node.attrs_name}}{{attr["initname"]}} = {{ attr["init"] -}};
+		{%- endif %}
+	{%- endfor %}
+	{%- for attr in node.initattrs %}
+	res->attr.{{node.attrs_name}}{{attr["initname"]}} = {{ attr["init"] -}};
 	{%- endfor %}
 	{{- node.init }}
-	{% if node.optimize != False -%}
-		res = optimize_node(res);
-	{% endif -%}
+	{%- if node.optimize != False %}
+	res = optimize_node(res);
+	{%- endif %}
 	IRN_VRFY_IRG(res, irg);
 	current_ir_graph = rem;
 	return res;
@@ -329,14 +330,15 @@ ir_node *new_d_{{node.constrname}}(
 		{% endfilter %})
 {
 	ir_node *res;
-	{{ node.d_pre }}
 	res = new_rd_{{node.constrname}}(
 		{%- filter parameters %}
 			dbgi
 			{{node|curblock}}
 			{{node|nodearguments}}
 		{% endfilter %});
-	{{ node.d_post }}
+	{%- if "fragile" in node.flags %}
+	firm_alloc_frag_arr(res, op_{{node.name}}, &res->attr.except.frag_arr);
+	{%- endif %}
 	return res;
 }
 
