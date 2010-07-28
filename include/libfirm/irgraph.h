@@ -319,9 +319,6 @@ FIRM_API irg_phase_state get_irg_phase_state(const ir_graph *irg);
 /** Sets the phase state of an IR graph. */
 FIRM_API void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
 
-/** Sets the phase of the given IR graph to low. */
-#define set_irg_phase_low(irg)	set_irg_phase_state(irg, phase_low)
-
 /** state: op_pin_state_pinned
    The graph is "op_pin_state_pinned" if all nodes are associated with a basic block.
    It is in state "op_pin_state_floats" if nodes are in arbitrary blocks.  In state

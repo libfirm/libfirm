@@ -4176,8 +4176,6 @@ FIRM_API void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
 
 /** Finalize a Block node, when all control flows are known. */
 FIRM_API void mature_immBlock(ir_node *block);
-#define mature_cur_block() mature_immBlock(get_cur_block());
-
 
 /** Get the current value of a local variable.
  *
