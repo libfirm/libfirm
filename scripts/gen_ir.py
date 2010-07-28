@@ -466,6 +466,52 @@ typedef enum {
 
 ''')
 
+opcodes_h_template = env.from_string('''
+/* Warning: automatically generated code */
+#ifndef FIRM_IR_OPCODES_H
+#define FIRM_IR_OPCODES_H
+
+/** The opcodes of the libFirm predefined operations. */
+typedef enum ir_opcode {
+{%- for node in nodes %}
+	iro_{{node.name}},
+{%- endfor %}
+	iro_First = iro_{{nodes[0].name}},
+	iro_Last = iro_{{nodes[-1].name}},
+
+	beo_First,
+	/* backend specific nodes */
+	beo_Spill = beo_First,
+	beo_Reload,
+	beo_Perm,
+	beo_MemPerm,
+	beo_Copy,
+	beo_Keep,
+	beo_CopyKeep,
+	beo_Call,
+	beo_Return,
+	beo_AddSP,
+	beo_SubSP,
+	beo_IncSP,
+	beo_Start,
+	beo_FrameAddr,
+	beo_Barrier,
+	/* last backend node number */
+	beo_Last = beo_Barrier,
+	iro_MaxOpcode
+} ir_opcode;
+
+{% for node in nodes %}
+FIRM_API ir_op *op_{{node.name}};
+{%- endfor %}
+
+{% for node in nodes %}
+FIRM_API ir_op *get_op_{{node.name}}(void);
+{%- endfor %}
+
+#endif
+''')
+
 #############################
 
 def prepare_nodes():
@@ -523,6 +569,10 @@ def main(argv):
 
 	file = open(gendir2 + "/projnumbers.h", "w")
 	file.write(projnumbers_h_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir2 + "/opcodes.h", "w")
+	file.write(opcodes_h_template.render(nodes = real_nodes))
 	file.close()
 
 main(sys.argv)
