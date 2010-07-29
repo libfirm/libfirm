@@ -114,7 +114,7 @@ static ir_node **assignments;
  * the information is per firm-node.
  */
 struct allocation_info_t {
-	unsigned  last_uses;      /**< bitset indicating last uses (input pos) */
+	unsigned  last_uses[2];   /**< bitset indicating last uses (input pos) */
 	ir_node  *current_value;  /**< copy of the value that should be used */
 	ir_node  *original_value; /**< for copies point to original value */
 	float     prefs[0];       /**< register preferences */
@@ -370,9 +370,9 @@ static void analyze_block(ir_node *block, void *data)
 		/* the allocation info node currently only uses 1 unsigned value
 		   to mark last used inputs. So we will fail for a node with more than
 		   32 inputs. */
-		if (arity >= (int) sizeof(unsigned) * 8) {
+		if (arity >= (int) sizeof(info->last_uses) * 8) {
 			panic("Node with more than %d inputs not supported yet",
-					(int) sizeof(unsigned) * 8);
+					(int) sizeof(info->last_uses) * 8);
 		}
 
 		info = get_allocation_info(node);
@@ -383,7 +383,7 @@ static void analyze_block(ir_node *block, void *data)
 
 			/* last usage of a value? */
 			if (!ir_nodeset_contains(&live_nodes, op)) {
-				rbitset_set(&info->last_uses, i);
+				rbitset_set(info->last_uses, i);
 			}
 		}
 
@@ -1064,7 +1064,7 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 {
 	allocation_info_t     *info      = get_allocation_info(node);
-	const unsigned        *last_uses = &info->last_uses;
+	const unsigned        *last_uses = info->last_uses;
 	int                    arity     = get_irn_arity(node);
 	int                    i;
 
@@ -1130,7 +1130,7 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 		ir_node               *op;
 		const arch_register_t *reg;
 
-		if (!rbitset_is_set(&info->last_uses, i))
+		if (!rbitset_is_set(info->last_uses, i))
 			continue;
 
 		op  = get_irn_n(node, i);
