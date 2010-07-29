@@ -315,48 +315,6 @@ static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 	return new_r_Unknown(get_irn_irg(block), mode_b);
 }
 
-static void create_phi_extracts(ir_node *block)
-{
-	int       i;
-	ir_node  *phi;
-	ir_loop  *loop = get_irn_loop(block);
-	ir_graph *irg  = get_irn_irg(block);
-
-	/* No extracts needed when accessing phis outside of loops. */
-	if (!loop) return;
-
-	/* Iterate all phi nodes in the current block. */
-	phi = get_Block_phis(block);
-	while (phi != NULL) {
-		const ir_edge_t *edge, *tmp;
-
-		foreach_out_edge_safe(phi, edge, tmp) {
-			ir_node *src = get_edge_src_irn(edge);
-
-			/* End processes no values. These are keep-alive edges. */
-			if (src == get_irg_end(irg)) continue;
-
-			/* When someone outside the loop accesses the phi node, construct
-			 * an extract node to get the appropriate value. */
-			if (!is_in_loop(src, loop)) {
-
-				ir_mode  *mode      = get_irn_mode(phi);
-				ir_node  *cond      = create_break_cond(block, loop);
-				ir_node  *src_block = get_nodes_block(src);
-				ir_node  *extract   = new_r_Extract(src_block, phi, cond, mode);
-
-				/* Rewire src to access the extract node instead. */
-				for (i = 0; i < get_irn_arity(src); i++) {
-					ir_node *dep = get_irn_n(src, i);
-					if (dep == phi) set_irn_n(src, i, extract);
-				}
-			}
-		}
-
-		phi = get_Phi_next(phi);
-	}
-}
-
 static void replace_phis_walk(ir_node *block, void *ctx)
 {
 	int          i;
@@ -410,12 +368,42 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	}
 
 	/* Construct projs on the result. */
-	create_phi_extracts(block);
 	replace_phis_by_projs(block, result);
 
 	pset_new_destroy(&inner_preds);
 	pset_new_destroy(&outer_preds);
 	free_incoming_values(values);
+}
+
+static void insert_extract_walk(ir_node* node, void *ctx)
+{
+	int      i;
+	ir_node *block;
+	(void)ctx;
+
+	if (is_Block(node)) return;
+
+	block = get_nodes_block(node);
+
+	for (i = 0; i < get_irn_arity(node); i++)
+	{
+		ir_node *in       = get_irn_n(node, i);
+		ir_node *in_block = get_nodes_block(in);
+		ir_loop *in_loop  = get_irn_loop(in_block);
+
+		/* Shortcut. Can't be an extract. */
+		if (in_loop == NULL)   continue;
+		if (block == in_block) continue;
+
+		/* Accessing a loop from the outside requires extract. */
+		if (!is_in_loop(node, in_loop)) {
+			/* TODO: find out if this also handles the gamma cond extracts. */
+			ir_mode *mode    = get_irn_mode(in);
+			ir_node *cond    = create_break_cond(in_block, in_loop);
+			ir_node *extract = new_r_Extract(block, in, cond, mode);
+			set_irn_n(node, i, extract);
+		}
+	}
 }
 
 static void replace_phis(ir_graph *irg)
@@ -438,6 +426,9 @@ static void replace_phis(ir_graph *irg)
 
 	/* Walk along the graph and replace phi nodes by gammas. */
 	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
+	irg_walk_graph(irg, NULL, insert_extract_walk, NULL);
+
+	/* TODO: insert extract nodes on every cross-block node into a loop. */
 
 	free_rev_cdep(irg);
 	free_cdep(irg);
