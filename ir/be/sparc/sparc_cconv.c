@@ -71,7 +71,6 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		ir_mode            *mode       = get_type_mode(param_type);
 		int                 bits       = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param      = &params[i];
-		param->type = param_type;
 
 		if (regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[regnum++];
@@ -79,6 +78,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				reg = map_i_to_o_reg(reg);
 			param->reg0 = reg;
 		} else {
+			param->type   = param_type;
 			param->offset = stack_offset;
 			/* increase offset 4 bytes so everything is aligned */
 			stack_offset += bits > 32 ? bits/8 : 4;

@@ -85,7 +85,7 @@ typedef enum arch_register_req_type_t {
 	/** The register must be unequal from some other at the node. */
 	arch_register_req_type_must_be_different = 1U << 3,
 	/** The registernumber should be aligned (in case of multiregister values)*/
-	arch_register_req_type_must_be_aligned   = 1U << 4,
+	arch_register_req_type_aligned           = 1U << 4,
 	/** ignore while allocating registers */
 	arch_register_req_type_ignore            = 1U << 5,
 	/** the output produces a new value for the stack pointer

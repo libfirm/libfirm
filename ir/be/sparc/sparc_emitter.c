@@ -170,6 +170,21 @@ void sparc_emit_offset(const ir_node *node)
 	}
 }
 
+void sparc_emit_float_load_store_mode(const ir_node *node)
+{
+	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
+	ir_mode *mode = attr->load_store_mode;
+	int      bits = get_mode_size_bits(mode);
+
+	assert(mode_is_float(mode));
+
+	switch (bits) {
+	case 32:  return;
+	case 64:  be_emit_char('d'); return;
+	case 128: be_emit_char('q'); return;
+	}
+	panic("invalid flaot load/store mode %+F", mode);
+}
 
 /**
  *  Emit load mode char
@@ -186,7 +201,7 @@ void sparc_emit_load_mode(const ir_node *node)
 	} else if (bits == 8) {
 		be_emit_string(is_signed ? "sb" : "ub");
 	} else if (bits == 64) {
-		be_emit_string("d");
+		be_emit_char('d');
 	} else {
 		assert(bits == 32);
 	}
@@ -206,7 +221,7 @@ void sparc_emit_store_mode(const ir_node *node)
 	} else if (bits == 8) {
 		be_emit_string("b");
 	} else if (bits == 64) {
-		be_emit_string("d");
+		be_emit_char('d');
 	} else {
 		assert(bits == 32);
 	}

@@ -263,11 +263,13 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 	attr   = get_sparc_load_store_attr_const(node);
 	entity = attr->entity;
 	mode   = attr->load_store_mode;
-	align  = get_mode_size_bytes(mode);
 	if (entity != NULL)
 		return;
 	if (!attr->is_frame_entity)
 		return;
+	if (arch_irn_get_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot)
+		mode = mode_Lu;
+	align  = get_mode_size_bytes(mode);
 	be_node_needs_frame_entity(env, node, mode, align);
 }
 

@@ -1263,6 +1263,7 @@ sub generate_requirements {
 	my $idx   = shift;
 	my $is_in = shift;
 	my $class = "";
+	my $width = 1;
 	my $result;
 
 	my @req_type_mask;
@@ -1272,6 +1273,10 @@ sub generate_requirements {
 				push(@req_type_mask, "arch_register_req_type_ignore");
 			} elsif ($f eq "S") {
 				push(@req_type_mask, "arch_register_req_type_produces_sp");
+			} elsif ($f eq "a") {
+				push(@req_type_mask, "arch_register_req_type_aligned");
+			} elsif ($f eq "2" or $f eq "4" or $f eq "8") {
+				$width = int($f);
 			}
 		}
 	}
@@ -1300,7 +1305,7 @@ EOF
 	NULL,        /* limit bitset */
 	0,           /* same pos */
 	0,           /* different pos */
-	1            /* width */
+	$width            /* width */
 };
 
 EOF
@@ -1336,7 +1341,7 @@ EOF
 	${limit_bitset},
 	${same_pos},        /* same pos */
 	${different_pos},       /* different pos */
-	1             /* width */
+	$width             /* width */
 };
 
 EOF

@@ -42,6 +42,7 @@ void sparc_emit_dest_register(const ir_node *node, int pos);
 void sparc_emit_offset(const ir_node *node);
 void sparc_emit_load_mode(const ir_node *node);
 void sparc_emit_store_mode(const ir_node *node);
+void sparc_emit_float_load_store_mode(const ir_node *node);
 void sparc_emit_mode_sign_prefix(const ir_node *node);
 void sparc_emit_fp_mode_suffix(const ir_node *node);
 void sparc_emit_fp_conv_source(const ir_node *node);
