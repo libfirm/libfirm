@@ -33,9 +33,9 @@
 enum range_types {
 	VRP_UNDEFINED, /**< No information could be derived so far */
 	VRP_RANGE,     /**< bottom and top form a range, including both values */
-	VRP_ANTIRANGE, /**< range from bottom to top can not be, but borders might
-	                  be */
-	VRP_VARYING    /**< information can not be derived */
+	VRP_ANTIRANGE, /**< range from bottom to top cannot be, but borders might
+	                    be */
+	VRP_VARYING    /**< information cannot be derived */
 };
 
 /** VRP information */
