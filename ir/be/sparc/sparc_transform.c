@@ -194,7 +194,6 @@ static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 typedef enum {
 	MATCH_NONE         = 0,
 	MATCH_COMMUTATIVE  = 1 << 0, /**< commutative operation. */
-	MATCH_SIZE_NEUTRAL = 1 << 1,
 } match_flags_t;
 
 typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
@@ -281,7 +280,7 @@ static ir_node *gen_Add(ir_node *node)
 		return gen_helper_binfpop(node, mode, new_bd_sparc_fadd);
 	}
 
-	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
+	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
 }
 
 /**
@@ -298,7 +297,7 @@ static ir_node *gen_Sub(ir_node *node)
 		return gen_helper_binfpop(node, mode, new_bd_sparc_fsub);
 	}
 
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sub_reg, new_bd_sparc_Sub_imm);
+	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sub_reg, new_bd_sparc_Sub_imm);
 }
 
 /**
@@ -371,7 +370,7 @@ static ir_node *gen_Mul(ir_node *node)
 	}
 
 	assert(mode_is_data(mode));
-	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL,
+	return gen_helper_binop(node, MATCH_COMMUTATIVE,
 	                        new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
 }
 
@@ -392,7 +391,7 @@ static ir_node *gen_Mulh(ir_node *node)
 
 
 	assert(mode_is_data(mode));
-	mul = gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_SIZE_NEUTRAL, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
+	mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
 	//arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
 	proj_res_hi = new_r_Proj(mul, mode_gp, pn_sparc_Mulh_low);
 	return proj_res_hi;
@@ -488,17 +487,17 @@ static ir_node *gen_Eor(ir_node *node)
 
 static ir_node *gen_Shl(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sll_reg, new_bd_sparc_Sll_imm);
+	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sll_reg, new_bd_sparc_Sll_imm);
 }
 
 static ir_node *gen_Shr(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Slr_reg, new_bd_sparc_Slr_imm);
+	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Slr_reg, new_bd_sparc_Slr_imm);
 }
 
 static ir_node *gen_Shrs(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_SIZE_NEUTRAL, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
+	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 
 /**
