@@ -109,8 +109,8 @@ void fill_node_buckets(pbqp *pbqp)
 	node_len = pbqp->num_nodes;
 
 	#if KAPS_TIMING
-		ir_timer_t *t_fill_buckets = ir_timer_register("be_pbqp_fill_buckets", "PBQP Fill Nodes into buckets");
-		ir_timer_reset_and_start(t_fill_buckets);
+		ir_timer_t *t_fill_buckets = ir_timer_new();
+		ir_timer_start(t_fill_buckets);
 	#endif
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
@@ -133,7 +133,7 @@ void fill_node_buckets(pbqp *pbqp)
 
 	#if KAPS_TIMING
 		ir_timer_stop(t_fill_buckets);
-		printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_fill_buckets), (double)ir_timer_elapsed_usec(t_fill_buckets) / 1000.0);
+		printf("PBQP Fill Nodes into buckets: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_fill_buckets) / 1000.0);
 	#endif
 }
 
@@ -713,8 +713,8 @@ void initial_simplify_edges(pbqp *pbqp)
 	assert(pbqp);
 
 	#if KAPS_TIMING
-		ir_timer_t *t_int_simpl = ir_timer_register("be_pbqp_init_simp", "PBQP Initial simplify edges");
-		ir_timer_reset_and_start(t_int_simpl);
+		ir_timer_t *t_int_simpl = ir_timer_new();
+		ir_timer_start(t_int_simpl);
 	#endif
 
 #if	KAPS_DUMP
@@ -752,7 +752,7 @@ void initial_simplify_edges(pbqp *pbqp)
 
 	#if KAPS_TIMING
 		ir_timer_stop(t_int_simpl);
-		printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_int_simpl), (double)ir_timer_elapsed_usec(t_int_simpl) / 1000.0);
+		printf("PBQP Initial simplify edges: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_int_simpl) / 1000.0);
 	#endif
 }
 
@@ -763,7 +763,7 @@ num determine_solution(pbqp *pbqp)
 	num      solution   = 0;
 
 	#if KAPS_TIMING
-		ir_timer_t *t_det_solution = ir_timer_register("be_det_solution", "PBQP Determine Solution");
+		ir_timer_t *t_det_solution = ir_timer_new();
 		ir_timer_reset_and_start(t_det_solution);
 	#endif
 
@@ -818,7 +818,7 @@ num determine_solution(pbqp *pbqp)
 
 	#if KAPS_TIMING
 		ir_timer_stop(t_det_solution);
-		printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_det_solution), (double)ir_timer_elapsed_usec(t_det_solution) / 1000.0);
+		printf("PBQP Determine Solution: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_det_solution) / 1000.0);
 	#endif
 
 	return solution;

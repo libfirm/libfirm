@@ -264,18 +264,11 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 {
 	#if KAPS_TIMING
 		/* create timers */
-		ir_timer_t *t_edge = ir_timer_register("be_pbqp_edges", "pbqp reduce independent edges");
-		ir_timer_t *t_r0 = ir_timer_register("be_pbqp_r0", "pbqp R0 reductions");
-		ir_timer_t *t_r1 = ir_timer_register("be_pbqp_r1", "pbqp R1 reductions");
-		ir_timer_t *t_r2 = ir_timer_register("be_pbqp_r2", "pbqp R2 reductions");
-		ir_timer_t *t_rn = ir_timer_register("be_pbqp_rN", "pbqp RN reductions");
-
-		/* reset timers */
-		ir_timer_reset(t_edge);
-		ir_timer_reset(t_r0);
-		ir_timer_reset(t_r1);
-		ir_timer_reset(t_r2);
-		ir_timer_reset(t_rn);
+		ir_timer_t *t_edge = ir_timer_new();
+		ir_timer_t *t_r0   = ir_timer_new();
+		ir_timer_t *t_r1   = ir_timer_new();
+		ir_timer_t *t_r2   = ir_timer_new();
+		ir_timer_t *t_rn   = ir_timer_new();
 	#endif
 
 	for (;;) {
@@ -321,11 +314,11 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 			#endif
 		} else {
 			#if KAPS_TIMING
-				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_edge), (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
-				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_r0), (double)ir_timer_elapsed_usec(t_r0) / 1000.0);
-				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_r1), (double)ir_timer_elapsed_usec(t_r1) / 1000.0);
-				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_r2), (double)ir_timer_elapsed_usec(t_r2) / 1000.0);
-				printf("%-20s: %8.3lf msec\n", ir_timer_get_description(t_rn), (double)ir_timer_elapsed_usec(t_rn) / 1000.0);
+				printf("pbqp reduce independent edges: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
+				printf("pbqp R0 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r0) / 1000.0);
+				printf("pbqp R1 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r1) / 1000.0);
+				printf("pbqp R2 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r2) / 1000.0);
+				printf("pbqp RN reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_rn) / 1000.0);
 			#endif
 
 			return;
