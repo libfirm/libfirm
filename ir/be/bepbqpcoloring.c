@@ -69,7 +69,7 @@
 #include "pbqp_node_t.h"
 #include "pbqp_node.h"
 
-#define TIMER 		0
+#define TIMER 		1
 #define PRINT_RPEO 	0
 
 
@@ -646,11 +646,11 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 #if TIMER
-	printf("%-20s: %8.3lf msec\n", "pbqp alloc create",
+	printf("PBQP alloc create:     %10.3lf msec\n",
 	       (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create) / 1000.0);
-	printf("%-20s: %8.3lf msec\n", "pbqp alloc solve",
+	printf("PBQP alloc solve:      %10.3lf msec\n",
 	       (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_solve) / 1000.0);
-	printf("%-20s: %8.3lf msec\n", "pbqp alloc create aff",
+	printf("PBQP alloc create aff: %10.3lf msec\n",
 	       (double)ir_timer_elapsed_usec(t_ra_pbqp_alloc_create_aff) / 1000.0);
 #endif
 
