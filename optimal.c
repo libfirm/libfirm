@@ -1179,10 +1179,10 @@ static void select_column(pbqp_edge *edge, unsigned col_index)
 	pbqp_node      *tgt_node;
 	vector         *src_vec;
 	vector         *tgt_vec;
-	num             min;
 	unsigned        src_len;
 	unsigned        tgt_len;
 	unsigned        src_index;
+	unsigned        new_infinity = 0;
 
 	assert(edge);
 
@@ -1208,20 +1208,21 @@ static void select_column(pbqp_edge *edge, unsigned col_index)
 		num elem = mat->entries[src_index * tgt_len + col_index];
 
 		if (elem != 0) {
+			if (elem == INF_COSTS && src_vec->entries[src_index].data != INF_COSTS)
+				new_infinity = 1;
+
 			src_vec->entries[src_index].data = pbqp_add(
 					src_vec->entries[src_index].data, elem);
-
 		}
 	}
 
-	min = pbqp_matrix_get_col_min(mat, col_index, src_vec);
-
-	if (min == INF_COSTS) {
+	if (new_infinity) {
 		unsigned edge_index;
 		unsigned edge_len = pbqp_node_get_degree(src_node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 			pbqp_edge *edge_candidate = src_node->edges[edge_index];
+
 			if (edge_candidate != edge) {
 				insert_into_edge_bucket(edge_candidate);
 			}
@@ -1239,9 +1240,9 @@ static void select_row(pbqp_edge *edge, unsigned row_index)
 	pbqp_node      *src_node;
 	pbqp_node      *tgt_node;
 	vector         *tgt_vec;
-	num             min;
 	unsigned        tgt_len;
 	unsigned        tgt_index;
+	unsigned        new_infinity = 0;
 
 	assert(edge);
 
@@ -1262,20 +1263,21 @@ static void select_row(pbqp_edge *edge, unsigned row_index)
 		num elem = mat->entries[row_index * tgt_len + tgt_index];
 
 		if (elem != 0) {
+			if (elem == INF_COSTS && tgt_vec->entries[tgt_index].data != INF_COSTS)
+				new_infinity = 1;
+
 			tgt_vec->entries[tgt_index].data = pbqp_add(
 					tgt_vec->entries[tgt_index].data, elem);
-
 		}
 	}
 
-	min = pbqp_matrix_get_row_min(mat, row_index, tgt_vec);
-
-	if (min == INF_COSTS) {
+	if (new_infinity) {
 		unsigned edge_index;
 		unsigned edge_len = pbqp_node_get_degree(tgt_node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 			pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
+
 			if (edge_candidate != edge) {
 				insert_into_edge_bucket(edge_candidate);
 			}
