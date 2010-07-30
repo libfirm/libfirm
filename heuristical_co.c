@@ -107,7 +107,6 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 	#if KAPS_TIMING
 		/* create timers */
 		ir_timer_t *t_edge = ir_timer_new();
-		ir_timer_t *t_r0   = ir_timer_new();
 		ir_timer_t *t_r1   = ir_timer_new();
 		ir_timer_t *t_r2   = ir_timer_new();
 		ir_timer_t *t_rn   = ir_timer_new();
@@ -116,13 +115,13 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 	for (;;) {
 		if (edge_bucket_get_length(edge_bucket) > 0) {
 			#if KAPS_TIMING
-				ir_timer_start(t_r0);
+				ir_timer_start(t_edge);
 			#endif
 
 			apply_edge(pbqp);
 
 			#if KAPS_TIMING
-				ir_timer_stop(t_r0);
+				ir_timer_stop(t_edge);
 			#endif
 		} else if (node_bucket_get_length(node_buckets[1]) > 0) {
 			#if KAPS_TIMING
@@ -156,8 +155,7 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 			#endif
 		} else {
 			#if KAPS_TIMING
-				printf("pbqp reduce independent edges: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
-				printf("pbqp R0 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r0) / 1000.0);
+				printf("pbqp RE reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
 				printf("pbqp R1 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r1) / 1000.0);
 				printf("pbqp R2 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r2) / 1000.0);
 				printf("pbqp RN reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_rn) / 1000.0);
