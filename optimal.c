@@ -144,9 +144,10 @@ static void normalize_towards_source(pbqp_edge *edge)
 	pbqp_node      *tgt_node;
 	vector         *src_vec;
 	vector         *tgt_vec;
-	int             src_len;
-	int             tgt_len;
-	int             src_index;
+	unsigned        src_len;
+	unsigned        tgt_len;
+	unsigned        src_index;
+	unsigned        new_infinity = 0;
 
 	assert(edge);
 
@@ -175,22 +176,28 @@ static void normalize_towards_source(pbqp_edge *edge)
 		if (min != 0) {
 			if (src_vec->entries[src_index].data == INF_COSTS) {
 				pbqp_matrix_set_row_value(mat, src_index, 0);
-			} else {
-				pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
+				continue;
 			}
+
+			pbqp_matrix_sub_row_value(mat, src_index, tgt_vec, min);
 			src_vec->entries[src_index].data = pbqp_add(
 					src_vec->entries[src_index].data, min);
 
 			if (min == INF_COSTS) {
-				unsigned edge_index;
-				unsigned edge_len = pbqp_node_get_degree(src_node);
+				new_infinity = 1;
+			}
+		}
+	}
 
-				for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-					pbqp_edge *edge_candidate = src_node->edges[edge_index];
-					if (edge_candidate != edge) {
-						insert_into_edge_bucket(edge_candidate);
-					}
-				}
+	if (new_infinity) {
+		unsigned edge_index;
+		unsigned edge_len = pbqp_node_get_degree(src_node);
+
+		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+			pbqp_edge *edge_candidate = src_node->edges[edge_index];
+
+			if (edge_candidate != edge) {
+				insert_into_edge_bucket(edge_candidate);
 			}
 		}
 	}
@@ -203,9 +210,10 @@ static void normalize_towards_target(pbqp_edge *edge)
 	pbqp_node      *tgt_node;
 	vector         *src_vec;
 	vector         *tgt_vec;
-	int             src_len;
-	int             tgt_len;
-	int             tgt_index;
+	unsigned        src_len;
+	unsigned        tgt_len;
+	unsigned        tgt_index;
+	unsigned        new_infinity = 0;
 
 	assert(edge);
 
@@ -227,28 +235,35 @@ static void normalize_towards_target(pbqp_edge *edge)
 	mat = edge->costs;
 	assert(mat);
 
+	/* Normalize towards target node. */
 	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
 		num min = pbqp_matrix_get_col_min(mat, tgt_index, src_vec);
 
 		if (min != 0) {
 			if (tgt_vec->entries[tgt_index].data == INF_COSTS) {
 				pbqp_matrix_set_col_value(mat, tgt_index, 0);
-			} else {
-				pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
+				continue;
 			}
+
+			pbqp_matrix_sub_col_value(mat, tgt_index, src_vec, min);
 			tgt_vec->entries[tgt_index].data = pbqp_add(
 					tgt_vec->entries[tgt_index].data, min);
 
 			if (min == INF_COSTS) {
-				unsigned edge_index;
-				unsigned edge_len = pbqp_node_get_degree(tgt_node);
+				new_infinity = 1;
+			}
+		}
+	}
 
-				for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-					pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
-					if (edge_candidate != edge) {
-						insert_into_edge_bucket(edge_candidate);
-					}
-				}
+	if (new_infinity) {
+		unsigned edge_index;
+		unsigned edge_len = pbqp_node_get_degree(tgt_node);
+
+		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+			pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
+
+			if (edge_candidate != edge) {
+				insert_into_edge_bucket(edge_candidate);
 			}
 		}
 	}
