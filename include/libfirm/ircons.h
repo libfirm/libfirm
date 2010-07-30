@@ -284,6 +284,8 @@
  *    ir_node *new_Cmp    (ir_node *op1, ir_node *op2);
  *    ir_node *new_Conv   (ir_node *op, ir_mode *mode);
  *    ir_node *new_Cast   (ir_node *op, ir_type *to_tp);
+ *    ir_node *new_Carry  (ir_node *op1, ir_node *op2, ir_mode *mode);
+ *    ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Load   (ir_node *store, ir_node *addr, ir_mode *mode, ir_cons_flags flags);
  *    ir_node *new_Store  (ir_node *store, ir_node *addr, ir_node *val, ir_cons_flags flags);
  *    ir_node *new_Alloc  (ir_node *store, ir_node *count, ir_type *alloc_type,
@@ -766,6 +768,18 @@
  *    ---------------------------------------------------------
  *
  *    Rotates the operand to the left by k bits.
+ *
+ *    ir_node *new_Carry (ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ------------------------------------------------------------
+ *
+ *    Calculates the Carry value for integer addition. Used only
+ *    in lowering code.
+ *
+ *    ir_node *new_Borrow (ir_node *op1, ir_node *op2, ir_mode *mode)
+ *    ------------------------------------------------------------
+ *
+ *    Calculates the Borrow value for integer substraction. Used only
+ *    in lowering code.
  *
  *    ir_node *new_Conv (ir_node *op, ir_mode *mode)
  *    ---------------------------------------------
@@ -1682,6 +1696,32 @@ FIRM_API ir_node *new_rd_strictConv(dbg_info *db, ir_node *block,
 FIRM_API ir_node *new_rd_Cast(dbg_info *db, ir_node *block,
                               ir_node *op, ir_type *to_tp);
 
+/** Constructor for a Carry node.
+ * Note: This node is not supported by the backends! Only use for program
+ * analysis tasks.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *block The IR block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_rd_Carry(dbg_info *db, ir_node *block,
+                               ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Borrow node.
+ * Note: This node is not supported by the backends! Only use for program
+ * analysis tasks.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *block The IR block the node belongs to.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_rd_Borrow(dbg_info *db, ir_node *block,
+                                ir_node *op1, ir_node *op2, ir_mode *mode);
+
 /** Constructor for a Phi node.
  *
  * @param *db    A pointer for debug information.
@@ -2393,6 +2433,27 @@ FIRM_API ir_node *new_r_strictConv(ir_node *block, ir_node *op, ir_mode *mode);
  * @param *to_tp The type of this the operand muss be casted .
  */
 FIRM_API ir_node *new_r_Cast(ir_node *block, ir_node *op, ir_type *to_tp);
+
+/** Constructor for a Carry node.
+ *
+ * @param *block The IR block the node belongs to.
+ * @param *op1   The first operand.
+ * @param *op2   The second operand.
+ * @param *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_r_Carry(ir_node *block, ir_node *op1, ir_node *op2,
+                              ir_mode *mode);
+
+/**
+ * Constructor for a Borrow node.
+ *
+ * @param *block The IR block the node belongs to.
+ * @param *op1   The first operand.
+ * @param *op2   The second operand.
+ * @param *mode  The mode of the operands and the results.
+ */
+FIRM_API ir_node *new_r_Borrow(ir_node *block, ir_node *op1, ir_node *op2,
+                               ir_mode *mode);
 
 /** Constructor for a Phi node.
  *
@@ -3162,6 +3223,30 @@ FIRM_API ir_node *new_d_strictConv(dbg_info *db, ir_node *op, ir_mode *mode);
  */
 FIRM_API ir_node *new_d_Cast(dbg_info *db, ir_node *op, ir_type *to_tp);
 
+/** Constructor for a Carry node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_d_Carry(dbg_info *db, ir_node *op1, ir_node *op2,
+                              ir_mode *mode);
+
+/** Constructor for a Borrow node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *db    A pointer for debug information.
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_d_Borrow(dbg_info *db, ir_node *op1, ir_node *op2,
+                               ir_mode *mode);
+
 /** Constructor for a Phi node.
  *
  * Adds the node to the block in current_ir_block.
@@ -3870,6 +3955,26 @@ FIRM_API ir_node *new_strictConv(ir_node *op, ir_mode *mode);
  * @param   *to_tp The type of this the operand muss be casted .
  */
 FIRM_API ir_node *new_Cast(ir_node *op, ir_type *to_tp);
+
+/** Constructor for a Carry node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_Carry(ir_node *op1, ir_node *op2, ir_mode *mode);
+
+/** Constructor for a Borrow node.
+ *
+ * Adds the node to the block in current_ir_block.
+ *
+ * @param   *op1   The first operand.
+ * @param   *op2   The second operand.
+ * @param   *mode  The mode of the operands and the result.
+ */
+FIRM_API ir_node *new_Borrow(ir_node *op1, ir_node *op2, ir_mode *mode);
 
 /** Constructor for a Phi node.
  *

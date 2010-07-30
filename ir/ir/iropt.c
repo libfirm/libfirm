@@ -160,6 +160,50 @@ static tarval *computed_value_Sub(const ir_node *n)
 }  /* computed_value_Sub */
 
 /**
+ * Return the value of a Carry.
+ * Special : a op 0, 0 op b
+ */
+static tarval *computed_value_Carry(const ir_node *n)
+{
+	ir_node *a = get_binop_left(n);
+	ir_node *b = get_binop_right(n);
+	ir_mode *m = get_irn_mode(n);
+
+	tarval *ta = value_of(a);
+	tarval *tb = value_of(b);
+
+	if ((ta != tarval_bad) && (tb != tarval_bad)) {
+		tarval_add(ta, tb);
+		return tarval_carry() ? get_mode_one(m) : get_mode_null(m);
+	} else {
+		if (tarval_is_null(ta) || tarval_is_null(tb))
+			return get_mode_null(m);
+	}
+	return tarval_bad;
+}  /* computed_value_Carry */
+
+/**
+ * Return the value of a Borrow.
+ * Special : a op 0
+ */
+static tarval *computed_value_Borrow(const ir_node *n)
+{
+	ir_node *a = get_binop_left(n);
+	ir_node *b = get_binop_right(n);
+	ir_mode *m = get_irn_mode(n);
+
+	tarval *ta = value_of(a);
+	tarval *tb = value_of(b);
+
+	if ((ta != tarval_bad) && (tb != tarval_bad)) {
+		return tarval_cmp(ta, tb) == pn_Cmp_Lt ? get_mode_one(m) : get_mode_null(m);
+	} else if (tarval_is_null(ta)) {
+		return get_mode_null(m);
+	}
+	return tarval_bad;
+}  /* computed_value_Borrow */
+
+/**
  * Return the value of an unary Minus.
  */
 static tarval *computed_value_Minus(const ir_node *n)
@@ -686,6 +730,8 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(SymConst);
 	CASE(Add);
 	CASE(Sub);
+	CASE(Carry);
+	CASE(Borrow);
 	CASE(Minus);
 	CASE(Mul);
 	CASE(Abs);

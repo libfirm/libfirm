@@ -363,9 +363,9 @@ static int vrp_update_node(ir_node *node)
 
 
 	/* TODO: Check, if there can be information derived from any of these:
-	is_Abs(node) is_Alloc(node) is_Anchor(node) is_Bound(node)
+	is_Abs(node) is_Alloc(node) is_Anchor(node) is_Borrow(node) is_Bound(node)
 	is_Break(node) is_Builtin(node) is_Call(node)
-	is_Cast(node) is_Cmp(node) is_Cond(node)
+	is_Carry(node) is_Cast(node) is_Cmp(node) is_Cond(node)
 	is_CopyB(node) is_Div(node) is_DivMod(node) is_Dummy(node)
 	is_End(node) is_Free(node)
 	is_IJmp(node) is_InstOf(node) is_Jmp(node) is_Load(node) is_Minus(node)

@@ -170,6 +170,9 @@ class Block(Op):
 	}
 	'''
 
+class Borrow(Binop):
+	flags = []
+
 class Bound(Op):
 	ins    = [ "mem", "index", "lower", "upper" ]
 	outs  = [
@@ -238,6 +241,9 @@ class Call(Op):
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
+
+class Carry(Binop):
+	flags = [ "commutative" ]
 
 class Cast(Unop):
 	mode     = "get_irn_mode(irn_op)"

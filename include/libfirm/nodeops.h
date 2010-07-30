@@ -212,12 +212,16 @@ FIRM_API int is_And(const ir_node *node);
 FIRM_API int is_Bad(const ir_node *node);
 /** Return true of the node is a Block node. */
 FIRM_API int is_Block(const ir_node *node);
+/** Return true of the node is a Borrow node. */
+FIRM_API int is_Borrow(const ir_node *node);
 /** Return true of the node is a Bound node. */
 FIRM_API int is_Bound(const ir_node *node);
 /** Return true of the node is a Builtin node. */
 FIRM_API int is_Builtin(const ir_node *node);
 /** Return true of the node is a Call node. */
 FIRM_API int is_Call(const ir_node *node);
+/** Return true of the node is a Carry node. */
+FIRM_API int is_Carry(const ir_node *node);
 /** Return true of the node is a Cast node. */
 FIRM_API int is_Cast(const ir_node *node);
 /** Return true of the node is a Cmp node. */
@@ -342,6 +346,11 @@ void set_And_right(ir_node *node, ir_node *right);
 
 
 
+FIRM_API ir_node *get_Borrow_left(const ir_node *node);
+void set_Borrow_left(ir_node *node, ir_node *left);
+FIRM_API ir_node *get_Borrow_right(const ir_node *node);
+void set_Borrow_right(ir_node *node, ir_node *right);
+
 FIRM_API ir_node *get_Bound_mem(const ir_node *node);
 void set_Bound_mem(ir_node *node, ir_node *mem);
 FIRM_API ir_node *get_Bound_index(const ir_node *node);
@@ -366,6 +375,11 @@ FIRM_API ir_type* get_Call_type(const ir_node *node);
 FIRM_API void set_Call_type(ir_node *node, ir_type* type);
 FIRM_API unsigned get_Call_tail_call(const ir_node *node);
 FIRM_API void set_Call_tail_call(ir_node *node, unsigned tail_call);
+
+FIRM_API ir_node *get_Carry_left(const ir_node *node);
+void set_Carry_left(ir_node *node, ir_node *left);
+FIRM_API ir_node *get_Carry_right(const ir_node *node);
+void set_Carry_right(ir_node *node, ir_node *right);
 
 FIRM_API ir_node *get_Cast_op(const ir_node *node);
 void set_Cast_op(ir_node *node, ir_node *op);
