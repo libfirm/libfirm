@@ -39,13 +39,21 @@
 #include "iredges.h"
 #include "bitset.h"
 
-static int get_pred_index(ir_node *block, ir_node *pred_block)
+/******************************************************************************
+ * Utility functions.                                                         *
+ ******************************************************************************/
+
+/**
+ * Given two blocks, where pred_block is a predecessor of block, returns the
+ * index of that predecessor among blocks dependencies.
+ */
+static int get_Block_cfgpred_idx(ir_node *block, ir_node *pred_block)
 {
 	int i;
+	assert(is_Block(block) && is_Block(pred_block));
 
 	/* Get the predecessors of block until the given block is found. */
 	for (i = 0; i < get_Block_n_cfgpreds(block); i++) {
-
 		ir_node *pred = get_Block_cfgpred(block, i);
 		if (get_nodes_block(pred) == pred_block) return i;
 	}
@@ -53,20 +61,30 @@ static int get_pred_index(ir_node *block, ir_node *pred_block)
 	return -1;
 }
 
+/**
+ * Given two blocks, where pred_block is a predecessor of block, returns the
+ * node inside pred_block that block depends on.
+ */
 static ir_node *get_pred_in_block(ir_node *block, ir_node *pred_block)
 {
-	int pred_index = get_pred_index(block, pred_block);
+	int pred_index = get_Block_cfgpred_idx(block, pred_block);
 	assert((pred_index >= 0) && "Predecessor not found.");
 
 	return get_Block_cfgpred(block, pred_index);
 }
 
+/**
+ * Determines whether the given node is nested somewhere inside the specified
+ * loop by walking up the loop tree.
+ */
 static int is_in_loop(ir_node *node, ir_loop *outer_loop)
 {
-	ir_loop *last;
-	ir_loop *loop;
+	ir_loop *last, *loop;
+	assert(node && outer_loop);
 
+	/* get_irn_loop will return NULL on a node. */
 	if (!is_Block(node)) node = get_nodes_block(node);
+
 	loop = get_irn_loop(node);
 	if (loop == NULL) return 0;
 
@@ -82,7 +100,11 @@ static int is_in_loop(ir_node *node, ir_loop *outer_loop)
 	return 0;
 }
 
-/* Collect all reachable nodes, stopping at the given end node. */
+/**
+ * Walks down the control dependence graph and collects all reachable nodes
+ * until the given idom node is reached. For each node that can be reached,
+ * the bit corresponding to its index is set in the reach bitset.
+ */
 static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
 {
 	ir_cdep *dep;
@@ -103,16 +125,28 @@ static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
 	}
 }
 
-static ir_node *select_values_walk(
-	bitset_t  *reach,   /* Nodes that can reach the preds via cdeps. */
-	ir_node   *block,   /* The current block to construct a selector for. */
-	ir_node   *end,     /* The end node where selection takes place. */
+/******************************************************************************
+ * Phase 1-1: Create gamma graphs for value selection.                        *
+ ******************************************************************************/
+
+/**
+ * This function is called by select_value and does the actual work, by
+ * walking down the reverse control dependence graph and creating gamma nodes
+ * on the way from the idom node to the predecessors.
+ * See select_value for a real description, this is just the worker function.
+ */
+static ir_node *select_value_walk(
+	bitset_t  *reach,  /* Nodes that can reach the preds via cdeps. */
+	ir_node   *block,  /* The current block to build a select graph for. */
+	ir_node   *end,    /* The end node where selection takes place. */
 	ir_node  **values) /* A value for each of the preds of end. */
 {
 	ir_cdep *dep;
 	ir_node *used_deps[2];
 	int      num_used_deps;
 	int      pred_index;
+
+	assert(is_Block(block) && is_Block(end) && values);
 
 	/* Get the reverse deps for the block. */
 	dep = find_rev_cdep(block);
@@ -134,7 +168,7 @@ static ir_node *select_values_walk(
 
 	/* Check if this is a predecessor of end and get the index. There should
 	 * always be somewhere to recurse except on a predecessor block. */
-	pred_index = get_pred_index(end, block);
+	pred_index = get_Block_cfgpred_idx(end, block);
 	assert(((pred_index >= 0) || (num_used_deps > 0)) && "Nowhere to walk.");
 
 	/* There are four situations that may happen. (1) This is a predecessor
@@ -150,7 +184,7 @@ static ir_node *select_values_walk(
 
 	/* Case two. */
 	if ((num_used_deps == 1) && (pred_index < 0)) {
-		return select_values_walk(reach, used_deps[0], end, values);
+		return select_value_walk(reach, used_deps[0], end, values);
 	}
 
 	/* Case three. */
@@ -160,8 +194,8 @@ static ir_node *select_values_walk(
 		int      succ_req, succ_cur;
 
 		/* Get the values for the gamma. True/false may still be flipped. */
-		ir_true  = select_values_walk(reach, used_deps[0], end, values);
-		ir_false = select_values_walk(reach, used_deps[1], end, values);
+		ir_true  = select_value_walk(reach, used_deps[0], end, values);
+		ir_false = select_value_walk(reach, used_deps[1], end, values);
 
 		/* Get the first successor and find out which branch it belongs to. */
 		succ      = get_edge_src_irn(get_block_succ_first(block));
@@ -202,13 +236,25 @@ static ir_node *select_values_walk(
 	return NULL;
 }
 
-static ir_node *select_values(bitset_t *preds, ir_node *block, ir_node **values)
+/**
+ * This function creates a graph of gamma nodes to select a value from one of
+ * the given block predecessors, similar to a phi node. For each predecessor
+ * of the block, a value has to be provided through the values list.
+ * The bitset specifies the indices of the predecessor blocks to consider.
+ *
+ * To do this, the immediate dominator of the given predecessors is determined
+ * and all reachable control dependencies are collected by find_cdep_reach. The
+ * select_value_walk function will then be called, to do the real work.
+ */
+static ir_node *select_value(bitset_t *preds, ir_node *block, ir_node **values)
 {
 	unsigned  i;
 	int       num_preds;
 	ir_node  *idom, *result;
 	ir_graph *irg;
 	bitset_t *reach;
+
+	assert(is_Block(block) && preds && values);
 
 	num_preds = bitset_popcount(preds);
 	if (num_preds == 0) return NULL;
@@ -217,7 +263,7 @@ static ir_node *select_values(bitset_t *preds, ir_node *block, ir_node **values)
 	if (num_preds == 1) {
 		bitset_foreach(preds, i) {
 			ir_node *pred  = get_nodes_block(get_Block_cfgpred(block, i));
-			int      index = get_pred_index(block, pred);
+			int      index = get_Block_cfgpred_idx(block, pred);
 			assert(index >= 0);
 
 			return values[index];
@@ -248,19 +294,35 @@ static ir_node *select_values(bitset_t *preds, ir_node *block, ir_node **values)
 	}
 
 	/* Walk down the reachable deps from the idom and create gammas. */
-	result = select_values_walk(reach, idom, block, values);
+	result = select_value_walk(reach, idom, block, values);
 	bitset_free(reach);
 
 	return result;
 }
 
-static ir_node **get_incoming_values(ir_node *block)
-{
-	int num_phis, i;
-	int num_preds = get_Block_n_cfgpreds(block);
+/******************************************************************************
+ * Phase 1-2: Wrap and unwrap phi-selected values in tuples.                  *
+ ******************************************************************************/
 
-	ir_node **tuples = NEW_ARR_F(ir_node*, num_preds);
+/**
+ * Creates a tuple for each predecessor block, that encapsulates the values
+ * that all the phi nodes in the block select for that predecessor. The list of
+ * tuples that is returned is ordered corresponding to the blocks predecessor
+ * nodes. The values inside the tuples are ordered like the linked list of phi
+ * nodes in the block.
+ *
+ * This makes it possible to handle all the phi nodes in the block at once, as
+ * if there would only be one phi node with mode_T.
+ */
+static ir_node **create_incoming_tuples(ir_node *block)
+{
+	int       i, num_phis, num_preds;
+	ir_node **tuples;
 	ir_node  *phi;
+
+	assert(is_Block(block));
+	num_preds = get_Block_n_cfgpreds(block);
+	tuples    = NEW_ARR_F(ir_node*, num_preds);
 
 	/* Count phi nodes in this block. */
 	phi = get_Block_phis(block);
@@ -292,15 +354,27 @@ static ir_node **get_incoming_values(ir_node *block)
 	return tuples;
 }
 
-static void free_incoming_values(ir_node **tuples)
+/**
+ * Frees the list created by get_incoming_values again.
+ */
+static void free_incoming_tuples(ir_node **tuples)
 {
 	DEL_ARR_F(tuples);
 }
 
+/**
+ * Used in conjunction with get_incoming_values. This will replace all phi
+ * nodes in the block by projs, that select their respective value from the
+ * given tuple.
+ * This is used, once the gamma graph that selects the blocks phi nodes is
+ * in place. The tuple returned by that graph is the tuple passed here.
+ */
 static void replace_phis_by_projs(ir_node *block, ir_node *tuple) {
 
 	ir_node *phi, *next_phi;
 	int i = 0;
+
+	assert(is_Block(block) && (get_irn_mode(tuple) == mode_T));
 
 	/* For each node create a proj getting a value from the tuple. */
 	phi = get_Block_phis(block);
@@ -315,13 +389,14 @@ static void replace_phis_by_projs(ir_node *block, ir_node *tuple) {
 	}
 }
 
-static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
-{
-	/* Not supported yet. */
-	(void)loop;
-	return new_r_Unknown(get_irn_irg(block), mode_b);
-}
+/******************************************************************************
+ * Phase 1-3: Replace phi nodes with gamma graphs or theta nodes.             *
+ ******************************************************************************/
 
+/**
+ * This function is used to walk along the blocks and replace the phi nodes
+ * by gamma graphs or theta nodes. This is used by replace_phis.
+ */
 static void replace_phis_walk(ir_node *block, void *ctx)
 {
 	int          i;
@@ -330,12 +405,13 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	bitset_t    *outer_preds, *inner_preds;
 
 	(void)ctx;
+	assert(is_Block(block));
 
 	/* Skip blocks without phis. */
 	if (get_Block_phis(block) == NULL) return;
 
 	/* Obtain for each predecessor the values selected by phis. */
-	values = get_incoming_values(block);
+	values = create_incoming_tuples(block);
 
 	/* Find out if we need to construct a theta node or just gamma nodes.
 	 * If we are inside a loop header (there are incoming paths from the loop
@@ -364,8 +440,8 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	}
 
 	/* Create gammas for the outer and inner preds. Can return NULL. */
-	inner_tuple = select_values(inner_preds, block, values);
-	outer_tuple = select_values(outer_preds, block, values);
+	inner_tuple = select_value(inner_preds, block, values);
+	outer_tuple = select_value(outer_preds, block, values);
 	assert(inner_tuple);
 
 	/* If there are outer and inner preds, construct a theta node. */
@@ -379,10 +455,66 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 
 	bitset_free(outer_preds);
 	bitset_free(inner_preds);
-	free_incoming_values(values);
+	free_incoming_tuples(values);
 }
 
-static void insert_extract_walk(ir_node* node, void *ctx)
+/**
+ * Initiates the replacement of phi nodes by gamma and theta nodes in the
+ * given graph. Note that after calling this function there will still be a
+ * block structure and extract nodes, as well as their conditions are still
+ * missing. They will be placed by the next phase.
+ */
+static void replace_phis(ir_graph *irg)
+{
+	ir_resources_t resources =
+		IR_RESOURCE_IRN_LINK |
+		IR_RESOURCE_PHI_LIST;
+
+	assert(irg);
+
+	/* We need to walk the CFG in reverse order and access dominators. */
+	assure_doms(irg);
+	assure_cf_loop(irg);
+
+	/* Create lists of phi nodes in each block. */
+	ir_reserve_resources(irg, resources);
+	collect_phiprojs(irg);
+
+	/* Create the control dependence graph. */
+	compute_cdep(irg);
+	compute_rev_cdep(irg);
+
+	/* Walk along the graph and replace phi nodes by gammas. */
+	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
+
+	free_rev_cdep(irg);
+	free_cdep(irg);
+	ir_free_resources(irg, resources);
+}
+
+/******************************************************************************
+ * Phase 2: Insert extract nodes when accessing values in a loop.             *
+ ******************************************************************************/
+
+/**
+ * Creates a graph of gamma nodes that evaluates to true when one of the given
+ * loops breaking conditions is true. In PEG semantics, the produced value is
+ * part of loop and produces an infinite list of booleans.
+ */
+static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
+{
+	assert(is_Block(block) && loop);
+
+	/* Not supported yet. */
+	(void)loop;
+	return new_r_Unknown(get_irn_irg(block), mode_b);
+}
+
+/**
+ * This walker function walks through the graph and inserts extract nodes when
+ * a node inside a loop is accessed from the outside.
+ */
+static void insert_extracts_walk(ir_node* node, void *ctx)
 {
 	int      i;
 	ir_node *block;
@@ -412,39 +544,27 @@ static void insert_extract_walk(ir_node* node, void *ctx)
 	}
 }
 
-static void replace_phis(ir_graph *irg)
+/**
+ * Initiates extract node creation in the graph. The block structure is still
+ * important for this phase, to determine loop membership.
+ */
+static void insert_extracts(ir_graph* irg)
 {
-	ir_resources_t resources =
-		IR_RESOURCE_IRN_LINK |
-		IR_RESOURCE_PHI_LIST;
+	assert(irg);
 
-	/* We need to walk the CFG in reverse order and access dominators. */
-	assure_doms(irg);
 	assure_cf_loop(irg);
-
-	/* Create lists of phi nodes in each block. */
-	ir_reserve_resources(irg, resources);
-	collect_phiprojs(irg);
-
-	/* Create the control dependence graph. */
-	compute_cdep(irg);
-	compute_rev_cdep(irg);
-
-	/* Walk along the graph and replace phi nodes by gammas. */
-	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
-	irg_walk_graph(irg, NULL, insert_extract_walk, NULL);
-
-	/* TODO: insert extract nodes on every cross-block node into a loop. */
-
-	free_rev_cdep(irg);
-	free_cdep(irg);
-	ir_free_resources(irg, resources);
+	irg_walk_graph(irg, NULL, insert_extracts_walk, NULL);
 }
 
+/******************************************************************************
+ * Phase 3: Remove the graphs block structure.                                *
+ ******************************************************************************/
+
 /**
- * Moves all nodes except those in the start- and end-block to the given block.
+ * Moves all nodes except those in the start- and end-block to the target block.
+ * The target block is given by the walkers context. See remove_blocks.
  */
-static void move_to_block(ir_node *irn, void *ctx)
+static void remove_blocks_walk(ir_node *irn, void *ctx)
 {
 	ir_graph *irg;
 	ir_node  *block, *target;
@@ -464,6 +584,12 @@ static void move_to_block(ir_node *irn, void *ctx)
 	set_nodes_block(irn, target);
 }
 
+/**
+ * Removes the graphs superfluous block structure, by creating a new block that
+ * remains beside start and end block and then moving all nodes there.
+ * Firm will remove the remaining blocks as they can't be reached from the end
+ * block anymore.
+ */
 static void remove_blocks(ir_graph *irg)
 {
 	/* Create a single block to stuff everything else in. */
@@ -471,21 +597,23 @@ static void remove_blocks(ir_graph *irg)
 	ir_node *exec  = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
 	ir_node *block = new_r_Block(irg, 1, &exec);
 
-	/**
-	 * Move all nodes into that block. The old block structure will vanish,
-	 * since it can't be reached from the end block, once the return has been
-	 * moved away into the new block.
-	 */
-	irg_walk_graph(irg, NULL, move_to_block, block);
+	irg_walk_graph(irg, NULL, remove_blocks_walk, block);
 }
 
+/******************************************************************************
+ * Phase 4: Unfold gamma and theta tuples.                                    *
+ ******************************************************************************/
+
 /**
- * Unfolds a value in a tree of tupelized gammas. This replicates the tree
- * along the way with the values mode.
+ * Walks along gamma and theta nodes with mode_T and splits them up, so that
+ * each value in the tuple gets its own copy of the gamma/theta graph.
  */
 static ir_node *unfold_tuples_walk(ir_node *irn, int idx, ir_mode *mode)
 {
-	ir_node *block = get_nodes_block(irn);
+	ir_node *block;
+	assert((idx >= 0) && irn && mode);
+
+	block = get_nodes_block(irn);
 
 	if (is_Gamma(irn)) {
 		/* Construct a new gamma for the value. */
@@ -510,12 +638,17 @@ static ir_node *unfold_tuples_walk(ir_node *irn, int idx, ir_mode *mode)
 	assert(0 && "Invalid tupelized gamma tree.");
 }
 
+/**
+ * Walker function to search for gammas and theta nodes on tuples and splitting
+ * them up into multiple graphs.
+ */
 static void unfold_tuples_find(ir_node *irn, void *ctx)
 {
 	ir_node *tuple, *value;
 	ir_mode *value_mode;
 	int      value_pn;
 
+	assert(irn);
 	(void)ctx;
 
 	/* Search for proj nodes. */
@@ -532,10 +665,19 @@ static void unfold_tuples_find(ir_node *irn, void *ctx)
 	}
 }
 
+/**
+ * Unfolds all gamma and theta nodes with mode_T to create graphs for all the
+ * individual values stored inside those tuples.
+ */
 static void unfold_tuples(ir_graph *irg)
 {
+	assert(irg);
 	irg_walk_graph(irg, NULL, unfold_tuples_find, NULL);
 }
+
+/******************************************************************************
+ * Public interface.                                                          *
+ ******************************************************************************/
 
 /**
  * TODO:
@@ -543,6 +685,9 @@ static void unfold_tuples(ir_graph *irg)
  * - Multiple loop entries
  */
 
+/**
+ * Converts the given firm graph to the PEG representation.
+ */
 void convert_to_peg(ir_graph *irg)
 {
 	/* Use automatic out edges. Makes things easier later. */
@@ -550,6 +695,7 @@ void convert_to_peg(ir_graph *irg)
 	int had_edges = edges_assure(irg);
 	set_optimize(0);
 
+	assert(irg);
 	dump_ir_graph(irg, "cfg");
 
 	/* Eliminate all switch nodes, we can't represent them in a PEG. */
@@ -562,7 +708,11 @@ void convert_to_peg(ir_graph *irg)
 
 	/* Replace phi nodes by gamma trees selecting tuples. */
 	replace_phis(irg);
-	dump_ir_graph(irg, "gamma");
+	dump_ir_graph(irg, "gamma_theta");
+
+	/* Add extract nodes on loop access. */
+	insert_extracts(irg);
+	dump_ir_graph(irg, "extracts");
 
 	/* Remove the existing block structure. */
 	remove_blocks(irg);
