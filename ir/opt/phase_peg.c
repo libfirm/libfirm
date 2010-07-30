@@ -35,10 +35,9 @@
 #include "irgwalk.h"
 #include "lowering.h"
 #include "array_t.h"
-#include "pmap.h"
-#include "pset_new.h"
 #include "cdep.h"
 #include "iredges.h"
+#include "bitset.h"
 
 static int get_pred_index(ir_node *block, ir_node *pred_block)
 {
@@ -84,19 +83,19 @@ static int is_in_loop(ir_node *node, ir_loop *outer_loop)
 }
 
 /* Collect all reachable nodes, stopping at the given end node. */
-static void find_cdep_reach(pset_new_t *reach, ir_node *block, ir_node *idom)
+static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
 {
 	ir_cdep *dep;
 
 	assert(is_Block(block));
 	if (block == idom) return;
 
-	pset_new_insert(reach, block);
+	bitset_set(reach, get_irn_idx(block));
 	dep = find_cdep(block);
 
 	/* Recurse all unvisited blocks. */
 	while (dep != NULL) {
-		if (!pset_new_contains(reach, dep->node)) {
+		if (!bitset_is_set(reach, get_irn_idx(dep->node))) {
 			find_cdep_reach(reach, dep->node, idom);
 		}
 
@@ -105,10 +104,10 @@ static void find_cdep_reach(pset_new_t *reach, ir_node *block, ir_node *idom)
 }
 
 static ir_node *select_values_walk(
-	pset_new_t *reach,   /* Nodes that can reach the preds via cdeps. */
-	ir_node    *block,   /* The current block to construct a selector for. */
-	ir_node    *end,     /* The end node where selection takes place. */
-	ir_node    **values) /* A value for each of the preds of end. */
+	bitset_t  *reach,   /* Nodes that can reach the preds via cdeps. */
+	ir_node   *block,   /* The current block to construct a selector for. */
+	ir_node   *end,     /* The end node where selection takes place. */
+	ir_node  **values) /* A value for each of the preds of end. */
 {
 	ir_cdep *dep;
 	ir_node *used_deps[2];
@@ -122,7 +121,7 @@ static ir_node *select_values_walk(
 	num_used_deps = 0;
 	while (dep != NULL) {
 
-		if (pset_new_contains(reach, dep->node)) {
+		if (bitset_is_set(reach, get_irn_idx(dep->node))) {
 			used_deps[num_used_deps] = dep->node;
 			num_used_deps++;
 
@@ -156,8 +155,6 @@ static ir_node *select_values_walk(
 
 	/* Case three. */
 	if ((num_used_deps == 2) && (pred_index < 0)) {
-
-		ir_loop *loop;
 		ir_mode *mode;
 		ir_node *cond, *ir_true, *ir_false, *succ, *succ_proj;
 		int      succ_req, succ_cur;
@@ -190,13 +187,11 @@ static ir_node *select_values_walk(
 		mode = get_irn_mode(ir_true);
 		cond = get_Cond_selector(get_Proj_pred(succ_proj));
 
-		/* Find out if cond is inside some loop that end (where the value is
-		 * actually selected) is not in. */
-		loop = get_irn_loop(cond);
-		if (loop && !is_in_loop(end, loop)) {
-			/* TODO: construct an extract node for the cond. */
-			assert(0);
-		}
+		/* The condition might actually be nested inside a loop. In that case
+		 * we would need an extract node to get it out. However we can just
+		 * create a dependency to the condition here and since the gamma node
+		 * is constructed in the end block, the extract insertion phase that
+		 * is executed later will take care of this, too. */
 
 		return new_r_Gamma(end, cond, ir_false, ir_true, mode);
 	}
@@ -207,42 +202,54 @@ static ir_node *select_values_walk(
 	return NULL;
 }
 
-static ir_node *select_values(pset_new_t *preds, ir_node *block, ir_node **values)
+static ir_node *select_values(bitset_t *preds, ir_node *block, ir_node **values)
 {
-	int                  num_preds;
-	ir_node             *idom, *result, *pred;
-	pset_new_t           reach;
-	pset_new_iterator_t  it;
+	unsigned  i;
+	int       num_preds;
+	ir_node  *idom, *result;
+	ir_graph *irg;
+	bitset_t *reach;
 
-	num_preds = pset_new_size(preds);
+	num_preds = bitset_popcount(preds);
 	if (num_preds == 0) return NULL;
 
 	/* Shortcut for exactly one pred. */
 	if (num_preds == 1) {
-		foreach_pset_new(preds, pred, it) {
-			int index = get_pred_index(block, pred);
+		bitset_foreach(preds, i) {
+			ir_node *pred  = get_nodes_block(get_Block_cfgpred(block, i));
+			int      index = get_pred_index(block, pred);
 			assert(index >= 0);
+
 			return values[index];
 		}
+		assert(0);
 	}
 
 	/* Get the idom of the given pred blocks. */
 	idom = NULL;
-	foreach_pset_new(preds, pred, it) {
+	bitset_foreach(preds, i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+		pred = get_nodes_block(pred);
+
 		if (idom == NULL) idom = get_Block_idom(pred);
 		else idom = node_smallest_common_dominator(idom, pred);
 		assert(idom);
 	}
 
 	/* Discover reachable deps for the preds. */
-	pset_new_init(&reach);
-	foreach_pset_new(preds, pred, it) {
-		find_cdep_reach(&reach, pred, idom);
+	irg = get_irn_irg(block);
+	reach = bitset_malloc(get_irg_last_idx(irg));
+
+	bitset_foreach(preds, i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+		pred = get_nodes_block(pred);
+
+		find_cdep_reach(reach, pred, idom);
 	}
 
 	/* Walk down the reachable deps from the idom and create gammas. */
-	result = select_values_walk(&reach, idom, block, values);
-	pset_new_destroy(&reach);
+	result = select_values_walk(reach, idom, block, values);
+	bitset_free(reach);
 
 	return result;
 }
@@ -320,7 +327,7 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	int          i;
 	ir_loop     *loop;
 	ir_node    **values, *outer_tuple, *inner_tuple, *result;
-	pset_new_t   outer_preds, inner_preds;
+	bitset_t    *outer_preds, *inner_preds;
 
 	(void)ctx;
 
@@ -338,27 +345,27 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	 * for both values, but on a subset of predecessors only. */
 
 	/* Collect pred nodes outside the current loop. */
-	pset_new_init(&outer_preds);
-	pset_new_init(&inner_preds);
+	outer_preds = bitset_malloc(get_Block_n_cfgpreds(block));
+	inner_preds = bitset_malloc(get_Block_n_cfgpreds(block));
 
 	loop = get_irn_loop(block);
 	for (i = 0; i < get_Block_n_cfgpreds(block); i++) {
 
-		ir_node    *pred = get_nodes_block(get_Block_cfgpred(block, i));
-		pset_new_t *set  = &inner_preds;
+		ir_node  *pred = get_nodes_block(get_Block_cfgpred(block, i));
+		bitset_t *set  = inner_preds;
 
 		/* Classify preds by their origin (inside the loop or outside). If
 		 * there is no loop, put everything in inner_preds. */
 		if (loop && !is_in_loop(pred, loop)) {
-			set = &outer_preds;
+			set = outer_preds;
 		}
 
-		pset_new_insert(set, pred);
+		bitset_set(set, i);
 	}
 
 	/* Create gammas for the outer and inner preds. Can return NULL. */
-	inner_tuple = select_values(&inner_preds, block, values);
-	outer_tuple = select_values(&outer_preds, block, values);
+	inner_tuple = select_values(inner_preds, block, values);
+	outer_tuple = select_values(outer_preds, block, values);
 	assert(inner_tuple);
 
 	/* If there are outer and inner preds, construct a theta node. */
@@ -370,8 +377,8 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	/* Construct projs on the result. */
 	replace_phis_by_projs(block, result);
 
-	pset_new_destroy(&inner_preds);
-	pset_new_destroy(&outer_preds);
+	bitset_free(outer_preds);
+	bitset_free(inner_preds);
 	free_incoming_values(values);
 }
 
@@ -397,7 +404,6 @@ static void insert_extract_walk(ir_node* node, void *ctx)
 
 		/* Accessing a loop from the outside requires extract. */
 		if (!is_in_loop(node, in_loop)) {
-			/* TODO: find out if this also handles the gamma cond extracts. */
 			ir_mode *mode    = get_irn_mode(in);
 			ir_node *cond    = create_break_cond(in_block, in_loop);
 			ir_node *extract = new_r_Extract(block, in, cond, mode);
@@ -530,6 +536,12 @@ static void unfold_tuples(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, unfold_tuples_find, NULL);
 }
+
+/**
+ * TODO:
+ * - Loop conditions
+ * - Multiple loop entries
+ */
 
 void convert_to_peg(ir_graph *irg)
 {
