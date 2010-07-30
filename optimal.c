@@ -133,7 +133,7 @@ void fill_node_buckets(pbqp *pbqp)
 
 	#if KAPS_TIMING
 		ir_timer_stop(t_fill_buckets);
-		printf("PBQP Fill Nodes into buckets: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_fill_buckets) / 1000.0);
+		printf("PBQP Fill Nodes into buckets: %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_fill_buckets) / 1000.0);
 	#endif
 }
 
@@ -775,7 +775,7 @@ void initial_simplify_edges(pbqp *pbqp)
 
 	#if KAPS_TIMING
 		ir_timer_stop(t_int_simpl);
-		printf("PBQP Initial simplify edges: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_int_simpl) / 1000.0);
+		printf("PBQP Initial simplify edges:  %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_int_simpl) / 1000.0);
 	#endif
 }
 
@@ -841,7 +841,7 @@ num determine_solution(pbqp *pbqp)
 
 	#if KAPS_TIMING
 		ir_timer_stop(t_det_solution);
-		printf("PBQP Determine Solution: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_det_solution) / 1000.0);
+		printf("PBQP Determine Solution:      %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_det_solution) / 1000.0);
 	#endif
 
 	return solution;

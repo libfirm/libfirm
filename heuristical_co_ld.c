@@ -313,10 +313,10 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 			#endif
 		} else {
 			#if KAPS_TIMING
-				printf("pbqp RE reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
-				printf("pbqp R1 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r1) / 1000.0);
-				printf("pbqp R2 reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_r2) / 1000.0);
-				printf("pbqp RN reductions: %8.3lf msec\n", (double)ir_timer_elapsed_usec(t_rn) / 1000.0);
+				printf("PBQP RE reductions:           %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_edge) / 1000.0);
+				printf("PBQP R1 reductions:           %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_r1) / 1000.0);
+				printf("PBQP R2 reductions:           %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_r2) / 1000.0);
+				printf("PBQP RN reductions:           %10.3lf msec\n", (double)ir_timer_elapsed_usec(t_rn) / 1000.0);
 			#endif
 
 			return;
