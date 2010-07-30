@@ -425,6 +425,10 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 
 	/* Reduce the remaining source node via RI. */
 	apply_RI(pbqp);
+
+#if KAPS_STATISTIC
+	pbqp->num_r1--;
+#endif
 }
 
 /**
@@ -583,6 +587,10 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 
 	/* Reduce the remaining source node via RI. */
 	apply_RI(pbqp);
+
+#if KAPS_STATISTIC
+	pbqp->num_r1--;
+#endif
 }
 
 /**
