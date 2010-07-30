@@ -1172,6 +1172,121 @@ void apply_RII(pbqp *pbqp)
 	simplify_edge(pbqp, edge);
 }
 
+static void select_column(pbqp_edge *edge, unsigned col_index)
+{
+	pbqp_matrix    *mat;
+	pbqp_node      *src_node;
+	pbqp_node      *tgt_node;
+	vector         *src_vec;
+	vector         *tgt_vec;
+	num             min;
+	unsigned        src_len;
+	unsigned        tgt_len;
+	unsigned        src_index;
+
+	assert(edge);
+
+	src_node = edge->src;
+	tgt_node = edge->tgt;
+	assert(src_node);
+	assert(tgt_node);
+
+	src_vec = src_node->costs;
+	tgt_vec = tgt_node->costs;
+	assert(src_vec);
+	assert(tgt_vec);
+
+	src_len = src_vec->len;
+	tgt_len = tgt_vec->len;
+	assert(src_len > 0);
+	assert(tgt_len > 0);
+
+	mat = edge->costs;
+	assert(mat);
+
+	for (src_index = 0; src_index < src_len; ++src_index) {
+		num elem = mat->entries[src_index * tgt_len + col_index];
+
+		if (elem != 0) {
+			src_vec->entries[src_index].data = pbqp_add(
+					src_vec->entries[src_index].data, elem);
+
+		}
+	}
+
+	min = pbqp_matrix_get_col_min(mat, col_index, src_vec);
+
+	if (min == INF_COSTS) {
+		unsigned edge_index;
+		unsigned edge_len = pbqp_node_get_degree(src_node);
+
+		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+			pbqp_edge *edge_candidate = src_node->edges[edge_index];
+			if (edge_candidate != edge) {
+				insert_into_edge_bucket(edge_candidate);
+			}
+		}
+	}
+
+	delete_edge(edge);
+	reorder_node(src_node);
+	reorder_node(tgt_node);
+}
+
+static void select_row(pbqp_edge *edge, unsigned row_index)
+{
+	pbqp_matrix    *mat;
+	pbqp_node      *src_node;
+	pbqp_node      *tgt_node;
+	vector         *tgt_vec;
+	num             min;
+	unsigned        tgt_len;
+	unsigned        tgt_index;
+
+	assert(edge);
+
+	src_node = edge->src;
+	tgt_node = edge->tgt;
+	assert(tgt_node);
+
+	tgt_vec = tgt_node->costs;
+	assert(tgt_vec);
+
+	tgt_len = tgt_vec->len;
+	assert(tgt_len > 0);
+
+	mat = edge->costs;
+	assert(mat);
+
+	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
+		num elem = mat->entries[row_index * tgt_len + tgt_index];
+
+		if (elem != 0) {
+			tgt_vec->entries[tgt_index].data = pbqp_add(
+					tgt_vec->entries[tgt_index].data, elem);
+
+		}
+	}
+
+	min = pbqp_matrix_get_row_min(mat, row_index, tgt_vec);
+
+	if (min == INF_COSTS) {
+		unsigned edge_index;
+		unsigned edge_len = pbqp_node_get_degree(tgt_node);
+
+		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
+			pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
+			if (edge_candidate != edge) {
+				insert_into_edge_bucket(edge_candidate);
+			}
+		}
+	}
+
+	delete_edge(edge);
+	reorder_node(src_node);
+	reorder_node(tgt_node);
+}
+
 void select_alternative(pbqp_node *node, unsigned selected_index)
 {
 	unsigned  edge_index;
@@ -1193,9 +1308,14 @@ void select_alternative(pbqp_node *node, unsigned selected_index)
 		}
 	}
 
-	/* Add all incident edges to edge bucket, since they are now independent. */
+	/* Select corresponding row/column for incident edges. */
 	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
-		insert_into_edge_bucket(node->edges[edge_index]);
+		pbqp_edge *edge = node->edges[edge_index];
+
+		if (edge->src == node)
+			select_row(edge, selected_index);
+		else
+			select_column(edge, selected_index);
 	}
 }
 
