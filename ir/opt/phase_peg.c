@@ -125,6 +125,46 @@ static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
 	}
 }
 
+/**
+ * Identifies the header node of the loop, which is where the loop is being
+ * entered. If there are more than two loop headers, only one of them will be
+ * returned. This should be normalized before.
+ */
+static ir_node *find_loop_header(ir_loop *loop)
+{
+	int i, j;
+
+	/* This assumes, that for two nested loops the header node of the outer
+	 * loop is not part of the inner loop. This shouldn't happen because the
+	 * inner loop needs a backedge. Since the header node would be the first
+	 * node along the inner loops path, the backedge has to go either there or
+	 * to some node further down the path but before the branch that leads to
+	 * the backedge.
+	 * In the first case, there is just one loop whose body branches somewhere
+	 * and eventually leads back to the header. In the second case, there is
+	 * a nested loop that can't have the same header as the first one, because
+	 * the backedge is behind the header. */
+
+	for (i = 0; i < get_loop_n_nodes(loop); i++) {
+		ir_node *node = get_loop_node(loop, i);
+
+		/* Search for control flow from outside the loop. */
+		for (j = 0; j < get_Block_n_cfgpreds(node); j++) {
+			ir_node *pred = get_Block_cfgpred(node, j);
+			pred = get_nodes_block(pred);
+
+			/* TODO: Could be improved by either using a bitset to collect
+			 * the nodes of the loop first or by augmenting the loop tree to
+			 * provide loop membership lookup in O(1). */
+			if (!is_in_loop(pred, loop)) {
+				return node; /* Has to be the header. */
+			}
+		}
+	}
+
+	assert(0 && "No loop header found.");
+}
+
 /******************************************************************************
  * Phase 1-1: Create gamma graphs for value selection.                        *
  ******************************************************************************/
@@ -503,7 +543,11 @@ static void replace_phis(ir_graph *irg)
  */
 static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 {
+	ir_node *header;
 	assert(is_Block(block) && loop);
+
+	/* Identify the loops header node. */
+	header = find_loop_header(loop);
 
 	/* Not supported yet. */
 	(void)loop;
@@ -683,6 +727,9 @@ static void unfold_tuples(ir_graph *irg)
  * TODO:
  * - Loop conditions
  * - Multiple loop entries
+ * - Use an obstack for allocations
+ * - What about keepalive edges?
+ * - Generalize select_values
  */
 
 /**
@@ -717,7 +764,6 @@ void convert_to_peg(ir_graph *irg)
 	/* Remove the existing block structure. */
 	remove_blocks(irg);
 
-	dump_ir_graph(irg, "nocfg-cf");
 	ir_add_dump_flags(ir_dump_flag_hide_control_flow);
 	dump_ir_graph(irg, "nocfg");
 
