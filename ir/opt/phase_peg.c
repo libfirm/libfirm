@@ -176,66 +176,83 @@ static ir_node *find_loop_header(ir_loop *loop)
  * See select_value for a real description, this is just the worker function.
  */
 static ir_node *select_value_walk(
-	bitset_t  *reach,  /* Nodes that can reach the preds via cdeps. */
-	ir_node   *block,  /* The current block to build a select graph for. */
-	ir_node   *end,    /* The end node where selection takes place. */
-	ir_node  **values) /* A value for each of the preds of end. */
+	bitset_t  *reach,      /* Nodes that can reach the preds via cdeps. */
+	ir_node   *cons_block, /* The block to construct the gamma graph in. */
+	ir_node   *block,      /* The current block to build a select graph for. */
+	int        num_blocks, /* The number of end blocks. */
+	ir_node  **blocks,     /* The blocks we have values for. */
+	ir_node  **values)     /* A value for each of the blocks. */
 {
 	ir_cdep *dep;
-	ir_node *used_deps[2];
-	int      num_used_deps;
-	int      pred_index;
+	ir_node *deps[2];
+	int      n_deps;
+	int      val_index, i;
 
-	assert(is_Block(block) && is_Block(end) && values);
+	assert(is_Block(cons_block) && is_Block(block));
+	assert((num_blocks > 0) && blocks && values);
 
 	/* Get the reverse deps for the block. */
 	dep = find_rev_cdep(block);
 
-	/* Collect the deps that can reach the predecessors. */
-	num_used_deps = 0;
+	/* Collect the dependees that can reach one of the blocks. */
+	n_deps = 0;
 	while (dep != NULL) {
 
 		if (bitset_is_set(reach, get_irn_idx(dep->node))) {
-			used_deps[num_used_deps] = dep->node;
-			num_used_deps++;
+			deps[n_deps] = dep->node;
+			n_deps++;
 
-			/* This won't happen I have proven it! */
-			assert(num_used_deps <= 2);
+			/* There are more than two deps, but only one branch. So one dep
+			 * must dominate another. This violates the base assumption, that
+			 * only one of the blocks is guaranteed to have been executed. */
+			assert((n_deps <= 2) && "Base assumption violated.");
 		}
 
 		dep = dep->next;
 	}
 
-	/* Check if this is a predecessor of end and get the index. There should
-	 * always be somewhere to recurse except on a predecessor block. */
-	pred_index = get_Block_cfgpred_idx(end, block);
-	assert(((pred_index >= 0) || (num_used_deps > 0)) && "Nowhere to walk.");
+	/* Find out if we have reached one of the end blocks. */
+	val_index = -1;
 
-	/* There are four situations that may happen. (1) This is a predecessor
-	 * we have a value for. (2) This is no predecessor but there is one dependee
-	 * to recurse to. (3) This is a branch with two dependees to get the values
-	 * from. (4) This is a branch with one dependee and the block is a
-	 * predecessor itself to get the other value from. */
+	for (i = 0; i < num_blocks; i++) {
+		if (block == blocks[i]) {
+			val_index = i;
+			break;
+		}
+	}
+
+	assert(((val_index >= 0) || (n_deps > 0)) && "Nowhere to walk.");
+
+	/* There are four situations that may happen. (1) This is a block we have a
+	 * value for. (2) We have one dependee to recurse to. (3) This is a branch
+	 * with two dependees to get the values from. (4) This is a branch with one
+	 * dependee and we have a value for the block itself. */
 
 	/* Case one. */
-	if ((num_used_deps == 0) && (pred_index >= 0)) {
-		return values[pred_index];
+	if ((n_deps == 0) && (val_index >= 0)) {
+		return values[val_index];
 	}
 
 	/* Case two. */
-	if ((num_used_deps == 1) && (pred_index < 0)) {
-		return select_value_walk(reach, used_deps[0], end, values);
+	if ((n_deps == 1) && (val_index < 0)) {
+		return select_value_walk(
+			reach, cons_block, deps[0], num_blocks, blocks, values
+		);
 	}
 
 	/* Case three. */
-	if ((num_used_deps == 2) && (pred_index < 0)) {
+	if ((n_deps == 2) && (val_index < 0)) {
 		ir_mode *mode;
 		ir_node *cond, *ir_true, *ir_false, *succ, *succ_proj;
 		int      succ_req, succ_cur;
 
-		/* Get the values for the gamma. True/false may still be flipped. */
-		ir_true  = select_value_walk(reach, used_deps[0], end, values);
-		ir_false = select_value_walk(reach, used_deps[1], end, values);
+		/* Get the true and false values. They may still be flipped. */
+		ir_true = select_value_walk(
+			reach, cons_block, deps[0], num_blocks, blocks, values
+		);
+		ir_false = select_value_walk(
+			reach, cons_block, deps[1], num_blocks, blocks, values
+		);
 
 		/* Get the first successor and find out which branch it belongs to. */
 		succ      = get_edge_src_irn(get_block_succ_first(block));
@@ -245,7 +262,7 @@ static ir_node *select_value_walk(
 		 * leads. Note that list[0] will postdominate the successor that
 		 * depends on block but not block itself (and the other successor). */
 		succ_req = (get_Proj_proj(succ_proj) == pn_Cond_true);
-		succ_cur = block_postdominates(used_deps[0], succ);
+		succ_cur = block_postdominates(deps[0], succ);
 
 		/* If succ_cur is true, succ leads to list[0] and therefore to the
 		 * currently assigned ir_true. This has to match succ_req which is
@@ -267,7 +284,7 @@ static ir_node *select_value_walk(
 		 * is constructed in the end block, the extract insertion phase that
 		 * is executed later will take care of this, too. */
 
-		return new_r_Gamma(end, cond, ir_false, ir_true, mode);
+		return new_r_Gamma(cons_block, cond, ir_false, ir_true, mode);
 	}
 
 	/* Case four is not handled yet. */
@@ -277,64 +294,57 @@ static ir_node *select_value_walk(
 }
 
 /**
- * This function creates a graph of gamma nodes to select a value from one of
- * the given block predecessors, similar to a phi node. For each predecessor
- * of the block, a value has to be provided through the values list.
- * The bitset specifies the indices of the predecessor blocks to consider.
+ * Given a set of blocks and a value for each block, builds a graph of gamma
+ * nodes to select the value corresponding to the block that has previously
+ * been executed. Speaking in CFG terms, the basic assumption is that exactly
+ * one of the given blocks is guaranteed to have been executed when the gamma
+ * graph is evaluated.
  *
- * To do this, the immediate dominator of the given predecessors is determined
- * and all reachable control dependencies are collected by find_cdep_reach. The
- * select_value_walk function will then be called, to do the real work.
+ * If that assumtion doesn't hold, the returned gamma graph may either return
+ * a value for a block that is actually never executed or it may fail with an
+ * assertion (if one of the given blocks dominates another block).
  */
-static ir_node *select_value(bitset_t *preds, ir_node *block, ir_node **values)
+static ir_node *select_value(
+	ir_node   *cons_block, /* The block to construct the gamma graph in. */
+	int        num_blocks, /* The number of end blocks. */
+	ir_node  **blocks,     /* The blocks we have values for. */
+	ir_node  **values)     /* A value for each of the blocks. */
 {
-	unsigned  i;
-	int       num_preds;
+	int       i;
 	ir_node  *idom, *result;
 	ir_graph *irg;
 	bitset_t *reach;
 
-	assert(is_Block(block) && preds && values);
+	assert(is_Block(cons_block) && (num_blocks > 0) && blocks && values);
 
-	num_preds = bitset_popcount(preds);
-	if (num_preds == 0) return NULL;
-
-	/* Shortcut for exactly one pred. */
-	if (num_preds == 1) {
-		bitset_foreach(preds, i) {
-			ir_node *pred  = get_nodes_block(get_Block_cfgpred(block, i));
-			int      index = get_Block_cfgpred_idx(block, pred);
-			assert(index >= 0);
-
-			return values[index];
-		}
-		assert(0);
+	/* One node shortcut. */
+	if (num_blocks == 1) {
+		return values[0];
 	}
 
-	/* Get the idom of the given pred blocks. */
+	/* Find the idom of the given blocks. This is where the first important
+	 * decision takes place. So it is the starting point for construction. */
 	idom = NULL;
-	bitset_foreach(preds, i) {
-		ir_node *pred = get_Block_cfgpred(block, i);
-		pred = get_nodes_block(pred);
 
-		if (idom == NULL) idom = get_Block_idom(pred);
-		else idom = node_smallest_common_dominator(idom, pred);
+	for (i = 0; i < num_blocks; i++) {
+		assert(is_Block(blocks[i]));
+		if (idom == NULL) idom = get_Block_idom(blocks[i]);
+		else idom = node_smallest_common_dominator(idom, blocks[i]);
 		assert(idom);
 	}
 
-	/* Discover reachable deps for the preds. */
-	irg = get_irn_irg(block);
+	/* Discover all reachable deps of the given blocks. */
+	irg   = get_irn_irg(cons_block);
 	reach = bitset_malloc(get_irg_last_idx(irg));
 
-	bitset_foreach(preds, i) {
-		ir_node *pred = get_Block_cfgpred(block, i);
-		pred = get_nodes_block(pred);
-
-		find_cdep_reach(reach, pred, idom);
+	for (i = 0; i < num_blocks; i++) {
+		find_cdep_reach(reach, blocks[i], idom);
 	}
 
 	/* Walk down the reachable deps from the idom and create gammas. */
-	result = select_value_walk(reach, idom, block, values);
+	result = select_value_walk(
+		reach, cons_block, idom, num_blocks, blocks, values
+	);
 	bitset_free(reach);
 
 	return result;
@@ -345,61 +355,33 @@ static ir_node *select_value(bitset_t *preds, ir_node *block, ir_node **values)
  ******************************************************************************/
 
 /**
- * Creates a tuple for each predecessor block, that encapsulates the values
- * that all the phi nodes in the block select for that predecessor. The list of
- * tuples that is returned is ordered corresponding to the blocks predecessor
- * nodes. The values inside the tuples are ordered like the linked list of phi
- * nodes in the block.
+ * Createss a tuple for one predecessors of given block list, that encapsulates
+ * the values that all the phi nodes select for that predecessor. The values
+ * inside the tuple are ordered like the linked list of phi nodes in the block.
  *
  * This makes it possible to handle all the phi nodes in the block at once, as
  * if there would only be one phi node with mode_T.
  */
-static ir_node **create_incoming_tuples(ir_node *block)
+static ir_node *get_incoming_tuple(ir_node *block, int pred_index)
 {
-	int       i, num_phis, num_preds;
-	ir_node **tuples;
-	ir_node  *phi;
+	int       i;
+	ir_node  *phi    = get_Block_phis(block);
+	ir_node **values = NEW_ARR_F(ir_node*, 0);
+	ir_node  *tuple;
 
-	assert(is_Block(block));
-	num_preds = get_Block_n_cfgpreds(block);
-	tuples    = NEW_ARR_F(ir_node*, num_preds);
-
-	/* Count phi nodes in this block. */
-	phi = get_Block_phis(block);
-	num_phis = 0;
-
+	/* Collect the according preds of all phi nodes. */
+	i = 0;
 	while (phi != NULL) {
-		num_phis++;
+		ARR_APP1(ir_node*, values, get_Phi_pred(phi, pred_index));
 		phi = get_Phi_next(phi);
+		i++;
 	}
 
-	/* For each predecessor create a tuple of values selected by the phis. */
-	for (i = 0; i < num_preds; i++) {
-		int j = 0;
+	/* Create a tuple from the values and return it. */
+	tuple = new_r_Tuple(block, ARR_LEN(values), values);
+	DEL_ARR_F(values);
 
-		/* Collect the values of all phis on the given predecessor. */
-		ir_node **values = NEW_ARR_F(ir_node*, num_phis);
-
-		phi = get_Block_phis(block);
-		while (phi != NULL) {
-			values[j++] = get_Phi_pred(phi, i);
-			phi = get_Phi_next(phi);
-		}
-
-		/* Create a tuple from them. */
-		tuples[i] = new_r_Tuple(block, num_phis, values);
-		DEL_ARR_F(values);
-	}
-
-	return tuples;
-}
-
-/**
- * Frees the list created by get_incoming_values again.
- */
-static void free_incoming_tuples(ir_node **tuples)
-{
-	DEL_ARR_F(tuples);
+	return tuple;
 }
 
 /**
@@ -439,10 +421,10 @@ static void replace_phis_by_projs(ir_node *block, ir_node *tuple) {
  */
 static void replace_phis_walk(ir_node *block, void *ctx)
 {
-	int          i;
-	ir_loop     *loop;
-	ir_node    **values, *outer_tuple, *inner_tuple, *result;
-	bitset_t    *outer_preds, *inner_preds;
+	int       i, num_preds, num_inner, num_outer;
+	ir_node **blocks, **values;
+	ir_node  *inner_value, *outer_value, *result;
+	ir_loop  *loop;
 
 	(void)ctx;
 	assert(is_Block(block));
@@ -450,52 +432,53 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	/* Skip blocks without phis. */
 	if (get_Block_phis(block) == NULL) return;
 
-	/* Obtain for each predecessor the values selected by phis. */
-	values = create_incoming_tuples(block);
+	num_preds = get_Block_n_cfgpreds(block);
+	loop      = get_irn_loop(block);
 
-	/* Find out if we need to construct a theta node or just gamma nodes.
-	 * If we are inside a loop header (there are incoming paths from the loop
-	 * and from outside the loop), we need a theta node. The values from those
-	 * predecessors outside the loop provide the init value and those from
-	 * inside the loop the next value. Use the usual gamma tree construction
-	 * for both values, but on a subset of predecessors only. */
+	/* Obtain a list of predecessors. Partition the list so that predecessors
+	 * from inside the loop end up left in the list. All nodes are considered
+	 * to be inside the loop if there is no loop at all. */
+	blocks    = XMALLOCN(ir_node*, num_preds);
+	values    = XMALLOCN(ir_node*, num_preds);
+	num_inner = 0;
+	num_outer = 0;
 
-	/* Collect pred nodes outside the current loop. */
-	outer_preds = bitset_malloc(get_Block_n_cfgpreds(block));
-	inner_preds = bitset_malloc(get_Block_n_cfgpreds(block));
+	for (i = 0; i < num_preds; i++) {
+		int      index = 0;
+		ir_node *pred  = get_nodes_block(get_Block_cfgpred(block, i));
 
-	loop = get_irn_loop(block);
-	for (i = 0; i < get_Block_n_cfgpreds(block); i++) {
-
-		ir_node  *pred = get_nodes_block(get_Block_cfgpred(block, i));
-		bitset_t *set  = inner_preds;
-
-		/* Classify preds by their origin (inside the loop or outside). If
-		 * there is no loop, put everything in inner_preds. */
-		if (loop && !is_in_loop(pred, loop)) {
-			set = outer_preds;
+		/* Add inner blocks on the left and outer nodes on the right. */
+		if (!loop || is_in_loop(pred, loop)) {
+			index = num_inner;
+			num_inner++;
+		} else {
+			num_outer++;
+			index = num_preds - num_outer;
 		}
 
-		bitset_set(set, i);
+		/* Store block and value in the same order. */
+		blocks[index] = pred;
+		values[index] = get_incoming_tuple(block, i);
 	}
 
-	/* Create gammas for the outer and inner preds. Can return NULL. */
-	inner_tuple = select_value(inner_preds, block, values);
-	outer_tuple = select_value(outer_preds, block, values);
-	assert(inner_tuple);
+	/* Select the inner value. This always works. */
+	inner_value = select_value(block, num_inner, blocks, values);
+	result = inner_value;
 
-	/* If there are outer and inner preds, construct a theta node. */
-	result = inner_tuple;
-	if (outer_tuple) {
-		result = new_r_Theta(block, outer_tuple, inner_tuple, mode_T);
+	/* For loops also get the outer value and build a theta. */
+	if (num_outer > 0) {
+		outer_value = select_value(
+			block, num_outer, blocks + num_inner, values + num_inner
+		);
+
+		result = new_r_Theta(block, outer_value, inner_value, mode_T);
 	}
+
+	xfree(values);
+	xfree(blocks);
 
 	/* Construct projs on the result. */
 	replace_phis_by_projs(block, result);
-
-	bitset_free(outer_preds);
-	bitset_free(inner_preds);
-	free_incoming_tuples(values);
 }
 
 /**
@@ -565,6 +548,9 @@ static void insert_extracts_walk(ir_node* node, void *ctx)
 	(void)ctx;
 
 	if (is_Block(node)) return;
+
+	/* Ignore those keep-alive edges. */
+	if (is_End(node)) return;
 
 	block = get_nodes_block(node);
 
