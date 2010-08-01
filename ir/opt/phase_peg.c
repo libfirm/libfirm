@@ -110,9 +110,10 @@ static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
 	ir_cdep *dep;
 
 	assert(is_Block(block));
-	if (block == idom) return;
 
 	bitset_set(reach, get_irn_idx(block));
+
+	if (block == idom) return;
 	dep = find_cdep(block);
 
 	/* Recurse all unvisited blocks. */
@@ -170,58 +171,98 @@ static ir_node *find_loop_header(ir_loop *loop)
  ******************************************************************************/
 
 /**
+ * Unfortunately select_value_walk requires quite a bit of context that doesn't
+ * change and isn't tied to the recursion path. Passing this data as parameter
+ * increases stack consumption and makes usage much more clumsy.
+ */
+typedef struct select_value_ctx {
+	/* We can't use the visited flag here, because extract node construction
+	 * requires select_value and happens in a walker function. */
+
+	bitset_t  *visited;    /* The blocks we have already visited. */
+	bitset_t  *reach;      /* Nodes that reach end blocks via revcdeps. */
+
+	int        num_blocks; /* The number of end blocks. */
+	ir_node  **blocks;     /* A list of end block we have values for. */
+	ir_node  **values;     /* The values to select for each end block. */
+
+	ir_node   *cons_block; /* The block where nodes shall be constructed. */
+} select_value_ctx;
+
+/**
  * This function is called by select_value and does the actual work, by
  * walking down the reverse control dependence graph and creating gamma nodes
  * on the way from the idom node to the predecessors.
  * See select_value for a real description, this is just the worker function.
  */
-static ir_node *select_value_walk(
-	bitset_t  *reach,      /* Nodes that can reach the preds via cdeps. */
-	ir_node   *cons_block, /* The block to construct the gamma graph in. */
-	ir_node   *block,      /* The current block to build a select graph for. */
-	int        num_blocks, /* The number of end blocks. */
-	ir_node  **blocks,     /* The blocks we have values for. */
-	ir_node  **values)     /* A value for each of the blocks. */
+static ir_node *select_value_walk(ir_node *block, select_value_ctx *ctx)
 {
 	ir_cdep *dep;
 	ir_node *deps[2];
-	int      n_deps;
+	int      num_deps;
 	int      val_index, i;
 
-	assert(is_Block(cons_block) && is_Block(block));
-	assert((num_blocks > 0) && blocks && values);
-
-	/* Get the reverse deps for the block. */
-	dep = find_rev_cdep(block);
-
-	/* Collect the dependees that can reach one of the blocks. */
-	n_deps = 0;
-	while (dep != NULL) {
-
-		if (bitset_is_set(reach, get_irn_idx(dep->node))) {
-			deps[n_deps] = dep->node;
-			n_deps++;
-
-			/* There are more than two deps, but only one branch. So one dep
-			 * must dominate another. This violates the base assumption, that
-			 * only one of the blocks is guaranteed to have been executed. */
-			assert((n_deps <= 2) && "Base assumption violated.");
-		}
-
-		dep = dep->next;
-	}
+	assert(ctx->reach && ctx->visited);
+	assert(is_Block(ctx->cons_block) && is_Block(block));
+	assert((ctx->num_blocks > 0) && ctx->blocks && ctx->values);
 
 	/* Find out if we have reached one of the end blocks. */
 	val_index = -1;
 
-	for (i = 0; i < num_blocks; i++) {
-		if (block == blocks[i]) {
+	for (i = 0; i < ctx->num_blocks; i++) {
+		if (block == ctx->blocks[i]) {
 			val_index = i;
 			break;
 		}
 	}
 
-	assert(((val_index >= 0) || (n_deps > 0)) && "Nowhere to walk.");
+	/* Have we already visited this node? */
+	if (bitset_is_set(ctx->visited, get_irn_idx(block))) {
+
+		/* Under normal circumstances we can just ignore cycles along the path.
+		 * Control flow may of course loop a few times, before it breaks out to
+		 * reach one of the end blocks, but we don't have to consider that here.
+		 * We only construct gamma nodes and going back to the path we already
+		 * built gammas for will cause an infinite loop.
+		 *
+		 * The actual looping semantic is added later, when extract nodes for
+		 * the branch conditions are constructed.
+		 *
+		 * However there is one exception: when building the break condition,
+		 * the header node of the loop is both idom and an end node. We will
+		 * later reach that node again and have to return its value. So if this
+		 * is an end node, return its value. */
+
+		if (val_index >= 0) {
+			return ctx->values[val_index];
+		} else {
+			return
+		}
+	}
+
+	bitset_set(ctx->visited, get_irn_idx(block));
+
+	/* Get the reverse deps for the block. */
+	dep = find_rev_cdep(block);
+
+	/* Collect the dependees that can reach one of the blocks. */
+	num_deps = 0;
+	while (dep != NULL) {
+
+		if (bitset_is_set(ctx->reach, get_irn_idx(dep->node))) {
+			deps[num_deps] = dep->node;
+			num_deps++;
+
+			/* There are more than two deps, but only one branch. So one dep
+			 * must dominate another. This violates the base assumption, that
+			 * only one of the blocks is guaranteed to have been executed. */
+			assert((num_deps <= 2) && "Base assumption violated.");
+		}
+
+		dep = dep->next;
+	}
+
+	assert(((val_index >= 0) || (num_deps > 0)) && "Nowhere to walk.");
 
 	/* There are four situations that may happen. (1) This is a block we have a
 	 * value for. (2) We have one dependee to recurse to. (3) This is a branch
@@ -229,30 +270,24 @@ static ir_node *select_value_walk(
 	 * dependee and we have a value for the block itself. */
 
 	/* Case one. */
-	if ((n_deps == 0) && (val_index >= 0)) {
-		return values[val_index];
+	if ((num_deps == 0) && (val_index >= 0)) {
+		return ctx->values[val_index];
 	}
 
 	/* Case two. */
-	if ((n_deps == 1) && (val_index < 0)) {
-		return select_value_walk(
-			reach, cons_block, deps[0], num_blocks, blocks, values
-		);
+	if ((num_deps == 1) && (val_index < 0)) {
+		return select_value_walk(deps[0], ctx);
 	}
 
 	/* Case three. */
-	if ((n_deps == 2) && (val_index < 0)) {
+	if ((num_deps == 2) && (val_index < 0)) {
 		ir_mode *mode;
 		ir_node *cond, *ir_true, *ir_false, *succ, *succ_proj;
 		int      succ_req, succ_cur;
 
 		/* Get the true and false values. They may still be flipped. */
-		ir_true = select_value_walk(
-			reach, cons_block, deps[0], num_blocks, blocks, values
-		);
-		ir_false = select_value_walk(
-			reach, cons_block, deps[1], num_blocks, blocks, values
-		);
+		ir_true  = select_value_walk(deps[0], ctx);
+		ir_false = select_value_walk(deps[1], ctx);
 
 		/* Get the first successor and find out which branch it belongs to. */
 		succ      = get_edge_src_irn(get_block_succ_first(block));
@@ -284,7 +319,7 @@ static ir_node *select_value_walk(
 		 * is constructed in the end block, the extract insertion phase that
 		 * is executed later will take care of this, too. */
 
-		return new_r_Gamma(cons_block, cond, ir_false, ir_true, mode);
+		return new_r_Gamma(ctx->cons_block, cond, ir_false, ir_true, mode);
 	}
 
 	/* Case four is not handled yet. */
@@ -295,14 +330,23 @@ static ir_node *select_value_walk(
 
 /**
  * Given a set of blocks and a value for each block, builds a graph of gamma
- * nodes to select the value corresponding to the block that has previously
- * been executed. Speaking in CFG terms, the basic assumption is that exactly
- * one of the given blocks is guaranteed to have been executed when the gamma
- * graph is evaluated.
+ * nodes to select the value corresponding to the block that will be executed.
+ * Speaking in CFG terms, the basic assumption is that exactly one of the given
+ * blocks is guaranteed to be executed when the gamma graph is evaluated.
  *
  * If that assumtion doesn't hold, the returned gamma graph may either return
  * a value for a block that is actually never executed or it may fail with an
  * assertion (if one of the given blocks dominates another block).
+ *
+ * The simple example is the replacement of a phi node when control flow merges
+ * after several branches. The resulting gamma graph will evaluate the branch
+ * conditions and select the value of the old phi node.
+ *
+ * A more complex example are breaking conditions of loops. In that case, the
+ * select_value function is used to determine if the loop header is executed
+ * again or if a block behind one of the breaking edges will run. One of these
+ * cases will inevitably happen in each iteration. Note that the result will
+ * produce an infinite list with one selected value for each iteration.
  */
 static ir_node *select_value(
 	ir_node   *cons_block, /* The block to construct the gamma graph in. */
@@ -310,10 +354,10 @@ static ir_node *select_value(
 	ir_node  **blocks,     /* The blocks we have values for. */
 	ir_node  **values)     /* A value for each of the blocks. */
 {
-	int       i;
-	ir_node  *idom, *result;
-	ir_graph *irg;
-	bitset_t *reach;
+	int               i, last_idx;
+	ir_node          *idom, *result;
+	ir_graph         *irg;
+	select_value_ctx  ctx;
 
 	assert(is_Block(cons_block) && (num_blocks > 0) && blocks && values);
 
@@ -334,18 +378,25 @@ static ir_node *select_value(
 	}
 
 	/* Discover all reachable deps of the given blocks. */
-	irg   = get_irn_irg(cons_block);
-	reach = bitset_malloc(get_irg_last_idx(irg));
+	irg         = get_irn_irg(cons_block);
+	last_idx    = get_irg_last_idx(irg);
+	ctx.reach   = bitset_malloc(last_idx);
+	ctx.visited = bitset_malloc(last_idx);
 
 	for (i = 0; i < num_blocks; i++) {
-		find_cdep_reach(reach, blocks[i], idom);
+		find_cdep_reach(ctx.reach, blocks[i], idom);
 	}
 
 	/* Walk down the reachable deps from the idom and create gammas. */
-	result = select_value_walk(
-		reach, cons_block, idom, num_blocks, blocks, values
-	);
-	bitset_free(reach);
+	ctx.blocks     = blocks;
+	ctx.values     = values;
+	ctx.cons_block = cons_block;
+	ctx.num_blocks = num_blocks;
+
+	result = select_value_walk(idom, &ctx);
+
+	bitset_free(ctx.reach);
+	bitset_free(ctx.visited);
 
 	return result;
 }
@@ -481,6 +532,18 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	replace_phis_by_projs(block, result);
 }
 
+
+static void print_cdeps(ir_node *irn, void* ctx)
+{
+	ir_cdep *dep = find_cdep(irn);
+	while (dep)
+	{
+		printf("%li -> %li\n", get_irn_node_nr(irn), get_irn_node_nr(dep->node));
+
+		dep = dep->next;
+	}
+}
+
 /**
  * Initiates the replacement of phi nodes by gamma and theta nodes in the
  * given graph. Note that after calling this function there will still be a
@@ -507,6 +570,8 @@ static void replace_phis(ir_graph *irg)
 	compute_cdep(irg);
 	compute_rev_cdep(irg);
 
+	irg_walk_graph(irg, NULL, print_cdeps, NULL);
+
 	/* Walk along the graph and replace phi nodes by gammas. */
 	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
 
@@ -528,6 +593,16 @@ static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 {
 	ir_node *header;
 	assert(is_Block(block) && loop);
+
+	/* The break condition for an iteration can be found using select_value.
+	 * For blocks at the end of edges that left the loop select true, because
+	 * one of the breaking conditions had to be true then. For the loop header
+	 * select false, because if it is reached again, another iteration will
+	 * follow. The remaining question is: how does select_value cope with the
+	 * loop on the header node (control dependant on itself) and what happens
+	 * if the idom is one of the final nodes (the header). Will another idom
+	 * be selected?
+	 */
 
 	/* Identify the loops header node. */
 	header = find_loop_header(loop);
