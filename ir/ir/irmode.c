@@ -99,28 +99,6 @@ static ir_mode *find_mode(const ir_mode *m)
 	return NULL;
 }
 
-#ifdef FIRM_STATISTICS
-/* return the mode index, only needed for statistics */
-int stat_find_mode_index(const ir_mode *m)
-{
-	int i;
-	for (i = ARR_LEN(mode_list) - 1; i >= 0; --i) {
-		ir_mode *n = mode_list[i];
-		if (modes_are_equal(n, m))
-			return i;
-	}
-	return -1;
-}
-
-/* return the mode for a given index, only needed for statistics */
-ir_mode *stat_mode_for_index(int idx)
-{
-	if (0 <= idx  && idx < ARR_LEN(mode_list))
-		return mode_list[idx];
-	return NULL;
-}
-#endif
-
 /**
  * sets special values of modes
  */

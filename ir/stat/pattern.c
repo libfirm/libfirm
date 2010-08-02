@@ -395,6 +395,18 @@ static int addr_cmp(const void *p1, const void *p2, size_t size)
 	return e1->addr != e2->addr;
 }  /* addr_cmp */
 
+static unsigned find_mode_index(const ir_mode *mode)
+{
+	int n = get_irp_n_modes();
+	int i;
+
+	for (i = 0; i < n; ++i) {
+		if (get_irp_mode(i) == mode)
+			return i;
+	}
+	return -1;
+}
+
 /**
  * Encodes an IR-node, recursive worker.
  *
@@ -434,7 +446,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 		ir_mode *mode = get_irn_mode(node);
 
 		if (mode)
-			put_code(env->buf, stat_find_mode_index(mode));
+			put_code(env->buf, find_mode_index(mode));
 		else
 			put_tag(env->buf, VLC_TAG_EMPTY);
 	}  /* if */
