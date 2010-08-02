@@ -5732,6 +5732,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_ia32_l_ShrDep,    gen_ia32_l_ShrDep);
 	be_set_transform_function(op_ia32_l_ShrD,      gen_ia32_l_ShrD);
 	be_set_transform_function(op_ia32_l_Sub,       gen_ia32_l_Sub);
+	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
 	be_set_transform_function(op_ia32_Minus64Bit,  be_duplicate_node);
 	be_set_transform_function(op_ia32_NoReg_GP,    be_duplicate_node);
 	be_set_transform_function(op_ia32_NoReg_VFP,   be_duplicate_node);
