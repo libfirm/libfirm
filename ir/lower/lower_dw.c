@@ -54,9 +54,6 @@
 #include "array_t.h"
 #include "irpass_t.h"
 
-/** A map from mode to a primitive type. */
-static pmap *prim_types;
-
 /** A map from (op, imode, omode) to Intrinsic functions entities. */
 static set *intrinsic_fkt;
 
@@ -125,25 +122,6 @@ typedef struct _lower_env_t {
 } lower_env_t;
 
 /**
- * Get a primitive mode for a mode.
- */
-static ir_type *get_primitive_type(ir_mode *mode)
-{
-	pmap_entry *entry = pmap_find(prim_types, mode);
-	ir_type *tp;
-	char buf[64];
-
-	if (entry)
-		return entry->value;
-
-	snprintf(buf, sizeof(buf), "_prim_%s", get_mode_name(mode));
-	tp = new_type_primitive(mode);
-
-	pmap_insert(prim_types, mode, tp);
-	return tp;
-}  /* get_primitive_type */
-
-/**
  * Create a method type for a Conv emulation from imode to omode.
  */
 static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env)
@@ -176,7 +154,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env)
 			set_method_param_type(mtd, n_param++, tp_u);
 			set_method_param_type(mtd, n_param++, tp_u);
 		} else {
-			ir_type *tp = get_primitive_type(imode);
+			ir_type *tp = get_type_for_mode(imode);
 			set_method_param_type(mtd, n_param++, tp);
 		}  /* if */
 
@@ -188,7 +166,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env)
 			set_method_res_type(mtd, n_res++, tp_u);
 			set_method_res_type(mtd, n_res++, tp_u);
 		} else {
-			ir_type *tp = get_primitive_type(omode);
+			ir_type *tp = get_type_for_mode(omode);
 			set_method_res_type(mtd, n_res++, tp);
 		}  /* if */
 		entry->mtd = mtd;
@@ -2463,8 +2441,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	assert(get_mode_size_bits(param->low_signed) == get_mode_size_bits(param->low_unsigned));
 
 	/* create the necessary maps */
-	if (! prim_types)
-		prim_types = pmap_create();
 	if (! intrinsic_fkt)
 		intrinsic_fkt = new_set(cmp_op_mode, iro_Last + 1);
 	if (! conv_types)
@@ -2474,9 +2450,9 @@ void lower_dw_ops(const lwrdw_param_t *param)
 
 	/* create a primitive unsigned and signed type */
 	if (! tp_u)
-		tp_u = get_primitive_type(param->low_unsigned);
+		tp_u = get_type_for_mode(param->low_unsigned);
 	if (! tp_s)
-		tp_s = get_primitive_type(param->low_signed);
+		tp_s = get_type_for_mode(param->low_signed);
 
 	/* create method types for the created binop calls */
 	if (! binop_tp_u) {
