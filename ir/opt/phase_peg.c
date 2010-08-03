@@ -38,6 +38,7 @@
 #include "cdep.h"
 #include "iredges.h"
 #include "bitset.h"
+#include "pmap.h"
 
 /******************************************************************************
  * Utility functions.                                                         *
@@ -102,10 +103,10 @@ static int is_in_loop(ir_node *node, ir_loop *outer_loop)
 
 /**
  * Walks down the control dependence graph and collects all reachable nodes
- * until the given idom node is reached. For each node that can be reached,
+ * until the given end node is reached. For each node that can be reached,
  * the bit corresponding to its index is set in the reach bitset.
  */
-static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
+static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *end)
 {
 	ir_cdep *dep;
 
@@ -113,62 +114,46 @@ static void find_cdep_reach(bitset_t *reach, ir_node *block, ir_node *idom)
 
 	bitset_set(reach, get_irn_idx(block));
 
-	if (block == idom) return;
+	if (block == end) return;
 	dep = find_cdep(block);
 
 	/* Recurse all unvisited blocks. */
 	while (dep != NULL) {
 		if (!bitset_is_set(reach, get_irn_idx(dep->node))) {
-			find_cdep_reach(reach, dep->node, idom);
+			find_cdep_reach(reach, dep->node, end);
 		}
 
 		dep = dep->next;
 	}
 }
 
-/**
- * Identifies the header node of the loop, which is where the loop is being
- * entered. If there are more than two loop headers, only one of them will be
- * returned. This should be normalized before.
- */
-static ir_node *find_loop_header(ir_loop *loop)
-{
-	int i, j;
-
-	/* This assumes, that for two nested loops the header node of the outer
-	 * loop is not part of the inner loop. This shouldn't happen because the
-	 * inner loop needs a backedge. Since the header node would be the first
-	 * node along the inner loops path, the backedge has to go either there or
-	 * to some node further down the path but before the branch that leads to
-	 * the backedge.
-	 * In the first case, there is just one loop whose body branches somewhere
-	 * and eventually leads back to the header. In the second case, there is
-	 * a nested loop that can't have the same header as the first one, because
-	 * the backedge is behind the header. */
-
-	for (i = 0; i < get_loop_n_nodes(loop); i++) {
-		ir_node *node = get_loop_node(loop, i);
-
-		/* Search for control flow from outside the loop. */
-		for (j = 0; j < get_Block_n_cfgpreds(node); j++) {
-			ir_node *pred = get_Block_cfgpred(node, j);
-			pred = get_nodes_block(pred);
-
-			/* TODO: Could be improved by either using a bitset to collect
-			 * the nodes of the loop first or by augmenting the loop tree to
-			 * provide loop membership lookup in O(1). */
-			if (!is_in_loop(pred, loop)) {
-				return node; /* Has to be the header. */
-			}
-		}
-	}
-
-	assert(0 && "No loop header found.");
-}
-
 /******************************************************************************
  * Phase 1-1: Create gamma graphs for value selection.                        *
  ******************************************************************************/
+
+/**
+ * Values can be assigned to nodes only, not to edges. That is because we walk
+ * along control dependencies and don't consider the control flow edges at all.
+ * However in some cases we want to associate a value with certain edges of a
+ * node only.
+ *
+ * To calculate breaking conditions of a loop for example, we start at the loop
+ * header and go down the rev cdeps until we find either an exit node or reach
+ * the header again. So we basically start at a block we have a value for, but
+ * we only want to return that value, if we reach that block via a backedge.
+ * This is exactly what value_type_backedge is for.
+ */
+
+typedef enum block_value_type {
+	value_type_normal,
+	value_type_backedge
+} block_value_type;
+
+typedef struct block_value {
+	ir_node          *block;
+	ir_node          *value;
+	block_value_type  type;
+} block_value;
 
 /**
  * Unfortunately select_value_walk requires quite a bit of context that doesn't
@@ -179,115 +164,134 @@ typedef struct select_value_ctx {
 	/* We can't use the visited flag here, because extract node construction
 	 * requires select_value and happens in a walker function. */
 
-	bitset_t  *visited;    /* The blocks we have already visited. */
-	bitset_t  *reach;      /* Nodes that reach end blocks via revcdeps. */
+	bitset_t    *visited;    /* The blocks we have already visited. */
+	bitset_t    *reach;      /* Nodes that reach end blocks via revcdeps. */
 
-	int        num_blocks; /* The number of end blocks. */
-	ir_node  **blocks;     /* A list of end block we have values for. */
-	ir_node  **values;     /* The values to select for each end block. */
+	int          num_values; /* The number of values to select from. */
+	block_value *values;     /* A list of value for block associations. */
 
-	ir_node   *cons_block; /* The block where nodes shall be constructed. */
+	ir_node     *cons_block; /* The block where nodes shall be constructed. */
 } select_value_ctx;
 
 /**
  * This function is called by select_value and does the actual work, by
  * walking down the reverse control dependence graph and creating gamma nodes
- * on the way from the idom node to the predecessors.
+ * on the way from the idom node to the end blocks.
+ *
+ * If ctx->be_value is NULL and a backedge is found, the execution will back-
+ * track to the last branch and throw the path and branch away. If both paths
+ * of a branch are NULL, execution will backtrack even further.
+ *
  * See select_value for a real description, this is just the worker function.
  */
 static ir_node *select_value_walk(ir_node *block, select_value_ctx *ctx)
 {
-	ir_cdep *dep;
-	ir_node *deps[2];
-	int      num_deps;
-	int      val_index, i;
+	ir_cdep     *dep;
+	ir_node     *deps[2];
+	ir_node     *dep_values[2];
+	int          num_dep_values;
+	int          i;
+	block_value *block_value;
 
 	assert(ctx->reach && ctx->visited);
 	assert(is_Block(ctx->cons_block) && is_Block(block));
-	assert((ctx->num_blocks > 0) && ctx->blocks && ctx->values);
+	assert((ctx->num_values > 0) && ctx->values);
 
-	/* Find out if we have reached one of the end blocks. */
-	val_index = -1;
+	/* Find out if we have reached one of the value blocks. */
+	block_value = NULL;
 
-	for (i = 0; i < ctx->num_blocks; i++) {
-		if (block == ctx->blocks[i]) {
-			val_index = i;
+	for (i = 0; i < ctx->num_values; i++) {
+		if (block == ctx->values[i].block) {
+			block_value = &ctx->values[i];
 			break;
 		}
 	}
 
-	/* Have we already visited this node? */
+	/* Find out if this is a backedge and return be_value then. */
 	if (bitset_is_set(ctx->visited, get_irn_idx(block))) {
-
-		/* Under normal circumstances we can just ignore cycles along the path.
-		 * Control flow may of course loop a few times, before it breaks out to
-		 * reach one of the end blocks, but we don't have to consider that here.
-		 * We only construct gamma nodes and going back to the path we already
-		 * built gammas for will cause an infinite loop.
-		 *
-		 * The actual looping semantic is added later, when extract nodes for
-		 * the branch conditions are constructed.
-		 *
-		 * However there is one exception: when building the break condition,
-		 * the header node of the loop is both idom and an end node. We will
-		 * later reach that node again and have to return its value. So if this
-		 * is an end node, return its value. */
-
-		if (val_index >= 0) {
-			return ctx->values[val_index];
+		/* If the block uses backedge retrieval, return the value. */
+		if (block_value && (block_value->type == value_type_backedge)) {
+			return block_value->value;
 		} else {
-			return
+			return NULL; /* Backtrack otherwise. */
 		}
 	}
 
 	bitset_set(ctx->visited, get_irn_idx(block));
 
+	/* Backedge values are ignored beyond this point. */
+	if (block_value && (block_value->type == value_type_backedge)) {
+		block_value = NULL;
+	}
+
 	/* Get the reverse deps for the block. */
 	dep = find_rev_cdep(block);
 
-	/* Collect the dependees that can reach one of the blocks. */
-	num_deps = 0;
+	/* Collect values for all dependees. Some may backtrack and return NULL,
+	 * in which case they are not considered any further. */
+	num_dep_values = 0;
 	while (dep != NULL) {
 
 		if (bitset_is_set(ctx->reach, get_irn_idx(dep->node))) {
-			deps[num_deps] = dep->node;
-			num_deps++;
+			ir_node *dep_value;
+
+			/* Note that a dep might return NULL in case of loops. */
+			dep_value = select_value_walk(dep->node, ctx);
+
+			if (dep_value) {
+				deps[num_dep_values]       = dep->node;
+				dep_values[num_dep_values] = dep_value;
+				num_dep_values++;
+			}
 
 			/* There are more than two deps, but only one branch. So one dep
 			 * must dominate another. This violates the base assumption, that
 			 * only one of the blocks is guaranteed to have been executed. */
-			assert((num_deps <= 2) && "Base assumption violated.");
+			assert((num_dep_values <= 2) && "Base assumption violated.");
 		}
 
 		dep = dep->next;
 	}
 
-	assert(((val_index >= 0) || (num_deps > 0)) && "Nowhere to walk.");
+	assert((block_value || (num_dep_values > 0)) && "Nowhere to walk.");
 
-	/* There are four situations that may happen. (1) This is a block we have a
-	 * value for. (2) We have one dependee to recurse to. (3) This is a branch
-	 * with two dependees to get the values from. (4) This is a branch with one
-	 * dependee and we have a value for the block itself. */
+	/**
+	 * There are five situations that may happen:
+	 *
+	 *  (1) We have a value for the block and no other value.
+	 *  (2) We have a value for the block and a value for one successor.
+	 *  (3) We have no value, but we got one from a successor.
+	 *  (4) We have no value, but we got two from the successors.
+	 *  (5) We have no value at all.
+	 */
 
-	/* Case one. */
-	if ((num_deps == 0) && (val_index >= 0)) {
-		return ctx->values[val_index];
+	/* (1) Simply return the value we have. */
+	if ((num_dep_values == 0) && block_value) {
+		assert(block_value->type == value_type_normal);
+		return block_value->value;
 	}
 
-	/* Case two. */
-	if ((num_deps == 1) && (val_index < 0)) {
-		return select_value_walk(deps[0], ctx);
+	/* (2) One end block leads to another (or even itself). Create a gamma
+	 *     node to select which value to return. */
+	if ((num_dep_values == 1) && block_value) {
+		assert(0); /* TODO */
+		return NULL;
 	}
 
-	/* Case three. */
-	if ((num_deps == 2) && (val_index < 0)) {
+	/* (3) Simply return the value we got. */
+	if ((num_dep_values == 1) && !block_value) {
+		return dep_values[0];
+	}
+
+	/* (4) The classical branch. Build a gamma node. */
+	if ((num_dep_values == 2) && !block_value) {
 		ir_mode *mode;
 		ir_node *cond, *ir_true, *ir_false, *succ, *succ_proj;
 		int      succ_req, succ_cur;
 
 		/* Get the true and false values. They may still be flipped. */
-		ir_true  = select_value_walk(deps[0], ctx);
-		ir_false = select_value_walk(deps[1], ctx);
+		ir_true  = dep_values[0];
+		ir_false = dep_values[1];
 
 		/* Get the first successor and find out which branch it belongs to. */
 		succ      = get_edge_src_irn(get_block_succ_first(block));
@@ -322,9 +326,7 @@ static ir_node *select_value_walk(ir_node *block, select_value_ctx *ctx)
 		return new_r_Gamma(ctx->cons_block, cond, ir_false, ir_true, mode);
 	}
 
-	/* Case four is not handled yet. */
-
-	assert(0 && "Unexpected control dependence graph.");
+	/* (5) Backtrack. */
 	return NULL;
 }
 
@@ -338,44 +340,46 @@ static ir_node *select_value_walk(ir_node *block, select_value_ctx *ctx)
  * a value for a block that is actually never executed or it may fail with an
  * assertion (if one of the given blocks dominates another block).
  *
- * The simple example is the replacement of a phi node when control flow merges
- * after several branches. The resulting gamma graph will evaluate the branch
- * conditions and select the value of the old phi node.
+ * In some cases the control flow will branch back to the discovered path. This
+ * happens when loop nodes are involved. For usual value selection, this can be
+ * ignored (by passing NULL), because the gamma structure is static and the
+ * decision whether to do another iteration is handled by the extract nodes.
  *
- * A more complex example are breaking conditions of loops. In that case, the
- * select_value function is used to determine if the loop header is executed
- * again or if a block behind one of the breaking edges will run. One of these
- * cases will inevitably happen in each iteration. Note that the result will
- * produce an infinite list with one selected value for each iteration.
- */
+ * However this is also used to calculate the break condition for the extract
+ * nodes. In that case, following a backedge means the breaking condition for
+ * that iteration yields false. Decisions leading to a backedge are relevant
+ * here and the false value can be given as the be_value parameter. */
+
 static ir_node *select_value(
-	ir_node   *cons_block, /* The block to construct the gamma graph in. */
-	int        num_blocks, /* The number of end blocks. */
-	ir_node  **blocks,     /* The blocks we have values for. */
-	ir_node  **values)     /* A value for each of the blocks. */
+	ir_node     *cons_block, /* The block to construct the gamma graph in. */
+	int          num_values, /* The number of values to select from. */
+	block_value *values)     /* A list of value for block associations. */
 {
 	int               i, last_idx;
-	ir_node          *idom, *result;
+	ir_node          *result, *dom;
 	ir_graph         *irg;
 	select_value_ctx  ctx;
 
-	assert(is_Block(cons_block) && (num_blocks > 0) && blocks && values);
+	assert(is_Block(cons_block) && (num_values > 0) && values);
 
 	/* One node shortcut. */
-	if (num_blocks == 1) {
-		return values[0];
+	if (num_values == 1) {
+		assert(values[0].type == value_type_normal);
+		return values[0].value;
 	}
 
-	/* Find the idom of the given blocks. This is where the first important
-	 * decision takes place. So it is the starting point for construction. */
-	idom = NULL;
+	/* Find the clostes common dominator of the given blocks. This is where
+	 * the first important decision takes place. So it is the starting
+	 * point for construction. */
 
-	for (i = 0; i < num_blocks; i++) {
-		assert(is_Block(blocks[i]));
-		if (idom == NULL) idom = get_Block_idom(blocks[i]);
-		else idom = node_smallest_common_dominator(idom, blocks[i]);
-		assert(idom);
+	dom = values[0].block; /* A block dominates itself. */
+
+	for (i = 1; i < num_values; i++) {
+		assert(is_Block(values[i].block));
+		dom = node_smallest_common_dominator(dom, values[i].block);
 	}
+
+	assert(dom);
 
 	/* Discover all reachable deps of the given blocks. */
 	irg         = get_irn_irg(cons_block);
@@ -383,17 +387,17 @@ static ir_node *select_value(
 	ctx.reach   = bitset_malloc(last_idx);
 	ctx.visited = bitset_malloc(last_idx);
 
-	for (i = 0; i < num_blocks; i++) {
-		find_cdep_reach(ctx.reach, blocks[i], idom);
+	for (i = 0; i < num_values; i++) {
+		find_cdep_reach(ctx.reach, values[i].block, dom);
 	}
 
 	/* Walk down the reachable deps from the idom and create gammas. */
-	ctx.blocks     = blocks;
 	ctx.values     = values;
 	ctx.cons_block = cons_block;
-	ctx.num_blocks = num_blocks;
+	ctx.num_values = num_values;
 
-	result = select_value_walk(idom, &ctx);
+	result = select_value_walk(dom, &ctx);
+	assert(result && "Couldn't select a value.");
 
 	bitset_free(ctx.reach);
 	bitset_free(ctx.visited);
@@ -472,10 +476,10 @@ static void replace_phis_by_projs(ir_node *block, ir_node *tuple) {
  */
 static void replace_phis_walk(ir_node *block, void *ctx)
 {
-	int       i, num_preds, num_inner, num_outer;
-	ir_node **blocks, **values;
-	ir_node  *inner_value, *outer_value, *result;
-	ir_loop  *loop;
+	int          i, num_preds, num_inner, num_outer;
+	ir_node     *inner_value, *outer_value, *result;
+	ir_loop     *loop;
+	block_value *values;
 
 	(void)ctx;
 	assert(is_Block(block));
@@ -489,8 +493,7 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 	/* Obtain a list of predecessors. Partition the list so that predecessors
 	 * from inside the loop end up left in the list. All nodes are considered
 	 * to be inside the loop if there is no loop at all. */
-	blocks    = XMALLOCN(ir_node*, num_preds);
-	values    = XMALLOCN(ir_node*, num_preds);
+	values    = XMALLOCN(block_value, num_preds);
 	num_inner = 0;
 	num_outer = 0;
 
@@ -508,40 +511,25 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 		}
 
 		/* Store block and value in the same order. */
-		blocks[index] = pred;
-		values[index] = get_incoming_tuple(block, i);
+		values[index].block = pred;
+		values[index].value = get_incoming_tuple(block, i);
+		values[index].type  = value_type_normal;
 	}
 
 	/* Select the inner value. This always works. */
-	inner_value = select_value(block, num_inner, blocks, values);
+	inner_value = select_value(block, num_inner, values);
 	result = inner_value;
 
 	/* For loops also get the outer value and build a theta. */
 	if (num_outer > 0) {
-		outer_value = select_value(
-			block, num_outer, blocks + num_inner, values + num_inner
-		);
-
+		outer_value = select_value(block, num_outer, values + num_inner);
 		result = new_r_Theta(block, outer_value, inner_value, mode_T);
 	}
 
 	xfree(values);
-	xfree(blocks);
 
 	/* Construct projs on the result. */
 	replace_phis_by_projs(block, result);
-}
-
-
-static void print_cdeps(ir_node *irn, void* ctx)
-{
-	ir_cdep *dep = find_cdep(irn);
-	while (dep)
-	{
-		printf("%li -> %li\n", get_irn_node_nr(irn), get_irn_node_nr(dep->node));
-
-		dep = dep->next;
-	}
 }
 
 /**
@@ -558,25 +546,13 @@ static void replace_phis(ir_graph *irg)
 
 	assert(irg);
 
-	/* We need to walk the CFG in reverse order and access dominators. */
-	assure_doms(irg);
-	assure_cf_loop(irg);
-
 	/* Create lists of phi nodes in each block. */
 	ir_reserve_resources(irg, resources);
 	collect_phiprojs(irg);
 
-	/* Create the control dependence graph. */
-	compute_cdep(irg);
-	compute_rev_cdep(irg);
-
-	irg_walk_graph(irg, NULL, print_cdeps, NULL);
-
 	/* Walk along the graph and replace phi nodes by gammas. */
 	irg_block_walk_graph(irg, NULL, replace_phis_walk, NULL);
 
-	free_rev_cdep(irg);
-	free_cdep(irg);
 	ir_free_resources(irg, resources);
 }
 
@@ -585,31 +561,126 @@ static void replace_phis(ir_graph *irg)
  ******************************************************************************/
 
 /**
+ * Exit blocks of for a loop iteration. The loop header is a special kind of
+ * "exit". It just exits the current iteration and begins the new one.
+ */
+typedef struct iter_exits
+{
+	ir_loop  *root;
+	ir_node  *entry;
+	ir_node **blocks;
+	int       num_blocks;
+} iter_exits;
+
+static void find_iter_exits_walk(ir_loop *loop, iter_exits *exits)
+{
+	int       i, j;
+	ir_graph *irg;
+	const ir_edge_t *edge;
+
+	for (i = 0; i < get_loop_n_elements(loop); i++) {
+		loop_element element = get_loop_element(loop, i);
+
+		switch (*element.kind) {
+		case k_ir_loop:
+			/* Recurse into deeper loops. */
+			find_iter_exits_walk(element.son, exits);
+			break;
+
+		case k_ir_node:
+			irg = get_irn_irg(element.node);
+
+			/* Iterate in-edges. */
+			for (j = 0; j < get_Block_n_cfgpreds(element.node); j++) {
+				ir_node *pred = get_Block_cfgpred(element.node, j);
+				pred = get_nodes_block(pred);
+
+				/* Edge from the outside, must be the loop entry. */
+				if (!is_in_loop(pred, exits->root)) {
+					assert(!exits->entry && "Multiple loop entries.");
+					exits->entry = element.node;
+				}
+			}
+
+			/* Iterate out-edges. */
+			foreach_block_succ(element.node, edge) {
+				ir_node *src = get_edge_src_irn(edge);
+
+				/* Skip keep-alive edges. */
+				if (src != get_irg_end(irg)) {
+
+					/* Edge from outside the loop. This is an exit. */
+					if (!is_in_loop(src, exits->root)) {
+						ARR_APP1(ir_node*, exits->blocks, src);
+						exits->num_blocks++;
+					}
+				}
+			}
+
+			break;
+
+		default:
+			assert(0 && "Unexpected element type.");
+		}
+	}
+}
+
+/**
+ * Find all blocks that an iteration of the given loop can exit to.
+ */
+static iter_exits *find_iter_exits(ir_loop *loop)
+{
+	iter_exits *exits = XMALLOC(iter_exits);
+
+	exits->root       = loop;
+	exits->entry      = NULL;
+	exits->num_blocks = 0;
+	exits->blocks      = NEW_ARR_F(ir_node*, 0);
+
+	find_iter_exits_walk(loop, exits);
+	return exits;
+}
+
+static void free_iter_exits(iter_exits *exits)
+{
+	DEL_ARR_F(exits->blocks);
+	xfree(exits);
+}
+
+/**
  * Creates a graph of gamma nodes that evaluates to true when one of the given
  * loops breaking conditions is true. In PEG semantics, the produced value is
  * part of loop and produces an infinite list of booleans.
  */
 static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 {
-	ir_node *header;
-	assert(is_Block(block) && loop);
+	int          i;
+	iter_exits  *exits    = find_iter_exits(loop);
+	block_value *values   = XMALLOCN(block_value, exits->num_blocks + 1);
+	ir_node     *ir_true  = new_Const_long(mode_b, 1);
+	ir_node     *ir_false = new_Const_long(mode_b, 0);
+	ir_node     *result;
 
-	/* The break condition for an iteration can be found using select_value.
-	 * For blocks at the end of edges that left the loop select true, because
-	 * one of the breaking conditions had to be true then. For the loop header
-	 * select false, because if it is reached again, another iteration will
-	 * follow. The remaining question is: how does select_value cope with the
-	 * loop on the header node (control dependant on itself) and what happens
-	 * if the idom is one of the final nodes (the header). Will another idom
-	 * be selected?
-	 */
+	/* When entering the entry block via a backedge, select false. */
+	values[0].block = exits->entry;
+	values[0].value = ir_false;
+	values[0].type  = value_type_backedge;
 
-	/* Identify the loops header node. */
-	header = find_loop_header(loop);
+	/* Select true when entering any exit block. */
+	for (i = 0; i < exits->num_blocks; i++) {
+		values[i + 1].block = exits->blocks[i];
+		values[i + 1].value = ir_true;
+		values[i + 1].type  = value_type_normal;
+	}
 
-	/* Not supported yet. */
-	(void)loop;
-	return new_r_Unknown(get_irn_irg(block), mode_b);
+	/* Select one of the values. */
+	result = select_value(block, exits->num_blocks + 1, values);
+
+	/* TODO: dominator stimmt noch nicht. */
+	xfree(values);
+	free_iter_exits(exits);
+
+	return result;
 }
 
 /**
@@ -620,7 +691,7 @@ static void insert_extracts_walk(ir_node* node, void *ctx)
 {
 	int      i;
 	ir_node *block;
-	(void)ctx;
+	pmap    *break_conds = (pmap*)ctx;
 
 	if (is_Block(node)) return;
 
@@ -642,8 +713,15 @@ static void insert_extracts_walk(ir_node* node, void *ctx)
 		/* Accessing a loop from the outside requires extract. */
 		if (!is_in_loop(node, in_loop)) {
 			ir_mode *mode    = get_irn_mode(in);
-			ir_node *cond    = create_break_cond(in_block, in_loop);
-			ir_node *extract = new_r_Extract(block, in, cond, mode);
+			ir_node *cond    = pmap_get(break_conds, in_loop);
+			ir_node *extract;
+
+			if (!cond) {
+				cond = create_break_cond(in_block, in_loop);
+				pmap_insert(break_conds, in_loop, cond);
+			}
+
+			extract = new_r_Extract(block, in, cond, mode);
 			set_irn_n(node, i, extract);
 		}
 	}
@@ -655,10 +733,15 @@ static void insert_extracts_walk(ir_node* node, void *ctx)
  */
 static void insert_extracts(ir_graph* irg)
 {
+	pmap *break_conds;
 	assert(irg);
 
 	assure_cf_loop(irg);
-	irg_walk_graph(irg, NULL, insert_extracts_walk, NULL);
+	break_conds = pmap_create();
+
+	irg_walk_graph(irg, NULL, insert_extracts_walk, break_conds);
+
+	pmap_destroy(break_conds);
 }
 
 /******************************************************************************
@@ -814,6 +897,14 @@ void convert_to_peg(ir_graph *irg)
 	normalize_one_return(irg);
 	dump_ir_graph(irg, "return");
 
+	/* We need to walk the CFG in reverse order and access dominators. */
+	assure_doms(irg);
+	assure_cf_loop(irg);
+
+	/* Create the control dependence graph. */
+	compute_cdep(irg);
+	compute_rev_cdep(irg);
+
 	/* Replace phi nodes by gamma trees selecting tuples. */
 	replace_phis(irg);
 	dump_ir_graph(irg, "gamma_theta");
@@ -821,6 +912,9 @@ void convert_to_peg(ir_graph *irg)
 	/* Add extract nodes on loop access. */
 	insert_extracts(irg);
 	dump_ir_graph(irg, "extracts");
+
+	free_rev_cdep(irg);
+	free_cdep(irg);
 
 	/* Remove the existing block structure. */
 	remove_blocks(irg);
