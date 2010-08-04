@@ -40,6 +40,9 @@
 #include "irgwalk.h"
 #include "time.h"
 
+/* libfirm/ir/adt includes */
+#include "bipartite.h"
+
 /* libfirm/ir/be includes */
 #include "bearch.h"
 #include "beirg.h"
@@ -68,9 +71,12 @@
 #include "html_dumper.h"
 #include "pbqp_node_t.h"
 #include "pbqp_node.h"
+#include "pbqp_edge_t.h"
 
-#define TIMER 		0
-#define PRINT_RPEO 	0
+#define TIMER 					0
+#define PRINT_RPEO 				0
+#define USE_BIPARTIT_MATCHING 	0
+#define DO_USEFUL_OPT			1
 
 
 static int use_exec_freq 		= true;
@@ -151,6 +157,7 @@ static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn)
 	unsigned idx;
 	for (idx = 0; idx < colors_n; idx++) {
 		if (bitset_is_set(ignored_regs, idx) || !arch_reg_out_is_allocatable(irn, arch_register_for_index(cls, idx))) {
+			/* constrained */
 			vector_set(costs_vector, idx, INF_COSTS);
 			cntConstrains++;
 		}
@@ -170,10 +177,11 @@ static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 
 	if (get_edge(pbqp, get_irn_idx(src_node), get_irn_idx(trg_node)) == NULL) {
 
-		/* increase ife edge counter */
+//		/* increase ife edge counter */
 		pbqp_alloc_env->ife_edge_num[get_irn_idx(src_node)]++;
 		pbqp_alloc_env->ife_edge_num[get_irn_idx(trg_node)]++;
 
+#if DO_USEFUL_OPT || USE_BIPARTIT_MATCHING
 		/* do useful optimization to speed up pbqp solving (we can do this because we know our matrix) */
 		if (get_free_regs(restr_nodes, cls, src_node) == 1 && get_free_regs(restr_nodes, cls, trg_node) == 1) {
 			unsigned src_idx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
@@ -192,7 +200,7 @@ static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 			}
 			return;
 		}
-
+#endif
 		/* insert interference edge */
 		insert_edge(pbqp, src_node, trg_node, ife_matrix_template);
 	}
@@ -226,7 +234,7 @@ static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_nod
 		else {
 			afe_matrix = pbqp_alloc_env->aff_matrix_template;
 		}
-
+#if DO_USEFUL_OPT || USE_BIPARTIT_MATCHING
 		/* do useful optimization to speed up pbqp solving */
 		if (get_free_regs(restr_nodes, cls, src_node) == 1 && get_free_regs(restr_nodes, cls, trg_node) == 1) {
 			return;
@@ -242,7 +250,7 @@ static void inser_afe_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_nod
 			}
 			return;
 		}
-
+#endif
 		/* insert interference edge */
 		insert_edge(pbqp, src_node, trg_node, afe_matrix);
 	}
@@ -307,15 +315,20 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	const arch_register_class_t *cls               	= pbqp_alloc_env->cls;
 	plist_t						*rpeo			   	= pbqp_alloc_env->rpeo;
 	pbqp						*pbqp_inst		   	= pbqp_alloc_env->pbqp_inst;
-	unsigned					*restr_nodes		= pbqp_alloc_env->restr_nodes;
-	pqueue_t  					*queue             	= new_pqueue();
-	pqueue_t  					*restr_nodes_queue 	= new_pqueue();
 	plist_t						*temp_list         	= plist_new();
-	plist_t						*sorted_list       	= plist_new();
+	plist_element_t 			*el;
 	ir_node                     *irn;
 	ir_nodeset_t                 live_nodes;
-	plist_element_t *el;
-	ir_node *last_element = NULL;
+#if USE_BIPARTIT_MATCHING
+	int 						*assignment			= ALLOCAN(int, cls->n_regs);
+//	ir_graph					*irg				= pbqp_alloc_env->irg;
+#else
+	unsigned					*restr_nodes		= pbqp_alloc_env->restr_nodes;
+	pqueue_t  					*restr_nodes_queue 	= new_pqueue();
+	pqueue_t  					*queue             	= new_pqueue();
+	plist_t						*sorted_list       	= plist_new();
+	ir_node 					*last_element 		= NULL;
+#endif
 
 	/* first, determine the pressure */
 	/* (this is only for compatibility with copymin optimization, it's not needed for pbqp coloring) */
@@ -388,6 +401,111 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 			be_liveness_transfer(cls, irn, &live_nodes);
 		}
 
+#if USE_BIPARTIT_MATCHING
+		if (get_irn_mode(irn) == mode_T) {
+
+			unsigned clique_size = 0;
+			unsigned n_alloc = 0;
+			pbqp_node *clique[cls->n_regs];
+			bipartite_t *bp = bipartite_new(cls->n_regs, cls->n_regs);
+
+			/* add all proj after a perm to clique */
+			const ir_edge_t *edge;
+			foreach_out_edge(irn, edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+
+				/* ignore node if it is not necessary for register allocation */
+				if (!arch_irn_consider_in_reg_alloc(cls, proj))
+					continue;
+
+				/* insert pbqp node into temp rpeo list of this block */
+				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(proj)));
+
+				if(is_Perm_Proj(proj)) {
+					/* add proj to clique */
+					pbqp_node *clique_member = get_node(pbqp_inst,proj->node_idx);
+					clique[clique_size] = clique_member;
+					vector *costs = clique_member->costs;
+					unsigned idx = 0;
+					for(idx = 0; idx < costs->len; idx++) {
+						if(costs->entries[idx].data != INF_COSTS) {
+							bipartite_add(bp, clique_size, idx);
+						}
+					}
+
+					/* increase node counter */
+					clique_size++;
+					n_alloc++;
+				}
+			}
+
+			if(clique_size > 0) {
+				plist_element_t *listElement;
+				foreach_plist(temp_list, listElement) {
+					pbqp_node 	*clique_candidate 	= listElement->data;
+					unsigned 	 idx 				= 0;
+					bool 		 isMember 			= true;
+
+					/* clique size not bigger then register class size */
+					if(clique_size >= cls->n_regs) break;
+
+					for(idx = 0; idx < clique_size; idx++) {
+						pbqp_node *member = clique[idx];
+
+						if(member == clique_candidate) {
+							isMember = false;
+							break;
+						}
+
+						if(get_edge(pbqp_inst, member->index, clique_candidate->index) == NULL && get_edge(pbqp_inst, clique_candidate->index, member->index) == NULL) {
+							isMember = false;
+							break;
+						}
+					}
+
+					/* goto next list element if current node is not a member of the clique */
+					if(!isMember) { continue; }
+
+					/* add candidate to clique */
+					clique[clique_size] = clique_candidate;
+
+					vector *costs = clique_candidate->costs;
+					for(idx = 0; idx < costs->len; idx++) {
+						if(costs->entries[idx].data != INF_COSTS) {
+							bipartite_add(bp, clique_size, idx);
+						}
+					}
+
+					/* increase node counter */
+					clique_size++;
+					}
+				}
+
+			/* solve bipartite matching */
+			bipartite_matching(bp, assignment);
+
+			/* assign colors */
+			unsigned nodeIdx = 0;
+			for(nodeIdx = 0; nodeIdx < clique_size; nodeIdx++) {
+				vector *costs = clique[nodeIdx]->costs;
+				int idx;
+				for(idx = 0; idx < (int)costs->len; idx++) {
+					if(assignment[nodeIdx] != idx) {
+						costs->entries[idx].data = INF_COSTS;
+					}
+				}
+				assert(assignment[nodeIdx] >= 0 && "there must have been a register assigned (node not register pressure faithful?)");
+			}
+
+			/* free memory */
+			bipartite_free(bp);
+		}
+		else {
+			if (arch_irn_consider_in_reg_alloc(cls, irn)) {
+				plist_insert_front(temp_list, get_node(pbqp_inst, get_irn_idx(irn)));
+			}
+		}
+#else
 		/* order nodes for perfect elimination order */
 		if (get_irn_mode(irn) == mode_T) {
 			bool allHaveIFEdges = true;
@@ -456,9 +574,10 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 				last_element = NULL;
 			}
 		}
+#endif
 	}
 
-	/* insert nodes into reverse perfect elimination order */
+	/* add the temp rpeo list of this block to the global reverse perfect elimination order list*/
 	foreach_plist(temp_list, el) {
 		plist_insert_back(rpeo, el->data);
 	}
@@ -466,9 +585,12 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	/* free reserved memory */
 	ir_nodeset_destroy(&live_nodes);
 	plist_free(temp_list);
+#if USE_BIPARTIT_MATCHING
+#else
 	plist_free(sorted_list);
 	del_pqueue(queue);
 	del_pqueue(restr_nodes_queue);
+#endif
 }
 
 static void insert_perms(ir_node *block, void *data)
@@ -616,7 +738,6 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	printf("\n");
 #endif
 
-
 	/* solve pbqp instance */
 #if TIMER
 	ir_timer_reset_and_start(t_ra_pbqp_alloc_solve);
@@ -630,6 +751,8 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if TIMER
 	ir_timer_stop(t_ra_pbqp_alloc_solve);
 #endif
+
+
 	num solution = get_solution(pbqp_alloc_env.pbqp_inst);
 	assert(solution != INF_COSTS && "No PBQP solution found");
 
