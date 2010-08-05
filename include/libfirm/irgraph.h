@@ -527,8 +527,9 @@ FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
  * Graph State
  */
 typedef enum {
-	IR_GRAPH_STATE_KEEP_MUX = 1 << 0,  /**< should perform no further optimisations on Mux nodes */
-	IR_GRAPH_STATE_ARCH_DEP = 1 << 1,  /**< should not construct more nodes which irarch potentially breaks down */
+	IR_GRAPH_STATE_KEEP_MUX      = 1U << 0,  /**< should perform no further optimisations on Mux nodes */
+	IR_GRAPH_STATE_ARCH_DEP      = 1U << 1,  /**< should not construct more nodes which irarch potentially breaks down */
+	IR_GRAPH_STATE_BCONV_ALLOWED = 1U << 2,  /**< Conv(mode_b) to Iu is allowed as set command */
 } ir_graph_state_t;
 
 /** set some state flags on the graph (this does not clear the other flags) */

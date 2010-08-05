@@ -77,9 +77,9 @@ static void maybe_kill_node(ir_node *node)
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
-		set_irn_n(node, i, new_Bad());
+		set_irn_n(node, i, new_r_Bad(irg));
 	}
-	set_nodes_block(node, new_Bad());
+	set_nodes_block(node, new_r_Bad(irg));
 
 	edges_node_deleted(node, irg);
 }
@@ -89,7 +89,8 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 	ir_node  *block  = get_nodes_block(node);
 	ir_mode  *mode   = config.lowered_mode;
 	tarval   *tv_one = get_mode_one(mode);
-	ir_node  *one    = new_d_Const(dbgi, tv_one);
+	ir_graph *irg    = get_irn_irg(node);
+	ir_node  *one    = new_rd_Const(dbgi, irg, tv_one);
 
 	return new_rd_Eor(dbgi,	block, node, one, mode);
 }
@@ -116,12 +117,13 @@ static ir_type *create_lowered_type(void)
 static ir_node *create_set(ir_node *node)
 {
 	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_graph *irg     = get_irn_irg(node);
 	ir_mode  *mode    = config.lowered_set_mode;
 	tarval   *tv_one  = get_mode_one(mode);
-	ir_node  *one     = new_d_Const(dbgi, tv_one);
+	ir_node  *one     = new_rd_Const(dbgi, irg, tv_one);
 	ir_node  *block   = get_nodes_block(node);
 	tarval   *tv_zero = get_mode_null(mode);
-	ir_node  *zero    = new_d_Const(dbgi, tv_zero);
+	ir_node  *zero    = new_rd_Const(dbgi, irg, tv_zero);
 
 	ir_node *set      = new_rd_Mux(dbgi, block, node, zero, one, mode);
 
@@ -160,6 +162,7 @@ static ir_node *lower_node(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_mode  *mode  = config.lowered_mode;
+	ir_graph *irg;
 	ir_node  *res;
 
 	res = get_irn_link(node);
@@ -168,6 +171,7 @@ static ir_node *lower_node(ir_node *node)
 
 	assert(get_irn_mode(node) == mode_b);
 
+	irg = get_irn_irg(node);
 	switch (get_irn_opcode(node)) {
 	case iro_Phi: {
 		int       i, arity;
@@ -176,7 +180,7 @@ static ir_node *lower_node(ir_node *node)
 
 		arity   = get_irn_arity(node);
 		in      = ALLOCAN(ir_node*, arity);
-		unknown = new_Unknown(mode);
+		unknown = new_r_Unknown(irg, mode);
 		for (i = 0; i < arity; ++i) {
 			in[i] = unknown;
 		}
@@ -242,7 +246,7 @@ static ir_node *lower_node(ir_node *node)
 		ir_node *pred     = get_Conv_op(node);
 		ir_mode *mode     = get_irn_mode(pred);
 		tarval  *tv_zeroc = get_mode_null(mode);
-		ir_node *zero_cmp = new_d_Const(dbgi, tv_zeroc);
+		ir_node *zero_cmp = new_rd_Const(dbgi, irg, tv_zeroc);
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
 		ir_node *proj     = new_rd_Proj(dbgi, cmp, mode_b, pn_Cmp_Lg);
@@ -293,7 +297,7 @@ static ir_node *lower_node(ir_node *node)
 
 				bits      = get_mode_size_bits(mode);
 				tv        = new_tarval_from_long(bits-1, mode_Iu);
-				shift_cnt = new_d_Const(dbgi, tv);
+				shift_cnt = new_rd_Const(dbgi, irg, tv);
 
 				if (cmp_mode != mode) {
 					a = new_rd_Conv(dbgi, block, a, mode);
@@ -317,7 +321,8 @@ synth_zero_one:
 			res = node;
 			goto own_replacement;
 		} else if (is_Proj(pred) && is_Start(get_Proj_pred(pred))) {
-			ir_entity *entity = get_irg_entity(current_ir_graph);
+			ir_graph  *irg    = get_irn_irg(node);
+			ir_entity *entity = get_irg_entity(irg);
 			ir_type   *type   = get_entity_type(entity);
 			adjust_method_type(type);
 			set_irn_mode(node, mode);
@@ -333,10 +338,10 @@ synth_zero_one:
 		tarval *tv = get_Const_tarval(node);
 		if (tv == get_tarval_b_true()) {
 			tarval  *tv_one  = get_mode_one(mode);
-			res              = new_d_Const(dbgi, tv_one);
+			res              = new_rd_Const(dbgi, irg, tv_one);
 		} else if (tv == get_tarval_b_false()) {
 			tarval  *tv_zero = get_mode_null(mode);
-			res              = new_d_Const(dbgi, tv_zero);
+			res              = new_rd_Const(dbgi, irg, tv_zero);
 		} else {
 			panic("invalid boolean const %+F", node);
 		}
@@ -344,7 +349,7 @@ synth_zero_one:
 	}
 
 	case iro_Unknown:
-		res = new_Unknown(mode);
+		res = new_r_Unknown(irg, mode);
 		break;
 
 	default:
@@ -360,8 +365,7 @@ own_replacement:
 static void lower_mode_b_walker(ir_node *node, void *env)
 {
 	int i, arity;
-	bool changed = 0;
-	(void) env;
+	bool changed = false;
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
@@ -396,21 +400,27 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 		changed = true;
 	}
 	if (changed) {
-		add_identities(current_ir_graph->value_table, node);
+		ir_graph *irg = get_irn_irg(node);
+		bool *global_changed = env;
+		*global_changed = true;
+		add_identities(irg->value_table, node);
 	}
 }
 
 void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 {
-	ir_entity *entity = get_irg_entity(irg);
-	ir_type   *type   = get_entity_type(entity);
+	ir_entity *entity  = get_irg_entity(irg);
+	ir_type   *type    = get_entity_type(entity);
+	bool       changed = false;
 
 	config        = *nconfig;
 	lowered_nodes = new_pdeq();
 	lowered_type  = NULL;
 
+	edges_assure(irg);
+
 	/* ensure no optimisation touches muxes anymore */
-	set_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX);
+	set_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX | IR_GRAPH_STATE_BCONV_ALLOWED);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -418,7 +428,7 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 
 	set_opt_allow_conv_b(0);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
-	irg_walk_graph(irg, lower_mode_b_walker, NULL, NULL);
+	irg_walk_graph(irg, lower_mode_b_walker, NULL, &changed);
 
 	while (!pdeq_empty(lowered_nodes)) {
 		ir_node *node = (ir_node*) pdeq_getr(lowered_nodes);
@@ -427,6 +437,10 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	del_pdeq(lowered_nodes);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	if (changed) {
+		set_irg_outs_inconsistent(irg);
+	}
 }
 
 struct pass_t {

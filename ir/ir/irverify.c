@@ -1556,7 +1556,7 @@ static int verify_node_Conv(ir_node *n, ir_graph *irg)
 	(void) irg;
 
 	ASSERT_AND_RET_DBG(
-		get_irg_phase_state(irg) == phase_backend ||
+		is_irg_state(irg, IR_GRAPH_STATE_BCONV_ALLOWED) ||
 		(mode_is_datab(op1mode) && mode_is_data(mymode)),
 		"Conv node", 0,
 		show_unop_failure(n, "/* Conv: BB x datab --> data */");
