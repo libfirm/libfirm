@@ -150,21 +150,11 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	int                    spills_needed;
 	size_t                 cand_idx;
 	ir_node               *n;
+	ir_node               *value;
 
-	/* mode_T nodes define several values at once. Count them */
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(node, edge) {
-			const ir_node *proj = get_edge_src_irn(edge);
-
-			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
-				++values_defined;
-			}
-		}
-	} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
+	be_foreach_definition(node, cls, value,
 		++values_defined;
-	}
+	);
 
 	/* we need registers for the non-live argument values */
 	arity = get_irn_arity(node);
@@ -248,25 +238,14 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
  */
 static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 {
+	ir_node *value;
 	/* You should better break out of your loop when hitting the first phi
 	 * function. */
 	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
 
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(node, edge) {
-			const ir_node *proj = get_edge_src_irn(edge);
-
-			if (arch_irn_consider_in_reg_alloc(cls, proj)) {
-				ir_nodeset_remove(nodeset, proj);
-			}
-		}
-	}
-
-	if (arch_irn_consider_in_reg_alloc(cls, node)) {
-		ir_nodeset_remove(nodeset, node);
-	}
+	be_foreach_definition(node, cls, value,
+		ir_nodeset_remove(nodeset, value);
+	);
 }
 
 static void add_uses(ir_node *node, ir_nodeset_t *nodeset)

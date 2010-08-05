@@ -836,4 +836,34 @@ static inline void arch_set_out_register_req(ir_node *node, int pos,
 	info->out_infos[pos].req = req;
 }
 
+/**
+ * Iterate over all values defined by an instruction.
+ * Only looks at values in a certain register class where the requirements
+ * are not marked as ignore.
+ * Executes @p code for each definition.
+ */
+#define be_foreach_definition(node, cls, value, code)                      \
+	do {                                                                   \
+	if (get_irn_mode(node) == mode_T) {                                    \
+		const ir_edge_t *edge_;                                            \
+		foreach_out_edge(node, edge_) {                                    \
+			const arch_register_req_t *req_;                               \
+			value = get_edge_src_irn(edge_);                               \
+			req_  = arch_get_register_req_out(value);                      \
+			if (req_->cls != cls)                                          \
+				continue;                                                  \
+			if (req_->type & arch_register_req_type_ignore)                \
+				continue;                                                  \
+			code                                                           \
+		}                                                                  \
+	} else {                                                               \
+		const arch_register_req_t *req_ = arch_get_register_req_out(node); \
+		value = node;                                                      \
+		if (req_->cls == cls                                               \
+				&& !(req_->type & arch_register_req_type_ignore)) {        \
+			code                                                           \
+		}                                                                  \
+	}                                                                      \
+	} while (0)
+
 #endif

@@ -287,21 +287,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 static void check_defs(const ir_nodeset_t *live_nodes, float weight,
                        ir_node *node)
 {
-	const arch_register_req_t *req;
-
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			check_defs(live_nodes, weight, proj);
-		}
-		return;
-	}
-
-	if (!arch_irn_consider_in_reg_alloc(cls, node))
-		return;
-
-	req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_register_req_out(node);
 	if (req->type & arch_register_req_type_limited) {
 		const unsigned *limited = req->limited;
 		float           penalty = weight * DEF_FACTOR;
@@ -361,8 +347,12 @@ static void analyze_block(ir_node *block, void *data)
 		if (is_Phi(node))
 			break;
 
-		if (create_preferences)
-			check_defs(&live_nodes, weight, node);
+		if (create_preferences) {
+			ir_node *value;
+			be_foreach_definition(node, cls, value,
+				check_defs(&live_nodes, weight, value);
+			);
+		}
 
 		/* mark last uses */
 		arity = get_irn_arity(node);
@@ -413,26 +403,13 @@ static void analyze_block(ir_node *block, void *data)
 	ir_nodeset_destroy(&live_nodes);
 }
 
-static void congruence_def(ir_nodeset_t *live_nodes, ir_node *node)
+static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 {
-	const arch_register_req_t *req;
-
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-		foreach_out_edge(node, edge) {
-			ir_node *def = get_edge_src_irn(edge);
-			congruence_def(live_nodes, def);
-		}
-		return;
-	}
-
-	if (!arch_irn_consider_in_reg_alloc(cls, node))
-		return;
+	const arch_register_req_t *req = arch_get_register_req_out(node);
 
 	/* should be same constraint? */
-	req = arch_get_register_req_out(node);
 	if (req->type & arch_register_req_type_should_be_same) {
-		ir_node *insn  = skip_Proj(node);
+		const ir_node *insn  = skip_Proj_const(node);
 		int      arity = get_irn_arity(insn);
 		int      i;
 		unsigned node_idx = get_irn_idx(node);
@@ -485,10 +462,13 @@ static void create_congruence_class(ir_node *block, void *data)
 
 	/* check should be same constraints */
 	sched_foreach_reverse(block, node) {
+		ir_node *value;
 		if (is_Phi(node))
 			break;
 
-		congruence_def(&live_nodes, node);
+		be_foreach_definition(node, cls, value,
+			congruence_def(&live_nodes, value);
+		);
 		be_liveness_transfer(cls, node, &live_nodes);
 	}
 
@@ -602,8 +582,6 @@ static void combine_congruence_classes(void)
 	irg_walk_graph(irg, set_congruence_prefs, NULL, NULL);
 	free(congruence_classes);
 }
-
-
 
 
 
@@ -1153,6 +1131,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	hungarian_problem_t *bp;
 	unsigned l, r;
 	unsigned *assignment;
+	ir_node  *value;
 
 	/* construct a list of register occupied by live-through values */
 	unsigned *live_through_regs = NULL;
@@ -1185,43 +1164,17 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	}
 
 	/* is any of the live-throughs using a constrained output register? */
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			const arch_register_req_t *req;
-
-			if (!arch_irn_consider_in_reg_alloc(cls, proj))
-				continue;
-
-			req = arch_get_register_req_out(proj);
-			if (!(req->type & arch_register_req_type_limited))
-				continue;
-
-			if (live_through_regs == NULL) {
-				rbitset_alloca(live_through_regs, n_regs);
-				determine_live_through_regs(live_through_regs, node);
-			}
-
-			rbitset_or(forbidden_regs, req->limited, n_regs);
-			if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
-				good = false;
-			}
+	be_foreach_definition(node, cls, value,
+		if (! (req_->type & arch_register_req_type_limited))
+			continue;
+		if (live_through_regs == NULL) {
+			rbitset_alloca(live_through_regs, n_regs);
+			determine_live_through_regs(live_through_regs, node);
 		}
-	} else {
-		if (arch_irn_consider_in_reg_alloc(cls, node)) {
-			const arch_register_req_t *req = arch_get_register_req_out(node);
-			if (req->type & arch_register_req_type_limited) {
-				rbitset_alloca(live_through_regs, n_regs);
-				determine_live_through_regs(live_through_regs, node);
-				if (rbitsets_have_common(req->limited, live_through_regs, n_regs)) {
-					good = false;
-					rbitset_or(forbidden_regs, req->limited, n_regs);
-				}
-			}
-		}
-	}
+		rbitset_or(forbidden_regs, req_->limited, n_regs);
+		if (rbitsets_have_common(req_->limited, live_through_regs, n_regs))
+			good = false;
+	);
 
 	if (good)
 		return;
@@ -1707,6 +1660,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	sched_foreach(block, node) {
 		int i;
 		int arity;
+		ir_node *value;
 
 		/* phis are already assigned */
 		if (is_Phi(node))
@@ -1737,17 +1691,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 		/* assign output registers */
 		/* TODO: 2 phases: first: pre-assigned ones, 2nd real regs */
-		if (get_irn_mode(node) == mode_T) {
-			const ir_edge_t *edge;
-			foreach_out_edge(node, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-				if (!arch_irn_consider_in_reg_alloc(cls, proj))
-					continue;
-				assign_reg(block, proj, forbidden_regs);
-			}
-		} else if (arch_irn_consider_in_reg_alloc(cls, node)) {
-			assign_reg(block, node, forbidden_regs);
-		}
+		be_foreach_definition(node, cls, value,
+			assign_reg(block, value, forbidden_regs);
+		);
 	}
 
 	ir_nodeset_destroy(&live_nodes);

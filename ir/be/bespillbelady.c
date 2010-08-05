@@ -66,8 +66,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define TIME_UNDEFINED 6666
 
-//#define LOOK_AT_LOOPDEPTH
-
 /**
  * An association between a node and a point in time.
  */
@@ -772,6 +770,7 @@ static void process_block(ir_node *block)
 
 	sched_foreach(block, irn) {
 		int i, arity;
+		ir_node *value;
 		assert(workset_get_length(ws) <= n_regs);
 
 		/* Phis are no real instr (see insert_starters()) */
@@ -797,20 +796,9 @@ static void process_block(ir_node *block)
 
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
-		if (get_irn_mode(irn) == mode_T) {
-			const ir_edge_t *edge;
-
-			foreach_out_edge(irn, edge) {
-				ir_node *proj = get_edge_src_irn(edge);
-				if (!arch_irn_consider_in_reg_alloc(cls, proj))
-					continue;
-				workset_insert(new_vals, proj, false);
-			}
-		} else {
-			if (!arch_irn_consider_in_reg_alloc(cls, irn))
-				continue;
-			workset_insert(new_vals, irn, false);
-		}
+		be_foreach_definition(irn, cls, value,
+			workset_insert(new_vals, value, false);
+		);
 		displace(new_vals, 0);
 
 		instr_nr++;
