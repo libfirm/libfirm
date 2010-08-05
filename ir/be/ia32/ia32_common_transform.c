@@ -836,6 +836,7 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 		*req             = *other_constr;
 		req->type       |= arch_register_req_type_should_be_same;
 		req->other_same  = 1U << pos;
+		req->width       = 1;
 
 		/* switch constraints. This is because in firm we have same_as
 		 * constraints on the output constraints while in the gcc asm syntax
@@ -865,7 +866,8 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 		memset(req, 0, sizeof(req[0]));
 		req->type = arch_register_req_type_normal;
 	}
-	req->cls = constraint->cls;
+	req->cls   = constraint->cls;
+	req->width = 1;
 
 	return req;
 }
@@ -891,6 +893,7 @@ const arch_register_req_t *parse_clobber(const char *clobber)
 	req->type    = arch_register_req_type_limited;
 	req->cls     = arch_register_get_class(reg);
 	req->limited = limited;
+	req->width   = 1;
 
 	return req;
 }

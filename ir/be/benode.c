@@ -483,6 +483,7 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *bl, ir_node *op)
 	req->cls        = cls;
 	req->type       = arch_register_req_type_should_be_same;
 	req->other_same = 1U << 0;
+	req->width      = 1;
 	be_set_constr_out(res, 0, req);
 
 	return res;
@@ -920,6 +921,7 @@ const arch_register_req_t *be_create_reg_req(struct obstack *obst,
 	req->type    = arch_register_req_type_limited | additional_types;
 	req->cls     = cls;
 	req->limited = limited_bitset;
+	req->width   = 1;
 	return req;
 }
 
