@@ -235,17 +235,16 @@ my %float_binop_constructors = (
 %nodes = (
 
 Add => {
-	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
-	emit      => '. add %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. add %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Sub => {
-	irn_flags => [ "rematerializable" ],
-	mode		=> $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sub %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. sub %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
@@ -412,7 +411,6 @@ Call => {
 Cmp => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. cmp %S1, %R2I',
-	reg_req      => { in => [ "gp", "gp" ], out => [ "flags" ] },
 	ins          => [ "left", "right" ],
 	mode         => $mode_flags,
 	constructors => \%cmp_operand_constructors,
@@ -439,63 +437,55 @@ SwitchJmp => {
 },
 
 Sll => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sll %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. sll %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Slr => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. srl %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. srl %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Sra => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. sra %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. sra %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 And => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. and %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. and %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Or => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. or %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. or %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Xor => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp" ] },
-	emit      => '. xor %S1, %R2I, %D1',
+	irn_flags    => [ "rematerializable" ],
+	mode         => $mode_gp,
+	emit         => '. xor %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Mul => {
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "y" ] },
+	mode         => $mode_gp,
+	emit         => '. smul %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
-	emit      => '. smul %S1, %R2I, %D1',
-	mode      => $mode_gp,
 },
 
 Mulh => {
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "gp" ] },
-	outs      => [ "low", "high" ],
+	outs         => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,
 },
 
@@ -504,20 +494,18 @@ Mulh => {
 #   as an explicit y-register
 
 SDiv => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "none" ] },
-	ins       => [ "dividend_low", "divisor" ],
-	outs      => [ "res", "M" ],
+	irn_flags    => [ "rematerializable" ],
+	state        => "exc_pinned",
+	ins          => [ "dividend_low", "divisor" ],
+	outs         => [ "res", "M" ],
 	constructors => \%binop_operand_constructors,
 },
 
 UDiv => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp" ], out => [ "gp", "none" ] },
-	ins       => [ "dividend_low", "divisor" ],
-	outs      => [ "res", "M" ],
+	irn_flags    => [ "rematerializable" ],
+	state        => "exc_pinned",
+	ins          => [ "dividend_low", "divisor" ],
+	outs         => [ "res", "M" ],
 	constructors => \%binop_operand_constructors,
 },
 
@@ -551,41 +539,37 @@ fcmp => {
 },
 
 fadd => {
-	op_flags  => [ "commutative" ],
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fadd%FPM %S1, %S2, %D1',
-	attr_type => "sparc_fp_attr_t",
-	attr      => "ir_mode *fp_mode",
+	op_flags     => [ "commutative" ],
+	irn_flags    => [ "rematerializable" ],
+	emit         => '. fadd%FPM %S1, %S2, %D1',
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
 	constructors => \%float_binop_constructors,
 },
 
 fsub => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      => '. fsub%FPM %S1, %S2, %D1',
-	attr_type => "sparc_fp_attr_t",
-	attr      => "ir_mode *fp_mode",
+	irn_flags    => [ "rematerializable" ],
+	emit         => '. fsub%FPM %S1, %S2, %D1',
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
 	constructors => \%float_binop_constructors,
 },
 
 fmul => {
-	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "commutative" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp" ] },
-	emit      =>'. fmul%FPM %S1, %S2, %D1',
-	attr_type => "sparc_fp_attr_t",
-	attr      => "ir_mode *fp_mode",
+	irn_flags    => [ "rematerializable" ],
+	op_flags     => [ "commutative" ],
+	emit         =>'. fmul%FPM %S1, %S2, %D1',
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
 	constructors => \%float_binop_constructors,
 },
 
 fdiv => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fp", "none" ] },
-	emit      => '. fdiv%FPM %S1, %S2, %D1',
-	attr_type => "sparc_fp_attr_t",
-	attr      => "ir_mode *fp_mode",
-	outs      => [ "res", "M" ],
+	irn_flags    => [ "rematerializable" ],
+	emit         => '. fdiv%FPM %S1, %S2, %D1',
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
+	outs         => [ "res", "M" ],
 	constructors => \%float_binop_constructors,
 },
 
@@ -599,11 +583,10 @@ fneg => {
 },
 
 "fabs" => {
-	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      => '. fabs%FPM %S1, %D1',
-	attr_type => "sparc_fp_attr_t",
-	attr      => "ir_mode *fp_mode",
+	irn_flags    => [ "rematerializable" ],
+	emit         => '. fabs%FPM %S1, %D1',
+	attr_type    => "sparc_fp_attr_t",
+	attr         => "ir_mode *fp_mode",
 	constructors => \%float_binop_constructors,
 },
 
