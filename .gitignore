@@ -7,5 +7,6 @@ Makefile.in
 /configure
 /depcomp
 /install-sh
+/ir/kaps
 /ltmain.sh
 /missing
