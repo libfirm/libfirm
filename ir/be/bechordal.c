@@ -129,7 +129,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	/*
 	 * For each out operand, try to find an in operand which can be assigned the
 	 * same register as the out operand.
-	*/
+	 */
 	for (j = 0; j < insn->use_start; ++j) {
 		be_operand_t *smallest        = NULL;
 		int           smallest_n_regs = env->cls->n_regs + 1;
