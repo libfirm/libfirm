@@ -105,13 +105,14 @@ pbqp_node *pbqp_node_deep_copy(pbqp *pbqp, pbqp_node_bucket new_bucket, pbqp_nod
 	unsigned   edge_index;
 	unsigned   edge_length = pbqp_node_get_degree(node);
 	pbqp_node *copy        = obstack_alloc(&pbqp->obstack, sizeof(*node));
+
 	assert(copy);
 
 	copy->edges        = NEW_ARR_F(pbqp_edge *, 0);
 	for (edge_index = 0; edge_index < edge_length; ++edge_index) {
-		pbqp_edge *edge_copy;
-		pbqp_edge *edge        = node->edges[edge_index];
-		int        is_src      = edge->src == node;
+		pbqp_edge *edge_copy = NULL;
+		pbqp_edge *edge      = node->edges[edge_index];
+		int        is_src    = edge->src == node;
 
 		if (is_src) {
 			unsigned other_index = edge->tgt->bucket_index;

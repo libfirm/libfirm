@@ -38,9 +38,11 @@ num pbqp_add(num x, num y)
 
 	num res = x + y;
 
+#if !KAPS_USE_UNSIGNED
 	/* No positive overflow. */
 	assert(x < 0 || y < 0 || res >= x);
 	assert(x < 0 || y < 0 || res >= y);
+#endif
 
 	/* No negative overflow. */
 	assert(x > 0 || y > 0 || res <= x);

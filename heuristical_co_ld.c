@@ -39,6 +39,8 @@ static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 	assert(pbqp);
 	assert(node);
 
+	(void) pbqp;
+
 	edge = node->edges[0];
 	mat = edge->costs;
 	is_src = edge->src == node;

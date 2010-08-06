@@ -180,8 +180,8 @@ num pbqp_matrix_get_col_min(pbqp_matrix *matrix, unsigned col_index, vector *fla
 unsigned pbqp_matrix_get_col_min_index(pbqp_matrix *matrix, unsigned col_index, vector *flags)
 {
 	unsigned row_index;
-	unsigned min_index;
-	num min = INF_COSTS;
+	unsigned min_index = 0;
+	num      min       = INF_COSTS;
 
 	assert(matrix);
 	assert(flags);
@@ -260,8 +260,8 @@ num pbqp_matrix_get_row_min(pbqp_matrix *matrix, unsigned row_index, vector *fla
 unsigned pbqp_matrix_get_row_min_index(pbqp_matrix *matrix, unsigned row_index, vector *flags)
 {
 	unsigned col_index;
-	unsigned min_index;
-	num min = INF_COSTS;
+	unsigned min_index = 0;
+	num      min       = INF_COSTS;
 
 	assert(matrix);
 	assert(flags);

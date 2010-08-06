@@ -664,6 +664,8 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	assert(pbqp);
 	assert(edge);
 
+	(void) pbqp;
+
 	src_node = edge->src;
 	tgt_node = edge->tgt;
 	assert(src_node);
@@ -796,6 +798,8 @@ num determine_solution(pbqp *pbqp)
 
 	assert(pbqp);
 
+	(void) pbqp;
+
 #if	KAPS_DUMP
 	file = pbqp->dump_file;
 
@@ -857,6 +861,8 @@ static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 
 	assert(pbqp);
 	assert(node);
+
+	(void) pbqp;
 
 	edge = node->edges[0];
 	mat = edge->costs;
