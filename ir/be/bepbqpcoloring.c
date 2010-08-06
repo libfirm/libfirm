@@ -754,7 +754,8 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 	num solution = get_solution(pbqp_alloc_env.pbqp_inst);
-	assert(solution != INF_COSTS && "No PBQP solution found");
+	if (solution == INF_COSTS)
+		panic("No PBQP solution found");
 
 
 	/* assign colors */
