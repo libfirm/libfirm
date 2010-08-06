@@ -131,15 +131,15 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	 * same register as the out operand.
 	*/
 	for (j = 0; j < insn->use_start; ++j) {
-		int smallest         = -1;
-		int smallest_n_regs  = env->cls->n_regs + 1;
-		be_operand_t *out_op = &insn->ops[j];
+		be_operand_t *smallest        = NULL;
+		int           smallest_n_regs = env->cls->n_regs + 1;
+		be_operand_t *out_op          = &insn->ops[j];
 
 		/* Try to find an in operand which has ... */
 		for (i = insn->use_start; i < insn->n_ops; ++i) {
-			int n_total;
-			const be_operand_t *op = &insn->ops[i];
-			be_lv_t            *lv;
+			int           n_total;
+			be_operand_t *op = &insn->ops[i];
+			be_lv_t      *lv;
 
 			if (op->partner != NULL)
 				continue;
@@ -153,20 +153,19 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			n_total = bitset_popcount(op->regs);
 
 			if (!bitset_is_empty(bs) && n_total < smallest_n_regs) {
-				smallest = i;
+				smallest        = op;
 				smallest_n_regs = n_total;
 			}
 		}
 
-		if (smallest >= 0) {
-			be_operand_t *partner = &insn->ops[smallest];
+		if (smallest != NULL) {
 			for (i = insn->use_start; i < insn->n_ops; ++i) {
-				if (insn->ops[i].carrier == partner->carrier)
+				if (insn->ops[i].carrier == smallest->carrier)
 					insn->ops[i].partner = out_op;
 			}
 
-			out_op->partner  = partner;
-			partner->partner = out_op;
+			out_op->partner   = smallest;
+			smallest->partner = out_op;
 		}
 	}
 }
