@@ -132,7 +132,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 	*/
 	for (j = 0; j < insn->use_start; ++j) {
 		int smallest         = -1;
-		int smallest_n_regs  = 2 * env->cls->n_regs + 1;
+		int smallest_n_regs  = env->cls->n_regs + 1;
 		be_operand_t *out_op = &insn->ops[j];
 
 		/* Try to find an in operand which has ... */
@@ -150,7 +150,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 			bitset_clear_all(bs);
 			bitset_copy(bs, op->regs);
 			bitset_and(bs, out_op->regs);
-			n_total = bitset_popcount(op->regs) + bitset_popcount(out_op->regs);
+			n_total = bitset_popcount(op->regs);
 
 			if (!bitset_is_empty(bs) && n_total < smallest_n_regs) {
 				smallest = i;
