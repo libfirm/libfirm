@@ -19,8 +19,8 @@
 
 /**
  * @file
- * @brief	analyze graph to provide value range information
- * @author 	Jonas Fietz
+ * @brief   analyze graph to provide value range information
+ * @author  Jonas Fietz
  * @version	$Id$
  */
 #include "config.h"
@@ -38,14 +38,14 @@
 #include "irop.h"
 #include "pdeq.h"
 #include "irphase_t.h"
+#include "bitset.h"
 #include "debug.h"
 
-static char v;
-static void *VISITED = &v;
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 struct vrp_env_t {
-	waitq *workqueue;
-	DEBUG_ONLY(firm_dbg_module_t *dbg);
+	waitq    *workqueue;
+	bitset_t *visited;
 };
 
 static vrp_attr *get_vrp_attr(const ir_node *node)
@@ -477,21 +477,20 @@ static int vrp_update_node(ir_node *node)
 
 static void vrp_first_pass(ir_node *n, void *e)
 {
-	ir_node *succ;
 	int i;
 	struct vrp_env_t *env = e;
 
 	if (is_Block(n))
 		return;
 
-	set_irn_link(n, VISITED);
+	bitset_set(env->visited, get_irn_idx(n));
 
 	vrp_update_node(n);
 
 	assure_irg_outs(get_current_ir_graph());
 	for (i = get_irn_n_outs(n) - 1; i >=0; --i) {
-		succ =  get_irn_out(n, i);
-		if (get_irn_link(succ) == VISITED) {
+		ir_node *succ = get_irn_out(n, i);
+		if (bitset_is_set(env->visited, get_irn_idx(succ))) {
 			/* we found a loop*/
 			waitq_put(env->workqueue, succ);
 		}
@@ -502,9 +501,8 @@ static void *vrp_init_node(ir_phase *phase, const ir_node *n)
 {
 	ir_mode *mode;
 	vrp_attr *vrp;
-	struct vrp_env_t *env = phase->priv;
 
-	DBG((env->dbg, LEVEL_2, "initialized node nr: %d\n", get_irn_node_nr(n)));
+	DBG((dbg, LEVEL_2, "initialized node nr: %d\n", get_irn_node_nr(n)));
 	vrp = phase_alloc(phase, sizeof(vrp_attr));
 
 	memset(vrp, 0, sizeof(vrp_attr));
@@ -548,6 +546,8 @@ void set_vrp_data(ir_graph *irg)
 	struct vrp_env_t *env;
 	ir_phase *phase;
 
+	FIRM_DBG_REGISTER(dbg, "ir.ana.vrp");
+
 	assure_irg_outs(irg); /* ensure that out edges are consistent*/
 	phase = irg_get_phase(irg, PHASE_VRP);
 	if (phase == NULL) {
@@ -555,7 +555,6 @@ void set_vrp_data(ir_graph *irg)
 		phase = new_phase(irg, vrp_init_node);
 		irg_register_phase(irg, PHASE_VRP, phase);
 		env = phase_alloc(phase, sizeof(*env));
-		FIRM_DBG_REGISTER(env->dbg, "ir.ana.vrp");
 		phase->priv = env;
 	} else {
 		env = phase->priv;
@@ -563,7 +562,9 @@ void set_vrp_data(ir_graph *irg)
 
 	env->workqueue = new_waitq();
 
+	env->visited = bitset_malloc(get_irg_last_idx(irg));
 	irg_walk_graph(irg, NULL, vrp_first_pass, env);
+	bitset_free(env->visited);
 
 	/* while there are entries in the worklist, continue*/
 	while (!waitq_empty(env->workqueue)) {
@@ -579,7 +580,6 @@ void set_vrp_data(ir_graph *irg)
 	}
 	del_waitq(env->workqueue);
 }
-
 
 ir_graph_pass_t *set_vrp_pass(const char *name)
 {
@@ -630,5 +630,6 @@ vrp_attr *vrp_get_info(const ir_node *node)
 	if (vrp && vrp->valid) {
 		return vrp;
 	}
+
 	return NULL;
 }

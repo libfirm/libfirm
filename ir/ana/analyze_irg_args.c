@@ -36,9 +36,6 @@
 
 #include "analyze_irg_args.h"
 
-static char v;
-static void *VISITED = &v;
-
 /**
  * Walk recursive the successors of a graph argument
  * with mode reference and mark if it will be read,
@@ -53,13 +50,13 @@ static unsigned analyze_arg(ir_node *arg, unsigned bits)
 	ir_node *succ;
 
 	/* We must visit a node once to avoid endless recursion.*/
-	set_irn_link(arg, VISITED);
+	mark_irn_visited(arg);
 
 	for (i = get_irn_n_outs(arg) - 1; i >= 0; --i) {
 		succ = get_irn_out(arg, i);
 
 		/* We was here.*/
-		if (get_irn_link(succ) == VISITED)
+		if (irn_visited(succ))
 			continue;
 
 		/* We should not walk over the memory edge.*/
@@ -327,13 +324,13 @@ static unsigned calc_method_param_weight(ir_node *arg)
 	unsigned weight = null_weight;
 
 	/* We mark the nodes to avoid endless recursion */
-	set_irn_link(arg, VISITED);
+	mark_irn_visited(arg);
 
 	for (i = get_irn_n_outs(arg) - 1; i >= 0; i--) {
 		succ = get_irn_out(arg, i);
 
 		/* We was here.*/
-		if (get_irn_link(succ) == VISITED)
+		if (irn_visited(succ))
 			continue;
 
 		/* We should not walk over the memory edge.*/
@@ -460,12 +457,6 @@ static void analyze_method_params_weight(ir_entity *ent)
 		proj_nr = get_Proj_proj(arg);
 		ent->attr.mtd_attr.param_weight[proj_nr] += calc_method_param_weight(arg);
 	}
-
-#if 0
-	printf("\n%s:\n", get_entity_name(ent));
-	for (i = nparams - 1; i >= 0; --i)
-		printf("The weight of argument %i is %f \n", i, ent->param_weight[i]);
-#endif
 }
 
 /*
@@ -506,12 +497,16 @@ unsigned get_method_param_weight(ir_entity *ent, int pos)
  */
 void analyze_irg_args_weight(ir_graph *irg)
 {
-	ir_entity *ent;
-
-	ent = get_irg_entity(irg);
-	if (ent == NULL)
+	ir_entity *entity = get_irg_entity(irg);
+	if (entity == NULL)
 		return;
 
-	if (! ent->attr.mtd_attr.param_weight)
-		analyze_method_params_weight(ent);
+	assert(is_method_entity(entity));
+	if (ent->attr.mtd_attr.param_weight != NULL)
+		return;
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
+	analyze_method_params_weight(ent);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
