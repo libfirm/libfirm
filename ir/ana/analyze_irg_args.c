@@ -502,11 +502,11 @@ void analyze_irg_args_weight(ir_graph *irg)
 		return;
 
 	assert(is_method_entity(entity));
-	if (ent->attr.mtd_attr.param_weight != NULL)
+	if (entity->attr.mtd_attr.param_weight != NULL)
 		return;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
-	analyze_method_params_weight(ent);
+	analyze_method_params_weight(entity);
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 }
