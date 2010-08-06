@@ -184,9 +184,9 @@ static void insert_ife_edge(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *src_no
 #if DO_USEFUL_OPT || USE_BIPARTIT_MATCHING
 		/* do useful optimization to speed up pbqp solving (we can do this because we know our matrix) */
 		if (get_free_regs(restr_nodes, cls, src_node) == 1 && get_free_regs(restr_nodes, cls, trg_node) == 1) {
-			unsigned src_idx = vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs);
-			unsigned trg_idx = vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs);
-			assert(src_idx != trg_idx && "Interfering nodes could not have the same register!");
+			assert(vector_get_min_index(get_node(pbqp, get_irn_idx(src_node))->costs) !=
+			       vector_get_min_index(get_node(pbqp, get_irn_idx(trg_node))->costs) &&
+			       "Interfering nodes must not have the same register!");
 			return;
 		}
 		if (get_free_regs(restr_nodes, cls, src_node) == 1 || get_free_regs(restr_nodes, cls, trg_node) == 1) {
