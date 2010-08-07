@@ -304,7 +304,6 @@ static int should_be_scheduled(ir_node *node)
 	case iro_Start:
 	case iro_Jmp:
 	case beo_Return:
-	case iro_Unreachable:
 		return 1;
 	default:
 		break;

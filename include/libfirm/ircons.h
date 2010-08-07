@@ -254,7 +254,6 @@
  *    ir_node *new_IJmp     (ir_node *tgt);
  *    ir_node *new_Cond     (ir_node *c);
  *    ir_node *new_Return   (ir_node *store, int arity, ir_node **in);
- *    ir_node *new_Unreachable (ir_node *store);
  *    ir_node *new_Const    (tarval *con);
  *    ir_node *new_SymConst (ir_mode *mode, symconst_symbol value, symconst_kind kind);
  *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, ir_entity *ent);
@@ -417,7 +416,7 @@
  *    -----------------------
  *
  *    In each block there must be exactly one of the control flow
- *    operations Start, End, Jmp, Cond, Return, Raise, or Unreachable.  The output of a
+ *    operations Start, End, Jmp, Cond, Return or Raise.  The output of a
  *    control flow operation points to the block to be executed next.
  *
  *    ir_node *new_Start (void)
@@ -502,16 +501,6 @@
  *    Output
  *      Control flow to the end block.
  *
- *    ir_node *new_Unreachable (ir_node *store)
- *    -----------------------------------------
- *
- *    The Unreachable node represents an unreachable control flow, typically
- *    after a noreturn call.  It passes the control flow to the end_block.
- *
- *    Inputs:
- *      The memory state.
- *    Output
- *      Control flow to the end block.
  *
  *    ir_node *new_Const (tarval *con)
  *    -----------------------------------------------
@@ -1225,16 +1214,6 @@ FIRM_API ir_node *new_rd_Cond(dbg_info *db, ir_node *block, ir_node *c);
  */
 FIRM_API ir_node *new_rd_Return(dbg_info *db, ir_node *block,
                                 ir_node *store, int arity, ir_node *in[]);
-
-/** Constructor for an Unreachable node.
- *
- * Holds the memory.  Only node that can end unreachable control flow.
- *
- * @param *db    A pointer for debug information.
- * @param *block The IR block the node belongs to.
- * @param *store The state of memory.
- */
-FIRM_API ir_node *new_rd_Unreachable(dbg_info *db, ir_node *block, ir_node *store);
 
 /** Constructor for a Const_type node.
  *
@@ -2071,15 +2050,6 @@ FIRM_API ir_node *new_r_Cond(ir_node *block, ir_node *c);
 FIRM_API ir_node *new_r_Return(ir_node *block, ir_node *store,
                                int arity, ir_node *in[]);
 
-/** Constructor for an Unreachable node.
- *
- * Holds the memory.  Only node that can end unreachable control flow.
- *
- * @param *block The IR block the node belongs to.
- * @param *store The state of memory.
- */
-FIRM_API ir_node *new_r_Unreachable(ir_node *block, ir_node *store);
-
 /** Constructor for a Const node.
  *
  * Adds the node to the start block.
@@ -2820,17 +2790,6 @@ FIRM_API ir_node *new_d_Cond(dbg_info *db, ir_node *c);
  */
 FIRM_API ir_node *new_d_Return(dbg_info *db, ir_node *store,
                                int arity, ir_node *in[]);
-
-/** Constructor for an Unreachable node.
- *
- * Adds the node to the block in current_ir_block.
- *
- * Holds the memory.  Only node that can end unreachable control flow.
- *
- * @param *db    A pointer for debug information.
- * @param *store The state of memory.
- */
-FIRM_API ir_node *new_d_Unreachable(dbg_info *db, ir_node *store);
 
 /** Constructor for a Const_type node.
  *
@@ -3595,15 +3554,6 @@ FIRM_API ir_node *new_Cond(ir_node *c);
  * @param *in    Array with index inputs to the node.
  */
 FIRM_API ir_node *new_Return(ir_node *store, int arity, ir_node *in[]);
-
-/** Constructor for an Unreachable node.
- *
- * Holds the memory.  Only node that can end unreachable control flow.
- * Adds the node to the block in current_ir_block.
- *
- * @param *store The state of memory.
- */
-FIRM_API ir_node *new_Unreachable(ir_node *store);
 
 /** Constructor for a Const node.
  *

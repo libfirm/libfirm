@@ -893,10 +893,9 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 				break;   /*  We can not test properly.  How many tuples are there? */
 			ASSERT_AND_RET(
 				(
-					is_Return(pred)      ||
-					is_Unreachable(pred) ||
-					is_Bad(pred)         ||
-					is_Raise(pred)       ||
+					is_Return(pred) ||
+					is_Bad(pred)    ||
+					is_Raise(pred)  ||
 					is_fragile_op(pred)
 				),
 				"End Block node", 0);

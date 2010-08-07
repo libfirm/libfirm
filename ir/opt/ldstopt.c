@@ -2185,8 +2185,6 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		pred = skip_Proj(pred);
 		if (is_Return(pred))
 			dfs(get_Return_mem(pred), env);
-		else if (is_Unreachable(pred))
-			dfs(get_Unreachable_mem(pred), env);
 		else if (is_Raise(pred))
 			dfs(get_Raise_mem(pred), env);
 		else if (is_fragile_op(pred))

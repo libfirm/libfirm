@@ -121,7 +121,6 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_Pin,         be_duplicate_node);
 	be_set_transform_function(op_Start,       be_duplicate_node);
 	be_set_transform_function(op_Sync,        be_duplicate_node);
-	be_set_transform_function(op_Unreachable, be_duplicate_node);
 }
 
 ir_node *be_duplicate_node(ir_node *node)

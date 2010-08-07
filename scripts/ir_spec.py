@@ -633,12 +633,6 @@ class Return(Op):
 	flags    = [ "cfopcode" ]
 	pinned   = "yes"
 
-class Unreachable(Op):
-	ins      = [ "mem" ]
-	mode     = "mode_X"
-	flags    = [ "cfopcode" ]
-	pinned   = "yes"
-
 class Rotl(Binop):
 	flags    = []
 

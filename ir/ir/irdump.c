@@ -760,7 +760,6 @@ static void dump_node_mode(FILE *F, ir_node *n)
 	case iro_Sel:
 	case iro_End:
 	case iro_Return:
-	case iro_Unreachable:
 	case iro_Free:
 	case iro_Sync:
 	case iro_Jmp:
