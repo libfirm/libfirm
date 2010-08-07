@@ -310,6 +310,8 @@ FIRM_API int is_Sync(const ir_node *node);
 FIRM_API int is_Tuple(const ir_node *node);
 /** Return true of the node is a Unknown node. */
 FIRM_API int is_Unknown(const ir_node *node);
+/** Return true of the node is a Unreachable node. */
+FIRM_API int is_Unreachable(const ir_node *node);
 
 
 FIRM_API ir_asm_constraint* get_ASM_input_constraints(const ir_node *node);
@@ -586,6 +588,9 @@ void set_Sub_right(ir_node *node, ir_node *right);
 
 
 
+
+FIRM_API ir_node *get_Unreachable_mem(const ir_node *node);
+void set_Unreachable_mem(ir_node *node, ir_node *mem);
 /** @} */
 
 #endif

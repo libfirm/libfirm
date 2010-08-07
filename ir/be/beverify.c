@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -304,6 +304,7 @@ static int should_be_scheduled(ir_node *node)
 	case iro_Start:
 	case iro_Jmp:
 	case beo_Return:
+	case iro_Unreachable:
 		return 1;
 	default:
 		break;

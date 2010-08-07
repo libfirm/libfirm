@@ -62,8 +62,9 @@ typedef enum ir_opcode {
 	iro_Sync,
 	iro_Tuple,
 	iro_Unknown,
+	iro_Unreachable,
 	iro_First = iro_ASM,
-	iro_Last = iro_Unknown,
+	iro_Last = iro_Unreachable,
 
 	beo_First,
 	/* backend specific nodes */
@@ -145,6 +146,7 @@ FIRM_API ir_op *op_SymConst;
 FIRM_API ir_op *op_Sync;
 FIRM_API ir_op *op_Tuple;
 FIRM_API ir_op *op_Unknown;
+FIRM_API ir_op *op_Unreachable;
 
 
 FIRM_API ir_op *get_op_ASM(void);
@@ -204,5 +206,6 @@ FIRM_API ir_op *get_op_SymConst(void);
 FIRM_API ir_op *get_op_Sync(void);
 FIRM_API ir_op *get_op_Tuple(void);
 FIRM_API ir_op *get_op_Unknown(void);
+FIRM_API ir_op *get_op_Unreachable(void);
 
 #endif
