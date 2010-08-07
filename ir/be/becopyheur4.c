@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -255,10 +255,11 @@ static int cmp_col_cost_gt(const void *a, const void *b)
 {
 	const col_cost_t *c1 = a;
 	const col_cost_t *c2 = b;
-	if (c2->cost == c1->cost)
+	real_t diff = c2->cost - c1->cost;
+
+	if (diff == 0.0)
 		return QSORT_CMP(c1->col, c2->col);
 
-	real_t diff = c2->cost - c1->cost;
 	return (diff > 0) - (diff < 0);
 }
 
