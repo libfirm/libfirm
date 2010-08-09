@@ -482,10 +482,24 @@ And => {
 	constructors => \%binop_operand_constructors,
 },
 
+AndN => {
+	irn_flags => [ "rematerializable" ],
+	mode      => $mode_gp,
+	emit      => '. andn %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
+},
+
 Or => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
 	emit         => '. or %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
+},
+
+OrN => {
+	irn_flags => [ "rematerializable" ],
+	mode      => $mode_gp,
+	emit      => '. orn %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
