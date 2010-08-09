@@ -24,6 +24,8 @@
  */
 #include "config.h"
 
+#include <stdint.h>
+
 #include "irnode_t.h"
 #include "irgraph_t.h"
 #include "irmode_t.h"
@@ -320,11 +322,25 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
  */
 static ir_node *gen_Add(ir_node *node)
 {
-	ir_mode *mode = get_irn_mode(node);
+	ir_mode *mode  = get_irn_mode(node);
+	ir_node *right = get_Add_right(node);
 
 	if (mode_is_float(mode)) {
 		return gen_helper_binfpop(node, mode, new_bd_sparc_fadd_s,
 		                          new_bd_sparc_fadd_d, new_bd_sparc_fadd_q);
+	}
+
+	/* special case: + 0x1000 can be represented as - 0x1000 */
+	if (is_Const(right)) {
+		tarval   *tv  = get_Const_tarval(right);
+		uint32_t  val = get_tarval_long(tv);
+		if (val == 0x1000) {
+			dbg_info *dbgi   = get_irn_dbg_info(node);
+			ir_node  *block  = be_transform_node(get_nodes_block(node));
+			ir_node  *op     = get_Add_left(node);
+			ir_node  *new_op = be_transform_node(op);
+			return new_bd_sparc_Sub_imm(dbgi, block, new_op, -0x1000);
+		}
 	}
 
 	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
