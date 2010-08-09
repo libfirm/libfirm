@@ -752,28 +752,55 @@ static void emit_sparc_Ba(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
+static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
+                      const arch_register_t *dst_reg)
+{
+	be_emit_cstring("\tfmov ");
+	be_emit_string(arch_register_get_name(src_reg));
+	be_emit_cstring(", ");
+	be_emit_string(arch_register_get_name(dst_reg));
+	be_emit_finish_line_gas(node);
+}
+
+static const arch_register_t *get_next_fp_reg(const arch_register_t *reg)
+{
+	unsigned index = reg->index;
+	assert(reg == &sparc_fp_regs[index]);
+	index++;
+	assert(index < N_sparc_fp_REGS);
+	return &sparc_fp_regs[index];
+}
+
 /**
  * emit copy node
  */
-static void emit_be_Copy(const ir_node *irn)
+static void emit_be_Copy(const ir_node *node)
 {
-	ir_mode *mode = get_irn_mode(irn);
+	ir_mode               *mode    = get_irn_mode(node);
+	const arch_register_t *src_reg = get_in_reg(node, 0);
+	const arch_register_t *dst_reg = get_out_reg(node, 0);
 
-	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
-		/* omitted Copy */
+	if (src_reg == dst_reg)
 		return;
-	}
 
 	if (mode_is_float(mode)) {
-		panic("emit_be_Copy: move not supported for FP");
+		unsigned bits = get_mode_size_bits(mode);
+		int      n    = bits > 32 ? bits > 64 ? 3 : 1 : 0;
+		int      i;
+		emit_fmov(node, src_reg, dst_reg);
+		for (i = 0; i < n; ++i) {
+			src_reg = get_next_fp_reg(src_reg);
+			dst_reg = get_next_fp_reg(dst_reg);
+			emit_fmov(node, src_reg, dst_reg);
+		}
 	} else if (mode_is_data(mode)) {
 		be_emit_cstring("\tmov ");
-		sparc_emit_source_register(irn, 0);
+		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
-		sparc_emit_dest_register(irn, 0);
-		be_emit_finish_line_gas(irn);
+		sparc_emit_dest_register(node, 0);
+		be_emit_finish_line_gas(node);
 	} else {
-		panic("emit_be_Copy: move not supported for this mode");
+		panic("emit_be_Copy: invalid mode");
 	}
 }
 
@@ -785,8 +812,6 @@ static void emit_nothing(const ir_node *irn)
 {
 	(void) irn;
 }
-
-
 
 /**
  * type of emitter function
@@ -844,15 +869,15 @@ static void sparc_register_emitters(void)
  */
 static void sparc_emit_node(const ir_node *node)
 {
-	ir_op               *op       = get_irn_op(node);
+	ir_op *op = get_irn_op(node);
 
 	if (op->ops.generic) {
 		emit_func func = (emit_func) op->ops.generic;
 		be_dbg_set_dbg_info(get_irn_dbg_info(node));
 		(*func) (node);
 	} else {
-		panic("Error: No emit handler for node %+F (graph %+F)\n",
-			node, current_ir_graph);
+		panic("No emit handler for node %+F (graph %+F)\n",	node,
+		      current_ir_graph);
 	}
 }
 

@@ -232,6 +232,24 @@ my %float_binop_constructors = (
 	}
 );
 
+my %float_unop_constructors = (
+	s => {
+		reg_req => { in => [ "fp" ], out => [ "fp" ] },
+		ins     => [ "left", "right" ],
+		mode    => $mode_fp,
+	},
+	d => {
+		reg_req => { in => [ "fp:a|2" ], out => [ "fp:a|2" ] },
+		ins     => [ "left", "right" ],
+		mode    => $mode_fp2,
+	},
+	q => {
+		reg_req => { in => [ "fp:a|4" ], out => [ "fp:a|4" ] },
+		ins     => [ "left", "right" ],
+		mode    => $mode_fp4,
+	}
+);
+
 %nodes = (
 
 Add => {
@@ -531,11 +549,21 @@ Nop => {
 
 fcmp => {
 	irn_flags => [ "rematerializable", "modifies_fp_flags" ],
-	reg_req   => { in => [ "fp", "fp" ], out => [ "fpflags" ] },
 	emit      => '. fcmp%FPM %S1, %S2',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	mode      => $mode_fpflags,
+	constructors => {
+		s => {
+			reg_req => { in => [ "fp", "fp" ], out => [ "fpflags" ] },
+		},
+		d => {
+			reg_req => { in => [ "fp:a|2", "fp:a|2" ], out => [ "fpflags" ] },
+		},
+		q => {
+			reg_req => { in => [ "fp:a|4", "fp:a|4" ], out => [ "fpflags" ] },
+		},
+	},
 },
 
 fadd => {
@@ -576,27 +604,53 @@ fdiv => {
 fneg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
-	emit      => '. fneg%FPM %S1, %D1',
+	# note that we only need the first register even for wide-values
+	emit      => '. fneg %S1, %D1',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
-	mode      => $mode_fp,
+	constructors => \%float_unop_constructors,
 },
 
 "fabs" => {
 	irn_flags    => [ "rematerializable" ],
-	emit         => '. fabs%FPM %S1, %D1',
+	# note that we only need the first register even for wide-values
+	emit         => '. fabs %S1, %D1',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
-	constructors => \%float_binop_constructors,
+	constructors => \%float_unop_constructors,
 },
 
 fftof => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	emit      => '. f%FCONVS%.to%FCONVD %S1, %D1',
 	attr_type => "sparc_fp_conv_attr_t",
 	attr      => "ir_mode *src_mode, ir_mode *dest_mode",
-	mode      => $mode_fp,
+	constructors => {
+		s_d => {
+			reg_req => { in => [ "fp" ], out => [ "fp:a|2" ] },
+			mode    => $mode_fp2,
+		},
+		s_q => {
+			reg_req => { in => [ "fp" ], out => [ "fp:a|2" ] },
+			mode    => $mode_fp4,
+		},
+		d_s => {
+			reg_req => { in => [ "fp:a|2" ], out => [ "fp" ] },
+			mode    => $mode_fp,
+		},
+		d_q => {
+			reg_req => { in => [ "fp:a|2" ], out => [ "fp:a|4" ] },
+			mode    => $mode_fp4,
+		},
+		q_s => {
+			reg_req => { in => [ "fp:a|4" ], out => [ "fp" ] },
+			mode    => $mode_fp,
+		},
+		q_d => {
+			reg_req => { in => [ "fp:a|4" ], out => [ "fp:a|2" ] },
+			mode    => $mode_fp2,
+		},
+	},
 },
 
 fitof => {
@@ -605,7 +659,20 @@ fitof => {
 	emit      => '. fito%FPM %S1, %D1',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
-	mode      => $mode_fp,
+	constructors => {
+		s => {
+			reg_req => { in => [ "gp" ], out => [ "fp" ] },
+			mode    => $mode_fp,
+		},
+		d => {
+			reg_req => { in => [ "gp" ], out => [ "fp:a|2" ] },
+			mode    => $mode_fp2,
+		},
+		q => {
+			reg_req => { in => [ "gp" ], out => [ "fp:a|4" ] },
+			mode    => $mode_fp4,
+		},
+	},
 },
 
 fftoi => {
@@ -615,14 +682,35 @@ fftoi => {
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	mode      => $mode_gp,
+	constructors => {
+		s => {
+			reg_req => { in => [ "gp" ], out => [ "gp" ] },
+		},
+		d => {
+			reg_req => { in => [ "fp:a|2" ], out => [ "gp" ] },
+		},
+		q => {
+			reg_req => { in => [ "fp:a|4" ], out => [ "gp" ] },
+		},
+	},
 },
 
 Ldf => {
 	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
+	constructors => {
+		s => {
+			reg_req => { in => [ "gp", "none" ], out => [ "fp", "none" ] },
+		},
+		d => {
+			reg_req => { in => [ "gp", "none" ], out => [ "fp:a|2", "none" ] },
+		},
+		q => {
+			reg_req => { in => [ "gp", "none" ], out => [ "fp:a|4", "none" ] },
+		},
+	},
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
-	reg_req   => { in => [ "gp", "none" ], out => [ "fp", "none" ] },
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 	emit      => '. ld%FLSM [%S1%O], %D1'
@@ -631,9 +719,19 @@ Ldf => {
 Stf => {
 	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
+	constructors => {
+		s => {
+			reg_req => { in => [ "gp", "fp", "none" ], out => [ "none" ] },
+		},
+		d => {
+			reg_req => { in => [ "gp", "fp:a|2", "none" ], out => [ "none" ] },
+		},
+		q => {
+			reg_req => { in => [ "gp", "fp:a|4", "none" ], out => [ "none" ] },
+		},
+	},
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
-	reg_req   => { in => [ "gp", "fp", "none" ], out => [ "none" ] },
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 	emit      => '. st%FLSM %S2, [%S1%O]',
