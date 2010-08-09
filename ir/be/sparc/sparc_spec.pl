@@ -496,6 +496,13 @@ Xor => {
 	constructors => \%binop_operand_constructors,
 },
 
+XNor => {
+	irn_flags => [ "rematerializable" ],
+	mode      => $mode_gp,
+	emit      => '. xnor %S1, %R2I, %D1',
+	constructors => \%binop_operand_constructors,
+},
+
 Mul => {
 	mode         => $mode_gp,
 	emit         => '. smul %S1, %R2I, %D1',
@@ -525,26 +532,6 @@ UDiv => {
 	ins          => [ "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
 	constructors => \%binop_operand_constructors,
-},
-
-Minus => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => ". sub %%g0, %S1, %D1"
-},
-
-Not => {
-	irn_flags => [ "rematerializable" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	emit      => '. xnor %S1, %%g0, %D1'
-},
-
-Nop => {
-	op_flags => [ "keep" ],
-	reg_req	 => { in => [], out => [ "none" ] },
-	emit     => '. nop',
 },
 
 fcmp => {

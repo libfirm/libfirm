@@ -525,6 +525,11 @@ static ir_node *gen_Abs(ir_node *node)
 	}
 }
 
+static ir_node *get_g0(void)
+{
+	return be_prolog_get_reg_value(abihelper, &sparc_gp_regs[REG_G0]);
+}
+
 /**
  * Transforms a Not node.
  *
@@ -532,12 +537,13 @@ static ir_node *gen_Abs(ir_node *node)
  */
 static ir_node *gen_Not(ir_node *node)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op      = get_Not_op(node);
-	ir_node  *new_op  = be_transform_node(op);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *op     = get_Not_op(node);
+	ir_node  *new_op = be_transform_node(op);
+	ir_node  *zero   = get_g0();
 
-	return new_bd_sparc_Not(dbgi, block, new_op);
+	return new_bd_sparc_XNor_reg(dbgi, block, zero, new_op);
 }
 
 static ir_node *gen_And(ir_node *node)
@@ -575,18 +581,23 @@ static ir_node *gen_Shrs(ir_node *node)
  */
 static ir_node *gen_Minus(ir_node *node)
 {
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *op     = get_Minus_op(node);
-	ir_node  *new_op = be_transform_node(op);
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_mode  *mode   = get_irn_mode(node);
+	ir_mode  *mode = get_irn_mode(node);
+	ir_node  *op;
+	ir_node  *block;
+	ir_node  *new_op;
+	ir_node  *zero;
+	dbg_info *dbgi;
 
 	if (mode_is_float(mode)) {
 		return gen_helper_unfpop(node, mode, new_bd_sparc_fneg_s,
 		                         new_bd_sparc_fneg_d, new_bd_sparc_fneg_q);
 	}
-
-	return new_bd_sparc_Minus(dbgi, block, new_op);
+	block  = be_transform_node(get_nodes_block(node));
+	dbgi   = get_irn_dbg_info(node);
+	op     = get_Minus_op(node);
+	new_op = be_transform_node(op);
+	zero   = get_g0();
+	return new_bd_sparc_Sub_reg(dbgi, block, zero, new_op);
 }
 
 static ir_node *make_addr(dbg_info *dbgi, ir_entity *entity)
@@ -652,7 +663,7 @@ static ir_node *gen_Const(ir_node *node)
 
 	/* use the 0 register instead of a 0-constant */
 	if (is_Const_null(node)) {
-		return be_prolog_get_reg_value(abihelper, &sparc_gp_regs[REG_G0]);
+		return get_g0();
 	}
 
 	return create_const_graph(node, block);
