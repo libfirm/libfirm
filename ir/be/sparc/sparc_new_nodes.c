@@ -147,7 +147,7 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 	}
 }
 
-static void sparc_set_attr_imm(ir_node *res, int immediate_value)
+static void sparc_set_attr_imm(ir_node *res, int32_t immediate_value)
 {
 	sparc_attr_t *attr = get_irn_generic_attr(res);
 	attr->immediate_value = immediate_value;

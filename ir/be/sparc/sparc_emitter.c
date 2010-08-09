@@ -111,9 +111,15 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void sparc_emit_immediate(const ir_node *node)
 {
-	int const val = get_sparc_attr_const(node)->immediate_value;
-	assert(-4096 <= val && val < 4096);
-	be_emit_irprintf("%d", val);
+	int32_t value = get_sparc_attr_const(node)->immediate_value;
+	assert(-4096 <= value && value < 4096);
+	be_emit_irprintf("%d", value);
+}
+
+void sparc_emit_high_immediate(const ir_node *node)
+{
+	uint32_t value = (uint32_t) get_sparc_attr_const(node)->immediate_value;
+	be_emit_irprintf("%%hi(0x%X)", value);
 }
 
 void sparc_emit_source_register(const ir_node *node, int pos)
@@ -325,31 +331,6 @@ static void emit_sparc_Save(const ir_node *irn)
 	be_emit_cstring("\tsave ");
 	sparc_emit_source_register(irn, 0);
 	be_emit_irprintf(", %d, ", -save_attr->initial_stacksize);
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-}
-
-/**
- * emits code to load hi 22 bit of a constant
- */
-static void emit_sparc_HiImm(const ir_node *irn)
-{
-	const sparc_attr_t *attr = get_sparc_attr_const(irn);
-	be_emit_cstring("\tsethi ");
-	be_emit_irprintf("%%hi(%d), ", attr->immediate_value);
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-}
-
-/**
- * emits code to load lo 10bits of a constant
- */
-static void emit_sparc_LoImm(const ir_node *irn)
-{
-	const sparc_attr_t *attr = get_sparc_attr_const(irn);
-	be_emit_cstring("\tor ");
-	sparc_emit_source_register(irn, 0);
-	be_emit_irprintf(", %%lo(%d), ", attr->immediate_value);
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
@@ -849,8 +830,6 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
-	set_emitter(op_sparc_HiImm,     emit_sparc_HiImm);
-	set_emitter(op_sparc_LoImm,     emit_sparc_LoImm);
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
 	set_emitter(op_sparc_Save,      emit_sparc_Save);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);

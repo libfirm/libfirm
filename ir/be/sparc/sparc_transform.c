@@ -33,6 +33,7 @@
 #include "iredges.h"
 #include "ircons.h"
 #include "irprintf.h"
+#include "iroptimize.h"
 #include "dbginfo.h"
 #include "iropt_t.h"
 #include "debug.h"
@@ -151,50 +152,6 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 	}
 }
 
-/**
- * Creates a possible DAG for a constant.
- */
-static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
-                                         long value)
-{
-	ir_node *result;
-
-	/* we need to load hi & lo separately */
-	if (value < -4096 || value > 4095) {
-		ir_node *hi = new_bd_sparc_HiImm(dbgi, block, (int) value);
-		result = new_bd_sparc_LoImm(dbgi, block, hi, value);
-		be_dep_on_frame(hi);
-	} else {
-		result = new_bd_sparc_Mov_imm(dbgi, block, (int) value);
-		be_dep_on_frame(result);
-	}
-
-	return result;
-}
-
-/**
- * Create a DAG constructing a given Const.
- *
- * @param irn  a Firm const
- */
-static ir_node *create_const_graph(ir_node *irn, ir_node *block)
-{
-	tarval  *tv = get_Const_tarval(irn);
-	ir_mode *mode = get_tarval_mode(tv);
-	dbg_info *dbgi = get_irn_dbg_info(irn);
-	long value;
-
-
-	if (mode_is_reference(mode)) {
-		/* SPARC V8 is 32bit, so we can safely convert a reference tarval into Iu */
-		assert(get_mode_size_bits(mode) == get_mode_size_bits(mode_gp));
-		tv = tarval_convert_to(tv, mode_gp);
-	}
-
-	value = get_tarval_long(tv);
-	return create_const_graph_value(dbgi, block, value);
-}
-
 typedef enum {
 	MATCH_NONE         = 0,
 	MATCH_COMMUTATIVE  = 1 << 0, /**< commutative operation. */
@@ -202,7 +159,7 @@ typedef enum {
 
 typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
 typedef ir_node* (*new_binop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
-typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, int simm13);
+typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, int32_t immediate);
 typedef ir_node* (*new_unop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_mode *mode);
 
 /**
@@ -211,14 +168,12 @@ typedef ir_node* (*new_unop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *o
  */
 static bool is_imm_encodeable(const ir_node *node)
 {
-	long val;
-
+	long value;
 	if (!is_Const(node))
 		return false;
 
-	val = get_tarval_long(get_Const_tarval(node));
-
-	return -4096 <= val && val <= 4095;
+	value = get_tarval_long(get_Const_tarval(node));
+	return -4096 <= value && value <= 4095;
 }
 
 /**
@@ -710,19 +665,15 @@ static ir_entity *create_float_const_entity(tarval *tv)
 	return entity;
 }
 
-/**
- * Transforms a Const node.
- *
- * @param node    the ir Const node
- * @return The transformed sparc node.
- */
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node *block = be_transform_node(get_nodes_block(node));
-	ir_mode *mode  = get_irn_mode(node);
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	ir_mode  *mode  = get_irn_mode(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	tarval   *tv;
+	long      value;
 
 	if (mode_is_float(mode)) {
-		dbg_info  *dbgi   = get_irn_dbg_info(node);
 		tarval    *tv     = get_Const_tarval(node);
 		ir_entity *entity = create_float_const_entity(tv);
 		ir_node   *addr   = make_addr(dbgi, entity);
@@ -735,12 +686,21 @@ static ir_node *gen_Const(ir_node *node)
 		return proj;
 	}
 
-	/* use the 0 register instead of a 0-constant */
-	if (is_Const_null(node)) {
+	tv    = get_Const_tarval(node);
+	value = get_tarval_long(tv);
+	if (value == 0) {
 		return get_g0();
+	} else if (-4096 <= value && value <= 4095) {
+		return new_bd_sparc_Or_imm(dbgi, block, get_g0(), value);
+	} else {
+		ir_node *hi = new_bd_sparc_SetHi(dbgi, block, value);
+		be_dep_on_frame(hi);
+		if ((value & 0x3ff) != 0) {
+			return new_bd_sparc_Or_imm(dbgi, block, hi, value & 0x3ff);
+		} else {
+			return hi;
+		}
 	}
-
-	return create_const_graph(node, block);
 }
 
 static ir_mode *get_cmp_mode(ir_node *b_value)
@@ -773,7 +733,7 @@ static ir_node *gen_Cond(ir_node *node)
 
 	// switch/case jumps
 	if (mode != mode_b) {
-		panic("SwitchJmp not supported yet");
+		panic("SwitchJump not implemented yet");
 	}
 
 	// regular if/else jumps
@@ -965,10 +925,6 @@ static ir_node *gen_Conv(ir_node *node)
 
 static ir_node *gen_Unknown(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-
 	/* just produce a 0 */
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
@@ -976,7 +932,7 @@ static ir_node *gen_Unknown(ir_node *node)
 		be_dep_on_frame(node);
 		return node;
 	} else if (mode_needs_gp_reg(mode)) {
-		return create_const_graph_value(dbgi, new_block, 0);
+		return get_g0();
 	}
 
 	panic("Unexpected Unknown mode");
@@ -1899,6 +1855,9 @@ void sparc_transform_graph(sparc_code_gen_t *cg)
 	node_to_stack = NULL;
 
 	be_add_missing_keeps(irg);
+
+	/* do code placement, to optimize the position of constants */
+	place_code(cg->irg);
 }
 
 void sparc_init_transform(void)

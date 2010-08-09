@@ -35,6 +35,7 @@
 #include "bearch_sparc_t.h"
 
 void sparc_emit_immediate(const ir_node *node);
+void sparc_emit_high_immediate(const ir_node *node);
 void sparc_emit_mode(const ir_node *node);
 void sparc_emit_source_register(const ir_node *node, int pos);
 void sparc_emit_reg_or_imm(const ir_node *node, int pos);

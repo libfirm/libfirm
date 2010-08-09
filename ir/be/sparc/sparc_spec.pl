@@ -130,6 +130,7 @@ $state       = 32; # register represents a state
 	D5  => "${arch}_emit_dest_register(node, 4);",
 	D6  => "${arch}_emit_dest_register(node, 5);",
 	IM  => "${arch}_emit_immediate(node);",
+	HIM => "${arch}_emit_high_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
 	SM  => "${arch}_emit_store_mode(node);",
 	FLSM => "${arch}_emit_float_load_store_mode(node);",
@@ -179,7 +180,7 @@ $default_copy_attr = "sparc_copy_attr";
 
 my %cmp_operand_constructors = (
 	imm => {
-		attr       => "int immediate_value",
+		attr       => "int32_t immediate_value",
 		custominit => "sparc_set_attr_imm(res, immediate_value);",
 		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
 		ins        => [ "left" ],
@@ -192,7 +193,7 @@ my %cmp_operand_constructors = (
 
 my %unop_operand_constructors = (
 	imm => {
-		attr       => "int immediate_value",
+		attr       => "int32_t immediate_value",
 		custominit => "sparc_set_attr_imm(res, immediate_value);",
 		reg_req    => { in => [], out => [ "gp" ] },
 	},
@@ -203,7 +204,7 @@ my %unop_operand_constructors = (
 
 my %binop_operand_constructors = (
 	imm => {
-		attr       => "int immediate_value",
+		attr       => "int32_t immediate_value",
 		custominit => "sparc_set_attr_imm(res, immediate_value);",
 		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
 		ins        => [ "left" ],
@@ -286,25 +287,14 @@ Ld => {
 	emit      => '. ld%LM [%S1%O], %D1'
 },
 
-HiImm => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	outs      => [ "res" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [], out => [ "gp" ] },
-	attr       => "int immediate_value",
+SetHi => {
+	irn_flags  => [ "rematerializable" ],
+	outs       => [ "res" ],
+	mode       => $mode_gp,
+	reg_req    => { in => [], out => [ "gp" ] },
+	attr       => "int32_t immediate_value",
 	custominit => "sparc_set_attr_imm(res, immediate_value);",
-},
-
-LoImm => {
-	irn_flags => [ "rematerializable" ],
-	state     => "exc_pinned",
-	ins       => [ "hireg" ],
-	outs      => [ "res" ],
-	mode      => $mode_gp,
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	attr       => "int immediate_value",
-	custominit => "sparc_set_attr_imm(res, immediate_value);",
+	emit       => '. sethi %HIM, %D1'
 },
 
 St => {
@@ -324,14 +314,6 @@ St => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
 	emit      => '. st%SM %S2, [%S1%O]'
-},
-
-Mov => {
-	irn_flags => [ "rematerializable" ],
-	arity     => "variable",
-	emit      => '. mov %R1I, %D1',
-	mode      => $mode_gp,
-	constructors => \%unop_operand_constructors,
 },
 
 Save => {
