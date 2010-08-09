@@ -133,6 +133,12 @@ static void spill_node(ir_node *node)
 	bitset_set(spilled_nodes, get_irn_idx(node));
 }
 
+static unsigned get_value_width(const ir_node *node)
+{
+	const arch_register_req_t *req = arch_get_register_req_out(node);
+	return req->width;
+}
+
 /**
  * spill @p n nodes from a nodeset. Removes the nodes from the nodeset and
  * sets the spilled bits in spilled_nodes.
@@ -151,8 +157,8 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	ir_node               *value;
 
 	be_foreach_definition(node, cls, value,
-		assert(req_->width == 1); /* no support for wide-values yet */
-		++values_defined;
+		assert(req_->width >= 1);
+		values_defined += req_->width;
 	);
 
 	/* we need registers for the non-live argument values */
@@ -161,7 +167,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 		ir_node *pred = get_irn_n(node, i);
 		if (arch_irn_consider_in_reg_alloc(cls, pred)
 				&& !ir_nodeset_contains(live_nodes, pred)) {
-			++free_regs_needed;
+			free_regs_needed += get_value_width(pred);
 		}
 	}
 
@@ -197,9 +203,9 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	/* spill cheapest ones */
 	cand_idx = 0;
 	while (spills_needed > 0) {
-		bool               is_use = false;
-		spill_candidate_t *candidate;
-		ir_node           *cand_node;
+		bool                       is_use = false;
+		spill_candidate_t         *candidate;
+		ir_node                   *cand_node;
 
 		if (cand_idx >= n_live_nodes) {
 			panic("can't spill enough values for node %+F", node);
@@ -220,13 +226,12 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 				break;
 			}
 		}
-		if (is_use) {
+		if (is_use)
 			continue;
-		}
 
 		spill_node(cand_node);
 		ir_nodeset_remove(live_nodes, cand_node);
-		--spills_needed;
+		spills_needed -= get_value_width(cand_node);
 	}
 }
 
@@ -282,6 +287,7 @@ static void spill_block(ir_node *block, void *data)
 	ir_node               *node;
 	int                    n_phi_values_spilled;
 	int                    regpressure;
+	int                    live_nodes_pressure;
 	int                    phi_spills_needed;
 	(void) data;
 
@@ -322,12 +328,17 @@ static void spill_block(ir_node *block, void *data)
 			break;
 
 		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
-			++n_phi_values_spilled;
+			n_phi_values_spilled += get_value_width(node);
 		}
 	}
 
+	live_nodes_pressure = 0;
+	foreach_ir_nodeset(&live_nodes, node, iter) {
+		live_nodes_pressure += get_value_width(node);
+	}
+
 	/* calculate how many of the phis need to be spilled */
-	regpressure       = ir_nodeset_size(&live_nodes) + n_phi_values_spilled;
+	regpressure       = live_nodes_pressure + n_phi_values_spilled;
 	phi_spills_needed = regpressure - n_regs;
 	DBG((dbg, LEVEL_3, "Regpressure before phis: %d phispills: %d\n",
 	     regpressure, phi_spills_needed));
@@ -341,10 +352,11 @@ static void spill_block(ir_node *block, void *data)
 		if (phi_spills_needed <= 0)
 			break;
 
-		if (bitset_is_set(spilled_nodes, get_irn_idx(node))) {
-			be_spill_phi(spill_env, node);
-			--phi_spills_needed;
-		}
+		if (!bitset_is_set(spilled_nodes, get_irn_idx(node)))
+			continue;
+
+		be_spill_phi(spill_env, node);
+		phi_spills_needed -= get_value_width(node);
 	}
 	assert(phi_spills_needed <= 0);
 
