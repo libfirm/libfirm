@@ -225,30 +225,38 @@ static bool is_imm_encodeable(const ir_node *node)
  * @param new_reg  register generation function ptr
  * @param new_imm  immediate generation function ptr
  */
-static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
-				new_binop_reg_func new_reg, new_binop_imm_func new_imm)
+static ir_node *gen_helper_binop_args(ir_node *node,
+                                      ir_node *op1, ir_node *op2,
+                                      match_flags_t flags,
+                                      new_binop_reg_func new_reg,
+                                      new_binop_imm_func new_imm)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_binop_left(node);
-	ir_node  *new_op1;
-	ir_node  *op2     = get_binop_right(node);
-	ir_node  *new_op2;
 	dbg_info *dbgi    = get_irn_dbg_info(node);
+	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	ir_node  *new_op1;
+	ir_node  *new_op2;
 
 	if (is_imm_encodeable(op2)) {
 		ir_node *new_op1 = be_transform_node(op1);
 		return new_imm(dbgi, block, new_op1, get_tarval_long(get_Const_tarval(op2)));
 	}
-
 	new_op2 = be_transform_node(op2);
 
 	if ((flags & MATCH_COMMUTATIVE) && is_imm_encodeable(op1)) {
 		return new_imm(dbgi, block, new_op2, get_tarval_long(get_Const_tarval(op1)) );
 	}
-
 	new_op1 = be_transform_node(op1);
 
 	return new_reg(dbgi, block, new_op1, new_op2);
+}
+
+static ir_node *gen_helper_binop(ir_node *node, match_flags_t flags,
+                                 new_binop_reg_func new_reg,
+                                 new_binop_imm_func new_imm)
+{
+	ir_node *op1 = get_binop_left(node);
+	ir_node *op2 = get_binop_right(node);
+	return gen_helper_binop_args(node, op1, op2, flags, new_reg, new_imm);
 }
 
 /**
@@ -537,12 +545,16 @@ static ir_node *get_g0(void)
  */
 static ir_node *gen_Not(ir_node *node)
 {
+	ir_node  *op     = get_Not_op(node);
+	ir_node  *zero   = get_g0();
 	dbg_info *dbgi   = get_irn_dbg_info(node);
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *op     = get_Not_op(node);
 	ir_node  *new_op = be_transform_node(op);
-	ir_node  *zero   = get_g0();
 
+	/* Note: Not(Eor()) is normalize in firm locatopts already so
+	 * we don't match it for xnor here */
+
+	/* Not can be represented with xnor 0, n */
 	return new_bd_sparc_XNor_reg(dbgi, block, zero, new_op);
 }
 
@@ -558,7 +570,19 @@ static ir_node *gen_Or(ir_node *node)
 
 static ir_node *gen_Eor(ir_node *node)
 {
-	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Xor_reg, new_bd_sparc_Xor_imm);
+	ir_node *left  = get_Eor_left(node);
+	ir_node *right = get_Eor_right(node);
+
+	/* Note: firm normalizes Not(Eor(a,b)) and Eor(Not(a),b) to Eor(a, Not(b))*/
+	if (is_Not(right)) {
+		ir_node *not_op = get_Not_op(right);
+		return gen_helper_binop_args(node, left, not_op, MATCH_COMMUTATIVE,
+		                             new_bd_sparc_XNor_reg,
+		                             new_bd_sparc_XNor_imm);
+	}
+
+	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Xor_reg,
+	                        new_bd_sparc_Xor_imm);
 }
 
 static ir_node *gen_Shl(ir_node *node)
