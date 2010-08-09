@@ -304,6 +304,12 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 		}
 	}
 
+	if (req->width != 1) {
+		fprintf(F, " width:%u", req->width);
+	}
+	if (arch_register_req_is(req, aligned)) {
+		fprintf(F, " aligned");
+	}
 	if (arch_register_req_is(req, ignore)) {
 		fprintf(F, " ignore");
 	}
