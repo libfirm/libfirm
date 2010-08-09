@@ -1220,7 +1220,17 @@ static const arch_register_req_t *phi_get_irn_reg_req(const ir_node *node,
 
 		req = get_Phi_reg_req_recursive(node, &visited);
 		assert(req->cls != NULL);
-		req = req->cls->class_req;
+		if (req->width > 1) {
+			arch_register_req_t *new_req = allocate_reg_req(node);
+			new_req->type                = arch_register_req_type_normal;
+			new_req->cls                 = req->cls;
+			new_req->other_same          = 0;
+			new_req->other_different     = 0;
+			new_req->width               = req->width;
+			req = new_req;
+		} else {
+			req = req->cls->class_req;
+		}
 
 		if (visited != NULL)
 			del_pset(visited);
