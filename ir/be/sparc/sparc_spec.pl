@@ -518,12 +518,14 @@ XNor => {
 },
 
 Mul => {
+	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
 	emit         => '. smul %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
 },
 
 Mulh => {
+	irn_flags    => [ "rematerializable" ],
 	outs         => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,
 },
