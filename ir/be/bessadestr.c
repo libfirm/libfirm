@@ -137,12 +137,8 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 		 */
 		for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 			ir_node                   *arg = get_irn_n(phi, i);
-			const arch_register_req_t *req = arch_get_register_req_out(arg);
 			unsigned                   hash;
 			perm_proj_t                templ;
-
-			if (req->type & arch_register_req_type_ignore)
-				continue;
 
 			hash = hash_irn(arg);
 			templ.arg  = arg;
@@ -251,12 +247,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 		/* process all arguments of the phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node                   *arg = get_irn_n(phi, i);
-			const arch_register_req_t *req = arch_get_register_req_out(arg);
 			const arch_register_t     *arg_reg;
 			ir_node                   *arg_block;
-
-			if (req->type & arch_register_req_type_ignore)
-				continue;
 
 			arg_block = get_Block_cfgpred_block(phi_block, i);
 			arg_reg   = get_reg(arg);
@@ -264,6 +256,15 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 			assert(arg_reg && "Register must be set while placing perms");
 
 			DBG((dbg, LEVEL_1, "  for %+F(%s) -- %+F(%s)\n", phi, phi_reg->name, arg, arg_reg->name));
+
+			if (phi_reg == arg_reg
+					|| (arg_reg->type & arch_register_type_joker)
+					|| (arg_reg->type & arch_register_type_virtual)) {
+				/* Phi and arg have the same register, so pin and continue */
+				pin_irn(arg, phi_block);
+				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, get_reg(arg)->name));
+				continue;
+			}
 
 			if (be_values_interfere(lv, phi, arg)) {
 				/*
@@ -275,19 +276,6 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				*/
 				ir_node *dupl  = be_new_Copy(cls, arg_block, arg);
 
-				/* this is commented out because it will fail in case of unknown float */
-#if 0
-				ir_mode *m_phi = get_irn_mode(phi), *m_dupl = get_irn_mode(dupl);
-
-				/*
-					Conv signed <-> unsigned is killed on ia32
-					check for: (both int OR both float) AND equal mode sizes
-				*/
-				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
-					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
-					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
-#endif /* if 0 */
-
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);
 				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, NULL), dupl);
@@ -296,13 +284,6 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				be_liveness_update(lv, arg);
 				DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
 				continue; /* with next argument */
-			}
-
-			if (phi_reg == arg_reg) {
-				/* Phi and arg have the same register, so pin and continue */
-				pin_irn(arg, phi_block);
-				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, get_reg(arg)->name));
-				continue;
 			}
 
 			DBG((dbg, LEVEL_1, "    they do not interfere\n"));
@@ -345,20 +326,6 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				ir_node *perm = get_Proj_pred(arg);
 				ir_node *dupl = be_new_Copy(cls, arg_block, arg);
 				ir_node *ins;
-
-				/* this is commented out because it will fail in case of unknown float */
-#if 0
-				ir_mode *m_phi    = get_irn_mode(phi);
-				ir_mode *m_dupl   = get_irn_mode(dupl);
-
-				/*
-					Conv signed <-> unsigned is killed on ia32
-					check for: (both int OR both float) AND equal mode sizes
-				*/
-				assert(((mode_is_int(m_phi) && mode_is_int(m_dupl)) ||
-					(mode_is_float(m_phi) && mode_is_float(m_dupl))) &&
-					(get_mode_size_bits(m_phi) == get_mode_size_bits(m_dupl)));
-#endif /* if 0 */
 
 				set_irn_n(phi, i, dupl);
 				set_reg(dupl, phi_reg);

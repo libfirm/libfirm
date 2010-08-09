@@ -368,8 +368,9 @@ static void analyze_block(ir_node *block, void *data)
 
 		info = get_allocation_info(node);
 		for (i = 0; i < arity; ++i) {
-			ir_node *op = get_irn_n(node, i);
-			if (!arch_irn_consider_in_reg_alloc(cls, op))
+			ir_node                   *op  = get_irn_n(node, i);
+			const arch_register_req_t *req = arch_get_register_req_out(op);
+			if (req->cls != cls)
 				continue;
 
 			/* last usage of a value? */
@@ -767,8 +768,6 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	unsigned                   r;
 
 	assert(!is_Phi(node));
-	assert(arch_irn_consider_in_reg_alloc(cls, node));
-
 	/* preassigned register? */
 	reg = arch_get_irn_register(node);
 	if (reg != NULL) {
@@ -777,10 +776,12 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		return;
 	}
 
-	/* give should_be_same boni */
-	info = get_allocation_info(node);
-	req  = arch_get_register_req_out(node);
+	req = arch_get_register_req_out(node);
+	/* ignore reqs must be preassigned */
+	assert (! (req->type & arch_register_req_type_ignore));
 
+	/* give should_be_same boni */
+	info    = get_allocation_info(node);
 	in_node = skip_Proj(node);
 	if (req->type & arch_register_req_type_should_be_same) {
 		float weight = (float)get_block_execfreq(execfreqs, block);
@@ -1042,10 +1043,10 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
  */
 static void free_last_uses(ir_nodeset_t *live_nodes, ir_node *node)
 {
-	allocation_info_t     *info      = get_allocation_info(node);
-	const unsigned        *last_uses = info->last_uses;
-	int                    arity     = get_irn_arity(node);
-	int                    i;
+	allocation_info_t *info      = get_allocation_info(node);
+	const unsigned    *last_uses = info->last_uses;
+	int                arity     = get_irn_arity(node);
+	int                i;
 
 	for (i = 0; i < arity; ++i) {
 		ir_node *op;
@@ -1301,7 +1302,7 @@ static void add_phi_permutations(ir_node *block, int p)
 	unsigned  *permutation;
 	ir_node  **old_assignments;
 	bool       need_permutation;
-	ir_node   *node;
+	ir_node   *phi;
 	ir_node   *pred = get_Block_cfgpred_block(block, p);
 
 	block_info_t *pred_info = get_block_info(pred);
@@ -1317,29 +1318,36 @@ static void add_phi_permutations(ir_node *block, int p)
 
 	/* check phi nodes */
 	need_permutation = false;
-	node = sched_first(block);
-	for ( ; is_Phi(node); node = sched_next(node)) {
+	phi = sched_first(block);
+	for ( ; is_Phi(phi); phi = sched_next(phi)) {
 		const arch_register_t *reg;
+		const arch_register_t *op_reg;
 		int                    regn;
 		int                    a;
 		ir_node               *op;
 
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
+		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
-		op = get_Phi_pred(node, p);
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
-			continue;
-
-		a = find_value_in_block_info(pred_info, op);
+		op = get_Phi_pred(phi, p);
+		a  = find_value_in_block_info(pred_info, op);
 		assert(a >= 0);
 
-		reg  = arch_get_irn_register(node);
+		reg  = arch_get_irn_register(phi);
 		regn = arch_register_get_index(reg);
-		if (regn != a) {
-			permutation[regn] = a;
-			need_permutation  = true;
-		}
+		/* same register? nothing to do */
+		if (regn == a)
+			continue;
+
+		op     = pred_info->assignments[a];
+		op_reg = arch_get_irn_register(op);
+		/* virtual or joker registers are ok too */
+		if ((op_reg->type & arch_register_type_joker)
+				|| (op_reg->type & arch_register_type_virtual))
+			continue;
+
+		permutation[regn] = a;
+		need_permutation  = true;
 	}
 
 	if (need_permutation) {
@@ -1347,30 +1355,27 @@ static void add_phi_permutations(ir_node *block, int p)
 		old_assignments = assignments;
 		assignments     = pred_info->assignments;
 		permute_values(NULL, be_get_end_of_block_insertion_point(pred),
-						 permutation);
+		               permutation);
 		assignments = old_assignments;
 	}
 
 	/* change phi nodes to use the copied values */
-	node = sched_first(block);
-	for ( ; is_Phi(node); node = sched_next(node)) {
+	phi = sched_first(block);
+	for ( ; is_Phi(phi); phi = sched_next(phi)) {
 		int      a;
 		ir_node *op;
 
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
+		if (!arch_irn_consider_in_reg_alloc(cls, phi))
 			continue;
 
-		op = get_Phi_pred(node, p);
-		/* no need to do anything for Unknown inputs */
-		if (!arch_irn_consider_in_reg_alloc(cls, op))
-			continue;
+		op = get_Phi_pred(phi, p);
 
 		/* we have permuted all values into the correct registers so we can
 		   simply query which value occupies the phis register in the
 		   predecessor */
-		a  = arch_register_get_index(arch_get_irn_register(node));
+		a  = arch_register_get_index(arch_get_irn_register(phi));
 		op = pred_info->assignments[a];
-		set_Phi_pred(node, p, op);
+		set_Phi_pred(phi, p, op);
 	}
 }
 
@@ -1536,14 +1541,14 @@ static void assign_phi_registers(ir_node *block)
  */
 static void allocate_coalesce_block(ir_node *block, void *data)
 {
-	int                    i;
-	ir_nodeset_t           live_nodes;
-	ir_node               *node;
-	int                    n_preds;
-	block_info_t          *block_info;
-	block_info_t         **pred_block_infos;
-	ir_node              **phi_ins;
-	unsigned              *forbidden_regs; /**< collects registers which must
+	int            i;
+	ir_nodeset_t   live_nodes;
+	ir_node       *node;
+	int            n_preds;
+	block_info_t  *block_info;
+	block_info_t **pred_block_infos;
+	ir_node      **phi_ins;
+	unsigned      *forbidden_regs; /**< collects registers which must
 	                                        not be used for optimistic splits */
 
 	(void) data;
@@ -1556,8 +1561,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 	ir_nodeset_init(&live_nodes);
 
 	/* gather regalloc infos of predecessor blocks */
-	n_preds             = get_Block_n_cfgpreds(block);
-	pred_block_infos    = ALLOCAN(block_info_t*, n_preds);
+	n_preds          = get_Block_n_cfgpreds(block);
+	pred_block_infos = ALLOCAN(block_info_t*, n_preds);
 	for (i = 0; i < n_preds; ++i) {
 		ir_node      *pred      = get_Block_cfgpred_block(block, i);
 		block_info_t *pred_info = get_block_info(pred);
@@ -1568,13 +1573,25 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* collect live-in nodes and preassigned values */
 	be_lv_foreach(lv, block, be_lv_state_in, i) {
-		const arch_register_t *reg;
-		int                    p;
-		bool                   need_phi = false;
+		bool                       need_phi = false;
+		const arch_register_req_t *req;
+		const arch_register_t     *reg;
+		int                        p;
 
 		node = be_lv_get_irn(lv, block, i);
-		if (!arch_irn_consider_in_reg_alloc(cls, node))
+		req  = arch_get_register_req_out(node);
+		if (req->cls != cls)
 			continue;
+
+		if (req->type & arch_register_req_type_ignore) {
+			allocation_info_t *info = get_allocation_info(node);
+			info->current_value = node;
+
+			reg = arch_get_irn_register(node);
+			assert(reg != NULL); /* ignore values must be preassigned */
+			use_reg(node, reg);
+			continue;
+		}
 
 		/* check all predecessors for this value, if it is not everywhere the
 		   same or unknown then we have to construct a phi
@@ -1691,8 +1708,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		free_last_uses(&live_nodes, node);
 
 		/* assign output registers */
-		/* TODO: 2 phases: first: pre-assigned ones, 2nd real regs */
-		be_foreach_definition(node, cls, value,
+		be_foreach_definition_(node, cls, value,
 			assign_reg(block, value, forbidden_regs);
 		);
 	}
