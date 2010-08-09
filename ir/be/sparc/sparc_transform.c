@@ -587,136 +587,6 @@ static ir_node *gen_Const(ir_node *node)
 	return create_const_graph(node, block);
 }
 
-/**
- * AddSP
- * @param node the ir AddSP node
- * @return transformed sparc SAVE node
- */
-static ir_node *gen_be_AddSP(ir_node *node)
-{
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *sz     = get_irn_n(node, be_pos_AddSP_size);
-	ir_node  *new_sz = be_transform_node(sz);
-	ir_node  *sp     = get_irn_n(node, be_pos_AddSP_old_sp);
-	ir_node  *new_sp = be_transform_node(sp);
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_node  *nomem  = new_NoMem();
-	ir_node  *new_op;
-
-	/* SPARC stack grows in reverse direction */
-	new_op = new_bd_sparc_SubSP(dbgi, block, new_sp, new_sz, nomem);
-
-	return new_op;
-}
-
-/**
- * SubSP
- * @param node the ir SubSP node
- * @return transformed sparc SAVE node
- */
-static ir_node *gen_be_SubSP(ir_node *node)
-{
-	ir_node  *block  = be_transform_node(get_nodes_block(node));
-	ir_node  *sz     = get_irn_n(node, be_pos_SubSP_size);
-	ir_node  *new_sz = be_transform_node(sz);
-	ir_node  *sp     = get_irn_n(node, be_pos_SubSP_old_sp);
-	ir_node  *new_sp = be_transform_node(sp);
-	dbg_info *dbgi   = get_irn_dbg_info(node);
-	ir_node  *nomem  = new_NoMem();
-	ir_node  *new_op;
-
-	/* SPARC stack grows in reverse direction */
-	new_op = new_bd_sparc_AddSP(dbgi, block, new_sp, new_sz, nomem);
-	return new_op;
-}
-
-/**
- * transform FrameAddr
- */
-static ir_node *gen_be_FrameAddr(ir_node *node)
-{
-	ir_node   *block  = be_transform_node(get_nodes_block(node));
-	ir_entity *ent    = be_get_frame_entity(node);
-	ir_node   *fp     = be_get_FrameAddr_frame(node);
-	ir_node   *new_fp = be_transform_node(fp);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *new_node;
-	new_node = new_bd_sparc_FrameAddr(dbgi, block, new_fp, ent);
-	return new_node;
-}
-
-/**
- * Transform a be_Copy.
- */
-static ir_node *gen_be_Copy(ir_node *node)
-{
-	ir_node *result = be_duplicate_node(node);
-	ir_mode *mode   = get_irn_mode(result);
-
-	if (mode_needs_gp_reg(mode)) {
-		set_irn_mode(node, mode_gp);
-	}
-
-	return result;
-}
-
-/**
- * Transform a Call
- */
-static ir_node *gen_be_Call(ir_node *node)
-{
-	ir_node *res = be_duplicate_node(node);
-	arch_irn_add_flags(res, arch_irn_flags_modify_flags);
-	return res;
-}
-
-/**
- * Transforms a Switch.
- *
- */
-static ir_node *gen_SwitchJmp(ir_node *node)
-{
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *selector = get_Cond_selector(node);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node *new_op = be_transform_node(selector);
-	ir_node *const_graph;
-	ir_node *sub;
-
-	ir_node *proj;
-	const ir_edge_t *edge;
-	int min = INT_MAX;
-	int max = INT_MIN;
-	int translation;
-	int pn;
-	int n_projs;
-
-	foreach_out_edge(node, edge) {
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-		pn = get_Proj_proj(proj);
-
-		min = pn<min ? pn : min;
-		max = pn>max ? pn : max;
-	}
-
-	translation = min;
-	n_projs = max - translation + 1;
-
-	foreach_out_edge(node, edge) {
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-		pn = get_Proj_proj(proj) - translation;
-		set_Proj_proj(proj, pn);
-	}
-
-	const_graph = create_const_graph_value(dbgi, block, translation);
-	sub = new_bd_sparc_Sub_reg(dbgi, block, new_op, const_graph);
-	return new_bd_sparc_SwitchJmp(dbgi, block, sub, n_projs, get_Cond_default_proj(node) - translation);
-}
-
 static ir_mode *get_cmp_mode(ir_node *b_value)
 {
 	ir_node *pred;
@@ -747,7 +617,7 @@ static ir_node *gen_Cond(ir_node *node)
 
 	// switch/case jumps
 	if (mode != mode_b) {
-		return gen_SwitchJmp(node);
+		panic("SwitchJmp not supported yet");
 	}
 
 	// regular if/else jumps
@@ -1670,11 +1540,6 @@ void sparc_register_transformers(void)
 	be_set_transform_function(op_Abs,          gen_Abs);
 	be_set_transform_function(op_Add,          gen_Add);
 	be_set_transform_function(op_And,          gen_And);
-	be_set_transform_function(op_be_AddSP,     gen_be_AddSP);
-	be_set_transform_function(op_be_Call,      gen_be_Call);
-	be_set_transform_function(op_be_Copy,      gen_be_Copy);
-	be_set_transform_function(op_be_FrameAddr, gen_be_FrameAddr);
-	be_set_transform_function(op_be_SubSP,     gen_be_SubSP);
 	be_set_transform_function(op_Call,         gen_Call);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
 	be_set_transform_function(op_Cond,         gen_Cond);
