@@ -153,7 +153,7 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
  * Creates a possible DAG for a constant.
  */
 static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
-				long value)
+                                         long value)
 {
 	ir_node *result;
 
@@ -650,6 +650,11 @@ static ir_node *gen_Const(ir_node *node)
 		return proj;
 	}
 
+	/* use the 0 register instead of a 0-constant */
+	if (is_Const_null(node)) {
+		return be_prolog_get_reg_value(abihelper, &sparc_gp_regs[REG_G0]);
+	}
+
 	return create_const_graph(node, block);
 }
 
@@ -975,6 +980,8 @@ static ir_node *gen_Start(ir_node *node)
 	/* stackpointer is important at function prolog */
 	be_prolog_add_reg(abihelper, sp_reg,
 			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
+	be_prolog_add_reg(abihelper, &sparc_gp_regs[REG_G0],
+	        arch_register_req_type_ignore);
 	/* function parameters in registers */
 	for (i = 0; i < get_method_n_params(function_type); ++i) {
 		const reg_or_stackslot_t *param = &cconv->parameters[i];
