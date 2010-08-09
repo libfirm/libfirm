@@ -182,8 +182,9 @@ static const arch_register_req_t *get_default_req_current_cls(void)
 		struct obstack      *obst = get_irg_obstack(irg);
 		arch_register_req_t *req  = OALLOCZ(obst, arch_register_req_t);
 
-		req->type = arch_register_req_type_normal;
-		req->cls  = cls;
+		req->type  = arch_register_req_type_normal;
+		req->cls   = cls;
+		req->width = 1;
 
 		default_cls_req = req;
 	}

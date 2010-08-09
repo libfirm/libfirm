@@ -72,19 +72,19 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef struct loc_t {
 	ir_node          *node;
 	unsigned          time;     /**< A use time (see beuses.h). */
-	bool              spilled;  /**< the value was already spilled on this path */
+	bool              spilled;  /**< value was already spilled on this path */
 } loc_t;
 
 typedef struct _workset_t {
-	int   len;          /**< current length */
-	loc_t vals[0];      /**< inlined array of the values/distances in this working set */
+	unsigned len;     /**< current length */
+	loc_t    vals[0]; /**< array of the values/distances in this working set */
 } workset_t;
 
 static struct obstack               obst;
 static const arch_register_class_t *cls;
 static const be_lv_t               *lv;
 static be_loopana_t                *loop_ana;
-static int                          n_regs;
+static unsigned                     n_regs;
 static workset_t                   *ws;     /**< the main workset used while
 	                                             processing a block. */
 static be_uses_t                   *uses;   /**< env for the next-use magic */
@@ -103,18 +103,11 @@ static int                          remat_bonus      = 10;
 
 static const lc_opt_table_entry_t options[] = {
 	LC_OPT_ENT_BOOL   ("movespills", "try to move spills out of loops", &move_spills),
-	LC_OPT_ENT_BOOL   ("respectloopdepth", "exprimental (outermost loop cutting)", &respectloopdepth),
-	LC_OPT_ENT_BOOL   ("improveknownpreds", "experimental (known preds cutting)", &improve_known_preds),
+	LC_OPT_ENT_BOOL   ("respectloopdepth", "outermost loop cutting", &respectloopdepth),
+	LC_OPT_ENT_BOOL   ("improveknownpreds", "known preds cutting", &improve_known_preds),
 	LC_OPT_ENT_INT    ("rematbonus", "give bonus to rematerialisable nodes", &remat_bonus),
 	LC_OPT_LAST
 };
-
-static int loc_compare(const void *a, const void *b)
-{
-	const loc_t *p = a;
-	const loc_t *q = b;
-	return p->time - q->time;
-}
 
 /**
  * Alloc a new workset on obstack @p ob with maximum size @p max
@@ -160,8 +153,8 @@ static void workset_bulk_fill(workset_t *workset, int count, const loc_t *locs)
  */
 static void workset_insert(workset_t *workset, ir_node *val, bool spilled)
 {
-	loc_t *loc;
-	int    i;
+	loc_t    *loc;
+	unsigned  i;
 	/* check for current regclass */
 	assert(arch_irn_consider_in_reg_alloc(cls, val));
 
@@ -196,9 +189,9 @@ static void workset_clear(workset_t *workset)
 /**
  * Removes the value @p val from the workset if present.
  */
-static inline void workset_remove(workset_t *workset, ir_node *val)
+static void workset_remove(workset_t *workset, ir_node *val)
 {
-	int i;
+	unsigned i;
 	for (i = 0; i < workset->len; ++i) {
 		if (workset->vals[i].node == val) {
 			workset->vals[i] = workset->vals[--workset->len];
@@ -207,11 +200,9 @@ static inline void workset_remove(workset_t *workset, ir_node *val)
 	}
 }
 
-static inline const loc_t *workset_contains(const workset_t *ws,
-                                            const ir_node *val)
+static const loc_t *workset_contains(const workset_t *ws, const ir_node *val)
 {
-	int i;
-
+	unsigned i;
 	for (i = 0; i < ws->len; ++i) {
 		if (ws->vals[i].node == val)
 			return &ws->vals[i];
@@ -220,22 +211,52 @@ static inline const loc_t *workset_contains(const workset_t *ws,
 	return NULL;
 }
 
+static int loc_compare(const void *a, const void *b)
+{
+	const loc_t *p = a;
+	const loc_t *q = b;
+	return p->time - q->time;
+}
+
+static void workset_sort(workset_t *workset)
+{
+	qsort(workset->vals, workset->len, sizeof(workset->vals[0]), loc_compare);
+}
+
+static inline unsigned workset_get_time(const workset_t *workset, unsigned idx)
+{
+	return workset->vals[idx].time;
+}
+
+static inline void workset_set_time(workset_t *workset, unsigned idx,
+                                    unsigned time)
+{
+	workset->vals[idx].time = time;
+}
+
+static inline unsigned workset_get_length(const workset_t *workset)
+{
+	return workset->len;
+}
+
+static inline void workset_set_length(workset_t *workset, unsigned len)
+{
+	workset->len = len;
+}
+
+static inline ir_node *workset_get_val(const workset_t *workset, unsigned idx)
+{
+	return workset->vals[idx].node;
+}
+
 /**
  * Iterates over all values in the working set.
  * @p ws The workset to iterate
  * @p v  A variable to put the current value in
  * @p i  An integer for internal use
  */
-#define workset_foreach(ws, v, i)	for (i=0; \
-										v=(i < ws->len) ? ws->vals[i].node : NULL, i < ws->len; \
-										++i)
-
-#define workset_set_time(ws, i, t) (ws)->vals[i].time=t
-#define workset_get_time(ws, i) (ws)->vals[i].time
-#define workset_set_length(ws, length) (ws)->len = length
-#define workset_get_length(ws) ((ws)->len)
-#define workset_get_val(ws, i) ((ws)->vals[i].node)
-#define workset_sort(ws) do { qsort((ws)->vals, (ws)->len, sizeof((ws)->vals[0]), loc_compare); } while(0)
+#define workset_foreach(ws, v, i)	\
+	for (i=0; v=(i < ws->len) ? ws->vals[i].node : NULL, i < ws->len; ++i)
 
 typedef struct _block_info_t
 {
@@ -243,20 +264,26 @@ typedef struct _block_info_t
 	workset_t *end_workset;
 } block_info_t;
 
-
 static block_info_t *new_block_info(void)
 {
 	return OALLOCZ(&obst, block_info_t);
 }
 
-#define get_block_info(block)        ((block_info_t *)get_irn_link(block))
-#define set_block_info(block, info)  set_irn_link(block, info)
+static inline block_info_t *get_block_info(const ir_node *block)
+{
+	return get_irn_link(block);
+}
+
+static inline void set_block_info(ir_node *block, block_info_t *info)
+{
+	set_irn_link(block, info);
+}
 
 /**
  * @return The distance to the next use or 0 if irn has dont_spill flag set
  */
-static inline unsigned get_distance(ir_node *from, unsigned from_step,
-                                    const ir_node *def, int skip_from_uses)
+static unsigned get_distance(ir_node *from, unsigned from_step,
+                             const ir_node *def, int skip_from_uses)
 {
 	be_next_use_t use;
 	unsigned      costs;
@@ -301,7 +328,7 @@ static void displace(workset_t *new_vals, int is_usage)
 	int       len;
 	int       spills_needed;
 	int       demand;
-	int       iter;
+	unsigned  iter;
 
 	/* 1. Identify the number of needed slots and the values to reload */
 	demand = 0;
@@ -464,7 +491,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 
 	next_use = be_get_next_use(uses, first, 0, node, 0);
 	if (USES_IS_INFINITE(next_use.time)) {
-		// the nodes marked as live in shouldn't be dead, so it must be a phi
+		/* the nodes marked as live in shouldn't be dead, so it must be a phi */
 		assert(is_Phi(node));
 		loc.time = USES_INFINITY;
 		DB((dbg, DBG_START, "    %+F not taken (dead)\n", node));
@@ -512,7 +539,10 @@ static void decide_start_workset(const ir_node *block)
 	loc_t       loc;
 	loc_t      *starters;
 	loc_t      *delayed;
-	int         i, len, ws_count;
+	unsigned    len;
+	unsigned    i;
+	int         in;
+	unsigned    ws_count;
 	int	        free_slots, free_pressure_slots;
 	unsigned    pressure;
 	int         arity;
@@ -523,15 +553,15 @@ static void decide_start_workset(const ir_node *block)
 	arity           = get_irn_arity(block);
 	pred_worksets   = ALLOCAN(workset_t*, arity);
 	all_preds_known = true;
-	for (i = 0; i < arity; ++i) {
-		ir_node      *pred_block = get_Block_cfgpred_block(block, i);
+	for (in = 0; in < arity; ++in) {
+		ir_node      *pred_block = get_Block_cfgpred_block(block, in);
 		block_info_t *pred_info  = get_block_info(pred_block);
 
 		if (pred_info == NULL) {
-			pred_worksets[i] = NULL;
-			all_preds_known  = false;
+			pred_worksets[in] = NULL;
+			all_preds_known   = false;
 		} else {
-			pred_worksets[i] = pred_info->end_workset;
+			pred_worksets[in] = pred_info->end_workset;
 		}
 	}
 
@@ -570,8 +600,8 @@ static void decide_start_workset(const ir_node *block)
 	}
 
 	/* check all Live-Ins */
-	be_lv_foreach(lv, block, be_lv_state_in, i) {
-		ir_node *node = be_lv_get_irn(lv, block, i);
+	be_lv_foreach(lv, block, be_lv_state_in, in) {
+		ir_node *node = be_lv_get_irn(lv, block, in);
 		unsigned available;
 
 		if (all_preds_known) {
@@ -602,6 +632,7 @@ static void decide_start_workset(const ir_node *block)
 	DB((dbg, DBG_START, "Loop pressure %d, taking %d delayed vals\n",
 	    pressure, free_slots));
 	if (free_slots > 0) {
+		int i;
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
 		for (i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {
@@ -639,7 +670,8 @@ static void decide_start_workset(const ir_node *block)
 
 	/* spill phis (the actual phis not just their values) that are in this block
 	 * but not in the start workset */
-	for (i = ARR_LEN(delayed) - 1; i >= 0; --i) {
+	len = ARR_LEN(delayed);
+	for (i = 0; i < len; ++i) {
 		ir_node *node = delayed[i].node;
 		if (node == NULL || !is_Phi(node) || get_nodes_block(node) != block)
 			continue;
@@ -653,7 +685,7 @@ static void decide_start_workset(const ir_node *block)
 	qsort(starters, ARR_LEN(starters), sizeof(starters[0]), loc_compare);
 
 	/* Copy the best ones from starters to start workset */
-	ws_count = MIN(ARR_LEN(starters), n_regs);
+	ws_count = MIN((unsigned) ARR_LEN(starters), n_regs);
 	workset_clear(ws);
 	workset_bulk_fill(ws, ws_count, starters);
 
@@ -722,11 +754,11 @@ static void decide_start_workset(const ir_node *block)
  */
 static void process_block(ir_node *block)
 {
-	workset_t       *new_vals;
-	ir_node         *irn;
-	int              iter;
-	block_info_t    *block_info;
-	int              arity;
+	workset_t    *new_vals;
+	ir_node      *irn;
+	unsigned      iter;
+	block_info_t *block_info;
+	int           arity;
 
 	/* no need to process a block twice */
 	assert(get_block_info(block) == NULL);
@@ -797,6 +829,7 @@ static void process_block(ir_node *block)
 		/* allocate all values _defined_ by this instruction */
 		workset_clear(new_vals);
 		be_foreach_definition(irn, cls, value,
+			assert(req_->width == 1);
 			workset_insert(new_vals, value, false);
 		);
 		displace(new_vals, 0);
@@ -808,8 +841,7 @@ static void process_block(ir_node *block)
 	block_info->end_workset = workset_clone(ws);
 	DB((dbg, DBG_WSETS, "End workset for %+F:\n", block));
 	workset_foreach(ws, irn, iter)
-		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn,
-		     workset_get_time(ws, iter)));
+		DB((dbg, DBG_WSETS, "  %+F (%u)\n", irn, workset_get_time(ws, iter)));
 }
 
 /**
@@ -819,10 +851,10 @@ static void process_block(ir_node *block)
  */
 static void fix_block_borders(ir_node *block, void *data)
 {
-	workset_t    *start_workset;
-	int           arity;
-	int           i;
-	int           iter;
+	workset_t *start_workset;
+	int        arity;
+	int        i;
+	unsigned   iter;
 	(void) data;
 
 	DB((dbg, DBG_FIX, "\n"));
@@ -846,7 +878,7 @@ static void fix_block_borders(ir_node *block, void *data)
 		/* spill all values not used anymore */
 		workset_foreach(pred_end_workset, node, iter) {
 			ir_node *n2;
-			int      iter2;
+			unsigned iter2;
 			bool     found = false;
 			workset_foreach(start_workset, n2, iter2) {
 				if (n2 == node) {

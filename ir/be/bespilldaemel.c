@@ -24,9 +24,9 @@
  * @date        20.09.2005
  * @version     $Id: bespillbelady.c 13913 2007-05-18 12:48:56Z matze $
  * @brief
- *   This implements a naive spilling algorithm. It is designed to produce similar
- *   effects to the spill decisions produced by traditional graph coloring
- *   register allocators that spill while they are coloring the graph.
+ *   This implements a naive spilling algorithm. It is designed to produce
+ *   similar effects to the spill decisions produced by traditional graph
+ *   coloring register allocators that spill while they are coloring the graph.
  *
  *   This spiller walks over all blocks and looks for places with too high
  *   register pressure where it spills the values that are cheapest to spill.
@@ -101,8 +101,6 @@ static double get_spill_costs(ir_node *node)
 		}
 	}
 
-	/* TODO cache costs? */
-
 	return costs;
 }
 
@@ -153,6 +151,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	ir_node               *value;
 
 	be_foreach_definition(node, cls, value,
+		assert(req_->width == 1); /* no support for wide-values yet */
 		++values_defined;
 	);
 
@@ -167,7 +166,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	}
 
 	/* we can reuse all reloaded values for the defined values, but we might
-	   need even more registers */
+	 * need even more registers */
 	if (values_defined > free_regs_needed)
 		free_regs_needed = values_defined;
 
@@ -198,14 +197,13 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	/* spill cheapest ones */
 	cand_idx = 0;
 	while (spills_needed > 0) {
+		bool               is_use = false;
 		spill_candidate_t *candidate;
 		ir_node           *cand_node;
-		int               is_use;
 
 		if (cand_idx >= n_live_nodes) {
 			panic("can't spill enough values for node %+F", node);
 		}
-
 
 		candidate = &candidates[cand_idx];
 		cand_node = candidate->node;
@@ -215,11 +213,10 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 			continue;
 
 		/* make sure the node is not an argument of the instruction */
-		is_use = 0;
 		for (i = 0; i < arity; ++i) {
 			ir_node *in = get_irn_n(node, i);
 			if (in == cand_node) {
-				is_use = 1;
+				is_use = true;
 				break;
 			}
 		}
@@ -239,9 +236,8 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 static void remove_defs(ir_node *node, ir_nodeset_t *nodeset)
 {
 	ir_node *value;
-	/* You should better break out of your loop when hitting the first phi
-	 * function. */
-	assert(!is_Phi(node) && "liveness_transfer produces invalid results for phi nodes");
+	/* You must break out of your loop when hitting the first phi function. */
+	assert(!is_Phi(node));
 
 	be_foreach_definition(node, cls, value,
 		ir_nodeset_remove(nodeset, value);
@@ -319,8 +315,7 @@ static void spill_block(ir_node *block, void *data)
 
 	/* until now only the values of some phis have been spilled the phis itself
 	 * are still there and occupy registers, so we need to count them and might
-	 * have to spill some of them.
-	 */
+	 * have to spill some of them. */
 	n_phi_values_spilled = 0;
 	sched_foreach(block, node) {
 		if (!is_Phi(node))
@@ -359,7 +354,6 @@ static void spill_block(ir_node *block, void *data)
 static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
 {
 	n_regs = new_cls->n_regs - be_put_ignore_regs(irg, new_cls, NULL);
-
 	if (n_regs == 0)
 		return;
 
@@ -375,12 +369,9 @@ static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
 	irg_block_walk_graph(irg, spill_block, NULL, NULL);
 
 	bitset_free(spilled_nodes);
-	spilled_nodes = NULL;
 
 	be_insert_spills_reloads(spill_env);
-
 	be_delete_spill_env(spill_env);
-	spill_env = NULL;
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill);
