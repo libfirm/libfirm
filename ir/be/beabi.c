@@ -2274,9 +2274,10 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	sp_req = OALLOCZ(obst, arch_register_req_t);
 	env->sp_req = sp_req;
 
-	sp_req->type = arch_register_req_type_limited
-	             | arch_register_req_type_produces_sp;
-	sp_req->cls  = arch_register_get_class(arch_env->sp);
+	sp_req->type  = arch_register_req_type_limited
+	              | arch_register_req_type_produces_sp;
+	sp_req->cls   = arch_register_get_class(arch_env->sp);
+	sp_req->width = 1;
 
 	limited_bitset = rbitset_obstack_alloc(obst, sp_req->cls->n_regs);
 	rbitset_set(limited_bitset, arch_register_get_index(arch_env->sp));
