@@ -727,10 +727,9 @@ static void check_input_constraints(ir_node *node)
 	/* verify input register */
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-
-		if (is_Unknown(pred))
-			continue;
+		const arch_register_req_t *req      = arch_get_in_register_req(node, i);
+		ir_node                   *pred     = get_irn_n(node, i);
+		const arch_register_req_t *pred_req = arch_get_register_req_out(pred);
 
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
@@ -738,11 +737,24 @@ static void check_input_constraints(ir_node *node)
 			problem_found = 1;
 			continue;
 		}
-
-		if (arch_get_irn_reg_class(node, i) == NULL)
+		if (req->cls == NULL)
 			continue;
 
+		if (req->width > pred_req->width) {
+			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register width of value at input %d too small\n",
+			           node, get_nodes_block(node), get_irg_dump_name(irg), i);
+			problem_found = 1;
+		}
+
 		reg = arch_get_irn_register(pred);
+		if (req->type & arch_register_req_type_aligned) {
+			if (reg->index % req->width != 0) {
+				ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) register allignment not fulfilled\n",
+				           node, get_nodes_block(node), get_irg_dump_name(irg), i);
+				problem_found = 1;
+			}
+		}
+
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned (%+F input constraint)\n",
 			           pred, get_nodes_block(pred), get_irg_dump_name(irg), node);
