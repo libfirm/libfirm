@@ -38,35 +38,35 @@
 #include "irtools.h"
 #include "xmalloc.h"
 #include "debug.h"
-#include "obst.h"
 #include "bitset.h"
 #include "error.h"
 
 #include "hungarian.h"
 
+DEBUG_ONLY(static firm_dbg_module_t *dbg);
+
 struct hungarian_problem_t {
-	unsigned num_rows;          /**< number of rows */
-	unsigned num_cols;          /**< number of columns */
-	int      **cost;            /**< the cost matrix */
-	int      max_cost;          /**< the maximal costs in the matrix */
-	int      match_type;        /**< PERFECT or NORMAL matching */
-	bitset_t *missing_left;     /**< left side nodes having no edge to the right side */
-	bitset_t *missing_right;    /**< right side nodes having no edge to the left side */
-	struct obstack obst;
-	DEBUG_ONLY(firm_dbg_module_t *dbg);
+	unsigned      num_rows;      /**< number of rows */
+	unsigned      num_cols;      /**< number of columns */
+	unsigned     *cost;          /**< the cost matrix */
+	unsigned      max_cost;      /**< the maximal costs in the matrix */
+	match_type_t  match_type;    /**< PERFECT or NORMAL matching */
+	unsigned     *missing_left;  /**< bitset: left side nodes having no edge to
+	                                  the right side */
+	unsigned     *missing_right; /**< bitset: right side nodes having no edge to
+	                              the left side */
 };
 
-static void hungarian_dump_f(FILE *f, int **C, unsigned n_rows, unsigned n_cols,
-                             int width)
+static void hungarian_dump_f(FILE *f, const unsigned *cost,
+                             unsigned num_rows, unsigned num_cols, int width)
 {
-	unsigned r;
+	unsigned r, c;
 
 	fprintf(f , "\n");
-	for (r = 0; r < n_rows; r++) {
-		unsigned c;
+	for (r = 0; r < num_rows; r++) {
 		fprintf(f, " [");
-		for (c = 0; c < n_cols; c++) {
-			fprintf(f, "%*d", width, C[r][c]);
+		for (c = 0; c < num_cols; c++) {
+			fprintf(f, "%*u", width, cost[r*num_cols + c]);
 		}
 		fprintf(f, "]\n");
 	}
@@ -78,25 +78,22 @@ void hungarian_print_cost_matrix(hungarian_problem_t *p, int width)
 	hungarian_dump_f(stderr, p->cost, p->num_rows, p->num_cols, width);
 }
 
-hungarian_problem_t *hungarian_new(unsigned n_rows, unsigned n_cols,
+hungarian_problem_t *hungarian_new(unsigned num_rows, unsigned num_cols,
                                    match_type_t match_type)
 {
-	unsigned r;
 	hungarian_problem_t *p = XMALLOCZ(hungarian_problem_t);
 
-	FIRM_DBG_REGISTER(p->dbg, "firm.hungarian");
+	FIRM_DBG_REGISTER(dbg, "firm.hungarian");
 
 	/*
 		Is the number of cols  not equal to number of rows ?
 		If yes, expand with 0 - cols / 0 - cols
 	*/
-	n_rows = MAX(n_cols, n_rows);
-	n_cols = n_rows;
+	num_rows = MAX(num_cols, num_rows);
+	num_cols = num_rows;
 
-	obstack_init(&p->obst);
-
-	p->num_rows   = n_rows;
-	p->num_cols   = n_cols;
+	p->num_rows   = num_rows;
+	p->num_cols   = num_cols;
 	p->match_type = match_type;
 
 	/*
@@ -105,29 +102,28 @@ hungarian_problem_t *hungarian_new(unsigned n_rows, unsigned n_cols,
 		the assignment later.
 	*/
 	if (match_type == HUNGARIAN_MATCH_NORMAL) {
-		p->missing_left  = bitset_obstack_alloc(&p->obst, n_rows);
-		p->missing_right = bitset_obstack_alloc(&p->obst, n_cols);
-		bitset_set_all(p->missing_left);
-		bitset_set_all(p->missing_right);
+		p->missing_left  = rbitset_malloc(num_rows);
+		p->missing_right = rbitset_malloc(num_cols);
+		rbitset_set_all(p->missing_left,  num_rows);
+		rbitset_set_all(p->missing_right, num_cols);
 	}
 
 	/* allocate space for cost matrix */
-	p->cost = OALLOCNZ(&p->obst, int*, n_rows);
-	for (r = 0; r < p->num_rows; r++)
-		p->cost[r] = OALLOCNZ(&p->obst, int, n_cols);
-
+	p->cost = XMALLOCNZ(unsigned, num_rows * num_cols);
 	return p;
 }
 
 void hungarian_prepare_cost_matrix(hungarian_problem_t *p,
                                    hungarian_mode_t mode)
 {
-	unsigned r, c;
-
 	if (mode == HUNGARIAN_MODE_MAXIMIZE_UTIL) {
+		unsigned  r, c;
+		unsigned  num_cols = p->num_cols;
+		unsigned *cost     = p->cost;
+		unsigned  max_cost = p->max_cost;
 		for (r = 0; r < p->num_rows; r++) {
 			for (c = 0; c < p->num_cols; c++) {
-				p->cost[r][c] = p->max_cost - p->cost[r][c];
+				cost[r*num_cols + c] = max_cost - cost[r*num_cols + c];
 			}
 		}
 	} else if (mode == HUNGARIAN_MODE_MINIMIZE_COST) {
@@ -138,18 +134,17 @@ void hungarian_prepare_cost_matrix(hungarian_problem_t *p,
 }
 
 void hungarian_add(hungarian_problem_t *p, unsigned left, unsigned right,
-                   int cost)
+                   unsigned cost)
 {
 	assert(p->num_rows > left  && "Invalid row selected.");
 	assert(p->num_cols > right && "Invalid column selected.");
-	assert(cost >= 0);
 
-	p->cost[left][right] = cost;
-	p->max_cost          = MAX(p->max_cost, cost);
+	p->cost[left*p->num_cols + right] = cost;
+	p->max_cost                       = MAX(p->max_cost, cost);
 
 	if (p->match_type == HUNGARIAN_MATCH_NORMAL) {
-		bitset_clear(p->missing_left, left);
-		bitset_clear(p->missing_right, right);
+		rbitset_clear(p->missing_left, left);
+		rbitset_clear(p->missing_right, right);
 	}
 }
 
@@ -158,35 +153,37 @@ void hungarian_remove(hungarian_problem_t *p, unsigned left, unsigned right)
 	assert(p->num_rows > left  && "Invalid row selected.");
 	assert(p->num_cols > right && "Invalid column selected.");
 
-	/* Set cost[left][right] to 0. */
-	p->cost[left][right] = 0;
+	p->cost[left*p->num_cols + right] = 0;
 
 	if (p->match_type == HUNGARIAN_MATCH_NORMAL) {
-		bitset_set(p->missing_left, left);
-		bitset_set(p->missing_right, right);
+		rbitset_set(p->missing_left, left);
+		rbitset_set(p->missing_right, right);
 	}
 }
 
 void hungarian_free(hungarian_problem_t* p)
 {
-	obstack_free(&p->obst, NULL);
+	xfree(p->missing_left);
+	xfree(p->missing_right);
+	xfree(p->cost);
 	xfree(p);
 }
 
 int hungarian_solve(hungarian_problem_t* p, unsigned *assignment,
-                    int *final_cost, int cost_threshold)
+                    unsigned *final_cost, unsigned cost_threshold)
 {
-	int       cost          = 0;
-	unsigned  num_rows      = p->num_rows;
-	unsigned  num_cols      = p->num_cols;
-	unsigned *col_mate      = XMALLOCNZ(unsigned, num_rows);
-	unsigned *row_mate      = XMALLOCNZ(unsigned, num_cols);
-	unsigned *parent_row    = XMALLOCNZ(unsigned, num_cols);
-	unsigned *unchosen_row  = XMALLOCNZ(unsigned, num_rows);
-	int      *row_dec       = XMALLOCNZ(int, num_rows);
-	int      *col_inc       = XMALLOCNZ(int, num_cols);
-	int      *slack         = XMALLOCNZ(int, num_cols);
-	unsigned *slack_row     = XMALLOCNZ(unsigned, num_rows);
+	unsigned  res_cost     = 0;
+	unsigned  num_rows     = p->num_rows;
+	unsigned  num_cols     = p->num_cols;
+	unsigned *cost         = p->cost;
+	unsigned *col_mate     = XMALLOCNZ(unsigned, num_rows);
+	unsigned *row_mate     = XMALLOCNZ(unsigned, num_cols);
+	unsigned *parent_row   = XMALLOCNZ(unsigned, num_cols);
+	unsigned *unchosen_row = XMALLOCNZ(unsigned, num_rows);
+	int      *row_dec      = XMALLOCNZ(int, num_rows);
+	int      *col_inc      = XMALLOCNZ(int, num_cols);
+	int      *slack        = XMALLOCNZ(int, num_cols);
+	unsigned *slack_row    = XMALLOCNZ(unsigned, num_rows);
 	unsigned  r;
 	unsigned  c;
 	unsigned  t;
@@ -195,27 +192,27 @@ int hungarian_solve(hungarian_problem_t* p, unsigned *assignment,
 	memset(assignment, -1, num_rows * sizeof(assignment[0]));
 
 	/* Begin subtract column minima in order to start with lots of zeros 12 */
-	DBG((p->dbg, LEVEL_1, "Using heuristic\n"));
+	DBG((dbg, LEVEL_1, "Using heuristic\n"));
 
 	for (c = 0; c < num_cols; ++c) {
-		int s = p->cost[0][c];
+		unsigned col_mininum = cost[0*num_cols + c];
 
 		for (r = 1; r < num_rows; ++r) {
-			if (p->cost[r][c] < s)
-				s = p->cost[r][c];
+			if (cost[r*num_cols + c] < col_mininum)
+				col_mininum = cost[r*num_cols + c];
 		}
 
-		cost += s;
-		if (s == 0)
+		if (col_mininum == 0)
 			continue;
 
+		res_cost += col_mininum;
 		for (r = 0; r < num_rows; ++r)
-			p->cost[r][c] -= s;
+			cost[r*num_cols + c] -= col_mininum;
 	}
 	/* End subtract column minima in order to start with lots of zeros 12 */
 
 	/* Begin initial state 16 */
-	t = 0;
+	unmatched = 0;
 	for (c = 0; c < num_cols; ++c) {
 		row_mate[c]   = (unsigned) -1;
 		parent_row[c] = (unsigned) -1;
@@ -224,40 +221,43 @@ int hungarian_solve(hungarian_problem_t* p, unsigned *assignment,
 	}
 
 	for (r = 0; r < num_rows; ++r) {
-		int s = p->cost[r][0];
+		unsigned row_minimum = cost[r*num_cols + 0];
 
 		for (c = 1; c < num_cols; ++c) {
-			if (p->cost[r][c] < s)
-				s = p->cost[r][c];
+			if (cost[r*num_cols + c] < row_minimum)
+				row_minimum = cost[r*num_cols + c];
 		}
 
-		row_dec[r] = s;
+		row_dec[r] = row_minimum;
 
 		for (c = 0; c < num_cols; ++c) {
-			if (s == p->cost[r][c] && row_mate[c] == (unsigned)-1) {
-				col_mate[r] = c;
-				row_mate[c] = r;
-				DBG((p->dbg, LEVEL_1, "matching col %d == row %d\n", c, r));
-				goto row_done;
-			}
+			if (cost[r*num_cols + c] != row_minimum)
+				continue;
+			if (row_mate[c] != (unsigned)-1)
+				continue;
+
+			col_mate[r] = c;
+			row_mate[c] = r;
+			DBG((dbg, LEVEL_1, "matching col %u == row %u\n", c, r));
+			goto row_done;
 		}
 
 		col_mate[r] = (unsigned)-1;
-		DBG((p->dbg, LEVEL_1, "node %d: unmatched row %d\n", t, r));
-		unchosen_row[t++] = r;
+		DBG((dbg, LEVEL_1, "node %u: unmatched row %u\n", unmatched, r));
+		unchosen_row[unmatched++] = r;
 row_done: ;
 	}
 	/* End initial state 16 */
 
 	/* Begin Hungarian algorithm 18 */
-	if (t == 0)
+	if (unmatched == 0)
 		goto done;
 
-	unmatched = t;
+	t = unmatched;
 	for (;;) {
 		unsigned q = 0;
 		unsigned j;
-		DBG((p->dbg, LEVEL_1, "Matched %d rows.\n", num_rows - t));
+		DBG((dbg, LEVEL_1, "Matched %u rows.\n", num_rows - t));
 
 		for (;;) {
 			int s;
@@ -268,7 +268,7 @@ row_done: ;
 
 				for (c = 0; c < num_cols; ++c) {
 					if (slack[c]) {
-						int del = p->cost[r][c] - s + col_inc[c];
+						int del = cost[r*num_cols + c] - s + col_inc[c];
 
 						if (del < slack[c]) {
 							if (del == 0) {
@@ -277,7 +277,7 @@ row_done: ;
 
 								slack[c]      = 0;
 								parent_row[c] = r;
-								DBG((p->dbg, LEVEL_1, "node %d: row %d == col %d -- row %d\n", t, row_mate[c], c, r));
+								DBG((dbg, LEVEL_1, "node %u: row %u == col %u -- row %u\n", t, row_mate[c], c, r));
 								unchosen_row[t++] = row_mate[c];
 							} else {
 								slack[c]     = del;
@@ -306,7 +306,7 @@ row_done: ;
 					if (slack[c] == 0) {
 						/* Begin look at a new zero 22 */
 						r = slack_row[c];
-						DBG((p->dbg, LEVEL_1, "Decreasing uncovered elements by %d produces zero at [%d, %d]\n", s, r, c));
+						DBG((dbg, LEVEL_1, "Decreasing uncovered elements by %d produces zero at [%u, %u]\n", s, r, c));
 						if (row_mate[c] == (unsigned)-1) {
 							for (j = c + 1; j < num_cols; ++j) {
 								if (slack[j] == 0)
@@ -315,7 +315,7 @@ row_done: ;
 							goto breakthru;
 						} else {
 							parent_row[c] = r;
-							DBG((p->dbg, LEVEL_1, "node %d: row %d == col %d -- row %d\n", t, row_mate[c], c, r));
+							DBG((dbg, LEVEL_1, "node %u: row %u == col %u -- row %u\n", t, row_mate[c], c, r));
 							unchosen_row[t++] = row_mate[c];
 						}
 						/* End look at a new zero 22 */
@@ -328,13 +328,13 @@ row_done: ;
 		}
 breakthru:
 		/* Begin update the matching 20 */
-		DBG((p->dbg, LEVEL_1, "Breakthrough at node %d of %d.\n", q, t));
+		DBG((dbg, LEVEL_1, "Breakthrough at node %u of %u.\n", q, t));
 		for (;;) {
 			j           = col_mate[r];
 			col_mate[r] = c;
 			row_mate[c] = r;
 
-			DBG((p->dbg, LEVEL_1, "rematching col %d == row %d\n", c, r));
+			DBG((dbg, LEVEL_1, "rematching col %u == row %u\n", c, r));
 			if (j == (unsigned)-1)
 				break;
 
@@ -349,13 +349,13 @@ breakthru:
 		/* Begin get ready for another stage 17 */
 		t = 0;
 		for (c = 0; c < num_cols; ++c) {
-			parent_row[c] = -1;
+			parent_row[c] = (unsigned) -1;
 			slack[c]      = INT_MAX;
 		}
 
 		for (r = 0; r < num_rows; ++r) {
 			if (col_mate[r] == (unsigned)-1) {
-				DBG((p->dbg, LEVEL_1, "node %d: unmatched row %d\n", t, r));
+				DBG((dbg, LEVEL_1, "node %u: unmatched row %u\n", t, r));
 				unchosen_row[t++] = r;
 			}
 		}
@@ -366,14 +366,15 @@ done:
 	/* Begin double check the solution 23 */
 	for (r = 0; r < num_rows; ++r) {
 		for (c = 0; c < num_cols; ++c) {
-			if (p->cost[r][c] < row_dec[r] - col_inc[c])
+			if ((int) cost[r*num_cols + c] < row_dec[r] - col_inc[c])
 				return -1;
 		}
 	}
 
 	for (r = 0; r < num_rows; ++r) {
 		c = col_mate[r];
-		if (c == (unsigned)-1 || p->cost[r][c] != row_dec[r] - col_inc[c])
+		if (c == (unsigned)-1
+		    || cost[r*num_cols + c] != (unsigned) (row_dec[r] - col_inc[c]))
 			return -2;
 	}
 
@@ -390,7 +391,8 @@ done:
 
 	/* collect the assigned values */
 	for (r = 0; r < num_rows; ++r) {
-		if (cost_threshold > 0 && p->cost[r][col_mate[r]] >= cost_threshold)
+		if (cost_threshold > 0
+		    && cost[r*num_cols + col_mate[r]] >= cost_threshold)
 			assignment[r] = -1; /* remove matching having cost > threshold */
 		else
 			assignment[r] = col_mate[r];
@@ -399,25 +401,25 @@ done:
 	/* In case of normal matching: remove impossible ones */
 	if (p->match_type == HUNGARIAN_MATCH_NORMAL) {
 		for (r = 0; r < num_rows; ++r) {
-			if (bitset_is_set(p->missing_left, r)
-			        || bitset_is_set(p->missing_right, col_mate[r]))
+			if (rbitset_is_set(p->missing_left, r)
+			        || rbitset_is_set(p->missing_right, col_mate[r]))
 				assignment[r] = -1;
 		}
 	}
 
 	for (r = 0; r < num_rows; ++r) {
 		for (c = 0; c < num_cols; ++c) {
-			p->cost[r][c] = p->cost[r][c] - row_dec[r] + col_inc[c];
+			cost[r*num_cols + c] = cost[r*num_cols + c] - row_dec[r] + col_inc[c];
 		}
 	}
 
 	for (r = 0; r < num_rows; ++r)
-		cost += row_dec[r];
+		res_cost += row_dec[r];
 
 	for (c = 0; c < num_cols; ++c)
-		cost -= col_inc[c];
+		res_cost -= col_inc[c];
 
-	DBG((p->dbg, LEVEL_1, "Cost is %d\n", cost));
+	DBG((dbg, LEVEL_1, "Cost is %d\n", res_cost));
 
 	xfree(slack);
 	xfree(col_inc);
@@ -429,7 +431,7 @@ done:
 	xfree(col_mate);
 
 	if (final_cost != NULL)
-		*final_cost = cost;
+		*final_cost = res_cost;
 
 	return 0;
 }

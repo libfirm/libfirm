@@ -1495,7 +1495,8 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 	ir_nodeset_iterator_t iter;
 	ir_node     *u_irn;
 	unsigned    i, j;
-	int         cost, cur_chain, res;
+	unsigned    cost;
+	int         cur_chain, res;
 	rss_edge_t  *dvg_edge;
 
 #define MAP_IDX(irn) bsearch_for_index(get_irn_idx(irn), idx_map,  n,  1)
@@ -1595,8 +1596,8 @@ static ir_nodeset_t *compute_maximal_antichain(rss_t *rss, dvg_t *dvg, int itera
 		}
 	}
 
-	DBG((rss->dbg, LEVEL_2, "\t\tgot assignment with cost %d\n", cost));
-	DBG((rss->dbg, LEVEL_3, "\t\t\tassignment   ---   reverse assignment\n", cost));
+	DBG((rss->dbg, LEVEL_2, "\t\tgot assignment with cost %u\n", cost));
+	DBG((rss->dbg, LEVEL_3, "\t\t\tassignment   ---   reverse assignment\n"));
 	for (i = 0; i < n; ++i) {
 		DBG((rss->dbg, LEVEL_3, "\t\t\t%3u -> %3u         %3u -> %3u\n", i, assignment[i], i, assignment_rev[i]));
 	}

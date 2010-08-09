@@ -52,19 +52,20 @@ typedef struct hungarian_problem_t hungarian_problem_t;
  * This method initialize the hungarian_problem structure and init
  * the cost matrix (missing lines or columns are filled with 0).
  *
- * @param rows       Number of rows in the given matrix
- * @param cols       Number of cols in the given matrix
+ * @param num_rows   Number of rows in the given matrix
+ * @param num_cols   Number of cols in the given matrix
  * @param match_type The type of matching
  * @return The problem object.
  */
-FIRM_API hungarian_problem_t *hungarian_new(unsigned rows, unsigned cols,
+FIRM_API hungarian_problem_t *hungarian_new(unsigned num_rows,
+                                            unsigned num_cols,
                                             match_type_t match_type);
 
 /**
  * Adds an edge from left to right with some costs.
  */
 FIRM_API void hungarian_add(hungarian_problem_t *p, unsigned left,
-                            unsigned right, int cost);
+                            unsigned right, unsigned cost);
 
 /**
  * Removes the edge from left to right.
@@ -95,7 +96,7 @@ FIRM_API void hungarian_free(hungarian_problem_t *p);
  * @return 0 on success, negative number otherwise
  */
 FIRM_API int hungarian_solve(hungarian_problem_t *p, unsigned *assignment,
-                             int *final_cost, int cost_threshold);
+                             unsigned *final_cost, unsigned cost_threshold);
 
 /**
  * Print the cost matrix.
