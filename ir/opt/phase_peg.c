@@ -846,16 +846,51 @@ static void unfold_tuples(ir_graph *irg)
 }
 
 /******************************************************************************
+ * Local optimizations.                                                       *
+ ******************************************************************************/
+
+static ir_node *equivalent_node_gamma(ir_node *gamma)
+{
+	ir_node *ir_true  = get_Gamma_true(gamma);
+	ir_node *ir_false = get_Gamma_false(gamma);
+
+	if (get_irn_mode(gamma) != mode_b) return gamma;
+
+	/* Gamma(cond, true, false) --> cond */
+	if (is_Const(ir_true) && is_Const(ir_false) &&
+		is_Const_null(ir_false) && is_Const_one(ir_true)) {
+		return get_Gamma_cond(gamma);
+	}
+
+	return gamma;
+}
+
+static ir_node *transform_node_gamma(ir_node *gamma)
+{
+	ir_node *ir_true  = get_Gamma_true(gamma);
+	ir_node *ir_false = get_Gamma_false(gamma);
+
+	if (get_irn_mode(gamma) != mode_b) return gamma;
+
+	/* Gamma(cond, false, true) --> Not(cond) */
+	if (is_Const(ir_true) && is_Const(ir_false) &&
+		is_Const_null(ir_true) && is_Const_one(ir_false)) {
+
+		return new_r_Not(get_nodes_block(gamma), get_Gamma_cond(gamma), mode_b);
+	}
+
+	return gamma;
+}
+
+/******************************************************************************
  * Public interface.                                                          *
  ******************************************************************************/
 
 /**
  * TODO:
- * - Loop conditions
  * - Multiple loop entries
  * - Use an obstack for allocations
  * - What about keepalive edges?
- * - Generalize select_values
  */
 
 /**
@@ -864,9 +899,14 @@ static void unfold_tuples(ir_graph *irg)
 void convert_to_peg(ir_graph *irg)
 {
 	/* Use automatic out edges. Makes things easier later. */
-	int opt_level = get_optimize();
+	//int opt_level = get_optimize();
 	int had_edges = edges_assure(irg);
-	set_optimize(0);
+	//set_optimize(0);
+	//set_opt_cse(1);
+
+	/* Register local optimizations. */
+	op_Gamma->ops.equivalent_node = equivalent_node_gamma;
+	op_Gamma->ops.transform_node  = transform_node_gamma;
 
 	assert(irg);
 	dump_ir_graph(irg, "cfg");
@@ -883,10 +923,6 @@ void convert_to_peg(ir_graph *irg)
 	assure_doms(irg);
 	assure_cf_loop(irg);
 
-	/* Create the control dependence graph. */
-	compute_cdep(irg);
-	compute_rev_cdep(irg);
-
 	/* Replace phi nodes by gamma trees selecting tuples. */
 	replace_phis(irg);
 	dump_ir_graph(irg, "gamma_theta");
@@ -894,9 +930,6 @@ void convert_to_peg(ir_graph *irg)
 	/* Add extract nodes on loop access. */
 	insert_extracts(irg);
 	dump_ir_graph(irg, "extracts");
-
-	free_rev_cdep(irg);
-	free_cdep(irg);
 
 	/* Remove the existing block structure. */
 	remove_blocks(irg);
@@ -915,7 +948,9 @@ void convert_to_peg(ir_graph *irg)
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
-	optimize_cf(irg);
-	set_optimize(opt_level);
+	//optimize_cf(irg);
+	//set_optimize(opt_level);
 	if (!had_edges) edges_deactivate(irg);
+
+	combo(irg);
 }
