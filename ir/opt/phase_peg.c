@@ -175,7 +175,7 @@ static ir_node *find_values_dom(int num_values, select_value *values)
 
 typedef struct build_gammas_ctx
 {
-	bitset_t      *visited;
+	bitset_t      *path;
 	ir_node       *cons_block;
 	int            num_values;
 	select_value  *values;
@@ -187,7 +187,7 @@ static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
 {
 	const ir_edge_t *edge;
 
-	int i, j, block_idx, num_out_edges;
+	int i, j, block_idx;
 	int num_closures = 0, num_edges = 0;
 
 	select_edge  edges[2];
@@ -197,9 +197,9 @@ static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
 	/* Find overlapping closures and outgoing edges. */
 	block_idx = get_irn_idx(block);
 
-	/* Mark the block visited. Return NULL on visited blocks. */
-	if (bitset_is_set(ctx->visited, block_idx)) return NULL;
-	bitset_set(ctx->visited, block_idx);
+	/* Return NULL on backedges. If there would be a value, the previous node
+	 * wouldn't have recursed here. Cancel recursion to avoid a loop. */
+	if (bitset_is_set(ctx->path, block_idx)) return NULL;
 
 	for (i = 0; i < ctx->num_values; i++) {
 		/* Check the closure of every value. */
@@ -230,17 +230,6 @@ static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
 	/* If we overlap with only one closure, don't recurse further. */
 	if (num_closures == 1) return closure_value;
 
-	num_out_edges = get_irn_n_edges_kind(block, EDGE_KIND_BLOCK);
-	assert((num_out_edges <= 2) && "More than two out-edges.");
-
-	/* This is no branch, but we still have more than two values. Recurse. */
-	if (num_out_edges <= 1) {
-		foreach_block_succ(block, edge) {
-			ir_node *succ = get_edge_src_irn(edge);
-			return build_gammas_walk(succ, ctx);
-		}
-	}
-
 	/* There are two successors and we are in more than one closure. We may
 	 * already have <=2 values from adjoing edges in values and edges. Try
 	 * get remaining values by recursion. */
@@ -263,7 +252,9 @@ static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
 
 		/* Try to recurse, to get another value. This may return NULL, if we
 		 * leave all transitive hulls by that edge. */
+		bitset_set(ctx->path, block_idx);
 		value = build_gammas_walk(succ, ctx);
+		bitset_clear(ctx->path, block_idx);
 
 		/* Store the value and the edge we used. */
 		if (value) {
@@ -282,9 +273,8 @@ static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
 	 * had num_edges >= 1 and returned non-NULL). */
 	if (num_edges <= 0) return NULL;
 
-	/* One path must have reached a backedge and backtracked (this is the only
-	 * case of returning NULL with num_closures > 1), but the other has a value
-	 * we can select instead. */
+	/* One path must have reached a backedge and backtracked or it has left
+	 * all closures and leads to nowhere. Return the value we have for sure. */
 	if (num_edges == 1) return values[0];
 
 	/* We have exactly two values to select from here. */
@@ -350,7 +340,7 @@ static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 	}
 
 	/* Store recursion-independ data in a structure to make things easier. */
-	ctx.visited    = bitset_malloc(max_idx);
+	ctx.path       = bitset_malloc(max_idx);
 	ctx.cons_block = cons_block;
 	ctx.num_values = num_values;
 	ctx.values     = values;
@@ -358,7 +348,7 @@ static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 
 	result = build_gammas_walk(start_block, &ctx);
 
-	bitset_free(ctx.visited);
+	bitset_free(ctx.path);
 
 	/* Free the transitive closures again. */
 	for (i = 0; i < num_values; i++) {
