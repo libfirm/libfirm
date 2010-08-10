@@ -907,6 +907,7 @@ void convert_to_peg(ir_graph *irg)
 	/* Unfold tuples on gammas and thetas. */
 	unfold_tuples(irg);
 	dump_ir_graph(irg, "unfold");
+	ir_remove_dump_flags(ir_dump_flag_hide_control_flow);
 
 	/* Most data is probably inconsistent now. */
 	set_irg_outs_inconsistent(irg);
