@@ -48,6 +48,7 @@
 
 pbqp_edge **edge_bucket;
 pbqp_edge **rm_bucket;
+pbqp_node **rn_bucket;
 pbqp_node **node_buckets[4];
 pbqp_node **reduced_bucket = NULL;
 static int         buckets_filled = 0;
@@ -79,6 +80,7 @@ static void init_buckets(void)
 	edge_bucket_init(&edge_bucket);
 	edge_bucket_init(&rm_bucket);
 	node_bucket_init(&reduced_bucket);
+	node_bucket_init(&rn_bucket);
 
 	for (i = 0; i < 4; ++i) {
 		node_bucket_init(&node_buckets[i]);
@@ -96,6 +98,7 @@ void free_buckets(void)
 	edge_bucket_free(&edge_bucket);
 	edge_bucket_free(&rm_bucket);
 	node_bucket_free(&reduced_bucket);
+	node_bucket_free(&rn_bucket);
 
 	buckets_filled = 0;
 }
@@ -625,6 +628,8 @@ void apply_RM(pbqp *pbqp, pbqp_node *node)
 		else
 			merge_source_into_target(pbqp, edge);
 	}
+
+	node_bucket_insert(&rn_bucket, node);
 }
 
 void reorder_node(pbqp_node *node)

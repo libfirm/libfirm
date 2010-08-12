@@ -47,10 +47,9 @@
 #include "plist.h"
 #include "timing.h"
 
-static void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
+static void merge_into_RN_node(pbqp *pbqp, plist_t *rpeo)
 {
 	pbqp_node   *node         = NULL;
-	unsigned     min_index    = 0;
 
 	assert(pbqp);
 
@@ -77,9 +76,19 @@ static void apply_RN_co(pbqp *pbqp, plist_t *rpeo)
 #endif
 	/* Check whether we can merge a neighbor into the current node. */
 	apply_RM(pbqp, node);
+}
 
-	/* Apply optimal solution for the given node, if possible. */
-	if (pbqp_node_get_degree(node) < 3)
+static void apply_RN_co(pbqp *pbqp)
+{
+	pbqp_node   *node      = NULL;
+	unsigned     min_index = 0;
+
+	assert(pbqp);
+
+	node = node_bucket_pop(&rn_bucket);
+	assert(node);
+
+	if (node_is_reduced(node))
 		return;
 
 	min_index = get_local_minimal_alternative(pbqp, node);
@@ -143,12 +152,22 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 			#if KAPS_TIMING
 				ir_timer_stop(t_r2);
 			#endif
+		} else if (node_bucket_get_length(rn_bucket) > 0) {
+			#if KAPS_TIMING
+				ir_timer_start(t_rn);
+			#endif
+
+			apply_RN_co(pbqp);
+
+			#if KAPS_TIMING
+				ir_timer_stop(t_rn);
+			#endif
 		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
 			#if KAPS_TIMING
 				ir_timer_start(t_rn);
 			#endif
 
-			apply_RN_co(pbqp, rpeo);
+			merge_into_RN_node(pbqp, rpeo);
 
 			#if KAPS_TIMING
 				ir_timer_stop(t_rn);
