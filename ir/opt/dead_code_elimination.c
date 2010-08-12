@@ -203,13 +203,13 @@ ir_graph_pass_t *dead_node_elimination_pass(const char *name)
   __)|_| | \_/ | \_/(/_   |_/\__|__
 
   The following stuff implements a facility that automatically patches
-  registered ir_node pointers to the new node when a dead node elimination occurs.
-
+  registered ir_node pointers to the new node when a dead node elimination
+  occurs.
 
   Warning: This is considered a hack - try hard to avoid this!
 */
 
-struct _survive_dce_t {
+struct survive_dce_t {
 	struct obstack obst;
 	pmap *places;
 	pmap *new_places;
@@ -217,8 +217,8 @@ struct _survive_dce_t {
 	hook_entry_t dead_node_elim_subst;
 };
 
-typedef struct _survive_dce_list_t {
-	struct _survive_dce_list_t *next;
+typedef struct survive_dce_list_t {
+	struct survive_dce_list_t *next;
 	ir_node **place;
 } survive_dce_list_t;
 

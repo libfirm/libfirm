@@ -64,7 +64,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /* Forward declaration. */
-typedef struct _x87_simulator x87_simulator;
+typedef struct x87_simulator x87_simulator;
 
 /**
  * An exchange template.
@@ -73,7 +73,7 @@ typedef struct _x87_simulator x87_simulator;
  * their opcodes!
  * Further, x87 supports inverse instructions, so we can handle them.
  */
-typedef struct _exchange_tmpl {
+typedef struct exchange_tmpl {
 	ir_op *normal_op;       /**< the normal one */
 	ir_op *reverse_op;      /**< the reverse one if exists */
 	ir_op *normal_pop_op;   /**< the normal one with tos pop */
@@ -83,7 +83,7 @@ typedef struct _exchange_tmpl {
 /**
  * An entry on the simulated x87 stack.
  */
-typedef struct _st_entry {
+typedef struct st_entry {
 	int     reg_idx;        /**< the virtual register index of this stack value */
 	ir_node *node;          /**< the node that produced this value */
 } st_entry;
@@ -91,7 +91,7 @@ typedef struct _st_entry {
 /**
  * The x87 state.
  */
-typedef struct _x87_state {
+typedef struct x87_state {
 	st_entry st[N_x87_REGS];  /**< the register stack */
 	int depth;                /**< the current stack depth */
 	int tos;                  /**< position of the tos */
@@ -126,7 +126,7 @@ typedef int (*sim_func)(x87_state *state, ir_node *n);
 /**
  * A block state: Every block has a x87 state at the beginning and at the end.
  */
-typedef struct _blk_state {
+typedef struct blk_state {
 	x87_state *begin;   /**< state at the begin or NULL if not assigned */
 	x87_state *end;     /**< state at the end or NULL if not assigned */
 } blk_state;
@@ -139,7 +139,7 @@ typedef unsigned char vfp_liveness;
 /**
  * The x87 simulator.
  */
-struct _x87_simulator {
+struct x87_simulator {
 	struct obstack obst;        /**< An obstack for fast allocating. */
 	pmap *blk_states;           /**< Map blocks to states. */
 	be_lv_t *lv;                /**< intrablock liveness. */
@@ -1953,7 +1953,7 @@ static int sim_Return(x87_state *state, ir_node *n)
 	return NO_NODE_ADDED;
 }  /* sim_Return */
 
-typedef struct _perm_data_t {
+typedef struct perm_data_t {
 	const arch_register_t *in;
 	const arch_register_t *out;
 } perm_data_t;

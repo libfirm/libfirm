@@ -111,7 +111,7 @@ be_ifg_t *be_create_ifg(const be_chordal_env_t *env);
                           |_|            |___/
 */
 
-typedef struct _be_ifg_dump_dot_cb_t {
+typedef struct be_ifg_dump_dot_cb_t {
 	int  (*is_dump_node)(void *self, ir_node *irn);
 	void (*graph_attr)(FILE *f, void *self);
 	void (*node_attr)(FILE *f, void *self, ir_node *irn);

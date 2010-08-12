@@ -45,7 +45,7 @@
 #include "error.h"
 
 /** Walker environment. */
-typedef struct _walker_env {
+typedef struct walker_env {
 	pmap     *c_map;              /**< The intrinsic call map. */
 	unsigned nr_of_intrinsics;    /**< statistics */
 	i_instr_record **i_map;       /**< The intrinsic instruction map. */

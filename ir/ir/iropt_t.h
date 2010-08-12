@@ -140,7 +140,7 @@ bool is_negated_value(ir_node *a, ir_node *b);
 
 
 /** NOTE: Survive DCE is considered a bad hack - don't use */
-typedef struct _survive_dce_t survive_dce_t;
+typedef struct survive_dce_t survive_dce_t;
 
 /**
  * Make a new Survive DCE environment.

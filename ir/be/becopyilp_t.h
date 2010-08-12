@@ -41,14 +41,14 @@
 
  *****************************************************************************/
 
-typedef struct _coloring_suffix_t coloring_suffix_t;
+typedef struct coloring_suffix_t coloring_suffix_t;
 
-struct _coloring_suffix_t {
+struct coloring_suffix_t {
 	coloring_suffix_t *next;
 	ir_node           *irn;
 };
 
-typedef struct _size_red_t {
+typedef struct size_red_t {
 	copy_opt_t        *co;
 	pset              *all_removed;   /**< All nodes removed during problem size reduction */
 	coloring_suffix_t *col_suff;      /**< Coloring suffix. Reverse would be a PEO prefix */
@@ -121,11 +121,11 @@ static inline int co_ilp_get_costs(copy_opt_t *co, ir_node *root, ir_node *arg) 
 
 #define EPSILON 0.00001
 
-typedef struct _ilp_env_t ilp_env_t;
+typedef struct ilp_env_t ilp_env_t;
 
 typedef void(*ilp_callback)(ilp_env_t*);
 
-struct _ilp_env_t {
+struct ilp_env_t {
 	const copy_opt_t *co;   /**< the copy opt problem */
 	size_red_t       *sr;   /**< problem size reduction. removes simple nodes */
 	lpp_t            *lp;   /**< the linear programming problem */

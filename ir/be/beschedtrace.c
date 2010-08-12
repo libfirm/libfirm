@@ -39,7 +39,7 @@
 static char _mark;
 #define MARK &_mark
 
-typedef struct _trace_irn {
+typedef struct trace_irn {
 	sched_timestep_t delay;      /**< The delay for this node if already calculated, else 0. */
 	sched_timestep_t etime;      /**< The earliest time of this node. */
 	unsigned num_user;           /**< The number real users (mode datab) of this node */
@@ -49,7 +49,7 @@ typedef struct _trace_irn {
 	unsigned is_root       : 1;  /**< is a root node of a block */
 } trace_irn_t;
 
-typedef struct _trace_env {
+typedef struct trace_env {
 	trace_irn_t      *sched_info;               /**< trace scheduling information about the nodes */
 	sched_timestep_t curr_time;                 /**< current time of the scheduler */
 	void             *selector_env;             /**< the backend selector environment */

@@ -68,7 +68,7 @@ typedef struct {
 
 #define lc_opt_is_error(err) ((err)->error != lc_opt_err_none)
 
-typedef struct _lc_opt_entry_t lc_opt_entry_t;
+typedef struct lc_opt_entry_t lc_opt_entry_t;
 
 typedef int (lc_opt_callback_t)(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
 

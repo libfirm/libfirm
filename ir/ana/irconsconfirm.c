@@ -46,7 +46,7 @@
 /**
  * Walker environment.
  */
-typedef struct _env_t {
+typedef struct env_t {
 	unsigned num_confirms;  /**< Number of inserted Confirm nodes. */
 	unsigned num_consts;    /**< Number of constants placed. */
 	unsigned num_eq;        /**< Number of equalities placed. */

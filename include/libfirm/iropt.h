@@ -56,7 +56,7 @@
  *     Avoid floating point constant folding. Useful for frontends which do not
  *     create arithmetic operations in the backends arithmetic mode.
  */
-typedef enum _fp_model_t {
+typedef enum fp_model_t {
 	fp_explicit_rounding  = (1u << 0),  /**< Explicit rounding at assignments, typecasts, return
 	                                  and function calls. Conv nodes may NOT be removed, even
 	                                  if they look useless. */

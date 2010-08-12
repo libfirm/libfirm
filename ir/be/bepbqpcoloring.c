@@ -25,7 +25,7 @@
  * @version     $Id: bechordal.c 26750 2009-11-27 09:37:43Z bersch $
  */
 
-/* 	miscellaneous includes */
+/* miscellaneous includes */
 #include "config.h"
 
 #ifdef FIRM_KAPS
@@ -82,9 +82,9 @@
 static int use_exec_freq     = true;
 static int use_late_decision = false;
 
-typedef struct _be_pbqp_alloc_env_t {
-	pbqp                        *pbqp_inst;			/**< PBQP instance for register allocation */
-	ir_graph                    *irg;          		/**< The graph under examination. */
+typedef struct be_pbqp_alloc_env_t {
+	pbqp                        *pbqp_inst;         /**< PBQP instance for register allocation */
+	ir_graph                    *irg;               /**< The graph under examination. */
 	const arch_register_class_t *cls;				/**< Current processed register class */
 	be_lv_t                     *lv;
 	bitset_t                    *ignored_regs;

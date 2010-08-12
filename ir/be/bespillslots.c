@@ -471,21 +471,21 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 
 
 
-typedef struct _spill_slot_t {
+typedef struct spill_slot_t {
 	int size;
 	int align;
 	ir_entity *entity;
 } spill_slot_t;
 
-typedef struct _memperm_entry_t {
+typedef struct memperm_entry_t {
 	ir_node* node;
 	int pos;
 	ir_entity *in;
 	ir_entity *out;
-	struct _memperm_entry_t *next;
+	struct memperm_entry_t *next;
 } memperm_entry_t;
 
-typedef struct _memperm_t {
+typedef struct memperm_t {
 	ir_node *block;
 	int entrycount;
 	memperm_entry_t *entries;

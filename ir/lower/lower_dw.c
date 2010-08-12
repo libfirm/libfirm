@@ -72,7 +72,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /**
  * An entry in the (op, imode, omode) -> entity map.
  */
-typedef struct _op_mode_entry {
+typedef struct op_mode_entry {
 	const ir_op   *op;    /**< the op */
 	const ir_mode *imode; /**< the input mode */
 	const ir_mode *omode; /**< the output mode */
@@ -82,7 +82,7 @@ typedef struct _op_mode_entry {
 /**
  * An entry in the (imode, omode) -> tp map.
  */
-typedef struct _conv_tp_entry {
+typedef struct conv_tp_entry {
 	const ir_mode *imode; /**< the input mode */
 	const ir_mode *omode; /**< the output mode */
 	ir_type       *mtd;   /**< the associated method type of this (imode, omode) pair */
@@ -92,7 +92,7 @@ typedef struct _conv_tp_entry {
  * Every double word node will be replaced,
  * we need some store to hold the replacement:
  */
-typedef struct _node_entry_t {
+typedef struct node_entry_t {
 	ir_node *low_word;    /**< the low word */
 	ir_node *high_word;   /**< the high word */
 } node_entry_t;
@@ -105,7 +105,7 @@ enum lower_flags {
 /**
  * The lower environment.
  */
-typedef struct _lower_env_t {
+typedef struct lower_env_t {
 	node_entry_t **entries;       /**< entries per node */
 	struct obstack obst;          /**< an obstack holding the temporary data */
 	ir_type  *l_mtp;              /**< lowered method type of the current method */

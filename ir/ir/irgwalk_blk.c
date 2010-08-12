@@ -41,7 +41,7 @@
 /**
  * Metadata for block walker
  */
-typedef struct _blk_collect_data_t {
+typedef struct blk_collect_data_t {
 	struct obstack obst;            /**< obstack to allocate objects on */
 	pset           *blk_map;        /**< Hash map: Block -> List */
 	ir_node        **blk_list;      /**< the Block list */
@@ -51,7 +51,7 @@ typedef struct _blk_collect_data_t {
 /**
  * An entry for a block in the blk_map
  */
-typedef struct _block_entry_t {
+typedef struct block_entry_t {
 	ir_node *block;       /**< the block */
 	ir_node **phi_list;   /**< the list of Phi instruction */
 	ir_node **df_list;    /**< the list of data flow instruction */

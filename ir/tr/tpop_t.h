@@ -61,7 +61,7 @@ typedef void (*insert_entity_func)(ir_type *tp, ir_entity *member);
 /**
  * tp_op operations.
  */
-typedef struct _tp_op_ops {
+typedef struct tp_op_ops {
 	free_attrs_func         free_attrs;         /**< Called to free the attributes of a type. */
 	free_entities_func      free_entities;      /**< Called to free the owned entities of a type. */
 	free_auto_entities_func free_auto_entities; /**< Called to free the automatic allocated entities of a type. */

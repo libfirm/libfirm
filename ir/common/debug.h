@@ -49,7 +49,7 @@ enum firm_dbg_level_t {
 	SET_LEVEL_ALL = SET_LEVEL_5
 };
 
-typedef struct _firm_dbg_module_t firm_dbg_module_t;
+typedef struct firm_dbg_module_t firm_dbg_module_t;
 
 /* Internal function to the debug module. */
 void *_firm_dbg_make_msg(const firm_dbg_module_t *mod, unsigned mask, const char *fmt, ...);

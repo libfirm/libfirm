@@ -5,7 +5,7 @@
 
 #include "../begin.h"
 
-typedef struct _gs_matrix_t gs_matrix_t;
+typedef struct gs_matrix_t gs_matrix_t;
 
 /**
  * Allocate a new matrix and init internal data for a matrix of size

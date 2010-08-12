@@ -29,7 +29,7 @@
 
 #include "begin.h"
 
-typedef struct _ir_timer_t ir_timer_t;
+typedef struct ir_timer_t ir_timer_t;
 
 /**
  * Switch to real-time scheduling.

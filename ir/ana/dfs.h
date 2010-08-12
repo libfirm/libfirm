@@ -31,9 +31,9 @@
 
 #include "absgraph.h"
 
-typedef struct _dfs_t      dfs_t;
-typedef struct _dfs_node_t dfs_node_t;
-typedef struct _dfs_edge_t dfs_edge_t;
+typedef struct dfs_t      dfs_t;
+typedef struct dfs_node_t dfs_node_t;
+typedef struct dfs_edge_t dfs_edge_t;
 
 typedef enum {
 	DFS_EDGE_ANC,

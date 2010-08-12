@@ -31,7 +31,7 @@
 #include "arm_nodes_attr.h"
 #include "be.h"
 
-typedef struct _arm_isa_t arm_isa_t;
+typedef struct arm_isa_t arm_isa_t;
 
 /** The following bitmasks control CPU extensions:  */
 enum arm_cpu_extensions {
@@ -132,7 +132,7 @@ enum arm_processor_types {
 	ARM_STRONG = ARM_ARCH_V4,
 };
 
-typedef struct _arm_code_gen_t {
+typedef struct arm_code_gen_t {
 	const arch_code_generator_if_t *impl;           /**< implementation */
 	ir_graph                       *irg;            /**< current irg */
 	arm_isa_t                      *isa;            /**< the isa instance */
@@ -140,7 +140,7 @@ typedef struct _arm_code_gen_t {
 } arm_code_gen_t;
 
 
-struct _arm_isa_t {
+struct arm_isa_t {
 	arch_env_t     base;      /**< must be derived from arch_env_t */
 	int            fpu_arch;      /**< FPU architecture */
 	arm_code_gen_t *cg;           /**< current code generator */

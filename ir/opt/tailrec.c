@@ -52,7 +52,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 /**
  * the environment for collecting data
  */
-typedef struct _collect_t {
+typedef struct collect_t {
 	ir_node *proj_X;      /**< initial exec proj */
 	ir_node *block;       /**< old first block */
 	int     blk_idx;      /**< cfgpred index of the initial exec in block */

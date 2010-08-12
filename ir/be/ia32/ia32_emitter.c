@@ -1209,13 +1209,13 @@ static void emit_ia32_CMovcc(const ir_node *node)
 
 
 /* jump table entry (target and corresponding number) */
-typedef struct _branch_t {
+typedef struct branch_t {
 	ir_node *target;
 	int      value;
 } branch_t;
 
 /* jump table for switch generation */
-typedef struct _jmp_tbl_t {
+typedef struct jmp_tbl_t {
 	ir_node  *defProj;                 /**< default target */
 	long      min_value;               /**< smallest switch case */
 	long      max_value;               /**< largest switch case */

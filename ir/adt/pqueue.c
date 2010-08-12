@@ -46,12 +46,12 @@
  *
  */
 
-typedef struct _pqueue_el_t {
+typedef struct pqueue_el_t {
 	void *data;
 	int  priority;
 } pqueue_el_t;
 
-struct _pqueue_t {
+struct pqueue_t {
 	pqueue_el_t *elems;
 };
 

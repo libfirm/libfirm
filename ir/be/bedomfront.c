@@ -40,7 +40,7 @@
 /**
  * The dominance frontier for a graph.
  */
-struct _be_dom_front_info_t {
+struct be_dom_front_info_t {
 	pmap *df_map;         /**< A map, mapping every block to a list of its dominance frontier blocks. */
 	struct obstack obst;  /**< An obstack holding all the frontier data. */
 };

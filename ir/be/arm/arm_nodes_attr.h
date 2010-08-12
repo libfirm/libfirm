@@ -99,7 +99,7 @@ typedef struct arm_load_store_attr_t {
 } arm_load_store_attr_t;
 
 /** Attributes for a SymConst */
-typedef struct _arm_SymConst_attr_t {
+typedef struct arm_SymConst_attr_t {
 	arm_attr_t  base;
 	ir_entity  *entity;
 	int         fp_offset;

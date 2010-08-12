@@ -45,11 +45,11 @@ typedef struct {
 	unsigned is_set : 1;
 } lc_opt_special_t;
 
-struct _lc_opt_entry_t {
+struct lc_opt_entry_t {
 	unsigned hash;
 	const char *name;
 	const char *desc;
-	struct _lc_opt_entry_t *parent;
+	struct lc_opt_entry_t *parent;
 
 	unsigned is_grp : 1;
 

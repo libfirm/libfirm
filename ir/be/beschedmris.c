@@ -53,7 +53,7 @@
 #include "beschedmris.h"
 #include "beirg.h"
 
-struct _mris_env_t {
+struct mris_env_t {
 	ir_phase          ph;
 	heights_t         *heights;
 	ir_graph          *irg;
@@ -64,7 +64,7 @@ struct _mris_env_t {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
-typedef struct _mris_irn_t {
+typedef struct mris_irn_t {
 	int visited;
 	ir_node *lineage_start;
 	ir_node *lineage_next;

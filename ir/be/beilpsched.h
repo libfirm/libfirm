@@ -42,7 +42,7 @@
  * from the backend or they pass back information to the backend about
  * the state of scheduling.
  */
-struct _ilp_sched_selector_if_t {
+struct ilp_sched_selector_if_t {
 
 	/**
 	 * This function is called before the scheduling of the irg.
@@ -98,7 +98,7 @@ struct _ilp_sched_selector_if_t {
 /**
  * The actual ILP schedule selector.
  */
-struct _ilp_sched_selector_t {
+struct ilp_sched_selector_t {
 	ilp_sched_selector_if_t *impl;
 };
 

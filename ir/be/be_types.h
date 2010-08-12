@@ -54,29 +54,29 @@ typedef enum arch_irn_flags_t {
 	                                                flags */
 } arch_irn_flags_t;
 
-typedef struct _be_lv_t                  be_lv_t;
-typedef struct _be_lv_info_t             be_lv_info_t;
+typedef struct be_lv_t                  be_lv_t;
+typedef struct be_lv_info_t             be_lv_info_t;
 
-typedef struct _be_abi_call_flags_bits_t be_abi_call_flags_bits_t;
-typedef union  _be_abi_call_flags_t      be_abi_call_flags_t;
-typedef struct _be_abi_callbacks_t       be_abi_callbacks_t;
-typedef struct _be_abi_call_t            be_abi_call_t;
-typedef struct _be_abi_irg_t             be_abi_irg_t;
-typedef struct be_stack_layout_t         be_stack_layout_t;
+typedef struct be_abi_call_flags_bits_t be_abi_call_flags_bits_t;
+typedef union  be_abi_call_flags_t      be_abi_call_flags_t;
+typedef struct be_abi_callbacks_t       be_abi_callbacks_t;
+typedef struct be_abi_call_t            be_abi_call_t;
+typedef struct be_abi_irg_t             be_abi_irg_t;
+typedef struct be_stack_layout_t        be_stack_layout_t;
 
-typedef struct _be_dom_front_info_t      be_dom_front_info_t;
+typedef struct be_dom_front_info_t      be_dom_front_info_t;
 
-typedef struct _list_sched_selector_t    list_sched_selector_t;
+typedef struct list_sched_selector_t    list_sched_selector_t;
 
-typedef struct _ilp_sched_selector_t     ilp_sched_selector_t;
-typedef struct _ilp_sched_selector_if_t  ilp_sched_selector_if_t;
+typedef struct ilp_sched_selector_t     ilp_sched_selector_t;
+typedef struct ilp_sched_selector_if_t  ilp_sched_selector_if_t;
 
-typedef struct _be_execution_unit_type_t be_execution_unit_type_t;
-typedef struct _be_execution_unit_t      be_execution_unit_t;
-typedef struct _be_machine_t             be_machine_t;
+typedef struct be_execution_unit_type_t be_execution_unit_type_t;
+typedef struct be_execution_unit_t      be_execution_unit_t;
+typedef struct be_machine_t             be_machine_t;
 
-typedef struct backend_info_t            backend_info_t;
-typedef struct sched_info_t              sched_info_t;
-typedef struct reg_out_info_t            reg_out_info_t;
+typedef struct backend_info_t           backend_info_t;
+typedef struct sched_info_t             sched_info_t;
+typedef struct reg_out_info_t           reg_out_info_t;
 
 #endif

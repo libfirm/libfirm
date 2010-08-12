@@ -40,13 +40,13 @@
 
 #include "../begin.h"
 
-typedef struct _plist_element plist_element_t;
-typedef struct _plist plist_t;
+typedef struct plist_element plist_element_t;
+typedef struct plist plist_t;
 
 /**
  * The plist data type.
  */
-struct _plist {
+struct plist {
 	/**
 	 * The obstack used for all allocations.
 	 */
@@ -81,7 +81,7 @@ struct _plist {
 /**
  * An element in the pointer list.
  */
-struct _plist_element {
+struct plist_element {
 	plist_element_t *next;
 	plist_element_t *prev;
 	void *data;

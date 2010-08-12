@@ -39,7 +39,7 @@
 /**
  * Data representing the problem of copy minimization.
  */
-struct _copy_opt_t {
+struct copy_opt_t {
 	be_chordal_env_t            *cenv;
 	const arch_register_class_t *cls;
 	ir_graph                    *irg;
@@ -86,7 +86,7 @@ static inline int is_2addr_code(const arch_register_req_t *req)
 
 #define MIS_HEUR_TRIGGER 8
 
-typedef struct _unit_t {
+typedef struct unit_t {
 	struct list_head units;              /**< chain for all units */
 	copy_opt_t       *co;                /**< the copy opt this unit belongs to */
 	int              node_count;         /**< size of the nodes array */
@@ -114,16 +114,16 @@ typedef struct _unit_t {
                   |_|                                      |___/
  ******************************************************************************/
 
-typedef struct _neighb_t neighb_t;
-typedef struct _affinity_node_t affinity_node_t;
+typedef struct neighb_t neighb_t;
+typedef struct affinity_node_t affinity_node_t;
 
-struct _neighb_t {
+struct neighb_t {
 	neighb_t *next;   /** the next neighbour entry*/
 	const ir_node  *irn;    /** the neighbour itself */
 	int      costs;   /** the costs of the edge (affinity_node_t->irn, neighb_t->irn) */
 };
 
-struct _affinity_node_t {
+struct affinity_node_t {
 	const ir_node  *irn;          /** a node with affinity edges */
 	int      degree;        /** number of affinity edges in the linked list below */
 	neighb_t *neighbours;   /** a linked list of all affinity neighbours */

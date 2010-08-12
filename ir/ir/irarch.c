@@ -95,7 +95,7 @@ struct instruction {
 /**
  * The environment for the strength reduction of multiplications.
  */
-typedef struct _mul_env {
+typedef struct mul_env {
 	struct obstack obst;       /**< an obstack for local space. */
 	ir_mode        *mode;      /**< the mode of the multiplication constant */
 	unsigned       bits;       /**< number of bits in the mode */

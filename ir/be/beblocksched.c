@@ -68,7 +68,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-typedef enum _blocksched_algos_t {
+typedef enum blocksched_algos_t {
 	BLOCKSCHED_NAIV, BLOCKSCHED_GREEDY, BLOCKSCHED_ILP
 } blocksched_algos_t;
 
@@ -535,22 +535,22 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
  */
 
 #ifdef WITH_ILP
-typedef struct _ilp_edge_t {
+typedef struct ilp_edge_t {
 	ir_node *block;   /**< source block */
 	int     pos;      /**< number of cfg predecessor (target) */
 	int     ilpvar;
 } ilp_edge_t;
 
-typedef struct _blocksched_ilp_env_t {
+typedef struct blocksched_ilp_env_t {
 	blocksched_env_t env;
 	ilp_edge_t       *ilpedges;
 	lpp_t            *lpp;
 } blocksched_ilp_env_t;
 
-typedef struct _blocksched_ilp_entry_t {
+typedef struct blocksched_ilp_entry_t {
 	ir_node *block;
-	struct _blocksched_entry_t *next;
-	struct _blocksched_entry_t *prev;
+	struct blocksched_entry_t *next;
+	struct blocksched_entry_t *prev;
 
 	int out_cst;
 } blocksched_ilp_entry_t;

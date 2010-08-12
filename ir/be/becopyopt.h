@@ -63,7 +63,7 @@ enum {
 	CO_ALGO_LAST
 };
 
-typedef struct _copy_opt_t copy_opt_t;
+typedef struct copy_opt_t copy_opt_t;
 
 typedef int(*cost_fct_t)(const copy_opt_t *, ir_node *, ir_node *, int);
 

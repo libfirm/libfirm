@@ -101,7 +101,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /**
  * An association between a node and a point in time.
  */
-typedef struct _loc_t {
+typedef struct loc_t {
   ir_node *irn;        /**< A node. */
   unsigned time;       /**< A use time.
 						 In the global pass this is used
@@ -110,12 +110,12 @@ typedef struct _loc_t {
 						*/
 } loc_t;
 
-typedef struct _workset_t {
+typedef struct workset_t {
 	int len;			/**< current length */
 	loc_t vals[0];		/**< inlined array of the values/distances in this working set */
 } workset_t;
 
-typedef struct _belady_env_t {
+typedef struct belady_env_t {
 	struct obstack ob;
 	ir_graph *irg;
 	const dfs_t *dfs;
@@ -129,7 +129,7 @@ typedef struct _belady_env_t {
 	int n_regs;			         /**< number of regs in this reg-class */
 	workset_t *ws;		         /**< the main workset used while processing a block. ob-allocated */
 	ir_node *instr;		         /**< current instruction */
-	int instr_nr;     	         /**< current instruction number (relative to block start) */
+	int instr_nr;                /**< current instruction number (relative to block start) */
 
 	spill_env_t *senv;	         /**< see bespill.h */
 	bitset_t *spilled;           /**< bitset to keep all the irns which have already been spilled. */
@@ -267,9 +267,9 @@ static inline int workset_get_index(const workset_t *ws, const ir_node *val)
 #define workset_sort(ws) qsort((ws)->vals, (ws)->len, sizeof((ws)->vals[0]), loc_compare);
 #define workset_contains(ws, n) (workset_get_index(ws, n) >= 0)
 
-typedef struct _bring_in_t bring_in_t;
+typedef struct bring_in_t bring_in_t;
 
-typedef struct _block_info_t {
+typedef struct block_info_t {
 	belady_env_t *bel;
 	ir_node *bl;
 	int id;
@@ -323,14 +323,14 @@ static inline ir_node *block_info_get_last_ins(block_info_t *bi)
 	return bi->last_ins;
 }
 
-typedef struct _next_use_t {
+typedef struct next_use_t {
 	unsigned is_first_use : 1; /**< Indicate that this use is the first
 								 in the block. Needed to identify
 								 transport in values for the global
 								 pass. */
 	sched_timestep_t step;     /**< The time step of the use. */
 	ir_node *irn;
-	struct _next_use_t *next;  /**< The next use int this block
+	struct next_use_t *next;   /**< The next use int this block
 								 or NULL. */
 } next_use_t;
 
@@ -419,7 +419,7 @@ static int block_freq_dfs_gt(const void *a, const void *b)
   Data structures to represent bring in variables.
 */
 
-struct _bring_in_t {
+struct bring_in_t {
 	ir_node *irn;              /**< The node to bring in. */
 	block_info_t *bi;          /**< The block to which bring in should happen. */
 	int pressure_so_far;       /**< The maximal pressure till the first use of irn in bl. */
@@ -774,22 +774,22 @@ enum {
 	irn_act_live_through
 };
 
-typedef struct _block_state_t {
-	struct _block_state_t *next;
-	struct _block_state_t *next_intern;
+typedef struct block_state_t {
+	struct block_state_t *next;
+	struct block_state_t *next_intern;
 	block_info_t *bi;
 	int pressure;
 	workset_t *end_state;
 } block_state_t;
 
-typedef struct _irn_action_t {
-	struct _irn_action_t *next;
+typedef struct irn_action_t {
+	struct irn_action_t *next;
 	ir_node *irn;
 	const ir_node *bl;
 	int act;
 } irn_action_t;
 
-typedef struct _global_end_state_t {
+typedef struct global_end_state_t {
 	belady_env_t *env;
 	bitset_t *succ_phis;
 	bitset_t *committed;

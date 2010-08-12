@@ -235,7 +235,7 @@ struct cl_entry {
 /**
  * Walker environment for fix_args_and_collect_calls().
  */
-typedef struct _wlk_env_t {
+typedef struct wlk_env_t {
 	int                  arg_shift;        /**< The Argument index shift for parameters. */
 	int                  first_hidden;     /**< The index of the first hidden argument. */
 	struct obstack       obst;             /**< An obstack to allocate the data on. */

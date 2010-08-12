@@ -42,18 +42,18 @@
 
 /* printf implementation */
 
-typedef struct _lc_arg_t {
-	struct _lc_arg_t *next;
+typedef struct lc_arg_t {
+	struct lc_arg_t *next;
 	const char *name;
 	char letter;
 	int lc_arg_type;
 	const lc_arg_handler_t *handler;
 } lc_arg_t;
 
-struct _lc_arg_env_t {
-	set *args;			   		/**< Map for named arguments. */
-	lc_arg_t *lower[26];		/**< Map for lower conversion specifiers. */
-	lc_arg_t *upper[26];		/**< Map for upper conversion specifiers. */
+struct lc_arg_env_t {
+	set *args;                  /**< Map for named arguments. */
+	lc_arg_t *lower[26];        /**< Map for lower conversion specifiers. */
+	lc_arg_t *upper[26];        /**< Map for upper conversion specifiers. */
 };
 
 /** The default argument environment. */

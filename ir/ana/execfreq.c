@@ -69,7 +69,7 @@
 
 #define set_foreach(s,i) for ((i)=set_first((s)); (i); (i)=set_next((s)))
 
-typedef struct _freq_t {
+typedef struct freq_t {
 	const ir_node    *irn;
 	int               idx;
 	double            freq;

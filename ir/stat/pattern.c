@@ -60,7 +60,7 @@ typedef unsigned char BYTE;
 /**
  * The code buffer.
  */
-typedef struct _code_buf_t {
+typedef struct code_buf_t {
 	BYTE     *next;    /**< Next byte address to be written. */
 	BYTE     *end;     /**< End address of the buffer. */
 	BYTE     *start;   /**< Start address of the buffer. */
@@ -89,7 +89,7 @@ enum vlc_code_t {
 /*
  * An entry for holding one pattern.
  */
-typedef struct _pattern_entry_t {
+typedef struct pattern_entry_t {
 	counter_t   count;        /**< Amount of pattern occurance. */
 	unsigned    len;          /**< The length of the VLC encoded buffer. */
 	BYTE        buf[1];       /**< The buffer containing the VLC encoded pattern. */
@@ -109,7 +109,7 @@ enum options_t {
 /**
  * Pattern info.
  */
-typedef struct _pattern_info_t {
+typedef struct pattern_info_t {
 	int                       enable;         /**< If non-zero, this module is enabled. */
 	struct obstack            obst;           /**< An obstack containing the counters. */
 	HASH_MAP(pattern_entry_t) *pattern_hash;  /**< A hash map containing the pattern. */
@@ -367,7 +367,7 @@ static BYTE next_tag(CODE_BUFFER *buf)
 /**
  * An Environment for the pattern encoder.
  */
-typedef struct _codec_enc_t {
+typedef struct codec_enc_t {
 	CODE_BUFFER      *buf;      /**< The current code buffer. */
 	set              *id_set;   /**< A set containing all already seen Firm nodes. */
 	unsigned         curr_id;   /**< The current node id. */
@@ -378,7 +378,7 @@ typedef struct _codec_enc_t {
 /**
  * An address entry.
  */
-typedef struct _addr_entry_t {
+typedef struct addr_entry_t {
 	void *addr;     /**< the address */
 	unsigned id;    /**< associated ID */
 } addr_entry_t;
@@ -659,7 +659,7 @@ static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
 /**
  * The environment for the pattern calculation.
  */
-typedef struct _pattern_env {
+typedef struct pattern_env {
 	int max_depth;    /**< maximum depth for pattern generation. */
 } pattern_env_t;
 

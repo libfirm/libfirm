@@ -30,16 +30,16 @@
 
 #include <stddef.h>
 
-struct _lc_appendable_funcs_t;
+struct lc_appendable_funcs_t;
 
-typedef struct _lc_appendable_t {
+typedef struct lc_appendable_t {
 	void *obj;
 	size_t written;
 	size_t limit;
-	const struct _lc_appendable_funcs_t *app;
+	const struct lc_appendable_funcs_t *app;
 } lc_appendable_t;
 
-typedef struct _lc_appendable_funcs_t {
+typedef struct lc_appendable_funcs_t {
 	void (*init)(lc_appendable_t *obj);
 	void (*finish)(lc_appendable_t *obj);
 	int (*snadd)(lc_appendable_t *obj, const char *str, size_t len);

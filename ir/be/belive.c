@@ -93,9 +93,9 @@ int (be_is_live_end)(const be_lv_t *lv, const ir_node *block, const ir_node *irn
 
 
 #ifdef LV_USE_BINARY_SEARCH
-static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx)
+static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 {
-	struct _be_lv_info_t *payload = arr + 1;
+	be_lv_info_t *payload = arr + 1;
 
 	unsigned n   = arr[0].u.head.n_members;
 	unsigned res = 0;
@@ -141,7 +141,7 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 /**
  * This function searches linearly for the node in the array.
  */
-static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned idx)
+static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 {
 	unsigned n  = arr[0].u.head.n_members;
 	unsigned i;
@@ -155,10 +155,10 @@ static inline unsigned _be_liveness_bsearch(struct _be_lv_info_t *arr, unsigned 
 }
 #endif
 
-struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *bl, const ir_node *irn)
+be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl, const ir_node *irn)
 {
-	struct _be_lv_info_t *irn_live;
-	struct _be_lv_info_node_t *res = NULL;
+	be_lv_info_t *irn_live;
+	be_lv_info_node_t *res = NULL;
 
 	stat_ev_tim_push();
 	irn_live = phase_get_irn_data(&li->ph, bl);
@@ -169,7 +169,7 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 		int pos = _be_liveness_bsearch(irn_live, idx);
 
 		/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
-		struct _be_lv_info_node_t *rec = &irn_live[pos + 1].u.node;
+		be_lv_info_node_t *rec = &irn_live[pos + 1].u.node;
 
 		/* Check, if the irn is in deed in the array. */
 		if (rec->idx == idx)
@@ -180,9 +180,9 @@ struct _be_lv_info_node_t *be_lv_get(const struct _be_lv_t *li, const ir_node *b
 	return res;
 }
 
-static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node *bl, ir_node *irn)
+static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *irn)
 {
-	struct _be_lv_info_t *irn_live = phase_get_or_set_irn_data(&li->ph, bl);
+	be_lv_info_t *irn_live = phase_get_or_set_irn_data(&li->ph, bl);
 
 	unsigned idx = get_irn_idx(irn);
 
@@ -190,11 +190,11 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 	unsigned pos = _be_liveness_bsearch(irn_live, idx);
 
 	/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
-	struct _be_lv_info_node_t *res = &irn_live[pos + 1].u.node;
+	be_lv_info_node_t *res = &irn_live[pos + 1].u.node;
 
 	/* Check, if the irn is in deed in the array. */
 	if (res->idx != idx) {
-		struct _be_lv_info_t *payload;
+		be_lv_info_t *payload;
 		unsigned n_members = irn_live[0].u.head.n_members;
 		unsigned n_size    = irn_live[0].u.head.n_size;
 		unsigned i;
@@ -205,7 +205,7 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 			unsigned old_size_bytes  = (n_size + 1) * sizeof(irn_live[0]);
 			unsigned new_size        = (2 * n_size) + 1;
 			size_t   new_size_bytes  = new_size * sizeof(irn_live[0]);
-			struct _be_lv_info_t *nw = phase_alloc(&li->ph, new_size_bytes);
+			be_lv_info_t *nw = phase_alloc(&li->ph, new_size_bytes);
 			memcpy(nw, irn_live, old_size_bytes);
 			memset(((char*) nw) + old_size_bytes, 0,
 			       new_size_bytes - old_size_bytes);
@@ -231,7 +231,7 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
 		unsigned i;
 		unsigned n = irn_live[0].u.head.n_members;
 		unsigned last = 0;
-		struct _be_lv_info_t *payload = &irn_live[1];
+		be_lv_info_t *payload = &irn_live[1];
 
 		for (i = 0; i < n; ++i) {
 			assert(payload[i].u.node.idx >= last);
@@ -247,17 +247,17 @@ static struct _be_lv_info_node_t *be_lv_get_or_set(struct _be_lv_t *li, ir_node 
  * Removes a node from the list of live variables of a block.
  * @return 1 if the node was live at that block, 0 if not.
  */
-static int be_lv_remove(struct _be_lv_t *li, const ir_node *bl,
+static int be_lv_remove(be_lv_t *li, const ir_node *bl,
                         const ir_node *irn)
 {
-	struct _be_lv_info_t *irn_live = phase_get_irn_data(&li->ph, bl);
+	be_lv_info_t *irn_live = phase_get_irn_data(&li->ph, bl);
 
 	if (irn_live) {
 		unsigned n   = irn_live[0].u.head.n_members;
 		unsigned idx = get_irn_idx(irn);
 		unsigned pos = _be_liveness_bsearch(irn_live, idx);
-		struct _be_lv_info_t *payload  = irn_live + 1;
-		struct _be_lv_info_node_t *res = &payload[pos].u.node;
+		be_lv_info_t *payload  = irn_live + 1;
+		be_lv_info_node_t *res = &payload[pos].u.node;
 
 		/* The node is in deed in the block's array. Let's remove it. */
 		if (res->idx == idx) {
@@ -296,7 +296,7 @@ static void register_node(be_lv_t *lv, const ir_node *irn)
  */
 static inline void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
-	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
+	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live in at %+F\n", irn, block));
 	n->flags |= be_lv_state_in;
 	register_node(lv, irn);
@@ -307,7 +307,7 @@ static inline void mark_live_in(be_lv_t *lv, ir_node *block, ir_node *irn)
  */
 static inline void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
-	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
+	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live out at %+F\n", irn, block));
 	n->flags |= be_lv_state_out | be_lv_state_end;
 	register_node(lv, irn);
@@ -318,7 +318,7 @@ static inline void mark_live_out(be_lv_t *lv, ir_node *block, ir_node *irn)
  */
 static inline void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
 {
-	struct _be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
+	be_lv_info_node_t *n = be_lv_get_or_set(lv, block, irn);
 	DBG((dbg, LEVEL_2, "marking %+F live end at %+F\n", irn, block));
 	n->flags |= be_lv_state_end;
 	register_node(lv, irn);
@@ -368,7 +368,7 @@ static void live_end_at_block(ir_node *block, int is_true_out)
 	}
 }
 
-typedef struct _lv_walker_t {
+typedef struct lv_walker_t {
 	be_lv_t *lv;
 	void *data;
 } lv_walker_t;
@@ -466,7 +466,7 @@ static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 {
 	if (is_Block(bl)) {
 		be_lv_t *lv = context;
-		struct _be_lv_info_t *info = phase_get_irn_data(&lv->ph, bl);
+		be_lv_info_t *info = phase_get_irn_data(&lv->ph, bl);
 
 		fprintf(f, "liveness:\n");
 		if (info) {
@@ -474,7 +474,7 @@ static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 			unsigned i;
 
 			for (i = 0; i < n; ++i) {
-				struct _be_lv_info_node_t *n = &info[i+1].u.node;
+				be_lv_info_node_t *n = &info[i+1].u.node;
 				ir_fprintf(f, "%s %+F\n", lv_flags_to_str(n->flags), get_idx_irn(lv->irg, n->idx));
 			}
 		}
@@ -483,7 +483,7 @@ static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 
 static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn)
 {
-	struct _be_lv_info_t *info = phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
+	be_lv_info_t *info = phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
 	(void) irn;
 
 	memset(info, 0, LV_STD_SIZE * sizeof(info[0]));
@@ -656,8 +656,8 @@ static void lv_check_walker(ir_node *bl, void *data)
 	be_lv_t *lv    = w->lv;
 	be_lv_t *fresh = w->data;
 
-	struct _be_lv_info_t *curr = phase_get_irn_data(&lv->ph, bl);
-	struct _be_lv_info_t *fr   = phase_get_irn_data(&fresh->ph, bl);
+	be_lv_info_t *curr = phase_get_irn_data(&lv->ph, bl);
+	be_lv_info_t *fr   = phase_get_irn_data(&fresh->ph, bl);
 
 	if (!fr && curr && curr[0].u.head.n_members > 0) {
 		unsigned i;
@@ -679,13 +679,13 @@ static void lv_check_walker(ir_node *bl, void *data)
 
 			ir_fprintf(stderr, "current:\n");
 			for (i = 0; i < n_curr; ++i) {
-				struct _be_lv_info_node_t *n = &curr[1 + i].u.node;
+				be_lv_info_node_t *n = &curr[1 + i].u.node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
 
 			ir_fprintf(stderr, "correct:\n");
 			for (i = 0; i < n_fresh; ++i) {
-				struct _be_lv_info_node_t *n = &fr[1 + i].u.node;
+				be_lv_info_node_t *n = &fr[1 + i].u.node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
 		}

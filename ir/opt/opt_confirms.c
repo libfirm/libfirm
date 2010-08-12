@@ -50,7 +50,7 @@ enum range_tags {
  * such kind of operation, we use border flags allowing
  * all intervals.
  */
-typedef struct _interval_t {
+typedef struct interval_t {
 	tarval        *min;   /**< lowest border */
 	tarval        *max;   /**< highest border */
 	unsigned char flags;  /**< border flags */

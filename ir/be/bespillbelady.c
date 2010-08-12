@@ -75,7 +75,7 @@ typedef struct loc_t {
 	bool              spilled;  /**< value was already spilled on this path */
 } loc_t;
 
-typedef struct _workset_t {
+typedef struct workset_t {
 	unsigned len;     /**< current length */
 	loc_t    vals[0]; /**< array of the values/distances in this working set */
 } workset_t;
@@ -258,8 +258,7 @@ static inline ir_node *workset_get_val(const workset_t *workset, unsigned idx)
 #define workset_foreach(ws, v, i)	\
 	for (i=0; v=(i < ws->len) ? ws->vals[i].node : NULL, i < ws->len; ++i)
 
-typedef struct _block_info_t
-{
+typedef struct block_info_t {
 	workset_t *start_workset;
 	workset_t *end_workset;
 } block_info_t;

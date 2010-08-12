@@ -286,7 +286,7 @@ FIRM_API void all_optimizations_off(void);
 /**
  * Possible verification modes.
  */
-typedef enum _firm_verification_t {
+typedef enum firm_verification_t {
   FIRM_VERIFICATION_OFF        = 0,	/**< do not verify nodes at all */
   FIRM_VERIFICATION_ON         = 1,	/**< do node verification and assert on error in debug version */
   FIRM_VERIFICATION_REPORT     = 2,	/**< do node verification, but report to stderr only */

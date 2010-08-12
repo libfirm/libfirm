@@ -58,7 +58,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-typedef struct _be_abi_call_arg_t {
+typedef struct be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
 	unsigned in_reg   : 1;  /**< 1: this argument is transmitted in registers. */
 	unsigned on_stack : 1;	/**< 1: this argument is transmitted on the stack. */
@@ -73,7 +73,7 @@ typedef struct _be_abi_call_arg_t {
 	unsigned               space_after;  /**< allocate space after */
 } be_abi_call_arg_t;
 
-struct _be_abi_call_t {
+struct be_abi_call_t {
 	be_abi_call_flags_t          flags;  /**< Flags describing the ABI behavior on calls */
 	int                          pop;    /**< number of bytes the stack frame is shrinked by the callee on return. */
 	const be_abi_callbacks_t    *cb;
@@ -85,7 +85,7 @@ struct _be_abi_call_t {
 /**
  * The ABI information for the current graph.
  */
-struct _be_abi_irg_t {
+struct be_abi_irg_t {
 	survive_dce_t        *dce_survivor;
 
 	be_abi_call_t        *call;         /**< The ABI call information. */

@@ -40,12 +40,12 @@ enum dag_counting_options_t {
 	FIRMSTAT_ARGS_ARE_ROOTS = 0x00000008,  /**< arguments (Proj(Proj(Start)) are roots */
 };
 
-typedef struct _dag_entry_t dag_entry_t;
+typedef struct dag_entry_t dag_entry_t;
 
 /**
  * Environment for connecting DAG's
  */
-typedef struct _dag_env_t {
+typedef struct dag_env_t {
 	struct obstack obst;
 	unsigned       num_of_dags;   /**< Number of found DAGs so far. */
 	dag_entry_t    *list_of_dags; /**< List of found DAGs. */
@@ -55,7 +55,7 @@ typedef struct _dag_env_t {
 /**
  * a DAG Entry
  */
-struct _dag_entry_t {
+struct dag_entry_t {
 	unsigned    id;               /**< assigned ID for this DAG */
 	ir_node     *root;            /**< one root of the DAG */
 	unsigned    num_roots;        /**< number of root nodes in the DAG */

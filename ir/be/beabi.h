@@ -37,7 +37,7 @@
 #include "bearch.h"
 #include "beabi.h"
 
-struct _be_abi_call_flags_bits_t {
+struct be_abi_call_flags_bits_t {
 	unsigned left_to_right          : 1;  /**< Arguments are from left to right. */
 	unsigned store_args_sequential  : 1;  /**< Use sequential stores for arguments. */
 	unsigned try_omit_fp            : 1;  /**< Try to omit the frame pointer. */
@@ -47,12 +47,12 @@ struct _be_abi_call_flags_bits_t {
 	unsigned frame_is_setup_on_call : 1;  /**< Set to one, if there is already enough room on the stack for call args. */
 };
 
-union _be_abi_call_flags_t {
+union be_abi_call_flags_t {
 	be_abi_call_flags_bits_t bits;
 	unsigned val;
 };
 
-struct _be_abi_callbacks_t {
+struct be_abi_callbacks_t {
 	/**
 	 * Initialize the callback object.
 	 * @param call The call object.

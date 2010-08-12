@@ -1015,7 +1015,7 @@ static const char *get_dot_color_name(size_t col)
 	return col < sizeof(names)/sizeof(names[0]) ? names[col] : "white";
 }
 
-typedef struct _co_ifg_dump_t {
+typedef struct co_ifg_dump_t {
 	const copy_opt_t *co;
 	unsigned flags;
 } co_ifg_dump_t;

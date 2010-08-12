@@ -331,7 +331,7 @@ typedef union {
 /**
  * Edge info to put into an irn.
  */
-typedef struct _irn_edge_kind_info_t {
+typedef struct irn_edge_kind_info_t {
 	struct list_head outs_head;  /**< The list of all outs. */
 	unsigned edges_built : 1;    /**< Set edges where built for this node. */
 	unsigned out_count : 31;     /**< Number of outs in the list. */
@@ -342,7 +342,7 @@ typedef irn_edge_info_t irn_edges_info_t[EDGE_KIND_LAST];
 /**
  * A Def-Use edge.
  */
-typedef struct _ir_def_use_edge {
+typedef struct ir_def_use_edge {
 	ir_node *use;            /** The use node of that edge. */
 	int     pos;             /** The position of this edge in use's input array. */
 } ir_def_use_edge;
@@ -387,7 +387,7 @@ struct ir_node {
 /**
  * Edge info to put into an irg.
  */
-typedef struct _irg_edge_info_t {
+typedef struct irg_edge_info_t {
 	ir_edgeset_t     edges;          /**< A set containing all edges of the current graph. */
 	struct list_head free_edges;     /**< list of all free edges. */
 	struct obstack   edges_obst;     /**< Obstack, where edges are allocated on. */

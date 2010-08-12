@@ -40,7 +40,7 @@
  * You can implement your own list scheduler by implementing these
  * functions.
  */
-struct _list_sched_selector_t {
+struct list_sched_selector_t {
 
 	/**
 	 * Called before a graph is being scheduled.

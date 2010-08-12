@@ -22,19 +22,19 @@
  */
 #define COL_INCREASE 2
 
-typedef struct _col_val_t {
+typedef struct col_val_t {
 	double v;
 	int col_idx;
 } col_val_t;
 
-typedef struct _row_col_t {
+typedef struct row_col_t {
 	int c_cols;
 	int n_cols;
 	double diag;
 	col_val_t *cols;
 } row_col_t;
 
-struct _gs_matrix_t {
+struct gs_matrix_t {
 	int initial_col_increase;
 	int c_rows;
 	int n_zero_entries;           ///< Upper bound on number of entries equal to 0.0

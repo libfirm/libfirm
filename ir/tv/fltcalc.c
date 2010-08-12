@@ -96,7 +96,7 @@ typedef union {
 #define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
 
 /* our floating point value */
-struct _fp_value {
+struct fp_value {
 	ieee_descriptor_t desc;
 	char sign;
 	char value[1];			/* exp[value_size] + mant[value_size] */

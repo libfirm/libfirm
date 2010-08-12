@@ -191,7 +191,7 @@ typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
 /**
  * The lowering parameter description.
  */
-typedef struct _lwrdw_param_t {
+typedef struct lwrdw_param_t {
 	int enable;                   /**< if true lowering is enabled */
 	int little_endian;            /**< if true should be lowered for little endian, else big endian */
 	ir_mode *high_signed;         /**< the double word signed mode to be lowered, typically Ls */
@@ -364,7 +364,7 @@ enum ikind {
 /**
  * An intrinsic call record.
  */
-typedef struct _i_call_record {
+typedef struct i_call_record {
 	enum ikind    kind;       /**< must be INTRINSIC_CALL */
 	ir_entity     *i_ent;     /**< the entity representing an intrinsic call */
 	i_mapper_func i_mapper;   /**< the mapper function to call */
@@ -375,7 +375,7 @@ typedef struct _i_call_record {
 /**
  * An intrinsic instruction record.
  */
-typedef struct _i_instr_record {
+typedef struct i_instr_record {
 	enum ikind    kind;       /**< must be INTRINSIC_INSTR */
 	ir_op         *op;        /**< the opcode that must be mapped. */
 	i_mapper_func i_mapper;   /**< the mapper function to call */
@@ -386,7 +386,7 @@ typedef struct _i_instr_record {
 /**
  * An intrinsic record.
  */
-typedef union _i_record {
+typedef union i_record {
 	i_call_record  i_call;
 	i_instr_record i_instr;
 } i_record;
@@ -613,7 +613,7 @@ FIRM_API int i_mapper_alloca(ir_node *call, void *ctx);
 /**
  * A runtime routine description.
  */
-typedef struct _runtime_rt {
+typedef struct runtime_rt {
 	ir_entity *ent;            /**< The entity representing the runtime routine. */
 	ir_mode   *mode;           /**< The operation mode of the mapped instruction. */
 	ir_mode   *res_mode;       /**< The result mode of the mapped instruction or NULL. */

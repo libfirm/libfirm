@@ -66,13 +66,13 @@ typedef struct {
 } constraint_env_t;
 
 /** Lowering walker environment. */
-typedef struct _lower_env_t {
+typedef struct lower_env_t {
 	ir_graph *irg;
 	unsigned  do_copy : 1;
 } lower_env_t;
 
 /** Holds a Perm register pair. */
-typedef struct _reg_pair_t {
+typedef struct reg_pair_t {
 	const arch_register_t *in_reg;    /**< a perm IN register */
 	ir_node               *in_node;   /**< the in node to which the register belongs */
 
@@ -82,7 +82,7 @@ typedef struct _reg_pair_t {
 	int                    checked;   /**< indicates whether the pair was check for cycle or not */
 } reg_pair_t;
 
-typedef enum _perm_type_t {
+typedef enum perm_type_t {
 	PERM_CYCLE,
 	PERM_CHAIN,
 	PERM_SWAP,
@@ -90,7 +90,7 @@ typedef enum _perm_type_t {
 } perm_type_t;
 
 /** Structure to represent cycles or chains in a Perm. */
-typedef struct _perm_cycle_t {
+typedef struct perm_cycle_t {
 	const arch_register_t **elems;       /**< the registers in the cycle */
 	int                     n_elems;     /**< number of elements in the cycle */
 	perm_type_t             type;        /**< type (CHAIN or CYCLE) */

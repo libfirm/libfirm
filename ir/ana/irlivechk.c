@@ -58,7 +58,7 @@
 
 #include "statev.h"
 
-typedef struct _bl_info_t {
+typedef struct bl_info_t {
 	const ir_node *block;      /**< The block. */
 
 	int be_tgt_calc : 1;
@@ -75,7 +75,7 @@ typedef struct _bl_info_t {
 
 #define get_block_info(lv, bl) ((bl_info_t *) phase_get_irn_data(&(lv)->ph, bl))
 
-struct _lv_chk_t {
+struct lv_chk_t {
 	ir_phase     ph;
 	const dfs_t *dfs;
 	int          n_blocks;

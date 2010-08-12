@@ -61,7 +61,7 @@
 
 #define DEBUG_LVL 1
 
-typedef struct _local_env_t {
+typedef struct local_env_t {
 	double time_limit;
 	int first_x_var, last_x_var;
 	int n_colors;
@@ -218,7 +218,7 @@ static void build_affinity_cstr(ilp_env_t *ienv)
 /**
  * Helping stuff for build_clique_star_cstr
  */
-typedef struct _edge_t {
+typedef struct edge_t {
 	ir_node *n1, *n2;
 } edge_t;
 

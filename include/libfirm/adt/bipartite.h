@@ -28,7 +28,7 @@
 
 #include "../begin.h"
 
-typedef struct _bipartite_t bipartite_t;
+typedef struct bipartite_t bipartite_t;
 
 FIRM_API bipartite_t *bipartite_new(int n_left, int n_right);
 FIRM_API void bipartite_free(bipartite_t *gr);

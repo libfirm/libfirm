@@ -35,7 +35,7 @@
 
 #include "obst.h"
 
-typedef struct _absgraph_t {
+typedef struct absgraph_t {
 	void *(*get_root)(void *self);
 	void (*grow_succs)(void *self, void *node, struct obstack *obst);
 	void *(*get_end)(void *self);

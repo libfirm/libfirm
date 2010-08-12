@@ -29,21 +29,21 @@
 
 #include "bechordal.h"
 
-typedef struct _plotter_t           plotter_t;
-typedef struct _plotter_if_t        plotter_if_t;
-typedef struct _rect_t              rect_t;
-typedef struct _draw_chordal_opts_t draw_chordal_opts_t;
-typedef struct _color_t             color_t;
+typedef struct plotter_t           plotter_t;
+typedef struct plotter_if_t        plotter_if_t;
+typedef struct rect_t              rect_t;
+typedef struct draw_chordal_opts_t draw_chordal_opts_t;
+typedef struct color_t             color_t;
 
-struct _color_t {
+struct color_t {
 	double r, g, b;
 };
 
-struct _rect_t {
+struct rect_t {
 	int x, y, w, h;
 };
 
-struct _plotter_if_t {
+struct plotter_if_t {
 	void (*begin)(plotter_t *self, const rect_t *visible_area);
 
 	void (*set_color)(plotter_t *self, const color_t * color);
@@ -60,11 +60,11 @@ struct _plotter_if_t {
 
 extern void plotter_free(plotter_t *self);
 
-struct _plotter_t {
+struct plotter_t {
 	const plotter_if_t *vtab;
 };
 
-struct _draw_chordal_opts_t {
+struct draw_chordal_opts_t {
 	int h_gap;
 	int h_inter_gap;
 	int v_gap;

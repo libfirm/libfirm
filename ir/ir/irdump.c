@@ -602,7 +602,7 @@ static ir_node **construct_block_lists(ir_graph *irg)
 	return ird_get_irg_link(irg);
 }
 
-typedef struct _list_tuple {
+typedef struct list_tuple {
 	ir_node **blk_list;
 	ir_extblk **extbb_list;
 } list_tuple;
@@ -795,12 +795,12 @@ static int dump_node_typeinfo(FILE *F, ir_node *n)
 	return bad;
 }
 
-typedef struct _pns_lookup {
+typedef struct pns_lookup {
 	long       nr;      /**< the proj number */
 	const char *name;   /**< the name of the Proj */
 } pns_lookup_t;
 
-typedef struct _proj_lookup {
+typedef struct proj_lookup {
 	ir_opcode          code;      /**< the opcode of the Proj predecessor */
 	unsigned           num_data;  /**< number of data entries */
 	const pns_lookup_t *data;     /**< the data */

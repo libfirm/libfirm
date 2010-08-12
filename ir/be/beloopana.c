@@ -44,13 +44,13 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
 #define HASH_LOOP_INFO(info) (HASH_PTR((info)->loop) ^ HASH_PTR((info)->cls))
 
-typedef struct _be_loop_info_t {
+typedef struct be_loop_info_t {
 	ir_loop                     *loop;
 	const arch_register_class_t *cls;
 	unsigned                    max_pressure;
 } be_loop_info_t;
 
-struct _be_loopana_t {
+struct be_loopana_t {
 	set      *data;
 	ir_graph *irg;
 };

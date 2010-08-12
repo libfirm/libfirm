@@ -38,7 +38,7 @@
 /**
  * Environment for extbb construction.
  */
-typedef struct _env {
+typedef struct env {
 	struct obstack *obst;   /**< the obstack where allocations took place */
 	ir_extblk *head;        /**< head of the list of all extended blocks */
 	ir_node *start_block;   /**< the start block of the current graph */

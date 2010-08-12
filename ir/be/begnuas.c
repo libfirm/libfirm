@@ -57,7 +57,7 @@ static be_gas_section_t current_section = (be_gas_section_t) -1;
  * write it to the disk. This is an artifact from the old C-generating backend
  * and even there NOT needed. So we might change it in the future.
  */
-typedef struct _be_gas_decl_env {
+typedef struct be_gas_decl_env {
 	be_gas_section_t     section;
 	const be_main_env_t *main_env;
 } be_gas_decl_env_t;

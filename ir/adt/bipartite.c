@@ -32,7 +32,7 @@
 #include "bipartite.h"
 #include "xmalloc.h"
 
-struct _bipartite_t {
+struct bipartite_t {
 	int n_left, n_right;
 	bitset_t *adj[1];
 };

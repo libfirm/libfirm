@@ -56,7 +56,7 @@ typedef struct loc_entry {
 	unsigned int lineno;   /**< line number */
 } loc_entry;
 
-typedef struct _block_id_walker_data_t {
+typedef struct block_id_walker_data_t {
 	tarval         **array;    /**< the entity the holds the block counts */
 	unsigned int   id;         /**< current block id number */
 	ir_node        *symconst;  /**< the SymConst representing array */
@@ -66,7 +66,7 @@ typedef struct _block_id_walker_data_t {
 	unsigned       flags;      /**< profile flags */
 } block_id_walker_data_t;
 
-typedef struct _execcount_t {
+typedef struct execcount_t {
 	unsigned long block;
 	unsigned int count;
 } execcount_t;
@@ -627,7 +627,7 @@ ir_profile_get_block_execcount(const ir_node *block)
 	}
 }
 
-typedef struct _intialize_execfreq_env_t {
+typedef struct intialize_execfreq_env_t {
 	ir_graph *irg;
 	ir_exec_freq *execfreqs;
 	double freq_factor;

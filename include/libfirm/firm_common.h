@@ -33,7 +33,7 @@
  * libFirm initialization parameters.
  * @deprecated
  */
-struct _firm_parameter_t {
+struct firm_parameter_t {
 	/**
 	 * The size of this structure. init_firm() will only initialize
 	 * this amount of data. This allows to add more fields to this structure
@@ -84,7 +84,7 @@ struct _firm_parameter_t {
 	void *dummy;
 };
 
-typedef struct _firm_parameter_t firm_parameter_t;
+typedef struct firm_parameter_t firm_parameter_t;
 
 /**
  * Initialize the firm library.

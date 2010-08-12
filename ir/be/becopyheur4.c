@@ -84,7 +84,7 @@ static unsigned last_chunk_id   = 0;
 static int recolor_limit        = 7;
 static real_t dislike_influence = REAL(0.1);
 
-typedef struct _col_cost_t {
+typedef struct col_cost_t {
 	int     col;
 	real_t  cost;
 } col_cost_t;
@@ -92,7 +92,7 @@ typedef struct _col_cost_t {
 /**
  * An affinity chunk.
  */
-typedef struct _aff_chunk_t {
+typedef struct aff_chunk_t {
 	const ir_node  **n;                     /**< An ARR_F containing all nodes of the chunk. */
 	const ir_node  **interfere;             /**< An ARR_F containing all inference. */
 	int              weight;                /**< Weight of this chunk */
@@ -107,14 +107,14 @@ typedef struct _aff_chunk_t {
 /**
  * An affinity edge.
  */
-typedef struct _aff_edge_t {
+typedef struct aff_edge_t {
 	const ir_node *src;                   /**< Source node. */
 	const ir_node *tgt;                   /**< Target node. */
 	int           weight;                 /**< The weight of this edge. */
 } aff_edge_t;
 
 /* main coalescing environment */
-typedef struct _co_mst_env_t {
+typedef struct co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
 	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
@@ -128,7 +128,7 @@ typedef struct _co_mst_env_t {
 } co_mst_env_t;
 
 /* stores coalescing related information for a node */
-typedef struct _co_mst_irn_t {
+typedef struct co_mst_irn_t {
 	const ir_node    *irn;              /**< the irn this information belongs to */
 	aff_chunk_t      *chunk;            /**< the chunk this irn belongs to */
 	bitset_t         *adm_colors;       /**< set of admissible colors for this irn */

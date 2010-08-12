@@ -48,7 +48,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 /**
  * The walker environment for updating function calls.
  */
-typedef struct _env_t {
+typedef struct env_t {
 	unsigned n_calls_SymConst;
 	unsigned n_calls_Sel;
 	ir_node  *float_const_call_list;    /**< The list of all floating const function calls that will be changed. */

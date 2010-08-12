@@ -156,7 +156,7 @@ static inline int _sched_has_next(const ir_node *irn)
 static inline int _sched_has_prev(const ir_node *irn)
 {
 	const sched_info_t *info  = get_irn_sched_info(irn);
-   	const ir_node      *block = is_Block(irn) ? irn : get_nodes_block(irn);
+	const ir_node      *block = is_Block(irn) ? irn : get_nodes_block(irn);
 	return info->prev != block;
 }
 

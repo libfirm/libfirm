@@ -29,14 +29,14 @@
 #include "begin.h"
 
 /** Supported Edge kinds. */
-enum _ir_edge_kind_t {
+enum ir_edge_kind_t {
 	EDGE_KIND_NORMAL,  /**< Normal data flow edges. */
 	EDGE_KIND_BLOCK,   /**< Block to Block control flow edges. */
 	EDGE_KIND_DEP,     /**< Dependency edges. */
 	EDGE_KIND_LAST
 };
 
-typedef enum _ir_edge_kind_t ir_edge_kind_t;
+typedef enum ir_edge_kind_t ir_edge_kind_t;
 
 #include "end.h"
 

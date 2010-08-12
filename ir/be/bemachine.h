@@ -29,19 +29,19 @@
 
 #include "be_types.h"
 
-struct _be_execution_unit_t {
+struct be_execution_unit_t {
 	be_execution_unit_type_t *tp;
 	const char               *name;
 };
 
-struct _be_execution_unit_type_t {
+struct be_execution_unit_type_t {
 	unsigned            n_units;
 	unsigned            ports_per_unit;
 	const char          *name;
 	be_execution_unit_t *units;
 };
 
-struct _be_machine_t {
+struct be_machine_t {
 	unsigned                 bundle_size;
 	unsigned                 bundels_per_cycle;
 	unsigned                 n_unit_types;

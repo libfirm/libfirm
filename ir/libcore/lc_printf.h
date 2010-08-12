@@ -37,7 +37,7 @@
 #include "lc_config.h"
 #include "lc_appendable.h"
 
-typedef struct _lc_arg_occ_t {
+typedef struct lc_arg_occ_t {
 	int width;								/**< The width, or 0 if not given. */
 	int precision;						/**< The precision, or 0 if not given */
 
@@ -75,12 +75,12 @@ enum {
   lc_arg_type_last
 };
 
-typedef struct _lc_arg_handler {
+typedef struct lc_arg_handler {
 	int (*get_lc_arg_type)(const lc_arg_occ_t *occ);
 	int (*emit)(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_value_t *arg);
 } lc_arg_handler_t;
 
-typedef struct _lc_arg_env_t lc_arg_env_t;
+typedef struct lc_arg_env_t lc_arg_env_t;
 
 lc_arg_env_t *lc_arg_new_env(void);
 void lc_arg_free_env(lc_arg_env_t *env);

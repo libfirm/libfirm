@@ -123,7 +123,7 @@ void be_do_stat_reg_pressure(ir_graph *irg, const arch_register_class_t *cls)
 
 
 
-typedef struct _estimate_irg_costs_env_t {
+typedef struct estimate_irg_costs_env_t {
 	ir_exec_freq     *execfreqs;
 	double           costs;
 } estimate_irg_costs_env_t;

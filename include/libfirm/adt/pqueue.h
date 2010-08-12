@@ -30,7 +30,7 @@
 
 #include "../begin.h"
 
-typedef struct _pqueue_t pqueue_t;
+typedef struct pqueue_t pqueue_t;
 
 /**
  * Creates a new priority queue.

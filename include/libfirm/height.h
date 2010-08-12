@@ -30,7 +30,7 @@
 #include "firm_types.h"
 #include "begin.h"
 
-typedef struct _heights_t heights_t;
+typedef struct heights_t heights_t;
 
 /**
  * Get the height of a node inside a basic block.

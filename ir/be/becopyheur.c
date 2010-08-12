@@ -59,7 +59,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 /**
  * Modeling additional conflicts between nodes. NOT live range interference
  */
-typedef struct _conflict_t {
+typedef struct conflict_t {
 	const ir_node *n1, *n2;
 } conflict_t;
 
@@ -67,7 +67,7 @@ typedef struct _conflict_t {
  * If an irn is changed, the changes first get stored in a node_stat_t,
  * to allow undo of changes (=drop new data) in case of conflicts.
  */
-typedef struct _node_stat_t {
+typedef struct node_stat_t {
 	ir_node *irn;
 	int     new_color;
 	int     pinned_local :1;
@@ -76,7 +76,7 @@ typedef struct _node_stat_t {
 /**
  * Represents a node in the optimization queue.
  */
-typedef struct _qnode_t {
+typedef struct qnode_t {
 	struct list_head queue;            /**< chaining of unit_t->queue */
 	const unit_t     *ou;              /**< the opt unit this node belongs to */
 	int              color;            /**< target color */

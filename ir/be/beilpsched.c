@@ -71,13 +71,13 @@
 #include "belistsched.h"
 #include "bemodule.h"
 
-typedef struct _ilpsched_options_t {
+typedef struct ilpsched_options_t {
 	unsigned regpress;
 	unsigned time_limit;
 	char     log_file[1024];
 } ilpsched_options_t;
 
-typedef struct _unit_type_info_t {
+typedef struct unit_type_info_t {
 	int                            n_units;
 	const be_execution_unit_type_t *tp;
 } unit_type_info_t;
@@ -85,7 +85,7 @@ typedef struct _unit_type_info_t {
 /**
  * holding the ILP variables of the different types
  */
-typedef struct _ilp_var_types_t {
+typedef struct ilp_var_types_t {
 	int *x;   /* x_{nt}^k variables */
 	int *a;   /* a_{nt}^k variables */
 	int *y;   /* y_{nt}^k variables */
@@ -94,14 +94,14 @@ typedef struct _ilp_var_types_t {
 /**
  * Holds alive variables for a node live-in to a block.
  */
-typedef struct _ilp_livein_node_t {
+typedef struct ilp_livein_node_t {
 	ir_node  *irn;
 	unsigned max_alive_steps;
 	int      *a;
 } ilp_livein_node_t;
 
 /* attributes for a node */
-typedef struct _ilpsched_node_attr_t {
+typedef struct ilpsched_node_attr_t {
 	unsigned asap;                     /**< The ASAP scheduling control step */
 	unsigned alap;                     /**< The ALAP scheduling control step */
 	unsigned latency;                  /**< Latency of this node (needed for sorting) */
@@ -122,7 +122,7 @@ typedef struct _ilpsched_node_attr_t {
 } ilpsched_node_attr_t;
 
 /* attributes for a block */
-typedef struct _ilpsched_block_attr_t {
+typedef struct ilpsched_block_attr_t {
 	unsigned block_last_idx;        /**< The highest node index in block so far */
 	unsigned n_interesting_nodes;   /**< The number of nodes interesting for scheduling */
 	unsigned max_steps;             /**< Upper bound for block execution */
@@ -131,7 +131,7 @@ typedef struct _ilpsched_block_attr_t {
 	pset     *livein_nodes;         /**< A set of nodes which are live-in to this block */
 } ilpsched_block_attr_t;
 
-typedef union _ilpsched_attr_ {
+typedef union ilpsched_attr_ {
 	ilpsched_node_attr_t  node_attr;
 	ilpsched_block_attr_t block_attr;
 } ilpsched_attr_t;

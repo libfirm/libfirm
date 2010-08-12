@@ -37,9 +37,9 @@
 #include "benode.h"
 
 
-typedef struct _usage_stats_t {
+typedef struct usage_stats_t {
 	ir_node *irn;
-	struct _usage_stats_t *next;
+	struct usage_stats_t *next;
 	int max_hops;
 	int uses_in_block;      /**< Number of uses inside the current block. */
 	int already_consumed;   /**< Number of insns using this value already

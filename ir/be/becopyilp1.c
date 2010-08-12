@@ -32,7 +32,7 @@
 
 #define DEBUG_LVL 1
 
-typedef struct _my_env_t {
+typedef struct my_env_t {
 	int dummy;
 } my_env_t;
 

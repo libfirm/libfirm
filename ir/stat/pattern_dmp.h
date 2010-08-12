@@ -28,7 +28,7 @@
 
 #include "counter.h"
 
-typedef struct _pattern_dumper_t pattern_dumper_t;
+typedef struct pattern_dumper_t pattern_dumper_t;
 
 /**
  * Starts a new pattern.

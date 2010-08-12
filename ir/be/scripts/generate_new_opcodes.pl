@@ -476,7 +476,7 @@ EOF
 	$obst_constructor .= "}\n\n";
 }
 
-push(@obst_enum_op, "typedef enum _${arch}_opcodes {\n");
+push(@obst_enum_op, "typedef enum ${arch}_opcodes {\n");
 foreach my $op (keys(%nodes)) {
 	my %n        = %{ $nodes{"$op"} };
 	my $known_mode;

@@ -48,7 +48,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
-typedef struct _walker_t {
+typedef struct walker_t {
 	int   changes;        /**< set, if a reassociation take place */
 	waitq *wq;            /**< a wait queue */
 } walker_t;

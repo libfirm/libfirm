@@ -82,7 +82,7 @@ enum {
 	BE_SCHED_PREP_RSS  = 3
 };
 
-typedef struct _list_sched_options_t {
+typedef struct list_sched_options_t {
 	int select;  /**< the node selector */
 	int prep;    /**< schedule preparation */
 } list_sched_options_t;
@@ -129,7 +129,7 @@ static const lc_opt_table_entry_t list_sched_option_table[] = {
 /**
  * All scheduling info needed per node.
  */
-typedef struct _sched_irn_t {
+typedef struct sched_irn_t {
 	unsigned num_not_sched_user; /**< The number of not yet scheduled users of this node */
 	unsigned already_sched : 1;  /**< Set if this node is already scheduled */
 } sched_irn_t;
@@ -137,7 +137,7 @@ typedef struct _sched_irn_t {
 /**
  * Scheduling environment for the whole graph.
  */
-typedef struct _sched_env_t {
+typedef struct sched_env_t {
 	sched_irn_t *sched_info;                    /**< scheduling info per node */
 	const list_sched_selector_t *selector;      /**< The node selector. */
 	void *selector_env;                         /**< A pointer to give to the selector. */
@@ -146,7 +146,7 @@ typedef struct _sched_env_t {
 /**
  * Environment for a block scheduler.
  */
-typedef struct _block_sched_env_t {
+typedef struct block_sched_env_t {
 	sched_irn_t *sched_info;                    /**< scheduling info per node, copied from the global scheduler object */
 	ir_nodeset_t cands;                         /**< the set of candidates */
 	ir_node *block;                             /**< the current block */

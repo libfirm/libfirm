@@ -65,7 +65,7 @@ int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm);
 /**
  * Possible return values of value_classify().
  */
-typedef enum _value_classify_sign {
+typedef enum value_classify_sign {
 	value_classified_unknown  = 0,   /**< could not classify */
 	value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
 	value_classified_negative = -1   /**< value is negative, i.e. <= 0 if

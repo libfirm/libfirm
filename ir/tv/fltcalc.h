@@ -75,8 +75,8 @@ typedef struct ieee_descriptor_t {
 	unsigned char clss;             /**< state of this float */
 } ieee_descriptor_t;
 
-struct _fp_value;
-typedef struct _fp_value fp_value;
+struct fp_value;
+typedef struct fp_value fp_value;
 
 /*@{*/
 /** internal buffer access

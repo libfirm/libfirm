@@ -380,7 +380,7 @@ FIRM_API tarval *get_tarval_minus_inf(ir_mode *mode);
 
 /* ******************** Arithmetic operations on tarvals ******************** */
 
-typedef enum _tarval_int_overflow_mode_t {
+typedef enum tarval_int_overflow_mode_t {
 	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
 	TV_OVERFLOW_WRAP,     /**< tarval module will overflow will be ignored, wrap around occurs */
 	TV_OVERFLOW_SATURATE  /**< tarval module will saturate the overflow */

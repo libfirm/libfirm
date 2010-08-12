@@ -44,7 +44,7 @@
  */
 #define is_iterator(ptr) (((const iterator_t *) (ptr))->magic == ITERATOR_MAGIC)
 
-typedef struct _iterator_t {
+typedef struct iterator_t {
 	unsigned magic;
 	void *(*start)(void *collection);
 	void *(*next)(void *collection, void *curr);

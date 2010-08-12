@@ -32,7 +32,7 @@
 #include "bearch.h"
 #include "beirg.h"
 
-typedef struct _be_loopana_t be_loopana_t;
+typedef struct be_loopana_t be_loopana_t;
 
 /**
  * Compute the register pressure for a class of all loops in the irg.

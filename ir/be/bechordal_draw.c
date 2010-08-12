@@ -243,7 +243,7 @@ const draw_chordal_opts_t draw_chordal_def_opts = {
 	10, 10, 30, 8, 10, 10
 };
 
-typedef struct _draw_chordal_env_t {
+typedef struct draw_chordal_env_t {
 	const be_chordal_env_t      *chordal_env;
 	const arch_register_class_t *cls;
 	pmap                        *block_dims;

@@ -360,7 +360,7 @@ int be_verify_schedule(ir_graph *irg)
 
 
 
-typedef struct _spill_t {
+typedef struct spill_t {
 	ir_node *spill;
 	ir_entity *ent;
 } spill_t;

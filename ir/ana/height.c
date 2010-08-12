@@ -39,7 +39,7 @@
 #include "irphase_t.h"
 #include "iredges_t.h"
 
-struct _heights_t {
+struct heights_t {
 	ir_phase  phase;
 	unsigned  visited;
 	void     *dump_handle;

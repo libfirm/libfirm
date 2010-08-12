@@ -70,13 +70,13 @@ enum changes_t {
 /**
  * walker environment
  */
-typedef struct _walk_env_t {
+typedef struct walk_env_t {
 	struct obstack obst;          /**< list of all stores */
 	unsigned changes;             /**< a bitmask of graph changes */
 } walk_env_t;
 
 /** A Load/Store info. */
-typedef struct _ldst_info_t {
+typedef struct ldst_info_t {
 	ir_node  *projs[MAX_PROJ];    /**< list of Proj's of this node */
 	ir_node  *exc_block;          /**< the exception block if available */
 	int      exc_idx;             /**< predecessor index in the exception block */
@@ -94,7 +94,7 @@ enum block_flags_t {
 /**
  * a Block info.
  */
-typedef struct _block_info_t {
+typedef struct block_info_t {
 	unsigned flags;               /**< flags for the block */
 } block_info_t;
 

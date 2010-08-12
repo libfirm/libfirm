@@ -39,8 +39,8 @@
 #include "irprintf.h"
 #include "execfreq.h"
 
-typedef struct _env {
-  	struct obstack *obst;   /**< the obstack where allocations took place */
+typedef struct env {
+	struct obstack *obst;   /**< the obstack where allocations took place */
 	ir_extblk *head;        /**< head of the list of all extended blocks */
 	ir_exec_freq *execfreqs;
 } env_t;

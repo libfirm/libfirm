@@ -33,11 +33,11 @@
 #include "bearch.h"
 #include "beirg.h"
 
-typedef struct _be_operand_t  be_operand_t;
-typedef struct _be_insn_t     be_insn_t;
-typedef struct _be_insn_env_t be_insn_env_t;
+typedef struct be_operand_t  be_operand_t;
+typedef struct be_insn_t     be_insn_t;
+typedef struct be_insn_env_t be_insn_env_t;
 
-struct _be_operand_t {
+struct be_operand_t {
 	ir_node *irn;                   /**< Firm node of the insn this operand belongs to */
 	ir_node *carrier;               /**< node representing the operand value (Proj or the node itself for defs, the used value for uses) */
 	be_operand_t *partner;          /**< used in bechordal later... (TODO what does it do?) */
@@ -47,7 +47,7 @@ struct _be_operand_t {
 	unsigned has_constraints : 1;   /**< the carrier node has register constraints (the constraint type is limited) */
 };
 
-struct _be_insn_t {
+struct be_insn_t {
 	be_operand_t *ops;             /**< the values used and defined by the insn */
 	int n_ops;                     /**< length of the ops array */
 	int use_start;                 /**< entries [0-use_start) in ops are defs,
@@ -60,7 +60,7 @@ struct _be_insn_t {
 	unsigned pre_colored     : 1;  /**< all defined values already have a register assigned */
 };
 
-struct _be_insn_env_t {
+struct be_insn_env_t {
 	struct obstack              *obst;
 	const arch_register_class_t *cls;
 	bitset_t                    *ignore_colors;

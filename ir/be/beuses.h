@@ -30,7 +30,7 @@
 #include "firm_types.h"
 #include "belive.h"
 
-typedef struct _be_next_use_t {
+typedef struct be_next_use_t {
 	unsigned       time;
 	int            outermost_loop;
 	const ir_node *before;
@@ -49,7 +49,7 @@ static inline int USES_IS_PENDING(unsigned time)
 	return time == USES_PENDING;
 }
 
-typedef struct _be_uses_t be_uses_t;
+typedef struct be_uses_t be_uses_t;
 
 be_next_use_t be_get_next_use(be_uses_t *uses, ir_node *from,
                          unsigned from_step, const ir_node *def,

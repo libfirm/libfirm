@@ -86,7 +86,7 @@ typedef enum {
 /**
  * Reasons for node number breakpoints.
  */
-typedef enum _bp_reasons_t {
+typedef enum bp_reasons_t {
 	BP_ON_NEW_NODE,    /**< break if node with number is created */
 	BP_ON_REPLACE,     /**< break if node with number is replaced */
 	BP_ON_LOWER,       /**< break if node with number is lowered */
@@ -97,12 +97,12 @@ typedef enum _bp_reasons_t {
 } bp_reasons_t;
 
 /** A breakpoint. */
-typedef struct _breakpoint {
+typedef struct breakpoint {
 	bp_kind      kind;        /**< the kind of this break point */
 	unsigned     bpnr;        /**< break point number */
 	int          active;      /**< non-zero, if this break point is active */
 	bp_reasons_t reason;      /**< reason for the breakpoint */
-	struct _breakpoint *next; /**< link to the next one */
+	struct breakpoint *next; /**< link to the next one */
 } breakpoint;
 
 /** A number breakpoint. */

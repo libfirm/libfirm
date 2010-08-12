@@ -36,7 +36,7 @@
 #define STAT_CNT_NUM 1
 #endif
 
-typedef struct _counter_t {
+typedef struct counter_t {
 	unsigned cnt[STAT_CNT_NUM];
 } counter_t;
 

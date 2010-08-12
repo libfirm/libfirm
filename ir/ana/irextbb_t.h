@@ -34,7 +34,7 @@
 /**
  * An extended block.
  */
-struct _ir_extblk {
+struct ir_extblk {
 	firm_kind kind;        /**< k_ir_extblk */
 	ir_visited_t visited;  /**< visited flag */
 	ir_node  **blks;       /**< blocks belonging to this extended block */

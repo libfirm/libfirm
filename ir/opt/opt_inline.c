@@ -639,7 +639,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 static struct obstack  temp_obst;
 
 /** Represents a possible inlinable call in a graph. */
-typedef struct _call_entry {
+typedef struct call_entry {
 	ir_node    *call;       /**< The Call node. */
 	ir_graph   *callee;     /**< The callee IR-graph. */
 	list_head  list;        /**< List head for linking the next one. */
@@ -652,7 +652,7 @@ typedef struct _call_entry {
 /**
  * environment for inlining small irgs
  */
-typedef struct _inline_env_t {
+typedef struct inline_env_t {
 	struct obstack obst;  /**< An obstack where call_entries are allocated on. */
 	list_head      calls; /**< The call entry list. */
 } inline_env_t;

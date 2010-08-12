@@ -50,7 +50,7 @@ typedef void (*DUMP_END_FUNC)(pattern_dumper_t *self);
 /**
  * the pattern dumper
  */
-struct _pattern_dumper_t {
+struct pattern_dumper_t {
 	DUMP_NEW_PATTERN_FUNC      dump_new_pattern;
 	DUMP_FINISH_PATTERN_FUNC   dump_finish_pattern;
 	DUMP_NODE_FUNC             dump_node;
@@ -66,7 +66,7 @@ struct _pattern_dumper_t {
 /**
  * VCG private data
  */
-typedef struct _vcg_private_t {
+typedef struct vcg_private_t {
 	FILE     *f;          /**< file to dump to */
 	unsigned pattern_id;  /**< ID of the pattern */
 	unsigned max_pattern; /**< maximum number of pattern to be dumped */

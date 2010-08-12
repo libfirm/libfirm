@@ -99,9 +99,9 @@ static be_ifg_dump_dot_cb_t ifg_dot_cb;
 
 typedef unsigned col_t;
 
-typedef struct _co2_irn_t       co2_irn_t;
-typedef struct _co2_cloud_t     co2_cloud_t;
-typedef struct _co2_cloud_irn_t co2_cloud_irn_t;
+typedef struct co2_irn_t       co2_irn_t;
+typedef struct co2_cloud_t     co2_cloud_t;
+typedef struct co2_cloud_irn_t co2_cloud_irn_t;
 
 typedef struct {
 	col_t col;
@@ -119,7 +119,7 @@ typedef struct {
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } co2_t;
 
-struct _co2_irn_t {
+struct co2_irn_t {
 	const ir_node   *irn;
 	affinity_node_t *aff;
 	co2_irn_t       *touched_next;
@@ -133,8 +133,8 @@ struct _co2_irn_t {
 	struct list_head changed_list;
 };
 
-struct _co2_cloud_irn_t {
-	struct _co2_irn_t  inh;
+struct co2_cloud_irn_t {
+	struct co2_irn_t   inh;
 	co2_cloud_t       *cloud;
 	int                visited;
 	int                index;
@@ -151,7 +151,7 @@ struct _co2_cloud_irn_t {
 	struct list_head   mst_list;
 };
 
-struct _co2_cloud_t {
+struct co2_cloud_t {
 	co2_t            *env;
 	struct obstack    obst;
 	int               costs;
@@ -855,7 +855,7 @@ static void apply_coloring(co2_cloud_irn_t *ci, col_t col, int depth)
 	// assert(ok && "Color changing may not fail while committing the coloring");
 	materialize_coloring(&changed);
 
- 	for (i = 0; i < ci->mst_n_childs; ++i) {
+	for (i = 0; i < ci->mst_n_childs; ++i) {
 		apply_coloring(ci->mst_childs[i], front[i], depth + 1);
 	}
 }

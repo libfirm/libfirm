@@ -52,7 +52,7 @@
 /**
  * walker environment
  */
-typedef struct _walk_env {
+typedef struct walk_env {
   ir_node *found_allocs;            /**< list of all found non-escaped allocs */
   ir_node *dead_allocs;             /**< list of all found dead alloc */
   check_alloc_entity_func callback; /**< callback that checks a given entity for allocation */
@@ -62,7 +62,7 @@ typedef struct _walk_env {
 
   /* these fields are only used in the global escape analysis */
   ir_graph *irg;                    /**< the irg for this environment */
-  struct _walk_env *next;           /**< for linking environments */
+  struct walk_env *next;           /**< for linking environments */
 
 } walk_env_t;
 

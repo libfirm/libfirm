@@ -92,7 +92,7 @@ static be_ra_chordal_opts_t options = {
 	""
 };
 
-typedef struct _post_spill_env_t {
+typedef struct post_spill_env_t {
 	be_chordal_env_t            cenv;
 	ir_graph                    *irg;
 	const arch_register_class_t *cls;

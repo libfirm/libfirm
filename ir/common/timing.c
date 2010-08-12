@@ -73,7 +73,7 @@ static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
 /**
  * A timer.
  */
-struct _ir_timer_t {
+struct ir_timer_t {
 	ir_timer_val_t elapsed;     /**< the elapsed time so far */
 	ir_timer_val_t start;       /**< the start value of the timer */
 	ir_timer_t     *link;       /**< link to the next entry in the timer stack */

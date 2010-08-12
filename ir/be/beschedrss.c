@@ -75,25 +75,25 @@
 #define BLOCK_IDX_MAP(rss, irn) bsearch_for_index(get_irn_idx((irn)), (rss)->idx_map, ARR_LEN_SAFE((rss)->idx_map), 1)
 
 /* the rss options */
-typedef struct _rss_opts_t {
+typedef struct rss_opts_t {
 	int dump_flags;
 } rss_opts_t;
 
 /* Represents a child with associated costs */
-typedef struct _child {
+typedef struct child {
 	ir_node *irn;
 	float   cost;
 } child_t;
 
 /* We need edges for several purposes. */
-typedef struct _rss_edge {
+typedef struct rss_edge {
 	ir_node *src;
 	ir_node *tgt;
 	void    *next;
 } rss_edge_t;
 
 /* Represents a connected bipartite component. */
-typedef struct _cbc {
+typedef struct cbc {
 	ir_nodeset_t parents;       /**< = S  a set of value producers */
 	ir_nodeset_t children;      /**< = T  a set of value consumers */
 	pset    *kill_edges;    /**< = E  a set of edges (t in T, s in S) such as each s in S gets killed by at least one t in T */
@@ -101,18 +101,18 @@ typedef struct _cbc {
 } cbc_t;
 
 /* Represents a disjoint value DAG. */
-typedef struct _dvg {
+typedef struct dvg {
 	ir_nodeset_t nodes;
 	pset    *edges;
 } dvg_t;
 
 /* Represents a chain of nodes. */
-typedef struct _chain {
+typedef struct chain {
 	plist_t *elements;   /**< List of chain elements */
 	int     nr;          /**< a deterministic index for set insertion (used as hash) */
 } chain_t;
 
-typedef struct _rss_irn {
+typedef struct rss_irn {
 	plist_t  *consumer_list;    /**< List of consumers */
 	const ir_node **consumer;   /**< Sorted consumer array (needed for faster access) */
 
@@ -138,7 +138,7 @@ typedef struct _rss_irn {
 } rss_irn_t;
 
 /* Represents a serialization edge with associated costs. */
-typedef struct _serialization {
+typedef struct serialization {
 	rss_irn_t  *u;       /* the top node */
 	rss_irn_t  *v;       /* the node about to be serialized after u */
 	rss_edge_t *edge;    /* the edge selected for the serialization */
@@ -147,7 +147,7 @@ typedef struct _serialization {
 	int        new_killer;
 } serialization_t;
 
-typedef struct _rss {
+typedef struct rss {
 	ir_phase          ph;              /**< Phase to hold some data */
 	heights_t        *h;              /**< The current height object */
 	ir_graph         *irg;            /**< The irg to preprocess */

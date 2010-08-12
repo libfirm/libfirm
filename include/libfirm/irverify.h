@@ -55,7 +55,7 @@ FIRM_API int irn_verify_irg_dump(ir_node *checknode, ir_graph *irg, const char *
 /**
  * Flags for irg_verify().
  */
-typedef enum _irg_verify_flags_t {
+typedef enum irg_verify_flags_t {
 	VERIFY_NORMAL      = 0,      /**< check SSA property only if dominance information is available */
 	VERIFY_ENFORCE_SSA = 1       /**< check SSA property by enforcing the dominance information recalculation */
 } irg_verify_flags_t;

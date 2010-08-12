@@ -34,7 +34,7 @@
 #include "obst.h"
 #include "dfs.h"
 
-struct _dfs_node_t {
+struct dfs_node_t {
 	int visited;
 	const void *node;
 	const void *ancestor;
@@ -44,13 +44,13 @@ struct _dfs_node_t {
 	int	level;
 };
 
-struct _dfs_edge_t {
+struct dfs_edge_t {
 	const void *src, *tgt;
 	dfs_node_t *s, *t;
 	dfs_edge_kind_t kind;
 };
 
-struct _dfs_t {
+struct dfs_t {
 	void *graph;
 	const absgraph_t *graph_impl;
 	struct obstack obst;
@@ -66,9 +66,9 @@ struct _dfs_t {
 	unsigned edges_classified : 1;
 };
 
-static struct _dfs_node_t *_dfs_get_node(const struct _dfs_t *self, const void *node)
+static dfs_node_t *_dfs_get_node(const dfs_t *self, const void *node)
 {
-	struct _dfs_node_t templ;
+	dfs_node_t templ;
 	memset(&templ, 0, sizeof(templ));
 	templ.node = node;
 	return set_insert(self->nodes, &templ, sizeof(templ), HASH_PTR(node));
@@ -76,10 +76,10 @@ static struct _dfs_node_t *_dfs_get_node(const struct _dfs_t *self, const void *
 
 #define _dfs_int_is_ancestor(n, m) ((m)->pre_num >= (n)->pre_num && (m)->pre_num <= (n)->max_pre_num)
 
-static inline int _dfs_is_ancestor(const struct _dfs_t *dfs, const void *a, const void *b)
+static inline int _dfs_is_ancestor(const dfs_t *dfs, const void *a, const void *b)
 {
-	struct _dfs_node_t *n = _dfs_get_node(dfs, a);
-	struct _dfs_node_t *m = _dfs_get_node(dfs, b);
+	dfs_node_t *n = _dfs_get_node(dfs, a);
+	dfs_node_t *m = _dfs_get_node(dfs, b);
 	return _dfs_int_is_ancestor(n, m);
 }
 

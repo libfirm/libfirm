@@ -52,7 +52,7 @@
 
 #define SCAN_INTERBLOCK_USES
 
-typedef struct _be_use_t {
+typedef struct be_use_t {
 	const ir_node *block;
 	const ir_node *node;
 	int outermost_loop;
@@ -60,8 +60,8 @@ typedef struct _be_use_t {
 	unsigned visited;
 } be_use_t;
 
-struct _be_uses_t {
-  	set *uses;
+struct be_uses_t {
+	set *uses;
 	ir_graph *irg;
 	const be_lv_t *lv;
 	unsigned visited_counter;

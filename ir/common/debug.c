@@ -44,7 +44,7 @@ static set *module_set;
 /**
  * A debug module.
  */
-struct _firm_dbg_module_t {
+struct firm_dbg_module_t {
   unsigned mask;
   const char *name;
   FILE *file;
@@ -102,7 +102,7 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file)
 /**
  * A message info: a pair of debug handle and message
  */
-typedef struct _msg_info_t {
+typedef struct msg_info_t {
   const char *msg;
   const firm_dbg_module_t *mod;
 } msg_info_t;

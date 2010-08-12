@@ -43,7 +43,7 @@
 /**
  * An edge.
  */
-struct _ir_edge_t {
+struct ir_edge_t {
 	ir_node  *src;          /**< The source node of the edge. */
 	int      pos;           /**< The position of the edge at @p src. */
 	unsigned invalid : 1;   /**< edges that are removed are marked invalid. */

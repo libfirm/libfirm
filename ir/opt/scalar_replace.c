@@ -64,7 +64,7 @@ typedef union {
  * An access path, used to assign value numbers
  * to variables that will be scalar replaced.
  */
-typedef struct _path_t {
+typedef struct path_t {
 	unsigned    vnum;      /**< The value number. */
 	unsigned    path_len;  /**< The length of the access path. */
 	path_elem_t path[1];   /**< The path. */
@@ -73,7 +73,7 @@ typedef struct _path_t {
 /** The size of a path in bytes. */
 #define PATH_SIZE(p)  (sizeof(*(p)) + sizeof((p)->path[0]) * ((p)->path_len - 1))
 
-typedef struct _scalars_t {
+typedef struct scalars_t {
 	ir_entity *ent;              /**< A entity for scalar replacement. */
 } scalars_t;
 
@@ -537,7 +537,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 /**
  * A list entry for the fixing lists
  */
-typedef struct _list_entry_t {
+typedef struct list_entry_t {
 	ir_node  *node;   /**< the node that must be fixed */
 	unsigned vnum;    /**< the value number of this node */
 } list_entry_t;
@@ -545,7 +545,7 @@ typedef struct _list_entry_t {
 /**
  * environment for memory walker
  */
-typedef struct _env_t {
+typedef struct env_t {
 	int          nvals;       /**< number of values */
 	ir_mode      **modes;     /**< the modes of the values */
 	pset         *sels;       /**< A set of all Sel nodes that have a value number */

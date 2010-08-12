@@ -34,7 +34,7 @@
 
 #include "beirg.h"
 
-typedef struct _mris_env_t mris_env_t;
+typedef struct mris_env_t mris_env_t;
 
 /**
  * Preprocess the irg with the MRIS algorithm.

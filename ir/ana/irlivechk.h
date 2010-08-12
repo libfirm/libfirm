@@ -43,7 +43,7 @@ typedef enum {
 	lv_chk_state_through = lv_chk_state_in | lv_chk_state_out | lv_chk_state_end,
 } lv_chk_state_t;
 
-typedef struct _lv_chk_t lv_chk_t;
+typedef struct lv_chk_t lv_chk_t;
 
 /**
  * Make a new liveness check environment.

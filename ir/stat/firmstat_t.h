@@ -58,7 +58,7 @@ typedef pset hmap_distrib_entry_t;
 /**
  * An entry in a distribution table
  */
-typedef struct _distrib_entry_t {
+typedef struct distrib_entry_t {
 	counter_t	 cnt;       /**< the current count */
 	const void *object;   /**< the object which is counted */
 } distrib_entry_t;
@@ -69,7 +69,7 @@ typedef unsigned (*distrib_hash_fun)(const void *object);
 /**
  * The distribution table.
  */
-typedef struct _distrib_tbl_t {
+typedef struct distrib_tbl_t {
 	struct obstack            cnts;       /**< obstack containing the distrib_entry_t entries */
 	HASH_MAP(distrib_entry_t) *hash_map;  /**< the hash map containing the distribution */
 	distrib_hash_fun          hash_func;  /**< the hash function for object in this distribution */
@@ -88,7 +88,7 @@ enum adr_marker_t {
 /**
  * An entry in the address_mark set
  */
-typedef struct _address_mark_entry_t {
+typedef struct address_mark_entry_t {
   ir_node  *node;               /**< the node which this entry belongs to, needed for compare */
   unsigned mark;                /**< the mark, a bitmask of enum adr_marker_t */
 } address_mark_entry_t;
@@ -96,7 +96,7 @@ typedef struct _address_mark_entry_t {
 /**
  * An entry for ir_nodes, used in ir_graph statistics.
  */
-typedef struct _node_entry_t {
+typedef struct node_entry_t {
 	counter_t   cnt_alive;    /**< amount of nodes in this entry */
 	counter_t   new_node;     /**< amount of new nodes for this entry */
 	counter_t   into_Id;      /**< amount of nodes that turned into Id's for this entry */
@@ -148,7 +148,7 @@ enum graph_counter_names {
 /**
  * An entry for ir_graphs. These numbers are calculated for every IR graph.
  */
-typedef struct _graph_entry_t {
+typedef struct graph_entry_t {
 	struct obstack             recalc_cnts;                  /**< obstack containing the counters that are recalculated */
 	HASH_MAP(node_entry_t)     *opcode_hash;                 /**< hash map containing the opcode counter */
 	HASH_MAP(block_entry_t)    *block_hash;                  /**< hash map containing the block counter */
@@ -172,7 +172,7 @@ typedef struct _graph_entry_t {
 /**
  * An entry for optimized ir_nodes
  */
-typedef struct _opt_entry_t {
+typedef struct opt_entry_t {
 	counter_t   count;    /**< optimization counter */
 	const ir_op *op;      /**< the op for this entry */
 } opt_entry_t;
@@ -180,7 +180,7 @@ typedef struct _opt_entry_t {
 /**
  * An entry for register pressure.
  */
-typedef struct _reg_pressure_entry_t {
+typedef struct reg_pressure_entry_t {
 	const char *class_name; /**< name of the register class */
 	int         pressure;   /**< the register pressure for this class */
 } reg_pressure_entry_t;
@@ -188,7 +188,7 @@ typedef struct _reg_pressure_entry_t {
 /**
  * An entry for permutation statistics.
  */
-typedef struct _perm_stat_entry_t {
+typedef struct perm_stat_entry_t {
 	ir_node       *perm;       /**< the perm node */
 	int            size;       /**< complete size */
 	int            real_size;  /**< number of pairs with different registers */
@@ -201,7 +201,7 @@ typedef struct _perm_stat_entry_t {
 /**
  * An entry for permutation statistics per class.
  */
-typedef struct _perm_class_entry_t {
+typedef struct perm_class_entry_t {
 	const char                  *class_name; /**< name of the register class */
 	int                          n_regs;     /**< number of register in this class */
 	HASH_MAP(perm_stat_entry_t) *perm_stat;  /**< statistics about all perm nodes of this class */
@@ -210,7 +210,7 @@ typedef struct _perm_class_entry_t {
 /**
  * An entry for a block or extended block in a ir-graph
  */
-typedef struct _be_block_entry_t {
+typedef struct be_block_entry_t {
 	long                           block_nr;         /**< block nr */
 	distrib_tbl_t                  *sched_ready;     /**< distribution of ready nodes per block */
 	/**< the highest register pressures for this block for each register class */
@@ -236,7 +236,7 @@ enum block_counter_names {
 /**
  * An entry for a block or extended block in a ir-graph
  */
-typedef struct _block_entry_t {
+typedef struct block_entry_t {
 	counter_t       cnt[_bcnt_last];  /**< counter */
 	long            block_nr;         /**< block nr */
 	unsigned        is_start:1;       /**< set, if it's the Start block. */
@@ -249,7 +249,7 @@ typedef block_entry_t extbb_entry_t;
 /**
  * Some potential interesting float values
  */
-typedef enum _float_classify_t {
+typedef enum float_classify_t {
 	STAT_FC_0,                /**< the float value 0.0 */
 	STAT_FC_1,                /**< the float value 1.0 */
 	STAT_FC_2,                /**< the float value 2.0 */
@@ -262,14 +262,14 @@ typedef enum _float_classify_t {
 /**
  * constant info
  */
-typedef struct _constant_info_t {
+typedef struct constant_info_t {
 	counter_t  int_bits_count[32];  /**< distribution of bit sizes of integer constants */
 	counter_t  floats[STAT_FC_MAX]; /**< floating point constants */
 	counter_t  others;              /**< all other constants */
 } constant_info_t;
 
 /** forward */
-typedef struct _dumper_t dumper_t;
+typedef struct dumper_t dumper_t;
 
 /**
  * handler for dumping an IRG
@@ -314,7 +314,7 @@ typedef void (*dump_finish_FUNC)(dumper_t *dmp);
 /**
  * statistics info
  */
-typedef struct _statistic_info_t {
+typedef struct statistic_info_t {
 	unsigned                stat_options;        /**< statistic options: field must be first */
 	struct obstack          cnts;                /**< obstack containing the counters that are incremented */
 	struct obstack          be_data;             /**< obstack containing backend statistics data */
@@ -344,7 +344,7 @@ typedef struct _statistic_info_t {
 /**
  * a dumper description
  */
-struct _dumper_t {
+struct dumper_t {
 	dump_graph_FUNC         dump_graph;     /**< handler for dumping an irg */
 	dump_const_table_FUNC   dump_const_tbl; /**< handler for dumping a const table */
 	dump_param_tbl_FUNC     dump_param_tbl; /**< handler for dumping the Call parameter table */

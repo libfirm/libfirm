@@ -119,7 +119,7 @@ static int remove_senseless_conds(ir_node *bl)
 }
 
 /** An environment for merge_blocks and collect nodes. */
-typedef struct _merge_env {
+typedef struct merge_env {
 	int changed;    /**< Set if the graph was changed. */
 	int phis_moved; /**< Set if Phi nodes were moved. */
 	plist_t *list;  /**< Helper list for all found Switch Conds. */
