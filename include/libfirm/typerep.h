@@ -253,8 +253,11 @@ FIRM_API const char *get_entity_ld_name(const ir_entity *ent);
 /** Returns the owner of the entity. */
 FIRM_API ir_type *get_entity_owner(const ir_entity *ent);
 
-/** Sets the owner field in entity to owner.  Don't forget to add
-   ent to owner!! */
+/**
+ * Sets the owner field in entity to owner.
+ * Automatically removes entity from old owner type and adds it to the new
+ * one.
+ */
 FIRM_API void set_entity_owner(ir_entity *ent, ir_type *owner);
 
 /** Returns the type of an entity. */
