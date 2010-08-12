@@ -48,10 +48,10 @@
 
 pbqp_edge **edge_bucket;
 pbqp_edge **rm_bucket;
-pbqp_node **rn_bucket;
 pbqp_node **node_buckets[4];
 pbqp_node **reduced_bucket = NULL;
-static int         buckets_filled = 0;
+pbqp_node  *merged_node = NULL;
+static int  buckets_filled = 0;
 
 static void insert_into_edge_bucket(pbqp_edge *edge)
 {
@@ -80,7 +80,6 @@ static void init_buckets(void)
 	edge_bucket_init(&edge_bucket);
 	edge_bucket_init(&rm_bucket);
 	node_bucket_init(&reduced_bucket);
-	node_bucket_init(&rn_bucket);
 
 	for (i = 0; i < 4; ++i) {
 		node_bucket_init(&node_buckets[i]);
@@ -98,7 +97,6 @@ void free_buckets(void)
 	edge_bucket_free(&edge_bucket);
 	edge_bucket_free(&rm_bucket);
 	node_bucket_free(&reduced_bucket);
-	node_bucket_free(&rn_bucket);
 
 	buckets_filled = 0;
 }
@@ -426,9 +424,6 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 		insert_into_rm_bucket(new_edge);
 	}
 
-	/* Reduce the remaining source node via RI. */
-	apply_RI(pbqp);
-
 #if KAPS_STATISTIC
 	pbqp->num_r1--;
 #endif
@@ -588,9 +583,6 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 		insert_into_rm_bucket(new_edge);
 	}
 
-	/* Reduce the remaining source node via RI. */
-	apply_RI(pbqp);
-
 #if KAPS_STATISTIC
 	pbqp->num_r1--;
 #endif
@@ -629,7 +621,7 @@ void apply_RM(pbqp *pbqp, pbqp_node *node)
 			merge_source_into_target(pbqp, edge);
 	}
 
-	node_bucket_insert(&rn_bucket, node);
+	merged_node = node;
 }
 
 void reorder_node(pbqp_node *node)

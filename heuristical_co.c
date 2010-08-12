@@ -85,7 +85,8 @@ static void apply_RN_co(pbqp *pbqp)
 
 	assert(pbqp);
 
-	node = node_bucket_pop(&rn_bucket);
+	node        = merged_node;
+	merged_node = NULL;
 	assert(node);
 
 	if (node_is_reduced(node))
@@ -152,7 +153,7 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 			#if KAPS_TIMING
 				ir_timer_stop(t_r2);
 			#endif
-		} else if (node_bucket_get_length(rn_bucket) > 0) {
+		} else if (merged_node != NULL) {
 			#if KAPS_TIMING
 				ir_timer_start(t_rn);
 			#endif
