@@ -66,14 +66,6 @@ static void merge_into_RN_node(pbqp *pbqp, plist_t *rpeo)
 	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
-#if	KAPS_DUMP
-	if (pbqp->dump_file) {
-		char     txt[100];
-		sprintf(txt, "RN-Reduction of Node n%d", node->index);
-		dump_section(pbqp->dump_file, 2, txt);
-		pbqp_dump_graph(pbqp);
-	}
-#endif
 	/* Check whether we can merge a neighbor into the current node. */
 	apply_RM(pbqp, node);
 }
@@ -91,6 +83,15 @@ static void apply_RN_co(pbqp *pbqp)
 
 	if (node_is_reduced(node))
 		return;
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		char     txt[100];
+		sprintf(txt, "RN-Reduction of Node n%d", node->index);
+		dump_section(pbqp->dump_file, 2, txt);
+		pbqp_dump_graph(pbqp);
+	}
+#endif
 
 	min_index = get_local_minimal_alternative(pbqp, node);
 

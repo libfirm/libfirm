@@ -348,6 +348,14 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 	pbqp->num_rm++;
 #endif
 
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		char txt[100];
+		sprintf(txt, "Merging n%d into n%d", src_node->index, tgt_node->index);
+		dump_section(pbqp->dump_file, 3, txt);
+	}
+#endif
+
 	/* Reconnect the source's edges with the target node. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
 		pbqp_edge   *old_edge = src_node->edges[edge_index];
@@ -512,6 +520,14 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 
 #if KAPS_STATISTIC
 	pbqp->num_rm++;
+#endif
+
+#if	KAPS_DUMP
+	if (pbqp->dump_file) {
+		char txt[100];
+		sprintf(txt, "Merging n%d into n%d", tgt_node->index, src_node->index);
+		dump_section(pbqp->dump_file, 3, txt);
+	}
 #endif
 
 	/* Reconnect the target's edges with the source node. */
