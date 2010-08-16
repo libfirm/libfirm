@@ -91,6 +91,9 @@ void delete_edge(pbqp_edge *edge)
 
 	disconnect_edge(src_node, edge);
 	disconnect_edge(tgt_node, edge);
+
+	reorder_node(src_node);
+	reorder_node(tgt_node);
 }
 
 pbqp_edge *pbqp_edge_deep_copy(pbqp *pbqp, pbqp_edge *edge,

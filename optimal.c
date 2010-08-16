@@ -417,8 +417,6 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 		add_edge_costs(pbqp, tgt_node->index, other_node->index, new_matrix);
 
 		delete_edge(old_edge);
-		reorder_node(src_node);
-		reorder_node(other_node);
 
 		new_edge = get_edge(pbqp, tgt_node->index, other_node->index);
 		insert_into_rm_bucket(new_edge);
@@ -576,8 +574,6 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 		add_edge_costs(pbqp, src_node->index, other_node->index, new_matrix);
 
 		delete_edge(old_edge);
-		reorder_node(tgt_node);
-		reorder_node(other_node);
 
 		new_edge = get_edge(pbqp, src_node->index, other_node->index);
 		insert_into_rm_bucket(new_edge);
@@ -722,8 +718,6 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 #endif
 
 		delete_edge(edge);
-		reorder_node(src_node);
-		reorder_node(tgt_node);
 	}
 }
 
@@ -1256,8 +1250,6 @@ static void select_column(pbqp_edge *edge, unsigned col_index)
 	}
 
 	delete_edge(edge);
-	reorder_node(src_node);
-	reorder_node(tgt_node);
 }
 
 static void select_row(pbqp_edge *edge, unsigned row_index)
@@ -1311,8 +1303,6 @@ static void select_row(pbqp_edge *edge, unsigned row_index)
 	}
 
 	delete_edge(edge);
-	reorder_node(src_node);
-	reorder_node(tgt_node);
 }
 
 void select_alternative(pbqp_node *node, unsigned selected_index)
