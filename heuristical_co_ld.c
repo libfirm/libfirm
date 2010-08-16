@@ -146,10 +146,10 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 
 static void back_propagate_RN(pbqp *pbqp, pbqp_node *node)
 {
-	vector 			*vec		= NULL;
-	pbqp_node		*neighbor	= NULL;
-	pbqp_edge		*edge		= NULL;
-	unsigned 		 idx 		= 0;
+	vector    *vec      = NULL;
+	pbqp_node *neighbor = NULL;
+	pbqp_edge *edge     = NULL;
+	unsigned   idx      = 0;
 
 	assert(pbqp);
 
@@ -160,9 +160,11 @@ static void back_propagate_RN(pbqp *pbqp, pbqp_node *node)
 		edge = node->edges[idx];
 		neighbor = edge->src == node ? edge->tgt : edge->src;
 
-		if(edge->src == node)  	/* node is edge src node */
+		/* node is edge src node */
+		if(edge->src == node)
 			vector_add_matrix_col(vec, edge->costs, neighbor->solution);
-		else					/* node is edge tgt node */
+		/* node is edge tgt node */
+		else
 			vector_add_matrix_row(vec, edge->costs, neighbor->solution);
 	}
 
@@ -210,10 +212,10 @@ static void back_propagate_ld(pbqp *pbqp)
 
 static void apply_RN_co_without_selection(pbqp *pbqp, plist_t *rpeo)
 {
-	pbqp_node   *node         	= NULL;
-	pbqp_node	*neighbor	  	= NULL;
-	pbqp_edge   *edge         	= NULL;
-	unsigned	 idx		  	= 0;
+	pbqp_node *node     = NULL;
+	pbqp_node *neighbor = NULL;
+	pbqp_edge *edge     = NULL;
+	unsigned   idx      = 0;
 
 	(void)pbqp;
 
