@@ -620,7 +620,7 @@ void apply_RM(pbqp *pbqp, pbqp_node *node)
 	merged_node = node;
 }
 
-void reorder_node(pbqp_node *node)
+void reorder_node_after_edge_deletion(pbqp_node *node)
 {
 	unsigned    degree     = pbqp_node_get_degree(node);
 	/* Assume node lost one incident edge. */
@@ -630,12 +630,6 @@ void reorder_node(pbqp_node *node)
 
 	/* Same bucket as before */
 	if (degree > 2) return;
-
-	if (!node_bucket_contains(node_buckets[old_degree], node)) {
-		/* Old arity is new arity, so we have nothing to do. */
-		assert(node_bucket_contains(node_buckets[degree], node));
-		return;
-	}
 
 	/* Delete node from old bucket... */
 	node_bucket_remove(&node_buckets[old_degree], node);
@@ -1041,7 +1035,7 @@ void apply_RI(pbqp *pbqp)
 	}
 #endif
 
-	reorder_node(other_node);
+	reorder_node_after_edge_deletion(other_node);
 
 #if KAPS_STATISTIC
 	pbqp->num_r1++;
@@ -1177,8 +1171,8 @@ void apply_RII(pbqp *pbqp)
 		/* Free local matrix. */
 		obstack_free(&pbqp->obstack, mat);
 
-		reorder_node(src_node);
-		reorder_node(tgt_node);
+		reorder_node_after_edge_deletion(src_node);
+		reorder_node_after_edge_deletion(tgt_node);
 	}
 
 #if	KAPS_DUMP

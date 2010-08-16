@@ -31,6 +31,7 @@
 
 #include "kaps.h"
 #include "matrix.h"
+#include "optimal.h"
 #include "pbqp_edge.h"
 #include "pbqp_edge_t.h"
 #include "pbqp_node.h"
@@ -95,8 +96,8 @@ void delete_edge(pbqp_edge *edge)
 	edge->src = NULL;
 	edge->tgt = NULL;
 
-	reorder_node(src_node);
-	reorder_node(tgt_node);
+	reorder_node_after_edge_deletion(src_node);
+	reorder_node_after_edge_deletion(tgt_node);
 }
 
 unsigned is_deleted(pbqp_edge *edge)

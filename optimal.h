@@ -49,7 +49,7 @@ pbqp_node *get_node_with_max_degree(void);
 void initial_simplify_edges(pbqp *pbqp);
 void select_alternative(pbqp_node *node, unsigned selected_index);
 void simplify_edge(pbqp *pbqp, pbqp_edge *edge);
-void reorder_node(pbqp_node *node);
+void reorder_node_after_edge_deletion(pbqp_node *node);
 
 int node_is_reduced(pbqp_node *node);
 

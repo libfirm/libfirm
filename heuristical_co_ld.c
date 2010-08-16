@@ -252,7 +252,7 @@ static void apply_RN_co_without_selection(pbqp *pbqp, plist_t *rpeo)
 			continue;
 
 		disconnect_edge(neighbor, edge);
-		reorder_node(neighbor);
+		reorder_node_after_edge_deletion(neighbor);
 	}
 
 	/* Remove node from old bucket */
