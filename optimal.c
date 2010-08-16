@@ -414,11 +414,20 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 			}
 		}
 
+		new_edge = get_edge(pbqp, tgt_node->index, other_node->index);
+
 		add_edge_costs(pbqp, tgt_node->index, other_node->index, new_matrix);
+
+		if (new_edge == NULL) {
+			reorder_node_after_edge_insertion(tgt_node);
+			reorder_node_after_edge_insertion(other_node);
+		}
 
 		delete_edge(old_edge);
 
 		new_edge = get_edge(pbqp, tgt_node->index, other_node->index);
+		simplify_edge(pbqp, new_edge);
+
 		insert_into_rm_bucket(new_edge);
 	}
 
@@ -571,11 +580,20 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 			}
 		}
 
+		new_edge = get_edge(pbqp, src_node->index, other_node->index);
+
 		add_edge_costs(pbqp, src_node->index, other_node->index, new_matrix);
+
+		if (new_edge == NULL) {
+			reorder_node_after_edge_insertion(src_node);
+			reorder_node_after_edge_insertion(other_node);
+		}
 
 		delete_edge(old_edge);
 
 		new_edge = get_edge(pbqp, src_node->index, other_node->index);
+		simplify_edge(pbqp, new_edge);
+
 		insert_into_rm_bucket(new_edge);
 	}
 
@@ -611,9 +629,10 @@ void apply_RM(pbqp *pbqp, pbqp_node *node)
 		pbqp_edge *edge = edge_bucket_pop(&rm_bucket);
 		assert(edge);
 
+		/* If the edge is not deleted: Try a merge. */
 		if (edge->src == node)
 			merge_target_into_source(pbqp, edge);
-		else
+		else if (edge->tgt == node)
 			merge_source_into_target(pbqp, edge);
 	}
 
