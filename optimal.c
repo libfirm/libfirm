@@ -665,7 +665,7 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	assert(tgt_node);
 
 	/* If edge are already deleted, we have nothing to do. */
-	if (!is_connected(src_node, edge) || !is_connected(tgt_node, edge))
+	if (is_deleted(edge))
 		return;
 
 #if	KAPS_DUMP

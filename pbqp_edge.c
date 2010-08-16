@@ -92,8 +92,22 @@ void delete_edge(pbqp_edge *edge)
 	disconnect_edge(src_node, edge);
 	disconnect_edge(tgt_node, edge);
 
+	edge->src = NULL;
+	edge->tgt = NULL;
+
 	reorder_node(src_node);
 	reorder_node(tgt_node);
+}
+
+unsigned is_deleted(pbqp_edge *edge)
+{
+	unsigned deleted;
+
+	assert(edge);
+
+	deleted = (edge->src == NULL) && (edge-> tgt == NULL);
+
+	return deleted;
 }
 
 pbqp_edge *pbqp_edge_deep_copy(pbqp *pbqp, pbqp_edge *edge,
