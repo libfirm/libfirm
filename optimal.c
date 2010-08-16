@@ -638,6 +638,24 @@ void reorder_node_after_edge_deletion(pbqp_node *node)
 	node_bucket_insert(&node_buckets[degree], node);
 }
 
+void reorder_node_after_edge_insertion(pbqp_node *node)
+{
+	unsigned    degree     = pbqp_node_get_degree(node);
+	/* Assume node lost one incident edge. */
+	unsigned    old_degree = degree - 1;
+
+	if (!buckets_filled) return;
+
+	/* Same bucket as before */
+	if (old_degree > 2) return;
+
+	/* Delete node from old bucket... */
+	node_bucket_remove(&node_buckets[old_degree], node);
+
+	/* ..and add to new one. */
+	node_bucket_insert(&node_buckets[degree], node);
+}
+
 void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 {
 	pbqp_matrix    *mat;
