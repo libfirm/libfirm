@@ -400,10 +400,9 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 		changed = true;
 	}
 	if (changed) {
-		ir_graph *irg = get_irn_irg(node);
 		bool *global_changed = env;
 		*global_changed = true;
-		add_identities(irg->value_table, node);
+		add_identities(node);
 	}
 }
 

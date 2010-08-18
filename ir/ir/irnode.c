@@ -263,6 +263,7 @@ ir_node *(get_irn_n)(const ir_node *node, int n)
 
 void set_irn_n(ir_node *node, int n, ir_node *in)
 {
+	ir_graph *irg = get_irn_irg(node);
 	assert(node && node->kind == k_ir_node);
 	assert(-1 <= n);
 	assert(n < get_irn_arity(node));
@@ -272,7 +273,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	hook_set_irn_n(node, n, in, node->in[n + 1]);
 
 	/* Here, we rely on src and tgt being in the current ir graph */
-	edges_notify_edge(node, n, in, node->in[n + 1], current_ir_graph);
+	edges_notify_edge(node, n, in, node->in[n + 1], irg);
 
 	node->in[n + 1] = in;
 }
@@ -613,7 +614,6 @@ void (set_Block_block_visited)(ir_node *node, ir_visited_t visit)
 	_set_Block_block_visited(node, visit);
 }
 
-/* For this current_ir_graph must be set. */
 void (mark_Block_block_visited)(ir_node *node)
 {
 	_mark_Block_block_visited(node);
@@ -1162,9 +1162,11 @@ ir_entity *get_Call_callee(const ir_node *node, int pos)
 
 void set_Call_callee_arr(ir_node *node, const int n, ir_entity ** arr)
 {
+	ir_graph *irg = get_irn_irg(node);
+
 	assert(is_Call(node));
 	if (node->attr.call.callee_arr == NULL || get_Call_n_callees(node) != n) {
-		node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, current_ir_graph->obst, n);
+		node->attr.call.callee_arr = NEW_ARR_D(ir_entity *, irg->obst, n);
 	}
 	memcpy(node->attr.call.callee_arr, arr, n * sizeof(ir_entity *));
 }

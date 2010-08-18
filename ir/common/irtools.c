@@ -170,10 +170,9 @@ static ir_node *get_new_node(const ir_node *old_node)
 
 void irn_rewire_inputs(ir_node *node)
 {
-	ir_graph *new_irg;
-	ir_node  *new_node;
-	int       arity;
-	int       i;
+	ir_node *new_node;
+	int      arity;
+	int      i;
 
 	new_node = get_new_node(node);
 
@@ -199,8 +198,7 @@ void irn_rewire_inputs(ir_node *node)
 	}
 
 	/* Now the new node is complete. We can add it to the hash table for CSE. */
-	new_irg = get_irn_irg(new_node);
-	add_identities(new_irg->value_table, new_node);
+	add_identities(new_node);
 }
 
 void firm_pset_dump(pset *set)

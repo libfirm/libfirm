@@ -188,8 +188,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	res->last_node_idx = 0;
 
-	res->value_table = new_identities(); /* value table for global value
-	                                        numbering for optimizing use in iropt.c */
+	new_identities(res);
 	res->outs = NULL;
 
 	res->inline_property       = irg_inline_any;
@@ -305,7 +304,7 @@ ir_graph *new_const_code_irg(void)
 	res->fp_model         = fp_model_precise;
 
 	/* value table for global value numbering for optimizing use in iropt.c */
-	res->value_table = new_identities();
+	new_identities(res);
 	res->ent         = NULL;
 	res->frame_type  = NULL;
 
@@ -424,7 +423,7 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	res->extblk_state     = ir_extblk_info_none;
 	res->fp_model         = irg->fp_model;
 
-	res->value_table = new_identities();
+	new_identities(res);
 
 	/* clone the frame type here for safety */
 	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
@@ -481,8 +480,7 @@ void free_ir_graph(ir_graph *irg)
 		free_irg_outs(irg);
 	if (irg->frame_type)
 		free_type(irg->frame_type);
-	if (irg->value_table)
-		del_identities(irg->value_table);
+	del_identities(irg);
 	if (irg->ent) {
 		set_entity_irg(irg->ent, NULL);  /* not set in const code irg */
 	}

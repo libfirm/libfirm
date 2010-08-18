@@ -83,7 +83,6 @@ typedef struct pre_env {
 	char first_iter;        /**< non-zero for first iteration */
 } pre_env;
 
-static pset         *value_table;
 static ir_nodemap_t value_map;
 
 /** The debug module handle. */
@@ -117,14 +116,14 @@ static ir_node *add(ir_node *e, ir_node *v)
 {
 	if (is_Proj(v)) {
 		ir_node *pred = get_Proj_pred(v);
-		ir_node *v_pred = identify_remember(value_table, pred);
+		ir_node *v_pred = identify_remember(pred);
 
 		if (v_pred != pred) {
 			/* must create a new value here */
 			v = new_r_Proj(v_pred, get_irn_mode(v), get_Proj_proj(v));
 		}
 	}
-	v = identify_remember(value_table, v);
+	v = identify_remember(v);
 	ir_nodemap_insert(&value_map, e, v);
 	return v;
 }  /* add */
@@ -141,7 +140,7 @@ static ir_node *lookup(ir_node *e)
 {
 	ir_node *value = ir_nodemap_get(&value_map, e);
 	if (value != NULL)
-		return identify_remember(value_table, value);
+		return identify_remember(value);
 	return NULL;
 }  /* lookup */
 
@@ -395,7 +394,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 	nn = new_ir_node(
 		get_irn_dbg_info(node),
 		current_ir_graph,
-		NULL,
+		get_nodes_block(node),
 		get_irn_op(node),
 		get_irn_mode(node),
 		arity,
@@ -404,7 +403,6 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 	   node might depend on that. */
 	copy_node_attr(current_ir_graph, node, nn);
 
-	set_nodes_block(nn, get_nodes_block(node));
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred    = get_irn_n(node, i);
 		ir_node *leader  = lookup(pred);
@@ -807,7 +805,7 @@ void do_gvn_pre(ir_graph *irg)
 	/* edges will crash if enabled due to our allocate on other obstack trick */
 	edges_deactivate(irg);
 
-	value_table = new_identities();
+	new_identities(irg);
 	ir_nodemap_init(&value_map);
 
 	obstack_init(&obst);
@@ -891,10 +889,8 @@ void do_gvn_pre(ir_graph *irg)
 		if (bl_info->new_set)
 			ir_valueset_del(bl_info->new_set);
 	}
-	del_identities(value_table);
 	ir_nodemap_destroy(&value_map);
 	obstack_free(&obst, NULL);
-	value_table = NULL;
 
 	/* pin the graph again: This is needed due to the use of set_opt_global_cse(1) */
 	set_irg_pinned(irg, op_pin_state_pinned);

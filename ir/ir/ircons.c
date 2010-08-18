@@ -61,7 +61,7 @@ static uninitialized_local_variable_func_t *default_initialize_local_variable = 
 static ir_node *new_bd_Start(dbg_info *db, ir_node *block)
 {
 	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 
 	res = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
 
@@ -72,7 +72,7 @@ static ir_node *new_bd_Start(dbg_info *db, ir_node *block)
 static ir_node *new_bd_End(dbg_info *db, ir_node *block)
 {
 	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 
 	res = new_ir_node(db, irg, block, op_End, mode_X, -1, NULL);
 
@@ -87,7 +87,7 @@ static ir_node *new_bd_End(dbg_info *db, ir_node *block)
 static ir_node *new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
 {
 	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 	int i;
 	int has_unknown = 0;
 
@@ -162,7 +162,7 @@ static ir_node *new_bd_Sel(dbg_info *db, ir_node *block, ir_node *store,
 	ir_node  **r_in;
 	ir_node  *res;
 	int      r_arity;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg  = get_irn_irg(block);
 	ir_mode  *mode = is_Method_type(get_entity_type(ent)) ? mode_P_code : mode_P_data;
 
 	assert(ent != NULL && is_entity(ent) && "entity expected in Sel construction");
@@ -186,7 +186,7 @@ static ir_node *new_bd_SymConst_type(dbg_info *db, ir_node *block,
                                      ir_mode *mode, symconst_symbol value,
                                      symconst_kind symkind, ir_type *tp)
 {
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 	ir_node  *res = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
 
 	res->attr.symc.kind = symkind;
@@ -201,7 +201,7 @@ static ir_node *new_bd_SymConst_type(dbg_info *db, ir_node *block,
 static ir_node *new_bd_Sync(dbg_info *db, ir_node *block)
 {
 	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 
 	res = new_ir_node(db, irg, block, op_Sync, mode_M, -1, NULL);
 	/* no need to call optimize node here, Sync are always created with no predecessors */
@@ -215,7 +215,7 @@ static ir_node *new_bd_ASM(dbg_info *db, ir_node *block, int arity,
 	                         ident *clobber[], ident *text)
 {
 	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 
 	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
 	res->attr.assem.pin_state = op_pin_state_pinned;
@@ -1444,6 +1444,14 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
 ir_node *new_Anchor(ir_graph *irg)
 {
 	ir_node *in[anchor_last];
+	ir_node *res;
 	memset(in, 0, sizeof(in));
-	return new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
+	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
+
+	/* hack to get get_irn_irg working: set block to ourself and allow
+	 * get_Block_irg for anchor */
+	res->attr.irg.irg = irg;
+	res->in[0] = res;
+
+	return res;
 }

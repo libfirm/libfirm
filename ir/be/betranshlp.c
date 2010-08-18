@@ -256,7 +256,7 @@ static void fix_loops(ir_node *node)
 	}
 
 	if (changed) {
-		identify_remember(current_ir_graph->value_table, node);
+		identify_remember(node);
 	}
 }
 
@@ -361,7 +361,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		fix_loops(anchor);
 		set_irn_n(new_anchor, i, anchor);
 	}
-	set_nodes_block(new_anchor, get_irg_anchor(irg, anchor_end_block));
 
 	del_waitq(env.worklist);
 	free_End(old_end);
@@ -445,8 +444,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	irg_invalidate_phases(irg);
 
 	/* create new value table for CSE */
-	del_identities(irg->value_table);
-	irg->value_table = new_identities();
+	new_identities(irg);
 
 	/* enter special helper */
 	op_Block->ops.generic = (op_func)gen_Block;

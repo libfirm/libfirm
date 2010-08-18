@@ -53,6 +53,7 @@ class Anchor(Op):
 	arity       = "variable"
 	flags       = [ "dump_noblock" ]
 	pinned      = "yes"
+	attr_struct = "irg_attr"
 	knownBlock  = True
 	singleton   = True
 

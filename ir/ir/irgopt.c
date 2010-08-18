@@ -71,18 +71,19 @@ static void optimize_in_place_wrapper(ir_node *n, void *env)
  */
 static inline void do_local_optimize(ir_node *n)
 {
+	ir_graph *irg = get_irn_irg(n);
+
 	/* Handle graph state */
-	assert(get_irg_phase_state(current_ir_graph) != phase_building);
+	assert(get_irg_phase_state(irg) != phase_building);
 
 	if (get_opt_global_cse())
-		set_irg_pinned(current_ir_graph, op_pin_state_floats);
-	set_irg_outs_inconsistent(current_ir_graph);
-	set_irg_doms_inconsistent(current_ir_graph);
-	set_irg_loopinfo_inconsistent(current_ir_graph);
+		set_irg_pinned(irg, op_pin_state_floats);
+	set_irg_outs_inconsistent(irg);
+	set_irg_doms_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
 
 	/* Clean the value_table in irg for the CSE. */
-	del_identities(current_ir_graph->value_table);
-	current_ir_graph->value_table = new_identities();
+	new_identities(irg);
 
 	/* walk over the graph */
 	irg_walk(n, firm_clear_link, optimize_in_place_wrapper, NULL);
@@ -184,11 +185,10 @@ int optimize_graph_df(ir_graph *irg)
 	state = edges_assure(irg);
 
 	if (get_opt_global_cse())
-		set_irg_pinned(current_ir_graph, op_pin_state_floats);
+		set_irg_pinned(irg, op_pin_state_floats);
 
 	/* Clean the value_table in irg for the CSE. */
-	del_identities(irg->value_table);
-	irg->value_table = new_identities();
+	new_identities(irg);
 
 	if (get_irg_dom_state(irg) == dom_consistent)
 		irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);

@@ -125,7 +125,7 @@ struct ir_mode {
 
 /* ir node attributes */
 
-/** first attribute of Bad and Block nodes */
+/** first attribute of Bad, Block, Anchor nodes */
 typedef struct {
 	ir_graph *irg;              /**< The graph this block like node belongs to. */
 } irg_attr;

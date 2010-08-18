@@ -52,21 +52,20 @@ ir_node *equivalent_node(ir_node *n);
 /**
  * Creates a new value table used for storing CSE identities.
  * The value table is used to identify common expressions.
- *
  */
-pset *new_identities(void);
+void new_identities(ir_graph *irg);
 
 /**
  * Deletes a identities value table.
  *
  * @param value_table  the identity set
  */
-void del_identities(pset *value_table);
+void del_identities(ir_graph *irg);
 
 /**
  * Add a node to the identities value table.
  */
-void add_identities(pset *value_table, ir_node *node);
+void add_identities(ir_node *node);
 
 /**
  * Compare function for two nodes in the hash table. Gets two
@@ -79,7 +78,7 @@ int identities_cmp(const void *elt, const void *key);
  * Looks up the node in a hash table, enters it in the table
  * if it isn't there yet.
  */
-ir_node *identify_remember(pset *value_table, ir_node *n);
+ir_node *identify_remember(ir_node *n);
 
 /** Visit each node in the value table of a graph. */
 void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env);

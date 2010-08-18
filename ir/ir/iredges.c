@@ -273,6 +273,7 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
 	info->out_count += ofs;
 
 #if 0
+	ir_graph *irg = get_irn_irg(tgt);
 	assert(info->out_count >= 0);
 	if (info->out_count == 0 && kind == EDGE_KIND_NORMAL) {
 		/* tgt lost it's last user */
@@ -281,12 +282,12 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
 		for (i = get_irn_arity(tgt) - 1; i >= -1; --i) {
 			ir_node *prev = get_irn_n(tgt, i);
 
-			edges_notify_edge(tgt, i, NULL, prev, current_ir_graph);
+			edges_notify_edge(tgt, i, NULL, prev, irg);
 		}
 		for (i = get_irn_deps(tgt) - 1; i >= 0; --i) {
 			ir_node *prev = get_irn_dep(tgt, i);
 
-			edges_notify_edge_kind(tgt, i, NULL, prev, EDGE_KIND_DEP, current_ir_graph);
+			edges_notify_edge_kind(tgt, i, NULL, prev, EDGE_KIND_DEP, irg);
 
 		}
 	}

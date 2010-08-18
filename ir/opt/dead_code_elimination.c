@@ -175,8 +175,7 @@ void dead_node_elimination(ir_graph *irg)
 	irg->last_node_idx = 0;
 
 	/* We also need a new value table for CSE */
-	del_identities(irg->value_table);
-	irg->value_table = new_identities();
+	new_identities(irg);
 
 	/* Copy the graph from the old to the new obstack */
 	copy_graph_env(irg);

@@ -408,7 +408,6 @@ static inline void _set_Block_block_visited(ir_node *node, ir_visited_t visit)
 	node->attr.block.block_visited = visit;
 }
 
-/* For this current_ir_graph must be set. */
 static inline void _mark_Block_block_visited(ir_node *node)
 {
 	ir_graph *irg = get_Block_irg(node);
@@ -443,7 +442,7 @@ static inline int _is_Block_dead(const ir_node *block)
 
 static inline ir_graph *_get_Block_irg(const ir_node *block)
 {
-	assert(is_Block(block) || is_Bad(block));
+	assert(is_Block(block) || is_Bad(block) || is_Anchor(block));
 	return block->attr.irg.irg;
 }
 
