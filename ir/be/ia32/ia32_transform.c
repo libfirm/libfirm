@@ -3180,7 +3180,6 @@ enum setcc_transform_insn {
 
 typedef struct setcc_transform {
 	unsigned num_steps;
-	unsigned permutate_cmp_ins;
 	pn_Cmp   pnc;
 	struct {
 		enum setcc_transform_insn  transform;
@@ -3200,7 +3199,6 @@ static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f,
 	unsigned step = 0;
 
 	res->num_steps = 0;
-	res->permutate_cmp_ins = 0;
 
 	if (tarval_is_null(t)) {
 		tarval *tmp = t;
@@ -3445,23 +3443,25 @@ static ir_node *gen_Mux(ir_node *node)
 			if (is_Cmp(cmp)) {
 				ir_node  *cmp_left  = get_Cmp_left(cmp);
 				ir_node  *cmp_right = get_Cmp_right(cmp);
+				ir_node  *val_true  = mux_true;
+				ir_node  *val_false = mux_false;
 				pn_Cmp    pnc       = get_Proj_proj(cond);
 
-				if (is_Const(mux_true) && is_Const_null(mux_true)) {
-					ir_node *tmp = mux_false;
-					mux_false = mux_true;
-					mux_true  = tmp;
-					pnc       = get_negated_pnc(pnc, mode);
+				if (is_Const(val_true) && is_Const_null(val_true)) {
+					ir_node *tmp = val_false;
+					val_false = val_true;
+					val_true  = tmp;
+					pnc       = ia32_get_negated_pnc(pnc);
 				}
-				if (is_Const_0(mux_false) && is_Sub(mux_true)) {
+				if (is_Const_0(val_false) && is_Sub(val_true)) {
 					if ((pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge)
-						&& get_Sub_left(mux_true) == cmp_left
-						&& get_Sub_right(mux_true) == cmp_right) {
+						&& get_Sub_left(val_true) == cmp_left
+						&& get_Sub_right(val_true) == cmp_right) {
 						return create_doz(node, cmp_left, cmp_right);
 					}
 					if ((pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le)
-						&& get_Sub_left(mux_true) == cmp_right
-						&& get_Sub_right(mux_true) == cmp_left) {
+						&& get_Sub_left(val_true) == cmp_right
+						&& get_Sub_right(val_true) == cmp_left) {
 						return create_doz(node, cmp_right, cmp_left);
 					}
 				}
@@ -3479,10 +3479,6 @@ static ir_node *gen_Mux(ir_node *node)
 
 			find_const_transform(pnc, tv_true, tv_false, &res);
 			new_node = node;
-			if (res.permutate_cmp_ins) {
-				ia32_attr_t *attr = get_ia32_attr(flags);
-				attr->data.ins_permuted ^= 1;
-			}
 			for (step = (int)res.num_steps - 1; step >= 0; --step) {
 				ir_node *imm;
 
@@ -3519,7 +3515,7 @@ static ir_node *gen_Mux(ir_node *node)
 					new_node = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
 					break;
 				case SETCC_TR_SET:
-					new_node = create_set_32bit(dbgi, new_block, flags, res.pnc, new_node);
+					new_node = create_set_32bit(dbgi, new_block, flags, res.pnc, node);
 					break;
 				case SETCC_TR_SBB:
 					new_node = new_bd_ia32_Sbb0(dbgi, new_block, flags);
