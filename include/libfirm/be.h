@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "irarch.h"
 #include "lowering.h"
+#include "iroptimize.h"
 #include "begin.h"
 
 typedef enum {
@@ -77,7 +78,7 @@ typedef struct backend_params {
 	void *create_intrinsic_ctx;
 
 	/** Backend settings for if-conversion. */
-	const ir_settings_if_conv_t *if_conv_info;
+	arch_allow_ifconv_func allow_ifconv;
 
 	/**
 	 * some backends like x87 can only do arithmetic in a specific float

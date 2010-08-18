@@ -255,37 +255,23 @@ typedef int (*arch_allow_ifconv_func)(ir_node *sel, ir_node *mux_false,
                                       ir_node *mux_true);
 
 /**
- * The parameters structure.
- */
-struct ir_settings_if_conv_t {
-	int                 max_depth;       /**< The maximum depth up to which expressions
-	                                       are examined when it has to be decided if they
-	                                       can be placed into another block. */
-	arch_allow_ifconv_func allow_ifconv; /**< Evaluator function, if not set all possible Psi
-	                                       nodes will be created. */
-};
-
-/**
  * Perform If conversion on a graph.
  *
  * @param irg The graph.
- * @param params The parameters for the if conversion.
  *
  * Cannot handle blocks with Bad control predecessors, so call it after control
  * flow optimization.
  */
-FIRM_API void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params);
+FIRM_API void opt_if_conv(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for opt_if_conv().
  *
  * @param name     the name of this pass or NULL
- * @param params   The parameters for the if conversion.
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_API ir_graph_pass_t *opt_if_conv_pass(
-	const char *name, const ir_settings_if_conv_t *params);
+FIRM_API ir_graph_pass_t *opt_if_conv_pass(const char *name);
 
 /**
  * Tries to reduce dependencies for memory nodes where possible by parllelizing

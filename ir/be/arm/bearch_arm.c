@@ -680,10 +680,6 @@ static int arm_is_valid_clobber(const char *clobber)
  */
 static const backend_params *arm_get_libfirm_params(void)
 {
-	static const ir_settings_if_conv_t ifconv = {
-		4,                    /* maxdepth, doesn't matter for Psi-conversion */
-		arm_is_mux_allowed   /* allows or disallows Mux creation for given selector */
-	};
 	static ir_settings_arch_dep_t ad = {
 		1,    /* allow subs */
 		1,	  /* Muls are fast enough on ARM but ... */
@@ -696,10 +692,10 @@ static const backend_params *arm_get_libfirm_params(void)
 	static backend_params p = {
 		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */
-		NULL,  /* will be set later */
+		&ad,   /* will be set later */
 		NULL,  /* but yet no creator function */
 		NULL,  /* context for create_intrinsic_fkt */
-		NULL,  /* ifconv_info will be set below */
+		arm_is_mux_allowed, /* allow_ifconv function */
 		NULL,  /* float arithmetic mode (TODO) */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
@@ -707,8 +703,6 @@ static const backend_params *arm_get_libfirm_params(void)
 		4      /* alignment of stack parameter */
 	};
 
-	p.dep_param    = &ad;
-	p.if_conv_info = &ifconv;
 	return &p;
 }
 

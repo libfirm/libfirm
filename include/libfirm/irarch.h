@@ -80,11 +80,6 @@ struct ir_settings_arch_dep_t {
 typedef const ir_settings_arch_dep_t *(*arch_dep_params_factory_t)(void);
 
 /**
- * A default parameter factory for testing purposes.
- */
-FIRM_API const ir_settings_arch_dep_t *arch_dep_default_factory(void);
-
-/**
  * Optimization flags.
  */
 typedef enum {
@@ -93,15 +88,6 @@ typedef enum {
 	arch_dep_div_by_const = 2,  /**< optimize Div into Shift/Add/Mulh */
 	arch_dep_mod_by_const = 4   /**< optimize Mod into Shift/Add/Mulh */
 } arch_dep_opts_t;
-
-/**
- * Initialize the machine dependent optimizations.
- * @param factory   A factory that delivers parameters for these
- *                  optimizations. If NULL is passed, or this method
- *                  is not called, the machine dependent optimizations
- *                  are not enabled at all.
- */
-FIRM_API void arch_dep_init(arch_dep_params_factory_t factory);
 
 /**
  * Set the optimizations that shall be applied.

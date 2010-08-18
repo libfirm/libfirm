@@ -2366,10 +2366,6 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
  */
 static const backend_params *ia32_get_libfirm_params(void)
 {
-	static const ir_settings_if_conv_t ifconv = {
-		4,                    /* maxdepth, doesn't matter for Mux-conversion */
-		ia32_is_mux_allowed   /* allows or disallows Mux creation for given selector */
-	};
 	static const ir_settings_arch_dep_t ad = {
 		1,                   /* also use subs */
 		4,                   /* maximum shifts */
@@ -2385,8 +2381,8 @@ static const backend_params *ia32_get_libfirm_params(void)
 		1,     /* support inline assembly */
 		NULL,  /* will be set later */
 		ia32_create_intrinsic_fkt,
-		&intrinsic_env,  /* context for ia32_create_intrinsic_fkt */
-		NULL,  /* ifconv info will be set below */
+		&intrinsic_env,      /* context for ia32_create_intrinsic_fkt */
+		ia32_is_mux_allowed, /* ifconv info will be set below */
 		NULL,  /* float arithmetic mode, will be set below */
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */
@@ -2401,7 +2397,6 @@ static const backend_params *ia32_get_libfirm_params(void)
 	init_asm_constraints();
 
 	p.dep_param    = &ad;
-	p.if_conv_info = &ifconv;
 	if (! ia32_cg_config.use_sse2)
 		p.mode_float_arithmetic = mode_E;
 	return &p;

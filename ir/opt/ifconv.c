@@ -23,7 +23,6 @@
  * @author  Christoph Mallon
  * @version $Id$
  */
-
 #include "config.h"
 
 #include <assert.h>
@@ -40,8 +39,8 @@
 #include "irtools.h"
 #include "array_t.h"
 #include "irpass_t.h"
+#include "be.h"
 
-// debug
 #include "irdump.h"
 #include "debug.h"
 
@@ -49,8 +48,8 @@
  * Environment for if-conversion.
  */
 typedef struct walker_env {
-	const ir_settings_if_conv_t *params; /**< Conversion parameter. */
-	int                         changed; /**< Set if the graph was changed. */
+	arch_allow_ifconv_func allow_ifconv;
+	bool                   changed; /**< Set if the graph was changed. */
 } walker_env;
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
@@ -66,14 +65,6 @@ static int default_allow_ifconv(ir_node *sel, ir_node *mux_false,
 	(void) mux_true;
 	return 0;
 }
-
-/**
- * Default options.
- */
-static const ir_settings_if_conv_t default_info = {
-	0,    /* doesn't matter for Mux */
-	default_allow_ifconv
-};
 
 /**
  * Returns non-zero if a Block can be emptied.
@@ -357,7 +348,7 @@ restart:
 						mux_true  = get_Phi_pred(p, i);
 						mux_false = get_Phi_pred(p, j);
 					}
-					if (!env->params->allow_ifconv(sel, mux_false, mux_true)) {
+					if (!env->allow_ifconv(sel, mux_false, mux_true)) {
 						supported = false;
 						break;
 					}
@@ -369,7 +360,7 @@ restart:
 					cond, projx0, projx1
 				));
 
-				env->changed = 1;
+				env->changed = true;
 				prepare_path(block, i, dependency);
 				prepare_path(block, j, dependency);
 				arity = get_irn_arity(block);
@@ -485,13 +476,17 @@ static void collect_phis(ir_node *node, void *env)
 	}
 }
 
-void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
+void opt_if_conv(ir_graph *irg)
 {
-	walker_env env;
+	walker_env            env;
+	const backend_params *be_params = be_get_backend_param();
 
 	/* get the parameters */
-	env.params  = (params != NULL ? params : &default_info);
-	env.changed = 0;
+	if (be_params->allow_ifconv != NULL)
+		env.allow_ifconv = be_params->allow_ifconv;
+	else
+		env.allow_ifconv = default_allow_ifconv;
+	env.changed = false;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
@@ -523,27 +518,7 @@ void opt_if_conv(ir_graph *irg, const ir_settings_if_conv_t *params)
 	free_cdep(irg);
 }
 
-struct pass_t {
-	ir_graph_pass_t             pass;
-	const ir_settings_if_conv_t *params;
-};
-
-/**
- * Wrapper for running opt_if_conv() as an ir_graph pass.
- */
-static int pass_wrapper(ir_graph *irg, void *context)
+ir_graph_pass_t *opt_if_conv_pass(const char *name)
 {
-	struct pass_t *pass = context;
-	opt_if_conv(irg, pass->params);
-	return 0;
-}
-
-ir_graph_pass_t *opt_if_conv_pass(const char *name,
-                                  const ir_settings_if_conv_t *params)
-{
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
-	pass->params = params;
-
-	return def_graph_pass_constructor(
-		&pass->pass, name ? name : "ifconv", pass_wrapper);
+	return def_graph_pass(name ? name : "ifconv", opt_if_conv);
 }
