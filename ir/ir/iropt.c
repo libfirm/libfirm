@@ -5700,7 +5700,10 @@ static ir_node *transform_node_Mux(ir_node *n)
 	ir_mode *mode = get_irn_mode(n);
 	ir_node  *t   = get_Mux_true(n);
 	ir_node  *f   = get_Mux_false(n);
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(n);
+
+	if (is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX))
+		return n;
 
 	if (is_Mux(t)) {
 		ir_node*  block = get_nodes_block(n);
@@ -5756,23 +5759,22 @@ static ir_node *transform_node_Mux(ir_node *n)
 		}
 	}
 
-	/* first normalization step: move a possible zero to the false case */
+	/* first normalization step: try to move a constant to the false side,
+	 * 0 prefered on false side too */
 	if (is_Proj(sel)) {
 		ir_node *cmp = get_Proj_pred(sel);
 
-		if (is_Cmp(cmp)) {
-			if (is_Const(t) && is_Const_null(t)) {
-				ir_node *tmp;
+		if (is_Cmp(cmp) && is_Const(t) &&
+				(!is_Const(f) || (is_Const_null(t) && !is_Const_null(f)))) {
+			ir_node *tmp = t;
+			t = f;
+			f = tmp;
 
-				/* Mux(x, 0, y) => Mux(x, y, 0) */
-				pn_Cmp pnc = get_Proj_proj(sel);
-				sel = new_r_Proj(cmp, mode_b,
-					get_negated_pnc(pnc, get_irn_mode(get_Cmp_left(cmp))));
-				n        = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, t, f, mode);
-				tmp = t;
-				t = f;
-				f = tmp;
-			}
+			/* Mux(x, a, b) => Mux(not(x), b, a) */
+			pn_Cmp pnc = get_Proj_proj(sel);
+			sel = new_r_Proj(cmp, mode_b,
+				get_negated_pnc(pnc, get_irn_mode(get_Cmp_left(cmp))));
+			n = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
 		}
 	}
 
@@ -5814,12 +5816,11 @@ static ir_node *transform_node_Mux(ir_node *n)
 		}
 	}
 
-	/* more normalization: try to normalize Mux(x, C1, C2) into Mux(x, +1/-1, 0) op C2 */
-	if (is_Const(t) && is_Const(f) && mode_is_int(mode)
-			&& !is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX)) {
+	/* more normalization: Mux(sel, 0, 1) is simply a conv from the mode_b
+	 * value to integer. */
+	if (is_Const(t) && is_Const(f) && mode_is_int(mode)) {
 		tarval *a = get_Const_tarval(t);
 		tarval *b = get_Const_tarval(f);
-		tarval *diff, *min;
 
 		if (tarval_is_one(a) && tarval_is_null(b)) {
 			ir_node *block = get_nodes_block(n);
@@ -5833,26 +5834,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 			ir_node *conv  = new_r_Conv(block, not_, mode);
 			n = conv;
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
-			return n;
-		}
-
-		/* TODO: it's not really clear if that helps in general or should be moved
-		 * to backend, especially with the MUX->Conv transformation above */
-		if (tarval_cmp(a, b) & pn_Cmp_Gt) {
-			diff = tarval_sub(a, b, NULL);
-			min  = b;
-		} else {
-			diff = tarval_sub(b, a, NULL);
-			min  = a;
-		}
-
-		if (diff == get_tarval_one(mode)) {
-			dbg_info *dbg   = get_irn_dbg_info(n);
-			ir_node  *block = get_nodes_block(n);
-			ir_node  *t     = new_Const(tarval_sub(a, min, NULL));
-			ir_node  *f     = new_Const(tarval_sub(b, min, NULL));
-			n = new_rd_Mux(dbg, block, sel, f, t, mode);
-			n = new_rd_Add(dbg, block, n, new_Const(min), mode);
 			return n;
 		}
 	}
