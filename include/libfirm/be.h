@@ -58,24 +58,27 @@ typedef enum {
  */
 typedef ir_node *(create_trampoline_fkt)(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee);
 
+/** callback where the backend performs required lowering for the target
+ * architecture. Typical examples are transforming doubleword operations into
+ * sequences of word operations. The callback should be invoked before the
+ * frontend, because it is usually a good idea to perform other optimisations
+ * after the lowering
+ */
+typedef void (*lower_for_target_func)(void);
+
 /**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
  */
 typedef struct backend_params {
-	/** If set, the backend cannot handle DWORD access. */
-	unsigned do_dw_lowering:1;
 	/** If set, the backend supports inline assembly. */
 	unsigned support_inline_asm:1;
 
+	/** callback that performs lowerings required for target architecture */
+	lower_for_target_func lower_for_target;
+
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
-
-	/** The architecture specific intrinsic function creator. */
-	create_intrinsic_fkt *arch_create_intrinsic_fkt;
-
-	/** The context parameter for the create intrinsic function. */
-	void *create_intrinsic_ctx;
 
 	/** Backend settings for if-conversion. */
 	arch_allow_ifconv_func allow_ifconv;
@@ -116,6 +119,12 @@ FIRM_API int be_parse_arg(const char *arg);
  *         backend
  */
 FIRM_API const backend_params *be_get_backend_param(void);
+
+/**
+ * Creates an ir_prog pass which performs lowerings necessary for the target
+ * architecture. (Calling backend_params->lower_for_target)
+ */
+FIRM_API ir_prog_pass_t *lower_for_target_pass(const char *name);
 
 /**
  * Main interface to the frontend.

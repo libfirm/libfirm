@@ -185,23 +185,17 @@ FIRM_API ir_graph_pass_t *lower_switch_pass(const char *name,
  * @param context  the context parameter
  */
 typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
-                                          const ir_mode *imode, const ir_mode *omode,
-                                          void *context);
+                                          const ir_mode *imode,
+                                          const ir_mode *omode, void *context);
 
 /**
  * The lowering parameter description.
  */
 typedef struct lwrdw_param_t {
-	int enable;                   /**< if true lowering is enabled */
-	int little_endian;            /**< if true should be lowered for little endian, else big endian */
-	ir_mode *high_signed;         /**< the double word signed mode to be lowered, typically Ls */
-	ir_mode *high_unsigned;       /**< the double word unsigned mode to be lowered, typically Lu */
-	ir_mode *low_signed;          /**< the word signed mode to be used, typically Is */
-	ir_mode *low_unsigned;        /**< the word unsigned mode to be used, typically Iu */
-
-	/** callback that creates the intrinsic entity */
-	create_intrinsic_fkt *create_intrinsic;
-	void *ctx;                    /**< context parameter for the creator function */
+	unsigned              little_endian : 1; /**< if true should be lowered for little endian, else big endian */
+	unsigned              doubleword_size;   /**< bitsize of the doubleword mode */
+	create_intrinsic_fkt *create_intrinsic;  /**< callback that creates the intrinsic entity */
+	void                 *ctx;               /**< context parameter for the creator function */
 } lwrdw_param_t;
 
 /**
@@ -210,17 +204,6 @@ typedef struct lwrdw_param_t {
  * @param param  parameter for lowering
  */
 FIRM_API void lower_dw_ops(const lwrdw_param_t *param);
-
-/**
- * Creates an ir_prog pass for lower_dw_ops().
- *
- * @param name   the name of this pass or NULL
- * @param param  parameter for lowering
- *
- * @return  the newly created ir_prog pass
- */
-FIRM_API ir_prog_pass_t *lower_dw_ops_pass(const char *name,
-                                           const lwrdw_param_t *param);
 
 /**
  * Default implementation. Context is unused.

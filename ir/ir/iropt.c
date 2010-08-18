@@ -5656,9 +5656,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 	ir_node  *f   = get_Mux_false(n);
 	ir_graph *irg = current_ir_graph;
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX))
-		return n;
-
 	if (is_Mux(t)) {
 		ir_node*  block = get_nodes_block(n);
 		ir_node*  c0    = sel;
@@ -5772,7 +5769,8 @@ static ir_node *transform_node_Mux(ir_node *n)
 	}
 
 	/* more normalization: try to normalize Mux(x, C1, C2) into Mux(x, +1/-1, 0) op C2 */
-	if (is_Const(t) && is_Const(f) && mode_is_int(mode)) {
+	if (is_Const(t) && is_Const(f) && mode_is_int(mode)
+			&& !is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX)) {
 		tarval *a = get_Const_tarval(t);
 		tarval *b = get_Const_tarval(f);
 		tarval *diff, *min;
@@ -5791,6 +5789,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 			DBG_OPT_ALGSIM0(oldn, n, FS_OPT_MUX_CONV);
 			return n;
 		}
+
 		/* TODO: it's not really clear if that helps in general or should be moved
 		 * to backend, especially with the MUX->Conv transformation above */
 		if (tarval_cmp(a, b) & pn_Cmp_Gt) {

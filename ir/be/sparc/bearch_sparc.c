@@ -561,17 +561,20 @@ static int sparc_get_reg_class_alignment(const arch_register_class_t *cls)
 	return get_mode_size_bytes(mode);
 }
 
+static void sparc_lower_for_target(void)
+{
+	/* TODO, doubleword lowering and others */
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
 static const backend_params *sparc_get_backend_params(void)
 {
 	static backend_params p = {
-		0,     /* no dword lowering */
 		0,     /* no inline assembly */
+		sparc_lower_for_target, /* lowering callback */
 		NULL,  /* will be set later */
-		NULL,  /* no creator function */
-		NULL,  /* context for create_intrinsic_fkt */
 		NULL,  /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
 		0,     /* no trampoline support: size 0 */

@@ -824,17 +824,7 @@ static ir_entity *mcount = NULL;
 
 static void ia32_before_abi(void *self)
 {
-	lower_mode_b_config_t lower_mode_b_config = {
-		mode_Iu,  /* lowered mode */
-		mode_Bu,  /* preferred mode for set */
-		0,        /* don't lower direct compares */
-	};
 	ia32_code_gen_t *cg = self;
-
-	ir_lower_mode_b(cg->irg, &lower_mode_b_config);
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "lower_modeb");
-
 	if (cg->gprof) {
 		if (mcount == NULL) {
 			ir_type *tp = new_type_method(0, 0);
@@ -2335,6 +2325,32 @@ static int ia32_is_valid_clobber(const char *clobber)
 	return ia32_get_clobber_register(clobber) != NULL;
 }
 
+static void ia32_lower_for_target(void)
+{
+	int n_irgs = get_irp_n_irgs();
+	int i;
+	lower_mode_b_config_t lower_mode_b_config = {
+		mode_Iu,  /* lowered mode */
+		mode_Bu,  /* preferred mode for set */
+		0,        /* don't lower direct compares */
+	};
+
+	/* perform doubleword lowering */
+	lwrdw_param_t lower_dw_params = {
+		1,  /* little endian */
+		64, /* doubleword size */
+		ia32_create_intrinsic_fkt,
+		&intrinsic_env,
+	};
+	lower_dw_ops(&lower_dw_params);
+
+	/* lower for mode_b stuff */
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		ir_lower_mode_b(irg, &lower_mode_b_config);
+	}
+}
+
 /**
  * Create the trampoline code.
  */
@@ -2377,12 +2393,10 @@ static const backend_params *ia32_get_libfirm_params(void)
 		32, /* Mulh allowed up to 32 bit */
 	};
 	static backend_params p = {
-		1,     /* need dword lowering */
 		1,     /* support inline assembly */
+		ia32_lower_for_target,
 		NULL,  /* will be set later */
-		ia32_create_intrinsic_fkt,
-		&intrinsic_env,      /* context for ia32_create_intrinsic_fkt */
-		ia32_is_mux_allowed, /* ifconv info will be set below */
+		ia32_is_mux_allowed,
 		NULL,  /* float arithmetic mode, will be set below */
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */

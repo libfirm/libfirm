@@ -690,11 +690,9 @@ static const backend_params *arm_get_libfirm_params(void)
 		32,   /* SMUL & UMUL available for 32 bit */
 	};
 	static backend_params p = {
-		1,     /* need dword lowering */
 		0,     /* don't support inline assembler yet */
+		NULL,  /* lowering function */
 		&ad,   /* will be set later */
-		NULL,  /* but yet no creator function */
-		NULL,  /* context for create_intrinsic_fkt */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		NULL,  /* float arithmetic mode (TODO) */
 		0,     /* no trampoline support: size 0 */

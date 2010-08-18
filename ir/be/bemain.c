@@ -49,6 +49,7 @@
 #include "firmstat.h"
 #include "execfreq.h"
 #include "irprofile.h"
+#include "irpass_t.h"
 
 #include "bearch.h"
 #include "be_t.h"
@@ -341,11 +342,9 @@ int be_parse_arg(const char *arg)
 
 /** The be parameters returned by default, all off. */
 static const backend_params be_params = {
-	0,    /* need dword lowering */
 	0,    /* don't support inline assembler yet */
+	NULL, /* no lowering required */
 	NULL, /* will be set later */
-	NULL, /* but yet no creator function */
-	NULL, /* context for create_intrinsic_fkt */
 	NULL, /* no if conversion settings */
 	NULL, /* no float arithmetic mode */
 	0,    /* no trampoline support: size 0 */
@@ -642,8 +641,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		if (!arch_env->custom_abi) {
 			dump(DUMP_ABI, irg, "abi");
-			/* do local optimizations */
-			optimize_graph_df(irg);
 		}
 
 		/* we have to do cfopt+remove_critical_edges as we can't have Bad-blocks
@@ -914,6 +911,23 @@ void be_main(FILE *file_handle, const char *cup_name)
 		stat_ev_end();
 	}
 #endif
+}
+
+static int do_lower_for_target(ir_prog *irp, void *context)
+{
+	const backend_params *be_params = be_get_backend_param();
+	be_params->lower_for_target();
+	(void) context;
+	(void) irp;
+	return 0;
+}
+
+ir_prog_pass_t *lower_for_target_pass(const char *name)
+{
+	ir_prog_pass_t *pass = XMALLOCZ(ir_prog_pass_t);
+	return def_prog_pass_constructor(pass,
+	                                 name ? name : "lower_for_target",
+	                                 do_lower_for_target);
 }
 
 unsigned be_put_ignore_regs(const ir_graph *irg,
