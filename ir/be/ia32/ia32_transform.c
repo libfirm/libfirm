@@ -3443,21 +3443,27 @@ static ir_node *gen_Mux(ir_node *node)
 		if (is_Proj(cond)) {
 			ir_node *cmp = get_Proj_pred(cond);
 			if (is_Cmp(cmp)) {
-				ir_node  *cmp_left    = get_Cmp_left(cmp);
-				ir_node  *cmp_right   = get_Cmp_right(cmp);
-				pn_Cmp   pnc          = get_Proj_proj(cond);
+				ir_node  *cmp_left  = get_Cmp_left(cmp);
+				ir_node  *cmp_right = get_Cmp_right(cmp);
+				pn_Cmp    pnc       = get_Proj_proj(cond);
 
-				/* check for unsigned Doz first */
-				if ((pnc & pn_Cmp_Gt) && !mode_is_signed(mode) &&
-					is_Const_0(mux_false) && is_Sub(mux_true) &&
-					get_Sub_left(mux_true) == cmp_left && get_Sub_right(mux_true) == cmp_right) {
-					/* Mux(a >=u b, a - b, 0) unsigned Doz */
-					return create_doz(node, cmp_left, cmp_right);
-				} else if ((pnc & pn_Cmp_Lt) && !mode_is_signed(mode) &&
-					is_Const_0(mux_true) && is_Sub(mux_false) &&
-					get_Sub_left(mux_false) == cmp_left && get_Sub_right(mux_false) == cmp_right) {
-					/* Mux(a <=u b, 0, a - b) unsigned Doz */
-					return create_doz(node, cmp_left, cmp_right);
+				if (is_Const(mux_true) && is_Const_null(mux_true)) {
+					ir_node *tmp = mux_false;
+					mux_false = mux_true;
+					mux_true  = tmp;
+					pnc       = get_negated_pnc(pnc, mode);
+				}
+				if (is_Const_0(mux_false) && is_Sub(mux_true)) {
+					if ((pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge)
+						&& get_Sub_left(mux_true) == cmp_left
+						&& get_Sub_right(mux_true) == cmp_right) {
+						return create_doz(node, cmp_left, cmp_right);
+					}
+					if ((pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le)
+						&& get_Sub_left(mux_true) == cmp_right
+						&& get_Sub_right(mux_true) == cmp_left) {
+						return create_doz(node, cmp_right, cmp_left);
+					}
 				}
 			}
 		}

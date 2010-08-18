@@ -2213,6 +2213,8 @@ static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	ir_node *cmp;
 	ir_node *cmp_left;
 	ir_node *cmp_right;
+	ir_node *sub_left;
+	ir_node *sub_right;
 	ir_mode *mode;
 	long     pn;
 
@@ -2230,20 +2232,29 @@ static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	pn        = get_Proj_proj(sel);
 	cmp_left  = get_Cmp_left(cmp);
 	cmp_right = get_Cmp_right(cmp);
-	if ((pn & pn_Cmp_Gt) &&
-		is_Const(mux_false) && is_Const_null(mux_false) && is_Sub(mux_true) &&
-		get_Sub_left(mux_true) == cmp_left &&
-		get_Sub_right(mux_true) == cmp_right) {
-		/* Mux(a >=u b, a - b, 0) unsigned Doz */
-		return true;
+
+	/* "move" zero constant to false input */
+	if (is_Const(mux_true) && is_Const_null(mux_true)) {
+		ir_node *tmp = mux_false;
+		mux_false = mux_true;
+		mux_true  = tmp;
+		pn = get_negated_pnc(pn, mode);
 	}
-	if ((pn & pn_Cmp_Lt) &&
-		is_Const(mux_true) && is_Const_null(mux_true) && is_Sub(mux_false) &&
-		get_Sub_left(mux_false) == cmp_left &&
-		get_Sub_right(mux_false) == cmp_right) {
-		/* Mux(a <=u b, 0, a - b) unsigned Doz */
+	if (!is_Const(mux_false) || !is_Const_null(mux_false))
+		return false;
+	if (!is_Sub(mux_true))
+		return false;
+	sub_left  = get_Sub_left(mux_true);
+	sub_right = get_Sub_right(mux_true);
+
+	/* Mux(a >=u b, 0, a-b) */
+	if ((pn == pn_Cmp_Gt || pn == pn_Cmp_Ge)
+			&& sub_left == cmp_left && sub_right == cmp_right)
 		return true;
-	}
+	/* Mux(a <=u b, 0, b-a) */
+	if ((pn == pn_Cmp_Lt || pn == pn_Cmp_Le)
+			&& sub_left == cmp_right && sub_right == cmp_left)
+		return true;
 
 	return false;
 }
