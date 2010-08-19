@@ -325,13 +325,15 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
 
 static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 											ir_entity *entity, int32_t offset,
-											bool is_frame_entity)
+											bool is_frame_entity,
+											bool is_reg_reg)
 {
 	sparc_load_store_attr_t *attr     = get_sparc_load_store_attr(res);
 	attr->base.immediate_value_entity = entity;
 	attr->base.immediate_value        = offset;
 	attr->load_store_mode             = ls_mode;
 	attr->is_frame_entity             = is_frame_entity;
+	attr->is_reg_reg                  = is_reg_reg;
 }
 
 static void init_sparc_save_attributes(ir_node *res, int initial_stacksize)

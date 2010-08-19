@@ -79,7 +79,8 @@ typedef struct sparc_load_store_attr_t sparc_load_store_attr_t;
 struct sparc_load_store_attr_t {
 	sparc_attr_t  base;    /**< generic attribute */
 	ir_mode      *load_store_mode;
-	bool          is_frame_entity;
+	bool          is_frame_entity : 1;
+	bool          is_reg_reg      : 1;
 };
 
 /**

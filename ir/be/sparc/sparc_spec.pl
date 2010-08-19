@@ -137,7 +137,8 @@ $state       = 32; # register represents a state
 	FPM  => "${arch}_emit_fp_mode_suffix(node);",
 	FCONVS => "${arch}_emit_fp_conv_source(node);",
 	FCONVD => "${arch}_emit_fp_conv_destination(node);",
-	O      => "${arch}_emit_offset(node);",
+	O2     => "${arch}_emit_offset(node, 1);",
+	O3     => "${arch}_emit_offset(node, 2);",
 );
 
 $default_attr_type = "sparc_attr_t";
@@ -146,8 +147,7 @@ $default_copy_attr = "sparc_copy_attr";
 
 %init_attr = (
 	sparc_attr_t             => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-	                            "\tinit_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity);",
+	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_jmp_switch_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
@@ -275,18 +275,23 @@ Ld => {
 	op_flags  => [ "labeled", "fragile" ],
 	state     => "exc_pinned",
 	constructors => {
-		"" => {
-			reg_req   => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+		imm => {
+			reg_req    => { in => [ "gp", "none" ], out => [ "gp", "none" ] },
+			ins        => [ "ptr", "mem" ],
+			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
+			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
-		d => {
-			reg_req => { in => [ "gp", "none" ], out => [ "gp:a|2", "none" ] },
+		reg => {
+			reg_req    => { in => [ "gp", "gp", "none" ], out => [ "gp", "none" ] },
+			ins        => [ "ptr", "ptr2", "mem" ],
+			attr       => "ir_mode *ls_mode",
+			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
-	outs      => [ "res", "M" ],
 	ins       => [ "ptr", "mem" ],
+	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-	emit      => '. ld%LM [%S1%O], %D1'
+	emit      => '. ld%LM [%S1%O2], %D1'
 },
 
 SetHi => {
@@ -304,18 +309,23 @@ St => {
 	mode      => "mode_M",
 	state     => "exc_pinned",
 	constructors => {
-		"" => {
-			reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+		imm => {
+			reg_req    => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
+			ins        => [ "val", "ptr", "mem" ],
+			attr       => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
+			custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
 		},
-		d => {
-			reg_req   => { in => [ "gp", "gp:a|2", "none" ], out => [ "none" ] },
+		reg => {
+			reg_req    => { in => [ "gp", "gp", "gp", "none" ], out => [ "none" ] },
+			ins        => [ "val", "ptr", "ptr2", "mem" ],
+			attr       => "ir_mode *ls_mode",
+			custominit => "init_sparc_load_store_attributes(res, ls_mode, NULL, 0, false, true);",
 		},
 	},
-	ins       => [ "ptr", "val", "mem" ],
+	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-	emit      => '. st%SM %S2, [%S1%O]'
+	emit      => '. st%SM %S1, [%S2%O3]'
 },
 
 Save => {
@@ -694,7 +704,8 @@ Ldf => {
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-	emit      => '. ld%FLSM [%S1%O], %D1'
+	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
+	emit      => '. ld%FLSM [%S1%O2], %D1'
 },
 
 Stf => {
@@ -702,20 +713,21 @@ Stf => {
 	state     => "exc_pinned",
 	constructors => {
 		s => {
-			reg_req => { in => [ "gp", "fp", "none" ], out => [ "none" ] },
+			reg_req => { in => [ "fp",     "gp", "none" ], out => [ "none" ] },
 		},
 		d => {
-			reg_req => { in => [ "gp", "fp:a|2", "none" ], out => [ "none" ] },
+			reg_req => { in => [ "fp:a|2", "gp", "none" ], out => [ "none" ] },
 		},
 		q => {
-			reg_req => { in => [ "gp", "fp:a|4", "none" ], out => [ "none" ] },
+			reg_req => { in => [ "fp:a|4", "gp", "none" ], out => [ "none" ] },
 		},
 	},
-	ins       => [ "ptr", "val", "mem" ],
+	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
-	emit      => '. st%FLSM %S2, [%S1%O]',
+	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
+	emit      => '. st%FLSM %S2, [%S1%O2]',
 	mode      => 'mode_M',
 },
 

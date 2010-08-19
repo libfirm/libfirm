@@ -191,11 +191,17 @@ static bool is_stack_pointer_relative(const ir_node *node)
 /**
  * emit SP offset
  */
-void sparc_emit_offset(const ir_node *node)
+void sparc_emit_offset(const ir_node *node, int offset_node_pos)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
 
-	if (attr->is_frame_entity) {
+	if (attr->is_reg_reg) {
+		assert(!attr->is_frame_entity);
+		assert(attr->base.immediate_value == 0);
+		assert(attr->base.immediate_value_entity == NULL);
+		be_emit_char('+');
+		sparc_emit_source_register(node, offset_node_pos);
+	} else if (attr->is_frame_entity) {
 		int32_t offset = attr->base.immediate_value;
 		/* bad hack: the real stack stuff is behind the always-there spill
 		 * space for the register window and stack */
@@ -205,7 +211,8 @@ void sparc_emit_offset(const ir_node *node)
 			assert(is_valid_immediate(offset));
 			be_emit_irprintf("%+ld", offset);
 		}
-	} else {
+	} else if (attr->base.immediate_value != 0
+			|| attr->base.immediate_value_entity != NULL) {
 		be_emit_char('+');
 		sparc_emit_immediate(node);
 	}
