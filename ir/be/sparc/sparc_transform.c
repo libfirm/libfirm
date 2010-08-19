@@ -578,10 +578,16 @@ static ir_node *gen_Eor(ir_node *node)
 	ir_node *left  = get_Eor_left(node);
 	ir_node *right = get_Eor_right(node);
 
-	/* Note: firm normalizes Not(Eor(a,b)) and Eor(Not(a),b) to Eor(a, Not(b))*/
 	if (is_Not(right)) {
 		ir_node *not_op = get_Not_op(right);
 		return gen_helper_binop_args(node, left, not_op, MATCH_COMMUTATIVE,
+		                             new_bd_sparc_XNor_reg,
+		                             new_bd_sparc_XNor_imm);
+	}
+	if (is_Not(left)) {
+		ir_node *not_op = get_Not_op(left);
+		return gen_helper_binop_args(node, not_op, right,
+		                             MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
 		                             new_bd_sparc_XNor_reg,
 		                             new_bd_sparc_XNor_imm);
 	}

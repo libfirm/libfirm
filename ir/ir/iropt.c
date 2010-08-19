@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include <string.h>
+#include <stdbool.h>
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -3645,6 +3646,33 @@ static ir_node *transform_node_And(ir_node *n)
 	return n;
 }  /* transform_node_And */
 
+/* the order of the values is important! */
+typedef enum const_class {
+	const_const = 0,
+	const_like  = 1,
+	const_other = 2
+} const_class;
+
+static const_class classify_const(const ir_node* n)
+{
+	if (is_Const(n))         return const_const;
+	if (is_irn_constlike(n)) return const_like;
+	return const_other;
+}
+
+/**
+ * Determines whether r is more constlike or has a larger index (in that order)
+ * than l.
+ */
+static bool operands_are_normalized(const ir_node *l, const ir_node *r)
+{
+	const const_class l_order = classify_const(l);
+	const const_class r_order = classify_const(r);
+	return
+		l_order > r_order ||
+		(l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
+}
+
 /**
  * Transform an Eor.
  */
@@ -3672,21 +3700,21 @@ static ir_node *transform_node_Eor(ir_node *n)
 		}
 	}
 
-	if (a == b) {
-		ir_graph *irg = get_irn_irg(n);
-		/* a ^ a = 0 */
-		n = new_rd_Const(get_irn_dbg_info(n), irg, get_mode_null(mode));
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_A_A);
-		return n;
-	}
-
-	/* normalize not nodes... ~a ^ b => a ^ ~b */
-	if (is_Not(a)) {
+	/* normalize not nodes... ~a ^ b <=> a ^ ~b */
+	if (is_Not(a) && operands_are_normalized(get_Not_op(a), b)) {
 		dbg_info *dbg      = get_irn_dbg_info(n);
 		ir_node  *block    = get_nodes_block(n);
 		ir_node  *new_not  = new_rd_Not(dbg, block, b, mode);
 		ir_node  *new_left = get_Not_op(a);
 		n = new_rd_Eor(dbg, block, new_left, new_not, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+		return n;
+	} else if (is_Not(b) && !operands_are_normalized(a, get_Not_op(b))) {
+		dbg_info *dbg       = get_irn_dbg_info(n);
+		ir_node  *block     = get_nodes_block(n);
+		ir_node  *new_not   = new_rd_Not(dbg, block, a, mode);
+		ir_node  *new_right = get_Not_op(b);
+		n = new_rd_Eor(dbg, block, new_not, new_right, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 		return n;
 	}
@@ -4202,33 +4230,6 @@ static ir_node *create_zero_const(ir_mode *mode)
 	ir_node  *cnst  = new_Const(tv);
 
 	return cnst;
-}
-
-/* the order of the values is important! */
-typedef enum const_class {
-	const_const = 0,
-	const_like  = 1,
-	const_other = 2
-} const_class;
-
-static const_class classify_const(const ir_node* n)
-{
-	if (is_Const(n))         return const_const;
-	if (is_irn_constlike(n)) return const_like;
-	return const_other;
-}
-
-/**
- * Determines whether r is more constlike or has a larger index (in that order)
- * than l.
- */
-static int operands_are_normalized(const ir_node *l, const ir_node *r)
-{
-	const const_class l_order = classify_const(l);
-	const const_class r_order = classify_const(r);
-	return
-		l_order > r_order ||
-		(l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
 }
 
 /**
