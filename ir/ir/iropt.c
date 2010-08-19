@@ -4440,6 +4440,13 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 					}
 				}
 			}
+			/* Cmp(Eor(x, y), 0) <=> Cmp(x, y) at least for the ==0,!=0
+			 * cases */
+			if (is_Const(right) && is_Const_null(right) && is_Eor(left)) {
+				right = get_Eor_right(left);
+				left  = get_Eor_left(left);
+				changed |= 1;
+			}
 		}  /* mode_is_int(...) */
 	}  /* proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg */
 
