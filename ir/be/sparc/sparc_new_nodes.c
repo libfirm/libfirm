@@ -49,7 +49,7 @@ static bool has_symconst_attr(const ir_node *node)
 	return is_sparc_SymConst(node) || is_sparc_FrameAddr(node);
 }
 
-static bool has_load_store_attr(const ir_node *node)
+bool sparc_has_load_store_attr(const ir_node *node)
 {
 	return is_sparc_Ld(node) || is_sparc_St(node) || is_sparc_Ldf(node)
 	    || is_sparc_Stf(node);
@@ -110,7 +110,7 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			ir_fprintf(F, "entity: %+F\n", attr->entity);
 			fprintf(F, "fp_offset: %d\n", attr->fp_offset);
 		}
-		if (has_load_store_attr(n)) {
+		if (sparc_has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
 			ir_fprintf(F, "load store mode: %+F\n", attr->load_store_mode);
 			ir_fprintf(F, "entity: (sign %d) %+F\n", attr->entity_sign,
@@ -200,13 +200,13 @@ const sparc_attr_t *get_sparc_attr_const(const ir_node *node)
 
 sparc_load_store_attr_t *get_sparc_load_store_attr(ir_node *node)
 {
-	assert(has_load_store_attr(node));
+	assert(sparc_has_load_store_attr(node));
 	return (sparc_load_store_attr_t*) get_irn_generic_attr_const(node);
 }
 
 const sparc_load_store_attr_t *get_sparc_load_store_attr_const(const ir_node *node)
 {
-	assert(has_load_store_attr(node));
+	assert(sparc_has_load_store_attr(node));
 	return (const sparc_load_store_attr_t*) get_irn_generic_attr_const(node);
 }
 
@@ -330,8 +330,7 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
 	(void) execution_units;
 
 	arch_irn_set_flags(node, flags);
-	attr->in_req  = in_reqs;
-	attr->is_load_store = false;
+	attr->in_req = in_reqs;
 
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
@@ -349,7 +348,6 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 	attr->entity_sign        = entity_sign;
 	attr->is_frame_entity    = is_frame_entity;
 	attr->offset             = offset;
-	attr->base.is_load_store = true;
 }
 
 static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
@@ -407,7 +405,7 @@ static int cmp_attr_sparc(ir_node *a, ir_node *b)
 	const sparc_attr_t *attr_b = get_sparc_attr_const(b);
 
 	return attr_a->immediate_value != attr_b->immediate_value
-			|| attr_a->is_load_store != attr_b->is_load_store;
+		|| attr_a->immediate_value_entity != attr_b->immediate_value_entity;
 }
 
 static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)

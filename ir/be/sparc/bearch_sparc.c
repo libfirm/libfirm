@@ -74,14 +74,12 @@ static arch_irn_class_t sparc_classify(const ir_node *irn)
 
 static ir_entity *sparc_get_frame_entity(const ir_node *irn)
 {
-	const sparc_attr_t *attr = get_sparc_attr_const(irn);
-
 	if (is_sparc_FrameAddr(irn)) {
 		const sparc_symconst_attr_t *attr = get_irn_generic_attr_const(irn);
 		return attr->entity;
 	}
 
-	if (attr->is_load_store) {
+	if (sparc_has_load_store_attr(irn)) {
 		const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(irn);
 		if (load_store_attr->is_frame_entity) {
 			return load_store_attr->entity;
@@ -102,7 +100,7 @@ static void sparc_set_frame_offset(ir_node *irn, int offset)
 		attr->fp_offset += offset;
 	} else {
 		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(irn);
-		assert(attr->base.is_load_store);
+		assert(sparc_has_load_store_attr(irn));
 		attr->offset += offset;
 	}
 }

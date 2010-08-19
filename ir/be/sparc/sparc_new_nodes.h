@@ -25,6 +25,7 @@
 #ifndef FIRM_BE_SPARC_SPARC_NEW_NODES_H
 #define FIRM_BE_SPARC_SPARC_NEW_NODES_H
 
+#include <stdbool.h>
 #include "sparc_nodes_attr.h"
 
 /**
@@ -33,6 +34,7 @@
 sparc_attr_t *get_sparc_attr(ir_node *node);
 const sparc_attr_t *get_sparc_attr_const(const ir_node *node);
 
+bool sparc_has_load_store_attr(const ir_node *node);
 sparc_load_store_attr_t *get_sparc_load_store_attr(ir_node *node);
 const sparc_load_store_attr_t *get_sparc_load_store_attr_const(const ir_node *node);
 
