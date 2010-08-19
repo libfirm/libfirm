@@ -44,11 +44,6 @@
 #include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
 
-static bool has_symconst_attr(const ir_node *node)
-{
-	return is_sparc_SymConst(node) || is_sparc_FrameAddr(node);
-}
-
 bool sparc_has_load_store_attr(const ir_node *node)
 {
 	return is_sparc_Ld(node) || is_sparc_St(node) || is_sparc_Ldf(node)
@@ -91,6 +86,8 @@ static bool has_fp_conv_attr(const ir_node *node)
  */
 static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
+	const sparc_attr_t *attr;
+
 	switch (reason) {
 	case dump_node_opcode_txt:
 		fprintf(F, "%s", get_irn_opname(n));
@@ -101,20 +98,20 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 
 	case dump_node_info_txt:
 		arch_dump_reqs_and_registers(F, n);
+		attr = get_sparc_attr_const(n);
+		if (attr->immediate_value_entity) {
+			ir_fprintf(F, "entity: %+F (offset %d)\n",
+			           attr->immediate_value_entity, attr->immediate_value);
+		} else {
+			ir_fprintf(F, "immediate value: %d\n", attr->immediate_value);
+		}
 		if (has_save_attr(n)) {
 			const sparc_save_attr_t *attr = get_sparc_save_attr_const(n);
 			fprintf(F, "initial stacksize: %d\n", attr->initial_stacksize);
 		}
-		if (has_symconst_attr(n)) {
-			const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(n);
-			ir_fprintf(F, "entity: %+F\n", attr->entity);
-			fprintf(F, "fp_offset: %d\n", attr->fp_offset);
-		}
 		if (sparc_has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
 			ir_fprintf(F, "load store mode: %+F\n", attr->load_store_mode);
-			ir_fprintf(F, "entity: %+F\n", attr->entity);
-			fprintf(F, "offset: %ld\n", attr->offset);
 			fprintf(F, "is frame entity: %s\n",
 			        attr->is_frame_entity ? "true" : "false");
 		}
@@ -146,10 +143,12 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 	}
 }
 
-static void sparc_set_attr_imm(ir_node *res, int32_t immediate_value)
+static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
+                               int32_t immediate_value)
 {
-	sparc_attr_t *attr = get_irn_generic_attr(res);
-	attr->immediate_value = immediate_value;
+	sparc_attr_t *attr           = get_irn_generic_attr(res);
+	attr->immediate_value_entity = entity;
+	attr->immediate_value        = immediate_value;
 }
 
 static void init_sparc_jmp_cond_attr(ir_node *node, int pnc, bool is_unsigned)
@@ -207,18 +206,6 @@ const sparc_load_store_attr_t *get_sparc_load_store_attr_const(const ir_node *no
 {
 	assert(sparc_has_load_store_attr(node));
 	return (const sparc_load_store_attr_t*) get_irn_generic_attr_const(node);
-}
-
-sparc_symconst_attr_t *get_sparc_symconst_attr(ir_node *node)
-{
-	assert(has_symconst_attr(node));
-	return (sparc_symconst_attr_t*) get_irn_generic_attr_const(node);
-}
-
-const sparc_symconst_attr_t *get_sparc_symconst_attr_const(const ir_node *node)
-{
-	assert(has_symconst_attr(node));
-	return (const sparc_symconst_attr_t*) get_irn_generic_attr_const(node);
 }
 
 sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr(ir_node *node)
@@ -337,21 +324,14 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
 }
 
 static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
-											ir_entity *entity,
-											long offset, bool is_frame_entity)
+											ir_entity *entity, int32_t offset,
+											bool is_frame_entity)
 {
-	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(res);
-	attr->load_store_mode    = ls_mode;
-	attr->entity             = entity;
-	attr->is_frame_entity    = is_frame_entity;
-	attr->offset             = offset;
-}
-
-static void init_sparc_symconst_attributes(ir_node *res, ir_entity *entity)
-{
-	sparc_symconst_attr_t *attr = get_sparc_symconst_attr(res);
-	attr->entity    = entity;
-	attr->fp_offset = 0;
+	sparc_load_store_attr_t *attr     = get_sparc_load_store_attr(res);
+	attr->base.immediate_value_entity = entity;
+	attr->base.immediate_value        = offset;
+	attr->load_store_mode             = ls_mode;
+	attr->is_frame_entity             = is_frame_entity;
 }
 
 static void init_sparc_save_attributes(ir_node *res, int initial_stacksize)
@@ -413,22 +393,8 @@ static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)
 	if (cmp_attr_sparc(a, b))
 		return 1;
 
-	return attr_a->entity != attr_b->entity
-			|| attr_a->is_frame_entity != attr_b->is_frame_entity
-			|| attr_a->load_store_mode != attr_b->load_store_mode
-			|| attr_a->offset != attr_b->offset;
-}
-
-static int cmp_attr_sparc_symconst(ir_node *a, ir_node *b)
-{
-	const sparc_symconst_attr_t *attr_a = get_sparc_symconst_attr_const(a);
-	const sparc_symconst_attr_t *attr_b = get_sparc_symconst_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->entity != attr_b->entity
-			|| attr_a->fp_offset != attr_b->fp_offset;
+	return attr_a->is_frame_entity != attr_b->is_frame_entity
+			|| attr_a->load_store_mode != attr_b->load_store_mode;
 }
 
 static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)

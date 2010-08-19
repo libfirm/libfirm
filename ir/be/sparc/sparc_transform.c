@@ -69,9 +69,6 @@ static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
 
-static ir_node *gen_SymConst(ir_node *node);
-
-
 static inline int mode_needs_gp_reg(ir_mode *mode)
 {
 	return mode_is_int(mode) || mode_is_reference(mode);
@@ -89,10 +86,10 @@ static ir_node *gen_zero_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                                    int src_bits)
 {
 	if (src_bits == 8) {
-		return new_bd_sparc_And_imm(dbgi, block, op, 0xFF);
+		return new_bd_sparc_And_imm(dbgi, block, op, NULL, 0xFF);
 	} else if (src_bits == 16) {
-		ir_node *lshift = new_bd_sparc_Sll_imm(dbgi, block, op, 16);
-		ir_node *rshift = new_bd_sparc_Slr_imm(dbgi, block, lshift, 16);
+		ir_node *lshift = new_bd_sparc_Sll_imm(dbgi, block, op, NULL, 16);
+		ir_node *rshift = new_bd_sparc_Slr_imm(dbgi, block, lshift, NULL, 16);
 		return rshift;
 	} else {
 		panic("zero extension only supported for 8 and 16 bits");
@@ -111,8 +108,8 @@ static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                                    int src_bits)
 {
 	int shift_width = 32 - src_bits;
-	ir_node *lshift_node = new_bd_sparc_Sll_imm(dbgi, block, op, shift_width);
-	ir_node *rshift_node = new_bd_sparc_Sra_imm(dbgi, block, lshift_node, shift_width);
+	ir_node *lshift_node = new_bd_sparc_Sll_imm(dbgi, block, op, NULL, shift_width);
+	ir_node *rshift_node = new_bd_sparc_Sra_imm(dbgi, block, lshift_node, NULL, shift_width);
 	return rshift_node;
 }
 
@@ -159,12 +156,16 @@ typedef enum {
 
 typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
 typedef ir_node* (*new_binop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
-typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, int32_t immediate);
+typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_entity *entity, int32_t immediate);
 typedef ir_node* (*new_unop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_mode *mode);
+
+static bool is_value_imm_encodeable(int32_t value)
+{
+	return -4096 <= value && value <= 4095;
+}
 
 /**
  * checks if a node's value can be encoded as a immediate
- *
  */
 static bool is_imm_encodeable(const ir_node *node)
 {
@@ -173,7 +174,7 @@ static bool is_imm_encodeable(const ir_node *node)
 		return false;
 
 	value = get_tarval_long(get_Const_tarval(node));
-	return -4096 <= value && value <= 4095;
+	return is_value_imm_encodeable(value);
 }
 
 /**
@@ -195,12 +196,14 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 
 	if (is_imm_encodeable(op2)) {
 		ir_node *new_op1 = be_transform_node(op1);
-		return new_imm(dbgi, block, new_op1, get_tarval_long(get_Const_tarval(op2)));
+		int32_t immediate = get_tarval_long(get_Const_tarval(op2));
+		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
 	new_op2 = be_transform_node(op2);
 
 	if ((flags & MATCH_COMMUTATIVE) && is_imm_encodeable(op1)) {
-		return new_imm(dbgi, block, new_op2, get_tarval_long(get_Const_tarval(op1)) );
+		int32_t immediate = get_tarval_long(get_Const_tarval(op1));
+		return new_imm(dbgi, block, new_op2, NULL, immediate);
 	}
 	new_op1 = be_transform_node(op1);
 
@@ -269,6 +272,51 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
 	panic("unsupported mode %+F for float op", mode);
 }
 
+typedef struct address_t {
+	ir_node   *base;
+	ir_entity *entity;
+	int32_t    offset;
+} address_t;
+
+static void match_address(ir_node *ptr, address_t *address)
+{
+	ir_node   *base   = ptr;
+	int32_t    offset = 0;
+	ir_entity *entity = NULL;
+
+	if (is_Add(base)) {
+		ir_node *add_right = get_Add_right(base);
+		if (is_Const(add_right)) {
+			base    = get_Add_left(base);
+			offset += get_tarval_long(get_Const_tarval(add_right));
+		}
+	}
+	/* Note that we don't match sub(x, Const) or chains of adds/subs
+	 * because this should all be normalized by now */
+
+	/* we only use the symconst if we're the only user otherwise we probably
+	 * won't save anything but produce multiple sethi+or combinations with
+	 * just different offsets */
+	if (is_SymConst(base) && get_irn_n_edges(base) == 1) {
+		dbg_info *dbgi      = get_irn_dbg_info(ptr);
+		ir_node  *block     = get_nodes_block(ptr);
+		ir_node  *new_block = be_transform_node(block);
+		entity = get_SymConst_entity(base);
+		base   = new_bd_sparc_SetHi(dbgi, new_block, entity, offset);
+	} else {
+		if (is_value_imm_encodeable(offset)) {
+			base = be_transform_node(base);
+		} else {
+			base   = be_transform_node(ptr);
+			offset = 0;
+		}
+	}
+
+	address->base   = base;
+	address->entity = entity;
+	address->offset = offset;
+}
+
 /**
  * Creates an sparc Add.
  *
@@ -277,8 +325,8 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
  */
 static ir_node *gen_Add(ir_node *node)
 {
-	ir_mode *mode  = get_irn_mode(node);
-	ir_node *right = get_Add_right(node);
+	ir_mode *mode = get_irn_mode(node);
+	ir_node *right;
 
 	if (mode_is_float(mode)) {
 		return gen_helper_binfpop(node, mode, new_bd_sparc_fadd_s,
@@ -286,19 +334,37 @@ static ir_node *gen_Add(ir_node *node)
 	}
 
 	/* special case: + 0x1000 can be represented as - 0x1000 */
+	right = get_Add_right(node);
 	if (is_Const(right)) {
-		tarval   *tv  = get_Const_tarval(right);
-		uint32_t  val = get_tarval_long(tv);
+		tarval  *tv;
+		uint32_t val;
+		ir_node *left = get_Add_left(node);
+		/* is this simple address arithmetic? then we can let the linker do
+		 * the calculation. */
+		if (is_SymConst(left)) {
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = be_transform_node(get_nodes_block(node));
+			address_t address;
+
+			match_address(node, &address);
+			assert(is_sparc_SetHi(address.base));
+			return new_bd_sparc_Or_imm(dbgi, block, address.base,
+			                           address.entity, address.offset);
+		}
+
+		tv  = get_Const_tarval(right);
+		val = get_tarval_long(tv);
 		if (val == 0x1000) {
 			dbg_info *dbgi   = get_irn_dbg_info(node);
 			ir_node  *block  = be_transform_node(get_nodes_block(node));
 			ir_node  *op     = get_Add_left(node);
 			ir_node  *new_op = be_transform_node(op);
-			return new_bd_sparc_Sub_imm(dbgi, block, new_op, -0x1000);
+			return new_bd_sparc_Sub_imm(dbgi, block, new_op, NULL, -0x1000);
 		}
 	}
 
-	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
+	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Add_reg,
+	                        new_bd_sparc_Add_imm);
 }
 
 /**
@@ -366,19 +432,23 @@ static ir_node *create_stf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
  */
 static ir_node *gen_Load(ir_node *node)
 {
+	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_mode  *mode     = get_Load_mode(node);
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr      = get_Load_ptr(node);
-	ir_node  *new_ptr  = be_transform_node(ptr);
 	ir_node  *mem      = get_Load_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_load = NULL;
+	address_t address;
+
+	match_address(ptr, &address);
 
 	if (mode_is_float(mode)) {
-		new_load = create_ldf(dbgi, block, new_ptr, new_mem, mode, NULL, 0, false);
+		new_load = create_ldf(dbgi, block, address.base, new_mem, mode,
+		                      address.entity, address.offset, false);
 	} else {
-		new_load = new_bd_sparc_Ld(dbgi, block, new_ptr, new_mem, mode, NULL, 0, false);
+		new_load = new_bd_sparc_Ld(dbgi, block, address.base, new_mem, mode,
+		                           address.entity, address.offset, false);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -395,19 +465,24 @@ static ir_node *gen_Store(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *ptr      = get_Store_ptr(node);
-	ir_node  *new_ptr  = be_transform_node(ptr);
 	ir_node  *mem      = get_Store_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
 	ir_node  *val      = get_Store_value(node);
 	ir_node  *new_val  = be_transform_node(val);
 	ir_mode  *mode     = get_irn_mode(val);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node *new_store = NULL;
+	ir_node  *new_store = NULL;
+	address_t address;
+
+	match_address(ptr, &address);
 
 	if (mode_is_float(mode)) {
-		new_store = create_stf(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, false);
+		new_store = create_stf(dbgi, block, address.base, new_val, new_mem,
+		                       mode, address.entity, address.offset, false);
 	} else {
-		new_store = new_bd_sparc_St(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, false);
+		new_store = new_bd_sparc_St(dbgi, block, address.base, new_val, new_mem,
+		                            mode, address.entity, address.offset,
+		                            false);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 
@@ -497,7 +572,7 @@ static ir_node *gen_Abs(ir_node *node)
 		dbg_info *const dbgi   = get_irn_dbg_info(node);
 		ir_node  *const op     = get_Abs_op(node);
 		ir_node  *const new_op = be_transform_node(op);
-		ir_node  *const sra    = new_bd_sparc_Sra_imm(dbgi, block, new_op, 31);
+		ir_node  *const sra    = new_bd_sparc_Sra_imm(dbgi, block, new_op, NULL, 31);
 		ir_node  *const xor    = new_bd_sparc_Xor_reg(dbgi, block, new_op, sra);
 		ir_node  *const sub    = new_bd_sparc_Sub_reg(dbgi, block, xor,    sra);
 		return sub;
@@ -635,14 +710,6 @@ static ir_node *gen_Minus(ir_node *node)
 	return new_bd_sparc_Sub_reg(dbgi, block, zero, new_op);
 }
 
-static ir_node *make_addr(dbg_info *dbgi, ir_entity *entity)
-{
-	ir_node *block = get_irg_start_block(current_ir_graph);
-	ir_node *node  = new_bd_sparc_SymConst(dbgi, block, entity);
-	be_dep_on_frame(node);
-	return node;
-}
-
 /**
  * Create an entity for a given (floating point) tarval
  */
@@ -682,11 +749,12 @@ static ir_node *gen_Const(ir_node *node)
 	if (mode_is_float(mode)) {
 		tarval    *tv     = get_Const_tarval(node);
 		ir_entity *entity = create_float_const_entity(tv);
-		ir_node   *addr   = make_addr(dbgi, entity);
+		ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
 		ir_node   *mem    = new_NoMem();
 		ir_node   *new_op
-			= create_ldf(dbgi, block, addr, mem, mode, NULL, 0, false);
+			= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
 		ir_node   *proj   = new_Proj(new_op, mode, pn_sparc_Ldf_res);
+		be_dep_on_frame(hi);
 
 		set_irn_pinned(new_op, op_pin_state_floats);
 		return proj;
@@ -697,12 +765,12 @@ static ir_node *gen_Const(ir_node *node)
 	if (value == 0) {
 		return get_g0();
 	} else if (-4096 <= value && value <= 4095) {
-		return new_bd_sparc_Or_imm(dbgi, block, get_g0(), value);
+		return new_bd_sparc_Or_imm(dbgi, block, get_g0(), NULL, value);
 	} else {
-		ir_node *hi = new_bd_sparc_SetHi(dbgi, block, value);
+		ir_node *hi = new_bd_sparc_SetHi(dbgi, block, NULL, value);
 		be_dep_on_frame(hi);
 		if ((value & 0x3ff) != 0) {
-			return new_bd_sparc_Or_imm(dbgi, block, hi, value & 0x3ff);
+			return new_bd_sparc_Or_imm(dbgi, block, hi, NULL, value & 0x3ff);
 		} else {
 			return hi;
 		}
@@ -798,10 +866,15 @@ static ir_node *gen_Cmp(ir_node *node)
  */
 static ir_node *gen_SymConst(ir_node *node)
 {
-	ir_entity *entity = get_SymConst_entity(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_entity *entity    = get_SymConst_entity(node);
+	dbg_info  *dbgi      = get_irn_dbg_info(node);
+	ir_node   *block     = get_nodes_block(node);
+	ir_node   *new_block = be_transform_node(block);
+	ir_node   *hi        = new_bd_sparc_SetHi(dbgi, new_block, entity, 0);
+	ir_node   *low       = new_bd_sparc_Or_imm(dbgi, new_block, hi, entity, 0);
+	be_dep_on_frame(hi);
 
-	return make_addr(dbgi, entity);
+	return low;
 }
 
 static ir_node *create_fftof(dbg_info *dbgi, ir_node *block, ir_node *op,
@@ -1377,7 +1450,7 @@ static ir_node *gen_Sel(ir_node *node)
 	assert(get_entity_owner(entity) !=
 			get_method_value_param_type(get_entity_type(get_irg_entity(get_irn_irg(node)))));
 
-	return new_bd_sparc_FrameAddr(dbgi, new_block, new_ptr, entity);
+	return new_bd_sparc_FrameAddr(dbgi, new_block, new_ptr, entity, 0);
 }
 
 static const arch_register_req_t float1_req = {

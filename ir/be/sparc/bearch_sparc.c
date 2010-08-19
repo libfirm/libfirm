@@ -66,23 +66,24 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static arch_irn_class_t sparc_classify(const ir_node *irn)
+static arch_irn_class_t sparc_classify(const ir_node *node)
 {
-	(void) irn;
+	(void) node;
 	return 0;
 }
 
-static ir_entity *sparc_get_frame_entity(const ir_node *irn)
+static ir_entity *sparc_get_frame_entity(const ir_node *node)
 {
-	if (is_sparc_FrameAddr(irn)) {
-		const sparc_symconst_attr_t *attr = get_irn_generic_attr_const(irn);
-		return attr->entity;
+	if (is_sparc_FrameAddr(node)) {
+		const sparc_attr_t *attr = get_sparc_attr_const(node);
+		return attr->immediate_value_entity;
 	}
 
-	if (sparc_has_load_store_attr(irn)) {
-		const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(irn);
+	if (sparc_has_load_store_attr(node)) {
+		const sparc_load_store_attr_t *load_store_attr
+			= get_sparc_load_store_attr_const(node);
 		if (load_store_attr->is_frame_entity) {
-			return load_store_attr->entity;
+			return load_store_attr->base.immediate_value_entity;
 		}
 	}
 
@@ -93,16 +94,14 @@ static ir_entity *sparc_get_frame_entity(const ir_node *irn)
  * This function is called by the generic backend to correct offsets for
  * nodes accessing the stack.
  */
-static void sparc_set_frame_offset(ir_node *irn, int offset)
+static void sparc_set_frame_offset(ir_node *node, int offset)
 {
-	if (is_sparc_FrameAddr(irn)) {
-		sparc_symconst_attr_t *attr = get_irn_generic_attr(irn);
-		attr->fp_offset += offset;
-	} else {
-		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(irn);
-		assert(sparc_has_load_store_attr(irn));
-		attr->offset += offset;
-	}
+	sparc_attr_t *attr = get_sparc_attr(node);
+	attr->immediate_value += offset;
+
+	/* must be a FrameAddr or a load/store node with frame_entity */
+	assert(is_sparc_FrameAddr(node) ||
+			get_sparc_load_store_attr_const(node)->is_frame_entity);
 }
 
 static int sparc_get_sp_bias(const ir_node *node)
@@ -259,7 +258,7 @@ static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 		return;
 
 	attr   = get_sparc_load_store_attr_const(node);
-	entity = attr->entity;
+	entity = attr->base.immediate_value_entity;
 	mode   = attr->load_store_mode;
 	if (entity != NULL)
 		return;
@@ -279,7 +278,9 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
 		/* we only say be_node_needs_frame_entity on nodes with load_store
 		 * attributes, so this should be fine */
 		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
-		attr->entity = entity;
+		assert(attr->is_frame_entity);
+		assert(attr->base.immediate_value_entity == NULL);
+		attr->base.immediate_value_entity = entity;
 	}
 }
 

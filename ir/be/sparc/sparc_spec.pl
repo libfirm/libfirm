@@ -148,8 +148,6 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_attr_t             => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity);",
-	sparc_symconst_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-	                            "\tinit_sparc_symconst_attributes(res, entity);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_jmp_switch_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
@@ -162,7 +160,6 @@ $default_copy_attr = "sparc_copy_attr";
 %compare_attr = (
 	sparc_attr_t            => "cmp_attr_sparc",
 	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-	sparc_symconst_attr_t   => "cmp_attr_sparc_symconst",
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
 	sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
 	sparc_save_attr_t       => "cmp_attr_sparc_save",
@@ -180,8 +177,8 @@ $default_copy_attr = "sparc_copy_attr";
 
 my %cmp_operand_constructors = (
 	imm => {
-		attr       => "int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_value);",
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
 		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
 		ins        => [ "left" ],
 	},
@@ -193,8 +190,8 @@ my %cmp_operand_constructors = (
 
 my %unop_operand_constructors = (
 	imm => {
-		attr       => "int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_value);",
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
 		reg_req    => { in => [], out => [ "gp" ] },
 	},
 	reg => {
@@ -204,8 +201,8 @@ my %unop_operand_constructors = (
 
 my %binop_operand_constructors = (
 	imm => {
-		attr       => "int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_value);",
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
 		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
 		ins        => [ "left" ],
 	},
@@ -283,7 +280,7 @@ Ld => {
 	outs      => [ "res", "M" ],
 	ins       => [ "ptr", "mem" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	emit      => '. ld%LM [%S1%O], %D1'
 },
 
@@ -292,8 +289,8 @@ SetHi => {
 	outs       => [ "res" ],
 	mode       => $mode_gp,
 	reg_req    => { in => [], out => [ "gp" ] },
-	attr       => "int32_t immediate_value",
-	custominit => "sparc_set_attr_imm(res, immediate_value);",
+	attr       => "ir_entity *entity, int32_t immediate_value",
+	custominit => "sparc_set_attr_imm(res, entity, immediate_value);",
 	emit       => '. sethi %HIM, %D1'
 },
 
@@ -312,7 +309,7 @@ St => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	emit      => '. st%SM %S2, [%S1%O]'
 },
 
@@ -342,23 +339,15 @@ AddSP => {
 	emit      => ". add %S1, %S2, %D1\n",
 },
 
-SymConst => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	attr      => "ir_entity *entity",
-	reg_req   => { out => [ "gp" ] },
-	attr_type => "sparc_symconst_attr_t",
-	mode      => $mode_gp,
-},
-
 FrameAddr => {
-	op_flags  => [ "constlike" ],
-	irn_flags => [ "rematerializable" ],
-	attr      => "ir_entity *entity",
-	reg_req   => { in => [ "gp" ], out => [ "gp" ] },
-	ins       => [ "base" ],
-	attr_type => "sparc_symconst_attr_t",
-	mode      => $mode_gp,
+	op_flags   => [ "constlike" ],
+	irn_flags  => [ "rematerializable" ],
+	attr       => "ir_entity *entity, int32_t offset",
+	reg_req    => { in => [ "gp" ], out => [ "gp" ] },
+	ins        => [ "base" ],
+	attr_type  => "sparc_attr_t",
+	custominit => "sparc_set_attr_imm(res, entity, offset);",
+	mode       => $mode_gp,
 },
 
 Bicc => {
@@ -396,8 +385,8 @@ Call => {
 	out_arity => "variable",
 	constructors => {
 		imm => {
-			attr       => "ir_entity *entity, long offset",
-			custominit => "get_sparc_attr(res)->immediate_value_entity = entity;",
+			attr       => "ir_entity *entity, int32_t offset",
+			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
 			arity     => "variable",
 			out_arity => "variable",
 		},
@@ -697,7 +686,7 @@ Ldf => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	emit      => '. ld%FLSM [%S1%O], %D1'
 },
 
@@ -718,7 +707,7 @@ Stf => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	emit      => '. st%FLSM %S2, [%S1%O]',
 	mode      => 'mode_M',
 },

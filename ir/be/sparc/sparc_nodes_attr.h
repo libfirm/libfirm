@@ -38,7 +38,7 @@ struct sparc_attr_t
 	except_attr                 exc;                /**< the exception attribute. MUST be the first one. */
 	const arch_register_req_t **in_req;             /**< register requirements for arguments */
 	int32_t                     immediate_value;    /* immediate values */
-	ir_entity                  *immediate_value_entity; /* hack for now */
+	ir_entity                  *immediate_value_entity;
 };
 
 enum sparc_arch_irn_flags_t {
@@ -79,19 +79,7 @@ typedef struct sparc_load_store_attr_t sparc_load_store_attr_t;
 struct sparc_load_store_attr_t {
 	sparc_attr_t  base;    /**< generic attribute */
 	ir_mode      *load_store_mode;
-	ir_entity    *entity;
-	long          offset;
 	bool          is_frame_entity;
-};
-
-/**
- * attributes for SymConsts
- */
-typedef struct sparc_symconst_attr_t sparc_symconst_attr_t;
-struct sparc_symconst_attr_t {
-	sparc_attr_t  base;    /**< generic attribute */
-	ir_entity    *entity;
-	int           fp_offset;
 };
 
 /**

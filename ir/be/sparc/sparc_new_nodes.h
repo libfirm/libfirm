@@ -38,9 +38,6 @@ bool sparc_has_load_store_attr(const ir_node *node);
 sparc_load_store_attr_t *get_sparc_load_store_attr(ir_node *node);
 const sparc_load_store_attr_t *get_sparc_load_store_attr_const(const ir_node *node);
 
-sparc_symconst_attr_t *get_sparc_symconst_attr(ir_node *node);
-const sparc_symconst_attr_t *get_sparc_symconst_attr_const(const ir_node *node);
-
 sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr(ir_node *node);
 const sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr_const(const ir_node *node);
 

@@ -109,17 +109,46 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 	return reg;
 }
 
+static bool is_valid_immediate(int32_t value)
+{
+	return -4096 <= value && value < 4096;
+}
+
 void sparc_emit_immediate(const ir_node *node)
 {
-	int32_t value = get_sparc_attr_const(node)->immediate_value;
-	assert(-4096 <= value && value < 4096);
-	be_emit_irprintf("%d", value);
+	const sparc_attr_t *attr   = get_sparc_attr_const(node);
+	ir_entity          *entity = attr->immediate_value_entity;
+
+	if (entity == NULL) {
+		int32_t value = attr->immediate_value;
+		assert(is_valid_immediate(value));
+		be_emit_irprintf("%d", value);
+	} else {
+		be_emit_cstring("%lo(");
+		be_gas_emit_entity(entity);
+		if (attr->immediate_value != 0) {
+			be_emit_irprintf("%+d", attr->immediate_value);
+		}
+		be_emit_char(')');
+	}
 }
 
 void sparc_emit_high_immediate(const ir_node *node)
 {
-	uint32_t value = (uint32_t) get_sparc_attr_const(node)->immediate_value;
-	be_emit_irprintf("%%hi(0x%X)", value);
+	const sparc_attr_t *attr   = get_sparc_attr_const(node);
+	ir_entity          *entity = attr->immediate_value_entity;
+
+	be_emit_cstring("%hi(");
+	if (entity == NULL) {
+		uint32_t value = (uint32_t) attr->immediate_value;
+		be_emit_irprintf("0x%X", value);
+	} else {
+		be_gas_emit_entity(entity);
+		if (attr->immediate_value != 0) {
+			be_emit_irprintf("%+d", attr->immediate_value);
+		}
+	}
+	be_emit_char(')');
 }
 
 void sparc_emit_source_register(const ir_node *node, int pos)
@@ -165,14 +194,20 @@ static bool is_stack_pointer_relative(const ir_node *node)
 void sparc_emit_offset(const ir_node *node)
 {
 	const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(node);
-	long                           offset = attr->offset;
 
-	/* bad hack: the real stack stuff is behind the always-there spill
-	 * space for the register window and stack */
-	if (is_stack_pointer_relative(node))
-		offset += SPARC_MIN_STACKSIZE;
-	if (offset != 0) {
-		be_emit_irprintf("%+ld", offset);
+	if (attr->is_frame_entity) {
+		int32_t offset = attr->base.immediate_value;
+		/* bad hack: the real stack stuff is behind the always-there spill
+		 * space for the register window and stack */
+		if (is_stack_pointer_relative(node))
+			offset += SPARC_MIN_STACKSIZE;
+		if (offset != 0) {
+			assert(is_valid_immediate(offset));
+			be_emit_irprintf("%+ld", offset);
+		}
+	} else {
+		be_emit_char('+');
+		sparc_emit_immediate(node);
 	}
 }
 
@@ -420,6 +455,9 @@ static void emit_sparc_Call(const ir_node *node)
 	be_emit_cstring("\tcall ");
 	if (entity != NULL) {
 	    sparc_emit_entity(entity);
+	    if (attr->immediate_value != 0) {
+			be_emit_irprintf("%+d", attr->immediate_value);
+		}
 		be_emit_cstring(", 0");
 	} else {
 		int last = get_irn_arity(node);
@@ -522,54 +560,28 @@ static void emit_be_MemPerm(const ir_node *node)
 }
 
 /**
- * Emit a SymConst.
- */
-static void emit_sparc_SymConst(const ir_node *irn)
-{
-	const sparc_symconst_attr_t *attr = get_sparc_symconst_attr_const(irn);
-
-	//sethi %hi(const32),%reg
-	//or    %reg,%lo(const32),%reg
-
-	be_emit_cstring("\tsethi %hi(");
-	be_gas_emit_entity(attr->entity);
-	be_emit_cstring("), ");
-	sparc_emit_dest_register(irn, 0);
-	be_emit_cstring("\n ");
-
-	// TODO: could be combined with the following load/store instruction
-	be_emit_cstring("\tor ");
-	sparc_emit_dest_register(irn, 0);
-	be_emit_cstring(", %lo(");
-	be_gas_emit_entity(attr->entity);
-	be_emit_cstring("), ");
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-}
-
-/**
  * Emits code for FrameAddr fix
  */
-static void emit_sparc_FrameAddr(const ir_node *irn)
+static void emit_sparc_FrameAddr(const ir_node *node)
 {
-	const sparc_symconst_attr_t *attr = get_irn_generic_attr_const(irn);
+	const sparc_attr_t *attr = get_sparc_attr_const(node);
 
 	// no need to fix offset as we are adressing via the framepointer
-	if (attr->fp_offset >= 0) {
+	if (attr->immediate_value >= 0) {
 		be_emit_cstring("\tadd ");
-		sparc_emit_source_register(irn, 0);
+		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
-		be_emit_irprintf("%ld", attr->fp_offset);
+		be_emit_irprintf("%ld", attr->immediate_value);
 	} else {
 		be_emit_cstring("\tsub ");
-		sparc_emit_source_register(irn, 0);
+		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
-		be_emit_irprintf("%ld", -attr->fp_offset);
+		be_emit_irprintf("%ld", -attr->immediate_value);
 	}
 
 	be_emit_cstring(", ");
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
+	sparc_emit_dest_register(node, 0);
+	be_emit_finish_line_gas(node);
 }
 
 static const char *get_icc_unsigned(pn_Cmp pnc)
@@ -833,7 +845,6 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
 	set_emitter(op_sparc_Save,      emit_sparc_Save);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
-	set_emitter(op_sparc_SymConst,  emit_sparc_SymConst);
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 
 	/* no need to emit anything for the following nodes */
