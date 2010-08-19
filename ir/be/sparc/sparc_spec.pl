@@ -226,17 +226,14 @@ my %div_operand_constructors = (
 my %float_binop_constructors = (
 	s => {
 		reg_req => { in => [ "fp", "fp" ], out => [ "fp" ] },
-		ins     => [ "left", "right" ],
 		mode    => $mode_fp,
 	},
 	d => {
 		reg_req => { in => [ "fp:a|2", "fp:a|2" ], out => [ "fp:a|2" ] },
-		ins     => [ "left", "right" ],
 		mode    => $mode_fp2,
 	},
 	q => {
 		reg_req => { in => [ "fp:a|4", "fp:a|4" ], out => [ "fp:a|4" ] },
-		ins     => [ "left", "right" ],
 		mode    => $mode_fp4,
 	}
 );
@@ -244,17 +241,14 @@ my %float_binop_constructors = (
 my %float_unop_constructors = (
 	s => {
 		reg_req => { in => [ "fp" ], out => [ "fp" ] },
-		ins     => [ "left", "right" ],
 		mode    => $mode_fp,
 	},
 	d => {
 		reg_req => { in => [ "fp:a|2" ], out => [ "fp:a|2" ] },
-		ins     => [ "left", "right" ],
 		mode    => $mode_fp2,
 	},
 	q => {
 		reg_req => { in => [ "fp:a|4" ], out => [ "fp:a|4" ] },
-		ins     => [ "left", "right" ],
 		mode    => $mode_fp4,
 	}
 );
@@ -553,6 +547,7 @@ fadd => {
 	emit         => '. fadd%FPM %S1, %S2, %D1',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
+	ins          => [ "left", "right" ],
 	constructors => \%float_binop_constructors,
 },
 
@@ -561,6 +556,7 @@ fsub => {
 	emit         => '. fsub%FPM %S1, %S2, %D1',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
+	ins          => [ "left", "right" ],
 	constructors => \%float_binop_constructors,
 },
 
@@ -570,6 +566,7 @@ fmul => {
 	emit         =>'. fmul%FPM %S1, %S2, %D1',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
+	ins          => [ "left", "right" ],
 	constructors => \%float_binop_constructors,
 },
 
@@ -578,6 +575,7 @@ fdiv => {
 	emit         => '. fdiv%FPM %S1, %S2, %D1',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
+	ins          => [ "left", "right" ],
 	outs         => [ "res", "M" ],
 	constructors => \%float_binop_constructors,
 },
@@ -589,6 +587,7 @@ fneg => {
 	emit      => '. fneg %S1, %D1',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
+	ins          => [ "val" ],
 	constructors => \%float_unop_constructors,
 },
 
@@ -598,6 +597,7 @@ fneg => {
 	emit         => '. fabs %S1, %D1',
 	attr_type    => "sparc_fp_attr_t",
 	attr         => "ir_mode *fp_mode",
+	ins          => [ "val" ],
 	constructors => \%float_unop_constructors,
 },
 
