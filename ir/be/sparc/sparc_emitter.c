@@ -412,7 +412,7 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 	be_emit_irprintf("\t%s ", is_signed ? "sdiv" : "udiv");
 	sparc_emit_source_register(node, 1);
 	be_emit_cstring(", ");
-	sparc_emit_source_register(node, 2);
+	sparc_emit_reg_or_imm(node, 2);
 	be_emit_cstring(", ");
 	sparc_emit_dest_register(node, 0);
 	be_emit_finish_line_gas(node);
@@ -420,11 +420,7 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 
 static void emit_sparc_SDiv(const ir_node *node)
 {
-	(void) node;
-	/* aehm we would need an aditional register for an sra instruction to
-	 * compute the upper bits... Just panic for now */
-	//emit_sparc_Div(node, true);
-	panic("signed div is wrong");
+	emit_sparc_Div(node, true);
 }
 
 static void emit_sparc_UDiv(const ir_node *node)

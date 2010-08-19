@@ -272,6 +272,11 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
 	panic("unsupported mode %+F for float op", mode);
 }
 
+static ir_node *get_g0(void)
+{
+	return be_prolog_get_reg_value(abihelper, &sparc_gp_regs[REG_G0]);
+}
+
 typedef struct address_t {
 	ir_node   *base;
 	ir_entity *entity;
@@ -531,6 +536,17 @@ static ir_node *gen_Mulh(ir_node *node)
 	return proj_res_hi;
 }
 
+static ir_node *gen_sign_extension_value(ir_node *node)
+{
+	ir_node *block     = get_nodes_block(node);
+	ir_node *new_block = be_transform_node(block);
+	ir_node *new_node  = be_transform_node(node);
+	/* TODO: we could do some shortcuts for some value types probably.
+	 * (For constants or other cases where we know the sign bit in
+	 *  advance) */
+	return new_bd_sparc_Sra_imm(NULL, new_block, new_node, NULL, 31);
+}
+
 /**
  * Creates an sparc Div.
  *
@@ -538,17 +554,41 @@ static ir_node *gen_Mulh(ir_node *node)
  */
 static ir_node *gen_Div(ir_node *node)
 {
-	ir_mode *mode = get_Div_resmode(node);
-	ir_node *res;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_mode  *mode      = get_Div_resmode(node);
+	ir_node  *left      = get_Div_left(node);
+	ir_node  *left_low  = be_transform_node(left);
+	ir_node  *right     = get_Div_right(node);
+	ir_node  *res;
 
 	assert(!mode_is_float(mode));
 	if (mode_is_signed(mode)) {
-		res = gen_helper_binop(node, 0, new_bd_sparc_SDiv_reg,
-		                       new_bd_sparc_SDiv_imm);
+		ir_node *left_high = gen_sign_extension_value(left);
+
+		if (is_imm_encodeable(right)) {
+			int32_t immediate = get_tarval_long(get_Const_tarval(right));
+			res = new_bd_sparc_SDiv_imm(dbgi, new_block, left_high, left_low,
+			                            NULL, immediate);
+		} else {
+			ir_node *new_right = be_transform_node(right);
+			res = new_bd_sparc_SDiv_reg(dbgi, new_block, left_high, left_low,
+			                            new_right);
+		}
 	} else {
-		res = gen_helper_binop(node, 0, new_bd_sparc_UDiv_reg,
-		                       new_bd_sparc_UDiv_imm);
+		ir_node *left_high = get_g0();
+		if (is_imm_encodeable(right)) {
+			int32_t immediate = get_tarval_long(get_Const_tarval(right));
+			res = new_bd_sparc_UDiv_imm(dbgi, new_block, left_high, left_low,
+			                            NULL, immediate);
+		} else {
+			ir_node *new_right = be_transform_node(right);
+			res = new_bd_sparc_UDiv_reg(dbgi, new_block, left_high, left_low,
+			                            new_right);
+		}
 	}
+
 	return res;
 }
 
@@ -577,11 +617,6 @@ static ir_node *gen_Abs(ir_node *node)
 		ir_node  *const sub    = new_bd_sparc_Sub_reg(dbgi, block, xor,    sra);
 		return sub;
 	}
-}
-
-static ir_node *get_g0(void)
-{
-	return be_prolog_get_reg_value(abihelper, &sparc_gp_regs[REG_G0]);
 }
 
 /**

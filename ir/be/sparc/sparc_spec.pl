@@ -212,6 +212,17 @@ my %binop_operand_constructors = (
 	},
 );
 
+my %div_operand_constructors = (
+	imm => {
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp" ] },
+	},
+	reg => {
+		reg_req    => { in => [ "gp", "gp", "gp" ], out => [ "gp" ] },
+	},
+);
+
 my %float_binop_constructors = (
 	s => {
 		reg_req => { in => [ "fp", "fp" ], out => [ "fp" ] },
@@ -501,24 +512,20 @@ Mulh => {
 	constructors => \%binop_operand_constructors,
 },
 
-# The div instructions are kinda hacky. Things to improve:
-# * Make high-value input explicitely. Either as a gp at first or ideally
-#   as an explicit y-register
-
 SDiv => {
 	irn_flags    => [ "rematerializable" ],
 	state        => "exc_pinned",
-	ins          => [ "dividend_low", "divisor" ],
+	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
-	constructors => \%binop_operand_constructors,
+	constructors => \%div_operand_constructors,
 },
 
 UDiv => {
 	irn_flags    => [ "rematerializable" ],
 	state        => "exc_pinned",
-	ins          => [ "dividend_low", "divisor" ],
+	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
-	constructors => \%binop_operand_constructors,
+	constructors => \%div_operand_constructors,
 },
 
 fcmp => {
