@@ -96,11 +96,11 @@ struct sparc_jmp_cond_attr_t {
 /**
  * attributes for switch jumps
  */
-typedef struct sparc_jmp_switch_attr_t sparc_jmp_switch_attr_t;
-struct sparc_jmp_switch_attr_t {
+typedef struct sparc_switch_jmp_attr_t sparc_switch_jmp_attr_t;
+struct sparc_switch_jmp_attr_t {
 	sparc_attr_t  base;    /**< generic attribute */
-	int           n_projs;
 	long          default_proj_num;
+	ir_entity    *jump_table;
 };
 
 #endif

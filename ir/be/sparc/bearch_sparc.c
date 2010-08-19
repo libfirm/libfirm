@@ -131,8 +131,6 @@ static const arch_irn_ops_t sparc_irn_ops = {
 	NULL,    /* perform_memory_operand  */
 };
 
-
-
 /**
  * Transforms the standard firm graph into
  * a SPARC firm graph

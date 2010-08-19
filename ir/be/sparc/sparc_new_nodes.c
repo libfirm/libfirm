@@ -55,7 +55,7 @@ static bool has_jmp_cond_attr(const ir_node *node)
 	return is_sparc_Bicc(node) || is_sparc_fbfcc(node);
 }
 
-static bool has_jmp_switch_attr(const ir_node *node)
+static bool has_switch_jmp_attr(const ir_node *node)
 {
 	return is_sparc_SwitchJmp(node);
 }
@@ -121,10 +121,9 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			fprintf(F, "pnc: %d (%s)\n", attr->pnc, get_pnc_string(attr->pnc));
 			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
 		}
-		if (has_jmp_switch_attr(n)) {
-			const sparc_jmp_switch_attr_t *attr
-				= get_sparc_jmp_switch_attr_const(n);
-			fprintf(F, "n projs: %d\n", attr->n_projs);
+		if (has_switch_jmp_attr(n)) {
+			const sparc_switch_jmp_attr_t *attr
+				= get_sparc_switch_jmp_attr_const(n);
 			fprintf(F, "default proj: %ld\n", attr->default_proj_num);
 		}
 		if (has_fp_attr(n)) {
@@ -156,32 +155,6 @@ static void init_sparc_jmp_cond_attr(ir_node *node, int pnc, bool is_unsigned)
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 	attr->pnc         = pnc;
 	attr->is_unsigned = is_unsigned;
-}
-
-void set_sparc_jmp_switch_n_projs(ir_node *node, int n_projs)
-{
-	sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr(node);
-	attr->n_projs = n_projs;
-}
-
-void set_sparc_jmp_switch_default_proj_num(ir_node *node, long def_proj_num)
-{
-	sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr(node);
-	attr->default_proj_num = def_proj_num;
-}
-
-
-
-int get_sparc_jmp_switch_n_projs(const ir_node *node)
-{
-	const sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr_const(node);
-	return attr->n_projs;
-}
-
-long get_sparc_jmp_switch_default_proj_num(const ir_node *node)
-{
-	const sparc_jmp_switch_attr_t *attr = get_sparc_jmp_switch_attr_const(node);
-	return attr->default_proj_num;
 }
 
 sparc_attr_t *get_sparc_attr(ir_node *node)
@@ -220,16 +193,16 @@ const sparc_jmp_cond_attr_t *get_sparc_jmp_cond_attr_const(const ir_node *node)
 	return (const sparc_jmp_cond_attr_t*) get_irn_generic_attr_const(node);
 }
 
-sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr(ir_node *node)
+sparc_switch_jmp_attr_t *get_sparc_switch_jmp_attr(ir_node *node)
 {
-	assert(has_jmp_switch_attr(node));
-	return (sparc_jmp_switch_attr_t*) get_irn_generic_attr_const(node);
+	assert(has_switch_jmp_attr(node));
+	return (sparc_switch_jmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
-const sparc_jmp_switch_attr_t *get_sparc_jmp_switch_attr_const(const ir_node *node)
+const sparc_switch_jmp_attr_t *get_sparc_switch_jmp_attr_const(const ir_node *node)
 {
-	assert(has_jmp_switch_attr(node));
-	return (const sparc_jmp_switch_attr_t*) get_irn_generic_attr_const(node);
+	assert(has_switch_jmp_attr(node));
+	return (const sparc_switch_jmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
 sparc_save_attr_t *get_sparc_save_attr(ir_node *node)
@@ -356,6 +329,14 @@ static void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
 	attr->dest_mode = dest_mode;
 }
 
+static void init_sparc_switch_jmp_attributes(ir_node *res, long default_pn,
+                                             ir_entity *jump_table)
+{
+	sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr(res);
+	attr->default_proj_num = default_pn;
+	attr->jump_table       = jump_table;
+}
+
 /**
  * copies sparc attributes of  node
  */
@@ -411,16 +392,15 @@ static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
 	    || attr_a->is_unsigned != attr_b->is_unsigned;
 }
 
-static int cmp_attr_sparc_jmp_switch(ir_node *a, ir_node *b)
+static int cmp_attr_sparc_switch_jmp(ir_node *a, ir_node *b)
 {
-	const sparc_jmp_switch_attr_t *attr_a = get_sparc_jmp_switch_attr_const(a);
-	const sparc_jmp_switch_attr_t *attr_b = get_sparc_jmp_switch_attr_const(b);
+	const sparc_switch_jmp_attr_t *attr_a = get_sparc_switch_jmp_attr_const(a);
+	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
 
 	if (cmp_attr_sparc(a, b))
 		return 1;
 
-	return attr_a->default_proj_num != attr_b->default_proj_num
-			|| attr_a->n_projs != attr_b->n_projs;
+	return attr_a->default_proj_num != attr_b->default_proj_num;
 }
 
 static int cmp_attr_sparc_save(ir_node *a, ir_node *b)

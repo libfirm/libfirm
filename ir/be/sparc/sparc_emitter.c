@@ -322,12 +322,17 @@ void sparc_emit_fp_mode_suffix(const ir_node *node)
 	emit_fp_suffix(attr->fp_mode);
 }
 
+static ir_node *get_jump_target(const ir_node *jump)
+{
+	return get_irn_link(jump);
+}
+
 /**
  * Returns the target label for a control flow node.
  */
 static void sparc_emit_cfop_target(const ir_node *node)
 {
-	ir_node *block = get_irn_link(node);
+	ir_node *block = get_jump_target(node);
 	be_gas_emit_block_name(block);
 }
 
@@ -400,6 +405,12 @@ static void emit_sparc_Mulh(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
+static void fill_delay_slot(void)
+{
+	be_emit_cstring("\tnop\n");
+	be_emit_write_line();
+}
+
 static void emit_sparc_Div(const ir_node *node, bool is_signed)
 {
 	/* can we get the delay count of the wr instruction somewhere? */
@@ -412,8 +423,7 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 	be_emit_finish_line_gas(node);
 
 	for (i = 0; i < wry_delay_count; ++i) {
-		be_emit_cstring("\tnop");
-		be_emit_finish_line_gas(node);
+		fill_delay_slot();
 	}
 
 	be_emit_irprintf("\t%s ", is_signed ? "sdiv" : "udiv");
@@ -468,9 +478,7 @@ static void emit_sparc_Call(const ir_node *node)
 	}
 	be_emit_finish_line_gas(node);
 
-	/* fill delay slot */
-	be_emit_cstring("\tnop");
-	be_emit_finish_line_gas(node);
+	fill_delay_slot();
 }
 
 /**
@@ -693,9 +701,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	sparc_emit_cfop_target(proj_true);
 	be_emit_finish_line_gas(proj_true);
 
-	be_emit_cstring("\tnop");
-	be_emit_pad_comment();
-	be_emit_cstring("/* TODO: use delay slot */\n");
+	fill_delay_slot();
 
 	if (get_irn_link(proj_false) == next_block) {
 		be_emit_cstring("\t/* fallthrough to ");
@@ -706,8 +712,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 		be_emit_cstring("\tba ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
-		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */\n");
-		be_emit_finish_line_gas(proj_false);
+		fill_delay_slot();
 	}
 }
 
@@ -739,13 +744,82 @@ static void emit_sparc_Ba(const ir_node *node)
 		be_emit_cstring("\tba ");
 		sparc_emit_cfop_target(node);
 		be_emit_finish_line_gas(node);
-		be_emit_cstring("\tnop\t\t/* TODO: use delay slot */\n");
+		fill_delay_slot();
 	} else {
 		be_emit_cstring("\t/* fallthrough to ");
 		sparc_emit_cfop_target(node);
 		be_emit_cstring(" */");
 	}
 	be_emit_finish_line_gas(node);
+}
+
+static void emit_jump_table(const ir_node *node)
+{
+	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
+	long             switch_min    = LONG_MAX;
+	long             switch_max    = LONG_MIN;
+	long             default_pn    = attr->default_proj_num;
+	ir_entity       *entity        = attr->jump_table;
+	ir_node         *default_block = NULL;
+	unsigned         length;
+	const ir_edge_t *edge;
+	unsigned         i;
+	ir_node        **table;
+
+	/* go over all proj's and collect them */
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long     pn   = get_Proj_proj(proj);
+
+		/* check for default proj */
+		if (pn == default_pn) {
+			assert(default_block == NULL); /* more than 1 default_pn? */
+			default_block = get_jump_target(proj);
+		} else {
+			switch_min = pn < switch_min ? pn : switch_min;
+			switch_max = pn > switch_max ? pn : switch_max;
+		}
+	}
+	length = (unsigned long) (switch_max - switch_min) + 1;
+	assert(switch_min < LONG_MAX || switch_max > LONG_MIN);
+
+	table = XMALLOCNZ(ir_node*, length);
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long     pn   = get_Proj_proj(proj);
+		if (pn == default_pn)
+			continue;
+
+		table[pn - switch_min] = get_jump_target(proj);
+	}
+
+	/* emit table */
+	be_gas_emit_switch_section(GAS_SECTION_RODATA);
+	be_emit_cstring("\t.align 4\n");
+	be_gas_emit_entity(entity);
+	be_emit_cstring(":\n");
+	for (i = 0; i < length; ++i) {
+		ir_node *block = table[i];
+		if (block == NULL)
+			block = default_block;
+		be_emit_cstring("\t.long ");
+		be_gas_emit_block_name(block);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+
+	xfree(table);
+}
+
+static void emit_sparc_SwitchJmp(const ir_node *node)
+{
+	be_emit_cstring("\tjmp ");
+	sparc_emit_source_register(node, 0);
+	be_emit_finish_line_gas(node);
+	fill_delay_slot();
+
+	emit_jump_table(node);
 }
 
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
@@ -848,6 +922,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
 	set_emitter(op_sparc_Save,      emit_sparc_Save);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
+	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 
 	/* no need to emit anything for the following nodes */

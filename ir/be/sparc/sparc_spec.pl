@@ -149,7 +149,8 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_attr_t             => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-	sparc_jmp_switch_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
+	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+	                            "\tinit_sparc_switch_jmp_attributes(res, default_pn, jump_table);\n",
 	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
@@ -161,7 +162,7 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_attr_t            => "cmp_attr_sparc",
 	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
-	sparc_jmp_switch_attr_t	=> "cmp_attr_sparc_jmp_switch",
+	sparc_switch_jmp_attr_t	=> "cmp_attr_sparc_switch_jmp",
 	sparc_save_attr_t       => "cmp_attr_sparc_save",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
@@ -185,17 +186,6 @@ my %cmp_operand_constructors = (
 	reg => {
 		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
 		ins        => [ "left", "right" ],
-	},
-);
-
-my %unop_operand_constructors = (
-	imm => {
-		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
-		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-		reg_req    => { in => [], out => [ "gp" ] },
-	},
-	reg => {
-		reg_req    => { in => [ "gp" ], out => [ "gp" ] },
 	},
 );
 
@@ -429,15 +419,13 @@ Tst => {
 },
 
 SwitchJmp => {
-	op_flags  => [ "labeled", "cfopcode", "forking" ],
-	irn_flags => [ "modifies_flags" ],
-	state     => "pinned",
-	mode      => "mode_T",
-	attr      => "int n_projs, long def_proj_num",
-	init_attr => "\tset_sparc_jmp_switch_n_projs(res, n_projs);\n".
-					"\tset_sparc_jmp_switch_default_proj_num(res, def_proj_num);",
-	reg_req   => { in => [ "gp" ], out => [ "none" ] },
-	attr_type => "sparc_jmp_switch_attr_t",
+	op_flags     => [ "labeled", "cfopcode", "forking" ],
+	state        => "pinned",
+	mode         => "mode_T",
+	reg_req      => { in => [ "gp" ], out => [ ] },
+	attr_type    => "sparc_switch_jmp_attr_t",
+	attr         => "long default_pn, ir_entity *jump_table",
+	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Sll => {
