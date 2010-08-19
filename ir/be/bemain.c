@@ -343,6 +343,7 @@ int be_parse_arg(const char *arg)
 /** The be parameters returned by default, all off. */
 static const backend_params be_params = {
 	0,    /* don't support inline assembler yet */
+	0,    /* don't support rotl */
 	NULL, /* no lowering required */
 	NULL, /* will be set later */
 	NULL, /* no if conversion settings */

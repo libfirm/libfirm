@@ -73,6 +73,8 @@ typedef void (*lower_for_target_func)(void);
 typedef struct backend_params {
 	/** If set, the backend supports inline assembly. */
 	unsigned support_inline_asm:1;
+	/** If set, the backend supports Rotl nodes */
+	unsigned support_rotl:1;
 
 	/** callback that performs lowerings required for target architecture */
 	lower_for_target_func lower_for_target;

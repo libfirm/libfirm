@@ -50,6 +50,7 @@
 #include "array_t.h"
 #include "vrp.h"
 #include "firm_types.h"
+#include "be.h"
 
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"
@@ -5165,6 +5166,10 @@ static ir_node *transform_node_Or_Rotl(ir_node *or)
 				!= (int) get_mode_size_bits(mode))
 			return or;
 
+		/* some backends can't handle rotl */
+		if (!be_get_backend_param()->support_rotl)
+			return or;
+
 		/* yet, condition met */
 		block = get_nodes_block(or);
 
@@ -5180,9 +5185,11 @@ static ir_node *transform_node_Or_Rotl(ir_node *or)
         rotval = sub; /* a Rot right is not supported, so use a rot left */
     } else if (is_Sub(c2)) {
 		v      = c1;
-    	sub    = c2;
+		sub    = c2;
         rotval = v;
-    } else return or;
+    } else {
+		return or;
+	}
 
 	if (get_Sub_right(sub) != v)
 		return or;
@@ -5196,6 +5203,10 @@ static ir_node *transform_node_Or_Rotl(ir_node *or)
 		return or;
 
 	if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
+		return or;
+
+	/* some backends can't handle rotl */
+	if (!be_get_backend_param()->support_rotl)
 		return or;
 
 	/* yet, condition met */

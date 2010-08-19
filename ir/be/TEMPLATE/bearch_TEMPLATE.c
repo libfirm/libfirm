@@ -454,6 +454,7 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 {
 	static backend_params p = {
 		0,     /* no inline assembly */
+		0,     /* no support for Rotl nodes */
 		TEMPLATE_lower_for_target,  /* lowering for target */
 		NULL,  /* architecture dependent settings, will be set later */
 		NULL,  /* parameter for if conversion */
