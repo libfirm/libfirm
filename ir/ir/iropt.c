@@ -50,6 +50,7 @@
 #include "array_t.h"
 #include "vrp.h"
 #include "firm_types.h"
+#include "bitfiddle.h"
 #include "be.h"
 
 /* Make types visible to allow most efficient access */
@@ -5126,8 +5127,12 @@ static ir_node *transform_node_Or_Rotl(ir_node *or)
 {
 	ir_mode *mode = get_irn_mode(or);
 	ir_node *shl, *shr, *block;
-	ir_node *irn, *x, *c1, *c2, *v, *sub, *n, *rotval;
+	ir_node *irn, *x, *c1, *c2, *n;
 	tarval *tv1, *tv2;
+
+	/* some backends can't handle rotl */
+	if (!be_get_backend_param()->support_rotl)
+		return or;
 
 	if (! mode_is_int(mode))
 		return or;
@@ -5166,10 +5171,6 @@ static ir_node *transform_node_Or_Rotl(ir_node *or)
 				!= (int) get_mode_size_bits(mode))
 			return or;
 
-		/* some backends can't handle rotl */
-		if (!be_get_backend_param()->support_rotl)
-			return or;
-
 		/* yet, condition met */
 		block = get_nodes_block(or);
 
@@ -5179,41 +5180,15 @@ static ir_node *transform_node_Or_Rotl(ir_node *or)
 		return n;
 	}
 
-    if (is_Sub(c1)) {
-	    v      = c2;
-		sub    = c1;
-        rotval = sub; /* a Rot right is not supported, so use a rot left */
-    } else if (is_Sub(c2)) {
-		v      = c1;
-		sub    = c2;
-        rotval = v;
-    } else {
+	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
+	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
+	if (!is_negated_value(c1, c2)) {
 		return or;
 	}
 
-	if (get_Sub_right(sub) != v)
-		return or;
-
-	c1 = get_Sub_left(sub);
-	if (!is_Const(c1))
-		return or;
-
-	tv1 = get_Const_tarval(c1);
-	if (! tarval_is_long(tv1))
-		return or;
-
-	if (get_tarval_long(tv1) != (int) get_mode_size_bits(mode))
-		return or;
-
-	/* some backends can't handle rotl */
-	if (!be_get_backend_param()->support_rotl)
-		return or;
-
 	/* yet, condition met */
 	block = get_nodes_block(or);
-
-	n = new_r_Rotl(block, x, rotval, mode);
-
+	n = new_r_Rotl(block, x, c1, mode);
 	DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
 	return n;
 }  /* transform_node_Or_Rotl */
@@ -5526,6 +5501,91 @@ static ir_node *transform_node_shl_shr(ir_node *n)
 	return new_and;
 }
 
+static tarval *get_modulo_tv_value(tarval *tv, int modulo_val)
+{
+	ir_mode *mode      = get_tarval_mode(tv);
+	tarval  *modulo_tv = new_tarval_from_long(modulo_val, mode);
+	return tarval_mod(tv, modulo_tv);
+}
+
+typedef ir_node*(*new_shift_func)(dbg_info *dbgi, ir_node *block,
+                                  ir_node *left, ir_node *right, ir_mode *mode);
+
+/**
+ * Normalisation: if we have a shl/shr with modulo_shift behaviour
+ * then we can use that to minimize the value of Add(x, const) or
+ * Sub(Const, x). In particular this often avoids 1 instruction in some
+ * backends for the Shift(x, Sub(Const, y)) case because it can be replaced
+ * by Shift(x, Minus(y)) which doesnt't need an explicit Const constructed.
+ */
+static ir_node *transform_node_shift_modulo(ir_node *n,
+                                            new_shift_func new_shift)
+{
+	ir_mode  *mode   = get_irn_mode(n);
+	int       modulo = get_mode_modulo_shift(mode);
+	ir_node  *newop  = NULL;
+	ir_mode  *mode_right;
+	ir_node  *block;
+	ir_node  *right;
+	ir_graph *irg;
+
+	if (modulo == 0)
+		return n;
+	if (get_mode_arithmetic(mode) != irma_twos_complement)
+		return n;
+	if (!is_po2(modulo))
+		return n;
+
+	irg        = get_irn_irg(n);
+	block      = get_nodes_block(n);
+	right      = get_binop_right(n);
+	mode_right = get_irn_mode(right);
+	if (is_Const(right)) {
+		tarval   *tv     = get_Const_tarval(right);
+		tarval   *tv_mod = get_modulo_tv_value(tv, modulo);
+
+		if (tv_mod == tv)
+			return n;
+
+		newop = new_r_Const(irg, tv_mod);
+	} else if (is_Add(right)) {
+		ir_node *add_right = get_Add_right(right);
+		if (is_Const(add_right)) {
+			tarval   *tv     = get_Const_tarval(add_right);
+			tarval   *tv_mod = get_modulo_tv_value(tv, modulo);
+			ir_node  *newconst;
+			if (tv_mod == tv)
+				return n;
+
+			newconst = new_r_Const(irg, tv_mod);
+			newop    = new_r_Add(block, get_Add_left(right), newconst,
+			                     mode_right);
+		}
+	} else if (is_Sub(right)) {
+		ir_node *sub_left = get_Sub_left(right);
+		if (is_Const(sub_left)) {
+			tarval   *tv     = get_Const_tarval(sub_left);
+			tarval   *tv_mod = get_modulo_tv_value(tv, modulo);
+			ir_node  *newconst;
+			if (tv_mod == tv)
+				return n;
+
+			newconst = new_r_Const(irg, tv_mod);
+			newop    = new_r_Sub(block, newconst, get_Sub_right(right),
+			                     mode_right);
+		}
+	} else {
+		return n;
+	}
+
+	if (newop != NULL) {
+		dbg_info *dbgi = get_irn_dbg_info(n);
+		ir_node  *left = get_binop_left(n);
+		return new_shift(dbgi, block, left, newop, mode);
+	}
+	return n;
+}
+
 /**
  * Transform a Shr.
  */
@@ -5539,6 +5599,8 @@ static ir_node *transform_node_Shr(ir_node *n)
 	HANDLE_BINOP_PHI((eval_func) tarval_shr, left, right, c, mode);
 	n = transform_node_shift(n);
 
+	if (is_Shr(n))
+		n = transform_node_shift_modulo(n, new_rd_Shr);
 	if (is_Shr(n))
 		n = transform_node_shl_shr(n);
 	if (is_Shr(n))
@@ -5561,6 +5623,8 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	n = transform_node_shift(n);
 
 	if (is_Shrs(n))
+		n = transform_node_shift_modulo(n, new_rd_Shrs);
+	if (is_Shrs(n))
 		n = transform_node_bitop_shift(n);
 
 	return n;
@@ -5579,6 +5643,8 @@ static ir_node *transform_node_Shl(ir_node *n)
 	HANDLE_BINOP_PHI((eval_func) tarval_shl, a, b, c, mode);
 	n = transform_node_shift(n);
 
+	if (is_Shl(n))
+		n = transform_node_shift_modulo(n, new_rd_Shl);
 	if (is_Shl(n))
 		n = transform_node_shl_shr(n);
 	if (is_Shl(n))

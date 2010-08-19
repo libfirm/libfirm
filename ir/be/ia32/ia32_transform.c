@@ -1771,39 +1771,14 @@ static ir_node *gen_Ror(ir_node *node, ir_node *op1, ir_node *op2)
  */
 static ir_node *gen_Rotl(ir_node *node)
 {
-	ir_node *rotate = NULL;
 	ir_node *op1    = get_Rotl_left(node);
 	ir_node *op2    = get_Rotl_right(node);
 
-	/* Firm has only RotL, so we are looking for a right (op2)
-		 operand "-e+mode_size_bits" (it's an already modified "mode_size_bits-e",
-		 that means we can create a RotR instead of an Add and a RotL */
-
-	if (is_Add(op2)) {
-		ir_node *add = op2;
-		ir_node *left = get_Add_left(add);
-		ir_node *right = get_Add_right(add);
-		if (is_Const(right)) {
-			tarval  *tv   = get_Const_tarval(right);
-			ir_mode *mode = get_irn_mode(node);
-			long     bits = get_mode_size_bits(mode);
-
-			if (is_Minus(left) &&
-			    tarval_is_long(tv)       &&
-			    get_tarval_long(tv) == bits &&
-			    bits                == 32)
-			{
-				DB((dbg, LEVEL_1, "RotL into RotR ... "));
-				rotate = gen_Ror(node, op1, get_Minus_op(left));
-			}
-		}
+	if (is_Minus(op2)) {
+		return gen_Ror(node, op1, get_Minus_op(op2));
 	}
 
-	if (rotate == NULL) {
-		rotate = gen_Rol(node, op1, op2);
-	}
-
-	return rotate;
+	return gen_Rol(node, op1, op2);
 }
 
 
