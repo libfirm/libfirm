@@ -321,40 +321,40 @@ static ir_node *gen_Sub(ir_node *node)
 
 static ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
                            ir_node *mem, ir_mode *mode, ir_entity *entity,
-                           int entity_sign, long offset, bool is_frame_entity)
+                           long offset, bool is_frame_entity)
 {
 	unsigned bits = get_mode_size_bits(mode);
 	assert(mode_is_float(mode));
 	if (bits == 32) {
 		return new_bd_sparc_Ldf_s(dbgi, block, ptr, mem, mode, entity,
-		                          entity_sign, offset, is_frame_entity);
+		                          offset, is_frame_entity);
 	} else if (bits == 64) {
 		return new_bd_sparc_Ldf_d(dbgi, block, ptr, mem, mode, entity,
-		                          entity_sign, offset, is_frame_entity);
+		                          offset, is_frame_entity);
 	} else {
 		assert(bits == 128);
 		return new_bd_sparc_Ldf_q(dbgi, block, ptr, mem, mode, entity,
-		                          entity_sign, offset, is_frame_entity);
+		                          offset, is_frame_entity);
 	}
 }
 
 static ir_node *create_stf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
                            ir_node *value, ir_node *mem, ir_mode *mode,
-                           ir_entity *entity, int entity_sign, long offset,
+                           ir_entity *entity, long offset,
                            bool is_frame_entity)
 {
 	unsigned bits = get_mode_size_bits(mode);
 	assert(mode_is_float(mode));
 	if (bits == 32) {
 		return new_bd_sparc_Stf_s(dbgi, block, ptr, value, mem, mode, entity,
-		                          entity_sign, offset, is_frame_entity);
+		                          offset, is_frame_entity);
 	} else if (bits == 64) {
 		return new_bd_sparc_Stf_d(dbgi, block, ptr, value, mem, mode, entity,
-		                          entity_sign, offset, is_frame_entity);
+		                          offset, is_frame_entity);
 	} else {
 		assert(bits == 128);
 		return new_bd_sparc_Stf_q(dbgi, block, ptr, value, mem, mode, entity,
-		                          entity_sign, offset, is_frame_entity);
+		                          offset, is_frame_entity);
 	}
 }
 
@@ -376,9 +376,9 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_load = NULL;
 
 	if (mode_is_float(mode)) {
-		new_load = create_ldf(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+		new_load = create_ldf(dbgi, block, new_ptr, new_mem, mode, NULL, 0, false);
 	} else {
-		new_load = new_bd_sparc_Ld(dbgi, block, new_ptr, new_mem, mode, NULL, 0, 0, false);
+		new_load = new_bd_sparc_Ld(dbgi, block, new_ptr, new_mem, mode, NULL, 0, false);
 	}
 	set_irn_pinned(new_load, get_irn_pinned(node));
 
@@ -405,9 +405,9 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store = NULL;
 
 	if (mode_is_float(mode)) {
-		new_store = create_stf(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
+		new_store = create_stf(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, false);
 	} else {
-		new_store = new_bd_sparc_St(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, 0, false);
+		new_store = new_bd_sparc_St(dbgi, block, new_ptr, new_val, new_mem, mode, NULL, 0, false);
 	}
 	set_irn_pinned(new_store, get_irn_pinned(node));
 
@@ -685,7 +685,7 @@ static ir_node *gen_Const(ir_node *node)
 		ir_node   *addr   = make_addr(dbgi, entity);
 		ir_node   *mem    = new_NoMem();
 		ir_node   *new_op
-			= create_ldf(dbgi, block, addr, mem, mode, NULL, 0, 0, false);
+			= create_ldf(dbgi, block, addr, mem, mode, NULL, 0, false);
 		ir_node   *proj   = new_Proj(new_op, mode, pn_sparc_Ldf_res);
 
 		set_irn_pinned(new_op, op_pin_state_floats);
@@ -1139,7 +1139,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	ir_node  *sp    = get_irg_frame(irg);
 	ir_node  *nomem = new_NoMem();
 	ir_node  *st    = new_bd_sparc_St(dbgi, block, sp, value0, nomem, mode_gp,
-	                                  NULL, 0, 0, true);
+	                                  NULL, 0, true);
 	ir_mode  *mode;
 	ir_node  *ldf;
 	ir_node  *mem;
@@ -1147,7 +1147,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 
 	if (value1 != NULL) {
 		ir_node *st1 = new_bd_sparc_St(dbgi, block, sp, value1, nomem, mode_gp,
-		                               NULL, 0, 4, true);
+		                               NULL, 4, true);
 		ir_node *in[2] = { st, st1 };
 		ir_node *sync  = new_r_Sync(block, 2, in);
 		set_irn_pinned(st1, op_pin_state_floats);
@@ -1158,7 +1158,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 		mode = mode_fp;
 	}
 
-	ldf = create_ldf(dbgi, block, sp, mem, mode, NULL, 0, 0, true);
+	ldf = create_ldf(dbgi, block, sp, mem, mode, NULL, 0, true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
 	return new_Proj(ldf, mode, pn_sparc_Ldf_res);
@@ -1172,18 +1172,18 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 	ir_node  *stack = get_irg_frame(irg);
 	ir_node  *nomem = new_NoMem();
 	ir_node  *stf   = create_stf(dbgi, block, stack, node, nomem, float_mode,
-	                             NULL, 0, 0, true);
+	                             NULL, 0, true);
 	int       bits  = get_mode_size_bits(float_mode);
 	ir_node  *ld;
 	set_irn_pinned(stf, op_pin_state_floats);
 
-	ld = new_bd_sparc_Ld(dbgi, block, stack, stf, mode_gp, NULL, 0, 0, true);
+	ld = new_bd_sparc_Ld(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
 	set_irn_pinned(ld, op_pin_state_floats);
 	result[0] = new_Proj(ld, mode_gp, pn_sparc_Ld_res);
 
 	if (bits == 64) {
 		ir_node *ld2 = new_bd_sparc_Ld(dbgi, block, stack, stf, mode_gp,
-		                               NULL, 0, 4, true);
+		                               NULL, 4, true);
 		set_irn_pinned(ld, op_pin_state_floats);
 		result[1] = new_Proj(ld2, mode_gp, pn_sparc_Ld_res);
 
@@ -1292,10 +1292,10 @@ static ir_node *gen_Call(ir_node *node)
 		/* create a parameter frame if necessary */
 		if (mode_is_float(mode)) {
 			str = create_stf(dbgi, new_block, incsp, new_value, new_mem,
-			                 mode, NULL, 0, param->offset, true);
+			                 mode, NULL, param->offset, true);
 		} else {
 			str = new_bd_sparc_St(dbgi, new_block, incsp, new_value, new_mem,
-								  mode, NULL, 0, param->offset, true);
+								  mode, NULL, param->offset, true);
 		}
 		set_irn_pinned(str, op_pin_state_floats);
 		sync_ins[sync_arity++] = str;
@@ -1619,7 +1619,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 				ir_node *mem = be_prolog_get_memory(abihelper);
 				ir_node *ld  = new_bd_sparc_Ld(NULL, new_block, fp, mem,
 				                               mode_gp, param->entity,
-				                               0, 0, true);
+				                               0, true);
 				value1 = new_Proj(ld, mode_gp, pn_sparc_Ld_res);
 			}
 
@@ -1637,11 +1637,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 
 		if (mode_is_float(mode)) {
 			load  = create_ldf(NULL, new_block, fp, mem, mode,
-			                   param->entity, 0, 0, true);
+			                   param->entity, 0, true);
 			value = new_r_Proj(load, mode_fp, pn_sparc_Ldf_res);
 		} else {
 			load  = new_bd_sparc_Ld(NULL, new_block, fp, mem, mode,
-			                        param->entity, 0, 0, true);
+			                        param->entity, 0, true);
 			value = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 		}
 		set_irn_pinned(load, op_pin_state_floats);

@@ -113,8 +113,7 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		if (sparc_has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
 			ir_fprintf(F, "load store mode: %+F\n", attr->load_store_mode);
-			ir_fprintf(F, "entity: (sign %d) %+F\n", attr->entity_sign,
-			           attr->entity);
+			ir_fprintf(F, "entity: %+F\n", attr->entity);
 			fprintf(F, "offset: %ld\n", attr->offset);
 			fprintf(F, "is frame entity: %s\n",
 			        attr->is_frame_entity ? "true" : "false");
@@ -339,13 +338,11 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
 
 static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 											ir_entity *entity,
-											int entity_sign, long offset,
-											bool is_frame_entity)
+											long offset, bool is_frame_entity)
 {
 	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(res);
 	attr->load_store_mode    = ls_mode;
 	attr->entity             = entity;
-	attr->entity_sign        = entity_sign;
 	attr->is_frame_entity    = is_frame_entity;
 	attr->offset             = offset;
 }
@@ -417,7 +414,6 @@ static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)
 		return 1;
 
 	return attr_a->entity != attr_b->entity
-			|| attr_a->entity_sign != attr_b->entity_sign
 			|| attr_a->is_frame_entity != attr_b->is_frame_entity
 			|| attr_a->load_store_mode != attr_b->load_store_mode
 			|| attr_a->offset != attr_b->offset;

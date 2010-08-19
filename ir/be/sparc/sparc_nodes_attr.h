@@ -80,7 +80,6 @@ struct sparc_load_store_attr_t {
 	sparc_attr_t  base;    /**< generic attribute */
 	ir_mode      *load_store_mode;
 	ir_entity    *entity;
-	int           entity_sign;
 	long          offset;
 	bool          is_frame_entity;
 };

@@ -186,7 +186,7 @@ static void transform_Reload(ir_node *node)
 
 	ir_node  *sched_point = sched_prev(node);
 
-	load = new_bd_sparc_Ld(dbgi, block, ptr, mem, mode, entity, false, 0, true);
+	load = new_bd_sparc_Ld(dbgi, block, ptr, mem, mode, entity, 0, true);
 	sched_add_after(sched_point, load);
 	sched_remove(node);
 
@@ -214,7 +214,7 @@ static void transform_Spill(ir_node *node)
 	ir_node   *store;
 
 	sched_point = sched_prev(node);
-	store = new_bd_sparc_St(dbgi, block, ptr, val, mem, mode, entity, false, 0, true);
+	store = new_bd_sparc_St(dbgi, block, ptr, val, mem, mode, entity, 0, true);
 	sched_remove(node);
 	sched_add_after(sched_point, store);
 

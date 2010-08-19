@@ -147,7 +147,7 @@ $default_copy_attr = "sparc_copy_attr";
 %init_attr = (
 	sparc_attr_t             => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-	                            "\tinit_sparc_load_store_attributes(res, ls_mode, entity, entity_sign, offset, is_frame_entity);",
+	                            "\tinit_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity);",
 	sparc_symconst_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_symconst_attributes(res, entity);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
@@ -283,7 +283,7 @@ Ld => {
 	outs      => [ "res", "M" ],
 	ins       => [ "ptr", "mem" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
 	emit      => '. ld%LM [%S1%O], %D1'
 },
 
@@ -312,7 +312,7 @@ St => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
 	emit      => '. st%SM %S2, [%S1%O]'
 },
 
@@ -697,7 +697,7 @@ Ldf => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
 	emit      => '. ld%FLSM [%S1%O], %D1'
 },
 
@@ -718,7 +718,7 @@ Stf => {
 	ins       => [ "ptr", "val", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	attr      => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
+	attr      => "ir_mode *ls_mode, ir_entity *entity, long offset, bool is_frame_entity",
 	emit      => '. st%FLSM %S2, [%S1%O]',
 	mode      => 'mode_M',
 },
