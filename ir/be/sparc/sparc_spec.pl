@@ -460,11 +460,25 @@ And => {
 	constructors => \%binop_operand_constructors,
 },
 
+AndCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. and %S1, %R2I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
+},
+
 AndN => {
 	irn_flags => [ "rematerializable" ],
 	mode      => $mode_gp,
 	emit      => '. andn %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
+},
+
+AndNCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. andn %S1, %R2I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 Or => {
@@ -474,11 +488,25 @@ Or => {
 	constructors => \%binop_operand_constructors,
 },
 
+OrCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. or %S1, %R2I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
+},
+
 OrN => {
 	irn_flags => [ "rematerializable" ],
 	mode      => $mode_gp,
 	emit      => '. orn %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
+},
+
+OrNCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. orn %S1, %R2I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 Xor => {
@@ -488,11 +516,25 @@ Xor => {
 	constructors => \%binop_operand_constructors,
 },
 
+XorCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. xor %S1, %R2I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
+},
+
 XNor => {
 	irn_flags => [ "rematerializable" ],
 	mode      => $mode_gp,
 	emit      => '. xnor %S1, %R2I, %D1',
 	constructors => \%binop_operand_constructors,
+},
+
+XNorCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. xnor %S1, %R2I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 Mul => {

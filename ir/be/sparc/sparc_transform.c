@@ -715,72 +715,54 @@ static ir_node *gen_Not(ir_node *node)
 	return new_bd_sparc_XNor_reg(dbgi, block, zero, new_op);
 }
 
+static ir_node *gen_helper_bitop(ir_node *node,
+                                 new_binop_reg_func new_reg,
+                                 new_binop_imm_func new_imm,
+                                 new_binop_reg_func new_not_reg,
+                                 new_binop_imm_func new_not_imm)
+{
+	ir_node *op1 = get_binop_left(node);
+	ir_node *op2 = get_binop_right(node);
+	if (is_Not(op1)) {
+		return gen_helper_binop_args(node, get_Not_op(op1), op2,
+		                             MATCH_MODE_NEUTRAL,
+		                             new_not_reg, new_not_imm);
+	}
+	if (is_Not(op2)) {
+		return gen_helper_binop_args(node, op1, get_Not_op(op2),
+		                             MATCH_MODE_NEUTRAL,
+		                             new_not_reg, new_not_imm);
+	}
+	return gen_helper_binop_args(node, op1, op2,
+								 MATCH_MODE_NEUTRAL | MATCH_COMMUTATIVE,
+								 new_reg, new_imm);
+}
+
 static ir_node *gen_And(ir_node *node)
 {
-	ir_node *left  = get_And_left(node);
-	ir_node *right = get_And_right(node);
-
-	if (is_Not(right)) {
-		ir_node *not_op = get_Not_op(right);
-		return gen_helper_binop_args(node, left, not_op, MATCH_MODE_NEUTRAL,
-		                             new_bd_sparc_AndN_reg,
-		                             new_bd_sparc_AndN_imm);
-	}
-	if (is_Not(left)) {
-		ir_node *not_op = get_Not_op(left);
-		return gen_helper_binop_args(node, right, not_op, MATCH_MODE_NEUTRAL,
-		                             new_bd_sparc_AndN_reg,
-		                             new_bd_sparc_AndN_imm);
-	}
-
-	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-	                        new_bd_sparc_And_reg, new_bd_sparc_And_imm);
+	return gen_helper_bitop(node,
+	                        new_bd_sparc_And_reg,
+	                        new_bd_sparc_And_imm,
+	                        new_bd_sparc_AndN_reg,
+	                        new_bd_sparc_AndN_imm);
 }
 
 static ir_node *gen_Or(ir_node *node)
 {
-	ir_node *left  = get_Or_left(node);
-	ir_node *right = get_Or_right(node);
-
-	if (is_Not(right)) {
-		ir_node *not_op = get_Not_op(right);
-		return gen_helper_binop_args(node, left, not_op, MATCH_MODE_NEUTRAL,
-		                             new_bd_sparc_OrN_reg,
-		                             new_bd_sparc_OrN_imm);
-	}
-	if (is_Not(left)) {
-		ir_node *not_op = get_Not_op(left);
-		return gen_helper_binop_args(node, right, not_op, MATCH_MODE_NEUTRAL,
-		                             new_bd_sparc_OrN_reg,
-		                             new_bd_sparc_OrN_imm);
-	}
-
-	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-	                        new_bd_sparc_Or_reg, new_bd_sparc_Or_imm);
+	return gen_helper_bitop(node,
+	                        new_bd_sparc_Or_reg,
+	                        new_bd_sparc_Or_imm,
+	                        new_bd_sparc_OrN_reg,
+	                        new_bd_sparc_OrN_imm);
 }
 
 static ir_node *gen_Eor(ir_node *node)
 {
-	ir_node *left  = get_Eor_left(node);
-	ir_node *right = get_Eor_right(node);
-
-	if (is_Not(right)) {
-		ir_node *not_op = get_Not_op(right);
-		return gen_helper_binop_args(node, left, not_op,
-		                             MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-		                             new_bd_sparc_XNor_reg,
-		                             new_bd_sparc_XNor_imm);
-	}
-	if (is_Not(left)) {
-		ir_node *not_op = get_Not_op(left);
-		return gen_helper_binop_args(node, not_op, right,
-		                             MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-		                             new_bd_sparc_XNor_reg,
-		                             new_bd_sparc_XNor_imm);
-	}
-
-	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
-	                        new_bd_sparc_Xor_reg, new_bd_sparc_Xor_imm);
+	return gen_helper_bitop(node,
+	                        new_bd_sparc_Xor_reg,
+	                        new_bd_sparc_Xor_imm,
+	                        new_bd_sparc_XNor_reg,
+	                        new_bd_sparc_XNor_imm);
 }
 
 static ir_node *gen_Shl(ir_node *node)
@@ -1008,9 +990,9 @@ static ir_node *gen_Cond(ir_node *node)
  */
 static ir_node *gen_Cmp(ir_node *node)
 {
-	ir_node  *op1      = get_Cmp_left(node);
-	ir_node  *op2      = get_Cmp_right(node);
-	ir_mode  *cmp_mode = get_irn_mode(op1);
+	ir_node *op1      = get_Cmp_left(node);
+	ir_node *op2      = get_Cmp_right(node);
+	ir_mode *cmp_mode = get_irn_mode(op1);
 	assert(get_irn_mode(op2) == cmp_mode);
 
 	if (mode_is_float(cmp_mode)) {
@@ -1026,6 +1008,32 @@ static ir_node *gen_Cmp(ir_node *node)
 		} else {
 			assert(bits == 128);
 			return new_bd_sparc_fcmp_q(dbgi, block, new_op1, new_op2, cmp_mode);
+		}
+	}
+
+	/* when we compare a bitop like and,or,... with 0 then we can directly use
+	 * the bitopcc variant.
+	 * Currently we only do this when we're the only user of the node...
+	 */
+	if (is_Const(op2) && is_Const_null(op2) && get_irn_n_edges(op1) == 1) {
+		if (is_And(op1)) {
+			return gen_helper_bitop(op1,
+			                        new_bd_sparc_AndCCZero_reg,
+			                        new_bd_sparc_AndCCZero_imm,
+			                        new_bd_sparc_AndNCCZero_reg,
+			                        new_bd_sparc_AndNCCZero_imm);
+		} else if (is_Or(op1)) {
+			return gen_helper_bitop(op1,
+			                        new_bd_sparc_OrCCZero_reg,
+			                        new_bd_sparc_OrCCZero_imm,
+			                        new_bd_sparc_OrNCCZero_reg,
+			                        new_bd_sparc_OrNCCZero_imm);
+		} else if (is_Eor(op1)) {
+			return gen_helper_bitop(op1,
+			                        new_bd_sparc_XorCCZero_reg,
+			                        new_bd_sparc_XorCCZero_imm,
+			                        new_bd_sparc_XNorCCZero_reg,
+			                        new_bd_sparc_XNorCCZero_imm);
 		}
 	}
 
