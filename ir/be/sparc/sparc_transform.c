@@ -151,7 +151,10 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
 
 typedef enum {
 	MATCH_NONE         = 0,
-	MATCH_COMMUTATIVE  = 1 << 0, /**< commutative operation. */
+	MATCH_COMMUTATIVE  = 1U << 0, /**< commutative operation. */
+	MATCH_MODE_NEUTRAL = 1U << 1, /**< the higher bits of the inputs don't
+	                                   influence the significant lower bit at
+	                                   all (for cases where mode < 32bit) */
 } match_flags_t;
 
 typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
@@ -177,6 +180,43 @@ static bool is_imm_encodeable(const ir_node *node)
 	return is_value_imm_encodeable(value);
 }
 
+static bool needs_extension(ir_mode *mode)
+{
+	return get_mode_size_bits(mode) < get_mode_size_bits(mode_gp);
+}
+
+/**
+ * Check, if a given node is a Down-Conv, ie. a integer Conv
+ * from a mode with a mode with more bits to a mode with lesser bits.
+ * Moreover, we return only true if the node has not more than 1 user.
+ *
+ * @param node   the node
+ * @return non-zero if node is a Down-Conv
+ */
+static bool is_downconv(const ir_node *node)
+{
+	ir_mode *src_mode;
+	ir_mode *dest_mode;
+
+	if (!is_Conv(node))
+		return false;
+
+	src_mode  = get_irn_mode(get_Conv_op(node));
+	dest_mode = get_irn_mode(node);
+	return
+		mode_needs_gp_reg(src_mode)  &&
+		mode_needs_gp_reg(dest_mode) &&
+		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
+}
+
+static ir_node *sparc_skip_downconv(ir_node *node)
+{
+	while (is_downconv(node)) {
+		node = get_Conv_op(node);
+	}
+	return node;
+}
+
 /**
  * helper function for binop operations
  *
@@ -189,24 +229,42 @@ static ir_node *gen_helper_binop_args(ir_node *node,
                                       new_binop_reg_func new_reg,
                                       new_binop_imm_func new_imm)
 {
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = be_transform_node(get_nodes_block(node));
 	ir_node  *new_op1;
 	ir_node  *new_op2;
+	ir_mode  *mode1;
+	ir_mode  *mode2;
+
+	if (flags & MATCH_MODE_NEUTRAL) {
+		op1 = sparc_skip_downconv(op1);
+		op2 = sparc_skip_downconv(op2);
+	}
+	mode1 = get_irn_mode(op1);
+	mode2 = get_irn_mode(op2);
 
 	if (is_imm_encodeable(op2)) {
-		ir_node *new_op1 = be_transform_node(op1);
-		int32_t immediate = get_tarval_long(get_Const_tarval(op2));
+		ir_node *new_op1   = be_transform_node(op1);
+		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
+		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
+			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
+		}
 		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
 	new_op2 = be_transform_node(op2);
+	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode2)) {
+		new_op2 = gen_extension(dbgi, block, new_op2, mode2);
+	}
 
 	if ((flags & MATCH_COMMUTATIVE) && is_imm_encodeable(op1)) {
 		int32_t immediate = get_tarval_long(get_Const_tarval(op1));
 		return new_imm(dbgi, block, new_op2, NULL, immediate);
 	}
-	new_op1 = be_transform_node(op1);
 
+	new_op1 = be_transform_node(op1);
+	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
+		new_op1 = gen_extension(dbgi, block, new_op1, mode1);
+	}
 	return new_reg(dbgi, block, new_op1, new_op2);
 }
 
@@ -378,8 +436,8 @@ static ir_node *gen_Add(ir_node *node)
 		}
 	}
 
-	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Add_reg,
-	                        new_bd_sparc_Add_imm);
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
 }
 
 /**
@@ -532,8 +590,7 @@ static ir_node *gen_Mul(ir_node *node)
 		                          new_bd_sparc_fmul_d, new_bd_sparc_fmul_q);
 	}
 
-	assert(mode_is_data(mode));
-	return gen_helper_binop(node, MATCH_COMMUTATIVE,
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
 	                        new_bd_sparc_Mul_reg, new_bd_sparc_Mul_imm);
 }
 
@@ -547,17 +604,12 @@ static ir_node *gen_Mulh(ir_node *node)
 {
 	ir_mode *mode = get_irn_mode(node);
 	ir_node *mul;
-	ir_node *proj_res_hi;
 
 	if (mode_is_float(mode))
 		panic("FP not supported yet");
 
-
-	assert(mode_is_data(mode));
 	mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
-	//arch_irn_add_flags(mul, arch_irn_flags_modify_flags);
-	proj_res_hi = new_r_Proj(mul, mode_gp, pn_sparc_Mulh_low);
-	return proj_res_hi;
+	return new_r_Proj(mul, mode_gp, pn_sparc_Mulh_low);
 }
 
 static ir_node *gen_sign_extension_value(ir_node *node)
@@ -670,19 +722,19 @@ static ir_node *gen_And(ir_node *node)
 
 	if (is_Not(right)) {
 		ir_node *not_op = get_Not_op(right);
-		return gen_helper_binop_args(node, left, not_op, MATCH_NONE,
+		return gen_helper_binop_args(node, left, not_op, MATCH_MODE_NEUTRAL,
 		                             new_bd_sparc_AndN_reg,
 		                             new_bd_sparc_AndN_imm);
 	}
 	if (is_Not(left)) {
 		ir_node *not_op = get_Not_op(left);
-		return gen_helper_binop_args(node, right, not_op, MATCH_NONE,
+		return gen_helper_binop_args(node, right, not_op, MATCH_MODE_NEUTRAL,
 		                             new_bd_sparc_AndN_reg,
 		                             new_bd_sparc_AndN_imm);
 	}
 
-	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_And_reg,
-	                        new_bd_sparc_And_imm);
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_And_reg, new_bd_sparc_And_imm);
 }
 
 static ir_node *gen_Or(ir_node *node)
@@ -692,19 +744,19 @@ static ir_node *gen_Or(ir_node *node)
 
 	if (is_Not(right)) {
 		ir_node *not_op = get_Not_op(right);
-		return gen_helper_binop_args(node, left, not_op, MATCH_NONE,
+		return gen_helper_binop_args(node, left, not_op, MATCH_MODE_NEUTRAL,
 		                             new_bd_sparc_OrN_reg,
 		                             new_bd_sparc_OrN_imm);
 	}
 	if (is_Not(left)) {
 		ir_node *not_op = get_Not_op(left);
-		return gen_helper_binop_args(node, right, not_op, MATCH_NONE,
+		return gen_helper_binop_args(node, right, not_op, MATCH_MODE_NEUTRAL,
 		                             new_bd_sparc_OrN_reg,
 		                             new_bd_sparc_OrN_imm);
 	}
 
-	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Or_reg,
-	                        new_bd_sparc_Or_imm);
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_Or_reg, new_bd_sparc_Or_imm);
 }
 
 static ir_node *gen_Eor(ir_node *node)
@@ -714,7 +766,8 @@ static ir_node *gen_Eor(ir_node *node)
 
 	if (is_Not(right)) {
 		ir_node *not_op = get_Not_op(right);
-		return gen_helper_binop_args(node, left, not_op, MATCH_COMMUTATIVE,
+		return gen_helper_binop_args(node, left, not_op,
+		                             MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
 		                             new_bd_sparc_XNor_reg,
 		                             new_bd_sparc_XNor_imm);
 	}
@@ -726,8 +779,8 @@ static ir_node *gen_Eor(ir_node *node)
 		                             new_bd_sparc_XNor_imm);
 	}
 
-	return gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Xor_reg,
-	                        new_bd_sparc_Xor_imm);
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_Xor_reg, new_bd_sparc_Xor_imm);
 }
 
 static ir_node *gen_Shl(ir_node *node)
@@ -955,17 +1008,17 @@ static ir_node *gen_Cond(ir_node *node)
  */
 static ir_node *gen_Cmp(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *op1      = get_Cmp_left(node);
 	ir_node  *op2      = get_Cmp_right(node);
 	ir_mode  *cmp_mode = get_irn_mode(op1);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node  *new_op1  = be_transform_node(op1);
-	ir_node  *new_op2  = be_transform_node(op2);
 	assert(get_irn_mode(op2) == cmp_mode);
 
 	if (mode_is_float(cmp_mode)) {
-		unsigned bits = get_mode_size_bits(cmp_mode);
+		ir_node  *block   = be_transform_node(get_nodes_block(node));
+		dbg_info *dbgi    = get_irn_dbg_info(node);
+		ir_node  *new_op1 = be_transform_node(op1);
+		ir_node  *new_op2 = be_transform_node(op2);
+		unsigned  bits    = get_mode_size_bits(cmp_mode);
 		if (bits == 32) {
 			return new_bd_sparc_fcmp_s(dbgi, block, new_op1, new_op2, cmp_mode);
 		} else if (bits == 64) {
@@ -977,9 +1030,8 @@ static ir_node *gen_Cmp(ir_node *node)
 	}
 
 	/* integer compare */
-	new_op1 = gen_extension(dbgi, block, new_op1, cmp_mode);
-	new_op2 = gen_extension(dbgi, block, new_op2, cmp_mode);
-	return new_bd_sparc_Cmp_reg(dbgi, block, new_op1, new_op2);
+	return gen_helper_binop_args(node, op1, op2, MATCH_NONE,
+	                             new_bd_sparc_Cmp_reg, new_bd_sparc_Cmp_imm);
 }
 
 /**

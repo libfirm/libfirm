@@ -202,6 +202,19 @@ my %binop_operand_constructors = (
 	},
 );
 
+my %binopcczero_operand_constructors = (
+	imm => {
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+		reg_req    => { in => [ "gp" ], out => [ "flags" ] },
+		ins        => [ "left" ],
+	},
+	reg => {
+		reg_req    => { in => [ "gp", "gp" ], out => [ "flags" ] },
+		ins        => [ "left", "right" ],
+	},
+);
+
 my %div_operand_constructors = (
 	imm => {
 		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -402,20 +415,11 @@ Call => {
 	},
 },
 
-Cmp => {
+Cmp => {  # aka SubccZero
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. cmp %S1, %R2I',
-	ins          => [ "left", "right" ],
 	mode         => $mode_flags,
-	constructors => \%cmp_operand_constructors,
-},
-
-Tst => {
-	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. tst %S1',
-	mode         => $mode_flags,
-	reg_req      => { in => [ "gp" ], out => [ "flags" ] },
-	ins          => [ "val" ],
+	constructors => \%binopcczero_operand_constructors,
 },
 
 SwitchJmp => {
