@@ -210,14 +210,11 @@ static void back_propagate_ld(pbqp *pbqp)
 	}
 }
 
-static void apply_RN_co_without_selection(pbqp *pbqp, plist_t *rpeo)
+static void merge_into_RN_node(pbqp *pbqp, plist_t *rpeo)
 {
 	pbqp_node *node     = NULL;
-	pbqp_node *neighbor = NULL;
-	pbqp_edge *edge     = NULL;
-	unsigned   idx      = 0;
 
-	(void)pbqp;
+	assert(pbqp);
 
 	do {
 		/* get last element from reverse perfect elimination order */
@@ -231,6 +228,24 @@ static void apply_RN_co_without_selection(pbqp *pbqp, plist_t *rpeo)
 	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
+	/* Check whether we can merge a neighbor into the current node. */
+	apply_RM(pbqp, node);
+}
+
+static void apply_RN_co_without_selection(pbqp *pbqp)
+{
+	pbqp_node *node;
+	unsigned   edge_index;
+
+	assert(pbqp);
+
+	node        = merged_node;
+	merged_node = NULL;
+	assert(node);
+
+	if (node_is_reduced(node))
+		return;
+
 #if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
@@ -241,10 +256,16 @@ static void apply_RN_co_without_selection(pbqp *pbqp, plist_t *rpeo)
 #endif
 
 	/* Disconnect neighbor nodes */
-	for(idx = 0; idx < pbqp_node_get_degree(node); idx++) {
+	for(edge_index = 0; edge_index < pbqp_node_get_degree(node); edge_index++) {
+		pbqp_edge *edge;
+		pbqp_node *neighbor;
+
 		/* get neighbor node */
-		edge = node->edges[idx];
+		edge = node->edges[edge_index];
+		assert(edge);
+
 		neighbor = edge->src == node ? edge->tgt : edge->src;
+		assert(neighbor);
 
 		assert(neighbor != node);
 
@@ -303,12 +324,22 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 			#if KAPS_TIMING
 				ir_timer_stop(t_r2);
 			#endif
+		} else if (merged_node != NULL) {
+			#if KAPS_TIMING
+				ir_timer_start(t_rn);
+			#endif
+
+			apply_RN_co_without_selection(pbqp);
+
+			#if KAPS_TIMING
+				ir_timer_stop(t_rn);
+			#endif
 		} else if (node_bucket_get_length(node_buckets[3]) > 0) {
 			#if KAPS_TIMING
 				ir_timer_start(t_rn);
 			#endif
 
-			apply_RN_co_without_selection(pbqp, rpeo);
+			merge_into_RN_node(pbqp, rpeo);
 
 			#if KAPS_TIMING
 				ir_timer_stop(t_rn);
