@@ -146,18 +146,18 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 
 static void back_propagate_RN(pbqp *pbqp, pbqp_node *node)
 {
-	vector    *vec      = NULL;
-	pbqp_node *neighbor = NULL;
-	pbqp_edge *edge     = NULL;
-	unsigned   idx      = 0;
+	vector    *vec        = NULL;
+	pbqp_node *neighbor   = NULL;
+	pbqp_edge *edge       = NULL;
+	unsigned   edge_index = 0;
 
 	assert(pbqp);
 
 	vec = vector_copy(pbqp, node->costs);
 
-	for(idx = 0; idx < pbqp_node_get_degree(node); idx++) {
+	for(edge_index = 0; edge_index < pbqp_node_get_degree(node); edge_index++) {
 		/* get neighbor node */
-		edge = node->edges[idx];
+		edge = node->edges[edge_index];
 		neighbor = edge->src == node ? edge->tgt : edge->src;
 
 		/* node is edge src node */
