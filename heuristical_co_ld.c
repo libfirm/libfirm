@@ -262,8 +262,6 @@ static void apply_RN_co_without_selection(pbqp *pbqp, plist_t *rpeo)
 	node_bucket_insert(&reduced_bucket, node);
 }
 
-
-
 static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 {
 	#if KAPS_TIMING

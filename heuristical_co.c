@@ -72,8 +72,8 @@ static void merge_into_RN_node(pbqp *pbqp, plist_t *rpeo)
 
 static void apply_RN_co(pbqp *pbqp)
 {
-	pbqp_node   *node      = NULL;
-	unsigned     min_index = 0;
+	pbqp_node   *node;
+	unsigned     min_index;
 
 	assert(pbqp);
 
