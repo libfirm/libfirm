@@ -726,7 +726,7 @@ static ir_node *gen_helper_bitop(ir_node *node,
 	ir_node *op1 = get_binop_left(node);
 	ir_node *op2 = get_binop_right(node);
 	if (is_Not(op1)) {
-		return gen_helper_binop_args(node, get_Not_op(op1), op2,
+		return gen_helper_binop_args(node, op2, get_Not_op(op1),
 		                             MATCH_MODE_NEUTRAL,
 		                             new_not_reg, new_not_imm);
 	}

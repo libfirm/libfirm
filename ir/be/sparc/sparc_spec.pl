@@ -462,7 +462,7 @@ And => {
 
 AndCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. and %S1, %R2I, %%g0',
+	emit         => '. andcc %S1, %R2I, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -476,7 +476,7 @@ AndN => {
 
 AndNCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. andn %S1, %R2I, %%g0',
+	emit         => '. andncc %S1, %R2I, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -490,7 +490,7 @@ Or => {
 
 OrCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. or %S1, %R2I, %%g0',
+	emit         => '. orcc %S1, %R2I, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -504,7 +504,7 @@ OrN => {
 
 OrNCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. orn %S1, %R2I, %%g0',
+	emit         => '. orncc %S1, %R2I, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -518,7 +518,7 @@ Xor => {
 
 XorCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. xor %S1, %R2I, %%g0',
+	emit         => '. xorcc %S1, %R2I, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
@@ -532,7 +532,7 @@ XNor => {
 
 XNorCCZero => {
 	irn_flags    => [ "rematerializable", "modifies_flags" ],
-	emit         => '. xnor %S1, %R2I, %%g0',
+	emit         => '. xnorcc %S1, %R2I, %%g0',
 	mode         => $mode_flags,
 	constructors => \%binopcczero_operand_constructors,
 },
