@@ -413,7 +413,7 @@ static ir_node *gen_Add(ir_node *node)
 		ir_node *left = get_Add_left(node);
 		/* is this simple address arithmetic? then we can let the linker do
 		 * the calculation. */
-		if (is_SymConst(left)) {
+		if (is_SymConst(left) && get_irn_n_edges(left) == 1) {
 			dbg_info *dbgi  = get_irn_dbg_info(node);
 			ir_node  *block = be_transform_node(get_nodes_block(node));
 			address_t address;
