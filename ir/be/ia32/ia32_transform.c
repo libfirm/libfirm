@@ -45,7 +45,7 @@
 #include "irdom.h"
 #include "error.h"
 #include "array_t.h"
-#include "height.h"
+#include "heights.h"
 
 #include "../benode.h"
 #include "../besched.h"

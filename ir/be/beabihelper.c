@@ -34,7 +34,7 @@
 #include "iredges.h"
 #include "irgwalk.h"
 #include "irphase_t.h"
-#include "height.h"
+#include "heights.h"
 
 typedef struct reg_flag_t {
 	const arch_register_t *reg;   /**< register at an input position.
@@ -497,7 +497,7 @@ static void link_ops_in_block_walker(ir_node *node, void *data)
 	}
 }
 
-static heights_t *heights;
+static ir_heights_t *heights;
 
 /**
  * Check if a node is somehow data dependent on another one.

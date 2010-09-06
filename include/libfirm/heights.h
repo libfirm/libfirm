@@ -23,14 +23,16 @@
  * @author  Sebastian Hack
  * @date    19.04.2006
  * @version $Id$
+ *
+ * The height is a measure for the longest datadependencies path from a node to
+ * the end of a basic block. This is usefull for scheduling heuristics and can
+ * also be used to speedup reachability queries.
  */
 #ifndef FIRM_ANA_HEIGHTS_H
 #define FIRM_ANA_HEIGHTS_H
 
 #include "firm_types.h"
 #include "begin.h"
-
-typedef struct heights_t heights_t;
 
 /**
  * Get the height of a node inside a basic block.
@@ -40,16 +42,17 @@ typedef struct heights_t heights_t;
  * @param irn  The node.
  * @return     The height of the node.
  */
-FIRM_API unsigned get_irn_height(const heights_t *h, const ir_node *irn);
+FIRM_API unsigned get_irn_height(const ir_heights_t *h, const ir_node *irn);
 
 /**
- * Check, if a certain node is reachable according to data dependence edges from another node.
+ * Check, if a certain node is reachable according to data dependence edges
+ * from another node. Both nodes must be in the same block.
  * @param h The heights object.
  * @param n The first node.
  * @param m The other node.
  * @return  1, if n is data dependent on m, 0 if not.
  */
-FIRM_API int heights_reachable_in_block(heights_t *h, const ir_node *n,
+FIRM_API int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                         const ir_node *m);
 
 /**
@@ -57,7 +60,7 @@ FIRM_API int heights_reachable_in_block(heights_t *h, const ir_node *n,
  * This can be used to recompute the height information if the graph has changed since the last computation.
  * @param h The heights object.
  */
-FIRM_API void heights_recompute(heights_t *h);
+FIRM_API void heights_recompute(ir_heights_t *h);
 
 /**
  * Recompute the height information for a certain block.
@@ -66,20 +69,20 @@ FIRM_API void heights_recompute(heights_t *h);
  * @param block The block
  * @return The maximum over all heights in the block.
  */
-FIRM_API unsigned heights_recompute_block(heights_t *h, ir_node *block);
+FIRM_API unsigned heights_recompute_block(ir_heights_t *h, ir_node *block);
 
 /**
  * Make a new heights object.
  * This also computes the heights for each block in the graph.
  * @param irg The graph.
  */
-FIRM_API heights_t *heights_new(ir_graph *irg);
+FIRM_API ir_heights_t *heights_new(ir_graph *irg);
 
 /**
  * Free a heights object.
  * @param h The heights object.
  */
-FIRM_API void heights_free(heights_t *h);
+FIRM_API void heights_free(ir_heights_t *h);
 
 #include "end.h"
 

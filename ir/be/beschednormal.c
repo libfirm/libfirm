@@ -30,7 +30,7 @@
 #include "belistsched.h"
 #include "belive_t.h"
 #include "beutil.h"
-#include "height.h"
+#include "heights.h"
 #include "irtools.h"
 #include "irgwalk.h"
 #include "benode.h"
@@ -312,7 +312,7 @@ static int root_cmp(const void* a, const void* b)
 static void normal_sched_block(ir_node* block, void* env)
 {
 	ir_node**      roots = get_irn_link(block);
-	heights_t*     heights = env;
+	ir_heights_t*  heights = env;
 	int            root_count;
 	irn_cost_pair* root_costs;
 	int i;
@@ -379,8 +379,8 @@ static void normal_sched_block(ir_node* block, void* env)
 static void *normal_init_graph(const list_sched_selector_t *vtab,
                                ir_graph *irg)
 {
-	instance_t* inst = XMALLOC(instance_t);
-	heights_t*  heights;
+	instance_t   *inst = XMALLOC(instance_t);
+	ir_heights_t *heights;
 
 	(void)vtab;
 

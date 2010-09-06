@@ -31,6 +31,7 @@
 #include "irprintf.h"
 #include "typerep.h"
 #include "bitset.h"
+#include "heights.h"
 
 #include "../betranshlp.h"
 #include "../beirg.h"
@@ -46,7 +47,7 @@
 /** hold the current code generator during transformation */
 ia32_code_gen_t *env_cg = NULL;
 
-heights_t *heights = NULL;
+ir_heights_t *heights = NULL;
 
 static int check_immediate_constraint(long val, char immediate_constraint_type)
 {

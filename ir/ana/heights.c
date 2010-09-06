@@ -26,7 +26,7 @@
  */
 #include "config.h"
 
-#include "height.h"
+#include "heights.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,7 +39,7 @@
 #include "irphase_t.h"
 #include "iredges_t.h"
 
-struct heights_t {
+struct ir_heights_t {
 	ir_phase  phase;
 	unsigned  visited;
 	void     *dump_handle;
@@ -70,8 +70,8 @@ static void *irn_height_reinit(ir_phase *phase, const ir_node *node,
 
 static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
 {
-	heights_t *heights = data;
-	irn_height_t *h    = phase_get_irn_data(&heights->phase, irn);
+	ir_heights_t *heights = data;
+	irn_height_t *h       = phase_get_irn_data(&heights->phase, irn);
 
 	if (h)
 		fprintf(f, "height: %u\n", h->height);
@@ -84,7 +84,8 @@ static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
  * @param tgt  The node we try to reach.
  * @return     1, one of tgt can be reached from curr, 0 else.
  */
-static bool search(const heights_t *h, const ir_node *curr, const ir_node *tgt)
+static bool search(const ir_heights_t *h, const ir_node *curr,
+                   const ir_node *tgt)
 {
 	irn_height_t *h_curr;
 	irn_height_t *h_tgt;
@@ -127,7 +128,7 @@ static bool search(const heights_t *h, const ir_node *curr, const ir_node *tgt)
  * Check, if one node can be reached from another one, according to data
  * dependence.
  */
-int heights_reachable_in_block(heights_t *h, const ir_node *n,
+int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                const ir_node *m)
 {
 	int res          = 0;
@@ -151,7 +152,7 @@ int heights_reachable_in_block(heights_t *h, const ir_node *n,
  * @param irn The node.
  * @param bl  The block.
  */
-static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
+static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 {
 	irn_height_t *ih = phase_get_or_set_irn_data(&h->phase, irn);
 
@@ -190,7 +191,7 @@ static unsigned compute_height(heights_t *h, ir_node *irn, const ir_node *bl)
 	return ih->height;
 }
 
-static unsigned compute_heights_in_block(ir_node *bl, heights_t *h)
+static unsigned compute_heights_in_block(ir_node *bl, ir_heights_t *h)
 {
 	int             max_height = -1;
 	const ir_edge_t *edge;
@@ -216,18 +217,18 @@ static unsigned compute_heights_in_block(ir_node *bl, heights_t *h)
 
 static void compute_heights_in_block_walker(ir_node *block, void *data)
 {
-	heights_t *h = data;
+	ir_heights_t *h = data;
 	compute_heights_in_block(block, h);
 }
 
-unsigned get_irn_height(const heights_t *heights, const ir_node *irn)
+unsigned get_irn_height(const ir_heights_t *heights, const ir_node *irn)
 {
 	const irn_height_t *h = phase_get_irn_data(&heights->phase, irn);
 	assert(h && "No height information for node");
 	return h->height;
 }
 
-unsigned heights_recompute_block(heights_t *h, ir_node *block)
+unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 {
 	const ir_edge_t *edge;
 
@@ -244,7 +245,7 @@ unsigned heights_recompute_block(heights_t *h, ir_node *block)
 	return compute_heights_in_block(block, h);
 }
 
-void heights_recompute(heights_t *h)
+void heights_recompute(ir_heights_t *h)
 {
 	ir_graph *irg = phase_get_irg(&h->phase);
 
@@ -254,9 +255,9 @@ void heights_recompute(heights_t *h)
 	irg_block_walk_graph(irg, compute_heights_in_block_walker, NULL, h);
 }
 
-heights_t *heights_new(ir_graph *irg)
+ir_heights_t *heights_new(ir_graph *irg)
 {
-	heights_t *res = XMALLOC(heights_t);
+	ir_heights_t *res = XMALLOC(ir_heights_t);
 	phase_init(&res->phase, irg, irn_height_init);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
 	heights_recompute(res);
@@ -264,7 +265,7 @@ heights_t *heights_new(ir_graph *irg)
 	return res;
 }
 
-void heights_free(heights_t *h)
+void heights_free(ir_heights_t *h)
 {
 	phase_deinit(&h->phase);
 	dump_remove_node_info_callback(h->dump_handle);

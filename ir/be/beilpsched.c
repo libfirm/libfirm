@@ -43,7 +43,7 @@
 #include "irgwalk.h"
 #include "irbitset.h"
 #include "irphase_t.h"
-#include "height.h"
+#include "heights.h"
 #include "iredges.h"
 #include "pdeq.h"
 #include "debug.h"
@@ -146,7 +146,7 @@ typedef struct {
 typedef struct {
 	ir_phase             ph;            /**< The phase */
 	ir_graph             *irg;          /**< The current irg */
-	heights_t            *height;       /**< The heights object of the irg */
+	ir_heights_t         *height;       /**< The heights object of the irg */
 	void                 *irg_env;      /**< An environment for the irg scheduling, provided by the backend */
 	void                 *block_env;    /**< An environment for scheduling a block, provided by the backend */
 	const arch_env_t     *arch_env;
@@ -208,7 +208,7 @@ static const lc_opt_table_entry_t ilpsched_option_table[] = {
 	We need this global variable as we compare nodes dependent on heights,
 	but we cannot pass any information to the qsort compare function.
 */
-static heights_t *glob_heights;
+static ir_heights_t *glob_heights;
 
 /**
  * Check if irn is a Proj, which has no execution units assigned.

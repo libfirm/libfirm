@@ -71,7 +71,7 @@
 #include "firm_common.h"
 #include "firmstat.h"
 #include "firm_types.h"
-#include "height.h"
+#include "heights.h"
 #include "ident.h"
 #include "interval_analysis.h"
 #include "irarch.h"

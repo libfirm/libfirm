@@ -53,7 +53,7 @@
 #include "plist.h"
 #include "array_t.h"
 
-#include "height.h"
+#include "heights.h"
 
 #include "beabi.h"
 #include "bemodule.h"
@@ -149,7 +149,7 @@ typedef struct serialization {
 
 typedef struct rss {
 	ir_phase          ph;              /**< Phase to hold some data */
-	heights_t        *h;              /**< The current height object */
+	ir_heights_t     *h;              /**< The current height object */
 	ir_graph         *irg;            /**< The irg to preprocess */
 	plist_t          *nodes;          /**< The list of interesting nodes */
 	const arch_env_t *arch_env;       /**< The architecture environment */

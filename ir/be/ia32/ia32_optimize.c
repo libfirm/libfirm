@@ -34,7 +34,7 @@
 #include "tv.h"
 #include "irgmod.h"
 #include "irgwalk.h"
-#include "height.h"
+#include "heights.h"
 #include "irbitset.h"
 #include "irprintf.h"
 #include "irdump.h"

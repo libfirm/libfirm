@@ -46,7 +46,7 @@
 #include "irtools.h"
 #include "irbitset.h"
 #include "irnodeset.h"
-#include "height.h"
+#include "heights.h"
 
 #include "benode.h"
 #include "besched.h"
@@ -55,7 +55,7 @@
 
 struct mris_env_t {
 	ir_phase          ph;
-	heights_t         *heights;
+	ir_heights_t      *heights;
 	ir_graph          *irg;
 	ir_node           *bl;
 	int               visited;

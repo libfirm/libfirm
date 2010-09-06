@@ -39,7 +39,7 @@
 #include "irgopt.h"
 #include "irbitset.h"
 #include "iropt_t.h"
-#include "height.h"
+#include "heights.h"
 #include "pdeq.h"
 #include "irtools.h"
 #include "raw_bitset.h"
@@ -109,7 +109,7 @@ struct be_abi_irg_t {
 	arch_register_req_t  *sp_req;
 };
 
-static heights_t *ir_heights;
+static ir_heights_t *ir_heights;
 
 /** Flag: if set, try to omit the frame pointer in all routines. */
 static int be_omit_fp = 1;

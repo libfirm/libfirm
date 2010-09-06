@@ -27,8 +27,8 @@
 #ifndef FIRM_BE_IA32_IA32_COMMON_TRANSFORM_H
 #define FIRM_BE_IA32_IA32_COMMON_TRANSFORM_H
 
+#include "firm_types.h"
 #include "bearch_ia32_t.h"
-#include "height.h"
 
 /**
  * An assembler constraint.
@@ -44,8 +44,8 @@ struct constraint_t {
 };
 
 extern ia32_code_gen_t *env_cg;
-extern heights_t *heights;
-extern int        no_pic_adjust;
+extern ir_heights_t    *heights;
+extern int              no_pic_adjust;
 
 /**
  * Get an atomic entity that is initialized with a tarval forming
