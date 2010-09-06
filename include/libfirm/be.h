@@ -75,6 +75,8 @@ typedef struct backend_params {
 	unsigned support_inline_asm:1;
 	/** If set, the backend supports Rotl nodes */
 	unsigned support_rotl:1;
+	/** the backend uses big-endian byte ordering if set, else little endian */
+	unsigned byte_order_big_endian:1;
 
 	/** callback that performs lowerings required for target architecture */
 	lower_for_target_func lower_for_target;

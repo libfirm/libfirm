@@ -572,6 +572,7 @@ static const backend_params *sparc_get_backend_params(void)
 	static backend_params p = {
 		0,     /* no inline assembly */
 		0,     /* no support for RotL nodes */
+		1,     /* big endian */
 		sparc_lower_for_target, /* lowering callback */
 		&arch_dep,              /* will be set later */
 		NULL,  /* parameter for if conversion */

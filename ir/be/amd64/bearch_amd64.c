@@ -612,6 +612,7 @@ static const backend_params *amd64_get_backend_params(void) {
 	static backend_params p = {
 		0,     /* no inline assembly */
 		1,     /* support Rotl nodes */
+		0,     /* little endian */
 		amd64_lower_for_target,  /* lowering callback */
 		NULL,  /* will be set later */
 		NULL,  /* parameter for if conversion */

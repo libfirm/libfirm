@@ -692,6 +692,7 @@ static const backend_params *arm_get_libfirm_params(void)
 	static backend_params p = {
 		0,     /* don't support inline assembler yet */
 		1,     /* support Rotl nodes */
+		1,     /* big endian */
 		NULL,  /* lowering function */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */

@@ -340,20 +340,6 @@ int be_parse_arg(const char *arg)
 	return lc_opt_from_single_arg(be_grp, NULL, arg, NULL);
 }
 
-/** The be parameters returned by default, all off. */
-static const backend_params be_params = {
-	0,    /* don't support inline assembler yet */
-	0,    /* don't support rotl */
-	NULL, /* no lowering required */
-	NULL, /* will be set later */
-	NULL, /* no if conversion settings */
-	NULL, /* no float arithmetic mode */
-	0,    /* no trampoline support: size 0 */
-	0,    /* no trampoline support: align 0 */
-	NULL, /* no trampoline support: no trampoline builder */
-	4     /* alignment of stack parameter */
-};
-
 /* Perform schedule verification if requested. */
 static void be_sched_verify(ir_graph *irg, int verify_opt)
 {
@@ -380,9 +366,7 @@ void firm_be_finish(void)
 /* Returns the backend parameter */
 const backend_params *be_get_backend_param(void)
 {
-	if (isa_if->get_params)
-		return isa_if->get_params();
-	return &be_params;
+	return isa_if->get_params();
 }
 
 /**

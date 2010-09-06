@@ -2348,6 +2348,7 @@ static const backend_params *ia32_get_libfirm_params(void)
 	static backend_params p = {
 		1,     /* support inline assembly */
 		1,     /* support Rotl nodes */
+		0,     /* little endian */
 		ia32_lower_for_target,
 		NULL,  /* will be set later */
 		ia32_is_mux_allowed,

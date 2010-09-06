@@ -1004,12 +1004,13 @@ static size_t              max_vals;
 static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
                           const ir_initializer_t *initializer, ir_type *type)
 {
-	unsigned char  last_bits = 0;
+	static const size_t BITS_PER_BYTE = 8;
 	ir_mode       *mode      = get_type_mode(type);
 	tarval        *tv        = NULL;
-	unsigned char  curr_bits;
 	int            value_len;
-	int            j;
+	size_t         bit_offset;
+	size_t         end;
+	bool           big_endian = be_get_backend_param()->byte_order_big_endian;
 
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
@@ -1033,22 +1034,41 @@ static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
 	}
 	tv = tarval_convert_to(tv, get_type_mode(type));
 
-	/* normalize offset */
-	vals        += offset_bits >> 3;
-	offset_bits &= 7;
-	value_len    = get_mode_size_bits(mode);
+	value_len  = get_type_size_bytes(get_primitive_base_type(type));
+	bit_offset = 0;
+	end        = get_mode_size_bits(mode);
+	while (bit_offset < end) {
+		size_t        src_offset      = bit_offset / BITS_PER_BYTE;
+		size_t        src_offset_bits = bit_offset % BITS_PER_BYTE;
+		size_t        dst_offset      = (bit_offset+offset_bits) / BITS_PER_BYTE;
+		size_t        dst_offset_bits = (bit_offset+offset_bits) % BITS_PER_BYTE;
+		size_t        src_bits_len    = end-bit_offset;
+		size_t        dst_bits_len    = BITS_PER_BYTE-dst_offset_bits;
+		unsigned char curr_bits;
+		normal_or_bitfield *val;
+		if (src_bits_len > dst_bits_len)
+			src_bits_len = dst_bits_len;
 
-	/* combine bits with existing bits */
-	for (j = 0; value_len + (int) offset_bits > 0; ++j) {
-		assert((size_t) (vals - glob_vals) + j < max_vals);
-		assert(vals[j].kind == BITFIELD ||
-				(vals[j].kind == NORMAL && vals[j].v.value == NULL));
-		vals[j].kind = BITFIELD;
-		curr_bits    = get_tarval_sub_bits(tv, j);
-		vals[j].v.bf_val
-			|= (last_bits >> (8 - offset_bits)) | (curr_bits << offset_bits);
-		value_len -= 8;
-		last_bits = curr_bits;
+		if (big_endian) {
+			val = &vals[value_len - dst_offset - 1];
+		} else {
+			val = &vals[dst_offset];
+		}
+
+		assert((val-glob_vals) < (ptrdiff_t) max_vals);
+		assert(val->kind == BITFIELD ||
+				(val->kind == NORMAL && val->v.value == NULL));
+		val->kind  = BITFIELD;
+		curr_bits  = get_tarval_sub_bits(tv, src_offset);
+		curr_bits  = curr_bits >> src_offset_bits;
+		if (src_offset_bits + src_bits_len > 8) {
+			unsigned next_bits = get_tarval_sub_bits(tv, src_offset+1);
+			curr_bits |= next_bits << (8 - src_offset_bits);
+		}
+		curr_bits &= (1 << src_bits_len) - 1;
+		val->v.bf_val |= curr_bits << dst_offset_bits;
+
+		bit_offset += dst_bits_len;
 	}
 }
 
@@ -1125,11 +1145,12 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 				if (mode != NULL) {
 					size_t offset_bits
 						= get_entity_offset_bits_remainder(member);
-					size_t value_len   = get_mode_size_bits(mode);
+					size_t value_len = get_mode_size_bits(mode);
 
 					if (offset_bits != 0 ||
 						(value_len != 8 && value_len != 16 && value_len != 32
-						 && value_len != 64)) {
+						 && value_len != 64) ||
+						(is_Primitive_type(subtype) && get_primitive_base_type(subtype) != NULL)) {
 						emit_bitfield(&vals[offset], offset_bits,
 						              sub_initializer, subtype);
 						continue;
