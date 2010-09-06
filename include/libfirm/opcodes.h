@@ -6,7 +6,6 @@
 /** The opcodes of the libFirm predefined operations. */
 typedef enum ir_opcode {
 	iro_ASM,
-	iro_Abs,
 	iro_Add,
 	iro_Alloc,
 	iro_Anchor,
@@ -89,7 +88,6 @@ typedef enum ir_opcode {
 
 
 FIRM_API ir_op *op_ASM;
-FIRM_API ir_op *op_Abs;
 FIRM_API ir_op *op_Add;
 FIRM_API ir_op *op_Alloc;
 FIRM_API ir_op *op_Anchor;
@@ -148,7 +146,6 @@ FIRM_API ir_op *op_Unknown;
 
 
 FIRM_API ir_op *get_op_ASM(void);
-FIRM_API ir_op *get_op_Abs(void);
 FIRM_API ir_op *get_op_Add(void);
 FIRM_API ir_op *get_op_Alloc(void);
 FIRM_API ir_op *get_op_Anchor(void);

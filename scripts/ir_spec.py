@@ -20,9 +20,6 @@ class Binop(Op):
 	pinned   = "no"
 abstract(Binop)
 
-class Abs(Unop):
-	flags = []
-
 class Add(Binop):
 	flags = ["commutative"]
 

@@ -2061,53 +2061,6 @@ static void ia32_mark_remat(ir_node *node)
 }
 
 /**
- * Check if Mux(sel, t, f) would represent an Abs (or -Abs).
- */
-static bool mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
-{
-	ir_node *cmp_left;
-	ir_node *cmp_right;
-	ir_node *cmp;
-	pn_Cmp  pnc;
-
-	if (!is_Proj(sel))
-		return false;
-	cmp = get_Proj_pred(sel);
-	if (!is_Cmp(cmp))
-		return false;
-
-	/* must be <, <=, >=, > */
-	pnc = get_Proj_proj(sel);
-	switch (pnc) {
-	case pn_Cmp_Ge:
-	case pn_Cmp_Gt:
-	case pn_Cmp_Le:
-	case pn_Cmp_Lt:
-	case pn_Cmp_Uge:
-	case pn_Cmp_Ug:
-	case pn_Cmp_Ul:
-	case pn_Cmp_Ule:
-		break;
-	default:
-		return false;
-	}
-
-	if (!is_negated_value(mux_true, mux_false))
-		return false;
-
-	/* must be x cmp 0 */
-	cmp_right = get_Cmp_right(cmp);
-	if (!is_Const(cmp_right) || !is_Const_null(cmp_right))
-		return 0;
-
-	cmp_left = get_Cmp_left(cmp);
-	if (cmp_left != mux_true && cmp_left != mux_false)
-		return false;
-
-	return true;
-}
-
-/**
  * Check if Mux(sel, mux_true, mux_false) would represent a Max or Min operation
  */
 static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
@@ -2254,9 +2207,6 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 {
 	ir_mode *mode;
 
-	/* we can handle Abs for all modes and compares */
-	if (mux_is_abs(sel, mux_true, mux_false))
-		return true;
 	/* we can handle Set for all modes and compares */
 	if (mux_is_set(sel, mux_true, mux_false))
 		return true;
@@ -2280,6 +2230,9 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	mode = get_irn_mode(mux_true);
 	if (get_mode_size_bits(mode) > 32)
 		return false;
+	/* we can handle Abs for all modes and compares (except 64bit) */
+	if (be_mux_is_abs(sel, mux_true, mux_false) != 0)
+		return true;
 	/* we can't handle MuxF yet */
 	if (mode_is_float(mode))
 		return false;

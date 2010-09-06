@@ -91,4 +91,12 @@ void be_enqueue_preds(ir_node *node);
  */
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func);
 
+/**
+ * If Mux(sel, t, f) represents an Abs return 1, if it represents -Abs return
+ * -1, otherwise 0
+ */
+int be_mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false);
+
+ir_node *be_get_abs_op(ir_node *sel);
+
 #endif

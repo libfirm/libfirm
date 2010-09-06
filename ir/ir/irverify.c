@@ -1416,25 +1416,6 @@ static int verify_node_Mod(ir_node *n, ir_graph *irg)
 }
 
 /**
- * verify an Abs node
- */
-static int verify_node_Abs(ir_node *n, ir_graph *irg)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Abs_op(n));
-	(void) irg;
-
-	ASSERT_AND_RET_DBG(
-		/* Abs: BB x num --> num */
-		op1mode == mymode &&
-		mode_is_num (op1mode),
-		"Abs node", 0,
-		show_unop_failure(n, "/* Abs: BB x num --> num */");
-	);
-	return 1;
-}
-
-/**
  * verify a logical And, Or, Eor node
  */
 static int verify_node_Logic(ir_node *n, ir_graph *irg)
@@ -2265,7 +2246,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(DivMod);
 	CASE(Div);
 	CASE(Mod);
-	CASE(Abs);
 	CASE(And);
 	CASE(Or);
 	CASE(Eor);

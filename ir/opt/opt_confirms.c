@@ -107,8 +107,8 @@ int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 
 	/* there might be several Confirms one after other that form an interval */
 	for (;;) {
-		if (is_Minus(n) || is_Abs(n)) {
-			/* we can safely skip Minus and Abs when checking for != 0 */
+		if (is_Minus(n)) {
+			/* we can safely skip Minus when checking for != 0 */
 			n = get_unop_op(n);
 			continue;
 		}

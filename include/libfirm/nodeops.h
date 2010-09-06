@@ -198,8 +198,6 @@ typedef enum {
 
 /** Return true of the node is a ASM node. */
 FIRM_API int is_ASM(const ir_node *node);
-/** Return true of the node is a Abs node. */
-FIRM_API int is_Abs(const ir_node *node);
 /** Return true of the node is a Add node. */
 FIRM_API int is_Add(const ir_node *node);
 /** Return true of the node is a Alloc node. */
@@ -320,9 +318,6 @@ FIRM_API ident** get_ASM_clobbers(const ir_node *node);
 FIRM_API void set_ASM_clobbers(ir_node *node, ident** clobbers);
 FIRM_API ident* get_ASM_text(const ir_node *node);
 FIRM_API void set_ASM_text(ir_node *node, ident* text);
-
-FIRM_API ir_node *get_Abs_op(const ir_node *node);
-void set_Abs_op(ir_node *node, ir_node *op);
 
 FIRM_API ir_node *get_Add_left(const ir_node *node);
 void set_Add_left(ir_node *node, ir_node *left);

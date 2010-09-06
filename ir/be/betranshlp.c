@@ -476,3 +476,78 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	edges_deactivate(irg);
 	edges_activate(irg);
 }
+
+int be_mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
+{
+	ir_node *cmp_left;
+	ir_node *cmp_right;
+	ir_node *cmp;
+	ir_mode *mode;
+	pn_Cmp   pnc;
+
+	if (!is_Proj(sel))
+		return 0;
+	cmp = get_Proj_pred(sel);
+	if (!is_Cmp(cmp))
+		return 0;
+
+	/**
+	 * Note further that these optimization work even for floating point
+	 * with NaN's because -NaN == NaN.
+	 * However, if +0 and -0 is handled differently, we cannot use the Abs/-Abs
+	 * transformations.
+	 */
+	mode = get_irn_mode(mux_true);
+	if (mode_honor_signed_zeros(mode))
+		return 0;
+
+	/* must be <, <=, >=, > */
+	pnc = get_Proj_proj(sel);
+	switch (pnc) {
+	case pn_Cmp_Ge:
+	case pn_Cmp_Gt:
+	case pn_Cmp_Le:
+	case pn_Cmp_Lt:
+	case pn_Cmp_Uge:
+	case pn_Cmp_Ug:
+	case pn_Cmp_Ul:
+	case pn_Cmp_Ule:
+		break;
+	default:
+		return 0;
+	}
+
+	if (!is_negated_value(mux_true, mux_false))
+		return 0;
+
+	/* must be x cmp 0 */
+	cmp_right = get_Cmp_right(cmp);
+	if (!is_Const(cmp_right) || !is_Const_null(cmp_right))
+		return 0;
+
+	cmp_left = get_Cmp_left(cmp);
+	if (cmp_left == mux_false) {
+		if (pnc & pn_Cmp_Lt) {
+			return 1;
+		} else {
+			assert(pnc & pn_Cmp_Gt);
+			return -1;
+		}
+	} else if (cmp_left == mux_true) {
+		if (pnc & pn_Cmp_Lt) {
+			return -1;
+		} else {
+			assert(pnc & pn_Cmp_Gt);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+ir_node *be_get_abs_op(ir_node *sel)
+{
+	ir_node *cmp      = get_Proj_pred(sel);
+	ir_node *cmp_left = get_Cmp_left(cmp);
+	return cmp_left;
+}

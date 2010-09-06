@@ -27,7 +27,7 @@
 
 /*
  * Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
- * der nicht erreichbaren Methoden wird aus der Absch‰tzung der
+ * der nicht erreichbaren Methoden wird aus der Absch√§tzung der
  * Aufrufrelation bestimmt.
  */
 #include "config.h"

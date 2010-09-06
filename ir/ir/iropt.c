@@ -255,20 +255,6 @@ static tarval *computed_value_Mul(const ir_node *n)
 }  /* computed_value_Mul */
 
 /**
- * Return the value of an Abs.
- */
-static tarval *computed_value_Abs(const ir_node *n)
-{
-	ir_node *a = get_Abs_op(n);
-	tarval *ta = value_of(a);
-
-	if (ta != tarval_bad)
-		return tarval_abs(ta);
-
-	return tarval_bad;
-}  /* computed_value_Abs */
-
-/**
  * Return the value of an And.
  * Special case: a & 0, 0 & b
  */
@@ -737,7 +723,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(Borrow);
 	CASE(Minus);
 	CASE(Mul);
-	CASE(Abs);
 	CASE(And);
 	CASE(Or);
 	CASE(Eor);
@@ -1280,13 +1265,11 @@ restart:
 		if (get_Conv_strict(n)) {
 			ir_node *p = a;
 
-			/* neither Minus nor Abs nor Confirm change the precision,
+			/* neither Minus nor Confirm change the precision,
 			   so we can "look-through" */
 			for (;;) {
 				if (is_Minus(p)) {
 					p = get_Minus_op(p);
-				} else if (is_Abs(p)) {
-					p = get_Abs_op(p);
 				} else if (is_Confirm(p)) {
 					p = get_Confirm_value(p);
 				} else {
@@ -1296,7 +1279,7 @@ restart:
 			}
 			if (is_Conv(p) && get_Conv_strict(p)) {
 				/* we known already, that a_mode == n_mode, and neither
-				   Abs nor Minus change the mode, so the second Conv
+				   Minus change the mode, so the second Conv
 				   can be kicked */
 				assert(get_irn_mode(p) == n_mode);
 				n = a;
@@ -3275,54 +3258,6 @@ static ir_node *transform_node_Quot(ir_node *n)
 	}
 	return n;
 }  /* transform_node_Quot */
-
-/**
- * Optimize Abs(x) into  x if x is Confirmed >= 0
- * Optimize Abs(x) into -x if x is Confirmed <= 0
- * Optimize Abs(-x) int Abs(x)
- */
-static ir_node *transform_node_Abs(ir_node *n)
-{
-	ir_node *c, *oldn = n;
-	ir_node *a = get_Abs_op(n);
-	ir_mode *mode;
-
-	HANDLE_UNOP_PHI(tarval_abs, a, c);
-
-	switch (classify_value_sign(a)) {
-	case value_classified_negative:
-		mode = get_irn_mode(n);
-
-		/*
-		 * We can replace the Abs by -x here.
-		 * We even could add a new Confirm here
-		 * (if not twos complement)
-		 *
-		 * Note that -x would create a new node, so we could
-		 * not run it in the equivalent_node() context.
-		 */
-		n = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
-
-		DBG_OPT_CONFIRM(oldn, n);
-		return n;
-	case value_classified_positive:
-		/* n is positive, Abs is not needed */
-		n = a;
-
-		DBG_OPT_CONFIRM(oldn, n);
-		return n;
-	default:
-		break;
-	}
-	if (is_Minus(a)) {
-		/* Abs(-x) = Abs(x) */
-		mode = get_irn_mode(n);
-		n = new_rd_Abs(get_irn_dbg_info(n), get_nodes_block(n), get_Minus_op(a), mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ABS_MINUS_X);
-		return n;
-	}
-	return n;
-}  /* transform_node_Abs */
 
 /**
  * Optimize -a CMP -b into b CMP a.
@@ -5922,41 +5857,12 @@ static ir_node *transform_node_Mux(ir_node *n)
 		/*
 		 * Note: normalization puts the constant on the right side,
 		 * so we check only one case.
-		 *
-		 * Note further that these optimization work even for floating point
-		 * with NaN's because -NaN == NaN.
-		 * However, if +0 and -0 is handled differently, we cannot use the Abs/-Abs
-		 * transformations.
 		 */
 		if (is_Cmp(cmp)) {
 			ir_node *cmp_r = get_Cmp_right(cmp);
 			if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
 				ir_node *block = get_nodes_block(n);
 				ir_node *cmp_l = get_Cmp_left(cmp);
-
-				if (!mode_honor_signed_zeros(mode) && is_negated_value(f, t)) {
-					/* f = -t */
-
-					/* NaN's work fine with abs, so it is ok to remove Uo */
-					long pnc = pn & ~pn_Cmp_Uo;
-
-					if ( (cmp_l == t && (pnc == pn_Cmp_Ge || pnc == pn_Cmp_Gt))
-						|| (cmp_l == f && (pnc == pn_Cmp_Le || pnc == pn_Cmp_Lt)))
-					{
-						/* Mux(a >/>= 0, a, -a) = Mux(a </<= 0, -a, a) ==> Abs(a) */
-						n = new_rd_Abs(get_irn_dbg_info(n), block, cmp_l, mode);
-						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
-						return n;
-					} else if ((cmp_l == t && (pnc == pn_Cmp_Le || pnc == pn_Cmp_Lt))
-						|| (cmp_l == f && (pnc == pn_Cmp_Ge || pnc == pn_Cmp_Gt)))
-					{
-						/* Mux(a </<= 0, a, -a) = Mux(a >/>= 0, -a, a) ==> -Abs(a) */
-						n = new_rd_Abs(get_irn_dbg_info(n), block, cmp_l, mode);
-						n = new_rd_Minus(get_irn_dbg_info(n), block, n, mode);
-						DBG_OPT_ALGSIM1(oldn, cmp, sel, n, FS_OPT_MUX_TO_ABS);
-						return n;
-					}
-				}
 
 				if (mode_is_int(mode)) {
 					/* integer only */
@@ -6200,7 +6106,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE_PROJ_EX(Mod);
 	CASE_PROJ_EX(DivMod);
 	CASE(Quot);
-	CASE(Abs);
 	CASE_PROJ_EX(Cmp);
 	CASE_PROJ_EX(Cond);
 	CASE(And);

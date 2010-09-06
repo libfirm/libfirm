@@ -622,6 +622,7 @@ static int map_Minus(ir_node *call, void *ctx)
 	return 1;
 }
 
+#if 0
 /**
  * Map a Abs (a_l, a_h)
  */
@@ -671,6 +672,7 @@ static int map_Abs(ir_node *call, void *ctx)
 
 	return 1;
 }
+#endif
 
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
@@ -907,10 +909,6 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 	case iro_Minus:
 		ent    = &i_ents[iro_Minus];
 		mapper = map_Minus;
-		break;
-	case iro_Abs:
-		ent    = &i_ents[iro_Abs];
-		mapper = map_Abs;
 		break;
 	case iro_Div:
 		ent    = &i_ents[iro_Div];

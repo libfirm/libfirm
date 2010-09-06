@@ -676,6 +676,7 @@ static ir_node *gen_Quot(ir_node *node)
 	                          new_bd_sparc_fdiv_d, new_bd_sparc_fdiv_q);
 }
 
+#if 0
 static ir_node *gen_Abs(ir_node *node)
 {
 	ir_mode *const mode = get_irn_mode(node);
@@ -694,6 +695,7 @@ static ir_node *gen_Abs(ir_node *node)
 		return sub;
 	}
 }
+#endif
 
 /**
  * Transforms a Not node.
@@ -2018,7 +2020,6 @@ void sparc_register_transformers(void)
 {
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Abs,          gen_Abs);
 	be_set_transform_function(op_Add,          gen_Add);
 	be_set_transform_function(op_And,          gen_And);
 	be_set_transform_function(op_Call,         gen_Call);

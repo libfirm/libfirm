@@ -272,7 +272,6 @@
  *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state;
- *    ir_node *new_Abs    (ir_node *op,                ir_mode *mode);
  *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Or     (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Eor    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -717,11 +716,6 @@
  *
  *    ir_node *new_Mod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
  *    ------------------------------------------------------------------------------------------------
- *
- *    Trivial.
- *
- *    ir_node *new_Abs (ir_node *op, ir_mode *mode)
- *    ---------------------------------------------
  *
  *    Trivial.
  *
@@ -1555,16 +1549,6 @@ FIRM_API ir_node *new_rd_Mod(dbg_info *db, ir_node *block, ir_node *memop,
                              ir_node *op1, ir_node *op2, ir_mode *mode,
                              op_pin_state state);
 
-/** Constructor for a Abs node.
- *
- * @param   *db    A pointer for debug information.
- * @param   *block The IR block the node belongs to.
- * @param   *op    The operand
- * @param   *mode  The mode of the operands and the result.
- */
-FIRM_API ir_node *new_rd_Abs(dbg_info *db, ir_node *block, ir_node *op,
-                             ir_mode *mode);
-
 /** Constructor for a And node.
  *
  * @param   *db    A pointer for debug information.
@@ -2311,14 +2295,6 @@ FIRM_API ir_node *new_r_DivRL(ir_node *block, ir_node *memop,
 FIRM_API ir_node *new_r_Mod(ir_node *block, ir_node *memop,
                             ir_node *op1, ir_node *op2, ir_mode *mode,
                             op_pin_state state);
-
-/** Constructor for a Abs node.
- *
- * @param *block The IR block the node belongs to.
- * @param *op    The operand
- * @param *mode  The mode of the operands and the result.
- */
-FIRM_API ir_node *new_r_Abs(ir_node *block, ir_node *op, ir_mode *mode);
 
 /** Constructor for a And node.
  *
@@ -3077,16 +3053,6 @@ FIRM_API ir_node *new_d_Mod(dbg_info *db, ir_node *memop,
                             ir_node *op1, ir_node *op2, ir_mode *mode,
                             op_pin_state state);
 
-/** Constructor for a Abs node.
- *
- * Adds the node to the block in current_ir_block.
- *
- * @param   *db    A pointer for debug information.
- * @param   *op    The operand
- * @param   *mode  The mode of the operands and the result.
- */
-FIRM_API ir_node *new_d_Abs(dbg_info *db, ir_node *op, ir_mode *mode);
-
 /** Constructor for a And node.
  *
  * Adds the node to the block in current_ir_block.
@@ -3832,15 +3798,6 @@ FIRM_API ir_node *new_DivRL(ir_node *memop, ir_node *op1, ir_node *op2,
  */
 FIRM_API ir_node *new_Mod(ir_node *memop, ir_node *op1, ir_node *op2,
                           ir_mode *mode, op_pin_state state);
-
-/** Constructor for a Abs node.
- *
- * Adds the node to the block in current_ir_block.
- *
- * @param   *op    The operand
- * @param   *mode  The mode of the operands and the result.
- */
-FIRM_API ir_node *new_Abs(ir_node *op, ir_mode *mode);
 
 /** Constructor for a And node.
  *

@@ -96,7 +96,6 @@ enum firmstat_optimizations_t {
 	FS_OPT_MUX_TRANSFORM,                     /**< Mux(t ==/!= f, t, f) = f/t, Mux(t ==/!= 0, -t, t) = -t/t */
 	FS_OPT_MUX_TO_MIN,                        /**< Mux(a < b, a, b) = Min(a,b) */
 	FS_OPT_MUX_TO_MAX,                        /**< Mux(a > b, a, b) = Max(a,b) */
-	FS_OPT_MUX_TO_ABS,                        /**< Mux(a > 0, a, -a) = Abs(a) */
 	FS_OPT_MUX_TO_BITOP,                      /**< Mux((a & 2^x) ==/!= 0, 2^x, 0) = (a & 2^x) (xor 2^x) */
 	FS_OPT_IDEM_UNARY,                        /**< Idempotent unary operation */
 	FS_OPT_MINUS_NOT,                         /**< -(~x) = x + 1 */
@@ -104,7 +103,6 @@ enum firmstat_optimizations_t {
 	FS_OPT_NOT_PLUS_1,                        /**< ~x + 1 = -x */
 	FS_OPT_ADD_X_NOT_X,                       /**< ~x + x = -1 */
 	FS_OPT_FP_INV_MUL,                        /**< x / y = x * (1.0/y) */
-	FS_OPT_ABS_MINUS_X,                       /**< Abs(-x) = Abs(x) */
 	FS_OPT_CONST_PHI,                         /**< Constant evaluation on Phi */
 	FS_OPT_PREDICATE,                         /**< Predicate optimization */
 	FS_OPT_DEMORGAN,                          /**< optimization using DeMorgan's law */

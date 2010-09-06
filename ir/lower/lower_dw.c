@@ -2629,7 +2629,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	LOWER(Div);
 	LOWER(Mod);
 	LOWER(Sel);
-	LOWER_UN(Abs);
 	LOWER_UN(Minus);
 
 	LOWER(Conv);

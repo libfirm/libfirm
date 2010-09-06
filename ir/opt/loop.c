@@ -1678,8 +1678,14 @@ static void create_duffs_block(void)
 	ins[1] = bad_count;
 	duff_block = new_Block(2, ins);
 
+	/* Matze: I commented this line out because I was in the process of
+	 * removing the Abs node. I don't understand that line at all anyway
+	 * since no other code here checks for the presence of an Abs or creates
+	 * one. So how can we know here that "count" is an Abs node... */
+#if 0
 	/* count wants to be positive */
 	ins[0] = get_Abs_op(count);
+#endif
 	/* Manually feed the aforementioned count = 1 (bad case)*/
 	ins[1] = new_Const(get_mode_one(mode));
 	count_phi = new_r_Phi(duff_block, 2, ins, mode);

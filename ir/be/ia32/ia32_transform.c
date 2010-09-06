@@ -1842,20 +1842,11 @@ static ir_node *gen_Not(ir_node *node)
 	return gen_unop(node, op, new_bd_ia32_Not, match_mode_neutral);
 }
 
-
-
-/**
- * Transforms an Abs node.
- *
- * @return The created ia32 Abs node
- */
-static ir_node *gen_Abs(ir_node *node)
+static ir_node *create_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
+                           bool negate, ir_node *node)
 {
-	ir_node   *block     = get_nodes_block(node);
 	ir_node   *new_block = be_transform_node(block);
-	ir_node   *op        = get_Abs_op(node);
-	dbg_info  *dbgi      = get_irn_dbg_info(node);
-	ir_mode   *mode      = get_irn_mode(node);
+	ir_mode   *mode      = get_irn_mode(op);
 	ir_node   *new_op;
 	ir_node   *new_node;
 	int        size;
@@ -1878,12 +1869,20 @@ static ir_node *gen_Abs(ir_node *node)
 
 			set_ia32_op_type(new_node, ia32_AddrModeS);
 			set_ia32_ls_mode(new_node, mode);
+
+			/* TODO, implement -Abs case */
+			assert(!negate);
 		} else {
 			new_node = new_bd_ia32_vfabs(dbgi, new_block, new_op);
 			SET_IA32_ORIG_NODE(new_node, node);
+			if (negate) {
+				new_node = new_bd_ia32_vfchs(dbgi, new_block, new_node);
+				SET_IA32_ORIG_NODE(new_node, node);
+			}
 		}
 	} else {
-		ir_node *xor, *sign_extension;
+		ir_node *xor;
+		ir_node *sign_extension;
 
 		if (get_mode_size_bits(mode) == 32) {
 			new_op = be_transform_node(op);
@@ -1897,8 +1896,13 @@ static ir_node *gen_Abs(ir_node *node)
 		                      nomem, new_op, sign_extension);
 		SET_IA32_ORIG_NODE(xor, node);
 
-		new_node = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP,
-		                           nomem, xor, sign_extension);
+		if (negate) {
+			new_node = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP,
+									   nomem, sign_extension, xor);
+		} else {
+			new_node = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP,
+									   nomem, xor, sign_extension);
+		}
 		SET_IA32_ORIG_NODE(new_node, node);
 	}
 
@@ -3292,18 +3296,24 @@ static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f,
  */
 static ir_node *gen_Mux(ir_node *node)
 {
-	dbg_info *dbgi        = get_irn_dbg_info(node);
-	ir_node  *block       = get_nodes_block(node);
-	ir_node  *new_block   = be_transform_node(block);
-	ir_node  *mux_true    = get_Mux_true(node);
-	ir_node  *mux_false   = get_Mux_false(node);
-	ir_node  *cond        = get_Mux_sel(node);
-	ir_mode  *mode        = get_irn_mode(node);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *mux_true  = get_Mux_true(node);
+	ir_node  *mux_false = get_Mux_false(node);
+	ir_node  *cond      = get_Mux_sel(node);
+	ir_mode  *mode      = get_irn_mode(node);
 	ir_node  *flags;
 	ir_node  *new_node;
+	int       is_abs;
 	pn_Cmp   pnc;
 
 	assert(get_irn_mode(cond) == mode_b);
+
+	is_abs = be_mux_is_abs(cond, mux_true, mux_false);
+	if (is_abs != 0) {
+		return create_abs(dbgi, block, be_get_abs_op(cond), is_abs < 0, node);
+	}
 
 	/* Note: a Mux node uses a Load two times IFF it's used in the compare AND in the result */
 	if (mode_is_float(mode)) {
@@ -5674,7 +5684,6 @@ static void register_transformers(void)
 	/* first clear the generic function pointer for all ops */
 	be_start_transform_setup();
 
-	be_set_transform_function(op_Abs,              gen_Abs);
 	be_set_transform_function(op_Add,              gen_Add);
 	be_set_transform_function(op_And,              gen_And);
 	be_set_transform_function(op_ASM,              gen_ASM);
