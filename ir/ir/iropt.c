@@ -4653,14 +4653,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 						}
 					}
 				} /* == or != */
-				/* the following reassociations work only for <= */
-				else if (proj_nr == pn_Cmp_Le || proj_nr == pn_Cmp_Lt) {
-					if (tv != tarval_bad) {
-						/* c >= 0 : Abs(a) <= c  ==>  (unsigned)(a + c) <= 2*c */
-						if (is_Abs(left)) { // TODO something is missing here
-						}
-					}
-				}
 			} /* mode_is_int */
 
 			if (proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) {
