@@ -568,11 +568,20 @@ static void sparc_lower_for_target(void)
  */
 static const backend_params *sparc_get_backend_params(void)
 {
+	static const ir_settings_arch_dep_t arch_dep = {
+		1,     /* also_use_subs */
+		1,     /* maximum_shifts */
+		31,    /* highest_shift_amount */
+		NULL,  /* evaluate_cost_func */
+		1,     /* allow mulhs */
+		1,     /* allow mulhu */
+		32,    /* max_bits_for_mulh */
+	};
 	static backend_params p = {
 		0,     /* no inline assembly */
 		0,     /* no support for RotL nodes */
 		sparc_lower_for_target, /* lowering callback */
-		NULL,  /* will be set later */
+		&arch_dep,              /* will be set later */
 		NULL,  /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
 		0,     /* no trampoline support: size 0 */
