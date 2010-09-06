@@ -49,7 +49,7 @@ void sparc_emit_fp_mode_suffix(const ir_node *node);
 void sparc_emit_fp_conv_source(const ir_node *node);
 void sparc_emit_fp_conv_destination(const ir_node *node);
 
-void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg);
+void sparc_emit_routine(ir_graph *irg);
 
 void sparc_init_emitter(void);
 

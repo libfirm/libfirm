@@ -282,7 +282,6 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
 	}
 }
 
-
 static void sparc_after_ra(void *self)
 {
 	sparc_code_gen_t *cg      = self;
@@ -296,18 +295,16 @@ static void sparc_after_ra(void *self)
 	irg_block_walk_graph(cg->irg, NULL, sparc_after_ra_walker, NULL);
 }
 
-
-
 /**
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
 static void sparc_emit_and_done(void *self)
 {
-	sparc_code_gen_t *cg = self;
-	ir_graph           *irg = cg->irg;
+	sparc_code_gen_t *cg  = self;
+	ir_graph         *irg = cg->irg;
 
-	sparc_gen_routine(cg, irg);
+	sparc_emit_routine(irg);
 
 	/* de-allocate code generator */
 	free(cg);
@@ -364,7 +361,6 @@ static sparc_isa_t sparc_isa_template = {
 	},
 	NULL						/* current code generator */
 };
-
 
 static void sparc_handle_intrinsics(void)
 {
@@ -437,7 +433,6 @@ static void sparc_handle_intrinsics(void)
 		lower_intrinsics(records, n_records, /*part_block_used=*/0);
 }
 
-
 /**
  * Initializes the backend ISA
  */
@@ -462,8 +457,6 @@ static arch_env_t *sparc_init(FILE *outfile)
 	return &isa->base;
 }
 
-
-
 /**
  * Closes the output file and frees the ISA structure.
  */
@@ -477,7 +470,6 @@ static void sparc_done(void *self)
 	be_emit_exit();
 	free(self);
 }
-
 
 static unsigned sparc_get_n_reg_class(void)
 {

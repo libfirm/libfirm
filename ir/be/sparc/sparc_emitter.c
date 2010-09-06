@@ -39,6 +39,7 @@
 #include "error.h"
 #include "raw_bitset.h"
 #include "dbginfo.h"
+#include "heights.h"
 
 #include "../besched.h"
 #include "../beblocksched.h"
@@ -54,6 +55,12 @@
 #include "gen_sparc_regalloc_if.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
+static ir_heights_t  *heights;
+static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
+                                              the next delay slot */
+
+static void sparc_emit_node(const ir_node *node);
 
 /**
  * Returns the register at in position pos.
@@ -336,12 +343,120 @@ static void sparc_emit_cfop_target(const ir_node *node)
 	be_gas_emit_block_name(block);
 }
 
-/**
- * Emit single entity
- */
-static void sparc_emit_entity(ir_entity *entity)
+static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 {
-	be_gas_emit_entity(entity);
+	return get_irn_arity(node)-1;
+}
+
+static bool ba_is_fallthrough(const ir_node *node)
+{
+	ir_node *block      = get_nodes_block(node);
+	ir_node *next_block = get_irn_link(block);
+	return get_irn_link(node) == next_block;
+}
+
+static bool is_no_instruction(const ir_node *node)
+{
+	/* copies are nops if src_reg == dest_reg */
+	if (be_is_Copy(node) || be_is_CopyKeep(node)) {
+		const arch_register_t *src_reg  = get_in_reg(node, 0);
+		const arch_register_t *dest_reg = get_out_reg(node, 0);
+
+		if (src_reg == dest_reg)
+			return true;
+	}
+	/* Ba is not emitted if it is a simple fallthrough */
+	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
+		return true;
+
+	return be_is_Keep(node) || be_is_Barrier(node) || be_is_Start(node)
+		|| is_Phi(node);
+}
+
+static bool has_delay_slot(const ir_node *node)
+{
+	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
+		return false;
+
+	return is_sparc_Bicc(node) || is_sparc_fbfcc(node) || is_sparc_Ba(node)
+		|| is_sparc_SwitchJmp(node) || is_sparc_Call(node)
+		|| is_sparc_SDiv(node) || is_sparc_UDiv(node);
+}
+
+/** returns true if the emitter for this sparc node can produce more than one
+ * actual sparc instruction.
+ * Usually it is a bad sign if we have to add instructions here. We should
+ * rather try to get them lowered down. So we can actually put them into
+ * delay slots and make them more accessible to the scheduler.
+ */
+static bool emits_multiple_instructions(const ir_node *node)
+{
+	if (has_delay_slot(node))
+		return true;
+
+	return is_sparc_Mulh(node) || is_sparc_SDiv(node) || is_sparc_UDiv(node)
+		|| be_is_MemPerm(node) || be_is_Perm(node) || be_is_Return(node);
+}
+
+/**
+ * search for an instruction that can fill the delay slot of @p node
+ */
+static const ir_node *pick_delay_slot_for(const ir_node *node)
+{
+	const ir_node *check      = node;
+	const ir_node *schedpoint = node;
+	unsigned       tries      = 0;
+	/* currently we don't track which registers are still alive, so we can't
+	 * pick any other instructions other than the one directly preceding */
+	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 1;
+
+	assert(has_delay_slot(node));
+
+	if (is_sparc_Call(node)) {
+		const sparc_attr_t *attr   = get_sparc_attr_const(node);
+		ir_entity          *entity = attr->immediate_value_entity;
+		if (entity != NULL) {
+			check = NULL; /* pick any instruction, dependencies on Call
+			                 don't matter */
+		} else {
+			/* we only need to check the value for the call destination */
+			check = get_irn_n(node, get_sparc_Call_dest_addr_pos(node));
+		}
+
+		/* the Call also destroys the value of %o7, but since this is currently
+		 * marked as ignore register in the backend, it should never be used by
+		 * the instruction in the delay slot. */
+	} else {
+		check = node;
+	}
+
+	while (sched_has_prev(schedpoint)) {
+		schedpoint = sched_prev(schedpoint);
+
+		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
+			break;
+
+		if (has_delay_slot(schedpoint))
+			break;
+
+		/* skip things which don't really result in instructions */
+		if (is_no_instruction(schedpoint))
+			continue;
+
+		if (emits_multiple_instructions(schedpoint))
+			continue;
+
+		/* allowed for delayslot: any instruction which is not necessary to
+		 * compute an input to the branch. */
+		if (check != NULL
+				&& heights_reachable_in_block(heights, check, schedpoint))
+			continue;
+
+		/* found something */
+		return schedpoint;
+	}
+
+	return NULL;
 }
 
 /**
@@ -352,7 +467,7 @@ static void emit_be_IncSP(const ir_node *irn)
 	int offs = -be_get_IncSP_offset(irn);
 
 	if (offs == 0)
-			return;
+		return;
 
 	/* SPARC stack grows downwards */
 	if (offs < 0) {
@@ -407,8 +522,13 @@ static void emit_sparc_Mulh(const ir_node *irn)
 
 static void fill_delay_slot(void)
 {
-	be_emit_cstring("\tnop\n");
-	be_emit_write_line();
+	if (delay_slot_filler != NULL) {
+		sparc_emit_node(delay_slot_filler);
+		delay_slot_filler = NULL;
+	} else {
+		be_emit_cstring("\tnop\n");
+		be_emit_write_line();
+	}
 }
 
 static void emit_sparc_Div(const ir_node *node, bool is_signed)
@@ -467,14 +587,14 @@ static void emit_sparc_Call(const ir_node *node)
 
 	be_emit_cstring("\tcall ");
 	if (entity != NULL) {
-	    sparc_emit_entity(entity);
+	    be_gas_emit_entity(entity);
 	    if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
 		}
 		be_emit_cstring(", 0");
 	} else {
-		int last = get_irn_arity(node);
-		sparc_emit_source_register(node, last-1);
+		int dest_addr = get_sparc_Call_dest_addr_pos(node);
+		sparc_emit_source_register(node, dest_addr);
 	}
 	be_emit_finish_line_gas(node);
 
@@ -511,9 +631,6 @@ static void emit_be_Perm(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
-/**
- * TODO: not really tested but seems to work with memperm_arity == 1
- */
 static void emit_be_MemPerm(const ir_node *node)
 {
 	int i;
@@ -570,9 +687,6 @@ static void emit_be_MemPerm(const ir_node *node)
 	assert(sp_change == 0);
 }
 
-/**
- * Emits code for FrameAddr fix
- */
 static void emit_sparc_FrameAddr(const ir_node *node)
 {
 	const sparc_attr_t *attr = get_sparc_attr_const(node);
@@ -652,9 +766,6 @@ static const char *get_fcc(pn_Cmp pnc)
 
 typedef const char* (*get_cc_func)(pn_Cmp pnc);
 
-/**
- * Emits code for Branch
- */
 static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 {
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
@@ -728,27 +839,17 @@ static void emit_sparc_fbfcc(const ir_node *node)
 	emit_sparc_branch(node, get_fcc);
 }
 
-/**
- * emit Jmp (which actually is a branch always (ba) instruction)
- */
 static void emit_sparc_Ba(const ir_node *node)
 {
-	ir_node *block, *next_block;
-
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
-	/* we have a block schedule */
-	next_block = get_irn_link(block);
-	if (get_irn_link(node) != next_block) {
+	if (ba_is_fallthrough(node)) {
+		be_emit_cstring("\t/* fallthrough to ");
+		sparc_emit_cfop_target(node);
+		be_emit_cstring(" */");
+	} else {
 		be_emit_cstring("\tba ");
 		sparc_emit_cfop_target(node);
 		be_emit_finish_line_gas(node);
 		fill_delay_slot();
-	} else {
-		be_emit_cstring("\t/* fallthrough to ");
-		sparc_emit_cfop_target(node);
-		be_emit_cstring(" */");
 	}
 	be_emit_finish_line_gas(node);
 }
@@ -841,9 +942,6 @@ static const arch_register_t *get_next_fp_reg(const arch_register_t *reg)
 	return &sparc_fp_regs[index];
 }
 
-/**
- * emit copy node
- */
 static void emit_be_Copy(const ir_node *node)
 {
 	ir_mode               *mode    = get_irn_mode(node);
@@ -874,23 +972,13 @@ static void emit_be_Copy(const ir_node *node)
 	}
 }
 
-
-/**
- * dummy emitter for ignored nodes
- */
 static void emit_nothing(const ir_node *irn)
 {
 	(void) irn;
 }
 
-/**
- * type of emitter function
- */
 typedef void (*emit_func) (const ir_node *);
 
-/**
- * Set a node emitter. Make it a bit more type safe.
- */
 static inline void set_emitter(ir_op *op, emit_func sparc_emit_node)
 {
 	op->ops.generic = (op_func)sparc_emit_node;
@@ -949,27 +1037,51 @@ static void sparc_emit_node(const ir_node *node)
 	}
 }
 
+static ir_node *find_next_delay_slot(ir_node *from)
+{
+	ir_node *schedpoint = from;
+	while (!has_delay_slot(schedpoint)) {
+		if (!sched_has_next(schedpoint))
+			return NULL;
+		schedpoint = sched_next(schedpoint);
+	}
+	return schedpoint;
+}
+
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void sparc_gen_block(ir_node *block, void *data)
+static void sparc_emit_block(ir_node *block)
 {
 	ir_node *node;
-	(void) data;
+	ir_node *next_delay_slot;
 
-	if (! is_Block(block))
-		return;
+	assert(is_Block(block));
 
 	be_gas_emit_block_name(block);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 
+	next_delay_slot = find_next_delay_slot(sched_first(block));
+	if (next_delay_slot != NULL)
+		delay_slot_filler = pick_delay_slot_for(next_delay_slot);
+
 	sched_foreach(block, node) {
+		if (node == delay_slot_filler) {
+			continue;
+		}
+
 		sparc_emit_node(node);
+
+		if (node == next_delay_slot) {
+			assert(delay_slot_filler == NULL);
+			next_delay_slot = find_next_delay_slot(sched_next(node));
+			if (next_delay_slot != NULL)
+				delay_slot_filler = pick_delay_slot_for(next_delay_slot);
+		}
 	}
 }
-
 
 /**
  * Emits code for function start.
@@ -996,11 +1108,6 @@ static void sparc_emit_func_epilog(ir_graph *irg)
 	be_emit_write_line();
 }
 
-/**
- * Block-walker:
- * TODO: Sets labels for control flow nodes (jump target).
- * Links control predecessors to there destination blocks.
- */
 static void sparc_gen_labels(ir_node *block, void *env)
 {
 	ir_node *pred;
@@ -1013,51 +1120,47 @@ static void sparc_gen_labels(ir_node *block, void *env)
 	}
 }
 
-
-/**
- * Main driver
- */
-void sparc_gen_routine(const sparc_code_gen_t *cg, ir_graph *irg)
+void sparc_emit_routine(ir_graph *irg)
 {
-	ir_node **blk_sched;
-	ir_node *last_block = NULL;
-	ir_entity *entity     = get_irg_entity(irg);
-	int i, n;
-	(void) cg;
+	ir_entity  *entity = get_irg_entity(irg);
+	ir_node   **block_schedule;
+	int         i;
+	int         n;
 
-	be_gas_elf_type_char = '#';
+	be_gas_elf_type_char      = '#';
 	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF_SPARC;
+
+	heights = heights_new(irg);
 
 	/* register all emitter functions */
 	sparc_register_emitters();
 	be_dbg_method_begin(entity);
 
 	/* create the block schedule. For now, we don't need it earlier. */
-	blk_sched = be_create_block_schedule(irg);
+	block_schedule = be_create_block_schedule(irg);
 
-	// emit function prolog
 	sparc_emit_func_prolog(irg);
-
-	// generate BLOCK labels
 	irg_block_walk_graph(irg, sparc_gen_labels, NULL, NULL);
 
-	// inject block scheduling links & emit code of each block
-	n = ARR_LEN(blk_sched);
-	for (i = 0; i < n;) {
-		ir_node *block, *next_bl;
-
-		block = blk_sched[i];
-		++i;
-		next_bl = i < n ? blk_sched[i] : NULL;
-
-		/* set here the link. the emitter expects to find the next block here */
-		set_irn_link(block, next_bl);
-		sparc_gen_block(block, last_block);
-		last_block = block;
+	/* inject block scheduling links & emit code of each block */
+	n = ARR_LEN(block_schedule);
+	for (i = 0; i < n; ++i) {
+		ir_node *block      = block_schedule[i];
+		ir_node *next_block = i+1 < n ? block_schedule[i+1] : NULL;
+		set_irn_link(block, next_block);
 	}
 
-	// emit function epilog
+	for (i = 0; i < n; ++i) {
+		ir_node *block = block_schedule[i];
+		if (block == get_irg_end_block(irg))
+			continue;
+		sparc_emit_block(block);
+	}
+
+	/* emit function epilog */
 	sparc_emit_func_epilog(irg);
+
+	heights_free(heights);
 }
 
 void sparc_init_emitter(void)
