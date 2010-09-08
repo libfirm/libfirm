@@ -5772,18 +5772,18 @@ static ir_node *transform_node_Mux(ir_node *n)
 	}
 
 	/* first normalization step: try to move a constant to the false side,
-	 * 0 prefered on false side too */
+	 * 0 preferred on false side too */
 	if (is_Proj(sel)) {
 		ir_node *cmp = get_Proj_pred(sel);
 
 		if (is_Cmp(cmp) && is_Const(t) &&
-				(!is_Const(f) || (is_Const_null(t) && !is_Const_null(f)))) {
+		    (!is_Const(f) || (is_Const_null(t) && !is_Const_null(f)))) {
+			pn_Cmp pnc = get_Proj_proj(sel);
 			ir_node *tmp = t;
 			t = f;
 			f = tmp;
 
 			/* Mux(x, a, b) => Mux(not(x), b, a) */
-			pn_Cmp pnc = get_Proj_proj(sel);
 			sel = new_r_Proj(cmp, mode_b,
 				get_negated_pnc(pnc, get_irn_mode(get_Cmp_left(cmp))));
 			n = new_rd_Mux(get_irn_dbg_info(n), get_nodes_block(n), sel, f, t, mode);
