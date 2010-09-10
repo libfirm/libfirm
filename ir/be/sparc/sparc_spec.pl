@@ -757,7 +757,7 @@ Stf => {
 	attr_type => "sparc_load_store_attr_t",
 	attr      => "ir_mode *ls_mode, ir_entity *entity, int32_t offset, bool is_frame_entity",
 	custominit => "init_sparc_load_store_attributes(res, ls_mode, entity, offset, is_frame_entity, false);",
-	emit      => '. st%FLSM %S1, [%S0%O1]',
+	emit      => '. st%FLSM %S0, [%S1%O2]',
 	mode      => 'mode_M',
 },
 
