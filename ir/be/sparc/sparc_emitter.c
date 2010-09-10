@@ -932,9 +932,9 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
                       const arch_register_t *dst_reg)
 {
-	be_emit_cstring("\tfmov ");
+	be_emit_cstring("\tfmovs %");
 	be_emit_string(arch_register_get_name(src_reg));
-	be_emit_cstring(", ");
+	be_emit_cstring(", %");
 	be_emit_string(arch_register_get_name(dst_reg));
 	be_emit_finish_line_gas(node);
 }
