@@ -37,53 +37,50 @@
 #include "irpass_t.h"
 #include "lowering.h"
 #include "error.h"
+#include "irnodeset.h"
 
 #define foreach_out_irn(irn, i, outirn) for (i = get_irn_n_outs(irn) - 1;\
 	i >= 0 && (outirn = get_irn_out(irn, i)); --i)
 
-typedef struct walk_env {
-	unsigned         spare_size;        /**< the allowed spare size for table switches */
-	bool             changed;           /**< indicates whether a change was performed */
+typedef struct walk_env_t {
+	unsigned      spare_size; /**< the allowed spare size for table switches */
+	bool          allow_out_of_bounds;
+	bool          changed;    /**< indicates whether a change was performed */
+	ir_nodeset_t  processed;
 } walk_env_t;
 
-typedef struct case_data {
+typedef struct case_data_t {
 	long     value;
 	ir_node *target;
 } case_data_t;
 
-typedef struct ifcas_env {
+typedef struct cond_env_t {
 	ir_node  *sel;
-	int       defindex;
+	long      switch_min;
+	long      switch_max;
+	ir_node  *default_block;
+	unsigned  num_cases;
 	ir_node **defusers;           /**< the Projs pointing to the default case */
-} ifcas_env_t;
+} cond_env_t;
 
-/**
- * Evaluate a switch and decide whether we should build a table switch.
- *
- * @param cond       The Cond node representing the switch.
- * @param spare_size Allowed spare size for table switches in machine words.
- *                   (Default in edgfe: 128)
- */
-static bool should_do_table_switch(ir_node *cond, unsigned spare_size)
+static void analyse_switch(cond_env_t *env, ir_node *cond)
 {
-	long     default_pn;
+	long     default_pn    = get_Cond_default_proj(cond);
+	long     switch_min    = LONG_MAX;
+	long     switch_max    = LONG_MIN;
+	ir_node *default_block = NULL;
+	unsigned num_cases     = 0;
 	int      i;
 	ir_node *proj;
-	long switch_min = LONG_MAX;
-	long switch_max = LONG_MIN;
-	unsigned long spare;
-	unsigned long num_cases = 0;
-
-	/* TODO: Minimum size for jump table? */
-	if (get_irn_n_outs(cond) <= 4)
-		return false;
-
-	default_pn = get_Cond_default_proj(cond);
 
 	foreach_out_irn(cond, i, proj) {
 		long pn = get_Proj_proj(proj);
-		if (pn == default_pn)
+		if (pn == default_pn) {
+			ir_node *target = get_irn_out(proj, 0);
+			assert(default_block == NULL || default_block == target);
+			default_block = target;
 			continue;
+		}
 
 		if (pn < switch_min)
 			switch_min = pn;
@@ -91,13 +88,12 @@ static bool should_do_table_switch(ir_node *cond, unsigned spare_size)
 			switch_max = pn;
 		++num_cases;
 	}
+	assert(default_block != NULL);
 
-	/*
-	 * Here we have: num_cases and [switch_min, switch_max] interval.
-	 * We do an if-cascade if there are too many spare numbers.
-	 */
-	spare = (unsigned long) switch_max - (unsigned long) switch_min - num_cases + 1;
-	return spare < spare_size;
+	env->switch_min    = switch_min;
+	env->switch_max    = switch_max;
+	env->num_cases     = num_cases;
+	env->default_block = default_block;
 }
 
 static int casecmp(const void *a, const void *b)
@@ -117,13 +113,13 @@ static int casecmp(const void *a, const void *b)
 /**
  * Creates an if cascade realizing binary search.
  */
-static void create_if_cascade(ifcas_env_t *env, dbg_info *dbgi, ir_node *block,
+static void create_if_cascade(cond_env_t *env, dbg_info *dbgi, ir_node *block,
                               case_data_t *curcases, unsigned numcases)
 {
 	ir_graph *irg = get_irn_irg(block);
-    ir_mode *cmp_mode;
-    ir_node *cmp_sel;
-    ir_node *sel_block;
+    ir_mode  *cmp_mode;
+    ir_node  *cmp_sel;
+    ir_node  *sel_block;
 
     /* Get the mode and sel node for the comparison. */
     cmp_mode  = get_irn_mode(env->sel);
@@ -143,7 +139,7 @@ static void create_if_cascade(ifcas_env_t *env, dbg_info *dbgi, ir_node *block,
 
 	if (numcases == 0) {
 		/* zero cases: "goto default;" */
-		env->defusers[env->defindex++] = new_Jmp();
+		ARR_APP1(ir_node*, env->defusers, new_Jmp());
 	} else if (numcases == 1) {
 		/* only one case: "if (sel == val) goto target else goto default;" */
 		ir_node *val       = new_r_Const_long(irg, cmp_mode, curcases[0].value);
@@ -154,7 +150,7 @@ static void create_if_cascade(ifcas_env_t *env, dbg_info *dbgi, ir_node *block,
 		ir_node *falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
 
 		set_Block_cfgpred(curcases[0].target, 0, trueproj);
-		env->defusers[env->defindex++] = falseproj;
+		ARR_APP1(ir_node*, env->defusers, falseproj);
 	} else if (numcases == 2) {
 		/* only two cases: "if (sel == val[0]) goto target[0];" */
 		ir_node *val       = new_r_Const_long(irg, cmp_mode, curcases[0].value);
@@ -179,7 +175,7 @@ static void create_if_cascade(ifcas_env_t *env, dbg_info *dbgi, ir_node *block,
 		trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
 		set_Block_cfgpred(curcases[1].target, 0, trueproj);
-		env->defusers[env->defindex++] = falseproj;
+		ARR_APP1(ir_node*, env->defusers, falseproj);
 	} else {
 		/* recursive case: split cases in the middle */
 		int midcase = numcases / 2;
@@ -204,6 +200,99 @@ static void create_if_cascade(ifcas_env_t *env, dbg_info *dbgi, ir_node *block,
 	}
 }
 
+static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
+{
+	ir_graph      *irg           = get_irn_irg(cond);
+	dbg_info      *dbgi          = get_irn_dbg_info(cond);
+	ir_node       *sel           = get_Cond_selector(cond);
+	ir_node       *block         = get_nodes_block(cond);
+	ir_mode       *cmp_mode      = get_irn_mode(sel);
+	ir_node      **default_preds = NEW_ARR_F(ir_node*, 0);
+	unsigned long  default_pn    = get_Cond_default_proj(cond);
+	long           delta         = 0;
+	ir_node       *max_const;
+	ir_node       *proj_true;
+	ir_node       *proj_false;
+	ir_node       *cmp;
+	ir_node       *proj_cmp;
+	ir_node       *oob_cond;
+	ir_node       *in[1];
+	ir_node       *new_block;
+	int            n_default_preds;
+	int            i;
+	ir_node       *proj;
+
+	if (mode_is_signed(cmp_mode)) {
+		cmp_mode = find_unsigned_mode(cmp_mode);
+		sel      = new_r_Conv(block, sel, cmp_mode);
+	}
+
+	/* normalize so switch_min is at 0 */
+	if (env->switch_min != 0) {
+		ir_node *min_const  = new_r_Const_long(irg, cmp_mode, env->switch_min);
+		sel = new_rd_Sub(dbgi, block, sel, min_const, cmp_mode);
+
+		delta            = env->switch_min;
+		env->switch_min  = 0;
+		env->switch_max -= delta;
+	}
+
+	/* check for out-of-bounds */
+	max_const  = new_r_Const_long(irg, cmp_mode, env->switch_max);
+	cmp        = new_rd_Cmp(dbgi, block, sel, max_const);
+	proj_cmp   = new_r_Proj(cmp, mode_b, pn_Cmp_Le);
+	oob_cond   = new_rd_Cond(dbgi, block, proj_cmp);
+	proj_true  = new_r_Proj(oob_cond, mode_X, pn_Cond_true);
+	proj_false = new_r_Proj(oob_cond, mode_X, pn_Cond_false);
+
+	ARR_APP1(ir_node*, default_preds, proj_false);
+
+	/* create new block containing the cond */
+	in[0] = proj_true;
+	new_block = new_r_Block(irg, 1, in);
+	set_nodes_block(cond, new_block);
+
+	/* adapt projs */
+	foreach_out_irn(cond, i, proj) {
+		unsigned long pn     = get_Proj_proj(proj);
+		unsigned long new_pn = pn - delta;
+		if (pn == default_pn) {
+			/* we might have to choose a new default_pn */
+			if (pn < (unsigned long) env->switch_max) {
+				new_pn = env->switch_max + 1;
+				set_Cond_default_proj(cond, new_pn);
+			} else {
+				new_pn = default_pn;
+			}
+			ARR_APP1(ir_node*, default_preds, proj);
+		}
+
+		set_Proj_proj(proj, new_pn);
+		set_nodes_block(proj, new_block);
+	}
+
+	/* adapt default block */
+	n_default_preds = ARR_LEN(default_preds);
+	if (n_default_preds > 1) {
+		int i;
+
+		/* create new intermediate blocks so we don't have critical edges */
+		for (i = 0; i < n_default_preds; ++i) {
+			ir_node *proj = default_preds[i];
+			ir_node *block;
+			ir_node *in[1];
+
+			in[0] = proj;
+			block = new_r_Block(irg, 1, in);
+
+			default_preds[i] = new_r_Jmp(block);
+		}
+	}
+	set_irn_in(env->default_block, n_default_preds, default_preds);
+
+	DEL_ARR_F(default_preds);
+}
+
 /**
  * Block-Walker: searches for Cond nodes with a non-boolean mode
  */
@@ -223,7 +312,8 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	ir_node     *condblock;
 	ir_node     *defblock = NULL;
 	dbg_info    *dbgi;
-	ifcas_env_t  ifcas_env;
+	cond_env_t   cond_env;
+	unsigned long spare;
 
 	/* because we split critical blocks only blocks with 1 predecessors may
 	 * contain Proj->Cond nodes */
@@ -245,16 +335,32 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	if (sel_mode == mode_b)
 		return;
 
+	if (ir_nodeset_contains(&env->processed, cond))
+		return;
+	ir_nodeset_insert(&env->processed, cond);
+
 	/* the algorithms here don't work reliable for modes bigger than 32
 	 * since we operate with long numbers */
 	assert(get_mode_size_bits(sel_mode) <= 32);
 
-	/* ok, we have found a switch cond */
+	analyse_switch(&cond_env, cond);
 
-	/* no need to do anything if backend handles out-of-bounds and the switch
-	 * is small enough */
-	if (should_do_table_switch(cond, env->spare_size))
+	/*
+	 * Here we have: num_cases and [switch_min, switch_max] interval.
+	 * We do an if-cascade if there are too many spare numbers.
+	 */
+	spare = (unsigned long) cond_env.switch_max
+		- (unsigned long) cond_env.switch_min
+		- (unsigned long) cond_env.num_cases + 1;
+	if (spare < env->spare_size) {
+		/* we won't decompose the switch. But we might have to add
+		 * out-of-bounds checking */
+		if (!env->allow_out_of_bounds) {
+			create_out_of_bounds_check(&cond_env, cond);
+			env->changed = true;
+		}
 		return;
+	}
 
 	/*
 	 * Switch should be transformed into an if cascade.
@@ -265,10 +371,9 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	numcases = get_irn_n_outs(cond) - 1; /* does not contain default case */
 	cases    = XMALLOCN(case_data_t, numcases);
 
-	default_pn         = get_Cond_default_proj(cond);
-	ifcas_env.sel      = sel;
-	ifcas_env.defindex = 0;
-	ifcas_env.defusers = XMALLOCN(ir_node*, numcases);
+	default_pn        = get_Cond_default_proj(cond);
+	cond_env.sel      = sel;
+	cond_env.defusers = NEW_ARR_F(ir_node*, 0);
 
 	foreach_out_irn(cond, i, proj) {
 		long pn = get_Proj_proj(proj);
@@ -294,25 +399,28 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	/* Now create the if cascade */
 	condblock = get_nodes_block(cond);
 	dbgi      = get_irn_dbg_info(cond);
-	create_if_cascade(&ifcas_env, dbgi, condblock, cases, numcases);
+	create_if_cascade(&cond_env, dbgi, condblock, cases, numcases);
 
 	/* Connect new default case users */
-	set_irn_in(defblock, ifcas_env.defindex, ifcas_env.defusers);
+	set_irn_in(defblock, ARR_LEN(cond_env.defusers), cond_env.defusers);
 
 	xfree(cases);
-	xfree(ifcas_env.defusers);
+	DEL_ARR_F(cond_env.defusers);
 }
 
-void lower_switch(ir_graph *irg, unsigned spare_size)
+void lower_switch(ir_graph *irg, unsigned spare_size, int allow_out_of_bounds)
 {
 	walk_env_t env;
 	env.changed             = false;
 	env.spare_size          = spare_size;
+	env.allow_out_of_bounds = allow_out_of_bounds;
+	ir_nodeset_init(&env.processed);
 
 	remove_critical_cf_edges(irg);
 	assure_irg_outs(irg);
 
 	irg_block_walk_graph(irg, find_cond_nodes, NULL, &env);
+	ir_nodeset_destroy(&env.processed);
 
 	if (env.changed) {
 		/* control flow changed */

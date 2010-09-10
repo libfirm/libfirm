@@ -858,12 +858,11 @@ static void emit_sparc_Ba(const ir_node *node)
 static void emit_jump_table(const ir_node *node)
 {
 	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
-	long             switch_min    = LONG_MAX;
 	long             switch_max    = LONG_MIN;
 	long             default_pn    = attr->default_proj_num;
 	ir_entity       *entity        = attr->jump_table;
 	ir_node         *default_block = NULL;
-	unsigned         length;
+	unsigned long    length;
 	const ir_edge_t *edge;
 	unsigned         i;
 	ir_node        **table;
@@ -878,12 +877,18 @@ static void emit_jump_table(const ir_node *node)
 			assert(default_block == NULL); /* more than 1 default_pn? */
 			default_block = get_jump_target(proj);
 		} else {
-			switch_min = pn < switch_min ? pn : switch_min;
 			switch_max = pn > switch_max ? pn : switch_max;
 		}
 	}
-	length = (unsigned long) (switch_max - switch_min) + 1;
-	assert(switch_min < LONG_MAX || switch_max > LONG_MIN);
+	assert(switch_max > LONG_MIN);
+
+	length = (unsigned long) switch_max + 1;
+	/* the 16000 isn't a real limit of the architecture. But should protect us
+	 * from seamingly endless compiler runs */
+	if (length > 16000) {
+		/* switch lowerer should have broken this monster to pieces... */
+		panic("too large switch encountered");
+	}
 
 	table = XMALLOCNZ(ir_node*, length);
 	foreach_out_edge(node, edge) {
@@ -892,7 +897,7 @@ static void emit_jump_table(const ir_node *node)
 		if (pn == default_pn)
 			continue;
 
-		table[pn - switch_min] = get_jump_target(proj);
+		table[pn] = get_jump_target(proj);
 	}
 
 	/* emit table */

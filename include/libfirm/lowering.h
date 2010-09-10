@@ -160,8 +160,12 @@ FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_size,
  * @param irg        The ir graph to be lowered.
  * @param spare_size Allowed spare size for table switches in machine words.
  *                   (Default in edgfe: 128)
+ * @param allow_out_of_bounds   backend can handle out-of-bounds values
+ *                              (values bigger than minimum and maximum proj
+ *                               number)
  */
-FIRM_API void lower_switch(ir_graph *irg, unsigned spare_size);
+FIRM_API void lower_switch(ir_graph *irg, unsigned spare_size,
+                           int allow_out_of_bounds);
 
 /**
  * A callback type for creating an intrinsic entity for a given opcode.

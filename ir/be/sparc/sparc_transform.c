@@ -902,33 +902,15 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	ir_node         *block        = be_transform_node(get_nodes_block(node));
 	ir_node         *selector     = get_Cond_selector(node);
 	ir_node         *new_selector = be_transform_node(selector);
-	long             switch_min   = LONG_MAX;
-	long             switch_max   = LONG_MIN;
 	long             default_pn   = get_Cond_default_proj(node);
 	ir_entity       *entity;
 	ir_node         *table_address;
 	ir_node         *index;
 	ir_node         *load;
 	ir_node         *address;
-	unsigned         length;
-	const ir_edge_t *edge;
 
 	/* switch with smaller mode not implemented yet */
 	assert(get_mode_size_bits(get_irn_mode(selector)) == 32);
-
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
-		if (pn == default_pn)
-			continue;
-
-		switch_min = pn<switch_min ? pn : switch_min;
-		switch_max = pn>switch_max ? pn : switch_max;
-	}
-	length = (unsigned long) (switch_max - switch_min);
-	if (length > 16000) {
-		panic("Size of switch %+F bigger than 16000", node);
-	}
 
 	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
 	set_entity_visibility(entity, ir_visibility_private);
@@ -940,8 +922,7 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	 * done. */
 
 	/* construct base address */
-	table_address = make_address(dbgi, block, entity,
-	                             -switch_min * get_mode_size_bytes(mode_gp));
+	table_address = make_address(dbgi, block, entity, 0);
 	/* scale index */
 	index = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
 	/* load from jumptable */

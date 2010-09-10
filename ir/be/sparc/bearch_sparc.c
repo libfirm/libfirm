@@ -558,7 +558,7 @@ static void sparc_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_switch(irg, 128);
+		lower_switch(irg, 256, false);
 	}
 }
 
