@@ -539,9 +539,6 @@ FIRM_API void clear_irg_state(ir_graph *irg, ir_graph_state_t state);
 /** query wether a set of graph state flags are activated */
 FIRM_API int is_irg_state(const ir_graph *irg, ir_graph_state_t state);
 
-/** Normalization: Move Proj nodes into the same block as its predecessors */
-FIRM_API void normalize_proj_nodes(ir_graph *irg);
-
 /** Set a description for local value n. */
 FIRM_API void set_irg_loc_description(ir_graph *irg, int n, void *description);
 

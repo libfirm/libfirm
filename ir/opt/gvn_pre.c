@@ -815,10 +815,6 @@ void do_gvn_pre(ir_graph *irg)
 	a_env.end_block   = get_irg_end_block(irg);
 	a_env.pairs       = NULL;
 
-	/* Move Proj's into the same block as their args,
-	   else we would assign the result to wrong blocks */
-	normalize_proj_nodes(irg);
-
 	/* critical edges MUST be removed */
 	remove_critical_cf_edges(irg);
 
