@@ -1162,47 +1162,6 @@ ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
 	return phi;
 }
 
-/**
- * Guess correct register class of a phi node by looking at its arguments
- */
-static const arch_register_req_t *get_Phi_reg_req_recursive(const ir_node *phi,
-                                                            pset **visited)
-{
-	int n = get_irn_arity(phi);
-	ir_node *op;
-	int i;
-
-	if (*visited && pset_find_ptr(*visited, phi))
-		return NULL;
-
-	for (i = 0; i < n; ++i) {
-		op = get_irn_n(phi, i);
-		/* Matze: don't we unnecessary constraint our phis with this?
-		 * we only need to take the regclass IMO*/
-		if (!is_Phi(op))
-			return arch_get_register_req_out(op);
-	}
-
-	/*
-	 * The operands of that Phi were all Phis themselves.
-	 * We have to start a DFS for a non-Phi argument now.
-	 */
-	if (!*visited)
-		*visited = pset_new_ptr(16);
-
-	pset_insert_ptr(*visited, phi);
-
-	for (i = 0; i < n; ++i) {
-		const arch_register_req_t *req;
-		op = get_irn_n(phi, i);
-		req = get_Phi_reg_req_recursive(op, visited);
-		if (req != NULL)
-			return req;
-	}
-
-	return NULL;
-}
-
 static const arch_register_req_t *phi_get_irn_reg_req(const ir_node *node,
                                                       int pos)
 {
@@ -1212,31 +1171,7 @@ static const arch_register_req_t *phi_get_irn_reg_req(const ir_node *node,
 
 	if (req != NULL)
 		return req;
-
-	if (!mode_is_datab(get_irn_mode(node))) {
-		req = arch_no_register_req;
-	} else {
-		pset *visited = NULL;
-
-		req = get_Phi_reg_req_recursive(node, &visited);
-		assert(req->cls != NULL);
-		if (req->width > 1) {
-			arch_register_req_t *new_req = allocate_reg_req(node);
-			new_req->type                = arch_register_req_type_normal;
-			new_req->cls                 = req->cls;
-			new_req->other_same          = 0;
-			new_req->other_different     = 0;
-			new_req->width               = req->width;
-			req = new_req;
-		} else {
-			req = req->cls->class_req;
-		}
-
-		if (visited != NULL)
-			del_pset(visited);
-	}
-	info->out_infos[0].req = req;
-	return req;
+	return arch_no_register_req;
 }
 
 void be_set_phi_reg_req(ir_node *node, const arch_register_req_t *req)
