@@ -427,7 +427,7 @@ Sll => {
 	constructors => \%binop_operand_constructors,
 },
 
-Slr => {
+Srl => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
 	emit         => '. srl %S0, %R1I, %D0',
