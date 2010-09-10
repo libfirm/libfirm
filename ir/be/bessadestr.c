@@ -52,9 +52,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define get_reg(irn)         arch_get_irn_register(irn)
-#define set_reg(irn, reg)    arch_set_irn_register(irn, reg)
-
 static void clear_link(ir_node *irn, void *data)
 {
 	(void) data;
@@ -182,10 +179,10 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			for (pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
-				assert(get_reg(pp->arg));
-				set_reg(proj, get_reg(pp->arg));
+				assert(arch_get_irn_register(pp->arg));
+				arch_set_irn_register(proj, arch_get_irn_register(pp->arg));
 				insert_after = proj;
-				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", get_reg(pp->arg)->name, pp->arg, pp->proj));
+				DBG((dbg, LEVEL_2, "Copy register assignment %s from %+F to %+F\n", arch_get_irn_register(pp->arg)->name, pp->arg, pp->proj));
 			}
 
 			/*
@@ -237,7 +234,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 	/* Consider all phis of this block */
 	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 		ir_node                     *phi_block = get_nodes_block(phi);
-		const arch_register_t       *phi_reg   = get_reg(phi);
+		const arch_register_t       *phi_reg   = arch_get_irn_register(phi);
 		const arch_register_class_t *cls       = phi_reg->reg_class;
 		int                          max;
 		int                          i;
@@ -251,7 +248,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 			ir_node                   *arg_block;
 
 			arg_block = get_Block_cfgpred_block(phi_block, i);
-			arg_reg   = get_reg(arg);
+			arg_reg   = arch_get_irn_register(arg);
 
 			assert(arg_reg && "Register must be set while placing perms");
 
@@ -262,7 +259,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 					|| (arg_reg->type & arch_register_type_virtual)) {
 				/* Phi and arg have the same register, so pin and continue */
 				pin_irn(arg, phi_block);
-				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, get_reg(arg)->name));
+				DBG((dbg, LEVEL_1, "      arg has same reg: pin %+F(%s)\n", arg, arch_get_irn_register(arg)->name));
 				continue;
 			}
 
@@ -277,12 +274,12 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				ir_node *dupl  = be_new_Copy(cls, arg_block, arg);
 
 				set_irn_n(phi, i, dupl);
-				set_reg(dupl, phi_reg);
+				arch_set_irn_register(dupl, phi_reg);
 				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, NULL), dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);
 				be_liveness_update(lv, arg);
-				DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
+				DBG((dbg, LEVEL_1, "    they do interfere: insert %+F(%s)\n", dupl, arch_get_irn_register(dupl)->name));
 				continue; /* with next argument */
 			}
 
@@ -307,8 +304,8 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 						get_nodes_block(phi) == get_nodes_block(other_phi) &&
 						"link fields are screwed up");
 
-					if (get_irn_n(other_phi, i) == arg && get_reg(other_phi) == arg_reg) {
-						DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, get_reg(other_phi)->name));
+					if (get_irn_n(other_phi, i) == arg && arch_get_irn_register(other_phi) == arg_reg) {
+						DBG((dbg, LEVEL_1, "        found %+F(%s)\n", other_phi, arch_get_irn_register(other_phi)->name));
 						pin_irn(arg, phi_block);
 						break;
 					}
@@ -328,7 +325,7 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				ir_node *ins;
 
 				set_irn_n(phi, i, dupl);
-				set_reg(dupl, phi_reg);
+				arch_set_irn_register(dupl, phi_reg);
 				/* skip the Perm's Projs and insert the copies behind. */
 				for (ins = sched_next(perm); is_Proj(ins); ins = sched_next(ins)) {
 				}
@@ -336,15 +333,15 @@ static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);
 				be_liveness_update(lv, arg);
-				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, get_reg(dupl)->name));
+				DBG((dbg, LEVEL_1, "      arg is pinned: insert %+F(%s)\n", dupl, arch_get_irn_register(dupl)->name));
 			} else {
 				/*
 					No other phi has the same color (else arg would have been pinned),
 					so just set the register and pin
 				*/
-				set_reg(arg, phi_reg);
+				arch_set_irn_register(arg, phi_reg);
 				pin_irn(arg, phi_block);
-				DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, get_reg(arg)->name));
+				DBG((dbg, LEVEL_1, "      arg is not pinned: so pin %+F(%s)\n", arg, arch_get_irn_register(arg)->name));
 			}
 		}
 	}
@@ -399,7 +396,7 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
 		const arch_register_t *phi_reg, *arg_reg;
 
-		phi_reg = get_reg(phi);
+		phi_reg = arch_get_irn_register(phi);
 		/* iterate over all args of phi */
 		for (i = 0, max = get_irn_arity(phi); i < max; ++i) {
 			ir_node                   *arg = get_irn_n(phi, i);
@@ -408,7 +405,7 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 			if (req->type & arch_register_req_type_ignore)
 				continue;
 
-			arg_reg = get_reg(arg);
+			arg_reg = arch_get_irn_register(arg);
 
 			if (phi_reg != arg_reg) {
 				DBG((dbg, 0, "Error: Registers of %+F and %+F differ: %s %s\n", phi, arg, phi_reg->name, arg_reg->name));

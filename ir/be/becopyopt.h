@@ -255,13 +255,6 @@ void co_free_graph_structure(copy_opt_t *co);
 /**
  * Solves the problem using mixed integer programming
  * @returns 1 iff solution state was optimal
- * NYI
- */
-int co_solve_ilp1(copy_opt_t *co, double time_limit);
-
-/**
- * Solves the problem using mixed integer programming
- * @returns 1 iff solution state was optimal
  * Uses the OU and the GRAPH data structure
  * Dependency of the OU structure can be removed
  */
@@ -273,4 +266,4 @@ int co_solve_ilp2(copy_opt_t *co);
  */
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn);
 
-#endif /* FIRM_BE_BECOPYOPT_H */
+#endif

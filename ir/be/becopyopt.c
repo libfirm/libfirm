@@ -858,8 +858,6 @@ void co_free_graph_structure(copy_opt_t *co)
 	co->nodes = NULL;
 }
 
-/* co_solve_ilp1() co_solve_ilp2() are implemented in becopyilpX.c */
-
 int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
 {
 	affinity_node_t new_node, *n;

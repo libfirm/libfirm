@@ -50,8 +50,6 @@
 #include "bearch.h"
 #include "beuses.h"
 
-#define SCAN_INTERBLOCK_USES
-
 typedef struct be_use_t {
 	const ir_node *block;
 	const ir_node *node;
@@ -173,7 +171,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	unsigned  next_use_step;
 	const ir_edge_t *edge;
 
-#if 1
 	assert(skip_from_uses == 0 || skip_from_uses == 1);
 	if (skip_from_uses) {
 		from = sched_next(from);
@@ -213,48 +210,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	node = sched_last(block);
 	step = get_step(node) + 1 + timestep + skip_from_uses;
 
-#else
-	if (skip_from_uses) {
-		from = sched_next(from);
-		++step;
-	}
-
-	sched_foreach_from(from, node) {
-		int i, arity;
-
-		if (is_Phi(node)) {
-			step++;
-			continue;
-		}
-
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			const ir_node *operand = get_irn_n(node, i);
-
-			if (operand == def) {
-				be_next_use_t result;
-
-				DBG((env->dbg, LEVEL_3, "found use of %+F at %+F\n", operand, node));
-
-				/**
-				 * Spills/Reloads are a special case, they're not really a
-				 * usage of a value, continue searching
-				 */
-				if (be_is_Spill(node) || be_is_Reload(node)) {
-					return be_get_next_use(env, node, step, node, 1);
-				}
-
-				result.time           = step;
-				result.outermost_loop = get_loop_depth(get_irn_loop(block));
-				result.before         = node;
-				return result;
-			}
-		}
-
-		step++;
-	}
-#endif
-
 	if (be_is_phi_argument(block, def)) {
 		// TODO we really should continue searching the uses of the phi,
 		// as a phi isn't a real use that implies a reload (because we could
@@ -267,7 +222,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		return result;
 	}
 
-#ifdef SCAN_INTERBLOCK_USES
 	{
 	unsigned next_use   = USES_INFINITY;
 	int outermost_loop;
@@ -339,9 +293,6 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	DBG((env->dbg, LEVEL_5, "Result: %d (outerloop: %d)\n", result.time, result.outermost_loop));
 	return result;
 	}
-#else
-	return USES_INFINITY;
-#endif
 }
 
 be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
