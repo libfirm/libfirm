@@ -673,9 +673,6 @@ void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs)
 const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos)
 {
 	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	if (attr->in_req == NULL)
-		return arch_no_register_req;
-
 	return attr->in_req[pos];
 }
 
