@@ -674,6 +674,17 @@ static int arm_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
+static void arm_lower_for_target(void)
+{
+	int i;
+	int n_irgs = get_irp_n_irgs();
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		lower_switch(irg, 128);
+	}
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -692,7 +703,7 @@ static const backend_params *arm_get_libfirm_params(void)
 		0,     /* don't support inline assembler yet */
 		1,     /* support Rotl nodes */
 		1,     /* big endian */
-		NULL,  /* lowering function */
+		arm_lower_for_target, /* lowering function */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		NULL,  /* float arithmetic mode (TODO) */

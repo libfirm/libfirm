@@ -164,18 +164,6 @@ FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_size,
 FIRM_API void lower_switch(ir_graph *irg, unsigned spare_size);
 
 /**
- * Creates an ir_graph pass for lower_switch().
- *
- * @param name       the name of this pass or NULL
- * @param spare_size Allowed spare size for table switches in machine words.
- *                   (Default in edgfe: 128)
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *lower_switch_pass(const char *name,
-                                            unsigned spare_size);
-
-/**
  * A callback type for creating an intrinsic entity for a given opcode.
  *
  * @param method   the method type of the emulation function entity

@@ -551,7 +551,15 @@ static int sparc_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void sparc_lower_for_target(void)
 {
+	int i;
+	int n_irgs = get_irp_n_irgs();
+
 	/* TODO, doubleword lowering and others */
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		lower_switch(irg, 128);
+	}
 }
 
 /**

@@ -2264,10 +2264,12 @@ static void ia32_lower_for_target(void)
 	};
 	lower_dw_ops(&lower_dw_params);
 
-	/* lower for mode_b stuff */
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
+		/* lower for mode_b stuff */
 		ir_lower_mode_b(irg, &lower_mode_b_config);
+		/* break up switches with wide ranges */
+		lower_switch(irg, 128);
 	}
 }
 
