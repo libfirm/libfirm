@@ -42,6 +42,7 @@
 #include "debug.h"
 #include "array_t.h"
 #include "error.h"
+#include "util.h"
 
 #include "../bearch.h"
 #include "../benode.h"
@@ -361,11 +362,89 @@ static sparc_isa_t sparc_isa_template = {
 	NULL						/* current code generator */
 };
 
+/**
+ * rewrite unsigned->float conversion.
+ * Sparc has no instruction for this so instead we do the following:
+ *
+ *   int    signed_x = unsigned_value_x;
+ *   double res      = signed_x;
+ *   if (signed_x < 0)
+ *       res += 4294967296. ;
+ *   return (float) res;
+ */
+static void rewrite_unsigned_float_Conv(ir_node *node)
+{
+	ir_graph *irg         = get_irn_irg(node);
+	dbg_info *dbgi        = get_irn_dbg_info(node);
+	ir_node  *lower_block = get_nodes_block(node);
+
+	part_block(node);
+
+	{
+		ir_node  *block       = get_nodes_block(node);
+		ir_node  *unsigned_x  = get_Conv_op(node);
+		ir_mode  *mode_u      = get_irn_mode(unsigned_x);
+		ir_mode  *mode_s      = find_signed_mode(mode_u);
+		ir_mode  *mode_d      = mode_D;
+		ir_node  *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
+		ir_node  *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
+		ir_node  *zero        = new_r_Const(irg, get_mode_null(mode_s));
+		ir_node  *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero);
+		ir_node  *proj_lt     = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
+		ir_node  *cond        = new_rd_Cond(dbgi, block, proj_lt);
+		ir_node  *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+		ir_node  *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+		ir_node  *in_true[1]  = { proj_true };
+		ir_node  *in_false[1] = { proj_false };
+		ir_node  *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+		ir_node  *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
+		ir_node  *true_jmp    = new_r_Jmp(true_block);
+		ir_node  *false_jmp   = new_r_Jmp(false_block);
+		tarval   *correction  = new_tarval_from_double(4294967296., mode_d);
+		ir_node  *c_const     = new_r_Const(irg, correction);
+		ir_node  *fadd        = new_rd_Add(dbgi, true_block, res, c_const,
+		                                   mode_d);
+
+		ir_node  *lower_in[2] = { true_jmp, false_jmp };
+		ir_node  *phi_in[2]   = { fadd, res };
+		ir_mode  *dest_mode   = get_irn_mode(node);
+		ir_node  *phi;
+		ir_node  *res_conv;
+
+		set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+		phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, mode_d);
+		assert(get_Block_phis(lower_block) == NULL);
+		set_Block_phis(lower_block, phi);
+		set_Phi_next(phi, NULL);
+
+		res_conv = new_rd_Conv(dbgi, lower_block, phi, dest_mode);
+
+		exchange(node, res_conv);
+	}
+}
+
+static int sparc_rewrite_Conv(ir_node *node, void *ctx)
+{
+	(void) ctx;
+	ir_mode *to_mode   = get_irn_mode(node);
+	ir_node *op        = get_Conv_op(node);
+	ir_mode *from_mode = get_irn_mode(op);
+
+	if (mode_is_float(to_mode) && mode_is_int(from_mode)
+			&& get_mode_size_bits(from_mode) == 32
+			&& !mode_is_signed(from_mode)) {
+		rewrite_unsigned_float_Conv(node);
+		return 1;
+	}
+
+	return 0;
+}
+
 static void sparc_handle_intrinsics(void)
 {
 	ir_type *tp, *int_tp, *uint_tp;
 	i_record records[8];
-	int n_records = 0;
+	size_t n_records = 0;
 
 	runtime_rt rt_iMod, rt_uMod;
 
@@ -374,7 +453,14 @@ static void sparc_handle_intrinsics(void)
 	int_tp  = new_type_primitive(mode_Is);
 	uint_tp = new_type_primitive(mode_Iu);
 
+	/* we need to rewrite some forms of int->float conversions */
+	{
+		i_instr_record *map_Conv = &records[n_records++].i_instr;
 
+		map_Conv->kind     = INTRINSIC_INSTR;
+		map_Conv->op       = op_Conv;
+		map_Conv->i_mapper = sparc_rewrite_Conv;
+	}
 	/* SPARC has no signed mod instruction ... */
 	{
 		i_instr_record *map_Mod = &records[n_records++].i_instr;
@@ -428,8 +514,8 @@ static void sparc_handle_intrinsics(void)
 		map_Mod->ctx      = &rt_uMod;
 	}
 
-	if (n_records > 0)
-		lower_intrinsics(records, n_records, /*part_block_used=*/0);
+	assert(n_records < ARRAY_SIZE(records));
+	lower_intrinsics(records, n_records, /*part_block_used=*/ true);
 }
 
 /**

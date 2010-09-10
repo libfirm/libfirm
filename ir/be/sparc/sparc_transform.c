@@ -1070,35 +1070,57 @@ static ir_node *create_fftof(dbg_info *dbgi, ir_node *block, ir_node *op,
 static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
                             ir_mode *src_mode)
 {
-	unsigned bits = get_mode_size_bits(src_mode);
+	ir_node  *ftoi;
+	unsigned  bits = get_mode_size_bits(src_mode);
 	if (bits == 32) {
-		return new_bd_sparc_fftoi_s(dbgi, block, op, src_mode);
+		ftoi = new_bd_sparc_fftoi_s(dbgi, block, op, src_mode);
 	} else if (bits == 64) {
-		return new_bd_sparc_fftoi_d(dbgi, block, op, src_mode);
+		ftoi = new_bd_sparc_fftoi_d(dbgi, block, op, src_mode);
 	} else {
 		assert(bits == 128);
-		return new_bd_sparc_fftoi_q(dbgi, block, op, src_mode);
+		ftoi = new_bd_sparc_fftoi_q(dbgi, block, op, src_mode);
+	}
+
+	{
+	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *sp    = get_irg_frame(irg);
+	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, src_mode,
+	                             NULL, 0, true);
+	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
+	                                      NULL, 0, true);
+	ir_node  *res   = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
+	set_irn_pinned(stf, op_pin_state_floats);
+	set_irn_pinned(ld, op_pin_state_floats);
+	return res;
 	}
 }
 
 static ir_node *create_itof(dbg_info *dbgi, ir_node *block, ir_node *op,
                             ir_mode *dst_mode)
 {
-	unsigned bits = get_mode_size_bits(dst_mode);
+	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *sp    = get_irg_frame(irg);
+	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, op, sp, nomem,
+	                                      mode_gp, NULL, 0, true);
+	ir_node  *ldf   = new_bd_sparc_Ldf_s(dbgi, block, sp, st, mode_fp,
+	                                     NULL, 0, true);
+	ir_node  *res   = new_r_Proj(ldf, mode_fp, pn_sparc_Ldf_res);
+	unsigned  bits  = get_mode_size_bits(dst_mode);
+	set_irn_pinned(st, op_pin_state_floats);
+	set_irn_pinned(ldf, op_pin_state_floats);
+
 	if (bits == 32) {
-		return new_bd_sparc_fitof_s(dbgi, block, op, dst_mode);
+		return new_bd_sparc_fitof_s(dbgi, block, res, dst_mode);
 	} else if (bits == 64) {
-		return new_bd_sparc_fitof_d(dbgi, block, op, dst_mode);
+		return new_bd_sparc_fitof_d(dbgi, block, res, dst_mode);
 	} else {
 		assert(bits == 128);
-		return new_bd_sparc_fitof_q(dbgi, block, op, dst_mode);
+		return new_bd_sparc_fitof_q(dbgi, block, res, dst_mode);
 	}
 }
 
-/**
- * Transforms a Conv node.
- *
- */
 static ir_node *gen_Conv(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
@@ -1129,8 +1151,11 @@ static ir_node *gen_Conv(ir_node *node)
 			}
 		} else {
 			/* int -> float conv */
-			if (!mode_is_signed(src_mode))
-				panic("unsigned to float not implemented yet");
+			if (src_bits < 32) {
+				new_op = gen_extension(dbg, block, new_op, src_mode);
+			} else if (src_bits == 32 && !mode_is_signed(src_mode)) {
+				panic("unsigned to float not lowered!");
+			}
 			return create_itof(dbg, block, new_op, dst_mode);
 		}
 	} else { /* complete in gp registers */

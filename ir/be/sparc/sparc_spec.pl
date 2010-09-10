@@ -678,21 +678,20 @@ fftof => {
 
 fitof => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "gp" ], out => [ "fp" ] },
 	emit      => '. fito%FPM %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	constructors => {
 		s => {
-			reg_req => { in => [ "gp" ], out => [ "fp" ] },
+			reg_req => { in => [ "fp" ], out => [ "fp" ] },
 			mode    => $mode_fp,
 		},
 		d => {
-			reg_req => { in => [ "gp" ], out => [ "fp:a|2" ] },
+			reg_req => { in => [ "fp" ], out => [ "fp:a|2" ] },
 			mode    => $mode_fp2,
 		},
 		q => {
-			reg_req => { in => [ "gp" ], out => [ "fp:a|4" ] },
+			reg_req => { in => [ "fp" ], out => [ "fp:a|4" ] },
 			mode    => $mode_fp4,
 		},
 	},
@@ -700,20 +699,19 @@ fitof => {
 
 fftoi => {
 	irn_flags => [ "rematerializable" ],
-	reg_req   => { in => [ "fp" ], out => [ "gp" ] },
-	emit      => '. f%FPM.toi %S0, %D0',
+	emit      => '. f%FPM%.toi %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	mode      => $mode_gp,
 	constructors => {
 		s => {
-			reg_req => { in => [ "gp" ], out => [ "gp" ] },
+			reg_req => { in => [ "fp" ], out => [ "fp" ] },
 		},
 		d => {
-			reg_req => { in => [ "fp:a|2" ], out => [ "gp" ] },
+			reg_req => { in => [ "fp:a|2" ], out => [ "fp" ] },
 		},
 		q => {
-			reg_req => { in => [ "fp:a|4" ], out => [ "gp" ] },
+			reg_req => { in => [ "fp:a|4" ], out => [ "fp" ] },
 		},
 	},
 },
