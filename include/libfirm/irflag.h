@@ -149,15 +149,6 @@ FIRM_API void set_opt_optimize_class_casts(int value);
 FIRM_API void set_opt_suppress_downcast_optimization(int value);
 FIRM_API int get_opt_suppress_downcast_optimization(void);
 
-/** Enable/Disable floating of fragile ops.
- *
- * This flags enables/disables the floating of fragile operations.
- * If this flag is on, fragile operations which are known to NOT raise
- * an exception can be place to other basic blocks.
- * Otherwise they remain in the block they were created.
- */
-FIRM_API void set_opt_fragile_ops(int value);
-
 /**
  * Enable/Disable Confirm node removal during local optimization.
  */

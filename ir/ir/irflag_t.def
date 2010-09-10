@@ -77,9 +77,6 @@ I_FLAG(allow_conv_b                       , 13, ON)
 /** precise exception context */
 I_FLAG(precise_exc_context                , 15, OFF)
 
-/** Optimize Fragile OPs */
-I_FLAG(fragile_ops                        , 16, OFF)
-
 /** Optimize cast nodes. */
 E_FLAG(suppress_downcast_optimization     , 22, OFF)
 
