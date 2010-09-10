@@ -85,7 +85,6 @@ static int TEMPLATE_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t TEMPLATE_irn_ops = {
-	get_TEMPLATE_in_req,
 	TEMPLATE_classify,
 	TEMPLATE_get_frame_entity,
 	TEMPLATE_set_frame_offset,

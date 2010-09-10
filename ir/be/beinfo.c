@@ -75,13 +75,23 @@ static void new_Phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 	old_phi_copy_attr(irg, old_node, new_node);
 }
 
-int be_infos_equal(const backend_info_t *info1, const backend_info_t *info2)
+int be_nodes_equal(ir_node *node1, ir_node *node2)
 {
-	int len = ARR_LEN(info1->out_infos);
-	int i;
+	const backend_info_t *info1 = be_get_info(node1);
+	const backend_info_t *info2 = be_get_info(node2);
+	int                   len   = ARR_LEN(info1->out_infos);
+	int                   arity = get_irn_arity(node1);
+	int                   i;
 
 	if (ARR_LEN(info2->out_infos) != len)
 		return false;
+
+	assert(arity == get_irn_arity(node2));
+
+	for (i = 0; i < arity; ++i) {
+		if (info1->in_reqs[i] != info2->in_reqs[i])
+			return false;
+	}
 
 	for (i = 0; i < len; ++i) {
 		const reg_out_info_t *out1 = &info1->out_infos[i];
@@ -93,13 +103,6 @@ int be_infos_equal(const backend_info_t *info1, const backend_info_t *info2)
 	}
 
 	return true;
-}
-
-int be_nodes_equal(const ir_node *node1, const ir_node *node2)
-{
-	backend_info_t *info1 = be_get_info(node1);
-	backend_info_t *info2 = be_get_info(node2);
-	return be_infos_equal(info1, info2);
 }
 
 static void init_walker(ir_node *node, void *data)

@@ -120,7 +120,6 @@ static int sparc_get_sp_bias(const ir_node *node)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t sparc_irn_ops = {
-	get_sparc_in_req,
 	sparc_classify,
 	sparc_get_frame_entity,
 	sparc_set_frame_offset,

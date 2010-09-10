@@ -384,16 +384,6 @@ struct arch_inverse_t {
 struct arch_irn_ops_t {
 
 	/**
-	 * Get the register requirements for a given operand.
-	 * @param irn The node.
-	 * @param pos The operand's position
-	 * @return    The register requirements for the selected operand.
-	 *            The pointer returned is never NULL.
-	 */
-	const arch_register_req_t *(*get_irn_reg_req_in)(const ir_node *irn,
-	                                                 int pos);
-
-	/**
 	 * Classify the node.
 	 * @param irn The node.
 	 * @return A classification.
@@ -812,8 +802,10 @@ static inline bool arch_irn_consider_in_reg_alloc(
 static inline const arch_register_req_t *arch_get_in_register_req(
 		const ir_node *node, int pos)
 {
-	const arch_irn_ops_t *ops = get_irn_ops_simple(node);
-	return ops->get_irn_reg_req_in(node, pos);
+	const backend_info_t *info = be_get_info(node);
+	if (info->in_reqs == NULL)
+		return arch_no_register_req;
+	return info->in_reqs[pos];
 }
 
 /**
@@ -834,6 +826,20 @@ static inline void arch_set_out_register_req(ir_node *node, int pos,
 	backend_info_t *info = be_get_info(node);
 	assert(pos < (int) arch_irn_get_n_outs(node));
 	info->out_infos[pos].req = req;
+}
+
+static inline void arch_set_in_register_reqs(ir_node *node,
+                                            const arch_register_req_t **in_reqs)
+{
+	backend_info_t *info = be_get_info(node);
+	info->in_reqs = in_reqs;
+}
+
+static inline const arch_register_req_t **arch_get_in_register_reqs(
+		const ir_node *node)
+{
+	backend_info_t *info = be_get_info(node);
+	return info->in_reqs;
 }
 
 /**

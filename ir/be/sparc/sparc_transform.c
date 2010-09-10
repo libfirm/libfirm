@@ -1584,7 +1584,7 @@ static ir_node *gen_Call(ir_node *node)
 	} else {
 		res = new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, out_arity);
 	}
-	set_sparc_in_req_all(res, in_req);
+	arch_set_in_register_reqs(res, in_req);
 
 	/* create output register reqs */
 	o = 0;

@@ -109,33 +109,6 @@ const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node)
 }
 
 /**
- * Returns the argument register requirements of a amd64 node.
- */
-const arch_register_req_t **get_amd64_in_req_all(const ir_node *node)
-{
-	const amd64_attr_t *attr = get_amd64_attr_const(node);
-	return attr->in_req;
-}
-
-/**
- * Returns the argument register requirement at position pos of an amd64 node.
- */
-const arch_register_req_t *get_amd64_in_req(const ir_node *node, int pos)
-{
-	const amd64_attr_t *attr = get_amd64_attr_const(node);
-	return attr->in_req[pos];
-}
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_amd64_req_in(ir_node *node, const arch_register_req_t *req, int pos)
-{
-	amd64_attr_t *attr  = get_amd64_attr(node);
-	attr->in_req[pos] = req;
-}
-
-/**
  * Initializes the nodes attributes.
  */
 static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
@@ -151,7 +124,7 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	(void) execution_units;
 
 	arch_irn_set_flags(node, flags);
-	attr->in_req  = in_reqs;
+	arch_set_in_register_reqs(node, in_reqs);
 
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);
@@ -211,6 +184,7 @@ static void amd64_copy_attr(ir_graph *irg, const ir_node *old_node,
 	/* copy out flags */
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
+	new_info->in_reqs = old_info->in_reqs;
 }
 
 /* Include the generated constructor functions */

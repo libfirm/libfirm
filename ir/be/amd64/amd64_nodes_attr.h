@@ -33,8 +33,6 @@ typedef struct amd64_SymConst_attr_t   amd64_SymConst_attr_t;
 struct amd64_attr_t
 {
 	except_attr                 exc;     /**< the exception attribute. MUST be the first one. */
-	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-	const arch_register_req_t **out_req; /**< register requirements for results */
 	ir_mode                    *ls_mode; /**< Stores the "input" mode */
 	struct amd64_attr_data_bitfield {
 		unsigned ins_permuted : 1;      /**< inputs of node have been permuted

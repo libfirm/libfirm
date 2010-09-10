@@ -128,8 +128,6 @@ struct ia32_attr_t {
 
 	const be_execution_unit_t ***exec_units; /**< list of units this operation can be executed on */
 
-	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-
 	ir_label_t        exc_label;       /**< the exception label iff this instruction can throw an exception */
 
 #ifndef NDEBUG

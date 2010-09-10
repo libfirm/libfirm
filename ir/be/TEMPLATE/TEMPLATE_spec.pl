@@ -122,6 +122,9 @@ $mode_fp  = "mode_E";  # mode used by floatingpoint registers
 	C  => "${arch}_emit_immediate(node);"
 );
 
+$default_attr_type = "TEMPLATE_attr_t";
+$default_copy_attr = "TEMPLATE_copy_attr";
+
 %nodes = (
 
 # Integer nodes

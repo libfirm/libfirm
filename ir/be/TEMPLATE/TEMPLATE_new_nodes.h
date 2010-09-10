@@ -34,21 +34,6 @@ TEMPLATE_attr_t *get_TEMPLATE_attr(ir_node *node);
 
 const TEMPLATE_attr_t *get_TEMPLATE_attr_const(const ir_node *node);
 
-/**
- * Returns the argument register requirements of an TEMPLATE node.
- */
-const arch_register_req_t **get_TEMPLATE_in_req_all(const ir_node *node);
-
-/**
- * Returns the argument register requirements of an TEMPLATE node.
- */
-const arch_register_req_t *get_TEMPLATE_in_req(const ir_node *node, int pos);
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_TEMPLATE_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
 /* Include the generated headers */
 #include "gen_TEMPLATE_new_nodes.h"
 

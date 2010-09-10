@@ -53,23 +53,6 @@ const sparc_fp_attr_t *get_sparc_fp_attr_const(const ir_node *node);
 sparc_fp_conv_attr_t *get_sparc_fp_conv_attr(ir_node *node);
 const sparc_fp_conv_attr_t *get_sparc_fp_conv_attr_const(const ir_node *node);
 
-/**
- * Returns the argument register requirements of an sparc node.
- */
-const arch_register_req_t **get_sparc_in_req_all(const ir_node *node);
-
-void set_sparc_in_req_all(ir_node *node, const arch_register_req_t **reqs);
-
-/**
- * Returns the argument register requirements of an sparc node.
- */
-const arch_register_req_t *get_sparc_in_req(const ir_node *node, int pos);
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_sparc_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
 /* Include the generated headers */
 #include "gen_sparc_new_nodes.h"
 

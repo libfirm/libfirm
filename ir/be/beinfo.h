@@ -65,7 +65,6 @@ void be_info_new_node(ir_node *node);
 void be_info_duplicate(const ir_node *old_node, ir_node *new_node);
 int be_info_initialized(const ir_graph *irg);
 
-int be_nodes_equal(const ir_node *node1, const ir_node *node2);
-int be_infos_equal(const backend_info_t *info1, const backend_info_t *info2);
+int be_nodes_equal(ir_node *node1, ir_node *node2);
 
 #endif

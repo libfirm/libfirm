@@ -242,26 +242,6 @@ ir_entity *get_ia32_frame_ent(const ir_node *node);
 void set_ia32_frame_ent(ir_node *node, ir_entity *ent);
 
 /**
- * Returns the argument register requirements of an ia32 node.
- */
-const arch_register_req_t **get_ia32_in_req_all(const ir_node *node);
-
-/**
- * Sets the argument register requirements of an ia32 node.
- */
-void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs);
-
-/**
- * Returns the argument register requirements of an ia32 node.
- */
-const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos);
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
-/**
  * Returns the condition code of a node.
  */
 long get_ia32_condcode(const ir_node *node);

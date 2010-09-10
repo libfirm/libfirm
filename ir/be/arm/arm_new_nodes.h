@@ -65,18 +65,6 @@ const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node);
 arm_farith_attr_t *get_arm_farith_attr(ir_node *node);
 const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node);
 
-void set_arm_in_req_all(ir_node *node, const arch_register_req_t **reqs);
-
-/**
- * Returns the argument register requirements of an arm node.
- */
-const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos);
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
 /**
 * Return the tarval of a fConst
 */

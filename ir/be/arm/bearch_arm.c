@@ -119,7 +119,6 @@ static int arm_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t arm_irn_ops = {
-	get_arm_in_req,
 	arm_classify,
 	arm_get_frame_entity,
 	arm_set_stack_bias,

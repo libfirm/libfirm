@@ -188,15 +188,6 @@ static ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int
 	}
 }
 
-
-static const arch_register_req_t *get_ia32_SwitchJmp_out_req(
-		const ir_node *node, int pos)
-{
-	(void) node;
-	(void) pos;
-	return arch_no_register_req;
-}
-
 static arch_irn_class_t ia32_classify(const ir_node *irn)
 {
 	arch_irn_class_t classification = 0;
@@ -716,7 +707,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 					/* we can't swap left/right for limited registers
 					 * (As this (currently) breaks constraint handling copies)
 					 */
-					req = get_ia32_in_req(irn, n_ia32_binary_left);
+					req = arch_get_in_register_req(irn, n_ia32_binary_left);
 					if (req->type & arch_register_req_type_limited)
 						return 0;
 					break;
@@ -786,7 +777,6 @@ static const be_abi_callbacks_t ia32_abi_callbacks = {
 
 /* register allocator interface */
 static const arch_irn_ops_t ia32_irn_ops = {
-	get_ia32_in_req,
 	ia32_classify,
 	ia32_get_frame_entity,
 	ia32_set_frame_offset,
@@ -796,27 +786,6 @@ static const arch_irn_ops_t ia32_irn_ops = {
 	ia32_possible_memory_operand,
 	ia32_perform_memory_operand,
 };
-
-/* special register allocator interface for SwitchJmp
-   as it possibly has a WIDE range of Proj numbers.
-   We don't want to allocate output for register constraints for
-   all these. */
-static const arch_irn_ops_t ia32_SwitchJmp_irn_ops = {
-	/* Note: we also use SwitchJmp_out_req for the inputs too:
-	   This is because the bearch API has a conceptual problem at the moment.
-	   Querying for negative proj numbers which can happen for switchs
-	   isn't possible and will result in inputs getting queried */
-	get_ia32_SwitchJmp_out_req,
-	ia32_classify,
-	ia32_get_frame_entity,
-	ia32_set_frame_offset,
-	ia32_get_sp_bias,
-	ia32_get_inverse,
-	ia32_get_op_estimated_cost,
-	ia32_possible_memory_operand,
-	ia32_perform_memory_operand,
-};
-
 
 static ir_entity *mcount = NULL;
 
@@ -1614,8 +1583,6 @@ static arch_env_t *ia32_init(FILE *file_handle)
 
 	ia32_register_init();
 	ia32_create_opcodes(&ia32_irn_ops);
-	/* special handling for SwitchJmp */
-	op_ia32_SwitchJmp->ops.be_ops = &ia32_SwitchJmp_irn_ops;
 
 	be_emit_init(file_handle);
 	isa->regs_16bit     = pmap_create();

@@ -1416,7 +1416,8 @@ static void optimize_conv_conv(ir_node *node)
 			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
 			if (get_mode_size_bits(conv_mode) == 8) {
 				set_irn_op(pred, op_ia32_Conv_I2I8Bit);
-				set_ia32_in_req_all(pred, get_ia32_in_req_all(node));
+				arch_set_in_register_reqs(pred,
+				                          arch_get_in_register_reqs(node));
 			}
 		} else {
 			/* we don't want to end up with 2 loads, so we better do nothing */
@@ -1430,7 +1431,8 @@ static void optimize_conv_conv(ir_node *node)
 			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
 			if (get_mode_size_bits(conv_mode) == 8) {
 				set_irn_op(result_conv, op_ia32_Conv_I2I8Bit);
-				set_ia32_in_req_all(result_conv, get_ia32_in_req_all(node));
+				arch_set_in_register_reqs(result_conv,
+				                          arch_get_in_register_reqs(node));
 			}
 		}
 	} else {

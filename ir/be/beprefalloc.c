@@ -87,7 +87,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static struct obstack               obst;
 static ir_graph                    *irg;
 static const arch_register_class_t *cls;
-static const arch_register_req_t   *default_cls_req;
 static be_lv_t                     *lv;
 static const ir_exec_freq          *execfreqs;
 static unsigned                     n_regs;
@@ -172,24 +171,6 @@ static block_info_t *get_block_info(ir_node *block)
 	}
 
 	return info;
-}
-
-/**
- * Get default register requirement for the current register class
- */
-static const arch_register_req_t *get_default_req_current_cls(void)
-{
-	if (default_cls_req == NULL) {
-		struct obstack      *obst = get_irg_obstack(irg);
-		arch_register_req_t *req  = OALLOCZ(obst, arch_register_req_t);
-
-		req->type  = arch_register_req_type_normal;
-		req->cls   = cls;
-		req->width = 1;
-
-		default_cls_req = req;
-	}
-	return default_cls_req;
 }
 
 /**
@@ -1618,12 +1599,8 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		}
 
 		if (need_phi) {
-			ir_mode                   *mode = get_irn_mode(node);
-			const arch_register_req_t *req  = get_default_req_current_cls();
-			ir_node                   *phi;
-
-			phi = new_r_Phi(block, n_preds, phi_ins, mode);
-			be_set_phi_reg_req(phi, req);
+			ir_mode *mode = get_irn_mode(node);
+			ir_node *phi  = be_new_Phi(block, n_preds, phi_ins, mode, cls);
 
 			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
 #ifdef DEBUG_libfirm
@@ -1935,7 +1912,6 @@ static void be_pref_alloc(ir_graph *new_irg)
 
 	for (c = 0; c < n_cls; ++c) {
 		cls             = arch_env_get_reg_class(arch_env, c);
-		default_cls_req = NULL;
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;
 

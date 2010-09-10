@@ -288,24 +288,6 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-void set_arm_in_req_all(ir_node *node, const arch_register_req_t **reqs)
-{
-	arm_attr_t *attr = get_arm_attr(node);
-	attr->in_req = reqs;
-}
-
-const arch_register_req_t *get_arm_in_req(const ir_node *node, int pos)
-{
-	const arm_attr_t *attr = get_arm_attr_const(node);
-	return attr->in_req[pos];
-}
-
-void set_arm_req_in(ir_node *node, const arch_register_req_t *req, int pos)
-{
-	arm_attr_t *attr  = get_arm_attr(node);
-	attr->in_req[pos] = req;
-}
-
 tarval *get_fConst_value(const ir_node *node)
 {
 	const arm_fConst_attr_t *attr = get_arm_fConst_attr_const(node);
@@ -367,7 +349,7 @@ static void init_arm_attributes(ir_node *node, int flags,
 	(void) execution_units;
 
 	arch_irn_set_flags(node, flags);
-	attr->in_req           = in_reqs;
+	arch_set_in_register_reqs(node, in_reqs);
 	attr->is_load_store    = false;
 
 	info            = be_get_info(node);
@@ -603,6 +585,7 @@ static void arm_copy_attr(ir_graph *irg, const ir_node *old_node,
 	/* copy out flags */
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
+	new_info->in_reqs = old_info->in_reqs;
 }
 
 

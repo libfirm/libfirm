@@ -650,42 +650,6 @@ unsigned get_ia32_latency(const ir_node *node)
 }
 
 /**
- * Returns the argument register requirements of an ia32 node.
- */
-const arch_register_req_t **get_ia32_in_req_all(const ir_node *node)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->in_req;
-}
-
-/**
- * Sets the argument register requirements of an ia32 node.
- */
-void set_ia32_in_req_all(ir_node *node, const arch_register_req_t **reqs)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->in_req      = reqs;
-}
-
-/**
- * Returns the argument register requirement at position pos of an ia32 node.
- */
-const arch_register_req_t *get_ia32_in_req(const ir_node *node, int pos)
-{
-	const ia32_attr_t *attr = get_ia32_attr_const(node);
-	return attr->in_req[pos];
-}
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_ia32_req_in(ir_node *node, const arch_register_req_t *req, int pos)
-{
-	ia32_attr_t *attr = get_ia32_attr(node);
-	attr->in_req[pos] = req;
-}
-
-/**
  * Returns the condition code of a node.
  */
 long get_ia32_condcode(const ir_node *node)
@@ -838,7 +802,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	backend_info_t  *info;
 
 	arch_irn_set_flags(node, flags);
-	set_ia32_in_req_all(node, in_reqs);
+	arch_set_in_register_reqs(node, in_reqs);
 
 	attr->exec_units  = execution_units;
 #ifndef NDEBUG
@@ -1114,6 +1078,7 @@ static void ia32_copy_attr(ir_graph *irg, const ir_node *old_node,
 	/* copy out flags */
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
+	new_info->in_reqs = old_info->in_reqs;
 }
 
 /* Include the generated constructor functions */

@@ -111,7 +111,6 @@ static int amd64_get_sp_bias(const ir_node *irn)
 /* fill register allocator interface */
 
 static const arch_irn_ops_t amd64_irn_ops = {
-	get_amd64_in_req,
 	amd64_classify,
 	amd64_get_frame_entity,
 	amd64_set_frame_offset,

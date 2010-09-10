@@ -72,16 +72,16 @@ static inline const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos)
 {
 	if (is_Proj(irn)) {
+		ir_node *pred = get_Proj_pred(irn);
+		long     pn   = get_Proj_proj(irn);
 		assert(pos == -1);
-		pos = -1-get_Proj_proj(irn);
-		irn = get_Proj_pred(irn);
+		return arch_get_out_register_req(pred, pn);
 	}
 
 	if (pos < 0) {
 		return arch_get_out_register_req(irn, -pos-1);
 	} else {
-		const arch_irn_ops_t *ops = get_irn_ops_simple(irn);
-		return ops->get_irn_reg_req_in(irn, pos);
+		return arch_get_in_register_req(irn, pos);
 	}
 }
 

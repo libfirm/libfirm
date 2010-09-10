@@ -2000,7 +2000,7 @@ static ir_node *gen_Call(ir_node *node)
 		pmap_insert(node_to_stack, node, incsp);
 	}
 
-	set_arm_in_req_all(res, in_req);
+	arch_set_in_register_reqs(res, in_req);
 
 	/* create output register reqs */
 	arch_set_out_register_req(res, 0, arch_no_register_req);

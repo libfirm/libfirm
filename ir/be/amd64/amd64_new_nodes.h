@@ -51,21 +51,6 @@ amd64_attr_t *get_amd64_attr(ir_node *node);
 const amd64_attr_t *get_amd64_attr_const(const ir_node *node);
 const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node);
 
-/**
- * Returns the argument register requirements of an amd64 node.
- */
-const arch_register_req_t **get_amd64_in_req_all(const ir_node *node);
-
-/**
- * Returns the argument register requirements of an amd64 node.
- */
-const arch_register_req_t *get_amd64_in_req(const ir_node *node, int pos);
-
-/**
- * Sets the IN register requirements at position pos.
- */
-void set_amd64_req_in(ir_node *node, const arch_register_req_t *req, int pos);
-
 /* Include the generated headers */
 #include "gen_amd64_new_nodes.h"
 

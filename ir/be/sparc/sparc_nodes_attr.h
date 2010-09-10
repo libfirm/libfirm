@@ -36,7 +36,6 @@ typedef struct sparc_attr_t  sparc_attr_t;
 struct sparc_attr_t
 {
 	except_attr                 exc;                /**< the exception attribute. MUST be the first one. */
-	const arch_register_req_t **in_req;             /**< register requirements for arguments */
 	int32_t                     immediate_value;    /* immediate values */
 	ir_entity                  *immediate_value_entity;
 };

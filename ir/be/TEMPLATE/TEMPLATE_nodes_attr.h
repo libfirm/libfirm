@@ -32,9 +32,6 @@ typedef struct TEMPLATE_attr_t  TEMPLATE_attr_t;
 struct TEMPLATE_attr_t
 {
 	tarval *value;
-
-	const arch_register_req_t **in_req;  /**< register requirements for arguments */
-	const arch_register_req_t **out_req; /**< register requirements for results */
 };
 
 #endif
