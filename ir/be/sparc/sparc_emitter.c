@@ -47,6 +47,7 @@
 #include "../begnuas.h"
 #include "../be_dbgout.h"
 #include "../benode.h"
+#include "../bestack.h"
 
 #include "sparc_emitter.h"
 #include "gen_sparc_emitter.h"

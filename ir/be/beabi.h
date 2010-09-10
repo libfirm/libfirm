@@ -183,21 +183,7 @@ ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
 be_abi_irg_t *be_abi_introduce(ir_graph *irg);
 
-/**
- * Fix the stack bias for all nodes accessing the stack frame using the
- * stack pointer.
- */
-void be_abi_fix_stack_bias(ir_graph *irg);
 void be_abi_free(ir_graph *irg);
-
-int be_get_stack_entity_offset(be_stack_layout_t *frame, ir_entity *ent,
-                               int bias);
-
-/**
- * Rewire all stack modifying nodes and their users to assure SSA property.
- * @param env   The abi
- */
-void be_abi_fix_stack_nodes(ir_graph *irg);
 
 /**
  * Put the registers which are forbidden specifically for this IRG in a bitset.

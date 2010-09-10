@@ -73,6 +73,7 @@
 #include "beverify.h"
 #include "be_dbgout.h"
 #include "beirg.h"
+#include "bestack.h"
 
 #define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
 

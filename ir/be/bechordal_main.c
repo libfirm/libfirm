@@ -71,6 +71,7 @@
 #include "bera.h"
 #include "beirg.h"
 #include "bedump_minir.h"
+#include "bestack.h"
 
 #include "bespillslots.h"
 #include "bespill.h"

@@ -72,6 +72,7 @@
 #include "bespillutil.h"
 #include "beverify.h"
 #include "beutil.h"
+#include "bestack.h"
 
 #define USE_FACTOR                     1.0f
 #define DEF_FACTOR                     1.0f

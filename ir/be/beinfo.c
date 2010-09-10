@@ -43,7 +43,7 @@ void be_info_new_node(ir_node *node)
 	backend_info_t *info;
 
 	/* Projs need no be info, their tuple holds all information */
- 	if (is_Proj(node))
+	if (is_Proj(node))
 		return;
 
 	obst = be_get_be_obst(current_ir_graph);

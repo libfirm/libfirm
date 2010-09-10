@@ -83,6 +83,8 @@ typedef struct be_irg_t {
 	be_dom_front_info_t   *dom_front;
 	be_lv_t               *lv;
 	be_stack_layout_t      stack_layout;
+	arch_register_req_t   *sp_req; /**< requirements for stackpointer producing
+	                                    nodes. */
 	struct obstack         obst; /**< birg obstack (mainly used to keep
 	                                  register constraints which we can't keep
 	                                  in the irg obst, because it gets replace
