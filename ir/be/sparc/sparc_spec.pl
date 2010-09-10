@@ -609,7 +609,17 @@ fdiv => {
 	attr         => "ir_mode *fp_mode",
 	ins          => [ "left", "right" ],
 	outs         => [ "res", "M" ],
-	constructors => \%float_binop_constructors,
+	constructors => {
+		s => {
+			reg_req => { in => [ "fp", "fp" ], out => [ "fp", "none" ] },
+		},
+		d => {
+			reg_req => { in => [ "fp:a|2", "fp:a|2" ], out => [ "fp:a|2", "none" ] },
+		},
+		q => {
+			reg_req => { in => [ "fp:a|4", "fp:a|4" ], out => [ "fp:a|4", "none" ] },
+		}
+	},
 },
 
 fneg => {
