@@ -287,17 +287,6 @@ FIRM_API void ir_lower_mode_b(ir_graph *irg,
                               const lower_mode_b_config_t *config);
 
 /**
- * Creates an ir_graph pass for ir_lower_mode_b().
- *
- * @param name     the name of this pass or NULL
- * @param config   configuration for mode_b lowerer
- *
- * @return  the newly created ir_graph pass
- */
-FIRM_API ir_graph_pass_t *ir_lower_mode_b_pass(const char *name,
-                                           const lower_mode_b_config_t *config);
-
-/**
  * Used as callback, whenever a lowerable mux is found. The return value
  * indicates, whether the mux should be lowered. This may be used, to lower
  * floating point muxes, while keeping mux nodes for integers, for example.

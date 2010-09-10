@@ -441,29 +441,3 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 		set_irg_outs_inconsistent(irg);
 	}
 }
-
-struct pass_t {
-	ir_graph_pass_t             pass;
-	const lower_mode_b_config_t *config;
-};
-
-/**
- * Wrapper to run ir_lower_mode_b() as an ir_graph pass
- */
-static int pass_wrapper(ir_graph *irg, void *context)
-{
-	struct pass_t *pass = context;
-
-	ir_lower_mode_b(irg, pass->config);
-	return 0;
-}
-
-ir_graph_pass_t *ir_lower_mode_b_pass(
-	const char *name, const lower_mode_b_config_t *config)
-{
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
-
-	pass->config = config;
-	return def_graph_pass_constructor(
-		&pass->pass, name ? name : "lower_mode_b", pass_wrapper);
-}
