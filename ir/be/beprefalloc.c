@@ -802,7 +802,6 @@ static void assign_reg(const ir_node *block, ir_node *node,
 
 		if (!rbitset_is_set(normal_regs, num))
 			continue;
-
 		reg = arch_register_for_index(cls, num);
 		DB((dbg, LEVEL_2, " %s(%f)", reg->name, reg_prefs[i].pref));
 	}
@@ -821,6 +820,11 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		r = reg_prefs[i].num;
 		if (!rbitset_is_set(allowed_regs, r))
 			continue;
+		/* alignment constraint? */
+		if (req->width > 1 && (req->type & arch_register_req_type_aligned)
+				&& (r % req->width) != 0)
+			continue;
+
 		if (assignments[r] == NULL)
 			break;
 		pref   = reg_prefs[i].pref;
