@@ -3804,8 +3804,7 @@ static ir_node *gen_Conv(ir_node *node)
 					/* if fp_no_float_fold is not set then we assume that we
 					 * don't have any float operations in a non
 					 * mode_float_arithmetic mode and can skip strict upconvs */
-					if (src_bits < tgt_bits
-							&& !(get_irg_fp_model(current_ir_graph) & fp_no_float_fold)) {
+					if (src_bits < tgt_bits) {
 						DB((dbg, LEVEL_1, "killed Conv(float, float) ..."));
 						return new_op;
 					} else {

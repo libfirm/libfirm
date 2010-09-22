@@ -52,9 +52,6 @@
  * - fp_model_fast:
  *     Fastest mode. Associative and distributive law allowed at the expense
  *     of floating point accuracy and correctness. Explicit rounding is disabled.
- * - fp_no_float_fold:
- *     Avoid floating point constant folding. Useful for frontends which do not
- *     create arithmetic operations in the backends arithmetic mode.
  */
 typedef enum fp_model_t {
 	fp_explicit_rounding  = (1u << 0),  /**< Explicit rounding at assignments, typecasts, return
@@ -69,7 +66,6 @@ typedef enum fp_model_t {
 	                                  synchronized exception code. */
 	fp_environment_access = (1u << 5),  /**< FPU environment can be accessed. Even Constant folding
 	                                  cannot be done. */
-	fp_no_float_fold      = (1u << 6),
 
 	/** Precise floating point model. Default. */
 	fp_model_precise = fp_explicit_rounding|fp_strict_algebraic|fp_contradictions,

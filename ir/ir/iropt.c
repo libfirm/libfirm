@@ -6744,11 +6744,6 @@ ir_node *optimize_node(ir_node *n)
 	if (get_opt_constant_folding()) {
 		/* neither constants nor Tuple values can be evaluated */
 		if (iro != iro_Const && (get_irn_mode(n) != mode_T)) {
-			unsigned fp_model = get_irg_fp_model(irg);
-			int old_fp_mode = tarval_fp_ops_enabled();
-
-			tarval_enable_fp_ops(! (fp_model & fp_no_float_fold));
-
 			/* try to evaluate */
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
@@ -6786,10 +6781,8 @@ ir_node *optimize_node(ir_node *n)
 				if (old_tp && get_type_mode(old_tp) == get_tarval_mode(tv))
 					set_Const_type(nw, old_tp);
 				DBG_OPT_CSTEVAL(oldn, nw);
-				tarval_enable_fp_ops(old_fp_mode);
 				return nw;
 			}
-			tarval_enable_fp_ops(old_fp_mode);
 		}
 	}
 
@@ -6860,11 +6853,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 	if (get_opt_constant_folding()) {
 		/* neither constants nor Tuple values can be evaluated */
 		if (iro != iro_Const && get_irn_mode(n) != mode_T) {
-			ir_graph *irg      = get_irn_irg(n);
-			unsigned  fp_model = get_irg_fp_model(irg);
-			int old_fp_mode = tarval_fp_ops_enabled();
-
-			tarval_enable_fp_ops((fp_model & fp_strict_algebraic) == 0);
 			/* try to evaluate */
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
@@ -6884,10 +6872,8 @@ ir_node *optimize_in_place_2(ir_node *n)
 					set_Const_type(n, old_tp);
 
 				DBG_OPT_CSTEVAL(oldn, n);
-				tarval_enable_fp_ops(old_fp_mode);
 				return n;
 			}
-			tarval_enable_fp_ops(old_fp_mode);
 		}
 	}
 
