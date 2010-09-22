@@ -83,7 +83,6 @@ static be_options_t be_options = {
 	BE_TIME_OFF,                       /* no timing */
 	0,                                 /* no opt profile */
 	0,                                 /* try to omit frame pointer */
-	0,                                 /* try to omit leaf frame pointer */
 	0,                                 /* create PIC code */
 	0,                                 /* create gprof compatible profiling code */
 	BE_VERIFY_WARN,                    /* verification level: warn */
@@ -134,7 +133,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_STR      ("config",     "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
-	LC_OPT_ENT_BOOL     ("omitleaffp", "omit frame pointer in leaf routines",                 &be_options.omit_leaf_fp),
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
 	LC_OPT_ENT_BOOL     ("gprof",      "create gprof profiling code",                         &be_options.gprof),
 	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),

@@ -112,9 +112,6 @@ static ir_heights_t *ir_heights;
 /** Flag: if set, try to omit the frame pointer in all routines. */
 static int be_omit_fp = 1;
 
-/** Flag: if set, try to omit the frame pointer in leaf routines only. */
-static int be_omit_leaf_fp = 1;
-
 /*
      _    ____ ___    ____      _ _ _                _
     / \  | __ )_ _|  / ___|__ _| | | |__   __ _  ___| | _____
@@ -263,7 +260,7 @@ static be_abi_call_t *be_abi_call_new(const arch_register_class_t *cls_addr)
 	call->cb         = NULL;
 	call->cls_addr   = cls_addr;
 
-	call->flags.bits.try_omit_fp = be_omit_fp | be_omit_leaf_fp;
+	call->flags.bits.try_omit_fp = be_omit_fp;
 
 	return call;
 }
@@ -2203,7 +2200,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 		return env;
 
 	be_omit_fp      = options->omit_fp;
-	be_omit_leaf_fp = options->omit_leaf_fp;
 
 	env->dce_survivor = new_survive_dce();
 	env->keep_map     = pmap_create();
