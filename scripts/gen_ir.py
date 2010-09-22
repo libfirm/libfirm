@@ -285,10 +285,8 @@ ir_node *new_rd_{{node.constrname}}(
 	{% endfilter %})
 {
 	ir_node *res;
-	ir_graph *rem = current_ir_graph;
 	{{node|irgassign}}
 	{{node|insdecl}}
-	current_ir_graph = irg;
 	res = new_ir_node(
 		{%- filter arguments %}
 			dbgi
@@ -312,7 +310,6 @@ ir_node *new_rd_{{node.constrname}}(
 	res = optimize_node(res);
 	{%- endif %}
 	IRN_VERIFY_IRG(res, irg);
-	current_ir_graph = rem;
 	return res;
 }
 
