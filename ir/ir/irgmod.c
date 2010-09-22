@@ -172,10 +172,46 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 		}
 	}
 
-	/* recursion ... */
 	if (is_Phi(node))
 		return;
 
+	/* recursion ... */
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred = get_irn_n(node, i);
+		if (get_nodes_block(pred) == from_bl)
+			move(pred, from_bl, to_bl);
+	}
+}
+
+/**
+ * Moves node and all predecessors of node from from_bl to to_bl.
+ * Does not move predecessors of Phi nodes (or block nodes).
+ */
+static void move_alt(ir_node *node, ir_node *from_bl, ir_node *to_bl)
+{
+	int i, arity;
+
+	/* move this node */
+	set_nodes_block(node, to_bl);
+
+	/* move its Projs */
+	if (get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+			set_nodes_block(proj, to_bl);
+		}
+	}
+
+	/* We must not move predecessors of Phi nodes, even if they are in
+	 * from_bl. (because these are values from an earlier loop iteration
+	 * which are not predecessors of node here)
+	 */
+	if (is_Phi(node))
+		return;
+
+	/* recursion ... */
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
@@ -219,6 +255,31 @@ void part_block(ir_node *node)
 
 	set_optimize(rem_opt);
 	current_ir_graph = rem;
+}
+
+ir_node *part_block_edges(ir_node *node)
+{
+	ir_node         *old_block = get_nodes_block(node);
+	ir_node         *new_block = new_Block(get_Block_n_cfgpreds(old_block),
+	                                       get_Block_cfgpred_arr(old_block));
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+
+	/* old_block has no predecessors anymore for now */
+	set_irn_in(old_block, 0, NULL);
+
+	/* move node and its predecessors to new_block */
+	move_alt(node, old_block, new_block);
+
+	/* move Phi nodes to new_block */
+	foreach_out_edge_safe(old_block, edge, next) {
+		ir_node *phi = get_edge_src_irn(edge);
+		if (!is_Phi(phi))
+			continue;
+		set_nodes_block(phi, new_block);
+	}
+
+	return old_block;
 }
 
 void kill_node(ir_node *node)

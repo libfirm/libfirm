@@ -78,6 +78,14 @@ FIRM_API void collect_phiprojs(ir_graph *irg);
 FIRM_API void part_block(ir_node *node);
 
 /**
+ * Same as part_block() but works with out-edges so you don't have to call
+ * collect_phiprojs.
+ * This variant also removes all predecessors of the old block and returns
+ * it. You are responsible to add control flow predecessors to it.
+ */
+FIRM_API ir_node *part_block_edges(ir_node *node);
+
+/**
  * Kill a node by setting its predecessors to Bad and finally
  * exchange the node by Bad itself.
  */
