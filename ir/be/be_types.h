@@ -77,4 +77,7 @@ typedef struct backend_info_t           backend_info_t;
 typedef struct sched_info_t             sched_info_t;
 typedef struct reg_out_info_t           reg_out_info_t;
 
+typedef struct be_main_env_t be_main_env_t;
+typedef struct be_options_t  be_options_t;
+
 #endif

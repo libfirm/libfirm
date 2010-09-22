@@ -28,7 +28,7 @@
 #define FIRM_BE_BEGNUAS_H
 
 #include <stdbool.h>
-#include "be.h"
+#include "be_types.h"
 #include "beemitter.h"
 
 typedef enum {
@@ -66,11 +66,9 @@ extern bool                 be_gas_emit_types;
  */
 extern char                 be_gas_elf_type_char;
 
-
 /**
  * Generate all entities.
  * @param main_env          the main backend environment
- * @param emit_commons      if non-zero, emit commons (non-local uninitialized entities)
  */
 void be_gas_emit_decls(const be_main_env_t *main_env);
 
