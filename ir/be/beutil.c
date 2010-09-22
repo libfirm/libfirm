@@ -49,20 +49,6 @@ void be_clear_links(ir_graph *irg)
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 }
 
-static void count_num_reachable_nodes(ir_node *irn, void *env)
-{
-	int *num = env;
-	(*num)++;
-	(void) irn;
-}
-
-unsigned get_num_reachable_nodes(ir_graph *irg)
-{
-	int num = 0;
-	irg_walk_graph(irg, count_num_reachable_nodes, NULL, &num);
-	return num;
-}
-
 /**
  * Gets the Proj with number pn from irn.
  */

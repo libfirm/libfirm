@@ -60,13 +60,6 @@ static inline const ir_node *get_block_const(const ir_node *irn)
 void be_clear_links(ir_graph *irg);
 
 /**
- * Returns the number of reachable nodes in an irg.
- * @param irg The irg.
- * @return The number of reachable nodes.
- */
-unsigned get_num_reachable_nodes(ir_graph *irg);
-
-/**
  * Gets the Proj with number pn from irn.
  */
 ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn);
