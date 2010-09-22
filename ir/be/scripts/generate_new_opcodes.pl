@@ -530,18 +530,20 @@ foreach my $op (keys(%nodes)) {
 
 		$num_outs = $#outs + 1;
 
-		$obst_proj .= "\nenum pn_${op} {\n";
+		if ($num_outs > 0) {
+			$obst_proj .= "\nenum pn_${op} {\n";
 
-		for (my $idx = 0; $idx <= $#outs; $idx++) {
-			# check, if we have additional flags annotated to out
-			if ($outs[$idx] =~ /:((S|I)(\|(S|I))*)/) {
-				push(@out_flags, $1);
-				$outs[$idx] =~ s/:((S|I)(\|(S|I))*)//;
+			for (my $idx = 0; $idx <= $#outs; $idx++) {
+				# check, if we have additional flags annotated to out
+				if ($outs[$idx] =~ /:((S|I)(\|(S|I))*)/) {
+					push(@out_flags, $1);
+					$outs[$idx] =~ s/:((S|I)(\|(S|I))*)//;
+				}
+				$obst_proj .= "\tpn_${op}_".$outs[$idx]." = ${idx},\n";
 			}
-			$obst_proj .= "\tpn_${op}_".$outs[$idx]." = ${idx},\n";
-		}
 
-		$obst_proj .= "};\n";
+			$obst_proj .= "};\n";
+		}
 		# outs have names, it must be a mode_T node
 		if (!defined($n{mode})) {
 			$n{mode} = "mode_T";
@@ -555,11 +557,13 @@ foreach my $op (keys(%nodes)) {
 			die "Fatal error: Op ${op} has different number of ins and arity\n";
 		}
 
-		$obst_proj .= "\nenum n_$op {\n";
-		for (my $idx = 0; $idx <= $#ins; $idx++) {
-			$obst_proj .= "\tn_${op}_".$ins[$idx]." = ${idx},\n";
+		if ($#ins >= 0) {
+			$obst_proj .= "\nenum n_$op {\n";
+			for (my $idx = 0; $idx <= $#ins; $idx++) {
+				$obst_proj .= "\tn_${op}_".$ins[$idx]." = ${idx},\n";
+			}
+			$obst_proj .= "};\n";
 		}
-		$obst_proj .= "};\n";
 	}
 
 	# Create opcode
