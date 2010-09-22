@@ -99,13 +99,6 @@ int (get_optimize)(void)
 	return get_opt_optimize();
 }
 
-void set_opt_control_flow(int value)
-{
-	set_opt_control_flow_straightening(value);
-	set_opt_control_flow_weak_simplification(value);
-	set_opt_control_flow_strong_simplification(value);
-}
-
 /* Save the current optimization state. */
 void save_optimization_state(optimization_state_t *state)
 {

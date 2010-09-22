@@ -49,51 +49,32 @@ I_FLAG(constant_folding                   , 3, ON)
 /** Bad node propagation. */
 I_FLAG(unreachable_code                   , 4, ON)
 
-/** */
-I_FLAG(control_flow_straightening         , 5, ON)
-
-/** */
-I_FLAG(control_flow_weak_simplification   , 6, ON)
-
-/** */
-I_FLAG(control_flow_strong_simplification , 7, ON)
-
 /** Algebraic simplifications. */
-I_FLAG(algebraic_simplification           , 8, ON)
+I_FLAG(algebraic_simplification           , 5, ON)
 
 /** Use Global Null Pointer Test elimination. */
-I_FLAG(global_null_ptr_elimination        , 10, ON)
+I_FLAG(global_null_ptr_elimination        , 6, ON)
 
 /** Remove dynamic method dispatch. */
-E_FLAG(dyn_meth_dispatch                  , 11, ON)
-
-/** Transformations that normalize the firm representation
- *  as removing Ids and Tuples, useless Phis, SymConst(id) -> Const(entity) ...
- */
-I_FLAG(normalize                          , 12, ON)
-
-I_FLAG(allow_conv_b                       , 13, ON)
+E_FLAG(dyn_meth_dispatch                  , 7, ON)
 
 /** Optimize cast nodes. */
-E_FLAG(suppress_downcast_optimization     , 22, OFF)
-
-/** Not really an optimization, removes Confirm nodes. */
-I_FLAG(remove_confirm                     , 23, OFF)
+E_FLAG(suppress_downcast_optimization     , 8, OFF)
 
 /** Load and Store have only Null exceptions. */
-I_FLAG(ldst_only_null_ptr_exceptions      , 25, ON)
+I_FLAG(ldst_only_null_ptr_exceptions      , 9, ON)
 
 /** Sel-based Null-pointer check elimination. */
-I_FLAG(sel_based_null_check_elim          , 26, OFF)
+I_FLAG(sel_based_null_check_elim          , 10, OFF)
 
 /** Automatically create Sync node during construction. */
-I_FLAG(auto_create_sync                   , 27, OFF)
+I_FLAG(auto_create_sync                   , 11, OFF)
 
 /** Enable Alias-analysis. */
-I_FLAG(alias_analysis                     , 28, ON)
+I_FLAG(alias_analysis                     , 12, ON)
 
 /** Closed world assumption. */
-I_FLAG(closed_world                       , 31, OFF)
+I_FLAG(closed_world                       , 13, OFF)
 
 /* -------------------- RUNNING flags ------------------- */
 

@@ -665,7 +665,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* we switch off optimizations here, because they might cause trouble */
 		save_optimization_state(&state);
 		set_optimize(0);
-		set_opt_normalize(0);
 		set_opt_cse(0);
 
 		/* add Keeps for should_be_different constrained nodes  */

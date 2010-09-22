@@ -440,17 +440,10 @@ static tarval *computed_value_Mux(const ir_node *n)
  */
 static tarval *computed_value_Confirm(const ir_node *n)
 {
-	/*
-	 * Beware: we might produce Phi(Confirm(x == true), Confirm(x == false)).
-	 * Do NOT optimize them away (jump threading wants them), so wait until
-	 * remove_confirm is activated.
-	 */
-	if (get_opt_remove_confirm()) {
-		if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
-			tarval *tv = value_of(get_Confirm_bound(n));
-			if (tv != tarval_bad)
-				return tv;
-		}
+	if (get_Confirm_cmp(n) == pn_Cmp_Eq) {
+		tarval *tv = value_of(get_Confirm_bound(n));
+		if (tv != tarval_bad)
+			return tv;
 	}
 	return value_of(get_Confirm_value(n));
 }  /* computed_value_Confirm */
@@ -799,7 +792,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 				/* Jmp jumps into the block it is in -- deal self cycle. */
 				n = set_Block_dead(n);
 				DBG_OPT_DEAD_BLOCK(oldn, n);
-			} else if (get_opt_control_flow_straightening()) {
+			} else {
 				n = predblock;
 				DBG_OPT_STG(oldn, n);
 			}
@@ -811,8 +804,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 				DBG_OPT_DEAD_BLOCK(oldn, n);
 			}
 		}
-	} else if ((n_preds == 2) &&
-	           (get_opt_control_flow_weak_simplification())) {
+	} else if (n_preds == 2) {
 		/* Test whether Cond jumps twice to this block
 		 * The more general case which more than 2 predecessors is handles
 		 * in optimize_cf(), we handle only this special case for speed here.
@@ -1408,8 +1400,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	ir_node *block;
 	ir_node *first_val = NULL; /* to shutup gcc */
 
-	if (!get_opt_normalize()) return n;
-
 	n_preds = get_Phi_n_preds(n);
 
 	block = get_nodes_block(n);
@@ -1917,8 +1907,6 @@ static ir_node *equivalent_node_Confirm(ir_node *n)
 		pred = get_Confirm_value(n);
 		pnc  = get_Confirm_cmp(n);
 	}
-	if (get_opt_remove_confirm())
-		return get_Confirm_value(n);
 	return n;
 }
 

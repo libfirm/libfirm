@@ -127,7 +127,7 @@ ir_node *transform_node_Sel(ir_node *node)
 
 	if (get_irp_phase_state() == phase_building) return node;
 
-	if (!(get_opt_optimize() && get_opt_dyn_meth_dispatch()))
+	if (!get_opt_dyn_meth_dispatch())
 		return node;
 
 	if (!is_Method_type(get_entity_type(ent)))
@@ -189,7 +189,7 @@ ir_node *transform_polymorph_Load(ir_node *load)
 	ir_entity *ent;
 	ir_type *dyn_tp;
 
-	if (!(get_opt_optimize() && get_opt_dyn_meth_dispatch()))
+	if (!get_opt_dyn_meth_dispatch())
 		return load;
 
 	field_ptr = get_Load_ptr(load);

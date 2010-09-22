@@ -108,23 +108,6 @@ FIRM_API void set_opt_global_cse(int value);
  */
 FIRM_API void set_opt_unreachable_code(int value);
 
-/** Enables/Disables control flow optimizations.
- *
- * Performs Straightening, if simplifications and loop simplifications.
- * Sets all separate control flow flags (control_flow_straightening,
- * weak_simplification, strong_simplification and critical_edges).
- */
-FIRM_API void set_opt_control_flow(int value);
-
-/** Enables/Disables Straightening. */
-FIRM_API void set_opt_control_flow_straightening(int value);
-
-/** Enables/Disables if simplifications in local optimizations. */
-FIRM_API void set_opt_control_flow_weak_simplification(int value);
-
-/** Enables/Disables strong if and loop simplification (in optimize_cf). */
-FIRM_API void set_opt_control_flow_strong_simplification(int value);
-
 /** Enable/Disable optimization of dynamic method dispatch.
  *
  * This flag enables/disables the optimization of dynamic method dispatch.
@@ -148,11 +131,6 @@ FIRM_API void set_opt_optimize_class_casts(int value);
  */
 FIRM_API void set_opt_suppress_downcast_optimization(int value);
 FIRM_API int get_opt_suppress_downcast_optimization(void);
-
-/**
- * Enable/Disable Confirm node removal during local optimization.
- */
-FIRM_API void set_opt_remove_confirm(int value);
 
 /**
  * Enable/Disable Null exception in Load and Store nodes only.
@@ -206,27 +184,6 @@ FIRM_API void set_opt_global_null_ptr_elimination(int value);
  * This flag should be set for Java style languages.
  */
 FIRM_API void set_opt_auto_create_sync(int value);
-
-/** Enable/Disable normalizations of the firm representation.
- *
- *  This flag guards transformations that normalize the Firm representation
- *  as removing Ids and Tuples, useless Phis, replacing SymConst(id) by
- *  Const(entity) and others.
- *  The transformations guarded by this flag are not guarded by flag
- *  "optimize".
- *  Many algorithms operating on Firm can not deal with constructs in
- *  the non-normalized representation.
- *  default: ON
- *
- *  @note ATTENTION: not all such transformations are guarded by a flag.
- */
-FIRM_API void set_opt_normalize(int value);
-
-/**
- * Enable/Disable ConvB() nodes with a "semantic behavior", i.e. a real
- * operation that must be executed.
- */
-FIRM_API void set_opt_allow_conv_b(int value);
 
 /** Enable/Disable Alias analysis.
  *

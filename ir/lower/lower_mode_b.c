@@ -425,7 +425,6 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 
 	adjust_method_type(type);
 
-	set_opt_allow_conv_b(0);
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, &changed);
 

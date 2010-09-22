@@ -171,9 +171,6 @@ static void merge_blocks(ir_node *node, void *ctx)
 				   promote it directly below. Nevertheless, we sometimes reach a block
 				   the first time through a dataflow node.  In this case we optimized the
 				   block as such and have to promote the Bad here. */
-				assert((get_opt_control_flow_straightening() ||
-					get_opt_control_flow_weak_simplification()) &&
-					("strange flag setting"));
 				exchange(b, new_block);
 				env->changed = 1;
 				b = new_block;
@@ -327,12 +324,6 @@ static int test_whether_dispensable(ir_node *b, int pos)
 		return 0;
 
 	if (is_Block_removable(pred)) {
-		if (!get_opt_optimize() || !get_opt_control_flow_strong_simplification()) {
-			/* Mark block so that is will not be removed: optimization is turned off. */
-			set_Block_non_removable(pred);
-			return 1;
-		}
-
 		/* Seems to be empty. At least we detected this in collect_nodes. */
 		if (get_irn_link(b) == NULL) {
 			/* There are no Phi nodes ==> all predecessors are dispensable. */

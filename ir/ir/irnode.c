@@ -1610,8 +1610,6 @@ ir_node *skip_HighLevel_ops(ir_node *node)
  *
  * Note: This function takes 10% of mostly ANY the compiler run, so it's
  * a little bit "hand optimized".
- *
- * Moreover, it CANNOT be switched off using get_opt_normalize() ...
  */
 ir_node *skip_Id(ir_node *node)
 {

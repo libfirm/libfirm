@@ -619,38 +619,24 @@ ir_graph_pass_t *construct_confirms_pass(const char *name)
 	return def_graph_pass(name ? name : "confirm", construct_confirms);
 }  /* construct_confirms_pass */
 
-#if 0
-/**
- * Post-walker: Remove Confirm nodes
- */
-static void rem_Confirm(ir_node *n, void *env)
+static void remove_confirm(ir_node *n, void *env)
 {
+	ir_node *value;
+
 	(void) env;
-	if (is_Confirm(n)) {
-		ir_node *value = get_Confirm_value(n);
-		if (value != n)
-			exchange(n, value);
-		else {
-			/*
-			 * Strange: a Confirm is its own bound. This can happen
-			 * in dead blocks when Phi nodes are already removed.
-			 */
-			exchange(n, new_Bad());
-		}
-	}
-}  /* rem_Confirm */
-#endif
+	if (!is_Confirm(n))
+		return;
+
+	value = get_Confirm_value(n);
+	exchange(n, value);
+}
 
 /*
  * Remove all Confirm nodes from a graph.
  */
 void remove_confirms(ir_graph *irg)
 {
-	int rem = get_opt_remove_confirm();
-
-	set_opt_remove_confirm(1);
-	optimize_graph_df(irg);
-	set_opt_remove_confirm(rem);
+	irg_walk_graph(irg, NULL, remove_confirm, NULL);
 }  /* remove_confirms */
 
 /* Construct a pass. */
