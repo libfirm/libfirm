@@ -235,6 +235,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 		delta            = env->switch_min;
 		env->switch_min  = 0;
 		env->switch_max -= delta;
+		set_Cond_selector(cond, sel);
 	}
 
 	/* check for out-of-bounds */
