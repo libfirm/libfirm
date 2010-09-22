@@ -31,66 +31,21 @@
 #include "irgwalk.h"
 
 /**
- * Post-walker: prepare the graph nodes for new SSA construction cycle by allocation
- * new arrays.
+ * Post-walker: prepare the graph nodes for new SSA construction cycle by
+ * allocation new arrays.
  */
 static void prepare_nodes(ir_node *irn, void *env)
 {
 	(void)env;
 
-	switch (get_irn_opcode(irn)) {
-	case iro_Block:
+	if (is_Block(irn)) {
+		unsigned        n_loc = current_ir_graph->n_loc;
+		struct obstack *obst  = current_ir_graph->obst;
 		/* reset mature flag */
 		irn->attr.block.is_matured = 0;
-		irn->attr.block.graph_arr  = NEW_ARR_D(ir_node *, current_ir_graph->obst,
-		                                       current_ir_graph->n_loc);
-		memset(irn->attr.block.graph_arr, 0, sizeof(ir_node *) * current_ir_graph->n_loc);
+		irn->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
+		memset(irn->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
 		irn->attr.block.phis       = NULL;
-		break;
-	/* note that the frag array must be cleared first, else firm_alloc_frag_arr()
-	   will not allocate new memory. */
-	case iro_Quot:
-		irn->attr.except.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Quot, &irn->attr.except.frag_arr);
-		break;
-	case iro_DivMod:
-		irn->attr.except.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_DivMod, &irn->attr.except.frag_arr);
-		break;
-	case iro_Div:
-		irn->attr.except.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Div, &irn->attr.except.frag_arr);
-		break;
-	case iro_Mod:
-		irn->attr.except.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Mod, &irn->attr.except.frag_arr);
-		break;
-	case iro_Call:
-		irn->attr.call.exc.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Call, &irn->attr.call.exc.frag_arr);
-		break;
-	case iro_Load:
-		irn->attr.load.exc.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Load, &irn->attr.load.exc.frag_arr);
-		break;
-	case iro_Store:
-		irn->attr.store.exc.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Store, &irn->attr.store.exc.frag_arr);
-		break;
-	case iro_Alloc:
-		irn->attr.alloc.exc.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Alloc, &irn->attr.alloc.exc.frag_arr);
-		break;
-	case iro_CopyB:
-		irn->attr.copyb.exc.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_CopyB, &irn->attr.copyb.exc.frag_arr);
-		break;
-	case iro_Raise:
-		irn->attr.bound.exc.frag_arr = NULL;
-		firm_alloc_frag_arr(irn, op_Bound, &irn->attr.bound.exc.frag_arr);
-		break;
-	default:
-		break;
 	}
 }
 

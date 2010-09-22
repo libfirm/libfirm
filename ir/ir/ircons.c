@@ -620,152 +620,6 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode);
 static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
 
 /**
- * Construct a new frag_array for node n.
- * Copy the content from the current graph_arr of the corresponding block:
- * this is the current state.
- * Set ProjM(n) as current memory state.
- * Further the last entry in frag_arr of current block points to n.  This
- * constructs a chain block->last_frag_op-> ... first_frag_op of all frag ops in the block.
- */
-static inline ir_node **new_frag_arr(ir_node *n)
-{
-	ir_node **arr;
-	int opt;
-
-	arr = NEW_ARR_D (ir_node *, current_ir_graph->obst, current_ir_graph->n_loc);
-	memcpy(arr, current_ir_graph->current_block->attr.block.graph_arr,
-	       sizeof(ir_node *)*current_ir_graph->n_loc);
-
-	/* turn off optimization before allocating Proj nodes, as res isn't
-	   finished yet. */
-	opt = get_opt_optimize(); set_optimize(0);
-	/* Here we rely on the fact that all frag ops have Memory as first result! */
-	if (is_Call(n)) {
-		arr[0] = new_Proj(n, mode_M, pn_Call_M);
-	} else if (is_CopyB(n)) {
-		arr[0] = new_Proj(n, mode_M, pn_CopyB_M);
-	} else {
-		assert((pn_Quot_M == pn_DivMod_M) &&
-		       (pn_Quot_M == pn_Div_M)    &&
-		       (pn_Quot_M == pn_Mod_M)    &&
-		       (pn_Quot_M == pn_Load_M)   &&
-		       (pn_Quot_M == pn_Store_M)  &&
-		       (pn_Quot_M == pn_Alloc_M)  &&
-		       (pn_Quot_M == pn_Bound_M));
-		arr[0] = new_Proj(n, mode_M, pn_Alloc_M);
-	}
-	set_optimize(opt);
-
-	current_ir_graph->current_block->attr.block.graph_arr[current_ir_graph->n_loc-1] = n;
-	return arr;
-}  /* new_frag_arr */
-
-/**
- * Returns the frag_arr from a node.
- */
-static inline ir_node **get_frag_arr(ir_node *n)
-{
-	switch (get_irn_opcode(n)) {
-	case iro_Call:
-		return n->attr.call.exc.frag_arr;
-	case iro_Alloc:
-		return n->attr.alloc.exc.frag_arr;
-	case iro_Load:
-		return n->attr.load.exc.frag_arr;
-	case iro_Store:
-		return n->attr.store.exc.frag_arr;
-	default:
-		return n->attr.except.frag_arr;
-	}
-}  /* get_frag_arr */
-
-static void set_frag_value(ir_node **frag_arr, int pos, ir_node *val)
-{
-#ifdef DEBUG_libfirm
-	int i;
-
-	for (i = 1024; i >= 0; --i)
-#else
-	for (;;)
-#endif
-	{
-		if (frag_arr[pos] == NULL)
-			frag_arr[pos] = val;
-		if (frag_arr[current_ir_graph->n_loc - 1] != NULL) {
-			ir_node **arr = get_frag_arr(frag_arr[current_ir_graph->n_loc - 1]);
-			assert(arr != frag_arr && "Endless recursion detected");
-			frag_arr = arr;
-		} else
-			return;
-	}
-	assert(!"potential endless recursion in set_frag_value");
-}  /* set_frag_value */
-
-static ir_node *get_r_frag_value_internal(ir_node *block, ir_node *cfOp,
-                                          int pos, ir_mode *mode)
-{
-	ir_node *res;
-	ir_node **frag_arr;
-
-	assert(is_fragile_op(cfOp) && !is_Bad(cfOp));
-
-	frag_arr = get_frag_arr(cfOp);
-	res = frag_arr[pos];
-	if (res == NULL) {
-		if (block->attr.block.graph_arr[pos] != NULL) {
-			/* There was a set_value() after the cfOp and no get_value() before that
-			   set_value().  We must build a Phi node now. */
-			if (block->attr.block.is_matured) {
-				int ins = get_irn_arity(block);
-				ir_node **nin;
-				NEW_ARR_A(ir_node *, nin, ins);
-				res = phi_merge(block, pos, mode, nin, ins);
-			} else {
-				res = new_rd_Phi0(current_ir_graph, block, mode);
-				res->attr.phi.u.pos    = pos;
-				res->attr.phi.next     = block->attr.block.phis;
-				block->attr.block.phis = res;
-			}
-			assert(res != NULL);
-			/* It's a Phi, we can write this into all graph_arrs with NULL */
-			set_frag_value(block->attr.block.graph_arr, pos, res);
-		} else {
-			res = get_r_value_internal(block, pos, mode);
-			set_frag_value(block->attr.block.graph_arr, pos, res);
-		}
-	}
-	return res;
-}  /* get_r_frag_value_internal */
-
-/**
- * Check whether a control flownode  cf_pred represents an exception flow.
- *
- * @param cf_pred     the control flow node
- * @param prev_cf_op  if cf_pred is a Proj, the predecessor node, else equal to cf_pred
- */
-static int is_exception_flow(ir_node *cf_pred, ir_node *prev_cf_op)
-{
-	/*
-	 * Note: all projections from a raise are "exceptional control flow" we we handle it
-	 * like a normal Jmp, because there is no "regular" one.
-	 * That's why Raise is no "fragile_op"!
-	 */
-	if (is_fragile_op(prev_cf_op)) {
-		if (is_Proj(cf_pred)) {
-			if (get_Proj_proj(cf_pred) == pn_Generic_X_regular) {
-				/* the regular control flow, NO exception */
-				return 0;
-			}
-			assert(get_Proj_proj(cf_pred) == pn_Generic_X_except);
-			return 1;
-		}
-		/* Hmm, exception but not a Proj? */
-		panic("unexpected condition: fragile op without a proj");
-	}
-	return 0;
-}  /* is_exception_flow */
-
-/**
  * Computes the predecessors for the real phi node, and then
  * allocates and returns this node.  The routine called to allocate the
  * node might optimize it away and return a real value.
@@ -784,17 +638,17 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 		ir_graph *irg = current_ir_graph;
 
 		if (block == get_irg_start_block(irg)) {
- 			/* Collapsing to Bad tarvals is no good idea.
- 			   So we call a user-supplied routine here that deals with this case as
- 			   appropriate for the given language. Sorrily the only help we can give
- 			   here is the position.
+			/* Collapsing to Bad tarvals is no good idea.
+			   So we call a user-supplied routine here that deals with this
+			   case as appropriate for the given language. Sorrily the only
+			   help we can give here is the position.
 
- 			   Even if all variables are defined before use, it can happen that
- 			   we get to the start block, if a Cond has been replaced by a tuple
- 			   (bad, jmp).  In this case we call the function needlessly, eventually
- 			   generating an non existent error.
- 			   However, this SHOULD NOT HAPPEN, as bad control flow nodes are intercepted
- 			   before recurring.
+			   Even if all variables are defined before use, it can happen that
+			   we get to the start block, if a Cond has been replaced by a tuple
+			   (bad, jmp).  In this case we call the function needlessly,
+			   eventually generating an non existent error.
+			   However, this SHOULD NOT HAPPEN, as bad control flow nodes are
+			   intercepted before recurring.
 			 */
 			if (default_initialize_local_variable != NULL) {
 				ir_node *rem = get_cur_block();
@@ -802,21 +656,13 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 				set_cur_block(block);
 				block->attr.block.graph_arr[pos] = default_initialize_local_variable(irg, mode, pos - 1);
 				set_cur_block(rem);
-			}
-			else
+			} else {
 				block->attr.block.graph_arr[pos] = new_Unknown(mode);
-			/* We don't need to care about exception ops in the start block.
-			   There are none by definition. */
+			}
 			return block->attr.block.graph_arr[pos];
 		} else {
 			phi0 = new_rd_Phi0(irg, block, mode);
 			block->attr.block.graph_arr[pos] = phi0;
-			if (get_opt_precise_exc_context()) {
-				/* Set graph_arr for fragile ops.  Also here we should break recursion.
-				   We could choose a cyclic path through an cfop.  But the recursion would
-				   break at some point. */
-				set_frag_value(block->attr.block.graph_arr, pos, phi0);
-			}
 		}
 	}
 
@@ -836,11 +682,7 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 		prevBlock = prevCfOp->in[0]; /* go past control flow op to prev block */
 		assert(prevBlock);
 		if (!is_Bad(prevBlock)) {
-			if (get_opt_precise_exc_context() && is_exception_flow(cf_pred, prevCfOp)) {
-				assert(get_r_frag_value_internal(prevBlock, prevCfOp, pos, mode));
-				nin[i-1] = get_r_frag_value_internal(prevBlock, prevCfOp, pos, mode);
-			} else
-				nin[i-1] = get_r_value_internal(prevBlock, pos, mode);
+			nin[i-1] = get_r_value_internal(prevBlock, pos, mode);
 		} else {
 			nin[i-1] = new_Bad();
 		}
@@ -872,8 +714,6 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 	if (phi0 != NULL) {
 		exchange(phi0, res);
 		block->attr.block.graph_arr[pos] = res;
-		/* Don't set_frag_value as it does not overwrite.  Doesn't matter, is
-		   only an optimization. */
 	}
 
 	return res;
@@ -1045,26 +885,6 @@ ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 	res = new_d_Proj(db, arg, mode_X, max_proj);
 	return res;
 }  /* new_d_defaultProj */
-
-/**
- * Allocate a frag array for a node if the current graph state is phase_building.
- *
- * @param irn         the node for which the frag array should be allocated
- * @param op          the opcode of the (original) node, if does not match opcode of irn,
- *                    nothing is done
- * @param frag_store  the address of the frag store in irn attributes, if this
- *                    address contains a value != NULL, does nothing
- */
-void firm_alloc_frag_arr(ir_node *irn, ir_op *op, ir_node ***frag_store)
-{
-	if (get_opt_precise_exc_context()) {
-		if ((current_ir_graph->phase_state == phase_building) &&
-		    (get_irn_op(irn) == op) && /* Could be optimized away. */
-		    !*frag_store)    /* Could be a cse where the arr is already set. */ {
-			*frag_store = new_frag_arr(irn);
-		}
-	}
-}  /* firm_alloc_frag_arr */
 
 ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, ir_entity *ent)
 /* GL: objptr was called frame before.  Frame was a bad choice for the name

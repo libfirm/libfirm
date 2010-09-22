@@ -228,23 +228,6 @@ FIRM_API void set_opt_normalize(int value);
  */
 FIRM_API void set_opt_allow_conv_b(int value);
 
-/** Enable/Disable precise exception context.
- *
- * If enabled, all exceptions form a barrier for values, as in the
- * following example:
- *
- * @code
- * a = 1;
- * b = 3 / 0;
- * a = 2;
- * @endcode
- *
- * If precise exception handling is enabled, an exception handler see a == 1,
- * else it might see a == 2.
- * Enable this for languages with strict exception order like Java.
- */
-FIRM_API void set_opt_precise_exc_context(int value);
-
 /** Enable/Disable Alias analysis.
  *
  * If enabled, memory disambiguation by alias analysis is used.

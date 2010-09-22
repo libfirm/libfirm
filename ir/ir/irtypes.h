@@ -191,7 +191,6 @@ typedef struct {
 	op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
 									 If it's know that no exception will be generated, could be set to
 									 op_pin_state_floats. */
-	struct ir_node **frag_arr;    /**< For Phi node construction in case of exception */
 } except_attr;
 
 /** Call attributes. */

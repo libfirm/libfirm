@@ -74,9 +74,6 @@ I_FLAG(normalize                          , 12, ON)
 
 I_FLAG(allow_conv_b                       , 13, ON)
 
-/** precise exception context */
-I_FLAG(precise_exc_context                , 15, OFF)
-
 /** Optimize cast nodes. */
 E_FLAG(suppress_downcast_optimization     , 22, OFF)
 

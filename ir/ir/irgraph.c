@@ -130,18 +130,11 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 {
 	assert(res->phase_state == phase_building);
 
-	if (get_opt_precise_exc_context()) {
-		res->n_loc = n_loc + 1 + 1; /* number of local variables that are never
-		                               dereferenced in this graph plus one for
-		                               the store plus one for links to fragile
-		                               operations.  n_loc is not the number of
-		                               parameters to the procedure!  */
-	} else {
-		res->n_loc = n_loc + 1;     /* number of local variables that are never
-		                               dereferenced in this graph plus one for
-		                               the store. This is not the number of parameters
-		                               to the procedure!  */
-	}
+	res->n_loc = n_loc + 1;     /* number of local variables that are never
+	                               dereferenced in this graph plus one for
+	                               the store. This is not the number of
+	                               parameters to the procedure!  */
+
 	if (res->loc_descriptions) {
 		xfree(res->loc_descriptions);
 		res->loc_descriptions = NULL;
@@ -677,10 +670,7 @@ ir_type *get_irg_value_param_type(ir_graph *irg)
 
 int get_irg_n_locs(ir_graph *irg)
 {
-	if (get_opt_precise_exc_context())
-		return irg->n_loc - 1 - 1;
-	else
-		return irg->n_loc - 1;
+	return irg->n_loc - 1;
 }
 
 /* Returns the obstack associated with the graph. */

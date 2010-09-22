@@ -340,9 +340,6 @@ ir_node *new_d_{{node.constrname}}(
 			{{node|curblock}}
 			{{node|nodearguments}}
 		{% endfilter %});
-	{%- if "fragile" in node.flags %}
-	firm_alloc_frag_arr(res, op_{{node.name}}, &res->attr.except.frag_arr);
-	{%- endif %}
 	return res;
 }
 
