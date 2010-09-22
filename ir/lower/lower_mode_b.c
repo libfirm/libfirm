@@ -49,15 +49,18 @@
 #include "irtools.h"
 #include "iredges.h"
 #include "iropt_t.h"
+#include "irgmod.h"
 #include "tv.h"
 #include "error.h"
 #include "lowering.h"
 #include "pdeq.h"
 #include "irpass_t.h"
+#include "util.h"
+#include "array.h"
 
-static lower_mode_b_config_t  config;
-static ir_type               *lowered_type  = NULL;
-static pdeq                  *lowered_nodes = NULL;
+static const lower_mode_b_config_t *config;
+static ir_type                     *lowered_type;
+static ir_node                    **lowered_nodes;
 
 /**
  * Removes a node if its out-edge count has reached 0.
@@ -87,7 +90,7 @@ static void maybe_kill_node(ir_node *node)
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
 	ir_node  *block  = get_nodes_block(node);
-	ir_mode  *mode   = config.lowered_mode;
+	ir_mode  *mode   = config->lowered_mode;
 	tarval   *tv_one = get_mode_one(mode);
 	ir_graph *irg    = get_irn_irg(node);
 	ir_node  *one    = new_rd_Const(dbgi, irg, tv_one);
@@ -106,32 +109,50 @@ static ir_node *create_convb(ir_node *node)
 static ir_type *create_lowered_type(void)
 {
 	if (lowered_type == NULL) {
-		lowered_type = new_type_primitive(config.lowered_mode);
+		lowered_type = new_type_primitive(config->lowered_mode);
 	}
 	return lowered_type;
 }
 
-/**
- * creates a "set" node that produces a 0 or 1 based on a Cmp result
- */
-static ir_node *create_set(ir_node *node)
+ir_node *ir_create_mux_set(ir_node *cond, ir_mode *dest_mode)
 {
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_graph *irg     = get_irn_irg(node);
-	ir_mode  *mode    = config.lowered_set_mode;
-	tarval   *tv_one  = get_mode_one(mode);
-	ir_node  *one     = new_rd_Const(dbgi, irg, tv_one);
-	ir_node  *block   = get_nodes_block(node);
-	tarval   *tv_zero = get_mode_null(mode);
-	ir_node  *zero    = new_rd_Const(dbgi, irg, tv_zero);
-
-	ir_node *set      = new_rd_Mux(dbgi, block, node, zero, one, mode);
-
-	if (mode != config.lowered_mode) {
-		set = new_r_Conv(block, set, config.lowered_mode);
-	}
-
+	ir_graph *irg     = get_irn_irg(cond);
+	ir_node  *block   = get_nodes_block(cond);
+	tarval   *tv_one  = get_mode_one(dest_mode);
+	ir_node  *one     = new_r_Const(irg, tv_one);
+	tarval   *tv_zero = get_mode_null(dest_mode);
+	ir_node  *zero    = new_r_Const(irg, tv_zero);
+	ir_node  *set     = new_r_Mux(block, cond, zero, one, dest_mode);
 	return set;
+}
+
+ir_node *ir_create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
+{
+	ir_node  *lower_block = part_block_edges(cond_value);
+	ir_node  *upper_block = get_nodes_block(cond_value);
+	ir_graph *irg         = get_irn_irg(cond_value);
+	ir_node  *cond        = new_r_Cond(upper_block, cond_value);
+	ir_node  *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+	ir_node  *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+	ir_node  *in_true[1]  = { proj_true };
+	ir_node  *in_false[1] = { proj_false };
+	ir_node  *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+	ir_node  *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
+	ir_node  *true_jmp    = new_r_Jmp(true_block);
+	ir_node  *false_jmp   = new_r_Jmp(false_block);
+	ir_node  *lower_in[2] = { true_jmp, false_jmp };
+	ir_node  *one         = new_r_Const(irg, get_mode_one(dest_mode));
+	ir_node  *zero        = new_r_Const(irg, get_mode_null(dest_mode));
+	ir_node  *phi_in[2]   = { one, zero };
+	ir_node  *phi;
+
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, dest_mode);
+	assert(get_Block_phis(lower_block) == NULL);
+	set_Block_phis(lower_block, phi);
+	set_Phi_next(phi, NULL);
+
+	return phi;
 }
 
 static void adjust_method_type(ir_type *method_type)
@@ -161,7 +182,7 @@ static ir_node *lower_node(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
-	ir_mode  *mode  = config.lowered_mode;
+	ir_mode  *mode  = config->lowered_mode;
 	ir_graph *irg;
 	ir_node  *res;
 
@@ -186,11 +207,11 @@ static ir_node *lower_node(ir_node *node)
 		}
 		new_phi = new_r_Phi(block, arity, in, mode);
 		/* FIXME This does not correctly break cycles: The Phi might not be the
-		 * first in the recursion, so the caller(s) are some yet un-lowered nodes
-		 * and this Phi might have them (indirectly) as operands, so they would be
-		 * replaced twice. */
+		 * first in the recursion, so the caller(s) are some yet un-lowered
+		 * nodes and this Phi might have them (indirectly) as operands, so they
+		 * would be replaced twice. */
 		set_irn_link(node, new_phi);
-		pdeq_putr(lowered_nodes, node);
+		ARR_APP1(ir_node*, lowered_nodes, node);
 
 		for (i = 0; i < arity; ++i) {
 			ir_node *in     = get_irn_n(node, i);
@@ -250,7 +271,7 @@ static ir_node *lower_node(ir_node *node)
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
 		ir_node *proj     = new_rd_Proj(dbgi, cmp, mode_b, pn_Cmp_Lg);
-		res = create_set(proj);
+		res = config->create_set(proj);
 		break;
 	}
 
@@ -312,10 +333,10 @@ static ir_node *lower_node(ir_node *node)
 			} else {
 				/* synthesize the 0/1 value */
 synth_zero_one:
-				res = create_set(node);
+				res = config->create_set(node);
 			}
 		} else if (is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
-			ir_type   *type   = get_Call_type(get_Proj_pred(pred));
+			ir_type *type = get_Call_type(get_Proj_pred(pred));
 			adjust_method_type(type);
 			set_irn_mode(node, mode);
 			res = node;
@@ -337,11 +358,11 @@ synth_zero_one:
 	case iro_Const: {
 		tarval *tv = get_Const_tarval(node);
 		if (tv == get_tarval_b_true()) {
-			tarval  *tv_one  = get_mode_one(mode);
-			res              = new_rd_Const(dbgi, irg, tv_one);
+			tarval *tv_one = get_mode_one(mode);
+			res            = new_rd_Const(dbgi, irg, tv_one);
 		} else if (tv == get_tarval_b_false()) {
-			tarval  *tv_zero = get_mode_null(mode);
-			res              = new_rd_Const(dbgi, irg, tv_zero);
+			tarval *tv_zero = get_mode_null(mode);
+			res             = new_rd_Const(dbgi, irg, tv_zero);
 		} else {
 			panic("invalid boolean const %+F", node);
 		}
@@ -356,7 +377,7 @@ synth_zero_one:
 		panic("didn't expect %+F to have mode_b", node);
 	}
 
-	pdeq_putr(lowered_nodes, node);
+	ARR_APP1(ir_node*, lowered_nodes, node);
 own_replacement:
 	set_irn_link(node, res);
 	return res;
@@ -374,7 +395,7 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 		if (get_irn_mode(in) != mode_b)
 			continue;
 
-		if (! config.lower_direct_cmp) {
+		if (! config->lower_direct_cmp) {
 			/* Proj(Cmp) as input for Cond and Mux nodes needs no changes.
 			   (Mux with mode_b is an exception as it gets replaced by and/or
 			    anyway so we still lower the inputs then) */
@@ -411,9 +432,11 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	ir_entity *entity  = get_irg_entity(irg);
 	ir_type   *type    = get_entity_type(entity);
 	bool       changed = false;
+	int        i;
+	int        n;
 
-	config        = *nconfig;
-	lowered_nodes = new_pdeq();
+	config        = nconfig;
+	lowered_nodes = NEW_ARR_F(ir_node*, 0);
 	lowered_type  = NULL;
 
 	edges_assure(irg);
@@ -428,11 +451,12 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, &changed);
 
-	while (!pdeq_empty(lowered_nodes)) {
-		ir_node *node = (ir_node*) pdeq_getr(lowered_nodes);
+	n = ARR_LEN(lowered_nodes);
+	for (i = 0; i < n; ++i) {
+		ir_node *node = lowered_nodes[i];
 		maybe_kill_node(node);
 	}
-	del_pdeq(lowered_nodes);
+	DEL_ARR_F(lowered_nodes);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 

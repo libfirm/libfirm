@@ -2068,13 +2068,21 @@ static int ia32_is_valid_clobber(const char *clobber)
 	return ia32_get_clobber_register(clobber) != NULL;
 }
 
+static ir_node *ia32_create_set(ir_node *cond)
+{
+	/* ia32-set function produces 8-bit results which have to be converted */
+	ir_node *set   = ir_create_mux_set(cond, mode_Bu);
+	ir_node *block = get_nodes_block(set);
+	return new_r_Conv(block, set, mode_Iu);
+}
+
 static void ia32_lower_for_target(void)
 {
 	int n_irgs = get_irp_n_irgs();
 	int i;
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,  /* lowered mode */
-		mode_Bu,  /* preferred mode for set */
+		ia32_create_set,
 		0,        /* don't lower direct compares */
 	};
 
