@@ -234,6 +234,8 @@ FIRM_API int is_Const(const ir_node *node);
 FIRM_API int is_Conv(const ir_node *node);
 /** Return true of the node is a CopyB node. */
 FIRM_API int is_CopyB(const ir_node *node);
+/** Return true of the node is a Deleted node. */
+FIRM_API int is_Deleted(const ir_node *node);
 /** Return true of the node is a Div node. */
 FIRM_API int is_Div(const ir_node *node);
 /** Return true of the node is a DivMod node. */
@@ -416,6 +418,7 @@ FIRM_API ir_node *get_CopyB_src(const ir_node *node);
 void set_CopyB_src(ir_node *node, ir_node *src);
 FIRM_API ir_type* get_CopyB_type(const ir_node *node);
 FIRM_API void set_CopyB_type(ir_node *node, ir_type* type);
+
 
 FIRM_API ir_node *get_Div_mem(const ir_node *node);
 void set_Div_mem(ir_node *node, ir_node *mem);

@@ -29,8 +29,12 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** Exchanges two nodes by conserving edges leaving old (i.e.,
-   pointers pointing to old).  Turns the old node into an Id. */
+/**
+ * Exchanges two nodes by conserving edges leaving old (i.e.,
+ * pointers pointing to old).
+ * The nodes op will be changed to op_Deleted and you must not do anything with
+ * the node anymore except testing its op.
+ */
 FIRM_API void exchange(ir_node *old, ir_node *nw);
 
 /** Turns a node into a "useless" Tuple.

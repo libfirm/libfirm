@@ -6849,6 +6849,9 @@ ir_node *optimize_in_place_2(ir_node *n)
 
 	if (!get_opt_optimize() && !is_Phi(n)) return n;
 
+	if (iro == iro_Deleted)
+		return n;
+
 	/* constant expression evaluation / constant folding */
 	if (get_opt_constant_folding()) {
 		/* neither constants nor Tuple values can be evaluated */

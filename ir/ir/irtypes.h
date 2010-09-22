@@ -130,6 +130,10 @@ typedef struct {
 	ir_graph *irg;              /**< The graph this block like node belongs to. */
 } irg_attr;
 
+typedef struct {
+	irg_attr    irg;
+} bad_attr;
+
 /** Block attributes */
 typedef struct {
 	/* General attributes */
@@ -303,6 +307,7 @@ typedef struct {
    some have more. Their name is 'irnodename_attr' */
 typedef union {
 	irg_attr       irg;           /**< For Blocks and Bad: its belonging irg */
+	bad_attr       bad;           /**< for Bads: irg reference */
 	block_attr     block;         /**< For Block: Fields needed to construct it */
 	cond_attr      cond;          /**< For Cond. */
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */

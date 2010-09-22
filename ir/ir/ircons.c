@@ -149,7 +149,7 @@ static ir_node *new_bd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
 	ir_node  *res;
 
-	assert(arg->op == op_Cond);
+	assert(is_Cond(arg));
 	arg->attr.cond.default_proj = max_proj;
 	res = new_rd_Proj(db, arg, mode_X, max_proj);
 	return res;
@@ -880,7 +880,7 @@ ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp)
 ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
 	ir_node *res;
-	assert(arg->op == op_Cond);
+	assert(is_Cond(arg));
 	arg->attr.cond.default_proj = max_proj;
 	res = new_d_Proj(db, arg, mode_X, max_proj);
 	return res;

@@ -941,11 +941,7 @@ found_front:
 		arch_set_irn_register(node, arch_get_irn_register(proj));
 
 		/* reroute all users of the proj to the moved node. */
-		edges_reroute(proj, node, irg);
-
-		/* and kill it */
-		set_Proj_pred(proj, new_Bad());
-		kill_node(proj);
+		exchange(proj, node);
 
 		bitset_set(moved, input);
 		n_moved++;

@@ -231,7 +231,7 @@ def main(argv):
 	# these nodes don't work correctly yet for some reasons...
 	niynodes = [ "ASM" ]
 	# these have custom im-/export code
-	customcode = [ "Start", "End", "Anchor", "SymConst", "Block" ]
+	customcode = [ "Start", "End", "Anchor", "SymConst", "Block", "Deleted" ]
 
 	real_nodes = []
 	for node in ir_spec.nodes:

@@ -161,7 +161,7 @@ static inline ir_node *_get_irn_n(const ir_node *node, int n)
 	nn = node->in[n + 1];
 	if (nn == NULL) {
 		/* only block and Anchor inputs are allowed to be NULL */
-		assert((node->op == op_Anchor || n == -1) && "NULL input of a node");
+		assert((is_Anchor(node) || n == -1) && "NULL input of a node");
 		return NULL;
 	}
 	if (nn->op != op_Id) return nn;
@@ -233,18 +233,28 @@ static inline void _set_irn_mode(ir_node *node, ir_mode *mode)
 	node->mode = mode;
 }
 
+static inline int ir_has_irg_ref(const ir_node *node)
+{
+	return is_Block(node) || is_Bad(node) || is_Anchor(node);
+}
+
 static inline ir_graph *_get_irn_irg(const ir_node *node)
 {
 	/*
-	 * Do not use get_nodes_Block() here, because this
+	 * Do not use get_nodes_block() here, because this
 	 * will check the pinned state.
-	 * However even a 'wrong' block is always in the proper
-	 * irg.
+	 * However even a 'wrong' block is always in the proper irg.
 	 */
 	if (! is_Block(node))
 		node = get_irn_n(node, -1);
-	/* note that get_Block_irg() can handle Bad nodes */
-	return get_Block_irg(node);
+	assert(ir_has_irg_ref(node));
+	return node->attr.irg.irg;
+}
+
+static inline ir_node *_get_nodes_block(const ir_node *node)
+{
+	assert(!is_Block(node));
+	return get_irn_n(node, -1);
 }
 
 /**
@@ -399,13 +409,13 @@ static inline ir_node  *_get_Block_cfgpred_block(const ir_node *node, int pos)
 
 static inline ir_visited_t _get_Block_block_visited(const ir_node *node)
 {
-	assert(node->op == op_Block);
+	assert(is_Block(node));
 	return node->attr.block.block_visited;
 }
 
 static inline void _set_Block_block_visited(ir_node *node, ir_visited_t visit)
 {
-	assert(node->op == op_Block);
+	assert(is_Block(node));
 	node->attr.block.block_visited = visit;
 }
 
@@ -443,7 +453,7 @@ static inline int _is_Block_dead(const ir_node *block)
 
 static inline ir_graph *_get_Block_irg(const ir_node *block)
 {
-	assert(is_Block(block) || is_Bad(block) || is_Anchor(block));
+	assert(is_Block(block));
 	return block->attr.irg.irg;
 }
 
@@ -616,6 +626,7 @@ void init_irnode(void);
 #define get_irn_mode(node)                    _get_irn_mode(node)
 #define set_irn_mode(node, mode)              _set_irn_mode(node, mode)
 #define get_irn_irg(node)                     _get_irn_irg(node)
+#define get_nodes_block(node)                 _get_nodes_block(node)
 #define get_irn_op(node)                      _get_irn_op(node)
 #define set_irn_op(node, op)                  _set_irn_op(node, op)
 #define get_irn_opcode(node)                  _get_irn_opcode(node)

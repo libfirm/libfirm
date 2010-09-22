@@ -24,6 +24,7 @@ typedef enum ir_opcode {
 	iro_Const,
 	iro_Conv,
 	iro_CopyB,
+	iro_Deleted,
 	iro_Div,
 	iro_DivMod,
 	iro_Dummy,
@@ -106,6 +107,7 @@ FIRM_API ir_op *op_Confirm;
 FIRM_API ir_op *op_Const;
 FIRM_API ir_op *op_Conv;
 FIRM_API ir_op *op_CopyB;
+FIRM_API ir_op *op_Deleted;
 FIRM_API ir_op *op_Div;
 FIRM_API ir_op *op_DivMod;
 FIRM_API ir_op *op_Dummy;
@@ -164,6 +166,7 @@ FIRM_API ir_op *get_op_Confirm(void);
 FIRM_API ir_op *get_op_Const(void);
 FIRM_API ir_op *get_op_Conv(void);
 FIRM_API ir_op *get_op_CopyB(void);
+FIRM_API ir_op *get_op_Deleted(void);
 FIRM_API ir_op *get_op_Div(void);
 FIRM_API ir_op *get_op_DivMod(void);
 FIRM_API ir_op *get_op_Dummy(void);

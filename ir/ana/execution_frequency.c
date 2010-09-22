@@ -161,9 +161,9 @@ static void my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func 
 
   pre(node, env);
 
-  if (node->op != op_Block) {
+  if (!is_Block(node)) {
     ir_node *pred;
-    if (node->op == op_Proj)
+    if (is_Proj(node))
       pred = get_irn_n(node, 0);
     else
       pred = get_irn_n(node, -1);
@@ -179,7 +179,7 @@ static void my_irg_walk_2_both(ir_node *node, irg_walk_func *pre, irg_walk_func 
     }
   }
 
-  if (node->op == op_End) {
+  if (is_End(node)) {
     for (i = get_irn_arity(node) - 1; i >= 0; --i) {
       ir_node *pred = get_irn_n(node, i);
       if ((pred->op == op_Block) && (pred->visited < current_ir_graph->visited))

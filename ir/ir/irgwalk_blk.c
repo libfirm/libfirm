@@ -285,7 +285,7 @@ static void collect_walk(ir_node *node, blk_collect_data_t *env)
 
 	mark_irn_visited(node);
 
-	if (node->op == op_Block) {
+	if (is_Block(node)) {
 		/* predecessors of a block are control flow nodes */
 		for (i = _get_walk_arity(env, node) - 1; i >= 0; --i) {
 			ir_node *pred = _get_walk_irn_n(env, node, i);

@@ -101,10 +101,17 @@ class Bad(Op):
 	pinned      = "yes"
 	knownBlock  = True
 	singleton   = True
-	attr_struct = "irg_attr"
+	attr_struct = "bad_attr"
 	init = '''
 	res->attr.irg.irg = irg;
 	'''
+
+class Deleted(Op):
+	mode        = "mode_Bad"
+	flags       = [ ]
+	pinned      = "yes"
+	knownBlock  = True
+	singleton   = True
 
 class Block(Op):
 	mode        = "mode_BB"

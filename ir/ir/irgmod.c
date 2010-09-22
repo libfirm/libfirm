@@ -85,7 +85,8 @@ void exchange(ir_node *old, ir_node *nw)
 		edges_reroute(old, nw, irg);
 		edges_reroute_kind(old, nw, EDGE_KIND_DEP, irg);
 		edges_node_deleted(old, irg);
-		old->op = op_Bad;
+		/* noone is allowed to reference this node anymore */
+		set_irn_op(old, op_Deleted);
 	} else {
 		/* Else, do it the old-fashioned way. */
 		ir_node *block;

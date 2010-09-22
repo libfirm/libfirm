@@ -508,11 +508,9 @@ int get_irn_pred_pos(ir_node *node, ir_node *arg)
 
 /** manipulate fields of individual nodes **/
 
-/* this works for all except Block */
-ir_node *get_nodes_block(const ir_node *node)
+ir_node *(get_nodes_block)(const ir_node *node)
 {
-	assert(node->op != op_Block);
-	return get_irn_n(node, -1);
+	return _get_nodes_block(node);
 }
 
 void set_nodes_block(ir_node *node, ir_node *block)
@@ -1302,7 +1300,7 @@ int is_Phi0(const ir_node *n)
 
 ir_node **get_Phi_preds_arr(ir_node *node)
 {
-  assert(node->op == op_Phi);
+  assert(is_Phi(node));
   return (ir_node **)&(get_irn_in(node)[1]);
 }
 
@@ -1311,13 +1309,6 @@ int get_Phi_n_preds(const ir_node *node)
 	assert(is_Phi(node) || is_Phi0(node));
 	return (get_irn_arity(node));
 }
-
-/*
-void set_Phi_n_preds(ir_node *node, int n_preds)
-{
-	assert(node->op == op_Phi);
-}
-*/
 
 ir_node *get_Phi_pred(const ir_node *node, int pos)
 {
@@ -1591,25 +1582,19 @@ skip_Proj_const(const ir_node *node)
 ir_node *skip_Tuple(ir_node *node)
 {
   ir_node *pred;
-  ir_op   *op;
 
 restart:
 	if (is_Proj(node)) {
 	    pred = get_Proj_pred(node);
-	    op   = get_irn_op(pred);
 
-		/*
-		 * Looks strange but calls get_irn_op() only once
-		 * in most often cases.
-		 */
-		if (op == op_Proj) { /* nested Tuple ? */
+		if (is_Proj(pred)) { /* nested Tuple ? */
 		    pred = skip_Tuple(pred);
 
 			if (is_Tuple(pred)) {
 				node = get_Tuple_pred(pred, get_Proj_proj(node));
 				goto restart;
 			}
-		} else if (op == op_Tuple) {
+		} else if (is_Tuple(pred)) {
 			node = get_Tuple_pred(pred, get_Proj_proj(node));
 			goto restart;
 		}
@@ -1691,7 +1676,7 @@ ir_node *skip_Id(ir_node *node)
 
 		node->in[0+1] = node;   /* turn us into a self referencing Id:  shorten Id cycles. */
 		res = skip_Id(rem_pred);
-		if (res->op == op_Id) /* self-loop */ return node;
+		if (is_Id(res)) /* self-loop */ return node;
 
 		node->in[0+1] = res;    /* Turn Id chain into Ids all referencing the chain end. */
 		return res;

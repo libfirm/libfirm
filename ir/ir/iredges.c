@@ -622,6 +622,9 @@ static void visitor(ir_node *irn, void *data)
 {
 	visitor_info_t *info = data;
 
+	if (is_Deleted(irn))
+		return;
+
 	if (!irn_visited_else_mark(irn)) {
 		info->visit(irn, info->data);
 	}
