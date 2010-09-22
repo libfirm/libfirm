@@ -464,8 +464,6 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	dump(DUMP_INITIAL, irg, "prepared");
 }
 
-#define BE_TIMER_ONLY(code)   do { if (be_timing) { code; } } while (0)
-
 int be_timing;
 
 static const char *get_timer_name(be_timer_id_t id)
