@@ -1492,16 +1492,6 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)
 		print_edge_vcgattr(F, n, i);
 		fprintf(F, "}\n");
 	}
-
-	if ((flags & ir_dump_flag_macroblock_edges) && is_Block(n)) {
-		ir_node *mb = get_Block_MacroBlock(n);
-		fprintf(F, "edge: {sourcename: \"");
-		PRINT_NODEID(n);
-		fprintf(F, "\" targetname: \"");
-		PRINT_NODEID(mb);
-		fprintf(F, "\" label: \"mb\" " MACROBLOCK_EDGE_ATTR);
-		fprintf(F, "}\n");
-	}
 }
 
 /**

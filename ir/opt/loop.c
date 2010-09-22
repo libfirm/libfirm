@@ -650,8 +650,6 @@ static ir_node *copy_node(ir_node *node)
 	}
 
 	if (is_Block(cp)) {
-		/* We may not keep the old macroblock. */
-		set_Block_MacroBlock(cp, cp);
 		set_Block_mark(cp, 0);
 	}
 

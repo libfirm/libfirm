@@ -207,12 +207,6 @@ static void remove_empty_block(ir_node *block)
 
 		if (node == jump)
 			continue;
-		if (is_Block(node)) {
-			/* a Block->Block edge: This should be the MacroBlock
-			   edge, ignore it. */
-			assert(get_Block_MacroBlock(node) == block && "Wrong Block->Block edge");
-			continue;
-		}
 		/* we simply kill Pins, because there are some strange interactions
 		 * between jump threading, which produce PhiMs with Pins, we simply
 		 * kill the pins here, everything is scheduled anyway */

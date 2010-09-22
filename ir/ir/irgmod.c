@@ -119,8 +119,7 @@ void exchange(ir_node *old, ir_node *nw)
 
 /**
  * Walker: links all Phi nodes to their Blocks lists,
- *         all Proj nodes to there predecessors and all
- *         partBlocks to there MacroBlock header.
+ *         all Proj nodes to there predecessors.
  */
 static void collect_phiprojs_walker(ir_node *n, void *env)
 {
@@ -138,13 +137,6 @@ static void collect_phiprojs_walker(ir_node *n, void *env)
 
 		set_irn_link(n, get_irn_link(pred));
 		set_irn_link(pred, n);
-	} else if (is_Block(n)) {
-		ir_node *mbh = get_Block_MacroBlock(n);
-
-		if (mbh != n) {
-			set_irn_link(n, get_irn_link(mbh));
-			set_irn_link(mbh, n);
-		}
 	}
 }
 
@@ -194,8 +186,8 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 void part_block(ir_node *node)
 {
-	ir_node *new_block, *old_block, *mbh;
-	ir_node *phi, *jmp, *next, *block;
+	ir_node *new_block, *old_block;
+	ir_node *phi, *jmp;
 	ir_graph *rem = current_ir_graph;
 
 	/* Turn off optimizations so that blocks are not merged again. */
@@ -206,17 +198,8 @@ void part_block(ir_node *node)
 
 	/* Transform the control flow */
 	old_block = get_nodes_block(node);
-	mbh       = get_Block_MacroBlock(old_block);
 	new_block = new_Block(get_Block_n_cfgpreds(old_block),
 	                      get_Block_cfgpred_arr(old_block));
-
-	if (mbh != old_block) {
-		/* we splitting a partBlock */
-		set_Block_MacroBlock(new_block, mbh);
-	} else {
-		/* we are splitting a header: this creates a new header */
-		set_Block_MacroBlock(new_block, new_block);
-	}
 
 	/* create a jump from new_block to old_block, which is now the lower one */
 	jmp = new_r_Jmp(new_block);
@@ -234,70 +217,10 @@ void part_block(ir_node *node)
 		phi = get_Phi_next(phi);
 	}
 
-	/* rewire partBlocks: This is necessary, because old_block is a new MacroBlock
-	   header now */
-	if (mbh != old_block) {
-		ir_node *list = NULL;
-
-		/* move blocks from mbh to old_block if old_block dominates them */
-		block = get_irn_link(mbh);
-
-		/* mbh's list will be rebuild */
-		set_irn_link(mbh, NULL);
-		/* old_block is a new mbh */
-		set_Block_MacroBlock(old_block, old_block);
-
-		/* note that we must splice the list of partBlock here */
-		for (; block != NULL; block = next) {
-			ir_node *curr = block;
-			assert(is_Block(curr));
-
-			next = get_irn_link(block);
-
-			if (block == old_block) {
-				/* this effectively removed old_block from mbh's list */
-				continue;
-			}
-
-			assert(get_Block_MacroBlock(curr) == mbh);
-
-			for (;;) {
-				if (curr == old_block) {
-					/* old_block dominates the block, so old_block will be
-					   the new macro block header */
-					set_Block_MacroBlock(block, old_block);
-					set_irn_link(block, list);
-					list = block;
-					break;
-				}
-				if (curr == mbh) {
-					/* leave it in the mbh */
-					set_irn_link(block, get_irn_link(mbh));
-					set_irn_link(mbh, block);
-					break;
-				}
-
-				assert(get_Block_n_cfgpreds(curr) == 1);
-				curr = get_Block_cfgpred_block(curr, 0);
-			}
-		}
-		/* beware: do NOT directly manipulate old_block's list, as old_block is
-		   in mbh's list and this would destroy the list! */
-		set_irn_link(old_block, list);
-
-		/* finally add new_block to mbh's list */
-		set_irn_link(new_block, get_irn_link(mbh));
-		set_irn_link(mbh, new_block);
-	} else {
-		/* old_block is the mbh, as well as new_block */
-		set_Block_MacroBlock(new_block, new_block);
-	}
-
 	set_optimize(rem_opt);
 	current_ir_graph = rem;
 }
 
-/* kill a node by setting its predecessors to Bad and finally exchange the node by Bad itself. */
 void kill_node(ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);

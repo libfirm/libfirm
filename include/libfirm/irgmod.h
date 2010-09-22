@@ -55,7 +55,6 @@ FIRM_API void turn_into_tuple(ir_node *node, int arity);
   * Further it collects all Proj nodes in a list of the node producing
   * the tuple. In case of nested tuples the Projs are collected in the
   * node producing the outermost Tuple.
-  * All partBlocks are linked to its macroblock header.
   * All other link fields are cleared afterwards.
   */
 FIRM_API void collect_phiprojs(ir_graph *irg);
@@ -67,10 +66,11 @@ FIRM_API void collect_phiprojs(ir_graph *irg);
  * (old_block) of node.  Moves node and its predecessors from old_block to
  * new_block.  Moves all Projs that depend on moved nodes and are in old_block
  * to new_block. Moves all Phi nodes from old_block to new_block.  To achieve
- * this the routine assumes that all Phi nodes are in the Phi list (see get_Block_phis())
- * of old_block.  Further it assumes that all Proj nodes are accessible by the link field
- * of the nodes producing the Tuple and all partBlocks are linked to its MacroBlock header.
- * This can be established by collect_phiprojs().  part_block() conserves this property.
+ * this the routine assumes that all Phi nodes are in the Phi list (see
+ * get_Block_phis()) of old_block.
+ * Further it assumes that all Proj nodes are accessible by the link field of
+ * the nodes producing the Tuple. This can be established by collect_phiprojs().
+ * part_block() conserves this property.
  * Adds a Jmp node to new_block that jumps to old_block.
  *
  * @param node   The node were to break the block

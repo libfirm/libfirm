@@ -374,21 +374,12 @@ static ir_node *gen_Block(ir_node *node)
 {
 	ir_graph *irg             = current_ir_graph;
 	dbg_info *dbgi            = get_irn_dbg_info(node);
-	ir_node  *macroblock      = get_Block_MacroBlock(node);
 	ir_node  *block;
 
 	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
 	                    get_irn_arity(node), get_irn_in(node) + 1);
 	copy_node_attr(irg, node, block);
 	block->node_nr = node->node_nr;
-
-	if (node == macroblock) {
-		/* this node is a macroblock header */
-		set_Block_MacroBlock(block, block);
-	} else {
-		macroblock = be_transform_node(macroblock);
-		set_Block_MacroBlock(block, macroblock);
-	}
 
 	/* put the preds in the worklist */
 	be_enqueue_preds(node);

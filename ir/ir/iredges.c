@@ -472,17 +472,13 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
 	}
 
 	if (edges_activated_kind(irg, EDGE_KIND_BLOCK) && is_Block(src)) {
-		if (pos == -1) {
-			/* a MacroBlock edge: ignore it here */
-		} else {
-			ir_node *bl_old = old_tgt ? get_nodes_block(skip_Proj(old_tgt)) : NULL;
-			ir_node *bl_tgt = NULL;
+		ir_node *bl_old = old_tgt ? get_nodes_block(skip_Proj(old_tgt)) : NULL;
+		ir_node *bl_tgt = NULL;
 
-			if (tgt)
-				bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(skip_Proj(tgt));
+		if (tgt)
+			bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(skip_Proj(tgt));
 
-			edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
-		}
+		edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
 	}
 }
 

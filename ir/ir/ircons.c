@@ -933,19 +933,14 @@ ir_node *new_d_immBlock(dbg_info *db)
 	/* creates a new dynamic in-array as length of in is -1 */
 	res = new_ir_node(db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
 
-	/* macroblock head */
-	res->in[0] = res;
-
 	res->attr.block.is_matured  = 0;
 	res->attr.block.is_dead     = 0;
-	res->attr.block.is_mb_head  = 1;
 	res->attr.block.irg.irg     = current_ir_graph;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
 	res->attr.block.region      = NULL;
-	res->attr.block.mb_depth    = 0;
 	res->attr.block.entity      = NULL;
 
 	set_Block_block_visited(res, 0);
@@ -966,27 +961,6 @@ ir_node *new_immBlock(void)
 	return new_d_immBlock(NULL);
 }  /* new_immBlock */
 
-/* immature PartBlock with its predecessors */
-ir_node *new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp)
-{
-	ir_node *res = new_d_immBlock(db);
-	ir_node *blk = get_nodes_block(pred_jmp);
-
-	res->in[0] = blk->in[0];
-	assert(res->in[0] != NULL);
-	add_immBlock_pred(res, pred_jmp);
-
-	res->attr.block.is_mb_head = 0;
-	res->attr.block.mb_depth = blk->attr.block.mb_depth + 1;
-
-	return res;
-}  /* new_d_immPartBlock */
-
-ir_node *new_immPartBlock(ir_node *pred_jmp)
-{
-	return new_d_immPartBlock(NULL, pred_jmp);
-}  /* new_immPartBlock */
-
 /* add an edge to a jmp/control flow node */
 void add_immBlock_pred(ir_node *block, ir_node *jmp)
 {
@@ -994,7 +968,6 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 
 	assert(is_Block(block) && "Error: Must be a Block");
 	assert(!block->attr.block.is_matured && "Error: Block already matured!\n");
-	assert(block->attr.block.is_mb_head && "Error: Cannot add a predecessor to a PartBlock");
 	assert(is_ir_node(jmp));
 
 	ARR_APP1(ir_node *, block->in, jmp);

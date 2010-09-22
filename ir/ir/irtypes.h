@@ -142,7 +142,6 @@ typedef struct {
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
 	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
-	unsigned is_mb_head:1;      /**< Set if this block is a macroblock head. */
 	unsigned marked:1;          /**< Can be set/unset to temporary mark a block. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */
@@ -159,7 +158,6 @@ typedef struct {
 	unsigned *cg_backedge;      /**< Raw Bitfield n set to true if pred n is interprocedural backedge. */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
-	unsigned mb_depth;          /**< The macroblock depth: A distance from the macroblock header */
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 

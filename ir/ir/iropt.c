@@ -1670,14 +1670,13 @@ static ir_node *equivalent_node_Proj_Bound(ir_node *proj)
 		ret_tuple = 1;
 	else if (is_Bound(pred)) {
 		/*
-		 * idx was Bounds checked in the same MacroBlock previously,
-		 * it is still valid if lower <= pred_lower && pred_upper <= upper.
+		 * idx was Bounds checked previously, it is still valid if
+		 * lower <= pred_lower && pred_upper <= upper.
 		 */
 		ir_node *lower = get_Bound_lower(bound);
 		ir_node *upper = get_Bound_upper(bound);
 		if (get_Bound_lower(pred) == lower &&
-			get_Bound_upper(pred) == upper &&
-			get_irn_MacroBlock(bound) == get_irn_MacroBlock(pred)) {
+			get_Bound_upper(pred) == upper) {
 			/*
 			 * One could expect that we simply return the previous
 			 * Bound here. However, this would be wrong, as we could
@@ -4830,14 +4829,13 @@ static ir_node *transform_node_Proj_Bound(ir_node *proj)
 		ret_tuple = 1;
 	else if (is_Bound(pred)) {
 		/*
-		* idx was Bounds checked in the same MacroBlock previously,
-		* it is still valid if lower <= pred_lower && pred_upper <= upper.
+		* idx was Bounds checked previously, it is still valid if
+		* lower <= pred_lower && pred_upper <= upper.
 		*/
 		ir_node *lower = get_Bound_lower(bound);
 		ir_node *upper = get_Bound_upper(bound);
 		if (get_Bound_lower(pred) == lower &&
-			get_Bound_upper(pred) == upper &&
-			get_irn_MacroBlock(bound) == get_irn_MacroBlock(pred)) {
+			get_Bound_upper(pred) == upper) {
 			/*
 			 * One could expect that we simply return the previous
 			 * Bound here. However, this would be wrong, as we could
@@ -6432,13 +6430,17 @@ int identities_cmp(const void *elt, const void *key)
 	if (irn_arity_a != get_irn_arity(b))
 		return 1;
 
+	/* blocks are never the same */
+	if (is_Block(a))
+		return 1;
+
 	if (get_irn_pinned(a) == op_pin_state_pinned) {
 		/* for pinned nodes, the block inputs must be equal */
 		if (get_irn_n(a, -1) != get_irn_n(b, -1))
 			return 1;
 	} else if (! get_opt_global_cse()) {
-		/* for block-local CSE both nodes must be in the same MacroBlock */
-		if (get_irn_MacroBlock(a) != get_irn_MacroBlock(b))
+		/* for block-local CSE both nodes must be in the same Block */
+		if (get_nodes_block(a) != get_nodes_block(b))
 			return 1;
 	}
 
@@ -6507,54 +6509,6 @@ void ir_normalize_node(ir_node *n)
 	}
 }  /* ir_normalize_node */
 
-/**
- * Update the nodes after a match in the value table. If both nodes have
- * the same MacroBlock but different Blocks, we must ensure that the node
- * with the dominating Block (the node that is near to the MacroBlock header
- * is stored in the table.
- * Because a MacroBlock has only one "non-exception" flow, we don't need
- * dominance info here: We known, that one block must dominate the other and
- * following the only block input will allow to find it.
- */
-static void update_known_irn(ir_node *known_irn, const ir_node *new_ir_node)
-{
-	ir_node *known_blk, *new_block, *block, *mbh;
-
-	if (get_opt_global_cse()) {
-		/* Block inputs are meaning less */
-		return;
-	}
-	known_blk = get_irn_n(known_irn, -1);
-	new_block = get_irn_n(new_ir_node, -1);
-	if (known_blk == new_block) {
-		/* already in the same block */
-		return;
-	}
-	/*
-	 * We expect the typical case when we built the graph. In that case, the
-	 * known_irn is already the upper one, so checking this should be faster.
-	 */
-	block = new_block;
-	mbh   = get_Block_MacroBlock(new_block);
-	for (;;) {
-		if (block == known_blk) {
-			/* ok, we have found it: known_block dominates new_block as expected */
-			return;
-		}
-		if (block == mbh) {
-			/*
-			 * We have reached the MacroBlock header NOT founding
-			 * the known_block. new_block must dominate known_block.
-			 * Update known_irn.
-			 */
-			set_irn_n(known_irn, -1, new_block);
-			return;
-		}
-		assert(get_Block_n_cfgpreds(block) == 1);
-		block = get_Block_cfgpred_block(block, 0);
-	}
-}  /* update_value_table */
-
 /*
  * Return the canonical node computing the same value as n.
  * Looks up the node in a hash table, enters it in the table
@@ -6579,8 +6533,6 @@ ir_node *identify_remember(ir_node *n)
 	nn = pset_insert(value_table, n, ir_node_hash(n));
 
 	if (nn != n) {
-		update_known_irn(nn, n);
-
 		/* n is reachable again */
 		edges_node_revival(nn, get_irn_irg(nn));
 	}
@@ -6589,9 +6541,9 @@ ir_node *identify_remember(ir_node *n)
 }  /* identify_remember */
 
 /**
- * During construction we set the op_pin_state_pinned flag in the graph right when the
- * optimization is performed.  The flag turning on procedure global cse could
- * be changed between two allocations.  This way we are safe.
+ * During construction we set the op_pin_state_pinned flag in the graph right
+ * when the optimization is performed.  The flag turning on procedure global
+ * cse could be changed between two allocations.  This way we are safe.
  *
  * @param n            The node to lookup
  */
@@ -6600,7 +6552,7 @@ static inline ir_node *identify_cons(ir_node *n)
 	ir_node *old = n;
 
 	n = identify_remember(n);
-	if (n != old && get_irn_MacroBlock(old) != get_irn_MacroBlock(n)) {
+	if (n != old && get_nodes_block(old) != get_nodes_block(n)) {
 		ir_graph *irg = get_irn_irg(n);
 		set_irg_pinned(irg, op_pin_state_floats);
 	}

@@ -457,7 +457,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 	case iro_Add:
 		/* try additive */
 		a = get_Add_left(irn);
-		if (get_irn_MacroBlock(a) != get_irn_MacroBlock(call)) {
+		if (get_nodes_block(a) != get_nodes_block(call)) {
 			/* we are outside, ignore */
 			va = TR_UNKNOWN;
 		} else {
@@ -466,7 +466,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 				return TR_BAD;
 		}
 		b = get_Add_right(irn);
-		if (get_irn_MacroBlock(b) != get_irn_MacroBlock(call)) {
+		if (get_nodes_block(b) != get_nodes_block(call)) {
 			/* we are outside, ignore */
 			vb = TR_UNKNOWN;
 		} else {
@@ -493,7 +493,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 	case iro_Sub:
 		/* try additive, but return value must be left */
 		a = get_Sub_left(irn);
-		if (get_irn_MacroBlock(a) != get_irn_MacroBlock(call)) {
+		if (get_nodes_block(a) != get_nodes_block(call)) {
 			/* we are outside, ignore */
 			va = TR_UNKNOWN;
 		} else {
@@ -502,7 +502,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 				return TR_BAD;
 		}
 		b = get_Sub_right(irn);
-		if (get_irn_MacroBlock(b) != get_irn_MacroBlock(call)) {
+		if (get_nodes_block(b) != get_nodes_block(call)) {
 			/* we are outside, ignore */
 			vb = TR_UNKNOWN;
 		} else {
@@ -519,7 +519,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 	case iro_Mul:
 		/* try multiplicative */
 		a = get_Mul_left(irn);
-		if (get_irn_MacroBlock(a) != get_irn_MacroBlock(call)) {
+		if (get_nodes_block(a) != get_nodes_block(call)) {
 			/* we are outside, ignore */
 			va = TR_UNKNOWN;
 		} else {
@@ -528,7 +528,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 				return TR_BAD;
 		}
 		b = get_Mul_right(irn);
-		if (get_irn_MacroBlock(b) != get_irn_MacroBlock(call)) {
+		if (get_nodes_block(b) != get_nodes_block(call)) {
 			/* we are outside, ignore */
 			vb = TR_UNKNOWN;
 		} else {

@@ -941,19 +941,19 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 		/*
 		 * a Load immediately after a Store -- a read after write.
 		 * We may remove the Load, if both Load & Store does not have an
-		 * exception handler OR they are in the same MacroBlock. In the latter
+		 * exception handler OR they are in the same Block. In the latter
 		 * case the Load cannot throw an exception when the previous Store was
 		 * quiet.
 		 *
 		 * Why we need to check for Store Exception? If the Store cannot
 		 * be executed (ROM) the exception handler might simply jump into
-		 * the load MacroBlock :-(
+		 * the load Block :-(
 		 * We could make it a little bit better if we would know that the
 		 * exception handler of the Store jumps directly to the end...
 		 */
 		if (is_Store(pred) && ((pred_info->projs[pn_Store_X_except] == NULL
 				&& info->projs[pn_Load_X_except] == NULL)
-				|| get_nodes_MacroBlock(load) == get_nodes_MacroBlock(pred)))
+				|| get_nodes_block(load) == get_nodes_block(pred)))
 		{
 			long    load_offset;
 			ir_node *base_ptr = get_base_and_offset(ptr, &load_offset);
@@ -965,14 +965,17 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 		           can_use_stored_value(get_Load_mode(pred), load_mode)) {
 			/*
 			 * a Load after a Load -- a read after read.
-			 * We may remove the second Load, if it does not have an exception handler
-			 * OR they are in the same MacroBlock. In the later case the Load cannot
-			 * throw an exception when the previous Load was quiet.
+			 * We may remove the second Load, if it does not have an exception
+			 * handler OR they are in the same Block. In the later case
+			 * the Load cannot throw an exception when the previous Load was
+			 * quiet.
 			 *
-			 * Here, there is no need to check if the previous Load has an exception
-			 * hander because they would have exact the same exception...
+			 * Here, there is no need to check if the previous Load has an
+			 * exception hander because they would have exact the same
+			 * exception...
 			 */
-			if (info->projs[pn_Load_X_except] == NULL || get_nodes_MacroBlock(load) == get_nodes_MacroBlock(pred)) {
+			if (info->projs[pn_Load_X_except] == NULL
+					|| get_nodes_block(load) == get_nodes_block(pred)) {
 				ir_node *value;
 
 				DBG_OPT_RAR(load, pred);
@@ -1252,7 +1255,6 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 	ir_node *value = get_Store_value(store);
 	ir_mode *mode  = get_irn_mode(value);
 	ir_node *block = get_nodes_block(store);
-	ir_node *mblk  = get_Block_MacroBlock(block);
 
 	for (pred = curr; pred != store;) {
 		ldst_info_t *pred_info = get_irn_link(pred);
@@ -1267,9 +1269,9 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 		 * killed ...
 		 */
 		if (is_Store(pred) && get_Store_ptr(pred) == ptr &&
-            get_nodes_MacroBlock(pred) == mblk) {
+            get_nodes_block(pred) == block) {
 			/*
-			 * a Store after a Store in the same MacroBlock -- a write after write.
+			 * a Store after a Store in the same Block -- a write after write.
 			 */
 
 			/*

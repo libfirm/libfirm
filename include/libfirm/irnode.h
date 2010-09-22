@@ -251,19 +251,6 @@ FIRM_API ir_node *get_nodes_block (const ir_node *node);
 /** Sets the Block of a node. */
 FIRM_API void set_nodes_block (ir_node *node, ir_node *block);
 
-/**
- * Return the MacroBlock the node belongs to.  This is only
- * possible for pinned nodes or if the graph is in pinned state.
- * Otherwise the MacroBlock may be incorrect.  This condition is
- * now checked by an assertion.
- *
- * This works for all except Block.  It can return Blocks or the Bad node.
- *
- * To express the difference to access routines that work for all
- * nodes we use infix "nodes" and do not name this function
- * get_irn_MacroBlock(). */
-FIRM_API ir_node *get_nodes_MacroBlock(const ir_node *node);
-
 /** Test whether arbitrary node is frame pointer.
  *
  * Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
@@ -336,12 +323,6 @@ FIRM_API int Block_block_visited(const ir_node *node);
 FIRM_API ir_extblk *get_Block_extbb(const ir_node *block);
 /** Sets the extended basic block a block belongs to. */
 FIRM_API void set_Block_extbb(ir_node *block, ir_extblk *extblk);
-/** Get the Macro Block header of a (sub-) block. */
-FIRM_API ir_node *get_Block_MacroBlock(const ir_node *block);
-/** Set the Macro Block header of a (sub-) block. */
-FIRM_API void set_Block_MacroBlock(ir_node *block, ir_node *mbh);
-/** Get the Macro Block header of a node. */
-FIRM_API ir_node *get_irn_MacroBlock(const ir_node *n);
 /** Returns the ir_graph this Block belongs to. */
 FIRM_API ir_graph *get_Block_irg(const ir_node *block);
 /** Returns non-zero if the block has an entity assigned */

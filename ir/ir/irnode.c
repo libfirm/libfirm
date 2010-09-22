@@ -519,13 +519,6 @@ void set_nodes_block(ir_node *node, ir_node *block)
 	set_irn_n(node, -1, block);
 }
 
-/* this works for all except Block */
-ir_node *get_nodes_MacroBlock(const ir_node *node)
-{
-	assert(node->op != op_Block);
-	return get_Block_MacroBlock(get_irn_n(node, -1));
-}
-
 /* Test whether arbitrary node is frame pointer, i.e. Proj(pn_Start_P_frame_base)
  * from Start.  If so returns frame type, else Null. */
 ir_type *is_frame_pointer(const ir_node *n)
@@ -646,39 +639,6 @@ void set_Block_extbb(ir_node *block, ir_extblk *extblk)
 	assert(is_Block(block));
 	assert(extblk == NULL || is_ir_extbb(extblk));
 	block->attr.block.extblk = extblk;
-}
-
-/* Returns the macro block header of a block.*/
-ir_node *get_Block_MacroBlock(const ir_node *block)
-{
-	ir_node *mbh;
-	assert(is_Block(block));
-	mbh = get_irn_n(block, -1);
-	/* once macro block header is respected by all optimizations,
-	   this assert can be removed */
-	assert(mbh != NULL);
-	return mbh;
-}
-
-/* Sets the macro block header of a block. */
-void set_Block_MacroBlock(ir_node *block, ir_node *mbh)
-{
-	assert(is_Block(block));
-	mbh = skip_Id(mbh);
-	assert(is_Block(mbh));
-	set_irn_n(block, -1, mbh);
-}
-
-/* returns the macro block header of a node. */
-ir_node *get_irn_MacroBlock(const ir_node *n)
-{
-	if (! is_Block(n)) {
-		n = get_nodes_block(n);
-		/* if the Block is Bad, do NOT try to get it's MB, it will fail. */
-		if (is_Bad(n))
-			return (ir_node *)n;
-	}
-	return get_Block_MacroBlock(n);
 }
 
 /* returns the graph of a Block. */

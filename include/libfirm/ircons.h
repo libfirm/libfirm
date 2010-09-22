@@ -4218,20 +4218,6 @@ FIRM_API ir_node *new_Dummy(ir_mode *mode);
 FIRM_API ir_node *new_d_immBlock(dbg_info *db);
 FIRM_API ir_node *new_immBlock(void);
 
-/** Create an immature PartBlock.
- *
- * An immature block has only one Block or PartBlock predecessor.
- * A PartBlock forms together with one BLock and possibly other
- * PartBlocks a MacroBlock.
- *
- * Adds the PartBlock to the graph in current_ir_graph. Does set
- * current_block.  Can be used with automatic Phi node construction.
- * This constructor can only be used if the graph is in
- * state_building.
- */
-FIRM_API ir_node *new_d_immPartBlock(dbg_info *db, ir_node *pred_jmp);
-FIRM_API ir_node *new_immPartBlock(ir_node *pred_jmp);
-
 /** Add a control flow edge to an immature block. */
 FIRM_API void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
 

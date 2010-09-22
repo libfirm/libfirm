@@ -125,17 +125,12 @@ class Block(Op):
 	java_noconstr = True
 
 	init = '''
-	/* macroblock header */
-	res->in[0] = res;
-
 	res->attr.block.is_dead     = 0;
-	res->attr.block.is_mb_head  = 1;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = new_backedge_arr(irg->obst, arity);
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
-	res->attr.block.mb_depth    = 0;
 	res->attr.block.entity      = NULL;
 
 	set_Block_matured(res, 1);

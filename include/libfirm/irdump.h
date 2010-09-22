@@ -333,10 +333,8 @@ typedef enum {
 	ir_dump_flag_node_addresses        = 1U << 14,
 	/** dump all anchor nodes, even the unused ones */
 	ir_dump_flag_all_anchors           = 1U << 15,
-	/** dumps macroblock edges from every block to its macroblock */
-	ir_dump_flag_macroblock_edges      = 1U << 16,
 	/** dumps marked blocks with an asterisk in the label */
-	ir_dump_flag_show_marks            = 1U << 17,
+	ir_dump_flag_show_marks            = 1U << 16,
 
 	/** turns of dumping of constant entity values in typegraphs */
 	ir_dump_flag_no_entity_values      = 1U << 20,

@@ -133,7 +133,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	case iro_Block: {
 		if (has_Block_entity(n))
 			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
-		ir_fprintf(F, "  macro Block: %+F\n", get_Block_MacroBlock(n));
 		fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
 		if (get_irg_dom_state(get_irn_irg(n)) != dom_none) {

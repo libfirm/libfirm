@@ -439,11 +439,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		if (code == iro_End) {
 			/* Skip the end node because of keep-alive edges. */
 			continue;
-		} else if (code == iro_Block) {
-			/* A Block-Block edge. This should be the MacroBlock
-			 * edge, ignore it. */
-			assert(get_Block_MacroBlock(irn) == block && "Block-Block edge found");
-			continue;
 		}
 
 		users = get_irn_n_edges(irn);

@@ -107,12 +107,9 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 	copy_node_attr(irg, n, nn);
 	set_irn_link(n, nn);
 
-	/* fix the irg for blocks */
-	if (is_Block(nn)) {
+	/* fix the irg for nodes containing a reference to it */
+	if (ir_has_irg_ref(nn)) {
 		nn->attr.block.irg.irg = irg;
-
-		/* we cannot allow blocks WITHOUT macroblock input */
-		set_Block_MacroBlock(nn, get_Block_MacroBlock(n));
 	}
 }
 
@@ -144,9 +141,6 @@ ir_node *irn_copy_into_irg(const ir_node *node, ir_graph *irg)
 
 	/* copy the attributes */
 	copy_node_attr(irg, node, res);
-	if (op == op_Block) {
-		set_Block_MacroBlock(res, get_Block_MacroBlock(node));
-	}
 
 	/* duplicate dependency edges */
 	n_deps = get_irn_deps(node);
@@ -176,15 +170,7 @@ void irn_rewire_inputs(ir_node *node)
 
 	new_node = get_new_node(node);
 
-	if (is_Block(node)) {
-		/* copy the macro block header */
-		ir_node *mbh = get_Block_MacroBlock(node);
-
-		/* get the macro block header */
-		ir_node *nmbh = get_new_node(mbh);
-		assert(nmbh != NULL);
-		set_Block_MacroBlock(new_node, nmbh);
-	} else {
+	if (!is_Block(node)) {
 		ir_node *block     = get_nodes_block(node);
 		ir_node *new_block = get_new_node(block);
 		set_nodes_block(new_node, new_block);
