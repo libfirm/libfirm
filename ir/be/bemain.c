@@ -77,10 +77,6 @@
 
 #define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
 
-#ifdef WITH_ILP
-#include "beilpsched.h"
-#endif /* WITH_ILP */
-
 /* options visible for anyone */
 static be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
@@ -91,7 +87,6 @@ static be_options_t be_options = {
 	0,                                 /* create PIC code */
 	0,                                 /* create gprof compatible profiling code */
 	BE_VERIFY_WARN,                    /* verification level: warn */
-	BE_SCHED_LIST,                     /* scheduler: list scheduler */
 	"linux",                           /* target OS name */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex",                           /* ilp solver */
@@ -127,25 +122,12 @@ static const lc_opt_enum_int_items_t verify_items[] = {
 	{ NULL,     0 }
 };
 
-/* scheduling options. */
-static const lc_opt_enum_int_items_t sched_items[] = {
-	{ "list", BE_SCHED_LIST },
-#ifdef WITH_ILP
-	{ "ilp",  BE_SCHED_ILP  },
-#endif /* WITH_ILP */
-	{ NULL,   0 }
-};
-
 static lc_opt_enum_mask_var_t dump_var = {
 	&be_options.dump_flags, dump_items
 };
 
 static lc_opt_enum_int_var_t verify_var = {
 	&be_options.verify_option, verify_items
-};
-
-static lc_opt_enum_int_var_t sched_var = {
-	&be_options.scheduler, sched_items
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
@@ -158,7 +140,6 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
-	LC_OPT_ENT_ENUM_PTR ("sched",      "select a scheduler",                                  &sched_var),
 	LC_OPT_ENT_STR      ("os",         "specify target operating system",                     &be_options.target_os, sizeof(be_options.target_os)),
 #ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
@@ -671,18 +652,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* schedule the irg */
 		be_timer_push(T_SCHED);
-		switch (be_options.scheduler) {
-			default:
-				fprintf(stderr, "Warning: invalid scheduler (%d) selected, falling back to list scheduler.\n", be_options.scheduler);
-			case BE_SCHED_LIST:
-				list_sched(irg);
-				break;
-#ifdef WITH_ILP
-			case BE_SCHED_ILP:
-				be_ilp_sched(irg);
-				break;
-#endif /* WITH_ILP */
-		};
+		list_sched(irg);
 		be_timer_pop(T_SCHED);
 
 		dump(DUMP_SCHED, irg, "sched");

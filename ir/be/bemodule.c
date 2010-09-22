@@ -59,7 +59,6 @@ void be_init_arch_amd64(void);
 void be_init_arch_sta(void);
 void be_init_arch_sparc(void);
 void be_init_arch_TEMPLATE(void);
-void be_init_ilpsched(void);
 void be_init_copyilp(void);
 void be_init_peephole(void);
 void be_init_ra(void);
@@ -134,7 +133,6 @@ void be_init_modules(void)
 	be_init_arch_TEMPLATE();
 
 #ifdef WITH_ILP
-	be_init_ilpsched();
 	be_init_copyilp();
 #endif /* WITH_ILP */
 

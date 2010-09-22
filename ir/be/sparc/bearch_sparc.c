@@ -50,7 +50,6 @@
 #include "../besched.h"
 #include "be.h"
 #include "../bemachine.h"
-#include "../beilpsched.h"
 #include "../bemodule.h"
 #include "../beirg.h"
 #include "../bespillslots.h"
@@ -532,39 +531,6 @@ static const arch_register_class_t *sparc_get_reg_class_for_mode(const ir_mode *
 		return &sparc_reg_classes[CLASS_sparc_gp];
 }
 
-static int sparc_to_appear_in_schedule(void *block_env, const ir_node *irn)
-{
-	(void) block_env;
-
-	if (!is_sparc_irn(irn))
-		return -1;
-
-	return 1;
-}
-
-list_sched_selector_t sparc_sched_selector;
-
-/**
- * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
- */
-static const list_sched_selector_t *sparc_get_list_sched_selector(
-		const void *self, list_sched_selector_t *selector)
-{
-	(void) self;
-	(void) selector;
-
-	sparc_sched_selector = trivial_selector;
-	sparc_sched_selector.to_appear_in_schedule = sparc_to_appear_in_schedule;
-	return &sparc_sched_selector;
-}
-
-static const ilp_sched_selector_t *sparc_get_ilp_sched_selector(
-		const void *self)
-{
-	(void) self;
-	return NULL;
-}
-
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -617,21 +583,6 @@ static const backend_params *sparc_get_backend_params(void)
 	return &p;
 }
 
-static const be_execution_unit_t ***sparc_get_allowed_execution_units(
-		const ir_node *irn)
-{
-	(void) irn;
-	/* TODO */
-	panic("sparc_get_allowed_execution_units not implemented yet");
-}
-
-static const be_machine_t *sparc_get_machine(const void *self)
-{
-	(void) self;
-	/* TODO */
-	panic("sparc_get_machine not implemented yet");
-}
-
 static ir_graph **sparc_get_backend_irg_list(const void *self,
                                              ir_graph ***irgs)
 {
@@ -660,12 +611,8 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_get_reg_class,
 	sparc_get_reg_class_for_mode,
 	NULL,
-	sparc_get_list_sched_selector,
-	sparc_get_ilp_sched_selector,
 	sparc_get_reg_class_alignment,
 	sparc_get_backend_params,
-	sparc_get_allowed_execution_units,
-	sparc_get_machine,
 	sparc_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	sparc_parse_asm_constraint,

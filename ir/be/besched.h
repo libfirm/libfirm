@@ -27,6 +27,7 @@
 #define FIRM_BE_BESCHED_H
 
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "irgraph.h"
 #include "irnode.h"
@@ -125,14 +126,25 @@ static inline int _sched_get_time_step(const ir_node *irn)
  * @param irn The node to check for.
  * @return 1, if the node consumes/produces data, false if not.
  */
-static inline int to_appear_in_schedule(const ir_node *irn)
+static inline bool to_appear_in_schedule(const ir_node *irn)
 {
 	switch(get_irn_opcode(irn)) {
-		case iro_Jmp:
-		case iro_Proj:
-			return 0;
-		default:
-			return is_data_node(irn);
+	case iro_Anchor:
+	case iro_Bad:
+	case iro_Block:
+	case iro_Confirm:
+	case iro_Dummy:
+	case iro_End:
+	case iro_NoMem:
+	case iro_Pin:
+	case iro_Proj:
+	case iro_Sync:
+	case iro_Unknown:
+		return false;
+	case iro_Phi:
+		return mode_is_data(get_irn_mode(irn));
+	default:
+		return ! (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled);
 	}
 }
 

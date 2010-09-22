@@ -80,7 +80,6 @@ const list_sched_selector_t trivial_selector = {
 	trivial_init_graph,
 	trivial_init_block,
 	trivial_select,
-	NULL,                /* to_appear_in_schedule */
 	NULL,                /* node_ready */
 	NULL,                /* node_selected */
 	NULL,                /* exectime */

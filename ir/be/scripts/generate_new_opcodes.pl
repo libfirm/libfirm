@@ -416,6 +416,7 @@ EOF
 			"rematerializable" => "arch_irn_flags_rematerializable",
 			"modify_flags"     => "arch_irn_flags_modify_flags",
 			"simple_jump"      => "arch_irn_flags_simple_jump",
+			"not_scheduled"    => "arch_irn_flags_not_scheduled",
 		);
 		if (defined(%custom_irn_flags)) {
 			%known_irn_flags = (%known_irn_flags, %custom_irn_flags);

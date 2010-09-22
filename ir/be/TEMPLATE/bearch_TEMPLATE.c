@@ -346,39 +346,6 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn)
-{
-	(void) block_env;
-
-	if (!is_TEMPLATE_irn(irn))
-		return -1;
-
-	return 1;
-}
-
-list_sched_selector_t TEMPLATE_sched_selector;
-
-/**
- * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
- */
-static const list_sched_selector_t *TEMPLATE_get_list_sched_selector(
-		const void *self, list_sched_selector_t *selector)
-{
-	(void) self;
-	(void) selector;
-
-	TEMPLATE_sched_selector = trivial_selector;
-	TEMPLATE_sched_selector.to_appear_in_schedule = TEMPLATE_to_appear_in_schedule;
-	return &TEMPLATE_sched_selector;
-}
-
-static const ilp_sched_selector_t *TEMPLATE_get_ilp_sched_selector(
-		const void *self)
-{
-	(void) self;
-	return NULL;
-}
-
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -413,21 +380,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 	return &p;
 }
 
-static const be_execution_unit_t ***TEMPLATE_get_allowed_execution_units(
-		const ir_node *irn)
-{
-	(void) irn;
-	/* TODO */
-	return NULL;
-}
-
-static const be_machine_t *TEMPLATE_get_machine(const void *self)
-{
-	(void) self;
-	/* TODO */
-	return NULL;
-}
-
 static ir_graph **TEMPLATE_get_backend_irg_list(const void *self,
                                                 ir_graph ***irgs)
 {
@@ -456,12 +408,8 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_reg_class,
 	TEMPLATE_get_reg_class_for_mode,
 	TEMPLATE_get_call_abi,
-	TEMPLATE_get_list_sched_selector,
-	TEMPLATE_get_ilp_sched_selector,
 	TEMPLATE_get_reg_class_alignment,
     TEMPLATE_get_backend_params,
-	TEMPLATE_get_allowed_execution_units,
-	TEMPLATE_get_machine,
 	TEMPLATE_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	TEMPLATE_parse_asm_constraint,

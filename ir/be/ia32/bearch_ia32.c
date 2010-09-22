@@ -63,7 +63,6 @@
 #include "../be_dbgout.h"
 #include "../beblocksched.h"
 #include "../bemachine.h"
-#include "../beilpsched.h"
 #include "../bespillslots.h"
 #include "../bemodule.h"
 #include "../begnuas.h"
@@ -1821,51 +1820,6 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
-{
-	(void) block_env;
-
-	if (!is_ia32_irn(irn)) {
-		return -1;
-	}
-
-	if (is_ia32_NoReg_GP(irn) || is_ia32_NoReg_VFP(irn) || is_ia32_NoReg_XMM(irn)
-	    || is_ia32_ChangeCW(irn) || is_ia32_Immediate(irn))
-		return 0;
-
-	return 1;
-}
-
-/**
- * Returns the estimated execution time of an ia32 irn.
- */
-static sched_timestep_t ia32_sched_exectime(void *env, const ir_node *irn)
-{
-	(void) env;
-	return is_ia32_irn(irn) ? ia32_get_op_estimated_cost(irn) : 1;
-}
-
-list_sched_selector_t ia32_sched_selector;
-
-/**
- * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
- */
-static const list_sched_selector_t *ia32_get_list_sched_selector(
-		const void *self, list_sched_selector_t *selector)
-{
-	(void) self;
-	memcpy(&ia32_sched_selector, selector, sizeof(ia32_sched_selector));
-	ia32_sched_selector.exectime              = ia32_sched_exectime;
-	ia32_sched_selector.to_appear_in_schedule = ia32_to_appear_in_schedule;
-	return &ia32_sched_selector;
-}
-
-static const ilp_sched_selector_t *ia32_get_ilp_sched_selector(const void *self)
-{
-	(void) self;
-	return NULL;
-}
-
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -1877,69 +1831,6 @@ static int ia32_get_reg_class_alignment(const arch_register_class_t *cls)
 	if (mode_is_float(mode) && bytes > 8)
 		return 16;
 	return bytes;
-}
-
-static const be_execution_unit_t ***ia32_get_allowed_execution_units(
-		const ir_node *irn)
-{
-	static const be_execution_unit_t *_allowed_units_BRANCH[] = {
-		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH1],
-		&ia32_execution_units_BRANCH[IA32_EXECUNIT_TP_BRANCH_BRANCH2],
-		NULL,
-	};
-	static const be_execution_unit_t *_allowed_units_GP[] = {
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EAX],
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EBX],
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_ECX],
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EDX],
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_ESI],
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EDI],
-		&ia32_execution_units_GP[IA32_EXECUNIT_TP_GP_GP_EBP],
-		NULL,
-	};
-	static const be_execution_unit_t *_allowed_units_DUMMY[] = {
-		&be_machine_execution_units_DUMMY[0],
-		NULL,
-	};
-	static const be_execution_unit_t **_units_callret[] = {
-		_allowed_units_BRANCH,
-		NULL
-	};
-	static const be_execution_unit_t **_units_other[] = {
-		_allowed_units_GP,
-		NULL
-	};
-	static const be_execution_unit_t **_units_dummy[] = {
-		_allowed_units_DUMMY,
-		NULL
-	};
-	const be_execution_unit_t ***ret;
-
-	if (is_ia32_irn(irn)) {
-		ret = get_ia32_exec_units(irn);
-	} else if (is_be_node(irn)) {
-		if (be_is_Return(irn)) {
-			ret = _units_callret;
-		} else if (be_is_Barrier(irn)) {
-			ret = _units_dummy;
-		} else {
-			ret = _units_other;
-		}
-	}
-	else {
-		ret = _units_dummy;
-	}
-
-	return ret;
-}
-
-/**
- * Return the abstract ia32 machine.
- */
-static const be_machine_t *ia32_get_machine(const void *self)
-{
-	const ia32_isa_t *isa = self;
-	return isa->cpu;
 }
 
 /**
@@ -2314,12 +2205,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_reg_class,
 	ia32_get_reg_class_for_mode,
 	ia32_get_call_abi,
-	ia32_get_list_sched_selector,
-	ia32_get_ilp_sched_selector,
 	ia32_get_reg_class_alignment,
 	ia32_get_libfirm_params,
-	ia32_get_allowed_execution_units,
-	ia32_get_machine,
 	ia32_get_irg_list,
 	ia32_mark_remat,
 	ia32_parse_asm_constraint,

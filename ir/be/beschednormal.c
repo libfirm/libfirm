@@ -442,7 +442,6 @@ const list_sched_selector_t normal_selector = {
 	normal_init_graph,
 	normal_init_block,
 	normal_select,
-	NULL,              /* to_appear_in_schedule */
 	NULL,              /* node_ready */
 	NULL,              /* node_selected */
 	NULL,              /* exectime */

@@ -181,16 +181,6 @@ static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, ir_graph
 	return main_env;
 }
 
-static inline int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
-{
-	int res = -1;
-
-	if (sel->to_appear_in_schedule)
-		res = sel->to_appear_in_schedule(block_env, irn);
-
-	return res >= 0 ? res : (to_appear_in_schedule(irn) || be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_Start(irn));
-}
-
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 {
 	ir_node *irn;
@@ -205,12 +195,12 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	* Collect usage statistics.
 	*/
 	sched_foreach(bl, irn) {
-		if (must_appear_in_schedule(env->main_env->vtab, env, irn)) {
+		if (to_appear_in_schedule(irn)) {
 			int i, n;
 
 			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 				//ir_node *op = get_irn_n(irn, i);
-				if (must_appear_in_schedule(env->main_env->vtab, env, irn)) {
+				if (to_appear_in_schedule(irn)) {
 					usage_stats_t *us = get_or_set_usage_stats(env, irn);
 #if 0 /* Liveness is not computed here! */
 					if (is_live_end(bl, op))
@@ -264,7 +254,7 @@ static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if (must_appear_in_schedule(env->main_env->vtab, env, op))
+		if (to_appear_in_schedule(op))
 			sum += compute_max_hops(env, op);
 	}
 
@@ -319,7 +309,6 @@ const list_sched_selector_t reg_pressure_selector = {
 	reg_pressure_graph_init,
 	reg_pressure_block_init,
 	reg_pressure_select,
-	NULL,                    /* to_appear_in_schedule */
 	NULL,                    /* node_ready */
 	NULL,                    /* node_selected */
 	NULL,                    /* exectime */

@@ -569,7 +569,7 @@ static int is_value_available(spill_env_t *env, const ir_node *arg,
 	if (arch_irn_is_ignore(arg))
 		return 1;
 
- 	return 0;
+	return 0;
 }
 
 /**

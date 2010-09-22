@@ -47,8 +47,8 @@ typedef enum arch_irn_flags_t {
 	                                                default check_modifies
 	                                                implementation in beflags */
 	arch_irn_flags_simple_jump      = 1U << 3, /**< a simple jump instruction */
-
-	arch_irn_flags_backend          = 1U << 4, /**< begin of custom backend
+	arch_irn_flags_not_scheduled    = 1U << 4, /**< node must not be scheduled*/
+	arch_irn_flags_backend          = 1U << 5, /**< begin of custom backend
 	                                                flags */
 } arch_irn_flags_t;
 

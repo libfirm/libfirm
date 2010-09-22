@@ -505,39 +505,6 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 	}
 }
 
-static int amd64_to_appear_in_schedule(void *block_env, const ir_node *irn)
-{
-	(void) block_env;
-
-	if(!is_amd64_irn(irn))
-		return -1;
-
-	return 1;
-}
-
-list_sched_selector_t amd64_sched_selector;
-
-/**
- * Returns the reg_pressure scheduler with to_appear_in_schedule() overloaded
- */
-static const list_sched_selector_t *amd64_get_list_sched_selector(
-		const void *self, list_sched_selector_t *selector)
-{
-	(void) self;
-	(void) selector;
-
-	amd64_sched_selector = trivial_selector;
-	amd64_sched_selector.to_appear_in_schedule = amd64_to_appear_in_schedule;
-	return &amd64_sched_selector;
-}
-
-static const ilp_sched_selector_t *amd64_get_ilp_sched_selector(
-		const void *self)
-{
-	(void) self;
-	return NULL;
-}
-
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -571,23 +538,6 @@ static const backend_params *amd64_get_backend_params(void) {
 	return &p;
 }
 
-static const be_execution_unit_t ***amd64_get_allowed_execution_units(
-		const ir_node *irn)
-{
-	(void) irn;
-	/* TODO */
-	assert(0);
-	return NULL;
-}
-
-static const be_machine_t *amd64_get_machine(const void *self)
-{
-	(void) self;
-	/* TODO */
-	assert(0);
-	return NULL;
-}
-
 static ir_graph **amd64_get_backend_irg_list(const void *self,
                                                 ir_graph ***irgs)
 {
@@ -616,12 +566,8 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_get_reg_class,
 	amd64_get_reg_class_for_mode,
 	amd64_get_call_abi,
-	amd64_get_list_sched_selector,
-	amd64_get_ilp_sched_selector,
 	amd64_get_reg_class_alignment,
     amd64_get_backend_params,
-	amd64_get_allowed_execution_units,
-	amd64_get_machine,
 	amd64_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	amd64_parse_asm_constraint,

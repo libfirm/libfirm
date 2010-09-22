@@ -645,7 +645,6 @@ const list_sched_selector_t muchnik_selector = {
 	muchnik_init_graph,
 	muchnik_init_block,
 	muchnik_select,
-	NULL,                /* to_appear_in_schedule */
 	trace_node_ready,    /* node_ready */
 	trace_update_time,   /* node_selected */
 	NULL,                /* exectime */
@@ -733,7 +732,6 @@ const list_sched_selector_t heuristic_selector = {
 	muchnik_init_graph,
 	muchnik_init_block,
 	heuristic_select,
-	NULL,                /* to_appear_in_schedule */
 	trace_node_ready,    /* node_ready */
 	trace_update_time,   /* node_selected */
 	NULL,                /* exectime */

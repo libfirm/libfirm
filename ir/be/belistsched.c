@@ -64,8 +64,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
-#define BE_SCHED_NODE(irn) (be_is_Keep(irn) || be_is_CopyKeep(irn) || be_is_Start(irn))
-
 enum {
 	BE_SCHED_SELECT_TRIVIAL,
 	BE_SCHED_SELECT_REGPRESS,
@@ -157,24 +155,6 @@ typedef struct block_sched_env_t {
 } block_sched_env_t;
 
 /**
- * Returns non-zero if a node must be placed in the schedule.
- */
-static inline int must_appear_in_schedule(const list_sched_selector_t *sel, void *block_env, const ir_node *irn)
-{
-	int res = -1;
-
-	/* if there are no uses, don't schedule */
-	if (get_irn_n_edges(irn) < 1)
-		return 0;
-
-	/* else ask the scheduler */
-	if (sel->to_appear_in_schedule)
-		res = sel->to_appear_in_schedule(block_env, irn);
-
-	return res >= 0 ? res : ((to_appear_in_schedule(irn) || BE_SCHED_NODE(irn)) && ! is_Unknown(irn));
-}
-
-/**
  * Returns non-zero if the node is already scheduled
  */
 static inline int is_already_scheduled(block_sched_env_t *env, ir_node *n)
@@ -235,7 +215,7 @@ static inline int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 			return 0;
 	}
 
-	if (! must_appear_in_schedule(env->selector, env, irn)) {
+	if (! to_appear_in_schedule(irn)) {
 		add_to_sched(env, irn);
 		DB((dbg, LEVEL_3, "\tmaking immediately available: %+F\n", irn));
 	} else {
@@ -393,13 +373,13 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
     /* If the node consumes/produces data, it is appended to the schedule
      * list, otherwise, it is not put into the list */
-    if (must_appear_in_schedule(env->selector, env->selector_block_env, irn)) {
+    if (to_appear_in_schedule(irn)) {
 		update_sched_liveness(env, irn);
 		sched_add_before(env->block, irn);
 
 		DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
 
-	   	/* Remove the node from the ready set */
+		/* Remove the node from the ready set */
 		ir_nodeset_remove(&env->cands, irn);
     }
 
@@ -549,18 +529,18 @@ void list_sched(ir_graph *irg)
 	int num_nodes;
 	sched_env_t env;
 	mris_env_t *mris = NULL;
-	list_sched_selector_t sel;
+	const list_sched_selector_t *selector;
 
 	/* Select a scheduler based on backend options */
 	switch (list_sched_options.select) {
-		case BE_SCHED_SELECT_TRIVIAL:  sel = trivial_selector;      break;
-		case BE_SCHED_SELECT_RANDOM:   sel = random_selector;       break;
-		case BE_SCHED_SELECT_REGPRESS: sel = reg_pressure_selector; break;
-		case BE_SCHED_SELECT_MUCHNIK:  sel = muchnik_selector;      break;
-		case BE_SCHED_SELECT_HEUR:     sel = heuristic_selector;    break;
-		case BE_SCHED_SELECT_NORMAL:   sel = normal_selector;       break;
+		case BE_SCHED_SELECT_TRIVIAL:  selector = &trivial_selector;      break;
+		case BE_SCHED_SELECT_RANDOM:   selector = &random_selector;       break;
+		case BE_SCHED_SELECT_REGPRESS: selector = &reg_pressure_selector; break;
+		case BE_SCHED_SELECT_MUCHNIK:  selector = &muchnik_selector;      break;
+		case BE_SCHED_SELECT_HEUR:     selector = &heuristic_selector;    break;
+		case BE_SCHED_SELECT_NORMAL:   selector = &normal_selector;       break;
 		default:
-		case BE_SCHED_SELECT_HMUCHNIK: sel = heuristic_selector;    break;
+		case BE_SCHED_SELECT_HMUCHNIK: selector = &heuristic_selector;    break;
 	}
 
 #if 1
@@ -589,7 +569,7 @@ void list_sched(ir_graph *irg)
 
 	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env_get_list_sched_selector(be_get_irg_arch_env(irg), &sel);
+	env.selector   = selector;
 	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
 
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
@@ -614,18 +594,18 @@ void list_sched_single_block(ir_graph *irg, ir_node *block)
 {
 	int num_nodes;
 	sched_env_t env;
-	list_sched_selector_t sel;
+	const list_sched_selector_t *selector;
 
 	/* Select a scheduler based on backend options */
 	switch (list_sched_options.select) {
-		case BE_SCHED_SELECT_TRIVIAL:  sel = trivial_selector;      break;
-		case BE_SCHED_SELECT_RANDOM:   sel = random_selector;       break;
-		case BE_SCHED_SELECT_REGPRESS: sel = reg_pressure_selector; break;
-		case BE_SCHED_SELECT_MUCHNIK:  sel = muchnik_selector;      break;
-		case BE_SCHED_SELECT_HEUR:     sel = heuristic_selector;    break;
-		case BE_SCHED_SELECT_NORMAL:   sel = normal_selector;       break;
+		case BE_SCHED_SELECT_TRIVIAL:  selector = &trivial_selector;      break;
+		case BE_SCHED_SELECT_RANDOM:   selector = &random_selector;       break;
+		case BE_SCHED_SELECT_REGPRESS: selector = &reg_pressure_selector; break;
+		case BE_SCHED_SELECT_MUCHNIK:  selector = &muchnik_selector;      break;
+		case BE_SCHED_SELECT_HEUR:     selector = &heuristic_selector;    break;
+		case BE_SCHED_SELECT_NORMAL:   selector = &normal_selector;       break;
 		default:
-		case BE_SCHED_SELECT_HMUCHNIK: sel = trivial_selector;      break;
+		case BE_SCHED_SELECT_HMUCHNIK: selector = &trivial_selector;      break;
 	}
 
 	/* Assure, that the out edges are computed */
@@ -636,7 +616,7 @@ void list_sched_single_block(ir_graph *irg, ir_node *block)
 
 	/* initialize environment for list scheduler */
 	memset(&env, 0, sizeof(env));
-	env.selector   = arch_env_get_list_sched_selector(be_get_irg_arch_env(irg), &sel);
+	env.selector   = selector;
 	env.sched_info = NEW_ARR_F(sched_irn_t, num_nodes);
 
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));

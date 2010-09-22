@@ -512,24 +512,6 @@ struct arch_isa_if_t {
 	                     be_abi_call_t *abi);
 
 	/**
-	 * Get the list scheduler to use. There is already a selector given, the
-	 * backend is free to modify and/or ignore it.
-	 *
-	 * @param self     The isa object.
-	 * @param selector The selector given by options.
-	 * @return         The list scheduler selector.
-	 */
-	const list_sched_selector_t *(*get_list_sched_selector)(const void *self,
-			list_sched_selector_t *selector);
-
-	/**
-	 * Get the ILP scheduler to use.
-	 * @param self  The isa object.
-	 * @return      The ILP scheduler selector
-	 */
-	const ilp_sched_selector_t *(*get_ilp_sched_selector)(const void *self);
-
-	/**
 	 * Get the necessary alignment for storing a register of given class.
 	 * @param self  The isa object.
 	 * @param cls   The register class.
@@ -542,30 +524,6 @@ struct arch_isa_if_t {
 	 * needed for this backend.
 	 */
 	const backend_params *(*get_params)(void);
-
-	/**
-	 * Returns an 2-dim array of execution units, @p irn can be executed on.
-	 * The first dimension is the type, the second the allowed units of this
-	 * type.
-	 * Each dimension is a NULL terminated list.
-	 * @param self  The isa object.
-	 * @param irn   The node.
-	 * @return An array of allowed execution units.
-	 *         exec_unit = {
-	 *                       { unit1_of_tp1, ..., unitX1_of_tp1, NULL },
-	 *                       ...,
-	 *                       { unit1_of_tpY, ..., unitXn_of_tpY, NULL },
-	 *                       NULL
-	 *                     };
-	 */
-	const be_execution_unit_t ***(*get_allowed_execution_units)(
-			const ir_node *irn);
-
-	/**
-	 * Return the abstract machine for this isa.
-	 * @param self  The isa object.
-	 */
-	const be_machine_t *(*get_machine)(const void *self);
 
 	/**
 	 * Return an ordered list of irgs where code should be generated for.
@@ -650,8 +608,6 @@ struct arch_isa_if_t {
 #define arch_env_get_reg_class(env,i)                  ((env)->impl->get_reg_class(i))
 #define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((mode)))
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
-#define arch_env_get_list_sched_selector(env,selector) ((env)->impl->get_list_sched_selector((env), (selector)))
-#define arch_env_get_ilp_sched_selector(env)           ((env)->impl->get_ilp_sched_selector(env))
 #define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((cls)))
 #define arch_env_get_params(env)                       ((env)->impl->get_params())
 #define arch_env_get_allowed_execution_units(env,irn)  ((env)->impl->get_allowed_execution_units((irn)))

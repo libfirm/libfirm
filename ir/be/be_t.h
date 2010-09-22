@@ -58,11 +58,6 @@ enum {
 	BE_VERIFY_ASSERT
 };
 
-enum {
-	BE_SCHED_LIST,
-	BE_SCHED_ILP
-};
-
 /** Backend options */
 struct be_options_t {
 	unsigned dump_flags;      /**< backend dumping flags */
@@ -73,7 +68,6 @@ struct be_options_t {
 	int  pic;                 /**< create position independent code */
 	int  gprof;               /**< create gprof compatible profiling code */
 	int  verify_option;       /**< backend verify option */
-	int  scheduler;           /**< the scheduler */
 	char target_os[128];      /**< target operating system name */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */

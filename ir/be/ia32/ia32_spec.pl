@@ -220,6 +220,7 @@ $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",
 Immediate => {
 	state     => "pinned",
 	op_flags  => [ "constlike" ],
+	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
 	attr      => "ir_entity *symconst, int symconst_sign, int no_pic_adjust, long offset",
 	attr_type => "ia32_immediate_attr_t",
@@ -1124,6 +1125,7 @@ GetEIP => {
 NoReg_GP => {
 	state     => "pinned",
 	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "gp_NOREG:I" ] },
 	units     => [],
 	emit      => "",
@@ -1134,6 +1136,7 @@ NoReg_GP => {
 NoReg_VFP => {
 	state     => "pinned",
 	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "vfp_NOREG:I" ] },
 	units     => [],
 	emit      => "",
@@ -1145,6 +1148,7 @@ NoReg_VFP => {
 NoReg_XMM => {
 	state     => "pinned",
 	op_flags  => [ "constlike", "dump_noblock", "dump_noinput" ],
+	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "xmm_NOREG:I" ] },
 	units     => [],
 	emit      => "",
@@ -1155,6 +1159,7 @@ NoReg_XMM => {
 ChangeCW => {
 	state     => "pinned",
 	op_flags  => [ "constlike" ],
+	irn_flags => [ "not_scheduled" ],
 	reg_req   => { out => [ "fpcw:I" ] },
 	mode      => $mode_fpcw,
 	latency   => 3,

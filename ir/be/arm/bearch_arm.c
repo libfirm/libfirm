@@ -50,7 +50,6 @@
 #include "../besched.h"
 #include "be.h"
 #include "../bemachine.h"
-#include "../beilpsched.h"
 #include "../bemodule.h"
 #include "../beirg.h"
 #include "../bespillslots.h"
@@ -514,36 +513,6 @@ static const arch_register_class_t *arm_get_reg_class_for_mode(const ir_mode *mo
 		return &arm_reg_classes[CLASS_arm_gp];
 }
 
-static int arm_to_appear_in_schedule(void *block_env, const ir_node *irn)
-{
-	(void) block_env;
-	if (!is_arm_irn(irn))
-		return -1;
-
-	return 1;
-}
-
-list_sched_selector_t arm_sched_selector;
-
-/**
- * Returns the reg_pressure scheduler with to_appear_in_schedule() over\loaded
- */
-static const list_sched_selector_t *arm_get_list_sched_selector(const void *self, list_sched_selector_t *selector)
-{
-	(void) self;
-	memcpy(&arm_sched_selector, selector, sizeof(arm_sched_selector));
-	/* arm_sched_selector.exectime              = arm_sched_exectime; */
-	arm_sched_selector.to_appear_in_schedule = arm_to_appear_in_schedule;
-	return &arm_sched_selector;
-
-}
-
-static const ilp_sched_selector_t *arm_get_ilp_sched_selector(const void *self)
-{
-	(void) self;
-	return NULL;
-}
-
 /**
  * Returns the necessary byte alignment for storing a register of given class.
  */
@@ -552,20 +521,6 @@ static int arm_get_reg_class_alignment(const arch_register_class_t *cls)
 	(void) cls;
 	/* ARM is a 32 bit CPU, no need for other alignment */
 	return 4;
-}
-
-static const be_execution_unit_t ***arm_get_allowed_execution_units(const ir_node *irn)
-{
-	(void) irn;
-	/* TODO */
-	panic("Unimplemented arm_get_allowed_execution_units()");
-}
-
-static const be_machine_t *arm_get_machine(const void *self)
-{
-	(void) self;
-	/* TODO */
-	panic("Unimplemented arm_get_machine()");
 }
 
 /**
@@ -675,12 +630,8 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_reg_class,
 	arm_get_reg_class_for_mode,
 	NULL,
-	arm_get_list_sched_selector,
-	arm_get_ilp_sched_selector,
 	arm_get_reg_class_alignment,
 	arm_get_libfirm_params,
-	arm_get_allowed_execution_units,
-	arm_get_machine,
 	arm_get_irg_list,
 	NULL,               /* mark remat */
 	arm_parse_asm_constraint,
