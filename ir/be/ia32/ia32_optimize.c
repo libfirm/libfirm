@@ -58,8 +58,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static ia32_code_gen_t *cg;
-
 static void copy_mark(const ir_node *old, ir_node *new)
 {
 	if (is_ia32_is_reload(old))
@@ -146,6 +144,7 @@ check_shift_amount:
 static void peephole_ia32_Cmp(ir_node *const node)
 {
 	ir_node                     *right;
+	ir_graph                    *irg;
 	ia32_immediate_attr_t const *imm;
 	dbg_info                    *dbgi;
 	ir_node                     *block;
@@ -172,8 +171,9 @@ static void peephole_ia32_Cmp(ir_node *const node)
 		return;
 
 	dbgi         = get_irn_dbg_info(node);
+	irg          = get_irn_irg(node);
 	block        = get_nodes_block(node);
-	noreg        = ia32_new_NoReg_gp(cg);
+	noreg        = ia32_new_NoReg_gp(irg);
 	nomem        = get_irg_no_mem(current_ir_graph);
 	op           = get_irn_n(node, n_ia32_Cmp_left);
 	attr         = get_irn_generic_attr(node);
@@ -478,13 +478,13 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 	/* walk through the Stores and create Pushs for them */
 	block  = get_nodes_block(irn);
 	spmode = get_irn_mode(irn);
-	irg    = cg->irg;
+	irg    = get_irn_irg(irn);
 	for (; i >= 0; --i) {
 		const arch_register_t *spreg;
 		ir_node *push;
 		ir_node *val, *mem, *mem_proj;
 		ir_node *store = stores[i];
-		ir_node *noreg = ia32_new_NoReg_gp(cg);
+		ir_node *noreg = ia32_new_NoReg_gp(irg);
 
 		val = get_irn_n(store, n_ia32_unary_op);
 		mem = get_irn_n(store, n_ia32_mem);
@@ -771,7 +771,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 	/* create a new IncSP if needed */
 	block = get_nodes_block(irn);
-	irg   = cg->irg;
+	irg   = get_irn_irg(irn);
 	if (inc_ofs > 0) {
 		pred_sp = be_new_IncSP(esp, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);
@@ -971,9 +971,9 @@ static void peephole_ia32_Const(ir_node *node)
 	be_peephole_exchange(node, xor);
 }
 
-static inline int is_noreg(ia32_code_gen_t *cg, const ir_node *node)
+static inline int is_noreg(const ir_node *node)
 {
-	return node == cg->noreg_gp;
+	return is_ia32_NoReg_GP(node);
 }
 
 ir_node *ia32_immediate_from_long(long val)
@@ -1024,6 +1024,7 @@ static int is_am_minus_one(const ir_node *node)
  */
 static void peephole_ia32_Lea(ir_node *node)
 {
+	ir_graph              *irg;
 	ir_node               *base;
 	ir_node               *index;
 	const arch_register_t *base_reg;
@@ -1048,13 +1049,13 @@ static void peephole_ia32_Lea(ir_node *node)
 	base  = get_irn_n(node, n_ia32_Lea_base);
 	index = get_irn_n(node, n_ia32_Lea_index);
 
-	if (is_noreg(cg, base)) {
+	if (is_noreg(base)) {
 		base     = NULL;
 		base_reg = NULL;
 	} else {
 		base_reg = arch_get_irn_register(base);
 	}
-	if (is_noreg(cg, index)) {
+	if (is_noreg(index)) {
 		index     = NULL;
 		index_reg = NULL;
 	} else {
@@ -1149,7 +1150,8 @@ make_add_immediate:
 make_add:
 	dbgi  = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
-	noreg = ia32_new_NoReg_gp(cg);
+	irg   = get_irn_irg(node);
+	noreg = ia32_new_NoReg_gp(irg);
 	nomem = new_NoMem();
 	res   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
 	arch_set_irn_register(res, out_reg);
@@ -1159,7 +1161,8 @@ make_add:
 make_shl:
 	dbgi  = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
-	noreg = ia32_new_NoReg_gp(cg);
+	irg   = get_irn_irg(node);
+	noreg = ia32_new_NoReg_gp(irg);
 	nomem = new_NoMem();
 	res   = new_bd_ia32_Shl(dbgi, block, op1, op2);
 	arch_set_irn_register(res, out_reg);
@@ -1244,10 +1247,8 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 }
 
 /* Perform peephole-optimizations. */
-void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
+void ia32_peephole_optimization(ir_graph *irg)
 {
-	cg = new_cg;
-
 	/* register peephole optimisations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_ia32_Const,    peephole_ia32_Const);
@@ -1265,7 +1266,7 @@ void ia32_peephole_optimization(ia32_code_gen_t *new_cg)
 	if (ia32_cg_config.use_short_sex_eax)
 		register_peephole_optimisation(op_ia32_Conv_I2I, peephole_ia32_Conv_I2I);
 
-	be_peephole_opt(cg->irg);
+	be_peephole_opt(irg);
 }
 
 /**
@@ -1475,12 +1476,9 @@ static void optimize_node(ir_node *node, void *env)
 /**
  * Performs conv and address mode optimization.
  */
-void ia32_optimize_graph(ia32_code_gen_t *cg)
+void ia32_optimize_graph(ir_graph *irg)
 {
-	irg_walk_blkwise_graph(cg->irg, NULL, optimize_node, cg);
-
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "opt");
+	irg_walk_blkwise_graph(irg, NULL, optimize_node, NULL);
 }
 
 void ia32_init_optimize(void)

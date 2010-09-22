@@ -46,7 +46,7 @@ void arm_emit_shifter_operand(const ir_node *node);
 void arm_emit_load_mode(const ir_node *node);
 void arm_emit_store_mode(const ir_node *node);
 
-void arm_gen_routine(const arm_code_gen_t *cg, ir_graph *irg);
+void arm_gen_routine(ir_graph *irg);
 
 void arm_init_emitter(void);
 

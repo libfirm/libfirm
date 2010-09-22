@@ -54,8 +54,7 @@ void arm_gen_vals_from_word(unsigned int value, arm_vals *result);
  * Performs Peephole Optimizations an a graph.
  *
  * @param irg   the graph
- * @param cg    the code generator object
  */
-void arm_peephole_optimization(arm_code_gen_t *cg);
+void arm_peephole_optimization(ir_graph *irg);
 
-#endif /* FIRM_BE_ARM_ARM_OPTIMIZE_H */
+#endif

@@ -40,8 +40,6 @@
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
 
-static arm_code_gen_t  *cg;
-
 static unsigned arm_ror(unsigned v, unsigned ror)
 {
 	return (v << (32 - ror)) | (v >> ror);
@@ -267,10 +265,8 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 }
 
 /* Perform peephole-optimizations. */
-void arm_peephole_optimization(arm_code_gen_t *new_cg)
+void arm_peephole_optimization(ir_graph *irg)
 {
-	cg = new_cg;
-
 	/* register peephole optimizations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,      peephole_be_IncSP);
@@ -278,5 +274,5 @@ void arm_peephole_optimization(arm_code_gen_t *new_cg)
 	register_peephole_optimisation(op_arm_Ldr,       peephole_arm_Str_Ldr);
 	register_peephole_optimisation(op_arm_FrameAddr, peephole_arm_FrameAddr);
 
-	be_peephole_opt(cg->irg);
+	be_peephole_opt(irg);
 }

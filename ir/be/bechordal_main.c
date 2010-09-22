@@ -420,69 +420,45 @@ static void be_ra_chordal_main(ir_graph *irg)
 		be_collect_node_stats(&last_node_stats, irg);
 	}
 
-	if (! arch_code_generator_has_spiller(be_get_irg_cg(irg))) {
-		/* use one of the generic spiller */
+	/* use one of the generic spiller */
 
-		/* Perform the following for each register class. */
-		for (j = 0, m = arch_env_get_n_reg_class(arch_env); j < m; ++j) {
-			post_spill_env_t pse;
-			const arch_register_class_t *cls
-				= arch_env_get_reg_class(arch_env, j);
+	/* Perform the following for each register class. */
+	for (j = 0, m = arch_env_get_n_reg_class(arch_env); j < m; ++j) {
+		post_spill_env_t pse;
+		const arch_register_class_t *cls
+			= arch_env_get_reg_class(arch_env, j);
 
-			if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
-				continue;
+		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
+			continue;
 
 
-			stat_ev_ctx_push_str("bechordal_cls", cls->name);
+		stat_ev_ctx_push_str("bechordal_cls", cls->name);
 
-			stat_ev_if {
-				be_do_stat_reg_pressure(irg, cls);
-			}
-
-			memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
-			pse.irg = irg;
-			pre_spill(&pse, cls);
-
-			be_timer_push(T_RA_SPILL);
-			be_do_spill(irg, cls);
-			be_timer_pop(T_RA_SPILL);
-
-			dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
-
-			post_spill(&pse, 0);
-
-			stat_ev_if {
-				be_node_stats_t node_stats;
-
-				be_collect_node_stats(&node_stats, irg);
-				be_subtract_node_stats(&node_stats, &last_node_stats);
-				be_emit_node_stats(&node_stats, "bechordal_");
-
-				be_copy_node_stats(&last_node_stats, &node_stats);
-				stat_ev_ctx_pop("bechordal_cls");
-			}
+		stat_ev_if {
+			be_do_stat_reg_pressure(irg, cls);
 		}
-	} else {
-		post_spill_env_t *pse;
 
-		/* the backend has its own spiller */
-		m = arch_env_get_n_reg_class(arch_env);
-
-		pse = ALLOCAN(post_spill_env_t, m);
-
-		for (j = 0; j < m; ++j) {
-			memcpy(&pse[j].cenv, &chordal_env, sizeof(chordal_env));
-			pse[j].irg = irg;
-			pre_spill(&pse[j], pse[j].cls);
-		}
+		memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
+		pse.irg = irg;
+		pre_spill(&pse, cls);
 
 		be_timer_push(T_RA_SPILL);
-		arch_code_generator_spill(be_get_irg_cg(irg), irg);
+		be_do_spill(irg, cls);
 		be_timer_pop(T_RA_SPILL);
-		dump(BE_CH_DUMP_SPILL, irg, NULL, "spill");
 
-		for (j = 0; j < m; ++j) {
-			post_spill(&pse[j], j);
+		dump(BE_CH_DUMP_SPILL, irg, pse.cls, "spill");
+
+		post_spill(&pse, 0);
+
+		stat_ev_if {
+			be_node_stats_t node_stats;
+
+			be_collect_node_stats(&node_stats, irg);
+			be_subtract_node_stats(&node_stats, &last_node_stats);
+			be_emit_node_stats(&node_stats, "bechordal_");
+
+			be_copy_node_stats(&last_node_stats, &node_stats);
+			stat_ev_ctx_pop("bechordal_cls");
 		}
 	}
 

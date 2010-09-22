@@ -132,18 +132,9 @@ enum arm_processor_types {
 	ARM_STRONG = ARM_ARCH_V4,
 };
 
-typedef struct arm_code_gen_t {
-	const arch_code_generator_if_t *impl;           /**< implementation */
-	ir_graph                       *irg;            /**< current irg */
-	arm_isa_t                      *isa;            /**< the isa instance */
-	char                            dump;           /**< set to 1 if graphs should be dumped */
-} arm_code_gen_t;
-
-
 struct arm_isa_t {
 	arch_env_t     base;      /**< must be derived from arch_env_t */
 	int            fpu_arch;      /**< FPU architecture */
-	arm_code_gen_t *cg;           /**< current code generator */
 };
 
 #endif

@@ -200,8 +200,11 @@ static bool is_simple_sse_Const(ir_node *node)
  */
 static ir_node *get_symconst_base(void)
 {
-	if (be_get_irg_options(env_cg->irg)->pic) {
-		return arch_code_generator_get_pic_base(env_cg);
+	ir_graph *irg = current_ir_graph;
+
+	if (be_get_irg_options(irg)->pic) {
+		const arch_env_t *arch_env = be_get_irg_arch_env(irg);
+		return arch_env->impl->get_pic_base(irg);
 	}
 
 	return noreg_GP;
@@ -847,7 +850,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		build_address(am, op2, 0);
 		new_op1     = (op1 == NULL ? NULL : be_transform_node(op1));
 		if (mode_is_float(mode)) {
-			new_op2 = ia32_new_NoReg_vfp(env_cg);
+			new_op2 = ia32_new_NoReg_vfp(current_ir_graph);
 		} else {
 			new_op2 = noreg_GP;
 		}
@@ -859,7 +862,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 		build_address(am, op1, 0);
 
 		if (mode_is_float(mode)) {
-			noreg = ia32_new_NoReg_vfp(env_cg);
+			noreg = ia32_new_NoReg_vfp(current_ir_graph);
 		} else {
 			noreg = noreg_GP;
 		}
@@ -1035,7 +1038,7 @@ static ir_node *get_fpcw(void)
 	if (initial_fpcw != NULL)
 		return initial_fpcw;
 
-	fpcw         = be_abi_get_ignore_irn(be_get_irg_abi(env_cg->irg),
+	fpcw         = be_abi_get_ignore_irn(be_get_irg_abi(current_ir_graph),
 	                                     &ia32_fp_cw_regs[REG_FPCW]);
 	initial_fpcw = be_transform_node(fpcw);
 
@@ -1804,7 +1807,7 @@ static ir_node *gen_Minus(ir_node *node)
 			/* TODO: non-optimal... if we have many xXors, then we should
 			 * rather create a load for the const and use that instead of
 			 * several AM nodes... */
-			ir_node *noreg_xmm = ia32_new_NoReg_xmm(env_cg);
+			ir_node *noreg_xmm = ia32_new_NoReg_xmm(current_ir_graph);
 
 			new_node = new_bd_ia32_xXor(dbgi, block, get_symconst_base(),
 			                            noreg_GP, nomem, new_op, noreg_xmm);
@@ -1856,7 +1859,7 @@ static ir_node *create_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 		new_op = be_transform_node(op);
 
 		if (ia32_cg_config.use_sse2) {
-			ir_node *noreg_fp = ia32_new_NoReg_xmm(env_cg);
+			ir_node *noreg_fp = ia32_new_NoReg_xmm(current_ir_graph);
 			new_node = new_bd_ia32_xAnd(dbgi, new_block, get_symconst_base(),
 			                            noreg_GP, nomem, new_op, noreg_fp);
 
@@ -2513,7 +2516,7 @@ static ir_node *gen_vfist(dbg_info *dbgi, ir_node *block, ir_node *base, ir_node
 		new_node = new_r_Proj(vfisttp, mode_M, pn_ia32_vfisttp_M);
 		*fist    = vfisttp;
 	} else {
-		ir_node *trunc_mode = ia32_new_Fpu_truncate(env_cg);
+		ir_node *trunc_mode = ia32_new_Fpu_truncate(current_ir_graph);
 
 		/* do a fist */
 		new_node = new_bd_ia32_vfist(dbgi, block, base, index, mem, val, trunc_mode);
@@ -4366,7 +4369,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.mem_proj           = nomem;
 		am.op_type            = ia32_AddrModeS;
 		am.new_op1            = res;
-		am.new_op2            = ia32_new_NoReg_vfp(env_cg);
+		am.new_op2            = ia32_new_NoReg_vfp(current_ir_graph);
 		am.pinned             = op_pin_state_floats;
 		am.commutative        = 1;
 		am.ins_permuted       = 0;
@@ -4733,7 +4736,9 @@ static ir_node *gen_be_Call(ir_node *node)
 		ir_mode *const res_mode = get_type_mode(res_type);
 
 		if (res_mode != NULL && mode_is_float(res_mode)) {
-			env_cg->do_x87_sim = 1;
+			ir_graph        *irg      = current_ir_graph;
+			ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+			irg_data->do_x87_sim = 1;
 		}
 	}
 
@@ -4742,7 +4747,7 @@ static ir_node *gen_be_Call(ir_node *node)
 
 	/* special case for PIC trampoline calls */
 	old_no_pic_adjust = no_pic_adjust;
-	no_pic_adjust     = be_get_irg_options(env_cg->irg)->pic;
+	no_pic_adjust     = be_get_irg_options(current_ir_graph)->pic;
 
 	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
 	                match_am | match_immediate);
@@ -5753,14 +5758,15 @@ static void register_transformers(void)
  */
 static void ia32_pretransform_node(void)
 {
-	ia32_code_gen_t *cg = env_cg;
+	ir_graph        *irg      = current_ir_graph;
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(current_ir_graph);
 
-	cg->noreg_gp    = be_pre_transform_node(cg->noreg_gp);
-	cg->noreg_vfp   = be_pre_transform_node(cg->noreg_vfp);
-	cg->noreg_xmm   = be_pre_transform_node(cg->noreg_xmm);
+	irg_data->noreg_gp  = be_pre_transform_node(irg_data->noreg_gp);
+	irg_data->noreg_vfp = be_pre_transform_node(irg_data->noreg_vfp);
+	irg_data->noreg_xmm = be_pre_transform_node(irg_data->noreg_xmm);
 
-	nomem    = get_irg_no_mem(current_ir_graph);
-	noreg_GP = ia32_new_NoReg_gp(cg);
+	nomem    = get_irg_no_mem(irg);
+	noreg_GP = ia32_new_NoReg_gp(irg);
 
 	get_fpcw();
 }
@@ -5860,19 +5866,18 @@ static void postprocess_fp_call_results(void)
 }
 
 /* do the transformation */
-void ia32_transform_graph(ia32_code_gen_t *cg)
+void ia32_transform_graph(ir_graph *irg)
 {
 	int cse_last;
 
 	register_transformers();
-	env_cg        = cg;
 	initial_fpcw  = NULL;
 	no_pic_adjust = 0;
 
 	be_timer_push(T_HEIGHTS);
-	heights      = heights_new(cg->irg);
+	heights      = heights_new(irg);
 	be_timer_pop(T_HEIGHTS);
-	ia32_calculate_non_address_mode_nodes(cg->irg);
+	ia32_calculate_non_address_mode_nodes(irg);
 
 	/* the transform phase is not safe for CSE (yet) because several nodes get
 	 * attributes set after their creation */
@@ -5881,7 +5886,7 @@ void ia32_transform_graph(ia32_code_gen_t *cg)
 
 	call_list  = NEW_ARR_F(ir_node *, 0);
 	call_types = NEW_ARR_F(ir_type *, 0);
-	be_transform_graph(cg->irg, ia32_pretransform_node);
+	be_transform_graph(irg, ia32_pretransform_node);
 
 	if (ia32_cg_config.use_sse2)
 		postprocess_fp_call_results();

@@ -47,12 +47,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/** holds the current code generator during transformation */
-static amd64_code_gen_t *env_cg;
-
-///* its enough to have those once */
-//static ir_node *nomem, *noreg_GP;
-
 /* Some support functions: */
 
 static inline int mode_needs_gp_reg(ir_mode *mode)
@@ -573,14 +567,6 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 
 /* Boilerplate code for transformation: */
 
-static void amd64_pretransform_node(void)
-{
-	amd64_code_gen_t *cg = env_cg;
-	(void) cg;
-
-//	nomem = get_irg_no_mem(current_ir_graph);
-}
-
 static void amd64_register_transformers(void)
 {
 	be_start_transform_setup();
@@ -603,12 +589,10 @@ static void amd64_register_transformers(void)
 	be_set_transform_function(op_Minus,        gen_Minus);
 }
 
-
-void amd64_transform_graph(amd64_code_gen_t *cg)
+void amd64_transform_graph(ir_graph *irg)
 {
 	amd64_register_transformers();
-	env_cg = cg;
-	be_transform_graph(cg->irg, amd64_pretransform_node);
+	be_transform_graph(irg, NULL);
 }
 
 void amd64_init_transform(void)

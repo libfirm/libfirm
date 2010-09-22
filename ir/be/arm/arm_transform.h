@@ -29,7 +29,7 @@
 /**
  * Transform a Firm graph into an ARM graph.
  */
-void arm_transform_graph(arm_code_gen_t *cg);
+void arm_transform_graph(ir_graph *irg);
 
 void arm_init_transform(void);
 

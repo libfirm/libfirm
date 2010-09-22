@@ -58,7 +58,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static sparc_code_gen_t      *env_cg;
 static beabi_helper_env_t    *abihelper;
 static const arch_register_t *sp_reg = &sparc_gp_regs[REG_SP];
 static const arch_register_t *fp_reg = &sparc_gp_regs[REG_FRAME_POINTER];
@@ -811,7 +810,9 @@ static ir_node *gen_Minus(ir_node *node)
  */
 static ir_entity *create_float_const_entity(tarval *tv)
 {
-	ir_entity        *entity = (ir_entity*) pmap_get(env_cg->constants, tv);
+	const arch_env_t *arch_env = be_get_irg_arch_env(current_ir_graph);
+	sparc_isa_t      *isa      = (sparc_isa_t*) arch_env;
+	ir_entity        *entity   = (ir_entity*) pmap_get(isa->constants, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
 	ir_type          *type;
@@ -830,7 +831,7 @@ static ir_entity *create_float_const_entity(tarval *tv)
 	initializer = create_initializer_tarval(tv);
 	set_entity_initializer(entity, initializer);
 
-	pmap_insert(env_cg->constants, tv, entity);
+	pmap_insert(isa->constants, tv, entity);
 	return entity;
 }
 
@@ -2022,7 +2023,7 @@ static ir_node *gen_Jmp(ir_node *node)
 /**
  * configure transformation callbacks
  */
-void sparc_register_transformers(void)
+static void sparc_register_transformers(void)
 {
 	be_start_transform_setup();
 
@@ -2083,14 +2084,12 @@ static void assure_fp_keep(void)
 /**
  * Transform a Firm graph into a SPARC graph.
  */
-void sparc_transform_graph(sparc_code_gen_t *cg)
+void sparc_transform_graph(ir_graph *irg)
 {
-	ir_graph  *irg    = cg->irg;
 	ir_entity *entity = get_irg_entity(irg);
 	ir_type   *frame_type;
 
 	sparc_register_transformers();
-	env_cg = cg;
 
 	node_to_stack = pmap_create();
 
@@ -2104,7 +2103,7 @@ void sparc_transform_graph(sparc_code_gen_t *cg)
 	cconv = sparc_decide_calling_convention(get_entity_type(entity), false);
 	create_stacklayout(irg);
 
-	be_transform_graph(cg->irg, NULL);
+	be_transform_graph(irg, NULL);
 	assure_fp_keep();
 
 	be_abihelper_finish(abihelper);
@@ -2120,7 +2119,7 @@ void sparc_transform_graph(sparc_code_gen_t *cg)
 	be_add_missing_keeps(irg);
 
 	/* do code placement, to optimize the position of constants */
-	place_code(cg->irg);
+	place_code(irg);
 }
 
 void sparc_init_transform(void)

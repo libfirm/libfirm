@@ -135,15 +135,9 @@ static const arch_irn_ops_t sparc_irn_ops = {
  * Transforms the standard firm graph into
  * a SPARC firm graph
  */
-static void sparc_prepare_graph(void *self)
+static void sparc_prepare_graph(ir_graph *irg)
 {
-	sparc_code_gen_t *cg = self;
-
-	/* transform FIRM into SPARC asm nodes */
-	sparc_transform_graph(cg);
-
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "transformed");
+	sparc_transform_graph(irg);
 }
 
 static bool sparc_modifies_flags(const ir_node *node)
@@ -156,13 +150,12 @@ static bool sparc_modifies_fp_flags(const ir_node *node)
 	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
 }
 
-static void sparc_before_ra(void *self)
+static void sparc_before_ra(ir_graph *irg)
 {
-	sparc_code_gen_t *cg = self;
 	/* fixup flags register */
-	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_flags_class],
+	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_flags_class],
 	                   NULL, sparc_modifies_flags);
-	be_sched_fix_flags(cg->irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
+	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
 	                   NULL, sparc_modifies_fp_flags);
 }
 
@@ -282,66 +275,20 @@ static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
 	}
 }
 
-static void sparc_after_ra(void *self)
+static void sparc_after_ra(ir_graph *irg)
 {
-	sparc_code_gen_t *cg      = self;
-	ir_graph         *irg     = cg->irg;
-	be_fec_env_t     *fec_env = be_new_frame_entity_coalescer(irg);
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity);
 	be_free_frame_entity_coalescer(fec_env);
 
-	irg_block_walk_graph(cg->irg, NULL, sparc_after_ra_walker, NULL);
+	irg_block_walk_graph(irg, NULL, sparc_after_ra_walker, NULL);
 }
 
-/**
- * Emits the code, closes the output file and frees
- * the code generator interface.
- */
-static void sparc_emit_and_done(void *self)
+static void sparc_init_graph(ir_graph *irg)
 {
-	sparc_code_gen_t *cg  = self;
-	ir_graph         *irg = cg->irg;
-
-	sparc_emit_routine(irg);
-
-	/* de-allocate code generator */
-	free(cg);
-}
-
-static void *sparc_cg_init(ir_graph *irg);
-
-static const arch_code_generator_if_t sparc_code_gen_if = {
-	sparc_cg_init,
-	NULL,                 /* get_pic_base hook */
-	NULL,                 /* before abi introduce hook */
-	sparc_prepare_graph,
-	NULL,                 /* spill hook */
-	sparc_before_ra,      /* before register allocation hook */
-	sparc_after_ra,       /* after register allocation hook */
-	NULL,
-	sparc_emit_and_done
-};
-
-/**
- * Initializes the code generator.
- */
-static void *sparc_cg_init(ir_graph *irg)
-{
-	sparc_isa_t      *isa = (sparc_isa_t *) be_get_irg_arch_env(irg);
-	sparc_code_gen_t *cg  = XMALLOCZ(sparc_code_gen_t);
-
-	cg->impl      = &sparc_code_gen_if;
-	cg->irg       = irg;
-	cg->isa       = isa;
-	cg->dump      = (be_get_irg_options(irg)->dump_flags & DUMP_BE) != 0;
-	cg->constants = pmap_create();
-
-	/* enter the current code generator */
-	isa->cg = cg;
-
-	return (arch_code_generator_t*) cg;
+	(void) irg;
 }
 
 const arch_isa_if_t sparc_isa_if;
@@ -359,7 +306,7 @@ static sparc_isa_t sparc_isa_template = {
 		5,                                  /* costs for a reload instruction */
 		true,                               /* custom abi handling */
 	},
-	NULL						/* current code generator */
+	NULL,     /* constants */
 };
 
 /**
@@ -532,6 +479,7 @@ static arch_env_t *sparc_init(FILE *outfile)
 
 	isa = XMALLOC(sparc_isa_t);
 	memcpy(isa, &sparc_isa_template, sizeof(*isa));
+	isa->constants = pmap_create();
 
 	be_emit_init(outfile);
 
@@ -552,8 +500,9 @@ static void sparc_done(void *self)
 	/* emit now all global declarations */
 	be_gas_emit_decls(isa->base.main_env);
 
+	pmap_destroy(isa->constants);
 	be_emit_exit();
-	free(self);
+	free(isa);
 }
 
 static unsigned sparc_get_n_reg_class(void)
@@ -591,16 +540,6 @@ static int sparc_to_appear_in_schedule(void *block_env, const ir_node *irn)
 		return -1;
 
 	return 1;
-}
-
-/**
- * Initializes the code generator interface.
- */
-static const arch_code_generator_if_t *sparc_get_code_generator_if(
-		void *self)
-{
-	(void) self;
-	return &sparc_code_gen_if;
 }
 
 list_sched_selector_t sparc_sched_selector;
@@ -721,7 +660,6 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_get_reg_class,
 	sparc_get_reg_class_for_mode,
 	NULL,
-	sparc_get_code_generator_if,
 	sparc_get_list_sched_selector,
 	sparc_get_ilp_sched_selector,
 	sparc_get_reg_class_alignment,
@@ -731,7 +669,16 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	sparc_parse_asm_constraint,
-	sparc_is_valid_clobber
+	sparc_is_valid_clobber,
+
+	sparc_init_graph,
+	NULL, /* get_pic_base */
+	NULL, /* before_abi */
+	sparc_prepare_graph,
+	sparc_before_ra,
+	sparc_after_ra,
+	NULL, /* finish */
+	sparc_emit_routine,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc);

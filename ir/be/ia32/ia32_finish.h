@@ -32,11 +32,10 @@
 /**
  * Check 2-Addresscode constraints and call peephole optimizations.
  * @param irg  The irg to finish
- * @param cg   The codegenerator object for the irg
  */
-void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg);
+void ia32_finish_irg(ir_graph *irg);
 
 /** Initialize the finisher. */
 void ia32_init_finish(void);
 
-#endif /* FIRM_BE_IA32_IA32_FINISH_H */
+#endif

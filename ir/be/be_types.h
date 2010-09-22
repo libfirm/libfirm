@@ -35,8 +35,6 @@ typedef struct arch_flag_t               arch_flag_t;
 typedef struct arch_inverse_t            arch_inverse_t;
 typedef struct arch_isa_if_t             arch_isa_if_t;
 typedef struct arch_env_t                arch_env_t;
-typedef struct arch_code_generator_t     arch_code_generator_t;
-typedef struct arch_code_generator_if_t  arch_code_generator_if_t;
 
 /**
  * Some flags describing a node in more detail.

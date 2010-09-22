@@ -2095,18 +2095,26 @@ static int can_address_relative(ir_entity *entity)
 		&& !(get_entity_linkage(entity) & IR_LINKAGE_MERGE);
 }
 
+static ir_node *get_pic_base(ir_graph *irg)
+{
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
+	if (arch_env->impl->get_pic_base == NULL)
+		return NULL;
+	return arch_env->impl->get_pic_base(irg);
+}
+
 /** patches SymConsts to work in position independent code */
 static void fix_pic_symconsts(ir_node *node, void *data)
 {
-	ir_node      *pic_base;
-	ir_node      *add;
-	ir_node      *block;
-	ir_mode      *mode;
-	ir_node      *load;
-	ir_node      *load_res;
-	ir_graph     *irg = get_irn_irg(node);
-	int           arity, i;
-	be_main_env_t *be = be_get_irg_main_env(irg);
+	ir_graph         *irg = get_irn_irg(node);
+	be_main_env_t    *be  = be_get_irg_main_env(irg);
+	ir_node          *pic_base;
+	ir_node          *add;
+	ir_node          *block;
+	ir_mode          *mode;
+	ir_node          *load;
+	ir_node          *load_res;
+	int               arity, i;
 	(void) data;
 
 	arity = get_irn_arity(node);
@@ -2142,7 +2150,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 
 		/* everything else is accessed relative to EIP */
 		mode     = get_irn_mode(pred);
-		pic_base = arch_code_generator_get_pic_base(be_get_irg_cg(irg));
+		pic_base = get_pic_base(irg);
 
 		/* all ok now for locally constructed stuff */
 		if (can_address_relative(entity)) {

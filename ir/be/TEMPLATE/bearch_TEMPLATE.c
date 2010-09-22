@@ -101,12 +101,10 @@ static const arch_irn_ops_t TEMPLATE_irn_ops = {
  * Transforms the standard firm graph into
  * a TEMLPATE firm graph
  */
-static void TEMPLATE_prepare_graph(void *self)
+static void TEMPLATE_prepare_graph(ir_graph *irg)
 {
-	TEMPLATE_code_gen_t *cg = self;
-
 	/* transform nodes into assembler instructions */
-	TEMPLATE_transform_graph(cg);
+	TEMPLATE_transform_graph(irg);
 }
 
 
@@ -114,69 +112,27 @@ static void TEMPLATE_prepare_graph(void *self)
 /**
  * Called immediatly before emit phase.
  */
-static void TEMPLATE_finish_irg(void *self)
+static void TEMPLATE_finish_irg(ir_graph *irg)
 {
-	(void) self;
+	(void) irg;
 }
 
 
-static void TEMPLATE_before_ra(void *self)
+static void TEMPLATE_before_ra(ir_graph *irg)
 {
-	(void) self;
+	(void) irg;
 	/* Some stuff you need to do after scheduling but before register allocation */
 }
 
-static void TEMPLATE_after_ra(void *self)
+static void TEMPLATE_after_ra(ir_graph *irg)
 {
-	(void) self;
+	(void) irg;
 	/* Some stuff you need to do immediatly after register allocation */
 }
 
-
-
-/**
- * Emits the code, closes the output file and frees
- * the code generator interface.
- */
-static void TEMPLATE_emit_and_done(void *self)
+static void TEMPLATE_init_graph(ir_graph *irg)
 {
-	TEMPLATE_code_gen_t *cg = self;
-	ir_graph           *irg = cg->irg;
-
-	TEMPLATE_emit_routine(irg);
-
-	/* de-allocate code generator */
-	free(cg);
-}
-
-static void *TEMPLATE_cg_init(ir_graph *irg);
-
-static const arch_code_generator_if_t TEMPLATE_code_gen_if = {
-	TEMPLATE_cg_init,
-	NULL,                    /* get_pic_base hook */
-	NULL,                    /* before abi introduce hook */
-	TEMPLATE_prepare_graph,
-	NULL,                    /* spill hook */
-	TEMPLATE_before_ra,      /* before register allocation hook */
-	TEMPLATE_after_ra,       /* after register allocation hook */
-	TEMPLATE_finish_irg,
-	TEMPLATE_emit_and_done
-};
-
-/**
- * Initializes the code generator.
- */
-static void *TEMPLATE_cg_init(ir_graph *irg)
-{
-	const arch_env_t    *arch_env = be_get_irg_arch_env(irg);
-	TEMPLATE_isa_t      *isa      = (TEMPLATE_isa_t *) arch_env;
-	TEMPLATE_code_gen_t *cg       = XMALLOC(TEMPLATE_code_gen_t);
-
-	cg->impl = &TEMPLATE_code_gen_if;
-	cg->irg  = irg;
-	cg->isa  = isa;
-
-	return (arch_code_generator_t *)cg;
+	(void) irg;
 }
 
 
@@ -400,16 +356,6 @@ static int TEMPLATE_to_appear_in_schedule(void *block_env, const ir_node *irn)
 	return 1;
 }
 
-/**
- * Initializes the code generator interface.
- */
-static const arch_code_generator_if_t *TEMPLATE_get_code_generator_if(
-		void *self)
-{
-	(void) self;
-	return &TEMPLATE_code_gen_if;
-}
-
 list_sched_selector_t TEMPLATE_sched_selector;
 
 /**
@@ -510,7 +456,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_reg_class,
 	TEMPLATE_get_reg_class_for_mode,
 	TEMPLATE_get_call_abi,
-	TEMPLATE_get_code_generator_if,
 	TEMPLATE_get_list_sched_selector,
 	TEMPLATE_get_ilp_sched_selector,
 	TEMPLATE_get_reg_class_alignment,
@@ -520,7 +465,16 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	TEMPLATE_parse_asm_constraint,
-	TEMPLATE_is_valid_clobber
+	TEMPLATE_is_valid_clobber,
+
+	TEMPLATE_init_graph,
+	NULL,   /* get_pic_base */
+	NULL,   /* before_abi */
+	TEMPLATE_prepare_graph,
+	TEMPLATE_before_ra,
+	TEMPLATE_after_ra,
+	TEMPLATE_finish_irg,
+	TEMPLATE_emit_routine,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE);

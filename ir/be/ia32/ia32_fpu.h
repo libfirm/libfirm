@@ -31,6 +31,6 @@
 /**
  * Handle switching of fpu mode
  */
-void ia32_setup_fpu_mode(ia32_code_gen_t *cg);
+void ia32_setup_fpu_mode(ir_graph *irg);
 
-#endif /* FIRM_BE_IA32_IA32_FPU_H */
+#endif

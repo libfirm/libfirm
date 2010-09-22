@@ -32,15 +32,14 @@
 /**
  * Prepares irg for codegeneration. Places consts and transform reference mode
  * nodes into mode_Iu nodes.
- * @param cg  The ia32 codegenerator object
  */
-void ia32_pre_transform_phase(ia32_code_gen_t *cg);
+void ia32_pre_transform_phase(ir_graph *irg);
 
 /**
  * Performs conv and address mode optimizations.
  * @param cg  The ia32 codegenerator object
  */
-void ia32_optimize_graph(ia32_code_gen_t *cg);
+void ia32_optimize_graph(ir_graph *irg);
 
 /**
  * Performs Peephole Optimizations an a graph.
@@ -48,7 +47,7 @@ void ia32_optimize_graph(ia32_code_gen_t *cg);
  * @param irg   the graph
  * @param cg    the code generator object
  */
-void ia32_peephole_optimization(ia32_code_gen_t *cg);
+void ia32_peephole_optimization(ir_graph *irg);
 
 /** Initialize the ia32 address mode optimizer. */
 void ia32_init_optimize(void);

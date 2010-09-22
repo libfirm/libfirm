@@ -738,7 +738,8 @@ const char *get_ia32_orig_node(const ir_node *node)
 
 static const char *ia32_get_old_node_name(const ir_node *irn)
 {
-	struct obstack *obst = env_cg->isa->name_obst;
+	ir_graph       *irg  = get_irn_irg(irn);
+	struct obstack *obst = be_get_be_obst(irg);
 
 	lc_eoprintf(firm_get_arg_env(), obst, "%+F", irn);
 	obstack_1grow(obst, 0);
@@ -816,13 +817,15 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 
 void init_ia32_x87_attributes(ir_node *res)
 {
+	ir_graph        *irg      = get_irn_irg(res);
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
 	attr->attr_type   |= IA32_ATTR_ia32_x87_attr_t;
 #else
 	(void) res;
 #endif
-	ia32_current_cg->do_x87_sim = 1;
+	irg_data->do_x87_sim = 1;
 }
 
 void init_ia32_asm_attributes(ir_node *res)

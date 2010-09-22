@@ -78,7 +78,6 @@ typedef struct be_irg_t {
 	ir_graph              *irg;
 	be_main_env_t         *main_env;
 	be_abi_irg_t          *abi;
-	arch_code_generator_t *cg;
 	ir_exec_freq          *exec_freq;
 	be_dom_front_info_t   *dom_front;
 	be_lv_t               *lv;
@@ -87,8 +86,9 @@ typedef struct be_irg_t {
 	                                    nodes. */
 	struct obstack         obst; /**< birg obstack (mainly used to keep
 	                                  register constraints which we can't keep
-	                                  in the irg obst, because it gets replace
+	                                  in the irg obst, because it gets replaced
 	                                  during code selection) */
+	void                  *isa_link; /**< architecture specific per-graph data*/
 } be_irg_t;
 
 static inline be_irg_t *be_birg_from_irg(const ir_graph *irg)
@@ -129,11 +129,6 @@ static inline void be_set_irg_abi(ir_graph *irg, be_abi_irg_t *abi)
 static inline be_options_t *be_get_irg_options(const ir_graph *irg)
 {
 	return be_birg_from_irg(irg)->main_env->options;
-}
-
-static inline arch_code_generator_t *be_get_irg_cg(const ir_graph *irg)
-{
-	return be_birg_from_irg(irg)->cg;
 }
 
 /** deprecated */

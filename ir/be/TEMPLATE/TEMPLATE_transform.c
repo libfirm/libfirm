@@ -272,10 +272,10 @@ static void TEMPLATE_register_transformers(void)
 /**
  * Transform generic IR-nodes into TEMPLATE machine instructions
  */
-void TEMPLATE_transform_graph(TEMPLATE_code_gen_t *cg)
+void TEMPLATE_transform_graph(ir_graph *irg)
 {
 	TEMPLATE_register_transformers();
-	be_transform_graph(cg->irg, NULL);
+	be_transform_graph(irg, NULL);
 }
 
 void TEMPLATE_init_transform(void)

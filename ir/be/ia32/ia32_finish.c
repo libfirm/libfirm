@@ -54,7 +54,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
  */
-static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
+static void ia32_transform_sub_to_neg_add(ir_node *irn)
 {
 	ir_graph *irg;
 	ir_node *in1, *in2, *noreg, *nomem, *res;
@@ -66,8 +66,9 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	if (get_ia32_op_type(irn) != ia32_Normal)
 		return;
 
-	noreg    = ia32_new_NoReg_gp(cg);
-	noreg_fp = ia32_new_NoReg_xmm(cg);
+	irg      = get_irn_irg(irn);
+	noreg    = ia32_new_NoReg_gp(irg);
+	noreg_fp = ia32_new_NoReg_xmm(irg);
 	nomem    = new_NoMem();
 	in1      = get_irn_n(irn, n_ia32_binary_left);
 	in2      = get_irn_n(irn, n_ia32_binary_right);
@@ -82,7 +83,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn, ia32_code_gen_t *cg)
 	if (out_reg != in2_reg)
 		return;
 
-	irg   = cg->irg;
 	block = get_nodes_block(irn);
 	dbg   = get_irn_dbg_info(irn);
 
@@ -441,8 +441,8 @@ static void fix_am_source(ir_node *irn)
  */
 static void ia32_finish_irg_walker(ir_node *block, void *env)
 {
-	ia32_code_gen_t *cg = env;
 	ir_node *irn, *next;
+	(void) env;
 
 	/* first: turn back AM source if necessary */
 	for (irn = sched_first(block); ! sched_is_end(irn); irn = next) {
@@ -455,7 +455,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 
 		/* check if there is a sub which need to be transformed */
 		if (is_ia32_Sub(irn) || is_ia32_xSub(irn)) {
-			ia32_transform_sub_to_neg_add(irn, cg);
+			ia32_transform_sub_to_neg_add(irn);
 		}
 	}
 
@@ -484,7 +484,7 @@ static void ia32_push_on_queue_walker(ir_node *block, void *env)
 /**
  * Add Copy nodes for not fulfilled should_be_equal constraints
  */
-void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg)
+void ia32_finish_irg(ir_graph *irg)
 {
 	waitq *wq = new_waitq();
 
@@ -493,7 +493,7 @@ void ia32_finish_irg(ir_graph *irg, ia32_code_gen_t *cg)
 
 	while (! waitq_empty(wq)) {
 		ir_node *block = waitq_get(wq);
-		ia32_finish_irg_walker(block, cg);
+		ia32_finish_irg_walker(block, NULL);
 	}
 	del_waitq(wq);
 }

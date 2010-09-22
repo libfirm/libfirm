@@ -52,8 +52,8 @@ void ia32_emit_unop(const ir_node *node, int pos);
 void ia32_emit_am(const ir_node *node);
 void ia32_emit_x87_binop(const ir_node *node);
 
-void ia32_gen_routine(ia32_code_gen_t *cg, ir_graph *irg);
-void ia32_gen_binary_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg);
+void ia32_gen_routine(ir_graph *irg);
+void ia32_gen_binary_routine(ir_graph *irg);
 
 /** Initializes the Emitter. */
 void ia32_init_emitter(void);

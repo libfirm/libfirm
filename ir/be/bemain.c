@@ -580,7 +580,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_irg_t *birg = &birgs[i];
 		ir_graph *irg  = birg->irg;
 		optimization_state_t state;
-		const arch_code_generator_if_t *cg_if;
 
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
@@ -605,15 +604,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 		be_timer_pop(T_VERIFY);
 
-		/* Get the code generator interface. */
-		cg_if = arch_env_get_code_generator_if(arch_env);
-
 		/* get a code generator for this graph. */
-		birg->cg = cg_if->init(irg);
+		arch_env->impl->init_graph(irg);
 
 		/* some transformations need to be done before abi introduce */
-		assert(birg->cg->impl->before_abi == NULL || !arch_env->custom_abi);
-		arch_code_generator_before_abi(birg->cg);
+		if (arch_env->impl->before_abi != NULL)
+			arch_env->impl->before_abi(irg);
 
 		/* implement the ABI conventions. */
 		be_timer_push(T_ABI);
@@ -645,7 +641,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* perform codeselection */
 		be_timer_push(T_CODEGEN);
-		arch_code_generator_prepare_graph(birg->cg);
+		if (arch_env->impl->prepare_graph != NULL)
+			arch_env->impl->prepare_graph(irg);
 		be_timer_pop(T_CODEGEN);
 
 		if (be_options.verify_option == BE_VERIFY_WARN) {
@@ -712,7 +709,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* stuff needs to be done after scheduling but before register allocation */
 		be_timer_push(T_RA_PREPARATION);
-		arch_code_generator_before_ra(birg->cg);
+		if (arch_env->impl->before_ra != NULL)
+			arch_env->impl->before_ra(irg);
 		be_timer_pop(T_RA_PREPARATION);
 
 		/* connect all stack modifying nodes together (see beabi.c) */
@@ -745,7 +743,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* let the code generator prepare the graph for emitter */
 		be_timer_push(T_FINISH);
-		arch_code_generator_after_ra(birg->cg);
+		if (arch_env->impl->after_ra != NULL)
+			arch_env->impl->after_ra(irg);
 		be_timer_pop(T_FINISH);
 
 		/* fix stack offsets */
@@ -758,7 +757,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		dump(DUMP_SCHED, irg, "fix_stack_after_ra");
 
 		be_timer_push(T_FINISH);
-		arch_code_generator_finish(birg->cg);
+		if (arch_env->impl->finish != NULL)
+			arch_env->impl->finish(irg);
 		be_timer_pop(T_FINISH);
 
 		dump(DUMP_FINAL, irg, "finish");
@@ -787,7 +787,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* emit assembler code */
 		be_timer_push(T_EMIT);
-		arch_code_generator_done(birg->cg);
+		if (arch_env->impl->emit != NULL)
+			arch_env->impl->emit(irg);
 		be_timer_pop(T_EMIT);
 
 		dump(DUMP_FINAL, irg, "end");

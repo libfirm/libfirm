@@ -27,6 +27,6 @@
 
 void amd64_init_transform(void);
 
-void amd64_transform_graph(amd64_code_gen_t *cg);
+void amd64_transform_graph(ir_graph *irg);
 
 #endif

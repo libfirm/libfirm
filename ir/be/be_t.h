@@ -82,14 +82,13 @@ struct be_options_t {
 };
 
 struct be_main_env_t {
-	arch_env_t            *arch_env;
-	be_options_t          *options;              /**< backend options */
-	arch_code_generator_t *cg;
-	const char            *cup_name;             /**< name of the compilation unit */
-	pmap                  *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
-	ir_type               *pic_trampolines_type; /**< Class type containing all trampolines */
-	pmap                  *ent_pic_symbol_map;
-	ir_type               *pic_symbols_type;
+	arch_env_t   *arch_env;
+	be_options_t *options;              /**< backend options */
+	const char   *cup_name;             /**< name of the compilation unit */
+	pmap         *ent_trampoline_map;   /**< A map containing PIC trampolines for methods. */
+	ir_type      *pic_trampolines_type; /**< Class type containing all trampolines */
+	pmap         *ent_pic_symbol_map;
+	ir_type      *pic_symbols_type;
 };
 
 extern unsigned short asm_constraint_flags[256];

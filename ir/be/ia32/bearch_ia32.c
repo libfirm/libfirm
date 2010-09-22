@@ -99,7 +99,6 @@ transformer_t be_transformer = TRANSFORMER_DEFAULT;
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 ir_mode         *mode_fpcw       = NULL;
-ia32_code_gen_t *ia32_current_cg = NULL;
 
 /** The current omit-fp state */
 static unsigned ia32_curr_fp_ommitted  = 0;
@@ -127,7 +126,7 @@ typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
 /**
  * Used to create per-graph unique pseudo nodes.
  */
-static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
+static inline ir_node *create_const(ir_graph *irg, ir_node **place,
                                     create_const_node_func func,
                                     const arch_register_t* reg)
 {
@@ -136,7 +135,7 @@ static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 	if (*place != NULL)
 		return *place;
 
-	block = get_irg_start_block(cg->irg);
+	block = get_irg_start_block(irg);
 	res = func(NULL, block);
 	arch_set_irn_register(res, reg);
 	*place = res;
@@ -145,27 +144,31 @@ static inline ir_node *create_const(ia32_code_gen_t *cg, ir_node **place,
 }
 
 /* Creates the unique per irg GP NoReg node. */
-ir_node *ia32_new_NoReg_gp(ia32_code_gen_t *cg)
+ir_node *ia32_new_NoReg_gp(ir_graph *irg)
 {
-	return create_const(cg, &cg->noreg_gp, new_bd_ia32_NoReg_GP,
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	return create_const(irg, &irg_data->noreg_gp, new_bd_ia32_NoReg_GP,
 	                    &ia32_gp_regs[REG_GP_NOREG]);
 }
 
-ir_node *ia32_new_NoReg_vfp(ia32_code_gen_t *cg)
+ir_node *ia32_new_NoReg_vfp(ir_graph *irg)
 {
-	return create_const(cg, &cg->noreg_vfp, new_bd_ia32_NoReg_VFP,
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	return create_const(irg, &irg_data->noreg_vfp, new_bd_ia32_NoReg_VFP,
 	                    &ia32_vfp_regs[REG_VFP_NOREG]);
 }
 
-ir_node *ia32_new_NoReg_xmm(ia32_code_gen_t *cg)
+ir_node *ia32_new_NoReg_xmm(ir_graph *irg)
 {
-	return create_const(cg, &cg->noreg_xmm, new_bd_ia32_NoReg_XMM,
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	return create_const(irg, &irg_data->noreg_xmm, new_bd_ia32_NoReg_XMM,
 	                    &ia32_xmm_regs[REG_XMM_NOREG]);
 }
 
-ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg)
+ir_node *ia32_new_Fpu_truncate(ir_graph *irg)
 {
-	return create_const(cg, &cg->fpu_trunc_mode, new_bd_ia32_ChangeCW,
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	return create_const(irg, &irg_data->fpu_trunc_mode, new_bd_ia32_ChangeCW,
                         &ia32_fp_cw_regs[REG_FPCW]);
 }
 
@@ -173,18 +176,19 @@ ir_node *ia32_new_Fpu_truncate(ia32_code_gen_t *cg)
 /**
  * Returns the admissible noreg register node for input register pos of node irn.
  */
-static ir_node *ia32_get_admissible_noreg(ia32_code_gen_t *cg, ir_node *irn, int pos)
+static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 {
+	ir_graph                  *irg = get_irn_irg(irn);
 	const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
 	assert(req != NULL && "Missing register requirements");
 	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
-		return ia32_new_NoReg_gp(cg);
+		return ia32_new_NoReg_gp(irg);
 
 	if (ia32_cg_config.use_sse2) {
-		return ia32_new_NoReg_xmm(cg);
+		return ia32_new_NoReg_xmm(irg);
 	} else {
-		return ia32_new_NoReg_vfp(cg);
+		return ia32_new_NoReg_vfp(irg);
 	}
 }
 
@@ -274,15 +278,15 @@ static int ia32_get_sp_bias(const ir_node *node)
 static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias)
 {
 	ia32_abi_env_t   *env      = self;
-	ia32_code_gen_t  *cg       = ia32_current_cg;
-	const arch_env_t *arch_env = be_get_irg_arch_env(env->irg);
+	ir_graph         *irg      = env->irg;
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 
 	ia32_curr_fp_ommitted = env->flags.try_omit_fp;
 	if (! env->flags.try_omit_fp) {
 		ir_node  *bl      = get_irg_start_block(env->irg);
 		ir_node  *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
 		ir_node  *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
-		ir_node  *noreg   = ia32_new_NoReg_gp(cg);
+		ir_node  *noreg   = ia32_new_NoReg_gp(irg);
 		ir_node  *push;
 
 		/* mark bp register as ignore */
@@ -763,7 +767,7 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 
 	set_irn_n(irn, n_ia32_base, get_irg_frame(get_irn_irg(irn)));
 	set_irn_n(irn, n_ia32_mem,  spill);
-	set_irn_n(irn, i,           ia32_get_admissible_noreg(ia32_current_cg, irn, i));
+	set_irn_n(irn, i,           ia32_get_admissible_noreg(irn, i));
 	set_ia32_is_reload(irn);
 }
 
@@ -789,20 +793,18 @@ static const arch_irn_ops_t ia32_irn_ops = {
 
 static ir_entity *mcount = NULL;
 
-#define ID(s) new_id_from_chars(s, sizeof(s) - 1)
-
-static void ia32_before_abi(void *self)
+static void ia32_before_abi(ir_graph *irg)
 {
-	ia32_code_gen_t *cg = self;
-	if (cg->gprof) {
+	if (be_get_irg_options(irg)->gprof) {
 		if (mcount == NULL) {
 			ir_type *tp = new_type_method(0, 0);
-			mcount = new_entity(get_glob_type(), ID("mcount"), tp);
+			ident   *id = new_id_from_str("mcount");
+			mcount = new_entity(get_glob_type(), id, tp);
 			/* FIXME: enter the right ld_ident here */
 			set_entity_ld_ident(mcount, get_entity_ident(mcount));
 			set_entity_visibility(mcount, ir_visibility_external);
 		}
-		instrument_initcall(cg->irg, mcount);
+		instrument_initcall(irg, mcount);
 	}
 }
 
@@ -810,44 +812,44 @@ static void ia32_before_abi(void *self)
  * Transforms the standard firm graph into
  * an ia32 firm graph
  */
-static void ia32_prepare_graph(void *self)
+static void ia32_prepare_graph(ir_graph *irg)
 {
-	ia32_code_gen_t *cg = self;
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 
 #ifdef FIRM_GRGEN_BE
 	switch (be_transformer) {
 	case TRANSFORMER_DEFAULT:
 		/* transform remaining nodes into assembler instructions */
-		ia32_transform_graph(cg);
+		ia32_transform_graph(irg);
 		break;
 
 	case TRANSFORMER_PBQP:
 	case TRANSFORMER_RAND:
 		/* transform nodes into assembler instructions by PBQP magic */
-		ia32_transform_graph_by_pbqp(cg);
+		ia32_transform_graph_by_pbqp(irg);
 		break;
 
 	default:
 		panic("invalid transformer");
 	}
 #else
-	ia32_transform_graph(cg);
+	ia32_transform_graph(irg);
 #endif
 
 	/* do local optimizations (mainly CSE) */
-	optimize_graph_df(cg->irg);
+	optimize_graph_df(irg);
 
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "transformed");
+	if (irg_data->dump)
+		dump_ir_graph(irg, "transformed");
 
 	/* optimize address mode */
-	ia32_optimize_graph(cg);
+	ia32_optimize_graph(irg);
 
 	/* do code placement, to optimize the position of constants */
-	place_code(cg->irg);
+	place_code(irg);
 
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "place");
+	if (irg_data->dump)
+		dump_ir_graph(irg, "place");
 }
 
 ir_node *turn_back_am(ir_node *node)
@@ -883,7 +885,7 @@ ir_node *turn_back_am(ir_node *node)
 		default:
 			panic("Unknown AM type");
 	}
-	noreg = ia32_new_NoReg_gp(ia32_current_cg);
+	noreg = ia32_new_NoReg_gp(current_ir_graph);
 	set_irn_n(node, n_ia32_base,  noreg);
 	set_irn_n(node, n_ia32_index, noreg);
 	set_ia32_am_offs_int(node, 0);
@@ -948,25 +950,23 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 /**
  * Called before the register allocator.
  */
-static void ia32_before_ra(void *self)
+static void ia32_before_ra(ir_graph *irg)
 {
-	ia32_code_gen_t *cg = self;
-
 	/* setup fpu rounding modes */
-	ia32_setup_fpu_mode(cg);
+	ia32_setup_fpu_mode(irg);
 
 	/* fixup flags */
-	be_sched_fix_flags(cg->irg, &ia32_reg_classes[CLASS_ia32_flags],
+	be_sched_fix_flags(irg, &ia32_reg_classes[CLASS_ia32_flags],
 	                   &flags_remat, NULL);
 
-	be_add_missing_keeps(cg->irg);
+	be_add_missing_keeps(irg);
 }
 
 
 /**
  * Transforms a be_Reload into a ia32 Load.
  */
-static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node)
+static void transform_to_Load(ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
 	dbg_info *dbg        = get_irn_dbg_info(node);
@@ -974,7 +974,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node)
 	ir_entity *ent       = be_get_frame_entity(node);
 	ir_mode *mode        = get_irn_mode(node);
 	ir_mode *spillmode   = get_spill_mode(node);
-	ir_node *noreg       = ia32_new_NoReg_gp(cg);
+	ir_node *noreg       = ia32_new_NoReg_gp(irg);
 	ir_node *sched_point = NULL;
 	ir_node *ptr         = get_irg_frame(irg);
 	ir_node *mem         = get_irn_n(node, be_pos_Reload_mem);
@@ -1025,7 +1025,7 @@ static void transform_to_Load(ia32_code_gen_t *cg, ir_node *node)
 /**
  * Transforms a be_Spill node into a ia32 Store.
  */
-static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node)
+static void transform_to_Store(ir_node *node)
 {
 	ir_graph *irg  = get_irn_irg(node);
 	dbg_info *dbg  = get_irn_dbg_info(node);
@@ -1033,7 +1033,7 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node)
 	ir_entity *ent = be_get_frame_entity(node);
 	const ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
 	ir_mode *mode  = get_spill_mode(spillval);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
+	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	ir_node *nomem = new_NoMem();
 	ir_node *ptr   = get_irg_frame(irg);
 	ir_node *val   = get_irn_n(node, be_pos_Spill_val);
@@ -1074,12 +1074,12 @@ static void transform_to_Store(ia32_code_gen_t *cg, ir_node *node)
 	exchange(node, store);
 }
 
-static ir_node *create_push(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
+static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
 {
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
 	ir_graph *irg = get_irn_irg(node);
+	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	ir_node *frame = get_irg_frame(irg);
 
 	ir_node *push = new_bd_ia32_Push(dbg, block, frame, noreg, mem, noreg, sp);
@@ -1094,13 +1094,13 @@ static ir_node *create_push(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpo
 	return push;
 }
 
-static ir_node *create_pop(ia32_code_gen_t *cg, ir_node *node, ir_node *schedpoint, ir_node *sp, ir_entity *ent)
+static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_entity *ent)
 {
-	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_node *block = get_nodes_block(node);
-	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_graph *irg  = get_irn_irg(node);
-	ir_node *frame = get_irg_frame(irg);
+	dbg_info *dbg   = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *frame = get_irg_frame(irg);
 
 	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg, new_NoMem(), sp);
 
@@ -1133,10 +1133,11 @@ static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
  * push/pop into/from memory cascades. This is possible without using
  * any registers.
  */
-static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
+static void transform_MemPerm(ir_node *node)
 {
 	ir_node         *block = get_nodes_block(node);
-	ir_node         *sp    = be_abi_get_ignore_irn(be_get_irg_abi(cg->irg), &ia32_gp_regs[REG_ESP]);
+	ir_graph        *irg   = get_irn_irg(node);
+	ir_node         *sp    = be_abi_get_ignore_irn(be_get_irg_abi(irg), &ia32_gp_regs[REG_ESP]);
 	int              arity = be_get_MemPerm_entity_arity(node);
 	ir_node        **pops  = ALLOCAN(ir_node*, arity);
 	ir_node         *in[1];
@@ -1160,11 +1161,11 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 			entsize = entsize2;
 		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
-		push = create_push(cg, node, node, sp, mem, inent);
+		push = create_push(node, node, sp, mem, inent);
 		sp = create_spproj(node, push, pn_ia32_Push_stack);
 		if (entsize == 8) {
 			/* add another push after the first one */
-			push = create_push(cg, node, node, sp, mem, inent);
+			push = create_push(node, node, sp, mem, inent);
 			add_ia32_am_offs_int(push, 4);
 			sp = create_spproj(node, push, pn_ia32_Push_stack);
 		}
@@ -1186,13 +1187,13 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 			entsize = entsize2;
 		assert( (entsize == 4 || entsize == 8) && "spillslot on x86 should be 32 or 64 bit");
 
-		pop = create_pop(cg, node, node, sp, outent);
+		pop = create_pop(node, node, sp, outent);
 		sp = create_spproj(node, pop, pn_ia32_Pop_stack);
 		if (entsize == 8) {
 			add_ia32_am_offs_int(pop, 4);
 
 			/* add another pop after the first one */
-			pop = create_pop(cg, node, node, sp, outent);
+			pop = create_pop(node, node, sp, outent);
 			sp = create_spproj(node, pop, pn_ia32_Pop_stack);
 		}
 
@@ -1228,18 +1229,18 @@ static void transform_MemPerm(ia32_code_gen_t *cg, ir_node *node)
 static void ia32_after_ra_walker(ir_node *block, void *env)
 {
 	ir_node *node, *prev;
-	ia32_code_gen_t *cg = env;
+	(void) env;
 
 	/* beware: the schedule is changed here */
 	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
 		prev = sched_prev(node);
 
 		if (be_is_Reload(node)) {
-			transform_to_Load(cg, node);
+			transform_to_Load(node);
 		} else if (be_is_Spill(node)) {
-			transform_to_Store(cg, node);
+			transform_to_Store(node);
 		} else if (be_is_MemPerm(node)) {
-			transform_MemPerm(cg, node);
+			transform_MemPerm(node);
 		}
 	}
 }
@@ -1322,18 +1323,16 @@ need_stackent:
  * We transform Spill and Reload here. This needs to be done before
  * stack biasing otherwise we would miss the corrected offset for these nodes.
  */
-static void ia32_after_ra(void *self)
+static void ia32_after_ra(ir_graph *irg)
 {
-	ia32_code_gen_t *cg = self;
-	ir_graph *irg = cg->irg;
-	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(cg->irg);
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 
 	/* create and coalesce frame entities */
 	irg_walk_graph(irg, NULL, ia32_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, ia32_set_frame_entity);
 	be_free_frame_entity_coalescer(fec_env);
 
-	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, cg);
+	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
 }
 
 /**
@@ -1341,118 +1340,73 @@ static void ia32_after_ra(void *self)
  * virtual with real x87 instructions, creating a block schedule and peephole
  * optimisations.
  */
-static void ia32_finish(void *self)
+static void ia32_finish(ir_graph *irg)
 {
-	ia32_code_gen_t *cg = self;
-	ir_graph        *irg = cg->irg;
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 
-	ia32_finish_irg(irg, cg);
+	ia32_finish_irg(irg);
 
 	/* we might have to rewrite x87 virtual registers */
-	if (cg->do_x87_sim) {
-		x87_simulate_graph(cg->irg);
+	if (irg_data->do_x87_sim) {
+		x87_simulate_graph(irg);
 	}
 
 	/* do peephole optimisations */
-	ia32_peephole_optimization(cg);
+	ia32_peephole_optimization(irg);
 
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
-	cg->blk_sched = be_create_block_schedule(irg);
+	irg_data->blk_sched = be_create_block_schedule(irg);
 }
 
 /**
  * Emits the code, closes the output file and frees
  * the code generator interface.
  */
-static void ia32_codegen(void *self)
+static void ia32_emit(ir_graph *irg)
 {
-	ia32_code_gen_t *cg = self;
-	ir_graph        *irg = cg->irg;
-
 	if (ia32_cg_config.emit_machcode) {
-		ia32_gen_binary_routine(cg, irg);
+		ia32_gen_binary_routine(irg);
 	} else {
-		ia32_gen_routine(cg, irg);
+		ia32_gen_routine(irg);
 	}
-
-	/* remove it from the isa */
-	cg->isa->cg = NULL;
-
-	assert(ia32_current_cg == cg);
-	ia32_current_cg = NULL;
-
-	/* de-allocate code generator */
-	free(cg);
 }
 
 /**
  * Returns the node representing the PIC base.
  */
-static ir_node *ia32_get_pic_base(void *self)
+static ir_node *ia32_get_pic_base(ir_graph *irg)
 {
+	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 	ir_node         *block;
-	ia32_code_gen_t *cg      = self;
-	ir_node         *get_eip = cg->get_eip;
+	ir_node         *get_eip = irg_data->get_eip;
 	if (get_eip != NULL)
 		return get_eip;
 
-	block       = get_irg_start_block(cg->irg);
-	get_eip     = new_bd_ia32_GetEIP(NULL, block);
-	cg->get_eip = get_eip;
+	block             = get_irg_start_block(irg);
+	get_eip           = new_bd_ia32_GetEIP(NULL, block);
+	irg_data->get_eip = get_eip;
 
 	be_dep_on_frame(get_eip);
 	return get_eip;
 }
 
-static void *ia32_cg_init(ir_graph *irg);
-
-static const arch_code_generator_if_t ia32_code_gen_if = {
-	ia32_cg_init,
-	ia32_get_pic_base,   /* return node used as base in pic code addresses */
-	ia32_before_abi,     /* before abi introduce hook */
-	ia32_prepare_graph,
-	NULL,                /* spill */
-	ia32_before_ra,      /* before register allocation hook */
-	ia32_after_ra,       /* after register allocation hook */
-	ia32_finish,         /* called before codegen */
-	ia32_codegen         /* emit && done */
-};
-
 /**
  * Initializes a IA32 code generator.
  */
-static void *ia32_cg_init(ir_graph *irg)
+static void ia32_init_graph(ir_graph *irg)
 {
-	ia32_isa_t      *isa = (ia32_isa_t *)be_get_irg_arch_env(irg);
-	ia32_code_gen_t *cg  = XMALLOCZ(ia32_code_gen_t);
+	struct obstack  *obst     = be_get_be_obst(irg);
+	ia32_irg_data_t *irg_data = OALLOCZ(obst, ia32_irg_data_t);
 
-	cg->impl      = &ia32_code_gen_if;
-	cg->irg       = irg;
-	cg->isa       = isa;
-	cg->blk_sched = NULL;
-	cg->dump      = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
-	cg->gprof     = (be_get_irg_options(irg)->gprof) ? 1 : 0;
+	irg_data->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
-	if (cg->gprof) {
+	if (be_get_irg_options(irg)->gprof) {
 		/* Linux gprof implementation needs base pointer */
 		be_get_irg_options(irg)->omit_fp = 0;
 	}
 
-	/* enter it */
-	isa->cg = cg;
-
-#ifndef NDEBUG
-	if (isa->name_obst) {
-		obstack_free(isa->name_obst, NULL);
-		obstack_init(isa->name_obst);
-	}
-#endif /* NDEBUG */
-
-	assert(ia32_current_cg == NULL);
-	ia32_current_cg = cg;
-
-	return (arch_code_generator_t *)cg;
+	be_birg_from_irg(irg)->isa_link = irg_data;
 }
 
 
@@ -1505,11 +1459,7 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* 8bit register names high */
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
-	NULL,                    /* current code generator */
 	NULL,                    /* abstract machine */
-#ifndef NDEBUG
-	NULL,                    /* name obstack */
-#endif
 };
 
 static void init_asm_constraints(void)
@@ -1596,11 +1546,6 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	ia32_build_8bit_reg_map(isa->regs_8bit);
 	ia32_build_8bit_reg_map_high(isa->regs_8bit_high);
 
-#ifndef NDEBUG
-	isa->name_obst = XMALLOC(struct obstack);
-	obstack_init(isa->name_obst);
-#endif /* NDEBUG */
-
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;
 
@@ -1637,10 +1582,6 @@ static void ia32_done(void *self)
 	pmap_destroy(isa->regs_8bit_high);
 	pmap_destroy(isa->tv_ent);
 	pmap_destroy(isa->types);
-
-#ifndef NDEBUG
-	obstack_free(isa->name_obst, NULL);
-#endif /* NDEBUG */
 
 	be_emit_exit();
 
@@ -1893,15 +1834,6 @@ static int ia32_to_appear_in_schedule(void *block_env, const ir_node *irn)
 		return 0;
 
 	return 1;
-}
-
-/**
- * Initializes the code generator interface.
- */
-static const arch_code_generator_if_t *ia32_get_code_generator_if(void *self)
-{
-	(void) self;
-	return &ia32_code_gen_if;
 }
 
 /**
@@ -2382,7 +2314,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_reg_class,
 	ia32_get_reg_class_for_mode,
 	ia32_get_call_abi,
-	ia32_get_code_generator_if,
 	ia32_get_list_sched_selector,
 	ia32_get_ilp_sched_selector,
 	ia32_get_reg_class_alignment,
@@ -2392,7 +2323,16 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_get_irg_list,
 	ia32_mark_remat,
 	ia32_parse_asm_constraint,
-	ia32_is_valid_clobber
+	ia32_is_valid_clobber,
+
+	ia32_init_graph,
+	ia32_get_pic_base,   /* return node used as base in pic code addresses */
+	ia32_before_abi,     /* before abi introduce hook */
+	ia32_prepare_graph,
+	ia32_before_ra,      /* before register allocation hook */
+	ia32_after_ra,       /* after register allocation hook */
+	ia32_finish,         /* called before codegen */
+	ia32_emit,           /* emit && done */
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);

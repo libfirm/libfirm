@@ -127,34 +127,27 @@ static const arch_irn_ops_t amd64_irn_ops = {
  * Transforms the standard firm graph into
  * a amd64 firm graph
  */
-static void amd64_prepare_graph(void *self)
+static void amd64_prepare_graph(ir_graph *irg)
 {
-	amd64_code_gen_t *cg = self;
+	amd64_irg_data_t *irg_data = amd64_get_irg_data(irg);
+	amd64_transform_graph(irg);
 
-	amd64_transform_graph (cg);
-
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "transformed");
+	if (irg_data->dump)
+		dump_ir_graph(irg, "transformed");
 }
 
 
 /**
  * Called immediatly before emit phase.
  */
-static void amd64_finish_irg(void *self)
+static void amd64_finish_irg(ir_graph *irg)
 {
-	amd64_code_gen_t *cg = self;
-	ir_graph         *irg = cg->irg;
-
-	dump_ir_graph(irg, "amd64-finished");
+	(void) irg;
 }
 
-static void amd64_before_ra(void *self)
+static void amd64_before_ra(ir_graph *irg)
 {
-	amd64_code_gen_t *cg = self;
-
-	be_sched_fix_flags(cg->irg, &amd64_reg_classes[CLASS_amd64_flags],
-	                   NULL, NULL);
+	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL);
 }
 
 
@@ -223,59 +216,23 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 	}
 }
 
-static void amd64_after_ra(void *self)
+static void amd64_after_ra(ir_graph *irg)
 {
-	amd64_code_gen_t *cg = self;
-	be_coalesce_spillslots(cg->irg);
+	be_coalesce_spillslots(irg);
 
-	irg_block_walk_graph(cg->irg, NULL, amd64_after_ra_walker, NULL);
+	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);
 }
-
-
-/**
- * Emits the code, closes the output file and frees
- * the code generator interface.
- */
-static void amd64_emit_and_done(void *self)
-{
-	amd64_code_gen_t *cg  = self;
-	ir_graph         *irg = cg->irg;
-
-	amd64_gen_routine(cg, irg);
-
-	/* de-allocate code generator */
-	free(cg);
-}
-
-static void *amd64_cg_init(ir_graph *irg);
-
-static const arch_code_generator_if_t amd64_code_gen_if = {
-	amd64_cg_init,
-	NULL,                    /* get_pic_base hook */
-	NULL,                    /* before abi introduce hook */
-	amd64_prepare_graph,
-	NULL,                    /* spill hook */
-	amd64_before_ra,      /* before register allocation hook */
-	amd64_after_ra,       /* after register allocation hook */
-	amd64_finish_irg,
-	amd64_emit_and_done
-};
 
 /**
  * Initializes the code generator.
  */
-static void *amd64_cg_init(ir_graph *irg)
+static void amd64_init_graph(ir_graph *irg)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-	amd64_isa_t      *isa      = (amd64_isa_t *) arch_env;
-	amd64_code_gen_t *cg       = XMALLOC(amd64_code_gen_t);
+	struct obstack   *obst     = be_get_be_obst(irg);
+	amd64_irg_data_t *irg_data = OALLOCZ(obst, amd64_irg_data_t);
+	irg_data->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
-	cg->impl     = &amd64_code_gen_if;
-	cg->irg      = irg;
-	cg->isa      = isa;
-	cg->dump     = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
-
-	return (arch_code_generator_t *)cg;
+	be_birg_from_irg(irg)->isa_link = irg_data;
 }
 
 
@@ -284,7 +241,7 @@ typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
 /**
  * Used to create per-graph unique pseudo nodes.
  */
-static inline ir_node *create_const(amd64_code_gen_t *cg, ir_node **place,
+static inline ir_node *create_const(ir_graph *irg, ir_node **place,
                                     create_const_node_func func,
                                     const arch_register_t* reg)
 {
@@ -293,7 +250,7 @@ static inline ir_node *create_const(amd64_code_gen_t *cg, ir_node **place,
 	if (*place != NULL)
 		return *place;
 
-	block = get_irg_start_block(cg->irg);
+	block = get_irg_start_block(irg);
 	res = func(NULL, block);
 	arch_set_irn_register(res, reg);
 	*place = res;
@@ -558,16 +515,6 @@ static int amd64_to_appear_in_schedule(void *block_env, const ir_node *irn)
 	return 1;
 }
 
-/**
- * Initializes the code generator interface.
- */
-static const arch_code_generator_if_t *amd64_get_code_generator_if(
-		void *self)
-{
-	(void) self;
-	return &amd64_code_gen_if;
-}
-
 list_sched_selector_t amd64_sched_selector;
 
 /**
@@ -669,7 +616,6 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_get_reg_class,
 	amd64_get_reg_class_for_mode,
 	amd64_get_call_abi,
-	amd64_get_code_generator_if,
 	amd64_get_list_sched_selector,
 	amd64_get_ilp_sched_selector,
 	amd64_get_reg_class_alignment,
@@ -679,7 +625,16 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_get_backend_irg_list,
 	NULL,                    /* mark remat */
 	amd64_parse_asm_constraint,
-	amd64_is_valid_clobber
+	amd64_is_valid_clobber,
+
+	amd64_init_graph,
+	NULL,              /* get_pic_base */
+	NULL,              /* before_abi */
+	amd64_prepare_graph,
+	amd64_before_ra,
+	amd64_after_ra,
+	amd64_finish_irg,
+	amd64_gen_routine,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64);

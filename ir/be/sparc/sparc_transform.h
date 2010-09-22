@@ -27,7 +27,6 @@
 
 void sparc_init_transform(void);
 
-void sparc_register_transformers(void);
+void sparc_transform_graph(ir_graph *irg);
 
-void sparc_transform_graph(sparc_code_gen_t *cg);
 #endif

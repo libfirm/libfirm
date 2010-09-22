@@ -32,18 +32,9 @@
 typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct sparc_isa_t            sparc_isa_t;
 
-typedef struct sparc_code_gen_t {
-	const arch_code_generator_if_t *impl;    /**< implementation */
-	ir_graph                       *irg;     /**< current irg */
-	sparc_isa_t                    *isa;     /**< the isa instance */
-	bool                            dump;    /**< set to 1 if graphs should
-	                                              be dumped */
-    pmap                           *constants;
-} sparc_code_gen_t;
-
 struct sparc_isa_t {
-	arch_env_t        base;      /**< must be derived from arch_env_t */
-	sparc_code_gen_t *cg;        /**< current code generator */
+	arch_env_t  base;      /**< must be derived from arch_env_t */
+    pmap       *constants;
 };
 
 /**
@@ -57,8 +48,6 @@ struct sparc_transform_env_t {
 	ir_node  *irn;      /**< The irn, to be transformed */
 	ir_mode  *mode;     /**< The mode of the irn */
 };
-
-void sparc_finish_irg(sparc_code_gen_t *cg);
 
 /**
  * Sparc ABI requires some space which is always available at the top of

@@ -459,96 +459,6 @@ struct arch_irn_ops_t {
 };
 
 /**
- * The code generator interface.
- */
-struct arch_code_generator_if_t {
-	/**
-	 * Initialize the code generator.
-	 * @param irg  A graph
-	 * @return     A newly created code generator.
-	 */
-	void *(*init)(ir_graph *irg);
-
-	/**
-	 * return node used as base in pic code addresses
-	 */
-	ir_node* (*get_pic_base)(void *self);
-
-	/**
-	 * Called before abi introduce.
-	 */
-	void (*before_abi)(void *self);
-
-	/**
-	 * Called, when the graph is being normalized.
-	 */
-	void (*prepare_graph)(void *self);
-
-	/**
-	 * Backend may provide an own spiller.
-	 * This spiller needs to spill all register classes.
-	 */
-	void (*spill)(void *self, ir_graph *irg);
-
-	/**
-	 * Called before register allocation.
-	 */
-	void (*before_ra)(void *self);
-
-	/**
-	 * Called after register allocation.
-	 */
-	void (*after_ra)(void *self);
-
-	/**
-	 * Called directly before done is called. This should be the last place
-	 * where the irg is modified.
-	 */
-	void (*finish)(void *self);
-
-	/**
-	 * Called after everything happened. This call should emit the final
-	 * assembly code but avoid changing the irg.
-	 * The code generator must also be de-allocated here.
-	 */
-	void (*done)(void *self);
-};
-
-/**
- * helper macro: call function func from the code generator
- * if it's implemented.
- */
-#define _arch_cg_call(cg, func) \
-do { \
-	if((cg)->impl->func) \
-		(cg)->impl->func(cg); \
-} while(0)
-
-#define _arch_cg_call_env(cg, env, func) \
-do { \
-	if((cg)->impl->func) \
-		(cg)->impl->func(cg, env); \
-} while(0)
-
-#define arch_code_generator_before_abi(cg)      _arch_cg_call(cg, before_abi)
-#define arch_code_generator_prepare_graph(cg)   _arch_cg_call(cg, prepare_graph)
-#define arch_code_generator_before_ra(cg)       _arch_cg_call(cg, before_ra)
-#define arch_code_generator_after_ra(cg)        _arch_cg_call(cg, after_ra)
-#define arch_code_generator_finish(cg)          _arch_cg_call(cg, finish)
-#define arch_code_generator_done(cg)            _arch_cg_call(cg, done)
-#define arch_code_generator_spill(cg, irg)      _arch_cg_call_env(cg, irg, spill)
-#define arch_code_generator_has_spiller(cg)     ((cg)->impl->spill != NULL)
-#define arch_code_generator_get_pic_base(cg)    \
-	((cg)->impl->get_pic_base != NULL ? (cg)->impl->get_pic_base(cg) : NULL)
-
-/**
- * Code generator base class.
- */
-struct arch_code_generator_t {
-	const arch_code_generator_if_t *impl;
-};
-
-/**
  * Architecture interface.
  */
 struct arch_isa_if_t {
@@ -600,13 +510,6 @@ struct arch_isa_if_t {
 	 */
 	void (*get_call_abi)(const void *self, ir_type *call_type,
 	                     be_abi_call_t *abi);
-
-	/**
-	 * Get the code generator interface.
-	 * @param self The this pointer.
-	 * @return     Some code generator interface.
-	 */
-	const arch_code_generator_if_t *(*get_code_generator_if)(void *self);
 
 	/**
 	 * Get the list scheduler to use. There is already a selector given, the
@@ -693,6 +596,51 @@ struct arch_isa_if_t {
 	 * backend
 	 */
 	int (*is_valid_clobber)(const char *clobber);
+
+	/**
+	 * Initialize the code generator.
+	 * @param irg  A graph
+	 * @return     A newly created code generator.
+	 */
+	void (*init_graph)(ir_graph *irg);
+
+	/**
+	 * return node used as base in pic code addresses
+	 */
+	ir_node* (*get_pic_base)(ir_graph *irg);
+
+	/**
+	 * Called before abi introduce.
+	 */
+	void (*before_abi)(ir_graph *irg);
+
+	/**
+	 * Called, when the graph is being normalized.
+	 */
+	void (*prepare_graph)(ir_graph *irg);
+
+	/**
+	 * Called before register allocation.
+	 */
+	void (*before_ra)(ir_graph *irg);
+
+	/**
+	 * Called after register allocation.
+	 */
+	void (*after_ra)(ir_graph *irg);
+
+	/**
+	 * Called directly before done is called. This should be the last place
+	 * where the irg is modified.
+	 */
+	void (*finish)(ir_graph *irg);
+
+	/**
+	 * Called after everything happened. This call should emit the final
+	 * assembly code but avoid changing the irg.
+	 * The code generator must also be de-allocated here.
+	 */
+	void (*emit)(ir_graph *irg);
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))
@@ -702,7 +650,6 @@ struct arch_isa_if_t {
 #define arch_env_get_reg_class(env,i)                  ((env)->impl->get_reg_class(i))
 #define arch_env_get_reg_class_for_mode(env,mode)      ((env)->impl->get_reg_class_for_mode((mode)))
 #define arch_env_get_call_abi(env,tp,abi)              ((env)->impl->get_call_abi((env), (tp), (abi)))
-#define arch_env_get_code_generator_if(env)            ((env)->impl->get_code_generator_if((env)))
 #define arch_env_get_list_sched_selector(env,selector) ((env)->impl->get_list_sched_selector((env), (selector)))
 #define arch_env_get_ilp_sched_selector(env)           ((env)->impl->get_ilp_sched_selector(env))
 #define arch_env_get_reg_class_alignment(env,cls)      ((env)->impl->get_reg_class_alignment((cls)))

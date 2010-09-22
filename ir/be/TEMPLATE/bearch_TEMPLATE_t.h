@@ -31,30 +31,8 @@
 #include "../beemitter.h"
 #include "set.h"
 
-typedef struct TEMPLATE_isa_t            TEMPLATE_isa_t;
-typedef struct TEMPLATE_code_gen_t       TEMPLATE_code_gen_t;
-typedef struct TEMPLATE_transform_env_t  TEMPLATE_transform_env_t;
-
-struct TEMPLATE_code_gen_t {
-	const arch_code_generator_if_t *impl;           /**< implementation */
-	ir_graph                       *irg;            /**< current irg */
-	TEMPLATE_isa_t                 *isa;            /**< the isa instance */
-};
-
-struct TEMPLATE_isa_t {
+typedef struct TEMPLATE_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_isa */
-};
-
-/**
- * this is a struct to minimize the number of parameters
- * for transformation walker
- */
-struct TEMPLATE_transform_env_t {
-	dbg_info *dbg;      /**< The node debug info */
-	ir_graph *irg;      /**< The irg, the node should be created in */
-	ir_node  *block;    /**< The block, the node should belong to */
-	ir_node  *irn;      /**< The irn, to be transformed */
-	ir_mode  *mode;     /**< The mode of the irn */
-};
+} TEMPLATE_isa_t;
 
 #endif

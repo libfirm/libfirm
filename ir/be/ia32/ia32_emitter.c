@@ -84,7 +84,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 #define SNPRINTF_BUF_LEN 128
 
 static const ia32_isa_t *isa;
-static ia32_code_gen_t  *cg;
 static char              pic_base_label[128];
 static ir_label_t        exc_label_id;
 static int               mark_spill_reload = 0;
@@ -1972,7 +1971,8 @@ static void ia32_emit_align_label(void)
 static int should_align_block(const ir_node *block)
 {
 	static const double DELTA = .0001;
-	ir_exec_freq *exec_freq   = be_get_irg_exec_freq(cg->irg);
+	ir_graph     *irg         = get_irn_irg(block);
+	ir_exec_freq *exec_freq   = be_get_irg_exec_freq(irg);
 	ir_node      *prev        = get_prev_block_sched(block);
 	double        block_freq;
 	double        prev_freq = 0;  /**< execfreq of the fallthrough block */
@@ -2019,7 +2019,7 @@ static void ia32_emit_block_header(ir_node *block)
 	ir_graph     *irg = current_ir_graph;
 	int           need_label = block_needs_label(block);
 	int           i, arity;
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(cg->irg);
+	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
 
 	if (block == get_irg_end_block(irg))
 		return;
@@ -2147,15 +2147,17 @@ static int cmp_exc_entry(const void *a, const void *b)
 /**
  * Main driver. Emits the code for one routine.
  */
-void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
+void ia32_gen_routine(ir_graph *irg)
 {
-	ir_entity *entity     = get_irg_entity(irg);
-	exc_entry *exc_list   = NEW_ARR_F(exc_entry, 0);
+	ir_entity        *entity    = get_irg_entity(irg);
+	exc_entry        *exc_list  = NEW_ARR_F(exc_entry, 0);
+	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
+	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
+	ir_node         **blk_sched = irg_data->blk_sched;
 	int i, n;
 
-	cg       = ia32_cg;
-	isa      = cg->isa;
-	do_pic   = be_get_irg_options(cg->irg)->pic;
+	isa      = (ia32_isa_t*) arch_env;
+	do_pic   = be_get_irg_options(irg)->pic;
 
 	be_gas_elf_type_char = '@';
 
@@ -2171,16 +2173,16 @@ void ia32_gen_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, &exc_list);
 
 	/* initialize next block links */
-	n = ARR_LEN(cg->blk_sched);
+	n = ARR_LEN(blk_sched);
 	for (i = 0; i < n; ++i) {
-		ir_node *block = cg->blk_sched[i];
-		ir_node *prev  = i > 0 ? cg->blk_sched[i-1] : NULL;
+		ir_node *block = blk_sched[i];
+		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
 
 		set_irn_link(block, prev);
 	}
 
 	for (i = 0; i < n; ++i) {
-		ir_node *block = cg->blk_sched[i];
+		ir_node *block = blk_sched[i];
 
 		ia32_gen_block(block);
 	}
@@ -4217,13 +4219,15 @@ static void gen_binary_block(ir_node *block)
 	}
 }
 
-void ia32_gen_binary_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
+void ia32_gen_binary_routine(ir_graph *irg)
 {
-	ir_entity *entity     = get_irg_entity(irg);
+	ir_entity        *entity    = get_irg_entity(irg);
+	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
+	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
+	ir_node         **blk_sched = irg_data->blk_sched;
 	int i, n;
 
-	cg  = ia32_cg;
-	isa = cg->isa;
+	isa = (ia32_isa_t*) arch_env;
 
 	ia32_register_binary_emitters();
 
@@ -4234,16 +4238,16 @@ void ia32_gen_binary_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 	irg_block_walk_graph(irg, ia32_gen_labels, NULL, NULL);
 
 	/* initialize next block links */
-	n = ARR_LEN(cg->blk_sched);
+	n = ARR_LEN(blk_sched);
 	for (i = 0; i < n; ++i) {
-		ir_node *block = cg->blk_sched[i];
-		ir_node *prev  = i > 0 ? cg->blk_sched[i-1] : NULL;
+		ir_node *block = blk_sched[i];
+		ir_node *prev  = i > 0 ? blk_sched[i-1] : NULL;
 
 		set_irn_link(block, prev);
 	}
 
 	for (i = 0; i < n; ++i) {
-		ir_node *block = cg->blk_sched[i];
+		ir_node *block = blk_sched[i];
 		gen_binary_block(block);
 	}
 
@@ -4254,8 +4258,6 @@ void ia32_gen_binary_routine(ia32_code_gen_t *ia32_cg, ir_graph *irg)
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
-
-
 
 
 void ia32_init_emitter(void)

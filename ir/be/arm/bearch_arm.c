@@ -133,43 +133,30 @@ static const arch_irn_ops_t arm_irn_ops = {
  * Transforms the standard Firm graph into
  * a ARM firm graph.
  */
-static void arm_prepare_graph(void *self)
+static void arm_prepare_graph(ir_graph *irg)
 {
-	arm_code_gen_t *cg = self;
-
 	/* transform nodes into assembler instructions */
-	arm_transform_graph(cg);
+	arm_transform_graph(irg);
 
 	/* do local optimizations (mainly CSE) */
-	local_optimize_graph(cg->irg);
-
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "transformed");
+	local_optimize_graph(irg);
 
 	/* do code placement, to optimize the position of constants */
-	place_code(cg->irg);
-
-	if (cg->dump)
-		dump_ir_graph(cg->irg, "place");
+	place_code(irg);
 }
 
 /**
  * Called immediately before emit phase.
  */
-static void arm_finish_irg(void *self)
+static void arm_finish_irg(ir_graph *irg)
 {
-	arm_code_gen_t *cg = self;
-
 	/* do peephole optimizations and fix stack offsets */
-	arm_peephole_optimization(cg);
+	arm_peephole_optimization(irg);
 }
 
-static void arm_before_ra(void *self)
+static void arm_before_ra(ir_graph *irg)
 {
-	arm_code_gen_t *cg = self;
-
-	be_sched_fix_flags(cg->irg, &arm_reg_classes[CLASS_arm_flags],
-	                   NULL, NULL);
+	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL);
 }
 
 static void transform_Reload(ir_node *node)
@@ -280,68 +267,23 @@ static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
 	}
 }
 
-static void arm_after_ra(void *self)
+static void arm_after_ra(ir_graph *irg)
 {
-	arm_code_gen_t *cg  = self;
-	ir_graph       *irg = cg->irg;
-
 	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
 
 	irg_walk_graph(irg, NULL, arm_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, arm_set_frame_entity);
 	be_free_frame_entity_coalescer(fec_env);
 
-	irg_block_walk_graph(cg->irg, NULL, arm_after_ra_walker, NULL);
+	irg_block_walk_graph(irg, NULL, arm_after_ra_walker, NULL);
 }
-
-/**
- * Emits the code, closes the output file and frees
- * the code generator interface.
- */
-static void arm_emit_and_done(void *self)
-{
-	arm_code_gen_t *cg = self;
-	ir_graph       *irg = cg->irg;
-
-	arm_gen_routine(cg, irg);
-
-	/* de-allocate code generator */
-	free(self);
-}
-
-/* forward */
-static void *arm_cg_init(ir_graph *irg);
-
-static const arch_code_generator_if_t arm_code_gen_if = {
-	arm_cg_init,
-	NULL,               /* get_pic_base */
-	NULL,               /* before abi introduce */
-	arm_prepare_graph,
-	NULL,               /* spill */
-	arm_before_ra,      /* before register allocation hook */
-	arm_after_ra,
-	arm_finish_irg,
-	arm_emit_and_done,
-};
 
 /**
  * Initializes the code generator.
  */
-static void *arm_cg_init(ir_graph *irg)
+static void arm_init_graph(ir_graph *irg)
 {
-	arm_isa_t      *isa = (arm_isa_t*) be_get_irg_arch_env(irg);
-	arm_code_gen_t *cg;
-
-	cg       = XMALLOCZ(arm_code_gen_t);
-	cg->impl = &arm_code_gen_if;
-	cg->irg  = irg;
-	cg->isa  = isa;
-	cg->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
-
-	/* enter the current code generator */
-	isa->cg = cg;
-
-	return (arch_code_generator_t *)cg;
+	(void) irg;
 }
 
 
@@ -488,7 +430,6 @@ static arm_isa_t arm_isa_template = {
 		true,                  /* we do have custom abi handling */
 	},
 	ARM_FPU_ARCH_FPE,      /* FPU architecture */
-	NULL,                  /* current code generator */
 };
 
 /**
@@ -507,7 +448,6 @@ static arch_env_t *arm_init(FILE *file_handle)
 
 	arm_register_init();
 
-	isa->cg  = NULL;
 	be_emit_init(file_handle);
 
 	arm_create_opcodes(&arm_irn_ops);
@@ -581,15 +521,6 @@ static int arm_to_appear_in_schedule(void *block_env, const ir_node *irn)
 		return -1;
 
 	return 1;
-}
-
-/**
- * Initializes the code generator interface.
- */
-static const arch_code_generator_if_t *arm_get_code_generator_if(void *self)
-{
-	(void) self;
-	return &arm_code_gen_if;
 }
 
 list_sched_selector_t arm_sched_selector;
@@ -744,7 +675,6 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_reg_class,
 	arm_get_reg_class_for_mode,
 	NULL,
-	arm_get_code_generator_if,
 	arm_get_list_sched_selector,
 	arm_get_ilp_sched_selector,
 	arm_get_reg_class_alignment,
@@ -754,7 +684,16 @@ const arch_isa_if_t arm_isa_if = {
 	arm_get_irg_list,
 	NULL,               /* mark remat */
 	arm_parse_asm_constraint,
-	arm_is_valid_clobber
+	arm_is_valid_clobber,
+
+	arm_init_graph,
+	NULL,  /* get_pic_base */
+	NULL,  /* before_abi */
+	arm_prepare_graph,
+	arm_before_ra,
+	arm_after_ra,
+	arm_finish_irg,
+	arm_gen_routine,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm);

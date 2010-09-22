@@ -62,8 +62,8 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arm_code_gen_t *cg;
-static set                  *sym_or_tv;
+static set       *sym_or_tv;
+static arm_isa_t *isa;
 
 /**
  * Returns the register at in position pos.
@@ -756,7 +756,7 @@ static void emit_be_Copy(const ir_node *irn)
 	}
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(cg->isa)) {
+		if (USE_FPA(isa)) {
 			be_emit_cstring("\tmvf");
 			be_emit_char(' ');
 			arm_emit_dest_register(irn, 0);
@@ -951,7 +951,8 @@ static void arm_emit_block_header(ir_node *block, ir_node *prev)
 	int           n_cfgpreds;
 	int           need_label;
 	int           i, arity;
-	ir_exec_freq  *exec_freq = be_get_irg_exec_freq(cg->irg);
+	ir_graph      *irg       = get_irn_irg(block);
+	ir_exec_freq  *exec_freq = be_get_irg_exec_freq(irg);
 
 	need_label = 0;
 	n_cfgpreds = get_Block_n_cfgpreds(block);
@@ -1042,14 +1043,15 @@ static int cmp_sym_or_tv(const void *elt, const void *key, size_t size)
 	return p1->u.generic != p2->u.generic;
 }
 
-void arm_gen_routine(const arm_code_gen_t *arm_cg, ir_graph *irg)
+void arm_gen_routine(ir_graph *irg)
 {
-	ir_node   **blk_sched;
-	int       i, n;
-	ir_node   *last_block = NULL;
-	ir_entity *entity     = get_irg_entity(irg);
+	ir_node          *last_block = NULL;
+	ir_entity        *entity     = get_irg_entity(irg);
+	const arch_env_t *arch_env   = be_get_irg_arch_env(irg);
+	ir_node          **blk_sched;
+	int              i, n;
 
-	cg        = arm_cg;
+	isa = (arm_isa_t*) arch_env;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);
 
 	be_gas_elf_type_char = '%';

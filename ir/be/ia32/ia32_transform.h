@@ -32,7 +32,7 @@
  * Transform firm nodes to x86 assembler nodes, ie
  * do instruction selection.
  */
-void ia32_transform_graph(ia32_code_gen_t *cg);
+void ia32_transform_graph(ir_graph *irg);
 
 /**
  * Some constants needed for code generation.

@@ -58,14 +58,12 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-/** hold the current code generator during transformation */
-static arm_code_gen_t *env_cg;
-
 static const arch_register_t *sp_reg = &arm_gp_regs[REG_SP];
 static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
 static beabi_helper_env_t    *abihelper;
 static calling_convention_t  *cconv = NULL;
+static arm_isa_t             *isa;
 
 static pmap                  *node_to_stack;
 
@@ -215,7 +213,7 @@ static ir_node *gen_Conv(ir_node *node)
 		return new_op;
 
 	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			if (mode_is_float(src_mode)) {
 				if (mode_is_float(dst_mode)) {
 					/* from float to float */
@@ -232,7 +230,7 @@ static ir_node *gen_Conv(ir_node *node)
 					return new_bd_arm_FltX(dbg, block, new_op, dst_mode);
 				}
 			}
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -509,9 +507,9 @@ static ir_node *gen_Add(ir_node *node)
 		dbg_info *dbgi    = get_irn_dbg_info(node);
 		ir_node  *new_op1 = be_transform_node(op1);
 		ir_node  *new_op2 = be_transform_node(op2);
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			return new_bd_arm_Adf(dbgi, block, new_op1, new_op2, mode);
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -556,9 +554,9 @@ static ir_node *gen_Mul(ir_node *node)
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			return new_bd_arm_Muf(dbg, block, new_op1, new_op2, mode);
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -581,9 +579,9 @@ static ir_node *gen_Quot(ir_node *node)
 
 	assert(mode != mode_E && "IEEE Extended FP not supported");
 
-	if (USE_FPA(env_cg->isa)) {
+	if (USE_FPA(isa)) {
 		return new_bd_arm_Dvf(dbg, block, new_op1, new_op2, mode);
-	} else if (USE_VFP(env_cg->isa)) {
+	} else if (USE_VFP(isa)) {
 		assert(mode != mode_E && "IEEE Extended FP not supported");
 		panic("VFP not supported yet");
 	} else {
@@ -668,9 +666,9 @@ static ir_node *gen_Sub(ir_node *node)
 	dbg_info *dbgi    = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			return new_bd_arm_Suf(dbgi, block, new_op1, new_op2, mode);
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -890,9 +888,9 @@ static ir_node *gen_Minus(ir_node *node)
 	ir_mode  *mode    = get_irn_mode(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			return new_bd_arm_Mvf(dbgi, block, op, mode);
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -915,10 +913,10 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_load = NULL;
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			new_load = new_bd_arm_Ldf(dbgi, block, new_ptr, new_mem, mode,
 			                          NULL, 0, 0, false);
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -955,10 +953,10 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node *new_store = NULL;
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			new_store = new_bd_arm_Stf(dbgi, block, new_ptr, new_val,
 			                           new_mem, mode, NULL, 0, 0, false);
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -1118,12 +1116,12 @@ static ir_node *gen_Const(ir_node *node)
 	dbg_info *dbg = get_irn_dbg_info(node);
 
 	if (mode_is_float(mode)) {
-		if (USE_FPA(env_cg->isa)) {
+		if (USE_FPA(isa)) {
 			tarval *tv = get_Const_tarval(node);
 			node       = new_bd_arm_fConst(dbg, block, tv);
 			be_dep_on_frame(node);
 			return node;
-		} else if (USE_VFP(env_cg->isa)) {
+		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
@@ -1612,7 +1610,7 @@ static ir_node *gen_Proj(ir_node *node)
 
 typedef ir_node *(*create_const_node_func)(dbg_info *db, ir_node *block);
 
-static inline ir_node *create_const(ir_node **place,
+static inline ir_node *create_const(ir_graph *irg, ir_node **place,
                                     create_const_node_func func,
                                     const arch_register_t* reg)
 {
@@ -1621,7 +1619,7 @@ static inline ir_node *create_const(ir_node **place,
 	if (*place != NULL)
 		return *place;
 
-	block = get_irg_start_block(env_cg->irg);
+	block = get_irg_start_block(irg);
 	res = func(NULL, block);
 	arch_set_irn_register(res, reg);
 	*place = res;
@@ -2149,11 +2147,11 @@ static void arm_init_fpa_immediate(void)
 /**
  * Transform a Firm graph into an ARM graph.
  */
-void arm_transform_graph(arm_code_gen_t *cg)
+void arm_transform_graph(ir_graph *irg)
 {
 	static int imm_initialized = 0;
-	ir_graph  *irg             = cg->irg;
 	ir_entity *entity          = get_irg_entity(irg);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	ir_type   *frame_type;
 
 	mode_gp = mode_Iu;
@@ -2164,7 +2162,8 @@ void arm_transform_graph(arm_code_gen_t *cg)
 		imm_initialized = 1;
 	}
 	arm_register_transformers();
-	env_cg = cg;
+
+	isa = (arm_isa_t*) arch_env;
 
 	node_to_stack = pmap_create();
 
@@ -2175,7 +2174,7 @@ void arm_transform_graph(arm_code_gen_t *cg)
 	cconv = arm_decide_calling_convention(get_entity_type(entity));
 	create_stacklayout(irg);
 
-	be_transform_graph(cg->irg, NULL);
+	be_transform_graph(irg, NULL);
 
 	be_abihelper_finish(abihelper);
 	abihelper = NULL;

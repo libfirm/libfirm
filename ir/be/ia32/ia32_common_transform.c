@@ -44,9 +44,6 @@
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 
-/** hold the current code generator during transformation */
-ia32_code_gen_t *env_cg = NULL;
-
 ir_heights_t *heights = NULL;
 
 static int check_immediate_constraint(long val, char immediate_constraint_type)
@@ -86,9 +83,11 @@ static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 
 ir_entity *create_float_const_entity(ir_node *cnst)
 {
-	ia32_isa_t       *isa = env_cg->isa;
-	tarval           *tv  = get_Const_tarval(cnst);
-	ir_entity        *res = pmap_get(isa->tv_ent, tv);
+	ir_graph         *irg      = get_irn_irg(cnst);
+	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
+	ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
+	tarval           *tv       = get_Const_tarval(cnst);
+	ir_entity        *res      = pmap_get(isa->tv_ent, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
 	ir_type          *tp;
@@ -548,7 +547,7 @@ ir_node *gen_ASM(ir_node *node)
 			if (r_clobber_bits != 0) {
 				if (parsed_constraint.all_registers_allowed) {
 					parsed_constraint.all_registers_allowed = 0;
-					be_abi_set_non_ignore_regs(be_get_irg_abi(env_cg->irg),
+					be_abi_set_non_ignore_regs(be_get_irg_abi(current_ir_graph),
 							parsed_constraint.cls,
 							&parsed_constraint.allowed_registers);
 				}

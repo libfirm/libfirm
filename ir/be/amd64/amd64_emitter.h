@@ -43,7 +43,6 @@ void amd64_emit_fp_offset(const ir_node *node);
 int get_amd64_reg_nr(ir_node *irn, int posi, int in_out);
 const char *get_amd64_in_reg_name(ir_node *irn, int pos);
 
-
-void amd64_gen_routine(const amd64_code_gen_t *cg, ir_graph *irg);
+void amd64_gen_routine(ir_graph *irg);
 
 #endif

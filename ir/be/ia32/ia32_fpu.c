@@ -87,8 +87,8 @@ static void create_fpcw_entities(void)
 static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
                                       ir_node *after)
 {
-	ia32_code_gen_t *cg = env;
 	ir_node *spill = NULL;
+	(void) env;
 
 	/* we don't spill the fpcw in unsafe mode */
 	if (ia32_cg_config.use_unsafe_floatconv) {
@@ -104,7 +104,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 	if (force == 1 || !is_ia32_ChangeCW(state)) {
 		ir_graph *irg = get_irn_irg(state);
 		ir_node *block = get_nodes_block(state);
-		ir_node *noreg = ia32_new_NoReg_gp(cg);
+		ir_node *noreg = ia32_new_NoReg_gp(irg);
 		ir_node *nomem = new_NoMem();
 		ir_node *frame = get_irg_frame(irg);
 
@@ -120,11 +120,11 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 	return spill;
 }
 
-static ir_node *create_fldcw_ent(ia32_code_gen_t *cg, ir_node *block,
-                                 ir_entity *entity)
+static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 {
+	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *nomem = new_NoMem();
-	ir_node  *noreg = ia32_new_NoReg_gp(cg);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *reload;
 
 	reload = new_bd_ia32_FldCW(NULL, block, noreg, noreg, nomem);
@@ -141,21 +141,21 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
                                        ir_node *spill, ir_node *before,
                                        ir_node *last_state)
 {
-	ia32_code_gen_t *cg    = env;
-	ir_graph        *irg   = get_irn_irg(state);
-	ir_node         *block = get_nodes_block(before);
-	ir_node         *frame = get_irg_frame(irg);
-	ir_node         *noreg = ia32_new_NoReg_gp(cg);
-	ir_node         *reload = NULL;
+	ir_graph *irg    = get_irn_irg(state);
+	ir_node  *block  = get_nodes_block(before);
+	ir_node  *frame  = get_irg_frame(irg);
+	ir_node  *noreg  = ia32_new_NoReg_gp(irg);
+	ir_node  *reload = NULL;
+	(void) env;
 
 	if (ia32_cg_config.use_unsafe_floatconv) {
 		if (fpcw_round == NULL) {
 			create_fpcw_entities();
 		}
 		if (spill != NULL) {
-			reload = create_fldcw_ent(cg, block, fpcw_round);
+			reload = create_fldcw_ent(block, fpcw_round);
 		} else {
-			reload = create_fldcw_ent(cg, block, fpcw_truncate);
+			reload = create_fldcw_ent(block, fpcw_truncate);
 		}
 		sched_add_before(before, reload);
 		return reload;
@@ -291,12 +291,12 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 	be_liveness_invalidate(be_get_irg_liveness(irg));
 }
 
-void ia32_setup_fpu_mode(ia32_code_gen_t *cg)
+void ia32_setup_fpu_mode(ir_graph *irg)
 {
 	/* do ssa construction for the fpu modes */
-	rewire_fpu_mode_nodes(cg->irg);
+	rewire_fpu_mode_nodes(irg);
 
 	/* ensure correct fpu mode for operations */
-	be_assure_state(cg->irg, &ia32_fp_cw_regs[REG_FPCW],
-	                cg, create_fpu_mode_spill, create_fpu_mode_reload);
+	be_assure_state(irg, &ia32_fp_cw_regs[REG_FPCW],
+	                NULL, create_fpu_mode_spill, create_fpu_mode_reload);
 }
