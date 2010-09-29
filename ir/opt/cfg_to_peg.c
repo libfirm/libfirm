@@ -480,12 +480,14 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 
 	/* For loops also get the outer value and build a theta. */
 	if (num_outer > 0) {
+		int depth = get_loop_depth(loop);
+
 		start_block = find_values_dom(num_outer, values + num_inner);
 		outer_value = build_gammas(
 			start_block, block, num_outer, values + num_inner
 		);
 
-		result = new_r_Theta(block, outer_value, inner_value, mode_T);
+		result = new_r_Theta(block, outer_value, inner_value, mode_T, depth);
 	}
 
 	for (i = 0; i < num_preds; i++) {
@@ -529,8 +531,7 @@ static void replace_phis(ir_graph *irg)
  * Exit blocks of for a loop iteration. The loop header is a special kind of
  * "exit". It just exits the current iteration and begins the new one.
  */
-typedef struct iter_exits
-{
+typedef struct iter_exits {
 	ir_loop     *root;
 	ir_node     *header;
 	int          num_back_edges;
@@ -794,9 +795,10 @@ static ir_node *unfold_tuples_walk(ir_node *irn, int idx, ir_mode *mode)
 	}
 	else if (is_Theta(irn)) {
 		/* Same thing for the theta. */
-		ir_node *init = unfold_tuples_walk(get_Theta_init(irn), idx, mode);
-		ir_node *next = unfold_tuples_walk(get_Theta_next(irn), idx, mode);
-		return new_r_Theta(block, init, next, mode);
+		int      depth = get_Theta_depth(irn);
+		ir_node *init  = unfold_tuples_walk(get_Theta_init(irn), idx, mode);
+		ir_node *next  = unfold_tuples_walk(get_Theta_next(irn), idx, mode);
+		return new_r_Theta(block, init, next, mode, depth);
 	}
 	else if (is_Tuple(irn)) {
 		/* Extract the appropriate value from the tuple. */
@@ -851,15 +853,25 @@ static void unfold_tuples(ir_graph *irg)
 
 static ir_node *equivalent_node_gamma(ir_node *gamma)
 {
+	ir_node *cond     = get_Gamma_cond(gamma);
 	ir_node *ir_true  = get_Gamma_true(gamma);
 	ir_node *ir_false = get_Gamma_false(gamma);
 
 	if (get_irn_mode(gamma) != mode_b) return gamma;
 
 	/* Gamma(cond, true, false) --> cond */
-	if (is_Const(ir_true) && is_Const(ir_false) &&
-		is_Const_null(ir_false) && is_Const_one(ir_true)) {
+	if (is_Const(ir_true)  && is_Const_one(ir_true) &&
+		is_Const(ir_false) && is_Const_null(ir_false)) {
 		return get_Gamma_cond(gamma);
+	}
+
+	/* Gamma(Not(cond), a, b) --> Gamma(cond, b, a) */
+	if (is_Not(cond)) {
+		cond = get_Not_op(cond);
+		set_Gamma_cond(gamma, cond);
+		set_Gamma_false(gamma, ir_true);
+		set_Gamma_true(gamma, ir_false);
+		return gamma;
 	}
 
 	return gamma;
@@ -873,10 +885,11 @@ static ir_node *transform_node_gamma(ir_node *gamma)
 	if (get_irn_mode(gamma) != mode_b) return gamma;
 
 	/* Gamma(cond, false, true) --> Not(cond) */
-	if (is_Const(ir_true) && is_Const(ir_false) &&
-		is_Const_null(ir_true) && is_Const_one(ir_false)) {
+	if (is_Const(ir_true)  && is_Const_null(ir_true) &&
+		is_Const(ir_false) && is_Const_one(ir_false)) {
 
-		return new_r_Not(get_nodes_block(gamma), get_Gamma_cond(gamma), mode_b);
+		ir_node *block = get_nodes_block(gamma);
+		return new_r_Not(block, get_Gamma_cond(gamma), mode_b);
 	}
 
 	return gamma;
@@ -896,13 +909,10 @@ static ir_node *transform_node_gamma(ir_node *gamma)
 /**
  * Converts the given firm graph to the PEG representation.
  */
-void convert_to_peg(ir_graph *irg)
+void cfg_to_peg(ir_graph *irg)
 {
 	/* Use automatic out edges. Makes things easier later. */
-	//int opt_level = get_optimize();
 	int had_edges = edges_assure(irg);
-	//set_optimize(0);
-	//set_opt_cse(1);
 
 	/* Register local optimizations. */
 	op_Gamma->ops.equivalent_node = equivalent_node_gamma;
@@ -948,9 +958,5 @@ void convert_to_peg(ir_graph *irg)
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
-	//optimize_cf(irg);
-	//set_optimize(opt_level);
 	if (!had_edges) edges_deactivate(irg);
-
-	combo(irg);
 }

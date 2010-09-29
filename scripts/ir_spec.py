@@ -946,6 +946,12 @@ class Theta(Op):
 	ins    = [ "init", "next" ]
 	flags  = []
 	pinned = "no"
+	attrs  = [
+		dict(
+			type = "int",
+			name = "depth"
+		)
+	]
 
 class Extract(Op):
 	ins    = [ "list", "cond" ]

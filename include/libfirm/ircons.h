@@ -1288,9 +1288,10 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
  * @param *init       The initial value of the produced infinite list.
  * @param *next       The result of a subgraph that calculates the next value.
  * @param *mode       The mode of the node, init and next.
+ * @param depth       The loop depth of the node.
  */
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
-                               ir_node *next, ir_mode *mode);
+                               ir_node *next, ir_mode *mode, int theta);
 
 /** Constructor for a Extract node.
  *
@@ -1452,9 +1453,10 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
  * @param *init       The initial value of the produced infinite list.
  * @param *next       The result of a subgraph that calculates the next value.
  * @param *mode       The mode of the node, init and next.
+ * @param depth       The loop depth of the node.
  */
 FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
-                              ir_mode *mode);
+                              ir_mode *mode, int depth);
 
 /** Constructor for a Extract node.
  *
@@ -1627,9 +1629,10 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
  * @param *init       The initial value of the produced infinite list.
  * @param *next       The result of a subgraph that calculates the next value.
  * @param *mode       The mode of the node, init and next.
+ * @param depth       The loop depth of the node.
  */
 FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
-                              ir_mode *mode);
+                              ir_mode *mode, int depth);
 
 /** Constructor for a Extract node.
  *
@@ -1783,8 +1786,10 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
  * @param *init       The initial value of the produced infinite list.
  * @param *next       The result of a subgraph that calculates the next value.
  * @param *mode       The mode of the node, init and next.
+ * @param depth       The loop depth of the node.
  */
-FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode);
+FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
+                            int depth);
 
 /** Constructor for a Extract node.
  *

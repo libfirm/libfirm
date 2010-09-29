@@ -1094,7 +1094,14 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(
  *
  * @param irg    The firm graph to convert.
  */
-FIRM_API void convert_to_peg(ir_graph *irg);
+FIRM_API void cfg_to_peg(ir_graph *irg);
+
+/**
+ * Convert a programm expression graph to a firm graph.
+ *
+ * @param irg    The program expression graph to convert.
+ */
+FIRM_API void peg_to_cfg(ir_graph *irg);
 
 #include "end.h"
 

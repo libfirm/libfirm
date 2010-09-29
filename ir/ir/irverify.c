@@ -1650,13 +1650,15 @@ static int verify_node_Theta(ir_node *n, ir_graph *irg)
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Theta_init(n));
 	ir_mode *op2mode = get_irn_mode(get_Theta_next(n));
+	int      depth   = get_Theta_depth(n);
 	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Theta: BB x datab|T|M x datab|T|M --> datab|T|M */
 		op1mode == mymode &&
 		op2mode == mymode &&
-		(mode_is_datab(mymode) || (mymode == mode_T) || (mymode == mode_M)),
+		(mode_is_datab(mymode) || (mymode == mode_T) || (mymode == mode_M)) &&
+		(depth > 0),
 		"Theta node", 0
 		);
 	return 1;

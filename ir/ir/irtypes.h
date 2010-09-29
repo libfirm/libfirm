@@ -330,6 +330,11 @@ typedef struct proj_attr {
 	long  proj;           /**< position of tuple sub-value which is projected */
 } proj_attr;
 
+/** Theta attribute. */
+typedef struct {
+	int            depth;         /**< The theta nodes lood depth. */
+} theta_attr;
+
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union ir_attr {
@@ -360,6 +365,7 @@ typedef union ir_attr {
 	div_attr       div;           /**< For Div operation */
 	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
+	theta_attr     theta;         /**< For Theta. */
 } ir_attr;
 
 /**

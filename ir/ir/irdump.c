@@ -1002,6 +1002,9 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 	case iro_CopyB:
 		ir_fprintf(F, "(%+F)", get_CopyB_type(n));
 		break;
+	case iro_Theta:
+		ir_fprintf(F, "%i ", get_Theta_depth(n));
+		break;
 
 	default:
 		break;

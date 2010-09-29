@@ -304,6 +304,10 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		fprintf(F, "\n");
 	} break;
 
+	case iro_Theta:
+		fprintf(F, "  loop depth: %i\n", get_Theta_depth(n));
+		break;
+
 	default:
 		break;
 	}
