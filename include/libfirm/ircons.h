@@ -1291,7 +1291,7 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
  * @param depth       The loop depth of the node.
  */
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
-                               ir_node *next, ir_mode *mode, int theta);
+                               ir_node *next, ir_mode *mode, int depth);
 
 /** Constructor for a Extract node.
  *

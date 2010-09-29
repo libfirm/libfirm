@@ -952,6 +952,7 @@ class Theta(Op):
 			name = "depth"
 		)
 	]
+	attr_struct = "theta_attr"
 
 class Extract(Op):
 	ins    = [ "list", "cond" ]
