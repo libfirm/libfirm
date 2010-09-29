@@ -1670,7 +1670,7 @@ static int verify_node_Theta(ir_node *n, ir_graph *irg)
 static int verify_node_Extract(ir_node *n, ir_graph *irg)
 {
 	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Extract_list(n));
+	ir_mode *op1mode = get_irn_mode(get_Extract_value(n));
 	ir_mode *op2mode = get_irn_mode(get_Extract_cond(n));
 	(void) irg;
 

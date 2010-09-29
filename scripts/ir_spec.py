@@ -955,7 +955,7 @@ class Theta(Op):
 	attr_struct = "theta_attr"
 
 class Extract(Op):
-	ins    = [ "list", "cond" ]
+	ins    = [ "value", "cond" ]
 	flags  = []
 	pinned = "no"
 

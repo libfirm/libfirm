@@ -1278,36 +1278,47 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
 
 /** Constructor for a Theta node.
  *
- * Defines data flow inside a loop. The results of nodes that process values
- * provided by the Theta node appear as infinite loops outside that subgraph.
- * It can be accessed using an Extract node.
+ * Used to define recursive data flow to describe data in loops. Every node
+ * that depends on the theta is nested with the thetas nesting depth. Those
+ * nodes will act as infinite lists to nodes with a smaller nesting depth. Each
+ * nesting level adds one level of indirection. So a theta node with level two
+ * will look like an infinite list of lists to the return node.
+ *
+ * A value can be fetched from those lists by using an extract node, for each
+ * level of indirection.
+ *
  * One of the basic nodes of the PEG representation.
  *
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
- * @param *init       The initial value of the produced infinite list.
- * @param *next       The result of a subgraph that calculates the next value.
+ * @param *init       The initial value of the recursion.
+ * @param *next       The recursively defined next value.
  * @param *mode       The mode of the node, init and next.
- * @param depth       The loop depth of the node.
+ * @param depth       The nesting depth of the node.
  */
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
                                ir_node *next, ir_mode *mode, int depth);
 
 /** Constructor for a Extract node.
  *
- * Lazily determines the first index, where the infinite condition list
- * evaluates to true and returns the element at that index from the first
- * infinite list. The infinite lists are specified by regular nodes in the
- * subgraph of a Theta node.
+ * Extracts a value from a list of values produced by a "nested" node. Given
+ * two nodes of the same nesting depth, the according theta nodes are iterated
+ * simultaneously until the condition value evaluates to true and the value
+ * nodes current value is returned. The extract node decreases the nesting
+ * depth is decreased by one.
+ *
+ * In other terms: given an infinite condition list, the first index with value
+ * "true" is determined and used to access the value from the value list.
+ *
  * One of the basic nodes of the PEG representation.
  *
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
- * @param *list       The infinite list to get the value from.
- * @param *cond       The infinite list of conditions.
+ * @param *value      The "nested" value node.
+ * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_rd_Extract(dbg_info *db, ir_node *block, ir_node *list,
+FIRM_API ir_node *new_rd_Extract(dbg_info *db, ir_node *block, ir_node *value,
                                  ir_node *cond, ir_mode *mode);
 
 /*-------------------------------------------------------------------------*/
@@ -1444,34 +1455,45 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
 
 /** Constructor for a Theta node.
  *
- * Defines data flow inside a loop. The results of nodes that process values
- * provided by the Theta node appear as infinite loops outside that subgraph.
- * It can be accessed using an Extract node.
+ * Used to define recursive data flow to describe data in loops. Every node
+ * that depends on the theta is nested with the thetas nesting depth. Those
+ * nodes will act as infinite lists to nodes with a smaller nesting depth. Each
+ * nesting level adds one level of indirection. So a theta node with level two
+ * will look like an infinite list of lists to the return node.
+ *
+ * A value can be fetched from those lists by using an extract node, for each
+ * level of indirection.
+ *
  * One of the basic nodes of the PEG representation.
  *
  * @param *block      The IR block the node belongs to.
- * @param *init       The initial value of the produced infinite list.
- * @param *next       The result of a subgraph that calculates the next value.
+ * @param *init       The initial value of the recursion.
+ * @param *next       The recursively defined next value.
  * @param *mode       The mode of the node, init and next.
- * @param depth       The loop depth of the node.
+ * @param depth       The nesting depth of the node.
  */
 FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
 /** Constructor for a Extract node.
  *
- * Lazily determines the first index, where the infinite condition list
- * evaluates to true and returns the element at that index from the first
- * infinite list. The infinite lists are specified by regular nodes in the
- * subgraph of a Theta node.
+ * Extracts a value from a list of values produced by a "nested" node. Given
+ * two nodes of the same nesting depth, the according theta nodes are iterated
+ * simultaneously until the condition value evaluates to true and the value
+ * nodes current value is returned. The extract node decreases the nesting
+ * depth is decreased by one.
+ *
+ * In other terms: given an infinite condition list, the first index with value
+ * "true" is determined and used to access the value from the value list.
+ *
  * One of the basic nodes of the PEG representation.
  *
  * @param *block      The IR block the node belongs to.
- * @param *list       The infinite list to get the value from.
- * @param *cond       The infinite list of conditions.
+ * @param *value      The "nested" value node.
+ * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_r_Extract(ir_node *block, ir_node *list, ir_node *cond,
+FIRM_API ir_node *new_r_Extract(ir_node *block, ir_node *value, ir_node *cond,
                                 ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
@@ -1620,34 +1642,45 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
 
 /** Constructor for a Theta node.
  *
- * Defines data flow inside a loop. The results of nodes that process values
- * provided by the Theta node appear as infinite loops outside that subgraph.
- * It can be accessed using an Extract node.
+ * Used to define recursive data flow to describe data in loops. Every node
+ * that depends on the theta is nested with the thetas nesting depth. Those
+ * nodes will act as infinite lists to nodes with a smaller nesting depth. Each
+ * nesting level adds one level of indirection. So a theta node with level two
+ * will look like an infinite list of lists to the return node.
+ *
+ * A value can be fetched from those lists by using an extract node, for each
+ * level of indirection.
+ *
  * One of the basic nodes of the PEG representation.
  *
  * @param *db         A pointer for debug information.
- * @param *init       The initial value of the produced infinite list.
- * @param *next       The result of a subgraph that calculates the next value.
+ * @param *init       The initial value of the recursion.
+ * @param *next       The recursively defined next value.
  * @param *mode       The mode of the node, init and next.
- * @param depth       The loop depth of the node.
+ * @param depth       The nesting depth of the node.
  */
 FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
 /** Constructor for a Extract node.
  *
- * Lazily determines the first index, where the infinite condition list
- * evaluates to true and returns the element at that index from the first
- * infinite list. The infinite lists are specified by regular nodes in the
- * subgraph of a Theta node.
+ * Extracts a value from a list of values produced by a "nested" node. Given
+ * two nodes of the same nesting depth, the according theta nodes are iterated
+ * simultaneously until the condition value evaluates to true and the value
+ * nodes current value is returned. The extract node decreases the nesting
+ * depth is decreased by one.
+ *
+ * In other terms: given an infinite condition list, the first index with value
+ * "true" is determined and used to access the value from the value list.
+ *
  * One of the basic nodes of the PEG representation.
  *
  * @param *db         A pointer for debug information.
- * @param *list       The infinite list to get the value from.
- * @param *cond       The infinite list of conditions.
+ * @param *value      The "nested" value node.
+ * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_d_Extract(dbg_info *db, ir_node *list, ir_node *cond,
+FIRM_API ir_node *new_d_Extract(dbg_info *db, ir_node *value, ir_node *cond,
                                 ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
@@ -1778,32 +1811,43 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
 
 /** Constructor for a Theta node.
  *
- * Defines data flow inside a loop. The results of nodes that process values
- * provided by the Theta node appear as infinite loops outside that subgraph.
- * It can be accessed using an Extract node.
+ * Used to define recursive data flow to describe data in loops. Every node
+ * that depends on the theta is nested with the thetas nesting depth. Those
+ * nodes will act as infinite lists to nodes with a smaller nesting depth. Each
+ * nesting level adds one level of indirection. So a theta node with level two
+ * will look like an infinite list of lists to the return node.
+ *
+ * A value can be fetched from those lists by using an extract node, for each
+ * level of indirection.
+ *
  * One of the basic nodes of the PEG representation.
  *
- * @param *init       The initial value of the produced infinite list.
- * @param *next       The result of a subgraph that calculates the next value.
+ * @param *init       The initial value of the recursion.
+ * @param *next       The recursively defined next value.
  * @param *mode       The mode of the node, init and next.
- * @param depth       The loop depth of the node.
+ * @param depth       The nesting depth of the node.
  */
 FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
                             int depth);
 
 /** Constructor for a Extract node.
  *
- * Lazily determines the first index, where the infinite condition list
- * evaluates to true and returns the element at that index from the first
- * infinite list. The infinite lists are specified by regular nodes in the
- * subgraph of a Theta node.
+ * Extracts a value from a list of values produced by a "nested" node. Given
+ * two nodes of the same nesting depth, the according theta nodes are iterated
+ * simultaneously until the condition value evaluates to true and the value
+ * nodes current value is returned. The extract node decreases the nesting
+ * depth is decreased by one.
+ *
+ * In other terms: given an infinite condition list, the first index with value
+ * "true" is determined and used to access the value from the value list.
+ *
  * One of the basic nodes of the PEG representation.
  *
- * @param *list       The infinite list to get the value from.
- * @param *cond       The infinite list of conditions.
+ * @param *value      The "nested" value node.
+ * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_Extract(ir_node *list, ir_node *cond, ir_mode *mode);
+FIRM_API ir_node *new_Extract(ir_node *value, ir_node *cond, ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
