@@ -371,10 +371,10 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 
 static int sparc_rewrite_Conv(ir_node *node, void *ctx)
 {
-	(void) ctx;
 	ir_mode *to_mode   = get_irn_mode(node);
 	ir_node *op        = get_Conv_op(node);
 	ir_mode *from_mode = get_irn_mode(op);
+	(void) ctx;
 
 	if (mode_is_float(to_mode) && mode_is_int(from_mode)
 			&& get_mode_size_bits(from_mode) == 32
