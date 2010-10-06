@@ -49,8 +49,9 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct walker_t {
-	int   changes;        /**< set, if a reassociation take place */
-	waitq *wq;            /**< a wait queue */
+	int       changes;   /**< set, if a reassociation take place */
+	ir_graph *irg;
+	waitq    *wq;        /**< a wait queue */
 } walker_t;
 
 typedef enum {
@@ -260,6 +261,7 @@ static int reassoc_commutative(ir_node **node)
 			 */
 			ir_node *irn, *in[2];
 			ir_mode *mode, *mode_c1 = get_irn_mode(c1), *mode_c2 = get_irn_mode(c2);
+			ir_graph *irg = get_irn_irg(c1);
 
 			/* It might happen, that c1 and c2 have different modes, for
 			 * instance Is and Iu.
@@ -286,11 +288,11 @@ static int reassoc_commutative(ir_node **node)
 			in[1] = c2;
 
 			mode  = get_mode_from_ops(in[0], in[1]);
-			in[1] = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
+			in[1] = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
 			in[0] = t2;
 
 			mode = get_mode_from_ops(in[0], in[1]);
-			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
+			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
 			     c1, get_irn_opname(n), c2, get_irn_opname(n), t2,
@@ -335,15 +337,16 @@ static int reassoc_commutative(ir_node **node)
 			/* convert x .OP. (x .OP. y) => y .OP. (x .OP. x) */
 			ir_mode *mode_res = get_irn_mode(n);
 			ir_mode *mode_c1  = get_irn_mode(c1);
+			ir_graph *irg     = get_irn_irg(c1);
 			ir_node *irn, *in[2];
 
 			in[0] = c1;
 			in[1] = c1;
 
-			in[1] = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode_c1, 2, in));
+			in[1] = optimize_node(new_ir_node(NULL, irg, block, op, mode_c1, 2, in));
 			in[0] = r;
 
-			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode_res, 2, in));
+			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode_res, 2, in));
 
 			DBG((dbg, LEVEL_5, "Applied: %n .%s. (%n .%s. %n) => %n .%s. (%n .%s. %n)\n",
 				c1, get_irn_opname(n), l, get_irn_opname(n), r,
@@ -454,6 +457,7 @@ static int reassoc_commutative(ir_node **n)
 		ir_mode *mode_right;
 		ir_node *new_node;
 		ir_node *in[2];
+		ir_graph *irg = get_irn_irg(last);
 
 		in[0] = last;
 		in[1] = args[i];
@@ -467,11 +471,11 @@ static int reassoc_commutative(ir_node **n)
 		}
 		if (mode_right != mode) {
 			assert(is_Add(node) && mode_is_reference(get_irn_mode(node)));
-			in[1] = new_r_Conv(current_ir_graph, commutative_block,in[1], mode);
+			in[1] = new_r_Conv(irg, commutative_block,in[1], mode);
 		}
 
 		/* TODO: produce useful debug info! */
-		new_node = new_ir_node(NULL, current_ir_graph, commutative_block,
+		new_node = new_ir_node(NULL, irg, commutative_block,
 		                       commutative_op, mode, 2, in);
 		new_node = optimize_node(new_node);
 		last     = new_node;
@@ -519,10 +523,11 @@ static int reassoc_Mul(ir_node **node)
 
 		/* we can only multiplication rules on integer arithmetic */
 		if (mode_is_int(get_irn_mode(t1)) && mode_is_int(get_irn_mode(t2))) {
+			ir_graph *irg = get_irn_irg(t1);
 			in[0] = new_rd_Mul(NULL, block, c, t1, mode);
 			in[1] = new_rd_Mul(NULL, block, c, t2, mode);
 
-			irn   = optimize_node(new_ir_node(NULL, current_ir_graph, block, op, mode, 2, in));
+			irn   = optimize_node(new_ir_node(NULL, irg, block, op, mode, 2, in));
 
 			/* In some cases it might happen that the new irn is equal the old one, for
 			 * instance in:
@@ -631,13 +636,13 @@ static void do_reassociation(walker_t *wenv)
 		/* reassociation must run until a fixpoint is reached. */
 		changed = 0;
 		do {
-			ir_op   *op    = get_irn_op(n);
-			ir_mode *mode  = get_irn_mode(n);
+			ir_op    *op   = get_irn_op(n);
+			ir_mode  *mode = get_irn_mode(n);
 
 			res = 0;
 
 			/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-			if (mode_is_float(mode) && get_irg_fp_model(current_ir_graph) & fp_strict_algebraic)
+			if (mode_is_float(mode) && get_irg_fp_model(wenv->irg) & fp_strict_algebraic)
 				break;
 
 			if (op->ops.reassociate) {
@@ -681,7 +686,7 @@ static ir_node *earliest_block(ir_node *a, ir_node *b, ir_node *curr_blk)
 		res = blk_b;
 	else
 		res = blk_a;
-	if (res == get_irg_start_block(current_ir_graph))
+	if (res == get_irg_start_block(get_irn_irg(curr_blk)))
 		return curr_blk;
 	return res;
 }  /* earliest_block */
@@ -809,6 +814,7 @@ static int move_consts_up(ir_node **node)
 	ir_node *l, *r, *a, *b, *c, *blk, *irn, *in[2];
 	ir_mode *mode, *ma, *mb;
 	dbg_info *dbg;
+	ir_graph *irg;
 
 	l = get_binop_left(n);
 	r = get_binop_right(n);
@@ -885,7 +891,8 @@ transform:
 	in[1] = b;
 
 	mode = get_mode_from_ops(a, b);
-	in[0] = irn = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+	irg  = get_irn_irg(blk);
+	in[0] = irn = optimize_node(new_ir_node(dbg, irg, blk, op, mode, 2, in));
 
 	/* beware: optimize_node might have changed the opcode, check again */
 	if (is_Add(irn) || is_Sub(irn)) {
@@ -894,7 +901,7 @@ transform:
 	in[1] = c;
 
 	mode = get_mode_from_ops(in[0], in[1]);
-	irn = optimize_node(new_ir_node(dbg, current_ir_graph, blk, op, mode, 2, in));
+	irn = optimize_node(new_ir_node(dbg, irg, blk, op, mode, 2, in));
 
 	exchange(n, irn);
 	*node = irn;
@@ -908,10 +915,11 @@ static void reverse_rules(ir_node *node, void *env)
 {
 	walker_t *wenv = env;
 	ir_mode *mode = get_irn_mode(node);
+	ir_graph *irg = get_irn_irg(node);
 	int res;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
-	if (mode_is_float(mode) && get_irg_fp_model(current_ir_graph) & fp_strict_algebraic)
+	if (mode_is_float(mode) && get_irg_fp_model(irg) & fp_strict_algebraic)
 		return;
 
 	do {
@@ -935,14 +943,10 @@ int optimize_reassociation(ir_graph *irg)
 {
 	walker_t env;
 	irg_loopinfo_state state;
-	ir_graph *rem;
 
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"Reassociation needs pinned graph to work properly");
-
-	rem = current_ir_graph;
-	current_ir_graph = irg;
 
 	/* we use dominance to detect dead blocks */
 	assure_doms(irg);
@@ -964,6 +968,7 @@ int optimize_reassociation(ir_graph *irg)
 		construct_cf_backedges(irg);
 
 	env.changes = 0;
+	env.irg     = irg;
 	env.wq      = new_waitq();
 
 	/* disable some optimizations while reassoc is running to prevent endless loops */
@@ -989,7 +994,6 @@ int optimize_reassociation(ir_graph *irg)
 #endif
 
 	del_waitq(env.wq);
-	current_ir_graph = rem;
 	return env.changes;
 }  /* optimize_reassociation */
 
