@@ -342,8 +342,6 @@ ir_graph *new_const_code_irg(void)
 	set_irn_visited(bad, -1);
 	set_irn_visited(no_mem, -1);
 
-	res->phase_state = phase_high;
-
 	return res;
 }
 

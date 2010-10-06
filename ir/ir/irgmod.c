@@ -222,20 +222,18 @@ static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 void part_block(ir_node *node)
 {
-	ir_node *new_block, *old_block;
-	ir_node *phi, *jmp;
-	ir_graph *rem = current_ir_graph;
+	ir_graph *irg = get_irn_irg(node);
+	ir_node  *new_block, *old_block;
+	ir_node  *phi, *jmp;
 
 	/* Turn off optimizations so that blocks are not merged again. */
 	int rem_opt = get_opt_optimize();
 	set_optimize(0);
 
-	current_ir_graph = get_irn_irg(node);
-
 	/* Transform the control flow */
 	old_block = get_nodes_block(node);
-	new_block = new_Block(get_Block_n_cfgpreds(old_block),
-	                      get_Block_cfgpred_arr(old_block));
+	new_block = new_r_Block(irg, get_Block_n_cfgpreds(old_block),
+	                        get_Block_cfgpred_arr(old_block));
 
 	/* create a jump from new_block to old_block, which is now the lower one */
 	jmp = new_r_Jmp(new_block);
@@ -254,7 +252,6 @@ void part_block(ir_node *node)
 	}
 
 	set_optimize(rem_opt);
-	current_ir_graph = rem;
 }
 
 ir_node *part_block_edges(ir_node *node)
