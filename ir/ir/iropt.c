@@ -1400,6 +1400,10 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	ir_node *block;
 	ir_node *first_val = NULL; /* to shutup gcc */
 
+	if (!get_opt_optimize() &&
+			get_irg_phase_state(get_irn_irg(n)) != phase_building)
+		return n;
+
 	n_preds = get_Phi_n_preds(n);
 
 	block = get_nodes_block(n);
