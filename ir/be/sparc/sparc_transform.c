@@ -847,10 +847,10 @@ static ir_node *gen_Const(ir_node *node)
 		tarval    *tv     = get_Const_tarval(node);
 		ir_entity *entity = create_float_const_entity(tv);
 		ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
-		ir_node   *mem    = new_NoMem();
+		ir_node   *mem    = new_r_NoMem(current_ir_graph);
 		ir_node   *new_op
 			= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
-		ir_node   *proj   = new_Proj(new_op, mode, pn_sparc_Ldf_res);
+		ir_node   *proj   = new_r_Proj(new_op, mode, pn_sparc_Ldf_res);
 		be_dep_on_frame(hi);
 
 		set_irn_pinned(new_op, op_pin_state_floats);
@@ -927,7 +927,8 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	/* scale index */
 	index = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
 	/* load from jumptable */
-	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, index, new_NoMem(),
+	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, index,
+	                           new_r_NoMem(current_ir_graph),
 	                           mode_gp);
 	address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 
@@ -1396,7 +1397,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *sp    = get_irg_frame(irg);
-	ir_node  *nomem = new_NoMem();
+	ir_node  *nomem = new_r_NoMem(irg);
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, value0, sp, nomem,
 	                                      mode_gp, NULL, 0, true);
 	ir_mode  *mode;
@@ -1420,7 +1421,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 	ldf = create_ldf(dbgi, block, sp, mem, mode, NULL, 0, true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
-	return new_Proj(ldf, mode, pn_sparc_Ldf_res);
+	return new_r_Proj(ldf, mode, pn_sparc_Ldf_res);
 }
 
 static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
@@ -1429,7 +1430,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_NoMem();
+	ir_node  *nomem = new_r_NoMem(irg);
 	ir_node  *stf   = create_stf(dbgi, block, node, stack, nomem, float_mode,
 	                             NULL, 0, true);
 	int       bits  = get_mode_size_bits(float_mode);
@@ -1438,13 +1439,13 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 
 	ld = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp, NULL, 0, true);
 	set_irn_pinned(ld, op_pin_state_floats);
-	result[0] = new_Proj(ld, mode_gp, pn_sparc_Ld_res);
+	result[0] = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
 
 	if (bits == 64) {
 		ir_node *ld2 = new_bd_sparc_Ld_imm(dbgi, block, stack, stf, mode_gp,
 		                                   NULL, 4, true);
 		set_irn_pinned(ld, op_pin_state_floats);
-		result[1] = new_Proj(ld2, mode_gp, pn_sparc_Ld_res);
+		result[1] = new_r_Proj(ld2, mode_gp, pn_sparc_Ld_res);
 
 		arch_irn_add_flags(ld, sparc_arch_irn_flag_needs_64bit_spillslot);
 		arch_irn_add_flags(ld2, sparc_arch_irn_flag_needs_64bit_spillslot);
@@ -1840,7 +1841,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_P_frame_base:
 		return be_prolog_get_reg_value(abihelper, fp_reg);
 	case pn_Start_P_tls:
-		return new_Bad();
+		return new_r_Bad(current_ir_graph);
 	case pn_Start_max:
 		break;
 	}
@@ -1879,7 +1880,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem,
 				                                   mode_gp, param->entity,
 				                                   0, true);
-				value1 = new_Proj(ld, mode_gp, pn_sparc_Ld_res);
+				value1 = new_r_Proj(ld, mode_gp, pn_sparc_Ld_res);
 			}
 
 			/* convert integer value to float */

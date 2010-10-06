@@ -210,33 +210,32 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->frame_type = new_type_frame();
 
 	/* the Anchor node must be created first */
-	res->anchor = new_Anchor(res);
+	res->anchor = new_r_Anchor(res);
 
 	/*-- Nodes needed in every graph --*/
 	set_irg_end_block (res, new_immBlock());
-	set_cur_block(get_irg_end_block(res));
-	end               = new_End();
-	set_irg_end       (res, end);
+	end = new_r_End(get_irg_end_block(res));
+	set_irg_end(res, end);
 
 	start_block = new_immBlock();
-	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
 	bad->attr.irg.irg = res;
 	set_irg_bad        (res, bad);
 	set_irg_no_mem     (res, new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
-	start = new_Start();
+	start = new_r_Start(start_block);
 	set_irg_start      (res, start);
 
 	/* Proj results of start node */
-	projX                   = new_Proj(start, mode_X, pn_Start_X_initial_exec);
+	projX                   = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
 	set_irg_initial_exec    (res, projX);
-	set_irg_frame           (res, new_Proj(start, mode_P_data, pn_Start_P_frame_base));
-	set_irg_tls             (res, new_Proj(start, mode_P_data, pn_Start_P_tls));
-	set_irg_args            (res, new_Proj(start, mode_T,      pn_Start_T_args));
-	initial_mem             = new_Proj(start, mode_M, pn_Start_M);
+	set_irg_frame           (res, new_r_Proj(start, mode_P_data, pn_Start_P_frame_base));
+	set_irg_tls             (res, new_r_Proj(start, mode_P_data, pn_Start_P_tls));
+	set_irg_args            (res, new_r_Proj(start, mode_T,      pn_Start_T_args));
+	initial_mem             = new_r_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
 
+	set_cur_block(start_block);
 	set_store(initial_mem);
 
 	res->index       = get_irp_new_irg_idx();
@@ -244,7 +243,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->graph_nr    = get_irp_new_node_nr();
 #endif
 
-	mature_immBlock(res->current_block);
+	mature_immBlock(start_block);
 
 	/*-- Make a block to start with --*/
 	first_block = new_immBlock();
@@ -302,18 +301,17 @@ ir_graph *new_const_code_irg(void)
 	res->frame_type  = NULL;
 
 	/* the Anchor node must be created first */
-	res->anchor = new_Anchor(res);
+	res->anchor = new_r_Anchor(res);
 
 	/* -- The end block -- */
 	end_block = new_immBlock();
 	set_irg_end_block(res, end_block);
-	set_cur_block(end_block);
-	end = new_End();
-	set_irg_end       (res, end);
+	end = new_r_End(end_block);
+	set_irg_end(res, end);
 	mature_immBlock(end_block);
 
 	/* -- The start block -- */
-	start_block        = new_immBlock();
+	start_block = new_immBlock();
 	set_cur_block(start_block);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
@@ -321,12 +319,12 @@ ir_graph *new_const_code_irg(void)
 	set_irg_bad(res, bad);
 	no_mem = new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL);
 	set_irg_no_mem(res, no_mem);
-	start = new_Start();
+	start = new_r_Start(start_block);
 	set_irg_start(res, start);
 
 	/* Proj results of start node */
-	set_irg_initial_mem(res, new_Proj(start, mode_M, pn_Start_M));
-	projX = new_Proj(start, mode_X, pn_Start_X_initial_exec);
+	set_irg_initial_mem(res, new_r_Proj(start, mode_M, pn_Start_M));
+	projX = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
 	mature_immBlock(start_block);
 
 	body_block = new_immBlock();

@@ -64,7 +64,7 @@ void be_info_new_node(ir_node *node)
 	}
 }
 
-static void new_Phi_copy_attr(ir_graph *irg, const ir_node *old_node,
+static void new_phi_copy_attr(ir_graph *irg, const ir_node *old_node,
                               ir_node *new_node)
 {
 	backend_info_t *old_info = be_get_info(old_node);
@@ -119,7 +119,7 @@ void be_info_init(void)
 		panic("double initialization of be_info");
 
 	old_phi_copy_attr = op_Phi->ops.copy_attr;
-	op_Phi->ops.copy_attr = new_Phi_copy_attr;
+	op_Phi->ops.copy_attr = new_phi_copy_attr;
 	initialized = true;
 
 	/* phis have register and register requirements now which we want to dump */
@@ -159,7 +159,7 @@ void be_info_free(void)
 	if (!initialized)
 		panic("be_info_free called without prior init");
 
-	assert(op_Phi->ops.copy_attr == new_Phi_copy_attr);
+	assert(op_Phi->ops.copy_attr == new_phi_copy_attr);
 	op_Phi->ops.copy_attr = old_phi_copy_attr;
 	initialized = false;
 

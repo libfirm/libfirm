@@ -370,8 +370,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	/* Prevents creation of phi that would be bad anyway.
 	 * Dead and bad blocks. */
 	if (get_irn_arity(block) < 1 || is_Bad(block)) {
+		ir_graph *irg = get_irn_irg(block);
 		DB((dbg, LEVEL_5, "ssa bad %N\n", block));
-		return new_Bad();
+		return new_r_Bad(irg);
 	}
 
 	if (block == ssa_second_def_block && !first) {
@@ -407,7 +408,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
 	for (i = 0; i < n_cfgpreds; ++i)
-		in[i] = new_Unknown(mode);
+		in[i] = new_r_Unknown(irg, mode);
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	/* Important: always keep block phi list up to date. */
@@ -1019,6 +1020,7 @@ static void fix_copy_inversion(void)
 	ir_node **phis;
 	ir_node *phi, *next;
 	ir_node *head_cp    = get_inversion_copy(loop_head);
+	ir_graph *irg       = get_irn_irg(head_cp);
 	int arity           = get_irn_arity(head_cp);
 	int backedges       = get_backedge_n(head_cp, 0);
 	int new_arity       = arity - backedges;
@@ -1034,7 +1036,7 @@ static void fix_copy_inversion(void)
 			ins[pos++] = get_irn_n(head_cp, i);
 	}
 
-	new_head = new_Block(new_arity, ins);
+	new_head = new_r_Block(irg, new_arity, ins);
 
 	phis = NEW_ARR_F(ir_node *, 0);
 
@@ -1072,6 +1074,7 @@ static void fix_head_inversion(void)
 	ir_node **ins;
 	ir_node *phi, *next;
 	ir_node **phis;
+	ir_graph *irg       = get_irn_irg(loop_head);
 	int arity           = get_irn_arity(loop_head);
 	int backedges       = get_backedge_n(loop_head, 0);
 	int new_arity       = backedges;
@@ -1087,7 +1090,7 @@ static void fix_head_inversion(void)
 			ins[pos++] = get_irn_n(loop_head, i);
 	}
 
-	new_head = new_Block(new_arity, ins);
+	new_head = new_r_Block(irg, new_arity, ins);
 
 	phis = NEW_ARR_F(ir_node *, 0);
 
@@ -1329,7 +1332,7 @@ static void unrolling_fix_loop_head_inv(void)
 {
 	ir_node *ins[2];
 	ir_node *phi;
-	ir_node *proj = new_Proj(loop_info.duff_cond, mode_X, 0);
+	ir_node *proj = new_r_Proj(loop_info.duff_cond, mode_X, 0);
 	ir_node *head_pred = get_irn_n(loop_head, loop_info.be_src_pos);
 	ir_node *loop_condition = get_unroll_copy(head_pred, unroll_nr - 1);
 
@@ -1419,7 +1422,7 @@ static void place_copies(int copies)
 			 * and one from the previous unrolled loop. */
 			ir_node *ins[2];
 			/* Calculate corresponding projection of mod result for this copy c */
-			ir_node *proj = new_Proj(loop_info.duff_cond, mode_X, unroll_nr - c - 1);
+			ir_node *proj = new_r_Proj(loop_info.duff_cond, mode_X, unroll_nr - c - 1);
 
 			ins[0] = new_jmp;
 			ins[1] = proj;
@@ -1541,6 +1544,7 @@ static ir_node *clone_phis_sans_bes(ir_node *node, ir_node *be_block)
 static ir_node *clone_block_sans_bes(ir_node *node, ir_node *be_block)
 {
 	ir_node **ins;
+	ir_graph *irg = get_irn_irg(node);
 	int arity = get_irn_arity(node);
 	int i, c = 0;
 
@@ -1555,7 +1559,7 @@ static ir_node *clone_block_sans_bes(ir_node *node, ir_node *be_block)
 		}
 	}
 
-	return new_Block(c, ins);
+	return new_r_Block(irg, c, ins);
 }
 
 /* Creates blocks for duffs device, using previously obtained
@@ -1565,6 +1569,7 @@ static void create_duffs_block(void)
 {
 	ir_mode *mode;
 
+	ir_graph *irg = get_irn_irg(loop_head);
 	ir_node *block1, *count_block, *duff_block;
 	ir_node *ems, *ems_divmod, *ems_mod_proj, *cmp_null,
 	        *cmp_proj, *ems_mode_cond, *x_true, *x_false, *const_null;
@@ -1577,7 +1582,7 @@ static void create_duffs_block(void)
 	ir_node *cmp_bad_count, *good_count, *bad_count, *count_phi, *bad_count_neg;
 
 	mode = get_irn_mode(loop_info.end_val);
-	const_null = new_Const(get_mode_null(mode));
+	const_null = new_r_Const(irg, get_mode_null(mode));
 
 	/* TODO naming
 	 * 1. Calculate first approach to count.
@@ -1598,7 +1603,7 @@ static void create_duffs_block(void)
 	        get_irn_mode(loop_info.end_val));
 
 	ems_divmod = new_r_DivMod(block1,
-		new_NoMem(),
+		new_r_NoMem(irg),
 		ems,
 		loop_info.step,
 		mode,
@@ -1607,12 +1612,12 @@ static void create_duffs_block(void)
 	ems_mod_proj = new_r_Proj(ems_divmod, mode, pn_DivMod_res_mod);
 	cmp_null = new_r_Cmp(block1, ems_mod_proj, const_null);
 	cmp_proj = new_r_Proj(cmp_null, mode, pn_Cmp_Eq);
-	ems_mode_cond = new_Cond(cmp_proj);
+	ems_mode_cond = new_r_Cond(block1, cmp_proj);
 
 	/* ems % step == 0 */
-	x_true = new_Proj(ems_mode_cond, mode_X, pn_Cond_true);
+	x_true = new_r_Proj(ems_mode_cond, mode_X, pn_Cond_true);
 	/* ems % step != 0 */
-	x_false = new_Proj(ems_mode_cond, mode_X, pn_Cond_false);
+	x_false = new_r_Proj(ems_mode_cond, mode_X, pn_Cond_false);
 
 
 	/* 2. Second block.
@@ -1624,21 +1629,21 @@ static void create_duffs_block(void)
 	ins[0] = x_true;
 	ins[1] = x_false;
 
-	count_block = new_Block(2, ins);
+	count_block = new_r_Block(irg, 2, ins);
 
 	/* Increase loop-taken-count depending on the loop condition
 	 * uses the latest iv to compare to. */
 	if (loop_info.latest_value == 1) {
 		/* ems % step == 0 :  +0 */
-		true_val = new_Const(get_mode_null(mode));
+		true_val = new_r_Const(irg, get_mode_null(mode));
 		/* ems % step != 0 :  +1 */
-		false_val = new_Const(get_mode_one(mode));
+		false_val = new_r_Const(irg, get_mode_one(mode));
 	} else {
 		tarval *tv_two = new_tarval_from_long(2, mode);
 		/* ems % step == 0 :  +1 */
-		true_val = new_Const(get_mode_one(mode));
+		true_val = new_r_Const(irg, get_mode_one(mode));
 		/* ems % step != 0 :  +2 */
-		false_val = new_Const(tv_two);
+		false_val = new_r_Const(irg, tv_two);
 	}
 
 	ins[0] = true_val;
@@ -1649,7 +1654,7 @@ static void create_duffs_block(void)
 	count = new_r_Proj(ems_divmod, mode, pn_DivMod_res_div);
 
 	/* (end - start) / step  +  correction */
-	count = new_Add(count, correction, mode);
+	count = new_r_Add(count_block, count, correction, mode);
 
 	cmp_bad_count = new_r_Cmp(count_block, count, const_null);
 
@@ -1666,16 +1671,16 @@ static void create_duffs_block(void)
 		bad_count_neg = new_r_Proj(cmp_bad_count, mode_X, pn_Cmp_Gt);
 	}
 
-	bad_count_neg = new_Cond(bad_count_neg);
-	good_count = new_Proj(bad_count_neg, mode_X, pn_Cond_true);
-	bad_count = new_Proj(ems_mode_cond, mode_X, pn_Cond_false);
+	bad_count_neg = new_r_Cond(count_block, bad_count_neg);
+	good_count = new_r_Proj(bad_count_neg, mode_X, pn_Cond_true);
+	bad_count = new_r_Proj(ems_mode_cond, mode_X, pn_Cond_false);
 
 	/* 3. Duff Block
 	 *    Contains module to decide which loop to start from. */
 
 	ins[0] = good_count;
 	ins[1] = bad_count;
-	duff_block = new_Block(2, ins);
+	duff_block = new_r_Block(irg, 2, ins);
 
 	/* Matze: I commented this line out because I was in the process of
 	 * removing the Abs node. I don't understand that line at all anyway
@@ -1686,21 +1691,21 @@ static void create_duffs_block(void)
 	ins[0] = get_Abs_op(count);
 #endif
 	/* Manually feed the aforementioned count = 1 (bad case)*/
-	ins[1] = new_Const(get_mode_one(mode));
+	ins[1] = new_r_Const(irg, get_mode_one(mode));
 	count_phi = new_r_Phi(duff_block, 2, ins, mode);
 
-	unroll_c = new_Const(new_tarval_from_long((long)unroll_nr, mode));
+	unroll_c = new_r_Const(irg, new_tarval_from_long((long)unroll_nr, mode));
 
 	/* count % unroll_nr */
 	duff_mod = new_r_Mod(duff_block,
-		new_NoMem(),
+		new_r_NoMem(irg),
 		count_phi,
 		unroll_c,
 		mode,
 		op_pin_state_pinned);
 
-	proj = new_Proj(duff_mod, mode_X, pn_Mod_res);
-	cond = new_Cond(proj);
+	proj = new_r_Proj(duff_mod, mode_X, pn_Mod_res);
+	cond = new_r_Cond(duff_block, proj);
 
 	loop_info.duff_cond = cond;
 }

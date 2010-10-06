@@ -639,7 +639,8 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 				/* ignore bad blocks. */
 				if (is_Bad(pred_blk)) {
-					in[pos] = new_Bad();
+					ir_graph *irg = get_irn_irg(pred_blk);
+					in[pos] = new_r_Bad(irg);
 					continue;
 				}
 

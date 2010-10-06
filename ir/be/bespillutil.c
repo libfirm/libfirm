@@ -427,7 +427,8 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	 * and simply always available. */
 	if (!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
-		spillinfo->spills->spill = new_NoMem();
+		ir_graph *irg = get_irn_irg(to_spill);
+		spillinfo->spills->spill = new_r_NoMem(irg);
 		DB((dbg, LEVEL_1, "don't spill %+F use NoMem\n", to_spill));
 		return;
 	}
@@ -549,7 +550,7 @@ static void spill_node(spill_env_t *env, spill_info_t *spillinfo)
 static int is_value_available(spill_env_t *env, const ir_node *arg,
                               const ir_node *reloader)
 {
-	if (is_Unknown(arg) || arg == new_NoMem())
+	if (is_Unknown(arg) || is_NoMem(arg))
 		return 1;
 
 	if (be_is_Spill(skip_Proj_const(arg)))
@@ -773,11 +774,12 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 	 * predecessor (of a PhiM) but this test might match other things too...
 	 */
 	if (!sched_is_scheduled(insn)) {
+		ir_graph *irg = get_irn_irg(to_spill);
 		/* override spillinfos or create a new one */
 		spill_t *spill = OALLOC(&env->obst, spill_t);
 		spill->after = NULL;
 		spill->next  = NULL;
-		spill->spill = new_NoMem();
+		spill->spill = new_r_NoMem(irg);
 
 		spillinfo->spills      = spill;
 		spillinfo->spill_costs = 0;

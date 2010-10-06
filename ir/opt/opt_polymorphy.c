@@ -142,10 +142,7 @@ ir_node *transform_node_Sel(ir_node *node)
 			/* We could remove the Call depending on this Sel. */
 			new_node = node;
 		} else {
-			ir_node *rem_block = get_cur_block();
-			set_cur_block(get_nodes_block(node));
-			new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(ent));
-			set_cur_block(rem_block);
+			new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(ent), get_nodes_block(node));
 			DBG_OPT_POLY(node, new_node);
 		}
 		return new_node;
@@ -157,15 +154,11 @@ ir_node *transform_node_Sel(ir_node *node)
 
 	if (dyn_tp != firm_unknown_type) {
 		ir_entity *called_ent;
-		ir_node *rem_block;
 
 		/* We know which method will be called, no dispatch necessary. */
 		called_ent = resolve_ent_polymorphy(dyn_tp, ent);
 
-		rem_block = get_cur_block();
-		set_cur_block(get_nodes_block(node));
-		new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(called_ent));
-		set_cur_block(rem_block);
+		new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(called_ent), get_nodes_block(node));
 		DBG_OPT_POLY(node, new_node);
 
 		return new_node;

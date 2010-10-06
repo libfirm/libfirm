@@ -556,10 +556,11 @@ typedef struct env_t {
  */
 static void topologic_walker(ir_node *node, void *ctx)
 {
-	env_t        *env = ctx;
-	ir_node      *adr, *block, *mem, *val;
-	ir_mode      *mode;
-	unsigned     vnum;
+	env_t    *env = ctx;
+	ir_graph *irg = get_irn_irg(node);
+	ir_node  *adr, *block, *mem, *val;
+	ir_mode  *mode;
+	unsigned vnum;
 
 	if (is_Load(node)) {
 		/* a load, check if we can resolve it */
@@ -597,14 +598,14 @@ static void topologic_walker(ir_node *node, void *ctx)
 		Handle this here. */
 		mode = get_Load_mode(node);
 		if (mode != get_irn_mode(val))
-			val = new_d_Conv(get_irn_dbg_info(node), val, mode);
+			val = new_rd_Conv(get_irn_dbg_info(node), block, val, mode);
 
 		mem = get_Load_mem(node);
 		turn_into_tuple(node, pn_Load_max);
 		set_Tuple_pred(node, pn_Load_M,         mem);
 		set_Tuple_pred(node, pn_Load_res,       val);
-		set_Tuple_pred(node, pn_Load_X_regular, new_Jmp());
-		set_Tuple_pred(node, pn_Load_X_except,  new_Bad());
+		set_Tuple_pred(node, pn_Load_X_regular, new_r_Jmp(block));
+		set_Tuple_pred(node, pn_Load_X_except,  new_r_Bad(irg));
 	} else if (is_Store(node)) {
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 
@@ -632,15 +633,15 @@ static void topologic_walker(ir_node *node, void *ctx)
 		/* Beware: A Store can contain a hidden conversion in Firm. */
 		val = get_Store_value(node);
 		if (get_irn_mode(val) != env->modes[vnum])
-			val = new_d_Conv(get_irn_dbg_info(node), val, env->modes[vnum]);
+			val = new_rd_Conv(get_irn_dbg_info(node), block, val, env->modes[vnum]);
 
 		set_value(vnum, val);
 
 		mem = get_Store_mem(node);
 		turn_into_tuple(node, pn_Store_max);
 		set_Tuple_pred(node, pn_Store_M,         mem);
-		set_Tuple_pred(node, pn_Store_X_regular, new_Jmp());
-		set_Tuple_pred(node, pn_Store_X_except,  new_Bad());
+		set_Tuple_pred(node, pn_Store_X_regular, new_r_Jmp(block));
+		set_Tuple_pred(node, pn_Store_X_except,  new_r_Bad(irg));
 	}
 }
 

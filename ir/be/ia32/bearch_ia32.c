@@ -558,7 +558,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 	mode     = get_irn_mode(irn);
 	irn_mode = get_irn_mode(irn);
 	noreg    = get_irn_n(irn, 0);
-	nomem    = new_NoMem();
+	nomem    = new_r_NoMem(irg);
 	dbg      = get_irn_dbg_info(irn);
 
 	/* initialize structure */
@@ -854,6 +854,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 ir_node *turn_back_am(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_node  *base  = get_irn_n(node, n_ia32_base);
 	ir_node  *index = get_irn_n(node, n_ia32_index);
@@ -866,7 +867,7 @@ ir_node *turn_back_am(ir_node *node)
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
 		set_ia32_is_reload(load);
-	set_irn_n(node, n_ia32_mem, new_NoMem());
+	set_irn_n(node, n_ia32_mem, new_r_NoMem(irg));
 
 	switch (get_ia32_am_support(node)) {
 		case ia32_am_unary:
@@ -1033,7 +1034,7 @@ static void transform_to_Store(ir_node *node)
 	const ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
 	ir_mode *mode  = get_spill_mode(spillval);
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
-	ir_node *nomem = new_NoMem();
+	ir_node *nomem = new_r_NoMem(irg);
 	ir_node *ptr   = get_irg_frame(irg);
 	ir_node *val   = get_irn_n(node, be_pos_Spill_val);
 	ir_node *store;
@@ -1101,7 +1102,7 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg, new_NoMem(), sp);
+	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg, new_r_NoMem(irg), sp);
 
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);
@@ -1169,7 +1170,7 @@ static void transform_MemPerm(ir_node *node)
 			sp = create_spproj(node, push, pn_ia32_Push_stack);
 		}
 
-		set_irn_n(node, i, new_Bad());
+		set_irn_n(node, i, new_r_Bad(irg));
 	}
 
 	/* create pops */
@@ -1217,7 +1218,7 @@ static void transform_MemPerm(ir_node *node)
 	/* remove memperm */
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
-		set_irn_n(node, i, new_Bad());
+		set_irn_n(node, i, new_r_Bad(irg));
 	}
 	sched_remove(node);
 }
@@ -2109,23 +2110,25 @@ static void ia32_lower_for_target(void)
  */
 static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
 {
-	ir_node  *st, *p = trampoline;
-	ir_mode *mode    = get_irn_mode(p);
+	ir_graph *irg  = get_irn_irg(block);
+	ir_node  *p    = trampoline;
+	ir_mode  *mode = get_irn_mode(p);
+	ir_node  *st;
 
 	/* mov  ecx,<env> */
-	st  = new_r_Store(block, mem, p, new_Const_long(mode_Bu, 0xb9), 0);
+	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), 0);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 1), mode);
+	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
 	st  = new_r_Store(block, mem, p, env, 0);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 4), mode);
+	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
 	/* jmp  <callee> */
-	st  = new_r_Store(block, mem, p, new_Const_long(mode_Bu, 0xe9), 0);
+	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), 0);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 1), mode);
+	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
 	st  = new_r_Store(block, mem, p, callee, 0);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_Const_long(mode_Iu, 4), mode);
+	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
 
 	return mem;
 }

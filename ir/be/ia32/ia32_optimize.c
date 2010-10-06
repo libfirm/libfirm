@@ -543,7 +543,8 @@ static ir_node *create_push(dbg_info *dbgi, ir_node *block,
 
 	ir_node *val   = ia32_new_NoReg_gp(cg);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
-	ir_node *nomem = new_NoMem();
+	ir_graph *irg  = get_irn_irg(block);
+	ir_node *nomem = new_r_NoMem(irg);
 	ir_node *push  = new_bd_ia32_Push(dbgi, block, noreg, noreg, nomem, val, stack);
 	sched_add_before(schedpoint, push);
 
@@ -850,12 +851,13 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
                            const arch_register_t *reg)
 {
 	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	ir_graph *irg = get_irn_irg(block);
 	ir_node *pop;
 	ir_node *keep;
 	ir_node *val;
 	ir_node *in[1];
 
-	pop   = new_bd_ia32_Pop(dbgi, block, new_NoMem(), stack);
+	pop   = new_bd_ia32_Pop(dbgi, block, new_r_NoMem(irg), stack);
 
 	stack = new_r_Proj(pop, mode_Iu, pn_ia32_Pop_stack);
 	arch_set_irn_register(stack, esp);
@@ -1152,7 +1154,7 @@ make_add:
 	block = get_nodes_block(node);
 	irg   = get_irn_irg(node);
 	noreg = ia32_new_NoReg_gp(irg);
-	nomem = new_NoMem();
+	nomem = new_r_NoMem(irg);
 	res   = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, op1, op2);
 	arch_set_irn_register(res, out_reg);
 	set_ia32_commutative(res);
@@ -1163,7 +1165,7 @@ make_shl:
 	block = get_nodes_block(node);
 	irg   = get_irn_irg(node);
 	noreg = ia32_new_NoReg_gp(irg);
-	nomem = new_NoMem();
+	nomem = new_r_NoMem(irg);
 	res   = new_bd_ia32_Shl(dbgi, block, op1, op2);
 	arch_set_irn_register(res, out_reg);
 	goto exchange;

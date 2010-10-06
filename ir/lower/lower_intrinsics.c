@@ -216,7 +216,8 @@ ir_prog_pass_t *lower_intrinsics_pass(
  */
 static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg_jmp, ir_node *exc_jmp)
 {
-	ir_node *block = get_nodes_block(call);
+	ir_node  *block = get_nodes_block(call);
+	ir_graph *irg   = get_irn_irg(block);
 
 	if (reg_jmp == NULL) {
 
@@ -225,7 +226,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 		set_opt_cse(0);
 		reg_jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
-		exc_jmp = new_Bad();
+		exc_jmp = new_r_Bad(irg);
 	}
 	irn = new_r_Tuple(block, 1, &irn);
 
@@ -234,7 +235,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
 	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
 	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_Bad());
+	set_Tuple_pred(call, pn_Call_P_value_res_base, new_r_Bad(irg));
 }  /* replace_call */
 
 /* A mapper for the integer abs. */
@@ -363,11 +364,12 @@ int i_mapper_cbrt(ir_node *call, void *ctx)
 int i_mapper_pow(ir_node *call, void *ctx)
 {
 	dbg_info *dbg;
-	ir_node *mem;
-	ir_node *left  = get_Call_param(call, 0);
-	ir_node *right = get_Call_param(call, 1);
-	ir_node *block = get_nodes_block(call);
-	ir_node *irn, *reg_jmp = NULL, *exc_jmp = NULL;
+	ir_node  *mem;
+	ir_node  *left  = get_Call_param(call, 0);
+	ir_node  *right = get_Call_param(call, 1);
+	ir_node  *block = get_nodes_block(call);
+	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *irn, *reg_jmp = NULL, *exc_jmp = NULL;
 	(void) ctx;
 
 	if (is_Const(left) && is_Const_one(left)) {
@@ -378,7 +380,7 @@ int i_mapper_pow(ir_node *call, void *ctx)
 		if (tarval_is_null(tv)) {
 			/* pow(x, 0.0) = 1.0 */
 			ir_mode *mode = get_tarval_mode(tv);
-			irn = new_Const(get_mode_one(mode));
+			irn = new_r_Const(irg, get_mode_one(mode));
 		} else if (tarval_is_one(tv)) {
 			/* pow(x, 1.0) = x */
 			irn = left;
@@ -398,7 +400,7 @@ int i_mapper_pow(ir_node *call, void *ctx)
 		ir_mode *mode = get_irn_mode(left);
 		ir_node *quot;
 
-		irn  = new_Const(get_mode_one(mode));
+		irn  = new_r_Const(irg, get_mode_one(mode));
 		quot = new_rd_Quot(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
 		mem  = new_r_Proj(quot, mode_M, pn_Quot_M);
 		irn  = new_r_Proj(quot, mode, pn_Quot_res);
@@ -418,8 +420,9 @@ int i_mapper_exp(ir_node *call, void *ctx)
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* exp(0.0) = 1.0 */
+		ir_graph *irg  = get_irn_irg(val);
 		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_Const(get_mode_one(mode));
+		ir_node *irn   = new_r_Const(irg, get_mode_one(mode));
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_EXP);
 		replace_call(irn, call, mem, NULL, NULL);
@@ -456,9 +459,10 @@ static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason)
 
 	if (is_Const(val) && is_Const_one(val)) {
 		/* acos(1.0) = 0.0 */
-		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_Const(get_mode_null(mode));
-		ir_node *mem   = get_Call_mem(call);
+		ir_graph *irg = get_irn_irg(val);
+		ir_mode *mode = get_irn_mode(val);
+		ir_node *irn  = new_r_Const(irg, get_mode_null(mode));
+		ir_node *mem  = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
@@ -502,8 +506,9 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 
 	if (is_Const(val) && is_Const_null(val)) {
 		/* f(0.0) = 1.0 */
+		ir_graph *irg  = get_irn_irg(val);
 		ir_mode *mode  = get_irn_mode(val);
-		ir_node *irn   = new_Const(get_mode_one(mode));
+		ir_node *irn   = new_r_Const(irg, get_mode_one(mode));
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);
@@ -631,7 +636,7 @@ static bool initializer_val_is_null(ir_initializer_t *init)
  * @return a Const node containing the strlen() result or NULL
  *         if the evaluation fails
  */
-static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp)
+static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 {
 	ir_type *tp = get_entity_type(ent);
 	ir_mode *mode;
@@ -670,7 +675,7 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp)
 		}
 		if (len >= 0) {
 			tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
-			return new_Const_type(tv, res_tp);
+			return new_r_Const_type(irg, tv, res_tp);
 		}
 		return NULL;
 	}
@@ -684,7 +689,7 @@ static ir_node *eval_strlen(ir_entity *ent, ir_type *res_tp)
 		ir_initializer_t *val = get_initializer_compound_value(initializer, i);
 		if (initializer_val_is_null(val)) {
 			tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
-			return new_Const_type(tv, res_tp);
+			return new_r_Const_type(irg, tv, res_tp);
 		}
 	}
 
@@ -706,7 +711,7 @@ int i_mapper_strlen(ir_node *call, void *ctx)
 		ir_node *irn;
 
 		tp  = get_method_res_type(tp, 0);
-		irn = eval_strlen(ent, tp);
+		irn = eval_strlen(get_irn_irg(call), ent, tp);
 
 		if (irn) {
 			ir_node *mem = get_Call_mem(call);
@@ -728,7 +733,8 @@ int i_mapper_strlen(ir_node *call, void *ctx)
  * @return a Const node containing the strcmp() result or NULL
  *         if the evaluation fails
  */
-static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp)
+static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
+                            ir_type *res_tp)
 {
 	ir_type *tp;
 	ir_mode *mode;
@@ -800,7 +806,7 @@ static ir_node *eval_strcmp(ir_entity *left, ir_entity *right, ir_type *res_tp)
 		if (i < n) {
 			/* we found an end */
 			tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
-			return new_Const_type(tv, res_tp);
+			return new_r_Const_type(irg, tv, res_tp);
 		}
 		return NULL;
 	}
@@ -885,10 +891,11 @@ int i_mapper_strcmp(ir_node *call, void *ctx)
 
 	if (left == right) {
 		/* a strcmp(s, s) ==> 0 */
+		ir_graph *irg  = get_irn_irg(call);
 		ir_node *mem   = get_Call_mem(call);
 		ir_mode *mode  = get_type_mode(res_tp);
 
-		irn = new_Const(get_mode_null(mode));
+		irn = new_r_Const(irg, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
@@ -898,7 +905,7 @@ int i_mapper_strcmp(ir_node *call, void *ctx)
 
 	if (ent_l != NULL && ent_r != NULL) {
 		/* both entities are const, try to evaluate */
-		irn = eval_strcmp(ent_l, ent_r, res_tp);
+		irn = eval_strcmp(get_irn_irg(call), ent_l, ent_r, res_tp);
 	} else if (ent_l != NULL) {
 		if (is_empty_string(ent_l)) {
 			/* s strcmp("", s) ==> -(*s)*/
@@ -959,6 +966,7 @@ int i_mapper_strncmp(ir_node *call, void *ctx)
 	if (left == right || (is_Const(len) && is_Const_null(len))) {
 		/* a strncmp(s, s, len) ==> 0 OR
 		   a strncmp(a, b, 0) ==> 0 */
+		ir_graph  *irg     = get_irn_irg(call);
 		ir_node   *mem     = get_Call_mem(call);
 		ir_node   *adr     = get_Call_ptr(call);
 		ir_entity *ent     = get_SymConst_entity(adr);
@@ -966,7 +974,7 @@ int i_mapper_strncmp(ir_node *call, void *ctx)
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);
 
-		irn = new_Const(get_mode_null(mode));
+		irn = new_r_Const(irg, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;
@@ -1087,6 +1095,7 @@ int i_mapper_memcmp(ir_node *call, void *ctx)
 	if (left == right || (is_Const(len) && is_Const_null(len))) {
 		/* a memcmp(s, s, len) ==> 0 OR
 		   a memcmp(a, b, 0) ==> 0 */
+		ir_graph  *irg     = get_irn_irg(call);
 		ir_node   *mem     = get_Call_mem(call);
 		ir_node   *adr     = get_Call_ptr(call);
 		ir_entity *ent     = get_SymConst_entity(adr);
@@ -1094,7 +1103,7 @@ int i_mapper_memcmp(ir_node *call, void *ctx)
 		ir_type   *res_tp  = get_method_res_type(call_tp, 0);
 		ir_mode   *mode    = get_type_mode(res_tp);
 
-		irn = new_Const(get_mode_null(mode));
+		irn = new_r_Const(irg, get_mode_null(mode));
 		DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_STRNCMP);
 		replace_call(irn, call, mem, NULL, NULL);
 		return 1;

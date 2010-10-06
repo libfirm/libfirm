@@ -658,7 +658,7 @@ static int map_Abs(ir_node *call, void *ctx)
 	*/
 
 	/* TODO: give a hint to the backend somehow to not create a cltd here... */
-	sign   = new_rd_Shrs(dbg, block, a_h, new_Const_long(l_mode, 31), h_mode);
+	sign   = new_rd_Shrs(dbg, block, a_h, new_r_Const_long(irg, l_mode, 31), h_mode);
 	sign_l = new_rd_Conv(dbg, block, sign, l_mode);
 	sub_l  = new_rd_Eor(dbg, block, a_l, sign_l, l_mode);
 	sub_h  = new_rd_Eor(dbg, block, a_h, sign,   h_mode);
@@ -794,7 +794,7 @@ static int map_Conv(ir_node *call, void *ctx)
 			/* convert from float to signed 64bit */
 			ir_mode *flt_mode = get_irn_mode(a_f);
 			tarval  *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
-			ir_node *flt_corr = new_Const(flt_tv);
+			ir_node *flt_corr = new_r_Const(irg, flt_tv);
 			ir_node *lower_blk = block;
 			ir_node *upper_blk;
 			ir_node *cmp, *proj, *cond, *blk, *int_phi, *flt_phi;
@@ -814,8 +814,8 @@ static int map_Conv(ir_node *call, void *ctx)
 			set_irn_in(lower_blk, 2, in);
 
 			/* create to Phis */
-			in[0] = new_Const(get_mode_null(h_res_mode));
-			in[1] = new_Const_long(h_res_mode, 0x80000000);
+			in[0] = new_r_Const(irg, get_mode_null(h_res_mode));
+			in[1] = new_r_Const_long(irg, h_res_mode, 0x80000000);
 
 			int_phi = new_r_Phi(lower_blk, 2, in, h_res_mode);
 

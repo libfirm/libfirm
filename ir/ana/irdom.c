@@ -52,7 +52,8 @@ ir_node *get_Block_idom(const ir_node *bl)
 	assert(is_Block(bl));
 	if (get_Block_dom_depth(bl) == -1) {
 		/* This block is not reachable from Start */
-		return new_Bad();
+		ir_graph *irg = get_irn_irg(bl);
+		return new_r_Bad(irg);
 	}
 	return get_dom_info(bl)->idom;
 }
@@ -83,7 +84,8 @@ ir_node *get_Block_ipostdom(const ir_node *bl)
 	assert(is_Block(bl));
 	if (get_Block_postdom_depth(bl) == -1) {
 		/* This block is not reachable from Start */
-		return new_Bad();
+		ir_graph *irg = get_irn_irg(bl);
+		return new_r_Bad(irg);
 	}
 	return get_pdom_info(bl)->idom;
 }

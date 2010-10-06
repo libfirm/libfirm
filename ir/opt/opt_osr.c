@@ -1105,6 +1105,7 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 		tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr, *tv_end;
 		tarval_int_overflow_mode_t ovmode;
 		scc *pscc;
+		ir_graph *irg;
 
 		if (! is_counter_iv(iv, env)) {
 			DB((dbg, LEVEL_4, " not counter IV"));
@@ -1172,7 +1173,8 @@ static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env
 			DB((dbg, LEVEL_4, " = OVERFLOW"));
 			return NULL;
 		}
-		return new_Const(tv);
+		irg = get_irn_irg(iv);
+		return new_r_Const(irg, tv);
 	}
 	return do_apply(e->code, NULL, rc, e->rc, get_irn_mode(e->dst));
 }  /* applyOneEdge */

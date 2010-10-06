@@ -235,13 +235,14 @@ static void process_block(ir_node *block, void *data)
 
 static void kill_node_and_preds(ir_node *node)
 {
+	ir_graph *irg = get_irn_irg(node);
 	int arity, i;
 
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_irn_n(node, i);
 
-		set_irn_n(node, i, new_Bad());
+		set_irn_n(node, i, new_r_Bad(irg));
 		if (get_irn_n_edges(pred) != 0)
 			continue;
 

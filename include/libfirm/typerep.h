@@ -429,7 +429,7 @@ FIRM_API int is_irn_const_expression(ir_node *n);
 
 /**
  * Copies a Firm subgraph that complies to the restrictions for
- * constant expressions to current_block in current_ir_graph.
+ * constant expressions to block.
  *
  * @param dbg  debug info for all newly created nodes
  * @param n    the node
@@ -437,7 +437,7 @@ FIRM_API int is_irn_const_expression(ir_node *n);
  * Set current_ir_graph to get_const_code_irg() to generate a constant
  * expression.
  */
-FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n);
+FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *to_block);
 
 /* Set has no effect for existent entities of type method. */
 FIRM_API ir_node *get_atomic_ent_value(ir_entity *ent);

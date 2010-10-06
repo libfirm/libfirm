@@ -33,7 +33,7 @@
 /**
  * Creates a new Anchor node.
  */
-ir_node *new_Anchor(ir_graph *irg);
+ir_node *new_r_Anchor(ir_graph *irg);
 
 /**
  * Allocate a frag array for a node if the current graph state is phase_building.

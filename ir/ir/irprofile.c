@@ -347,7 +347,6 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 	int filename_len = strlen(filename)+1;
 	ident *cur_ident;
 	unsigned align_l, align_n, size;
-	ir_graph *rem;
 	block_id_walker_data_t  wd;
 	symconst_symbol sym;
 
@@ -447,19 +446,17 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 	}
 
 	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph      *irg = get_irp_irg(n);
-		int            i;
-		ir_node       *endbb = get_irg_end_block(irg);
-		fix_env       env;
-
-		set_current_ir_graph(irg);
+		ir_graph *irg   = get_irp_irg(i);
+		ir_node  *endbb = get_irg_end_block(irg);
+		int       i;
+		fix_env   env;
 
 		/* generate a symbolic constant pointing to the count array */
 		sym.entity_p = bblock_counts;
 		wd.symconst  = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
 
 		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
-		env.end_block   = get_irg_end_block(irg);
+		env.end_block = get_irg_end_block(irg);
 		irg_block_walk_graph(irg, fix_ssa, NULL, &env);
 		for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
 			ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
@@ -490,9 +487,8 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 	set_array_entity_values(bblock_id, tarval_array, n_blocks);
 
 	if (flags & profile_with_locations) {
+		ir_graph *irg = get_const_code_irg();
 		/* build the initializer for the locations */
-		rem = current_ir_graph;
-		current_ir_graph = get_const_code_irg();
 		ent = get_array_element_entity(loc_type);
 		set_entity_linkage(ent_locations, IR_LINKAGE_CONSTANT);
 		for (i = 0; i < n_blocks; ++i) {
@@ -506,7 +502,7 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 			set_compound_graph_path_node(path, 0, ent);
 			set_compound_graph_path_node(path, 1, loc_lineno);
 			tv = new_tarval_from_long(wd.locs[i].lineno, mode_Iu);
-			add_compound_ent_value_w_path(ent_locations, new_Const(tv), path);
+			add_compound_ent_value_w_path(ent_locations, new_r_Const(irg, tv), path);
 
 			/* name */
 			path = new_compound_graph_path(loc_type, 2);
@@ -515,14 +511,13 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 			set_compound_graph_path_node(path, 1, loc_name);
 			if (wd.locs[i].fname) {
 				sym.entity_p = wd.locs[i].fname;
-				n = new_SymConst(mode_P_data, sym, symconst_addr_ent);
+				n = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
 			} else {
-				n = new_Const(get_mode_null(mode_P_data));
+				n = new_r_Const(irg, get_mode_null(mode_P_data));
 			}
 			add_compound_ent_value_w_path(ent_locations, n, path);
 		}
 		pmap_destroy(wd.fname_map);
-		current_ir_graph = rem;
 	}
 	return gen_initializer_irg(ent_filename, bblock_id, bblock_counts, n_blocks);
 }

@@ -150,6 +150,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	tarval  *      tv_lo   = cpair->tv_lo;
 	tarval  *      tv_hi   = cpair->tv_hi;
 	ir_mode *      mode    = cpair->lo_mode;
+	ir_graph *     irg     = get_irn_irg(cmp_lo);
 
 	if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Eq &&
 	    tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
@@ -171,7 +172,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 			hil   = get_Cmp_left(cmp_hi);
 			hil   = new_r_Conv(dst_block, hil, mode);
 			p     = new_r_And(dst_block, lol, hil, mode);
-			c     = new_Const(tv_lo);
+			c     = new_r_Const(irg, tv_lo);
 			cmp   = new_r_Cmp(dst_block, p, c);
 			p     = new_r_Proj(cmp, mode_b, pn_Cmp_Eq);
 			return p;
@@ -190,7 +191,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 	if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 	    (pnc_hi == pn_Cmp_Eq || pnc_hi == pn_Cmp_Ge || pnc_hi == pn_Cmp_Gt)) {
 		/* x <|<=|== lo && x ==|>=|> hi ==> false */
-		ir_node *const t = new_Const(tarval_b_false);
+		ir_node *const t = new_r_Const(irg, tarval_b_false);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 	           (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
@@ -212,7 +213,7 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 				return p;
 			} else if (pnc_hi == pn_Cmp_Lt) {
 				/* x > c && x < c + 1 ==> false */
-				ir_node *const t = new_Const(tarval_b_false);
+				ir_node *const t = new_r_Const(irg, tarval_b_false);
 				return t;
 			} else if (pnc_hi == pn_Cmp_Le) {
 				/* x > c && x <= c + 1 ==> x != c + 1 */
@@ -257,9 +258,9 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 				if (tv_lo == tarval_bad || tv_hi == tarval_bad)
 					return NULL;
 			}
-			c    = new_Const(tv_lo);
+			c    = new_r_Const(irg, tv_lo);
 			sub  = new_r_Sub(block, x, c, mode);
-			subc = new_r_Sub(block, new_Const(tv_hi), c, mode);
+			subc = new_r_Sub(block, new_r_Const(irg, tv_hi), c, mode);
 			cmp  = new_r_Cmp(block, sub, subc);
 			p    = new_r_Proj(cmp, mode_b, pnc_hi);
 			return p;
@@ -282,6 +283,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	tarval  *      tv_lo   = cpair->tv_lo;
 	tarval  *      tv_hi   = cpair->tv_hi;
 	ir_mode *      mode    = cpair->lo_mode;
+	ir_graph *     irg     = get_irn_irg(cmp_lo);
 
 	if (pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lg &&
 		tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
@@ -303,7 +305,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 			hil   = get_Cmp_left(cmp_hi);
 			hil   = new_r_Conv(dst_block, hil, mode);
 			p     = new_r_Or(dst_block, lol, hil, mode);
-			c     = new_Const(tv_lo);
+			c     = new_r_Const(irg, tv_lo);
 			cmp   = new_r_Cmp(dst_block, p, c);
 			p     = new_r_Proj(cmp, mode_b, pn_Cmp_Lg);
 			return p;
@@ -322,7 +324,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 	if ((pnc_lo == pn_Cmp_Ge || pnc_lo == pn_Cmp_Gt || pnc_lo == pn_Cmp_Lg) &&
 	    (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
 		/* x >=|>|!= lo | x <|<=|!= hi ==> true */
-		ir_node *const t = new_Const(tarval_b_true);
+		ir_node *const t = new_r_Const(irg, tarval_b_true);
 		return t;
 	} else if ((pnc_lo == pn_Cmp_Lt || pnc_lo == pn_Cmp_Le || pnc_lo == pn_Cmp_Eq) &&
 	           (pnc_hi == pn_Cmp_Lt || pnc_hi == pn_Cmp_Le || pnc_hi == pn_Cmp_Lg)) {
@@ -344,7 +346,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 				return p;
 			} else if (pnc_hi == pn_Cmp_Ge) {
 				/* x <= c || x >= c + 1 ==> true */
-				ir_node *const t = new_Const(tarval_b_true);
+				ir_node *const t = new_r_Const(irg, tarval_b_true);
 				return t;
 			} else if (pnc_hi == pn_Cmp_Gt) {
 				/* x <= c || x > c + 1 ==> x != c + 1 */
@@ -389,9 +391,9 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 				if (tv_lo == tarval_bad || tv_hi == tarval_bad)
 					return NULL;
 			}
-			c    = new_Const(tv_lo);
+			c    = new_r_Const(irg, tv_lo);
 			sub  = new_r_Sub(block, x, c, mode);
-			subc = new_r_Sub(block, new_Const(tv_hi), c, mode);
+			subc = new_r_Sub(block, new_r_Const(irg, tv_hi), c, mode);
 			cmp  = new_r_Cmp(block, sub, subc);
 			p    = new_r_Proj(cmp, mode_b, pnc_hi);
 			return p;

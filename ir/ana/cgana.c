@@ -206,9 +206,8 @@ static void sel_methods_walker(ir_node *node, void *env)
 			 * So we could replace the Sel node by a SymConst.
 			 * This method must exists.
 			 */
-			set_irg_current_block(current_ir_graph, get_nodes_block(node));
 			assert(get_entity_irg(arr[0]) != NULL);
-			new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(arr[0]));
+			new_node = copy_const_value(get_irn_dbg_info(node), get_atomic_ent_value(arr[0]), get_nodes_block(node));
 			DBG_OPT_POLY(node, new_node);
 			exchange(node, new_node);
 		}

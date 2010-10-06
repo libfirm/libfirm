@@ -139,7 +139,7 @@ static void create_if_cascade(cond_env_t *env, dbg_info *dbgi, ir_node *block,
 
 	if (numcases == 0) {
 		/* zero cases: "goto default;" */
-		ARR_APP1(ir_node*, env->defusers, new_Jmp());
+		ARR_APP1(ir_node*, env->defusers, new_r_Jmp(block));
 	} else if (numcases == 1) {
 		/* only one case: "if (sel == val) goto target else goto default;" */
 		ir_node *val       = new_r_Const_long(irg, cmp_mode, curcases[0].value);

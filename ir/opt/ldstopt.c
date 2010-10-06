@@ -877,9 +877,10 @@ static int try_load_after_store(ir_node *load,
 		/* produce a shift to adjust offset delta */
 		if (delta > 0) {
 			ir_node *cnst;
+			ir_graph *irg = get_irn_irg(load);
 
 			/* FIXME: only true for little endian */
-			cnst        = new_Const_long(mode_Iu, delta * 8);
+			cnst        = new_r_Const_long(irg, mode_Iu, delta * 8);
 			store_value = new_r_Shr(get_nodes_block(load),
 									store_value, cnst, store_mode);
 		}
@@ -899,7 +900,8 @@ static int try_load_after_store(ir_node *load,
 	res = 0;
 	/* no exception */
 	if (info->projs[pn_Load_X_except]) {
-		exchange( info->projs[pn_Load_X_except], new_Bad());
+		ir_graph *irg = get_irn_irg(load);
+		exchange( info->projs[pn_Load_X_except], new_r_Bad(irg));
 		res |= CF_CHANGED;
 	}
 	if (info->projs[pn_Load_X_regular]) {
@@ -1001,7 +1003,8 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 
 				/* no exception */
 				if (info->projs[pn_Load_X_except]) {
-					exchange(info->projs[pn_Load_X_except], new_Bad());
+					ir_graph *irg = get_irn_irg(load);
+					exchange(info->projs[pn_Load_X_except], new_r_Bad(irg));
 					res |= CF_CHANGED;
 				}
 				if (info->projs[pn_Load_X_regular]) {
@@ -1068,27 +1071,22 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
  */
 ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 {
-	ir_mode *c_mode = get_irn_mode(c);
-	ir_mode *l_mode = get_Load_mode(load);
-	ir_node *res    = NULL;
+	ir_mode  *c_mode = get_irn_mode(c);
+	ir_mode  *l_mode = get_Load_mode(load);
+	ir_node  *block  = get_nodes_block(load);
+	dbg_info *dbgi   = get_irn_dbg_info(load);
+	ir_node  *res    = copy_const_value(dbgi, c, block);
 
 	if (c_mode != l_mode) {
 		/* check, if the mode matches OR can be easily converted info */
 		if (is_reinterpret_cast(c_mode, l_mode)) {
-			/* we can safely cast */
-			dbg_info *dbg   = get_irn_dbg_info(load);
-			ir_node  *block = get_nodes_block(load);
-
 			/* copy the value from the const code irg and cast it */
-			res = copy_const_value(dbg, c);
-			res = new_rd_Conv(dbg, block, res, l_mode);
+			res = new_rd_Conv(dbgi, block, res, l_mode);
 		}
-	} else {
-		/* copy the value from the const code irg */
-		res = copy_const_value(get_irn_dbg_info(load), c);
+		return NULL;
 	}
 	return res;
-}  /* can_replace_load_by_const */
+}
 
 /**
  * optimize a Load
@@ -1143,7 +1141,8 @@ static unsigned optimize_load(ir_node *load)
 
 			/* no exception, clear the info field as it might be checked later again */
 			if (info->projs[pn_Load_X_except]) {
-				exchange(info->projs[pn_Load_X_except], new_Bad());
+				ir_graph *irg = get_irn_irg(load);
+				exchange(info->projs[pn_Load_X_except], new_r_Bad(irg));
 				info->projs[pn_Load_X_except] = NULL;
 				res |= CF_CHANGED;
 			}
@@ -1177,7 +1176,8 @@ static unsigned optimize_load(ir_node *load)
 	if (value != NULL) {
 		/* we completely replace the load by this value */
 		if (info->projs[pn_Load_X_except]) {
-			exchange(info->projs[pn_Load_X_except], new_Bad());
+			ir_graph *irg = get_irn_irg(load);
+			exchange(info->projs[pn_Load_X_except], new_r_Bad(irg));
 			info->projs[pn_Load_X_except] = NULL;
 			res |= CF_CHANGED;
 		}

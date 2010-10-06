@@ -64,7 +64,6 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
                         dbg_info *db)
 {
 	ir_entity *res;
-	ir_graph *rem;
 
 	assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
 
@@ -88,13 +87,11 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 	res->repr_class           = NULL;
 
 	if (is_Method_type(type)) {
+		ir_graph *irg = get_const_code_irg();
 		symconst_symbol sym;
 		ir_mode *mode = is_Method_type(type) ? mode_P_code : mode_P_data;
 		sym.entity_p            = res;
-		rem                     = current_ir_graph;
-		current_ir_graph        = get_const_code_irg();
-		set_atomic_ent_value(res, new_SymConst(mode, sym, symconst_addr_ent));
-		current_ir_graph        = rem;
+		set_atomic_ent_value(res, new_r_SymConst(irg, mode, sym, symconst_addr_ent));
 		res->linkage            = IR_LINKAGE_CONSTANT;
 		res->attr.mtd_attr.irg_add_properties = mtp_property_inherited;
 		res->attr.mtd_attr.vtable_number      = IR_VTABLE_NUM_NOT_SET;
@@ -509,10 +506,11 @@ int is_irn_const_expression(ir_node *n)
 
 /*
  * Copies a firm subgraph that complies to the restrictions for
- * constant expressions to current_block in current_ir_graph.
+ * constant expressions to block.
  */
-ir_node *copy_const_value(dbg_info *dbg, ir_node *n)
+ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *block)
 {
+	ir_graph *irg = get_irn_irg(block);
 	ir_node *nn;
 	ir_mode *m;
 
@@ -522,36 +520,53 @@ ir_node *copy_const_value(dbg_info *dbg, ir_node *n)
 	m = get_irn_mode(n);
 	switch (get_irn_opcode(n)) {
 	case iro_Const:
-		nn = new_d_Const_type(dbg, get_Const_tarval(n), get_Const_type(n));
+		nn = new_rd_Const_type(dbg, irg, get_Const_tarval(n), get_Const_type(n));
 		break;
 	case iro_SymConst:
-		nn = new_d_SymConst_type(dbg, get_irn_mode(n), get_SymConst_symbol(n), get_SymConst_kind(n),
+		nn = new_rd_SymConst_type(dbg, irg, get_irn_mode(n), get_SymConst_symbol(n), get_SymConst_kind(n),
 			get_SymConst_value_type(n));
 		break;
 	case iro_Add:
-		nn = new_d_Add(dbg, copy_const_value(dbg, get_Add_left(n)),
-			copy_const_value(dbg, get_Add_right(n)), m); break;
+		nn = new_rd_Add(dbg, block,
+		                copy_const_value(dbg, get_Add_left(n), block),
+		                copy_const_value(dbg, get_Add_right(n), block), m);
+		break;
 	case iro_Sub:
-		nn = new_d_Sub(dbg, copy_const_value(dbg, get_Sub_left(n)),
-			copy_const_value(dbg, get_Sub_right(n)), m); break;
+		nn = new_rd_Sub(dbg, block,
+		                copy_const_value(dbg, get_Sub_left(n), block),
+		                copy_const_value(dbg, get_Sub_right(n), block), m);
+		break;
 	case iro_Mul:
-		nn = new_d_Mul(dbg, copy_const_value(dbg, get_Mul_left(n)),
-			copy_const_value(dbg, get_Mul_right(n)), m); break;
+		nn = new_rd_Mul(dbg, block,
+		                copy_const_value(dbg, get_Mul_left(n), block),
+		                copy_const_value(dbg, get_Mul_right(n), block), m);
+		break;
 	case iro_And:
-		nn = new_d_And(dbg, copy_const_value(dbg, get_And_left(n)),
-			copy_const_value(dbg, get_And_right(n)), m); break;
+		nn = new_rd_And(dbg, block,
+		                copy_const_value(dbg, get_And_left(n), block),
+		                copy_const_value(dbg, get_And_right(n), block), m);
+		break;
 	case iro_Or:
-		nn = new_d_Or(dbg, copy_const_value(dbg, get_Or_left(n)),
-			copy_const_value(dbg, get_Or_right(n)), m); break;
+		nn = new_rd_Or(dbg, block,
+		               copy_const_value(dbg, get_Or_left(n), block),
+		               copy_const_value(dbg, get_Or_right(n), block), m);
+		break;
 	case iro_Eor:
-		nn = new_d_Eor(dbg, copy_const_value(dbg, get_Eor_left(n)),
-			copy_const_value(dbg, get_Eor_right(n)), m); break;
+		nn = new_rd_Eor(dbg, block,
+		                copy_const_value(dbg, get_Eor_left(n), block),
+		                copy_const_value(dbg, get_Eor_right(n), block), m);
+		break;
 	case iro_Cast:
-		nn = new_d_Cast(dbg, copy_const_value(dbg, get_Cast_op(n)), get_Cast_type(n)); break;
+		nn = new_rd_Cast(dbg, block,
+		                 copy_const_value(dbg, get_Cast_op(n), block),
+		                 get_Cast_type(n));
+		break;
 	case iro_Conv:
-		nn = new_d_Conv(dbg, copy_const_value(dbg, get_Conv_op(n)), m); break;
+		nn = new_rd_Conv(dbg, block,
+		                 copy_const_value(dbg, get_Conv_op(n), block), m);
+		break;
 	case iro_Unknown:
-		nn = new_Unknown(m); break;
+		nn = new_r_Unknown(irg, m); break;
 	default:
 		panic("opcode invalid or not implemented");
 	}

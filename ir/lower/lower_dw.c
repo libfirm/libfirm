@@ -1038,6 +1038,7 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *env)
 				ir_node  *right = get_Rotl_right(node);
 				ir_node  *left, *shl, *shr, *or, *block, *sub, *c;
 				ir_mode  *omode, *rmode;
+				ir_graph *irg;
 				dbg_info *dbg;
 				optimization_state_t state;
 
@@ -1052,13 +1053,14 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *env)
 				}
 
 				/* replace the Rotl(x,y) by an Or(Shl(x,y), Shr(x,64-y)) and lower those */
+				irg   = get_irn_irg(node);
 				dbg   = get_irn_dbg_info(node);
 				omode = get_irn_mode(node);
 				left  = get_Rotl_left(node);
 				block = get_nodes_block(node);
 				shl   = new_rd_Shl(dbg, block, left, right, omode);
 				rmode = get_irn_mode(right);
-				c     = new_Const_long(rmode, get_mode_size_bits(omode));
+				c     = new_r_Const_long(irg, rmode, get_mode_size_bits(omode));
 				sub   = new_rd_Sub(dbg, block, c, right, rmode);
 				shr   = new_rd_Shr(dbg, block, left, sub, omode);
 
@@ -1321,7 +1323,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 				ir_node *low  = new_r_Conv(block, lentry->low_word, mode);
 				ir_node *high = new_r_Conv(block, lentry->high_word, mode);
 				ir_node *or   = new_rd_Or(dbg, block, low, high, mode);
-				ir_node *cmp  = new_rd_Cmp(dbg, block, or, new_Const_long(mode, 0));
+				ir_node *cmp  = new_rd_Cmp(dbg, block, or, new_r_Const_long(irg, mode, 0));
 
 				ir_node *proj = new_r_Proj(cmp, mode_b, pnc);
 				set_Cond_selector(node, proj);
@@ -1518,18 +1520,18 @@ static void lower_Conv_to_Ll(ir_node *node, lower_env_t *env)
 
 			if (mode_is_signed(imode)) {
 				int      c       = get_mode_size_bits(low_signed) - 1;
-				ir_node *cnst    = new_Const_long(low_unsigned, c);
+				ir_node *cnst    = new_r_Const_long(irg, low_unsigned, c);
 				if (get_irn_mode(op) != low_signed)
 					op = new_rd_Conv(dbg, block, op, low_signed);
 				entry->high_word = new_rd_Shrs(dbg, block, op, cnst,
 				                               low_signed);
 			} else {
-				entry->high_word = new_Const(get_mode_null(low_signed));
+				entry->high_word = new_r_Const(irg, get_mode_null(low_signed));
 			}
 		}
 	} else if (imode == mode_b) {
 		entry->low_word = new_rd_Conv(dbg, block, op, low_unsigned);
-		entry->high_word = new_Const(get_mode_null(low_signed));
+		entry->high_word = new_r_Const(irg, get_mode_null(low_signed));
 	} else {
 		ir_node *irn, *call;
 		ir_type *mtp = get_conv_type(imode, omode, env);

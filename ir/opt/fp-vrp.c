@@ -567,7 +567,8 @@ static void apply_result(ir_node* const irn, void* ctx)
 		ir_mode* const m = get_irn_mode(irn);
 		ir_node*       n;
 		if (mode_is_intb(m)) {
-			n = new_Const(z);
+			ir_graph *irg = get_irn_irg(irn);
+			n = new_r_Const(irg, z);
 		} else if (m == mode_X) {
 			ir_node*  const block = get_nodes_block(irn);
 			ir_graph* const irg   = get_Block_irg(block);

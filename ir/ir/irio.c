@@ -58,6 +58,7 @@ typedef struct io_env_t
 	int line;
 	ir_type **fixedtypes;
 	struct obstack obst;
+	ir_graph *irg;
 } io_env_t;
 
 typedef enum typetag_t
@@ -1028,7 +1029,7 @@ static ir_node *get_node_or_dummy(io_env_t *env, long nodenr)
 {
 	ir_node *node = get_node_or_null(env, nodenr);
 	if (node == NULL) {
-		node = new_Dummy(mode_X);
+		node = new_r_Dummy(env->irg, mode_X);
 		set_id(env, nodenr, node);
 	}
 	return node;
@@ -1412,11 +1413,12 @@ static void import_entity(io_env_t *env)
 /** Parses the whole type graph. */
 static int parse_typegraph(io_env_t *env)
 {
+	ir_graph *old_irg = env->irg;
 	keyword_t kwkind;
 
 	EXPECT('{');
 
-	current_ir_graph = get_const_code_irg();
+	env->irg = get_const_code_irg();
 
 	/* parse all types first */
 	while (true) {
@@ -1442,6 +1444,7 @@ static int parse_typegraph(io_env_t *env)
 			break;
 		}
 	}
+	env->irg = old_irg;
 	return 1;
 }
 
@@ -1481,7 +1484,7 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 	const char *nodename;
 	ir_node    *node, *newnode;
 
-	current_ir_graph = irg;
+	env->irg = irg;
 
 	EXPECT('{');
 
@@ -1514,7 +1517,7 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 		case iro_End:
 		{
 			ir_node *newendblock = get_node(env, preds[0]);
-			newnode = get_irg_end(current_ir_graph);
+			newnode = get_irg_end(irg);
 			exchange(get_nodes_block(newnode), newendblock);
 			for (i = 0; i < numpreds - 1; i++)
 				add_irn_n(newnode, prednodes[i]);
@@ -1524,7 +1527,7 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 		case iro_Start:
 		{
 			ir_node *newstartblock = get_node(env, preds[0]);
-			newnode = get_irg_start(current_ir_graph);
+			newnode = get_irg_start(irg);
 			exchange(get_nodes_block(newnode), newstartblock);
 			break;
 		}
@@ -1538,12 +1541,12 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 				goto endloop;
 			}
 
-			newnode = new_Block(numpreds - 1, prednodes);
+			newnode = new_r_Block(irg, numpreds - 1, prednodes);
 			break;
 		}
 
 		case iro_Anchor:
-			newnode = current_ir_graph->anchor;
+			newnode = irg->anchor;
 			for (i = 0; i < numpreds - 1; i++)
 				set_irn_n(newnode, i, prednodes[i]);
 			set_irn_n(newnode, -1, get_node(env, preds[0]));
@@ -1554,7 +1557,7 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 			long entnr = read_long(env);
 			union symconst_symbol sym;
 			sym.entity_p = get_entity(env, entnr);
-			newnode = new_SymConst(mode_P, sym, symconst_addr_ent);
+			newnode = new_r_SymConst(irg, mode_P, sym, symconst_addr_ent);
 			break;
 		}
 

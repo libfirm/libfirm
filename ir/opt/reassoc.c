@@ -551,11 +551,12 @@ static int reassoc_Mul(ir_node **node)
  */
 static int reassoc_Shl(ir_node **node)
 {
-	ir_node *n = *node;
-	ir_node *c = get_Shl_right(n);
-	ir_node *x, *blk, *irn;
-	ir_mode *mode;
-	tarval *tv;
+	ir_node  *n = *node;
+	ir_node  *c = get_Shl_right(n);
+	ir_node  *x, *blk, *irn;
+	ir_graph *irg;
+	ir_mode  *mode;
+	tarval   *tv;
 
 	if (! is_Const(c))
 		return 0;
@@ -570,7 +571,8 @@ static int reassoc_Shl(ir_node **node)
 		return 0;
 
 	blk = get_nodes_block(n);
-	c   = new_Const(tv);
+	irg = get_irn_irg(blk);
+	c   = new_r_Const(irg, tv);
 	irn = new_rd_Mul(get_irn_dbg_info(n), blk, x, c, mode);
 
 	if (irn != n) {

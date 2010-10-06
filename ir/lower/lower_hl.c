@@ -144,12 +144,12 @@ static void lower_sel(ir_node *sel)
 
 					assert(irg == current_ir_graph);
 					if (! is_Unknown(lb))
-						lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb), mode_Int);
+						lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb, bl), mode_Int);
 					else
 						lb = NULL;
 
 					if (! is_Unknown(ub))
-						ub = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), ub), mode_Int);
+						ub = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), ub, bl), mode_Int);
 					else
 						ub = NULL;
 
@@ -250,6 +250,7 @@ static void lower_symconst(ir_node *symc)
 	tarval        *tv;
 	ir_enum_const *ec;
 	ir_mode       *mode;
+	ir_graph      *irg;
 
 	switch (get_SymConst_kind(symc)) {
 	case symconst_type_tag:
@@ -257,10 +258,11 @@ static void lower_symconst(ir_node *symc)
 		break;
 	case symconst_type_size:
 		/* rewrite the SymConst node by a Const node */
+		irg  = get_irn_irg(symc);
 		tp   = get_SymConst_type(symc);
 		assert(get_type_state(tp) == layout_fixed);
 		mode = get_irn_mode(symc);
-		newn = new_Const_long(mode, get_type_size_bytes(tp));
+		newn = new_r_Const_long(irg, mode, get_type_size_bytes(tp));
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -268,10 +270,11 @@ static void lower_symconst(ir_node *symc)
 		break;
 	case symconst_type_align:
 		/* rewrite the SymConst node by a Const node */
+		irg  = get_irn_irg(symc);
 		tp   = get_SymConst_type(symc);
 		assert(get_type_state(tp) == layout_fixed);
 		mode = get_irn_mode(symc);
-		newn = new_Const_long(mode, get_type_alignment_bytes(tp));
+		newn = new_r_Const_long(irg, mode, get_type_alignment_bytes(tp));
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -282,10 +285,11 @@ static void lower_symconst(ir_node *symc)
 		break;
 	case symconst_ofs_ent:
 		/* rewrite the SymConst node by a Const node */
+		irg  = get_irn_irg(symc);
 		ent  = get_SymConst_entity(symc);
 		assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 		mode = get_irn_mode(symc);
-		newn = new_Const_long(mode, get_entity_offset(ent));
+		newn = new_r_Const_long(irg, mode, get_entity_offset(ent));
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -293,10 +297,11 @@ static void lower_symconst(ir_node *symc)
 		break;
 	case symconst_enum_const:
 		/* rewrite the SymConst node by a Const node */
+		irg  = get_irn_irg(symc);
 		ec   = get_SymConst_enum(symc);
 		assert(get_type_state(get_enumeration_owner(ec)) == layout_fixed);
 		tv   = get_enumeration_value(ec);
-		newn = new_Const(tv);
+		newn = new_r_Const(irg, tv);
 		assert(newn);
 		/* run the hooks */
 		hook_lower(symc);
@@ -333,6 +338,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 {
 	ir_node *sel = get_Load_ptr(load);
 	ir_node *block, *n_proj, *res, *ptr;
+	ir_graph *irg;
 	ir_entity *ent;
 	ir_type *bf_type;
 	ir_mode *bf_mode, *mode;
@@ -372,9 +378,10 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 	 */
 
 	/* abandon bitfield sel */
+	irg = get_irn_irg(sel);
 	ptr = get_Sel_ptr(sel);
 	db  = get_irn_dbg_info(sel);
-	ptr = new_rd_Add(db, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
+	ptr = new_rd_Add(db, block, ptr, new_r_Const_long(irg, mode_Is, offset), get_irn_mode(ptr));
 
 	set_Load_ptr(load, ptr);
 	set_Load_mode(load, mode);
@@ -391,20 +398,20 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 		int shift_count_down  = bits - bf_bits;
 
 		if (shift_count_up) {
-			res = new_r_Shl(block, res, new_Const_long(mode_Iu, shift_count_up), mode);
+			res = new_r_Shl(block, res, new_r_Const_long(irg, mode_Iu, shift_count_up), mode);
 		}
 		if (shift_count_down) {
-			res = new_r_Shrs(block, res, new_Const_long(mode_Iu, shift_count_down), mode);
+			res = new_r_Shrs(block, res, new_r_Const_long(irg, mode_Iu, shift_count_down), mode);
 		}
 	} else { /* unsigned */
 		int shift_count_down  = bit_offset;
 		unsigned mask = ((unsigned)-1) >> (bits - bf_bits);
 
 		if (shift_count_down) {
-			res = new_r_Shr(block, res, new_Const_long(mode_Iu, shift_count_down), mode);
+			res = new_r_Shr(block, res, new_r_Const_long(irg, mode_Iu, shift_count_down), mode);
 		}
 		if (bits != bf_bits) {
-			res = new_r_And(block, res, new_Const_long(mode, mask), mode);
+			res = new_r_And(block, res, new_r_Const_long(irg, mode, mask), mode);
 		}
 	}
 
@@ -424,6 +431,7 @@ static void lower_bitfields_stores(ir_node *store)
 	ir_type *bf_type;
 	ir_mode *bf_mode, *mode;
 	ir_node *mem, *irn, *block;
+	ir_graph *irg;
 	unsigned mask, neg_mask;
 	int bf_bits, bits_mask, offset, bit_offset;
 	dbg_info *db;
@@ -467,9 +475,10 @@ static void lower_bitfields_stores(ir_node *store)
 	neg_mask = ~mask;
 
 	/* abandon bitfield sel */
+	irg = get_irn_irg(sel);
 	ptr = get_Sel_ptr(sel);
 	db  = get_irn_dbg_info(sel);
-	ptr = new_rd_Add(db, block, ptr, new_Const_long(mode_Is, offset), get_irn_mode(ptr));
+	ptr = new_rd_Add(db, block, ptr, new_r_Const_long(irg, mode_Is, offset), get_irn_mode(ptr));
 
 	if (neg_mask) {
 		/* there are some bits, normal case */
@@ -477,13 +486,13 @@ static void lower_bitfields_stores(ir_node *store)
 		mem  = new_r_Proj(irn, mode_M, pn_Load_M);
 		irn  = new_r_Proj(irn, mode, pn_Load_res);
 
-		irn = new_r_And(block, irn, new_Const_long(mode, neg_mask), mode);
+		irn = new_r_And(block, irn, new_r_Const_long(irg, mode, neg_mask), mode);
 
 		if (bit_offset > 0) {
-			value = new_r_Shl(block, value, new_Const_long(mode_Iu, bit_offset), mode);
+			value = new_r_Shl(block, value, new_r_Const_long(irg, mode_Iu, bit_offset), mode);
 		}
 
-		value = new_r_And(block, value, new_Const_long(mode, mask), mode);
+		value = new_r_And(block, value, new_r_Const_long(irg, mode, mask), mode);
 
 		value = new_r_Or(block, value, irn, mode);
 	}

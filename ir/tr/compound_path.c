@@ -295,24 +295,22 @@ void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member,
 void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals)
 {
 	int i;
-	ir_graph *rem = current_ir_graph;
-	ir_type *arrtp = get_entity_type(ent);
-	ir_node *val;
-	ir_type *elttp = get_array_element_type(arrtp);
+	ir_type  *arrtp = get_entity_type(ent);
+	ir_node  *val;
+	ir_type  *elttp = get_array_element_type(arrtp);
+	ir_graph *irg = get_const_code_irg();
 
 	assert(is_Array_type(arrtp));
 	assert(get_array_n_dimensions(arrtp) == 1);
 	/* One bound is sufficient, the number of constant fields makes the
 	   size. */
 	assert(get_array_lower_bound (arrtp, 0) || get_array_upper_bound (arrtp, 0));
-	current_ir_graph = get_const_code_irg();
 
 	for (i = 0; i < num_vals; i++) {
-		val = new_Const_type(values[i], elttp);
+		val = new_r_Const_type(irg, values[i], elttp);
 		add_compound_ent_value(ent, val, get_array_element_entity(arrtp));
 		set_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0, i);
 	}
-	current_ir_graph = rem;
 }
 
 unsigned get_compound_ent_value_offset_bytes(const ir_entity *ent, int pos)

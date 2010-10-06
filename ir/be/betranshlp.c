@@ -292,7 +292,7 @@ static ir_node *new_be_Anchor(ir_graph *irg)
 
 	/* Hack: some places in the code ask the Anchor for its register
 	   requirements */
-	new_anchor = new_Anchor(irg);
+	new_anchor = new_r_Anchor(irg);
 	info = be_get_info(new_anchor);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
 	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));

@@ -1196,14 +1196,14 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				x87_patch_insn(n, op_p);
 			} else {
 				ir_node  *vfld, *mem, *block, *rproj, *mproj;
-				ir_graph *irg;
+				ir_graph *irg = get_irn_irg(n);
 
 				/* stack full here: need fstp + load */
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 
 				block = get_nodes_block(n);
-				vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), new_NoMem(), get_ia32_ls_mode(n));
+				vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), new_r_NoMem(irg), get_ia32_ls_mode(n));
 
 				/* copy all attributes */
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));
@@ -1223,7 +1223,6 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				arch_set_irn_register(rproj, op2);
 
 				/* reroute all former users of the store memory to the load memory */
-				irg = get_irn_irg(n);
 				edges_reroute(mem, mproj, irg);
 				/* set the memory input of the load to the store memory */
 				set_irn_n(vfld, n_ia32_vfld_mem, mem);

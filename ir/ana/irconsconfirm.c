@@ -152,7 +152,8 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 			 * We can replace the input with true/false.
 			 */
 			if (con == NULL) {
-				con = new_Const(pnc == pn_Cond_true ? tarval_b_true : tarval_b_false);
+				ir_graph *irg = get_irn_irg(block);
+				con = new_r_Const(irg, pnc == pn_Cond_true ? tarval_b_true : tarval_b_false);
 			}
 			old = get_irn_n(user, pos);
 			set_irn_n(user, pos, con);
@@ -212,8 +213,9 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				NEW_ARR_A(ir_node *, in, n);
 				/* ok, ALL predecessors are either dominated by block OR other block */
 				if (c_b == NULL) {
-					ir_node *c_true  = new_Const(tarval_b_true);
-					ir_node *c_false = new_Const(tarval_b_false);
+					ir_graph *irg    = get_irn_irg(block);
+					ir_node *c_true  = new_r_Const(irg, tarval_b_true);
+					ir_node *c_false = new_r_Const(irg, tarval_b_false);
 					env->num_consts += 2;
 					if (pnc == pn_Cond_true) {
 						c_b = c_true;
@@ -518,9 +520,9 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 			 * We can replace the input with a Confirm(ptr, !=, NULL).
 			 */
 			if (c == NULL) {
-				ir_mode *mode = get_irn_mode(ptr);
-				c = new_Const(get_mode_null(mode));
-
+				ir_mode  *mode = get_irn_mode(ptr);
+				ir_graph *irg  = get_irn_irg(block);
+				c = new_r_Const(irg, get_mode_null(mode));
 				c = new_r_Confirm(block, ptr, c, pn_Cmp_Lg);
 			}
 

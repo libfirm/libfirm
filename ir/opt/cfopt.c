@@ -104,9 +104,10 @@ static int remove_senseless_conds(ir_node *bl)
 				ir_node *cond_j = skip_Proj(pred_j);
 
 				if (cond_j == cond_i) {
-					ir_node *jmp = new_r_Jmp(get_nodes_block(cond_i));
+					ir_graph *irg = get_irn_irg(bl);
+					ir_node  *jmp = new_r_Jmp(get_nodes_block(cond_i));
 					set_irn_n(bl, i, jmp);
-					set_irn_n(bl, j, new_Bad());
+					set_irn_n(bl, j, new_r_Bad(irg));
 
 					DBG_OPT_IFSIM2(cond_i, jmp);
 					changed = 1;
@@ -181,7 +182,8 @@ static void merge_blocks(ir_node *node, void *ctx)
 			 * prevented, so just set it's cf to Bad.
 			 */
 			if (is_Block_dead(new_block)) {
-				exchange(node, new_Bad());
+				ir_graph *irg = get_irn_irg(node);
+				exchange(node, new_r_Bad(irg));
 				env->changed = 1;
 			}
 		}
@@ -213,8 +215,9 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env)
 			ir_node *pred_bl = get_nodes_block(skip_Proj(skipped));
 
 			if (is_Block_dead(pred_bl) || (get_Block_dom_depth(pred_bl) < 0)) {
+				ir_graph *irg = get_irn_irg(block);
 				set_Block_dead(pred_bl);
-				exchange(pred_X, new_Bad());
+				exchange(pred_X, new_r_Bad(irg));
 				*changed = 1;
 			} else if (skipped != pred_X) {
 				set_Block_cfgpred(block, i, skipped);
@@ -488,7 +491,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 				if (get_Block_idom(b) != predb) {
 					/* predb is not the dominator. There can't be uses of pred's Phi nodes, kill them .*/
-					exchange(phi, new_Bad());
+					ir_graph *irg = get_irn_irg(b);
+					exchange(phi, new_r_Bad(irg));
 				} else {
 					/* predb is the direct dominator of b. There might be uses of the Phi nodes from
 					   predb in further block, so move this phi from the predecessor into the block b */
@@ -572,7 +576,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 					in[n_preds++] = pred_X;
 			}
 			/* Remove block as it might be kept alive. */
-			exchange(pred, b/*new_Bad()*/);
+			exchange(pred, b/*new_r_Bad(irg)*/);
 		} else {
 			/* case 3: */
 			in[n_preds++] = get_Block_cfgpred(b, i);
@@ -638,15 +642,16 @@ static int handle_switch_cond(ir_node *cond)
 
 		if (tv != tarval_bad) {
 			/* we have a constant switch */
-			long num     = get_tarval_long(tv);
-			long def_num = get_Cond_default_proj(cond);
+			long      num     = get_tarval_long(tv);
+			long      def_num = get_Cond_default_proj(cond);
+			ir_graph *irg     = get_irn_irg(cond);
 
 			if (def_num == get_Proj_proj(proj1)) {
 				/* first one is the defProj */
 				if (num == get_Proj_proj(proj2)) {
 					jmp = new_r_Jmp(blk);
 					exchange(proj2, jmp);
-					exchange(proj1, new_Bad());
+					exchange(proj1, new_r_Bad(irg));
 					return 1;
 				}
 			} else if (def_num == get_Proj_proj(proj2)) {
@@ -654,7 +659,7 @@ static int handle_switch_cond(ir_node *cond)
 				if (num == get_Proj_proj(proj1)) {
 					jmp = new_r_Jmp(blk);
 					exchange(proj1, jmp);
-					exchange(proj2, new_Bad());
+					exchange(proj2, new_r_Bad(irg));
 					return 1;
 				}
 			} else {
@@ -662,12 +667,12 @@ static int handle_switch_cond(ir_node *cond)
 				if (num == get_Proj_proj(proj1)) {
 					jmp = new_r_Jmp(blk);
 					exchange(proj1, jmp);
-					exchange(proj2, new_Bad());
+					exchange(proj2, new_r_Bad(irg));
 					return 1;
 				} else if (num == get_Proj_proj(proj2)) {
 					jmp = new_r_Jmp(blk);
 					exchange(proj2, jmp);
-					exchange(proj1, new_Bad());
+					exchange(proj1, new_r_Bad(irg));
 					return 1;
 				}
 			}
@@ -731,7 +736,7 @@ restart:
 		if (is_Block(ka)) {
 			/* do NOT keep dead blocks */
 			if (is_Block_dead(ka) || get_Block_dom_depth(ka) < 0) {
-				set_End_keepalive(end, i, new_Bad());
+				set_End_keepalive(end, i, new_r_Bad(irg));
 				changed = 1;
 			}
 		} else {
@@ -739,7 +744,7 @@ restart:
 
 			if (is_Bad(block) || is_Block_dead(block) || get_Block_dom_depth(block) < 0) {
 				/* do NOT keep nodes in dead blocks */
-				set_End_keepalive(end, i, new_Bad());
+				set_End_keepalive(end, i, new_r_Bad(irg));
 				changed = 1;
 			}
 		}
@@ -793,7 +798,7 @@ restart:
 		if (is_Block(ka)) {
 			/* do NOT keep dead blocks */
 			if (is_Block_dead(ka) || get_Block_dom_depth(ka) < 0) {
-				set_End_keepalive(end, i, new_Bad());
+				set_End_keepalive(end, i, new_r_Bad(irg));
 				changed = 1;
 			}
 		} else {
@@ -801,7 +806,7 @@ restart:
 
 			if (is_Bad(block) || is_Block_dead(block) || get_Block_dom_depth(block) < 0) {
 				/* do NOT keep nodes in dead blocks */
-				set_End_keepalive(end, i, new_Bad());
+				set_End_keepalive(end, i, new_r_Bad(irg));
 				changed = 1;
 			}
 		}

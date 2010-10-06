@@ -184,7 +184,7 @@ static void transform_Spill(ir_node *node)
 	ir_node   *block  = get_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *ptr    = get_irg_frame(irg);
-	ir_node   *mem    = new_NoMem();
+	ir_node   *mem    = new_r_NoMem(irg);
 	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
 	//ir_mode   *mode   = get_irn_mode(val);
 	ir_entity *entity = be_get_frame_entity(node);

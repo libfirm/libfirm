@@ -1151,7 +1151,7 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	 * registers... */
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_NoMem();
+	ir_node  *nomem = new_r_NoMem(irg);
 	ir_node  *str0  = new_bd_arm_Str(dbgi, block, stack, node0, nomem, mode_gp,
 	                                 NULL, 0, 0, true);
 	ir_node  *str1  = new_bd_arm_Str(dbgi, block, stack, node1, nomem, mode_gp,
@@ -1165,14 +1165,14 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	ldf = new_bd_arm_Ldf(dbgi, block, stack, sync, mode_D, NULL, 0, 0, true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
-	return new_Proj(ldf, mode_fp, pn_arm_Ldf_res);
+	return new_r_Proj(ldf, mode_fp, pn_arm_Ldf_res);
 }
 
 static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_NoMem();
+	ir_node  *nomem = new_r_NoMem(irg);
 	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem, mode_gp,
 	                                 NULL, 0, 0, true);
 	ir_node  *ldf;
@@ -1181,14 +1181,14 @@ static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 	ldf = new_bd_arm_Ldf(dbgi, block, stack, str, mode_F, NULL, 0, 0, true);
 	set_irn_pinned(ldf, op_pin_state_floats);
 
-	return new_Proj(ldf, mode_fp, pn_arm_Ldf_res);
+	return new_r_Proj(ldf, mode_fp, pn_arm_Ldf_res);
 }
 
 static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_NoMem();
+	ir_node  *nomem = new_r_NoMem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_F,
 	                                 NULL, 0, 0, true);
 	ir_node  *ldr;
@@ -1197,7 +1197,7 @@ static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 	ldr = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 0, true);
 	set_irn_pinned(ldr, op_pin_state_floats);
 
-	return new_Proj(ldr, mode_gp, pn_arm_Ldr_res);
+	return new_r_Proj(ldr, mode_gp, pn_arm_Ldr_res);
 }
 
 static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
@@ -1205,7 +1205,7 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_NoMem();
+	ir_node  *nomem = new_r_NoMem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_D,
 	                                 NULL, 0, 0, true);
 	ir_node  *ldr0, *ldr1;
@@ -1216,8 +1216,8 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 	ldr1 = new_bd_arm_Ldr(dbgi, block, stack, stf, mode_gp, NULL, 0, 4, true);
 	set_irn_pinned(ldr1, op_pin_state_floats);
 
-	*out_value0 = new_Proj(ldr0, mode_gp, pn_arm_Ldr_res);
-	*out_value1 = new_Proj(ldr1, mode_gp, pn_arm_Ldr_res);
+	*out_value0 = new_r_Proj(ldr0, mode_gp, pn_arm_Ldr_res);
+	*out_value1 = new_r_Proj(ldr1, mode_gp, pn_arm_Ldr_res);
 }
 
 static ir_node *gen_CopyB(ir_node *node)
@@ -1427,7 +1427,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return be_prolog_get_reg_value(abihelper, sp_reg);
 
 	case pn_Start_P_tls:
-		return new_Bad();
+		return new_r_Bad(get_irn_irg(node));
 
 	case pn_Start_max:
 		break;
@@ -1467,7 +1467,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 				ir_node  *ldr = new_bd_arm_Ldr(NULL, new_block, fp, mem,
 				                               mode_gp, param->entity,
 				                               0, 0, true);
-				value1 = new_Proj(ldr, mode_gp, pn_arm_Ldr_res);
+				value1 = new_r_Proj(ldr, mode_gp, pn_arm_Ldr_res);
 			}
 
 			/* convert integer value to float */

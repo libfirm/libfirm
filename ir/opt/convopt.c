@@ -174,11 +174,11 @@ static ir_node *place_conv(ir_node *node, ir_mode *dest_mode)
 static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode  *mode = get_irn_mode(node);
+	ir_graph *irg  = get_irn_irg(node);
 	size_t    arity;
 	size_t    conv_arity;
 	size_t    i;
 	ir_node  *new_node;
-	ir_graph *irg;
 	ir_node **ins;
 
 	if (mode == dest_mode)
@@ -190,7 +190,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		if (tv == tarval_bad) {
 			return place_conv(node, dest_mode);
 		} else {
-			return new_Const(tv);
+			return new_r_Const(irg, tv);
 		}
 	}
 
@@ -224,7 +224,6 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 
 	// We want to create a new node with the right mode
 	arity = get_irn_arity(node);
-	irg = get_irn_irg(node);
 	ins = ALLOCAN(ir_node *, arity);
 
 	// The shift count does not participate in the conv optimisation
@@ -256,19 +255,6 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 	return new_node;
 }
 
-/* TODO, backends (at least ia32) can't handle it at the moment,
-   and it's probably not more efficient on most archs */
-#if 0
-static void try_optimize_cmp(ir_node *node)
-{
-	ir_node *left  = get_Cmp_left(node);
-	ir_node *right = get_Cmp_right(node);
-	ir_node *conv  = NULL;
-
-	if (is_downconv
-}
-#endif
-
 static void conv_opt_walker(ir_node *node, void *data)
 {
 	ir_node *transformed;
@@ -277,13 +263,6 @@ static void conv_opt_walker(ir_node *node, void *data)
 	ir_mode *mode;
 	int costs;
 	bool *changed = data;
-
-#if 0
-	if (is_Cmp(node)) {
-		try_optimize_cmp(node);
-		return;
-	}
-#endif
 
 	if (!is_Conv(node))
 		return;

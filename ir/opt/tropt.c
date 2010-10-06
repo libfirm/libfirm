@@ -95,6 +95,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 {
 	ir_type *fromtype = get_irn_typeinfo_type(pred);
 	ir_node *new_cast = pred;
+	ir_node *block;
 	int ref_depth = 0;
 
 	if (totype == fromtype) return pred;   /* Case for optimization! */
@@ -114,7 +115,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			return pred;
 	}
 
-	set_cur_block(get_nodes_block(pred));
+	block = get_nodes_block(pred);
 
 	if (is_SubClass_of(totype, fromtype)) {
 		/* downcast */
@@ -131,7 +132,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			assert(new_type);
 			fromtype = new_type;
 			new_type = pointerize_type(new_type, ref_depth);
-			new_cast = new_Cast(pred, new_type);
+			new_cast = new_r_Cast(block, pred, new_type);
 			pred = new_cast;
 			n_casts_normalized ++;
 			set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
@@ -152,7 +153,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			assert(new_type);
 			fromtype = new_type;
 			new_type = pointerize_type(new_type, ref_depth);
-			new_cast = new_Cast(pred, new_type);
+			new_cast = new_r_Cast(block, pred, new_type);
 			pred = new_cast;
 			n_casts_normalized ++;
 			set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
@@ -415,6 +416,7 @@ static int concretize_Phi_type(ir_node *phi)
  */
 static int remove_Cmp_Null_cast(ir_node *cmp)
 {
+	ir_graph *irg;
 	ir_node *cast, *null, *new_null;
 	int     cast_pos, null_pos;
 	ir_type *fromtype;
@@ -443,9 +445,10 @@ static int remove_Cmp_Null_cast(ir_node *cmp)
 		return 0;
 
 	/* Transform Cmp */
+	irg = get_irn_irg(cmp);
 	set_irn_n(cmp, cast_pos, get_Cast_op(cast));
 	fromtype = get_irn_typeinfo_type(get_Cast_op(cast));
-	new_null = new_Const_type(get_Const_tarval(null), fromtype);
+	new_null = new_r_Const_type(irg, get_Const_tarval(null), fromtype);
 	set_irn_typeinfo_type(new_null, fromtype);
 	set_irn_n(cmp, null_pos, new_null);
 	++n_casts_removed;

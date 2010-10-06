@@ -1638,7 +1638,7 @@ ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
 	ir_type *res;
 	int i;
 	ir_node *unk;
-	ir_graph *rem = current_ir_graph;
+	ir_graph *irg = get_const_code_irg();
 
 	assert(!is_Method_type(element_type));
 
@@ -1648,14 +1648,12 @@ ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
 	res->attr.aa.upper_bound  = XMALLOCNZ(ir_node*, n_dimensions);
 	res->attr.aa.order        = XMALLOCNZ(int,      n_dimensions);
 
-	current_ir_graph = get_const_code_irg();
-	unk = new_Unknown(mode_Iu);
+	unk = new_r_Unknown(irg, mode_Iu);
 	for (i = 0; i < n_dimensions; i++) {
 		res->attr.aa.lower_bound[i] =
 		res->attr.aa.upper_bound[i] = unk;
 		res->attr.aa.order[i]       = i;
 	}
-	current_ir_graph = rem;
 
 	res->attr.aa.element_type = element_type;
 	res->attr.aa.element_ent
@@ -1712,12 +1710,10 @@ void set_array_bounds(ir_type *array, int dimension, ir_node *lower_bound,
 void set_array_bounds_int(ir_type *array, int dimension, int lower_bound,
                           int upper_bound)
 {
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = get_const_code_irg();
+	ir_graph *irg = get_const_code_irg();
 	set_array_bounds(array, dimension,
-	          new_Const_long(mode_Iu, lower_bound),
-	          new_Const_long(mode_Iu, upper_bound));
-	current_ir_graph = rem;
+	          new_r_Const_long(irg, mode_Iu, lower_bound),
+	          new_r_Const_long(irg, mode_Iu, upper_bound));
 }
 
 void set_array_lower_bound(ir_type *array, int dimension, ir_node *lower_bound)
@@ -1729,11 +1725,9 @@ void set_array_lower_bound(ir_type *array, int dimension, ir_node *lower_bound)
 
 void set_array_lower_bound_int(ir_type *array, int dimension, int lower_bound)
 {
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = get_const_code_irg();
+	ir_graph *irg = get_const_code_irg();
 	set_array_lower_bound(array, dimension,
-	     new_Const_long(mode_Iu, lower_bound));
-	current_ir_graph = rem;
+	     new_r_Const_long(irg, mode_Iu, lower_bound));
 }
 
 void set_array_upper_bound(ir_type *array, int dimension, ir_node *upper_bound)
@@ -1745,11 +1739,9 @@ void set_array_upper_bound(ir_type *array, int dimension, ir_node *upper_bound)
 
 void set_array_upper_bound_int(ir_type *array, int dimension, int upper_bound)
 {
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = get_const_code_irg();
+	ir_graph *irg = get_const_code_irg();
 	set_array_upper_bound(array, dimension,
-	            new_Const_long(mode_Iu, upper_bound));
-	current_ir_graph = rem;
+	                      new_r_Const_long(irg, mode_Iu, upper_bound));
 }
 
 int has_array_lower_bound(const ir_type *array, int dimension)

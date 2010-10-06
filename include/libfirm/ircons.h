@@ -1150,7 +1150,7 @@ FIRM_API ir_node *new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node *
  * @param *irg   The IR graph the node belongs to.
  * @param *block The IR block the node belongs to.
  */
-FIRM_API ir_node *new_rd_Start(dbg_info *db, ir_graph *irg, ir_node *block);
+FIRM_API ir_node *new_rd_Start(dbg_info *db, ir_node *block);
 
 /** Constructor for a End node.
  *
@@ -1158,7 +1158,7 @@ FIRM_API ir_node *new_rd_Start(dbg_info *db, ir_graph *irg, ir_node *block);
  * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  */
-FIRM_API ir_node *new_rd_End(dbg_info *db, ir_graph *irg, ir_node *block);
+FIRM_API ir_node *new_rd_End(dbg_info *db, ir_node *block);
 
 /** Constructor for a Jmp node.
  *
@@ -1977,17 +1977,15 @@ FIRM_API ir_node *new_r_Block(ir_graph *irg, int arity, ir_node *in[]);
 
 /** Constructor for a Start node.
  *
- * @param *irg   The IR graph the node belongs to.
  * @param *block The IR block the node belongs to.
  */
-FIRM_API ir_node *new_r_Start(ir_graph *irg, ir_node *block);
+FIRM_API ir_node *new_r_Start(ir_node *block);
 
 /** Constructor for a End node.
  *
- * @param *irg   The IR graph the node  belongs to.
  * @param *block The IR block the node belongs to.
  */
-FIRM_API ir_node *new_r_End(ir_graph *irg, ir_node *block);
+FIRM_API ir_node *new_r_End(ir_node *block);
 
 /** Constructor for a Jmp node.
  *

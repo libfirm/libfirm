@@ -307,9 +307,9 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 			modes[i] = mode;
 			if (env->variants[i] == TR_ADD) {
-				set_value(i, new_Const(get_mode_null(mode)));
+				set_value(i, new_r_Const(irg, get_mode_null(mode)));
 			} else if (env->variants[i] == TR_MUL) {
-				set_value(i, new_Const(get_mode_one(mode)));
+				set_value(i, new_r_Const(irg, get_mode_one(mode)));
 			}
 		}
 		mature_immBlock(start_block);
@@ -331,7 +331,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 			/* create a new jump, free of CSE */
 			set_optimize(0);
-			jmp = new_Jmp();
+			jmp = new_r_Jmp(block);
 			set_optimize(rem);
 
 			for (i = 0; i < env->n_ress; ++i) {
@@ -342,7 +342,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 				}
 			}
 			/* create a new tuple for the return values */
-			tuple = new_Tuple(env->n_ress, in);
+			tuple = new_r_Tuple(block, env->n_ress, in);
 
 			turn_into_tuple(call, pn_Call_max);
 			set_Tuple_pred(call, pn_Call_M,                mem);
@@ -365,12 +365,14 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		end_block = get_irg_end_block(irg);
 		for (i = get_Block_n_cfgpreds(end_block) - 1; i >= 0; --i) {
 			ir_node *ret = get_Block_cfgpred(end_block, i);
+			ir_node *block;
 
 			/* search all Returns of a block */
 			if (! is_Return(ret))
 				continue;
 
-			set_cur_block(get_nodes_block(ret));
+			block = get_nodes_block(ret);
+			set_cur_block(block);
 			for (j = 0; j < env->n_ress; ++j) {
 				ir_node *pred = get_Return_res(ret, j);
 				ir_node *n;
@@ -381,13 +383,13 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 				case TR_ADD:
 					n = get_value(j, modes[j]);
-					n = new_Add(n, pred, modes[j]);
+					n = new_r_Add(block, n, pred, modes[j]);
 					set_Return_res(ret, j, n);
 					break;
 
 				case TR_MUL:
 					n = get_value(j, modes[j]);
-					n = new_Mul(n, pred, modes[j]);
+					n = new_r_Mul(block, n, pred, modes[j]);
 					set_Return_res(ret, j, n);
 					break;
 
