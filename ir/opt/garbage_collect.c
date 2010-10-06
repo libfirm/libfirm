@@ -65,7 +65,6 @@ static void start_visit_node(ir_node *node)
 	if (get_irg_visited(irg) < get_max_irg_visited()) {
 		set_irg_visited(irg, get_max_irg_visited());
 	}
-	current_ir_graph = irg;
 	irg_walk_2(node, visit_node, NULL, NULL);
 }
 

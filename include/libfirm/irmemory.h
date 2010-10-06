@@ -81,19 +81,16 @@ typedef enum {
  * Called by get_alias_relation().
  */
 typedef ir_alias_relation (*DISAMBIGUATOR_FUNC)(
-	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2);
 
 /**
  * Classify a base pointer.
  *
- * @param irg  the graph of the pointer
  * @param irn  the node representing the base address
  * @param ent  the base entity of the base address iff any
  */
-FIRM_API ir_storage_class_class_t classify_pointer(const ir_graph *irg,
-                                                   const ir_node *irn,
+FIRM_API ir_storage_class_class_t classify_pointer(const ir_node *irn,
                                                    const ir_entity *ent);
 
 /**
@@ -136,7 +133,6 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
  * interrogated to detect the alias relation.
  */
 FIRM_API ir_alias_relation get_alias_relation(
-	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2);
 
@@ -165,7 +161,6 @@ FIRM_API void mem_disambig_init(void);
  * @see get_alias_relation()
  */
 FIRM_API ir_alias_relation get_alias_relation_ex(
-	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2);
 

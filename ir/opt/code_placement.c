@@ -77,12 +77,13 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 		int in_dead_block   = is_Block_unreachable(curr_block);
 		int depth           = 0;
 		ir_node *b          = NULL;   /* The block to place this node in */
+		ir_graph *irg       = get_irn_irg(n);
 
 		assert(!is_Block(n));
 
 		if (is_irn_start_block_placed(n)) {
 			/* These nodes will not be placed by the loop below. */
-			b = get_irg_start_block(current_ir_graph);
+			b = get_irg_start_block(irg);
 			depth = 1;
 		}
 
@@ -133,9 +134,9 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 			   in the backend phase. */
 			if (depth == 1 &&
 					get_Block_dom_depth(get_nodes_block(n)) > 1 &&
-					get_irg_phase_state(current_ir_graph) != phase_backend) {
-				b = get_Block_cfg_out(get_irg_start_block(current_ir_graph), 0);
-				assert(b != get_irg_start_block(current_ir_graph));
+					get_irg_phase_state(irg) != phase_backend) {
+				b = get_Block_cfg_out(get_irg_start_block(irg), 0);
+				assert(b != get_irg_start_block(irg));
 				depth = 2;
 			}
 		}
@@ -231,13 +232,13 @@ static void place_floats_early(ir_node *n, waitq *worklist)
  *
  * @param worklist   a worklist, used for the algorithm, empty on in/output
  */
-static void place_early(waitq *worklist)
+static void place_early(ir_graph *irg, waitq *worklist)
 {
 	assert(worklist);
-	inc_irg_visited(current_ir_graph);
+	inc_irg_visited(irg);
 
 	/* this inits the worklist */
-	place_floats_early(get_irg_end(current_ir_graph), worklist);
+	place_floats_early(get_irg_end(irg), worklist);
 
 	/* Work the content of the worklist. */
 	while (!waitq_empty(worklist)) {
@@ -245,7 +246,7 @@ static void place_early(waitq *worklist)
 		if (!irn_visited(n))
 			place_floats_early(n, worklist);
 	}
-	set_irg_pinned(current_ir_graph, op_pin_state_pinned);
+	set_irg_pinned(irg, op_pin_state_pinned);
 }
 
 /**
@@ -501,13 +502,13 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
  *
  * @param worklist   the worklist containing the nodes to place
  */
-static void place_late(waitq *worklist)
+static void place_late(ir_graph *irg, waitq *worklist)
 {
 	assert(worklist);
-	inc_irg_visited(current_ir_graph);
+	inc_irg_visited(irg);
 
 	/* This fills the worklist initially. */
-	place_floats_late(get_irg_start_block(current_ir_graph), worklist);
+	place_floats_late(get_irg_start_block(irg), worklist);
 
 	/* And now empty the worklist again... */
 	while (!waitq_empty(worklist)) {
@@ -521,9 +522,7 @@ static void place_late(waitq *worklist)
 void place_code(ir_graph *irg)
 {
 	waitq *worklist;
-	ir_graph *rem = current_ir_graph;
 
-	current_ir_graph = irg;
 	remove_critical_cf_edges(irg);
 
 	/* Handle graph state */
@@ -539,19 +538,18 @@ void place_code(ir_graph *irg)
 	/* Place all floating nodes as early as possible. This guarantees
 	 a legal code placement. */
 	worklist = new_waitq();
-	place_early(worklist);
+	place_early(irg, worklist);
 
 	/* Note: place_early changes only blocks, no data edges. So, the
 	 * data out edges are still valid, no need to recalculate them here. */
 
 	/* Now move the nodes down in the dominator tree. This reduces the
 	   unnecessary executions of the node. */
-	place_late(worklist);
+	place_late(irg, worklist);
 
 	set_irg_outs_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 	del_waitq(worklist);
-	current_ir_graph = rem;
 }
 
 /**

@@ -653,24 +653,25 @@ static void topologic_walker(ir_node *node, void *ctx)
  * @param modes   A flexible array, containing all the modes of
  *                the value numbers.
  */
-static void do_scalar_replacements(pset *sels, int nvals, ir_mode **modes)
+static void do_scalar_replacements(ir_graph *irg, pset *sels, int nvals,
+                                   ir_mode **modes)
 {
 	env_t env;
 
-	ssa_cons_start(current_ir_graph, nvals);
+	ssa_cons_start(irg, nvals);
 
-	env.nvals     = nvals;
-	env.modes     = modes;
-	env.sels      = sels;
+	env.nvals = nvals;
+	env.modes = modes;
+	env.sels  = sels;
 
 	/*
 	 * second step: walk over the graph blockwise in topological order
 	 * and fill the array as much as possible.
 	 */
-	DB((dbg, SET_LEVEL_3, "Substituting Loads and Stores in %+F\n", current_ir_graph));
-	irg_walk_blkwise_graph(current_ir_graph, NULL, topologic_walker, &env);
+	DB((dbg, SET_LEVEL_3, "Substituting Loads and Stores in %+F\n", irg));
+	irg_walk_blkwise_graph(irg, NULL, topologic_walker, &env);
 
-	ssa_cons_finish(current_ir_graph);
+	ssa_cons_finish(irg);
 }
 
 /*
@@ -688,11 +689,7 @@ int scalar_replacement_opt(ir_graph *irg)
 	set       *set_ent;
 	pset      *sels;
 	ir_type   *ent_type, *frame_tp;
-	ir_graph  *rem;
 	int       res = 0;
-
-	rem = current_ir_graph;
-	current_ir_graph = irg;
 
 	/* Call algorithm that computes the out edges */
 	assure_irg_outs(irg);
@@ -752,7 +749,7 @@ int scalar_replacement_opt(ir_graph *irg)
 
 		/* If scalars were found. */
 		if (nvals > 0) {
-			do_scalar_replacements(sels, nvals, modes);
+			do_scalar_replacements(irg, sels, nvals, modes);
 
 			foreach_set(set_ent, value) {
 				free_entity(value->ent);
@@ -776,7 +773,6 @@ int scalar_replacement_opt(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
-	current_ir_graph = rem;
 	return res;
 }
 

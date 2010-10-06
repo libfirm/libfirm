@@ -1021,7 +1021,6 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 		if (is_Store(pred)) {
 			/* check if we can pass through this store */
 			ir_alias_relation rel = get_alias_relation(
-				current_ir_graph,
 				get_Store_ptr(pred),
 				get_irn_mode(get_Store_value(pred)),
 				ptr, load_mode);
@@ -1334,7 +1333,6 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 		if (is_Store(pred)) {
 			/* check if we can pass through this store */
 			ir_alias_relation rel = get_alias_relation(
-				current_ir_graph,
 				get_Store_ptr(pred),
 				get_irn_mode(get_Store_value(pred)),
 				ptr, mode);
@@ -1344,7 +1342,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 			pred = skip_Proj(get_Store_mem(pred));
 		} else if (is_Load(pred)) {
 			ir_alias_relation rel = get_alias_relation(
-				current_ir_graph, get_Load_ptr(pred), get_Load_mode(pred),
+				get_Load_ptr(pred), get_Load_mode(pred),
 				ptr, mode);
 			if (rel != ir_no_alias)
 				break;
@@ -1872,7 +1870,6 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 				if (is_Store(other)) {
 					ir_alias_relation rel = get_alias_relation(
-						current_ir_graph,
 						get_Store_ptr(other),
 						get_irn_mode(get_Store_value(other)),
 						ptr, load_mode);
@@ -2172,11 +2169,9 @@ static void dfs(ir_node *irn, loop_env *env)
  */
 static void do_dfs(ir_graph *irg, loop_env *env)
 {
-	ir_graph *rem = current_ir_graph;
 	ir_node  *endblk, *end;
 	int      i;
 
-	current_ir_graph = irg;
 	inc_irg_visited(irg);
 
 	/* visit all memory nodes */
@@ -2204,7 +2199,6 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		if (is_Phi(ka) && !irn_visited(ka))
 			dfs(ka, env);
 	}
-	current_ir_graph = rem;
 }  /* do_dfs */
 
 /**

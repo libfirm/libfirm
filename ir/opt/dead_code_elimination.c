@@ -85,10 +85,8 @@ static void copy_node_dce(ir_node *node, void *env)
 }
 
 /**
- * Copies the graph reachable from current_ir_graph->end to the obstack
- * in current_ir_graph and fixes the environment.
- * Then fixes the fields in current_ir_graph containing nodes of the
- * graph.
+ * Copies the graph reachable from the End node to the obstack
+ * in irg. Then fixes the fields containing nodes of the graph.
  *
  * @param copy_node_nr  If non-zero, the node number will be copied
  */
@@ -142,7 +140,6 @@ static void copy_graph_env(ir_graph *irg)
  */
 void dead_node_elimination(ir_graph *irg)
 {
-	ir_graph *rem;
 	struct obstack *graveyard_obst = NULL;
 	struct obstack *rebirth_obst   = NULL;
 
@@ -150,10 +147,6 @@ void dead_node_elimination(ir_graph *irg)
 
 	/* inform statistics that we started a dead-node elimination run */
 	hook_dead_node_elim(irg, 1);
-
-	/* Remember external state of current_ir_graph. */
-	rem = current_ir_graph;
-	current_ir_graph = irg;
 
 	assert(get_irg_phase_state(irg) != phase_building);
 
@@ -186,8 +179,6 @@ void dead_node_elimination(ir_graph *irg)
 
 	/* inform statistics that the run is over */
 	hook_dead_node_elim(irg, 0);
-
-	current_ir_graph = rem;
 }
 
 ir_graph_pass_t *dead_node_elimination_pass(const char *name)

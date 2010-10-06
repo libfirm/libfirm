@@ -702,7 +702,6 @@ void optimize_cf(ir_graph *irg)
 	int i, j, n, changed;
 	ir_node **in = NULL;
 	ir_node *cond, *end = get_irg_end(irg);
-	ir_graph *rem = current_ir_graph;
 	plist_element_t *el;
 	merge_env env;
 
@@ -711,8 +710,6 @@ void optimize_cf(ir_graph *irg)
 	/* if the graph is not pinned, we cannot determine empty blocks */
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 	       "Control flow optimization need a pinned graph");
-
-	current_ir_graph = irg;
 
 	/* FIXME: control flow opt destroys block edges. So edges are deactivated here. Fix the edges! */
 	edges_deactivate(irg);
@@ -876,8 +873,6 @@ restart:
 			fprintf(stderr, "VERIFY_BAD in optimize_cf()\n");
 		}
 	}
-
-	current_ir_graph = rem;
 }
 
 /* Creates an ir_graph pass for optimize_cf. */

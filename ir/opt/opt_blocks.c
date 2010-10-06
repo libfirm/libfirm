@@ -962,7 +962,7 @@ static void partition_for_end_block(ir_node *end_block, environment_t *env)
 	}
 
 	/* collect all no-return blocks */
-	end = get_irg_end(current_ir_graph);
+	end = get_irg_end(get_irn_irg(end_block));
 	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
 		ir_node *ka    = get_End_keepalive(end, i);
 		ir_node *block;
@@ -1081,7 +1081,7 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
 	int           i, k, n;
 	pred_t        *preds;
 
-	if (block == get_irg_end_block(current_ir_graph)) {
+	if (block == get_irg_end_block(get_irn_irg(block))) {
 		/* always create a partition for the end block */
 		partition_for_end_block(block, env);
 		return;
@@ -1198,14 +1198,10 @@ static void add_roots(ir_graph *irg, environment_t *env)
 /* Combines congruent end blocks into one. */
 int shape_blocks(ir_graph *irg)
 {
-	ir_graph      *rem;
 	environment_t env;
 	partition_t   *part;
 	block_t       *bl;
 	int           res, n;
-
-	rem = current_ir_graph;
-	current_ir_graph = irg;
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
@@ -1284,7 +1280,6 @@ int shape_blocks(ir_graph *irg)
 	DEL_ARR_F(env.live_outs);
 	del_set(env.opcode2id_map);
 	obstack_free(&env.obst, NULL);
-	current_ir_graph = rem;
 
 	return res;
 }  /* shape_blocks */

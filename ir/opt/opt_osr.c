@@ -489,7 +489,7 @@ static int replace(ir_node *irn, ir_node *iv, ir_node *rc, iv_env *env)
 	if (result != irn) {
 		node_entry *e;
 
-		hook_strength_red(current_ir_graph, irn);
+		hook_strength_red(get_irn_irg(irn), irn);
 		exchange(irn, result);
 		e = get_irn_ne(result, env);
 		if (e->pscc == NULL) {
@@ -1046,13 +1046,11 @@ static void dfs(ir_node *irn, iv_env *env)
  */
 static void do_dfs(ir_graph *irg, iv_env *env)
 {
-	ir_graph *rem = current_ir_graph;
 	ir_node  *end = get_irg_end(irg);
 	int i;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 
-	current_ir_graph = irg;
 	inc_irg_visited(irg);
 
 	/* visit all visible nodes */
@@ -1067,8 +1065,6 @@ static void do_dfs(ir_graph *irg, iv_env *env)
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-
-	current_ir_graph = rem;
 }  /* do_dfs */
 
 /**
@@ -1297,12 +1293,8 @@ static void clear_and_fix(ir_node *irn, void *env)
 /* Remove any Phi cycles with only one real input. */
 void remove_phi_cycles(ir_graph *irg)
 {
-	iv_env   env;
-	ir_graph *rem;
-	int      projs_moved;
-
-	rem = current_ir_graph;
-	current_ir_graph = irg;
+	iv_env env;
+	int    projs_moved;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.remove_phi");
 
@@ -1348,8 +1340,6 @@ void remove_phi_cycles(ir_graph *irg)
 
 	DEL_ARR_F(env.stack);
 	obstack_free(&env.obst, NULL);
-
-	current_ir_graph = rem;
 }  /* remove_phi_cycles */
 
 ir_graph_pass_t *remove_phi_cycles_pass(const char *name)
@@ -1416,12 +1406,8 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx)
 void opt_osr(ir_graph *irg, unsigned flags)
 {
 	iv_env   env;
-	ir_graph *rem;
 	int      edges;
 	int      projs_moved;
-
-	rem = current_ir_graph;
-	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
 
@@ -1482,8 +1468,6 @@ void opt_osr(ir_graph *irg, unsigned flags)
 
 	if (! edges)
 		edges_deactivate(irg);
-
-	current_ir_graph = rem;
 }  /* opt_osr */
 
 struct pass_t {

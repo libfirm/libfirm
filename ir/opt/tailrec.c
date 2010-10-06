@@ -97,7 +97,7 @@ static void collect_data(ir_node *node, void *env)
 		/*
 		 * the first block has the initial exec as cfg predecessor
 		 */
-		if (node != get_irg_start_block(current_ir_graph)) {
+		if (node != get_irg_start_block(get_irn_irg(node))) {
 			for (i = 0; i < n_pred; ++i) {
 				if (get_Block_cfgpred(node, i) == data->proj_X) {
 					data->block   = node;
@@ -149,9 +149,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	int rem            = get_optimize();
 	ir_entity *ent     = get_irg_entity(irg);
 	ir_type *method_tp = get_entity_type(ent);
-	ir_graph *old      = current_ir_graph;
-
-	current_ir_graph = irg;
 
 	assert(env->n_tail_calls > 0);
 
@@ -276,7 +273,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	set_irg_doms_inconsistent(irg);
 	set_irg_outs_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_state(current_ir_graph, loopinfo_cf_inconsistent);
+	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 	set_trouts_inconsistent();
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
@@ -408,7 +405,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			exchange(p, bad);
 		}
 	}
-	current_ir_graph = old;
 }
 
 /**
@@ -728,8 +724,6 @@ void opt_tail_recursion(void)
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		irg = get_irp_irg(i);
-
-		current_ir_graph = irg;
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		if (opt_tail_rec_irg(irg))

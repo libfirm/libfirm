@@ -705,7 +705,7 @@ restart:
 			env->changed = 1;
 
 			DB((dbg, LEVEL_1, "boolopt: %+F: fusing (ub %+F lb %+F)\n",
-				current_ir_graph, upper_block, lower_block));
+				get_irn_irg(upper_block), upper_block, lower_block));
 
 			/* move all expressions on the path to lower/upper block */
 			move_nodes_to_block(get_Block_cfgpred(block, up_idx), upper_block);

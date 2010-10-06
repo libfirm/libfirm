@@ -1247,7 +1247,8 @@ static void collect_memops(ir_node *irn, void *ctx)
 	(void) ctx;
 	if (is_Proj(irn)) {
 		/* we can safely ignore ProjM's except the initial memory */
-		if (irn != get_irg_initial_mem(current_ir_graph))
+		ir_graph *irg = get_irn_irg(irn);
+		if (irn != get_irg_initial_mem(irg))
 			return;
 	}
 
@@ -1380,7 +1381,7 @@ static void kill_memops(const value_t *value)
 	for (pos = rbitset_next(env.curr_set, 0, 1); pos < end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
 
-		if (ir_no_alias != get_alias_relation(current_ir_graph, value->address, value->mode,
+		if (ir_no_alias != get_alias_relation(value->address, value->mode,
 			                                  op->value.address, op->value.mode)) {
 			rbitset_clear(env.curr_set, pos);
 			env.curr_id_2_memop[pos] = NULL;
@@ -2306,10 +2307,7 @@ static void kill_unreachable_blocks(ir_graph *irg)
 
 int opt_ldst(ir_graph *irg)
 {
-	block_t  *bl;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = irg;
+	block_t *bl;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst");
 
@@ -2446,7 +2444,6 @@ end:
 	DEL_ARR_F(env.id_2_address);
 #endif
 
-	current_ir_graph = rem;
 	return env.changed != 0;
 }  /* opt_ldst */
 

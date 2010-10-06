@@ -100,7 +100,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 			++ctx->n_calls_SymConst;
 		} else if (get_opt_closed_world() &&
 		           is_Sel(ptr) &&
-		           get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
+		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
 			/* If all possible callees are const functions, we can remove the memory edge. */
 			int i, n_callees = get_Call_n_callees(call);
 			if (n_callees == 0) {
@@ -176,9 +176,6 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 {
 	ir_node *call, *next, *mem, *proj;
 	int exc_changed = 0;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = irg;
 
 	/* First step: fix all calls by removing their memory input and let
 	 * them floating.
@@ -251,7 +248,6 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		/* ... including exception edges */
 		set_irg_doms_inconsistent(irg);
 	}
-	current_ir_graph = rem;
 }  /* fix_const_call_list */
 
 /**
@@ -280,7 +276,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 			++ctx->n_calls_SymConst;
 		} else if (get_opt_closed_world() &&
 		           is_Sel(ptr) &&
-		           get_irg_callee_info_state(current_ir_graph) == irg_callee_info_consistent) {
+		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
 			/* If all possible callees are nothrow functions, we can remove the exception edge. */
 			int i, n_callees = get_Call_n_callees(call);
 			if (n_callees == 0) {
@@ -343,9 +339,6 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 {
 	ir_node *call, *next, *proj;
 	int exc_changed = 0;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = irg;
 
 	/* First step: go through the list of calls and mark them. */
 	for (call = call_list; call; call = next) {
@@ -390,7 +383,6 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 		/* ... including exception edges */
 		set_irg_doms_inconsistent(irg);
 	}
-	current_ir_graph = rem;
 }  /* fix_nothrow_call_list */
 
 /* marking */
@@ -474,7 +466,7 @@ static unsigned _follow_mem(ir_node *node)
 				ir_entity *ent = get_SymConst_entity(ptr);
 				ir_graph  *irg = get_entity_irg(ent);
 
-				if (irg == current_ir_graph) {
+				if (irg == get_irn_irg(node)) {
 					/* A self-recursive call. The property did not depend on this call. */
 				} else if (irg == NULL) {
 					m = get_entity_additional_properties(ent) & (mtp_property_const|mtp_property_pure);
@@ -522,7 +514,6 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top)
 	ir_node *end, *endbl;
 	int j;
 	unsigned prop = get_irg_additional_properties(irg);
-	ir_graph *rem = current_ir_graph;
 
 	if (prop & mtp_property_const) {
 		/* already marked as a const function */
@@ -547,8 +538,6 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top)
 	end   = get_irg_end(irg);
 	endbl = get_nodes_block(end);
 	prop  = mtp_property_const;
-
-	current_ir_graph = irg;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
@@ -615,7 +604,6 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top)
 		SET_IRG_READY(irg);
 	CLEAR_IRG_BUSY(irg);
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
-	current_ir_graph = rem;
 	return prop;
 }  /* check_const_or_pure_function */
 

@@ -424,15 +424,10 @@ static int is_malloc_Result(const ir_node *node)
 	return 0;
 }  /* is_malloc_Result */
 
-/**
- * Classify a base pointer.
- *
- * @param irg  the graph of the pointer
- * @param irn  the node representing the base address
- * @param ent  the base entity of the base address iff any
- */
-ir_storage_class_class_t classify_pointer(const ir_graph *irg, const ir_node *irn, const ir_entity *ent)
+ir_storage_class_class_t classify_pointer(const ir_node *irn,
+                                          const ir_entity *ent)
 {
+	ir_graph *irg = get_irn_irg(irn);
 	ir_storage_class_class_t res = ir_sc_pointer;
 	if (is_Global(irn)) {
 		ir_entity *entity = get_Global_entity(irn);
@@ -477,7 +472,6 @@ static const ir_node *skip_Bitfield_Sels(const ir_node *adr)
 /**
  * Determine the alias relation between two addresses.
  *
- * @param irg    the graph of both memory operations
  * @param addr1  pointer address of the first memory operation
  * @param mode1  the mode of the accessed data through addr1
  * @param addr2  pointer address of the second memory operation
@@ -486,7 +480,6 @@ static const ir_node *skip_Bitfield_Sels(const ir_node *adr)
  * @return found memory relation
  */
 static ir_alias_relation _get_alias_relation(
-	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2)
 {
@@ -498,6 +491,7 @@ static ir_alias_relation _get_alias_relation(
 	const ir_node         *base2;
 	const ir_node         *orig_adr1 = adr1;
 	const ir_node         *orig_adr2 = adr2;
+	ir_graph              *irg;
 	unsigned              mode_size;
 	ir_storage_class_class_t class1, class2, mod1, mod2;
 	int                   have_const_offsets;
@@ -508,6 +502,7 @@ static ir_alias_relation _get_alias_relation(
 	if (adr1 == adr2)
 		return ir_sure_alias;
 
+	irg = get_irn_irg(adr1);
 	options = get_irg_memory_disambiguator_options(irg);
 
 	/* The Armageddon switch */
@@ -593,8 +588,8 @@ static ir_alias_relation _get_alias_relation(
 			return different_sel_offsets(adr1, adr2);
 	}
 
-	mod1 = classify_pointer(irg, base1, ent1);
-	mod2 = classify_pointer(irg, base2, ent2);
+	mod1 = classify_pointer(base1, ent1);
+	mod2 = classify_pointer(base2, ent2);
 
 	class1 = GET_BASE_SC(mod1);
 	class2 = GET_BASE_SC(mod2);
@@ -680,7 +675,7 @@ leave_type_based_alias:;
 
 	/* do we have a language specific memory disambiguator? */
 	if (language_disambuigator != NULL) {
-		ir_alias_relation rel = language_disambuigator(irg, orig_adr1, mode1, orig_adr2, mode2);
+		ir_alias_relation rel = language_disambuigator(orig_adr1, mode1, orig_adr2, mode2);
 		if (rel != ir_may_alias)
 			return rel;
 	}
@@ -693,11 +688,10 @@ leave_type_based_alias:;
  * Determine the alias relation between two addresses.
  */
 ir_alias_relation get_alias_relation(
-	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2)
 {
-	ir_alias_relation rel = _get_alias_relation(irg, adr1, mode1, adr2, mode2);
+	ir_alias_relation rel = _get_alias_relation(adr1, mode1, adr2, mode2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
 	return rel;
 }  /* get_alias_relation */
@@ -747,7 +741,6 @@ void mem_disambig_init(void)
  * Determine the alias relation between two addresses.
  */
 ir_alias_relation get_alias_relation_ex(
-	const ir_graph *irg,
 	const ir_node *adr1, const ir_mode *mode1,
 	const ir_node *adr2, const ir_mode *mode2)
 {
@@ -772,7 +765,7 @@ ir_alias_relation get_alias_relation_ex(
 	if (entry != NULL)
 		return entry->result;
 
-	key.result = get_alias_relation(irg, adr1, mode1, adr2, mode2);
+	key.result = get_alias_relation(adr1, mode1, adr2, mode2);
 
 	set_insert(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	return key.result;
