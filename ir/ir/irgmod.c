@@ -188,7 +188,7 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
  * Moves node and all predecessors of node from from_bl to to_bl.
  * Does not move predecessors of Phi nodes (or block nodes).
  */
-static void move_alt(ir_node *node, ir_node *from_bl, ir_node *to_bl)
+static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 {
 	int i, arity;
 
@@ -216,7 +216,7 @@ static void move_alt(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	for (i = 0; i < arity; i++) {
 		ir_node *pred = get_irn_n(node, i);
 		if (get_nodes_block(pred) == from_bl)
-			move(pred, from_bl, to_bl);
+			move_edges(pred, from_bl, to_bl);
 	}
 }
 
@@ -259,9 +259,11 @@ void part_block(ir_node *node)
 
 ir_node *part_block_edges(ir_node *node)
 {
+	ir_graph        *irg       = get_irn_irg(node);
 	ir_node         *old_block = get_nodes_block(node);
-	ir_node         *new_block = new_Block(get_Block_n_cfgpreds(old_block),
-	                                       get_Block_cfgpred_arr(old_block));
+	ir_node         *new_block = new_r_Block(irg,
+	                                         get_Block_n_cfgpreds(old_block),
+	                                         get_Block_cfgpred_arr(old_block));
 	const ir_edge_t *edge;
 	const ir_edge_t *next;
 
@@ -269,7 +271,7 @@ ir_node *part_block_edges(ir_node *node)
 	set_irn_in(old_block, 0, NULL);
 
 	/* move node and its predecessors to new_block */
-	move_alt(node, old_block, new_block);
+	move_edges(node, old_block, new_block);
 
 	/* move Phi nodes to new_block */
 	foreach_out_edge_safe(old_block, edge, next) {
