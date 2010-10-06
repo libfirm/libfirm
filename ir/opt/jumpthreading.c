@@ -83,8 +83,10 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	ir_node **in;
 
 	/* This is needed because we create bads sometimes */
-	if (is_Bad(block))
-		return new_Bad();
+	if (is_Bad(block)) {
+		ir_graph *irg = get_irn_irg(block);
+		return new_r_Bad(irg);
+	}
 
 	/* the other defs can't be marked for cases where a user of the original
 	 * value is in the same block as the alternative definition.
@@ -118,7 +120,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
 	for (i = 0; i < n_cfgpreds; ++i)
-		in[i] = new_Unknown(mode);
+		in[i] = new_r_Unknown(irg, mode);
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	set_irn_link(block, phi);
@@ -300,7 +302,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 
 				cmp_copy = exact_copy(pred);
 				set_nodes_block(cmp_copy, user_block);
-				copy = new_r_Proj(current_ir_graph, user_block, cmp_copy, mode_b, pn);
+				copy = new_r_Proj(cmp_copy, mode_b, pn);
 				set_irn_n(user, pos, copy);
 			}
 			continue;
@@ -622,6 +624,7 @@ static void thread_jumps(ir_node* block, void* data)
 	ir_node *copy_block;
 	int      selector_evaluated;
 	const ir_edge_t *edge, *next;
+	ir_graph *irg;
 	ir_node *bad;
 	size_t   cnst_pos;
 
@@ -686,7 +689,8 @@ static void thread_jumps(ir_node* block, void* data)
 	}
 
 	if (selector_evaluated == 0) {
-		bad = new_Bad();
+		ir_graph *irg = get_irn_irg(block);
+		bad = new_r_Bad(irg);
 		exchange(projx, bad);
 		*changed = 1;
 		return;
@@ -701,8 +705,9 @@ static void thread_jumps(ir_node* block, void* data)
 
 	/* (recursively) look if a pred of a Phi is a constant or a Confirm */
 	env.true_block = block;
-	inc_irg_visited(current_ir_graph);
-	env.visited_nr = get_irg_visited(current_ir_graph);
+	irg = get_irn_irg(block);
+	inc_irg_visited(irg);
+	env.visited_nr = get_irg_visited(irg);
 
 	copy_block = find_candidate(&env, projx, selector);
 	if (copy_block == NULL)
@@ -711,7 +716,7 @@ static void thread_jumps(ir_node* block, void* data)
 	/* we have to remove the edge towards the pred as the pred now
 	 * jumps into the true_block. We also have to shorten Phis
 	 * in our block because of this */
-	bad      = new_Bad();
+	bad      = new_r_Bad(irg);
 	cnst_pos = env.cnst_pos;
 
 	/* shorten Phis */
