@@ -58,7 +58,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static const arch_register_t *sp_reg = &arm_gp_regs[REG_SP];
+static const arch_register_t *sp_reg = &arm_registers[REG_SP];
 static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
 static beabi_helper_env_t    *abihelper;

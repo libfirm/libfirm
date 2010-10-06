@@ -783,7 +783,7 @@ print OUT <<END;
 #ifdef BIT
 #undef BIT
 #endif
-#define BIT(x)  (1 << (x % 32))
+#define BIT(x)  (1 << (x))
 
 END
 
@@ -1244,7 +1244,10 @@ CHECK_REQS: foreach (@regs) {
 				} elsif(defined($temp)) {
 					$temp .= " | ";
 				}
-				$temp .= "BIT(REG_".uc(${reg}).")";
+				my $firstreg = uc($reg_classes{$class}[0]->{"name"});
+				my $classuc = uc($class);
+				my $reguc = uc($reg);
+				$temp .= "BIT(REG_${classuc}_${reguc})";
 			}
 			if(defined($temp)) {
 				push(@obst_limit_func, "${temp}");

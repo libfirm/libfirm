@@ -141,8 +141,10 @@ const arch_isa_if_t TEMPLATE_isa_if;
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	{
 		&TEMPLATE_isa_if,             /* isa interface implementation */
-		&TEMPLATE_gp_regs[REG_SP],  /* stack pointer register */
-		&TEMPLATE_gp_regs[REG_BP],  /* base pointer register */
+		N_TEMPLATE_REGISTERS,
+		TEMPLATE_registers,
+		&TEMPLATE_registers[REG_SP],  /* stack pointer register */
+		&TEMPLATE_registers[REG_BP],  /* base pointer register */
 		&TEMPLATE_reg_classes[CLASS_TEMPLATE_gp],  /* link pointer register class */
 		-1,                          /* stack direction */
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
@@ -195,12 +197,12 @@ static void TEMPLATE_done(void *self)
 
 static unsigned TEMPLATE_get_n_reg_class(void)
 {
-	return N_CLASSES;
+	return N_TEMPLATE_CLASSES;
 }
 
 static const arch_register_class_t *TEMPLATE_get_reg_class(unsigned i)
 {
-	assert(i < N_CLASSES);
+	assert(i < N_TEMPLATE_CLASSES);
 	return &TEMPLATE_reg_classes[i];
 }
 
@@ -342,7 +344,7 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 		mode = get_type_mode(tp);
 
 		be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &TEMPLATE_fp_regs[REG_F0] : &TEMPLATE_gp_regs[REG_R0], ABI_CONTEXT_BOTH);
+			mode_is_float(mode) ? &TEMPLATE_registers[REG_F0] : &TEMPLATE_registers[REG_R0], ABI_CONTEXT_BOTH);
 	}
 }
 

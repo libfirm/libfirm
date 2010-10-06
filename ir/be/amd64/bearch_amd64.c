@@ -262,8 +262,10 @@ const arch_isa_if_t amd64_isa_if;
 static amd64_isa_t amd64_isa_template = {
 	{
 		&amd64_isa_if,             /* isa interface implementation */
-		&amd64_gp_regs[REG_RSP],  /* stack pointer register */
-		&amd64_gp_regs[REG_RBP],  /* base pointer register */
+		N_AMD64_REGISTERS,
+		amd64_registers,
+		&amd64_registers[REG_RSP],  /* stack pointer register */
+		&amd64_registers[REG_RBP],  /* base pointer register */
 		&amd64_reg_classes[CLASS_amd64_gp],  /* link pointer register class */
 		-1,                          /* stack direction */
 		3,                           /* power of two stack alignment for calls, 2^2 == 4 */
@@ -316,12 +318,12 @@ static void amd64_done(void *self)
 
 static unsigned amd64_get_n_reg_class(void)
 {
-	return N_CLASSES;
+	return N_AMD64_CLASSES;
 }
 
 static const arch_register_class_t *amd64_get_reg_class(unsigned i)
 {
-	assert(i < N_CLASSES);
+	assert(i < N_AMD64_CLASSES);
 	return &amd64_reg_classes[i];
 }
 
@@ -433,12 +435,12 @@ static const be_abi_callbacks_t amd64_abi_callbacks = {
 };
 
 static const arch_register_t *gpreg_param_reg_std[] = {
-	&amd64_gp_regs[REG_RDI],
-	&amd64_gp_regs[REG_RSI],
-	&amd64_gp_regs[REG_RDX],
-	&amd64_gp_regs[REG_RCX],
-	&amd64_gp_regs[REG_R8],
-	&amd64_gp_regs[REG_R9],
+	&amd64_registers[REG_RDI],
+	&amd64_registers[REG_RSI],
+	&amd64_registers[REG_RDX],
+	&amd64_registers[REG_RCX],
+	&amd64_registers[REG_R8],
+	&amd64_registers[REG_R9],
 };
 
 static const arch_register_t *amd64_get_RegParam_reg(int n)
@@ -498,10 +500,10 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 
 		/* FIXME: No floating point yet */
 		/* be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &amd64_fp_regs[REG_F0] : &amd64_gp_regs[REG_R0], ABI_CONTEXT_BOTH) */;
+			mode_is_float(mode) ? &amd64_fp_regs[REG_F0] : &amd64_registers[REG_R0], ABI_CONTEXT_BOTH) */;
 
 		be_abi_call_res_reg(abi, 0,
-			&amd64_gp_regs[REG_RAX], ABI_CONTEXT_BOTH);
+			&amd64_registers[REG_RAX], ABI_CONTEXT_BOTH);
 	}
 }
 

@@ -94,15 +94,14 @@ my $regtypes_decl;# stack for the register type variables declarations
 my @regclasses;   # stack for the register class variables
 my $classdef;     # stack to define a name for a class index
 my $regdef;       # stack to define a name for a register index
+my $regdef2;
+my $regcounts;
 my $reginit;      # stack for the register type inits
 my $single_constraints_decls;
 my $single_constraints;
 
-my $numregs;
 my $class_ptr;
 my $class_idx = 0;
-
-my $tmp;
 
 my %regclass2len = ();
 my %reg2class = ();
@@ -135,6 +134,8 @@ sub get_limited_array {
 
 	my $limitedbitsetlen = $regclass2len{$regclass};
 	my $arraylen         = ($limitedbitsetlen+31) / 32;
+	my $firstreg         = uc($reg_classes{$regclass}[0]->{"name"});
+	my $classuc          = uc($regclass);
 	my $first            = 1;
 	for (my $i = 0; $i < $arraylen; ++$i) {
 		if ($first) {
@@ -146,9 +147,9 @@ sub get_limited_array {
 		my $index = $reg2class{"$reg"}{"index"};
 		if ($index >= $i*32 && $index < ($i+1)*32) {
 			if ($i > 0) {
-				$result .= "(1 << (REG_${ucname} % 32))";
+				$result .= "(1 << (REG_${classuc}_${ucname} % 32))";
 			} else {
-				$result .= "(1 << REG_${ucname})";
+				$result .= "(1 << REG_${classuc}_${ucname})";
 			}
 		} else {
 			$result .= "0";
@@ -163,7 +164,6 @@ foreach my $class_name (keys(%reg_classes)) {
 	my $old_classname = $class_name;
 
 	$class_name = $arch."_".$class_name;
-	$numregs    = "N_".$class_name."_REGS";
 	$class_ptr  = "&".$arch."_reg_classes[CLASS_".$class_name."]";
 	my $flags = pop(@class);
 	$class_mode  = $flags->{"mode"};
@@ -199,16 +199,14 @@ static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
 };
 EOF
 
-	$regtypes_decl .= "extern const arch_register_t ${class_name}_regs[$numregs];\n";
-
 	$classdef .= "\tCLASS_$class_name = $class_idx,\n";
-	push(@regclasses, "{ $class_idx, \"$class_name\", $numregs, NULL, ".$class_name."_regs, $flags_prepared, &${arch}_class_reg_req_${old_classname} }");
+	my $numregs = @class;
+	my $first_reg = "&${arch}_registers[REG_". uc($class[0]->{"name"}) . "]";
+	push(@regclasses, "{ $class_idx, \"$class_name\", $numregs, NULL, $first_reg, $flags_prepared, &${arch}_class_reg_req_${old_classname} }");
 
 	my $idx = 0;
 	$reginit .= "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n";
-	$regtypes_def .= "const arch_register_t ${class_name}_regs[$numregs] = {\n";
-
-	$regdef .= "enum reg_${class_name}_indices {\n";
+	my $lastreg;
 	foreach (@class) {
 		my $name = $_->{"name"};
 		my $ucname = uc($name);
@@ -216,13 +214,16 @@ EOF
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
 		my $realname = $_->{realname};
+		my $classuc = uc($old_classname);
 
-		$regdef .= "\tREG_${ucname},\n";
+		$regdef  .= "\tREG_${ucname},\n";
+		$regdef2 .= "\tREG_${classuc}_${ucname} = $idx,\n";
 
 		$regtypes_def .= <<EOF;
 	{
 		"${realname}",
 		${class_ptr},
+		REG_${classuc}_${ucname},
 		REG_${ucname},
 		${type},
 		&${arch}_single_reg_req_${old_classname}_${name}
@@ -242,20 +243,18 @@ static const arch_register_req_t ${arch}_single_reg_req_${old_classname}_${name}
 };
 EOF
 
+		$lastreg = $ucname;
 		$idx++;
 	}
-	$regtypes_def .= "};\n";
-
-	$regdef .= "\t$numregs = $idx\n";
-	$regdef .= "};\n\n";
+	$regcounts .= "\tN_${class_name}_REGS = $numregs,\n";
 
 	$class_idx++;
 }
 
-$classdef .= "\tN_CLASSES = ".scalar(keys(%reg_classes))."\n";
-$classdef .= "};\n\n";
+my $archuc = uc($arch);
 
-$tmp = uc($arch);
+$classdef .= "\tN_${archuc}_CLASSES = ".scalar(keys(%reg_classes))."\n";
+$classdef .= "};\n\n";
 
 # generate header (external usage) file
 open(OUT, ">$target_h") || die("Fatal error: Could not open $target_h, reason: $!\n");
@@ -271,17 +270,28 @@ print OUT<<EOF;
  *         created by: $0 $specfile $target_dir
  * \@date   $creation_time
  */
-#ifndef FIRM_BE_${tmp}_GEN_${tmp}_REGALLOC_IF_H
-#define FIRM_BE_${tmp}_GEN_${tmp}_REGALLOC_IF_H
+#ifndef FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
+#define FIRM_BE_${archuc}_GEN_${archuc}_REGALLOC_IF_H
 
 #include "../bearch.h"
 #include "${arch}_nodes_attr.h"
 
+enum reg_indices {
 ${regdef}
-${classdef}
-${regtypes_decl}
+	N_${archuc}_REGISTERS
+};
+enum {
+${regdef2}
+};
 
-extern arch_register_class_t ${arch}_reg_classes[N_CLASSES];
+enum {
+${regcounts}
+};
+${classdef}
+
+extern const arch_register_t ${arch}_registers[N_${archuc}_REGISTERS];
+
+extern arch_register_class_t ${arch}_reg_classes[N_${archuc}_CLASSES];
 
 void ${arch}_register_init(void);
 unsigned ${arch}_get_n_regs(void);
@@ -321,7 +331,10 @@ print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @r
 
 print OUT<<EOF;
 ${single_constraints}
+
+const arch_register_t ${arch}_registers[] = {
 ${regtypes_def}
+};
 
 void ${arch}_register_init(void)
 {

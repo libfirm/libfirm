@@ -191,7 +191,7 @@ void sparc_emit_reg_or_imm(const ir_node *node, int pos)
 
 static bool is_stack_pointer_relative(const ir_node *node)
 {
-	const arch_register_t *sp = &sparc_gp_regs[REG_SP];
+	const arch_register_t *sp = &sparc_registers[REG_SP];
 	return (is_sparc_St(node) && get_in_reg(node, n_sparc_St_ptr) == sp)
 	    || (is_sparc_Ld(node) && get_in_reg(node, n_sparc_Ld_ptr) == sp);
 }
@@ -942,10 +942,10 @@ static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
 static const arch_register_t *get_next_fp_reg(const arch_register_t *reg)
 {
 	unsigned index = reg->index;
-	assert(reg == &sparc_fp_regs[index]);
+	assert(reg == &sparc_registers[index]);
 	index++;
-	assert(index < N_sparc_fp_REGS);
-	return &sparc_fp_regs[index];
+	assert(index - REG_F0 < N_sparc_fp_REGS);
+	return &sparc_registers[index];
 }
 
 static void emit_be_Copy(const ir_node *node)

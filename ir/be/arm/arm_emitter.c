@@ -519,7 +519,7 @@ static void emit_arm_CopyB(const ir_node *irn)
 	tmpregs[0] = get_in_reg(irn, 2);
 	tmpregs[1] = get_in_reg(irn, 3);
 	tmpregs[2] = get_in_reg(irn, 4);
-	tmpregs[3] = &arm_gp_regs[REG_R12];
+	tmpregs[3] = &arm_registers[REG_R12];
 
 	/* Note: R12 is always the last register because the RA did not assign higher ones */
 	qsort((void *)tmpregs, 3, sizeof(tmpregs[0]), reg_cmp);

@@ -132,7 +132,7 @@ static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 	set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 	set_ia32_am_sc(reload, entity);
 	set_ia32_use_frame(reload);
-	arch_set_irn_register(reload, &ia32_fp_cw_regs[REG_FPCW]);
+	arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 
 	return reload;
 }
@@ -166,7 +166,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(reload, ia32_AddrModeS);
 		set_ia32_ls_mode(reload, ia32_reg_classes[CLASS_ia32_fp_cw].mode);
 		set_ia32_use_frame(reload);
-		arch_set_irn_register(reload, &ia32_fp_cw_regs[REG_FPCW]);
+		arch_set_irn_register(reload, &ia32_registers[REG_FPCW]);
 
 		sched_add_before(before, reload);
 	} else {
@@ -194,7 +194,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		/* TODO: make the actual mode configurable in ChangeCW... */
 		or_const = new_bd_ia32_Immediate(NULL, get_irg_start_block(irg),
 		                                 NULL, 0, 0, 3072);
-		arch_set_irn_register(or_const, &ia32_gp_regs[REG_GP_NOREG]);
+		arch_set_irn_register(or_const, &ia32_registers[REG_GP_NOREG]);
 		or = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res,
 		                    or_const);
 		sched_add_before(before, or);
@@ -210,7 +210,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_ls_mode(fldcw, lsmode);
 		set_ia32_use_frame(fldcw);
-		arch_set_irn_register(fldcw, &ia32_fp_cw_regs[REG_FPCW]);
+		arch_set_irn_register(fldcw, &ia32_registers[REG_FPCW]);
 		sched_add_before(before, fldcw);
 
 		reload = fldcw;
@@ -232,7 +232,7 @@ static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 		return;
 
 	reg = arch_get_irn_register(node);
-	if (reg == &ia32_fp_cw_regs[REG_FPCW] && !is_ia32_ChangeCW(node)) {
+	if (reg == &ia32_registers[REG_FPCW] && !is_ia32_ChangeCW(node)) {
 		ARR_APP1(ir_node*, env->state_nodes, node);
 	}
 }
@@ -241,7 +241,7 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 {
 	collect_fpu_mode_nodes_env_t env;
 	be_ssa_construction_env_t senv;
-	const arch_register_t *reg = &ia32_fp_cw_regs[REG_FPCW];
+	const arch_register_t *reg = &ia32_registers[REG_FPCW];
 	ir_node *initial_value;
 	ir_node **phis;
 	be_lv_t *lv = be_get_irg_liveness(irg);
@@ -297,6 +297,6 @@ void ia32_setup_fpu_mode(ir_graph *irg)
 	rewire_fpu_mode_nodes(irg);
 
 	/* ensure correct fpu mode for operations */
-	be_assure_state(irg, &ia32_fp_cw_regs[REG_FPCW],
+	be_assure_state(irg, &ia32_registers[REG_FPCW],
 	                NULL, create_fpu_mode_spill, create_fpu_mode_reload);
 }

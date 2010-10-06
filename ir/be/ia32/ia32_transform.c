@@ -1039,7 +1039,7 @@ static ir_node *get_fpcw(void)
 		return initial_fpcw;
 
 	fpcw         = be_abi_get_ignore_irn(be_get_irg_abi(current_ir_graph),
-	                                     &ia32_fp_cw_regs[REG_FPCW]);
+	                                     &ia32_registers[REG_FPCW]);
 	initial_fpcw = be_transform_node(fpcw);
 
 	return initial_fpcw;
@@ -4451,7 +4451,7 @@ static ir_node *gen_Proj_be_AddSP(ir_node *node)
 	if (proj == pn_be_AddSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
 		                           pn_ia32_SubSP_stack);
-		arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
+		arch_set_irn_register(res, &ia32_registers[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_AddSP_res) {
 		return new_rd_Proj(dbgi, new_pred, mode_Iu,
@@ -4476,7 +4476,7 @@ static ir_node *gen_Proj_be_SubSP(ir_node *node)
 	if (proj == pn_be_SubSP_sp) {
 		ir_node *res = new_rd_Proj(dbgi, new_pred, mode_Iu,
 		                           pn_ia32_AddSP_stack);
-		arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
+		arch_set_irn_register(res, &ia32_registers[REG_ESP]);
 		return res;
 	} else if (proj == pn_be_SubSP_M) {
 		return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_AddSP_M);
@@ -4764,9 +4764,9 @@ static ir_node *gen_be_Call(ir_node *node)
 		assert(req->cls == &ia32_reg_classes[CLASS_ia32_gp]);
 
 		switch (*req->limited) {
-			case 1 << REG_EAX: assert(eax == noreg_GP); eax = reg_parm; break;
-			case 1 << REG_ECX: assert(ecx == noreg_GP); ecx = reg_parm; break;
-			case 1 << REG_EDX: assert(edx == noreg_GP); edx = reg_parm; break;
+			case 1 << REG_GP_EAX: assert(eax == noreg_GP); eax = reg_parm; break;
+			case 1 << REG_GP_ECX: assert(ecx == noreg_GP); ecx = reg_parm; break;
+			case 1 << REG_GP_EDX: assert(edx == noreg_GP); edx = reg_parm; break;
 			default: panic("Invalid GP register for register parameter");
 		}
 	}
@@ -5537,11 +5537,11 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	/* TODO arch_set_irn_register() only operates on Projs, need variant with index */
 	switch (proj) {
 		case pn_ia32_Call_stack:
-			arch_set_irn_register(res, &ia32_gp_regs[REG_ESP]);
+			arch_set_irn_register(res, &ia32_registers[REG_ESP]);
 			break;
 
 		case pn_ia32_Call_fpcw:
-			arch_set_irn_register(res, &ia32_fp_cw_regs[REG_FPCW]);
+			arch_set_irn_register(res, &ia32_registers[REG_FPCW]);
 			break;
 	}
 

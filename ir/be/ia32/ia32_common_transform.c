@@ -131,7 +131,7 @@ ir_node *ia32_create_Immediate(ir_entity *symconst, int symconst_sign, long val)
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, symconst,
 			symconst_sign, no_pic_adjust, val);
-	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
+	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 
 	return immediate;
 }
@@ -145,7 +145,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 
 	/* TODO: construct a hashmap instead of doing linear search for clobber
 	 * register */
-	for (c = 0; c < N_CLASSES; ++c) {
+	for (c = 0; c < N_IA32_CLASSES; ++c) {
 		cls = & ia32_reg_classes[c];
 		for (r = 0; r < cls->n_regs; ++r) {
 			const arch_register_t *temp_reg = arch_register_for_index(cls, r);
@@ -218,32 +218,32 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		case 'a':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EAX;
+			limited |= 1 << REG_GP_EAX;
 			break;
 		case 'b':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EBX;
+			limited |= 1 << REG_GP_EBX;
 			break;
 		case 'c':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_ECX;
+			limited |= 1 << REG_GP_ECX;
 			break;
 		case 'd':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EDX;
+			limited |= 1 << REG_GP_EDX;
 			break;
 		case 'D':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EDI;
+			limited |= 1 << REG_GP_EDI;
 			break;
 		case 'S':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_ESI;
+			limited |= 1 << REG_GP_ESI;
 			break;
 		case 'Q':
 		case 'q':
@@ -251,20 +251,20 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 			 * difference to Q for us (we only assign whole registers) */
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EAX | 1 << REG_EBX | 1 << REG_ECX |
-			           1 << REG_EDX;
+			limited |= 1 << REG_GP_EAX | 1 << REG_GP_EBX | 1 << REG_GP_ECX |
+			           1 << REG_GP_EDX;
 			break;
 		case 'A':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EAX | 1 << REG_EDX;
+			limited |= 1 << REG_GP_EAX | 1 << REG_GP_EDX;
 			break;
 		case 'l':
 			assert(cls == NULL || cls == &ia32_reg_classes[CLASS_ia32_gp]);
 			cls      = &ia32_reg_classes[CLASS_ia32_gp];
-			limited |= 1 << REG_EAX | 1 << REG_EBX | 1 << REG_ECX |
-			           1 << REG_EDX | 1 << REG_ESI | 1 << REG_EDI |
-			           1 << REG_EBP;
+			limited |= 1 << REG_GP_EAX | 1 << REG_GP_EBX | 1 << REG_GP_ECX |
+			           1 << REG_GP_EDX | 1 << REG_GP_ESI | 1 << REG_GP_EDI |
+			           1 << REG_GP_EBP;
 			break;
 
 		case 'R':
@@ -447,7 +447,7 @@ ir_node *gen_ASM(ir_node *node)
 	const ir_asm_constraint    *out_constraints;
 	ident                     **clobbers;
 	int                         clobbers_flags = 0;
-	unsigned                    clobber_bits[N_CLASSES];
+	unsigned                    clobber_bits[N_IA32_CLASSES];
 	int                         out_size;
 	backend_info_t             *info;
 

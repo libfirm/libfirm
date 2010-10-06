@@ -59,8 +59,8 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static beabi_helper_env_t    *abihelper;
-static const arch_register_t *sp_reg = &sparc_gp_regs[REG_SP];
-static const arch_register_t *fp_reg = &sparc_gp_regs[REG_FRAME_POINTER];
+static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
+static const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
 static calling_convention_t  *cconv  = NULL;
 static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
@@ -331,7 +331,7 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
 
 static ir_node *get_g0(void)
 {
-	return be_prolog_get_reg_value(abihelper, &sparc_gp_regs[REG_G0]);
+	return be_prolog_get_reg_value(abihelper, &sparc_registers[REG_G0]);
 }
 
 typedef struct address_t {
@@ -1287,7 +1287,7 @@ static ir_node *gen_Start(ir_node *node)
 	/* stackpointer is important at function prolog */
 	be_prolog_add_reg(abihelper, sp_reg,
 			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
-	be_prolog_add_reg(abihelper, &sparc_gp_regs[REG_G0],
+	be_prolog_add_reg(abihelper, &sparc_registers[REG_G0],
 	        arch_register_req_type_ignore);
 	/* function parameters in registers */
 	for (i = 0; i < get_method_n_params(function_type); ++i) {

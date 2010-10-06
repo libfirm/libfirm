@@ -293,7 +293,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
 		flags_proj = new_r_Proj(left, flags_mode, pn_ia32_flags);
-		arch_set_irn_register(flags_proj, &ia32_flags_regs[REG_EFLAGS]);
+		arch_set_irn_register(flags_proj, &ia32_registers[REG_EFLAGS]);
 
 		assert(get_irn_mode(node) != mode_T);
 
@@ -330,10 +330,10 @@ static void peephole_ia32_Test(ir_node *node)
 		} else if (offset < 256) {
 			arch_register_t const* const reg = arch_get_irn_register(left);
 
-			if (reg != &ia32_gp_regs[REG_EAX] &&
-					reg != &ia32_gp_regs[REG_EBX] &&
-					reg != &ia32_gp_regs[REG_ECX] &&
-					reg != &ia32_gp_regs[REG_EDX]) {
+			if (reg != &ia32_registers[REG_EAX] &&
+					reg != &ia32_registers[REG_EBX] &&
+					reg != &ia32_registers[REG_ECX] &&
+					reg != &ia32_registers[REG_EDX]) {
 				return;
 			}
 		} else {
@@ -539,7 +539,7 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 static ir_node *create_push(dbg_info *dbgi, ir_node *block,
                             ir_node *stack, ir_node *schedpoint)
 {
-	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	const arch_register_t *esp = &ia32_registers[REG_ESP];
 
 	ir_node *val   = ia32_new_NoReg_gp(cg);
 	ir_node *noreg = ia32_new_NoReg_gp(cg);
@@ -658,7 +658,7 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
  */
 static void peephole_Load_IncSP_to_pop(ir_node *irn)
 {
-	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	const arch_register_t *esp = &ia32_registers[REG_ESP];
 	int      i, maxslot, inc_ofs, ofs;
 	ir_node  *node, *pred_sp, *block;
 	ir_node  *loads[MAXPUSH_OPTIMIZE];
@@ -824,12 +824,12 @@ static const arch_register_t *get_free_gp_reg(void)
 	int i;
 
 	for (i = 0; i < N_ia32_gp_REGS; ++i) {
-		const arch_register_t *reg = &ia32_gp_regs[i];
+		const arch_register_t *reg = &ia32_reg_classes[CLASS_ia32_gp].regs[i];
 		if (arch_register_type_is(reg, ignore))
 			continue;
 
 		if (be_peephole_get_value(CLASS_ia32_gp, i) == NULL)
-			return &ia32_gp_regs[i];
+			return reg;
 	}
 
 	return NULL;
@@ -850,7 +850,7 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
                            ir_node *stack, ir_node *schedpoint,
                            const arch_register_t *reg)
 {
-	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	const arch_register_t *esp = &ia32_registers[REG_ESP];
 	ir_graph *irg = get_irn_irg(block);
 	ir_node *pop;
 	ir_node *keep;
@@ -878,7 +878,7 @@ static ir_node *create_pop(dbg_info *dbgi, ir_node *block,
  */
 static void peephole_be_IncSP(ir_node *node)
 {
-	const arch_register_t *esp = &ia32_gp_regs[REG_ESP];
+	const arch_register_t *esp = &ia32_registers[REG_ESP];
 	const arch_register_t *reg;
 	dbg_info              *dbgi;
 	ir_node               *block;
@@ -955,7 +955,7 @@ static void peephole_ia32_Const(ir_node *node)
 	if (ia32_cg_config.use_mov_0)
 		return;
 	/* xor destroys the flags, so no-one must be using them */
-	if (be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
+	if (be_peephole_get_value(CLASS_ia32_flags, REG_FLAGS_EFLAGS) != NULL)
 		return;
 
 	reg = arch_get_irn_register(node);
@@ -984,7 +984,7 @@ ir_node *ia32_immediate_from_long(long val)
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate
 		= new_bd_ia32_Immediate(NULL, start_block, NULL, 0, 0, val);
-	arch_set_irn_register(immediate, &ia32_gp_regs[REG_GP_NOREG]);
+	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 
 	return immediate;
 }
@@ -1001,7 +1001,7 @@ static ir_node *create_immediate_from_am(const ir_node *node)
 
 	res = new_bd_ia32_Immediate(NULL, block, entity, sc_sign, sc_no_pic_adjust,
 	                            offset);
-	arch_set_irn_register(res, &ia32_gp_regs[REG_GP_NOREG]);
+	arch_set_irn_register(res, &ia32_registers[REG_GP_NOREG]);
 	return res;
 }
 
@@ -1045,7 +1045,7 @@ static void peephole_ia32_Lea(ir_node *node)
 	assert(is_ia32_Lea(node));
 
 	/* we can only do this if it is allowed to clobber the flags */
-	if (be_peephole_get_value(CLASS_ia32_flags, REG_EFLAGS) != NULL)
+	if (be_peephole_get_value(CLASS_ia32_flags, REG_FLAGS_EFLAGS) != NULL)
 		return;
 
 	base  = get_irn_n(node, n_ia32_Lea_base);
@@ -1218,7 +1218,7 @@ static void peephole_ia32_xZero(ir_node *xor)
  */
 static void peephole_ia32_Conv_I2I(ir_node *node)
 {
-	const arch_register_t *eax          = &ia32_gp_regs[REG_EAX];
+	const arch_register_t *eax          = &ia32_registers[REG_EAX];
 	ir_mode               *smaller_mode = get_ia32_ls_mode(node);
 	ir_node               *val          = get_irn_n(node, n_ia32_Conv_I2I_val);
 	dbg_info              *dbgi;

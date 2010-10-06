@@ -34,10 +34,10 @@
 
 
 static const arch_register_t *gpreg_param_reg_std[] = {
-	&arm_gp_regs[REG_R0],
-	&arm_gp_regs[REG_R1],
-	&arm_gp_regs[REG_R2],
-	&arm_gp_regs[REG_R3],
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3],
 };
 
 const arch_register_t *arm_get_RegParam_reg(int n)

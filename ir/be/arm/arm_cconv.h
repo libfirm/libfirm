@@ -31,51 +31,51 @@
 #include "gen_arm_regalloc_if.h"
 
 static const arch_register_t *const callee_saves[] = {
-	&arm_gp_regs[REG_R4],
-	&arm_gp_regs[REG_R5],
-	&arm_gp_regs[REG_R6],
-	&arm_gp_regs[REG_R7],
-	&arm_gp_regs[REG_R8],
-	&arm_gp_regs[REG_R9],
-	&arm_gp_regs[REG_R10],
-	&arm_gp_regs[REG_R11],
-	&arm_gp_regs[REG_LR],
+	&arm_registers[REG_R4],
+	&arm_registers[REG_R5],
+	&arm_registers[REG_R6],
+	&arm_registers[REG_R7],
+	&arm_registers[REG_R8],
+	&arm_registers[REG_R9],
+	&arm_registers[REG_R10],
+	&arm_registers[REG_R11],
+	&arm_registers[REG_LR],
 };
 
 static const arch_register_t *const caller_saves[] = {
-	&arm_gp_regs[REG_R0],
-	&arm_gp_regs[REG_R1],
-	&arm_gp_regs[REG_R2],
-	&arm_gp_regs[REG_R3],
-	&arm_gp_regs[REG_LR],
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3],
+	&arm_registers[REG_LR],
 
-	&arm_fpa_regs[REG_F0],
-	&arm_fpa_regs[REG_F1],
-	&arm_fpa_regs[REG_F2],
-	&arm_fpa_regs[REG_F3],
-	&arm_fpa_regs[REG_F4],
-	&arm_fpa_regs[REG_F5],
-	&arm_fpa_regs[REG_F6],
-	&arm_fpa_regs[REG_F7],
+	&arm_registers[REG_F0],
+	&arm_registers[REG_F1],
+	&arm_registers[REG_F2],
+	&arm_registers[REG_F3],
+	&arm_registers[REG_F4],
+	&arm_registers[REG_F5],
+	&arm_registers[REG_F6],
+	&arm_registers[REG_F7],
 };
 
 static const arch_register_t* const param_regs[] = {
-	&arm_gp_regs[REG_R0],
-	&arm_gp_regs[REG_R1],
-	&arm_gp_regs[REG_R2],
-	&arm_gp_regs[REG_R3]
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3]
 };
 
 static const arch_register_t* const result_regs[] = {
-	&arm_gp_regs[REG_R0],
-	&arm_gp_regs[REG_R1],
-	&arm_gp_regs[REG_R2],
-	&arm_gp_regs[REG_R3]
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3]
 };
 
 static const arch_register_t* const float_result_regs[] = {
-	&arm_fpa_regs[REG_F0],
-	&arm_fpa_regs[REG_F1]
+	&arm_registers[REG_F0],
+	&arm_registers[REG_F1]
 };
 
 /** information about a single parameter or result */

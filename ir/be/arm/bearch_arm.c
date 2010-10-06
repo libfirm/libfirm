@@ -419,8 +419,10 @@ const arch_isa_if_t arm_isa_if;
 static arm_isa_t arm_isa_template = {
 	{
 		&arm_isa_if,           /* isa interface */
-		&arm_gp_regs[REG_SP],  /* stack pointer */
-		&arm_gp_regs[REG_R11], /* base pointer */
+		N_ARM_REGISTERS,
+		arm_registers,
+		&arm_registers[REG_SP],  /* stack pointer */
+		&arm_registers[REG_R11], /* base pointer */
 		&arm_reg_classes[CLASS_arm_gp],  /* static link pointer class */
 		-1,                    /* stack direction */
 		2,                     /* power of two stack alignment for calls, 2^2 == 4 */
@@ -488,7 +490,7 @@ static void arm_done(void *self)
  */
 static unsigned arm_get_n_reg_class(void)
 {
-	return N_CLASSES;
+	return N_ARM_CLASSES;
 }
 
 /**
@@ -496,7 +498,7 @@ static unsigned arm_get_n_reg_class(void)
  */
 static const arch_register_class_t *arm_get_reg_class(unsigned i)
 {
-	assert(i < N_CLASSES);
+	assert(i < N_ARM_CLASSES);
 	return &arm_reg_classes[i];
 }
 

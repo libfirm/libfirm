@@ -37,11 +37,11 @@
  */
 static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
 {
-	unsigned idx = arch_register_get_index(reg);
+	unsigned idx = reg->global_index;
 	assert(REG_I0 <= idx && idx <= REG_I7);
 	idx += REG_O0 - REG_I0;
 	assert(REG_O0 <= idx && idx <= REG_O7);
-	return &sparc_gp_regs[idx];
+	return &sparc_registers[idx];
 }
 
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,

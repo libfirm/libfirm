@@ -154,7 +154,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 
 	assert(reg && "no in register found");
 
-	if (reg == &ia32_gp_regs[REG_GP_NOREG])
+	if (reg == &ia32_registers[REG_GP_NOREG])
 		panic("trying to emit noreg for %+F input %d", irn, pos);
 
 	return reg;
@@ -2227,14 +2227,14 @@ static unsigned char pnc_map_unsigned[8];
 
 static void build_reg_map(void)
 {
-	reg_gp_map[REG_EAX] = 0x0;
-	reg_gp_map[REG_ECX] = 0x1;
-	reg_gp_map[REG_EDX] = 0x2;
-	reg_gp_map[REG_EBX] = 0x3;
-	reg_gp_map[REG_ESP] = 0x4;
-	reg_gp_map[REG_EBP] = 0x5;
-	reg_gp_map[REG_ESI] = 0x6;
-	reg_gp_map[REG_EDI] = 0x7;
+	reg_gp_map[REG_GP_EAX] = 0x0;
+	reg_gp_map[REG_GP_ECX] = 0x1;
+	reg_gp_map[REG_GP_EDX] = 0x2;
+	reg_gp_map[REG_GP_EBX] = 0x3;
+	reg_gp_map[REG_GP_ESP] = 0x4;
+	reg_gp_map[REG_GP_EBP] = 0x5;
+	reg_gp_map[REG_GP_ESI] = 0x6;
+	reg_gp_map[REG_GP_EDI] = 0x7;
 
 	pnc_map_signed[pn_Cmp_Eq]    = 0x04;
 	pnc_map_signed[pn_Cmp_Lt]    = 0x0C;
@@ -2558,7 +2558,7 @@ static void bemit_binop_with_imm(
 			bemit_mod_am(ruval, node);
 		} else {
 			const arch_register_t *reg = get_in_reg(node, n_ia32_binary_left);
-			if (reg->index == REG_EAX) {
+			if (reg->index == REG_GP_EAX) {
 				bemit8(opcode_ax);
 			} else {
 				bemit8(opcode);
@@ -2663,9 +2663,9 @@ static void bemit_perm(const ir_node *node)
 	assert(cls0 == arch_register_get_class(in1) && "Register class mismatch at Perm");
 
 	if (cls0 == &ia32_reg_classes[CLASS_ia32_gp]) {
-		if (in0->index == REG_EAX) {
+		if (in0->index == REG_GP_EAX) {
 			bemit8(0x90 + reg_gp_map[in1->index]);
-		} else if (in1->index == REG_EAX) {
+		} else if (in1->index == REG_GP_EAX) {
 			bemit8(0x90 + reg_gp_map[in0->index]);
 		} else {
 			bemit8(0x87);
@@ -3022,7 +3022,7 @@ static void bemit_cmp(const ir_node *node)
 					bemit_mod_am(7, node);
 				} else {
 					const arch_register_t *reg = get_in_reg(node, n_ia32_binary_left);
-					if (reg->index == REG_EAX) {
+					if (reg->index == REG_GP_EAX) {
 						bemit8(0x3D);
 					} else {
 						bemit8(0x81);
@@ -3055,7 +3055,7 @@ static void bemit_cmp8bit(const ir_node *node)
 	if (is_ia32_Immediate(right)) {
 		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *out = get_in_reg(node, n_ia32_Cmp_left);
-			if (out->index == REG_EAX) {
+			if (out->index == REG_GP_EAX) {
 				bemit8(0x3C);
 			} else {
 				bemit8(0x80);
@@ -3084,7 +3084,7 @@ static void bemit_test8bit(const ir_node *node)
 	if (is_ia32_Immediate(right)) {
 		if (get_ia32_op_type(node) == ia32_Normal) {
 			const arch_register_t *out = get_in_reg(node, n_ia32_Test8Bit_left);
-			if (out->index == REG_EAX) {
+			if (out->index == REG_GP_EAX) {
 				bemit8(0xA8);
 			} else {
 				bemit8(0xF6);
@@ -3154,7 +3154,7 @@ static void bemit_ldtls(const ir_node *node)
 	const arch_register_t *out = get_out_reg(node, 0);
 
 	bemit8(0x65); // gs:
-	if (out->index == REG_EAX) {
+	if (out->index == REG_GP_EAX) {
 		bemit8(0xA1); // movl 0, %eax
 	} else {
 		bemit8(0x8B); // movl 0, %reg
@@ -3205,9 +3205,9 @@ static void bemit_helper_sbb(const arch_register_t *src, const arch_register_t *
 /* helper function for bemit_minus64bit */
 static void bemit_helper_xchg(const arch_register_t *src, const arch_register_t *dst)
 {
-	if (src->index == REG_EAX) {
+	if (src->index == REG_GP_EAX) {
 		bemit8(0x90 + reg_gp_map[dst->index]); // xchgl %eax, %dst
-	} else if (dst->index == REG_EAX) {
+	} else if (dst->index == REG_GP_EAX) {
 		bemit8(0x90 + reg_gp_map[src->index]); // xchgl %src, %eax
 	} else {
 		bemit8(0x87); // xchgl %src, %dst
@@ -3315,7 +3315,7 @@ static void bemit_load(const ir_node *node)
 {
 	const arch_register_t *out = get_out_reg(node, 0);
 
-	if (out->index == REG_EAX) {
+	if (out->index == REG_GP_EAX) {
 		ir_node   *base      = get_irn_n(node, n_ia32_base);
 		int        has_base  = !is_ia32_NoReg_GP(base);
 		ir_node   *index     = get_irn_n(node, n_ia32_index);
@@ -3360,7 +3360,7 @@ static void bemit_store(const ir_node *node)
 	} else {
 		const arch_register_t *in = get_in_reg(node, n_ia32_Store_val);
 
-		if (in->index == REG_EAX) {
+		if (in->index == REG_GP_EAX) {
 			ir_node   *base      = get_irn_n(node, n_ia32_base);
 			int        has_base  = !is_ia32_NoReg_GP(base);
 			ir_node   *index     = get_irn_n(node, n_ia32_index);

@@ -241,8 +241,9 @@ void be_register_isa_if(const char *name, const arch_isa_if_t *isa);
 struct arch_register_t {
 	const char                  *name;       /**< The name of the register. */
 	const arch_register_class_t *reg_class;  /**< The class of the register */
-	unsigned                     index;      /**< The index of the register in
+	unsigned short               index;      /**< The index of the register in
 	                                              the class. */
+	unsigned short               global_index;
 	arch_register_type_t         type;       /**< The type of the register. */
 	/** register constraint allowing just this register */
 	const arch_register_req_t   *single_req;
@@ -623,6 +624,8 @@ struct arch_isa_if_t {
  */
 struct arch_env_t {
 	const arch_isa_if_t   *impl;
+	unsigned               n_registers;      /**< number of registers */
+	const arch_register_t *registers;        /**< register array */
 	const arch_register_t *sp;               /**< The stack pointer register. */
 	const arch_register_t *bp;               /**< The base pointer register. */
 	const arch_register_class_t *link_class; /**< The static link pointer
@@ -634,8 +637,8 @@ struct arch_env_t {
 	int                    spill_cost;       /**< cost for a be_Spill node */
 	int                    reload_cost;      /**< cost for a be_Reload node */
 	bool                   custom_abi : 1;   /**< backend does all abi handling
-	                                              and does not need the generic stuff
-	                                              from beabi.h/.c */
+	                                              and does not need the generic
+	                                              stuff from beabi.h/.c */
 };
 
 static inline unsigned arch_irn_get_n_outs(const ir_node *node)

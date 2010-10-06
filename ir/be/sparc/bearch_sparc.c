@@ -295,8 +295,10 @@ const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	{
 		&sparc_isa_if,                      /* isa interface implementation */
-		&sparc_gp_regs[REG_SP],             /* stack pointer register */
-		&sparc_gp_regs[REG_FRAME_POINTER],  /* base pointer register */
+		N_SPARC_REGISTERS,
+		sparc_registers,
+		&sparc_registers[REG_SP],           /* stack pointer register */
+		&sparc_registers[REG_FRAME_POINTER],/* base pointer register */
 		&sparc_reg_classes[CLASS_sparc_gp], /* link pointer register class */
 		-1,                                 /* stack direction */
 		3,                                  /* power of two stack alignment
@@ -507,12 +509,12 @@ static void sparc_done(void *self)
 
 static unsigned sparc_get_n_reg_class(void)
 {
-	return N_CLASSES;
+	return N_SPARC_CLASSES;
 }
 
 static const arch_register_class_t *sparc_get_reg_class(unsigned i)
 {
-	assert(i < N_CLASSES);
+	assert(i < N_SPARC_CLASSES);
 	return &sparc_reg_classes[i];
 }
 

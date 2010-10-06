@@ -121,7 +121,7 @@ static void peephole_be_IncSP(ir_node *node)
 	block = get_nodes_block(node);
 	for (cnt = 1; cnt < v.ops; ++cnt) {
 		int value = sign * arm_ror(v.values[cnt], v.rors[cnt]);
-		ir_node *next = be_new_IncSP(&arm_gp_regs[REG_SP], block, node,
+		ir_node *next = be_new_IncSP(&arm_registers[REG_SP], block, node,
 		                             value, 1);
 		sched_add_after(node, next);
 		node = next;
@@ -150,13 +150,13 @@ static ir_node *gen_ptr_add(ir_node *node, ir_node *frame, arm_vals *v)
 	ir_node *ptr;
 
 	ptr = new_bd_arm_Add_imm(dbgi, block, frame, v->values[0], v->rors[0]);
-	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
+	arch_set_irn_register(ptr, &arm_registers[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
 		ir_node *next = new_bd_arm_Add_imm(dbgi, block, ptr, v->values[cnt],
 		                                   v->rors[cnt]);
-		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
+		arch_set_irn_register(next, &arm_registers[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
 	}
@@ -174,13 +174,13 @@ static ir_node *gen_ptr_sub(ir_node *node, ir_node *frame, arm_vals *v)
 	ir_node *ptr;
 
 	ptr = new_bd_arm_Sub_imm(dbgi, block, frame, v->values[0], v->rors[0]);
-	arch_set_irn_register(ptr, &arm_gp_regs[REG_R12]);
+	arch_set_irn_register(ptr, &arm_registers[REG_R12]);
 	sched_add_before(node, ptr);
 
 	for (cnt = 1; cnt < v->ops; ++cnt) {
 		ir_node *next = new_bd_arm_Sub_imm(dbgi, block, ptr, v->values[cnt],
 		                                   v->rors[cnt]);
-		arch_set_irn_register(next, &arm_gp_regs[REG_R12]);
+		arch_set_irn_register(next, &arm_registers[REG_R12]);
 		sched_add_before(node, next);
 		ptr = next;
 	}

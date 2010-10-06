@@ -147,28 +147,28 @@ ir_node *ia32_new_NoReg_gp(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 	return create_const(irg, &irg_data->noreg_gp, new_bd_ia32_NoReg_GP,
-	                    &ia32_gp_regs[REG_GP_NOREG]);
+	                    &ia32_registers[REG_GP_NOREG]);
 }
 
 ir_node *ia32_new_NoReg_vfp(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 	return create_const(irg, &irg_data->noreg_vfp, new_bd_ia32_NoReg_VFP,
-	                    &ia32_vfp_regs[REG_VFP_NOREG]);
+	                    &ia32_registers[REG_VFP_NOREG]);
 }
 
 ir_node *ia32_new_NoReg_xmm(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 	return create_const(irg, &irg_data->noreg_xmm, new_bd_ia32_NoReg_XMM,
-	                    &ia32_xmm_regs[REG_XMM_NOREG]);
+	                    &ia32_registers[REG_XMM_NOREG]);
 }
 
 ir_node *ia32_new_Fpu_truncate(ir_graph *irg)
 {
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
 	return create_const(irg, &irg_data->fpu_trunc_mode, new_bd_ia32_ChangeCW,
-                        &ia32_fp_cw_regs[REG_FPCW]);
+                        &ia32_registers[REG_FPCW]);
 }
 
 
@@ -1119,7 +1119,7 @@ static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 {
 	dbg_info *dbg = get_irn_dbg_info(node);
 	ir_mode *spmode = mode_Iu;
-	const arch_register_t *spreg = &ia32_gp_regs[REG_ESP];
+	const arch_register_t *spreg = &ia32_registers[REG_ESP];
 	ir_node *sp;
 
 	sp = new_rd_Proj(dbg, pred, spmode, pos);
@@ -1137,7 +1137,7 @@ static void transform_MemPerm(ir_node *node)
 {
 	ir_node         *block = get_nodes_block(node);
 	ir_graph        *irg   = get_irn_irg(node);
-	ir_node         *sp    = be_abi_get_ignore_irn(be_get_irg_abi(irg), &ia32_gp_regs[REG_ESP]);
+	ir_node         *sp    = be_abi_get_ignore_irn(be_get_irg_abi(irg), &ia32_registers[REG_ESP]);
 	int              arity = be_get_MemPerm_entity_arity(node);
 	ir_node        **pops  = ALLOCAN(ir_node*, arity);
 	ir_node         *in[1];
@@ -1444,8 +1444,10 @@ const arch_isa_if_t ia32_isa_if;
 static ia32_isa_t ia32_isa_template = {
 	{
 		&ia32_isa_if,            /* isa interface implementation */
-		&ia32_gp_regs[REG_ESP],  /* stack pointer register */
-		&ia32_gp_regs[REG_EBP],  /* base pointer register */
+		N_IA32_REGISTERS,
+		ia32_registers,
+		&ia32_registers[REG_ESP],  /* stack pointer register */
+		&ia32_registers[REG_EBP],  /* base pointer register */
 		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
 		-1,                      /* stack direction */
 		2,                       /* power of two stack alignment, 2^2 == 4 */
@@ -1599,7 +1601,7 @@ static void ia32_done(void *self)
  */
 static unsigned ia32_get_n_reg_class(void)
 {
-	return N_CLASSES;
+	return N_IA32_CLASSES;
 }
 
 /**
@@ -1607,7 +1609,7 @@ static unsigned ia32_get_n_reg_class(void)
  */
 static const arch_register_class_t *ia32_get_reg_class(unsigned i)
 {
-	assert(i < N_CLASSES);
+	assert(i < N_IA32_CLASSES);
 	return &ia32_reg_classes[i];
 }
 
@@ -1633,33 +1635,33 @@ static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
                                                     const ir_mode *mode)
 {
 	static const arch_register_t *gpreg_param_reg_fastcall[] = {
-		&ia32_gp_regs[REG_ECX],
-		&ia32_gp_regs[REG_EDX],
+		&ia32_registers[REG_ECX],
+		&ia32_registers[REG_EDX],
 		NULL
 	};
 	static const unsigned MAXNUM_GPREG_ARGS = 3;
 
 	static const arch_register_t *gpreg_param_reg_regparam[] = {
-		&ia32_gp_regs[REG_EAX],
-		&ia32_gp_regs[REG_EDX],
-		&ia32_gp_regs[REG_ECX]
+		&ia32_registers[REG_EAX],
+		&ia32_registers[REG_EDX],
+		&ia32_registers[REG_ECX]
 	};
 
 	static const arch_register_t *gpreg_param_reg_this[] = {
-		&ia32_gp_regs[REG_ECX],
+		&ia32_registers[REG_ECX],
 		NULL,
 		NULL
 	};
 
 	static const arch_register_t *fpreg_sse_param_reg_std[] = {
-		&ia32_xmm_regs[REG_XMM0],
-		&ia32_xmm_regs[REG_XMM1],
-		&ia32_xmm_regs[REG_XMM2],
-		&ia32_xmm_regs[REG_XMM3],
-		&ia32_xmm_regs[REG_XMM4],
-		&ia32_xmm_regs[REG_XMM5],
-		&ia32_xmm_regs[REG_XMM6],
-		&ia32_xmm_regs[REG_XMM7]
+		&ia32_registers[REG_XMM0],
+		&ia32_registers[REG_XMM1],
+		&ia32_registers[REG_XMM2],
+		&ia32_registers[REG_XMM3],
+		&ia32_registers[REG_XMM4],
+		&ia32_registers[REG_XMM5],
+		&ia32_registers[REG_XMM6],
+		&ia32_registers[REG_XMM7]
 	};
 
 	static const arch_register_t *fpreg_sse_param_reg_this[] = {
@@ -1805,8 +1807,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 
 		assert(!mode_is_float(mode) && "mixed INT, FP results not supported");
 
-		be_abi_call_res_reg(abi, 0, &ia32_gp_regs[REG_EAX], ABI_CONTEXT_BOTH);
-		be_abi_call_res_reg(abi, 1, &ia32_gp_regs[REG_EDX], ABI_CONTEXT_BOTH);
+		be_abi_call_res_reg(abi, 0, &ia32_registers[REG_EAX], ABI_CONTEXT_BOTH);
+		be_abi_call_res_reg(abi, 1, &ia32_registers[REG_EDX], ABI_CONTEXT_BOTH);
 	}
 	else if (n == 1) {
 		const arch_register_t *reg;
@@ -1815,7 +1817,7 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 		assert(is_atomic_type(tp));
 		mode = get_type_mode(tp);
 
-		reg = mode_is_float(mode) ? &ia32_vfp_regs[REG_VF0] : &ia32_gp_regs[REG_EAX];
+		reg = mode_is_float(mode) ? &ia32_registers[REG_VF0] : &ia32_registers[REG_EAX];
 
 		be_abi_call_res_reg(abi, 0, reg, ABI_CONTEXT_BOTH);
 	}
