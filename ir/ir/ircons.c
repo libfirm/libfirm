@@ -92,24 +92,17 @@ ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in,
 	return res;
 }
 
-ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg, tarval *con,
-                           ir_type *tp)
+ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con)
 {
 	ir_node  *block = get_irg_start_block(irg);
 	ir_mode  *mode  = get_tarval_mode(con);
 	ir_node  *res   = new_ir_node(db, irg, block, op_Const, mode, 0, NULL);
 	res->attr.con.tarval = con;
-	set_Const_type(res, tp);  /* Call method because of complex assertion. */
+
 	res = optimize_node (res);
-	assert(get_Const_type(res) == tp);
 	irn_verify_irg(res, irg);
 
 	return res;
-}
-
-ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con)
-{
-	return new_rd_Const_type(db, irg, con, firm_unknown_type);
 }
 
 ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
@@ -125,22 +118,6 @@ ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 	assert(is_Cond(arg));
 	arg->attr.cond.default_proj = max_proj;
 	res = new_rd_Proj(db, arg, mode_X, max_proj);
-	return res;
-}
-
-ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                              symconst_symbol value, symconst_kind symkind,
-                              ir_type *tp)
-{
-	ir_node *block = get_irg_start_block(irg);
-	ir_node *res   = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
-
-	res->attr.symc.kind = symkind;
-	res->attr.symc.sym  = value;
-	res->attr.symc.tp   = tp;
-
-	res = optimize_node(res);
-	irn_verify_irg(res, irg);
 	return res;
 }
 
@@ -192,42 +169,49 @@ ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *store,
 ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
                          symconst_symbol value, symconst_kind symkind)
 {
-	return new_rd_SymConst_type(db, irg, mode, value, symkind, firm_unknown_type);
+	ir_node *block = get_irg_start_block(irg);
+	ir_node *res   = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
+	res->attr.symc.kind = symkind;
+	res->attr.symc.sym  = value;
+
+	res = optimize_node(res);
+	irn_verify_irg(res, irg);
+	return res;
 }
 
-ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol)
 {
 	symconst_symbol sym;
 	sym.entity_p = symbol;
-	return new_rd_SymConst_type(db, irg, mode, sym, symconst_addr_ent, tp);
+	return new_rd_SymConst(db, irg, mode, sym, symconst_addr_ent);
 }
 
-ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol)
 {
 	symconst_symbol sym;
 	sym.entity_p = symbol;
-	return new_rd_SymConst_type(db, irg, mode, sym, symconst_ofs_ent, tp);
+	return new_rd_SymConst(db, irg, mode, sym, symconst_ofs_ent);
 }
 
-ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
 {
 	symconst_symbol sym;
 	sym.type_p = symbol;
-	return new_rd_SymConst_type(db, irg, mode, sym, symconst_type_tag, tp);
+	return new_rd_SymConst(db, irg, mode, sym, symconst_type_tag);
 }
 
-ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
 {
 	symconst_symbol sym;
 	sym.type_p = symbol;
-	return new_rd_SymConst_type(db, irg, mode, sym, symconst_type_size, tp);
+	return new_rd_SymConst(db, irg, mode, sym, symconst_type_size);
 }
 
-ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol, ir_type *tp)
+ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol)
 {
 	symconst_symbol sym;
 	sym.type_p = symbol;
-	return new_rd_SymConst_type(db, irg, mode, sym, symconst_type_align, tp);
+	return new_rd_SymConst(db, irg, mode, sym, symconst_type_align);
 }
 
 ir_node *new_r_Start(ir_graph *irg)
@@ -245,10 +229,6 @@ ir_node *new_r_Const(ir_graph *irg, tarval *con)
 ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value)
 {
 	return new_rd_Const_long(NULL, irg, mode, value);
-}
-ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp)
-{
-	return new_rd_Const_type(NULL, irg, con, tp);
 }
 ir_node *new_r_SymConst(ir_graph *irg, ir_mode *mode, symconst_symbol value,
                         symconst_kind symkind)
@@ -686,12 +666,6 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 	return new_rd_Const_long(db, current_ir_graph, mode, value);
 }
 
-ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp)
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_Const_type(db, current_ir_graph, con, tp);
-}
-
 ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
 	ir_node *res;
@@ -710,19 +684,11 @@ ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
 	                  store, objptr, 0, NULL, ent);
 }
 
-ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode, symconst_symbol value,
-                             symconst_kind kind, ir_type *tp)
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_SymConst_type(db, current_ir_graph, mode, value, kind, tp);
-}
-
 ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
                         symconst_kind kind)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_SymConst_type(db, current_ir_graph, mode, value, kind,
-	                            firm_unknown_type);
+	return new_rd_SymConst(db, current_ir_graph, mode, value, kind);
 }
 
 ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[])
@@ -1008,15 +974,6 @@ ir_node *new_Const_long(ir_mode *mode, long value)
 	return new_d_Const_long(NULL, mode, value);
 }
 
-ir_node *new_Const_type(tarval *con, ir_type *tp)
-{
-	return new_d_Const_type(NULL, con, tp);
-}
-
-ir_node *new_SymConst_type(ir_mode *mode, symconst_symbol value, symconst_kind kind, ir_type *type)
-{
-	return new_d_SymConst_type(NULL, mode, value, kind, type);
-}
 ir_node *new_SymConst(ir_mode *mode, symconst_symbol value, symconst_kind kind)
 {
 	return new_d_SymConst(NULL, mode, value, kind);

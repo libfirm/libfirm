@@ -391,14 +391,6 @@ FIRM_API int is_strictConv(const ir_node *node);
 /** Returns true if node is a SymConst node with kind symconst_addr_ent. */
 FIRM_API int is_SymConst_addr_ent(const ir_node *node);
 
-/** Returns the source language type of a Const node.
- * Must be an atomic type.  Mode of type must be mode of node.
- */
-FIRM_API ir_type  *get_Const_type(const ir_node *node);
-
-/** Sets the source language type of a Const node. */
-FIRM_API void     set_Const_type(ir_node *node, ir_type *tp);
-
 /** Returns non-zero if s symconst kind has a type attribute */
 #define SYMCONST_HAS_TYPE(kind) ((kind) <= symconst_type_align)
 
@@ -431,12 +423,6 @@ FIRM_API void           set_SymConst_enum(ir_node *node, ir_enum_const *ec);
 FIRM_API union symconst_symbol get_SymConst_symbol(const ir_node *node);
 FIRM_API void                  set_SymConst_symbol(ir_node *node,
                                                    union symconst_symbol sym);
-
-/** Access the type of the value represented by the SymConst.
- *
- *  Example: primitive type int for SymConst size. */
-FIRM_API ir_type *get_SymConst_value_type(const ir_node *node);
-FIRM_API void    set_SymConst_value_type(ir_node *node, ir_type *tp);
 
 FIRM_API ir_node   **get_Sel_index_arr(ir_node *node);
 FIRM_API int        get_Sel_n_indexs(const ir_node *node);
@@ -665,11 +651,6 @@ FIRM_API int is_irn_forking(const ir_node *node);
  * or loop calculations
  */
 FIRM_API void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
-
-/** Return the type associated with the value produced by n
- *  if the node remarks this type as it is the case for
- *  Cast, Const, SymConst and some Proj nodes or unknown_type. */
-FIRM_API ir_type *get_irn_type(ir_node *n);
 
 /** Return the type attribute of a node n (SymConst, Call, Alloc, Free,
     Cast) or NULL.*/

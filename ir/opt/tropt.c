@@ -32,7 +32,6 @@
 #include "irprog.h"
 #include "irtypeinfo.h"
 #include "irgwalk.h"
-#include "irsimpletype.h"
 #include "trouts.h"
 #include "ircons.h"
 #include "irgmod.h"
@@ -219,8 +218,10 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct)
 	int i;
 	if (gppt_fct) gen_pointer_type_to = gppt_fct;
 
+#if 0
 	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
 		simple_analyse_types();
+#endif
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		pure_normalize_irg_class_casts(get_irp_irg(i));
@@ -448,7 +449,7 @@ static int remove_Cmp_Null_cast(ir_node *cmp)
 	irg = get_irn_irg(cmp);
 	set_irn_n(cmp, cast_pos, get_Cast_op(cast));
 	fromtype = get_irn_typeinfo_type(get_Cast_op(cast));
-	new_null = new_r_Const_type(irg, get_Const_tarval(null), fromtype);
+	new_null = new_r_Const(irg, get_Const_tarval(null));
 	set_irn_typeinfo_type(new_null, fromtype);
 	set_irn_n(cmp, null_pos, new_null);
 	++n_casts_removed;
@@ -476,8 +477,10 @@ void optimize_class_casts(void)
 {
 	int changed;
 
+#if 0
 	if (get_irp_typeinfo_state() != ir_typeinfo_consistent)
 		simple_analyse_types();
+#endif
 
 	changed = 0;
 	all_irg_walk(NULL, irn_optimize_class_cast, &changed);

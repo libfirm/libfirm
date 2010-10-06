@@ -297,7 +297,6 @@ void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals)
 	int i;
 	ir_type  *arrtp = get_entity_type(ent);
 	ir_node  *val;
-	ir_type  *elttp = get_array_element_type(arrtp);
 	ir_graph *irg = get_const_code_irg();
 
 	assert(is_Array_type(arrtp));
@@ -307,7 +306,7 @@ void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals)
 	assert(get_array_lower_bound (arrtp, 0) || get_array_upper_bound (arrtp, 0));
 
 	for (i = 0; i < num_vals; i++) {
-		val = new_r_Const_type(irg, values[i], elttp);
+		val = new_r_Const(irg, values[i]);
 		add_compound_ent_value(ent, val, get_array_element_entity(arrtp));
 		set_compound_graph_path_array_index(get_compound_ent_value_path(ent, i), 0, i);
 	}

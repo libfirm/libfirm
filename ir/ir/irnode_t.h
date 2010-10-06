@@ -48,17 +48,6 @@ ir_node     **get_irn_in            (const ir_node *node);
 extern unsigned firm_add_node_size;
 
 /**
- * Sets the get_type operation for an ir_op_ops.
- *
- * @param code   the opcode for the default operation
- * @param ops    the operations initialized
- *
- * @return
- *    The operations.
- */
-ir_op_ops *firm_set_default_get_type(ir_opcode code, ir_op_ops *ops);
-
-/**
  * Sets the get_type_attr operation for an ir_op_ops.
  *
  * @param code   the opcode for the default operation
@@ -476,10 +465,6 @@ static inline int _is_Const_all_one(const ir_node *node) {
 
 static inline int _is_irn_forking(const ir_node *node) {
 	return is_op_forking(_get_irn_op(node));
-}
-
-static inline ir_type *_get_irn_type(ir_node *node) {
-	return _get_irn_op(node)->ops.get_type(node);
 }
 
 static inline ir_type *_get_irn_type_attr(ir_node *node) {

@@ -230,7 +230,7 @@ static void lower_sel(ir_node *sel)
 			}
 		} else {
 			/* global_type */
-			newn = new_rd_SymConst_addr_ent(NULL, irg, mode, ent, firm_unknown_type);
+			newn = new_rd_SymConst_addr_ent(NULL, irg, mode, ent);
 		}
 	}
 	/* run the hooks */

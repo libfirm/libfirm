@@ -1207,22 +1207,6 @@ FIRM_API ir_node *new_rd_Cond(dbg_info *db, ir_node *block, ir_node *c);
 FIRM_API ir_node *new_rd_Return(dbg_info *db, ir_node *block,
                                 ir_node *store, int arity, ir_node *in[]);
 
-/** Constructor for a Const_type node.
- *
- * Adds the node to the start block.
- *
- * The constant represents a target value.  This constructor sets high
- * level type information for the constant value.
- * Derives mode from passed tarval.
- *
- * @param *db    A pointer for debug information.
- * @param *irg   The IR graph the node  belongs to.
- * @param *con   Points to an entry in the constant table.
- * @param *tp    The type of the constant.
- */
-FIRM_API ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg,
-                                    tarval *con, ir_type *tp);
-
 /** Constructor for a Const node.
  *
  * Adds the node to the start block.
@@ -1255,7 +1239,7 @@ FIRM_API ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con);
 FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
                                     ir_mode *mode, long value);
 
-/** Constructor for a SymConst_type node.
+/** Constructor for a SymConst node.
  *
  *  This is the constructor for a symbolic constant.
  *    There are several kinds of symbolic constants:
@@ -1289,15 +1273,6 @@ FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  * @param val     A type, ident, entity or enum constant depending on the
  *                SymConst kind.
  * @param kind    The kind of the symbolic constant, see the list above
- * @param tp      The source type of the constant.
- */
-FIRM_API ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg,
-                                       ir_mode *mode, union symconst_symbol val,
-                                       symconst_kind kind, ir_type *tp);
-
-/** Constructor for a SymConst node.
- *
- *  Same as new_rd_SymConst_type, except that it sets the type to type_unknown.
  */
 FIRM_API ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
                                   union symconst_symbol value,
@@ -1305,51 +1280,46 @@ FIRM_API ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
 
 /** Constructor for a SymConst addr_ent node.
  *
- * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * Same as new_rd_SymConst, except that the constructor is tailored for
  * symconst_addr_ent.
  * Adds the SymConst to the start block of irg. */
 FIRM_API ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg,
-                                           ir_mode *mode, ir_entity *symbol,
-                                           ir_type *tp);
+                                           ir_mode *mode, ir_entity *symbol);
 
 /** Constructor for a SymConst ofs_ent node.
  *
- * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * Same as new_rd_SymConst, except that the constructor is tailored for
  * symconst_ofs_ent.
  * Adds the SymConst to the start block of irg.
  */
 FIRM_API ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg,
-                                          ir_mode *mode, ir_entity *symbol,
-                                          ir_type *tp);
+                                          ir_mode *mode, ir_entity *symbol);
 
 /** Constructor for a SymConst type_tag node.
  *
- * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * Same as new_rd_SymConst, except that the constructor is tailored for
  * symconst_type_tag.
  * Adds the SymConst to the start block of irg.
  */
 FIRM_API ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg,
-                                           ir_mode *mode, ir_type *symbol,
-                                           ir_type *tp);
+                                           ir_mode *mode, ir_type *symbol);
 
 /** Constructor for a SymConst size node.
  *
- * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * Same as new_rd_SymConst, except that the constructor is tailored for
  * symconst_type_size.
  * Adds the SymConst to the start block of irg. */
 FIRM_API ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg,
-                                       ir_mode *mode, ir_type *symbol,
-                                       ir_type *tp);
+                                       ir_mode *mode, ir_type *symbol);
 
 /** Constructor for a SymConst size node.
  *
- * Same as new_rd_SymConst_type, except that the constructor is tailored for
+ * Same as new_rd_SymConst, except that the constructor is tailored for
  * symconst_type_align.
  * Adds the SymConst to the start block of irg.
  */
 FIRM_API ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg,
-                                        ir_mode *mode, ir_type *symbol,
-                                        ir_type *tp);
+                                        ir_mode *mode, ir_type *symbol);
 
 /** Constructor for a simpleSel node.
  *
@@ -2052,20 +2022,6 @@ FIRM_API ir_node *new_r_Const(ir_graph *irg, tarval *con);
  */
 FIRM_API ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value);
 
-/** Constructor for a Const_type node.
- *
- * Adds the node to the start block.
- *
- * The constant represents a target value.  This constructor sets high
- * level type information for the constant value.
- * Derives mode from passed tarval.
- *
- * @param *irg   The IR graph the node  belongs to.
- * @param *con   Points to an entry in the constant table.
- * @param *tp    The type of the constant.
- */
-FIRM_API ir_node *new_r_Const_type(ir_graph *irg, tarval *con, ir_type *tp);
-
 /** Constructor for a SymConst node.
  *
  *  This is the constructor for a symbolic constant.
@@ -2759,21 +2715,6 @@ FIRM_API ir_node *new_d_Cond(dbg_info *db, ir_node *c);
 FIRM_API ir_node *new_d_Return(dbg_info *db, ir_node *store,
                                int arity, ir_node *in[]);
 
-/** Constructor for a Const_type node.
- *
- * Adds the node to the start block.
- *
- * The constant represents a target value.  This constructor sets high
- * level type information for the constant value.
- * Derives mode from passed tarval.
- *
- * @param *db    A pointer for debug information.
- * @param *con   Points to an entry in the constant table. This pointer is
-                 added to the attributes of the node.
- * @param *tp    The type of the constant.
- */
-FIRM_API ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp);
-
 /** Constructor for a Const node.
  *
  * Adds the node to the block in current_ir_block.
@@ -2798,7 +2739,7 @@ FIRM_API ir_node *new_d_Const(dbg_info *db, tarval *con);
  */
 FIRM_API ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
 
-/** Constructor for a SymConst_type node.
+/** Constructor for a SymConst node.
  *
  *  This is the constructor for a symbolic constant.
  *    There are several kinds of symbolic constants:
@@ -2831,15 +2772,6 @@ FIRM_API ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value);
  * @param value   A type, ident, entity or enum constant depending on the
  *                SymConst kind.
  * @param kind    The kind of the symbolic constant, see the list above
- * @param tp      The source type of the constant.
- */
-FIRM_API ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode,
-                                      union symconst_symbol value,
-                                      symconst_kind kind, ir_type *tp);
-
-/** Constructor for a SymConst node.
- *
- *  Same as new_d_SymConst_type, except that it sets the type to type_unknown.
  */
 FIRM_API ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode,
                                  union symconst_symbol value,
@@ -3538,48 +3470,6 @@ FIRM_API ir_node *new_Const(tarval *con);
  * @return A new const node.
  */
 FIRM_API ir_node *new_Const_long(ir_mode *mode, long value);
-
-/** Constructor for a Const node.
- *
- * Derives mode from passed tarval. */
-FIRM_API ir_node *new_Const_type(tarval *con, ir_type *tp);
-
-/** Constructor for a SymConst_type node.
- *
- *  This is the constructor for a symbolic constant.
- *    There are several kinds of symbolic constants:
- *    - symconst_type_tag   The symbolic constant represents a type tag.  The
- *                          type the tag stands for is given explicitly.
- *    - symconst_type_size  The symbolic constant represents the size of a type.
- *                          The type of which the constant represents the size
- *                          is given explicitly.
- *    - symconst_type_align The symbolic constant represents the alignment of a
- *                          type.  The type of which the constant represents the
- *                          size is given explicitly.
- *    - symconst_addr_ent   The symbolic constant represents the address of an
- *                          entity (variable or method).  The variable is given
- *                          explicitly by a firm entity.
- *    - symconst_ofs_ent    The symbolic constant represents the offset of an
- *                          entity in its owner type.
- *    - symconst_enum_const The symbolic constant is a enumeration constant of
- *                          an enumeration type.
- *
- *    Inputs to the node:
- *      No inputs except the block it belongs to.
- *    Outputs of the node.
- *      An unsigned integer (I_u) or a pointer (P).
- *
- *    Mention union in declaration so that the firmjni generator recognizes that
- *    it can not cast the argument to an int.
- *
- * @param mode    The mode for the SymConst.
- * @param value   A type, ident, entity or enum constant depending on the
- *                SymConst kind.
- * @param kind    The kind of the symbolic constant, see the list above
- * @param tp      The source type of the constant.
- */
-FIRM_API ir_node *new_SymConst_type(ir_mode *mode, union symconst_symbol value,
-                                    symconst_kind kind, ir_type *tp);
 
 /** Constructor for a SymConst node.
  *

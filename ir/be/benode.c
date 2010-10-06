@@ -1302,7 +1302,6 @@ static const ir_op_ops be_node_op_ops = {
 	NULL,
 	NULL,
 	NULL,
-	NULL,
 	dump_node,
 	NULL,
 	&be_node_irn_ops

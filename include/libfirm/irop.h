@@ -183,12 +183,6 @@ typedef int (*reassociate_func)(ir_node **n);
 typedef void (*copy_attr_func)(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
 /**
- * The get_type operation.
- * Return the type of the node self.
- */
-typedef ir_type *(*get_type_func)(const ir_node *self);
-
-/**
  * The get_type_attr operation. Used to traverse all types that can be
  * accessed from an ir_graph.
  * Return the type attribute of the node self.
@@ -251,7 +245,6 @@ typedef struct {
 	node_cmp_attr_func    node_cmp_attr;        /**< Compares two node attributes. */
 	reassociate_func      reassociate;          /**< Reassociate a tree. */
 	copy_attr_func        copy_attr;            /**< Copy node attributes. */
-	get_type_func         get_type;             /**< Return the type of a node. */
 	get_type_attr_func    get_type_attr;        /**< Return the type attribute of a node. */
 	get_entity_attr_func  get_entity_attr;      /**< Return the entity attribute of a node. */
 	verify_node_func      verify_node;          /**< Verify the node. */

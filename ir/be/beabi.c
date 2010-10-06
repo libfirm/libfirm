@@ -2140,7 +2140,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 			dbgi             = get_irn_dbg_info(pred);
 			trampoline       = get_trampoline(be, entity);
 			trampoline_const = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code,
-			                                            trampoline, NULL);
+			                                            trampoline);
 			set_irn_n(node, i, trampoline_const);
 			continue;
 		}
@@ -2163,7 +2163,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		dbgi         = get_irn_dbg_info(pred);
 		pic_symbol   = get_pic_symbol(be, entity);
 		pic_symconst = new_rd_SymConst_addr_ent(dbgi, irg, mode_P_code,
-		                                        pic_symbol, NULL);
+		                                        pic_symbol);
 		add = new_r_Add(block, pic_base, pic_symconst, mode);
 		mark_irn_visited(add);
 

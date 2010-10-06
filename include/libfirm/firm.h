@@ -102,7 +102,6 @@
 #include "irpass.h"
 #include "irprintf.h"
 #include "irprog.h"
-#include "irsimpletype.h"
 #include "irtypeinfo.h"
 #include "irverify.h"
 #include "lowering.h"

@@ -173,14 +173,12 @@ typedef struct {
 /** Const attributes. */
 typedef struct {
 	tarval  *tarval;  /**< the target value */
-	ir_type *tp;      /**< the source type, for analyses. default: type_unknown. */
 } const_attr;
 
 /** SymConst attributes. */
 typedef struct {
 	symconst_symbol sym;  // old tori
 	symconst_kind   kind;
-	ir_type         *tp;  /**< the source type, for analyses. default: type_unknown. */
 } symconst_attr;
 
 /** Sel attributes. */

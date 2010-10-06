@@ -675,7 +675,7 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 		}
 		if (len >= 0) {
 			tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
-			return new_r_Const_type(irg, tv, res_tp);
+			return new_r_Const(irg, tv);
 		}
 		return NULL;
 	}
@@ -689,7 +689,7 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 		ir_initializer_t *val = get_initializer_compound_value(initializer, i);
 		if (initializer_val_is_null(val)) {
 			tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
-			return new_r_Const_type(irg, tv, res_tp);
+			return new_r_Const(irg, tv);
 		}
 	}
 
@@ -806,7 +806,7 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 		if (i < n) {
 			/* we found an end */
 			tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
-			return new_r_Const_type(irg, tv, res_tp);
+			return new_r_Const(irg, tv);
 		}
 		return NULL;
 	}

@@ -180,7 +180,7 @@ static void add_constructor(ir_entity *method)
     ir_entity *ptr          = new_entity(constructors, ide, ptr_type);
 	ir_graph  *irg          = get_const_code_irg();
     ir_node   *val          = new_rd_SymConst_addr_ent(NULL, irg, mode_P_code,
-	                                                   method, NULL);
+	                                                   method);
 
     set_entity_compiler_generated(ptr, 1);
     set_entity_linkage(ptr, IR_LINKAGE_CONSTANT);

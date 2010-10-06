@@ -1373,22 +1373,6 @@ restart:
 }  /* equivalent_node_Conv */
 
 /**
- * A Cast may be removed if the type of the previous node
- * is already the type of the Cast.
- */
-static ir_node *equivalent_node_Cast(ir_node *n)
-{
-	ir_node *oldn = n;
-	ir_node *pred = get_Cast_op(n);
-
-	if (get_irn_type(pred) == get_Cast_type(n)) {
-		n = pred;
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_CAST);
-	}
-	return n;
-}  /* equivalent_node_Cast */
-
-/**
  * - fold Phi-nodes, iff they have only one predecessor except
  *   themselves.
  */
@@ -1965,7 +1949,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Or);
 	CASE(And);
 	CASE(Conv);
-	CASE(Cast);
 	CASE(Phi);
 	CASE(Sync);
 	CASE_PROJ(Tuple);
@@ -2080,7 +2063,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, tarval *other, eval_func eval, 
 	irg = get_irn_irg(phi);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const_type(irg, res[i], get_Const_type(pred));
+		res[i] = new_r_Const(irg, res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_binop_on_phi */
@@ -2125,7 +2108,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir
 	irg = get_irn_irg(a);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(a, i);
-		res[i] = new_r_Const_type(irg, res[i], get_Const_type(pred));
+		res[i] = new_r_Const(irg, res[i]);
 	}
 	return new_r_Phi(get_nodes_block(a), n, (ir_node **)res, mode);
 }  /* apply_binop_on_2_phis */
@@ -2163,7 +2146,7 @@ static ir_node *apply_unop_on_phi(ir_node *phi, tarval *(*eval)(tarval *))
 	irg  = get_irn_irg(phi);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const_type(irg, res[i], get_Const_type(pred));
+		res[i] = new_r_Const(irg, res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_unop_on_phi */
@@ -2198,7 +2181,7 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 	irg = get_irn_irg(phi);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const_type(irg, res[i], get_Const_type(pred));
+		res[i] = new_r_Const(irg, res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_conv_on_phi */
@@ -3821,29 +3804,6 @@ static ir_node *transform_node_Minus(ir_node *n)
 
 	return n;
 }  /* transform_node_Minus */
-
-/**
- * Transform a Cast_type(Const) into a new Const_type
- */
-static ir_node *transform_node_Cast(ir_node *n)
-{
-	ir_node *oldn = n;
-	ir_node *pred = get_Cast_op(n);
-	ir_type *tp = get_irn_type(n);
-
-	if (is_Const(pred) && get_Const_type(pred) != tp) {
-		ir_graph *irg = get_irn_irg(n);
-		n = new_rd_Const_type(NULL, irg, get_Const_tarval(pred), tp);
-		DBG_OPT_CSTEVAL(oldn, n);
-	} else if (is_SymConst(pred) && get_SymConst_value_type(pred) != tp) {
-		ir_graph *irg = get_irn_irg(n);
-		n = new_rd_SymConst_type(NULL, irg, get_irn_mode(pred),
-			get_SymConst_symbol(pred), get_SymConst_kind(pred), tp);
-		DBG_OPT_CSTEVAL(oldn, n);
-	}
-
-	return n;
-}  /* transform_node_Cast */
 
 /**
  * Transform a Proj(Load) with a non-null address.
@@ -6149,7 +6109,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Eor);
 	CASE(Not);
 	CASE(Minus);
-	CASE(Cast);
 	CASE_PROJ(Load);
 	CASE_PROJ(Store);
 	CASE_PROJ(Bound);
@@ -6187,9 +6146,8 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 /** Compares the attributes of two Const nodes. */
 static int node_cmp_attr_Const(ir_node *a, ir_node *b)
 {
-	return (get_Const_tarval(a) != get_Const_tarval(b))
-	    || (get_Const_type(a) != get_Const_type(b));
-}  /* node_cmp_attr_Const */
+	return get_Const_tarval(a) != get_Const_tarval(b);
+}
 
 /** Compares the attributes of two Proj nodes. */
 static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
@@ -6219,9 +6177,8 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 	const symconst_attr *pa = &a->attr.symc;
 	const symconst_attr *pb = &b->attr.symc;
 	return (pa->kind       != pb->kind)
-	    || (pa->sym.type_p != pb->sym.type_p)
-	    || (pa->tp         != pb->tp);
-}  /* node_cmp_attr_SymConst */
+	    || (pa->sym.type_p != pb->sym.type_p);
+}
 
 /** Compares the attributes of two Call nodes. */
 static int node_cmp_attr_Call(ir_node *a, ir_node *b)
@@ -6741,15 +6698,7 @@ ir_node *optimize_node(ir_node *n)
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
 				ir_node *nw;
-				ir_type *old_tp = get_irn_type(n);
-				int i, arity = get_irn_arity(n);
 				int node_size;
-
-				/*
-				 * Try to recover the type of the new expression.
-				 */
-				for (i = 0; i < arity && !old_tp; ++i)
-					old_tp = get_irn_type(get_irn_n(n, i));
 
 				/*
 				 * we MUST copy the node here temporary, because it's still needed
@@ -6771,8 +6720,6 @@ ir_node *optimize_node(ir_node *n)
 				irg_kill_node(irg, n);
 				nw = new_r_Const(irg, tv);
 
-				if (old_tp && get_type_mode(old_tp) == get_tarval_mode(tv))
-					set_Const_type(nw, old_tp);
 				DBG_OPT_CSTEVAL(oldn, nw);
 				return nw;
 			}
@@ -6853,20 +6800,9 @@ ir_node *optimize_in_place_2(ir_node *n)
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
 				/* evaluation was successful -- replace the node. */
-				ir_type *old_tp = get_irn_type(n);
 				ir_graph *irg = get_irn_irg(n);
-				int i, arity = get_irn_arity(n);
-
-				/*
-				 * Try to recover the type of the new expression.
-				 */
-				for (i = 0; i < arity && !old_tp; ++i)
-					old_tp = get_irn_type(get_irn_n(n, i));
 
 				n = new_r_Const(irg, tv);
-
-				if (old_tp && get_type_mode(old_tp) == get_tarval_mode(tv))
-					set_Const_type(n, old_tp);
 
 				DBG_OPT_CSTEVAL(oldn, n);
 				return n;
@@ -7009,7 +6945,6 @@ ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops)
 	ops = firm_set_default_equivalent_node(code, ops);
 	ops = firm_set_default_transform_node(code, ops);
 	ops = firm_set_default_node_cmp_attr(code, ops);
-	ops = firm_set_default_get_type(code, ops);
 	ops = firm_set_default_get_type_attr(code, ops);
 	ops = firm_set_default_get_entity_attr(code, ops);
 

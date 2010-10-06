@@ -208,10 +208,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 					   get_method_res_type(tp, i));
 		}
 	} break;
-	case iro_Const: {
-		assert(get_Const_type(n) != firm_none_type);
-		ir_fprintf(F, "  Const of type %+F\n", get_Const_type(n));
-	} break;
 	case iro_SymConst: {
 		switch (get_SymConst_kind(n)) {
 		case symconst_addr_ent:
@@ -244,7 +240,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  name: %s\n", get_enumeration_const_name(get_SymConst_enum(n)));
 			break;
 		}
-		ir_fprintf(F, "  type of value: %+F\n", get_SymConst_value_type(n));
 	} break;
 	case iro_Load:
 		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), NULL));

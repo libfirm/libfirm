@@ -890,25 +890,6 @@ int (is_Const_all_one)(const ir_node *node)
 }
 
 
-/* The source language type.  Must be an atomic type.  Mode of type must
-   be mode of node. For tarvals from entities type must be pointer to
-   entity type. */
-ir_type *get_Const_type(const ir_node *node)
-{
-	assert(is_Const(node));
-	return node->attr.con.tp;
-}
-
-void set_Const_type(ir_node *node, ir_type *tp)
-{
-	assert(is_Const(node));
-	if (tp != firm_unknown_type) {
-		assert(is_atomic_type(tp));
-		assert(get_type_mode(tp) == get_irn_mode(node));
-	}
-	node->attr.con.tp = tp;
-}
-
 
 symconst_kind get_SymConst_kind(const ir_node *node)
 {
@@ -976,18 +957,6 @@ void set_SymConst_symbol(ir_node *node, union symconst_symbol sym)
 {
 	assert(is_SymConst(node));
 	node->attr.symc.sym = sym;
-}
-
-ir_type *get_SymConst_value_type(const ir_node *node)
-{
-	assert(is_SymConst(node));
-	return node->attr.symc.tp;
-}
-
-void set_SymConst_value_type(ir_node *node, ir_type *tp)
-{
-	assert(is_SymConst(node));
-	node->attr.symc.tp = tp;
 }
 
 int get_Sel_n_indexs(const ir_node *node)
@@ -1716,14 +1685,6 @@ void (copy_node_attr)(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 	_copy_node_attr(irg, old_node, new_node);
 }
 
-/* Return the type associated with the value produced by n
- * if the node remarks this type as it is the case for
- * Cast, Const, SymConst and some Proj nodes. */
-ir_type *(get_irn_type)(ir_node *node)
-{
-	return _get_irn_type(node);
-}
-
 /* Return the type attribute of a node n (SymConst, Call, Alloc, Free,
    Cast) or NULL.*/
 ir_type *(get_irn_type_attr)(ir_node *node)
@@ -1795,30 +1756,6 @@ const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred)
 	}
 	return "<unknown>";
 #undef X
-}
-
-/** the get_type operation must be always implemented and return a firm type */
-static ir_type *get_Default_type(const ir_node *n)
-{
-	(void) n;
-	return get_unknown_type();
-}
-
-/* Sets the get_type operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_get_type(ir_opcode code, ir_op_ops *ops)
-{
-	switch (code) {
-	case iro_Const:    ops->get_type = get_Const_type; break;
-	case iro_SymConst: ops->get_type = get_SymConst_value_type; break;
-	case iro_Cast:     ops->get_type = get_Cast_type; break;
-	case iro_Proj:     ops->get_type = get_Proj_type; break;
-	default:
-		/* not allowed to be NULL */
-		if (! ops->get_type)
-			ops->get_type = get_Default_type;
-		break;
-	}
-	return ops;
 }
 
 /** Return the attribute type of a SymConst node if exists */
