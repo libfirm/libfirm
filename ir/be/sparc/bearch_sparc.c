@@ -553,6 +553,15 @@ static void sparc_lower_for_target(void)
 	}
 }
 
+static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
+                                ir_node *mux_true)
+{
+	(void) sel;
+	(void) mux_false;
+	(void) mux_true;
+	return false;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -573,7 +582,7 @@ static const backend_params *sparc_get_backend_params(void)
 		1,     /* big endian */
 		sparc_lower_for_target, /* lowering callback */
 		&arch_dep,              /* will be set later */
-		NULL,  /* parameter for if conversion */
+		sparc_is_mux_allowed,   /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */

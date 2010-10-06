@@ -543,8 +543,7 @@ static int arm_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	(void) sel;
 	(void) mux_false;
 	(void) mux_true;
-
-	return 0;
+	return false;
 }
 
 static asm_constraint_flags_t arm_parse_asm_constraint(const char **c)

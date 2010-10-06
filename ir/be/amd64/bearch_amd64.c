@@ -518,6 +518,15 @@ static void amd64_lower_for_target(void)
 {
 }
 
+static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
+                                ir_node *mux_true)
+{
+	(void) sel;
+	(void) mux_false;
+	(void) mux_true;
+	return false;
+}
+
 /**
  * Returns the libFirm configuration parameter for this backend.
  */
@@ -528,7 +537,7 @@ static const backend_params *amd64_get_backend_params(void) {
 		0,     /* little endian */
 		amd64_lower_for_target,  /* lowering callback */
 		NULL,  /* will be set later */
-		NULL,  /* parameter for if conversion */
+		amd64_is_mux_allowed,  /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */

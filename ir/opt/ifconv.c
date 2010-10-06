@@ -55,18 +55,6 @@ typedef struct walker_env {
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 /**
- * Default callback for Mux creation: don't allow any Mux nodes
- */
-static int default_allow_ifconv(ir_node *sel, ir_node *mux_false,
-                                ir_node *mux_true)
-{
-	(void) sel;
-	(void) mux_false;
-	(void) mux_true;
-	return 0;
-}
-
-/**
  * Returns non-zero if a Block can be emptied.
  *
  * @param block  the block
@@ -482,11 +470,8 @@ void opt_if_conv(ir_graph *irg)
 	const backend_params *be_params = be_get_backend_param();
 
 	/* get the parameters */
-	if (be_params->allow_ifconv != NULL)
-		env.allow_ifconv = be_params->allow_ifconv;
-	else
-		env.allow_ifconv = default_allow_ifconv;
-	env.changed = false;
+	env.allow_ifconv = be_params->allow_ifconv;
+	env.changed      = false;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ifconv");
 
