@@ -61,6 +61,7 @@
 static const lower_mode_b_config_t *config;
 static ir_type                     *lowered_type;
 static ir_node                    **lowered_nodes;
+static ir_node                    **check_later;
 
 /**
  * Removes a node if its out-edge count has reached 0.
@@ -152,6 +153,9 @@ ir_node *ir_create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 	set_Block_phis(lower_block, phi);
 	set_Phi_next(phi, NULL);
 
+	/* make sure we do visit the cond_value later... */
+	ARR_APP1(ir_node*, check_later, cond_value);
+
 	return phi;
 }
 
@@ -223,20 +227,22 @@ static ir_node *lower_node(ir_node *node)
 		return new_phi;
 	}
 
-	case iro_And:
-	case iro_Or:
+	case iro_And: {
+		ir_node *lowered_left  = lower_node(get_And_left(node));
+		ir_node *lowered_right = lower_node(get_And_right(node));
+		res = new_rd_And(dbgi, block, lowered_left, lowered_right, mode);
+		break;
+	}
+	case iro_Or: {
+		ir_node *lowered_left  = lower_node(get_Or_left(node));
+		ir_node *lowered_right = lower_node(get_Or_right(node));
+		res = new_rd_Or(dbgi, block, lowered_left, lowered_right, mode);
+		break;
+	}
 	case iro_Eor: {
-		int i, arity;
-
-		res   = exact_copy(node);
-		arity = get_irn_arity(node);
-		for (i = 0; i < arity; ++i) {
-			ir_node *in     = get_irn_n(node, i);
-			ir_node *low_in = lower_node(in);
-
-			set_irn_n(res, i, low_in);
-		}
-		set_irn_mode(res, mode);
+		ir_node *lowered_left  = lower_node(get_Eor_left(node));
+		ir_node *lowered_right = lower_node(get_Eor_right(node));
+		res = new_rd_Eor(dbgi, block, lowered_left, lowered_right, mode);
 		break;
 	}
 
@@ -437,6 +443,7 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 
 	config        = nconfig;
 	lowered_nodes = NEW_ARR_F(ir_node*, 0);
+	check_later   = NEW_ARR_F(ir_node*, 0);
 	lowered_type  = NULL;
 
 	edges_assure(irg);
@@ -451,11 +458,17 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, &changed);
 
+	for (i = 0; i < ARR_LEN(check_later); ++i) {
+		ir_node *node = check_later[i];
+		irg_walk_core(node, lower_mode_b_walker, NULL, &changed);
+	}
+
 	n = ARR_LEN(lowered_nodes);
 	for (i = 0; i < n; ++i) {
 		ir_node *node = lowered_nodes[i];
 		maybe_kill_node(node);
 	}
+	DEL_ARR_F(check_later);
 	DEL_ARR_F(lowered_nodes);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
