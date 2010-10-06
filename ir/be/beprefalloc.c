@@ -1899,7 +1899,7 @@ static void spill(void)
 static void be_pref_alloc(ir_graph *new_irg)
 {
 	const arch_env_t *arch_env = be_get_irg_arch_env(new_irg);
-	int   n_cls                = arch_env_get_n_reg_class(arch_env);
+	int   n_cls                = arch_env->n_register_classes;
 	int   c;
 
 	obstack_init(&obst);
@@ -1911,7 +1911,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 	determine_block_order();
 
 	for (c = 0; c < n_cls; ++c) {
-		cls             = arch_env_get_reg_class(arch_env, c);
+		cls = &arch_env->register_classes[c];
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;
 

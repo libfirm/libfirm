@@ -220,14 +220,14 @@ static void end_mapping(const char *name)
 
 static void print_regclasses(void)
 {
-	int n_classes = arch_env_get_n_reg_class(arch_env);
+	int n_classes = arch_env->n_register_classes;
 	int c;
 
 	begin_block_sequence("regclasses");
 	for (c = 0; c < n_classes; ++c) {
 		int                          n_regs;
 		int                          r;
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, c);
+		const arch_register_class_t *cls = &arch_env->register_classes[c];
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;
 

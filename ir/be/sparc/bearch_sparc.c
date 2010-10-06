@@ -297,6 +297,8 @@ static sparc_isa_t sparc_isa_template = {
 		&sparc_isa_if,                      /* isa interface implementation */
 		N_SPARC_REGISTERS,
 		sparc_registers,
+		N_SPARC_CLASSES,
+		sparc_reg_classes,
 		&sparc_registers[REG_SP],           /* stack pointer register */
 		&sparc_registers[REG_FRAME_POINTER],/* base pointer register */
 		&sparc_reg_classes[CLASS_sparc_gp], /* link pointer register class */
@@ -507,18 +509,6 @@ static void sparc_done(void *self)
 	free(isa);
 }
 
-static unsigned sparc_get_n_reg_class(void)
-{
-	return N_SPARC_CLASSES;
-}
-
-static const arch_register_class_t *sparc_get_reg_class(unsigned i)
-{
-	assert(i < N_SPARC_CLASSES);
-	return &sparc_reg_classes[i];
-}
-
-
 
 /**
  * Get the register class which shall be used to store a value of a given mode.
@@ -619,8 +609,6 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
 	sparc_done,
 	NULL,                /* handle intrinsics */
-	sparc_get_n_reg_class,
-	sparc_get_reg_class,
 	sparc_get_reg_class_for_mode,
 	NULL,
 	sparc_get_reg_class_alignment,

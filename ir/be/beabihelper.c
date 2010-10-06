@@ -66,7 +66,7 @@ struct beabi_helper_env_t {
 static void prepare_rsm(register_state_mapping_t *rsm,
                         const arch_env_t *arch_env)
 {
-	unsigned   n_reg_classes = arch_env_get_n_reg_class(arch_env);
+	unsigned   n_reg_classes = arch_env->n_register_classes;
 	unsigned   c;
 	reg_flag_t memory = { NULL, 0 };
 
@@ -77,7 +77,7 @@ static void prepare_rsm(register_state_mapping_t *rsm,
 	rsm->value_map     = NULL;
 	rsm->reg_index_map = XMALLOCN(int*, n_reg_classes);
 	for (c = 0; c < n_reg_classes; ++c) {
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, c);
+		const arch_register_class_t *cls    = &arch_env->register_classes[c];
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		unsigned                     r;
 
@@ -90,7 +90,7 @@ static void prepare_rsm(register_state_mapping_t *rsm,
 
 static void free_rsm(register_state_mapping_t *rsm, const arch_env_t *arch_env)
 {
-	unsigned n_reg_classes = arch_env_get_n_reg_class(arch_env);
+	unsigned n_reg_classes = arch_env->n_register_classes;
 	unsigned c;
 
 	for (c = 0; c < n_reg_classes; ++c) {
@@ -110,12 +110,12 @@ static void free_rsm(register_state_mapping_t *rsm, const arch_env_t *arch_env)
 static void rsm_clear_regs(register_state_mapping_t *rsm,
                            const arch_env_t *arch_env)
 {
-	unsigned   n_reg_classes = arch_env_get_n_reg_class(arch_env);
+	unsigned   n_reg_classes = arch_env->n_register_classes;
 	unsigned   c;
 	reg_flag_t memory = { NULL, 0 };
 
 	for (c = 0; c < n_reg_classes; ++c) {
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, c);
+		const arch_register_class_t *cls    = &arch_env->register_classes[c];
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		unsigned                     r;
 

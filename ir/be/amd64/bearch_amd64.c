@@ -264,6 +264,8 @@ static amd64_isa_t amd64_isa_template = {
 		&amd64_isa_if,             /* isa interface implementation */
 		N_AMD64_REGISTERS,
 		amd64_registers,
+		N_AMD64_CLASSES,
+		amd64_reg_classes,
 		&amd64_registers[REG_RSP],  /* stack pointer register */
 		&amd64_registers[REG_RBP],  /* base pointer register */
 		&amd64_reg_classes[CLASS_amd64_gp],  /* link pointer register class */
@@ -314,19 +316,6 @@ static void amd64_done(void *self)
 	be_emit_exit();
 	free(self);
 }
-
-
-static unsigned amd64_get_n_reg_class(void)
-{
-	return N_AMD64_CLASSES;
-}
-
-static const arch_register_class_t *amd64_get_reg_class(unsigned i)
-{
-	assert(i < N_AMD64_CLASSES);
-	return &amd64_reg_classes[i];
-}
-
 
 
 /**
@@ -573,8 +562,6 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
 	amd64_done,
 	NULL,                /* handle intrinsics */
-	amd64_get_n_reg_class,
-	amd64_get_reg_class,
 	amd64_get_reg_class_for_mode,
 	amd64_get_call_abi,
 	amd64_get_reg_class_alignment,

@@ -421,6 +421,8 @@ static arm_isa_t arm_isa_template = {
 		&arm_isa_if,           /* isa interface */
 		N_ARM_REGISTERS,
 		arm_registers,
+		N_ARM_CLASSES,
+		arm_reg_classes,
 		&arm_registers[REG_SP],  /* stack pointer */
 		&arm_registers[REG_R11], /* base pointer */
 		&arm_reg_classes[CLASS_arm_gp],  /* static link pointer class */
@@ -479,27 +481,6 @@ static void arm_done(void *self)
 
 	be_emit_exit();
 	free(self);
-}
-
-
-/**
- * Report the number of register classes.
- * If we don't have fp instructions, report only GP
- * here to speed up register allocation (and makes dumps
- * smaller and more readable).
- */
-static unsigned arm_get_n_reg_class(void)
-{
-	return N_ARM_CLASSES;
-}
-
-/**
- * Return the register class with requested index.
- */
-static const arch_register_class_t *arm_get_reg_class(unsigned i)
-{
-	assert(i < N_ARM_CLASSES);
-	return &arm_reg_classes[i];
 }
 
 /**
@@ -628,8 +609,6 @@ const arch_isa_if_t arm_isa_if = {
 	arm_init,
 	arm_done,
 	NULL,  /* handle_intrinsics */
-	arm_get_n_reg_class,
-	arm_get_reg_class,
 	arm_get_reg_class_for_mode,
 	NULL,
 	arm_get_reg_class_alignment,

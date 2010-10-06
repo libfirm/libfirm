@@ -803,12 +803,12 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 	int i, nregclasses;
 	(void) data;
 
-	nregclasses = arch_env_get_n_reg_class(arch_env);
+	nregclasses = arch_env->n_register_classes;
 	for (i = 0; i < nregclasses; ++i) {
 		ir_node *node;
 		int      idx, i2, n_regs;
 
-		regclass = arch_env_get_reg_class(arch_env, i);
+		regclass = &arch_env->register_classes[i];
 
 		assert(lv->nodes && "live sets must be computed");
 

@@ -143,6 +143,8 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		&TEMPLATE_isa_if,             /* isa interface implementation */
 		N_TEMPLATE_REGISTERS,
 		TEMPLATE_registers,
+		N_TEMPLATE_CLASSES,
+		TEMPLATE_reg_classes,
 		&TEMPLATE_registers[REG_SP],  /* stack pointer register */
 		&TEMPLATE_registers[REG_BP],  /* base pointer register */
 		&TEMPLATE_reg_classes[CLASS_TEMPLATE_gp],  /* link pointer register class */
@@ -193,20 +195,6 @@ static void TEMPLATE_done(void *self)
 	be_emit_exit();
 	free(self);
 }
-
-
-static unsigned TEMPLATE_get_n_reg_class(void)
-{
-	return N_TEMPLATE_CLASSES;
-}
-
-static const arch_register_class_t *TEMPLATE_get_reg_class(unsigned i)
-{
-	assert(i < N_TEMPLATE_CLASSES);
-	return &TEMPLATE_reg_classes[i];
-}
-
-
 
 /**
  * Get the register class which shall be used to store a value of a given mode.
@@ -415,8 +403,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
 	TEMPLATE_done,
 	NULL,                /* handle intrinsics */
-	TEMPLATE_get_n_reg_class,
-	TEMPLATE_get_reg_class,
 	TEMPLATE_get_reg_class_for_mode,
 	TEMPLATE_get_call_abi,
 	TEMPLATE_get_reg_class_alignment,

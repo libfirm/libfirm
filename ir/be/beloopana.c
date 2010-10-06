@@ -200,8 +200,8 @@ be_loopana_t *be_new_loop_pressure(ir_graph *irg,
 	if (cls != NULL) {
 		be_compute_loop_pressure(loop_ana, irg_loop, cls);
 	} else {
-		for (i = arch_env_get_n_reg_class(arch_env) - 1; i >= 0; --i) {
-			const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
+		for (i = arch_env->n_register_classes - 1; i >= 0; --i) {
+			const arch_register_class_t *cls = &arch_env->register_classes[i];
 			DBG((dbg, LEVEL_1, "\n=====================================================\n", cls->name));
 			DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
 			DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));

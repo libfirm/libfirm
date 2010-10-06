@@ -193,9 +193,9 @@ static void process_block(ir_node *block, void *data)
 	(void) data;
 
 	/* construct initial register assignment */
-	n_classes = arch_env_get_n_reg_class(arch_env);
+	n_classes = arch_env->n_register_classes;
 	for (i = 0; i < n_classes; ++i) {
-		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
+		const arch_register_class_t *cls    = &arch_env->register_classes[i];
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		memset(register_values[i], 0, sizeof(ir_node*) * n_regs);
 	}
@@ -427,10 +427,10 @@ void be_peephole_opt(ir_graph *irg)
 	arch_env = be_get_irg_arch_env(irg);
 	lv       = be_get_irg_liveness(irg);
 
-	n_classes = arch_env_get_n_reg_class(arch_env);
+	n_classes = arch_env->n_register_classes;
 	register_values = XMALLOCN(ir_node**, n_classes);
 	for (i = 0; i < n_classes; ++i) {
-		const arch_register_class_t *cls    = arch_env_get_reg_class(arch_env, i);
+		const arch_register_class_t *cls    = &arch_env->register_classes[i];
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		register_values[i] = XMALLOCN(ir_node*, n_regs);
 	}

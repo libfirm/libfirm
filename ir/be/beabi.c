@@ -516,9 +516,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* Put caller save into the destroyed set and state registers in the states
 	 * set */
-	for (i = 0, n = arch_env_get_n_reg_class(arch_env); i < n; ++i) {
+	for (i = 0, n = arch_env->n_register_classes; i < n; ++i) {
 		unsigned j;
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
+		const arch_register_class_t *cls = &arch_env->register_classes[i];
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
 
@@ -1830,8 +1830,8 @@ static void modify_irg(ir_graph *irg)
 	}
 
 	/* Collect all callee-save registers */
-	for (i = 0, n = arch_env_get_n_reg_class(arch_env); i < n; ++i) {
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
+	for (i = 0, n = arch_env->n_register_classes; i < n; ++i) {
+		const arch_register_class_t *cls = &arch_env->register_classes[i];
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = &cls->regs[j];
 			if (arch_register_type_is(reg, callee_save) ||
@@ -1993,10 +1993,10 @@ static void fix_call_state_inputs(ir_graph *irg)
 	arch_register_t **stateregs = NEW_ARR_F(arch_register_t*, 0);
 
 	/* Collect caller save registers */
-	n = arch_env_get_n_reg_class(arch_env);
+	n = arch_env->n_register_classes;
 	for (i = 0; i < n; ++i) {
 		unsigned j;
-		const arch_register_class_t *cls = arch_env_get_reg_class(arch_env, i);
+		const arch_register_class_t *cls = &arch_env->register_classes[i];
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
 			if (arch_register_type_is(reg, state)) {

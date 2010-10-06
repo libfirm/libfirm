@@ -424,10 +424,9 @@ static void be_ra_chordal_main(ir_graph *irg)
 	/* use one of the generic spiller */
 
 	/* Perform the following for each register class. */
-	for (j = 0, m = arch_env_get_n_reg_class(arch_env); j < m; ++j) {
+	for (j = 0, m = arch_env->n_register_classes; j < m; ++j) {
 		post_spill_env_t pse;
-		const arch_register_class_t *cls
-			= arch_env_get_reg_class(arch_env, j);
+		const arch_register_class_t *cls = &arch_env->register_classes[j];
 
 		if (arch_register_class_flags(cls) & arch_register_class_flag_manual_ra)
 			continue;

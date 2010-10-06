@@ -1446,6 +1446,8 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_isa_if,            /* isa interface implementation */
 		N_IA32_REGISTERS,
 		ia32_registers,
+		N_IA32_CLASSES,
+		ia32_reg_classes,
 		&ia32_registers[REG_ESP],  /* stack pointer register */
 		&ia32_registers[REG_EBP],  /* base pointer register */
 		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
@@ -1590,28 +1592,6 @@ static void ia32_done(void *self)
 	free(self);
 }
 
-
-/**
- * Return the number of register classes for this architecture.
- * We report always these:
- *  - the general purpose registers
- *  - the SSE floating point register set
- *  - the virtual floating point registers
- *  - the SSE vector register set
- */
-static unsigned ia32_get_n_reg_class(void)
-{
-	return N_IA32_CLASSES;
-}
-
-/**
- * Return the register class for index i.
- */
-static const arch_register_class_t *ia32_get_reg_class(unsigned i)
-{
-	assert(i < N_IA32_CLASSES);
-	return &ia32_reg_classes[i];
-}
 
 /**
  * Get the register class which shall be used to store a value of a given mode.
@@ -2214,8 +2194,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_init,
 	ia32_done,
 	ia32_handle_intrinsics,
-	ia32_get_n_reg_class,
-	ia32_get_reg_class,
 	ia32_get_reg_class_for_mode,
 	ia32_get_call_abi,
 	ia32_get_reg_class_alignment,
