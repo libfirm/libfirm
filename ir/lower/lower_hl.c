@@ -391,7 +391,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 		int shift_count_down  = bits - bf_bits;
 
 		if (shift_count_up) {
-			res = new_r_Shl(block, res,	new_Const_long(mode_Iu, shift_count_up), mode);
+			res = new_r_Shl(block, res, new_Const_long(mode_Iu, shift_count_up), mode);
 		}
 		if (shift_count_down) {
 			res = new_r_Shrs(block, res, new_Const_long(mode_Iu, shift_count_down), mode);
@@ -401,7 +401,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 		unsigned mask = ((unsigned)-1) >> (bits - bf_bits);
 
 		if (shift_count_down) {
-			res = new_r_Shr(block, res,	new_Const_long(mode_Iu, shift_count_down), mode);
+			res = new_r_Shr(block, res, new_Const_long(mode_Iu, shift_count_down), mode);
 		}
 		if (bits != bf_bits) {
 			res = new_r_And(block, res, new_Const_long(mode, mask), mode);

@@ -961,7 +961,7 @@ static char next_char(void)
 	return *lexer.curr_pos++;
 }  /* next_char */
 
-#define unput()		if (lexer.curr_pos < lexer.end_pos) --lexer.curr_pos
+#define unput()    if (lexer.curr_pos < lexer.end_pos) --lexer.curr_pos
 
 #undef MIN
 #define MIN(a, b) (a) < (b) ? (a) : (b)

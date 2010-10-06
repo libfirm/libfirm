@@ -61,7 +61,7 @@
 #endif
 
 
-#define EPSILON		     1e-5
+#define EPSILON          1e-5
 #define UNDEF(x)         (fabs(x) < EPSILON)
 #define SEIDEL_TOLERANCE 1e-7
 

@@ -61,7 +61,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 typedef struct be_abi_call_arg_t {
 	unsigned is_res   : 1;  /**< 1: the call argument is a return value. 0: it's a call parameter. */
 	unsigned in_reg   : 1;  /**< 1: this argument is transmitted in registers. */
-	unsigned on_stack : 1;	/**< 1: this argument is transmitted on the stack. */
+	unsigned on_stack : 1;  /**< 1: this argument is transmitted on the stack. */
 	unsigned callee   : 1;  /**< 1: someone called us. 0: We call another function */
 
 	int                    pos;
@@ -139,7 +139,7 @@ static int cmp_call_arg(const void *a, const void *b, size_t n)
  * @param call      the abi call
  * @param is_res    true for call results, false for call arguments
  * @param pos       position of the argument
- * @param callee	context type - if we are callee or caller
+ * @param callee    context type - if we are callee or caller
  */
 static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos, int callee)
 {

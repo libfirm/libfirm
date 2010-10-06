@@ -182,18 +182,20 @@ static void emit_nothing(const ir_node *node)
 static void emit_amd64_SymConst(const ir_node *irn)
 {
 	const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(irn);
-//	sym_or_tv_t key, *entry;
-//	unsigned label;
-//
-//	key.u.id     = get_entity_ld_ident(attr->entity);
-//	key.is_ident = 1;
-//	key.label    = 0;
-//	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
-//	if (entry->label == 0) {
-//		/* allocate a label */
-//		entry->label = get_unique_label();
-//	}
-//	label = entry->label;
+#if 0
+	sym_or_tv_t key, *entry;
+	unsigned label;
+
+	key.u.id     = get_entity_ld_ident(attr->entity);
+	key.is_ident = 1;
+	key.label    = 0;
+	entry = (sym_or_tv_t *)set_insert(sym_or_tv, &key, sizeof(key), HASH_PTR(key.u.generic));
+	if (entry->label == 0) {
+		/* allocate a label */
+		entry->label = get_unique_label();
+	}
+	label = entry->label;
+#endif
 
 	be_emit_cstring("\tmov $");
 	be_gas_emit_entity(attr->entity);

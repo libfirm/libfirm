@@ -58,7 +58,7 @@ typedef struct interval_t {
 
 #ifdef DEBUG_CONFIRM
 
-#define compare_iv(l_iv, r_iv, pnc)		compare_iv_dbg(l_iv, r_iv, pnc)
+#define compare_iv(l_iv, r_iv, pnc)    compare_iv_dbg(l_iv, r_iv, pnc)
 
 /* forward */
 static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc);

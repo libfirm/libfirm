@@ -698,7 +698,7 @@ void compute_doms(ir_graph *irg)
 			tmp_dom_info *u;
 
 			if (is_Bad(pred) || (get_Block_dom_pre_num (pred) == -1))
-				continue;	/* control-dead */
+				continue;    /* control-dead */
 
 			u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
 			if (u->semi < w->semi) w->semi = u->semi;
@@ -714,7 +714,7 @@ void compute_doms(ir_graph *irg)
 				tmp_dom_info *u;
 
 				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
-					continue;	/* control-dead */
+					continue;   /* control-dead */
 
 				u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
 				if (u->semi < w->semi) w->semi = u->semi;
@@ -840,7 +840,7 @@ void compute_postdoms(ir_graph *irg)
 			tmp_dom_info *u;
 
 			if (get_Block_postdom_pre_num (succ) == -1)
-				continue;	/* endless-loop */
+				continue;    /* endless-loop */
 
 			u = dom_eval (&tdi_list[get_Block_postdom_pre_num(succ)]);
 			if (u->semi < w->semi) w->semi = u->semi;

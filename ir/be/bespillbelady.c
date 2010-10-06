@@ -255,7 +255,7 @@ static inline ir_node *workset_get_val(const workset_t *workset, unsigned idx)
  * @p v  A variable to put the current value in
  * @p i  An integer for internal use
  */
-#define workset_foreach(ws, v, i)	\
+#define workset_foreach(ws, v, i) \
 	for (i=0; v=(i < ws->len) ? ws->vals[i].node : NULL, i < ws->len; ++i)
 
 typedef struct block_info_t {
@@ -542,7 +542,7 @@ static void decide_start_workset(const ir_node *block)
 	unsigned    i;
 	int         in;
 	unsigned    ws_count;
-	int	        free_slots, free_pressure_slots;
+	int         free_slots, free_pressure_slots;
 	unsigned    pressure;
 	int         arity;
 	workset_t **pred_worksets;

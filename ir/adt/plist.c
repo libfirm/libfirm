@@ -146,7 +146,7 @@ void plist_insert_before(plist_t *list, plist_element_t *element, void *value)
 		list->first_element = newElement;
 	}
 
- 	element->prev = newElement;
+	element->prev = newElement;
 	++list->element_count;
 }
 

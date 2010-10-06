@@ -68,7 +68,7 @@ typedef struct bl_info_t {
 	bitset_t *red_reachable;   /**< Holds all id's if blocks reachable
 								 in the CFG modulo back edges. */
 
-	bitset_t *be_tgt_reach;	   /**< target blocks of back edges whose
+	bitset_t *be_tgt_reach;    /**< target blocks of back edges whose
 								 sources are reachable from this block
 								 in the reduced graph. */
 } bl_info_t;

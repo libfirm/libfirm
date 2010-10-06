@@ -58,9 +58,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 #endif
 
 #undef IMAX
-#define IMAX(a,b)	((a) > (b) ? (a) : (b))
+#define IMAX(a,b)   ((a) > (b) ? (a) : (b))
 
-#define MAX_PROJ	IMAX(IMAX(pn_Load_max, pn_Store_max), pn_Call_max)
+#define MAX_PROJ    IMAX(IMAX(pn_Load_max, pn_Store_max), pn_Call_max)
 
 enum changes_t {
 	DF_CHANGED = 1,       /**< data flow changed */
@@ -319,7 +319,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			ir_node *l = get_Sub_left(ptr);
 			ir_node *r = get_Sub_right(ptr);
 
-			if (get_irn_mode(l) == get_irn_mode(ptr) &&	is_Const(r))
+			if (get_irn_mode(l) == get_irn_mode(ptr) && is_Const(r))
 				ptr = l;
 			else
 				return NULL;
@@ -1673,7 +1673,7 @@ static void do_load_store_optimize(ir_node *n, void *env)
 
 /** A scc. */
 typedef struct scc {
-	ir_node *head;		/**< the head of the list */
+	ir_node *head;      /**< the head of the list */
 } scc;
 
 /** A node entry. */

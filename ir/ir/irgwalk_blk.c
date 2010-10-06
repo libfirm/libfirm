@@ -267,11 +267,11 @@ static void traverse_dom_blocks_top_down(blk_collect_data_t* blks, irg_walk_func
 	ctx.env  = env;
 
 	if (pre != NULL && post != NULL)
-		dom_tree_walk_irg(current_ir_graph,	dom_block_visit_both, NULL, &ctx);
+		dom_tree_walk_irg(current_ir_graph, dom_block_visit_both, NULL, &ctx);
 	else if (pre != NULL)
-		dom_tree_walk_irg(current_ir_graph,	dom_block_visit_pre, NULL, &ctx);
+		dom_tree_walk_irg(current_ir_graph, dom_block_visit_pre, NULL, &ctx);
 	else if (post != NULL)
-		dom_tree_walk_irg(current_ir_graph,	dom_block_visit_post, NULL, &ctx);
+		dom_tree_walk_irg(current_ir_graph, dom_block_visit_post, NULL, &ctx);
 }
 
 /**

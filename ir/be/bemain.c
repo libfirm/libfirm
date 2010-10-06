@@ -251,11 +251,11 @@ asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 	}
 
 	if ((
-	    	flags & ASM_CONSTRAINT_FLAG_MODIFIER_WRITE &&
-	    	flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE
+	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_WRITE &&
+	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_WRITE
 	    ) || (
-	    	flags & ASM_CONSTRAINT_FLAG_MODIFIER_READ &&
-	    	flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ
+	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_READ &&
+	        flags & ASM_CONSTRAINT_FLAG_MODIFIER_NO_READ
 	    )) {
 		flags |= ASM_CONSTRAINT_FLAG_INVALID;
 	}

@@ -86,8 +86,8 @@ static void do_finalization(type_or_ent tore, void *env)
  */
 void types_calc_finalization(void)
 {
- 	if (! get_opt_closed_world())
- 		return;
+	if (! get_opt_closed_world())
+		return;
 
 	FIRM_DBG_REGISTER(dbg, "firm.tr.finalization");
 

@@ -191,7 +191,7 @@ static void add_constructor(ir_entity *method)
  * Generates a new irg which calls the initializer
  *
  * Pseudocode:
- *	 void __firmprof_initializer(void) { __init_firmprof(ent_filename, bblock_id, bblock_counts, n_blocks); }
+ *    void __firmprof_initializer(void) { __init_firmprof(ent_filename, bblock_id, bblock_counts, n_blocks); }
  */
 static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bblock_counts, int n_blocks)
 {
@@ -321,7 +321,7 @@ static void block_id_walker(ir_node *bb, void *data)
 	++wd->id;
 }
 
-#define IDENT(x)	new_id_from_chars(x, sizeof(x) - 1)
+#define IDENT(x)    new_id_from_chars(x, sizeof(x) - 1)
 
 ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 {

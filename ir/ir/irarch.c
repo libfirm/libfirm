@@ -407,12 +407,12 @@ static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, t
 	instruction *Ns;
 	unsigned t;
 
-	if (R[0] == 0) {					/* Case 1 */
+	if (R[0] == 0) {                    /* Case 1 */
 		t = R[1] > IMAX(env->max_S, R[1]);
 		R[1] -= t;
 		Ns = decompose_mul(env, &R[1], r - 1, N);
 		return emit_LEA(env, env->root, Ns, t);
-	} else if (R[0] <= env->max_S) {	/* Case 2 */
+	} else if (R[0] <= env->max_S) {    /* Case 2 */
 		t = R[0];
 		R[1] += t;
 		Ns = decompose_mul(env, &R[1], r - 1, N);

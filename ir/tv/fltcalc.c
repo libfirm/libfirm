@@ -99,7 +99,7 @@ typedef union {
 struct fp_value {
 	ieee_descriptor_t desc;
 	char sign;
-	char value[1];			/* exp[value_size] + mant[value_size] */
+	char value[1];        /* exp[value_size] + mant[value_size] */
 };
 
 #define _exp(a)  &((a)->value[0])

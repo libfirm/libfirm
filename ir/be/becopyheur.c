@@ -87,7 +87,7 @@ typedef struct qnode_t {
 	set              *changed_nodes;   /**< contains node_stat_t's. */
 } qnode_t;
 
-static pset *pinned_global;			/**< optimized nodes should not be altered any more */
+static pset *pinned_global;  /**< optimized nodes should not be altered any more */
 
 static inline int nodes_interfere(const be_chordal_env_t *env, const ir_node *a, const ir_node *b)
 {

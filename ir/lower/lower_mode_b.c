@@ -95,7 +95,7 @@ static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 	ir_graph *irg    = get_irn_irg(node);
 	ir_node  *one    = new_rd_Const(dbgi, irg, tv_one);
 
-	return new_rd_Eor(dbgi,	block, node, one, mode);
+	return new_rd_Eor(dbgi, block, node, one, mode);
 }
 
 static ir_node *create_convb(ir_node *node)

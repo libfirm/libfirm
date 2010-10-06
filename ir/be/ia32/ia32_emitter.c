@@ -1833,9 +1833,9 @@ static void ia32_register_emitters(void)
 #define IA32_EMIT2(a,b) op_ia32_##a->ops.generic = (op_func)emit_ia32_##b
 #define IA32_EMIT(a)    IA32_EMIT2(a,a)
 #define EMIT(a)         op_##a->ops.generic = (op_func)emit_##a
-#define IGN(a)			op_##a->ops.generic = (op_func)emit_Nothing
+#define IGN(a)          op_##a->ops.generic = (op_func)emit_Nothing
 #define BE_EMIT(a)      op_be_##a->ops.generic = (op_func)emit_be_##a
-#define BE_IGN(a)		op_be_##a->ops.generic = (op_func)emit_Nothing
+#define BE_IGN(a)       op_be_##a->ops.generic = (op_func)emit_Nothing
 
 	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();

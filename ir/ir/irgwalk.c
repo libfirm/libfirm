@@ -445,7 +445,7 @@ static void walk_initializer(ir_initializer_t *initializer, walk_env *env)
 {
 	switch (initializer->kind) {
     case IR_INITIALIZER_CONST:
-    	irg_walk(initializer->consti.value, env->pre, env->post, env->env);
+		irg_walk(initializer->consti.value, env->pre, env->post, env->env);
         return;
     case IR_INITIALIZER_TARVAL:
     case IR_INITIALIZER_NULL:

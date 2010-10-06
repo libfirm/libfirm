@@ -178,7 +178,7 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
 				}
 				assert(other_blk);
 
-			 	/*
+				/*
 				 * Note the special case here: if block is a then, there might be no else
 				 * block. In that case the other_block is the user_blk itself and pred_block
 				 * is the cond_block ...

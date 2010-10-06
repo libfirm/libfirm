@@ -86,7 +86,7 @@
 #define ENT_DFP_ABS  "C_ia32_dfp_abs"
 #define ENT_ULL_BIAS "C_ia32_ull_bias"
 
-#define mode_vfp	(ia32_reg_classes[CLASS_ia32_vfp].mode)
+#define mode_vfp    (ia32_reg_classes[CLASS_ia32_vfp].mode)
 #define mode_xmm    (ia32_reg_classes[CLASS_ia32_xmm].mode)
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -1178,7 +1178,7 @@ static ir_node *gen_unop(ir_node *node, ir_node *op, construct_unop_func *func,
 	return new_node;
 }
 
-static ir_node *create_lea_from_address(dbg_info *dbgi,	ir_node *block,
+static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
                                         ia32_address_t *addr)
 {
 	ir_node *base, *index, *res;
@@ -2700,7 +2700,7 @@ static ir_node *gen_Cond(ir_node *node)
 	ir_node  *block     = get_nodes_block(node);
 	ir_node  *new_block = be_transform_node(block);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node	 *sel       = get_Cond_selector(node);
+	ir_node  *sel       = get_Cond_selector(node);
 	ir_mode  *sel_mode  = get_irn_mode(sel);
 	ir_node  *flags     = NULL;
 	ir_node  *new_node;
@@ -4122,7 +4122,8 @@ static ir_node *gen_Bound(ir_node *node)
 		ir_node  *sub, *res, *flags, *block;
 
 		res = gen_binop(node, get_Bound_index(node), get_Bound_upper(node),
-			new_bd_ia32_Sub, match_mode_neutral	| match_am | match_immediate);
+		                new_bd_ia32_Sub,
+		                match_mode_neutral | match_am | match_immediate);
 
 		block = get_nodes_block(res);
 		if (! is_Proj(res)) {
@@ -4176,7 +4177,7 @@ static ir_node *gen_ia32_l_Add(ir_node *node)
 			match_mode_neutral);
 
 	if (is_Proj(lowered)) {
-		lowered	= get_Proj_pred(lowered);
+		lowered = get_Proj_pred(lowered);
 	} else {
 		assert(is_ia32_Add(lowered));
 		set_irn_mode(lowered, mode_T);
@@ -4228,7 +4229,7 @@ static ir_node *gen_ia32_l_Sub(ir_node *node)
 			match_am | match_immediate | match_mode_neutral);
 
 	if (is_Proj(lowered)) {
-		lowered	= get_Proj_pred(lowered);
+		lowered = get_Proj_pred(lowered);
 	} else {
 		assert(is_ia32_Sub(lowered));
 		set_irn_mode(lowered, mode_T);

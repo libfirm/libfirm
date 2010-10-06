@@ -2606,7 +2606,7 @@ restart:
 				return n;
 			} else if (right == b) {
 				if (mode != get_irn_mode(left)) {
- 					/* This Sub is an effective Cast */
+					/* This Sub is an effective Cast */
 					left = new_r_Conv(get_nodes_block(n), left, mode);
 				}
 				n = left;
@@ -2636,7 +2636,7 @@ restart:
 
 				n = new_r_Minus(get_nodes_block(n), left, l_mode);
 				if (mode != l_mode) {
- 					/* This Sub is an effective Cast */
+					/* This Sub is an effective Cast */
 					n = new_r_Conv(get_nodes_block(n), n, mode);
 				}
 				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
@@ -4427,7 +4427,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 			/*
 			 * UpConv(x) REL 0  ==> x REL 0
 			 * Don't do this for float values as it's unclear whether it is a
- 			 * win. (on the other side it makes detection/creation of fabs hard)
+			 * win. (on the other side it makes detection/creation of fabs hard)
 			 */
 			if (get_mode_size_bits(mode) > get_mode_size_bits(op_mode) &&
 			    ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) ||

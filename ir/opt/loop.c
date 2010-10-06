@@ -159,13 +159,13 @@ static void do_print_stats(void)
 
 /* Commandline parameters */
 typedef struct loop_opt_params_t {
-	unsigned max_loop_size;		/* Maximum number of nodes */
-	int      depth_adaption;	/* Loop nest depth adaption */
-	unsigned allowed_calls;		/* Number of calls allowed */
-	unsigned count_phi:1;		/* Count phi nodes */
-	unsigned count_proj:1;		/* Count projections */
+	unsigned max_loop_size;     /* Maximum number of nodes */
+	int      depth_adaption;    /* Loop nest depth adaption */
+	unsigned allowed_calls;     /* Number of calls allowed */
+	unsigned count_phi:1;       /* Count phi nodes */
+	unsigned count_proj:1;      /* Count projections */
 
-	unsigned max_cc_size;		/* Maximum condition chain size */
+	unsigned max_cc_size;       /* Maximum condition chain size */
 
 	unsigned allow_const_unrolling:1;
 	unsigned allow_invar_unrolling:1;
@@ -176,22 +176,22 @@ static loop_opt_params_t opt_params;
 
 /* Loop analysis informations */
 typedef struct loop_info_t {
-	unsigned nodes;			/* node count */
-	unsigned ld_st;			/* load and store nodes */
-	unsigned calls;			/* number of calls */
-	unsigned cf_outs;		/* number of cf edges which leave the loop */
-	entry_edge cf_out;		/* single loop leaving cf edge */
-	int be_src_pos;			/* position of the single own backedge in the head */
+	unsigned nodes;         /* node count */
+	unsigned ld_st;         /* load and store nodes */
+	unsigned calls;         /* number of calls */
+	unsigned cf_outs;       /* number of cf edges which leave the loop */
+	entry_edge cf_out;      /* single loop leaving cf edge */
+	int be_src_pos;         /* position of the single own backedge in the head */
 
 	/* for inversion */
-	unsigned cc_size;		/* nodes in the condition chain */
+	unsigned cc_size;       /* nodes in the condition chain */
 
 	/* for unrolling */
-	unsigned max_unroll;		/* Number of unrolls satisfying max_loop_size */
-	unsigned exit_cond;			/* 1 if condition==true exits the loop.  */
-	unsigned latest_value:1;	/* 1 if condition is checked against latest counter value */
-	unsigned needs_backedge:1;	/* 0 if loop is completely unrolled */
-	unsigned decreasing:1;		/* Step operation is_Sub, or step is<0 */
+	unsigned max_unroll;        /* Number of unrolls satisfying max_loop_size */
+	unsigned exit_cond;         /* 1 if condition==true exits the loop.  */
+	unsigned latest_value:1;    /* 1 if condition is checked against latest counter value */
+	unsigned needs_backedge:1;  /* 0 if loop is completely unrolled */
+	unsigned decreasing:1;      /* Step operation is_Sub, or step is<0 */
 
 	/* IV informations of a simple loop */
 	ir_node *start_val;
@@ -200,10 +200,10 @@ typedef struct loop_info_t {
 	ir_node *iteration_phi;
 	ir_node *add;
 
-	tarval *count_tar;					/* Number of loop iterations */
+	tarval *count_tar;                  /* Number of loop iterations */
 
-	ir_node *duff_cond;					/* Duff mod */
-	unrolling_kind_flag unroll_kind; 	/* constant or invariant unrolling */
+	ir_node *duff_cond;                 /* Duff mod */
+	unrolling_kind_flag unroll_kind;    /* constant or invariant unrolling */
 } loop_info_t;
 
 /* Information about the current loop */
@@ -664,7 +664,7 @@ static ir_node *copy_node(ir_node *node)
  * Order of ins is important for later usage.
  */
 static void copy_walk(ir_node *node, walker_condition *walk_condition,
-		ir_loop *set_loop)
+                      ir_loop *set_loop)
 {
 	int i;
 	int arity;
@@ -980,7 +980,7 @@ static unsigned find_condition_chain(ir_node *block)
 	 *   / A*  B           /    |
 	 *  / /\   /          ?     |
 	 *   /   C*      =>      D  |
-	 *	    /  D 	       Head |
+	 *      /  D           Head |
 	 *     /               A  \_|
 	 *                      C
 	 */
@@ -1018,10 +1018,10 @@ static void fix_copy_inversion(void)
 	ir_node **ins;
 	ir_node **phis;
 	ir_node *phi, *next;
-	ir_node *head_cp 	= get_inversion_copy(loop_head);
-	int arity 			= get_irn_arity(head_cp);
-	int backedges	 	= get_backedge_n(head_cp, 0);
-	int new_arity 		= arity - backedges;
+	ir_node *head_cp    = get_inversion_copy(loop_head);
+	int arity           = get_irn_arity(head_cp);
+	int backedges       = get_backedge_n(head_cp, 0);
+	int new_arity       = arity - backedges;
 	int pos;
 	int i;
 
@@ -1072,9 +1072,9 @@ static void fix_head_inversion(void)
 	ir_node **ins;
 	ir_node *phi, *next;
 	ir_node **phis;
-	int arity 			= get_irn_arity(loop_head);
-	int backedges	 	= get_backedge_n(loop_head, 0);
-	int new_arity 		= backedges;
+	int arity           = get_irn_arity(loop_head);
+	int backedges       = get_backedge_n(loop_head, 0);
+	int new_arity       = backedges;
 	int pos;
 	int i;
 
@@ -1522,14 +1522,15 @@ static ir_node *clone_phis_sans_bes(ir_node *node, ir_node *be_block)
 		if (! is_own_backedge(be_block, i)) {
 			ins[c] = get_irn_n(node, i);
 			++c;
-		}
-	/*	} else {
+#if 0
+		} else {
 			ir_node *pred = get_inr_n(node, i);
 			if (! is_in_loop(pred)) {
 				ins[c] = pred;
 				++c;
 			}
-		}*/
+#endif
+		}
 	}
 
 	return new_r_Phi(get_nodes_block(node), c, ins, get_irn_mode(node));
@@ -2033,10 +2034,10 @@ static unsigned are_mode_I(ir_node *n1, ir_node* n2, ir_node *n3)
 static unsigned get_unroll_decision_invariant(void)
 {
 
-	ir_node 	*projres, *loop_condition, *iteration_path;
-	unsigned 	success, is_latest_val;
-	tarval 		*start_tar, *step_tar;
-	ir_mode		*mode;
+	ir_node  *projres, *loop_condition, *iteration_path;
+	unsigned  success, is_latest_val;
+	tarval   *start_tar, *step_tar;
+	ir_mode  *mode;
 
 	/* RETURN if loop is not 'simple' */
 	projres = is_simple_loop();
@@ -2231,11 +2232,11 @@ static unsigned get_preferred_factor_constant(tarval *count_tar)
 /* TODO split. */
 static unsigned get_unroll_decision_constant(void)
 {
-	ir_node 	*projres, *loop_condition, *iteration_path;
-	unsigned 	success, is_latest_val;
-	tarval 		*start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
-	pn_Cmp		proj_proj, norm_proj;
-	ir_mode		*mode;
+	ir_node  *projres, *loop_condition, *iteration_path;
+	unsigned  success, is_latest_val;
+	tarval   *start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
+	pn_Cmp    proj_proj, norm_proj;
+	ir_mode  *mode;
 
 	/* RETURN if loop is not 'simple' */
 	projres = is_simple_loop();

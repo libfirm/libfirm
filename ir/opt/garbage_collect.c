@@ -177,7 +177,7 @@ void garbage_collect_entities(void)
 		if (entity_visited(entity))
 			continue;
 
-		DB((dbg, LEVEL_1, "  freeing method %+F\n",	entity));
+		DB((dbg, LEVEL_1, "  freeing method %+F\n", entity));
 		remove_irp_irg(irg);
 	}
 

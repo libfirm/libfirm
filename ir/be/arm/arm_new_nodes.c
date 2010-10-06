@@ -107,7 +107,7 @@ static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		fprintf(F, "%s", get_irn_opname(n));
 
 		if (arm_has_symconst_attr(n)) {
-			const arm_SymConst_attr_t *attr	= get_arm_SymConst_attr_const(n);
+			const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(n);
 			if (attr->entity != NULL) {
 				fputc(' ', F);
 				fputs(get_entity_name(attr->entity), F);
@@ -192,7 +192,7 @@ static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			fputc('\n', F);
 		}
 		if (arm_has_symconst_attr(n)) {
-			const arm_SymConst_attr_t *attr	= get_arm_SymConst_attr_const(n);
+			const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(n);
 
 			fprintf(F, "entity = ");
 			if (attr->entity != NULL) {

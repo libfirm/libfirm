@@ -58,7 +58,7 @@
 /* the unop index */
 #define UNOP_IDX 0
 
-#define MASK_TOS(x)		((x) & (N_x87_REGS - 1))
+#define MASK_TOS(x)    ((x) & (N_x87_REGS - 1))
 
 /** the debug handle */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -131,7 +131,7 @@ typedef struct blk_state {
 	x87_state *end;     /**< state at the end or NULL if not assigned */
 } blk_state;
 
-#define PTR_TO_BLKSTATE(p)	((blk_state *)(p))
+#define PTR_TO_BLKSTATE(p)    ((blk_state *)(p))
 
 /** liveness bitset for vfp registers. */
 typedef unsigned char vfp_liveness;
@@ -802,7 +802,7 @@ static vfp_liveness vfp_liveness_end_of_block(x87_simulator *sim, const ir_node 
 }  /* vfp_liveness_end_of_block */
 
 /** get the register mask from an arch_register */
-#define REGMASK(reg)	(1 << (arch_register_get_index(reg)))
+#define REGMASK(reg)    (1 << (arch_register_get_index(reg)))
 
 /**
  * Return a bitset of argument registers which are live at the end of a node.
@@ -1267,7 +1267,7 @@ static int sim_##op(x87_state *state, ir_node *n) { \
 }
 
 #define GEN_BINOP(op)   _GEN_BINOP(op, op)
-#define GEN_BINOPR(op)	_GEN_BINOP(op, op##r)
+#define GEN_BINOPR(op)  _GEN_BINOP(op, op##r)
 
 #define GEN_LOAD(op)                                              \
 static int sim_##op(x87_state *state, ir_node *n) {               \

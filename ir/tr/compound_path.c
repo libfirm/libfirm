@@ -369,7 +369,7 @@ unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *ent,
 	if (last_node == NULL)
 		return 0;
 
-  	return get_entity_offset_bits_remainder(last_node);
+	return get_entity_offset_bits_remainder(last_node);
 }
 
 int get_compound_ent_n_values(const ir_entity *ent)

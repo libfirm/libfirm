@@ -849,7 +849,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(n, i);
 		ASSERT_AND_RET(
-			is_Bad(pred) ||	(get_irn_mode(pred) == mode_X),
+			is_Bad(pred) || (get_irn_mode(pred) == mode_X),
 			"Block node must have a mode_X predecessor", 0);
 	}
 

@@ -713,14 +713,14 @@ static set *result_cache = NULL;
 
 /** An entry in the relation cache. */
 typedef struct mem_disambig_entry {
-	const ir_node	  *adr1;    /**< The first address. */
-	const ir_mode	  *mode1;   /**< The first address mode. */
-	const ir_node	  *adr2;    /**< The second address. */
-	const ir_mode	  *mode2;   /**< The second address mode. */
+	const ir_node     *adr1;    /**< The first address. */
+	const ir_mode     *mode1;   /**< The first address mode. */
+	const ir_node     *adr2;    /**< The second address. */
+	const ir_mode     *mode2;   /**< The second address mode. */
 	ir_alias_relation result;   /**< The alias relation result. */
 } mem_disambig_entry;
 
-#define HASH_ENTRY(adr1, adr2)	(HASH_PTR(adr1) ^ HASH_PTR(adr2))
+#define HASH_ENTRY(adr1, adr2)  (HASH_PTR(adr1) ^ HASH_PTR(adr2))
 
 /**
  * Compare two relation cache entries.

@@ -48,8 +48,8 @@
 #include "beirg.h"
 #include "bearch.h"
 
-#define DBG_COALESCING		1
-#define DBG_INTERFERENCES	2
+#define DBG_COALESCING      1
+#define DBG_INTERFERENCES   2
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 

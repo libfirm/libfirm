@@ -320,7 +320,7 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 /**
  * Kill the Barrier nodes for better peephole optimization.
  */
-static void	kill_barriers(ir_graph *irg)
+static void kill_barriers(ir_graph *irg)
 {
 	ir_node *end_blk = get_irg_end_block(irg);
 	ir_node *start_blk = get_irg_start_block(irg);

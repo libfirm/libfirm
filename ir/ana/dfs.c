@@ -222,7 +222,7 @@ static void dfs_dump_edge(const dfs_edge_t *edge, FILE *file)
 	const char *s, *style;
 	int weight;
 
-#define XXX(e)		case DFS_EDGE_ ## e: s = #e; break
+#define XXX(e)   case DFS_EDGE_ ## e: s = #e; break
 	switch (edge->kind) {
 		XXX(FWD);
 		XXX(CROSS);

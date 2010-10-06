@@ -1207,9 +1207,9 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 			if (vals[k].v.value != NULL) {
 				emit_atomic_init(env, vals[k].v.value);
 				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
-	 		} else {
-	 			elem_size = 0;
-	 		}
+			} else {
+				elem_size = 0;
+			}
 		} else if (vals[k].kind == TARVAL) {
 			tarval *tv   = vals[k].v.tarval;
 			size_t  size = get_mode_size_bytes(get_tarval_mode(tv));

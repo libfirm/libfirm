@@ -125,7 +125,7 @@ struct co2_irn_t {
 	co2_irn_t       *touched_next;
 	col_t            tmp_col;
 	col_t            orig_col;
-	int				 last_color_change;
+	int              last_color_change;
 	bitset_t        *adm_cache;
 	unsigned         fixed          : 1;
 	unsigned         tmp_fixed      : 1;
@@ -161,7 +161,7 @@ struct co2_cloud_t {
 	int               n_memb;
 	int               n_constr;
 	int               max_degree;
-	int			      ticks;
+	int               ticks;
 	double            freedom;
 	co2_cloud_irn_t  *master;
 	co2_cloud_irn_t  *mst_root;

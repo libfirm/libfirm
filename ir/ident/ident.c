@@ -81,7 +81,7 @@ int id_is_prefix(ident *prefix, ident *id)
 	size_t prefix_len = get_id_strlen(prefix);
 	if (prefix_len > get_id_strlen(id))
 		return 0;
-  	return 0 == memcmp(get_id_str(prefix), get_id_str(id), prefix_len);
+	return 0 == memcmp(get_id_str(prefix), get_id_str(id), prefix_len);
 }
 
 int id_is_suffix(ident *suffix, ident *id)

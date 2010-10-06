@@ -85,7 +85,7 @@ static int use_late_decision = false;
 typedef struct be_pbqp_alloc_env_t {
 	pbqp                        *pbqp_inst;         /**< PBQP instance for register allocation */
 	ir_graph                    *irg;               /**< The graph under examination. */
-	const arch_register_class_t *cls;				/**< Current processed register class */
+	const arch_register_class_t *cls;               /**< Current processed register class */
 	be_lv_t                     *lv;
 	bitset_t                    *ignored_regs;
 	pbqp_matrix                 *ife_matrix_template;
@@ -312,9 +312,9 @@ static void create_affinity_edges(ir_node *irn, void *env)
 
 static void create_pbqp_coloring_instance(ir_node *block, void *data)
 {
-	be_pbqp_alloc_env_t         *pbqp_alloc_env    	= data;
-	be_lv_t                     *lv                	= pbqp_alloc_env->lv;
-	const arch_register_class_t *cls               	= pbqp_alloc_env->cls;
+	be_pbqp_alloc_env_t         *pbqp_alloc_env     = data;
+	be_lv_t                     *lv                 = pbqp_alloc_env->lv;
+	const arch_register_class_t *cls                = pbqp_alloc_env->cls;
 	plist_t                     *rpeo               = pbqp_alloc_env->rpeo;
 	pbqp                        *pbqp_inst          = pbqp_alloc_env->pbqp_inst;
 	plist_t                     *temp_list          = plist_new();
@@ -325,9 +325,9 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 	int                         *assignment         = ALLOCAN(int, cls->n_regs);
 #else
 	unsigned                    *restr_nodes        = pbqp_alloc_env->restr_nodes;
-	pqueue_t                    *restr_nodes_queue 	= new_pqueue();
-	pqueue_t                    *queue             	= new_pqueue();
-	plist_t                     *sorted_list       	= plist_new();
+	pqueue_t                    *restr_nodes_queue  = new_pqueue();
+	pqueue_t                    *queue              = new_pqueue();
+	plist_t                     *sorted_list        = plist_new();
 	ir_node                     *last_element       = NULL;
 #endif
 
@@ -611,9 +611,9 @@ static void insert_perms(ir_node *block, void *data)
 	 * start handling constraints from there.
 	 */
 	for (irn = sched_first(block); !sched_is_end(irn);) {
-		int silent_old = silent;	/* store old silent value */
+		int silent_old = silent;    /* store old silent value */
 		if (be_is_Barrier(irn))
-			silent = !silent;		/* toggle silent flag */
+			silent = !silent;       /* toggle silent flag */
 
 		be_insn_t *insn = chordal_scan_insn(env, irn);
 		irn             = insn->next_insn;
@@ -663,7 +663,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 	/* initialize pbqp allocation data structure */
-	pbqp_alloc_env.pbqp_inst    = alloc_pbqp(get_irg_last_idx(irg));		/* initialize pbqp instance */
+	pbqp_alloc_env.pbqp_inst    = alloc_pbqp(get_irg_last_idx(irg));  /* initialize pbqp instance */
 	pbqp_alloc_env.cls          = cls;
 	pbqp_alloc_env.irg          = irg;
 	pbqp_alloc_env.lv           = lv;
@@ -672,7 +672,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	pbqp_alloc_env.restr_nodes  = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.ife_edge_num = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
 	pbqp_alloc_env.env          = env;
-	be_put_ignore_regs(irg, cls, pbqp_alloc_env.ignored_regs);				/* get ignored registers */
+	be_put_ignore_regs(irg, cls, pbqp_alloc_env.ignored_regs);        /* get ignored registers */
 
 
 	/* create costs matrix template for interference edges */
@@ -734,7 +734,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if PRINT_RPEO
 	plist_element_t *elements;
 	foreach_plist(pbqp_alloc_env.rpeo, elements) {
-		pbqp_node *node			   = elements->data;
+		pbqp_node *node = elements->data;
 		printf(" %d(%lu);", node->index, get_idx_irn(irg, node->index)->node_nr);
 	}
 	printf("\n");

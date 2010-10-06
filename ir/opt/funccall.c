@@ -394,7 +394,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 }  /* fix_nothrow_call_list */
 
 /* marking */
-#define SET_IRG_READY(irg)	rbitset_set(ready_set, get_irg_idx(irg))
+#define SET_IRG_READY(irg)  rbitset_set(ready_set, get_irg_idx(irg))
 #define IS_IRG_READY(irg)   rbitset_is_set(ready_set, get_irg_idx(irg))
 #define SET_IRG_BUSY(irg)   rbitset_set(busy_set, get_irg_idx(irg))
 #define CLEAR_IRG_BUSY(irg) rbitset_clear(busy_set, get_irg_idx(irg))

@@ -275,7 +275,7 @@ void _obstack_newchunk (h, length)
 {
   register struct _obstack_chunk *old_chunk = h->chunk;
   register struct _obstack_chunk *new_chunk;
-  register long	new_size;
+  register long new_size;
   register long obj_size = h->next_free - h->object_base;
   register long i;
   long already;
@@ -342,8 +342,8 @@ int _obstack_allocated_p (h, obj)
      struct obstack *h;
      POINTER obj;
 {
-  register struct _obstack_chunk *lp;	/* below addr of any objects in this chunk */
-  register struct _obstack_chunk *plp;	/* point to previous chunk if any */
+  register struct _obstack_chunk *lp;   /* below addr of any objects in this chunk */
+  register struct _obstack_chunk *plp;  /* point to previous chunk if any */
 
   lp = (h)->chunk;
   /* We use >= rather than > since the object cannot be exactly at
@@ -369,8 +369,8 @@ void _obstack_free (h, obj)
      struct obstack *h;
      POINTER obj;
 {
-  register struct _obstack_chunk *lp;	/* below addr of any objects in this chunk */
-  register struct _obstack_chunk *plp;	/* point to previous chunk if any */
+  register struct _obstack_chunk *lp;   /* below addr of any objects in this chunk */
+  register struct _obstack_chunk *plp;  /* point to previous chunk if any */
 
   lp = h->chunk;
   /* We use >= because there cannot be an object at the beginning of a chunk.
@@ -402,8 +402,8 @@ void obstack_free (h, obj)
      struct obstack *h;
      POINTER obj;
 {
-  register struct _obstack_chunk *lp;	/* below addr of any objects in this chunk */
-  register struct _obstack_chunk *plp;	/* point to previous chunk if any */
+  register struct _obstack_chunk *lp;   /* below addr of any objects in this chunk */
+  register struct _obstack_chunk *plp;  /* point to previous chunk if any */
 
   lp = h->chunk;
   /* We use >= because there cannot be an object at the beginning of a chunk.
@@ -582,4 +582,4 @@ POINTER (obstack_copy0) (obstack, pointer, length)
 
 #endif /* 0 */
 
-#endif	/* !ELIDE_CODE */
+#endif    /* !ELIDE_CODE */

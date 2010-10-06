@@ -48,8 +48,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 /* Make a fourcc for border checking. */
-#define BORDER_FOURCC				FOURCC('B', 'O', 'R', 'D')
-
+#define BORDER_FOURCC   FOURCC('B', 'O', 'R', 'D')
 
 int has_reg_class(const be_chordal_env_t *env, const ir_node *irn)
 {

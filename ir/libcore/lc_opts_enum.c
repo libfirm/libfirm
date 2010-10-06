@@ -25,13 +25,13 @@
 #include "lc_opts_t.h"
 #include "lc_opts_enum.h"
 
-static const char *delim			= " \t|,";
+static const char *delim = " \t|,";
 
 #define DECL_CB(N, op) \
 int lc_opt_enum_ ## N ## _cb(LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_t type), void *data, size_t len, ...) \
 { \
-	lc_opt_enum_ ## N ## _var_t *var						= data; \
-	const lc_opt_enum_ ## N ## _items_t *items	= var->items; \
+	lc_opt_enum_ ## N ## _var_t *var           = data; \
+	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
  \
 	va_list args; \
 	char *s, *tmp; \
@@ -77,9 +77,9 @@ DECL_CB(func_ptr, =)
 #define DECL_DUMP(T, N, cond) \
 int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_t type), void *data, LC_UNUSED(size_t len)) \
 { \
-	lc_opt_enum_ ## N ## _var_t *var						= data; \
-	const lc_opt_enum_ ## N ## _items_t *items	= var->items; \
-	const char *prefix								= "";			 \
+	lc_opt_enum_ ## N ## _var_t *var           = data;       \
+	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
+	const char *prefix                         = "";         \
 	TYPE(value) = *var->value; \
 	int i; \
 	size_t l = strlen(buf); \
@@ -109,9 +109,9 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name),
 #define DECL_DUMP_VALS(T, N) \
 int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_t type), void *data, LC_UNUSED(size_t len)) \
 { \
-	lc_opt_enum_ ## N ## _var_t *var						= data; \
-	const lc_opt_enum_ ## N ## _items_t *items	= var->items; \
-	const char *prefix								= "";			 \
+	lc_opt_enum_ ## N ## _var_t *var           = data;       \
+	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
+	const char *prefix                         = "";         \
 	int i; \
 	size_t l = strlen(buf); \
  \

@@ -225,7 +225,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
  * Adjusts the register allocation for the (new) phi-operands
  * and insert duplicates iff necessary.
  */
-static void	set_regs_or_place_dupls_walker(ir_node *bl, void *data)
+static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 {
 	be_chordal_env_t *chordal_env = data;
 	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);

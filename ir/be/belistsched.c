@@ -453,8 +453,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 		if (is_Phi(irn)) {
 			/*
-				Phi functions are scheduled immediately, since they	only
-				transfer data flow from the predecessors to this block.
+			   Phi functions are scheduled immediately, since they only
+			   transfer data flow from the predecessors to this block.
 			*/
 			add_to_sched(&be, irn);
 		} else if (be_is_Start(irn)) {

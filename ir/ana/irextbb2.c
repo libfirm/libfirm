@@ -122,7 +122,7 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
 	ir_node         *best_succ    = NULL;
 	double          best_execfreq = -1;
 
- 	/*
+	/*
 		More than two successors means we have a jump table.
 		we cannot include a jump target into the current extended
 		basic block, so create a new one here.
@@ -180,7 +180,7 @@ static void pick_successor(ir_node *block, ir_extblk *extblk, env_t *env)
  */
 void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs)
 {
-  	env_t     env;
+	env_t     env;
 	ir_extblk *extbb, *next;
 	ir_node   *endblock;
 

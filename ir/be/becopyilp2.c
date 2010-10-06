@@ -30,19 +30,19 @@
  *  - Clique-star constraints
  *
  *
- *	\min \sum_{ (i,j) \in Q }  w_ij y_ij
+ * \min \sum_{ (i,j) \in Q }  w_ij y_ij
  *
- *		\sum_c x_nc			=  1			n \in N, c \in C
+ *     \sum_c x_nc           =  1           n \in N, c \in C
  *
- *		x_nc				=  0			n \in N, c \not\in C(n)
+ *     x_nc                  =  0           n \in N, c \not\in C(n)
  *
- *		\sum x_nc			<= 1			x_nc \in Clique \in AllCliques,  c \in C
+ *     \sum x_nc            <=  1           x_nc \in Clique \in AllCliques,  c \in C
  *
- *		\sum_{e \in p} y_e	>= 1			p \in P		path constraints
+ *     \sum_{e \in p} y_e   >=  1           p \in P      path constraints
  *
- *		\sum_{e \in cs} y_e	>= |cs| - 1		cs \in CP	clique-star constraints
+ *     \sum_{e \in cs} y_e  >= |cs| - 1     cs \in CP    clique-star constraints
  *
- *		x_nc, y_ij \in N,   w_ij \in R^+
+ *     x_nc, y_ij \in N,   w_ij \in R^+
  */
 #include "config.h"
 

@@ -111,8 +111,8 @@ typedef struct loc_t {
 } loc_t;
 
 typedef struct workset_t {
-	int len;			/**< current length */
-	loc_t vals[0];		/**< inlined array of the values/distances in this working set */
+	int len;            /**< current length */
+	loc_t vals[0];      /**< inlined array of the values/distances in this working set */
 } workset_t;
 
 typedef struct belady_env_t {
@@ -126,12 +126,12 @@ typedef struct belady_env_t {
 
 	ir_node **blocks;            /**< Array of all blocks. */
 	int n_blocks;                /**< Number of blocks in the graph. */
-	int n_regs;			         /**< number of regs in this reg-class */
-	workset_t *ws;		         /**< the main workset used while processing a block. ob-allocated */
-	ir_node *instr;		         /**< current instruction */
+	int n_regs;                  /**< number of regs in this reg-class */
+	workset_t *ws;               /**< the main workset used while processing a block. ob-allocated */
+	ir_node *instr;              /**< current instruction */
 	int instr_nr;                /**< current instruction number (relative to block start) */
 
-	spill_env_t *senv;	         /**< see bespill.h */
+	spill_env_t *senv;           /**< see bespill.h */
 	bitset_t *spilled;           /**< bitset to keep all the irns which have already been spilled. */
 	ir_nodeset_t *extra_spilled; /** All nodes for which a special spill location has been computed. */
 } belady_env_t;
@@ -255,7 +255,7 @@ static inline int workset_get_index(const workset_t *ws, const ir_node *val)
  * @p v  A variable to put the current value in
  * @p i  An integer for internal use
  */
-#define workset_foreach(ws, v, i)	for (i=0; \
+#define workset_foreach(ws, v, i)  for (i=0; \
 										v=(i < ws->len) ? ws->vals[i].irn : NULL, i < ws->len; \
 										++i)
 
@@ -367,7 +367,7 @@ static void build_next_uses(block_info_t *bi)
 	}
 }
 
-#define get_current_use(bi, irn) 	 phase_get_irn_data(&(bi)->next_uses, (irn))
+#define get_current_use(bi, irn)    phase_get_irn_data(&(bi)->next_uses, (irn))
 
 static inline void advance_current_use(block_info_t *bi, const ir_node *irn)
 {

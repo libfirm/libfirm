@@ -292,15 +292,11 @@ ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg, tarval *con, ir_type *tp
 ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con)
 {
 	ir_node  *res;
-//#ifdef USE_ORIGINAL
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
 	res = new_bd_Const_type(db, con, firm_unknown_type);
 	current_ir_graph = rem;
-//#else
-//	res = new_rd_Const_type(db, irg, con, firm_unknown_type);
-//#endif
 
 	return res;
 }  /* new_rd_Const */
@@ -566,7 +562,7 @@ static inline ir_node *new_rd_Phi_in(ir_graph *irg, ir_node *block,
 	   is not needed.
 	   Note: We MUST consider Bad nodes, else we might get data flow cycles in dead loops! */
 	known = res;
-	for (i = ins - 1; i >= 0; --i) 	{
+	for (i = ins - 1; i >= 0; --i) {
 		assert(in[i]);
 
 		in[i] = skip_Id(in[i]);  /* increases the number of freed Phis. */

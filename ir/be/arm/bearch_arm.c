@@ -578,7 +578,7 @@ static const backend_params *arm_get_libfirm_params(void)
 {
 	static ir_settings_arch_dep_t ad = {
 		1,    /* allow subs */
-		1,	  /* Muls are fast enough on ARM but ... */
+		1,    /* Muls are fast enough on ARM but ... */
 		31,   /* ... one shift would be possible better */
 		NULL, /* no evaluator function */
 		0,    /* SMUL is needed, only in Arch M */

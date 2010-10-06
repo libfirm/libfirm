@@ -21,7 +21,7 @@
  * @file
  * @brief       implementation of the spill/reload placement abstraction layer
  * @author      Daniel Grund, Sebastian Hack, Matthias Braun
- * @date		29.09.2005
+ * @date        29.09.2005
  * @version     $Id$
  */
 #include "config.h"
@@ -152,7 +152,7 @@ spill_env_t *be_new_spill_env(ir_graph *irg)
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 
 	spill_env_t *env = XMALLOC(spill_env_t);
-	env->spills			= new_set(cmp_spillinfo, 1024);
+	env->spills         = new_set(cmp_spillinfo, 1024);
 	env->irg            = irg;
 	env->arch_env       = arch_env;
 	ir_nodeset_init(&env->mem_phis);
@@ -358,7 +358,7 @@ void be_add_reload_at_end(spill_env_t *env, ir_node *to_spill,
 }
 
 void be_add_reload_on_edge(spill_env_t *env, ir_node *to_spill, ir_node *block,
-                           int pos,	const arch_register_class_t *reload_cls,
+                           int pos, const arch_register_class_t *reload_cls,
                            int allow_remat)
 {
 	ir_node *before = get_block_insertion_point(block, pos);

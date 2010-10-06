@@ -51,7 +51,7 @@ typedef struct walk_env {
 static ir_mode *get_ir_mode(unsigned bytes)
 {
 	switch (bytes) {
-	case 1:	 return mode_Bu;
+	case 1:  return mode_Bu;
 	case 2:  return mode_Hu;
 	case 4:  return mode_Iu;
 	case 8:  return mode_Lu;

@@ -34,7 +34,7 @@
 
 
 struct pmap {
-  	int dummy; /* dummy entry */
+	int dummy; /* dummy entry */
 };
 
 
@@ -58,7 +58,7 @@ static int pmap_entry_cmp(const void *p1, const void *p2, size_t size)
 /* Creates a new empty map with an initial number of slots. */
 pmap *pmap_create_ex(int slots)
 {
-  	return (pmap *)new_set(pmap_entry_cmp, slots);
+	return (pmap *)new_set(pmap_entry_cmp, slots);
 }
 
 pmap *pmap_create(void)

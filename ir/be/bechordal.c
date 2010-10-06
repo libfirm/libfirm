@@ -77,9 +77,9 @@ typedef struct be_chordal_alloc_env_t {
 	be_chordal_env_t *chordal_env;
 
 	pset *pre_colored;     /**< Set of precolored nodes. */
-	bitset_t *live;		   /**< A liveness bitset. */
+	bitset_t *live;        /**< A liveness bitset. */
 	bitset_t *tmp_colors;  /**< An auxiliary bitset which is as long as the number of colors in the class. */
-	bitset_t *colors;	   /**< The color mask. */
+	bitset_t *colors;      /**< The color mask. */
 	bitset_t *in_colors;   /**< Colors used by live in values. */
 	int colors_n;          /**< The number of colors. */
 } be_chordal_alloc_env_t;

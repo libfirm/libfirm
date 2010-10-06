@@ -1275,8 +1275,6 @@ int shape_blocks(ir_graph *irg)
 
 		/* Calls might be removed. */
 		set_trouts_inconsistent();
-
-	//	dump_ir_block_graph(irg, "-after");
 	}
 
 	for (bl = env.all_blocks; bl != NULL; bl = bl->all_next) {

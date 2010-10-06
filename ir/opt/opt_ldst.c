@@ -158,7 +158,8 @@ static void dump_block_list(ldst_env *env)
 		for (op = entry->memop_forward; op != NULL; op = op->next) {
 			if (i == 0) {
 				DB((dbg, LEVEL_2, "\n\t"));
-			}			DB((dbg, LEVEL_2, "%+F", op->node));
+			}
+			DB((dbg, LEVEL_2, "%+F", op->node));
 			if ((op->flags & FLAG_KILL_ALL) == FLAG_KILL_ALL)
 				DB((dbg, LEVEL_2, "X"));
 			else if (op->flags & FLAG_KILL_ALL)
@@ -609,7 +610,7 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 			ir_node *l = get_Sub_left(ptr);
 			ir_node *r = get_Sub_right(ptr);
 
-			if (get_irn_mode(l) == get_irn_mode(ptr) &&	is_Const(r))
+			if (get_irn_mode(l) == get_irn_mode(ptr) && is_Const(r))
 				ptr = l;
 			else
 				return NULL;
@@ -2308,14 +2309,11 @@ int opt_ldst(ir_graph *irg)
 	current_ir_graph = irg;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldst");
-//	firm_dbg_set_mask(dbg, -1);
 
 	DB((dbg, LEVEL_1, "\nDoing Load/Store optimization on %+F\n", irg));
 
 	/* we need landing pads */
 	remove_critical_cf_edges(irg);
-
-//	dump_ir_block_graph(irg, "-XXX");
 
 	if (get_opt_alias_analysis()) {
 		assure_irg_entity_usage_computed(irg);
@@ -2417,7 +2415,6 @@ int opt_ldst(ir_graph *irg)
 		memset(bl->id_2_memop_antic, 0, env.rbs_size * sizeof(bl->id_2_memop_antic[0]));
 	}
 
-//	dump_block_list(&env);
 	(void) dump_block_list;
 
 	calcAvail();
@@ -2441,8 +2438,6 @@ end:
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
 	ir_nodemap_destroy(&env.adr_map);
 	obstack_free(&env.obst, NULL);
-
-//	dump_ir_block_graph(irg, "-YYY");
 
 #ifdef DEBUG_libfirm
 	DEL_ARR_F(env.id_2_address);

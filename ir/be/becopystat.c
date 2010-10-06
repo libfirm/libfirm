@@ -61,23 +61,23 @@ enum vals_t {
 	I_BLOCKS,
 
 	/* phi nodes */
-	I_PHI_CNT,			/* number of phi nodes */
-	I_PHI_ARG_CNT,		/* number of arguments of phis */
-	I_PHI_ARG_SELF,		/* number of arguments of phis being the phi itself */
-	I_PHI_ARG_CONST,	/* number of arguments of phis being consts */
-	I_PHI_ARG_PRED,		/* ... being defined in a cf-pred */
-	I_PHI_ARG_GLOB,		/* ... being defined elsewhere */
+	I_PHI_CNT,          /* number of phi nodes */
+	I_PHI_ARG_CNT,      /* number of arguments of phis */
+	I_PHI_ARG_SELF,     /* number of arguments of phis being the phi itself */
+	I_PHI_ARG_CONST,    /* number of arguments of phis being consts */
+	I_PHI_ARG_PRED,     /* ... being defined in a cf-pred */
+	I_PHI_ARG_GLOB,     /* ... being defined elsewhere */
 	I_PHI_ARITY_S,
 	I_PHI_ARITY_E    = I_PHI_ARITY_S+MAX_ARITY,
 
 	/* copy nodes */
-	I_CPY_CNT,			/* number of copynodes */
+	I_CPY_CNT,          /* number of copynodes */
 
 	/* phi classes */
-	I_CLS_CNT,			/* number of phi classes */
-	I_CLS_IF_FREE,		/* number of pc having no interference */
-	I_CLS_IF_MAX,		/* number of possible interferences in all classes */
-	I_CLS_IF_CNT,		/* number of actual interferences in all classes */
+	I_CLS_CNT,          /* number of phi classes */
+	I_CLS_IF_FREE,      /* number of pc having no interference */
+	I_CLS_IF_MAX,       /* number of possible interferences in all classes */
+	I_CLS_IF_CNT,       /* number of actual interferences in all classes */
 	I_CLS_SIZE_S,
 	I_CLS_SIZE_E = I_CLS_SIZE_S+MAX_CLS_SIZE,
 	I_CLS_PHIS_S,
@@ -87,20 +87,20 @@ enum vals_t {
 	/* all of them are external set */
 
 	/* ilp values */
-	I_HEUR_TIME,		/* solving time in milli seconds */
-	I_ILP_TIME,			/* solving time in milli seconds */
+	I_HEUR_TIME,        /* solving time in milli seconds */
+	I_ILP_TIME,         /* solving time in milli seconds */
 	I_ILP_VARS,
 	I_ILP_CSTR,
-	I_ILP_ITER,			/* number of simplex iterations */
+	I_ILP_ITER,         /* number of simplex iterations */
 
 	/* copy instructions */
-	I_COPIES_MAX,		/* max possible costs of copies*/
-	I_COPIES_INIT,		/* number of copies in initial allocation */
-	I_COPIES_HEUR,		/* number of copies after heuristic */
-	I_COPIES_5SEC,		/* number of copies after ilp with max n sec */
-	I_COPIES_30SEC,		/* number of copies after ilp with max n sec */
-	I_COPIES_OPT,		/* number of copies after ilp */
-	I_COPIES_IF,		/* number of copies inevitable due to root-arg-interf */
+	I_COPIES_MAX,       /* max possible costs of copies*/
+	I_COPIES_INIT,      /* number of copies in initial allocation */
+	I_COPIES_HEUR,      /* number of copies after heuristic */
+	I_COPIES_5SEC,      /* number of copies after ilp with max n sec */
+	I_COPIES_30SEC,     /* number of copies after ilp with max n sec */
+	I_COPIES_OPT,       /* number of copies after ilp */
+	I_COPIES_IF,        /* number of copies inevitable due to root-arg-interf */
 
 	ASIZE
 };
@@ -138,7 +138,7 @@ void be_quit_copystat(void)
 
 /**
  * @return 1 if the block at pos @p pos removed a critical edge
- * 		   0 else
+ *         0 else
  */
 static inline int was_edge_critical(const ir_node *bl, int pos)
 {

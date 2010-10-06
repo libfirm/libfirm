@@ -1259,7 +1259,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 	if (old_info->out_infos != NULL) {
 		unsigned n_outs = ARR_LEN(old_info->out_infos);
 		/* need dyanmic out infos? */
-		if (be_is_Barrier(new_node)	|| be_is_Perm(new_node)) {
+		if (be_is_Barrier(new_node) || be_is_Perm(new_node)) {
 			new_info->out_infos = NEW_ARR_F(reg_out_info_t, n_outs);
 		} else {
 			new_info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outs);

@@ -58,7 +58,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /** A scc. */
 typedef struct scc {
-	ir_node  *head;		/**< the head of the list */
+	ir_node  *head;     /**< the head of the list */
 	tarval   *init;     /**< the init value iff only one exists. */
 	tarval   *incr;     /**< the induction variable increment if only a single const exists. */
 	unsigned code;      /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not analysed, iro_Bad else */
@@ -164,7 +164,6 @@ static void LFTR_add(ir_node *src, ir_node *dst, ir_opcode code, ir_node *rc, iv
 	 * There might be more than one edge here. This is rather bad
 	 * because we currently store only one.
 	 */
-//	assert(LFTR_find(src, env) == NULL);
 	set_insert(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
 }  /* LFTR_add */
 

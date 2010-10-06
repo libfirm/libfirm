@@ -502,8 +502,8 @@ static int ia32_get_op_estimated_cost(const ir_node *irn)
 			cycles.
 		*/
 		if (is_ia32_use_frame(irn) || (
-		    	is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_base)) &&
-		    	is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index))
+		    is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_base)) &&
+		    is_ia32_NoReg_GP(get_irn_n(irn, n_ia32_index))
 		    )) {
 			cost += 5;
 		} else {

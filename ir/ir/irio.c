@@ -674,8 +674,8 @@ static void export_node(ir_node *irn, void *ctx)
 
 	fprintf(env->file, "] { ");
 
-	switch (opcode)	{
-	#include "gen_irio_export.inl"
+	switch (opcode) {
+#include "gen_irio_export.inl"
 	}
 	fputs("}\n", env->file);
 }

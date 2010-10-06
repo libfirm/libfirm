@@ -54,7 +54,7 @@ typedef pset pset_pattern_entry_t;
 typedef unsigned char BYTE;
 
 /** Maximum size of the pattern store. */
-#define PATTERN_STORE_SIZE	2048
+#define PATTERN_STORE_SIZE    2048
 
 
 /**

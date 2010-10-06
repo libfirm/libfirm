@@ -209,9 +209,9 @@ void be_emit_code(FILE *output, const binary_emiter_interface_t *interface)
 	    assert(fragment->offset >= offset);
 	    nops = fragment->offset - offset;
 	    if (nops > 0) {
-	    	unsigned char *nopbuffer = obstack_alloc(&code_fragment_obst, nops);
-	    	interface->create_nops(nopbuffer, nops);
-	    	emit(output, nopbuffer, nops);
+			unsigned char *nopbuffer = obstack_alloc(&code_fragment_obst, nops);
+			interface->create_nops(nopbuffer, nops);
+			emit(output, nopbuffer, nops);
 			offset = fragment->offset;
 			obstack_free(&code_fragment_obst, nopbuffer);
 		}

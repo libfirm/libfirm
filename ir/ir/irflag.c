@@ -35,8 +35,8 @@
 
 /* DISABLE - don't do this optimization
    ENABLE  - lets see, if there is a better graph */
-#define ON	(-1)
-#define OFF  (0)
+#define ON   -1
+#define OFF   0
 
 #define FLAG(name, value, def)     (irf_##name & def) |
 #define E_FLAG(name, value, def)    FLAG(name, value, def)

@@ -58,8 +58,8 @@
 
 #define OPT_DELIM '-'
 
-#define HELP_TEMPL		"%-15s %-10s %-45s"
-#define HELP_TEMPL_VALS	HELP_TEMPL " [%s] (%s)"
+#define HELP_TEMPL         "%-15s %-10s %-45s"
+#define HELP_TEMPL_VALS    HELP_TEMPL " [%s] (%s)"
 
 static struct obstack obst;
 
@@ -154,12 +154,12 @@ static lc_opt_entry_t *init_opt(lc_opt_entry_t *ent,
 	set_error(err, lc_opt_err_none, "");
 	list_add_tail(&ent->list, &lc_get_grp_special(ent->parent)->opts);
 
-	s->type		 = type;
-	s->value	 = val;
-	s->cb		 = cb;
+	s->type      = type;
+	s->value     = val;
+	s->cb        = cb;
 	s->dump      = dump;
 	s->dump_vals = dump_vals;
-	s->length	 = length;
+	s->length    = length;
 
 	return ent;
 }
@@ -740,8 +740,8 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 		 * from a file.
 		 */
 		if (arg[0] == '@') {
-			size_t n		= strcspn(&arg[1], " \t\n");
-			char *fname		= alloca(n + 1);
+			size_t n    = strcspn(&arg[1], " \t\n");
+			char *fname = alloca(n + 1);
 			FILE *f;
 
 			strncpy(fname, &arg[1], n);
@@ -845,8 +845,8 @@ static int opt_arg_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_
 	char buf[256];
 
 	lc_opt_entry_t *opt = arg->v_ptr;
-	const char *s		= buf;
-	size_t res			= 0;
+	const char     *s   = buf;
+	size_t          res = 0;
 
 	switch (occ->conversion) {
 	case 'V':

@@ -2000,7 +2000,7 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 		}  /* if */
 	}  /* for */
 
-	if (results) {		/* there are results */
+	if (results) {    /* there are results */
 		int rem = get_optimize();
 
 		/* switch off optimization for new Proj nodes or they might be CSE'ed

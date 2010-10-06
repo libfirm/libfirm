@@ -75,7 +75,7 @@ typedef enum blocksched_algos_t {
 static int algo = BLOCKSCHED_GREEDY;
 
 static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
-	{ "naiv",	BLOCKSCHED_NAIV },
+	{ "naiv",   BLOCKSCHED_NAIV },
 	{ "greedy", BLOCKSCHED_GREEDY },
 #ifdef WITH_ILP
 	{ "ilp",    BLOCKSCHED_ILP },

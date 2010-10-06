@@ -368,7 +368,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 			int pos      = get_edge_src_pos(edge);
 			ir_node *def;
 
-			if (env->ignore_uses != NULL	&&
+			if (env->ignore_uses != NULL &&
 			   ir_nodeset_contains(env->ignore_uses, use))
 				continue;
 			if (is_Anchor(use) || is_End(use))

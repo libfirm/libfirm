@@ -274,11 +274,11 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
  */
 static void post_spill(post_spill_env_t *pse, int iteration)
 {
-	be_chordal_env_t    *chordal_env = &pse->cenv;
-	ir_graph            *irg         = pse->irg;
-	ir_exec_freq        *exec_freq   = be_get_irg_exec_freq(irg);
-	int                  colors_n    = arch_register_class_n_regs(chordal_env->cls);
-	int             allocatable_regs
+	be_chordal_env_t *chordal_env = &pse->cenv;
+	ir_graph         *irg         = pse->irg;
+	ir_exec_freq     *exec_freq   = be_get_irg_exec_freq(irg);
+	int               colors_n    = arch_register_class_n_regs(chordal_env->cls);
+	int               allocatable_regs
 		= colors_n - be_put_ignore_regs(irg, chordal_env->cls, NULL);
 
 	/* some special classes contain only ignore regs, no work to be done */

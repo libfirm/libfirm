@@ -326,7 +326,7 @@ static inline void mark_live_end(be_lv_t *lv, ir_node *block, ir_node *irn)
 
 static struct {
 	be_lv_t  *lv;         /**< The liveness object. */
-	ir_node  *def;	      /**< The node (value). */
+	ir_node  *def;        /**< The node (value). */
 	ir_node  *def_block;  /**< The block of def. */
 	bitset_t *visited;    /**< A set were all visited blocks are recorded. */
 } re;

@@ -461,7 +461,7 @@ static ir_node *get_end_of_block_insertion_point(ir_node *block)
 	if (!is_cfop(last)) {
 		last = sched_next(last);
 		/* last node must be a cfop, only exception is the start block */
-		assert(last	== get_irg_start_block(get_irn_irg(block)));
+		assert(last == get_irg_start_block(get_irn_irg(block)));
 	}
 
 	return last;
@@ -507,7 +507,7 @@ static void fix_block_borders(ir_node *block, void *data)
 		     pred_info->end_state, need_state));
 
 		if (pred_info->end_state != need_state) {
-			ir_node *insert_point =	get_end_of_block_insertion_point(pred);
+			ir_node *insert_point = get_end_of_block_insertion_point(pred);
 
 
 			DBG((dbg, LEVEL_3, "  Creating reload for %+F\n", need_state));

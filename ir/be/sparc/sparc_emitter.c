@@ -1038,7 +1038,7 @@ static void sparc_emit_node(const ir_node *node)
 		be_dbg_set_dbg_info(get_irn_dbg_info(node));
 		(*func) (node);
 	} else {
-		panic("No emit handler for node %+F (graph %+F)\n",	node,
+		panic("No emit handler for node %+F (graph %+F)\n", node,
 		      current_ir_graph);
 	}
 }

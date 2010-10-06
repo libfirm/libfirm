@@ -81,7 +81,7 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr)
 		for (i = 0; i < n_keep; ++i) {
 			marked[i] = keep_arr[i];
 			set_entity_link(marked[i], MARK);
-			DB((dbg, LEVEL_1, "  method %+F kept alive.\n",	marked[i]));
+			DB((dbg, LEVEL_1, "  method %+F kept alive.\n", marked[i]));
 		}
 
 		for (i = 0; i < ARR_LEN(marked); ++i) {
@@ -127,7 +127,7 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr)
 		if (get_entity_link(ent) == MARK)
 			continue;
 
-		DB((dbg, LEVEL_1, "  freeing method %+F\n",	ent));
+		DB((dbg, LEVEL_1, "  freeing method %+F\n", ent));
 		remove_irp_irg(irg);
 
 		free_entity(ent);

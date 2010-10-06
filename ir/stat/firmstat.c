@@ -83,13 +83,13 @@ static ir_op _op_SelSelSel;
 /* ---------------------------------------------------------------------------------- */
 
 /** Marks the begin of a statistic (hook) function. */
-#define STAT_ENTER		++status->recursive
+#define STAT_ENTER    ++status->recursive
 
 /** Marks the end of a statistic (hook) functions. */
-#define STAT_LEAVE		--status->recursive
+#define STAT_LEAVE    --status->recursive
 
 /** Allows to enter a statistic function only when we are not already in a hook. */
-#define STAT_ENTER_SINGLE	do { if (status->recursive > 0) return; ++status->recursive; } while (0)
+#define STAT_ENTER_SINGLE    do { if (status->recursive > 0) return; ++status->recursive; } while (0)
 
 /**
  * global status
@@ -648,7 +648,7 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 			ir_node *other_block = get_nodes_block(pred);
 			block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
-			cnt_inc(&b_entry->cnt[bcnt_in_edges]);	/* an edge coming from another block */
+			cnt_inc(&b_entry->cnt[bcnt_in_edges]);  /* an edge coming from another block */
 			cnt_inc(&b_entry_other->cnt[bcnt_out_edges]);
 		}  /* for */
 		return;
@@ -678,11 +678,11 @@ static void undate_block_info(ir_node *node, graph_entry_t *graph)
 		other_block = get_nodes_block(pred);
 
 		if (other_block == block)
-			cnt_inc(&b_entry->cnt[bcnt_edges]);	/* a in block edge */
+			cnt_inc(&b_entry->cnt[bcnt_edges]); /* a in block edge */
 		else {
 			block_entry_t *b_entry_other = block_get_entry(&graph->recalc_cnts, get_irn_node_nr(other_block), graph->block_hash);
 
-			cnt_inc(&b_entry->cnt[bcnt_in_edges]);	/* an edge coming from another block */
+			cnt_inc(&b_entry->cnt[bcnt_in_edges]);  /* an edge coming from another block */
 			cnt_inc(&b_entry_other->cnt[bcnt_out_edges]);
 		}  /* if */
 	}  /* for */
@@ -712,7 +712,7 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 			if (extbb != other_extbb) {
 				extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
 
-				cnt_inc(&eb_entry->cnt[bcnt_in_edges]);	/* an edge coming from another extbb */
+				cnt_inc(&eb_entry->cnt[bcnt_in_edges]); /* an edge coming from another extbb */
 				cnt_inc(&eb_entry_other->cnt[bcnt_out_edges]);
 			}  /* if */
 		}  /* for */
@@ -741,11 +741,11 @@ static void update_extbb_info(ir_node *node, graph_entry_t *graph)
 		ir_extblk *other_extbb = get_nodes_extbb(pred);
 
 		if (other_extbb == extbb)
-			cnt_inc(&eb_entry->cnt[bcnt_edges]);	/* a in extbb edge */
+			cnt_inc(&eb_entry->cnt[bcnt_edges]);    /* a in extbb edge */
 		else {
 			extbb_entry_t *eb_entry_other = block_get_entry(&graph->recalc_cnts, get_extbb_node_nr(other_extbb), graph->extbb_hash);
 
-			cnt_inc(&eb_entry->cnt[bcnt_in_edges]);	/* an edge coming from another extbb */
+			cnt_inc(&eb_entry->cnt[bcnt_in_edges]); /* an edge coming from another extbb */
 			cnt_inc(&eb_entry_other->cnt[bcnt_out_edges]);
 		}  /* if */
 	}  /* for */
@@ -962,7 +962,7 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 				}  /* if */
 				/* other parameter */
 				cnt_inc(&graph->cnt[gcnt_param_adr]);
-end_parameter:	;
+end_parameter: ;
 			} else {
 				/* unknown Pointer access */
 				cnt_inc(&graph->cnt[gcnt_other_adr]);

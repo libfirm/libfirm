@@ -388,7 +388,7 @@ static void peephole_ia32_Return(ir_node *node)
 }
 
 /* only optimize up to 48 stores behind IncSPs */
-#define MAXPUSH_OPTIMIZE	48
+#define MAXPUSH_OPTIMIZE    48
 
 /**
  * Tries to create Push's from IncSP, Store combinations.
