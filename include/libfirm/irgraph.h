@@ -135,9 +135,8 @@ FIRM_API void set_current_ir_graph(ir_graph *graph);
  * represent a procedure in FIRM.
  *
  * It allocates an ir_graph and sets the field irg of the entity ent
- * as well as current_ir_graph to point to this graph.
- * Further it allocates the following nodes needed for every
- * procedure:
+ * to point to this graph. Further it allocates the following nodes needed
+ * for every procedure:
  *
  * - The start block containing a start node and Proj nodes for it's
  *   seven results (X, M, P, P, P, T, P).
@@ -242,11 +241,6 @@ FIRM_API void set_irg_initial_mem(ir_graph *irg, ir_node *node);
 FIRM_API ir_node *get_irg_args(const ir_graph *irg);
 /** Sets the node that represents the argument pointer of the given IR graph. */
 FIRM_API void set_irg_args(ir_graph *irg, ir_node *node);
-
-/** Returns the current block of an IR graph. */
-FIRM_API ir_node *get_irg_current_block(const ir_graph *irg);
-/** Sets the current block of an IR graph. */
-FIRM_API void set_irg_current_block(ir_graph *irg, ir_node *node);
 
 /** Returns the Bad node of the given IR graph.  Use new_Bad() instead!! */
 FIRM_API ir_node *get_irg_bad(const ir_graph *irg);

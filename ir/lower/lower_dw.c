@@ -2092,8 +2092,8 @@ static void lower_Phi(ir_node *phi, ir_mode *mode, lower_env_t *env)
 	/* first create a new in array */
 	NEW_ARR_A(ir_node *, inl, arity);
 	NEW_ARR_A(ir_node *, inh, arity);
-	unk_l = new_r_Unknown(irg, mode_l);
-	unk_h = new_r_Unknown(irg, mode);
+	unk_l = new_r_Dummy(irg, mode_l);
+	unk_h = new_r_Dummy(irg, mode);
 
 	for (i = 0; i < arity; ++i) {
 		ir_node *pred = get_Phi_pred(phi, i);

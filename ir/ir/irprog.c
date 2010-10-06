@@ -116,6 +116,8 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 	irp->class_cast_state           = ir_class_casts_transitive;
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 
+	current_ir_graph = irp->const_code_irg;
+
 	return irp;
 #undef IDENT
 }

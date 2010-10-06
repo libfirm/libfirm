@@ -201,13 +201,14 @@ static ir_node *lower_node(ir_node *node)
 	case iro_Phi: {
 		int       i, arity;
 		ir_node **in;
-		ir_node  *unknown, *new_phi;
+		ir_node  *dummy;
+		ir_node  *new_phi;
 
-		arity   = get_irn_arity(node);
-		in      = ALLOCAN(ir_node*, arity);
-		unknown = new_r_Unknown(irg, mode);
+		arity = get_irn_arity(node);
+		in    = ALLOCAN(ir_node*, arity);
+		dummy = new_r_Dummy(irg, mode);
 		for (i = 0; i < arity; ++i) {
-			in[i] = unknown;
+			in[i] = dummy;
 		}
 		new_phi = new_r_Phi(block, arity, in, mode);
 		/* FIXME This does not correctly break cycles: The Phi might not be the

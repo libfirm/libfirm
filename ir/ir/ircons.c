@@ -22,7 +22,7 @@
  * @brief   Various irnode constructors. Automatic construction of SSA
  *          representation.
  * @author  Martin Trapp, Christian Schaefer, Goetz Lindenmaier, Boris Boesler
-            Michael Beck
+ *          Michael Beck, Matthias Braun
  * @version $Id$
  */
 #include "config.h"
@@ -44,39 +44,30 @@
 #include "irflag_t.h"
 #include "error.h"
 
-/* when we need verifying */
-#ifdef NDEBUG
-# define IRN_VERIFY_IRG(res, irg)
-#else
-# define IRN_VERIFY_IRG(res, irg)  irn_verify_irg(res, irg)
-#endif /* NDEBUG */
+#include "gen_ir_cons.c.inl"
 
 /**
  * Language dependent variable initialization callback.
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
-#include "gen_ir_cons.c.inl"
-
-static ir_node *new_bd_Start(dbg_info *db, ir_node *block)
+ir_node *new_rd_Start(dbg_info *db, ir_graph *irg)
 {
-	ir_node  *res;
-	ir_graph *irg = get_irn_irg(block);
+	ir_node  *block = get_irg_start_block(irg);
+	ir_node  *res   = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
 
-	res = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
-
-	IRN_VERIFY_IRG(res, irg);
+	res = optimize_node(res);
+	irn_verify_irg(res, irg);
 	return res;
 }
 
-static ir_node *new_bd_End(dbg_info *db, ir_node *block)
+ir_node *new_rd_End(dbg_info *db, ir_graph *irg)
 {
-	ir_node  *res;
-	ir_graph *irg = get_irn_irg(block);
+	ir_node  *block = get_irg_end_block(irg);
+	ir_node  *res   = new_ir_node(db, irg, block, op_End, mode_X, -1, NULL);
 
-	res = new_ir_node(db, irg, block, op_End, mode_X, -1, NULL);
-
-	IRN_VERIFY_IRG(res, irg);
+	res = optimize_node(res);
+	irn_verify_irg(res, irg);
 	return res;
 }
 
@@ -84,138 +75,97 @@ static ir_node *new_bd_End(dbg_info *db, ir_node *block)
  * Creates a Phi node with all predecessors.  Calling this constructor
  * is only allowed if the corresponding block is mature.
  */
-static ir_node *new_bd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
+ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in,
+                    ir_mode *mode)
 {
-	ir_node  *res;
 	ir_graph *irg = get_irn_irg(block);
-	int i;
-	int has_unknown = 0;
-
-	/* Don't assert that block matured: the use of this constructor is strongly
-	   restricted ... */
-	if (get_Block_matured(block))
-		assert(get_irn_arity(block) == arity);
-
-	res = new_ir_node(db, irg, block, op_Phi, mode, arity, in);
-
+	ir_node  *res = new_ir_node(db, irg, block, op_Phi, mode, arity, in);
 	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 
-	for (i = arity - 1; i >= 0; --i)
-		if (is_Unknown(in[i])) {
-			has_unknown = 1;
-			break;
-		}
-
-	if (!has_unknown) res = optimize_node(res);
-	IRN_VERIFY_IRG(res, irg);
+	res = optimize_node(res);
+	irn_verify_irg(res, irg);
 
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
 	if (is_Phi(res) && mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), res);
 	return res;
-}  /* new_bd_Phi */
+}
 
-static ir_node *new_bd_Const_type(dbg_info *db, tarval *con, ir_type *tp)
+ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg, tarval *con,
+                           ir_type *tp)
 {
-	ir_node  *res;
-	ir_graph *irg = current_ir_graph;
-
-	res = new_ir_node(db, irg, get_irg_start_block(irg), op_Const, get_tarval_mode(con), 0, NULL);
+	ir_node  *block = get_irg_start_block(irg);
+	ir_mode  *mode  = get_tarval_mode(con);
+	ir_node  *res   = new_ir_node(db, irg, block, op_Const, mode, 0, NULL);
 	res->attr.con.tarval = con;
 	set_Const_type(res, tp);  /* Call method because of complex assertion. */
 	res = optimize_node (res);
 	assert(get_Const_type(res) == tp);
-	IRN_VERIFY_IRG(res, irg);
+	irn_verify_irg(res, irg);
 
 	return res;
-}  /* new_bd_Const_type */
+}
 
-static ir_node *new_bd_Const(dbg_info *db, tarval *con)
+ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con)
 {
-	ir_graph *irg = current_ir_graph;
 	return new_rd_Const_type(db, irg, con, firm_unknown_type);
-}  /* new_bd_Const */
+}
 
-static ir_node *new_bd_Const_long(dbg_info *db, ir_mode *mode, long value)
+ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
+                           long value)
 {
-	ir_graph *irg = current_ir_graph;
 	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
-}  /* new_bd_Const_long */
+}
 
-static ir_node *new_bd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
+ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
-	ir_node  *res;
+	ir_node *res;
 
 	assert(is_Cond(arg));
 	arg->attr.cond.default_proj = max_proj;
 	res = new_rd_Proj(db, arg, mode_X, max_proj);
 	return res;
-}  /* new_bd_defaultProj */
+}
 
-static ir_node *new_bd_Sel(dbg_info *db, ir_node *block, ir_node *store,
-                           ir_node *objptr, int arity, ir_node **in,
-                           ir_entity *ent)
+ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg, ir_mode *mode,
+                              symconst_symbol value, symconst_kind symkind,
+                              ir_type *tp)
 {
-	ir_node  **r_in;
-	ir_node  *res;
-	int      r_arity;
-	ir_graph *irg  = get_irn_irg(block);
-	ir_mode  *mode = is_Method_type(get_entity_type(ent)) ? mode_P_code : mode_P_data;
-
-	assert(ent != NULL && is_entity(ent) && "entity expected in Sel construction");
-
-	r_arity = arity + 2;
-	NEW_ARR_A(ir_node *, r_in, r_arity);  /* uses alloca */
-	r_in[0] = store;
-	r_in[1] = objptr;
-	memcpy(&r_in[2], in, sizeof(ir_node *) * arity);
-	/*
-	 * Sel's can select functions which should be of mode mode_P_code.
-	 */
-	res = new_ir_node(db, irg, block, op_Sel, mode, r_arity, r_in);
-	res->attr.sel.entity = ent;
-	res = optimize_node(res);
-	IRN_VERIFY_IRG(res, irg);
-	return res;
-}  /* new_bd_Sel */
-
-static ir_node *new_bd_SymConst_type(dbg_info *db, ir_node *block,
-                                     ir_mode *mode, symconst_symbol value,
-                                     symconst_kind symkind, ir_type *tp)
-{
-	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
+	ir_node *block = get_irg_start_block(irg);
+	ir_node *res   = new_ir_node(db, irg, block, op_SymConst, mode, 0, NULL);
 
 	res->attr.symc.kind = symkind;
 	res->attr.symc.sym  = value;
 	res->attr.symc.tp   = tp;
 
 	res = optimize_node(res);
-	IRN_VERIFY_IRG(res, irg);
+	irn_verify_irg(res, irg);
 	return res;
-}  /* new_bd_SymConst_type */
+}
 
-static ir_node *new_bd_Sync(dbg_info *db, ir_node *block)
+ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[])
 {
-	ir_node  *res;
 	ir_graph *irg = get_irn_irg(block);
+	ir_node  *res = new_ir_node(db, irg, block, op_Sync, mode_M, -1, NULL);
+	int       i;
 
-	res = new_ir_node(db, irg, block, op_Sync, mode_M, -1, NULL);
-	/* no need to call optimize node here, Sync are always created with no predecessors */
-	IRN_VERIFY_IRG(res, irg);
+	for (i = 0; i < arity; ++i)
+		add_Sync_pred(res, in[i]);
+
+	res = optimize_node(res);
+	irn_verify_irg(res, irg);
 	return res;
-}  /* new_bd_Sync */
+}
 
-static ir_node *new_bd_ASM(dbg_info *db, ir_node *block, int arity,
-                           ir_node *in[], ir_asm_constraint *inputs, int n_outs,
-	                         ir_asm_constraint *outputs, int n_clobber,
-	                         ident *clobber[], ident *text)
+ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
+                    ir_asm_constraint *inputs, int n_outs,
+	                ir_asm_constraint *outputs, int n_clobber,
+	                ident *clobber[], ident *text)
 {
-	ir_node  *res;
 	ir_graph *irg = get_irn_irg(block);
+	ir_node  *res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
 
-	res = new_ir_node(db, irg, block, op_ASM, mode_T, arity, in);
 	res->attr.assem.pin_state = op_pin_state_pinned;
 	res->attr.assem.input_constraints
 		= NEW_ARR_D(ir_asm_constraint, irg->obst, arity);
@@ -229,179 +179,64 @@ static ir_node *new_bd_ASM(dbg_info *db, ir_node *block, int arity,
 	memcpy(res->attr.assem.clobbers, clobber, sizeof(clobber[0]) * n_clobber);
 
 	res = optimize_node(res);
-	IRN_VERIFY_IRG(res, irg);
+	irn_verify_irg(res, irg);
 	return res;
-}  /* new_bd_ASM */
-
-/* --------------------------------------------- */
-/* private interfaces, for professional use only */
-/* --------------------------------------------- */
-
-ir_node *new_rd_Start(dbg_info *db, ir_node *block)
-{
-	return new_bd_Start(db, block);
 }
-
-ir_node *new_rd_End(dbg_info *db, ir_node *block)
-{
-	return new_bd_End(db, block);
-}
-
-/* Creates a Phi node with all predecessors.  Calling this constructor
-   is only allowed if the corresponding block is mature.  */
-ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in, ir_mode *mode)
-{
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = get_Block_irg(block);
-	res = new_bd_Phi(db, block,arity, in, mode);
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_Phi */
-
-ir_node *new_rd_Const_type(dbg_info *db, ir_graph *irg, tarval *con, ir_type *tp)
-{
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = irg;
-	res = new_bd_Const_type(db, con, tp);
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_Const_type */
-
-ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con)
-{
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = irg;
-	res = new_bd_Const_type(db, con, firm_unknown_type);
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_Const */
-
-ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode, long value)
-{
-	return new_rd_Const(db, irg, new_tarval_from_long(value, mode));
-}  /* new_rd_Const_long */
-
-ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
-{
-	return new_bd_defaultProj(db, arg, max_proj);
-}  /* new_rd_defaultProj */
 
 ir_node *new_rd_simpleSel(dbg_info *db, ir_node *block, ir_node *store,
                           ir_node *objptr, ir_entity *ent)
 {
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = get_Block_irg(block);
-	res = new_bd_Sel(db, block, store, objptr, 0, NULL, ent);
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_simpleSel */
-
-ir_node *new_rd_SymConst_type(dbg_info *db, ir_graph *irg, ir_mode *mode,
-                              symconst_symbol value, symconst_kind symkind,
-                              ir_type *tp)
-{
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-	ir_node  *block = get_irg_start_block(irg);
-
-	current_ir_graph = irg;
-	res = new_bd_SymConst_type(db, block, mode, value, symkind, tp);
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_SymConst_type */
+	return new_rd_Sel(db, block, store, objptr, 0, NULL, ent);
+}
 
 ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
                          symconst_symbol value, symconst_kind symkind)
 {
 	return new_rd_SymConst_type(db, irg, mode, value, symkind, firm_unknown_type);
-}  /* new_rd_SymConst */
+}
 
 ir_node *new_rd_SymConst_addr_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol, ir_type *tp)
 {
 	symconst_symbol sym;
 	sym.entity_p = symbol;
 	return new_rd_SymConst_type(db, irg, mode, sym, symconst_addr_ent, tp);
-}  /* new_rd_SymConst_addr_ent */
+}
 
 ir_node *new_rd_SymConst_ofs_ent(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_entity *symbol, ir_type *tp)
 {
 	symconst_symbol sym;
 	sym.entity_p = symbol;
 	return new_rd_SymConst_type(db, irg, mode, sym, symconst_ofs_ent, tp);
-}  /* new_rd_SymConst_ofs_ent */
+}
 
 ir_node *new_rd_SymConst_type_tag(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol, ir_type *tp)
 {
 	symconst_symbol sym;
 	sym.type_p = symbol;
 	return new_rd_SymConst_type(db, irg, mode, sym, symconst_type_tag, tp);
-}  /* new_rd_SymConst_type_tag */
+}
 
 ir_node *new_rd_SymConst_size(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol, ir_type *tp)
 {
 	symconst_symbol sym;
 	sym.type_p = symbol;
 	return new_rd_SymConst_type(db, irg, mode, sym, symconst_type_size, tp);
-}  /* new_rd_SymConst_size */
+}
 
 ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_type *symbol, ir_type *tp)
 {
 	symconst_symbol sym;
 	sym.type_p = symbol;
 	return new_rd_SymConst_type(db, irg, mode, sym, symconst_type_align, tp);
-}  /* new_rd_SymConst_align */
-
-ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[])
-{
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-	int      i;
-
-	current_ir_graph = get_Block_irg(block);
-	res = new_bd_Sync(db, block);
-	current_ir_graph = rem;
-
-	for (i = 0; i < arity; ++i)
-		add_Sync_pred(res, in[i]);
-
-	return res;
-}  /* new_rd_Sync */
-
-ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
-                    int arity, ir_node *in[], ir_asm_constraint *inputs,
-                    int n_outs, ir_asm_constraint *outputs,
-                    int n_clobber, ident *clobber[], ident *text)
-{
-	ir_node  *res;
-	ir_graph *rem = current_ir_graph;
-
-	current_ir_graph = get_Block_irg(block);
-	res = new_bd_ASM(db, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
-	current_ir_graph = rem;
-
-	return res;
-}  /* new_rd_ASM */
-
-ir_node *new_r_Start(ir_node *block)
-{
-	return new_rd_Start(NULL, block);
 }
-ir_node *new_r_End(ir_node *block)
+
+ir_node *new_r_Start(ir_graph *irg)
 {
-	return new_rd_End(NULL, block);
+	return new_rd_Start(NULL, irg);
+}
+ir_node *new_r_End(ir_graph *irg)
+{
+	return new_rd_End(NULL, irg);
 }
 ir_node *new_r_Const(ir_graph *irg, tarval *con)
 {
@@ -466,9 +301,9 @@ ir_node *new_d_Start(dbg_info *db)
 	                  op_Start, mode_T, 0, NULL);
 
 	res = optimize_node(res);
-	IRN_VERIFY_IRG(res, current_ir_graph);
+	irn_verify_irg(res, current_ir_graph);
 	return res;
-}  /* new_d_Start */
+}
 
 ir_node *new_d_End(dbg_info *db)
 {
@@ -477,10 +312,10 @@ ir_node *new_d_End(dbg_info *db)
 	res = new_ir_node(db, current_ir_graph,  current_ir_graph->current_block,
 	                  op_End, mode_X, -1, NULL);
 	res = optimize_node(res);
-	IRN_VERIFY_IRG(res, current_ir_graph);
+	irn_verify_irg(res, current_ir_graph);
 
 	return res;
-}  /* new_d_End */
+}
 
 /* ***********************************************************************/
 /* Methods necessary for automatic Phi node creation                     */
@@ -509,38 +344,35 @@ ir_node *new_d_End(dbg_info *db)
 * *************************************************************************** */
 
 /** Creates a Phi node with 0 predecessors. */
-static inline ir_node *new_rd_Phi0(ir_graph *irg, ir_node *block, ir_mode *mode)
+static inline ir_node *new_rd_Phi0(ir_node *block, ir_mode *mode)
 {
-	ir_node *res;
-
-	res = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
-	IRN_VERIFY_IRG(res, irg);
+	ir_graph *irg = get_irn_irg(block);
+	ir_node  *res = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
+	irn_verify_irg(res, irg);
 	return res;
-}  /* new_rd_Phi0 */
-
+}
 
 /**
  * Internal constructor of a Phi node by a phi_merge operation.
  *
- * @param irg    the graph on which the Phi will be constructed
  * @param block  the block in which the Phi will be constructed
  * @param mode   the mod eof the Phi node
  * @param in     the input array of the phi node
- * @param ins    number of elements in the input array
+ * @param n_in   number of elements in the input array
  * @param phi0   in non-NULL: the Phi0 node in the same block that represents
  *               the value for which the new Phi is constructed
  */
-static inline ir_node *new_rd_Phi_in(ir_graph *irg, ir_node *block,
-                                     ir_mode *mode, ir_node **in, int ins,
-                                     ir_node *phi0)
+static ir_node *new_rd_Phi_in(ir_node *block, ir_mode *mode,
+                              int n_in, ir_node **in, ir_node *phi0)
 {
 	int i;
 	ir_node *res, *known;
+	ir_graph *irg = get_irn_irg(block);
 
 	/* Allocate a new node on the obstack.  The allocation copies the in
 	   array. */
-	res = new_ir_node(NULL, irg, block, op_Phi, mode, ins, in);
-	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, ins);
+	res = new_ir_node(NULL, irg, block, op_Phi, mode, n_in, in);
+	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, n_in);
 
 	/* This loop checks whether the Phi has more than one predecessor.
 	   If so, it is a real Phi node and we break the loop.  Else the
@@ -548,7 +380,7 @@ static inline ir_node *new_rd_Phi_in(ir_graph *irg, ir_node *block,
 	   is not needed.
 	   Note: We MUST consider Bad nodes, else we might get data flow cycles in dead loops! */
 	known = res;
-	for (i = ins - 1; i >= 0; --i) {
+	for (i = n_in - 1; i >= 0; --i) {
 		assert(in[i]);
 
 		in[i] = skip_Id(in[i]);  /* increases the number of freed Phis. */
@@ -587,7 +419,7 @@ static inline ir_node *new_rd_Phi_in(ir_graph *irg, ir_node *block,
 		}
 	} else {
 		res = optimize_node(res);  /* This is necessary to add the node to the hash table for cse. */
-		IRN_VERIFY_IRG(res, irg);
+		irn_verify_irg(res, irg);
 		/* Memory Phis in endless loops must be kept alive.
 		   As we can't distinguish these easily we keep all of them alive. */
 		if (is_Phi(res) && mode == mode_M)
@@ -595,11 +427,9 @@ static inline ir_node *new_rd_Phi_in(ir_graph *irg, ir_node *block,
 	}
 
 	return res;
-}  /* new_rd_Phi_in */
+}
 
 static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode);
-
-static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins);
 
 /**
  * Computes the predecessors for the real phi node, and then
@@ -607,9 +437,10 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
  * node might optimize it away and return a real value.
  * This function must be called with an in-array of proper size.
  */
-static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
+static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode,
+                          int n_ins, ir_node **ins)
 {
-	ir_graph *irg = current_ir_graph;
+	ir_graph *irg = get_irn_irg(block);
 	ir_node *prevBlock, *res, *phi0, *phi0_all;
 	int i;
 
@@ -633,17 +464,17 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 			   intercepted before recurring.
 			 */
 			if (default_initialize_local_variable != NULL) {
-				ir_node *rem = get_cur_block();
+				ir_node *rem = get_r_cur_block(irg);
 
-				set_cur_block(block);
+				set_r_cur_block(irg, block);
 				block->attr.block.graph_arr[pos] = default_initialize_local_variable(irg, mode, pos - 1);
-				set_cur_block(rem);
+				set_r_cur_block(irg, rem);
 			} else {
 				block->attr.block.graph_arr[pos] = new_r_Unknown(irg, mode);
 			}
 			return block->attr.block.graph_arr[pos];
 		} else {
-			phi0 = new_rd_Phi0(irg, block, mode);
+			phi0 = new_rd_Phi0(block, mode);
 			block->attr.block.graph_arr[pos] = phi0;
 		}
 	}
@@ -651,22 +482,22 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 	/* This loop goes to all predecessor blocks of the block the Phi node
 	   is in and there finds the operands of the Phi node by calling
 	   get_r_value_internal.  */
-	for (i = 1; i <= ins; ++i) {
+	for (i = 1; i <= n_ins; ++i) {
 		ir_node *cf_pred = block->in[i];
 		ir_node *prevCfOp = skip_Proj(cf_pred);
 		assert(prevCfOp);
 		if (is_Bad(prevCfOp)) {
 			/* In case a Cond has been optimized we would get right to the start block
 			with an invalid definition. */
-			nin[i-1] = new_r_Bad(irg);
+			ins[i-1] = new_r_Bad(irg);
 			continue;
 		}
 		prevBlock = prevCfOp->in[0]; /* go past control flow op to prev block */
 		assert(prevBlock);
 		if (!is_Bad(prevBlock)) {
-			nin[i-1] = get_r_value_internal(prevBlock, pos, mode);
+			ins[i-1] = get_r_value_internal(prevBlock, pos, mode);
 		} else {
-			nin[i-1] = new_r_Bad(irg);
+			ins[i-1] = new_r_Bad(irg);
 		}
 	}
 
@@ -685,11 +516,11 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 		phi0_all = phi0;
 	}
 
-	/* After collecting all predecessors into the array nin a new Phi node
+	/* After collecting all predecessors into the array ins a new Phi node
 	   with these predecessors is created.  This constructor contains an
 	   optimization: If all predecessors of the Phi node are identical it
 	   returns the only operand instead of a new Phi node.  */
-	res = new_rd_Phi_in(current_ir_graph, block, mode, nin, ins, phi0_all);
+	res = new_rd_Phi_in(block, mode, n_ins, ins, phi0_all);
 
 	/* In case we allocated a Phi0 node at the beginning of this procedure,
 	   we need to exchange this Phi0 with the real Phi. */
@@ -699,7 +530,7 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode, ir_node **nin,
 	}
 
 	return res;
-}  /* phi_merge */
+}
 
 /**
  * This function returns the last definition of a value.  In case
@@ -744,7 +575,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	*/
 
 	/* case 4 -- already visited. */
-	if (get_irn_visited(block) == get_irg_visited(current_ir_graph)) {
+	if (irn_visited(block)) {
 		/* As phi_merge allocates a Phi0 this value is always defined. Here
 		is the critical difference of the two algorithms. */
 		assert(block->attr.block.graph_arr[pos]);
@@ -752,7 +583,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	}
 
 	/* visited the first time */
-	set_irn_visited(block, get_irg_visited(current_ir_graph));
+	mark_irn_visited(block);
 
 	/* Get the local valid value */
 	res = block->attr.block.graph_arr[pos];
@@ -764,13 +595,12 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	if (block->attr.block.is_matured) { /* case 3 */
 
 		/* The Phi has the same amount of ins as the corresponding block. */
-		int ins = get_irn_arity(block);
-		ir_node **nin;
-		NEW_ARR_A(ir_node *, nin, ins);
+		int n_in = get_irn_arity(block);
+		ir_node **in;
+		NEW_ARR_A(ir_node *, in, n_in);
 
 		/* Phi merge collects the predecessors and then creates a node. */
-		res = phi_merge(block, pos, mode, nin, ins);
-
+		res = phi_merge(block, pos, mode, n_in, in);
 	} else {  /* case 1 */
 		/* The block is not mature, we don't know how many in's are needed.  A Phi
 		   with zero predecessors is created.  Such a Phi node is called Phi0
@@ -779,7 +609,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 		   The Phi0 has to remember the pos of it's internal value.  If the real
 		   Phi is computed, pos is used to update the array with the local
 		   values. */
-		res = new_rd_Phi0(current_ir_graph, block, mode);
+		res = new_rd_Phi0(block, mode);
 		res->attr.phi.u.pos    = pos;
 		res->attr.phi.next     = block->attr.block.phis;
 		block->attr.block.phis = res;
@@ -791,7 +621,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	block->attr.block.graph_arr[pos] = res;
 
 	return res;
-}  /* get_r_value_internal */
+}
 
 /* ************************************************************************** */
 
@@ -821,7 +651,7 @@ void mature_immBlock(ir_node *block)
 		for (n = block->attr.block.phis; n; n = next) {
 			inc_irg_visited(irg);
 			next = n->attr.phi.next;
-			exchange(n, phi_merge(block, n->attr.phi.u.pos, n->mode, nin, ins));
+			exchange(n, phi_merge(block, n->attr.phi.u.pos, n->mode, ins, nin));
 		}
 
 		block->attr.block.is_matured = 1;
@@ -834,34 +664,33 @@ void mature_immBlock(ir_node *block)
 		   nodes refer to the unoptimized node.
 		   We can call optimize_in_place_2(), as global cse has no effect on blocks. */
 		block = optimize_in_place_2(block);
-		IRN_VERIFY_IRG(block, irg);
+		irn_verify_irg(block, irg);
 	}
-}  /* mature_immBlock */
+}
 
 ir_node *new_d_Phi(dbg_info *db, int arity, ir_node **in, ir_mode *mode)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_Phi(db, current_ir_graph->current_block, arity, in, mode);
-}  /* new_d_Phi */
+	return new_rd_Phi(db, current_ir_graph->current_block, arity, in, mode);
+}
 
 ir_node *new_d_Const(dbg_info *db, tarval *con)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_Const(db, con);
-}  /* new_d_Const */
+	return new_rd_Const(db, current_ir_graph, con);
+}
 
 ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_Const_long(db, mode, value);
-}  /* new_d_Const_long */
+	return new_rd_Const_long(db, current_ir_graph, mode, value);
+}
 
 ir_node *new_d_Const_type(dbg_info *db, tarval *con, ir_type *tp)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_Const_type(db, con, tp);
-}  /* new_d_Const_type */
-
+	return new_rd_Const_type(db, current_ir_graph, con, tp);
+}
 
 ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
@@ -871,63 +700,58 @@ ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 	arg->attr.cond.default_proj = max_proj;
 	res = new_d_Proj(db, arg, mode_X, max_proj);
 	return res;
-}  /* new_d_defaultProj */
+}
 
-ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr, ir_entity *ent)
-/* GL: objptr was called frame before.  Frame was a bad choice for the name
-   as the operand could as well be a pointer to a dynamic object. */
+ir_node *new_d_simpleSel(dbg_info *db, ir_node *store, ir_node *objptr,
+                         ir_entity *ent)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_Sel(db, current_ir_graph->current_block,
+	return new_rd_Sel(db, current_ir_graph->current_block,
 	                  store, objptr, 0, NULL, ent);
-}  /* new_d_simpleSel */
+}
 
-ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode, symconst_symbol value, symconst_kind kind, ir_type *tp)
+ir_node *new_d_SymConst_type(dbg_info *db, ir_mode *mode, symconst_symbol value,
+                             symconst_kind kind, ir_type *tp)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_SymConst_type(db, get_irg_start_block(current_ir_graph), mode,
-	                            value, kind, tp);
-}  /* new_d_SymConst_type */
+	return new_rd_SymConst_type(db, current_ir_graph, mode, value, kind, tp);
+}
 
-ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value, symconst_kind kind)
+ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
+                        symconst_kind kind)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_SymConst_type(db, get_irg_start_block(current_ir_graph), mode,
-	                            value, kind, firm_unknown_type);
-}  /* new_d_SymConst */
+	return new_rd_SymConst_type(db, current_ir_graph, mode, value, kind,
+	                            firm_unknown_type);
+}
 
 ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[])
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	return new_rd_Sync(db, current_ir_graph->current_block, arity, in);
-}  /* new_d_Sync */
+}
 
-ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[], ir_asm_constraint *inputs,
+ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
+                   ir_asm_constraint *inputs,
                    int n_outs, ir_asm_constraint *outputs, int n_clobber,
                    ident *clobber[], ident *text)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_bd_ASM(db, current_ir_graph->current_block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
-}  /* new_d_ASM */
+	return new_rd_ASM(db, current_ir_graph->current_block, arity, in, inputs,
+	                  n_outs, outputs, n_clobber, clobber, text);
+}
 
-/* ********************************************************************* */
-/* Comfortable interface with automatic Phi node construction.           */
-/* (Uses also constructors of ?? interface, except new_Block.            */
-/* ********************************************************************* */
-
-/*  Block construction */
-/* immature Block without predecessors */
-ir_node *new_d_immBlock(dbg_info *db)
+ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 {
 	ir_node *res;
 
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(get_irg_phase_state(irg) == phase_building);
 	/* creates a new dynamic in-array as length of in is -1 */
-	res = new_ir_node(db, current_ir_graph, NULL, op_Block, mode_BB, -1, NULL);
+	res = new_ir_node(dbgi, irg, NULL, op_Block, mode_BB, -1, NULL);
 
 	res->attr.block.is_matured  = 0;
 	res->attr.block.is_dead     = 0;
-	res->attr.block.irg.irg     = current_ir_graph;
+	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
@@ -938,22 +762,30 @@ ir_node *new_d_immBlock(dbg_info *db)
 	set_Block_block_visited(res, 0);
 
 	/* Create and initialize array for Phi-node construction. */
-	res->attr.block.graph_arr = NEW_ARR_D(ir_node *, current_ir_graph->obst,
-	                                      current_ir_graph->n_loc);
-	memset(res->attr.block.graph_arr, 0, sizeof(ir_node *)*current_ir_graph->n_loc);
+	res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
+	memset(res->attr.block.graph_arr, 0, sizeof(ir_node*) * irg->n_loc);
 
 	/* Immature block may not be optimized! */
-	IRN_VERIFY_IRG(res, current_ir_graph);
+	irn_verify_irg(res, irg);
 
 	return res;
-}  /* new_d_immBlock */
+}
+
+ir_node *new_r_immBlock(ir_graph *irg)
+{
+	return new_rd_immBlock(NULL, irg);
+}
+
+ir_node *new_d_immBlock(dbg_info *dbgi)
+{
+	return new_rd_immBlock(dbgi, current_ir_graph);
+}
 
 ir_node *new_immBlock(void)
 {
-	return new_d_immBlock(NULL);
-}  /* new_immBlock */
+	return new_rd_immBlock(NULL, current_ir_graph);
+}
 
-/* add an edge to a jmp/control flow node */
 void add_immBlock_pred(ir_node *block, ir_node *jmp)
 {
 	int n = ARR_LEN(block->in) - 1;
@@ -965,35 +797,42 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 	ARR_APP1(ir_node *, block->in, jmp);
 	/* Call the hook */
 	hook_set_irn_n(block, n, jmp, NULL);
-}  /* add_immBlock_pred */
+}
 
-/* changing the current block */
 void set_cur_block(ir_node *target)
 {
 	current_ir_graph->current_block = target;
-}  /* set_cur_block */
+}
 
-/* ************************ */
-/* parameter administration */
-
-/* get a value from the parameter array from the current block by its index */
-ir_node *get_d_value(dbg_info *db, int pos, ir_mode *mode)
+void set_r_cur_block(ir_graph *irg, ir_node *target)
 {
-	ir_graph *irg = current_ir_graph;
+	irg->current_block = target;
+}
+
+ir_node *get_r_cur_block(ir_graph *irg)
+{
+	return irg->current_block;
+}
+
+ir_node *get_cur_block(void)
+{
+	return get_r_cur_block(current_ir_graph);
+}
+
+ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode)
+{
 	assert(get_irg_phase_state(irg) == phase_building);
 	inc_irg_visited(irg);
-	(void) db;
 
 	assert(pos >= 0);
 
 	return get_r_value_internal(irg->current_block, pos + 1, mode);
-}  /* get_d_value */
+}
 
-/* get a value from the parameter array from the current block by its index */
 ir_node *get_value(int pos, ir_mode *mode)
 {
-	return get_d_value(NULL, pos, mode);
-}  /* get_value */
+	return get_r_value(current_ir_graph, pos, mode);
+}
 
 /**
  * helper function for guess_mode: recursively look for a definition for
@@ -1046,18 +885,20 @@ ir_mode *ir_guess_mode(int pos)
 	return mode;
 }
 
-/* set a value at position pos in the parameter array from the current block */
-void set_value(int pos, ir_node *value)
+void set_r_value(ir_graph *irg, int pos, ir_node *value)
 {
-	ir_graph *irg = current_ir_graph;
 	assert(get_irg_phase_state(irg) == phase_building);
 	assert(pos >= 0);
 	assert(pos+1 < irg->n_loc);
 	assert(is_ir_node(value));
 	irg->current_block->attr.block.graph_arr[pos + 1] = value;
-}  /* set_value */
+}
 
-/* Find the value number for a node in the current block.*/
+void set_value(int pos, ir_node *value)
+{
+	set_r_value(current_ir_graph, pos, value);
+}
+
 int find_value(ir_node *value)
 {
 	int i;
@@ -1067,25 +908,25 @@ int find_value(ir_node *value)
 		if (bl->attr.block.graph_arr[i] == value)
 			return i - 1;
 	return -1;
-}  /* find_value */
+}
 
-/* get the current store */
-ir_node *get_store(void)
+ir_node *get_r_store(ir_graph *irg)
 {
-	ir_graph *irg = current_ir_graph;
-
 	assert(get_irg_phase_state(irg) == phase_building);
-	/* GL: one could call get_value instead */
 	inc_irg_visited(irg);
 	return get_r_value_internal(irg->current_block, 0, mode_M);
-}  /* get_store */
+}
 
-/* set the current store: handles automatic Sync construction for Load nodes */
-void set_store(ir_node *store)
+ir_node *get_store(void)
+{
+	return get_r_store(current_ir_graph);
+}
+
+void set_r_store(ir_graph *irg, ir_node *store)
 {
 	ir_node *load, *pload, *pred, *in[2];
 
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
+	assert(get_irg_phase_state(irg) == phase_building);
 	/* Beware: due to dead code elimination, a store might become a Bad node even in
 	   the construction phase. */
 	assert((get_irn_mode(store) == mode_M || is_Bad(store)) && "storing non-memory node");
@@ -1111,38 +952,24 @@ void set_store(ir_node *store)
 
 					in[0] = pred;
 					in[1] = store;
-					store = new_Sync(2, in);
+					store = new_r_Sync(irg->current_block, 2, in);
 				}
 			}
 		}
 	}
-	current_ir_graph->current_block->attr.block.graph_arr[0] = store;
-}  /* set_store */
+	irg->current_block->attr.block.graph_arr[0] = store;
+}
+
+void set_store(ir_node *store)
+{
+	set_r_store(current_ir_graph, store);
+}
 
 void keep_alive(ir_node *ka)
 {
 	add_End_keepalive(get_irg_end(current_ir_graph), ka);
-}  /* keep_alive */
+}
 
-/* --- Useful access routines --- */
-/* Returns the current block of the current graph.  To set the current
-   block use set_cur_block. */
-ir_node *get_cur_block(void)
-{
-	return get_irg_current_block(current_ir_graph);
-}  /* get_cur_block */
-
-/* Returns the frame type of the current graph */
-ir_type *get_cur_frame_type(void)
-{
-	return get_irg_frame_type(current_ir_graph);
-}  /* get_cur_frame_type */
-
-
-/* ********************************************************************* */
-/* initialize */
-
-/* call once for each run of the library */
 void ir_set_uninitialized_local_variable_func(
 		uninitialized_local_variable_func_t *func)
 {
@@ -1227,7 +1054,6 @@ ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
 	return new_d_ASM(NULL, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
-/* create a new anchor node */
 ir_node *new_r_Anchor(ir_graph *irg)
 {
 	ir_node *in[anchor_last];

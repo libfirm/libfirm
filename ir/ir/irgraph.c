@@ -161,8 +161,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, ent);
 
-	current_ir_graph = res;
-
 	/*-- initialized for each graph. --*/
 	res->kind = k_ir_graph;
 	res->obst = XMALLOC(struct obstack);
@@ -213,17 +211,17 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->anchor = new_r_Anchor(res);
 
 	/*-- Nodes needed in every graph --*/
-	set_irg_end_block (res, new_immBlock());
-	end = new_r_End(get_irg_end_block(res));
+	set_irg_end_block (res, new_r_immBlock(res));
+	end = new_r_End(res);
 	set_irg_end(res, end);
 
-	start_block = new_immBlock();
+	start_block = new_r_Block(res, 0, NULL);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
 	bad->attr.irg.irg = res;
 	set_irg_bad        (res, bad);
 	set_irg_no_mem     (res, new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
-	start = new_r_Start(start_block);
+	start = new_r_Start(res);
 	set_irg_start      (res, start);
 
 	/* Proj results of start node */
@@ -235,19 +233,17 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	initial_mem             = new_r_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
 
-	set_cur_block(start_block);
-	set_store(initial_mem);
-
 	res->index       = get_irp_new_irg_idx();
 #ifdef DEBUG_libfirm
 	res->graph_nr    = get_irp_new_node_nr();
 #endif
 
-	mature_immBlock(start_block);
+	set_r_cur_block(res, start_block);
+	set_r_store(res, initial_mem);
 
 	/*-- Make a block to start with --*/
-	first_block = new_immBlock();
-	set_cur_block(first_block);
+	first_block = new_r_immBlock(res);
+	set_r_cur_block(res, first_block);
 	add_immBlock_pred(first_block, projX);
 
 	res->method_execution_frequency = -1.0;
@@ -280,7 +276,6 @@ ir_graph *new_const_code_irg(void)
 	/* inform statistics here, as blocks will be already build on this graph */
 	hook_new_graph(res, NULL);
 
-	current_ir_graph   = res;
 	res->n_loc         = 1; /* Only the memory. */
 	res->visited       = 0; /* visited flag, for the ir walker */
 	res->block_visited = 0; /* visited flag, for the 'block'-walker */
@@ -304,33 +299,29 @@ ir_graph *new_const_code_irg(void)
 	res->anchor = new_r_Anchor(res);
 
 	/* -- The end block -- */
-	end_block = new_immBlock();
+	end_block = new_r_Block(res, 0, NULL);
 	set_irg_end_block(res, end_block);
-	end = new_r_End(end_block);
+	end = new_r_End(res);
 	set_irg_end(res, end);
-	mature_immBlock(end_block);
 
 	/* -- The start block -- */
-	start_block = new_immBlock();
-	set_cur_block(start_block);
+	start_block = new_r_Block(res, 0, NULL);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
 	bad->attr.irg.irg = res;
 	set_irg_bad(res, bad);
 	no_mem = new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL);
 	set_irg_no_mem(res, no_mem);
-	start = new_r_Start(start_block);
+	start = new_r_Start(res);
 	set_irg_start(res, start);
 
 	/* Proj results of start node */
 	set_irg_initial_mem(res, new_r_Proj(start, mode_M, pn_Start_M));
 	projX = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
-	mature_immBlock(start_block);
 
-	body_block = new_immBlock();
-	add_immBlock_pred(body_block, projX);
-	mature_immBlock(body_block); /* mature the 'body' block for expressions */
-	set_cur_block(body_block);
+	body_block = new_r_Block(res, 1, &projX);
+
+	set_r_cur_block(res, body_block);
 
 	/* Set the visited flag high enough that the blocks will never be visited. */
 	set_irn_visited(body_block, -1);
@@ -624,16 +615,6 @@ ir_node *(get_irg_no_mem)(const ir_graph *irg)
 void (set_irg_no_mem)(ir_graph *irg, ir_node *node)
 {
 	_set_irg_no_mem(irg, node);
-}
-
-ir_node *(get_irg_current_block)(const ir_graph *irg)
-{
-	return _get_irg_current_block(irg);
-}
-
-void (set_irg_current_block)(ir_graph *irg, ir_node *node)
-{
-	_set_irg_current_block(irg, node);
 }
 
 ir_entity *(get_irg_entity)(const ir_graph *irg)

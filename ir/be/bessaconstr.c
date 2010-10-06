@@ -116,12 +116,14 @@ static ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 	int i, n_preds = get_Block_n_cfgpreds(block);
 	ir_graph *irg = get_Block_irg(block);
 	ir_node **ins = ALLOCAN(ir_node*, n_preds);
+	ir_node  *dummy;
 	ir_node  *phi;
 
 	assert(n_preds > 1);
 
+	dummy = new_r_Dummy(irg, env->mode);
 	for (i = 0; i < n_preds; ++i) {
-		ins[i] = new_r_Unknown(irg, env->mode);
+		ins[i] = dummy;
 	}
 	phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_cls);
 	if (env->new_phis != NULL) {

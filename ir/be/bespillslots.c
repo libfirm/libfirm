@@ -701,8 +701,7 @@ static ir_node *get_end_of_block_insertion_point(ir_node* block)
 
 static void create_memperms(be_fec_env_t *env)
 {
-	ir_graph         *irg      = env->irg;
-	memperm_t        *memperm;
+	memperm_t *memperm;
 
 	for (memperm = set_first(env->memperms); memperm != NULL; memperm = set_next(env->memperms)) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
@@ -733,7 +732,6 @@ static void create_memperms(be_fec_env_t *env)
 
 			be_set_MemPerm_in_entity(mempermnode, i, entry->in);
 			be_set_MemPerm_out_entity(mempermnode, i, entry->out);
-			set_irg_current_block(irg, memperm->block);
 			proj = new_r_Proj(mempermnode, get_irn_mode(arg), i);
 
 			set_irn_n(entry->node, entry->pos, proj);

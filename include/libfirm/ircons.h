@@ -1148,17 +1148,15 @@ FIRM_API ir_node *new_rd_Block(dbg_info *db, ir_graph *irg, int arity, ir_node *
  *
  * @param *db    A pointer for debug information.
  * @param *irg   The IR graph the node belongs to.
- * @param *block The IR block the node belongs to.
  */
-FIRM_API ir_node *new_rd_Start(dbg_info *db, ir_node *block);
+FIRM_API ir_node *new_rd_Start(dbg_info *db, ir_graph *irg);
 
 /** Constructor for a End node.
  *
  * @param *db    A pointer for  debug information.
  * @param *irg   The IR graph the node  belongs to.
- * @param *block The IR block the node belongs to.
  */
-FIRM_API ir_node *new_rd_End(dbg_info *db, ir_node *block);
+FIRM_API ir_node *new_rd_End(dbg_info *db, ir_graph *irg);
 
 /** Constructor for a Jmp node.
  *
@@ -1975,17 +1973,11 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
  */
 FIRM_API ir_node *new_r_Block(ir_graph *irg, int arity, ir_node *in[]);
 
-/** Constructor for a Start node.
- *
- * @param *block The IR block the node belongs to.
- */
-FIRM_API ir_node *new_r_Start(ir_node *block);
+/** Constructor for a Start node. */
+FIRM_API ir_node *new_r_Start(ir_graph *irg);
 
-/** Constructor for a End node.
- *
- * @param *block The IR block the node belongs to.
- */
-FIRM_API ir_node *new_r_End(ir_node *block);
+/** Constructor for a End node. */
+FIRM_API ir_node *new_r_End(ir_graph *irg);
 
 /** Constructor for a Jmp node.
  *
@@ -2682,9 +2674,11 @@ FIRM_API ir_node *new_r_ASM(ir_node *block,
  *  @param target  The new current block.
  */
 FIRM_API void set_cur_block(ir_node *target);
+FIRM_API void set_r_cur_block(ir_graph *irg, ir_node *target);
 
 /** Returns the current block of the current graph. */
 FIRM_API ir_node *get_cur_block(void);
+FIRM_API ir_node *get_r_cur_block(ir_graph *irg);
 
 /** Constructor for a Block node.
  *
@@ -4215,6 +4209,8 @@ FIRM_API ir_node *new_Dummy(ir_mode *mode);
  */
 FIRM_API ir_node *new_d_immBlock(dbg_info *db);
 FIRM_API ir_node *new_immBlock(void);
+FIRM_API ir_node *new_r_immBlock(ir_graph *irg);
+FIRM_API ir_node *new_rd_immBlock(dbg_info *db, ir_graph *irg);
 
 /** Add a control flow edge to an immature block. */
 FIRM_API void add_immBlock_pred(ir_node *immblock, ir_node *jmp);
@@ -4232,8 +4228,8 @@ FIRM_API void mature_immBlock(ir_node *block);
  * @param  pos   The position/id of the local variable.
  * @param *mode  The mode of the value to get.
  */
-FIRM_API ir_node *get_d_value(dbg_info *db, int pos, ir_mode *mode);
 FIRM_API ir_node *get_value(int pos, ir_mode *mode);
+FIRM_API ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode);
 
 /**
  * Try to guess the mode of a local variable.
@@ -4256,6 +4252,7 @@ FIRM_API ir_mode *ir_guess_mode(int pos);
  * @param *value The new value written to the local variable.
  */
 FIRM_API void set_value(int pos, ir_node *value);
+FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
 
 /**
  * Find the value number for a node in the current block.
@@ -4274,6 +4271,7 @@ FIRM_API int find_value(ir_node *value);
  * state value.
  */
 FIRM_API ir_node *get_store(void);
+FIRM_API ir_node *get_r_store(ir_graph *irg);
 
 /** Remark a new definition of the memory state.
  *
@@ -4283,16 +4281,13 @@ FIRM_API ir_node *get_store(void);
  * @param *store The new memory state.
  */
 FIRM_API void set_store(ir_node *store);
+FIRM_API void set_r_store(ir_graph *irg, ir_node *store);
 
 /** keep this node alive even if End is not control-reachable from it
  *
  * @param ka The node to keep alive.
  */
 FIRM_API void keep_alive(ir_node *ka);
-
-/** Returns the frame type of the current graph */
-FIRM_API ir_type *get_cur_frame_type(void);
-
 
 /* --- initialize and finalize IR construction --- */
 

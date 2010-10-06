@@ -216,16 +216,6 @@ static inline void _set_irg_no_mem(ir_graph *irg, ir_node *node)
 	set_irn_n(irg->anchor, anchor_no_mem, node);
 }
 
-static inline ir_node *_get_irg_current_block(const ir_graph *irg)
-{
-	return irg->current_block;
-}
-
-static inline void _set_irg_current_block(ir_graph *irg, ir_node *node)
-{
-	irg->current_block = node;
-}
-
 static inline ir_entity *_get_irg_entity(const ir_graph *irg)
 {
 	assert(irg);
@@ -556,8 +546,6 @@ static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
 #define set_irg_bad(irg, node)                _set_irg_bad(irg, node)
 #define get_irg_no_mem(irg)                   _get_irg_no_mem(irg)
 #define set_irn_no_mem(irg, node)             _set_irn_no_mem(irg, node)
-#define get_irg_current_block(irg)            _get_irg_current_block(irg)
-#define set_irg_current_block(irg, node)      _set_irg_current_block(irg, node)
 #define get_irg_entity(irg)                   _get_irg_entity(irg)
 #define set_irg_entity(irg, ent)              _set_irg_entity(irg, ent)
 #define get_irg_frame_type(irg)               _get_irg_frame_type(irg)

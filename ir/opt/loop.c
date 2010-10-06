@@ -364,6 +364,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	ir_graph *irg;
 	ir_node *phi;
 	ir_node **in;
+	ir_node  *dummy;
 
 	DB((dbg, LEVEL_5, "ssa search_def_and_create_phis: block %N\n", block));
 
@@ -407,8 +408,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
+	dummy = new_r_Dummy(irg, mode);
 	for (i = 0; i < n_cfgpreds; ++i)
-		in[i] = new_r_Unknown(irg, mode);
+		in[i] = dummy;
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	/* Important: always keep block phi list up to date. */

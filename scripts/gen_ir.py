@@ -309,7 +309,7 @@ ir_node *new_rd_{{node.constrname}}(
 	{%- if node.optimize != False %}
 	res = optimize_node(res);
 	{%- endif %}
-	IRN_VERIFY_IRG(res, irg);
+	irn_verify_irg(res, irg);
 	return res;
 }
 

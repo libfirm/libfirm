@@ -81,6 +81,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	ir_graph *irg;
 	ir_node *phi;
 	ir_node **in;
+	ir_node *dummy;
 
 	/* This is needed because we create bads sometimes */
 	if (is_Bad(block)) {
@@ -119,8 +120,9 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
+	dummy = new_r_Dummy(irg, mode);
 	for (i = 0; i < n_cfgpreds; ++i)
-		in[i] = new_r_Unknown(irg, mode);
+		in[i] = dummy;
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	set_irn_link(block, phi);

@@ -1456,7 +1456,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		}
 	}
 
-	if (i >= n_preds) {
+	if (i >= n_preds && !is_Dummy(first_val)) {
 		/* Fold, if no multiple distinct non-self-referencing inputs */
 		n = first_val;
 		DBG_OPT_PHI(oldn, n);
