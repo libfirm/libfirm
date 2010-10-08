@@ -1992,20 +1992,12 @@ static serialization_t *compute_best_admissible_serialization(rss_t *rss, ir_nod
  */
 static void perform_value_serialization_heuristic(rss_t *rss)
 {
-	bitset_t *arch_nonign_bs = bitset_alloca(arch_register_class_n_regs(rss->cls));
-	bitset_t *abi_ign_bs     = bitset_alloca(arch_register_class_n_regs(rss->cls));
 	unsigned available_regs, iteration;
 	dvg_t    dvg;
 	ir_nodeset_t *sat_vals;
 	pset *ser_set = new_pset(cmp_rss_edges, 20);
 
-	/* available_regs = R = |arch_non_ignore_regs cut ~abi_ignore_regs| */
-	arch_put_non_ignore_regs(rss->cls, arch_nonign_bs);
-	be_abi_put_ignore_regs(rss->abi, rss->cls, abi_ign_bs);
-	bitset_andnot(arch_nonign_bs, abi_ign_bs);
-	available_regs  = bitset_popcount(arch_nonign_bs);
-	//num_live = pset_count(rss->live_block);
-	//available_regs -= num_live < available_regs ? num_live : 0;
+	available_regs = be_get_n_allocatable_regs(rss->irg, rss->cls);
 
 	DBG((rss->dbg, LEVEL_1, "\n\t#available regs: %d\n\n", available_regs));
 

@@ -250,10 +250,10 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	ir_graph         *irg         = pse->irg;
 	ir_exec_freq     *exec_freq   = be_get_irg_exec_freq(irg);
 
-	pse->cls                   = cls;
-	chordal_env->cls           = cls;
-	chordal_env->border_heads  = pmap_create();
-	chordal_env->ignore_colors = bitset_malloc(chordal_env->cls->n_regs);
+	pse->cls                      = cls;
+	chordal_env->cls              = cls;
+	chordal_env->border_heads     = pmap_create();
+	chordal_env->allocatable_regs = bitset_malloc(chordal_env->cls->n_regs);
 
 	be_assure_liveness(irg);
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
@@ -261,7 +261,7 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, exec_freq));
 
 	/* put all ignore registers into the ignore register set. */
-	be_put_ignore_regs(irg, pse->cls, chordal_env->ignore_colors);
+	be_put_allocatable_regs(irg, pse->cls, chordal_env->allocatable_regs);
 
 	be_timer_push(T_RA_CONSTR);
 	be_pre_spill_prepare_constr(irg, chordal_env->cls);
@@ -278,9 +278,7 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 	be_chordal_env_t *chordal_env = &pse->cenv;
 	ir_graph         *irg         = pse->irg;
 	ir_exec_freq     *exec_freq   = be_get_irg_exec_freq(irg);
-	int               colors_n    = arch_register_class_n_regs(chordal_env->cls);
-	int               allocatable_regs
-		= colors_n - be_put_ignore_regs(irg, chordal_env->cls, NULL);
+	int               allocatable_regs = be_get_n_allocatable_regs(irg, chordal_env->cls);
 
 	/* some special classes contain only ignore regs, no work to be done */
 	if (allocatable_regs > 0) {
@@ -382,7 +380,7 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 
 	/* free some always allocated data structures */
 	pmap_destroy(chordal_env->border_heads);
-	bitset_free(chordal_env->ignore_colors);
+	bitset_free(chordal_env->allocatable_regs);
 }
 
 /**
@@ -406,12 +404,12 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 	be_assure_liveness(irg);
 
-	chordal_env.obst          = &obst;
-	chordal_env.opts          = &options;
-	chordal_env.irg           = irg;
-	chordal_env.border_heads  = NULL;
-	chordal_env.ifg           = NULL;
-	chordal_env.ignore_colors = NULL;
+	chordal_env.obst             = &obst;
+	chordal_env.opts             = &options;
+	chordal_env.irg              = irg;
+	chordal_env.border_heads     = NULL;
+	chordal_env.ifg              = NULL;
+	chordal_env.allocatable_regs = NULL;
 
 	obstack_init(&obst);
 

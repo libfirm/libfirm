@@ -117,7 +117,7 @@ typedef struct aff_edge_t {
 typedef struct co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
-	bitset_t         *ignore_regs;   /**< set containing all global ignore registers */
+	bitset_t         *allocatable_regs; /**< set containing all global ignore registers */
 	ir_phase         ph;             /**< phase object holding data for nodes */
 	pqueue_t         *chunks;        /**< priority queue for chunks */
 	list_head         chunklist;     /**< list holding all chunks */
@@ -405,7 +405,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn)
 		bitset_set_all(res->adm_colors);
 
 	/* exclude global ignore registers as well */
-	bitset_andnot(res->adm_colors, env->ignore_regs);
+	bitset_and(res->adm_colors, env->allocatable_regs);
 
 	/* compute the constraint factor */
 	res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
@@ -1234,7 +1234,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 		int          n_succeeded;
 
 		/* skip ignore colors */
-		if (bitset_is_set(env->ignore_regs, col))
+		if (!bitset_is_set(env->allocatable_regs, col))
 			continue;
 
 		DB((dbg, LEVEL_2, "\ttrying color %d\n", col));
@@ -1416,8 +1416,8 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
  */
 static int co_solve_heuristic_mst(copy_opt_t *co)
 {
-	unsigned     n_regs       = co->cls->n_regs;
-	bitset_t     *ignore_regs = bitset_alloca(n_regs);
+	unsigned     n_regs            = co->cls->n_regs;
+	bitset_t     *allocatable_regs = bitset_alloca(n_regs);
 	unsigned     i, j, k;
 	ir_node      *irn;
 	co_mst_env_t mst_env;
@@ -1430,18 +1430,18 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	phase_init(&mst_env.ph, co->irg, co_mst_irn_init);
 	phase_set_private(&mst_env.ph, &mst_env);
 
-	k = be_put_ignore_regs(co->cenv->irg, co->cls, ignore_regs);
-	k = n_regs - k;
+	be_put_allocatable_regs(co->cenv->irg, co->cls, allocatable_regs);
+	k = bitset_popcount(allocatable_regs);
 
-	mst_env.n_regs        = n_regs;
-	mst_env.k             = k;
-	mst_env.chunks        = new_pqueue();
-	mst_env.co            = co;
-	mst_env.ignore_regs   = ignore_regs;
-	mst_env.ifg           = co->cenv->ifg;
+	mst_env.n_regs           = n_regs;
+	mst_env.k                = k;
+	mst_env.chunks           = new_pqueue();
+	mst_env.co               = co;
+	mst_env.allocatable_regs = allocatable_regs;
+	mst_env.ifg              = co->cenv->ifg;
 	INIT_LIST_HEAD(&mst_env.chunklist);
-	mst_env.chunk_visited = 0;
-	mst_env.single_cols   = phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
+	mst_env.chunk_visited    = 0;
+	mst_env.single_cols      = phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
 
 	for (i = 0; i < n_regs; ++i) {
 		col_cost_t *vec = phase_alloc(&mst_env.ph, sizeof(*vec) * n_regs);

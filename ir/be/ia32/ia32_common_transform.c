@@ -547,7 +547,7 @@ ir_node *gen_ASM(ir_node *node)
 			if (r_clobber_bits != 0) {
 				if (parsed_constraint.all_registers_allowed) {
 					parsed_constraint.all_registers_allowed = 0;
-					be_abi_set_non_ignore_regs(be_get_irg_abi(current_ir_graph),
+					be_set_allocatable_regs(current_ir_graph,
 							parsed_constraint.cls,
 							&parsed_constraint.allowed_registers);
 				}

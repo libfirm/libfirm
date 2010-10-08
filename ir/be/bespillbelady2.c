@@ -1469,7 +1469,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *cls)
 	int i, n_regs;
 
 	/* some special classes contain only ignore regs, nothing to do then */
-	n_regs = cls->n_regs - be_put_ignore_regs(irg, cls, NULL);
+	n_regs = be_get_n_allocatable_regs(irg, cls);
 	if (n_regs == 0)
 		return;
 

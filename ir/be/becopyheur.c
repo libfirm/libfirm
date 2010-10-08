@@ -285,8 +285,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		int free_col;
 
 		/* Get all possible colors */
-		bitset_copy(free_cols, co->cenv->ignore_colors);
-		bitset_flip_all(free_cols);
+		bitset_copy(free_cols, co->cenv->allocatable_regs);
 
 		/* Exclude colors not assignable to the irn */
 		req = arch_get_register_req_out(irn);
@@ -553,7 +552,7 @@ static void ou_optimize(unit_t *ou)
 	qnode_t                     *curr = NULL;
 	qnode_t                     *tmp;
 	const arch_register_req_t   *req;
-	bitset_t const*              ignore;
+	bitset_t const*              allocatable_regs;
 	unsigned                     n_regs;
 	unsigned                     idx;
 	int                          i;
@@ -565,14 +564,14 @@ static void ou_optimize(unit_t *ou)
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
 
-	req     = arch_get_register_req_out(ou->nodes[0]);
-	ignore  = ou->co->cenv->ignore_colors;
-	n_regs  = req->cls->n_regs;
+	req              = arch_get_register_req_out(ou->nodes[0]);
+	allocatable_regs = ou->co->cenv->allocatable_regs;
+	n_regs           = req->cls->n_regs;
 	if (arch_register_req_is(req, limited)) {
 		unsigned const* limited = req->limited;
 
 		for (idx = 0; idx != n_regs; ++idx) {
-			if (bitset_is_set(ignore, idx))
+			if (!bitset_is_set(allocatable_regs, idx))
 				continue;
 			if (!rbitset_is_set(limited, idx))
 				continue;
@@ -581,7 +580,7 @@ static void ou_optimize(unit_t *ou)
 		}
 	} else {
 		for (idx = 0; idx != n_regs; ++idx) {
-			if (bitset_is_set(ignore, idx))
+			if (!bitset_is_set(allocatable_regs, idx))
 				continue;
 
 			ou_insert_qnode(ou, new_qnode(ou, idx));

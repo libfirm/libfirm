@@ -41,7 +41,7 @@ struct be_operand_t {
 	ir_node *irn;                   /**< Firm node of the insn this operand belongs to */
 	ir_node *carrier;               /**< node representing the operand value (Proj or the node itself for defs, the used value for uses) */
 	be_operand_t *partner;          /**< used in bechordal later... (TODO what does it do?) */
-	bitset_t *regs;                 /**< admissible register bitset */
+	const bitset_t *regs;           /**< admissible register bitset */
 	int pos;                        /**< pos of the operand (0 to n are inputs, -1 to -n are outputs) */
 	const arch_register_req_t *req; /**< register constraints for the carrier node */
 	unsigned has_constraints : 1;   /**< the carrier node has register constraints (the constraint type is limited) */
@@ -63,14 +63,12 @@ struct be_insn_t {
 struct be_insn_env_t {
 	struct obstack              *obst;
 	const arch_register_class_t *cls;
-	bitset_t                    *ignore_colors;
+	bitset_t                    *allocatable_regs;
 };
 
 #define be_insn_n_defs(insn) ((insn)->use_start)
 #define be_insn_n_uses(insn) ((insn)->n_ops - (insn)->use_start)
 
 be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn);
-
-be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, ir_graph *irg, const arch_register_class_t *cls, struct obstack *obst);
 
 #endif /* FIRM_BE_BEINSN_T_H */

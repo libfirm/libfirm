@@ -88,8 +88,9 @@ static int get_next_free_reg(const be_chordal_alloc_env_t *alloc_env, bitset_t *
 {
 	bitset_t *tmp = alloc_env->tmp_colors;
 	bitset_copy(tmp, colors);
-	bitset_or(tmp, alloc_env->chordal_env->ignore_colors);
-	return bitset_next_clear(tmp, 0);
+	bitset_flip_all(tmp);
+	bitset_and(tmp, alloc_env->chordal_env->allocatable_regs);
+	return bitset_next_set(tmp, 0);
 }
 
 static bitset_t *get_decisive_partner_regs(bitset_t *bs, const be_operand_t *o1, const be_operand_t *o2)
@@ -315,10 +316,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			alloc_nodes[n_alloc] = proj;
 			pmap_insert(partners, proj, NULL);
 
-			bitset_clear_all(bs);
-			arch_put_non_ignore_regs(env->cls, bs);
-			bitset_andnot(bs, env->ignore_colors);
-			bitset_foreach(bs, col) {
+			bitset_foreach(env->allocatable_regs, col) {
 				//hungarian_add(bp, n_alloc, col, 1);
 				bipartite_add(bp, n_alloc, col);
 			}

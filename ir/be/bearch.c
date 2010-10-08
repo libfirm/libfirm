@@ -147,16 +147,6 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 	}
 }
 
-void arch_put_non_ignore_regs(const arch_register_class_t *cls, bitset_t *bs)
-{
-	unsigned i;
-
-	for (i = 0; i < cls->n_regs; ++i) {
-		if (!arch_register_type_is(&cls->regs[i], ignore))
-			bitset_set(bs, i);
-	}
-}
-
 int arch_reg_is_allocatable(const ir_node *irn, int pos,
                             const arch_register_t *reg)
 {

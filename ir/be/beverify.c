@@ -126,8 +126,7 @@ int be_verify_register_pressure(ir_graph *irg, const arch_register_class_t *cls)
 	env.lv                  = be_liveness(irg);
 	env.irg                 = irg;
 	env.cls                 = cls;
-	env.registers_available
-		= env.cls->n_regs - be_put_ignore_regs(irg, env.cls, NULL);
+	env.registers_available = be_get_n_allocatable_regs(irg, cls);
 	env.problem_found       = 0;
 
 	be_liveness_assure_sets(env.lv);

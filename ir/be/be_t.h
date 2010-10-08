@@ -88,16 +88,15 @@ extern unsigned short asm_constraint_flags[256];
 
 void be_init_default_asm_constraint_flags(void);
 
-/**
- * Put the registers to be ignored in this IRG into a bitset.
- * @param irg  The graph
- * @param cls  The register class.
- * @param bs   The bitset (may be NULL).
- * @return The number of registers to be ignored.
- */
-unsigned be_put_ignore_regs(const ir_graph *irg,
-                            const arch_register_class_t *cls, bitset_t *bs);
+void be_put_allocatable_regs(const ir_graph *irg,
+                             const arch_register_class_t *cls, bitset_t *bs);
 
+void be_set_allocatable_regs(const ir_graph *irg,
+                             const arch_register_class_t *cls,
+                             unsigned *raw_bitset);
+
+unsigned be_get_n_allocatable_regs(const ir_graph *irg,
+                                   const arch_register_class_t *cls);
 
 /**
  * Initialize the backend. Must be run first in init_firm();

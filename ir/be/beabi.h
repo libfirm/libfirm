@@ -185,13 +185,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg);
 
 void be_abi_free(ir_graph *irg);
 
-/**
- * Put the registers which are forbidden specifically for this IRG in a bitset.
- */
-void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, bitset_t *bs);
-
-void be_abi_set_non_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, unsigned *raw_bitset);
-
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 

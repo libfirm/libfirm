@@ -175,28 +175,14 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 
 		assert(cls == env->cls);
 
-		op->regs = bitset_obstack_alloc(obst, env->cls->n_regs);
-
 		if (type & arch_register_req_type_limited) {
-			rbitset_copy_to_bitset(req->limited, op->regs);
+			bitset_t *regs = bitset_obstack_alloc(obst, env->cls->n_regs);
+			rbitset_copy_to_bitset(req->limited, regs);
+			op->regs = regs;
 		} else {
-			arch_put_non_ignore_regs(env->cls, op->regs);
-			if (env->ignore_colors)
-				bitset_andnot(op->regs, env->ignore_colors);
+			op->regs = env->allocatable_regs;
 		}
 	}
 
 	return insn;
-}
-
-be_insn_env_t *be_insn_env_init(be_insn_env_t *ie, ir_graph *irg,
-                                const arch_register_class_t *cls,
-                                struct obstack *obst)
-{
-	ie->cls  = cls;
-	ie->obst = obst;
-	ie->ignore_colors = bitset_obstack_alloc(obst, cls->n_regs);
-	be_abi_put_ignore_regs(be_get_irg_abi(irg), cls, ie->ignore_colors);
-
-	return ie;
 }

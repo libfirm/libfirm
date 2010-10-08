@@ -87,7 +87,7 @@ typedef struct be_pbqp_alloc_env_t {
 	ir_graph                    *irg;               /**< The graph under examination. */
 	const arch_register_class_t *cls;               /**< Current processed register class */
 	be_lv_t                     *lv;
-	bitset_t                    *ignored_regs;
+	bitset_t                    *allocatable_regs;
 	pbqp_matrix                 *ife_matrix_template;
 	pbqp_matrix                 *aff_matrix_template;
 	plist_t                     *rpeo;
@@ -147,7 +147,7 @@ static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn)
 {
 	const arch_register_class_t *cls = pbqp_alloc_env->cls;
 	pbqp     *pbqp_inst              = pbqp_alloc_env->pbqp_inst;
-	bitset_t *ignored_regs           = pbqp_alloc_env->ignored_regs;
+	bitset_t *allocatable_regs       = pbqp_alloc_env->allocatable_regs;
 	unsigned  colors_n               = arch_register_class_n_regs(cls);
 	unsigned  cntConstrains          = 0;
 
@@ -157,7 +157,7 @@ static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn)
 	/* set costs depending on register constrains */
 	unsigned idx;
 	for (idx = 0; idx < colors_n; idx++) {
-		if (bitset_is_set(ignored_regs, idx) || !arch_reg_out_is_allocatable(irn, arch_register_for_index(cls, idx))) {
+		if (!bitset_is_set(allocatable_regs, idx) || !arch_reg_out_is_allocatable(irn, arch_register_for_index(cls, idx))) {
 			/* constrained */
 			vector_set(costs_vector, idx, INF_COSTS);
 			cntConstrains++;
@@ -663,16 +663,16 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 	/* initialize pbqp allocation data structure */
-	pbqp_alloc_env.pbqp_inst    = alloc_pbqp(get_irg_last_idx(irg));  /* initialize pbqp instance */
-	pbqp_alloc_env.cls          = cls;
-	pbqp_alloc_env.irg          = irg;
-	pbqp_alloc_env.lv           = lv;
-	pbqp_alloc_env.ignored_regs = bitset_malloc(colors_n);
-	pbqp_alloc_env.rpeo         = plist_new();
-	pbqp_alloc_env.restr_nodes  = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
-	pbqp_alloc_env.ife_edge_num = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
-	pbqp_alloc_env.env          = env;
-	be_put_ignore_regs(irg, cls, pbqp_alloc_env.ignored_regs);        /* get ignored registers */
+	pbqp_alloc_env.pbqp_inst        = alloc_pbqp(get_irg_last_idx(irg));  /* initialize pbqp instance */
+	pbqp_alloc_env.cls              = cls;
+	pbqp_alloc_env.irg              = irg;
+	pbqp_alloc_env.lv               = lv;
+	pbqp_alloc_env.allocatable_regs = bitset_malloc(colors_n);
+	pbqp_alloc_env.rpeo             = plist_new();
+	pbqp_alloc_env.restr_nodes      = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
+	pbqp_alloc_env.ife_edge_num     = XMALLOCNZ(unsigned, get_irg_last_idx(irg));
+	pbqp_alloc_env.env              = env;
+	be_put_allocatable_regs(irg, cls, pbqp_alloc_env.allocatable_regs);
 
 
 	/* create costs matrix template for interference edges */
@@ -785,7 +785,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if KAPS_DUMP
 	fclose(file_before);
 #endif
-	bitset_free(pbqp_alloc_env.ignored_regs);
+	bitset_free(pbqp_alloc_env.allocatable_regs);
 	free_pbqp(pbqp_alloc_env.pbqp_inst);
 	plist_free(pbqp_alloc_env.rpeo);
 	xfree(pbqp_alloc_env.restr_nodes);

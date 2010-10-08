@@ -222,9 +222,9 @@ be_insn_t *chordal_scan_insn(be_chordal_env_t *env, ir_node *irn)
 {
 	be_insn_env_t ie;
 
-	ie.ignore_colors = env->ignore_colors;
-	ie.obst          = env->obst;
-	ie.cls           = env->cls;
+	ie.allocatable_regs = env->allocatable_regs;
+	ie.obst             = env->obst;
+	ie.cls              = env->cls;
 	return be_scan_insn(&ie, irn);
 }
 

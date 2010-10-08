@@ -2268,17 +2268,42 @@ void be_abi_free(ir_graph *irg)
 	be_set_irg_abi(irg, NULL);
 }
 
-void be_abi_put_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, bitset_t *bs)
+void be_put_allocatable_regs(const ir_graph *irg,
+                             const arch_register_class_t *cls, bitset_t *bs)
 {
-	arch_register_t *reg;
+	be_abi_irg_t          *abi = be_get_irg_abi(irg);
+	const arch_register_t *reg;
+	unsigned               i;
 
-	for (reg = pset_first(abi->ignore_regs); reg; reg = pset_next(abi->ignore_regs))
-		if (reg->reg_class == cls)
+	assert(bitset_size(bs) == cls->n_regs);
+	bitset_clear_all(bs);
+
+	for (i = 0; i < cls->n_regs; ++i) {
+		reg = &cls->regs[i];
+		if (! (reg->type & arch_register_type_ignore))
 			bitset_set(bs, reg->index);
+	}
+
+	for (reg = pset_first(abi->ignore_regs); reg != NULL;
+	     reg = pset_next(abi->ignore_regs)) {
+		if (reg->reg_class == cls)
+			bitset_clear(bs, reg->index);
+	}
 }
 
-void be_abi_set_non_ignore_regs(be_abi_irg_t *abi, const arch_register_class_t *cls, unsigned *raw_bitset)
+unsigned be_get_n_allocatable_regs(const ir_graph *irg,
+                                   const arch_register_class_t *cls)
 {
+	bitset_t *bs = bitset_alloca(cls->n_regs);
+	be_put_allocatable_regs(irg, cls, bs);
+	return bitset_popcount(bs);
+}
+
+void be_set_allocatable_regs(const ir_graph *irg,
+                             const arch_register_class_t *cls,
+                             unsigned *raw_bitset)
+{
+	be_abi_irg_t    *abi = be_get_irg_abi(irg);
 	unsigned         i;
 	arch_register_t *reg;
 

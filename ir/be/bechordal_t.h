@@ -68,7 +68,7 @@ struct be_chordal_env_t {
 	const arch_register_class_t *cls;   /**< The current register class. */
 	pmap                 *border_heads; /**< Maps blocks to border heads. */
 	be_ifg_t             *ifg;          /**< The interference graph. */
-	bitset_t             *ignore_colors;/**< A set of colors which shall be ignored in register allocation. */
+	bitset_t             *allocatable_regs; /**< set of allocatable registers */
 };
 
 static inline struct list_head *_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl) {

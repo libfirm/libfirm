@@ -878,19 +878,3 @@ ir_prog_pass_t *lower_for_target_pass(const char *name)
 	                                 name ? name : "lower_for_target",
 	                                 do_lower_for_target);
 }
-
-unsigned be_put_ignore_regs(const ir_graph *irg,
-                            const arch_register_class_t *cls, bitset_t *bs)
-{
-	if (bs == NULL)
-		bs = bitset_alloca(cls->n_regs);
-	else
-		bitset_clear_all(bs);
-
-	assert(bitset_size(bs) == cls->n_regs);
-	arch_put_non_ignore_regs(cls, bs);
-	bitset_flip_all(bs);
-	be_abi_put_ignore_regs(be_get_irg_abi(irg), cls, bs);
-
-	return bitset_popcount(bs);
-}
