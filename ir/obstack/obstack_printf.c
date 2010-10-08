@@ -5,9 +5,15 @@
 #include "obstack.h"
 
 #ifdef _WIN32
-#define vsnprintf _vsnprintf
-#endif
-
+/* win32/C89 has no va_copy function... so we have to use the stupid fixed-length version */
+int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
+{
+	char buf[16384];
+	int len = _vsnprintf(buf, sizeof(buf), fmt, ap);
+	obstack_grow(obst, buf, len);
+	return len;
+}
+#else
 int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 {
 	char    buf[128];
@@ -46,6 +52,7 @@ int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 
 	return len;
 }
+#endif
 
 int obstack_printf(struct obstack *obst, const char *fmt, ...)
 {
