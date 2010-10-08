@@ -76,6 +76,23 @@ static const arch_register_t *const caller_saves[] = {
 	&sparc_registers[REG_F31],
 };
 
+static const arch_register_t *const omit_fp_callee_saves[] = {
+	&sparc_registers[REG_L0],
+	&sparc_registers[REG_L1],
+	&sparc_registers[REG_L2],
+	&sparc_registers[REG_L3],
+	&sparc_registers[REG_L4],
+	&sparc_registers[REG_L5],
+	&sparc_registers[REG_L6],
+	&sparc_registers[REG_L7],
+	&sparc_registers[REG_I0],
+	&sparc_registers[REG_I1],
+	&sparc_registers[REG_I2],
+	&sparc_registers[REG_I3],
+	&sparc_registers[REG_I4],
+	&sparc_registers[REG_I5],
+};
+
 static const arch_register_t* const param_regs[] = {
 	&sparc_registers[REG_I0],
 	&sparc_registers[REG_I1],
@@ -108,6 +125,8 @@ typedef struct reg_or_stackslot_t
 /** The calling convention info for one call site. */
 typedef struct calling_convention_t
 {
+	bool                omit_fp;          /**< do not use frame pointer (and no
+	                                           save/restore) */
 	reg_or_stackslot_t *parameters;       /**< parameter info. */
 	int                 param_stack_size; /**< stack size for parameters */
 	reg_or_stackslot_t *results;          /**< result info. */
@@ -122,7 +141,7 @@ typedef struct calling_convention_t
  * @param caller         true for convention for the caller, false for callee
  */
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
-                                                      bool caller);
+                                                      ir_graph *irg);
 
 /**
  * free memory used by a calling_convention_t

@@ -27,6 +27,7 @@
 
 #include "sparc_cconv.h"
 #include "irmode.h"
+#include "irgwalk.h"
 #include "typerep.h"
 #include "xmalloc.h"
 #include "error.h"
@@ -44,8 +45,23 @@ static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
 	return &sparc_registers[idx];
 }
 
+static void check_omit_fp(ir_node *node, void *env)
+{
+	bool *can_omit_fp = (bool*) env;
+
+	/* omit-fp is not possible if:
+	 *  - we have allocations on the stack
+	 *  - we have calls (with the exception of tail-calls once we support them)
+	 */
+	if ((is_Alloc(node) && get_Alloc_where(node) == stack_alloc)
+			|| (is_Free(node) && get_Free_where(node) == stack_alloc)
+			|| is_Call(node)) {
+		*can_omit_fp = false;
+	}
+}
+
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
-                                                      bool caller)
+                                                      ir_graph *irg)
 {
 	int                   stack_offset = 0;
 	reg_or_stackslot_t   *params;
@@ -60,6 +76,13 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	int                   regnum;
 	int                   float_regnum;
 	calling_convention_t *cconv;
+	bool                  omit_fp = false;
+
+	if (irg != NULL) {
+		const be_options_t *options = be_get_irg_options(irg);
+		omit_fp = options->omit_fp;
+		irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+	}
 
 	/* determine how parameters are passed */
 	n_params = get_method_n_params(function_type);
@@ -74,7 +97,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 
 		if (regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[regnum++];
-			if (caller)
+			if (irg == NULL || omit_fp)
 				reg = map_i_to_o_reg(reg);
 			param->reg0 = reg;
 		} else {
@@ -92,7 +115,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 
 			if (regnum < n_param_regs) {
 				const arch_register_t *reg = param_regs[regnum++];
-				if (caller)
+				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
 				param->reg1 = reg;
 			} else {
@@ -132,7 +155,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				panic("Too many results for sparc backend");
 			} else {
 				const arch_register_t *reg = param_regs[regnum++];
-				if (caller)
+				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
 				result->reg0 = reg;
 			}
@@ -143,6 +166,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->results          = results;
+	cconv->omit_fp          = omit_fp;
 
 	return cconv;
 }

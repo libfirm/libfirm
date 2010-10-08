@@ -38,6 +38,7 @@
 #include "iropt_t.h"
 #include "debug.h"
 #include "error.h"
+#include "util.h"
 
 #include "../benode.h"
 #include "../beirg.h"
@@ -1213,7 +1214,17 @@ static ir_node *gen_Unknown(ir_node *node)
  */
 static ir_type *sparc_get_between_type(void)
 {
-	static ir_type *between_type = NULL;
+	static ir_type *between_type  = NULL;
+	static ir_type *between_type0 = NULL;
+
+	if (cconv->omit_fp) {
+		if (between_type0 == NULL) {
+			between_type0
+				= new_type_class(new_id_from_str("sparc_between_type"));
+			set_type_size_bytes(between_type0, 0);
+		}
+		return between_type0;
+	}
 
 	if (between_type == NULL) {
 		between_type = new_type_class(new_id_from_str("sparc_between_type"));
@@ -1260,7 +1271,7 @@ static void create_stacklayout(ir_graph *irg)
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
 	layout->stack_dir      = -1;
-	layout->sp_relative    = false;
+	layout->sp_relative    = cconv->omit_fp;
 
 	assert(N_FRAME_TYPES == 3);
 	layout->order[0] = layout->frame_type;
@@ -1283,7 +1294,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *start;
 	ir_node   *sp;
 	ir_node   *barrier;
-	ir_node   *save;
 	int        i;
 
 	/* stackpointer is important at function prolog */
@@ -1299,14 +1309,28 @@ static ir_node *gen_Start(ir_node *node)
 		if (param->reg1 != NULL)
 			be_prolog_add_reg(abihelper, param->reg1, 0);
 	}
+	/* we need the values of the callee saves (Note: non omit-fp mode has no
+	 * callee saves) */
+	if (cconv->omit_fp) {
+		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
+		size_t c;
+		for (c = 0; c < n_callee_saves; ++c) {
+			be_prolog_add_reg(abihelper, omit_fp_callee_saves[c], 0);
+		}
+	} else {
+		be_prolog_add_reg(abihelper, fp_reg, arch_register_req_type_ignore);
+	}
 
 	start = be_prolog_create_start(abihelper, dbgi, new_block);
-
 	mem  = be_prolog_get_memory(abihelper);
 	sp   = be_prolog_get_reg_value(abihelper, sp_reg);
-	save = new_bd_sparc_Save_imm(NULL, block, sp, NULL, -SPARC_MIN_STACKSIZE);
-	sp   = new_r_Proj(save, mode_gp, pn_sparc_Save_stack);
-	arch_set_irn_register(sp, sp_reg);
+
+	if (!cconv->omit_fp) {
+		ir_node *save = new_bd_sparc_Save_imm(NULL, block, sp, NULL,
+		                                      -SPARC_MIN_STACKSIZE);
+		sp = new_r_Proj(save, mode_gp, pn_sparc_Save_stack);
+		arch_set_irn_register(sp, sp_reg);
+	}
 
 	sp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_prolog_set_reg_value(abihelper, sp_reg, sp);
@@ -1350,11 +1374,9 @@ static ir_node *gen_Return(ir_node *node)
 	dbg_info *dbgi           = get_irn_dbg_info(node);
 	ir_node  *mem            = get_Return_mem(node);
 	ir_node  *new_mem        = be_transform_node(mem);
-	ir_node  *sp_proj        = get_stack_pointer_for(node);
+	ir_node  *sp             = get_stack_pointer_for(node);
 	int       n_res          = get_Return_n_ress(node);
 	ir_node  *bereturn;
-	ir_node  *restore;
-	ir_node  *incsp;
 	int       i;
 
 	be_epilog_begin(abihelper);
@@ -1363,7 +1385,7 @@ static ir_node *gen_Return(ir_node *node)
 	   will later serialize all stack pointer adjusting nodes */
 	be_epilog_add_reg(abihelper, sp_reg,
 			arch_register_req_type_produces_sp | arch_register_req_type_ignore,
-			sp_proj);
+			sp);
 
 	/* result values */
 	for (i = 0; i < n_res; ++i) {
@@ -1374,19 +1396,32 @@ static ir_node *gen_Return(ir_node *node)
 		assert(slot->reg1 == NULL);
 		be_epilog_add_reg(abihelper, reg, 0, new_res_value);
 	}
+	/* callee saves */
+	if (cconv->omit_fp) {
+		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
+		size_t i;
+		for (i = 0; i < n_callee_saves; ++i) {
+			const arch_register_t *reg   = omit_fp_callee_saves[i];
+			ir_node               *value
+				= be_prolog_get_reg_value(abihelper, reg);
+			be_epilog_add_reg(abihelper, reg, 0, value);
+		}
+	}
 
 	/* create the barrier before the epilog code */
 	be_epilog_create_barrier(abihelper, new_block);
 
 	/* epilog code: an incsp */
-	sp_proj = be_epilog_get_reg_value(abihelper, sp_reg);
-	incsp   = be_new_IncSP(sp_reg, new_block, sp_proj,
-	                       BE_STACK_FRAME_SIZE_SHRINK, 0);
-	be_epilog_set_reg_value(abihelper, sp_reg, incsp);
+	sp = be_epilog_get_reg_value(abihelper, sp_reg);
+	sp = be_new_IncSP(sp_reg, new_block, sp,
+	                  BE_STACK_FRAME_SIZE_SHRINK, 0);
+	be_epilog_set_reg_value(abihelper, sp_reg, sp);
 
 	/* we need a restore instruction */
-	restore = new_bd_sparc_RestoreZero(NULL, block);
-	keep_alive(restore);
+	if (!cconv->omit_fp) {
+		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block);
+		keep_alive(restore);
+	}
 
 	bereturn = be_epilog_create_return(abihelper, dbgi, new_block);
 
@@ -1476,7 +1511,7 @@ static ir_node *gen_Call(ir_node *node)
 	const arch_register_req_t **in_req
 		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
 	calling_convention_t *cconv
-		= sparc_decide_calling_convention(type, true);
+		= sparc_decide_calling_convention(type, NULL);
 	int              in_arity     = 0;
 	int              sync_arity   = 0;
 	int              n_caller_saves
@@ -1824,6 +1859,12 @@ static ir_node *gen_Proj_Quot(ir_node *node)
 	panic("Unsupported Proj from Quot");
 }
 
+static ir_node *get_frame_base(void)
+{
+	const arch_register_t *reg = cconv->omit_fp ? sp_reg : fp_reg;
+	return be_prolog_get_reg_value(abihelper, reg);
+}
+
 static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
@@ -1840,7 +1881,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 	case pn_Start_T_args:
 		return barrier;
 	case pn_Start_P_frame_base:
-		return be_prolog_get_reg_value(abihelper, fp_reg);
+		return get_frame_base();
 	case pn_Start_P_tls:
 		return new_r_Bad(current_ir_graph);
 	case pn_Start_max:
@@ -1890,18 +1931,18 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		return value;
 	} else {
 		/* argument transmitted on stack */
-		ir_node  *fp   = be_prolog_get_reg_value(abihelper, fp_reg);
 		ir_node  *mem  = be_prolog_get_memory(abihelper);
 		ir_mode  *mode = get_type_mode(param->type);
+		ir_node  *base = get_frame_base();
 		ir_node  *load;
 		ir_node  *value;
 
 		if (mode_is_float(mode)) {
-			load  = create_ldf(NULL, new_block, fp, mem, mode,
+			load  = create_ldf(NULL, new_block, base, mem, mode,
 			                   param->entity, 0, true);
 			value = new_r_Proj(load, mode_fp, pn_sparc_Ldf_res);
 		} else {
-			load  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem, mode,
+			load  = new_bd_sparc_Ld_imm(NULL, new_block, base, mem, mode,
 			                            param->entity, 0, true);
 			value = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 		}
@@ -1954,7 +1995,7 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_node              *new_call      = be_transform_node(call);
 	ir_type              *function_type = get_Call_type(call);
 	calling_convention_t *cconv
-		= sparc_decide_calling_convention(function_type, true);
+		= sparc_decide_calling_convention(function_type, NULL);
 	const reg_or_stackslot_t *res = &cconv->results[pn];
 	const arch_register_t    *reg = res->reg0;
 	ir_mode                  *mode;
@@ -2102,11 +2143,12 @@ void sparc_transform_graph(ir_graph *irg)
 
 	abihelper = be_abihelper_prepare(irg);
 	be_collect_stacknodes(abihelper);
-	cconv = sparc_decide_calling_convention(get_entity_type(entity), false);
+	cconv = sparc_decide_calling_convention(get_entity_type(entity), irg);
 	create_stacklayout(irg);
 
 	be_transform_graph(irg, NULL);
-	assure_fp_keep();
+	if (!cconv->omit_fp)
+		assure_fp_keep();
 
 	be_abihelper_finish(abihelper);
 	sparc_free_calling_convention(cconv);

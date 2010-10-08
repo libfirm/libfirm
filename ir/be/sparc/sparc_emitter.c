@@ -439,7 +439,7 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		for (i = 0; i < arity; ++i) {
 			ir_node               *in  = get_irn_n(node, i);
 			const arch_register_t *reg = arch_get_irn_register(in);
-			if (reg == &sparc_gp_regs[REG_O7]) {
+			if (reg == &sparc_registers[REG_O7]) {
 				check = skip_Proj(in);
 				break;
 			}
