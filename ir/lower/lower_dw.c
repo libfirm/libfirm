@@ -2594,50 +2594,35 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	lenv.first_id      = new_id_from_chars(param->little_endian ? ".l" : ".h", 2);
 	lenv.next_id       = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);
 
-	/* first clear the generic function pointer for all ops */
 	clear_irp_opcodes_generic_func();
-
-#define LOWER2(op, fkt)   enter_lower_func(op_##op, fkt)
-#define LOWER(op)         LOWER2(op, lower_##op)
-#define LOWER_BIN(op)     LOWER2(op, lower_Binop)
-#define LOWER_UN(op)      LOWER2(op, lower_Unop)
-
-	/* the table of all operations that must be lowered follows */
-	LOWER(ASM);
-	LOWER(Load);
-	LOWER(Store);
-	LOWER(Const);
-	LOWER(And);
-	LOWER(Or);
-	LOWER(Eor);
-	LOWER(Not);
-	LOWER(Cond);
-	LOWER(Return);
-	LOWER(Call);
-	LOWER(Unknown);
-	LOWER(Phi);
-	LOWER(Mux);
-	LOWER(Start);
-
-	LOWER_BIN(Add);
-	LOWER_BIN(Sub);
-	LOWER_BIN(Mul);
-	LOWER(Shl);
-	LOWER(Shr);
-	LOWER(Shrs);
-	LOWER(Rotl);
-	LOWER(DivMod);
-	LOWER(Div);
-	LOWER(Mod);
-	LOWER(Sel);
-	LOWER_UN(Minus);
-
-	LOWER(Conv);
-
-#undef LOWER_UN
-#undef LOWER_BIN
-#undef LOWER
-#undef LOWER2
+	enter_lower_func(op_Add,     lower_Binop);
+	enter_lower_func(op_And,     lower_And);
+	enter_lower_func(op_ASM,     lower_ASM);
+	enter_lower_func(op_Call,    lower_Call);
+	enter_lower_func(op_Cond,    lower_Cond);
+	enter_lower_func(op_Const,   lower_Const);
+	enter_lower_func(op_Conv,    lower_Conv);
+	enter_lower_func(op_Div,     lower_Div);
+	enter_lower_func(op_DivMod,  lower_DivMod);
+	enter_lower_func(op_Eor,     lower_Eor);
+	enter_lower_func(op_Load,    lower_Load);
+	enter_lower_func(op_Minus,   lower_Unop);
+	enter_lower_func(op_Mod,     lower_Mod);
+	enter_lower_func(op_Mul,     lower_Binop);
+	enter_lower_func(op_Mux,     lower_Mux);
+	enter_lower_func(op_Not,     lower_Not);
+	enter_lower_func(op_Or,      lower_Or);
+	enter_lower_func(op_Phi,     lower_Phi);
+	enter_lower_func(op_Return,  lower_Return);
+	enter_lower_func(op_Rotl,    lower_Rotl);
+	enter_lower_func(op_Sel,     lower_Sel);
+	enter_lower_func(op_Shl,     lower_Shl);
+	enter_lower_func(op_Shr,     lower_Shr);
+	enter_lower_func(op_Shrs,    lower_Shrs);
+	enter_lower_func(op_Start,   lower_Start);
+	enter_lower_func(op_Store,   lower_Store);
+	enter_lower_func(op_Sub,     lower_Binop);
+	enter_lower_func(op_Unknown, lower_Unknown);
 
 	/* transform all graphs */
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
