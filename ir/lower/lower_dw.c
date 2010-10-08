@@ -748,31 +748,59 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env)
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
 		ir_tarval *tv = get_Const_tarval(right);
 
-		if (tarval_is_long(tv) &&
-		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
-			ir_mode *mode_l;
-			ir_node *block = get_nodes_block(node);
-			ir_node *left = get_Shl_left(node);
-			ir_node *c;
-			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
-			const node_entry_t *left_entry = get_node_entry(env, left);
-			ir_node  *res_low;
-			ir_node  *res_high;
+		if (tarval_is_long(tv)) {
+			long value = get_tarval_long(tv);
+		    if (value >= (long)get_mode_size_bits(mode)) {
+				/* simple case: shift above the lower word */
+				ir_mode *mode_l;
+				ir_node *block = get_nodes_block(node);
+				ir_node *left = get_Shl_left(node);
+				ir_node *c;
+				long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
+				const node_entry_t *left_entry = get_node_entry(env, left);
+				ir_node  *res_low;
+				ir_node  *res_high;
 
-			left = left_entry->low_word;
-			left = new_r_Conv(block, left, mode);
+				left = left_entry->low_word;
+				left = new_r_Conv(block, left, mode);
 
-			mode_l = env->low_unsigned;
-			if (shf_cnt > 0) {
-				c        = new_r_Const_long(irg, mode_l, shf_cnt);
-				res_high = new_r_Shl(block, left, c, mode);
-			} else {
-				res_high = left;
+				mode_l = env->low_unsigned;
+				if (shf_cnt > 0) {
+					c        = new_r_Const_long(irg, mode_l, shf_cnt);
+					res_high = new_r_Shl(block, left, c, mode);
+				} else {
+					res_high = left;
+				}
+				res_low = new_r_Const(irg, get_mode_null(mode_l));
+				set_lowered(env, node, res_low, res_high);
+
+				return;
 			}
-			res_low = new_r_Const(irg, get_mode_null(mode_l));
-			set_lowered(env, node, res_low, res_high);
+			if (value == 1) {
+				/* left << 1 == left + left */
+				ir_node            *left        = get_binop_left(node);
+				const node_entry_t *left_entry  = get_node_entry(env, left);
+				ir_node            *in[4]       = {
+					left_entry->low_word, left_entry->high_word,
+					left_entry->low_word, left_entry->high_word,
+				};
+				dbg_info           *dbgi        = get_irn_dbg_info(node);
+				ir_node            *block       = get_nodes_block(node);
+				ir_graph           *irg         = get_irn_irg(block);
+				ir_type            *mtp
+					= mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
+				ir_node            *addr
+					= get_intrinsic_address(mtp, op_Add, mode, mode, env);
+				ir_node            *call
+					= new_rd_Call(dbgi, block, get_irg_no_mem(irg), addr, 4, in, mtp);
+				ir_node            *resproj  = new_r_Proj(call, mode_T, pn_Call_T_result);
+				ir_node            *res_low  = new_r_Proj(resproj, env->low_unsigned, 0);
+				ir_node            *res_high = new_r_Proj(resproj, mode,              1);
+				set_irn_pinned(call, get_irn_pinned(node));
+				set_lowered(env, node, res_low, res_high);
 
-			return;
+				return;
+			}
 		}
 	}
 	lower_Shiftop(node, mode, env);
