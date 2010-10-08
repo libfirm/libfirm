@@ -1041,16 +1041,6 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *env)
 				dbg_info *dbg;
 				optimization_state_t state;
 
-				if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-					tarval *tv = get_Const_tarval(right);
-
-					if (tarval_is_long(tv) &&
-					    get_tarval_long(tv) == (long)get_mode_size_bits(mode)) {
-						/* will be optimized in lower_Rotl() */
-						return;
-					}
-				}
-
 				/* replace the Rotl(x,y) by an Or(Shl(x,y), Shr(x,64-y)) and lower those */
 				irg   = get_irn_irg(node);
 				dbg   = get_irn_dbg_info(node);
@@ -1081,30 +1071,6 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *env)
 	} else {
 		prepare_links(node, env);
 	}
-}
-
-/**
- * Translate a special case Rotl(x, sizeof(w)).
- */
-static void lower_Rotl(ir_node *node, ir_mode *mode, lower_env_t *env)
-{
-	ir_node *right = get_Rotl_right(node);
-	ir_node *left = get_Rotl_left(node);
-	ir_node *h, *l;
-	unsigned idx = get_irn_idx(left);
-	(void) right;
-	(void) mode;
-
-	assert(get_mode_arithmetic(mode) == irma_twos_complement &&
-	       is_Const(right) && tarval_is_long(get_Const_tarval(right)) &&
-	       get_tarval_long(get_Const_tarval(right)) == (long)get_mode_size_bits(mode));
-
-	l = env->entries[idx]->low_word;
-	h = env->entries[idx]->high_word;
-	idx = get_irn_idx(node);
-
-	env->entries[idx]->low_word  = h;
-	env->entries[idx]->high_word = l;
 }
 
 /**
@@ -2617,7 +2583,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	enter_lower_func(op_Or,      lower_Or);
 	enter_lower_func(op_Phi,     lower_Phi);
 	enter_lower_func(op_Return,  lower_Return);
-	enter_lower_func(op_Rotl,    lower_Rotl);
 	enter_lower_func(op_Sel,     lower_Sel);
 	enter_lower_func(op_Shl,     lower_Shl);
 	enter_lower_func(op_Shr,     lower_Shr);
