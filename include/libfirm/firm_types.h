@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -69,6 +69,9 @@ typedef void irg_reg_walk_func(ir_region *, void *);
 /* settings */
 typedef struct ir_settings_arch_dep_t ir_settings_arch_dep_t;
 typedef struct ir_settings_if_conv_t  ir_settings_if_conv_t;
+
+/* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
+typedef const ir_node *ir_node_cnst_ptr;
 
 /* states */
 
@@ -212,6 +215,16 @@ enum pn_generic {
 	pn_Generic_X_except  = 2,  /**< The control flow result branching to the exception handler */
 	pn_Generic_other     = 3   /**< First free projection number */
 };
+
+/**
+ * Possible return values of value_classify().
+ */
+typedef enum {
+	value_classified_unknown  = 0,   /**< could not classify */
+	value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
+	value_classified_negative = -1   /**< value is negative, i.e. <= 0 if
+	                                      no signed zero exists or < 0 else */
+} ir_value_classify_sign;
 
 #include "end.h"
 
