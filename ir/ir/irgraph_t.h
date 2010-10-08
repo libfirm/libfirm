@@ -271,15 +271,15 @@ static inline void _set_irg_outs_inconsistent(ir_graph *irg)
 		irg->outs_state = outs_inconsistent;
 }
 
-static inline irg_extblk_state _get_irg_extblk_state(const ir_graph *irg)
+static inline irg_extblk_info_state _get_irg_extblk_state(const ir_graph *irg)
 {
-  return irg->extblk_state;
+	return irg->extblk_state;
 }
 
 static inline void _set_irg_extblk_inconsistent(ir_graph *irg)
 {
-	if (irg->extblk_state == extblk_valid)
-		irg->extblk_state = extblk_invalid;
+	if (irg->extblk_state == ir_extblk_info_valid)
+		irg->extblk_state = ir_extblk_info_invalid;
 }
 
 static inline irg_dom_state _get_irg_dom_state(const ir_graph *irg)

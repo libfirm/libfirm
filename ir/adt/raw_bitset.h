@@ -233,7 +233,7 @@ static inline void rbitset_flip_all(unsigned *bitset, unsigned size)
  */
 static inline bool rbitset_is_set(const unsigned *bitset, unsigned pos)
 {
-	return BITSET_ELEM(bitset, pos) & (1 << (pos % BITS_PER_ELEM));
+	return (BITSET_ELEM(bitset, pos) & (1 << (pos % BITS_PER_ELEM))) != 0;
 }
 
 /**

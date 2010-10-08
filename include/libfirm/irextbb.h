@@ -31,13 +31,6 @@
 #include "execfreq.h"
 #include "begin.h"
 
-/** Flags for extended basic block state. */
-typedef enum {
-  ir_extblk_info_none    = 0,  /**< No extended basic block information is constructed. Default. */
-  ir_extblk_info_valid   = 1,  /**< Extended basic block information is valid. */
-  ir_extblk_info_invalid = 2   /**< Extended basic block information is constructed but invalid. */
-} irg_extblk_info_state;
-
 /* type of callback function for ir_graph walk */
 #ifndef _EXTBB_WALK_FUNC_TYPEDEF_
 #define _EXTBB_WALK_FUNC_TYPEDEF_

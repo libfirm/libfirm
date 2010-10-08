@@ -702,7 +702,7 @@ void (set_irg_outs_inconsistent)(ir_graph *irg)
 	_set_irg_outs_inconsistent(irg);
 }
 
-irg_extblk_state (get_irg_extblk_state)(const ir_graph *irg)
+irg_extblk_info_state (get_irg_extblk_state)(const ir_graph *irg)
 {
 	return _get_irg_extblk_state(irg);
 }
