@@ -31,7 +31,7 @@
 #include "irnode_t.h"
 #include "iropt_t.h"
 #include "iropt_dbg.h"
-#include "opt_confirms.h"
+#include "iroptimize.h"
 #include "irflag_t.h"
 #include "irprintf.h"
 
@@ -95,7 +95,7 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn
  * This is a often needed case, so we handle here Confirm
  * nodes too.
  */
-int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
+FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 {
 #define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
 
@@ -174,7 +174,7 @@ int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
  * - A SymConst(entity) is NEVER a NULL pointer
  * - Confirms are evaluated
  */
-int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
+FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 {
 	ir_tarval *tv;
 
@@ -229,7 +229,7 @@ int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
  * If the mode of the value did not honor signed zeros, else
  * check for >= 0 or < 0.
  */
-value_classify_sign classify_value_sign(ir_node *n)
+FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n)
 {
 	ir_tarval *tv, *c;
 	ir_mode *mode;
@@ -627,7 +627,7 @@ static int is_transitive(pn_Cmp pnc)
  * @param right  the right operand of the Cmp
  * @param pnc    the compare relation
  */
-ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
+FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
 {
 	ir_node    *l_bound;
 	pn_Cmp      l_pnc, res_pnc, neg_pnc;

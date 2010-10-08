@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -42,7 +42,7 @@
 #include "irtools.h"
 #include "irgraph.h"
 #include "tv.h"
-#include "opt_confirms.h"
+#include "iroptimize.h"
 #include "iropt_dbg.h"
 #include "irpass.h"
 #include "vrp.h"

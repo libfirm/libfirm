@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -36,6 +36,7 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irverify.h"
+#include "iroptimize.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
@@ -43,7 +44,6 @@
 #include "irhooks.h"
 #include "irarch.h"
 #include "hashptr.h"
-#include "opt_confirms.h"
 #include "opt_polymorphy.h"
 #include "irtools.h"
 #include "irhooks.h"

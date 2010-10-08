@@ -26,6 +26,7 @@
 #define FIRM_IROPTIMIZE_H
 
 #include "firm_types.h"
+#include "nodeops.h"
 #include "begin.h"
 
 /**
@@ -1077,6 +1078,67 @@ FIRM_API void fixpoint_vrp(ir_graph*);
  * @return  the newly created ir_graph pass
  */
 FIRM_API ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name);
+
+/** Needed for MSVC to suppress warnings because it doest NOT handle const right. */
+typedef const ir_node *ir_node_cnst_ptr;
+
+/**
+ * Check, if the value of a node is != 0.
+ *
+ * This is a often needed case, so we handle here Confirm
+ * nodes too.
+ *
+ * @param n        a node representing the value
+ * @param confirm  if n is confirmed to be != 0, returns
+ *                 the the Confirm-node, else NULL
+ */
+FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm);
+
+/**
+ * Check, if the value of a node cannot represent a NULL pointer.
+ *
+ * - If option sel_based_null_check_elim is enabled, all
+ *   Sel nodes can be skipped.
+ * - A SymConst(entity) is NEVER a NULL pointer
+ * - A Const != NULL is NEVER a NULL pointer
+ * - Confirms are evaluated
+ *
+ * @param n        a node representing the value
+ * @param confirm  if n is confirmed to be != NULL, returns
+ *                 the the Confirm-node, else NULL
+ */
+FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm);
+
+/**
+ * Possible return values of value_classify().
+ */
+typedef enum ir_value_classify_sign {
+	value_classified_unknown  = 0,   /**< could not classify */
+	value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
+	value_classified_negative = -1   /**< value is negative, i.e. <= 0 if
+	                                      no signed zero exists or < 0 else */
+} ir_value_classify_sign;
+
+/**
+ * Check, if the value of a node can be confirmed >= 0 or <= 0,
+ * If the mode of the value did not honor signed zeros, else
+ * check for >= 0 or < 0.
+ *
+ * @param n  a node representing the value
+ */
+FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
+
+/**
+ * Return the value of a Cmp if one or both predecessors
+ * are Confirm nodes.
+ *
+ * @param cmp    the compare node that will be evaluated
+ * @param left   the left operand of the Cmp
+ * @param right  the right operand of the Cmp
+ * @param pnc    the compare relation
+ */
+FIRM_API ir_tarval *computed_value_Cmp_Confirm(
+	ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc);
 
 #include "end.h"
 
