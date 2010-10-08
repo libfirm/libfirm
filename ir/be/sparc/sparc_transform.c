@@ -835,29 +835,33 @@ static ir_entity *create_float_const_entity(ir_tarval *tv)
 	return entity;
 }
 
+static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
+{
+	ir_entity *entity = create_float_const_entity(tv);
+	ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
+	ir_node   *mem    = new_r_NoMem(current_ir_graph);
+	ir_mode   *mode   = get_tarval_mode(tv);
+	ir_node   *new_op
+		= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
+	ir_node   *proj   = new_Proj(new_op, mode, pn_sparc_Ldf_res);
+	be_dep_on_frame(hi);
+
+	set_irn_pinned(new_op, op_pin_state_floats);
+	return proj;
+}
+
 static ir_node *gen_Const(ir_node *node)
 {
 	ir_node   *block = be_transform_node(get_nodes_block(node));
 	ir_mode   *mode  = get_irn_mode(node);
 	dbg_info  *dbgi  = get_irn_dbg_info(node);
-	ir_tarval *tv;
+	ir_tarval *tv    = get_Const_tarval(node);
 	long       value;
 
 	if (mode_is_float(mode)) {
-		ir_tarval *tv     = get_Const_tarval(node);
-		ir_entity *entity = create_float_const_entity(tv);
-		ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
-		ir_node   *mem    = new_r_NoMem(current_ir_graph);
-		ir_node   *new_op
-			= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
-		ir_node   *proj   = new_r_Proj(new_op, mode, pn_sparc_Ldf_res);
-		be_dep_on_frame(hi);
-
-		set_irn_pinned(new_op, op_pin_state_floats);
-		return proj;
+		return gen_float_const(dbgi, block, tv);
 	}
 
-	tv    = get_Const_tarval(node);
 	value = get_tarval_long(tv);
 	if (value == 0) {
 		return get_g0();
@@ -1194,9 +1198,8 @@ static ir_node *gen_Unknown(ir_node *node)
 	/* just produce a 0 */
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		panic("FP not implemented");
-		be_dep_on_frame(node);
-		return node;
+		ir_node *block = be_transform_node(get_nodes_block(node));
+		return gen_float_const(NULL, block, get_mode_null(mode));
 	} else if (mode_needs_gp_reg(mode)) {
 		return get_g0();
 	}
