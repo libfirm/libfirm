@@ -670,14 +670,16 @@ static void lower_binop(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
+	ir_node            *block      = get_nodes_block(node);
 	ir_node            *left       = get_binop_left(node);
 	const node_entry_t *left_entry = get_node_entry(env, left);
 	ir_node            *right      = get_binop_right(node);
 	ir_node            *in[3]      = {
-		left_entry->low_word, left_entry->high_word, right
+		left_entry->low_word, left_entry->high_word,
+		/* it should be safe to conv to low_unsigned */
+		new_r_Conv(block, right, env->low_unsigned)
 	};
 	dbg_info           *dbgi       = get_irn_dbg_info(node);
-	ir_node            *block      = get_nodes_block(node);
 	ir_graph           *irg        = get_irn_irg(block);
 	ir_type            *mtp
 		= mode_is_signed(mode) ? shiftop_tp_s : shiftop_tp_u;
@@ -691,10 +693,6 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	set_irn_pinned(call, get_irn_pinned(node));
 	set_lowered(env, node, res_low, res_high);
-
-	/* The shift count is always mode_Iu, no need for lowering */
-	assert(get_irn_mode(right) != env->high_signed
-			&& get_irn_mode(right) != env->high_unsigned);
 }
 
 /**
