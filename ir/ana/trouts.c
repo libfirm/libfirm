@@ -456,7 +456,7 @@ void add_type_pointertype_to(const ir_type *tp, ir_type *ptp)
 	assert(ptp && is_Pointer_type(ptp));
 
 	pts = get_type_pointertype_array(tp);
-	ARR_APP1(ir_node *, pts, ptp);
+	ARR_APP1(ir_type*, pts, ptp);
 	set_type_pointertype_array(tp, pts);
 }
 
@@ -503,7 +503,7 @@ void  add_type_arraytype_of(const ir_type *tp, ir_type *atp)
 	assert(atp && is_Array_type(atp));
 
 	pts = get_type_arraytype_array(tp);
-	ARR_APP1(ir_node *, pts, atp);
+	ARR_APP1(ir_type*, pts, atp);
 	set_type_arraytype_array(tp, pts);
 }
 

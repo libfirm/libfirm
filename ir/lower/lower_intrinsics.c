@@ -103,7 +103,7 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
 	walker_env_t   wenv;
 
 	/* we use the ir_op generic pointers here */
-	NEW_ARR_A(const i_instr_record *, i_map, n_ops);
+	NEW_ARR_A(i_instr_record *, i_map, n_ops);
 	memset((void *)i_map, 0, sizeof(*i_map) * n_ops);
 
 	/* fill a map for faster search */

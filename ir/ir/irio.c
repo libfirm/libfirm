@@ -1456,7 +1456,7 @@ static int read_node_header(io_env_t *env, long *nodenr, long **preds,
 	*nodename = read_word(env);
 	*nodenr   = read_long(env);
 
-	ARR_RESIZE(ir_node *, *preds, 0);
+	ARR_RESIZE(long, *preds, 0);
 
 	EXPECT('[');
 	for (numpreds = 0; !feof(env->file); numpreds++) {

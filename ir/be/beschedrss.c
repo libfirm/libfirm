@@ -2095,7 +2095,7 @@ static void process_block(ir_node *block, void *env)
 	/* build an index map for all nodes in the current block */
 	i            = 0;
 	n            = get_irn_n_edges(block);
-	NEW_ARR_A(int *, rss->idx_map, n);
+	NEW_ARR_A(int, rss->idx_map, n);
 	foreach_out_edge(block, edge) {
 		ir_node *irn      = get_edge_src_irn(edge);
 		rss->idx_map[i++] = get_irn_idx(irn);

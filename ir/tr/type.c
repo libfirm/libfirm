@@ -907,7 +907,7 @@ void remove_class_subtype(ir_type *clss, ir_type *subtype)
 		if (clss->attr.ca.subtypes[i] == subtype) {
 			for (; i < (ARR_LEN (clss->attr.ca.subtypes))-1; i++)
 				clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
-			ARR_SETLEN(ir_entity*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
+			ARR_SETLEN(ir_type*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
 			break;
 		}
 }
@@ -963,7 +963,7 @@ void remove_class_supertype(ir_type *clss, ir_type *supertype)
 		if (clss->attr.ca.supertypes[i] == supertype) {
 			for (; i < (ARR_LEN(clss->attr.ca.supertypes))-1; i++)
 				clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
-			ARR_SETLEN(ir_entity*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
+			ARR_SETLEN(ir_type*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
 			break;
 		}
 }

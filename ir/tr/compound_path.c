@@ -241,8 +241,8 @@ void remove_compound_ent_value(ir_entity *ent, ir_entity *value_ent)
 				ent->attr.cmpd_attr.val_paths[i] = ent->attr.cmpd_attr.val_paths[i+1];
 				ent->attr.cmpd_attr.values[i]    = ent->attr.cmpd_attr.values[i+1];
 			}
-			ARR_SETLEN(ir_entity*, ent->attr.cmpd_attr.val_paths, n - 1);
-			ARR_SETLEN(ir_node*,   ent->attr.cmpd_attr.values,    n - 1);
+			ARR_SETLEN(compound_graph_path*, ent->attr.cmpd_attr.val_paths, n - 1);
+			ARR_SETLEN(ir_node*,             ent->attr.cmpd_attr.values,    n - 1);
 			break;
 		}
 	}
