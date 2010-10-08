@@ -591,11 +591,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			arch_env->impl->before_abi(irg);
 
 		/* implement the ABI conventions. */
-		be_timer_push(T_ABI);
-		be_abi_introduce(irg);
-		be_timer_pop(T_ABI);
-
 		if (!arch_env->custom_abi) {
+			be_timer_push(T_ABI);
+			be_abi_introduce(irg);
+			be_timer_pop(T_ABI);
 			dump(DUMP_ABI, irg, "abi");
 		}
 
@@ -760,9 +759,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_FINAL, irg, "end");
 
-		be_timer_push(T_ABI);
-		be_abi_free(irg);
-		be_timer_pop(T_ABI);
+		if (!arch_env->custom_abi) {
+			be_timer_push(T_ABI);
+			be_abi_free(irg);
+			be_timer_pop(T_ABI);
+		}
 
 		restore_optimization_state(&state);
 

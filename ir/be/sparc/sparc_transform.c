@@ -710,7 +710,7 @@ static ir_node *gen_Not(ir_node *node)
 	ir_node  *block  = be_transform_node(get_nodes_block(node));
 	ir_node  *new_op = be_transform_node(op);
 
-	/* Note: Not(Eor()) is normalize in firm locatopts already so
+	/* Note: Not(Eor()) is normalize in firm localopts already so
 	 * we don't match it for xnor here */
 
 	/* Not can be represented with xnor 0, n */

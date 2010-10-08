@@ -1525,7 +1525,8 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_node              *call          = get_Proj_pred(get_Proj_pred(node));
 	ir_node              *new_call      = be_transform_node(call);
 	ir_type              *function_type = get_Call_type(call);
-	calling_convention_t *cconv = arm_decide_calling_convention(function_type);
+	calling_convention_t *cconv
+		= arm_decide_calling_convention(NULL, function_type);
 	const reg_or_stackslot_t *res = &cconv->results[pn];
 	ir_mode              *mode;
 	int                   regn;
@@ -1844,7 +1845,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node              *new_mem      = be_transform_node(mem);
 	dbg_info             *dbgi         = get_irn_dbg_info(node);
 	ir_type              *type         = get_Call_type(node);
-	calling_convention_t *cconv        = arm_decide_calling_convention(type);
+	calling_convention_t *cconv        = arm_decide_calling_convention(NULL, type);
 	int                   n_params     = get_Call_n_params(node);
 	int                   n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
 	/* max inputs: memory, callee, register arguments */
@@ -2171,7 +2172,7 @@ void arm_transform_graph(ir_graph *irg)
 	abihelper = be_abihelper_prepare(irg);
 	be_collect_stacknodes(abihelper);
 	assert(cconv == NULL);
-	cconv = arm_decide_calling_convention(get_entity_type(entity));
+	cconv = arm_decide_calling_convention(irg, get_entity_type(entity));
 	create_stacklayout(irg);
 
 	be_transform_graph(irg, NULL);

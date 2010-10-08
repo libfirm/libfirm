@@ -102,7 +102,6 @@ struct be_abi_irg_t {
 	void                 *cb;           /**< ABI Callback self pointer. */
 
 	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
-	pset                 *ignore_regs;  /**< Additional registers which shall be ignored. */
 
 	ir_node              **calls;       /**< flexible array containing all be_Call nodes */
 };
@@ -1703,6 +1702,7 @@ static void modify_irg(ir_graph *irg)
 	const arch_env_t      *arch_env     = be_get_irg_arch_env(irg);
 	const arch_register_t *sp           = arch_env->sp;
 	ir_type               *method_type  = get_entity_type(get_irg_entity(irg));
+	be_irg_t              *birg         = be_birg_from_irg(irg);
 	struct obstack        *obst         = be_get_be_obst(irg);
 	be_stack_layout_t     *stack_layout = be_get_irg_stack_layout(irg);
 	ir_node *end;
@@ -1901,7 +1901,7 @@ static void modify_irg(ir_graph *irg)
 
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
-	pset_insert_ptr(env->ignore_regs, fp_reg);
+	rbitset_clear(birg->allocatable_regs, fp_reg->global_index);
 
 	/* rewire old mem users to new mem */
 	exchange(old_mem, mem);
@@ -2185,19 +2185,28 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	const arch_env_t *arch_env    = be_get_irg_arch_env(irg);
 	ir_entity        *entity      = get_irg_entity(irg);
 	ir_type          *method_type = get_entity_type(entity);
+	be_irg_t         *birg        = be_birg_from_irg(irg);
+	struct obstack   *obst        = &birg->obst;
+	unsigned          r;
 
 	pmap_entry *ent;
 	ir_node *dummy;
 
-	env->ignore_regs  = pset_new_ptr_default();
+	/* determine allocatable registers */
+	assert(birg->allocatable_regs == NULL);
+	birg->allocatable_regs = rbitset_obstack_alloc(obst, arch_env->n_registers);
+	for (r = 0; r < arch_env->n_registers; ++r) {
+		const arch_register_t *reg = &arch_env->registers[r];
+		if ( !(reg->type & arch_register_type_ignore)) {
+			rbitset_set(birg->allocatable_regs, r);
+		}
+	}
 
 	/* break here if backend provides a custom API.
 	 * Note: we shouldn't have to setup any be_abi_irg_t* stuff at all,
 	 * but need more cleanup to make this work
 	 */
 	be_set_irg_abi(irg, env);
-	if (arch_env->custom_abi)
-		return env;
 
 	be_omit_fp      = options->omit_fp;
 
@@ -2259,8 +2268,6 @@ void be_abi_free(ir_graph *irg)
 		be_abi_call_free(env->call);
 	if (env->dce_survivor != NULL)
 		free_survive_dce(env->dce_survivor);
-	if (env->ignore_regs != NULL)
-		del_pset(env->ignore_regs);
 	if (env->regs != NULL)
 		pmap_destroy(env->regs);
 	free(env);
@@ -2271,23 +2278,16 @@ void be_abi_free(ir_graph *irg)
 void be_put_allocatable_regs(const ir_graph *irg,
                              const arch_register_class_t *cls, bitset_t *bs)
 {
-	be_abi_irg_t          *abi = be_get_irg_abi(irg);
-	const arch_register_t *reg;
-	unsigned               i;
+	be_irg_t *birg             = be_birg_from_irg(irg);
+	unsigned *allocatable_regs = birg->allocatable_regs;
+	unsigned  i;
 
 	assert(bitset_size(bs) == cls->n_regs);
 	bitset_clear_all(bs);
-
 	for (i = 0; i < cls->n_regs; ++i) {
-		reg = &cls->regs[i];
-		if (! (reg->type & arch_register_type_ignore))
-			bitset_set(bs, reg->index);
-	}
-
-	for (reg = pset_first(abi->ignore_regs); reg != NULL;
-	     reg = pset_next(abi->ignore_regs)) {
-		if (reg->reg_class == cls)
-			bitset_clear(bs, reg->index);
+		const arch_register_t *reg = &cls->regs[i];
+		if (rbitset_is_set(allocatable_regs, reg->global_index))
+			bitset_set(bs, i);
 	}
 }
 
@@ -2303,23 +2303,15 @@ void be_set_allocatable_regs(const ir_graph *irg,
                              const arch_register_class_t *cls,
                              unsigned *raw_bitset)
 {
-	be_abi_irg_t    *abi = be_get_irg_abi(irg);
-	unsigned         i;
-	arch_register_t *reg;
+	be_irg_t *birg             = be_birg_from_irg(irg);
+	unsigned *allocatable_regs = birg->allocatable_regs;
+	unsigned  i;
 
+	rbitset_clear_all(raw_bitset, cls->n_regs);
 	for (i = 0; i < cls->n_regs; ++i) {
-		if (arch_register_type_is(&cls->regs[i], ignore))
-			continue;
-
-		rbitset_set(raw_bitset, i);
-	}
-
-	for (reg = pset_first(abi->ignore_regs); reg != NULL;
-	     reg = pset_next(abi->ignore_regs)) {
-		if (reg->reg_class != cls)
-			continue;
-
-		rbitset_clear(raw_bitset, reg->index);
+		const arch_register_t *reg = &cls->regs[i];
+		if (rbitset_is_set(allocatable_regs, reg->global_index))
+			rbitset_set(raw_bitset, i);
 	}
 }
 

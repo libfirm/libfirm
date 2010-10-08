@@ -30,7 +30,26 @@
 #include "irgwalk.h"
 #include "typerep.h"
 #include "xmalloc.h"
+#include "util.h"
 #include "error.h"
+#include "gen_sparc_regalloc_if.h"
+
+static const unsigned ignore_regs[] = {
+	REG_G0,
+	/* reserved for sparc ABI: */
+	REG_G5,
+	REG_G6,
+	REG_G7,
+
+	REG_SP,
+	REG_O7,
+	REG_FRAME_POINTER,
+	REG_I7,
+
+	REG_FPFLAGS,
+	REG_FLAGS,
+	REG_Y,
+};
 
 /**
  * Maps an input register representing the i'th register input
@@ -63,20 +82,18 @@ static void check_omit_fp(ir_node *node, void *env)
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
                                                       ir_graph *irg)
 {
-	int                   stack_offset = 0;
+	int                   stack_offset        = 0;
+	int                   n_param_regs        = ARRAY_SIZE(param_regs);
+	int                   n_float_result_regs = ARRAY_SIZE(float_result_regs);
+	bool                  omit_fp             = false;
 	reg_or_stackslot_t   *params;
 	reg_or_stackslot_t   *results;
-	int                   n_param_regs
-		= sizeof(param_regs)/sizeof(param_regs[0]);
-	int                   n_float_result_regs
-		= sizeof(float_result_regs)/sizeof(float_result_regs[0]);
 	int                   n_params;
 	int                   n_results;
 	int                   i;
 	int                   regnum;
 	int                   float_regnum;
 	calling_convention_t *cconv;
-	bool                  omit_fp = false;
 
 	if (irg != NULL) {
 		const be_options_t *options = be_get_irg_options(irg);
@@ -167,6 +184,21 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	cconv->param_stack_size = stack_offset;
 	cconv->results          = results;
 	cconv->omit_fp          = omit_fp;
+
+	/* setup ignore register array */
+	if (irg != NULL) {
+		be_irg_t       *birg      = be_birg_from_irg(irg);
+		size_t          n_ignores = ARRAY_SIZE(ignore_regs);
+		struct obstack *obst      = &birg->obst;
+		size_t          r;
+
+		assert(birg->allocatable_regs == NULL);
+		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_SPARC_REGISTERS);
+		rbitset_set_all(birg->allocatable_regs, N_SPARC_REGISTERS);
+		for (r = 0; r < n_ignores; ++r) {
+			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
+		}
+	}
 
 	return cconv;
 }

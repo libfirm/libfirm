@@ -30,8 +30,17 @@
 #include "typerep.h"
 #include "xmalloc.h"
 #include "error.h"
+#include "util.h"
 
-calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
+static const unsigned ignore_regs[] = {
+	REG_R12,
+	REG_SP,
+	REG_PC,
+	REG_FL,
+};
+
+calling_convention_t *arm_decide_calling_convention(ir_graph *irg,
+                                                    ir_type *function_type)
 {
 	int                   stack_offset = 0;
 	reg_or_stackslot_t   *params;
@@ -124,6 +133,21 @@ calling_convention_t *arm_decide_calling_convention(ir_type *function_type)
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
 	cconv->results          = results;
+
+	/* setup allocatable registers */
+	if (irg != NULL) {
+		be_irg_t       *birg      = be_birg_from_irg(irg);
+		size_t          n_ignores = ARRAY_SIZE(ignore_regs);
+		struct obstack *obst      = &birg->obst;
+		size_t          r;
+
+		assert(birg->allocatable_regs == NULL);
+		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_ARM_REGISTERS);
+		rbitset_set_all(birg->allocatable_regs, N_ARM_REGISTERS);
+		for (r = 0; r < n_ignores; ++r) {
+			rbitset_clear(birg->allocatable_regs, ignore_regs[r]);
+		}
+	}
 
 	return cconv;
 }
