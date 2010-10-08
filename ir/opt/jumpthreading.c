@@ -92,7 +92,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	/* the other defs can't be marked for cases where a user of the original
 	 * value is in the same block as the alternative definition.
 	 * In this case we mustn't use the alternative definition.
-	 * So we keep a flag that indicated wether we walked at least 1 block
+	 * So we keep a flag that indicated whether we walked at least 1 block
 	 * away and may use the alternative definition */
 	if (block == ssa_second_def_block && !first) {
 		return ssa_second_def;
