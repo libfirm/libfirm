@@ -33,7 +33,7 @@
  * @param obst   the obstack to allocate the array on
  * @param size   the size of the backedge array
  */
-unsigned *new_backedge_arr(struct obstack *obst, unsigned size);
+bitset_t *new_backedge_arr(struct obstack *obst, unsigned size);
 
 /**
  * Adapts backedges array to new size.

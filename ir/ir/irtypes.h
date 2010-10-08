@@ -40,6 +40,7 @@
 #include "irprog.h"
 #include "field_temperature.h"
 #include "irphase.h"
+#include "bitset.h"
 
 #include "pset.h"
 #include "set.h"
@@ -154,8 +155,8 @@ typedef struct {
 	ir_node ** in_cg;           /**< array with predecessors in
 	                             * interprocedural_view, if they differ
 	                             * from intraprocedural predecessors */
-	unsigned *backedge;         /**< Raw Bitfield n set to true if pred n is backedge.*/
-	unsigned *cg_backedge;      /**< Raw Bitfield n set to true if pred n is interprocedural backedge. */
+	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
+	bitset_t *cg_backedge;      /**< Bitfield n set to true if pred n is interprocedural backedge. */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
 	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	ir_entity *entity;          /**< entitiy representing this block */
@@ -250,7 +251,7 @@ typedef struct {
 typedef struct {
 	ir_node        *next;         /**< Points to the next Phi in the Phi list of a block. */
 	union {
-		unsigned       *backedge;     /**< Raw Bitfield: bit n is set to true if pred n is backedge. */
+		bitset_t      *backedge;     /**< Raw Bitfield: bit n is set to true if pred n is backedge. */
 		int            pos;           /**< For Phi0. Used to remember the value defined by
 		                               this Phi node.  Needed when the Phi is completed
 		                               to call get_r_internal_value() to find the

@@ -97,30 +97,6 @@ static inline unsigned *rbitset_obstack_alloc(struct obstack *obst,
 }
 
 /**
- * Allocate an empty raw bitset including the size on an obstack.
- * The size of this bitset can be accessed by bitset[-1].
- *
- * @param obst  the obstack where the bitset is allocated on
- * @param size  number of bits in the bitset
- *
- * @return the new bitset
- */
-static inline unsigned *rbitset_w_size_obstack_alloc(struct obstack *obst,
-                                                     unsigned size)
-{
-	unsigned  size_bytes = BITSET_SIZE_BYTES(size);
-	unsigned *res        = obstack_alloc(obst, size_bytes + sizeof(unsigned));
-	*res = size;
-	++res;
-	memset(res, 0, size_bytes);
-
-	return res;
-}
-
-/** Return the size of a bitset allocated with a *_w_size_* function */
-#define rbitset_size(set)	(set)[-1]
-
-/**
  * Duplicate a raw bitset on an obstack.
  *
  * @param obst       the obstack where the bitset is allocated on
