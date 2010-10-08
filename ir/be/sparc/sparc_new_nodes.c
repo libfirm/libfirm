@@ -60,11 +60,6 @@ static bool has_switch_jmp_attr(const ir_node *node)
 	return is_sparc_SwitchJmp(node);
 }
 
-static bool has_save_attr(const ir_node *node)
-{
-	return is_sparc_Save(node);
-}
-
 static bool has_fp_attr(const ir_node *node)
 {
 	return is_sparc_fadd(node) || is_sparc_fsub(node)
@@ -104,10 +99,6 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			           attr->immediate_value_entity, attr->immediate_value);
 		} else {
 			ir_fprintf(F, "immediate value: %d\n", attr->immediate_value);
-		}
-		if (has_save_attr(n)) {
-			const sparc_save_attr_t *attr = get_sparc_save_attr_const(n);
-			fprintf(F, "initial stacksize: %d\n", attr->initial_stacksize);
 		}
 		if (sparc_has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
@@ -205,18 +196,6 @@ const sparc_switch_jmp_attr_t *get_sparc_switch_jmp_attr_const(const ir_node *no
 	return (const sparc_switch_jmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
-sparc_save_attr_t *get_sparc_save_attr(ir_node *node)
-{
-	assert(has_save_attr(node));
-	return (sparc_save_attr_t*) get_irn_generic_attr_const(node);
-}
-
-const sparc_save_attr_t *get_sparc_save_attr_const(const ir_node *node)
-{
-	assert(has_save_attr(node));
-	return (const sparc_save_attr_t*) get_irn_generic_attr_const(node);
-}
-
 sparc_fp_attr_t *get_sparc_fp_attr(ir_node *node)
 {
 	assert(has_fp_attr(node));
@@ -273,12 +252,6 @@ static void init_sparc_load_store_attributes(ir_node *res, ir_mode *ls_mode,
 	attr->load_store_mode             = ls_mode;
 	attr->is_frame_entity             = is_frame_entity;
 	attr->is_reg_reg                  = is_reg_reg;
-}
-
-static void init_sparc_save_attributes(ir_node *res, int initial_stacksize)
-{
-	sparc_save_attr_t *attr = get_sparc_save_attr(res);
-	attr->initial_stacksize = initial_stacksize;
 }
 
 static void init_sparc_fp_attributes(ir_node *res, ir_mode *fp_mode)
@@ -368,17 +341,6 @@ static int cmp_attr_sparc_switch_jmp(ir_node *a, ir_node *b)
 		return 1;
 
 	return attr_a->default_proj_num != attr_b->default_proj_num;
-}
-
-static int cmp_attr_sparc_save(ir_node *a, ir_node *b)
-{
-	const sparc_save_attr_t *attr_a = get_sparc_save_attr_const(a);
-	const sparc_save_attr_t *attr_b = get_sparc_save_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->initial_stacksize != attr_b->initial_stacksize;
 }
 
 static int cmp_attr_sparc_fp(ir_node *a, ir_node *b)

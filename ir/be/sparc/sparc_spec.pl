@@ -139,7 +139,6 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_switch_jmp_attributes(res, default_pn, jump_table);\n",
-	sparc_save_attr_t        => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
 	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);".
@@ -151,7 +150,6 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
 	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
 	sparc_switch_jmp_attr_t	=> "cmp_attr_sparc_switch_jmp",
-	sparc_save_attr_t       => "cmp_attr_sparc_save",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
 );
@@ -160,9 +158,6 @@ $default_copy_attr = "sparc_copy_attr";
 	modifies_flags    => "sparc_arch_irn_flag_modifies_flags",
 	modifies_fp_flags => "sparc_arch_irn_flag_modifies_fp_flags",
 );
-
-# addressing modes: imm, reg, reg +/- imm, reg + reg
-# max. imm = 13 bits signed (-4096 ... 4096)
 
 my %cmp_operand_constructors = (
 	imm => {
@@ -260,7 +255,6 @@ Sub => {
 	constructors => \%binop_operand_constructors,
 },
 
-
 # Load / Store
 Ld => {
 	op_flags  => [ "labeled", "fragile" ],
@@ -320,15 +314,44 @@ St => {
 },
 
 Save => {
-	reg_req   => {
-		in => [ "sp", "none"],
-		out => [ "sp:I|S", "frame_pointer:I", "none" ]
+	emit      => '. save %S0, %R1I, %D0',
+	outs      => [ "stack" ],
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "sp" ], out => [ "sp:I|S" ] },
+			ins        => [ "stack" ],
+		},
+		reg => {
+			reg_req    => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
+			ins        => [ "stack", "increment" ],
+		}
 	},
-	ins       => [ "stack", "mem" ],
-	outs      => [ "stack", "frame", "mem" ],
-	attr      => "int initial_stacksize",
-	attr_type => "sparc_save_attr_t",
-	init_attr => "\tinit_sparc_save_attributes(res, initial_stacksize);",
+},
+
+Restore => {
+	emit => '. restore %S0, %R1I, %D0',
+	outs => [ "stack" ],
+	constructors => {
+		imm => {
+			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+			reg_req    => { in => [ "sp" ], out => [ "sp:I|S" ] },
+			ins        => [ "stack" ],
+		},
+		reg => {
+			reg_req    => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
+			ins        => [ "stack", "increment" ],
+		}
+	},
+},
+
+RestoreZero => {
+	emit => '. restore',
+	outs => [ ],
+	ins  => [ ],
+	mode => "mode_T",
 },
 
 SubSP => {
@@ -382,6 +405,25 @@ Ba => {
 	irn_flags => [ "simple_jump" ],
 	reg_req   => { out => [ "none" ] },
 	mode      => "mode_X",
+},
+
+# This is a JumpLink instruction, but with the addition that you can add custom
+# register constraints to model your calling conventions
+Return => {
+	arity     => "variable",
+	out_arity => "variable",
+	constructors => {
+		imm => {
+			attr       => "ir_entity *entity, int32_t offset",
+			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
+			arity     => "variable",
+			out_arity => "variable",
+		},
+		reg => {
+			arity     => "variable",
+			out_arity => "variable",
+		}
+	},
 },
 
 Call => {

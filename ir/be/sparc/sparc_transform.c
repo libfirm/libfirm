@@ -1282,7 +1282,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *mem;
 	ir_node   *start;
 	ir_node   *sp;
-	ir_node   *fp;
 	ir_node   *barrier;
 	ir_node   *save;
 	int        i;
@@ -1305,15 +1304,9 @@ static ir_node *gen_Start(ir_node *node)
 
 	mem  = be_prolog_get_memory(abihelper);
 	sp   = be_prolog_get_reg_value(abihelper, sp_reg);
-	save = new_bd_sparc_Save(NULL, block, sp, mem, SPARC_MIN_STACKSIZE);
-	fp   = new_r_Proj(save, mode_gp, pn_sparc_Save_frame);
+	save = new_bd_sparc_Save_imm(NULL, block, sp, NULL, -SPARC_MIN_STACKSIZE);
 	sp   = new_r_Proj(save, mode_gp, pn_sparc_Save_stack);
-	mem  = new_r_Proj(save, mode_M, pn_sparc_Save_mem);
-	arch_set_irn_register(fp, fp_reg);
 	arch_set_irn_register(sp, sp_reg);
-
-	be_prolog_add_reg(abihelper, fp_reg, arch_register_req_type_ignore);
-	be_prolog_set_reg_value(abihelper, fp_reg, fp);
 
 	sp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_prolog_set_reg_value(abihelper, sp_reg, sp);
@@ -1360,6 +1353,7 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *sp_proj        = get_stack_pointer_for(node);
 	int       n_res          = get_Return_n_ress(node);
 	ir_node  *bereturn;
+	ir_node  *restore;
 	ir_node  *incsp;
 	int       i;
 
@@ -1389,6 +1383,10 @@ static ir_node *gen_Return(ir_node *node)
 	incsp   = be_new_IncSP(sp_reg, new_block, sp_proj,
 	                       BE_STACK_FRAME_SIZE_SHRINK, 0);
 	be_epilog_set_reg_value(abihelper, sp_reg, incsp);
+
+	/* we need a restore instruction */
+	restore = new_bd_sparc_RestoreZero(NULL, block);
+	keep_alive(restore);
 
 	bereturn = be_epilog_create_return(abihelper, dbgi, new_block);
 

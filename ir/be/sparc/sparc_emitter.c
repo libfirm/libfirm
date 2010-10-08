@@ -366,6 +366,8 @@ static bool is_no_instruction(const ir_node *node)
 		if (src_reg == dest_reg)
 			return true;
 	}
+	if (be_is_IncSP(node) && be_get_IncSP_offset(node) == 0)
+		return true;
 	/* Ba is not emitted if it is a simple fallthrough */
 	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
 		return true;
@@ -381,7 +383,8 @@ static bool has_delay_slot(const ir_node *node)
 
 	return is_sparc_Bicc(node) || is_sparc_fbfcc(node) || is_sparc_Ba(node)
 		|| is_sparc_SwitchJmp(node) || is_sparc_Call(node)
-		|| is_sparc_SDiv(node) || is_sparc_UDiv(node);
+		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
+		|| be_is_Return(node);
 }
 
 /** returns true if the emitter for this sparc node can produce more than one
@@ -396,7 +399,7 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return true;
 
 	return is_sparc_Mulh(node) || is_sparc_SDiv(node) || is_sparc_UDiv(node)
-		|| be_is_MemPerm(node) || be_is_Perm(node) || be_is_Return(node);
+		|| be_is_MemPerm(node) || be_is_Perm(node);
 }
 
 /**
@@ -427,6 +430,20 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		/* the Call also destroys the value of %o7, but since this is currently
 		 * marked as ignore register in the backend, it should never be used by
 		 * the instruction in the delay slot. */
+	} else if (be_is_Return(node)) {
+		/* we only have to check the jump destination value */
+		int arity = get_irn_arity(node);
+		int i;
+
+		check = NULL;
+		for (i = 0; i < arity; ++i) {
+			ir_node               *in  = get_irn_n(node, i);
+			const arch_register_t *reg = arch_get_irn_register(in);
+			if (reg == &sparc_gp_regs[REG_O7]) {
+				check = skip_Proj(in);
+				break;
+			}
+		}
 	} else {
 		check = node;
 	}
@@ -481,19 +498,6 @@ static void emit_be_IncSP(const ir_node *irn)
 	sparc_emit_source_register(irn, 0);
 	be_emit_irprintf(", %d", offs);
 	be_emit_cstring(", ");
-	sparc_emit_dest_register(irn, 0);
-	be_emit_finish_line_gas(irn);
-}
-
-/**
- * emits code for save instruction with min. required stack space
- */
-static void emit_sparc_Save(const ir_node *irn)
-{
-	const sparc_save_attr_t *save_attr = get_sparc_save_attr_const(irn);
-	be_emit_cstring("\tsave ");
-	sparc_emit_source_register(irn, 0);
-	be_emit_irprintf(", %d, ", -save_attr->initial_stacksize);
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
@@ -564,18 +568,6 @@ static void emit_sparc_SDiv(const ir_node *node)
 static void emit_sparc_UDiv(const ir_node *node)
 {
 	emit_sparc_Div(node, false);
-}
-
-/**
- * Emits code for return node
- */
-static void emit_be_Return(const ir_node *irn)
-{
-	be_emit_cstring("\tret");
-	//be_emit_cstring("\tjmp %i7+8");
-	be_emit_finish_line_gas(irn);
-	be_emit_cstring("\trestore");
-	be_emit_finish_line_gas(irn);
 }
 
 /**
@@ -686,6 +678,24 @@ static void emit_be_MemPerm(const ir_node *node)
 	be_emit_finish_line_gas(node);
 
 	assert(sp_change == 0);
+}
+
+static void emit_be_Return(const ir_node *node)
+{
+	const char *destreg = "%o7";
+
+	/* hack: we don't explicitely model register changes because of the
+	 * restore node. So we have to do it manually here */
+	if (delay_slot_filler != NULL &&
+			(is_sparc_Restore(delay_slot_filler)
+			 || is_sparc_RestoreZero(delay_slot_filler))) {
+		destreg = "%i7";
+	}
+	be_emit_cstring("\tjmp ");
+	be_emit_string(destreg);
+	be_emit_cstring("+8");
+	be_emit_finish_line_gas(node);
+	fill_delay_slot();
 }
 
 static void emit_sparc_FrameAddr(const ir_node *node)
@@ -1014,7 +1024,6 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
-	set_emitter(op_sparc_Save,      emit_sparc_Save);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);

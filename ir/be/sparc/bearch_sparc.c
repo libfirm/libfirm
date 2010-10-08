@@ -107,12 +107,15 @@ static void sparc_set_frame_offset(ir_node *node, int offset)
 static int sparc_get_sp_bias(const ir_node *node)
 {
 	if (is_sparc_Save(node)) {
-		const sparc_save_attr_t *attr = get_sparc_save_attr_const(node);
-		/* Note we do not retport the change of the SPARC_MIN_STACKSIZE
+		const sparc_attr_t *attr = get_sparc_attr_const(node);
+		if (get_irn_arity(node) == 3)
+			panic("no support for _reg variant yet");
+
+		/* Note we do not report the change of the SPARC_MIN_STACKSIZE
 		 * size, since we have additional magic in the emitter which
 		 * calculates that! */
-		assert(attr->initial_stacksize >= SPARC_MIN_STACKSIZE);
-		return attr->initial_stacksize - SPARC_MIN_STACKSIZE;
+		assert(attr->immediate_value <= -SPARC_MIN_STACKSIZE);
+		return attr->immediate_value + SPARC_MIN_STACKSIZE;
 	}
 	return 0;
 }
