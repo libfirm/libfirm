@@ -2123,7 +2123,7 @@ static const backend_params *ia32_get_libfirm_params(void)
 	static const ir_settings_arch_dep_t ad = {
 		1,                   /* also use subs */
 		4,                   /* maximum shifts */
-		31,                  /* maximum shift amount */
+		63,                  /* maximum shift amount */
 		ia32_evaluate_insn,  /* evaluate the instruction sequence */
 
 		1,  /* allow Mulhs */

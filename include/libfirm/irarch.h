@@ -47,11 +47,12 @@ typedef enum instr {
  * A Callback for evaluating the costs of an instruction.
  *
  * @param kind   the instruction
+ * @param mode   the mode of the instruction
  * @param tv     for MUL instruction, the multiplication constant
  *
  * @return the costs of this instruction
  */
-typedef int (*evaluate_costs_func)(insn_kind kind, ir_tarval *tv);
+typedef int (*evaluate_costs_func)(insn_kind kind, const ir_mode *mode, ir_tarval *tv);
 
 /**
  * A parameter structure that drives the machine dependent Firm

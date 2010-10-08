@@ -438,13 +438,13 @@ static void set_arch_costs(void)
 }
 
 /* Evaluate the costs of an instruction. */
-int ia32_evaluate_insn(insn_kind kind, ir_tarval *tv)
+int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 {
 	int cost;
 
 	switch (kind) {
 	case MUL:
-		cost =  arch_costs->cost_mul_start;
+		cost = arch_costs->cost_mul_start;
 		if (arch_costs->cost_mul_bit > 0) {
 			char *bitstr = get_tarval_bitpattern(tv);
 			int i;
@@ -456,14 +456,26 @@ int ia32_evaluate_insn(insn_kind kind, ir_tarval *tv)
 			}
 			free(bitstr);
 		}
-		return cost;
+		if (get_mode_size_bits(mode) <= 32)
+			return cost;
+		/* 64bit mul supported, approx 4times of a 32bit mul*/
+		return 4 * cost;
 	case LEA:
-		return arch_costs->lea_cost;
+		/* lea is only supported for 32 bit */
+		if (get_mode_size_bits(mode) <= 32)
+			return arch_costs->lea_cost;
+		return 0x10000;
 	case ADD:
 	case SUB:
-		return arch_costs->add_cost;
+		if (get_mode_size_bits(mode) <= 32)
+			return arch_costs->add_cost;
+		/* 64bit add/sub supported, double the cost */
+		return 2 * arch_costs->add_cost;
 	case SHIFT:
-		return arch_costs->const_shf_cost;
+		if (get_mode_size_bits(mode) <= 32)
+			return arch_costs->const_shf_cost;
+		/* 64bit shift supported, double the cost */
+		return 2 * arch_costs->const_shf_cost;
 	case ZERO:
 		return arch_costs->add_cost;
 	default:

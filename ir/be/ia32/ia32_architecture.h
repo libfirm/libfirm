@@ -115,10 +115,11 @@ void ia32_setup_cg_config(void);
  * lowerer.
  *
  * @param kind   the instruction
+ * @param mode   the mode of the instruction
  * @param tv     for MUL instruction, the multiplication constant
  *
  * @return the cost
  */
-int ia32_evaluate_insn(insn_kind kind, ir_tarval *tv);
+int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv);
 
 #endif

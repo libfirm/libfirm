@@ -104,8 +104,9 @@ typedef struct mul_env {
  * Some kind of default evaluator. Return the cost of
  * instructions.
  */
-static int default_evaluate(insn_kind kind, ir_tarval *tv)
+static int default_evaluate(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 {
+	(void) mode;
 	(void) tv;
 
 	if (kind == MUL)
@@ -485,7 +486,7 @@ static int evaluate_insn(mul_env *env, instruction *inst)
 	case ADD:
 		costs  = evaluate_insn(env, inst->in[0]);
 		costs += evaluate_insn(env, inst->in[1]);
-		costs += env->evaluate(inst->kind, NULL);
+		costs += env->evaluate(inst->kind, env->mode, NULL);
 		inst->costs = costs;
 		return costs;
 	case SHIFT:
@@ -496,11 +497,11 @@ static int evaluate_insn(mul_env *env, instruction *inst)
 		else
 			--env->n_shift;
 		costs  = evaluate_insn(env, inst->in[0]);
-		costs += env->evaluate(inst->kind, NULL);
+		costs += env->evaluate(inst->kind, env->mode, NULL);
 		inst->costs = costs;
 		return costs;
 	case ZERO:
-		inst->costs = costs = env->evaluate(inst->kind, NULL);
+		inst->costs = costs = env->evaluate(inst->kind, env->mode, NULL);
 		return costs;
 	case MUL:
 	case ROOT:
@@ -544,7 +545,7 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, ir_tarval *tv)
 	inst = decompose_mul(&env, R, r, tv);
 
 	/* the paper suggests 70% here */
-	mul_costs = (env.evaluate(MUL, tv) * 7 + 5) / 10;
+	mul_costs = (env.evaluate(MUL, env.mode, tv) * 7 + 5) / 10;
 	if (evaluate_insn(&env, inst) <= mul_costs && !env.fail) {
 		env.op       = operand;
 		env.blk      = get_nodes_block(irn);
