@@ -324,7 +324,7 @@ static void write_mode(io_env_t *env, ir_mode *mode)
 	fputc(' ', env->file);
 }
 
-static void write_tarval(io_env_t *env, tarval *tv)
+static void write_tarval(io_env_t *env, ir_tarval *tv)
 {
 	char buf[1024];
 	write_mode(env, get_tarval_mode(tv));
@@ -1161,11 +1161,11 @@ static ir_cons_flags get_cons_flags(io_env_t *env)
 	return flags;
 }
 
-static tarval *read_tv(io_env_t *env)
+static ir_tarval *read_tv(io_env_t *env)
 {
-	ir_mode *tvmode = read_mode(env);
-	char    *str    = read_word(env);
-	tarval  *tv     = new_tarval_from_str(str, strlen(str), tvmode);
+	ir_mode   *tvmode = read_mode(env);
+	char      *str    = read_word(env);
+	ir_tarval *tv     = new_tarval_from_str(str, strlen(str), tvmode);
 	obstack_free(&env->obst, str);
 
 	return tv;

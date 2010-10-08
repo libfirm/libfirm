@@ -120,18 +120,18 @@ struct lower_env_t {
 	node_entry_t **entries;       /**< entries per node */
 	ir_graph      *irg;
 	struct obstack obst;          /**< an obstack holding the temporary data */
-	ir_type  *l_mtp;              /**< lowered method type of the current method */
-	tarval   *tv_mode_bytes;      /**< a tarval containing the number of bytes in the lowered modes */
-	tarval   *tv_mode_bits;       /**< a tarval containing the number of bits in the lowered modes */
-	pdeq     *waitq;              /**< a wait queue of all nodes that must be handled later */
-	ir_node **lowered_phis;       /**< list of lowered phis */
-	pmap     *proj_2_block;       /**< a map from ProjX to its destination blocks */
-	ir_mode  *high_signed;        /**< doubleword signed type */
-	ir_mode  *high_unsigned;      /**< doubleword unsigned type */
-	ir_mode  *low_signed;         /**< word signed type */
-	ir_mode  *low_unsigned;       /**< word unsigned type */
-	ident    *first_id;           /**< .l for little and .h for big endian */
-	ident    *next_id;            /**< .h for little and .l for big endian */
+	ir_type   *l_mtp;              /**< lowered method type of the current method */
+	ir_tarval *tv_mode_bytes;     /**< a tarval containing the number of bytes in the lowered modes */
+	ir_tarval *tv_mode_bits;      /**< a tarval containing the number of bits in the lowered modes */
+	pdeq      *waitq;              /**< a wait queue of all nodes that must be handled later */
+	ir_node  **lowered_phis;       /**< list of lowered phis */
+	pmap      *proj_2_block;       /**< a map from ProjX to its destination blocks */
+	ir_mode   *high_signed;        /**< doubleword signed type */
+	ir_mode   *high_unsigned;      /**< doubleword unsigned type */
+	ir_mode   *low_signed;         /**< word signed type */
+	ir_mode   *low_unsigned;       /**< word unsigned type */
+	ident     *first_id;           /**< .l for little and .h for big endian */
+	ident     *next_id;            /**< .h for little and .l for big endian */
 	const lwrdw_param_t *params;  /**< transformation parameter */
 	unsigned flags;               /**< some flags */
 	unsigned n_entries;           /**< number of entries */
@@ -343,15 +343,15 @@ static void set_lowered(lower_env_t *env, ir_node *old,
  */
 static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
-	ir_graph *irg      = get_irn_irg(node);
-	dbg_info *dbg      = get_irn_dbg_info(node);
-	ir_mode  *low_mode = env->low_unsigned;
-	tarval   *tv       = get_Const_tarval(node);
-	tarval   *tv_l     = tarval_convert_to(tv, low_mode);
-	ir_node  *res_low  = new_rd_Const(dbg, irg, tv_l);
-	tarval   *tv_shrs  = tarval_shrs(tv, env->tv_mode_bits);
-	tarval   *tv_h     = tarval_convert_to(tv_shrs, mode);
-	ir_node  *res_high = new_rd_Const(dbg, irg, tv_h);
+	ir_graph  *irg      = get_irn_irg(node);
+	dbg_info  *dbg      = get_irn_dbg_info(node);
+	ir_mode   *low_mode = env->low_unsigned;
+	ir_tarval *tv       = get_Const_tarval(node);
+	ir_tarval *tv_l     = tarval_convert_to(tv, low_mode);
+	ir_node   *res_low  = new_rd_Const(dbg, irg, tv_l);
+	ir_tarval *tv_shrs  = tarval_shrs(tv, env->tv_mode_bits);
+	ir_tarval *tv_h     = tarval_convert_to(tv_shrs, mode);
+	ir_node   *res_high = new_rd_Const(dbg, irg, tv_h);
 
 	set_lowered(env, node, res_low, res_high);
 }
@@ -706,7 +706,7 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node  *right = get_Shr_right(node);
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
+		ir_tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
 		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
@@ -748,7 +748,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node  *right = get_Shl_right(node);
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
+		ir_tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
 		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
@@ -789,7 +789,7 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node  *right = get_Shrs_right(node);
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
+		ir_tarval *tv = get_Const_tarval(right);
 
 		if (tarval_is_long(tv) &&
 		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {

@@ -454,7 +454,7 @@ ir_node *get_atomic_ent_value(ir_entity *entity)
 		return new_r_Const(get_const_code_irg(), get_mode_null(mode));
 	}
 	case IR_INITIALIZER_TARVAL: {
-		tarval *tv = get_initializer_tarval_value(initializer);
+		ir_tarval *tv = get_initializer_tarval_value(initializer);
 		return new_r_Const(get_const_code_irg(), tv);
 	}
 	case IR_INITIALIZER_CONST:
@@ -605,7 +605,7 @@ ir_initializer_t *create_initializer_const(ir_node *value)
 	return initializer;
 }
 
-ir_initializer_t *create_initializer_tarval(tarval *tv)
+ir_initializer_t *create_initializer_tarval(ir_tarval *tv)
 {
 	struct obstack *obst = get_irg_obstack(get_const_code_irg());
 
@@ -642,7 +642,7 @@ ir_node *get_initializer_const_value(const ir_initializer_t *initializer)
 	return skip_Id(initializer->consti.value);
 }
 
-tarval *get_initializer_tarval_value(const ir_initializer_t *initializer)
+ir_tarval *get_initializer_tarval_value(const ir_initializer_t *initializer)
 {
 	assert(initializer->kind == IR_INITIALIZER_TARVAL);
 	return initializer->tarval.value;

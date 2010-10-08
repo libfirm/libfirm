@@ -473,13 +473,13 @@ FIRM_API ir_initializer_t *get_initializer_null(void);
 FIRM_API ir_initializer_t *create_initializer_const(ir_node *value);
 
 /** creates an initializer containing a single tarval value */
-FIRM_API ir_initializer_t *create_initializer_tarval(tarval *tv);
+FIRM_API ir_initializer_t *create_initializer_tarval(ir_tarval *tv);
 
 /** return value contained in a const initializer */
 FIRM_API ir_node *get_initializer_const_value(const ir_initializer_t *initializer);
 
 /** return value contained in a tarval initializer */
-FIRM_API tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
+FIRM_API ir_tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
 
 /** creates a compound initializer which holds @p n_entries entries */
 FIRM_API ir_initializer_t *create_initializer_compound(unsigned n_entries);
@@ -1963,7 +1963,7 @@ FIRM_API const char *get_enumeration_name(const ir_type *enumeration);
 
 /** Set an enumeration constant to a enumeration type at a given position. */
 FIRM_API void set_enumeration_const(ir_type *enumeration, int pos,
-                                    ident *nameid, tarval *con);
+                                    ident *nameid, ir_tarval *con);
 
 /** Returns the number of enumeration values of this enumeration */
 FIRM_API int get_enumeration_n_enums(const ir_type *enumeration);
@@ -1976,10 +1976,10 @@ FIRM_API ir_enum_const *get_enumeration_const(const ir_type *enumeration,
 FIRM_API ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst);
 
 /** Sets the enumeration constant value. */
-FIRM_API void set_enumeration_value(ir_enum_const *enum_cnst, tarval *con);
+FIRM_API void set_enumeration_value(ir_enum_const *enum_cnst, ir_tarval *con);
 
 /** Returns the enumeration constant value. */
-FIRM_API tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
+FIRM_API ir_tarval *get_enumeration_value(const ir_enum_const *enum_cnst);
 
 /** Assign an ident to an enumeration constant. */
 FIRM_API void set_enumeration_nameid(ir_enum_const *enum_cnst, ident *id);

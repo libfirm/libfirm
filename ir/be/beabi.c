@@ -784,10 +784,10 @@ static ir_node *adjust_alloc_size(unsigned stack_alignment, ir_node *size,
                                   ir_node *block, dbg_info *dbg)
 {
 	if (stack_alignment > 1) {
-		ir_mode  *mode;
-		tarval   *tv;
-		ir_node  *mask;
-		ir_graph *irg;
+		ir_mode   *mode;
+		ir_tarval *tv;
+		ir_node   *mask;
+		ir_graph  *irg;
 
 		assert(is_po2(stack_alignment));
 
@@ -856,11 +856,11 @@ static ir_node *adjust_alloc(be_abi_irg_t *env, ir_node *alloc, ir_node *curr_sp
 
 	/* we might need to multiply the count with the element size */
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
-		ir_mode *mode = get_irn_mode(count);
-		tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
-		                                     mode);
-		ir_node *cnst = new_rd_Const(dbg, irg, tv);
-		size          = new_rd_Mul(dbg, block, count, cnst, mode);
+		ir_mode   *mode  = get_irn_mode(count);
+		ir_tarval *tv    = new_tarval_from_long(get_type_size_bytes(type),
+		                                        mode);
+		ir_node   *cnst = new_rd_Const(dbg, irg, tv);
+		size            = new_rd_Mul(dbg, block, count, cnst, mode);
 	} else {
 		size = count;
 	}
@@ -921,10 +921,10 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 
 	/* we might need to multiply the size with the element size */
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
-		tarval *tv = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
-		ir_node *cnst = new_rd_Const(dbg, irg, tv);
-		ir_node *mul = new_rd_Mul(dbg, block, get_Free_size(free),
-		                          cnst, mode_Iu);
+		ir_tarval *tv   = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
+		ir_node   *cnst = new_rd_Const(dbg, irg, tv);
+		ir_node   *mul  = new_rd_Mul(dbg, block, get_Free_size(free),
+		                             cnst, mode_Iu);
 		size = mul;
 	} else {
 		size = get_Free_size(free);
@@ -1017,7 +1017,7 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
 
 	if (code == iro_Builtin && get_Builtin_kind(irn) == ir_bk_return_address) {
 		ir_node       *param = get_Builtin_param(irn, 0);
-		tarval        *tv    = get_Const_tarval(param);
+		ir_tarval     *tv    = get_Const_tarval(param);
 		unsigned long  value = get_tarval_long(tv);
 		/* use ebp, so the climbframe algo works... */
 		if (value > 0) {

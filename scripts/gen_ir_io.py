@@ -45,8 +45,8 @@ env.filters['block']     = format_block
 env.filters['arguments'] = format_arguments
 
 def get_io_type(type, attrname, node):
-	if type == "tarval*":
-		importcmd = "tarval *%s = read_tv(env);" % attrname
+	if type == "ir_tarval*":
+		importcmd = "ir_tarval *%s = read_tv(env);" % attrname
 		exportcmd = "write_tarval(env, %(val)s);";
 	elif type == "ir_mode*":
 		importcmd = "ir_mode *%s = read_mode(env);" % attrname

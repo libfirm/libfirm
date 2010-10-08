@@ -314,7 +314,7 @@ ident *ia32_get_ent_ident(ir_entity *ent);
  */
 void set_ia32_Const_attr(ir_node *ia32_cnst, ir_node *cnst);
 
-void set_ia32_Const_tarval(ir_node *node, tarval *tv);
+void set_ia32_Const_tarval(ir_node *node, ir_tarval *tv);
 
 /**
  * Returns whether or not the node is an AddrModeS node.

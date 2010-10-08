@@ -208,7 +208,7 @@ Not => {
 Const => {
 	op_flags   => [ "constlike" ],
 	irn_flags  => [ "rematerializable" ],
-	attr       => "tarval *value",
+	attr       => "ir_tarval *value",
 	custominit => "set_TEMPLATE_value(res, value);",
 	reg_req    => { out => [ "gp" ] },
 	emit       => '. mov %C, %D1',

@@ -101,7 +101,7 @@ void be_emit_ident(ident *id);
  *
  * @param tv   the tarval to be emitted
  */
-void be_emit_tarval(tarval *tv);
+void be_emit_tarval(ir_tarval *tv);
 
 /**
  * Emit the output of an ir_printf.

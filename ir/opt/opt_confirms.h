@@ -90,6 +90,6 @@ value_classify_sign classify_value_sign(ir_node *n);
  * @param right  the right operand of the Cmp
  * @param pnc    the compare relation
  */
-tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc);
+ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc);
 
 #endif /* FIRM_OPT_CONFIRMS_H */

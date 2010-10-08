@@ -90,11 +90,11 @@ static void maybe_kill_node(ir_node *node)
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
-	ir_node  *block  = get_nodes_block(node);
-	ir_mode  *mode   = config->lowered_mode;
-	tarval   *tv_one = get_mode_one(mode);
-	ir_graph *irg    = get_irn_irg(node);
-	ir_node  *one    = new_rd_Const(dbgi, irg, tv_one);
+	ir_node   *block  = get_nodes_block(node);
+	ir_mode   *mode   = config->lowered_mode;
+	ir_tarval *tv_one = get_mode_one(mode);
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *one    = new_rd_Const(dbgi, irg, tv_one);
 
 	return new_rd_Eor(dbgi, block, node, one, mode);
 }
@@ -117,13 +117,13 @@ static ir_type *create_lowered_type(void)
 
 ir_node *ir_create_mux_set(ir_node *cond, ir_mode *dest_mode)
 {
-	ir_graph *irg     = get_irn_irg(cond);
-	ir_node  *block   = get_nodes_block(cond);
-	tarval   *tv_one  = get_mode_one(dest_mode);
-	ir_node  *one     = new_r_Const(irg, tv_one);
-	tarval   *tv_zero = get_mode_null(dest_mode);
-	ir_node  *zero    = new_r_Const(irg, tv_zero);
-	ir_node  *set     = new_r_Mux(block, cond, zero, one, dest_mode);
+	ir_graph  *irg     = get_irn_irg(cond);
+	ir_node   *block   = get_nodes_block(cond);
+	ir_tarval *tv_one  = get_mode_one(dest_mode);
+	ir_node   *one     = new_r_Const(irg, tv_one);
+	ir_tarval *tv_zero = get_mode_null(dest_mode);
+	ir_node   *zero    = new_r_Const(irg, tv_zero);
+	ir_node   *set     = new_r_Mux(block, cond, zero, one, dest_mode);
 	return set;
 }
 
@@ -271,10 +271,10 @@ static ir_node *lower_node(ir_node *node)
 	}
 
 	case iro_Conv: {
-		ir_node *pred     = get_Conv_op(node);
-		ir_mode *mode     = get_irn_mode(pred);
-		tarval  *tv_zeroc = get_mode_null(mode);
-		ir_node *zero_cmp = new_rd_Const(dbgi, irg, tv_zeroc);
+		ir_node   *pred     = get_Conv_op(node);
+		ir_mode   *mode     = get_irn_mode(pred);
+		ir_tarval *tv_zeroc = get_mode_null(mode);
+		ir_node   *zero_cmp = new_rd_Const(dbgi, irg, tv_zeroc);
 
 		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
 		ir_node *proj     = new_rd_Proj(dbgi, cmp, mode_b, pn_Cmp_Lg);
@@ -293,13 +293,13 @@ static ir_node *lower_node(ir_node *node)
 			if ((mode_is_int(cmp_mode) || mode_is_reference(cmp_mode)) &&
 			    (get_mode_size_bits(cmp_mode) < get_mode_size_bits(mode) ||
 			    (mode_is_signed(cmp_mode) && is_Const(right) && is_Const_null(right)))) {
-				int      pnc      = get_Proj_proj(node);
-				int      need_not = 0;
-				ir_node *a        = NULL;
-				ir_node *b        = NULL;
-				int      bits;
-				tarval  *tv;
-				ir_node *shift_cnt;
+				int        pnc      = get_Proj_proj(node);
+				int        need_not = 0;
+				ir_node   *a        = NULL;
+				ir_node   *b        = NULL;
+				int        bits;
+				ir_tarval *tv;
+				ir_node   *shift_cnt;
 
 				if (pnc == pn_Cmp_Lt) {
 					/* a < b  ->  (a - b) >> 31 */
@@ -363,13 +363,13 @@ synth_zero_one:
 	}
 
 	case iro_Const: {
-		tarval *tv = get_Const_tarval(node);
+		ir_tarval *tv = get_Const_tarval(node);
 		if (tv == get_tarval_b_true()) {
-			tarval *tv_one = get_mode_one(mode);
-			res            = new_rd_Const(dbgi, irg, tv_one);
+			ir_tarval *tv_one = get_mode_one(mode);
+			res               = new_rd_Const(dbgi, irg, tv_one);
 		} else if (tv == get_tarval_b_false()) {
-			tarval *tv_zero = get_mode_null(mode);
-			res             = new_rd_Const(dbgi, irg, tv_zero);
+			ir_tarval *tv_zero = get_mode_null(mode);
+			res                = new_rd_Const(dbgi, irg, tv_zero);
 		} else {
 			panic("invalid boolean const %+F", node);
 		}

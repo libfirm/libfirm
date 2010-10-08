@@ -58,10 +58,10 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /** A scc. */
 typedef struct scc {
-	ir_node  *head;     /**< the head of the list */
-	tarval   *init;     /**< the init value iff only one exists. */
-	tarval   *incr;     /**< the induction variable increment if only a single const exists. */
-	unsigned code;      /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not analysed, iro_Bad else */
+	ir_node   *head; /**< the head of the list */
+	ir_tarval *init; /**< the init value iff only one exists. */
+	ir_tarval *incr; /**< the induction variable increment if only a single const exists. */
+	unsigned   code; /**< == iro_Add if +incr, iro_Sub if -incr, 0 if not analysed, iro_Bad else */
 } scc;
 
 /** A node entry */
@@ -516,7 +516,7 @@ static int is_x86_shift_const(ir_node *mul)
 	/* normalization put constants on the right side */
 	rc = get_Mul_right(mul);
 	if (is_Const(rc)) {
-		tarval *tv = get_Const_tarval(rc);
+		ir_tarval *tv = get_Const_tarval(rc);
 
 		if (tarval_is_long(tv)) {
 			long value = get_tarval_long(tv);
@@ -1098,7 +1098,7 @@ static void assign_po(ir_node *block, void *ctx)
 static ir_node *applyOneEdge(ir_node *iv, ir_node *rc, LFTR_edge *e, iv_env *env)
 {
 	if (env->osr_flags & osr_flag_lftr_with_ov_check) {
-		tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr, *tv_end;
+		ir_tarval *tv_l, *tv_r, *tv, *tv_init, *tv_incr, *tv_end;
 		tarval_int_overflow_mode_t ovmode;
 		scc *pscc;
 		ir_graph *irg;

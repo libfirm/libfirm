@@ -155,7 +155,7 @@ FIRM_API void set_compound_ent_value(ir_entity *ent, ir_node *val,
  * fits into the given array size.  Does not test whether the
  * values have the proper mode for the array.
  */
-FIRM_API void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals);
+FIRM_API void set_array_entity_values(ir_entity *ent, ir_tarval **values, int num_vals);
 
 /**
  * @deprecated

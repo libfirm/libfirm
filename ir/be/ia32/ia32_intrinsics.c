@@ -266,7 +266,7 @@ static int map_Shl(ir_node *call, void *ctx)
 
 	if (is_Const(cnt)) {
 		/* the shift count is a const, create better code */
-		tarval *tv = get_Const_tarval(cnt);
+		ir_tarval *tv = get_Const_tarval(cnt);
 
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the lower bits. Note that there is no
@@ -355,7 +355,7 @@ static int map_Shr(ir_node *call, void *ctx)
 
 	if (is_Const(cnt)) {
 		/* the shift count is a const, create better code */
-		tarval *tv = get_Const_tarval(cnt);
+		ir_tarval *tv = get_Const_tarval(cnt);
 
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the higher bits. Note that there is no
@@ -442,7 +442,7 @@ static int map_Shrs(ir_node *call, void *ctx)
 
 	if (is_Const(cnt)) {
 		/* the shift count is a const, create better code */
-		tarval *tv = get_Const_tarval(cnt);
+		ir_tarval *tv = get_Const_tarval(cnt);
 
 		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
 			/* simplest case: shift only the higher bits. Note that there is no
@@ -516,9 +516,9 @@ static int map_Shrs(ir_node *call, void *ctx)
 static int is_sign_extend(ir_node *low, ir_node *high)
 {
 	if (is_Shrs(high)) {
-		ir_node *high_l;
-		ir_node *high_r;
-		tarval  *shift_count;
+		ir_node   *high_l;
+		ir_node   *high_r;
+		ir_tarval *shift_count;
 
 		high_r = get_Shrs_right(high);
 		if (!is_Const(high_r)) return 0;
@@ -532,8 +532,8 @@ static int is_sign_extend(ir_node *low, ir_node *high)
 		if (is_Conv(low)    && get_Conv_op(low)    == high_l) return 1;
 		if (is_Conv(high_l) && get_Conv_op(high_l) == low)    return 1;
 	} else if (is_Const(low) && is_Const(high)) {
-		tarval *tl = get_Const_tarval(low);
-		tarval *th = get_Const_tarval(high);
+		ir_tarval *tl = get_Const_tarval(low);
+		ir_tarval *th = get_Const_tarval(high);
 
 		if (tarval_is_long(th) && tarval_is_long(tl)) {
 			long l = get_tarval_long(tl);
@@ -792,13 +792,13 @@ static int map_Conv(ir_node *call, void *ctx)
 							   pn_ia32_l_FloattoLL_res_high);
 		} else {
 			/* convert from float to signed 64bit */
-			ir_mode *flt_mode = get_irn_mode(a_f);
-			tarval  *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
-			ir_node *flt_corr = new_r_Const(irg, flt_tv);
-			ir_node *lower_blk = block;
-			ir_node *upper_blk;
-			ir_node *cmp, *proj, *cond, *blk, *int_phi, *flt_phi;
-			ir_node *in[2];
+			ir_mode   *flt_mode = get_irn_mode(a_f);
+			ir_tarval *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
+			ir_node   *flt_corr = new_r_Const(irg, flt_tv);
+			ir_node   *lower_blk = block;
+			ir_node   *upper_blk;
+			ir_node   *cmp, *proj, *cond, *blk, *int_phi, *flt_phi;
+			ir_node   *in[2];
 
 			part_block(call);
 			upper_blk = get_nodes_block(call);

@@ -402,8 +402,8 @@ void set_Confirm_bound(ir_node *node, ir_node *bound);
 FIRM_API pn_Cmp get_Confirm_cmp(const ir_node *node);
 FIRM_API void set_Confirm_cmp(ir_node *node, pn_Cmp cmp);
 
-FIRM_API tarval* get_Const_tarval(const ir_node *node);
-FIRM_API void set_Const_tarval(ir_node *node, tarval* tarval);
+FIRM_API ir_tarval* get_Const_tarval(const ir_node *node);
+FIRM_API void set_Const_tarval(ir_node *node, ir_tarval* tarval);
 
 FIRM_API ir_node *get_Conv_op(const ir_node *node);
 void set_Conv_op(ir_node *node, ir_node *op);

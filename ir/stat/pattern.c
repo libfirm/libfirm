@@ -454,7 +454,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 	/* do we need integer constants */
 	if (env->options & OPT_WITH_ICONST) {
 		if (code == iro_Const) {
-			tarval *tv = get_Const_tarval(node);
+			ir_tarval *tv = get_Const_tarval(node);
 
 			if (tarval_is_long(tv)) {
 				long v = get_tarval_long(tv);

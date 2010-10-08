@@ -43,13 +43,13 @@
  */
 static void lower_sel(ir_node *sel)
 {
-	ir_graph *irg = current_ir_graph;
-	ir_entity   *ent;
-	ir_node  *newn, *cnst, *index, *ptr, *bl;
-	tarval   *tv;
-	ir_mode  *basemode, *mode, *mode_Int;
-	ir_type  *basetyp, *owner;
-	dbg_info *dbg;
+	ir_graph  *irg = current_ir_graph;
+	ir_entity *ent;
+	ir_node   *newn, *cnst, *index, *ptr, *bl;
+	ir_tarval *tv;
+	ir_mode   *basemode, *mode, *mode_Int;
+	ir_type   *basetyp, *owner;
+	dbg_info  *dbg;
 
 	assert(is_Sel(sel));
 
@@ -186,8 +186,8 @@ static void lower_sel(ir_node *sel)
 				}
 			} else {
 				/* no array type */
-				ir_mode *idx_mode = get_irn_mode(index);
-				tarval *tv = new_tarval_from_long(get_mode_size_bytes(basemode), idx_mode);
+				ir_mode   *idx_mode = get_irn_mode(index);
+				ir_tarval *tv       = new_tarval_from_long(get_mode_size_bytes(basemode), idx_mode);
 
 				newn = new_rd_Add(dbg, bl, get_Sel_ptr(sel),
 					new_rd_Mul(dbg, bl, index,
@@ -247,7 +247,7 @@ static void lower_symconst(ir_node *symc)
 	ir_node       *newn;
 	ir_type       *tp;
 	ir_entity     *ent;
-	tarval        *tv;
+	ir_tarval     *tv;
 	ir_enum_const *ec;
 	ir_mode       *mode;
 	ir_graph      *irg;

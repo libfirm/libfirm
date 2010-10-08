@@ -248,7 +248,7 @@ void be_gas_emit_switch_section(be_gas_section_t section)
 	emit_section(section, NULL);
 }
 
-static tarval *get_initializer_tarval(const ir_initializer_t *initializer)
+static ir_tarval *get_initializer_tarval(const ir_initializer_t *initializer)
 {
 	if (initializer->kind == IR_INITIALIZER_TARVAL)
 		return initializer->tarval.value;
@@ -274,7 +274,7 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 		return 0;
 	for (i = 0; i < len; ++i) {
 		int               c;
-		tarval           *tv;
+		ir_tarval        *tv;
 		ir_mode          *mode;
 		ir_initializer_t *sub_initializer
 			= initializer->compound.initializers[i];
@@ -306,7 +306,7 @@ static bool initializer_is_null(const ir_initializer_t *initializer)
 	case IR_INITIALIZER_NULL:
 		return true;
 	case IR_INITIALIZER_TARVAL: {
-		tarval *tv = initializer->tarval.value;
+		ir_tarval *tv = initializer->tarval.value;
 		return tarval_is_null(tv);
 	}
 	case IR_INITIALIZER_CONST: {
@@ -575,7 +575,7 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
  * @param tv     the tarval
  * @param bytes  the width of the tarvals value in bytes
  */
-static void emit_arith_tarval(tarval *tv, int bytes)
+static void emit_arith_tarval(ir_tarval *tv, int bytes)
 {
 	switch (bytes) {
 	case 1:
@@ -651,7 +651,7 @@ const char *be_gas_insn_label_prefix(void)
  *
  * @return the tarval
  */
-static tarval *get_atomic_init_tv(ir_node *init)
+static ir_tarval *get_atomic_init_tv(ir_node *init)
 {
 	for (;;) {
 		ir_mode *mode = get_irn_mode(init);
@@ -703,7 +703,7 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
-	tarval *tv;
+	ir_tarval *tv;
 	ir_entity *ent;
 
 	init = skip_Id(init);
@@ -914,8 +914,8 @@ static void emit_string_initializer(const ir_initializer_t *initializer)
 		const ir_initializer_t *sub_initializer
 			= get_initializer_compound_value(initializer, i);
 
-		tarval *tv = get_initializer_tarval(sub_initializer);
-		int     c  = get_tarval_long(tv);
+		ir_tarval *tv = get_initializer_tarval(sub_initializer);
+		int        c  = get_tarval_long(tv);
 
 		switch (c) {
 		case '"' : be_emit_cstring("\\\""); break;
@@ -945,7 +945,7 @@ typedef struct {
 	enum normal_or_bitfield_kind kind;
 	union {
 		ir_node       *value;
-		tarval        *tarval;
+		ir_tarval     *tarval;
 		unsigned char  bf_val;
 	} v;
 } normal_or_bitfield;
@@ -1005,12 +1005,12 @@ static void emit_bitfield(normal_or_bitfield *vals, size_t offset_bits,
                           const ir_initializer_t *initializer, ir_type *type)
 {
 	static const size_t BITS_PER_BYTE = 8;
-	ir_mode       *mode      = get_type_mode(type);
-	tarval        *tv        = NULL;
-	int            value_len;
-	size_t         bit_offset;
-	size_t         end;
-	bool           big_endian = be_get_backend_param()->byte_order_big_endian;
+	ir_mode   *mode      = get_type_mode(type);
+	ir_tarval *tv        = NULL;
+	int        value_len;
+	size_t     bit_offset;
+	size_t     end;
+	bool       big_endian = be_get_backend_param()->byte_order_big_endian;
 
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
@@ -1211,8 +1211,8 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 				elem_size = 0;
 			}
 		} else if (vals[k].kind == TARVAL) {
-			tarval *tv   = vals[k].v.tarval;
-			size_t  size = get_mode_size_bytes(get_tarval_mode(tv));
+			ir_tarval *tv   = vals[k].v.tarval;
+			size_t     size = get_mode_size_bytes(get_tarval_mode(tv));
 
 			assert(tv != NULL);
 
@@ -1290,7 +1290,7 @@ static void emit_compound_graph_init(be_gas_decl_env_t *env,
 
 		if (offset_bits != 0 ||
 				(value_len != 8 && value_len != 16 && value_len != 32 && value_len != 64)) {
-			tarval *tv = get_atomic_init_tv(value);
+			ir_tarval *tv = get_atomic_init_tv(value);
 			unsigned char curr_bits, last_bits = 0;
 			if (tv == NULL) {
 				panic("Couldn't get numeric value for bitfield initializer '%s'",

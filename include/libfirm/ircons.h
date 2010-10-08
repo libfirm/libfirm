@@ -254,7 +254,7 @@
  *    ir_node *new_IJmp     (ir_node *tgt);
  *    ir_node *new_Cond     (ir_node *c);
  *    ir_node *new_Return   (ir_node *store, int arity, ir_node **in);
- *    ir_node *new_Const    (tarval *con);
+ *    ir_node *new_Const    (ir_tarval *con);
  *    ir_node *new_SymConst (ir_mode *mode, symconst_symbol value, symconst_kind kind);
  *    ir_node *new_simpleSel (ir_node *store, ir_node *objptr, ir_entity *ent);
  *    ir_node *new_Sel    (ir_node *store, ir_node *objptr, int arity,
@@ -501,7 +501,7 @@
  *      Control flow to the end block.
  *
  *
- *    ir_node *new_Const (tarval *con)
+ *    ir_node *new_Const (ir_tarval *con)
  *    -----------------------------------------------
  *
  *    Creates a constant in the constant table and adds a Const node
@@ -1220,7 +1220,7 @@ FIRM_API ir_node *new_rd_Return(dbg_info *db, ir_node *block,
  * @param *irg   The IR graph the node  belongs to.
  * @param *con   Points to an entry in the constant table.
  */
-FIRM_API ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con);
+FIRM_API ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, ir_tarval *con);
 
 /**
  * Constructor for a Const node.
@@ -2006,7 +2006,7 @@ FIRM_API ir_node *new_r_Return(ir_node *block, ir_node *store,
  * @param *irg   The IR graph the node  belongs to.
  * @param *con   Points to an entry in the constant table.
  */
-FIRM_API ir_node *new_r_Const(ir_graph *irg, tarval *con);
+FIRM_API ir_node *new_r_Const(ir_graph *irg, ir_tarval *con);
 
 /** Constructor for a Const node.
  *
@@ -2728,7 +2728,7 @@ FIRM_API ir_node *new_d_Return(dbg_info *db, ir_node *store,
  * @param *con   Points to an entry in the constant table. This pointer is added
  *               to the attributes of the node.
  */
-FIRM_API ir_node *new_d_Const(dbg_info *db, tarval *con);
+FIRM_API ir_node *new_d_Const(dbg_info *db, ir_tarval *con);
 
 /**
  * @see new_rd_Const_long()
@@ -3456,7 +3456,7 @@ FIRM_API ir_node *new_Return(ir_node *store, int arity, ir_node *in[]);
  * @param *con   Points to an entry in the constant table. This pointer is
  *               added to the attributes of  the node.
  */
-FIRM_API ir_node *new_Const(tarval *con);
+FIRM_API ir_node *new_Const(ir_tarval *con);
 
 /**
  * Make a const from a long.

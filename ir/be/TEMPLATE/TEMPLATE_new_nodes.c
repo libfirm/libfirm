@@ -115,7 +115,7 @@ static void init_TEMPLATE_attributes(ir_node *node, arch_irn_flags_t flags,
 	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
-static void set_TEMPLATE_value(ir_node *node, tarval *value)
+static void set_TEMPLATE_value(ir_node *node, ir_tarval *value)
 {
 	TEMPLATE_attr_t *attr = get_TEMPLATE_attr(node);
 	attr->value = value;

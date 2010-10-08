@@ -41,12 +41,13 @@ enum range_types {
 /** VRP information */
 typedef struct {
 	int valid;                   /**< This node has valid vrp information */
-	tarval *bits_set;            /**< The bits which, by analysis, are  definitely set.
+	ir_tarval *bits_set;         /**< The bits which, by analysis, are  definitely set.
 	                                  0: may be not set, 1: definitely set*/
-	tarval *bits_not_set;        /**< The bits which by analysis are definitely
+	ir_tarval *bits_not_set;     /**< The bits which by analysis are definitely
 	                                  not set, 1 for may be set, 0: definitely not set  */
 	enum range_types range_type; /**< The range represented by range_top, range_bottom */
-	tarval *range_bottom, *range_top;
+	ir_tarval *range_bottom;
+	ir_tarval *range_top;
 } vrp_attr;
 
 /**

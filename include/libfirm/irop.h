@@ -138,7 +138,7 @@ typedef unsigned (*hash_func)(const ir_node *self);
  * This operation evaluates an IR node into a tarval if possible,
  * returning tarval_bad otherwise.
  */
-typedef tarval *(*computed_value_func)(const ir_node *self);
+typedef ir_tarval *(*computed_value_func)(const ir_node *self);
 
 /**
  * The equivalent node operation.

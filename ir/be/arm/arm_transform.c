@@ -120,9 +120,9 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
  */
 static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 {
-	tarval  *tv = get_Const_tarval(irn);
-	ir_mode *mode = get_tarval_mode(tv);
-	unsigned value;
+	ir_tarval *tv   = get_Const_tarval(irn);
+	ir_mode   *mode = get_tarval_mode(tv);
+	unsigned   value;
 
 	if (mode_is_reference(mode)) {
 		/* ARM is 32bit, so we can safely convert a reference tarval into Iu */
@@ -717,7 +717,7 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 
 	new_op1 = be_transform_node(op1);
 	if (is_Const(op2)) {
-		tarval      *tv  = get_Const_tarval(op2);
+		ir_tarval   *tv  = get_Const_tarval(op2);
 		unsigned int val = get_tarval_long(tv);
 		assert(tarval_is_long(tv));
 		if (can_use_shift_constant(val, shift_modifier)) {
@@ -790,10 +790,10 @@ static ir_node *gen_Rotl(ir_node *node)
 	if (is_Add(op2)) {
 		ir_node *right = get_Add_right(op2);
 		if (is_Const(right)) {
-			tarval  *tv   = get_Const_tarval(right);
-			ir_mode *mode = get_irn_mode(node);
-			long     bits = get_mode_size_bits(mode);
-			ir_node *left = get_Add_left(op2);
+			ir_tarval *tv   = get_Const_tarval(right);
+			ir_mode   *mode = get_irn_mode(node);
+			long       bits = get_mode_size_bits(mode);
+			ir_node   *left = get_Add_left(op2);
 
 			if (is_Minus(left) &&
 			    tarval_is_long(tv)          &&
@@ -804,10 +804,10 @@ static ir_node *gen_Rotl(ir_node *node)
 	} else if (is_Sub(op2)) {
 		ir_node *left = get_Sub_left(op2);
 		if (is_Const(left)) {
-			tarval  *tv   = get_Const_tarval(left);
-			ir_mode *mode = get_irn_mode(node);
-			long     bits = get_mode_size_bits(mode);
-			ir_node *right = get_Sub_right(op2);
+			ir_tarval *tv   = get_Const_tarval(left);
+			ir_mode   *mode = get_irn_mode(node);
+			long       bits = get_mode_size_bits(mode);
+			ir_node   *right = get_Sub_right(op2);
 
 			if (tarval_is_long(tv)          &&
 			    get_tarval_long(tv) == bits &&
@@ -815,9 +815,9 @@ static ir_node *gen_Rotl(ir_node *node)
 				rotate = gen_Ror(node, op1, right);
 		}
 	} else if (is_Const(op2)) {
-		tarval  *tv   = get_Const_tarval(op2);
-		ir_mode *mode = get_irn_mode(node);
-		long     bits = get_mode_size_bits(mode);
+		ir_tarval *tv   = get_Const_tarval(op2);
+		ir_mode   *mode = get_irn_mode(node);
+		long       bits = get_mode_size_bits(mode);
 
 		if (tarval_is_long(tv) && bits == 32) {
 			ir_node  *block   = be_transform_node(get_nodes_block(node));
@@ -1073,7 +1073,7 @@ static ir_node *gen_Cond(ir_node *node)
 	return new_bd_arm_B(dbgi, block, flag_node, get_Proj_proj(selector));
 }
 
-static tarval *fpa_imm[3][fpa_max];
+static ir_tarval *fpa_imm[3][fpa_max];
 
 #if 0
 /**
@@ -1117,8 +1117,8 @@ static ir_node *gen_Const(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
-			tarval *tv = get_Const_tarval(node);
-			node       = new_bd_arm_fConst(dbg, block, tv);
+			ir_tarval *tv = get_Const_tarval(node);
+			node          = new_bd_arm_fConst(dbg, block, tv);
 			be_dep_on_frame(node);
 			return node;
 		} else if (USE_VFP(isa)) {
@@ -1635,8 +1635,8 @@ static ir_node *gen_Unknown(ir_node *node)
 	/* just produce a 0 */
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		tarval *tv = get_mode_null(mode);
-		ir_node *node = new_bd_arm_fConst(dbgi, new_block, tv);
+		ir_tarval *tv   = get_mode_null(mode);
+		ir_node   *node = new_bd_arm_fConst(dbgi, new_block, tv);
 		be_dep_on_frame(node);
 		return node;
 	} else if (mode_needs_gp_reg(mode)) {

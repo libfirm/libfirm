@@ -112,12 +112,12 @@ struct ir_mode {
                                           of all bits and must be dividable by vector_elem */
 
 	/* ----------------------------------------------------------------------- */
-	tarval            *min;         /**< the minimum value that can be expressed */
-	tarval            *max;         /**< the maximum value that can be expressed */
-	tarval            *null;        /**< the value 0 */
-	tarval            *one;         /**< the value 1 */
-	tarval            *minus_one;   /**< the value -1 */
-	tarval            *all_one;     /**< the value ~0 */
+	ir_tarval         *min;         /**< the minimum value that can be expressed */
+	ir_tarval         *max;         /**< the maximum value that can be expressed */
+	ir_tarval         *null;        /**< the value 0 */
+	ir_tarval         *one;         /**< the value 1 */
+	ir_tarval         *minus_one;   /**< the value -1 */
+	ir_tarval         *all_one;     /**< the value ~0 */
 	ir_mode           *eq_signed;   /**< For pointer modes, the equivalent signed integer one. */
 	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
 	void              *link;        /**< To store some intermediate information */
@@ -172,8 +172,8 @@ typedef struct {
 } cond_attr;
 
 /** Const attributes. */
-typedef struct {
-	tarval  *tarval;  /**< the target value */
+typedef struct const_attr {
+	ir_tarval *tarval;  /**< the target value */
 } const_attr;
 
 /** SymConst attributes. */

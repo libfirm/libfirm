@@ -288,13 +288,13 @@ const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node)
 	return get_irn_generic_attr_const(node);
 }
 
-tarval *get_fConst_value(const ir_node *node)
+ir_tarval *get_fConst_value(const ir_node *node)
 {
 	const arm_fConst_attr_t *attr = get_arm_fConst_attr_const(node);
 	return attr->tv;
 }
 
-void set_fConst_value(ir_node *node, tarval *tv)
+void set_fConst_value(ir_node *node, ir_tarval *tv)
 {
 	arm_fConst_attr_t *attr = get_arm_fConst_attr(node);
 	attr->tv = tv;

@@ -212,7 +212,7 @@ typedef struct jumpthreading_env_t {
 	ir_node       *cmp;        /**< The Compare node that might be partial evaluated */
 	pn_Cmp         pnc;        /**< The Compare mode of the Compare node. */
 	ir_node       *cnst;
-	tarval        *tv;
+	ir_tarval     *tv;
 	ir_visited_t   visited_nr;
 
 	ir_node       *cnst_pred;   /**< the block before the constant */
@@ -352,7 +352,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
  * @param tv_left   the left tarval
  * @param tv_right  the right tarval
  */
-static int eval_cmp_tv(pn_Cmp pnc, tarval *tv_left, tarval *tv_right)
+static int eval_cmp_tv(pn_Cmp pnc, ir_tarval *tv_left, ir_tarval *tv_right)
 {
 	pn_Cmp cmp_result = tarval_cmp(tv_left, tv_right);
 
@@ -399,12 +399,12 @@ static int eval_cmp_vrp(pn_Cmp pnc, ir_node *left, ir_node *right)
 static int eval_cmp(jumpthreading_env_t *env, ir_node *cand)
 {
 	if (is_Const(cand)) {
-		tarval *tv_cand   = get_Const_tarval(cand);
-		tarval *tv_cmp    = get_Const_tarval(env->cnst);
+		ir_tarval *tv_cand   = get_Const_tarval(cand);
+		ir_tarval *tv_cmp    = get_Const_tarval(env->cnst);
 
 		return eval_cmp_tv(env->pnc, tv_cand, tv_cmp);
 	} else { /* a Confirm */
-		tarval *res = computed_value_Cmp_Confirm(env->cmp, cand, env->cnst, env->pnc);
+		ir_tarval *res = computed_value_Cmp_Confirm(env->cmp, cand, env->cnst, env->pnc);
 
 		if (res == tarval_bad)
 			return -1;
@@ -425,7 +425,7 @@ static int is_Const_or_Confirm(const ir_node *node)
 /**
  * get the tarval of a Const or Confirm with
  */
-static tarval *get_Const_or_Confirm_tarval(const ir_node *node)
+static ir_tarval *get_Const_or_Confirm_tarval(const ir_node *node)
 {
 	if (is_Confirm(node)) {
 		if (get_Confirm_bound(node))
@@ -508,7 +508,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 	}
 
 	if (is_Const_or_Confirm(value)) {
-		tarval *tv = get_Const_or_Confirm_tarval(value);
+		ir_tarval *tv = get_Const_or_Confirm_tarval(value);
 
 		if (tv != env->tv)
 			return NULL;
@@ -655,9 +655,9 @@ static void thread_jumps(ir_node* block, void* data)
 			ir_node *left  = get_Cmp_left(cmp);
 			ir_node *right = get_Cmp_right(cmp);
 			if (is_Const(left) && is_Const(right)) {
-				int     pnc      = get_Proj_proj(selector);
-				tarval *tv_left  = get_Const_tarval(left);
-				tarval *tv_right = get_Const_tarval(right);
+				int        pnc      = get_Proj_proj(selector);
+				ir_tarval *tv_left  = get_Const_tarval(left);
+				ir_tarval *tv_right = get_Const_tarval(right);
 
 				selector_evaluated = eval_cmp_tv(pnc, tv_left, tv_right);
 			}
@@ -672,7 +672,7 @@ static void thread_jumps(ir_node* block, void* data)
 			}
 		}
 	} else if (is_Const_or_Confirm(selector)) {
-		tarval *tv = get_Const_or_Confirm_tarval(selector);
+		ir_tarval *tv = get_Const_or_Confirm_tarval(selector);
 		if (tv == tarval_b_true) {
 			selector_evaluated = 1;
 		} else {

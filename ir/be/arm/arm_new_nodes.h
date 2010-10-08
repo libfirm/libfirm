@@ -68,12 +68,12 @@ const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node);
 /**
 * Return the tarval of a fConst
 */
-tarval *get_fConst_value(const ir_node *node);
+ir_tarval *get_fConst_value(const ir_node *node);
 
 /**
  * Sets the tarval of a fConst
  */
-void set_fConst_value(ir_node *node, tarval *tv);
+void set_fConst_value(ir_node *node, ir_tarval *tv);
 
 /**
  * Returns the compare kind

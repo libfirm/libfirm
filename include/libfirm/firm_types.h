@@ -40,7 +40,7 @@ typedef struct ir_op                ir_op,               *ir_op_ptr;
 typedef struct ir_mode              ir_mode,             *ir_mode_ptr;
 typedef struct ir_edge_t            ir_edge_t,           *ir_edge_ptr;
 typedef struct ir_heights_t         ir_heights_t;
-typedef struct tarval               tarval,              *ir_tarval_ptr;
+typedef struct ir_tarval            ir_tarval,           *ir_tarval_ptr;
 typedef struct ir_enum_const        ir_enum_const,       *ir_enum_const_ptr;
 typedef struct ir_type              ir_type,             *ir_type_ptr;
 typedef struct ir_graph             ir_graph,            *ir_graph_ptr;

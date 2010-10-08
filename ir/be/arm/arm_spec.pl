@@ -567,7 +567,7 @@ Stf => {
 fConst => {
 	op_flags  => [ "constlike" ],
 	irn_flags => [ "rematerializable" ],
-	attr      => "tarval *tv",
+	attr      => "ir_tarval *tv",
 	init_attr => "attr->tv = tv;",
 	mode      => "get_tarval_mode(tv)",
 	reg_req   => { out => [ "fpa" ] },

@@ -51,7 +51,7 @@ typedef enum instr {
  *
  * @return the costs of this instruction
  */
-typedef int (*evaluate_costs_func)(insn_kind kind, tarval *tv);
+typedef int (*evaluate_costs_func)(insn_kind kind, ir_tarval *tv);
 
 /**
  * A parameter structure that drives the machine dependent Firm

@@ -92,7 +92,7 @@ ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in,
 	return res;
 }
 
-ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, tarval *con)
+ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, ir_tarval *con)
 {
 	ir_node  *block = get_irg_start_block(irg);
 	ir_mode  *mode  = get_tarval_mode(con);
@@ -222,7 +222,7 @@ ir_node *new_r_End(ir_graph *irg)
 {
 	return new_rd_End(NULL, irg);
 }
-ir_node *new_r_Const(ir_graph *irg, tarval *con)
+ir_node *new_r_Const(ir_graph *irg, ir_tarval *con)
 {
 	return new_rd_Const(NULL, irg, con);
 }
@@ -654,7 +654,7 @@ ir_node *new_d_Phi(dbg_info *db, int arity, ir_node **in, ir_mode *mode)
 	return new_rd_Phi(db, current_ir_graph->current_block, arity, in, mode);
 }
 
-ir_node *new_d_Const(dbg_info *db, tarval *con)
+ir_node *new_d_Const(dbg_info *db, ir_tarval *con)
 {
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
 	return new_rd_Const(db, current_ir_graph, con);
@@ -964,7 +964,7 @@ ir_node *new_End(void)
 {
 	return new_d_End(NULL);
 }
-ir_node *new_Const(tarval *con)
+ir_node *new_Const(ir_tarval *con)
 {
 	return new_d_Const(NULL, con);
 }

@@ -68,9 +68,9 @@ struct ir_loop {
 	unsigned flags;                   /**< a set of loop_flags_t */
 	struct ir_loop *outer_loop;       /**< The outer loop */
 	loop_element   *children;         /**< Mixed flexible array: Contains sons and loop_nodes */
-	tarval  *loop_iter_start;         /**< counting loop: the start value */
-	tarval  *loop_iter_end;           /**< counting loop: the last value reached */
-	tarval  *loop_iter_increment;     /**< counting loop: the increment */
+	ir_tarval *loop_iter_start;       /**< counting loop: the start value */
+	ir_tarval *loop_iter_end;         /**< counting loop: the last value reached */
+	ir_tarval *loop_iter_increment;   /**< counting loop: the increment */
 	ir_node *loop_iter_variable;      /**< The iteration variable of counting loop.*/
 
 	void *link;                       /**< link field. */

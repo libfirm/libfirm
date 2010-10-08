@@ -202,7 +202,7 @@ static const tarval_mode_info dec_output = {
 /**
  * emit a tarval as decimal
  */
-static void be_emit_tv_as_decimal(tarval *tv)
+static void be_emit_tv_as_decimal(ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	const tarval_mode_info *old = get_tarval_mode_output_option(mode);

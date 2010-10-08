@@ -123,8 +123,8 @@ static struct obstack obst;
 
 typedef struct bitinfo
 {
-	tarval* z; // safe zeroes, 0 = bit is zero,       1 = bit maybe is 1
-	tarval* o; // safe ones,   0 = bit maybe is zero, 1 = bit is 1
+	ir_tarval* z; // safe zeroes, 0 = bit is zero,       1 = bit maybe is 1
+	ir_tarval* o; // safe ones,   0 = bit maybe is zero, 1 = bit is 1
 } bitinfo;
 
 typedef struct environment_t {
@@ -136,7 +136,7 @@ static inline bitinfo* get_bitinfo(ir_node const* const irn)
 	return get_irn_link(irn);
 }
 
-static int set_bitinfo(ir_node* const irn, tarval* const z, tarval* const o)
+static int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
 {
 	bitinfo* b = get_bitinfo(irn);
 	if (b == NULL) {
@@ -159,8 +159,8 @@ static int mode_is_intb(ir_mode const* const m)
 static int transfer(ir_node* const irn)
 {
 	ir_mode* const m = get_irn_mode(irn);
-	tarval*        z;
-	tarval*        o;
+	ir_tarval*     z;
+	ir_tarval*     o;
 
 	if (m == mode_X) {
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
@@ -171,10 +171,10 @@ static int transfer(ir_node* const irn)
 					z = get_tarval_b_true();
 					o = get_tarval_b_false();
 				} else if (is_Cond(pred)) {
-					ir_node* const selector = get_Cond_selector(pred);
-					bitinfo* const b        = get_bitinfo(selector);
-					tarval*  const bz       = b->z;
-					tarval*  const bo       = b->o;
+					ir_node*   const selector = get_Cond_selector(pred);
+					bitinfo*   const b        = get_bitinfo(selector);
+					ir_tarval* const bz       = b->z;
+					ir_tarval* const bo       = b->o;
 					if (get_irn_mode(selector) == mode_b) {
 						if (bz == bo) {
 							if ((bz == get_tarval_b_true()) == get_Proj_proj(irn)) {
@@ -188,7 +188,7 @@ static int transfer(ir_node* const irn)
 					} else {
 						long const val = get_Proj_proj(irn);
 						if (val != get_Cond_default_proj(pred)) {
-							tarval* const tv = new_tarval_from_long(val, get_irn_mode(selector));
+							ir_tarval* const tv = new_tarval_from_long(val, get_irn_mode(selector));
 							if (!tarval_is_null(tarval_andnot(tv, bz)) ||
 									!tarval_is_null(tarval_andnot(bo, tv))) {
 								// At least one bit differs.
@@ -250,9 +250,9 @@ result_unknown_X:
 			}
 
 			case iro_Shl: {
-				bitinfo* const l  = get_bitinfo(get_Shl_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Shl_right(irn));
-				tarval*  const rz = r->z;
+				bitinfo*   const l  = get_bitinfo(get_Shl_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Shl_right(irn));
+				ir_tarval* const rz = r->z;
 				if (rz == r->o) {
 					z = tarval_shl(l->z, rz);
 					o = tarval_shl(l->o, rz);
@@ -263,9 +263,9 @@ result_unknown_X:
 			}
 
 			case iro_Shr: {
-				bitinfo* const l  = get_bitinfo(get_Shr_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Shr_right(irn));
-				tarval*  const rz = r->z;
+				bitinfo*   const l  = get_bitinfo(get_Shr_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Shr_right(irn));
+				ir_tarval* const rz = r->z;
 				if (rz == r->o) {
 					z = tarval_shr(l->z, rz);
 					o = tarval_shr(l->o, rz);
@@ -276,9 +276,9 @@ result_unknown_X:
 			}
 
 			case iro_Shrs: {
-				bitinfo* const l  = get_bitinfo(get_Shrs_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Shrs_right(irn));
-				tarval*  const rz = r->z;
+				bitinfo*   const l  = get_bitinfo(get_Shrs_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Shrs_right(irn));
+				ir_tarval* const rz = r->z;
 				if (rz == r->o) {
 					z = tarval_shrs(l->z, rz);
 					o = tarval_shrs(l->o, rz);
@@ -289,9 +289,9 @@ result_unknown_X:
 			}
 
 			case iro_Rotl: {
-				bitinfo* const l  = get_bitinfo(get_Rotl_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Rotl_right(irn));
-				tarval*  const rz = r->z;
+				bitinfo*   const l  = get_bitinfo(get_Rotl_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Rotl_right(irn));
+				ir_tarval* const rz = r->z;
 				if (rz == r->o) {
 					z = tarval_rotl(l->z, rz);
 					o = tarval_rotl(l->o, rz);
@@ -302,24 +302,24 @@ result_unknown_X:
 			}
 
 			case iro_Add: {
-				bitinfo* const l  = get_bitinfo(get_Add_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Add_right(irn));
-				tarval*  const lz = l->z;
-				tarval*  const lo = l->o;
-				tarval*  const rz = r->z;
-				tarval*  const ro = r->o;
+				bitinfo*   const l  = get_bitinfo(get_Add_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Add_right(irn));
+				ir_tarval* const lz = l->z;
+				ir_tarval* const lo = l->o;
+				ir_tarval* const rz = r->z;
+				ir_tarval* const ro = r->o;
 				if (lz == lo && rz == ro) {
 					z = o = tarval_add(lz, rz);
 				} else {
 					// TODO improve: can only do lower disjoint bits
 					/* Determine where any of the operands has zero bits, i.e. where no
 					 * carry out is generated if there is not carry in */
-					tarval* const no_c_in_no_c_out = tarval_and(lz, rz);
+					ir_tarval* const no_c_in_no_c_out = tarval_and(lz, rz);
 					/* Generate a mask of the lower consecutive zeroes: x | -x.  In this
 					 * range the addition is disjoint and therefore Add behaves like Or.
 					 */
-					tarval* const low_zero_mask = tarval_or(no_c_in_no_c_out, tarval_neg(no_c_in_no_c_out));
-					tarval* const low_one_mask  = tarval_not(low_zero_mask);
+					ir_tarval* const low_zero_mask = tarval_or(no_c_in_no_c_out, tarval_neg(no_c_in_no_c_out));
+					ir_tarval* const low_one_mask  = tarval_not(low_zero_mask);
 					z = tarval_or( tarval_or(lz, rz), low_zero_mask);
 					o = tarval_and(tarval_or(lo, ro), low_one_mask);
 				}
@@ -330,10 +330,10 @@ result_unknown_X:
 				bitinfo* const l = get_bitinfo(get_Sub_left(irn));
 				bitinfo* const r = get_bitinfo(get_Sub_right(irn));
 				if (l != NULL && r != NULL) { // Sub might subtract pointers.
-					tarval* const lz = l->z;
-					tarval* const lo = l->o;
-					tarval* const rz = r->z;
-					tarval* const ro = r->o;
+					ir_tarval* const lz = l->z;
+					ir_tarval* const lo = l->o;
+					ir_tarval* const rz = r->z;
+					ir_tarval* const ro = r->o;
 					if (lz == lo && rz == ro) {
 						z = o = tarval_sub(lz, rz, NULL);
 					} else if (tarval_is_null(tarval_andnot(rz, lo))) {
@@ -352,19 +352,19 @@ result_unknown_X:
 			}
 
 			case iro_Mul: {
-				bitinfo* const l  = get_bitinfo(get_Mul_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Mul_right(irn));
-				tarval*  const lz = l->z;
-				tarval*  const lo = l->o;
-				tarval*  const rz = r->z;
-				tarval*  const ro = r->o;
+				bitinfo*   const l  = get_bitinfo(get_Mul_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Mul_right(irn));
+				ir_tarval* const lz = l->z;
+				ir_tarval* const lo = l->o;
+				ir_tarval* const rz = r->z;
+				ir_tarval* const ro = r->o;
 				if (lz == lo && rz == ro) {
 					z = o = tarval_mul(lz, rz);
 				} else {
 					// TODO improve
 					// Determine safe lower zeroes: x | -x.
-					tarval* const lzn = tarval_or(lz, tarval_neg(lz));
-					tarval* const rzn = tarval_or(rz, tarval_neg(rz));
+					ir_tarval* const lzn = tarval_or(lz, tarval_neg(lz));
+					ir_tarval* const rzn = tarval_or(rz, tarval_neg(rz));
 					// Concatenate safe lower zeroes.
 					if (tarval_cmp(lzn, rzn) == pn_Cmp_Lt) {
 						z = tarval_mul(tarval_eor(lzn, tarval_shl(lzn, get_tarval_one(m))), rzn);
@@ -403,12 +403,12 @@ result_unknown_X:
 			}
 
 			case iro_Eor: {
-				bitinfo* const l  = get_bitinfo(get_Eor_left(irn));
-				bitinfo* const r  = get_bitinfo(get_Eor_right(irn));
-				tarval*  const lz = l->z;
-				tarval*  const lo = l->o;
-				tarval*  const rz = r->z;
-				tarval*  const ro = r->o;
+				bitinfo*   const l  = get_bitinfo(get_Eor_left(irn));
+				bitinfo*   const r  = get_bitinfo(get_Eor_right(irn));
+				ir_tarval* const lz = l->z;
+				ir_tarval* const lo = l->o;
+				ir_tarval* const rz = r->z;
+				ir_tarval* const ro = r->o;
 				z = tarval_or(tarval_andnot(lz, ro), tarval_andnot(rz, lo));
 				o = tarval_or(tarval_andnot(ro, lz), tarval_andnot(lo, rz));
 				break;
@@ -474,10 +474,10 @@ result_unknown_X:
 						goto result_unknown; // Cmp compares something we cannot evaluate.
 					switch (get_Proj_proj(irn)) {
 						case pn_Cmp_Lg: {
-							tarval* const lz = l->z;
-							tarval* const lo = l->o;
-							tarval* const rz = r->z;
-							tarval* const ro = r->o;
+							ir_tarval* const lz = l->z;
+							ir_tarval* const lo = l->o;
+							ir_tarval* const rz = r->z;
+							ir_tarval* const ro = r->o;
 							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
 									!tarval_is_null(tarval_andnot(lo, rz))) {
 								// At least one bit differs.
@@ -491,10 +491,10 @@ result_unknown_X:
 						}
 
 						case pn_Cmp_Eq: {
-							tarval* const lz = l->z;
-							tarval* const lo = l->o;
-							tarval* const rz = r->z;
-							tarval* const ro = r->o;
+							ir_tarval* const lz = l->z;
+							ir_tarval* const lo = l->o;
+							ir_tarval* const rz = r->z;
+							ir_tarval* const ro = r->o;
 							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
 									!tarval_is_null(tarval_andnot(lo, rz))) {
 								// At least one bit differs.
@@ -549,8 +549,8 @@ static void first_round(ir_node* const irn, void* const env)
 static void apply_result(ir_node* const irn, void* ctx)
 {
 	bitinfo* const b = get_bitinfo(irn);
-	tarval*        z;
-	tarval*        o;
+	ir_tarval*     z;
+	ir_tarval*     o;
 	environment_t* env = ctx;
 
 	if (!b) return;

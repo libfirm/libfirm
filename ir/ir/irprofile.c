@@ -57,7 +57,7 @@ typedef struct loc_entry {
 } loc_entry;
 
 typedef struct block_id_walker_data_t {
-	tarval         **array;    /**< the entity the holds the block counts */
+	ir_tarval      **array;    /**< the entity the holds the block counts */
 	unsigned int   id;         /**< current block id number */
 	ir_node        *symconst;  /**< the SymConst representing array */
 	pmap           *fname_map; /**< set containing all found filenames */
@@ -268,11 +268,11 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 
 		if (! entry) {
 			static unsigned nr = 0;
-			ident   *id;
-			char    buf[128];
-			ir_type *arr;
-			int     i, len = strlen(fname) + 1;
-			tarval  **tarval_string;
+			ident       *id;
+			char        buf[128];
+			ir_type     *arr;
+			int         i, len = strlen(fname) + 1;
+			ir_tarval **tarval_string;
 
 			snprintf(buf, sizeof(buf), "firm_name_arr.%u", nr);
 			arr = new_type_array(1, wd->tp_char);
@@ -286,7 +286,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			pmap_insert(wd->fname_map, (void *)fname, ent);
 
 			/* initialize file name string constant */
-			tarval_string = ALLOCAN(tarval*, len);
+			tarval_string = ALLOCAN(ir_tarval*, len);
 			for (i = 0; i < len; ++i) {
 				tarval_string[i] = new_tarval_from_long(fname[i], mode_Bs);
 			}
@@ -327,23 +327,23 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 {
 	int n, i;
 	int n_blocks = 0;
-	ir_entity *bblock_id;
-	ir_entity *bblock_counts;
-	ir_entity *ent_filename;
-	ir_entity *ent_locations = NULL;
-	ir_entity *loc_lineno = NULL;
-	ir_entity *loc_name = NULL;
-	ir_entity *ent;
-	ir_type *array_type;
-	ir_type *uint_type;
-	ir_type *string_type;
-	ir_type *character_type;
-	ir_type *loc_type = NULL;
-	ir_type *charptr_type;
-	ir_type *gtp;
-	tarval **tarval_array;
-	tarval **tarval_string;
-	tarval *tv;
+	ir_entity  *bblock_id;
+	ir_entity  *bblock_counts;
+	ir_entity  *ent_filename;
+	ir_entity  *ent_locations = NULL;
+	ir_entity  *loc_lineno = NULL;
+	ir_entity  *loc_name = NULL;
+	ir_entity  *ent;
+	ir_type    *array_type;
+	ir_type    *uint_type;
+	ir_type    *string_type;
+	ir_type    *character_type;
+	ir_type    *loc_type = NULL;
+	ir_type    *charptr_type;
+	ir_type    *gtp;
+	ir_tarval **tarval_array;
+	ir_tarval **tarval_string;
+	ir_tarval *tv;
 	int filename_len = strlen(filename)+1;
 	ident *cur_ident;
 	unsigned align_l, align_n, size;
@@ -420,7 +420,7 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 	}
 
 	/* initialize count array */
-	NEW_ARR_A(tarval *, tarval_array, n_blocks);
+	NEW_ARR_A(ir_tarval *, tarval_array, n_blocks);
 	tv = get_mode_null(mode_Iu);
 	for (i = 0; i < n_blocks; ++i) {
 		tarval_array[i] = tv;
@@ -428,7 +428,7 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
 
 	/* initialize function name string constant */
-	tarval_string = ALLOCAN(tarval*, filename_len);
+	tarval_string = ALLOCAN(ir_tarval*, filename_len);
 	for (i = 0; i < filename_len; ++i) {
 		tarval_string[i] = new_tarval_from_long(filename[i], mode_Bs);
 	}
@@ -493,7 +493,7 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 		set_entity_linkage(ent_locations, IR_LINKAGE_CONSTANT);
 		for (i = 0; i < n_blocks; ++i) {
 			compound_graph_path *path;
-			tarval *tv;
+			ir_tarval *tv;
 			ir_node *n;
 
 			/* lineno */

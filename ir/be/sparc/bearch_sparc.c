@@ -332,28 +332,28 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 	part_block(node);
 
 	{
-		ir_node  *block       = get_nodes_block(node);
-		ir_node  *unsigned_x  = get_Conv_op(node);
-		ir_mode  *mode_u      = get_irn_mode(unsigned_x);
-		ir_mode  *mode_s      = find_signed_mode(mode_u);
-		ir_mode  *mode_d      = mode_D;
-		ir_node  *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
-		ir_node  *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
-		ir_node  *zero        = new_r_Const(irg, get_mode_null(mode_s));
-		ir_node  *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero);
-		ir_node  *proj_lt     = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
-		ir_node  *cond        = new_rd_Cond(dbgi, block, proj_lt);
-		ir_node  *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
-		ir_node  *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
-		ir_node  *in_true[1]  = { proj_true };
-		ir_node  *in_false[1] = { proj_false };
-		ir_node  *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
-		ir_node  *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
-		ir_node  *true_jmp    = new_r_Jmp(true_block);
-		ir_node  *false_jmp   = new_r_Jmp(false_block);
-		tarval   *correction  = new_tarval_from_double(4294967296., mode_d);
-		ir_node  *c_const     = new_r_Const(irg, correction);
-		ir_node  *fadd        = new_rd_Add(dbgi, true_block, res, c_const,
+		ir_node   *block       = get_nodes_block(node);
+		ir_node   *unsigned_x  = get_Conv_op(node);
+		ir_mode   *mode_u      = get_irn_mode(unsigned_x);
+		ir_mode   *mode_s      = find_signed_mode(mode_u);
+		ir_mode   *mode_d      = mode_D;
+		ir_node   *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
+		ir_node   *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
+		ir_node   *zero        = new_r_Const(irg, get_mode_null(mode_s));
+		ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero);
+		ir_node   *proj_lt     = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
+		ir_node   *cond        = new_rd_Cond(dbgi, block, proj_lt);
+		ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
+		ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
+		ir_node   *in_true[1]  = { proj_true };
+		ir_node   *in_false[1] = { proj_false };
+		ir_node   *true_block  = new_r_Block(irg, ARRAY_SIZE(in_true), in_true);
+		ir_node   *false_block = new_r_Block(irg, ARRAY_SIZE(in_false),in_false);
+		ir_node   *true_jmp    = new_r_Jmp(true_block);
+		ir_node   *false_jmp   = new_r_Jmp(false_block);
+		ir_tarval *correction  = new_tarval_from_double(4294967296., mode_d);
+		ir_node   *c_const     = new_r_Const(irg, correction);
+		ir_node   *fadd        = new_rd_Add(dbgi, true_block, res, c_const,
 		                                   mode_d);
 
 		ir_node  *lower_in[2] = { true_jmp, false_jmp };

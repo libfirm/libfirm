@@ -638,7 +638,7 @@ static int handle_switch_cond(ir_node *cond)
 	} else if (get_irn_link(proj2) == NULL) {
 		/* We have two Proj's here. Check if the Cond has
 		   a constant argument */
-		tarval *tv = value_of(sel);
+		ir_tarval *tv = value_of(sel);
 
 		if (tv != tarval_bad) {
 			/* we have a constant switch */

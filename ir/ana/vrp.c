@@ -43,10 +43,10 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
-struct vrp_env_t {
+typedef struct vrp_env_t {
 	waitq    *workqueue;
 	bitset_t *visited;
-};
+} vrp_env_t;
 
 static vrp_attr *get_vrp_attr(const ir_node *node)
 {
@@ -55,10 +55,10 @@ static vrp_attr *get_vrp_attr(const ir_node *node)
 
 static int vrp_update_node(ir_node *node)
 {
-	tarval *new_bits_set = get_tarval_bad();
-	tarval *new_bits_not_set = get_tarval_bad();
-	tarval *new_range_bottom = get_tarval_bad();
-	tarval *new_range_top = get_tarval_bad();
+	ir_tarval *new_bits_set = get_tarval_bad();
+	ir_tarval *new_bits_not_set = get_tarval_bad();
+	ir_tarval *new_range_bottom = get_tarval_bad();
+	ir_tarval *new_range_top = get_tarval_bad();
 	enum range_types new_range_type = VRP_UNDEFINED;
 	int something_changed = 0;
 	vrp_attr *vrp;
@@ -73,7 +73,7 @@ static int vrp_update_node(ir_node *node)
 
 	switch (get_irn_opcode(node)) {
 	case iro_Const: {
-		tarval *tv = get_Const_tarval(node);
+		ir_tarval *tv = get_Const_tarval(node);
 		new_bits_set = tv;
 		new_bits_not_set = tv;
 		new_range_bottom = tv;
@@ -97,7 +97,7 @@ static int vrp_update_node(ir_node *node)
 
 	case iro_Add: {
 		int overflow_top, overflow_bottom;
-		tarval *new_top, *new_bottom;
+		ir_tarval *new_top, *new_bottom;
 		const vrp_attr *vrp_left, *vrp_right;
 		vrp_left = get_vrp_attr(get_Add_left(node));
 		vrp_right = get_vrp_attr(get_Add_right(node));
@@ -129,7 +129,7 @@ static int vrp_update_node(ir_node *node)
 
 	case iro_Sub: {
 		int overflow_top, overflow_bottom;
-		tarval *new_top, *new_bottom;
+		ir_tarval *new_top, *new_bottom;
 		const vrp_attr *vrp_left, *vrp_right;
 		vrp_left = get_vrp_attr(get_Sub_left(node));
 		vrp_right = get_vrp_attr(get_Sub_right(node));
@@ -179,7 +179,7 @@ static int vrp_update_node(ir_node *node)
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
-			tarval *bits_set, *bits_not_set;
+			ir_tarval *bits_set, *bits_not_set;
 			bits_set = tarval_rotl(vrp_left->bits_set, get_Const_tarval(right));
 			bits_not_set = tarval_rotl(vrp_left->bits_not_set, get_Const_tarval(right));
 		}

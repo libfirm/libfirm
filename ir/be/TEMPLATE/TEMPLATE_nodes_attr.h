@@ -31,7 +31,7 @@ typedef struct TEMPLATE_attr_t  TEMPLATE_attr_t;
 
 struct TEMPLATE_attr_t
 {
-	tarval *value;
+	ir_tarval *value;
 };
 
 #endif

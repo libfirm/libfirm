@@ -292,7 +292,7 @@ void set_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *member,
 	set_compound_ent_value_w_path(ent, val, path, pos);
 }
 
-void set_array_entity_values(ir_entity *ent, tarval **values, int num_vals)
+void set_array_entity_values(ir_entity *ent, ir_tarval **values, int num_vals)
 {
 	int i;
 	ir_type  *arrtp = get_entity_type(ent);

@@ -101,7 +101,7 @@ ir_node *optimize_in_place_2(ir_node *n);
  * returning tarval_bad otherwise.
  * No calculations are done here, just a lookup.
  */
-typedef tarval *(*value_of_func)(const ir_node *self);
+typedef ir_tarval *(*value_of_func)(const ir_node *self);
 
 extern value_of_func value_of_ptr;
 
@@ -115,7 +115,7 @@ void set_value_of_func(value_of_func func);
 /**
  * Returns the associated tarval of a node.
  */
-static inline tarval *value_of(const ir_node *n)
+static inline ir_tarval *value_of(const ir_node *n)
 {
 	return value_of_ptr(n);
 }

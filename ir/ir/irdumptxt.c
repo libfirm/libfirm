@@ -367,8 +367,8 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
                                          const ir_initializer_t *initializer,
                                          ir_type *type)
 {
-	tarval  *tv;
-	ir_node *value;
+	ir_tarval *tv;
+	ir_node   *value;
 
 	if (need_nl) {
 		fprintf(F, "\n%s    ", prefix);

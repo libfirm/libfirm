@@ -42,15 +42,15 @@
 
 /** Describes a pair of relative conditions lo < hi, lo pnc_lo x, hi pnc_hi x */
 typedef struct cond_pair {
-	ir_node *cmp_lo;  /**< The lo compare node. */
-	ir_node *cmp_hi;  /**< The hi compare node. */
-	pn_Cmp   pnc_lo;  /**< The lo relation node. */
-	pn_Cmp   pnc_hi;  /**< The hi relation node. */
-	ir_node *proj_lo; /**< The mode_b result proj of cmp_lo. */
-	ir_node *proj_hi; /**< The mode_b result proj of cmp_hi. */
-	tarval  *tv_lo;   /**< The tarval of cmp_lo node. */
-	tarval  *tv_hi;   /**< The tarval of cmp_hi node. */
-	ir_mode *lo_mode; /**< The mode of the cmp_lo operands. */
+	ir_node   *cmp_lo;  /**< The lo compare node. */
+	ir_node   *cmp_hi;  /**< The hi compare node. */
+	pn_Cmp     pnc_lo;  /**< The lo relation node. */
+	pn_Cmp     pnc_hi;  /**< The hi relation node. */
+	ir_node   *proj_lo; /**< The mode_b result proj of cmp_lo. */
+	ir_node   *proj_hi; /**< The mode_b result proj of cmp_hi. */
+	ir_tarval *tv_lo;   /**< The tarval of cmp_lo node. */
+	ir_tarval *tv_hi;   /**< The tarval of cmp_hi node. */
+	ir_mode   *lo_mode; /**< The mode of the cmp_lo operands. */
 } cond_pair;
 
 /** Environment for all walker in boolopt. */
@@ -98,9 +98,9 @@ static int find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const r
 
 			if (lol == rol && lor != ror && is_Const(lor) && is_Const(ror)) {
 				/* lo == (x CMP c_l), ro == (x cmp c_r) */
-				tarval *const tv_l  = get_Const_tarval(lor);
-				tarval *const tv_r  = get_Const_tarval(ror);
-				pn_Cmp  const rel   = tarval_cmp(tv_l, tv_r);
+				ir_tarval *const tv_l  = get_Const_tarval(lor);
+				ir_tarval *const tv_r  = get_Const_tarval(ror);
+				pn_Cmp     const rel   = tarval_cmp(tv_l, tv_r);
 
 				res->lo_mode = get_irn_mode(lol);
 
@@ -141,16 +141,16 @@ static int find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const r
  */
 static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 {
-	ir_node *const cmp_lo  = cpair->cmp_lo;
-	ir_node *const cmp_hi  = cpair->cmp_hi;
-	pn_Cmp         pnc_lo  = cpair->pnc_lo;
-	pn_Cmp   const pnc_hi  = cpair->pnc_hi;
-	ir_node *const proj_lo = cpair->proj_lo;
-	ir_node *const proj_hi = cpair->proj_hi;
-	tarval  *      tv_lo   = cpair->tv_lo;
-	tarval  *      tv_hi   = cpair->tv_hi;
-	ir_mode *      mode    = cpair->lo_mode;
-	ir_graph *     irg     = get_irn_irg(cmp_lo);
+	ir_node    *const cmp_lo  = cpair->cmp_lo;
+	ir_node    *const cmp_hi  = cpair->cmp_hi;
+	pn_Cmp            pnc_lo  = cpair->pnc_lo;
+	pn_Cmp      const pnc_hi  = cpair->pnc_hi;
+	ir_node    *const proj_lo = cpair->proj_lo;
+	ir_node    *const proj_hi = cpair->proj_hi;
+	ir_tarval  *      tv_lo   = cpair->tv_lo;
+	ir_tarval  *      tv_hi   = cpair->tv_hi;
+	ir_mode    *      mode    = cpair->lo_mode;
+	ir_graph   *      irg     = get_irn_irg(cmp_lo);
 
 	if (pnc_lo == pn_Cmp_Eq && pnc_hi == pn_Cmp_Eq &&
 	    tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
@@ -232,8 +232,8 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
 		/* x >|\= lo && x <|<= hi ==> (x - lo) <u|<=u (hi-lo) */
 		if (pnc_lo == pn_Cmp_Gt) {
 			/* must convert to >= */
-			ir_mode *mode = get_tarval_mode(tv_lo);
-			tarval *n = tarval_add(tv_lo, get_mode_one(mode));
+			ir_mode   *mode = get_tarval_mode(tv_lo);
+			ir_tarval *n    = tarval_add(tv_lo, get_mode_one(mode));
 			if (n != tarval_bad && tarval_cmp(n, tv_lo) == pn_Cmp_Gt) {
 				/* no overflow */
 				tv_lo = n;
@@ -274,16 +274,16 @@ static ir_node *bool_and(cond_pair* const cpair, ir_node *dst_block)
  */
 static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 {
-	ir_node *const cmp_lo  = cpair->cmp_lo;
-	ir_node *const cmp_hi  = cpair->cmp_hi;
-	pn_Cmp         pnc_lo  = cpair->pnc_lo;
-	pn_Cmp   const pnc_hi  = cpair->pnc_hi;
-	ir_node *const proj_lo = cpair->proj_lo;
-	ir_node *const proj_hi = cpair->proj_hi;
-	tarval  *      tv_lo   = cpair->tv_lo;
-	tarval  *      tv_hi   = cpair->tv_hi;
-	ir_mode *      mode    = cpair->lo_mode;
-	ir_graph *     irg     = get_irn_irg(cmp_lo);
+	ir_node   *const cmp_lo  = cpair->cmp_lo;
+	ir_node   *const cmp_hi  = cpair->cmp_hi;
+	pn_Cmp           pnc_lo  = cpair->pnc_lo;
+	pn_Cmp     const pnc_hi  = cpair->pnc_hi;
+	ir_node   *const proj_lo = cpair->proj_lo;
+	ir_node   *const proj_hi = cpair->proj_hi;
+	ir_tarval *      tv_lo   = cpair->tv_lo;
+	ir_tarval *      tv_hi   = cpair->tv_hi;
+	ir_mode   *      mode    = cpair->lo_mode;
+	ir_graph  *      irg     = get_irn_irg(cmp_lo);
 
 	if (pnc_lo == pn_Cmp_Lg && pnc_hi == pn_Cmp_Lg &&
 		tarval_is_null(tv_lo) && tarval_is_null(tv_hi) &&
@@ -365,8 +365,8 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
 		/* x <|<= lo  || x >|>= hi ==> (x - lo) >u|>=u (hi-lo) */
 		if (pnc_lo == pn_Cmp_Le) {
 			/* must convert to < */
-			ir_mode *mode = get_tarval_mode(tv_lo);
-			tarval *n = tarval_add(tv_lo, get_mode_one(mode));
+			ir_mode   *mode = get_tarval_mode(tv_lo);
+			ir_tarval *n    = tarval_add(tv_lo, get_mode_one(mode));
 			if (n != tarval_bad && tarval_cmp(n, tv_lo) == pn_Cmp_Gt) {
 				/* no overflow */
 				tv_lo = n;

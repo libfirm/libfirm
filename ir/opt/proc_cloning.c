@@ -56,10 +56,10 @@
  * decide if this function must be cloned.
  */
 typedef struct quadruple {
-	ir_entity       *ent;     /**< The entity of our Call. */
-	int             pos;      /**< Position of a constant argument of our Call. */
-	tarval          *tv;      /**< The tarval of this argument if Const node. */
-	ir_node         **calls;  /**< The list of all calls with the same characteristics */
+	ir_entity *ent;     /**< The entity of our Call. */
+	int       pos;      /**< Position of a constant argument of our Call. */
+	ir_tarval *tv;      /**< The tarval of this argument if Const node. */
+	ir_node   **calls;  /**< The list of all calls with the same characteristics */
 } quadruple_t;
 
 /**

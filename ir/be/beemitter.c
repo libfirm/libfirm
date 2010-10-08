@@ -54,7 +54,7 @@ void be_emit_ident(ident *id)
 	be_emit_string_len(str, len);
 }
 
-void be_emit_tarval(tarval *tv)
+void be_emit_tarval(ir_tarval *tv)
 {
 	char buf[64];
 

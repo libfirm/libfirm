@@ -65,7 +65,7 @@ static unsigned log2abs(long value)
 /**
  * classify the value of a float tarval
  */
-static float_classify_t classify_float_value(tarval *tv)
+static float_classify_t classify_float_value(ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 
@@ -104,9 +104,9 @@ const char *stat_fc_name(float_classify_t classification)
 /* update info on Consts */
 void stat_update_const(stat_info_t *status, ir_node *node, graph_entry_t *graph)
 {
-	ir_mode *mode = get_irn_mode(node);
-	tarval *tv;
-	unsigned bits;
+	ir_mode   *mode = get_irn_mode(node);
+	ir_tarval *tv;
+	unsigned   bits;
 	(void) graph;
 
 	if (mode_is_int(mode)) {

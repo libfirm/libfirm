@@ -51,8 +51,8 @@ enum range_tags {
  * all intervals.
  */
 typedef struct interval_t {
-	tarval        *min;   /**< lowest border */
-	tarval        *max;   /**< highest border */
+	ir_tarval     *min;   /**< lowest border */
+	ir_tarval     *max;   /**< highest border */
 	unsigned char flags;  /**< border flags */
 } interval_t;
 
@@ -99,7 +99,7 @@ int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 {
 #define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
 
-	tarval *tv;
+	ir_tarval *tv;
 	ir_mode *mode = get_irn_mode(n);
 	pn_Cmp pnc;
 
@@ -176,7 +176,7 @@ int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
  */
 int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 {
-	tarval *tv;
+	ir_tarval *tv;
 
 	*confirm = NULL;
 	n  = skip_Cast_const(n);
@@ -211,8 +211,8 @@ int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 		/* check for more Confirms */
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
 			if (get_Confirm_cmp(n) == pn_Cmp_Lg) {
-				ir_node *bound = get_Confirm_bound(n);
-				tarval  *tv    = value_of(bound);
+				ir_node   *bound = get_Confirm_bound(n);
+				ir_tarval *tv    = value_of(bound);
 
 				if (tarval_is_null(tv)) {
 					*confirm = n;
@@ -231,7 +231,7 @@ int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
  */
 value_classify_sign classify_value_sign(ir_node *n)
 {
-	tarval *tv, *c;
+	ir_tarval *tv, *c;
 	ir_mode *mode;
 	pn_Cmp cmp, ncmp;
 	int negate = 1;
@@ -337,7 +337,7 @@ value_classify_sign classify_value_sign(ir_node *n)
  * @return the filled interval or NULL if no interval
  *         can be created (happens only on floating point
  */
-static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
+static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 
@@ -387,8 +387,8 @@ static interval_t *get_interval_from_tv(interval_t *iv, tarval *tv)
  */
 static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
 {
-	ir_mode *mode = get_irn_mode(bound);
-	tarval  *tv   = value_of(bound);
+	ir_mode   *mode = get_irn_mode(bound);
+	ir_tarval *tv   = value_of(bound);
 
 	if (tv == tarval_bad) {
 		/* There is nothing we could do here. For integer
@@ -488,11 +488,11 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
  *   tarval_b_true or tarval_b_false it it can be evaluated,
  *   tarval_bad else
  */
-static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
 {
-	pn_Cmp res;
-	unsigned flags;
-	tarval *tv_true = tarval_b_true, *tv_false = tarval_b_false;
+	pn_Cmp     res;
+	unsigned   flags;
+	ir_tarval *tv_true = tarval_b_true, *tv_false = tarval_b_false;
 
 	/* if one interval contains NaNs, we cannot evaluate anything */
 	if (! l_iv || ! r_iv)
@@ -500,7 +500,7 @@ static tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_C
 
 	/* we can only check ordered relations */
 	if (pnc & pn_Cmp_Uo) {
-		tarval *t;
+		ir_tarval *t;
 
 		pnc      = get_negated_pnc(pnc, get_tarval_mode(l_iv->min));
 		t        = tv_true;
@@ -627,13 +627,13 @@ static int is_transitive(pn_Cmp pnc)
  * @param right  the right operand of the Cmp
  * @param pnc    the compare relation
  */
-tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
+ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
 {
-	ir_node         *l_bound;
-	pn_Cmp          l_pnc, res_pnc, neg_pnc;
-	interval_t      l_iv, r_iv;
-	tarval          *tv;
-	ir_mode         *mode;
+	ir_node    *l_bound;
+	pn_Cmp      l_pnc, res_pnc, neg_pnc;
+	interval_t  l_iv, r_iv;
+	ir_tarval  *tv;
+	ir_mode    *mode;
 
 	if (is_Confirm(right)) {
 		/* we want the Confirm on the left side */

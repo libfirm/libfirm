@@ -390,7 +390,7 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			assert(get_type_mode(tp) != NULL);
 			for (i = get_enumeration_n_enums(tp) - 1; i >= 0; --i) {
 				ir_enum_const *ec = get_enumeration_const(tp, i);
-				tarval        *tv = get_enumeration_value(ec);
+				ir_tarval     *tv = get_enumeration_value(ec);
 				assert(tv != NULL && tv != tarval_bad);
 			}
 #endif
@@ -1899,7 +1899,7 @@ int get_enumeration_n_enums(const ir_type *enumeration)
 }
 
 void set_enumeration_const(ir_type *enumeration, int pos, ident *nameid,
-                           tarval *con)
+                           ir_tarval *con)
 {
 	assert(0 <= pos && pos < ARR_LEN(enumeration->attr.ea.enumer));
 	enumeration->attr.ea.enumer[pos].nameid = nameid;
@@ -1919,12 +1919,12 @@ ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst)
 	return enum_cnst->owner;
 }
 
-void set_enumeration_value(ir_enum_const *enum_cnst, tarval *con)
+void set_enumeration_value(ir_enum_const *enum_cnst, ir_tarval *con)
 {
 	enum_cnst->value = con;
 }
 
-tarval *get_enumeration_value(const ir_enum_const *enum_cnst)
+ir_tarval *get_enumeration_value(const ir_enum_const *enum_cnst)
 {
 	return enum_cnst->value;
 }

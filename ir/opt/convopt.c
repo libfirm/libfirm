@@ -77,7 +77,7 @@ static bool is_optimizable_node(const ir_node *node)
 	}
 }
 
-static tarval* conv_const_tv(const ir_node* cnst, ir_mode* dest_mode)
+static ir_tarval* conv_const_tv(const ir_node* cnst, ir_mode* dest_mode)
 {
 	return tarval_convert_to(get_Const_tarval(cnst), dest_mode);
 }
@@ -186,7 +186,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 
 	if (is_Const(node)) {
 		/* TODO tarval module is incomplete and can't convert floats to ints */
-		tarval *tv = conv_const_tv(node, dest_mode);
+		ir_tarval *tv = conv_const_tv(node, dest_mode);
 		if (tv == tarval_bad) {
 			return place_conv(node, dest_mode);
 		} else {

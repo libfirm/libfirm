@@ -104,7 +104,7 @@ typedef struct mul_env {
  * Some kind of default evaluator. Return the cost of
  * instructions.
  */
-static int default_evaluate(insn_kind kind, tarval *tv)
+static int default_evaluate(insn_kind kind, ir_tarval *tv)
 {
 	(void) tv;
 
@@ -190,7 +190,7 @@ static instruction *emit_ROOT(mul_env *env, ir_node *root_op)
 /**
  * Returns the condensed representation of the tarval tv
  */
-static unsigned char *value_to_condensed(mul_env *env, tarval *tv, int *pr)
+static unsigned char *value_to_condensed(mul_env *env, ir_tarval *tv, int *pr)
 {
 	ir_mode *mode = get_tarval_mode(tv);
 	int     bits = get_mode_size_bits(mode);
@@ -279,9 +279,9 @@ static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r
 /**
  * creates a tarval from a condensed representation.
  */
-static tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
+static ir_tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
 {
-	tarval *res, *tv;
+	ir_tarval *res, *tv;
 	int i, j;
 
 	j = 0;
@@ -290,7 +290,7 @@ static tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
 	for (i = 0; i < r; ++i) {
 		j = R[i];
 		if (j) {
-			tarval *t = new_tarval_from_long(j, mode_Iu);
+			ir_tarval *t = new_tarval_from_long(j, mode_Iu);
 			tv = tarval_shl(tv, t);
 		}
 		res = res ? tarval_add(res, tv) : tv;
@@ -299,12 +299,12 @@ static tarval *condensed_to_value(mul_env *env, unsigned char *R, int r)
 }
 
 /* forward */
-static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N);
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarval *N);
 
 /*
  * handle simple cases with up-to 2 bits set
  */
-static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, tarval *N)
+static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r, ir_tarval *N)
 {
 	instruction *ins, *ins2;
 
@@ -334,7 +334,7 @@ static instruction *decompose_simple_cases(mul_env *env, unsigned char *R, int r
 /**
  * Main decompose driver.
  */
-static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N)
+static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarval *N)
 {
 	unsigned i;
 	int gain;
@@ -380,8 +380,8 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval 
 		N = condensed_to_value(env, R, r);
 
 	for (i = env->max_S; i > 0; --i) {
-		tarval *div_res, *mod_res;
-		tarval *tv = new_tarval_from_long((1 << i) + 1, env->mode);
+		ir_tarval *div_res, *mod_res;
+		ir_tarval *tv = new_tarval_from_long((1 << i) + 1, env->mode);
 
 		div_res = tarval_divmod(N, tv, &mod_res);
 		if (mod_res == get_mode_null(env->mode)) {
@@ -403,7 +403,7 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, tarval 
 /**
  * basic decomposition routine
  */
-static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, tarval *N)
+static instruction *basic_decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarval *N)
 {
 	instruction *Ns;
 	unsigned t;
@@ -520,7 +520,7 @@ static int evaluate_insn(mul_env *env, instruction *inst)
  *
  * @return the new graph
  */
-static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv)
+static ir_node *do_decomposition(ir_node *irn, ir_node *operand, ir_tarval *tv)
 {
 	mul_env       env;
 	instruction   *inst;
@@ -562,13 +562,13 @@ static ir_node *do_decomposition(ir_node *irn, ir_node *operand, tarval *tv)
 /* Replace Muls with Shifts and Add/Subs. */
 ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 {
-	ir_graph *irg;
-	ir_node *res  = irn;
-	ir_mode *mode = get_irn_mode(irn);
-	ir_node *left;
-	ir_node *right;
-	ir_node *operand;
-	tarval  *tv;
+	ir_node   *res  = irn;
+	ir_mode   *mode = get_irn_mode(irn);
+	ir_graph  *irg;
+	ir_node   *left;
+	ir_node   *right;
+	ir_node   *operand;
+	ir_tarval *tv;
 	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
 
 
@@ -614,7 +614,7 @@ ir_node *arch_dep_replace_mul_with_shifts(ir_node *irn)
 /**
  * calculated the ld2 of a tarval if tarval is 2^n, else returns -1.
  */
-static int tv_ld2(tarval *tv, int bits)
+static int tv_ld2(ir_tarval *tv, int bits)
 {
 	int i, k = 0, num;
 
@@ -655,7 +655,7 @@ static int tv_ld2(tarval *tv, int bits)
 
 /** The result of a the magic() function. */
 struct ms {
-	tarval *M;        /**< magic number */
+	ir_tarval *M;     /**< magic number */
 	int s;            /**< shift amount */
 	int need_add;     /**< an additional add is needed */
 	int need_sub;     /**< an additional sub is needed */
@@ -666,16 +666,16 @@ struct ms {
  *
  * see Hacker's Delight: 10-6 Integer Division by Constants: Incorporation into a Compiler
  */
-static struct ms magic(tarval *d)
+static struct ms magic(ir_tarval *d)
 {
 	ir_mode *mode   = get_tarval_mode(d);
 	ir_mode *u_mode = find_unsigned_mode(mode);
 	int bits        = get_mode_size_bits(u_mode);
 	int p;
-	tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
+	ir_tarval *ad, *anc, *delta, *q1, *r1, *q2, *r2, *t;     /* unsigned */
 	pn_Cmp d_cmp, M_cmp;
 
-	tarval *bits_minus_1, *two_bits_1;
+	ir_tarval *bits_minus_1, *two_bits_1;
 
 	struct ms mag;
 
@@ -742,7 +742,7 @@ static struct ms magic(tarval *d)
 
 /** The result of the magicu() function. */
 struct mu {
-	tarval *M;        /**< magic add constant */
+	ir_tarval *M;     /**< magic add constant */
 	int s;            /**< shift amount */
 	int need_add;     /**< add indicator */
 };
@@ -752,13 +752,13 @@ struct mu {
  *
  * see Hacker's Delight: 10-10 Integer Division by Constants: Incorporation into a Compiler (Unsigned)
  */
-static struct mu magicu(tarval *d)
+static struct mu magicu(ir_tarval *d)
 {
 	ir_mode *mode   = get_tarval_mode(d);
 	int bits        = get_mode_size_bits(mode);
 	int p;
-	tarval *nc, *delta, *q1, *r1, *q2, *r2;
-	tarval *bits_minus_1, *two_bits_1, *seven_ff;
+	ir_tarval *nc, *delta, *q1, *r1, *q2, *r2;
+	ir_tarval *bits_minus_1, *two_bits_1, *seven_ff;
 
 	struct mu magu;
 
@@ -821,7 +821,7 @@ static struct mu magicu(tarval *d)
  *
  * Note that 'div' might be a mod or DivMod operation as well
  */
-static ir_node *replace_div_by_mulh(ir_node *div, tarval *tv)
+static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 {
 	dbg_info *dbg  = get_irn_dbg_info(div);
 	ir_node *n     = get_binop_left(div);
@@ -907,7 +907,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 		ir_node *c = get_Div_right(irn);
 		ir_node *block, *left;
 		ir_mode *mode;
-		tarval *tv, *ntv;
+		ir_tarval *tv, *ntv;
 		dbg_info *dbg;
 		int n, bits;
 		int k;
@@ -1007,7 +1007,7 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 		ir_node *c = get_Mod_right(irn);
 		ir_node *block, *left;
 		ir_mode *mode;
-		tarval *tv, *ntv;
+		ir_tarval *tv, *ntv;
 		dbg_info *dbg;
 		int n, bits;
 		int k;
@@ -1104,7 +1104,7 @@ void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn
 		ir_node *c = get_DivMod_right(irn);
 		ir_node *block, *left;
 		ir_mode *mode;
-		tarval *tv, *ntv;
+		ir_tarval *tv, *ntv;
 		dbg_info *dbg;
 		int n, bits;
 		int k;

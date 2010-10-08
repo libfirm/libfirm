@@ -217,7 +217,7 @@ FIRM_API void set_mode_link(ir_mode *mode, void *l);
  * For modes of the sort float_number this is the most negative value
  * bigger than -infinite.
  */
-FIRM_API tarval *get_mode_min(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_min(ir_mode *mode);
 
 /**
  * Returns the biggest representable value o f a given mode.
@@ -225,7 +225,7 @@ FIRM_API tarval *get_mode_min(ir_mode *mode);
  * For modes of the sort float_number this is the largest value lower
  * than infinite.
  */
-FIRM_API tarval *get_mode_max(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_max(ir_mode *mode);
 
 /**
  * Returns the value Zero represented in this mode.
@@ -235,7 +235,7 @@ FIRM_API tarval *get_mode_max(ir_mode *mode);
  * op_pin_state_floats and ints, and references (NULL-Pointer)
  * else returns tarval_bad.
  */
-FIRM_API tarval *get_mode_null(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_null(ir_mode *mode);
 
 /**
  * Returns the value One, represented in this mode.
@@ -244,7 +244,7 @@ FIRM_API tarval *get_mode_null(ir_mode *mode);
  * is defined only for modes allowing multiplication,
  * i.e. ints and floats.
  */
-FIRM_API tarval *get_mode_one(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_one(ir_mode *mode);
 
 /**
  * Returns the value Minus One, represented in this mode.
@@ -252,14 +252,14 @@ FIRM_API tarval *get_mode_one(ir_mode *mode);
  * Minus One is defined only for modes allowing
  * multiplication with signed values, i.e. signed ints and floats.
  */
-FIRM_API tarval *get_mode_minus_one(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_minus_one(ir_mode *mode);
 
 /**
  * Returns the value where all bits are One, represented in this mode.
  *
  * All One is defined only for modes integer, reference and boolean modes
  */
-FIRM_API tarval *get_mode_all_one(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_all_one(ir_mode *mode);
 
 /**
  * Returns the positive infinite value of a mode.
@@ -267,7 +267,7 @@ FIRM_API tarval *get_mode_all_one(ir_mode *mode);
  * This is only valid for float_numbers, other modes
  * will result in tarval_bad.
  */
-FIRM_API tarval *get_mode_infinite(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_infinite(ir_mode *mode);
 
 /**
  * Returns the NAN value of a given mode.
@@ -275,7 +275,7 @@ FIRM_API tarval *get_mode_infinite(ir_mode *mode);
  * This is only valid for float_numbers, other modes
  * will result in tarval_bad.
  */
-FIRM_API tarval *get_mode_NAN(ir_mode *mode);
+FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
 
 FIRM_API ir_mode *mode_M; /**< memory */
 

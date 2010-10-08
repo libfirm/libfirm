@@ -317,9 +317,9 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 /* A mapper for the floating point sqrt. */
 int i_mapper_sqrt(ir_node *call, void *ctx)
 {
-	ir_node *mem;
-	tarval *tv;
-	ir_node *op = get_Call_param(call, 0);
+	ir_node   *mem;
+	ir_tarval *tv;
+	ir_node   *op = get_Call_param(call, 0);
 	(void) ctx;
 
 	if (!is_Const(op))
@@ -340,9 +340,9 @@ int i_mapper_sqrt(ir_node *call, void *ctx)
 /* A mapper for the floating point cbrt. */
 int i_mapper_cbrt(ir_node *call, void *ctx)
 {
-	ir_node *mem;
-	tarval *tv;
-	ir_node *op = get_Call_param(call, 0);
+	ir_node   *mem;
+	ir_tarval *tv;
+	ir_node   *op = get_Call_param(call, 0);
 	(void) ctx;
 
 	if (!is_Const(op))
@@ -376,7 +376,7 @@ int i_mapper_pow(ir_node *call, void *ctx)
 		/* pow (1.0, x) = 1.0 */
 		irn = left;
 	} else if (is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
+		ir_tarval *tv = get_Const_tarval(right);
 		if (tarval_is_null(tv)) {
 			/* pow(x, 0.0) = 1.0 */
 			ir_mode *mode = get_tarval_mode(tv);
@@ -608,7 +608,7 @@ static ir_entity *get_const_entity(ir_node *ptr)
 
 static bool initializer_val_is_null(ir_initializer_t *init)
 {
-	tarval *tv;
+	ir_tarval *tv;
 
 	if (get_initializer_kind(init) == IR_INITIALIZER_NULL)
 		return true;
@@ -674,7 +674,7 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 			}
 		}
 		if (len >= 0) {
-			tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
+			ir_tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
 			return new_r_Const(irg, tv);
 		}
 		return NULL;
@@ -688,7 +688,7 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	for (i = 0; i < size; ++i) {
 		ir_initializer_t *val = get_initializer_compound_value(initializer, i);
 		if (initializer_val_is_null(val)) {
-			tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
+			ir_tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
 			return new_r_Const(irg, tv);
 		}
 	}
@@ -775,7 +775,7 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 		for (i = 0; i < n; ++i) {
 			ir_node *irn;
 			long v_l, v_r;
-			tarval *tv;
+			ir_tarval *tv;
 
 			irn = get_compound_ent_value(left, i);
 			if (! is_Const(irn))
@@ -805,7 +805,7 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 		}
 		if (i < n) {
 			/* we found an end */
-			tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
+			ir_tarval *tv = new_tarval_from_long(res, get_type_mode(res_tp));
 			return new_r_Const(irg, tv);
 		}
 		return NULL;

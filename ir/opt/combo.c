@@ -138,7 +138,7 @@ typedef struct listmap_t {
  * have to use this union.
  */
 typedef union {
-	tarval          *tv;
+	ir_tarval      *tv;
 	symconst_symbol sym;
 } lattice_elem_t;
 
@@ -230,7 +230,7 @@ DEBUG_ONLY(static const char *what_reason;)
 DEBUG_ONLY(static unsigned part_nr = 0);
 
 /** The tarval returned by Unknown nodes: set to either tarval_bad OR tarval_top. */
-static tarval *tarval_UNKNOWN;
+static ir_tarval *tarval_UNKNOWN;
 
 /* forward */
 static node_t *identity(node_t *node);
@@ -660,7 +660,7 @@ static inline lattice_elem_t get_node_type(const ir_node *irn)
  *
  * @return the associated type of this node
  */
-static inline tarval *get_node_tarval(const ir_node *irn)
+static inline ir_tarval *get_node_tarval(const ir_node *irn)
 {
 	lattice_elem_t type = get_node_type(irn);
 
@@ -2213,7 +2213,7 @@ static void compute_Sub(node_t *node)
 	node_t         *r   = get_irn_node(get_Sub_right(sub));
 	lattice_elem_t a    = l->type;
 	lattice_elem_t b    = r->type;
-	tarval         *tv;
+	ir_tarval      *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
@@ -2260,7 +2260,7 @@ static void compute_Eor(node_t *node)
 	node_t         *r   = get_irn_node(get_Eor_right(eor));
 	lattice_elem_t a    = l->type;
 	lattice_elem_t b    = r->type;
-	tarval         *tv;
+	ir_tarval      *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_top;
@@ -2335,7 +2335,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 	lattice_elem_t a     = l->type;
 	lattice_elem_t b     = r->type;
 	pn_Cmp         pnc   = get_Proj_proj(proj);
-	tarval         *tv;
+	ir_tarval      *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
 		node->type.tv = tarval_undefined;
@@ -2660,11 +2660,11 @@ static node_t *identity_Phi(node_t *node)
  */
 static node_t *identity_comm_zero_binop(node_t *node)
 {
-	ir_node *op   = node->node;
-	node_t  *a    = get_irn_node(get_binop_left(op));
-	node_t  *b    = get_irn_node(get_binop_right(op));
-	ir_mode *mode = get_irn_mode(op);
-	tarval  *zero;
+	ir_node   *op   = node->node;
+	node_t    *a    = get_irn_node(get_binop_left(op));
+	node_t    *b    = get_irn_node(get_binop_right(op));
+	ir_mode   *mode = get_irn_mode(op);
+	ir_tarval *zero;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
@@ -2685,10 +2685,10 @@ static node_t *identity_comm_zero_binop(node_t *node)
  */
 static node_t *identity_shift(node_t *node)
 {
-	ir_node *op   = node->node;
-	node_t  *b    = get_irn_node(get_binop_right(op));
-	ir_mode *mode = get_irn_mode(b->node);
-	tarval  *zero;
+	ir_node   *op   = node->node;
+	node_t    *b    = get_irn_node(get_binop_right(op));
+	ir_mode   *mode = get_irn_mode(b->node);
+	ir_tarval *zero;
 
 	/* node: no input should be tarval_top, else the binop would be also
 	 * Top and not being split. */
@@ -2703,11 +2703,11 @@ static node_t *identity_shift(node_t *node)
  */
 static node_t *identity_Mul(node_t *node)
 {
-	ir_node *op   = node->node;
-	node_t  *a    = get_irn_node(get_Mul_left(op));
-	node_t  *b    = get_irn_node(get_Mul_right(op));
-	ir_mode *mode = get_irn_mode(op);
-	tarval  *one;
+	ir_node   *op   = node->node;
+	node_t    *a    = get_irn_node(get_Mul_left(op));
+	node_t    *b    = get_irn_node(get_Mul_right(op));
+	ir_mode   *mode = get_irn_mode(op);
+	ir_tarval *one;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
 	if (mode_is_float(mode) && (get_irg_fp_model(current_ir_graph) & fp_strict_algebraic))
@@ -2748,10 +2748,10 @@ static node_t *identity_Sub(node_t *node)
  */
 static node_t *identity_And(node_t *node)
 {
-	ir_node *and = node->node;
-	node_t  *a   = get_irn_node(get_And_left(and));
-	node_t  *b   = get_irn_node(get_And_right(and));
-	tarval  *neutral = get_mode_all_one(get_irn_mode(and));
+	ir_node   *and = node->node;
+	node_t    *a   = get_irn_node(get_And_left(and));
+	node_t    *b   = get_irn_node(get_And_right(and));
+	ir_tarval *neutral = get_mode_all_one(get_irn_mode(and));
 
 	/* node: no input should be tarval_top, else the And would be also
 	 * Top and not being split. */
@@ -3185,8 +3185,8 @@ static void apply_cf(ir_node *block, void *ctx)
 		next = get_Phi_next(phi);
 		if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
 			/* this Phi is replaced by a constant */
-			tarval  *tv = node->type.tv;
-			ir_node *c  = new_r_Const(current_ir_graph, tv);
+			ir_tarval *tv = node->type.tv;
+			ir_node   *c  = new_r_Const(current_ir_graph, tv);
 
 			set_irn_node(c, node);
 			node->node = c;
@@ -3390,8 +3390,8 @@ static void apply_result(ir_node *irn, void *ctx)
 						exchange(irn, jmp);
 						env->modified = 1;
 					} else {
-						node_t *sel = get_irn_node(get_Cond_selector(cond));
-						tarval *tv  = sel->type.tv;
+						node_t    *sel = get_irn_node(get_Cond_selector(cond));
+						ir_tarval *tv  = sel->type.tv;
 
 						if (is_tarval(tv) && tarval_is_constant(tv)) {
 							/* The selector is a constant, but more
@@ -3405,7 +3405,7 @@ static void apply_result(ir_node *irn, void *ctx)
 		} else {
 			/* normal data node */
 			if (is_tarval(node->type.tv) && tarval_is_constant(node->type.tv)) {
-				tarval *tv = node->type.tv;
+				ir_tarval *tv = node->type.tv;
 
 				/*
 				 * Beware: never replace mode_T nodes by constants. Currently we must mark

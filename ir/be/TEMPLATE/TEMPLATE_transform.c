@@ -153,11 +153,11 @@ static ir_node *gen_Not(ir_node *node)
 
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	tarval   *value     = get_Const_tarval(node);
-	ir_node  *result;
+	ir_node   *block     = get_nodes_block(node);
+	ir_node   *new_block = be_transform_node(block);
+	dbg_info  *dbgi      = get_irn_dbg_info(node);
+	ir_tarval *value     = get_Const_tarval(node);
+	ir_node   *result;
 
 	result = new_bd_TEMPLATE_Const(dbgi, new_block, value);
 

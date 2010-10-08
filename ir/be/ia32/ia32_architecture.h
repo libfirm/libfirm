@@ -119,6 +119,6 @@ void ia32_setup_cg_config(void);
  *
  * @return the cost
  */
-int ia32_evaluate_insn(insn_kind kind, tarval *tv);
+int ia32_evaluate_insn(insn_kind kind, ir_tarval *tv);
 
 #endif

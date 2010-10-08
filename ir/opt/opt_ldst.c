@@ -561,10 +561,10 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 				int i, n;
 
 				for (i = 0, n = get_Sel_n_indexs(ptr); i < n; ++i) {
-					ir_node *bound;
-					tarval *tlower, *tupper;
-					ir_node *index = get_Sel_index(ptr, i);
-					tarval *tv     = computed_value(index);
+					ir_node   *bound;
+					ir_tarval *tlower, *tupper;
+					ir_node   *index = get_Sel_index(ptr, i);
+					ir_tarval *tv     = computed_value(index);
 
 					/* check if the index is constant */
 					if (tv == tarval_bad)
@@ -645,7 +645,7 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth)
 	compound_graph_path *res = NULL;
 	ir_entity           *root, *field, *ent;
 	int                 path_len, pos, idx;
-	tarval              *tv;
+	ir_tarval           *tv;
 	ir_type             *tp;
 
 	if (is_SymConst(ptr)) {
@@ -673,10 +673,10 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth)
 			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
 		}
 	} else if (is_Add(ptr)) {
-		ir_node *l    = get_Add_left(ptr);
-		ir_node *r    = get_Add_right(ptr);
-		ir_mode *mode = get_irn_mode(ptr);
-		tarval  *tmp;
+		ir_node   *l    = get_Add_left(ptr);
+		ir_node   *r    = get_Add_right(ptr);
+		ir_mode   *mode = get_irn_mode(ptr);
+		ir_tarval *tmp;
 
 		if (is_Const(r) && get_irn_mode(l) == mode) {
 			ptr = l;
@@ -697,9 +697,9 @@ ptr_arith:
 		}
 		idx = 0;
 		for (ent = field;;) {
-			unsigned size;
-			tarval   *sz, *tv_index, *tlower, *tupper;
-			ir_node  *bound;
+			unsigned  size;
+			ir_tarval *sz, *tv_index, *tlower, *tupper;
+			ir_node   *bound;
 
 			tp = get_entity_type(ent);
 			if (! is_Array_type(tp))
@@ -748,9 +748,9 @@ ptr_arith:
 		pos      = path_len - depth - idx;
 
 		for (ent = field;;) {
-			unsigned size;
-			tarval   *sz, *tv_index;
-			long     index;
+			unsigned   size;
+			ir_tarval *sz, *tv_index;
+			long       index;
 
 			tp = get_entity_type(ent);
 			if (! is_Array_type(tp))
@@ -805,7 +805,7 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
 	path_entry       entry, *p;
 	ir_entity        *ent, *field;
 	ir_initializer_t *initializer;
-	tarval           *tv;
+	ir_tarval        *tv;
 	ir_type          *tp;
 	unsigned         n;
 
@@ -917,10 +917,10 @@ ptr_arith:
 		/* fill them up */
 		pos = 0;
 		for (ent = field;;) {
-			unsigned size;
-			tarval   *sz, *tv_index, *tlower, *tupper;
-			long     index;
-			ir_node  *bound;
+			unsigned  size;
+			ir_tarval *sz, *tv_index, *tlower, *tupper;
+			long      index;
+			ir_node   *bound;
 
 			tp = get_entity_type(ent);
 			if (! is_Array_type(tp))

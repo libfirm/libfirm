@@ -322,7 +322,7 @@ class Const(Op):
 	attrs_name = "con"
 	attrs      = [
 		dict(
-			type = "tarval*",
+			type = "ir_tarval*",
 			name = "tarval",
 		)
 	]

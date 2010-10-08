@@ -86,7 +86,7 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 	ir_graph         *irg      = get_irn_irg(cnst);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
-	tarval           *tv       = get_Const_tarval(cnst);
+	ir_tarval        *tv       = get_Const_tarval(cnst);
 	ir_entity        *res      = pmap_get(isa->tv_ent, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
@@ -972,7 +972,7 @@ ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
 	}
 
 	if (cnst != NULL) {
-		tarval *offset = get_Const_tarval(cnst);
+		ir_tarval *offset = get_Const_tarval(cnst);
 		if (!tarval_is_long(offset)) {
 			ir_fprintf(stderr, "Optimisation Warning: tarval of %+F is not a long?\n", cnst);
 			return NULL;

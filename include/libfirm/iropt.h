@@ -79,7 +79,7 @@ typedef enum fp_model_t {
 /** If the expression referenced can be evaluated statically
  *  computed_value returns a tarval representing the result.
  *  Else returns tarval_bad. */
-FIRM_API tarval *computed_value(const ir_node *n);
+FIRM_API ir_tarval *computed_value(const ir_node *n);
 
 /** Applies all optimizations to n that are expressible as a pattern
  *  in Firm, i.e., they need not a walk of the graph.

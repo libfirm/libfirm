@@ -61,7 +61,7 @@ static ir_entity *create_ent(int value, const char *name)
 	ir_graph  *cnst_irg;
 	ir_entity *ent;
 	ir_node   *cnst;
-	tarval    *tv;
+	ir_tarval *tv;
 
 	set_type_alignment_bytes(type, 4);
 

@@ -57,7 +57,7 @@
  */
 typedef union {
 	ir_entity *ent;
-	tarval *tv;
+	ir_tarval *tv;
 } path_elem_t;
 
 /**

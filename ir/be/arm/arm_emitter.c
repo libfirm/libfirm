@@ -296,7 +296,7 @@ void arm_emit_shifter_operand(const ir_node *node)
 typedef struct sym_or_tv_t {
 	union {
 		ir_entity  *entity;  /**< An entity. */
-		tarval     *tv;      /**< A tarval. */
+		ir_tarval  *tv;      /**< A tarval. */
 		const void *generic; /**< For generic compare. */
 	} u;
 	unsigned label;      /**< the associated label. */
@@ -1098,7 +1098,7 @@ void arm_gen_routine(ir_graph *irg)
 				be_emit_char('\n');
 				be_emit_write_line();
 			} else {
-				tarval *tv = entry->u.tv;
+				ir_tarval *tv = entry->u.tv;
 				int i, size = get_mode_size_bytes(get_tarval_mode(tv));
 				unsigned v;
 

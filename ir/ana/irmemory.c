@@ -121,8 +121,8 @@ static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt)
  */
 static ir_alias_relation check_const(const ir_node *cns, int size)
 {
-	tarval *tv = get_Const_tarval(cns);
-	tarval *tv_size;
+	ir_tarval *tv = get_Const_tarval(cns);
+	ir_tarval *tv_size;
 
 	if (size == 0)
 		return tarval_is_null(tv) ? ir_may_alias : ir_no_alias;
@@ -147,9 +147,9 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 		return ir_sure_alias;
 	if (is_Const(idx1) && is_Const(idx2)) {
 		/* both are const, we can compare them */
-		tarval *tv1 = get_Const_tarval(idx1);
-		tarval *tv2 = get_Const_tarval(idx2);
-		tarval *tv, *tv_size;
+		ir_tarval *tv1 = get_Const_tarval(idx1);
+		ir_tarval *tv2 = get_Const_tarval(idx2);
+		ir_tarval *tv, *tv_size;
 		ir_mode *m1, *m2;
 
 		if (size == 0)
@@ -182,7 +182,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 			if (get_mode_sign(m1) != get_mode_sign(m2)) {
 				/* find the signed */
 				if (mode_is_signed(m2)) {
-					tarval *t = tv1;
+					ir_tarval *t = tv1;
 					ir_mode *tm = m1;
 					tv1 = tv2; m1 = m2;
 					tv2 = t;   m2 = tm;
@@ -214,7 +214,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 			}
 		}
 		if (tarval_cmp(tv1, tv2) == pn_Cmp_Gt) {
-			tarval *t = tv1;
+			ir_tarval *t = tv1;
 			tv1 = tv2;
 			tv2 = t;
 		}
@@ -517,7 +517,7 @@ static ir_alias_relation _get_alias_relation(
 	while (is_Add(adr1)) {
 		ir_node *add_right = get_Add_right(adr1);
 		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
-			tarval *tv  = get_Const_tarval(add_right);
+			ir_tarval *tv  = get_Const_tarval(add_right);
 			offset1    += get_tarval_long(tv);
 			adr1        = get_Add_left(adr1);
 		} else if (mode_is_reference(get_irn_mode(add_right))) {
@@ -531,7 +531,7 @@ static ir_alias_relation _get_alias_relation(
 	while (is_Add(adr2)) {
 		ir_node *add_right = get_Add_right(adr2);
 		if (is_Const(add_right) && !mode_is_reference(get_irn_mode(add_right))) {
-			tarval *tv  = get_Const_tarval(add_right);
+			ir_tarval *tv  = get_Const_tarval(add_right);
 			offset2    += get_tarval_long(tv);
 			adr2        = get_Add_left(adr2);
 		} else if (mode_is_reference(get_irn_mode(add_right))) {
@@ -631,10 +631,10 @@ static ir_alias_relation _get_alias_relation(
 			/* for some reason CSE didn't happen yet for the 2 SymConsts... */
 			return ir_may_alias;
 		} else if (class1 == ir_sc_globaladdr) {
-			tarval *tv  = get_Const_tarval(base1);
-			offset1    += get_tarval_long(tv);
-			tv          = get_Const_tarval(base2);
-			offset2    += get_tarval_long(tv);
+			ir_tarval *tv = get_Const_tarval(base1);
+			offset1      += get_tarval_long(tv);
+			tv            = get_Const_tarval(base2);
+			offset2      += get_tarval_long(tv);
 
 			if ((unsigned long)labs(offset2 - offset1) >= mode_size)
 				return ir_no_alias;

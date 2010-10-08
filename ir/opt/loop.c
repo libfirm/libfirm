@@ -204,7 +204,7 @@ typedef struct loop_info_t {
 	ir_node *iteration_phi;
 	ir_node *add;
 
-	tarval *count_tar;					/* Number of loop iterations */
+	ir_tarval *count_tar;               /* Number of loop iterations */
 
 	ir_node *duff_cond;					/* Duff mod */
 	unrolling_kind_flag unroll_kind; 	/* constant or invariant unrolling */
@@ -1754,7 +1754,7 @@ static void create_duffs_block(void)
 		/* ems % step != 0 :  +1 */
 		false_val = new_Const(get_mode_one(mode));
 	} else {
-		tarval *tv_two = new_tarval_from_long(2, mode);
+		ir_tarval *tv_two = new_tarval_from_long(2, mode);
 		/* ems % step == 0 :  +1 */
 		true_val = new_Const(get_mode_one(mode));
 		/* ems % step != 0 :  +2 */
@@ -2008,10 +2008,11 @@ static pn_Cmp get_math_inverted_case(pn_Cmp proj)
 
 /* Returns 1 if loop exits within 2 steps of the iv.
  * Norm_proj means we do not exit the loop.*/
-static unsigned simulate_next(tarval **count_tar,
-		tarval *stepped, tarval *step_tar, tarval *end_tar, pn_Cmp norm_proj)
+static unsigned simulate_next(ir_tarval **count_tar,
+		ir_tarval *stepped, ir_tarval *step_tar, ir_tarval *end_tar,
+		pn_Cmp norm_proj)
 {
-	tarval *next;
+	ir_tarval *next;
 
 	DB((dbg, LEVEL_4, "Loop taken if (stepped)%ld %s (end)%ld ",
 				get_tarval_long(stepped),
@@ -2163,7 +2164,7 @@ static unsigned get_unroll_decision_invariant(void)
 
 	ir_node 	*projres, *loop_condition, *iteration_path;
 	unsigned 	success, is_latest_val;
-	tarval 		*step_tar;
+	ir_tarval   *step_tar;
 	ir_mode		*mode;
 
 
@@ -2278,9 +2279,9 @@ static unsigned get_unroll_decision_invariant(void)
 
 /* Returns unroll factor,
  * given maximum unroll factor and number of loop passes. */
-static unsigned get_preferred_factor_constant(tarval *count_tar)
+static unsigned get_preferred_factor_constant(ir_tarval *count_tar)
 {
-	tarval *tar_6, *tar_5, *tar_4, *tar_3, *tar_2;
+	ir_tarval *tar_6, *tar_5, *tar_4, *tar_3, *tar_2;
 	unsigned prefer;
 	ir_mode *mode = get_irn_mode(loop_info.end_val);
 
@@ -2370,7 +2371,7 @@ static unsigned get_unroll_decision_constant(void)
 {
 	ir_node 	*projres, *loop_condition, *iteration_path;
 	unsigned 	success, is_latest_val;
-	tarval 		*start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
+	ir_tarval  *start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
 	pn_Cmp		proj_proj, norm_proj;
 	ir_mode		*mode;
 

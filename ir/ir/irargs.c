@@ -169,7 +169,7 @@ static int firm_emit(lc_appendable_t *app,
 			break;
 		default:
 			if (is_Const(X)) {
-				tarval *tv = get_Const_tarval(X);
+				ir_tarval *tv = get_Const_tarval(X);
 				if (tv)
 					tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
 				else

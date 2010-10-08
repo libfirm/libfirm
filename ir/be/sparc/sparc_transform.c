@@ -407,9 +407,9 @@ static ir_node *gen_Add(ir_node *node)
 	/* special case: + 0x1000 can be represented as - 0x1000 */
 	right = get_Add_right(node);
 	if (is_Const(right)) {
-		tarval  *tv;
-		uint32_t val;
-		ir_node *left = get_Add_left(node);
+		ir_node   *left = get_Add_left(node);
+		ir_tarval *tv;
+		uint32_t   val;
 		/* is this simple address arithmetic? then we can let the linker do
 		 * the calculation. */
 		if (is_SymConst(left) && get_irn_n_edges(left) == 1) {
@@ -808,7 +808,7 @@ static ir_node *gen_Minus(ir_node *node)
 /**
  * Create an entity for a given (floating point) tarval
  */
-static ir_entity *create_float_const_entity(tarval *tv)
+static ir_entity *create_float_const_entity(ir_tarval *tv)
 {
 	const arch_env_t *arch_env = be_get_irg_arch_env(current_ir_graph);
 	sparc_isa_t      *isa      = (sparc_isa_t*) arch_env;
@@ -837,14 +837,14 @@ static ir_entity *create_float_const_entity(tarval *tv)
 
 static ir_node *gen_Const(ir_node *node)
 {
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	ir_mode  *mode  = get_irn_mode(node);
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	tarval   *tv;
-	long      value;
+	ir_node   *block = be_transform_node(get_nodes_block(node));
+	ir_mode   *mode  = get_irn_mode(node);
+	dbg_info  *dbgi  = get_irn_dbg_info(node);
+	ir_tarval *tv;
+	long       value;
 
 	if (mode_is_float(mode)) {
-		tarval    *tv     = get_Const_tarval(node);
+		ir_tarval *tv     = get_Const_tarval(node);
 		ir_entity *entity = create_float_const_entity(tv);
 		ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
 		ir_node   *mem    = new_r_NoMem(current_ir_graph);

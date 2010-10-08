@@ -149,10 +149,10 @@ static int is_immediate(ia32_address_t *addr, const ir_node *node, int negate)
  */
 static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 {
-	tarval  *tv;
-	ir_node *left;
-	ir_node *right;
-	long    val;
+	ir_tarval *tv;
+	ir_node   *left;
+	ir_node   *right;
+	long      val;
 
 	switch (get_irn_opcode(node)) {
 	case iro_Const:
@@ -253,8 +253,8 @@ static int eat_shl(ia32_address_t *addr, ir_node *node)
 	long     val;
 
 	if (is_Shl(node)) {
-		ir_node *right = get_Shl_right(node);
-		tarval  *tv;
+		ir_node   *right = get_Shl_right(node);
+		ir_tarval *tv;
 
 		/* we can use shl with 1, 2 or 3 shift */
 		if (!is_Const(right))

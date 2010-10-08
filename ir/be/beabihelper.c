@@ -483,9 +483,9 @@ static void link_ops_in_block_walker(ir_node *node, void *data)
 		break;
 	case iro_Builtin:
 		if (get_Builtin_kind(node) == ir_bk_return_address) {
-			ir_node *param = get_Builtin_param(node, 0);
-			tarval  *tv    = get_Const_tarval(param); /* must be Const */
-			long     value = get_tarval_long(tv);
+			ir_node   *param = get_Builtin_param(node, 0);
+			ir_tarval *tv    = get_Const_tarval(param); /* must be Const */
+			long       value = get_tarval_long(tv);
 			if (value > 0) {
 				/* we need esp for the climbframe algo */
 				collect_node(node);

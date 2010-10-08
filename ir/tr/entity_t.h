@@ -59,7 +59,7 @@ typedef struct ir_initializer_const_t {
  */
 typedef struct ir_initializer_tarval_t {
 	ir_initializer_base_t  base;
-	tarval                *value;
+	ir_tarval             *value;
 } ir_initializer_tarval_t ;
 
 union ir_initializer_t {

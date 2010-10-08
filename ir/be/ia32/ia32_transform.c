@@ -154,7 +154,7 @@ static bool is_Const_Minus_1(ir_node *node)
  */
 static bool is_simple_x87_Const(ir_node *node)
 {
-	tarval *tv = get_Const_tarval(node);
+	ir_tarval *tv = get_Const_tarval(node);
 	if (tarval_is_null(tv) || tarval_is_one(tv))
 		return true;
 
@@ -167,8 +167,8 @@ static bool is_simple_x87_Const(ir_node *node)
  */
 static bool is_simple_sse_Const(ir_node *node)
 {
-	tarval  *tv   = get_Const_tarval(node);
-	ir_mode *mode = get_tarval_mode(tv);
+	ir_tarval *tv   = get_Const_tarval(node);
+	ir_mode   *mode = get_tarval_mode(tv);
 
 	if (mode == mode_F)
 		return true;
@@ -229,7 +229,7 @@ static ir_node *gen_Const(ir_node *node)
 		ir_entity *floatent;
 
 		if (ia32_cg_config.use_sse2) {
-			tarval *tv = get_Const_tarval(node);
+			ir_tarval *tv = get_Const_tarval(node);
 			if (tarval_is_null(tv)) {
 				load = new_bd_ia32_xZero(dbgi, block);
 				set_ia32_ls_mode(load, mode);
@@ -329,9 +329,9 @@ end:
 		be_dep_on_frame(load);
 		return res;
 	} else { /* non-float mode */
-		ir_node *cnst;
-		tarval  *tv = get_Const_tarval(node);
-		long     val;
+		ir_node   *cnst;
+		ir_tarval *tv = get_Const_tarval(node);
+		long       val;
 
 		tv = tarval_convert_to(tv, mode_Iu);
 
@@ -498,11 +498,11 @@ ir_entity *ia32_gen_fp_known_const(ia32_known_const_t kct)
 	};
 	static ir_entity *ent_cache[ia32_known_const_max];
 
-	const char    *ent_name, *cnst_str;
-	ir_type       *tp;
-	ir_entity     *ent;
-	tarval        *tv;
-	ir_mode       *mode;
+	const char *ent_name, *cnst_str;
+	ir_type    *tp;
+	ir_entity  *ent;
+	ir_tarval  *tv;
+	ir_mode    *mode;
 
 	ent_name = names[kct].ent_name;
 	if (! ent_cache[kct]) {
@@ -1375,8 +1375,8 @@ static ir_node *gen_And(ir_node *node)
 
 	/* is it a zero extension? */
 	if (is_Const(op2)) {
-		tarval   *tv    = get_Const_tarval(op2);
-		long      v     = get_tarval_long(tv);
+		ir_tarval *tv = get_Const_tarval(op2);
+		long       v  = get_tarval_long(tv);
 
 		if (v == 0xFF || v == 0xFFFF) {
 			dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -1690,8 +1690,8 @@ static ir_node *gen_Shrs(ir_node *node)
 	ir_node *right = get_Shrs_right(node);
 
 	if (is_Const(right)) {
-		tarval *tv = get_Const_tarval(right);
-		long val = get_tarval_long(tv);
+		ir_tarval *tv  = get_Const_tarval(right);
+		long       val = get_tarval_long(tv);
 		if (val == 31) {
 			/* this is a sign extension */
 			dbg_info *dbgi   = get_irn_dbg_info(node);
@@ -1707,8 +1707,8 @@ static ir_node *gen_Shrs(ir_node *node)
 		ir_node *shl_left  = get_Shl_left(left);
 		ir_node *shl_right = get_Shl_right(left);
 		if (is_Const(shl_right)) {
-			tarval *tv1 = get_Const_tarval(right);
-			tarval *tv2 = get_Const_tarval(shl_right);
+			ir_tarval *tv1 = get_Const_tarval(right);
+			ir_tarval *tv2 = get_Const_tarval(shl_right);
 			if (tv1 == tv2 && tarval_is_long(tv1)) {
 				long val = get_tarval_long(tv1);
 				if (val == 16 || val == 24) {
@@ -2450,7 +2450,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 {
 	ir_mode        *mode      = get_irn_mode(cns);
 	unsigned        size      = get_mode_size_bytes(mode);
-	tarval         *tv        = get_Const_tarval(cns);
+	ir_tarval      *tv        = get_Const_tarval(cns);
 	ir_node        *block     = get_nodes_block(node);
 	ir_node        *new_block = be_transform_node(block);
 	ir_node        *ptr       = get_Store_ptr(node);
@@ -3099,8 +3099,8 @@ static ir_entity *ia32_create_const_array(ir_node *c0, ir_node *c1, ir_mode **ne
 	ir_mode          *mode = *new_mode;
 	ir_type          *tp;
 	ir_initializer_t *initializer;
-	tarval           *tv0 = get_Const_tarval(c0);
-	tarval           *tv1 = get_Const_tarval(c1);
+	ir_tarval        *tv0 = get_Const_tarval(c0);
+	ir_tarval        *tv1 = get_Const_tarval(c1);
 
 	if (mode == NULL) {
 		/* detect the best mode for the constants */
@@ -3175,7 +3175,7 @@ typedef struct setcc_transform {
  * Find a transformation that creates 0 and 1 from
  * tv_t and tv_f.
  */
-static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f,
+static void find_const_transform(pn_Cmp pnc, ir_tarval *t, ir_tarval *f,
                                  setcc_transform_t *res)
 {
 	unsigned step = 0;
@@ -3183,13 +3183,13 @@ static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f,
 	res->num_steps = 0;
 
 	if (tarval_is_null(t)) {
-		tarval *tmp = t;
+		ir_tarval *tmp = t;
 		t = f;
 		f = tmp;
 		pnc = ia32_get_negated_pnc(pnc);
 	} else if (tarval_cmp(t, f) == pn_Cmp_Lt) {
 		// now, t is the bigger one
-		tarval *tmp = t;
+		ir_tarval *tmp = t;
 		t = f;
 		f = tmp;
 		pnc = ia32_get_negated_pnc(pnc);
@@ -3197,7 +3197,7 @@ static void find_const_transform(pn_Cmp pnc, tarval *t, tarval *f,
 	res->pnc = pnc;
 
 	if (! tarval_is_null(f)) {
-		tarval *t_sub = tarval_sub(t, f, NULL);
+		ir_tarval *t_sub = tarval_sub(t, f, NULL);
 
 		t = t_sub;
 		res->steps[step].transform = SETCC_TR_ADD;
@@ -3460,8 +3460,8 @@ static ir_node *gen_Mux(ir_node *node)
 
 		if (is_Const(mux_true) && is_Const(mux_false)) {
 			/* both are const, good */
-			tarval *tv_true = get_Const_tarval(mux_true);
-			tarval *tv_false = get_Const_tarval(mux_false);
+			ir_tarval *tv_true  = get_Const_tarval(mux_true);
+			ir_tarval *tv_false = get_Const_tarval(mux_false);
 			setcc_transform_t res;
 			int step;
 
@@ -4820,10 +4820,10 @@ static ir_node *gen_debugbreak(ir_node *node)
  */
 static ir_node *gen_return_address(ir_node *node)
 {
-	ir_node *param      = get_Builtin_param(node, 0);
-	ir_node *frame      = get_Builtin_param(node, 1);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	tarval  *tv         = get_Const_tarval(param);
+	ir_node   *param    = get_Builtin_param(node, 0);
+	ir_node   *frame    = get_Builtin_param(node, 1);
+	dbg_info  *dbgi     = get_irn_dbg_info(node);
+	ir_tarval *tv       = get_Const_tarval(param);
 	unsigned long value = get_tarval_long(tv);
 
 	ir_node *block  = be_transform_node(get_nodes_block(node));
@@ -4863,10 +4863,10 @@ static ir_node *gen_return_address(ir_node *node)
  */
 static ir_node *gen_frame_address(ir_node *node)
 {
-	ir_node *param      = get_Builtin_param(node, 0);
-	ir_node *frame      = get_Builtin_param(node, 1);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	tarval  *tv         = get_Const_tarval(param);
+	ir_node   *param    = get_Builtin_param(node, 0);
+	ir_node   *frame    = get_Builtin_param(node, 1);
+	dbg_info  *dbgi     = get_irn_dbg_info(node);
+	ir_tarval *tv       = get_Const_tarval(param);
 	unsigned long value = get_tarval_long(tv);
 
 	ir_node *block  = be_transform_node(get_nodes_block(node));
@@ -4917,7 +4917,7 @@ static ir_node *gen_prefetch(ir_node *node)
 	ir_node        *ptr, *block, *mem, *base, *index;
 	ir_node        *param,  *new_node;
 	long           rw, locality;
-	tarval         *tv;
+	ir_tarval      *tv;
 	ia32_address_t addr;
 
 	if (!ia32_cg_config.use_sse_prefetch && !ia32_cg_config.use_3dnow_prefetch) {

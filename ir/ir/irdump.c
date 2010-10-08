@@ -1833,7 +1833,7 @@ static void dump_enum_item(FILE *F, ir_type *tp, int pos)
 	char buf[1024];
 	ir_enum_const *ec = get_enumeration_const(tp, pos);
 	ident         *id = get_enumeration_const_nameid(ec);
-	tarval        *tv = get_enumeration_value(ec);
+	ir_tarval     *tv = get_enumeration_value(ec);
 
 	if (tv)
 		tarval_snprintf(buf, sizeof(buf), tv);

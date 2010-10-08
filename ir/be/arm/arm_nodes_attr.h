@@ -126,7 +126,7 @@ typedef struct arm_CopyB_attr_t {
 /** Attributes for a fConst */
 typedef struct arm_fConst_attr_t {
 	arm_attr_t  base;
-	tarval     *tv;              /**< the tarval representing the FP const */
+	ir_tarval  *tv;              /**< the tarval representing the FP const */
 } arm_fConst_attr_t;
 
 /** attributes for floatingpoint arithmetic operations */

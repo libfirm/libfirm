@@ -411,9 +411,8 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
       /* if the size is a type size and the types matched */
       assert(atp == get_SymConst_type(size));
       tp = atp;
-    }
-    else if (is_Const(size)) {
-      tarval *tv = get_Const_tarval(size);
+    } else if (is_Const(size)) {
+      ir_tarval *tv = get_Const_tarval(size);
 
       if (tv != tarval_bad && tarval_is_long(tv) &&
           get_type_state(atp) == layout_fixed &&

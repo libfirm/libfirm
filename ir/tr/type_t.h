@@ -98,7 +98,7 @@ typedef struct {
 
 /** An enumerator constant. */
 struct ir_enum_const {
-	tarval  *value;     /**< The constants that represents this enumerator identifier. */
+	ir_tarval  *value;  /**< The constants that represents this enumerator identifier. */
 	ident   *nameid;    /**< The name of the enumerator identifier. */
 	ir_type *owner;     /**< owner type of this enumerator constant. */
 };

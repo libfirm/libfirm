@@ -61,10 +61,10 @@ static inline int mode_needs_gp_reg(ir_mode *mode)
  */
 static ir_node *create_const_graph(ir_node *irn, ir_node *block)
 {
-	tarval  *tv    = get_Const_tarval(irn);
-	ir_mode *mode  = get_tarval_mode(tv);
-	dbg_info *dbgi = get_irn_dbg_info(irn);
-	unsigned value;
+	ir_tarval *tv   = get_Const_tarval(irn);
+	ir_mode   *mode = get_tarval_mode(tv);
+	dbg_info  *dbgi = get_irn_dbg_info(irn);
+	unsigned   value;
 
 	if (mode_is_reference(mode)) {
 		/* AMD64 is 64bit, so we can safely convert a reference tarval into Iu */

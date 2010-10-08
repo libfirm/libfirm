@@ -63,7 +63,7 @@ struct opcode_key_t {
 	union {
 		long            proj;   /**< For Proj nodes, its proj number */
 		ir_entity       *ent;   /**< For Sel nodes, its entity */
-		tarval          *tv;    /**< For Const nodes, its tarval */
+		ir_tarval       *tv;    /**< For Const nodes, its tarval */
 		symconst_symbol sym;    /**< For SymConst nodes, its symbol .*/
 		void            *addr;  /**< Alias all addresses. */
 		int             intVal; /**< For Conv/Div nodes: strict/remainderless. */
