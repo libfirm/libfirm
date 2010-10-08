@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2009 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -97,6 +97,7 @@ static ir_prog_pass_t *create_wrapper_pass(ir_graph_pass_manager_t *graph_mgr)
 	/* create a wrapper pass */
 	ir_prog_pass_t *pass = XMALLOCZ(ir_prog_pass_t);
 
+	pass->kind          = k_ir_prog_pass;
 	pass->run_on_irprog = run_wrapper;
 	pass->context       = graph_mgr;
 	pass->name          = graph_mgr->name;
