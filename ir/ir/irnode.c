@@ -1379,40 +1379,6 @@ void add_Sync_pred(ir_node *node, ir_node *pred)
 	add_irn_n(node, pred);
 }
 
-/* Returns the source language type of a Proj node. */
-ir_type *get_Proj_type(const ir_node *n)
-{
-	ir_type *tp   = firm_unknown_type;
-	ir_node *pred = get_Proj_pred(n);
-
-	switch (get_irn_opcode(pred)) {
-	case iro_Proj: {
-		ir_node *pred_pred;
-		/* Deal with Start / Call here: we need to know the Proj Nr. */
-		assert(get_irn_mode(pred) == mode_T);
-		pred_pred = get_Proj_pred(pred);
-
-		if (is_Start(pred_pred))  {
-			ir_type *mtp = get_entity_type(get_irg_entity(get_irn_irg(pred_pred)));
-			tp = get_method_param_type(mtp, get_Proj_proj(n));
-		} else if (is_Call(pred_pred)) {
-			ir_type *mtp = get_Call_type(pred_pred);
-			tp = get_method_res_type(mtp, get_Proj_proj(n));
-		}
-	} break;
-	case iro_Start: break;
-	case iro_Call: break;
-	case iro_Load: {
-		ir_node *a = get_Load_ptr(pred);
-		if (is_Sel(a))
-			tp = get_entity_type(get_Sel_entity(a));
-	} break;
-	default:
-		break;
-	}
-	return tp;
-}
-
 long get_Proj_proj(const ir_node *node)
 {
 	assert(is_Proj(node));
