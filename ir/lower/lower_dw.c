@@ -107,6 +107,7 @@ enum lower_flags {
  */
 typedef struct lower_env_t {
 	node_entry_t **entries;       /**< entries per node */
+	ir_graph      *irg;
 	struct obstack obst;          /**< an obstack holding the temporary data */
 	ir_type  *l_mtp;              /**< lowered method type of the current method */
 	tarval   *tv_mode_bytes;      /**< a tarval containing the number of bytes in the lowered modes */
@@ -317,12 +318,12 @@ static void prepare_links(ir_node *node, void *env)
  */
 static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
+	ir_graph *irg      = get_irn_irg(node);
+	dbg_info *dbg      = get_irn_dbg_info(node);
+	ir_mode  *low_mode = env->low_unsigned;
+	int       idx;
 	tarval   *tv, *tv_l, *tv_h;
 	ir_node  *low, *high;
-	dbg_info *dbg = get_irn_dbg_info(node);
-	int      idx;
-	ir_graph *irg = current_ir_graph;
-	ir_mode  *low_mode = env->low_unsigned;
 
 	tv   = get_Const_tarval(node);
 
@@ -344,7 +345,7 @@ static void lower_Const(ir_node *node, ir_mode *mode, lower_env_t *env)
 static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
 	ir_mode    *low_mode = env->low_unsigned;
-	ir_graph   *irg = current_ir_graph;
+	ir_graph   *irg = get_irn_irg(node);
 	ir_node    *adr = get_Load_ptr(node);
 	ir_node    *mem = get_Load_mem(node);
 	ir_node    *low, *high, *proj;
@@ -424,7 +425,7 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env)
 		return;
 	}  /* if */
 
-	irg = current_ir_graph;
+	irg = get_irn_irg(node);
 	adr = get_Store_ptr(node);
 	mem = get_Store_mem(node);
 	block = get_nodes_block(node);
@@ -503,7 +504,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 		ent = entry->ent;
 	}  /* if */
 	sym.entity_p = ent;
-	return new_r_SymConst(current_ir_graph, mode_P_code, sym, symconst_addr_ent);
+	return new_r_SymConst(env->irg, mode_P_code, sym, symconst_addr_ent);
 }  /* get_intrinsic_address */
 
 /**
@@ -814,12 +815,11 @@ static void lower_Binop(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	dbg   = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
-	irg   = current_ir_graph;
+	irg   = get_irn_irg(block);
 
 	mtp = mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
 	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, env);
-	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
-		irn, 4, in, mtp);
+	irn = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 4, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
 	irn = new_r_Proj(irn, mode_T, pn_Call_T_result);
 
@@ -864,12 +864,11 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	dbg   = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
-	irg  = current_ir_graph;
+	irg   = get_irn_irg(block);
 
 	mtp = mode_is_signed(mode) ? shiftop_tp_s : shiftop_tp_u;
 	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, env);
-	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
-		irn, 3, in, mtp);
+	irn = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 3, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
 	irn = new_r_Proj(irn, mode_T, pn_Call_T_result);
 
@@ -884,8 +883,8 @@ static void lower_Shiftop(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
+	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *right = get_Shr_right(node);
-	ir_graph *irg = current_ir_graph;
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
 		tarval *tv = get_Const_tarval(right);
@@ -931,8 +930,8 @@ static void lower_Shr(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
+	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *right = get_Shl_right(node);
-	ir_graph *irg = current_ir_graph;
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
 		tarval *tv = get_Const_tarval(right);
@@ -976,8 +975,8 @@ static void lower_Shl(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
+	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *right = get_Shrs_right(node);
-	ir_graph *irg = current_ir_graph;
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
 		tarval *tv = get_Const_tarval(right);
@@ -1119,6 +1118,7 @@ static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node  *in[2];
 	dbg_info *dbg;
 	ir_type  *mtp;
+	ir_graph *irg;
 	int      idx;
 	node_entry_t *entry;
 
@@ -1137,11 +1137,11 @@ static void lower_Unop(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	dbg   = get_irn_dbg_info(node);
 	block = get_nodes_block(node);
+	irg   = get_irn_irg(block);
 
 	mtp = mode_is_signed(mode) ? unop_tp_s : unop_tp_u;
 	irn = get_intrinsic_address(mtp, get_irn_op(node), mode, mode, env);
-	irn = new_rd_Call(dbg, block, get_irg_no_mem(current_ir_graph),
-		irn, 2, in, mtp);
+	irn = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
 	set_irn_pinned(irn, get_irn_pinned(node));
 	irn = new_r_Proj(irn, mode_T, pn_Call_T_result);
 
@@ -1196,7 +1196,7 @@ static void lower_Binop_logical(ir_node *node, ir_mode *mode, lower_env_t *env,
 
 	idx = get_irn_idx(node);
 	assert(idx < env->n_entries);
-	irg = current_ir_graph;
+	irg = get_irn_irg(node);
 	env->entries[idx]->low_word  = constr_rd(dbg, block, lop_l, rop_l, env->low_unsigned);
 	env->entries[idx]->high_word = constr_rd(dbg, block, lop_h, rop_h, mode);
 }  /* lower_Binop_logical */
@@ -1486,7 +1486,7 @@ static void lower_Conv_to_Ll(ir_node *node, lower_env_t *env)
 	ir_node  *op           = get_Conv_op(node);
 	ir_mode  *imode        = get_irn_mode(op);
 	int      idx           = get_irn_idx(node);
-	ir_graph *irg          = current_ir_graph;
+	ir_graph *irg          = get_irn_irg(node);
 	ir_node  *block        = get_nodes_block(node);
 	dbg_info *dbg          = get_irn_dbg_info(node);
 	node_entry_t *entry = env->entries[idx];
@@ -1556,7 +1556,7 @@ static void lower_Conv_from_Ll(ir_node *node, lower_env_t *env)
 	ir_node      *block = get_nodes_block(node);
 	dbg_info     *dbg   = get_irn_dbg_info(node);
 	int          idx    = get_irn_idx(op);
-	ir_graph     *irg   = current_ir_graph;
+	ir_graph     *irg   = get_irn_irg(node);
 	node_entry_t *entry = env->entries[idx];
 
 	assert(idx < env->n_entries);
@@ -1759,7 +1759,7 @@ static ir_type *lower_mtp(ir_type *mtp, lower_env_t *env)
  */
 static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
-	ir_graph  *irg = current_ir_graph;
+	ir_graph  *irg = get_irn_irg(node);
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *mtp = get_entity_type(ent);
 	ir_node   **in;
@@ -2514,7 +2514,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 {
 	lower_env_t lenv;
 	int         i;
-	ir_graph    *rem;
 
 	if (! param)
 		return;
@@ -2641,7 +2640,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 #undef LOWER2
 
 	/* transform all graphs */
-	rem = current_ir_graph;
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph  *irg = get_irp_irg(i);
 		ir_entity *ent;
@@ -2656,6 +2654,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		lenv.entries   = NEW_ARR_F(node_entry_t *, n_idx);
 		memset(lenv.entries, 0, n_idx * sizeof(lenv.entries[0]));
 
+		lenv.irg          = irg;
 		lenv.l_mtp        = NULL;
 		lenv.flags        = 0;
 		lenv.proj_2_block = pmap_create();
@@ -2684,7 +2683,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 
 			/* last step: all waiting nodes */
 			DB((dbg, LEVEL_1, "finishing waiting nodes:\n"));
-			current_ir_graph = irg;
 			while (! pdeq_empty(lenv.waitq)) {
 				ir_node *node = pdeq_getl(lenv.waitq);
 
@@ -2710,7 +2708,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 		obstack_free(&lenv.obst, NULL);
 	}  /* for */
 	del_pdeq(lenv.waitq);
-	current_ir_graph = rem;
 }  /* lower_dw_ops */
 
 /* Default implementation. */
