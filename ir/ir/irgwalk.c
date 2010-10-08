@@ -160,11 +160,15 @@ void irg_walk_core(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 void irg_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
               void *env)
 {
-	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
-	inc_irg_visited(current_ir_graph);
-	assert(current_ir_graph == get_irn_irg(node));
+	ir_graph *irg = get_irn_irg(node);
+	ir_graph *rem = current_ir_graph;
+
+	current_ir_graph = irg;
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
 	irg_walk_core(node, pre, post, env);
-	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
+	current_ir_graph = rem;
 }
 
 /*
