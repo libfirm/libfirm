@@ -149,9 +149,6 @@ ir_node *ir_create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 
 	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
 	phi = new_r_Phi(lower_block, ARRAY_SIZE(phi_in), phi_in, dest_mode);
-	assert(get_Block_phis(lower_block) == NULL);
-	set_Block_phis(lower_block, phi);
-	set_Phi_next(phi, NULL);
 
 	/* make sure we do visit the cond_value later... */
 	ARR_APP1(ir_node*, check_later, cond_value);

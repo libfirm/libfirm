@@ -536,15 +536,24 @@ static int sparc_get_reg_class_alignment(const arch_register_class_t *cls)
 	return get_mode_size_bytes(mode);
 }
 
+static ir_node *sparc_create_set(ir_node *cond)
+{
+	return ir_create_cond_set(cond, mode_Iu);
+}
+
 static void sparc_lower_for_target(void)
 {
 	int i;
 	int n_irgs = get_irp_n_irgs();
-
-	/* TODO, doubleword lowering and others */
+	lower_mode_b_config_t lower_mode_b_config = {
+		mode_Iu,
+		sparc_create_set,
+		0,
+	};
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
+		ir_lower_mode_b(irg, &lower_mode_b_config);
 		lower_switch(irg, 256, false);
 	}
 }
@@ -552,9 +561,17 @@ static void sparc_lower_for_target(void)
 static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
                                 ir_node *mux_true)
 {
-	(void) sel;
-	(void) mux_false;
-	(void) mux_true;
+	ir_graph *irg  = get_irn_irg(sel);
+	ir_mode  *mode = get_irn_mode(mux_true);
+
+	if (get_irg_phase_state(irg) == phase_low)
+		return false;
+
+	if (!mode_is_int(mode) && !mode_is_reference(mode) && mode != mode_b)
+		return false;
+	if (is_Const(mux_true) && is_Const_one(mux_true) &&
+			is_Const(mux_false) && is_Const_null(mux_false))
+		return true;
 	return false;
 }
 

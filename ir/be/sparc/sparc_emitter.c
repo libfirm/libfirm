@@ -451,15 +451,15 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 	while (sched_has_prev(schedpoint)) {
 		schedpoint = sched_prev(schedpoint);
 
-		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
-			break;
-
 		if (has_delay_slot(schedpoint))
 			break;
 
 		/* skip things which don't really result in instructions */
 		if (is_no_instruction(schedpoint))
 			continue;
+
+		if (tries++ >= PICK_DELAY_SLOT_MAX_DISTANCE)
+			break;
 
 		if (emits_multiple_instructions(schedpoint))
 			continue;

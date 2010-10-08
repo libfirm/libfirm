@@ -1132,14 +1132,18 @@ static ir_node *gen_Conv(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *op       = get_Conv_op(node);
-	ir_node  *new_op   = be_transform_node(op);
 	ir_mode  *src_mode = get_irn_mode(op);
 	ir_mode  *dst_mode = get_irn_mode(node);
 	dbg_info *dbg      = get_irn_dbg_info(node);
+	ir_node  *new_op;
 
 	int src_bits = get_mode_size_bits(src_mode);
 	int dst_bits = get_mode_size_bits(dst_mode);
 
+	if (src_mode == mode_b)
+		panic("ConvB not lowered %+F", node);
+
+	new_op = be_transform_node(op);
 	if (src_mode == dst_mode)
 		return new_op;
 
@@ -1165,6 +1169,8 @@ static ir_node *gen_Conv(ir_node *node)
 			}
 			return create_itof(dbg, block, new_op, dst_mode);
 		}
+	} else if (src_mode == mode_b) {
+		panic("ConvB not lowered %+F", node);
 	} else { /* complete in gp registers */
 		int min_bits;
 		ir_mode *min_mode;
