@@ -305,6 +305,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 	const arch_env_t          *arch_env = be_get_irg_arch_env(irg);
 	be_irg_t                  *birg     = be_birg_from_irg(irg);
 	const arch_register_req_t *sp_req   = birg->sp_req;
+	const arch_register_t     *sp       = arch_env->sp;
 	be_ssa_construction_env_t  senv;
 	int i, len;
 	ir_node **phis;
@@ -322,9 +323,10 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 		new_sp_req->width = 1;
 
 		limited_bitset = rbitset_obstack_alloc(obst, new_sp_req->cls->n_regs);
-		rbitset_set(limited_bitset, arch_register_get_index(arch_env->sp));
+		rbitset_set(limited_bitset, arch_register_get_index(sp));
 		new_sp_req->limited = limited_bitset;
-		if (arch_env->sp->type & arch_register_type_ignore) {
+
+		if (!rbitset_is_set(birg->allocatable_regs, sp->global_index)) {
 			new_sp_req->type |= arch_register_req_type_ignore;
 		}
 

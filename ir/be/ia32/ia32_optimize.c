@@ -819,13 +819,14 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 /**
  * Find a free GP register if possible, else return NULL.
  */
-static const arch_register_t *get_free_gp_reg(void)
+static const arch_register_t *get_free_gp_reg(ir_graph *irg)
 {
+	be_irg_t *birg = be_birg_from_irg(irg);
 	int i;
 
 	for (i = 0; i < N_ia32_gp_REGS; ++i) {
 		const arch_register_t *reg = &ia32_reg_classes[CLASS_ia32_gp].regs[i];
-		if (arch_register_type_is(reg, ignore))
+		if (!rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
 		if (be_peephole_get_value(CLASS_ia32_gp, i) == NULL)
@@ -907,7 +908,7 @@ static void peephole_be_IncSP(ir_node *node)
 
 	if (offset < 0) {
 		/* we need a free register for pop */
-		reg = get_free_gp_reg();
+		reg = get_free_gp_reg(get_irn_irg(node));
 		if (reg == NULL)
 			return;
 
@@ -1196,7 +1197,7 @@ static void peephole_ia32_Imul_split(ir_node *imul)
 		return;
 	}
 	/* we need a free register */
-	reg = get_free_gp_reg();
+	reg = get_free_gp_reg(get_irn_irg(imul));
 	if (reg == NULL)
 		return;
 

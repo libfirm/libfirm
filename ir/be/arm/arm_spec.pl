@@ -12,48 +12,40 @@ $mode_gp    = "mode_Iu";
 $mode_flags = "mode_Bu";
 $mode_fp    = "mode_E";
 
-# register types:
-$normal      =  0; # no special type
-$caller_save =  1; # caller save (register must be saved by the caller of a function)
-$callee_save =  2; # callee save (register must be saved by the called function)
-$ignore      =  4; # ignore (do not assign this register)
-$arbitrary   =  8; # emitter can choose an arbitrary register of this class
-$virtual     = 16; # the register is a virtual one
-$state       = 32; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "r0",  type => $caller_save },
-		{ name => "r1",  type => $caller_save },
-		{ name => "r2",  type => $caller_save },
-		{ name => "r3",  type => $caller_save },
-		{ name => "r4",  type => $callee_save },
-		{ name => "r5",  type => $callee_save },
-		{ name => "r6",  type => $callee_save },
-		{ name => "r7",  type => $callee_save },
-		{ name => "r8",  type => $callee_save },
-		{ name => "r9",  type => $callee_save },
-		{ name => "r10", type => $callee_save },
-		{ name => "r11", type => $callee_save },
-		{ name => "r12", type => $ignore }, # reserved for linker/immediate fixups
-		{ name => "sp",  type => $ignore }, # this is our stack pointer
-		{ name => "lr",  type => $callee_save | $caller_save }, # this is our return address
-		{ name => "pc",  type => $ignore }, # this is our program counter
+		{ name => "r0" },
+		{ name => "r1" },
+		{ name => "r2" },
+		{ name => "r3" },
+		{ name => "r4" },
+		{ name => "r5" },
+		{ name => "r6" },
+		{ name => "r7" },
+		{ name => "r8" },
+		{ name => "r9" },
+		{ name => "r10" },
+		{ name => "r11" },
+		{ name => "r12" },
+		{ name => "sp" },
+		{ name => "lr" },
+		{ name => "pc" },
 		{ mode => $mode_gp }
 	],
 	fpa => [
-		{ name => "f0", type => $caller_save },
-		{ name => "f1", type => $caller_save },
-		{ name => "f2", type => $caller_save },
-		{ name => "f3", type => $caller_save },
-		{ name => "f4", type => $caller_save },
-		{ name => "f5", type => $caller_save },
-		{ name => "f6", type => $caller_save },
-		{ name => "f7", type => $caller_save },
+		{ name => "f0" },
+		{ name => "f1" },
+		{ name => "f2" },
+		{ name => "f3" },
+		{ name => "f4" },
+		{ name => "f5" },
+		{ name => "f6" },
+		{ name => "f7" },
 		{ mode => $mode_fp }
 	],
 	flags => [
-		{ name => "fl", type => 0 },
+		{ name => "fl" },
 		{ mode => $mode_flags, flags => "manual_ra" }
 	],
 );
@@ -426,7 +418,8 @@ SwitchJmp => {
 	mode      => "mode_T",
 	attr      => "int n_projs, long def_proj_num",
 	init_attr => "\tset_arm_SwitchJmp_n_projs(res, n_projs);\n".
-	             "\tset_arm_SwitchJmp_default_proj_num(res, def_proj_num);",
+	             "\tset_arm_SwitchJmp_default_proj_num(res, def_proj_num);\n".
+	             "\tinfo->out_infos = NULL;",
 	reg_req   => { in => [ "gp" ], out => [ "none" ] },
 	attr_type => "arm_SwitchJmp_attr_t",
 },

@@ -59,6 +59,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	const arch_register_class_t *cls = env->cls;
 	ir_node  *block      = get_nodes_block(node);
 	const ir_graph *irg  = env->irg;
+	be_irg_t       *birg = be_birg_from_irg(irg);
 	be_lv_t *lv          = be_get_irg_liveness(irg);
 	unsigned *tmp        = NULL;
 	unsigned *def_constr = NULL;
@@ -70,15 +71,14 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	 * fullfil the constraint
 	 * (typical example: stack pointer as input to copyb)
 	 * TODO: This really just checks precolored registers at the moment and
-	 *       ignore the general case of not matching in/out constraints
+	 *       ignores the general case of not matching in/out constraints
 	 */
 	for (i = 0; i < arity; ++i) {
-		ir_node *op = get_irn_n(node, i);
-		ir_node *copy;
-		const arch_register_t *reg;
-		const arch_register_req_t *req;
+		ir_node                   *op  = get_irn_n(node, i);
+		const arch_register_req_t *req = arch_get_register_req(node, i);
+		const arch_register_t     *reg;
+		ir_node                   *copy;
 
-		req = arch_get_register_req(node, i);
 		if (req->cls != cls)
 			continue;
 		reg = arch_get_irn_register(op);
@@ -88,7 +88,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		/* precolored with an ignore register (which is not a joker like
 		   unknown/noreg) */
 		if (arch_register_type_is(reg, joker)
-				|| !arch_register_type_is(reg, ignore))
+				|| rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
 		if (! (req->type & arch_register_req_type_limited))
@@ -100,7 +100,8 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		stat_ev_int("constr_copy", 1);
 		sched_add_before(node, copy);
 		set_irn_n(node, i, copy);
-		DBG((dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n", copy, node, i));
+		DBG((dbg, LEVEL_3, "inserting ignore arg copy %+F for %+F pos %d\n",
+		     copy, node, i));
 	}
 
 	/* insert copies for nodes that occur constrained more than once. */

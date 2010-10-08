@@ -10,103 +10,92 @@ $mode_fp      = "mode_F";
 $mode_fp2     = "mode_D";
 $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 
-$normal      =  0; # no special type
-$caller_save =  1; # caller save (register must be saved by the caller of a function)
-$callee_save =  2; # callee save (register must be saved by the called function)
-$ignore      =  4; # ignore (do not assign this register)
-$arbitrary   =  8; # emitter can choose an arbitrary register of this class
-$virtual     = 16; # the register is a virtual one
-$state       = 32; # register represents a state
-
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
 	gp => [
-		{ name => "g0", type => $ignore }, # hardwired 0, behaves like /dev/null
-		{ name => "g1", type => $caller_save }, # temp. value
-		{ name => "g2", type => $caller_save },
-		{ name => "g3", type => $caller_save },
-		{ name => "g4", type => $caller_save },
-		{ name => "g5", type => $ignore }, # reserved by SPARC ABI
-		{ name => "g6", type => $ignore }, # reserved by SPARC ABI
-		{ name => "g7", type => $ignore }, # reserved by SPARC ABI
+		{ name => "g0" },
+		{ name => "g1" },
+		{ name => "g2" },
+		{ name => "g3" },
+		{ name => "g4" },
+		{ name => "g5" },
+		{ name => "g6" },
+		{ name => "g7" },
 
-		# window's out registers
-		{ name => "o0", type => $caller_save }, # param 1 / return value from callee
-		{ name => "o1", type => $caller_save }, # param 2
-		{ name => "o2", type => $caller_save }, # param 3
-		{ name => "o3", type => $caller_save }, # param 4
-		{ name => "o4", type => $caller_save }, # param 5
-		{ name => "o5", type => $caller_save }, # param 6
-		{ name => "sp", type => $ignore }, # our stackpointer
-		{ name => "o7", type => $ignore }, # temp. value / address of CALL instr.
+		{ name => "o0" },
+		{ name => "o1" },
+		{ name => "o2" },
+		{ name => "o3" },
+		{ name => "o4" },
+		{ name => "o5" },
+		{ name => "sp" },
+		{ name => "o7" },
 
-		# window's local registers
-		{ name => "l0", type => 0 },
-		{ name => "l1", type => 0 },
-		{ name => "l2", type => 0 },
-		{ name => "l3", type => 0 },
-		{ name => "l4", type => 0 },
-		{ name => "l5", type => 0 },
-		{ name => "l6", type => 0 },
-		{ name => "l7", type => 0 },
+		{ name => "l0" },
+		{ name => "l1" },
+		{ name => "l2" },
+		{ name => "l3" },
+		{ name => "l4" },
+		{ name => "l5" },
+		{ name => "l6" },
+		{ name => "l7" },
 
-		# window's in registers
-		{ name => "i0", type => 0 }, # incoming param1 / return value to caller
-		{ name => "i1", type => 0 }, # param 2
-		{ name => "i2", type => 0 }, # param 3
-		{ name => "i3", type => 0 }, # param 4
-		{ name => "i4", type => 0 }, # param 5
-		{ name => "i5", type => 0 }, # param 6
-		{ name => "frame_pointer", realname => "fp", type => $ignore }, # our framepointer
-		{ name => "i7", type => $ignore }, # return address - 8
+		{ name => "i0" },
+		{ name => "i1" },
+		{ name => "i2" },
+		{ name => "i3" },
+		{ name => "i4" },
+		{ name => "i5" },
+		{ name => "frame_pointer", realname => "fp" },
+		{ name => "i7" },
 		{ mode => $mode_gp }
 	],
 	fpflags_class => [
-		{ name => "fpflags", type => $ignore },
+		{ name => "fpflags" },
 		{ mode => $mode_fpflags, flags => "manual_ra" }
 	],
 	flags_class => [
-		{ name => "flags", type => $ignore },
+		{ name => "flags" },
 		{ mode => $mode_flags, flags => "manual_ra" }
 	],
 	mul_div_high_res => [
-		{ name => "y", type => $ignore },
+		{ name => "y" },
 		{ mode => $mode_gp, flags => "manual_ra" }
 	],
 	# fp registers can be accessed any time
 	fp => [
-		{ name => "f0",  type => $caller_save },
-		{ name => "f1",  type => $caller_save },
-		{ name => "f2",  type => $caller_save },
-		{ name => "f3",  type => $caller_save },
-		{ name => "f4",  type => $caller_save },
-		{ name => "f5",  type => $caller_save },
-		{ name => "f6",  type => $caller_save },
-		{ name => "f7",  type => $caller_save },
-		{ name => "f8",  type => $caller_save },
-		{ name => "f9",  type => $caller_save },
-		{ name => "f10", type => $caller_save },
-		{ name => "f11", type => $caller_save },
-		{ name => "f12", type => $caller_save },
-		{ name => "f13", type => $caller_save },
-		{ name => "f14", type => $caller_save },
-		{ name => "f15", type => $caller_save },
-		{ name => "f16", type => $caller_save },
-		{ name => "f17", type => $caller_save },
-		{ name => "f18", type => $caller_save },
-		{ name => "f19", type => $caller_save },
-		{ name => "f20", type => $caller_save },
-		{ name => "f21", type => $caller_save },
-		{ name => "f22", type => $caller_save },
-		{ name => "f23", type => $caller_save },
-		{ name => "f24", type => $caller_save },
-		{ name => "f25", type => $caller_save },
-		{ name => "f26", type => $caller_save },
-		{ name => "f27", type => $caller_save },
-		{ name => "f28", type => $caller_save },
-		{ name => "f29", type => $caller_save },
-		{ name => "f30", type => $caller_save },
-		{ name => "f31", type => $caller_save },
+		{ name => "f0" },
+		{ name => "f1" },
+		{ name => "f2" },
+		{ name => "f3" },
+		{ name => "f4" },
+		{ name => "f5" },
+		{ name => "f6" },
+		{ name => "f7" },
+		{ name => "f8" },
+		{ name => "f9" },
+		{ name => "f10" },
+		{ name => "f11" },
+		{ name => "f12" },
+		{ name => "f13" },
+		{ name => "f14" },
+		{ name => "f15" },
+		{ name => "f16" },
+		{ name => "f17" },
+		{ name => "f18" },
+		{ name => "f19" },
+		{ name => "f20" },
+		{ name => "f21" },
+		{ name => "f22" },
+		{ name => "f23" },
+		{ name => "f24" },
+		{ name => "f25" },
+		{ name => "f26" },
+		{ name => "f27" },
+		{ name => "f28" },
+		{ name => "f29" },
+		{ name => "f30" },
+		{ name => "f31" },
 		{ mode => $mode_fp }
 	]
 ); # %reg_classes

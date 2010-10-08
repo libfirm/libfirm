@@ -228,13 +228,8 @@ void free_copy_opt(copy_opt_t *co)
 static int co_is_optimizable_root(ir_node *irn)
 {
 	const arch_register_req_t *req;
-	const arch_register_t     *reg;
 
 	if (arch_irn_is_ignore(irn))
-		return 0;
-
-	reg = arch_get_irn_register(irn);
-	if (arch_register_type_is(reg, ignore))
 		return 0;
 
 	if (is_Reg_Phi(irn) || is_Perm_Proj(irn))
@@ -805,16 +800,11 @@ static void build_graph_walker(ir_node *irn, void *env)
 	const arch_register_req_t *req;
 	copy_opt_t                *co  = env;
 	int pos, max;
-	const arch_register_t *reg;
 
 	if (get_irn_mode(irn) == mode_T)
 		return;
 	req = arch_get_register_req_out(irn);
 	if (req->cls != co->cls || arch_irn_is_ignore(irn))
-		return;
-
-	reg = arch_get_irn_register(irn);
-	if (arch_register_type_is(reg, ignore))
 		return;
 
 	if (is_Reg_Phi(irn)) { /* Phis */
@@ -898,6 +888,8 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	be_ifg_t *ifg       = co->cenv->ifg;
 	int      *color_map = ALLOCAN(int, co->cls->n_regs);
 	int      *node_map  = XMALLOCN(int, get_irg_last_idx(co->irg) + 1);
+	ir_graph *irg       = co->irg;
+	be_irg_t *birg      = be_birg_from_irg(irg);
 
 	ir_node *irn;
 	nodes_iter_t it;
@@ -908,7 +900,11 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 	n_regs = 0;
 	for (i = 0; i < co->cls->n_regs; ++i) {
 		const arch_register_t *reg = &co->cls->regs[i];
-		color_map[i] = arch_register_type_is(reg, ignore) ? -1 : n_regs++;
+		if (rbitset_is_set(birg->allocatable_regs, reg->global_index)) {
+			color_map[i] = n_regs++;
+		} else {
+			color_map[i] = -1;
+		}
 	}
 
 	/*

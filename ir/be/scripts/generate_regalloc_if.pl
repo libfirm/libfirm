@@ -208,9 +208,10 @@ EOF
 	$reginit .= "\t$arch\_reg_classes[CLASS_".$class_name."].mode = $class_mode;\n";
 	my $lastreg;
 	foreach (@class) {
-		my $name = $_->{"name"};
+		my $name   = $_->{"name"};
 		my $ucname = uc($name);
-		my $type = translate_reg_type($_->{"type"});
+		my $type   = "arch_register_type_none";
+		$type = translate_reg_type($_->{"type"}) if (exists($_->{"type"}));
 		# realname is name if not set by user
 		$_->{"realname"} = $_->{"name"} if (! exists($_->{"realname"}));
 		my $realname = $_->{realname};

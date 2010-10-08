@@ -874,10 +874,12 @@ void be_set_constr_single_reg_in(ir_node *node, int pos,
 void be_set_constr_single_reg_out(ir_node *node, int pos,
 		const arch_register_t *reg, arch_register_req_type_t additional_types)
 {
+	ir_graph                  *irg  = get_irn_irg(node);
+	be_irg_t                  *birg = be_birg_from_irg(irg);
 	const arch_register_req_t *req;
 
 	/* if we have an ignore register, add ignore flag and just assign it */
-	if (reg->type & arch_register_type_ignore) {
+	if (!rbitset_is_set(birg->allocatable_regs, reg->global_index)) {
 		additional_types |= arch_register_req_type_ignore;
 	}
 

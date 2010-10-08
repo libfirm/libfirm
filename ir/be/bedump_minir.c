@@ -243,6 +243,7 @@ static void print_regclasses(void)
 		}
 		end_list("registers");
 
+#if 0
 		begin_block_mapping("flags");
 		for (r = 0; r < n_regs; ++r) {
 			const arch_register_t *reg  = arch_register_for_index(cls, r);
@@ -255,6 +256,7 @@ static void print_regclasses(void)
 			}
 		}
 		end_block_mapping("flags");
+#endif
 
 		end_block_mapping(NULL);
 	}

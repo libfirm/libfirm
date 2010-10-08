@@ -342,7 +342,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 
 		assert(assignment[i] >= 0 && "there must have been a register assigned (node not register pressure faithful?)");
 		reg = arch_register_for_index(env->cls, assignment[i]);
-		assert(! (reg->type & arch_register_type_ignore));
 
 		irn = alloc_nodes[i];
 		if (irn != NULL) {
@@ -502,7 +501,6 @@ static void assign(ir_node *block, void *env_ptr)
 				col = get_next_free_reg(alloc_env, colors);
 				reg = arch_register_for_index(env->cls, col);
 				assert(arch_get_irn_register(irn) == NULL && "This node must not have been assigned a register yet");
-				assert(!arch_register_type_is(reg, ignore) && "Must not assign ignore register");
 			}
 
 			bitset_set(colors, col);
@@ -520,11 +518,6 @@ static void assign(ir_node *block, void *env_ptr)
 			assert(reg && "Register must have been assigned");
 
 			col = arch_register_get_index(reg);
-#ifndef NDEBUG
-			if (!arch_register_type_is(reg, ignore)) {
-				assert(bitset_is_set(live, nr) && "Cannot have a non live use");
-			}
-#endif
 
 			bitset_clear(colors, col);
 			bitset_clear(live, nr);
