@@ -1683,6 +1683,7 @@ static void create_duffs_block(void)
 
 	ir_node *count, *correction, *unroll_c;
 	ir_node *cmp_bad_count, *good_count, *bad_count, *count_phi, *bad_count_neg;
+	ir_node *phi;
 
 	mode = get_irn_mode(loop_info.end_val);
 	const_null = new_Const(get_mode_null(mode));
@@ -1695,7 +1696,6 @@ static void create_duffs_block(void)
 
 	/* Create loop entry phis in first duff block
 	 * as it becomes the loops preheader */
-	ir_node *phi;
 	for_each_phi(loop_head, phi) {
 		/* Returns phis pred if phi would have arity 1*/
 		ir_node *new_phi = clone_phis_sans_bes(phi, loop_head, block1);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1326,8 +1326,8 @@ static void lower_Proj_Cmp(lower_env_t *env, ir_node *proj)
 
 static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
-	(void) mode;
 	ir_node *pred = get_Proj_pred(node);
+	(void) mode;
 	if (is_Cmp(pred)) {
 		lower_Proj_Cmp(env, node);
 	}
