@@ -41,30 +41,30 @@
 
 void ia32_build_16bit_reg_map(pmap *reg_map)
 {
-	pmap_insert(reg_map, &ia32_registers[REG_EAX], "ax");
-	pmap_insert(reg_map, &ia32_registers[REG_EBX], "bx");
-	pmap_insert(reg_map, &ia32_registers[REG_ECX], "cx");
-	pmap_insert(reg_map, &ia32_registers[REG_EDX], "dx");
-	pmap_insert(reg_map, &ia32_registers[REG_ESI], "si");
-	pmap_insert(reg_map, &ia32_registers[REG_EDI], "di");
-	pmap_insert(reg_map, &ia32_registers[REG_EBP], "bp");
-	pmap_insert(reg_map, &ia32_registers[REG_ESP], "sp");
+	pmap_insert(reg_map, &ia32_registers[REG_EAX], (void*)"ax");
+	pmap_insert(reg_map, &ia32_registers[REG_EBX], (void*)"bx");
+	pmap_insert(reg_map, &ia32_registers[REG_ECX], (void*)"cx");
+	pmap_insert(reg_map, &ia32_registers[REG_EDX], (void*)"dx");
+	pmap_insert(reg_map, &ia32_registers[REG_ESI], (void*)"si");
+	pmap_insert(reg_map, &ia32_registers[REG_EDI], (void*)"di");
+	pmap_insert(reg_map, &ia32_registers[REG_EBP], (void*)"bp");
+	pmap_insert(reg_map, &ia32_registers[REG_ESP], (void*)"sp");
 }
 
 void ia32_build_8bit_reg_map(pmap *reg_map)
 {
-	pmap_insert(reg_map, &ia32_registers[REG_EAX], "al");
-	pmap_insert(reg_map, &ia32_registers[REG_EBX], "bl");
-	pmap_insert(reg_map, &ia32_registers[REG_ECX], "cl");
-	pmap_insert(reg_map, &ia32_registers[REG_EDX], "dl");
+	pmap_insert(reg_map, &ia32_registers[REG_EAX], (void*)"al");
+	pmap_insert(reg_map, &ia32_registers[REG_EBX], (void*)"bl");
+	pmap_insert(reg_map, &ia32_registers[REG_ECX], (void*)"cl");
+	pmap_insert(reg_map, &ia32_registers[REG_EDX], (void*)"dl");
 }
 
 void ia32_build_8bit_reg_map_high(pmap *reg_map)
 {
-	pmap_insert(reg_map, &ia32_registers[REG_EAX], "ah");
-	pmap_insert(reg_map, &ia32_registers[REG_EBX], "bh");
-	pmap_insert(reg_map, &ia32_registers[REG_ECX], "ch");
-	pmap_insert(reg_map, &ia32_registers[REG_EDX], "dh");
+	pmap_insert(reg_map, &ia32_registers[REG_EAX], (void*)"ah");
+	pmap_insert(reg_map, &ia32_registers[REG_EBX], (void*)"bh");
+	pmap_insert(reg_map, &ia32_registers[REG_ECX], (void*)"ch");
+	pmap_insert(reg_map, &ia32_registers[REG_EDX], (void*)"dh");
 }
 
 const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg)

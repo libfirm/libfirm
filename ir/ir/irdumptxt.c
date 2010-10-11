@@ -311,13 +311,13 @@ void dump_graph_as_text(FILE *out, ir_graph *irg)
  *  "prefix"    node8, ... node15,\n
  *  "prefix"    node16, node17\n
  */
-static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
+static void dump_node_list(FILE *F, firm_kind *k, const char *prefix,
                            int (*get_entity_n_nodes)(firm_kind *ent),
                            ir_node *(*get_entity_node)(firm_kind *ent, int pos),
-                           char *name)
+                           const char *name)
 {
 	int i, n_nodes = get_entity_n_nodes(k);
-	char *comma = "";
+	const char *comma = "";
 
 	fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
 	for (i = 0; i < n_nodes; ++i) {
@@ -338,13 +338,13 @@ static void dump_node_list(FILE *F, firm_kind *k, char *prefix,
  *  "prefix"    node8, ... node15,\n
  *  "prefix"    node16, node17\n
  */
-static void dump_type_list(FILE *F, ir_type *tp, char *prefix,
+static void dump_type_list(FILE *F, ir_type *tp, const char *prefix,
                            int (*get_n_types)(const ir_type *tp),
                            ir_type *(*get_type)(const ir_type *tp, int pos),
                            const char *name)
 {
 	int i, n_nodes = get_n_types(tp);
-	char *comma = "";
+	const char *comma = "";
 
 	fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
 	for (i = 0; i < n_nodes; ++i) {
@@ -446,7 +446,7 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 		fprintf(F, " hidden_user");
 }
 
-static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, char *prefix)
+static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *prefix)
 {
 	int i, j;
 	ir_type *owner, *type;

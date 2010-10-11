@@ -482,9 +482,9 @@ static void debug_vcg_dump_pkg(rss_t *rss, ir_nodeset_t *max_ac, int iteration)
 	}
 
 	foreach_plist(rss->nodes, el) {
-		ir_node   *irn  = plist_element_get_value(el);
-		rss_irn_t *rirn = get_rss_irn(rss, irn);
-		char      *c1   = "";
+		ir_node    *irn  = plist_element_get_value(el);
+		rss_irn_t  *rirn = get_rss_irn(rss, irn);
+		const char *c1   = "";
 		plist_element_t *k_el;
 
 		/* dump selected saturating values in yellow */
@@ -500,9 +500,9 @@ static void debug_vcg_dump_pkg(rss_t *rss, ir_nodeset_t *max_ac, int iteration)
 		}
 
 		foreach_plist(rirn->pkiller_list, k_el) {
-			ir_node   *pkiller = plist_element_get_value(k_el);
-			rss_irn_t *pk_rirn = get_rss_irn(rss, pkiller);
-			char      *c2      = "";
+			ir_node    *pkiller = plist_element_get_value(k_el);
+			rss_irn_t  *pk_rirn = get_rss_irn(rss, pkiller);
+			const char *c2      = "";
 
 			if (max_ac && ir_nodeset_contains(max_ac, pkiller))
 				c2 = "color:yellow";

@@ -207,7 +207,7 @@ static int is_nice_value(ir_node *n)
  * @param txt    a text to describe the set
  * @param block  the owner block of the set
  */
-static void dump_value_set(ir_valueset_t *set, char *txt, ir_node *block)
+static void dump_value_set(ir_valueset_t *set, const char *txt, ir_node *block)
 {
 	ir_valueset_iterator_t iter;
 	ir_node *value, *expr;
