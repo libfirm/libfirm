@@ -51,26 +51,6 @@
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
-ir_node *new_rd_Start(dbg_info *db, ir_graph *irg)
-{
-	ir_node  *block = get_irg_start_block(irg);
-	ir_node  *res   = new_ir_node(db, irg, block, op_Start, mode_T, 0, NULL);
-
-	res = optimize_node(res);
-	irn_verify_irg(res, irg);
-	return res;
-}
-
-ir_node *new_rd_End(dbg_info *db, ir_graph *irg)
-{
-	ir_node  *block = get_irg_end_block(irg);
-	ir_node  *res   = new_ir_node(db, irg, block, op_End, mode_X, -1, NULL);
-
-	res = optimize_node(res);
-	irn_verify_irg(res, irg);
-	return res;
-}
-
 /**
  * Creates a Phi node with all predecessors.  Calling this constructor
  * is only allowed if the corresponding block is mature.
@@ -118,20 +98,6 @@ ir_node *new_rd_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 	assert(is_Cond(arg));
 	arg->attr.cond.default_proj = max_proj;
 	res = new_rd_Proj(db, arg, mode_X, max_proj);
-	return res;
-}
-
-ir_node *new_rd_Sync(dbg_info *db, ir_node *block, int arity, ir_node *in[])
-{
-	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(db, irg, block, op_Sync, mode_M, -1, NULL);
-	int       i;
-
-	for (i = 0; i < arity; ++i)
-		add_Sync_pred(res, in[i]);
-
-	res = optimize_node(res);
-	irn_verify_irg(res, irg);
 	return res;
 }
 
@@ -214,14 +180,6 @@ ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_ty
 	return new_rd_SymConst(db, irg, mode, sym, symconst_type_align);
 }
 
-ir_node *new_r_Start(ir_graph *irg)
-{
-	return new_rd_Start(NULL, irg);
-}
-ir_node *new_r_End(ir_graph *irg)
-{
-	return new_rd_End(NULL, irg);
-}
 ir_node *new_r_Const(ir_graph *irg, ir_tarval *con)
 {
 	return new_rd_Const(NULL, irg, con);
@@ -244,10 +202,6 @@ ir_node *new_r_Phi(ir_node *block, int arity, ir_node **in, ir_mode *mode)
 {
 	return new_rd_Phi(NULL, block, arity, in, mode);
 }
-ir_node *new_r_Sync(ir_node *block, int arity, ir_node *in[])
-{
-	return new_rd_Sync(NULL, block, arity, in);
-}
 ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 {
 	return new_rd_defaultProj(NULL, arg, max_proj);
@@ -266,35 +220,6 @@ ir_node *new_r_ASM(ir_node *block,
                    int n_clobber, ident *clobber[], ident *text)
 {
 	return new_rd_ASM(NULL, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
-}
-
-/** ********************/
-/** public interfaces  */
-/** construction tools */
-
-ir_node *new_d_Start(dbg_info *db)
-{
-	ir_node *res;
-
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	res = new_ir_node(db, current_ir_graph, current_ir_graph->current_block,
-	                  op_Start, mode_T, 0, NULL);
-
-	res = optimize_node(res);
-	irn_verify_irg(res, current_ir_graph);
-	return res;
-}
-
-ir_node *new_d_End(dbg_info *db)
-{
-	ir_node *res;
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	res = new_ir_node(db, current_ir_graph,  current_ir_graph->current_block,
-	                  op_End, mode_X, -1, NULL);
-	res = optimize_node(res);
-	irn_verify_irg(res, current_ir_graph);
-
-	return res;
 }
 
 /* ***********************************************************************/
@@ -691,12 +616,6 @@ ir_node *new_d_SymConst(dbg_info *db, ir_mode *mode, symconst_symbol value,
 	return new_rd_SymConst(db, current_ir_graph, mode, value, kind);
 }
 
-ir_node *new_d_Sync(dbg_info *db, int arity, ir_node *in[])
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_Sync(db, current_ir_graph->current_block, arity, in);
-}
-
 ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
                    ir_asm_constraint *inputs,
                    int n_outs, ir_asm_constraint *outputs, int n_clobber,
@@ -956,14 +875,6 @@ void irp_finalize_cons(void)
 	irp->phase_state = phase_high;
 }
 
-ir_node *new_Start(void)
-{
-	return new_d_Start(NULL);
-}
-ir_node *new_End(void)
-{
-	return new_d_End(NULL);
-}
 ir_node *new_Const(ir_tarval *con)
 {
 	return new_d_Const(NULL, con);
@@ -985,10 +896,6 @@ ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
 ir_node *new_Phi(int arity, ir_node **in, ir_mode *mode)
 {
 	return new_d_Phi(NULL, arity, in, mode);
-}
-ir_node *new_Sync(int arity, ir_node *in[])
-{
-	return new_d_Sync(NULL, arity, in);
 }
 ir_node *new_defaultProj(ir_node *arg, long max_proj)
 {
@@ -1023,5 +930,20 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	res->attr.irg.irg = irg;
 	res->in[0] = res;
 
+	return res;
+}
+
+ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[])
+{
+	ir_node *res = new_ir_node(NULL, irg, NULL, op_Block, mode_BB, arity, in);
+	res->attr.block.irg.irg = irg;
+	res->attr.block.backedge = new_backedge_arr(irg->obst, arity);
+	set_Block_matured(res, 1);
+	/* Create and initialize array for Phi-node construction. */
+	if (get_irg_phase_state(irg) == phase_building) {
+		res->attr.block.graph_arr = NEW_ARR_D(ir_node *, irg->obst, irg->n_loc);
+		memset(res->attr.block.graph_arr, 0, irg->n_loc * sizeof(ir_node*));
+	}
+	irn_verify_irg(res, irg);
 	return res;
 }

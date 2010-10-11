@@ -285,8 +285,12 @@ ir_node *new_rd_{{node.constrname}}(
 	{% endfilter %})
 {
 	ir_node *res;
+	{%- if node.arity == "dynamic" %}
+	int      i;
+	{%- endif %}
 	{{node|irgassign}}
 	{{node|insdecl}}
+
 	res = new_ir_node(
 		{%- filter arguments %}
 			dbgi
@@ -296,6 +300,11 @@ ir_node *new_rd_{{node.constrname}}(
 			{{node.mode}}
 			{{node|arity_and_ins}}
 		{% endfilter %});
+	{%- if node.arity == "dynamic" %}
+	for (i = 0; i < arity; ++i) {
+		add_irn_n(res, in[i]);
+	}
+	{%- endif %}
 	{%- for attr in node.attrs %}
 	res->attr.{{node.attrs_name}}{{attr["initname"]}} =
 		{%- if "init" in attr %} {{ attr["init"] -}};
@@ -306,9 +315,7 @@ ir_node *new_rd_{{node.constrname}}(
 	res->attr.{{node.attrs_name}}{{attr["initname"]}} = {{ attr["init"] -}};
 	{%- endfor %}
 	{{- node.init }}
-	{%- if node.optimize != False %}
 	res = optimize_node(res);
-	{%- endif %}
 	irn_verify_irg(res, irg);
 	return res;
 }
@@ -568,7 +575,7 @@ def main(argv):
 	gendir2 = argv[2] + "/../../include/libfirm"
 
 	# List of TODOs
-	niymap = [ "ASM", "Const", "Phi", "SymConst", "Sync"]
+	niymap = [ "ASM", "Const", "Phi", "SymConst" ]
 
 	real_nodes = prepare_nodes()
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
@@ -576,7 +583,7 @@ def main(argv):
 		if node.name in niymap:
 			continue
 
-		if not isAbstract(node) and not hasattr(node, "singleton"):
+		if not isAbstract(node) and not hasattr(node, "noconstructor"):
 			file.write(constructor_template.render(vars()))
 
 			if hasattr(node, "special_constructors"):

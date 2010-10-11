@@ -1156,7 +1156,7 @@ FIRM_API ir_node *new_rd_Start(dbg_info *db, ir_graph *irg);
  * @param *db    A pointer for  debug information.
  * @param *irg   The IR graph the node  belongs to.
  */
-FIRM_API ir_node *new_rd_End(dbg_info *db, ir_graph *irg);
+FIRM_API ir_node *new_rd_End(dbg_info *db, ir_graph *irg, int arity, ir_node *in[]);
 
 /** Constructor for a Jmp node.
  *
@@ -1947,7 +1947,7 @@ FIRM_API ir_node *new_r_Block(ir_graph *irg, int arity, ir_node *in[]);
 FIRM_API ir_node *new_r_Start(ir_graph *irg);
 
 /** Constructor for a End node. */
-FIRM_API ir_node *new_r_End(ir_graph *irg);
+FIRM_API ir_node *new_r_End(ir_graph *irg, int arity, ir_node *in[]);
 
 /** Constructor for a Jmp node.
  *
@@ -2662,7 +2662,7 @@ FIRM_API ir_node *new_d_Start(dbg_info *db);
  *
  * @param *db     A pointer for debug information.
  */
-FIRM_API ir_node *new_d_End(dbg_info *db);
+FIRM_API ir_node *new_d_End(dbg_info *db, int arity, ir_node *in[]);
 
 /** Constructor for a Jmp node.
  *
@@ -3401,7 +3401,7 @@ FIRM_API ir_node *new_Start(void);
  *
  * Adds the node to the block in current_ir_block.
  */
-FIRM_API ir_node *new_End(void);
+FIRM_API ir_node *new_End(int arity, ir_node *in[]);
 
 /** Constructor for a Jump node.
  *

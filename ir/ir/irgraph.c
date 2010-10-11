@@ -212,10 +212,10 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	/*-- Nodes needed in every graph --*/
 	set_irg_end_block (res, new_r_immBlock(res));
-	end = new_r_End(res);
+	end = new_r_End(res, 0, NULL);
 	set_irg_end(res, end);
 
-	start_block = new_r_Block(res, 0, NULL);
+	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
 	bad->attr.irg.irg = res;
@@ -299,13 +299,13 @@ ir_graph *new_const_code_irg(void)
 	res->anchor = new_r_Anchor(res);
 
 	/* -- The end block -- */
-	end_block = new_r_Block(res, 0, NULL);
+	end_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_end_block(res, end_block);
-	end = new_r_End(res);
+	end = new_r_End(res, 0, NULL);
 	set_irg_end(res, end);
 
 	/* -- The start block -- */
-	start_block = new_r_Block(res, 0, NULL);
+	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
 	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
 	bad->attr.irg.irg = res;

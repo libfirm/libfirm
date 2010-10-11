@@ -35,6 +35,10 @@
  */
 ir_node *new_r_Anchor(ir_graph *irg);
 
+/** create new block node without immediately optimizing it.
+ * This is an internal helper function for new_ir_graph() */
+ir_node *new_r_Block_noopt(ir_graph *irg, int arity, ir_node *in[]);
+
 /**
  * Allocate a frag array for a node if the current graph state is phase_building.
  *
