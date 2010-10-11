@@ -117,12 +117,6 @@ FIRM_API void set_opt_unreachable_code(int value);
 FIRM_API void set_opt_dyn_meth_dispatch(int value);
 FIRM_API int get_opt_dyn_meth_dispatch(void);
 
-/** Enable/Disable type optimization of cast nodes.
- *
- * Controls the optimizations in tropt.h.  Default: on.
- */
-FIRM_API void set_opt_optimize_class_casts(int value);
-
 /** Restricts the behavior of cast optimization.
  *
  *  If set, downcast are not optimized if they might be
