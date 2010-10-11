@@ -35,7 +35,7 @@ void pbqp_dump_graph(pbqp *pbqp);
 
 void dump_simplifyedge(pbqp *pbqp, pbqp_edge *edge);
 
-void dump_section(FILE *f, int level, char *txt);
+void dump_section(FILE *f, int level, const char *txt);
 
 void dump_node(FILE *file, pbqp_node *node);
 void dump_edge(FILE *file, pbqp_edge *edge);

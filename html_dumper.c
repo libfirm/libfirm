@@ -151,7 +151,7 @@ static void dump_node_costs(pbqp *pbqp)
 	fputs("</p>", pbqp->dump_file);
 }
 
-void dump_section(FILE *f, int level, char *txt)
+void dump_section(FILE *f, int level, const char *txt)
 {
 	assert(f);
 
