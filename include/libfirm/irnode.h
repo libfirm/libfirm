@@ -658,12 +658,6 @@ FIRM_API ir_entity *get_irn_entity_attr(ir_node *n);
 FIRM_API int is_irn_constlike(const ir_node *node);
 
 /**
- * Returns non-zero for nodes that must be always optimized
- * (Phi, Id. Proj, Cond, Block, Confirm ...).
- */
-FIRM_API int is_irn_always_opt(const ir_node *node);
-
-/**
  * Returns non-zero for nodes that are allowed to have keep-alives and
  * are neither Block nor PhiM.
  */

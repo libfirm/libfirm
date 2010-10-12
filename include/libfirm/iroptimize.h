@@ -107,15 +107,6 @@ FIRM_API int conv_opt(ir_graph *irg);
 FIRM_API ir_graph_pass_t *conv_opt_pass(const char *name);
 
 /**
- * Do the scalar replacement optimization.
- * Make a date flow analyze and split the
- * data flow edges.
- *
- * @param irg  the graph which should be optimized
- */
-FIRM_API void data_flow_scalar_replacement_opt(ir_graph *irg);
-
-/**
  * A callback that checks whether a entity is an allocation
  * routine.
  */
@@ -620,9 +611,6 @@ FIRM_API int scalar_replacement_opt(ir_graph *irg);
  * @return  the newly created ir_graph pass
  */
 FIRM_API ir_graph_pass_t *scalar_replacement_opt_pass(const char *name);
-
-/** Performs strength reduction for the passed graph. */
-FIRM_API void reduce_strength(ir_graph *irg);
 
 /**
  * Optimizes tail-recursion calls by converting them into loops.
