@@ -985,7 +985,6 @@ ir_graph_pass_t *irg_verify_edges_pass(const char *name, unsigned assert_on_prob
 void init_edges(void)
 {
 	FIRM_DBG_REGISTER(dbg, DBG_EDGES);
-	/* firm_dbg_set_mask(dbg, -1); */
 }
 
 void edges_init_dbg(int do_dbg)

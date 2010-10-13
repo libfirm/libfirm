@@ -432,9 +432,12 @@ static inline int _is_Block_dead(const ir_node *block)
 {
 	ir_op *op = _get_irn_op(block);
 
-	if (op == op_Bad)
+	/* we can have Bad, Anchor and Block nodes as block input */
+	if (op == op_Bad) {
 		return 1;
-	else {
+	} else if (op == op_Anchor) {
+		return 0;
+	} else {
 		assert(op == op_Block);
 		return block->attr.block.is_dead;
 	}

@@ -206,14 +206,6 @@ ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 {
 	return new_rd_defaultProj(NULL, arg, max_proj);
 }
-ir_node *new_r_Bad(ir_graph *irg)
-{
-	return get_irg_bad(irg);
-}
-ir_node *new_r_NoMem(ir_graph *irg)
-{
-	return get_irg_no_mem(irg);
-}
 ir_node *new_r_ASM(ir_node *block,
                    int arity, ir_node *in[], ir_asm_constraint *inputs,
                    int n_outs, ir_asm_constraint *outputs,
@@ -901,16 +893,6 @@ ir_node *new_defaultProj(ir_node *arg, long max_proj)
 {
 	return new_d_defaultProj(NULL, arg, max_proj);
 }
-ir_node *new_Bad(void)
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return get_irg_bad(current_ir_graph);
-}
-ir_node *new_NoMem(void)
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return get_irg_no_mem(current_ir_graph);
-}
 ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
                  int n_outs, ir_asm_constraint *outputs,
                  int n_clobber, ident *clobber[], ident *text)
@@ -924,10 +906,10 @@ ir_node *new_r_Anchor(ir_graph *irg)
 	ir_node *res;
 	memset(in, 0, sizeof(in));
 	res = new_ir_node(NULL, irg, NULL, op_Anchor, mode_ANY, anchor_last, in);
+	res->attr.anchor.irg.irg = irg;
 
 	/* hack to get get_irn_irg working: set block to ourself and allow
 	 * get_Block_irg for anchor */
-	res->attr.irg.irg = irg;
 	res->in[0] = res;
 
 	return res;

@@ -135,6 +135,10 @@ typedef struct {
 	irg_attr    irg;
 } bad_attr;
 
+typedef struct anchor_attr {
+	irg_attr  irg;
+} anchor_attr;
+
 /** Block attributes */
 typedef struct {
 	/* General attributes */
@@ -305,6 +309,7 @@ typedef struct {
 typedef union {
 	irg_attr       irg;           /**< For Blocks and Bad: its belonging irg */
 	bad_attr       bad;           /**< for Bads: irg reference */
+	anchor_attr    anchor;        /**< for Anchor: irg reference */
 	block_attr     block;         /**< For Block: Fields needed to construct it */
 	cond_attr      cond;          /**< For Cond. */
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */

@@ -217,10 +217,9 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
-	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
-	bad->attr.irg.irg = res;
+	bad = new_r_Bad(res);
 	set_irg_bad        (res, bad);
-	set_irg_no_mem     (res, new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL));
+	set_irg_no_mem     (res, new_r_NoMem(res));
 	start = new_r_Start(res);
 	set_irg_start      (res, start);
 
@@ -307,10 +306,9 @@ ir_graph *new_const_code_irg(void)
 	/* -- The start block -- */
 	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
-	bad = new_ir_node(NULL, res, start_block, op_Bad, mode_T, 0, NULL);
-	bad->attr.irg.irg = res;
+	bad = new_r_Bad(res);
 	set_irg_bad(res, bad);
-	no_mem = new_ir_node(NULL, res, start_block, op_NoMem, mode_M, 0, NULL);
+	no_mem = new_r_NoMem(res);
 	set_irg_no_mem(res, no_mem);
 	start = new_r_Start(res);
 	set_irg_start(res, start);

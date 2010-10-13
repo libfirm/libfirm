@@ -96,15 +96,15 @@ class ASM(Op):
 	]
 
 class Bad(Op):
-	mode          = "mode_Bad"
+	mode          = "mode_T"
 	flags         = [ "cfopcode", "start_block", "dump_noblock" ]
 	pinned        = "yes"
 	knownBlock    = True
+	block         = "get_irg_start_block(irg)"
 	singleton     = True
 	attr_struct   = "bad_attr"
-	noconstructor = True
 	init = '''
-	res->attr.irg.irg = irg;
+	res->attr.bad.irg.irg = irg;
 	'''
 
 class Deleted(Op):
@@ -544,8 +544,8 @@ class NoMem(Op):
 	flags         = [ "dump_noblock", "dump_noinput" ]
 	pinned        = "yes"
 	knownBlock    = True
+	block         = "get_irg_start_block(irg)"
 	singleton     = True
-	noconstructor = True
 
 class Not(Unop):
 	flags = []

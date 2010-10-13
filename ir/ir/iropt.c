@@ -2973,7 +2973,7 @@ make_tuple:
 		turn_into_tuple(n, pn_Div_max);
 		set_Tuple_pred(n, pn_Div_M,         mem);
 		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_Div_X_except,  new_r_Bad(irg));
+		set_Tuple_pred(n, pn_Div_X_except,  get_irg_bad(irg));
 		set_Tuple_pred(n, pn_Div_res,       value);
 	}
 	return n;
@@ -3065,7 +3065,7 @@ make_tuple:
 		turn_into_tuple(n, pn_Mod_max);
 		set_Tuple_pred(n, pn_Mod_M,         mem);
 		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_Mod_X_except,  new_r_Bad(irg));
+		set_Tuple_pred(n, pn_Mod_X_except,  get_irg_bad(irg));
 		set_Tuple_pred(n, pn_Mod_res,       value);
 	}
 	return n;
@@ -3178,7 +3178,7 @@ make_tuple:
 		turn_into_tuple(n, pn_DivMod_max);
 		set_Tuple_pred(n, pn_DivMod_M,         mem);
 		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_DivMod_X_except,  new_r_Bad(irg)); /*no exception*/
+		set_Tuple_pred(n, pn_DivMod_X_except,  get_irg_bad(irg)); /*no exception*/
 		set_Tuple_pred(n, pn_DivMod_res_div,   va);
 		set_Tuple_pred(n, pn_DivMod_res_mod,   vb);
 	}
@@ -3227,7 +3227,7 @@ static ir_node *transform_node_Quot(ir_node *n)
 				turn_into_tuple(n, pn_Quot_max);
 				set_Tuple_pred(n, pn_Quot_M, mem);
 				set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(blk));
-				set_Tuple_pred(n, pn_Quot_X_except,  new_r_Bad(irg));
+				set_Tuple_pred(n, pn_Quot_X_except,  get_irg_bad(irg));
 				set_Tuple_pred(n, pn_Quot_res, m);
 				DBG_OPT_ALGSIM1(oldn, a, b, m, FS_OPT_FP_INV_MUL);
 			}
@@ -3289,11 +3289,11 @@ static ir_node *transform_node_Cond(ir_node *n)
 		jmp = new_r_Jmp(blk);
 		turn_into_tuple(n, pn_Cond_max);
 		if (ta == tarval_b_true) {
-			set_Tuple_pred(n, pn_Cond_false, new_r_Bad(irg));
+			set_Tuple_pred(n, pn_Cond_false, get_irg_bad(irg));
 			set_Tuple_pred(n, pn_Cond_true, jmp);
 		} else {
 			set_Tuple_pred(n, pn_Cond_false, jmp);
-			set_Tuple_pred(n, pn_Cond_true, new_r_Bad(irg));
+			set_Tuple_pred(n, pn_Cond_true, get_irg_bad(irg));
 		}
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
@@ -3891,7 +3891,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 			ir_graph *irg = get_irn_irg(proj);
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
-			return new_r_Bad(irg);
+			return get_irg_bad(irg);
 		}
 
 		case pn_Div_M: {
@@ -3946,7 +3946,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 			ir_graph *irg = get_irn_irg(proj);
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
-			return new_r_Bad(irg);
+			return get_irg_bad(irg);
 		}
 
 		case pn_Mod_M: {
@@ -4010,7 +4010,7 @@ static ir_node *transform_node_Proj_DivMod(ir_node *proj)
 			/* we found an exception handler, remove it */
 			ir_graph *irg = get_irn_irg(proj);
 			DBG_OPT_EXC_REM(proj);
-			return new_r_Bad(irg);
+			return get_irg_bad(irg);
 		}
 
 		case pn_DivMod_M: {
@@ -6594,7 +6594,7 @@ static ir_node *gigo(ir_node *node)
 		if (is_Block(block)) {
 			if (is_Block_dead(block)) {
 				/* control flow from dead block is dead */
-				return new_r_Bad(irg);
+				return get_irg_bad(irg);
 			}
 
 			for (i = get_irn_arity(block) - 1; i >= 0; --i) {
@@ -6613,7 +6613,7 @@ static ir_node *gigo(ir_node *node)
 					 * but can be found by irg_walk()!
 					 */
 					set_Block_dead(block);
-					return new_r_Bad(irg);
+					return get_irg_bad(irg);
 				}
 			}
 		}
@@ -6621,7 +6621,7 @@ static ir_node *gigo(ir_node *node)
 
 	/* Blocks, Phis and Tuples may have dead inputs, e.g., if one of the
 	   blocks predecessors is dead. */
-	if (op != op_Block && op != op_Phi && op != op_Tuple) {
+	if (op != op_Block && op != op_Phi && op != op_Tuple && op != op_Anchor) {
 		ir_graph *irg = get_irn_irg(node);
 		irn_arity = get_irn_arity(node);
 
@@ -6630,13 +6630,13 @@ static ir_node *gigo(ir_node *node)
 		 */
 		if (is_irn_pinned_in_irg(node) &&
 			is_Block_dead(get_nodes_block(skip_Proj(node))))
-			return new_r_Bad(irg);
+			return get_irg_bad(irg);
 
 		for (i = 0; i < irn_arity; i++) {
 			ir_node *pred = get_irn_n(node, i);
 
 			if (is_Bad(pred))
-				return new_r_Bad(irg);
+				return get_irg_bad(irg);
 #if 0
 			/* Propagating Unknowns here seems to be a bad idea, because
 			   sometimes we need a node as a input and did not want that
@@ -6658,7 +6658,7 @@ static ir_node *gigo(ir_node *node)
 		for (i = 0; i < irn_arity; i++) {
 			if (!is_Bad(get_irn_n(node, i))) break;
 		}
-		if (i == irn_arity) node = new_r_Bad(irg);
+		if (i == irn_arity) node = get_irg_bad(irg);
 	}
 #endif
 	return node;

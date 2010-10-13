@@ -1805,6 +1805,13 @@ FIRM_API ir_node *new_rd_Tuple(dbg_info *db, ir_node *block,
 FIRM_API ir_node *new_rd_Id(dbg_info *db, ir_node *block,
                             ir_node *val, ir_mode *mode);
 
+/** Constructor for a Bad node.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The IR graph the node  belongs to.
+ */
+FIRM_API ir_node *new_rd_Bad(dbg_info *db, ir_graph *irg);
+
 /** Constructor for a Confirm node.
  *
  * Specifies constraints for a value.  To support dataflow analyses.
@@ -1830,6 +1837,13 @@ FIRM_API ir_node *new_rd_Confirm(dbg_info *db, ir_node *block,
  * @param *m      The mode of the unknown value.
  */
 FIRM_API ir_node *new_rd_Unknown(dbg_info *db, ir_graph *irg, ir_mode *m);
+
+/** Constructor for a NoMem node.
+ *
+ * @param *db     A pointer for debug information.
+ * @param *irg    The IR graph the node belongs to.
+ */
+FIRM_API ir_node *new_rd_NoMem(dbg_info *db, ir_graph *irg);
 
 /** Constructor for a Mux node.
  *
@@ -2497,9 +2511,6 @@ FIRM_API ir_node *new_r_Id(ir_node *block, ir_node *val, ir_mode *mode);
 
 /** Constructor for a Bad node.
  *
- * Returns the unique Bad node of the graph.  The same as
- * get_irg_bad().
- *
  * @param *irg    The IR graph the node  belongs to.
  */
 FIRM_API ir_node *new_r_Bad(ir_graph *irg);
@@ -2530,9 +2541,6 @@ FIRM_API ir_node *new_r_Confirm(ir_node *block, ir_node *val, ir_node *bound,
 FIRM_API ir_node *new_r_Unknown(ir_graph *irg, ir_mode *m);
 
 /** Constructor for a NoMem node.
- *
- * Returns the unique NoMem node of the graph.  The same as
- * get_irg_no_mem().
  *
  * @param *irg    The IR graph the node belongs to.
  */
@@ -3267,6 +3275,12 @@ FIRM_API ir_node *new_d_Tuple(dbg_info *db, int arity, ir_node *in[]);
  */
 FIRM_API ir_node *new_d_Id(dbg_info *db, ir_node *val, ir_mode *mode);
 
+/** Constructor for a Bad node.
+ *
+ * @param *db     A pointer for debug information.
+ */
+FIRM_API ir_node *new_d_Bad(dbg_info *db);
+
 /** Constructor for a Confirm node.
  *
  * Constructor for a Confirm node. Adds the node to the block in current_ir_block.
@@ -3292,6 +3306,12 @@ FIRM_API ir_node *new_d_Confirm(dbg_info *db, ir_node *val, ir_node *bound,
  * @param *m      The mode of the unknown value.
  */
 FIRM_API ir_node *new_d_Unknown(dbg_info *db, ir_mode *m);
+
+/** Constructor for a NoMem node.
+ *
+ * @param *db     A pointer for debug information.
+ */
+FIRM_API ir_node *new_d_NoMem(dbg_info *db);
 
 /** Constructor for a Mux node.
  *
@@ -3929,9 +3949,6 @@ FIRM_API ir_node *new_Tuple(int arity, ir_node *in[]);
 FIRM_API ir_node *new_Id(ir_node *val, ir_mode *mode);
 
 /** Constructor for a Bad node.
- *
- * Returns the unique Bad node of the graph.  The same as
- * get_irg_bad().
  */
 FIRM_API ir_node *new_Bad(void);
 
@@ -3958,11 +3975,7 @@ FIRM_API ir_node *new_Confirm(ir_node *val, ir_node *bound, pn_Cmp cmp);
  */
 FIRM_API ir_node *new_Unknown(ir_mode *m);
 
-/** Constructor for a NoMem node.
- *
- * Returns the unique NoMem node of the graph.  The same as
- * get_irg_no_mem().
- */
+/** Constructor for a NoMem node. */
 FIRM_API ir_node *new_NoMem(void);
 
 /** Constructor for a Mux node.
