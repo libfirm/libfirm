@@ -1389,18 +1389,6 @@ FIRM_API int get_class_member_index(const ir_type *clss, ir_entity *mem);
  *  name returns one of them.  Returns NULL if no member found. */
 FIRM_API ir_entity *get_class_member_by_name(ir_type *clss, ident *name);
 
-/** Overwrites the member at position pos, 0 <= pos < n_member with
- *  the passed entity. */
-FIRM_API void set_class_member(ir_type *clss, ir_entity *member, int pos);
-
-/** Replaces complete member list in class type by the list passed.
- *
- *  Copies the list passed. This function is necessary to reduce the number of members.
- *  members is an array of entities, num the size of this array.  Sets all
- *  owners of the members passed to clss. */
-FIRM_API void set_class_members(ir_type *clss, ir_entity *members[], int arity);
-
-
 /** Adds subtype as subtype to clss.
  *
  *  Checks whether clss is a supertype of subtype.  If not
@@ -1541,10 +1529,6 @@ FIRM_API ir_entity *get_struct_member(const ir_type *strct, int pos);
 
 /** Returns index of member in strct, -1 if not contained. */
 FIRM_API int get_struct_member_index(const ir_type *strct, ir_entity *member);
-
-/** Overwrites the member at position pos, 0 <= pos < n_member with
-   the passed entity. */
-FIRM_API void set_struct_member(ir_type *strct, int pos, ir_entity *member);
 
 /** Returns true if a type is a struct type. */
 FIRM_API int is_Struct_type(const ir_type *strct);
@@ -1816,9 +1800,6 @@ FIRM_API ir_entity *get_union_member(const ir_type *uni, int pos);
 
 /** Returns index of member in uni, -1 if not contained. */
 FIRM_API int get_union_member_index(const ir_type *uni, ir_entity *member);
-
-/** Overwrites a entity at position pos in a union type. */
-FIRM_API void set_union_member(ir_type *uni, int pos, ir_entity *member);
 
 /** Returns true if a type is a union type. */
 FIRM_API int is_Union_type(const ir_type *uni);

@@ -824,25 +824,6 @@ ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 	return NULL;
 }
 
-void set_class_member(ir_type *clss, ir_entity *member, int pos)
-{
-	assert(clss && (clss->type_op == type_class));
-	assert(pos >= 0 && pos < get_class_n_members(clss));
-	clss->attr.ca.members[pos] = member;
-}
-
-void set_class_members(ir_type *clss, ir_entity **members, int arity)
-{
-	int i;
-	assert(clss && (clss->type_op == type_class));
-	DEL_ARR_F(clss->attr.ca.members);
-	clss->attr.ca.members = NEW_ARR_F(ir_entity *, 0);
-	for (i = 0; i < arity; ++i) {
-		set_entity_owner(members[i], clss);
-		ARR_APP1(ir_entity *, clss->attr.ca.members, members[i]);
-	}
-}
-
 static void remove_class_member(ir_type *clss, ir_entity *member)
 {
 	int i;
@@ -1133,14 +1114,6 @@ int get_struct_member_index(const ir_type *strct, ir_entity *mem)
 		if (get_struct_member(strct, i) == mem)
 			return i;
 		return -1;
-}
-
-void set_struct_member(ir_type *strct, int pos, ir_entity *member)
-{
-	assert(strct && (strct->type_op == type_struct));
-	assert(pos >= 0 && pos < get_struct_n_members(strct));
-	assert(get_entity_type(member)->type_op != type_method);/* @@@ lowerfirm !!*/
-	strct->attr.sa.members[pos] = member;
 }
 
 static void remove_struct_member(ir_type *strct, ir_entity *member)
@@ -1597,13 +1570,6 @@ int get_union_member_index(const ir_type *uni, ir_entity *mem)
 			return i;
 	}
 	return -1;
-}
-
-void set_union_member(ir_type *uni, int pos, ir_entity *member)
-{
-	assert(uni && (uni->type_op == type_union));
-	assert(pos >= 0 && pos < get_union_n_members(uni));
-	uni->attr.ua.members[pos] = member;
 }
 
 static void remove_union_member(ir_type *uni, ir_entity *member)
