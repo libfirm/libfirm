@@ -148,12 +148,6 @@ typedef enum {
  */
 FIRM_API firm_kind get_kind(const void *firm_thing);
 
-/** Returns the kind of a thing as a string. */
-FIRM_API const char *print_firm_kind(void *firm_thing);
-
-/** Print an identification of a firm thing. */
-FIRM_API void firm_identify_thing(void *X);
-
 #include "end.h"
 
 #endif
