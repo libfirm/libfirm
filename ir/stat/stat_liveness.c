@@ -44,7 +44,7 @@ struct block_entry_t {
 struct environment_t {
 	struct obstack obst;
 	block_entry_t *entries;  /**< List of all allocated block entries. */
-	void          *visited;  /**< a Bitset to mark visited nodes */
+	bitset_t      *visited;  /**< a Bitset to mark visited nodes */
 };
 
 static environment_t *env;
@@ -54,7 +54,7 @@ static environment_t *env;
  */
 static block_entry_t *get_block_entry(ir_node *block)
 {
-	block_entry_t *entry = get_irn_link(block);
+	block_entry_t *entry = (block_entry_t*)get_irn_link(block);
 
 	if (entry == NULL) {
 		entry = OALLOC(&env->obst, block_entry_t);

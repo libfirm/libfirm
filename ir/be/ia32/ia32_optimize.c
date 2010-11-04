@@ -58,14 +58,14 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-static void copy_mark(const ir_node *old, ir_node *new)
+static void copy_mark(const ir_node *old, ir_node *newn)
 {
 	if (is_ia32_is_reload(old))
-		set_ia32_is_reload(new);
+		set_ia32_is_reload(newn);
 	if (is_ia32_is_spill(old))
-		set_ia32_is_spill(new);
+		set_ia32_is_spill(newn);
 	if (is_ia32_is_remat(old))
-		set_ia32_is_remat(new);
+		set_ia32_is_remat(newn);
 }
 
 typedef enum produces_flag_t {
@@ -103,15 +103,15 @@ static produces_flag_t produces_test_flag(ir_node *node, int pn)
 
 		case iro_ia32_ShlD:
 		case iro_ia32_ShrD:
-			assert(n_ia32_ShlD_count == n_ia32_ShrD_count);
+			assert((int)n_ia32_ShlD_count == (int)n_ia32_ShrD_count);
 			count = get_irn_n(node, n_ia32_ShlD_count);
 			goto check_shift_amount;
 
 		case iro_ia32_Shl:
 		case iro_ia32_Shr:
 		case iro_ia32_Sar:
-			assert(n_ia32_Shl_count == n_ia32_Shr_count
-					&& n_ia32_Shl_count == n_ia32_Sar_count);
+			assert((int)n_ia32_Shl_count == (int)n_ia32_Shr_count
+					&& (int)n_ia32_Shl_count == (int)n_ia32_Sar_count);
 			count = get_irn_n(node, n_ia32_Shl_count);
 check_shift_amount:
 			/* when shift count is zero the flags are not affected, so we can only
@@ -176,7 +176,7 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	noreg        = ia32_new_NoReg_gp(irg);
 	nomem        = get_irg_no_mem(current_ir_graph);
 	op           = get_irn_n(node, n_ia32_Cmp_left);
-	attr         = get_irn_generic_attr(node);
+	attr         = get_ia32_attr(node);
 	ins_permuted = attr->data.ins_permuted;
 	cmp_unsigned = attr->data.cmp_unsigned;
 
@@ -214,8 +214,8 @@ static void peephole_ia32_Test(ir_node *node)
 	ir_node *left  = get_irn_n(node, n_ia32_Test_left);
 	ir_node *right = get_irn_n(node, n_ia32_Test_right);
 
-	assert(n_ia32_Test_left == n_ia32_Test8Bit_left
-			&& n_ia32_Test_right == n_ia32_Test8Bit_right);
+	assert((int)n_ia32_Test_left == (int)n_ia32_Test8Bit_left
+			&& (int)n_ia32_Test_right == (int)n_ia32_Test8Bit_right);
 
 	if (left == right) { /* we need a test for 0 */
 		ir_node         *block = get_nodes_block(node);
@@ -308,7 +308,7 @@ static void peephole_ia32_Test(ir_node *node)
 
 		offset = imm->offset;
 		if (get_ia32_op_type(node) == ia32_AddrModeS) {
-			ia32_attr_t *const attr = get_irn_generic_attr(node);
+			ia32_attr_t *const attr = get_ia32_attr(node);
 
 			if ((offset & 0xFFFFFF00) == 0) {
 				/* attr->am_offs += 0; */
@@ -948,7 +948,7 @@ static void peephole_ia32_Const(ir_node *node)
 	const arch_register_t       *reg;
 	ir_node                     *block;
 	dbg_info                    *dbgi;
-	ir_node                     *xor;
+	ir_node                     *xorn;
 
 	/* try to transform a mov 0, reg to xor reg reg */
 	if (attr->offset != 0 || attr->symconst != NULL)
@@ -965,13 +965,13 @@ static void peephole_ia32_Const(ir_node *node)
 	/* create xor(produceval, produceval) */
 	block = get_nodes_block(node);
 	dbgi  = get_irn_dbg_info(node);
-	xor   = new_bd_ia32_Xor0(dbgi, block);
-	arch_set_irn_register(xor, reg);
+	xorn  = new_bd_ia32_Xor0(dbgi, block);
+	arch_set_irn_register(xorn, reg);
 
-	sched_add_before(node, xor);
+	sched_add_before(node, xorn);
 
-	copy_mark(node, xor);
-	be_peephole_exchange(node, xor);
+	copy_mark(node, xorn);
+	be_peephole_exchange(node, xorn);
 }
 
 static inline int is_noreg(const ir_node *node)
@@ -1209,9 +1209,9 @@ static void peephole_ia32_Imul_split(ir_node *imul)
 /**
  * Replace xorps r,r and xorpd r,r by pxor r,r
  */
-static void peephole_ia32_xZero(ir_node *xor)
+static void peephole_ia32_xZero(ir_node *xorn)
 {
-	set_irn_op(xor, op_ia32_xPzero);
+	set_irn_op(xorn, op_ia32_xPzero);
 }
 
 /**
@@ -1307,7 +1307,7 @@ static void optimize_conv_store(ir_node *node)
 	if (!is_ia32_Store(node) && !is_ia32_Store8Bit(node))
 		return;
 
-	assert(n_ia32_Store_val == n_ia32_Store8Bit_val);
+	assert((int)n_ia32_Store_val == (int)n_ia32_Store8Bit_val);
 	pred_proj = get_irn_n(node, n_ia32_Store_val);
 	if (is_Proj(pred_proj)) {
 		pred = get_Proj_pred(pred_proj);
@@ -1343,7 +1343,7 @@ static void optimize_load_conv(ir_node *node)
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
 
-	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
+	assert((int)n_ia32_Conv_I2I_val == (int)n_ia32_Conv_I2I8Bit_val);
 	pred = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if (!is_Proj(pred))
 		return;
@@ -1390,7 +1390,7 @@ static void optimize_conv_conv(ir_node *node)
 	if (!is_ia32_Conv_I2I(node) && !is_ia32_Conv_I2I8Bit(node))
 		return;
 
-	assert(n_ia32_Conv_I2I_val == n_ia32_Conv_I2I8Bit_val);
+	assert((int)n_ia32_Conv_I2I_val == (int)n_ia32_Conv_I2I8Bit_val);
 	pred_proj = get_irn_n(node, n_ia32_Conv_I2I_val);
 	if (is_Proj(pred_proj))
 		pred = get_Proj_pred(pred_proj);

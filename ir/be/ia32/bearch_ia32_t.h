@@ -43,11 +43,6 @@
 #define SET_IA32_ORIG_NODE(n, o) set_ia32_orig_node(n, o)
 #endif /* NDEBUG */
 
-/* some typedefs */
-typedef enum ia32_optimize_t ia32_optimize_t;
-typedef enum cpu_support     cpu_support;
-typedef enum fp_support      fp_support;
-
 typedef struct ia32_isa_t            ia32_isa_t;
 typedef struct ia32_irn_ops_t        ia32_irn_ops_t;
 typedef struct ia32_intrinsic_env_t  ia32_intrinsic_env_t;

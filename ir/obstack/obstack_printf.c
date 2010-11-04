@@ -6,7 +6,7 @@
 
 #ifdef _WIN32
 /* win32/C89 has no va_copy function... so we have to use the stupid fixed-length version */
-int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
+int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap) FIRM_NOTHROW
 {
 	char buf[16384];
 	int len = _vsnprintf(buf, sizeof(buf), fmt, ap);
@@ -14,7 +14,7 @@ int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 	return len;
 }
 #else
-int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
+int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap) FIRM_NOTHROW
 {
 	char    buf[128];
 	char   *buffer = buf;
@@ -43,7 +43,7 @@ int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 		} else {
 			break;
 		}
-		buffer = malloc(size);
+		buffer = (char*)malloc(size);
 	}
 
 	obstack_grow(obst, buffer, len);
@@ -54,7 +54,7 @@ int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
 }
 #endif
 
-int obstack_printf(struct obstack *obst, const char *fmt, ...)
+int obstack_printf(struct obstack *obst, const char *fmt, ...) FIRM_NOTHROW
 {
 	va_list ap;
 	int     res;

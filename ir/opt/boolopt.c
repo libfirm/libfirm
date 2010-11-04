@@ -75,8 +75,8 @@ static int find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const r
 			ir_node *const lor   = get_Cmp_right(lo);
 			ir_node *const rol   = get_Cmp_left(ro);
 			ir_node *const ror   = get_Cmp_right(ro);
-			pn_Cmp   const pnc_l = get_Proj_proj(l);
-			pn_Cmp   const pnc_r = get_Proj_proj(r);
+			pn_Cmp   const pnc_l = get_Proj_pn_cmp(l);
+			pn_Cmp   const pnc_r = get_Proj_pn_cmp(r);
 
 			if (is_Const(lor) && is_Const_null(lor) &&
 			    is_Const(ror) && is_Const_null(ror) &&
@@ -407,7 +407,7 @@ static ir_node *bool_or(cond_pair *const cpair, ir_node *dst_block)
  */
 static void bool_walk(ir_node *n, void *ctx)
 {
-	bool_opt_env_t *env = ctx;
+	bool_opt_env_t *env = (bool_opt_env_t*)ctx;
 
 	if (get_irn_mode(n) != mode_b)
 		return;
@@ -586,9 +586,9 @@ static void move_nodes_to_block(ir_node *jmp, ir_node *to_block)
  */
 static void find_cf_and_or_walker(ir_node *block, void *ctx)
 {
+	bool_opt_env_t *env = (bool_opt_env_t*)ctx;
 	int low_idx, up_idx;
 	int n_cfgpreds;
-	bool_opt_env_t *env = ctx;
 
 	/* because we modify the graph in regions we might not visited yet,
 	 * Id nodes might arise here. Ignore them.

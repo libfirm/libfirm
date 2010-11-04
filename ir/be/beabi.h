@@ -188,7 +188,15 @@ void be_abi_free(ir_graph *irg);
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg);
 
-#define be_abi_reg_map_get(map, reg)	   pmap_get((map), (void *) (reg))
-#define be_abi_reg_map_set(map, reg, irn)  pmap_insert((map), (void *) (reg), (irn))
+static inline ir_node *be_abi_reg_map_get(pmap *map, const arch_register_t *reg)
+{
+	return (ir_node*)pmap_get(map, reg);
+}
+
+static inline void be_abi_reg_map_set(pmap *map, const arch_register_t* reg,
+                                      ir_node *node)
+{
+	pmap_insert(map, reg, node);
+}
 
 #endif

@@ -81,7 +81,7 @@ static ir_type *get_dynamic_type(ir_node *ptr)
 
 	/* skip Cast and Confirm nodes */
 	for (;;) {
-		ir_opcode code = get_irn_opcode(ptr);
+		unsigned code = get_irn_opcode(ptr);
 
 		switch (code) {
 		case iro_Cast:

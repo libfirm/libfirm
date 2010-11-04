@@ -203,7 +203,7 @@ static void custom_color(int num, const char *rgb_def)
 	obstack_1grow(&color_obst, '\0');
 
 	color_rgb[num]   = rgb_def;
-	color_names[num] = obstack_finish(&color_obst);
+	color_names[num] = (const char*)obstack_finish(&color_obst);
 }
 
 /** Define a named color. */
@@ -313,7 +313,7 @@ static void print_ent_ent_edge(FILE *F, const ir_entity *ent1, const ir_entity *
 	fprintf(F, "\" targetname: \""); PRINT_ENTID(ent2);  fprintf(F, "\"");
 	vfprintf(F, fmt, ap);
 	fprintf(F, " ");
-	if (color != (ird_color_t) -1)
+	if (color != ird_color_none)
 		print_vcg_color(F, color);
 	fprintf(F, "}\n");
 	va_end(ap);
@@ -599,7 +599,7 @@ static ir_node **construct_block_lists(ir_graph *irg)
 	}
 
 	current_ir_graph = rem;
-	return ird_get_irg_link(irg);
+	return (ir_node**)ird_get_irg_link(irg);
 }
 
 typedef struct list_tuple {
@@ -744,7 +744,7 @@ default_case:
 static void dump_node_mode(FILE *F, ir_node *n)
 {
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
-	ir_opcode       iro;
+	unsigned         iro;
 	ir_mode         *mode;
 
 	/* call the dump_node operation if available */
@@ -801,7 +801,7 @@ typedef struct pns_lookup {
 } pns_lookup_t;
 
 typedef struct proj_lookup {
-	ir_opcode          code;      /**< the opcode of the Proj predecessor */
+	unsigned           code;      /**< the opcode of the Proj predecessor */
 	unsigned           num_data;  /**< number of data entries */
 	const pns_lookup_t *data;     /**< the data */
 } proj_lookup_t;
@@ -968,7 +968,7 @@ static const proj_lookup_t proj_lut[] = {
 static void dump_node_nodeattr(FILE *F, ir_node *n)
 {
 	ir_node *pred;
-	ir_opcode code;
+	unsigned code;
 	long proj_nr;
 	const ir_op_ops *ops = get_op_ops(get_irn_op(n));
 
@@ -1170,7 +1170,7 @@ void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 
 void dump_remove_node_info_callback(void *handle)
 {
-	hook_entry_t *info = handle;
+	hook_entry_t *info = (hook_entry_t*)handle;
 	unregister_hook(hook_node_info, info);
 	xfree(info);
 }
@@ -1500,7 +1500,7 @@ static void dump_ir_data_edges(FILE *F, ir_node *n)
 static void dump_ir_edges(ir_node *node, void *env)
 {
 	int              i = 0;
-	FILE            *F = env;
+	FILE            *F = (FILE*)env;
 	const ir_edge_t *edge;
 
 	foreach_out_edge(node, edge) {
@@ -1524,7 +1524,7 @@ static void dump_ir_edges(ir_node *node, void *env)
 /** Dumps a node and its edges but not the block edge  */
 static void dump_node_wo_blockedge(ir_node *n, void *env)
 {
-	FILE *F = env;
+	FILE *F = (FILE*)env;
 	dump_node(F, n);
 	dump_ir_data_edges(F, n);
 }
@@ -1532,7 +1532,7 @@ static void dump_node_wo_blockedge(ir_node *n, void *env)
 /** Dumps a node and its edges. */
 static void dump_node_with_edges(ir_node *n, void *env)
 {
-	FILE *F = env;
+	FILE *F = (FILE*)env;
 	dump_node_wo_blockedge(n, env);
 	if (!node_floats(n))
 		dump_ir_block_edge(F, n);
@@ -1605,7 +1605,7 @@ static void dump_whole_block(FILE *F, ir_node *block)
 		dump_block_edge_hook(F, block);
 
 	/* dump the nodes that go into the block */
-	for (node = ird_get_irn_link(block); node; node = ird_get_irn_link(node)) {
+	for (node = (ir_node*)ird_get_irn_link(block); node; node = (ir_node*)ird_get_irn_link(node)) {
 		dump_node(F, node);
 		dump_ir_data_edges(F, node);
 	}
@@ -1622,7 +1622,7 @@ static void dump_block_graph(FILE *F, ir_graph *irg)
 {
 	int i;
 	ir_graph *rem = current_ir_graph;
-	ir_node **arr = ird_get_irg_link(irg);
+	ir_node **arr = (ir_node**)ird_get_irg_link(irg);
 	current_ir_graph = irg;
 
 	for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
@@ -1688,7 +1688,7 @@ static void dump_graph_from_list(FILE *F, ir_graph *irg)
 /** dumps the edges between nodes and their type or entity attributes. */
 static void dump_node2type_edges(ir_node *n, void *env)
 {
-	FILE *F = env;
+	FILE *F = (FILE*)env;
 	assert(n);
 
 	switch (get_irn_opcode(n)) {
@@ -1859,7 +1859,7 @@ static void dump_entity_initializer(FILE *F, const ir_entity *ent)
 /** Dumps a type or entity and it's edges. */
 static void dump_type_info(type_or_ent tore, void *env)
 {
-	FILE *F = env;
+	FILE *F = (FILE*)env;
 	int i = 0;  /* to shutup gcc */
 
 	/* dump this type or entity */
@@ -1877,7 +1877,7 @@ static void dump_type_info(type_or_ent tore, void *env)
 		print_ent_type_edge(F,ent, get_entity_type(ent), ENT_TYPE_EDGE_ATTR);
 		if (is_Class_type(get_entity_owner(ent))) {
 			for (i = get_entity_n_overwrites(ent) - 1; i >= 0; --i)
-				print_ent_ent_edge(F,ent, get_entity_overwrites(ent, i), 0, -1, ENT_OVERWRITES_EDGE_ATTR);
+				print_ent_ent_edge(F, ent, get_entity_overwrites(ent, i), 0, ird_color_none, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		/* attached subgraphs */
 		if (! (flags & ir_dump_flag_no_entity_values)) {
@@ -1891,7 +1891,7 @@ static void dump_type_info(type_or_ent tore, void *env)
 					if (value) {
 						print_ent_node_edge(F, ent, value, ENT_VALUE_EDGE_ATTR, i);
 						dump_const_expression(F, value);
-						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, -1, ENT_CORR_EDGE_ATTR, i);
+						print_ent_ent_edge(F, ent, get_compound_ent_value_member(ent, i), 0, ird_color_none, ENT_CORR_EDGE_ATTR, i);
 						/*
 						fprintf(F, "edge: { sourcename: \"%p\" targetname: \"%p\" "
 						ENT_CORR_EDGE_ATTR  "}\n", GET_ENTID(ent),
@@ -1966,7 +1966,7 @@ static void dump_type_info(type_or_ent tore, void *env)
  */
 static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 {
-	FILE *F = ctx;
+	FILE *F = (FILE*)ctx;
 	int i = 0;  /* to shutup gcc */
 
 	/* dump this type or entity */
@@ -1983,7 +1983,7 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 			/* The edges */
 			print_type_ent_edge(F, get_entity_owner(ent), ent, TYPE_MEMBER_EDGE_ATTR);
 			for (i = get_entity_n_overwrites(ent) - 1; i >= 0; --i)
-				print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, -1, ENT_OVERWRITES_EDGE_ATTR);
+				print_ent_ent_edge(F, get_entity_overwrites(ent, i), ent, 0, ird_color_none, ENT_OVERWRITES_EDGE_ATTR);
 		}
 		break;
 	}
@@ -2015,7 +2015,7 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 /* dump out edges */
 static void dump_out_edge(ir_node *n, void *env)
 {
-	FILE *F = env;
+	FILE *F = (FILE*)env;
 	int i;
 	for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(n, i);
@@ -2193,7 +2193,7 @@ static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 	 */
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *irg = get_irp_irg(i);
-		ir_node **arr = ird_get_irg_link(irg);
+		ir_node **arr = (ir_node**)ird_get_irg_link(irg);
 		if (arr == NULL)
 			continue;
 
@@ -2208,7 +2208,7 @@ static void dump_extblock_graph(FILE *F, ir_graph *irg)
 {
 	int i;
 	ir_graph *rem = current_ir_graph;
-	ir_extblk **arr = ird_get_irg_link(irg);
+	ir_extblk **arr = (ir_extblk**)ird_get_irg_link(irg);
 	current_ir_graph = irg;
 
 	for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
@@ -2267,7 +2267,7 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_graph *irg     = get_irp_irg(i);
-		list_tuple *lists = ird_get_irg_link(irg);
+		list_tuple *lists = (list_tuple*)ird_get_irg_link(irg);
 
 		if (lists) {
 			/* dump the extended blocks first */
@@ -2339,7 +2339,7 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 static void dump_block_to_cfg(ir_node *block, void *env)
 {
-	FILE *F = env;
+	FILE *F = (FILE*)env;
 	int i, fl = 0;
 	ir_node *pred;
 
@@ -2627,18 +2627,20 @@ void dump_loop(FILE *F, ir_loop *l)
 	collect_nodeloop_external_nodes(l, loopnodes, extnodes);
 
 	/* build block lists */
-	for (n = eset_first(loopnodes); n != NULL; n = eset_next(loopnodes))
+	eset_foreach(loopnodes, ir_node*, n) {
 		set_irn_link(n, NULL);
-	for (n = eset_first(extnodes); n != NULL; n = eset_next(extnodes))
+	}
+	eset_foreach(extnodes, ir_node*, n) {
 		set_irn_link(n, NULL);
-	for (n = eset_first(loopnodes); n != NULL; n = eset_next(loopnodes)) {
+	}
+	eset_foreach(loopnodes, ir_node*, n) {
 		if (!is_Block(n)) {
 			b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
 			set_irn_link(b, n);
 		}
 	}
-	for (n = eset_first(extnodes); n != NULL; n = eset_next(extnodes)) {
+	eset_foreach(extnodes, ir_node*, n) {
 		if (!is_Block(n)) {
 			b = get_nodes_block(n);
 			set_irn_link(n, get_irn_link(b));
@@ -2646,7 +2648,7 @@ void dump_loop(FILE *F, ir_loop *l)
 		}
 	}
 
-	for (b = eset_first(loopnodes); b != NULL; b = eset_next(loopnodes)) {
+	eset_foreach(loopnodes, ir_node*, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: \"");
 			PRINT_NODEID(b);
@@ -2659,7 +2661,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			dump_ir_data_edges(F, b);
 
 			/* dump the nodes that go into the block */
-			for (n = get_irn_link(b); n; n = get_irn_link(n)) {
+			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
 				if (eset_contains(extnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
@@ -2673,7 +2675,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\n");
 		}
 	}
-	for (b = eset_first(extnodes); b != NULL; b = eset_next(extnodes)) {
+	eset_foreach(extnodes, ir_node*, b) {
 		if (is_Block(b)) {
 			fprintf(F, "graph: { title: \"");
 			PRINT_NODEID(b);
@@ -2683,7 +2685,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			fprintf(F, "\" status:clustered color:lightblue\n");
 
 			/* dump the nodes that go into the block */
-			for (n = get_irn_link(b); n; n = get_irn_link(n)) {
+			for (n = (ir_node*)get_irn_link(b); n; n = (ir_node*)get_irn_link(n)) {
 				if (!eset_contains(loopnodes, n))
 					overrule_nodecolor = ird_color_block_inout;
 				dump_node(F, n);
@@ -2767,7 +2769,7 @@ void dump_ir_graph_ext(ir_graph_dump_func func, ir_graph *graph,
 	}
 	obstack_1grow(&obst, '\0');
 
-	file_name = obstack_finish(&obst);
+	file_name = (char*)obstack_finish(&obst);
 	/* xvcg expects only <CR> so we need "b"inary mode (for win32) */
 	out       = fopen(file_name, "wb");
 	obstack_free(&obst, file_name);
@@ -2796,7 +2798,7 @@ void dump_ir_prog_ext(ir_prog_dump_func func, const char *suffix)
 	}
 	obstack_1grow(&obst, '\0');
 
-	file_name = obstack_finish(&obst);
+	file_name = (char*)obstack_finish(&obst);
 	out       = fopen(file_name, "wb");
 	obstack_free(&obst, file_name);
 
@@ -2827,17 +2829,17 @@ void dump_all_ir_graphs(const char *suffix)
 	}
 }
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t pass;
 	char           suffix[1];
-};
+} pass_t;
 
 /**
  * Wrapper around dump_all_ir_graphs().
  */
 static int dump_all_ir_graphs_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	(void)irp;
 	dump_all_ir_graphs(pass->suffix);
@@ -2846,8 +2848,8 @@ static int dump_all_ir_graphs_wrapper(ir_prog *irp, void *context)
 
 ir_prog_pass_t *dump_all_ir_graph_pass(const char *name, const char *suffix)
 {
-	size_t         len   = strlen(suffix);
-	struct pass_t  *pass = xmalloc(sizeof(*pass) + len);
+	size_t  len  = strlen(suffix) + 1;
+	pass_t *pass = XMALLOCF(pass_t, suffix, len);
 	ir_prog_pass_t *res  = def_prog_pass_constructor(
 		&pass->pass, name ? name : "dump_all_graphs", dump_all_ir_graphs_wrapper);
 
@@ -2855,7 +2857,7 @@ ir_prog_pass_t *dump_all_ir_graph_pass(const char *name, const char *suffix)
 	res->dump_irprog   = ir_prog_no_dump;
 	res->verify_irprog = ir_prog_no_verify;
 
-	memcpy(pass->suffix, suffix, len+1);
+	memcpy(pass->suffix, suffix, len);
 
 	return res;
 }

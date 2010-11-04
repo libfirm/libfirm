@@ -105,7 +105,7 @@ typedef void (*compute_func)(node_t *node);
  * An opcode map key.
  */
 struct opcode_key_t {
-	ir_opcode   code;   /**< The Firm opcode. */
+	unsigned    code;   /**< The Firm opcode. */
 	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
 	int         arity;  /**< The arity of this opcode (needed for Phi etc. */
 	union {
@@ -534,8 +534,8 @@ static void verify_type(const lattice_elem_t old_type, node_t *node)
  */
 static int listmap_cmp_ptr(const void *elt, const void *key, size_t size)
 {
-	const listmap_entry_t *e1 = elt;
-	const listmap_entry_t *e2 = key;
+	const listmap_entry_t *e1 = (listmap_entry_t*)elt;
+	const listmap_entry_t *e2 = (listmap_entry_t*)key;
 
 	(void) size;
 	return e1->id != e2->id;
@@ -577,7 +577,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry = set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
+	entry = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -604,8 +604,8 @@ static unsigned opcode_hash(const opcode_key_t *entry)
  */
 static int cmp_opcode(const void *elt, const void *key, size_t size)
 {
-	const opcode_key_t *o1 = elt;
-	const opcode_key_t *o2 = key;
+	const opcode_key_t *o1 = (opcode_key_t*)elt;
+	const opcode_key_t *o2 = (opcode_key_t*)key;
 
 	(void) size;
 	return o1->code != o2->code || o1->mode != o2->mode ||
@@ -620,8 +620,8 @@ static int cmp_opcode(const void *elt, const void *key, size_t size)
  */
 static int cmp_def_use_edge(const void *a, const void *b)
 {
-	const ir_def_use_edge *ea = a;
-	const ir_def_use_edge *eb = b;
+	const ir_def_use_edge *ea = (const ir_def_use_edge*)a;
+	const ir_def_use_edge *eb = (const ir_def_use_edge*)b;
 
 	/* no overrun, because range is [-1, MAXINT] */
 	return ea->pos - eb->pos;
@@ -783,7 +783,7 @@ static node_t *create_partition_node(ir_node *irn, partition_t *part, environmen
  */
 static void create_initial_partitions(ir_node *irn, void *ctx)
 {
-	environment_t *env  = ctx;
+	environment_t *env  = (environment_t*)ctx;
 	partition_t   *part = env->initial;
 	node_t        *node;
 
@@ -1464,7 +1464,7 @@ static void collect_touched(list_head *list, int idx, environment_t *env)
 				continue;
 
 			if (is_constant_type(y->type)) {
-				ir_opcode code = get_irn_opcode(succ);
+				unsigned  code = get_irn_opcode(succ);
 				if (code == iro_Sub || code == iro_Cmp)
 					add_to_cprop(y, env);
 			}
@@ -1517,7 +1517,7 @@ static void collect_commutative_touched(list_head *list, environment_t *env)
 
 			y = get_irn_node(succ);
 			if (is_constant_type(y->type)) {
-				ir_opcode code = get_irn_opcode(succ);
+				unsigned code = get_irn_opcode(succ);
 				if (code == iro_Eor)
 					add_to_cprop(y, env);
 			}
@@ -1763,7 +1763,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 		break;
 	}
 
-	entry = set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
+	entry = (opcode_key_t*)set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* lambda_opcode */
 
@@ -2334,7 +2334,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
 	lattice_elem_t a     = l->type;
 	lattice_elem_t b     = r->type;
-	pn_Cmp         pnc   = get_Proj_proj(proj);
+	pn_Cmp         pnc   = get_Proj_pn_cmp(proj);
 	ir_tarval      *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
@@ -2349,7 +2349,6 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 	 *  consistent with compute_Cmp, so don't do anything for floats)
 	 */
 	} else if (r->part == l->part && !mode_is_float(get_irn_mode(l->node))) {
-
 		tv = pnc & pn_Cmp_Eq ? tarval_b_true : tarval_b_false;
 
 		/* if the node was ONCE evaluated by all constants, but now
@@ -2748,10 +2747,10 @@ static node_t *identity_Sub(node_t *node)
  */
 static node_t *identity_And(node_t *node)
 {
-	ir_node   *and = node->node;
-	node_t    *a   = get_irn_node(get_And_left(and));
-	node_t    *b   = get_irn_node(get_And_right(and));
-	ir_tarval *neutral = get_mode_all_one(get_irn_mode(and));
+	ir_node   *andnode = node->node;
+	node_t    *a       = get_irn_node(get_And_left(andnode));
+	node_t    *b       = get_irn_node(get_And_right(andnode));
+	ir_tarval *neutral = get_mode_all_one(get_irn_mode(andnode));
 
 	/* node: no input should be tarval_top, else the And would be also
 	 * Top and not being split. */
@@ -3086,7 +3085,7 @@ static int can_exchange(ir_node *pred, ir_node *block)
  */
 static void apply_cf(ir_node *block, void *ctx)
 {
-	environment_t *env = ctx;
+	environment_t *env = (environment_t*)ctx;
 	node_t        *node = get_irn_node(block);
 	int           i, j, k, n;
 	ir_node       **ins, **in_X;
@@ -3295,7 +3294,7 @@ static int all_users_are_dead(const ir_node *irn)
  */
 static void find_kept_memory(ir_node *irn, void *ctx)
 {
-	environment_t *env = ctx;
+	environment_t *env = (environment_t*)ctx;
 	node_t        *node, *block;
 
 	if (get_irn_mode(irn) != mode_M)
@@ -3321,7 +3320,7 @@ static void find_kept_memory(ir_node *irn, void *ctx)
  */
 static void apply_result(ir_node *irn, void *ctx)
 {
-	environment_t *env = ctx;
+	environment_t *env = (environment_t*)ctx;
 	node_t        *node = get_irn_node(irn);
 
 	if (is_Block(irn) || is_End(irn) || is_Bad(irn)) {

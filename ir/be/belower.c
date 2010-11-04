@@ -555,7 +555,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	sched_add_after(skip_Proj(irn), keep);
 
 	/* insert the other different and it's copies into the map */
-	entry = ir_nodemap_get(op_set, other_different);
+	entry = (op_copy_assoc_t*)ir_nodemap_get(op_set, other_different);
 	if (! entry) {
 		entry      = OALLOC(&env->obst, op_copy_assoc_t);
 		entry->cls = cls;
@@ -622,6 +622,7 @@ static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, con
 static void assure_constraints_walker(ir_node *block, void *walk_env)
 {
 	ir_node *irn;
+	constraint_env_t *env = (constraint_env_t*)walk_env;
 
 	sched_foreach_reverse(block, irn) {
 		ir_mode *mode = get_irn_mode(irn);
@@ -634,10 +635,10 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
 
 				mode = get_irn_mode(proj);
 				if (mode_is_datab(mode))
-					assure_different_constraints(proj, irn, walk_env);
+					assure_different_constraints(proj, irn, env);
 			}
 		} else if (mode_is_datab(mode)) {
-			assure_different_constraints(irn, irn, walk_env);
+			assure_different_constraints(irn, irn, env);
 		}
 	}
 }
@@ -653,7 +654,7 @@ static void melt_copykeeps(constraint_env_t *cenv)
 
 	/* for all */
 	foreach_ir_nodemap(&cenv->op_set, map_entry, map_iter) {
-		op_copy_assoc_t *entry = map_entry.data;
+		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
 		int     idx, num_ck;
 		ir_node *cp;
 		struct obstack obst;
@@ -784,7 +785,7 @@ void assure_constraints(ir_graph *irg)
 
 	/* for all */
 	foreach_ir_nodemap(&cenv.op_set, map_entry, map_iter) {
-		op_copy_assoc_t          *entry = map_entry.data;
+		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
 		int                       n     = ir_nodeset_size(&entry->copies);
 		ir_node                 **nodes = ALLOCAN(ir_node*, n);
 		ir_node                  *cp;
@@ -999,7 +1000,7 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 
 	perm_stayed = push_through_perm(irn);
 	if (perm_stayed)
-		lower_perm_node(irn, walk_env);
+		lower_perm_node(irn, (lower_env_t*)walk_env);
 }
 
 void lower_nodes_after_ra(ir_graph *irg, int do_copy)

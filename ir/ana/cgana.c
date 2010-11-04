@@ -129,12 +129,12 @@ static ir_entity ** get_impl_methods(ir_entity * method)
 		ir_entity * ent;
 		arr = NEW_ARR_F(ir_entity *, size + 1);
 		arr[0] = NULL;  /* Represents open method */
-		for (ent = eset_first(set); size > 0; ent = eset_next(set), --size)
+		for (ent = (ir_entity*) eset_first(set); size > 0; ent = (ir_entity*) eset_next(set), --size)
 			arr[size] = ent;
 	} else {
 		ir_entity * ent;
 		arr = NEW_ARR_F(ir_entity *, size);
-		for (size -= 1, ent = eset_first(set); size >= 0; ent = eset_next(set), --size)
+		for (size -= 1, ent = (ir_entity*) eset_first(set); size >= 0; ent = (ir_entity*) eset_next(set), --size)
 			arr[size] = ent;
 	}
 	eset_destroy(set);
@@ -188,7 +188,7 @@ static void sel_methods_walker(ir_node *node, void *env)
 
 		/* -- As an add on we get an optimization that removes polymorphic calls.
 		This optimization is more powerful than that in transform_node_Sel().  -- */
-		arr = get_entity_link(ent);
+		arr = (ir_entity**) get_entity_link(ent);
 		if (arr == NULL) {
 			/*
 			 * The Sel node never returns a pointer to a usable method.
@@ -267,7 +267,7 @@ static ir_entity ** get_Sel_arr(ir_node * sel)
 	ent = get_Sel_entity(sel);
 
 	assert(is_Method_type(get_entity_type(ent))); /* what else? */
-	arr = get_entity_link(ent);
+	arr = (ir_entity**) get_entity_link(ent);
 	if (arr) {
 		return arr;
 	} else {
@@ -405,7 +405,7 @@ static void free_mark(ir_node *node, eset * set)
  */
 static void free_ana_walker(ir_node *node, void *env)
 {
-	eset *set = env;
+	eset *set = (eset*) env;
 	int i;
 
 	if (get_irn_link(node) == MARK) {
@@ -589,7 +589,7 @@ static ir_entity **get_free_methods(int *length)
 	/* Finally, transform the set into an array. */
 	*length = eset_count(free_set);
 	arr = XMALLOCN(ir_entity*, *length);
-	for (i = 0, ent = eset_first(free_set); ent; ent = eset_next(free_set)) {
+	for (i = 0, ent = (ir_entity*) eset_first(free_set); ent; ent = (ir_entity*) eset_next(free_set)) {
 		arr[i++] = ent;
 	}
 	eset_destroy(free_set);
@@ -733,7 +733,7 @@ static void callee_walker(ir_node *call, void *env)
 
 		callee_ana_node(get_Call_ptr(call), methods);
 		arr = NEW_ARR_F(ir_entity *, eset_count(methods));
-		for (i = 0, ent = eset_first(methods); ent; ent = eset_next(methods)) {
+		for (i = 0, ent = (ir_entity*) eset_first(methods); ent; ent = (ir_entity*) eset_next(methods)) {
 			arr[i] = ent;
 			/* we want the unknown_entity on the zero position for easy tests later */
 			if (ent == unknown_entity) {
@@ -788,8 +788,8 @@ static void sel_methods_dispose(void)
 {
 	ir_entity * ent;
 	assert(entities);
-	for (ent = eset_first(entities); ent; ent = eset_next(entities)) {
-		ir_entity ** arr = get_entity_link(ent);
+	for (ent = (ir_entity*) eset_first(entities); ent; ent = (ir_entity*) eset_next(entities)) {
+		ir_entity ** arr = (ir_entity**) get_entity_link(ent);
 		if (arr) {
 			DEL_ARR_F(arr);
 		}

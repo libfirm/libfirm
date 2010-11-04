@@ -79,7 +79,7 @@
  *         first element of this array).
  */
 #define DUP_ARR_F(type, arr)							\
-  memcpy(CLONE_ARR_F(type, (arr)), (arr), sizeof(type) * ARR_LEN((arr)))
+  ((type*) memcpy(CLONE_ARR_F(type, (arr)), (arr), sizeof(type) * ARR_LEN((arr))))
 
 /**
  * Delete a flexible array.
@@ -137,7 +137,7 @@
  *         first element of this array).
  */
 #define DUP_ARR_D(type, obstack, arr)							\
-  memcpy(CLONE_ARR_D(type, (obstack), (arr)), (arr), sizeof(type) * ARR_LEN ((arr)))
+  ((type*)memcpy(CLONE_ARR_D(type, (obstack), (arr)), (arr), sizeof(type) * ARR_LEN ((arr))))
 
 /**
  * Returns the length of an array
@@ -157,7 +157,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_RESIZE(type, arr, n)					\
-  ((arr) = ir_arr_resize((void *)(arr), (n), sizeof(type)))
+  ((arr) = (type*) ir_arr_resize((void *)(arr), (n), sizeof(type)))
 
 /**
  * Resize a flexible array, always reallocate data.
@@ -169,7 +169,7 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_SETLEN(type, arr, n)					\
-  ((arr) = ir_arr_setlen((void *)(arr), (n), sizeof(type) * (n)))
+  ((arr) = (type*) ir_arr_setlen((void *)(arr), (n), sizeof(type) * (n)))
 
 /** Set a length smaller than the current length of the array.  Do not
  *  resize. len must be <= ARR_LEN(arr). */

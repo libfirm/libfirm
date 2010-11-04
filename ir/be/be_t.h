@@ -84,7 +84,7 @@ struct be_main_env_t {
 	ir_type      *pic_symbols_type;
 };
 
-extern unsigned short asm_constraint_flags[256];
+extern asm_constraint_flags_t asm_constraint_flags[256];
 
 void be_init_default_asm_constraint_flags(void);
 
@@ -107,7 +107,8 @@ void firm_be_finish(void);
 extern int be_timing;
 
 typedef enum {
-	T_ABI,
+	T_FIRST,
+	T_ABI = T_FIRST,
 	T_CODEGEN,
 	T_RA_PREPARATION,
 	T_SCHED,
@@ -132,6 +133,7 @@ typedef enum {
 	T_RA_OTHER,
 	T_LAST = T_RA_OTHER
 } be_timer_id_t;
+ENUM_COUNTABLE(be_timer_id_t)
 extern ir_timer_t *be_timers[T_LAST+1];
 
 static inline void be_timer_push(be_timer_id_t id)

@@ -76,6 +76,9 @@ FIRM_API void *eset_next(eset *s);
 /** Inserts all elements of source into target (union).  Does NOT work if NULL is contained in source. */
 FIRM_API void eset_insert_all(eset *target, eset *source);
 
+#define eset_foreach(eset, type, iter) \
+	for ((iter) = (type)eset_first((eset)); (iter) != NULL; (iter) = (type)eset_next((eset)))
+
 #include "../end.h"
 
 #endif

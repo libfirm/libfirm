@@ -267,21 +267,21 @@ static int check_visited_flag(ir_graph *irg, ir_node *n)
 /**
  * helper environment struct for constant_on_wrong_obstack()
  */
-struct myenv {
+typedef struct myenv {
 	int res;
 	ir_graph *irg;
-};
+} myenv;
 
 /**
  * called by the walker
  */
-static void on_irg_storage(ir_node *n, void *env)
+static void on_irg_storage(ir_node *n, void *data)
 {
-	struct myenv *myenv = env;
+	myenv *env = (myenv*)data;
 
 	/* We also test whether the setting of the visited flag is legal. */
-	myenv->res = node_is_in_irgs_storage(myenv->irg, n) &&
-	             check_visited_flag(myenv->irg, n);
+	env->res = node_is_in_irgs_storage(env->irg, n) &&
+	           check_visited_flag(env->irg, n);
 }
 
 /**
@@ -290,7 +290,7 @@ static void on_irg_storage(ir_node *n, void *env)
  */
 static int constant_on_wrong_irg(ir_node *n)
 {
-	struct myenv env;
+	myenv env;
 
 	env.res = 1;  /* on right obstack */
 	env.irg = get_const_code_irg();
@@ -408,7 +408,7 @@ int check_entity(ir_entity *ent)
  */
 static void check_tore(type_or_ent tore, void *env)
 {
-	int *res = env;
+	int *res = (int*)env;
 	assert(tore.ent);
 	if (is_type(tore.typ)) {
 		*res = check_type(tore.typ);

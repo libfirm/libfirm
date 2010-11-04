@@ -112,7 +112,7 @@
  */
 #define DBG_OPT_ALGSIM0(oldn, n, flag)                              \
 	do {                                                            \
-	  hook_merge_nodes(&n, 1, &oldn, 1, flag);                      \
+	  hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)flag);       \
 	  __dbg_info_merge_pair(n, oldn, dbg_algebraic_simplification); \
 	} while(0)
 
@@ -131,7 +131,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = a;                                                 \
 	  ons[2] = b;                                                 \
-	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), flag);        \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), (hook_opt_kind)flag); \
 	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_algebraic_simplification); \
 	} while(0)
 
@@ -149,7 +149,7 @@
 	  ons[0] = oldn;                                              \
 	  ons[1] = pred;                                              \
 	  ons[2] = n;                                                 \
-	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), flag);        \
+	  hook_merge_nodes(&n, 1, ons, ARRAY_SIZE(ons), (hook_opt_kind)flag); \
 	  __dbg_info_merge_sets(&n, 1, ons, ARRAY_SIZE(ons), dbg_algebraic_simplification); \
 	} while(0)
 
@@ -392,10 +392,10 @@
  * @param n     the new node replacing oldn
  * @param flag  firm statistics option
  */
-#define DBG_OPT_GVN_PRE(oldn, n, flag)             \
-	do {                                           \
-	  hook_merge_nodes(&n, 1, &oldn, 1, flag);     \
-	  __dbg_info_merge_pair(n, oldn, dbg_gvn_pre); \
+#define DBG_OPT_GVN_PRE(oldn, n, flag)                        \
+	do {                                                      \
+	  hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)flag); \
+	  __dbg_info_merge_pair(n, oldn, dbg_gvn_pre);            \
 	} while(0)
 
 /**
@@ -405,10 +405,10 @@
  * @param n     the new node replacing oldn
  * @param flag  firm statistics option
  */
-#define DBG_OPT_COMBO(oldn, n, flag)             \
-	do {                                         \
-	  hook_merge_nodes(&n, 1, &oldn, 1, flag);   \
-	  __dbg_info_merge_pair(n, oldn, dbg_combo); \
+#define DBG_OPT_COMBO(oldn, n, flag)                          \
+	do {                                                      \
+	  hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)flag); \
+	  __dbg_info_merge_pair(n, oldn, dbg_combo);              \
 	} while(0)
 
 /**
@@ -419,7 +419,7 @@
  */
 #define DBG_OPT_JUMPTHREADING(oldn, n)                         \
 	do {                                                   \
-	  hook_merge_nodes(&n, 1, &oldn, 1, FS_OPT_JUMPTHREADING); \
+	  hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)FS_OPT_JUMPTHREADING); \
 	  __dbg_info_merge_pair(n, oldn, dbg_jumpthreading);       \
 	} while(0)
 

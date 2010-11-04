@@ -92,7 +92,7 @@ static int               do_pic;
 /** Return the next block in Block schedule */
 static ir_node *get_prev_block_sched(const ir_node *block)
 {
-	return get_irn_link(block);
+	return (ir_node*)get_irn_link(block);
 }
 
 /** Checks if the current block is a fall-through target. */
@@ -483,7 +483,7 @@ void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
 static ir_node *get_cfop_target_block(const ir_node *irn)
 {
 	assert(get_irn_mode(irn) == mode_X);
-	return get_irn_link(irn);
+	return (ir_node*)get_irn_link(irn);
 }
 
 /**
@@ -545,12 +545,14 @@ static void ia32_emit_cmp_suffix(int pnc)
 }
 
 typedef enum ia32_emit_mod_t {
+	EMIT_NONE         = 0,
 	EMIT_RESPECT_LS   = 1U << 0,
 	EMIT_ALTERNATE_AM = 1U << 1,
 	EMIT_LONG         = 1U << 2,
 	EMIT_HIGH_REG     = 1U << 3,
 	EMIT_LOW_REG      = 1U << 4
 } ia32_emit_mod_t;
+ENUM_BITSET(ia32_emit_mod_t)
 
 /**
  * Emits address mode.
@@ -641,7 +643,7 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 
 	for (;;) {
 		const char      *start = fmt;
-		ia32_emit_mod_t  mod   = 0;
+		ia32_emit_mod_t  mod   = EMIT_NONE;
 
 		while (*fmt != '%' && *fmt != '\n' && *fmt != '\0')
 			++fmt;
@@ -975,7 +977,7 @@ static int determine_final_pnc(const ir_node *node, int flags_pos, int pnc)
 	return pnc;
 }
 
-static pn_Cmp ia32_get_negated_pnc(pn_Cmp pnc)
+static int ia32_get_negated_pnc(int pnc)
 {
 	ir_mode *mode = pnc & ia32_pn_Cmp_float ? mode_F : mode_Iu;
 	return get_negated_pnc(pnc, mode);
@@ -983,7 +985,7 @@ static pn_Cmp ia32_get_negated_pnc(pn_Cmp pnc)
 
 void ia32_emit_cmp_suffix_node(const ir_node *node, int flags_pos)
 {
-	pn_Cmp pnc = get_ia32_condcode(node);
+	int pnc = get_ia32_condcode(node);
 	pnc = determine_final_pnc(node, flags_pos, pnc);
 
 	ia32_emit_cmp_suffix(pnc);
@@ -1036,7 +1038,7 @@ static void emit_ia32_Jcc(const ir_node *node)
 	int            need_parity_label = 0;
 	const ir_node *proj_true;
 	const ir_node *proj_false;
-	pn_Cmp         pnc = get_ia32_condcode(node);
+	int            pnc = get_ia32_condcode(node);
 
 	pnc = determine_final_pnc(node, 0, pnc);
 
@@ -1116,8 +1118,8 @@ static void emit_ia32_Setcc(const ir_node *node)
 {
 	const arch_register_t *dreg = get_out_reg(node, pn_ia32_Setcc_res);
 
-	pn_Cmp pnc = get_ia32_condcode(node);
-	pnc        = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
+	int pnc = get_ia32_condcode(node);
+	pnc     = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
 	if (pnc & ia32_pn_Cmp_float) {
 		switch (pnc & 0x0f) {
 		case pn_Cmp_Uo:
@@ -1153,9 +1155,9 @@ static void emit_ia32_Setcc(const ir_node *node)
 
 static void emit_ia32_CMovcc(const ir_node *node)
 {
-	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
-	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
-	pn_Cmp                 pnc          = get_ia32_condcode(node);
+	const ia32_attr_t     *attr = get_ia32_attr_const(node);
+	const arch_register_t *out  = arch_irn_get_register(node, pn_ia32_res);
+	int                    pnc  = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
@@ -2111,7 +2113,7 @@ typedef struct exc_entry {
  */
 static void ia32_gen_labels(ir_node *block, void *data)
 {
-	exc_entry **exc_list = data;
+	exc_entry **exc_list = (exc_entry**)data;
 	ir_node *pred;
 	int     n;
 
@@ -2136,8 +2138,8 @@ static void ia32_gen_labels(ir_node *block, void *data)
  */
 static int cmp_exc_entry(const void *a, const void *b)
 {
-	const exc_entry *ea = a;
-	const exc_entry *eb = b;
+	const exc_entry *ea = (const exc_entry*)a;
+	const exc_entry *eb = (const exc_entry*)b;
 
 	if (get_ia32_exc_label_id(ea->exc_instr) < get_ia32_exc_label_id(eb->exc_instr))
 		return -1;
@@ -2875,8 +2877,8 @@ static void bemit_setcc(const ir_node *node)
 {
 	const arch_register_t *dreg = get_out_reg(node, pn_ia32_Setcc_res);
 
-	pn_Cmp pnc = get_ia32_condcode(node);
-	pnc        = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
+	int pnc = get_ia32_condcode(node);
+	pnc     = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
 	if (pnc & ia32_pn_Cmp_float) {
 		switch (pnc & 0x0f) {
 		case pn_Cmp_Uo:
@@ -2944,7 +2946,7 @@ static void bemit_cmovcc(const ir_node *node)
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
 	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
-	pn_Cmp                 pnc          = get_ia32_condcode(node);
+	int                    pnc          = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 

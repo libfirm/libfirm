@@ -76,7 +76,7 @@ typedef struct {
 	ir_type *value_ress;            /**< A type whose entities represent copied value results. */
 	ir_variadicity variadicity;        /**< The variadicity of the method. */
 	int first_variadic_param;       /**< The index of the first variadic parameter or -1 if non-variadic .*/
-	unsigned additional_properties; /**< Set of additional method properties. */
+	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 
@@ -544,13 +544,13 @@ static inline int _get_method_n_ress(const ir_type *method)
 	return method->attr.ma.n_res;
 }
 
-static inline unsigned _get_method_additional_properties(const ir_type *method)
+static inline mtp_additional_properties _get_method_additional_properties(const ir_type *method)
 {
 	assert(method && (method->type_op == type_method));
 	return method->attr.ma.additional_properties;
 }
 
-static inline void _set_method_additional_properties(ir_type *method, unsigned mask)
+static inline void _set_method_additional_properties(ir_type *method, mtp_additional_properties mask)
 {
 	assert(method && (method->type_op == type_method));
 
@@ -559,7 +559,7 @@ static inline void _set_method_additional_properties(ir_type *method, unsigned m
 	method->attr.ma.additional_properties = mask & ~mtp_property_inherited;
 }
 
-static inline void _set_method_additional_property(ir_type *method, mtp_additional_property flag)
+static inline void _add_method_additional_properties(ir_type *method, mtp_additional_properties flag)
 {
 	assert(method && (method->type_op == type_method));
 
@@ -623,7 +623,7 @@ static inline void _set_method_calling_convention(ir_type *method, unsigned cc_m
 #define get_method_n_ress(method)         _get_method_n_ress(method)
 #define get_method_additional_properties(method)        _get_method_additional_properties(method)
 #define set_method_additional_properties(method, mask)  _set_method_additional_properties(method, mask)
-#define set_method_additional_property(method, flag)    _set_method_additional_property(method, flag)
+#define add_method_additional_properties(method, flag)  _add_method_additional_properties(method, flag)
 #define get_method_calling_convention(method)           _get_method_calling_convention(method)
 #define set_method_calling_convention(method, cc_mask)  _set_method_calling_convention(method, cc_mask)
 

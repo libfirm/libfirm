@@ -127,7 +127,8 @@ static int be_omit_fp = 1;
  */
 static int cmp_call_arg(const void *a, const void *b, size_t n)
 {
-	const be_abi_call_arg_t *p = a, *q = b;
+	const be_abi_call_arg_t *p = (const be_abi_call_arg_t*)a;
+	const be_abi_call_arg_t *q = (const be_abi_call_arg_t*)b;
 	(void) n;
 	return !(p->is_res == q->is_res && p->pos == q->pos && p->callee == q->callee);
 }
@@ -152,7 +153,7 @@ static be_abi_call_arg_t *get_call_arg(be_abi_call_t *call, int is_res, int pos,
 
 	hash = is_res * 128 + pos;
 
-	return set_find(call->params, &arg, sizeof(arg), hash);
+	return (be_abi_call_arg_t*)set_find(call->params, &arg, sizeof(arg), hash);
 }
 
 /**
@@ -468,9 +469,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			/* Insert a store for primitive arguments. */
 			if (is_atomic_type(param_type)) {
-				ir_node *store;
 				ir_node *mem_input = do_seq ? curr_mem : new_r_NoMem(irg);
-				store = new_rd_Store(dbgi, bl, mem_input, addr, param, 0);
+				ir_node *store     = new_rd_Store(dbgi, bl, mem_input, addr, param, cons_none);
 				mem   = new_r_Proj(store, mode_M, pn_Store_M);
 			} else {
 				/* Make a mem copy for compound arguments. */
@@ -671,7 +671,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		assert(arg->reg != NULL);
 
 		be_set_constr_single_reg_in(low_call, be_pos_Call_first_arg + i,
-		                            arg->reg, 0);
+		                            arg->reg, arch_register_req_type_none);
 	}
 
 	/* Set the register constraints of the results. */
@@ -681,7 +681,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		int                      pn   = get_Proj_proj(proj);
 
 		assert(arg->in_reg);
-		be_set_constr_single_reg_out(low_call, pn, arg->reg, 0);
+		be_set_constr_single_reg_out(low_call, pn, arg->reg,
+		                             arch_register_req_type_none);
 		arch_set_irn_register(proj, arg->reg);
 	}
 	exchange(irn, low_call);
@@ -712,7 +713,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			ir_node *proj = new_r_Proj(low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */
-			be_set_constr_single_reg_out(low_call, curr_res_proj, reg, 0);
+			be_set_constr_single_reg_out(low_call, curr_res_proj, reg,
+			                             arch_register_req_type_none);
 			arch_set_irn_register(proj, reg);
 
 			set_irn_link(proj, (void*) reg);
@@ -731,7 +733,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		/* create the Keep for the caller save registers */
 		keep = be_new_Keep(bl, n, in);
 		for (i = 0; i < n; ++i) {
-			const arch_register_t *reg = get_irn_link(in[i]);
+			const arch_register_t *reg = (const arch_register_t*)get_irn_link(in[i]);
 			be_node_set_reg_class_in(keep, i, reg->reg_class);
 		}
 	}
@@ -998,8 +1000,8 @@ static int cmp_call_dependency(const void *c1, const void *c2)
  */
 static void link_ops_in_block_walker(ir_node *irn, void *data)
 {
-	be_abi_irg_t *env  = data;
-	ir_opcode     code = get_irn_opcode(irn);
+	be_abi_irg_t *env  = (be_abi_irg_t*)data;
+	unsigned      code = get_irn_opcode(irn);
 
 	if (code == iro_Call ||
 	   (code == iro_Alloc && get_Alloc_where(irn) == stack_alloc) ||
@@ -1034,7 +1036,7 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
  */
 static void process_ops_in_block(ir_node *bl, void *data)
 {
-	be_abi_irg_t   *env     = data;
+	be_abi_irg_t   *env     = (be_abi_irg_t*)data;
 	ir_node        *curr_sp = env->init_sp;
 	ir_node        *irn;
 	ir_node       **nodes;
@@ -1042,12 +1044,14 @@ static void process_ops_in_block(ir_node *bl, void *data)
 	int             n_nodes;
 
 	n_nodes = 0;
-	for (irn = get_irn_link(bl); irn != NULL; irn = get_irn_link(irn)) {
+	for (irn = (ir_node*)get_irn_link(bl); irn != NULL;
+	     irn = (ir_node*)get_irn_link(irn)) {
 		++n_nodes;
 	}
 
 	nodes = ALLOCAN(ir_node*, n_nodes);
-	for (irn = get_irn_link(bl), n = 0; irn; irn = get_irn_link(irn), ++n) {
+	for (irn = (ir_node*)get_irn_link(bl), n = 0; irn != NULL;
+	     irn = (ir_node*)get_irn_link(irn), ++n) {
 		nodes[n] = irn;
 	}
 
@@ -1183,8 +1187,8 @@ typedef struct {
 
 static int cmp_regs(const void *a, const void *b)
 {
-	const reg_node_map_t *p = a;
-	const reg_node_map_t *q = b;
+	const reg_node_map_t *p = (const reg_node_map_t*)a;
+	const reg_node_map_t *q = (const reg_node_map_t*)b;
 
 	if (p->reg->reg_class == q->reg->reg_class)
 		return p->reg->index - q->reg->index;
@@ -1199,8 +1203,8 @@ static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
 	int i = 0;
 
 	foreach_pmap(reg_map, ent) {
-		res[i].reg = ent->key;
-		res[i].irn = ent->value;
+		res[i].reg = (const arch_register_t*)ent->key;
+		res[i].irn = (ir_node*)ent->value;
 		i++;
 	}
 
@@ -1233,11 +1237,11 @@ static ir_node *create_barrier(ir_node *bl, ir_node **mem, pmap *regs,
 	irn = be_new_Barrier(bl, n, in);
 
 	for (n = 0; n < n_regs; ++n) {
-		ir_node               *pred     = rm[n].irn;
-		const arch_register_t *reg      = rm[n].reg;
-		arch_register_type_t   add_type = 0;
-		ir_node               *proj;
-		const backend_info_t  *info;
+		ir_node                  *pred     = rm[n].irn;
+		const arch_register_t    *reg      = rm[n].reg;
+		arch_register_req_type_t  add_type = arch_register_req_type_none;
+		ir_node                  *proj;
+		const backend_info_t     *info;
 
 		/* stupid workaround for now... as not all nodes report register
 		 * requirements. */
@@ -1252,8 +1256,10 @@ static ir_node *create_barrier(ir_node *bl, ir_node **mem, pmap *regs,
 
 		proj = new_r_Proj(irn, get_irn_mode(pred), n);
 		be_node_set_reg_class_in(irn, n, reg->reg_class);
-		if (in_req)
-			be_set_constr_single_reg_in(irn, n, reg, 0);
+		if (in_req) {
+			be_set_constr_single_reg_in(irn, n, reg,
+			                            arch_register_req_type_none);
+		}
 		be_set_constr_single_reg_out(irn, n, reg, add_type);
 		arch_set_irn_register(proj, reg);
 
@@ -1284,7 +1290,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
-	ir_node *keep  = pmap_get(env->keep_map, bl);
+	ir_node *keep  = (ir_node*)pmap_get(env->keep_map, bl);
 	int in_max;
 	ir_node *ret;
 	int i, n;
@@ -1318,7 +1324,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 
 	/* Add uses of the callee save registers. */
 	foreach_pmap(env->regs, ent) {
-		const arch_register_t *reg = ent->key;
+		const arch_register_t *reg = (const arch_register_t*)ent->key;
 		if (arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
 			pmap_insert(reg_map, ent->key, ent->value);
 	}
@@ -1359,8 +1365,8 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	/* grow the rest of the stuff. */
 	foreach_pmap(reg_map, ent) {
 		if (ent->value) {
-			in[n]     = ent->value;
-			regs[n++] = ent->key;
+			in[n]     = (ir_node*)ent->value;
+			regs[n++] = (const arch_register_t*)ent->key;
 		}
 	}
 
@@ -1413,7 +1419,7 @@ typedef struct lower_frame_sels_env_t {
  */
 static ir_entity *get_argument_entity(ir_entity *ent, lower_frame_sels_env_t *ctx)
 {
-	ir_entity *argument_ent = get_entity_link(ent);
+	ir_entity *argument_ent = (ir_entity*)get_entity_link(ent);
 
 	if (argument_ent == NULL) {
 		/* we have NO argument entity yet: This is bad, as we will
@@ -1446,7 +1452,7 @@ static ir_entity *get_argument_entity(ir_entity *ent, lower_frame_sels_env_t *ct
  */
 static void lower_frame_sels_walker(ir_node *irn, void *data)
 {
-	lower_frame_sels_env_t *ctx = data;
+	lower_frame_sels_env_t *ctx = (lower_frame_sels_env_t*)data;
 
 	if (is_Sel(irn)) {
 		ir_node *ptr = get_Sel_ptr(irn);
@@ -1557,7 +1563,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_graph *irg,
 
 			/* the backing store itself */
 			store = new_r_Store(first_bl, mem, addr,
-			                    new_r_Proj(args, mode, i), 0);
+			                    new_r_Proj(args, mode, i), cons_none);
 		}
 		/* the new memory Proj gets the last Proj from store */
 		set_Proj_pred(nmem, store);
@@ -1628,7 +1634,7 @@ static void fix_start_block(ir_graph *irg)
  */
 static void update_outer_frame_sels(ir_node *irn, void *env)
 {
-	lower_frame_sels_env_t *ctx = env;
+	lower_frame_sels_env_t *ctx = (lower_frame_sels_env_t*)env;
 	ir_node                *ptr;
 	ir_entity              *ent;
 	int                    pos = 0;
@@ -1860,10 +1866,10 @@ static void modify_irg(ir_graph *irg)
 	rm = ALLOCAN(reg_node_map_t, pmap_count(env->regs));
 	reg_map_to_arr(rm, env->regs);
 	for (i = 0, n = pmap_count(env->regs); i < n; ++i) {
-		arch_register_t          *reg      = (void *) rm[i].reg;
+		const arch_register_t    *reg      = rm[i].reg;
 		ir_mode                  *mode     = reg->reg_class->mode;
 		long                      nr       = i;
-		arch_register_req_type_t  add_type = 0;
+		arch_register_req_type_t  add_type = arch_register_req_type_none;
 		ir_node                  *proj;
 
 		if (reg == sp)
@@ -1927,7 +1933,7 @@ static void modify_irg(ir_graph *irg)
 			param_type = get_method_param_type(method_type, nr);
 
 			if (arg->in_reg) {
-				repl = pmap_get(env->regs, (void *) arg->reg);
+				repl = (ir_node*)pmap_get(env->regs, arg->reg);
 			} else if (arg->on_stack) {
 				ir_node *addr = be_new_FrameAddr(sp->reg_class, start_bl, frame_pointer, arg->stack_ent);
 
@@ -2047,7 +2053,7 @@ static ir_entity *create_trampoline(be_main_env_t *be, ir_entity *method)
  */
 static ir_entity *get_trampoline(be_main_env_t *env, ir_entity *method)
 {
-	ir_entity *result = pmap_get(env->ent_trampoline_map, method);
+	ir_entity *result = (ir_entity*)pmap_get(env->ent_trampoline_map, method);
 	if (result == NULL) {
 		result = create_trampoline(env, method);
 		pmap_insert(env->ent_trampoline_map, method, result);
@@ -2072,7 +2078,7 @@ static ir_entity *create_pic_symbol(be_main_env_t *be, ir_entity *entity)
 
 static ir_entity *get_pic_symbol(be_main_env_t *env, ir_entity *entity)
 {
-	ir_entity *result = pmap_get(env->ent_pic_symbol_map, entity);
+	ir_entity *result = (ir_entity*)pmap_get(env->ent_pic_symbol_map, entity);
 	if (result == NULL) {
 		result = create_pic_symbol(env, entity);
 		pmap_insert(env->ent_pic_symbol_map, entity, result);
@@ -2319,14 +2325,14 @@ ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *re
 {
 	assert(arch_register_type_is(reg, callee_save));
 	assert(pmap_contains(abi->regs, (void *) reg));
-	return pmap_get(abi->regs, (void *) reg);
+	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }
 
 ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
 {
 	assert(arch_register_type_is(reg, ignore));
 	assert(pmap_contains(abi->regs, (void *) reg));
-	return pmap_get(abi->regs, (void *) reg);
+	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);

@@ -156,6 +156,7 @@ typedef enum {
 	                                   influence the significant lower bit at
 	                                   all (for cases where mode < 32bit) */
 } match_flags_t;
+ENUM_BITSET(match_flags_t)
 
 typedef ir_node* (*new_binop_reg_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2);
 typedef ir_node* (*new_binop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -965,7 +966,7 @@ static ir_node *gen_Cond(ir_node *node)
 	block       = be_transform_node(get_nodes_block(node));
 	dbgi        = get_irn_dbg_info(node);
 	flag_node   = be_transform_node(get_Proj_pred(selector));
-	pnc         = get_Proj_proj(selector);
+	pnc         = get_Proj_pn_cmp(selector);
 	is_unsigned = !mode_is_signed(cmp_mode);
 	if (mode_is_float(cmp_mode)) {
 		assert(!is_unsigned);
@@ -1310,10 +1311,14 @@ static ir_node *gen_Start(ir_node *node)
 	/* function parameters in registers */
 	for (i = 0; i < get_method_n_params(function_type); ++i) {
 		const reg_or_stackslot_t *param = &cconv->parameters[i];
-		if (param->reg0 != NULL)
-			be_prolog_add_reg(abihelper, param->reg0, 0);
-		if (param->reg1 != NULL)
-			be_prolog_add_reg(abihelper, param->reg1, 0);
+		if (param->reg0 != NULL) {
+			be_prolog_add_reg(abihelper, param->reg0,
+			                  arch_register_req_type_none);
+		}
+		if (param->reg1 != NULL) {
+			be_prolog_add_reg(abihelper, param->reg1,
+			                  arch_register_req_type_none);
+		}
 	}
 	/* we need the values of the callee saves (Note: non omit-fp mode has no
 	 * callee saves) */
@@ -1321,7 +1326,8 @@ static ir_node *gen_Start(ir_node *node)
 		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
 		size_t c;
 		for (c = 0; c < n_callee_saves; ++c) {
-			be_prolog_add_reg(abihelper, omit_fp_callee_saves[c], 0);
+			be_prolog_add_reg(abihelper, omit_fp_callee_saves[c],
+			                  arch_register_req_type_none);
 		}
 	} else {
 		be_prolog_add_reg(abihelper, fp_reg, arch_register_req_type_ignore);
@@ -1362,7 +1368,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 	}
 
 	stack_pred_transformed = be_transform_node(stack_pred);
-	stack                  = pmap_get(node_to_stack, stack_pred);
+	stack                  = (ir_node*)pmap_get(node_to_stack, stack_pred);
 	if (stack == NULL) {
 		return get_stack_pointer_for(stack_pred);
 	}
@@ -1400,7 +1406,8 @@ static ir_node *gen_Return(ir_node *node)
 		const reg_or_stackslot_t *slot          = &cconv->results[i];
 		const arch_register_t    *reg           = slot->reg0;
 		assert(slot->reg1 == NULL);
-		be_epilog_add_reg(abihelper, reg, 0, new_res_value);
+		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none,
+		                  new_res_value);
 	}
 	/* callee saves */
 	if (cconv->omit_fp) {
@@ -1410,7 +1417,8 @@ static ir_node *gen_Return(ir_node *node)
 			const arch_register_t *reg   = omit_fp_callee_saves[i];
 			ir_node               *value
 				= be_prolog_get_reg_value(abihelper, reg);
-			be_epilog_add_reg(abihelper, reg, 0, value);
+			be_epilog_add_reg(abihelper, reg, arch_register_req_type_none,
+			                  value);
 		}
 	}
 
@@ -1489,8 +1497,8 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		set_irn_pinned(ld, op_pin_state_floats);
 		result[1] = new_r_Proj(ld2, mode_gp, pn_sparc_Ld_res);
 
-		arch_irn_add_flags(ld, sparc_arch_irn_flag_needs_64bit_spillslot);
-		arch_irn_add_flags(ld2, sparc_arch_irn_flag_needs_64bit_spillslot);
+		arch_irn_add_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
+		arch_irn_add_flags(ld2, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
 	} else {
 		assert(bits == 32);
 		result[1] = NULL;
@@ -1834,8 +1842,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	long      pn       = get_Proj_proj(node);
 
 	assert(is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred));
-	assert(pn_sparc_SDiv_res == pn_sparc_UDiv_res);
-	assert(pn_sparc_SDiv_M == pn_sparc_UDiv_M);
+	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);
+	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_UDiv_M);
 	switch (pn) {
 	case pn_Div_res:
 		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_res);

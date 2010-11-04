@@ -57,8 +57,8 @@ struct be_loopana_t {
 
 static int cmp_loop_info(const void *a, const void *b, size_t size)
 {
-	const be_loop_info_t *i1 = a;
-	const be_loop_info_t *i2 = b;
+	const be_loop_info_t *i1 = (const be_loop_info_t*)a;
+	const be_loop_info_t *i2 = (const be_loop_info_t*)b;
 	(void) size;
 
 	return ! (i1->loop == i2->loop && i1->cls == i2->cls);
@@ -142,7 +142,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 	key.loop            = loop;
 	key.cls             = cls;
 	key.max_pressure    = 0;
-	entry               = set_insert(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
+	entry               = (be_loop_info_t*)set_insert(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 	entry->max_pressure = MAX(entry->max_pressure, pressure);
 
 	return pressure;
@@ -225,7 +225,7 @@ unsigned be_get_loop_pressure(be_loopana_t *loop_ana, const arch_register_class_
 
 	key.loop = loop;
 	key.cls  = cls;
-	entry    = set_find(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
+	entry    = (be_loop_info_t*)set_find(loop_ana->data, &key, sizeof(key), HASH_LOOP_INFO(&key));
 
 	if (entry)
 		pressure = entry->max_pressure;

@@ -111,7 +111,7 @@ static inline pdeq *alloc_pdeq_block (void)
 	if (TUNE_NSAVED_PDEQS && pdeqs_cached) {
 		p = pdeq_block_cache[--pdeqs_cached];
 	} else {
-		p = xmalloc(PREF_MALLOC_SIZE);
+		p = (pdeq*) xmalloc(PREF_MALLOC_SIZE);
 	}
 	return p;
 }

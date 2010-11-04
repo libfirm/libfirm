@@ -71,7 +71,7 @@ static dfs_node_t *_dfs_get_node(const dfs_t *self, const void *node)
 	dfs_node_t templ;
 	memset(&templ, 0, sizeof(templ));
 	templ.node = node;
-	return set_insert(self->nodes, &templ, sizeof(templ), HASH_PTR(node));
+	return (dfs_node_t*) set_insert(self->nodes, &templ, sizeof(templ), HASH_PTR(node));
 }
 
 #define _dfs_int_is_ancestor(n, m) ((m)->pre_num >= (n)->pre_num && (m)->pre_num <= (n)->max_pre_num)

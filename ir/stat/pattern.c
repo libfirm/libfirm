@@ -145,8 +145,8 @@ static int pattern_count_cmp(const void *elt, const void *key)
  */
 static int pattern_cmp(const void *elt, const void *key)
 {
-	const pattern_entry_t *e1 = elt;
-	const pattern_entry_t *e2 = key;
+	const pattern_entry_t *e1 = (const pattern_entry_t*)elt;
+	const pattern_entry_t *e2 = (const pattern_entry_t*)key;
 	int diff = e1->len - e2->len;
 
 	if (diff)
@@ -388,8 +388,8 @@ typedef struct addr_entry_t {
  */
 static int addr_cmp(const void *p1, const void *p2, size_t size)
 {
-	const addr_entry_t *e1 = p1;
-	const addr_entry_t *e2 = p2;
+	const addr_entry_t *e1 = (const addr_entry_t*)p1;
+	const addr_entry_t *e2 = (const addr_entry_t*)p2;
 	(void) size;
 
 	return e1->addr != e2->addr;
@@ -419,7 +419,7 @@ static int _encode_node(ir_node *node, int max_depth, codec_env_t *env)
 	int i, preds;
 	int res, depth;
 
-	ir_opcode code = get_irn_opcode(node);
+	unsigned code = get_irn_opcode(node);
 
 	/* insert the node into our ID map */
 	entry.addr = node;
@@ -686,14 +686,14 @@ static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set)
 
 	hash = buf_hash(buf);
 
-	elem = pset_find(set, key, hash);
+	elem = (pattern_entry_t*)pset_find(set, key, hash);
 	if (elem != NULL) {
 		obstack_free(&status->obst, key);
 		return elem;
 	}  /* if */
 
 	cnt_clr(&key->count);
-	return pset_insert(set, key, hash);
+	return (pattern_entry_t*)pset_insert(set, key, hash);
 }  /* pattern_get_entry */
 
 /**
@@ -722,7 +722,7 @@ static void count_pattern(CODE_BUFFER *buf, int depth)
  */
 static void calc_nodes_pattern(ir_node *node, void *ctx)
 {
-	pattern_env_t   *env = ctx;
+	pattern_env_t   *env = (pattern_env_t*)ctx;
 	BYTE            buffer[PATTERN_STORE_SIZE];
 	CODE_BUFFER     buf;
 	int             depth;
@@ -759,9 +759,9 @@ static void store_pattern(const char *fname)
 	fwrite("FPS1", 4, 1, f);
 	fwrite(&count, sizeof(count), 1, f);
 
-	for (i = 0, entry = pset_first(status->pattern_hash);
+	for (i = 0, entry = (pattern_entry_t*)pset_first(status->pattern_hash);
 	     entry && i < count;
-	     entry = pset_next(status->pattern_hash), ++i) {
+	     entry = (pattern_entry_t*)pset_next(status->pattern_hash), ++i) {
 		fwrite(entry, offsetof(pattern_entry_t, buf) + entry->len, 1, f);
 	}  /* for */
 	fclose(f);
@@ -836,9 +836,9 @@ static void pattern_output(const char *fname)
 	dump = new_vcg_dumper(fname, 100);
 
 	pattern_arr = XMALLOCN(pattern_entry_t*, count);
-	for (i = 0, entry = pset_first(status->pattern_hash);
+	for (i = 0, entry = (pattern_entry_t*)pset_first(status->pattern_hash);
 	     entry && i < count;
-	     entry = pset_next(status->pattern_hash), ++i) {
+	     entry = (pattern_entry_t*)pset_next(status->pattern_hash), ++i) {
 		pattern_arr[i] =  entry;
 	}  /* for */
 	assert(count == i);

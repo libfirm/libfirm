@@ -80,8 +80,9 @@ static unsigned *busy_set;
  */
 static void collect_const_and_pure_calls(ir_node *node, void *env)
 {
-	env_t     *ctx = env;
-	ir_node   *call, *ptr;
+	env_t     *ctx = (env_t*)env;
+	ir_node   *call;
+	ir_node   *ptr;
 	ir_entity *ent;
 	unsigned  and_prop, or_prop, prop;
 
@@ -181,7 +182,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 	 * them floating.
 	 * The original memory input is preserved in their link fields. */
 	for (call = ctx->float_const_call_list; call != NULL; call = next) {
-		next = get_irn_link(call);
+		next = (ir_node*)get_irn_link(call);
 		mem  = get_Call_mem(call);
 
 		set_irn_link(call, mem);
@@ -209,9 +210,9 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 
 	/* Last step: fix all Proj's */
 	for (proj = ctx->proj_list; proj != NULL; proj = next) {
-		next = get_irn_link(proj);
+		next = (ir_node*)get_irn_link(proj);
 		call = get_Proj_pred(proj);
-		mem  = get_irn_link(call);
+		mem  = (ir_node*)get_irn_link(call);
 
 		/* beware of calls in the pure call list */
 		if (!mem || is_Call(mem))
@@ -256,7 +257,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
  */
 static void collect_nothrow_calls(ir_node *node, void *env)
 {
-	env_t *ctx = env;
+	env_t *ctx = (env_t*)env;
 	ir_node *call, *ptr;
 	ir_entity *ent;
 	unsigned prop;
@@ -342,7 +343,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 
 	/* First step: go through the list of calls and mark them. */
 	for (call = call_list; call; call = next) {
-		next = get_irn_link(call);
+		next = (ir_node*)get_irn_link(call);
 
 		/* current_ir_graph is in memory anyway, so it's a good marker */
 		set_irn_link(call, &current_ir_graph);
@@ -351,7 +352,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 
 	/* Second step: Remove all exception Proj's */
 	for (proj = proj_list; proj; proj = next) {
-		next = get_irn_link(proj);
+		next = (ir_node*)get_irn_link(proj);
 		call = get_Proj_pred(proj);
 
 		/* handle only marked calls */
@@ -393,14 +394,16 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 #define IS_IRG_BUSY(irg)    rbitset_is_set(busy_set, get_irg_idx(irg))
 
 /* forward */
-static unsigned check_const_or_pure_function(ir_graph *irg, int top);
+static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int top);
 
 /**
  * Calculate the bigger property of two. Handle the temporary flag right.
  */
-static unsigned max_property(unsigned a, unsigned b)
+static mtp_additional_properties max_property(mtp_additional_properties a,
+                                              mtp_additional_properties b)
 {
-	unsigned r, t = (a | b) & mtp_temporary;
+	mtp_additional_properties r;
+	mtp_additional_properties t = (a | b) & mtp_temporary;
 	a &= ~mtp_temporary;
 	b &= ~mtp_temporary;
 
@@ -418,9 +421,10 @@ static unsigned max_property(unsigned a, unsigned b)
  *         mtp_property_pure  if only Loads and const/pure calls detected
  *         mtp_no_property    else
  */
-static unsigned _follow_mem(ir_node *node)
+static mtp_additional_properties follow_mem_(ir_node *node)
 {
-	unsigned m, mode = mtp_property_const;
+	mtp_additional_properties mode = mtp_property_const;
+	mtp_additional_properties m;
 	ir_node  *ptr;
 	int i;
 
@@ -444,7 +448,7 @@ static unsigned _follow_mem(ir_node *node)
 		case iro_Sync:
 			/* do a dfs search */
 			for (i = get_irn_arity(node) - 1; i >= 0; --i) {
-				m    = _follow_mem(get_irn_n(node, i));
+				m    = follow_mem_(get_irn_n(node, i));
 				mode = max_property(mode, m);
 				if (mode == mtp_no_property)
 					return mtp_no_property;
@@ -485,7 +489,7 @@ static unsigned _follow_mem(ir_node *node)
 			return mtp_no_property;
 		}
 	}
-}  /* _follow_mem */
+}
 
 /**
  * Follow the memory chain starting at node and determine
@@ -495,13 +499,11 @@ static unsigned _follow_mem(ir_node *node)
  *         mtp_property_pure  if only Loads and const/pure calls detected
  *         mtp_no_property else
  */
-static unsigned follow_mem(ir_node *node, unsigned mode)
+static mtp_additional_properties follow_mem(ir_node *node, mtp_additional_properties mode)
 {
-	unsigned m;
-
-	m = _follow_mem(node);
+	mtp_additional_properties m = follow_mem_(node);
 	return max_property(mode, m);
-}  /* follow_mem */
+}
 
 /**
  * Check if a graph represents a const or a pure function.
@@ -509,11 +511,11 @@ static unsigned follow_mem(ir_node *node, unsigned mode)
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
-static unsigned check_const_or_pure_function(ir_graph *irg, int top)
+static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int top)
 {
 	ir_node *end, *endbl;
 	int j;
-	unsigned prop = get_irg_additional_properties(irg);
+	mtp_additional_properties prop = get_irg_additional_properties(irg);
 
 	if (prop & mtp_property_const) {
 		/* already marked as a const function */
@@ -547,7 +549,7 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top)
 	/* visit every Return */
 	for (j = get_Block_n_cfgpreds(endbl) - 1; j >= 0; --j) {
 		ir_node   *node = get_Block_cfgpred(endbl, j);
-		ir_opcode code  = get_irn_opcode(node);
+		unsigned   code = get_irn_opcode(node);
 		ir_node   *mem;
 
 		/* Bad nodes usually do NOT produce anything, so it's ok */
@@ -596,7 +598,7 @@ static unsigned check_const_or_pure_function(ir_graph *irg, int top)
 			/* We use the temporary flag here to mark optimistic result.
 			   Set the property only if we are sure that it does NOT base on
 			   temporary results OR if we are at top-level. */
-			set_irg_additional_property(irg, prop & ~mtp_temporary);
+			add_irg_additional_properties(irg, prop & ~mtp_temporary);
 			SET_IRG_READY(irg);
 		}
 	}
@@ -691,12 +693,12 @@ static int is_malloc_call_result(const ir_node *node)
 /**
  * Update a property depending on a call property.
  */
-static unsigned update_property(unsigned orig_prop, unsigned call_prop)
+static mtp_additional_properties update_property(mtp_additional_properties orig_prop, mtp_additional_properties call_prop)
 {
-	unsigned t = (orig_prop | call_prop) & mtp_temporary;
-	unsigned r = orig_prop & call_prop;
+	mtp_additional_properties t = (orig_prop | call_prop) & mtp_temporary;
+	mtp_additional_properties r = orig_prop & call_prop;
 	return r | t;
-}  /** update_property */
+}
 
 /**
  * Check if a node is stored.
@@ -760,11 +762,11 @@ static int is_stored(const ir_node *n)
  *
  * return ~mtp_property_malloc if return values are stored, ~0 else
  */
-static unsigned check_stored_result(ir_graph *irg)
+static mtp_additional_properties check_stored_result(ir_graph *irg)
 {
 	ir_node  *end_blk = get_irg_end_block(irg);
 	int      i, j;
-	unsigned res = ~0;
+	mtp_additional_properties res = ~mtp_no_property;
 	int      old_edges = edges_assure_kind(irg, EDGE_KIND_NORMAL);
 
 	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
@@ -786,7 +788,7 @@ finish:
 	if (! old_edges)
 		edges_deactivate_kind(irg, EDGE_KIND_NORMAL);
 	return res;
-}  /* check_stored_result */
+}
 
 /**
  * Check if a graph represents a nothrow or a malloc function.
@@ -794,13 +796,13 @@ finish:
  * @param irg  the graph to check
  * @param top  if set, this is the top call
  */
-static unsigned check_nothrow_or_malloc(ir_graph *irg, int top)
+static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 {
-	ir_node   *end_blk = get_irg_end_block(irg);
+	mtp_additional_properties curr_prop = mtp_property_malloc | mtp_property_nothrow;
+	ir_node                  *end_blk   = get_irg_end_block(irg);
 	ir_entity *ent;
 	ir_type   *mtp;
 	int       i, j;
-	unsigned  curr_prop = mtp_property_malloc | mtp_property_nothrow;
 
 	if (IS_IRG_READY(irg)) {
 		/* already checked */
@@ -846,7 +848,7 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top)
 							if (callee == irg) {
 								/* A self-recursive call. The property did not depend on this call. */
 							} else if (callee != NULL) {
-								unsigned prop = check_nothrow_or_malloc(callee, /*top=*/0);
+								mtp_additional_properties prop = check_nothrow_or_malloc(callee, /*top=*/0);
 								curr_prop = update_property(curr_prop, prop);
 							} else {
 								curr_prop = update_property(curr_prop, get_entity_additional_properties(ent));
@@ -903,7 +905,7 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top)
 						/* A self-recursive call. The property did not depend on this call. */
 					} else if (callee != NULL) {
 						/* Note: we check here for nothrow only, so do NOT reset the malloc property */
-						unsigned prop = check_nothrow_or_malloc(callee, /*top=*/0) | mtp_property_malloc;
+						mtp_additional_properties prop = check_nothrow_or_malloc(callee, /*top=*/0) | mtp_property_malloc;
 						curr_prop = update_property(curr_prop, prop);
 					} else {
 						if ((get_entity_additional_properties(ent) & mtp_property_nothrow) == 0)
@@ -965,7 +967,7 @@ static unsigned check_nothrow_or_malloc(ir_graph *irg, int top)
 			/* We use the temporary flag here to mark an optimistic result.
 			   Set the property only if we are sure that it does NOT base on
 			   temporary results OR if we are at top-level. */
-			set_irg_additional_property(irg, curr_prop & ~mtp_temporary);
+			add_irg_additional_properties(irg, curr_prop & ~mtp_temporary);
 			SET_IRG_READY(irg);
 		}
 	}
@@ -986,7 +988,7 @@ static void check_for_possible_endless_loops(ir_graph *irg)
 
 	root_loop = get_irg_loop(irg);
 	if (root_loop->flags & loop_outer_loop)
-		set_irg_additional_property(irg, mtp_property_has_loop);
+		add_irg_additional_properties(irg, mtp_property_has_loop);
 }
 
 /*
@@ -1074,18 +1076,18 @@ void firm_init_funccalls(void)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
 }  /* firm_init_funccalls */
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t          pass;
 	int                     force_run;
 	check_alloc_entity_func callback;
-};
+} pass_t;
 
 /**
  * Wrapper for running optimize_funccalls() as an ir_prog pass.
  */
 static int pass_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	(void)irp;
 	optimize_funccalls(pass->force_run, pass->callback);

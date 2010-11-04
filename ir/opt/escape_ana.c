@@ -278,9 +278,9 @@ static int can_escape(ir_node *n)
  */
 static void find_allocations(ir_node *alloc, void *ctx)
 {
+  walk_env_t *env = (walk_env_t*)ctx;
   int i;
   ir_node *adr;
-  walk_env_t *env = ctx;
 
   if (! is_Alloc(alloc))
     return;
@@ -321,10 +321,10 @@ static void find_allocations(ir_node *alloc, void *ctx)
  */
 static void find_allocation_calls(ir_node *call, void *ctx)
 {
+  walk_env_t *env = (walk_env_t*)ctx;
   int        i;
   ir_node    *adr;
   ir_entity  *ent;
-  walk_env_t *env = ctx;
 
   if (! is_Call(call))
     return;
@@ -385,7 +385,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 
   /* kill all dead allocs */
   for (alloc = env->dead_allocs; alloc; alloc = next) {
-    next = get_irn_link(alloc);
+    next = (ir_node*)get_irn_link(alloc);
 
     DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F unused, deleted.\n", irg, alloc));
 
@@ -402,7 +402,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   /* convert all non-escaped heap allocs into frame variables */
   ftp = get_irg_frame_type(irg);
   for (alloc = env->found_allocs; alloc; alloc = next) {
-    next = get_irn_link(alloc);
+    next = (ir_node*)get_irn_link(alloc);
     size = get_Alloc_count(alloc);
     atp  = get_Alloc_type(alloc);
 
@@ -478,7 +478,7 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 
   /* kill all dead allocs */
   for (call = env->dead_allocs; call; call = next) {
-    next = get_irn_link(call);
+    next = (ir_node*)get_irn_link(call);
 
     DBG((dbgHandle, LEVEL_1, "%+F allocation of %+F unused, deleted.\n", irg, call));
 
@@ -497,7 +497,7 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
   /* convert all non-escaped heap allocs into frame variables */
   ftp = get_irg_frame_type(irg);
   for (call = env->found_allocs; call; call = next) {
-    next = get_irn_link(call);
+    next = (ir_node*)get_irn_link(call);
   }
 }
 

@@ -58,21 +58,21 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static arch_irn_class_t amd64_classify(const ir_node *irn)
 {
 	(void) irn;
-	return 0;
+	return arch_irn_class_none;
 }
 
 static ir_entity *amd64_get_frame_entity(const ir_node *node)
 {
 	if (is_amd64_FrameAddr(node)) {
-		const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(node);
+		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
 		return attr->entity;
 
 	} else if (is_amd64_Store(node)) {
-		const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(node);
+		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
 		return attr->entity;
 
 	} else if (is_amd64_Load(node)) {
-		const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(node);
+		const amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr_const(node);
 		return attr->entity;
 	}
 
@@ -88,15 +88,15 @@ static ir_entity *amd64_get_frame_entity(const ir_node *node)
 static void amd64_set_frame_offset(ir_node *irn, int offset)
 {
 	if (is_amd64_FrameAddr(irn)) {
-		amd64_SymConst_attr_t *attr = get_irn_generic_attr(irn);
+		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
 		attr->fp_offset += offset;
 
 	} else if (is_amd64_Store(irn)) {
-		amd64_SymConst_attr_t *attr = get_irn_generic_attr(irn);
+		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
 		attr->fp_offset += offset;
 
 	} else if (is_amd64_Load(irn)) {
-		amd64_SymConst_attr_t *attr = get_irn_generic_attr(irn);
+		amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(irn);
 		attr->fp_offset += offset;
 
 	}
@@ -258,7 +258,7 @@ static inline ir_node *create_const(ir_graph *irg, ir_node **place,
 	return res;
 }
 
-const arch_isa_if_t amd64_isa_if;
+extern const arch_isa_if_t amd64_isa_if;
 static amd64_isa_t amd64_isa_template = {
 	{
 		&amd64_isa_if,             /* isa interface implementation */
@@ -308,7 +308,7 @@ static arch_env_t *amd64_init(FILE *outfile)
  */
 static void amd64_done(void *self)
 {
-	amd64_isa_t *isa = self;
+	amd64_isa_t *isa = (amd64_isa_t*)self;
 
 	/* emit now all global declarations */
 	be_gas_emit_decls(isa->base.main_env);
@@ -380,7 +380,7 @@ static ir_type *amd64_get_between_type(void *self)
 static const arch_register_t *amd64_abi_prologue(void *self, ir_node **mem,
                                                     pmap *reg_map, int *stack_bias)
 {
-	amd64_abi_env_t  *env  = self;
+	amd64_abi_env_t  *env  = (amd64_abi_env_t*)self;
 	const arch_env_t *aenv = be_get_irg_arch_env(env->irg);
 	(void) mem;
 	(void) stack_bias;
@@ -400,7 +400,7 @@ static const arch_register_t *amd64_abi_prologue(void *self, ir_node **mem,
 static void amd64_abi_epilogue(void *self, ir_node *bl, ir_node **mem,
                                pmap *reg_map)
 {
-	amd64_abi_env_t  *env  = self;
+	amd64_abi_env_t  *env  = (amd64_abi_env_t*)self;
 	const arch_env_t *aenv = be_get_irg_arch_env(env->irg);
 	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, aenv->sp);
 	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, aenv->bp);

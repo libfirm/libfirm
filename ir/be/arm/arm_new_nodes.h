@@ -65,6 +65,9 @@ const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node);
 arm_farith_attr_t *get_arm_farith_attr(ir_node *node);
 const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node);
 
+arm_CopyB_attr_t *get_arm_CopyB_attr(ir_node *node);
+const arm_CopyB_attr_t *get_arm_CopyB_attr_const(const ir_node *node);
+
 /**
 * Return the tarval of a fConst
 */

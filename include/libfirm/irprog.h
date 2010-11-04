@@ -62,6 +62,7 @@ typedef enum ir_segment_t {
 
 	IR_SEGMENT_LAST = IR_SEGMENT_DESTRUCTORS
 } ir_segment_t;
+ENUM_COUNTABLE(ir_segment_t)
 
 /**
  * A variable pointing to the current irp (program or module).

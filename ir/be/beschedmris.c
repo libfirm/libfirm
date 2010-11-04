@@ -79,7 +79,7 @@ typedef struct mris_irn_t {
 
 static void *mris_irn_data_init(ir_phase *ph, const ir_node *irn)
 {
-	mris_irn_t *mi = phase_alloc(ph, sizeof(mi[0]));
+	mris_irn_t *mi = (mris_irn_t*)phase_alloc(ph, sizeof(mi[0]));
 	(void) irn;
 	memset(mi, 0, sizeof(mi[0]));
 	INIT_LIST_HEAD(&mi->lineage_list);
@@ -132,7 +132,7 @@ static ir_node **all_descendants(mris_env_t *env, ir_node *irn)
 #endif
 	bitset_free(visited);
 	obstack_ptr_grow(&env->obst, NULL);
-	return obstack_finish(&env->obst);
+	return (ir_node**)obstack_finish(&env->obst);
 }
 
 static ir_node *put_lowest_in_front(mris_env_t *env, ir_node **in)
@@ -362,7 +362,7 @@ static mris_env_t *dump_env = NULL;
 
 static void block_walker(ir_node *bl, void *data)
 {
-	mris_env_t *env = data;
+	mris_env_t *env = (mris_env_t*)data;
 	env->bl = bl;
 	lineage_formation(env);
 	fuse_lineages(env);

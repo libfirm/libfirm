@@ -31,20 +31,20 @@
 #include "begin.h"
 
 /** The alias relation of two memory addresses. */
-typedef enum {
+typedef enum ir_alias_relation {
 	ir_no_alias,       /**< No alias. */
 	ir_may_alias,      /**< Unknown state, may alias. */
 	ir_sure_alias      /**< Sure alias. */
 } ir_alias_relation;
 
 /** The state of the entity usage flags. */
-typedef enum {
+typedef enum ir_entity_usage_computed_state {
 	ir_entity_usage_not_computed,
 	ir_entity_usage_computed
 } ir_entity_usage_computed_state;
 
 /** Possible options for the memory disambiguator. */
-typedef enum {
+typedef enum ir_disambuigator_options {
 	aa_opt_no_opt               = 0,  /**< no options: most conservative */
 	aa_opt_type_based           = 1,  /**< use type based alias analysis: strict typed source language */
 	aa_opt_byte_type_may_alias  = 2,  /**< if type based analysis is enabled: bytes types may alias other types */
@@ -53,6 +53,7 @@ typedef enum {
 	aa_opt_no_alias             = 16, /**< two addresses NEVER alias, use with CAUTION (gcc -fno-alias) */
 	aa_opt_inherited            = 128 /**< only for implementation: options from a graph are inherited from global */
 } ir_disambuigator_options;
+ENUM_BITSET(ir_disambuigator_options)
 
 /**
  * Classify storage locations.
@@ -60,7 +61,7 @@ typedef enum {
  * ir_sc_pointer potentially aliases all classes which don't have a
  * NOTTAKEN modifier.
  */
-typedef enum {
+typedef enum ir_storage_class_class_t {
 	ir_sc_pointer           = 0x0,  /**< generic pointer, may be anything */
 	ir_sc_globalvar         = 0x1,  /**< an address of a global variable */
 	ir_sc_localvar          = 0x2,  /**< an address of a local variable or method argument */
@@ -72,9 +73,13 @@ typedef enum {
 	ir_sc_modifier_argument = 0x40, /**< if set pointer was a function argument */
 	ir_sc_modifiers         = ir_sc_modifier_nottaken | ir_sc_modifier_argument
 } ir_storage_class_class_t;
+ENUM_BITSET(ir_storage_class_class_t)
 
 /** Get the base storage class (ignore modifier) */
-#define GET_BASE_SC(x) ((x) & ~ir_sc_modifiers)
+static inline ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
+{
+	return x & ~ir_sc_modifiers;
+}
 
 /**
  * A source language specific memory disambiguator function.

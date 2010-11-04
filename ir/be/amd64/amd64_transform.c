@@ -240,7 +240,7 @@ static ir_node *gen_Cond(ir_node *node)
 	dbgi      = get_irn_dbg_info(node);
 	flag_node = be_transform_node(get_Proj_pred(selector));
 
-	return new_bd_amd64_Jcc(dbgi, block, flag_node, get_Proj_proj(selector));
+	return new_bd_amd64_Jcc(dbgi, block, flag_node, get_Proj_pn_cmp(selector));
 }
 
 #if 0

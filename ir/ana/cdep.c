@@ -46,7 +46,7 @@ static cdep_info *cdep_data;
 /* Return a list of all control dependences of a block. */
 ir_cdep *find_cdep(const ir_node *block)
 {
-	return pmap_get(cdep_data->cdep_map, block);
+	return (ir_cdep*) pmap_get(cdep_data->cdep_map, block);
 }
 
 /* Replace the control dependence info of old by the info of nw. */
@@ -97,7 +97,7 @@ typedef struct cdep_env {
  */
 static void cdep_pre(ir_node *node, void *ctx)
 {
-	cdep_env *env = ctx;
+	cdep_env *env = (cdep_env*) ctx;
 	int i;
 
 	/* special case:

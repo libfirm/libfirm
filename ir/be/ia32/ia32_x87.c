@@ -343,7 +343,7 @@ static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
 	pmap_entry *entry = pmap_find(sim->blk_states, block);
 
 	if (! entry) {
-		blk_state *bl_state = obstack_alloc(&sim->obst, sizeof(*bl_state));
+		blk_state *bl_state = OALLOC(&sim->obst, blk_state);
 		bl_state->begin = NULL;
 		bl_state->end   = NULL;
 
@@ -363,7 +363,7 @@ static blk_state *x87_get_bl_state(x87_simulator *sim, ir_node *block)
  */
 static x87_state *x87_alloc_state(x87_simulator *sim)
 {
-	x87_state *res = obstack_alloc(&sim->obst, sizeof(*res));
+	x87_state *res = OALLOC(&sim->obst, x87_state);
 
 	res->sim = sim;
 	return res;
@@ -2209,7 +2209,7 @@ static void x87_init_simulator(x87_simulator *sim, ir_graph *irg)
 	obstack_init(&sim->obst);
 	sim->blk_states = pmap_create();
 	sim->n_idx      = get_irg_last_idx(irg);
-	sim->live       = obstack_alloc(&sim->obst, sizeof(*sim->live) * sim->n_idx);
+	sim->live       = OALLOCN(&sim->obst, vfp_liveness, sim->n_idx);
 
 	DB((dbg, LEVEL_1, "--------------------------------\n"
 		"x87 Simulator started for %+F\n", irg));
@@ -2259,7 +2259,7 @@ static void x87_destroy_simulator(x87_simulator *sim)
  */
 static void update_liveness_walker(ir_node *block, void *data)
 {
-	x87_simulator *sim = data;
+	x87_simulator *sim = (x87_simulator*)data;
 	update_liveness(sim, block);
 }  /* update_liveness_walker */
 
@@ -2303,7 +2303,7 @@ void x87_simulate_graph(ir_graph *irg)
 
 	/* iterate */
 	do {
-		block = waitq_get(sim.worklist);
+		block = (ir_node*)waitq_get(sim.worklist);
 		x87_simulate_block(&sim, block);
 	} while (! waitq_empty(sim.worklist));
 

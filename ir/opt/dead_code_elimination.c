@@ -61,16 +61,16 @@ static void rewire_inputs(ir_node *node, void *env)
 
 static void copy_node_dce(ir_node *node, void *env)
 {
-	int       i;
-	ir_node  *new_node = exact_copy(node);
-	ir_graph *irg      = get_irn_irg(new_node);
+	ir_phase_id i;
+	ir_node    *new_node = exact_copy(node);
+	ir_graph   *irg      = get_irn_irg(new_node);
 	(void) env;
 
 	/* preserve the node numbers for easier debugging */
 	new_node->node_nr = node->node_nr;
 
 	/* copy phase information for this node */
-	for (i = 0; i <= PHASE_LAST; i++) {
+	for (i = PHASE_FIRST; i <= PHASE_LAST; ++i) {
 		ir_phase *phase = irg_get_phase(irg, i);
 		if (phase == NULL)
 			continue;
@@ -92,13 +92,13 @@ static void copy_node_dce(ir_node *node, void *env)
  */
 static void copy_graph_env(ir_graph *irg)
 {
-	ir_node *new_anchor;
-	int i;
+	ir_node    *new_anchor;
+	ir_phase_id i;
 
 	/* init the new_phases array */
 	/* TODO: this is wrong, it should only allocate a new data_ptr inside
 	 * the phase! */
-	for (i = 0; i <= PHASE_LAST; i++) {
+	for (i = PHASE_FIRST; i <= PHASE_LAST; ++i) {
 		ir_phase *old_ph = irg_get_phase(irg, i);
 		if (old_ph == NULL) {
 			new_phases[i] = NULL;
@@ -112,12 +112,12 @@ static void copy_graph_env(ir_graph *irg)
 	irg_walk_anchors(irg, copy_node_dce, rewire_inputs, NULL);
 
 	/* fix the anchor */
-	new_anchor = get_irn_link(irg->anchor);
+	new_anchor = (ir_node*)get_irn_link(irg->anchor);
 	assert(new_anchor != NULL);
 	irg->anchor = new_anchor;
 
 	/* copy the new phases into the irg */
-	for (i = 0; i <= PHASE_LAST; i++) {
+	for (i = PHASE_FIRST; i <= PHASE_LAST; ++i) {
 		ir_phase *old_ph = irg_get_phase(irg, i);
 		if (old_ph == NULL)
 			continue;
@@ -214,7 +214,7 @@ typedef struct survive_dce_list_t {
 
 static void dead_node_hook(void *context, ir_graph *irg, int start)
 {
-	survive_dce_t *sd = context;
+	survive_dce_t *sd = (survive_dce_t*)context;
 	(void) irg;
 
 	/* Create a new map before the dead node elimination is performed. */
@@ -233,8 +233,8 @@ static void dead_node_hook(void *context, ir_graph *irg, int start)
  */
 static void dead_node_subst_hook(void *context, ir_graph *irg, ir_node *old, ir_node *nw)
 {
-	survive_dce_t *sd = context;
-	survive_dce_list_t *list = pmap_get(sd->places, old);
+	survive_dce_t      *sd   = (survive_dce_t*)context;
+	survive_dce_list_t *list = (survive_dce_list_t*)pmap_get(sd->places, old);
 	(void) irg;
 
 	/* If the node is to be patched back, write the new address to all registered locations. */
@@ -295,7 +295,7 @@ void survive_dce_register_irn(survive_dce_t *sd, ir_node **place)
 {
 	if (*place != NULL) {
 		ir_node *irn      = *place;
-		survive_dce_list_t *curr = pmap_get(sd->places, irn);
+		survive_dce_list_t *curr = (survive_dce_list_t*)pmap_get(sd->places, irn);
 		survive_dce_list_t *nw   = OALLOC(&sd->obst, survive_dce_list_t);
 
 		nw->next  = curr;

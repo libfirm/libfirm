@@ -118,8 +118,8 @@ struct spill_env_t {
  */
 static int cmp_spillinfo(const void *x, const void *y, size_t size)
 {
-	const spill_info_t *xx = x;
-	const spill_info_t *yy = y;
+	const spill_info_t *xx = (const spill_info_t*)x;
+	const spill_info_t *yy = (const spill_info_t*)y;
 	(void) size;
 
 	return xx->to_spill != yy->to_spill;
@@ -134,14 +134,14 @@ static spill_info_t *get_spillinfo(const spill_env_t *env, ir_node *value)
 	int hash = hash_irn(value);
 
 	info.to_spill = value;
-	res = set_find(env->spills, &info, sizeof(info), hash);
+	res = (spill_info_t*)set_find(env->spills, &info, sizeof(info), hash);
 
 	if (res == NULL) {
 		info.reloaders   = NULL;
 		info.spills      = NULL;
 		info.spill_costs = -1;
 		info.reload_cls  = NULL;
-		res = set_insert(env->spills, &info, sizeof(info), hash);
+		res = (spill_info_t*)set_insert(env->spills, &info, sizeof(info), hash);
 	}
 
 	return res;
@@ -886,7 +886,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 	}
 
 	/* process each spilled node */
-	for (si = set_first(env->spills); si; si = set_next(env->spills)) {
+	foreach_set(env->spills, spill_info_t*, si) {
 		reloader_t *rld;
 		ir_node  *to_spill        = si->to_spill;
 		ir_mode  *mode            = get_irn_mode(to_spill);

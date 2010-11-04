@@ -161,7 +161,7 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl, const ir_node
 	be_lv_info_node_t *res = NULL;
 
 	stat_ev_tim_push();
-	irn_live = phase_get_irn_data(&li->ph, bl);
+	irn_live = (be_lv_info_t*)phase_get_irn_data(&li->ph, bl);
 	if (irn_live) {
 		unsigned idx = get_irn_idx(irn);
 
@@ -182,7 +182,7 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl, const ir_node
 
 static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *irn)
 {
-	be_lv_info_t *irn_live = phase_get_or_set_irn_data(&li->ph, bl);
+	be_lv_info_t *irn_live = (be_lv_info_t*)phase_get_or_set_irn_data(&li->ph, bl);
 
 	unsigned idx = get_irn_idx(irn);
 
@@ -205,7 +205,7 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 			unsigned old_size_bytes  = (n_size + 1) * sizeof(irn_live[0]);
 			unsigned new_size        = (2 * n_size) + 1;
 			size_t   new_size_bytes  = new_size * sizeof(irn_live[0]);
-			be_lv_info_t *nw = phase_alloc(&li->ph, new_size_bytes);
+			be_lv_info_t *nw = (be_lv_info_t*)phase_alloc(&li->ph, new_size_bytes);
 			memcpy(nw, irn_live, old_size_bytes);
 			memset(((char*) nw) + old_size_bytes, 0,
 			       new_size_bytes - old_size_bytes);
@@ -250,7 +250,7 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 static int be_lv_remove(be_lv_t *li, const ir_node *bl,
                         const ir_node *irn)
 {
-	be_lv_info_t *irn_live = phase_get_irn_data(&li->ph, bl);
+	be_lv_info_t *irn_live = (be_lv_info_t*)phase_get_irn_data(&li->ph, bl);
 
 	if (irn_live) {
 		unsigned n   = irn_live[0].u.head.n_members;
@@ -442,7 +442,7 @@ static void liveness_for_node(ir_node *irn)
 
 static void lv_remove_irn_walker(ir_node *bl, void *data)
 {
-	lv_remove_walker_t *w = data;
+	lv_remove_walker_t *w = (lv_remove_walker_t*)data;
 	be_lv_remove(w->lv, bl, w->irn);
 }
 
@@ -465,8 +465,8 @@ static const char *lv_flags_to_str(unsigned flags)
 static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 {
 	if (is_Block(bl)) {
-		be_lv_t *lv = context;
-		be_lv_info_t *info = phase_get_irn_data(&lv->ph, bl);
+		be_lv_t *lv = (be_lv_t*)context;
+		be_lv_info_t *info = (be_lv_info_t*)phase_get_irn_data(&lv->ph, bl);
 
 		fprintf(f, "liveness:\n");
 		if (info) {
@@ -483,7 +483,7 @@ static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 
 static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn)
 {
-	be_lv_info_t *info = phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
+	be_lv_info_t *info = (be_lv_info_t*)phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
 	(void) irn;
 
 	memset(info, 0, LV_STD_SIZE * sizeof(info[0]));
@@ -497,7 +497,7 @@ static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn)
  */
 static void collect_liveness_nodes(ir_node *irn, void *data)
 {
-	ir_node **nodes = data;
+	ir_node **nodes = (ir_node**)data;
 	if (is_liveness_node(irn))
 		nodes[get_irn_idx(irn)] = irn;
 }
@@ -652,12 +652,12 @@ void be_liveness_update(be_lv_t *lv, ir_node *irn)
 
 static void lv_check_walker(ir_node *bl, void *data)
 {
-	lv_walker_t *w = data;
+	lv_walker_t *w = (lv_walker_t*)data;
 	be_lv_t *lv    = w->lv;
-	be_lv_t *fresh = w->data;
+	be_lv_t *fresh = (be_lv_t*)w->data;
 
-	be_lv_info_t *curr = phase_get_irn_data(&lv->ph, bl);
-	be_lv_info_t *fr   = phase_get_irn_data(&fresh->ph, bl);
+	be_lv_info_t *curr = (be_lv_info_t*)phase_get_irn_data(&lv->ph, bl);
+	be_lv_info_t *fr   = (be_lv_info_t*)phase_get_irn_data(&fresh->ph, bl);
 
 	if (!fr && curr && curr[0].u.head.n_members > 0) {
 		unsigned i;
@@ -706,9 +706,9 @@ void be_liveness_check(be_lv_t *lv)
 
 static void lv_dump_block_walker(ir_node *irn, void *data)
 {
-	lv_walker_t *w = data;
+	lv_walker_t *w = (lv_walker_t*)data;
 	if (is_Block(irn))
-		lv_dump_block(w->lv, w->data, irn);
+		lv_dump_block(w->lv, (FILE*)w->data, irn);
 }
 
 
@@ -740,7 +740,7 @@ void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name)
  */
 static void dom_check(ir_node *irn, void *data)
 {
-	int *problem_found = data;
+	int *problem_found = (int*)data;
 
 	if (!is_Block(irn) && irn != get_irg_end(get_irn_irg(irn))) {
 		int i, n;
@@ -849,7 +849,7 @@ void be_liveness_nodes_live_at(const be_lv_t *lv,
 
 static void collect_node(ir_node *irn, void *data)
 {
-	struct obstack *obst = data;
+	struct obstack *obst = (struct obstack*)data;
 	obstack_ptr_grow(obst, irn);
 }
 
@@ -866,11 +866,11 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 
 	irg_block_walk_graph(irg, collect_node, NULL, &obst);
 	obstack_ptr_grow(&obst, NULL);
-	blocks = obstack_finish(&obst);
+	blocks = (ir_node**)obstack_finish(&obst);
 
 	irg_walk_graph(irg, collect_node, NULL, &obst);
 	obstack_ptr_grow(&obst, NULL);
-	nodes = obstack_finish(&obst);
+	nodes = (ir_node**)obstack_finish(&obst);
 
 	stat_ev_ctx_push("be_lv_chk_compare");
 	for (j = 0; nodes[j]; ++j) {

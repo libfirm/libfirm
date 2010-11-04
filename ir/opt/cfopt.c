@@ -137,7 +137,7 @@ static void merge_blocks(ir_node *node, void *ctx)
 {
 	int i;
 	ir_node *new_block;
-	merge_env *env = ctx;
+	merge_env *env = (merge_env*)ctx;
 
 	/* clear the link field for ALL nodes first */
 	set_irn_link(node, NULL);
@@ -203,7 +203,7 @@ static void merge_blocks(ir_node *node, void *ctx)
 static void remove_unreachable_blocks_and_conds(ir_node *block, void *env)
 {
 	int i;
-	int *changed = env;
+	int *changed = (int*)env;
 
 	/* Check block predecessors and turn control flow into bad.
 	   Beware of Tuple, kill them. */
@@ -244,8 +244,8 @@ static void remove_unreachable_blocks_and_conds(ir_node *block, void *env)
  */
 static void collect_nodes(ir_node *n, void *ctx)
 {
-	ir_opcode code = get_irn_opcode(n);
-	merge_env *env = ctx;
+	unsigned   code = get_irn_opcode(n);
+	merge_env *env  = (merge_env*)ctx;
 
 	if (code == iro_Block) {
 		/* mark the block as non-removable if it is labeled */
@@ -416,7 +416,7 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	int i, j, k, n, max_preds, n_preds, p_preds = -1;
 	ir_node *pred, *phi, *next;
 	ir_node **in;
-	merge_env *env = ctx;
+	merge_env *env = (merge_env*)ctx;
 
 	/* Count the number of predecessor if this block is merged with pred blocks
 	   that are empty. */
@@ -427,9 +427,9 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	in = XMALLOCN(ir_node*, max_preds);
 
 	/*- Fix the Phi nodes of the current block -*/
-	for (phi = get_irn_link(b); phi != NULL; phi = next) {
+	for (phi = (ir_node*)get_irn_link(b); phi != NULL; phi = (ir_node*)next) {
 		assert(is_Phi(phi));
-		next = get_irn_link(phi);
+		next = (ir_node*)get_irn_link(phi);
 
 		/* Find the new predecessors for the Phi */
 		p_preds = 0;
@@ -483,9 +483,9 @@ static void optimize_blocks(ir_node *b, void *ctx)
 			ir_node *next_phi;
 
 			/* we found a predecessor block at position k that will be removed */
-			for (phi = get_irn_link(predb); phi; phi = next_phi) {
+			for (phi = (ir_node*)get_irn_link(predb); phi; phi = next_phi) {
 				int q_preds = 0;
-				next_phi = get_irn_link(phi);
+				next_phi = (ir_node*)get_irn_link(phi);
 
 				assert(is_Phi(phi));
 
@@ -597,8 +597,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
  */
 static void remove_simple_blocks(ir_node *block, void *ctx)
 {
-	ir_node *new_blk = equivalent_node(block);
-	merge_env *env = ctx;
+	merge_env *env = (merge_env*)ctx;
+	ir_node   *new_blk = equivalent_node(block);
 
 	if (new_blk != block) {
 		exchange(block, new_blk);
@@ -622,8 +622,8 @@ static int handle_switch_cond(ir_node *cond)
 {
 	ir_node *sel = get_Cond_selector(cond);
 
-	ir_node *proj1 = get_irn_link(cond);
-	ir_node *proj2 = get_irn_link(proj1);
+	ir_node *proj1 = (ir_node*)get_irn_link(cond);
+	ir_node *proj2 = (ir_node*)get_irn_link(proj1);
 	ir_node *jmp, *blk;
 
 	blk = get_nodes_block(cond);
@@ -767,7 +767,7 @@ restart:
 
 	/* handle all collected switch-Conds */
 	foreach_plist(env.list, el) {
-		cond = plist_element_get_value(el);
+		cond = (ir_node*)plist_element_get_value(el);
 		env.changed |= handle_switch_cond(cond);
 	}
 	plist_free(env.list);

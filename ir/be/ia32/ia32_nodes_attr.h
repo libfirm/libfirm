@@ -68,6 +68,7 @@ typedef enum {
 	match_upconv_32         = 1 << 9  /**< 8/16 bit insn are processed by doing
 	                                       an upconv to 32bit */
 } match_flags_t;
+ENUM_BITSET(match_flags_t)
 
 typedef struct ia32_op_attr_t ia32_op_attr_t;
 struct ia32_op_attr_t {
@@ -135,7 +136,6 @@ struct ia32_attr_t {
 	unsigned          attr_type;      /**< bitfield indicating the attribute type */
 #endif
 };
-COMPILETIME_ASSERT(sizeof(struct ia32_attr_data_bitfield) <= 4, attr_bitfield)
 
 /**
  * The attributes for a Call node.

@@ -136,10 +136,10 @@ FIRM_API void pset_new_remove_iterator(pset_new_t *pset_new, const pset_new_iter
 /**
  * Convenience macro for iterating over a pset_new.
  */
-#define foreach_pset_new(pset_new, ptr, iter)    \
+#define foreach_pset_new(pset_new, type, ptr, iter)    \
 	for(pset_new_iterator_init(&iter, pset_new), \
-		ptr = pset_new_iterator_next(&iter);     \
-		ptr != NULL; ptr = pset_new_iterator_next(&iter))
+		ptr = (type) pset_new_iterator_next(&iter);     \
+		ptr != NULL; ptr = (type) pset_new_iterator_next(&iter))
 
 #include "../end.h"
 

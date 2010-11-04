@@ -93,12 +93,14 @@ void be_register_dbgout_module(const char *name,
 {
 	if (selected_dbgout_module == NULL)
 		selected_dbgout_module = func;
-	be_add_module_to_list(&dbgout_modules, name, func);
+	be_add_module_to_list(&dbgout_modules, name, (void*)func);
 }
 
 static dbg_handle *create_null_dbgout_module(void)
 {
-	static const debug_ops null_ops;
+	static const debug_ops null_ops = {
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+	};
 	static dbg_handle null_handle = { &null_ops };
 	return &null_handle;
 }

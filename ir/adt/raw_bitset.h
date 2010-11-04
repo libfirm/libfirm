@@ -58,11 +58,7 @@
  */
 static inline unsigned *rbitset_malloc(unsigned size)
 {
-	unsigned  size_bytes = BITSET_SIZE_BYTES(size);
-	unsigned *res        = xmalloc(size_bytes);
-	memset(res, 0, size_bytes);
-
-	return res;
+	return XMALLOCNZ(unsigned, BITSET_SIZE_ELEMS(size));
 }
 
 /**
@@ -74,7 +70,7 @@ static inline unsigned *rbitset_malloc(unsigned size)
 #define rbitset_alloca(res, size) \
 do { \
 	unsigned size_bytes = BITSET_SIZE_BYTES(size); \
-	res = alloca(size_bytes); \
+	res = (unsigned*)alloca(size_bytes); \
 	memset(res, 0, size_bytes); \
 } while(0)
 
@@ -89,11 +85,7 @@ do { \
 static inline unsigned *rbitset_obstack_alloc(struct obstack *obst,
                                               unsigned size)
 {
-	unsigned  size_bytes = BITSET_SIZE_BYTES(size);
-	unsigned *res        = obstack_alloc(obst, size_bytes);
-	memset(res, 0, size_bytes);
-
-	return res;
+	return OALLOCNZ(obst, unsigned, BITSET_SIZE_ELEMS(size));
 }
 
 /**
@@ -109,7 +101,7 @@ static inline unsigned *rbitset_duplicate_obstack_alloc(struct obstack *obst,
 	const unsigned *old_bitset, unsigned size)
 {
 	unsigned  size_bytes = BITSET_SIZE_BYTES(size);
-	unsigned *res        = obstack_alloc(obst, size_bytes);
+	unsigned *res        = OALLOCN(obst, unsigned, BITSET_SIZE_ELEMS(size));
 	memcpy(res, old_bitset, size_bytes);
 
 	return res;

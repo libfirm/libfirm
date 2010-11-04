@@ -184,10 +184,9 @@ static ir_node *lower_node(ir_node *node)
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_mode  *mode  = config->lowered_mode;
+	ir_node  *res   = (ir_node*)get_irn_link(node);
 	ir_graph *irg;
-	ir_node  *res;
 
-	res = get_irn_link(node);
 	if (res != NULL)
 		return res;
 
@@ -425,7 +424,7 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 		changed = true;
 	}
 	if (changed) {
-		bool *global_changed = env;
+		bool *global_changed = (bool*)env;
 		*global_changed = true;
 		add_identities(node);
 	}

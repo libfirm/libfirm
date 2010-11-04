@@ -207,7 +207,7 @@ FIRM_API void pset_break(pset *pset);
  * @param pset   the pset
  * @param entry  the iterator
  */
-#define foreach_pset(pset, entry) for (entry = pset_first(pset); entry; entry = pset_next(pset))
+#define foreach_pset(pset, type, entry) for (entry = (type)pset_first(pset); entry; entry = (type)pset_next(pset))
 
 /**
  * Inserts all elements of the pointer set src into

@@ -102,10 +102,16 @@ amd64_attr_t *get_amd64_attr(ir_node *node)
 
 const amd64_SymConst_attr_t *get_amd64_SymConst_attr_const(const ir_node *node)
 {
-	const amd64_attr_t           *attr     = get_amd64_attr_const(node);
-	const amd64_SymConst_attr_t  *sym_attr = CONST_CAST_AMD64_ATTR(amd64_SymConst_attr_t, attr);
+	const amd64_SymConst_attr_t *attr
+		= (const amd64_SymConst_attr_t*)get_irn_generic_attr_const(node);
+	return attr;
+}
 
-	return sym_attr;
+amd64_SymConst_attr_t *get_amd64_SymConst_attr(ir_node *node)
+{
+	amd64_SymConst_attr_t *attr
+		= (amd64_SymConst_attr_t*)get_irn_generic_attr(node);
+	return attr;
 }
 
 /**
@@ -132,7 +138,7 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 
 	attr->data.ins_permuted = 0;
 	attr->data.cmp_unsigned = 0;
-	attr->ext.pnc           = 0;
+	attr->ext.pnc           = (pn_Cmp)0;
 	attr->ext.imm_value     = 0;
 }
 
@@ -141,7 +147,7 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
  */
 static void init_amd64_SymConst_attributes(ir_node *node, ir_entity *entity)
 {
-	amd64_SymConst_attr_t *attr = get_irn_generic_attr (node);
+	amd64_SymConst_attr_t *attr = get_amd64_SymConst_attr(node);
 	attr->entity    = entity;
 	attr->fp_offset = 0;
 }

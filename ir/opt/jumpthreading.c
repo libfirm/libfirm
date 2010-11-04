@@ -232,7 +232,7 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 		copy = get_Phi_pred(node, j);
 		/* we might have to evaluate a Phi-cascade */
 		if (get_irn_visited(copy) >= env->visited_nr) {
-			copy = get_irn_link(copy);
+			copy = (ir_node*)get_irn_link(copy);
 		}
 	} else {
 		copy = exact_copy(node);
@@ -249,7 +249,7 @@ static ir_node *copy_and_fix_node(const jumpthreading_env_t *env,
 				continue;
 
 			if (get_irn_visited(pred) >= env->visited_nr) {
-				new_pred = get_irn_link(pred);
+				new_pred = (ir_node*)get_irn_link(pred);
 			} else {
 				new_pred = copy_and_fix_node(env, block, copy_block, j, pred);
 			}
@@ -317,7 +317,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		 * recursive find_phi_with_const() call */
 		assert(get_irn_visited(copy) <= env->visited_nr);
 		if (get_irn_visited(copy) >= env->visited_nr) {
-			ir_node *prev_copy = get_irn_link(copy);
+			ir_node *prev_copy = (ir_node*)get_irn_link(copy);
 			if (prev_copy != NULL)
 				set_irn_link(node, prev_copy);
 		}
@@ -339,7 +339,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 
 		DB((dbg, LEVEL_2, ">> Fixing users of %+F\n", node));
 
-		copy_node = get_irn_link(node);
+		copy_node = (ir_node*)get_irn_link(node);
 		construct_ssa(block, node, copy_block, copy_node);
 	}
 }
@@ -561,14 +561,14 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 	if (is_Proj(value)) {
 		ir_node *left;
 		ir_node *right;
-		int      pnc;
+		pn_Cmp   pnc;
 		ir_node *cmp = get_Proj_pred(value);
 		if (!is_Cmp(cmp))
 			return NULL;
 
 		left  = get_Cmp_left(cmp);
 		right = get_Cmp_right(cmp);
-		pnc   = get_Proj_proj(value);
+		pnc   = get_Proj_pn_cmp(value);
 
 		/* we assume that the constant is on the right side, swap left/right
 		 * if needed */
@@ -619,7 +619,7 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 static void thread_jumps(ir_node* block, void* data)
 {
 	jumpthreading_env_t env;
-	int *changed = data;
+	int *changed = (int*)data;
 	ir_node *selector;
 	ir_node *projx;
 	ir_node *cond;
@@ -655,7 +655,7 @@ static void thread_jumps(ir_node* block, void* data)
 			ir_node *left  = get_Cmp_left(cmp);
 			ir_node *right = get_Cmp_right(cmp);
 			if (is_Const(left) && is_Const(right)) {
-				int        pnc      = get_Proj_proj(selector);
+				pn_Cmp     pnc      = get_Proj_pn_cmp(selector);
 				ir_tarval *tv_left  = get_Const_tarval(left);
 				ir_tarval *tv_right = get_Const_tarval(right);
 
@@ -666,7 +666,7 @@ static void thread_jumps(ir_node* block, void* data)
 				 * constant or the comparison could not be evaluated.
 				 * Try with VRP information now.
 				 */
-				int pnc = get_Proj_proj(selector);
+				pn_Cmp pnc = get_Proj_pn_cmp(selector);
 
 				selector_evaluated = eval_cmp_vrp(pnc, left, right);
 			}

@@ -47,6 +47,7 @@ typedef enum {
 	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
 	GAS_SECTION_FLAG_COMDAT  = 1 << 9   /**< thread local version of _BSS */
 } be_gas_section_t;
+ENUM_BITSET(be_gas_section_t)
 
 typedef enum object_file_format_t {
 	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */

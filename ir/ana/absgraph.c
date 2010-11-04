@@ -34,20 +34,20 @@
 
 static void *irg_cfg_succ_get_root(void *self)
 {
-	ir_graph *irg = self;
+	ir_graph *irg = (ir_graph*) self;
 	edges_assure_kind(irg, EDGE_KIND_BLOCK);
 	return get_irg_start_block(irg);
 }
 
 static void *irg_cfg_succ_get_end(void *self)
 {
-	ir_graph *irg = self;
+	ir_graph *irg = (ir_graph*) self;
 	return get_irg_end_block(irg);
 }
 
 static void irg_cfg_succ_grow_succs(void *self, void *node, struct obstack *obst)
 {
-	ir_node *bl = node;
+	ir_node *bl = (ir_node*) node;
 	const ir_edge_t *edge;
 
 	(void) self;
@@ -77,8 +77,8 @@ static void irg_cfg_pred_grow_succs(void *self, void *node, struct obstack *obst
 	int i, n;
 
 	(void) self;
-	for (i = 0, n = get_irn_arity(node); i < n; ++i) {
-		obstack_ptr_grow(obst, get_irn_n(node, i));
+	for (i = 0, n = get_irn_arity((ir_node*) node); i < n; ++i) {
+		obstack_ptr_grow(obst, get_irn_n((ir_node*) node, i));
 	}
 }
 

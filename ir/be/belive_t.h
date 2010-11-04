@@ -77,7 +77,7 @@ struct be_lv_info_t {
 static inline int _be_lv_next_irn(const be_lv_t *lv, const ir_node *bl,
                                   unsigned flags, int i)
 {
-	be_lv_info_t *arr = phase_get_irn_data(&lv->ph, bl);
+	be_lv_info_t *arr = (be_lv_info_t*)phase_get_irn_data(&lv->ph, bl);
 
 	if (arr) {
 		int n_members = (int) arr[0].u.head.n_members;
@@ -95,7 +95,7 @@ static inline int _be_lv_next_irn(const be_lv_t *lv, const ir_node *bl,
 
 static inline ir_node *_be_lv_get_irn(const be_lv_t *lv, const ir_node *bl, int i)
 {
-	be_lv_info_t *arr = phase_get_irn_data(&lv->ph, bl);
+	be_lv_info_t *arr = (be_lv_info_t*)phase_get_irn_data(&lv->ph, bl);
 	return get_idx_irn(lv->irg, arr[i + 1].u.node.idx);
 }
 

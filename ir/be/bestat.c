@@ -94,7 +94,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 
 static void stat_reg_pressure_block(ir_node *block, void *data)
 {
-	pressure_walker_env_t *env = data;
+	pressure_walker_env_t *env = (pressure_walker_env_t*)data;
 
 	check_reg_pressure_class(env, block, env->cls);
 }
@@ -130,7 +130,7 @@ typedef struct estimate_irg_costs_env_t {
 
 static void estimate_block_costs(ir_node *block, void *data)
 {
-	estimate_irg_costs_env_t *env = data;
+	estimate_irg_costs_env_t *env = (estimate_irg_costs_env_t*)data;
 	ir_node *node;
 	double  costs = 0.0;
 
@@ -157,7 +157,7 @@ double be_estimate_irg_costs(ir_graph *irg, ir_exec_freq *execfreqs)
 
 static void node_stat_walker(ir_node *irn, void *data)
 {
-	be_node_stats_t *const stats = data;
+	be_node_stats_t *const stats = (be_node_stats_t*)data;
 
 	/* if the node is a normal phi */
 	if (is_Phi(irn)) {
@@ -217,10 +217,10 @@ static const char *get_stat_name(enum be_stat_tag_t tag)
 
 void be_emit_node_stats(be_node_stats_t *stats, const char *prefix)
 {
-	static char buf[256];
-	int         i;
+	static char   buf[256];
+	be_stat_tag_t i;
 
-	for (i = 0; i < BE_STAT_COUNT; ++i) {
+	for (i = BE_STAT_FIRST; i < BE_STAT_COUNT; ++i) {
 		snprintf(buf, sizeof(buf), "%s%s", prefix, get_stat_name(i));
 		stat_ev_dbl(buf, (*stats)[i]);
 	}
@@ -230,7 +230,7 @@ void be_emit_node_stats(be_node_stats_t *stats, const char *prefix)
 
 static void insn_count_walker(ir_node *irn, void *data)
 {
-	unsigned long *cnt = data;
+	unsigned long *cnt = (unsigned long*)data;
 
 	switch (get_irn_opcode(irn)) {
 	case iro_Proj:
@@ -252,7 +252,7 @@ unsigned long be_count_insns(ir_graph *irg)
 
 static void block_count_walker(ir_node *node, void *data)
 {
-	unsigned long *cnt = data;
+	unsigned long *cnt = (unsigned long*)data;
 	if (node == get_irg_end_block(current_ir_graph))
 		return;
 	(*cnt)++;

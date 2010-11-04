@@ -149,6 +149,7 @@ typedef enum {
 	 */
 	IR_LINKAGE_HIDDEN_USER     = 1 << 4
 } ir_linkage;
+ENUM_BITSET(ir_linkage)
 
 /**
  * Return the visibility class of an entity
@@ -575,15 +576,15 @@ FIRM_API int entity_not_visited(const ir_entity *ent);
  * set_entity_additional_properties() or
  * set_entity_additional_property().
  */
-FIRM_API unsigned get_entity_additional_properties(const ir_entity *ent);
+FIRM_API mtp_additional_properties get_entity_additional_properties(const ir_entity *ent);
 
 /** Sets the mask of the additional graph properties. */
 FIRM_API void set_entity_additional_properties(ir_entity *ent,
-                                               unsigned property_mask);
+                                               mtp_additional_properties prop);
 
-/** Sets one additional graph property. */
-FIRM_API void set_entity_additional_property(ir_entity *ent,
-                                             mtp_additional_property flag);
+/** Sets additional graph properties. */
+FIRM_API void add_entity_additional_properties(ir_entity *ent,
+                                               mtp_additional_properties flag);
 
 /** Returns the class type that this type info entity represents or NULL
     if ent is no type info entity. */
@@ -629,7 +630,7 @@ FIRM_API ir_entity *unknown_entity;
 FIRM_API ir_entity *get_unknown_entity(void);
 
 /** Encodes how a pointer parameter is accessed. */
-typedef enum acc_bits {
+typedef enum ptr_access_kind {
 	ptr_access_none  = 0,                                 /**< no access */
 	ptr_access_read  = 1,                                 /**< read access */
 	ptr_access_write = 2,                                 /**< write access */
@@ -637,6 +638,7 @@ typedef enum acc_bits {
 	ptr_access_store = 4,                                 /**< the pointer is stored */
 	ptr_access_all   = ptr_access_rw|ptr_access_store     /**< all possible access */
 } ptr_access_kind;
+ENUM_BITSET(ptr_access_kind)
 
 #define IS_READ(a)     ((a) & ptr_access_read)
 #define IS_WRITTEN(a)  ((a) & ptr_access_write)
@@ -1678,15 +1680,15 @@ FIRM_API int get_method_first_variadic_param_index(const ir_type *method);
 FIRM_API void set_method_first_variadic_param_index(ir_type *method, int index);
 
 /** Returns the mask of the additional graph properties. */
-FIRM_API unsigned get_method_additional_properties(const ir_type *method);
+FIRM_API mtp_additional_properties get_method_additional_properties(const ir_type *method);
 
 /** Sets the mask of the additional graph properties. */
 FIRM_API void set_method_additional_properties(ir_type *method,
-                                               unsigned property_mask);
+                                               mtp_additional_properties property_mask);
 
 /** Sets one additional graph property. */
-FIRM_API void set_method_additional_property(ir_type *method,
-                                             mtp_additional_property flag);
+FIRM_API void add_method_additional_properties(ir_type *method,
+                                               mtp_additional_properties flag);
 
 /**
  * Calling conventions: lower 24 bits are the number of register parameters,

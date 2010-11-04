@@ -137,7 +137,7 @@ void ir_init(const firm_parameter_t *param)
 	firm_init_loop_opt();
 
 	/* Init architecture dependent optimizations. */
-	arch_dep_set_opts(0);
+	arch_dep_set_opts(arch_dep_none);
 
 	init_irnode();
 

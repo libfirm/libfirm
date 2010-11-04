@@ -45,7 +45,7 @@
 #include "irpass.h"
 
 /* maximum number of output Proj's */
-#define MAX_PROJ (pn_Load_max > pn_Store_max ? pn_Load_max : pn_Store_max)
+#define MAX_PROJ ((long)pn_Load_max > (long)pn_Store_max ? (long)pn_Load_max : (long)pn_Store_max)
 
 /**
  * Mapping an address to an dense ID.
@@ -216,14 +216,14 @@ static block_t *get_block_entry(const ir_node *block)
 {
 	assert(is_Block(block));
 
-	return get_irn_link(block);
+	return (block_t*)get_irn_link(block);
 }  /* get_block_entry */
 
 /** Get the memop entry for a memory operation node */
 static memop_t *get_irn_memop(const ir_node *irn)
 {
 	assert(! is_Block(irn));
-	return get_irn_link(irn);
+	return (memop_t*)get_irn_link(irn);
 }  /* get_irn_memop */
 
 /**
@@ -312,7 +312,7 @@ restart:
 		goto restart;
 	}
 
-	entry = ir_nodemap_get(&env.adr_map, adr);
+	entry = (address_entry*)ir_nodemap_get(&env.adr_map, adr);
 
 	if (entry == NULL) {
 		/* new address */
@@ -673,17 +673,19 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth)
 			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
 		}
 	} else if (is_Add(ptr)) {
-		ir_node   *l    = get_Add_left(ptr);
-		ir_node   *r    = get_Add_right(ptr);
-		ir_mode   *mode = get_irn_mode(ptr);
+		ir_mode   *mode;
 		ir_tarval *tmp;
 
-		if (is_Const(r) && get_irn_mode(l) == mode) {
-			ptr = l;
-			tv  = get_Const_tarval(r);
-		} else {
-			ptr = r;
-			tv  = get_Const_tarval(l);
+		{
+			ir_node *l = get_Add_left(ptr);
+			ir_node *r = get_Add_right(ptr);
+			if (is_Const(r) && get_irn_mode(l) == get_irn_mode(ptr)) {
+				ptr = l;
+				tv  = get_Const_tarval(r);
+			} else {
+				ptr = r;
+				tv  = get_Const_tarval(l);
+			}
 		}
 ptr_arith:
 		mode = get_tarval_mode(tv);
@@ -876,17 +878,19 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
 		}
 		return rec_find_compound_ent_value(get_Sel_ptr(ptr), &entry);
 	}  else if (is_Add(ptr)) {
-		ir_node  *l = get_Add_left(ptr);
-		ir_node  *r = get_Add_right(ptr);
-		ir_mode  *mode;
+		ir_mode *mode;
 		unsigned pos;
 
-		if (is_Const(r)) {
-			ptr = l;
-			tv  = get_Const_tarval(r);
-		} else {
-			ptr = r;
-			tv  = get_Const_tarval(l);
+		{
+			ir_node *l = get_Add_left(ptr);
+			ir_node *r = get_Add_right(ptr);
+			if (is_Const(r)) {
+				ptr = l;
+				tv  = get_Const_tarval(r);
+			} else {
+				ptr = r;
+				tv  = get_Const_tarval(l);
+			}
 		}
 ptr_arith:
 		mode = get_tarval_mode(tv);

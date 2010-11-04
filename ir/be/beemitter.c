@@ -82,7 +82,7 @@ void be_emit_irprintf(const char *fmt, ...)
 void be_emit_write_line(void)
 {
 	size_t  len  = obstack_object_size(&emit_obst);
-	char   *line = obstack_finish(&emit_obst);
+	char   *line = (char*)obstack_finish(&emit_obst);
 
 	fwrite(line, 1, len, emit_file);
 	obstack_free(&emit_obst, line);

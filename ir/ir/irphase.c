@@ -54,7 +54,7 @@ void phase_init(ir_phase *phase, ir_graph *irg, phase_irn_init *data_init)
 
 ir_phase *new_phase(ir_graph *irg, phase_irn_init *data_init)
 {
-	ir_phase *phase = xmalloc(sizeof(*phase));
+	ir_phase *phase = XMALLOC(ir_phase);
 	phase_init(phase, irg, data_init);
 	return phase;
 }

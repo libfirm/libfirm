@@ -88,7 +88,7 @@ struct lv_chk_t {
 static void *init_block_data(ir_phase *ph, const ir_node *irn)
 {
 	lv_chk_t *lv      = firm_container_of(ph, lv_chk_t, ph);
-	bl_info_t *bi     = phase_alloc(ph, sizeof(bi[0]));
+	bl_info_t *bi     = (bl_info_t*) phase_alloc(ph, sizeof(bi[0]));
 
 	bi->id            = get_Block_dom_tree_pre_num(irn);
 	bi->block         = irn;
@@ -132,7 +132,7 @@ static void red_trans_closure(lv_chk_t *lv)
 	int i, n;
 
 	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		const ir_node *bl   = dfs_get_post_num_node(lv->dfs, i);
+		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t *bi = get_block_info(lv, bl);
 
 		const ir_edge_t *edge;
@@ -214,7 +214,7 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 	}
 
 	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		const ir_node *bl = dfs_get_post_num_node(lv->dfs, i);
+		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t *bi     = get_block_info(lv, bl);
 
 		const ir_edge_t *edge;
@@ -234,7 +234,7 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 	}
 
 	for (i = 0, n = dfs_get_n_nodes(lv->dfs); i < n; ++i) {
-		const ir_node *bl = dfs_get_post_num_node(lv->dfs, i);
+		const ir_node *bl = (const ir_node*) dfs_get_post_num_node(lv->dfs, i);
 		bl_info_t *bi     = get_block_info(lv, bl);
 		bitset_set(bi->be_tgt_reach, bi->id);
 	}
@@ -278,7 +278,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	/* fill the map which maps pre_num to block infos */
 	for (i = res->n_blocks - 1; i >= 0; --i) {
 		ir_node *irn  = (ir_node *) dfs_get_pre_num_node(res->dfs, i);
-		bl_info_t *bi = phase_get_or_set_irn_data(&res->ph, irn);
+		bl_info_t *bi = (bl_info_t*) phase_get_or_set_irn_data(&res->ph, irn);
 		assert(bi->id < res->n_blocks);
 		assert(res->map[bi->id] == NULL);
 		res->map[bi->id] = bi;
@@ -293,7 +293,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 #ifndef NDEBUG
 	DBG((res->dbg, LEVEL_1, "liveness chk in %+F\n", irg));
 	for (i = res->n_blocks - 1; i >= 0; --i) {
-		const ir_node *irn = dfs_get_pre_num_node(res->dfs, i);
+		const ir_node *irn = (const ir_node*) dfs_get_pre_num_node(res->dfs, i);
 		bl_info_t *bi      = get_block_info(res, irn);
 		DBG((res->dbg, LEVEL_1, "lv_chk for %d -> %+F\n", i, irn));
 		DBG((res->dbg, LEVEL_1, "\tred reach: %B\n", bi->red_reachable));

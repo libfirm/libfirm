@@ -42,16 +42,17 @@
 		#ifdef _WIN32
 			#define FIRM_API extern __declspec(dllimport)
 		#else
-			#define FIRM_API
+			#define FIRM_API extern
 		#endif
 	#endif
 #else
-	#define  FIRM_API
+	#define  FIRM_API extern
 #endif
 
-/* mark declarations as C function */
+#endif
+
+/* mark declarations as C function (note that we always need this,
+ * so don't put it in the include guard) */
 #ifdef __cplusplus
 extern "C" {
-#endif
-
 #endif

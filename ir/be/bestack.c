@@ -141,11 +141,11 @@ static void lower_outer_frame_sels(ir_node *sel, void *ctx)
 /**
  * A helper struct for the bias walker.
  */
-struct bias_walk {
+typedef struct bias_walk {
 	int           start_block_bias;  /**< The bias at the end of the start block. */
 	int           between_size;
 	ir_node      *start_block;  /**< The start block of the current graph. */
-};
+} bias_walk;
 
 /**
  * Fix all stack accessing operations in the block bl.
@@ -233,7 +233,7 @@ static int process_stack_bias(ir_node *bl, int real_bias)
  */
 static void stack_bias_walker(ir_node *bl, void *data)
 {
-	struct bias_walk *bw = data;
+	bias_walk *bw = (bias_walk*)data;
 	if (bl != bw->start_block) {
 		process_stack_bias(bl, bw->start_block_bias);
 	}
@@ -243,8 +243,8 @@ void be_abi_fix_stack_bias(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	ir_type           *frame_tp;
-	int               i;
-	struct bias_walk  bw;
+	int                i;
+	bias_walk          bw;
 
 	stack_frame_compute_initial_offset(stack_layout);
 
@@ -280,7 +280,7 @@ typedef struct fix_stack_walker_env_t {
 static void collect_stack_nodes_walker(ir_node *node, void *data)
 {
 	ir_node                   *insn = node;
-	fix_stack_walker_env_t    *env = data;
+	fix_stack_walker_env_t    *env  = (fix_stack_walker_env_t*)data;
 	const arch_register_req_t *req;
 
 	if (is_Proj(node)) {

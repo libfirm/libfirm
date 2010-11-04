@@ -48,17 +48,13 @@ static pmap *type_map;
  * Default implementation for finding a pointer type for a given element type.
  * Simple create a new one.
  */
-static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode, int alignment)
+static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode,
+                                      int alignment)
 {
-	ir_type *res;
-	pmap_entry *e;
-
 	/* Mode and alignment are always identical in all calls to def_find_pointer_type(), so
 	   we simply can use a map from the element type to the pointer type. */
-	e = pmap_find(type_map, e_type);
-	if (e && get_type_mode(e->value) == mode)
-		res = e->value;
-	else {
+	ir_type *res = (ir_type*)pmap_get(type_map, e_type);
+	if (res == NULL || get_type_mode(res) != mode) {
 		res = new_type_pointer(e_type);
 		set_type_mode(res, mode);
 		set_type_alignment_bytes(res, alignment);
@@ -259,7 +255,7 @@ typedef struct wlk_env_t {
  */
 static cl_entry *get_Call_entry(ir_node *call, wlk_env *env)
 {
-	cl_entry *res = get_irn_link(call);
+	cl_entry *res = (cl_entry*)get_irn_link(call);
 	if (res == NULL) {
 		cl_entry *res = OALLOC(&env->obst, cl_entry);
 		res->next  = env->cl_list;
@@ -315,7 +311,7 @@ static void check_ptr(ir_node *ptr, wlk_env *env)
 
 	/* still alias free */
 	ptr = find_base_adr(ptr, &ent);
-	sc  = GET_BASE_SC(classify_pointer(ptr, ent));
+	sc  = get_base_sc(classify_pointer(ptr, ent));
 	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
 		/* non-local memory access */
 		env->only_local_mem = 0;
@@ -330,7 +326,7 @@ static void check_ptr(ir_node *ptr, wlk_env *env)
  */
 static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 {
-	wlk_env *env = ctx;
+	wlk_env *env = (wlk_env*)ctx;
 	int      i;
 	ir_type *ctp;
 	ir_node *ptr;
@@ -472,7 +468,7 @@ typedef struct cr_pair {
  */
 static void do_copy_return_opt(ir_node *n, void *ctx)
 {
-	cr_pair *arr = ctx;
+	cr_pair *arr = (cr_pair*)ctx;
 	int i;
 
 	if (is_Sel(n)) {
@@ -507,7 +503,7 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_en
 	/* use a map the check if we already create such an entity */
 	e = pmap_find(env->dummy_map, tp);
 	if (e)
-		ent = e->value;
+		ent = (ir_entity*)e->value;
 	else {
 		ir_type *ft = get_irg_frame_type(irg);
 		char buf[16];
@@ -546,7 +542,7 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 
 	n_args = 0;
 	for (p = entry->copyb; p; p = n) {
-		n   = get_irn_link(p);
+		n   = (ir_node*)get_irn_link(p);
 		src = get_CopyB_src(p);
 
 		/* old scheme using value_res_ent */
@@ -868,7 +864,7 @@ static int must_be_lowered(const lower_params_t *lp, ir_type *tp)
  */
 static void lower_method_types(type_or_ent tore, void *env)
 {
-	const lower_params_t *lp = env;
+	const lower_params_t *lp = (const lower_params_t*)env;
 	ir_type *tp;
 
 	/* fix method entities */

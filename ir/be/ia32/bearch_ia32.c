@@ -193,7 +193,7 @@ static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 
 static arch_irn_class_t ia32_classify(const ir_node *irn)
 {
-	arch_irn_class_t classification = 0;
+	arch_irn_class_t classification = arch_irn_class_none;
 
 	assert(is_ia32_irn(irn));
 
@@ -276,7 +276,7 @@ static int ia32_get_sp_bias(const ir_node *node)
  */
 static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias)
 {
-	ia32_abi_env_t   *env      = self;
+	ia32_abi_env_t   *env      = (ia32_abi_env_t*)self;
 	ir_graph         *irg      = env->irg;
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 
@@ -334,7 +334,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
  */
 static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
 {
-	ia32_abi_env_t   *env      = self;
+	ia32_abi_env_t   *env      = (ia32_abi_env_t*)self;
 	const arch_env_t *arch_env = be_get_irg_arch_env(env->irg);
 	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, arch_env->sp);
 	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, arch_env->bp);
@@ -440,7 +440,7 @@ static void ia32_build_between_type(void)
  */
 static ir_type *ia32_abi_get_between_type(void *self)
 {
-	ia32_abi_env_t *env = self;
+	ia32_abi_env_t *env = (ia32_abi_env_t*)self;
 
 	ia32_build_between_type();
 	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
@@ -1250,7 +1250,7 @@ static void ia32_after_ra_walker(ir_node *block, void *env)
  */
 static void ia32_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t  *env = data;
+	be_fec_env_t  *env = (be_fec_env_t*)data;
 	const ir_mode *mode;
 	int            align;
 
@@ -1434,7 +1434,7 @@ static void set_tarval_output_modes(void)
 	}
 }
 
-const arch_isa_if_t ia32_isa_if;
+extern const arch_isa_if_t ia32_isa_if;
 
 /**
  * The template that generates a new ISA object.
@@ -1576,7 +1576,7 @@ static arch_env_t *ia32_init(FILE *file_handle)
  */
 static void ia32_done(void *self)
 {
-	ia32_isa_t *isa = self;
+	ia32_isa_t *isa = (ia32_isa_t*)self;
 
 	/* emit now all global declarations */
 	be_gas_emit_decls(isa->base.main_env);
@@ -1862,7 +1862,7 @@ static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
 	 *  or max(a, b) = a >= b ? a : b
 	 * (Note we only handle float min/max here)
 	 */
-	pnc = get_Proj_proj(sel);
+	pnc = get_Proj_pn_cmp(sel);
 	switch (pnc) {
 	case pn_Cmp_Ge:
 	case pn_Cmp_Gt:
@@ -2098,17 +2098,17 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 	ir_node  *st;
 
 	/* mov  ecx,<env> */
-	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), 0);
+	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
-	st  = new_r_Store(block, mem, p, env, 0);
+	st  = new_r_Store(block, mem, p, env, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
 	/* jmp  <callee> */
-	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), 0);
+	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
-	st  = new_r_Store(block, mem, p, callee, 0);
+	st  = new_r_Store(block, mem, p, callee, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
 

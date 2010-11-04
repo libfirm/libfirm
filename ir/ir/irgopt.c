@@ -160,7 +160,7 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
  */
 static void opt_walker(ir_node *n, void *env)
 {
-	pdeq *waitq = env;
+	pdeq *waitq = (pdeq*)env;
 	ir_node *optimized;
 
 	optimized = optimize_in_place_2(n);
@@ -209,7 +209,7 @@ int optimize_graph_df(ir_graph *irg)
 
 	/* finish the wait queue */
 	while (! pdeq_empty(waitq)) {
-		ir_node *n = pdeq_getl(waitq);
+		ir_node *n = (ir_node*)pdeq_getl(waitq);
 		if (! is_Bad(n))
 			opt_walker(n, waitq);
 	}

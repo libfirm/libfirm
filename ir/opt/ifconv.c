@@ -274,7 +274,7 @@ static void prepare_path(ir_node* block, int i, const ir_node* dependency)
  */
 static void if_conv_walker(ir_node *block, void *ctx)
 {
-	walker_env *env = ctx;
+	walker_env *env = (walker_env*)ctx;
 	int arity;
 	int i;
 

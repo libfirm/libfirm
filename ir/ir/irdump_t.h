@@ -32,6 +32,7 @@
  * Symbolic names for the different dumping colors.
  */
 typedef enum ird_color_t {
+	ird_color_none = -1,
 	ird_color_prog_background,
 	ird_color_block_background,
 	ird_color_dead_block_background,

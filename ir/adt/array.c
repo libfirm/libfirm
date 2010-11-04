@@ -82,7 +82,7 @@ void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size)
 
 	assert(obstack && (nelts >= 0));
 
-	dp = obstack_alloc(obstack, ARR_ELTS_OFFS + elts_size);
+	dp = (ir_arr_descr*) obstack_alloc(obstack, ARR_ELTS_OFFS + elts_size);
 	ARR_SET_DBGINF(dp, ARR_D_MAGIC, elts_size/nelts);
 	dp->u.obstack = obstack;
 	dp->nelts = nelts;
@@ -102,13 +102,13 @@ void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size)
  */
 void *ir_new_arr_f(int nelts, size_t elts_size)
 {
-	ir_arr_descr *new;
+	ir_arr_descr *newa;
 
 	assert (nelts >= 0);
-	new = xmalloc (ARR_ELTS_OFFS+elts_size);
-	ARR_SET_DBGINF (new, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
-	new->u.allocated = new->nelts = nelts;
-	return new->v.elts;
+	newa = (ir_arr_descr*) xmalloc (ARR_ELTS_OFFS+elts_size);
+	ARR_SET_DBGINF (newa, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
+	newa->u.allocated = newa->nelts = nelts;
+	return newa->v.elts;
 }
 
 /**
@@ -154,7 +154,7 @@ void *ir_arr_setlen (void *elts, int nelts, size_t elts_size)
 	ARR_VRFY (elts);
 	assert (!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
 
-	dp = xrealloc (dp, ARR_ELTS_OFFS+elts_size);
+	dp = (ir_arr_descr*) xrealloc (dp, ARR_ELTS_OFFS+elts_size);
 	dp->u.allocated = dp->nelts = nelts;
 
 	return dp->v.elts;
@@ -189,7 +189,7 @@ void *ir_arr_resize(void *elts, int nelts, size_t eltsize)
 	assert(n >= nelts);
 
 	if (n != dp->u.allocated) {
-		dp = xrealloc(dp, ARR_ELTS_OFFS+eltsize*n);
+		dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+eltsize*n);
 		dp->u.allocated = n;
 #if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
 	} else {

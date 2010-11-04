@@ -430,7 +430,7 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block)
 	/* Second step: calculate the pre-order list. */
 	preord = NULL;
 	for (curr = root; curr; curr = irn) {
-		irn = get_irn_link(curr);
+		irn = (ir_node*)get_irn_link(curr);
 		DBG((env->dbg, LEVEL_2, "   DAG root %+F\n", curr));
 		descent(curr, block, &preord, env, 0);
 	}
@@ -439,7 +439,7 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block)
 	/* Third step: calculate the Delay. Note that our
 	* list is now in pre-order, starting at root
 	*/
-	for (cur_pos = 0, curr = root; curr; curr = get_irn_link(curr), cur_pos++) {
+	for (cur_pos = 0, curr = root; curr; curr = (ir_node*)get_irn_link(curr), cur_pos++) {
 		sched_timestep_t d;
 
 		if (is_cfop(curr)) {
@@ -478,7 +478,7 @@ static void trace_preprocess_block(trace_env_t *env, ir_node *block)
  */
 static void trace_node_ready(void *data, ir_node *irn, ir_node *pred)
 {
-	trace_env_t *env = data;
+	trace_env_t *env = (trace_env_t*)data;
 	sched_timestep_t etime_p, etime;
 
 	etime = env->curr_time;
@@ -497,7 +497,7 @@ static void trace_node_ready(void *data, ir_node *irn, ir_node *pred)
  */
 static void trace_update_time(void *data, ir_node *irn)
 {
-	trace_env_t *env = data;
+	trace_env_t *env = (trace_env_t*)data;
 	if (is_Phi(irn) || get_irn_opcode(irn) == beo_Start) {
 		env->curr_time += get_irn_etime(env, irn);
 	}
@@ -533,7 +533,7 @@ static trace_env_t *trace_init(ir_graph *irg)
  */
 static void trace_free(void *data)
 {
-	trace_env_t *env = data;
+	trace_env_t *env = (trace_env_t*)data;
 	be_liveness_free(env->liveness);
 	DEL_ARR_F(env->sched_info);
 	free(env);
@@ -565,7 +565,7 @@ static ir_node *basic_selection(ir_nodeset_t *ready_set)
 */
 static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_nodeset_t *live_set)
 {
-	trace_env_t *env = block_env;
+	trace_env_t *env = (trace_env_t*)block_env;
 	ir_nodeset_t mcands, ecands;
 	ir_nodeset_iterator_t iter;
 	sched_timestep_t max_delay = 0;
@@ -631,7 +631,8 @@ static void *muchnik_init_graph(const list_sched_selector_t *vtab, ir_graph *irg
 
 static void *muchnik_init_block(void *graph_env, ir_node *bl)
 {
-	trace_preprocess_block(graph_env, bl);
+	trace_env_t *env = (trace_env_t*) graph_env;
+	trace_preprocess_block(env, bl);
 	return graph_env;
 }
 
@@ -652,7 +653,7 @@ const list_sched_selector_t muchnik_selector = {
  */
 static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t *lv)
 {
-	trace_env_t *trace_env   = block_env;
+	trace_env_t *trace_env   = (trace_env_t*)block_env;
 	ir_node     *irn, *cand  = NULL;
 	int         max_prio     = INT_MIN;
 	int         cur_prio     = INT_MIN;

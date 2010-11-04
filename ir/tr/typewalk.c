@@ -245,7 +245,7 @@ static void irn_type_walker(
      If so start a walk over that information. */
 static void start_type_walk(ir_node *node, void *ctx)
 {
-	type_walk_env *env = ctx;
+	type_walk_env *env = (type_walk_env*)ctx;
 	type_walk_func *pre;
 	type_walk_func *post;
 	void *envi;

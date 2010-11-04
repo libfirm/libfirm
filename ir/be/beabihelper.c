@@ -39,7 +39,7 @@
 typedef struct reg_flag_t {
 	const arch_register_t *reg;   /**< register at an input position.
 	                                   may be NULL in case of memory input */
-	arch_irn_flags_t       flags;
+	arch_register_req_type_t flags;
 } reg_flag_t;
 
 /**
@@ -68,7 +68,7 @@ static void prepare_rsm(register_state_mapping_t *rsm,
 {
 	unsigned   n_reg_classes = arch_env->n_register_classes;
 	unsigned   c;
-	reg_flag_t memory = { NULL, 0 };
+	reg_flag_t memory = { NULL, arch_register_req_type_none };
 
 	rsm->regs = NEW_ARR_F(reg_flag_t, 0);
 	/* memory input at 0 */
@@ -112,7 +112,7 @@ static void rsm_clear_regs(register_state_mapping_t *rsm,
 {
 	unsigned   n_reg_classes = arch_env->n_register_classes;
 	unsigned   c;
-	reg_flag_t memory = { NULL, 0 };
+	reg_flag_t memory = { NULL, arch_register_req_type_none };
 
 	for (c = 0; c < n_reg_classes; ++c) {
 		const arch_register_class_t *cls    = &arch_env->register_classes[c];
@@ -133,7 +133,8 @@ static void rsm_clear_regs(register_state_mapping_t *rsm,
 }
 
 static int rsm_add_reg(register_state_mapping_t *rsm,
-                       const arch_register_t *reg, arch_irn_flags_t flags)
+                       const arch_register_t *reg,
+                       arch_register_req_type_t flags)
 {
 	int        input_idx = ARR_LEN(rsm->regs);
 	int        cls_idx   = reg->reg_class->index;
@@ -205,7 +206,7 @@ static ir_node *rsm_create_barrier(register_state_mapping_t *rsm,
 			arch_set_out_register_req(barrier, o, arch_no_register_req);
 			proj = new_r_Proj(barrier, mode_M, o);
 		} else {
-			be_set_constr_single_reg_in(barrier, o, reg, 0);
+			be_set_constr_single_reg_in(barrier, o, reg, arch_register_req_type_none);
 			be_set_constr_single_reg_out(barrier, o, reg, regflag->flags);
 			proj = new_r_Proj(barrier, reg->reg_class->mode, o);
 		}
@@ -245,7 +246,7 @@ void be_abihelper_finish(beabi_helper_env_t *env)
 }
 
 void be_prolog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
-                       arch_irn_flags_t flags)
+                       arch_register_req_type_t flags)
 {
 	rsm_add_reg(&env->prolog, reg, flags);
 }
@@ -321,7 +322,7 @@ void be_epilog_begin(beabi_helper_env_t *env)
 }
 
 void be_epilog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
-                       arch_irn_flags_t flags, ir_node *value)
+                       arch_register_req_type_t flags, ir_node *value)
 {
 	int index = rsm_add_reg(&env->epilog, reg, flags);
 	rsm_set_value(&env->epilog, index, value);
@@ -372,7 +373,8 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 		const reg_flag_t      *regflag = &env->epilog.regs[i];
 		const arch_register_t *reg     = regflag->reg;
 		if (reg != NULL) {
-			be_set_constr_single_reg_in(ret, i, reg, 0);
+			be_set_constr_single_reg_in(ret, i, reg,
+			                            arch_register_req_type_none);
 		}
 	}
 
@@ -457,7 +459,7 @@ void be_add_missing_keeps(ir_graph *irg)
 static void collect_node(ir_node *node)
 {
 	ir_node *block = get_nodes_block(node);
-	ir_node *old   = get_irn_link(block);
+	ir_node *old   = (ir_node*)get_irn_link(block);
 
 	set_irn_link(node, old);
 	set_irn_link(block, node);
@@ -537,14 +539,15 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 
 static void process_ops_in_block(ir_node *block, void *data)
 {
-	ir_phase *phase = data;
+	ir_phase *phase = (ir_phase*)data;
 	unsigned  n;
 	unsigned  n_nodes;
 	ir_node  *node;
 	ir_node **nodes;
 
 	n_nodes = 0;
-	for (node = get_irn_link(block); node != NULL; node = get_irn_link(node)) {
+	for (node = (ir_node*)get_irn_link(block); node != NULL;
+	     node = (ir_node*)get_irn_link(node)) {
 		++n_nodes;
 	}
 
@@ -553,7 +556,8 @@ static void process_ops_in_block(ir_node *block, void *data)
 
 	nodes = XMALLOCN(ir_node*, n_nodes);
 	n = 0;
-	for (node = get_irn_link(block); node != NULL; node = get_irn_link(node)) {
+	for (node = (ir_node*)get_irn_link(block); node != NULL;
+	     node = (ir_node*)get_irn_link(node)) {
 		nodes[n++] = node;;
 	}
 	assert(n == n_nodes);
@@ -584,5 +588,5 @@ void be_collect_stacknodes(beabi_helper_env_t *env)
 
 ir_node *be_get_stack_pred(const beabi_helper_env_t *env, const ir_node *node)
 {
-	return phase_get_irn_data(env->stack_order, node);
+	return (ir_node*)phase_get_irn_data(env->stack_order, node);
 }

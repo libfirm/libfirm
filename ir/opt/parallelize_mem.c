@@ -212,7 +212,7 @@ static void walker(ir_node *proj, void *env)
 		sync = new_r_Sync(block, n, in);
 		exchange(proj, sync);
 
-		assert(pn_Load_M == pn_Store_M);
+		assert((long)pn_Load_M == (long)pn_Store_M);
 		proj = new_r_Proj(mem_op, mode_M, pn_Load_M);
 		set_Sync_pred(sync, 0, proj);
 

@@ -391,7 +391,7 @@ void set_entity_visibility(ir_entity *entity, ir_visibility visibility)
 
 ir_visibility get_entity_visibility(const ir_entity *entity)
 {
-	return entity->visibility;
+	return (ir_visibility)entity->visibility;
 }
 
 void set_entity_linkage(ir_entity *entity, ir_linkage linkage)
@@ -598,7 +598,7 @@ ir_initializer_t *create_initializer_const(ir_node *value)
 	struct obstack *obst = get_irg_obstack(get_const_code_irg());
 
 	ir_initializer_t *initializer
-		= obstack_alloc(obst, sizeof(ir_initializer_const_t));
+		= (ir_initializer_t*)OALLOC(obst, ir_initializer_const_t);
 	initializer->kind         = IR_INITIALIZER_CONST;
 	initializer->consti.value = value;
 
@@ -610,7 +610,7 @@ ir_initializer_t *create_initializer_tarval(ir_tarval *tv)
 	struct obstack *obst = get_irg_obstack(get_const_code_irg());
 
 	ir_initializer_t *initializer
-		= obstack_alloc(obst, sizeof(ir_initializer_tarval_t));
+		= (ir_initializer_t*)OALLOC(obst, ir_initializer_tarval_t);
 	initializer->kind         = IR_INITIALIZER_TARVAL;
 	initializer->tarval.value = tv;
 
@@ -625,7 +625,8 @@ ir_initializer_t *create_initializer_compound(unsigned n_entries)
 	size_t size  = sizeof(ir_initializer_compound_t)
 	             + (n_entries-1) * sizeof(ir_initializer_t*);
 
-	ir_initializer_t *initializer = obstack_alloc(obst, size);
+	ir_initializer_t *initializer
+		= (ir_initializer_t*)obstack_alloc(obst, size);
 	initializer->kind                    = IR_INITIALIZER_COMPOUND;
 	initializer->compound.n_initializers = n_entries;
 
@@ -923,7 +924,7 @@ int (entity_not_visited)(const ir_entity *ent)
 	return _entity_not_visited(ent);
 }
 
-unsigned get_entity_additional_properties(const ir_entity *ent)
+mtp_additional_properties get_entity_additional_properties(const ir_entity *ent)
 {
 	ir_graph *irg;
 
@@ -941,7 +942,7 @@ unsigned get_entity_additional_properties(const ir_entity *ent)
 	return ent->attr.mtd_attr.irg_add_properties;
 }
 
-void set_entity_additional_properties(ir_entity *ent, unsigned property_mask)
+void set_entity_additional_properties(ir_entity *ent, mtp_additional_properties property_mask)
 {
 	ir_graph *irg;
 
@@ -952,13 +953,13 @@ void set_entity_additional_properties(ir_entity *ent, unsigned property_mask)
 	if (irg)
 		set_irg_additional_properties(irg, property_mask);
 	else {
-    /* do not allow to set the mtp_property_inherited flag or
-		* the automatic inheritance of flags will not work */
+		/* do not allow to set the mtp_property_inherited flag or
+		 * the automatic inheritance of flags will not work */
 		ent->attr.mtd_attr.irg_add_properties = property_mask & ~mtp_property_inherited;
 	}
 }
 
-void set_entity_additional_property(ir_entity *ent, mtp_additional_property flag)
+void add_entity_additional_properties(ir_entity *ent, mtp_additional_properties properties)
 {
 	ir_graph *irg;
 
@@ -967,16 +968,16 @@ void set_entity_additional_property(ir_entity *ent, mtp_additional_property flag
 	/* first check, if the graph exists */
 	irg = get_entity_irg(ent);
 	if (irg)
-		set_irg_additional_property(irg, flag);
+		add_irg_additional_properties(irg, properties);
 	else {
-		unsigned mask = ent->attr.mtd_attr.irg_add_properties;
+		mtp_additional_properties mask = ent->attr.mtd_attr.irg_add_properties;
 
 		if (mask & mtp_property_inherited)
 			mask = get_method_additional_properties(get_entity_type(ent));
 
 		/* do not allow to set the mtp_property_inherited flag or
 		 * the automatic inheritance of flags will not work */
-		ent->attr.mtd_attr.irg_add_properties = mask | (flag & ~mtp_property_inherited);
+		ent->attr.mtd_attr.irg_add_properties = mask | (properties & ~mtp_property_inherited);
 	}
 }
 
@@ -1031,7 +1032,7 @@ void ir_finish_entity(void)
 
 ir_allocation get_entity_allocation(const ir_entity *entity)
 {
-	return entity->allocation;
+	return (ir_allocation)entity->allocation;
 }
 
 void set_entity_allocation(ir_entity *entity, ir_allocation allocation)
@@ -1041,7 +1042,7 @@ void set_entity_allocation(ir_entity *entity, ir_allocation allocation)
 
 ir_peculiarity get_entity_peculiarity(const ir_entity *entity)
 {
-	return entity->peculiarity;
+	return (ir_peculiarity)entity->peculiarity;
 }
 
 void set_entity_peculiarity(ir_entity *entity, ir_peculiarity peculiarity)

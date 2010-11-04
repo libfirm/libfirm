@@ -88,7 +88,7 @@ static int cmp_usage(const void *a, const void *b)
 
 static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t *env, ir_node *irn)
 {
-	usage_stats_t *us = get_irn_link(irn);
+	usage_stats_t *us = (usage_stats_t*)get_irn_link(irn);
 
 	if (!us) {
 		us                   = OALLOC(&env->obst, usage_stats_t);
@@ -105,7 +105,7 @@ static inline usage_stats_t *get_or_set_usage_stats(reg_pressure_selector_env_t 
 
 static inline usage_stats_t *get_usage_stats(ir_node *irn)
 {
-	usage_stats_t *us = get_irn_link(irn);
+	usage_stats_t *us = (usage_stats_t*)get_irn_link(irn);
 	assert(us && "This node must have usage stats");
 	return us;
 }
@@ -189,7 +189,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	obstack_init(&env->obst);
 	ir_nodeset_init(&env->already_scheduled);
 	env->root              = NULL;
-	env->main_env          = graph_env;
+	env->main_env          = (reg_pressure_main_env_t*)graph_env;
 
 	/*
 	* Collect usage statistics.
@@ -218,7 +218,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 
 static void reg_pressure_block_free(void *block_env)
 {
-	reg_pressure_selector_env_t *env = block_env;
+	reg_pressure_selector_env_t *env = (reg_pressure_selector_env_t*)block_env;
 	usage_stats_t *us;
 
 	for (us = env->root; us; us = us->next)
@@ -267,7 +267,7 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
                                     ir_nodeset_t *live_set)
 {
 	ir_nodeset_iterator_t iter;
-	reg_pressure_selector_env_t *env = block_env;
+	reg_pressure_selector_env_t *env = (reg_pressure_selector_env_t*)block_env;
 	ir_node *irn, *res     = NULL;
 	int curr_cost          = INT_MAX;
 	(void) live_set;

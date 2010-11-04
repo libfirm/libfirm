@@ -69,7 +69,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static arch_irn_class_t sparc_classify(const ir_node *node)
 {
 	(void) node;
-	return 0;
+	return arch_irn_class_none;
 }
 
 static ir_entity *sparc_get_frame_entity(const ir_node *node)
@@ -235,7 +235,7 @@ static void sparc_after_ra_walker(ir_node *block, void *data)
 
 static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t  *env = data;
+	be_fec_env_t  *env = (be_fec_env_t*)data;
 	const ir_mode *mode;
 	int            align;
 	ir_entity     *entity;
@@ -294,7 +294,7 @@ static void sparc_init_graph(ir_graph *irg)
 	(void) irg;
 }
 
-const arch_isa_if_t sparc_isa_if;
+extern const arch_isa_if_t sparc_isa_if;
 static sparc_isa_t sparc_isa_template = {
 	{
 		&sparc_isa_if,                      /* isa interface implementation */
@@ -502,7 +502,7 @@ static arch_env_t *sparc_init(FILE *outfile)
  */
 static void sparc_done(void *self)
 {
-	sparc_isa_t *isa = self;
+	sparc_isa_t *isa = (sparc_isa_t*)self;
 
 	/* emit now all global declarations */
 	be_gas_emit_decls(isa->base.main_env);

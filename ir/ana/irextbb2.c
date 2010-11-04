@@ -221,8 +221,8 @@ void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs)
 
 		extbb->blks = NEW_ARR_D(ir_node *, env.obst, len);
 
-		for (block = extbb->link, i = 0; i < len; ++i) {
-			ir_node *nblock = get_irn_link(block);
+		for (block = (ir_node*) extbb->link, i = 0; i < len; ++i) {
+			ir_node *nblock = (ir_node*) get_irn_link(block);
 
 			/* ensure that the leader is the first one */
 			extbb->blks[len - 1 - i] = block;

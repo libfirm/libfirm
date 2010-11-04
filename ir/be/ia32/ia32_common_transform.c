@@ -69,7 +69,7 @@ static int check_immediate_constraint(long val, char immediate_constraint_type)
  */
 static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 {
-	ir_type *res = pmap_get(types, mode);
+	ir_type *res = (ir_type*)pmap_get(types, mode);
 	if (res != NULL)
 		return res;
 
@@ -87,7 +87,7 @@ ir_entity *create_float_const_entity(ir_node *cnst)
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	ia32_isa_t       *isa      = (ia32_isa_t*) arch_env;
 	ir_tarval        *tv       = get_Const_tarval(cnst);
-	ir_entity        *res      = pmap_get(isa->tv_ent, tv);
+	ir_entity        *res      = (ir_entity*)pmap_get(isa->tv_ent, tv);
 	ir_initializer_t *initializer;
 	ir_mode          *mode;
 	ir_type          *tp;
@@ -506,7 +506,7 @@ ir_node *gen_ASM(ir_node *node)
 
 	/* construct output constraints */
 	out_size = out_arity + 1;
-	out_reg_reqs = obstack_alloc(obst, out_size * sizeof(out_reg_reqs[0]));
+	out_reg_reqs = OALLOCN(obst, const arch_register_req_t*, out_size);
 
 	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint   *constraint = &out_constraints[out_idx];
@@ -528,7 +528,7 @@ ir_node *gen_ASM(ir_node *node)
 	}
 
 	/* inputs + input constraints */
-	in_reg_reqs = obstack_alloc(obst, arity * sizeof(in_reg_reqs[0]));
+	in_reg_reqs = OALLOCN(obst, const arch_register_req_t*, arity);
 	for (i = 0; i < arity; ++i) {
 		ir_node                   *pred         = get_irn_n(node, i);
 		const ir_asm_constraint   *constraint   = &in_constraints[i];
@@ -651,8 +651,8 @@ ir_node *gen_ASM(ir_node *node)
 				ir_node             **new_in;
 
 				in_size *= 2;
-				new_in_reg_reqs
-					= obstack_alloc(obst, in_size*sizeof(in_reg_reqs[0]));
+				new_in_reg_reqs = OALLOCN(obst, const arch_register_req_t*,
+				                          in_size);
 				memcpy(new_in_reg_reqs, in_reg_reqs, arity * sizeof(new_in_reg_reqs[0]));
 				new_in = ALLOCANZ(ir_node*, in_size);
 				memcpy(new_in, in, arity*sizeof(new_in[0]));
@@ -700,7 +700,7 @@ ir_node *gen_ASM(ir_node *node)
 
 				out_size *= 2;
 				new_out_reg_reqs
-					= obstack_alloc(obst, out_size*sizeof(out_reg_reqs[0]));
+					= OALLOCN(obst, const arch_register_req_t*, out_size);
 				memcpy(new_out_reg_reqs, out_reg_reqs,
 				       out_arity * sizeof(new_out_reg_reqs[0]));
 				out_reg_reqs = new_out_reg_reqs;
@@ -719,7 +719,7 @@ ir_node *gen_ASM(ir_node *node)
 
 		out_size = out_arity + 1;
 		new_out_reg_reqs
-			= obstack_alloc(obst, out_size*sizeof(out_reg_reqs[0]));
+			= OALLOCN(obst, const arch_register_req_t*, out_size);
 		memcpy(new_out_reg_reqs, out_reg_reqs,
 			   out_arity * sizeof(new_out_reg_reqs[0]));
 		out_reg_reqs = new_out_reg_reqs;
@@ -832,7 +832,7 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 
 		other_constr     = out_reqs[same_as];
 
-		req              = obstack_alloc(obst, sizeof(req[0]));
+		req              = OALLOC(obst, arch_register_req_t);
 		*req             = *other_constr;
 		req->type       |= arch_register_req_type_should_be_same;
 		req->other_same  = 1U << pos;
@@ -854,7 +854,7 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 			&& !constraint->all_registers_allowed) {
 		unsigned *limited_ptr;
 
-		req         = obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
+		req         = (arch_register_req_t*)obstack_alloc(obst, sizeof(req[0]) + sizeof(unsigned));
 		memset(req, 0, sizeof(req[0]));
 		limited_ptr = (unsigned*) (req+1);
 
@@ -862,8 +862,7 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 		*limited_ptr = constraint->allowed_registers;
 		req->limited = limited_ptr;
 	} else {
-		req       = obstack_alloc(obst, sizeof(req[0]));
-		memset(req, 0, sizeof(req[0]));
+		req       = OALLOCZ(obst, arch_register_req_t);
 		req->type = arch_register_req_type_normal;
 	}
 	req->cls   = constraint->cls;
@@ -885,11 +884,10 @@ const arch_register_req_t *parse_clobber(const char *clobber)
 
 	assert(reg->index < 32);
 
-	limited  = obstack_alloc(obst, sizeof(limited[0]));
+	limited  = OALLOC(obst, unsigned);
 	*limited = 1 << reg->index;
 
-	req          = obstack_alloc(obst, sizeof(req[0]));
-	memset(req, 0, sizeof(req[0]));
+	req          = OALLOCZ(obst, arch_register_req_t);
 	req->type    = arch_register_req_type_limited;
 	req->cls     = arch_register_get_class(reg);
 	req->limited = limited;

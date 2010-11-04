@@ -93,7 +93,7 @@ enum cpu_arch_features {
 /**
  * CPU's.
  */
-enum cpu_support {
+typedef enum cpu_support {
 	cpu_generic     = arch_generic32,
 
 	/* intel CPUs */
@@ -127,7 +127,7 @@ enum cpu_support {
 	cpu_winchip2    = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3          = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3_2        = arch_ppro | arch_feature_p6_insn | arch_sse1_insn, /* really no 3DNow! */
-};
+} cpu_support;
 
 static int         opt_size             = 0;
 static int         emit_machcode        = 0;

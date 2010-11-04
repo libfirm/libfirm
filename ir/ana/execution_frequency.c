@@ -85,7 +85,7 @@ double get_region_exec_freq(void *reg)
   ef.reg  = reg;
   assert(exec_freq_set);
 
-  found = set_find(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
+  found = (reg_exec_freq*) set_find(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
 
   /* Not found if information is invalid. */
   if (found)
@@ -144,7 +144,7 @@ static Cond_prob get_ProjX_probability(ir_node *n)
   reg_exec_freq ef, *found;
   ef.reg  = n;
 
-  found = set_find(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
+  found = (reg_exec_freq*) set_find(exec_freq_set, &ef, sizeof(ef), exec_freq_hash(&ef));
 
   if (found)
     return (Cond_prob)found->prob;
@@ -256,7 +256,7 @@ static void precompute_cond_evaluation(void)
   Cond_list = NULL;
   my_irg_walk_current_graph(walk_pre, walk_post, NULL);
 
-  for (c = Cond_list; c; c = get_irn_link(c)) {
+  for (c = Cond_list; c; c = (ir_node*)get_irn_link(c)) {
     ir_node *p0, *p1;
 
     assert(get_irn_n_outs(c) == 2 && "encountered a switch cond");
@@ -332,7 +332,7 @@ static inline double get_weighted_region_exec_freq(void *reg, int pos)
       cfop = skip_Proj(cfop);
   } else {
     assert(is_ir_loop(reg));
-    cfop = get_loop_cfop(reg, pos);
+    cfop = (ir_node*)get_loop_cfop(reg, pos);
   }
 
   if (is_fragile_op(cfop) || is_fragile_Proj(cfop)) {

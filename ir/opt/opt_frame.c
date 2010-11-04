@@ -101,7 +101,7 @@ void opt_frame_irg(ir_graph *irg)
 	if (list != NULL) {
 		/* delete list members */
 		for (ent = list; ent; ent = list) {
-			list = get_entity_link(ent);
+			list = (ir_entity*)get_entity_link(ent);
 			free_entity(ent);
 		}
 		/* we changed the frame type, it's layout should be redefined */

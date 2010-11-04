@@ -86,7 +86,7 @@ static inline scc_info *new_scc_info(struct obstack *obst)
  */
 static inline void mark_irn_in_stack(ir_node *n)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	info->in_stack = 1;
 }
 
@@ -95,7 +95,7 @@ static inline void mark_irn_in_stack(ir_node *n)
  */
 static inline void mark_irn_not_in_stack(ir_node *n)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	info->in_stack = 0;
 }
 
@@ -104,7 +104,7 @@ static inline void mark_irn_not_in_stack(ir_node *n)
  */
 static inline int irn_is_in_stack(ir_node *n)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	return info->in_stack;
 }
 
@@ -113,7 +113,7 @@ static inline int irn_is_in_stack(ir_node *n)
  */
 static inline void set_irn_uplink(ir_node *n, int uplink)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	info->uplink = uplink;
 }
 
@@ -122,7 +122,7 @@ static inline void set_irn_uplink(ir_node *n, int uplink)
  */
 static inline int get_irn_uplink(ir_node *n)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	return info->uplink;
 }
 
@@ -131,7 +131,7 @@ static inline int get_irn_uplink(ir_node *n)
  */
 static inline void set_irn_dfn(ir_node *n, int dfn)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	info->dfn = dfn;
 }
 
@@ -140,7 +140,7 @@ static inline void set_irn_dfn(ir_node *n, int dfn)
  */
 static inline int get_irn_dfn(ir_node *n)
 {
-	scc_info *info = get_irn_link(n);
+	scc_info *info = (scc_info*) get_irn_link(n);
 	return info->dfn;
 }
 
@@ -288,7 +288,7 @@ static ir_loop *new_loop(void)
  */
 static inline void init_node(ir_node *n, void *env)
 {
-	struct obstack *obst = env;
+	struct obstack *obst = (struct obstack*) env;
 	if (is_Block(n))
 		set_irn_link(n, new_scc_info(obst));
 	clear_backedges(n);

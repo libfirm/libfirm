@@ -66,7 +66,7 @@ static void clear_link(ir_node *irn, void *data)
  */
 static void collect_phis_walker(ir_node *irn, void *data)
 {
-	be_chordal_env_t *env = data;
+	be_chordal_env_t *env = (be_chordal_env_t*)data;
 	if (is_Phi(irn) && chordal_has_class(env, irn)) {
 		ir_node *bl = get_nodes_block(irn);
 		set_irn_link(irn, get_irn_link(bl));
@@ -89,8 +89,8 @@ typedef struct {
 
 static int cmp_perm_proj(const void *a, const void *b, size_t n)
 {
-	const perm_proj_t *p = a;
-	const perm_proj_t *q = b;
+	const perm_proj_t *p = (const perm_proj_t*)a;
+	const perm_proj_t *q = (const perm_proj_t*)b;
 	(void) n;
 
 	return !(p->arg == q->arg);
@@ -106,7 +106,7 @@ typedef struct insert_all_perms_env_t {
  */
 static void insert_all_perms_walker(ir_node *bl, void *data)
 {
-	insert_all_perms_env_t *env = data;
+	insert_all_perms_env_t *env = (insert_all_perms_env_t*)data;
 	be_chordal_env_t *chordal_env = env->chordal_env;
 	pmap *perm_map = env->perm_map;
 	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
@@ -132,14 +132,15 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 		 * Note that all phis in the list are in the same
 		 * register class by construction.
 		 */
-		for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+		for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
+		     phi = (ir_node*)get_irn_link(phi)) {
 			ir_node                   *arg = get_irn_n(phi, i);
 			unsigned                   hash;
 			perm_proj_t                templ;
 
 			hash = hash_irn(arg);
 			templ.arg  = arg;
-			pp         = set_find(arg_set, &templ, sizeof(templ), hash);
+			pp         = (perm_proj_t*)set_find(arg_set, &templ, sizeof(templ), hash);
 
 			/*
 			 * If a proj_perm_t entry has not been made in the argument set,
@@ -161,8 +162,9 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * above in the arg_set and insert it into the schedule.
 			 */
 			in = XMALLOCN(ir_node*, n_projs);
-			for (pp = set_first(arg_set); pp; pp = set_next(arg_set))
+			foreach_set(arg_set, perm_proj_t*, pp) {
 				in[pp->pos] = pp->arg;
+			}
 
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
 			be_stat_ev("phi_perm", n_projs);
@@ -176,7 +178,7 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			 * arguments to the projs (new phi arguments).
 			 */
 			insert_after = perm;
-			for (pp = set_first(arg_set); pp; pp = set_next(arg_set)) {
+			foreach_set(arg_set, perm_proj_t*, pp) {
 				ir_node *proj = new_r_Proj(perm, get_irn_mode(pp->arg), pp->pos);
 				pp->proj = proj;
 				assert(arch_get_irn_register(pp->arg));
@@ -188,11 +190,12 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			/*
 			 * Set the phi nodes to their new arguments: The Projs of the Perm
 			 */
-			for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+			for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
+			     phi = (ir_node*)get_irn_link(phi)) {
 				perm_proj_t templ;
 
 				templ.arg = get_irn_n(phi, i);
-				pp        = set_find(arg_set, &templ, sizeof(templ), hash_irn(templ.arg));
+				pp        = (perm_proj_t*)set_find(arg_set, &templ, sizeof(templ), hash_irn(templ.arg));
 
 				/* If not found, it was an interfering argument */
 				if (pp) {
@@ -227,12 +230,13 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
  */
 static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 {
-	be_chordal_env_t *chordal_env = data;
+	be_chordal_env_t *chordal_env = (be_chordal_env_t*)data;
 	be_lv_t *lv = be_get_irg_liveness(chordal_env->irg);
 	ir_node *phi;
 
 	/* Consider all phis of this block */
-	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+	for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
+	     phi = (ir_node*)get_irn_link(phi)) {
 		ir_node                     *phi_block = get_nodes_block(phi);
 		const arch_register_t       *phi_reg   = arch_get_irn_register(phi);
 		const arch_register_class_t *cls       = phi_reg->reg_class;
@@ -298,7 +302,9 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 
 				DBG((dbg, LEVEL_1, "      searching for phi with same arg having args register\n"));
 
-				for (other_phi = get_irn_link(phi_block); other_phi; other_phi = get_irn_link(other_phi)) {
+				for (other_phi = (ir_node*)get_irn_link(phi_block);
+				     other_phi != NULL;
+				     other_phi = (ir_node*)get_irn_link(other_phi)) {
 
 					assert(is_Phi(other_phi)                               &&
 						get_nodes_block(phi) == get_nodes_block(other_phi) &&
@@ -393,7 +399,8 @@ static void ssa_destruction_check_walker(ir_node *bl, void *data)
 	int i, max;
 	(void)data;
 
-	for (phi = get_irn_link(bl); phi; phi = get_irn_link(phi)) {
+	for (phi = (ir_node*)get_irn_link(bl); phi != NULL;
+	     phi = (ir_node*)get_irn_link(phi)) {
 		const arch_register_t *phi_reg, *arg_reg;
 
 		phi_reg = arch_get_irn_register(phi);

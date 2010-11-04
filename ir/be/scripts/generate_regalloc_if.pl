@@ -181,12 +181,8 @@ foreach my $class_name (keys(%reg_classes)) {
 			$flags_prepared .= "arch_register_class_flag_$flag";
 		}
 	} else {
-		$flags_prepared = "0";
+		$flags_prepared = "arch_register_class_flag_none";
 	}
-
-	$single_constraints_decls .= <<EOF;
-static const arch_register_req_t ${arch}_class_reg_req_${old_classname};
-EOF
 
 	$single_constraints .= <<EOF;
 static const arch_register_req_t ${arch}_class_reg_req_${old_classname} = {
@@ -325,13 +321,12 @@ print OUT<<EOF;
 #include "bearch_${arch}_t.h"
 #include "irmode.h"
 
-${single_constraints_decls}
+${single_constraints}
 EOF
 
 print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @regclasses)."\n};\n\n";
 
 print OUT<<EOF;
-${single_constraints}
 
 const arch_register_t ${arch}_registers[] = {
 ${regtypes_def}

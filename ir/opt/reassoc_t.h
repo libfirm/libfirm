@@ -46,6 +46,6 @@
  * @return
  *    The operations.
  */
-ir_op_ops *firm_set_default_reassoc(ir_opcode code, ir_op_ops *ops);
+ir_op_ops *firm_set_default_reassoc(unsigned code, ir_op_ops *ops);
 
 #endif /* _REASSOC_T_H_ */

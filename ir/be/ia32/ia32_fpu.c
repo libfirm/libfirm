@@ -172,7 +172,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 	} else {
 		ir_mode *lsmode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
 		ir_node *nomem  = new_r_NoMem(irg);
-		ir_node *cwstore, *load, *load_res, *or, *store, *fldcw;
+		ir_node *cwstore, *load, *load_res, *orn, *store, *fldcw;
 		ir_node *or_const;
 
 		assert(last_state != NULL);
@@ -195,11 +195,11 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		or_const = new_bd_ia32_Immediate(NULL, get_irg_start_block(irg),
 		                                 NULL, 0, 0, 3072);
 		arch_set_irn_register(or_const, &ia32_registers[REG_GP_NOREG]);
-		or = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res,
+		orn = new_bd_ia32_Or(NULL, block, noreg, noreg, nomem, load_res,
 		                    or_const);
-		sched_add_before(before, or);
+		sched_add_before(before, orn);
 
-		store = new_bd_ia32_Store(NULL, block, frame, noreg, nomem, or);
+		store = new_bd_ia32_Store(NULL, block, frame, noreg, nomem, orn);
 		set_ia32_op_type(store, ia32_AddrModeD);
 		/* use mode_Iu, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(store, mode_Iu);
@@ -225,7 +225,7 @@ typedef struct collect_fpu_mode_nodes_env_t {
 
 static void collect_fpu_mode_nodes_walker(ir_node *node, void *data)
 {
-	collect_fpu_mode_nodes_env_t *env = data;
+	collect_fpu_mode_nodes_env_t *env = (collect_fpu_mode_nodes_env_t*)data;
 	const arch_register_t *reg;
 
 	if (!mode_is_data(get_irn_mode(node)))

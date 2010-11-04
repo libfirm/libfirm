@@ -67,7 +67,7 @@
 
 #define MAX_INT_FREQ 1000000
 
-#define set_foreach(s,i) for ((i)=set_first((s)); (i); (i)=set_next((s)))
+#define set_foreach(s,type,i) for ((i)=(type)set_first((s)); (i); (i)=(type)set_next((s)))
 
 typedef struct freq_t {
 	const ir_node    *irn;
@@ -76,7 +76,7 @@ typedef struct freq_t {
 } freq_t;
 
 struct ir_exec_freq {
-	set *set;
+	set *freqs;
 	hook_entry_t hook;
 	double max;
 	double min_non_zero;
@@ -86,35 +86,34 @@ struct ir_exec_freq {
 
 static int cmp_freq(const void *a, const void *b, size_t size)
 {
-	const freq_t *p = a;
-	const freq_t *q = b;
+	const freq_t *p = (const freq_t*) a;
+	const freq_t *q = (const freq_t*) b;
 	(void) size;
 
 	return !(p->irn == q->irn);
 }
 
-static freq_t *set_find_freq(set *set, const ir_node *irn)
+static freq_t *set_find_freq(set *freqs, const ir_node *irn)
 {
-	freq_t     query;
-
+	freq_t query;
 	query.irn = irn;
-	return set_find(set, &query, sizeof(query), HASH_PTR(irn));
+	return (freq_t*) set_find(freqs, &query, sizeof(query), HASH_PTR(irn));
 }
 
-static freq_t *set_insert_freq(set *set, const ir_node *irn)
+static freq_t *set_insert_freq(set *freqs, const ir_node *irn)
 {
 	freq_t query;
 
 	query.irn = irn;
 	query.freq = 0.0;
 	query.idx  = -1;
-	return set_insert(set, &query, sizeof(query), HASH_PTR(irn));
+	return (freq_t*) set_insert(freqs, &query, sizeof(query), HASH_PTR(irn));
 }
 
 double get_block_execfreq(const ir_exec_freq *ef, const ir_node *irn)
 {
 	if (!ef->infeasible) {
-		set *freqs = ef->set;
+		set *freqs = ef->freqs;
 		freq_t *freq;
 		assert(is_Block(irn));
 		freq = set_find_freq(freqs, irn);
@@ -218,16 +217,17 @@ static double get_cf_probability(ir_node *bb, int pos, double loop_weight)
 
 static void exec_freq_node_info(void *ctx, FILE *f, const ir_node *irn)
 {
-	if (is_Block(irn)) {
-		ir_exec_freq *ef = ctx;
-		fprintf(f, "execution frequency: %g/%lu\n", get_block_execfreq(ef, irn), get_block_execfreq_ulong(ef, irn));
-	}
+	ir_exec_freq *ef = (ir_exec_freq*) ctx;
+	if (!is_Block(irn))
+		return;
+
+	fprintf(f, "execution frequency: %g/%lu\n", get_block_execfreq(ef, irn), get_block_execfreq_ulong(ef, irn));
 }
 
 ir_exec_freq *create_execfreq(ir_graph *irg)
 {
 	ir_exec_freq *execfreq = XMALLOCZ(ir_exec_freq);
-	execfreq->set = new_set(cmp_freq, 32);
+	execfreq->freqs = new_set(cmp_freq, 32);
 
 	memset(&execfreq->hook, 0, sizeof(execfreq->hook));
 
@@ -244,13 +244,13 @@ ir_exec_freq *create_execfreq(ir_graph *irg)
 
 void set_execfreq(ir_exec_freq *execfreq, const ir_node *block, double freq)
 {
-	freq_t *f = set_insert_freq(execfreq->set, block);
+	freq_t *f = set_insert_freq(execfreq->freqs, block);
 	f->freq = freq;
 }
 
 static void collect_blocks(ir_node *bl, void *data)
 {
-	set *freqs = data;
+	set *freqs = (set*) data;
 	set_insert_freq(freqs, bl);
 }
 
@@ -277,7 +277,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 	dfs = dfs_new(&absgraph_irg_cfg_succ, irg);
 	ef = XMALLOCZ(ir_exec_freq);
 	ef->min_non_zero = HUGE_VAL; /* initialize with a reasonable large number. */
-	freqs = ef->set = new_set(cmp_freq, dfs_get_n_nodes(dfs));
+	freqs = ef->freqs = new_set(cmp_freq, dfs_get_n_nodes(dfs));
 
 	/*
 	 * Populate the exec freq set.
@@ -353,7 +353,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 	norm = x[s->idx] != 0.0 ? 1.0 / x[s->idx] : 1.0;
 
 	ef->max = 0.0;
-	set_foreach(freqs, freq) {
+	set_foreach(freqs, freq_t*, freq) {
 		int idx = freq->idx;
 
 		/* take abs because it sometimes can be -0 in case of endless loops */
@@ -376,10 +376,10 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 		double l1 = 1.0;
 		double h1 = MAX_INT_FREQ;
 
-		double *fs = malloc(set_count(freqs) * sizeof(fs[0]));
+		double *fs = (double*) malloc(set_count(freqs) * sizeof(fs[0]));
 		int i, j, n = 0;
 
-		set_foreach(freqs, freq)
+		set_foreach(freqs, freq_t*, freq)
 			fs[n++] = freq->freq;
 
 		/*
@@ -428,7 +428,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 
 void free_execfreq(ir_exec_freq *ef)
 {
-	del_set(ef->set);
+	del_set(ef->freqs);
 	unregister_hook(hook_node_info, &ef->hook);
 	free(ef);
 }

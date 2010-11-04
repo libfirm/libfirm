@@ -433,7 +433,7 @@ void * MANGLE(_,_search) (SET *table,
 			obstack_grow0 (&table->obst, key, size);
 		else
 			obstack_grow (&table->obst, key, size);
-		q = obstack_finish (&table->obst);
+		q = (Segment) obstack_finish (&table->obst);
 		q->entry.size = size;
 #endif
 		q->chain = CurrentSegment[SegmentIndex];

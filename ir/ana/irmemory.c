@@ -591,8 +591,8 @@ static ir_alias_relation _get_alias_relation(
 	mod1 = classify_pointer(base1, ent1);
 	mod2 = classify_pointer(base2, ent2);
 
-	class1 = GET_BASE_SC(mod1);
-	class2 = GET_BASE_SC(mod2);
+	class1 = get_base_sc(mod1);
+	class2 = get_base_sc(mod2);
 
 	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
 		/* swap pointer class to class1 */
@@ -600,8 +600,8 @@ static ir_alias_relation _get_alias_relation(
 			ir_storage_class_class_t temp = mod1;
 			mod1 = mod2;
 			mod2 = temp;
-			class1 = GET_BASE_SC(mod1);
-			class2 = GET_BASE_SC(mod2);
+			class1 = get_base_sc(mod1);
+			class2 = get_base_sc(mod2);
 		}
 		/* a pointer and an object whose address was never taken */
 		if (mod2 & ir_sc_modifier_nottaken) {
@@ -721,8 +721,8 @@ typedef struct mem_disambig_entry {
  */
 static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 {
-	const mem_disambig_entry *p1 = elt;
-	const mem_disambig_entry *p2 = key;
+	const mem_disambig_entry *p1 = (const mem_disambig_entry*) elt;
+	const mem_disambig_entry *p2 = (const mem_disambig_entry*) key;
 	(void) size;
 
 	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2 &&
@@ -761,7 +761,7 @@ ir_alias_relation get_alias_relation_ex(
 	key.adr2  = adr2;
 	key.mode1 = mode1;
 	key.mode2 = mode2;
-	entry = set_find(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
+	entry = (mem_disambig_entry*) set_find(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	if (entry != NULL)
 		return entry->result;
 
@@ -826,7 +826,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 	ir_mode   *emode, *mode;
 	ir_node   *value;
 	ir_type   *tp;
-	ir_entity_usage res = 0;
+	unsigned   res = 0;
 
 	for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(irn, i);
@@ -942,7 +942,7 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 		}
 	}
 
-	return res;
+	return (ir_entity_usage) res;
 }
 
 /**
@@ -960,7 +960,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 		/* methods can only be analyzed globally */
 		if (! is_method_entity(ent)) {
-			ir_entity_usage flags = 0;
+			ir_entity_usage flags = ir_usage_none;
 			if (get_entity_linkage(ent) & IR_LINKAGE_HIDDEN_USER)
 				flags = ir_usage_unknown;
 			set_entity_usage(ent, flags);
@@ -974,7 +974,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
 		ir_node        *succ = get_irn_out(irg_frame, i);
 		ir_entity      *entity;
-		ir_entity_usage flags;
+		unsigned        flags;
 
 		if (!is_Sel(succ))
 			continue;
@@ -982,7 +982,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 		entity = get_Sel_entity(succ);
 		flags  = get_entity_usage(entity);
 		flags |= determine_entity_usage(succ, entity);
-		set_entity_usage(entity, flags);
+		set_entity_usage(entity, (ir_entity_usage) flags);
 	}
 
 	/* check inner functions accessing outer frame */
@@ -1013,11 +1013,11 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 						if (get_entity_owner(entity) == ft) {
 							/* found an access to the outer frame */
-							ir_entity_usage flags;
+							unsigned flags;
 
 							flags  = get_entity_usage(entity);
 							flags |= determine_entity_usage(succ, entity);
-							set_entity_usage(entity, flags);
+							set_entity_usage(entity, (ir_entity_usage) flags);
 						}
 					}
 				}
@@ -1058,13 +1058,13 @@ static void init_entity_usage(ir_type *tp)
 
 	/* We have to be conservative: All external visible entities are unknown */
 	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
-		ir_entity       *ent  = get_compound_member(tp, i);
-		ir_entity_usage flags = ir_usage_none;
+		ir_entity       *ent   = get_compound_member(tp, i);
+		unsigned         flags = ir_usage_none;
 
 		if (entity_is_externally_visible(ent)) {
 			flags |= ir_usage_unknown;
 		}
-		set_entity_usage(ent, flags);
+		set_entity_usage(ent, (ir_entity_usage) flags);
 	}
 }
 
@@ -1185,9 +1185,9 @@ static void print_entity_usage_flags(ir_type *tp)
  */
 static void check_global_address(ir_node *irn, void *env)
 {
-	ir_node *tls = env;
+	ir_node *tls = (ir_node*) env;
 	ir_entity *ent;
-	ir_entity_usage flags;
+	unsigned flags;
 
 	if (is_Global(irn)) {
 		/* A global. */
@@ -1200,7 +1200,7 @@ static void check_global_address(ir_node *irn, void *env)
 
 	flags = get_entity_usage(ent);
 	flags |= determine_entity_usage(irn, ent);
-	set_entity_usage(ent, flags);
+	set_entity_usage(ent, (ir_entity_usage) flags);
 }  /* check_global_address */
 
 /**
@@ -1230,7 +1230,6 @@ static void analyse_irp_globals_entity_usage(void)
 
 #ifdef DEBUG_libfirm
 	if (firm_dbg_get_mask(dbg) & LEVEL_1) {
-		ir_segment_t s;
 		for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 			print_entity_usage_flags(get_segment_type(s));
 		}
@@ -1282,8 +1281,8 @@ static ir_type *clone_type_and_cache(ir_type *tp)
 	ir_type *res;
 	pmap_entry *e = pmap_find(mtp_map, tp);
 
-	if (e)
-		return e->value;
+	if (e != NULL)
+		return (ir_type*) e->value;
 
 	res = clone_type_method(tp);
 	pmap_insert(mtp_map, tp, res);
@@ -1308,7 +1307,7 @@ static void update_calls_to_private(ir_node *call, void *env)
 			if (get_entity_additional_properties(ent) & mtp_property_private) {
 				if ((get_method_additional_properties(ctp) & mtp_property_private) == 0) {
 					ctp = clone_type_and_cache(ctp);
-					set_method_additional_property(ctp, mtp_property_private);
+					add_method_additional_properties(ctp, mtp_property_private);
 					set_Call_type(call, ctp);
 					DB((dbgcall, LEVEL_1, "changed call to private method %+F using cloned type %+F\n", ent, ctp));
 				}
@@ -1337,12 +1336,12 @@ void mark_private_methods(void)
 		    !(flags & ir_usage_address_taken)) {
 			ir_type *mtp = get_entity_type(ent);
 
-			set_entity_additional_property(ent, mtp_property_private);
+			add_entity_additional_properties(ent, mtp_property_private);
 			DB((dbgcall, LEVEL_1, "found private method %+F\n", ent));
 			if ((get_method_additional_properties(mtp) & mtp_property_private) == 0) {
 				/* need a new type */
 				mtp = clone_type_and_cache(mtp);
-				set_method_additional_property(mtp, mtp_property_private);
+				add_method_additional_properties(mtp, mtp_property_private);
 				set_entity_type(ent, mtp);
 				DB((dbgcall, LEVEL_2, "changed entity type of %+F to %+F\n", ent, mtp));
 				changed = 1;

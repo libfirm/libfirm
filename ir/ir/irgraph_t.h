@@ -312,7 +312,7 @@ static inline void _set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s)
 
 static inline void _set_irg_loopinfo_inconsistent(ir_graph *irg)
 {
-	irg->loopinfo_state &= ~loopinfo_valid;
+	irg->loopinfo_state = (irg_loopinfo_state) (irg->loopinfo_state & ~loopinfo_valid);
 }
 
 static inline void _set_irg_pinned(ir_graph *irg, op_pin_state p)
@@ -347,21 +347,21 @@ static inline void _set_irg_inline_property(ir_graph *irg, irg_inline_property s
 	irg->inline_property = s;
 }
 
-static inline unsigned _get_irg_additional_properties(const ir_graph *irg)
+static inline mtp_additional_properties _get_irg_additional_properties(const ir_graph *irg)
 {
 	if (irg->additional_properties & mtp_property_inherited)
 		return get_method_additional_properties(get_entity_type(irg->ent));
 	return irg->additional_properties;
 }
 
-static inline void _set_irg_additional_properties(ir_graph *irg, unsigned mask)
+static inline void _set_irg_additional_properties(ir_graph *irg, mtp_additional_properties mask)
 {
 	irg->additional_properties = mask & ~mtp_property_inherited;
 }
 
-static inline void _set_irg_additional_property(ir_graph *irg, mtp_additional_property flag)
+static inline void _add_irg_additional_properties(ir_graph *irg, mtp_additional_properties flag)
 {
-	unsigned prop = irg->additional_properties;
+	mtp_additional_properties prop = irg->additional_properties;
 
 	if (prop & mtp_property_inherited)
 		prop = get_method_additional_properties(get_entity_type(irg->ent));
@@ -416,12 +416,12 @@ static inline unsigned _get_irg_fp_model(const ir_graph *irg)
 
 static inline void _set_irg_state(ir_graph *irg, ir_graph_state_t state)
 {
-	irg->state |= state;
+	irg->state = (ir_graph_state_t) (irg->state | state);
 }
 
 static inline void _clear_irg_state(ir_graph *irg, ir_graph_state_t state)
 {
-	irg->state &= ~state;
+	irg->state = (ir_graph_state_t) (irg->state & ~state);
 }
 
 static inline int _is_irg_state(const ir_graph *irg, ir_graph_state_t state)

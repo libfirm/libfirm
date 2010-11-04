@@ -83,7 +83,7 @@ static void mark_iterated_dominance_frontiers(
 	stat_ev_tim_push();
 	while (!waitq_empty(env->worklist)) {
 		int i;
-		ir_node *block = waitq_get(env->worklist);
+		ir_node  *block    = (ir_node*)waitq_get(env->worklist);
 		ir_node **domfront = be_get_dominance_frontier(env->domfronts, block);
 		int domfront_len = ARR_LEN(domfront);
 
@@ -160,7 +160,7 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 {
 	if (irn_visited(block)) {
 		assert(get_irn_link(block) != NULL);
-		return get_irn_link(block);
+		return (ir_node*)get_irn_link(block);
 	} else if (Block_block_visited(block)) {
 		return create_phi(env, block, block);
 	} else {
@@ -189,7 +189,7 @@ static ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 	   the one immediately dominating us
 	 */
 	node = block;
-	def  = get_irn_link(node);
+	def  = (ir_node*)get_irn_link(node);
 	while (def != NULL) {
 		if (!value_dominates(at, def)) {
 			DBG((dbg, LEVEL_3, "\t...found dominating def %+F\n", def));
@@ -197,7 +197,7 @@ static ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
 		}
 
 		node = def;
-		def  = get_irn_link(node);
+		def  = (ir_node*)get_irn_link(node);
 	}
 
 	/* block in dominance frontier? create a phi then */
@@ -223,7 +223,7 @@ static void introduce_def_at_block(ir_node *block, ir_node *def)
 		ir_node *current_def;
 
 		for (;;) {
-			current_def = get_irn_link(node);
+			current_def = (ir_node*)get_irn_link(node);
 			if (current_def == def) {
 				/* already in block */
 				return;

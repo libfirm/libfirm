@@ -34,7 +34,7 @@ typedef unsigned long ir_label_t;
 
 typedef struct dbg_info             dbg_info,            *dbg_info_ptr;
 typedef struct type_dbg_info        type_dbg_info,       *type_dbg_info_ptr;
-typedef const struct ident          ident,               *ir_ident_ptr;
+typedef struct ident                ident,               *ir_ident_ptr;
 typedef struct ir_node              ir_node,             *ir_node_ptr;
 typedef struct ir_op                ir_op,               *ir_op_ptr;
 typedef struct ir_mode              ir_mode,             *ir_mode_ptr;
@@ -92,8 +92,35 @@ typedef const ir_node *ir_node_cnst_ptr;
  */
 typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mode, int pos);
 
+#ifdef __cplusplus
+#	define ENUM_BITSET(type) \
+	extern "C++" { \
+		static inline type operator ~  (type  a)         { return     (type)~(int)a;           } \
+		static inline type operator &  (type  a, type b) { return     (type)((int)a & (int)b); } \
+		static inline type operator &= (type& a, type b) { return a = (type)((int)a & (int)b); } \
+		static inline type operator ^  (type  a, type b) { return     (type)((int)a ^ (int)b); } \
+		static inline type operator ^= (type& a, type b) { return a = (type)((int)a ^ (int)b); } \
+		static inline type operator |  (type  a, type b) { return     (type)((int)a | (int)b); } \
+		static inline type operator |= (type& a, type b) { return a = (type)((int)a | (int)b); } \
+	}
+#else
+#	define ENUM_BITSET(type)
+#endif
+
+#ifdef __cplusplus
+#	define ENUM_COUNTABLE(type) \
+	extern "C++" { \
+		static inline type operator ++(type& a) { return a = (type)((int)a + 1); } \
+		static inline type operator --(type& a) { return a = (type)((int)a - 1); } \
+	}
+#else
+#	define ENUM_COUNTABLE(type)
+#endif
+
+
+
 /** op_pin_state_pinned states. */
-typedef enum {
+typedef enum op_pin_state {
 	op_pin_state_floats = 0,    /**< Nodes of this opcode can be placed in any basic block. */
 	op_pin_state_pinned = 1,    /**< Nodes must remain in this basic block. */
 	op_pin_state_exc_pinned,    /**< Node must be remain in this basic block if it can throw an
@@ -105,7 +132,7 @@ typedef enum {
 /**
  * A type to express conditional jump predictions.
  */
-typedef enum {
+typedef enum cond_jmp_predicate {
 	COND_JMP_PRED_NONE,        /**< No jump prediction. Default. */
 	COND_JMP_PRED_TRUE,        /**< The True case is predicted. */
 	COND_JMP_PRED_FALSE        /**< The False case is predicted. */
@@ -116,7 +143,7 @@ typedef enum {
  * Tell about special properties of a method type. Some
  * of these may be discovered by analyses.
  */
-typedef enum {
+typedef enum mtp_additional_properties {
 	mtp_no_property            = 0x00000000, /**< no additional properties, default */
 	mtp_property_const         = 0x00000001, /**< This method did not access memory and calculates
 	                                              its return values solely from its parameters.
@@ -144,7 +171,8 @@ typedef enum {
 	mtp_property_has_loop      = 0x00000400, /**< Set, if this method contains one possible endless loop. */
 	mtp_property_inherited     = (1<<31)     /**< Internal. Used only in irg's, means property is
 	                                              inherited from type. */
-} mtp_additional_property;
+} mtp_additional_properties;
+ENUM_BITSET(mtp_additional_properties)
 
 /**  This enum names the different kinds of symbolic Constants represented by
  * SymConst.  The content of the attribute symconst_symbol depends on this tag.
@@ -176,20 +204,20 @@ typedef union symconst_symbol {
 } symconst_symbol;
 
 /** The allocation place. */
-typedef enum {
+typedef enum ir_where_alloc {
 	stack_alloc,          /**< Alloc allocates the object on the stack. */
 	heap_alloc            /**< Alloc allocates the object on the heap. */
 } ir_where_alloc;
 
 /** A input/output constraint attribute. */
-typedef struct {
+typedef struct ir_asm_constraint {
 	unsigned       pos;           /**< The inputs/output position for this constraint. */
 	ident          *constraint;   /**< The constraint for this input/output. */
 	ir_mode        *mode;         /**< The mode of the constraint. */
 } ir_asm_constraint;
 
 /** Supported libFirm builtins. */
-typedef enum {
+typedef enum ir_builtin_kind {
 	ir_bk_trap,                   /**< GCC __builtin_trap(): insert trap */
 	ir_bk_debugbreak,             /**< MS __debugbreak(): insert debug break */
 	ir_bk_return_address,         /**< GCC __builtin_return_address() */
@@ -219,7 +247,7 @@ enum pn_generic {
 /**
  * Possible return values of value_classify().
  */
-typedef enum {
+typedef enum ir_value_classify_sign {
 	value_classified_unknown  = 0,   /**< could not classify */
 	value_classified_positive = 1,   /**< value is positive, i.e. >= 0 */
 	value_classified_negative = -1   /**< value is negative, i.e. <= 0 if

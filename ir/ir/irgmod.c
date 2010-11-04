@@ -164,11 +164,11 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 
 	/* move its Projs */
 	if (get_irn_mode(node) == mode_T) {
-		ir_node *proj = get_irn_link(node);
+		ir_node *proj = (ir_node*)get_irn_link(node);
 		while (proj) {
 			if (get_nodes_block(proj) == from_bl)
 				set_nodes_block(proj, to_bl);
-			proj = get_irn_link(proj);
+			proj = (ir_node*)get_irn_link(proj);
 		}
 	}
 

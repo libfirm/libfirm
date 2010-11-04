@@ -207,11 +207,11 @@ static void lower_sel(ir_node *sel)
 			cnst = new_rd_Const(dbg, irg, tv);
 			add  = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
 #ifdef DO_CACHEOPT  /* cacheopt version */
-			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), sel, ent_mode, 0);
+			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), sel, ent_mode, cons_none);
 			cacheopt_map_addrs_register_node(newn);
 			set_Load_ptr(newn, add);
 #else /* normal code */
-			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, 0);
+			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, cons_none);
 #endif
 			newn = new_r_Proj(newn, ent_mode, pn_Load_res);
 
@@ -482,7 +482,7 @@ static void lower_bitfields_stores(ir_node *store)
 
 	if (neg_mask) {
 		/* there are some bits, normal case */
-		irn  = new_r_Load(block, mem, ptr, mode, 0);
+		irn  = new_r_Load(block, mem, ptr, mode, cons_none);
 		mem  = new_r_Proj(irn, mode_M, pn_Load_M);
 		irn  = new_r_Proj(irn, mode, pn_Load_res);
 
@@ -593,17 +593,17 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields)
 	set_irg_outs_inconsistent(irg);
 }
 
-struct pass_t {
+typedef struct pass_t {
 	ir_graph_pass_t pass;
 	int            lower_bitfields;
-};
+} pass_t;
 
 /**
  * Wrapper for running lower_highlevel_graph() as an ir_graph pass.
  */
 static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	lower_highlevel_graph(irg, pass->lower_bitfields);
 	return 0;
@@ -611,7 +611,7 @@ static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context)
 
 ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
+	pass_t *pass = XMALLOCZ(pass_t);
 
 	pass->lower_bitfields = lower_bitfields;
 	return def_graph_pass_constructor(

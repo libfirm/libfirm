@@ -73,7 +73,7 @@ struct dag_entry_t {
  */
 static dag_entry_t *get_irn_dag_entry(ir_node *n)
 {
-	dag_entry_t *p = get_irn_link(n);
+	dag_entry_t *p = (dag_entry_t*)get_irn_link(n);
 
 	if (p) {
 		/* skip any dead links */
@@ -134,7 +134,7 @@ static dag_entry_t *new_dag_entry(dag_env_t *dag_env, ir_node *node)
  */
 static void find_dag_roots(ir_node *node, void *env)
 {
-	dag_env_t   *dag_env = env;
+	dag_env_t   *dag_env = (dag_env_t*)env;
 	int         i, arity;
 	dag_entry_t *entry;
 	ir_node     *block;
@@ -209,7 +209,7 @@ static void find_dag_roots(ir_node *node, void *env)
  */
 static void connect_dags(ir_node *node, void *env)
 {
-	dag_env_t   *dag_env = env;
+	dag_env_t   *dag_env = (dag_env_t*)env;
 	int         i, arity;
 	ir_node     *block;
 	dag_entry_t *entry;

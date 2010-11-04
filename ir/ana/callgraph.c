@@ -260,7 +260,7 @@ static void ana_Call(ir_node *n, void *env)
 			buf.irg = callee;
 
 			pset_insert((pset *)callee->callers, irg, HASH_PTR(irg));
-			found = pset_find((pset *)irg->callees, &buf, HASH_PTR(callee));
+			found = (cg_callee_entry*) pset_find((pset *)irg->callees, &buf, HASH_PTR(callee));
 			if (found) {  /* add Call node to list, compute new nesting. */
 				ir_node **arr = found->call_list;
 				ARR_APP1(ir_node *, arr, n);
@@ -282,16 +282,16 @@ static void ana_Call(ir_node *n, void *env)
 /** compare two ir graphs in a cg_callee_entry */
 static int cg_callee_entry_cmp(const void *elt, const void *key)
 {
-	const cg_callee_entry *e1 = elt;
-	const cg_callee_entry *e2 = key;
+	const cg_callee_entry *e1 = (const cg_callee_entry*) elt;
+	const cg_callee_entry *e2 = (const cg_callee_entry*) key;
 	return e1->irg != e2->irg;
 }
 
 /** compare two ir graphs for pointer identity */
 static int graph_cmp(const void *elt, const void *key)
 {
-	const ir_graph *e1 = elt;
-	const ir_graph *e2 = key;
+	const ir_graph *e1 = (const ir_graph*) elt;
+	const ir_graph *e2 = (const ir_graph*) key;
 	return e1 != e2;
 }
 
@@ -331,10 +331,10 @@ void compute_callgraph(void)
 		count = pset_count(callee_set);
 		irg->callees = NEW_ARR_F(cg_callee_entry *, count);
 		irg->callee_isbe = NULL;
-		callee = pset_first(callee_set);
+		callee = (cg_callee_entry*) pset_first(callee_set);
 		for (j = 0; j < count; ++j) {
 			irg->callees[j] = callee;
-			callee = pset_next(callee_set);
+			callee = (cg_callee_entry*) pset_next(callee_set);
 		}
 		del_pset(callee_set);
 		assert(callee == NULL);
@@ -343,10 +343,10 @@ void compute_callgraph(void)
 		count = pset_count(caller_set);
 		irg->callers = NEW_ARR_F(ir_graph *, count);
 		irg->caller_isbe =  NULL;
-		c = pset_first(caller_set);
+		c = (ir_graph*) pset_first(caller_set);
 		for (j = 0; j < count; ++j) {
 			irg->callers[j] = c;
-			c = pset_next(caller_set);
+			c = (ir_graph*) pset_next(caller_set);
 		}
 		del_pset(caller_set);
 		assert(c == NULL);
@@ -485,49 +485,49 @@ static inline ir_visited_t get_cg_irg_visited(ir_graph *irg)
 
 static inline void mark_irg_in_stack(ir_graph *irg)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->in_stack = 1;
 }
 
 static inline void mark_irg_not_in_stack(ir_graph *irg)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->in_stack = 0;
 }
 
 static inline int irg_is_in_stack(ir_graph *irg)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	return info->in_stack;
 }
 
 static inline void set_irg_uplink(ir_graph *irg, int uplink)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->uplink = uplink;
 }
 
 static inline int get_irg_uplink(ir_graph *irg)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	return info->uplink;
 }
 
 static inline void set_irg_dfn(ir_graph *irg, int dfn)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	info->dfn = dfn;
 }
 
 static inline int get_irg_dfn(ir_graph *irg)
 {
-	scc_info *info = get_irg_link(irg);
+	scc_info *info = (scc_info*) get_irg_link(irg);
 	assert(info && "missing call to init_scc()");
 	return info->dfn;
 }
@@ -560,7 +560,7 @@ static inline void push(ir_graph *irg)
 {
 	if (tos == ARR_LEN(stack)) {
 		int nlen = ARR_LEN(stack) * 2;
-		ARR_RESIZE(ir_node *, stack, nlen);
+		ARR_RESIZE(ir_graph*, stack, nlen);
 	}
 	stack [tos++] = irg;
 	mark_irg_in_stack(irg);

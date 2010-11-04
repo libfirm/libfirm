@@ -72,7 +72,7 @@ struct be_chordal_env_t {
 };
 
 static inline struct list_head *_get_block_border_head(const be_chordal_env_t *inf, ir_node *bl) {
-  return pmap_get(inf->border_heads, bl);
+  return (list_head*)pmap_get(inf->border_heads, bl);
 }
 
 #define get_block_border_head(info, bl)     _get_block_border_head(info, bl)

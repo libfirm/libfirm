@@ -158,7 +158,7 @@ be_insn_t *be_scan_insn(const be_insn_env_t *env, ir_node *irn)
 	}
 
 	insn->has_constraints = insn->in_constraints | insn->out_constraints;
-	insn->ops = obstack_finish(obst);
+	insn->ops = (be_operand_t*)obstack_finish(obst);
 
 	/* Compute the admissible registers bitsets. */
 	for (i = 0; i < insn->n_ops; ++i) {

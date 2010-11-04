@@ -247,7 +247,7 @@ static void emit_shf_mod_name(arm_shift_modifier_t mod)
 
 void arm_emit_shifter_operand(const ir_node *node)
 {
-	const arm_shifter_operand_t *attr = get_irn_generic_attr_const(node);
+	const arm_shifter_operand_t *attr = get_arm_shifter_operand_attr_const(node);
 
 	switch (attr->shift_modifier) {
 	case ARM_SHF_REG:
@@ -346,7 +346,7 @@ static void emit_arm_SymConst(const ir_node *irn)
 
 static void emit_arm_FrameAddr(const ir_node *irn)
 {
-	const arm_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
+	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
 
 	be_emit_cstring("\tadd ");
 	arm_emit_dest_register(irn, 0);
@@ -393,7 +393,7 @@ static void emit_arm_fConst(const ir_node *irn)
  */
 static ir_node *sched_next_block(const ir_node *block)
 {
-    return get_irn_link(block);
+    return (ir_node*)get_irn_link(block);
 }
 
 /**
@@ -401,7 +401,7 @@ static ir_node *sched_next_block(const ir_node *block)
  */
 static ir_node *get_cfop_target_block(const ir_node *irn)
 {
-	return get_irn_link(irn);
+	return (ir_node*)get_irn_link(irn);
 }
 
 /**
@@ -427,7 +427,7 @@ static void emit_arm_B(const ir_node *irn)
 	ir_node *op1 = get_irn_n(irn, 0);
 	const char *suffix;
 	pn_Cmp pnc = get_arm_CondJmp_pnc(irn);
-	const arm_cmp_attr_t *cmp_attr = get_irn_generic_attr_const(op1);
+	const arm_cmp_attr_t *cmp_attr = get_arm_cmp_attr_const(op1);
 	bool is_signed = !cmp_attr->is_unsigned;
 
 	assert(is_arm_Cmp(op1) || is_arm_Tst(op1));
@@ -495,8 +495,8 @@ static void emit_arm_B(const ir_node *irn)
 /** Sort register in ascending order. */
 static int reg_cmp(const void *a, const void *b)
 {
-	const arch_register_t * const *ra = a;
-	const arch_register_t * const *rb = b;
+	const arch_register_t * const *ra = (const arch_register_t**)a;
+	const arch_register_t * const *rb = (const arch_register_t**)b;
 
 	return *ra < *rb ? -1 : (*ra != *rb);
 }
@@ -506,7 +506,7 @@ static int reg_cmp(const void *a, const void *b)
  */
 static void emit_arm_CopyB(const ir_node *irn)
 {
-	const arm_CopyB_attr_t *attr = get_irn_generic_attr_const(irn);
+	const arm_CopyB_attr_t *attr = get_arm_CopyB_attr_const(irn);
 	unsigned size = attr->size;
 
 	const char *tgt = arch_register_get_name(get_in_reg(irn, 0));
@@ -1034,8 +1034,8 @@ static void arm_gen_labels(ir_node *block, void *env)
  */
 static int cmp_sym_or_tv(const void *elt, const void *key, size_t size)
 {
-	const sym_or_tv_t *p1 = elt;
-	const sym_or_tv_t *p2 = key;
+	const sym_or_tv_t *p1 = (const sym_or_tv_t*)elt;
+	const sym_or_tv_t *p2 = (const sym_or_tv_t*)key;
 	(void) size;
 
 	/* as an identifier NEVER can point to a tarval, it's enough
@@ -1087,7 +1087,7 @@ void arm_gen_routine(ir_graph *irg)
 
 		be_emit_cstring("\t.align 2\n");
 
-		foreach_set(sym_or_tv, entry) {
+		foreach_set(sym_or_tv, sym_or_tv_t*, entry) {
 			emit_constant_name(entry);
 			be_emit_cstring(":\n");
 			be_emit_write_line();

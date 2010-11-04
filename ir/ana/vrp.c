@@ -478,7 +478,7 @@ static int vrp_update_node(ir_node *node)
 static void vrp_first_pass(ir_node *n, void *e)
 {
 	int i;
-	struct vrp_env_t *env = e;
+	vrp_env_t *env = (vrp_env_t*) e;
 
 	if (is_Block(n))
 		return;
@@ -503,7 +503,7 @@ static void *vrp_init_node(ir_phase *phase, const ir_node *n)
 	vrp_attr *vrp;
 
 	DBG((dbg, LEVEL_2, "initialized node nr: %d\n", get_irn_node_nr(n)));
-	vrp = phase_alloc(phase, sizeof(vrp_attr));
+	vrp = (vrp_attr*) phase_alloc(phase, sizeof(vrp_attr));
 
 	memset(vrp, 0, sizeof(vrp_attr));
 	/* Initialize the vrp information to default */
@@ -543,7 +543,7 @@ void set_vrp_data(ir_graph *irg)
 {
 	ir_node *succ, *node;
 	int i;
-	struct vrp_env_t *env;
+	vrp_env_t *env;
 	ir_phase *phase;
 
 	FIRM_DBG_REGISTER(dbg, "ir.ana.vrp");
@@ -554,10 +554,10 @@ void set_vrp_data(ir_graph *irg)
 		/* this is our first run */
 		phase = new_phase(irg, vrp_init_node);
 		irg_register_phase(irg, PHASE_VRP, phase);
-		env = phase_alloc(phase, sizeof(*env));
+		env = (vrp_env_t*) phase_alloc(phase, sizeof(*env));
 		phase->priv = env;
 	} else {
-		env = phase->priv;
+		env = (vrp_env_t*) phase->priv;
 	}
 
 	env->workqueue = new_waitq();
@@ -568,7 +568,7 @@ void set_vrp_data(ir_graph *irg)
 
 	/* while there are entries in the worklist, continue*/
 	while (!waitq_empty(env->workqueue)) {
-		node = waitq_get(env->workqueue);
+		node = (ir_node*) waitq_get(env->workqueue);
 
 		if (vrp_update_node(node)) {
 			/* if something changed, add successors to worklist*/
@@ -626,7 +626,7 @@ vrp_attr *vrp_get_info(const ir_node *node)
 		return NULL;
 	}
 
-	vrp = phase_get_irn_data(phase, node);
+	vrp = (vrp_attr*) phase_get_irn_data(phase, node);
 	if (vrp && vrp->valid) {
 		return vrp;
 	}

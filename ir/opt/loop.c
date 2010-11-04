@@ -583,7 +583,7 @@ static unsigned is_nodes_block_marked(ir_node* node)
 
 /* Extends a nodes ins by node new.
  * NOTE: This is slow if a node n needs to be extended more than once. */
-static void extend_irn(ir_node *n, ir_node *new, int new_is_backedge)
+static void extend_irn(ir_node *n, ir_node *newnode, int new_is_backedge)
 {
 	ir_node **ins;
 	int i;
@@ -609,7 +609,7 @@ static void extend_irn(ir_node *n, ir_node *new, int new_is_backedge)
 	for(i = 0; i < arity; ++i) {
 		ins[i] = get_irn_n(n, i);
 	}
-	ins[i] = new;
+	ins[i] = newnode;
 
 	set_irn_in(n, new_arity, ins);
 
@@ -1434,7 +1434,7 @@ static void unrolling_fix_loop_head_inv(void)
 		ir_node *last_pred = get_unroll_copy(pred, unroll_nr - 1);
 
 		ins[0] = last_pred;
-		ins[1] = get_irn_link(phi);
+		ins[1] = (ir_node*)get_irn_link(phi);
 		set_irn_in(phi, 2, ins);
 		DB((dbg, LEVEL_4, "Rewire ins of loophead phi %N to pred %N and duffs entry %N \n" , phi, ins[0], ins[1]));
 	}
@@ -1523,7 +1523,7 @@ static void place_copies(int copies)
 				ir_node *duff_phi;
 
 				lower_phi = get_unroll_copy(phi, c + 1);
-				duff_phi = get_irn_link(phi);
+				duff_phi = (ir_node*)get_irn_link(phi);
 				DB((dbg, LEVEL_4, "DD Link of %N is %N\n" , phi, duff_phi));
 
 				/*  */
@@ -2529,7 +2529,7 @@ static unsigned get_unroll_decision_constant(void)
 
 	DB((dbg, LEVEL_4, "stepped to %ld\n", get_tarval_long(stepped)));
 
-	proj_proj = get_Proj_proj(projres);
+	proj_proj = get_Proj_pn_cmp(projres);
 	/* Assure that norm_proj is the stay-in-loop case. */
 	if (loop_info.exit_cond == 1)
 		norm_proj = get_math_inverted_case(proj_proj);

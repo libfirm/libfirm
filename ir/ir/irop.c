@@ -125,7 +125,7 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_copy_attr(ir_opcode code, ir_op_ops *ops)
+static ir_op_ops *firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
 	case iro_Call:
@@ -264,7 +264,7 @@ const ir_op_ops *(get_op_ops)(const ir_op *op)
 
 irop_flags get_op_flags(const ir_op *op)
 {
-	return op->flags;
+	return (irop_flags)op->flags;
 }
 
 #include "gen_irop.c.inl"

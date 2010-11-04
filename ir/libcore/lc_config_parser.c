@@ -1625,7 +1625,7 @@ void _lc_opt_add_to_data_char(char c)
 static void path_push(text_t text)
 {
 	obstack_grow0(&obst, text.str, text.len);
-	path_stack[path_sp++] = obstack_finish(&obst);
+	path_stack[path_sp++] = (const char*)obstack_finish(&obst);
 }
 
 static void path_free(void)
@@ -1651,7 +1651,7 @@ static void group_close(void)
 
 static void lc_opt_set(void)
 {
-	char *str = obstack_finish(&obst);
+	char *str = (char*)obstack_finish(&obst);
 
 	lc_opt_err_info_t err;
 	lc_opt_entry_t *opt = lc_opt_resolve_opt(CURR_GRP, path_stack, path_sp, &err);

@@ -200,7 +200,7 @@ static ir_tarval *get_tarval(const void *value, int length, ir_mode *mode)
 	if (length > 0) {
 		/* if there already is such a value, it is returned, else value
 		 * is copied into the set */
-		char *temp = alloca(length);
+		char *temp = (char*) alloca(length);
 		memcpy(temp, value, length);
 		if (get_mode_arithmetic(mode) == irma_twos_complement) {
 			sign_extend(temp, mode);
@@ -224,7 +224,7 @@ static ir_tarval *get_tarval_overflow(const void *value, int length, ir_mode *mo
 	switch (get_mode_sort(mode)) {
 	case irms_reference:
 		/* addresses always wrap around */
-		temp = alloca(sc_get_buffer_length());
+		temp = (char*) alloca(sc_get_buffer_length());
 		memcpy(temp, value, sc_get_buffer_length());
 		sc_truncate(get_mode_size_bits(mode), temp);
 		/* the sc_ module expects that all bits are set ... */
@@ -237,7 +237,7 @@ static ir_tarval *get_tarval_overflow(const void *value, int length, ir_mode *mo
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_max(mode);
 			case TV_OVERFLOW_WRAP:
-				temp = alloca(sc_get_buffer_length());
+				temp = (char*) alloca(sc_get_buffer_length());
 				memcpy(temp, value, sc_get_buffer_length());
 				sc_truncate(get_mode_size_bits(mode), temp);
 				/* the sc_ module expects that all bits are set ... */
@@ -254,7 +254,7 @@ static ir_tarval *get_tarval_overflow(const void *value, int length, ir_mode *mo
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_min(mode);
 			case TV_OVERFLOW_WRAP: {
-				char *temp = alloca(sc_get_buffer_length());
+				char *temp = (char*) alloca(sc_get_buffer_length());
 				memcpy(temp, value, sc_get_buffer_length());
 				sc_truncate(get_mode_size_bits(mode), temp);
 				return get_tarval(temp, length, mode);
@@ -269,14 +269,14 @@ static ir_tarval *get_tarval_overflow(const void *value, int length, ir_mode *mo
 
 	case irms_float_number:
 #ifdef SWITCH_NOINFINITY
-		if (fc_is_inf(value)) {
+		if (fc_is_inf((const fp_value*) value)) {
 			/* clip infinity to maximum value */
-			return fc_is_negative(value) ? get_mode_min(mode) : get_mode_max(mode);
+			return fc_is_negative((const fp_value*) value) ? get_mode_min(mode) : get_mode_max(mode);
 		}
 #endif
 
 #ifdef SWITCH_NODENORMALS
-		if (fc_is_subnormal(value)) {
+		if (fc_is_subnormal((const fp_value*) value)) {
 			/* clip denormals to zero */
 			return get_mode_null(mode);
 		}
@@ -502,7 +502,7 @@ long double get_tarval_double(ir_tarval *tv)
 {
 	assert(tarval_is_double(tv));
 
-	return fc_val_to_ieee754(tv->value);
+	return fc_val_to_ieee754((const fp_value*) tv->value);
 }
 
 
@@ -801,7 +801,7 @@ int tarval_is_negative(ir_tarval *a)
 			return sc_comp(a->value, get_mode_null(a->mode)->value) == -1 ? 1 : 0;
 
 	case irms_float_number:
-		return fc_is_negative(a->value);
+		return fc_is_negative((const fp_value*) a->value);
 
 	default:
 		panic("mode %F does not support negation value", a->mode);
@@ -884,7 +884,7 @@ pn_Cmp tarval_cmp(ir_tarval *a, ir_tarval *b)
 		 * BEWARE: we cannot compare a == b here, because
 		 * a NaN is always Unordered to any other value, even to itself!
 		 */
-		switch (fc_comp(a->value, b->value)) {
+		switch (fc_comp((const fp_value*) a->value, (const fp_value*) b->value)) {
 		case -1: return pn_Cmp_Lt;
 		case  0: return pn_Cmp_Eq;
 		case  1: return pn_Cmp_Gt;
@@ -939,19 +939,19 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		switch (get_mode_sort(dst_mode)) {
 		case irms_float_number:
 			desc = get_descriptor(dst_mode);
-			fc_cast(src->value, desc, NULL);
+			fc_cast((const fp_value*) src->value, desc, NULL);
 			return get_tarval(fc_get_buffer(), fc_get_buffer_length(), dst_mode);
 
 		case irms_int_number:
 			switch (current_float_to_int_mode) {
 			case TRUNCATE:
-				res = fc_int(src->value, NULL);
+				res = fc_int((const fp_value*) src->value, NULL);
 				break;
 			case ROUND:
-				res = fc_rnd(src->value, NULL);
+				res = fc_rnd((const fp_value*) src->value, NULL);
 				break;
 			}
-			buffer = alloca(sc_get_buffer_length());
+			buffer = (char*) alloca(sc_get_buffer_length());
 			if (! fc_flt2int(res, buffer, dst_mode))
 				return tarval_bad;
 			return get_tarval(buffer, sc_get_buffer_length(), dst_mode);
@@ -968,7 +968,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 
 		case irms_reference:
 		case irms_int_number:
-			buffer = alloca(sc_get_buffer_length());
+			buffer = (char*) alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
 			sign_extend(buffer, dst_mode);
 			return get_tarval_overflow(buffer, src->length, dst_mode);
@@ -982,7 +982,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			/* XXX floating point unit does not understand internal integer
 			 * representation, convert to string first, then create float from
 			 * string */
-			buffer = alloca(100);
+			buffer = (char*) alloca(100);
 			/* decimal string representation because hexadecimal output is
 			 * interpreted unsigned by fc_val_from_str, so this is a HACK */
 			len = snprintf(buffer, 100, "%s",
@@ -1005,7 +1005,7 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 
 	case irms_reference:
 		if (get_mode_sort(dst_mode) == irms_int_number) {
-			buffer = alloca(sc_get_buffer_length());
+			buffer = (char*) alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
 			sign_extend(buffer, src->mode);
 			return get_tarval_overflow(buffer, src->length, dst_mode);
@@ -1030,7 +1030,7 @@ ir_tarval *tarval_not(ir_tarval *a)
 	switch (get_mode_sort(a->mode)) {
 	case irms_reference:
 	case irms_int_number:
-		buffer = alloca(sc_get_buffer_length());
+		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_not(a->value, buffer);
 		return get_tarval(buffer, a->length, a->mode);
 
@@ -1066,7 +1066,7 @@ ir_tarval *tarval_neg(ir_tarval *a)
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
-		buffer = alloca(sc_get_buffer_length());
+		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_neg(a->value, buffer);
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
@@ -1075,7 +1075,7 @@ ir_tarval *tarval_neg(ir_tarval *a)
 		/*if (no_float)
 			return tarval_bad;*/
 
-		fc_neg(a->value, NULL);
+		fc_neg((const fp_value*) a->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	default:
@@ -1109,7 +1109,7 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 	case irms_reference:
 	case irms_int_number:
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
-		buffer = alloca(sc_get_buffer_length());
+		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_add(a->value, b->value, buffer);
 		carry_flag = sc_get_bit_at(buffer, get_mode_size_bits(a->mode));
 		return get_tarval_overflow(buffer, a->length, a->mode);
@@ -1118,7 +1118,7 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 		if (no_float)
 			return tarval_bad;
 
-		fc_add(a->value, b->value, NULL);
+		fc_add((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	default:
@@ -1152,7 +1152,7 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 	case irms_reference:
 	case irms_int_number:
 		/* modes of a,b are equal, so result has mode of a as this might be the character */
-		buffer = alloca(sc_get_buffer_length());
+		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_sub(a->value, b->value, buffer);
 		carry_flag = sc_get_bit_at(buffer, get_mode_size_bits(a->mode));
 		return get_tarval_overflow(buffer, a->length, a->mode);
@@ -1161,7 +1161,7 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 		if (no_float)
 			return tarval_bad;
 
-		fc_sub(a->value, b->value, NULL);
+		fc_sub((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	default:
@@ -1188,7 +1188,7 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		/* modes of a,b are equal */
-		buffer = alloca(sc_get_buffer_length());
+		buffer = (char*) alloca(sc_get_buffer_length());
 		sc_mul(a->value, b->value, buffer);
 		return get_tarval_overflow(buffer, a->length, a->mode);
 
@@ -1196,7 +1196,7 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 		if (no_float)
 			return tarval_bad;
 
-		fc_mul(a->value, b->value, NULL);
+		fc_mul((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 
 	default:
@@ -1221,7 +1221,7 @@ ir_tarval *tarval_quo(ir_tarval *a, ir_tarval *b)
 		return tarval_bad;
 	}
 
-	fc_div(a->value, b->value, NULL);
+	fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
 	return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 }
 
@@ -1276,8 +1276,8 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 {
 	int len = sc_get_buffer_length();
-	char *div_res = alloca(len);
-	char *mod_res = alloca(len);
+	char *div_res = (char*) alloca(len);
+	char *mod_res = (char*) alloca(len);
 
 	assert((a->mode == b->mode) && mode_is_int(a->mode));
 
@@ -1315,7 +1315,7 @@ ir_tarval *tarval_abs(ir_tarval *a)
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		if (sc_comp(a->value, get_mode_null(a->mode)->value) == -1) {
-			buffer = alloca(sc_get_buffer_length());
+			buffer = (char*) alloca(sc_get_buffer_length());
 			sc_neg(a->value, buffer);
 			return get_tarval_overflow(buffer, a->length, a->mode);
 		}
@@ -1326,8 +1326,9 @@ ir_tarval *tarval_abs(ir_tarval *a)
 		/*if (no_float)
 			return tarval_bad;*/
 
-		if (fc_comp(a->value, get_mode_null(a->mode)->value) == -1) {
-			fc_neg(a->value, NULL);
+		if (fc_comp((const fp_value*) a->value,
+		    (const fp_value*) get_mode_null(a->mode)->value) == -1) {
+			fc_neg((const fp_value*) a->value, NULL);
 			return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
 		}
 		return a;
@@ -1444,7 +1445,7 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
-		temp_val = alloca(sc_get_buffer_length());
+		temp_val = (char*) alloca(sc_get_buffer_length());
 
 		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
 		sc_mod(b->value, temp_val, temp_val);
@@ -1472,7 +1473,7 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
-		temp_val = alloca(sc_get_buffer_length());
+		temp_val = (char*) alloca(sc_get_buffer_length());
 
 		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
 		sc_mod(b->value, temp_val, temp_val);
@@ -1500,7 +1501,7 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
-		temp_val = alloca(sc_get_buffer_length());
+		temp_val = (char*) alloca(sc_get_buffer_length());
 
 		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
 		sc_mod(b->value, temp_val, temp_val);
@@ -1528,7 +1529,7 @@ ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b)
 	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
-		temp_val = alloca(sc_get_buffer_length());
+		temp_val = (char*) alloca(sc_get_buffer_length());
 
 		sc_val_from_ulong(get_mode_modulo_shift(a->mode), temp_val);
 		sc_mod(b->value, temp_val, temp_val);
@@ -1561,7 +1562,7 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 	const tarval_mode_info *mode_info;
 	const char *prefix, *suffix;
 
-	mode_info = tv->mode->tv_priv;
+	mode_info = (const tarval_mode_info*) tv->mode->tv_priv;
 	if (! mode_info)
 		mode_info = &default_info;
 	prefix = mode_info->mode_prefix ? mode_info->mode_prefix : "";
@@ -1594,15 +1595,15 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 	case irms_float_number:
 		switch (mode_info->mode_output) {
 		case TVO_HEX:
-			return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_PACKED), suffix);
+			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_PACKED), suffix);
 
 		case TVO_HEXFLOAT:
-			return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_HEX), suffix);
+			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_HEX), suffix);
 
 		case TVO_FLOAT:
 		case TVO_NATIVE:
 		default:
-			return snprintf(buf, len, "%s%s%s", prefix, fc_print(tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
+			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
 		}
 		break;
 
@@ -1680,7 +1681,7 @@ unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs)
 	case irma_twos_complement:
 		return sc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	case irma_ieee754:
-		return fc_sub_bits(tv->value, get_mode_size_bits(tv->mode), byte_ofs);
+		return fc_sub_bits((const fp_value*) tv->value, get_mode_size_bits(tv->mode), byte_ofs);
 	default:
 		panic("get_tarval_sub_bits(): arithmetic mode not supported");
 	}
@@ -1710,7 +1711,7 @@ const tarval_mode_info *get_tarval_mode_output_option(ir_mode *mode)
 {
 	assert(mode);
 
-	return mode->tv_priv;
+	return (const tarval_mode_info*) mode->tv_priv;
 }
 
 /*
@@ -1791,14 +1792,14 @@ int get_tarval_lowest_bit(ir_tarval *tv)
 int tarval_ieee754_zero_mantissa(ir_tarval *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
-	return fc_zero_mantissa(tv->value);
+	return fc_zero_mantissa((const fp_value*) tv->value);
 }
 
 /* Returns the exponent of a floating point IEEE-754 tarval. */
 int tarval_ieee754_get_exponent(ir_tarval *tv)
 {
 	assert(get_mode_arithmetic(tv->mode) == irma_ieee754);
-	return fc_get_exponent(tv->value);
+	return fc_get_exponent((const fp_value*) tv->value);
 }
 
 /*
@@ -1808,7 +1809,7 @@ int tarval_ieee754_get_exponent(ir_tarval *tv)
 int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode)
 {
 	const ieee_descriptor_t *desc = get_descriptor(mode);
-	return fc_can_lossless_conv_to(tv->value, desc);
+	return fc_can_lossless_conv_to((const fp_value*) tv->value, desc);
 }
 
 /* Set the immediate precision for IEEE-754 results. */
@@ -1840,7 +1841,7 @@ int tarval_is_NaN(ir_tarval *tv)
 {
 	if (! mode_is_float(tv->mode))
 		return 0;
-	return fc_is_nan(tv->value);
+	return fc_is_nan((const fp_value*) tv->value);
 }
 
 /* check if its the a floating point +inf */
@@ -1848,7 +1849,8 @@ int tarval_is_plus_inf(ir_tarval *tv)
 {
 	if (! mode_is_float(tv->mode))
 		return 0;
-	return fc_is_inf(tv->value) && !fc_is_negative(tv->value);
+	return fc_is_inf((const fp_value*) tv->value)
+		&& !fc_is_negative((const fp_value*) tv->value);
 }
 
 /* check if its the a floating point -inf */
@@ -1856,14 +1858,16 @@ int tarval_is_minus_inf(ir_tarval *tv)
 {
 	if (! mode_is_float(tv->mode))
 		return 0;
-	return fc_is_inf(tv->value) && fc_is_negative(tv->value);
+	return fc_is_inf((const fp_value*) tv->value)
+		&& fc_is_negative((const fp_value*) tv->value);
 }
 
 /* check if the tarval represents a finite value */
 int tarval_is_finite(ir_tarval *tv)
 {
 	if (mode_is_float(tv->mode))
-		return !fc_is_nan(tv->value) && !fc_is_inf(tv->value);
+		return !fc_is_nan((const fp_value*) tv->value)
+			&& !fc_is_inf((const fp_value*) tv->value);
 	return 1;
 }
 
@@ -1977,7 +1981,3 @@ int (is_tarval)(const void *thing)
 {
 	return _is_tarval(thing);
 }
-
-/****************************************************************************
- *   end of tv.c
- ****************************************************************************/

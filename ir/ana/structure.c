@@ -123,7 +123,7 @@ ir_region *get_irn_region(ir_node *n)
  */
 int is_region(const void *thing)
 {
-	const firm_kind *kind = thing;
+	const firm_kind *kind = (const firm_kind*) thing;
 	return *kind == k_ir_region;
 }
 
@@ -225,7 +225,7 @@ static void dfs_walk(ir_graph *irg, walk_env *env)
 	ir_region *reg;
 
 	current_ir_graph = irg;
-	reg              = get_irn_link(get_irg_start_block(irg));
+	reg              = (ir_region*) get_irn_link(get_irg_start_block(irg));
 
 	env->premax  = 0;
 	env->postmax = 0;
@@ -239,7 +239,7 @@ static void dfs_walk(ir_graph *irg, walk_env *env)
  */
 static void wrap_BasicBlocks(ir_node *block, void *ctx)
 {
-	walk_env *env = ctx;
+	walk_env *env = (walk_env*) ctx;
 	ir_region *reg;
 
 	/* Allocate a Block wrapper */
@@ -268,8 +268,8 @@ static void wrap_BasicBlocks(ir_node *block, void *ctx)
  */
 static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 {
-	walk_env *env = ctx;
-	ir_region *reg = get_irn_link(blk);
+	walk_env *env = (walk_env*) ctx;
+	ir_region *reg = (ir_region*) get_irn_link(blk);
 	int i, j, len;
 
 	if (blk == env->start_block) {
@@ -280,7 +280,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 		reg->pred = NEW_ARR_D(ir_region *, env->obst, len);
 		for (i = j = 0; i < len; ++i) {
 			ir_node *pred = get_Block_cfgpred_block(blk, i);
-			reg->pred[j++] = get_irn_link(pred);
+			reg->pred[j++] = (ir_region*) get_irn_link(pred);
 		}
 		ARR_SHRINKLEN(reg->pred, j);
 	}
@@ -289,7 +289,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 	reg->succ = NEW_ARR_D(ir_region *, env->obst, len);
 	for (i = j = 0; i < len; ++i) {
 		ir_node *succ = get_Block_cfg_out(blk, i);
-		reg->succ[j++] = get_irn_link(succ);
+		reg->succ[j++] = (ir_region*) get_irn_link(succ);
 	}
 	ARR_SHRINKLEN(reg->succ, j);
 }  /* update_BasicBlock_regions */
@@ -327,7 +327,7 @@ static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_l
 		nset = next;
 		reg->parts[i].region = nset;
 		nset->parent = reg;
-		next = nset->link;
+		next = (ir_region*) nset->link;
 		nset->link = NULL;
 	}
 
@@ -403,7 +403,7 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 	int add = 1;
 
 	/* check, if the exit block is in the list */
-	for (c = cases; c != NULL; c = c->link) {
+	for (c = cases; c != NULL; c = (ir_region*) c->link) {
 		if (c == exit) {
 			add = 0;
 			break;
@@ -418,7 +418,7 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 	reg->parts[0].region = head; head->parent = reg;
 	i = 1;
 	for (c = cases; c != NULL; c = n) {
-		n = c->link;
+		n = (ir_region*) c->link;
 		if (c != exit) {
 			reg->parts[i++].region = c;
 			c->parent = reg;
@@ -514,7 +514,7 @@ static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_regio
 static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head)
 {
 	ir_region *reg, *succ;
-	ir_region *body = head->link;
+	ir_region *body = (ir_region*) head->link;
 	int i, j, len;
 
 	head->link = NULL;
@@ -559,7 +559,7 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 	int i, j, k, len, n_pred, n_succ;
 
 	/* count number of parts */
-	for (len = 0, c = head; c != NULL; c = c->link)
+	for (len = 0, c = head; c != NULL; c = (ir_region*) c->link)
 		++len;
 
 	ALLOC_REG(obst, reg, ir_rk_WhileLoop);
@@ -571,7 +571,7 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 	for (i = 0, c = head; c != NULL; c = n) {
 		reg->parts[i++].region = c;
 		c->parent = reg;
-		n = c->link;
+		n = (ir_region*) c->link;
 		c->link = NULL;
 	}
 
@@ -662,7 +662,7 @@ static struct ir_region *reverse_list(ir_region *n)
 	ir_region *prev = NULL, *next;
 
 	for (; n; n = next) {
-		next = n->link;
+		next = (ir_region*) n->link;
 		n->link = prev;
 		prev = n;
 	}
@@ -703,8 +703,8 @@ static ir_region *find_cyclic_region(ir_region *node)
 				}
 			}
 			/* reverse the list. */
-			last = rem->link;
-			rem->link = reverse_list(rem->link);
+			last = (ir_region*) rem->link;
+			rem->link = reverse_list((ir_region*) rem->link);
 		}
 	}
 
@@ -737,7 +737,7 @@ static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node)
 	list = find_cyclic_region(node);
 
 	if (list->link) {
-		if (!LINK(list)->link && get_region_n_succs(list->link) == 1) {
+		if (!LINK(list)->link && get_region_n_succs((ir_region*) list->link) == 1) {
 			/* only one body block with only one successor (the head) */
 			return new_WhileLoop(obst, list);
 		}
@@ -756,7 +756,7 @@ static void clear_list(ir_region *list)
 	ir_region *next;
 
 	for (next = list; next; list = next) {
-		next = list->link;
+		next = (ir_region*) list->link;
 		list->link = NULL;
 	}
 }
@@ -863,7 +863,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			ir_region *pos_exit_2 = NULL;
 
 			/* find the exit */
-			for (m = nset; m != NULL; m = m->link) {
+			for (m = (ir_region*) nset; m != NULL; m = (ir_region*) m->link) {
 				if (get_region_n_succs(m) != 1) {
 					/* must be the exit block */
 					if (rexit == NULL) {
@@ -900,7 +900,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			}
 			if (rexit != NULL) {
 				/* do the checks */
-				for (n = nset; n != NULL; n = n->link) {
+				for (n = (ir_region*) nset; n != NULL; n = (ir_region*) n->link) {
 					ir_region *succ;
 					if (n == rexit) {
 						/* good, default fall through */

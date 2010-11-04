@@ -57,7 +57,7 @@ typedef struct pred_t          pred_t;
 
 /** An opcode map key. */
 struct opcode_key_t {
-	ir_opcode   code;   /**< The Firm opcode. */
+	unsigned    code;   /**< The Firm opcode. */
 	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
 	int         arity;  /**< The arity of this opcode (needed for Phi etc. */
 	union {
@@ -198,8 +198,8 @@ static void dump_list(const char *msg, const block_t *block)
  */
 static int listmap_cmp_ptr(const void *elt, const void *key, size_t size)
 {
-	const listmap_entry_t *e1 = elt;
-	const listmap_entry_t *e2 = key;
+	const listmap_entry_t *e1 = (const listmap_entry_t*)elt;
+	const listmap_entry_t *e2 = (const listmap_entry_t*)key;
 
 	(void) size;
 	return e1->id != e2->id;
@@ -241,7 +241,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 	key.id   = id;
 	key.list = NULL;
 	key.next = NULL;
-	entry = set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
+	entry    = (listmap_entry_t*)set_insert(map->map, &key, sizeof(key), HASH_PTR(id));
 
 	if (entry->list == NULL) {
 		/* a new entry, put into the list */
@@ -269,8 +269,8 @@ static unsigned opcode_hash(const opcode_key_t *entry)
  */
 static int cmp_opcode(const void *elt, const void *key, size_t size)
 {
-	const opcode_key_t *o1 = elt;
-	const opcode_key_t *o2 = key;
+	const opcode_key_t *o1 = (opcode_key_t*)elt;
+	const opcode_key_t *o2 = (opcode_key_t*)key;
 
 	(void) size;
 	return o1->code != o2->code || o1->mode != o2->mode ||
@@ -438,7 +438,7 @@ static opcode_key_t *opcode(const node_t *node, environment_t *env)
 		break;
 	}
 
-	entry = set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
+	entry = (opcode_key_t*)set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
 }  /* opcode */
 
@@ -678,7 +678,7 @@ static void propagate_blocks_live_troughs(partition_t *part, environment_t *env)
 			listmap_entry_t *entry;
 
 			/* Add bl to map[live_trough(bl)]. */
-			id          = live_throughs(bl, phi);
+			id          = (opcode_key_t*)live_throughs(bl, phi);
 			entry       = listmap_find(&map, id);
 			bl->next    = entry->list;
 			entry->list = bl;
@@ -1034,7 +1034,7 @@ static void clear_phi_links(ir_node *irn, void *env)
  */
 static void find_liveouts(ir_node *irn, void *ctx)
 {
-	environment_t *env        = ctx;
+	environment_t *env        = (environment_t*)ctx;
 	ir_node       **live_outs = env->live_outs;
 	ir_node       *this_block;
 	int           i;
@@ -1077,7 +1077,7 @@ static void find_liveouts(ir_node *irn, void *ctx)
  */
 static void check_for_cf_meet(ir_node *block, void *ctx)
 {
-	environment_t *env = ctx;
+	environment_t *env = (environment_t*)ctx;
 	int           i, k, n;
 	pred_t        *preds;
 
@@ -1118,12 +1118,12 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
  */
 static int cmp_nodes(const void *a, const void *b)
 {
-	const ir_node *const *pa = a;
-	const ir_node *const *pb = b;
+	const ir_node *const *pa = (const ir_node*const*)a;
+	const ir_node *const *pb = (const ir_node*const*)b;
 	const ir_node  *irn_a  = *pa;
 	const ir_node  *irn_b  = *pb;
-	ir_opcode      code_a  = get_irn_opcode(irn_a);
-	ir_opcode      code_b  = get_irn_opcode(irn_b);
+	unsigned       code_a  = get_irn_opcode(irn_a);
+	unsigned       code_b  = get_irn_opcode(irn_b);
 	ir_mode        *mode_a, *mode_b;
 	unsigned       idx_a, idx_b;
 

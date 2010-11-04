@@ -74,8 +74,8 @@ lc_arg_env_t *lc_arg_get_default_env(void)
 
 static int lc_arg_cmp(const void *p1, const void *p2, UNUSED(size_t size))
 {
-	const lc_arg_t *a1 = p1;
-	const lc_arg_t *a2 = p2;
+	const lc_arg_t *a1 = (const lc_arg_t*)p1;
+	const lc_arg_t *a2 = (const lc_arg_t*)p2;
 	return strcmp(a1->name, a2->name);
 }
 
@@ -113,7 +113,7 @@ int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_a
 		base = 'a';
 	}
 
-	ent = set_insert(env->args, &arg, sizeof(arg), HASH_STR(name, strlen(name)));
+	ent = (lc_arg_t*)set_insert(env->args, &arg, sizeof(arg), HASH_STR(name, strlen(name)));
 
 	if (ent && base != 0)
 		map[letter - base] = ent;
@@ -240,7 +240,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		 * int pointer location */
 		case 'n':
 			{
-				int *num = val->v_ptr;
+				int *num = (int*)val->v_ptr;
 				*num = app->written;
 			}
 			break;
@@ -249,7 +249,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		 * buffer of 128 letters for all other types should be enough. */
 		case 's':
 			{
-				const char *str = val->v_ptr;
+				const char *str = (const char*)val->v_ptr;
 				res = lc_arg_append(app, occ, str, strlen(str));
 			}
 			break;
@@ -391,12 +391,12 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 						char *name;
 						lc_arg_t tmp;
 
-						name = malloc(sizeof(char) * (n + 1));
+						name = (char*) malloc(sizeof(char) * (n + 1));
 						memcpy(name, named, sizeof(char) * n);
 						name[n] = '\0';
 						tmp.name = name;
 
-						arg = set_find(env->args, &tmp, sizeof(tmp), HASH_STR(named, n));
+						arg = (lc_arg_t*)set_find(env->args, &tmp, sizeof(tmp), HASH_STR(named, n));
 						occ.modifier = "";
 						occ.modifier_length = 0;
 

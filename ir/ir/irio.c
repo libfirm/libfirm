@@ -297,7 +297,7 @@ static unsigned symbol(const char *str, typetag_t typetag)
 	key.str = str;
 	key.typetag = typetag;
 
-	entry = set_find(symtbl, &key, sizeof(key), firm_fnv_hash_str(str) + typetag * 17);
+	entry = (symbol_t*)set_find(symtbl, &key, sizeof(key), firm_fnv_hash_str(str) + typetag * 17);
 	return entry ? entry->code : SYMERROR;
 }
 
@@ -306,7 +306,7 @@ static void *get_id(io_env_t *env, long id)
 	id_entry key, *entry;
 	key.id = id;
 
-	entry = set_find(env->idset, &key, sizeof(key), (unsigned) id);
+	entry = (id_entry*)set_find(env->idset, &key, sizeof(key), (unsigned) id);
 	return entry ? entry->elem : NULL;
 }
 
@@ -745,7 +745,7 @@ static void export_program(io_env_t *env)
 		fprintf(f, "\tmain_irg %d\n", get_irp_main_irg
 #endif
 
-	for (s = 0; s <= IR_SEGMENT_LAST; ++s) {
+	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *segment_type = get_segment_type(s);
 		fprintf(f, "\tsegment_type %s", get_segment_name(s));
 		if (segment_type == NULL) {
@@ -909,7 +909,7 @@ static char *read_word(io_env_t *env)
 
 endofword:
 	obstack_1grow(&env->obst, '\0');
-	return obstack_finish(&env->obst);
+	return (char*)obstack_finish(&env->obst);
 }
 
 static char *read_quoted_string(io_env_t *env)
@@ -937,7 +937,7 @@ static char *read_quoted_string(io_env_t *env)
 	}
 	obstack_1grow(&env->obst, '\0');
 
-	return obstack_finish(&env->obst);
+	return (char*)obstack_finish(&env->obst);
 }
 
 static ident *read_ident(io_env_t *env)
@@ -999,7 +999,7 @@ static long read_long(io_env_t *env)
 	} while (isdigit(env->c));
 	obstack_1grow(&env->obst, 0);
 
-	str = obstack_finish(&env->obst);
+	str = (char*)obstack_finish(&env->obst);
 	result = atol(str);
 	obstack_free(&env->obst, str);
 
@@ -1254,8 +1254,8 @@ static void import_type(io_env_t *env)
 	}
 
 	case tpo_method: {
-		unsigned callingconv = (unsigned) read_long(env);
-		unsigned addprops    = (unsigned) read_long(env);
+		unsigned                  callingconv = (unsigned) read_long(env);
+		mtp_additional_properties addprops    = (mtp_additional_properties) read_long(env);
 		int nparams          = (int)      read_long(env);
 		int nresults         = (int)      read_long(env);
 		int variaindex;
@@ -1360,12 +1360,12 @@ static void import_entity(io_env_t *env)
 
 		v = symbol(str, tt_visibility);
 		if (v != SYMERROR) {
-			visibility = v;
+			visibility = (ir_visibility)v;
 			continue;
 		}
 		v = symbol(str, tt_linkage);
 		if (v != SYMERROR) {
-			linkage |= v;
+			linkage |= (ir_linkage)v;
 			continue;
 		}
 		printf("Parser error, expected visibility or linkage, got '%s'\n",
@@ -1605,7 +1605,7 @@ static int parse_modes(io_env_t *env)
 		switch (kwkind) {
 		case kw_mode: {
 			const char *name = read_quoted_string(env);
-			ir_mode_sort sort = read_enum(env, tt_mode_sort);
+			ir_mode_sort sort = (ir_mode_sort)read_enum(env, tt_mode_sort);
 			int size = read_long(env);
 			int sign = read_long(env);
 			ir_mode_arithmetic arith = read_mode_arithmetic(env);
@@ -1706,7 +1706,7 @@ void ir_import_file(FILE *input, const char *inputname)
 		if (env->c == EOF)
 			break;
 
-		kw = read_enum(env, tt_keyword);
+		kw = (keyword_t)read_enum(env, tt_keyword);
 		switch (kw) {
 		case kw_modes:
 			if (!parse_modes(env)) goto end;

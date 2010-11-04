@@ -508,7 +508,7 @@ static void gen_method_type(wenv_t *env, ir_type *tp)
  */
 static void walk_type(type_or_ent tore, void *ctx)
 {
-	wenv_t *env = ctx;
+	wenv_t *env = (wenv_t*)ctx;
 	ir_type  *tp;
 
 	if (is_type(tore.typ)) {
@@ -568,10 +568,9 @@ static void walk_type(type_or_ent tore, void *ctx)
 static void finish_types(wenv_t *env)
 {
 	waitq *wq = env->wq;
-	ir_type *tp;
 
 	while (! waitq_empty(wq)) {
-		tp = waitq_get(wq);
+		ir_type *tp = (ir_type*)waitq_get(wq);
 		if (IS_TYPE_READY(tp))
 			continue;
 

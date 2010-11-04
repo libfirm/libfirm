@@ -95,8 +95,6 @@ static const lc_opt_table_entry_t options[] = {
 
 #define INFEASIBLE(cost) ((cost) == INT_MAX)
 
-static be_ifg_dump_dot_cb_t ifg_dot_cb;
-
 typedef unsigned col_t;
 
 typedef struct co2_irn_t       co2_irn_t;
@@ -185,7 +183,7 @@ static void *co2_irn_init(ir_phase *ph, const ir_node *irn)
 	co2_t *env         = (co2_t *) ph;
 	affinity_node_t *a = get_affinity_info(env->co, irn);
 	size_t size        = a ? sizeof(co2_cloud_irn_t) : sizeof(co2_irn_t);
-	co2_irn_t *ci      = phase_alloc(ph, size);
+	co2_irn_t *ci      = (co2_irn_t*)phase_alloc(ph, size);
 
 	memset(ci, 0, size);
 	INIT_LIST_HEAD(&ci->changed_list);
@@ -208,8 +206,8 @@ static void *co2_irn_init(ir_phase *ph, const ir_node *irn)
 
 static int cmp_clouds_gt(const void *a, const void *b)
 {
-	const co2_cloud_t * const *p = a;
-	const co2_cloud_t * const *q = b;
+	const co2_cloud_t * const *p = (const co2_cloud_t*const*)a;
+	const co2_cloud_t * const *q = (const co2_cloud_t*const*)b;
 	double c = CLOUD_WEIGHT(*p);
 	double d = CLOUD_WEIGHT(*q);
 	return QSORT_CMP(d, c);
@@ -221,8 +219,8 @@ static int cmp_clouds_gt(const void *a, const void *b)
  */
 static int col_cost_pair_lt(const void *a, const void *b)
 {
-	const col_cost_pair_t *p = a;
-	const col_cost_pair_t *q = b;
+	const col_cost_pair_t *p = (const col_cost_pair_t*)a;
+	const col_cost_pair_t *q = (const col_cost_pair_t*)b;
 	int c = p->costs;
 	int d = q->costs;
 	return QSORT_CMP(c, d);
@@ -230,8 +228,8 @@ static int col_cost_pair_lt(const void *a, const void *b)
 
 static int cmp_edges(const void *a, const void *b)
 {
-	const edge_t *p = a;
-	const edge_t *q = b;
+	const edge_t *p = (const edge_t*)a;
+	const edge_t *q = (const edge_t*)b;
 	return QSORT_CMP(q->costs, p->costs);
 }
 
@@ -812,7 +810,7 @@ static void populate_cloud(co2_t *env, co2_cloud_t *cloud, affinity_node_t *a, i
 
 static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 {
-	co2_cloud_t *cloud = phase_alloc(&env->ph, sizeof(cloud[0]));
+	co2_cloud_t *cloud = (co2_cloud_t*)phase_alloc(&env->ph, sizeof(cloud[0]));
 	co2_cloud_irn_t *ci;
 	int i;
 
@@ -828,7 +826,7 @@ static co2_cloud_t *new_cloud(co2_t *env, affinity_node_t *a)
 	cloud->freedom = (cloud->n_memb * env->n_regs) / cloud->freedom;
 
 	/* Also allocate space for the node sequence and compute that sequence. */
-	cloud->seq    = phase_alloc(&env->ph, cloud->n_memb * sizeof(cloud->seq[0]));
+	cloud->seq = (co2_cloud_irn_t**)phase_alloc(&env->ph, cloud->n_memb * sizeof(cloud->seq[0]));
 
 	i = 0;
 	list_for_each_entry(co2_cloud_irn_t, ci, &cloud->members_head, cloud_list) {
@@ -897,7 +895,7 @@ static void process_cloud(co2_cloud_t *cloud)
 			}
 		}
 	}
-	edges = obstack_finish(&cloud->obst);
+	edges = (edge_t*)obstack_finish(&cloud->obst);
 	qsort(edges, n_edges, sizeof(edges[0]), cmp_edges);
 
 	/* Compute the maximum spanning tree using Kruskal/Union-Find */
@@ -927,7 +925,7 @@ static void process_cloud(co2_cloud_t *cloud)
 	cloud->mst_root = cloud->master;
 	q = new_pdeq1(cloud->master);
 	while (!pdeq_empty(q)) {
-		co2_cloud_irn_t *ci = pdeq_getl(q);
+		co2_cloud_irn_t *ci = (co2_cloud_irn_t*)pdeq_getl(q);
 		int ofs    = ci->index * cloud->n_memb;
 		int end    = ofs + cloud->n_memb;
 		int i;
@@ -953,7 +951,7 @@ static void process_cloud(co2_cloud_t *cloud)
 		}
 
 		obstack_ptr_grow(&cloud->obst, NULL);
-		ci->mst_childs = obstack_finish(&cloud->obst);
+		ci->mst_childs = (co2_cloud_irn_t**)obstack_finish(&cloud->obst);
 	}
 	del_pdeq(q);
 	free(mst_edges);
@@ -1012,61 +1010,6 @@ static int cloud_costs(co2_cloud_t *cloud)
 	}
 
 	return costs / 2;
-}
-
-static void process(co2_t *env)
-{
-	affinity_node_t *a;
-	co2_cloud_t *pos;
-	co2_cloud_t **clouds;
-	int n_clouds;
-	int i;
-	int init_costs  = 0;
-	int all_costs   = 0;
-	int final_costs = 0;
-
-	n_clouds = 0;
-	co_gs_foreach_aff_node(env->co, a) {
-		co2_cloud_irn_t *ci = get_co2_cloud_irn(env, a->irn);
-
-		if (!ci->cloud) {
-			new_cloud(env, a);
-			n_clouds++;
-		}
-	}
-
-	i = 0;
-	clouds = XMALLOCN(co2_cloud_t*, n_clouds);
-	list_for_each_entry(co2_cloud_t, pos, &env->cloud_head, list)
-		clouds[i++] = pos;
-	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds_gt);
-
-	for (i = 0; i < n_clouds; ++i) {
-		init_costs  += cloud_costs(clouds[i]);
-
-		/* Process the cloud. */
-		process_cloud(clouds[i]);
-
-		all_costs   += clouds[i]->costs;
-		final_costs += cloud_costs(clouds[i]);
-
-		/* Dump the IFG if the user demanded it. */
-		if (dump_flags & DUMP_CLOUD) {
-			char buf[256];
-			FILE *f;
-
-			ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%d.dot", env->co->irg, env->co->cls->name, i);
-			f = fopen(buf, "wt");
-			if (f != NULL) {
-				be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
-				fclose(f);
-			}
-		}
-	}
-
-	DB((env->dbg, LEVEL_1, "all costs: %d, init costs: %d, final costs: %d\n", all_costs, init_costs, final_costs));
-
-	xfree(clouds);
 }
 
 static void writeback_colors(co2_t *env)
@@ -1159,14 +1102,14 @@ static int ifg_is_dump_node(void *self, ir_node *irn)
 
 static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 {
-	co2_t *env    = self;
+	co2_t *env    = (co2_t*)self;
 	co2_irn_t *ci = get_co2_irn(env, irn);
 	int peri      = 1;
 
 	char buf[128] = "";
 
 	if (ci->aff) {
-		co2_cloud_irn_t *cci = (void *) ci;
+		co2_cloud_irn_t *cci = (co2_cloud_irn_t*) ci;
 		if (cci->cloud && cci->cloud->mst_root == cci)
 			peri = 2;
 
@@ -1180,7 +1123,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 
 static void ifg_dump_at_end(FILE *file, void *self)
 {
-	co2_t *env = self;
+	co2_t *env = (co2_t*)self;
 	affinity_node_t *a;
 
 	co_gs_foreach_aff_node(env->co, a) {
@@ -1210,7 +1153,6 @@ static void ifg_dump_at_end(FILE *file, void *self)
 	}
 }
 
-
 static be_ifg_dump_dot_cb_t ifg_dot_cb = {
 	ifg_is_dump_node,
 	ifg_dump_graph_attr,
@@ -1219,6 +1161,61 @@ static be_ifg_dump_dot_cb_t ifg_dot_cb = {
 	NULL,
 	ifg_dump_at_end
 };
+
+static void process(co2_t *env)
+{
+	affinity_node_t *a;
+	co2_cloud_t *pos;
+	co2_cloud_t **clouds;
+	int n_clouds;
+	int i;
+	int init_costs  = 0;
+	int all_costs   = 0;
+	int final_costs = 0;
+
+	n_clouds = 0;
+	co_gs_foreach_aff_node(env->co, a) {
+		co2_cloud_irn_t *ci = get_co2_cloud_irn(env, a->irn);
+
+		if (!ci->cloud) {
+			new_cloud(env, a);
+			n_clouds++;
+		}
+	}
+
+	i = 0;
+	clouds = XMALLOCN(co2_cloud_t*, n_clouds);
+	list_for_each_entry(co2_cloud_t, pos, &env->cloud_head, list)
+		clouds[i++] = pos;
+	qsort(clouds, n_clouds, sizeof(clouds[0]), cmp_clouds_gt);
+
+	for (i = 0; i < n_clouds; ++i) {
+		init_costs  += cloud_costs(clouds[i]);
+
+		/* Process the cloud. */
+		process_cloud(clouds[i]);
+
+		all_costs   += clouds[i]->costs;
+		final_costs += cloud_costs(clouds[i]);
+
+		/* Dump the IFG if the user demanded it. */
+		if (dump_flags & DUMP_CLOUD) {
+			char buf[256];
+			FILE *f;
+
+			ir_snprintf(buf, sizeof(buf), "ifg_%F_%s_cloud_%d.dot", env->co->irg, env->co->cls->name, i);
+			f = fopen(buf, "wt");
+			if (f != NULL) {
+				be_ifg_dump_dot(env->co->cenv->ifg, env->co->irg, f, &ifg_dot_cb, env);
+				fclose(f);
+			}
+		}
+	}
+
+	DB((env->dbg, LEVEL_1, "all costs: %d, init costs: %d, final costs: %d\n", all_costs, init_costs, final_costs));
+
+	xfree(clouds);
+}
 
 int co_solve_heuristic_new(copy_opt_t *co)
 {

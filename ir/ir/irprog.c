@@ -66,7 +66,7 @@ static ir_prog *new_incomplete_ir_prog(void)
 	res->max_irg_idx    = 0;
 	res->max_node_nr    = 0;
 #ifndef NDEBUG
-	res->reserved_resources = 0;
+	res->reserved_resources = IR_RESOURCE_NONE;
 #endif
 
 	return res;
@@ -403,17 +403,17 @@ void set_irp_phase_state(irg_phase_state s)
 	irp->phase_state = s;
 }
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t  pass;
 	irg_phase_state state;
-};
+} pass_t;
 
 /**
  * Wrapper for setting the state of a whole ir_prog.
  */
 static int set_irp_phase_state_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t  *pass  = context;
+	pass_t         *pass  = (pass_t *)context;
 	irg_phase_state state = pass->state;
 	int             i;
 

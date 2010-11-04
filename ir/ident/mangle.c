@@ -57,7 +57,7 @@ ident *id_mangle_entity(const ir_entity *ent)
 	obstack_1grow(&mangle_obst,'_');
 	obstack_grow(&mangle_obst, get_id_str(ent->name), get_id_strlen(ent->name));
 	len = obstack_object_size(&mangle_obst);
-	cp = obstack_finish(&mangle_obst);
+	cp = (char*)obstack_finish(&mangle_obst);
 	res = new_id_from_chars(cp, len);
 	obstack_free(&mangle_obst, cp);
 	return res;
@@ -74,7 +74,7 @@ ident *id_mangle(ident *first, ident *scnd)
 	obstack_grow(&mangle_obst, get_id_str(first), get_id_strlen(first));
 	obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
 	len = obstack_object_size(&mangle_obst);
-	cp = obstack_finish(&mangle_obst);
+	cp = (char*)obstack_finish(&mangle_obst);
 	res = new_id_from_chars(cp, len);
 	obstack_free(&mangle_obst, cp);
 	return res;
@@ -91,7 +91,7 @@ ident *id_mangle3(const char *prefix, ident *scnd, const char *suffix)
 	obstack_grow(&mangle_obst, get_id_str(scnd), get_id_strlen(scnd));
 	obstack_grow(&mangle_obst, suffix, strlen(suffix));
 	len = obstack_object_size(&mangle_obst);
-	cp  = obstack_finish(&mangle_obst);
+	cp  = (char*)obstack_finish(&mangle_obst);
 	res = new_id_from_chars(cp, len);
 	obstack_free(&mangle_obst, cp);
 	return res;
@@ -108,7 +108,7 @@ static ident *id_mangle_3(ident *first, char c, ident *scnd)
 	obstack_1grow(&mangle_obst, c);
 	obstack_grow(&mangle_obst,get_id_str(scnd),get_id_strlen(scnd));
 	len = obstack_object_size(&mangle_obst);
-	cp = obstack_finish(&mangle_obst);
+	cp = (char*)obstack_finish(&mangle_obst);
 	res = new_id_from_chars(cp, len);
 	obstack_free(&mangle_obst, cp);
 	return res;

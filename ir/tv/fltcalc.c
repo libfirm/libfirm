@@ -48,6 +48,15 @@
 #define strtold(s, e) strtod(s, e)
 #endif
 
+#ifdef _MSC_VER
+#include <float.h>
+#define isnan(x)   _isnan(x)
+static inline int isinf(double x)
+{
+	return !_finite(x) && !_isnan(x);
+}
+#endif
+
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
@@ -160,18 +169,18 @@ static void *pack(const fp_value *int_float, void *packed)
 	fp_value *val_buffer;
 	int      pos;
 
-	temp      = alloca(value_size);
-	shift_val = alloca(value_size);
+	temp      = (char*) alloca(value_size);
+	shift_val = (char*) alloca(value_size);
 
 	switch ((value_class_t)int_float->desc.clss) {
 	case NAN:
-		val_buffer = alloca(calc_buffer_size);
+		val_buffer = (fp_value*) alloca(calc_buffer_size);
 		fc_get_qnan(&int_float->desc, val_buffer);
 		int_float = val_buffer;
 		break;
 
 	case INF:
-		val_buffer = alloca(calc_buffer_size);
+		val_buffer = (fp_value*) alloca(calc_buffer_size);
 		fc_get_plusinf(&int_float->desc, val_buffer);
 		val_buffer->sign = int_float->sign;
 		int_float = val_buffer;
@@ -222,7 +231,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 	int exact = 1;
 	int hsb;
 	char lsb, guard, round, round_dir = 0;
-	char *temp = alloca(value_size);
+	char *temp = (char*) alloca(value_size);
 
 	/* save rounding bits at the end */
 	hsb = ROUNDING_BITS + in_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(in_val)) - 1;
@@ -445,8 +454,8 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		return;
 	}
 
-	temp     = alloca(value_size);
-	exp_diff = alloca(value_size);
+	temp     = (char*) alloca(value_size);
+	exp_diff = (char*) alloca(value_size);
 
 	/* get exponent difference */
 	sc_sub(_exp(a), _exp(b), exp_diff);
@@ -508,7 +517,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 		/* if subtracting a little more than the represented value or adding a little
 		 * more than the represented value to a negative value this, in addition to the
 		 * still set sticky bit, takes account of the 'little more' */
-		char *temp1 = alloca(calc_buffer_size);
+		char *temp1 = (char*) alloca(calc_buffer_size);
 		sc_val_from_ulong(1, temp1);
 		sc_add(temp, temp1, temp);
 	}
@@ -548,7 +557,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 
 	handle_NAN(a, b, result);
 
-	temp = alloca(value_size);
+	temp = (char*) alloca(value_size);
 
 	if (result != a && result != b)
 		result->desc = a->desc;
@@ -635,8 +644,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 
 	handle_NAN(a, b, result);
 
-	temp = alloca(value_size);
-	dividend = alloca(value_size);
+	temp = (char*) alloca(value_size);
+	dividend = (char*) alloca(value_size);
 
 	if (result != a && result != b)
 		result->desc = a->desc;
@@ -713,7 +722,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	_shift_left(_mant(a), temp, dividend);
 
 	{
-		char *divisor = alloca(calc_buffer_size);
+		char *divisor = (char*) alloca(calc_buffer_size);
 		sc_val_from_ulong(1, divisor);
 		_shift_right(_mant(b), divisor, divisor);
 		sc_div(dividend, divisor, _mant(result));
@@ -788,7 +797,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 	/* fixme: can be exact */
 	fc_exact = 0;
 
-	temp = alloca(value_size);
+	temp = (char*) alloca(value_size);
 
 	if (a != result)
 		result->desc = a->desc;
@@ -846,10 +855,10 @@ void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t
 
 	/* XXX excuse of an implementation to make things work */
 	LLDBL             val;
-	fp_value          *tmp = alloca(calc_buffer_size);
+	fp_value          *tmp = (fp_value*) alloca(calc_buffer_size);
 	ieee_descriptor_t tmp_desc;
 
-	buffer = alloca(len+1);
+	buffer = (char*) alloca(len+1);
 	memcpy(buffer, str, len);
 	buffer[len] = '\0';
 	val = strtold(buffer, NULL);
@@ -861,7 +870,7 @@ void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t
 	tmp_desc.clss          = NORMAL;
 	fc_val_from_ieee754(val, &tmp_desc, tmp);
 
-	return fc_cast(tmp, desc, result);
+	return fc_cast(tmp, desc, (fp_value*) result);
 }
 
 fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result)
@@ -900,7 +909,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
 #endif
 
 	if (result == NULL) result = calc_buffer;
-	temp = alloca(value_size);
+	temp = (char*) alloca(value_size);
 
 	/* CLEAR the buffer, else some bits might be uninitialized */
 	memset(result, 0, fc_get_buffer_length());
@@ -918,8 +927,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
 		result->desc.clss = NAN;
 		TRACEPRINTF(("val_from_float resulted in NAN\n"));
 		return result;
-	}
-	else if (isinf(l)) {
+	} else if (isinf(l)) {
 		result->desc.clss = INF;
 		TRACEPRINTF(("val_from_float resulted in %sINF\n", (result->sign == 1) ? "-" : ""));
 		return result;
@@ -999,7 +1007,7 @@ LLDBL fc_val_to_ieee754(const fp_value *val)
 #endif
 	mantissa_size = desc.mantissa_size + desc.explicit_one;
 
-	temp = alloca(calc_buffer_size);
+	temp = (fp_value*) alloca(calc_buffer_size);
 	value = fc_cast(val, &desc, temp);
 
 	sign = value->sign;
@@ -1043,7 +1051,7 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 	int exp_offset, val_bias, res_bias;
 
 	if (result == NULL) result = calc_buffer;
-	temp = alloca(value_size);
+	temp = (char*) alloca(value_size);
 
 	if (value->desc.exponent_size == desc->exponent_size &&
 		value->desc.mantissa_size == desc->mantissa_size &&
@@ -1282,7 +1290,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 	char *mul_1;
 	LLDBL flt_val;
 
-	mul_1 = alloca(calc_buffer_size);
+	mul_1 = (char*) alloca(calc_buffer_size);
 
 	switch (base) {
 	case FC_DEC:
@@ -1422,7 +1430,7 @@ void init_fltcalc(int precision)
 		value_size       = sc_get_buffer_length();
 		calc_buffer_size = sizeof(fp_value) + 2*value_size - 1;
 
-		calc_buffer = xmalloc(calc_buffer_size);
+		calc_buffer = (fp_value*) xmalloc(calc_buffer_size);
 		memset(calc_buffer, 0, calc_buffer_size);
 		DEBUGPRINTF(("init fltcalc:\n\tVALUE_SIZE = %d\ntCALC_BUFFER_SIZE = %d\n\tcalc_buffer = %p\n\n", value_size, calc_buffer_size, calc_buffer));
 #ifdef HAVE_LONG_DOUBLE
@@ -1474,7 +1482,7 @@ fp_value *fc_sub(const fp_value *a, const fp_value *b, fp_value *result)
 	TRACEPRINTF(("%s ", fc_print(a, buffer, sizeof(buffer), FC_PACKED)));
 	TRACEPRINTF(("- %s ", fc_print(b, buffer, sizeof(buffer), FC_PACKED)));
 
-	temp = alloca(calc_buffer_size);
+	temp = (fp_value*) alloca(calc_buffer_size);
 	memcpy(temp, b, calc_buffer_size);
 	temp->sign = !b->sign;
 	if (sc_comp(_exp(a), _exp(temp)) == -1)

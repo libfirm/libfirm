@@ -47,6 +47,7 @@ typedef enum arch_register_class_flags_t {
 	/** the register models an abstract state (example: fpu rounding mode) */
 	arch_register_class_flag_state     = 1U << 1
 } arch_register_class_flags_t;
+ENUM_BITSET(arch_register_class_flags_t)
 
 typedef enum arch_register_type_t {
 	arch_register_type_none         = 0,
@@ -69,6 +70,7 @@ typedef enum arch_register_type_t {
 	 * code */
 	arch_register_type_state        = 1U << 5,
 } arch_register_type_t;
+ENUM_BITSET(arch_register_type_t)
 
 /**
  * Different types of register allocation requirements.
@@ -93,6 +95,7 @@ typedef enum arch_register_req_type_t {
 	 * rewiring logic) */
 	arch_register_req_type_produces_sp       = 1U << 6,
 } arch_register_req_type_t;
+ENUM_BITSET(arch_register_req_type_t)
 
 extern const arch_register_req_t *arch_no_register_req;
 
@@ -111,12 +114,14 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node);
  * Node classification. Used for statistics and for detecting reload nodes.
  */
 typedef enum arch_irn_class_t {
+	arch_irn_class_none   = 0,
 	arch_irn_class_spill  = 1 << 0,
 	arch_irn_class_reload = 1 << 1,
 	arch_irn_class_remat  = 1 << 2,
 	arch_irn_class_copy   = 1 << 3,
 	arch_irn_class_perm   = 1 << 4
 } arch_irn_class_t;
+ENUM_BITSET(arch_irn_class_t)
 
 void arch_set_frame_offset(ir_node *irn, int bias);
 

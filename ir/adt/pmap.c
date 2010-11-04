@@ -48,8 +48,8 @@ struct pmap {
  */
 static int pmap_entry_cmp(const void *p1, const void *p2, size_t size)
 {
-	const pmap_entry *entry1 = p1;
-	const pmap_entry *entry2 = p2;
+	const pmap_entry *entry1 = (const pmap_entry*) p1;
+	const pmap_entry *entry2 = (const pmap_entry*) p2;
 	(void) size;
 
 	return entry1->key != entry2->key;
@@ -76,7 +76,7 @@ void pmap_insert(pmap *map, const void *key, void *value)
 	pmap_entry entry, *p;
 
 	entry.key = key;
-	p = set_insert(M2S(map), &entry, sizeof(pmap_entry), HASH_PTR(key));
+	p = (pmap_entry*) set_insert(M2S(map), &entry, sizeof(pmap_entry), HASH_PTR(key));
 	p->value = value;
 }
 

@@ -34,6 +34,7 @@
  * The type of an option.
  */
 typedef enum {
+	lc_opt_type_invalid,
 	lc_opt_type_enum,
 	lc_opt_type_bit,
 	lc_opt_type_negbit,
@@ -127,7 +128,7 @@ typedef struct {
 	_LC_OPT_ENT(name, desc, type, data, len, cb, dump, dump_vals)
 
 #define LC_OPT_LAST \
-	_LC_OPT_ENT(NULL, NULL, 0, NULL, 0, NULL, NULL, NULL)
+	_LC_OPT_ENT(NULL, NULL, lc_opt_type_invalid, NULL, 0, NULL, NULL, NULL)
 
 /**
  * Get the root option group.

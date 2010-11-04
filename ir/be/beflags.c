@@ -171,7 +171,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 				break;
 			}
 		}
-		n = get_irn_link(n);
+		n = (ir_node*)get_irn_link(n);
 	} while (n != NULL);
 
 	/* No need to introduce the copy, because it only lives in this block, but

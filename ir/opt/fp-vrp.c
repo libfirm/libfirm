@@ -133,7 +133,7 @@ typedef struct environment_t {
 
 static inline bitinfo* get_bitinfo(ir_node const* const irn)
 {
-	return get_irn_link(irn);
+	return (bitinfo*)get_irn_link(irn);
 }
 
 static int set_bitinfo(ir_node* const irn, ir_tarval* const z, ir_tarval* const o)
@@ -534,7 +534,7 @@ result_unknown:
 
 static void first_round(ir_node* const irn, void* const env)
 {
-	pdeq* const q = env;
+	pdeq* const q = (pdeq*)env;
 
 	transfer(irn);
 	if (is_Phi(irn) || is_Block(irn)) {
@@ -548,10 +548,10 @@ static void first_round(ir_node* const irn, void* const env)
 
 static void apply_result(ir_node* const irn, void* ctx)
 {
-	bitinfo* const b = get_bitinfo(irn);
+	environment_t* env = (environment_t*)ctx;
+	bitinfo* const b   = get_bitinfo(irn);
 	ir_tarval*     z;
 	ir_tarval*     o;
-	environment_t* env = ctx;
 
 	if (!b) return;
 	if (is_Const(irn)) return; // It cannot get any better than a Const.
@@ -707,7 +707,7 @@ void fixpoint_vrp(ir_graph* const irg)
 		irg_walk_blkwise_dom_top_down(irg, firm_clear_link, first_round, q);
 
 		while (!pdeq_empty(q)) {
-			ir_node* const n = pdeq_getl(q);
+			ir_node* const n = (ir_node*)pdeq_getl(q);
 			if (transfer(n))
 				queue_users(q, n);
 		}

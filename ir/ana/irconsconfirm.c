@@ -403,10 +403,11 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 /**
  * Pre-block-walker: Called for every block to insert Confirm nodes
  */
-static void insert_Confirm_in_block(ir_node *block, void *env)
+static void insert_Confirm_in_block(ir_node *block, void *data)
 {
 	ir_node *cond, *proj, *selector;
 	ir_mode *mode;
+	env_t   *env = (env_t*) data;
 
 	/*
 	 * we can only handle blocks with only ONE control flow
@@ -430,7 +431,7 @@ static void insert_Confirm_in_block(ir_node *block, void *env)
 		ir_node *cmp;
 		pn_Cmp pnc;
 
-		handle_modeb(block, selector, get_Proj_proj(proj), env);
+		handle_modeb(block, selector, (pn_Cond) get_Proj_proj(proj), env);
 
 		/* this should be an IF, check this */
 		if (! is_Proj(selector))
@@ -440,7 +441,7 @@ static void insert_Confirm_in_block(ir_node *block, void *env)
 		if (! is_Cmp(cmp))
 			return;
 
-		pnc = get_Proj_proj(selector);
+		pnc = (pn_Cmp) get_Proj_proj(selector);
 
 		if (get_Proj_proj(proj) != pn_Cond_true) {
 			/* it's the false branch */
@@ -537,9 +538,10 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 /**
  * Pre-walker: Called for every node to insert Confirm nodes
  */
-static void insert_Confirm(ir_node *node, void *env)
+static void insert_Confirm(ir_node *node, void *data)
 {
 	ir_node *ptr;
+	env_t   *env = (env_t*) data;
 
 	switch (get_irn_opcode(node)) {
 	case iro_Block:

@@ -34,6 +34,10 @@
 #include "irverify.h"
 #include "xmalloc.h"
 
+typedef void (*void_pass_func_irg)(ir_graph *irg);
+typedef int (*int_pass_func_irg)(ir_graph *irg);
+typedef void (*void_pass_func)(void);
+
 /*Add a graph pass to a graph pass manager. */
 void ir_graph_pass_mgr_add(ir_graph_pass_manager_t *mgr, ir_graph_pass_t *pass)
 {
@@ -58,7 +62,7 @@ void ir_prog_pass_mgr_add(ir_prog_pass_manager_t *mgr, ir_prog_pass_t *pass)
  */
 static int run_wrapper(ir_prog *prog, void *ctx)
 {
-	ir_graph_pass_manager_t *mgr = ctx;
+	ir_graph_pass_manager_t *mgr = (ir_graph_pass_manager_t*)ctx;
 
 	(void)prog;
 	return ir_graph_pass_mgr_run(mgr);
@@ -85,7 +89,7 @@ void ir_prog_no_dump(ir_prog *prog, void *ctx, unsigned idx)
  */
 static void term_wrapper(void *context)
 {
-	ir_graph_pass_manager_t *mgr = context;
+	ir_graph_pass_manager_t *mgr = (ir_graph_pass_manager_t*)context;
 	term_graph_pass_mgr(mgr);
 }
 
@@ -124,7 +128,7 @@ void ir_prog_pass_mgr_add_graph_pass(
 	if (! list_empty(&mgr->passes)) {
 		wrapper = list_entry(mgr->passes.prev, ir_prog_pass_t, list);
 		if (wrapper->is_wrapper) {
-			graph_mgr = wrapper->context;
+			graph_mgr = (ir_graph_pass_manager_t*)wrapper->context;
 
 			ir_graph_pass_mgr_add(graph_mgr, pass);
 			++mgr->n_passes;
@@ -247,7 +251,7 @@ int ir_prog_pass_mgr_run(ir_prog_pass_manager_t *mgr)
 			}
 		}
 		if (pass->is_wrapper) {
-			ir_graph_pass_manager_t *graph_mgr = pass->context;
+			ir_graph_pass_manager_t *graph_mgr = (ir_graph_pass_manager_t*)pass->context;
 			idx += graph_mgr->n_passes;
 		} else
 			++idx;
@@ -346,7 +350,7 @@ void ir_prog_pass_mgr_set_run_idx(
  */
 static int void_graph_wrapper(ir_graph *irg, void *context)
 {
-	void (*function)(ir_graph *irg) = context;
+	void_pass_func_irg function = (void_pass_func_irg)context;
 	function(irg);
 	return 0;
 }  /* void_graph_wrapper */
@@ -359,7 +363,7 @@ ir_graph_pass_t *def_graph_pass(
 
 	pass->kind       = k_ir_graph_pass;
 	pass->run_on_irg = void_graph_wrapper;
-	pass->context    = function;
+	pass->context    = (void*)function;
 	pass->name       = name;
 
 	INIT_LIST_HEAD(&pass->list);
@@ -368,11 +372,11 @@ ir_graph_pass_t *def_graph_pass(
 }  /* def_graph_pass */
 
 /**
- * Wrapper for running void function(ir_graph *irg) as an ir_graph pass.
+ * Wrapper for running int function(ir_graph *irg) as an ir_graph pass.
  */
 static int int_graph_wrapper(ir_graph *irg, void *context)
 {
-	int (*function)(ir_graph *irg) = context;
+	int_pass_func_irg function = (int_pass_func_irg)context;
 	return function(irg);
 }  /* int_graph_wrapper */
 
@@ -384,7 +388,7 @@ ir_graph_pass_t *def_graph_pass_ret(
 
 	pass->kind       = k_ir_graph_pass;
 	pass->run_on_irg = int_graph_wrapper;
-	pass->context    = function;
+	pass->context    = (void*)function;
 	pass->name       = name;
 
 	INIT_LIST_HEAD(&pass->list);
@@ -421,7 +425,7 @@ void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag)
  */
 static int void_prog_wrapper(ir_prog *irp, void *context)
 {
-	void (*function)(void) = context;
+	void_pass_func function = (void_pass_func)context;
 
 	(void)irp;
 	function();
@@ -437,7 +441,7 @@ ir_prog_pass_t *def_prog_pass(
 
 	pass->kind          = k_ir_prog_pass;
 	pass->run_on_irprog = void_prog_wrapper;
-	pass->context       = function;
+	pass->context       = (void*)function;
 	pass->name          = name;
 
 	INIT_LIST_HEAD(&pass->list);
@@ -466,18 +470,18 @@ ir_prog_pass_t *def_prog_pass_constructor(
 	return pass;
 }  /* def_prog_pass_constructor */
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t pass;
 	void           *context;
 	void (*function)(void *context);
-};
+} pass_t;
 
 /**
  * Wrapper for the call_function pass.
  */
 static int call_function_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	(void)irp;
 	pass->function(pass->context);

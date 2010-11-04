@@ -64,8 +64,8 @@ typedef struct block_entry_t {
  */
 static int addr_cmp(const void *elt, const void *key)
 {
-	const block_entry_t *e1 = elt;
-	const block_entry_t *e2 = key;
+	const block_entry_t *e1 = (const block_entry_t*)elt;
+	const block_entry_t *e2 = (const block_entry_t*)key;
 
 	return e1->block != e2->block;
 }
@@ -79,7 +79,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 	block_entry_t *elem;
 
 	key.block = block;
-	elem = pset_find(ctx->blk_map, &key, HASH_PTR(block));
+	elem = (block_entry_t*)pset_find(ctx->blk_map, &key, HASH_PTR(block));
 	if (elem)
 		return elem;
 
@@ -91,7 +91,7 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
 	elem->cf_list    = NEW_ARR_F(ir_node *, 0);
 	elem->entry_list = NEW_ARR_F(ir_node *, 0);
 
-	return pset_insert(ctx->blk_map, elem, HASH_PTR(block));
+	return (block_entry_t*)pset_insert(ctx->blk_map, elem, HASH_PTR(block));
 }
 
 /**
@@ -225,7 +225,7 @@ typedef struct dom_traversal_t {
  */
 static void dom_block_visit_pre(ir_node *block, void *env)
 {
-	dom_traversal_t *ctx   = env;
+	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
 	traverse_block_pre(block, entry, ctx->pre, ctx->env);
@@ -236,7 +236,7 @@ static void dom_block_visit_pre(ir_node *block, void *env)
  */
 static void dom_block_visit_post(ir_node *block, void *env)
 {
-	dom_traversal_t *ctx   = env;
+	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
 	traverse_block_post(block, entry, ctx->post, ctx->env);
@@ -247,7 +247,7 @@ static void dom_block_visit_post(ir_node *block, void *env)
  */
 static void dom_block_visit_both(ir_node *block, void *env)
 {
-	dom_traversal_t *ctx   = env;
+	dom_traversal_t *ctx   = (dom_traversal_t*)env;
 	block_entry_t   *entry = block_find_entry(block, ctx->blks);
 
 	traverse_block_pre(block, entry, ctx->pre, ctx->env);

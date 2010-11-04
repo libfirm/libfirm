@@ -144,8 +144,8 @@ $default_copy_attr = "sparc_copy_attr";
 );
 
 %custom_irn_flags = (
-	modifies_flags    => "sparc_arch_irn_flag_modifies_flags",
-	modifies_fp_flags => "sparc_arch_irn_flag_modifies_fp_flags",
+	modifies_flags    => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_flags",
+	modifies_fp_flags => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_fp_flags",
 );
 
 my %cmp_operand_constructors = (

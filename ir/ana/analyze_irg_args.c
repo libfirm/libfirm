@@ -44,7 +44,7 @@
  * @param arg   The graph argument with mode reference,
  *             that must be checked.
  */
-static unsigned analyze_arg(ir_node *arg, unsigned bits)
+static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 {
 	int i, p;
 	ir_node *succ;

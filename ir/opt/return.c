@@ -297,7 +297,7 @@ void normalize_n_returns(ir_graph *irg)
 		dbg_info *dbgi  = get_irn_dbg_info(ret);
 		ir_node  *phiM;
 
-		list = get_irn_link(ret);
+		list = (ir_node*)get_irn_link(ret);
 		--n_rets;
 
 		n = get_Block_n_cfgpreds(block);
@@ -366,7 +366,7 @@ void normalize_n_returns(ir_graph *irg)
 	 */
 	in = ALLOCAN(ir_node*, n_finals);
 
-	for (i = 0; final; ++i, final = get_irn_link(final))
+	for (i = 0; final != NULL; ++i, final = (ir_node*)get_irn_link(final))
 		in[i] = final;
 
 	exchange(endbl, new_r_Block(irg, n_finals, in));

@@ -86,7 +86,7 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 		 * the def node (see the code above). It was placed into the
 		 * link field of the irn, so we can get it there.
 		 */
-		b = get_irn_link(irn);
+		b = (border_t*)get_irn_link(irn);
 
 		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered"));
 	}
@@ -113,7 +113,7 @@ void create_borders(ir_node *block, void *env_ptr)
 #define border_use(irn, step, real) \
 	border_add(env, head, irn, step, ++pressure, 0, real)
 
-	be_chordal_env_t *env             = env_ptr;
+	be_chordal_env_t *env             = (be_chordal_env_t*)env_ptr;
 	bitset_t *live                    = bitset_malloc(get_irg_last_idx(env->irg));
 	ir_node *irn;
 	be_lv_t *lv                       = be_get_irg_liveness(env->irg);

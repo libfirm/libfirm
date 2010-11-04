@@ -43,7 +43,7 @@ typedef struct walk_env {
 
 static void find_mux_nodes(ir_node *mux, void *ctx)
 {
-	walk_env_t *env = ctx;
+	walk_env_t *env = (walk_env_t*)ctx;
 
 	/* Skip non-mux nodes. */
 	if (!is_Mux(mux))
@@ -145,17 +145,17 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 	DEL_ARR_F(env.muxes);
 }
 
-struct pass_t {
+typedef struct pass_t {
 	ir_graph_pass_t    pass;
 	lower_mux_callback *cb_func;
-};
+} pass_t;
 
 /**
  * Wrapper to run ir_lower_mux() as an ir_graph pass
  */
 static int pass_wrapper(ir_graph *irg, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	lower_mux(irg, pass->cb_func);
 	return 0;
@@ -163,7 +163,7 @@ static int pass_wrapper(ir_graph *irg, void *context)
 
 ir_graph_pass_t *lower_mux_pass(const char *name, lower_mux_callback *cb_func)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
+	pass_t *pass = XMALLOCZ(pass_t);
 
 	pass->cb_func = cb_func;
 	return def_graph_pass_constructor(

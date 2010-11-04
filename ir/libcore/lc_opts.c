@@ -112,9 +112,9 @@ static lc_opt_entry_t *init_entry(lc_opt_entry_t *ent, lc_opt_entry_t *parent,
 	const char *copied_desc;
 
 	obstack_grow0(&obst, name, strlen(name));
-	copied_name = obstack_finish(&obst);
+	copied_name = (char*)obstack_finish(&obst);
 	obstack_grow0(&obst, desc, strlen(desc));
-	copied_desc = obstack_finish(&obst);
+	copied_desc = (char*)obstack_finish(&obst);
 
 	memset(ent, 0, sizeof(*ent));
 	set_name(ent, copied_name);
@@ -311,7 +311,7 @@ static lc_opt_entry_t *resolve_up_to_last_str_rec(lc_opt_entry_t *from,
 		size_t next = strspn(path + end, path_delim);
 
 		/* copy the part of the path into a buffer */
-		char *buf = malloc((end+1) * sizeof(buf[0]));
+		char *buf = (char*)malloc((end+1) * sizeof(buf[0]));
 		strncpy(buf, path, end);
 		buf[end] = '\0';
 
@@ -398,7 +398,7 @@ int lc_opt_std_cb(UNUSED(const char *name), lc_opt_type_t type, void *data, size
 			break;
 
 		case lc_opt_type_string:
-			strncpy(data, va_arg(args, const char *), length);
+			strncpy((char*)data, va_arg(args, const char *), length);
 			break;
 
 		case lc_opt_type_int:
@@ -432,7 +432,7 @@ int lc_opt_std_dump(char *buf, size_t n, UNUSED(const char *name), lc_opt_type_t
 			res = snprintf(buf, n, "%s", *((int *) data) ? "true" : "false");
 			break;
 		case lc_opt_type_string:
-			strncpy(buf, data, n);
+			strncpy(buf, (const char*)data, n);
 			res = n;
 			break;
 		case lc_opt_type_int:
@@ -542,6 +542,8 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 			if (s->cb(opt->name, s->type, s->value, s->length, value))
 				error = lc_opt_err_none;
 			break;
+		case lc_opt_type_invalid:
+			abort();
 	}
 
 	set_error(err, error, value);
@@ -729,7 +731,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 	int ret                   = 0;
 
 	lc_opt_err_info_t err;
-	char *end, *buf, *eqsign;
+	const char *end, *eqsign;
 
 	if (n >= n_prefix && strncmp(opt_prefix, arg, n_prefix) == 0) {
 		arg = arg + n_prefix;
@@ -741,7 +743,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 		 */
 		if (arg[0] == '@') {
 			size_t n    = strcspn(&arg[1], " \t\n");
-			char *fname = alloca(n + 1);
+			char *fname = (char*)alloca(n + 1);
 			FILE *f;
 
 			strncpy(fname, &arg[1], n);
@@ -768,7 +770,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 			 * Copy the part of the option into the buffer and add the
 			 * finalizing zero.
 			 */
-			buf = obstack_copy0(&obst, arg, end - arg);
+			char *buf = (char*)obstack_copy0(&obst, arg, end - arg);
 
 			/* Resolve the group inside the group */
 			grp = lc_opt_find_grp(grp, buf, &err);
@@ -787,6 +789,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 
 		if (!error) {
 			lc_opt_entry_t *opt;
+			char           *buf;
 
 			/*
 			 * Now, we are at the last option part:
@@ -796,7 +799,7 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 			 * later.
 			 */
 			end = strchr(arg, '=');
-			buf = obstack_copy0(&obst, arg, end ? end - arg : (int) strlen(arg));
+			buf = (char*)obstack_copy0(&obst, arg, end ? end - arg : (int) strlen(arg));
 			opt = lc_opt_find_opt(grp, buf, &err);
 			error = lc_opt_raise_error(&err, handler, ERR_STRING, arg);
 
@@ -844,7 +847,7 @@ static int opt_arg_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_
 {
 	char buf[256];
 
-	lc_opt_entry_t *opt = arg->v_ptr;
+	lc_opt_entry_t *opt = (lc_opt_entry_t*)arg->v_ptr;
 	const char     *s   = buf;
 	size_t          res = 0;
 

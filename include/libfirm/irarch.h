@@ -89,6 +89,7 @@ typedef enum {
 	arch_dep_div_by_const = 2,  /**< optimize Div into Shift/Add/Mulh */
 	arch_dep_mod_by_const = 4   /**< optimize Mod into Shift/Add/Mulh */
 } arch_dep_opts_t;
+ENUM_BITSET(arch_dep_opts_t)
 
 /**
  * Set the optimizations that shall be applied.

@@ -52,7 +52,7 @@ typedef struct {
 
 static void *irn_height_init(ir_phase *phase, const ir_node *node)
 {
-	irn_height_t *h = phase_alloc(phase, sizeof(*h));
+	irn_height_t *h = (irn_height_t*) phase_alloc(phase, sizeof(*h));
 	(void) node;
 	memset(h, 0, sizeof(*h));
 	return h;
@@ -70,8 +70,8 @@ static void *irn_height_reinit(ir_phase *phase, const ir_node *node,
 
 static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
 {
-	ir_heights_t *heights = data;
-	irn_height_t *h       = phase_get_irn_data(&heights->phase, irn);
+	ir_heights_t *heights = (ir_heights_t*) data;
+	irn_height_t *h       = (irn_height_t*) phase_get_irn_data(&heights->phase, irn);
 
 	if (h)
 		fprintf(f, "height: %u\n", h->height);
@@ -102,12 +102,12 @@ static bool search(const ir_heights_t *h, const ir_node *curr,
 		return false;
 
 	/* Check, if we have already been here. Coming more often won't help :-) */
-	h_curr = phase_get_irn_data(&h->phase, curr);
+	h_curr = (irn_height_t*) phase_get_irn_data(&h->phase, curr);
 	if (h_curr->visited >= h->visited)
 		return false;
 
 	/* If we are too deep into the DAG we won't find the target either. */
-	h_tgt = phase_get_irn_data(&h->phase, tgt);
+	h_tgt = (irn_height_t*) phase_get_irn_data(&h->phase, tgt);
 	if (h_curr->height > h_tgt->height)
 		return false;
 
@@ -132,8 +132,8 @@ int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                const ir_node *m)
 {
 	int res          = 0;
-	irn_height_t *hn = phase_get_irn_data(&h->phase, n);
-	irn_height_t *hm = phase_get_irn_data(&h->phase, m);
+	irn_height_t *hn = (irn_height_t*) phase_get_irn_data(&h->phase, n);
+	irn_height_t *hm = (irn_height_t*) phase_get_irn_data(&h->phase, m);
 
 	assert(get_nodes_block(n) == get_nodes_block(m));
 	assert(hn != NULL && hm != NULL);
@@ -154,7 +154,7 @@ int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
  */
 static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 {
-	irn_height_t *ih = phase_get_or_set_irn_data(&h->phase, irn);
+	irn_height_t *ih = (irn_height_t*) phase_get_or_set_irn_data(&h->phase, irn);
 
 	const ir_edge_t *edge;
 
@@ -217,13 +217,13 @@ static unsigned compute_heights_in_block(ir_node *bl, ir_heights_t *h)
 
 static void compute_heights_in_block_walker(ir_node *block, void *data)
 {
-	ir_heights_t *h = data;
+	ir_heights_t *h = (ir_heights_t*) data;
 	compute_heights_in_block(block, h);
 }
 
 unsigned get_irn_height(const ir_heights_t *heights, const ir_node *irn)
 {
-	const irn_height_t *h = phase_get_irn_data(&heights->phase, irn);
+	const irn_height_t *h = (irn_height_t*) phase_get_irn_data(&heights->phase, irn);
 	assert(h && "No height information for node");
 	return h->height;
 }
@@ -237,7 +237,7 @@ unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 	/* reset phase data for all nodes in the block */
 	foreach_out_edge(block, edge) {
 		ir_node      *irn = get_edge_src_irn(edge);
-		irn_height_t *ih  = phase_get_irn_data(&h->phase, irn);
+		irn_height_t *ih  = (irn_height_t*) phase_get_irn_data(&h->phase, irn);
 		memset(ih, 0, sizeof(*ih));
 	}
 

@@ -447,19 +447,19 @@ FIRM_API void set_irg_inline_property(ir_graph *irg, irg_inline_property s);
  * Returns the mask of the additional graph properties.
  * The properties are automatically inherited from the method type
  * if they were not set using set_irg_additional_properties() or
- * set_irg_additional_property().
+ * set_irg_additional_properties().
  *
- * @return a bitset of mtp_additional_property values
+ * @return a bitset of mtp_additional_properties values
  */
-FIRM_API unsigned get_irg_additional_properties(const ir_graph *irg);
+FIRM_API mtp_additional_properties get_irg_additional_properties(const ir_graph *irg);
 
 /** Sets the mask of the additional graph properties. */
 FIRM_API void set_irg_additional_properties(ir_graph *irg,
-                                            unsigned property_mask);
+                                            mtp_additional_properties property_mask);
 
 /** Sets one additional graph property. */
-FIRM_API void set_irg_additional_property(ir_graph *irg,
-                                          mtp_additional_property flag);
+FIRM_API void add_irg_additional_properties(ir_graph *irg,
+                                            mtp_additional_properties flag);
 
 /** A void * field to link arbitrary information to the node. */
 FIRM_API void set_irg_link(ir_graph *irg, void *thing);
@@ -487,8 +487,9 @@ FIRM_API void set_irg_block_visited(ir_graph *irg, ir_visited_t i);
  * block_visited flags. If NDEBUG is not defined, then the compiler will abort
  * if 2 parties try to use the flags.
  */
-enum ir_resources_enum_t {
+typedef enum ir_resources_t {
 	/* local (irg) resources */
+	IR_RESOURCE_NONE          = 0,
 	IR_RESOURCE_BLOCK_VISITED = 1 << 0,  /**< Block visited flags are used. */
 	IR_RESOURCE_BLOCK_MARK    = 1 << 1,  /**< Block mark bits are used. */
 	IR_RESOURCE_IRN_VISITED   = 1 << 2,  /**< IR-node visited flags are used. */
@@ -504,8 +505,8 @@ enum ir_resources_enum_t {
 	/* masks */
 	IR_RESOURCE_LOCAL_MASK    = 0x00FF,  /**< Mask for all local resources. */
 	IR_RESOURCE_GLOBAL_MASK   = 0xFF00   /**< Mask for all global resources. */
-};
-typedef unsigned ir_resources_t;
+} ir_resources_t;
+ENUM_BITSET(ir_resources_t)
 
 #ifndef NDEBUG
 FIRM_API void ir_reserve_resources(ir_graph *irg, ir_resources_t resources);
@@ -525,6 +526,7 @@ typedef enum {
 	IR_GRAPH_STATE_ARCH_DEP      = 1U << 1,  /**< should not construct more nodes which irarch potentially breaks down */
 	IR_GRAPH_STATE_BCONV_ALLOWED = 1U << 2,  /**< Conv(mode_b) to Iu is allowed as set command */
 } ir_graph_state_t;
+ENUM_BITSET(ir_graph_state_t)
 
 /** set some state flags on the graph (this does not clear the other flags) */
 FIRM_API void set_irg_state(ir_graph *irg, ir_graph_state_t state);

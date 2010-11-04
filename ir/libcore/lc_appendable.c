@@ -76,13 +76,13 @@ static void default_finish(UNUSED(lc_appendable_t *env))
 static int file_snadd(lc_appendable_t *obj, const char *str, size_t n)
 {
 	obj->written += n;
-	fwrite(str, sizeof(char), n, obj->obj);
+	fwrite(str, sizeof(char), n, (FILE*)obj->obj);
 	return n;
 }
 
 static int file_chadd(lc_appendable_t *obj, int ch)
 {
-	fputc(ch, obj->obj);
+	fputc(ch, (FILE*)obj->obj);
 	obj->written++;
 	return 1;
 }
@@ -103,13 +103,13 @@ const lc_appendable_funcs_t *lc_appendable_file = &app_file;
 
 static void str_init(lc_appendable_t *obj)
 {
-	strncpy(obj->obj, "", obj->limit);
+	strncpy((char*)obj->obj, "", obj->limit);
 }
 
 static int str_snadd(lc_appendable_t *obj, const char *str, size_t n)
 {
 	size_t to_write = LC_MIN(obj->limit - obj->written - 1, n);
-	char *tgt = obj->obj;
+	char *tgt = (char*)obj->obj;
 	strncpy(tgt + obj->written, str, to_write);
 	obj->written += to_write;
 	return to_write;
@@ -118,7 +118,7 @@ static int str_snadd(lc_appendable_t *obj, const char *str, size_t n)
 static int str_chadd(lc_appendable_t *obj, int ch)
 {
 	if (obj->limit - obj->written > 1) {
-		char *tgt = obj->obj;
+		char *tgt = (char*)obj->obj;
 		tgt[obj->written++] = (char) ch;
 		return 1;
 	}
@@ -128,7 +128,7 @@ static int str_chadd(lc_appendable_t *obj, int ch)
 
 static void str_finish(lc_appendable_t *obj)
 {
-	char *str = obj->obj;
+	char *str = (char*)obj->obj;
 	str[obj->written] = '\0';
 }
 
@@ -147,7 +147,7 @@ const lc_appendable_funcs_t *lc_appendable_string = &app_string;
 
 static int obst_snadd(lc_appendable_t *obj, const char *str, size_t n)
 {
-	struct obstack *obst = obj->obj;
+	struct obstack *obst = (struct obstack*)obj->obj;
 	obj->written += n;
 	obstack_grow(obst, str, n);
 	return n;
@@ -155,7 +155,7 @@ static int obst_snadd(lc_appendable_t *obj, const char *str, size_t n)
 
 static int obst_chadd(lc_appendable_t *obj, int ch)
 {
-	struct obstack *obst = obj->obj;
+	struct obstack *obst = (struct obstack*)obj->obj;
 	obstack_1grow(obst, (char) ch);
 	obj->written++;
 	return 1;

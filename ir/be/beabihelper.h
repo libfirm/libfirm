@@ -29,6 +29,7 @@
 
 #include "firm_types.h"
 #include "be_types.h"
+#include "bearch.h"
 
 typedef struct beabi_helper_env_t beabi_helper_env_t;
 
@@ -46,7 +47,7 @@ void be_abihelper_finish(beabi_helper_env_t *env);
  * as ignore or produces_sp).
  */
 void be_prolog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
-                       arch_irn_flags_t flags);
+                       arch_register_req_type_t flags);
 
 /**
  * Creates a start node.
@@ -86,7 +87,7 @@ void be_prolog_set_memory(beabi_helper_env_t *env, ir_node *value);
  *  - stack pointer, base pointer
  */
 void be_epilog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
-                       arch_irn_flags_t flags, ir_node *value);
+                       arch_register_req_type_t flags, ir_node *value);
 
 void be_epilog_set_reg_value(beabi_helper_env_t *env,
                              const arch_register_t *reg, ir_node *value);

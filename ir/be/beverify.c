@@ -286,7 +286,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 static void check_schedule(ir_node *node, void *data)
 {
-	be_verify_schedule_env_t *env = data;
+	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*)data;
 	bool should_be = to_appear_in_schedule(node);
 	bool scheduled = bitset_is_set(env->scheduled, get_irn_idx(node));
 
@@ -335,8 +335,8 @@ typedef struct {
 
 static int cmp_spill(const void* d1, const void* d2, size_t size)
 {
-	const spill_t* s1 = d1;
-	const spill_t* s2 = d2;
+	const spill_t* s1 = (const spill_t*)d1;
+	const spill_t* s2 = (const spill_t*)d2;
 	(void) size;
 
 	return s1->spill != s2->spill;
@@ -347,7 +347,7 @@ static spill_t *find_spill(be_verify_spillslots_env_t *env, ir_node *node)
 	spill_t spill;
 
 	spill.spill = node;
-	return set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
+	return (spill_t*)set_find(env->spills, &spill, sizeof(spill), HASH_PTR(node));
 }
 
 static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_entity *ent)
@@ -356,11 +356,11 @@ static spill_t *get_spill(be_verify_spillslots_env_t *env, ir_node *node, ir_ent
 	int hash = HASH_PTR(node);
 
 	spill.spill = node;
-	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
 
 	if (res == NULL) {
 		spill.ent = ent;
-		res = set_insert(env->spills, &spill, sizeof(spill), hash);
+		res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
 	}
 
 	return res;
@@ -429,13 +429,13 @@ static void collect_memperm(be_verify_spillslots_env_t *env, ir_node *node, ir_n
 	}
 
 	spill.spill = node;
-	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = spillent;
-	res = set_insert(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	for (i = 0, arity = be_get_MemPerm_entity_arity(memperm); i < arity; ++i) {
 		ir_node* arg = get_irn_n(memperm, i + 1);
@@ -454,13 +454,13 @@ static void collect_memphi(be_verify_spillslots_env_t *env, ir_node *node, ir_no
 	assert(is_Phi(node));
 
 	spill.spill = node;
-	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		return;
 	}
 
 	spill.ent = ent;
-	res = set_insert(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	/* is 1 of the arguments a spill? */
 	for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
@@ -493,7 +493,7 @@ static void collect(be_verify_spillslots_env_t *env, ir_node *node, ir_node *rel
  */
 static void collect_spills_walker(ir_node *node, void *data)
 {
-	be_verify_spillslots_env_t *env = data;
+	be_verify_spillslots_env_t *env = (be_verify_spillslots_env_t*)data;
 
 	if (arch_irn_classify(node) & arch_irn_class_reload) {
 		ir_node *spill = get_memory_edge(node);
@@ -520,8 +520,9 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 	spill_t  *spill;
 	int       i;
 
-	for (spill = set_first(env->spills), i = 0; spill != NULL; spill = set_next(env->spills), ++i) {
-		spills[i] = spill;
+	i = 0;
+	foreach_set(env->spills, spill_t*, spill) {
+		spills[i++] = spill;
 	}
 
 	for (i = 0; i < spillcount; ++i) {
@@ -547,7 +548,7 @@ static void check_spillslot_interference(be_verify_spillslots_env_t *env)
 
 static void check_lonely_spills(ir_node *node, void *data)
 {
-	be_verify_spillslots_env_t *env = data;
+	be_verify_spillslots_env_t *env = (be_verify_spillslots_env_t*)data;
 
 	if (be_is_Spill(node) || (is_Proj(node) && be_is_MemPerm(get_Proj_pred(node)))) {
 		spill_t *spill = find_spill(env, node);

@@ -224,6 +224,14 @@ FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 	return 0;
 }  /* value_not_null */
 
+#ifdef __cplusplus
+extern "C++" {
+	static inline ir_value_classify_sign operator *(ir_value_classify_sign sign, int mul) {
+	return (ir_value_classify_sign) (sign*mul);
+	}
+}
+#endif
+
 /*
  * Check, if the value of a node can be confirmed >= 0 or <= 0,
  * If the mode of the value did not honor signed zeros, else
@@ -237,7 +245,7 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n)
 	int negate = 1;
 
 	for (;;) {
-		ir_opcode code = get_irn_opcode(n);
+		unsigned code = get_irn_opcode(n);
 
 		switch (code) {
 		case iro_Minus:

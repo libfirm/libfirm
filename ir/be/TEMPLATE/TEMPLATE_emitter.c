@@ -106,7 +106,7 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
 
 void TEMPLATE_emit_immediate(const ir_node *node)
 {
-	const TEMPLATE_attr_t *attr = get_irn_generic_attr_const(node);
+	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
 	be_emit_tarval(attr->value);
 }
 
@@ -127,7 +127,7 @@ void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
  */
 static void TEMPLATE_emit_cfop_target(const ir_node *node)
 {
-	ir_node *block = get_irn_link(node);
+	ir_node *block = (ir_node*)get_irn_link(node);
 	be_gas_emit_block_name(block);
 }
 

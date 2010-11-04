@@ -406,7 +406,7 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
  */
 static void list_sched_block(ir_node *block, void *env_ptr)
 {
-	sched_env_t *env                      = env_ptr;
+	sched_env_t *env                      = (sched_env_t*)env_ptr;
 	const list_sched_selector_t *selector = env->selector;
 
 	block_sched_env_t be;
@@ -432,8 +432,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	/* Then one can add all nodes are ready to the set. */
 	foreach_out_edge(block, edge) {
-		ir_node   *irn = get_edge_src_irn(edge);
-		ir_opcode code = get_irn_opcode(irn);
+		ir_node   *irn  = get_edge_src_irn(edge);
+		unsigned   code = get_irn_opcode(irn);
 		int users;
 
 		if (code == iro_End) {

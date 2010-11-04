@@ -36,7 +36,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static void do_finalization(type_or_ent tore, void *env)
 {
-	ir_type *glob_tp = env;
+	ir_type *glob_tp = (ir_type*)env;
 
 	if (is_type(tore.typ)) {
 		ir_type *cls = tore.typ;

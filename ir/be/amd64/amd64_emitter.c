@@ -209,9 +209,6 @@ static void emit_amd64_SymConst(const ir_node *irn)
  */
 static void emit_amd64_Conv(const ir_node *irn)
 {
-	const amd64_attr_t *attr = get_irn_generic_attr_const(irn);
-	(void) attr;
-
 	be_emit_cstring("\tmov ");
 	amd64_emit_source_register(irn, 0);
 	be_emit_cstring(", ");
@@ -225,7 +222,7 @@ static void emit_amd64_Conv(const ir_node *irn)
  */
 static ir_node *sched_next_block(const ir_node *block)
 {
-    return get_irn_link(block);
+    return (ir_node*)get_irn_link(block);
 }
 
 /**
@@ -233,7 +230,7 @@ static ir_node *sched_next_block(const ir_node *block)
  */
 static ir_node *get_cfop_target_block(const ir_node *irn)
 {
-	return get_irn_link(irn);
+	return (ir_node*)get_irn_link(irn);
 }
 
 /**
@@ -280,10 +277,10 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	const ir_node        *block;
 	const ir_node        *next_block;
 	const char           *suffix;
-	const amd64_attr_t   *attr      = get_irn_generic_attr_const(irn);
+	const amd64_attr_t   *attr      = get_amd64_attr_const(irn);
 	int                   proj_num  = attr->ext.pnc;
 	ir_node              *op1       = get_irn_n(irn, 0);
-	const amd64_attr_t   *cmp_attr  = get_irn_generic_attr_const(op1);
+	const amd64_attr_t   *cmp_attr  = get_amd64_attr_const(op1);
 	bool                  is_signed = !cmp_attr->data.cmp_unsigned;
 
 	assert(is_amd64_Cmp(op1));
@@ -424,7 +421,8 @@ static void emit_be_Perm(const ir_node *node)
 
 static void emit_amd64_FrameAddr(const ir_node *irn)
 {
-	const amd64_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
+	const amd64_SymConst_attr_t *attr =
+		(const amd64_SymConst_attr_t*) get_amd64_attr_const(irn);
 
 	be_emit_cstring("\tmov ");
 	amd64_emit_source_register(irn, 0);

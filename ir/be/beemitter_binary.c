@@ -44,7 +44,7 @@ struct obstack code_fragment_obst;
     be_emit(8/16/32/entity) call!) */
 code_fragment_t *be_get_current_fragment(void)
 {
-	code_fragment_t *fragment = obstack_base(&code_fragment_obst);
+	code_fragment_t *fragment = (code_fragment_t*)obstack_base(&code_fragment_obst);
 	assert(obstack_object_size(&code_fragment_obst) >= sizeof(code_fragment_t));
 	assert(fragment->magic == CODE_FRAGMENT_MAGIC);
 
@@ -61,7 +61,7 @@ static void alloc_fragment(void)
 	assert(obstack_object_size(&code_fragment_obst) == 0);
 
 	obstack_blank(&code_fragment_obst, sizeof(*fragment));
-	fragment = obstack_base(&code_fragment_obst);
+	fragment = (code_fragment_t*)obstack_base(&code_fragment_obst);
 	memset(fragment, 0, sizeof(*fragment));
 #ifndef NDEBUG
 	fragment->magic = CODE_FRAGMENT_MAGIC;
@@ -209,7 +209,7 @@ void be_emit_code(FILE *output, const binary_emiter_interface_t *interface)
 	    assert(fragment->offset >= offset);
 	    nops = fragment->offset - offset;
 	    if (nops > 0) {
-			unsigned char *nopbuffer = obstack_alloc(&code_fragment_obst, nops);
+			unsigned char *nopbuffer = (unsigned char*)obstack_alloc(&code_fragment_obst, nops);
 			interface->create_nops(nopbuffer, nops);
 			emit(output, nopbuffer, nops);
 			offset = fragment->offset;
@@ -221,7 +221,7 @@ void be_emit_code(FILE *output, const binary_emiter_interface_t *interface)
 		offset += fragment->len;
 
 		/* emit the jump */
-		jmpbuffer = obstack_alloc(&code_fragment_obst, fragment->jumpsize_min);
+		jmpbuffer = (unsigned char*)obstack_alloc(&code_fragment_obst, fragment->jumpsize_min);
 		interface->emit_jump(fragment, jmpbuffer);
 		emit(output, jmpbuffer, fragment->jumpsize_min);
 		offset += fragment->jumpsize_min;

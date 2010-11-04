@@ -156,7 +156,7 @@ ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
 	assert(irg);
 	assert(op);
 	assert(mode);
-	p = obstack_alloc(irg->obst, node_size);
+	p = (char*)obstack_alloc(irg->obst, node_size);
 	memset(p, 0, node_size);
 	res = (ir_node *)(p + add_node_size);
 
@@ -1263,7 +1263,7 @@ void (set_Phi_next)(ir_node *phi, ir_node *next)
 
 int is_memop(const ir_node *node)
 {
-	ir_opcode code = get_irn_opcode(node);
+	unsigned code = get_irn_opcode(node);
 	return (code == iro_Load || code == iro_Store);
 }
 
@@ -1294,7 +1294,7 @@ void set_memop_ptr(ir_node *node, ir_node *ptr)
 ir_volatility get_Load_volatility(const ir_node *node)
 {
 	assert(is_Load(node));
-	return node->attr.load.volatility;
+	return (ir_volatility)node->attr.load.volatility;
 }
 
 void set_Load_volatility(ir_node *node, ir_volatility volatility)
@@ -1306,7 +1306,7 @@ void set_Load_volatility(ir_node *node, ir_volatility volatility)
 ir_align get_Load_align(const ir_node *node)
 {
 	assert(is_Load(node));
-	return node->attr.load.aligned;
+	return (ir_align)node->attr.load.aligned;
 }
 
 void set_Load_align(ir_node *node, ir_align align)
@@ -1319,7 +1319,7 @@ void set_Load_align(ir_node *node, ir_align align)
 ir_volatility get_Store_volatility(const ir_node *node)
 {
 	assert(is_Store(node));
-	return node->attr.store.volatility;
+	return (ir_volatility)node->attr.store.volatility;
 }
 
 void set_Store_volatility(ir_node *node, ir_volatility volatility)
@@ -1331,7 +1331,7 @@ void set_Store_volatility(ir_node *node, ir_volatility volatility)
 ir_align get_Store_align(const ir_node *node)
 {
 	assert(is_Store(node));
-	return node->attr.store.aligned;
+	return (ir_align)node->attr.store.aligned;
 }
 
 void set_Store_align(ir_node *node, ir_align align)
@@ -1394,6 +1394,11 @@ void set_Proj_proj(ir_node *node, long proj)
 int (is_arg_Proj)(const ir_node *node)
 {
 	return _is_arg_Proj(node);
+}
+
+pn_Cmp (get_Proj_pn_cmp)(const ir_node *node)
+{
+	return _get_Proj_pn_cmp(node);
 }
 
 ir_node **get_Tuple_preds_arr(ir_node *node)

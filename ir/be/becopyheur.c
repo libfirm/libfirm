@@ -101,8 +101,8 @@ static inline int nodes_interfere(const be_chordal_env_t *env, const ir_node *a,
 
 static int set_cmp_conflict_t(const void *x, const void *y, size_t size)
 {
-	const conflict_t *xx = x;
-	const conflict_t *yy = y;
+	const conflict_t *xx = (const conflict_t*)x;
+	const conflict_t *yy = (const conflict_t*)y;
 	(void) size;
 
 	return xx->n1 != yy->n1 || xx->n2 != yy->n2;
@@ -160,7 +160,7 @@ static inline const node_stat_t *qnode_find_node(const qnode_t *qn, ir_node *irn
 {
 	node_stat_t find;
 	find.irn = irn;
-	return set_find(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
+	return (const node_stat_t*)set_find(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**
@@ -173,7 +173,7 @@ static inline node_stat_t *qnode_find_or_insert_node(const qnode_t *qn, ir_node 
 	find.irn = irn;
 	find.new_color = NO_COLOR;
 	find.pinned_local = 0;
-	return set_insert(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
+	return (node_stat_t*)set_insert(qn->changed_nodes, &find, sizeof(find), hash_irn(irn));
 }
 
 /**
@@ -620,7 +620,8 @@ static void ou_optimize(unit_t *ou)
 		}
 
 		/* set color of all changed nodes */
-		for (ns = set_first(curr->changed_nodes); ns; ns = set_next(curr->changed_nodes)) {
+		for (ns = (node_stat_t*)set_first(curr->changed_nodes); ns != NULL;
+		     ns = (node_stat_t*)set_next(curr->changed_nodes)) {
 			/* NO_COLOR is possible, if we had an undo */
 			if (ns->new_color != NO_COLOR) {
 				DBG((dbg, LEVEL_1, "\t    color(%+F) := %d\n", ns->irn, ns->new_color));

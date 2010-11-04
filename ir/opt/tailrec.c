@@ -65,7 +65,7 @@ typedef struct collect_t {
  */
 static void collect_data(ir_node *node, void *env)
 {
-	collect_t *data = env;
+	collect_t *data = (collect_t*)env;
 	ir_node *pred;
 	ir_op *op;
 
@@ -177,7 +177,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	irg_walk_graph(irg, NULL, collect_data, &data);
 
 	/* check number of arguments */
-	call = get_irn_link(end_block);
+	call     = (ir_node*)get_irn_link(end_block);
 	n_params = get_Call_n_params(call);
 
 	assert(data.proj_X && "Could not find initial exec from Start");
@@ -194,7 +194,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	for (i = 1, p = env->rets; p; p = n) {
 		ir_node *block = get_nodes_block(p);
 
-		n = get_irn_link(p);
+		n = (ir_node*)get_irn_link(p);
 		in[i++] = new_r_Jmp(block);
 
 		// exchange(p, new_r_Bad(irg));
@@ -220,7 +220,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	set_irg_initial_mem(irg, in[i]);
 	++i;
 
-	for (calls = call; calls; calls = get_irn_link(calls)) {
+	for (calls = call; calls != NULL; calls = (ir_node*)get_irn_link(calls)) {
 		in[i] = get_Call_mem(calls);
 		++i;
 	}
@@ -237,7 +237,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		NEW_ARR_A(ir_node **, call_params, env->n_tail_calls);
 
 		/* collect all parameters */
-		for (i = 0, calls = call; calls; calls = get_irn_link(calls)) {
+		for (i = 0, calls = call; calls != NULL;
+		     calls = (ir_node*)get_irn_link(calls)) {
 			call_params[i] = get_Call_param_arr(calls);
 			++i;
 		}
@@ -265,7 +266,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		long proj = get_Proj_proj(p);
 
 		assert(0 <= proj && proj < n_params);
-		n = get_irn_link(p);
+		n = (ir_node*)get_irn_link(p);
 		exchange(p, phis[proj + 1]);
 	}
 
@@ -319,7 +320,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			ir_node *call, *mem, *jmp, *tuple;
 
 			set_cur_block(block);
-			n = get_irn_link(p);
+			n = (ir_node*)get_irn_link(p);
 
 			call = skip_Proj(get_Return_mem(p));
 			assert(is_Call(call));
@@ -401,7 +402,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 		/* no: we can kill all returns */
 		for (p = env->rets; p; p = n) {
-			n = get_irn_link(p);
+			n = (ir_node*)get_irn_link(p);
 			exchange(p, bad);
 		}
 	}

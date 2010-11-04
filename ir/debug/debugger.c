@@ -254,7 +254,7 @@ static void dbg_new_node(void *ctx, ir_graph *irg, ir_node *node)
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_NEW_NODE;
 
-	elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F created\n", elem->bp.bpnr, node);
 		firm_debug_break();
@@ -276,7 +276,7 @@ static void dbg_replace(void *ctx, ir_node *old, ir_node *nw)
 	key.nr        = get_irn_node_nr(old);
 	key.bp.reason = BP_ON_REPLACE;
 
-	elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F will be replaced by %+F\n", elem->bp.bpnr, old, nw);
 		firm_debug_break();
@@ -297,7 +297,7 @@ static void dbg_lower(void *ctx, ir_node *node)
 	key.nr        = get_irn_node_nr(node);
 	key.bp.reason = BP_ON_LOWER;
 
-	elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 	if (elem && elem->bp.active) {
 		dbg_printf("Firm BP %u reached, %+F will be lowered\n", elem->bp.bpnr, node);
 		firm_debug_break();
@@ -318,7 +318,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 		key.nr        = get_irg_graph_nr(irg);
 		key.bp.reason = BP_ON_REMIRG;
 
-		elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+		elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 		if (elem && elem->bp.active) {
 			ir_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, irg);
 			firm_debug_break();
@@ -334,7 +334,7 @@ static void dbg_free_graph(void *ctx, ir_graph *irg)
 		key.id        = get_entity_ident(ent);
 		key.bp.reason = BP_ON_REMIRG;
 
-		elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+		elem = (bp_ident_t*)set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
 		if (elem && elem->bp.active) {
 			dbg_printf("Firm BP %u reached, %+F will be deleted\n", elem->bp.bpnr, ent);
 			firm_debug_break();
@@ -357,7 +357,7 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
 		key.id        = get_entity_ident(ent);
 		key.bp.reason = BP_ON_NEW_ENT;
 
-		elem = set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+		elem = (bp_ident_t*)set_find(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
 		if (elem && elem->bp.active) {
 			ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
 			firm_debug_break();
@@ -369,7 +369,7 @@ static void dbg_new_entity(void *ctx, ir_entity *ent)
 		key.nr        = get_entity_nr(ent);
 		key.bp.reason = BP_ON_NEW_ENT;
 
-		elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+		elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 		if (elem && elem->bp.active) {
 			dbg_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, ent);
 			firm_debug_break();
@@ -392,7 +392,7 @@ static void dbg_new_type(void *ctx, ir_type *tp)
 		key.nr        = get_type_nr(tp);
 		key.bp.reason = BP_ON_NEW_TYPE;
 
-		elem = set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+		elem = (bp_nr_t*)set_find(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 		if (elem && elem->bp.active) {
 			ir_printf("Firm BP %u reached, %+F was created\n", elem->bp.bpnr, tp);
 			firm_debug_break();
@@ -422,8 +422,8 @@ static const char *reason_str(bp_reasons_t reason)
  */
 static int cmp_nr_bp(const void *elt, const void *key, size_t size)
 {
-	const bp_nr_t *e1 = elt;
-	const bp_nr_t *e2 = key;
+	const bp_nr_t *e1 = (const bp_nr_t*)elt;
+	const bp_nr_t *e2 = (const bp_nr_t*)key;
 	(void) size;
 
 	return (e1->nr - e2->nr) | (e1->bp.reason - e2->bp.reason);
@@ -434,8 +434,8 @@ static int cmp_nr_bp(const void *elt, const void *key, size_t size)
  */
 static int cmp_ident_bp(const void *elt, const void *key, size_t size)
 {
-	const bp_ident_t *e1 = elt;
-	const bp_ident_t *e2 = key;
+	const bp_ident_t *e1 = (const bp_ident_t*)elt;
+	const bp_ident_t *e2 = (const bp_ident_t*)key;
 	(void) size;
 
 	return (e1->id != e2->id) | (e1->bp.reason - e2->bp.reason);
@@ -497,7 +497,7 @@ static void break_on_nr(long nr, bp_reasons_t reason)
 	key.bp.reason = reason;
 	key.nr        = nr;
 
-	elem = set_insert(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
+	elem = (bp_nr_t*)set_insert(bp_numbers, &key, sizeof(key), HASH_NR_BP(key));
 
 	if (elem->bp.bpnr == 0) {
 		/* new break point */
@@ -524,7 +524,7 @@ static void break_on_ident(const char *name, bp_reasons_t reason)
 	key.bp.reason = reason;
 	key.id        = new_id_from_str(name);
 
-	elem = set_insert(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
+	elem = (bp_ident_t*)set_insert(bp_idents, &key, sizeof(key), HASH_IDENT_BP(key));
 
 	if (elem->bp.bpnr == 0) {
 		/* new break point */
@@ -677,10 +677,10 @@ static void show_firm_object(void *firm_thing)
 		fprintf(f, "BAD: (%p)\n", firm_thing);
 		break;
 	case k_entity:
-		dump_entity_to_file(f, firm_thing);
+		dump_entity_to_file(f, (ir_entity*)firm_thing);
 		break;
 	case k_type:
-		dump_type_to_file(f, firm_thing);
+		dump_type_to_file(f, (ir_type*)firm_thing);
 		break;
 	case k_ir_graph:
 	case k_ir_node:
@@ -753,7 +753,7 @@ typedef struct find_env {
  */
 static void check_ent_nr(type_or_ent tore, void *ctx)
 {
-	find_env_t *env = ctx;
+	find_env_t *env = (find_env_t*)ctx;
 
 	if (is_entity(tore.ent)) {
 		if (get_entity_nr(tore.ent) == env->u.nr) {
@@ -767,7 +767,7 @@ static void check_ent_nr(type_or_ent tore, void *ctx)
  */
 static void check_ent_name(type_or_ent tore, void *ctx)
 {
-	find_env_t *env = ctx;
+	find_env_t *env = (find_env_t*)ctx;
 
 	if (is_entity(tore.ent))
 		if (strcmp(get_entity_name(tore.ent), env->u.name) == 0) {

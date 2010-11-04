@@ -410,7 +410,7 @@ void postdom_tree_walk_irg(ir_graph *irg, irg_walk_func *pre,
 
 static void assign_tree_dom_pre_order(ir_node *bl, void *data)
 {
-	unsigned *num = data;
+	unsigned *num = (unsigned*) data;
 	ir_dom_info *bi = get_dom_info(bl);
 
 	bi->tree_pre_num = (*num)++;
@@ -436,7 +436,7 @@ static void assign_tree_dom_pre_order_max(ir_node *bl, void *data)
 
 static void assign_tree_postdom_pre_order(ir_node *bl, void *data)
 {
-	unsigned *num = data;
+	unsigned *num = (unsigned*) data;
 	ir_dom_info *bi = get_pdom_info(bl);
 
 	bi->tree_pre_num = (*num)++;

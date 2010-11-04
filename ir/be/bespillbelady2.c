@@ -139,8 +139,8 @@ typedef struct belady_env_t {
 
 static int loc_compare(const void *a, const void *b)
 {
-	const loc_t *p = a;
-	const loc_t *q = b;
+	const loc_t *p = (const loc_t*)a;
+	const loc_t *q = (const loc_t*)b;
 	return (p->time > q->time) - (p->time < q->time);
 }
 
@@ -295,7 +295,7 @@ typedef struct block_info_t {
 
 } block_info_t;
 
-static inline void *new_block_info(belady_env_t *bel, int id)
+static inline block_info_t *new_block_info(belady_env_t *bel, int id)
 {
 	ir_node      *bl  = bel->blocks[id];
 	block_info_t *res = OALLOCZ(&bel->ob, block_info_t);
@@ -349,8 +349,8 @@ static void build_next_uses(block_info_t *bi)
 
 		for (i = get_irn_arity(irn) - 1; i >= 0; --i) {
 			ir_node *op = get_irn_n(irn, i);
-			next_use_t *curr = phase_get_irn_data(&bi->next_uses, op);
-			next_use_t *use  = phase_alloc(&bi->next_uses, sizeof(use[0]));
+			next_use_t *curr = (next_use_t*)phase_get_irn_data(&bi->next_uses, op);
+			next_use_t *use  = (next_use_t*)phase_alloc(&bi->next_uses, sizeof(use[0]));
 
 			use->is_first_use = 1;
 			use->step         = sched_get_time_step(irn);
@@ -367,7 +367,10 @@ static void build_next_uses(block_info_t *bi)
 	}
 }
 
-#define get_current_use(bi, irn)    phase_get_irn_data(&(bi)->next_uses, (irn))
+static inline next_use_t *get_current_use(block_info_t *bi, const ir_node *node)
+{
+	return (next_use_t*)phase_get_irn_data(&bi->next_uses, node);
+}
 
 static inline void advance_current_use(block_info_t *bi, const ir_node *irn)
 {
@@ -379,8 +382,8 @@ static inline void advance_current_use(block_info_t *bi, const ir_node *irn)
 
 static __attribute__((unused)) int block_freq_gt(const void *a, const void *b)
 {
-	const ir_node * const *p = a;
-	const ir_node * const *q = b;
+	const ir_node * const *p = (const ir_node**)a;
+	const ir_node * const *q = (const ir_node**)b;
 	block_info_t *pi = get_block_info(*p);
 	block_info_t *qi = get_block_info(*q);
 	double diff = qi->exec_freq - pi->exec_freq;
@@ -389,8 +392,8 @@ static __attribute__((unused)) int block_freq_gt(const void *a, const void *b)
 
 static int block_freq_dfs_gt(const void *a, const void *b)
 {
-	const ir_node * const *p = a;
-	const ir_node * const *q = b;
+	const ir_node * const *p = (const ir_node**)a;
+	const ir_node * const *q = (const ir_node**)b;
 	block_info_t *pi = get_block_info(*p);
 	block_info_t *qi = get_block_info(*q);
 	double diff;
@@ -651,8 +654,8 @@ static void displace(block_info_t *bi, workset_t *new_vals, int is_usage)
  */
 static void belady(belady_env_t *env, int id)
 {
-	block_info_t *block_info = new_block_info(env, id);
-	const ir_node *block     = block_info->bl;
+	block_info_t  *block_info = new_block_info(env, id);
+	const ir_node *block      = block_info->bl;
 
 	workset_t *new_vals;
 	ir_node *irn;
@@ -1380,7 +1383,7 @@ static bring_in_t **determine_global_order(belady_env_t *env)
 	}
 
 	obstack_ptr_grow(&env->ob, NULL);
-	res = obstack_finish(&env->ob);
+	res = (bring_in_t**)obstack_finish(&env->ob);
 	qsort(res, n, sizeof(res[0]), bring_in_cmp);
 	return res;
 }
@@ -1450,7 +1453,7 @@ static void global_assign(belady_env_t *env)
 
 static void collect_blocks(ir_node *bl, void *data)
 {
-	belady_env_t *env = data;
+	belady_env_t *env = (belady_env_t*)data;
 	++env->n_blocks;
 	obstack_ptr_grow(&env->ob, bl);
 }
@@ -1492,7 +1495,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *cls)
 
 	irg_block_walk_graph(irg, NULL, collect_blocks, &env);
 	obstack_ptr_grow(&env.ob, NULL);
-	env.blocks = obstack_finish(&env.ob);
+	env.blocks = (ir_node**)obstack_finish(&env.ob);
 
 	/* renumbering in the blocks gives nicer debug output as number are smaller. */
 #ifdef DEBUG_libfirm

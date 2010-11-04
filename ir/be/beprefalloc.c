@@ -141,7 +141,7 @@ typedef struct block_info_t block_info_t;
  */
 static allocation_info_t *get_allocation_info(ir_node *node)
 {
-	allocation_info_t *info = get_irn_link(node);
+	allocation_info_t *info = (allocation_info_t*)get_irn_link(node);
 	if (info == NULL) {
 		info = OALLOCFZ(&obst, allocation_info_t, prefs, n_regs);
 		info->current_value  = node;
@@ -162,7 +162,7 @@ static allocation_info_t *try_get_allocation_info(const ir_node *node)
  */
 static block_info_t *get_block_info(ir_node *block)
 {
-	block_info_t *info = get_irn_link(block);
+	block_info_t *info = (block_info_t*)get_irn_link(block);
 
 	assert(is_Block(block));
 	if (info == NULL) {
@@ -794,7 +794,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 
 	/* create list of register candidates and sort by their preference */
 	DB((dbg, LEVEL_2, "Candidates for %+F:", node));
-	reg_prefs = alloca(n_regs * sizeof(reg_prefs[0]));
+	reg_prefs = ALLOCAN(reg_pref_t, n_regs);
 	fill_sort_candidates(reg_prefs, info);
 	for (i = 0; i < n_regs; ++i) {
 		unsigned num = reg_prefs[i].num;
@@ -1727,10 +1727,10 @@ struct block_costs_t {
 
 static int cmp_block_costs(const void *d1, const void *d2)
 {
-	const ir_node       * const *block1 = d1;
-	const ir_node       * const *block2 = d2;
-	const block_costs_t *info1  = get_irn_link(*block1);
-	const block_costs_t *info2  = get_irn_link(*block2);
+	const ir_node       * const *block1 = (const ir_node**)d1;
+	const ir_node       * const *block2 = (const ir_node**)d2;
+	const block_costs_t *info1  = (const block_costs_t*)get_irn_link(*block1);
+	const block_costs_t *info2  = (const block_costs_t*)get_irn_link(*block2);
 	return QSORT_CMP(info2->costs, info1->costs);
 }
 
@@ -1763,7 +1763,7 @@ static void determine_block_order(void)
 		int   p;
 		for (p = 0; p < n_cfgpreds; ++p) {
 			ir_node       *pred_block = get_Block_cfgpred_block(block, p);
-			block_costs_t *pred_costs = get_irn_link(pred_block);
+			block_costs_t *pred_costs = (block_costs_t*)get_irn_link(pred_block);
 			/* we don't have any info for backedges */
 			if (pred_costs == NULL)
 				continue;
@@ -1790,7 +1790,7 @@ static void determine_block_order(void)
 		/* continually add predecessors with highest costs to worklist
 		 * (without using backedges) */
 		do {
-			block_costs_t *info       = get_irn_link(block);
+			block_costs_t *info       = (block_costs_t*)get_irn_link(block);
 			ir_node       *best_pred  = NULL;
 			float          best_costs = -1;
 			int            n_cfgpred  = get_Block_n_cfgpreds(block);
@@ -1800,7 +1800,7 @@ static void determine_block_order(void)
 			mark_Block_block_visited(block);
 			for (i = 0; i < n_cfgpred; ++i) {
 				ir_node       *pred_block = get_Block_cfgpred_block(block, i);
-				block_costs_t *pred_info  = get_irn_link(pred_block);
+				block_costs_t *pred_info  = (block_costs_t*)get_irn_link(pred_block);
 
 				/* ignore backedges */
 				if (pred_info->dfs_num > info->dfs_num)
@@ -1816,7 +1816,7 @@ static void determine_block_order(void)
 
 		/* now put all nodes in the worklist in our final order */
 		while (!pdeq_empty(worklist)) {
-			ir_node *pblock = pdeq_getr(worklist);
+			ir_node *pblock = (ir_node*)pdeq_getr(worklist);
 			assert(order_p < n_blocks);
 			order[order_p++] = pblock;
 		}

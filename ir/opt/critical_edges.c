@@ -50,7 +50,7 @@ static void walk_critical_cf_edges(ir_node *n, void *env)
 {
 	int arity, i;
 	ir_node *pre, *block, *jmp;
-	cf_env *cenv = env;
+	cf_env *cenv = (cf_env*)env;
 	ir_graph *irg = get_irn_irg(n);
 
 	/* Block has multiple predecessors */

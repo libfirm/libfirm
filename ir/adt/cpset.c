@@ -56,18 +56,18 @@ void cpset_init_size_(cpset_t *self, size_t expected_elems);
 
 #include "hashset.c"
 
-void cpset_init(cpset_t *this, cpset_hash_function hash_function,
+void cpset_init(cpset_t *this_, cpset_hash_function hash_function,
                 cpset_cmp_function cmp_function)
 {
-	this->hash_function = hash_function;
-	this->cmp_function = cmp_function;
-	cpset_init_(this);
+	this_->hash_function = hash_function;
+	this_->cmp_function = cmp_function;
+	cpset_init_(this_);
 }
 
-void cpset_init_size(cpset_t *this, cpset_hash_function hash_function,
+void cpset_init_size(cpset_t *this_, cpset_hash_function hash_function,
                      cpset_cmp_function cmp_function, size_t expected_elems)
 {
-	this->hash_function = hash_function;
-	this->cmp_function = cmp_function;
-	cpset_init_size_(this, expected_elems);
+	this_->hash_function = hash_function;
+	this_->cmp_function = cmp_function;
+	cpset_init_size_(this_, expected_elems);
 }

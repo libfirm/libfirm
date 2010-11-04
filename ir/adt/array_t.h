@@ -53,7 +53,7 @@
   do {												\
     int nelts = (n);										\
     assert(nelts >= 0);									\
-    (var) = (void *)((ir_arr_descr *)alloca(ARR_ELTS_OFFS + sizeof(type) * nelts))->v.elts;	\
+    (var) = (type *)((ir_arr_descr *)alloca(ARR_ELTS_OFFS + sizeof(type) * nelts))->v.elts;	\
     ARR_SET_DBGINF(ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type));				\
     (void)(ARR_DESCR((var))->nelts = nelts);							\
   } while (0)

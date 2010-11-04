@@ -154,7 +154,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			/* add to schedule */
 			sched_add_before(irn, res);
 		} else {
-			ir_node *stc, *cmc, *not, *adc;
+			ir_node *stc, *cmc, *nnot, *adc;
 			ir_node *adc_flags;
 
 			/*
@@ -166,15 +166,15 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			 *
 			 * a + -b = a + (~b + 1)  would set the carry flag IF a == b ...
 			 */
-			not = new_bd_ia32_Not(dbg, block, in2);
-			arch_set_irn_register(not, in2_reg);
-			sched_add_before(irn, not);
+			nnot = new_bd_ia32_Not(dbg, block, in2);
+			arch_set_irn_register(nnot, in2_reg);
+			sched_add_before(irn, nnot);
 
 			stc = new_bd_ia32_Stc(dbg, block);
 			arch_set_irn_register(stc, &ia32_registers[REG_EFLAGS]);
 			sched_add_before(irn, stc);
 
-			adc = new_bd_ia32_Adc(dbg, block, noreg, noreg, nomem, not, in1, stc);
+			adc = new_bd_ia32_Adc(dbg, block, noreg, noreg, nomem, nnot, in1, stc);
 			arch_set_irn_register(adc, out_reg);
 			sched_add_before(irn, adc);
 
@@ -476,7 +476,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
  */
 static void ia32_push_on_queue_walker(ir_node *block, void *env)
 {
-	waitq *wq = env;
+	waitq *wq = (waitq*)env;
 	waitq_put(wq, block);
 }
 
@@ -492,7 +492,7 @@ void ia32_finish_irg(ir_graph *irg)
 	irg_block_walk_graph(irg, NULL, ia32_push_on_queue_walker, wq);
 
 	while (! waitq_empty(wq)) {
-		ir_node *block = waitq_get(wq);
+		ir_node *block = (ir_node*)waitq_get(wq);
 		ia32_finish_irg_walker(block, NULL);
 	}
 	del_waitq(wq);

@@ -26,13 +26,21 @@
 #endif
 
 #include <stdio.h>
+#include <unistd.h>  /* flex generated code wants a declaration of isatty... */
 
 #include "lc_parser_t.h"
 #include "lc_config_parser.h"
 
 #define YY_NO_UNISTD_H
+#define YY_NO_INPUT
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 static int _lc_opt_wrap(void);
+#ifdef __cplusplus
+}
+#endif
 
 %}
 
@@ -109,6 +117,5 @@ static int _lc_opt_wrap(void)
 {
 	/* avoid warning */
 	(void) yyunput;
-	(void) input;
 	return 1;
 }

@@ -361,7 +361,7 @@ struct dumper_t {
 /**
  * helper: get an ir_op from an opcode
  */
-ir_op *stat_get_op_from_opcode(ir_opcode code);
+ir_op *stat_get_op_from_opcode(unsigned code);
 
 /* API for distribution tables */
 

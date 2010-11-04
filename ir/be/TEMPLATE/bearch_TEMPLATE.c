@@ -55,7 +55,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static arch_irn_class_t TEMPLATE_classify(const ir_node *irn)
 {
 	(void) irn;
-	return 0;
+	return arch_irn_class_none;
 }
 
 static ir_entity *TEMPLATE_get_frame_entity(const ir_node *node)
@@ -137,7 +137,7 @@ static void TEMPLATE_init_graph(ir_graph *irg)
 
 
 
-const arch_isa_if_t TEMPLATE_isa_if;
+extern const arch_isa_if_t TEMPLATE_isa_if;
 static TEMPLATE_isa_t TEMPLATE_isa_template = {
 	{
 		&TEMPLATE_isa_if,             /* isa interface implementation */
@@ -187,7 +187,7 @@ static arch_env_t *TEMPLATE_init(FILE *outfile)
  */
 static void TEMPLATE_done(void *self)
 {
-	TEMPLATE_isa_t *isa = self;
+	TEMPLATE_isa_t *isa = (TEMPLATE_isa_t*)self;
 
 	/* emit now all global declarations */
 	be_gas_emit_decls(isa->base.main_env);
@@ -260,7 +260,7 @@ static ir_type *TEMPLATE_get_between_type(void *self)
 static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
                                                     pmap *reg_map, int *stack_bias)
 {
-	TEMPLATE_abi_env_t *env      = self;
+	TEMPLATE_abi_env_t *env      = (TEMPLATE_abi_env_t*)self;
 	const arch_env_t   *arch_env = be_get_irg_arch_env(env->irg);
 	(void) reg_map;
 	(void) mem;

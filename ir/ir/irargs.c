@@ -65,7 +65,7 @@ static int bitset_emit(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	int res = 2;
-	bitset_t *b = arg->v_ptr;
+	bitset_t *b = (bitset_t*)arg->v_ptr;
 	unsigned  p;
 	char buf[32];
 	const char *prefix = "";
@@ -91,7 +91,7 @@ static int firm_emit_dbg(lc_appendable_t *app,
     const lc_arg_occ_t *occ, const lc_arg_value_t *arg)
 {
 	char buf[1024];
-	ir_node *irn = arg->v_ptr;
+	ir_node *irn = (ir_node*)arg->v_ptr;
 	dbg_info *dbg = get_irn_dbg_info(irn);
 
 	ir_dbg_info_snprint(buf, sizeof(buf), dbg);
@@ -116,8 +116,8 @@ static int firm_emit(lc_appendable_t *app,
 {
 #define A(s)    occ->flag_hash ? s " ": ""
 
-	void *X = arg->v_ptr;
-	firm_kind *obj = X;
+	void *X = (void*)arg->v_ptr;
+	firm_kind *obj = (firm_kind*)X;
 	int i, n;
 	ir_node *block;
 	char add[64];
@@ -128,112 +128,130 @@ static int firm_emit(lc_appendable_t *app,
 	buf[0] = '\0';
 	add[0] = '\0';
 
-	if (! X)
-		strncpy(buf, "(null)", sizeof(buf));
-	else {
-		switch (*obj) {
+	if (X == NULL) {
+		return lc_arg_append(app, occ, "(null)", 6);
+	}
+
+	switch (*obj) {
 	case k_BAD:
 		snprintf(buf, sizeof(buf), "BAD");
 		snprintf(add, sizeof(add), "[%p]", X);
 		break;
-	case k_entity:
+	case k_entity: {
+		ir_entity *entity = (ir_entity*)X;
 		snprintf(buf, sizeof(buf), "%s%s", A("ent"),
-			isupper(occ->conversion) ? get_entity_ld_name_ex(X): get_entity_name(X));
-		snprintf(add, sizeof(add), "[%ld]", get_entity_nr(X));
-		break;
-	case k_type: {
-		char type_name[256];
-		ir_print_type(type_name, sizeof(type_name), X);
-		snprintf(buf, sizeof(buf), "%s%s:%s", A("type"), get_type_tpop_name(X),
-		         type_name);
-		snprintf(add, sizeof(add), "[%ld]", get_type_nr(X));
+			isupper(occ->conversion) ? get_entity_ld_name_ex(entity): get_entity_name(entity));
+		snprintf(add, sizeof(add), "[%ld]", get_entity_nr(entity));
 		break;
 	}
-	case k_ir_graph:
-		if (X == get_const_code_irg())
+	case k_type: {
+		ir_type *type = (ir_type*)X;
+		char type_name[256];
+		ir_print_type(type_name, sizeof(type_name), type);
+		snprintf(buf, sizeof(buf), "%s%s:%s", A("type"),
+		         get_type_tpop_name(type), type_name);
+		snprintf(add, sizeof(add), "[%ld]", get_type_nr(type));
+		break;
+	}
+	case k_ir_graph: {
+		ir_graph *irg = (ir_graph*)X;
+		if (irg == get_const_code_irg())
 			snprintf(buf, sizeof(buf), "%s<ConstCodeIrg>", A("irg"));
 		else
-			snprintf(buf, sizeof(buf), "%s%s", A("irg"), get_entity_name(get_irg_entity(X)));
-		snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(X));
+			snprintf(buf, sizeof(buf), "%s%s", A("irg"), get_entity_name(get_irg_entity(irg)));
+		snprintf(add, sizeof(add), "[%ld]", get_irg_graph_nr(irg));
 		break;
-	case k_ir_node:
+	}
+	case k_ir_node: {
+		ir_node *node = (ir_node*)X;
 		switch (occ->conversion) {
 		case 'B':
-			block = !is_Block(X) ? get_nodes_block(X) : X;
+			block = !is_Block(node) ? get_nodes_block(node) : node;
 			snprintf(buf, sizeof(buf), "%s%s %s", A("irn"),
 			         get_irn_opname(block), get_mode_name(get_irn_mode(block)));
 			snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(block));
 			break;
 		case 'N':
-			snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(X));
+			snprintf(buf, sizeof(buf), "%ld", get_irn_node_nr(node));
 			break;
 		default:
-			if (is_Const(X)) {
-				ir_tarval *tv = get_Const_tarval(X);
+			if (is_Const(node)) {
+				ir_tarval *tv = get_Const_tarval(node);
 				if (tv)
 					tarval_snprintf(tv_buf, sizeof(tv_buf), tv);
 				else
 					strncpy(tv_buf, "(NULL)", sizeof(tv_buf));
-				snprintf(buf, sizeof(buf), "%s%s %s<%s>", A("irn"), get_irn_opname(X),
-					get_mode_name(get_irn_mode(X)), tv_buf);
-			} else if (is_SymConst_addr_ent(X)) {
-				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(X),
-				get_mode_name(get_irn_mode(X)), get_entity_name(get_SymConst_entity(X)));
-			} else if (is_Sel(X)) {
-				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(X),
-				get_mode_name(get_irn_mode(X)), get_entity_name(get_Sel_entity(X)));
+				snprintf(buf, sizeof(buf), "%s%s %s<%s>", A("irn"), get_irn_opname(node),
+					get_mode_name(get_irn_mode(node)), tv_buf);
+			} else if (is_SymConst_addr_ent(node)) {
+				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
+				get_mode_name(get_irn_mode(node)), get_entity_name(get_SymConst_entity(node)));
+			} else if (is_Sel(node)) {
+				snprintf(buf, sizeof(buf), "%s%s %s[%s]", A("irn"), get_irn_opname(node),
+				get_mode_name(get_irn_mode(node)), get_entity_name(get_Sel_entity(node)));
 			} else {
-				snprintf(buf, sizeof(buf), "%s%s %s", A("irn"), get_irn_opname(X),
-				get_mode_name(get_irn_mode(X)));
+				snprintf(buf, sizeof(buf), "%s%s %s", A("irn"), get_irn_opname(node),
+				get_mode_name(get_irn_mode(node)));
 			}
-			snprintf(add, sizeof(add), "[%ld:%u]", get_irn_node_nr(X), get_irn_idx(X));
+			snprintf(add, sizeof(add), "[%ld:%u]", get_irn_node_nr(node), get_irn_idx(node));
 		}
 		break;
-	case k_ir_mode:
-		snprintf(buf, sizeof(buf), "%s%s", A("mode"), get_mode_name(X));
+	}
+	case k_ir_mode: {
+		ir_mode *mode = (ir_mode*)X;
+		snprintf(buf, sizeof(buf), "%s%s", A("mode"), get_mode_name(mode));
 		break;
-	case k_tarval:
-		tarval_snprintf(tv_buf, sizeof(tv_buf), X);
+	}
+	case k_tarval: {
+		ir_tarval *tarval = (ir_tarval*)X;
+		tarval_snprintf(tv_buf, sizeof(tv_buf), tarval);
 		snprintf(buf, sizeof(buf), "%s%s", A("tv"), tv_buf);
 		break;
-	case k_ir_loop:
-		snprintf(buf, sizeof(buf), "loop[%d:%d]", get_loop_loop_nr(X), get_loop_depth(X));
+	}
+	case k_ir_loop: {
+		ir_loop *loop = (ir_loop*)X;
+		snprintf(buf, sizeof(buf), "loop[%d:%d]", get_loop_loop_nr(loop), get_loop_depth(loop));
 		break;
-	case k_ir_op:
-		snprintf(buf, sizeof(buf), "%s%s", A("op"), get_op_name(X));
+	}
+	case k_ir_op: {
+		ir_op *op = (ir_op*)X;
+		snprintf(buf, sizeof(buf), "%s%s", A("op"), get_op_name(op));
 		break;
-	case k_ir_compound_graph_path:
-		n = get_compound_graph_path_length(X);
+	}
+	case k_ir_compound_graph_path: {
+		compound_graph_path *path = (compound_graph_path*)X;
+		n = get_compound_graph_path_length(path);
 
 		for (i = 0; i < n; ++i) {
-			ent = get_compound_graph_path_node(X, i);
+			ent = get_compound_graph_path_node(path, i);
 
 			strncat(buf, ".", sizeof(buf)-1);
 			strncat(buf, get_entity_name(ent), sizeof(buf)-1);
 			if (is_Array_type(get_entity_owner(ent))) {
 				snprintf(add, sizeof(add), "[%d]",
-					get_compound_graph_path_array_index(X, i));
+					get_compound_graph_path_array_index(path, i));
 				strncat(buf, add, sizeof(buf)-1);
 			}
 		}
 		add[0] = '\0';
 		break;
-	case k_ir_extblk:
+	}
+	case k_ir_extblk: {
+		ir_extblk *extblk = (ir_extblk*)X;
 		snprintf(buf, sizeof(buf), "ExtBlock");
-		snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(get_extbb_leader(X)));
+		snprintf(add, sizeof(add), "[%ld]", get_irn_node_nr(get_extbb_leader(extblk)));
 		break;
+	}
 
 	default:
 		snprintf(buf, sizeof(buf), "UNKWN");
 		snprintf(add, sizeof(add), "[%p]", X);
-		}
 	}
 
 	if (occ->flag_plus)
 		strncat(buf, add, sizeof(buf)-1);
 
 	return lc_arg_append(app, occ, buf, strlen(buf));
-
 #undef A
 }
 
@@ -293,18 +311,16 @@ lc_arg_env_t *firm_get_arg_env(void)
 		const char *name;
 		char letter;
 	} args[] = {
-#define X(name, letter) {"firm:" name, letter}
-		X("type",      't'),
-		X("entity",    'e'),
-		X("entity_ld", 'E'),
-		X("tarval",    'T'),
-		X("irn",       'n'),
-		X("op",        'O'),
-		X("irn_nr",    'N'),
-		X("mode",      'm'),
-		X("block",     'B'),
-		X("cg_path",   'P'),
-#undef X
+		{"firm:type",      't'},
+		{"firm:entity",    'e'},
+		{"firm:entity_ld", 'E'},
+		{"firm:tarval",    'T'},
+		{"firm:irn",       'n'},
+		{"firm:op",        'O'},
+		{"firm:irn_nr",    'N'},
+		{"firm:mode",      'm'},
+		{"firm:block",     'B'},
+		{"firm:cg_path",   'P'},
 	};
 
 	size_t i;

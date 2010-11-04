@@ -60,7 +60,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 #undef IMAX
 #define IMAX(a,b)   ((a) > (b) ? (a) : (b))
 
-#define MAX_PROJ    IMAX(IMAX(pn_Load_max, pn_Store_max), pn_Call_max)
+#define MAX_PROJ    IMAX(IMAX((long)pn_Load_max, (long)pn_Store_max), (long)pn_Call_max)
 
 enum changes_t {
 	DF_CHANGED = 1,       /**< data flow changed */
@@ -110,7 +110,7 @@ static unsigned master_visited = 0;
  */
 static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst)
 {
-	ldst_info_t *info = get_irn_link(node);
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(node);
 
 	if (! info) {
 		info = OALLOCZ(obst, ldst_info_t);
@@ -124,7 +124,7 @@ static ldst_info_t *get_ldst_info(ir_node *node, struct obstack *obst)
  */
 static block_info_t *get_block_info(ir_node *node, struct obstack *obst)
 {
-	block_info_t *info = get_irn_link(node);
+	block_info_t *info = (block_info_t*)get_irn_link(node);
 
 	if (! info) {
 		info = OALLOCZ(obst, block_info_t);
@@ -179,10 +179,10 @@ static unsigned update_exc(ldst_info_t *info, ir_node *block, int pos)
  */
 static void collect_nodes(ir_node *node, void *env)
 {
-	ir_opcode   opcode = get_irn_opcode(node);
+	walk_env_t  *wenv   = (walk_env_t *)env;
+	unsigned     opcode = get_irn_opcode(node);
 	ir_node     *pred, *blk, *pred_blk;
 	ldst_info_t *ldst_info;
-	walk_env_t  *wenv = env;
 
 	if (opcode == iro_Proj) {
 		pred   = get_Proj_pred(node);
@@ -382,17 +382,19 @@ static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth)
 			set_compound_graph_path_array_index(res, pos, get_Sel_array_index_long(ptr, 0));
 		}
 	} else if (is_Add(ptr)) {
-		ir_node   *l    = get_Add_left(ptr);
-		ir_node   *r    = get_Add_right(ptr);
-		ir_mode   *mode = get_irn_mode(ptr);
+		ir_mode   *mode;
 		ir_tarval *tmp;
 
-		if (is_Const(r) && get_irn_mode(l) == mode) {
-			ptr = l;
-			tv  = get_Const_tarval(r);
-		} else {
-			ptr = r;
-			tv  = get_Const_tarval(l);
+		{
+			ir_node   *l    = get_Add_left(ptr);
+			ir_node   *r    = get_Add_right(ptr);
+			if (is_Const(r) && get_irn_mode(l) == get_irn_mode(ptr)) {
+				ptr = l;
+				tv  = get_Const_tarval(r);
+			} else {
+				ptr = r;
+				tv  = get_Const_tarval(l);
+			}
 		}
 ptr_arith:
 		mode = get_tarval_mode(tv);
@@ -585,17 +587,19 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
 		}
 		return rec_find_compound_ent_value(get_Sel_ptr(ptr), &entry);
 	}  else if (is_Add(ptr)) {
-		ir_node  *l = get_Add_left(ptr);
-		ir_node  *r = get_Add_right(ptr);
 		ir_mode  *mode;
 		unsigned pos;
 
-		if (is_Const(r)) {
-			ptr = l;
-			tv  = get_Const_tarval(r);
-		} else {
-			ptr = r;
-			tv  = get_Const_tarval(l);
+		{
+			ir_node *l = get_Add_left(ptr);
+			ir_node *r = get_Add_right(ptr);
+			if (is_Const(r)) {
+				ptr = l;
+				tv  = get_Const_tarval(r);
+			} else {
+				ptr = r;
+				tv  = get_Const_tarval(l);
+			}
 		}
 ptr_arith:
 		mode = get_tarval_mode(tv);
@@ -697,7 +701,7 @@ static void reduce_adr_usage(ir_node *ptr);
  */
 static void handle_load_update(ir_node *load)
 {
-	ldst_info_t *info = get_irn_link(load);
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
 
 	/* do NOT touch volatile loads for now */
 	if (get_Load_volatility(load) == volatility_is_volatile)
@@ -731,7 +735,7 @@ static void reduce_adr_usage(ir_node *ptr)
 	/* this Proj is dead now */
 	pred = get_Proj_pred(ptr);
 	if (is_Load(pred)) {
-		ldst_info_t *info = get_irn_link(pred);
+		ldst_info_t *info = (ldst_info_t*)get_irn_link(pred);
 		info->projs[get_Proj_proj(ptr)] = NULL;
 
 		/* this node lost its result proj, handle that */
@@ -893,7 +897,7 @@ static int try_load_after_store(ir_node *load,
 
 	DBG_OPT_RAW(load, store_value);
 
-	info = get_irn_link(load);
+	info = (ldst_info_t*)get_irn_link(load);
 	if (info->projs[pn_Load_M])
 		exchange(info->projs[pn_Load_M], get_Load_mem(load));
 
@@ -931,14 +935,14 @@ static int try_load_after_store(ir_node *load,
 static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 {
 	unsigned    res = 0;
-	ldst_info_t *info = get_irn_link(load);
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
 	ir_node     *pred;
 	ir_node     *ptr       = get_Load_ptr(load);
 	ir_node     *mem       = get_Load_mem(load);
 	ir_mode     *load_mode = get_Load_mode(load);
 
 	for (pred = curr; load != pred; ) {
-		ldst_info_t *pred_info = get_irn_link(pred);
+		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
 
 		/*
 		 * a Load immediately after a Store -- a read after write.
@@ -1094,7 +1098,7 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
  */
 static unsigned optimize_load(ir_node *load)
 {
-	ldst_info_t *info = get_irn_link(load);
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
 	ir_node     *mem, *ptr, *value;
 	ir_entity   *ent;
 	long        dummy;
@@ -1247,7 +1251,7 @@ static int is_partially_same(ir_node *small, ir_node *large)
 static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 {
 	unsigned res = 0;
-	ldst_info_t *info = get_irn_link(store);
+	ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
 	ir_node *pred;
 	ir_node *ptr = get_Store_ptr(store);
 	ir_node *mem = get_Store_mem(store);
@@ -1256,7 +1260,7 @@ static unsigned follow_Mem_chain_for_Store(ir_node *store, ir_node *curr)
 	ir_node *block = get_nodes_block(store);
 
 	for (pred = curr; pred != store;) {
-		ldst_info_t *pred_info = get_irn_link(pred);
+		ldst_info_t *pred_info = (ldst_info_t*)get_irn_link(pred);
 
 		/*
 		 * BEWARE: one might think that checking the modes is useless, because
@@ -1420,7 +1424,7 @@ static unsigned optimize_store(ir_node *store)
 
 	/* a store to an entity which is never read is unnecessary */
 	if (entity != NULL && !(get_entity_usage(entity) & ir_usage_read)) {
-		ldst_info_t *info = get_irn_link(store);
+		ldst_info_t *info = (ldst_info_t*)get_irn_link(store);
 		if (info->projs[pn_Store_X_except] == NULL) {
 			DB((dbg, LEVEL_1, "  Killing useless %+F to never read entity %+F\n", store, entity));
 			exchange(info->projs[pn_Store_M], get_Store_mem(store));
@@ -1500,7 +1504,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	/* check if the block is post dominated by Phi-block
 	   and has no exception exit */
-	bl_info = get_irn_link(block);
+	bl_info = (block_info_t*)get_irn_link(block);
 	if (bl_info->flags & BLOCK_HAS_EXC)
 		return 0;
 
@@ -1511,7 +1515,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	/* this is the address of the store */
 	ptr  = get_Store_ptr(store);
 	mode = get_irn_mode(get_Store_value(store));
-	info = get_irn_link(store);
+	info = (ldst_info_t*)get_irn_link(store);
 	exc  = info->exc_block;
 
 	for (i = 1; i < n; ++i) {
@@ -1527,7 +1531,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		if (ptr != get_Store_ptr(pred) || mode != get_irn_mode(get_Store_value(pred)))
 			return 0;
 
-		info = get_irn_link(pred);
+		info = (ldst_info_t*)get_irn_link(pred);
 
 		/* check, if all stores have the same exception flow */
 		if (exc != info->exc_block)
@@ -1542,7 +1546,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		   and has no exception exit. Note that block must be different from
 		   Phi-block, else we would move a Store from end End of a block to its
 		   Start... */
-		bl_info = get_irn_link(block);
+		bl_info = (block_info_t*)get_irn_link(block);
 		if (bl_info->flags & BLOCK_HAS_EXC)
 			return 0;
 		if (block == phi_block || ! block_postdominates(phi_block, block))
@@ -1582,7 +1586,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		assert(is_Proj(projMs[i]));
 
 		store = get_Proj_pred(projMs[i]);
-		info  = get_irn_link(store);
+		info  = (ldst_info_t*)get_irn_link(store);
 
 		inM[i] = get_Store_mem(store);
 		inD[i] = get_Store_value(store);
@@ -1608,7 +1612,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 	}
 
 	/* fourth step: create the Store */
-	store = new_rd_Store(db, block, phiM, ptr, phiD, 0);
+	store = new_rd_Store(db, block, phiM, ptr, phiD, cons_none);
 #ifdef DO_CACHEOPT
 	co_set_irn_name(store, co_get_irn_ident(old_store));
 #endif
@@ -1648,7 +1652,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
  */
 static void do_load_store_optimize(ir_node *n, void *env)
 {
-	walk_env_t *wenv = env;
+	walk_env_t *wenv = (walk_env_t*)env;
 
 	switch (get_irn_opcode(n)) {
 
@@ -1701,10 +1705,10 @@ typedef struct loop_env {
 static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
 {
 	ir_phase   *ph = &env->ph;
-	node_entry *e  = phase_get_irn_data(&env->ph, irn);
+	node_entry *e  = (node_entry*)phase_get_irn_data(&env->ph, irn);
 
 	if (! e) {
-		e = phase_alloc(ph, sizeof(*e));
+		e = (node_entry*)phase_alloc(ph, sizeof(*e));
 		memset(e, 0, sizeof(*e));
 		phase_set_irn_data(ph, irn, e);
 	}
@@ -1782,8 +1786,8 @@ typedef struct avail_entry_t {
  */
 static int cmp_avail_entry(const void *elt, const void *key, size_t size)
 {
-	const avail_entry_t *a = elt;
-	const avail_entry_t *b = key;
+	const avail_entry_t *a = (const avail_entry_t*)elt;
+	const avail_entry_t *b = (const avail_entry_t*)key;
 	(void) size;
 
 	return a->ptr != b->ptr || a->mode != b->mode;
@@ -1830,7 +1834,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 			if (pe->pscc != ne->pscc) {
 				/* not in the same SCC, is region const */
-				phi_entry *pe = phase_alloc(&env->ph, sizeof(*pe));
+				phi_entry *pe = (phi_entry*)phase_alloc(&env->ph, sizeof(*pe));
 
 				pe->phi  = phi;
 				pe->pos  = j;
@@ -1852,7 +1856,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 		next = ne->next;
 
 		if (is_Load(load)) {
-			ldst_info_t *info = get_irn_link(load);
+			ldst_info_t *info = (ldst_info_t*)get_irn_link(load);
 			ir_node     *ptr = get_Load_ptr(load);
 
 			/* for now, we cannot handle Loads with exceptions */
@@ -1898,11 +1902,11 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 					entry.ptr  = ptr;
 					entry.mode = load_mode;
-					res = set_find(avail, &entry, sizeof(entry), hash_cache_entry(&entry));
+					res = (avail_entry_t*)set_find(avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 					if (res != NULL) {
 						irn = res->load;
 					} else {
-						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, 0);
+						irn = new_rd_Load(db, pred, get_Phi_pred(phi, pos), ptr, load_mode, cons_none);
 						entry.load = irn;
 						set_insert(avail, &entry, sizeof(entry), hash_cache_entry(&entry));
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
@@ -2143,7 +2147,7 @@ static void dfs(ir_node *irn, loop_env *env)
 	}
 
 	if (node->low == node->DFSnum) {
-		scc *pscc = phase_alloc(&env->ph, sizeof(*pscc));
+		scc *pscc = (scc*)phase_alloc(&env->ph, sizeof(*pscc));
 		ir_node *x;
 
 		pscc->head = NULL;

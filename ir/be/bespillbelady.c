@@ -213,8 +213,8 @@ static const loc_t *workset_contains(const workset_t *ws, const ir_node *val)
 
 static int loc_compare(const void *a, const void *b)
 {
-	const loc_t *p = a;
-	const loc_t *q = b;
+	const loc_t *p = (const loc_t*)a;
+	const loc_t *q = (const loc_t*)b;
 	return p->time - q->time;
 }
 
@@ -270,7 +270,7 @@ static block_info_t *new_block_info(void)
 
 static inline block_info_t *get_block_info(const ir_node *block)
 {
-	return get_irn_link(block);
+	return (block_info_t*)get_irn_link(block);
 }
 
 static inline void set_block_info(ir_node *block, block_info_t *info)

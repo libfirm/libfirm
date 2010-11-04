@@ -129,7 +129,7 @@ static bool add_implementing_graphs(ir_entity *method)
 static void rta_act(ir_node *node, void *env)
 {
 	bool *change = (bool*)env;
-	ir_opcode op = get_irn_opcode(node);
+	unsigned op = get_irn_opcode(node);
 
 	if (iro_Call == op) {         /* CALL */
 		ir_entity *ent = NULL;
@@ -216,12 +216,12 @@ static int rta_fill_incremental(void)
 		DB((dbg, LEVEL_2, "RTA: RUN %i\n", n_runs));
 
 		/* collect what we have found previously */
-		foreach_pset_new(live_graphs, graph, iter) {
+		foreach_pset_new(live_graphs, ir_graph*, graph, iter) {
 			pset_new_insert(_live_graphs, graph);
 		}
 
 		rerun = false;
-		foreach_pset_new(live_graphs, graph, iter) {
+		foreach_pset_new(live_graphs, ir_graph*, graph, iter) {
 			DB((dbg, LEVEL_2, "RTA: RUN %i: considering graph of %+F\n", n_runs, graph));
 			rerun |= rta_fill_graph(graph);
 		}
@@ -387,7 +387,7 @@ void rta_delete_dead_graphs(void)
 	/* Hmm, probably we need to run this only if dead_irgs is non-NULL */
 	type_walk(make_entity_to_description, NULL, NULL);
 	for (irg = dead_irgs; irg != NULL; irg = next_irg) {
-		next_irg = get_irg_link(irg);
+		next_irg = (ir_graph*) get_irg_link(irg);
 		remove_irp_irg(irg);
 	}
 

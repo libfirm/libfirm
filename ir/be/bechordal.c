@@ -350,7 +350,7 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 			DBG((dbg, LEVEL_2, "\tsetting %+F to register %s\n", irn, reg->name));
 		}
 
-		irn = pmap_get(partners, alloc_nodes[i]);
+		irn = (ir_node*)pmap_get(partners, alloc_nodes[i]);
 		if (irn != NULL) {
 			arch_set_irn_register(irn, reg);
 			(void) pset_hinsert_ptr(alloc_env->pre_colored, irn);
@@ -413,7 +413,7 @@ static void constraints(ir_node *bl, void *data)
 	 * Each other block is begun loud.
 	 */
 	int                     silent = bl == get_irg_start_block(get_irn_irg(bl));
-	be_chordal_alloc_env_t *env    = data;
+	be_chordal_alloc_env_t *env    = (be_chordal_alloc_env_t*)data;
 	ir_node                *irn;
 
 	/*
@@ -427,7 +427,7 @@ static void constraints(ir_node *bl, void *data)
 
 static void assign(ir_node *block, void *env_ptr)
 {
-	be_chordal_alloc_env_t *alloc_env = env_ptr;
+	be_chordal_alloc_env_t *alloc_env = (be_chordal_alloc_env_t*)env_ptr;
 	be_chordal_env_t *env       = alloc_env->chordal_env;
 	bitset_t *live              = alloc_env->live;
 	bitset_t *colors            = alloc_env->colors;

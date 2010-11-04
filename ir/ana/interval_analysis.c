@@ -88,7 +88,7 @@ static inline region_attr *get_region_attr(void *region)
 	region_attr r_attr, *res;
 	r_attr.reg = region;
 
-	res = set_find(region_attr_set, &r_attr, sizeof(r_attr), attr_set_hash(&r_attr));
+	res = (region_attr*) set_find(region_attr_set, &r_attr, sizeof(r_attr), attr_set_hash(&r_attr));
 
 	if (res == NULL) {
 		r_attr.in_array = NEW_ARR_F(void *, 0);
@@ -98,7 +98,7 @@ static inline region_attr *get_region_attr(void *region)
 			r_attr.op_array = NULL;
 		r_attr.n_outs     = 0;
 		r_attr.n_exc_outs = 0;
-		res = set_insert(region_attr_set, &r_attr, sizeof(r_attr), attr_set_hash(&r_attr));
+		res = (region_attr*) set_insert(region_attr_set, &r_attr, sizeof(r_attr), attr_set_hash(&r_attr));
 	}
 
 	return res;
@@ -446,9 +446,9 @@ void free_intervals(void)
 	if (region_attr_set == NULL)
 		return;
 
-	for (res = set_first(region_attr_set);
+	for (res = (region_attr*) set_first(region_attr_set);
 	     res != NULL;
-	     res = set_next(region_attr_set)) {
+	     res = (region_attr*) set_next(region_attr_set)) {
 		DEL_ARR_F(res->in_array);
 		if (res->op_array != NULL)
 			DEL_ARR_F(res->op_array);
@@ -468,7 +468,7 @@ static void dump_region_edges(FILE *F, void *reg)
 	int i, n_ins = get_region_n_ins(reg);
 
 	if (is_ir_node(reg)) {
-		ir_node *irn = reg;
+		ir_node *irn = (ir_node*) reg;
 		if (get_Block_n_cfgpreds(irn) > get_region_n_ins(reg)) {
 			for (i = n_ins; i < get_Block_n_cfgpreds(irn); ++i) {
 				if (is_backedge(irn, i))
@@ -487,7 +487,7 @@ static void dump_region_edges(FILE *F, void *reg)
 		void *target = get_region_in(reg, i);
 
 		if (is_ir_node(reg)) {
-			ir_node *irn = reg;
+			ir_node *irn = (ir_node*) reg;
 			if (get_Block_n_cfgpreds(irn) != get_region_n_ins(reg)) {
 				ir_printf("n_cfgpreds = %d, n_ins = %d\n %+F\n", get_Block_n_cfgpreds(irn), get_region_n_ins(reg), irn);
 			}
@@ -520,7 +520,7 @@ static void dump_region_edges(FILE *F, void *reg)
 			PRINT_LOOPID(((ir_loop *)target));
 		}
 		fprintf(F, "\"");
-		if (is_ir_node(reg) && is_fragile_op(skip_Proj(get_Block_cfgpred(reg, i))))
+		if (is_ir_node(reg) && is_fragile_op(skip_Proj(get_Block_cfgpred((ir_node*) reg, i))))
 			fprintf(F, EXC_CF_EDGE_ATTR);
 		fprintf(F, "}\n");
 	}

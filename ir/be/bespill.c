@@ -233,7 +233,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 
 static void pre_spill_prepare_constr_walker(ir_node *block, void *data)
 {
-	be_pre_spill_env_t *env = data;
+	be_pre_spill_env_t *env = (be_pre_spill_env_t*)data;
 	ir_node *node;
 	sched_foreach(block, node) {
 		prepare_constr_insn(env, node);

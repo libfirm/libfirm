@@ -26,6 +26,8 @@
 #ifndef FIRM_BE_TYPES_H
 #define FIRM_BE_TYPES_H
 
+#include "firm_types.h"
+
 typedef unsigned int sched_timestep_t;
 
 typedef struct arch_register_class_t     arch_register_class_t;
@@ -51,6 +53,7 @@ typedef enum arch_irn_flags_t {
 	arch_irn_flags_backend          = 1U << 5, /**< begin of custom backend
 	                                                flags */
 } arch_irn_flags_t;
+ENUM_BITSET(arch_irn_flags_t)
 
 typedef struct be_lv_t                  be_lv_t;
 typedef struct be_lv_info_t             be_lv_info_t;

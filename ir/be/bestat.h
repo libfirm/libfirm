@@ -33,16 +33,18 @@
 #include "bestatevent.h"
 #include "bearch.h"
 
-enum be_stat_tag_t {
-	BE_STAT_PHIS,      /**< phi count (excluding mem-phis) */
-	BE_STAT_MEM_PHIS,  /**< memory-phi count */
-	BE_STAT_COPIES,    /**< copies */
-	BE_STAT_PERMS,     /**< perms */
-	BE_STAT_SPILLS,    /**< spills (also folded spills) */
-	BE_STAT_RELOADS,   /**< reloads (also folded reloads) */
-	BE_STAT_REMATS,    /**< rematerialized nodes */
+typedef enum be_stat_tag_t {
+	BE_STAT_FIRST,
+	BE_STAT_PHIS = BE_STAT_FIRST, /**< phi count (excluding mem-phis) */
+	BE_STAT_MEM_PHIS,             /**< memory-phi count */
+	BE_STAT_COPIES,               /**< copies */
+	BE_STAT_PERMS,                /**< perms */
+	BE_STAT_SPILLS,               /**< spills (also folded spills) */
+	BE_STAT_RELOADS,              /**< reloads (also folded reloads) */
+	BE_STAT_REMATS,               /**< rematerialized nodes */
 	BE_STAT_COUNT
-};
+} be_stat_tag_t;
+ENUM_COUNTABLE(be_stat_tag_t)
 typedef unsigned long be_node_stats_t[BE_STAT_COUNT];
 
 /**

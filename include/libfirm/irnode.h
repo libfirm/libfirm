@@ -35,6 +35,8 @@
 #include "begin.h"
 #include "nodeops.h"
 
+ENUM_BITSET(pn_Cmp)
+
 /**
  * @defgroup ir_node Declarations of an ir node.
  *
@@ -571,6 +573,7 @@ FIRM_API void      add_Sync_pred(ir_node *node, ir_node *pred);
 /** Return the projection number of a Proj node. */
 FIRM_API long      get_Proj_proj(const ir_node *node);
 FIRM_API void      set_Proj_proj(ir_node *node, long proj);
+FIRM_API pn_Cmp    get_Proj_pn_cmp(const ir_node*);
 
 /**
  * Returns non-zero if a node is a routine parameter.

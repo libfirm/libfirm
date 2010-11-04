@@ -93,7 +93,7 @@ static int get_block_n_succs(ir_node *block)
 static void pre_walk_calc_extbb(ir_node *block, void *ctx)
 {
 	int n = get_Block_n_cfgpreds(block);
-	env_t *env = ctx;
+	env_t *env = (env_t*) ctx;
 
 	if (n <= 0 || n > 1 || block == env->start_block) {
 		/*
@@ -149,7 +149,7 @@ static ir_extblk _sentinel = { k_ir_extblk, 0xFEA1DEAD, NULL, NULL };
 static void post_walk_calc_extbb(ir_node *block, void *ctx)
 {
 	ir_extblk *extbb = get_Block_extbb(block);
-	env_t *env = ctx;
+	env_t *env = (env_t*) ctx;
 	ir_extblk *sentinel = &_sentinel;
 
 	if (! extbb) {
@@ -189,7 +189,7 @@ static void post_walk_calc_extbb(ir_node *block, void *ctx)
 		}
 		/* arg, the list is in wrong order, turn around and add to the extbb list */
 		for (curr = list; curr; curr = prev) {
-			prev = get_irn_link(curr);
+			prev = (ir_node*) get_irn_link(curr);
 			set_irn_link(curr, extbb->link);
 			extbb->link = curr;
 			set_Block_extbb(curr, extbb);
@@ -240,8 +240,8 @@ void compute_extbb(ir_graph *irg)
 
 		extbb->blks = NEW_ARR_D(ir_node *, env.obst, len);
 
-		for (block = extbb->link, i = 0; i < len; ++i) {
-			ir_node *nblock = get_irn_link(block);
+		for (block = (ir_node*) extbb->link, i = 0; i < len; ++i) {
+			ir_node *nblock = (ir_node*) get_irn_link(block);
 
 			/* ensure that the leader is the first one */
 			extbb->blks[len - 1 - i] = block;

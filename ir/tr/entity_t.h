@@ -81,7 +81,7 @@ typedef struct compound_ent_attr {
 typedef struct method_ent_attr {
 	ir_graph *irg;                 /**< The corresponding irg if known.
 	                                    The ir_graph constructor automatically sets this field. */
-	unsigned irg_add_properties;   /**< Additional graph properties can be
+	mtp_additional_properties irg_add_properties;   /**< Additional graph properties can be
 	                                    stored in a entity if no irg is available. */
 
 	unsigned vtable_number;        /**< For a dynamically called method, the number assigned
@@ -237,13 +237,13 @@ static inline void _set_entity_type(ir_entity *ent, ir_type *type)
 static inline ir_linkage _get_entity_linkage(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
-	return ent->linkage;
+	return (ir_linkage) ent->linkage;
 }
 
 static inline ir_volatility _get_entity_volatility(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
-	return ent->volatility;
+	return (ir_volatility) ent->volatility;
 }
 
 static inline void _set_entity_volatility(ir_entity *ent, ir_volatility vol)
@@ -267,7 +267,7 @@ static inline void _set_entity_alignment(ir_entity *ent, unsigned alignment)
 static inline ir_align _get_entity_aligned(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
-	return ent->aligned;
+	return (ir_align) ent->aligned;
 }
 
 static inline void _set_entity_aligned(ir_entity *ent, ir_align a)
@@ -291,7 +291,7 @@ static inline void _set_entity_compiler_generated(ir_entity *ent, int flag)
 static inline ir_entity_usage _get_entity_usage(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
-	return ent->usage;
+	return (ir_entity_usage) ent->usage;
 }
 
 static inline void _set_entity_usage(ir_entity *ent, ir_entity_usage state)

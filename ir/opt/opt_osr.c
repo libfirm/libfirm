@@ -96,7 +96,7 @@ typedef struct iv_env {
  * An entry in the (op, node, node) -> node map.
  */
 typedef struct quadruple_t {
-	ir_opcode code;  /**< the opcode of the reduced operation */
+	unsigned   code; /**< the opcode of the reduced operation */
 	ir_node   *op1;  /**< the first operand the reduced operation */
 	ir_node   *op2;  /**< the second operand of the reduced operation */
 
@@ -109,7 +109,7 @@ typedef struct quadruple_t {
 typedef struct LFTR_edge {
 	ir_node   *src;   /**< the source node */
 	ir_node   *dst;   /**< the destination node */
-	ir_opcode code;   /**< the opcode that must be applied */
+	unsigned  code;   /**< the opcode that must be applied */
 	ir_node   *rc;    /**< the region const that must be applied */
 } LFTR_edge;
 
@@ -121,8 +121,8 @@ static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env);
  */
 static int LFTR_cmp(const void *e1, const void *e2, size_t size)
 {
-	const LFTR_edge *l1 = e1;
-	const LFTR_edge *l2 = e2;
+	const LFTR_edge *l1 = (const LFTR_edge*)e1;
+	const LFTR_edge *l2 = (const LFTR_edge*)e2;
 	(void) size;
 
 	return l1->src != l2->src;
@@ -139,7 +139,7 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env)
 
 	key.src  = src;
 
-	return set_find(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
+	return (LFTR_edge*)set_find(env->lftr_edges, &key, sizeof(key), HASH_PTR(src));
 }  /* LFTR_find */
 
 /**
@@ -151,7 +151,7 @@ static LFTR_edge *LFTR_find(ir_node *src, iv_env *env)
  * @param rc    the region const used in the transition
  * @param env   the environment
  */
-static void LFTR_add(ir_node *src, ir_node *dst, ir_opcode code, ir_node *rc, iv_env *env)
+static void LFTR_add(ir_node *src, ir_node *dst, unsigned code, ir_node *rc, iv_env *env)
 {
 	LFTR_edge key;
 
@@ -175,7 +175,7 @@ static void LFTR_add(ir_node *src, ir_node *dst, ir_opcode code, ir_node *rc, iv
  */
 static node_entry *get_irn_ne(ir_node *irn, iv_env *env)
 {
-	node_entry *e = get_irn_link(irn);
+	node_entry *e = (node_entry*)get_irn_link(irn);
 
 	if (e == NULL) {
 		e = OALLOCZ(&env->obst, node_entry);
@@ -228,8 +228,8 @@ static int is_rc(ir_node *irn, ir_node *header_block)
  */
 static int quad_cmp(const void *e1, const void *e2, size_t size)
 {
-	const quadruple_t *c1 = e1;
-	const quadruple_t *c2 = e2;
+	const quadruple_t *c1 = (const quadruple_t*)e1;
+	const quadruple_t *c2 = (const quadruple_t*)e2;
 	(void) size;
 
 	return c1->code != c2->code || c1->op1 != c2->op1 || c1->op2 != c2->op2;
@@ -245,7 +245,7 @@ static int quad_cmp(const void *e1, const void *e2, size_t size)
  *
  * @return the already reduced node or NULL if this operation is not yet reduced
  */
-static ir_node *search(ir_opcode code, ir_node *op1, ir_node *op2, iv_env *env)
+static ir_node *search(unsigned code, ir_node *op1, ir_node *op2, iv_env *env)
 {
 	quadruple_t key, *entry;
 
@@ -253,8 +253,8 @@ static ir_node *search(ir_opcode code, ir_node *op1, ir_node *op2, iv_env *env)
 	key.op1 = op1;
 	key.op2 = op2;
 
-	entry = set_find(env->quad_map, &key, sizeof(key),
-	                 (code * 9) ^ HASH_PTR(op1) ^HASH_PTR(op2));
+	entry = (quadruple_t*)set_find(env->quad_map, &key, sizeof(key),
+	                               (code * 9) ^ HASH_PTR(op1) ^HASH_PTR(op2));
 	if (entry)
 		return entry->res;
 	return NULL;
@@ -269,7 +269,7 @@ static ir_node *search(ir_opcode code, ir_node *op1, ir_node *op2, iv_env *env)
  * @param result  the result of the reduced operation
  * @param env     the environment
  */
-static void add(ir_opcode code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env)
+static void add(unsigned code, ir_node *op1, ir_node *op2, ir_node *result, iv_env *env)
 {
 	quadruple_t key;
 
@@ -312,7 +312,7 @@ static ir_node *find_location(ir_node *block1, ir_node *block2)
  *
  * @return the newly created node
  */
-static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
+static ir_node *do_apply(unsigned code, dbg_info *db, ir_node *op1, ir_node *op2, ir_mode *mode)
 {
 	ir_node *result;
 	ir_node *block = find_location(get_nodes_block(op1), get_nodes_block(op2));
@@ -346,7 +346,7 @@ static ir_node *do_apply(ir_opcode code, dbg_info *db, ir_node *op1, ir_node *op
  */
 static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1, ir_node *op2, iv_env *env)
 {
-	ir_opcode code = get_irn_opcode(orig);
+	unsigned code = get_irn_opcode(orig);
 	ir_node *result = search(code, op1, op2, env);
 
 	if (result == NULL) {
@@ -381,7 +381,7 @@ static ir_node *apply(ir_node *header, ir_node *orig, ir_node *op1, ir_node *op2
  */
 static ir_node *reduce(ir_node *orig, ir_node *iv, ir_node *rc, iv_env *env)
 {
-	ir_opcode code = get_irn_opcode(orig);
+	unsigned code = get_irn_opcode(orig);
 	ir_node *result = search(code, iv, rc, env);
 
 	/* check if we have already done this operation on the iv */
@@ -445,7 +445,7 @@ static void update_scc(ir_node *iv, node_entry *e, iv_env *env)
 	pscc->head = NULL;
 	waitq_put(wq, iv);
 	do {
-		ir_node    *irn = waitq_get(wq);
+		ir_node    *irn = (ir_node*)waitq_get(wq);
 		node_entry *ne  = get_irn_ne(irn, env);
 		int        i;
 
@@ -683,7 +683,7 @@ static int check_replace(ir_node *irn, iv_env *env)
 {
 	ir_node   *left, *right, *iv, *rc;
 	ir_op     *op  = get_irn_op(irn);
-	ir_opcode code = get_op_code(op);
+	unsigned  code = get_op_code(op);
 	ir_node   *liv, *riv;
 
 	switch (code) {
@@ -734,7 +734,7 @@ static void classify_iv(scc *pscc, iv_env *env)
 
 	/* find the header block for this scc */
 	for (irn = pscc->head; irn; irn = next) {
-		node_entry *e = get_irn_link(irn);
+		node_entry *e = (node_entry*)get_irn_link(irn);
 		ir_node *block = get_nodes_block(irn);
 
 		next = e->next;
@@ -834,7 +834,7 @@ fail:
 static void process_scc(scc *pscc, iv_env *env)
 {
 	ir_node *head = pscc->head;
-	node_entry *e = get_irn_link(head);
+	node_entry *e = (node_entry*)get_irn_link(head);
 
 #ifdef DEBUG_libfirm
 	{
@@ -842,7 +842,7 @@ static void process_scc(scc *pscc, iv_env *env)
 
 		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
 		for (irn = pscc->head; irn != NULL; irn = next) {
-			node_entry *e = get_irn_link(irn);
+			node_entry *e = (node_entry*)get_irn_link(irn);
 
 			next = e->next;
 
@@ -916,7 +916,7 @@ static void remove_phi_cycle(scc *pscc, iv_env *env)
 static void process_phi_only_scc(scc *pscc, iv_env *env)
 {
 	ir_node *head = pscc->head;
-	node_entry *e = get_irn_link(head);
+	node_entry *e = (node_entry*)get_irn_link(head);
 
 #ifdef DEBUG_libfirm
 	{
@@ -924,7 +924,7 @@ static void process_phi_only_scc(scc *pscc, iv_env *env)
 
 		DB((dbg, LEVEL_4, " SCC at %p:\n ", pscc));
 		for (irn = pscc->head; irn; irn = next) {
-			node_entry *e = get_irn_link(irn);
+			node_entry *e = (node_entry*)get_irn_link(irn);
 
 			next = e->next;
 
@@ -1072,7 +1072,7 @@ static void do_dfs(ir_graph *irg, iv_env *env)
  */
 static void assign_po(ir_node *block, void *ctx)
 {
-	iv_env *env = ctx;
+	iv_env *env = (iv_env*)ctx;
 	node_entry *e = get_irn_ne(block, env);
 
 	e->POnum = env->POnum++;
@@ -1224,7 +1224,7 @@ static ir_node *applyEdges(ir_node **pIV, ir_node *rc, iv_env *env)
  */
 static void do_lftr(ir_node *cmp, void *ctx)
 {
-	iv_env *env = ctx;
+	iv_env *env = (iv_env*)ctx;
 	ir_node *left, *right, *liv, *riv;
 	ir_node *iv, *rc;
 	ir_node *nleft = NULL, *nright = NULL;
@@ -1275,7 +1275,7 @@ static void lftr(ir_graph *irg, iv_env *env)
  */
 static void clear_and_fix(ir_node *irn, void *env)
 {
-	int *moved = env;
+	int *moved = (int*)env;
 	set_irn_link(irn, NULL);
 
 	if (is_Proj(irn)) {
@@ -1470,24 +1470,24 @@ void opt_osr(ir_graph *irg, unsigned flags)
 		edges_deactivate(irg);
 }  /* opt_osr */
 
-struct pass_t {
+typedef struct pass_t {
 	ir_graph_pass_t pass;
 	unsigned        flags;
-};
+} pass_t;
 
 /**
 * Wrapper for running opt_osr() as an ir_graph pass.
 */
 static int pass_wrapper(ir_graph *irg, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 	opt_osr(irg, pass->flags);
 	return 0;
 }  /* pass_wrapper */
 
 ir_graph_pass_t *opt_osr_pass(const char *name, unsigned flags)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
+	pass_t *pass = XMALLOCZ(pass_t);
 
 	pass->flags = flags;
 	return def_graph_pass_constructor(

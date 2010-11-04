@@ -53,9 +53,11 @@
  * this gets too tedious)
  */
 typedef enum ir_phase_id {
-	PHASE_VRP,
+	PHASE_FIRST,
+	PHASE_VRP = PHASE_FIRST,
 	PHASE_LAST = PHASE_VRP
 } ir_phase_id;
+ENUM_COUNTABLE(ir_phase_id)
 
 /** The type of an ir_op. */
 struct ir_op {
@@ -127,11 +129,11 @@ struct ir_mode {
 /* ir node attributes */
 
 /** first attribute of Bad, Block, Anchor nodes */
-typedef struct {
+typedef struct irg_attr {
 	ir_graph *irg;              /**< The graph this block like node belongs to. */
 } irg_attr;
 
-typedef struct {
+typedef struct bad_attr {
 	irg_attr    irg;
 } bad_attr;
 
@@ -140,7 +142,7 @@ typedef struct anchor_attr {
 } anchor_attr;
 
 /** Block attributes */
-typedef struct {
+typedef struct block_attr {
 	/* General attributes */
 	irg_attr     irg;           /**< The graph this block belongs to. */
 	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
@@ -170,7 +172,7 @@ typedef struct {
 } block_attr;
 
 /** Cond attributes. */
-typedef struct {
+typedef struct cond_attr {
 	long default_proj;           /**< only for non-binary Conds: biggest Proj number, i.e. the one used for default. */
 	cond_jmp_predicate jmp_pred; /**< only for binary Conds: The jump predication. */
 } cond_attr;
@@ -181,25 +183,25 @@ typedef struct const_attr {
 } const_attr;
 
 /** SymConst attributes. */
-typedef struct {
+typedef struct symconst_attr {
 	symconst_symbol sym;  // old tori
 	symconst_kind   kind;
 } symconst_attr;
 
 /** Sel attributes. */
-typedef struct {
+typedef struct sel_attr {
 	ir_entity *entity;    /**< entity to select */
 } sel_attr;
 
 /** Exception attributes. */
-typedef struct {
+typedef struct except_attr {
 	op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
 									 If it's know that no exception will be generated, could be set to
 									 op_pin_state_floats. */
 } except_attr;
 
 /** Call attributes. */
-typedef struct {
+typedef struct call_attr {
 	except_attr exc;               /**< the exception attribute. MUST be the first one. */
 	ir_type     *type;             /**< type of called procedure */
 	ir_entity   **callee_arr;      /**< result of callee analysis */
@@ -207,38 +209,38 @@ typedef struct {
 } call_attr;
 
 /** Builtin attributes. */
-typedef struct {
+typedef struct builtin_attr {
 	except_attr     exc;           /**< the exception attribute. MUST be the first one. */
 	ir_builtin_kind kind;          /**< kind of the called builtin procedure */
 	ir_type         *type;         /**< type of called builtin procedure */
 } builtin_attr;
 
 /** Alloc attributes. */
-typedef struct {
+typedef struct alloc_attr {
 	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
     ir_where_alloc where;         /**< stack, heap or other managed part of memory */
 	ir_type        *type;         /**< Type of the allocated object.  */
 } alloc_attr;
 
 /** Free attributes. */
-typedef struct {
+typedef struct free_attr {
 	ir_type *type;                /**< Type of the allocated object.  */
 	ir_where_alloc where;         /**< stack, heap or other managed part of memory */
 } free_attr;
 
 /** InstOf attributes. */
-typedef struct {
+typedef struct io_attr {
 	except_attr    exc;           /**< the exception attribute. MUST be the first one. */
 	ir_type *type;                /**< the type of which the object pointer must be */
 } io_attr;
 
 /** Cast attributes. */
-typedef struct {
+typedef struct cast_attr {
 	ir_type *type;                /**< Type of the casted node. */
 } cast_attr;
 
 /** Load attributes. */
-typedef struct {
+typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
     unsigned      volatility:1;   /**< The volatility of this Load operation. */
     unsigned      aligned:1;      /**< The align attribute of this Load operation. */
@@ -246,13 +248,13 @@ typedef struct {
 } load_attr;
 
 /** Store attributes. */
-typedef struct {
+typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
 	unsigned      volatility:1;   /**< The volatility of this Store operation. */
 	unsigned      aligned:1;      /**< The align attribute of this Store operation. */
 } store_attr;
 
-typedef struct {
+typedef struct phi_attr {
 	ir_node        *next;         /**< Points to the next Phi in the Phi list of a block. */
 	union {
 		bitset_t      *backedge;     /**< Raw Bitfield: bit n is set to true if pred n is backedge. */
@@ -267,35 +269,35 @@ typedef struct {
 
 
 /**< Confirm attribute. */
-typedef struct {
+typedef struct confirm_attr {
 	pn_Cmp cmp;                   /**< The compare operation. */
 } confirm_attr;
 
 /** CopyB attribute. */
-typedef struct {
+typedef struct copyb_attr {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 	ir_type        *type;         /**< Type of the copied entity. */
 } copyb_attr;
 
 /** Bound attribute. */
-typedef struct {
+typedef struct bound_attr {
 	except_attr exc;              /**< The exception attribute. MUST be the first one. */
 } bound_attr;
 
 /** Conv attribute. */
-typedef struct {
+typedef struct conv_attr {
 	char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
 } conv_attr;
 
 /** Div/Mod/DivMod/Quot attribute. */
-typedef struct {
+typedef struct divmod_attr {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 	ir_mode        *resmode;      /**< Result mode for the division. */
 	char           no_remainder;  /**< Set, if known that a division can be done without a remainder. */
 } divmod_attr;
 
 /** Inline Assembler support attribute. */
-typedef struct {
+typedef struct asm_attr {
 	/* BEWARE: pin state MUST be the first attribute */
 	op_pin_state      pin_state;            /**< the pin state for operations that might generate a exception */
 	ident             *text;                /**< The inline assembler text. */
@@ -306,7 +308,7 @@ typedef struct {
 
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
-typedef union {
+typedef union ir_attr {
 	irg_attr       irg;           /**< For Blocks and Bad: its belonging irg */
 	bad_attr       bad;           /**< for Bads: irg reference */
 	anchor_attr    anchor;        /**< for Anchor: irg reference */
@@ -332,7 +334,7 @@ typedef union {
 	conv_attr      conv;          /**< For Conv operation */
 	divmod_attr    divmod;        /**< For Div/Mod/DivMod operation */
 	asm_attr       assem;         /**< For ASM operation. */
-} attr;
+} ir_attr;
 
 /**
  * Edge info to put into an irn.
@@ -384,7 +386,7 @@ struct ir_node {
 	irn_edges_info_t edge_info;  /**< Everlasting out edges. */
 
 	/* ------- Opcode depending fields -------- */
-	attr attr;               /**< The set of attributes of this node. Depends on opcode.
+	ir_attr attr;            /**< The set of attributes of this node. Depends on opcode.
 	                              Must be last field of struct ir_node. */
 };
 
@@ -448,8 +450,8 @@ struct ir_graph {
 	struct obstack *extbb_obst;    /**< The obstack for extended basic block info. */
 
 	/* -- Fields for graph properties -- */
-	irg_inline_property inline_property;     /**< How to handle inlineing. */
-	unsigned additional_properties;          /**< Additional graph properties. */
+	irg_inline_property        inline_property;       /**< How to handle inlineing. */
+	mtp_additional_properties  additional_properties; /**< Additional graph properties. */
 
 	/* -- Fields indicating different states of irgraph -- */
 	ir_graph_state_t      state;

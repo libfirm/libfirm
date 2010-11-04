@@ -62,7 +62,7 @@ int be_ifg_connected(const be_ifg_t *ifg, const ir_node *a, const ir_node *b)
 
 static void nodes_walker(ir_node *bl, void *data)
 {
-	nodes_iter_t     *it   = data;
+	nodes_iter_t     *it   = (nodes_iter_t*)data;
 	struct list_head *head = get_block_border_head(it->env, bl);
 	border_t         *b;
 
@@ -83,7 +83,7 @@ static void find_nodes(const be_ifg_t *ifg, nodes_iter_t *iter)
 
 	irg_block_walk_graph(ifg->env->irg, nodes_walker, NULL, iter);
 	obstack_ptr_grow(&iter->obst, NULL);
-	iter->nodes = obstack_finish(&iter->obst);
+	iter->nodes = (ir_node**)obstack_finish(&iter->obst);
 }
 
 static inline void node_break(nodes_iter_t *it, int force)
@@ -124,7 +124,7 @@ void be_ifg_nodes_break(nodes_iter_t *iter)
 
 static void find_neighbour_walker(ir_node *block, void *data)
 {
-	neighbours_iter_t *it    = data;
+	neighbours_iter_t *it    = (neighbours_iter_t*)data;
 	struct list_head  *head  = get_block_border_head(it->env, block);
 	be_lv_t           *lv    = be_get_irg_liveness(it->env->irg);
 
@@ -211,7 +211,7 @@ static inline void free_clique_iter(cliques_iter_t *it)
 
 static void get_blocks_dom_order(ir_node *blk, void *env)
 {
-	cliques_iter_t *it = env;
+	cliques_iter_t *it = (cliques_iter_t*)env;
 	obstack_ptr_grow(&it->ob, blk);
 }
 
@@ -250,8 +250,8 @@ static inline int get_next_clique(cliques_iter_t *it)
 					ir_node *irn;
 
 					/* fill the output buffer */
-					for (irn = pset_first(it->living); irn != NULL;
-					     irn = pset_next(it->living)) {
+					for (irn = (ir_node*)pset_first(it->living); irn != NULL;
+					     irn = (ir_node*)pset_next(it->living)) {
 						it->buf[count++] = irn;
 					}
 
@@ -285,7 +285,7 @@ int be_ifg_cliques_begin(const be_ifg_t *ifg, cliques_iter_t *it,
 	it->cenv     = ifg->env;
 	it->buf      = buf;
 	it->n_blocks = obstack_object_size(&it->ob) / sizeof(void *);
-	it->blocks   = obstack_finish(&it->ob);
+	it->blocks   = (ir_node**)obstack_finish(&it->ob);
 	it->blk      = 0;
 	it->bor      = NULL;
 	it->living   = pset_new_ptr(2 * arch_register_class_n_regs(it->cenv->cls));

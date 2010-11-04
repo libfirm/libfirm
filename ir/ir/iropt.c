@@ -454,11 +454,11 @@ static ir_tarval *computed_value_Confirm(const ir_node *n)
  */
 static ir_tarval *computed_value_Proj_Cmp(const ir_node *n)
 {
-	ir_node *cmp   = get_Proj_pred(n);
-	ir_node *left  = get_Cmp_left(cmp);
-	ir_node *right = get_Cmp_right(cmp);
-	long pn_cmp    = get_Proj_proj(n);
-	ir_mode *mode  = get_irn_mode(left);
+	ir_node *cmp    = get_Proj_pred(n);
+	ir_node *left   = get_Cmp_left(cmp);
+	ir_node *right  = get_Cmp_right(cmp);
+	pn_Cmp   pn_cmp = get_Proj_pn_cmp(n);
+	ir_mode *mode   = get_irn_mode(left);
 	ir_tarval *tv_l, *tv_r;
 
 	/*
@@ -2058,7 +2058,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 	irg = get_irn_irg(phi);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const(irg, res[i]);
+		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_binop_on_phi */
@@ -2103,7 +2103,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir
 	irg = get_irn_irg(a);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(a, i);
-		res[i] = new_r_Const(irg, res[i]);
+		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(a), n, (ir_node **)res, mode);
 }  /* apply_binop_on_2_phis */
@@ -2141,7 +2141,7 @@ static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
 	irg  = get_irn_irg(phi);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const(irg, res[i]);
+		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_unop_on_phi */
@@ -2176,7 +2176,7 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 	irg = get_irn_irg(phi);
 	for (i = 0; i < n; ++i) {
 		pred = get_irn_n(phi, i);
-		res[i] = new_r_Const(irg, res[i]);
+		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
 }  /* apply_conv_on_phi */
@@ -3432,8 +3432,8 @@ static ir_node *transform_node_And(ir_node *n)
 		ir_node *pred_b = get_Proj_pred(b);
 		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
-			pn_Cmp pn_a     = get_Proj_proj(a);
-			pn_Cmp pn_b     = get_Proj_proj(b);
+			pn_Cmp pn_a     = get_Proj_pn_cmp(a);
+			pn_Cmp pn_b     = get_Proj_pn_cmp(b);
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a & pn_b;
 
@@ -3605,8 +3605,8 @@ static ir_node *transform_node_Eor(ir_node *n)
 		ir_node *pred_b = get_Proj_pred(b);
 		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
-			pn_Cmp pn_a     = get_Proj_proj(a);
-			pn_Cmp pn_b     = get_Proj_proj(b);
+			pn_Cmp pn_a     = get_Proj_pn_cmp(a);
+			pn_Cmp pn_b     = get_Proj_pn_cmp(b);
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a ^ pn_b;
 
@@ -4945,26 +4945,26 @@ static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
  *     AND   c1    ===>           OR     if (c1 | c2) == 0x111..11
  *        OR
  */
-static ir_node *transform_node_Or_bf_store(ir_node *or)
+static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
 {
-	ir_node *and, *c1;
+	ir_node *irn_and, *c1;
 	ir_node *or_l, *c2;
 	ir_node *and_l, *c3;
 	ir_node *value, *c4;
 	ir_node *new_and, *new_const, *block;
-	ir_mode *mode = get_irn_mode(or);
+	ir_mode *mode = get_irn_mode(irn_or);
 
 	ir_tarval *tv1, *tv2, *tv3, *tv4, *tv;
 
 	for (;;) {
 		ir_graph *irg;
-		get_comm_Binop_Ops(or, &and, &c1);
-		if (!is_Const(c1) || !is_And(and))
-			return or;
+		get_comm_Binop_Ops(irn_or, &irn_and, &c1);
+		if (!is_Const(c1) || !is_And(irn_and))
+			return irn_or;
 
-		get_comm_Binop_Ops(and, &or_l, &c2);
+		get_comm_Binop_Ops(irn_and, &or_l, &c2);
 		if (!is_Const(c2))
-			return or;
+			return irn_or;
 
 		tv1 = get_Const_tarval(c1);
 		tv2 = get_Const_tarval(c2);
@@ -4972,26 +4972,26 @@ static ir_node *transform_node_Or_bf_store(ir_node *or)
 		tv = tarval_or(tv1, tv2);
 		if (tarval_is_all_one(tv)) {
 			/* the AND does NOT clear a bit with isn't set by the OR */
-			set_Or_left(or, or_l);
-			set_Or_right(or, c1);
+			set_Or_left(irn_or, or_l);
+			set_Or_right(irn_or, c1);
 
 			/* check for more */
 			continue;
 		}
 
 		if (!is_Or(or_l))
-			return or;
+			return irn_or;
 
 		get_comm_Binop_Ops(or_l, &and_l, &c3);
 		if (!is_Const(c3) || !is_And(and_l))
-			return or;
+			return irn_or;
 
 		get_comm_Binop_Ops(and_l, &value, &c4);
 		if (!is_Const(c4))
-			return or;
+			return irn_or;
 
 		/* ok, found the pattern, check for conditions */
-		assert(mode == get_irn_mode(and));
+		assert(mode == get_irn_mode(irn_and));
 		assert(mode == get_irn_mode(or_l));
 		assert(mode == get_irn_mode(and_l));
 
@@ -5001,29 +5001,29 @@ static ir_node *transform_node_Or_bf_store(ir_node *or)
 		tv = tarval_or(tv4, tv2);
 		if (!tarval_is_all_one(tv)) {
 			/* have at least one 0 at the same bit position */
-			return or;
+			return irn_or;
 		}
 
 		if (tv3 != tarval_andnot(tv3, tv4)) {
 			/* bit in the or_mask is outside the and_mask */
-			return or;
+			return irn_or;
 		}
 
 		if (tv1 != tarval_andnot(tv1, tv2)) {
 			/* bit in the or_mask is outside the and_mask */
-			return or;
+			return irn_or;
 		}
 
 		/* ok, all conditions met */
-		block = get_irn_n(or, -1);
+		block = get_irn_n(irn_or, -1);
 		irg   = get_irn_irg(block);
 
 		new_and = new_r_And(block, value, new_r_Const(irg, tarval_and(tv4, tv2)), mode);
 
 		new_const = new_r_Const(irg, tarval_or(tv3, tv1));
 
-		set_Or_left(or, new_and);
-		set_Or_right(or, new_const);
+		set_Or_left(irn_or, new_and);
+		set_Or_right(irn_or, new_const);
 
 		/* check for more */
 	}
@@ -5032,73 +5032,73 @@ static ir_node *transform_node_Or_bf_store(ir_node *or)
 /**
  * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rotl
  */
-static ir_node *transform_node_Or_Rotl(ir_node *or)
+static ir_node *transform_node_Or_Rotl(ir_node *irn_or)
 {
-	ir_mode *mode = get_irn_mode(or);
+	ir_mode *mode = get_irn_mode(irn_or);
 	ir_node *shl, *shr, *block;
 	ir_node *irn, *x, *c1, *c2, *n;
 	ir_tarval *tv1, *tv2;
 
 	/* some backends can't handle rotl */
 	if (!be_get_backend_param()->support_rotl)
-		return or;
+		return irn_or;
 
 	if (! mode_is_int(mode))
-		return or;
+		return irn_or;
 
-	shl = get_binop_left(or);
-	shr = get_binop_right(or);
+	shl = get_binop_left(irn_or);
+	shr = get_binop_right(irn_or);
 
 	if (is_Shr(shl)) {
 		if (!is_Shl(shr))
-			return or;
+			return irn_or;
 
 		irn = shl;
 		shl = shr;
 		shr = irn;
 	} else if (!is_Shl(shl)) {
-		return or;
+		return irn_or;
 	} else if (!is_Shr(shr)) {
-		return or;
+		return irn_or;
 	}
 	x = get_Shl_left(shl);
 	if (x != get_Shr_left(shr))
-		return or;
+		return irn_or;
 
 	c1 = get_Shl_right(shl);
 	c2 = get_Shr_right(shr);
 	if (is_Const(c1) && is_Const(c2)) {
 		tv1 = get_Const_tarval(c1);
 		if (! tarval_is_long(tv1))
-			return or;
+			return irn_or;
 
 		tv2 = get_Const_tarval(c2);
 		if (! tarval_is_long(tv2))
-			return or;
+			return irn_or;
 
 		if (get_tarval_long(tv1) + get_tarval_long(tv2)
 				!= (int) get_mode_size_bits(mode))
-			return or;
+			return irn_or;
 
 		/* yet, condition met */
-		block = get_nodes_block(or);
+		block = get_nodes_block(irn_or);
 
 		n = new_r_Rotl(block, x, c1, mode);
 
-		DBG_OPT_ALGSIM1(or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
+		DBG_OPT_ALGSIM1(irn_or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
 		return n;
 	}
 
 	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
 	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
 	if (!is_negated_value(c1, c2)) {
-		return or;
+		return irn_or;
 	}
 
 	/* yet, condition met */
-	block = get_nodes_block(or);
+	block = get_nodes_block(irn_or);
 	n = new_r_Rotl(block, x, c1, mode);
-	DBG_OPT_ALGSIM0(or, n, FS_OPT_OR_SHFT_TO_ROTL);
+	DBG_OPT_ALGSIM0(irn_or, n, FS_OPT_OR_SHFT_TO_ROTL);
 	return n;
 }  /* transform_node_Or_Rotl */
 
@@ -5131,8 +5131,8 @@ static ir_node *transform_node_Or(ir_node *n)
 		ir_node *pred_b = get_Proj_pred(b);
 		if (pred_a == pred_b) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
-			pn_Cmp pn_a     = get_Proj_proj(a);
-			pn_Cmp pn_b     = get_Proj_proj(b);
+			pn_Cmp pn_a     = get_Proj_pn_cmp(a);
+			pn_Cmp pn_b     = get_Proj_pn_cmp(b);
 			/* yes, we can simply calculate with pncs */
 			pn_Cmp new_pnc  = pn_a | pn_b;
 
@@ -5766,7 +5766,7 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 		if (is_Cmp(cmp) && is_Const(t) &&
 		    (!is_Const(f) || (is_Const_null(t) && !is_Const_null(f)))) {
-			pn_Cmp pnc = get_Proj_proj(sel);
+			pn_Cmp pnc = get_Proj_pn_cmp(sel);
 			ir_node *tmp = t;
 			t = f;
 			f = tmp;
@@ -6517,7 +6517,7 @@ ir_node *identify_remember(ir_node *n)
 
 	ir_normalize_node(n);
 	/* lookup or insert in hash table with given hash key. */
-	nn = pset_insert(value_table, n, ir_node_hash(n));
+	nn = (ir_node*)pset_insert(value_table, n, ir_node_hash(n));
 
 	if (nn != n) {
 		/* n is reachable again */
@@ -6564,7 +6564,7 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 	ir_graph *rem = current_ir_graph;
 
 	current_ir_graph = irg;
-	foreach_pset(irg->value_table, node) {
+	foreach_pset(irg->value_table, ir_node*, node) {
 		visit(node, env);
 	}
 	current_ir_graph = rem;
@@ -6675,7 +6675,7 @@ ir_node *optimize_node(ir_node *n)
 {
 	ir_node   *oldn = n;
 	ir_graph  *irg  = get_irn_irg(n);
-	ir_opcode  iro  = get_irn_opcode(n);
+	unsigned   iro  = get_irn_opcode(n);
 	ir_tarval *tv;
 
 	/* Always optimize Phi nodes: part of the construction. */
@@ -6692,11 +6692,11 @@ ir_node *optimize_node(ir_node *n)
 				int node_size;
 
 				/*
-				 * we MUST copy the node here temporary, because it's still needed
-				 * for DBG_OPT_CSTEVAL
+				 * we MUST copy the node here temporary, because it's still
+				 * needed for DBG_OPT_CSTEVAL
 				 */
 				node_size = offsetof(ir_node, attr) +  n->op->attr_size;
-				oldn = alloca(node_size);
+				oldn = (ir_node*)alloca(node_size);
 
 				memcpy(oldn, n, node_size);
 				CLONE_ARR_A(ir_node *, oldn->in, n->in);
@@ -6776,7 +6776,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 {
 	ir_tarval *tv;
 	ir_node   *oldn = n;
-	ir_opcode  iro  = get_irn_opcode(n);
+	unsigned   iro  = get_irn_opcode(n);
 
 	if (!get_opt_optimize() && !is_Phi(n)) return n;
 

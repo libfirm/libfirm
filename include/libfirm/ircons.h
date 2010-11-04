@@ -1127,6 +1127,7 @@ typedef enum ir_cons_flags {
 	cons_unaligned = 1U << 1,  /**< Memory operation is unaligned. */
 	cons_floats    = 1U << 2   /**< Memory operation can float. */
 } ir_cons_flags;
+ENUM_BITSET(ir_cons_flags)
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface                                                       */

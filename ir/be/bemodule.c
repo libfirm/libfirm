@@ -167,7 +167,7 @@ typedef struct module_opt_data_t {
 static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
                           size_t length, ...)
 {
-	module_opt_data_t            *moddata = data;
+	module_opt_data_t            *moddata = (module_opt_data_t*)data;
 	int                          res      = 0;
 	va_list                      args;
 	const char                   *opt;
@@ -196,7 +196,7 @@ static int set_opt_module(const char *name, lc_opt_type_t type, void *data,
 static int dump_opt_module(char *buf, size_t buflen, const char *name,
                            lc_opt_type_t type, void *data, size_t length)
 {
-	module_opt_data_t            *moddata = data;
+	module_opt_data_t            *moddata = (module_opt_data_t*)data;
 	const be_module_list_entry_t *module;
 	(void) name;
 	(void) type;
@@ -219,7 +219,7 @@ static int dump_opt_module(char *buf, size_t buflen, const char *name,
 static int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
                                 lc_opt_type_t type, void *data, size_t len)
 {
-	module_opt_data_t            *moddata = data;
+	module_opt_data_t            *moddata = (module_opt_data_t*)data;
 	char                         *p       = buf;
 	const be_module_list_entry_t *module;
 	(void) name;

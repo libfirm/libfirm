@@ -143,7 +143,10 @@ typedef struct co_mst_irn_t {
 	real_t           constr_factor;
 } co_mst_irn_t;
 
-#define get_co_mst_irn(mst_env, irn) (phase_get_or_set_irn_data(&(mst_env)->ph, (irn)))
+static co_mst_irn_t *get_co_mst_irn(co_mst_env_t *env, const ir_node *node)
+{
+	return (co_mst_irn_t*)phase_get_or_set_irn_data(&env->ph, node);
+}
 
 typedef int decide_func_t(const co_mst_irn_t *node, int col);
 
@@ -229,8 +232,8 @@ static int decider_always_yes(const co_mst_irn_t *node, int col)
 /** compares two affinity edges by its weight */
 static int cmp_aff_edge(const void *a, const void *b)
 {
-	const aff_edge_t *e1 = a;
-	const aff_edge_t *e2 = b;
+	const aff_edge_t *e1 = (const aff_edge_t*)a;
+	const aff_edge_t *e2 = (const aff_edge_t*)b;
 
 	if (e2->weight == e1->weight) {
 		if (e2->src->node_idx == e1->src->node_idx)
@@ -245,16 +248,16 @@ static int cmp_aff_edge(const void *a, const void *b)
 /** compares to color-cost pairs */
 static __attribute__((unused)) int cmp_col_cost_lt(const void *a, const void *b)
 {
-	const col_cost_t *c1 = a;
-	const col_cost_t *c2 = b;
+	const col_cost_t *c1 = (const col_cost_t*)a;
+	const col_cost_t *c2 = (const col_cost_t*)b;
 	real_t diff = c1->cost - c2->cost;
 	return (diff > 0) - (diff < 0);
 }
 
 static int cmp_col_cost_gt(const void *a, const void *b)
 {
-	const col_cost_t *c1 = a;
-	const col_cost_t *c2 = b;
+	const col_cost_t *c1 = (const col_cost_t*)a;
+	const col_cost_t *c2 = (const col_cost_t*)b;
 	real_t diff = c2->cost - c1->cost;
 
 	if (diff == 0.0)
@@ -374,8 +377,8 @@ static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node)
  */
 static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn)
 {
-	co_mst_irn_t *res = phase_alloc(ph, sizeof(res[0]));
-	co_mst_env_t *env = ph->priv;
+	co_mst_irn_t *res = (co_mst_irn_t*)phase_alloc(ph, sizeof(res[0]));
+	co_mst_env_t *env = (co_mst_env_t*)ph->priv;
 
 	const arch_register_req_t *req;
 	neighbours_iter_t nodes_it;
@@ -421,7 +424,7 @@ static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn)
 			++len;
 		}
 	}
-	res->int_neighs = obstack_finish(phase_obst(ph));
+	res->int_neighs = (ir_node**)obstack_finish(phase_obst(ph));
 	res->n_neighs   = len;
 	return res;
 }
@@ -768,7 +771,7 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 		bitset_remv_irn(visited, max_node);
 		i = 0;
 		while (!pqueue_empty(grow)) {
-			ir_node *irn = pqueue_pop_front(grow);
+			ir_node *irn = (ir_node*)pqueue_pop_front(grow);
 			affinity_node_t *an = get_affinity_info(env->co, irn);
 			neighb_t        *neigh;
 
@@ -814,7 +817,7 @@ static void expand_chunk_from(co_mst_env_t *env, co_mst_irn_t *node, bitset_t *v
 
 	/* as long as there are nodes in the queue */
 	while (! waitq_empty(nodes)) {
-		co_mst_irn_t    *n  = waitq_get(nodes);
+		co_mst_irn_t    *n  = (co_mst_irn_t*)waitq_get(nodes);
 		affinity_node_t *an = get_affinity_info(env->co, n->irn);
 
 		/* check all affinity neighbors */
@@ -1317,7 +1320,7 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 
 	/* free all intermediate created chunks except best one */
 	while (! waitq_empty(tmp_chunks)) {
-		aff_chunk_t *tmp = waitq_get(tmp_chunks);
+		aff_chunk_t *tmp = (aff_chunk_t*)waitq_get(tmp_chunks);
 		if (tmp != best_chunk)
 			delete_aff_chunk(tmp);
 	}
@@ -1441,10 +1444,10 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	mst_env.ifg              = co->cenv->ifg;
 	INIT_LIST_HEAD(&mst_env.chunklist);
 	mst_env.chunk_visited    = 0;
-	mst_env.single_cols      = phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
+	mst_env.single_cols      = (col_cost_t**)phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
 
 	for (i = 0; i < n_regs; ++i) {
-		col_cost_t *vec = phase_alloc(&mst_env.ph, sizeof(*vec) * n_regs);
+		col_cost_t *vec = (col_cost_t*)phase_alloc(&mst_env.ph, sizeof(*vec) * n_regs);
 
 		mst_env.single_cols[i] = vec;
 		for (j = 0; j < n_regs; ++j) {
@@ -1465,7 +1468,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 
 	/* color chunks as long as there are some */
 	while (! pqueue_empty(mst_env.chunks)) {
-		aff_chunk_t *chunk = pqueue_pop_front(mst_env.chunks);
+		aff_chunk_t *chunk = (aff_chunk_t*)pqueue_pop_front(mst_env.chunks);
 
 		color_aff_chunk(&mst_env, chunk);
 		DB((dbg, LEVEL_4, "<<<====== Coloring chunk (%u) done\n", chunk->id));

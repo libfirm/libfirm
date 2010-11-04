@@ -76,8 +76,8 @@ typedef struct execcount_t {
  */
 static int cmp_execcount(const void *a, const void *b, size_t size)
 {
-	const execcount_t *ea = a;
-	const execcount_t *eb = b;
+	const execcount_t *ea = (const execcount_t*)a;
+	const execcount_t *eb = (const execcount_t*)b;
 	(void) size;
 	return ea->block != eb->block;
 }
@@ -87,7 +87,7 @@ static int cmp_execcount(const void *a, const void *b, size_t size)
  */
 static void block_counter(ir_node * bb, void * data)
 {
-	unsigned int *count = data;
+	unsigned *count = (unsigned*)data;
 	(void) bb;
 	*count = *count + 1;
 }
@@ -125,12 +125,12 @@ static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 	unknown = new_r_Unknown(irg, mode_M);
 	cnst    = new_r_Const_long(irg, mode_Iu, get_mode_size_bytes(mode_Iu) * id);
 	offset  = new_r_Add(bb, address, cnst, get_modeP_data());
-	load    = new_r_Load(bb, unknown, offset, mode_Iu, 0);
+	load    = new_r_Load(bb, unknown, offset, mode_Iu, cons_none);
 	projm   = new_r_Proj(load, mode_M, pn_Load_M);
 	proji   = new_r_Proj(load, mode_Iu, pn_Load_res);
 	cnst    = new_r_Const_long(irg, mode_Iu, 1);
 	add     = new_r_Add(bb, proji, cnst, mode_Iu);
-	store   = new_r_Store(bb, projm, offset, add, 0);
+	store   = new_r_Store(bb, projm, offset, add, cons_none);
 	projm   = new_r_Proj(store, mode_M, pn_Store_M);
 	set_irn_link(bb, projm);
 	set_irn_link(projm, load);
@@ -145,7 +145,7 @@ typedef struct fix_env {
  */
 static void fix_ssa(ir_node *bb, void *data)
 {
-	fix_env *env = data;
+	fix_env *env = (fix_env*)data;
 	ir_node *mem;
 	int     arity = get_Block_n_cfgpreds(bb);
 
@@ -156,18 +156,18 @@ static void fix_ssa(ir_node *bb, void *data)
 	if (bb == get_irg_start_block(get_irn_irg(bb))) {
 		mem = get_irg_initial_mem(get_irn_irg(bb));
 	} else if (arity == 1) {
-		mem = get_irn_link(get_Block_cfgpred_block(bb, 0));
+		mem = (ir_node*)get_irn_link(get_Block_cfgpred_block(bb, 0));
 	} else {
 		int n;
 		ir_node **ins;
 
 		NEW_ARR_A(ir_node*, ins, arity);
 		for (n = arity - 1; n >= 0; --n) {
-			ins[n] = get_irn_link(get_Block_cfgpred_block(bb, n));
+			ins[n] = (ir_node*)get_irn_link(get_Block_cfgpred_block(bb, n));
 		}
 		mem = new_r_Phi(bb, arity, ins, mode_M);
 	}
-	set_Load_mem(get_irn_link(get_irn_link(bb)), mem);
+	set_Load_mem((ir_node*)get_irn_link((ir_node*)get_irn_link(bb)), mem);
 }
 
 static void add_constructor(ir_entity *method)
@@ -293,7 +293,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			set_entity_linkage(ent, IR_LINKAGE_CONSTANT);
 			set_array_entity_values(ent, tarval_string, len);
 		} else {
-			ent = entry->value;
+			ent = (ir_entity*)entry->value;
 		}
 		wd->locs[wd->id].fname  = ent;
 		wd->locs[wd->id].lineno = lineno;
@@ -309,7 +309,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
  */
 static void block_id_walker(ir_node *bb, void *data)
 {
-	block_id_walker_data_t *wd = data;
+	block_id_walker_data_t *wd = (block_id_walker_data_t*)data;
 
 	wd->array[wd->id] = new_tarval_from_long(get_irn_node_nr(bb), mode_Iu);
 	instrument_block(bb, wd->symconst, wd->id);
@@ -466,13 +466,13 @@ ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
 
 			switch (get_irn_opcode(node)) {
 			case iro_Return:
-				ins[0] = get_irn_link(bb);
+				ins[0] = (ir_node*)get_irn_link(bb);
 				ins[1] = get_Return_mem(node);
 				sync   = new_r_Sync(bb, 2, ins);
 				set_Return_mem(node, sync);
 				break;
 			case iro_Raise:
-				ins[0] = get_irn_link(bb);
+				ins[0] = (ir_node*)get_irn_link(bb);
 				ins[1] = get_Raise_mem(node);
 				sync   = new_r_Sync(bb, 2, ins);
 				set_Raise_mem(node, sync);
@@ -611,7 +611,7 @@ ir_profile_get_block_execcount(const ir_node *block)
 		return 1;
 
 	query.block = get_irn_node_nr(block);
-	ec = set_find(profile, &query, sizeof(query), get_irn_node_nr(block));
+	ec = (execcount_t*)set_find(profile, &query, sizeof(query), get_irn_node_nr(block));
 
 	if (ec != NULL) {
 		return ec->count;
@@ -633,7 +633,7 @@ static const double MIN_EXECFREQ = 0.00001;
 
 static void initialize_execfreq(ir_node *block, void *data)
 {
-	initialize_execfreq_env_t *env = data;
+	initialize_execfreq_env_t *env = (initialize_execfreq_env_t*)data;
 	double freq;
 
 	if (block == get_irg_start_block(env->irg)

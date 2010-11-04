@@ -97,7 +97,7 @@ static int legal_backarray(ir_node *n)
 void fix_backedges(struct obstack *obst, ir_node *n)
 {
 	bitset_t *arr = mere_get_backarray(n);
-	ir_opcode opc;
+	unsigned opc;
 	int arity;
 
 	if (! arr)

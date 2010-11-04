@@ -220,11 +220,11 @@ static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
 
 		if (is_immediate(addr, left, 0)) {
 			eat_immediate(addr, left, 0);
-			return eat_immediates(addr, right, 0);
+			return eat_immediates(addr, right, ia32_create_am_normal);
 		}
 		if (is_immediate(addr, right, 0)) {
 			eat_immediate(addr, right, 0);
-			return eat_immediates(addr, left, 0);
+			return eat_immediates(addr, left, ia32_create_am_normal);
 		}
 	} else if (is_Sub(node)) {
 		ir_node *left  = get_Sub_left(node);
@@ -232,7 +232,7 @@ static ir_node *eat_immediates(ia32_address_t *addr, ir_node *node,
 
 		if (is_immediate(addr, right, 1)) {
 			eat_immediate(addr, right, 1);
-			return eat_immediates(addr, left, 0);
+			return eat_immediates(addr, left, ia32_create_am_normal);
 		}
 	}
 
@@ -459,7 +459,7 @@ static int value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
  */
 static void mark_non_address_nodes(ir_node *node, void *env)
 {
-	be_lv_t *lv = env;
+	be_lv_t *lv = (be_lv_t*)env;
 	int      arity;
 	int      i;
 	ir_node *val;

@@ -137,7 +137,7 @@ struct blocksched_env_t {
  */
 static void collect_egde_frequency(ir_node *block, void *data)
 {
-	blocksched_env_t   *env = data;
+	blocksched_env_t   *env = (blocksched_env_t*)data;
 	int                arity;
 	edge_t             edge;
 	blocksched_entry_t *entry;
@@ -206,16 +206,16 @@ static void collect_egde_frequency(ir_node *block, void *data)
 
 static int cmp_edges(const void *d1, const void *d2)
 {
-	const edge_t *e1 = d1;
-	const edge_t *e2 = d2;
+	const edge_t *e1 = (const edge_t*)d1;
+	const edge_t *e2 = (const edge_t*)d2;
 
 	return QSORT_CMP(e2->execfreq, e1->execfreq);
 }
 
 static int cmp_edges_outedge_penalty(const void *d1, const void *d2)
 {
-	const edge_t *e1 = d1;
-	const edge_t *e2 = d2;
+	const edge_t *e1 = (const edge_t*)d1;
+	const edge_t *e2 = (const edge_t*)d2;
 	/* reverse sorting as penalties are negative */
 	return QSORT_CMP(e1->outedge_penalty_freq, e2->outedge_penalty_freq);
 }
@@ -260,8 +260,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = get_irn_link(block);
-		pred_entry = get_irn_link(pred_block);
+		entry      = (blocksched_entry_t*)get_irn_link(block);
+		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -299,8 +299,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = get_irn_link(block);
-		pred_entry = get_irn_link(pred_block);
+		entry      = (blocksched_entry_t*)get_irn_link(block);
+		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
 
 		if (pred_entry->next != NULL || entry->prev != NULL)
 			continue;
@@ -341,8 +341,8 @@ static void coalesce_blocks(blocksched_env_t *env)
 			continue;
 
 		pred_block = get_Block_cfgpred_block(block, pos);
-		entry      = get_irn_link(block);
-		pred_entry = get_irn_link(pred_block);
+		entry      = (blocksched_entry_t*)get_irn_link(block);
+		pred_entry = (blocksched_entry_t*)get_irn_link(pred_block);
 
 		/* is 1 of the blocks already attached to another block? */
 		if (pred_entry->next != NULL || entry->prev != NULL)
@@ -380,7 +380,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 
 		/* we only need to put the first of a series of already connected
 		 * blocks into the worklist */
-		succ_entry = get_irn_link(succ_block);
+		succ_entry = (blocksched_entry_t*)get_irn_link(succ_block);
 		while (succ_entry->prev != NULL) {
 			/* break cycles... */
 			if (succ_entry->prev->block == succ_block) {
@@ -416,7 +416,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 		if (irn_visited(succ_block))
 			continue;
 
-		succ_entry = get_irn_link(succ_block);
+		succ_entry = (blocksched_entry_t*)get_irn_link(succ_block);
 		if (succ_entry->prev != NULL)
 			continue;
 
@@ -435,11 +435,11 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 				DB((dbg, LEVEL_1, "worklist empty\n"));
 				return;
 			}
-			succ = pdeq_getl(env->worklist);
+			succ = (ir_node*)pdeq_getl(env->worklist);
 		} while (irn_visited(succ));
 	}
 
-	succ_entry       = get_irn_link(succ);
+	succ_entry       = (blocksched_entry_t*)get_irn_link(succ);
 	entry->next      = succ_entry;
 	succ_entry->prev = entry;
 
@@ -450,7 +450,7 @@ static blocksched_entry_t *finish_block_schedule(blocksched_env_t *env)
 {
 	ir_graph           *irg        = env->irg;
 	ir_node            *startblock = get_irg_start_block(irg);
-	blocksched_entry_t *entry      = get_irn_link(startblock);
+	blocksched_entry_t *entry      = (blocksched_entry_t*)get_irn_link(startblock);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);

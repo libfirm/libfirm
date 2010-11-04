@@ -68,7 +68,7 @@ int be_is_transformed(const ir_node *node)
 static inline ir_node *be_get_transformed_node(ir_node *old_node)
 {
 	if (irn_visited(old_node)) {
-		ir_node *new_node = get_irn_link(old_node);
+		ir_node *new_node = (ir_node*)get_irn_link(old_node);
 		assert(new_node != NULL);
 		return new_node;
 	}
@@ -211,7 +211,7 @@ static void fix_loops(ir_node *node)
 	changed = 0;
 	if (! is_Block(node)) {
 		ir_node *block     = get_nodes_block(node);
-		ir_node *new_block = get_irn_link(block);
+		ir_node *new_block = (ir_node*)get_irn_link(block);
 
 		if (new_block != NULL) {
 			set_nodes_block(node, new_block);
@@ -225,7 +225,7 @@ static void fix_loops(ir_node *node)
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(node, i);
-		ir_node *nw = get_irn_link(in);
+		ir_node *nw = (ir_node*)get_irn_link(in);
 
 		if (nw != NULL && nw != in) {
 			set_irn_n(node, i, nw);
@@ -244,7 +244,7 @@ static void fix_loops(ir_node *node)
 	arity = get_irn_deps(node);
 	for (i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_dep(node, i);
-		ir_node *nw = get_irn_link(in);
+		ir_node *nw = (ir_node*)get_irn_link(in);
 
 		if (nw != NULL && nw != in) {
 			set_irn_dep(node, i, nw);
@@ -345,7 +345,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	/* process worklist (this should transform all nodes in the graph) */
 	while (! waitq_empty(env.worklist)) {
-		ir_node *node = waitq_get(env.worklist);
+		ir_node *node = (ir_node*)waitq_get(env.worklist);
 		be_transform_node(node);
 	}
 
@@ -357,7 +357,7 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		if (anchor == NULL)
 			continue;
 
-		anchor = get_irn_link(anchor);
+		anchor = (ir_node*)get_irn_link(anchor);
 		fix_loops(anchor);
 		set_irn_n(new_anchor, i, anchor);
 	}
@@ -493,7 +493,7 @@ int be_mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 		return 0;
 
 	/* must be <, <=, >=, > */
-	pnc = get_Proj_proj(sel);
+	pnc = get_Proj_pn_cmp(sel);
 	switch (pnc) {
 	case pn_Cmp_Ge:
 	case pn_Cmp_Gt:

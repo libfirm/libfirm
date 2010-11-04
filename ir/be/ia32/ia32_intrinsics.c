@@ -112,7 +112,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 		foreach_out_edge_safe(call, edge, next) {
 			ir_node *proj = get_edge_src_irn(edge);
-			pn_Call pn    = get_Proj_proj(proj);
+			pn_Call pn    = (pn_Call)get_Proj_proj(proj);
 
 			switch (pn) {
 			case pn_Call_X_regular:
@@ -328,8 +328,10 @@ static int map_Shl(ir_node *call, void *ctx)
 
 	/* move it down */
 	set_nodes_block(call, block);
-	for (irn = get_irn_link(call); irn != NULL; irn = get_irn_link(irn))
+	for (irn = (ir_node*)get_irn_link(call); irn != NULL;
+	     irn = (ir_node*)get_irn_link(irn)) {
 		set_nodes_block(irn, block);
+	}
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -415,8 +417,10 @@ static int map_Shr(ir_node *call, void *ctx)
 
 	/* move it down */
 	set_nodes_block(call, block);
-	for (irn = get_irn_link(call); irn != NULL; irn = get_irn_link(irn))
+	for (irn = (ir_node*)get_irn_link(call); irn != NULL;
+	     irn = (ir_node*)get_irn_link(irn)) {
 		set_nodes_block(irn, block);
+	}
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -504,8 +508,10 @@ static int map_Shrs(ir_node *call, void *ctx)
 
 	/* move it down */
 	set_nodes_block(call, block);
-	for (irn = get_irn_link(call); irn != NULL; irn = get_irn_link(irn))
+	for (irn = (ir_node*)get_irn_link(call); irn != NULL;
+	     irn = (ir_node*)get_irn_link(irn)) {
 		set_nodes_block(irn, block);
+	}
 
 	resolve_call(call, l_res, h_res, irg, block);
 	return 1;
@@ -703,7 +709,7 @@ static ir_entity *create_compiler_lib_entity(const char *name, ir_type *type)
  */
 static int map_Div(ir_node *call, void *ctx)
 {
-	ia32_intrinsic_env_t *env = ctx;
+	ia32_intrinsic_env_t *env = (ia32_intrinsic_env_t*)ctx;
 	ir_type   *method    = get_Call_type(call);
 	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
 	ir_node   *ptr;
@@ -739,7 +745,7 @@ static int map_Div(ir_node *call, void *ctx)
  */
 static int map_Mod(ir_node *call, void *ctx)
 {
-	ia32_intrinsic_env_t *env = ctx;
+	ia32_intrinsic_env_t *env = (ia32_intrinsic_env_t*)ctx;
 	ir_type   *method    = get_Call_type(call);
 	ir_mode   *h_mode    = get_type_mode(get_method_res_type(method, 1));
 	ir_node   *ptr;
@@ -854,8 +860,10 @@ static int map_Conv(ir_node *call, void *ctx)
 			/* move the call and its Proj's to the lower block */
 			set_nodes_block(call, lower_blk);
 
-			for (proj = get_irn_link(call); proj != NULL; proj = get_irn_link(proj))
+			for (proj = (ir_node*)get_irn_link(call); proj != NULL;
+			     proj = (ir_node*)get_irn_link(proj)) {
 				set_nodes_block(proj, lower_blk);
+			}
 			block = lower_blk;
 		}
 		/* lower the call */

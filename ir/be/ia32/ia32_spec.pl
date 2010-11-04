@@ -1001,7 +1001,7 @@ Setcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
+	attr      => "int pnc",
 	# The way we handle Setcc with float nodes (potentially) destroys the flags
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
@@ -1020,7 +1020,7 @@ SetccMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "eflags" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
+	attr      => "int pnc",
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => '. set%CMP3 %AM',
 	latency   => 1,
@@ -1039,7 +1039,7 @@ CMovcc => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
+	attr      => "int pnc",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1052,7 +1052,7 @@ Jcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "pn_Cmp pnc",
+	attr      => "int pnc",
 	latency   => 2,
 	units     => [ "BRANCH" ],
 },

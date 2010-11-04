@@ -154,7 +154,7 @@ static const lc_opt_table_entry_t be_main_options[] = {
 static be_module_list_entry_t *isa_ifs = NULL;
 
 
-unsigned short asm_constraint_flags[256];
+asm_constraint_flags_t asm_constraint_flags[256];
 
 void be_init_default_asm_constraint_flags(void)
 {
@@ -219,7 +219,7 @@ void be_init_default_asm_constraint_flags(void)
 
 asm_constraint_flags_t be_parse_asm_constraints(const char *constraint)
 {
-	asm_constraint_flags_t  flags = 0;
+	asm_constraint_flags_t  flags = ASM_CONSTRAINT_FLAG_NONE;
 	const char             *c;
 	asm_constraint_flags_t  tflags;
 
@@ -770,9 +770,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_timer_pop(T_OTHER);
 
 		if (be_timing) {
-			int t;
+			be_timer_id_t t;
 			if (stat_ev_enabled) {
-				for (t = 0; t < T_LAST+1; ++t) {
+				for (t = T_FIRST; t < T_LAST+1; ++t) {
 					char buf[128];
 					snprintf(buf, sizeof(buf), "bemain_time_%s",
 					         get_timer_name(t));
@@ -781,12 +781,12 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			} else {
 				printf("==>> IRG %s <<==\n",
 				       get_entity_name(get_irg_entity(irg)));
-				for (t = 0; t < T_LAST+1; ++t) {
+				for (t = T_FIRST; t < T_LAST+1; ++t) {
 					double val = ir_timer_elapsed_usec(be_timers[t]) / 1000.0;
 					printf("%-20s: %8.3lf msec\n", get_timer_name(t), val);
 				}
 			}
-			for (t = 0; t < T_LAST+1; ++t) {
+			for (t = T_FIRST; t < T_LAST+1; ++t) {
 				ir_timer_stop(be_timers[t]);
 				ir_timer_reset(be_timers[t]);
 			}

@@ -102,8 +102,8 @@ static stat_info_t *status = (stat_info_t *)&status_disable;
  */
 static int opcode_cmp(const void *elt, const void *key)
 {
-	const node_entry_t *e1 = elt;
-	const node_entry_t *e2 = key;
+	const node_entry_t *e1 = (const node_entry_t*)elt;
+	const node_entry_t *e2 = (const node_entry_t*)key;
 
 	return e1->op->code - e2->op->code;
 }  /* opcode_cmp */
@@ -113,8 +113,8 @@ static int opcode_cmp(const void *elt, const void *key)
  */
 static int graph_cmp(const void *elt, const void *key)
 {
-	const graph_entry_t *e1 = elt;
-	const graph_entry_t *e2 = key;
+	const graph_entry_t *e1 = (const graph_entry_t*)elt;
+	const graph_entry_t *e2 = (const graph_entry_t*)key;
 
 	return e1->irg != e2->irg;
 }  /* graph_cmp */
@@ -124,8 +124,8 @@ static int graph_cmp(const void *elt, const void *key)
  */
 static int opt_cmp(const void *elt, const void *key)
 {
-	const opt_entry_t *e1 = elt;
-	const opt_entry_t *e2 = key;
+	const opt_entry_t *e1 = (const opt_entry_t*)elt;
+	const opt_entry_t *e2 = (const opt_entry_t*)key;
 
 	return e1->op->code != e2->op->code;
 }  /* opt_cmp */
@@ -135,8 +135,8 @@ static int opt_cmp(const void *elt, const void *key)
  */
 static int block_cmp(const void *elt, const void *key)
 {
-	const block_entry_t *e1 = elt;
-	const block_entry_t *e2 = key;
+	const block_entry_t *e1 = (const block_entry_t*)elt;
+	const block_entry_t *e2 = (const block_entry_t*)key;
 
 	/* it's enough to compare the block number */
 	return e1->block_nr != e2->block_nr;
@@ -147,8 +147,8 @@ static int block_cmp(const void *elt, const void *key)
  */
 static int be_block_cmp(const void *elt, const void *key)
 {
-	const be_block_entry_t *e1 = elt;
-	const be_block_entry_t *e2 = key;
+	const be_block_entry_t *e1 = (const be_block_entry_t*)elt;
+	const be_block_entry_t *e2 = (const be_block_entry_t*)key;
 
 	return e1->block_nr != e2->block_nr;
 }  /* be_block_cmp */
@@ -158,8 +158,8 @@ static int be_block_cmp(const void *elt, const void *key)
  */
 static int reg_pressure_cmp(const void *elt, const void *key)
 {
-	const reg_pressure_entry_t *e1 = elt;
-	const reg_pressure_entry_t *e2 = key;
+	const reg_pressure_entry_t *e1 = (const reg_pressure_entry_t*)elt;
+	const reg_pressure_entry_t *e2 = (const reg_pressure_entry_t*)key;
 
 	return e1->class_name != e2->class_name;
 }  /* reg_pressure_cmp */
@@ -169,8 +169,8 @@ static int reg_pressure_cmp(const void *elt, const void *key)
  */
 static int perm_stat_cmp(const void *elt, const void *key)
 {
-	const perm_stat_entry_t *e1 = elt;
-	const perm_stat_entry_t *e2 = key;
+	const perm_stat_entry_t *e1 = (const perm_stat_entry_t*)elt;
+	const perm_stat_entry_t *e2 = (const perm_stat_entry_t*)key;
 
 	return e1->perm != e2->perm;
 }  /* perm_stat_cmp */
@@ -180,8 +180,8 @@ static int perm_stat_cmp(const void *elt, const void *key)
  */
 static int perm_class_cmp(const void *elt, const void *key)
 {
-	const perm_class_entry_t *e1 = elt;
-	const perm_class_entry_t *e2 = key;
+	const perm_class_entry_t *e1 = (const perm_class_entry_t*)elt;
+	const perm_class_entry_t *e2 = (const perm_class_entry_t*)key;
 
 	return e1->class_name != e2->class_name;
 }  /* perm_class_cmp */
@@ -191,8 +191,8 @@ static int perm_class_cmp(const void *elt, const void *key)
  */
 static int opcode_cmp_2(const void *elt, const void *key)
 {
-	const ir_op *e1 = elt;
-	const ir_op *e2 = key;
+	const ir_op *e1 = (const ir_op*)elt;
+	const ir_op *e2 = (const ir_op*)key;
 
 	return e1->code != e2->code;
 }  /* opcode_cmp_2 */
@@ -202,8 +202,8 @@ static int opcode_cmp_2(const void *elt, const void *key)
  */
 static int address_mark_cmp(const void *elt, const void *key, size_t size)
 {
-	const address_mark_entry_t *e1 = elt;
-	const address_mark_entry_t *e2 = key;
+	const address_mark_entry_t *e1 = (const address_mark_entry_t*)elt;
+	const address_mark_entry_t *e2 = (const address_mark_entry_t*)key;
 	(void) size;
 
 	/* compare only the nodes, the rest is used as data container */
@@ -235,7 +235,7 @@ static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap)
 
 	key.op = op;
 
-	elem = pset_find(hmap, &key, op->code);
+	elem = (node_entry_t*)pset_find(hmap, &key, op->code);
 	if (elem)
 		return elem;
 
@@ -246,7 +246,7 @@ static node_entry_t *opcode_get_entry(const ir_op *op, hmap_node_entry_t *hmap)
 
 	elem->op = op;
 
-	return pset_insert(hmap, elem, op->code);
+	return (node_entry_t*)pset_insert(hmap, elem, op->code);
 }  /* opcode_get_entry */
 
 /**
@@ -260,7 +260,7 @@ static ir_op *opcode_find_entry(ir_opcode code, hmap_ir_op *hmap)
 	ir_op key;
 
 	key.code = code;
-	return pset_find(hmap, &key, code);
+	return (ir_op*)pset_find(hmap, &key, code);
 }  /* opcode_find_entry */
 
 /**
@@ -306,7 +306,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 
 	key.irg = irg;
 
-	elem = pset_find(hmap, &key, HASH_PTR(irg));
+	elem = (graph_entry_t*)pset_find(hmap, &key, HASH_PTR(irg));
 
 	if (elem) {
 		/* create hash map backend block information */
@@ -335,7 +335,7 @@ static graph_entry_t *graph_get_entry(ir_graph *irg, hmap_graph_entry_t *hmap)
 	for (i = 0; i < sizeof(elem->opt_hash)/sizeof(elem->opt_hash[0]); ++i)
 		elem->opt_hash[i] = new_pset(opt_cmp, 4);
 
-	return pset_insert(hmap, elem, HASH_PTR(irg));
+	return (graph_entry_t*)pset_insert(hmap, elem, HASH_PTR(irg));
 }  /* graph_get_entry */
 
 /**
@@ -359,7 +359,7 @@ static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
 
 	key.op = op;
 
-	elem = pset_find(hmap, &key, op->code);
+	elem = (opt_entry_t*)pset_find(hmap, &key, op->code);
 	if (elem)
 		return elem;
 
@@ -370,7 +370,7 @@ static opt_entry_t *opt_get_entry(const ir_op *op, hmap_opt_entry_t *hmap)
 
 	elem->op = op;
 
-	return pset_insert(hmap, elem, op->code);
+	return (opt_entry_t*)pset_insert(hmap, elem, op->code);
 }  /* opt_get_entry */
 
 /**
@@ -397,7 +397,7 @@ static block_entry_t *block_get_entry(struct obstack *obst, long block_nr, hmap_
 
 	key.block_nr = block_nr;
 
-	elem = pset_find(hmap, &key, block_nr);
+	elem = (block_entry_t*)pset_find(hmap, &key, block_nr);
 	if (elem)
 		return elem;
 
@@ -408,7 +408,7 @@ static block_entry_t *block_get_entry(struct obstack *obst, long block_nr, hmap_
 
 	elem->block_nr = block_nr;
 
-	return pset_insert(hmap, elem, block_nr);
+	return (block_entry_t*)pset_insert(hmap, elem, block_nr);
 }  /* block_get_entry */
 
 /**
@@ -443,7 +443,7 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
 
 	key.block_nr = block_nr;
 
-	elem = pset_find(hmap, &key, block_nr);
+	elem = (be_block_entry_t*)pset_find(hmap, &key, block_nr);
 	if (elem)
 		return elem;
 
@@ -454,7 +454,7 @@ static be_block_entry_t *be_block_get_entry(struct obstack *obst, long block_nr,
 
 	elem->block_nr = block_nr;
 
-	return pset_insert(hmap, elem, block_nr);
+	return (be_block_entry_t*)pset_insert(hmap, elem, block_nr);
 }  /* be_block_get_entry */
 
 /**
@@ -482,7 +482,7 @@ static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char
 
 	key.class_name = class_name;
 
-	elem = pset_find(hmap, &key, HASH_PTR(class_name));
+	elem = (perm_class_entry_t*)pset_find(hmap, &key, HASH_PTR(class_name));
 	if (elem)
 		return elem;
 
@@ -493,7 +493,7 @@ static perm_class_entry_t *perm_class_get_entry(struct obstack *obst, const char
 
 	elem->class_name = class_name;
 
-	return pset_insert(hmap, elem, HASH_PTR(class_name));
+	return (perm_class_entry_t*)pset_insert(hmap, elem, HASH_PTR(class_name));
 }  /* perm_class_get_entry */
 
 /**
@@ -524,7 +524,7 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 
 	key.perm = perm;
 
-	elem = pset_find(hmap, &key, HASH_PTR(perm));
+	elem = (perm_stat_entry_t*)pset_find(hmap, &key, HASH_PTR(perm));
 	if (elem)
 		return elem;
 
@@ -535,7 +535,7 @@ static perm_stat_entry_t *perm_stat_get_entry(struct obstack *obst, ir_node *per
 
 	elem->perm = perm;
 
-	return pset_insert(hmap, elem, HASH_PTR(perm));
+	return (perm_stat_entry_t*)pset_insert(hmap, elem, HASH_PTR(perm));
 }  /* perm_stat_get_entry */
 
 /**
@@ -557,7 +557,7 @@ static void clear_optimization_counter(void)
 static ir_op *stat_get_irn_op(ir_node *node)
 {
 	ir_op *op = get_irn_op(node);
-	ir_opcode opc = op->code;
+	unsigned opc = op->code;
 
 	switch (opc) {
 	case iro_Phi:
@@ -925,7 +925,7 @@ static ir_node *find_base_adr(ir_node *sel)
  */
 static void stat_update_address(ir_node *node, graph_entry_t *graph)
 {
-	ir_opcode opc = get_irn_opcode(node);
+	unsigned opc = get_irn_opcode(node);
 	ir_node *base;
 	ir_graph *irg;
 
@@ -978,7 +978,7 @@ end_parameter: ;
  */
 static void update_node_stat(ir_node *node, void *env)
 {
-	graph_entry_t *graph = env;
+	graph_entry_t *graph = (graph_entry_t*)env;
 	node_entry_t *entry;
 
 	ir_op *op = stat_get_irn_op(node);
@@ -1047,7 +1047,7 @@ static void update_node_stat(ir_node *node, void *env)
  */
 static void update_node_stat_2(ir_node *node, void *env)
 {
-	graph_entry_t *graph = env;
+	graph_entry_t *graph = (graph_entry_t*)env;
 
 	/* check for properties that depends on calls like recursion/leaf/indirect call */
 	if (is_Call(node))
@@ -1059,7 +1059,7 @@ static void update_node_stat_2(ir_node *node, void *env)
  */
 static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
 {
-	address_mark_entry_t *value = set_find(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
+	address_mark_entry_t *value = (address_mark_entry_t*)set_find(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
 
 	return value ? value->mark : 0;
 }  /* get_adr_mark */
@@ -1069,7 +1069,7 @@ static unsigned get_adr_mark(graph_entry_t *graph, ir_node *node)
  */
 static void set_adr_mark(graph_entry_t *graph, ir_node *node, unsigned val)
 {
-	address_mark_entry_t *value = set_insert(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
+	address_mark_entry_t *value = (address_mark_entry_t*)set_insert(graph->address_mark, &node, sizeof(*value), HASH_PTR(node));
 
 	value->mark = val;
 }  /* set_adr_mark */
@@ -1135,7 +1135,7 @@ static ir_mode *get_irn_op_mode(ir_node *node)
  */
 static void mark_address_calc(ir_node *node, void *env)
 {
-	graph_entry_t *graph = env;
+	graph_entry_t *graph = (graph_entry_t*)env;
 	ir_mode *mode = get_irn_op_mode(node);
 	int i, n;
 	unsigned mark_preds = MARK_REF_NON_ADR;
@@ -1181,7 +1181,7 @@ static void mark_address_calc(ir_node *node, void *env)
  */
 static void count_adr_ops(ir_node *node, void *env)
 {
-	graph_entry_t *graph = env;
+	graph_entry_t *graph = (graph_entry_t*)env;
 	unsigned mark        = get_adr_mark(graph, node);
 
 	if (mark & MARK_ADDRESS_CALC)
@@ -1205,7 +1205,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 	int i;
 
 	/* clear first the alive counter in the graph */
-	foreach_pset(graph->opcode_hash, entry) {
+	foreach_pset(graph->opcode_hash, node_entry_t*, entry) {
 		cnt_clr(&entry->cnt_alive);
 	}  /* foreach_pset */
 
@@ -1249,7 +1249,7 @@ static void update_graph_stat(graph_entry_t *global, graph_entry_t *graph)
 		graph->is_chain_call = 0;
 
 	/* assume we walk every graph only ONCE, we could sum here the global count */
-	foreach_pset(graph->opcode_hash, entry) {
+	foreach_pset(graph->opcode_hash, node_entry_t*, entry) {
 		node_entry_t *g_entry = opcode_get_entry(entry->op, global->opcode_hash);
 
 		/* update the node counter */
@@ -1364,7 +1364,7 @@ static void stat_dump_registered(graph_entry_t *entry)
 		if (dumper->func_map) {
 			dump_graph_FUNC func;
 
-			foreach_pset(dumper->func_map, func)
+			foreach_pset(dumper->func_map, dump_graph_FUNC, func)
 				func(dumper, entry);
 		}  /* if */
 	}  /* for */
@@ -1445,7 +1445,7 @@ void stat_register_dumper_func(dump_graph_FUNC func)
 	for (dumper = status->dumper; dumper; dumper = dumper->next) {
 		if (! dumper->func_map)
 			dumper->func_map = pset_new_ptr(3);
-		pset_insert_ptr(dumper->func_map, func);
+		pset_insert_ptr(dumper->func_map, (void*)func);
 	}  /* for */
 }  /* stat_register_dumper_func */
 
@@ -1791,7 +1791,7 @@ static void stat_merge_nodes(
 						xopt = HOOK_OPT_CONFIRM_C;
 				}  /* if */
 
-				removed_due_opt(old_node_array[i], graph->opt_hash[xopt], xopt);
+				removed_due_opt(old_node_array[i], graph->opt_hash[xopt], (hook_opt_kind)xopt);
 			}  /* if */
 		}  /* for */
 	}
@@ -2186,7 +2186,8 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		stat_dump_init(fname);
 
 		/* calculate the graph statistics */
-		for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
+		for (entry = (graph_entry_t*)pset_first(status->irg_hash);
+		      entry != NULL; entry = (graph_entry_t*)pset_next(status->irg_hash)) {
 			if (entry->irg == NULL) {
 				/* special entry for the global count */
 				continue;
@@ -2199,13 +2200,14 @@ void stat_dump_snapshot(const char *name, const char *phase)
 
 		/* some calculations are dependent, we pushed them on the wait_q */
 		while (! pdeq_empty(status->wait_q)) {
-			entry = pdeq_getr(status->wait_q);
+			entry = (graph_entry_t*)pdeq_getr(status->wait_q);
 
 			update_graph_stat_2(global, entry);
 		}  /* while */
 
 		/* dump per graph */
-		for (entry = pset_first(status->irg_hash); entry; entry = pset_next(status->irg_hash)) {
+		for (entry = (graph_entry_t*)pset_first(status->irg_hash);
+		     entry != NULL; entry = (graph_entry_t*)pset_next(status->irg_hash)) {
 			if (entry->irg == NULL) {
 				/* special entry for the global count */
 				continue;
@@ -2244,7 +2246,8 @@ void stat_dump_snapshot(const char *name, const char *phase)
 		{
 			node_entry_t *entry;
 
-			for (entry = pset_first(global->opcode_hash); entry; entry = pset_next(global->opcode_hash)) {
+			for (entry = (node_entry_t*)pset_first(global->opcode_hash);
+			     entry != NULL; entry = (node_entry_t*)pset_next(global->opcode_hash)) {
 				opcode_clear_entry(entry);
 			}  /* for */
 			/* clear all global counter */
@@ -2254,18 +2257,18 @@ void stat_dump_snapshot(const char *name, const char *phase)
 	STAT_LEAVE;
 }  /* stat_dump_snapshot */
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t pass;
 	const char     *fname;
 	const char     *phase;
-};
+} pass_t;
 
 /**
  * Wrapper to run stat_dump_snapshot() as a ir_prog wrapper.
  */
 static int stat_dump_snapshot_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	(void)irp;
 	stat_dump_snapshot(pass->fname, pass->phase);
@@ -2296,7 +2299,7 @@ static void no_dump(ir_prog *prog, void *ctx, unsigned idx)
 ir_prog_pass_t *stat_dump_snapshot_pass(
 	const char *name, const char *fname, const char *phase)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
+	pass_t *pass = XMALLOCZ(pass_t);
 
 	def_prog_pass_constructor(
 		&pass->pass, name ? name : "stat_snapshot", stat_dump_snapshot_wrapper);

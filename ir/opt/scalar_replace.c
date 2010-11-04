@@ -86,8 +86,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  */
 static int path_cmp(const void *elt, const void *key, size_t size)
 {
-	const path_t *p1 = elt;
-	const path_t *p2 = key;
+	const path_t *p1 = (const path_t*)elt;
+	const path_t *p2 = (const path_t*)key;
 	(void) size;
 
 	/* we can use memcmp here, because identical tarvals should have identical addresses */
@@ -101,8 +101,8 @@ static int path_cmp(const void *elt, const void *key, size_t size)
  */
 static int ent_cmp(const void *elt, const void *key, size_t size)
 {
-	const scalars_t *c1 = elt;
-	const scalars_t *c2 = key;
+	const scalars_t *c1 = (const scalars_t*)elt;
+	const scalars_t *c2 = (const scalars_t*)key;
 	(void) size;
 
 	return c1->ent != c2->ent;
@@ -485,14 +485,15 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 
 	DB((dbg, SET_LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
 	/* visit all Sel nodes in the chain of the entity */
-	for (sel = get_entity_link(ent); sel; sel = next) {
-		next = get_irn_link(sel);
+	for (sel = (ir_node*)get_entity_link(ent); sel != NULL;
+	     sel = next) {
+		next = (ir_node*)get_irn_link(sel);
 
 		/* we must mark this sel for later */
 		pset_insert_ptr(sels, sel);
 
 		key  = find_path(sel, 0);
-		path = set_find(pathes, key, PATH_SIZE(key), path_hash(key));
+		path = (path_t*)set_find(pathes, key, PATH_SIZE(key), path_hash(key));
 
 		if (path) {
 			SET_VNUM(sel, path->vnum);
@@ -556,7 +557,7 @@ typedef struct env_t {
  */
 static void topologic_walker(ir_node *node, void *ctx)
 {
-	env_t    *env = ctx;
+	env_t    *env = (env_t*)ctx;
 	ir_graph *irg = get_irn_irg(node);
 	ir_node  *adr, *block, *mem, *val;
 	ir_mode  *mode;
@@ -751,7 +752,7 @@ int scalar_replacement_opt(ir_graph *irg)
 		if (nvals > 0) {
 			do_scalar_replacements(irg, sels, nvals, modes);
 
-			foreach_set(set_ent, value) {
+			foreach_set(set_ent, scalars_t*, value) {
 				free_entity(value->ent);
 			}
 

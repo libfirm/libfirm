@@ -34,13 +34,13 @@
 
 static void *it_pset_start(void *collection)
 {
-	return pset_first(collection);
+	return pset_first((pset*) collection);
 }
 
 static void *it_pset_next(void *collection, void *curr)
 {
 	(void) curr;
-	return pset_next(collection);
+	return pset_next((pset*) collection);
 }
 
 static void it_pset_finish(void *collection, void *curr)
@@ -61,8 +61,8 @@ const iterator_t *pset_iterator = &iterator_pset;
 
 static void *it_list_next(void *coll, void *it)
 {
-	struct list_head *head = coll;
-	struct list_head *curr = it;
+	struct list_head *head = (list_head*) coll;
+	struct list_head *curr = (list_head*) it;
 	return curr->next != head ? curr->next : NULL;
 }
 

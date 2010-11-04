@@ -150,7 +150,7 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode, lower_env_t *env)
 	key.omode = omode;
 	key.mtd   = NULL;
 
-	entry = set_insert(conv_types, &key, sizeof(key), HASH_PTR(imode) ^ HASH_PTR(omode));
+	entry = (conv_tp_entry_t*)set_insert(conv_types, &key, sizeof(key), HASH_PTR(imode) ^ HASH_PTR(omode));
 	if (! entry->mtd) {
 		int n_param = 1, n_res = 1;
 
@@ -369,7 +369,7 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env)
 	dbg_info   *dbg;
 	ir_node    *block = get_nodes_block(node);
 	ir_cons_flags volatility = get_Load_volatility(node) == volatility_is_volatile
-	                         ? cons_volatile : 0;
+	                         ? cons_volatile : cons_none;
 
 	if (env->params->little_endian) {
 		low  = adr;
@@ -387,7 +387,8 @@ static void lower_Load(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	set_lowered(env, node, low, high);
 
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
 		case pn_Load_M:         /* Memory result. */
 			/* put it to the second one */
@@ -424,7 +425,7 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node            *value = get_Store_value(node);
 	const node_entry_t *entry = get_node_entry(env, value);
 	ir_cons_flags volatility = get_Store_volatility(node) == volatility_is_volatile
-	                           ? cons_volatile : 0;
+	                           ? cons_volatile : cons_none;
 	(void) mode;
 
 	assert(entry);
@@ -456,7 +457,8 @@ static void lower_Store(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	set_lowered(env, node, low, high);
 
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
 		case pn_Store_M:         /* Memory result. */
 			/* put it to the second one */
@@ -497,7 +499,7 @@ static ir_node *get_intrinsic_address(ir_type *method, ir_op *op,
 	key.omode = omode;
 	key.ent   = NULL;
 
-	entry = set_insert(intrinsic_fkt, &key, sizeof(key),
+	entry = (op_mode_entry_t*)set_insert(intrinsic_fkt, &key, sizeof(key),
 				HASH_PTR(op) ^ HASH_PTR(imode) ^ (HASH_PTR(omode) << 8));
 	if (! entry->ent) {
 		/* create a new one */
@@ -540,7 +542,8 @@ static void lower_Div(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
 		case pn_Div_M:         /* Memory result. */
 			/* reroute to the call */
@@ -596,7 +599,8 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node            *proj;
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
 		case pn_Mod_M:         /* Memory result. */
 			/* reroute to the call */
@@ -856,12 +860,12 @@ static void lower_Shrs(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static void prepare_links_and_handle_rotl(ir_node *node, void *env)
 {
-	lower_env_t *lenv = env;
+	lower_env_t *lenv = (lower_env_t*)env;
 
 	if (is_Rotl(node)) {
 		ir_mode  *mode = get_irn_op_mode(node);
 		ir_node  *right;
-		ir_node  *left, *shl, *shr, *or, *block, *sub, *c;
+		ir_node  *left, *shl, *shr, *ornode, *block, *sub, *c;
 		ir_mode  *omode, *rmode;
 		ir_graph *irg;
 		dbg_info *dbg;
@@ -888,17 +892,17 @@ static void prepare_links_and_handle_rotl(ir_node *node, void *env)
 		/* switch optimization off here, or we will get the Rotl back */
 		save_optimization_state(&state);
 		set_opt_algebraic_simplification(0);
-		or = new_rd_Or(dbg, block, shl, shr, omode);
+		ornode = new_rd_Or(dbg, block, shl, shr, omode);
 		restore_optimization_state(&state);
 
-		exchange(node, or);
+		exchange(node, ornode);
 
 		/* do lowering on the new nodes */
 		prepare_links(lenv, shl);
 		prepare_links(lenv, c);
 		prepare_links(lenv, sub);
 		prepare_links(lenv, shr);
-		prepare_links(lenv, or);
+		prepare_links(lenv, ornode);
 		return;
 	}
 
@@ -1031,7 +1035,8 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	rentry = get_node_entry(env, right);
 
 	/* all right, build the code */
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		long proj_nr = get_Proj_proj(proj);
 
 		if (proj_nr == pn_Cond_true) {
@@ -1050,16 +1055,16 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	block = get_nodes_block(node);
 	irg   = get_Block_irg(block);
 	dbg   = get_irn_dbg_info(cmp);
-	pnc   = get_Proj_proj(sel);
+	pnc   = get_Proj_pn_cmp(sel);
 
 	if (is_Const(right) && is_Const_null(right)) {
 		if (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) {
 			/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
-			ir_mode *mode = env->low_unsigned;
-			ir_node *low  = new_r_Conv(block, lentry->low_word, mode);
-			ir_node *high = new_r_Conv(block, lentry->high_word, mode);
-			ir_node *or   = new_rd_Or(dbg, block, low, high, mode);
-			ir_node *cmp  = new_rd_Cmp(dbg, block, or, new_r_Const_long(irg, mode, 0));
+			ir_mode *mode   = env->low_unsigned;
+			ir_node *low    = new_r_Conv(block, lentry->low_word, mode);
+			ir_node *high   = new_r_Conv(block, lentry->high_word, mode);
+			ir_node *ornode = new_rd_Or(dbg, block, low, high, mode);
+			ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0));
 
 			ir_node *proj = new_r_Proj(cmp, mode_b, pnc);
 			set_Cond_selector(node, proj);
@@ -1074,7 +1079,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		pmap_entry *entry = pmap_find(env->proj_2_block, projF);
 
 		assert(entry);
-		dst_blk = entry->value;
+		dst_blk = (ir_node*)entry->value;
 
 		irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Eq);
 		dbg = get_irn_dbg_info(node);
@@ -1107,7 +1112,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		pmap_entry *entry = pmap_find(env->proj_2_block, projT);
 
 		assert(entry);
-		dst_blk = entry->value;
+		dst_blk = (ir_node*)entry->value;
 
 		irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Lg);
 		dbg = get_irn_dbg_info(node);
@@ -1142,11 +1147,11 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 		entry = pmap_find(env->proj_2_block, projT);
 		assert(entry);
-		dstT = entry->value;
+		dstT = (ir_node*)entry->value;
 
 		entry = pmap_find(env->proj_2_block, projF);
 		assert(entry);
-		dstF = entry->value;
+		dstF = (ir_node*)entry->value;
 
 		irn = new_r_Proj(cmpH, mode_b, pnc & ~pn_Cmp_Eq);
 		dbg = get_irn_dbg_info(node);
@@ -1275,10 +1280,10 @@ static void lower_Conv_from_Ll(ir_node *node, lower_env_t *env)
 		set_Conv_op(node, op);
 	} else if (omode == mode_b) {
 		/* llu ? true : false  <=> (low|high) ? true : false */
-		ir_mode *mode = env->low_unsigned;
-		ir_node *or   = new_rd_Or(dbg, block, entry->low_word, entry->high_word,
-		                          mode);
-		set_Conv_op(node, or);
+		ir_mode *mode   = env->low_unsigned;
+		ir_node *ornode = new_rd_Or(dbg, block, entry->low_word,
+		                            entry->high_word, mode);
+		set_Conv_op(node, ornode);
 	} else {
 		ir_node *irn, *call, *in[2];
 		ir_mode *imode = get_irn_mode(op);
@@ -1318,7 +1323,7 @@ static void lower_Proj_Cmp(lower_env_t *env, ir_node *proj)
 	r      = get_Cmp_right(cmp);
 	lentry = get_node_entry(env, l);
 	rentry = get_node_entry(env, r);
-	pnc    = get_Proj_proj(proj);
+	pnc    = get_Proj_pn_cmp(proj);
 	blk    = get_nodes_block(cmp);
 	db     = get_irn_dbg_info(cmp);
 	low    = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word);
@@ -1508,7 +1513,7 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 			set_lowered_type(value_type, get_method_value_param_type(res));
 		}
 	} else {
-		res = entry->value;
+		res = (ir_type*)entry->value;
 	}
 	return res;
 }
@@ -1616,7 +1621,8 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	/* ok, fix all Proj's and create new ones */
 	args = get_irg_args(irg);
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		ir_node *pred = get_Proj_pred(proj);
 		long proj_nr;
 		ir_mode *mode;
@@ -1736,7 +1742,8 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	/* fix the results */
 	results = NULL;
-	for (proj = get_irn_link(node); proj; proj = get_irn_link(proj)) {
+	for (proj = (ir_node*)get_irn_link(node); proj;
+	     proj = (ir_node*)get_irn_link(proj)) {
 		long proj_nr = get_Proj_proj(proj);
 
 		if (proj_nr == pn_Call_T_result && get_Proj_pred(proj) == node) {
@@ -1752,7 +1759,8 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 		/* switch off optimization for new Proj nodes or they might be CSE'ed
 		   with not patched one's */
 		set_optimize(0);
-		for (i = j = 0, proj = get_irn_link(results); proj; proj = get_irn_link(proj), ++i, ++j) {
+		for (i = j = 0, proj = (ir_node*)get_irn_link(results); proj;
+		     proj = (ir_node*)get_irn_link(proj), ++i, ++j) {
 			if (get_Proj_pred(proj) == results) {
 				long      proj_nr   = get_Proj_proj(proj);
 				ir_mode  *proj_mode = get_irn_mode(proj);
@@ -1924,7 +1932,7 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
 	for (n = asmn;;) {
 		ir_mode *proj_mode;
 
-		n = get_irn_link(n);
+		n = (ir_node*)get_irn_link(n);
 		if (n == NULL)
 			break;
 
@@ -1958,7 +1966,7 @@ static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env)
 /**
  * check for opcodes that must always be lowered.
  */
-static bool always_lower(ir_opcode code)
+static bool always_lower(unsigned code)
 {
 	switch (code) {
 	case iro_ASM:
@@ -1980,8 +1988,8 @@ static bool always_lower(ir_opcode code)
  */
 static int cmp_op_mode(const void *elt, const void *key, size_t size)
 {
-	const op_mode_entry_t *e1 = elt;
-	const op_mode_entry_t *e2 = key;
+	const op_mode_entry_t *e1 = (const op_mode_entry_t*)elt;
+	const op_mode_entry_t *e2 = (const op_mode_entry_t*)key;
 	(void) size;
 
 	return (e1->op - e2->op) | (e1->imode - e2->imode) | (e1->omode - e2->omode);
@@ -1992,8 +2000,8 @@ static int cmp_op_mode(const void *elt, const void *key, size_t size)
  */
 static int cmp_conv_tp(const void *elt, const void *key, size_t size)
 {
-	const conv_tp_entry_t *e1 = elt;
-	const conv_tp_entry_t *e2 = key;
+	const conv_tp_entry_t *e1 = (const conv_tp_entry_t*)elt;
+	const conv_tp_entry_t *e2 = (const conv_tp_entry_t*)key;
 	(void) size;
 
 	return (e1->imode - e2->imode) | (e1->omode - e2->omode);
@@ -2217,7 +2225,7 @@ static void lower_irg(lower_env_t *env, ir_graph *irg)
 
 		env->lowered_phis = NEW_ARR_F(ir_node*, 0);
 		while (!pdeq_empty(env->waitq)) {
-			ir_node *node = pdeq_getl(env->waitq);
+			ir_node *node = (ir_node*)pdeq_getl(env->waitq);
 			lower_node(env, node);
 		}
 

@@ -70,7 +70,7 @@ static arch_irn_class_t arm_classify(const ir_node *irn)
 {
 	(void) irn;
 	/* TODO: we should mark reload/spill instructions and classify them here */
-	return 0;
+	return arch_irn_class_none;
 }
 
 static ir_entity *arm_get_frame_entity(const ir_node *irn)
@@ -78,7 +78,7 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 	const arm_attr_t *attr = get_arm_attr_const(irn);
 
 	if (is_arm_FrameAddr(irn)) {
-		const arm_SymConst_attr_t *attr = get_irn_generic_attr_const(irn);
+		const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
 		return attr->entity;
 	}
 	if (attr->is_load_store) {
@@ -98,7 +98,7 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 static void arm_set_stack_bias(ir_node *irn, int bias)
 {
 	if (is_arm_FrameAddr(irn)) {
-		arm_SymConst_attr_t *attr = get_irn_generic_attr(irn);
+		arm_SymConst_attr_t *attr = get_arm_SymConst_attr(irn);
 		attr->fp_offset += bias;
 	} else {
 		arm_load_store_attr_t *attr = get_arm_load_store_attr(irn);
@@ -225,7 +225,7 @@ static void arm_after_ra_walker(ir_node *block, void *data)
 
 static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	be_fec_env_t  *env = data;
+	be_fec_env_t  *env = (be_fec_env_t*)data;
 	const ir_mode *mode;
 	int            align;
 	ir_entity     *entity;
@@ -415,7 +415,7 @@ static void arm_handle_intrinsics(void)
 		lower_intrinsics(records, n_records, /*part_block_used=*/0);
 }
 
-const arch_isa_if_t arm_isa_if;
+extern const arch_isa_if_t arm_isa_if;
 static arm_isa_t arm_isa_template = {
 	{
 		&arm_isa_if,           /* isa interface */
@@ -475,7 +475,7 @@ static arch_env_t *arm_init(FILE *file_handle)
  */
 static void arm_done(void *self)
 {
-	arm_isa_t *isa = self;
+	arm_isa_t *isa = (arm_isa_t*)self;
 
 	be_gas_emit_decls(isa->base.main_env);
 

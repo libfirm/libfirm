@@ -23,16 +23,9 @@
  * @author      Matthias Braun
  * @version     $Id$
  */
-#ifndef FIRM_END_H
-#define FIRM_END_H
 
-#ifndef FIRM_BEGIN_H
-#error "end.h included without begin.h?"
-#endif
-
-/* close extern "C" block from begin.h */
+/* close extern "C" block from begin.h,
+ * we need this without include guard (see begin.h) */
 #ifdef __cplusplus
 }
-#endif
-
 #endif

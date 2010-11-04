@@ -39,6 +39,7 @@
 #include "irprog.h"
 #include "entity_t.h"
 #include "error.h"
+#include "util.h"
 
 #include "be_t.h"
 #include "beemitter.h"
@@ -119,7 +120,7 @@ static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity
 	/* Part1: section-name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	assert(base < sizeof(basename)/sizeof(basename[0]));
+	assert(base < (be_gas_section_t)ARRAY_SIZE(basename));
 	be_emit_string(basename[base]);
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
@@ -198,7 +199,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		}
 	}
 
-	assert(base < sizeof(basename)/sizeof(basename[0]));
+	assert(base < (be_gas_section_t) ARRAY_SIZE(basename));
 	be_emit_cstring("\t.section\t.");
 	/* section name */
 	if (flags & GAS_SECTION_FLAG_TLS)

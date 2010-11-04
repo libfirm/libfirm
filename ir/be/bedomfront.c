@@ -133,5 +133,5 @@ void be_free_dominance_frontiers(be_dom_front_info_t *info)
 ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info,
                                     ir_node *block)
 {
-	return pmap_get(info->df_map, block);
+	return (ir_node**)pmap_get(info->df_map, block);
 }

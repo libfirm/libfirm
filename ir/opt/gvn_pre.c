@@ -138,11 +138,11 @@ static ir_node *add(ir_node *e, ir_node *v)
  */
 static ir_node *lookup(ir_node *e)
 {
-	ir_node *value = ir_nodemap_get(&value_map, e);
+	ir_node *value = (ir_node*)ir_nodemap_get(&value_map, e);
 	if (value != NULL)
 		return identify_remember(value);
 	return NULL;
-}  /* lookup */
+}
 
 /**
  * Return the block info of a block.
@@ -151,8 +151,8 @@ static ir_node *lookup(ir_node *e)
  */
 static block_info *get_block_info(ir_node *block)
 {
-	return get_irn_link(block);
-}  /* get_block_info */
+	return (block_info*)get_irn_link(block);
+}
 
 /**
  * Allocate a block info for a block.
@@ -232,12 +232,12 @@ static void dump_value_set(ir_valueset_t *set, const char *txt, ir_node *block)
 #endif /* DEBUG_libfirm */
 
 /**
- * Topological walker. Allocates block info for every block and place nodes in topological
- * order into the nodes set.
+ * Topological walker. Allocates block info for every block and place nodes in
+ * topological order into the nodes set.
  */
 static void topo_walker(ir_node *irn, void *ctx)
 {
-	pre_env    *env = ctx;
+	pre_env    *env = (pre_env*)ctx;
 	ir_node    *block;
 	block_info *info;
 	ir_node    *value;
@@ -264,7 +264,7 @@ static void topo_walker(ir_node *irn, void *ctx)
 	info  = get_block_info(block);
 
 	ir_valueset_insert(info->exp_gen, value, irn);
-}  /* topo_walker */
+}
 
 /**
  * Computes Avail_out(block):
@@ -281,7 +281,7 @@ static void topo_walker(ir_node *irn, void *ctx)
  */
 static void compute_avail_top_down(ir_node *block, void *ctx)
 {
-	pre_env    *env = ctx;
+	pre_env    *env = (pre_env*)ctx;
 	block_info *dom_info;
 	block_info *info = get_block_info(block);
 	ir_node    *dom_blk;
@@ -307,7 +307,7 @@ static void compute_avail_top_down(ir_node *block, void *ctx)
 	value_union(info->avail_out, info->exp_gen);
 
 	dump_value_set(info->avail_out, "Avail_out", block);
-}  /* compute_avail_top_down */
+}
 
 /**
  * check if a node n is clean in block block.
@@ -381,7 +381,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		ir_node *trans;
 
 		leader = leader != NULL ? leader : pred;
-		trans  = ir_valueset_lookup(translated, leader);
+		trans  = (ir_node*)ir_valueset_lookup(translated, leader);
 
 		if ((trans != NULL && trans != leader) || (is_Phi(leader) && get_nodes_block(leader) == block))
 			break;
@@ -409,7 +409,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
 		ir_node *trans;
 
 		leader = leader != NULL ? leader : pred;
-		trans  = ir_valueset_lookup(translated, leader);
+		trans  = (ir_node*)ir_valueset_lookup(translated, leader);
 		if (trans == NULL)
 			trans = leader;
 
@@ -430,7 +430,7 @@ static ir_node *phi_translate(ir_node *node, ir_node *block, int pos, ir_valuese
  */
 static void compute_antic(ir_node *block, void *ctx)
 {
-	pre_env    *env = ctx;
+	pre_env    *env = (pre_env*)ctx;
 	block_info *succ_info;
 	block_info *info = get_block_info(block);
 	ir_node    *succ, *value, *expr;
@@ -536,7 +536,7 @@ static void compute_antic(ir_node *block, void *ctx)
  */
 static void insert_nodes(ir_node *block, void *ctx)
 {
-	pre_env    *env = ctx;
+	pre_env    *env = (pre_env*)ctx;
 	ir_node    *value, *expr, *idom, *first_s, *worklist;
 	block_info *curr_info, *idom_info;
 	int        pos, arity = get_irn_arity(block);
@@ -603,7 +603,7 @@ static void insert_nodes(ir_node *block, void *ctx)
 				v_prime = value;
 
 			pred_info = get_block_info(pred_blk);
-			e_dprime  = ir_valueset_lookup(pred_info->avail_out, v_prime);
+			e_dprime  = (ir_node*)ir_valueset_lookup(pred_info->avail_out, v_prime);
 
 			if (e_dprime == NULL) {
 				pred_info->avail     = e_prime;
@@ -716,7 +716,7 @@ static void insert_nodes(ir_node *block, void *ctx)
  */
 static void eliminate(ir_node *irn, void *ctx)
 {
-	pre_env *env = ctx;
+	pre_env *env = (pre_env*)ctx;
 
 	if (!is_Block(irn)) {
 		ir_node *block = get_nodes_block(irn);
@@ -724,7 +724,7 @@ static void eliminate(ir_node *irn, void *ctx)
 		ir_node *value = lookup(irn);
 
 		if (value != NULL) {
-			ir_node *expr = ir_valueset_lookup(bl->avail_out, value);
+			ir_node *expr = (ir_node*)ir_valueset_lookup(bl->avail_out, value);
 
 			if (expr != NULL && expr != irn) {
 				elim_pair *p = OALLOC(env->obst, elim_pair);

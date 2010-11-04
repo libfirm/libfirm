@@ -111,10 +111,10 @@ static ir_graph *alloc_graph(void)
  */
 static void free_graph(ir_graph *irg)
 {
-	char *ptr = (char *)irg;
-	int  i;
+	char           *ptr = (char *)irg;
+	ir_edge_kind_t  i;
 
-	for (i = 0; i < EDGE_KIND_LAST; ++i)
+	for (i = EDGE_KIND_FIRST; i < EDGE_KIND_LAST; ++i)
 		edges_deactivate_kind(irg, i);
 	DEL_ARR_F(irg->idx_irn_map);
 	free(ptr - additional_graph_data_size);
@@ -341,7 +341,7 @@ ir_graph *new_const_code_irg(void)
  */
 static void copy_all_nodes(ir_node *node, void *env)
 {
-	ir_graph *irg      = env;
+	ir_graph *irg      = (ir_graph*)env;
 	ir_node  *new_node = irn_copy_into_irg(node, irg);
 
 	set_irn_link(node, new_node);
@@ -353,7 +353,7 @@ static void copy_all_nodes(ir_node *node, void *env)
 
 		if (is_frame_type(tp)) {
 			/* replace by the copied entity */
-			ent = get_entity_link(ent);
+			ent = (ir_entity*)get_entity_link(ent);
 
 			assert(is_entity(ent));
 			assert(get_entity_owner(ent) == get_irg_frame_type(irg));
@@ -775,19 +775,19 @@ void (set_irg_inline_property)(ir_graph *irg, irg_inline_property s)
 	_set_irg_inline_property(irg, s);
 }
 
-unsigned (get_irg_additional_properties)(const ir_graph *irg)
+mtp_additional_properties (get_irg_additional_properties)(const ir_graph *irg)
 {
 	return _get_irg_additional_properties(irg);
 }
 
-void (set_irg_additional_properties)(ir_graph *irg, unsigned property_mask)
+void (set_irg_additional_properties)(ir_graph *irg, mtp_additional_properties property_mask)
 {
 	_set_irg_additional_properties(irg, property_mask);
 }
 
-void (set_irg_additional_property)(ir_graph *irg, mtp_additional_property flag)
+void (add_irg_additional_properties)(ir_graph *irg, mtp_additional_properties flag)
 {
-	_set_irg_additional_property(irg, flag);
+	_add_irg_additional_properties(irg, flag);
 }
 
 void (set_irg_link)(ir_graph *irg, void *thing)

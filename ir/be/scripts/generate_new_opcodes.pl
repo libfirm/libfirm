@@ -270,10 +270,10 @@ sub create_constructor {
 
 	# emit constructor code
 	$temp = <<EOF;
-	ir_node        *res;
-	ir_op          *op      = op_${arch}_${op};
-	int             flags   = 0;
-	backend_info_t *info;
+	ir_node          *res;
+	ir_op            *op      = op_${arch}_${op};
+	arch_irn_flags_t  flags   = arch_irn_flags_none;
+	backend_info_t   *info;
 EOF
 
 	if($arity == $ARITY_DYNAMIC) {
@@ -459,7 +459,7 @@ EOF
 EOF
 
 	if (exists($n->{"init_attr"})) {
-		$temp .= "\tattr = get_irn_generic_attr(res);\n";
+		$temp .= "\tattr = (${attr_type}*)get_irn_generic_attr(res);\n";
 		$temp .= "\t".$n->{"init_attr"}."\n";
 	}
 
@@ -838,8 +838,7 @@ print OUT<<ENDOFMAIN;
 ENDOFMAIN
 
 	if (defined($default_op_attr_type)) {
-		print OUT "\tattrs = xmalloc(sizeof(attr[0]) * iro_$arch\_last);\n";
-		print OUT "\tmemset(attrs, 0, sizeof(attr[0]) * iro_$arch\_last);\n";
+		print OUT "\tattrs = XMALLOCNZ(${default_op_attr_type}, iro_${arch}_last);\n";
 	}
 
 print OUT @obst_new_irop;

@@ -124,7 +124,7 @@ static inline int _edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind
 * Assure, that the edges information is present for a certain graph.
 * @param irg The graph.
 */
-static inline void _edges_assure_kind(ir_graph *irg, int kind)
+static inline void _edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind)
 {
 	if(!_edges_activated_kind(irg, kind))
 		edges_activate_kind(irg, kind);

@@ -354,6 +354,7 @@ typedef enum {
 	MATCH_SIZE_NEUTRAL = 1 << 2,
 	MATCH_SKIP_NOT     = 1 << 3,  /**< skip Not on ONE input */
 } match_flags_t;
+ENUM_BITSET(match_flags_t)
 
 /**
  * possible binop constructors.
@@ -1070,7 +1071,7 @@ static ir_node *gen_Cond(ir_node *node)
 	dbgi      = get_irn_dbg_info(node);
 	flag_node = be_transform_node(get_Proj_pred(selector));
 
-	return new_bd_arm_B(dbgi, block, flag_node, get_Proj_proj(selector));
+	return new_bd_arm_B(dbgi, block, flag_node, get_Proj_pn_cmp(selector));
 }
 
 static ir_tarval *fpa_imm[3][fpa_max];
@@ -1737,13 +1738,13 @@ static ir_node *gen_Start(ir_node *node)
 	for (i = 0; i < get_method_n_params(function_type); ++i) {
 		const reg_or_stackslot_t *param = &cconv->parameters[i];
 		if (param->reg0 != NULL)
-			be_prolog_add_reg(abihelper, param->reg0, 0);
+			be_prolog_add_reg(abihelper, param->reg0, arch_register_req_type_none);
 		if (param->reg1 != NULL)
-			be_prolog_add_reg(abihelper, param->reg1, 0);
+			be_prolog_add_reg(abihelper, param->reg1, arch_register_req_type_none);
 	}
 	/* announce that we need the values of the callee save regs */
 	for (i = 0; i < (int) (sizeof(callee_saves)/sizeof(callee_saves[0])); ++i) {
-		be_prolog_add_reg(abihelper, callee_saves[i], 0);
+		be_prolog_add_reg(abihelper, callee_saves[i], arch_register_req_type_none);
 	}
 
 	start = be_prolog_create_start(abihelper, dbgi, new_block);
@@ -1770,7 +1771,7 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 	}
 
 	stack_pred_transformed = be_transform_node(stack_pred);
-	stack                  = pmap_get(node_to_stack, stack_pred);
+	stack                  = (ir_node*)pmap_get(node_to_stack, stack_pred);
 	if (stack == NULL) {
 		return get_stack_pointer_for(stack_pred);
 	}
@@ -1810,14 +1811,14 @@ static ir_node *gen_Return(ir_node *node)
 		const reg_or_stackslot_t *slot          = &cconv->results[i];
 		const arch_register_t    *reg           = slot->reg0;
 		assert(slot->reg1 == NULL);
-		be_epilog_add_reg(abihelper, reg, 0, new_res_value);
+		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none, new_res_value);
 	}
 
 	/* connect callee saves with their values at the function begin */
 	for (i = 0; i < n_callee_saves; ++i) {
 		const arch_register_t *reg   = callee_saves[i];
 		ir_node               *value = be_prolog_get_reg_value(abihelper, reg);
-		be_epilog_add_reg(abihelper, reg, 0, value);
+		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none, value);
 	}
 
 	/* create the barrier before the epilog code */

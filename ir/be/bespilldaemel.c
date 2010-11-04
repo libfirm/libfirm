@@ -70,8 +70,8 @@ struct spill_candidate_t {
 
 static int compare_spill_candidates_desc(const void *d1, const void *d2)
 {
-	const spill_candidate_t *c1 = d1;
-	const spill_candidate_t *c2 = d2;
+	const spill_candidate_t *c1 = (const spill_candidate_t*)d1;
+	const spill_candidate_t *c2 = (const spill_candidate_t*)d2;
 
 	return (int) (c1->costs - c2->costs);
 }

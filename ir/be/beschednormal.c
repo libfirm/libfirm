@@ -56,7 +56,7 @@ static int must_be_scheduled(const ir_node* const irn)
 static ir_node *normal_select(void *block_env, ir_nodeset_t *ready_set,
                               ir_nodeset_t *live_set)
 {
-	instance_t* inst = block_env;
+	instance_t* inst = (instance_t*)block_env;
 	ir_node*    irn;
 	ir_node*    next;
 	ir_node*    last = NULL;
@@ -65,7 +65,7 @@ static ir_node *normal_select(void *block_env, ir_nodeset_t *ready_set,
 	(void)live_set;
 
 	for (irn = inst->curr_list; irn != NULL; last = irn, irn = next) {
-		next = get_irn_link(irn);
+		next = (ir_node*)get_irn_link(irn);
 		if (ir_nodeset_contains(ready_set, irn)) {
 #if defined NORMAL_DBG
 			ir_fprintf(stderr, "scheduling %+F\n", irn);
@@ -91,8 +91,8 @@ typedef struct irn_cost_pair {
 
 static int cost_cmp(const void* a, const void* b)
 {
-	const irn_cost_pair* const a1 = a;
-	const irn_cost_pair* const b1 = b;
+	const irn_cost_pair* const a1 = (const irn_cost_pair*)a;
+	const irn_cost_pair* const b1 = (const irn_cost_pair*)b;
 	int ret = b1->cost - a1->cost;
 	if (ret == 0)
 		ret = (int)get_irn_idx(a1->irn) - (int)get_irn_idx(b1->irn);
@@ -222,7 +222,7 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 
 static void normal_cost_walker(ir_node* irn, void* env)
 {
-	instance_t *inst = env;
+	instance_t *inst = (instance_t*)env;
 
 #if defined NORMAL_DBG
 	ir_fprintf(stderr, "cost walking node %+F\n", irn);
@@ -250,7 +250,7 @@ static void collect_roots(ir_node* irn, void* env)
 
 	if (is_root) {
 		ir_node* block = get_nodes_block(irn);
-		ir_node** roots = get_irn_link(block);
+		ir_node** roots = (ir_node**)get_irn_link(block);
 		if (roots == NULL) {
 			roots = NEW_ARR_F(ir_node*, 0);
 		}
@@ -288,8 +288,8 @@ static ir_node** sched_node(ir_node** sched, ir_node* irn)
 
 static int root_cmp(const void* a, const void* b)
 {
-	const irn_cost_pair* const a1 = a;
-	const irn_cost_pair* const b1 = b;
+	const irn_cost_pair* const a1 = (const irn_cost_pair*)a;
+	const irn_cost_pair* const b1 = (const irn_cost_pair*)b;
 	int ret;
 	if (is_irn_forking(a1->irn)) {
 		ret = 1;
@@ -311,8 +311,8 @@ static int root_cmp(const void* a, const void* b)
 
 static void normal_sched_block(ir_node* block, void* env)
 {
-	ir_node**      roots = get_irn_link(block);
-	ir_heights_t*  heights = env;
+	ir_node**      roots = (ir_node**)get_irn_link(block);
+	ir_heights_t*  heights = (ir_heights_t*)env;
 	int            root_count;
 	irn_cost_pair* root_costs;
 	int i;
@@ -406,8 +406,8 @@ static void *normal_init_graph(const list_sched_selector_t *vtab,
 
 static void *normal_init_block(void *graph_env, ir_node *block)
 {
-	instance_t* inst  = graph_env;
-	ir_node**   sched = get_irn_link(block);
+	instance_t* inst  = (instance_t*)graph_env;
+	ir_node**   sched = (ir_node**)get_irn_link(block);
 	ir_node*    first = NULL;
 	int         i;
 
@@ -430,7 +430,7 @@ static void *normal_init_block(void *graph_env, ir_node *block)
 
 static void normal_finish_graph(void *env)
 {
-	instance_t *inst = env;
+	instance_t *inst = (instance_t*)env;
 
 	/* block uses the link field to store the schedule */
 	ir_free_resources(inst->irg, IR_RESOURCE_IRN_LINK);

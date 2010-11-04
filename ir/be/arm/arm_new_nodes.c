@@ -214,13 +214,13 @@ static void arm_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 arm_attr_t *get_arm_attr(ir_node *node)
 {
 	assert(is_arm_irn(node) && "need arm node to get attributes");
-	return get_irn_generic_attr(node);
+	return (arm_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_attr_t *get_arm_attr_const(const ir_node *node)
 {
 	assert(is_arm_irn(node) && "need arm node to get attributes");
-	return get_irn_generic_attr_const(node);
+	return (const arm_attr_t*)get_irn_generic_attr_const(node);
 }
 
 static bool has_symconst_attr(const ir_node *node)
@@ -231,61 +231,73 @@ static bool has_symconst_attr(const ir_node *node)
 arm_SymConst_attr_t *get_arm_SymConst_attr(ir_node *node)
 {
 	assert(has_symconst_attr(node));
-	return get_irn_generic_attr(node);
+	return (arm_SymConst_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_SymConst_attr_t *get_arm_SymConst_attr_const(const ir_node *node)
 {
 	assert(has_symconst_attr(node));
-	return get_irn_generic_attr_const(node);
+	return (const arm_SymConst_attr_t*)get_irn_generic_attr_const(node);
 }
 
 static const arm_fConst_attr_t *get_arm_fConst_attr_const(const ir_node *node)
 {
 	assert(is_arm_fConst(node));
-	return get_irn_generic_attr_const(node);
+	return (const arm_fConst_attr_t*)get_irn_generic_attr_const(node);
 }
 
 static arm_fConst_attr_t *get_arm_fConst_attr(ir_node *node)
 {
 	assert(is_arm_fConst(node));
-	return get_irn_generic_attr(node);
+	return (arm_fConst_attr_t*)get_irn_generic_attr(node);
 }
 
 arm_farith_attr_t *get_arm_farith_attr(ir_node *node)
 {
 	assert(has_farith_attr(node));
-	return get_irn_generic_attr(node);
+	return (arm_farith_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_farith_attr_t *get_arm_farith_attr_const(const ir_node *node)
 {
 	assert(has_farith_attr(node));
-	return get_irn_generic_attr_const(node);
+	return (const arm_farith_attr_t*)get_irn_generic_attr_const(node);
 }
 
 arm_CondJmp_attr_t *get_arm_CondJmp_attr(ir_node *node)
 {
 	assert(is_arm_B(node));
-	return get_irn_generic_attr(node);
+	return (arm_CondJmp_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_CondJmp_attr_t *get_arm_CondJmp_attr_const(const ir_node *node)
 {
 	assert(is_arm_B(node));
-	return get_irn_generic_attr_const(node);
+	return (const arm_CondJmp_attr_t*)get_irn_generic_attr_const(node);
 }
 
 arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr(ir_node *node)
 {
 	assert(is_arm_SwitchJmp(node));
-	return get_irn_generic_attr(node);
+	return (arm_SwitchJmp_attr_t*)get_irn_generic_attr(node);
 }
 
 const arm_SwitchJmp_attr_t *get_arm_SwitchJmp_attr_const(const ir_node *node)
 {
 	assert(is_arm_SwitchJmp(node));
-	return get_irn_generic_attr_const(node);
+	return (const arm_SwitchJmp_attr_t*)get_irn_generic_attr_const(node);
+}
+
+arm_CopyB_attr_t *get_arm_CopyB_attr(ir_node *node)
+{
+	assert(is_arm_CopyB(node));
+	return (arm_CopyB_attr_t*)get_irn_generic_attr(node);
+}
+
+const arm_CopyB_attr_t *get_arm_CopyB_attr_const(const ir_node *node)
+{
+	assert(is_arm_CopyB(node));
+	return (const arm_CopyB_attr_t*)get_irn_generic_attr_const(node);
 }
 
 ir_tarval *get_fConst_value(const ir_node *node)
@@ -337,7 +349,7 @@ void set_arm_SwitchJmp_default_proj_num(ir_node *node, long default_proj_num)
 }
 
 /* Set the ARM machine node attributes to default values. */
-static void init_arm_attributes(ir_node *node, int flags,
+static void init_arm_attributes(ir_node *node, arch_irn_flags_t flags,
                          const arch_register_req_t ** in_reqs,
                          const be_execution_unit_t ***execution_units,
 						 int n_res)
@@ -362,7 +374,7 @@ static void init_arm_load_store_attributes(ir_node *res, ir_mode *ls_mode,
                                            int entity_sign, long offset,
                                            bool is_frame_entity)
 {
-	arm_load_store_attr_t *attr = get_irn_generic_attr(res);
+	arm_load_store_attr_t *attr = get_arm_load_store_attr(res);
 	attr->load_store_mode    = ls_mode;
 	attr->entity             = entity;
 	attr->entity_sign        = entity_sign;
@@ -375,7 +387,7 @@ static void init_arm_shifter_operand(ir_node *res, unsigned immediate_value,
                                      arm_shift_modifier_t shift_modifier,
                                      unsigned shift_immediate)
 {
-	arm_shifter_operand_t *attr = get_irn_generic_attr(res);
+	arm_shifter_operand_t *attr = get_arm_shifter_operand_attr(res);
 	attr->immediate_value = immediate_value;
 	attr->shift_modifier  = shift_modifier;
 	attr->shift_immediate = shift_immediate;
@@ -383,7 +395,7 @@ static void init_arm_shifter_operand(ir_node *res, unsigned immediate_value,
 
 static void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
 {
-	arm_cmp_attr_t *attr = get_irn_generic_attr(res);
+	arm_cmp_attr_t *attr = get_arm_cmp_attr(res);
 	attr->ins_permuted = ins_permuted;
 	attr->is_unsigned  = is_unsigned;
 }
@@ -391,20 +403,20 @@ static void init_arm_cmp_attr(ir_node *res, bool ins_permuted, bool is_unsigned)
 static void init_arm_SymConst_attributes(ir_node *res, ir_entity *entity,
                                          int symconst_offset)
 {
-	arm_SymConst_attr_t *attr = get_irn_generic_attr(res);
+	arm_SymConst_attr_t *attr = get_arm_SymConst_attr(res);
 	attr->entity    = entity;
 	attr->fp_offset = symconst_offset;
 }
 
 static void init_arm_farith_attributes(ir_node *res, ir_mode *mode)
 {
-	arm_farith_attr_t *attr = get_irn_generic_attr(res);
+	arm_farith_attr_t *attr = get_arm_farith_attr(res);
 	attr->mode = mode;
 }
 
 static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
 {
-	arm_CopyB_attr_t *attr = get_irn_generic_attr(res);
+	arm_CopyB_attr_t *attr = get_arm_CopyB_attr(res);
 	attr->size = size;
 }
 
@@ -423,8 +435,8 @@ static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b)
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_irn_generic_attr_const(a);
-	attr_b = get_irn_generic_attr_const(b);
+	attr_a = get_arm_SymConst_attr_const(a);
+	attr_b = get_arm_SymConst_attr_const(b);
 	return attr_a->entity != attr_b->entity
 		|| attr_a->fp_offset != attr_b->fp_offset;
 }
@@ -437,8 +449,8 @@ static int cmp_attr_arm_CopyB(ir_node *a, ir_node *b)
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_irn_generic_attr_const(a);
-	attr_b = get_irn_generic_attr_const(b);
+	attr_a = get_arm_CopyB_attr_const(a);
+	attr_b = get_arm_CopyB_attr_const(b);
 	return attr_a->size != attr_b->size;
 }
 
@@ -548,8 +560,8 @@ static int cmp_attr_arm_cmp(ir_node *a, ir_node *b)
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_irn_generic_attr_const(a);
-	attr_b = get_irn_generic_attr_const(b);
+	attr_a = get_arm_cmp_attr(a);
+	attr_b = get_arm_cmp_attr(b);
 	if (attr_a->ins_permuted != attr_b->ins_permuted
 			|| attr_a->is_unsigned != attr_b->is_unsigned)
 		return 1;

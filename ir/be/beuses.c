@@ -68,8 +68,8 @@ struct be_uses_t {
 
 static int cmp_use(const void *a, const void *b, size_t n)
 {
-	const be_use_t *p = a;
-	const be_use_t *q = b;
+	const be_use_t *p = (const be_use_t*)a;
+	const be_use_t *q = (const be_use_t*)b;
 	(void) n;
 
 	return !(p->block == q->block && p->node == q->node);
@@ -89,7 +89,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 
 	temp.block = block;
 	temp.node = def;
-	result = set_find(env->uses, &temp, sizeof(temp), hash);
+	result = (be_use_t*)set_find(env->uses, &temp, sizeof(temp), hash);
 
 	if (result == NULL) {
 		// insert templ first as we might end in a loop in the get_next_use
@@ -97,7 +97,7 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		temp.next_use = USES_INFINITY;
 		temp.outermost_loop = -1;
 		temp.visited = 0;
-		result = set_insert(env->uses, &temp, sizeof(temp), hash);
+		result = (be_use_t*)set_insert(env->uses, &temp, sizeof(temp), hash);
 	}
 
 	if (result->outermost_loop < 0 && result->visited < env->visited_counter) {

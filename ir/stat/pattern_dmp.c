@@ -77,7 +77,7 @@ typedef struct vcg_private_t {
  */
 static void vcg_dump_start(pattern_dumper_t *self)
 {
-	vcg_private_t *priv = self->data;
+	vcg_private_t *priv = (vcg_private_t*)self->data;
 
 	fprintf(priv->f,
 		"graph: { title: \"Most found pattern\"\n"
@@ -94,7 +94,7 @@ static void vcg_dump_start(pattern_dumper_t *self)
  */
 static void vcg_dump_end(pattern_dumper_t *self)
 {
-	vcg_private_t *priv = self->data;
+	vcg_private_t *priv = (vcg_private_t*)self->data;
 
 	fprintf(priv->f, "}\n");
 	fclose(priv->f);
@@ -105,7 +105,7 @@ static void vcg_dump_end(pattern_dumper_t *self)
  */
 static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 {
-	vcg_private_t *priv = self->data;
+	vcg_private_t *priv = (vcg_private_t*)self->data;
 	static unsigned nr = 0;
 
 	if (priv->pattern_id > priv->max_pattern)
@@ -127,7 +127,7 @@ static void vcg_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
  */
 static void vcg_dump_finish_pattern(pattern_dumper_t *self)
 {
-	vcg_private_t *priv = self->data;
+	vcg_private_t *priv = (vcg_private_t*)self->data;
 
 	if (priv->pattern_id > priv->max_pattern)
 		return;
@@ -148,7 +148,7 @@ static void vcg_dump_finish_pattern(pattern_dumper_t *self)
 static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
     unsigned op_code, unsigned mode_code, void *attr)
 {
-	vcg_private_t *priv = self->data;
+	vcg_private_t *priv = (vcg_private_t*)self->data;
 	ir_op *op           = stat_get_op_from_opcode(op_code);
 	ir_mode *mode       = get_irp_mode(mode_code);
 	long l              = attr ? *(long *)attr : 0;
@@ -170,7 +170,7 @@ static void vcg_dump_node(pattern_dumper_t *self, unsigned id,
  */
 static void vcg_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
-	vcg_private_t *priv = self->data;
+	vcg_private_t *priv = (vcg_private_t*)self->data;
 	(void) mode_code;
 
 	if (priv->pattern_id > priv->max_pattern)
@@ -204,7 +204,7 @@ static pattern_dumper_t vcg_dump = {
  */
 static void stdout_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
 {
-	FILE *f = self->data;
+	FILE *f = (FILE*)self->data;
 
 	fprintf(f, "%8u ", cnt_to_uint(cnt));
 }  /* stdout_dump_new_pattern */
@@ -215,7 +215,7 @@ static void stdout_dump_new_pattern(pattern_dumper_t *self, counter_t *cnt)
  */
 static void stdout_dump_finish_pattern(pattern_dumper_t *self)
 {
-	FILE *f = self->data;
+	FILE *f = (FILE*)self->data;
 
 	fprintf(f, "\n");
 }  /* stdout_dump_finish_pattern */
@@ -225,7 +225,7 @@ static void stdout_dump_finish_pattern(pattern_dumper_t *self)
  */
 static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_code, unsigned mode_code, void *attr)
 {
-	FILE *f       = self->data;
+	FILE *f       = (FILE*)self->data;
 	ir_op *op     = stat_get_op_from_opcode(op_code);
 	ir_mode *mode = get_irp_mode(mode_code);
 	(void) attr;
@@ -244,7 +244,7 @@ static void stdout_dump_node(pattern_dumper_t *self, unsigned id, unsigned op_co
  */
 static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
 {
-	FILE *f = self->data;
+	FILE *f = (FILE*)self->data;
 
 	fprintf(f, "REF:%u", id);
 }  /* stdout_dump_ref */
@@ -254,7 +254,7 @@ static void stdout_dump_ref(pattern_dumper_t *self, unsigned id)
  */
 static void stdout_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src, unsigned pos, unsigned mode_code)
 {
-	FILE *f = self->data;
+	FILE *f = (FILE*)self->data;
 	(void) tgt;
 	(void) src;
 	(void) pos;
@@ -269,7 +269,7 @@ static void stdout_dump_edge(pattern_dumper_t *self, unsigned tgt, unsigned src,
  */
 static void stdout_start_children(pattern_dumper_t *self, unsigned id)
 {
-	FILE *f = self->data;
+	FILE *f = (FILE*)self->data;
 	(void) id;
 
 	fprintf(f, "(");
@@ -280,7 +280,7 @@ static void stdout_start_children(pattern_dumper_t *self, unsigned id)
  */
 static void stdout_finish_children(pattern_dumper_t *self, unsigned id)
 {
-	FILE *f = self->data;
+	FILE *f = (FILE*)self->data;
 	(void) id;
 
 	fprintf(f, ")");
@@ -385,15 +385,13 @@ void pattern_end(pattern_dumper_t *self)
  */
 pattern_dumper_t *new_text_dumper(void)
 {
-	pattern_dumper_t *res = malloc(sizeof(*res));
+	pattern_dumper_t *res = XMALLOC(pattern_dumper_t);
 
-	if (res) {
-		memcpy(res, &stdout_dump, sizeof(*res));
-		res->data = stdout;
+	memcpy(res, &stdout_dump, sizeof(*res));
+	res->data = stdout;
 
-		if (res->dump_start)
-			res->dump_start(res);
-	}  /* if */
+	if (res->dump_start)
+		res->dump_start(res);
 	return res;
 }  /* new_text_dumper */
 
@@ -402,7 +400,7 @@ pattern_dumper_t *new_text_dumper(void)
  */
 pattern_dumper_t *new_vcg_dumper(const char *vcg_name, unsigned max_pattern)
 {
-	pattern_dumper_t *res = malloc(sizeof(*res) + sizeof(vcg_private_t));
+	pattern_dumper_t *res = (pattern_dumper_t*)malloc(sizeof(*res) + sizeof(vcg_private_t));
 	vcg_private_t *priv;
 
 	if (res) {

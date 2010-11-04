@@ -56,7 +56,7 @@
 #include <zlib.h>
 
 #define mfprintf   gzprintf
-static gzFile*     stat_ev_file  = NULL;
+static gzFile      stat_ev_file  = NULL;
 
 #else
 
@@ -122,10 +122,10 @@ void stat_ev_begin(const char *prefix, const char *filt)
 
 #ifdef FIRM_HAVE_LIBZ
 	snprintf(buf, sizeof(buf), "%s.ev.gz", prefix);
-	stat_ev_file    = gzopen(buf, "wt9");
+	stat_ev_file = gzopen(buf, "wt9");
 #else
 	snprintf(buf, sizeof(buf), "%s.ev", prefix);
-	stat_ev_file    = fopen(buf, "wt");
+	stat_ev_file = fopen(buf, "wt");
 #endif
 
 	if (filt && filt[0] != '\0') {

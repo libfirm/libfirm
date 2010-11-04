@@ -473,7 +473,7 @@ static ir_node *get_end_of_block_insertion_point(ir_node *block)
  */
 static void fix_block_borders(ir_node *block, void *data)
 {
-	minibelady_env_t *env = data;
+	minibelady_env_t *env = (minibelady_env_t*)data;
 	ir_graph *irg = get_irn_irg(block);
 	ir_node *startblock = get_irg_start_block(irg);
 	int i;

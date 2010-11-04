@@ -48,7 +48,7 @@ size_t sched_irn_data_offset = 0;
 
 static void block_sched_dumper(ir_node *block, void *env)
 {
-	FILE  *f = env;
+	FILE  *f = (FILE*)env;
 	const ir_node *curr;
 
 	ir_fprintf(f, "%+F:\n", block);

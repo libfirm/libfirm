@@ -284,6 +284,7 @@ typedef enum {
 
 	dump_verbosity_max                = 0x4FF00FBE   /**< Turn everything on */
 } ir_dump_verbosity_t;
+ENUM_BITSET(ir_dump_verbosity_t)
 
 /** override currently set text dump flags with new ones */
 FIRM_API void ir_set_dump_verbosity(ir_dump_verbosity_t verbosity);
@@ -343,6 +344,7 @@ typedef enum {
 	/** dump entities in class hierarchies */
 	ir_dump_flag_entities_in_hierarchy = 1U << 22,
 } ir_dump_flags_t;
+ENUM_BITSET(ir_dump_flags_t)
 
 /** override currently set dump flags with new ones */
 FIRM_API void ir_set_dump_flags(ir_dump_flags_t flags);

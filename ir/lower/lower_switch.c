@@ -98,8 +98,8 @@ static void analyse_switch(cond_env_t *env, ir_node *cond)
 
 static int casecmp(const void *a, const void *b)
 {
-	const case_data_t *cda = a;
-	const case_data_t *cdb = b;
+	const case_data_t *cda = (const case_data_t*)a;
+	const case_data_t *cdb = (const case_data_t*)b;
 
 	/*
 	 * Enforce unsigned sorting. Signed comparison will behave differently for
@@ -299,7 +299,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
  */
 static void find_cond_nodes(ir_node *block, void *ctx)
 {
-	walk_env_t  *env = ctx;
+	walk_env_t  *env = (walk_env_t *)ctx;
 	ir_node     *projx;
 	ir_node     *cond;
 	ir_node     *sel;

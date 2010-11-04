@@ -57,7 +57,7 @@ typedef struct walker_env {
  */
 static void call_mapper(ir_node *node, void *env)
 {
-	walker_env_t *wenv = env;
+	walker_env_t *wenv = (walker_env_t*)env;
 	ir_op *op = get_irn_op(node);
 
 	if (op == op_Call) {
@@ -74,7 +74,7 @@ static void call_mapper(ir_node *node, void *env)
 		p   = pmap_find(wenv->c_map, ent);
 
 		if (p) {
-			r = p->value;
+			r = (const i_call_record*)p->value;
 			wenv->nr_of_intrinsics += r->i_mapper(node, r->ctx) ? 1 : 0;
 		}
 	} else {
@@ -86,7 +86,7 @@ static void call_mapper(ir_node *node, void *env)
 					++wenv->nr_of_intrinsics;
 					break;
 				}
-				r = r->link;
+				r = (const i_instr_record*)r->link;
 			}
 		}
 	}
@@ -163,20 +163,20 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
 	return nr_of_intrinsics;
 }  /* lower_intrinsics */
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t pass;
 
 	int part_block_used;
 	int      length;
 	i_record list[1];
-};
+} pass_t;
 
 /**
  * Wrapper for running lower_intrinsics() as an ir_prog pass.
  */
 static int pass_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 	(void) irp; /* TODO: set current irp, or remove parameter */
 	lower_intrinsics(pass->list, pass->length, pass->part_block_used);
 	/* probably this pass should not run again */
@@ -195,7 +195,7 @@ ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
 	i_record *list, int length, int part_block_used)
 {
-	struct pass_t *pass = xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
+	pass_t *pass = (pass_t*)xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
 
 	memcpy(pass->list, list, sizeof(list[0]) * length);
 	pass->length          = length;
@@ -927,7 +927,7 @@ replace_by_call:
 			mode  = get_type_mode(char_tp);
 
 			/* replace the strcmp by (*x) */
-			irn = new_rd_Load(dbg, block, mem, v, mode, 0);
+			irn = new_rd_Load(dbg, block, mem, v, mode, cons_none);
 			mem = new_r_Proj(irn, mode_M, pn_Load_M);
 			exc = new_r_Proj(irn, mode_X, pn_Load_X_except);
 			reg = new_r_Proj(irn, mode_X, pn_Load_X_regular);

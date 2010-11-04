@@ -77,5 +77,5 @@ const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg)
 		return reg->name;
 	}
 
-	return e->value;
+	return (const char*)e->value;
 }

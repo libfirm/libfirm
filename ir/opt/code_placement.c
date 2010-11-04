@@ -242,7 +242,7 @@ static void place_early(ir_graph *irg, waitq *worklist)
 
 	/* Work the content of the worklist. */
 	while (!waitq_empty(worklist)) {
-		ir_node *n = waitq_get(worklist);
+		ir_node *n = (ir_node*)waitq_get(worklist);
 		if (!irn_visited(n))
 			place_floats_early(n, worklist);
 	}
@@ -512,7 +512,7 @@ static void place_late(ir_graph *irg, waitq *worklist)
 
 	/* And now empty the worklist again... */
 	while (!waitq_empty(worklist)) {
-		ir_node *n = waitq_get(worklist);
+		ir_node *n = (ir_node*)waitq_get(worklist);
 		if (!irn_visited(n))
 			place_floats_late(n, worklist);
 	}

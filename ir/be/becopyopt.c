@@ -390,7 +390,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 static void co_collect_units(ir_node *irn, void *env)
 {
 	const arch_register_req_t *req;
-	copy_opt_t                *co  = env;
+	copy_opt_t                *co  = (copy_opt_t*)env;
 	unit_t *unit;
 
 	if (get_irn_mode(irn) == mode_T)
@@ -748,8 +748,8 @@ void co_complete_stats(const copy_opt_t *co, co_complete_stats_t *stat)
 
 static int compare_affinity_node_t(const void *k1, const void *k2, size_t size)
 {
-	const affinity_node_t *n1 = k1;
-	const affinity_node_t *n2 = k2;
+	const affinity_node_t *n1 = (const affinity_node_t*)k1;
+	const affinity_node_t *n2 = (const affinity_node_t*)k2;
 	(void) size;
 
 	return (n1->irn != n2->irn);
@@ -764,7 +764,7 @@ static void add_edge(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs)
 	new_node.irn        = n1;
 	new_node.degree     = 0;
 	new_node.neighbours = NULL;
-	node = set_insert(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
+	node = (affinity_node_t*)set_insert(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 
 	for (nbr = node->neighbours; nbr; nbr = nbr->next)
 		if (nbr->irn == n2) {
@@ -798,7 +798,7 @@ static inline void add_edges(copy_opt_t *co, ir_node *n1, ir_node *n2, int costs
 static void build_graph_walker(ir_node *irn, void *env)
 {
 	const arch_register_req_t *req;
-	copy_opt_t                *co  = env;
+	copy_opt_t                *co  = (copy_opt_t*)env;
 	int pos, max;
 
 	if (get_irn_mode(irn) == mode_T)
@@ -855,7 +855,7 @@ int co_gs_is_optimizable(copy_opt_t *co, ir_node *irn)
 	ASSERT_GS_AVAIL(co);
 
 	new_node.irn = irn;
-	n = set_find(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
+	n = (affinity_node_t*)set_find(co->nodes, &new_node, sizeof(new_node), hash_irn(new_node.irn));
 	if (n) {
 		return (n->degree > 0);
 	} else
@@ -1028,7 +1028,7 @@ static int ifg_is_dump_node(void *self, ir_node *irn)
 
 static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 {
-	co_ifg_dump_t             *env     = self;
+	co_ifg_dump_t             *env     = (co_ifg_dump_t*)self;
 	const arch_register_t     *reg     = arch_get_irn_register(irn);
 	const arch_register_req_t *req     = arch_get_register_req_out(irn);
 	int                        limited = arch_register_req_is(req, limited);
@@ -1055,7 +1055,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 
 static void ifg_dump_at_end(FILE *file, void *self)
 {
-	co_ifg_dump_t *env = self;
+	co_ifg_dump_t *env = (co_ifg_dump_t*)self;
 	affinity_node_t *a;
 
 	co_gs_foreach_aff_node(env->co, a) {

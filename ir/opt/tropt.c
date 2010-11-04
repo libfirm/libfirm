@@ -461,7 +461,7 @@ static int remove_Cmp_Null_cast(ir_node *cmp)
  */
 static void irn_optimize_class_cast(ir_node *n, void *env)
 {
-	int *changed = env;
+	int *changed = (int*)env;
 
 	if (is_Cast(n))
 		*changed |= cancel_out_casts(n);

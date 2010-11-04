@@ -102,14 +102,14 @@ static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes)
 			addr_const = new_r_Const_long(irg, mode_Iu, offset);
 			add        = new_r_Add(block, addr_src, addr_const, addr_mode);
 
-			load     = new_r_Load(block, mem, add, mode, 0);
+			load     = new_r_Load(block, mem, add, mode, cons_none);
 			load_res = new_r_Proj(load, mode, pn_Load_res);
 			load_mem = new_r_Proj(load, mode_M, pn_Load_M);
 
 			addr_const = new_r_Const_long(irg, mode_Iu, offset);
 			add        = new_r_Add(block, addr_dst, addr_const, addr_mode);
 
-			store     = new_r_Store(block, load_mem, add, load_res, 0);
+			store     = new_r_Store(block, load_mem, add, load_res, cons_none);
 			store_mem = new_r_Proj(store, mode_M, pn_Store_M);
 
 			mem = store_mem;
@@ -129,7 +129,7 @@ static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes)
  */
 static void find_copyb_nodes(ir_node *irn, void *ctx)
 {
-	walk_env_t *env = ctx;
+	walk_env_t *env = (walk_env_t*)ctx;
 	ir_type    *tp;
 	unsigned   size;
 	entry_t    *entry;
@@ -139,7 +139,7 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 
 		if (is_CopyB(pred) && get_Proj_proj(irn) != pn_CopyB_M) {
 			/* found an exception Proj: remove it from the list again */
-			entry = get_irn_link(pred);
+			entry = (entry_t*)get_irn_link(pred);
 			list_del(&entry->list);
 		}
 		return;

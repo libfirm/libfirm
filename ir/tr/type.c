@@ -148,7 +148,7 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 	int node_size;
 
 	node_size = offsetof(ir_type, attr) +  type_op->attr_size;
-	res = xmalloc(node_size);
+	res = (ir_type*)xmalloc(node_size);
 	memset(res, 0, node_size);
 
 	res->kind       = k_type;
@@ -1451,20 +1451,20 @@ void set_method_first_variadic_param_index(ir_type *method, int index)
 	method->attr.ma.first_variadic_param = index;
 }
 
-unsigned (get_method_additional_properties)(const ir_type *method)
+mtp_additional_properties (get_method_additional_properties)(const ir_type *method)
 {
 	return _get_method_additional_properties(method);
 }
 
-void (set_method_additional_properties)(ir_type *method, unsigned mask)
+void (set_method_additional_properties)(ir_type *method, mtp_additional_properties mask)
 {
 	_set_method_additional_properties(method, mask);
 }
 
-void (set_method_additional_property)(ir_type *method,
-                                      mtp_additional_property flag)
+void (add_method_additional_property)(ir_type *method,
+                                      mtp_additional_properties flag)
 {
-	_set_method_additional_property(method, flag);
+	_add_method_additional_properties(method, flag);
 }
 
 unsigned (get_method_calling_convention)(const ir_type *method)

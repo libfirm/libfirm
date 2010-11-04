@@ -136,12 +136,12 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
                                int32_t immediate_value)
 {
-	sparc_attr_t *attr           = get_irn_generic_attr(res);
+	sparc_attr_t *attr           = (sparc_attr_t*)get_irn_generic_attr(res);
 	attr->immediate_value_entity = entity;
 	attr->immediate_value        = immediate_value;
 }
 
-static void init_sparc_jmp_cond_attr(ir_node *node, int pnc, bool is_unsigned)
+static void init_sparc_jmp_cond_attr(ir_node *node, pn_Cmp pnc, bool is_unsigned)
 {
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
 	attr->pnc         = pnc;

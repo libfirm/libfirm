@@ -84,8 +84,8 @@ typedef struct q_set {
  */
 static int entry_cmp(const void *elt, const void *key)
 {
-	const entry_t *e1 = elt;
-	const entry_t *e2 = key;
+	const entry_t *e1 = (const entry_t*)elt;
+	const entry_t *e2 = (const entry_t*)key;
 
 	return (e1->q.ent != e2->q.ent) || (e1->q.pos != e2->q.pos) || (e1->q.tv != e2->q.tv);
 }
@@ -156,7 +156,7 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 			key->next    = NULL;
 
 			/* We insert our information in the set, where we collect the calls.*/
-			entry = pset_insert(hmap->map, key, hash_entry(key));
+			entry = (entry_t*)pset_insert(hmap->map, key, hash_entry(key));
 
 			if (entry != key)
 				obstack_free(&hmap->obst, key);
@@ -179,7 +179,7 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
  */
 static void collect_irg_calls(ir_node *call, void *env)
 {
-	q_set *hmap = env;
+	q_set *hmap = (q_set*)env;
 	ir_node *call_ptr;
 	ir_entity *callee;
 
@@ -232,18 +232,17 @@ static ident *get_clone_ident(ident *id, int pos, unsigned nr)
  */
 static void copy_nodes(ir_node *irn, void *env)
 {
-	ir_node *arg, *irg_args, *irn_copy;
-	int proj_nr;
-	ir_graph *clone_irg = env;
-
-	arg      = get_irg_link(clone_irg);
-	irg_args = get_Proj_pred(arg);
+	ir_graph *clone_irg = (ir_graph*)env;
+	ir_node  *arg       = (ir_node*)get_irg_link(clone_irg);
+	ir_node  *irg_args  = get_Proj_pred(arg);
+	ir_node  *irn_copy;
+	long      proj_nr;
 
 	/* Copy all nodes except the arg. */
 	if (irn != arg)
 		copy_irn_to_irg(irn, clone_irg);
 
-	irn_copy = get_irn_link(irn);
+	irn_copy = (ir_node*)get_irn_link(irn);
 
 	/* Fix argument numbers */
 	if (is_Proj(irn) && get_Proj_pred(irn) == irg_args) {
@@ -260,38 +259,39 @@ static void copy_nodes(ir_node *irn, void *env)
  */
 static void set_preds(ir_node *irn, void *env)
 {
-	int i;
-	ir_node *irn_copy, *pred, *arg;
-	ir_graph *clone_irg = env;
+	ir_graph *clone_irg = (ir_graph*)env;
+	ir_node  *arg       = (ir_node*)get_irg_link(clone_irg);
+	int       i;
+	ir_node  *irn_copy;
+	ir_node  *pred;
 
-	arg = get_irg_link(clone_irg);
 	/* Arg is the method argument, that we have replaced by a constant.*/
 	if (arg == irn)
 		return;
 
-	irn_copy  = get_irn_link(irn);
+	irn_copy = (ir_node*)get_irn_link(irn);
 
 	if (is_Block(irn)) {
 		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--) {
 			pred = get_Block_cfgpred(irn, i);
 			/* "End" block must be handled extra, because it is not matured.*/
 			if (get_irg_end_block(current_ir_graph) == irn)
-				add_immBlock_pred(get_irg_end_block(clone_irg), get_irn_link(pred));
+				add_immBlock_pred(get_irg_end_block(clone_irg), (ir_node*)get_irn_link(pred));
 			else
-				set_Block_cfgpred(irn_copy, i, get_irn_link(pred));
+				set_Block_cfgpred(irn_copy, i, (ir_node*)get_irn_link(pred));
 		}
 	} else {
 		/* First we set the block our copy if it is not a block.*/
-		set_nodes_block(irn_copy, get_irn_link(get_nodes_block(irn)));
+		set_nodes_block(irn_copy, (ir_node*)get_irn_link(get_nodes_block(irn)));
 		if (is_End(irn)) {
 			/* Handle the keep-alives. This must be done separately, because
 			   the End node was NOT copied */
 			for (i = 0; i < get_End_n_keepalives(irn); ++i)
-				add_End_keepalive(irn_copy, get_irn_link(get_End_keepalive(irn, i)));
+				add_End_keepalive(irn_copy, (ir_node*)get_irn_link(get_End_keepalive(irn, i)));
 		} else {
 			for (i = get_irn_arity(irn) - 1; i >= 0; i--) {
 				pred = get_irn_n(irn, i);
-				set_irn_n(irn_copy, i, get_irn_link(pred));
+				set_irn_n(irn_copy, i, (ir_node*)get_irn_link(pred));
 			}
 		}
 	}
@@ -617,7 +617,7 @@ void proc_cloning(float threshold)
 		/* We iterate the set and arrange the element of the set in a list.
 		   The elements are arranged dependent of their value descending.*/
 		if (hmap.map) {
-			foreach_pset(hmap.map, entry) {
+			foreach_pset(hmap.map, entry_t*, entry) {
 				entry->weight = calculate_weight(entry);
 
 				/*
@@ -683,17 +683,17 @@ void proc_cloning(float threshold)
 	obstack_free(&hmap.obst, NULL);
 }
 
-struct pass_t {
+typedef struct pass_t {
 	ir_prog_pass_t pass;
 	float          threshold;
-};
+} pass_t;
 
 /**
  * Wrapper to run proc_cloning() as an ir_prog pass.
  */
 static int proc_cloning_wrapper(ir_prog *irp, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 
 	(void)irp;
 	proc_cloning(pass->threshold);
@@ -703,7 +703,7 @@ static int proc_cloning_wrapper(ir_prog *irp, void *context)
 /* create a ir_prog pass */
 ir_prog_pass_t *proc_cloning_pass(const char *name, float threshold)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
+	pass_t *pass = XMALLOCZ(pass_t);
 
 	pass->threshold = threshold;
 	return def_prog_pass_constructor(

@@ -158,7 +158,7 @@ ir_type *get_irn_typeinfo_type(const ir_node *n)
 
 	entry = pmap_find(type_node_map, n);
 	if (entry != NULL)
-		res = entry->value;
+		res = (ir_type*) entry->value;
 
 	return res;
 }

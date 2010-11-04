@@ -79,8 +79,8 @@ struct be_fec_env_t {
 /** Compare 2 affinity edges (used in quicksort) */
 static int cmp_affinity(const void *d1, const void *d2)
 {
-	const affinity_edge_t * const *e1 = d1;
-	const affinity_edge_t * const *e2 = d2;
+	const affinity_edge_t * const *e1 = (const affinity_edge_t**)d1;
+	const affinity_edge_t * const *e2 = (const affinity_edge_t**)d2;
 
 	/* sort in descending order */
 	return (*e1)->affinity < (*e2)->affinity ? 1 : -1;
@@ -88,8 +88,8 @@ static int cmp_affinity(const void *d1, const void *d2)
 
 static int cmp_spill(const void* d1, const void* d2, size_t size)
 {
-	const spill_t* s1 = d1;
-	const spill_t* s2 = d2;
+	const spill_t* s1 = (const spill_t*)d1;
+	const spill_t* s2 = (const spill_t*)d2;
 	(void) size;
 
 	return s1->spill != s2->spill;
@@ -101,7 +101,7 @@ static spill_t *get_spill(be_fec_env_t *env, ir_node *node)
 	int hash = hash_irn(node);
 
 	spill.spill = node;
-	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
 
 	return res;
 }
@@ -129,13 +129,13 @@ static spill_t *collect_spill(be_fec_env_t *env, ir_node *node,
 
 	/* insert into set of spills if not already there */
 	spill.spill = node;
-	res         = set_find(env->spills, &spill, sizeof(spill), hash);
+	res         = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
 
 	if (res == NULL) {
 		spill.spillslot = set_count(env->spills);
 		spill.mode      = mode;
 		spill.alignment = align;
-		res             = set_insert(env->spills, &spill, sizeof(spill), hash);
+		res             = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
 		DB((dbg, DBG_COALESCING, "Slot %d: %+F\n", spill.spillslot, node));
 	} else {
 		assert(res->mode == mode);
@@ -156,7 +156,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 	assert(is_Phi(node));
 
 	spill.spill = node;
-	res = set_find(env->spills, &spill, sizeof(spill), hash);
+	res = (spill_t*)set_find(env->spills, &spill, sizeof(spill), hash);
 	if (res != NULL) {
 		assert(res->mode == mode);
 		assert(res->alignment == align);
@@ -167,7 +167,7 @@ static spill_t *collect_memphi(be_fec_env_t *env, ir_node *node,
 	spill.mode      = mode;
 	spill.alignment = align;
 	DB((dbg, DBG_COALESCING, "Slot %d: %+F\n", spill.spillslot, node));
-	res             = set_insert(env->spills, &spill, sizeof(spill), hash);
+	res             = (spill_t*)set_insert(env->spills, &spill, sizeof(spill), hash);
 
 	/* collect attached spills and mem-phis */
 	arity = get_irn_arity(node);
@@ -369,10 +369,11 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 		memset(spilllist, 0, spillcount * sizeof(spilllist[0]));
 	);
 
-	for (spill = set_first(env->spills), i = 0; spill != NULL;
-	    spill = set_next(env->spills), ++i) {
+	i = 0;
+	foreach_set(env->spills, spill_t*, spill) {
 		assert(spill->spillslot < spillcount);
 		spilllist[spill->spillslot] = spill;
+		++i;
 	}
 
 	for (i = 0; i < spillcount; ++i) {
@@ -493,8 +494,8 @@ typedef struct memperm_t {
 
 static int cmp_memperm(const void* d1, const void* d2, size_t size)
 {
-	const memperm_t* e1 = d1;
-	const memperm_t* e2 = d2;
+	const memperm_t* e1 = (const memperm_t*)d1;
+	const memperm_t* e2 = (const memperm_t*)d2;
 	(void) size;
 
 	return e1->block != e2->block;
@@ -508,12 +509,12 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 	entry.block = block;
 	hash        = hash_irn(block);
 
-	res = set_find(env->memperms, &entry, sizeof(entry), hash);
+	res = (memperm_t*)set_find(env->memperms, &entry, sizeof(entry), hash);
 
 	if (res == NULL) {
 		entry.entrycount = 0;
 		entry.entries = NULL;
-		res = set_insert(env->memperms, &entry, sizeof(entry), hash);
+		res = (memperm_t*)set_insert(env->memperms, &entry, sizeof(entry), hash);
 	}
 
 	return res;
@@ -593,9 +594,7 @@ static void assign_spillslots(be_fec_env_t *env)
 	int           i;
 
 	/* construct spillslots */
-	for (spill = set_first(env->spills); spill != NULL;
-		spill = set_next(env->spills)) {
-
+	foreach_set(env->spills, spill_t*, spill) {
 		int slotid = spill->spillslot;
 		const ir_mode *mode = spill->mode;
 		spill_slot_t *slot = & (spillslots[slotid]);
@@ -610,9 +609,7 @@ static void assign_spillslots(be_fec_env_t *env)
 		}
 	}
 
-	for (spill = set_first(env->spills); spill != NULL;
-	    spill = set_next(env->spills)) {
-
+	foreach_set(env->spills, spill_t*, spill) {
 		ir_node      *node   = spill->spill;
 		int           slotid = spill->spillslot;
 		spill_slot_t *slot;
@@ -703,7 +700,7 @@ static void create_memperms(be_fec_env_t *env)
 {
 	memperm_t *memperm;
 
-	for (memperm = set_first(env->memperms); memperm != NULL; memperm = set_next(env->memperms)) {
+	foreach_set(env->memperms, memperm_t*, memperm) {
 		ir_node         **nodes = ALLOCAN(ir_node*, memperm->entrycount);
 		memperm_entry_t  *entry;
 		ir_node          *blockend;
@@ -747,8 +744,7 @@ static int count_spillslots(const be_fec_env_t *env)
 	int slotcount;
 
 	slotcount = 0;
-	for (spill = set_first(env->spills); spill != NULL;
-	    spill = set_next(env->spills)) {
+	foreach_set(env->spills, spill_t*, spill) {
 		int spillslot = spill->spillslot;
 		if (!bitset_is_set(counted, spillslot)) {
 			slotcount++;
@@ -810,7 +806,7 @@ void be_assign_entities(be_fec_env_t *env,
  */
 static void collect_spills_walker(ir_node *node, void *data)
 {
-	be_fec_env_t                *env = data;
+	be_fec_env_t                *env = (be_fec_env_t*)data;
 	const ir_mode               *mode;
 	const arch_register_class_t *cls;
 	int                          align;

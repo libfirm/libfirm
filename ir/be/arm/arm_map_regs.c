@@ -48,40 +48,40 @@ const arch_register_t *arm_get_RegParam_reg(int n)
 
 /* Mapping to store registers in firm nodes */
 
-struct arm_irn_reg_assoc {
+typedef struct arm_irn_reg_assoc {
 	const ir_node *irn;
 	const arch_register_t *reg;
-};
+} arm_irn_reg_assoc;
 
 int arm_cmp_irn_reg_assoc(const void *a, const void *b, size_t size)
 {
-	const struct arm_irn_reg_assoc *x = a;
-	const struct arm_irn_reg_assoc *y = b;
+	const arm_irn_reg_assoc *x = (const arm_irn_reg_assoc*)a;
+	const arm_irn_reg_assoc *y = (const arm_irn_reg_assoc*)b;
 	(void) size;
 
 	return x->irn != y->irn;
 }
 
-static struct arm_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
+static arm_irn_reg_assoc *get_irn_reg_assoc(const ir_node *irn, set *reg_set)
 {
-	struct arm_irn_reg_assoc templ;
+	arm_irn_reg_assoc templ;
 	unsigned int hash;
 
 	templ.irn = irn;
 	templ.reg = NULL;
 	hash = HASH_PTR(irn);
 
-	return set_insert(reg_set, &templ, sizeof(templ), hash);
+	return (arm_irn_reg_assoc*)set_insert(reg_set, &templ, sizeof(templ), hash);
 }
 
 void arm_set_firm_reg(ir_node *irn, const arch_register_t *reg, set *reg_set)
 {
-	struct arm_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
+	arm_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	assoc->reg = reg;
 }
 
 const arch_register_t *arm_get_firm_reg(const ir_node *irn, set *reg_set)
 {
-	const struct arm_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
+	const arm_irn_reg_assoc *assoc = get_irn_reg_assoc(irn, reg_set);
 	return assoc->reg;
 }

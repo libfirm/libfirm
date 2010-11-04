@@ -52,7 +52,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
  */
 static void collect_call(ir_node *node, void *env)
 {
-	ir_node *head = env;
+	ir_node *head = (ir_node*)env;
 
 	if (is_Call(node)) {
 		set_irn_link(node, get_irn_link(head));
@@ -98,7 +98,8 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr)
 			irg_walk_graph(irg, firm_clear_link, collect_call, node);
 
 			/* iterate calls */
-			for (node = get_irn_link(node); node; node = get_irn_link(node)) {
+			for (node = (ir_node*)get_irn_link(node); node != NULL;
+			     node = (ir_node*)get_irn_link(node)) {
 				int i;
 				assert(is_Call(node));
 

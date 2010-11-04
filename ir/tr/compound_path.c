@@ -43,7 +43,7 @@ compound_graph_path *new_compound_graph_path(ir_type *tp, int length)
 	assert(is_compound_type(tp) || is_Array_type(tp));
 	assert(length > 0);
 
-	res = xmalloc(sizeof(*res) + (length-1) * sizeof(res->list[0]));
+	res = (compound_graph_path*)xmalloc(sizeof(*res) + (length-1) * sizeof(res->list[0]));
 	memset(res, 0, sizeof(*res) + (length-1) * sizeof(res->list[0]));
 	res->kind = k_ir_compound_graph_path;
 	res->tp   = tp;

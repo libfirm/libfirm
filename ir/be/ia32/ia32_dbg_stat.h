@@ -117,7 +117,7 @@
  */
 #define DBG_OPT_LOAD_LEA(oldn, n)                                \
 	do {                                                         \
-		hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_LOAD_LEA);  \
+		hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)FS_BE_IA32_LOAD_LEA);  \
 		__dbg_info_merge_pair(n, oldn, dbg_backend);             \
 	} while(0)
 
@@ -129,7 +129,7 @@
  */
 #define DBG_OPT_STORE_LEA(oldn, n)                                \
 	do {                                                          \
-		hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_STORE_LEA);  \
+		hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)FS_BE_IA32_STORE_LEA);  \
 		__dbg_info_merge_pair(n, oldn, dbg_backend);              \
 	} while(0)
 
@@ -141,7 +141,7 @@
  */
 #define DBG_OPT_AM_S(oldn, n)                                \
 	do {                                                     \
-		hook_merge_nodes(&n, 1, &oldn, 1, FS_BE_IA32_AM_S);  \
+		hook_merge_nodes(&n, 1, &oldn, 1, (hook_opt_kind)FS_BE_IA32_AM_S);  \
 		__dbg_info_merge_pair(n, oldn, dbg_backend);         \
 	} while(0)
 
@@ -178,7 +178,7 @@
  */
 #define DBG_OPT_2ADDRCPY(cpy)                                    \
 	do {                                                         \
-		hook_merge_nodes(NULL, 0, &cpy, 1, FS_BE_IA32_2ADDRCPY); \
+		hook_merge_nodes(NULL, 0, &cpy, 1, (hook_opt_kind)FS_BE_IA32_2ADDRCPY); \
 	} while(0)
 
 /**
@@ -189,7 +189,7 @@
  */
 #define DBG_OPT_SPILL2ST(spill, store)                               \
 	do {                                                             \
-		hook_merge_nodes(&store, 1, &spill, 1, FS_BE_IA32_SPILL2ST); \
+		hook_merge_nodes(&store, 1, &spill, 1, (hook_opt_kind)FS_BE_IA32_SPILL2ST); \
 		__dbg_info_merge_pair(store, spill, dbg_backend);            \
 	} while(0)
 
@@ -201,7 +201,7 @@
  */
 #define DBG_OPT_RELOAD2LD(rload, load)                               \
 	do {                                                             \
-		hook_merge_nodes(&load, 1, &rload, 1, FS_BE_IA32_RELOAD2LD); \
+		hook_merge_nodes(&load, 1, &rload, 1, (hook_opt_kind)FS_BE_IA32_RELOAD2LD); \
 		__dbg_info_merge_pair(load, rload, dbg_backend);             \
 	} while(0)
 
@@ -213,7 +213,7 @@
  */
 #define DBG_OPT_SUB2NEGADD(sub, nadd)                               \
 	do {                                                            \
-		hook_merge_nodes(&nadd, 1, &sub, 1, FS_BE_IA32_SUB2NEGADD); \
+		hook_merge_nodes(&nadd, 1, &sub, 1, (hook_opt_kind)FS_BE_IA32_SUB2NEGADD); \
 		__dbg_info_merge_pair(nadd, sub, dbg_backend);              \
 	} while(0)
 
@@ -225,7 +225,7 @@
  */
 #define DBG_OPT_LEA2ADD(lea, nadd)                               \
 	do {                                                         \
-		hook_merge_nodes(&nadd, 1, &lea, 1, FS_BE_IA32_LEA2ADD); \
+		hook_merge_nodes(&nadd, 1, &lea, 1, (hook_opt_kind)FS_BE_IA32_LEA2ADD); \
 		__dbg_info_merge_pair(nadd, lea, dbg_backend);           \
 	} while(0)
 

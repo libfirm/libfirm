@@ -1940,7 +1940,7 @@ int irn_verify(ir_node *n)
  */
 static void verify_wrap(ir_node *node, void *env)
 {
-	int *res = env;
+	int *res = (int*)env;
 	*res = irn_verify_irg(node, current_ir_graph);
 }
 
@@ -1950,7 +1950,7 @@ static void verify_wrap(ir_node *node, void *env)
  */
 static void verify_wrap_ssa(ir_node *node, void *env)
 {
-	int *res = env;
+	int *res = (int*)env;
 
 	*res = irn_verify_irg(node, current_ir_graph);
 	if (*res) {
@@ -2008,17 +2008,17 @@ int irg_verify(ir_graph *irg, unsigned flags)
 	return res;
 }
 
-struct pass_t {
+typedef struct pass_t {
 	ir_graph_pass_t pass;
 	unsigned        flags;
-};
+} pass_t;
 
 /**
  * Wrapper to irg_verify to be run as an ir_graph pass.
  */
 static int irg_verify_wrapper(ir_graph *irg, void *context)
 {
-	struct pass_t *pass = context;
+	pass_t *pass = (pass_t*)context;
 	irg_verify(irg, pass->flags);
 	/* do NOT rerun the pass if verify is ok :-) */
 	return 0;
@@ -2027,7 +2027,7 @@ static int irg_verify_wrapper(ir_graph *irg, void *context)
 /* Creates an ir_graph pass for irg_verify(). */
 ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
+	pass_t *pass = XMALLOCZ(pass_t);
 
 	def_graph_pass_constructor(
 		&pass->pass, name ? name : "irg_verify", irg_verify_wrapper);
@@ -2068,7 +2068,7 @@ typedef struct verify_bad_env_t {
  */
 static void check_bads(ir_node *node, void *env)
 {
-	verify_bad_env_t *venv = env;
+	verify_bad_env_t *venv = (verify_bad_env_t*)env;
 	int i, arity = get_irn_arity(node);
 
 	if (is_Block(node)) {

@@ -197,7 +197,7 @@ static unsigned char *value_to_condensed(mul_env *env, ir_tarval *tv, int *pr)
 	int     bits = get_mode_size_bits(mode);
 	char    *bitstr = get_tarval_bitpattern(tv);
 	int     i, l, r;
-	unsigned char *R = obstack_alloc(&env->obst, bits);
+	unsigned char *R = (unsigned char*)obstack_alloc(&env->obst, bits);
 
 	l = r = 0;
 	for (i = 0; bitstr[i] != '\0'; ++i) {
@@ -241,7 +241,7 @@ static int calculate_gain(unsigned char *R, int r)
  */
 static unsigned char *complement_condensed(mul_env *env, unsigned char *R, int r, int gain, int *prs)
 {
-	unsigned char *value = obstack_alloc(&env->obst, env->bits);
+	unsigned char *value = (unsigned char*)obstack_alloc(&env->obst, env->bits);
 	int i, l, j;
 	unsigned char c;
 
@@ -352,7 +352,7 @@ static instruction *decompose_mul(mul_env *env, unsigned char *R, int r, ir_tarv
 
 			R1 = complement_condensed(env, R, r, gain, &r1);
 			r2 = r - gain + 1;
-			R2 = obstack_alloc(&env->obst, r2);
+			R2 = (unsigned char*)obstack_alloc(&env->obst, r2);
 
 			k = 1;
 			for (i = 0; i < gain; ++i) {

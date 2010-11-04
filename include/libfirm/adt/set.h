@@ -189,7 +189,7 @@ FIRM_API void set_break(set *set);
  * @param set    the set
  * @param entry  the iterator
  */
-#define foreach_set(set, entry) for (entry = set_first(set); entry; entry = set_next(set))
+#define foreach_set(set, type, entry) for (entry = (type) set_first(set); entry; entry = (type) set_next(set))
 
 /* implementation specific */
 #define new_set(cmp, slots) (SET_TRACE (new_set) ((cmp), (slots)))

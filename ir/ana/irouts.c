@@ -306,7 +306,7 @@ static int _count_outs(ir_node *n)
 	int start, i, res, irn_arity;
 
 	mark_irn_visited(n);
-	n->out = INT_TO_PTR(1);     /* Space for array size. */
+	n->out = (ir_def_use_edge*) INT_TO_PTR(1);     /* Space for array size. */
 
 	start = is_Block(n) ? 0 : -1;
 	irn_arity = get_irn_arity(n);
@@ -326,7 +326,7 @@ static int _count_outs(ir_node *n)
 			res += _count_outs(skipped_pred);
 
 		/*count my Def-Use edges */
-		skipped_pred->out = INT_TO_PTR(PTR_TO_INT(skipped_pred->out) + 1);
+		skipped_pred->out = (ir_def_use_edge*) INT_TO_PTR(PTR_TO_INT(skipped_pred->out) + 1);
 	}
 	return res;
 }
@@ -348,7 +348,7 @@ static int count_outs(ir_graph *irg)
 	for (i = anchor_last - 1; i >= 0; --i) {
 		n = get_irg_anchor(irg, i);
 		if (!irn_visited_else_mark(n)) {
-			n->out = INT_TO_PTR(1);
+			n->out = (ir_def_use_edge*) INT_TO_PTR(1);
 			++res;
 		}
 	}

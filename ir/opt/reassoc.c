@@ -593,7 +593,7 @@ static int reassoc_Shl(ir_node **node)
  */
 static void wq_walker(ir_node *n, void *env)
 {
-	walker_t *wenv = env;
+	walker_t *wenv = (walker_t*)env;
 
 	set_irn_link(n, NULL);
 	if (!is_Block(n)) {
@@ -619,7 +619,7 @@ static void do_reassociation(walker_t *wenv)
 	ir_node *n, *blk;
 
 	while (! waitq_empty(wenv->wq)) {
-		n = waitq_get(wenv->wq);
+		n = (ir_node*)waitq_get(wenv->wq);
 		set_irn_link(n, NULL);
 
 		blk = get_nodes_block(n);
@@ -913,9 +913,9 @@ transform:
  */
 static void reverse_rules(ir_node *node, void *env)
 {
-	walker_t *wenv = env;
-	ir_mode *mode = get_irn_mode(node);
-	ir_graph *irg = get_irn_irg(node);
+	walker_t *wenv = (walker_t*)env;
+	ir_graph *irg  = get_irn_irg(node);
+	ir_mode  *mode = get_irn_mode(node);
 	int res;
 
 	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */

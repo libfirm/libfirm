@@ -332,7 +332,7 @@ void sparc_emit_fp_mode_suffix(const ir_node *node)
 
 static ir_node *get_jump_target(const ir_node *jump)
 {
-	return get_irn_link(jump);
+	return (ir_node*)get_irn_link(jump);
 }
 
 /**
@@ -352,7 +352,7 @@ static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 static bool ba_is_fallthrough(const ir_node *node)
 {
 	ir_node *block      = get_nodes_block(node);
-	ir_node *next_block = get_irn_link(block);
+	ir_node *next_block = (ir_node*)get_irn_link(block);
 	return get_irn_link(node) == next_block;
 }
 
@@ -801,7 +801,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	block = get_nodes_block(node);
 
 	/* we have a block schedule */
-	next_block = get_irn_link(block);
+	next_block = (ir_node*)get_irn_link(block);
 
 	if (get_irn_link(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
