@@ -106,7 +106,6 @@
 #include "irverify.h"
 #include "lowering.h"
 #include "rta.h"
-#include "seqnumbers.h"
 #include "structure.h"
 #include "timing.h"
 #include "trouts.h"
