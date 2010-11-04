@@ -1461,8 +1461,8 @@ void (set_method_additional_properties)(ir_type *method, mtp_additional_properti
 	_set_method_additional_properties(method, mask);
 }
 
-void (add_method_additional_property)(ir_type *method,
-                                      mtp_additional_properties flag)
+void (add_method_additional_properties)(ir_type *method,
+                                        mtp_additional_properties flag)
 {
 	_add_method_additional_properties(method, flag);
 }
