@@ -29,11 +29,11 @@
 
 #include "pbqp_t.h"
 
-struct pbqp_edge {
-	pbqp_node   *src;                  /* Source index. */
-	pbqp_node   *tgt;                  /* Target index. */
-	pbqp_matrix *costs;                /* Cost matrix. */
-	unsigned     bucket_index;         /* Index of edge bucket. */
+struct pbqp_edge_t {
+	pbqp_node_t   *src;                  /* Source index. */
+	pbqp_node_t   *tgt;                  /* Target index. */
+	pbqp_matrix_t *costs;                /* Cost matrix. */
+	unsigned       bucket_index;         /* Index of edge bucket. */
 };
 
 #endif /* KAPS_PBQP_EDGE_T_H */

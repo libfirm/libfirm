@@ -50,7 +50,7 @@ static const char *cost2a(num const cost)
 }
 
 /* print vector */
-static void dump_vector(FILE *f, vector *vec)
+static void dump_vector(FILE *f, vector_t *vec)
 {
 	unsigned index;
 	assert(vec);
@@ -69,7 +69,7 @@ static void dump_vector(FILE *f, vector *vec)
 	fprintf(f, " )</span>\n");
 }
 
-static void dump_matrix(FILE *f, pbqp_matrix *mat)
+static void dump_matrix(FILE *f, pbqp_matrix_t *mat)
 {
 	unsigned row, col;
 	assert(mat);
@@ -89,7 +89,7 @@ static void dump_matrix(FILE *f, pbqp_matrix *mat)
 	fprintf(f, "\t\\end{pmatrix}\n");
 }
 
-void dump_edge(FILE *file, pbqp_edge *edge)
+void dump_edge(FILE *file, pbqp_edge_t *edge)
 {
 	fputs("<tex>\n", file);
 	fprintf(file, "\t\\overline\n{C}_{%d,%d}=\n",
@@ -98,7 +98,7 @@ void dump_edge(FILE *file, pbqp_edge *edge)
 	fputs("</tex><br>", file);
 }
 
-static void dump_edge_costs(pbqp *pbqp)
+static void dump_edge_costs(pbqp_t *pbqp)
 {
 	unsigned src_index;
 
@@ -107,7 +107,7 @@ static void dump_edge_costs(pbqp *pbqp)
 
 	fputs("<p>", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
-		pbqp_node *src_node = get_node(pbqp, src_index);
+		pbqp_node_t *src_node = get_node(pbqp, src_index);
 
 		if (!src_node)
 			continue;
@@ -115,8 +115,8 @@ static void dump_edge_costs(pbqp *pbqp)
 		unsigned edge_index;
 		unsigned len = ARR_LEN(src_node->edges);
 		for (edge_index = 0; edge_index < len; ++edge_index) {
-			pbqp_edge *edge = src_node->edges[edge_index];
-			unsigned tgt_index = edge->tgt->index;
+			pbqp_edge_t *edge      = src_node->edges[edge_index];
+			unsigned     tgt_index = edge->tgt->index;
 			if (src_index < tgt_index) {
 				dump_edge(pbqp->dump_file, edge);
 			}
@@ -125,7 +125,7 @@ static void dump_edge_costs(pbqp *pbqp)
 	fputs("</p>", pbqp->dump_file);
 }
 
-void dump_node(FILE *file, pbqp_node *node)
+void dump_node(FILE *file, pbqp_node_t *node)
 {
 	assert(file);
 
@@ -136,7 +136,7 @@ void dump_node(FILE *file, pbqp_node *node)
 	}
 }
 
-static void dump_node_costs(pbqp *pbqp)
+static void dump_node_costs(pbqp_t *pbqp)
 {
 	unsigned index;
 
@@ -158,7 +158,7 @@ void dump_section(FILE *f, int level, const char *txt)
 	fprintf(f, "<h%d>%s</h%d>\n", level, txt, level);
 }
 
-void pbqp_dump_graph(pbqp *pbqp)
+void pbqp_dump_graph(pbqp_t *pbqp)
 {
 	unsigned src_index;
 
@@ -167,14 +167,14 @@ void pbqp_dump_graph(pbqp *pbqp)
 
 	fputs("<p>\n<graph>\n\tgraph input {\n", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
-		pbqp_node *node = get_node(pbqp, src_index);
+		pbqp_node_t *node = get_node(pbqp, src_index);
 		if (node && !node_is_reduced(node)) {
 			fprintf(pbqp->dump_file, "\t n%d;\n", src_index);
 		}
 	}
 
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
-		pbqp_node *node = get_node(pbqp, src_index);
+		pbqp_node_t *node = get_node(pbqp, src_index);
 
 		if (!node)
 			continue;
@@ -185,8 +185,8 @@ void pbqp_dump_graph(pbqp *pbqp)
 		unsigned len = ARR_LEN(node->edges);
 		unsigned edge_index;
 		for (edge_index = 0; edge_index < len; ++edge_index) {
-			pbqp_node *tgt_node = node->edges[edge_index]->tgt;
-			unsigned tgt_index = tgt_node->index;
+			pbqp_node_t *tgt_node  = node->edges[edge_index]->tgt;
+			unsigned     tgt_index = tgt_node->index;
 
 			if (node_is_reduced(tgt_node))
 				continue;
@@ -200,7 +200,7 @@ void pbqp_dump_graph(pbqp *pbqp)
 	fputs("\t}\n</graph>\n</p>\n", pbqp->dump_file);
 }
 
-void pbqp_dump_input(pbqp *pbqp)
+void pbqp_dump_input(pbqp_t *pbqp)
 {
 	assert(pbqp);
 	assert(pbqp->dump_file);
@@ -214,7 +214,7 @@ void pbqp_dump_input(pbqp *pbqp)
 	dump_edge_costs(pbqp);
 }
 
-void dump_simplifyedge(pbqp *pbqp, pbqp_edge *edge)
+void dump_simplifyedge(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
 	assert(pbqp);
 	assert(pbqp->dump_file);

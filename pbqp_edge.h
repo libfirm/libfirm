@@ -29,12 +29,13 @@
 
 #include "pbqp_t.h"
 
-pbqp_edge *alloc_edge(pbqp *pbqp, int src_index, int tgt_index, pbqp_matrix *costs);
+pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
+                        pbqp_matrix_t *costs);
 
-pbqp_edge *pbqp_edge_deep_copy(pbqp *pbqp, pbqp_edge *edge,
-		pbqp_node *src_node, pbqp_node *tgt_node);
+pbqp_edge_t *pbqp_edge_deep_copy(pbqp_t *pbqp, pbqp_edge_t *edge,
+                                 pbqp_node_t *src_node, pbqp_node_t *tgt_node);
 
-void delete_edge(pbqp_edge *edge);
-unsigned is_deleted(pbqp_edge *edge);
+void delete_edge(pbqp_edge_t *edge);
+unsigned is_deleted(pbqp_edge_t *edge);
 
 #endif /* KAPS_PBQP_EDGE_H */

@@ -29,15 +29,15 @@
 
 #include "pbqp_t.h"
 
-void pbqp_dump_input(pbqp *pbqp);
+void pbqp_dump_input(pbqp_t *pbqp);
 
-void pbqp_dump_graph(pbqp *pbqp);
+void pbqp_dump_graph(pbqp_t *pbqp);
 
-void dump_simplifyedge(pbqp *pbqp, pbqp_edge *edge);
+void dump_simplifyedge(pbqp_t *pbqp, pbqp_edge_t *edge);
 
 void dump_section(FILE *f, int level, const char *txt);
 
-void dump_node(FILE *file, pbqp_node *node);
-void dump_edge(FILE *file, pbqp_edge *edge);
+void dump_node(FILE *file, pbqp_node_t *node);
+void dump_edge(FILE *file, pbqp_edge_t *edge);
 
 #endif /* KAPS_HTML_DUMPER_H */

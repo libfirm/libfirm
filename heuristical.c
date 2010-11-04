@@ -46,10 +46,10 @@
 
 #include "timing.h"
 
-static void apply_RN(pbqp *pbqp)
+static void apply_RN(pbqp_t *pbqp)
 {
-	pbqp_node   *node         = NULL;
-	unsigned     min_index    = 0;
+	pbqp_node_t *node      = NULL;
+	unsigned     min_index = 0;
 
 	assert(pbqp);
 
@@ -87,7 +87,7 @@ static void apply_RN(pbqp *pbqp)
 	select_alternative(node, min_index);
 }
 
-static void apply_heuristic_reductions(pbqp *pbqp)
+static void apply_heuristic_reductions(pbqp_t *pbqp)
 {
 	for (;;) {
 		if (edge_bucket_get_length(edge_bucket) > 0) {
@@ -104,7 +104,7 @@ static void apply_heuristic_reductions(pbqp *pbqp)
 	}
 }
 
-void solve_pbqp_heuristical(pbqp *pbqp)
+void solve_pbqp_heuristical(pbqp_t *pbqp)
 {
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);

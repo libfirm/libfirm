@@ -11,6 +11,6 @@
 #include "pbqp_t.h"
 #include "plist.h"
 
-void solve_pbqp_heuristical_co_ld(pbqp *pbqp, plist_t *rpeo);
+void solve_pbqp_heuristical_co_ld(pbqp_t *pbqp, plist_t *rpeo);
 
 #endif /* HEURISTICAL_CO_LD_H_ */

@@ -29,9 +29,9 @@
 
 #include "pbqp_t.h"
 
-typedef struct pbqp_matrix pbqp_matrix;
+typedef struct pbqp_matrix_t pbqp_matrix_t;
 
-struct pbqp_matrix {
+struct pbqp_matrix_t {
 	unsigned rows;
 	unsigned cols;
 	num entries[];

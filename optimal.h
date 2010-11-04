@@ -29,29 +29,29 @@
 
 #include "pbqp_t.h"
 
-extern pbqp_edge **edge_bucket;
-extern pbqp_node **node_buckets[4];
-extern pbqp_node **reduced_bucket;
-extern pbqp_node  *merged_node;
+extern pbqp_edge_t **edge_bucket;
+extern pbqp_node_t **node_buckets[4];
+extern pbqp_node_t **reduced_bucket;
+extern pbqp_node_t  *merged_node;
 
-void apply_edge(pbqp *pbqp);
+void apply_edge(pbqp_t *pbqp);
 
-void apply_RI(pbqp *pbqp);
-void apply_RII(pbqp *pbqp);
-void apply_RM(pbqp *pbqp, pbqp_node *node);
+void apply_RI(pbqp_t *pbqp);
+void apply_RII(pbqp_t *pbqp);
+void apply_RM(pbqp_t *pbqp, pbqp_node_t *node);
 
-void back_propagate(pbqp *pbqp);
-num determine_solution(pbqp *pbqp);
-void fill_node_buckets(pbqp *pbqp);
+void back_propagate(pbqp_t *pbqp);
+num determine_solution(pbqp_t *pbqp);
+void fill_node_buckets(pbqp_t *pbqp);
 void free_buckets(void);
-unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node);
-pbqp_node *get_node_with_max_degree(void);
-void initial_simplify_edges(pbqp *pbqp);
-void select_alternative(pbqp_node *node, unsigned selected_index);
-void simplify_edge(pbqp *pbqp, pbqp_edge *edge);
-void reorder_node_after_edge_deletion(pbqp_node *node);
-void reorder_node_after_edge_insertion(pbqp_node *node);
+unsigned get_local_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node);
+pbqp_node_t *get_node_with_max_degree(void);
+void initial_simplify_edges(pbqp_t *pbqp);
+void select_alternative(pbqp_node_t *node, unsigned selected_index);
+void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge);
+void reorder_node_after_edge_deletion(pbqp_node_t *node);
+void reorder_node_after_edge_insertion(pbqp_node_t *node);
 
-int node_is_reduced(pbqp_node *node);
+int node_is_reduced(pbqp_node_t *node);
 
 #endif /* KAPS_OPTIMAL_H */

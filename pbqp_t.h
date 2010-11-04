@@ -50,15 +50,15 @@
 #include "matrix_t.h"
 #include "vector_t.h"
 
-typedef struct pbqp_edge pbqp_edge;
-typedef struct pbqp_node pbqp_node;
-typedef struct pbqp      pbqp;
+typedef struct pbqp_edge_t pbqp_edge_t;
+typedef struct pbqp_node_t pbqp_node_t;
+typedef struct pbqp_t      pbqp_t;
 
-struct pbqp {
+struct pbqp_t {
 	struct obstack obstack;            /* Obstack. */
 	num            solution;           /* Computed solution. */
 	size_t         num_nodes;          /* Number of PBQP nodes. */
-	pbqp_node    **nodes;              /* Nodes of PBQP. */
+	pbqp_node_t  **nodes;              /* Nodes of PBQP. */
 	FILE          *dump_file;          /* File to dump in. */
 #if KAPS_STATISTIC
 	unsigned       num_bf;             /* Number of brute force reductions. */

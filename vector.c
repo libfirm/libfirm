@@ -54,10 +54,10 @@ num pbqp_add(num x, num y)
 	return res;
 }
 
-vector *vector_alloc(pbqp *pbqp, unsigned length)
+vector_t *vector_alloc(pbqp_t *pbqp, unsigned length)
 {
 	assert(length > 0);
-	vector *vec = obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
+	vector_t *vec = (vector_t*)obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
 	assert(vec);
 
 	vec->len = length;
@@ -66,16 +66,16 @@ vector *vector_alloc(pbqp *pbqp, unsigned length)
 	return vec;
 }
 
-vector *vector_copy(pbqp *pbqp, vector *v)
+vector_t *vector_copy(pbqp_t *pbqp, vector_t *v)
 {
 	unsigned  len  = v->len;
-	vector   *copy = obstack_copy(&pbqp->obstack, v, sizeof(*copy) + sizeof(*copy->entries) * len);
+	vector_t *copy = (vector_t*)obstack_copy(&pbqp->obstack, v, sizeof(*copy) + sizeof(*copy->entries) * len);
 	assert(copy);
 
 	return copy;
 }
 
-void vector_add(vector *sum, vector *summand)
+void vector_add(vector_t *sum, vector_t *summand)
 {
 	int i;
 	int len;
@@ -92,21 +92,21 @@ void vector_add(vector *sum, vector *summand)
 	}
 }
 
-void vector_set(vector *vec, unsigned index, num value)
+void vector_set(vector_t *vec, unsigned index, num value)
 {
 	assert(index < vec->len);
 	vec->entries[index].data = value;
 }
 
 #if KAPS_ENABLE_VECTOR_NAMES
-void vector_set_description(vector *vec, unsigned index, const char *name)
+void vector_set_description(vector_t *vec, unsigned index, const char *name)
 {
 	assert(index < vec->len);
 	vec->entries[index].name = name;
 }
 #endif
 
-void vector_add_value(vector *vec, num value)
+void vector_add_value(vector_t *vec, num value)
 {
 	unsigned index;
 	unsigned len;
@@ -120,7 +120,7 @@ void vector_add_value(vector *vec, num value)
 	}
 }
 
-void vector_add_matrix_col(vector *vec, pbqp_matrix *mat, unsigned col_index)
+void vector_add_matrix_col(vector_t *vec, pbqp_matrix_t *mat, unsigned col_index)
 {
 	unsigned index;
 	unsigned len;
@@ -137,7 +137,7 @@ void vector_add_matrix_col(vector *vec, pbqp_matrix *mat, unsigned col_index)
 	}
 }
 
-void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index)
+void vector_add_matrix_row(vector_t *vec, pbqp_matrix_t *mat, unsigned row_index)
 {
 	unsigned index;
 	unsigned len;
@@ -155,7 +155,7 @@ void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index)
 	}
 }
 
-num vector_get_min(vector *vec)
+num vector_get_min(vector_t *vec)
 {
 	unsigned index;
 	unsigned len;
@@ -177,7 +177,7 @@ num vector_get_min(vector *vec)
 	return min;
 }
 
-unsigned vector_get_min_index(vector *vec)
+unsigned vector_get_min_index(vector_t *vec)
 {
 	unsigned index;
 	unsigned len;

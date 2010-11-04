@@ -28,13 +28,13 @@
 #include "plist.h"
 #include "timing.h"
 
-static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *edge;
-	pbqp_node   *other;
-	pbqp_matrix *mat;
-	vector      *vec;
-	int          is_src;
+	pbqp_edge_t   *edge;
+	pbqp_node_t   *other;
+	pbqp_matrix_t *mat;
+	vector_t      *vec;
+	int            is_src;
 
 	assert(pbqp);
 	assert(node);
@@ -65,20 +65,20 @@ static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 #endif
 }
 
-static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *src_edge   = node->edges[0];
-	pbqp_edge   *tgt_edge   = node->edges[1];
-	int          src_is_src = src_edge->src == node;
-	int          tgt_is_src = tgt_edge->src == node;
-	pbqp_matrix *src_mat;
-	pbqp_matrix *tgt_mat;
-	pbqp_node   *src_node;
-	pbqp_node   *tgt_node;
-	vector      *vec;
-	vector      *node_vec;
-	unsigned     col_index;
-	unsigned     row_index;
+	pbqp_edge_t   *src_edge   = node->edges[0];
+	pbqp_edge_t   *tgt_edge   = node->edges[1];
+	int            src_is_src = src_edge->src == node;
+	int            tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix_t *src_mat;
+	pbqp_matrix_t *tgt_mat;
+	pbqp_node_t   *src_node;
+	pbqp_node_t   *tgt_node;
+	vector_t      *vec;
+	vector_t      *node_vec;
+	unsigned       col_index;
+	unsigned       row_index;
 
 	assert(pbqp);
 
@@ -96,8 +96,8 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 
 	/* Swap nodes if necessary. */
 	if (tgt_node->index < src_node->index) {
-		pbqp_node *tmp_node;
-		pbqp_edge *tmp_edge;
+		pbqp_node_t *tmp_node;
+		pbqp_edge_t *tmp_edge;
 
 		tmp_node = src_node;
 		src_node = tgt_node;
@@ -144,12 +144,12 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 	obstack_free(&pbqp->obstack, vec);
 }
 
-static void back_propagate_RN(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RN(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	vector    *vec        = NULL;
-	pbqp_node *neighbor   = NULL;
-	pbqp_edge *edge       = NULL;
-	unsigned   edge_index = 0;
+	vector_t    *vec        = NULL;
+	pbqp_node_t *neighbor   = NULL;
+	pbqp_edge_t *edge       = NULL;
+	unsigned     edge_index = 0;
 
 	assert(pbqp);
 
@@ -180,7 +180,7 @@ static void back_propagate_RN(pbqp *pbqp, pbqp_node *node)
 	obstack_free(&pbqp->obstack, vec);
 }
 
-static void back_propagate_ld(pbqp *pbqp)
+static void back_propagate_ld(pbqp_t *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len   = node_bucket_get_length(reduced_bucket);
@@ -194,7 +194,7 @@ static void back_propagate_ld(pbqp *pbqp)
 #endif
 
 	for (node_index = node_len; node_index > 0; --node_index) {
-		pbqp_node *node = reduced_bucket[node_index - 1];
+		pbqp_node_t *node = reduced_bucket[node_index - 1];
 
 		switch (pbqp_node_get_degree(node)) {
 			case 1:
@@ -210,15 +210,15 @@ static void back_propagate_ld(pbqp *pbqp)
 	}
 }
 
-static void merge_into_RN_node(pbqp *pbqp, plist_t *rpeo)
+static void merge_into_RN_node(pbqp_t *pbqp, plist_t *rpeo)
 {
-	pbqp_node *node     = NULL;
+	pbqp_node_t *node = NULL;
 
 	assert(pbqp);
 
 	do {
 		/* get last element from reverse perfect elimination order */
-		node = plist_last(rpeo)->data;
+		node = (pbqp_node_t*)plist_last(rpeo)->data;
 		/* remove element from reverse perfect elimination order */
 		plist_erase(rpeo, plist_last(rpeo));
 		/* insert node at the beginning of rpeo so the rpeo already exits after pbqp solving */
@@ -232,10 +232,10 @@ static void merge_into_RN_node(pbqp *pbqp, plist_t *rpeo)
 	apply_RM(pbqp, node);
 }
 
-static void apply_RN_co_without_selection(pbqp *pbqp)
+static void apply_RN_co_without_selection(pbqp_t *pbqp)
 {
-	pbqp_node *node;
-	unsigned   edge_index;
+	pbqp_node_t *node;
+	unsigned     edge_index;
 
 	assert(pbqp);
 
@@ -257,8 +257,8 @@ static void apply_RN_co_without_selection(pbqp *pbqp)
 
 	/* Disconnect neighbor nodes */
 	for(edge_index = 0; edge_index < pbqp_node_get_degree(node); edge_index++) {
-		pbqp_edge *edge;
-		pbqp_node *neighbor;
+		pbqp_edge_t *edge;
+		pbqp_node_t *neighbor;
 
 		/* get neighbor node */
 		edge = node->edges[edge_index];
@@ -283,7 +283,7 @@ static void apply_RN_co_without_selection(pbqp *pbqp)
 	node_bucket_insert(&reduced_bucket, node);
 }
 
-static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
+static void apply_heuristic_reductions_co(pbqp_t *pbqp, plist_t *rpeo)
 {
 	#if KAPS_TIMING
 		/* create timers */
@@ -357,7 +357,7 @@ static void apply_heuristic_reductions_co(pbqp *pbqp, plist_t *rpeo)
 	}
 }
 
-void solve_pbqp_heuristical_co_ld(pbqp *pbqp, plist_t *rpeo)
+void solve_pbqp_heuristical_co_ld(pbqp_t *pbqp, plist_t *rpeo)
 {
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);

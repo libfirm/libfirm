@@ -48,9 +48,9 @@ static int dump = 0;
 #endif
 
 /* Forward declarations. */
-static void apply_Brute_Force(pbqp *pbqp);
+static void apply_Brute_Force(pbqp_t *pbqp);
 
-static void apply_brute_force_reductions(pbqp *pbqp)
+static void apply_brute_force_reductions(pbqp_t *pbqp)
 {
 	for (;;) {
 		if (edge_bucket_get_length(edge_bucket) > 0) {
@@ -67,14 +67,14 @@ static void apply_brute_force_reductions(pbqp *pbqp)
 	}
 }
 
-static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
+static unsigned get_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	vector      *node_vec;
-	unsigned     node_index;
-	unsigned     node_len;
-	unsigned     min_index    = 0;
-	num          min          = INF_COSTS;
-	unsigned     bucket_index;
+	vector_t *node_vec;
+	unsigned  node_index;
+	unsigned  node_len;
+	unsigned  min_index    = 0;
+	num       min          = INF_COSTS;
+	unsigned  bucket_index;
 
 	assert(pbqp);
 	assert(node);
@@ -83,12 +83,12 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	bucket_index = node->bucket_index;
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		pbqp_node_bucket bucket_deg3;
-		num              value;
-		unsigned         bucket_0_length;
-		unsigned         bucket_red_length;
+		pbqp_node_bucket_t bucket_deg3;
+		num                value;
+		unsigned           bucket_0_length;
+		unsigned           bucket_red_length;
 
-		char *tmp = obstack_finish(&pbqp->obstack);
+		char *tmp = (char*)obstack_finish(&pbqp->obstack);
 
 		node_bucket_init(&bucket_deg3);
 
@@ -142,9 +142,9 @@ static unsigned get_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	return min_index;
 }
 
-static void apply_Brute_Force(pbqp *pbqp)
+static void apply_Brute_Force(pbqp_t *pbqp)
 {
-	pbqp_node   *node         = NULL;
+	pbqp_node_t *node         = NULL;
 	unsigned     min_index    = 0;
 
 	assert(pbqp);
@@ -193,13 +193,13 @@ static void apply_Brute_Force(pbqp *pbqp)
 
 
 
-static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *edge;
-	pbqp_node   *other;
-	pbqp_matrix *mat;
-	vector      *vec;
-	int          is_src;
+	pbqp_edge_t   *edge;
+	pbqp_node_t   *other;
+	pbqp_matrix_t *mat;
+	vector_t      *vec;
+	int            is_src;
 
 	assert(pbqp);
 	assert(node);
@@ -234,20 +234,20 @@ static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 #endif
 }
 
-static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *src_edge   = node->edges[0];
-	pbqp_edge   *tgt_edge   = node->edges[1];
-	int          src_is_src = src_edge->src == node;
-	int          tgt_is_src = tgt_edge->src == node;
-	pbqp_matrix *src_mat;
-	pbqp_matrix *tgt_mat;
-	pbqp_node   *src_node;
-	pbqp_node   *tgt_node;
-	vector      *vec;
-	vector      *node_vec;
-	unsigned     col_index;
-	unsigned     row_index;
+	pbqp_edge_t   *src_edge   = node->edges[0];
+	pbqp_edge_t   *tgt_edge   = node->edges[1];
+	int            src_is_src = src_edge->src == node;
+	int            tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix_t *src_mat;
+	pbqp_matrix_t *tgt_mat;
+	pbqp_node_t   *src_node;
+	pbqp_node_t   *tgt_node;
+	vector_t      *vec;
+	vector_t      *node_vec;
+	unsigned       col_index;
+	unsigned       row_index;
 
 	assert(pbqp);
 
@@ -265,8 +265,8 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 
 	/* Swap nodes if necessary. */
 	if (tgt_node->index < src_node->index) {
-		pbqp_node *tmp_node;
-		pbqp_edge *tmp_edge;
+		pbqp_node_t *tmp_node;
+		pbqp_edge_t *tmp_edge;
 
 		tmp_node = src_node;
 		src_node = tgt_node;
@@ -317,10 +317,10 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 	obstack_free(&pbqp->obstack, vec);
 }
 
-static void back_propagate_brute_force(pbqp *pbqp)
+static void back_propagate_brute_force(pbqp_t *pbqp)
 {
 	unsigned node_index;
-	unsigned node_len   = node_bucket_get_length(reduced_bucket);
+	unsigned node_len = node_bucket_get_length(reduced_bucket);
 
 	assert(pbqp);
 
@@ -331,7 +331,7 @@ static void back_propagate_brute_force(pbqp *pbqp)
 #endif
 
 	for (node_index = node_len; node_index > 0; --node_index) {
-		pbqp_node *node = reduced_bucket[node_index - 1];
+		pbqp_node_t *node = reduced_bucket[node_index - 1];
 
 		switch (pbqp_node_get_degree(node)) {
 			case 1:
@@ -347,7 +347,7 @@ static void back_propagate_brute_force(pbqp *pbqp)
 	}
 }
 
-void solve_pbqp_brute_force(pbqp *pbqp)
+void solve_pbqp_brute_force(pbqp_t *pbqp)
 {
 	/* Reduce nodes degree ... */
 	initial_simplify_edges(pbqp);

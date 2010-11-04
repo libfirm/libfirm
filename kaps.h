@@ -32,29 +32,30 @@
 /**
  * Create an empty PBQP instance with the given number of nodes.
  */
-pbqp* alloc_pbqp(unsigned number_nodes);
+pbqp_t* alloc_pbqp(unsigned number_nodes);
 
 /**
  * Free the given PBQP.
  */
-void free_pbqp(pbqp *pbqp);
+void free_pbqp(pbqp_t *pbqp);
 
 /**
  * Add costs vector to given node.
  */
-void add_node_costs(pbqp *pbqp, unsigned node_index, vector *costs);
+void add_node_costs(pbqp_t *pbqp, unsigned node_index, vector_t *costs);
 
 /**
  * Add costs matrix between given nodes.
  */
-void add_edge_costs(pbqp *pbqp, unsigned src_index, unsigned tgt_index, pbqp_matrix *costs);
+void add_edge_costs(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
+                    pbqp_matrix_t *costs);
 
-pbqp_edge *get_edge(pbqp *pbqp, unsigned src_index, unsigned tgt_index);
-pbqp_node *get_node(pbqp *pbqp, unsigned index);
+pbqp_edge_t *get_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index);
+pbqp_node_t *get_node(pbqp_t *pbqp, unsigned index);
 
-num get_node_solution(pbqp *pbqp, unsigned node_index);
-num get_solution(pbqp *pbqp);
+num get_node_solution(pbqp_t *pbqp, unsigned node_index);
+num get_solution(pbqp_t *pbqp);
 
-void set_dumpfile(pbqp *pbqp, FILE *f);
+void set_dumpfile(pbqp_t *pbqp, FILE *f);
 
 #endif /* KAPS_KAPS_H */

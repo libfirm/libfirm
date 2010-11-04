@@ -29,7 +29,7 @@
 
 #include "pbqp_t.h"
 
-typedef pbqp_node** pbqp_node_bucket;
-typedef pbqp_edge** pbqp_edge_bucket;
+typedef pbqp_node_t** pbqp_node_bucket_t;
+typedef pbqp_edge_t** pbqp_edge_bucket_t;
 
 #endif /* KAPS_BUCKET_T_H */

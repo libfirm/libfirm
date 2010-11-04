@@ -46,14 +46,14 @@
 #include "plist.h"
 #include "timing.h"
 
-pbqp_edge **edge_bucket;
-pbqp_edge **rm_bucket;
-pbqp_node **node_buckets[4];
-pbqp_node **reduced_bucket = NULL;
-pbqp_node  *merged_node = NULL;
+pbqp_edge_t **edge_bucket;
+pbqp_edge_t **rm_bucket;
+pbqp_node_t **node_buckets[4];
+pbqp_node_t **reduced_bucket = NULL;
+pbqp_node_t  *merged_node = NULL;
 static int  buckets_filled = 0;
 
-static void insert_into_edge_bucket(pbqp_edge *edge)
+static void insert_into_edge_bucket(pbqp_edge_t *edge)
 {
 	if (edge_bucket_contains(edge_bucket, edge)) {
 		/* Edge is already inserted. */
@@ -63,7 +63,7 @@ static void insert_into_edge_bucket(pbqp_edge *edge)
 	edge_bucket_insert(&edge_bucket, edge);
 }
 
-static void insert_into_rm_bucket(pbqp_edge *edge)
+static void insert_into_rm_bucket(pbqp_edge_t *edge)
 {
 	if (edge_bucket_contains(rm_bucket, edge)) {
 		/* Edge is already inserted. */
@@ -101,7 +101,7 @@ void free_buckets(void)
 	buckets_filled = 0;
 }
 
-void fill_node_buckets(pbqp *pbqp)
+void fill_node_buckets(pbqp_t *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len;
@@ -115,8 +115,8 @@ void fill_node_buckets(pbqp *pbqp)
 	#endif
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		unsigned   degree;
-		pbqp_node *node = get_node(pbqp, node_index);
+		unsigned     degree;
+		pbqp_node_t *node = get_node(pbqp, node_index);
 
 		if (!node) continue;
 
@@ -138,13 +138,13 @@ void fill_node_buckets(pbqp *pbqp)
 	#endif
 }
 
-static void normalize_towards_source(pbqp_edge *edge)
+static void normalize_towards_source(pbqp_edge_t *edge)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *src_vec;
-	vector         *tgt_vec;
+	pbqp_matrix_t  *mat;
+	pbqp_node_t    *src_node;
+	pbqp_node_t    *tgt_node;
+	vector_t       *src_vec;
+	vector_t       *tgt_vec;
 	unsigned        src_len;
 	unsigned        tgt_len;
 	unsigned        src_index;
@@ -195,7 +195,7 @@ static void normalize_towards_source(pbqp_edge *edge)
 		unsigned edge_len = pbqp_node_get_degree(src_node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-			pbqp_edge *edge_candidate = src_node->edges[edge_index];
+			pbqp_edge_t *edge_candidate = src_node->edges[edge_index];
 
 			if (edge_candidate != edge) {
 				insert_into_edge_bucket(edge_candidate);
@@ -204,13 +204,13 @@ static void normalize_towards_source(pbqp_edge *edge)
 	}
 }
 
-static void normalize_towards_target(pbqp_edge *edge)
+static void normalize_towards_target(pbqp_edge_t *edge)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *src_vec;
-	vector         *tgt_vec;
+	pbqp_matrix_t  *mat;
+	pbqp_node_t    *src_node;
+	pbqp_node_t    *tgt_node;
+	vector_t       *src_vec;
+	vector_t       *tgt_vec;
 	unsigned        src_len;
 	unsigned        tgt_len;
 	unsigned        tgt_index;
@@ -261,7 +261,7 @@ static void normalize_towards_target(pbqp_edge *edge)
 		unsigned edge_len = pbqp_node_get_degree(tgt_node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-			pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
+			pbqp_edge_t *edge_candidate = tgt_node->edges[edge_index];
 
 			if (edge_candidate != edge) {
 				insert_into_edge_bucket(edge_candidate);
@@ -276,13 +276,13 @@ static void normalize_towards_target(pbqp_edge *edge)
  * Checks whether the source node of edge can be merged into the target node of
  * edge, and performs the merge, if possible.
  */
-static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
+static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *src_vec;
-	vector         *tgt_vec;
+	pbqp_matrix_t  *mat;
+	pbqp_node_t    *src_node;
+	pbqp_node_t    *tgt_node;
+	vector_t       *src_vec;
+	vector_t       *tgt_vec;
 	unsigned       *mapping;
 	unsigned        src_len;
 	unsigned        tgt_len;
@@ -358,15 +358,15 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
 
 	/* Reconnect the source's edges with the target node. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-		pbqp_edge   *old_edge = src_node->edges[edge_index];
-		pbqp_edge   *new_edge;
-		pbqp_matrix *old_matrix;
-		pbqp_matrix *new_matrix;
-		pbqp_node   *other_node;
-		vector      *other_vec;
-		unsigned     other_len;
-		unsigned     other_index;
-		unsigned     tgt_index;
+		pbqp_edge_t   *old_edge = src_node->edges[edge_index];
+		pbqp_edge_t   *new_edge;
+		pbqp_matrix_t *old_matrix;
+		pbqp_matrix_t *new_matrix;
+		pbqp_node_t   *other_node;
+		vector_t      *other_vec;
+		unsigned       other_len;
+		unsigned       other_index;
+		unsigned       tgt_index;
 
 		assert(old_edge);
 
@@ -450,13 +450,13 @@ static void merge_source_into_target(pbqp *pbqp, pbqp_edge *edge)
  * Checks whether the target node of edge can be merged into the source node of
  * edge, and performs the merge, if possible.
  */
-static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
+static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *src_vec;
-	vector         *tgt_vec;
+	pbqp_matrix_t  *mat;
+	pbqp_node_t    *src_node;
+	pbqp_node_t    *tgt_node;
+	vector_t       *src_vec;
+	vector_t       *tgt_vec;
 	unsigned       *mapping;
 	unsigned        src_len;
 	unsigned        tgt_len;
@@ -532,15 +532,15 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 
 	/* Reconnect the target's edges with the source node. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-		pbqp_edge   *old_edge = tgt_node->edges[edge_index];
-		pbqp_edge   *new_edge;
-		pbqp_matrix *old_matrix;
-		pbqp_matrix *new_matrix;
-		pbqp_node   *other_node;
-		vector      *other_vec;
-		unsigned     other_len;
-		unsigned     other_index;
-		unsigned     src_index;
+		pbqp_edge_t   *old_edge = tgt_node->edges[edge_index];
+		pbqp_edge_t   *new_edge;
+		pbqp_matrix_t *old_matrix;
+		pbqp_matrix_t *new_matrix;
+		pbqp_node_t   *other_node;
+		vector_t      *other_vec;
+		unsigned       other_len;
+		unsigned       other_index;
+		unsigned       src_index;
 
 		assert(old_edge);
 
@@ -621,11 +621,11 @@ static void merge_target_into_source(pbqp *pbqp, pbqp_edge *edge)
 /**
  * Merge neighbors into the given node.
  */
-void apply_RM(pbqp *pbqp, pbqp_node *node)
+void apply_RM(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge **edges;
-	unsigned    edge_index;
-	unsigned    edge_len;
+	pbqp_edge_t **edges;
+	unsigned      edge_index;
+	unsigned      edge_len;
 
 	assert(node);
 	assert(pbqp);
@@ -635,14 +635,14 @@ void apply_RM(pbqp *pbqp, pbqp_node *node)
 
 	/* Check all incident edges. */
 	for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-		pbqp_edge *edge = edges[edge_index];
+		pbqp_edge_t *edge = edges[edge_index];
 
 		insert_into_rm_bucket(edge);
 	}
 
 	/* ALAP: Merge neighbors into given node. */
 	while(edge_bucket_get_length(rm_bucket) > 0) {
-		pbqp_edge *edge = edge_bucket_pop(&rm_bucket);
+		pbqp_edge_t *edge = edge_bucket_pop(&rm_bucket);
 		assert(edge);
 
 		/* If the edge is not deleted: Try a merge. */
@@ -655,7 +655,7 @@ void apply_RM(pbqp *pbqp, pbqp_node *node)
 	merged_node = node;
 }
 
-void reorder_node_after_edge_deletion(pbqp_node *node)
+void reorder_node_after_edge_deletion(pbqp_node_t *node)
 {
 	unsigned    degree     = pbqp_node_get_degree(node);
 	/* Assume node lost one incident edge. */
@@ -673,7 +673,7 @@ void reorder_node_after_edge_deletion(pbqp_node *node)
 	node_bucket_insert(&node_buckets[degree], node);
 }
 
-void reorder_node_after_edge_insertion(pbqp_node *node)
+void reorder_node_after_edge_insertion(pbqp_node_t *node)
 {
 	unsigned    degree     = pbqp_node_get_degree(node);
 	/* Assume node lost one incident edge. */
@@ -691,15 +691,15 @@ void reorder_node_after_edge_insertion(pbqp_node *node)
 	node_bucket_insert(&node_buckets[degree], node);
 }
 
-void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
+void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *src_vec;
-	vector         *tgt_vec;
-	int             src_len;
-	int             tgt_len;
+	pbqp_matrix_t *mat;
+	pbqp_node_t   *src_node;
+	pbqp_node_t   *tgt_node;
+	vector_t      *src_vec;
+	vector_t      *tgt_vec;
+	int            src_len;
+	int            tgt_len;
 
 	assert(pbqp);
 	assert(edge);
@@ -768,7 +768,7 @@ void simplify_edge(pbqp *pbqp, pbqp_edge *edge)
 	}
 }
 
-void initial_simplify_edges(pbqp *pbqp)
+void initial_simplify_edges(pbqp_t *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len;
@@ -793,10 +793,10 @@ void initial_simplify_edges(pbqp *pbqp)
 
 	/* First simplify all edges. */
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		unsigned    edge_index;
-		pbqp_node  *node = get_node(pbqp, node_index);
-		pbqp_edge **edges;
-		unsigned    edge_len;
+		unsigned      edge_index;
+		pbqp_node_t  *node = get_node(pbqp, node_index);
+		pbqp_edge_t **edges;
+		unsigned      edge_len;
 
 		if (!node) continue;
 
@@ -804,7 +804,7 @@ void initial_simplify_edges(pbqp *pbqp)
 		edge_len = pbqp_node_get_degree(node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-			pbqp_edge *edge = edges[edge_index];
+			pbqp_edge_t *edge = edges[edge_index];
 
 			/* Simplify only once per edge. */
 			if (node != edge->src) continue;
@@ -819,7 +819,7 @@ void initial_simplify_edges(pbqp *pbqp)
 	#endif
 }
 
-num determine_solution(pbqp *pbqp)
+num determine_solution(pbqp_t *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len;
@@ -855,7 +855,7 @@ num determine_solution(pbqp *pbqp)
 #endif
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
-		pbqp_node *node = node_buckets[0][node_index];
+		pbqp_node_t *node = node_buckets[0][node_index];
 		assert(node);
 
 		node->solution = vector_get_min_index(node->costs);
@@ -889,13 +889,13 @@ num determine_solution(pbqp *pbqp)
 	return solution;
 }
 
-static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *edge;
-	pbqp_node   *other;
-	pbqp_matrix *mat;
-	vector      *vec;
-	int          is_src;
+	pbqp_edge_t   *edge;
+	pbqp_node_t   *other;
+	pbqp_matrix_t *mat;
+	vector_t      *vec;
+	int            is_src;
 
 	assert(pbqp);
 	assert(node);
@@ -926,20 +926,20 @@ static void back_propagate_RI(pbqp *pbqp, pbqp_node *node)
 #endif
 }
 
-static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
+static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *src_edge   = node->edges[0];
-	pbqp_edge   *tgt_edge   = node->edges[1];
-	int          src_is_src = src_edge->src == node;
-	int          tgt_is_src = tgt_edge->src == node;
-	pbqp_matrix *src_mat;
-	pbqp_matrix *tgt_mat;
-	pbqp_node   *src_node;
-	pbqp_node   *tgt_node;
-	vector      *vec;
-	vector      *node_vec;
-	unsigned     col_index;
-	unsigned     row_index;
+	pbqp_edge_t   *src_edge   = node->edges[0];
+	pbqp_edge_t   *tgt_edge   = node->edges[1];
+	int            src_is_src = src_edge->src == node;
+	int            tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix_t *src_mat;
+	pbqp_matrix_t *tgt_mat;
+	pbqp_node_t   *src_node;
+	pbqp_node_t   *tgt_node;
+	vector_t      *vec;
+	vector_t      *node_vec;
+	unsigned       col_index;
+	unsigned       row_index;
 
 	assert(pbqp);
 
@@ -957,8 +957,8 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 
 	/* Swap nodes if necessary. */
 	if (tgt_node->index < src_node->index) {
-		pbqp_node *tmp_node;
-		pbqp_edge *tmp_edge;
+		pbqp_node_t *tmp_node;
+		pbqp_edge_t *tmp_edge;
 
 		tmp_node = src_node;
 		src_node = tgt_node;
@@ -1005,7 +1005,7 @@ static void back_propagate_RII(pbqp *pbqp, pbqp_node *node)
 	obstack_free(&pbqp->obstack, vec);
 }
 
-void back_propagate(pbqp *pbqp)
+void back_propagate(pbqp_t *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len   = node_bucket_get_length(reduced_bucket);
@@ -1019,7 +1019,7 @@ void back_propagate(pbqp *pbqp)
 #endif
 
 	for (node_index = node_len; node_index > 0; --node_index) {
-		pbqp_node *node = reduced_bucket[node_index - 1];
+		pbqp_node_t *node = reduced_bucket[node_index - 1];
 
 		switch (pbqp_node_get_degree(node)) {
 			case 1:
@@ -1035,20 +1035,20 @@ void back_propagate(pbqp *pbqp)
 	}
 }
 
-void apply_edge(pbqp *pbqp)
+void apply_edge(pbqp_t *pbqp)
 {
-	pbqp_edge *edge = edge_bucket_pop(&edge_bucket);
+	pbqp_edge_t *edge = edge_bucket_pop(&edge_bucket);
 
 	simplify_edge(pbqp, edge);
 }
 
-void apply_RI(pbqp *pbqp)
+void apply_RI(pbqp_t *pbqp)
 {
-	pbqp_node   *node       = node_bucket_pop(&node_buckets[1]);
-	pbqp_edge   *edge       = node->edges[0];
-	pbqp_matrix *mat        = edge->costs;
-	int          is_src     = edge->src == node;
-	pbqp_node   *other_node;
+	pbqp_node_t   *node   = node_bucket_pop(&node_buckets[1]);
+	pbqp_edge_t   *edge   = node->edges[0];
+	pbqp_matrix_t *mat    = edge->costs;
+	int            is_src = edge->src == node;
+	pbqp_node_t   *other_node;
 
 	(void ) pbqp;
 	assert(pbqp_node_get_degree(node) == 1);
@@ -1098,27 +1098,27 @@ void apply_RI(pbqp *pbqp)
 	node_bucket_insert(&reduced_bucket, node);
 }
 
-void apply_RII(pbqp *pbqp)
+void apply_RII(pbqp_t *pbqp)
 {
-	pbqp_node   *node       = node_bucket_pop(&node_buckets[2]);
-	pbqp_edge   *src_edge   = node->edges[0];
-	pbqp_edge   *tgt_edge   = node->edges[1];
-	int          src_is_src = src_edge->src == node;
-	int          tgt_is_src = tgt_edge->src == node;
-	pbqp_matrix *src_mat;
-	pbqp_matrix *tgt_mat;
-	pbqp_node   *src_node;
-	pbqp_node   *tgt_node;
-	pbqp_matrix *mat;
-	vector      *vec;
-	vector      *node_vec;
-	vector      *src_vec;
-	vector      *tgt_vec;
-	unsigned     col_index;
-	unsigned     col_len;
-	unsigned     row_index;
-	unsigned     row_len;
-	unsigned     node_len;
+	pbqp_node_t   *node       = node_bucket_pop(&node_buckets[2]);
+	pbqp_edge_t   *src_edge   = node->edges[0];
+	pbqp_edge_t   *tgt_edge   = node->edges[1];
+	int            src_is_src = src_edge->src == node;
+	int            tgt_is_src = tgt_edge->src == node;
+	pbqp_matrix_t *src_mat;
+	pbqp_matrix_t *tgt_mat;
+	pbqp_node_t   *src_node;
+	pbqp_node_t   *tgt_node;
+	pbqp_matrix_t *mat;
+	vector_t      *vec;
+	vector_t      *node_vec;
+	vector_t      *src_vec;
+	vector_t      *tgt_vec;
+	unsigned       col_index;
+	unsigned       col_len;
+	unsigned       row_index;
+	unsigned       row_len;
+	unsigned       node_len;
 
 	assert(pbqp);
 	assert(pbqp_node_get_degree(node) == 2);
@@ -1137,8 +1137,8 @@ void apply_RII(pbqp *pbqp)
 
 	/* Swap nodes if necessary. */
 	if (tgt_node->index < src_node->index) {
-		pbqp_node *tmp_node;
-		pbqp_edge *tmp_edge;
+		pbqp_node_t *tmp_node;
+		pbqp_edge_t *tmp_edge;
 
 		tmp_node = src_node;
 		src_node = tgt_node;
@@ -1202,7 +1202,7 @@ void apply_RII(pbqp *pbqp)
 		}
 	}
 
-	pbqp_edge *edge = get_edge(pbqp, src_node->index, tgt_node->index);
+	pbqp_edge_t *edge = get_edge(pbqp, src_node->index, tgt_node->index);
 
 	/* Disconnect node. */
 	disconnect_edge(src_node, src_edge);
@@ -1239,13 +1239,13 @@ void apply_RII(pbqp *pbqp)
 	simplify_edge(pbqp, edge);
 }
 
-static void select_column(pbqp_edge *edge, unsigned col_index)
+static void select_column(pbqp_edge_t *edge, unsigned col_index)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *src_vec;
-	vector         *tgt_vec;
+	pbqp_matrix_t  *mat;
+	pbqp_node_t    *src_node;
+	pbqp_node_t    *tgt_node;
+	vector_t       *src_vec;
+	vector_t       *tgt_vec;
 	unsigned        src_len;
 	unsigned        tgt_len;
 	unsigned        src_index;
@@ -1288,7 +1288,7 @@ static void select_column(pbqp_edge *edge, unsigned col_index)
 		unsigned edge_len = pbqp_node_get_degree(src_node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-			pbqp_edge *edge_candidate = src_node->edges[edge_index];
+			pbqp_edge_t *edge_candidate = src_node->edges[edge_index];
 
 			if (edge_candidate != edge) {
 				insert_into_edge_bucket(edge_candidate);
@@ -1299,12 +1299,12 @@ static void select_column(pbqp_edge *edge, unsigned col_index)
 	delete_edge(edge);
 }
 
-static void select_row(pbqp_edge *edge, unsigned row_index)
+static void select_row(pbqp_edge_t *edge, unsigned row_index)
 {
-	pbqp_matrix    *mat;
-	pbqp_node      *src_node;
-	pbqp_node      *tgt_node;
-	vector         *tgt_vec;
+	pbqp_matrix_t  *mat;
+	pbqp_node_t    *src_node;
+	pbqp_node_t    *tgt_node;
+	vector_t       *tgt_vec;
 	unsigned        tgt_len;
 	unsigned        tgt_index;
 	unsigned        new_infinity = 0;
@@ -1341,7 +1341,7 @@ static void select_row(pbqp_edge *edge, unsigned row_index)
 		unsigned edge_len = pbqp_node_get_degree(tgt_node);
 
 		for (edge_index = 0; edge_index < edge_len; ++edge_index) {
-			pbqp_edge *edge_candidate = tgt_node->edges[edge_index];
+			pbqp_edge_t *edge_candidate = tgt_node->edges[edge_index];
 
 			if (edge_candidate != edge) {
 				insert_into_edge_bucket(edge_candidate);
@@ -1352,12 +1352,12 @@ static void select_row(pbqp_edge *edge, unsigned row_index)
 	delete_edge(edge);
 }
 
-void select_alternative(pbqp_node *node, unsigned selected_index)
+void select_alternative(pbqp_node_t *node, unsigned selected_index)
 {
 	unsigned  edge_index;
 	unsigned  node_index;
 	unsigned  node_len;
-	vector   *node_vec;
+	vector_t *node_vec;
 	unsigned  max_degree = pbqp_node_get_degree(node);
 
 	assert(node);
@@ -1375,7 +1375,7 @@ void select_alternative(pbqp_node *node, unsigned selected_index)
 
 	/* Select corresponding row/column for incident edges. */
 	for (edge_index = 0; edge_index < max_degree; ++edge_index) {
-		pbqp_edge *edge = node->edges[edge_index];
+		pbqp_edge_t *edge = node->edges[edge_index];
 
 		if (edge->src == node)
 			select_row(edge, selected_index);
@@ -1384,17 +1384,17 @@ void select_alternative(pbqp_node *node, unsigned selected_index)
 	}
 }
 
-pbqp_node *get_node_with_max_degree(void)
+pbqp_node_t *get_node_with_max_degree(void)
 {
-	pbqp_node  **bucket       = node_buckets[3];
-	unsigned     bucket_len   = node_bucket_get_length(bucket);
-	unsigned     bucket_index;
-	unsigned     max_degree   = 0;
-	pbqp_node   *result       = NULL;
+	pbqp_node_t **bucket       = node_buckets[3];
+	unsigned      bucket_len   = node_bucket_get_length(bucket);
+	unsigned      bucket_index;
+	unsigned      max_degree   = 0;
+	pbqp_node_t  *result       = NULL;
 
 	for (bucket_index = 0; bucket_index < bucket_len; ++bucket_index) {
-		pbqp_node *candidate = bucket[bucket_index];
-		unsigned   degree    = pbqp_node_get_degree(candidate);
+		pbqp_node_t *candidate = bucket[bucket_index];
+		unsigned     degree    = pbqp_node_get_degree(candidate);
 
 		if (degree > max_degree) {
 			result = candidate;
@@ -1405,19 +1405,19 @@ pbqp_node *get_node_with_max_degree(void)
 	return result;
 }
 
-unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
+unsigned get_local_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node)
 {
-	pbqp_edge   *edge;
-	vector      *node_vec;
-	vector      *vec;
-	pbqp_matrix *mat;
-	unsigned     edge_index;
-	unsigned     max_degree;
-	unsigned     node_index;
-	unsigned     node_len;
-	unsigned     min_index    = 0;
-	num          min          = INF_COSTS;
-	int          is_src;
+	pbqp_edge_t   *edge;
+	vector_t      *node_vec;
+	vector_t      *vec;
+	pbqp_matrix_t *mat;
+	unsigned       edge_index;
+	unsigned       max_degree;
+	unsigned       node_index;
+	unsigned       node_len;
+	unsigned       min_index    = 0;
+	num            min          = INF_COSTS;
+	int            is_src;
 
 	assert(pbqp);
 	assert(node);
@@ -1455,7 +1455,7 @@ unsigned get_local_minimal_alternative(pbqp *pbqp, pbqp_node *node)
 	return min_index;
 }
 
-int node_is_reduced(pbqp_node *node)
+int node_is_reduced(pbqp_node_t *node)
 {
 	if (!reduced_bucket) return 0;
 

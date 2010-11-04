@@ -30,20 +30,20 @@
 
 #include "pbqp_t.h"
 
-typedef struct vec_elem vec_elem;
+typedef struct vec_elem_t vec_elem_t;
 
-struct vec_elem {
+struct vec_elem_t {
 	num data;
 #if KAPS_ENABLE_VECTOR_NAMES
 	const char *name;
 #endif
 };
 
-typedef struct vector vector;
+typedef struct vector_t vector_t;
 
-struct vector {
-	unsigned len;
-	vec_elem entries[];
+struct vector_t {
+	unsigned   len;
+	vec_elem_t entries[];
 };
 
 #endif /* KAPS_VECTOR_T_H */

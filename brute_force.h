@@ -29,6 +29,6 @@
 
 #include "pbqp_t.h"
 
-void solve_pbqp_brute_force(pbqp *pbqp);
+void solve_pbqp_brute_force(pbqp_t *pbqp);
 
 #endif /* KAPS_BRUTE_FORCE_H */

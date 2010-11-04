@@ -33,14 +33,14 @@
 #include "vector.h"
 #include "matrix.h"
 
-pbqp_matrix *pbqp_matrix_alloc(pbqp *pbqp, unsigned rows, unsigned cols)
+pbqp_matrix_t *pbqp_matrix_alloc(pbqp_t *pbqp, unsigned rows, unsigned cols)
 {
 	assert(cols> 0);
 	assert(rows> 0);
 
 	unsigned length = rows * cols;
 
-	pbqp_matrix *mat = obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(*mat->entries) * length);
+	pbqp_matrix_t *mat = (pbqp_matrix_t*)obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(*mat->entries) * length);
 	assert(mat);
 
 	mat->cols = cols;
@@ -50,23 +50,23 @@ pbqp_matrix *pbqp_matrix_alloc(pbqp *pbqp, unsigned rows, unsigned cols)
 	return mat;
 }
 
-pbqp_matrix *pbqp_matrix_copy(pbqp *pbqp, pbqp_matrix *m)
+pbqp_matrix_t *pbqp_matrix_copy(pbqp_t *pbqp, pbqp_matrix_t *m)
 {
-	unsigned     len  = m->rows * m->cols;
-	pbqp_matrix *copy = obstack_copy(&pbqp->obstack, m, sizeof(*copy) + sizeof(*copy->entries) * len);
+	unsigned       len  = m->rows * m->cols;
+	pbqp_matrix_t *copy = (pbqp_matrix_t*)obstack_copy(&pbqp->obstack, m, sizeof(*copy) + sizeof(*copy->entries) * len);
 	assert(copy);
 
 	return copy;
 }
 
-pbqp_matrix *pbqp_matrix_copy_and_transpose(pbqp *pbqp, pbqp_matrix *m)
+pbqp_matrix_t *pbqp_matrix_copy_and_transpose(pbqp_t *pbqp, pbqp_matrix_t *m)
 {
-	unsigned     i;
-	unsigned     j;
-	unsigned     cols = m->cols;
-	unsigned     rows = m->rows;
-	unsigned     len  = rows * cols;
-	pbqp_matrix *copy = obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * len);
+	unsigned       i;
+	unsigned       j;
+	unsigned       cols = m->cols;
+	unsigned       rows = m->rows;
+	unsigned       len  = rows * cols;
+	pbqp_matrix_t *copy = (pbqp_matrix_t*)obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * len);
 	assert(copy);
 
 	for (i = 0; i < rows; ++i) {
@@ -81,21 +81,21 @@ pbqp_matrix *pbqp_matrix_copy_and_transpose(pbqp *pbqp, pbqp_matrix *m)
 	return copy;
 }
 
-void pbqp_matrix_transpose(pbqp *pbqp, pbqp_matrix *mat)
+void pbqp_matrix_transpose(pbqp_t *pbqp, pbqp_matrix_t *mat)
 {
 	unsigned len;
 
 	assert(mat);
 	len = mat->rows * mat->cols;
 
-	pbqp_matrix *tmp = pbqp_matrix_copy_and_transpose(pbqp, mat);
+	pbqp_matrix_t *tmp = pbqp_matrix_copy_and_transpose(pbqp, mat);
 
 	memcpy(mat, tmp, sizeof(*mat) + sizeof(*mat->entries) * len);
 
 	obstack_free(&pbqp->obstack, tmp);
 }
 
-void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand)
+void pbqp_matrix_add(pbqp_matrix_t *sum, pbqp_matrix_t *summand)
 {
 	int i;
 	int len;
@@ -112,7 +112,7 @@ void pbqp_matrix_add(pbqp_matrix *sum, pbqp_matrix *summand)
 	}
 }
 
-void pbqp_matrix_set_col_value(pbqp_matrix *mat, unsigned col, num value)
+void pbqp_matrix_set_col_value(pbqp_matrix_t *mat, unsigned col, num value)
 {
 	unsigned row_index;
 	unsigned row_len;
@@ -127,7 +127,7 @@ void pbqp_matrix_set_col_value(pbqp_matrix *mat, unsigned col, num value)
 	}
 }
 
-void pbqp_matrix_set_row_value(pbqp_matrix *mat, unsigned row, num value)
+void pbqp_matrix_set_row_value(pbqp_matrix_t *mat, unsigned row, num value)
 {
 	unsigned col_index;
 	unsigned col_len;
@@ -142,7 +142,7 @@ void pbqp_matrix_set_row_value(pbqp_matrix *mat, unsigned row, num value)
 	}
 }
 
-void pbqp_matrix_set(pbqp_matrix *mat, unsigned row, unsigned col, num value)
+void pbqp_matrix_set(pbqp_matrix_t *mat, unsigned row, unsigned col, num value)
 {
 	assert(mat);
 	assert(col < mat->cols);
@@ -151,7 +151,7 @@ void pbqp_matrix_set(pbqp_matrix *mat, unsigned row, unsigned col, num value)
 	mat->entries[row * mat->cols + col] = value;
 }
 
-num pbqp_matrix_get_col_min(pbqp_matrix *matrix, unsigned col_index, vector *flags)
+num pbqp_matrix_get_col_min(pbqp_matrix_t *matrix, unsigned col_index, vector_t *flags)
 {
 	unsigned row_index;
 	num min = INF_COSTS;
@@ -177,7 +177,7 @@ num pbqp_matrix_get_col_min(pbqp_matrix *matrix, unsigned col_index, vector *fla
 	return min;
 }
 
-unsigned pbqp_matrix_get_col_min_index(pbqp_matrix *matrix, unsigned col_index, vector *flags)
+unsigned pbqp_matrix_get_col_min_index(pbqp_matrix_t *matrix, unsigned col_index, vector_t *flags)
 {
 	unsigned row_index;
 	unsigned min_index = 0;
@@ -205,8 +205,8 @@ unsigned pbqp_matrix_get_col_min_index(pbqp_matrix *matrix, unsigned col_index, 
 	return min_index;
 }
 
-void pbqp_matrix_sub_col_value(pbqp_matrix *matrix, unsigned col_index,
-		vector *flags, num value)
+void pbqp_matrix_sub_col_value(pbqp_matrix_t *matrix, unsigned col_index,
+		vector_t *flags, num value)
 {
 	unsigned col_len;
 	unsigned row_index;
@@ -232,7 +232,7 @@ void pbqp_matrix_sub_col_value(pbqp_matrix *matrix, unsigned col_index,
 	}
 }
 
-num pbqp_matrix_get_row_min(pbqp_matrix *matrix, unsigned row_index, vector *flags)
+num pbqp_matrix_get_row_min(pbqp_matrix_t *matrix, unsigned row_index, vector_t *flags)
 {
 	unsigned col_index;
 	num min = INF_COSTS;
@@ -257,7 +257,7 @@ num pbqp_matrix_get_row_min(pbqp_matrix *matrix, unsigned row_index, vector *fla
 	return min;
 }
 
-unsigned pbqp_matrix_get_row_min_index(pbqp_matrix *matrix, unsigned row_index, vector *flags)
+unsigned pbqp_matrix_get_row_min_index(pbqp_matrix_t *matrix, unsigned row_index, vector_t *flags)
 {
 	unsigned col_index;
 	unsigned min_index = 0;
@@ -284,8 +284,8 @@ unsigned pbqp_matrix_get_row_min_index(pbqp_matrix *matrix, unsigned row_index, 
 	return min_index;
 }
 
-void pbqp_matrix_sub_row_value(pbqp_matrix *matrix, unsigned row_index,
-		vector *flags, num value)
+void pbqp_matrix_sub_row_value(pbqp_matrix_t *matrix, unsigned row_index,
+		vector_t *flags, num value)
 {
 	unsigned col_index;
 	unsigned col_len;
@@ -309,7 +309,7 @@ void pbqp_matrix_sub_row_value(pbqp_matrix *matrix, unsigned row_index,
 	}
 }
 
-int pbqp_matrix_is_zero(pbqp_matrix *mat, vector *src_vec, vector *tgt_vec)
+int pbqp_matrix_is_zero(pbqp_matrix_t *mat, vector_t *src_vec, vector_t *tgt_vec)
 {
 	unsigned col_index;
 	unsigned col_len;
@@ -339,7 +339,7 @@ int pbqp_matrix_is_zero(pbqp_matrix *mat, vector *src_vec, vector *tgt_vec)
 	return 1;
 }
 
-void pbqp_matrix_add_to_all_cols(pbqp_matrix *mat, vector *vec)
+void pbqp_matrix_add_to_all_cols(pbqp_matrix_t *mat, vector_t *vec)
 {
 	unsigned col_index;
 	unsigned col_len;
@@ -362,7 +362,7 @@ void pbqp_matrix_add_to_all_cols(pbqp_matrix *mat, vector *vec)
 	}
 }
 
-void pbqp_matrix_add_to_all_rows(pbqp_matrix *mat, vector *vec)
+void pbqp_matrix_add_to_all_rows(pbqp_matrix_t *mat, vector_t *vec)
 {
 	unsigned col_index;
 	unsigned col_len;

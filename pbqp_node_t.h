@@ -29,12 +29,12 @@
 
 #include "pbqp_t.h"
 
-struct pbqp_node {
-	pbqp_edge **edges;
-	vector     *costs;
-	unsigned    bucket_index;
-	unsigned    solution;
-	unsigned    index;
+struct pbqp_node_t {
+	pbqp_edge_t **edges;
+	vector_t     *costs;
+	unsigned      bucket_index;
+	unsigned      solution;
+	unsigned      index;
 };
 
 #endif /* KAPS_PBQP_NODE_T_H */

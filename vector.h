@@ -31,26 +31,26 @@
 
 num pbqp_add(num x, num y);
 
-vector *vector_alloc(pbqp *pbqp, unsigned length);
+vector_t *vector_alloc(pbqp_t *pbqp, unsigned length);
 
 /* Copy the given vector. */
-vector *vector_copy(pbqp *pbqp, vector *v);
+vector_t *vector_copy(pbqp_t *pbqp, vector_t *v);
 
 /* sum += summand */
-void vector_add(vector *sum, vector *summand);
+void vector_add(vector_t *sum, vector_t *summand);
 
-void vector_set(vector *vec, unsigned index, num value);
+void vector_set(vector_t *vec, unsigned index, num value);
 
 #if KAPS_ENABLE_VECTOR_NAMES
-void vector_set_description(vector *vec, unsigned index, const char *name);
+void vector_set_description(vector_t *vec, unsigned index, const char *name);
 #endif
 
-void vector_add_value(vector *vec, num value);
+void vector_add_value(vector_t *vec, num value);
 
-void vector_add_matrix_col(vector *vec, pbqp_matrix *mat, unsigned col_index);
-void vector_add_matrix_row(vector *vec, pbqp_matrix *mat, unsigned row_index);
+void vector_add_matrix_col(vector_t *vec, pbqp_matrix_t *mat, unsigned col_index);
+void vector_add_matrix_row(vector_t *vec, pbqp_matrix_t *mat, unsigned row_index);
 
-num vector_get_min(vector *vec);
-unsigned vector_get_min_index(vector *vec);
+num vector_get_min(vector_t *vec);
+unsigned vector_get_min_index(vector_t *vec);
 
 #endif /* KAPS_VECTOR_H */
