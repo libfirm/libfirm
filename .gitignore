@@ -3,6 +3,8 @@ Makefile.in
 /autom4te.cache/
 /config.guess
 /config.h.in
+/config.h
+/build
 /config.sub
 /configure
 /depcomp
