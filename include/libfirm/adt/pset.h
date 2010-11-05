@@ -218,7 +218,7 @@ FIRM_API void pset_break(pset *pset);
  */
 FIRM_API void pset_insert_pset_ptr(pset *target, pset *src);
 
-#define new_pset(cmp, slots) (PSET_TRACE (new_pset) ((cmp), (slots)))
+#define new_pset(cmp, slots) ((new_pset) ((cmp), (slots)))
 #define pset_find(pset, key, hash) \
   _pset_search ((pset), (key), (hash), _pset_find)
 #define pset_insert(pset, key, hash) \
@@ -259,17 +259,6 @@ void pset_describe (pset *pset);
 typedef enum { _pset_find, _pset_insert, _pset_hinsert } _pset_action;
 
 FIRM_API void *_pset_search(pset *, const void *, unsigned, _pset_action);
-
-#if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
-extern const char *pset_tag;
-# ifdef PSET_ID
-#   define PSET_TRACE pset_tag = SET_ID,
-# else
-#   define PSET_TRACE pset_tag = __FILE__,
-# endif
-#else /* !(DEBUG && HAVE_GNU_MALLOC) */
-#   define PSET_TRACE
-#endif /* !(DEBUG && HAVE_GNU_MALLOC) */
 
 #include "../end.h"
 

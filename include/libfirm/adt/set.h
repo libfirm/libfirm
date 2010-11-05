@@ -192,7 +192,7 @@ FIRM_API void set_break(set *set);
 #define foreach_set(set, type, entry) for (entry = (type) set_first(set); entry; entry = (type) set_next(set))
 
 /* implementation specific */
-#define new_set(cmp, slots) (SET_TRACE (new_set) ((cmp), (slots)))
+#define new_set(cmp, slots) ((new_set) ((cmp), (slots)))
 #define set_find(set, key, size, hash) \
   _set_search ((set), (key), (size), (hash), _set_find)
 #define set_insert(set, key, size, hash) \
@@ -234,17 +234,6 @@ FIRM_API void set_describe (set *set);
 typedef enum { _set_find, _set_insert, _set_hinsert, _set_hinsert0 } _set_action;
 
 FIRM_API void *_set_search(set *, const void *, size_t, unsigned, _set_action);
-
-#if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
-extern const char *set_tag;
-# ifdef SET_ID
-#   define SET_TRACE set_tag = SET_ID,
-# else
-#   define SET_TRACE set_tag = __FILE__,
-# endif
-#else /* !(DEBUG && HAVE_GNU_MALLOC) */
-#   define SET_TRACE
-#endif /* !(DEBUG && HAVE_GNU_MALLOC) */
 
 #include "../end.h"
 

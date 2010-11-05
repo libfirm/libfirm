@@ -191,10 +191,6 @@ void *ir_arr_resize(void *elts, int nelts, size_t eltsize)
 	if (n != dp->u.allocated) {
 		dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+eltsize*n);
 		dp->u.allocated = n;
-#if defined(DEBUG) && defined(HAVE_GNU_MALLOC)
-	} else {
-		tmalloc_tag = NULL;
-#endif
 	}
 	dp->nelts = nelts;
 
