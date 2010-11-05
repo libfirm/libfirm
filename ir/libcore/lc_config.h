@@ -23,23 +23,10 @@
  * @author Sebastian Hack
  * @date 22.12.2004
  */
-
 #ifndef _LC_CONFIG_H
 #define _LC_CONFIG_H
 
-#if defined(__STD_VERSION__) && __STD_VERSION >= 199901L
-#define LC_HAVE_C99 1
-#endif
-
-/* ISO C99 Standard stuff */
-#ifdef LC_HAVE_C99
-#define LC_FUNCNAME    __func__
-#define LC_UNUSED(x)   x
-#define LC_LONGLONG    long long
-#define LC_LONGDOUBLE  long double
-
-/* definitions using GCC */
-#elif defined(__GNUC__)
+#if defined(__GNUC__)
 
 #define inline         __inline__
 #define LC_FUNCNAME    __FUNCTION__

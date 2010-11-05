@@ -36,23 +36,10 @@
 #define LONGLONG     long /* LC_LONGLONG */
 #define LONGDOUBLE   double /* LC_LONGDOUBLE */
 
-#ifdef LC_HAVE_C99
-#define HAVE_C99     LC_HAVE_C99
-#else /* LC_HAVE_C99 */
-
 #ifdef _WIN32
 /* Windows names for non-POSIX calls */
 #define snprintf  _snprintf
 #define vsnprintf _vsnprintf
 #endif /* WIN32 */
-
-/* These both are not posix or ansi c but almost everywhere existent */
-
-/* Daniel: Why not just include stdio.h?
-extern int snprintf(char *buf, size_t size, const char *fmt, ...);
-extern int vsnprintf(char *buf, size_t size, const char *fmt, va_list args);
-*/
-
-#endif /* LC_HAVE_C99 */
 
 #endif /* _COMMON_T_H */
