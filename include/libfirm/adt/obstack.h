@@ -507,10 +507,10 @@ __extension__								\
 #	define FIRM_NOTHROW
 #endif
 
-#ifdef _WIN32
-#	define FIRM_PRINTF(a,b)
-#else
+#ifdef __GNUC__
 #	define FIRM_PRINTF(a,b) __attribute__ ((__format__ (__printf__, a, b)))
+#else
+#	define FIRM_PRINTF(a,b)
 #endif
 
 /** prints formated string (printf-style format) to an obstack.
