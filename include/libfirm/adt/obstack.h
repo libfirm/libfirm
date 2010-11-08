@@ -507,13 +507,19 @@ __extension__								\
 #	define FIRM_NOTHROW
 #endif
 
+#ifdef _WIN32
+#	define FIRM_PRINTF(a,b)
+#else
+#	define FIRM_PRINTF(a,b) __attribute__ ((__format__ (__printf__, a, b)))
+#endif
+
 /** prints formated string (printf-style format) to an obstack.
  * This is done by "growing" the obstack with the obstack_*grow*
  * functions. Note: Does NOT append a null-byte. */
 int obstack_printf(struct obstack *obst, const char *fmt, ...)
-	FIRM_NOTHROW __attribute__ ((__format__ (__printf__, 2, 3)));
+	FIRM_NOTHROW FIRM_PRINTF(2, 3);
 int obstack_vprintf(struct obstack *obst, const char *fmt, va_list ap)
-	FIRM_NOTHROW __attribute__ ((__format__ (__printf__, 2, 0)));
+	FIRM_NOTHROW FIRM_PRINTF(2, 0);
 
 #include "../end.h"
 
