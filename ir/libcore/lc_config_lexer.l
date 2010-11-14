@@ -26,7 +26,11 @@
 #endif
 
 #include <stdio.h>
-#include <unistd.h>  /* flex generated code wants a declaration of isatty... */
+/* flex generated code wants a declaration of isatty... */
+#ifdef _WIN32
+#include <io.h>
+#else
+#include <unistd.h>
 
 #include "lc_parser_t.h"
 #include "lc_config_parser.h"
