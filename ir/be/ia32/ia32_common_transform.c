@@ -44,7 +44,7 @@
 #include "gen_ia32_new_nodes.h"
 #include "gen_ia32_regalloc_if.h"
 
-ir_heights_t *heights = NULL;
+ir_heights_t *ia32_heights = NULL;
 
 static int check_immediate_constraint(long val, char immediate_constraint_type)
 {
@@ -81,7 +81,7 @@ static ir_type *ia32_get_prim_type(pmap *types, ir_mode *mode)
 	return res;
 }
 
-ir_entity *create_float_const_entity(ir_node *cnst)
+ir_entity *ia32_create_float_const_entity(ir_node *cnst)
 {
 	ir_graph         *irg      = get_irn_irg(cnst);
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
@@ -130,7 +130,7 @@ ir_node *ia32_create_Immediate(ir_entity *symconst, int symconst_sign, long val)
 	ir_graph *irg         = current_ir_graph;
 	ir_node  *start_block = get_irg_start_block(irg);
 	ir_node  *immediate   = new_bd_ia32_Immediate(NULL, start_block, symconst,
-			symconst_sign, no_pic_adjust, val);
+			symconst_sign, ia32_no_pic_adjust, val);
 	arch_set_irn_register(immediate, &ia32_registers[REG_GP_NOREG]);
 
 	return immediate;
@@ -164,7 +164,7 @@ const arch_register_t *ia32_get_clobber_register(const char *clobber)
 
 int ia32_mode_needs_gp_reg(ir_mode *mode)
 {
-	if (mode == mode_fpcw)
+	if (mode == ia32_mode_fpcw)
 		return 0;
 	if (get_mode_size_bits(mode) > 32)
 		return 0;
@@ -425,7 +425,7 @@ static inline ir_node *get_new_node(ir_node *node)
 #endif
 }
 
-ir_node *gen_ASM(ir_node *node)
+ir_node *ia32_gen_ASM(ir_node *node)
 {
 	ir_node                    *block     = get_nodes_block(node);
 	ir_node                    *new_block = get_new_node(block);
@@ -476,7 +476,7 @@ ir_node *gen_ASM(ir_node *node)
 			continue;
 		}
 
-		req = parse_clobber(c);
+		req = ia32_parse_clobber(c);
 		clobber_bits[req->cls->index] |= *req->limited;
 
 		n_clobbers++;
@@ -516,7 +516,7 @@ ir_node *gen_ASM(ir_node *node)
 		const arch_register_req_t *req;
 
 		parse_asm_constraints(&parsed_constraint, c, 1);
-		req = make_register_req(&parsed_constraint, n_out_constraints,
+		req = ia32_make_register_req(&parsed_constraint, n_out_constraints,
 		                        out_reg_reqs, out_idx);
 		out_reg_reqs[out_idx] = req;
 
@@ -555,13 +555,13 @@ ir_node *gen_ASM(ir_node *node)
 			}
 		}
 
-		req = make_register_req(&parsed_constraint, n_out_constraints,
+		req = ia32_make_register_req(&parsed_constraint, n_out_constraints,
 		                        out_reg_reqs, i);
 		in_reg_reqs[i] = req;
 
 		if (parsed_constraint.immediate_type != '\0') {
 			char imm_type = parsed_constraint.immediate_type;
-			input = try_create_Immediate(pred, imm_type);
+			input = ia32_try_create_Immediate(pred, imm_type);
 		}
 
 		if (input == NULL) {
@@ -592,7 +592,7 @@ ir_node *gen_ASM(ir_node *node)
 		if (strcmp(c, "memory") == 0 || strcmp(c, "cc") == 0)
 			continue;
 
-		req = parse_clobber(c);
+		req = ia32_parse_clobber(c);
 		out_reg_reqs[out_idx] = req;
 		++out_idx;
 	}
@@ -746,7 +746,7 @@ ir_node *gen_ASM(ir_node *node)
 	return new_node;
 }
 
-ir_node *gen_CopyB(ir_node *node)
+ir_node *ia32_gen_CopyB(ir_node *node)
 {
 	ir_node  *block    = get_new_node(get_nodes_block(node));
 	ir_node  *src      = get_CopyB_src(node);
@@ -783,7 +783,7 @@ ir_node *gen_CopyB(ir_node *node)
 	return res;
 }
 
-ir_node *gen_Proj_tls(ir_node *node)
+ir_node *ia32_gen_Proj_tls(ir_node *node)
 {
 	ir_node *block = get_new_node(get_nodes_block(node));
 	ir_node *res   = NULL;
@@ -793,7 +793,7 @@ ir_node *gen_Proj_tls(ir_node *node)
 	return res;
 }
 
-ir_node *gen_Unknown(ir_node *node)
+ir_node *ia32_gen_Unknown(ir_node *node)
 {
 	ir_mode  *mode  = get_irn_mode(node);
 	ir_graph *irg   = current_ir_graph;
@@ -817,7 +817,7 @@ ir_node *gen_Unknown(ir_node *node)
 	return res;
 }
 
-const arch_register_req_t *make_register_req(const constraint_t *constraint,
+const arch_register_req_t *ia32_make_register_req(const constraint_t *constraint,
 		int n_outs, const arch_register_req_t **out_reqs, int pos)
 {
 	struct obstack      *obst    = get_irg_obstack(current_ir_graph);
@@ -871,7 +871,7 @@ const arch_register_req_t *make_register_req(const constraint_t *constraint,
 	return req;
 }
 
-const arch_register_req_t *parse_clobber(const char *clobber)
+const arch_register_req_t *ia32_parse_clobber(const char *clobber)
 {
 	struct obstack        *obst = get_irg_obstack(current_ir_graph);
 	const arch_register_t *reg  = ia32_get_clobber_register(clobber);
@@ -897,7 +897,7 @@ const arch_register_req_t *parse_clobber(const char *clobber)
 }
 
 
-int prevents_AM(ir_node *const block, ir_node *const am_candidate,
+int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
                        ir_node *const other)
 {
 	if (get_nodes_block(other) != block)
@@ -916,7 +916,7 @@ int prevents_AM(ir_node *const block, ir_node *const am_candidate,
 			if (is_Proj(pred) && get_Proj_pred(pred) == am_candidate)
 				continue;
 
-			if (!heights_reachable_in_block(heights, pred, am_candidate))
+			if (!heights_reachable_in_block(ia32_heights, pred, am_candidate))
 				continue;
 
 			return 1;
@@ -928,14 +928,14 @@ int prevents_AM(ir_node *const block, ir_node *const am_candidate,
 		if (is_Proj(other) && get_Proj_pred(other) == am_candidate)
 			return 0;
 
-		if (!heights_reachable_in_block(heights, other, am_candidate))
+		if (!heights_reachable_in_block(ia32_heights, other, am_candidate))
 			return 0;
 
 		return 1;
 	}
 }
 
-ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type)
+ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
 	long         val = 0;
 	ir_entity   *symconst_ent  = NULL;

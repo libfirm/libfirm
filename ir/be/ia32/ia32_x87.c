@@ -2268,7 +2268,7 @@ static void update_liveness_walker(ir_node *block, void *data)
  * Replaces all virtual floating point instructions and registers
  * by real ones.
  */
-void x87_simulate_graph(ir_graph *irg)
+void ia32_x87_simulate_graph(ir_graph *irg)
 {
 	/* TODO improve code quality (less executed fxch) by using execfreqs */
 
@@ -2310,7 +2310,7 @@ void x87_simulate_graph(ir_graph *irg)
 	/* kill it */
 	del_waitq(sim.worklist);
 	x87_destroy_simulator(&sim);
-}  /* x87_simulate_graph */
+}  /* ia32_x87_simulate_graph */
 
 /* Initializes the x87 simulator. */
 void ia32_init_x87(void)

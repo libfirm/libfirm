@@ -43,8 +43,8 @@ struct constraint_t {
 	int                          same_as;
 };
 
-extern ir_heights_t *heights;
-extern int           no_pic_adjust;
+extern ir_heights_t *ia32_heights;
+extern int           ia32_no_pic_adjust;
 
 /**
  * Get an atomic entity that is initialized with a tarval forming
@@ -52,7 +52,7 @@ extern int           no_pic_adjust;
  *
  * @param cnst             the node representing the constant
  */
-ir_entity *create_float_const_entity(ir_node *cnst);
+ir_entity *ia32_create_float_const_entity(ir_node *cnst);
 
 /**
  * Creates an immediate.
@@ -77,38 +77,38 @@ int ia32_mode_needs_gp_reg(ir_mode *mode);
 /**
  * generates code for a ASM node
  */
-ir_node *gen_ASM(ir_node *node);
+ir_node *ia32_gen_ASM(ir_node *node);
 
 /**
  * Transforms a CopyB node.
  *
  * @return The transformed node.
  */
-ir_node *gen_CopyB(ir_node *node);
+ir_node *ia32_gen_CopyB(ir_node *node);
 
 /**
  * Transform the Thread Local Storage Proj.
  */
-ir_node *gen_Proj_tls(ir_node *node);
+ir_node *ia32_gen_Proj_tls(ir_node *node);
 
 /**
  * This function just sets the register for the Unknown node
  * as this is not done during register allocation because Unknown
  * is an "ignore" node.
  */
-ir_node *gen_Unknown(ir_node *node);
+ir_node *ia32_gen_Unknown(ir_node *node);
 
-const arch_register_req_t *make_register_req(const constraint_t *constraint,
+const arch_register_req_t *ia32_make_register_req(const constraint_t *constraint,
 		int n_outs, const arch_register_req_t **out_reqs, int pos);
 
-const arch_register_req_t *parse_clobber(const char *clobber);
+const arch_register_req_t *ia32_parse_clobber(const char *clobber);
 
 /**
  * Checks whether other node inputs depend on the am_candidate (via mem-proj).
  */
-int prevents_AM(ir_node *const block, ir_node *const am_candidate,
+int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
                        ir_node *const other);
 
-ir_node *try_create_Immediate(ir_node *node, char immediate_constraint_type);
+ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type);
 
 #endif

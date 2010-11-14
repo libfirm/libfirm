@@ -39,7 +39,7 @@
  *
  * Registers must be allocated.
  */
-void x87_simulate_graph(ir_graph *irg);
+void ia32_x87_simulate_graph(ir_graph *irg);
 
 /**
  * Initializes the x87 simulator.

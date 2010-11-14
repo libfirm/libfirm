@@ -101,7 +101,7 @@ extern transformer_t be_transformer;
 #endif
 
 /** The mode for the floating point control word. */
-extern ir_mode *mode_fpcw;
+extern ir_mode *ia32_mode_fpcw;
 
 static inline ia32_irg_data_t *ia32_get_irg_data(const ir_graph *irg)
 {
@@ -124,7 +124,7 @@ ir_node *ia32_new_Fpu_truncate(ir_graph *irg);
  * Split instruction with source AM into Load and separate instruction.
  * @return result of the Load
  */
-ir_node *turn_back_am(ir_node *node);
+ir_node *ia32_turn_back_am(ir_node *node);
 
 /**
  * Maps all intrinsic calls that the backend support

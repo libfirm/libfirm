@@ -74,7 +74,7 @@ $state       = 32; # register represents a state
 	],
 	fp_cw => [	# the floating point control word
 		{ name => "fpcw", type => $ignore | $state },
-		{ mode => "mode_fpcw", flags => "manual_ra|state" }
+		{ mode => "ia32_mode_fpcw", flags => "manual_ra|state" }
 	],
 	flags => [
 		{ name => "eflags", type => 0 },
@@ -209,7 +209,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 $mode_xmm           = "mode_E";
 $mode_gp            = "mode_Iu";
 $mode_flags         = "mode_Iu";
-$mode_fpcw          = "mode_fpcw";
+$mode_fpcw          = "ia32_mode_fpcw";
 $status_flags       = [ "CF", "PF", "AF", "ZF", "SF", "OF" ];
 $status_flags_wo_cf = [       "PF", "AF", "ZF", "SF", "OF" ];
 $fpcw_flags         = [ "FP_IM", "FP_DM", "FP_ZM", "FP_OM", "FP_UM", "FP_PM",

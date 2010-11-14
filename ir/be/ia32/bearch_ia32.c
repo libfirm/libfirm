@@ -97,7 +97,7 @@ transformer_t be_transformer = TRANSFORMER_DEFAULT;
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-ir_mode         *mode_fpcw       = NULL;
+ir_mode         *ia32_mode_fpcw       = NULL;
 
 /** The current omit-fp state */
 static unsigned ia32_curr_fp_ommitted  = 0;
@@ -851,7 +851,7 @@ static void ia32_prepare_graph(ir_graph *irg)
 		dump_ir_graph(irg, "place");
 }
 
-ir_node *turn_back_am(ir_node *node)
+ir_node *ia32_turn_back_am(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_graph *irg   = get_irn_irg(node);
@@ -929,7 +929,7 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 	type = get_ia32_op_type(node);
 	switch (type) {
 		case ia32_AddrModeS:
-			turn_back_am(node);
+			ia32_turn_back_am(node);
 			break;
 
 		case ia32_AddrModeD:
@@ -1348,7 +1348,7 @@ static void ia32_finish(ir_graph *irg)
 
 	/* we might have to rewrite x87 virtual registers */
 	if (irg_data->do_x87_sim) {
-		x87_simulate_graph(irg);
+		ia32_x87_simulate_graph(irg);
 	}
 
 	/* do peephole optimisations */
@@ -1531,8 +1531,8 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	isa = XMALLOC(ia32_isa_t);
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
 
-	if (mode_fpcw == NULL) {
-		mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);
+	if (ia32_mode_fpcw == NULL) {
+		ia32_mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);
 	}
 
 	ia32_register_init();

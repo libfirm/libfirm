@@ -644,7 +644,7 @@ static void peephole_store_incsp(ir_node *store)
  */
 static inline int mode_needs_gp_reg(ir_mode *mode)
 {
-        if (mode == mode_fpcw)
+        if (mode == ia32_mode_fpcw)
                 return 0;
         if (get_mode_size_bits(mode) > 32)
                 return 0;
@@ -1202,7 +1202,7 @@ static void peephole_ia32_Imul_split(ir_node *imul)
 		return;
 
 	/* fine, we can rebuild it */
-	res = turn_back_am(imul);
+	res = ia32_turn_back_am(imul);
 	arch_set_irn_register(res, reg);
 }
 

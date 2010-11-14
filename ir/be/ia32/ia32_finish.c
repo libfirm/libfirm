@@ -426,7 +426,7 @@ static void fix_am_source(ir_node *irn)
 				out_reg != arch_get_irn_register(get_irn_n(irn, n_ia32_index)))
 			continue;
 
-		load_res = turn_back_am(irn);
+		load_res = ia32_turn_back_am(irn);
 		arch_set_irn_register(load_res, out_reg);
 
 		DBG((dbg, LEVEL_3,

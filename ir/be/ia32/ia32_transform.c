@@ -92,7 +92,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static ir_node         *initial_fpcw = NULL;
-int                     no_pic_adjust;
+int                     ia32_no_pic_adjust;
 
 typedef ir_node *construct_binop_func(dbg_info *db, ir_node *block,
         ir_node *base, ir_node *index, ir_node *mem, ir_node *op1,
@@ -285,7 +285,7 @@ static ir_node *gen_Const(ir_node *node)
 					}
 				}
 #endif /* CONSTRUCT_SSE_CONST */
-				floatent = create_float_const_entity(node);
+				floatent = ia32_create_float_const_entity(node);
 
 				base     = get_symconst_base();
 				load     = new_bd_ia32_xLoad(dbgi, block, base, noreg_GP, nomem,
@@ -308,7 +308,7 @@ static ir_node *gen_Const(ir_node *node)
 				ir_mode *ls_mode;
 				ir_node *base;
 
-				floatent = create_float_const_entity(node);
+				floatent = ia32_create_float_const_entity(node);
 				/* create_float_const_ent is smart and sometimes creates
 				   smaller entities */
 				ls_mode  = get_type_mode(get_entity_type(floatent));
@@ -591,10 +591,10 @@ static int ia32_use_source_address_mode(ir_node *block, ir_node *node,
 		return 0;
 
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
-	if (other != NULL && prevents_AM(block, load, other))
+	if (other != NULL && ia32_prevents_AM(block, load, other))
 		return 0;
 
-	if (other2 != NULL && prevents_AM(block, load, other2))
+	if (other2 != NULL && ia32_prevents_AM(block, load, other2))
 		return 0;
 
 	return 1;
@@ -636,7 +636,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 
 	/* floating point immediates */
 	if (is_Const(node)) {
-		ir_entity *entity  = create_float_const_entity(node);
+		ir_entity *entity  = ia32_create_float_const_entity(node);
 		addr->base         = get_symconst_base();
 		addr->index        = noreg_GP;
 		addr->mem          = nomem;
@@ -842,7 +842,7 @@ static void match_arguments(ia32_address_mode_t *am, ir_node *block,
 	 * op2 input */
 	new_op2 = NULL;
 	if (!(flags & match_try_am) && use_immediate) {
-		new_op2 = try_create_Immediate(op2, 0);
+		new_op2 = ia32_try_create_Immediate(op2, 0);
 	}
 
 	if (new_op2 == NULL &&
@@ -2105,14 +2105,14 @@ static int use_dest_am(ir_node *block, ir_node *node, ir_node *mem,
 	/* don't do AM if other node inputs depend on the load (via mem-proj) */
 	if (other != NULL                   &&
 	    get_nodes_block(other) == block &&
-	    heights_reachable_in_block(heights, other, load)) {
+	    heights_reachable_in_block(ia32_heights, other, load)) {
 		return 0;
 	}
 
-	if (prevents_AM(block, load, mem))
+	if (ia32_prevents_AM(block, load, mem))
 		return 0;
 	/* Store should be attached to the load via mem */
-	assert(heights_reachable_in_block(heights, mem, load));
+	assert(heights_reachable_in_block(ia32_heights, mem, load));
 
 	return 1;
 }
@@ -3874,7 +3874,7 @@ static ir_node *gen_Conv(ir_node *node)
 static ir_node *create_immediate_or_transform(ir_node *node,
                                               char immediate_constraint_type)
 {
-	ir_node *new_node = try_create_Immediate(node, immediate_constraint_type);
+	ir_node *new_node = ia32_try_create_Immediate(node, immediate_constraint_type);
 	if (new_node == NULL) {
 		new_node = be_transform_node(node);
 	}
@@ -4746,13 +4746,13 @@ static ir_node *gen_be_Call(ir_node *node)
 	assert(be_Call_get_entity(node) == NULL);
 
 	/* special case for PIC trampoline calls */
-	old_no_pic_adjust = no_pic_adjust;
-	no_pic_adjust     = be_get_irg_options(current_ir_graph)->pic;
+	old_no_pic_adjust  = ia32_no_pic_adjust;
+	ia32_no_pic_adjust = be_get_irg_options(current_ir_graph)->pic;
 
 	match_arguments(&am, src_block, NULL, src_ptr, src_mem,
 	                match_am | match_immediate);
 
-	no_pic_adjust = old_no_pic_adjust;
+	ia32_no_pic_adjust = old_no_pic_adjust;
 
 	i    = get_irn_arity(node) - 1;
 	fpcw = be_transform_node(get_irn_n(node, i--));
@@ -5656,7 +5656,7 @@ static ir_node *gen_Proj(ir_node *node)
 			}
 
 			case pn_Start_P_tls:
-				return gen_Proj_tls(node);
+				return ia32_gen_Proj_tls(node);
 		}
 		break;
 
@@ -5691,7 +5691,7 @@ static void register_transformers(void)
 
 	be_set_transform_function(op_Add,              gen_Add);
 	be_set_transform_function(op_And,              gen_And);
-	be_set_transform_function(op_ASM,              gen_ASM);
+	be_set_transform_function(op_ASM,              ia32_gen_ASM);
 	be_set_transform_function(op_be_AddSP,         gen_be_AddSP);
 	be_set_transform_function(op_be_Call,          gen_be_Call);
 	be_set_transform_function(op_be_Copy,          gen_be_Copy);
@@ -5705,7 +5705,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Cond,             gen_Cond);
 	be_set_transform_function(op_Const,            gen_Const);
 	be_set_transform_function(op_Conv,             gen_Conv);
-	be_set_transform_function(op_CopyB,            gen_CopyB);
+	be_set_transform_function(op_CopyB,            ia32_gen_CopyB);
 	be_set_transform_function(op_Div,              gen_Div);
 	be_set_transform_function(op_DivMod,           gen_DivMod);
 	be_set_transform_function(op_Eor,              gen_Eor);
@@ -5750,7 +5750,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Store,            gen_Store);
 	be_set_transform_function(op_Sub,              gen_Sub);
 	be_set_transform_function(op_SymConst,         gen_SymConst);
-	be_set_transform_function(op_Unknown,          gen_Unknown);
+	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
 }
 
 /**
@@ -5871,11 +5871,11 @@ void ia32_transform_graph(ir_graph *irg)
 	int cse_last;
 
 	register_transformers();
-	initial_fpcw  = NULL;
-	no_pic_adjust = 0;
+	initial_fpcw       = NULL;
+	ia32_no_pic_adjust = 0;
 
 	be_timer_push(T_HEIGHTS);
-	heights      = heights_new(irg);
+	ia32_heights = heights_new(irg);
 	be_timer_pop(T_HEIGHTS);
 	ia32_calculate_non_address_mode_nodes(irg);
 
@@ -5896,8 +5896,8 @@ void ia32_transform_graph(ir_graph *irg)
 	set_opt_cse(cse_last);
 
 	ia32_free_non_address_mode_nodes();
-	heights_free(heights);
-	heights = NULL;
+	heights_free(ia32_heights);
+	ia32_heights = NULL;
 }
 
 void ia32_init_transform(void)
