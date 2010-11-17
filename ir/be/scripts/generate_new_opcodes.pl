@@ -375,7 +375,7 @@ EOF
 				my $req = $out[$idx];
 				my $reqstruct = generate_requirements($req, $n, "${arch}_${op}", $idx, 0);
 				$set_out_reqs .= <<EOF;
-info->out_infos[${idx}].req = &${reqstruct};
+	info->out_infos[${idx}].req = &${reqstruct};
 EOF
 			}
 		} else {
@@ -454,7 +454,7 @@ EOF
 	${custominit}
 	info = be_get_info(res);
 	(void) info; /* avoid potential warning */
-	${set_out_reqs}
+${set_out_reqs}
 
 EOF
 
