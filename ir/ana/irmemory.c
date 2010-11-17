@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -90,6 +90,12 @@ void set_irp_memory_disambiguator_options(unsigned options)
 {
 	global_mem_disamgig_opt = options;
 }  /* set_irp_memory_disambiguator_options */
+
+/* Get the base storage class (ignore modifier) */
+ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
+{
+	return x & ~ir_sc_modifiers;
+}  /* get_base_sc */
 
 /**
  * Find the base address and entity of an Sel node.

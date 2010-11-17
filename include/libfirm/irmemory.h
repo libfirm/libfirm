@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -76,10 +76,7 @@ typedef enum ir_storage_class_class_t {
 ENUM_BITSET(ir_storage_class_class_t)
 
 /** Get the base storage class (ignore modifier) */
-static inline ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
-{
-	return x & ~ir_sc_modifiers;
-}
+FIRM_API ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x);
 
 /**
  * A source language specific memory disambiguator function.
