@@ -219,7 +219,19 @@ static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 {
 	gc_cond *cur, *new_cur;
 
-	/* Do not allow a rhs union in a union (left associative). */
+	/* Do not allow a rhs union in a union (left associative).
+	 * Instead add all entries in the union separately. */
+	if (rhs->type == gct_union) {
+		gc_cond *it, *rhs_entry;
+
+		cur = lhs;
+		foreach_gc_union(rhs, it, rhs_entry) {
+			cur = gc_new_union(info, cur, rhs_entry);
+		}
+
+		return cur;
+	}
+
 	assert(rhs->type != gct_union);
 
 	/* Swap A or 0 to the left. */
