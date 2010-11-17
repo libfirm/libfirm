@@ -27,263 +27,13 @@
 #include "config.h"
 
 #include "iroptimize.h"
-#include "irgraph_t.h"
 #include "irphase_t.h"
-#include "irdump.h"
-#include "irgwalk.h"
-#include "array.h"
-#include "irtools.h"
-#include "irop_t.h"
-#include "pset_new.h"
 #include "plist.h"
-#include "iredges.h"
+#include "peg_dom_t.h"
 
 #define LOG_DIRS_COMBINE   1
 #define LOG_DOMINATOR_TREE 1
 #define LOG_GATING_DIRS    1
-
-/******************************************************************************
- * Dominator trees.                                                           *
- ******************************************************************************/
-
-/**
- * Alas dominator analysis in firm is limited to CFG blocks. We need dominator
- * information for individual nodes with the return node being the root. These
- * functions provide that information. Use pd_init to calculate the dom tree
- * and pd_free to delete it. pd_get_node can then be used, to get the dominator
- * tree node for the given ir node and pd_dump can dump the tree to a file.
- * This is a simple implementation and not particularly smart or fast.
- */
-
-typedef struct pd_node {
-	ir_node        *irn;
-	char            defined;
-	int             index;
-	int             min_index;
-	int             max_index;
-	plist_t        *children;
-	struct pd_node *parent;
-} pd_node;
-
-/* PEG Dominator tree. */
-typedef struct pd_tree {
-	struct obstack  obst;
-	pd_node        *root;
-	ir_phase       *phase;
-} pd_tree;
-
-static void pd_set_parent(pd_node *parent, pd_node *child)
-{
-	/* Detach from the old parent if needed. */
-	if (child->parent) {
-		plist_element_t *it;
-		it = plist_find_value(child->parent->children, child);
-		assert(it);
-
-		plist_erase(child->parent->children, it);
-	}
-
-	/* Add to the new parent. */
-	child->parent = parent;
-	plist_insert_back(parent->children, child);
-}
-
-/* Calculate post-order indices. */
-static int pd_compute_indices_post(pd_tree *tree, ir_node *irn, int counter)
-{
-	int i;
-	pd_node *pdn;
-
-	if (irn_visited(irn)) return counter;
-	mark_irn_visited(irn);
-
-	for (i = 0; i < get_irn_arity(irn); i++) {
-		ir_node *dep = get_irn_n(irn, i);
-		counter = pd_compute_indices_post(tree, dep, counter);
-	}
-
-	/* Postorder indices. */
-	pdn = phase_get_or_set_irn_data(tree->phase, irn);
-	pdn->irn   = irn;
-	pdn->index = counter++;
-	return counter;
-}
-
-/* Calculate indices for queries. */
-static int pd_compute_indices_dom(pd_node *pdn, int counter)
-{
-	plist_element_t *it;
-	pdn->index = counter;
-	pdn->min_index = counter;
-
-	foreach_plist(pdn->children, it) {
-		counter++;
-		counter = pd_compute_indices_dom(it->data, counter);
-	}
-
-	pdn->max_index = counter;
-	return counter;
-}
-
-static pd_node *pd_compute_intersect(pd_node *lhs, pd_node *rhs)
-{
-	while (lhs != rhs) {
-		while (lhs->index < rhs->index) lhs = lhs->parent;
-		while (rhs->index < lhs->index) rhs = rhs->parent;
-	}
-	return lhs;
-}
-
-/* Paper: A simple, fast dominance algorithm. Keith et al. */
-static int pd_compute(pd_tree *tree, ir_node *irn)
-{
-	int i, changed;
-
-	if (irn_visited(irn)) return 0;
-	mark_irn_visited(irn);
-	changed = 0;
-
-	if (irn != tree->root->irn) {
-		const ir_edge_t *edge;
-		pd_node *pd_idom = NULL;
-		pd_node *pdn = phase_get_irn_data(tree->phase, irn);
-		assert(pdn);
-
-		/* Find new_idom. */
-		foreach_out_edge(irn, edge) {
-			ir_node *ir_src = get_edge_src_irn(edge);
-			pd_node *pd_src = phase_get_irn_data(tree->phase, ir_src);
-			if (!pd_src) continue;
-
-			if (pd_src->defined) {
-				pd_idom = pd_src;
-				break;
-			}
-		}
-
-		assert(pd_idom);
-
-		/* For all others. */
-		foreach_out_edge(irn, edge) {
-			ir_node *ir_src = get_edge_src_irn(edge);
-			pd_node *pd_src = phase_get_irn_data(tree->phase, ir_src);
-			if (!pd_src) continue;
-
-			if ((pd_src != pd_idom) && pd_src->defined) {
-				pd_idom = pd_compute_intersect(pd_src, pd_idom);
-			}
-		}
-
-		/* Link new_idom to the node. */
-		if (pdn->parent != pd_idom) {
-			pd_set_parent(pd_idom, pdn);
-			pdn->defined = 1;
-			changed = 1;
-		}
-	}
-
-	for (i = 0; i < get_irn_arity(irn); i++) {
-		ir_node *dep = get_irn_n(irn, i);
-		changed |= pd_compute(tree, dep);
-	}
-
-	return changed;
-}
-
-static void *pd_init_node(ir_phase *phase, const ir_node *irn)
-{
-	pd_tree *tree = phase_get_private(phase);
-	pd_node *pdn  = OALLOCZ(&tree->obst, pd_node);
-
-	(void)irn;
-	pdn->children = plist_obstack_new(&tree->obst);
-	return pdn;
-}
-
-static void pd_dump(pd_tree *tree, FILE *f);
-
-static pd_tree *pd_init(ir_graph *irg)
-{
-	// Get the return node from the PEG, alloc the tree.
-	int       changed = 1;
-	ir_node  *end     = get_irg_end_block(irg);
-	ir_node  *ret     = get_Block_cfgpred(end, 0);
-	pd_tree  *tree    = XMALLOC(pd_tree);
-	assert(is_Return(ret)); // The PEG has to be well-formed.
-
-	// Prepare data structures for computation.
-	obstack_init(&tree->obst);
-	tree->phase = new_phase(irg, pd_init_node);
-	phase_set_private(tree->phase, tree);
-	edges_activate(irg);
-
-	// Setup the root node.
-	tree->root = phase_get_or_set_irn_data(tree->phase, ret);
-	tree->root->irn     = ret;
-	tree->root->defined = 1;
-
-	/* Index nodes in post-order for the algorithm. */
-	inc_irg_visited(irg);
-	pd_compute_indices_post(tree, ret, 0);
-
-	/* Compute the dominance tree. */
-	while (changed) {
-		inc_irg_visited(irg);
-		changed = pd_compute(tree, ret);
-	}
-
-	/* Index nodes for fast queries. */
-	pd_compute_indices_dom(tree->root, 0);
-
-#ifdef LOG_DOMINATOR_TREE
-	pd_dump(tree, stdout);
-#endif
-
-	edges_deactivate(irg);
-	return tree;
-}
-
-static void pd_free(pd_tree *tree)
-{
-	phase_free(tree->phase);
-	obstack_free(&tree->obst, NULL);
-	xfree(tree);
-}
-
-static int pd_dominates(pd_tree *tree, ir_node *lhs, ir_node *rhs)
-{
-	/* Check for (non-strict) dominance. */
-	pd_node *lhs_node = phase_get_irn_data(tree->phase, lhs);
-	pd_node *rhs_node = phase_get_irn_data(tree->phase, rhs);
-
-	return (rhs_node->index >= lhs_node->min_index) &&
-	       (rhs_node->index <= lhs_node->max_index);
-}
-
-static void pd_dump_node(pd_node *pdn, FILE *f, int indent)
-{
-	plist_element_t *it;
-	int i;
-
-	for (i = 0; i < indent; i++) fprintf(f, "  ");
-	fprintf(f, "%s %li (%i - %i)\n",
-		get_op_name(get_irn_op(pdn->irn)),
-		get_irn_node_nr(pdn->irn),
-		pdn->min_index, pdn->max_index
-	);
-
-	foreach_plist(pdn->children, it) {
-		pd_dump_node(it->data, f, indent + 1);
-	}
-}
-
-static void pd_dump(pd_tree *tree, FILE *f)
-{
-	fprintf(f, "------------------\n");
-	fprintf(f, "PEG dominator tree\n");
-	fprintf(f, "------------------\n");
-	pd_dump_node(tree->root, f, 0);
-}
 
 /******************************************************************************
  * Gating conditions.                                                         *
@@ -701,13 +451,10 @@ static void gc_map_merge(gc_info *info, gc_map *map, gc_dirs *dirs)
  * Populate maps with directions.                                             *
  ******************************************************************************/
 
-static void gc_compute_cross_dirs(gc_info *info, pd_node *pdn,
-                                  gc_node *gcn, pd_node *pd_lhs)
+static void gc_compute_cross_dirs(gc_info *info, gc_node *gcn, gc_node *gc_lhs)
 {
-	plist_element_t *it_lhs, *it_mid, *it_rhs;
-
-	gc_node *gc_lhs = phase_get_irn_data(info->phase, pd_lhs->irn);
-	assert(gc_lhs);
+	plist_element_t *it_lhs, *it_rhs;
+	pd_iter it_mid;
 
 	/* Skip children with known cross dirs. */
 	if (gc_lhs->cross_map) return;
@@ -717,20 +464,21 @@ static void gc_compute_cross_dirs(gc_info *info, pd_node *pdn,
 
 	/* Scan conventional dirs in the child subgraph. */
 	foreach_plist(gc_lhs->map->dirs, it_lhs) {
+		ir_node *ir_rhs;
 		gc_dirs *lhs_dirs = it_lhs->data;
 
 		/* Search for dirs that cross into another childs subgraph. */
-		foreach_plist(pdn->children, it_mid) {
-			pd_node *pd_rhs = it_mid->data;
+		foreach_pd_child(info->tree, gcn->irn, it_mid, ir_rhs) {
 			gc_node *gc_rhs;
 
 			/* Skip boring dirs. */
-			if (lhs_dirs->target != pd_rhs->irn) continue;
+			if (lhs_dirs->target != ir_rhs) continue;
+
+			gc_rhs = phase_get_irn_data(info->phase, ir_rhs);
+			assert(gc_rhs);
 
 			/* Compute their cross dirs first. */
-			gc_compute_cross_dirs(info, pdn, gcn, pd_rhs);
-
-			gc_rhs = phase_get_irn_data(info->phase, pd_rhs->irn);
+			gc_compute_cross_dirs(info, gcn, gc_rhs);
 			assert(gc_rhs->cross_map);
 
 			/* Form our own cross dirs by concatenation.
@@ -755,35 +503,38 @@ static void gc_compute_cross_dirs(gc_info *info, pd_node *pdn,
 	}
 }
 
-static void gc_compute_dirs(gc_info *info, pd_node *pdn)
+static void gc_compute_dirs(gc_info *info, gc_node *gcn)
 {
 	int i;
+
 	plist_element_t *it;
-	gc_node *gcn;
+	pd_iter  it_child;
+	ir_node *ir_child;
 
 	/* Recurse first. */
-	foreach_plist(pdn->children, it) {
-		gc_compute_dirs(info, it->data);
+	foreach_pd_child(info->tree, gcn->irn, it_child, ir_child) {
+		gc_node *gc_child = phase_get_or_set_irn_data(info->phase, ir_child);
+		gc_child->irn = ir_child;
+
+		gc_compute_dirs(info, gc_child);
 	}
 
-	gcn = phase_get_or_set_irn_data(info->phase, pdn->irn);
-	gcn->irn = pdn->irn;
-
 	/* Compute crossing dirs for the dominator children. */
-	foreach_plist(pdn->children, it) {
-		gc_compute_cross_dirs(info, pdn, gcn, it->data);
+	foreach_pd_child(info->tree, gcn->irn, it_child, ir_child) {
+		gc_node *gc_child = phase_get_irn_data(info->phase, ir_child);
+		gc_compute_cross_dirs(info, gcn, gc_child);
 	}
 
 	/* Now create dirs edge by edge. */
-	for (i = 0; i < get_irn_arity(pdn->irn); i++) {
-		ir_node *ir_dep = get_irn_n(pdn->irn, i);
+	for (i = 0; i < get_irn_arity(gcn->irn); i++) {
+		ir_node *ir_dep = get_irn_n(gcn->irn, i);
 
 		/* Add the trivial gating path of length 1. */
 		gc_dirs *edge = gc_new_edge_dirs(info, gcn->irn, ir_dep);
 		gc_map_merge(info, gcn->map, edge);
 
 		/* For dominated target nodes add the combined dirs. */
-		if (pd_dominates(info->tree, pdn->irn, ir_dep)) {
+		if (pd_dominates(info->tree, gcn->irn, ir_dep)) {
 			gc_node *gc_dep = phase_get_irn_data(info->phase, ir_dep);
 			assert(gc_dep);
 
@@ -820,8 +571,20 @@ static void gc_dump(gc_info *info, FILE *f);
 static gc_info *gc_init(ir_graph *irg)
 {
 	gc_info *info = XMALLOC(gc_info);
+	ir_node *ret;
+
 	obstack_init(&info->obst);
 	info->tree = pd_init(irg);
+
+	ret = pd_get_root(info->tree);
+	assert(is_Return(ret));
+
+#ifdef LOG_DOMINATOR_TREE
+	printf("------------------\n");
+	printf("PEG dominator tree\n");
+	printf("------------------\n");
+	pd_dump(info->tree, stdout);
+#endif
 
 	info->phase = new_phase(irg, gc_init_node);
 	phase_set_private(info->phase, info);
@@ -833,8 +596,9 @@ static gc_info *gc_init(ir_graph *irg)
 #endif
 
 	/* Walk through the tree to compute directions. */
-	gc_compute_dirs(info, info->tree->root);
-	info->root = phase_get_irn_data(info->phase, info->tree->root->irn);
+	info->root = phase_get_or_set_irn_data(info->phase, ret);
+	info->root->irn = ret;
+	gc_compute_dirs(info, info->root);
 
 #ifdef LOG_GATING_DIRS
 	gc_dump(info, stdout);
