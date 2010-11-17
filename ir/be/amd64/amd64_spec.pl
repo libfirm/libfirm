@@ -54,49 +54,52 @@ $arch = "amd64";
 # comment: OPTIONAL comment for the node constructor
 #
 # register types:
-#   0 - no special type
-#   1 - caller save (register must be saved by the caller of a function)
-#   2 - callee save (register must be saved by the called function)
-#   4 - ignore (do not assign this register)
+$normal      =  0; # no special type
+$caller_save =  1; # caller save (register must be saved by the caller of a function)
+$callee_save =  2; # callee save (register must be saved by the called function)
+$ignore      =  4; # ignore (do not assign this register)
+$arbitrary   =  8; # emitter can choose an arbitrary register of this class
+$virtual     = 16; # the register is a virtual one
+$state       = 32; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "rax", type => 1 },
-		{ name => "rcx", type => 1 },
-		{ name => "rdx", type => 1 },
-		{ name => "rsi", type => 1 },
-		{ name => "rdi", type => 1 },
-		{ name => "rbx", type => 2 },
-		{ name => "rbp", type => 2 },
+		{ name => "rax", type => $caller_save },
+		{ name => "rcx", type => $caller_save },
+		{ name => "rdx", type => $caller_save },
+		{ name => "rsi", type => $caller_save },
+		{ name => "rdi", type => $caller_save },
+		{ name => "rbx", type => $callee_save },
+		{ name => "rbp", type => $callee_save },
 		{ name => "rsp", type => 4 }, # stackpointer?
-		{ name => "r8",  type => 1 },
-		{ name => "r9",  type => 1 },
-		{ name => "r10", type => 1 },
-		{ name => "r11", type => 1 },
-		{ name => "r12", type => 2 },
-		{ name => "r13", type => 2 },
-		{ name => "r14", type => 2 },
-		{ name => "r15", type => 2 },
-#		{ name => "gp_NOREG", type => 4 }, # we need a dummy register for NoReg nodes
+		{ name => "r8",  type => $caller_save },
+		{ name => "r9",  type => $caller_save },
+		{ name => "r10", type => $caller_save },
+		{ name => "r11", type => $caller_save },
+		{ name => "r12", type => $callee_save },
+		{ name => "r13", type => $callee_save },
+		{ name => "r14", type => $callee_save },
+		{ name => "r15", type => $callee_save },
+#		{ name => "gp_NOREG", type => $ignore }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Lu" }
 	],
 #	fp => [
-#		{ name => "xmm0", type => 1 },
-#		{ name => "xmm1", type => 1 },
-#		{ name => "xmm2", type => 1 },
-#		{ name => "xmm3", type => 1 },
-#		{ name => "xmm4", type => 1 },
-#		{ name => "xmm5", type => 1 },
-#		{ name => "xmm6", type => 1 },
-#		{ name => "xmm7", type => 1 },
-#		{ name => "xmm8", type => 1 },
-#		{ name => "xmm9", type => 1 },
-#		{ name => "xmm10", type => 1 },
-#		{ name => "xmm11", type => 1 },
-#		{ name => "xmm12", type => 1 },
-#		{ name => "xmm13", type => 1 },
-#		{ name => "xmm14", type => 1 },
-#		{ name => "xmm15", type => 1 },
+#		{ name => "xmm0", type => $caller_save },
+#		{ name => "xmm1", type => $caller_save },
+#		{ name => "xmm2", type => $caller_save },
+#		{ name => "xmm3", type => $caller_save },
+#		{ name => "xmm4", type => $caller_save },
+#		{ name => "xmm5", type => $caller_save },
+#		{ name => "xmm6", type => $caller_save },
+#		{ name => "xmm7", type => $caller_save },
+#		{ name => "xmm8", type => $caller_save },
+#		{ name => "xmm9", type => $caller_save },
+#		{ name => "xmm10", type => $caller_save },
+#		{ name => "xmm11", type => $caller_save },
+#		{ name => "xmm12", type => $caller_save },
+#		{ name => "xmm13", type => $caller_save },
+#		{ name => "xmm14", type => $caller_save },
+#		{ name => "xmm15", type => $caller_save },
 #		{ mode => "mode_D" }
 #	]
 	flags => [
