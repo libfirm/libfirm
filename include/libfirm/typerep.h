@@ -110,7 +110,7 @@ typedef enum {
 /**
  * linkage specifies how the linker treats symbols
  */
-typedef enum {
+typedef enum ir_linkage {
 	IR_LINKAGE_DEFAULT         = 0,
 	/**
 	 * A symbol whose definition won't change in a program.
@@ -250,6 +250,9 @@ FIRM_API void set_entity_ld_ident(ir_entity *ent, ident *ld_ident);
 
 /** Returns the mangled name of the entity as a string. */
 FIRM_API const char *get_entity_ld_name(const ir_entity *ent);
+
+/** returns 1 if the entity has an ld_ident set explicitely */
+FIRM_API int entity_has_ld_ident(const ir_entity *entity);
 
 /** Returns the owner of the entity. */
 FIRM_API ir_type *get_entity_owner(const ir_entity *ent);

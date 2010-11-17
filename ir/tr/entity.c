@@ -301,6 +301,11 @@ const char *(get_entity_ld_name)(const ir_entity *ent)
 	return _get_entity_ld_name(ent);
 }
 
+int entity_has_ld_ident(const ir_entity *entity)
+{
+	return entity->ld_name != NULL;
+}
+
 ir_type *(get_entity_type)(const ir_entity *ent)
 {
 	return _get_entity_type(ent);
