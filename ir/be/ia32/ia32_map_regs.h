@@ -36,20 +36,20 @@
 
 /**
  * Enters for each general purpose register the corresponding 16bit
- * name into a pmap.
+ * name into a map.
  */
-void ia32_build_16bit_reg_map(pmap *reg_map);
+void ia32_build_16bit_reg_map(const char *reg_map[]);
 
 /**
  * Enters for each general purpose register the corresponding 8bit
- * name into a pmap.
+ * name into a map.
  */
-void ia32_build_8bit_reg_map(pmap *reg_map);
-void ia32_build_8bit_reg_map_high(pmap *reg_map);
+void ia32_build_8bit_reg_map(const char *reg_map[]);
+void ia32_build_8bit_reg_map_high(const char *reg_map[]);
 
 /**
  * Returns the corresponding mapped name for a register.
  */
-const char *ia32_get_mapped_reg_name(pmap *reg_map, const arch_register_t *reg);
+const char *ia32_get_mapped_reg_name(const char *reg_map[], const arch_register_t *reg);
 
 #endif

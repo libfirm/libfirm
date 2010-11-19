@@ -1539,9 +1539,6 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	ia32_create_opcodes(&ia32_irn_ops);
 
 	be_emit_init(file_handle);
-	isa->regs_16bit     = pmap_create();
-	isa->regs_8bit      = pmap_create();
-	isa->regs_8bit_high = pmap_create();
 	isa->types          = pmap_create();
 	isa->tv_ent         = pmap_create();
 	isa->cpu            = ia32_init_machine_description();
@@ -1581,9 +1578,6 @@ static void ia32_done(void *self)
 	/* emit now all global declarations */
 	be_gas_emit_decls(isa->base.main_env);
 
-	pmap_destroy(isa->regs_16bit);
-	pmap_destroy(isa->regs_8bit);
-	pmap_destroy(isa->regs_8bit_high);
 	pmap_destroy(isa->tv_ent);
 	pmap_destroy(isa->types);
 
