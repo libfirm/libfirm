@@ -273,14 +273,17 @@ print OUT<<EOF;
 #include "../bearch.h"
 #include "${arch}_nodes_attr.h"
 
+/** global register indices for ${arch} registers */
 enum reg_indices {
 ${regdef}
 	N_${archuc}_REGISTERS
 };
+/** local register indices for ${arch} registers */
 enum {
 ${regdef2}
 };
 
+/** number of registers in ${arch} register classes. */
 enum {
 ${regcounts}
 };
@@ -328,10 +331,14 @@ print OUT "arch_register_class_t ${arch}_reg_classes[] = {\n\t".join(",\n\t", @r
 
 print OUT<<EOF;
 
+/** The array of all registers in the ${arch} architecture, sorted by its global index.*/
 const arch_register_t ${arch}_registers[] = {
 ${regtypes_def}
 };
 
+/**
+ * Initializes ${arch} register classes.
+ */
 void ${arch}_register_init(void)
 {
 ${reginit}
