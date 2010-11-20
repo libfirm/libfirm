@@ -30,6 +30,7 @@
 #include "irphase_t.h"
 #include "plist.h"
 #include "iredges.h"
+#include "obstack.h"
 
 typedef struct pd_node {
 	ir_node        *irn;
@@ -180,10 +181,10 @@ pd_tree *pd_init(ir_graph *irg)
 {
 	/* Get the return node from the PEG, alloc the tree. */
 	int       edges;
-	int       changed = 1;
-	ir_node  *end     = get_irg_end_block(irg);
-	ir_node  *ret     = get_Block_cfgpred(end, 0);
-	pd_tree  *tree    = XMALLOC(pd_tree);
+	int       changed;
+	ir_node  *end  = get_irg_end_block(irg);
+	ir_node  *ret  = get_Block_cfgpred(end, 0);
+	pd_tree  *tree = XMALLOC(pd_tree);
 	assert(is_Return(ret) && "Invalid PEG graph.");
 
 	/* Prepare data structures for computation. */
@@ -203,10 +204,10 @@ pd_tree *pd_init(ir_graph *irg)
 	pd_compute_indices_post(tree, ret, 0);
 
 	/* Compute the dominance tree. */
-	while (changed) {
+	do {
 		inc_irg_visited(irg);
 		changed = pd_compute(tree, ret);
-	}
+	} while(changed);
 
 	/* Index nodes for fast queries. */
 	pd_compute_indices_dom(tree->root, 0);
@@ -248,10 +249,7 @@ ir_node *pd_get_child(pd_tree *tree, ir_node *irn, pd_iter *it)
 	/* Get the first child element. */
 	plist_it = plist_first(pdn->children);
 	if (!plist_it) return NULL;
-
-	if (it != NULL) {
-		*it = plist_first(pdn->children);
-	}
+	if (it != NULL) *it = plist_it;
 
 	return ((pd_node*)plist_it->data)->irn;
 }

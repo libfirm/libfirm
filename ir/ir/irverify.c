@@ -1665,13 +1665,13 @@ static int verify_node_Theta(ir_node *n, ir_graph *irg)
 }
 
 /**
- * verify an Extract node
+ * verify an Eta node
  */
-static int verify_node_Extract(ir_node *n, ir_graph *irg)
+static int verify_node_Eta(ir_node *n, ir_graph *irg)
 {
 	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Extract_value(n));
-	ir_mode *op2mode = get_irn_mode(get_Extract_cond(n));
+	ir_mode *op1mode = get_irn_mode(get_Eta_value(n));
+	ir_mode *op2mode = get_irn_mode(get_Eta_cond(n));
 	(void) irg;
 
 	ASSERT_AND_RET(
@@ -1679,7 +1679,7 @@ static int verify_node_Extract(ir_node *n, ir_graph *irg)
 		op1mode == mymode &&
 		op2mode == mode_b &&
 		(mode_is_datab(mymode) || (mymode == mode_T) || (mymode == mode_M)),
-		"Extract node", 0
+		"Eta node", 0
 		);
 	return 1;
 }
@@ -2320,7 +2320,7 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
 	CASE(Bound);
 	CASE(Gamma);
 	CASE(Theta);
-	CASE(Extract);
+	CASE(Eta);
 	default:
 		break;
 	}

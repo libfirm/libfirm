@@ -30,6 +30,9 @@
 #include "irphase_t.h"
 #include "plist.h"
 #include "peg_dom_t.h"
+#include "peg_loop_t.h"
+#include "obstack.h"
+#include "irgwalk.h"
 
 #define LOG_DIRS_COMBINE   1
 #define LOG_DOMINATOR_TREE 1
@@ -681,6 +684,10 @@ static void gc_dump(gc_info *info, FILE *f)
 
 void peg_to_cfg(ir_graph *irg)
 {
-	gc_info *info = gc_init(irg);
-	gc_free(info);
+	//gc_info *info = gc_init(irg);
+	//gc_free(info);
+
+	pl_info *info = pl_init(irg);
+	pl_dump(info, stdout);
+	pl_free(info);
 }

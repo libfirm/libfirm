@@ -39,6 +39,7 @@
 #include "iredges.h"
 #include "bitset.h"
 #include "pmap.h"
+#include "obstack.h"
 
 /******************************************************************************
  * Utility functions.                                                         *
@@ -502,7 +503,7 @@ static void replace_phis_walk(ir_node *block, void *ctx)
 /**
  * Initiates the replacement of phi nodes by gamma and theta nodes in the
  * given graph. Note that after calling this function there will still be a
- * block structure and extract nodes, as well as their conditions are still
+ * block structure and eta nodes, as well as their conditions are still
  * missing. They will be placed by the next phase.
  */
 static void replace_phis(ir_graph *irg)
@@ -524,7 +525,7 @@ static void replace_phis(ir_graph *irg)
 }
 
 /******************************************************************************
- * Phase 2: Insert extract nodes when accessing values in a loop.             *
+ * Phase 2: Insert eta nodes when accessing values in a loop.                 *
  ******************************************************************************/
 
 /**
@@ -667,10 +668,10 @@ static ir_node *create_break_cond(ir_node *block, ir_loop *loop)
 }
 
 /**
- * This walker function walks through the graph and inserts extract nodes when
+ * This walker function walks through the graph and inserts eta nodes when
  * a node inside a loop is accessed from the outside.
  */
-static void insert_extracts_walk(ir_node* node, void *ctx)
+static void insert_etas_walk(ir_node* node, void *ctx)
 {
 	int      i;
 	ir_node *block;
@@ -689,32 +690,32 @@ static void insert_extracts_walk(ir_node* node, void *ctx)
 		ir_node *in_block = get_nodes_block(in);
 		ir_loop *in_loop  = get_irn_loop(in_block);
 
-		/* Shortcut. Can't be an extract. */
+		/* Shortcut. Can't be an eta. */
 		if (in_loop == NULL)   continue;
 		if (block == in_block) continue;
 
-		/* Accessing a loop from the outside requires extract. */
+		/* Accessing a loop from the outside requires eta. */
 		if (!is_in_loop(node, in_loop)) {
-			ir_mode *mode    = get_irn_mode(in);
-			ir_node *cond    = pmap_get(break_conds, in_loop);
-			ir_node *extract;
+			ir_mode *mode = get_irn_mode(in);
+			ir_node *cond = pmap_get(break_conds, in_loop);
+			ir_node *eta;
 
 			if (!cond) {
 				cond = create_break_cond(in_block, in_loop);
 				pmap_insert(break_conds, in_loop, cond);
 			}
 
-			extract = new_r_Extract(block, in, cond, mode);
-			set_irn_n(node, i, extract);
+			eta = new_r_Eta(block, in, cond, mode);
+			set_irn_n(node, i, eta);
 		}
 	}
 }
 
 /**
- * Initiates extract node creation in the graph. The block structure is still
+ * Initiates eta node creation in the graph. The block structure is still
  * important for this phase, to determine loop membership.
  */
-static void insert_extracts(ir_graph* irg)
+static void insert_etas(ir_graph* irg)
 {
 	pmap *break_conds;
 	assert(irg);
@@ -722,7 +723,7 @@ static void insert_extracts(ir_graph* irg)
 	assure_cf_loop(irg);
 	break_conds = pmap_create();
 
-	irg_walk_graph(irg, NULL, insert_extracts_walk, break_conds);
+	irg_walk_graph(irg, NULL, insert_etas_walk, break_conds);
 
 	pmap_destroy(break_conds);
 }
@@ -937,9 +938,9 @@ void cfg_to_peg(ir_graph *irg)
 	replace_phis(irg);
 	dump_ir_graph(irg, "gamma_theta");
 
-	/* Add extract nodes on loop access. */
-	insert_extracts(irg);
-	dump_ir_graph(irg, "extracts");
+	/* Add eta nodes on loop access. */
+	insert_etas(irg);
+	dump_ir_graph(irg, "etas");
 
 	/* Remove the existing block structure. */
 	remove_blocks(irg);

@@ -1299,13 +1299,13 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
                                ir_node *next, ir_mode *mode, int depth);
 
-/** Constructor for a Extract node.
+/** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
  * two nodes of the same nesting depth, the according theta nodes are iterated
  * simultaneously until the condition value evaluates to true and the value
- * nodes current value is returned. The extract node decreases the nesting
- * depth is decreased by one.
+ * nodes current value is returned. The eta node decreases the nesting depth
+ * by one.
  *
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
@@ -1318,8 +1318,8 @@ FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
  * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_rd_Extract(dbg_info *db, ir_node *block, ir_node *value,
-                                 ir_node *cond, ir_mode *mode);
+FIRM_API ir_node *new_rd_Eta(dbg_info *db, ir_node *block, ir_node *value,
+                             ir_node *cond, ir_mode *mode);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1475,13 +1475,13 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
 FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
-/** Constructor for a Extract node.
+/** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
  * two nodes of the same nesting depth, the according theta nodes are iterated
  * simultaneously until the condition value evaluates to true and the value
- * nodes current value is returned. The extract node decreases the nesting
- * depth is decreased by one.
+ * nodes current value is returned. The eta node decreases the nesting depth
+ * by one.
  *
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
@@ -1493,8 +1493,8 @@ FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
  * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_r_Extract(ir_node *block, ir_node *value, ir_node *cond,
-                                ir_mode *mode);
+FIRM_API ir_node *new_r_Eta(ir_node *block, ir_node *value, ir_node *cond,
+                            ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1662,13 +1662,13 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
 FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
-/** Constructor for a Extract node.
+/** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
  * two nodes of the same nesting depth, the according theta nodes are iterated
  * simultaneously until the condition value evaluates to true and the value
- * nodes current value is returned. The extract node decreases the nesting
- * depth is decreased by one.
+ * nodes current value is returned. The eta node decreases the nesting depth
+ * by one.
  *
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
@@ -1680,8 +1680,8 @@ FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
  * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_d_Extract(dbg_info *db, ir_node *value, ir_node *cond,
-                                ir_mode *mode);
+FIRM_API ir_node *new_d_Eta(dbg_info *db, ir_node *value, ir_node *cond,
+                            ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1830,13 +1830,13 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
 FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
                             int depth);
 
-/** Constructor for a Extract node.
+/** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
  * two nodes of the same nesting depth, the according theta nodes are iterated
  * simultaneously until the condition value evaluates to true and the value
- * nodes current value is returned. The extract node decreases the nesting
- * depth is decreased by one.
+ * nodes current value is returned. The eta node decreases the nesting depth
+ * by one.
  *
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
@@ -1847,7 +1847,7 @@ FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
  * @param *cond       The "nested" condition node.
  * @param *mode       The mode of the node, ir_true and ir_false.
  */
-FIRM_API ir_node *new_Extract(ir_node *value, ir_node *cond, ir_mode *mode);
+FIRM_API ir_node *new_Eta(ir_node *value, ir_node *cond, ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */
