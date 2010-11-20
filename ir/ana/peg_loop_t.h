@@ -39,6 +39,9 @@ pl_info *pl_init(ir_graph *irg);
 /** Free the loop information for the given tree. */
 void pl_free(pl_info *info);
 
+/** Get the associated graph. */
+ir_graph *pl_get_irg(pl_info *info);
+
 /** Get the loop depth of the given irn. */
 int pl_get_depth(pl_info *info, ir_node *irn);
 

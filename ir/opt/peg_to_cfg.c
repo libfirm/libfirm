@@ -36,7 +36,8 @@
 
 #define LOG_DIRS_COMBINE   1
 #define LOG_DOMINATOR_TREE 1
-#define LOG_GATING_DIRS    1
+#define LOG_LOOP_ANALYSIS  1
+#define LOG_GATING_CONDS   1
 
 /******************************************************************************
  * Gating conditions.                                                         *
@@ -109,7 +110,7 @@ typedef struct gc_node {
 /* Gating Condition info. */
 typedef struct gc_info {
 	struct obstack  obst;
-	pd_tree  *tree;
+	pd_tree  *pdt;
 	gc_node  *root;
 	ir_phase *phase;
 } gc_info;
@@ -203,13 +204,13 @@ static gc_cond *gc_new_ignore(void)
 	return &cond;
 }
 
-static gc_cond *gc_new_branch(gc_info *info, gc_cond *lhs,
+static gc_cond *gc_new_branch(gc_info *gci, gc_cond *lhs,
                               gc_cond *rhs, ir_node *gamma)
 {
 	/* G(g, a, a) = a */
 	if (gc_cond_equals(lhs, rhs)) return lhs;
 
-	gc_branch *gcb = OALLOC(&info->obst, gc_branch);
+	gc_branch *gcb = OALLOC(&gci->obst, gc_branch);
 	gcb->base.type = gct_branch;
 	gcb->lhs   = lhs;
 	gcb->rhs   = rhs;
@@ -218,7 +219,7 @@ static gc_cond *gc_new_branch(gc_info *info, gc_cond *lhs,
 }
 
 /* This is a complex beast. */
-static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
+static gc_cond *gc_new_union(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
 {
 	gc_cond *cur, *new_cur;
 
@@ -229,7 +230,7 @@ static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 
 		cur = lhs;
 		foreach_gc_union(rhs, it, rhs_entry) {
-			cur = gc_new_union(info, cur, rhs_entry);
+			cur = gc_new_union(gci, cur, rhs_entry);
 		}
 
 		return cur;
@@ -264,9 +265,9 @@ static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 
 		if (cur_branch->gamma == rhs_branch->gamma) {
 			/* Optimization can be applied. */
-			new_cur = gc_new_branch(info,
-				gc_new_union(info, cur_branch->lhs, rhs_branch->lhs),
-				gc_new_union(info, cur_branch->rhs, rhs_branch->rhs),
+			new_cur = gc_new_branch(gci,
+				gc_new_union(gci, cur_branch->lhs, rhs_branch->lhs),
+				gc_new_union(gci, cur_branch->rhs, rhs_branch->rhs),
 				cur_branch->gamma
 			);
 		}
@@ -289,7 +290,7 @@ static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 		if (new_cur) {
 			return new_cur;
 		} else {
-			gc_union *gcu = OALLOC(&info->obst, gc_union);
+			gc_union *gcu = OALLOC(&gci->obst, gc_union);
 			gcu->base.type = gct_union;
 			gcu->lhs = lhs;
 			gcu->rhs = rhs;
@@ -298,7 +299,7 @@ static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 	} else {
 		/* Tuple on the left. Replace the rhs or recurse. */
 		gc_union *lhs_gcu = (gc_union*)lhs;
-		gc_union *gcu = OALLOC(&info->obst, gc_union);
+		gc_union *gcu = OALLOC(&gci->obst, gc_union);
 		gcu->base.type = gct_union;
 
 		if (new_cur) {
@@ -306,14 +307,14 @@ static gc_cond *gc_new_union(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 			gcu->rhs = new_cur;
 			return (gc_cond*)gcu;
 		} else {
-			gcu->lhs = gc_new_union(info, lhs_gcu->lhs, rhs);
+			gcu->lhs = gc_new_union(gci, lhs_gcu->lhs, rhs);
 			gcu->rhs = lhs_gcu->rhs;
 			return (gc_cond*)gcu;
 		}
 	}
 }
 
-static gc_cond *gc_new_concat(gc_info *info, gc_cond *lhs, gc_cond *rhs)
+static gc_cond *gc_new_concat(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
 {
 	/* Swap A or 0 to the left. */
 	if ((rhs->type == gct_demand) || (rhs->type == gct_ignore)) {
@@ -327,9 +328,9 @@ static gc_cond *gc_new_concat(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 		/* G(g, a, b).c = G(g, a.c, b.c) */
 		gc_branch *lhs_branch = (gc_branch*)lhs;
 
-		return gc_new_branch(info,
-			gc_new_concat(info, lhs_branch->lhs, rhs),
-			gc_new_concat(info, lhs_branch->rhs, rhs),
+		return gc_new_branch(gci,
+			gc_new_concat(gci, lhs_branch->lhs, rhs),
+			gc_new_concat(gci, lhs_branch->rhs, rhs),
 			lhs_branch->gamma
 		);
 	}
@@ -337,9 +338,9 @@ static gc_cond *gc_new_concat(gc_info *info, gc_cond *lhs, gc_cond *rhs)
 		/* (a u b).c = a.c u b.c */
 		gc_union *lhs_union = (gc_union*)lhs;
 
-		return gc_new_union(info,
-			gc_new_concat(info, lhs_union->lhs, rhs),
-			gc_new_concat(info, lhs_union->lhs, rhs)
+		return gc_new_union(gci,
+			gc_new_concat(gci, lhs_union->lhs, rhs),
+			gc_new_concat(gci, lhs_union->lhs, rhs)
 		);
 	}}
 
@@ -357,10 +358,10 @@ static gc_cond *gc_new_concat(gc_info *info, gc_cond *lhs, gc_cond *rhs)
  */
 
 /* Compute directions for a single edge. */
-static gc_dirs *gc_new_edge_dirs(gc_info *info, ir_node *source,
+static gc_dirs *gc_new_edge_dirs(gc_info *gci, ir_node *source,
                                  ir_node *target)
 {
-	gc_dirs *dirs = OALLOC(&info->obst, gc_dirs);
+	gc_dirs *dirs = OALLOC(&gci->obst, gc_dirs);
 	dirs->target = target;
 	dirs->source = source;
 
@@ -371,7 +372,7 @@ static gc_dirs *gc_new_edge_dirs(gc_info *info, ir_node *source,
 		if (get_Gamma_true(source)  == target) edge = 1;
 
 		if (edge < 2) {
-			dirs->cond = gc_new_branch(info,
+			dirs->cond = gc_new_branch(gci,
 				(edge == 0) ? gc_new_demand() : gc_new_ignore(),
 				(edge == 0) ? gc_new_ignore() : gc_new_demand(),
 				source
@@ -390,9 +391,9 @@ static gc_dirs *gc_new_edge_dirs(gc_info *info, ir_node *source,
 
 static void gc_dump_cond(gc_cond *cond, FILE *f);
 
-static gc_dirs *gc_dirs_concat(gc_info *info, gc_dirs *lhs, gc_dirs *rhs)
+static gc_dirs *gc_dirs_concat(gc_info *gci, gc_dirs *lhs, gc_dirs *rhs)
 {
-	gc_dirs *dirs = OALLOC(&info->obst, gc_dirs);
+	gc_dirs *dirs = OALLOC(&gci->obst, gc_dirs);
 	assert(lhs->target == rhs->source);
 
 #ifdef LOG_DIRS_COMBINE
@@ -406,7 +407,7 @@ static gc_dirs *gc_dirs_concat(gc_info *info, gc_dirs *lhs, gc_dirs *rhs)
 	gc_dump_cond(rhs->cond, stdout); printf(") = ");
 #endif
 
-	dirs->cond   = gc_new_concat(info, lhs->cond, rhs->cond);
+	dirs->cond   = gc_new_concat(gci, lhs->cond, rhs->cond);
 	dirs->source = lhs->source;
 	dirs->target = rhs->target;
 
@@ -417,9 +418,9 @@ static gc_dirs *gc_dirs_concat(gc_info *info, gc_dirs *lhs, gc_dirs *rhs)
 	return dirs;
 }
 
-static gc_dirs *gc_dirs_union(gc_info *info, gc_dirs *lhs, gc_dirs *rhs)
+static gc_dirs *gc_dirs_union(gc_info *gci, gc_dirs *lhs, gc_dirs *rhs)
 {
-	gc_dirs *dirs = OALLOC(&info->obst, gc_dirs);
+	gc_dirs *dirs = OALLOC(&gci->obst, gc_dirs);
 	assert((lhs->target == rhs->target) && (lhs->source == rhs->source));
 
 #ifdef LOG_DIRS_COMBINE
@@ -432,7 +433,7 @@ static gc_dirs *gc_dirs_union(gc_info *info, gc_dirs *lhs, gc_dirs *rhs)
 	gc_dump_cond(rhs->cond, stdout); printf(") = ");
 #endif
 
-	dirs->cond   = gc_new_union(info, lhs->cond, rhs->cond);
+	dirs->cond   = gc_new_union(gci, lhs->cond, rhs->cond);
 	dirs->source = lhs->source;
 	dirs->target = rhs->target;
 
@@ -443,7 +444,7 @@ static gc_dirs *gc_dirs_union(gc_info *info, gc_dirs *lhs, gc_dirs *rhs)
 	return dirs;
 }
 
-static void gc_map_merge(gc_info *info, gc_map *map, gc_dirs *dirs)
+static void gc_map_merge(gc_info *gci, gc_map *map, gc_dirs *dirs)
 {
 	plist_element_t *it;
 	foreach_plist(map->dirs, it) {
@@ -453,7 +454,7 @@ static void gc_map_merge(gc_info *info, gc_map *map, gc_dirs *dirs)
 		/* Combine dirs with the same target. */
 		if (it_dirs->target == dirs->target) {
 			/* it_dirs is only used by us, so we can be destructive. */
-			it->data = gc_dirs_union(info, it_dirs, dirs);
+			it->data = gc_dirs_union(gci, it_dirs, dirs);
 			return;
 		}
 	}
@@ -466,7 +467,7 @@ static void gc_map_merge(gc_info *info, gc_map *map, gc_dirs *dirs)
  * Populate maps with directions.                                             *
  ******************************************************************************/
 
-static void gc_compute_cross_dirs(gc_info *info, gc_node *gcn, gc_node *gc_lhs)
+static void gc_compute_cross_dirs(gc_info *gci, gc_node *gcn, gc_node *gc_lhs)
 {
 	plist_element_t *it_lhs, *it_rhs;
 	pd_iter it_mid;
@@ -474,8 +475,8 @@ static void gc_compute_cross_dirs(gc_info *info, gc_node *gcn, gc_node *gc_lhs)
 	/* Skip children with known cross dirs. */
 	if (gc_lhs->cross_map) return;
 
-	gc_lhs->cross_map = OALLOC(&info->obst, gc_map);
-	gc_lhs->cross_map->dirs = plist_obstack_new(&info->obst);
+	gc_lhs->cross_map = OALLOC(&gci->obst, gc_map);
+	gc_lhs->cross_map->dirs = plist_obstack_new(&gci->obst);
 
 	/* Scan conventional dirs in the child subgraph. */
 	foreach_plist(gc_lhs->map->dirs, it_lhs) {
@@ -483,17 +484,17 @@ static void gc_compute_cross_dirs(gc_info *info, gc_node *gcn, gc_node *gc_lhs)
 		gc_dirs *lhs_dirs = it_lhs->data;
 
 		/* Search for dirs that cross into another childs subgraph. */
-		foreach_pd_child(info->tree, gcn->irn, it_mid, ir_rhs) {
+		foreach_pd_child(gci->pdt, gcn->irn, it_mid, ir_rhs) {
 			gc_node *gc_rhs;
 
 			/* Skip boring dirs. */
 			if (lhs_dirs->target != ir_rhs) continue;
 
-			gc_rhs = phase_get_irn_data(info->phase, ir_rhs);
+			gc_rhs = phase_get_irn_data(gci->phase, ir_rhs);
 			assert(gc_rhs);
 
 			/* Compute their cross dirs first. */
-			gc_compute_cross_dirs(info, gcn, gc_rhs);
+			gc_compute_cross_dirs(gci, gcn, gc_rhs);
 			assert(gc_rhs->cross_map);
 
 			/* Form our own cross dirs by concatenation.
@@ -502,8 +503,8 @@ static void gc_compute_cross_dirs(gc_info *info, gc_node *gcn, gc_node *gc_lhs)
 				gc_dirs *rhs_path = it_rhs->data;
 				gc_dirs *cross_dirs;
 
-				cross_dirs = gc_dirs_concat(info, lhs_dirs, rhs_path);
-				gc_map_merge(info, gc_lhs->cross_map, cross_dirs);
+				cross_dirs = gc_dirs_concat(gci, lhs_dirs, rhs_path);
+				gc_map_merge(gci, gc_lhs->cross_map, cross_dirs);
 			}
 
 			/* Then combine our cross paths with their normal paths. */
@@ -511,14 +512,14 @@ static void gc_compute_cross_dirs(gc_info *info, gc_node *gcn, gc_node *gc_lhs)
 				gc_dirs *rhs_dirs = it_rhs->data;
 				gc_dirs *cross_dirs;
 
-				cross_dirs = gc_dirs_concat(info, lhs_dirs, rhs_dirs);
-				gc_map_merge(info, gc_lhs->cross_map, cross_dirs);
+				cross_dirs = gc_dirs_concat(gci, lhs_dirs, rhs_dirs);
+				gc_map_merge(gci, gc_lhs->cross_map, cross_dirs);
 			}
 		}
 	}
 }
 
-static void gc_compute_dirs(gc_info *info, gc_node *gcn)
+static void gc_compute_dirs(gc_info *gci, gc_node *gcn)
 {
 	int i;
 
@@ -527,17 +528,17 @@ static void gc_compute_dirs(gc_info *info, gc_node *gcn)
 	ir_node *ir_child;
 
 	/* Recurse first. */
-	foreach_pd_child(info->tree, gcn->irn, it_child, ir_child) {
-		gc_node *gc_child = phase_get_or_set_irn_data(info->phase, ir_child);
+	foreach_pd_child(gci->pdt, gcn->irn, it_child, ir_child) {
+		gc_node *gc_child = phase_get_or_set_irn_data(gci->phase, ir_child);
 		gc_child->irn = ir_child;
 
-		gc_compute_dirs(info, gc_child);
+		gc_compute_dirs(gci, gc_child);
 	}
 
 	/* Compute crossing dirs for the dominator children. */
-	foreach_pd_child(info->tree, gcn->irn, it_child, ir_child) {
-		gc_node *gc_child = phase_get_irn_data(info->phase, ir_child);
-		gc_compute_cross_dirs(info, gcn, gc_child);
+	foreach_pd_child(gci->pdt, gcn->irn, it_child, ir_child) {
+		gc_node *gc_child = phase_get_irn_data(gci->phase, ir_child);
+		gc_compute_cross_dirs(gci, gcn, gc_child);
 	}
 
 	/* Now create dirs edge by edge. */
@@ -545,24 +546,24 @@ static void gc_compute_dirs(gc_info *info, gc_node *gcn)
 		ir_node *ir_dep = get_irn_n(gcn->irn, i);
 
 		/* Add the trivial gating path of length 1. */
-		gc_dirs *edge = gc_new_edge_dirs(info, gcn->irn, ir_dep);
-		gc_map_merge(info, gcn->map, edge);
+		gc_dirs *edge = gc_new_edge_dirs(gci, gcn->irn, ir_dep);
+		gc_map_merge(gci, gcn->map, edge);
 
 		/* For dominated target nodes add the combined dirs. */
-		if (pd_dominates(info->tree, gcn->irn, ir_dep)) {
-			gc_node *gc_dep = phase_get_irn_data(info->phase, ir_dep);
+		if (pd_dominates(gci->pdt, gcn->irn, ir_dep)) {
+			gc_node *gc_dep = phase_get_irn_data(gci->phase, ir_dep);
 			assert(gc_dep);
 
 			/* First all usual gating paths in gc_dep. */
 			foreach_plist(gc_dep->map->dirs, it) {
-				gc_dirs *dirs = gc_dirs_concat(info, edge, it->data);
-				gc_map_merge(info, gcn->map, dirs);
+				gc_dirs *dirs = gc_dirs_concat(gci, edge, it->data);
+				gc_map_merge(gci, gcn->map, dirs);
 			}
 
 			/* Then all the crossing paths. */
 			foreach_plist(gc_dep->cross_map->dirs, it) {
-				gc_dirs *dirs = gc_dirs_concat(info, edge, it->data);
-				gc_map_merge(info, gcn->map, dirs);
+				gc_dirs *dirs = gc_dirs_concat(gci, edge, it->data);
+				gc_map_merge(gci, gcn->map, dirs);
 			}
 		}
 	}
@@ -581,25 +582,19 @@ static void *gc_init_node(ir_phase *phase, const ir_node *irn)
 	return gcn;
 }
 
-static void gc_dump(gc_info *info, FILE *f);
+static void gc_dump(gc_info *gci, FILE *f);
 
-static gc_info *gc_init(ir_graph *irg)
+static gc_info *gc_init(ir_graph *irg, pd_tree *pdt, pl_info *pli)
 {
 	gc_info *info = XMALLOC(gc_info);
 	ir_node *ret;
+	assert((pd_get_irg(pdt) == irg) && (pl_get_irg(pli) == irg));
 
 	obstack_init(&info->obst);
-	info->tree = pd_init(irg);
 
-	ret = pd_get_root(info->tree);
+	info->pdt = pdt;
+	ret = pd_get_root(info->pdt);
 	assert(is_Return(ret));
-
-#ifdef LOG_DOMINATOR_TREE
-	printf("------------------\n");
-	printf("PEG dominator tree\n");
-	printf("------------------\n");
-	pd_dump(info->tree, stdout);
-#endif
 
 	info->phase = new_phase(irg, gc_init_node);
 	phase_set_private(info->phase, info);
@@ -615,19 +610,14 @@ static gc_info *gc_init(ir_graph *irg)
 	info->root->irn = ret;
 	gc_compute_dirs(info, info->root);
 
-#ifdef LOG_GATING_DIRS
-	gc_dump(info, stdout);
-#endif
-
 	return info;
 }
 
-static void gc_free(gc_info *info)
+static void gc_free(gc_info *gci)
 {
-	pd_free(info->tree);
-	phase_free(info->phase);
-	obstack_free(&info->obst, NULL);
-	xfree(info);
+	phase_free(gci->phase);
+	obstack_free(&gci->obst, NULL);
+	xfree(gci);
 }
 
 static void gc_dump_cond(gc_cond *cond, FILE *f)
@@ -664,15 +654,10 @@ static void gc_dump_path(gc_dirs *path, FILE *f)
 	gc_dump_cond(path->cond, f);
 }
 
-static void gc_dump(gc_info *info, FILE *f)
+static void gc_dump(gc_info *gci, FILE *f)
 {
 	plist_element_t *it;
-
-	fprintf(f, "-----------------\n");
-	fprintf(f, "Gating conditions\n");
-	fprintf(f, "-----------------\n");
-
-	foreach_plist(info->root->map->dirs, it) {
+	foreach_plist(gci->root->map->dirs, it) {
 		gc_dump_path(it->data, f);
 		fprintf(f, "\n");
 	}
@@ -684,10 +669,38 @@ static void gc_dump(gc_info *info, FILE *f)
 
 void peg_to_cfg(ir_graph *irg)
 {
-	//gc_info *info = gc_init(irg);
-	//gc_free(info);
+	pd_tree *pdt;
+	pl_info *pli;
+	gc_info *gci;
 
-	pl_info *info = pl_init(irg);
-	pl_dump(info, stdout);
-	pl_free(info);
+	pdt = pd_init(irg);
+
+#ifdef LOG_DOMINATOR_TREE
+	printf("------------------\n");
+	printf("PEG dominator tree\n");
+	printf("------------------\n");
+	pd_dump(pdt, stdout);
+#endif
+
+	pli = pl_init(irg);
+
+#ifdef LOG_LOOP_ANALYSIS
+	printf("------------------\n");
+	printf("Loop analysis info\n");
+	printf("------------------\n");
+	pl_dump(pli, stdout);
+#endif
+
+	gci = gc_init(irg, pdt, pli);
+
+#ifdef LOG_GATING_CONDS
+	printf("-----------------\n");
+	printf("Gating conditions\n");
+	printf("-----------------\n");
+	gc_dump(gci, stdout);
+#endif
+
+	gc_free(gci);
+	pl_free(pli);
+	pd_free(pdt);
 }

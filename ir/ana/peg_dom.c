@@ -66,7 +66,7 @@ static void pd_set_parent(pd_node *parent, pd_node *child)
 }
 
 /* Calculate post-order indices. */
-static int pd_compute_indices_post(pd_tree *tree, ir_node *irn, int counter)
+static int pd_compute_indices_post(pd_tree *pdt, ir_node *irn, int counter)
 {
 	int i;
 	pd_node *pdn;
@@ -76,11 +76,11 @@ static int pd_compute_indices_post(pd_tree *tree, ir_node *irn, int counter)
 
 	for (i = 0; i < get_irn_arity(irn); i++) {
 		ir_node *dep = get_irn_n(irn, i);
-		counter = pd_compute_indices_post(tree, dep, counter);
+		counter = pd_compute_indices_post(pdt, dep, counter);
 	}
 
 	/* Postorder indices. */
-	pdn = phase_get_or_set_irn_data(tree->phase, irn);
+	pdn = phase_get_or_set_irn_data(pdt->phase, irn);
 	pdn->irn   = irn;
 	pdn->index = counter++;
 	return counter;
@@ -112,7 +112,7 @@ static pd_node *pd_compute_intersect(pd_node *lhs, pd_node *rhs)
 }
 
 /* Paper: A simple, fast dominance algorithm. Keith et al. */
-static int pd_compute(pd_tree *tree, ir_node *irn)
+static int pd_compute(pd_tree *pdt, ir_node *irn)
 {
 	int i, changed;
 
@@ -120,16 +120,16 @@ static int pd_compute(pd_tree *tree, ir_node *irn)
 	mark_irn_visited(irn);
 	changed = 0;
 
-	if (irn != tree->root->irn) {
+	if (irn != pdt->root->irn) {
 		const ir_edge_t *edge;
 		pd_node *pd_idom = NULL;
-		pd_node *pdn = phase_get_irn_data(tree->phase, irn);
+		pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
 		assert(pdn);
 
 		/* Find new_idom. */
 		foreach_out_edge(irn, edge) {
 			ir_node *ir_src = get_edge_src_irn(edge);
-			pd_node *pd_src = phase_get_irn_data(tree->phase, ir_src);
+			pd_node *pd_src = phase_get_irn_data(pdt->phase, ir_src);
 			if (!pd_src) continue;
 
 			if (pd_src->defined) {
@@ -143,7 +143,7 @@ static int pd_compute(pd_tree *tree, ir_node *irn)
 		/* For all others. */
 		foreach_out_edge(irn, edge) {
 			ir_node *ir_src = get_edge_src_irn(edge);
-			pd_node *pd_src = phase_get_irn_data(tree->phase, ir_src);
+			pd_node *pd_src = phase_get_irn_data(pdt->phase, ir_src);
 			if (!pd_src) continue;
 
 			if ((pd_src != pd_idom) && pd_src->defined) {
@@ -161,7 +161,7 @@ static int pd_compute(pd_tree *tree, ir_node *irn)
 
 	for (i = 0; i < get_irn_arity(irn); i++) {
 		ir_node *dep = get_irn_n(irn, i);
-		changed |= pd_compute(tree, dep);
+		changed |= pd_compute(pdt, dep);
 	}
 
 	return changed;
@@ -216,34 +216,34 @@ pd_tree *pd_init(ir_graph *irg)
 	return tree;
 }
 
-void pd_free(pd_tree *tree)
+void pd_free(pd_tree *pdt)
 {
-	phase_free(tree->phase);
-	obstack_free(&tree->obst, NULL);
-	xfree(tree);
+	phase_free(pdt->phase);
+	obstack_free(&pdt->obst, NULL);
+	xfree(pdt);
 }
 
-int pd_dominates(pd_tree *tree, ir_node *lhs, ir_node *rhs)
+int pd_dominates(pd_tree *pdt, ir_node *lhs, ir_node *rhs)
 {
 	/* Check for (non-strict) dominance. */
-	pd_node *lhs_node = phase_get_irn_data(tree->phase, lhs);
-	pd_node *rhs_node = phase_get_irn_data(tree->phase, rhs);
+	pd_node *lhs_node = phase_get_irn_data(pdt->phase, lhs);
+	pd_node *rhs_node = phase_get_irn_data(pdt->phase, rhs);
 
 	return (rhs_node->index >= lhs_node->min_index) &&
 	       (rhs_node->index <= lhs_node->max_index);
 }
 
-ir_node *pd_get_parent(pd_tree *tree, ir_node *irn)
+ir_node *pd_get_parent(pd_tree *pdt, ir_node *irn)
 {
-	pd_node *pdn = phase_get_irn_data(tree->phase, irn);
+	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
 	assert(pdn && "No dominance information for the given node.");
 	return pdn->parent->irn;
 }
 
-ir_node *pd_get_child(pd_tree *tree, ir_node *irn, pd_iter *it)
+ir_node *pd_get_child(pd_tree *pdt, ir_node *irn, pd_iter *it)
 {
 	plist_element_t *plist_it;
-	pd_node *pdn = phase_get_irn_data(tree->phase, irn);
+	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
 	assert(pdn && "No dominance information for the given node.");
 
 	/* Get the first child element. */
@@ -265,9 +265,14 @@ ir_node *pd_iter_next(pd_iter *it)
 	return cur->irn;
 }
 
-ir_node *pd_get_root(pd_tree *tree)
+ir_node *pd_get_root(pd_tree *pdt)
 {
-	return tree->root->irn;
+	return pdt->root->irn;
+}
+
+ir_graph *pd_get_irg(pd_tree *pdt)
+{
+	return phase_get_irg(pdt->phase);
 }
 
 static void pd_dump_node(pd_node *pdn, FILE *f, int indent)
@@ -287,7 +292,7 @@ static void pd_dump_node(pd_node *pdn, FILE *f, int indent)
 	}
 }
 
-void pd_dump(pd_tree *tree, FILE *f)
+void pd_dump(pd_tree *pdt, FILE *f)
 {
-	pd_dump_node(tree->root, f, 0);
+	pd_dump_node(pdt->root, f, 0);
 }

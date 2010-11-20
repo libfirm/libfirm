@@ -37,31 +37,34 @@ typedef void* pd_iter;
 pd_tree *pd_init(ir_graph *irg);
 
 /** Free the dominance information for the given tree. */
-void pd_free(pd_tree *tree);
+void pd_free(pd_tree *pdt);
+
+/** Get the associated graph. */
+ir_graph *pd_get_irg(pd_tree *pdt);
 
 /** Get the dominator trees root node (ie. the return node). */
-ir_node *pd_get_root(pd_tree *tree);
+ir_node *pd_get_root(pd_tree *pdt);
 
 /** Determine if the lhs node dominates the rhs node. */
-int pd_dominates(pd_tree *tree, ir_node *lhs, ir_node *rhs);
+int pd_dominates(pd_tree *pdt, ir_node *lhs, ir_node *rhs);
 
 /** Get the parent node in the dominator tree. */
-ir_node *pd_get_parent(pd_tree *tree, ir_node *irn);
+ir_node *pd_get_parent(pd_tree *pdt, ir_node *irn);
 
 /**
  * Get the first child node. As "it" parameter either pass NULL (to only get
  * one child), or a pointer to an allocated pd_iter, to use with pd_iter_next.
  */
-ir_node *pd_get_child(pd_tree *tree, ir_node *irn, pd_iter *it);
+ir_node *pd_get_child(pd_tree *pdt, ir_node *irn, pd_iter *it);
 
 /** Get the next node from the given iterator. */
 ir_node *pd_iter_next(pd_iter *it);
 
 /** Dumps the dominator tree to the specified file. */
-void pd_dump(pd_tree *tree, FILE *f);
+void pd_dump(pd_tree *pdt, FILE *f);
 
-#define foreach_pd_child(tree, irn, it, child) \
-	for ((child) = pd_get_child((tree), (irn), &(it)); \
+#define foreach_pd_child(pdt, irn, it, child) \
+	for ((child) = pd_get_child((pdt), (irn), &(it)); \
 		(child); (child) = pd_iter_next(&(it)))
 
 #endif

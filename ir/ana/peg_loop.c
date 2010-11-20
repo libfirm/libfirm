@@ -43,17 +43,17 @@ struct pl_info {
 	plist_t        *etas;
 };
 
-int pl_get_depth(pl_info *info, ir_node *irn)
+int pl_get_depth(pl_info *pli, ir_node *irn)
 {
-	pl_node *pln = phase_get_irn_data(info->phase, irn);
+	pl_node *pln = phase_get_irn_data(pli->phase, irn);
 	if (!pln) return -1;
 	return pln->depth;
 }
 
-ir_node *pl_get_link(pl_info *info, ir_node *irn, pl_iter *it)
+ir_node *pl_get_link(pl_info *pli, ir_node *irn, pl_iter *it)
 {
 	plist_element_t *plist_it;
-	pl_node *pln = phase_get_irn_data(info->phase, irn);
+	pl_node *pln = phase_get_irn_data(pli->phase, irn);
 	assert(pln && "No loop information for the given node.");
 
 	/* Get the first link element. */
@@ -64,10 +64,10 @@ ir_node *pl_get_link(pl_info *info, ir_node *irn, pl_iter *it)
 	return (ir_node*)plist_it->data;
 }
 
-ir_node *pl_get_eta(pl_info *info, pl_iter *it)
+ir_node *pl_get_eta(pl_info *pli, pl_iter *it)
 {
 	/* Get the first eta element. */
-	plist_element_t *plist_it = plist_first(info->etas);
+	plist_element_t *plist_it = plist_first(pli->etas);
 	if (!plist_it) return NULL;
 	if (it != NULL) *it = plist_it;
 
@@ -95,7 +95,7 @@ static void *pl_init_node(ir_phase *phase, const ir_node *irn)
 	return pln;
 }
 
-static void pl_compute_depth(pl_info *info, ir_node *irn, plist_t *todo)
+static void pl_compute_depth(pl_info *pli, ir_node *irn, plist_t *todo)
 {
 	int i;
 	pl_node *pln;
@@ -108,27 +108,27 @@ static void pl_compute_depth(pl_info *info, ir_node *irn, plist_t *todo)
 		 * visited, but not processed. Prevent that, by queueing the dep for
 		 * later processing, so that post-order processing can finish first.
 		 * The depth of the theta itself is known after all. */
-		pl_compute_depth(info, get_Theta_init(irn), todo);
+		pl_compute_depth(pli, get_Theta_init(irn), todo);
 		plist_insert_back(todo, get_Theta_next(irn));
 
 		/* Use the known theta depth. */
-		pln = phase_get_or_set_irn_data(info->phase, irn);
+		pln = phase_get_or_set_irn_data(pli->phase, irn);
 		pln->depth = get_Theta_depth(irn);
 	} else {
 		/* Recurse first and calculate post-order. */
 		for (i = 0; i < get_irn_arity(irn); i++) {
 			ir_node *ir_dep = get_irn_n(irn, i);
-			pl_compute_depth(info, ir_dep, todo);
+			pl_compute_depth(pli, ir_dep, todo);
 		}
 
 		/* Use this when no deps are present (can't be in a loop). */
-		pln = phase_get_or_set_irn_data(info->phase, irn);
+		pln = phase_get_or_set_irn_data(pli->phase, irn);
 		pln->depth = 0;
 
 		/* Calculate minimal and maximal depth of the deps. */
 		for (i = 0; i < get_irn_arity(irn); i++) {
 			ir_node *ir_dep = get_irn_n(irn, i);
-			pl_node *pl_dep = phase_get_irn_data(info->phase, ir_dep);
+			pl_node *pl_dep = phase_get_irn_data(pli->phase, ir_dep);
 			assert(pl_dep);
 
 			/* Just take the nodes depth on the first try. */
@@ -141,12 +141,12 @@ static void pl_compute_depth(pl_info *info, ir_node *irn, plist_t *todo)
 			assert(pln->depth >= 0);
 
 			/* Store the node in the eta list. */
-			plist_insert_back(info->etas, irn);
+			plist_insert_back(pli->etas, irn);
 		}
 	}
 }
 
-static void pl_compute_thetas(pl_info *info, ir_node *irn,
+static void pl_compute_thetas(pl_info *pli, ir_node *irn,
                               ir_node *ir_eta, pl_node *pl_eta)
 {
 	int i;
@@ -155,7 +155,7 @@ static void pl_compute_thetas(pl_info *info, ir_node *irn,
 	if (irn_visited(irn)) return;
 	mark_irn_visited(irn);
 
-	pln = phase_get_irn_data(info->phase, irn);
+	pln = phase_get_irn_data(pli->phase, irn);
 	assert(pln);
 
 	/* Return when leaving the subgraph guarded by the eta node. */
@@ -164,7 +164,7 @@ static void pl_compute_thetas(pl_info *info, ir_node *irn,
 	/* Recurse deeper. */
 	for (i = 0; i < get_irn_arity(irn); i++) {
 		ir_node *ir_dep = get_irn_n(irn, i);
-		pl_compute_thetas(info, ir_dep, ir_eta, pl_eta);
+		pl_compute_thetas(pli, ir_dep, ir_eta, pl_eta);
 	}
 
 	/* Store theta nodes nested inside the eta, but not deeper. */
@@ -172,7 +172,7 @@ static void pl_compute_thetas(pl_info *info, ir_node *irn,
 		plist_insert_back(pl_eta->links, irn);
 
 		/* And link the eta on the theta, too. */
-		if (!pln->links) pln->links = plist_obstack_new(&info->obst);
+		if (!pln->links) pln->links = plist_obstack_new(&pli->obst);
 		plist_insert_back(pln->links, ir_eta);
 	}
 }
@@ -220,14 +220,19 @@ pl_info *pl_init(ir_graph *irg)
 	return info;
 }
 
-void pl_free(pl_info *info)
+void pl_free(pl_info *pli)
 {
-	phase_free(info->phase);
-	obstack_free(&info->obst, NULL);
-	xfree(info);
+	phase_free(pli->phase);
+	obstack_free(&pli->obst, NULL);
+	xfree(pli);
 }
 
-static void pl_dump_irn(pl_info *info, ir_node *irn, FILE* f)
+ir_graph *pl_get_irg(pl_info *info)
+{
+	return phase_get_irg(info->phase);
+}
+
+static void pl_dump_irn(pl_info *pli, ir_node *irn, FILE* f)
 {
 	int i;
 	pl_node *pln;
@@ -238,10 +243,10 @@ static void pl_dump_irn(pl_info *info, ir_node *irn, FILE* f)
 	/* Recurse deeper. */
 	for (i = 0; i < get_irn_arity(irn); i++) {
 		ir_node *ir_dep = get_irn_n(irn, i);
-		pl_dump_irn(info, ir_dep, f);
+		pl_dump_irn(pli, ir_dep, f);
 	}
 
-	pln = phase_get_irn_data(info->phase, irn);
+	pln = phase_get_irn_data(pli->phase, irn);
 	fprintf(f, "depth(%3li) = %i\n", get_irn_node_nr(irn), pln->depth);
 
 	if (pln->links) {
@@ -257,14 +262,14 @@ static void pl_dump_irn(pl_info *info, ir_node *irn, FILE* f)
 	}
 }
 
-void pl_dump(pl_info *info, FILE* f)
+void pl_dump(pl_info *pli, FILE* f)
 {
-	ir_graph *irg = phase_get_irg(info->phase);
+	ir_graph *irg = phase_get_irg(pli->phase);
 	ir_node  *end = get_irg_end_block(irg);
 	ir_node  *ret = get_Block_cfgpred(end, 0);
 	assert(ret);
 
 	/* Walk the tree and dump every node. */
 	inc_irg_visited(irg);
-	pl_dump_irn(info, ret, f);
+	pl_dump_irn(pli, ret, f);
 }
