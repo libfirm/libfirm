@@ -46,13 +46,16 @@ struct ia32_address_t {
 	int        symconst_sign; /**< The "sign" of the symconst. */
 };
 
+/**
+ * Additional flags for the address mode creation.
+ */
 typedef enum ia32_create_am_flags_t {
-	ia32_create_am_normal     = 0,
+	ia32_create_am_normal     = 0,       /**< Normal operation. */
 	ia32_create_am_force      = 1U << 0, /**< Ignore the marking of node as a
-	                                          non-address-mode node */
+	                                          non-address-mode node. */
 	ia32_create_am_double_use = 1U << 1  /**< Fold AM, even if the root of
 	                                          address calculation has two users.
-	                                          This is useful for dest AM */
+	                                          This is useful for dest AM. */
 } ia32_create_am_flags_t;
 
 /**
