@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -82,8 +82,7 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 
 		if (get_SymConst_kind(node) != symconst_addr_ent)
 			return 0;
-		(*symconsts)++;
-		if (*symconsts > 1)
+		if (++*symconsts > 1)
 			return 0;
 
 		return 1;
@@ -97,10 +96,10 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 		if (ia32_is_non_address_mode_node(node))
 			return 0;
 
-		left  = get_binop_left(node);
-		right = get_binop_right(node);
+		left = get_binop_left(node);
 		if (!do_is_immediate(left, symconsts, negate))
 			return 0;
+		right = get_binop_right(node);
 		if (!do_is_immediate(right, symconsts, is_Sub(node) ? !negate : negate))
 			return 0;
 
@@ -110,21 +109,6 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 		return 0;
 	}
 }
-
-/**
- * Checks if a DAG with a single root node can be represented as a simple immediate.
- *
- * @param node  the node
- *
- * @return non-zero if the DAG represents an immediate, 0 else
- */
-#if 0
-static int is_immediate_simple(const ir_node *node)
-{
-	int symconsts = 0;
-	return do_is_immediate(node, &symconsts, 0);
-}
-#endif
 
 /**
  * Check if a DAG starting with root node can be folded into an address mode
@@ -181,15 +165,15 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 	case iro_Add:
 		assert(!ia32_is_non_address_mode_node(node));
 		left  = get_Add_left(node);
-		right = get_Add_right(node);
 		eat_immediate(addr, left, negate);
+		right = get_Add_right(node);
 		eat_immediate(addr, right, negate);
 		break;
 	case iro_Sub:
 		assert(!ia32_is_non_address_mode_node(node));
 		left  = get_Sub_left(node);
-		right = get_Sub_right(node);
 		eat_immediate(addr, left, negate);
+		right = get_Sub_right(node);
 		eat_immediate(addr, right, !negate);
 		break;
 	default:
@@ -432,6 +416,9 @@ int ia32_is_non_address_mode_node(ir_node const *node)
 	return bitset_is_set(non_address_mode_nodes, get_irn_idx(node));
 }
 
+/**
+ * Check if a given value is last used (i.e. die after) the block of some other node.
+ */
 static int value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 {
 	ir_node         *block = get_nodes_block(here);
