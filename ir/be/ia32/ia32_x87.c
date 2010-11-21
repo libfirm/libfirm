@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -707,7 +707,7 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 	ia32_x87_attr_t *attr;
 
 	assert(num > 0);
-	while (num > 0) {
+	do {
 		x87_pop(state);
 		if (ia32_cg_config.use_ffreep)
 			fpop = new_bd_ia32_ffreep(NULL, get_nodes_block(n));
@@ -721,9 +721,7 @@ static ir_node *x87_create_fpop(x87_state *state, ir_node *n, int num)
 		keep_alive(fpop);
 		sched_add_before(n, fpop);
 		DB((dbg, LEVEL_1, "<<< %s %s\n", get_irn_opname(fpop), attr->x87[0]->name));
-
-		--num;
-	}
+	} while (--num > 0);
 	return fpop;
 }  /* x87_create_fpop */
 
