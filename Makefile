@@ -22,6 +22,7 @@ CC ?= cc
 LINK ?= $(CC)
 AR ?= ar ru
 RANLIB ?= ranlib
+DLLEXT ?= .so
 
 # Variants
 CFLAGS_debug      = -O0 -g3 -DDEBUG_libfirm
@@ -70,11 +71,11 @@ libfirm_DIRS := \
 	ir/be
 libfirm_SOURCES  = $(foreach dir,$(libfirm_DIRS),$(wildcard $(dir)/*.c))
 libfirm_a        = $(builddir)/libfirm.a
-libfirm_so       = $(builddir)/libfirm.so
+libfirm_dll      = $(builddir)/libfirm$(DLLEXT)
 libfirm_CPPFLAGS = -Iinclude/libfirm -Iinclude/libfirm/adt -I. $(foreach dir,$(libfirm_DIRS),-I$(dir))
 
 .PHONY: firm
-firm: $(libfirm_so)
+firm: $(libfirm_dll)
 
 # backends
 backends = amd64 arm ia32 sparc TEMPLATE
@@ -163,7 +164,7 @@ $(libfirm_a): $(libfirm_OBJECTS)
 	@echo RANLIB $@
 	$(Q)$(RANLIB) $@
 
-$(libfirm_so): $(libfirm_OBJECTS)
+$(libfirm_dll): $(libfirm_OBJECTS)
 	@echo LINK $@
 	$(Q)$(LINK) -shared -o $@ $^
 
