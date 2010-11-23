@@ -1518,17 +1518,11 @@ static void init_asm_constraints(void)
  */
 static arch_env_t *ia32_init(FILE *file_handle)
 {
-	static int inited = 0;
-	ia32_isa_t *isa;
+	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
 	int        i, n;
-
-	if (inited)
-		return NULL;
-	inited = 1;
 
 	set_tarval_output_modes();
 
-	isa = XMALLOC(ia32_isa_t);
 	memcpy(isa, &ia32_isa_template, sizeof(*isa));
 
 	if (ia32_mode_fpcw == NULL) {

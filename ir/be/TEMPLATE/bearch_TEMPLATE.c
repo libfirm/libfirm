@@ -162,14 +162,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
  */
 static arch_env_t *TEMPLATE_init(FILE *outfile)
 {
-	static int run_once = 0;
-	TEMPLATE_isa_t *isa;
-
-	if (run_once)
-		return NULL;
-	run_once = 1;
-
-	isa = XMALLOC(TEMPLATE_isa_t);
+	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
 	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
 
 	be_emit_init(outfile);
@@ -179,8 +172,6 @@ static arch_env_t *TEMPLATE_init(FILE *outfile)
 
 	return &isa->base;
 }
-
-
 
 /**
  * Closes the output file and frees the ISA structure.

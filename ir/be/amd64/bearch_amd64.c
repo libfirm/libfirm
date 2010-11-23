@@ -283,14 +283,7 @@ static amd64_isa_t amd64_isa_template = {
  */
 static arch_env_t *amd64_init(FILE *outfile)
 {
-	static int run_once = 0;
-	amd64_isa_t *isa;
-
-	if(run_once)
-		return NULL;
-	run_once = 1;
-
-	isa = XMALLOC(amd64_isa_t);
+	amd64_isa_t *isa = XMALLOC(amd64_isa_t);
 	memcpy(isa, &amd64_isa_template, sizeof(*isa));
 
 	be_emit_init(outfile);

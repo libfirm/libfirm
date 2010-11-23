@@ -441,13 +441,7 @@ static arm_isa_t arm_isa_template = {
  */
 static arch_env_t *arm_init(FILE *file_handle)
 {
-	static int inited = 0;
-	arm_isa_t *isa;
-
-	if (inited)
-		return NULL;
-
-	isa = XMALLOC(arm_isa_t);
+	arm_isa_t *isa = XMALLOC(arm_isa_t);
 	memcpy(isa, &arm_isa_template, sizeof(*isa));
 
 	arm_register_init();
@@ -464,7 +458,6 @@ static arch_env_t *arm_init(FILE *file_handle)
 	be_emit_irprintf("%stext0:\n", be_gas_get_private_prefix());
 	be_emit_write_line();
 
-	inited = 1;
 	return &isa->base;
 }
 
