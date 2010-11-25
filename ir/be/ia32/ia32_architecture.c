@@ -127,6 +127,8 @@ typedef enum cpu_support {
 	cpu_winchip2    = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3          = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3_2        = arch_ppro | arch_feature_p6_insn | arch_sse1_insn, /* really no 3DNow! */
+
+	cpu_autodetect  = 0,
 } cpu_support;
 
 static int         opt_size             = 0;
@@ -188,6 +190,8 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 
 	{ "generic",      cpu_generic },
 	{ "generic32",    cpu_generic },
+
+	{ "native",       cpu_autodetect },
 	{ NULL,           0 }
 };
 
@@ -484,12 +488,132 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 	}
 }
 
+static struct cpu_info_t {
+	char cpu_model;
+	char cpu_family;
+	char cpu_type;
+	char cpu_ext_model;
+	char cpu_ext_family;
+	unsigned edx_features;
+	unsigned ecx_features;
+};
+static void auto_detect_Intel(struct cpu_info_t info);
+static void auto_detect_AMD(struct cpu_info_t info);
+
+static void autodetect_arch() {
+	/* We use the cpuid instruction to detect the CPU features */
+
+	/* If bit 21 of the EFLAGS register can be changed, the cpuid instruction is available */
+	unsigned eflags_before;
+	unsigned eflags_after;
+	asm(
+		"pushf\n\t"
+		"popl %0\n\t"
+		"movl %0, %1\n\t"
+		"xorl $0x00200000, %1\n\t"
+		"pushl %1\n\t"
+		"popf\n\t"
+		"pushf\n\t"
+		"popl %1\n\t"
+		: "=r" (eflags_before), "=r" (eflags_after) :: "cc"
+	);
+	if (eflags_before == eflags_after) {
+		panic("arch autodetection impossible: no cpuid instruction available");
+	}
+
+	unsigned highest_calling_parameter, vid0, vid1, vid2;
+
+	__asm__ (
+		"xorl %%eax, %%eax\n\t" // 0 in eax for vendor ID
+		"cpuid\n\t"
+		: "=a" (highest_calling_parameter), "=b" (vid0), "=d" (vid1), "=c" (vid2)
+	);
+
+	int vendorid[4] = {vid0, vid1, vid2, 0};
+
+	unsigned cpu_signature, edx_features, ecx_features, add_feature_flags;
+	__asm__ (
+		"movl $1, %%eax\n\t" // 1 in eax for processor info and feature bits
+		"cpuid\n\t"
+		: "=a" (cpu_signature), "=b" (add_feature_flags), "=d" (ecx_features), "=c" (edx_features)
+	);
+
+	struct cpu_info_t cpu_info = {
+		(cpu_signature >>  4) & ((1<<4)-1),
+		(cpu_signature >>  8) & ((1<<4)-1),
+		(cpu_signature >> 12) & ((1<<2)-1),
+		(cpu_signature >> 16) & ((1<<4)-1),
+		(cpu_signature >> 20) & ((1<<8)-1),
+		edx_features,
+		ecx_features,
+	};
+
+	if        (0 == strcmp((char*) vendorid, "GenuineIntel")) {
+		auto_detect_Intel(cpu_info);
+	} else if (0 == strcmp((char*) vendorid, "AuthenticAMD")) {
+		auto_detect_AMD(cpu_info);
+	} else {
+		panic("Unknown Vendor ID for arch autodetection: %s\n", vendorid);
+	}
+}
+
+static void auto_detect_Intel(const struct cpu_info_t info) {
+	cpu_support auto_arch = cpu_generic;
+
+	switch (info.cpu_family) {
+		case 4:
+			auto_arch = arch_i486; break;
+		case 5:
+			auto_arch = arch_pentium; break;
+		case 6:
+			auto_arch = arch_ppro; break;
+		case 15:
+			auto_arch = arch_netburst; break;
+		default:
+			panic("Unknown cpu family for arch autodetection: %X\n", info.cpu_family);
+	}
+
+	if (info.edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
+	if (info.edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
+	if (info.edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
+
+	if (info.ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
+	if (info.ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
+	if (info.ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
+	if (info.ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
+
+	arch = auto_arch;
+	opt_arch = auto_arch;
+}
+
+static void auto_detect_AMD(const struct cpu_info_t info) {
+	cpu_support auto_arch = cpu_generic;
+
+	/* TODO find documentation on the cpu_family bits
+		for now we fall back to arch_k6. */
+	auto_arch = arch_k6;
+
+	if (info.edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
+	if (info.edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
+	if (info.edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
+
+	if (info.ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
+	if (info.ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
+	if (info.ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
+	if (info.ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
+
+	arch = auto_arch;
+	opt_arch = auto_arch;
+}
+
 void ia32_setup_cg_config(void)
 {
 	ia32_code_gen_config_t *const c = &ia32_cg_config;
 	memset(c, 0, sizeof(*c));
 
 	set_arch_costs();
+
+	if (arch == 0) autodetect_arch();
 
 	c->optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster than leave although it has a
