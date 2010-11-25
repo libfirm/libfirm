@@ -488,7 +488,7 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 	}
 }
 
-static struct cpu_info_t {
+typedef struct cpu_info_t {
 	char cpu_model;
 	char cpu_family;
 	char cpu_type;
@@ -496,9 +496,9 @@ static struct cpu_info_t {
 	char cpu_ext_family;
 	unsigned edx_features;
 	unsigned ecx_features;
-};
-static void auto_detect_Intel(struct cpu_info_t info);
-static void auto_detect_AMD(struct cpu_info_t info);
+} cpu_info_t;
+static void auto_detect_Intel(cpu_info_t const*);
+static void auto_detect_AMD(cpu_info_t const*);
 
 static void autodetect_arch() {
 	/* We use the cpuid instruction to detect the CPU features */
@@ -514,28 +514,33 @@ static void autodetect_arch() {
 		"pushl %1\n\t"
 		"popf\n\t"
 		"pushf\n\t"
-		"popl %1\n\t"
+		"popl %1"
 		: "=r" (eflags_before), "=r" (eflags_after) :: "cc"
 	);
 	if (eflags_before == eflags_after) {
 		panic("arch autodetection impossible: no cpuid instruction available");
 	}
 
-	unsigned highest_calling_parameter, vid0, vid1, vid2;
-
+	unsigned highest_calling_parameter;
+	char vendorid[13];
 	__asm__ (
-		"xorl %%eax, %%eax\n\t" // 0 in eax for vendor ID
-		"cpuid\n\t"
-		: "=a" (highest_calling_parameter), "=b" (vid0), "=d" (vid1), "=c" (vid2)
+		"cpuid"
+		: "=a" (highest_calling_parameter),
+		  "=b" (*(unsigned*)&vendorid[0]),
+		  "=d" (*(unsigned*)&vendorid[4]),
+		  "=c" (*(unsigned*)&vendorid[8])
+		: "a" (0) // get vendor ID
 	);
-
-	int vendorid[4] = {vid0, vid1, vid2, 0};
+	vendorid[12] = 0;
 
 	unsigned cpu_signature, edx_features, ecx_features, add_feature_flags;
 	__asm__ (
-		"movl $1, %%eax\n\t" // 1 in eax for processor info and feature bits
-		"cpuid\n\t"
-		: "=a" (cpu_signature), "=b" (add_feature_flags), "=d" (ecx_features), "=c" (edx_features)
+		"cpuid"
+		: "=a" (cpu_signature),
+		  "=b" (add_feature_flags),
+		  "=d" (ecx_features),
+		  "=c" (edx_features)
+		: "a" (1) // get processor info and feature bits
 	);
 
 	struct cpu_info_t cpu_info = {
@@ -549,18 +554,18 @@ static void autodetect_arch() {
 	};
 
 	if        (0 == strcmp((char*) vendorid, "GenuineIntel")) {
-		auto_detect_Intel(cpu_info);
+		auto_detect_Intel(&cpu_info);
 	} else if (0 == strcmp((char*) vendorid, "AuthenticAMD")) {
-		auto_detect_AMD(cpu_info);
+		auto_detect_AMD(&cpu_info);
 	} else {
 		panic("Unknown Vendor ID for arch autodetection: %s\n", vendorid);
 	}
 }
 
-static void auto_detect_Intel(const struct cpu_info_t info) {
+static void auto_detect_Intel(cpu_info_t const *info) {
 	cpu_support auto_arch = cpu_generic;
 
-	switch (info.cpu_family) {
+	switch (info->cpu_family) {
 		case 4:
 			auto_arch = arch_i486; break;
 		case 5:
@@ -570,47 +575,47 @@ static void auto_detect_Intel(const struct cpu_info_t info) {
 		case 15:
 			auto_arch = arch_netburst; break;
 		default:
-			panic("Unknown cpu family for arch autodetection: %X\n", info.cpu_family);
+			panic("Unknown cpu family for arch autodetection: %X\n", info->cpu_family);
 	}
 
-	if (info.edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
-	if (info.edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
-	if (info.edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
+	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
+	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
+	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
 
-	if (info.ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
-	if (info.ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
-	if (info.ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
-	if (info.ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
+	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
+	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
+	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
+	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
 
 	arch = auto_arch;
 	opt_arch = auto_arch;
 }
 
-static void auto_detect_AMD(const struct cpu_info_t info) {
+static void auto_detect_AMD(cpu_info_t const *info) {
 	cpu_support auto_arch = cpu_generic;
 
-	switch (info.cpu_family) {
+	switch (info->cpu_family) {
 		case 4:
 			auto_arch = arch_i486; break;
 		case 5:
 		case 6: // actually, 6 means K7 family
 			auto_arch = arch_k6; break;
 		case 15:
-			if (info.cpu_ext_family == 0 || info.cpu_ext_family == 1) {
+			if (info->cpu_ext_family == 0 || info->cpu_ext_family == 1) {
 				auto_arch = arch_k8; break;
 			} /* else fallthrough to panic */
 		default:
-			panic("Unknown cpu family for arch autodetection: %X\n", info.cpu_family);
+			panic("Unknown cpu family for arch autodetection: %X\n", info->cpu_family);
 	}
 
-	if (info.edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
-	if (info.edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
-	if (info.edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
+	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
+	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
+	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
 
-	if (info.ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
-	if (info.ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
-	if (info.ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
-	if (info.ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
+	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
+	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
+	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
+	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
 
 	arch = auto_arch;
 	opt_arch = auto_arch;
