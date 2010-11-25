@@ -589,9 +589,19 @@ static void auto_detect_Intel(const struct cpu_info_t info) {
 static void auto_detect_AMD(const struct cpu_info_t info) {
 	cpu_support auto_arch = cpu_generic;
 
-	/* TODO find documentation on the cpu_family bits
-		for now we fall back to arch_k6. */
-	auto_arch = arch_k6;
+	switch (info.cpu_family) {
+		case 4:
+			auto_arch = arch_i486; break;
+		case 5:
+		case 6: // actually, 6 means K7 family
+			auto_arch = arch_k6; break;
+		case 15:
+			if (info.cpu_ext_family == 0 || info.cpu_ext_family == 1) {
+				auto_arch = arch_k8; break;
+			} /* else fallthrough to panic */
+		default:
+			panic("Unknown cpu family for arch autodetection: %X\n", info.cpu_family);
+	}
 
 	if (info.edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
 	if (info.edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
