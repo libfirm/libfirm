@@ -36,6 +36,7 @@
 #include "ircons.h"
 #include "irdump.h"
 #include "irgmod.h"
+#include "pmap.h"
 
 #define LOG_DIRS_COMBINE   1
 #define LOG_DOMINATOR_TREE 1
@@ -86,35 +87,16 @@ typedef struct gc_union {
 } gc_union;
 
 /**
- * Directions represent a bunch of paths that go from a source node to a target
- * and have an associated gating condition to describe them.
- */
-
-typedef struct gc_dirs {
-	ir_node *source;
-	ir_node *target;
-	gc_cond *cond;
-} gc_dirs;
-
-/**
- * A map is used to store multiple directions to different targets. This may
- * become a real map structure at some time, to perform better.
- */
-
-typedef struct gc_map {
-	plist_t *dirs;
-} gc_map;
-
-/**
- * The node stores all directions originating at the associated irn. The cross
- * directions are used during computation. These are paths that cross into the
- * subtrees of a sibling in the dominator tree.
+ * The node stores gating conditions for paths originating at the associated
+ * irn. The cross gating conditions are used during computation. These are for
+ * paths that cross into the subtrees of a sibling in the dominator tree.
  */
 
 typedef struct gc_node {
 	ir_node *irn;
-	gc_map  *map;
-	gc_map  *cross_map;
+	pmap    *conds;       /* Indexed by the target node. */
+	pmap    *cross_conds; /* Indexed by the target node. */
+	char     has_cross_conds;
 } gc_node;
 
 /* Gating Condition info. */
@@ -393,246 +375,258 @@ static gc_cond *gc_new_concat(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
 	return NULL;
 }
 
-/******************************************************************************
- * Construct/combine directions and maps                                      *
- ******************************************************************************/
-
 /**
- * Combine paths into directions. This is mostly wrapping around cond and some
- * debug logging to control gating condition simplification.
+ * The same as above, but with some debug output, to verify that operations
+ * work as expected.
  */
 
-/* Compute directions for a single edge. */
-static gc_dirs *gc_new_edge_dirs(gc_info *gci, ir_node *source, ir_node *target)
-{
-	gc_dirs *dirs = OALLOC(&gci->obst, gc_dirs);
-	dirs->target = target;
-	dirs->source = source;
+static void gc_dump_cond(gc_cond *cond, FILE *f);
 
-	if (is_Gamma(source)) {
+static gc_cond *gc_new_concat_log(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
+{
+	gc_cond *result;
+
+#ifdef LOG_DIRS_COMBINE
+	printf("   concat("); gc_dump_cond(lhs, stdout);
+	printf(",");       gc_dump_cond(rhs, stdout);
+	printf(") = ");
+#endif
+
+	result = gc_new_concat(gci, lhs, rhs);
+
+#ifdef LOG_DIRS_COMBINE
+	gc_dump_cond(result, stdout); printf("\n");
+#endif
+
+	return result;
+}
+
+static gc_cond *gc_new_union_log(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
+{
+	gc_cond *result;
+
+#ifdef LOG_DIRS_COMBINE
+	printf("   union("); gc_dump_cond(lhs, stdout);
+	printf(",");      gc_dump_cond(rhs, stdout);
+	printf(") = ");
+#endif
+
+	result = gc_new_union(gci, lhs, rhs);
+
+#ifdef LOG_DIRS_COMBINE
+	gc_dump_cond(result, stdout); printf("\n");
+#endif
+
+	return result;
+}
+
+static void gc_cmap_add(gc_info *gci, pmap *map, gc_cond *cond, ir_node *dst)
+{
+	pmap_entry *entry = pmap_find(map, dst);
+	if (entry) {
+		/* Combine with existing conds by union. */
+		cond = gc_new_union_log(gci, entry->value, cond);
+	}
+
+	pmap_insert(map, dst, cond);
+}
+
+/******************************************************************************
+ * Populate maps with conditions.                                             *
+ ******************************************************************************/
+
+/* Compute a condition for a single edge. */
+static gc_cond *gc_new_edge_cond(gc_info *gci, ir_node *src, ir_node *dst)
+{
+	if (is_Gamma(src)) {
 		/* Determine the edge. */
 		int edge = 2;
-		if      (get_Gamma_true(source)  == target) edge = 0;
-		else if (get_Gamma_false(source) == target) edge = 1;
+		if      (get_Gamma_true(src)  == dst) edge = 0;
+		else if (get_Gamma_false(src) == dst) edge = 1;
 
 		if (edge < 2) {
-			dirs->cond = gc_new_branch(gci,
+			return gc_new_branch(gci,
 				(edge == 0) ? gc_new_demand() : gc_new_ignore(),
 				(edge == 0) ? gc_new_ignore() : gc_new_demand(),
-				source
+				src
 			);
-		} else {
-			/* Always demand condition edges. */
-			dirs->cond = gc_new_demand();
 		}
-	} else if (is_EtaA(source)) {
-		int source_depth = pl_get_depth(gci->pli, source);
-		int target_depth = pl_get_depth(gci->pli, target);
+	} else if (is_EtaA(src)) {
+		gc_cond *cond;
+		int source_depth = pl_get_depth(gci->pli, src);
+		int target_depth = pl_get_depth(gci->pli, dst);
 
 		int edge = 2;
-		if      (get_EtaA_result(source) == target) edge = 0;
-		else if (get_EtaA_repeat(source) == target) edge = 1;
+		if      (get_EtaA_result(src) == dst) edge = 0;
+		else if (get_EtaA_repeat(src) == dst) edge = 1;
 
 		if (edge < 2) {
 			/* Evaluate the result value or next values, depending on the
 			 * loop condition. This can be represented by a branch cond. */
-			dirs->cond = gc_new_branch(gci,
+			cond = gc_new_branch(gci,
 				(edge == 0) ? gc_new_demand() : gc_new_ignore(),
 				(edge == 0) ? gc_new_ignore() : gc_new_demand(),
-				source
+				src
 			);
 		} else {
 			/* Thetas and conditions are always evaluated. */
-			dirs->cond = gc_new_demand();
+			cond = gc_new_demand();
 		}
 
 		/* Only create a repeat edge if the target is loop-nested. The header
 		 * and repeat tuples are forced to be nested. The force tuple isn't. */
 		if (target_depth > source_depth) {
-			dirs->cond = gc_new_repeat(gci, dirs->cond, source);
+			cond = gc_new_repeat(gci, cond, src);
 		}
-	} else {
-		/* Always demand normal edges. */
-		dirs->cond = gc_new_demand();
+
+		return cond;
 	}
 
-	return dirs;
+	/* Default to demand. */
+	return gc_new_demand();
 }
 
-static void gc_dump_cond(gc_cond *cond, FILE *f);
-
-static gc_dirs *gc_dirs_concat(gc_info *gci, gc_dirs *lhs, gc_dirs *rhs)
+static void gc_compute_cross_conds(gc_info *gci, gc_node *gcn, gc_node *lhs)
 {
-	gc_dirs *dirs = OALLOC(&gci->obst, gc_dirs);
-	assert(lhs->target == rhs->source);
-
-#ifdef LOG_DIRS_COMBINE
-	printf("%3li -> %3li -> %3li: ",
-		get_irn_node_nr(lhs->source),
-		get_irn_node_nr(lhs->target),
-		get_irn_node_nr(rhs->target)
-	);
-	printf("concat("); gc_dump_cond(lhs->cond, stdout);
-	printf(",");       gc_dump_cond(rhs->cond, stdout);
-#endif
-
-	dirs->cond   = gc_new_concat(gci, lhs->cond, rhs->cond);
-	dirs->source = lhs->source;
-	dirs->target = rhs->target;
-
-#ifdef LOG_DIRS_COMBINE
-	printf(") = "); gc_dump_cond(dirs->cond, stdout); printf("\n");
-#endif
-
-	return dirs;
-}
-
-static gc_dirs *gc_dirs_union(gc_info *gci, gc_dirs *lhs, gc_dirs *rhs)
-{
-	gc_dirs *dirs = OALLOC(&gci->obst, gc_dirs);
-	assert((lhs->target == rhs->target) && (lhs->source == rhs->source));
-
-#ifdef LOG_DIRS_COMBINE
-	printf("%3li -> %3li:        ",
-		get_irn_node_nr(lhs->source),
-		get_irn_node_nr(lhs->target)
-	);
-	printf("union(");
-	gc_dump_cond(lhs->cond, stdout); printf(",");
-	gc_dump_cond(rhs->cond, stdout); printf(") = ");
-#endif
-
-	dirs->cond   = gc_new_union(gci, lhs->cond, rhs->cond);
-	dirs->source = lhs->source;
-	dirs->target = rhs->target;
-
-#ifdef LOG_DIRS_COMBINE
-	gc_dump_cond(dirs->cond, stdout); printf("\n");
-#endif
-
-	return dirs;
-}
-
-static void gc_map_merge(gc_info *gci, gc_map *map, gc_dirs *dirs)
-{
-	plist_element_t *it;
-	foreach_plist(map->dirs, it) {
-		gc_dirs *it_dirs = it->data;
-		assert(it_dirs->source == dirs->source);
-
-		/* Combine dirs with the same target. */
-		if (it_dirs->target == dirs->target) {
-			/* it_dirs is only used by us, so we can be destructive. */
-			it->data = gc_dirs_union(gci, it_dirs, dirs);
-			return;
-		}
-	}
-
-	/* Just insert the path if merging doesn't work. */
-	plist_insert_back(map->dirs, dirs);
-}
-
-/******************************************************************************
- * Populate maps with directions.                                             *
- ******************************************************************************/
-
-static void gc_compute_cross_dirs(gc_info *gci, gc_node *gcn, gc_node *gc_lhs)
-{
-	plist_element_t *it_lhs, *it_rhs;
-	pd_iter it_mid;
+	pmap_entry *lhs_entry, *rhs_entry;
 
 	/* Skip children with known cross dirs. */
-	if (gc_lhs->cross_map) return;
+	if (lhs->has_cross_conds) return;
+	lhs->has_cross_conds = 1;
 
-	gc_lhs->cross_map = OALLOC(&gci->obst, gc_map);
-	gc_lhs->cross_map->dirs = plist_obstack_new(&gci->obst);
+	/* Scan conventional conds in the child subgraph. */
+	foreach_pmap(lhs->conds, lhs_entry) {
+		gc_cond *lhs_cond = lhs_entry->value;
+		ir_node *lhs_dst  = (ir_node*)lhs_entry->key;
 
-	/* Scan conventional dirs in the child subgraph. */
-	foreach_plist(gc_lhs->map->dirs, it_lhs) {
-		ir_node *ir_rhs;
-		gc_dirs *lhs_dirs = it_lhs->data;
+		/**
+		 * Try to find two gating paths like this:
+		 *
+		 * rhs_dst
+		 *  ^       y
+		 *  |    /------\
+		 *  |x   |      |
+		 *  |    v      |
+		 * lhs_dst   lhs_src
+		 * rhs_src      |
+		 *       |      |z
+		 *       \      /
+		 *       gcn->irn
+		 *
+		 * The conditions for the combined (non-gating) path y.x is a cross
+		 * condition. When adding the edge z later, the whole path z.y.x will
+		 * become a gating path.
+		 */
 
-		/* Search for dirs that cross into another childs subgraph. */
-		foreach_pd_child(gci->pdt, gcn->irn, it_mid, ir_rhs) {
-			gc_node *gc_rhs;
+		/* Check if the parent of lhs_dst in the dom tree is gcn->irn. */
+		if (pd_get_parent(gci->pdt, lhs_dst) == gcn->irn) {
 
-			/* Skip boring dirs. */
-			if (lhs_dirs->target != ir_rhs) continue;
+			/* If it is, first calculate all cross conds in lhs_dst. */
+			gc_node *rhs = phase_get_irn_data(gci->phase, lhs_dst);
+			assert(rhs);
 
-			gc_rhs = phase_get_irn_data(gci->phase, ir_rhs);
-			assert(gc_rhs);
+			gc_compute_cross_conds(gci, gcn, rhs);
+			assert(rhs->has_cross_conds);
 
-			/* Compute their cross dirs first. */
-			gc_compute_cross_dirs(gci, gcn, gc_rhs);
-			assert(gc_rhs->cross_map);
+#ifdef LOG_DIRS_COMBINE
+			printf("Cross conds via %li -> %li\n",
+				get_irn_node_nr(lhs->irn), get_irn_node_nr(rhs->irn)
+			);
+#endif
 
-			/* Form our own cross dirs by concatenation.
-			 * First combine our cross paths with theirs. */
-			foreach_plist(gc_rhs->cross_map->dirs, it_rhs) {
-				gc_dirs *rhs_path = it_rhs->data;
-				gc_dirs *cross_dirs;
+			/* Concatenate our gating conds with the rhs cross conds. */
+			foreach_pmap(rhs->cross_conds, rhs_entry) {
+				gc_cond *rhs_cond = rhs_entry->value;
+				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
 
-				cross_dirs = gc_dirs_concat(gci, lhs_dirs, rhs_path);
-				gc_map_merge(gci, gc_lhs->cross_map, cross_dirs);
+				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
+				gc_cmap_add(gci, lhs->cross_conds, cond, rhs_dst);
 			}
 
-			/* Then combine our cross paths with their normal paths. */
-			foreach_plist(gc_rhs->map->dirs, it_rhs) {
-				gc_dirs *rhs_dirs = it_rhs->data;
-				gc_dirs *cross_dirs;
+			/* Concatenate our gating conds with the rhs gating conds. */
+			foreach_pmap(rhs->conds, rhs_entry) {
+				gc_cond *rhs_cond = rhs_entry->value;
+				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
 
-				cross_dirs = gc_dirs_concat(gci, lhs_dirs, rhs_dirs);
-				gc_map_merge(gci, gc_lhs->cross_map, cross_dirs);
+				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
+				gc_cmap_add(gci, lhs->cross_conds, cond, rhs_dst);
 			}
+
+#ifdef LOG_DIRS_COMBINE
+			printf("\n");
+#endif
 		}
 	}
 }
 
-static void gc_compute_dirs(gc_info *gci, gc_node *gcn)
+static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
 {
-	int i;
-
-	plist_element_t *it;
+	int      i;
 	pd_iter  it_child;
 	ir_node *ir_child;
 
 	/* Recurse first. */
-	foreach_pd_child(gci->pdt, gcn->irn, it_child, ir_child) {
+	foreach_pd_child(gci->pdt, lhs->irn, it_child, ir_child) {
 		gc_node *gc_child = phase_get_or_set_irn_data(gci->phase, ir_child);
 		gc_child->irn = ir_child;
 		gc_compute_dirs(gci, gc_child);
 	}
 
 	/* Compute crossing dirs for the dominator children. */
-	foreach_pd_child(gci->pdt, gcn->irn, it_child, ir_child) {
+	foreach_pd_child(gci->pdt, lhs->irn, it_child, ir_child) {
 		gc_node *gc_child = phase_get_irn_data(gci->phase, ir_child);
-		gc_compute_cross_dirs(gci, gcn, gc_child);
+		gc_compute_cross_conds(gci, lhs, gc_child);
 	}
 
-	/* Now create dirs edge by edge. */
-	for (i = 0; i < get_irn_arity(gcn->irn); i++) {
-		ir_node *ir_dep = get_irn_n(gcn->irn, i);
-		gc_dirs *edge   = gc_new_edge_dirs(gci, gcn->irn, ir_dep);
+	/* Now create gating conds edge by edge. */
+	for (i = 0; i < get_irn_arity(lhs->irn); i++) {
+		ir_node *lhs_src  = lhs->irn;
+		ir_node *lhs_dst  = get_irn_n(lhs_src, i);
+		gc_cond *lhs_cond = gc_new_edge_cond(gci, lhs_src, lhs_dst);
 
-		/* Add the trivial gating path of length 1. */
-		gc_map_merge(gci, gcn->map, edge);
+		/* Add the trivial gating cond for the lhs path of length 1. */
+		gc_cmap_add(gci, lhs->conds, lhs_cond, lhs_dst);
 
-		/* For dominated target nodes add the combined dirs. */
-		if (pd_dominates(gci->pdt, gcn->irn, ir_dep)) {
-			gc_node *gc_dep = phase_get_irn_data(gci->phase, ir_dep);
-			assert(gc_dep);
+		/* For dominated target nodes add the edge to their gating conds. */
+		if (pd_dominates(gci->pdt, lhs_src, lhs_dst)) {
+			/**
+			 * Add the combined paths:
+			 *
+			 * gcn->irn ----> lhs_src ----> lhs_dst
+			 *                              rhs_src ----> rhs_dst
+			 */
 
-			/* First all usual gating paths in gc_dep. */
-			foreach_plist(gc_dep->map->dirs, it) {
-				gc_dirs *dirs = gc_dirs_concat(gci, edge, it->data);
-				gc_map_merge(gci, gcn->map, dirs);
+			pmap_entry *rhs_entry;
+			gc_node    *rhs = phase_get_irn_data(gci->phase, lhs_dst);
+			assert(rhs);
+
+#ifdef LOG_DIRS_COMBINE
+			printf("Real conds via %li -> %li\n",
+				get_irn_node_nr(lhs->irn), get_irn_node_nr(rhs->irn)
+			);
+#endif
+
+			/* First use the normal gating conds. */
+			foreach_pmap(rhs->conds, rhs_entry) {
+				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
+				gc_cond *rhs_cond = rhs_entry->value;
+
+				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
+				gc_cmap_add(gci, lhs->conds, cond, rhs_dst);
 			}
 
-			/* Then all the crossing paths. */
-			foreach_plist(gc_dep->cross_map->dirs, it) {
-				gc_dirs *dirs = gc_dirs_concat(gci, edge, it->data);
-				gc_map_merge(gci, gcn->map, dirs);
+			/* Then all cross conds. */
+			foreach_pmap(rhs->cross_conds, rhs_entry) {
+				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
+				gc_cond *rhs_cond = rhs_entry->value;
+
+				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
+				gc_cmap_add(gci, lhs->conds, cond, rhs_dst);
 			}
+
+#ifdef LOG_DIRS_COMBINE
+			printf("\n");
+#endif
 		}
 	}
 }
@@ -640,11 +634,13 @@ static void gc_compute_dirs(gc_info *gci, gc_node *gcn)
 static void *gc_init_node(ir_phase *phase, const ir_node *irn)
 {
 	gc_info *info = phase_get_private(phase);
-	gc_node *gcn  = OALLOCZ(&info->obst, gc_node);
+	gc_node *gcn  = OALLOC(&info->obst, gc_node);
 
-	/* Initialize the nodes directions map. */
-	gcn->map = OALLOC(&info->obst, gc_map);
-	gcn->map->dirs = plist_obstack_new(&info->obst);
+	/* Initialize the condition maps. It's not obstacked, but we only allocate
+	 * them once, so allocation speed isn't that much of an issue. */
+	gcn->conds           = pmap_create_ex(10);
+	gcn->cross_conds     = pmap_create_ex(5);
+	gcn->has_cross_conds = 0;
 
 	(void)irn;
 	return gcn;
@@ -684,6 +680,17 @@ static gc_info *gc_init(ir_graph *irg, pd_tree *pdt, pl_info *pli)
 
 static void gc_free(gc_info *gci)
 {
+	ir_node *irn;
+
+	/* Free all the maps in the nodes. */
+	foreach_phase_irn(gci->phase, irn) {
+		gc_node *gcn = phase_get_irn_data(gci->phase, irn);
+		assert(gcn);
+
+		pmap_destroy(gcn->conds);
+		pmap_destroy(gcn->cross_conds);
+	}
+
 	phase_free(gci->phase);
 	obstack_free(&gci->obst, NULL);
 	xfree(gci);
@@ -721,21 +728,24 @@ static void gc_dump_cond(gc_cond *cond, FILE *f)
 	}}
 }
 
-static void gc_dump_path(gc_dirs *path, FILE *f)
+static void gc_dump_path(ir_node *src, ir_node *dst, gc_cond *cond, FILE *f)
 {
 	fprintf(f, "gc_%3li(%3li) = ",
-		get_irn_node_nr(path->source),
-		get_irn_node_nr(path->target)
+		get_irn_node_nr(src),
+		get_irn_node_nr(dst)
 	);
 
-	gc_dump_cond(path->cond, f);
+	gc_dump_cond(cond, f);
 }
 
 static void gc_dump(gc_info *gci, FILE *f)
 {
-	plist_element_t *it;
-	foreach_plist(gci->root->map->dirs, it) {
-		gc_dump_path(it->data, f);
+	pmap_entry *entry;
+	foreach_pmap(gci->root->conds, entry) {
+		ir_node *dst  = (ir_node*)entry->key;
+		gc_cond *cond = entry->value;
+
+		gc_dump_path(gci->root->irn, dst, cond, f);
 		fprintf(f, "\n");
 	}
 }
