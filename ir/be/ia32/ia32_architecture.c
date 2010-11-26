@@ -33,6 +33,10 @@
 #include "bearch_ia32_t.h"
 #include "ia32_architecture.h"
 
+#ifdef _MSC_VER
+#include <intrin.h>
+#endif
+
 ia32_code_gen_config_t  ia32_cg_config;
 
 /**
@@ -489,24 +493,178 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 }
 
 typedef struct cpu_info_t {
-	char cpu_model;
-	char cpu_family;
-	char cpu_type;
-	char cpu_ext_model;
-	char cpu_ext_family;
-	unsigned edx_features;
-	unsigned ecx_features;
+	unsigned char cpu_stepping;
+	unsigned char cpu_model;
+	unsigned char cpu_family;
+	unsigned char cpu_type;
+	unsigned char cpu_ext_model;
+	unsigned char cpu_ext_family;
+	unsigned      edx_features;
+	unsigned      ecx_features;
+	unsigned      add_features;
 } cpu_info_t;
-static void auto_detect_Intel(cpu_info_t const*);
-static void auto_detect_AMD(cpu_info_t const*);
 
-static void autodetect_arch() {
-	/* We use the cpuid instruction to detect the CPU features */
+static cpu_support auto_detect_Intel(cpu_info_t const *info) {
+	cpu_support auto_arch = cpu_generic;
 
+	unsigned family = (info->cpu_ext_family << 4) | info->cpu_family;
+	unsigned model  = (info->cpu_ext_model  << 4) | info->cpu_model;
+
+	switch (family) {
+	case 4:
+		auto_arch = arch_i486;
+		break;
+	case 5:
+		auto_arch = arch_pentium;
+		break;
+	case 6:
+		switch (model) {
+		case 0x01: /* PentiumPro */
+		case 0x03: /* Pentium II Model 3 */
+		case 0x05: /* Pentium II Model 5 */
+		case 0x06: /* Celeron Model 6 */
+		case 0x07: /* Pentium III Model 7 */
+		case 0x08: /* Pentium III Model 8 */
+		case 0x09: /* Pentium M Model 9 */
+		case 0x0A: /* Pentium III Model 0A */
+		case 0x0B: /* Pentium III Model 0B */
+		case 0x0D: /* Pentium M Model 0D */
+			auto_arch = arch_ppro;
+			break;
+		case 0x0E: /* Core Model 0E */
+			auto_arch = arch_ppro;
+			break;
+		case 0x0F: /* Core2 Model 0F */
+		case 0x15: /* Intel EP80579 */
+		case 0x16: /* Celeron Model 16 */
+		case 0x17: /* Core2 Model 17 */
+			auto_arch = arch_core2;
+			break;
+		default:
+			/* unknown */
+			break;
+		}
+		break;
+	case 15:
+		switch (model) {
+		case 0x00: /* Pentium 4 Model 00 */
+		case 0x01: /* Pentium 4 Model 01 */
+		case 0x02: /* Pentium 4 Model 02 */
+		case 0x03: /* Pentium 4 Model 03 */
+		case 0x04: /* Pentium 4 Model 04 */
+		case 0x06: /* Pentium 4 Model 06 */
+			auto_arch = arch_netburst;
+			break;
+		case 0x1A: /* Core i7 */
+			auto_arch = arch_core2;
+			break;
+		case 0x1C: /* Atom */
+			auto_arch = arch_atom;
+			break;
+		case 0x1D: /* Xeon MP */
+			auto_arch = arch_core2;
+			break;
+		default:
+			/* unknown */
+			break;
+		}
+		break;
+	default:
+		/* unknown */
+		break;
+	}
+
+	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
+	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
+	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
+
+	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
+	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
+	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
+	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
+
+	return auto_arch;
+}
+
+static cpu_support auto_detect_AMD(cpu_info_t const *info) {
+	cpu_support auto_arch = cpu_generic;
+
+	unsigned family, model;
+
+	if (info->cpu_family == 0x0F) {
+		family = (info->cpu_ext_family << 4) | info->cpu_family;
+		model  = (info->cpu_ext_model  << 4) | info->cpu_model;
+	} else {
+		family = info->cpu_family;
+		model  = info->cpu_model;
+	}
+
+	switch (family) {
+	case 0x04:
+		auto_arch = arch_i486;
+		break;
+	case 0x05:
+	case 0x06: // actually, 6 means K7 family
+		auto_arch = arch_k6;
+		break;
+	case 0x0F:
+		auto_arch = arch_k8;
+		break;
+	case 0x1F:
+	case 0x2F:
+		auto_arch = arch_k10;
+		break;
+	default:
+		/* unknown */
+		break;
+	}
+
+	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
+	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
+	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
+
+	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
+	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
+	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
+	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
+
+	return auto_arch;
+}
+
+typedef union {
+	struct {
+        unsigned eax;
+        unsigned ebx;
+        unsigned ecx;
+        unsigned edx;
+	} r;
+	int bulk[4];
+} cpuid_registers;
+
+static void x86_cpuid(cpuid_registers *regs, unsigned level)
+{
+#if defined(__GNUC__)
+	/* 32bit requires ebx to be saved, and it doesn't hurt on 64 bit */
+	__asm ("pushl %%ebx\n\t"
+	       "cpuid\n\t"
+		   "movl  %%ebx, %1\n\t"
+		   "popl  %%ebx\n\t"
+	: "=a" (regs->r.eax), "=r" (regs->r.ebx), "=c" (regs->r.ecx), "=d" (regs->r.edx)
+	: "a" (level)
+	);
+#elif defined(_MSC_VER)
+	__cpuid(regs->bulk, level);
+#endif
+}
+
+static int x86_toogle_cpuid(void)
+{
+	unsigned eflags_before = 0, eflags_after = 0;
+
+#if defined(__GNUC__)
+#ifdef __i386__
 	/* If bit 21 of the EFLAGS register can be changed, the cpuid instruction is available */
-	unsigned eflags_before;
-	unsigned eflags_after;
-	asm(
+	__asm__(
 		"pushf\n\t"
 		"popl %0\n\t"
 		"movl %0, %1\n\t"
@@ -516,108 +674,71 @@ static void autodetect_arch() {
 		"pushf\n\t"
 		"popl %1"
 		: "=r" (eflags_before), "=r" (eflags_after) :: "cc"
-	);
-	if (eflags_before == eflags_after) {
-		panic("arch autodetection impossible: no cpuid instruction available");
+		);
+#else
+	/* cpuid always available on 64bit */
+	return true;
+#endif
+#elif defined(_MSC_VER)
+#if defined(_M_IX86)
+	__asm {
+		pushfd
+		pop eax
+		mov eflags_before, eax
+		xor eax, 0x00200000
+		push eax
+		popfd
+		pushfd
+		pop eax
+		mov eflags_after, eax
 	}
-
-	unsigned highest_calling_parameter;
-	char vendorid[13];
-	__asm__ (
-		"cpuid"
-		: "=a" (highest_calling_parameter),
-		  "=b" (*(unsigned*)&vendorid[0]),
-		  "=d" (*(unsigned*)&vendorid[4]),
-		  "=c" (*(unsigned*)&vendorid[8])
-		: "a" (0) // get vendor ID
-	);
-	vendorid[12] = 0;
-
-	unsigned cpu_signature, edx_features, ecx_features, add_feature_flags;
-	__asm__ (
-		"cpuid"
-		: "=a" (cpu_signature),
-		  "=b" (add_feature_flags),
-		  "=d" (ecx_features),
-		  "=c" (edx_features)
-		: "a" (1) // get processor info and feature bits
-	);
-
-	struct cpu_info_t cpu_info = {
-		(cpu_signature >>  4) & ((1<<4)-1),
-		(cpu_signature >>  8) & ((1<<4)-1),
-		(cpu_signature >> 12) & ((1<<2)-1),
-		(cpu_signature >> 16) & ((1<<4)-1),
-		(cpu_signature >> 20) & ((1<<8)-1),
-		edx_features,
-		ecx_features,
-	};
-
-	if        (0 == strcmp((char*) vendorid, "GenuineIntel")) {
-		auto_detect_Intel(&cpu_info);
-	} else if (0 == strcmp((char*) vendorid, "AuthenticAMD")) {
-		auto_detect_AMD(&cpu_info);
-	} else {
-		panic("Unknown Vendor ID for arch autodetection: %s\n", vendorid);
-	}
+#else
+	return true;
+#endif
+#endif
+	return (eflags_before ^ eflags_after) & 0x00200000;
 }
 
-static void auto_detect_Intel(cpu_info_t const *info) {
+static void autodetect_arch(void)
+{
 	cpu_support auto_arch = cpu_generic;
 
-	switch (info->cpu_family) {
-		case 4:
-			auto_arch = arch_i486; break;
-		case 5:
-			auto_arch = arch_pentium; break;
-		case 6:
-			auto_arch = arch_ppro; break;
-		case 15:
-			auto_arch = arch_netburst; break;
-		default:
-			panic("Unknown cpu family for arch autodetection: %X\n", info->cpu_family);
+	/* We use the cpuid instruction to detect the CPU features */
+	if (x86_toogle_cpuid()) {
+		cpuid_registers   regs;
+		unsigned          highest_level;
+		char              vendorid[13];
+		struct cpu_info_t cpu_info;
+
+		/* get vendor ID */
+		x86_cpuid(&regs, 0);
+		highest_level = regs.r.eax;
+		memcpy(&vendorid[0], &regs.r.ebx, 4);
+		memcpy(&vendorid[4], &regs.r.edx, 4);
+		memcpy(&vendorid[8], &regs.r.ecx, 4);
+		vendorid[12] = '\0';
+
+		/* get processor info and feature bits */
+		x86_cpuid(&regs, 1);
+
+		cpu_info.cpu_stepping   = (regs.r.eax >>  0) & 0x0F;
+		cpu_info.cpu_model      = (regs.r.eax >>  4) & 0x0F;
+		cpu_info.cpu_family     = (regs.r.eax >>  8) & 0x0F;
+		cpu_info.cpu_type       = (regs.r.eax >> 12) & 0x03;
+		cpu_info.cpu_ext_model  = (regs.r.eax >> 16) & 0x0F;
+		cpu_info.cpu_ext_family = (regs.r.eax >> 20) & 0xFF;
+		cpu_info.edx_features   = regs.r.edx;
+		cpu_info.ecx_features   = regs.r.ecx;
+		cpu_info.add_features   = regs.r.ebx;
+
+		if        (0 == strcmp(vendorid, "GenuineIntel")) {
+			auto_arch = auto_detect_Intel(&cpu_info);
+		} else if (0 == strcmp(vendorid, "AuthenticAMD")) {
+			auto_arch = auto_detect_AMD(&cpu_info);
+		}
 	}
 
-	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
-	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
-	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
-
-	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
-	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
-	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
-	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
-
-	arch = auto_arch;
-	opt_arch = auto_arch;
-}
-
-static void auto_detect_AMD(cpu_info_t const *info) {
-	cpu_support auto_arch = cpu_generic;
-
-	switch (info->cpu_family) {
-		case 4:
-			auto_arch = arch_i486; break;
-		case 5:
-		case 6: // actually, 6 means K7 family
-			auto_arch = arch_k6; break;
-		case 15:
-			if (info->cpu_ext_family == 0 || info->cpu_ext_family == 1) {
-				auto_arch = arch_k8; break;
-			} /* else fallthrough to panic */
-		default:
-			panic("Unknown cpu family for arch autodetection: %X\n", info->cpu_family);
-	}
-
-	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
-	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
-	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
-
-	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
-	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
-	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
-	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
-
-	arch = auto_arch;
+	arch     = auto_arch;
 	opt_arch = auto_arch;
 }
 
