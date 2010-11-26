@@ -57,6 +57,9 @@ ir_node *pd_get_parent(pd_tree *pdt, ir_node *irn);
  */
 ir_node *pd_get_child(pd_tree *pdt, ir_node *irn, pd_iter *it);
 
+/** Get the number of children of the given irn. */
+int pd_get_child_count(pd_tree *pdt, ir_node *irn);
+
 /** Get the next node from the given iterator. */
 ir_node *pd_iter_next(pd_iter *it);
 

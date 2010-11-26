@@ -1299,6 +1299,20 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
                                ir_node *next, ir_mode *mode, int depth);
 
+/** Constructor for an "acyclic" Theta node.
+ *
+ * A variant of the theta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
+ * will replace the initial value on repeated evaluation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *block      The IR block the node belongs to.
+ * @param *init       The initial value to take.
+ * @param *mode       The mode of the node and init.
+ */
+FIRM_API ir_node *new_rd_ThetaA(dbg_info *db, ir_node *block, ir_node *init,
+                                ir_mode *mode);
+
 /** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
@@ -1316,10 +1330,29 @@ FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
  * @param *block      The IR block the node belongs to.
  * @param *value      The "nested" value node.
  * @param *cond       The "nested" condition node.
- * @param *mode       The mode of the node, ir_true and ir_false.
+ * @param *mode       The mode of the node and value.
  */
 FIRM_API ir_node *new_rd_Eta(dbg_info *db, ir_node *block, ir_node *value,
                              ir_node *cond, ir_mode *mode);
+
+/** Constructor for an "acyclic" Eta node.
+ *
+ * A variant of the eta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. It takes control of a loop by repeated
+ * evaluation of its dependencies and by replacing the linked theta values.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *block      The IR block the node belongs to.
+ * @param *header     A tuple of nodes to evaluate in the header.
+ * @param *repeat     A tuple of values to calculate on repeat.
+ * @param *result     The value to calculate on exit.
+ * @param *cond       The condition of the loop.
+ * @param *force      A tuple of nodes to evaluate before the loop.
+ * @param *mode       The mode of the node and value.
+ */
+FIRM_API ir_node *new_rd_EtaA(dbg_info *db, ir_node *block, ir_node *header,
+                              ir_node *repeat, ir_node *result, ir_node *cond,
+                              ir_node *force, ir_mode *mode);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1475,6 +1508,18 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
 FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
+/** Constructor for an "acyclic" Theta node.
+ *
+ * A variant of the theta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
+ * will replace the initial value on repeated evaluation.
+ *
+ * @param *block      The IR block the node belongs to.
+ * @param *init       The initial value to take.
+ * @param *mode       The mode of the node and init.
+ */
+FIRM_API ir_node *new_r_ThetaA(ir_node *block, ir_node *init, ir_mode *mode);
+
 /** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
@@ -1491,10 +1536,28 @@ FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
  * @param *block      The IR block the node belongs to.
  * @param *value      The "nested" value node.
  * @param *cond       The "nested" condition node.
- * @param *mode       The mode of the node, ir_true and ir_false.
+ * @param *mode       The mode of the node and value.
  */
 FIRM_API ir_node *new_r_Eta(ir_node *block, ir_node *value, ir_node *cond,
                             ir_mode *mode);
+
+/** Constructor for an "acyclic" Eta node.
+ *
+ * A variant of the eta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. It takes control of a loop by repeated
+ * evaluation of its dependencies and by replacing the linked theta values.
+ *
+ * @param *block      The IR block the node belongs to.
+ * @param *header     A tuple of nodes to evaluate in the header.
+ * @param *repeat     A tuple of values to calculate on repeat.
+ * @param *result     The value to calculate on exit.
+ * @param *cond       The condition of the loop.
+ * @param *force      A tuple of nodes to evaluate before the loop.
+ * @param *mode       The mode of the node and value.
+ */
+FIRM_API ir_node *new_r_EtaA(ir_node *block, ir_node *header, ir_node *repeat,
+                             ir_node *result, ir_node *cond, ir_node *force,
+                             ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1662,6 +1725,18 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
 FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
+/** Constructor for an "acyclic" Theta node.
+ *
+ * A variant of the theta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
+ * will replace the initial value on repeated evaluation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *init       The initial value to take.
+ * @param *mode       The mode of the node and init.
+ */
+FIRM_API ir_node *new_d_ThetaA(dbg_info *db, ir_node *init, ir_mode *mode);
+
 /** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
@@ -1678,10 +1753,28 @@ FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
  * @param *db         A pointer for debug information.
  * @param *value      The "nested" value node.
  * @param *cond       The "nested" condition node.
- * @param *mode       The mode of the node, ir_true and ir_false.
+ * @param *mode       The mode of the node and value.
  */
 FIRM_API ir_node *new_d_Eta(dbg_info *db, ir_node *value, ir_node *cond,
                             ir_mode *mode);
+
+/** Constructor for an "acyclic" Eta node.
+ *
+ * A variant of the eta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. It takes control of a loop by repeated
+ * evaluation of its dependencies and by replacing the linked theta values.
+ *
+ * @param *db         A pointer for debug information.
+ * @param *header     A tuple of nodes to evaluate in the header.
+ * @param *repeat     A tuple of values to calculate on repeat.
+ * @param *result     The value to calculate on exit.
+ * @param *cond       The condition of the loop.
+ * @param *force      A tuple of nodes to evaluate before the loop.
+ * @param *mode       The mode of the node and value.
+ */
+FIRM_API ir_node *new_d_EtaA(dbg_info *db, ir_node *header, ir_node *repeat,
+                             ir_node *result, ir_node *cond, ir_node *force,
+                             ir_mode *mode);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1830,6 +1923,17 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
 FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
                             int depth);
 
+/** Constructor for an "acyclic" Theta node.
+ *
+ * A variant of the theta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
+ * will replace the initial value on repeated evaluation.
+ *
+ * @param *init       The initial value to take.
+ * @param *mode       The mode of the node and init.
+ */
+FIRM_API ir_node *new_ThetaA(ir_node *init, ir_mode *mode);
+
 /** Constructor for a Eta node.
  *
  * Extracts a value from a list of values produced by a "nested" node. Given
@@ -1845,9 +1949,25 @@ FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
  *
  * @param *value      The "nested" value node.
  * @param *cond       The "nested" condition node.
- * @param *mode       The mode of the node, ir_true and ir_false.
+ * @param *mode       The mode of the node and value.
  */
 FIRM_API ir_node *new_Eta(ir_node *value, ir_node *cond, ir_mode *mode);
+
+/** Constructor for an "acyclic" Eta node.
+ *
+ * A variant of the eta node, used in acyclic PEGs, which are needed inside
+ * the PEG to CFG transformation phase. It takes control of a loop by repeated
+ * evaluation of its dependencies and by replacing the linked theta values.
+ *
+ * @param *header     A tuple of nodes to evaluate in the header.
+ * @param *repeat     A tuple of values to calculate on repeat.
+ * @param *result     The value to calculate on exit.
+ * @param *cond       The condition of the loop.
+ * @param *force      A tuple of nodes to evaluate before the loop.
+ * @param *mode       The mode of the node and value.
+ */
+FIRM_API ir_node *new_EtaA(ir_node *header, ir_node *repeat, ir_node *result,
+                           ir_node *cond, ir_node *force, ir_mode *mode);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

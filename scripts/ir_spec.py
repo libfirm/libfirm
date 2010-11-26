@@ -959,6 +959,16 @@ class Eta(Op):
 	flags  = []
 	pinned = "no"
 
+class ThetaA(Op):
+	ins    = [ "init" ]
+	flags  = []
+	pinned = "no"
+
+class EtaA(Op):
+	ins    = [ "header", "repeat", "result", "cond", "force" ]
+	flags  = []
+	pinned = "no"
+
 # Prepare node list
 
 def getOpList(namespace):

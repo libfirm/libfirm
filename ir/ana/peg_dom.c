@@ -248,10 +248,20 @@ ir_node *pd_get_child(pd_tree *pdt, ir_node *irn, pd_iter *it)
 
 	/* Get the first child element. */
 	plist_it = plist_first(pdn->children);
-	if (!plist_it) return NULL;
-	if (it != NULL) *it = plist_it;
+	if (!plist_it) {
+		if (it) *it = NULL;
+		return NULL;
+	}
 
+	if (it) *it = plist_it->next;
 	return ((pd_node*)plist_it->data)->irn;
+}
+
+int pd_get_child_count(pd_tree *pdt, ir_node *irn)
+{
+	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
+	assert(pdn && "No dominance information for the given node.");
+	return plist_count(pdn->children);
 }
 
 ir_node *pd_iter_next(pd_iter *it)

@@ -6307,6 +6307,18 @@ static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
 	return 1;
 }
 
+static int node_cmp_attr_Theta(ir_node *a, ir_node *b)
+{
+	return get_Theta_depth(a) != get_Theta_depth(b);
+}
+
+static int node_cmp_attr_ThetaA(ir_node *a, ir_node *b)
+{
+	(void) a;
+	(void) b;
+	return 1; /* Never CSE ThetaA. */
+}
+
 /**
  * Set the default node attribute compare operation for an ir_op_ops.
  *
@@ -6344,6 +6356,8 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Bound);
 	CASE(Builtin);
 	CASE(Dummy);
+	CASE(Theta);
+	CASE(ThetaA);
 	/* FIXME CopyB */
 	default:
 		/* leave NULL */
