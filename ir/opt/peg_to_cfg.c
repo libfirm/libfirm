@@ -43,6 +43,10 @@
 #define LOG_LOOP_ANALYSIS  1
 #define LOG_GATING_CONDS   1
 
+#define foreach_pmap_2(lhs, rhs, i, entry) \
+	for ((i) = 0; (i) < 2; (i)++) \
+		foreach_pmap(((i == 0) ? (lhs) : (rhs)), (entry))
+
 /******************************************************************************
  * Gating conditions.                                                         *
  ******************************************************************************/
@@ -387,9 +391,9 @@ static gc_cond *gc_new_concat_log(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
 	gc_cond *result;
 
 #ifdef LOG_DIRS_COMBINE
-	printf("   concat("); gc_dump_cond(lhs, stdout);
-	printf(",");       gc_dump_cond(rhs, stdout);
-	printf(") = ");
+	printf("concat(");
+	gc_dump_cond(lhs, stdout); printf(",");
+	gc_dump_cond(rhs, stdout); printf(") = ");
 #endif
 
 	result = gc_new_concat(gci, lhs, rhs);
@@ -406,9 +410,9 @@ static gc_cond *gc_new_union_log(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
 	gc_cond *result;
 
 #ifdef LOG_DIRS_COMBINE
-	printf("   union("); gc_dump_cond(lhs, stdout);
-	printf(",");      gc_dump_cond(rhs, stdout);
-	printf(") = ");
+	printf("               union (");
+	gc_dump_cond(lhs, stdout); printf(",");
+	gc_dump_cond(rhs, stdout); printf(") = ");
 #endif
 
 	result = gc_new_union(gci, lhs, rhs);
@@ -496,6 +500,7 @@ static void gc_compute_cross_conds(gc_info *gci, gc_node *gcn, gc_node *lhs)
 
 	/* Scan conventional conds in the child subgraph. */
 	foreach_pmap(lhs->conds, lhs_entry) {
+		ir_node *lhs_src  = lhs->irn;
 		gc_cond *lhs_cond = lhs_entry->value;
 		ir_node *lhs_dst  = (ir_node*)lhs_entry->key;
 
@@ -520,6 +525,7 @@ static void gc_compute_cross_conds(gc_info *gci, gc_node *gcn, gc_node *lhs)
 
 		/* Check if the parent of lhs_dst in the dom tree is gcn->irn. */
 		if (pd_get_parent(gci->pdt, lhs_dst) == gcn->irn) {
+			int i;
 
 			/* If it is, first calculate all cross conds in lhs_dst. */
 			gc_node *rhs = phase_get_irn_data(gci->phase, lhs_dst);
@@ -529,31 +535,32 @@ static void gc_compute_cross_conds(gc_info *gci, gc_node *gcn, gc_node *lhs)
 			assert(rhs->has_cross_conds);
 
 #ifdef LOG_DIRS_COMBINE
-			printf("Cross conds via %li -> %li\n",
-				get_irn_node_nr(lhs->irn), get_irn_node_nr(rhs->irn)
-			);
+			if ((pmap_count(rhs->conds) + pmap_count(rhs->cross_conds)) > 0) {
+				printf("Cross conds via %li -> %li\n",
+					get_irn_node_nr(lhs_src), get_irn_node_nr(lhs_dst)
+				);
+			}
 #endif
 
-			/* Concatenate our gating conds with the rhs cross conds. */
-			foreach_pmap(rhs->cross_conds, rhs_entry) {
+			/* Concatenate our gating conds with the rhs (cross) conds. */
+			foreach_pmap_2(rhs->conds, rhs->cross_conds, i, rhs_entry) {
 				gc_cond *rhs_cond = rhs_entry->value;
 				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
 
-				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
-				gc_cmap_add(gci, lhs->cross_conds, cond, rhs_dst);
-			}
-
-			/* Concatenate our gating conds with the rhs gating conds. */
-			foreach_pmap(rhs->conds, rhs_entry) {
-				gc_cond *rhs_cond = rhs_entry->value;
-				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
+#ifdef LOG_DIRS_COMBINE
+				printf("   %3li -> %3li: ",
+					get_irn_node_nr(lhs_src), get_irn_node_nr(rhs_dst)
+				);
+#endif
 
 				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
 				gc_cmap_add(gci, lhs->cross_conds, cond, rhs_dst);
 			}
 
 #ifdef LOG_DIRS_COMBINE
-			printf("\n");
+			if ((pmap_count(rhs->conds) + pmap_count(rhs->cross_conds)) > 0) {
+				printf("\n");
+			}
 #endif
 		}
 	}
@@ -561,7 +568,7 @@ static void gc_compute_cross_conds(gc_info *gci, gc_node *gcn, gc_node *lhs)
 
 static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
 {
-	int      i;
+	int      i, j;
 	pd_iter  it_child;
 	ir_node *ir_child;
 
@@ -584,6 +591,15 @@ static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
 		ir_node *lhs_dst  = get_irn_n(lhs_src, i);
 		gc_cond *lhs_cond = gc_new_edge_cond(gci, lhs_src, lhs_dst);
 
+#ifdef LOG_DIRS_COMBINE
+		printf("Normal conds via (%li, %li)\n   %3li -> %3li: ",
+			get_irn_node_nr(lhs_src), get_irn_node_nr(lhs_dst),
+			get_irn_node_nr(lhs_src), get_irn_node_nr(lhs_dst)
+		);
+
+		gc_dump_cond(lhs_cond, stdout); printf("\n");
+#endif
+
 		/* Add the trivial gating cond for the lhs path of length 1. */
 		gc_cmap_add(gci, lhs->conds, lhs_cond, lhs_dst);
 
@@ -600,34 +616,24 @@ static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
 			gc_node    *rhs = phase_get_irn_data(gci->phase, lhs_dst);
 			assert(rhs);
 
-#ifdef LOG_DIRS_COMBINE
-			printf("Real conds via %li -> %li\n",
-				get_irn_node_nr(lhs->irn), get_irn_node_nr(rhs->irn)
-			);
-#endif
-
-			/* First use the normal gating conds. */
-			foreach_pmap(rhs->conds, rhs_entry) {
+			/* Concatenate the edge cond with the rhs (cross) conds. */
+			foreach_pmap_2(rhs->conds, rhs->cross_conds, j, rhs_entry) {
 				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
 				gc_cond *rhs_cond = rhs_entry->value;
 
-				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
-				gc_cmap_add(gci, lhs->conds, cond, rhs_dst);
-			}
-
-			/* Then all cross conds. */
-			foreach_pmap(rhs->cross_conds, rhs_entry) {
-				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
-				gc_cond *rhs_cond = rhs_entry->value;
-
-				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
-				gc_cmap_add(gci, lhs->conds, cond, rhs_dst);
-			}
-
 #ifdef LOG_DIRS_COMBINE
-			printf("\n");
+				printf("   %3li -> %3li: ",
+					get_irn_node_nr(lhs_src), get_irn_node_nr(rhs_dst)
+				);
 #endif
+				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
+				gc_cmap_add(gci, lhs->conds, cond, rhs_dst);
+			}
 		}
+
+#ifdef LOG_DIRS_COMBINE
+		printf("\n");
+#endif
 	}
 }
 
@@ -666,7 +672,7 @@ static gc_info *gc_init(ir_graph *irg, pd_tree *pdt, pl_info *pli)
 
 #ifdef LOG_DIRS_COMBINE
 	printf("--------------------\n");
-	printf("Computing directions\n");
+	printf("Computing conditions\n");
 	printf("--------------------\n");
 #endif
 
