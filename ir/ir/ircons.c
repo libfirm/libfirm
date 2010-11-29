@@ -586,9 +586,10 @@ ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
 ir_node *new_d_defaultProj(dbg_info *db, ir_node *arg, long max_proj)
 {
 	ir_node *res;
-	assert(is_Cond(arg));
+	assert(is_Cond(arg) || is_Bad(arg));
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	arg->attr.cond.default_proj = max_proj;
+	if (is_Cond(arg))
+		arg->attr.cond.default_proj = max_proj;
 	res = new_d_Proj(db, arg, mode_X, max_proj);
 	return res;
 }
