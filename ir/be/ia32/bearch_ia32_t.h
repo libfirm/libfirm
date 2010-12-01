@@ -68,10 +68,6 @@ struct ia32_isa_t {
 	pmap                  *types;           /**< A map of modes to primitivetypes */
 	pmap                  *tv_ent;          /**< A map of entities that store const tarvals */
 	const be_machine_t    *cpu;             /**< the abstract machine */
-	const char *regs_32bit[N_ia32_gp_REGS]; /**< Contains the 32bits names of the gp registers */
-	const char *regs_16bit[N_ia32_gp_REGS]; /**< Contains the 16bits names of the gp registers */
-	const char *regs_8bit[N_ia32_gp_REGS];  /**< Contains the 8bits names of the gp registers */
-	const char *regs_8bit_high[N_ia32_gp_REGS]; /**< contains the high partof the 8 bit names of the gp registers */
 };
 
 /**

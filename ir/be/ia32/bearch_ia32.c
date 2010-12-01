@@ -80,7 +80,6 @@
 #include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_emitter.h"
-#include "ia32_map_regs.h"
 #include "ia32_optimize.h"
 #include "ia32_x87.h"
 #include "ia32_dbg_stat.h"
@@ -1458,9 +1457,6 @@ static ia32_isa_t ia32_isa_template = {
 		5,                       /* costs for a reload instruction */
 		false,                   /* no custom abi handling */
 	},
-	NULL,                    /* 16bit register names */
-	NULL,                    /* 8bit register names */
-	NULL,                    /* 8bit register names high */
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	NULL,                    /* abstract machine */
@@ -1536,10 +1532,6 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	isa->types          = pmap_create();
 	isa->tv_ent         = pmap_create();
 	isa->cpu            = ia32_init_machine_description();
-
-	ia32_build_16bit_reg_map(isa->regs_16bit);
-	ia32_build_8bit_reg_map(isa->regs_8bit);
-	ia32_build_8bit_reg_map_high(isa->regs_8bit_high);
 
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;

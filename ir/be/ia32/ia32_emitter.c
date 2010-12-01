@@ -75,7 +75,6 @@
 #include "gen_ia32_regalloc_if.h"
 #include "ia32_nodes_attr.h"
 #include "ia32_new_nodes.h"
-#include "ia32_map_regs.h"
 #include "ia32_architecture.h"
 #include "bearch_ia32_t.h"
 
@@ -205,16 +204,17 @@ static char *get_unique_label(char *buf, size_t buflen, const char *prefix)
 	return buf;
 }
 
-
 /**
  * Emit the name of the 8bit low register
  */
 static void emit_8bit_register(const arch_register_t *reg)
 {
 	const char *reg_name = arch_register_get_name(reg);
+	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
+			|| reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
 
 	be_emit_char('%');
-	be_emit_char(reg_name[1]);
+	be_emit_char(reg_name[1]); /* get the basic name of the register */
 	be_emit_char('l');
 }
 
@@ -224,18 +224,20 @@ static void emit_8bit_register(const arch_register_t *reg)
 static void emit_8bit_register_high(const arch_register_t *reg)
 {
 	const char *reg_name = arch_register_get_name(reg);
+	assert(reg->index == REG_GP_EAX || reg->index == REG_GP_EBX
+			|| reg->index == REG_GP_ECX || reg->index == REG_GP_EDX);
 
 	be_emit_char('%');
-	be_emit_char(reg_name[1]);
+	be_emit_char(reg_name[1]); /* get the basic name of the register */
 	be_emit_char('h');
 }
 
 static void emit_16bit_register(const arch_register_t *reg)
 {
-	const char *reg_name = ia32_get_mapped_reg_name(isa->regs_16bit, reg);
+	const char *reg_name = arch_register_get_name(reg);
 
 	be_emit_char('%');
-	be_emit_string(reg_name);
+	be_emit_string(reg_name+1); /* skip the 'e' prefix of the 32bit names */
 }
 
 /**
@@ -1366,7 +1368,6 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	const arch_register_t *reg;
 	const ia32_asm_reg_t  *asm_regs = attr->register_map;
 	const ia32_asm_reg_t  *asm_reg;
-	const char            *reg_name;
 	char                   c;
 	char                   modifier = 0;
 	int                    num      = -1;
@@ -1454,21 +1455,19 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 
 	/* emit it */
 	if (modifier != 0) {
-		be_emit_char('%');
 		switch (modifier) {
 		case 'b':
-			reg_name = ia32_get_mapped_reg_name(isa->regs_8bit, reg);
+			emit_8bit_register(reg);
 			break;
 		case 'h':
-			reg_name = ia32_get_mapped_reg_name(isa->regs_8bit_high, reg);
+			emit_8bit_register_high(reg);
 			break;
 		case 'w':
-			reg_name = ia32_get_mapped_reg_name(isa->regs_16bit, reg);
+			emit_16bit_register(reg);
 			break;
 		default:
 			panic("Invalid asm op modifier");
 		}
-		be_emit_string(reg_name);
 	} else {
 		emit_register(reg, asm_reg->mode);
 	}
