@@ -39,6 +39,11 @@ VPATH = $(srcdir)
 .PHONY: all
 all: firm
 
+# This rule is necessary so that make does not abort if headers get deleted
+# (the deleted header might still be referenced in a .d file)
+%.h:
+	@:
+
 # A very naive way to create a config.h if it is missing
 $(srcdir)config.h:
 	@echo MakeConfig $@
