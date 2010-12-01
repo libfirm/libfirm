@@ -586,7 +586,6 @@ static const backend_params *sparc_get_backend_params(void)
 		0,     /* no inline assembly */
 		0,     /* no support for RotL nodes */
 		1,     /* big endian */
-		sparc_lower_for_target, /* lowering callback */
 		&arch_dep,              /* will be set later */
 		sparc_is_mux_allowed,   /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
@@ -620,6 +619,7 @@ static int sparc_is_valid_clobber(const char *clobber)
 
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
+	sparc_lower_for_target,
 	sparc_done,
 	NULL,                /* handle intrinsics */
 	sparc_get_reg_class_for_mode,

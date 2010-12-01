@@ -565,7 +565,6 @@ static const backend_params *arm_get_libfirm_params(void)
 		0,     /* don't support inline assembler yet */
 		1,     /* support Rotl nodes */
 		1,     /* big endian */
-		arm_lower_for_target, /* lowering function */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		NULL,  /* float arithmetic mode (TODO) */
@@ -600,6 +599,7 @@ static const lc_opt_table_entry_t arm_options[] = {
 
 const arch_isa_if_t arm_isa_if = {
 	arm_init,
+	arm_lower_for_target,
 	arm_done,
 	NULL,  /* handle_intrinsics */
 	arm_get_reg_class_for_mode,

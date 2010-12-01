@@ -358,7 +358,6 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		0,     /* no inline assembly */
 		0,     /* no support for Rotl nodes */
 		0,     /* 0: little-endian, 1: big-endian */
-		TEMPLATE_lower_for_target,  /* lowering for target */
 		NULL,  /* architecture dependent settings, will be set later */
 		TEMPLATE_is_mux_allowed,  /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
@@ -392,6 +391,7 @@ static int TEMPLATE_is_valid_clobber(const char *clobber)
 
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
+	TEMPLATE_lower_for_target,
 	TEMPLATE_done,
 	NULL,                /* handle intrinsics */
 	TEMPLATE_get_reg_class_for_mode,

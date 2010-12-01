@@ -519,7 +519,6 @@ static const backend_params *amd64_get_backend_params(void) {
 		0,     /* no inline assembly */
 		1,     /* support Rotl nodes */
 		0,     /* little endian */
-		amd64_lower_for_target,  /* lowering callback */
 		NULL,  /* will be set later */
 		amd64_is_mux_allowed,  /* parameter for if conversion */
 		NULL,  /* float arithmetic mode */
@@ -553,6 +552,7 @@ static int amd64_is_valid_clobber(const char *clobber)
 
 const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
+	amd64_lower_for_target,
 	amd64_done,
 	NULL,                /* handle intrinsics */
 	amd64_get_reg_class_for_mode,

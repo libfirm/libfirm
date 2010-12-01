@@ -80,9 +80,6 @@ typedef struct backend_params {
 	/** the backend uses big-endian byte ordering if set, else little endian */
 	unsigned byte_order_big_endian:1;
 
-	/** callback that performs lowerings required for target architecture */
-	lower_for_target_func lower_for_target;
-
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
 
@@ -125,6 +122,17 @@ FIRM_API int be_parse_arg(const char *arg);
  *         backend
  */
 FIRM_API const backend_params *be_get_backend_param(void);
+
+/**
+ * Lowers current program for the target architecture.
+ * This must be run once before using be_main. The idea here is that the backend
+ * can perform lowerings like doubleword-lowering, ABI adjustments or
+ * implementation of boolean values, if-conversion, with target specific
+ * settings.
+ * The resulting graph is still a "normal" firm-graph on which you can and
+ * should perform further architecture-neutral optimisations before be_main.
+ */
+FIRM_API void be_lower_for_target(void);
 
 /**
  * Creates an ir_prog pass which performs lowerings necessary for the target

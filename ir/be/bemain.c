@@ -476,6 +476,19 @@ static const char *get_timer_name(be_timer_id_t id)
 }
 ir_timer_t *be_timers[T_LAST+1];
 
+void be_lower_for_target(void)
+{
+	int i;
+
+	isa_if->lower_for_target();
+	/* set the phase to low */
+	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+		ir_graph *irg = get_irp_irg(i);
+		set_irg_phase_state(irg, phase_low);
+	}
+	set_irp_phase_state(phase_low);
+}
+
 /**
  * The Firm backend main loop.
  * Do architecture specific lowering for all graphs
@@ -865,8 +878,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 
 static int do_lower_for_target(ir_prog *irp, void *context)
 {
-	const backend_params *be_params = be_get_backend_param();
-	be_params->lower_for_target();
+	be_lower_for_target();
 	(void) context;
 	(void) irp;
 	return 0;

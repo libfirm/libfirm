@@ -468,6 +468,12 @@ struct arch_isa_if_t {
 	arch_env_t *(*init)(FILE *file_handle);
 
 	/**
+	 * lowers current program for target. See the documentation for
+	 * be_lower_for_target() for details.
+	 */
+	void (*lower_for_target)(void);
+
+	/**
 	 * Free the isa instance.
 	 */
 	void (*done)(void *self);

@@ -2114,7 +2114,6 @@ static const backend_params *ia32_get_libfirm_params(void)
 		1,     /* support inline assembly */
 		1,     /* support Rotl nodes */
 		0,     /* little endian */
-		ia32_lower_for_target,
 		NULL,  /* will be set later */
 		ia32_is_mux_allowed,
 		NULL,  /* float arithmetic mode, will be set below */
@@ -2172,6 +2171,7 @@ static const lc_opt_table_entry_t ia32_options[] = {
 
 const arch_isa_if_t ia32_isa_if = {
 	ia32_init,
+	ia32_lower_for_target,
 	ia32_done,
 	ia32_handle_intrinsics,
 	ia32_get_reg_class_for_mode,
