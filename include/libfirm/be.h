@@ -60,14 +60,6 @@ ENUM_BITSET(asm_constraint_flags_t)
  */
 typedef ir_node *(create_trampoline_fkt)(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee);
 
-/** callback where the backend performs required lowering for the target
- * architecture. Typical examples are transforming doubleword operations into
- * sequences of word operations. The callback should be invoked before the
- * frontend, because it is usually a good idea to perform other optimisations
- * after the lowering
- */
-typedef void (*lower_for_target_func)(void);
-
 /**
  * This structure contains parameters that should be
  * propagated to the libFirm parameter set.
