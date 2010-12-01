@@ -203,7 +203,12 @@ FIRM_API int tarval_is_long(ir_tarval *tv);
  *   new_tarval_from_str()
  *   new_tarval_from_long()
  */
-FIRM_API ir_tarval *new_tarval_from_double(long double d, ir_mode *mode);
+FIRM_API ir_tarval *new_tarval_from_double(double d, ir_mode *mode);
+
+/**
+ * same as new_tarval_from_double(), but with a long double argument
+ */
+FIRM_API ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode);
 
 /**
  * This returns a double with the value represented value, or
@@ -214,7 +219,12 @@ FIRM_API ir_tarval *new_tarval_from_double(long double d, ir_mode *mode);
  *
  * @param tv    the tarval
  */
-FIRM_API long double get_tarval_double(ir_tarval *tv);
+FIRM_API double get_tarval_double(ir_tarval *tv);
+
+/**
+ * same as get_tarval_double but returns a long double value
+ */
+FIRM_API long double get_tarval_long_double(ir_tarval *tv);
 
 /**
  * This validates if tarval_to_double() will return a satisfying

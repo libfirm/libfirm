@@ -480,7 +480,7 @@ long get_tarval_long(ir_tarval* tv)
 	return sc_val_to_long(tv->value);
 }
 
-ir_tarval *new_tarval_from_double(long double d, ir_mode *mode)
+ir_tarval *new_tarval_from_long_double(long double d, ir_mode *mode)
 {
 	const ieee_descriptor_t *desc;
 
@@ -488,6 +488,11 @@ ir_tarval *new_tarval_from_double(long double d, ir_mode *mode)
 	desc = get_descriptor(mode);
 	fc_val_from_ieee754(d, desc, NULL);
 	return get_tarval(fc_get_buffer(), fc_get_buffer_length(), mode);
+}
+
+ir_tarval *new_tarval_from_double(double d, ir_mode *mode)
+{
+	return new_tarval_from_long_double(d, mode);
 }
 
 /* returns non-zero if can be converted to double */
@@ -498,11 +503,16 @@ int tarval_is_double(ir_tarval *tv)
 	return (get_mode_sort(tv->mode) == irms_float_number);
 }
 
-long double get_tarval_double(ir_tarval *tv)
+long double get_tarval_long_double(ir_tarval *tv)
 {
 	assert(tarval_is_double(tv));
 
 	return fc_val_to_ieee754((const fp_value*) tv->value);
+}
+
+double get_tarval_double(ir_tarval *tv)
+{
+	return get_tarval_long_double(tv);
 }
 
 
