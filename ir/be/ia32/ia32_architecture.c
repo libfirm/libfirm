@@ -492,6 +492,8 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 	}
 }
 
+/* autodetection code only works if we're on an x86 cpu obviously */
+#ifdef __i386__
 typedef struct cpu_info_t {
 	unsigned char cpu_stepping;
 	unsigned char cpu_model;
@@ -504,7 +506,8 @@ typedef struct cpu_info_t {
 	unsigned      add_features;
 } cpu_info_t;
 
-static cpu_support auto_detect_Intel(cpu_info_t const *info) {
+static cpu_support auto_detect_Intel(cpu_info_t const *info)
+{
 	cpu_support auto_arch = cpu_generic;
 
 	unsigned family = (info->cpu_ext_family << 4) | info->cpu_family;
@@ -741,6 +744,12 @@ static void autodetect_arch(void)
 	arch     = auto_arch;
 	opt_arch = auto_arch;
 }
+#else
+static void autodetect_arch(void)
+{
+	panic("architecture autodetection only possible when compiling on target architecture");
+}
+#endif
 
 void ia32_setup_cg_config(void)
 {
@@ -749,7 +758,8 @@ void ia32_setup_cg_config(void)
 
 	set_arch_costs();
 
-	if (arch == 0) autodetect_arch();
+	if (arch == 0)
+		autodetect_arch();
 
 	c->optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster than leave although it has a
