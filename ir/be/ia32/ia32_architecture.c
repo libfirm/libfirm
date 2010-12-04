@@ -619,14 +619,50 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 		auto_arch = arch_i486;
 		break;
 	case 0x05:
-	case 0x06: // actually, 6 means K7 family
-		auto_arch = arch_k6;
+		switch (model) {
+		case 0x00: /* K5 Model 0 */
+		case 0x01: /* K5 Model 1 */
+		case 0x02: /* K5 Model 2 */
+		case 0x03: /* K5 Model 3 */
+			auto_arch = arch_pentium;
+			break;
+		case 0x06: /* K6 Model 6 */
+		case 0x07: /* K6 Model 7 */
+		case 0x08: /* K6-2 Model 8 */
+		case 0x09: /* K6-III Model 9 */
+		case 0x0D: /* K6-2+ or K6-III+ */
+			auto_arch = arch_k6;
+			break;
+		case 0x0A:
+			auto_arch = arch_geode;
+			break;
+		default:
+			/* unknown */
+			break;
+		}
+		break;
+	case 0x06:
+		switch (model) {
+		case 0x01: /* Athlon Model 1 */
+		case 0x02: /* Athlon Model 2 */
+		case 0x03: /* Duron Model 3 */
+		case 0x04: /* Athlon Model 4 */
+		case 0x06: /* Athlon MP/Mobile Athlon Model 6 */
+		case 0x07: /* Mobile Duron Model 7 */
+		case 0x08: /* Athlon (TH/AP core) */
+		case 0x0A: /* Athlon (BT core) */
+			auto_arch = arch_athlon;
+			break;
+		default:
+			/* unknown K7 */
+			auto_arch = arch_athlon;
+			break;
+		}
 		break;
 	case 0x0F:
 		auto_arch = arch_k8;
 		break;
 	case 0x1F:
-	case 0x2F:
 		auto_arch = arch_k10;
 		break;
 	default:
