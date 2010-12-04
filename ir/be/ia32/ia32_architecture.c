@@ -204,7 +204,10 @@ static const lc_opt_enum_int_items_t arch_items[] = {
 	{ "generic",      cpu_generic },
 	{ "generic32",    cpu_generic },
 
+#ifdef NATIVE_X86
 	{ "native",       cpu_autodetect },
+#endif
+
 	{ NULL,           0 }
 };
 
@@ -749,12 +752,7 @@ static void autodetect_arch(void)
 	arch     = auto_arch;
 	opt_arch = auto_arch;
 }
-#else
-static void autodetect_arch(void)
-{
-	panic("architecture autodetection only possible when compiling on target architecture");
-}
-#endif
+#endif  /* NATIVE_X86 */
 
 void ia32_setup_cg_config(void)
 {
@@ -763,8 +761,10 @@ void ia32_setup_cg_config(void)
 
 	set_arch_costs();
 
-	if (arch == 0)
+#ifdef NATIVE_X86
+	if (arch == cpu_autodetect)
 		autodetect_arch();
+#endif
 
 	c->optimize_size        = opt_size != 0;
 	/* on newer intel cpus mov, pop is often faster than leave although it has a
