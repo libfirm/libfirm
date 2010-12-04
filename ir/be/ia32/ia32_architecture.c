@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -33,8 +33,17 @@
 #include "bearch_ia32_t.h"
 #include "ia32_architecture.h"
 
+#undef NATIVE_X86
+
 #ifdef _MSC_VER
+#if defined(_M_IX86) || defined(_M_X64)
 #include <intrin.h>
+#define NATIVE_X86
+#endif
+#else
+#if defined(__i386__) || defined(__x86_64__)
+#define NATIVE_X86
+#endif
 #endif
 
 ia32_code_gen_config_t  ia32_cg_config;
@@ -492,9 +501,9 @@ int ia32_evaluate_insn(insn_kind kind, const ir_mode *mode, ir_tarval *tv)
 	}
 }
 
-/* autodetection code only works if we're on an x86 cpu obviously */
-#ifdef __i386__
-typedef struct cpu_info_t {
+/* auto detection code only works if we're on an x86 cpu obviously */
+#ifdef NATIVE_X86
+typedef struct x86_cpu_info_t {
 	unsigned char cpu_stepping;
 	unsigned char cpu_model;
 	unsigned char cpu_family;
@@ -504,9 +513,9 @@ typedef struct cpu_info_t {
 	unsigned      edx_features;
 	unsigned      ecx_features;
 	unsigned      add_features;
-} cpu_info_t;
+} x86_cpu_info_t;
 
-static cpu_support auto_detect_Intel(cpu_info_t const *info)
+static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 {
 	cpu_support auto_arch = cpu_generic;
 
@@ -589,7 +598,7 @@ static cpu_support auto_detect_Intel(cpu_info_t const *info)
 	return auto_arch;
 }
 
-static cpu_support auto_detect_AMD(cpu_info_t const *info) {
+static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 	cpu_support auto_arch = cpu_generic;
 
 	unsigned family, model;
@@ -647,12 +656,8 @@ typedef union {
 static void x86_cpuid(cpuid_registers *regs, unsigned level)
 {
 #if defined(__GNUC__)
-	/* 32bit requires ebx to be saved, and it doesn't hurt on 64 bit */
-	__asm ("pushl %%ebx\n\t"
-	       "cpuid\n\t"
-		   "movl  %%ebx, %1\n\t"
-		   "popl  %%ebx\n\t"
-	: "=a" (regs->r.eax), "=r" (regs->r.ebx), "=c" (regs->r.ecx), "=d" (regs->r.edx)
+	__asm ("cpuid\n\t"
+	: "=a" (regs->r.eax), "=b" (regs->r.ebx), "=c" (regs->r.ecx), "=d" (regs->r.edx)
 	: "a" (level)
 	);
 #elif defined(_MSC_VER)
@@ -711,7 +716,7 @@ static void autodetect_arch(void)
 		cpuid_registers   regs;
 		unsigned          highest_level;
 		char              vendorid[13];
-		struct cpu_info_t cpu_info;
+		x86_cpu_info_t    cpu_info;
 
 		/* get vendor ID */
 		x86_cpuid(&regs, 0);
