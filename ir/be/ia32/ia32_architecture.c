@@ -75,17 +75,19 @@ enum cpu_arch_features {
 	arch_all_amd          = arch_k6 | arch_geode | arch_athlon_plus,
 
 	arch_feature_mmx      = 0x00004000, /**< MMX instructions */
-	arch_feature_p6_insn  = 0x00008000, /**< PentiumPro instructions */
-	arch_feature_sse1     = 0x00010000, /**< SSE1 instructions */
-	arch_feature_sse2     = 0x00020000, /**< SSE2 instructions */
-	arch_feature_sse3     = 0x00040000, /**< SSE3 instructions */
-	arch_feature_ssse3    = 0x00080000, /**< SSSE3 instructions */
-	arch_feature_3DNow    = 0x00100000, /**< 3DNow! instructions */
-	arch_feature_3DNowE   = 0x00200000, /**< Enhanced 3DNow! instructions */
-	arch_feature_64bit    = 0x00400000, /**< x86_64 support */
-	arch_feature_sse4_1   = 0x00800000, /**< SSE4.1 instructions */
-	arch_feature_sse4_2   = 0x01000000, /**< SSE4.2 instructions */
-	arch_feature_sse4a    = 0x02000000, /**< SSE4a instructions */
+	arch_feature_cmov     = 0x00008000, /**< cmov instructions */
+	arch_feature_p6_insn  = 0x00010000, /**< PentiumPro instructions */
+	arch_feature_sse1     = 0x00020000, /**< SSE1 instructions */
+	arch_feature_sse2     = 0x00040000, /**< SSE2 instructions */
+	arch_feature_sse3     = 0x00080000, /**< SSE3 instructions */
+	arch_feature_ssse3    = 0x00100000, /**< SSSE3 instructions */
+	arch_feature_3DNow    = 0x00200000, /**< 3DNow! instructions */
+	arch_feature_3DNowE   = 0x00400000, /**< Enhanced 3DNow! instructions */
+	arch_feature_64bit    = 0x00800000, /**< x86_64 support */
+	arch_feature_sse4_1   = 0x01000000, /**< SSE4.1 instructions */
+	arch_feature_sse4_2   = 0x02000000, /**< SSE4.2 instructions */
+	arch_feature_sse4a    = 0x04000000, /**< SSE4a instructions */
+	arch_feature_popcnt   = 0x08000000, /**< popcnt instruction */
 
 	arch_mmx_insn     = arch_feature_mmx,                         /**< MMX instructions */
 	arch_sse1_insn    = arch_feature_sse1   | arch_mmx_insn,      /**< SSE1 instructions, include MMX */
@@ -114,32 +116,32 @@ typedef enum cpu_support {
 	cpu_i486        = arch_i486,
 	cpu_pentium     = arch_pentium,
 	cpu_pentium_mmx = arch_pentium | arch_mmx_insn,
-	cpu_pentium_pro = arch_ppro | arch_feature_p6_insn,
-	cpu_pentium_2   = arch_ppro | arch_feature_p6_insn | arch_mmx_insn,
-	cpu_pentium_3   = arch_ppro | arch_feature_p6_insn | arch_sse1_insn,
-	cpu_pentium_m   = arch_ppro | arch_feature_p6_insn | arch_sse2_insn,
-	cpu_pentium_4   = arch_netburst | arch_feature_p6_insn | arch_sse2_insn,
-	cpu_prescott    = arch_nocona | arch_feature_p6_insn | arch_sse3_insn,
-	cpu_nocona      = arch_nocona | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
-	cpu_core2       = arch_core2 | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn,
-	cpu_penryn      = arch_core2 | arch_feature_p6_insn | arch_64bit_insn | arch_sse4_1_insn,
+	cpu_pentium_pro = arch_ppro | arch_feature_cmov | arch_feature_p6_insn,
+	cpu_pentium_2   = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_mmx_insn,
+	cpu_pentium_3   = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse1_insn,
+	cpu_pentium_m   = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn,
+	cpu_pentium_4   = arch_netburst | arch_feature_cmov | arch_feature_p6_insn | arch_sse2_insn,
+	cpu_prescott    = arch_nocona | arch_feature_cmov | arch_feature_p6_insn | arch_sse3_insn,
+	cpu_nocona      = arch_nocona | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
+	cpu_core2       = arch_core2 | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_ssse3_insn,
+	cpu_penryn      = arch_core2 | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse4_1_insn,
 
 	/* AMD CPUs */
 	cpu_k6          = arch_k6 | arch_mmx_insn,
 	cpu_k6_PLUS     = arch_k6 | arch_3DNow_insn,
 	cpu_geode       = arch_geode  | arch_sse1_insn | arch_3DNowE_insn,
-	cpu_athlon_old  = arch_athlon | arch_3DNowE_insn | arch_feature_p6_insn,
-	cpu_athlon      = arch_athlon | arch_sse1_insn | arch_3DNowE_insn | arch_feature_p6_insn,
-	cpu_athlon64    = arch_athlon | arch_sse2_insn | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn,
-	cpu_k8          = arch_k8  | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn,
-	cpu_k8_sse3     = arch_k8  | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
-	cpu_k10         = arch_k10 | arch_3DNowE_insn | arch_feature_p6_insn | arch_64bit_insn | arch_sse4a_insn,
+	cpu_athlon_old  = arch_athlon | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn,
+	cpu_athlon      = arch_athlon | arch_sse1_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn,
+	cpu_athlon64    = arch_athlon | arch_sse2_insn | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn,
+	cpu_k8          = arch_k8  | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn,
+	cpu_k8_sse3     = arch_k8  | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_64bit_insn | arch_sse3_insn,
+	cpu_k10         = arch_k10 | arch_3DNowE_insn | arch_feature_cmov | arch_feature_p6_insn | arch_feature_popcnt | arch_64bit_insn | arch_sse4a_insn,
 
 	/* other CPUs */
 	cpu_winchip_c6  = arch_i486 | arch_feature_mmx,
 	cpu_winchip2    = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
 	cpu_c3          = arch_i486 | arch_feature_mmx | arch_feature_3DNow,
-	cpu_c3_2        = arch_ppro | arch_feature_p6_insn | arch_sse1_insn, /* really no 3DNow! */
+	cpu_c3_2        = arch_ppro | arch_feature_cmov | arch_feature_p6_insn | arch_sse1_insn, /* really no 3DNow! */
 
 	cpu_autodetect  = 0,
 } cpu_support;
@@ -518,6 +520,65 @@ typedef struct x86_cpu_info_t {
 	unsigned      add_features;
 } x86_cpu_info_t;
 
+enum {
+	CPUID_FEAT_ECX_SSE3      = 1 << 0,
+	CPUID_FEAT_ECX_PCLMUL    = 1 << 1,
+	CPUID_FEAT_ECX_DTES64    = 1 << 2,
+	CPUID_FEAT_ECX_MONITOR   = 1 << 3,
+	CPUID_FEAT_ECX_DS_CPL    = 1 << 4,
+	CPUID_FEAT_ECX_VMX       = 1 << 5,
+	CPUID_FEAT_ECX_SMX       = 1 << 6,
+	CPUID_FEAT_ECX_EST       = 1 << 7,
+	CPUID_FEAT_ECX_TM2       = 1 << 8,
+	CPUID_FEAT_ECX_SSSE3     = 1 << 9,
+	CPUID_FEAT_ECX_CID       = 1 << 10,
+	CPUID_FEAT_ECX_FMA       = 1 << 12,
+	CPUID_FEAT_ECX_CX16      = 1 << 13,
+	CPUID_FEAT_ECX_ETPRD     = 1 << 14,
+	CPUID_FEAT_ECX_PDCM      = 1 << 15,
+	CPUID_FEAT_ECX_DCA       = 1 << 18,
+	CPUID_FEAT_ECX_SSE4_1    = 1 << 19,
+	CPUID_FEAT_ECX_SSE4_2    = 1 << 20,
+	CPUID_FEAT_ECX_x2APIC    = 1 << 21,
+	CPUID_FEAT_ECX_MOVBE     = 1 << 22,
+	CPUID_FEAT_ECX_POPCNT    = 1 << 23,
+	CPUID_FEAT_ECX_AES       = 1 << 25,
+	CPUID_FEAT_ECX_XSAVE     = 1 << 26,
+	CPUID_FEAT_ECX_OSXSAVE   = 1 << 27,
+	CPUID_FEAT_ECX_AVX       = 1 << 28,
+
+	CPUID_FEAT_EDX_FPU       = 1 << 0,
+	CPUID_FEAT_EDX_VME       = 1 << 1,
+	CPUID_FEAT_EDX_DE        = 1 << 2,
+	CPUID_FEAT_EDX_PSE       = 1 << 3,
+	CPUID_FEAT_EDX_TSC       = 1 << 4,
+	CPUID_FEAT_EDX_MSR       = 1 << 5,
+	CPUID_FEAT_EDX_PAE       = 1 << 6,
+	CPUID_FEAT_EDX_MCE       = 1 << 7,
+	CPUID_FEAT_EDX_CX8       = 1 << 8,
+	CPUID_FEAT_EDX_APIC      = 1 << 9,
+	CPUID_FEAT_EDX_SEP       = 1 << 11,
+	CPUID_FEAT_EDX_MTRR      = 1 << 12,
+	CPUID_FEAT_EDX_PGE       = 1 << 13,
+	CPUID_FEAT_EDX_MCA       = 1 << 14,
+	CPUID_FEAT_EDX_CMOV      = 1 << 15,
+	CPUID_FEAT_EDX_PAT       = 1 << 16,
+	CPUID_FEAT_EDX_PSE36     = 1 << 17,
+	CPUID_FEAT_EDX_PSN       = 1 << 18,
+	CPUID_FEAT_EDX_CLF       = 1 << 19,
+	CPUID_FEAT_EDX_DTES      = 1 << 21,
+	CPUID_FEAT_EDX_ACPI      = 1 << 22,
+	CPUID_FEAT_EDX_MMX       = 1 << 23,
+	CPUID_FEAT_EDX_FXSR      = 1 << 24,
+	CPUID_FEAT_EDX_SSE       = 1 << 25,
+	CPUID_FEAT_EDX_SSE2      = 1 << 26,
+	CPUID_FEAT_EDX_SS        = 1 << 27,
+	CPUID_FEAT_EDX_HTT       = 1 << 28,
+	CPUID_FEAT_EDX_TM1       = 1 << 29,
+	CPUID_FEAT_EDX_IA64      = 1 << 30,
+	CPUID_FEAT_EDX_PBE       = 1 << 31
+};
+
 static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 {
 	cpu_support auto_arch = cpu_generic;
@@ -544,16 +605,16 @@ static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 		case 0x0A: /* Pentium III Model 0A */
 		case 0x0B: /* Pentium III Model 0B */
 		case 0x0D: /* Pentium M Model 0D */
-			auto_arch = arch_ppro;
+			auto_arch = arch_ppro | arch_feature_p6_insn;
 			break;
 		case 0x0E: /* Core Model 0E */
-			auto_arch = arch_ppro;
+			auto_arch = arch_ppro | arch_feature_p6_insn;
 			break;
 		case 0x0F: /* Core2 Model 0F */
 		case 0x15: /* Intel EP80579 */
 		case 0x16: /* Celeron Model 16 */
 		case 0x17: /* Core2 Model 17 */
-			auto_arch = arch_core2;
+			auto_arch = arch_core2 | arch_feature_p6_insn;
 			break;
 		default:
 			/* unknown */
@@ -568,16 +629,16 @@ static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 		case 0x03: /* Pentium 4 Model 03 */
 		case 0x04: /* Pentium 4 Model 04 */
 		case 0x06: /* Pentium 4 Model 06 */
-			auto_arch = arch_netburst;
+			auto_arch = arch_netburst | arch_feature_p6_insn;
 			break;
 		case 0x1A: /* Core i7 */
-			auto_arch = arch_core2;
+			auto_arch = arch_core2 | arch_feature_p6_insn;
 			break;
 		case 0x1C: /* Atom */
 			auto_arch = arch_atom;
 			break;
 		case 0x1D: /* Xeon MP */
-			auto_arch = arch_core2;
+			auto_arch = arch_core2 | arch_feature_p6_insn;
 			break;
 		default:
 			/* unknown */
@@ -588,15 +649,6 @@ static cpu_support auto_detect_Intel(x86_cpu_info_t const *info)
 		/* unknown */
 		break;
 	}
-
-	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
-	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
-	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
-
-	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
-	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
-	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
-	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
 
 	return auto_arch;
 }
@@ -633,11 +685,12 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 		case 0x0D: /* K6-2+ or K6-III+ */
 			auto_arch = arch_k6;
 			break;
-		case 0x0A:
+		case 0x0A: /* Geode LX */
 			auto_arch = arch_geode;
 			break;
 		default:
-			/* unknown */
+			/* unknown K6 */
+			auto_arch = arch_k6;
 			break;
 		}
 		break;
@@ -649,35 +702,26 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 		case 0x04: /* Athlon Model 4 */
 		case 0x06: /* Athlon MP/Mobile Athlon Model 6 */
 		case 0x07: /* Mobile Duron Model 7 */
-		case 0x08: /* Athlon (TH/AP core) */
+		case 0x08: /* Athlon (TH/AP core) including Geode NX */
 		case 0x0A: /* Athlon (BT core) */
-			auto_arch = arch_athlon;
+			auto_arch = arch_athlon | arch_feature_p6_insn;
 			break;
 		default:
 			/* unknown K7 */
-			auto_arch = arch_athlon;
+			auto_arch = arch_athlon | arch_feature_p6_insn;;
 			break;
 		}
 		break;
 	case 0x0F:
-		auto_arch = arch_k8;
+		auto_arch = arch_k8 | arch_feature_p6_insn;;
 		break;
 	case 0x1F:
-		auto_arch = arch_k10;
+		auto_arch = arch_k10 | arch_feature_p6_insn;;
 		break;
 	default:
 		/* unknown */
 		break;
 	}
-
-	if (info->edx_features & (1<<23)) auto_arch |= arch_feature_mmx;
-	if (info->edx_features & (1<<25)) auto_arch |= arch_feature_sse1;
-	if (info->edx_features & (1<<26)) auto_arch |= arch_feature_sse2;
-
-	if (info->ecx_features & (1<< 0)) auto_arch |= arch_feature_sse3;
-	if (info->ecx_features & (1<< 9)) auto_arch |= arch_feature_ssse3;
-	if (info->ecx_features & (1<<19)) auto_arch |= arch_feature_sse4_1;
-	if (info->ecx_features & (1<<20)) auto_arch |= arch_feature_sse4_2;
 
 	return auto_arch;
 }
@@ -782,7 +826,29 @@ static void autodetect_arch(void)
 			auto_arch = auto_detect_Intel(&cpu_info);
 		} else if (0 == strcmp(vendorid, "AuthenticAMD")) {
 			auto_arch = auto_detect_AMD(&cpu_info);
+		} else if (0 == strcmp(vendorid, "Geode by NSC")) {
+			auto_arch = arch_geode;
 		}
+
+		if (cpu_info.edx_features & CPUID_FEAT_EDX_CMOV)
+			auto_arch |= arch_feature_cmov;
+		if (cpu_info.edx_features & CPUID_FEAT_EDX_MMX)
+			auto_arch |= arch_feature_mmx;
+		if (cpu_info.edx_features & CPUID_FEAT_EDX_SSE)
+			auto_arch |= arch_feature_sse1;
+		if (cpu_info.edx_features & CPUID_FEAT_EDX_SSE2)
+			auto_arch |= arch_feature_sse2;
+
+		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSE3)
+			auto_arch |= arch_feature_sse3;
+		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSSE3)
+			auto_arch |= arch_feature_ssse3;
+		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSE4_1)
+			auto_arch |= arch_feature_sse4_1;
+		if (cpu_info.ecx_features & CPUID_FEAT_ECX_SSE4_2)
+			auto_arch |= arch_feature_sse4_2;
+		if (cpu_info.ecx_features & CPUID_FEAT_ECX_POPCNT)
+			auto_arch |= arch_feature_popcnt;
 	}
 
 	arch     = auto_arch;
@@ -821,7 +887,7 @@ void ia32_setup_cg_config(void)
 	c->use_femms            = 0;
 #endif
 	c->use_fucomi           = FLAGS(arch, arch_feature_p6_insn);
-	c->use_cmov             = FLAGS(arch, arch_feature_p6_insn);
+	c->use_cmov             = FLAGS(arch, arch_feature_cmov);
 	c->use_modeD_moves      = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode);
 	c->use_add_esp_4        = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 |             arch_geode)                         && !opt_size;
 	c->use_add_esp_8        = FLAGS(opt_arch, arch_generic32 | arch_athlon_plus | arch_netburst | arch_nocona | arch_core2 | arch_ppro | arch_geode | arch_i386 | arch_i486) && !opt_size;
@@ -836,7 +902,7 @@ void ia32_setup_cg_config(void)
 	c->use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
 	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
 	c->use_3dnow_prefetch   = FLAGS(arch, arch_feature_3DNow);
-	c->use_popcnt           = FLAGS(arch, (arch_feature_sse4_2 | arch_feature_sse4a));
+	c->use_popcnt           = FLAGS(arch, arch_feature_popcnt);
 	c->use_i486             = (arch & arch_mask) >= arch_i486;
 	c->optimize_cc          = opt_cc;
 	c->use_unsafe_floatconv = opt_unsafe_floatconv;
