@@ -708,15 +708,16 @@ static cpu_support auto_detect_AMD(x86_cpu_info_t const *info) {
 			break;
 		default:
 			/* unknown K7 */
-			auto_arch = arch_athlon | arch_feature_p6_insn;;
+			auto_arch = arch_athlon | arch_feature_p6_insn;
 			break;
 		}
 		break;
 	case 0x0F:
-		auto_arch = arch_k8 | arch_feature_p6_insn;;
+		auto_arch = arch_k8 | arch_feature_p6_insn;
 		break;
 	case 0x1F:
-		auto_arch = arch_k10 | arch_feature_p6_insn;;
+	case 0x2F: /* AMD Family 11h */
+		auto_arch = arch_k10 | arch_feature_p6_insn;
 		break;
 	default:
 		/* unknown */
