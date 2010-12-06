@@ -526,15 +526,15 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 			if (reg == arch_env->sp || reg == arch_env->bp)
 				continue;
 
-			if (arch_register_type_is(reg, state)) {
+			if (reg->type & arch_register_type_state) {
 				ARR_APP1(const arch_register_t*, destroyed_regs, reg);
 				ARR_APP1(const arch_register_t*, states, reg);
 				/* we're already in the destroyed set so no need for further
 				 * checking */
 				continue;
 			}
-			if (destroy_all_regs || arch_register_type_is(reg, caller_save)) {
-				if (! arch_register_type_is(reg, ignore)) {
+			if (destroy_all_regs || (reg->type & arch_register_type_caller_save)) {
+				if (!(reg->type & arch_register_type_ignore)) {
 					ARR_APP1(const arch_register_t*, destroyed_regs, reg);
 				}
 			}
@@ -1325,7 +1325,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	/* Add uses of the callee save registers. */
 	foreach_pmap(env->regs, ent) {
 		const arch_register_t *reg = (const arch_register_t*)ent->key;
-		if (arch_register_type_is(reg, callee_save) || arch_register_type_is(reg, ignore))
+		if (reg->type & (arch_register_type_callee_save | arch_register_type_ignore))
 			pmap_insert(reg_map, ent->key, ent->value);
 	}
 
@@ -1840,8 +1840,7 @@ static void modify_irg(ir_graph *irg)
 		const arch_register_class_t *cls = &arch_env->register_classes[i];
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = &cls->regs[j];
-			if (arch_register_type_is(reg, callee_save) ||
-					arch_register_type_is(reg, state)) {
+			if (reg->type & (arch_register_type_callee_save | arch_register_type_state)) {
 				pmap_insert(env->regs, (void *) reg, NULL);
 			}
 		}
@@ -2005,7 +2004,7 @@ static void fix_call_state_inputs(ir_graph *irg)
 		const arch_register_class_t *cls = &arch_env->register_classes[i];
 		for (j = 0; j < cls->n_regs; ++j) {
 			const arch_register_t *reg = arch_register_for_index(cls, j);
-			if (arch_register_type_is(reg, state)) {
+			if (reg->type & arch_register_type_state) {
 				ARR_APP1(arch_register_t*, stateregs, (arch_register_t *)reg);
 			}
 		}
@@ -2323,14 +2322,14 @@ void be_set_allocatable_regs(const ir_graph *irg,
 
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg)
 {
-	assert(arch_register_type_is(reg, callee_save));
+	assert(reg->type & arch_register_type_callee_save);
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }
 
 ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
 {
-	assert(arch_register_type_is(reg, ignore));
+	assert(reg->type & arch_register_type_ignore);
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }

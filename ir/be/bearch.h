@@ -263,15 +263,6 @@ static inline const char *arch_register_get_name(const arch_register_t *reg)
 }
 
 /**
- * Convenience macro to check for register type.
- * @param req   A pointer to register.
- * @param kind  The kind of type to check for (see arch_register_type_t).
- * @return      1, If register is of given kind, 0 if not.
- */
-#define arch_register_type_is(reg, kind) \
-  (((reg)->type & arch_register_type_ ## kind) != 0)
-
-/**
  * A class of registers.
  * Like general purpose or floating point.
  */

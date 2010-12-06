@@ -84,7 +84,7 @@ static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 	assert(reg && "no in register found");
 
 	/* in case of a joker register: just return a valid register */
-	if (arch_register_type_is(reg, joker)) {
+	if (reg->type & arch_register_type_joker) {
 		const arch_register_req_t *req = arch_get_register_req(irn, pos);
 
 		if (arch_register_req_is(req, limited)) {

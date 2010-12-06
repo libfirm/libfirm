@@ -62,7 +62,7 @@ static void clear_reg_value(ir_node *node)
 	if (reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
-	if (arch_register_type_is(reg, virtual))
+	if (reg->type & arch_register_type_virtual)
 		return;
 	cls     = arch_register_get_class(reg);
 	reg_idx = arch_register_get_index(reg);
@@ -87,7 +87,7 @@ static void set_reg_value(ir_node *node)
 	if (reg == NULL) {
 		panic("No register assigned at %+F", node);
 	}
-	if (arch_register_type_is(reg, virtual))
+	if (reg->type & arch_register_type_virtual)
 		return;
 	cls     = arch_register_get_class(reg);
 	reg_idx = arch_register_get_index(reg);

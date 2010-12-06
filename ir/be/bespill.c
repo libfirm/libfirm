@@ -87,8 +87,8 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 
 		/* precolored with an ignore register (which is not a joker like
 		   unknown/noreg) */
-		if (arch_register_type_is(reg, joker)
-				|| rbitset_is_set(birg->allocatable_regs, reg->global_index))
+		if ((reg->type & arch_register_type_joker) ||
+		    rbitset_is_set(birg->allocatable_regs, reg->global_index))
 			continue;
 
 		if (! (req->type & arch_register_req_type_limited))
