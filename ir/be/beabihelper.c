@@ -36,16 +36,19 @@
 #include "irphase_t.h"
 #include "heights.h"
 
+/**
+ * An entry in the register state map.
+ */
 typedef struct reg_flag_t {
-	const arch_register_t *reg;   /**< register at an input position.
-	                                   may be NULL in case of memory input */
-	arch_register_req_type_t flags;
+	const arch_register_t *reg;     /**< register at an input position.
+	                                     may be NULL in case of memory input */
+	arch_register_req_type_t flags; /**< requirement flags for this register. */
 } reg_flag_t;
 
 /**
  * A register state mapping keeps track of the symbol values (=firm nodes)
- * to registers. This is usefull when constructing straight line code
- * which like the function prolog or epilog in some architectures.
+ * to registers. This is useful when constructing straight line code
+ * like the function prolog or epilog in some architectures.
  */
 typedef struct register_state_mapping_t {
 	ir_node   **value_map;     /**< mapping of state indices to values */
@@ -56,13 +59,25 @@ typedef struct register_state_mapping_t {
 	ir_node    *last_barrier;
 } register_state_mapping_t;
 
+/**
+ * The environment for all helper functions.
+ */
 struct beabi_helper_env_t {
-	ir_graph                 *irg;
-	register_state_mapping_t  prolog;
-	register_state_mapping_t  epilog;
-	ir_phase                 *stack_order;
+	ir_graph                 *irg;         /**< the graph we operate on */
+	register_state_mapping_t  prolog;      /**< the register state map for the prolog */
+	register_state_mapping_t  epilog;      /**< the register state map for the epilog */
+	ir_phase                 *stack_order; /**< a phase to handle stack dependencies. */
 };
 
+/**
+ * Create a new empty register state map for the given
+ * architecture.
+ *
+ * @param rsm       the register state map to be initialized
+ * @param arch_env  the architecture environment
+ *
+ * After this call, the register map is initialized to empty.
+ */
 static void prepare_rsm(register_state_mapping_t *rsm,
                         const arch_env_t *arch_env)
 {
@@ -88,6 +103,15 @@ static void prepare_rsm(register_state_mapping_t *rsm,
 	}
 }
 
+/**
+ * Destroy a register state map for the given
+ * architecture.
+ *
+ * @param rsm       the register state map to be destroyed
+ * @param arch_env  the architecture environment
+ *
+ * After this call, the register map is initialized to empty.
+ */
 static void free_rsm(register_state_mapping_t *rsm, const arch_env_t *arch_env)
 {
 	unsigned n_reg_classes = arch_env->n_register_classes;
@@ -107,6 +131,12 @@ static void free_rsm(register_state_mapping_t *rsm, const arch_env_t *arch_env)
 	rsm->value_map     = NULL;
 }
 
+/**
+ * Remove all registers from a register state map.
+ *
+ * @param rsm       the register state map to be destroyed
+ * @param arch_env  the architecture environment
+ */
 static void rsm_clear_regs(register_state_mapping_t *rsm,
                            const arch_env_t *arch_env)
 {
@@ -132,6 +162,10 @@ static void rsm_clear_regs(register_state_mapping_t *rsm,
 	}
 }
 
+/**
+ * Add a register and its constraint flags to a register state map
+ * and return its index inside the map.
+ */
 static int rsm_add_reg(register_state_mapping_t *rsm,
                        const arch_register_t *reg,
                        arch_register_req_type_t flags)
@@ -153,13 +187,18 @@ static int rsm_add_reg(register_state_mapping_t *rsm,
 	return input_idx;
 }
 
-
+/**
+ * Retrieve the ir_node stored at the given index in the register state map.
+ */
 static ir_node *rsm_get_value(register_state_mapping_t *rsm, int index)
 {
 	assert(0 <= index && index < ARR_LEN(rsm->value_map));
 	return rsm->value_map[index];
 }
 
+/**
+ * Retrieve the ir_node occupying the given register in the register state map.
+ */
 static ir_node *rsm_get_reg_value(register_state_mapping_t *rsm,
                                   const arch_register_t *reg)
 {
@@ -170,6 +209,9 @@ static ir_node *rsm_get_reg_value(register_state_mapping_t *rsm,
 	return rsm_get_value(rsm, input_idx);
 }
 
+/**
+ * Enter a ir_node at the given index in the register state map.
+ */
 static void rsm_set_value(register_state_mapping_t *rsm, int index,
                           ir_node *value)
 {
@@ -177,6 +219,9 @@ static void rsm_set_value(register_state_mapping_t *rsm, int index,
 	rsm->value_map[index] = value;
 }
 
+/**
+ * Enter a ir_node at the given register in the register state map.
+ */
 static void rsm_set_reg_value(register_state_mapping_t *rsm,
                               const arch_register_t *reg, ir_node *value)
 {
@@ -186,6 +231,12 @@ static void rsm_set_reg_value(register_state_mapping_t *rsm,
 	rsm_set_value(rsm, input_idx, value);
 }
 
+/**
+ * Create a Barrier from the registers stored at a register state map.
+ *
+ * @param rsm    the register state map
+ * @param block  the block to create the Barrier on
+ */
 static ir_node *rsm_create_barrier(register_state_mapping_t *rsm,
                                    ir_node *block)
 {
@@ -242,7 +293,7 @@ void be_abihelper_finish(beabi_helper_env_t *env)
 	if (env->epilog.reg_index_map != NULL) {
 		free_rsm(&env->epilog, arch_env);
 	}
-	free(env);
+	xfree(env);
 }
 
 void be_prolog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
@@ -537,6 +588,9 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 	return get_irn_idx(n2) - get_irn_idx(n1);
 }
 
+/**
+ * Block-walker: sorts dependencies
+ */
 static void process_ops_in_block(ir_node *block, void *data)
 {
 	ir_phase *phase = (ir_phase*)data;
@@ -558,7 +612,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 	n = 0;
 	for (node = (ir_node*)get_irn_link(block); node != NULL;
 	     node = (ir_node*)get_irn_link(node)) {
-		nodes[n++] = node;;
+		nodes[n++] = node;
 	}
 	assert(n == n_nodes);
 
@@ -571,6 +625,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 
 		phase_set_irn_data(phase, node, pred);
 	}
+	xfree(nodes);
 }
 
 void be_collect_stacknodes(beabi_helper_env_t *env)

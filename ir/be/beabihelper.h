@@ -33,8 +33,14 @@
 
 typedef struct beabi_helper_env_t beabi_helper_env_t;
 
+/**
+ * Creates a helper object for the ABI constraint handling.
+ */
 beabi_helper_env_t *be_abihelper_prepare(ir_graph *irg);
 
+/**
+ * Terminates a helper object for the ABI constraint handling.
+ */
 void be_abihelper_finish(beabi_helper_env_t *env);
 
 /**
@@ -43,7 +49,7 @@ void be_abihelper_finish(beabi_helper_env_t *env);
  *  - Callee-Save registers (we need to restore that value at the end)
  *  - Parameters passed in registers
  *  - stack pointer, base pointer, ...
- * It is possible to specify additional irn flags (usefull to mark a value
+ * It is possible to specify additional irn flags (useful to mark a value
  * as ignore or produces_sp).
  */
 void be_prolog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
