@@ -299,8 +299,8 @@ static ir_node *new_rd_Phi_in(ir_node *block, ir_mode *mode,
 	/* i < 0: there is at most one predecessor, we don't need a phi node. */
 	if (i < 0) {
 		if (res != known) {
-			edges_node_deleted(res, current_ir_graph);
-			obstack_free(current_ir_graph->obst, res);
+			edges_node_deleted(res, irg);
+			obstack_free(irg->obst, res);
 			if (is_Phi(known)) {
 				/* If pred is a phi node we want to optimize it: If loops are matured in a bad
 				   order, an enclosing Phi know may get superfluous. */
@@ -531,38 +531,40 @@ void mature_immBlock(ir_node *block)
 	int ins;
 	ir_node *n, **nin;
 	ir_node *next;
+	ir_graph *irg;
 
 	assert(is_Block(block));
-	if (!get_Block_matured(block)) {
-		ir_graph *irg = current_ir_graph;
+	if (get_Block_matured(block))
+		return;
 
-		ins = ARR_LEN(block->in) - 1;
-		/* Fix block parameters */
-		block->attr.block.backedge = new_backedge_arr(irg->obst, ins);
+	irg = get_irn_irg(block);
+	ins = ARR_LEN(block->in) - 1;
+	/* Fix block parameters */
+	block->attr.block.backedge = new_backedge_arr(irg->obst, ins);
 
-		/* An array for building the Phi nodes. */
-		NEW_ARR_A(ir_node *, nin, ins);
+	/* An array for building the Phi nodes. */
+	NEW_ARR_A(ir_node *, nin, ins);
 
-		/* Traverse a chain of Phi nodes attached to this block and mature
-		these, too. **/
-		for (n = block->attr.block.phis; n; n = next) {
-			inc_irg_visited(irg);
-			next = n->attr.phi.next;
-			exchange(n, phi_merge(block, n->attr.phi.u.pos, n->mode, ins, nin));
-		}
-
-		block->attr.block.is_matured = 1;
-
-		/* Now, as the block is a finished Firm node, we can optimize it.
-		   Since other nodes have been allocated since the block was created
-		   we can not free the node on the obstack.  Therefore we have to call
-		   optimize_in_place().
-		   Unfortunately the optimization does not change a lot, as all allocated
-		   nodes refer to the unoptimized node.
-		   We can call optimize_in_place_2(), as global cse has no effect on blocks. */
-		block = optimize_in_place_2(block);
-		irn_verify_irg(block, irg);
+	/* Traverse a chain of Phi nodes attached to this block and mature
+	these, too. */
+	for (n = block->attr.block.phis; n; n = next) {
+		inc_irg_visited(irg);
+		next = n->attr.phi.next;
+		exchange(n, phi_merge(block, n->attr.phi.u.pos, n->mode, ins, nin));
 	}
+
+	block->attr.block.is_matured = 1;
+
+	/* Now, as the block is a finished Firm node, we can optimize it.
+	   Since other nodes have been allocated since the block was created
+	   we can not free the node on the obstack.  Therefore we have to call
+	   optimize_in_place().
+	   Unfortunately the optimization does not change a lot, as all allocated
+	   nodes refer to the unoptimized node.
+	   We can call optimize_in_place_2(), as global cse has no effect on blocks.
+	 */
+	block = optimize_in_place_2(block);
+	irn_verify_irg(block, irg);
 }
 
 ir_node *new_d_Phi(dbg_info *db, int arity, ir_node **in, ir_mode *mode)
@@ -744,9 +746,8 @@ static ir_mode *guess_recursively(ir_node *block, int pos)
 	return NULL;
 }
 
-ir_mode *ir_guess_mode(int pos)
+ir_mode *ir_r_guess_mode(ir_graph *irg, int pos)
 {
-	ir_graph *irg   = current_ir_graph;
 	ir_node  *block = irg->current_block;
 	ir_node  *value = block->attr.block.graph_arr[pos+1];
 	ir_mode  *mode;
@@ -755,12 +756,17 @@ ir_mode *ir_guess_mode(int pos)
 	if (value != NULL)
 		return get_irn_mode(value);
 
-	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
-	inc_irg_visited(current_ir_graph);
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
+	inc_irg_visited(irg);
 	mode = guess_recursively(block, pos+1);
-	ir_free_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	return mode;
+}
+
+ir_mode *ir_guess_mode(int pos)
+{
+	return ir_r_guess_mode(current_ir_graph, pos);
 }
 
 void set_r_value(ir_graph *irg, int pos, ir_node *value)
@@ -777,15 +783,20 @@ void set_value(int pos, ir_node *value)
 	set_r_value(current_ir_graph, pos, value);
 }
 
-int find_value(ir_node *value)
+int r_find_value(ir_graph *irg, ir_node *value)
 {
 	int i;
-	ir_node *bl = current_ir_graph->current_block;
+	ir_node *bl = irg->current_block;
 
 	for (i = ARR_LEN(bl->attr.block.graph_arr) - 1; i >= 1; --i)
 		if (bl->attr.block.graph_arr[i] == value)
 			return i - 1;
 	return -1;
+}
+
+int find_value(ir_node *value)
+{
+	return r_find_value(current_ir_graph, value);
 }
 
 ir_node *get_r_store(ir_graph *irg)
@@ -843,9 +854,14 @@ void set_store(ir_node *store)
 	set_r_store(current_ir_graph, store);
 }
 
+void r_keep_alive(ir_graph *irg, ir_node *ka)
+{
+	add_End_keepalive(get_irg_end(irg), ka);
+}
+
 void keep_alive(ir_node *ka)
 {
-	add_End_keepalive(get_irg_end(current_ir_graph), ka);
+	r_keep_alive(current_ir_graph, ka);
 }
 
 void ir_set_uninitialized_local_variable_func(

@@ -4144,6 +4144,7 @@ FIRM_API ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode);
  * @param  pos   The position/id of the local variable.
  */
 FIRM_API ir_mode *ir_guess_mode(int pos);
+FIRM_API ir_mode *ir_r_guess_mode(ir_graph *irg, int pos);
 
 /** Remark a new definition of a variable.
  *
@@ -4167,6 +4168,7 @@ FIRM_API void set_r_value(ir_graph *irg, int pos, ir_node *value);
  * no value number in the current block.
  */
 FIRM_API int find_value(ir_node *value);
+FIRM_API int r_find_value(ir_graph *irg, ir_node *value);
 
 /** Get the current memory state.
  *
@@ -4192,6 +4194,7 @@ FIRM_API void set_r_store(ir_graph *irg, ir_node *store);
  * @param ka The node to keep alive.
  */
 FIRM_API void keep_alive(ir_node *ka);
+FIRM_API void r_keep_alive(ir_graph *irg, ir_node *ka);
 
 /* --- initialize and finalize IR construction --- */
 
