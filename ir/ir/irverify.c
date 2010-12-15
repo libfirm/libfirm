@@ -589,10 +589,11 @@ static int verify_node_Proj_Load(ir_node *n, ir_node *p)
 	long proj     = get_Proj_proj(p);
 
 	if (proj == pn_Load_res) {
-		ir_node *ptr = get_Load_ptr(n);
+		ir_node   *ptr = get_Load_ptr(n);
 		ir_entity *ent = get_ptr_entity(ptr);
+		ir_graph  *irg = get_irn_irg(n);
 
-		if (verify_entities && ent && get_irg_phase_state(current_ir_graph) == phase_high) {
+		if (verify_entities && ent && get_irg_phase_state(irg) == phase_high) {
 			/* do NOT check this for lowered phases, see comment on Store */
 			ASSERT_AND_RET_DBG(
 				(mode == get_type_mode(get_entity_type(ent))),
@@ -1649,7 +1650,7 @@ static int verify_node_Store(ir_node *n, ir_graph *irg)
 	ASSERT_AND_RET(mymode == mode_T, "Store node", 0);
 
 	target = get_ptr_entity(get_Store_ptr(n));
-	if (verify_entities && target && get_irg_phase_state(current_ir_graph) == phase_high) {
+	if (verify_entities && target && get_irg_phase_state(irg) == phase_high) {
 		/*
 		 * If lowered code, any Sels that add 0 may be removed, causing
 		 * an direct access to entities of array or compound type.
@@ -1836,6 +1837,7 @@ static int check_dominance_for_node(ir_node *use)
 			ir_node *def    = get_irn_n(use, i);
 			ir_node *def_bl = get_nodes_block(def);
 			ir_node *use_bl = bl;
+			ir_graph *irg;
 
 			/* ignore dead definition blocks, will be removed */
 			if (is_Block_dead(def_bl) || get_Block_dom_depth(def_bl) == -1)
@@ -1848,12 +1850,13 @@ static int check_dominance_for_node(ir_node *use)
 			if (is_Block_dead(use_bl) || get_Block_dom_depth(use_bl) == -1)
 				continue;
 
+			irg = get_irn_irg(use);
 			ASSERT_AND_RET_DBG(
 				block_dominates(def_bl, use_bl),
 				"the definition of a value used violates the dominance property", 0,
 				ir_fprintf(stderr,
 				"graph %+F: %+F of %+F must dominate %+F of user %+F input %d\n",
-				current_ir_graph, def_bl, def, use_bl, use, i
+				irg, def_bl, def, use_bl, use, i
 				);
 			);
 		}
@@ -1923,7 +1926,7 @@ int irn_verify_irg(ir_node *n, ir_graph *irg)
 int irn_verify(ir_node *n)
 {
 #ifdef DEBUG_libfirm
-	return irn_verify_irg(n, current_ir_graph);
+	return irn_verify_irg(n, get_irn_irg(n));
 #else
 	(void)n;
 	return 1;
@@ -1941,7 +1944,7 @@ int irn_verify(ir_node *n)
 static void verify_wrap(ir_node *node, void *env)
 {
 	int *res = (int*)env;
-	*res = irn_verify_irg(node, current_ir_graph);
+	*res = irn_verify_irg(node, get_irn_irg(node));
 }
 
 /**
@@ -1952,7 +1955,7 @@ static void verify_wrap_ssa(ir_node *node, void *env)
 {
 	int *res = (int*)env;
 
-	*res = irn_verify_irg(node, current_ir_graph);
+	*res = irn_verify_irg(node, get_irn_irg(node));
 	if (*res) {
 		*res = check_dominance_for_node(node);
 	}
@@ -1970,9 +1973,6 @@ int irg_verify(ir_graph *irg, unsigned flags)
 	int res = 1;
 #ifdef DEBUG_libfirm
 	ir_graph *rem;
-
-	rem = current_ir_graph;
-	current_ir_graph = irg;
 
 #ifndef NDEBUG
     last_irg_error = NULL;
@@ -1999,7 +1999,6 @@ int irg_verify(ir_graph *irg, unsigned flags)
 			fprintf(stderr, "irg_verify: Verifying graph %p failed\n", (void *)irg);
 	}
 
-	current_ir_graph = rem;
 #else
 	(void)irg;
 	(void)flags;
@@ -2070,6 +2069,7 @@ static void check_bads(ir_node *node, void *env)
 {
 	verify_bad_env_t *venv = (verify_bad_env_t*)env;
 	int i, arity = get_irn_arity(node);
+	ir_graph *irg = get_irn_irg(node);
 
 	if (is_Block(node)) {
 		if ((venv->flags & BAD_CF) == 0) {
@@ -2085,7 +2085,7 @@ static void check_bads(ir_node *node, void *env)
 						fprintf(stderr, "irg_verify_bads: Block %ld has Bad predecessor\n", get_irn_node_nr(node));
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-						dump_ir_graph(current_ir_graph, "-assert");
+						dump_ir_graph(irg, "-assert");
 						assert(0 && "Bad CF detected");
 					}
 				}
@@ -2102,7 +2102,7 @@ static void check_bads(ir_node *node, void *env)
 					fprintf(stderr, "irg_verify_bads: node %ld has Bad Block\n", get_irn_node_nr(node));
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-					dump_ir_graph(current_ir_graph, "-assert");
+					dump_ir_graph(irg, "-assert");
 					assert(0 && "Bad CF detected");
 				}
 			}
@@ -2116,7 +2116,7 @@ static void check_bads(ir_node *node, void *env)
 					fprintf(stderr, "irg_verify_bads: node %ld is a Tuple\n", get_irn_node_nr(node));
 				}
 				if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-					dump_ir_graph(current_ir_graph, "-assert");
+					dump_ir_graph(irg, "-assert");
 					assert(0 && "Tuple detected");
 				}
 			}
@@ -2137,7 +2137,7 @@ static void check_bads(ir_node *node, void *env)
 							fprintf(stderr, "irg_verify_bads: Phi %ld has Bad Input\n", get_irn_node_nr(node));
 						}
 						if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-							dump_ir_graph(current_ir_graph, "-assert");
+							dump_ir_graph(irg, "-assert");
 							assert(0 && "Bad CF detected");
 						}
 					}
@@ -2151,7 +2151,7 @@ static void check_bads(ir_node *node, void *env)
 						fprintf(stderr, "irg_verify_bads: node %ld has Bad Input\n", get_irn_node_nr(node));
 					}
 					if (get_node_verification_mode() == FIRM_VERIFICATION_ON) {
-						dump_ir_graph(current_ir_graph, "-assert");
+						dump_ir_graph(irg, "-assert");
 						assert(0 && "Bad NON-CF detected");
 					}
 				}
