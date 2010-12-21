@@ -26,15 +26,17 @@
 #ifndef FIRM_STAT_TIMING_H
 #define FIRM_STAT_TIMING_H
 
-#if defined(__i386__) || defined(_M_IX86)
+#if defined(__i386__) || defined(_M_IX86) || defined(_M_X64)
 
 #if defined(__GNUC__)
 typedef unsigned long long timing_ticks_t;
 static inline timing_ticks_t __timing_ticks(void) { timing_ticks_t result; __asm__ __volatile__ ("rdtsc" : "=A" (result)); return result; }
+
 #elif defined(_MSC_VER)
-/* win32 implementation using rdtsc */
+#include <intrin.h>
+
 typedef unsigned __int64 timing_ticks_t;
-static __inline timing_ticks_t __timing_ticks(void) { __asm { rdtsc } }
+static __inline timing_ticks_t __timing_ticks(void) { return __rdtsc(); }
 #else
 #error need a 64bit int type
 #endif
@@ -47,7 +49,7 @@ static __inline timing_ticks_t __timing_ticks(void) { __asm { rdtsc } }
 #define timing_ticks_ulong(t)        ((unsigned long) (t))
 #define timing_ticks_dbl(t)          ((double) (t))
 
-#else /* !__i386__ */
+#else /* !__i386__ && !__x86_64 */
 
 #include <sys/time.h>
 
