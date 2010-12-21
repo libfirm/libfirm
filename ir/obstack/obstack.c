@@ -82,7 +82,7 @@ int obstack_exit_failure = EXIT_FAILURE;
 # define CALL_CHUNKFUN(h, size) \
   (((h) -> use_extra_arg) \
    ? (*(h)->chunkfun) ((h)->extra_arg, (size)) \
-   : (*(struct _obstack_chunk *(*) (long)) (h)->chunkfun) ((size)))
+   : (*(struct _obstack_chunk *(*) (PTR_INT_TYPE)) (h)->chunkfun) ((size)))
 
 # define CALL_FREEFUN(h, old_chunk) \
   do { \
@@ -102,7 +102,7 @@ int obstack_exit_failure = EXIT_FAILURE;
    allocation fails.  */
 
 int _obstack_begin(struct obstack *h, int size, int alignment,
-                   void *(*chunkfun)(long), void (*freefun)(void *))
+                   void *(*chunkfun)(PTR_INT_TYPE), void (*freefun)(void *))
 {
   register struct _obstack_chunk *chunk; /* points to new chunk */
 
@@ -125,7 +125,7 @@ int _obstack_begin(struct obstack *h, int size, int alignment,
       size = 4096 - extra;
     }
 
-  h->chunkfun = (struct _obstack_chunk * (*)(void *, long)) chunkfun;
+  h->chunkfun = (struct _obstack_chunk * (*)(void *, PTR_INT_TYPE)) chunkfun;
   h->freefun = (void (*) (void *, struct _obstack_chunk *)) freefun;
   h->chunk_size = size;
   h->alignment_mask = alignment - 1;
@@ -146,7 +146,7 @@ int _obstack_begin(struct obstack *h, int size, int alignment,
 }
 
 int _obstack_begin_1(struct obstack *h, int size, int alignment,
-                     void *(*chunkfun) (void *, long),
+                     void *(*chunkfun) (void *, PTR_INT_TYPE),
                      void (*freefun) (void *, void *), void *arg)
 {
   register struct _obstack_chunk *chunk; /* points to new chunk */
@@ -170,7 +170,7 @@ int _obstack_begin_1(struct obstack *h, int size, int alignment,
       size = 4096 - extra;
     }
 
-  h->chunkfun = (struct _obstack_chunk * (*)(void *,long)) chunkfun;
+  h->chunkfun = (struct _obstack_chunk * (*)(void *,PTR_INT_TYPE)) chunkfun;
   h->freefun = (void (*) (void *, struct _obstack_chunk *)) freefun;
   h->chunk_size = size;
   h->alignment_mask = alignment - 1;
@@ -197,14 +197,14 @@ int _obstack_begin_1(struct obstack *h, int size, int alignment,
    Copies any partial object from the end of the old chunk
    to the beginning of the new one.  */
 
-void _obstack_newchunk(struct obstack *h, int length)
+void _obstack_newchunk(struct obstack *h, PTR_INT_TYPE length)
 {
   register struct _obstack_chunk *old_chunk = h->chunk;
   register struct _obstack_chunk *new_chunk;
-  register long new_size;
-  register long obj_size = h->next_free - h->object_base;
-  register long i;
-  long already;
+  register PTR_INT_TYPE new_size;
+  register PTR_INT_TYPE obj_size = h->next_free - h->object_base;
+  register PTR_INT_TYPE i;
+  PTR_INT_TYPE already;
   char *object_base;
 
   /* Compute size for new chunk.  */
@@ -321,10 +321,10 @@ void obstack_free(struct obstack *h, void *obj)
     abort ();
 }
 
-int _obstack_memory_used(struct obstack *h)
+PTR_INT_TYPE _obstack_memory_used(struct obstack *h)
 {
   register struct _obstack_chunk* lp;
-  register int nbytes = 0;
+  register PTR_INT_TYPE nbytes = 0;
 
   for (lp = h->chunk; lp != 0; lp = lp->prev)
     {
