@@ -39,7 +39,7 @@ struct ir_phase {
 	void           **data_ptr;      /**< Map node indexes to irn data on the obstack. */
 	ir_graph        *irg;           /**< The irg this phase will we applied to. */
 	phase_irn_init  *data_init;     /**< A callback that is called to initialize newly created node data. */
-	unsigned         n_data_ptr;    /**< The length of the data_ptr array. */
+	size_t           n_data_ptr;    /**< The length of the data_ptr array. */
 	struct obstack   obst;          /**< The obstack where the irn phase data will be stored on. */
 	void            *priv;          /**< Some pointer private to the user of the phase. */
 };
@@ -48,10 +48,10 @@ struct ir_phase {
  * For statistics: A type containing statistic data of a phase object.
  */
 typedef struct {
-	unsigned node_slots;       /**< The number of allocated node slots. */
-	unsigned node_slots_used;  /**< The number of used node slots, i.e. nodes that have node data. */
-	unsigned node_map_bytes;   /**< Number of used bytes for the node map. */
-	unsigned overall_bytes;    /**< Overall number of used bytes for the phase. */
+	size_t node_slots;       /**< The number of allocated node slots. */
+	size_t node_slots_used;  /**< The number of used node slots, i.e. nodes that have node data. */
+	size_t node_map_bytes;   /**< Number of used bytes for the node map. */
+	size_t overall_bytes;    /**< Overall number of used bytes for the phase. */
 } phase_stat_t;
 
 /**

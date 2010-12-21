@@ -194,7 +194,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 copy_opt_t *new_copy_opt(be_chordal_env_t *chordal_env, cost_fct_t get_costs)
 {
 	const char *s1, *s2, *s3;
-	int len;
+	size_t len;
 	copy_opt_t *co;
 
 	FIRM_DBG_REGISTER(dbg, "ir.be.copyopt");

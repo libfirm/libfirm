@@ -74,7 +74,7 @@ void phase_free(ir_phase *phase)
 
 phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)
 {
-	unsigned i, n;
+	size_t i, n;
 	memset(stat, 0, sizeof(stat[0]));
 
 	stat->node_map_bytes = phase->n_data_ptr * sizeof(phase->data_ptr[0]);
@@ -90,7 +90,7 @@ phase_stat_t *phase_stat(const ir_phase *phase, phase_stat_t *stat)
 
 void phase_reinit_irn_data(ir_phase *phase, phase_irn_reinit *data_reinit)
 {
-	unsigned i, n;
+	size_t i, n;
 	ir_graph *irg;
 
 	if (! phase->data_init)
