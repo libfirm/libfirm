@@ -1972,7 +1972,6 @@ int irg_verify(ir_graph *irg, unsigned flags)
 {
 	int res = 1;
 #ifdef DEBUG_libfirm
-	ir_graph *rem;
 
 #ifndef NDEBUG
     last_irg_error = NULL;
