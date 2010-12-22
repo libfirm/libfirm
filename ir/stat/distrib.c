@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -54,7 +54,9 @@ static int int_cmp_fun(const void *elt, const void *key)
 	const distrib_entry_t *p1 = (const distrib_entry_t*)elt;
 	const distrib_entry_t *p2 = (const distrib_entry_t*)key;
 
-	return (char *)p1->object - (char *)p2->object;
+	if (p1->object == p2->object)
+		return 0;
+	return p1->object < p2->object ? -1 : 1;
 }
 
 /*

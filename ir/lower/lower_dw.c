@@ -1992,7 +1992,7 @@ static int cmp_op_mode(const void *elt, const void *key, size_t size)
 	const op_mode_entry_t *e2 = (const op_mode_entry_t*)key;
 	(void) size;
 
-	return (e1->op - e2->op) | (e1->imode - e2->imode) | (e1->omode - e2->omode);
+	return (e1->op != e2->op) | (e1->imode != e2->imode) | (e1->omode != e2->omode);
 }
 
 /**
@@ -2004,7 +2004,7 @@ static int cmp_conv_tp(const void *elt, const void *key, size_t size)
 	const conv_tp_entry_t *e2 = (const conv_tp_entry_t*)key;
 	(void) size;
 
-	return (e1->imode - e2->imode) | (e1->omode - e2->omode);
+	return (e1->imode != e2->imode) | (e1->omode != e2->omode);
 }
 
 /**

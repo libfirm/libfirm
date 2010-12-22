@@ -387,7 +387,7 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					for (ch = *s; ch != '}' && ch != '\0'; ch = *++s);
 
 					if (s - named) {
-						int n = s - named;
+						size_t n = s - named;
 						char *name;
 						lc_arg_t tmp;
 

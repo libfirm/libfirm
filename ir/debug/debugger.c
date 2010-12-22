@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -933,7 +933,7 @@ static struct lexer {
 	unsigned cur_token;   /**< current token. */
 	unsigned number;      /**< current token attribute. */
 	const char *s;        /**< current token attribute. */
-	unsigned len;         /**< current token attribute. */
+	size_t len;           /**< current token attribute. */
 
 	const char *curr_pos;
 	const char *end_pos;
@@ -1052,7 +1052,7 @@ static unsigned get_token(void)
 void firm_debug(const char *cmd)
 {
 	char name[1024], fname[1024];
-	int len;
+	size_t len;
 
 	init_lexer(cmd);
 

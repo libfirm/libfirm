@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -2134,7 +2134,7 @@ void stat_dump_snapshot(const char *name, const char *phase)
 {
 	char fname[2048];
 	const char *p;
-	int l;
+	size_t l;
 
 	if (! status->stat_options)
 		return;

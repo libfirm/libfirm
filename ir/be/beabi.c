@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1193,7 +1193,7 @@ static int cmp_regs(const void *a, const void *b)
 	if (p->reg->reg_class == q->reg->reg_class)
 		return p->reg->index - q->reg->index;
 	else
-		return p->reg->reg_class - q->reg->reg_class;
+		return p->reg->reg_class < q->reg->reg_class ? -1 : +1;
 }
 
 static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
