@@ -628,7 +628,7 @@ static void thread_jumps(ir_node* block, void* data)
 	const ir_edge_t *edge, *next;
 	ir_graph *irg;
 	ir_node *bad;
-	size_t   cnst_pos;
+	int      cnst_pos;
 
 	if (get_Block_n_cfgpreds(block) != 1)
 		return;
