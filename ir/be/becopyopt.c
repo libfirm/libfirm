@@ -308,7 +308,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr;
-	unsigned  pos;
+	size_t  pos;
 	int curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
@@ -344,7 +344,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 	/* now compute the best set out of the unsafe nodes*/
 	if (unsafe_count > MIS_HEUR_TRIGGER) {
 		bitset_t *best = bitset_alloca(unsafe_count);
-		/* Heuristik: Greedy trial and error form index 0 to unsafe_count-1 */
+		/* Heuristic: Greedy trial and error form index 0 to unsafe_count-1 */
 		for (i=0; i<unsafe_count; ++i) {
 			bitset_set(best, i);
 			/* check if it is a stable set */
@@ -369,7 +369,7 @@ static int ou_max_ind_set_costs(unit_t *ou)
 							goto no_stable_set;
 
 			/* if we arrive here, we have a stable set */
-			/* compute the weigth of the stable set*/
+			/* compute the weight of the stable set*/
 			curr_weight = 0;
 			bitset_foreach(curr, pos)
 				curr_weight += unsafe_costs[pos];

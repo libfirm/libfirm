@@ -168,7 +168,7 @@ static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 	bitset_t *tmp = bitset_alloca(lv->n_blocks);
 	bl_info_t *bi = get_block_info(lv, bl);
 
-	unsigned elm;
+	size_t elm;
 
 	DBG((lv->dbg, LEVEL_2, "computing T_%d\n", bi->id));
 
@@ -205,7 +205,7 @@ static void compute_back_edge_chain(lv_chk_t *lv, const ir_node *bl)
 
 static inline void compute_back_edge_chains(lv_chk_t *lv)
 {
-	unsigned elm;
+	size_t elm;
 	int i, n;
 
 	DBG((lv->dbg, LEVEL_2, "back edge sources: %B\n", lv->back_edge_src));

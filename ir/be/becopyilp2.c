@@ -82,7 +82,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 
 	be_ifg_foreach_node(ifg, &iter, irn)
 		if (!sr_is_removed(ienv->sr, irn)) {
-			unsigned col;
+			size_t col;
 			int cst_idx;
 			const arch_register_req_t *req;
 			int curr_node_color = get_irn_col(irn);

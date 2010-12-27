@@ -37,7 +37,7 @@
 #include "raw_bitset.h"
 
 typedef struct bitset_t {
-	unsigned size;     /**< size of the bitset in bits */
+	size_t size;       /**< size of the bitset in bits */
 	unsigned data[1];  /**< data (should be declared data[] but this is only
 	                        allowed in C99) */
 } bitset_t;
@@ -45,7 +45,7 @@ typedef struct bitset_t {
 /**
  * return the number of bytes a bitset would need
  */
-static inline size_t bitset_total_size(unsigned n_bits)
+static inline size_t bitset_total_size(size_t n_bits)
 {
 	return sizeof(bitset_t) - sizeof(((bitset_t*)0)->data)
 		+ BITSET_SIZE_BYTES(n_bits);
@@ -55,7 +55,7 @@ static inline size_t bitset_total_size(unsigned n_bits)
  * initialize a bitset for bitsize size (bitset should point to memory
  * with a size calculated by bitset_total_size)
  */
-static inline bitset_t *bitset_init(void *memory, unsigned size)
+static inline bitset_t *bitset_init(void *memory, size_t size)
 {
 	bitset_t *result = (bitset_t*) memory;
 	result->size = size;
@@ -70,7 +70,7 @@ static inline bitset_t *bitset_init(void *memory, unsigned size)
  * @return A pointer to an empty initialized bitset.
  */
 static inline bitset_t *bitset_obstack_alloc(struct obstack *obst,
-                                             unsigned n_bits)
+                                             size_t n_bits)
 {
 	size_t size   = bitset_total_size(n_bits);
 	void  *memory = obstack_alloc(obst, size);
@@ -82,7 +82,7 @@ static inline bitset_t *bitset_obstack_alloc(struct obstack *obst,
  * @param size The greatest bit that shall be stored in the set.
  * @return A pointer to an empty initialized bitset.
  */
-static inline bitset_t *bitset_malloc(unsigned n_bits)
+static inline bitset_t *bitset_malloc(size_t n_bits)
 {
 	size_t  size   = bitset_total_size(n_bits);
 	void   *memory = xmalloc(size);
@@ -112,7 +112,7 @@ static inline void bitset_free(bitset_t *bitset)
  * @param bs The bitset.
  * @return The highest bit which can be set or cleared plus 1.
  */
-static inline unsigned bitset_size(const bitset_t *bitset)
+static inline size_t bitset_size(const bitset_t *bitset)
 {
 	return bitset->size;
 }
@@ -122,7 +122,7 @@ static inline unsigned bitset_size(const bitset_t *bitset)
  * @param bs The bitset.
  * @param bit The bit to set.
  */
-static inline void bitset_set(bitset_t *bs, unsigned bit)
+static inline void bitset_set(bitset_t *bs, size_t bit)
 {
 	assert(bit < bs->size);
 	rbitset_set(bs->data, bit);
@@ -133,7 +133,7 @@ static inline void bitset_set(bitset_t *bs, unsigned bit)
  * @param bs The bitset.
  * @param bit The bit to clear.
  */
-static inline void bitset_clear(bitset_t *bs, unsigned bit)
+static inline void bitset_clear(bitset_t *bs, size_t bit)
 {
 	assert(bit < bs->size);
 	rbitset_clear(bs->data, bit);
@@ -145,7 +145,7 @@ static inline void bitset_clear(bitset_t *bs, unsigned bit)
  * @param bit The bit to check for.
  * @return 1, if the bit was set, 0 if not.
  */
-static inline bool bitset_is_set(const bitset_t *bs, unsigned bit)
+static inline bool bitset_is_set(const bitset_t *bs, size_t bit)
 {
 	assert(bit < bs->size);
 	return rbitset_is_set(bs->data, bit);
@@ -156,7 +156,7 @@ static inline bool bitset_is_set(const bitset_t *bs, unsigned bit)
  * @param bs The bitset.
  * @param bit The bit to flip.
  */
-static inline void bitset_flip(bitset_t *bs, unsigned bit)
+static inline void bitset_flip(bitset_t *bs, size_t bit)
 {
 	assert(bit < bs->size);
 	rbitset_flip(bs->data, bit);
@@ -195,13 +195,13 @@ static inline void bitset_copy_into(bitset_t *tgt, const bitset_t *src)
  * @note Note that if pos is unset, pos is returned.
  * @param bs The bitset.
  * @param pos The bit from which to search for the next set bit.
- * @return The next set bit from pos on, or (unsigned)-1, if no unset bit was
+ * @return The next set bit from pos on, or (size_t)-1, if no unset bit was
  * found after pos.
  */
-static inline unsigned bitset_next_clear(const bitset_t *bs, unsigned pos)
+static inline size_t bitset_next_clear(const bitset_t *bs, size_t pos)
 {
 	if (pos >= bs->size)
-		return (unsigned)-1;
+		return (size_t)-1;
 	return rbitset_next_max(bs->data, pos, bs->size, false);
 }
 
@@ -210,27 +210,27 @@ static inline unsigned bitset_next_clear(const bitset_t *bs, unsigned pos)
  * @note Note that if pos is set, pos is returned.
  * @param bs The bitset.
  * @param pos The bit from which to search for the next set bit.
- * @return The next set bit from pos on, or (unsigned)-1, if no set bit was
+ * @return The next set bit from pos on, or (size_t)-1, if no set bit was
  * found after pos.
  */
-static inline unsigned bitset_next_set(const bitset_t *bs, unsigned pos)
+static inline size_t bitset_next_set(const bitset_t *bs, size_t pos)
 {
 	if (pos >= bs->size)
-		return (unsigned)-1;
+		return (size_t)-1;
 	return rbitset_next_max(bs->data, pos, bs->size, true);
 }
 
 /**
  * Convenience macro for bitset iteration.
  * @param bitset The bitset.
- * @param elm A unsigned long variable.
+ * @param elm A size_t variable.
  */
 #define bitset_foreach(bitset,elm) \
-	for(elm = bitset_next_set(bitset,0); elm != (unsigned) -1; elm = bitset_next_set(bitset,elm+1))
+	for(elm = bitset_next_set(bitset,0); elm != (size_t)-1; elm = bitset_next_set(bitset,elm+1))
 
 
 #define bitset_foreach_clear(bitset,elm) \
-	for(elm = bitset_next_clear(bitset,0); elm != (unsigned) -1; elm = bitset_next_clear(bitset,elm+1))
+	for(elm = bitset_next_clear(bitset,0); elm != (size_t) -1; elm = bitset_next_clear(bitset,elm+1))
 
 /**
  * Count the bits set.
@@ -238,7 +238,7 @@ static inline unsigned bitset_next_set(const bitset_t *bs, unsigned pos)
  * @param bs The bitset.
  * @return The number of bits set in the bitset.
  */
-static inline unsigned bitset_popcount(const bitset_t *bs)
+static inline size_t bitset_popcount(const bitset_t *bs)
 {
 	return rbitset_popcount(bs->data, bs->size);
 }
@@ -305,14 +305,14 @@ static inline bool bitset_intersect(const bitset_t *a, const bitset_t *b)
  * @param to     The last index plus one to set to one.
  * @param do_set If 1 the bits are set, if 0, they are cleared.
  */
-static inline void bitset_mod_range(bitset_t *a, unsigned from, unsigned to,
+static inline void bitset_mod_range(bitset_t *a, size_t from, size_t to,
                                     bool do_set)
 {
 	if (from == to)
 	    return;
 
 	if (to < from) {
-		unsigned tmp = from;
+		size_t tmp = from;
 		from = to;
 		to = tmp;
 	}
@@ -345,10 +345,10 @@ static inline bool bitset_is_empty(const bitset_t *bs)
 static inline void bitset_fprint(FILE *file, const bitset_t *bs)
 {
 	const char *prefix = "";
-	int i;
+	size_t i;
 
 	putc('{', file);
-	for(i = bitset_next_set(bs, 0); i != -1; i = bitset_next_set(bs, i + 1)) {
+	for(i = bitset_next_set(bs, 0); i != (size_t)-1; i = bitset_next_set(bs, i + 1)) {
 		fprintf(file, "%s%d", prefix, i);
 		prefix = ",";
 	}

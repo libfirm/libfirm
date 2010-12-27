@@ -398,7 +398,7 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
 	ir_node **safe, **unsafe;
 	int i, o, safe_count, safe_costs, unsafe_count, *unsafe_costs;
 	bitset_t *curr, *best;
-	unsigned pos;
+	size_t pos;
 	int next, curr_weight, best_weight = 0;
 
 	/* assign the nodes into two groups.
@@ -461,7 +461,7 @@ static inline void qnode_max_ind_set(qnode_t *qn, const unit_t *ou)
 							goto no_stable_set;
 
 			/* if we arrive here, we have a stable set */
-			/* compute the weigth of the stable set*/
+			/* compute the weight of the stable set*/
 			curr_weight = 0;
 			bitset_foreach(curr, pos)
 				curr_weight += unsafe_costs[pos];

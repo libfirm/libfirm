@@ -66,7 +66,7 @@ static int bitset_emit(lc_appendable_t *app,
 {
 	int res = 2;
 	bitset_t *b = (bitset_t*)arg->v_ptr;
-	unsigned  p;
+	size_t  p;
 	char buf[32];
 	const char *prefix = "";
 
