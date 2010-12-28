@@ -506,7 +506,9 @@ void be_add_missing_keeps(ir_graph *irg)
 }
 
 
-
+/**
+ * Link the node into its block list as a new head.
+ */
 static void collect_node(ir_node *node)
 {
 	ir_node *block = get_nodes_block(node);
@@ -516,6 +518,9 @@ static void collect_node(ir_node *node)
 	set_irn_link(block, node);
 }
 
+/**
+ * Post-walker: link all nodes that probably access the stack into lists of their block.
+ */
 static void link_ops_in_block_walker(ir_node *node, void *data)
 {
 	(void) data;
@@ -540,7 +545,8 @@ static void link_ops_in_block_walker(ir_node *node, void *data)
 			ir_tarval *tv    = get_Const_tarval(param); /* must be Const */
 			long       value = get_tarval_long(tv);
 			if (value > 0) {
-				/* we need esp for the climbframe algo */
+				/* not the return address of the current function:
+				 * we need the stack pointer for the frame climbing */
 				collect_node(node);
 			}
 		}
@@ -566,17 +572,18 @@ static int dependent_on(const ir_node *n1, const ir_node *n2)
 	return heights_reachable_in_block(heights, n1, n2);
 }
 
+/**
+ * Classical qsort() comparison function behavior:
+ *
+ * 0  if both elements are equal, no node depend on the other
+ * +1 if first depends on second (first is greater)
+ * -1 if second depends on first (second is greater)
+*/
 static int cmp_call_dependency(const void *c1, const void *c2)
 {
 	const ir_node *n1 = *(const ir_node **) c1;
 	const ir_node *n2 = *(const ir_node **) c2;
 
-	/*
-		Classical qsort() comparison function behavior:
-		0  if both elements are equal
-		1  if second is "smaller" that first
-		-1 if first is "smaller" that second
-	*/
 	if (dependent_on(n1, n2))
 		return 1;
 
@@ -589,7 +596,7 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 }
 
 /**
- * Block-walker: sorts dependencies
+ * Block-walker: sorts dependencies and remember them into a phase
  */
 static void process_ops_in_block(ir_node *block, void *data)
 {
@@ -619,6 +626,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 	/* order nodes according to their data dependencies */
 	qsort(nodes, n_nodes, sizeof(nodes[0]), cmp_call_dependency);
 
+	/* remember the calculated dependency into a phase */
 	for (n = n_nodes-1; n > 0; --n) {
 		ir_node *node = nodes[n];
 		ir_node *pred = nodes[n-1];
@@ -631,11 +639,15 @@ static void process_ops_in_block(ir_node *block, void *data)
 void be_collect_stacknodes(beabi_helper_env_t *env)
 {
 	ir_graph *irg = env->irg;
+
+	/* collect all potential^stack accessing nodes */
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, NULL);
 
 	assert(env->stack_order == NULL);
 	env->stack_order = new_phase(irg, phase_irn_init_default);
 
+	/* use heights to create a total order for those nodes: this order is stored
+	 * in the created phase */
 	heights = heights_new(irg);
 	irg_block_walk_graph(irg, NULL, process_ops_in_block, env->stack_order);
 	heights_free(heights);

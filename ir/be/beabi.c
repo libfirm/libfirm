@@ -1031,8 +1031,8 @@ static void link_ops_in_block_walker(ir_node *irn, void *data)
  * Block-walker:
  * Process all Call/Alloc/Free nodes inside a basic block.
  * Note that the link field of the block must contain a linked list of all
- * Call nodes inside the Block. We first order this list according to data dependency
- * and that connect the calls together.
+ * nodes inside the Block. We first order this list according to data dependency
+ * and that connect the nodes together.
  */
 static void process_ops_in_block(ir_node *bl, void *data)
 {
