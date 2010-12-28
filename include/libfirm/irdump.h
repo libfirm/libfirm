@@ -66,7 +66,7 @@ typedef void (*ir_prog_dump_func)(FILE *out);
  * at @p mime_type.
  * The file is stored into the directory specified by #ir_set_dump_path
  *
- * @param func       Dumper. Usualle one of #dump_callgraph, #dump_typegraph,
+ * @param func       Dumper. Usually one of #dump_callgraph, #dump_typegraph,
  *                   #dump_class_hierarchy, #dump_types_as_text,
  *                   #dump_globals_as_text
  * @param suffix     Suffix to append to the name
