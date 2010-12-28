@@ -1074,7 +1074,14 @@ static ir_node *gen_Cond(ir_node *node)
 	return new_bd_arm_B(dbgi, block, flag_node, get_Proj_pn_cmp(selector));
 }
 
-static ir_tarval *fpa_imm[3][fpa_max];
+enum fpa_imm_mode {
+	FPA_IMM_FLOAT    = 0,
+	FPA_IMM_DOUBLE   = 1,
+	FPA_IMM_EXTENDED = 2,
+	FPA_IMM_MAX = FPA_IMM_EXTENDED
+};
+
+static ir_tarval *fpa_imm[FPA_IMM_MAX + 1][fpa_max];
 
 #if 0
 /**
@@ -1088,13 +1095,13 @@ static int is_fpa_immediate(tarval *tv)
 
 	switch (get_mode_size_bits(mode)) {
 	case 32:
-		i = 0;
+		i = FPA_IMM_FLOAT;
 		break;
 	case 64:
-		i = 1;
+		i = FPA_IMM_DOUBLE;
 		break;
 	default:
-		i = 2;
+		i = FPA_IMM_EXTENDED;
 	}
 
 	if (tarval_is_negative(tv)) {
@@ -2118,32 +2125,32 @@ static void arm_register_transformers(void)
 static void arm_init_fpa_immediate(void)
 {
 	/* 0, 1, 2, 3, 4, 5, 10, or 0.5. */
-	fpa_imm[0][fpa_null]  = get_mode_null(mode_F);
-	fpa_imm[0][fpa_one]   = get_mode_one(mode_F);
-	fpa_imm[0][fpa_two]   = new_tarval_from_str("2", 1, mode_F);
-	fpa_imm[0][fpa_three] = new_tarval_from_str("3", 1, mode_F);
-	fpa_imm[0][fpa_four]  = new_tarval_from_str("4", 1, mode_F);
-	fpa_imm[0][fpa_five]  = new_tarval_from_str("5", 1, mode_F);
-	fpa_imm[0][fpa_ten]   = new_tarval_from_str("10", 2, mode_F);
-	fpa_imm[0][fpa_half]  = new_tarval_from_str("0.5", 3, mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_null]  = get_mode_null(mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_one]   = get_mode_one(mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_two]   = new_tarval_from_str("2", 1, mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_three] = new_tarval_from_str("3", 1, mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_four]  = new_tarval_from_str("4", 1, mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_five]  = new_tarval_from_str("5", 1, mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_ten]   = new_tarval_from_str("10", 2, mode_F);
+	fpa_imm[FPA_IMM_FLOAT][fpa_half]  = new_tarval_from_str("0.5", 3, mode_F);
 
-	fpa_imm[1][fpa_null]  = get_mode_null(mode_D);
-	fpa_imm[1][fpa_one]   = get_mode_one(mode_D);
-	fpa_imm[1][fpa_two]   = new_tarval_from_str("2", 1, mode_D);
-	fpa_imm[1][fpa_three] = new_tarval_from_str("3", 1, mode_D);
-	fpa_imm[1][fpa_four]  = new_tarval_from_str("4", 1, mode_D);
-	fpa_imm[1][fpa_five]  = new_tarval_from_str("5", 1, mode_D);
-	fpa_imm[1][fpa_ten]   = new_tarval_from_str("10", 2, mode_D);
-	fpa_imm[1][fpa_half]  = new_tarval_from_str("0.5", 3, mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_null]  = get_mode_null(mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_one]   = get_mode_one(mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_two]   = new_tarval_from_str("2", 1, mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_three] = new_tarval_from_str("3", 1, mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_four]  = new_tarval_from_str("4", 1, mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_five]  = new_tarval_from_str("5", 1, mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_ten]   = new_tarval_from_str("10", 2, mode_D);
+	fpa_imm[FPA_IMM_DOUBLE][fpa_half]  = new_tarval_from_str("0.5", 3, mode_D);
 
-	fpa_imm[2][fpa_null]  = get_mode_null(mode_E);
-	fpa_imm[2][fpa_one]   = get_mode_one(mode_E);
-	fpa_imm[2][fpa_two]   = new_tarval_from_str("2", 1, mode_E);
-	fpa_imm[2][fpa_three] = new_tarval_from_str("3", 1, mode_E);
-	fpa_imm[2][fpa_four]  = new_tarval_from_str("4", 1, mode_E);
-	fpa_imm[2][fpa_five]  = new_tarval_from_str("5", 1, mode_E);
-	fpa_imm[2][fpa_ten]   = new_tarval_from_str("10", 2, mode_E);
-	fpa_imm[2][fpa_half]  = new_tarval_from_str("0.5", 3, mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_null]  = get_mode_null(mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_one]   = get_mode_one(mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_two]   = new_tarval_from_str("2", 1, mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_three] = new_tarval_from_str("3", 1, mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_four]  = new_tarval_from_str("4", 1, mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_five]  = new_tarval_from_str("5", 1, mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_ten]   = new_tarval_from_str("10", 2, mode_E);
+	fpa_imm[FPA_IMM_EXTENDED][fpa_half]  = new_tarval_from_str("0.5", 3, mode_E);
 }
 
 /**
