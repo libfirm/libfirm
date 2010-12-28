@@ -39,7 +39,8 @@ static const unsigned ignore_regs[] = {
 	REG_FL,
 };
 
-calling_convention_t *arm_decide_calling_convention(ir_graph *irg,
+/* determine how function parameters and return values are passed. */
+calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
                                                     ir_type *function_type)
 {
 	int                   stack_offset = 0;
