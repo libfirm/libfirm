@@ -32,11 +32,12 @@
 #include "iredges.h"
 #include "obstack.h"
 
+typedef struct obstack obstack;
+
 typedef struct pd_node {
 	ir_node        *irn;
 	char            defined;
-	int             index;
-	int             min_index;
+	int             index; /* = min_index */
 	int             max_index;
 	plist_t        *children;
 	struct pd_node *parent;
@@ -44,9 +45,9 @@ typedef struct pd_node {
 
 /* PEG Dominator tree. */
 struct pd_tree {
-	struct obstack  obst;
-	pd_node        *root;
-	ir_phase       *phase;
+	obstack   obst;
+	pd_node  *root;
+	ir_phase *phase;
 };
 
 static void pd_set_parent(pd_node *parent, pd_node *child)
@@ -91,11 +92,9 @@ static int pd_compute_indices_dom(pd_node *pdn, int counter)
 {
 	plist_element_t *it;
 	pdn->index = counter;
-	pdn->min_index = counter;
 
 	foreach_plist(pdn->children, it) {
-		counter++;
-		counter = pd_compute_indices_dom(it->data, counter);
+		counter = pd_compute_indices_dom(it->data, counter + 1);
 	}
 
 	pdn->max_index = counter;
@@ -229,7 +228,7 @@ int pd_dominates(pd_tree *pdt, ir_node *lhs, ir_node *rhs)
 	pd_node *lhs_node = phase_get_irn_data(pdt->phase, lhs);
 	pd_node *rhs_node = phase_get_irn_data(pdt->phase, rhs);
 
-	return (rhs_node->index >= lhs_node->min_index) &&
+	return (rhs_node->index >= lhs_node->index) &&
 	       (rhs_node->index <= lhs_node->max_index);
 }
 
@@ -294,7 +293,7 @@ static void pd_dump_node(pd_node *pdn, FILE *f, int indent)
 	fprintf(f, "%s %li (%i - %i)\n",
 		get_op_name(get_irn_op(pdn->irn)),
 		get_irn_node_nr(pdn->irn),
-		pdn->min_index, pdn->max_index
+		pdn->index, pdn->max_index
 	);
 
 	foreach_plist(pdn->children, it) {

@@ -110,6 +110,12 @@ gc_cond *gc_get_union_cond(gc_cond *cond, gc_iter *it);
 /** Get the next condition from the given union iterator. */
 gc_cond *gc_union_iter_next(gc_iter *it);
 
+/** Get a demand condition. */
+gc_cond *gc_get_demand(void);
+
+/** Get ar ignore condition. */
+gc_cond *gc_get_ignore(void);
+
 #define foreach_gc_union(gcu, it, cond) \
 	for ((cond) = gc_get_union_cond((gcu), &(it)); \
 		(cond); (cond) = gc_union_iter_next(&(it)))

@@ -32,6 +32,8 @@
 #include "obstack.h"
 #include "irtools.h"
 
+typedef struct obstack obstack;
+
 typedef enum pl_type {
 	plt_any,
 	plt_eta
@@ -51,7 +53,7 @@ typedef struct pl_node_eta {
 } pl_node_eta;
 
 struct pl_info {
-	struct obstack obst;
+	obstack   obst;
 	ir_phase *phase;
 	plist_t  *etas;
 	plist_t  *thetas;

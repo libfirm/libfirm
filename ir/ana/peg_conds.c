@@ -36,6 +36,8 @@
 #include "pmap.h"
 #include "irgmod.h"
 
+typedef struct obstack obstack;
+
 //#define LOG_DIRS_COMBINE 1
 
 /* Convenience macro to iterate two pmaps in succession. */
@@ -93,7 +95,7 @@ typedef struct gc_node {
 
 /* Gating Condition info. */
 struct gc_info {
-	struct obstack  obst;
+	obstack   obst;
 	pd_tree  *pdt;
 	pl_info  *pli;
 	gc_node  *root;
@@ -178,6 +180,16 @@ static gc_cond *gc_new_ignore(void)
 {
 	static gc_cond cond = { gct_ignore };
 	return &cond;
+}
+
+gc_cond *gc_get_demand(void)
+{
+	return gc_new_demand();
+}
+
+gc_cond *gc_get_ignore(void)
+{
+	return gc_new_ignore();
 }
 
 static gc_cond *gc_new_branch(gc_info *gci, gc_cond *lhs,
@@ -609,8 +621,8 @@ static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
 
 static void *gc_init_node(ir_phase *phase, const ir_node *irn)
 {
-	gc_info *info = phase_get_private(phase);
-	gc_node *gcn  = OALLOC(&info->obst, gc_node);
+	gc_info *gci = phase_get_private(phase);
+	gc_node *gcn = OALLOC(&gci->obst, gc_node);
 
 	/* Initialize the condition maps. It's not obstacked, but we only allocate
 	 * them once, so allocation speed isn't that much of an issue. */
@@ -624,19 +636,19 @@ static void *gc_init_node(ir_phase *phase, const ir_node *irn)
 
 gc_info *gc_init(ir_graph *irg, pd_tree *pdt, pl_info *pli)
 {
-	gc_info *info = XMALLOC(gc_info);
+	gc_info *gci = XMALLOC(gc_info);
 	ir_node *ret;
 	assert((pd_get_irg(pdt) == irg) && (pl_get_irg(pli) == irg));
 
-	obstack_init(&info->obst);
+	obstack_init(&gci->obst);
 
-	info->pdt = pdt;
-	info->pli = pli;
-	ret = pd_get_root(info->pdt);
+	gci->pdt = pdt;
+	gci->pli = pli;
+	ret = pd_get_root(gci->pdt);
 	assert(is_Return(ret));
 
-	info->phase = new_phase(irg, gc_init_node);
-	phase_set_private(info->phase, info);
+	gci->phase = new_phase(irg, gc_init_node);
+	phase_set_private(gci->phase, gci);
 
 #ifdef LOG_DIRS_COMBINE
 	printf("--------------------\n");
@@ -645,11 +657,11 @@ gc_info *gc_init(ir_graph *irg, pd_tree *pdt, pl_info *pli)
 #endif
 
 	/* Walk through the tree to compute directions. */
-	info->root = phase_get_or_set_irn_data(info->phase, ret);
-	info->root->irn = ret;
-	gc_compute_dirs(info, info->root);
+	gci->root = phase_get_or_set_irn_data(gci->phase, ret);
+	gci->root->irn = ret;
+	gc_compute_dirs(gci, gci->root);
 
-	return info;
+	return gci;
 }
 
 void gc_free(gc_info *gci)
@@ -856,7 +868,7 @@ gc_cond *gc_get_union_rhs(gc_cond *cond)
 
 void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 {
-	struct obstack obst;
+	obstack  obst;
 	pl_iter  it, it_theta, it_border;
 	ir_node *eta, *theta, *irn;
 
