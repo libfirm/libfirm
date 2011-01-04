@@ -511,10 +511,7 @@ static void ct_arrange_graph(ct_info *cti, ir_node *irn)
 	}
 
 	if (is_Gamma(irn)) {
-		/* Gamma node handling. */
 		ct_template *tmpl;
-
-		assert(current);
 		tmpl = pmap_find(current->templates, irn)->value;
 
 		/* Set a marker after the condition, to put the condition before the
@@ -524,6 +521,20 @@ static void ct_arrange_graph(ct_info *cti, ir_node *irn)
 
 		ct_arrange_graph(cti, get_Gamma_true(irn));
 		ct_arrange_graph(cti, get_Gamma_false(irn));
+	} else if (is_EtaA(irn)) {
+		ct_template *tmpl;
+		tmpl = pmap_find(current->templates, irn)->value;
+
+		/* Set a marker after the condition, to put the nodes before the loop
+		 * template, instead of putting them behind. */
+		ct_arrange_graph(cti, get_EtaA_force(irn));
+		ct_ensure_marker(tmpl);
+
+		/* Process remaining nodes. */
+		ct_arrange_graph(cti, get_EtaA_cond(irn));
+		ct_arrange_graph(cti, get_EtaA_header(irn));
+		ct_arrange_graph(cti, get_EtaA_repeat(irn));
+		ct_arrange_graph(cti, get_EtaA_result(irn));
 	} else {
 		/* Recurse to all deps. */
 		for (i = 0; i < get_irn_arity(irn); i++) {
@@ -606,6 +617,66 @@ static ir_node *ct_build_template(ir_graph *irg, ct_template *tmpl,
 		}
 
 		return bl_join;
+	}
+	case ctt_loop: {
+		plist_element_t *it;
+		ct_loop *ctl = (ct_loop*)tmpl;
+
+		/* Create the header block and a jump to it. */
+		ir_node *enter_jumps[2]  = { new_r_Jmp(start) };
+		ir_node *bl_header_start = new_r_Block(irg, 1, enter_jumps);
+		ir_node *bl_header_end   = ct_build_region(
+			irg, ctl->header, bl_header_start
+		);
+
+		/* Conditionally leave the header block. */
+		ir_node *cond     = new_r_Cond(bl_header_end, ctl->cond);
+		ir_node *ir_true  = new_r_Proj(cond, mode_X, pn_Cond_true);
+		ir_node *ir_false = new_r_Proj(cond, mode_X, pn_Cond_false);
+
+		/* Create a block for the loop body. */
+		ir_node *body_jumps[1] = { ir_false };
+		ir_node *bl_body_start = new_r_Block(irg, 1, body_jumps);
+		ir_node *bl_body_end   = ct_build_region(
+			irg, ctl->repeat, bl_body_start
+		);
+
+		/* Create a block for leaving the loop. */
+		ir_node *leave_jumps[1] = { ir_true };
+		ir_node *bl_leave = new_r_Block(irg, 1, leave_jumps);
+
+		/* Add the back edge. */
+		enter_jumps[1] = new_r_Jmp(bl_body_end);
+		set_irn_in(bl_header_start, 2, enter_jumps);
+
+		/* Process all eta nodes to place phis. */
+		foreach_plist(ctl->etas, it) {
+			int      i;
+			ir_node *eta    = it->data;
+			ir_mode *mode   = get_irn_mode(eta);
+			ir_node *header = get_EtaA_header(eta);
+			ir_node *repeat = get_EtaA_repeat(eta);
+
+			assert(is_Tuple(header) && is_Tuple(repeat));
+			assert(get_irn_arity(header) == get_irn_arity(repeat));
+
+			/* TODO: rename header to somthing better? */
+			/* The etas header tuple contains all the thetas. */
+			for (i = 0; i < get_irn_arity(header); i++) {
+				ir_node *theta  = get_irn_n(header, i);
+				ir_node *ins[2] = {
+					get_ThetaA_init(theta), get_irn_n(repeat, i)
+				};
+
+				ir_node *phi = new_r_Phi(bl_header_start, 2, ins, mode);
+				exchange(theta, phi);
+			}
+
+			/* Replace the eta node by the result from the loop. */
+			exchange(eta, get_EtaA_result(eta));
+		}
+
+		return bl_leave;
 	}}
 
 	assert(0);
@@ -897,8 +968,6 @@ void peg_to_cfg(ir_graph *irg)
 	block = ct_build_template(irg, cti->root, block);
 	set_irn_in(get_irg_end_block(irg), 1, &cti->ret);
 
-	set_optimize(opt);
-
 	ct_free(cti);
 	gc_free(gci);
 	pd_free(pdt);
@@ -907,6 +976,8 @@ void peg_to_cfg(ir_graph *irg)
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
+
+	set_optimize(opt);
 
 	dump_ir_graph(irg, "newcfg");
 }
