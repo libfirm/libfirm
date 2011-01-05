@@ -181,7 +181,7 @@ static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *n
 		fprintf(stderr, "no admissible colors?!?");
 	else {
 		bitset_foreach(node->adm_colors, idx) {
-			fprintf(stderr, " %d", idx);
+			fprintf(stderr, " %lu", (unsigned long) idx);
 		}
 	}
 }

@@ -349,7 +349,7 @@ static inline void bitset_fprint(FILE *file, const bitset_t *bs)
 
 	putc('{', file);
 	for(i = bitset_next_set(bs, 0); i != (size_t)-1; i = bitset_next_set(bs, i + 1)) {
-		fprintf(file, "%s%d", prefix, i);
+		fprintf(file, "%s%lu", prefix, (unsigned long) i);
 		prefix = ",";
 	}
 	putc('}', file);
