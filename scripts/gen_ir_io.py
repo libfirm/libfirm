@@ -26,7 +26,7 @@ def format_block(node):
 	if hasattr(node, "knownBlock"):
 		if hasattr(node, "knownGraph"):
 			return ""
-		return "current_ir_graph"
+		return "irg"
 	else:
 		return "get_node(env, preds[0])"
 
