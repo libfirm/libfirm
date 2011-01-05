@@ -28,7 +28,7 @@ def format_block(node):
 			return ""
 		return "irg"
 	else:
-		return "get_node(env, preds[0])"
+		return "preds[0]"
 
 def format_arguments(string):
 	args = re.split('\s*\n\s*', string)
@@ -124,14 +124,14 @@ def preprocess_node(node):
 	arguments = [ ]
 	initargs = [ ]
 	specialconstrs = [ ]
-	i = 0
+	i = 1
 	for input in node.ins:
-		arguments.append("prednodes[%i]" % i)
+		arguments.append("preds[%i]" % i)
 		i += 1
 
 	if node.arity == "variable" or node.arity == "dynamic":
-		arguments.append("numpreds - %i" % (i + 1))
-		arguments.append("prednodes + %i" % i)
+		arguments.append("numpreds - %i" % i)
+		arguments.append("preds + %i" % i)
 
 	if not hasattr(node, "mode"):
 		arguments.append("mode")

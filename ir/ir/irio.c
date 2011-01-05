@@ -662,7 +662,11 @@ static void export_node(ir_node *irn, void *ctx)
 	fprintf(env->file, "\t%s %ld [ ", get_irn_opname(irn), get_irn_node_nr(irn));
 
 	n = get_irn_arity(irn);
-	for (i = -1; i < n; i++) {
+	if (!is_Block(irn)) {
+		fprintf(env->file, "%ld ", get_irn_node_nr(get_nodes_block(irn)));
+	}
+
+	for (i = 0; i < n; i++) {
 		ir_node *pred = get_irn_n(irn, i);
 		if (pred == NULL) {
 			/* Anchor node may have NULL predecessors */
@@ -1013,15 +1017,6 @@ static ir_node *get_node_or_null(io_env_t *env, long nodenr)
 		panic("Irn ID %ld collides with something else in line %d\n",
 		      nodenr, env->line);
 	}
-	return node;
-}
-
-static ir_node *get_node(io_env_t *env, long nodenr)
-{
-	ir_node *node = get_node_or_null(env, nodenr);
-	if (!node)
-		panic("Unknown node: %ld in line %d\n", nodenr, env->line);
-
 	return node;
 }
 
@@ -1448,7 +1443,7 @@ static int parse_typegraph(io_env_t *env)
 	return 1;
 }
 
-static int read_node_header(io_env_t *env, long *nodenr, long **preds,
+static int read_node_header(io_env_t *env, long *nodenr, ir_node ***preds,
                             const char **nodename)
 {
 	int numpreds;
@@ -1456,11 +1451,12 @@ static int read_node_header(io_env_t *env, long *nodenr, long **preds,
 	*nodename = read_word(env);
 	*nodenr   = read_long(env);
 
-	ARR_RESIZE(long, *preds, 0);
+	ARR_RESIZE(ir_node*, *preds, 0);
 
 	EXPECT('[');
 	for (numpreds = 0; !feof(env->file); numpreds++) {
 		long val;
+		ir_node *pred;
 
 		skip_ws(env);
 		if (env->c == ']') {
@@ -1468,7 +1464,8 @@ static int read_node_header(io_env_t *env, long *nodenr, long **preds,
 			break;
 		}
 		val = read_long(env);
-		ARR_APP1(long, *preds, val);
+		pred = get_node_or_dummy(env, val);
+		ARR_APP1(ir_node*, *preds, pred);
 	}
 
 	return numpreds;
@@ -1477,8 +1474,7 @@ static int read_node_header(io_env_t *env, long *nodenr, long **preds,
 /** Parses an IRG. */
 static int parse_graph(io_env_t *env, ir_graph *irg)
 {
-	long       *preds = NEW_ARR_F(long, 16);
-	ir_node   **prednodes = NEW_ARR_F(ir_node *, 16);
+	ir_node   **preds = NEW_ARR_F(ir_node*,0);
 	int         i, numpreds, ret = 1;
 	long        nodenr;
 	const char *nodename;
@@ -1496,17 +1492,6 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 		}
 
 		numpreds = read_node_header(env, &nodenr, &preds, &nodename);
-		if (numpreds == -1) break;  /* end-of-graph */
-		if (!numpreds) {
-			parse_error(env, "node %s %ld is missing predecessors!",
-			            nodename, nodenr);
-			ret = 0;
-			break;
-		}
-
-		ARR_RESIZE(ir_node *, prednodes, numpreds);
-		for (i = 0; i < numpreds - 1; i++)
-			prednodes[i] = get_node_or_dummy(env, preds[i + 1]);
 
 		node = get_node_or_null(env, nodenr);
 		newnode = NULL;
@@ -1516,40 +1501,31 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 		switch (symbol(nodename, tt_iro)) {
 		case iro_End:
 		{
-			ir_node *newendblock = get_node(env, preds[0]);
+			ir_node *newendblock = preds[0];
 			newnode = get_irg_end(irg);
 			exchange(get_nodes_block(newnode), newendblock);
-			for (i = 0; i < numpreds - 1; i++)
-				add_irn_n(newnode, prednodes[i]);
+			for (i = 1; i < numpreds; i++)
+				add_irn_n(newnode, preds[i]);
 			break;
 		}
 
 		case iro_Start:
 		{
-			ir_node *newstartblock = get_node(env, preds[0]);
+			ir_node *newstartblock = preds[0];
 			newnode = get_irg_start(irg);
 			exchange(get_nodes_block(newnode), newstartblock);
 			break;
 		}
 
 		case iro_Block:
-		{
-			if (preds[0] != nodenr) {
-				parse_error(env, "invalid block: preds[0] != nodenr (%ld != %ld)\n",
-				            preds[0], nodenr);
-				ret = 0;
-				goto endloop;
-			}
-
-			newnode = new_r_Block(irg, numpreds - 1, prednodes);
+			newnode = new_r_Block(irg, numpreds, preds);
 			break;
-		}
 
 		case iro_Anchor:
 			newnode = irg->anchor;
-			for (i = 0; i < numpreds - 1; i++)
-				set_irn_n(newnode, i, prednodes[i]);
-			set_irn_n(newnode, -1, get_node(env, preds[0]));
+			for (i = 1; i < numpreds; i++)
+				set_irn_n(newnode, i-1, preds[i]);
+			set_nodes_block(newnode, preds[0]);
 			break;
 
 		case iro_SymConst:
@@ -1581,9 +1557,7 @@ notsupported:
 		set_id(env, nodenr, newnode);
 	}
 
-endloop:
 	DEL_ARR_F(preds);
-	DEL_ARR_F(prednodes);
 
 	return ret;
 }
