@@ -923,7 +923,7 @@ void cfg_to_peg(ir_graph *irg)
 	dump_ir_graph(irg, "cfg");
 
 	/* Eliminate all switch nodes, we can't represent them in a PEG. */
-	lower_switch(irg, 0);
+	lower_switch(irg, 0, 0);
 	dump_ir_graph(irg, "switch");
 
 	/* Eliminate multiple returns. The program is exactly one value in PEG. */

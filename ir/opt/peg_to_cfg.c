@@ -429,7 +429,7 @@ static void ct_duplicate(ct_info *cti)
 
 	obstack_init(&obst);
 
-	foreach_pset_new(&cti->shared, irn, it) {
+	foreach_pset_new(&cti->shared, ir_node*, irn, it) {
 		ct_duplicate_node(&obst, cti, irn);
 	}
 
@@ -777,7 +777,7 @@ static void ct_dump_region(ct_info *cti, ct_region *reg, const char *name,
 	ct_dump_collect(cti, reg, cti->ret, &set);
 
 	ct_dump_indent(f, indent + 1); fprintf(f, "nodes {");
-	foreach_pset_new(&set, irn, it) {
+	foreach_pset_new(&set, ir_node*, irn, it) {
 		if (!first) fprintf(f, ", ");
 		fprintf(f, "%li", get_irn_node_nr(irn));
 		first = 0;
@@ -861,7 +861,7 @@ static void ct_dump(ct_info *cti, FILE *f)
 		fprintf(f, "duplicate nodes {\n");
 		ct_dump_indent(f, 1);
 
-		foreach_pset_new(&cti->shared, irn, it) {
+		foreach_pset_new(&cti->shared, ir_node*, irn, it) {
 			if (!first) fprintf(f, ", ");
 			fprintf(f, "%li", get_irn_node_nr(irn));
 			first = 0;
