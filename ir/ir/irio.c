@@ -1672,6 +1672,9 @@ static ir_node *read_ASM(io_env_t *env, int numpreds, ir_node **preds)
 			ARR_LEN(clobbers),
 			clobbers,
 			asm_text);
+	DEL_ARR_F(clobbers);
+	DEL_ARR_F(output_constraints);
+	DEL_ARR_F(input_constraints);
 	return newnode;
 }
 
