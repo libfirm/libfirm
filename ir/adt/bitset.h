@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include "irprintf.h"
 
 #include "xmalloc.h"
 #include "bitfiddle.h"
@@ -349,7 +350,7 @@ static inline void bitset_fprint(FILE *file, const bitset_t *bs)
 
 	putc('{', file);
 	for(i = bitset_next_set(bs, 0); i != (size_t)-1; i = bitset_next_set(bs, i + 1)) {
-		fprintf(file, "%s%lu", prefix, (unsigned long) i);
+		ir_fprintf(file, "%s%zu", prefix, i);
 		prefix = ",";
 	}
 	putc('}', file);

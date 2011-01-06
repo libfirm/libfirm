@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -181,7 +181,7 @@ static void dbg_admissible_colors(const co_mst_env_t *env, const co_mst_irn_t *n
 		fprintf(stderr, "no admissible colors?!?");
 	else {
 		bitset_foreach(node->adm_colors, idx) {
-			fprintf(stderr, " %lu", (unsigned long) idx);
+			ir_fprintf(stderr, " %zu", idx);
 		}
 	}
 }
