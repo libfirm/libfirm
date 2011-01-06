@@ -710,6 +710,43 @@ static void export_type_or_ent_post(type_or_ent tore, void *ctx)
 	}
 }
 
+static void export_ASM(io_env_t *env, ir_node *node)
+{
+	ir_asm_constraint *input_constraints    = get_ASM_input_constraints(node);
+	ir_asm_constraint *output_constraints   = get_ASM_output_constraints(node);
+	ident            **clobbers             = get_ASM_clobbers(node);
+	int                n_input_constraints  = get_ASM_n_input_constraints(node);
+	int                n_output_constraints = get_ASM_n_output_constraints(node);
+	int                n_clobbers           = get_ASM_n_clobbers(node);
+	int i;
+
+	write_ident(env, get_ASM_text(node));
+	write_list_begin(env);
+	for (i = 0; i < n_input_constraints; ++i) {
+		const ir_asm_constraint *constraint = &input_constraints[i];
+		write_unsigned(env, constraint->pos);
+		write_ident(env, constraint->constraint);
+		write_mode(env, constraint->mode);
+	}
+	write_list_end(env);
+
+	write_list_begin(env);
+	for (i = 0; i < n_output_constraints; ++i) {
+		const ir_asm_constraint *constraint = &output_constraints[i];
+		write_unsigned(env, constraint->pos);
+		write_ident(env, constraint->constraint);
+		write_mode(env, constraint->mode);
+	}
+	write_list_end(env);
+
+	write_list_begin(env);
+	for (i = 0; i < n_clobbers; ++i) {
+		ident *clobber = clobbers[i];
+		write_ident(env, clobber);
+	}
+	write_list_end(env);
+}
+
 /**
  * Walker: exports every node.
  */
@@ -760,6 +797,9 @@ static void export_node(ir_node *irn, void *ctx)
 	case iro_Proj:
 		write_mode(env, get_irn_mode(irn));
 		fprintf(env->file, "%ld ", get_Proj_proj(irn));
+		break;
+	case iro_ASM:
+		export_ASM(env, irn);
 		break;
 #include "gen_irio_export.inl"
 	default:
@@ -1590,6 +1630,51 @@ static int read_node_header(io_env_t *env, long *nodenr, ir_node ***preds,
 	return numpreds;
 }
 
+static ir_node *read_ASM(io_env_t *env, int numpreds, ir_node **preds)
+{
+	ir_node *newnode;
+	ir_asm_constraint *input_constraints  = NEW_ARR_F(ir_asm_constraint, 0);
+	ir_asm_constraint *output_constraints = NEW_ARR_F(ir_asm_constraint, 0);
+	ident            **clobbers           = NEW_ARR_F(ident*, 0);
+
+	ident *asm_text = read_ident(env);
+
+	expect_list_begin(env);
+	while (list_has_next(env)) {
+		ir_asm_constraint constraint;
+		constraint.pos        = read_unsigned(env);
+		constraint.constraint = read_ident(env);
+		constraint.mode       = read_mode(env);
+		ARR_APP1(ir_asm_constraint, input_constraints, constraint);
+	}
+
+	expect_list_begin(env);
+	while (list_has_next(env)) {
+		ir_asm_constraint constraint;
+		constraint.pos        = read_unsigned(env);
+		constraint.constraint = read_ident(env);
+		constraint.mode       = read_mode(env);
+		ARR_APP1(ir_asm_constraint, output_constraints, constraint);
+	}
+
+	expect_list_begin(env);
+	while (list_has_next(env)) {
+		ident *clobber = read_ident(env);
+		ARR_APP1(ident*, clobbers, clobber);
+	}
+
+	assert(ARR_LEN(input_constraints) == numpreds-1);
+
+	newnode = new_r_ASM(preds[0], numpreds-1, preds+1,
+			input_constraints,
+			ARR_LEN(output_constraints),
+			output_constraints,
+			ARR_LEN(clobbers),
+			clobbers,
+			asm_text);
+	return newnode;
+}
+
 /** Parses an IRG. */
 static int parse_graph(io_env_t *env, ir_graph *irg)
 {
@@ -1662,6 +1747,10 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 			set_nodes_block(newnode, preds[0]);
 			break;
 		}
+
+		case iro_ASM:
+			newnode = read_ASM(env, numpreds, preds);
+			break;
 
 		#include "gen_irio_import.inl"
 
