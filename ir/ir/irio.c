@@ -343,6 +343,43 @@ static void write_type_ref(io_env_t *env, ir_type *type)
 	write_long(env, get_type_nr(type));
 }
 
+static void write_string(io_env_t *env, const char *string)
+{
+	const char *c;
+	fputc('"', env->file);
+	for (c = string; *c != '\0'; ++c) {
+		switch (*c) {
+		case '\n':
+			fputc('\\', env->file);
+			fputc('n', env->file);
+			break;
+		case '"':
+		case '\\':
+			fputc('\\', env->file);
+			/* FALLTHROUGH */
+		default:
+			fputc(*c, env->file);
+			break;
+		}
+	}
+	fputc('"', env->file);
+}
+
+static void write_ident(io_env_t *env, ident *id)
+{
+	write_string(env, get_id_str(id));
+	fputc(' ', env->file);
+}
+
+static void write_ident_null(io_env_t *env, ident *id)
+{
+	if (id == NULL) {
+		fputs("NULL ", env->file);
+	} else {
+		write_ident(env, id);
+	}
+}
+
 static void write_mode(io_env_t *env, ir_mode *mode)
 {
 	fputs(get_mode_name(mode), env->file);
@@ -450,16 +487,6 @@ static void export_type_common(io_env_t *env, ir_type *tp)
 	        tp->flags);
 }
 
-static void export_compound_name(FILE *f, const ir_type *tp)
-{
-	ident *name = get_compound_ident(tp);
-	if (name == NULL) {
-		fputs("NULL ", f);
-	} else {
-		fprintf(f, "\"%s\" ", get_id_str(name));
-	}
-}
-
 static void export_type_pre(io_env_t *env, ir_type *tp)
 {
 	FILE *f = env->file;
@@ -481,7 +508,7 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 		panic("invalid type found");
 
 	case tpo_class:
-		export_compound_name(f, tp);
+		write_ident_null(env, get_compound_ident(tp));
 		break;
 
 	case tpo_primitive:
@@ -491,7 +518,7 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 	case tpo_union:
 	case tpo_struct:
 	case tpo_enumeration:
-		export_compound_name(f, tp);
+		write_ident_null(env, get_compound_ident(tp));
 		break;
 
 	case tpo_array:
@@ -596,12 +623,13 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 	if (is_Array_type(owner))
 		return;
 
-	fprintf(env->file, "\tentity %ld \"%s\" ",
-	        get_entity_nr(ent), get_entity_name(ent));
-	if (ent->ld_name != NULL) {
-		fprintf(env->file, "\"%s\" ", get_entity_ld_name(ent));
+	fprintf(env->file, "\tentity ");
+	write_long(env, get_entity_nr(ent));
+	write_ident_null(env, get_entity_ident(ent));
+	if (!entity_has_ld_ident(ent)) {
+		write_ident_null(env, NULL);
 	} else {
-		fprintf(env->file, "NULL ");
+		write_ident_null(env, get_entity_ld_ident(ent));
 	}
 
 	/* visibility + linkage */
@@ -759,8 +787,10 @@ static void export_modes(io_env_t *env)
 			break;
 		}
 
-		fprintf(env->file, "\tmode \"%s\" %s %u %d %s %u %u ",
-		        get_mode_name(mode), get_mode_sort_name(get_mode_sort(mode)),
+		fprintf(env->file, "\tmode ");
+		write_string(env, get_mode_name(mode));
+		fprintf(env->file, "%s %u %d %s %u %u ",
+		        get_mode_sort_name(get_mode_sort(mode)),
 		        get_mode_size_bits(mode), get_mode_sign(mode),
 		        get_mode_arithmetic_name(get_mode_arithmetic(mode)),
 		        get_mode_modulo_shift(mode),
@@ -782,21 +812,19 @@ static void export_program(io_env_t *env)
 
 	fputs("\nprogram {\n", f);
 	if (irp_prog_name_is_set()) {
-		fprintf(f, "\tname \"%s\"\n", get_irp_name());
+		fprintf(f, "\tname ");
+		write_string(env, get_irp_name());
+		fputc('\n', f);
 	}
-	/* We need numbers for irgs... */
-#if 0
-	if (get_irp_main_irg() != NULL) {
-		fprintf(f, "\tmain_irg %d\n", get_irp_main_irg
-#endif
 
 	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		ir_type *segment_type = get_segment_type(s);
-		fprintf(f, "\tsegment_type %s", get_segment_name(s));
+		fprintf(f, "\tsegment_type %s ", get_segment_name(s));
 		if (segment_type == NULL) {
 			fputs(" NULL\n", f);
 		} else {
-			fprintf(f, " %ld\n", get_type_nr(segment_type));
+			write_long(env, get_type_nr(segment_type));
+			fputc('\n', f);
 		}
 	}
 	fputs("}\n", f);
@@ -957,47 +985,60 @@ endofword:
 	return (char*)obstack_finish(&env->obst);
 }
 
-static char *read_quoted_string(io_env_t *env)
+static char *read_string(io_env_t *env)
 {
 	skip_ws(env);
-	if (env->c != '\"') {
-		parse_error(env, "Expected '\"', found '%c'\n", env->c);
+	if (env->c != '"') {
+		parse_error(env, "Expected string, got '%c'\n", env->c);
 		exit(1);
 	}
 	read_c(env);
 
 	assert(obstack_object_size(&env->obst) == 0);
-	while (true) {
-		int ch = env->c;
-		if (ch == EOF) {
-			parse_error(env, "Unexpected end of quoted string!\n");
+	while (env->c != '"') {
+		if (env->c == EOF) {
+			parse_error(env, "Unexpected EOF while parsing string\n");
 			exit(1);
 		}
-		if (ch == '\"') {
+
+		if (env->c == '\\') {
 			read_c(env);
-			break;
+			switch (env->c) {
+			case 'n':
+				obstack_1grow(&env->obst, '\n');
+				break;
+			case '"':
+			case '\\':
+				obstack_1grow(&env->obst, env->c);
+				break;
+			default:
+				parse_error(env, "Unknown escape sequence '\\%c'\n", env->c);
+				exit(1);
+				break;
+			}
+		} else {
+			obstack_1grow(&env->obst, env->c);
 		}
-		obstack_1grow(&env->obst, ch);
 		read_c(env);
 	}
-	obstack_1grow(&env->obst, '\0');
+	read_c(env);
+	obstack_1grow(&env->obst, 0);
 
 	return (char*)obstack_finish(&env->obst);
 }
 
 static ident *read_ident(io_env_t *env)
 {
-	char  *str = read_quoted_string(env);
+	char  *str = read_string(env);
 	ident *res = new_id_from_str(str);
 	obstack_free(&env->obst, str);
-
 	return res;
 }
 
 /*
  * reads a "quoted string" or alternatively the token NULL
  */
-static char *read_quoted_string_null(io_env_t *env)
+static char *read_string_null(io_env_t *env)
 {
 	skip_ws(env);
 	if (env->c == 'N') {
@@ -1007,7 +1048,7 @@ static char *read_quoted_string_null(io_env_t *env)
 			return NULL;
 		}
 	} else if (env->c == '"') {
-		return read_quoted_string(env);
+		return read_string(env);
 	}
 
 	parse_error(env, "Expected \"string\" or NULL\n");
@@ -1017,7 +1058,7 @@ static char *read_quoted_string_null(io_env_t *env)
 static ident *read_ident_null(io_env_t *env)
 {
 	ident *res;
-	char  *str = read_quoted_string_null(env);
+	char  *str = read_string_null(env);
 	if (str == NULL)
 		return NULL;
 
@@ -1288,8 +1329,7 @@ static void import_type(io_env_t *env)
 	}
 
 	case tpo_class: {
-		const char *name = read_quoted_string_null(env);
-		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
+		ident *id = read_ident_null(env);
 
 		if (typenr == (long) IR_SEGMENT_GLOBAL)
 			type = get_glob_type();
@@ -1348,17 +1388,14 @@ static void import_type(io_env_t *env)
 	}
 
 	case tpo_struct: {
-		const char *name = read_quoted_string_null(env);
-		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
+		ident *id = read_ident_null(env);
 		type = new_type_struct(id);
 		set_type_size_bytes(type, size);
 		break;
 	}
 
 	case tpo_union: {
-		const char *name = read_quoted_string_null(env);
-		ident      *id   = name != NULL ? new_id_from_str(name) : NULL;
-
+		ident *id = read_ident_null(env);
 		type = new_type_union(id);
 		set_type_size_bytes(type, size);
 		break;
@@ -1636,7 +1673,7 @@ static int parse_modes(io_env_t *env)
 		kwkind = (keyword_t) read_enum(env, tt_keyword);
 		switch (kwkind) {
 		case kw_mode: {
-			const char *name = read_quoted_string(env);
+			const char *name = read_string(env);
 			ir_mode_sort sort = (ir_mode_sort)read_enum(env, tt_mode_sort);
 			int size = read_long(env);
 			int sign = read_long(env);
