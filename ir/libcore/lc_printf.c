@@ -172,6 +172,39 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
 	strncpy(mod, occ->modifier, sizeof(mod) - 1);
 	mod[LC_MIN(sizeof(mod) - 1, occ->modifier_length)] = '\0';
 
+#ifdef _MSC_VER
+	/* work-around for buggy mscrt not supporting z, j,  and t modifier */
+	if (occ->modifier_length == 1) {
+		if (mod[0] == 'z') {
+			if (sizeof(size_t) == sizeof(int))
+				mod[0] = '\0';
+			if (sizeof(size_t) == sizeof(__int64)) {
+				mod[0] = 'I';
+				mod[1] = '6';
+				mod[2] = '4';
+				mod[3] = '\0';
+			}
+		} else if (mod[0] == 't') {
+			if (sizeof(ptrdiff_t) == sizeof(int))
+				mod[0] = '\0';
+			if (sizeof(ptrdiff_t) == sizeof(__int64)) {
+				mod[0] = 'I';
+				mod[1] = '6';
+				mod[2] = '4';
+				mod[3] = '\0';
+			}
+		} else if (mod[0] == 'j') {
+			if (sizeof(intmax_t) == sizeof(int))
+				mod[0] = '\0';
+			if (sizeof(intmax_t) == sizeof(__int64)) {
+				mod[0] = 'I';
+				mod[1] = '6';
+				mod[2] = '4';
+				mod[3] = '\0';
+			}
+		}
+	}
+#endif
 	snprintf(buf, len, "%%%s%s%s%s%s%s%s%s%c",
 			occ->flag_space ? "#" : "",
 			occ->flag_hash ? "#" : "",
@@ -198,11 +231,9 @@ static int std_get_lc_arg_type(const lc_arg_occ_t *occ)
 			case 'l':
 				return modlen > 1 && mod[1] == 'l' ? lc_arg_type_long_long : lc_arg_type_long;
 #define TYPE_CASE(letter,type) case letter: return lc_arg_type_ ## type;
-#if 0
 			TYPE_CASE('j', intmax_t);
 			TYPE_CASE('z', size_t);
 			TYPE_CASE('t', ptrdiff_t);
-#endif
 			TYPE_CASE('L', long_double);
 #undef TYPE_CASE
 		}
