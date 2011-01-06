@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -145,7 +145,7 @@ void (inc_master_type_visited)(void)
 ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 {
 	ir_type *res;
-	int node_size;
+	size_t node_size;
 
 	node_size = offsetof(ir_type, attr) +  type_op->attr_size;
 	res = (ir_type*)xmalloc(node_size);

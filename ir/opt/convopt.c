@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -93,8 +93,8 @@ static int is_downconv(ir_mode *src_mode, ir_mode *dest_mode)
 static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode *mode = get_irn_mode(node);
-	size_t arity;
-	size_t i;
+	int arity;
+	int i;
 	int costs;
 
 	if (mode == dest_mode)
@@ -120,8 +120,8 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 	/* Take the minimum of the conversion costs for Phi predecessors as only one
 	 * branch is actually executed at a time */
 	if (is_Phi(node)) {
-		size_t i;
-		size_t arity = get_Phi_n_preds(node);
+		int i;
+		int arity = get_Phi_n_preds(node);
 		int costs;
 
 		costs = get_conv_costs(get_Phi_pred(node, 0), dest_mode);
@@ -175,9 +175,9 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 {
 	ir_mode  *mode = get_irn_mode(node);
 	ir_graph *irg  = get_irn_irg(node);
-	size_t    arity;
-	size_t    conv_arity;
-	size_t    i;
+	int       arity;
+	int       conv_arity;
+	int       i;
 	ir_node  *new_node;
 	ir_node **ins;
 

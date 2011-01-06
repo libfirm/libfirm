@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -624,7 +624,7 @@ static void node_color_badness(co2_cloud_irn_t *ci, int *badness)
 
 		admissible_colors(env, ni, bs);
 		if (bitset_popcount(bs) == 1) {
-			unsigned c = bitset_next_set(bs, 0);
+			size_t c = bitset_next_set(bs, 0);
 			badness[c] += ci->costs;
 		}
 

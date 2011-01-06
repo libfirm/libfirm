@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -218,7 +218,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 {
 	ir_nodeset_iterator_t iter;
 	unsigned              r;
-	unsigned              n_allowed;
+	size_t                n_allowed;
 	allocation_info_t     *info = get_allocation_info(node);
 	ir_node               *neighbor;
 

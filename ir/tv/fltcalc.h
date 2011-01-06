@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -89,7 +89,7 @@ const void *fc_get_buffer(void);
 int fc_get_buffer_length(void);
 /*}@*/
 
-void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result);
+void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc, void *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the

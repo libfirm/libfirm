@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -211,7 +211,7 @@ tp_opcode (get_tpop_code)(const tp_op *op)
 }
 
 /* returns the attribute size of the operator. */
-int (get_tpop_attr_size)(const tp_op *op)
+size_t (get_tpop_attr_size)(const tp_op *op)
 {
 	return _get_tpop_attr_size(op);
 }

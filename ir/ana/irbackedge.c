@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -71,8 +71,8 @@ static bitset_t *get_backarray(ir_node *n)
 
 #ifndef NDEBUG
 	if (ba) {
-		int bal = bitset_size(ba);  /* avoid macro expansion in assertion. */
-		int inl = get_irn_arity(n);
+		size_t bal = bitset_size(ba);  /* avoid macro expansion in assertion. */
+		size_t inl = get_irn_arity(n);
 		assert(bal == inl && "backedge array with faulty length");
 	}
 #endif

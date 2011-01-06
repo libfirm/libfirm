@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -52,7 +52,7 @@ struct pressure_walker_env_t {
 	be_lv_t  *lv;
 	double    insn_count;
 	double    regpressure;
-	int       max_pressure;
+	size_t    max_pressure;
 	const arch_register_class_t *cls;
 };
 
@@ -63,7 +63,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	ir_graph     *irg  = env->irg;
 	ir_node      *irn;
 	ir_nodeset_t  live_nodes;
-	int           max_live;
+	size_t        max_live;
 
 	ir_nodeset_init(&live_nodes);
 	be_liveness_end_of_block(env->lv, cls, block, &live_nodes);
@@ -71,7 +71,7 @@ static void check_reg_pressure_class(pressure_walker_env_t *env,
 	env->regpressure += max_live;
 
 	sched_foreach_reverse(block, irn) {
-		int cnt;
+		size_t cnt;
 
 		if (is_Phi(irn))
 			break;

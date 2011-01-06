@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -34,9 +34,9 @@
 /* Computing x * _FIRM_FNV_FNV_PRIME */
 #define _FIRM_FNV_TIMES_PRIME(x) ((x) * _FIRM_FNV_FNV_PRIME)
 
-static inline unsigned firm_fnv_hash(const unsigned char *data, unsigned bytes)
+static inline unsigned firm_fnv_hash(const unsigned char *data, size_t bytes)
 {
-	unsigned i;
+	size_t   i;
 	unsigned hash = _FIRM_FNV_OFFSET_BASIS;
 
 	for(i = 0; i < bytes; ++i) {

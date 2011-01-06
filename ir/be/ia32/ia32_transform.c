@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -2456,7 +2456,7 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 	ir_node        *mem       = get_Store_mem(node);
 	dbg_info       *dbgi      = get_irn_dbg_info(node);
 	int             ofs       = 0;
-	size_t          i         = 0;
+	int             i         = 0;
 	ir_node        *ins[4];
 	ia32_address_t  addr;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -78,7 +78,7 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
 	be_lv_t      *lv = be_get_irg_liveness(irg);
 	ir_nodeset_t  live_nodes;
 	ir_node      *irn;
-	int          max_live;
+	size_t        max_live;
 
 	DBG((dbg, LEVEL_1, "Processing Block %+F\n", block));
 
@@ -88,7 +88,7 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
 	max_live   = ir_nodeset_size(&live_nodes);
 
 	sched_foreach_reverse(block, irn) {
-		int cnt;
+		size_t cnt;
 
 		if (is_Phi(irn))
 			break;
@@ -98,7 +98,7 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
 		max_live = MAX(cnt, max_live);
 	}
 
-	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %u)\n", block, cls->name, max_live));
+	DBG((dbg, LEVEL_1, "Finished with Block %+F (%s %zu)\n", block, cls->name, max_live));
 
 	ir_nodeset_destroy(&live_nodes);
 	return max_live;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -831,7 +831,7 @@ static inline void check_ascii(void)
 }
 
 int sc_val_from_str(char sign, unsigned base, const char *str,
-                    unsigned int len, void *buffer)
+                    size_t len, void *buffer)
 {
 	char *sc_base, *val;
 

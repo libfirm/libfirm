@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -135,7 +135,7 @@ void finish_tpop(void);
  * @param op  The type opcode to get the size for.
  * @return The size of the attribute of types with this opcode.
  */
-int get_tpop_attr_size (const tp_op *op);
+size_t get_tpop_attr_size(const tp_op *op);
 
 
 /* ---------------- *

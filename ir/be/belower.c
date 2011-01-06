@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -786,7 +786,7 @@ void assure_constraints(ir_graph *irg)
 	/* for all */
 	foreach_ir_nodemap(&cenv.op_set, map_entry, map_iter) {
 		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
-		int                       n     = ir_nodeset_size(&entry->copies);
+		size_t                    n     = ir_nodeset_size(&entry->copies);
 		ir_node                 **nodes = ALLOCAN(ir_node*, n);
 		ir_node                  *cp;
 		ir_nodeset_iterator_t     iter;

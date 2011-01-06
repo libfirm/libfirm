@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -57,7 +57,7 @@
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 static spill_env_t                 *spill_env;
-static int                          n_regs;
+static unsigned                     n_regs;
 static const arch_register_class_t *cls;
 static const be_lv_t               *lv;
 static bitset_t                    *spilled_nodes;
@@ -150,7 +150,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	size_t                 free_regs_needed = 0;
 	spill_candidate_t     *candidates;
 	ir_nodeset_iterator_t  iter;
-	size_t                 i, arity;
+	int                    i, arity;
 	int                    spills_needed;
 	size_t                 cand_idx;
 	ir_node               *n;

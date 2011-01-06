@@ -569,7 +569,8 @@ unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var
 		bitset_t *uses = bitset_alloca(lv->n_blocks);
 		bitset_t *Tq;
 
-		unsigned i, min_dom, max_dom;
+		size_t i;
+		unsigned min_dom, max_dom;
 		const ir_edge_t *edge;
 
 		/* if the block has no DFS info, it cannot be reached.

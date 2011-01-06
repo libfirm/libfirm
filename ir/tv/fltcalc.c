@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -849,7 +849,7 @@ int fc_get_buffer_length(void)
 	return calc_buffer_size;
 }
 
-void *fc_val_from_str(const char *str, unsigned int len, const ieee_descriptor_t *desc, void *result)
+void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc, void *result)
 {
 	char *buffer;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -196,7 +196,7 @@ void sign_extend(void *buffer, ir_mode *mode);
  * @return 1 if ok, 0 in case of parse error
  */
 int sc_val_from_str(char sign, unsigned base, const char *str,
-                    unsigned int len, void *buffer);
+                    size_t len, void *buffer);
 
 /** create a value from a long */
 void sc_val_from_long(long l, void *buffer);
