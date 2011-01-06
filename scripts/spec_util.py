@@ -38,6 +38,7 @@ def setnodedefaults(node):
 	setdefault(node, "arity", len(node.ins))
 	setdefault(node, "attrs", [])
 	setdefault(node, "constructor_args", [])
+	setdefault(node, "customSerializer", False)
 	setldefault(node, "constrname", node.name)
 	if hasattr(node, "outs"):
 		node.mode = "mode_T"

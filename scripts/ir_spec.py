@@ -46,26 +46,28 @@ class Alloc(Op):
 	attr_struct = "alloc_attr"
 
 class Anchor(Op):
-	mode        = "mode_ANY"
-	arity       = "variable"
-	flags       = [ "dump_noblock" ]
-	pinned      = "yes"
-	attr_struct = "irg_attr"
-	knownBlock  = True
-	singleton   = True
-	noconstructor = True
+	mode             = "mode_ANY"
+	arity            = "variable"
+	flags            = [ "dump_noblock" ]
+	pinned           = "yes"
+	attr_struct      = "irg_attr"
+	knownBlock       = True
+	singleton        = True
+	noconstructor    = True
+	customSerializer = True
 
 class And(Binop):
 	flags    = [ "commutative" ]
 
 class ASM(Op):
-	mode          = "mode_T"
-	arity         = "variable"
-	flags         = [ "keep", "uses_memory" ]
-	pinned        = "memory"
-	pinned_init   = "op_pin_state_pinned"
-	attr_struct   = "asm_attr"
-	attrs_name    = "assem"
+	mode             = "mode_T"
+	arity            = "variable"
+	flags            = [ "keep", "uses_memory" ]
+	pinned           = "memory"
+	pinned_init      = "op_pin_state_pinned"
+	attr_struct      = "asm_attr"
+	attrs_name       = "assem"
+	customSerializer = True
 	attrs = [
 		dict(
 			name = "input_constraints",
@@ -108,19 +110,21 @@ class Bad(Op):
 	'''
 
 class Deleted(Op):
-	mode          = "mode_Bad"
-	flags         = [ ]
-	pinned        = "yes"
-	noconstructor = True
+	mode             = "mode_Bad"
+	flags            = [ ]
+	pinned           = "yes"
+	noconstructor    = True
+	customSerializer = True
 
 class Block(Op):
-	mode        = "mode_BB"
-	knownBlock  = True
-	block       = "NULL"
-	pinned      = "yes"
-	arity       = "variable"
-	flags       = [ "labeled" ]
-	attr_struct = "block_attr"
+	mode             = "mode_BB"
+	knownBlock       = True
+	block            = "NULL"
+	pinned           = "yes"
+	arity            = "variable"
+	flags            = [ "labeled" ]
+	attr_struct      = "block_attr"
+	customSerializer = True
 
 	init = '''
 	res->attr.block.irg.irg     = irg;
@@ -407,20 +411,21 @@ class DivMod(Op):
 	arity_override = "oparity_binary"
 
 class Dummy(Op):
-	ins   = []
-	flags = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
+	ins        = []
+	flags      = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
 
 class End(Op):
-	mode       = "mode_X"
-	pinned     = "yes"
-	arity      = "dynamic"
-	flags      = [ "cfopcode" ]
-	knownBlock = True
-	block      = "get_irg_end_block(irg)"
-	singleton  = True
+	mode             = "mode_X"
+	pinned           = "yes"
+	arity            = "dynamic"
+	flags            = [ "cfopcode" ]
+	knownBlock       = True
+	block            = "get_irg_end_block(irg)"
+	singleton        = True
+	customSerializer = True
 
 class Eor(Binop):
 	flags    = [ "commutative" ]
@@ -572,13 +577,14 @@ class Pin(Op):
 	pinned   = "yes"
 
 class Proj(Op):
-	ins        = [ "pred" ]
-	flags      = []
-	pinned     = "no"
-	knownBlock = True
-	knownGraph = True
-	block      = "get_nodes_block(irn_pred)"
-	graph      = "get_irn_irg(irn_pred)"
+	ins              = [ "pred" ]
+	flags            = []
+	pinned           = "no"
+	knownBlock       = True
+	knownGraph       = True
+	block            = "get_nodes_block(irn_pred)"
+	graph            = "get_irn_irg(irn_pred)"
+	customSerializer = True
 	attrs      = [
 		dict(
 			type = "long",
@@ -660,12 +666,13 @@ class Start(Op):
 		("P_tls",          "pointer to thread local storage segment"),
 		("T_args",         "function arguments")
 	]
-	mode       = "mode_T"
-	pinned     = "yes"
-	flags      = [ "cfopcode" ]
-	singleton  = True
-	knownBlock = True
-	block      = "get_irg_start_block(irg)"
+	mode             = "mode_T"
+	pinned           = "yes"
+	flags            = [ "cfopcode" ]
+	singleton        = True
+	knownBlock       = True
+	customSerializer = True
+	block            = "get_irg_start_block(irg)"
 
 class Store(Op):
 	ins      = [ "mem", "ptr", "value" ]
@@ -701,6 +708,7 @@ class SymConst(Op):
 		)
 	]
 	attr_struct = "symconst_attr"
+	customSerializer = True
 
 class Sync(Op):
 	mode     = "mode_M"

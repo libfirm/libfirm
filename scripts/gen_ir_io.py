@@ -228,10 +228,6 @@ def main(argv):
 		sys.exit(1)
 
 	gendir = argv[2]
-	# these nodes don't work correctly yet for some reasons...
-	niynodes = [ "ASM" ]
-	# these have custom im-/export code
-	customcode = [ "Start", "End", "Anchor", "SymConst", "Block", "Deleted" ]
 
 	real_nodes = []
 	for node in ir_spec.nodes:
@@ -241,7 +237,7 @@ def main(argv):
 
 	file = open(gendir + "/gen_irio_export.inl", "w");
 	for node in real_nodes:
-		if node.__name__ in niynodes:
+		if node.customSerializer:
 			continue
 
 		preprocess_node(node)
@@ -251,7 +247,7 @@ def main(argv):
 
 	file = open(gendir + "/gen_irio_import.inl", "w");
 	for node in real_nodes:
-		if node.name in customcode or node.name in niynodes:
+		if node.customSerializer:
 			continue
 		file.write(import_attrs_template.render(vars()))
 	file.write("\n")
@@ -259,8 +255,6 @@ def main(argv):
 
 	file = open(gendir + "/gen_irio_lex.inl", "w");
 	for node in real_nodes:
-		if node.name in niynodes:
-			continue
 		file.write("\tINSERT(tt_iro, \"%s\", iro_%s);\n" % (node.name, node.name));
 	file.close()
 

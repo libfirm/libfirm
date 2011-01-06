@@ -680,7 +680,23 @@ static void export_node(ir_node *irn, void *ctx)
 	fprintf(env->file, "] { ");
 
 	switch (opcode) {
+	case iro_Start:
+	case iro_End:
+	case iro_Block:
+	case iro_Anchor:
+		break;
+	case iro_SymConst:
+		/* TODO: only symconst_addr_ent implemented yet */
+		assert(get_SymConst_kind(irn) == symconst_addr_ent);
+		fprintf(env->file, "%ld ", get_entity_nr(get_SymConst_entity(irn)));
+		break;
+	case iro_Proj:
+		write_mode(env, get_irn_mode(irn));
+		fprintf(env->file, "%ld ", get_Proj_proj(irn));
+		break;
 #include "gen_irio_export.inl"
+	default:
+		panic("no export code for node %+F\n", irn);
 	}
 	fputs("}\n", env->file);
 }
@@ -1499,8 +1515,7 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 		EXPECT('{');
 
 		switch (symbol(nodename, tt_iro)) {
-		case iro_End:
-		{
+		case iro_End: {
 			ir_node *newendblock = preds[0];
 			newnode = get_irg_end(irg);
 			exchange(get_nodes_block(newnode), newendblock);
@@ -1509,8 +1524,7 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 			break;
 		}
 
-		case iro_Start:
-		{
+		case iro_Start: {
 			ir_node *newstartblock = preds[0];
 			newnode = get_irg_start(irg);
 			exchange(get_nodes_block(newnode), newstartblock);
@@ -1528,12 +1542,21 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 			set_nodes_block(newnode, preds[0]);
 			break;
 
-		case iro_SymConst:
-		{
+		case iro_SymConst: {
 			long entnr = read_long(env);
 			union symconst_symbol sym;
 			sym.entity_p = get_entity(env, entnr);
 			newnode = new_r_SymConst(irg, mode_P, sym, symconst_addr_ent);
+			break;
+		}
+
+		case iro_Proj: {
+			ir_mode *mode = read_mode(env);
+			long     pn   = read_long(env);
+			newnode = new_r_Proj(preds[1], mode, pn);
+			/* explicitely set block, since preds[1] might be a dummy node
+			 * which is always in the startblock */
+			set_nodes_block(newnode, preds[0]);
 			break;
 		}
 
