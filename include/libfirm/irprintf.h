@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -41,14 +41,14 @@ struct obstack;
  * @param fmt  The format string.
  *
  * This function rudimentary implements a kind of printf(3) for ir
- * nodes. Following conversion specifiers. No length, special or field
- * width specifiers are accepted.
+ * nodes. Following conversion specifiers.
  * - @%% Print a '%' character.
  * - @%> Print as many white spaces as given in the parameter.
  * - @%c Print a character
  * - @%s A string.
  * - @%p A pointer.
  * - @%d A decimal integer.
+ * - @%u A decimal unsigned integer.
  * - @%x A hexadecimal integer.
  * - @%o An octal integer.
  * - @%I An ident.
