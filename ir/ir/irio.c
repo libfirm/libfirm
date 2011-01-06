@@ -422,6 +422,16 @@ static void write_cond_jmp_predicate(io_env_t *env, ir_node *irn)
 	fputc(' ', env->file);
 }
 
+static void write_list_begin(io_env_t *env)
+{
+	fputs("[", env->file);
+}
+
+static void write_list_end(io_env_t *env)
+{
+	fputs("] ", env->file);
+}
+
 static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 {
 	FILE *f = env->file;
@@ -712,11 +722,14 @@ static void export_node(ir_node *irn, void *ctx)
 	if (env->ignoreblocks && opcode == iro_Block)
 		return;
 
-	fprintf(env->file, "\t%s %ld [ ", get_irn_opname(irn), get_irn_node_nr(irn));
+	fprintf(env->file, "\t%s ", get_irn_opname(irn));
+	write_long(env, get_irn_node_nr(irn));
 
+	write_list_begin(env);
 	n = get_irn_arity(irn);
 	if (!is_Block(irn)) {
-		fprintf(env->file, "%ld ", get_irn_node_nr(get_nodes_block(irn)));
+		ir_node *block = get_nodes_block(irn);
+		write_long(env, get_irn_node_nr(block));
 	}
 
 	for (i = 0; i < n; i++) {
@@ -729,8 +742,9 @@ static void export_node(ir_node *irn, void *ctx)
 			write_long(env, get_irn_node_nr(pred));
 		}
 	}
+	write_list_end(env);
 
-	fprintf(env->file, "] { ");
+	fputs("{ ", env->file);
 
 	switch (opcode) {
 	case iro_Start:
@@ -1100,6 +1114,31 @@ static int read_int(io_env_t *env)
 static unsigned read_unsigned(io_env_t *env)
 {
 	return (unsigned) read_long(env);
+}
+
+static void expect_list_begin(io_env_t *env)
+{
+	skip_ws(env);
+	if (env->c != '[') {
+		parse_error(env, "Expected list, got '%c'\n", env->c);
+		exit(1);
+	}
+	read_c(env);
+}
+
+static bool list_has_next(io_env_t *env)
+{
+	if (feof(env->file)) {
+		parse_error(env, "Unexpected EOF while reading list");
+		exit(1);
+	}
+	skip_ws(env);
+	if (env->c == ']') {
+		read_c(env);
+		return false;
+	}
+
+	return true;
 }
 
 static ir_node *get_node_or_null(io_env_t *env, long nodenr)
@@ -1541,18 +1580,10 @@ static int read_node_header(io_env_t *env, long *nodenr, ir_node ***preds,
 
 	ARR_RESIZE(ir_node*, *preds, 0);
 
-	EXPECT('[');
-	for (numpreds = 0; !feof(env->file); numpreds++) {
-		long val;
-		ir_node *pred;
-
-		skip_ws(env);
-		if (env->c == ']') {
-			read_c(env);
-			break;
-		}
-		val = read_long(env);
-		pred = get_node_or_dummy(env, val);
+	expect_list_begin(env);
+	for (numpreds = 0; list_has_next(env); numpreds++) {
+		long     val  = read_long(env);
+		ir_node *pred = get_node_or_dummy(env, val);
 		ARR_APP1(ir_node*, *preds, pred);
 	}
 
