@@ -53,16 +53,16 @@ def get_io_type(type, attrname, node):
 		exportcmd = "write_mode(env, %(val)s);"
 	elif type == "ir_entity*":
 		importcmd = "ir_entity *%s = read_entity(env);" % attrname
-		exportcmd = """fprintf(env->file, "%%ld ", get_entity_nr(%(val)s));"""
+		exportcmd = """write_entity_ref(env, %(val)s);"""
 	elif type == "ir_type*":
 		importcmd = "ir_type *%s = read_type(env);" % attrname
-		exportcmd = """fprintf(env->file, "%%ld ", get_type_nr(%(val)s));"""
+		exportcmd = """write_type_ref(env, %(val)s);"""
 	elif type == "long" and node.name == "Proj":
 		importcmd = "long %s = read_long(env);" % attrname
-		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
+		exportcmd = """write_long(env, %(val)s);"""
 	elif type == "pn_Cmp" or type == "ir_where_alloc":
 		importcmd = "%s %s = (%s) read_long(env);" % (type, attrname, type)
-		exportcmd = """fprintf(env->file, "%%ld ", (long) %(val)s);"""
+		exportcmd = """write_long(env, (long) %(val)s);"""
 	elif type == "ir_cons_flags" and node.name == "Store":
 		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
 		exportcmd = """write_pin_state(env, irn);
@@ -86,14 +86,14 @@ def get_io_type(type, attrname, node):
 		importcmd = "cond_jmp_predicate %s = read_cond_jmp_predicate(env);" % attrname
 		exportcmd = "write_cond_jmp_predicate(env, irn);"
 	elif type == "int":
-		importcmd = "int %s = (int) read_long(env);" % attrname
-		exportcmd = """fprintf(env->file, "%%d ", %(val)s);"""
+		importcmd = "int %s = read_int(env);" % attrname
+		exportcmd = """write_int(env, %(val)s);"""
 	elif type == "unsigned":
-		importcmd = "unsigned %s = (unsigned) read_long(env);" % attrname
-		exportcmd = """fprintf(env->file, "%%u ", %(val)s);"""
+		importcmd = "unsigned %s = read_unsigned(env);" % attrname
+		exportcmd = """write_unsigned(env, %(val)s);"""
 	elif type == "long":
 		importcmd = "long %s = read_long(env);" % attrname
-		exportcmd = """fprintf(env->file, "%%ld ", %(val)s);"""
+		exportcmd = """write_long(env, %(val)s);"""
 	else:
 		warning("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
 		importcmd = """// BAD: %s %s

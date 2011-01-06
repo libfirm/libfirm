@@ -318,6 +318,31 @@ static void set_id(io_env_t *env, long id, void *elem)
 	set_insert(env->idset, &key, sizeof(key), (unsigned) id);
 }
 
+static void write_long(io_env_t *env, long value)
+{
+	fprintf(env->file, "%ld ", value);
+}
+
+static void write_int(io_env_t *env, int value)
+{
+	fprintf(env->file, "%d ", value);
+}
+
+static void write_unsigned(io_env_t *env, unsigned value)
+{
+	fprintf(env->file, "%u ", value);
+}
+
+static void write_entity_ref(io_env_t *env, ir_entity *entity)
+{
+	write_long(env, get_entity_nr(entity));
+}
+
+static void write_type_ref(io_env_t *env, ir_type *type)
+{
+	write_long(env, get_type_nr(type));
+}
+
 static void write_mode(io_env_t *env, ir_mode *mode)
 {
 	fputs(get_mode_name(mode), env->file);
@@ -370,7 +395,7 @@ static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 
 	switch (ini_kind) {
 	case IR_INITIALIZER_CONST:
-		fprintf(f, "%ld ", get_irn_node_nr(get_initializer_const_value(ini)));
+		write_long(env, get_irn_node_nr(get_initializer_const_value(ini)));
 		break;
 
 	case IR_INITIALIZER_TARVAL:
@@ -514,12 +539,12 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 			ir_node *upper = get_array_upper_bound(tp, i);
 
 			if (is_Const(lower))
-				fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(lower)));
+				write_long(env, get_tarval_long(get_Const_tarval(lower)));
 			else
 				panic("Lower array bound is not constant");
 
 			if (is_Const(upper))
-				fprintf(f, "%ld ", get_tarval_long(get_Const_tarval(upper)));
+				write_long(env, get_tarval_long(get_Const_tarval(upper)));
 			else if (is_Unknown(upper))
 				fputs("unknown ", f);
 			else
@@ -534,16 +559,16 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 		fprintf(f, "%u %u %d %d ", get_method_calling_convention(tp),
 			get_method_additional_properties(tp), nparams, nresults);
 		for (i = 0; i < nparams; i++)
-			fprintf(f, "%ld ", get_type_nr(get_method_param_type(tp, i)));
+			write_long(env, get_type_nr(get_method_param_type(tp, i)));
 		for (i = 0; i < nresults; i++)
-			fprintf(f, "%ld ", get_type_nr(get_method_res_type(tp, i)));
+			write_long(env, get_type_nr(get_method_res_type(tp, i)));
 		fprintf(f, "%d ", get_method_first_variadic_param_index(tp));
 		break;
 	}
 
 	case tpo_pointer:
 		write_mode(env, get_type_mode(tp));
-		fprintf(f, "%ld ", get_type_nr(get_pointer_points_to_type(tp)));
+		write_long(env, get_type_nr(get_pointer_points_to_type(tp)));
 		break;
 
 	case tpo_enumeration:
@@ -673,7 +698,7 @@ static void export_node(ir_node *irn, void *ctx)
 			assert(is_Anchor(irn));
 			fputs("-1 ", env->file);
 		} else {
-			fprintf(env->file, "%ld ", get_irn_node_nr(pred));
+			write_long(env, get_irn_node_nr(pred));
 		}
 	}
 
@@ -1024,6 +1049,16 @@ static long read_long(io_env_t *env)
 	obstack_free(&env->obst, str);
 
 	return result;
+}
+
+static int read_int(io_env_t *env)
+{
+	return (int) read_long(env);
+}
+
+static unsigned read_unsigned(io_env_t *env)
+{
+	return (unsigned) read_long(env);
 }
 
 static ir_node *get_node_or_null(io_env_t *env, long nodenr)
