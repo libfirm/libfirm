@@ -239,8 +239,11 @@ def preprocess_node(node):
 
 #############################
 
-constructor_template = env.from_string('''
+gen_ircons_c_inl_template = env.from_string(
+'''/* Warning: automatically generated code */
 
+{%- for node in nodes %}
+{%- if not node.noconstructor %}
 ir_node *new_rd_{{node.name}}(
 	{%- filter parameters %}
 		dbg_info *dbgi
@@ -281,6 +284,7 @@ ir_node *new_rd_{{node.name}}(
 	{{- node.init }}
 	res = optimize_node(res);
 	irn_verify_irg(res, irg);
+	{{- node.init_after_opt }}
 	return res;
 }
 
@@ -326,6 +330,8 @@ ir_node *new_{{node.name}}(
 			{{node|nodearguments}}
 		{% endfilter %});
 }
+{% endif %}
+{%- endfor %}
 ''')
 
 irnode_h_template = env.from_string(
@@ -538,19 +544,10 @@ def main(argv):
 	# hardcoded path to libfirm/include/libfirm
 	gendir2 = argv[2] + "/../../include/libfirm"
 
-	# List of TODOs
-	niymap = [ "ASM", "Const", "Phi", "SymConst" ]
-
 	real_nodes = prepare_nodes()
+
 	file = open(gendir + "/gen_ir_cons.c.inl", "w")
-	for node in real_nodes:
-		if node.name in niymap:
-			continue
-
-		if not isAbstract(node) and not hasattr(node, "noconstructor"):
-			file.write(constructor_template.render(vars()))
-
-	file.write("\n")
+	file.write(gen_ircons_c_inl_template.render(nodes = real_nodes))
 	file.close()
 
 	file = open(gendir + "/gen_irnode.h", "w")

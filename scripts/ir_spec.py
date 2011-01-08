@@ -80,6 +80,37 @@ class ASM(Op):
 	attr_struct      = "asm_attr"
 	attrs_name       = "assem"
 	customSerializer = True
+	attrs = [
+		dict(
+			name = "input_constraints",
+			type = "ir_asm_constraint*",
+		),
+		dict(
+			name = "n_output_constraints",
+			type = "int",
+			noprop = True,
+		),
+		dict(
+			name = "output_constraints",
+			type = "ir_asm_constraint*",
+		),
+		dict(
+			name = "n_clobbers",
+			type = "int",
+			noprop = True,
+		),
+		dict(
+			name = "clobbers",
+			type = "ident**",
+		),
+		dict(
+			name = "text",
+			type = "ident*",
+		),
+	]
+	# constructor is written manually at the moment, because of the clobbers+
+	# constraints arrays needing special handling (2 arguments for 1 attribute)
+	noconstructor = True
 
 class Bad(Op):
 	"""Bad nodes indicate invalid input, which is values which should never be
@@ -322,11 +353,11 @@ class Confirm(Op):
 
 class Const(Op):
 	"""Returns a constant value."""
-	mode       = ""
 	flags      = [ "constlike", "start_block" ]
+	block      = "get_irg_start_block(irg)"
+	mode       = "get_tarval_mode(tarval)"
 	knownBlock = True
 	pinned     = "no"
-	attrs_name = "con"
 	attrs      = [
 		dict(
 			type = "ir_tarval*",
@@ -334,6 +365,7 @@ class Const(Op):
 		)
 	]
 	attr_struct = "const_attr"
+	attrs_name  = "con"
 
 class Conv(Unop):
 	"""Converts values between modes"""
@@ -611,12 +643,13 @@ class Phi(Op):
 	arity         = "variable"
 	flags         = []
 	attr_struct   = "phi_attr"
-	init = '''
+	init          = '''
+	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);'''
+	init_after_opt = '''
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
-   	if (is_Phi(res) && mode == mode_M)
-		add_End_keepalive(get_irg_end(irg), res);
-	'''
+	if (is_Phi(res) && mode == mode_M)
+		add_End_keepalive(get_irg_end(irg), res);'''
 
 class Pin(Op):
 	"""Pin the value of the node node in the current block. No users of the Pin
@@ -800,6 +833,9 @@ class SymConst(Op):
 	]
 	attr_struct = "symconst_attr"
 	customSerializer = True
+	# constructor is written manually at the moment, because of the strange
+	# union argument
+	noconstructor = True
 
 class Sync(Op):
 	"""The Sync operation unifies several partial memory blocks. These blocks

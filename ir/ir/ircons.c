@@ -51,40 +51,6 @@
  */
 static uninitialized_local_variable_func_t *default_initialize_local_variable = NULL;
 
-/**
- * Creates a Phi node with all predecessors.  Calling this constructor
- * is only allowed if the corresponding block is mature.
- */
-ir_node *new_rd_Phi(dbg_info *db, ir_node *block, int arity, ir_node **in,
-                    ir_mode *mode)
-{
-	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(db, irg, block, op_Phi, mode, arity, in);
-	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
-
-	res = optimize_node(res);
-	irn_verify_irg(res, irg);
-
-	/* Memory Phis in endless loops must be kept alive.
-	   As we can't distinguish these easily we keep all of them alive. */
-	if (is_Phi(res) && mode == mode_M)
-		add_End_keepalive(get_irg_end(irg), res);
-	return res;
-}
-
-ir_node *new_rd_Const(dbg_info *db, ir_graph *irg, ir_tarval *con)
-{
-	ir_node  *block = get_irg_start_block(irg);
-	ir_mode  *mode  = get_tarval_mode(con);
-	ir_node  *res   = new_ir_node(db, irg, block, op_Const, mode, 0, NULL);
-	res->attr.con.tarval = con;
-
-	res = optimize_node (res);
-	irn_verify_irg(res, irg);
-
-	return res;
-}
-
 ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg, ir_mode *mode,
                            long value)
 {
@@ -180,10 +146,6 @@ ir_node *new_rd_SymConst_align(dbg_info *db, ir_graph *irg, ir_mode *mode, ir_ty
 	return new_rd_SymConst(db, irg, mode, sym, symconst_type_align);
 }
 
-ir_node *new_r_Const(ir_graph *irg, ir_tarval *con)
-{
-	return new_rd_Const(NULL, irg, con);
-}
 ir_node *new_r_Const_long(ir_graph *irg, ir_mode *mode, long value)
 {
 	return new_rd_Const_long(NULL, irg, mode, value);
@@ -197,10 +159,6 @@ ir_node *new_r_simpleSel(ir_node *block, ir_node *store, ir_node *objptr,
                          ir_entity *ent)
 {
 	return new_rd_Sel(NULL, block, store, objptr, 0, NULL, ent);
-}
-ir_node *new_r_Phi(ir_node *block, int arity, ir_node **in, ir_mode *mode)
-{
-	return new_rd_Phi(NULL, block, arity, in, mode);
 }
 ir_node *new_r_defaultProj(ir_node *arg, long max_proj)
 {
@@ -565,18 +523,6 @@ void mature_immBlock(ir_node *block)
 	 */
 	block = optimize_in_place_2(block);
 	irn_verify_irg(block, irg);
-}
-
-ir_node *new_d_Phi(dbg_info *db, int arity, ir_node **in, ir_mode *mode)
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_Phi(db, current_ir_graph->current_block, arity, in, mode);
-}
-
-ir_node *new_d_Const(dbg_info *db, ir_tarval *con)
-{
-	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	return new_rd_Const(db, current_ir_graph, con);
 }
 
 ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
@@ -954,11 +900,6 @@ void irp_finalize_cons(void)
 	irp->phase_state = phase_high;
 }
 
-ir_node *new_Const(ir_tarval *con)
-{
-	return new_d_Const(NULL, con);
-}
-
 ir_node *new_Const_long(ir_mode *mode, long value)
 {
 	return new_d_Const_long(NULL, mode, value);
@@ -971,10 +912,6 @@ ir_node *new_SymConst(ir_mode *mode, symconst_symbol value, symconst_kind kind)
 ir_node *new_simpleSel(ir_node *store, ir_node *objptr, ir_entity *ent)
 {
 	return new_d_simpleSel(NULL, store, objptr, ent);
-}
-ir_node *new_Phi(int arity, ir_node **in, ir_mode *mode)
-{
-	return new_d_Phi(NULL, arity, in, mode);
 }
 ir_node *new_defaultProj(ir_node *arg, long max_proj)
 {
