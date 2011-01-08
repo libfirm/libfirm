@@ -24,7 +24,6 @@
  *
  * @version  $Id$
  */
-
 #include "config.h"
 
 #include "iroptimize.h"
@@ -168,7 +167,7 @@ unsigned count_proj:1;      /* Count projections */
 unsigned max_cc_size;       /* Maximum condition chain size [nodes] */
 unsigned max_branches;
 
-unsigned max_unrolled_loop_size;	/* [nodes] */
+unsigned max_unrolled_loop_size;    /* [nodes] */
 unsigned allow_const_unrolling:1;
 unsigned allow_invar_unrolling:1;
 unsigned invar_unrolling_min_size;  /* [nodes] */
@@ -179,23 +178,23 @@ static loop_opt_params_t opt_params;
 
 /* Loop analysis informations */
 typedef struct loop_info_t {
-	unsigned nodes;			/* node count */
-	unsigned ld_st;			/* load and store nodes */
-	unsigned branches;		/* number of conditions */
-	unsigned calls;			/* number of calls */
-	unsigned cf_outs;		/* number of cf edges which leave the loop */
-	entry_edge cf_out;		/* single loop leaving cf edge */
-	int be_src_pos;			/* position of the single own backedge in the head */
+	unsigned nodes;        /* node count */
+	unsigned ld_st;        /* load and store nodes */
+	unsigned branches;     /* number of conditions */
+	unsigned calls;        /* number of calls */
+	unsigned cf_outs;      /* number of cf edges which leave the loop */
+	entry_edge cf_out;     /* single loop leaving cf edge */
+	int be_src_pos;        /* position of the single own backedge in the head */
 
 	/* for inversion */
-	unsigned cc_size;		/* nodes in the condition chain */
+	unsigned cc_size;      /* nodes in the condition chain */
 
 	/* for unrolling */
-	unsigned max_unroll;		/* Number of unrolls satisfying max_loop_size */
-	unsigned exit_cond;			/* 1 if condition==true exits the loop.  */
-	unsigned latest_value:1;	/* 1 if condition is checked against latest counter value */
-	unsigned needs_backedge:1;	/* 0 if loop is completely unrolled */
-	unsigned decreasing:1;		/* Step operation is_Sub, or step is<0 */
+	unsigned max_unroll;   /* Number of unrolls satisfying max_loop_size */
+	unsigned exit_cond;    /* 1 if condition==true exits the loop.  */
+	unsigned latest_value:1;    /* 1 if condition is checked against latest counter value */
+	unsigned needs_backedge:1;  /* 0 if loop is completely unrolled */
+	unsigned decreasing:1;      /* Step operation is_Sub, or step is<0 */
 
 	/* IV informations of a simple loop */
 	ir_node *start_val;
@@ -206,8 +205,8 @@ typedef struct loop_info_t {
 
 	ir_tarval *count_tar;               /* Number of loop iterations */
 
-	ir_node *duff_cond;					/* Duff mod */
-	unrolling_kind_flag unroll_kind; 	/* constant or invariant unrolling */
+	ir_node *duff_cond;                 /* Duff mod */
+	unrolling_kind_flag unroll_kind;    /* constant or invariant unrolling */
 } loop_info_t;
 
 /* Information about the current loop */
@@ -703,7 +702,7 @@ static ir_node *copy_node(ir_node *node)
  * Order of ins is important for later usage.
  */
 static void copy_walk(ir_node *node, walker_condition *walk_condition,
-		ir_loop *set_loop)
+                      ir_loop *set_loop)
 {
 	int i;
 	int arity;
@@ -785,8 +784,8 @@ static void copy_walk(ir_node *node, walker_condition *walk_condition,
  * Order of ins is important for later usage.
  * Takes copy_index, to phase-link copy at specific index.
  */
-static void copy_walk_n(ir_node *node,
-		walker_condition *walk_condition, int copy_index)
+static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
+                        int copy_index)
 {
 	int i;
 	int arity;
@@ -1021,7 +1020,7 @@ static unsigned find_condition_chain(ir_node *block)
 	 *   / A*  B           /    |
 	 *  / /\   /          ?     |
 	 *   /   C*      =>      D  |
-	 *	    /  D 	       Head |
+	 *      /  D           Head |
 	 *     /               A  \_|
 	 *                      C
 	 */
@@ -1059,10 +1058,10 @@ static void fix_copy_inversion(void)
 	ir_node **ins;
 	ir_node **phis;
 	ir_node *phi, *next;
-	ir_node *head_cp 	= get_inversion_copy(loop_head);
-	int arity 			= get_irn_arity(head_cp);
-	int backedges	 	= get_backedge_n(head_cp, 0);
-	int new_arity 		= arity - backedges;
+	ir_node *head_cp = get_inversion_copy(loop_head);
+	int arity        = get_irn_arity(head_cp);
+	int backedges    = get_backedge_n(head_cp, 0);
+	int new_arity    = arity - backedges;
 	int pos;
 	int i;
 
@@ -1114,9 +1113,9 @@ static void fix_head_inversion(void)
 	ir_node **ins;
 	ir_node *phi, *next;
 	ir_node **phis;
-	int arity 			= get_irn_arity(loop_head);
-	int backedges	 	= get_backedge_n(loop_head, 0);
-	int new_arity 		= backedges;
+	int arity     = get_irn_arity(loop_head);
+	int backedges = get_backedge_n(loop_head, 0);
+	int new_arity = backedges;
 	int pos;
 	int i;
 
@@ -1562,9 +1561,9 @@ static void place_copies(int copies)
 			ir_node *pred = get_irn_n(phi, be_src_pos);
 			ir_node *last_pred;
 
-            /* It is possible, that the value used
-             * in the OWN backedge path is NOT assigned in this loop. */
-            if (is_in_loop(pred))
+			/* It is possible, that the value used
+			 * in the OWN backedge path is NOT assigned in this loop. */
+			if (is_in_loop(pred))
 				last_pred = get_unroll_copy(pred, copies);
 			else
 				last_pred = pred;
@@ -2162,10 +2161,10 @@ static unsigned are_mode_I(ir_node *n1, ir_node* n2, ir_node *n3)
 static unsigned get_unroll_decision_invariant(void)
 {
 
-	ir_node 	*projres, *loop_condition, *iteration_path;
-	unsigned 	success, is_latest_val;
-	ir_tarval   *step_tar;
-	ir_mode		*mode;
+	ir_node   *projres, *loop_condition, *iteration_path;
+	unsigned   success, is_latest_val;
+	ir_tarval *step_tar;
+	ir_mode   *mode;
 
 
 	/* RETURN if loop is not 'simple' */
@@ -2369,11 +2368,11 @@ static unsigned get_preferred_factor_constant(ir_tarval *count_tar)
 /* TODO split. */
 static unsigned get_unroll_decision_constant(void)
 {
-	ir_node 	*projres, *loop_condition, *iteration_path;
-	unsigned 	success, is_latest_val;
-	ir_tarval  *start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
-	pn_Cmp		proj_proj, norm_proj;
-	ir_mode		*mode;
+	ir_node   *projres, *loop_condition, *iteration_path;
+	unsigned   success, is_latest_val;
+	ir_tarval *start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
+	pn_Cmp     proj_proj, norm_proj;
+	ir_mode   *mode;
 
 	/* RETURN if loop is not 'simple' */
 	projres = is_simple_loop();
@@ -2611,7 +2610,7 @@ static void unroll_loop(void)
 		if (opt_params.allow_invar_unrolling)
 			unroll_nr = get_unroll_decision_invariant();
 		if (unroll_nr > 1)
-		loop_info.unroll_kind = invariant;
+			loop_info.unroll_kind = invariant;
 	}
 
 	DB((dbg, LEVEL_2, " *** Unrolling %d times ***\n", unroll_nr));
@@ -2743,7 +2742,6 @@ static void set_loop_params(void)
     opt_params.invar_unrolling_min_size = 20;
     opt_params.max_unrolled_loop_size = 400;
     opt_params.max_branches = 9999;
-
 }
 
 /* Assure preconditions are met and go through all loops. */
