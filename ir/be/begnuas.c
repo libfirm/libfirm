@@ -1524,8 +1524,6 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 	be_dbg_variable(entity);
 
 	if (section == GAS_SECTION_BSS) {
-		ir_visibility visibility = get_entity_visibility(entity);
-
 		switch (visibility) {
 		case ir_visibility_local:
 		case ir_visibility_private:
@@ -1566,7 +1564,8 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
 		emit_align(alignment);
 	}
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF
-			&& be_gas_emit_types) {
+			&& be_gas_emit_types
+			&& visibility != ir_visibility_private) {
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
 		be_emit_cstring(", ");

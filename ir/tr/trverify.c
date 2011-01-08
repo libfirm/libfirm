@@ -423,17 +423,30 @@ static void check_tore(type_or_ent tore, void *env)
  */
 int tr_verify(void)
 {
-	int      res = no_error;
-	ir_type *constructors;
-	ir_type *destructors;
-	ir_type *thread_locals;
-	int      i;
 	static ident *empty = NULL;
+	int           res = no_error;
+	ir_type      *constructors;
+	ir_type      *destructors;
+	ir_type      *thread_locals;
+	int           i;
+	ir_segment_t  s;
 
 	if (empty == NULL)
 		empty = new_id_from_chars("", 0);
 
 	type_walk(check_tore, NULL, &res);
+
+	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
+		const ir_type *type = get_segment_type(s);
+		int            e;
+		for (e = 0; e < get_compound_n_members(type); ++e) {
+			ir_entity *entity = get_compound_member(type, e);
+			ASSERT_AND_RET(get_entity_ld_ident(entity) != NULL ||
+					get_entity_visibility(entity) == ir_visibility_private,
+					"segment members must have a name or visibility_private",
+					1);
+		}
+	}
 
 	constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
 	for (i = get_compound_n_members(constructors)-1; i >= 0; --i) {
