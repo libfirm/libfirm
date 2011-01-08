@@ -17,6 +17,17 @@ def format_nodeparameters(node):
 	parameters = map(lambda arg: arg["type"] + " " + arg["name"], node.arguments)
 	return format_parameterlist(parameters)
 
+def format_nodeparametershelp(node):
+	res = ""
+	for param in node.arguments:
+		res += " * @param %-9s %s\n" % (param["name"], param["comment"])
+	return res
+
+def format_a_an(text):
+	if text[0] in "aAeEuUoOiI":
+		return "an " + text
+	return "a " + text
+
 def format_blockparameter(node):
 	if hasattr(node, "knownBlock"):
 		if hasattr(node, "knownGraph"):
@@ -24,6 +35,14 @@ def format_blockparameter(node):
 		return "ir_graph *irg"
 	else:
 		return "ir_node *block"
+
+def format_blockparameterhelp(node):
+	if hasattr(node, "knownBlock"):
+		if hasattr(node, "knownGraph"):
+			return ""
+		return " * @param irg       The IR graph the node belongs to.\n"
+	else:
+		return " * @param block     The IR block the node belongs to.\n"
 
 def format_blockargument(node):
 	if hasattr(node, "knownBlock"):
@@ -160,10 +179,13 @@ def format_parameters(string):
 	return format_arguments(string, voidwhenempty = True)
 
 env = Environment()
+env.filters['a_an']            = format_a_an
 env.filters['parameterlist']   = format_parameterlist
 env.filters['nodearguments']   = format_nodearguments
 env.filters['nodeparameters']  = format_nodeparameters
+env.filters['nodeparametershelp'] = format_nodeparametershelp
 env.filters['blockparameter']  = format_blockparameter
+env.filters['blockparameterhelp'] = format_blockparameterhelp
 env.filters['blockargument']   = format_blockargument
 env.filters['irgassign']       = format_irgassign
 env.filters['curblock']        = format_curblock
@@ -182,9 +204,16 @@ env.filters['escape_keywords'] = format_escape_keywords
 
 def prepare_attr(attr):
 	if "init" in attr:
-		return dict(type = attr["type"], name = attr["name"], init = attr["init"])
+		return dict(
+			type = attr["type"],
+			name = attr["name"],
+			init = attr["init"],
+			comment = attr["comment"])
 	else:
-		return dict(type = attr["type"], name = attr["name"])
+		return dict(
+			type = attr["type"],
+			name = attr["name"],
+			comment = attr["comment"])
 
 def preprocess_node(node):
 	verify_node(node)
@@ -196,21 +225,34 @@ def preprocess_node(node):
 	arguments = [ ]
 	initattrs = [ ]
 	for input in node.ins:
-		arguments.append(dict(type = "ir_node *", name = "irn_" + input[0]))
+		arguments.append(dict(
+				type    = "ir_node *",
+				name    = "irn_" + input[0],
+				comment = input[1]))
 
 	if node.arity == "variable" or node.arity == "dynamic":
-		arguments.append(dict(type = "int", name = "arity"))
-		arguments.append(dict(type = "ir_node **", name = "in"))
+		arguments.append(dict(
+				type    = "int",
+				name    = "arity",
+				comment = "size of additional inputs array"))
+		arguments.append(dict(
+				type    = "ir_node **",
+				name    = "in",
+				comment = "additional inputs"))
 
 	if not hasattr(node, "mode"):
-		arguments.append(dict(type = "ir_mode *", name = "mode"))
+		arguments.append(dict(
+				type    = "ir_mode *",
+				name    = "mode",
+				comment = "mode of the operations result"))
 		node.mode = "mode"
 
 	for attr in node.attrs:
 		attr["fqname"] = "." + attr["name"]
-
-		if not "init" in attr:
-			arguments.append(prepare_attr(attr))
+		if "init" in attr:
+			continue
+		arguments.append(attr)
+		#arguments.append(prepare_attr(attr))
 
 	# dynamic pin state means more constructor arguments
 	if is_dynamic_pinned(node):
@@ -222,8 +264,9 @@ def preprocess_node(node):
 		else:
 			node.constructor_args.append(
 				dict(
-					name = "pin_state",
-					type = "op_pin_state"
+					name    = "pin_state",
+					type    = "op_pin_state",
+					comment = "pinned state",
 				)
 			)
 			initattrs.append(dict(
@@ -453,6 +496,58 @@ typedef enum {
 } pn_{{node.name}};
 {% endif %}
 {%- endfor %}
+
+{% for node in nodes %}
+{%- if not node.noconstructor %}
+/**
+ * Construct {{node.name|a_an}} node.
+ *
+ * @param dbgi      A pointer to debug information.
+{{ node|blockparameterhelp -}}
+{{ node|nodeparametershelp -}}
+ */
+FIRM_API ir_node *new_rd_{{node.name}}(
+	{%- filter parameters %}
+		dbg_info *dbgi
+		{{node|blockparameter}}
+		{{node|nodeparameters}}
+	{% endfilter %});
+
+/**
+ * Construct {{node.name|a_an}} node.
+ *
+{{ node|blockparameterhelp -}}
+{{ node|nodeparametershelp -}}
+ */
+FIRM_API ir_node *new_r_{{node.name}}(
+	{%- filter parameters %}
+		{{node|blockparameter}}
+		{{node|nodeparameters}}
+	{% endfilter %});
+
+/**
+ * Construct {{node.name|a_an}} node.
+ *
+ * @param dbgi      A pointer to debug information.
+{{ node|nodeparametershelp -}}
+ */
+FIRM_API ir_node *new_d_{{node.name}}(
+	{%- filter parameters %}
+		dbg_info *dbgi
+		{{node|nodeparameters}}
+	{% endfilter %});
+
+/**
+ * Construct {{node.name|a_an}} node.
+ *
+{{ node|nodeparametershelp -}}
+ */
+FIRM_API ir_node *new_{{node.name}}(
+	{%- filter parameters %}
+		{{node|nodeparameters}}
+	{% endfilter %});
+{%- endif %}
+{% endfor %}
 
 {% for node in nodes %}
 /** Return true of the node is a {{node.name}} node. */

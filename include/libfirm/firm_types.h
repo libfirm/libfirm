@@ -117,7 +117,16 @@ typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mod
 #	define ENUM_COUNTABLE(type)
 #endif
 
-
+/**
+ * constrained flags for memory operations.
+ */
+typedef enum ir_cons_flags {
+	cons_none      = 0,        /**< No constrains. */
+	cons_volatile  = 1U << 0,  /**< Memory operation is volatile. */
+	cons_unaligned = 1U << 1,  /**< Memory operation is unaligned. */
+	cons_floats    = 1U << 2   /**< Memory operation can float. */
+} ir_cons_flags;
+ENUM_BITSET(ir_cons_flags)
 
 /** op_pin_state_pinned states. */
 typedef enum op_pin_state {
