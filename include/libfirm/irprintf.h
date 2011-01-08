@@ -61,17 +61,17 @@ struct obstack;
  * Note that some of the standard format capabilities are not available
  * due to this new conversion specifiers, use lc_printf() if needed.
  */
-FIRM_API void ir_printf(const char *fmt, ...) FIRM_PRINTF(1,2);
+FIRM_API void ir_printf(const char *fmt, ...);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_fprintf(FILE *f, const char *fmt, ...) FIRM_PRINTF(2,3);
+FIRM_API void ir_fprintf(FILE *f, const char *fmt, ...);
 
 /**
  * @see ir_printf.
  */
-FIRM_API void ir_snprintf(char *buf, size_t n, const char *fmt, ...) FIRM_PRINTF(3,4);
+FIRM_API void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
 
 /**
  * @see ir_printf.
