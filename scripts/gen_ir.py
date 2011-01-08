@@ -62,14 +62,14 @@ def format_insdecl(node):
 		res += "\n\tNEW_ARR_A(ir_node *, r_in, r_arity);"
 		i = 0
 		for input in node.ins:
-			res += "\n\tr_in[" + `i` + "] = irn_" + input + ";"
+			res += "\n\tr_in[" + `i` + "] = irn_" + input[0] + ";"
 			i += 1
 		res += "\n\tmemcpy(&r_in[" + `insarity` + "], in, sizeof(ir_node *) * arity);\n\t"
 	else:
 		res = "ir_node *in[" + `arity` + "];"
 		i = 0
 		for input in node.ins:
-			res += "\n\tin[" + `i` + "] = irn_" + input + ";"
+			res += "\n\tin[" + `i` + "] = irn_" + input[0] + ";"
 			i += 1
 	return res
 
@@ -196,7 +196,7 @@ def preprocess_node(node):
 	arguments = [ ]
 	initattrs = [ ]
 	for input in node.ins:
-		arguments.append(dict(type = "ir_node *", name = "irn_" + input))
+		arguments.append(dict(type = "ir_node *", name = "irn_" + input[0]))
 
 	if node.arity == "variable" or node.arity == "dynamic":
 		arguments.append(dict(type = "int", name = "arity"))
@@ -378,16 +378,16 @@ void (set_{{node.name}}_{{attr.name}})(ir_node *node, {{attr.type}} {{attr.name}
 
 {%- for node in nodes %}
 {%- for in in node.ins %}
-ir_node *(get_{{node.name}}_{{in}})(const ir_node *node)
+ir_node *(get_{{node.name}}_{{in[0]}})(const ir_node *node)
 {
 	assert(is_{{node.name}}(node));
 	return get_irn_n(node, {{node.ins.index(in)}});
 }
 
-void (set_{{node.name}}_{{in}})(ir_node *node, ir_node *{{in|escape_keywords}})
+void (set_{{node.name}}_{{in[0]}})(ir_node *node, ir_node *{{in[0]|escape_keywords}})
 {
 	assert(is_{{node.name}}(node));
-	set_irn_n(node, {{node.ins.index(in)}}, {{in|escape_keywords}});
+	set_irn_n(node, {{node.ins.index(in)}}, {{in[0]|escape_keywords}});
 }
 {% endfor %}
 {% endfor %}
@@ -461,8 +461,8 @@ FIRM_API int is_{{node.name}}(const ir_node *node);
 
 {% for node in nodes %}
 {% for in in node.ins -%}
-FIRM_API ir_node *get_{{node.name}}_{{in}}(const ir_node *node);
-void set_{{node.name}}_{{in}}(ir_node *node, ir_node *{{in|escape_keywords}});
+FIRM_API ir_node *get_{{node.name}}_{{in[0]}}(const ir_node *node);
+void set_{{node.name}}_{{in[0]}}(ir_node *node, ir_node *{{in[0]|escape_keywords}});
 {% endfor -%}
 {% for attr in node.attrs|hasnot("noprop") -%}
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);

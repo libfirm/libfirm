@@ -7,7 +7,9 @@ abstract(Op)
 class Unop(Op):
 	"""Unary nodes have exactly 1 input"""
 	name     = "unop"
-	ins      = [ "op" ]
+	ins      = [
+		("op",  "operand"),
+	]
 	op_index = 0
 	pinned   = "no"
 abstract(Unop)
@@ -15,37 +17,45 @@ abstract(Unop)
 class Binop(Op):
 	"""Binary nodes have exactly 2 inputs"""
 	name     = "binop"
-	ins      = [ "left", "right" ]
+	ins      = [
+		( "left",   "first operand" ),
+		( "right", "second operand" ),
+	]
 	op_index = 0
 	pinned   = "no"
 abstract(Binop)
 
 class Add(Binop):
 	"""returns the sum of its operands"""
-	flags = ["commutative"]
+	flags = [ "commutative" ]
 
 class Alloc(Op):
 	"""allocates a block of memory.
 	It can be specified whether the variable should be allocated to the stack
 	or to the heap."""
-	ins   = [ "mem", "count" ]
+	ins   = [
+		("mem",   "memory dependency" ),
+		("count", "number of objects to allocate" ),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
 		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
 		("res",       "pointer to newly allocated memory",     "pn_Generic_other"),
 	]
-	flags = [ "fragile", "uses_memory" ]
 	attrs = [
 		dict(
-			name = "type",
-			type = "ir_type*"
+			name    = "type",
+			type    = "ir_type*",
+			comment = "type of the allocated variable",
 		),
 		dict(
-			name = "where",
-			type = "ir_where_alloc"
+			name    = "where",
+			type    = "ir_where_alloc",
+			comment = "whether to allocate the variable on the stack or heap",
 		)
 	]
+	flags       = [ "fragile", "uses_memory" ]
 	pinned      = "yes"
 	attr_struct = "alloc_attr"
 
@@ -82,30 +92,36 @@ class ASM(Op):
 	customSerializer = True
 	attrs = [
 		dict(
-			name = "input_constraints",
-			type = "ir_asm_constraint*",
+			name    = "input_constraints",
+			type    = "ir_asm_constraint*",
+			comment = "input constraints",
 		),
 		dict(
-			name = "n_output_constraints",
-			type = "int",
-			noprop = True,
+			name    = "n_output_constraints",
+			type    = "int",
+			noprop  = True,
+			comment = "number of output constraints",
 		),
 		dict(
-			name = "output_constraints",
-			type = "ir_asm_constraint*",
+			name    = "output_constraints",
+			type    = "ir_asm_constraint*",
+			comment = "output constraints",
 		),
 		dict(
-			name = "n_clobbers",
-			type = "int",
-			noprop = True,
+			name    = "n_clobbers",
+			type    = "int",
+			noprop  = True,
+			comment = "number of clobbered registers/memory",
 		),
 		dict(
-			name = "clobbers",
-			type = "ident**",
+			name    = "clobbers",
+			type    = "ident**",
+			comment = "list of clobbered registers/memory",
 		),
 		dict(
-			name = "text",
-			type = "ident*",
+			name    = "text",
+			type    = "ident*",
+			comment = "assembler text",
 		),
 	]
 	# constructor is written manually at the moment, because of the clobbers+
@@ -180,7 +196,12 @@ class Borrow(Binop):
 class Bound(Op):
 	"""Performs a bounds-check: if lower <= index < upper then return index,
 	otherwise throw an exception."""
-	ins    = [ "mem", "index", "lower", "upper" ]
+	ins    = [
+		("mem",    "memory dependency"),
+		("index",  "value to test"),
+		("lower",  "lower bound (inclusive)"),
+		("upper",  "upper bound (exclusive)"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -195,7 +216,9 @@ class Bound(Op):
 
 class Builtin(Op):
 	"""performs a backend-specific builtin."""
-	ins      = [ "mem" ]
+	ins      = [
+		("mem", "memory dependency"),
+	]
 	arity    = "variable"
 	outs     = [
 		("M",        "memory result", "pn_Generic_M"),
@@ -204,12 +227,14 @@ class Builtin(Op):
 	flags    = [ "uses_memory" ]
 	attrs    = [
 		dict(
-			type = "ir_builtin_kind",
-			name = "kind"
+			type    = "ir_builtin_kind",
+			name    = "kind",
+			comment = "kind of builtin",
 		),
 		dict(
-			type = "ir_type*",
-			name = "type"
+			type    = "ir_type*",
+			name    = "type",
+			comment = "method type for the builtin call",
 		)
 	]
 	pinned      = "memory"
@@ -224,7 +249,10 @@ class Call(Op):
 	operands are passed to the called code. Called code usually performs a
 	return operation. The operands of this return operation are the result
 	of the Call node."""
-	ins      = [ "mem", "ptr" ]
+	ins      = [
+		("mem",   "memory dependency"),
+		("ptr",   "pointer to called code"),
+	]
 	arity    = "variable"
 	outs     = [
 		("M",                "memory result",                         "pn_Generic_M"),
@@ -236,14 +264,15 @@ class Call(Op):
 	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [
 		dict(
-			type = "ir_type*",
-			name = "type"
+			type    = "ir_type*",
+			name    = "type",
+			comment = "type of the call (usually type of the called procedure)",
 		),
 		dict(
 			type = "unsigned",
 			name = "tail_call",
 			# the tail call attribute can only be set by analysis
-			init = "0"
+			init = "0",
 		)
 	]
 	attr_struct = "call_attr"
@@ -264,8 +293,9 @@ class Cast(Unop):
 	flags    = [ "highlevel" ]
 	attrs    = [
 		dict(
-			type = "ir_type*",
-			name = "type"
+			type    = "ir_type*",
+			name    = "type",
+			comment = "target type of the case",
 		)
 	]
 	attr_struct = "cast_attr"
@@ -307,7 +337,9 @@ class Cond(Op):
 	will proceed along output i. If the input is >= n control flow proceeds
 	along output def_proj.
 	"""
-	ins      = [ "selector" ]
+	ins      = [
+		("selector",  "condition parameter"),
+	]
 	outs     = [
 		("false", "control flow if operand is \"false\""),
 		("true",  "control flow if operand is \"true\""),
@@ -316,14 +348,16 @@ class Cond(Op):
 	pinned   = "yes"
 	attrs    = [
 		dict(
-			name = "default_proj",
-			type = "long",
-			init = "0"
+			name    = "default_proj",
+			type    = "long",
+			init    = "0",
+			comment = "Proj-number of default case for switch-Cond",
 		),
 		dict(
-			name = "jmp_pred",
-			type = "cond_jmp_predicate",
-			init = "COND_JMP_PRED_NONE"
+			name    = "jmp_pred",
+			type    = "cond_jmp_predicate",
+			init    = "COND_JMP_PRED_NONE",
+			comment = "can indicate the most likely jump",
 		)
 	]
 	attr_struct = "cond_attr"
@@ -338,14 +372,18 @@ class Confirm(Op):
 	value is always returned.
 	Note that this node does NOT check or assert the constraint, it merely
 	specifies it."""
-	ins      = [ "value", "bound" ]
+	ins      = [
+		("value",  "value to express a constraint for"),
+		("bound",  "value to compare against"),
+	]
 	mode     = "get_irn_mode(irn_value)"
 	flags    = [ "highlevel" ]
 	pinned   = "yes"
 	attrs    = [
 		dict(
-			name = "cmp",
-			type = "pn_Cmp"
+			name    = "cmp",
+			type    = "pn_Cmp",
+			comment = "compare operation",
 		),
 	]
 	attr_struct = "confirm_attr"
@@ -360,8 +398,9 @@ class Const(Op):
 	pinned     = "no"
 	attrs      = [
 		dict(
-			type = "ir_tarval*",
-			name = "tarval",
+			type    = "ir_tarval*",
+			name    = "tarval",
+			comment = "constant value (a tarval object)",
 		)
 	]
 	attr_struct = "const_attr"
@@ -372,9 +411,10 @@ class Conv(Unop):
 	flags = []
 	attrs = [
 		dict(
-			name = "strict",
-			type = "int",
-			init = "0",
+			name    = "strict",
+			type    = "int",
+			init    = "0",
+			comment = "force floating point to restrict precision even if backend computes in higher precision (deprecated)",
 		)
 	]
 	attr_struct = "conv_attr"
@@ -382,7 +422,11 @@ class Conv(Unop):
 
 class CopyB(Op):
 	"""Copies a block of memory"""
-	ins   = [ "mem", "dst", "src" ]
+	ins   = [
+		("mem",  "memory dependency"),
+		("dst",  "destination address"),
+		("src",  "source address"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -391,8 +435,9 @@ class CopyB(Op):
 	flags = [ "fragile", "uses_memory" ]
 	attrs = [
 		dict(
-			name = "type",
-			type = "ir_type*"
+			name    = "type",
+			type    = "ir_type*",
+			comment = "type of copied data",
 		)
 	]
 	attr_struct = "copyb_attr"
@@ -402,7 +447,11 @@ class CopyB(Op):
 
 class Div(Op):
 	"""returns the quotient of its 2 operands, integer version"""
-	ins   = [ "mem", "left", "right" ]
+	ins   = [
+		("mem",   "memory dependency"),
+		("left",  "first operand"),
+		("right", "second operand"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -413,8 +462,9 @@ class Div(Op):
 	attrs_name = "divmod"
 	attrs = [
 		dict(
-			type = "ir_mode*",
-			name = "resmode"
+			type    = "ir_mode*",
+			name    = "resmode",
+			comment = "mode of the result value",
 		),
 		dict(
 			name = "no_remainder",
@@ -429,7 +479,11 @@ class Div(Op):
 
 class DivMod(Op):
 	"""divides its 2 operands and computes the remainder of the division"""
-	ins   = [ "mem", "left", "right" ]
+	ins   = [
+		("mem",   "memory dependency"),
+		("left",  "first operand"),
+		("right", "second operand"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -441,8 +495,9 @@ class DivMod(Op):
 	attrs_name = "divmod"
 	attrs = [
 		dict(
-			type = "ir_mode*",
-			name = "resmode"
+			type    = "ir_mode*",
+			name    = "resmode",
+			comment = "mode of the result value",
 		),
 	]
 	attr_struct = "divmod_attr"
@@ -478,25 +533,33 @@ class Eor(Binop):
 
 class Free(Op):
 	"""Frees a block of memory previously allocated by an Alloc node"""
-	ins    = [ "mem", "ptr", "size" ]
+	ins    = [
+		("mem",   "memory dependency" ),
+		("ptr",   "pointer to the object to free"),
+		("size",  "number of objects to allocate" ),
+	]
 	mode   = "mode_M"
 	flags  = [ "uses_memory" ]
 	pinned = "yes"
 	attrs  = [
 		dict(
-			name = "type",
-			type = "ir_type*"
+			name    = "type",
+			type    = "ir_type*",
+			comment = "type of the allocated variable",
 		),
 		dict(
-			name = "where",
-			type = "ir_where_alloc"
+			name    = "where",
+			type    = "ir_where_alloc",
+			comment = "whether allocation was on the stack or heap",
 		)
 	]
 	attr_struct = "free_attr"
 
 class Id(Op):
 	"""Returns its operand unchanged."""
-	ins    = [ "pred" ]
+	ins    = [
+	   ("pred", "the value which is returned unchanged")
+	]
 	pinned = "no"
 	flags  = []
 
@@ -506,12 +569,17 @@ class IJmp(Op):
 	by the tuple results"""
 	mode     = "mode_X"
 	pinned   = "yes"
-	ins      = [ "target" ]
+	ins      = [
+	   ("target", "target address of the jump"),
+	]
 	flags    = [ "cfopcode", "forking", "keep" ]
 
 class InstOf(Op):
 	"""Tests wether an object is an instance of a class-type"""
-	ins   = [ "store", "obj" ]
+	ins   = [
+	   ("store", "memory dependency"),
+	   ("obj",   "pointer to object being queried")
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -521,8 +589,9 @@ class InstOf(Op):
 	flags = [ "highlevel" ]
 	attrs = [
 		dict(
-			name = "type",
-			type = "ir_type*"
+			name    = "type",
+			type    = "ir_type*",
+			comment = "type to check ptr for",
 		)
 	]
 	attr_struct = "io_attr"
@@ -538,7 +607,10 @@ class Jmp(Op):
 
 class Load(Op):
 	"""Loads a value from memory (heap or stack)."""
-	ins      = [ "mem", "ptr" ]
+	ins   = [
+		("mem", "memory dependency"),
+		("ptr",  "address to load from"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -547,21 +619,23 @@ class Load(Op):
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"
-	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	attrs    = [
 		dict(
-			type = "ir_mode*",
-			name = "mode",
-			java_name = "load_mode"
+			type      = "ir_mode*",
+			name      = "mode",
+			java_name = "load_mode",
+			comment   = "mode of the value to be loaded",
 		),
 	]
 	attr_struct = "load_attr"
 	constructor_args = [
 		dict(
-			type = "ir_cons_flags",
-			name = "flags",
+			type    = "ir_cons_flags",
+			name    = "flags",
+			comment = "specifies alignment, volatility and pin state",
 		),
 	]
+	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	init = '''
 	res->attr.load.volatility = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
 	res->attr.load.aligned = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
@@ -580,7 +654,11 @@ class Mod(Op):
 	* mod(-5,3)  produces -2
 	* mod(-5,-3) produces -2
 	"""
-	ins   = [ "mem", "left", "right" ]
+	ins   = [
+		("mem",   "memory dependency"),
+		("left",  "first operand"),
+		("right", "second operand"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -591,8 +669,9 @@ class Mod(Op):
 	attrs_name = "divmod"
 	attrs = [
 		dict(
-			type = "ir_mode*",
-			name = "resmode"
+			type    = "ir_mode*",
+			name    = "resmode",
+			comment = "mode of the result",
 		),
 	]
 	attr_struct = "divmod_attr"
@@ -612,7 +691,11 @@ class Mulh(Binop):
 class Mux(Op):
 	"""returns the false or true operand depending on the value of the sel
 	operand"""
-	ins    = [ "sel", "false", "true" ]
+	ins    = [
+	   ("sel",   "value making the output selection"),
+	   ("false", "selected if sel input is false"),
+	   ("true",  "selected if sel input is true"),
+	]
 	flags  = []
 	pinned = "no"
 
@@ -655,14 +738,18 @@ class Pin(Op):
 	"""Pin the value of the node node in the current block. No users of the Pin
 	node can float above the Block of the Pin. The node cannot float behind
 	this block. Often used to Pin the NoMem node."""
-	ins      = [ "op" ]
+	ins      = [
+		("op", "value which is pinned"),
+	]
 	mode     = "get_irn_mode(irn_op)"
 	flags    = [ "highlevel" ]
 	pinned   = "yes"
 
 class Proj(Op):
 	"""returns an entry of a tuple value"""
-	ins              = [ "pred" ]
+	ins              = [
+		("pred", "the tuple value from which a part is extracted"),
+	]
 	flags            = []
 	pinned           = "no"
 	knownBlock       = True
@@ -672,15 +759,20 @@ class Proj(Op):
 	customSerializer = True
 	attrs      = [
 		dict(
-			type = "long",
-			name = "proj",
+			type    = "long",
+			name    = "proj",
+			comment = "number of tuple component to be extracted",
 		),
 	]
 	attr_struct = "proj_attr"
 
 class Quot(Op):
 	"""returns the quotient of its 2 operands, floatingpoint version"""
-	ins   = [ "mem", "left", "right" ]
+	ins   = [
+	   ("mem",   "memory dependency"),
+	   ("left",  "first operand"),
+	   ("right", "second operand"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -691,8 +783,9 @@ class Quot(Op):
 	attrs_name = "divmod"
 	attrs = [
 		dict(
-			type = "ir_mode*",
-			name = "resmode"
+			type    = "ir_mode*",
+			name    = "resmode",
+			comment = "mode of the result value",
 		),
 	]
 	attr_struct = "divmod_attr"
@@ -704,7 +797,10 @@ class Raise(Op):
 	"""Raises an exception. Unconditional change of control flow. Writes an
 	explicit Except variable to memory to pass it to the exception handler.
 	Must be lowered to a Call to a runtime check function."""
-	ins    = [ "mem", "exo_ptr" ]
+	ins    = [
+		("mem",     "memory dependency"),
+		("exo_ptr", "pointer to exception object to be thrown"),
+	]
 	outs  = [
 		("M", "memory result",                     "pn_Generic_M"),
 		("X", "control flow to exception handler", "pn_Generic_X_regular"),
@@ -715,7 +811,9 @@ class Raise(Op):
 class Return(Op):
 	"""Returns from the current function. Takes memory and return values as
 	operands."""
-	ins      = [ "mem" ]
+	ins      = [
+		("mem", "memory dependency"),
+	]
 	arity    = "variable"
 	mode     = "mode_X"
 	flags    = [ "cfopcode" ]
@@ -729,15 +827,19 @@ class Rotl(Binop):
 class Sel(Op):
 	"""Computes the address of a entity of a compound type given the base
 	address of an instance of the compound type."""
-	ins    = [ "mem", "ptr" ]
+	ins    = [
+		("mem", "memory dependency"),
+		("ptr", "pointer to object to select from"),
+	]
 	arity  = "variable"
 	flags  = []
 	mode   = "is_Method_type(get_entity_type(entity)) ? mode_P_code : mode_P_data"
 	pinned = "no"
 	attrs  = [
 		dict(
-			type = "ir_entity*",
-			name = "entity"
+			type    = "ir_entity*",
+			name    = "entity",
+			comment = "entity which is selected",
 		)
 	]
 	attr_struct = "sel_attr"
@@ -777,7 +879,11 @@ class Start(Op):
 
 class Store(Op):
 	"""Stores a value into memory (heap or stack)."""
-	ins      = [ "mem", "ptr", "value" ]
+	ins   = [
+	   ("mem",   "memory dependency"),
+	   ("ptr",   "address to store to"),
+	   ("value", "value to store"),
+	]
 	outs  = [
 		("M",         "memory result",                         "pn_Generic_M"),
 		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
@@ -789,8 +895,9 @@ class Store(Op):
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
 	constructor_args = [
 		dict(
-			type = "ir_cons_flags",
-			name = "flags",
+			type    = "ir_cons_flags",
+			name    = "flags",
+			comment = "specifies alignment, volatility and pin state",
 		),
 	]
 	init = '''
@@ -826,9 +933,10 @@ class SymConst(Op):
 	pinned     = "no"
 	attrs      = [
 		dict(
-			type = "ir_entity*",
-			name = "entity",
-			noprop = True
+			type    = "ir_entity*",
+			name    = "entity",
+			noprop  = True,
+			comment = "entity whose address is returned",
 		)
 	]
 	attr_struct = "symconst_attr"
