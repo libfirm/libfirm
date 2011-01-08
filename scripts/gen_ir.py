@@ -233,14 +233,6 @@ def preprocess_node(node):
 
 	for arg in node.constructor_args:
 		arguments.append(prepare_attr(arg))
-		if arg["type"] == "ir_cons_flags":
-			name = arg["name"]
-			initattrs.append(dict(fqname = ".exc.pin_state",
-				init = name + " & cons_floats ? op_pin_state_floats : op_pin_state_pinned"))
-			initattrs.append(dict(fqname = ".volatility",
-				init = name + " & cons_volatile ? volatility_is_volatile : volatility_non_volatile"))
-			initattrs.append(dict(fqname = ".aligned",
-				init = name + " & cons_unaligned ? align_non_aligned : align_is_aligned"))
 
 	node.arguments = arguments
 	node.initattrs = initattrs

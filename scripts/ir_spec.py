@@ -530,6 +530,10 @@ class Load(Op):
 			name = "flags",
 		),
 	]
+	init = '''
+	res->attr.load.volatility = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
+	res->attr.load.aligned = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
+	'''
 
 class Minus(Unop):
 	"""returns the difference between its operands"""
@@ -637,7 +641,7 @@ class Proj(Op):
 		dict(
 			type = "long",
 			name = "proj",
-		)
+		),
 	]
 	attr_struct = "proj_attr"
 
@@ -756,6 +760,10 @@ class Store(Op):
 			name = "flags",
 		),
 	]
+	init = '''
+	res->attr.store.volatility = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
+	res->attr.store.aligned = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
+	'''
 
 class Sub(Binop):
 	"""returns the difference of its operands"""
