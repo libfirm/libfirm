@@ -151,6 +151,7 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	spill_candidate_t     *candidates;
 	ir_nodeset_iterator_t  iter;
 	int                    i, arity;
+	size_t                 c;
 	int                    spills_needed;
 	size_t                 cand_idx;
 	ir_node               *n;
@@ -184,17 +185,17 @@ static void do_spilling(ir_nodeset_t *live_nodes, ir_node *node)
 	candidates = ALLOCAN(spill_candidate_t, n_live_nodes);
 
 	/* construct array with spill candidates and calculate their costs */
-	i = 0;
+	c = 0;
 	foreach_ir_nodeset(live_nodes, n, iter) {
-		spill_candidate_t *candidate = & candidates[i];
+		spill_candidate_t *candidate = & candidates[c];
 
 		assert(!bitset_is_set(spilled_nodes, get_irn_idx(n)));
 
 		candidate->node  = n;
 		candidate->costs = get_spill_costs(n);
-		++i;
+		++c;
 	}
-	assert(i == n_live_nodes);
+	assert(c == n_live_nodes);
 
 	/* sort spill candidates */
 	qsort(candidates, n_live_nodes, sizeof(candidates[0]),
