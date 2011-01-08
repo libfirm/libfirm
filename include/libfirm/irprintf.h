@@ -41,17 +41,7 @@ struct obstack;
  * @param fmt  The format string.
  *
  * This function rudimentary implements a kind of printf(3) for ir
- * nodes. Following conversion specifiers.
- * - @%% Print a '%' character.
- * - @%> Print as many white spaces as given in the parameter.
- * - @%c Print a character
- * - @%s A string.
- * - @%p A pointer.
- * - @%d A decimal integer.
- * - @%u A decimal unsigned integer.
- * - @%x A hexadecimal integer.
- * - @%o An octal integer.
- * - @%I An ident.
+ * nodes and adds the following additional conversion specifiers.
  * - @%t A type name.
  * - @%e An entity name.
  * - @%E An entity ld name.
@@ -61,54 +51,46 @@ struct obstack;
  * - @%N The node number of an ir node.
  * - @%m The mode name of an ir mode.
  * - @%B The block node number of the nodes block.
- * - @%b A bitset.
- * - @%= A pnc value
- * - @%G A debug info (if available)
- * - @%P A compound graph path
+ * - @%P A compound graph path.
+ * - @%I An ident.
+ * - @%D Print as many white spaces as given in the parameter.
+ * - @%G A debug info (if available) from the given ir node.
+ * - @%B A bitset.
+ * - @%F A Firm object (automatically detected).
  *
- * Each of these can be prepend by a '+' which means, that the given
- * pointer is a collection of items specified by the format. In this
- * case you also have to pass an iterator interface to ir_printf()
- * suitable for the instance of the collection. So, imagine you have a
- * @c pset of ir_nodes and want to dump it, you write:
- * @code
- *   pset *nodes;
- *   ...
- *   ir_printf("Some nodes: %*n\n", it_pset, nodes);
- * @endcode
- * The @c it_pset is an iterator interface (of type
- * @c iterator_t that allows the dumper to traverse the set.
+ * Note that some of the standard format capabilities are not available
+ * due to this new conversion specifiers, use lc_printf() if needed.
  */
-FIRM_API void ir_printf(const char *fmt, ...);
+FIRM_API void ir_printf(const char *fmt, ...) FIRM_PRINTF(1,2);
 
 /**
- * @see irn_printf.
+ * @see ir_printf.
  */
-FIRM_API void ir_fprintf(FILE *f, const char *fmt, ...);
+FIRM_API void ir_fprintf(FILE *f, const char *fmt, ...) FIRM_PRINTF(2,3);
 
 /**
- * @see irn_printf.
+ * @see ir_printf.
  */
-FIRM_API void ir_snprintf(char *buf, size_t n, const char *fmt, ...);
+FIRM_API void ir_snprintf(char *buf, size_t n, const char *fmt, ...) FIRM_PRINTF(3,4);
 
 /**
- * @see irn_printf.
+ * @see ir_printf.
  */
 FIRM_API void ir_vprintf(const char *fmt, va_list args);
 
 /**
- * @see irn_printf.
+ * @see ir_printf.
  */
 FIRM_API void ir_vfprintf(FILE *f, const char *fmt, va_list args);
 
 /**
- * @see irn_printf.
+ * @see ir_printf.
  */
 FIRM_API void ir_vsnprintf(char *buf, size_t len, const char *fmt,
                            va_list args);
 
 /**
- * @see irn_printf.
+ * @see ir_printf.
  */
 FIRM_API void ir_obst_vprintf(struct obstack *obst, const char *fmt,
                               va_list args);

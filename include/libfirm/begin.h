@@ -49,6 +49,23 @@
 	#define  FIRM_API extern
 #endif
 
+#ifdef __cplusplus
+#	define FIRM_NOTHROW throw ()
+#else
+#	define FIRM_NOTHROW
+#endif
+
+/**
+ * @def FIRM_PRINTF
+ * Attribute with marks a function to have a printf style format
+ * string and variadic argument.
+ */
+#if defined(__GNUC__)
+#	define FIRM_PRINTF(a,b) __attribute__((__format__(__printf__, a, b)))
+#else
+#	define FIRM_PRINTF(a,b)
+#endif
+
 #endif
 
 /* mark declarations as C function (note that we always need this,
