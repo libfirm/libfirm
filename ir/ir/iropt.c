@@ -6143,7 +6143,7 @@ static int node_cmp_attr_Const(ir_node *a, ir_node *b)
 /** Compares the attributes of two Proj nodes. */
 static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
 {
-	return a->attr.proj != b->attr.proj;
+	return a->attr.proj.proj != b->attr.proj.proj;
 }  /* node_cmp_attr_Proj */
 
 /** Compares the attributes of two Alloc nodes. */

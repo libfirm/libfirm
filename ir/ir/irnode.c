@@ -1379,18 +1379,6 @@ void add_Sync_pred(ir_node *node, ir_node *pred)
 	add_irn_n(node, pred);
 }
 
-long get_Proj_proj(const ir_node *node)
-{
-	assert(is_Proj(node));
-	return node->attr.proj;
-}
-
-void set_Proj_proj(ir_node *node, long proj)
-{
-	assert(is_Proj(node));
-	node->attr.proj = proj;
-}
-
 int (is_arg_Proj)(const ir_node *node)
 {
 	return _is_arg_Proj(node);

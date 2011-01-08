@@ -306,6 +306,10 @@ typedef struct asm_attr {
 	ident             **clobbers;           /**< List of clobbered registers. */
 } asm_attr;
 
+typedef struct proj_attr {
+	long  proj;           /**< position of tuple sub-value which is projected */
+} proj_attr;
+
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union ir_attr {
@@ -326,7 +330,7 @@ typedef union ir_attr {
 	load_attr      load;          /**< For Load. */
 	store_attr     store;         /**< For Store. */
 	phi_attr       phi;           /**< For Phi. */
-	long           proj;          /**< For Proj: contains the result position to project */
+	proj_attr      proj;          /**< For Proj. */
 	confirm_attr   confirm;       /**< For Confirm: compare operation and region. */
 	except_attr    except;        /**< For Phi node construction in case of exceptions */
 	copyb_attr     copyb;         /**< For CopyB operation */

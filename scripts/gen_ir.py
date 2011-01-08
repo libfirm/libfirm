@@ -207,7 +207,7 @@ def preprocess_node(node):
 		node.mode = "mode"
 
 	for attr in node.attrs:
-		attr.setdefault("initname", "." + attr["name"])
+		attr["fqname"] = "." + attr["name"]
 
 		if not "init" in attr:
 			arguments.append(prepare_attr(attr))
@@ -216,8 +216,8 @@ def preprocess_node(node):
 	if is_dynamic_pinned(node):
 		if hasattr(node, "pinned_init"):
 			initattrs.append(dict(
-				initname = ".exc.pin_state",
-				init     = node.pinned_init
+				fqname = ".exc.pin_state",
+				init   = node.pinned_init
 			))
 		else:
 			node.constructor_args.append(
@@ -227,19 +227,19 @@ def preprocess_node(node):
 				)
 			)
 			initattrs.append(dict(
-				initname = ".exc.pin_state",
-				init     = "pin_state"
+				fqname = ".exc.pin_state",
+				init   = "pin_state"
 			))
 
 	for arg in node.constructor_args:
 		arguments.append(prepare_attr(arg))
 		if arg["type"] == "ir_cons_flags":
 			name = arg["name"]
-			initattrs.append(dict(initname = ".exc.pin_state",
+			initattrs.append(dict(fqname = ".exc.pin_state",
 				init = name + " & cons_floats ? op_pin_state_floats : op_pin_state_pinned"))
-			initattrs.append(dict(initname = ".volatility",
+			initattrs.append(dict(fqname = ".volatility",
 				init = name + " & cons_volatile ? volatility_is_volatile : volatility_non_volatile"))
-			initattrs.append(dict(initname = ".aligned",
+			initattrs.append(dict(fqname = ".aligned",
 				init = name + " & cons_unaligned ? align_non_aligned : align_is_aligned"))
 
 	node.arguments = arguments
@@ -278,13 +278,13 @@ ir_node *new_rd_{{node.name}}(
 	}
 	{%- endif %}
 	{%- for attr in node.attrs %}
-	res->attr.{{node.attrs_name}}{{attr["initname"]}} =
+	res->attr.{{node.attrs_name}}{{attr["fqname"]}} =
 		{%- if "init" in attr %} {{ attr["init"] -}};
 		{%- else              %} {{ attr["name"] -}};
 		{%- endif %}
 	{%- endfor %}
 	{%- for attr in node.initattrs %}
-	res->attr.{{node.attrs_name}}{{attr["initname"]}} = {{ attr["init"] -}};
+	res->attr.{{node.attrs_name}}{{attr["fqname"]}} = {{ attr["init"] -}};
 	{%- endfor %}
 	{{- node.init }}
 	res = optimize_node(res);

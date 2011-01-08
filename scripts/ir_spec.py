@@ -637,11 +637,9 @@ class Proj(Op):
 		dict(
 			type = "long",
 			name = "proj",
-			initname = "",
-			noprop = False,
 		)
 	]
-	attr_struct = "long"
+	attr_struct = "proj_attr"
 
 class Quot(Op):
 	"""returns the quotient of its 2 operands, floatingpoint version"""
