@@ -138,33 +138,6 @@ class Block(Op):
 	}
 	'''
 
-	java_add   = '''
-	public void addPred(Node node) {
-		binding_ircons.add_immBlock_pred(ptr, node.ptr);
-	}
-
-	public void mature() {
-		binding_ircons.mature_immBlock(ptr);
-	}
-
-	@Override
-	public Block getBlock() {
-		return null;
-	}
-
-	public boolean blockVisited() {
-		return 0 != binding_irnode.Block_block_visited(ptr);
-	}
-
-	public void markBlockVisited() {
-		binding_irnode.mark_Block_block_visited(ptr);
-	}
-
-	public boolean isBad() {
-		return binding_irnode.is_Bad(ptr) != 0;
-	}
-	'''
-
 class Borrow(Binop):
 	flags = []
 
