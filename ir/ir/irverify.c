@@ -97,6 +97,12 @@ static void show_entity_failure(ir_node *node)
 	}
 }
 
+static const char *get_irn_modename(const ir_node *node)
+{
+	ir_mode *mode = get_irn_mode(node);
+	return get_mode_name(mode);
+}
+
 /**
  * Prints a failure for a Node
  */

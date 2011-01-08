@@ -154,10 +154,6 @@ FIRM_API void del_Sync_n(ir_node *n, int i);
 FIRM_API void set_irn_mode(ir_node *node, ir_mode *mode);
 /** Gets the mode struct of a node.  */
 FIRM_API ir_mode *get_irn_mode(const ir_node *node);
-/** Gets the ident for a string representation of the mode .*/
-FIRM_API ident *get_irn_modeident(const ir_node *node);
-/** Gets the string representation of the mode .*/
-FIRM_API const char *get_irn_modename(const ir_node *node);
 /** Gets the opcode struct of the node. */
 FIRM_API ir_op *get_irn_op(const ir_node *node);
 /** Sets the opcode struct of the node. */
