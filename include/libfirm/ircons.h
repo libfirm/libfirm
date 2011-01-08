@@ -1170,7 +1170,7 @@ FIRM_API ir_node *new_rd_Const_long(dbg_info *db, ir_graph *irg,
  * @param *db     A pointer for debug information.
  * @param *irg    The IR graph the node  belongs to.
  * @param mode    The mode for the SymConst.
- * @param val     A type, ident, entity or enum constant depending on the
+ * @param value   A type, ident, entity or enum constant depending on the
  *                SymConst kind.
  * @param kind    The kind of the symbolic constant, see the list above
  */
@@ -1685,7 +1685,6 @@ FIRM_API void mature_immBlock(ir_node *block);
  * associated with pos.  Pos may not exceed the value passed as n_loc
  * to new_ir_graph.  This call automatically inserts Phi nodes.
  *
- * @param *db    A pointer for debug information.
  * @param  pos   The position/id of the local variable.
  * @param *mode  The mode of the value to get.
  */

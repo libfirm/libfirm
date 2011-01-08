@@ -103,7 +103,6 @@ FIRM_API const char *get_ir_alias_relation_name(ir_alias_relation rel);
 /**
  * Determine the alias relation between two addresses.
  *
- * @param irg     The current graph.
  * @param adr1    The first address.
  * @param mode1   The mode of the first memory access.
  * @param adr2    The second address.
