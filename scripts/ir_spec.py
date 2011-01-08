@@ -343,10 +343,6 @@ class Conv(Unop):
 			name = "strict",
 			type = "int",
 			init = "0",
-			special = dict(
-				prefix = "strict",
-				init = "1"
-			)
 		)
 	]
 	attr_struct = "conv_attr"
@@ -392,10 +388,6 @@ class Div(Op):
 			name = "no_remainder",
 			type = "int",
 			init = "0",
-			special = dict(
-				suffix = "RL",
-				init = "1"
-			)
 		)
 	]
 	attr_struct = "divmod_attr"

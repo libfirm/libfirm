@@ -195,7 +195,6 @@ def preprocess_node(node):
 	# construct node arguments
 	arguments = [ ]
 	initattrs = [ ]
-	specialconstrs = [ ]
 	for input in node.ins:
 		arguments.append(dict(type = "ir_node *", name = "irn_" + input))
 
@@ -207,36 +206,10 @@ def preprocess_node(node):
 		arguments.append(dict(type = "ir_mode *", name = "mode"))
 		node.mode = "mode"
 
-	attrs_with_special = 0
 	for attr in node.attrs:
 		attr.setdefault("initname", "." + attr["name"])
 
-		if "special" in attr:
-			if not "init" in attr:
-				print "Node type %s has an attribute with a \"special\" entry but without \"init\"" % node.name
-				sys.exit(1)
-
-			if attrs_with_special != 0:
-				print "Node type %s has more than one attribute with a \"special\" entry" % node.name
-				sys.exit(1)
-
-			attrs_with_special += 1
-
-			if "prefix" in attr["special"]:
-				specialname = attr["special"]["prefix"] + node.name
-			elif "suffix" in attr["special"]:
-				specialname = node.name + attr["special"]["suffix"]
-			else:
-				print "Unknown special constructor type for node type %s" % node.name
-				sys.exit(1)
-
-			specialconstrs.append(
-				dict(
-					constrname = specialname,
-					attr = attr
-				)
-			)
-		elif not "init" in attr:
+		if not "init" in attr:
 			arguments.append(prepare_attr(attr))
 
 	# dynamic pin state means more constructor arguments
@@ -271,13 +244,12 @@ def preprocess_node(node):
 
 	node.arguments = arguments
 	node.initattrs = initattrs
-	node.special_constructors = specialconstrs
 
 #############################
 
 constructor_template = env.from_string('''
 
-ir_node *new_rd_{{node.constrname}}(
+ir_node *new_rd_{{node.name}}(
 	{%- filter parameters %}
 		dbg_info *dbgi
 		{{node|blockparameter}}
@@ -320,13 +292,13 @@ ir_node *new_rd_{{node.constrname}}(
 	return res;
 }
 
-ir_node *new_r_{{node.constrname}}(
+ir_node *new_r_{{node.name}}(
 		{%- filter parameters %}
 			{{node|blockparameter}}
 			{{node|nodeparameters}}
 		{% endfilter %})
 {
-	return new_rd_{{node.constrname}}(
+	return new_rd_{{node.name}}(
 		{%- filter arguments %}
 			NULL
 			{{node|blockargument}}
@@ -334,7 +306,7 @@ ir_node *new_r_{{node.constrname}}(
 		{% endfilter %});
 }
 
-ir_node *new_d_{{node.constrname}}(
+ir_node *new_d_{{node.name}}(
 		{%- filter parameters %}
 			dbg_info *dbgi
 			{{node|nodeparameters}}
@@ -342,7 +314,7 @@ ir_node *new_d_{{node.constrname}}(
 {
 	ir_node *res;
 	assert(get_irg_phase_state(current_ir_graph) == phase_building);
-	res = new_rd_{{node.constrname}}(
+	res = new_rd_{{node.name}}(
 		{%- filter parameters %}
 			dbgi
 			{{node|curblock}}
@@ -351,12 +323,12 @@ ir_node *new_d_{{node.constrname}}(
 	return res;
 }
 
-ir_node *new_{{node.constrname}}(
+ir_node *new_{{node.name}}(
 		{%- filter parameters %}
 			{{node|nodeparameters}}
 		{% endfilter %})
 {
-	return new_d_{{node.constrname}}(
+	return new_d_{{node.name}}(
 		{%- filter arguments %}
 			NULL
 			{{node|nodearguments}}
@@ -586,11 +558,6 @@ def main(argv):
 		if not isAbstract(node) and not hasattr(node, "noconstructor"):
 			file.write(constructor_template.render(vars()))
 
-			if hasattr(node, "special_constructors"):
-				for special in node.special_constructors:
-					node.constrname = special["constrname"]
-					special["attr"]["init"] = special["attr"]["special"]["init"]
-					file.write(constructor_template.render(vars()))
 	file.write("\n")
 	file.close()
 

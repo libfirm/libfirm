@@ -123,7 +123,6 @@ def preprocess_node(node):
 	# construct node arguments
 	arguments = [ ]
 	initargs = [ ]
-	specialconstrs = [ ]
 	i = 1
 	for input in node.ins:
 		arguments.append("preds[%i]" % i)
@@ -136,36 +135,9 @@ def preprocess_node(node):
 	if not hasattr(node, "mode"):
 		arguments.append("mode")
 
-	attrs_with_special = 0
 	for attr in node.attrs:
 		prepare_attr(node, attr)
-		if "special" in attr:
-			if not "init" in attr:
-				warning("Node type %s has an attribute with a \"special\" entry but without \"init\"" % node.name)
-				sys.exit(1)
-
-			if attrs_with_special != 0:
-				warning("Node type %s has more than one attribute with a \"special\" entry" % node.name)
-				sys.exit(1)
-
-			attrs_with_special += 1
-
-			if "prefix" in attr["special"]:
-				specialname = attr["special"]["prefix"] + node.name
-			elif "suffix" in attr["special"]:
-				specialname = node.name + attr["special"]["suffix"]
-			else:
-				error("Unknown special constructor type for node type %s" % node.name)
-				sys.exit(1)
-
-			specialconstrs.append(
-				dict(
-					constrname = specialname,
-					attrname = attr["name"],
-					value = attr["special"]["init"]
-				)
-			)
-		elif "init" in attr:
+		if "init" in attr:
 			if attr["type"] == "op_pin_state":
 				initfunc = "set_irn_pinned"
 			else:
@@ -180,7 +152,6 @@ def preprocess_node(node):
 
 	node.arguments = arguments
 	node.initargs = initargs
-	node.special_constructors = specialconstrs
 
 export_attrs_template = env.from_string('''
 	case iro_{{node.name}}:
@@ -198,15 +169,6 @@ import_attrs_template = env.from_string('''
 		{% endfor -%}
 		{% for attr in node.constructor_args %}
 		{{attr.importcmd}}
-		{% endfor -%}
-		{% for special in node.special_constructors %}
-		if ({{special.attrname}} == {{special.value}})
-			newnode = new_r_{{special.constrname}}(
-{%- filter arguments %}
-{{node|block}}
-{{node.arguments|args}}
-{% endfilter %});
-		else
 		{% endfor -%}
 		newnode = new_r_{{node.name}}(
 {%- filter arguments %}
