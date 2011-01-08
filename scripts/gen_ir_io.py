@@ -236,6 +236,7 @@ def main(argv):
 		real_nodes.append(node)
 
 	file = open(gendir + "/gen_irio_export.inl", "w");
+	file.write("/* Warning: automatically generated code */")
 	for node in real_nodes:
 		if node.customSerializer:
 			continue
@@ -246,6 +247,7 @@ def main(argv):
 	file.close()
 
 	file = open(gendir + "/gen_irio_import.inl", "w");
+	file.write("/* Warning: automatically generated code */")
 	for node in real_nodes:
 		if node.customSerializer:
 			continue
@@ -254,6 +256,7 @@ def main(argv):
 	file.close()
 
 	file = open(gendir + "/gen_irio_lex.inl", "w");
+	file.write("/* Warning: automatically generated code */")
 	for node in real_nodes:
 		file.write("\tINSERT(tt_iro, \"%s\", iro_%s);\n" % (node.name, node.name));
 	file.close()

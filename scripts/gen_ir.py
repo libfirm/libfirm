@@ -364,8 +364,8 @@ ir_node *new_{{node.constrname}}(
 }
 ''')
 
-irnode_h_template = env.from_string('''
-/* Warning: automatically generated code */
+irnode_h_template = env.from_string(
+'''/* Warning: automatically generated code */
 
 {%- for node in nodes|isnot('custom_is') %}
 static inline int _is_{{node.name}}(const ir_node *node)
@@ -381,8 +381,8 @@ static inline int _is_{{node.name}}(const ir_node *node)
 
 ''')
 
-irnode_template = env.from_string('''
-/* Warning: automatically generated code */
+irnode_template = env.from_string(
+'''/* Warning: automatically generated code */
 {% for node in nodes %}
 int (is_{{node.name}})(const ir_node *node)
 {
@@ -423,8 +423,8 @@ void (set_{{node.name}}_{{in}})(ir_node *node, ir_node *{{in|escape_keywords}})
 {% endfor %}
 ''')
 
-irop_template = env.from_string('''
-/* Warning: automatically generated code */
+irop_template = env.from_string(
+'''/* Warning: automatically generated code */
 {% for node in nodes %}
 ir_op *op_{{node.name}}; ir_op *get_op_{{node.name}}(void) { return op_{{node.name}}; }
 {%- endfor %}
@@ -457,8 +457,8 @@ void finish_op(void)
 
 ''')
 
-nodeops_h_template = env.from_string('''
-/* Warning: automatically generated code */
+nodeops_h_template = env.from_string(
+'''/* Warning: automatically generated code */
 #ifndef FIRM_IR_NODEOPS_H
 #define FIRM_IR_NODEOPS_H
 
@@ -505,8 +505,8 @@ FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{att
 #endif
 ''')
 
-opcodes_h_template = env.from_string('''
-/* Warning: automatically generated code */
+opcodes_h_template = env.from_string(
+'''/* Warning: automatically generated code */
 #ifndef FIRM_IR_OPCODES_H
 #define FIRM_IR_OPCODES_H
 
