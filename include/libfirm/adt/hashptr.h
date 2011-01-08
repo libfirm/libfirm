@@ -26,6 +26,7 @@
 #ifndef FIRM_ADT_HASHPTR_H
 #define FIRM_ADT_HASHPTR_H
 
+#include <stdlib.h>
 #include "../begin.h"
 
 #define _FIRM_FNV_OFFSET_BASIS 2166136261U

@@ -27,6 +27,7 @@
 #ifndef FIRM_TV_FLTCALC_H
 #define FIRM_TV_FLTCALC_H
 
+#include <stdlib.h>
 #include "firm_types.h"
 
 #ifdef HAVE_LONG_DOUBLE
