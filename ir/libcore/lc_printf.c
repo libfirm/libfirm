@@ -203,6 +203,12 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
 				mod[3] = '\0';
 			}
 		}
+	} else if (occ->modifier_length == 2) {
+		if (mod[0] == 'h' && mod[1] == 'h') {
+			/* no support for char in mscrt, but we can safely ignore it
+			 * because the size is handled by the argument reader code */
+			mod[0] = '\0';
+		}
 	}
 #endif
 	snprintf(buf, len, "%%%s%s%s%s%s%s%s%s%c",
@@ -222,12 +228,14 @@ static char *make_fmt(char *buf, size_t len, const lc_arg_occ_t *occ)
  */
 static int std_get_lc_arg_type(const lc_arg_occ_t *occ)
 {
-	int modlen = occ->modifier_length;
+	size_t modlen = occ->modifier_length;
 
 	/* check, if the type can be derived from the modifier */
 	if (modlen > 0) {
 		const char *mod = occ->modifier;
 		switch (mod[0]) {
+			case 'h':
+				return modlen > 1 && mod[1] == 'h' ? lc_arg_type_char : lc_arg_type_short;
 			case 'l':
 				return modlen > 1 && mod[1] == 'l' ? lc_arg_type_long_long : lc_arg_type_long;
 #define TYPE_CASE(letter,type) case letter: return lc_arg_type_ ## type;
@@ -272,7 +280,7 @@ static int std_emit(lc_appendable_t *app, const lc_arg_occ_t *occ, const lc_arg_
 		case 'n':
 			{
 				int *num = (int*)val->v_ptr;
-				*num = app->written;
+				*num = (int)app->written;
 			}
 			break;
 
