@@ -858,12 +858,19 @@ static ir_node *equivalent_node_gamma(ir_node *gamma)
 	ir_node *ir_true  = get_Gamma_true(gamma);
 	ir_node *ir_false = get_Gamma_false(gamma);
 
+	/* Gamma(cond, a, a) --> a */
+	/*if (ir_true == ir_false) {
+		return ir_true;
+	}*/
+
+	/* FIXME: find out why this breaks things. */
+
 	if (get_irn_mode(gamma) != mode_b) return gamma;
 
 	/* Gamma(cond, true, false) --> cond */
 	if (is_Const(ir_true)  && is_Const_one(ir_true) &&
 		is_Const(ir_false) && is_Const_null(ir_false)) {
-		return get_Gamma_cond(gamma);
+		return cond;
 	}
 
 	/* Gamma(Not(cond), a, b) --> Gamma(cond, b, a) */
@@ -933,6 +940,8 @@ void cfg_to_peg(ir_graph *irg)
 	/* We need to walk the CFG in reverse order and access dominators. */
 	assure_doms(irg);
 	assure_cf_loop(irg);
+
+	set_irg_phase_state(irg, phase_building);
 
 	/* Replace phi nodes by gamma trees selecting tuples. */
 	replace_phis(irg);
