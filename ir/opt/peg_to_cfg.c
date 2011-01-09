@@ -68,19 +68,20 @@ typedef struct ct_region ct_region;
  * is used at the leaves, to store nodes.
  */
 typedef struct ct_template {
-	int        depth;
-	ct_type    type;
-	ct_region *parent;
-	ir_node   *block;
+	int              depth;
+	ct_type          type;
+	ct_region       *parent;
+	plist_element_t *entry;
+	plist_t         *nodes;
 } ct_template;
 
-/* TODO: do we really need the node list? */
 struct ct_region {
 	ct_template *parent;
-	pmap        *templates;
-	plist_t     *collector;
+	pmap        *lookup;
+	plist_t     *templates;
 	int          index; /* = min_index */
 	int          max_index;
+	plist_t     *nodes;
 };
 
 typedef struct ct_branch {
@@ -119,27 +120,28 @@ typedef struct ct_info {
 static ct_region *ct_new_region(ct_info *cti, ct_template *parent)
 {
 	ct_region *ctr = OALLOC(&cti->obst, ct_region);
-	ctr->templates = pmap_create_ex(5);
+	ctr->lookup    = pmap_create_ex(5);
 	ctr->parent    = parent;
-	ctr->collector = plist_obstack_new(&cti->obst);
+	ctr->templates = plist_obstack_new(&cti->obst);
 	ctr->index     = -1;
 	ctr->max_index = -1;
+	ctr->nodes     = plist_obstack_new(&cti->obst);
 	return ctr;
 }
 
 /* Freeing the data again is a bit complex because of the maps. */
 static void ct_free_template(ct_template *tmpl);
 
-static void ct_free_region(ct_region *ctr)
+static void ct_free_region(ct_region *reg)
 {
-	pmap_entry *entry;
+	plist_element_t *it;
 
 	/* Free templates in the region first. */
-	foreach_pmap(ctr->templates, entry) {
-		ct_free_template(entry->value);
+	foreach_plist(reg->templates, it) {
+		ct_free_template(it->data);
 	}
 
-	pmap_destroy(ctr->templates);
+	pmap_destroy(reg->lookup);
 }
 
 static void ct_free_template(ct_template *tmpl)
@@ -171,8 +173,9 @@ static ct_template *ct_new_root(ct_info *cti)
 	ct_root *ctr = OALLOC(&cti->obst, ct_root);
 	ctr->base.type   = ctt_root;
 	ctr->base.parent = NULL;
-	ctr->base.block  = NULL;
 	ctr->base.depth  = 0;
+	ctr->base.entry  = NULL;
+	ctr->base.nodes  = plist_obstack_new(&cti->obst);
 	ctr->graph       = ct_new_region(cti, (ct_template*)ctr);
 	return (ct_template*)ctr;
 }
@@ -182,8 +185,9 @@ static ct_template *ct_new_branch(ct_info *cti, ir_node *cond, ct_region *par)
 	ct_branch *ctb = OALLOC(&cti->obst, ct_branch);
 	ctb->base.type   = ctt_branch;
 	ctb->base.parent = par;
-	ctb->base.block  = NULL;
 	ctb->base.depth  = par->parent ? par->parent->depth + 1 : 0;
+	ctb->base.entry  = NULL;
+	ctb->base.nodes  = plist_obstack_new(&cti->obst);
 	ctb->cond        = cond;
 	ctb->rg_true     = ct_new_region(cti, (ct_template*)ctb);
 	ctb->rg_false    = ct_new_region(cti, (ct_template*)ctb);
@@ -196,8 +200,9 @@ static ct_template *ct_new_loop(ct_info *cti, ir_node *cond, ct_region *par)
 	ct_loop *ctl = OALLOC(&cti->obst, ct_loop);
 	ctl->base.type   = ctt_loop;
 	ctl->base.parent = par;
-	ctl->base.block  = NULL;
 	ctl->base.depth  = par->parent ? par->parent->depth + 1 : 0;
+	ctl->base.entry  = NULL;
+	ctl->base.nodes  = plist_obstack_new(&cti->obst);
 	ctl->cond        = cond;
 	ctl->header      = ct_new_region(cti, (ct_template*)ctl);
 	ctl->repeat      = ct_new_region(cti, (ct_template*)ctl);
@@ -238,12 +243,14 @@ static int ct_template_below(ct_template *lhs, ct_region *rhs)
 static ct_loop *ct_insert_loop(ct_info *cti, ir_node *eta, ct_region *reg)
 {
 	ir_node *cond = get_EtaA_cond(eta);
-	ct_loop *ctl  = pmap_get(reg->templates, eta);
+	ct_loop *ctl  = pmap_get(reg->lookup, eta);
 	if (ctl) return ctl;
 
 	ctl = (ct_loop*)ct_new_loop(cti, cond, reg);
-	pmap_insert(reg->templates, eta, ctl);
+	pmap_insert(reg->lookup, eta, ctl);
+	plist_insert_back(reg->templates, ctl);
 	plist_insert_back(ctl->etas, eta);
+	ctl->base.entry = plist_last(reg->templates);
 
 	return ctl;
 }
@@ -251,12 +258,14 @@ static ct_loop *ct_insert_loop(ct_info *cti, ir_node *eta, ct_region *reg)
 static ct_branch *ct_insert_branch(ct_info *cti, ir_node *gamma, ct_region *reg)
 {
 	ir_node   *cond = get_Gamma_cond(gamma);
-	ct_branch *ctb  = pmap_get(reg->templates, gamma);
+	ct_branch *ctb  = pmap_get(reg->lookup, gamma);
 	if (ctb) return ctb;
 
 	ctb = (ct_branch*)ct_new_branch(cti, cond, reg);
-	pmap_insert(reg->templates, gamma, ctb);
+	pmap_insert(reg->lookup, gamma, ctb);
+	plist_insert_back(reg->templates, ctb);
 	plist_insert_back(ctb->gammas, gamma);
+	ctb->base.entry = plist_last(reg->templates);
 
 	return ctb;
 }
@@ -333,7 +342,7 @@ static int ct_index_regions(ct_region *reg, int counter)
 	if (reg->index >= 0) return counter;
 	reg->index = counter;
 
-	foreach_pmap(reg->templates, entry) {
+	foreach_pmap(reg->lookup, entry) {
 		ct_template *tmpl = entry->value;
 
 		/* Recurse into the regions. */
@@ -437,12 +446,12 @@ static void ct_duplicate_node(obstack *obst, ct_info *cti, ir_node *irn)
 		if (is_Gamma(irn) || is_EtaA(irn)) {
 			plist_element_t *it;
 
-			pmap_entry  *entry = pmap_find(regions[i]->templates, irn);
+			pmap_entry  *entry = pmap_find(regions[i]->lookup, irn);
 			ct_template *tmpl  = entry->value; /* Template of the copy! */
 			plist_t     *irns  = NULL;
 
 			assert(tmpl->parent == regions[i]);
-			pmap_insert(regions[i]->templates, copies[i], tmpl);
+			pmap_insert(regions[i]->lookup, copies[i], tmpl);
 
 			/* Also alter the reference to the node in the copies template. */
 			switch (tmpl->type) {
@@ -498,14 +507,14 @@ static void ct_duplicate_node(obstack *obst, ct_info *cti, ir_node *irn)
 				/* The user is above the copy region. It may be an eta or
 				 * gamma node. Make sure to use this copy only, when the copy
 				 * region is below (a child) of the corresponding template. */
-				pmap_entry *entry;
+				ct_template *tmpl;
 
 				/* Get the nodes template. */
 				assert(is_Gamma(ir_user) || is_EtaA(ir_user));
-				entry = pmap_find(rg_user->templates, ir_user);
-				assert(entry);
+				tmpl = pmap_get(rg_user->lookup, ir_user);
+				assert(tmpl);
 
-				if (ct_template_below(entry->value, rg_copy)) {
+				if (ct_template_below(tmpl, rg_copy)) {
 					use_copy = 1;
 				}
 			} else if (rg_user->parent == rg_copy->parent) {
@@ -592,26 +601,20 @@ static void ct_free(ct_info *cti)
 	xfree(cti);
 }
 
-/* Ensure that the template is marked in the parent regions collector. It
- * ensures, that all nodes currently collected in the parent region are
- * evaluated before the template is. */
-static void ct_ensure_marker(ct_template *tmpl)
+static void ct_template_move_back(ct_template *tmpl)
 {
 	if (!tmpl->parent) return;
-
-	if ((plist_count(tmpl->parent->collector) == 0) ||
-	    (plist_last(tmpl->parent->collector)->data != tmpl)) {
-
-		plist_insert_back(tmpl->parent->collector, NULL);
-		plist_insert_back(tmpl->parent->collector, tmpl);
-	}
+	plist_erase(tmpl->parent->templates, tmpl->entry);
+	plist_insert_back(tmpl->parent->templates, tmpl);
+	tmpl->entry = plist_last(tmpl->parent->templates);
 }
 
-static void ct_arrange_graph(ct_info *cti, ir_node *irn)
+static void ct_arrange_graph(ct_info *cti, ir_node *irn, ct_template *last)
 {
 	int          i;
 	ct_node     *ctn;
 	ct_region   *current = NULL;
+	ct_template *anchor  = last;
 
 	if (irn_visited(irn)) return;
 	mark_irn_visited(irn);
@@ -621,77 +624,114 @@ static void ct_arrange_graph(ct_info *cti, ir_node *irn)
 	/* Get the nodes region and template (duplication required!). */
 	assert(plist_count(ctn->regions) <= 1);
 
-	/* Some nodes may not be in any region (start and end block). */
+	/* Some nodes may not be in any region (start and end block). Note that
+	 * these nodes need not to be placed. They already have their position. */
 	if (plist_count(ctn->regions) == 1) {
 		current = plist_first(ctn->regions)->data;
 		assert(current);
 	}
 
+	/* If gamma and eta nodes need to have a region. */
+	assert(current || (!is_Gamma(irn) && !is_EtaA(irn)));
+
+	/* Arrange nodes if needed. */
+	if (current) {
+		/* Find the last template we encountered in the current region. */
+		anchor = current->parent;
+
+		/* Is the template somewhere below the current region? */
+		if (last->parent && ct_region_below(current, last->parent)) {
+			anchor = last;
+
+			/* Unwind to determine the child template we came from. */
+			while (anchor->parent != current) {
+				assert(anchor);
+				anchor = anchor->parent->parent;
+			}
+		}
+	}
+
 	if (is_Gamma(irn)) {
-		ct_template *tmpl;
-		tmpl = pmap_find(current->templates, irn)->value;
+		ct_template *tmpl = pmap_get(current->lookup, irn);
+		assert(tmpl && "Gamma without template.");
 
-		/* Set a marker after the condition, to put the condition before the
-		 * branch template, instead of putting it behind. */
-		ct_arrange_graph(cti, get_Gamma_cond(irn));
-		ct_ensure_marker(tmpl);
-
-		ct_arrange_graph(cti, get_Gamma_true(irn));
-		ct_arrange_graph(cti, get_Gamma_false(irn));
+		/* Place the cond node before the template. */
+		ct_arrange_graph(cti, get_Gamma_cond(irn),  tmpl);
+		ct_arrange_graph(cti, get_Gamma_true(irn),  anchor);
+		ct_arrange_graph(cti, get_Gamma_false(irn), anchor);
 	} else if (is_EtaA(irn)) {
-		ct_template *tmpl;
-		tmpl = pmap_find(current->templates, irn)->value;
+		ct_template *tmpl = pmap_get(current->lookup, irn);
+		assert(tmpl && "Eta without template.");
 
-		/* Set a marker after the condition, to put the nodes before the loop
-		 * template, instead of putting them behind. */
-		ct_arrange_graph(cti, get_EtaA_force(irn));
-		ct_ensure_marker(tmpl);
-
-		/* Process remaining nodes. */
-		ct_arrange_graph(cti, get_EtaA_cond(irn));
-		ct_arrange_graph(cti, get_EtaA_header(irn));
-		ct_arrange_graph(cti, get_EtaA_repeat(irn));
-		ct_arrange_graph(cti, get_EtaA_result(irn));
+		/* Place the force nodes before the template. */
+		ct_arrange_graph(cti, get_EtaA_force(irn),  tmpl);
+		ct_arrange_graph(cti, get_EtaA_header(irn), anchor);
+		ct_arrange_graph(cti, get_EtaA_repeat(irn), anchor);
+		ct_arrange_graph(cti, get_EtaA_result(irn), anchor);
+		ct_arrange_graph(cti, get_EtaA_cond(irn),   anchor);
 	} else {
 		/* Recurse to all deps. */
 		for (i = 0; i < get_irn_arity(irn); i++) {
 			ir_node *dep = get_irn_n(irn, i);
-			ct_arrange_graph(cti, dep);
+			ct_arrange_graph(cti, dep, anchor);
 		}
 	}
 
+	/* Sort templates in post-order. */
 	if (current) {
-		/* Collect the node in the current region. */
-		plist_insert_back(current->collector, irn);
+		/* The anchor is a child template or current->parent if we came from
+		 * above. We pass this as last to the next node. If it is above us,
+		 * current->parent will become it's anchor. If it is on the same level,
+		 * it will inherit the anchor (deeper anchors are kept, current->parent
+		 * is obtained the same way). If it is deeper, it will use its own
+		 * current->parent (a child of us) as new anchor and pass in on. */
 
-		/* Set the template marker to ensure execution of all collected nodes
-		 * in the parent region before this template. Post-order ensures that
-		 * all the deps are placed there before the last marker is set. */
-		ct_ensure_marker(current->parent);
+		if (anchor == current->parent) {
+			/* Add to the end of the current region. */
+			plist_insert_back(current->nodes, irn);
+		} else {
+			/* Add in front of the anchor. */
+			plist_insert_back(anchor->nodes, irn);
+		}
+
+		ct_template_move_back(current->parent);
 	}
 }
 
 static ir_node *ct_build_template(ir_graph *irg, ct_template *tmpl,
                                   ir_node *start);
 
+static void ct_move_to_block(plist_t *nodes, ir_node *block)
+{
+	plist_element_t *it;
+
+	foreach_plist(nodes, it) {
+		if (is_Proj(it->data)) {
+			/* Move projs to their pred (which should be placed by now). */
+			set_nodes_block(it->data,
+				get_nodes_block(get_Proj_pred(it->data))
+			);
+		} else {
+			set_nodes_block(it->data, block);
+		}
+	}
+}
+
 static ir_node *ct_build_region(ir_graph *irg, ct_region *reg, ir_node *start)
 {
 	plist_element_t *it;
 	ir_node *block = start;
 
-	foreach_plist(reg->collector, it) {
-		/* Move nodes to the current block. */
-		if (it->data) {
-			set_nodes_block(it->data, block);
-		} else {
-			/* For templates, embed a new CFG. */
-			ct_template *tmpl = it->next->data;
-			it = it->next;
+	foreach_plist(reg->templates, it) {
+		ct_template *tmpl = it->data;
 
-			/* The template build function will return a new block to use. */
-			block = ct_build_template(irg, tmpl, block);
-		}
+		/* Move nodes to the current block, build the template. */
+		ct_move_to_block(tmpl->nodes, block);
+		block = ct_build_template(irg, tmpl, block);
 	}
+
+	/* Add the regions nodes last. */
+	ct_move_to_block(reg->nodes, block);
 
 	return block;
 }
@@ -727,6 +767,7 @@ static ir_node *ct_build_template(ir_graph *irg, ct_template *tmpl,
 
 		/* Replace associated gamma nodes by phis. */
 		foreach_plist(ctb->gammas, it) {
+			dump_irnode_to_file(stdout, it->data);
 			ir_node *gamma  = it->data;
 			ir_node *ins[2] = { get_Gamma_true(gamma), get_Gamma_false(gamma) };
 			ir_node *phi    = new_r_Phi(bl_join, 2, ins, get_irn_mode(gamma));
@@ -770,7 +811,6 @@ static ir_node *ct_build_template(ir_graph *irg, ct_template *tmpl,
 		foreach_plist(ctl->etas, it) {
 			int      i;
 			ir_node *eta    = it->data;
-			ir_mode *mode   = get_irn_mode(eta);
 			ir_node *header = get_EtaA_header(eta);
 			ir_node *repeat = get_EtaA_repeat(eta);
 
@@ -781,6 +821,7 @@ static ir_node *ct_build_template(ir_graph *irg, ct_template *tmpl,
 			/* The etas header tuple contains all the thetas. */
 			for (i = 0; i < get_irn_arity(header); i++) {
 				ir_node *theta  = get_irn_n(header, i);
+				ir_mode *mode   = get_irn_mode(theta);
 				ir_node *ins[2] = {
 					get_ThetaA_init(theta), get_irn_n(repeat, i)
 				};
@@ -815,10 +856,8 @@ static void ct_dump_template_name(ct_template *tmpl, FILE *f)
 	int first = 1;
 
 	switch(tmpl->type) {
-	case ctt_root: {
-		fprintf(f, "root");
-		break;
-	}
+	case ctt_root: fprintf(f, "root");  break;
+
 	case ctt_branch: {
 		ct_branch *ctb = (ct_branch*)tmpl;
 
@@ -873,7 +912,6 @@ static void ct_dump_region(ct_info *cti, ct_region *reg, const char *name,
 	pset_new_iterator_t it;
 
 	pset_new_t   set;
-	pmap_entry  *entry;
 	ct_template *tmpl;
 	ir_node     *irn;
 	int          first = 1;
@@ -903,46 +941,13 @@ static void ct_dump_region(ct_info *cti, ct_region *reg, const char *name,
 
 	pset_new_destroy(&set);
 
-	/* Output the ordered nodes (if any). */
-	if (plist_count(reg->collector) > 0) {
-		plist_element_t *it2;
-
-		first = 1;
-		ct_dump_indent(f, indent + 1); fprintf(f, "order {");
-		foreach_plist(reg->collector, it2) {
-			if (!first) fprintf(f, ", ");
-
-			if (it2->data) {
-				fprintf(f, "%li", get_irn_node_nr(it2->data));
-			} else {
-				it2 = it2->next;
-				ct_dump_template_name(it2->data, f);
-			}
-
-			first = 0;
-		}
-		fprintf(f, "}\n");
-	}
-
-	/* Templates may occur multiple times. */
-	if (pmap_count(reg->templates) > 0) {
-		pset_new_iterator_t it;
-
-		ct_template *tmpl;
-		pset_new_t   set;
-
-		pset_new_init(&set);
+	if (plist_count(reg->templates) > 0) {
+		plist_element_t *it;
 		fprintf(f, "\n");
 
-		foreach_pmap(reg->templates, entry) {
-			pset_new_insert(&set, entry->value);
+		foreach_plist(reg->templates, it) {
+			ct_dump_template(cti, it->data, f, indent + 1);
 		}
-
-		foreach_pset_new(&set, ct_template*, tmpl, it) {
-			ct_dump_template(cti, tmpl, f, indent + 1);
-		}
-
-		pset_new_destroy(&set);
 	}
 
 	ct_dump_indent(f, indent); fprintf(f, "}\n");
@@ -1012,9 +1017,15 @@ void peg_to_cfg(ir_graph *irg)
 	pl_info *pli;
 	gc_info *gci;
 	ct_info *cti;
+	ir_node *ins[0];
 	int edge_state;
 
+	optimization_state_t opt;
+	save_optimization_state(&opt);
 	all_optimizations_off();
+
+	/* Remove all keepalives. We shouldn't need them. */
+	set_End_keepalives(get_irg_end(irg), 0, ins);
 
 	pli = pl_init(irg);
 
@@ -1079,7 +1090,7 @@ void peg_to_cfg(ir_graph *irg)
 #endif
 
 	inc_irg_visited(irg);
-	ct_arrange_graph(cti, cti->ret);
+	ct_arrange_graph(cti, cti->ret, cti->root);
 
 #ifdef LOG_CFG_REGIONS
 	printf("---------------------------\n");
@@ -1094,14 +1105,16 @@ void peg_to_cfg(ir_graph *irg)
 	block = ct_build_template(irg, cti->root, block);
 	set_irn_in(get_irg_end_block(irg), 1, &cti->ret);
 
+	dump_ir_graph(irg, "newcfg");
+
 	ct_free(cti);
 	gc_free(gci);
 	pd_free(pdt);
+
+	restore_optimization_state(&opt);
 
 	set_irg_outs_inconsistent(irg);
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
-
-	dump_ir_graph(irg, "newcfg");
 }

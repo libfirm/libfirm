@@ -242,7 +242,7 @@ static gc_cond *gc_new_union(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
 	}
 
 	/* Try to optimize the full union away. */
-	switch (lhs->type) {
+	switch (lhs->type) { /* FIXME: simplification for repeat. */
 	case gct_demand: return lhs; /* A u c = A */
 	case gct_ignore: return rhs; /* 0 u c = c */
 	default: break;
@@ -572,6 +572,11 @@ static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
 		ir_node *lhs_src  = lhs->irn;
 		ir_node *lhs_dst  = get_irn_n(lhs_src, i);
 		gc_cond *lhs_cond = gc_new_edge_cond(gci, lhs_src, lhs_dst);
+		int      src_dpt  = pl_get_depth(gci->pli, lhs_src);
+		int      dst_dpt  = pl_get_depth(gci->pli, lhs_dst);
+
+		/* Only consider edges to nodes with equal or greater depth. */
+		if (src_dpt > dst_dpt) continue;
 
 #ifdef LOG_DIRS_COMBINE
 		printf("Normal conds via (%li, %li)\n   %3li -> %3li: ",

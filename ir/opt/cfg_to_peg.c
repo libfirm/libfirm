@@ -859,11 +859,9 @@ static ir_node *equivalent_node_gamma(ir_node *gamma)
 	ir_node *ir_false = get_Gamma_false(gamma);
 
 	/* Gamma(cond, a, a) --> a */
-	/*if (ir_true == ir_false) {
+	if (ir_true == ir_false) {
 		return ir_true;
-	}*/
-
-	/* FIXME: find out why this breaks things. */
+	}
 
 	if (get_irn_mode(gamma) != mode_b) return gamma;
 
@@ -906,13 +904,6 @@ static ir_node *transform_node_gamma(ir_node *gamma)
 /******************************************************************************
  * Public interface.                                                          *
  ******************************************************************************/
-
-/**
- * TODO:
- * - Multiple loop entries
- * - Use an obstack for allocations
- * - What about keepalive edges?
- */
 
 /**
  * Converts the given firm graph to the PEG representation.

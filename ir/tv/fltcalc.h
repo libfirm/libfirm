@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include "firm_types.h"
+#include <stddef.h>
 
 enum {
 	FC_DEC,
