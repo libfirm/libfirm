@@ -172,115 +172,14 @@ ir_node *new_r_ASM(ir_node *block,
 	return new_rd_ASM(NULL, block, arity, in, inputs, n_outs, outputs, n_clobber, clobber, text);
 }
 
-/* ***********************************************************************/
-/* Methods necessary for automatic Phi node creation                     */
-/*
-  ir_node *phi_merge            (ir_node *block, int pos, ir_mode *mode, ir_node **nin, int ins)
-  ir_node *get_r_value_internal (ir_node *block, int pos, ir_mode *mode);
-  ir_node *new_rd_Phi0          (ir_graph *irg, ir_node *block, ir_mode *mode)
-  ir_node *new_rd_Phi_in        (ir_graph *irg, ir_node *block, ir_mode *mode, ir_node **in, int ins)
-
-  Call Graph:   ( A ---> B == A "calls" B)
-
-       get_value         mature_immBlock
-          |                   |
-          |                   |
-          |                   |
-          |          ---> phi_merge
-          |         /       /   \
-          |        /       /     \
-         \|/      /      |/_      \
-       get_r_value_internal        |
-                |                  |
-                |                  |
-               \|/                \|/
-           new_rd_Phi0          new_rd_Phi_in
-
-* *************************************************************************** */
-
 /** Creates a Phi node with 0 predecessors. */
-static inline ir_node *new_rd_Phi0(ir_node *block, ir_mode *mode)
+static inline ir_node *new_rd_Phi0(dbg_info *dbgi, ir_node *block,
+                                   ir_mode *mode, int pos)
 {
 	ir_graph *irg = get_irn_irg(block);
-	ir_node  *res = new_ir_node(NULL, irg, block, op_Phi, mode, 0, NULL);
+	ir_node  *res = new_ir_node(dbgi, irg, block, op_Phi, mode, 0, NULL);
+	res->attr.phi.u.pos = pos;
 	irn_verify_irg(res, irg);
-	return res;
-}
-
-/**
- * Internal constructor of a Phi node by a phi_merge operation.
- *
- * @param block  the block in which the Phi will be constructed
- * @param mode   the mod eof the Phi node
- * @param in     the input array of the phi node
- * @param n_in   number of elements in the input array
- * @param phi0   in non-NULL: the Phi0 node in the same block that represents
- *               the value for which the new Phi is constructed
- */
-static ir_node *new_rd_Phi_in(ir_node *block, ir_mode *mode,
-                              int n_in, ir_node **in, ir_node *phi0)
-{
-	int i;
-	ir_node *res, *known;
-	ir_graph *irg = get_irn_irg(block);
-
-	/* Allocate a new node on the obstack.  The allocation copies the in
-	   array. */
-	res = new_ir_node(NULL, irg, block, op_Phi, mode, n_in, in);
-	res->attr.phi.u.backedge = new_backedge_arr(irg->obst, n_in);
-
-	/* This loop checks whether the Phi has more than one predecessor.
-	   If so, it is a real Phi node and we break the loop.  Else the
-	   Phi node merges the same definition on several paths and therefore
-	   is not needed.
-	   Note: We MUST consider Bad nodes, else we might get data flow cycles in dead loops! */
-	known = res;
-	for (i = n_in - 1; i >= 0; --i) {
-		assert(in[i]);
-
-		in[i] = skip_Id(in[i]);  /* increases the number of freed Phis. */
-
-		/* Optimize self referencing Phis:  We can't detect them yet properly, as
-		they still refer to the Phi0 they will replace.  So replace right now. */
-		if (phi0 && in[i] == phi0)
-			in[i] = res;
-
-		if (in[i] == res || in[i] == known)
-			continue;
-
-		if (known == res)
-			known = in[i];
-		else
-			break;
-	}
-
-	/* i < 0: there is at most one predecessor, we don't need a phi node. */
-	if (i < 0) {
-		if (res != known) {
-			edges_node_deleted(res, irg);
-			obstack_free(irg->obst, res);
-			if (is_Phi(known)) {
-				/* If pred is a phi node we want to optimize it: If loops are matured in a bad
-				   order, an enclosing Phi know may get superfluous. */
-				res = optimize_in_place_2(known);
-				if (res != known)
-					exchange(known, res);
-			}
-			else
-				res = known;
-		} else {
-			/* A undefined value, e.g., in unreachable code. */
-			res = new_r_Bad(irg);
-		}
-	} else {
-		res = optimize_node(res);  /* This is necessary to add the node to the hash table for cse. */
-		irn_verify_irg(res, irg);
-		/* Memory Phis in endless loops must be kept alive.
-		   As we can't distinguish these easily we keep all of them alive. */
-		if (is_Phi(res) && mode == mode_M)
-			add_End_keepalive(get_irg_end(irg), res);
-	}
-
 	return res;
 }
 
@@ -292,99 +191,56 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode);
  * node might optimize it away and return a real value.
  * This function must be called with an in-array of proper size.
  */
-static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode,
-                          int n_ins, ir_node **ins)
+static ir_node *set_phi_arguments(ir_node *phi, int pos)
 {
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *prevBlock, *res, *phi0, *phi0_all;
-	int i;
-
-	/* If this block has no value at pos create a Phi0 and remember it
-	   in graph_arr to break recursions.
-	   Else we may not set graph_arr as there a later value is remembered. */
-	phi0 = NULL;
-	if (block->attr.block.graph_arr[pos] == NULL) {
-
-		if (block == get_irg_start_block(irg)) {
-			/* Collapsing to Bad tarvals is no good idea.
-			   So we call a user-supplied routine here that deals with this
-			   case as appropriate for the given language. Sorrily the only
-			   help we can give here is the position.
-
-			   Even if all variables are defined before use, it can happen that
-			   we get to the start block, if a Cond has been replaced by a tuple
-			   (bad, jmp).  In this case we call the function needlessly,
-			   eventually generating an non existent error.
-			   However, this SHOULD NOT HAPPEN, as bad control flow nodes are
-			   intercepted before recurring.
-			 */
-			if (default_initialize_local_variable != NULL) {
-				ir_node *rem = get_r_cur_block(irg);
-
-				set_r_cur_block(irg, block);
-				block->attr.block.graph_arr[pos] = default_initialize_local_variable(irg, mode, pos - 1);
-				set_r_cur_block(irg, rem);
-			} else {
-				block->attr.block.graph_arr[pos] = new_r_Unknown(irg, mode);
-			}
-			return block->attr.block.graph_arr[pos];
-		} else {
-			phi0 = new_rd_Phi0(block, mode);
-			block->attr.block.graph_arr[pos] = phi0;
-		}
-	}
+	ir_node  *block        = get_nodes_block(phi);
+	ir_graph *irg          = get_irn_irg(block);
+	int       arity        = get_irn_arity(block);
+	ir_node **in           = ALLOCAN(ir_node*, arity);
+	ir_mode  *mode         = get_irn_mode(phi);
+	ir_node  *phi_value    = NULL;
+	bool      no_phi_value = false;
+	int       i;
 
 	/* This loop goes to all predecessor blocks of the block the Phi node
 	   is in and there finds the operands of the Phi node by calling
 	   get_r_value_internal.  */
-	for (i = 1; i <= n_ins; ++i) {
-		ir_node *cf_pred = block->in[i];
-		ir_node *prevCfOp = skip_Proj(cf_pred);
-		assert(prevCfOp);
-		if (is_Bad(prevCfOp)) {
-			/* In case a Cond has been optimized we would get right to the start block
-			with an invalid definition. */
-			ins[i-1] = new_r_Bad(irg);
-			continue;
-		}
-		prevBlock = prevCfOp->in[0]; /* go past control flow op to prev block */
-		assert(prevBlock);
-		if (!is_Bad(prevBlock)) {
-			ins[i-1] = get_r_value_internal(prevBlock, pos, mode);
+	for (i = 0; i < arity; ++i) {
+		ir_node *cfgpred = get_Block_cfgpred_block(block, i);
+		ir_node *value;
+		if (is_Bad(cfgpred)) {
+			value = new_r_Bad(irg);
 		} else {
-			ins[i-1] = new_r_Bad(irg);
+			value = get_r_value_internal(cfgpred, pos, mode);
 		}
+		if (!no_phi_value && value != phi) {
+			if (phi_value == NULL) {
+				phi_value = value;
+			} else if (value != phi_value) {
+				no_phi_value = true;
+				phi_value = NULL;
+			}
+		}
+		in[i] = value;
 	}
 
-	/* We want to pass the Phi0 node to the constructor: this finds additional
-	   optimization possibilities.
-	   The Phi0 node either is allocated in this function, or it comes from
-	   a former call to get_r_value_internal(). In this case we may not yet
-	   exchange phi0, as this is done in mature_immBlock(). */
-	if (phi0 == NULL) {
-		phi0_all = block->attr.block.graph_arr[pos];
-		if (! is_Phi0(phi0_all)            ||
-		    get_irn_arity(phi0_all) != 0   ||
-		    get_nodes_block(phi0_all) != block)
-			phi0_all = NULL;
-	} else {
-		phi0_all = phi0;
+	if (phi_value != NULL && !no_phi_value) {
+		exchange(phi, phi_value);
+		return phi_value;
 	}
 
-	/* After collecting all predecessors into the array ins a new Phi node
-	   with these predecessors is created.  This constructor contains an
-	   optimization: If all predecessors of the Phi node are identical it
-	   returns the only operand instead of a new Phi node.  */
-	res = new_rd_Phi_in(block, mode, n_ins, ins, phi0_all);
+	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
+	set_irn_in(phi, arity, in);
+	set_irn_op(phi, op_Phi);
 
-	/* In case we allocated a Phi0 node at the beginning of this procedure,
-	   we need to exchange this Phi0 with the real Phi. */
-	if (phi0 != NULL) {
-		exchange(phi0, res);
-		block->attr.block.graph_arr[pos] = res;
-	}
+	phi = optimize_in_place_2(phi);
+	irn_verify_irg(phi, irg);
 
-	return res;
+	/* Memory Phis in endless loops must be kept alive.
+	   As we can't distinguish these easily we keep all of them alive. */
+	if (is_Phi(phi) && mode == mode_M)
+		add_End_keepalive(get_irg_end(irg), phi);
+	return phi;
 }
 
 /**
@@ -399,82 +255,48 @@ static ir_node *phi_merge(ir_node *block, int pos, ir_mode *mode,
  */
 static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 {
-	ir_node *res;
-	/* There are 4 cases to treat.
-
-	   1. The block is not mature and we visit it the first time.  We can not
-	      create a proper Phi node, therefore a Phi0, i.e., a Phi without
-	      predecessors is returned.  This node is added to the linked list (block
-	      attribute "phis") of the containing block to be completed when this block is
-	      matured. (Completion will add a new Phi and turn the Phi0 into an Id
-	      node.)
-
-	   2. The value is already known in this block, graph_arr[pos] is set and we
-	      visit the block the first time.  We can return the value without
-	      creating any new nodes.
-
-	   3. The block is mature and we visit it the first time.  A Phi node needs
-	      to be created (phi_merge).  If the Phi is not needed, as all it's
-	      operands are the same value reaching the block through different
-	      paths, it's optimized away and the value itself is returned.
-
-	   4. The block is mature, and we visit it the second time.  Now two
-	      subcases are possible:
-	      * The value was computed completely the last time we were here. This
-	        is the case if there is no loop.  We can return the proper value.
-	      * The recursion that visited this node and set the flag did not
-	        return yet.  We are computing a value in a loop and need to
-	        break the recursion.  This case only happens if we visited
-	    the same block with phi_merge before, which inserted a Phi0.
-	    So we return the Phi0.
-	*/
-
-	/* case 4 -- already visited. */
-	if (irn_visited(block)) {
-		/* As phi_merge allocates a Phi0 this value is always defined. Here
-		is the critical difference of the two algorithms. */
-		assert(block->attr.block.graph_arr[pos]);
-		return block->attr.block.graph_arr[pos];
-	}
-
-	/* visited the first time */
-	mark_irn_visited(block);
-
-	/* Get the local valid value */
-	res = block->attr.block.graph_arr[pos];
-
-	/* case 2 -- If the value is actually computed, return it. */
+	ir_node *res = block->attr.block.graph_arr[pos];
 	if (res != NULL)
 		return res;
 
-	if (block->attr.block.is_matured) { /* case 3 */
-
-		/* The Phi has the same amount of ins as the corresponding block. */
-		int n_in = get_irn_arity(block);
-		ir_node **in;
-		NEW_ARR_A(ir_node *, in, n_in);
-
-		/* Phi merge collects the predecessors and then creates a node. */
-		res = phi_merge(block, pos, mode, n_in, in);
-	} else {  /* case 1 */
-		/* The block is not mature, we don't know how many in's are needed.  A Phi
-		   with zero predecessors is created.  Such a Phi node is called Phi0
-		   node.  The Phi0 is then added to the list of Phi0 nodes in this block
-		   to be matured by mature_immBlock later.
-		   The Phi0 has to remember the pos of it's internal value.  If the real
-		   Phi is computed, pos is used to update the array with the local
-		   values. */
-		res = new_rd_Phi0(block, mode);
-		res->attr.phi.u.pos    = pos;
+	/* in a matured block we can immediated determine the phi arguments */
+	if (block->attr.block.is_matured) {
+		int arity = get_irn_arity(block);
+		/* no predecessors: use unknown value */
+		if (arity == 0 && block == get_irg_start_block(get_irn_irg(block))) {
+			ir_graph *irg = get_irn_irg(block);
+			if (default_initialize_local_variable != NULL) {
+				ir_node *rem = get_r_cur_block(irg);
+				set_r_cur_block(irg, block);
+				res = default_initialize_local_variable(irg, mode, pos - 1);
+				set_r_cur_block(irg, rem);
+			} else {
+				res = new_r_Unknown(irg, mode);
+			}
+		/* one predecessor just use its value */
+		} else if (arity == 1) {
+			ir_node *cfgpred = get_Block_cfgpred_block(block, 0);
+			if (is_Bad(cfgpred)) {
+				res = cfgpred;
+			} else {
+				res = get_r_value_internal(cfgpred, pos, mode);
+			}
+		/* multiple predecessors construct Phi */
+		} else {
+			res = new_rd_Phi0(NULL, block, mode, pos);
+			/* enter phi0 into our variable value table to break cycles
+			 * arising from set_phi_arguments */
+			block->attr.block.graph_arr[pos] = res;
+			res = set_phi_arguments(res, pos);
+		}
+	} else {
+		/* in case of immature block we have to keep a Phi0 */
+		res = new_rd_Phi0(NULL, block, mode, pos);
+		/* enqueue phi so we can set arguments once the block matures */
 		res->attr.phi.next     = block->attr.block.phis;
 		block->attr.block.phis = res;
 	}
-
-	assert(is_ir_node(res) && "phi_merge() failed to construct a definition");
-
-	/* The local valid value is available now. */
 	block->attr.block.graph_arr[pos] = res;
-
 	return res;
 }
 
@@ -486,29 +308,31 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
  */
 void mature_immBlock(ir_node *block)
 {
-	int ins;
-	ir_node *n, **nin;
-	ir_node *next;
+	int       n_preds;
+	ir_node  *next;
+	ir_node  *phi;
 	ir_graph *irg;
 
 	assert(is_Block(block));
 	if (get_Block_matured(block))
 		return;
 
-	irg = get_irn_irg(block);
-	ins = ARR_LEN(block->in) - 1;
+	irg     = get_irn_irg(block);
+	n_preds = ARR_LEN(block->in) - 1;
 	/* Fix block parameters */
-	block->attr.block.backedge = new_backedge_arr(irg->obst, ins);
-
-	/* An array for building the Phi nodes. */
-	NEW_ARR_A(ir_node *, nin, ins);
+	block->attr.block.backedge = new_backedge_arr(irg->obst, n_preds);
 
 	/* Traverse a chain of Phi nodes attached to this block and mature
 	these, too. */
-	for (n = block->attr.block.phis; n; n = next) {
-		inc_irg_visited(irg);
-		next = n->attr.phi.next;
-		exchange(n, phi_merge(block, n->attr.phi.u.pos, n->mode, ins, nin));
+	for (phi = block->attr.block.phis; phi != NULL; phi = next) {
+		ir_node *new_value;
+		int      pos = phi->attr.phi.u.pos;
+
+		next = phi->attr.phi.next;
+		new_value = set_phi_arguments(phi, pos);
+		if (block->attr.block.graph_arr[pos] == phi) {
+			block->attr.block.graph_arr[pos] = new_value;
+		}
 	}
 
 	block->attr.block.is_matured = 1;
@@ -718,8 +542,6 @@ ir_node *get_cur_block(void)
 ir_node *get_r_value(ir_graph *irg, int pos, ir_mode *mode)
 {
 	assert(get_irg_phase_state(irg) == phase_building);
-	inc_irg_visited(irg);
-
 	assert(pos >= 0);
 
 	return get_r_value_internal(irg->current_block, pos + 1, mode);
@@ -818,7 +640,6 @@ int find_value(ir_node *value)
 ir_node *get_r_store(ir_graph *irg)
 {
 	assert(get_irg_phase_state(irg) == phase_building);
-	inc_irg_visited(irg);
 	return get_r_value_internal(irg->current_block, 0, mode_M);
 }
 
