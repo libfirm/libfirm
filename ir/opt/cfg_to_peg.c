@@ -910,6 +910,9 @@ static ir_node *transform_node_gamma(ir_node *gamma)
  */
 void cfg_to_peg(ir_graph *irg)
 {
+	//cc_test();
+	//return;
+
 	/* Use automatic out edges. Makes things easier later. */
 	int had_edges = edges_assure(irg);
 

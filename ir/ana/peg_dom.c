@@ -236,42 +236,30 @@ ir_node *pd_get_parent(pd_tree *pdt, ir_node *irn)
 {
 	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
 	assert(pdn && "No dominance information for the given node.");
-	return pdn->parent->irn;
+	return pdn->parent ? pdn->parent->irn : NULL;
 }
 
-ir_node *pd_get_child(pd_tree *pdt, ir_node *irn, pd_iter *it)
-{
-	plist_element_t *plist_it;
-	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
-	assert(pdn && "No dominance information for the given node.");
-
-	/* Get the first child element. */
-	plist_it = plist_first(pdn->children);
-	if (!plist_it) {
-		if (it) *it = NULL;
-		return NULL;
-	}
-
-	if (it) *it = plist_it->next;
-	return ((pd_node*)plist_it->data)->irn;
-}
-
-int pd_get_child_count(pd_tree *pdt, ir_node *irn)
+int pd_get_children_count(pd_tree *pdt, ir_node *irn)
 {
 	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
 	assert(pdn && "No dominance information for the given node.");
 	return plist_count(pdn->children);
 }
 
-ir_node *pd_iter_next(pd_iter *it)
+void pd_children_iter_init(pd_tree *pdt, ir_node *irn, pd_children_iter *it)
 {
-	pd_node *cur;
-	plist_element_t *plist_it = *it;
-	if (!plist_it) return NULL;
+	pd_node *pdn = phase_get_irn_data(pdt->phase, irn);
+	assert(pdn && "No dominance information for the given node.");
+	*it = plist_first(pdn->children);
+}
 
-	cur = plist_it->data;
-	*it = plist_it->next;
-	return cur->irn;
+ir_node *pd_children_iter_next(pd_children_iter *it)
+{
+	if (!*it) return NULL;
+
+	pd_node *pdn = (*it)->data;
+	*it = (*it)->next;
+	return pdn->irn;
 }
 
 ir_node *pd_get_root(pd_tree *pdt)
@@ -290,10 +278,9 @@ static void pd_dump_node(pd_node *pdn, FILE *f, int indent)
 	int i;
 
 	for (i = 0; i < indent; i++) fprintf(f, "  ");
-	fprintf(f, "%s %li (%i - %i)\n",
+	fprintf(f, "%s %li\n",
 		get_op_name(get_irn_op(pdn->irn)),
-		get_irn_node_nr(pdn->irn),
-		pdn->index, pdn->max_index
+		get_irn_node_nr(pdn->irn)
 	);
 
 	foreach_plist(pdn->children, it) {

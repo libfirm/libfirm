@@ -91,88 +91,6 @@ void pl_set_depth(pl_info *pli, ir_node *irn, int depth)
 	pln->depth = depth;
 }
 
-/* Create an iterator for the irns of some linked list of pl_nodes. */
-static ir_node *pl_iter_first(plist_t *list, pl_iter *it)
-{
-	plist_element_t *plist_it;
-
-	/* Get the first link element. */
-	plist_it = plist_first(list);
-	if (!plist_it) {
-		if (it) *it = NULL;
-		return NULL;
-	}
-
-	if (it) *it = plist_it->next;
-	return ((pl_node*)plist_it->data)->irn;
-}
-
-ir_node *pl_iter_next(pl_iter *it)
-{
-	pl_node *cur;
-	plist_element_t *plist_it = *it;
-	if (!plist_it) return NULL;
-
-	cur = plist_it->data;
-	*it = plist_it->next;
-	return cur->irn;
-}
-
-ir_node *pl_get_irg_eta(pl_info *pli, pl_iter *it)
-{
-	return pl_iter_first(pli->etas, it);
-}
-ir_node *pl_get_irg_theta(pl_info *pli, pl_iter *it)
-{
-	return pl_iter_first(pli->thetas, it);
-}
-
-ir_node *pl_get_eta(pl_info *pli, ir_node *irn, pl_iter *it)
-{
-	pl_node *pln = phase_get_irn_data(pli->phase, irn);
-	assert(pln && "No loop information for the given node.");
-	return pl_iter_first(pln->etas, it);
-}
-
-int pl_get_eta_count(pl_info *pli, ir_node *irn)
-{
-	pl_node *pln = phase_get_irn_data(pli->phase, irn);
-	assert(pln && "No loop information for the given node.");
-	return plist_count(pln->etas);
-}
-
-ir_node *pl_get_theta(pl_info *pli, ir_node *irn, pl_iter *it)
-{
-	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
-	assert(pln && "No loop information for the given node.");
-	assert((pln->base.type == plt_eta) && "Not an eta node.");
-	return pl_iter_first(pln->thetas, it);
-}
-
-int pl_get_theta_count(pl_info *pli, ir_node *irn)
-{
-	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
-	assert(pln && "No loop information for the given node.");
-	assert((pln->base.type == plt_eta) && "Not an eta node.");
-	return plist_count(pln->thetas);
-}
-
-ir_node *pl_get_border(pl_info *pli, ir_node *irn, pl_iter *it)
-{
-	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
-	assert(pln && "No loop information for the given node.");
-	assert((pln->base.type == plt_eta) && "Not an eta node.");
-	return pl_iter_first(pln->border, it);
-}
-
-int pl_get_border_count(pl_info *pli, ir_node *irn)
-{
-	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
-	assert(pln && "No loop information for the given node.");
-	assert((pln->base.type == plt_eta) && "Not an eta node.");
-	return plist_count(pln->border);
-}
-
 static void *pl_init_node(ir_phase *phase, const ir_node *irn)
 {
 	pl_info *pli = phase_get_private(phase);
@@ -393,4 +311,114 @@ void pl_dump(pl_info *pli, FILE* f)
 	/* Walk the tree and dump every node. */
 	inc_irg_visited(irg);
 	pl_dump_irn(pli, ret, f);
+}
+
+/******************************************************************************
+ * Public interfaces and iterators.                                           *
+ ******************************************************************************/
+
+/* IRG etas */
+int pl_get_irg_eta_count(pl_info *pli)
+{
+	return plist_count(pli->etas);
+}
+
+void pl_irg_etas_iter_init(pl_info *pli, pl_irg_etas_iter *it)
+{
+	*it = plist_first(pli->etas);
+}
+
+ir_node *pl_irg_etas_iter_next(pl_irg_etas_iter *it)
+{
+	if (!*it) return NULL;
+	pl_node *pln = (*it)->data; *it = (*it)->next;
+	return pln->irn;
+}
+
+/* IRG thetas */
+int pl_get_irg_theta_count(pl_info *pli)
+{
+	return plist_count(pli->thetas);
+}
+
+void pl_irg_thetas_iter_init(pl_info *pli, pl_irg_thetas_iter *it)
+{
+	*it = plist_first(pli->thetas);
+}
+
+ir_node *pl_irg_thetas_iter_next(pl_irg_thetas_iter *it)
+{
+	if (!*it) return NULL;
+	pl_node *pln = (*it)->data; *it = (*it)->next;
+	return pln->irn;
+}
+
+/* IRN etas */
+int pl_get_eta_count(pl_info *pli, ir_node *irn)
+{
+	pl_node *pln = phase_get_irn_data(pli->phase, irn);
+	assert(pln && "No loop information for the given node.");
+	return plist_count(pln->etas);
+}
+
+void pl_etas_iter_init(pl_info *pli, ir_node *irn, pl_etas_iter *it)
+{
+	pl_node *pln = phase_get_irn_data(pli->phase, irn);
+	assert(pln && "No loop information for the given node.");
+	*it = plist_first(pln->etas);
+}
+
+ir_node *pl_etas_iter_next(pl_thetas_iter *it)
+{
+	if (!*it) return NULL;
+	pl_node *pln = (*it)->data; *it = (*it)->next;
+	return pln->irn;
+}
+
+/* IRN thetas */
+int pl_get_theta_count(pl_info *pli, ir_node *irn)
+{
+	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
+	assert(pln && "No loop information for the given node.");
+	assert((pln->base.type == plt_eta) && "Not an eta node.");
+	return plist_count(pln->thetas);
+}
+
+void pl_thetas_iter_init(pl_info *pli, ir_node *irn, pl_thetas_iter *it)
+{
+	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
+	assert(pln && "No loop information for the given node.");
+	assert((pln->base.type == plt_eta) && "Not an eta node.");
+	*it = plist_first(pln->thetas);
+}
+
+ir_node *pl_thetas_iter_next(pl_thetas_iter *it)
+{
+	if (!*it) return NULL;
+	pl_node *pln = (*it)->data; *it = (*it)->next;
+	return pln->irn;
+}
+
+/* IRN border */
+int pl_get_border_count(pl_info *pli, ir_node *irn)
+{
+	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
+	assert(pln && "No loop information for the given node.");
+	assert((pln->base.type == plt_eta) && "Not an eta node.");
+	return plist_count(pln->border);
+}
+
+void pl_border_iter_init(pl_info *pli, ir_node *irn, pl_border_iter *it)
+{
+	pl_node_eta *pln = phase_get_irn_data(pli->phase, irn);
+	assert(pln && "No loop information for the given node.");
+	assert((pln->base.type == plt_eta) && "Not an eta node.");
+	*it = plist_first(pln->border);
+}
+
+ir_node *pl_border_iter_next(pl_border_iter *it)
+{
+	if (!*it) return NULL;
+	pl_node *pln = (*it)->data; *it = (*it)->next;
+	return pln->irn;
 }

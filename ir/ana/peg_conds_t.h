@@ -31,24 +31,29 @@
 #include "firm_types.h"
 #include "peg_dom_t.h"
 #include "peg_loop_t.h"
+#include "pmap_new.h"
+#include "plist.h"
+
+typedef struct gc_cond  gc_cond;
+typedef struct gc_union gc_union;
+typedef struct gc_info  gc_info;
+
+typedef pmap_new_iterator_t  gc_union_map_iter;
+typedef plist_element_t     *gc_union_iter;
+
+typedef struct gc_entry {
+	ir_node  *dst;
+	gc_union *uni;
+} gc_entry;
 
 typedef enum gc_type {
-	gct_demand, /* lambda */
-	gct_ignore, /* emptyset */
-	gct_branch, /* gamma(g, a, b) */
-	gct_union,  /* a u b */
-	gct_repeat
+	gct_while_true  = 0,
+	gct_if_true     = 1,
+	gct_if_false    = 2,
+	gct_last_cached = gct_if_false,
+	gct_once        = 3,
+	gct_invalid     = 4
 } gc_type;
-
-typedef struct gc_cond gc_cond;
-typedef struct gc_info gc_info;
-typedef void* gc_iter;
-
-/** A gating condition and an associated target node. */
-typedef struct gc_entry {
-	gc_cond *cond;
-	ir_node *dst;
-} gc_entry;
 
 /* Turn the PEG graph into an AcPEG. */
 void peg_to_acpeg(ir_graph *irg, pl_info *pli);
@@ -62,66 +67,43 @@ void gc_free(gc_info *gci);
 /** Dumps the gating conditions to the specified file. */
 void gc_dump(gc_info *gci, FILE* f);
 
-/** Get the gating condition for dst, stored on src. */
-gc_cond *gc_get_cond_for(gc_info *gci, ir_node *src, ir_node *dst);
+/** Initialize an iterator to iterate the union map on a node. */
+void gc_union_map_iter_init(gc_info *gci, ir_node *irn, gc_union_map_iter *it);
 
-/**
- * Get the first gating condition/target pair stored on the given irn. For the
- * "it" parameter either pass NULL (to only get one node), or a pointer to an
- * allocated gc_iter, to use with gc_iter_cond_next.
- *
- * If this behaves strangely, blame pmap for now.
- */
-gc_entry gc_get_cond(gc_info *gci, ir_node *irn, gc_iter *it);
+/** Get the next element from the given iterator. */
+gc_entry gc_union_map_iter_next(gc_union_map_iter *it);
 
-/** Get the next condition from the given condition iterator. */
-gc_entry gc_cond_iter_next(gc_iter *it);
+/** Initialize an iterator to iterate a union. */
+void gc_union_iter_init(gc_union *uni, gc_union_iter *it);
 
-/** Get the number of gating condition/target pairs stored on the given irn. */
-int gc_get_cond_count(gc_info *gci, ir_node *irn);
+/** Get the next element from the given iterator. */
+gc_cond *gc_union_iter_next(gc_union_iter *it);
+
+/** Determine if the given entry is a null object. */
+int gc_entry_is_null(gc_entry entry);
 
 /** Get the type of the given gating condition. */
 gc_type gc_get_cond_type(gc_cond *cond);
 
-/** Get the irn associated with the branch. */
-ir_node *gc_get_branch_irn(gc_cond *cond);
-/** Get the left-hand side (true side) of the branch. */
-gc_cond *gc_get_branch_lhs(gc_cond *cond);
-/** Get the right-hand side (false side) of the branch. */
-gc_cond *gc_get_branch_rhs(gc_cond *cond);
+/** Get the node of the given gating condition. */
+ir_node *gc_get_cond_irn(gc_cond *cond);
 
-/** Get the irn associated with the repeat. */
-ir_node *gc_get_repeat_irn(gc_cond *cond);
-/** Get the inner condition of the repeat. */
-gc_cond *gc_get_repeat_cond(gc_cond *cond);
+/** Get the tail of the gating condition. */
+gc_cond *gc_get_cond_next(gc_cond *cond);
 
-/** Get the left-hand side of the union (may be a union itself). */
-gc_cond *gc_get_union_lhs(gc_cond *cond);
-/** Get the right-hand side of the union (will not be a union). */
-gc_cond *gc_get_union_rhs(gc_cond *cond);
+/** Check whether the given union is empty. */
+int gc_union_is_empty(gc_union *uni);
 
-/**
- * Get the first gating condition in the given union. For the "it" parameter
- * either pass NULL (to only get one condition), or a pointer to an allocated
- * gc_iter, to use with gc_iter_union_next.
- */
-gc_cond *gc_get_union_cond(gc_cond *cond, gc_iter *it);
+#define foreach_gc_union_map(gci, irn, entry, it) \
+	for(gc_union_map_iter_init((gci), (irn), &(it)), \
+		(entry) = gc_union_map_iter_next(&(it)); \
+		!gc_entry_is_null((entry)); \
+		(entry) = gc_union_map_iter_next(&(it)))
 
-/** Get the next condition from the given union iterator. */
-gc_cond *gc_union_iter_next(gc_iter *it);
-
-/** Get a demand condition. */
-gc_cond *gc_get_demand(void);
-
-/** Get ar ignore condition. */
-gc_cond *gc_get_ignore(void);
-
-#define foreach_gc_union(gcu, it, cond) \
-	for ((cond) = gc_get_union_cond((gcu), &(it)); \
-		(cond); (cond) = gc_union_iter_next(&(it)))
-
-#define foreach_gc_conds(gci, irn, it, entry) \
-	for ((entry) = gc_get_cond((gci), (irn), &(it)); \
-		(entry).cond; (entry) = gc_cond_iter_next(&(it)))
+#define foreach_gc_union(uni, cond, it) \
+	for(gc_union_iter_init((uni), &(it)), \
+		(cond) = gc_union_iter_next(&(it)); \
+		(cond); \
+		(cond) = gc_union_iter_next(&(it)))
 
 #endif

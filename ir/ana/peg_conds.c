@@ -27,70 +27,122 @@
 #include "config.h"
 
 #include "peg_conds_t.h"
-#include "irphase_t.h"
+#include <assert.h>
+#include <stdio.h>
+#include "firm_types.h"
+#include "hashptr.h"
 #include "plist.h"
-#include "peg_dom_t.h"
-#include "peg_loop_t.h"
-#include "obstack.h"
+#include "obst.h"
+#include "pmap_new.h"
+#include "irphase_t.h"
 #include "ircons.h"
-#include "pmap.h"
 #include "irgmod.h"
+
+//#define LOG_COMBINE 1
 
 typedef struct obstack obstack;
 
-//#define LOG_DIRS_COMBINE 1
-
 /* Convenience macro to iterate two pmaps in succession. */
-#define foreach_pmap_2(lhs, rhs, i, entry) \
+#define foreach_pmap_2(lhs, rhs, entry, i, it) \
 	for ((i) = 0; (i) < 2; (i)++) \
-		foreach_pmap(((i == 0) ? (lhs) : (rhs)), (entry))
+		foreach_pmap_new(((i == 0) ? (lhs) : (rhs)), (entry), (it))
 
 /******************************************************************************
  * Gating conditions.                                                         *
  ******************************************************************************/
 
-/**
- * Gating conditions are just plain conditions without a relationship to nodes.
- * They are considered immutable, so any modification yields a new condition.
- * However due to their immutability, partial conditions can often be reused.
- */
-
 struct gc_cond {
-	gc_type type;
+	/* Set if one cond in the chain is while. */
+	char     loop : 1;
+	gc_type  type;
+	ir_node *irn;
+	const struct gc_cond *next;
 };
 
-/* A pointer to a struct is guaranteed to also point to the first member. */
-typedef struct gc_branch {
-	gc_cond  base;
-	ir_node *irn;
-	gc_cond *lhs; /* True */
-	gc_cond *rhs; /* False */
-} gc_branch;
+/******************************************************************************
+ * Gating conditions concat map.                                              *
+ ******************************************************************************/
 
-typedef struct gc_repeat {
-	gc_cond  base;
-	ir_node *irn;
-	gc_cond *cond;
-} gc_repeat;
+typedef struct gc_cmap          gc_cmap;
+typedef struct gc_cmap_iterator gc_cmap_iterator;
 
-/* Unions form a left-recursive linked list. a u b u c = (a u b) u c. */
-typedef struct gc_union {
-	gc_cond  base;
-	gc_cond *lhs;
-	gc_cond *rhs;
-} gc_union;
+/* Operation and associated result. */
+typedef struct gc_cmap_entry {
+	const gc_cond *lhs;
+	const gc_cond *rhs;
+	const gc_cond *res;
+} gc_cmap_entry;
 
-/**
- * The node stores gating conditions for paths originating at the associated
- * irn. The cross gating conditions are used during computation. These are for
- * paths that cross into the subtrees of a sibling in the dominator tree.
- */
+#define INVL ((void*)-1)
+
+gc_cmap_entry _gc_cmap_null = { NULL, NULL, NULL };
+gc_cmap_entry _gc_cmap_del  = { INVL, INVL, INVL };
+
+#define DO_REHASH
+#define SCALAR_RETURN
+#define HashSet                   gc_cmap
+#define HashSetIterator           gc_cmap_iterator
+#define ValueType                 gc_cmap_entry
+#define NullValue                _gc_cmap_null
+#define DeletedValue             _gc_cmap_del
+#define SetRangeEmpty(ptr,size)   memset(ptr, 0, (size) * sizeof(HashSetEntry))
+#define KeysEqual(map,key1,key2)  ((key1.lhs == key2.lhs) && (key1.rhs == key2.rhs))
+#define Hash(map,key1)            HASH_COMBINE(hash_ptr(key1.lhs), hash_ptr(key1.rhs))
+#define EntryIsEmpty(e)           (EntryGetValue(e).lhs == NULL)
+#define EntryIsDeleted(e)         (EntryGetValue(e).lhs == INVL)
+
+#define hashset_init            _gc_cmap_init
+#define hashset_init_size       _gc_cmap_init_size
+#define hashset_destroy         _gc_cmap_destroy
+#define hashset_insert          _gc_cmap_insert
+#define hashset_remove          _gc_cmap_remove
+#define hashset_find            _gc_cmap_find
+#define hashset_size            _gc_cmap_size
+#define hashset_iterator_init   _gc_cmap_iterator_init
+#define hashset_iterator_next   _gc_cmap_iterator_next
+#define hashset_remove_iterator _gc_cmap_remove_iterator
+
+#include "hashset.h"
+
+/* Prototypes for map operations. */
+size_t        _gc_cmap_size      (const gc_cmap *map);
+gc_cmap_entry _gc_cmap_find      (const gc_cmap *map, const gc_cmap_entry entry);
+void          _gc_cmap_init      (gc_cmap *map);
+void          _gc_cmap_destroy   (gc_cmap *map);
+gc_cmap_entry _gc_cmap_insert    (gc_cmap *map, gc_cmap_entry entry);
+void          _gc_cmap_remove    (gc_cmap *map, const gc_cmap_entry entry);
+void          _gc_cmap_init_size (gc_cmap *map, size_t expected_elements);
+
+gc_cmap_entry _gc_cmap_iterator_next   (gc_cmap_iterator *it);
+void          _gc_cmap_iterator_init   (gc_cmap_iterator *it, const gc_cmap *map);
+void          _gc_cmap_remove_iterator (gc_cmap *map, const gc_cmap_iterator *it);
+
+#include "hashset.c"
+
+/******************************************************************************
+ * Gating condition creation.                                                 *
+ ******************************************************************************/
+
+struct gc_union {
+	plist_t *conds;
+	char     done;
+};
 
 typedef struct gc_node {
-	ir_node *irn;
-	pmap    *conds;       /* Indexed by the target node. */
-	pmap    *cross_conds; /* Indexed by the target node. */
-	char     has_cross_conds;
+	ir_node     *irn;
+
+	/* Contains conds for dominated >children< (no other dominated nodes) and
+	 * undominated other nodes that are reachable. */
+	pmap_new_t   conds;
+
+	/* Contains conds for >siblings< we can reach and nodes we can reach from
+	 * there, that the sibling doesn't dominate itself. */
+	pmap_new_t  *cross_conds;
+
+	/* The root conds for construction. Every new cond will be looked up in
+	 * the gc_node of its irn, so that the same objects are used for the same
+	 * conditions. */
+	gc_cond    **roots;
 } gc_node;
 
 /* Gating Condition info. */
@@ -100,527 +152,482 @@ struct gc_info {
 	pl_info  *pli;
 	gc_node  *root;
 	ir_phase *phase;
+	gc_cmap   cmap;
 };
 
-/* Compare conditions. Not perfect, but should do its job. */
-static int gc_cond_equals(gc_cond *lhs, gc_cond *rhs)
+static const gc_cond *gc_get_once(void)
 {
-	if (lhs->type != rhs->type) return 0;
+	static gc_cond once = { 0, gct_once, NULL, NULL };
+	return &once;
+}
 
-	switch (lhs->type) {
-	case gct_demand: return 1; /* Types match, see above. */
-	case gct_ignore: return 1;
+static const gc_cond *gc_get_cond(gc_info *info, gc_type type, ir_node *irn)
+{
+	gc_node *gcn;
+	gc_cond *cond;
 
-	case gct_branch: {
-		gc_branch *lhs_branch = (gc_branch*)lhs;
-		gc_branch *rhs_branch = (gc_branch*)rhs;
+	if (type == gct_once) return gc_get_once();
+	assert(irn);
 
-		/* Compare the irn and both conditions. */
-		if (!(lhs_branch->irn == rhs_branch->irn)) return 0;
-		if (!gc_cond_equals(lhs_branch->lhs, rhs_branch->lhs)) return 0;
-		if (!gc_cond_equals(lhs_branch->rhs, rhs_branch->rhs)) return 0;
-		return 1;
+	gcn = phase_get_or_set_irn_data(info->phase, irn);
+
+	/* Use gcn->roots as lazily initialized lookup table. */
+	if (!gcn->roots) {
+		gcn->roots = OALLOCNZ(&info->obst, gc_cond*, gct_last_cached + 1);
 	}
-	case gct_repeat: {
-		gc_repeat *lhs_repeat = (gc_repeat*)lhs;
-		gc_repeat *rhs_repeat = (gc_repeat*)rhs;
 
-		/* Compare the irn and both conditions. */
-		if (!(lhs_repeat->irn == rhs_repeat->irn)) return 0;
-		if (!gc_cond_equals(lhs_repeat->cond, rhs_repeat->cond)) return 0;
-		return 1;
+	assert(type <= gct_last_cached);
+	cond = gcn->roots[type];
+
+	if (!cond) {
+		/* Create a new cond if none is present. */
+		cond = OALLOC(&info->obst, gc_cond);
+		cond->loop = (type == gct_while_true);
+		cond->type = type;
+		cond->irn  = irn;
+		cond->next = gc_get_once();
+		gcn->roots[type] = cond;
 	}
-	case gct_union: {
-		/* Tricky because the union is not ordered. */
-		gc_iter lhs_it, rhs_it;
-		gc_cond *lhs_cur, *rhs_cur;
-		int lhs_count = 0, rhs_count = 0;
 
-		/* Compare element counts first. */
-		foreach_gc_union(lhs, lhs_it, lhs_cur) lhs_count++;
-		foreach_gc_union(rhs, rhs_it, rhs_cur) rhs_count++;
-		if (lhs_count != rhs_count) return 0;
+	return cond;
+}
 
-		/* Hopefully this won't happen too often and with small unions. */
-		foreach_gc_union(lhs, lhs_it, lhs_cur) {
-			int found = 0;
+static const gc_cond *gc_concat(gc_info *info, const gc_cond *lhs,
+                                               const gc_cond *rhs)
+{
+	gc_cmap_entry entry = { lhs, rhs, NULL };
+	assert(lhs && rhs);
 
-			foreach_gc_union(rhs, rhs_it, rhs_cur) {
-				found = gc_cond_equals(lhs_cur, rhs_cur);
-				if (found) break;
-			}
+	/* Add piecewise, to rebuild the lhs chain with rhs as tail. */
+	if (lhs->next) {
+		rhs = gc_concat(info, lhs->next, rhs);
+	}
 
-			if (!found) return 0;
+	/* Try to lookup the result first. */
+	entry = _gc_cmap_find(&info->cmap, entry);
+
+	/* Calculate it if needed. */
+	if (entry.lhs == NULL) {
+		/* Handle once. */
+		if (lhs->type == gct_once) {
+			entry.res = rhs;
+		} else if (rhs->type == gct_once) {
+			entry.res = lhs;
+		} else {
+			/* Prepend a new node. */
+			gc_cond *res = OALLOC(&info->obst, gc_cond);
+			res->loop = lhs->loop || rhs->loop;
+			res->type = lhs->type;
+			res->irn  = lhs->irn;
+			res->next = rhs;
+			entry.res = res;
 		}
 
-		return 1;
-	}}
+		entry.lhs = lhs;
+		entry.rhs = rhs;
 
-	assert(0);
-	return 0;
+		assert(entry.res);
+		_gc_cmap_insert(&info->cmap, entry);
+	}
+
+	assert(entry.res);
+	return entry.res;
+}
+
+static void gc_dump_cond(const gc_cond *cond, FILE *f)
+{
+	assert(cond);
+
+	if (cond->irn) {
+		fprintf(f, "%li", get_irn_node_nr(cond->irn));
+	}
+
+	switch (cond->type) {
+	case gct_once:       fprintf(f, "Once");    break;
+	case gct_while_true: fprintf(f, "@");       break;
+	case gct_if_true:    fprintf(f, "+");       break;
+	case gct_if_false:   fprintf(f, "-");       break;
+	case gct_invalid:    fprintf(f, "INVALID"); break;
+	}
+
+	if (cond->next && (cond->next->type != gct_once)) {
+		fprintf(f, " ");
+		gc_dump_cond(cond->next, f);
+	}
 }
 
 /******************************************************************************
- * Construct/simplify gating conditions.                                      *
+ * Gating condition unification.                                              *
  ******************************************************************************/
 
-/**
- * Constructor methods. These construct new gating conditions. Note that the
- * simplification of conditions happens on-the-fly. So you might get some other
- * node back, than initially requested.
- */
-
-static gc_cond *gc_new_demand(void)
+static gc_union *gc_new_union(gc_info *info)
 {
-	static gc_cond cond = { gct_demand };
-	return &cond;
+	gc_union *uni = OALLOC(&info->obst, gc_union);
+	uni->conds = plist_obstack_new(&info->obst);
+	uni->done  = 0;
+	return uni;
 }
 
-static gc_cond *gc_new_ignore(void)
+static void gc_dump_union(const gc_union *uni, FILE *f)
 {
-	static gc_cond cond = { gct_ignore };
-	return &cond;
-}
-
-gc_cond *gc_get_demand(void)
-{
-	return gc_new_demand();
-}
-
-gc_cond *gc_get_ignore(void)
-{
-	return gc_new_ignore();
-}
-
-static gc_cond *gc_new_branch(gc_info *gci, gc_cond *lhs,
-                              gc_cond *rhs, ir_node *irn)
-{
-	/* G(g, a, a) = a */
-	if (gc_cond_equals(lhs, rhs)) return lhs;
-
-	gc_branch *gcb = OALLOC(&gci->obst, gc_branch);
-	gcb->base.type = gct_branch;
-	gcb->lhs = lhs;
-	gcb->rhs = rhs;
-	gcb->irn = irn;
-	return (gc_cond*)gcb;
-}
-
-static gc_cond *gc_new_repeat(gc_info *gci, gc_cond *cond, ir_node *irn)
-{
-	gc_repeat *gcr = OALLOC(&gci->obst, gc_repeat);
-	gcr->base.type = gct_repeat;
-	gcr->cond = cond;
-	gcr->irn  = irn;
-	return (gc_cond*)gcr;
-}
-
-/* This is a complex beast. */
-static gc_cond *gc_new_union(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
-{
-	gc_cond *cur, *new_cur;
-
-	/* Do not allow a rhs union in a union (left associative).
-	 * Instead add all entries in the union separately. */
-	if (rhs->type == gct_union) {
-		gc_iter it;
-		gc_cond *rhs_entry;
-
-		cur = lhs;
-		foreach_gc_union(rhs, it, rhs_entry) {
-			cur = gc_new_union(gci, cur, rhs_entry);
-		}
-
-		return cur;
-	}
-
-	assert(rhs->type != gct_union);
-
-	/* Swap A or 0 to the left. */
-	if ((rhs->type == gct_demand) || (rhs->type == gct_ignore)) {
-		gc_cond *tmp = lhs; lhs = rhs; rhs = tmp;
-	}
-
-	/* Try to optimize the full union away. */
-	switch (lhs->type) { /* FIXME: simplification for repeat. */
-	case gct_demand: return lhs; /* A u c = A */
-	case gct_ignore: return rhs; /* 0 u c = c */
-	default: break;
-	}
-
-	/* ((a u cur) u rhs) OR (cur u rhs) */
-	cur = lhs; new_cur = NULL;
-	if (lhs->type == gct_union) {
-		cur = ((gc_union*)lhs)->rhs;
-	}
-
-	/* Try optimizations on all union members. Set new_cur if possible. */
-
-	/* G(n, a, b) u G(n, c, d) = G(n, a u c, b u d) */
-	if ((cur->type == gct_branch) && (rhs->type == gct_branch)) {
-		gc_branch *cur_branch = (gc_branch*)cur;
-		gc_branch *rhs_branch = (gc_branch*)rhs;
-
-		if (cur_branch->irn == rhs_branch->irn) {
-			/* Optimization can be applied. */
-			new_cur = gc_new_branch(gci,
-				gc_new_union(gci, cur_branch->lhs, rhs_branch->lhs),
-				gc_new_union(gci, cur_branch->rhs, rhs_branch->rhs),
-				cur_branch->irn
-			);
-		}
-	} else if ((cur->type == gct_repeat) && (rhs->type == gct_repeat)) {
-		gc_repeat *cur_repeat = (gc_repeat*)cur;
-		gc_repeat *rhs_repeat = (gc_repeat*)rhs;
-
-		if (cur_repeat->irn == rhs_repeat->irn) {
-			new_cur = gc_new_repeat(gci,
-				gc_new_union(gci, cur_repeat->cond, rhs_repeat->cond),
-				cur_repeat->irn
-			);
-		}
-	}
-
-	/* These optimizations may be applicable now. */
-	if (new_cur) {
-		switch (new_cur->type) {
-		case gct_demand: return new_cur; /* a u A = A */
-		case gct_ignore: /* a u 0 = a */
-			if (lhs->type == gct_union) return ((gc_union*)lhs)->lhs;
-			return new_cur;
-
-		default: break;
-		}
-	}
-
-	if (lhs->type != gct_union) {
-		/* No tuple on the left. Return a single value or new tuple. */
-		if (new_cur) {
-			return new_cur;
-		} else {
-			gc_union *gcu = OALLOC(&gci->obst, gc_union);
-			gcu->base.type = gct_union;
-			gcu->lhs = lhs;
-			gcu->rhs = rhs;
-			return (gc_cond*)gcu;
-		}
+	if (plist_count(uni->conds) == 0) {
+		fprintf(f, "Never");
 	} else {
-		/* Tuple on the left. Replace the rhs or recurse. */
-		gc_union *lhs_gcu = (gc_union*)lhs;
-		gc_union *gcu = OALLOC(&gci->obst, gc_union);
-		gcu->base.type = gct_union;
-
-		if (new_cur) {
-			gcu->lhs = lhs_gcu->lhs;
-			gcu->rhs = new_cur;
-			return (gc_cond*)gcu;
-		} else {
-			gcu->lhs = gc_new_union(gci, lhs_gcu->lhs, rhs);
-			gcu->rhs = lhs_gcu->rhs;
-			return (gc_cond*)gcu;
+		plist_element_t *it;
+		foreach_plist(uni->conds, it) {
+			if (it != plist_first(uni->conds)) fprintf(f, " | ");
+			gc_dump_cond(it->data, f);
 		}
 	}
 }
 
-static gc_cond *gc_new_concat(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
+static const gc_cond *gc_try_unify(gc_info *info, const gc_cond *lhs,
+                                   const gc_cond *rhs)
 {
-	/* Swap A or 0 to the left. */
-	if ((rhs->type == gct_demand) || (rhs->type == gct_ignore)) {
-		gc_cond *tmp = lhs; lhs = rhs; rhs = tmp;
+	assert(lhs && rhs);
+	if (lhs == rhs) return lhs;
+
+	/* Handle the once cond. */
+	if (lhs->type == gct_once) return rhs->loop ? INVL : gc_get_once();
+	if (rhs->type == gct_once) return lhs->loop ? INVL : gc_get_once();
+
+	/* Two identical conds that only differ in one position can be collapsed
+	 * if that condition is if_true and if_false. For example:
+	 *
+	 * A+ B@ C- D+ E- | A+ B@ C+ D+ E- = A+ B@ D+ E-
+	 *
+	 * Note that shorter paths have less restrictions and are collapsed, too.
+	 *
+	 * A+ B- | A+ = A+
+	 *
+	 * But loops don't apply to path shortening:
+	 *
+	 * A+ B@ | A+
+	 *
+	 * Can't be collapsed, since if A+ is satisfied, the rhs causes evaluation
+	 * once, while the lhs causes evaluation 0 to n times. */
+
+	/* Same node is the first obvious check. */
+	if (lhs->irn == rhs->irn) {
+
+		/* Is this a common prefix? */
+		if (lhs->type == rhs->type) {
+			/* Recurse. If we get a new cond, prepend us. */
+			const gc_cond *res = gc_try_unify(info, lhs->next, rhs->next);
+			if (res == INVL) return INVL;
+
+			/* Use res as new suffix (shortened to the same suffix). */
+			assert(lhs->irn);
+			return gc_concat(info,
+				gc_get_cond(info, lhs->type, lhs->irn), res
+			);
+		} else {
+			/* Check if the types allow folding. */
+			if (((lhs->type != gct_if_true) && (lhs->type != gct_if_false)) ||
+			    ((rhs->type != gct_if_true) && (rhs->type != gct_if_false))) {
+				return INVL;
+			}
+
+			/* The suffixes have to match. */
+			if (lhs->next != rhs->next) {
+				return INVL;
+			}
+
+			/* If they do, just return the suffix. */
+			return lhs->next;
+		}
 	}
 
-	switch (lhs->type) {
-	case gct_demand: return rhs; /* A.c = c */
-	case gct_ignore: return lhs; /* 0.c = 0 */
-	case gct_branch: {
-		/* G(n, a, b).c = G(n, a.c, b.c) */
-		gc_branch *lhs_branch = (gc_branch*)lhs;
-		return gc_new_branch(gci,
-			gc_new_concat(gci, lhs_branch->lhs, rhs),
-			gc_new_concat(gci, lhs_branch->rhs, rhs),
-			lhs_branch->irn
-		);
+	/* Can't unify both conds. */
+	return INVL;
+}
+
+static void gc_unify(gc_info *info, gc_union *uni, const gc_cond *lhs)
+{
+	plist_element_t *it, *it_next;
+	assert(lhs);
+
+	/* Insert the element into the list. */
+	it = plist_first(uni->conds);
+
+	while (it) {
+		const gc_cond *rhs = it->data;
+		const gc_cond *res = gc_try_unify(info, lhs, rhs);
+		assert(res);
+
+		it_next = it->next;
+
+		if (res != INVL) {
+			/* Nothing changed? Don't recurse. */
+			if (res == rhs) return;
+
+			/* Delete the old entry, recursively insert the new. */
+			plist_erase(uni->conds, it);
+			gc_unify(info, uni, res);
+			return; /* We are done here. */
+		}
+
+		it = it_next;
 	}
-	case gct_repeat: {
-		/* R(n, a).b = R(n, a.b) */
-		gc_repeat *lhs_repeat = (gc_repeat*)lhs;
-		return gc_new_repeat(gci,
-			gc_new_concat(gci, lhs_repeat->cond, rhs),
-			lhs_repeat->irn
-		);
-	}
-	case gct_union: {
-		/* (a u b).c = a.c u b.c */
-		gc_union *lhs_union = (gc_union*)lhs;
-		return gc_new_union(gci,
-			gc_new_concat(gci, lhs_union->lhs, rhs),
-			gc_new_concat(gci, lhs_union->lhs, rhs)
-		);
-	}}
 
-	assert(0);
-	return NULL;
-}
-
-/**
- * The same as above, but with some debug output, to verify that operations
- * work as expected.
- */
-
-static void gc_dump_cond(gc_cond *cond, FILE *f);
-
-static gc_cond *gc_new_concat_log(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
-{
-	gc_cond *result;
-
-#ifdef LOG_DIRS_COMBINE
-	printf("concat(");
-	gc_dump_cond(lhs, stdout); printf(",");
-	gc_dump_cond(rhs, stdout); printf(") = ");
-#endif
-
-	result = gc_new_concat(gci, lhs, rhs);
-
-#ifdef LOG_DIRS_COMBINE
-	gc_dump_cond(result, stdout); printf("\n");
-#endif
-
-	return result;
-}
-
-static gc_cond *gc_new_union_log(gc_info *gci, gc_cond *lhs, gc_cond *rhs)
-{
-	gc_cond *result;
-
-#ifdef LOG_DIRS_COMBINE
-	printf("               union (");
-	gc_dump_cond(lhs, stdout); printf(",");
-	gc_dump_cond(rhs, stdout); printf(") = ");
-#endif
-
-	result = gc_new_union(gci, lhs, rhs);
-
-#ifdef LOG_DIRS_COMBINE
-	gc_dump_cond(result, stdout); printf("\n");
-#endif
-
-	return result;
-}
-
-static void gc_cmap_add(gc_info *gci, pmap *map, gc_cond *cond, ir_node *dst)
-{
-	/* Combine with existing conds by union. */
-	gc_cond *old_cond = pmap_get(map, dst);
-	if (old_cond) cond = gc_new_union_log(gci, old_cond, cond);
-	pmap_insert(map, dst, cond);
+	plist_insert_back(uni->conds, (void*)lhs);
 }
 
 /******************************************************************************
- * Populate maps with conditions.                                             *
+ * Build gating conditions for nodes.                                         *
  ******************************************************************************/
 
 /* Compute a condition for a single edge. */
-static gc_cond *gc_new_edge_cond(gc_info *gci, ir_node *src, ir_node *dst)
+static const gc_cond *gc_new_edge_cond(gc_info *gci, ir_node *src, ir_node *dst)
 {
 	if (is_Gamma(src)) {
 		/* Determine the edge. */
-		int edge = 2;
-		if      (get_Gamma_true(src)  == dst) edge = 0;
-		else if (get_Gamma_false(src) == dst) edge = 1;
+		gc_type type = gct_invalid;
+		if      (get_Gamma_true(src)  == dst) type = gct_if_true;
+		else if (get_Gamma_false(src) == dst) type = gct_if_false;
 
-		if (edge < 2) {
-			return gc_new_branch(gci,
-				(edge == 0) ? gc_new_demand() : gc_new_ignore(),
-				(edge == 0) ? gc_new_ignore() : gc_new_demand(),
-				src
-			);
+		if (type != gct_invalid) {
+			ir_node *cond = get_Gamma_cond(src);
+			return gc_get_cond(gci, type, cond);
 		}
+
+		return gc_get_once();
+
 	} else if (is_EtaA(src)) {
-		gc_cond *cond;
+		ir_node       *cond = get_EtaA_cond(src);
+		const gc_cond *res  = gc_get_once();
+
 		int source_depth = pl_get_depth(gci->pli, src);
 		int target_depth = pl_get_depth(gci->pli, dst);
 
-		int edge = 2;
-		if      (get_EtaA_result(src) == dst) edge = 0;
-		else if (get_EtaA_repeat(src) == dst) edge = 1;
+		/* Determine the edge. */
+		gc_type type = gct_invalid;
+		if      (get_EtaA_result(src) == dst) type = gct_if_true;
+		else if (get_EtaA_repeat(src) == dst) type = gct_if_false;
 
-		if (edge < 2) {
-			/* Evaluate the result value or next values, depending on the
-			 * loop condition. This can be represented by a branch cond. */
-			cond = gc_new_branch(gci,
-				(edge == 0) ? gc_new_demand() : gc_new_ignore(),
-				(edge == 0) ? gc_new_ignore() : gc_new_demand(),
-				src
-			);
-		} else {
-			/* Thetas and conditions are always evaluated. */
-			cond = gc_new_demand();
+		if (type != gct_invalid) {
+			res = gc_get_cond(gci, type, cond);
 		}
 
-		/* Only create a repeat edge if the target is loop-nested. The header
+		/* Only create a while edge if the target is loop-nested. The header
 		 * and repeat tuples are forced to be nested. The force tuple isn't. */
 		if (target_depth > source_depth) {
-			cond = gc_new_repeat(gci, cond, src);
+			res = gc_get_cond(gci, gct_while_true, cond);
 		}
 
-		return cond;
+		return res;
 	}
 
-	/* Default to demand. */
-	return gc_new_demand();
+	return gc_get_once();
 }
 
-static void gc_compute_cross_conds(gc_info *gci, gc_node *gcn, gc_node *lhs)
+static gc_union *gc_get_union_from(gc_info *gci, pmap_new_t *map, ir_node *dst)
 {
-	pmap_entry *lhs_entry, *rhs_entry;
+	/* Get the union for the target node. */
+	gc_union *uni = pmap_new_get(map, dst);
 
-	/* Skip children with known cross dirs. */
-	if (lhs->has_cross_conds) return;
-	lhs->has_cross_conds = 1;
+	if (!uni) {
+		uni = gc_new_union(gci);
+		pmap_new_insert(map, dst, uni);
+	}
+
+	return uni;
+}
+
+static void gc_concat_union(gc_info *info, gc_union *lhs,
+                            gc_union *rhs, gc_union *res)
+{
+	/* Consider all combined paths. */
+	plist_element_t *i, *j;
+
+	foreach_plist(lhs->conds, i) {
+		foreach_plist(rhs->conds, j) {
+			gc_unify(info, res, gc_concat(info, i->data, j->data));
+		}
+	}
+}
+
+static void gc_compute_cross_conds(gc_info *gci, gc_node *gc_parent,
+                                   gc_node *gc_src)
+{
+	pmap_new_iterator_t it_path, it_cont;
+	pmap_new_entry_t    en_path, en_cont;
+	ir_node *ir_parent = gc_parent->irn;
+
+	/* Skip finished children (normal and cross conds known). */
+	if (gc_src->cross_conds) return;
+
+	gc_src->cross_conds = XMALLOC(pmap_new_t);
+	pmap_new_init(gc_src->cross_conds);
 
 	/* Scan conventional conds in the child subgraph. */
-	foreach_pmap(lhs->conds, lhs_entry) {
-#ifdef LOG_DIRS_COMBINE
-		ir_node *lhs_src  = lhs->irn;
-#endif
-		gc_cond *lhs_cond = lhs_entry->value;
-		ir_node *lhs_dst  = (ir_node*)lhs_entry->key;
+	foreach_pmap_new(&gc_src->conds, en_path, it_path) {
+		gc_union *un_path = en_path.value;
+		ir_node  *ir_dst  = en_path.key;
 
 		/**
 		 * Try to find two gating paths like this:
 		 *
-		 * rhs_dst
-		 *  ^       y
-		 *  |    /------\
-		 *  |x   |      |
-		 *  |    v      |
-		 * lhs_dst   lhs_src
-		 * rhs_src      |
-		 *       |      |z
-		 *       \      /
-		 *       gcn->irn
+		 *    cont     path
+		 *  /------\ /------\
+		 *  |      | |      |
+		 *  v      | v      |
+		 * app     dst     src
+		 *           |      |
+		 *           |      |x
+		 *           \      /
+		 *            parent
 		 *
-		 * The conditions for the combined (non-gating) path y.x is a cross
-		 * condition. When adding the edge z later, the whole path z.y.x will
-		 * become a gating path.
+		 * The conditions for the combined (non-gating) path path.x is a
+		 * cross condition. When adding the edge cont later, the combined
+		 * path cont.path.x will become a gating path.
 		 */
 
-		/* Check if the parent of lhs_dst in the dom tree is gcn->irn. */
-		if (pd_get_parent(gci->pdt, lhs_dst) == gcn->irn) {
+		/* Check if the parent of ir_dst in the dom tree is ir_parent. */
+		if (pd_get_parent(gci->pdt, ir_dst) == ir_parent) {
 			int i;
 
-			/* If it is, first calculate all cross conds in lhs_dst. */
-			gc_node *rhs = phase_get_irn_data(gci->phase, lhs_dst);
-			assert(rhs);
+			/* If it is, first calculate all the remaining conds in ir_dst. */
+			gc_node *gc_dst = phase_get_irn_data(gci->phase, ir_dst);
+			gc_compute_cross_conds(gci, gc_parent, gc_dst);
+			assert(gc_dst->cross_conds); /* Normal and cross conds known. */
 
-			gc_compute_cross_conds(gci, gcn, rhs);
-			assert(rhs->has_cross_conds);
+			/* Concatenate the path gating conds with the continuations. */
+			foreach_pmap_2(&gc_dst->conds, gc_dst->cross_conds, en_cont, i, it_cont) {
+				gc_union *un_full;
+				gc_union *un_cont = en_cont.value;
+				ir_node  *ir_app  = en_cont.key;
 
-#ifdef LOG_DIRS_COMBINE
-			if ((pmap_count(rhs->conds) + pmap_count(rhs->cross_conds)) > 0) {
-				printf("Cross conds via %li -> %li\n",
-					get_irn_node_nr(lhs_src), get_irn_node_nr(lhs_dst)
-				);
+				/* Skip continuations where ir_dst dominates ir_app. There is
+				 * no need to add further information to those conds. */
+				if (pd_dominates(gci->pdt, ir_dst, ir_app)) continue;
+
+				un_full = gc_get_union_from(gci, gc_src->cross_conds, ir_app);
+				gc_concat_union(gci, un_path, un_cont, un_full);
 			}
+		}
+	}
+}
+
+static void gc_compute_conds(gc_info *gci, ir_node *irn)
+{
+	pd_children_iter it_path;
+
+	int i, j;
+
+	/**
+	 * Define variables for the nodes no process. Paths are layed out like:
+	 * src ------> dst ------> app     (source / destination / appendix)
+	 *      path        cont           (path / continuation)
+	 *            full                 (full path)
+	 */
+
+	const gc_cond *cd_path;
+	gc_node  *gc_src = phase_get_or_set_irn_data(gci->phase, irn);
+	gc_node  *gc_dst;
+	ir_node  *ir_src = irn;
+	ir_node  *ir_dst, *ir_app;
+	gc_union *un_path, *un_cont, *un_full;
+
+	/* Recurse to the children. */
+	foreach_pd_children(gci->pdt, ir_src, ir_dst, it_path) {
+		gc_compute_conds(gci, ir_dst);
+	}
+
+	/* Compute crossing conds for the children. */
+	foreach_pd_children(gci->pdt, ir_src, ir_dst, it_path) {
+		gc_dst = phase_get_or_set_irn_data(gci->phase, ir_dst);
+		gc_compute_cross_conds(gci, gc_src, gc_dst);
+	}
+
+#ifdef LOG_COMBINE
+	int output = 0;
 #endif
 
-			/* Concatenate our gating conds with the rhs (cross) conds. */
-			foreach_pmap_2(rhs->conds, rhs->cross_conds, i, rhs_entry) {
-				gc_cond *rhs_cond = rhs_entry->value;
-				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
+	/* Add gating conds of length 1. */
+	for (i = 0; i < get_irn_arity(ir_src); i++) {
+		int dp_src, dp_dst;
 
-#ifdef LOG_DIRS_COMBINE
-				printf("   %3li -> %3li: ",
-					get_irn_node_nr(lhs_src), get_irn_node_nr(rhs_dst)
+		/* Get information about the edge. */
+		ir_dst  = get_irn_n(ir_src, i);
+		cd_path = gc_new_edge_cond(gci, ir_src, ir_dst);
+		un_path = gc_get_union_from(gci, &gc_src->conds, ir_dst);
+		dp_src  = pl_get_depth(gci->pli, ir_src);
+		dp_dst  = pl_get_depth(gci->pli, ir_dst);
+
+		/* Only consider edges to nodes with equal or greater depth. */
+		if (dp_src <= dp_dst) {
+			/* Add the gating cond to the paths union. */
+			gc_unify(gci, un_path, cd_path);
+
+#ifdef LOG_COMBINE
+			if (plist_count(un_path->conds) > 0) {
+				printf("%4li -- %4li:         ",
+					get_irn_node_nr(ir_src),
+					get_irn_node_nr(ir_dst)
 				);
-#endif
 
-				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
-				gc_cmap_add(gci, lhs->cross_conds, cond, rhs_dst);
-			}
-
-#ifdef LOG_DIRS_COMBINE
-			if ((pmap_count(rhs->conds) + pmap_count(rhs->cross_conds)) > 0) {
+				output = 1;
+				gc_dump_union(un_path, stdout);
 				printf("\n");
 			}
 #endif
 		}
 	}
-}
 
-static void gc_compute_dirs(gc_info *gci, gc_node *lhs)
-{
-	int      i, j;
-	pd_iter  it_child;
-	ir_node *ir_child;
+	/* Combine gating conds on the children. */
+	foreach_pd_children(gci->pdt, ir_src, ir_dst, it_path) {
+		pmap_new_iterator_t it_cont;
+		pmap_new_entry_t    en_cont;
 
-	/* Recurse first. */
-	foreach_pd_child(gci->pdt, lhs->irn, it_child, ir_child) {
-		gc_node *gc_child = phase_get_or_set_irn_data(gci->phase, ir_child);
-		gc_child->irn = ir_child;
-		gc_compute_dirs(gci, gc_child);
-	}
+		/* Get the union for the path. */
+		gc_dst  = phase_get_irn_data(gci->phase, ir_dst);
+		un_path = gc_get_union_from(gci, &gc_src->conds, ir_dst);
+		assert(gc_dst);
 
-	/* Compute crossing dirs for the dominator children. */
-	foreach_pd_child(gci->pdt, lhs->irn, it_child, ir_child) {
-		gc_node *gc_child = phase_get_irn_data(gci->phase, ir_child);
-		gc_compute_cross_conds(gci, lhs, gc_child);
-	}
+		/* Concatenate the path with a continuation path. */
+		foreach_pmap_2(&gc_dst->conds, gc_dst->cross_conds, en_cont, j, it_cont) {
+			ir_app  = en_cont.key;
+			un_cont = en_cont.value;
 
-	/* Now create gating conds edge by edge. */
-	for (i = 0; i < get_irn_arity(lhs->irn); i++) {
-		ir_node *lhs_src  = lhs->irn;
-		ir_node *lhs_dst  = get_irn_n(lhs_src, i);
-		gc_cond *lhs_cond = gc_new_edge_cond(gci, lhs_src, lhs_dst);
-		int      src_dpt  = pl_get_depth(gci->pli, lhs_src);
-		int      dst_dpt  = pl_get_depth(gci->pli, lhs_dst);
+			/* Skip continuations, that dst dominates. There is no need
+			 * to add further information to those conds. */
+			if (pd_dominates(gci->pdt, ir_dst, ir_app)) continue;
 
-		/* Only consider edges to nodes with equal or greater depth. */
-		if (src_dpt > dst_dpt) continue;
+			un_full = gc_get_union_from(gci, &gc_src->conds, ir_app);
+			gc_concat_union(gci, un_path, un_cont, un_full);
 
-#ifdef LOG_DIRS_COMBINE
-		printf("Normal conds via (%li, %li)\n   %3li -> %3li: ",
-			get_irn_node_nr(lhs_src), get_irn_node_nr(lhs_dst),
-			get_irn_node_nr(lhs_src), get_irn_node_nr(lhs_dst)
-		);
-
-		gc_dump_cond(lhs_cond, stdout); printf("\n");
-#endif
-
-		/* Add the trivial gating cond for the lhs path of length 1. */
-		gc_cmap_add(gci, lhs->conds, lhs_cond, lhs_dst);
-
-		/* For dominated target nodes add the edge to their gating conds. */
-		if (pd_dominates(gci->pdt, lhs_src, lhs_dst)) {
-			/**
-			 * Add the combined paths:
-			 *
-			 * gcn->irn ----> lhs_src ----> lhs_dst
-			 *                              rhs_src ----> rhs_dst
-			 */
-
-			pmap_entry *rhs_entry;
-			gc_node    *rhs = phase_get_irn_data(gci->phase, lhs_dst);
-			assert(rhs);
-
-			/* Concatenate the edge cond with the rhs (cross) conds. */
-			foreach_pmap_2(rhs->conds, rhs->cross_conds, j, rhs_entry) {
-				ir_node *rhs_dst  = (ir_node*)rhs_entry->key;
-				gc_cond *rhs_cond = rhs_entry->value;
-
-#ifdef LOG_DIRS_COMBINE
-				printf("   %3li -> %3li: ",
-					get_irn_node_nr(lhs_src), get_irn_node_nr(rhs_dst)
+#ifdef LOG_COMBINE
+			if (plist_count(un_full->conds) > 0) {
+				printf("%4li -> %4li %s> %4li: ",
+					get_irn_node_nr(ir_src),
+					get_irn_node_nr(ir_dst),
+					(j == 0) ? "-" : "#",
+					get_irn_node_nr(ir_app)
 				);
-#endif
-				gc_cond *cond = gc_new_concat_log(gci, lhs_cond, rhs_cond);
-				gc_cmap_add(gci, lhs->conds, cond, rhs_dst);
+
+				output = 1;
+				gc_dump_union(un_full, stdout);
+				printf("\n");
 			}
+#endif
 		}
 
-#ifdef LOG_DIRS_COMBINE
-		printf("\n");
+		/* Mark the union as done. This way we don't need pl_info later. */
+		un_path->done = 1;
+	}
+
+#ifdef LOG_COMBINE
+	if (output) printf("\n");
 #endif
+
+	/* Free the child cross conds again. */
+	foreach_pd_children(gci->pdt, ir_src, ir_dst, it_path) {
+		gc_dst = phase_get_irn_data(gci->phase, ir_dst);
+
+		pmap_new_destroy(gc_dst->cross_conds);
+		xfree(gc_dst->cross_conds);
+		gc_dst->cross_conds = NULL;
 	}
 }
 
@@ -631,9 +638,11 @@ static void *gc_init_node(ir_phase *phase, const ir_node *irn)
 
 	/* Initialize the condition maps. It's not obstacked, but we only allocate
 	 * them once, so allocation speed isn't that much of an issue. */
-	gcn->conds           = pmap_create_ex(10);
-	gcn->cross_conds     = pmap_create_ex(5);
-	gcn->has_cross_conds = 0;
+
+	pmap_new_init(&gcn->conds);
+	gcn->roots       = NULL;
+	gcn->cross_conds = NULL;
+	gcn->irn         = (ir_node*)irn;
 
 	(void)irn;
 	return gcn;
@@ -661,11 +670,15 @@ gc_info *gc_init(ir_graph *irg, pd_tree *pdt, pl_info *pli)
 	printf("--------------------\n");
 #endif
 
-	/* Walk through the tree to compute directions. */
-	gci->root = phase_get_or_set_irn_data(gci->phase, ret);
-	gci->root->irn = ret;
-	gc_compute_dirs(gci, gci->root);
+	_gc_cmap_init(&gci->cmap);
 
+	/* Walk through the tree to compute directions. */
+	gc_compute_conds(gci, ret);
+	gci->root = phase_get_irn_data(gci->phase, ret);
+	assert(gci->root);
+
+	gci->pli = NULL;
+	gci->pdt = NULL;
 	return gci;
 }
 
@@ -678,193 +691,53 @@ void gc_free(gc_info *gci)
 		gc_node *gcn = phase_get_irn_data(gci->phase, irn);
 		assert(gcn);
 
-		pmap_destroy(gcn->conds);
-		pmap_destroy(gcn->cross_conds);
+		pmap_new_destroy(&gcn->conds);
+		assert(!gcn->cross_conds);
 	}
+
+	_gc_cmap_destroy(&gci->cmap);
 
 	phase_free(gci->phase);
 	obstack_free(&gci->obst, NULL);
 	xfree(gci);
 }
 
-static void gc_dump_cond(gc_cond *cond, FILE *f)
+static void gc_dump_node(gc_info *gci, gc_node *gcn, FILE *f, int indent)
 {
-	switch (cond->type) {
-	case gct_demand: fprintf(f, "A"); break;
-	case gct_ignore: fprintf(f, "0"); break;
-	case gct_branch: {
-		gc_branch *branch = (gc_branch*)cond;
+	pmap_new_entry_t    entry;
+	pmap_new_iterator_t it;
 
-		fprintf(f, "G(%li,", get_irn_node_nr(branch->irn));
-		gc_dump_cond(branch->lhs, f);
-		fprintf(f, ",");
-		gc_dump_cond(branch->rhs, f);
-		fprintf(f, ")");
-		break;
+	foreach_pmap_new(&gcn->conds, entry, it) {
+		int       i;
+		gc_union *uni   = entry.value;
+		ir_node  *ir_dst = entry.key;
+		gc_node  *gc_dst;
+		if (!uni->done) continue;
+
+		for (i = 0; i < indent; i++) fprintf(f, "  ");
+
+		fprintf(f, "%s %li",
+			get_op_name(get_irn_op(ir_dst)),
+			get_irn_node_nr(ir_dst)
+		);
+
+		fprintf(f, ": ");
+		gc_dump_union(uni, f);
+		fprintf(f, "\n");
+
+		gc_dst = phase_get_irn_data(gci->phase, ir_dst);
+		if (gc_dst) gc_dump_node(gci, gc_dst, f, indent + 1);
 	}
-	case gct_repeat: {
-		gc_repeat *repeat = (gc_repeat*)cond;
-
-		fprintf(f, "R(%li,", get_irn_node_nr(repeat->irn));
-		gc_dump_cond(repeat->cond, f);
-		fprintf(f, ")");
-		break;
-	}
-	case gct_union: {
-		gc_union *gcu = (gc_union*)cond;
-		gc_dump_cond(gcu->lhs, f);
-		fprintf(f, " u ");
-		gc_dump_cond(gcu->rhs, f);
-		break;
-	}}
-}
-
-static void gc_dump_path(ir_node *src, ir_node *dst, gc_cond *cond, FILE *f)
-{
-	fprintf(f, "gc_%3li(%3li) = ",
-		get_irn_node_nr(src),
-		get_irn_node_nr(dst)
-	);
-
-	gc_dump_cond(cond, f);
 }
 
 void gc_dump(gc_info *gci, FILE *f)
 {
-	pmap_entry *entry;
-	foreach_pmap(gci->root->conds, entry) {
-		ir_node *dst  = (ir_node*)entry->key;
-		gc_cond *cond = entry->value;
+	fprintf(f, "%s %li\n",
+		get_op_name(get_irn_op(gci->root->irn)),
+		get_irn_node_nr(gci->root->irn)
+	);
 
-		gc_dump_path(gci->root->irn, dst, cond, f);
-		fprintf(f, "\n");
-	}
-}
-
-/******************************************************************************
- * Public query interface.                                                    *
- ******************************************************************************/
-
-gc_cond *gc_get_cond_for(gc_info *gci, ir_node *src, ir_node *dst)
-{
-	pmap_entry *entry;
-	gc_node    *gcn = phase_get_irn_data(gci->phase, src);
-	assert(gcn && "No information for the given node.");
-
-	entry = pmap_find(gcn->conds, dst);
-	if (!entry) return NULL;
-	return entry->value;
-}
-
-int gc_get_cond_count(gc_info *gci, ir_node *irn)
-{
-	gc_node *gcn = phase_get_irn_data(gci->phase, irn);
-	assert(gcn && "No information for the given node.");
-	return pmap_count(gcn->conds);
-}
-
-gc_entry gc_get_cond(gc_info *gci, ir_node *irn, gc_iter *it)
-{
-	gc_node    *gcn = phase_get_irn_data(gci->phase, irn);
-	pmap_entry *entry;
-	gc_entry    res;
-	assert(gcn && "No information for the given node.");
-
-	/* Unfortunately, pmap iteration is a bit strange, with the need to break
-	 * iterations. This will have to do for now. */
-	*it   = gcn;
-	entry = pmap_first(gcn->conds);
-	res.cond = entry->value;
-	res.dst  = (ir_node*)entry->key;
-	return res;
-}
-
-gc_entry gc_cond_iter_next(gc_iter *it)
-{
-	gc_entry    res   = { NULL, NULL };
-	gc_node    *gcn   = *it;
-	pmap_entry *entry = pmap_next(gcn->conds);
-	if (!entry) return res;
-
-	res.cond = entry->value;
-	res.dst  = (ir_node*)entry->key;
-	return res;
-}
-
-gc_cond *gc_get_union_cond(gc_cond *cond, gc_iter *it)
-{
-	gc_union *gcu = (gc_union*)cond;
-	assert(cond->type == gct_union);
-
-	*it = gcu->lhs;
-	return gcu->rhs;
-}
-
-gc_cond *gc_union_iter_next(gc_iter *it)
-{
-	gc_cond  *cond = *it;
-	gc_union *gcu;
-	if (!cond) return NULL;
-
-	/* Cancel if it is no union. */
-	if (cond->type != gct_union) {
-		*it = NULL;
-		return cond;
-	}
-
-	/* Return the rhs, make lhs the new it. */
-	gcu = (gc_union*)cond;
-	*it = gcu->lhs;
-	return gcu->rhs;
-}
-
-/* A bit tedious, but it keeps the implementation details hidden. */
-
-gc_type gc_get_cond_type(gc_cond *cond)
-{
-	return cond->type;
-}
-
-ir_node *gc_get_branch_irn(gc_cond *cond)
-{
-	assert(cond->type == gct_branch);
-	return ((gc_branch*)cond)->irn;
-}
-
-gc_cond *gc_get_branch_lhs(gc_cond *cond)
-{
-	assert(cond->type == gct_branch);
-	return ((gc_branch*)cond)->lhs;
-}
-
-gc_cond *gc_get_branch_rhs(gc_cond *cond)
-{
-	assert(cond->type == gct_branch);
-	return ((gc_branch*)cond)->rhs;
-}
-
-ir_node *gc_get_repeat_irn(gc_cond *cond)
-{
-	assert(cond->type == gct_repeat);
-	return ((gc_repeat*)cond)->irn;
-}
-
-gc_cond *gc_get_repeat_cond(gc_cond *cond)
-{
-	assert(cond->type == gct_repeat);
-	return ((gc_repeat*)cond)->cond;
-}
-
-gc_cond *gc_get_union_lhs(gc_cond *cond)
-{
-	assert(cond->type == gct_union);
-	return ((gc_union*)cond)->lhs;
-}
-
-gc_cond *gc_get_union_rhs(gc_cond *cond)
-{
-	assert(cond->type == gct_union);
-	return ((gc_union*)cond)->rhs;
+	gc_dump_node(gci, gci->root, f, 1);
 }
 
 /******************************************************************************
@@ -873,15 +746,19 @@ gc_cond *gc_get_union_rhs(gc_cond *cond)
 
 void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 {
-	obstack  obst;
-	pl_iter  it, it_theta, it_border;
+	obstack obst;
+
+	pl_irg_thetas_iter it;
+	pl_thetas_iter     it_theta;
+	pl_border_iter     it_border;
+
 	ir_node *eta, *theta, *irn;
 
 	obstack_init(&obst);
 	assert(pl_get_irg(pli) == irg);
 
 	/* Process all etas in the graph. */
-	foreach_pl_irg_eta(pli, it, eta) {
+	foreach_pl_irg_etas(pli, eta, it) {
 		/* Create the tuples for thetas and next values. */
 		ir_node  *header, *repeat, *force, *eta_a;
 		ir_node  *block        = get_nodes_block(eta);
@@ -898,7 +775,7 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 
 		/* Collect the nodes. */
 		index = 0;
-		foreach_pl_theta(pli, eta, it_theta, theta) {
+		foreach_pl_thetas(pli, eta, theta, it_theta) {
 			assert(pl_get_depth(pli, theta) == (depth + 1));
 			header_ins[index] = theta;
 			repeat_ins[index] = get_Theta_next(theta);
@@ -906,7 +783,7 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 		}
 
 		index = 0;
-		foreach_pl_border(pli, eta, it_border, irn) {
+		foreach_pl_border(pli, eta, irn, it_border) {
 			assert(pl_get_depth(pli, irn) <= depth);
 			force_ins[index] = irn;
 			index++;
@@ -931,7 +808,7 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 	}
 
 	/* Replace thetas by "acyclic" thetas. */
-	foreach_pl_irg_theta(pli, it_theta, theta) {
+	foreach_pl_irg_thetas(pli, theta, it_theta) {
 		ir_node *block   = get_nodes_block(theta);
 		ir_mode *mode    = get_irn_mode(theta);
 		ir_node *init    = get_Theta_init(theta);
@@ -942,4 +819,82 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 	}
 
 	obstack_free(&obst, NULL);
+}
+
+/******************************************************************************
+ * Public interface.                                                          *
+ ******************************************************************************/
+
+void gc_union_map_iter_init(gc_info *gci, ir_node *irn, gc_union_map_iter *it)
+{
+	gc_node *gcn = phase_get_irn_data(gci->phase, irn);
+	assert(gcn && "No information for the given node.");
+
+	pmap_new_iterator_init(it, &gcn->conds);
+}
+
+gc_entry gc_union_map_iter_next(gc_union_map_iter *it)
+{
+	gc_entry res = { NULL, NULL };
+
+	while (1)
+	{
+		/* Advance the iterator. */
+		pmap_new_entry_t entry = pmap_new_iterator_next(it);
+		gc_union *uni;
+
+		/* If we reached the end, cancel. */
+		if (pmap_new_is_null(entry)) break;
+		uni = entry.value;
+
+		/* Only return finished unions. */
+		if (uni->done) {
+			res.uni = uni;
+			res.dst = entry.key;
+			return res;
+		}
+	}
+
+	return res;
+}
+
+int gc_entry_is_null(gc_entry entry)
+{
+	return entry.dst == NULL;
+}
+
+void gc_union_iter_init(gc_union *uni, gc_union_iter *it)
+{
+	*it = plist_first(uni->conds);
+}
+
+gc_cond *gc_union_iter_next(gc_union_iter *it)
+{
+	if (!*it) return NULL;
+
+	gc_cond *cond = (*it)->data;
+	*it = (*it)->next;
+	return cond;
+}
+
+gc_type gc_get_cond_type(gc_cond *cond)
+{
+	return cond->type;
+}
+
+ir_node *gc_get_cond_irn(gc_cond *cond)
+{
+	return cond->irn;
+}
+
+gc_cond *gc_get_cond_next(gc_cond *cond)
+{
+	/* Const is just a protection for the code in this source file. Outside
+	 * of it, gc_cond is an opaque type, so no protection is needed. */
+	return (gc_cond*)cond->next;
+}
+
+int gc_union_is_empty(gc_union *uni)
+{
+	return plist_count(uni->conds) == 0;
 }

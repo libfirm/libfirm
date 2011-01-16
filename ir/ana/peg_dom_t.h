@@ -29,9 +29,10 @@
 
 #include <stdio.h>
 #include "firm_types.h"
+#include "plist.h"
 
-typedef struct pd_tree pd_tree;
-typedef void* pd_iter;
+typedef struct pd_tree   pd_tree;
+typedef plist_element_t *pd_children_iter;
 
 /** Compute the dominance tree for the given irg. */
 pd_tree *pd_init(ir_graph *irg);
@@ -51,23 +52,22 @@ int pd_dominates(pd_tree *pdt, ir_node *lhs, ir_node *rhs);
 /** Get the parent node in the dominator tree. */
 ir_node *pd_get_parent(pd_tree *pdt, ir_node *irn);
 
-/**
- * Get the first child node. As "it" parameter either pass NULL (to only get
- * one child), or a pointer to an allocated pd_iter, to use with pd_iter_next.
- */
-ir_node *pd_get_child(pd_tree *pdt, ir_node *irn, pd_iter *it);
+/** Get a count of the nodes children. */
+int pd_get_children_count(pd_tree *pdt, ir_node *irn);
 
-/** Get the number of children of the given irn. */
-int pd_get_child_count(pd_tree *pdt, ir_node *irn);
+/** Initialize an iterator to iterate the nodes children. */
+void pd_children_iter_init(pd_tree *pdt, ir_node *irn, pd_children_iter *it);
 
-/** Get the next node from the given iterator. */
-ir_node *pd_iter_next(pd_iter *it);
+/** Get the next element from the given iterator. */
+ir_node *pd_children_iter_next(pd_children_iter *it);
 
 /** Dumps the dominator tree to the specified file. */
 void pd_dump(pd_tree *pdt, FILE *f);
 
-#define foreach_pd_child(pdt, irn, it, child) \
-	for ((child) = pd_get_child((pdt), (irn), &(it)); \
-		(child); (child) = pd_iter_next(&(it)))
+#define foreach_pd_children(pdt, irn, child, it) \
+	for(pd_children_iter_init((pdt), (irn), &(it)), \
+		(child) = pd_children_iter_next(&(it)); \
+		(child); \
+		(child) = pd_children_iter_next(&(it)))
 
 #endif

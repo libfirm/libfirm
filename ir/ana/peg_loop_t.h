@@ -29,9 +29,14 @@
 
 #include <stdio.h>
 #include "firm_types.h"
+#include "plist.h"
 
 typedef struct pl_info pl_info;
-typedef void* pl_iter;
+typedef plist_element_t *pl_irg_etas_iter;
+typedef plist_element_t *pl_irg_thetas_iter;
+typedef plist_element_t *pl_etas_iter;
+typedef plist_element_t *pl_thetas_iter;
+typedef plist_element_t *pl_border_iter;
 
 /** Compute the loop information for the given irg. */
 pl_info *pl_init(ir_graph *irg);
@@ -45,52 +50,50 @@ ir_graph *pl_get_irg(pl_info *pli);
 /** Get the loop depth of the given irn. */
 int pl_get_depth(pl_info *pli, ir_node *irn);
 
-/**
- * Get the first eta node in the irg. For the "it" parameter either pass NULL
- * (to only get one node), or a pointer to an allocated pl_iter, to use with
- * pl_iter_next.
- */
-ir_node *pl_get_irg_eta(pl_info *pli, pl_iter *it);
+/** Get a count of the eta nodes in the graph. */
+int pl_get_irg_eta_count(pl_info *pli);
 
-/**
- * Get the first theta node in the irg. For the "it" parameter either pass NULL
- * (to only get one node), or a pointer to an allocated pl_iter, to use with
- * pl_iter_next.
- */
-ir_node *pl_get_irg_theta(pl_info *pli, pl_iter *it);
+/** Initialize an iterator to iterate the eta nodes in the graph. */
+void pl_irg_etas_iter_init(pl_info *pli, pl_irg_etas_iter *it);
 
-/**
- * Get the first eta node associated with the given irn. For the "it"
- * parameter either pass NULL (to only get one node), or a pointer to an
- * allocated pl_iter, to use with pl_iter_next.
- */
-ir_node *pl_get_eta(pl_info *pli, ir_node *irn, pl_iter *it);
+/** Get the next element from the given iterator. */
+ir_node *pl_irg_etas_iter_next(pl_irg_etas_iter *it);
 
-/**
- * Get the first theta node associated with the given eta irn. For the "it"
- * parameter either pass NULL (to only get one node), or a pointer to an
- * allocated pl_iter, to use with pl_iter_next.
- */
-ir_node *pl_get_theta(pl_info *pli, ir_node *irn, pl_iter *it);
+/** Get a count of the theta nodes in the graph. */
+int pl_get_irg_theta_count(pl_info *pli);
 
-/**
- * Get the first border node associated with the given eta irn. For the "it"
- * parameter either pass NULL (to only get one node), or a pointer to an
- * allocated pl_iter, to use with pl_iter_next.
- */
-ir_node *pl_get_border(pl_info *pli, ir_node *irn, pl_iter *it);
+/** Initialize an iterator to iterate the theta nodes in the graph. */
+void pl_irg_thetas_iter_init(pl_info *pli, pl_irg_thetas_iter *it);
 
-/** Get the number of eta nodes associated with the given irn. */
-int pl_get_eta_count(pl_info *pli, ir_node *irn);
+/** Get the next element from the given iterator. */
+ir_node *pl_irg_thetas_iter_next(pl_irg_thetas_iter *it);
 
-/** Get the number of theta nodes associated with the given eta irn. */
+/** Get a count of the theta nodes associated with irn. */
 int pl_get_theta_count(pl_info *pli, ir_node *irn);
 
-/** Get the number of border nodes associated with the given eta irn. */
+/** Initialize an iterator to iterate the theta nodes associated with irn. */
+void pl_thetas_iter_init(pl_info *pli, ir_node *irn, pl_thetas_iter *it);
+
+/** Get the next element from the given iterator. */
+ir_node *pl_thetas_iter_next(pl_thetas_iter *it);
+
+/** Get a count of the theta nodes associated with irn. */
+int pl_get_eta_count(pl_info *pli, ir_node *irn);
+
+/** Initialize an iterator to iterate the theta nodes associated with irn. */
+void pl_etas_iter_init(pl_info *pli, ir_node *irn, pl_etas_iter *it);
+
+/** Get the next element from the given iterator. */
+ir_node *pl_etas_iter_next(pl_etas_iter *it);
+
+/** Get a count of the border nodes associated with irn. */
 int pl_get_border_count(pl_info *pli, ir_node *irn);
 
-/** Get the next node from the given iterator. */
-ir_node *pl_iter_next(pl_iter *it);
+/** Initialize an iterator to iterate the border nodes associated with irn. */
+void pl_border_iter_init(pl_info *pli, ir_node *irn, pl_border_iter *it);
+
+/** Get the next element from the given iterator. */
+ir_node *pl_border_iter_next(pl_border_iter *it);
 
 /**
  * Set depth of the given node. Intended to integrate new nodes into the graph
@@ -108,24 +111,34 @@ void pl_copy_info(pl_info *pli, ir_node *src, ir_node *dst);
 /** Dumps the loop analysis results to the specified file. */
 void pl_dump(pl_info *pli, FILE* f);
 
-#define foreach_pl_irg_eta(pli, it, eta) \
-	for ((eta) = pl_get_irg_eta((pli), &(it)); \
-		(eta); (eta) = pl_iter_next(&(it)))
+#define foreach_pl_irg_etas(pli, eta, it) \
+	for(pl_irg_etas_iter_init((pli), &(it)), \
+		(eta) = pl_irg_etas_iter_next(&(it)); \
+		(eta); \
+		(eta) = pl_irg_etas_iter_next(&(it)))
 
-#define foreach_pl_irg_theta(pli, it, theta) \
-	for ((theta) = pl_get_irg_theta((pli), &(it)); \
-		(theta); (theta) = pl_iter_next(&(it)))
+#define foreach_pl_irg_thetas(pli, theta, it) \
+	for(pl_irg_thetas_iter_init((pli), &(it)), \
+		(theta) = pl_irg_thetas_iter_next(&(it)); \
+		(theta); \
+		(theta) = pl_irg_thetas_iter_next(&(it)))
 
-#define foreach_pl_eta(pli, irn, it, eta) \
-	for ((eta) = pl_get_eta((pli), (irn), &(it)); \
-		(eta); (eta) = pl_iter_next(&(it)))
+#define foreach_pl_etas(pli, irn, eta, it) \
+	for(pl_etas_iter_init((pli), (irn), &(it)), \
+		(eta) = pl_etas_iter_next(&(it)); \
+		(eta); \
+		(eta) = pl_etas_iter_next(&(it)))
 
-#define foreach_pl_theta(pli, irn, it, theta) \
-	for ((theta) = pl_get_theta((pli), (irn), &(it)); \
-		(theta); (theta) = pl_iter_next(&(it)))
+#define foreach_pl_thetas(pli, irn, theta, it) \
+	for(pl_thetas_iter_init((pli), (irn), &(it)), \
+		(theta) = pl_thetas_iter_next(&(it)); \
+		(theta); \
+		(theta) = pl_thetas_iter_next(&(it)))
 
-#define foreach_pl_border(pli, irn, it, border) \
-	for ((border) = pl_get_border((pli), (irn), &(it)); \
-		(border); (border) = pl_iter_next(&(it)))
+#define foreach_pl_border(pli, irn, ir_border, it) \
+	for(pl_border_iter_init((pli), (irn), &(it)), \
+		(ir_border) = pl_border_iter_next(&(it)); \
+		(ir_border); \
+		(ir_border) = pl_border_iter_next(&(it)))
 
 #endif
