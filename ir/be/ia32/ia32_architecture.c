@@ -740,10 +740,21 @@ typedef union {
 static void x86_cpuid(cpuid_registers *regs, unsigned level)
 {
 #if defined(__GNUC__)
+#	ifdef __PIC__ // GCC cannot handle EBX in PIC
+	__asm (
+		"pushl %%ebx\n\t"
+		"cpuid\n\t"
+		"movl %%ebx, %1\n\t"
+		"popl %%ebx"
+	: "=a" (regs->r.eax), "=r" (regs->r.ebx), "=c" (regs->r.ecx), "=d" (regs->r.edx)
+	: "a" (level)
+	);
+#	else
 	__asm ("cpuid\n\t"
 	: "=a" (regs->r.eax), "=b" (regs->r.ebx), "=c" (regs->r.ecx), "=d" (regs->r.edx)
 	: "a" (level)
 	);
+#	endif
 #elif defined(_MSC_VER)
 	__cpuid(regs->bulk, level);
 #endif
