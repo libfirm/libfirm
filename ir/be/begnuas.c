@@ -262,17 +262,17 @@ static ir_tarval *get_initializer_tarval(const ir_initializer_t *initializer)
 	return get_tarval_undefined();
 }
 
-static int initializer_is_string_const(const ir_initializer_t *initializer)
+static bool initializer_is_string_const(const ir_initializer_t *initializer)
 {
 	size_t i, len;
-	int found_printable = 0;
+	bool found_printable = false;
 
 	if (initializer->kind != IR_INITIALIZER_COMPOUND)
-		return 0;
+		return false;
 
 	len = initializer->compound.n_initializers;
 	if (len < 1)
-		return 0;
+		return false;
 	for (i = 0; i < len; ++i) {
 		int               c;
 		ir_tarval        *tv;
@@ -282,20 +282,20 @@ static int initializer_is_string_const(const ir_initializer_t *initializer)
 
 		tv = get_initializer_tarval(sub_initializer);
 		if (!tarval_is_constant(tv))
-			return 0;
+			return false;
 
 		mode = get_tarval_mode(tv);
 		if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
-			return 0;
+			return false;
 
 		c = get_tarval_long(tv);
 		if (isgraph(c) || isspace(c))
-			found_printable = 1;
+			found_printable = true;
 		else if (c != 0)
-			return 0;
+			return false;
 
 		if (i == len - 1 && c != '\0')
-			return 0;
+			return false;
 	}
 
 	return found_printable;
@@ -899,7 +899,7 @@ static void emit_string_cst(const ir_entity *ent)
 	}
 }
 
-static void emit_string_initializer(const ir_initializer_t *initializer)
+static size_t emit_string_initializer(const ir_initializer_t *initializer)
 {
 	size_t i, len;
 
@@ -934,20 +934,24 @@ static void emit_string_initializer(const ir_initializer_t *initializer)
 	}
 	be_emit_cstring("\"\n");
 	be_emit_write_line();
+
+	return initializer->compound.n_initializers;
 }
 
-enum normal_or_bitfield_kind {
+typedef enum normal_or_bitfield_kind {
 	NORMAL = 0,
 	TARVAL,
+	STRING,
 	BITFIELD
-};
+} normal_or_bitfield_kind;
 
 typedef struct {
-	enum normal_or_bitfield_kind kind;
+	normal_or_bitfield_kind kind;
 	union {
-		ir_node       *value;
-		ir_tarval     *tarval;
-		unsigned char  bf_val;
+		ir_node                *value;
+		ir_tarval              *tarval;
+		unsigned char           bf_val;
+		const ir_initializer_t *string;
 	} v;
 } normal_or_bitfield;
 
@@ -1079,6 +1083,13 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 {
 	assert((size_t) (vals - glob_vals) < max_vals);
 
+	if (initializer_is_string_const(initializer)) {
+		assert(vals->kind != BITFIELD);
+		vals->kind     = STRING;
+		vals->v.string = initializer;
+		return;
+	}
+
 	switch (get_initializer_kind(initializer)) {
 	case IR_INITIALIZER_NULL:
 		return;
@@ -1202,16 +1213,19 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 
 	/* now write values sorted */
 	for (k = 0; k < size; ) {
-		int space     = 0;
-		int elem_size = 1;
-		if (vals[k].kind == NORMAL) {
+		int                     space     = 0;
+		int                     elem_size = 1;
+		normal_or_bitfield_kind kind      = vals[k].kind;
+		switch (kind) {
+		case NORMAL:
 			if (vals[k].v.value != NULL) {
 				emit_atomic_init(env, vals[k].v.value);
 				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
 			} else {
 				elem_size = 0;
 			}
-		} else if (vals[k].kind == TARVAL) {
+			break;
+		case TARVAL: {
 			ir_tarval *tv   = vals[k].v.tarval;
 			size_t     size = get_mode_size_bytes(get_tarval_mode(tv));
 
@@ -1222,10 +1236,15 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 			emit_arith_tarval(tv, size);
 			be_emit_char('\n');
 			be_emit_write_line();
-		} else {
-			assert(vals[k].kind == BITFIELD);
+			break;
+		}
+		case STRING:
+			elem_size = emit_string_initializer(vals[k].v.string);
+			break;
+		case BITFIELD:
 			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
 			be_emit_write_line();
+			break;
 		}
 
 		k += elem_size;
