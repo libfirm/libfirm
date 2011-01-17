@@ -126,10 +126,7 @@ void ir_del_arr_f(void *elts)
 	assert (dp->magic == ARR_F_MAGIC);
 
 #ifndef NDEBUG
-	{
-		ir_arr_descr *wdp = (ir_arr_descr *)dp;
-		wdp->magic = 0xdeadbeef;
-	}
+	dp->magic = 0xdeadbeef;
 #endif
 	free(dp);
 }
