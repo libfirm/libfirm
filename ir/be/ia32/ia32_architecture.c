@@ -757,6 +757,8 @@ static void x86_cpuid(cpuid_registers *regs, unsigned level)
 #	endif
 #elif defined(_MSC_VER)
 	__cpuid(regs->bulk, level);
+#else
+#	error CPUID is missing
 #endif
 }
 
