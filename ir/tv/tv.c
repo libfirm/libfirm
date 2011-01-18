@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -116,8 +116,8 @@ static const ieee_descriptor_t quad_desc     = { 15, 112, 0, NORMAL };
  *   private functions
  ****************************************************************************/
 #ifndef NDEBUG
-static int hash_val(const void *value, unsigned int length);
-static int hash_tv(ir_tarval *tv);
+static unsigned hash_val(const void *value, size_t length);
+static unsigned hash_tv(ir_tarval *tv);
 static void _fail_verify(ir_tarval *tv, const char* file, int line)
 {
 	/* print a memory image of the tarval and throw an assertion */
@@ -145,16 +145,16 @@ inline static void tarval_verify(ir_tarval *tv)
 #endif /* NDEBUG */
 
 /** Hash a tarval. */
-static int hash_tv(ir_tarval *tv)
+static unsigned hash_tv(ir_tarval *tv)
 {
-	return (PTR_TO_INT(tv->value) ^ PTR_TO_INT(tv->mode)) + tv->length;
+	return (unsigned)((PTR_TO_INT(tv->value) ^ PTR_TO_INT(tv->mode)) + tv->length);
 }
 
 /** Hash a value. Treat it as a byte array. */
-static int hash_val(const void *value, unsigned int length)
+static unsigned hash_val(const void *value, size_t length)
 {
-	unsigned int i;
-	unsigned int hash = 0;
+	size_t i;
+	unsigned hash = 0;
 
 	/* scramble the byte - array */
 	for (i = 0; i < length; ++i) {
@@ -190,7 +190,7 @@ static int cmp_tv(const void *p1, const void *p2, size_t n)
 }
 
 /** finds tarval with value/mode or creates new tarval */
-static ir_tarval *get_tarval(const void *value, int length, ir_mode *mode)
+static ir_tarval *get_tarval(const void *value, size_t length, ir_mode *mode)
 {
 	ir_tarval tv;
 
@@ -217,7 +217,7 @@ static ir_tarval *get_tarval(const void *value, int length, ir_mode *mode)
 /**
  * handle overflow
  */
-static ir_tarval *get_tarval_overflow(const void *value, int length, ir_mode *mode)
+static ir_tarval *get_tarval_overflow(const void *value, size_t length, ir_mode *mode)
 {
 	char *temp;
 

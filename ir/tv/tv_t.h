@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -82,10 +82,10 @@ void finish_tarval(void);
  *   irmode.h for predefined modes
  */
 struct ir_tarval {
-	firm_kind kind;         /**< must be k_tarval */
-	ir_mode   *mode;        /**< the mode of the stored value */
-	const void *value;      /**< the value stored in an internal way... */
-	unsigned int length;    /**< the length of the stored value */
+	firm_kind  kind;    /**< must be k_tarval */
+	ir_mode    *mode;   /**< the mode of the stored value */
+	const void *value;  /**< the value stored in an internal way... */
+	size_t     length;  /**< the length of the stored value */
 };
 
 /* inline functions */
