@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -49,7 +49,7 @@ FIRM_API eset *eset_copy(eset *source);
 FIRM_API void eset_destroy(eset *s);
 
 /** Returns the number of elements in the set. */
-FIRM_API int eset_count(eset *s);
+FIRM_API size_t eset_count(eset *s);
 
 /** Inserts an address into the set. */
 FIRM_API void eset_insert(eset *s, void *p);

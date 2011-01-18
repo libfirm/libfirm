@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -70,7 +70,7 @@ void eset_destroy(eset *s)
 }
 
 /* Returns the number of elements in the set. */
-int eset_count(eset *s)
+size_t eset_count(eset *s)
 {
   return set_count((set *)s);
 }

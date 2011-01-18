@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -91,7 +91,7 @@ typedef int (*pset_cmp_fun) (const void *elt, const void *key);
  * @returns
  *    created pset
  */
-FIRM_API pset *new_pset(pset_cmp_fun func, int slots);
+FIRM_API pset *new_pset(pset_cmp_fun func, size_t slots);
 
 /**
  * Deletes a pset.
@@ -108,7 +108,7 @@ FIRM_API void del_pset(pset *pset);
  *
  * @param pset   the pset
  */
-FIRM_API int pset_count(pset *pset);
+FIRM_API size_t pset_count(pset *pset);
 
 /**
  * Searches an element pointer in a pset.

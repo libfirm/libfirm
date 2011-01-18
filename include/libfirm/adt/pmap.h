@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -45,7 +45,7 @@ typedef struct pmap_entry {
 FIRM_API pmap *pmap_create(void);
 
 /** Creates a new empty map with an initial number of slots. */
-FIRM_API pmap *pmap_create_ex(int slots);
+FIRM_API pmap *pmap_create_ex(size_t slots);
 
 /** Deletes a map. */
 FIRM_API void pmap_destroy(pmap *);
@@ -65,7 +65,7 @@ FIRM_API pmap_entry * pmap_find(pmap *map, const void * key);
 /** Returns the value of "key". */
 FIRM_API void * pmap_get(pmap *map, const void * key);
 
-FIRM_API int pmap_count(pmap *map);
+FIRM_API size_t pmap_count(pmap *map);
 
 /**
  * Returns the first entry of a map if the map is not empty.

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -75,7 +75,7 @@ typedef int (*set_cmp_fun) (const void *elt, const void *key, size_t size);
  * @returns
  *    created set
  */
-FIRM_API set *new_set(set_cmp_fun func, int slots);
+FIRM_API set *new_set(set_cmp_fun func, size_t slots);
 
 /**
  * Deletes a set and all elements of it.
@@ -89,7 +89,7 @@ FIRM_API void del_set(set *set);
  *
  * @param set   the set
  */
-FIRM_API int set_count(set *set);
+FIRM_API size_t set_count(set *set);
 
 /**
  * Searches an element in a set.
@@ -225,7 +225,7 @@ void set_stats (set *set);
  *
  * @param set  the set
  */
-FIRM_API void set_describe (set *set);
+FIRM_API void set_describe(set *set);
 #endif
 
 

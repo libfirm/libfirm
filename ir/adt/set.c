@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -65,6 +65,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "xmalloc.h"
+#include "lc_printf.h"
 #ifdef PSET
 # include "pset.h"
 #else
@@ -90,10 +91,10 @@ typedef struct element {
 
 
 struct SET {
-	unsigned p;           /**< Next bucket to be split */
-	unsigned maxp;        /**< upper bound on p during expansion */
-	unsigned nkey;        /**< current # keys */
-	unsigned nseg;        /**< current # segments */
+	size_t p;             /**< Next bucket to be split */
+	size_t maxp;          /**< upper bound on p during expansion */
+	size_t nkey;          /**< current # keys */
+	size_t nseg;          /**< current # segments */
 	Segment *dir[DIRECTORY_SIZE];
 	MANGLEP(cmp_fun) cmp;     /**< function comparing entries */
 	unsigned iter_i, iter_j;
@@ -103,8 +104,8 @@ struct SET {
 #endif
 	struct obstack obst;      /**< obstack for allocation all data */
 #ifdef STATS
-	int naccess, ncollision, ndups;
-	int max_chain_len;
+	size_t naccess, ncollision, ndups;
+	size_t max_chain_len;
 #endif
 #ifdef DEBUG
 	const char *tag;          /**< an optionally tag for distinguishing sets */
@@ -116,16 +117,16 @@ struct SET {
 
 void MANGLEP(stats) (SET *table)
 {
-	int nfree = 0;
+	size_t nfree = 0;
 #ifdef PSET
 	Element *q = table->free_list;
 	while (q) { q = q->chain; ++nfree; }
 #endif
-	printf ("     accesses  collisions        keys  duplicates     longest      wasted\n%12d%12d%12d%12d%12d%12d\n",
+	lc_printf("     accesses  collisions        keys  duplicates     longest      wasted\n%12zu%12zu%12zu%12zu%12zu%12zu\n",
 			table->naccess, table->ncollision, table->nkey, table->ndups, table->max_chain_len, nfree);
 }
 
-static inline void stat_chain_len(SET *table, int chain_len)
+static inline void stat_chain_len(SET *table, size_t chain_len)
 {
 	table->ncollision += chain_len;
 	if (table->max_chain_len < chain_len) table->max_chain_len = chain_len;
@@ -149,11 +150,11 @@ const char *MANGLEP(tag);
 
 void MANGLEP(describe) (SET *table)
 {
-	unsigned i, j, collide;
+	size_t i, j, collide;
 	Element *ptr;
 	Segment *seg;
 
-	printf ("p=%u maxp=%u nkey=%u nseg=%u\n",
+	lc_printf("p=%zu maxp=%zu nkey=%zu nseg=%zu\n",
 			table->p, table->maxp, table->nkey, table->nseg);
 	for (i = 0;  i < table->nseg;  i++) {
 		seg = table->dir[i];
@@ -161,11 +162,11 @@ void MANGLEP(describe) (SET *table)
 			collide = 0;
 			ptr = seg[j];
 			while (ptr) {
-				if (collide) printf ("<%3d>", collide);
+				if (collide) lc_printf("<%3zu>", collide);
 				else printf ("table");
-				printf ("[%d][%3d]: %u %p\n", i, j, ptr->entry.hash, (void *)ptr->entry.dptr);
+				lc_printf("[%zd][%3zd]: %u %p\n", i, j, ptr->entry.hash, (void *)ptr->entry.dptr);
 				ptr = ptr->chain;
-				collide++;
+				++collide;
 			}
 		}
 	}
@@ -177,7 +178,7 @@ void MANGLEP(describe) (SET *table)
 #endif /* !DEBUG */
 
 
-SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, int nslots)
+SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 {
 	int i;
 	SET *table = XMALLOC(SET);
@@ -227,7 +228,7 @@ void PMANGLE(del) (SET *table)
 	xfree (table);
 }
 
-int MANGLEP(count) (SET *table)
+size_t MANGLEP(count) (SET *table)
 {
 	return table->nkey;
 }
@@ -322,9 +323,9 @@ static inline int loaded(SET *table)
  */
 static void expand_table(SET *table)
 {
-	unsigned NewAddress;
-	int OldSegmentIndex, NewSegmentIndex;
-	int OldSegmentDir, NewSegmentDir;
+	size_t NewAddress;
+	size_t OldSegmentIndex, NewSegmentIndex;
+	size_t OldSegmentDir, NewSegmentDir;
 	Segment *OldSegment;
 	Segment *NewSegment;
 	Element *Current;
@@ -390,7 +391,7 @@ void * MANGLE(_,_search) (SET *table,
 	int SegmentIndex;
 	MANGLEP(cmp_fun) cmp = table->cmp;
 	Segment q;
-	int chain_len = 0;
+	size_t chain_len = 0;
 
 	assert (table);
 	assert (key);
@@ -412,7 +413,7 @@ void * MANGLE(_,_search) (SET *table,
 		++chain_len;
 	}
 
-	stat_chain_len (table, chain_len);
+	stat_chain_len(table, chain_len);
 
 	if (!q && (action != MANGLE(_,_find))) { /* not found, insert */
 		assert (!table->iter_tail && "insert an element into a set that is iterated");

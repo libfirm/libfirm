@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -56,7 +56,7 @@ static int pmap_entry_cmp(const void *p1, const void *p2, size_t size)
 }
 
 /* Creates a new empty map with an initial number of slots. */
-pmap *pmap_create_ex(int slots)
+pmap *pmap_create_ex(size_t slots)
 {
 	return (pmap *)new_set(pmap_entry_cmp, slots);
 }
@@ -97,7 +97,7 @@ void * pmap_get(pmap *map, const void *key)
 	return entry == NULL ? NULL : entry->value;
 }
 
-int pmap_count(pmap *map)
+size_t pmap_count(pmap *map)
 {
 	return set_count(M2S(map));
 }
