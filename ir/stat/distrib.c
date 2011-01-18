@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -201,7 +201,7 @@ int stat_get_count_distrib_tbl(distrib_tbl_t *tbl)
 double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 {
 	distrib_entry_t *entry;
-	unsigned count;
+	size_t count;
 	double sum;
 
 	if (tbl->int_dist) {
@@ -248,7 +248,7 @@ double stat_calc_mean_distrib_tbl(distrib_tbl_t *tbl)
 double stat_calc_avg_distrib_tbl(distrib_tbl_t *tbl)
 {
 	distrib_entry_t *entry;
-	unsigned        count = 0;
+	size_t          count = 0;
 	double          sum   = 0.0;
 
 	if (tbl->int_dist) {

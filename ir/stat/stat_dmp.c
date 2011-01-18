@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -329,7 +329,7 @@ static void add_distrib_entry(const distrib_entry_t *entry, void *env)
 {
 	distrib_tbl_t *sum_tbl = (distrib_tbl_t*)env;
 
-	stat_add_int_distrib_tbl(sum_tbl, PTR_TO_INT(entry->object), &entry->cnt);
+	stat_add_int_distrib_tbl(sum_tbl, (int)PTR_TO_INT(entry->object), &entry->cnt);
 }  /* add_distrib_entry */
 
 /**
@@ -553,7 +553,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 	/* effects of optimizations */
 	if (dump_opts) {
-		size_t i;
+		int i;
 
 		simple_dump_real_func_calls(dmp, &entry->cnt[gcnt_acc_real_func_call]);
 		simple_dump_tail_recursion(dmp, entry->num_tail_recursion);

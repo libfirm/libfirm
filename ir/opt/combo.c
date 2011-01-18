@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -83,6 +83,7 @@
 #include "irnodeset.h"
 #include "irpass.h"
 #include "tv_t.h"
+#include "irtools.h"
 
 #include "irprintf.h"
 #include "irdump.h"
@@ -596,7 +597,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
  */
 static unsigned opcode_hash(const opcode_key_t *entry)
 {
-	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ptr) + entry->arity;
+	return (unsigned)(PTR_TO_INT(entry->mode) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ptr) + entry->arity);
 }  /* opcode_hash */
 
 /**

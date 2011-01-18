@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -143,7 +143,7 @@ static unsigned get_type_number(stabs_handle *h, ir_type *tp)
 		num = h->next_type_nr++;
 		pmap_insert(h->type_map, tp, INT_TO_PTR(num));
 	} else {
-		num = PTR_TO_INT(entry->value);
+		num = (unsigned)PTR_TO_INT(entry->value);
 	}
 	return num;
 }  /* get_type_number */

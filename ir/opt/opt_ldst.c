@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -125,7 +125,7 @@ typedef struct ldst_env_t {
 	memop_t         **curr_id_2_memop; /**< current map of address ids to memops */
 	unsigned        curr_adr_id;       /**< number for address mapping */
 	unsigned        n_mem_ops;         /**< number of memory operations (Loads/Stores) */
-	unsigned        rbs_size;          /**< size of all bitsets in bytes */
+	size_t          rbs_size;          /**< size of all bitsets in bytes */
 	int             max_cfg_preds;     /**< maximum number of block cfg predecessors */
 	int             changed;           /**< Flags for changed graph state */
 #ifdef DEBUG_libfirm
@@ -180,9 +180,9 @@ static void dump_block_list(ldst_env *env)
  */
 static void dump_curr(block_t *bl, const char *s)
 {
-	unsigned end = env.rbs_size - 1;
-	unsigned pos;
-	int      i;
+	size_t end = env.rbs_size - 1;
+	size_t pos;
+	int    i;
 
 	DB((dbg, LEVEL_2, "%s[%+F] = {", s, bl->block));
 	i = 0;
@@ -1379,8 +1379,8 @@ static void kill_all(void)
  */
 static void kill_memops(const value_t *value)
 {
-	unsigned end = env.rbs_size - 1;
-	unsigned pos;
+	size_t end = env.rbs_size - 1;
+	size_t pos;
 
 	for (pos = rbitset_next(env.curr_set, 0, 1); pos < end; pos = rbitset_next(env.curr_set, pos + 1, 1)) {
 		memop_t *op = env.curr_id_2_memop[pos];
@@ -1601,8 +1601,8 @@ static int backward_antic(block_t *bl)
 		ir_node  *succ    = get_Block_cfg_out(block, 0);
 		block_t  *succ_bl = get_block_entry(succ);
 		int      pred_pos = get_Block_cfgpred_pos(succ, block);
-		unsigned end      = env.rbs_size - 1;
-		unsigned pos;
+		size_t   end      = env.rbs_size - 1;
+		size_t   pos;
 
 		kill_all();
 
@@ -1940,8 +1940,8 @@ static int insert_Load(block_t *bl)
 {
 	ir_node  *block = bl->block;
 	int      i, n = get_Block_n_cfgpreds(block);
-	unsigned end = env.rbs_size - 1;
-	unsigned pos;
+	size_t   end = env.rbs_size - 1;
+	size_t   pos;
 
 	DB((dbg, LEVEL_3, "processing %+F\n", block));
 
@@ -1979,9 +1979,9 @@ static int insert_Load(block_t *bl)
 		}
 		/*
 		 * Ensure that all values are in the map: build Phi's if necessary:
-		 * Note: the last bit is the sentinel and ALWAYS set, so start with -2.
+		 * Note: the last bit is the sentinel and ALWAYS set, so end with -2.
 		 */
-		for (pos = env.rbs_size - 2; pos >= 0; --pos) {
+		for (pos = 0; pos < env.rbs_size - 1; ++pos) {
 			if (! rbitset_is_set(env.curr_set, pos))
 				env.curr_id_2_memop[pos] = NULL;
 			else {

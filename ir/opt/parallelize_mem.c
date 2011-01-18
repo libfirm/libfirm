@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -151,7 +151,7 @@ static void walker(ir_node *proj, void *env)
 	ir_node          *mem_op;
 	ir_node          *pred;
 	ir_node          *block;
-	int               n;
+	size_t            n;
 	parallelize_info  pi;
 
 	(void)env;

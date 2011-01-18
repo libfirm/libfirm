@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1199,8 +1199,8 @@ static int cmp_regs(const void *a, const void *b)
 static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
 {
 	pmap_entry *ent;
-	int n = pmap_count(reg_map);
-	int i = 0;
+	size_t n = pmap_count(reg_map);
+	size_t i = 0;
 
 	foreach_pmap(reg_map, ent) {
 		res[i].reg = (const arch_register_t*)ent->key;
@@ -1291,7 +1291,7 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	dbg_info *dbgi;
 	pmap *reg_map  = pmap_create();
 	ir_node *keep  = (ir_node*)pmap_get(env->keep_map, bl);
-	int in_max;
+	size_t in_max;
 	ir_node *ret;
 	int i, n;
 	unsigned pop;

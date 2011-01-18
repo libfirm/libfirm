@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -40,6 +40,7 @@
 #include "set.h"
 #include "irpass.h"
 #include "debug.h"
+#include "irtools.h"
 
 /* define this for general block shaping: congruent blocks
    are found not only before the end block but anywhere in the graph */
@@ -261,7 +262,7 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
 static unsigned opcode_hash(const opcode_key_t *entry)
 {
 	/* assume long >= int */
-	return (entry->mode - (ir_mode *)0) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.addr) + entry->arity;
+	return (unsigned)(PTR_TO_INT(entry->mode) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.addr) + entry->arity);
 }  /* opcode_hash */
 
 /**

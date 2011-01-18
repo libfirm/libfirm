@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -40,6 +40,7 @@
 #include "pattern_dmp.h"
 #include "hashptr.h"
 #include "error.h"
+#include "lc_printf.h"
 
 #ifdef FIRM_STATISTICS
 
@@ -91,7 +92,7 @@ enum vlc_code_t {
  */
 typedef struct pattern_entry_t {
 	counter_t   count;        /**< Amount of pattern occurance. */
-	unsigned    len;          /**< The length of the VLC encoded buffer. */
+	size_t      len;          /**< The length of the VLC encoded buffer. */
 	BYTE        buf[1];       /**< The buffer containing the VLC encoded pattern. */
 } pattern_entry_t;
 
@@ -147,12 +148,11 @@ static int pattern_cmp(const void *elt, const void *key)
 {
 	const pattern_entry_t *e1 = (const pattern_entry_t*)elt;
 	const pattern_entry_t *e2 = (const pattern_entry_t*)key;
-	int diff = e1->len - e2->len;
 
-	if (diff)
-		return diff;
+	if (e1->len == e2->len)
+		return memcmp(e1->buf, e2->buf, e1->len);
 
-	return memcmp(e1->buf, e2->buf, e1->len);
+	return e1->len < e2->len ? -1 : +1;
 }  /* pattern_cmp */
 
 /**
@@ -162,7 +162,7 @@ static int pattern_cmp(const void *elt, const void *key)
  * @param data  a buffer address
  * @param len   the length of the data buffer
  */
-static void init_buf(CODE_BUFFER *buf, BYTE *data, unsigned len)
+static void init_buf(CODE_BUFFER *buf, BYTE *data, size_t len)
 {
 	buf->start   =
 	buf->next    = data;
@@ -196,7 +196,7 @@ static inline void put_byte(CODE_BUFFER *buf, BYTE byte)
  *
  * @return  the length of the buffer content
  */
-static unsigned buf_lenght(const CODE_BUFFER *buf)
+static size_t buf_lenght(const CODE_BUFFER *buf)
 {
 	return buf->next - buf->start;
 }  /* buf_lenght */
@@ -634,7 +634,7 @@ static void _decode_node(unsigned parent, int position, codec_env_t *env)
 /**
  * Decode an IR-node.
  */
-static void decode_node(BYTE *b, unsigned len, pattern_dumper_t *dump)
+static void decode_node(BYTE *b, size_t len, pattern_dumper_t *dump)
 {
 	codec_env_t env;
 	CODE_BUFFER buf;
@@ -677,7 +677,7 @@ typedef struct pattern_env {
 static pattern_entry_t *pattern_get_entry(CODE_BUFFER *buf, pset *set)
 {
 	pattern_entry_t *key, *elem;
-	unsigned len = buf_lenght(buf);
+	size_t len = buf_lenght(buf);
 	unsigned hash;
 
 	key = OALLOCF(&status->obst, pattern_entry_t, buf, len);
@@ -731,7 +731,7 @@ static void calc_nodes_pattern(ir_node *node, void *ctx)
 	depth = encode_node(node, &buf, env->max_depth);
 
 	if (buf_overrun(&buf)) {
-		fprintf(stderr, "Pattern store: buffer overrun at size %u. Pattern ignored.\n", (unsigned) sizeof(buffer));
+		lc_fprintf(stderr, "Pattern store: buffer overrun at size %zu. Pattern ignored.\n", sizeof(buffer));
 	} else
 		count_pattern(&buf, depth);
 }  /* calc_nodes_pattern */
@@ -745,7 +745,7 @@ static void store_pattern(const char *fname)
 {
 	FILE *f;
 	pattern_entry_t *entry;
-	int i, count = pset_count(status->pattern_hash);
+	size_t i, count = pset_count(status->pattern_hash);
 
 	if (count <= 0)
 		return;
@@ -776,7 +776,7 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 {
 	FILE *f;
 	pattern_entry_t *entry, tmp;
-	int i, count;
+	size_t i, count;
 	unsigned j;
 	char magic[4];
 	HASH_MAP(pattern_entry_t) *pattern_hash = new_pset(pattern_cmp, 8);
@@ -809,7 +809,7 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 	}  /* for */
 	fclose(f);
 
-	printf("Read %d pattern from %s\n", count, fname);
+	lc_printf("Read %zu pattern from %s\n", count, fname);
 	assert(pset_count(pattern_hash) == count);
 
 	return pattern_hash;
@@ -825,11 +825,11 @@ static void pattern_output(const char *fname)
 	pattern_entry_t  *entry;
 	pattern_entry_t  **pattern_arr;
 	pattern_dumper_t *dump;
-	int i, count = pset_count(status->pattern_hash);
+	size_t i, count = pset_count(status->pattern_hash);
 
-	printf("\n%d pattern detected\n", count);
+	lc_printf("\n%zu pattern detected\n", count);
 
-	if (count <= 0)
+	if (count == 0)
 		return;
 
 	/* creates a dumper */
