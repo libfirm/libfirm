@@ -1,5 +1,5 @@
-LC_ARG_TYPE(char, char)
-LC_ARG_TYPE(short, short)
+LC_ARG_TYPE(int, char)
+LC_ARG_TYPE(int, short)
 LC_ARG_TYPE(int, int)
 LC_ARG_TYPE(long, long)
 LC_ARG_TYPE(LC_LONGLONG, long_long)
