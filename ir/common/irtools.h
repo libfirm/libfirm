@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -59,7 +59,7 @@ lc_opt_entry_t *firm_opt_get_root(void);
 /**
  * convert a pointer into an integer
  */
-#define PTR_TO_INT(v)   ((int)((char *)(v) - (char *)0))
+#define PTR_TO_INT(v)   (((char *)(v) - (char *)0))
 
 /**
  * Dump a pset containing Firm objects.
