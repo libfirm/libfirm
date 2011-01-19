@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -42,7 +42,7 @@
  * ueberschrieben.
  *
  * Frees all interprocedural loop information. */
-FIRM_API void gc_irgs(int n_keep, ir_entity *keep_arr[]);
+FIRM_API void gc_irgs(size_t n_keep, ir_entity *keep_arr[]);
 
 /**
  * Creates an ir_prog pass for gc_irgs().

@@ -1292,12 +1292,12 @@ int get_irg_recursion_depth(const ir_graph *irg)
 /* Computes the interprocedural loop nesting information. */
 void analyse_loop_nesting_depth(void)
 {
-	ir_entity **free_methods = NULL;
-	int arr_len;
-
 	/* establish preconditions. */
 	if (get_irp_callee_info_state() != irg_callee_info_consistent) {
-		cgana(&arr_len, &free_methods);
+		ir_entity **free_methods = NULL;
+
+		cgana(&free_methods);
+		xfree(free_methods);
 	}
 
 	if (irp_callgraph_consistent != get_irp_callgraph_state()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -61,7 +61,7 @@ static void collect_call(ir_node *node, void *env)
 }
 
 /* garbage collect methods: mark and remove */
-void gc_irgs(int n_keep, ir_entity ** keep_arr)
+void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 {
 	void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
 	int i;
@@ -78,10 +78,12 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr)
 	/* Mark entities that are alive.  */
 	if (n_keep > 0) {
 		ir_entity **marked = NEW_ARR_F(ir_entity *, n_keep);
-		for (i = 0; i < n_keep; ++i) {
-			marked[i] = keep_arr[i];
-			set_entity_link(marked[i], MARK);
-			DB((dbg, LEVEL_1, "  method %+F kept alive.\n", marked[i]));
+		size_t    idx;
+
+		for (idx = 0; idx < n_keep; ++idx) {
+			marked[i] = keep_arr[idx];
+			set_entity_link(marked[idx], MARK);
+			DB((dbg, LEVEL_1, "  method %+F kept alive.\n", marked[idx]));
 		}
 
 		for (i = 0; i < ARR_LEN(marked); ++i) {
@@ -141,17 +143,17 @@ void gc_irgs(int n_keep, ir_entity ** keep_arr)
 static void pass_wrapper(void)
 {
     ir_entity **keep_methods;
-    int         arr_len;
+    size_t    arr_len;
 
     /* Analysis that finds the free methods,
        i.e. methods that are dereferenced.
        Optimizes polymorphic calls :-). */
-    cgana(&arr_len, &keep_methods);
+    arr_len = cgana(&keep_methods);
 
     /* Remove methods that are never called. */
     gc_irgs(arr_len, keep_methods);
 
-    free(keep_methods);
+    xfree(keep_methods);
 }
 
 ir_prog_pass_t *gc_irgs_pass(const char *name)

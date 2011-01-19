@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1493,10 +1493,9 @@ static void callgraph_walker(ir_graph *irg, void *data)
 static ir_graph **create_irg_list(void)
 {
 	ir_entity **free_methods;
-	int       arr_len;
 	int       n_irgs = get_irp_n_irgs();
 
-	cgana(&arr_len, &free_methods);
+	cgana(&free_methods);
 	xfree(free_methods);
 
 	compute_callgraph();
