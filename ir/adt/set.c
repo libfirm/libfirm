@@ -180,8 +180,8 @@ void MANGLEP(describe) (SET *table)
 
 SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 {
-	int i;
-	SET *table = XMALLOC(SET);
+	SET   *table = XMALLOC(SET);
+	size_t i;
 
 	if (nslots > SEGMENT_SIZE * DIRECTORY_SIZE)
 		nslots = DIRECTORY_SIZE;

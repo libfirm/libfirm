@@ -1941,7 +1941,6 @@ static int insert_Load(block_t *bl)
 	ir_node  *block = bl->block;
 	int      i, n = get_Block_n_cfgpreds(block);
 	size_t   end = env.rbs_size - 1;
-	size_t   pos;
 
 	DB((dbg, LEVEL_3, "processing %+F\n", block));
 
@@ -1952,7 +1951,7 @@ static int insert_Load(block_t *bl)
 
 	if (n > 1) {
 		ir_node **ins;
-		int     pos;
+		size_t    pos;
 
 		NEW_ARR_A(ir_node *, ins, n);
 
@@ -2045,6 +2044,8 @@ static int insert_Load(block_t *bl)
 	}
 
 	if (n > 1) {
+		size_t pos;
+
 		/* check for partly redundant values */
 		for (pos = rbitset_next(bl->anticL_in, 0, 1);
 		     pos < end;

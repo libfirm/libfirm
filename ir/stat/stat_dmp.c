@@ -471,7 +471,7 @@ static void simple_dump_edges(dumper_t *dmp, counter_t *cnt)
  */
 static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 {
-	int i, dump_opts = 1;
+	int dump_opts = 1;
 	block_entry_t *b_entry;
 	extbb_entry_t *eb_entry;
 
@@ -480,6 +480,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 	if (entry->irg) {
 		ir_graph *const_irg = get_const_code_irg();
+		int       i;
 
 		if (entry->irg == const_irg)
 			fprintf(dmp->f, "\nConst code Irg %p", (void *)entry->irg);
@@ -553,7 +554,7 @@ static void simple_dump_graph(dumper_t *dmp, graph_entry_t *entry)
 
 	/* effects of optimizations */
 	if (dump_opts) {
-		int i;
+		size_t i;
 
 		simple_dump_real_func_calls(dmp, &entry->cnt[gcnt_acc_real_func_call]);
 		simple_dump_tail_recursion(dmp, entry->num_tail_recursion);

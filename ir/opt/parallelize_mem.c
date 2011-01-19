@@ -196,7 +196,7 @@ static void walker(ir_node *proj, void *env)
 		ir_node                *sync;
 		ir_node               **in;
 		ir_nodeset_iterator_t   iter;
-		int                     i;
+		size_t                  i;
 
 		++n;
 		NEW_ARR_A(ir_node*, in, n);
