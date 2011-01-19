@@ -144,7 +144,7 @@ static int dispatch_snprintf(char *buf, size_t len, const char *fmt,
 	int res = 0;
 
 	switch (lc_arg_type) {
-#define LC_ARG_TYPE(type,name) \
+#define LC_ARG_TYPE(type,name,va_type) \
 		case lc_arg_type_ ## name: res = snprintf(buf, len, fmt, val->v_ ## name); break;
 #include "lc_printf_arg_types.def"
 #undef LC_ARG_TYPE
@@ -491,7 +491,8 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 			/* Store the value according to argument information */
 			switch (occ.lc_arg_type) {
-#define LC_ARG_TYPE(type,name) case lc_arg_type_ ## name: val.v_ ## name = va_arg(args, type); break;
+#define LC_ARG_TYPE(type,name,va_type) \
+			case lc_arg_type_ ## name: val.v_ ## name = va_arg(args, va_type); break;
 #include "lc_printf_arg_types.def"
 #undef LC_ARG_TYPE
 			}

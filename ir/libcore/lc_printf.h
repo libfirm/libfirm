@@ -64,13 +64,13 @@ typedef struct lc_arg_occ_t {
  * @c ARG_TYPE macro is the name of the union member preceded by $c v_
  */
 typedef union {
-#define LC_ARG_TYPE(type,name) type v_ ## name;
+#define LC_ARG_TYPE(type,name,va_type) type v_ ## name;
 #include "lc_printf_arg_types.def"
 #undef LC_ARG_TYPE
 } lc_arg_value_t;
 
 enum {
-#define LC_ARG_TYPE(type,name) lc_arg_type_ ## name,
+#define LC_ARG_TYPE(type,name,va_type) lc_arg_type_ ## name,
 #include "lc_printf_arg_types.def"
 #undef LC_ARG_TYPE
   lc_arg_type_last
