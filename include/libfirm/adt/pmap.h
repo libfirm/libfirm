@@ -27,6 +27,8 @@
 #ifndef FIRM_ADT_PMAP_H
 #define FIRM_ADT_PMAP_H
 
+#include <stddef.h>
+
 #include "../begin.h"
 
 /**  A map which maps addresses to addresses. */

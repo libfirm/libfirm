@@ -29,6 +29,8 @@
 #ifndef FIRM_ADT_ESET_H
 #define FIRM_ADT_ESET_H
 
+#include <stddef.h>
+
 #include "../begin.h"
 
 /**
