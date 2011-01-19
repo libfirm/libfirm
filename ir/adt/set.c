@@ -186,7 +186,6 @@ SET *(PMANGLE(new)) (MANGLEP(cmp_fun) cmp, size_t nslots)
 	if (nslots > SEGMENT_SIZE * DIRECTORY_SIZE)
 		nslots = DIRECTORY_SIZE;
 	else {
-		assert (nslots >= 0);
 		/* Adjust nslots up to next power of 2, minimum SEGMENT_SIZE */
 		for (i = SEGMENT_SIZE;  i < nslots;  i <<= 1) {
 		}
