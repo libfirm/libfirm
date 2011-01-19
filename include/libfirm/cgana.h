@@ -76,7 +76,7 @@
  *    - Replace (Sel-method(Alloc)) by SymConst-entity.
  *    - Replaces Sel-method by SymConst-entity if the method is never overwritten.
  */
-FIRM_API void cgana(int *len, ir_entity ***free_methods);
+FIRM_API size_t cgana(ir_entity ***free_methods);
 
 /** Free callee information.
  *

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -542,7 +542,7 @@ static void add_method_address(ir_entity *ent, eset *set)
  * umgewandelt worden sein, d.h. SymConst-Operationen verweisen immer
  * auf eine echt externe Methode.
  */
-static ir_entity **get_free_methods(int *length)
+static size_t get_free_methods(ir_entity ***free_methods)
 {
 	eset *free_set = eset_create();
 	int i;
@@ -550,6 +550,7 @@ static ir_entity **get_free_methods(int *length)
 	ir_entity *ent;
 	ir_graph *irg;
 	ir_type *tp;
+	size_t length;
 
 	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
 		ir_linkage linkage;
@@ -587,14 +588,15 @@ static ir_entity **get_free_methods(int *length)
 		eset_insert(free_set, get_irg_entity(irg));
 
 	/* Finally, transform the set into an array. */
-	*length = eset_count(free_set);
-	arr = XMALLOCN(ir_entity*, *length);
+	length = eset_count(free_set);
+	arr = XMALLOCN(ir_entity*, length);
 	for (i = 0, ent = (ir_entity*) eset_first(free_set); ent; ent = (ir_entity*) eset_next(free_set)) {
 		arr[i++] = ent;
 	}
 	eset_destroy(free_set);
 
-	return arr;
+	*free_methods = arr;
+	return length;
 }
 
 /*--------------------------------------------------------------------------*/
@@ -815,13 +817,15 @@ static void destruct_walker(ir_node * node, void * env)
 /* Main drivers.                                                            */
 /*--------------------------------------------------------------------------*/
 
-void cgana(int *length, ir_entity ***free_methods)
+size_t cgana(ir_entity ***free_methods)
 {
+	size_t length;
 	/* Optimize Sel/SymConst nodes and compute all methods that implement an entity. */
 	sel_methods_init();
-	*free_methods = get_free_methods(length);
+	length = get_free_methods(free_methods);
 	callee_ana();
 	sel_methods_dispose();
+	return length;
 }
 
 void free_callee_info(ir_graph *irg)

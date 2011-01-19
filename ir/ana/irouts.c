@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -365,7 +365,8 @@ static int count_outs(ir_graph *irg)
  */
 static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free)
 {
-	int     n_outs, start, i, irn_arity, pos;
+	int    start, i, irn_arity, pos;
+	size_t n_outs;
 
 	mark_irn_visited(use);
 
@@ -413,7 +414,7 @@ static ir_def_use_edge *_set_out_edges(ir_node *use, ir_def_use_edge *free)
 static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
 {
 	ir_node *n;
-	int     i, n_outs;
+	int     i;
 
 	inc_irg_visited(irg);
 	free = _set_out_edges(get_irg_end(irg), free);
@@ -422,7 +423,7 @@ static ir_def_use_edge *set_out_edges(ir_graph *irg, ir_def_use_edge *free)
 	for (i = anchor_last - 1; i >= 0; --i) {
 		n = get_irg_anchor(irg, i);
 		if (!irn_visited_else_mark(n)) {
-			n_outs = PTR_TO_INT(n->out);
+			size_t n_outs = PTR_TO_INT(n->out);
 			n->out = free;
 #ifdef DEBUG_libfirm
 			n->out_valid = 1;

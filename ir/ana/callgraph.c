@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -322,7 +322,7 @@ void compute_callgraph(void)
 
 	/* Change the sets to arrays. */
 	for (i = 0; i < n_irgs; ++i) {
-		int j, count;
+		size_t j, count;
 		cg_callee_entry *callee;
 		ir_graph *c, *irg = get_irp_irg(i);
 		pset *callee_set, *caller_set;
