@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -271,7 +271,7 @@ static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
 			ident       *id;
 			char        buf[128];
 			ir_type     *arr;
-			int         i, len = strlen(fname) + 1;
+			size_t      i, len = strlen(fname) + 1;
 			ir_tarval **tarval_string;
 
 			snprintf(buf, sizeof(buf), "firm_name_arr.%u", nr);

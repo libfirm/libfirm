@@ -454,6 +454,7 @@ static path_t *find_path(ir_node *sel, size_t len)
 	} else
 		res = find_path(pred, len);
 
+	assert(len <= res->path_len);
 	pos = res->path_len - len;
 
 	res->path[pos++].ent = get_Sel_entity(sel);

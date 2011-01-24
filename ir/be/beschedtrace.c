@@ -613,7 +613,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 		}
 		else {
 force_mcands:
-			DB((env->dbg, LEVEL_3, "\tmcand = %d\n", ir_nodeset_size(&mcands)));
+			DB((env->dbg, LEVEL_3, "\tmcand = %zu\n", ir_nodeset_size(&mcands)));
 			irn = basic_selection(&mcands);
 		}
 	}
