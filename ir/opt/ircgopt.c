@@ -81,7 +81,7 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 		size_t    idx;
 
 		for (idx = 0; idx < n_keep; ++idx) {
-			marked[i] = keep_arr[idx];
+			marked[idx] = keep_arr[idx];
 			set_entity_link(marked[idx], MARK);
 			DB((dbg, LEVEL_1, "  method %+F kept alive.\n", marked[idx]));
 		}
