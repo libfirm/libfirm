@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -237,9 +237,9 @@ typedef union {
   	size_t eltsize;                                 \
     union {                                         \
       struct obstack *obstack;	/* dynamic: allocated on this obstack */  \
-      int allocated;			/* flexible: #slots allocated */          \
+      size_t allocated;			/* flexible: #slots allocated */          \
     } u;                                            \
-    int nelts;                                      \
+    size_t nelts;                                   \
     union {                                         \
       type elts[(rnelts)];                          \
       aligned_type align[1];                        \
@@ -253,11 +253,11 @@ typedef ARR_STRUCT(aligned_type, 1) ir_arr_descr;
 
 extern ir_arr_descr arr_mt_descr;
 
-FIRM_API void *ir_new_arr_f(int nelts, size_t elts_size);
+FIRM_API void *ir_new_arr_f(size_t nelts, size_t elts_size);
 FIRM_API void ir_del_arr_f(void *elts);
-FIRM_API void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size);
-FIRM_API void *ir_arr_resize(void *elts, int nelts, size_t elts_size);
-FIRM_API void *ir_arr_setlen(void *elts, int nelts, size_t elts_size);
+FIRM_API void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size);
+FIRM_API void *ir_arr_resize(void *elts, size_t nelts, size_t elts_size);
+FIRM_API void *ir_arr_setlen(void *elts, size_t nelts, size_t elts_size);
 FIRM_API void ir_verify_arr(const void *elts);
 
 #define ARR_ELTS_OFFS offsetof(ir_arr_descr, v.elts)

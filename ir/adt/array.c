@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -76,13 +76,13 @@ void ir_verify_arr(const void *arr)
  *
  * @remark Helper function, use NEW_ARR_D() instead.
  */
-void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size)
+void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size)
 {
 	ir_arr_descr *dp;
 
-	assert(obstack && (nelts >= 0));
+	assert(obstack);
 
-	dp = (ir_arr_descr*) obstack_alloc(obstack, ARR_ELTS_OFFS + elts_size);
+	dp = (ir_arr_descr*)obstack_alloc(obstack, ARR_ELTS_OFFS + elts_size);
 	ARR_SET_DBGINF(dp, ARR_D_MAGIC, elts_size/nelts);
 	dp->u.obstack = obstack;
 	dp->nelts = nelts;
@@ -100,13 +100,12 @@ void *ir_new_arr_d(struct obstack *obstack, int nelts, size_t elts_size)
  *
  * @remark Helper function, use NEW_ARR_F() instead.
  */
-void *ir_new_arr_f(int nelts, size_t elts_size)
+void *ir_new_arr_f(size_t nelts, size_t elts_size)
 {
 	ir_arr_descr *newa;
 
-	assert (nelts >= 0);
-	newa = (ir_arr_descr*) xmalloc (ARR_ELTS_OFFS+elts_size);
-	ARR_SET_DBGINF (newa, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
+	newa = (ir_arr_descr*)xmalloc(ARR_ELTS_OFFS+elts_size);
+	ARR_SET_DBGINF(newa, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
 	newa->u.allocated = newa->nelts = nelts;
 	return newa->v.elts;
 }
@@ -122,8 +121,8 @@ void ir_del_arr_f(void *elts)
 {
 	ir_arr_descr *dp = ARR_DESCR (elts);
 
-	ARR_VRFY (elts);
-	assert (dp->magic == ARR_F_MAGIC);
+	ARR_VRFY(elts);
+	assert(dp->magic == ARR_F_MAGIC);
 
 #ifndef NDEBUG
 	dp->magic = 0xdeadbeef;
@@ -143,15 +142,15 @@ void ir_del_arr_f(void *elts)
  *
  * @remark Helper function, use ARR_SETLEN() instead.
  */
-void *ir_arr_setlen (void *elts, int nelts, size_t elts_size)
+void *ir_arr_setlen (void *elts, size_t nelts, size_t elts_size)
 {
 	ir_arr_descr *dp = ARR_DESCR (elts);
 
-	assert ((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
-	ARR_VRFY (elts);
-	assert (!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
+	assert(dp->magic == ARR_F_MAGIC);
+	ARR_VRFY(elts);
+	assert(!dp->eltsize || !nelts || (dp->eltsize == elts_size/nelts));
 
-	dp = (ir_arr_descr*) xrealloc (dp, ARR_ELTS_OFFS+elts_size);
+	dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+elts_size);
 	dp->u.allocated = dp->nelts = nelts;
 
 	return dp->v.elts;
@@ -170,12 +169,12 @@ void *ir_arr_setlen (void *elts, int nelts, size_t elts_size)
  *
  * @remark Helper function, use ARR_RESIZE() instead.
  */
-void *ir_arr_resize(void *elts, int nelts, size_t eltsize)
+void *ir_arr_resize(void *elts, size_t nelts, size_t eltsize)
 {
 	ir_arr_descr *dp = ARR_DESCR(elts);
-	int n;
+	size_t n;
 
-	assert((dp->magic == ARR_F_MAGIC) && (nelts >= 0));
+	assert(dp->magic == ARR_F_MAGIC);
 	ARR_VRFY(elts);
 	assert(dp->eltsize ? dp->eltsize == eltsize : (dp->eltsize = eltsize, 1));
 
@@ -200,8 +199,7 @@ void *ir_arr_resize(void *elts, int nelts, size_t eltsize)
  * Do NOT use is in code, use ARR_LEN() macro!
  * This function is intended to be called from a debugger.
  */
-int array_len(const void *arr);
-int array_len(const void *arr)
+size_t array_len(const void *arr)
 {
 	return ARR_LEN(arr);
 }
@@ -211,7 +209,6 @@ int array_len(const void *arr)
  * Do NOT use is in code!.
  * This function is intended to be called from a debugger.
  */
-ir_arr_descr *array_descr(const void *arr);
 ir_arr_descr *array_descr(const void *arr)
 {
 	if (! arr)

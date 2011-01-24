@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -51,8 +51,7 @@
  */
 #define NEW_ARR_A(type, var, n)									\
   do {												\
-    int nelts = (n);										\
-    assert(nelts >= 0);									\
+    size_t nelts = (n);										\
     (var) = (type *)((ir_arr_descr *)alloca(ARR_ELTS_OFFS + sizeof(type) * nelts))->v.elts;	\
     ARR_SET_DBGINF(ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type));				\
     (void)(ARR_DESCR((var))->nelts = nelts);							\
