@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -59,13 +59,13 @@ struct pqueue_t {
  * Enforces the heap characteristics if the queue
  * starting from element at position @p pos.
  */
-static void pqueue_heapify(pqueue_t *q, unsigned pos)
+static void pqueue_heapify(pqueue_t *q, size_t pos)
 {
-	unsigned len = ARR_LEN(q->elems);
+	size_t len = ARR_LEN(q->elems);
 
 	while (pos * 2 < len) {
 		pqueue_el_t tmp;
-		unsigned    exchange = pos;
+		size_t      exchange = pos;
 
 		if (q->elems[exchange].priority < q->elems[pos * 2].priority) {
 			exchange = pos * 2;
@@ -90,7 +90,7 @@ static void pqueue_heapify(pqueue_t *q, unsigned pos)
 /**
  * Sifts up a newly inserted element at position @p pos.
  */
-static void pqueue_sift_up(pqueue_t *q, unsigned pos)
+static void pqueue_sift_up(pqueue_t *q, size_t pos)
 {
 	while (q->elems[pos].priority > q->elems[pos / 2].priority) {
 		pqueue_el_t tmp;
@@ -137,8 +137,8 @@ void *pqueue_pop_front(pqueue_t *q)
 			ARR_SHRINKLEN(q->elems, 0);
 			return q->elems[0].data;
 		default: {
-			void *data = q->elems[0].data;
-			int  len   = ARR_LEN(q->elems) - 1;
+			void   *data = q->elems[0].data;
+			size_t len   = ARR_LEN(q->elems) - 1;
 
 			q->elems[0] = q->elems[len];
 			ARR_SHRINKLEN(q->elems, len);
@@ -149,7 +149,7 @@ void *pqueue_pop_front(pqueue_t *q)
 	}
 }
 
-int pqueue_length(const pqueue_t *q)
+size_t pqueue_length(const pqueue_t *q)
 {
 	return ARR_LEN(q->elems);
 }

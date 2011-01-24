@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -64,7 +64,7 @@ FIRM_API void *pqueue_pop_front(pqueue_t *q);
  * @param q   The priority queue.
  * @return The length of the queue.
  */
-FIRM_API int pqueue_length(const pqueue_t *q);
+FIRM_API size_t pqueue_length(const pqueue_t *q);
 
 /**
  * Returns true if queue is empty.
