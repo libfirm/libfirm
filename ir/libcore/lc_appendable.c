@@ -33,7 +33,7 @@ int lc_appendable_snwadd(lc_appendable_t *app, const char *str, size_t len,
 {
 	int res = 0;
 	int i;
-	int to_pad = width - len;
+	size_t to_pad = width > len ? width - len : 0;
 
 	/* If not left justified, pad left */
 	for (i = 0; !left_just && i < to_pad; ++i)

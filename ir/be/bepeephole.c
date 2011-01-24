@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -264,7 +264,7 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 	sched_foreach_reverse(block, irn) {
 		int       arity;
 		unsigned *used;
-		unsigned  n_used;
+		size_t    n_used;
 		const ir_edge_t *edge, *next;
 
 		if (!be_is_Barrier(irn))
@@ -295,7 +295,7 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 		/* the barrier also had the effect of a Keep for unused inputs.
 		 * we now have to create an explicit Keep for them */
 		n_used = rbitset_popcount(used, arity);
-		if (n_used < (unsigned) arity) {
+		if (n_used < (size_t) arity) {
 			int       n_in = arity - (int) n_used;
 			ir_node **in   = ALLOCAN(ir_node*, n_in);
 			int       i    = 0;

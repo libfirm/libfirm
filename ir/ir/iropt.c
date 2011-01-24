@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -6689,7 +6689,7 @@ ir_node *optimize_node(ir_node *n)
 			tv = computed_value(n);
 			if (tv != tarval_bad) {
 				ir_node *nw;
-				int node_size;
+				size_t node_size;
 
 				/*
 				 * we MUST copy the node here temporary, because it's still

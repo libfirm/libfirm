@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -66,7 +66,7 @@ typedef union {
  */
 typedef struct path_t {
 	unsigned    vnum;      /**< The value number. */
-	unsigned    path_len;  /**< The length of the access path. */
+	size_t      path_len;  /**< The length of the access path. */
 	path_elem_t path[1];   /**< The path. */
 } path_t;
 
@@ -436,9 +436,10 @@ static int find_possible_replacements(ir_graph *irg)
  * @param sel  the Sel node
  * @param len  the length of the path so far
  */
-static path_t *find_path(ir_node *sel, unsigned len)
+static path_t *find_path(ir_node *sel, size_t len)
 {
-	int pos, i, n;
+	size_t pos;
+	int i, n;
 	path_t *res;
 	ir_node *pred = get_Sel_ptr(sel);
 

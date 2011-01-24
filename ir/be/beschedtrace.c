@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -597,7 +597,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 		DB((env->dbg, LEVEL_3, "\tirn = %+F, mcand = 1, max_delay = %u\n", irn, max_delay));
 	}
 	else {
-		int cnt = ir_nodeset_size(&ecands);
+		size_t cnt = ir_nodeset_size(&ecands);
 		if (cnt == 1) {
 			irn = get_nodeset_node(&ecands);
 
@@ -608,7 +608,7 @@ static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_node
 			DB((env->dbg, LEVEL_3, "\tirn = %+F, ecand = 1, max_delay = %u\n", irn, max_delay));
 		}
 		else if (cnt > 1) {
-			DB((env->dbg, LEVEL_3, "\tecand = %d, max_delay = %u\n", cnt, max_delay));
+			DB((env->dbg, LEVEL_3, "\tecand = %zu, max_delay = %u\n", cnt, max_delay));
 			irn = basic_selection(&ecands);
 		}
 		else {

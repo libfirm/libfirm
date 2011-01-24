@@ -725,8 +725,8 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 						   const char *arg, lc_opt_error_handler_t *handler)
 {
 	const lc_opt_entry_t *grp = root;
-	int n                     = strlen(arg);
-	int n_prefix              = opt_prefix ? strlen(opt_prefix) : 0;
+	size_t n                  = strlen(arg);
+	size_t n_prefix           = opt_prefix ? strlen(opt_prefix) : 0;
 	int error                 = 0;
 	int ret                   = 0;
 
