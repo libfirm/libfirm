@@ -1175,7 +1175,7 @@ static void add_roots(ir_graph *irg, environment_t *env)
      * Else, we will split identical blocks if we start which different roots.
 	 */
 	for (bl = env->all_blocks; bl != NULL; bl = bl->all_next) {
-		int i, n = ARR_LEN(bl->roots);
+		size_t i, n = ARR_LEN(bl->roots);
 
 #if 1
 		/* TODO: is this really needed? The roots are already in

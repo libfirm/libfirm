@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -435,8 +435,8 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	ir_entity *entity  = get_irg_entity(irg);
 	ir_type   *type    = get_entity_type(entity);
 	bool       changed = false;
-	int        i;
-	int        n;
+	size_t     i;
+	size_t     n;
 
 	config        = nconfig;
 	lowered_nodes = NEW_ARR_F(ir_node*, 0);
@@ -455,13 +455,12 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 	irg_walk_graph(irg, lower_mode_b_walker, NULL, &changed);
 
-	for (i = 0; i < ARR_LEN(check_later); ++i) {
+	for (i = 0, n = ARR_LEN(check_later); i < n; ++i) {
 		ir_node *node = check_later[i];
 		irg_walk_core(node, lower_mode_b_walker, NULL, &changed);
 	}
 
-	n = ARR_LEN(lowered_nodes);
-	for (i = 0; i < n; ++i) {
+	for (i = 0, n = ARR_LEN(lowered_nodes); i < n; ++i) {
 		ir_node *node = lowered_nodes[i];
 		maybe_kill_node(node);
 	}

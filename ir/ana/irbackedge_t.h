@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -33,7 +33,7 @@
  * @param obst   the obstack to allocate the array on
  * @param size   the size of the backedge array
  */
-bitset_t *new_backedge_arr(struct obstack *obst, unsigned size);
+bitset_t *new_backedge_arr(struct obstack *obst, size_t size);
 
 /**
  * Adapts backedges array to new size.

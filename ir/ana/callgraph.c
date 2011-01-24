@@ -206,7 +206,7 @@ int get_irg_callee_loop_depth(const ir_graph *irg, int pos)
 static double get_irg_callee_execution_frequency(const ir_graph *irg, int pos)
 {
 	ir_node **arr = irg->callees[pos]->call_list;
-	int i, n_Calls = ARR_LEN(arr);
+	size_t i, n_Calls = ARR_LEN(arr);
 	double freq = 0.0;
 
 	for (i = 0; i < n_Calls; ++i) {
@@ -537,7 +537,7 @@ static inline int get_irg_dfn(ir_graph *irg)
 /**********************************************************************/
 
 static ir_graph **stack = NULL;
-static int tos = 0;                /**< top of stack */
+static size_t tos = 0;                /**< top of stack */
 
 /**
  * Initialize the irg stack.
@@ -559,7 +559,7 @@ static inline void init_stack(void)
 static inline void push(ir_graph *irg)
 {
 	if (tos == ARR_LEN(stack)) {
-		int nlen = ARR_LEN(stack) * 2;
+		size_t nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_graph*, stack, nlen);
 	}
 	stack [tos++] = irg;
@@ -571,7 +571,10 @@ static inline void push(ir_graph *irg)
  */
 static inline ir_graph *pop(void)
 {
-	ir_graph *irg = stack[--tos];
+	ir_graph *irg;
+
+	assert(tos > 0);
+	irg = stack[--tos];
 	mark_irg_not_in_stack(irg);
 	return irg;
 }

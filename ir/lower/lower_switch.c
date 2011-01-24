@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -218,7 +218,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 	ir_node       *oob_cond;
 	ir_node       *in[1];
 	ir_node       *new_block;
-	int            n_default_preds;
+	size_t         n_default_preds;
 	int            i;
 	ir_node       *proj;
 
@@ -275,7 +275,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 	/* adapt default block */
 	n_default_preds = ARR_LEN(default_preds);
 	if (n_default_preds > 1) {
-		int i;
+		size_t i;
 
 		/* create new intermediate blocks so we don't have critical edges */
 		for (i = 0; i < n_default_preds; ++i) {

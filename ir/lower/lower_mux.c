@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -114,7 +114,7 @@ static void lower_mux_node(ir_node* mux)
 
 void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 {
-	int        i, n_muxes;
+	size_t     i, n_muxes;
 	walk_env_t env;
 
 	/* Scan the graph for mux nodes to lower. */

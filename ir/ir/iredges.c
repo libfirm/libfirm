@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -134,7 +134,7 @@ static int edges_used = 0;
  * Summed size of all users private data
  */
 
-static int edges_private_size = 0;
+static size_t edges_private_size = 0;
 #define EDGE_SIZE (sizeof(ir_edge_t) + edges_private_size)
 
 /**
@@ -170,9 +170,9 @@ static inline long edge_get_id(const ir_edge_t *e)
  * Each user has to remember his given offset and the size of his private data.
  * To be called before FIRM is initialized.
  */
-int edges_register_private_data(size_t n)
+size_t edges_register_private_data(size_t n)
 {
-	int res = edges_private_size;
+	size_t res = edges_private_size;
 
 	assert(!edges_used && "you cannot register private edge data, if edges have been initialized");
 

@@ -285,7 +285,7 @@ static ir_entity ** get_Sel_arr(ir_node * sel)
  *
  * @param sel  the Sel node
  */
-static int get_Sel_n_methods(ir_node * sel)
+static size_t get_Sel_n_methods(ir_node * sel)
 {
 	return ARR_LEN(get_Sel_arr(sel));
 }
@@ -293,10 +293,10 @@ static int get_Sel_n_methods(ir_node * sel)
 /**
  * Returns the ith possible called method entity at a Sel node.
  */
-static ir_entity * get_Sel_method(ir_node * sel, int pos)
+static ir_entity * get_Sel_method(ir_node * sel, size_t pos)
 {
 	ir_entity ** arr = get_Sel_arr(sel);
-	assert(pos >= 0 && pos < ARR_LEN(arr));
+	assert(pos < ARR_LEN(arr));
 	return arr[pos];
 }
 
@@ -360,7 +360,7 @@ static void free_mark_proj(ir_node * node, long n, eset * set)
  */
 static void free_mark(ir_node *node, eset * set)
 {
-	int i;
+	size_t i, n;
 
 	if (get_irn_link(node) == MARK)
 		return; /* already visited */
@@ -371,7 +371,7 @@ static void free_mark(ir_node *node, eset * set)
 	case iro_Sel: {
 		ir_entity *ent = get_Sel_entity(node);
 		if (is_method_entity(ent)) {
-			for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
+			for (i = 0, n = get_Sel_n_methods(node); i < n; ++i) {
 				eset_insert(set, get_Sel_method(node, i));
 			}
 		}
@@ -387,10 +387,13 @@ static void free_mark(ir_node *node, eset * set)
 		break;
 
 	case iro_Phi:
-		for (i = get_Phi_n_preds(node) - 1; i >= 0; --i) {
+	{
+		int i, n;
+		for (i = 0, n = get_Phi_n_preds(node); i < n; ++i) {
 			free_mark(get_Phi_pred(node, i), set);
 		}
 		break;
+	}
 	case iro_Proj:
 		free_mark_proj(get_Proj_pred(node), get_Proj_proj(node), set);
 		break;
@@ -648,8 +651,6 @@ static void callee_ana_proj(ir_node *node, long n, eset *methods)
  */
 static void callee_ana_node(ir_node *node, eset *methods)
 {
-	int i;
-
 	assert(mode_is_reference(get_irn_mode(node)) || is_Bad(node));
 	/* Beware of recursion */
 	if (get_irn_link(node) == MARK) {
@@ -672,9 +673,10 @@ static void callee_ana_node(ir_node *node, eset *methods)
 		break;
 	}
 
-	case iro_Sel:
+	case iro_Sel: {
 		/* polymorphic method */
-		for (i = get_Sel_n_methods(node) - 1; i >= 0; --i) {
+		size_t i, n;
+		for (i = 0, n = get_Sel_n_methods(node); i < n; ++i) {
 			ir_entity *ent = get_Sel_method(node, i);
 			if (ent != NULL) {
 				eset_insert(methods, ent);
@@ -683,16 +685,19 @@ static void callee_ana_node(ir_node *node, eset *methods)
 			}
 		}
 		break;
+	}
 
 	case iro_Bad:
 		/* nothing */
 		break;
 
-	case iro_Phi:
+	case iro_Phi: {
+		int i;
 		for (i = get_Phi_n_preds(node) - 1; i >= 0; --i) {
 			callee_ana_node(get_Phi_pred(node, i), methods);
 		}
 		break;
+	}
 
 	case iro_Mux:
 		callee_ana_node(get_Mux_false(node), methods);
@@ -731,7 +736,7 @@ static void callee_walker(ir_node *call, void *env)
 		eset *methods = eset_create();
 		ir_entity *ent;
 		ir_entity **arr;
-		int i;
+		size_t i;
 
 		callee_ana_node(get_Call_ptr(call), methods);
 		arr = NEW_ARR_F(ir_entity *, eset_count(methods));

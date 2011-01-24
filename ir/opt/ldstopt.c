@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1692,7 +1692,7 @@ typedef struct node_entry {
 typedef struct loop_env {
 	ir_phase ph;           /**< the phase object */
 	ir_node  **stack;      /**< the node stack */
-	int      tos;          /**< tos index */
+	size_t   tos;          /**< tos index */
 	unsigned nextDFSnum;   /**< the current DFS number */
 	unsigned POnum;        /**< current post order number */
 
@@ -1726,7 +1726,7 @@ static void push(loop_env *env, ir_node *n)
 	node_entry *e;
 
 	if (env->tos == ARR_LEN(env->stack)) {
-		int nlen = ARR_LEN(env->stack) * 2;
+		size_t nlen = ARR_LEN(env->stack) * 2;
 		ARR_RESIZE(ir_node *, env->stack, nlen);
 	}
 	env->stack[env->tos++] = n;

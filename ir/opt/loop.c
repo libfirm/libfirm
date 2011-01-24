@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -859,8 +859,8 @@ static void copy_walk_n(ir_node *node, walker_condition *walk_condition,
 /* Removes alle Blocks with non marked predecessors from the condition chain. */
 static void unmark_not_allowed_cc_blocks(void)
 {
-	int blocks = ARR_LEN(cc_blocks);
-	int i;
+	size_t blocks = ARR_LEN(cc_blocks);
+	size_t i;
 
 	for(i = 0; i < blocks; ++i) {
 		ir_node *block = cc_blocks[i];
@@ -888,8 +888,8 @@ static void unmark_not_allowed_cc_blocks(void)
  * TODO: invert head for unrolling? */
 static void unmark_cc_blocks(void)
 {
-	int blocks = ARR_LEN(cc_blocks);
-	int i;
+	size_t blocks = ARR_LEN(cc_blocks);
+	size_t i;
 
 	for(i = 0; i < blocks; ++i) {
 		ir_node *block = cc_blocks[i];

@@ -3564,7 +3564,7 @@ void combo(ir_graph *irg)
 	ir_node       *initial_bl;
 	node_t        *start;
 	ir_graph      *rem = current_ir_graph;
-	int           len;
+	size_t        len;
 
 	current_ir_graph = irg;
 

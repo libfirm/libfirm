@@ -163,7 +163,7 @@ void clear_backedges(ir_node *n)
 }
 
 /* Allocate a new backedge array on the obstack for given size. */
-bitset_t *new_backedge_arr(struct obstack *obst, unsigned size)
+bitset_t *new_backedge_arr(struct obstack *obst, size_t size)
 {
 	return bitset_obstack_alloc(obst, size);
 }

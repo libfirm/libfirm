@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -90,8 +90,8 @@ static inline int modes_are_equal(const ir_mode *m, const ir_mode *n)
  */
 static ir_mode *find_mode(const ir_mode *m)
 {
-	int i;
-	for (i = ARR_LEN(mode_list) - 1; i >= 0; --i) {
+	size_t i, n_modes;
+	for (i = 0, n_modes = ARR_LEN(mode_list); i < n_modes; ++i) {
 		ir_mode *n = mode_list[i];
 		if (modes_are_equal(n, m))
 			return n;

@@ -61,7 +61,7 @@ static inline ir_type *_get_tls_type(void)
 static inline int _get_irp_n_irgs(void)
 {
 	assert(irp && irp->graphs);
-	return ARR_LEN(irp->graphs);
+	return (int)ARR_LEN(irp->graphs);
 }
 
 static inline ir_graph *_get_irp_irg(int pos)
@@ -73,7 +73,7 @@ static inline ir_graph *_get_irp_irg(int pos)
 static inline int _get_irp_n_types(void)
 {
 	assert(irp && irp->types);
-	return ARR_LEN(irp->types);
+	return (int)ARR_LEN(irp->types);
 }
 
 static inline ir_type *_get_irp_type(int pos)
@@ -86,7 +86,7 @@ static inline ir_type *_get_irp_type(int pos)
 static inline int _get_irp_n_modes(void)
 {
 	assert(irp->modes);
-	return ARR_LEN(irp->modes);
+	return (int)ARR_LEN(irp->modes);
 }
 
 static inline ir_mode *_get_irp_mode(int pos)
@@ -98,7 +98,7 @@ static inline ir_mode *_get_irp_mode(int pos)
 static inline int _get_irp_n_opcodes(void)
 {
 	assert(irp && irp->opcodes);
-	return ARR_LEN(irp->opcodes);
+	return (int)ARR_LEN(irp->opcodes);
 }
 
 static inline ir_op *_get_irp_opcode(int pos)

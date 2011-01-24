@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -628,7 +628,7 @@ static inline unsigned arch_irn_get_n_outs(const ir_node *node)
 	if (info->out_infos == NULL)
 		return 0;
 
-	return ARR_LEN(info->out_infos);
+	return (unsigned)ARR_LEN(info->out_infos);
 }
 
 static inline const arch_irn_ops_t *get_irn_ops_simple(const ir_node *node)

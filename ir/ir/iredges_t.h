@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -147,7 +147,7 @@ void edges_invalidate_kind(ir_node *irn, ir_edge_kind_t kind, ir_graph *irg);
 *         edges_get_private_data()
 *         to get a pointer to your data.
 */
-int edges_register_private_data(size_t n);
+size_t edges_register_private_data(size_t n);
 
 /**
 * Get a pointer to the private data you registered.

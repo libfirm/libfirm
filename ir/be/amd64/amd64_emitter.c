@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -629,7 +629,7 @@ void amd64_gen_routine(ir_graph *irg)
 {
 	ir_entity *entity = get_irg_entity(irg);
 	ir_node  **blk_sched;
-	int i, n;
+	size_t i, n;
 
 	/* register all emitter functions */
 	amd64_register_emitters();

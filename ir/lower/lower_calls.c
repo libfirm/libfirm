@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -468,13 +468,12 @@ typedef struct cr_pair {
  */
 static void do_copy_return_opt(ir_node *n, void *ctx)
 {
-	cr_pair *arr = (cr_pair*)ctx;
-	int i;
-
 	if (is_Sel(n)) {
 		ir_entity *ent = get_Sel_entity(n);
+		cr_pair   *arr = (cr_pair*)ctx;
+		size_t    i, l;
 
-		for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
+		for (i = 0, l = ARR_LEN(arr); i < l; ++i) {
 			if (ent == arr[i].ent) {
 				exchange(n, arr[i].arg);
 				break;
@@ -657,10 +656,11 @@ static void fix_call_list(ir_graph *irg, wlk_env *env)
  */
 static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 {
-	ir_graph   * rem = current_ir_graph;
+	ir_graph   *rem = current_ir_graph;
 	ir_entity  *ent = get_irg_entity(irg);
 	ir_type    *mtp, *lowered_mtp, *tp, *ft;
-	int        i, j, k, n_ress = 0, n_ret_com = 0, n_cr_opt;
+	int        i, j, k, n_ress = 0, n_ret_com = 0;
+	size_t     n_cr_opt;
 	ir_node    **new_in, *ret, *endbl, *bl, *mem, *copy;
 	cr_pair    *cr_opt;
 	wlk_env    env;
@@ -812,9 +812,11 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 		set_irn_in(ret, j, new_in);
 
 		if (n_cr_opt > 0) {
+			size_t i, n;
+
 			irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
 
-			for (i = ARR_LEN(cr_opt) - 1; i >= 0; --i) {
+			for (i = 0, n = ARR_LEN(cr_opt); i < n; ++i) {
 				free_entity(cr_opt[i].ent);
 			}
 		}

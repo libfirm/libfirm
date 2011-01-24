@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -126,7 +126,7 @@ static inline void _set_extbb_link(ir_extblk *blk, void *link)
 static inline int _get_extbb_n_blocks(const ir_extblk *blk)
 {
 	assert(blk);
-	return ARR_LEN(blk->blks);
+	return (int)ARR_LEN(blk->blks);
 }
 
 /**

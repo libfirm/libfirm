@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -230,7 +230,7 @@ ir_node *get_compound_ent_value_by_path(const ir_entity *ent,
 
 void remove_compound_ent_value(ir_entity *ent, ir_entity *value_ent)
 {
-	int i, n;
+	size_t i, n;
 	assert(is_compound_entity(ent));
 
 	n = ARR_LEN(ent->attr.cmpd_attr.val_paths);

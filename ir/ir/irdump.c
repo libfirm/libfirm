@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -614,7 +614,7 @@ typedef struct list_tuple {
 static list_tuple *construct_extblock_lists(ir_graph *irg)
 {
 	ir_node **blk_list = construct_block_lists(irg);
-	int i;
+	size_t i, n;
 	ir_graph *rem = current_ir_graph;
 	list_tuple *lists = XMALLOC(list_tuple);
 
@@ -624,7 +624,7 @@ static list_tuple *construct_extblock_lists(ir_graph *irg)
 	lists->extbb_list = NEW_ARR_F(ir_extblk *, 0);
 
 	inc_irg_block_visited(irg);
-	for (i = ARR_LEN(blk_list) - 1; i >= 0; --i) {
+	for (i = 0, n = ARR_LEN(blk_list); i < n; ++i) {
 		ir_extblk *ext;
 
 		if (is_Block(blk_list[i])) {
@@ -1620,13 +1620,13 @@ static void dump_whole_block(FILE *F, ir_node *block)
  *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
 static void dump_block_graph(FILE *F, ir_graph *irg)
 {
-	int i;
+	size_t i, n;
 	ir_graph *rem = current_ir_graph;
 	ir_node **arr = (ir_node**)ird_get_irg_link(irg);
 	current_ir_graph = irg;
 
-	for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
-		ir_node * node = arr[i];
+	for (i = 0, n = ARR_LEN(arr); i < n; ++i) {
+		ir_node *node = arr[i];
 		if (is_Block(node)) {
 		/* Dumps the block and all the nodes in the block, which are to
 			be found in Block->link. */
@@ -2206,23 +2206,23 @@ static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
  *  The outermost nodes: blocks and nodes not op_pin_state_pinned, Bad, Unknown. */
 static void dump_extblock_graph(FILE *F, ir_graph *irg)
 {
-	int i;
+	size_t i, arr_len;
 	ir_graph *rem = current_ir_graph;
 	ir_extblk **arr = (ir_extblk**)ird_get_irg_link(irg);
 	current_ir_graph = irg;
 
-	for (i = ARR_LEN(arr) - 1; i >= 0; --i) {
+	for (i = 0, arr_len = ARR_LEN(arr); i < arr_len; ++i) {
 		ir_extblk *extbb = arr[i];
 		ir_node *leader = get_extbb_leader(extbb);
-		int j;
+		size_t j, n_blks;
 
 		fprintf(F, "graph: { title: \"");
 		PRINT_EXTBBID(leader);
 		fprintf(F, "\"  label: \"ExtBB %ld\" status:clustered color:lightgreen\n",
 		        get_irn_node_nr(leader));
 
-		for (j = ARR_LEN(extbb->blks) - 1; j >= 0; --j) {
-			ir_node * node = extbb->blks[j];
+		for (j = 0, n_blks = ARR_LEN(extbb->blks); j < n_blks; ++j) {
+			ir_node *node = extbb->blks[j];
 			if (is_Block(node)) {
 			/* Dumps the block and all the nodes in the block, which are to
 				be found in Block->link. */

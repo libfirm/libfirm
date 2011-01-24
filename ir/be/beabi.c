@@ -644,8 +644,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 		if (arg->in_reg) {
 			/* remove register from destroyed regs */
-			int j;
-			int n = ARR_LEN(destroyed_regs);
+			size_t j;
+			size_t n = ARR_LEN(destroyed_regs);
 			for (j = 0; j < n; ++j) {
 				if (destroyed_regs[j] == arg->reg) {
 					destroyed_regs[j] = destroyed_regs[n-1];

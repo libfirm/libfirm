@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -308,7 +308,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
  */
 void mature_immBlock(ir_node *block)
 {
-	int       n_preds;
+	size_t   n_preds;
 	ir_node  *next;
 	ir_node  *phi;
 	ir_graph *irg;

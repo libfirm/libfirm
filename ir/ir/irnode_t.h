@@ -135,7 +135,7 @@ static inline unsigned _get_irn_opcode(const ir_node *node)
  */
 static inline int _get_irn_arity(const ir_node *node)
 {
-	return ARR_LEN(node->in) - 1;
+	return (int)(ARR_LEN(node->in) - 1);
 }
 
 /**
@@ -167,7 +167,7 @@ static inline unsigned hash_irn(const ir_node *node)
 }
 
 static inline int _get_irn_deps(const ir_node *node) {
-	return node->deps ? ARR_LEN(node->deps) : 0;
+	return node->deps ? (int)ARR_LEN(node->deps) : 0;
 }
 
 static inline ir_node *_get_irn_dep(const ir_node *node, int pos) {

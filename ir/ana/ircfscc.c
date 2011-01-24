@@ -178,7 +178,7 @@ static void finish_stack(void)
 static inline void push(ir_node *n)
 {
 	if (tos == ARR_LEN(stack)) {
-		int nlen = ARR_LEN(stack) * 2;
+		size_t nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_node *, stack, nlen);
 	}
 	stack[tos++] = n;

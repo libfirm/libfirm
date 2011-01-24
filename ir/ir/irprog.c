@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -214,14 +214,13 @@ void add_irp_irg(ir_graph *irg)
 /* Removes irg from the list or irgs, shrinks the list by one. */
 void remove_irp_irg_from_list(ir_graph *irg)
 {
-	int i, l, found = 0;
+	size_t i, l;
 
 	assert(irg);
 	l = ARR_LEN(irp->graphs);
-	for (i = 0; i < l; i++) {
+	for (i = 0; i < l; ++i) {
 		if (irp->graphs[i] == irg) {
-			found = 1;
-			for (; i < l - 1; i++) {
+			for (; i < l - 1; ++i) {
 				irp->graphs[i] = irp->graphs[i+1];
 			}
 			ARR_SETLEN(ir_graph*, irp->graphs, l - 1);
@@ -270,15 +269,16 @@ void add_irp_type(ir_type *typ)
 /* Remove type from the list of types in irp. */
 void remove_irp_type(ir_type *typ)
 {
-	int i;
+	size_t i, l;
 	assert(typ);
 
-	for (i = ARR_LEN(irp->types) - 1; i >= 0; i--) {
+	l = ARR_LEN(irp->types);
+	for (i = 0; i < l; ++i) {
 		if (irp->types[i] == typ) {
-			for (; i < (ARR_LEN(irp->types)) - 1; i++) {
+			for (; i < l - 1; ++i) {
 				irp->types[i] = irp->types[i+1];
 			}
-			ARR_SETLEN(ir_type *, irp->types, (ARR_LEN(irp->types)) - 1);
+			ARR_SETLEN(ir_type *, irp->types, l - 1);
 			break;
 		}
 	}
@@ -324,13 +324,13 @@ void add_irp_mode(ir_mode *mode)
 /* Adds opcode to the list of opcodes in irp. */
 void add_irp_opcode(ir_op *opcode)
 {
-	int    len;
+	size_t len;
 	size_t code;
 	assert(opcode != NULL);
 	assert(irp);
 	len  = ARR_LEN(irp->opcodes);
 	code = opcode->code;
-	if ((int) code >= len) {
+	if (code >= len) {
 		ARR_RESIZE(ir_op*, irp->opcodes, code+1);
 		memset(&irp->opcodes[len], 0, (code-len+1) * sizeof(irp->opcodes[0]));
 	}

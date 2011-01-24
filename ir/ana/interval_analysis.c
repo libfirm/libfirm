@@ -106,7 +106,7 @@ static inline region_attr *get_region_attr(void *region)
 
 int get_region_n_ins(void *region)
 {
-	return ARR_LEN(get_region_attr(region)->in_array);
+	return (int)ARR_LEN(get_region_attr(region)->in_array);
 }
 
 void *get_region_in(void *region, int pos)

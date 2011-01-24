@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -197,7 +197,7 @@ ir_loop * get_irn_loop(ir_node *n)
 /**********************************************************************/
 
 static ir_node **stack = NULL;
-static int tos = 0;                /* top of stack */
+static size_t tos = 0;                /* top of stack */
 
 /**
  * initializes the stack
@@ -229,10 +229,10 @@ static void finish_stack(void)
 static inline void push(ir_node *n)
 {
 	if (tos == ARR_LEN(stack)) {
-		int nlen = ARR_LEN(stack) * 2;
+		size_t nlen = ARR_LEN(stack) * 2;
 		ARR_RESIZE(ir_node *, stack, nlen);
 	}
-	stack [tos++] = n;
+	stack[tos++] = n;
 	mark_irn_in_stack(n);
 }
 
@@ -243,7 +243,10 @@ static inline void push(ir_node *n)
  */
 static inline ir_node *pop(void)
 {
-	ir_node *n = stack[--tos];
+	ir_node *n;
+
+	assert(tos > 0);
+	n = stack[--tos];
 	mark_irn_not_in_stack(n);
 	return n;
 }

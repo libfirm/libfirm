@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -522,7 +522,7 @@ static float calculate_weight(const entry_t *entry)
 static void reorder_weights(q_set *hmap, float threshold)
 {
 	entry_t **adr, *p, *entry;
-	int i, len;
+	size_t i, len;
 	ir_entity *callee;
 
 restart:

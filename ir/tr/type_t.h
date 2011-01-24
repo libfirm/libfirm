@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -412,10 +412,10 @@ static inline int _is_class_type(const ir_type *clss)
 	return (clss->type_op == type_class);
 }
 
-static inline int _get_class_n_members (const ir_type *clss)
+static inline int _get_class_n_members(const ir_type *clss)
 {
 	assert(clss && (clss->type_op == type_class));
-	return (ARR_LEN (clss->attr.ca.members));
+	return (int)(ARR_LEN(clss->attr.ca.members));
 }
 
 static inline ir_entity *_get_class_member(const ir_type *clss, int pos)
