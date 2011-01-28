@@ -102,7 +102,7 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name),
 		} \
 	} \
  \
-	return strlen(buf); \
+	return (int)strlen(buf); \
 } \
 
 
@@ -131,7 +131,7 @@ int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, LC_UNUSED(const char *n
 		prefix = ", "; \
 	} \
  \
-	return strlen(buf); \
+	return (int)strlen(buf); \
 } \
 
 
