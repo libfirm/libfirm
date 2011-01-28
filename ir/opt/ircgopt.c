@@ -86,8 +86,8 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 			DB((dbg, LEVEL_1, "  method %+F kept alive.\n", marked[idx]));
 		}
 
-		for (i = 0; i < ARR_LEN(marked); ++i) {
-			ir_graph *irg = get_entity_irg(marked[i]);
+		for (idx = 0; idx < ARR_LEN(marked); ++idx) {
+			ir_graph *irg = get_entity_irg(marked[idx]);
 			ir_node *node;
 
 			if (irg == NULL)

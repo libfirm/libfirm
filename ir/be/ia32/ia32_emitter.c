@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -2199,7 +2199,7 @@ void ia32_gen_routine(ir_graph *irg)
 	   Those are ascending with ascending addresses. */
 	qsort(exc_list, ARR_LEN(exc_list), sizeof(exc_list[0]), cmp_exc_entry);
 	{
-		int i;
+		size_t i;
 
 		for (i = 0; i < ARR_LEN(exc_list); ++i) {
 			be_emit_cstring("\t.long ");

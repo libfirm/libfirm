@@ -1179,7 +1179,7 @@ static void fix_head_inversion(void)
 /* Does the loop inversion.  */
 static void inversion_walk(entry_edge *head_entries)
 {
-	int i;
+	size_t i;
 
 	/*
 	 * The order of rewiring bottom-up is crucial.
@@ -1462,7 +1462,8 @@ static void correct_phis(ir_node *node, void *env)
 static void place_copies(int copies)
 {
 	ir_node *loophead = loop_head;
-	int c, i;
+	size_t i;
+	int c;
 	int be_src_pos = loop_info.be_src_pos;
 
 	/* Serialize loops by fixing their head ins.
@@ -1578,11 +1579,12 @@ static void place_copies(int copies)
 /* Copies the cur_loop several times. */
 static void copy_loop(entry_edge *cur_loop_outs, int copies)
 {
-	int i, c;
+	int c;
 
 	ir_reserve_resources(current_ir_graph, IR_RESOURCE_IRN_VISITED);
 
 	for (c = 0; c < copies; ++c) {
+		size_t i;
 
 		inc_irg_visited(current_ir_graph);
 

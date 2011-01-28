@@ -826,11 +826,11 @@ ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 
 static void remove_class_member(ir_type *clss, ir_entity *member)
 {
-	int i;
+	size_t i;
 	assert(clss && (clss->type_op == type_class));
-	for (i = 0; i < (ARR_LEN (clss->attr.ca.members)); i++) {
+	for (i = 0; i < ARR_LEN(clss->attr.ca.members); ++i) {
 		if (clss->attr.ca.members[i] == member) {
-			for (; i < (ARR_LEN (clss->attr.ca.members)) - 1; i++)
+			for (; i < ARR_LEN(clss->attr.ca.members) - 1; ++i)
 				clss->attr.ca.members[i] = clss->attr.ca.members[i + 1];
 			ARR_SETLEN(ir_entity*, clss->attr.ca.members, ARR_LEN(clss->attr.ca.members) - 1);
 			break;
@@ -882,11 +882,11 @@ void set_class_subtype(ir_type *clss, ir_type *subtype, int pos)
 
 void remove_class_subtype(ir_type *clss, ir_type *subtype)
 {
-	int i;
+	size_t i;
 	assert(clss && (clss->type_op == type_class));
-	for (i = 0; i < (ARR_LEN (clss->attr.ca.subtypes)); i++)
+	for (i = 0; i < ARR_LEN(clss->attr.ca.subtypes); ++i)
 		if (clss->attr.ca.subtypes[i] == subtype) {
-			for (; i < (ARR_LEN (clss->attr.ca.subtypes))-1; i++)
+			for (; i < ARR_LEN(clss->attr.ca.subtypes) - 1; ++i)
 				clss->attr.ca.subtypes[i] = clss->attr.ca.subtypes[i+1];
 			ARR_SETLEN(ir_type*, clss->attr.ca.subtypes, ARR_LEN(clss->attr.ca.subtypes) - 1);
 			break;
@@ -938,11 +938,11 @@ void set_class_supertype(ir_type *clss, ir_type *supertype, int pos)
 
 void remove_class_supertype(ir_type *clss, ir_type *supertype)
 {
-	int i;
+	size_t i;
 	assert(clss && (clss->type_op == type_class));
-	for (i = 0; i < (ARR_LEN(clss->attr.ca.supertypes)); i++)
+	for (i = 0; i < ARR_LEN(clss->attr.ca.supertypes); ++i)
 		if (clss->attr.ca.supertypes[i] == supertype) {
-			for (; i < (ARR_LEN(clss->attr.ca.supertypes))-1; i++)
+			for (; i < ARR_LEN(clss->attr.ca.supertypes) - 1; ++i)
 				clss->attr.ca.supertypes[i] = clss->attr.ca.supertypes[i+1];
 			ARR_SETLEN(ir_type*, clss->attr.ca.supertypes, ARR_LEN(clss->attr.ca.supertypes) - 1);
 			break;
@@ -1118,11 +1118,11 @@ int get_struct_member_index(const ir_type *strct, ir_entity *mem)
 
 static void remove_struct_member(ir_type *strct, ir_entity *member)
 {
-	int i;
+	size_t i;
 	assert(strct && (strct->type_op == type_struct));
-	for (i = 0; i < (ARR_LEN (strct->attr.sa.members)); i++)
+	for (i = 0; i < ARR_LEN(strct->attr.sa.members); ++i)
 		if (strct->attr.sa.members[i] == member) {
-			for (; i < (ARR_LEN (strct->attr.sa.members))-1; i++)
+			for (; i < ARR_LEN(strct->attr.sa.members) - 1; ++i)
 				strct->attr.sa.members[i] = strct->attr.sa.members[i+1];
 			ARR_SETLEN(ir_entity*, strct->attr.sa.members, ARR_LEN(strct->attr.sa.members) - 1);
 			break;
@@ -1574,11 +1574,11 @@ int get_union_member_index(const ir_type *uni, ir_entity *mem)
 
 static void remove_union_member(ir_type *uni, ir_entity *member)
 {
-	int i;
+	size_t i;
 	assert(uni && (uni->type_op == type_union));
-	for (i = 0; i < (ARR_LEN(uni->attr.ua.members)); i++) {
+	for (i = 0; i < ARR_LEN(uni->attr.ua.members); ++i) {
 		if (uni->attr.ua.members[i] == member) {
-			for (; i < (ARR_LEN(uni->attr.ua.members))-1; i++)
+			for (; i < ARR_LEN(uni->attr.ua.members) - 1; i++)
 				uni->attr.ua.members[i] = uni->attr.ua.members[i+1];
 			ARR_SETLEN(ir_entity*, uni->attr.ua.members, ARR_LEN(uni->attr.ua.members) - 1);
 			break;

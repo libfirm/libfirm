@@ -490,7 +490,7 @@ static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent)
 {
 	int pos = q->pos;
 	ir_node *new_call, *call;
-	int i;
+	size_t i;
 
 	/* We iterate the list of the "call".*/
 	for (i = 0; i < ARR_LEN(q->calls); ++i) {

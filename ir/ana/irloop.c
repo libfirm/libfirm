@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -111,15 +111,15 @@ int (get_loop_n_sons)(const ir_loop *loop)
  * Returns NULL if there isn`t a pos`th loop_node */
 ir_loop *get_loop_son(ir_loop *loop, int pos)
 {
-	int child_nr = 0, loop_nr = -1;
+	size_t child_nr = 0;
+	int loop_nr = -1;
 
 	assert(loop && loop->kind == k_ir_loop);
-	while (child_nr < ARR_LEN(loop->children)) {
+	for (child_nr = 0; child_nr < ARR_LEN(loop->children); ++child_nr) {
 		if (*(loop->children[child_nr].kind) == k_ir_loop)
 			loop_nr++;
 		if (loop_nr == pos)
 			return loop->children[child_nr].son;
-		child_nr++;
 	}
 	return NULL;
 }
@@ -136,12 +136,13 @@ int get_loop_n_nodes(const ir_loop *loop)
  * Returns NULL if there isn't a pos'th ir_node   */
 ir_node *get_loop_node(const ir_loop *loop, int pos)
 {
-	int child_nr, node_nr = -1;
+	size_t child_nr;
+	int node_nr = -1;
 
 	assert(loop && loop->kind == k_ir_loop);
 	assert(pos < get_loop_n_nodes(loop));
 
-	for (child_nr = 0; child_nr < ARR_LEN(loop->children); child_nr++) {
+	for (child_nr = 0; child_nr < ARR_LEN(loop->children); ++child_nr) {
 		if (*(loop->children[child_nr].kind) == k_ir_node)
 			node_nr++;
 		if (node_nr == pos)

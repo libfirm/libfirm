@@ -66,7 +66,7 @@ static inline int _get_irp_n_irgs(void)
 
 static inline ir_graph *_get_irp_irg(int pos)
 {
-	assert(0 <= pos && pos <= ARR_LEN(irp->graphs));
+	assert(0 <= pos && pos <= (int)ARR_LEN(irp->graphs));
 	return irp->graphs[pos];
 }
 

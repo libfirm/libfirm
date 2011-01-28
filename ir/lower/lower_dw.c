@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -2216,7 +2216,7 @@ static void lower_irg(lower_env_t *env, ir_graph *irg)
 	               prepare_links_and_handle_rotl, env);
 
 	if (env->flags & MUST_BE_LOWERED) {
-		int i;
+		size_t i;
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 		inc_irg_visited(irg);
 

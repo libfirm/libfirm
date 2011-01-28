@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -430,13 +430,14 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 	reg->succ = NEW_ARR_D(ir_region *, obst, 1);
 	reg->succ[0] = exit;
 
-	DEBUG_ONLY(
+	DEBUG_ONLY({
+		size_t i;
 		DB((dbg, LEVEL_2, " Created %s(%u)\n", reg->type == ir_rk_Switch ? "Switch" : "Case", reg->nr));
 		for (i = 1; i < ARR_LEN(reg->parts); ++i) {
 			DB((dbg, LEVEL_2, "  Case(%u)\n", reg->parts[i].region->nr));
 		}
 		DB((dbg, LEVEL_2, "  Exit(%u)\n", exit->nr));
-	)
+	})
 	return reg;
 }  /* new_SwitchCase */
 

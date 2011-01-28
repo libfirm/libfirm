@@ -172,7 +172,7 @@ static inline int _get_irn_deps(const ir_node *node) {
 
 static inline ir_node *_get_irn_dep(const ir_node *node, int pos) {
 	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
-	assert(pos >= 0 && pos < ARR_LEN(node->deps) && "dependency index out of range");
+	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
 	return node->deps[pos];
 }
 
@@ -184,7 +184,7 @@ static inline void _set_irn_dep(ir_node *node, int pos, ir_node *dep)
 	ir_node *old;
 
 	assert(node->deps && "dependency array node yet allocated. use add_irn_dep()");
-	assert(pos >= 0 && pos < ARR_LEN(node->deps) && "dependency index out of range");
+	assert(pos >= 0 && pos < (int)ARR_LEN(node->deps) && "dependency index out of range");
 	old = node->deps[pos];
 	node->deps[pos] = dep;
 	edges_notify_edge_kind(node, pos, dep, old, EDGE_KIND_DEP, get_irn_irg(node));
