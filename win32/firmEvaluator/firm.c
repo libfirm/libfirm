@@ -17,7 +17,7 @@
 #include "array_t.h"
 #define NDEBUG
 #else
-#include "array.h"
+#include "array_t.h"
 #endif
 
 #include "entity_t.h"

@@ -167,10 +167,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="winmm.lib"
 				OutputFile="Debug/firmEvaluator.dll"
 				LinkIncremental="2"
 				SuppressStartupBanner="true"
-				ModuleDefinitionFile=".\firmEvaluator.def"
+				ModuleDefinitionFile="../firmEvaluator.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="d:\work\firmevaluator\Debug/firmEvaluator.pdb"
 				ImportLibrary="d:\work\firmevaluator\Debug/firmEvaluator.lib"
