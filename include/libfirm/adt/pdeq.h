@@ -71,7 +71,7 @@ FIRM_API void del_pdeq(pdeq *dq);
  *
  * @param dq   The list.
  */
-FIRM_API int pdeq_len(pdeq *dq);
+FIRM_API size_t pdeq_len(pdeq *dq);
 
 /**
  * Checks if a list is empty.

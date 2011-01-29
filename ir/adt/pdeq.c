@@ -48,7 +48,7 @@
 /**
  * Maximal number of data items in a pdeq chunk.
  */
-#define NDATA ((int)((PREF_MALLOC_SIZE - offsetof (pdeq, data)) / sizeof (void *)))
+#define NDATA ((PREF_MALLOC_SIZE - offsetof(pdeq, data)) / sizeof(void *))
 
 #ifdef NDEBUG
 # define VRFY(dq) ((void)0)
@@ -66,8 +66,8 @@ struct pdeq {
 #endif
 	pdeq *l_end, *r_end;  /**< left and right ends of the queue */
 	pdeq *l, *r;          /**< left and right neighbor */
-	int n;                /**< number of elements in the current chunk */
-	int p;                /**< the read/write pointer */
+	size_t n;             /**< number of elements in the current chunk */
+	size_t p;             /**< the read/write pointer */
 	const void *data[1];  /**< storage for elements */
 };
 
@@ -136,9 +136,9 @@ void _pdeq_vrfy(pdeq *dq)
 				&& ((q == dq->l_end) ^ (q->l != NULL))
 				&& ((q == dq->r_end) ^ (q->r != NULL))
 				&& (!q->l || (q == q->l->r))
-				&& ((q->n >= 0) && (q->n <= NDATA))
+				&& (q->n <= NDATA)
 				&& ((q == dq->l_end) || (q == dq->r_end) || (q->n == NDATA))
-				&& ((q->p >= 0) && (q->p < NDATA)));
+				&& (q->p < NDATA));
 		q = q->r;
 	}
 }
@@ -197,9 +197,9 @@ int pdeq_empty(pdeq *dq)
 }
 
 /* Returns the length of a double ended pointer list. */
-int pdeq_len(pdeq *dq)
+size_t pdeq_len(pdeq *dq)
 {
-	int n;
+	size_t n;
 	pdeq *q;
 
 	VRFY(dq);
@@ -218,7 +218,7 @@ int pdeq_len(pdeq *dq)
 pdeq *pdeq_putr(pdeq *dq, const void *x)
 {
 	pdeq *rdq;
-	int n;
+	size_t n;
 
 	VRFY(dq);
 
@@ -256,7 +256,7 @@ pdeq *pdeq_putr(pdeq *dq, const void *x)
 pdeq *pdeq_putl(pdeq *dq, const void *x)
 {
 	pdeq *ldq;
-	int p;
+	size_t p;
 
 	VRFY(dq);
 
@@ -282,8 +282,10 @@ pdeq *pdeq_putl(pdeq *dq, const void *x)
 	}
 
 	ldq->n++;
-	p = ldq->p - 1;
-	if (p < 0) p += NDATA;
+	if (ldq->p == 0)
+		p = NDATA;
+	else
+		p = ldq->p - 1;
 	ldq->p = p;
 
 	ldq->data[p] = x;
@@ -297,7 +299,7 @@ void *pdeq_getr(pdeq *dq)
 {
 	pdeq *rdq;
 	const void *x;
-	int n;
+	size_t n;
 
 	VRFY(dq);
 	assert(dq->l_end->n);
@@ -329,7 +331,7 @@ void *pdeq_getl(pdeq *dq)
 {
 	pdeq *ldq;
 	const void *x;
-	int p;
+	size_t p;
 
 	VRFY(dq);
 	assert(dq->l_end->n);
@@ -369,7 +371,7 @@ int pdeq_contains(pdeq *dq, const void *x)
 
 	q = dq->l_end;
 	do {
-		int p, ep;
+		size_t p, ep;
 
 		p = q->p; ep = p + q->n;
 
@@ -400,26 +402,26 @@ int pdeq_contains(pdeq *dq, const void *x)
 void *pdeq_search(pdeq *dq, cmp_fun cmp, const void *key)
 {
 	pdeq *q;
-	int p;
+	size_t p;
 
 	VRFY(dq);
 
 	q = dq->l_end;
 	do {
-		int ep;
+		size_t ep;
 
 		p = q->p; ep = p + q->n;
 
 		if (ep > NDATA) {
 			do {
-				if (!cmp (q->data[p], key)) return (void *)q->data[p-1];
+				if (!cmp(q->data[p], key)) return (void *)q->data[p-1];
 			} while (++p < NDATA);
 			p = 0;
 			ep -= NDATA;
 		}
 
 		while (p < ep) {
-			if (!cmp (q->data[p++], key)) return (void *)q->data[p-1];
+			if (!cmp(q->data[p++], key)) return (void *)q->data[p-1];
 		}
 
 		q = q->r;
@@ -441,12 +443,13 @@ void **pdeq_copyl(pdeq *dq, const void **dst)
 
 	q = dq->l_end;
 	while (q) {
-		int p, n;
+		size_t p, n;
 
 		p = q->p; n = q->n;
 
 		if (n + p > NDATA) {
-			int nn = NDATA - p;
+			/* p is always < NDATA */
+			size_t nn = NDATA - p;
 			memcpy((void *) d, &q->data[p], nn * sizeof(void *)); d += nn;
 			p = 0; n -= nn;
 		}
@@ -472,16 +475,24 @@ void **pdeq_copyr(pdeq *dq, const void **dst)
 
 	q = dq->r_end;
 	while (q) {
-		int p, i;
+		size_t p, i;
 
 		p = q->p; i = q->n + p - 1;
 		if (i >= NDATA) {
 			i -= NDATA;
-			do *d++ = q->data[i]; while (--i >= 0);
+			for (;; --i) {
+				*d++ = q->data[i];
+				if (i == 0)
+					break;
+			}
 			i = NDATA - 1;
 		}
 
-		do *d++ = q->data[i]; while (--i >= p);
+		for (;; --i) {
+			*d++ = q->data[i];
+			if (i <= p)
+				break;
+		}
 
 		q = q->l;
 	}
