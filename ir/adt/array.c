@@ -86,7 +86,7 @@ void *ir_new_arr_d(struct obstack *obstack, size_t nelts, size_t elts_size)
 	ARR_SET_DBGINF(dp, ARR_D_MAGIC, elts_size/nelts);
 	dp->u.obstack = obstack;
 	dp->nelts = nelts;
-	return dp->v.elts;
+	return dp->elts;
 }
 
 /**
@@ -107,7 +107,7 @@ void *ir_new_arr_f(size_t nelts, size_t elts_size)
 	newa = (ir_arr_descr*)xmalloc(ARR_ELTS_OFFS+elts_size);
 	ARR_SET_DBGINF(newa, ARR_F_MAGIC, nelts ? elts_size/nelts : 0);
 	newa->u.allocated = newa->nelts = nelts;
-	return newa->v.elts;
+	return newa->elts;
 }
 
 /**
@@ -153,7 +153,7 @@ void *ir_arr_setlen (void *elts, size_t nelts, size_t elts_size)
 	dp = (ir_arr_descr*) xrealloc(dp, ARR_ELTS_OFFS+elts_size);
 	dp->u.allocated = dp->nelts = nelts;
 
-	return dp->v.elts;
+	return dp->elts;
 }
 
 /**
@@ -190,7 +190,7 @@ void *ir_arr_resize(void *elts, size_t nelts, size_t eltsize)
 	}
 	dp->nelts = nelts;
 
-	return dp->v.elts;
+	return dp->elts;
 }
 
 #ifdef DEBUG_libfirm

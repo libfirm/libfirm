@@ -104,7 +104,7 @@
 #define NEW_ARR_D(type, obstack, nelts)					\
   (  nelts								\
    ? (type *)ir_new_arr_d((obstack), (nelts), sizeof(type) * (nelts))	\
-   : (type *)arr_mt_descr.v.elts)
+   : (type *)arr_mt_descr.elts)
 
 /**
  * Creates a new dynamic array with the same number of elements as a
@@ -228,28 +228,20 @@ typedef union {
   long l;
 } aligned_type;
 
-/**
- * Construct an array header.
- */
-#define ARR_STRUCT(type, rnelts)                    \
-  struct {                                          \
-  	int magic;                                      \
-  	size_t eltsize;                                 \
-    union {                                         \
-      struct obstack *obstack;	/* dynamic: allocated on this obstack */  \
-      size_t allocated;			/* flexible: #slots allocated */          \
-    } u;                                            \
-    size_t nelts;                                   \
-    union {                                         \
-      type elts[(rnelts)];                          \
-      aligned_type align[1];                        \
-    } v;                                            \
-  }
 
 /**
  * The array descriptor header type.
  */
-typedef ARR_STRUCT(aligned_type, 1) ir_arr_descr;
+typedef struct {
+	int magic;                    /**< array magic. */
+	size_t eltsize;               /**< size of array elements. */
+	union {
+		struct obstack *obstack;  /**< for obstack array: the obstack. */
+		size_t allocated;         /**< number of allocated elements. */
+	} u;
+	size_t nelts;                 /**< current length of the array. */
+	aligned_type elts[1];         /**< start of the array data. */
+} ir_arr_descr;
 
 extern ir_arr_descr arr_mt_descr;
 
@@ -260,7 +252,7 @@ FIRM_API void *ir_arr_resize(void *elts, size_t nelts, size_t elts_size);
 FIRM_API void *ir_arr_setlen(void *elts, size_t nelts, size_t elts_size);
 FIRM_API void ir_verify_arr(const void *elts);
 
-#define ARR_ELTS_OFFS offsetof(ir_arr_descr, v.elts)
+#define ARR_ELTS_OFFS offsetof(ir_arr_descr, elts)
 #define ARR_DESCR(elts) ((ir_arr_descr *)(void *)((char *)(elts) - ARR_ELTS_OFFS))
 
 #include "../end.h"
