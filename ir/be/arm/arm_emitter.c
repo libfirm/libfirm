@@ -1049,7 +1049,7 @@ void arm_gen_routine(ir_graph *irg)
 	ir_entity        *entity     = get_irg_entity(irg);
 	const arch_env_t *arch_env   = be_get_irg_arch_env(irg);
 	ir_node          **blk_sched;
-	int              i, n;
+	size_t           i, n;
 
 	isa = (arm_isa_t*) arch_env;
 	sym_or_tv = new_set(cmp_sym_or_tv, 8);

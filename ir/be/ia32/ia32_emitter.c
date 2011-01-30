@@ -4226,7 +4226,7 @@ void ia32_gen_binary_routine(ir_graph *irg)
 	const arch_env_t *arch_env  = be_get_irg_arch_env(irg);
 	ia32_irg_data_t  *irg_data  = ia32_get_irg_data(irg);
 	ir_node         **blk_sched = irg_data->blk_sched;
-	int i, n;
+	size_t            i, n;
 
 	isa = (ia32_isa_t*) arch_env;
 

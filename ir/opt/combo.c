@@ -3536,10 +3536,11 @@ static void set_compute_functions(void)
 /**
  * Add memory keeps.
  */
-static void add_memory_keeps(ir_node **kept_memory, int len)
+static void add_memory_keeps(ir_node **kept_memory, size_t len)
 {
 	ir_node      *end = get_irg_end(current_ir_graph);
 	int          i;
+	size_t       idx;
 	ir_nodeset_t set;
 
 	ir_nodeset_init(&set);
@@ -3548,8 +3549,8 @@ static void add_memory_keeps(ir_node **kept_memory, int len)
 	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i)
 		ir_nodeset_insert(&set, get_End_keepalive(end, i));
 
-	for (i = len - 1; i >= 0; --i) {
-		ir_node *ka = kept_memory[i];
+	for (idx = 0; idx < len; ++idx) {
+		ir_node *ka = kept_memory[idx];
 
 		if (! ir_nodeset_contains(&set, ka)) {
 			add_End_keepalive(end, ka);

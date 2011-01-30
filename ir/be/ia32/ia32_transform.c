@@ -5777,9 +5777,9 @@ static void ia32_pretransform_node(void)
  */
 static void postprocess_fp_call_results(void)
 {
-	int i;
+	size_t i, n;
 
-	for (i = ARR_LEN(call_list) - 1; i >= 0; --i) {
+	for (i = 0, n = ARR_LEN(call_list); i < n; ++i) {
 		ir_node *call = call_list[i];
 		ir_type *mtp  = call_types[i];
 		int     j;

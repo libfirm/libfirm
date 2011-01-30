@@ -265,8 +265,8 @@ void TEMPLATE_emit_routine(ir_graph *irg)
 {
 	ir_node   **block_schedule;
 	ir_entity  *entity = get_irg_entity(irg);
-	int         i;
-	int         n;
+	size_t      i;
+	size_t      n;
 
 	/* register all emitter functions */
 	TEMPLATE_register_emitters();

@@ -245,7 +245,7 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 	ir_node *initial_value;
 	ir_node **phis;
 	be_lv_t *lv = be_get_irg_liveness(irg);
-	int i, len;
+	size_t i, len;
 
 	/* do ssa construction for the fpu modes */
 	env.state_nodes = NEW_ARR_F(ir_node*, 0);

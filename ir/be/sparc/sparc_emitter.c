@@ -1139,8 +1139,8 @@ void sparc_emit_routine(ir_graph *irg)
 {
 	ir_entity  *entity = get_irg_entity(irg);
 	ir_node   **block_schedule;
-	int         i;
-	int         n;
+	size_t      i;
+	size_t      n;
 
 	be_gas_elf_type_char      = '#';
 	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF_SPARC;
