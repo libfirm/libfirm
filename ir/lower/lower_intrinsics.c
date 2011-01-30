@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -48,7 +48,7 @@
 /** Walker environment. */
 typedef struct walker_env {
 	pmap     *c_map;              /**< The intrinsic call map. */
-	unsigned nr_of_intrinsics;    /**< statistics */
+	size_t   nr_of_intrinsics;    /**< statistics */
 	i_instr_record **i_map;       /**< The intrinsic instruction map. */
 } walker_env_t;
 
@@ -93,13 +93,14 @@ static void call_mapper(ir_node *node, void *env)
 }  /* call_mapper */
 
 /* Go through all graphs and map calls to intrinsic functions. */
-unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
+size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 {
-	int            i, n_ops = get_irp_n_opcodes();
+	size_t         i;
+	int            idx, n_ops = get_irp_n_opcodes();
 	ir_graph       *irg;
 	pmap           *c_map = pmap_create_ex(length);
 	i_instr_record **i_map;
-	unsigned       nr_of_intrinsics = 0;
+	size_t         nr_of_intrinsics = 0;
 	walker_env_t   wenv;
 
 	/* we use the ir_op generic pointers here */
@@ -107,7 +108,7 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
 	memset((void *)i_map, 0, sizeof(*i_map) * n_ops);
 
 	/* fill a map for faster search */
-	for (i = length - 1; i >= 0; --i) {
+	for (i = 0; i < length; ++i) {
 		if (list[i].i_call.kind == INTRINSIC_CALL) {
 			pmap_insert(c_map, list[i].i_call.i_ent, (void *)&list[i].i_call);
 		} else {
@@ -122,8 +123,8 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
 	wenv.c_map = c_map;
 	wenv.i_map = i_map;
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		irg = get_irp_irg(i);
+	for (idx = get_irp_n_irgs() - 1; idx >= 0; --idx) {
+		irg = get_irp_irg(idx);
 
 		if (part_block_used) {
 			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
@@ -166,8 +167,8 @@ unsigned lower_intrinsics(i_record *list, int length, int part_block_used)
 typedef struct pass_t {
 	ir_prog_pass_t pass;
 
-	int part_block_used;
-	int      length;
+	int      part_block_used;
+	size_t   length;
 	i_record list[1];
 } pass_t;
 
@@ -193,7 +194,7 @@ static int pass_wrapper(ir_prog *irp, void *context)
  */
 ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
-	i_record *list, int length, int part_block_used)
+	i_record *list, size_t length, int part_block_used)
 {
 	pass_t *pass = (pass_t*)xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
 

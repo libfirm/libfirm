@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -389,7 +389,7 @@ typedef union i_record {
  *
  * @return number of found intrinsics.
  */
-FIRM_API unsigned lower_intrinsics(i_record *list, int length,
+FIRM_API size_t lower_intrinsics(i_record *list, size_t length,
                                    int part_block_used);
 
 /**
@@ -401,7 +401,7 @@ FIRM_API unsigned lower_intrinsics(i_record *list, int length,
  * @param part_block_used  set to true if part_block() must be using during lowering
  */
 FIRM_API ir_prog_pass_t *lower_intrinsics_pass(const char *name, i_record *list,
-                                               int length, int part_block_used);
+                                               size_t length, int part_block_used);
 
 /**
  * A mapper for the integer/float absolute value: type abs(type v).
