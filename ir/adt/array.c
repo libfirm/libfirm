@@ -58,7 +58,6 @@ void ir_verify_arr(const void *arr)
 	if (descr->magic == ARR_F_MAGIC) {
 		assert(descr->u.allocated >= descr->nelts);
 	}
-	assert(descr->nelts >= 0);
 #else
 	(void) arr;
 #endif
