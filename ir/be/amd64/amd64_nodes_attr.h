@@ -40,8 +40,8 @@ struct amd64_attr_t
 		unsigned cmp_unsigned : 1;      /**< compare should be unsigned */
 	} data;
 	struct amd64_attr_extended {
-		pn_Cmp   pnc;                   /**< type of compare operation >*/
-		unsigned imm_value;             /**< immediate value to use >*/
+		ir_relation relation;           /**< type of compare operation >*/
+		unsigned    imm_value;          /**< immediate value to use >*/
 	} ext;
 };
 

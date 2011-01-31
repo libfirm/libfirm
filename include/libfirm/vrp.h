@@ -61,10 +61,9 @@ FIRM_API void set_vrp_data(ir_graph *irg);
  *
  * @param left: the left node
  * @param right: the right node
- *
- * @return the pn_Cmp, if one can be derived
+ * @return all possible relations
  */
-FIRM_API pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right);
+FIRM_API ir_relation vrp_cmp(const ir_node *left, const ir_node *right);
 
 /*
  * Return the vrp data for this node

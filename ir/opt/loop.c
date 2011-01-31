@@ -1660,10 +1660,9 @@ static ir_node *new_Abs(ir_node *op, ir_mode *mode)
   ir_graph *irg      = get_irn_irg(op);
   ir_node  *block    = get_nodes_block(op);
   ir_node  *zero     = new_r_Const(irg, get_mode_null(mode));
-  ir_node  *cmp      = new_r_Cmp(block, op, zero);
-  ir_node  *cond     = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
+  ir_node  *cmp      = new_r_Cmp(block, op, zero, ir_relation_less);
   ir_node  *minus_op = new_r_Minus(block, op, mode);
-  ir_node  *mux      = new_r_Mux(block, cond, op, minus_op, mode);
+  ir_node  *mux      = new_r_Mux(block, cmp, op, minus_op, mode);
 
   return mux;
 }
@@ -1678,7 +1677,7 @@ static void create_duffs_block(void)
 
 	ir_node *block1, *count_block, *duff_block;
 	ir_node *ems, *ems_mod, *ems_div, *ems_mod_proj, *cmp_null,
-	        *cmp_proj, *ems_mode_cond, *x_true, *x_false, *const_null;
+	        *ems_mode_cond, *x_true, *x_false, *const_null;
 	ir_node *true_val, *false_val;
 	ir_node *ins[2];
 
@@ -1732,10 +1731,8 @@ static void create_duffs_block(void)
 	DB((dbg, LEVEL_4, "New module node %N\n", ems_mod));
 
 	ems_mod_proj = new_r_Proj(ems_mod, mode_Iu, pn_Mod_res);
-	cmp_null = new_r_Cmp(block1, ems_mod_proj, const_null);
-	cmp_proj = new_r_Proj(cmp_null, mode_b, pn_Cmp_Eq);
-	ems_mode_cond = new_r_Cond(block1, cmp_proj);
-
+	cmp_null = new_r_Cmp(block1, ems_mod_proj, const_null, ir_relation_less);
+	ems_mode_cond = new_r_Cond(block1, cmp_null);
 
 	/* ems % step == 0 */
 	x_true = new_r_Proj(ems_mode_cond, mode_X, pn_Cond_true);
@@ -1780,8 +1777,6 @@ static void create_duffs_block(void)
 	/* (end - start) / step  +  correction */
 	count = new_Add(count, correction, mode);
 
-	cmp_bad_count = new_r_Cmp(count_block, count, const_null);
-
 	/* We preconditioned the loop to be tail-controlled.
 	 * So, if count is something 'wrong' like 0,
 	 * negative/positive (depending on step direction),
@@ -1790,12 +1785,14 @@ static void create_duffs_block(void)
 
 	/* Depending on step direction, we have to check for > or < 0 */
 	if (loop_info.decreasing == 1) {
-		bad_count_neg = new_r_Proj(cmp_bad_count, mode_b, pn_Cmp_Lt);
+		cmp_bad_count = new_r_Cmp(count_block, count, const_null,
+		                          ir_relation_less);
 	} else {
-		bad_count_neg = new_r_Proj(cmp_bad_count, mode_b, pn_Cmp_Gt);
+		cmp_bad_count = new_r_Cmp(count_block, count, const_null,
+		                          ir_relation_greater);
 	}
 
-	bad_count_neg = new_r_Cond(count_block, bad_count_neg);
+	bad_count_neg = new_r_Cond(count_block, cmp_bad_count);
 	good_count = new_Proj(bad_count_neg, mode_X, pn_Cond_true);
 	bad_count = new_Proj(ems_mode_cond, mode_X, pn_Cond_false);
 
@@ -1994,38 +1991,17 @@ static unsigned get_const_pred(ir_node *node, ir_node **const_pred, ir_node **ot
 		return 1;
 }
 
-/* Returns the mathematically inverted pn_Cmp. */
-static pn_Cmp get_math_inverted_case(pn_Cmp proj)
-{
-	switch(proj) {
-		case pn_Cmp_Eq:
-			return pn_Cmp_Lg;
-		case pn_Cmp_Lg:
-			return pn_Cmp_Eq;
-		case pn_Cmp_Lt:
-			return pn_Cmp_Ge;
-		case pn_Cmp_Le:
-			return pn_Cmp_Gt;
-		case pn_Cmp_Gt:
-			return pn_Cmp_Le;
-		case pn_Cmp_Ge:
-			return pn_Cmp_Lt;
-		default:
-			panic("Unhandled pn_Cmp.");
-	}
-}
-
 /* Returns 1 if loop exits within 2 steps of the iv.
  * Norm_proj means we do not exit the loop.*/
 static unsigned simulate_next(ir_tarval **count_tar,
 		ir_tarval *stepped, ir_tarval *step_tar, ir_tarval *end_tar,
-		pn_Cmp norm_proj)
+		ir_relation norm_proj)
 {
 	ir_tarval *next;
 
 	DB((dbg, LEVEL_4, "Loop taken if (stepped)%ld %s (end)%ld ",
 				get_tarval_long(stepped),
-				get_pnc_string((norm_proj)),
+				get_relation_string((norm_proj)),
 				get_tarval_long(end_tar)));
 	DB((dbg, LEVEL_4, "comparing latest value %d\n", loop_info.latest_value));
 
@@ -2036,7 +2012,7 @@ static unsigned simulate_next(ir_tarval **count_tar,
 
 	DB((dbg, LEVEL_4, "Result: (stepped)%ld IS %s (end)%ld\n",
 				get_tarval_long(stepped),
-				get_pnc_string(tarval_cmp(stepped, end_tar)),
+				get_relation_string(tarval_cmp(stepped, end_tar)),
 				get_tarval_long(end_tar)));
 
 	/* next step */
@@ -2048,7 +2024,7 @@ static unsigned simulate_next(ir_tarval **count_tar,
 
 	DB((dbg, LEVEL_4, "Loop taken if %ld %s %ld ",
 				get_tarval_long(next),
-				get_pnc_string(norm_proj),
+				get_relation_string(norm_proj),
 				get_tarval_long(end_tar)));
 	DB((dbg, LEVEL_4, "comparing latest value %d\n", loop_info.latest_value));
 
@@ -2073,7 +2049,7 @@ static unsigned simulate_next(ir_tarval **count_tar,
 static ir_node *is_simple_loop(void)
 {
 	int arity, i;
-	ir_node *loop_block, *exit_block, *projx, *cond, *projres, *loop_condition;
+	ir_node *loop_block, *exit_block, *projx, *cond, *cmp;
 
 	/* Maximum of one condition, and no endless loops. */
 	if (loop_info.cf_outs != 1)
@@ -2128,13 +2104,12 @@ static ir_node *is_simple_loop(void)
 	/* find value on which loop exit depends */
 	projx = loop_info.cf_out.pred;
 	cond = get_irn_n(projx, 0);
-	projres = get_irn_n(cond, 0);
-	loop_condition = get_irn_n(projres, 0);
+	cmp = get_irn_n(cond, 0);
 
-	if (!is_Cmp(loop_condition))
+	if (!is_Cmp(cmp))
 		return NULL;
 
-	DB((dbg, LEVEL_5, "projection is %s\n", get_pnc_string(get_Proj_proj(projx))));
+	DB((dbg, LEVEL_5, "projection is %s\n", get_relation_string(get_Proj_proj(projx))));
 
 	switch(get_Proj_proj(projx)) {
 		case pn_Cond_false:
@@ -2148,8 +2123,7 @@ static ir_node *is_simple_loop(void)
 	}
 
 	DB((dbg, LEVEL_4, "Valid Cmp.\n"));
-
-	return projres;
+	return cmp;
 }
 
 /* Returns 1 if all nodes are mode_Iu or mode_Is. */
@@ -2378,15 +2352,16 @@ static unsigned get_preferred_factor_constant(ir_tarval *count_tar)
 /* TODO split. */
 static unsigned get_unroll_decision_constant(void)
 {
-	ir_node   *projres, *loop_condition, *iteration_path;
-	unsigned   success, is_latest_val;
-	ir_tarval *start_tar, *end_tar, *step_tar, *diff_tar, *count_tar, *stepped;
-	pn_Cmp     proj_proj, norm_proj;
-	ir_mode   *mode;
+	ir_node     *cmp, *iteration_path;
+	unsigned     success, is_latest_val;
+	ir_tarval   *start_tar, *end_tar, *step_tar, *diff_tar, *count_tar;
+	ir_tarval   *stepped;
+	ir_relation  proj_proj, norm_proj;
+	ir_mode     *mode;
 
 	/* RETURN if loop is not 'simple' */
-	projres = is_simple_loop();
-	if (projres == NULL)
+	cmp = is_simple_loop();
+	if (cmp == NULL)
 		return 0;
 
 	/* One in of the loop condition needs to be loop invariant. => end_val
@@ -2404,9 +2379,7 @@ static unsigned get_unroll_decision_constant(void)
 	     /\
 	*/
 
-	loop_condition = get_irn_n(projres, 0);
-
-	success = get_const_pred(loop_condition, &loop_info.end_val, &iteration_path);
+	success = get_const_pred(cmp, &loop_info.end_val, &iteration_path);
 	if (! success)
 		return 0;
 
@@ -2538,17 +2511,16 @@ static unsigned get_unroll_decision_constant(void)
 
 	DB((dbg, LEVEL_4, "stepped to %ld\n", get_tarval_long(stepped)));
 
-	proj_proj = get_Proj_pn_cmp(projres);
+	proj_proj = get_Cmp_relation(cmp);
 	/* Assure that norm_proj is the stay-in-loop case. */
 	if (loop_info.exit_cond == 1)
-		norm_proj = get_math_inverted_case(proj_proj);
+		norm_proj = get_negated_relation(proj_proj);
 	else
 		norm_proj = proj_proj;
 
-	DB((dbg, LEVEL_4, "normalized projection %s\n", get_pnc_string(norm_proj)));
-
+	DB((dbg, LEVEL_4, "normalized projection %s\n", get_relation_string(norm_proj)));
 	/* Executed at most once (stay in counting loop if a Eq b) */
-	if (norm_proj == pn_Cmp_Eq)
+	if (norm_proj == ir_relation_equal)
 		/* TODO Might be worth a warning. */
 		return 0;
 

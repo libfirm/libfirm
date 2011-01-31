@@ -283,29 +283,31 @@ static int vrp_update_node(ir_node *node)
 		new_bits_set = tarval_and(
 				new_bits_not_set, tarval_convert_to(vrp_pred->bits_set, new_mode));
 
-		if (tarval_cmp(vrp_pred->range_top, get_mode_max(new_mode)) == pn_Cmp_Le) {
+		/* Matze: TODO, BUGGY, tarval_cmp never returns ir_relation_less_equal */
+		if (tarval_cmp(vrp_pred->range_top, get_mode_max(new_mode)) == ir_relation_less_equal) {
 			vrp->range_top = vrp_pred->range_top;
 		}
 
-		if (tarval_cmp(vrp_pred->range_bottom, get_mode_min(new_mode)) == pn_Cmp_Ge) {
+		/* Matze: TODO, BUGGY, tarval_cmp never returns ir_relation_greater_equal */
+		if (tarval_cmp(vrp_pred->range_bottom, get_mode_min(new_mode)) == ir_relation_greater_equal) {
 			vrp->range_bottom = vrp_pred->range_bottom;
 		}
 		break;
 	}
 
 	case iro_Confirm: {
-		const pn_Cmp cmp = get_Confirm_cmp(node);
-		const ir_node *bound = get_Confirm_bound(node);
+		const ir_relation relation = get_Confirm_relation(node);
+		const ir_node    *bound    = get_Confirm_bound(node);
 
 
-		if (cmp == pn_Cmp_Lg) {
+		if (relation == ir_relation_less_greater) {
 			/** @todo: Handle non-Const bounds */
 			if (is_Const(bound)) {
 				new_range_type = VRP_ANTIRANGE;
 				new_range_top = get_Const_tarval(bound);
 				new_range_bottom = get_Const_tarval(bound);
 			}
-		} else if (cmp == pn_Cmp_Le) {
+		} else if (relation == ir_relation_less_equal) {
 			if (is_Const(bound)) {
 				new_range_type = VRP_RANGE;
 				new_range_top = get_Const_tarval(bound);
@@ -319,7 +321,7 @@ static int vrp_update_node(ir_node *node)
 		/* combine all ranges*/
 
 		int num = get_Phi_n_preds(node);
-		pn_Cmp cmp;
+		ir_relation relation;
 		int i;
 
 		const ir_node *pred = get_Phi_pred(node,0);
@@ -337,12 +339,12 @@ static int vrp_update_node(ir_node *node)
 			vrp_pred = get_vrp_attr(pred);
 			if (new_range_type == VRP_RANGE && vrp_pred->range_type ==
 					VRP_RANGE) {
-				cmp = tarval_cmp(new_range_top, vrp_pred->range_top);
-				if (cmp == pn_Cmp_Lt) {
+				relation = tarval_cmp(new_range_top, vrp_pred->range_top);
+				if (relation == ir_relation_less) {
 					new_range_top = vrp_pred->range_top;
 				}
-				cmp = tarval_cmp(new_range_bottom, vrp_pred->range_bottom);
-				if (cmp == pn_Cmp_Gt) {
+				relation = tarval_cmp(new_range_bottom, vrp_pred->range_bottom);
+				if (relation == ir_relation_greater) {
 					new_range_bottom = vrp_pred->range_bottom;
 				}
 			} else {
@@ -395,7 +397,7 @@ static int vrp_update_node(ir_node *node)
 	/* Merge the newly calculated values with those that might already exist*/
 	if (new_bits_set != tarval_bad) {
 		new_bits_set = tarval_or(new_bits_set, vrp->bits_set);
-		if (tarval_cmp(new_bits_set, vrp->bits_set) != pn_Cmp_Eq) {
+		if (tarval_cmp(new_bits_set, vrp->bits_set) != ir_relation_equal) {
 			something_changed = 1;
 			vrp->bits_set = new_bits_set;
 		}
@@ -403,7 +405,7 @@ static int vrp_update_node(ir_node *node)
 	if (new_bits_not_set != tarval_bad) {
 		new_bits_not_set = tarval_and(new_bits_not_set, vrp->bits_not_set);
 
-		if (tarval_cmp(new_bits_not_set, vrp->bits_not_set) != pn_Cmp_Eq) {
+		if (tarval_cmp(new_bits_not_set, vrp->bits_not_set) != ir_relation_equal) {
 			something_changed = 1;
 			vrp->bits_not_set = new_bits_not_set;
 		}
@@ -418,11 +420,11 @@ static int vrp_update_node(ir_node *node)
 
 	} else if (vrp->range_type == VRP_RANGE) {
 		if (new_range_type == VRP_RANGE) {
-			if (tarval_cmp(vrp->range_bottom, new_range_bottom) == pn_Cmp_Lt) {
+			if (tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_less) {
 				something_changed = 1;
 				vrp->range_bottom = new_range_bottom;
 			}
-			if (tarval_cmp(vrp->range_top, new_range_top) == pn_Cmp_Gt) {
+			if (tarval_cmp(vrp->range_top, new_range_top) == ir_relation_greater) {
 				something_changed = 1;
 				vrp->range_top = new_range_top;
 			}
@@ -431,13 +433,13 @@ static int vrp_update_node(ir_node *node)
 		if (new_range_type == VRP_ANTIRANGE) {
 			/* if they are overlapping, cut the range.*/
 			/* TODO: Maybe we can preserve more information here*/
-			if (tarval_cmp(vrp->range_bottom, new_range_top) == pn_Cmp_Gt &&
-					tarval_cmp(vrp->range_bottom, new_range_bottom) == pn_Cmp_Gt) {
+			if (tarval_cmp(vrp->range_bottom, new_range_top) == ir_relation_greater &&
+					tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_greater) {
 				something_changed = 1;
 				vrp->range_bottom = new_range_top;
 
-			} else if (tarval_cmp(vrp->range_top, new_range_bottom) == pn_Cmp_Gt &&
-					tarval_cmp(vrp->range_top, new_range_top) == pn_Cmp_Lt) {
+			} else if (tarval_cmp(vrp->range_top, new_range_bottom) == ir_relation_greater &&
+					tarval_cmp(vrp->range_top, new_range_top) == ir_relation_less) {
 				something_changed = 1;
 				vrp->range_top = new_range_bottom;
 			}
@@ -448,22 +450,22 @@ static int vrp_update_node(ir_node *node)
 		}
 	} else if (vrp->range_type == VRP_ANTIRANGE) {
 		if (new_range_type == VRP_ANTIRANGE) {
-			if (tarval_cmp(vrp->range_bottom, new_range_bottom) == pn_Cmp_Gt) {
+			if (tarval_cmp(vrp->range_bottom, new_range_bottom) == ir_relation_greater) {
 				something_changed = 1;
 				vrp->range_bottom = new_range_bottom;
 			}
-			if (tarval_cmp(vrp->range_top, new_range_top) == pn_Cmp_Lt) {
+			if (tarval_cmp(vrp->range_top, new_range_top) == ir_relation_less) {
 				something_changed = 1;
 				vrp->range_top = new_range_top;
 			}
 		}
 
 		if (new_range_type == VRP_RANGE) {
-			if (tarval_cmp(vrp->range_bottom, new_range_top) == pn_Cmp_Gt) {
+			if (tarval_cmp(vrp->range_bottom, new_range_top) == ir_relation_greater) {
 				something_changed = 1;
 				vrp->range_bottom = new_range_top;
 			}
-			if (tarval_cmp(vrp->range_top, new_range_bottom) == pn_Cmp_Lt) {
+			if (tarval_cmp(vrp->range_top, new_range_bottom) == ir_relation_less) {
 				something_changed = 1;
 				vrp->range_top = new_range_bottom;
 			}
@@ -586,33 +588,32 @@ ir_graph_pass_t *set_vrp_pass(const char *name)
 	return def_graph_pass(name ? name : "set_vrp", set_vrp_data);
 }
 
-pn_Cmp vrp_cmp(const ir_node *left, const ir_node *right)
+ir_relation vrp_cmp(const ir_node *left, const ir_node *right)
 {
 	vrp_attr *vrp_left, *vrp_right;
 
 	vrp_left = vrp_get_info(left);
 	vrp_right = vrp_get_info(right);
 
-	if (!vrp_left || !vrp_right) {
-		return pn_Cmp_False;
-	}
+	if (!vrp_left || !vrp_right)
+		return ir_relation_true;
 
 	if (vrp_left->range_type == VRP_RANGE && vrp_right->range_type == VRP_RANGE) {
-		if (tarval_cmp(vrp_left->range_top, vrp_right->range_bottom) == pn_Cmp_Lt) {
-			return pn_Cmp_Lt;
+		if (tarval_cmp(vrp_left->range_top, vrp_right->range_bottom) == ir_relation_less) {
+			return ir_relation_less;
 		}
-		if (tarval_cmp(vrp_left->range_bottom, vrp_right->range_top) == pn_Cmp_Gt) {
-			return pn_Cmp_Gt;
+		if (tarval_cmp(vrp_left->range_bottom, vrp_right->range_top) == ir_relation_greater) {
+			return ir_relation_greater;
 		}
 	}
 
 	if (!tarval_is_null(tarval_and(vrp_left->bits_set, tarval_not(vrp_right->bits_not_set))) ||
 			!tarval_is_null(tarval_and(tarval_not(vrp_left->bits_not_set), vrp_right->bits_set))) {
-		return pn_Cmp_Lg;
+		return ir_relation_less_greater;
 	}
-	/* TODO: We can get way more information here*/
 
-	return pn_Cmp_False;
+	/* TODO: We can get way more information here*/
+	return ir_relation_true;
 }
 
 vrp_attr *vrp_get_info(const ir_node *node)

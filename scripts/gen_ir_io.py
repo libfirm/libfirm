@@ -60,7 +60,7 @@ def get_io_type(type, attrname, node):
 	elif type == "long" and node.name == "Proj":
 		importcmd = "long %s = read_long(env);" % attrname
 		exportcmd = """write_long(env, %(val)s);"""
-	elif type == "pn_Cmp" or type == "ir_where_alloc":
+	elif type == "ir_relation" or type == "ir_where_alloc":
 		importcmd = "%s %s = (%s) read_long(env);" % (type, attrname, type)
 		exportcmd = """write_long(env, (long) %(val)s);"""
 	elif type == "ir_cons_flags" and node.name == "Store":

@@ -245,10 +245,10 @@ static void handle_modeb(ir_node *block, ir_node *selector, pn_Cond pnc, env_t *
  *
  * @param block   the block which is entered by the branch
  * @param cmp     the Cmp node expressing the branch condition
- * @param pnc     the Compare relation for taking this branch
+ * @param rel     the Compare relation for taking this branch
  * @param env     statistical environment
  */
-static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
+static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 {
 	ir_node *left  = get_Cmp_left(cmp);
 	ir_node *right = get_Cmp_right(cmp);
@@ -274,14 +274,14 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 		left  = right;
 		right = t;
 
-		pnc = get_inversed_pnc(pnc);
+		rel = get_inversed_relation(rel);
 	}
 
 	/*
 	 * First case: both values are identical.
 	 * replace the left one by the right (potentially const) one.
 	 */
-	if (pnc == pn_Cmp_Eq) {
+	if (rel == ir_relation_equal) {
 		cond_block = get_Block_cfgpred_block(block, 0);
 		for (edge = get_irn_out_edge_first(left); edge; edge = next) {
 			ir_node *user = get_edge_src_irn(edge);
@@ -339,7 +339,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 				}
 			}
 		}
-	} else { /* not pn_Cmp_Eq cases */
+	} else { /* not ir_relation_equal cases */
 		ir_node *c = NULL;
 
 		foreach_out_edge_safe(left, edge, next) {
@@ -354,7 +354,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 				 * We can replace the input with a Confirm(left, pnc, right).
 				 */
 				if (! c)
-					c = new_r_Confirm(block, left, right, pnc);
+					c = new_r_Confirm(block, left, right, rel);
 
 				pos = get_edge_src_pos(edge);
 				set_irn_n(succ, pos, c);
@@ -368,7 +368,7 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 			/* also construct inverse Confirms */
 			ir_node *rc = NULL;
 
-			pnc = get_inversed_pnc(pnc);
+			rel = get_inversed_relation(rel);
 			foreach_out_edge_safe(right, edge, next) {
 				ir_node *succ = get_edge_src_irn(edge);
 				int     pos;
@@ -384,10 +384,10 @@ static void handle_if(ir_node *block, ir_node *cmp, pn_Cmp pnc, env_t *env)
 					/*
 					 * Ok, we found a usage of right in a block
 					 * dominated by the branch block.
-					 * We can replace the input with a Confirm(right, pnc^-1, left).
+					 * We can replace the input with a Confirm(right, rel^-1, left).
 					 */
 					if (! rc)
-						rc = new_r_Confirm(block, right, left, pnc);
+						rc = new_r_Confirm(block, right, left, rel);
 
 					pos = get_edge_src_pos(edge);
 					set_irn_n(succ, pos, rc);
@@ -429,7 +429,7 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 
 	if (mode == mode_b) {
 		ir_node *cmp;
-		pn_Cmp pnc;
+		ir_relation rel;
 
 		handle_modeb(block, selector, (pn_Cond) get_Proj_proj(proj), env);
 
@@ -441,16 +441,16 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 		if (! is_Cmp(cmp))
 			return;
 
-		pnc = (pn_Cmp) get_Proj_proj(selector);
+		rel = get_Cmp_relation(cmp);
 
 		if (get_Proj_proj(proj) != pn_Cond_true) {
 			/* it's the false branch */
 			mode = get_irn_mode(get_Cmp_left(cmp));
-			pnc = get_negated_pnc(pnc, mode);
+			rel = get_negated_relation(rel);
 		}
-		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, cmp, pnc));
+		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, cmp, rel));
 
-		handle_if(block, cmp, pnc, env);
+		handle_if(block, cmp, rel, env);
 	} else if (mode_is_int(mode)) {
 		long proj_nr = get_Proj_proj(proj);
 
@@ -470,7 +470,7 @@ static int is_non_null_Confirm(const ir_node *ptr)
 	for (;;) {
 		if (! is_Confirm(ptr))
 			break;
-		if (get_Confirm_cmp(ptr) == pn_Cmp_Lg) {
+		if (get_Confirm_relation(ptr) == ir_relation_less_greater) {
 			ir_node *bound = get_Confirm_bound(ptr);
 
 			if (is_Const(bound) && is_Const_null(bound))
@@ -523,7 +523,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 				ir_mode  *mode = get_irn_mode(ptr);
 				ir_graph *irg  = get_irn_irg(block);
 				c = new_r_Const(irg, get_mode_null(mode));
-				c = new_r_Confirm(block, ptr, c, pn_Cmp_Lg);
+				c = new_r_Confirm(block, ptr, c, ir_relation_less_greater);
 			}
 
 			set_irn_n(succ, pos, c);

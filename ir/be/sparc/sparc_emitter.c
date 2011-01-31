@@ -720,67 +720,65 @@ static void emit_sparc_FrameAddr(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-static const char *get_icc_unsigned(pn_Cmp pnc)
+static const char *get_icc_unsigned(ir_relation relation)
 {
-	switch (pnc) {
-	case pn_Cmp_False: return "bn";
-	case pn_Cmp_Eq:    return "be";
-	case pn_Cmp_Lt:    return "blu";
-	case pn_Cmp_Le:    return "bleu";
-	case pn_Cmp_Gt:    return "bgu";
-	case pn_Cmp_Ge:    return "bgeu";
-	case pn_Cmp_Lg:    return "bne";
-	case pn_Cmp_Leg:   return "ba";
-	default: panic("Cmp has unsupported pnc");
+	switch (relation & (ir_relation_less_equal_greater)) {
+	case ir_relation_false:              return "bn";
+	case ir_relation_equal:              return "be";
+	case ir_relation_less:               return "blu";
+	case ir_relation_less_equal:         return "bleu";
+	case ir_relation_greater:            return "bgu";
+	case ir_relation_greater_equal:      return "bgeu";
+	case ir_relation_less_greater:       return "bne";
+	case ir_relation_less_equal_greater: return "ba";
+	default: panic("Cmp has unsupported relation");
 	}
 }
 
-static const char *get_icc_signed(pn_Cmp pnc)
+static const char *get_icc_signed(ir_relation relation)
 {
-	switch (pnc) {
-	case pn_Cmp_False: return "bn";
-	case pn_Cmp_Eq:    return "be";
-	case pn_Cmp_Lt:    return "bl";
-	case pn_Cmp_Le:    return "ble";
-	case pn_Cmp_Gt:    return "bg";
-	case pn_Cmp_Ge:    return "bge";
-	case pn_Cmp_Lg:    return "bne";
-	case pn_Cmp_Leg:   return "ba";
-	default: panic("Cmp has unsupported pnc");
+	switch (relation & (ir_relation_less_equal_greater)) {
+	case ir_relation_false:              return "bn";
+	case ir_relation_equal:              return "be";
+	case ir_relation_less:               return "bl";
+	case ir_relation_less_equal:         return "ble";
+	case ir_relation_greater:            return "bg";
+	case ir_relation_greater_equal:      return "bge";
+	case ir_relation_less_greater:       return "bne";
+	case ir_relation_less_equal_greater: return "ba";
+	default: panic("Cmp has unsupported relation");
 	}
 }
 
-static const char *get_fcc(pn_Cmp pnc)
+static const char *get_fcc(ir_relation relation)
 {
-	switch (pnc) {
-	case pn_Cmp_False: return "fbn";
-	case pn_Cmp_Eq:    return "fbe";
-	case pn_Cmp_Lt:    return "fbl";
-	case pn_Cmp_Le:    return "fble";
-	case pn_Cmp_Gt:    return "fbg";
-	case pn_Cmp_Ge:    return "fbge";
-	case pn_Cmp_Lg:    return "fblg";
-	case pn_Cmp_Leg:   return "fbo";
-	case pn_Cmp_Uo:    return "fbu";
-	case pn_Cmp_Ue:    return "fbue";
-	case pn_Cmp_Ul:    return "fbul";
-	case pn_Cmp_Ule:   return "fbule";
-	case pn_Cmp_Ug:    return "fbug";
-	case pn_Cmp_Uge:   return "fbuge";
-	case pn_Cmp_Ne:    return "fbne";
-	case pn_Cmp_True:  return "fba";
-	case pn_Cmp_max:
-		break;
+	switch (relation) {
+	case ir_relation_false:                   return "fbn";
+	case ir_relation_equal:                   return "fbe";
+	case ir_relation_less:                    return "fbl";
+	case ir_relation_less_equal:              return "fble";
+	case ir_relation_greater:                 return "fbg";
+	case ir_relation_greater_equal:           return "fbge";
+	case ir_relation_less_greater:            return "fblg";
+	case ir_relation_less_equal_greater:      return "fbo";
+	case ir_relation_unordered:               return "fbu";
+	case ir_relation_unordered_equal:         return "fbue";
+	case ir_relation_unordered_less:          return "fbul";
+	case ir_relation_unordered_less_equal:    return "fbule";
+	case ir_relation_unordered_greater:       return "fbug";
+	case ir_relation_unordered_greater_equal: return "fbuge";
+	case ir_relation_unordered_less_greater:  return "fbne";
+	case ir_relation_true:                    return "fba";
 	}
-	panic("invalid pnc");
+	panic("invalid relation");
 }
 
-typedef const char* (*get_cc_func)(pn_Cmp pnc);
+typedef const char* (*get_cc_func)(ir_relation relation);
 
 static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 {
 	const sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr_const(node);
-	pn_Cmp           pnc         = attr->pnc;
+	ir_relation      relation    = attr->relation;
 	const ir_node   *proj_true   = NULL;
 	const ir_node   *proj_false  = NULL;
 	const ir_edge_t *edge;
@@ -809,16 +807,12 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		if (is_sparc_fbfcc(node)) {
-			pnc = get_negated_pnc(pnc, mode_F);
-		} else {
-			pnc = get_negated_pnc(pnc, mode_Iu);
-		}
+		relation   = get_negated_relation(relation);
 	}
 
 	/* emit the true proj */
 	be_emit_cstring("\t");
-	be_emit_string(get_cc(pnc));
+	be_emit_string(get_cc(relation));
 	be_emit_char(' ');
 	sparc_emit_cfop_target(proj_true);
 	be_emit_finish_line_gas(proj_true);

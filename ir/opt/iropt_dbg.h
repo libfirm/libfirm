@@ -382,7 +382,7 @@
  */
 #define DBG_EVAL_CONFIRM(n)                                    \
 	do {                                                       \
-	  hook_merge_nodes(NULL, 0, &n, 1, HOOK_OPT_CONFIRM_E);    \
+	  hook_merge_nodes(NULL, 0, (ir_node**)&n, 1, HOOK_OPT_CONFIRM_E);    \
 	} while(0)
 
 /**

@@ -45,13 +45,12 @@
  * @sa
  *    Techreport 1999-14
  *    irmode.h for the modes definitions
- *    irnode.h for the pn_Cmp table
  */
 #ifndef FIRM_TV_TV_H
 #define FIRM_TV_TV_H
 
+#include <stddef.h>
 #include "firm_types.h"
-#include "irnode.h"
 
 #include "begin.h"
 
@@ -406,23 +405,15 @@ FIRM_API tarval_int_overflow_mode_t tarval_get_integer_overflow_mode(void);
 /**
  * Compares two tarvals
  *
- * Compare a with b and return a pn_Cmp describing the relation
- * between a and b.  This is either pn_Cmp_Uo, pn_Cmp_Lt, pn_Cmp_Eq, pn_Cmp_Gt,
- * or pn_Cmp_False if a or b are symbolic pointers which can not be compared at all.
+ * Compare a with b and return their relation.
+ * This is either ir_rel_unordered, ir_rel_less, ir_rel_greater, ir_rel_equal
+ * or ir_rel_false if a or b are symbolic pointers which can not be compared at
+ * all.
  *
  * @param a   the first tarval to be compared
  * @param b   the second tarval to be compared
- *
- * @return
- *   The pn_Cmp best describing the relation between a and b is returned.
- *   This means the mode with the least bits set is returned, e.g. if the
- *   tarvals are equal the pn_Cmp 'pn_Cmp_Eq' is returned, not 'pn_Cmp_Ge' which
- *   indicates 'greater or equal'
- *
- * @sa
- *    irnode.h for the definition of pn_Cmp
  */
-FIRM_API pn_Cmp tarval_cmp(ir_tarval *a, ir_tarval *b);
+FIRM_API ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b);
 
 /**
  * Converts a tarval to another mode.

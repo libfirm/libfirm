@@ -58,34 +58,34 @@ typedef struct interval_t {
 
 #ifdef DEBUG_CONFIRM
 
-#define compare_iv(l_iv, r_iv, pnc)    compare_iv_dbg(l_iv, r_iv, pnc)
+#define compare_iv(l_iv, r_iv, relation)    compare_iv_dbg(l_iv, r_iv, relation)
 
 /* forward */
-static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc);
+static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation);
 
 /* triangle */
-#define DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, v) \
+#define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v) \
   ir_printf("In %e:\na %= %n && b %= %n  ==>  a %= b == %s\n", \
     get_irg_entity(current_ir_graph), \
-    l_pnc, l_bound, r_pnc, r_bound, pnc, v);
+    l_relation, l_bound, r_relation, r_bound, relation, v);
 
 /* right side */
-#define DBG_OUT_R(r_pnc, r_bound, left, pnc, right, v) \
+#define DBG_OUT_R(r_relation, r_bound, left, relation, right, v) \
   ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
     get_irg_entity(current_ir_graph), \
-    r_pnc, r_bound, left, pnc, right, v);
+    r_relation, r_bound, left, relation, right, v);
 
 /* left side */
-#define DBG_OUT_L(l_pnc, l_bound, left, pnc, right, v) \
+#define DBG_OUT_L(l_relation, l_bound, left, relation, right, v) \
   ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
     get_irg_entity(current_ir_graph), \
-    l_pnc, l_bound, left, pnc, right, v);
+    l_relation, l_bound, left, relation, right, v);
 
 #else
 
-#define DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, v)
-#define DBG_OUT_R(r_pnc, r_bound, left, pnc, right, v)
-#define DBG_OUT_L(l_pnc, l_bound, left, pnc, right, v)
+#define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v)
+#define DBG_OUT_R(r_relation, r_bound, left, relation, right, v)
+#define DBG_OUT_L(l_relation, l_bound, left, relation, right, v)
 
 #endif /* DEBUG_CONFIRM */
 
@@ -101,7 +101,7 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 
 	ir_tarval *tv;
 	ir_mode *mode = get_irn_mode(n);
-	pn_Cmp pnc;
+	ir_relation relation;
 
 	*confirm = NULL;
 
@@ -124,7 +124,7 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 		if (tv == tarval_bad)
 			return 0;
 
-		pnc = tarval_cmp(tv, get_mode_null(mode));
+		relation = tarval_cmp(tv, get_mode_null(mode));
 
 		/*
 		 * Beware: C might by a NaN. It is not clear, what we should do
@@ -134,19 +134,19 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 		 *
 		 * Note that only the C != 0 case need additional checking.
 		 */
-		switch (get_Confirm_cmp(n)) {
-		case pn_Cmp_Eq: /* n == C /\ C != 0 ==> n != 0 */
-			RET_ON(pnc != pn_Cmp_Eq && pnc != pn_Cmp_Uo);
-		case pn_Cmp_Lg: /* n != C /\ C == 0 ==> n != 0 */
-			RET_ON(pnc == pn_Cmp_Eq);
-		case pn_Cmp_Lt: /* n <  C /\ C <= 0 ==> n != 0 */
-			RET_ON(pnc == pn_Cmp_Lt || pnc == pn_Cmp_Eq);
-		case pn_Cmp_Le: /* n <= C /\ C <  0 ==> n != 0 */
-			RET_ON(pnc == pn_Cmp_Lt);
-		case pn_Cmp_Ge: /* n >= C /\ C >  0 ==> n != 0 */
-			RET_ON(pnc == pn_Cmp_Gt);
-		case pn_Cmp_Gt: /* n >  C /\ C >= 0 ==> n != 0 */
-			RET_ON(pnc == pn_Cmp_Gt || pnc == pn_Cmp_Eq);
+		switch (get_Confirm_relation(n)) {
+		case ir_relation_equal: /* n == C /\ C != 0 ==> n != 0 */
+			RET_ON(relation != ir_relation_equal && relation != ir_relation_unordered);
+		case ir_relation_less_greater: /* n != C /\ C == 0 ==> n != 0 */
+			RET_ON(relation == ir_relation_equal);
+		case ir_relation_less: /* n <  C /\ C <= 0 ==> n != 0 */
+			RET_ON(relation == ir_relation_less || relation == ir_relation_equal);
+		case ir_relation_less_equal: /* n <= C /\ C <  0 ==> n != 0 */
+			RET_ON(relation == ir_relation_less);
+		case ir_relation_greater_equal: /* n >= C /\ C >  0 ==> n != 0 */
+			RET_ON(relation == ir_relation_greater);
+		case ir_relation_greater: /* n >  C /\ C >= 0 ==> n != 0 */
+			RET_ON(relation == ir_relation_greater || relation == ir_relation_equal);
 		default:
 			break;
 		}
@@ -157,10 +157,10 @@ FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 	if (tv == tarval_bad)
 		return 0;
 
-	pnc = tarval_cmp(tv, get_mode_null(mode));
+	relation = tarval_cmp(tv, get_mode_null(mode));
 
 	/* again, need check for NaN */
-	return (pnc != pn_Cmp_Eq) && (pnc != pn_Cmp_Uo);
+	return (relation != ir_relation_equal) && (relation != ir_relation_unordered);
 
 #undef RET_ON
 }  /* value_not_zero */
@@ -210,7 +210,7 @@ FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 	} else {
 		/* check for more Confirms */
 		for (; is_Confirm(n); n = skip_Cast(get_Confirm_value(n))) {
-			if (get_Confirm_cmp(n) == pn_Cmp_Lg) {
+			if (get_Confirm_relation(n) == ir_relation_less_greater) {
 				ir_node   *bound = get_Confirm_bound(n);
 				ir_tarval *tv    = value_of(bound);
 
@@ -241,7 +241,7 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n)
 {
 	ir_tarval *tv, *c;
 	ir_mode *mode;
-	pn_Cmp cmp, ncmp;
+	ir_relation cmp, ncmp;
 	int negate = 1;
 
 	for (;;) {
@@ -277,15 +277,15 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n)
 	 * optimization possibilities, so we handle this
 	 * different.
 	 */
-	cmp = get_Confirm_cmp(n);
+	cmp = get_Confirm_relation(n);
 
 	switch (cmp) {
-	case pn_Cmp_Lt:
+	case ir_relation_less:
 		/*
 		 * must be x < c <= 1 to be useful if integer mode and -0 = 0
 		 *         x < c <= 0 to be useful else
 		 */
-	case pn_Cmp_Le:
+	case ir_relation_less_equal:
 		/*
 		 * must be x <= c < 1 to be useful if integer mode and -0 = 0
 		 *         x <= c < 0 to be useful else
@@ -294,21 +294,21 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n)
 			get_mode_one(mode) : get_mode_null(mode);
 
 		ncmp = tarval_cmp(tv, c);
-		if (ncmp == pn_Cmp_Eq)
-			ncmp = pn_Cmp_Le;
+		if (ncmp == ir_relation_equal)
+			ncmp = ir_relation_less_equal;
 
-		if (cmp != (ncmp ^ pn_Cmp_Eq))
+		if (cmp != (ncmp ^ ir_relation_equal))
 			return value_classified_unknown;
 
 		/* yep, negative */
 		return value_classified_negative * negate;
 
-	case pn_Cmp_Ge:
+	case ir_relation_greater_equal:
 		/*
 		 * must be x >= c > -1 to be useful if integer mode
 		 *         x >= c >= 0 to be useful else
 		 */
-	case pn_Cmp_Gt:
+	case ir_relation_greater:
 		/*
 		 * must be x > c >= -1 to be useful if integer mode
 		 *         x > c >= 0 to be useful else
@@ -317,17 +317,17 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n)
 			c = get_mode_minus_one(mode);
 
 			ncmp = tarval_cmp(tv, c);
-			if (ncmp == pn_Cmp_Eq)
-				ncmp = pn_Cmp_Ge;
+			if (ncmp == ir_relation_equal)
+				ncmp = ir_relation_greater_equal;
 
-			if (cmp != (ncmp ^ pn_Cmp_Eq))
+			if (cmp != (ncmp ^ ir_relation_equal))
 				return value_classified_unknown;
 		} else {
 			c = get_mode_minus_one(mode);
 
 			ncmp = tarval_cmp(tv, c);
 
-			if (ncmp != pn_Cmp_Eq && ncmp != pn_Cmp_Gt)
+			if (ncmp != ir_relation_equal && ncmp != ir_relation_greater)
 				return value_classified_unknown;
 		}
 
@@ -386,14 +386,14 @@ static interval_t *get_interval_from_tv(interval_t *iv, ir_tarval *tv)
 /**
  * construct an interval from a Confirm
  *
- * @param iv     an empty interval, will be filled
- * @param bound  the bound value
- * @param pnc    the Confirm compare relation
+ * @param iv       an empty interval, will be filled
+ * @param bound    the bound value
+ * @param relation the Confirm compare relation
  *
  * @return the filled interval or NULL if no interval
  *         can be created (happens only on floating point
  */
-static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
+static interval_t *get_interval(interval_t *iv, ir_node *bound, ir_relation relation)
 {
 	ir_mode   *mode = get_irn_mode(bound);
 	ir_tarval *tv   = value_of(bound);
@@ -422,43 +422,43 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
 	}
 
 	/* check which side is known */
-	switch (pnc) {
-	case pn_Cmp_Eq:
+	switch (relation) {
+	case ir_relation_equal:
 		/* [tv, tv] */
 		iv->min   =
 			iv->max   = tv;
 		iv->flags = MIN_INCLUDED | MAX_INCLUDED;
 		break;
 
-	case pn_Cmp_Le:
+	case ir_relation_less_equal:
 		/* [-oo, tv] */
 		iv->min   = get_mode_min(mode);
 		iv->max   = tv;
 		iv->flags = MIN_INCLUDED | MAX_INCLUDED;
 		break;
 
-	case pn_Cmp_Lt:
+	case ir_relation_less:
 		/* [-oo, tv) */
 		iv->min   = get_mode_min(mode);
 		iv->max   = tv;
 		iv->flags = MIN_INCLUDED | MAX_EXCLUDED;
 		break;
 
-	case pn_Cmp_Gt:
+	case ir_relation_greater:
 		/* (tv, +oo] */
 		iv->min   = tv;
 		iv->max   = get_mode_max(mode);
 		iv->flags = MIN_EXCLUDED | MAX_INCLUDED;
 		break;
 
-	case pn_Cmp_Ge:
+	case ir_relation_greater_equal:
 		/* [tv, +oo] */
 		iv->min   = tv;
 		iv->max   = get_mode_max(mode);
 		iv->flags = MIN_INCLUDED | MAX_INCLUDED;
 		break;
 
-	case pn_Cmp_Leg:
+	case ir_relation_less_equal_greater:
 		/*
 		 * Ordered means, that at least neither
 		 * our bound nor our value ara NaN's
@@ -486,129 +486,129 @@ static interval_t *get_interval(interval_t *iv, ir_node *bound, pn_Cmp pnc)
 }  /* get_interval */
 
 /**
- * Try to evaluate l_iv pnc r_iv.
+ * Try to evaluate l_iv relation r_iv.
  *
- * @param l_iv   the left interval
- * @param r_iv   the right interval
- * @param pnc    the compare relation
+ * @param l_iv      the left interval
+ * @param r_iv      the right interval
+ * @param relation  the compare relation
  *
  * @return
  *   tarval_b_true or tarval_b_false it it can be evaluated,
  *   tarval_bad else
  */
-static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
 {
-	pn_Cmp     res;
-	unsigned   flags;
-	ir_tarval *tv_true = tarval_b_true, *tv_false = tarval_b_false;
+	ir_relation res;
+	unsigned    flags;
+	ir_tarval  *tv_true = tarval_b_true, *tv_false = tarval_b_false;
 
 	/* if one interval contains NaNs, we cannot evaluate anything */
 	if (! l_iv || ! r_iv)
 		return tarval_bad;
 
 	/* we can only check ordered relations */
-	if (pnc & pn_Cmp_Uo) {
+	if (relation & ir_relation_unordered) {
 		ir_tarval *t;
 
-		pnc      = get_negated_pnc(pnc, get_tarval_mode(l_iv->min));
+		relation = get_negated_relation(relation);
 		t        = tv_true;
 		tv_true  = tv_false;
 		tv_false = t;
 	}
 
 	/* if we have > or >=, we do the inverse to save some cases */
-	if (pnc == pn_Cmp_Ge || pnc == pn_Cmp_Gt) {
+	if (relation == ir_relation_greater_equal || relation == ir_relation_greater) {
 		const interval_t *t;
 
-		pnc  = get_inversed_pnc(pnc);
-		t    = l_iv;
-		l_iv = r_iv;
-		r_iv = t;
+		relation = get_inversed_relation(relation);
+		t        = l_iv;
+		l_iv     = r_iv;
+		r_iv     = t;
 	}
 
 	/* now, only the following cases remains */
-	switch (pnc) {
-	case pn_Cmp_Eq:
+	switch (relation) {
+	case ir_relation_equal:
 		/* two intervals can be compared for equality only if they are a single value */
 		if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
-			return tarval_cmp(l_iv->min, r_iv->min) == pn_Cmp_Eq ? tv_true : tv_false;
+			return tarval_cmp(l_iv->min, r_iv->min) == ir_relation_equal ? tv_true : tv_false;
 
 		/* if both intervals do not intersect, it is never equal */
 		res = tarval_cmp(l_iv->max, r_iv->min);
 
 		/* b < c ==> [a,b] != [c,d] */
-		if (res == pn_Cmp_Lt)
+		if (res == ir_relation_less)
 			return tv_false;
 
 		/* b <= c ==> [a,b) != [c,d]  AND [a,b] != (c,d] */
 		if ((l_iv->flags & MAX_EXCLUDED || r_iv->flags & MIN_EXCLUDED)
-			&& (res == pn_Cmp_Eq))
+			&& (res == ir_relation_equal))
 			return tv_false;
 
 		res = tarval_cmp(r_iv->max, l_iv->min);
 
 		/* d < a ==> [c,d] != [a,b] */
-		if (res == pn_Cmp_Lt)
+		if (res == ir_relation_less)
 			return tv_false;
 
 		/* d <= a ==> [c,d) != [a,b]  AND [c,d] != (a,b] */
 		if ((r_iv->flags & MAX_EXCLUDED || l_iv->flags & MIN_EXCLUDED)
-			&& (res == pn_Cmp_Eq))
+			&& (res == ir_relation_equal))
 			return tv_false;
 		break;
 
-	case pn_Cmp_Lg:
+	case ir_relation_less_greater:
 		/* two intervals can be compared for not equality only if they are a single value */
 		if (l_iv->min == l_iv->max && r_iv->min == r_iv->max)
-			return tarval_cmp(l_iv->min, r_iv->min) != pn_Cmp_Eq ? tv_true : tv_false;
+			return tarval_cmp(l_iv->min, r_iv->min) != ir_relation_equal ? tv_true : tv_false;
 		break;
 
-	case pn_Cmp_Lt:
+	case ir_relation_less:
 		res = tarval_cmp(l_iv->max, r_iv->min);
 
 		/* [a, b] < [c, d]  <==> b < c */
-		if (res == pn_Cmp_Lt)
+		if (res == ir_relation_less)
 			return tv_true;
 
 		/* if one border is excluded, b <= c is enough */
 		if ((l_iv->flags & MAX_EXCLUDED || r_iv->flags & MIN_EXCLUDED) &&
-			res == pn_Cmp_Eq)
+			res == ir_relation_equal)
 			return tv_true;
 
 		/* [a, b] >= [c, d] <==> a > d */
 		res = tarval_cmp(l_iv->min, r_iv->max);
-		if (res == pn_Cmp_Gt)
+		if (res == ir_relation_greater)
 			return tv_false;
 
 		/* if one border is excluded, a >= d is enough */
 		if ((l_iv->flags & MIN_EXCLUDED || r_iv->flags & MAX_EXCLUDED) &&
-			res == pn_Cmp_Eq)
+			res == ir_relation_equal)
 			return tv_false;
 		break;
 
-	case pn_Cmp_Le:
+	case ir_relation_less_equal:
 		/* [a, b) <= [c, d] or [a, b] <= (c, d]  <==> b <= c */
 		flags = (l_iv->flags & MAX_EXCLUDED) | (r_iv->flags & MIN_EXCLUDED);
 		if (flags) {
 			res = tarval_cmp(l_iv->max, r_iv->min);
 
-			if (res == pn_Cmp_Lt || res == pn_Cmp_Eq)
+			if (res == ir_relation_less || res == ir_relation_equal)
 				return tv_true;
 		}
 
 		res = tarval_cmp(l_iv->min, r_iv->max);
 
 		/* [a, b] > [c, d] <==> a > d */
-		if (res == pn_Cmp_Gt)
+		if (res == ir_relation_greater)
 			return tv_false;
 
 		/* if one border is excluded, a >= d is enough */
 		if ((l_iv->flags & MIN_EXCLUDED || r_iv->flags & MAX_EXCLUDED) &&
-			res == pn_Cmp_Eq)
+			res == ir_relation_equal)
 			return tv_false;
 		break;
 
-	case pn_Cmp_Leg:
+	case ir_relation_less_equal_greater:
 		/* Hmm. if both are intervals, we can find an order */
 		return tv_true;
 
@@ -621,24 +621,24 @@ static ir_tarval *(compare_iv)(const interval_t *l_iv, const interval_t *r_iv, p
 /**
  * Returns non-zero, if a given relation is transitive.
  */
-static int is_transitive(pn_Cmp pnc)
+static int is_transitive(ir_relation relation)
 {
-	return (pn_Cmp_False < pnc && pnc < pn_Cmp_Lg);
+	return (ir_relation_false < relation && relation < ir_relation_less_greater);
 }  /* is_transitive */
 
 /**
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
- * @param cmp    the Cmp node
- * @param left   the left operand of the Cmp
- * @param right  the right operand of the Cmp
- * @param pnc    the compare relation
+ * @param cmp      the Cmp node
+ * @param left     the left operand of the Cmp
+ * @param right    the right operand of the Cmp
+ * @param relation the compare relation
  */
-FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc)
+FIRM_API ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation)
 {
 	ir_node    *l_bound;
-	pn_Cmp      l_pnc, res_pnc, neg_pnc;
+	ir_relation l_relation, res_relation, neg_relation;
 	interval_t  l_iv, r_iv;
 	ir_tarval  *tv;
 	ir_mode    *mode;
@@ -649,7 +649,7 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 		right = left;
 		left  = t;
 
-		pnc = get_inversed_pnc(pnc);
+		relation = get_inversed_relation(relation);
 	} else if (! is_Confirm(left)) {
 		/* nothing more found */
 		tv = tarval_bad;
@@ -657,22 +657,22 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 	}
 
 	/* ok, here at least left is a Confirm, right might be */
-	l_bound = get_Confirm_bound(left);
-	l_pnc   = get_Confirm_cmp(left);
+	l_bound    = get_Confirm_bound(left);
+	l_relation = get_Confirm_relation(left);
 
 	if (is_Confirm(right)) {
 		/*
 		 * both sides are Confirm's. Check some rare cases first.
 		 */
-		ir_node *r_bound = get_Confirm_bound(right);
-		pn_Cmp  r_pnc    = get_Confirm_cmp(right);
+		ir_node    *r_bound    = get_Confirm_bound(right);
+		ir_relation r_relation = get_Confirm_relation(right);
 
 		/*
 		 * some check can be made WITHOUT constant bounds
 		 */
 		if (r_bound == l_bound) {
-			if (is_transitive(l_pnc)) {
-				pn_Cmp r_inc_pnc = get_inversed_pnc(r_pnc);
+			if (is_transitive(l_relation)) {
+				ir_relation r_inc_relation = get_inversed_relation(r_relation);
 
 				/*
 				 * triangle inequality:
@@ -681,18 +681,18 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 				 *
 				 * We handle correctly cases with some <=/>= here
 				 */
-				if ((l_pnc & ~pn_Cmp_Eq) == (r_inc_pnc & ~pn_Cmp_Eq)) {
-					res_pnc = (l_pnc & ~pn_Cmp_Eq) | (l_pnc & r_inc_pnc & pn_Cmp_Eq);
+				if ((l_relation & ~ir_relation_equal) == (r_inc_relation & ~ir_relation_equal)) {
+					res_relation = (l_relation & ~ir_relation_equal) | (l_relation & r_inc_relation & ir_relation_equal);
 
-					if ((pnc == res_pnc) || ((pnc & ~pn_Cmp_Eq) == res_pnc)) {
-						DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, "true");
+					if ((relation == res_relation) || ((relation & ~ir_relation_equal) == res_relation)) {
+						DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, "true");
 						DBG_EVAL_CONFIRM(cmp);
 						return tarval_b_true;
 					} else {
-						pn_Cmp neg_pnc = get_negated_pnc(pnc, get_irn_mode(left));
+						ir_relation neg_relation = get_negated_relation(relation);
 
-						if ((neg_pnc == res_pnc) || ((neg_pnc & ~pn_Cmp_Eq) == res_pnc)) {
-							DBG_OUT_TR(l_pnc, l_bound, r_pnc, r_bound, pnc, "false");
+						if ((neg_relation == res_relation) || ((neg_relation & ~ir_relation_equal) == res_relation)) {
+							DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, "false");
 							DBG_EVAL_CONFIRM(cmp);
 							return tarval_b_false;
 						}
@@ -707,26 +707,26 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 		 */
 		if (left == r_bound) {
 			/*
-			 * l == bound(r) AND pnc(r) == pnc:
+			 * l == bound(r) AND relation(r) == relation:
 			 *
 			 * We know that a CMP b and check for that
 			 */
-			if ((r_pnc == pnc) || (r_pnc == (pnc & ~pn_Cmp_Eq))) {
-				DBG_OUT_R(r_pnc, r_bound, left, pnc, right, "true");
+			if ((r_relation == relation) || (r_relation == (relation & ~ir_relation_equal))) {
+				DBG_OUT_R(r_relation, r_bound, left, relation, right, "true");
 				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_true;
 			}
 			/*
-			 * l == bound(r) AND pnc(r) != pnc:
+			 * l == bound(r) AND relation(r) != relation:
 			 *
 			 * We know that a CMP b and check for a ~CMP b
 			 */
 			else {
 				mode    = get_irn_mode(left);
-				neg_pnc = get_negated_pnc(pnc, mode);
+				neg_relation = get_negated_relation(relation);
 
-				if ((r_pnc == neg_pnc) || (r_pnc == (neg_pnc & ~pn_Cmp_Eq))) {
-					DBG_OUT_R(r_pnc, r_bound, left, pnc, right, "false");
+				if ((r_relation == neg_relation) || (r_relation == (neg_relation & ~ir_relation_equal))) {
+					DBG_OUT_R(r_relation, r_bound, left, relation, right, "false");
 					DBG_EVAL_CONFIRM(cmp);
 					return tarval_b_false;
 				}
@@ -735,9 +735,9 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 
 		/* now, try interval magic */
 		tv = compare_iv(
-			get_interval(&l_iv, l_bound, l_pnc),
-			get_interval(&r_iv, r_bound, r_pnc),
-			pnc);
+			get_interval(&l_iv, l_bound, l_relation),
+			get_interval(&r_iv, r_bound, r_relation),
+			relation);
 
 		if (tv != tarval_bad) {
 			DBG_EVAL_CONFIRM(cmp);
@@ -752,26 +752,26 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 	 */
 	if (right == l_bound) {
 		/*
-		 * r == bound(l) AND pnc(l) == pnc:
+		 * r == bound(l) AND relation(l) == relation:
 		 *
 		 * We know that a CMP b and check for that
 		 */
-		if ((l_pnc == pnc) || (l_pnc == (pnc & ~pn_Cmp_Eq))) {
-			DBG_OUT_L(l_pnc, l_bound, left, pnc, right, "true");
+		if ((l_relation == relation) || (l_relation == (relation & ~ir_relation_equal))) {
+			DBG_OUT_L(l_relation, l_bound, left, relation, right, "true");
 			DBG_EVAL_CONFIRM(cmp);
 			return tarval_b_true;
 		}
 		/*
-		 * r == bound(l) AND pnc(l) is Not(pnc):
+		 * r == bound(l) AND relation(l) is Not(relation):
 		 *
 		 * We know that a CMP b and check for a ~CMP b
 		 */
 		else {
 			mode = get_irn_mode(left);
-			neg_pnc = get_negated_pnc(pnc, mode);
+			neg_relation = get_negated_relation(relation);
 
-			if ((l_pnc == neg_pnc) || (l_pnc == (neg_pnc & ~pn_Cmp_Eq))) {
-				DBG_OUT_L(l_pnc, l_bound, left, pnc, right, "false");
+			if ((l_relation == neg_relation) || (l_relation == (neg_relation & ~ir_relation_equal))) {
+				DBG_OUT_L(l_relation, l_bound, left, relation, right, "false");
 				DBG_EVAL_CONFIRM(cmp);
 				return tarval_b_false;
 			}
@@ -783,24 +783,24 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(ir_node *cmp, ir_node *left, ir_n
 
 	if (tv != tarval_bad) {
 		tv = compare_iv(
-			get_interval(&l_iv, l_bound, l_pnc),
+			get_interval(&l_iv, l_bound, l_relation),
 			get_interval_from_tv(&r_iv, tv),
-			pnc);
+			relation);
 	} else {
 check_null_case:
 		/* check some other cases */
-		if ((pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) &&
+		if ((relation == ir_relation_equal || relation == ir_relation_less_greater) &&
 			is_Const(right) && is_Const_null(right)) {
 			/* for == 0 or != 0 we have some special tools */
 			ir_mode       *mode = get_irn_mode(left);
 			const ir_node *dummy;
 			if (mode_is_reference(mode)) {
 				if (value_not_null(left, &dummy)) {
-					tv = pnc == pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
+					tv = relation == ir_relation_equal ? tarval_b_false : tarval_b_true;
 				}
 			} else {
 				if (value_not_zero(left, &dummy)) {
-					tv = pnc == pn_Cmp_Eq ? tarval_b_false : tarval_b_true;
+					tv = relation == ir_relation_equal ? tarval_b_false : tarval_b_true;
 				}
 			}
 		}
@@ -844,36 +844,36 @@ static int iv_snprintf(char *buf, size_t len, const interval_t *iv)
 /**
  * For debugging. Prints an interval compare.
  *
- * @param l_iv  the left interval
- * @param r_iv  the right interval
- * @param pnc   the compare relation
+ * @param l_iv      the left interval
+ * @param r_iv      the right interval
+ * @param relation  the compare relation
  */
-static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+static void print_iv_cmp(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
 {
 	char sl[128], sr[128];
 
 	iv_snprintf(sl, sizeof(sl), l_iv);
 	iv_snprintf(sr, sizeof(sr), r_iv);
 
-	ir_printf("%s %= %s", sl, pnc, sr);
+	ir_printf("%s %= %s", sl, relation, sr);
 }  /* print_iv_cmp */
 
 /**
  * For debugging. call *compare_iv() and prints inputs and result.
  *
- * @param l_iv  the left interval
- * @param r_iv  the right interval
- * @param pnc   the compare relation
+ * @param l_iv     the left interval
+ * @param r_iv     the right interval
+ * @param relation the compare relation
  */
-static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, pn_Cmp pnc)
+static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir_relation relation)
 {
-	tarval *tv = (compare_iv)(l_iv, r_iv, pnc);
+	tarval *tv = (compare_iv)(l_iv, r_iv, relation);
 
 	if (tv == tarval_bad)
 	return tv;
 
 	ir_printf("In %e:\n", get_irg_entity(current_ir_graph));
-	print_iv_cmp(l_iv, r_iv, pnc);
+	print_iv_cmp(l_iv, r_iv, relation);
 	ir_printf(" = %T\n", tv);
 	return tv;
 }  /* compare_iv_dbg */

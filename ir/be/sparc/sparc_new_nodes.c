@@ -109,7 +109,8 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		if (has_jmp_cond_attr(n)) {
 			const sparc_jmp_cond_attr_t *attr
 				= get_sparc_jmp_cond_attr_const(n);
-			fprintf(F, "pnc: %d (%s)\n", attr->pnc, get_pnc_string(attr->pnc));
+			fprintf(F, "relation: %d (%s)\n", attr->relation,
+			        get_relation_string(attr->relation));
 			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
 		}
 		if (has_switch_jmp_attr(n)) {
@@ -141,10 +142,11 @@ static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
 	attr->immediate_value        = immediate_value;
 }
 
-static void init_sparc_jmp_cond_attr(ir_node *node, pn_Cmp pnc, bool is_unsigned)
+static void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
+                                     bool is_unsigned)
 {
 	sparc_jmp_cond_attr_t *attr = get_sparc_jmp_cond_attr(node);
-	attr->pnc         = pnc;
+	attr->relation    = relation;
 	attr->is_unsigned = is_unsigned;
 }
 
@@ -328,7 +330,7 @@ static int cmp_attr_sparc_jmp_cond(const ir_node *a, const ir_node *b)
 	if (cmp_attr_sparc(a, b))
 		return 1;
 
-	return attr_a->pnc != attr_b->pnc
+	return attr_a->relation != attr_b->relation
 	    || attr_a->is_unsigned != attr_b->is_unsigned;
 }
 

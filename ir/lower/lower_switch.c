@@ -143,9 +143,9 @@ static void create_if_cascade(cond_env_t *env, dbg_info *dbgi, ir_node *block,
 	} else if (numcases == 1) {
 		/* only one case: "if (sel == val) goto target else goto default;" */
 		ir_node *val       = new_r_Const_long(irg, cmp_mode, curcases[0].value);
-		ir_node *cmp       = new_rd_Cmp(dbgi, block, cmp_sel, val);
-		ir_node *proj      = new_r_Proj(cmp, mode_b, pn_Cmp_Eq);
-		ir_node *cond      = new_rd_Cond(dbgi, block, proj);
+		ir_node *cmp       = new_rd_Cmp(dbgi, block, cmp_sel, val,
+		                                ir_relation_equal);
+		ir_node *cond      = new_rd_Cond(dbgi, block, cmp);
 		ir_node *trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		ir_node *falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
 
@@ -154,9 +154,9 @@ static void create_if_cascade(cond_env_t *env, dbg_info *dbgi, ir_node *block,
 	} else if (numcases == 2) {
 		/* only two cases: "if (sel == val[0]) goto target[0];" */
 		ir_node *val       = new_r_Const_long(irg, cmp_mode, curcases[0].value);
-		ir_node *cmp       = new_rd_Cmp(dbgi, block, cmp_sel, val);
-		ir_node *proj      = new_r_Proj(cmp, mode_b, pn_Cmp_Eq);
-		ir_node *cond      = new_rd_Cond(dbgi, block, proj);
+		ir_node *cmp       = new_rd_Cmp(dbgi, block, cmp_sel, val,
+		                                ir_relation_equal);
+		ir_node *cond      = new_rd_Cond(dbgi, block, cmp);
 		ir_node *trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		ir_node *falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
 		ir_node *in[1];
@@ -169,9 +169,8 @@ static void create_if_cascade(cond_env_t *env, dbg_info *dbgi, ir_node *block,
 
 		/* second part: "else if (sel == val[1]) goto target[1] else goto default;" */
 		val       = new_r_Const_long(irg, cmp_mode, curcases[1].value);
-		cmp       = new_rd_Cmp(dbgi, neblock, cmp_sel, val);
-		proj      = new_r_Proj(cmp, mode_b, pn_Cmp_Eq);
-		cond      = new_rd_Cond(dbgi, neblock, proj);
+		cmp       = new_rd_Cmp(dbgi, neblock, cmp_sel, val, ir_relation_equal);
+		cond      = new_rd_Cond(dbgi, neblock, cmp);
 		trueproj  = new_r_Proj(cond, mode_X, pn_Cond_true);
 		falseproj = new_r_Proj(cond, mode_X, pn_Cond_false);
 		set_Block_cfgpred(curcases[1].target, 0, trueproj);
@@ -181,9 +180,8 @@ static void create_if_cascade(cond_env_t *env, dbg_info *dbgi, ir_node *block,
 		int midcase = numcases / 2;
 		ir_node *val  = new_r_Const_long(irg, cmp_mode,
 		                                 curcases[midcase].value);
-		ir_node *cmp  = new_rd_Cmp(dbgi, block, cmp_sel, val);
-		ir_node *proj = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
-		ir_node *cond = new_rd_Cond(dbgi, block, proj);
+		ir_node *cmp  = new_rd_Cmp(dbgi, block, cmp_sel, val, ir_relation_less);
+		ir_node *cond = new_rd_Cond(dbgi, block, cmp);
 		ir_node *in[1];
 		ir_node *ltblock;
 		ir_node *geblock;
@@ -214,7 +212,6 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 	ir_node       *proj_true;
 	ir_node       *proj_false;
 	ir_node       *cmp;
-	ir_node       *proj_cmp;
 	ir_node       *oob_cond;
 	ir_node       *in[1];
 	ir_node       *new_block;
@@ -240,9 +237,8 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 
 	/* check for out-of-bounds */
 	max_const  = new_r_Const_long(irg, cmp_mode, env->switch_max);
-	cmp        = new_rd_Cmp(dbgi, block, sel, max_const);
-	proj_cmp   = new_r_Proj(cmp, mode_b, pn_Cmp_Le);
-	oob_cond   = new_rd_Cond(dbgi, block, proj_cmp);
+	cmp        = new_rd_Cmp(dbgi, block, sel, max_const, ir_relation_less);
+	oob_cond   = new_rd_Cond(dbgi, block, cmp);
 	proj_true  = new_r_Proj(oob_cond, mode_X, pn_Cond_true);
 	proj_false = new_r_Proj(oob_cond, mode_X, pn_Cond_false);
 

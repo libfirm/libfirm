@@ -343,9 +343,9 @@ static void rewrite_unsigned_float_Conv(ir_node *node)
 		ir_node   *signed_x    = new_rd_Conv(dbgi, block, unsigned_x, mode_s);
 		ir_node   *res         = new_rd_Conv(dbgi, block, signed_x, mode_d);
 		ir_node   *zero        = new_r_Const(irg, get_mode_null(mode_s));
-		ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero);
-		ir_node   *proj_lt     = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
-		ir_node   *cond        = new_rd_Cond(dbgi, block, proj_lt);
+		ir_node   *cmp         = new_rd_Cmp(dbgi, block, signed_x, zero,
+		                                    ir_relation_less);
+		ir_node   *cond        = new_rd_Cond(dbgi, block, cmp);
 		ir_node   *proj_true   = new_r_Proj(cond, mode_X, pn_Cond_true);
 		ir_node   *proj_false  = new_r_Proj(cond, mode_X, pn_Cond_false);
 		ir_node   *in_true[1]  = { proj_true };

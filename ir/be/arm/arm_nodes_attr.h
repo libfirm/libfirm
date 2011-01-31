@@ -107,7 +107,7 @@ typedef struct arm_SymConst_attr_t {
 /** Attributes for a CondJmp */
 typedef struct arm_CondJmp_attr_t {
 	arm_attr_t  base;
-	pn_Cmp      pnc;
+	ir_relation relation;
 } arm_CondJmp_attr_t;
 
 /** Attributes for a SwitchJmp */

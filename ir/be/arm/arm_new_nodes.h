@@ -81,12 +81,12 @@ void set_fConst_value(ir_node *node, ir_tarval *tv);
 /**
  * Returns the compare kind
  */
-pn_Cmp get_arm_CondJmp_pnc(const ir_node *node);
+ir_relation get_arm_CondJmp_relation(const ir_node *node);
 
 /**
  * Set compare type
  */
-void set_arm_CondJmp_pnc(ir_node *node, pn_Cmp pnc);
+void set_arm_CondJmp_relation(ir_node *node, ir_relation relation);
 
 ir_node *new_r_arm_StoreStackMInc(ir_graph *irg, ir_node *block, ir_node *mem, ir_node *sp,
 							      int n_regs, ir_node **regs, ir_mode *mode);

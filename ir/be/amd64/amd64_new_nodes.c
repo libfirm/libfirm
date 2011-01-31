@@ -138,7 +138,7 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 
 	attr->data.ins_permuted = 0;
 	attr->data.cmp_unsigned = 0;
-	attr->ext.pnc           = (pn_Cmp)0;
+	attr->ext.relation      = ir_relation_false;
 	attr->ext.imm_value     = 0;
 }
 

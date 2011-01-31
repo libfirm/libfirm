@@ -985,16 +985,16 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env)
  */
 static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
-	ir_node *cmp, *left, *right, *block;
+	ir_node *left, *right, *block;
 	ir_node *sel = get_Cond_selector(node);
 	ir_mode *m = get_irn_mode(sel);
 	ir_mode *cmp_mode;
 	const node_entry_t *lentry, *rentry;
 	ir_node  *proj, *projT = NULL, *projF = NULL;
-	ir_node  *new_bl, *cmpH, *cmpL, *irn;
+	ir_node  *new_bl, *irn;
 	ir_node  *projHF, *projHT;
 	ir_node  *dst_blk;
-	pn_Cmp   pnc;
+	ir_relation relation;
 	ir_graph *irg;
 	dbg_info *dbg;
 
@@ -1008,19 +1008,15 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		return;
 	}
 
-	if (!is_Proj(sel))
+	if (!is_Cmp(sel))
 		return;
 
-	cmp = get_Proj_pred(sel);
-	if (!is_Cmp(cmp))
-		return;
-
-	left     = get_Cmp_left(cmp);
+	left     = get_Cmp_left(sel);
 	cmp_mode = get_irn_mode(left);
 	if (cmp_mode != env->high_signed && cmp_mode != env->high_unsigned)
 		return;
 
-	right  = get_Cmp_right(cmp);
+	right  = get_Cmp_right(sel);
 	lentry = get_node_entry(env, left);
 	rentry = get_node_entry(env, right);
 
@@ -1042,36 +1038,33 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	assert(projT && projF);
 
 	/* create a new high compare */
-	block = get_nodes_block(node);
-	irg   = get_Block_irg(block);
-	dbg   = get_irn_dbg_info(cmp);
-	pnc   = get_Proj_pn_cmp(sel);
+	block    = get_nodes_block(node);
+	irg      = get_Block_irg(block);
+	dbg      = get_irn_dbg_info(sel);
+	relation = get_Cmp_relation(sel);
 
 	if (is_Const(right) && is_Const_null(right)) {
-		if (pnc == pn_Cmp_Eq || pnc == pn_Cmp_Lg) {
+		if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
 			/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
 			ir_mode *mode   = env->low_unsigned;
 			ir_node *low    = new_r_Conv(block, lentry->low_word, mode);
 			ir_node *high   = new_r_Conv(block, lentry->high_word, mode);
 			ir_node *ornode = new_rd_Or(dbg, block, low, high, mode);
-			ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0));
-
-			ir_node *proj = new_r_Proj(cmp, mode_b, pnc);
-			set_Cond_selector(node, proj);
+			ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+			set_Cond_selector(node, cmp);
 			return;
 		}
 	}
 
-	cmpH = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word);
-
-	if (pnc == pn_Cmp_Eq) {
+	if (relation == ir_relation_equal) {
 		/* simple case:a == b <==> a_h == b_h && a_l == b_l */
 		pmap_entry *entry = pmap_find(env->proj_2_block, projF);
 
 		assert(entry);
 		dst_blk = (ir_node*)entry->value;
 
-		irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Eq);
+		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
+		                 ir_relation_equal);
 		dbg = get_irn_dbg_info(node);
 		irn = new_rd_Cond(dbg, block, irn);
 
@@ -1084,9 +1077,9 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 		new_bl = new_r_Block(irg, 1, &projHT);
 
-		dbg   = get_irn_dbg_info(cmp);
-		cmpL = new_rd_Cmp(dbg, new_bl, lentry->low_word, rentry->low_word);
-		irn = new_r_Proj(cmpL, mode_b, pn_Cmp_Eq);
+		dbg = get_irn_dbg_info(sel);
+		irn = new_rd_Cmp(dbg, new_bl, lentry->low_word, rentry->low_word,
+		                  ir_relation_equal);
 		dbg = get_irn_dbg_info(node);
 		irn = new_rd_Cond(dbg, new_bl, irn);
 
@@ -1097,14 +1090,15 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		proj = new_r_Proj(irn, mode_X, pn_Cond_true);
 		mark_irn_visited(proj);
 		exchange(projT, proj);
-	} else if (pnc == pn_Cmp_Lg) {
+	} else if (relation == ir_relation_less_greater) {
 		/* simple case:a != b <==> a_h != b_h || a_l != b_l */
 		pmap_entry *entry = pmap_find(env->proj_2_block, projT);
 
 		assert(entry);
 		dst_blk = (ir_node*)entry->value;
 
-		irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Lg);
+		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
+		                 ir_relation_less_greater);
 		dbg = get_irn_dbg_info(node);
 		irn = new_rd_Cond(dbg, block, irn);
 
@@ -1117,9 +1111,9 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 		new_bl = new_r_Block(irg, 1, &projHF);
 
-		dbg   = get_irn_dbg_info(cmp);
-		cmpL = new_rd_Cmp(dbg, new_bl, lentry->low_word, rentry->low_word);
-		irn = new_r_Proj(cmpL, mode_b, pn_Cmp_Lg);
+		dbg = get_irn_dbg_info(sel);
+		irn = new_rd_Cmp(dbg, new_bl, lentry->low_word, rentry->low_word,
+		                 ir_relation_less_greater);
 		dbg = get_irn_dbg_info(node);
 		irn = new_rd_Cond(dbg, new_bl, irn);
 
@@ -1143,7 +1137,8 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		assert(entry);
 		dstF = (ir_node*)entry->value;
 
-		irn = new_r_Proj(cmpH, mode_b, pnc & ~pn_Cmp_Eq);
+		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
+		                 relation & ~ir_relation_equal);
 		dbg = get_irn_dbg_info(node);
 		irn = new_rd_Cond(dbg, block, irn);
 
@@ -1157,7 +1152,8 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 		newbl_eq = new_r_Block(irg, 1, &projHF);
 
-		irn = new_r_Proj(cmpH, mode_b, pn_Cmp_Eq);
+		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
+		                 ir_relation_equal);
 		irn = new_rd_Cond(dbg, newbl_eq, irn);
 
 		proj = new_r_Proj(irn, mode_X, pn_Cond_false);
@@ -1170,9 +1166,9 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 		newbl_l = new_r_Block(irg, 1, &proj);
 
-		dbg   = get_irn_dbg_info(cmp);
-		cmpL = new_rd_Cmp(dbg, newbl_l, lentry->low_word, rentry->low_word);
-		irn = new_r_Proj(cmpL, mode_b, pnc);
+		dbg = get_irn_dbg_info(sel);
+		irn = new_rd_Cmp(dbg, newbl_l, lentry->low_word, rentry->low_word,
+		                 relation);
 		dbg = get_irn_dbg_info(node);
 		irn = new_rd_Cond(dbg, newbl_l, irn);
 
@@ -1292,66 +1288,58 @@ static void lower_Conv_from_Ll(ir_node *node, lower_env_t *env)
 }
 
 /**
- * lower boolean Proj(Cmp)
+ * lower Cmp
  */
-static void lower_Proj_Cmp(lower_env_t *env, ir_node *proj)
+static void lower_Cmp(ir_node *cmp, ir_mode *m, lower_env_t *env)
 {
-	ir_node  *cmp  = get_Proj_pred(proj);
 	ir_node  *l    = get_Cmp_left(cmp);
 	ir_mode  *mode = get_irn_mode(l);
 	ir_node  *r, *low, *high, *t, *res;
-	pn_Cmp    pnc;
+	ir_relation relation;
 	ir_node  *blk;
 	dbg_info *db;
 	const node_entry_t *lentry;
 	const node_entry_t *rentry;
+	(void) m;
 
 	if (mode != env->high_signed && mode != env->high_unsigned) {
 		return;
 	}
 
-	r      = get_Cmp_right(cmp);
-	lentry = get_node_entry(env, l);
-	rentry = get_node_entry(env, r);
-	pnc    = get_Proj_pn_cmp(proj);
-	blk    = get_nodes_block(cmp);
-	db     = get_irn_dbg_info(cmp);
-	low    = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word);
-	high   = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word);
+	r        = get_Cmp_right(cmp);
+	lentry   = get_node_entry(env, l);
+	rentry   = get_node_entry(env, r);
+	relation = get_Cmp_relation(cmp);
+	blk      = get_nodes_block(cmp);
+	db       = get_irn_dbg_info(cmp);
 
-	if (pnc == pn_Cmp_Eq) {
+	if (relation == ir_relation_equal) {
 		/* simple case:a == b <==> a_h == b_h && a_l == b_l */
-		res = new_rd_And(db, blk,
-			new_r_Proj(low, mode_b, pnc),
-			new_r_Proj(high, mode_b, pnc),
-			mode_b);
-	} else if (pnc == pn_Cmp_Lg) {
+		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
+		                  relation);
+		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
+		                  relation);
+		res  = new_rd_And(db, blk, low, high, mode_b);
+	} else if (relation == ir_relation_less_greater) {
 		/* simple case:a != b <==> a_h != b_h || a_l != b_l */
-		res = new_rd_Or(db, blk,
-			new_r_Proj(low, mode_b, pnc),
-			new_r_Proj(high, mode_b, pnc),
-			mode_b);
+		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
+		                  relation);
+		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
+		                  relation);
+		res = new_rd_Or(db, blk, low, high, mode_b);
 	} else {
-		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
-		t = new_rd_And(db, blk,
-			new_r_Proj(low, mode_b, pnc),
-			new_r_Proj(high, mode_b, pn_Cmp_Eq),
-			mode_b);
-		res = new_rd_Or(db, blk,
-			new_r_Proj(high, mode_b, pnc & ~pn_Cmp_Eq),
-			t,
-			mode_b);
-	}
-	exchange(proj, res);
-}
+		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
+		                  relation);
+		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
+		                  ir_relation_equal);
 
-static void lower_Proj(ir_node *node, ir_mode *mode, lower_env_t *env)
-{
-	ir_node *pred = get_Proj_pred(node);
-	(void) mode;
-	if (is_Cmp(pred)) {
-		lower_Proj_Cmp(env, node);
+		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
+		ir_node *high1 = new_rd_Cmp(db, blk, lentry->high_word,
+		                            rentry->high_word, relation & ~ir_relation_equal);
+		t = new_rd_And(db, blk, low, high, mode_b);
+		res = new_rd_Or(db, blk, high1, t, mode_b);
 	}
+	exchange(cmp, res);
 }
 
 /**
@@ -2348,10 +2336,11 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	}
 
 	clear_irp_opcodes_generic_func();
+	enter_lower_func(op_ASM,     lower_ASM);
 	enter_lower_func(op_Add,     lower_binop);
 	enter_lower_func(op_And,     lower_And);
-	enter_lower_func(op_ASM,     lower_ASM);
 	enter_lower_func(op_Call,    lower_Call);
+	enter_lower_func(op_Cmp,     lower_Cmp);
 	enter_lower_func(op_Cond,    lower_Cond);
 	enter_lower_func(op_Const,   lower_Const);
 	enter_lower_func(op_Conv,    lower_Conv);
@@ -2364,7 +2353,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	enter_lower_func(op_Mux,     lower_Mux);
 	enter_lower_func(op_Not,     lower_Not);
 	enter_lower_func(op_Or,      lower_Or);
-	enter_lower_func(op_Proj,    lower_Proj);
 	enter_lower_func(op_Return,  lower_Return);
 	enter_lower_func(op_Sel,     lower_Sel);
 	enter_lower_func(op_Shl,     lower_Shl);

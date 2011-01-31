@@ -210,7 +210,7 @@ static void split_critical_edge(ir_node *block, int pos)
 typedef struct jumpthreading_env_t {
 	ir_node       *true_block;
 	ir_node       *cmp;        /**< The Compare node that might be partial evaluated */
-	pn_Cmp         pnc;        /**< The Compare mode of the Compare node. */
+	ir_relation    relation;   /**< The Compare mode of the Compare node. */
 	ir_node       *cnst;
 	ir_tarval     *tv;
 	ir_visited_t   visited_nr;
@@ -348,47 +348,53 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
  * returns whether the cmp evaluates to true or false, or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
  *
- * @param pnc       the compare mode of the Compare
+ * @param relation  the compare mode of the Compare
  * @param tv_left   the left tarval
  * @param tv_right  the right tarval
  */
-static int eval_cmp_tv(pn_Cmp pnc, ir_tarval *tv_left, ir_tarval *tv_right)
+static int eval_cmp_tv(ir_relation relation, ir_tarval *tv_left,
+                       ir_tarval *tv_right)
 {
-	pn_Cmp cmp_result = tarval_cmp(tv_left, tv_right);
+	ir_relation cmp_result = tarval_cmp(tv_left, tv_right);
 
 	/* does the compare evaluate to true? */
-	if (cmp_result == pn_Cmp_False)
+	if (cmp_result == ir_relation_false)
 		return -1;
-	if ((cmp_result & pnc) != cmp_result)
-		return 0;
+	if ((cmp_result & relation) != 0)
+		return 1;
 
-	return 1;
+	return 0;
 }
+
+#if 0
+/* Matze: disabled, check first if the compare still is correct */
 
 /**
  * returns whether the cmp evaluates to true or false according to vrp
  * information , or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
  *
- * @param pnc       the compare mode of the Compare
- * @param left   the left node
- * @param right  the right node
+ * @param relation  the compare mode of the Compare
+ * @param left      the left node
+ * @param right     the right node
  */
-static int eval_cmp_vrp(pn_Cmp pnc, ir_node *left, ir_node *right)
+static int eval_cmp_vrp(ir_relation relation, ir_node *left, ir_node *right)
 {
-	pn_Cmp cmp_result = vrp_cmp(left, right);
+	ir_relation cmp_result = vrp_cmp(left, right);
 	/* does the compare evaluate to true? */
-	if (cmp_result == pn_Cmp_False) {
+	if (cmp_result == ir_relation_false)
 		return -1;
-	}
-	if ((cmp_result & pnc) != cmp_result) {
-		if ((cmp_result & pnc) != 0) {
+
+	if ((cmp_result & relation) != cmp_result) {
+		if ((cmp_result & relation) != 0) {
 			return -1;
 		}
 		return 0;
 	}
 	return 1;
 }
+#endif
+
 /**
  * returns whether the cmp evaluates to true or false, or can't be evaluated!
  * 1: true, 0: false, -1: can't evaluate
@@ -399,12 +405,12 @@ static int eval_cmp_vrp(pn_Cmp pnc, ir_node *left, ir_node *right)
 static int eval_cmp(jumpthreading_env_t *env, ir_node *cand)
 {
 	if (is_Const(cand)) {
-		ir_tarval *tv_cand   = get_Const_tarval(cand);
-		ir_tarval *tv_cmp    = get_Const_tarval(env->cnst);
+		ir_tarval *tv_cand = get_Const_tarval(cand);
+		ir_tarval *tv_cmp  = get_Const_tarval(env->cnst);
 
-		return eval_cmp_tv(env->pnc, tv_cand, tv_cmp);
+		return eval_cmp_tv(env->relation, tv_cand, tv_cmp);
 	} else { /* a Confirm */
-		ir_tarval *res = computed_value_Cmp_Confirm(env->cmp, cand, env->cnst, env->pnc);
+		ir_tarval *res = computed_value_Cmp_Confirm(env->cmp, cand, env->cnst, env->relation);
 
 		if (res == tarval_bad)
 			return -1;
@@ -443,9 +449,8 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 		return NULL;
 
 	if (is_Const_or_Confirm(value)) {
-		if (eval_cmp(env, value) <= 0) {
+		if (eval_cmp(env, value) <= 0)
 			return NULL;
-		}
 
 		DB((
 			dbg, LEVEL_1,
@@ -468,9 +473,8 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 		int i, arity;
 
 		/* the Phi has to be in the same Block as the Jmp */
-		if (get_nodes_block(value) != block) {
+		if (get_nodes_block(value) != block)
 			return NULL;
-		}
 
 		arity = get_irn_arity(value);
 		for (i = 0; i < arity; ++i) {
@@ -558,17 +562,11 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 			return copy_block;
 		}
 	}
-	if (is_Proj(value)) {
-		ir_node *left;
-		ir_node *right;
-		pn_Cmp   pnc;
-		ir_node *cmp = get_Proj_pred(value);
-		if (!is_Cmp(cmp))
-			return NULL;
-
-		left  = get_Cmp_left(cmp);
-		right = get_Cmp_right(cmp);
-		pnc   = get_Proj_pn_cmp(value);
+	if (is_Cmp(value)) {
+		ir_node    *cmp      = value;
+		ir_node    *left     = get_Cmp_left(cmp);
+		ir_node    *right    = get_Cmp_right(cmp);
+		ir_relation relation = get_Cmp_relation(cmp);
 
 		/* we assume that the constant is on the right side, swap left/right
 		 * if needed */
@@ -577,25 +575,24 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 			left       = right;
 			right      = t;
 
-			pnc        = get_inversed_pnc(pnc);
+			relation   = get_inversed_relation(relation);
 		}
 
 		if (!is_Const(right))
-			return 0;
+			return NULL;
 
-		if (get_nodes_block(left) != block) {
-			return 0;
-		}
+		if (get_nodes_block(left) != block)
+			return NULL;
 
 		/* negate condition when we're looking for the false block */
 		if (env->tv == tarval_b_false) {
-			pnc = get_negated_pnc(pnc, get_irn_mode(right));
+			relation = get_negated_relation(relation);
 		}
 
 		/* (recursively) look if a pred of a Phi is a constant or a Confirm */
-		env->cmp  = cmp;
-		env->pnc  = pnc;
-		env->cnst = right;
+		env->cmp      = cmp;
+		env->relation = relation;
+		env->cnst     = right;
 
 		return find_const_or_confirm(env, jump, left);
 	}
@@ -649,28 +646,25 @@ static void thread_jumps(ir_node* block, void* data)
 
 	/* handle cases that can be immediately evaluated */
 	selector_evaluated = -1;
-	if (is_Proj(selector)) {
-		ir_node *cmp = get_Proj_pred(selector);
-		if (is_Cmp(cmp)) {
-			ir_node *left  = get_Cmp_left(cmp);
-			ir_node *right = get_Cmp_right(cmp);
-			if (is_Const(left) && is_Const(right)) {
-				pn_Cmp     pnc      = get_Proj_pn_cmp(selector);
-				ir_tarval *tv_left  = get_Const_tarval(left);
-				ir_tarval *tv_right = get_Const_tarval(right);
+	if (is_Cmp(selector)) {
+		ir_node *left  = get_Cmp_left(selector);
+		ir_node *right = get_Cmp_right(selector);
+		if (is_Const(left) && is_Const(right)) {
+			ir_relation relation = get_Cmp_relation(selector);
+			ir_tarval  *tv_left  = get_Const_tarval(left);
+			ir_tarval  *tv_right = get_Const_tarval(right);
 
-				selector_evaluated = eval_cmp_tv(pnc, tv_left, tv_right);
-			}
-			if (selector_evaluated < 0) {
-				/* This is only the case if the predecessor nodes are not
-				 * constant or the comparison could not be evaluated.
-				 * Try with VRP information now.
-				 */
-				pn_Cmp pnc = get_Proj_pn_cmp(selector);
-
-				selector_evaluated = eval_cmp_vrp(pnc, left, right);
-			}
+			selector_evaluated = eval_cmp_tv(relation, tv_left, tv_right);
 		}
+#if 0
+		if (selector_evaluated < 0) {
+			/* This is only the case if the predecessor nodes are not
+			 * constant or the comparison could not be evaluated.
+			 * Try with VRP information now.
+			 */
+			selector_evaluated = eval_cmp_vrp(relation, left, right);
+		}
+#endif
 	} else if (is_Const_or_Confirm(selector)) {
 		ir_tarval *tv = get_Const_or_Confirm_tarval(selector);
 		if (tv == tarval_b_true) {

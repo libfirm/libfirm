@@ -604,12 +604,6 @@ static inline int _is_arg_Proj(const ir_node *node)
 	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
 }
 
-static inline pn_Cmp _get_Proj_pn_cmp(const ir_node *node)
-{
-	assert(is_Cmp(get_Proj_pred(node)));
-	return (pn_Cmp)get_Proj_proj(node);
-}
-
 /** initialize ir_node module */
 void init_irnode(void);
 
@@ -692,7 +686,5 @@ void init_irnode(void);
 #define get_Phi_next(node)                    _get_Phi_next(node)
 
 #define is_arg_Proj(node)                     _is_arg_Proj(node)
-
-#define get_Proj_pn_cmp(node)                 _get_Proj_pn_cmp(node)
 
 #endif

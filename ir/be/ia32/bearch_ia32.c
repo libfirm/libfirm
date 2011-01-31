@@ -1819,19 +1819,15 @@ static void ia32_mark_remat(ir_node *node)
 static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
                                  ir_node *mux_false)
 {
-	ir_node *cmp_l;
-	ir_node *cmp_r;
-	ir_node *cmp;
-	pn_Cmp  pnc;
+	ir_node    *cmp_l;
+	ir_node    *cmp_r;
+	ir_relation relation;
 
-	if (!is_Proj(sel))
-		return false;
-	cmp = get_Proj_pred(sel);
-	if (!is_Cmp(cmp))
+	if (!is_Cmp(sel))
 		return false;
 
-	cmp_l = get_Cmp_left(cmp);
-	cmp_r = get_Cmp_right(cmp);
+	cmp_l = get_Cmp_left(sel);
+	cmp_r = get_Cmp_right(sel);
 	if (!mode_is_float(get_irn_mode(cmp_l)))
 		return false;
 
@@ -1842,28 +1838,28 @@ static bool mux_is_float_min_max(ir_node *sel, ir_node *mux_true,
 	 *  or max(a, b) = a >= b ? a : b
 	 * (Note we only handle float min/max here)
 	 */
-	pnc = get_Proj_pn_cmp(sel);
-	switch (pnc) {
-	case pn_Cmp_Ge:
-	case pn_Cmp_Gt:
+	relation = get_Cmp_relation(sel);
+	switch (relation) {
+	case ir_relation_greater_equal:
+	case ir_relation_greater:
 		/* this is a max */
 		if (cmp_l == mux_true && cmp_r == mux_false)
 			return true;
 		break;
-	case pn_Cmp_Le:
-	case pn_Cmp_Lt:
+	case ir_relation_less_equal:
+	case ir_relation_less:
 		/* this is a min */
 		if (cmp_l == mux_true && cmp_r == mux_false)
 			return true;
 		break;
-	case pn_Cmp_Uge:
-	case pn_Cmp_Ug:
+	case ir_relation_unordered_greater_equal:
+	case ir_relation_unordered_greater:
 		/* this is a min */
 		if (cmp_l == mux_false && cmp_r == mux_true)
 			return true;
 		break;
-	case pn_Cmp_Ule:
-	case pn_Cmp_Ul:
+	case ir_relation_unordered_less_equal:
+	case ir_relation_unordered_less:
 		/* this is a max */
 		if (cmp_l == mux_false && cmp_r == mux_true)
 			return true;
@@ -1886,7 +1882,8 @@ static bool mux_is_set(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 		return false;
 
 	if (is_Const(mux_true) && is_Const(mux_false)) {
-		/* we can create a set plus up two 3 instructions for any combination of constants */
+		/* we can create a set plus up two 3 instructions for any combination
+		 * of constants */
 		return true;
 	}
 
@@ -1906,35 +1903,30 @@ static bool mux_is_float_const_const(ir_node *sel, ir_node *mux_true,
 
 static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 {
-	ir_node *cmp;
-	ir_node *cmp_left;
-	ir_node *cmp_right;
-	ir_node *sub_left;
-	ir_node *sub_right;
-	ir_mode *mode;
-	long     pn;
+	ir_node    *cmp_left;
+	ir_node    *cmp_right;
+	ir_node    *sub_left;
+	ir_node    *sub_right;
+	ir_mode    *mode;
+	ir_relation relation;
 
-	if (!is_Proj(sel))
-		return false;
-
-	cmp = get_Proj_pred(sel);
-	if (!is_Cmp(cmp))
+	if (!is_Cmp(sel))
 		return false;
 
 	mode = get_irn_mode(mux_true);
 	if (mode_is_signed(mode) || mode_is_float(mode))
 		return false;
 
-	pn        = get_Proj_proj(sel);
-	cmp_left  = get_Cmp_left(cmp);
-	cmp_right = get_Cmp_right(cmp);
+	relation  = get_Cmp_relation(sel);
+	cmp_left  = get_Cmp_left(sel);
+	cmp_right = get_Cmp_right(sel);
 
 	/* "move" zero constant to false input */
 	if (is_Const(mux_true) && is_Const_null(mux_true)) {
 		ir_node *tmp = mux_false;
 		mux_false = mux_true;
 		mux_true  = tmp;
-		pn = get_negated_pnc(pn, mode);
+		relation = get_negated_relation(relation);
 	}
 	if (!is_Const(mux_false) || !is_Const_null(mux_false))
 		return false;
@@ -1944,11 +1936,11 @@ static bool mux_is_doz(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	sub_right = get_Sub_right(mux_true);
 
 	/* Mux(a >=u b, 0, a-b) */
-	if ((pn == pn_Cmp_Gt || pn == pn_Cmp_Ge)
+	if ((relation & ir_relation_greater)
 			&& sub_left == cmp_left && sub_right == cmp_right)
 		return true;
 	/* Mux(a <=u b, 0, b-a) */
-	if ((pn == pn_Cmp_Lt || pn == pn_Cmp_Le)
+	if ((relation & ir_relation_less)
 			&& sub_left == cmp_right && sub_right == cmp_left)
 		return true;
 

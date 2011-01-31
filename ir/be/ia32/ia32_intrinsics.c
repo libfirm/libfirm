@@ -269,7 +269,8 @@ static int map_Shl(ir_node *call, void *ctx)
 		/* the shift count is a const, create better code */
 		ir_tarval *tv = get_Const_tarval(cnt);
 
-		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
+		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode))
+				& (ir_relation_greater_equal)) {
 			/* simplest case: shift only the lower bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv = new_rd_Conv(dbg, block, a_l, h_mode);
@@ -300,8 +301,7 @@ static int map_Shl(ir_node *call, void *ctx)
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
-	irn    = new_r_Proj(irn, mode_b, pn_Cmp_Eq);
+	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)), ir_relation_equal);
 	cond   = new_rd_Cond(dbg, upper, irn);
 
 	in[0]  = new_r_Proj(cond, mode_X, pn_Cond_true);
@@ -360,7 +360,7 @@ static int map_Shr(ir_node *call, void *ctx)
 		/* the shift count is a const, create better code */
 		ir_tarval *tv = get_Const_tarval(cnt);
 
-		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
+		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (ir_relation_greater_equal)) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv = new_rd_Conv(dbg, block, a_h, l_mode);
@@ -389,8 +389,7 @@ static int map_Shr(ir_node *call, void *ctx)
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
-	irn    = new_r_Proj(irn, mode_b, pn_Cmp_Eq);
+	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)), ir_relation_equal);
 	cond   = new_rd_Cond(dbg, upper, irn);
 
 	in[0]  = new_r_Proj(cond, mode_X, pn_Cond_true);
@@ -449,7 +448,7 @@ static int map_Shrs(ir_node *call, void *ctx)
 		/* the shift count is a const, create better code */
 		ir_tarval *tv = get_Const_tarval(cnt);
 
-		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (pn_Cmp_Gt|pn_Cmp_Eq)) {
+		if (tarval_cmp(tv, new_tarval_from_long(32, l_mode)) & (ir_relation_greater_equal)) {
 			/* simplest case: shift only the higher bits. Note that there is no
 			   need to reduce the constant here, this is done by the hardware.  */
 			ir_node *conv    = new_rd_Conv(dbg, block, a_h, l_mode);
@@ -480,8 +479,7 @@ static int map_Shrs(ir_node *call, void *ctx)
 	c_mode = get_irn_mode(cnt);
 	irn    = new_r_Const_long(irg, c_mode, 32);
 	irn    = new_rd_And(dbg, upper, cnt, irn, c_mode);
-	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)));
-	irn    = new_r_Proj(irn, mode_b, pn_Cmp_Eq);
+	irn    = new_rd_Cmp(dbg, upper, irn, new_r_Const(irg, get_mode_null(c_mode)), ir_relation_equal);
 	cond   = new_rd_Cond(dbg, upper, irn);
 
 	in[0]  = new_r_Proj(cond, mode_X, pn_Cond_true);
@@ -822,9 +820,8 @@ static int map_Conv(ir_node *call, void *ctx)
 			part_block(call);
 			upper_blk = get_nodes_block(call);
 
-			cmp   = new_rd_Cmp(dbg, upper_blk, a_f, flt_corr);
-			proj  = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
-			cond  = new_rd_Cond(dbg, upper_blk, proj);
+			cmp   = new_rd_Cmp(dbg, upper_blk, a_f, flt_corr, ir_relation_less);
+			cond  = new_rd_Cond(dbg, upper_blk, cmp);
 			in[0] = new_r_Proj(cond, mode_X, pn_Cond_true);
 			in[1] = new_r_Proj(cond, mode_X, pn_Cond_false);
 			blk   = new_r_Block(irg, 1, &in[1]);

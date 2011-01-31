@@ -302,26 +302,18 @@ class Cast(Unop):
 	init     = "assert(is_atomic_type(type));"
 
 class Cmp(Binop):
-	"""Returns the relation of 2 operands"""
-	outs  = [
-		("False", "always false",                            "0"),
-		("Eq",    "equal",                                   "1"),
-		("Lt",    "less",                                    "2"),
-		("Le",    "less or equal",                           "pn_Cmp_Eq|pn_Cmp_Lt"),
-		("Gt",    "greater",                                 "4"),
-		("Ge",    "greater or equal",                        "pn_Cmp_Eq|pn_Cmp_Gt"),
-		("Lg",    "less or greater ('not equal' for integer numbers)", "pn_Cmp_Lt|pn_Cmp_Gt"),
-		("Leg",   "less, equal or greater ('not unordered')", "pn_Cmp_Lt|pn_Cmp_Eq|pn_Cmp_Gt"),
-		("Uo",    "unordered",                               "8"),
-		("Ue",    "unordered or equal",                      "pn_Cmp_Uo|pn_Cmp_Eq"),
-		("Ul",    "unordered or less",                       "pn_Cmp_Uo|pn_Cmp_Lt"),
-		("Ule",   "unordered, less or equal",                "pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Eq"),
-		("Ug",    "unordered or greater",                    "pn_Cmp_Uo|pn_Cmp_Gt"),
-		("Uge",   "onordered, greater or equal",             "pn_Cmp_Uo|pn_Cmp_Gt|pn_Cmp_Eq"),
-		("Ne",    "unordered, less or greater ('not equal' for floatingpoint numbers)", "pn_Cmp_Uo|pn_Cmp_Lt|pn_Cmp_Gt"),
-		("True",  "always true",                             "15"),
-	]
+	"""Compares its two operands and checks wether a specified
+	   relation (like less or equal) is fulfilled."""
 	flags = []
+	mode  = "mode_b"
+	attrs = [
+		dict(
+			type    = "ir_relation",
+			name    = "relation",
+			comment = "Comparison relation"
+		)
+	]
+	attr_struct = "cmp_attr"
 
 class Cond(Op):
 	"""Conditionally change control flow. There are two versions of this node:
@@ -381,9 +373,9 @@ class Confirm(Op):
 	pinned   = "yes"
 	attrs    = [
 		dict(
-			name    = "cmp",
-			type    = "pn_Cmp",
-			comment = "compare operation",
+			name    = "relation",
+			type    = "ir_relation",
+			comment = "relation of value to bound",
 		),
 	]
 	attr_struct = "confirm_attr"

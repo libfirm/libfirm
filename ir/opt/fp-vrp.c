@@ -366,7 +366,7 @@ result_unknown_X:
 					ir_tarval* const lzn = tarval_or(lz, tarval_neg(lz));
 					ir_tarval* const rzn = tarval_or(rz, tarval_neg(rz));
 					// Concatenate safe lower zeroes.
-					if (tarval_cmp(lzn, rzn) == pn_Cmp_Lt) {
+					if (tarval_cmp(lzn, rzn) == ir_relation_less) {
 						z = tarval_mul(tarval_eor(lzn, tarval_shl(lzn, get_tarval_one(m))), rzn);
 					} else {
 						z = tarval_mul(tarval_eor(rzn, tarval_shl(rzn, get_tarval_one(m))), lzn);
@@ -465,86 +465,81 @@ result_unknown_X:
 				break;
 			}
 
-			case iro_Proj: {
-				ir_node* const pred = get_Proj_pred(irn);
-				if (is_Cmp(pred)) { // TODO generalize
-					bitinfo* const l = get_bitinfo(get_Cmp_left(pred));
-					bitinfo* const r = get_bitinfo(get_Cmp_right(pred));
-					if (l == NULL || r == NULL) {
-						goto result_unknown; // Cmp compares something we cannot evaluate.
-					} else {
-						ir_tarval* const lz = l->z;
-						ir_tarval* const lo = l->o;
-						ir_tarval* const rz = r->z;
-						ir_tarval* const ro = r->o;
-						pn_Cmp     const pn = get_Proj_proj(irn);
-						switch (pn) {
-							case pn_Cmp_Lg:
-								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-										!tarval_is_null(tarval_andnot(lo, rz))) {
-									// At least one bit differs.
-									z = o = get_tarval_b_true();
-								} else if (lz == lo && rz == ro && lz == rz) {
-									z = o = get_tarval_b_false();
-								} else {
-									goto result_unknown;
-								}
-								break;
-
-							case pn_Cmp_Eq:
-								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-										!tarval_is_null(tarval_andnot(lo, rz))) {
-									// At least one bit differs.
-									z = o = get_tarval_b_false();
-								} else if (lz == lo && rz == ro && lz == rz) {
-									z = o = get_tarval_b_true();
-								} else {
-									goto result_unknown;
-								}
-								break;
-
-							case pn_Cmp_Le:
-							case pn_Cmp_Lt:
-								/* TODO handle negative values */
-								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-										tarval_is_negative(rz) || tarval_is_negative(ro))
-									goto result_unknown;
-
-								if (tarval_cmp(lz, ro) & pn) {
-									/* Left upper bound is smaller(/equal) than right lower bound. */
-									z = o = get_tarval_b_true();
-								} else if (!(tarval_cmp(lo, rz) & pn)) {
-									/* Left lower bound is not smaller(/equal) than right upper bound. */
-									z = o = get_tarval_b_false();
-								} else {
-									goto result_unknown;
-								}
-								break;
-
-							case pn_Cmp_Ge:
-							case pn_Cmp_Gt:
-								/* TODO handle negative values */
-								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-										tarval_is_negative(rz) || tarval_is_negative(ro))
-									goto result_unknown;
-
-								if (!(tarval_cmp(lz, ro) & pn)) {
-									/* Left upper bound is not greater(/equal) than right lower bound. */
-									z = o = get_tarval_b_false();
-								} else if (tarval_cmp(lo, rz) & pn) {
-									/* Left lower bound is greater(/equal) than right upper bound. */
-									z = o = get_tarval_b_true();
-								} else {
-									goto result_unknown;
-								}
-								break;
-
-							default:
-								goto cannot_analyse;
-						}
-					}
+			case iro_Cmp: {
+				bitinfo* const l = get_bitinfo(get_Cmp_left(irn));
+				bitinfo* const r = get_bitinfo(get_Cmp_right(irn));
+				if (l == NULL || r == NULL) {
+					goto result_unknown; // Cmp compares something we cannot evaluate.
 				} else {
-					goto cannot_analyse;
+					ir_tarval*  const lz       = l->z;
+					ir_tarval*  const lo       = l->o;
+					ir_tarval*  const rz       = r->z;
+					ir_tarval*  const ro       = r->o;
+					ir_relation const relation = get_Cmp_relation(irn);
+					switch (relation) {
+						case ir_relation_less_greater:
+							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+									!tarval_is_null(tarval_andnot(lo, rz))) {
+								// At least one bit differs.
+								z = o = get_tarval_b_true();
+							} else if (lz == lo && rz == ro && lz == rz) {
+								z = o = get_tarval_b_false();
+							} else {
+								goto result_unknown;
+							}
+							break;
+
+						case ir_relation_equal:
+							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+									!tarval_is_null(tarval_andnot(lo, rz))) {
+								// At least one bit differs.
+								z = o = get_tarval_b_false();
+							} else if (lz == lo && rz == ro && lz == rz) {
+								z = o = get_tarval_b_true();
+							} else {
+								goto result_unknown;
+							}
+							break;
+
+						case ir_relation_less_equal:
+						case ir_relation_less:
+							/* TODO handle negative values */
+							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+									tarval_is_negative(rz) || tarval_is_negative(ro))
+								goto result_unknown;
+
+							if (tarval_cmp(lz, ro) & relation) {
+								/* Left upper bound is smaller(/equal) than right lower bound. */
+								z = o = get_tarval_b_true();
+							} else if (!(tarval_cmp(lo, rz) & relation)) {
+								/* Left lower bound is not smaller(/equal) than right upper bound. */
+								z = o = get_tarval_b_false();
+							} else {
+								goto result_unknown;
+							}
+							break;
+
+						case ir_relation_greater_equal:
+						case ir_relation_greater:
+							/* TODO handle negative values */
+							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+									tarval_is_negative(rz) || tarval_is_negative(ro))
+								goto result_unknown;
+
+							if (!(tarval_cmp(lz, ro) & relation)) {
+								/* Left upper bound is not greater(/equal) than right lower bound. */
+								z = o = get_tarval_b_false();
+							} else if (tarval_cmp(lo, rz) & relation) {
+								/* Left lower bound is greater(/equal) than right upper bound. */
+								z = o = get_tarval_b_true();
+							} else {
+								goto result_unknown;
+							}
+							break;
+
+						default:
+							goto cannot_analyse;
+					}
 				}
 				break;
 			}

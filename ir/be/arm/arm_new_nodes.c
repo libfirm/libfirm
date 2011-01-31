@@ -312,16 +312,16 @@ void set_fConst_value(ir_node *node, ir_tarval *tv)
 	attr->tv = tv;
 }
 
-pn_Cmp get_arm_CondJmp_pnc(const ir_node *node)
+ir_relation get_arm_CondJmp_relation(const ir_node *node)
 {
 	const arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr_const(node);
-	return attr->pnc;
+	return attr->relation;
 }
 
-void set_arm_CondJmp_pnc(ir_node *node, pn_Cmp pnc)
+void set_arm_CondJmp_relation(ir_node *node, ir_relation relation)
 {
 	arm_CondJmp_attr_t *attr = get_arm_CondJmp_attr(node);
-	attr->pnc = pnc;
+	attr->relation = relation;
 }
 
 int get_arm_SwitchJmp_n_projs(const ir_node *node)

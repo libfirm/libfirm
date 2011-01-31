@@ -499,28 +499,6 @@ static int verify_node_Proj_Mod(ir_node *n, ir_node *p)
 }
 
 /**
- * verify a Proj(Cmp) node
- */
-static int verify_node_Proj_Cmp(ir_node *n, ir_node *p)
-{
-	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
-	(void) n;
-
-	ASSERT_AND_RET_DBG(
-		(proj >= 0 && proj <= 15 && mode == mode_b),
-		"wrong Proj from Cmp", 0,
-		show_proj_failure(p);
-	);
-	ASSERT_AND_RET_DBG(
-		(mode_is_float(get_irn_mode(get_Cmp_left(n))) || !(proj & pn_Cmp_Uo)),
-		"unordered Proj for non-float Cmp (Did you use Ne instead of Lg?)", 0,
-		show_proj_failure(p);
-	);
-	return 1;
-}
-
-/**
  * verify a Proj(Load) node
  */
 static int verify_node_Proj_Load(ir_node *n, ir_node *p)
@@ -1344,7 +1322,7 @@ static int verify_node_Cmp(ir_node *n, ir_graph *irg)
 		/* Cmp: BB x datab x datab --> b16 */
 		mode_is_datab(op1mode) &&
 		op2mode == op1mode &&
-		mymode == mode_T,
+		mymode == mode_b,
 		"Cmp node", 0,
 		show_binop_failure(n, "/* Cmp: BB x datab x datab --> b16 */");
 	);
@@ -2142,7 +2120,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Call);
 	CASE(Div);
 	CASE(Mod);
-	CASE(Cmp);
 	CASE(Load);
 	CASE(Store);
 	CASE(Alloc);

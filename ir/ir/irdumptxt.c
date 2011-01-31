@@ -202,6 +202,10 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	case iro_Cast: {
 		ir_fprintf(F, "  cast to type: %+F\n", get_Cast_type(n));
 	} break;
+	case iro_Cmp: {
+		ir_relation relation = get_Cmp_relation(n);
+		ir_fprintf(F, "  relation: %s\n", get_relation_string(relation));
+	} break;
 	case iro_Return: {
 		size_t   i;
 		ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
@@ -254,7 +258,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		fprintf(F, "  align: %s\n", get_align_name(get_Store_align(n)));
 		break;
 	case iro_Confirm:
-		fprintf(F, "  compare operation: %s\n", get_pnc_string(get_Confirm_cmp(n)));
+		fprintf(F, "  compare operation: %s\n", get_relation_string(get_Confirm_relation(n)));
 		break;
 	case iro_ASM: {
 		const ir_asm_constraint *cons;

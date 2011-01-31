@@ -43,6 +43,7 @@
 
 #include "irhooks.h"
 #include "irtools.h"
+#include "util.h"
 
 #include "beinfo.h"
 
@@ -54,47 +55,43 @@
 #define RETURN_RESULT_OFFSET  1  /* mem is not a result */
 #define END_KEEPALIVE_OFFSET  0
 
-static const char *pnc_name_arr [] = {
-	"pn_Cmp_False", "pn_Cmp_Eq", "pn_Cmp_Lt", "pn_Cmp_Le",
-	"pn_Cmp_Gt", "pn_Cmp_Ge", "pn_Cmp_Lg", "pn_Cmp_Leg",
-	"pn_Cmp_Uo", "pn_Cmp_Ue", "pn_Cmp_Ul", "pn_Cmp_Ule",
-	"pn_Cmp_Ug", "pn_Cmp_Uge", "pn_Cmp_Ne", "pn_Cmp_True"
+static const char *relation_names [] = {
+	"false",
+	"equal",
+	"less",
+	"less_equal",
+	"greater",
+	"greater_equal",
+	"less_greater",
+	"less_equal_greater",
+	"unordered",
+	"unordered_equal",
+	"unordered_less",
+	"unordered_less_equal",
+	"unordered_greater",
+	"unordered_greater_equal",
+	"not_equal",
+	"true"
 };
 
-/**
- * returns the pnc name from an pnc constant
- */
-const char *get_pnc_string(int pnc)
+const char *get_relation_string(ir_relation relation)
 {
-	assert(pnc >= 0 && pnc <
-			(int) (sizeof(pnc_name_arr)/sizeof(pnc_name_arr[0])));
-	return pnc_name_arr[pnc];
+	assert(relation < (ir_relation)ARRAY_SIZE(relation_names));
+	return relation_names[relation];
 }
 
-/*
- * Calculates the negated (Complement(R)) pnc condition.
- */
-pn_Cmp get_negated_pnc(long pnc, ir_mode *mode)
+ir_relation get_negated_relation(ir_relation relation)
 {
-	pnc ^= pn_Cmp_True;
-
-	/* do NOT add the Uo bit for non-floating point values */
-	if (! mode_is_float(mode))
-		pnc &= ~pn_Cmp_Uo;
-
-	return (pn_Cmp) pnc;
+	return relation ^ ir_relation_true;
 }
 
-/* Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
-pn_Cmp get_inversed_pnc(long pnc)
+ir_relation get_inversed_relation(ir_relation relation)
 {
-	long code    = pnc & ~(pn_Cmp_Lt|pn_Cmp_Gt);
-	long lesser  = pnc & pn_Cmp_Lt;
-	long greater = pnc & pn_Cmp_Gt;
-
-	code |= (lesser ? pn_Cmp_Gt : 0) | (greater ? pn_Cmp_Lt : 0);
-
-	return (pn_Cmp) code;
+	ir_relation code    = relation & ~(ir_relation_less|ir_relation_greater);
+	bool        less    = relation & ir_relation_less;
+	bool        greater = relation & ir_relation_greater;
+	code |= (less ? ir_relation_greater : 0) | (greater ? ir_relation_less : 0);
+	return code;
 }
 
 /**
@@ -1355,11 +1352,6 @@ void add_Sync_pred(ir_node *node, ir_node *pred)
 int (is_arg_Proj)(const ir_node *node)
 {
 	return _is_arg_Proj(node);
-}
-
-pn_Cmp (get_Proj_pn_cmp)(const ir_node *node)
-{
-	return _get_Proj_pn_cmp(node);
 }
 
 ir_node **get_Tuple_preds_arr(ir_node *node)

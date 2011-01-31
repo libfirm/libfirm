@@ -399,9 +399,9 @@ B => {
 	state     => "pinned",
 	mode      => "mode_T",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
-	attr      => "pn_Cmp pnc",
+	attr      => "ir_relation relation",
 	attr_type => "arm_CondJmp_attr_t",
-	init_attr => "\tset_arm_CondJmp_pnc(res, pnc);",
+	init_attr => "\tset_arm_CondJmp_relation(res, relation);",
 },
 
 Jmp => {

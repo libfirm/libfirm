@@ -278,7 +278,7 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	const ir_node        *next_block;
 	const char           *suffix;
 	const amd64_attr_t   *attr      = get_amd64_attr_const(irn);
-	int                   proj_num  = attr->ext.pnc;
+	ir_relation           relation  = attr->ext.relation;
 	ir_node              *op1       = get_irn_n(irn, 0);
 	const amd64_attr_t   *cmp_attr  = get_amd64_attr_const(op1);
 	bool                  is_signed = !cmp_attr->data.cmp_unsigned;
@@ -296,7 +296,7 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	}
 
 	if (cmp_attr->data.ins_permuted) {
-		proj_num = get_mirrored_pnc(proj_num);
+		relation = get_inversed_relation(relation);
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -305,8 +305,8 @@ static void emit_amd64_Jcc(const ir_node *irn)
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 
-	assert(proj_num != pn_Cmp_False);
-	assert(proj_num != pn_Cmp_True);
+	assert(relation != ir_relation_false);
+	assert(relation != ir_relation_true);
 
 	if (get_cfop_target_block(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
@@ -314,17 +314,17 @@ static void emit_amd64_Jcc(const ir_node *irn)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		proj_num   = get_negated_pnc(proj_num, mode_Lu);
+		relation   = get_negated_relation(relation);
 	}
 
-	switch (proj_num) {
-		case pn_Cmp_Eq:  suffix = "e"; break;
-		case pn_Cmp_Lt:  suffix = is_signed ? "l"  : "b"; break;
-		case pn_Cmp_Le:  suffix = is_signed ? "le" : "be"; break;
-		case pn_Cmp_Gt:  suffix = is_signed ? "g"  : "a"; break;
-		case pn_Cmp_Ge:  suffix = is_signed ? "ge" : "ae"; break;
-		case pn_Cmp_Lg:  suffix = "ne"; break;
-		case pn_Cmp_Leg: suffix = "mp"; break;
+	switch (relation) {
+		case ir_relation_equal:              suffix = "e"; break;
+		case ir_relation_less:               suffix = is_signed ? "l"  : "b"; break;
+		case ir_relation_less_equal:         suffix = is_signed ? "le" : "be"; break;
+		case ir_relation_greater:            suffix = is_signed ? "g"  : "a"; break;
+		case ir_relation_greater_equal:      suffix = is_signed ? "ge" : "ae"; break;
+		case ir_relation_less_greater:       suffix = "ne"; break;
+		case ir_relation_less_equal_greater: suffix = "mp"; break;
 		default: panic("Cmp has unsupported pnc");
 	}
 

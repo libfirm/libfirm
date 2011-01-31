@@ -27,6 +27,7 @@
 #include "config.h"
 
 #include "beemitter.h"
+#include "irnode_t.h"
 #include "irprintf.h"
 #include "ident.h"
 #include "tv.h"

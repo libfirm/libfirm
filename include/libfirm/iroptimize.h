@@ -1097,13 +1097,13 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
  * Return the value of a Cmp if one or both predecessors
  * are Confirm nodes.
  *
- * @param cmp    the compare node that will be evaluated
- * @param left   the left operand of the Cmp
- * @param right  the right operand of the Cmp
- * @param pnc    the compare relation
+ * @param cmp       the compare node that will be evaluated
+ * @param left      the left operand of the Cmp
+ * @param right     the right operand of the Cmp
+ * @param relation  the compare relation
  */
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(
-	ir_node *cmp, ir_node *left, ir_node *right, pn_Cmp pnc);
+	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
 #include "end.h"
 

@@ -272,73 +272,75 @@ static ir_node *lower_node(ir_node *node)
 		ir_tarval *tv_zeroc = get_mode_null(mode);
 		ir_node   *zero_cmp = new_rd_Const(dbgi, irg, tv_zeroc);
 
-		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp);
-		ir_node *proj     = new_rd_Proj(dbgi, cmp, mode_b, pn_Cmp_Lg);
-		res = config->create_set(proj);
+		ir_node *cmp      = new_rd_Cmp(dbgi, block, pred, zero_cmp, ir_relation_less_greater);
+		res = config->create_set(cmp);
+		break;
+	}
+
+	case iro_Cmp: {
+		ir_node *left  = get_Cmp_left(node);
+		ir_node *right = get_Cmp_right(node);
+		ir_mode *cmp_mode  = get_irn_mode(left);
+
+		if ((mode_is_int(cmp_mode) || mode_is_reference(cmp_mode)) &&
+			(get_mode_size_bits(cmp_mode) < get_mode_size_bits(mode) ||
+			(mode_is_signed(cmp_mode) && is_Const(right) && is_Const_null(right)))) {
+			ir_relation relation = get_Cmp_relation(node);
+			int         need_not = 0;
+			ir_node    *a        = NULL;
+			ir_node    *b        = NULL;
+			int         bits;
+			ir_tarval  *tv;
+			ir_node    *shift_cnt;
+
+			if (relation == ir_relation_less) {
+				/* a < b  ->  (a - b) >> 31 */
+				a = left;
+				b = right;
+			} else if (relation == ir_relation_less_equal) {
+				/* a <= b  -> ~(a - b) >> 31 */
+				a        = right;
+				b        = left;
+				need_not = 1;
+			} else if (relation == ir_relation_greater) {
+				/* a > b   -> (b - a) >> 31 */
+				a = right;
+				b = left;
+			} else if (relation == ir_relation_greater_equal) {
+				/* a >= b   -> ~(a - b) >> 31 */
+				a        = left;
+				b        = right;
+				need_not = 1;
+			} else {
+				goto synth_zero_one;
+			}
+
+			bits      = get_mode_size_bits(mode);
+			tv        = new_tarval_from_long(bits-1, mode_Iu);
+			shift_cnt = new_rd_Const(dbgi, irg, tv);
+
+			if (cmp_mode != mode) {
+				a = new_rd_Conv(dbgi, block, a, mode);
+				b = new_rd_Conv(dbgi, block, b, mode);
+			}
+
+			res = new_rd_Sub(dbgi, block, a, b, mode);
+			if (need_not) {
+				res = new_rd_Not(dbgi, block, res, mode);
+			}
+			res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
+		} else {
+			/* synthesize the 0/1 value */
+synth_zero_one:
+			res = config->create_set(node);
+		}
 		break;
 	}
 
 	case iro_Proj: {
 		ir_node *pred = get_Proj_pred(node);
 
-		if (is_Cmp(pred)) {
-			ir_node *left  = get_Cmp_left(pred);
-			ir_node *right = get_Cmp_right(pred);
-			ir_mode *cmp_mode  = get_irn_mode(left);
-
-			if ((mode_is_int(cmp_mode) || mode_is_reference(cmp_mode)) &&
-			    (get_mode_size_bits(cmp_mode) < get_mode_size_bits(mode) ||
-			    (mode_is_signed(cmp_mode) && is_Const(right) && is_Const_null(right)))) {
-				int        pnc      = get_Proj_proj(node);
-				int        need_not = 0;
-				ir_node   *a        = NULL;
-				ir_node   *b        = NULL;
-				int        bits;
-				ir_tarval *tv;
-				ir_node   *shift_cnt;
-
-				if (pnc == pn_Cmp_Lt) {
-					/* a < b  ->  (a - b) >> 31 */
-					a = left;
-					b = right;
-				} else if (pnc == pn_Cmp_Le) {
-					/* a <= b  -> ~(a - b) >> 31 */
-					a        = right;
-					b        = left;
-					need_not = 1;
-				} else if (pnc == pn_Cmp_Gt) {
-					/* a > b   -> (b - a) >> 31 */
-					a = right;
-					b = left;
-				} else if (pnc == pn_Cmp_Ge) {
-					/* a >= b   -> ~(a - b) >> 31 */
-					a        = left;
-					b        = right;
-					need_not = 1;
-				} else {
-					goto synth_zero_one;
-				}
-
-				bits      = get_mode_size_bits(mode);
-				tv        = new_tarval_from_long(bits-1, mode_Iu);
-				shift_cnt = new_rd_Const(dbgi, irg, tv);
-
-				if (cmp_mode != mode) {
-					a = new_rd_Conv(dbgi, block, a, mode);
-					b = new_rd_Conv(dbgi, block, b, mode);
-				}
-
-				res = new_rd_Sub(dbgi, block, a, b, mode);
-				if (need_not) {
-					res = new_rd_Not(dbgi, block, res, mode);
-				}
-				res = new_rd_Shr(dbgi, block, res, shift_cnt, mode);
-			} else {
-				/* synthesize the 0/1 value */
-synth_zero_one:
-				res = config->create_set(node);
-			}
-		} else if (is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
+		if (is_Proj(pred) && is_Call(get_Proj_pred(pred))) {
 			ir_type *type = get_Call_type(get_Proj_pred(pred));
 			adjust_method_type(type);
 			set_irn_mode(node, mode);
@@ -399,15 +401,13 @@ static void lower_mode_b_walker(ir_node *node, void *env)
 			continue;
 
 		if (! config->lower_direct_cmp) {
-			/* Proj(Cmp) as input for Cond and Mux nodes needs no changes.
+			/* Cmp as input for Cond and Mux nodes needs no changes.
 			   (Mux with mode_b is an exception as it gets replaced by and/or
 			    anyway so we still lower the inputs then) */
 			if (is_Cond(node) ||
 			    (is_Mux(node) && get_irn_mode(node) != mode_b)) {
-				if (is_Proj(in)) {
-					ir_node *pred = get_Proj_pred(in);
-					if (is_Cmp(pred))
-						continue;
+				if (is_Cmp(in)) {
+					continue;
 				}
 			}
 		}

@@ -493,17 +493,14 @@ FIRM_API void     set_binop_left(ir_node *node, ir_node *left);
 FIRM_API ir_node *get_binop_right(const ir_node *node);
 FIRM_API void     set_binop_right(ir_node *node, ir_node *right);
 
-/** returns the pnc name from an pnc constant */
-FIRM_API const char *get_pnc_string(int pnc);
+/** returns the name of an ir_relation */
+FIRM_API const char *get_relation_string(ir_relation relation);
 
-/** Calculates the negated (Complement(R)) pnc condition. */
-FIRM_API pn_Cmp      get_negated_pnc(long pnc, ir_mode *mode);
+/** Calculates the negated (Complement(R)) relation, i.e. "<" --> ">=" */
+FIRM_API ir_relation get_negated_relation(ir_relation relation);
 
-/** Calculates the inversed (R^-1) pnc condition, i.e., "<" --> ">" */
-FIRM_API pn_Cmp      get_inversed_pnc(long pnc);
-
-/** An alternative name for get_inversed_pnc() that can be better memorized. */
-#define get_mirrored_pnc(pnc)  get_inversed_pnc(pnc)
+/** Calculates the inversed (R^-1) relation, i.e., "<" --> ">" */
+FIRM_API ir_relation get_inversed_relation(ir_relation relation);
 
 /** Checks for upcast.
  *
@@ -569,7 +566,6 @@ FIRM_API void      add_Sync_pred(ir_node *node, ir_node *pred);
 /** Return the projection number of a Proj node. */
 FIRM_API long      get_Proj_proj(const ir_node *node);
 FIRM_API void      set_Proj_proj(ir_node *node, long proj);
-FIRM_API pn_Cmp    get_Proj_pn_cmp(const ir_node*);
 
 /**
  * Returns non-zero if a node is a routine parameter.

@@ -858,7 +858,7 @@ int tarval_is_minus_one(ir_tarval *a)
 /*
  * comparison
  */
-pn_Cmp tarval_cmp(ir_tarval *a, ir_tarval *b)
+ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 {
 	carry_flag = -1;
 
@@ -867,10 +867,10 @@ pn_Cmp tarval_cmp(ir_tarval *a, ir_tarval *b)
 	}
 
 	if (a == tarval_undefined || b == tarval_undefined)
-		return pn_Cmp_False;
+		return ir_relation_false;
 
 	if (a->mode != b->mode)
-		return pn_Cmp_False;
+		return ir_relation_false;
 
 	if (get_mode_n_vector_elems(a->mode) > 1) {
 		/* vector arithmetic not implemented yet */
@@ -883,36 +883,33 @@ pn_Cmp tarval_cmp(ir_tarval *a, ir_tarval *b)
 	case irms_memory:
 	case irms_auxiliary:
 		if (a == b)
-			return pn_Cmp_Eq;
-		return pn_Cmp_False;
+			return ir_relation_equal;
+		return ir_relation_false;
 
 	case irms_float_number:
-		/* it should be safe to enable this even if other arithmetic is disabled */
-		/*if (no_float)
-			return pn_Cmp_False;*/
 		/*
 		 * BEWARE: we cannot compare a == b here, because
 		 * a NaN is always Unordered to any other value, even to itself!
 		 */
 		switch (fc_comp((const fp_value*) a->value, (const fp_value*) b->value)) {
-		case -1: return pn_Cmp_Lt;
-		case  0: return pn_Cmp_Eq;
-		case  1: return pn_Cmp_Gt;
-		case  2: return pn_Cmp_Uo;
-		default: return pn_Cmp_False;
+		case -1: return ir_relation_less;
+		case  0: return ir_relation_equal;
+		case  1: return ir_relation_greater;
+		case  2: return ir_relation_unordered;
+		default: return ir_relation_false;
 		}
 	case irms_reference:
 	case irms_int_number:
 		if (a == b)
-			return pn_Cmp_Eq;
-		return sc_comp(a->value, b->value) == 1 ? pn_Cmp_Gt : pn_Cmp_Lt;
+			return ir_relation_equal;
+		return sc_comp(a->value, b->value) == 1 ? ir_relation_greater : ir_relation_less;
 
 	case irms_internal_boolean:
 		if (a == b)
-			return pn_Cmp_Eq;
-		return a == tarval_b_true ? pn_Cmp_Gt : pn_Cmp_Lt;
+			return ir_relation_equal;
+		return a == tarval_b_true ? ir_relation_greater : ir_relation_less;
 	}
-	return pn_Cmp_False;
+	return ir_relation_false;
 }
 
 /*

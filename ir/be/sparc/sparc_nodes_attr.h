@@ -79,7 +79,7 @@ struct sparc_load_store_attr_t {
 typedef struct sparc_jmp_cond_attr_t sparc_jmp_cond_attr_t;
 struct sparc_jmp_cond_attr_t {
 	sparc_attr_t base;    /**< generic attribute */
-	pn_Cmp       pnc;
+	ir_relation  relation;
 	bool         is_unsigned : 1;
 };
 

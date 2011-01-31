@@ -249,19 +249,18 @@ int i_mapper_abs(ir_node *call, void *ctx)
 	ir_mode  *mode     = get_irn_mode(op);
 	dbg_info *dbg      = get_irn_dbg_info(call);
 	ir_node  *zero     = new_r_Const(irg, get_mode_null(mode));
-	ir_node  *cmp      = new_rd_Cmp(dbg, block, op, zero);
-	ir_node  *cond     = new_r_Proj(cmp, mode_b, pn_Cmp_Lt);
+	ir_node  *cmp      = new_rd_Cmp(dbg, block, op, zero, ir_relation_less);
 	ir_node  *minus_op = new_rd_Minus(dbg, block, op, mode);
 	ir_node  *mux;
 	arch_allow_ifconv_func allow_ifconv = be_get_backend_param()->allow_ifconv;
 	(void) ctx;
 
 	/* mux allowed by backend? */
-	if (!allow_ifconv(cond, op, minus_op))
+	if (!allow_ifconv(cmp, op, minus_op))
 		return 0;
 
 	/* construct Mux */
-	mux = new_rd_Mux(dbg, block, cond, op, minus_op, mode);
+	mux = new_rd_Mux(dbg, block, cmp, op, minus_op, mode);
 	DBG_OPT_ALGSIM0(call, mux, FS_OPT_RTS_ABS);
 	replace_call(mux, call, mem, NULL, NULL);
 	return 1;

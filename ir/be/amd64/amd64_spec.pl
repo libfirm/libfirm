@@ -267,8 +267,8 @@ Jcc => {
 	reg_req   => { in  => [ "eflags" ], out => [ "none", "none" ] },
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
-	attr      => "pn_Cmp pnc",
-	init_attr => "attr->ext.pnc = pnc;",
+	attr      => "ir_relation relation",
+	init_attr => "attr->ext.relation = relation;",
 	mode      => "mode_T",
 },
 Load => {

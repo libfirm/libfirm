@@ -133,7 +133,7 @@ static ir_alias_relation check_const(const ir_node *cns, int size)
 	if (size == 0)
 		return tarval_is_null(tv) ? ir_may_alias : ir_no_alias;
 	tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
-	return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? ir_no_alias : ir_may_alias;
+	return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
 }  /* check_const */
 
 /**
@@ -201,7 +201,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 				} else {
 					tv_size = new_tarval_from_long(size, m2);
 
-					if (tarval_cmp(tv2, tv_size) & (pn_Cmp_Eq|pn_Cmp_Gt)) {
+					if (tarval_cmp(tv2, tv_size) & (ir_relation_greater_equal)) {
 						/* tv1 is negative and tv2 >= tv_size, so the difference is bigger than size */
 						return ir_no_alias;
 					}
@@ -215,11 +215,11 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 					tv1 = tarval_convert_to(tv1, m2);
 
 					/* now we can compare without overflow */
-					return tarval_cmp(tv1, tv2) & (pn_Cmp_Eq|pn_Cmp_Gt) ? ir_no_alias : ir_may_alias;
+					return tarval_cmp(tv1, tv2) & (ir_relation_greater_equal) ? ir_no_alias : ir_may_alias;
 				}
 			}
 		}
-		if (tarval_cmp(tv1, tv2) == pn_Cmp_Gt) {
+		if (tarval_cmp(tv1, tv2) == ir_relation_greater) {
 			ir_tarval *t = tv1;
 			tv1 = tv2;
 			tv2 = t;
@@ -227,7 +227,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 		/* tv1 is now the "smaller" one */
 		tv      = tarval_sub(tv2, tv1, NULL);
 		tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
-		return tarval_cmp(tv_size, tv) & (pn_Cmp_Eq|pn_Cmp_Lt) ? ir_no_alias : ir_may_alias;
+		return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
 	}
 
 	/* Note: we rely here on the fact that normalization puts constants on the RIGHT side */

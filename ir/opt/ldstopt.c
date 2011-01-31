@@ -287,9 +287,9 @@ static ir_entity *find_constant_entity(ir_node *ptr)
 					if (tlower == tarval_bad || tupper == tarval_bad)
 						return NULL;
 
-					if (tarval_cmp(tv, tlower) & pn_Cmp_Lt)
+					if (tarval_cmp(tv, tlower) == ir_relation_less)
 						return NULL;
-					if (tarval_cmp(tupper, tv) & pn_Cmp_Lt)
+					if (tarval_cmp(tupper, tv) == ir_relation_less)
 						return NULL;
 
 					/* ok, bounds check finished */
@@ -434,9 +434,9 @@ ptr_arith:
 			if (tlower == tarval_bad || tupper == tarval_bad)
 				return NULL;
 
-			if (tarval_cmp(tv_index, tlower) & pn_Cmp_Lt)
+			if (tarval_cmp(tv_index, tlower) == ir_relation_less)
 				return NULL;
-			if (tarval_cmp(tupper, tv_index) & pn_Cmp_Lt)
+			if (tarval_cmp(tupper, tv_index) == ir_relation_less)
 				return NULL;
 
 			/* ok, bounds check finished */
@@ -660,9 +660,9 @@ ptr_arith:
 			if (tlower == tarval_bad || tupper == tarval_bad)
 				return NULL;
 
-			if (tarval_cmp(tv_index, tlower) & pn_Cmp_Lt)
+			if (tarval_cmp(tv_index, tlower) == ir_relation_less)
 				return NULL;
-			if (tarval_cmp(tupper, tv_index) & pn_Cmp_Lt)
+			if (tarval_cmp(tupper, tv_index) == ir_relation_less)
 				return NULL;
 
 			/* ok, bounds check finished */

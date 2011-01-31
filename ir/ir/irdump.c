@@ -962,9 +962,7 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 		proj_nr = get_Proj_proj(n);
 		code    = get_irn_opcode(pred);
 
-		if (code == iro_Cmp)
-			fprintf(F, "%s ", get_pnc_string(get_Proj_proj(n)));
-		else if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
+		if (code == iro_Proj && get_irn_opcode(get_Proj_pred(pred)) == iro_Start)
 			fprintf(F, "Arg %ld ", proj_nr);
 		else if (code == iro_Cond && get_irn_mode(get_Cond_selector(pred)) != mode_b)
 			fprintf(F, "%ld ", proj_nr);
@@ -999,8 +997,11 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 	case iro_Cast:
 		ir_fprintf(F, "(%+F)", get_Cast_type(n));
 		break;
+	case iro_Cmp:
+		fprintf(F, "%s ", get_relation_string(get_Cmp_relation(n)));
+		break;
 	case iro_Confirm:
-		fprintf(F, "%s ", get_pnc_string(get_Confirm_cmp(n)));
+		fprintf(F, "%s ", get_relation_string(get_Confirm_relation(n)));
 		break;
 	case iro_CopyB:
 		ir_fprintf(F, "(%+F)", get_CopyB_type(n));

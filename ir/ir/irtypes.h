@@ -267,10 +267,14 @@ typedef struct phi_attr {
 	} u;
 } phi_attr;
 
+/**< Cmp attribute. */
+typedef struct cmp_attr {
+	ir_relation relation;         /**< comparison condition. */
+} cmp_attr;
 
 /**< Confirm attribute. */
 typedef struct confirm_attr {
-	pn_Cmp cmp;                   /**< The compare operation. */
+	ir_relation relation;         /**< relation between value and bound */
 } confirm_attr;
 
 /** CopyB attribute. */
@@ -323,6 +327,7 @@ typedef union ir_attr {
 	bad_attr       bad;           /**< for Bads: irg reference */
 	anchor_attr    anchor;        /**< for Anchor: irg reference */
 	block_attr     block;         /**< For Block: Fields needed to construct it */
+	cmp_attr       cmp;           /**< For Cmp. */
 	cond_attr      cond;          /**< For Cond. */
 	const_attr     con;           /**< For Const: contains the value of the constant and a type */
 	symconst_attr  symc;          /**< For SymConst. */

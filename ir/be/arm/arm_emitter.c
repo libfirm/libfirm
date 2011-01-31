@@ -426,7 +426,7 @@ static void emit_arm_B(const ir_node *irn)
 	const ir_node *next_block;
 	ir_node *op1 = get_irn_n(irn, 0);
 	const char *suffix;
-	pn_Cmp pnc = get_arm_CondJmp_pnc(irn);
+	ir_relation relation = get_arm_CondJmp_relation(irn);
 	const arm_cmp_attr_t *cmp_attr = get_arm_cmp_attr_const(op1);
 	bool is_signed = !cmp_attr->is_unsigned;
 
@@ -443,7 +443,7 @@ static void emit_arm_B(const ir_node *irn)
 	}
 
 	if (cmp_attr->ins_permuted) {
-		pnc = get_mirrored_pnc(pnc);
+		relation = get_inversed_relation(relation);
 	}
 
 	/* for now, the code works for scheduled and non-schedules blocks */
@@ -452,8 +452,8 @@ static void emit_arm_B(const ir_node *irn)
 	/* we have a block schedule */
 	next_block = sched_next_block(block);
 
-	assert(pnc != pn_Cmp_False);
-	assert(pnc != pn_Cmp_True);
+	assert(relation != ir_relation_false);
+	assert(relation != ir_relation_true);
 
 	if (get_cfop_target_block(proj_true) == next_block) {
 		/* exchange both proj's so the second one can be omitted */
@@ -461,18 +461,18 @@ static void emit_arm_B(const ir_node *irn)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		pnc        = get_negated_pnc(pnc, mode_Iu);
+		relation   = get_negated_relation(relation);
 	}
 
-	switch (pnc) {
-		case pn_Cmp_Eq:  suffix = "eq"; break;
-		case pn_Cmp_Lt:  suffix = is_signed ? "lt" : "lo"; break;
-		case pn_Cmp_Le:  suffix = is_signed ? "le" : "ls"; break;
-		case pn_Cmp_Gt:  suffix = is_signed ? "gt" : "hi"; break;
-		case pn_Cmp_Ge:  suffix = is_signed ? "ge" : "hs"; break;
-		case pn_Cmp_Lg:  suffix = "ne"; break;
-		case pn_Cmp_Leg: suffix = "al"; break;
-		default: panic("Cmp has unsupported pnc");
+	switch (relation & (ir_relation_less_equal_greater)) {
+		case ir_relation_equal:         suffix = "eq"; break;
+		case ir_relation_less:          suffix = is_signed ? "lt" : "lo"; break;
+		case ir_relation_less_equal:    suffix = is_signed ? "le" : "ls"; break;
+		case ir_relation_greater:       suffix = is_signed ? "gt" : "hi"; break;
+		case ir_relation_greater_equal: suffix = is_signed ? "ge" : "hs"; break;
+		case ir_relation_less_greater:  suffix = "ne"; break;
+		case ir_relation_less_equal_greater: suffix = "al"; break;
+		default: panic("Cmp has unsupported relation");
 	}
 
 	/* emit the true proj */

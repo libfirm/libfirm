@@ -2235,44 +2235,12 @@ static void compute_Eor(node_t *node)
  */
 static void compute_Cmp(node_t *node)
 {
-	ir_node        *cmp  = node->node;
-	node_t         *l    = get_irn_node(get_Cmp_left(cmp));
-	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
-	lattice_elem_t a     = l->type;
-	lattice_elem_t b     = r->type;
-	ir_mode        *mode = get_irn_mode(get_Cmp_left(cmp));
-
-	if (a.tv == tarval_top || b.tv == tarval_top) {
-		node->type.tv = tarval_top;
-	} else if (r->part == l->part) {
-		/* both nodes congruent, we can probably do something */
-		if (mode_is_float(mode)) {
-			/* beware of NaN's */
-			node->type.tv = tarval_bottom;
-		} else {
-			node->type.tv = tarval_b_true;
-		}
-	} else if (is_con(a) && is_con(b)) {
-		node->type.tv = tarval_b_true;
-	} else {
-		node->type.tv = tarval_bottom;
-	}
-}  /* compute_Cmp */
-
-/**
- * (Re-)compute the type for a Proj(Cmp).
- *
- * @param node  the node
- * @param cond  the predecessor Cmp node
- */
-static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
-{
-	ir_node        *proj = node->node;
-	node_t         *l    = get_irn_node(get_Cmp_left(cmp));
-	node_t         *r    = get_irn_node(get_Cmp_right(cmp));
-	lattice_elem_t a     = l->type;
-	lattice_elem_t b     = r->type;
-	pn_Cmp         pnc   = get_Proj_pn_cmp(proj);
+	ir_node        *cmp     = node->node;
+	node_t         *l       = get_irn_node(get_Cmp_left(cmp));
+	node_t         *r       = get_irn_node(get_Cmp_right(cmp));
+	lattice_elem_t a        = l->type;
+	lattice_elem_t b        = r->type;
+	ir_relation    relation = get_Cmp_relation(cmp);
 	ir_tarval      *tv;
 
 	if (a.tv == tarval_top || b.tv == tarval_top) {
@@ -2287,7 +2255,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 	 *  consistent with compute_Cmp, so don't do anything for floats)
 	 */
 	} else if (r->part == l->part && !mode_is_float(get_irn_mode(l->node))) {
-		tv = pnc & pn_Cmp_Eq ? tarval_b_true : tarval_b_false;
+		tv = relation & ir_relation_equal ? tarval_b_true : tarval_b_false;
 
 		/* if the node was ONCE evaluated by all constants, but now
 		   this breaks AND we get from the argument partitions a different
@@ -2299,7 +2267,7 @@ static void compute_Proj_Cmp(node_t *node, ir_node *cmp)
 	} else {
 		node->type.tv = tarval_bottom;
 	}
-}  /* compute_Proj_Cmp */
+}
 
 /**
  * (Re-)compute the type for a Proj(Cond).
@@ -2469,28 +2437,23 @@ static void compute_Proj(node_t *node)
 		/* mode M is always bottom */
 		node->type.tv = tarval_bottom;
 		return;
+	} else if (mode == mode_X) {
+		/* handle mode_X nodes */
+		switch (get_irn_opcode(pred)) {
+		case iro_Start:
+			/* the Proj_X from the Start is always reachable.
+			   However this is already handled at the top. */
+			node->type.tv = tarval_reachable;
+			return;
+		case iro_Cond:
+			compute_Proj_Cond(node, pred);
+			return;
+		default:
+			break;
+		}
 	}
-	if (mode != mode_X) {
-		if (is_Cmp(pred))
-			compute_Proj_Cmp(node, pred);
-		else
-			default_compute(node);
-		return;
-	}
-	/* handle mode_X nodes */
 
-	switch (get_irn_opcode(pred)) {
-	case iro_Start:
-		/* the Proj_X from the Start is always reachable.
-		   However this is already handled at the top. */
-		node->type.tv = tarval_reachable;
-		break;
-	case iro_Cond:
-		compute_Proj_Cond(node, pred);
-		break;
-	default:
-		default_compute(node);
-	}
+	default_compute(node);
 }  /* compute_Proj */
 
 /**
@@ -2503,7 +2466,7 @@ static void compute_Confirm(node_t *node)
 	ir_node *confirm = node->node;
 	node_t  *pred = get_irn_node(get_Confirm_value(confirm));
 
-	if (get_Confirm_cmp(confirm) == pn_Cmp_Eq) {
+	if (get_Confirm_relation(confirm) == ir_relation_equal) {
 		node_t *bound = get_irn_node(get_Confirm_bound(confirm));
 
 		if (is_con(bound->type)) {

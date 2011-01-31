@@ -1916,73 +1916,75 @@ static ir_node *gen_bt(ir_node *cmp, ir_node *x, ir_node *n)
 	return new_bd_ia32_Bt(dbgi, new_block, op1, op2);
 }
 
-static ia32_condition_code_t pnc_to_condition_code(pn_Cmp pnc, ir_mode *mode)
+static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
+                                                        ir_mode *mode)
 {
 	if (mode_is_float(mode)) {
-		switch (pnc) {
-		case pn_Cmp_Eq:  return ia32_cc_float_equal;
-		case pn_Cmp_Lt:  return ia32_cc_float_below;
-		case pn_Cmp_Le:  return ia32_cc_float_below_equal;
-		case pn_Cmp_Gt:  return ia32_cc_float_above;
-		case pn_Cmp_Ge:  return ia32_cc_float_above_equal;
-		case pn_Cmp_Lg:  return ia32_cc_not_equal;
-		case pn_Cmp_Leg: return ia32_cc_not_parity;
-		case pn_Cmp_Uo:  return ia32_cc_parity;
-		case pn_Cmp_Ue:  return ia32_cc_equal;
-		case pn_Cmp_Ul:  return ia32_cc_float_unordered_below;
-		case pn_Cmp_Ule: return ia32_cc_float_unordered_below_equal;
-		case pn_Cmp_Ug:  return ia32_cc_float_unordered_above;
-		case pn_Cmp_Uge: return ia32_cc_float_unordered_above_equal;
-		case pn_Cmp_Ne:  return ia32_cc_float_not_equal;
-		case pn_Cmp_False:
-		case pn_Cmp_True:
-		case pn_Cmp_max:
+		switch (relation) {
+		case ir_relation_equal:              return ia32_cc_float_equal;
+		case ir_relation_less:               return ia32_cc_float_below;
+		case ir_relation_less_equal:         return ia32_cc_float_below_equal;
+		case ir_relation_greater:            return ia32_cc_float_above;
+		case ir_relation_greater_equal:      return ia32_cc_float_above_equal;
+		case ir_relation_less_greater:       return ia32_cc_not_equal;
+		case ir_relation_less_equal_greater: return ia32_cc_not_parity;
+		case ir_relation_unordered:          return ia32_cc_parity;
+		case ir_relation_unordered_equal:    return ia32_cc_equal;
+		case ir_relation_unordered_less:   return ia32_cc_float_unordered_below;
+		case ir_relation_unordered_less_equal:
+		                             return ia32_cc_float_unordered_below_equal;
+		case ir_relation_unordered_greater:
+		                             return ia32_cc_float_unordered_above;
+		case ir_relation_unordered_greater_equal:
+		                             return ia32_cc_float_unordered_above_equal;
+		case ir_relation_unordered_less_greater:
+		                             return ia32_cc_float_not_equal;
+		case ir_relation_false:
+		case ir_relation_true:
 			/* should we introduce a jump always/jump never? */
 			break;
 		}
 		panic("Unexpected float pnc");
 	} else if (mode_is_signed(mode)) {
-		switch (pnc) {
-		case pn_Cmp_Ue:
-		case pn_Cmp_Eq:  return ia32_cc_equal;
-		case pn_Cmp_Ul:
-		case pn_Cmp_Lt:  return ia32_cc_less;
-		case pn_Cmp_Ule:
-		case pn_Cmp_Le:  return ia32_cc_less_equal;
-		case pn_Cmp_Ug:
-		case pn_Cmp_Gt:  return ia32_cc_greater;
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ge:  return ia32_cc_greater_equal;
-		case pn_Cmp_Lg:
-		case pn_Cmp_Ne:  return ia32_cc_not_equal;
-		case pn_Cmp_Leg:
-		case pn_Cmp_Uo:
-		case pn_Cmp_False:
-		case pn_Cmp_True:
-		case pn_Cmp_max:
+		switch (relation) {
+		case ir_relation_unordered_equal:
+		case ir_relation_equal:                return ia32_cc_equal;
+		case ir_relation_unordered_less:
+		case ir_relation_less:                 return ia32_cc_less;
+		case ir_relation_unordered_less_equal:
+		case ir_relation_less_equal:           return ia32_cc_less_equal;
+		case ir_relation_unordered_greater:
+		case ir_relation_greater:              return ia32_cc_greater;
+		case ir_relation_unordered_greater_equal:
+		case ir_relation_greater_equal:        return ia32_cc_greater_equal;
+		case ir_relation_unordered_less_greater:
+		case ir_relation_less_greater:         return ia32_cc_not_equal;
+		case ir_relation_less_equal_greater:
+		case ir_relation_unordered:
+		case ir_relation_false:
+		case ir_relation_true:
 			/* introduce jump always/jump never? */
 			break;
 		}
 		panic("Unexpected pnc");
 	} else {
-		switch (pnc) {
-		case pn_Cmp_Ue:
-		case pn_Cmp_Eq:  return ia32_cc_equal;
-		case pn_Cmp_Ul:
-		case pn_Cmp_Lt:  return ia32_cc_below;
-		case pn_Cmp_Ule:
-		case pn_Cmp_Le:  return ia32_cc_below_equal;
-		case pn_Cmp_Ug:
-		case pn_Cmp_Gt:  return ia32_cc_above;
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ge:  return ia32_cc_above_equal;
-		case pn_Cmp_Lg:
-		case pn_Cmp_Ne:  return ia32_cc_not_equal;
-		case pn_Cmp_Leg:
-		case pn_Cmp_Uo:
-		case pn_Cmp_False:
-		case pn_Cmp_True:
-		case pn_Cmp_max:
+		switch (relation) {
+		case ir_relation_unordered_equal:
+		case ir_relation_equal:         return ia32_cc_equal;
+		case ir_relation_unordered_less:
+		case ir_relation_less:          return ia32_cc_below;
+		case ir_relation_unordered_less_equal:
+		case ir_relation_less_equal:    return ia32_cc_below_equal;
+		case ir_relation_unordered_greater:
+		case ir_relation_greater:       return ia32_cc_above;
+		case ir_relation_unordered_greater_equal:
+		case ir_relation_greater_equal: return ia32_cc_above_equal;
+		case ir_relation_unordered_less_greater:
+		case ir_relation_less_greater:  return ia32_cc_not_equal;
+		case ir_relation_less_equal_greater:
+		case ir_relation_unordered:
+		case ir_relation_false:
+		case ir_relation_true:
 			/* introduce jump always/jump never? */
 			break;
 		}
@@ -2001,20 +2003,18 @@ static ir_node *get_flags_mode_b(ir_node *node, ia32_condition_code_t *cc_out)
 	return flags;
 }
 
-static ir_node *get_flags_node_cmp(ir_node *node, ia32_condition_code_t *cc_out)
+static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 {
-	/* must have a Proj(Cmp) as input */
-	ir_node  *cmp  = get_Proj_pred(node);
-	int       pnc  = get_Proj_pn_cmp(node);
-	ir_node  *l    = get_Cmp_left(cmp);
-	ir_mode  *mode = get_irn_mode(l);
-	ir_node  *flags;
+	/* must have a Cmp as input */
+	ir_relation relation = get_Cmp_relation(cmp);
+	ir_node    *l        = get_Cmp_left(cmp);
+	ir_mode    *mode     = get_irn_mode(l);
+	ir_node    *flags;
 
 	/* check for bit-test */
-	if (ia32_cg_config.use_bt
-			&& (pnc == pn_Cmp_Eq
-			    || (mode_is_signed(mode) && pnc == pn_Cmp_Lg)
-				|| (!mode_is_signed(mode) && (pnc & pn_Cmp_Ge) == pn_Cmp_Gt))) {
+	if (ia32_cg_config.use_bt && (relation == ir_relation_equal
+		        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
+		        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))) {
 		ir_node *l = get_Cmp_left(cmp);
 		ir_node *r = get_Cmp_right(cmp);
 		if (is_And(l)) {
@@ -2032,7 +2032,7 @@ static ir_node *get_flags_node_cmp(ir_node *node, ia32_condition_code_t *cc_out)
 					ir_node *n = get_Shl_right(la);
 					flags    = gen_bt(cmp, ra, n);
 					/* the bit is copied into the CF flag */
-					if (pnc & pn_Cmp_Eq)
+					if (relation & ir_relation_equal)
 						*cc_out = ia32_cc_above_equal; /* test for CF=0 */
 					else
 						*cc_out = ia32_cc_below;       /* test for CF=1 */
@@ -2043,7 +2043,7 @@ static ir_node *get_flags_node_cmp(ir_node *node, ia32_condition_code_t *cc_out)
 	}
 
 	/* just do a normal transformation of the Cmp */
-	*cc_out = pnc_to_condition_code(pnc, mode);
+	*cc_out = relation_to_condition_code(relation, mode);
 	flags   = be_transform_node(cmp);
 	return flags;
 }
@@ -2056,7 +2056,7 @@ static ir_node *get_flags_node_cmp(ir_node *node, ia32_condition_code_t *cc_out)
  */
 static ir_node *get_flags_node(ir_node *node, ia32_condition_code_t *cc_out)
 {
-	if (is_Proj(node) && is_Cmp(get_Proj_pred(node)))
+	if (is_Cmp(node))
 		return get_flags_node_cmp(node, cc_out);
 	assert(get_irn_mode(node) == mode_b);
 	return get_flags_mode_b(node, cc_out);
@@ -2070,14 +2070,14 @@ static ir_node *get_flags_node(ir_node *node, ia32_condition_code_t *cc_out)
 static ir_node *gen_Load(ir_node *node)
 {
 	ir_node  *old_block = get_nodes_block(node);
-	ir_node  *block   = be_transform_node(old_block);
-	ir_node  *ptr     = get_Load_ptr(node);
-	ir_node  *mem     = get_Load_mem(node);
-	ir_node  *new_mem = be_transform_node(mem);
+	ir_node  *block     = be_transform_node(old_block);
+	ir_node  *ptr       = get_Load_ptr(node);
+	ir_node  *mem       = get_Load_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_mode  *mode      = get_Load_mode(node);
 	ir_node  *base;
 	ir_node  *index;
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	ir_mode  *mode    = get_Load_mode(node);
 	ir_node  *new_node;
 	ia32_address_t addr;
 
@@ -2848,25 +2848,6 @@ static ir_node *create_Ucomi(ir_node *node)
 }
 
 /**
- * helper function: checks whether all Cmp projs are Lg or Eq which is needed
- * to fold an and into a test node
- */
-static bool can_fold_test_and(ir_node *node)
-{
-	const ir_edge_t *edge;
-
-	/** we can only have eq and lg projs */
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		pn_Cmp   pnc  = get_Proj_pn_cmp(proj);
-		if (pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg)
-			return false;
-	}
-
-	return true;
-}
-
-/**
  * returns true if it is assured, that the upper bits of a node are "clean"
  * which means for a 16 or 8 bit value, that the upper bits in the register
  * are 0 for unsigned and a copy of the last significant bit for signed
@@ -2974,8 +2955,7 @@ static ir_node *gen_Cmp(ir_node *node)
 	/* Prefer the Test instruction, when encountering (x & y) ==/!= 0 */
 	if (is_Const_0(right)          &&
 	    is_And(left)               &&
-	    get_irn_n_edges(left) == 1 &&
-	    can_fold_test_and(node)) {
+	    get_irn_n_edges(left) == 1) {
 		/* Test(and_left, and_right) */
 		ir_node *and_left  = get_And_left(left);
 		ir_node *and_right = get_And_right(left);
@@ -3115,12 +3095,12 @@ static ir_node *create_doz(ir_node *psi, ir_node *a, ir_node *b)
 
 	if (is_Proj(new_node)) {
 		sub = get_Proj_pred(new_node);
-		assert(is_ia32_Sub(sub));
 	} else {
 		sub = new_node;
 		set_irn_mode(sub, mode_T);
 		new_node = new_rd_Proj(NULL, sub, mode, pn_ia32_res);
 	}
+	assert(is_ia32_Sub(sub));
 	eflags = new_rd_Proj(NULL, sub, mode_Iu, pn_ia32_Sub_flags);
 
 	dbgi = get_irn_dbg_info(psi);
@@ -3235,7 +3215,7 @@ static void find_const_transform(ia32_condition_code_t cc,
 		t = f;
 		f = tmp;
 		cc = ia32_negate_condition_code(cc);
-	} else if (tarval_cmp(t, f) == pn_Cmp_Lt) {
+	} else if (tarval_cmp(t, f) == ir_relation_less) {
 		// now, t is the bigger one
 		ir_tarval *tmp = t;
 		t = f;
@@ -3352,29 +3332,28 @@ static ir_node *gen_Mux(ir_node *node)
 	ir_node              *new_block = be_transform_node(block);
 	ir_node              *mux_true  = get_Mux_true(node);
 	ir_node              *mux_false = get_Mux_false(node);
-	ir_node              *cond      = get_Mux_sel(node);
+	ir_node              *sel       = get_Mux_sel(node);
 	ir_mode              *mode      = get_irn_mode(node);
 	ir_node              *flags;
 	ir_node              *new_node;
 	int                   is_abs;
 	ia32_condition_code_t cc;
 
-	assert(get_irn_mode(cond) == mode_b);
+	assert(get_irn_mode(sel) == mode_b);
 
-	is_abs = be_mux_is_abs(cond, mux_true, mux_false);
+	is_abs = be_mux_is_abs(sel, mux_true, mux_false);
 	if (is_abs != 0) {
-		return create_abs(dbgi, block, be_get_abs_op(cond), is_abs < 0, node);
+		return create_abs(dbgi, block, be_get_abs_op(sel), is_abs < 0, node);
 	}
 
 	/* Note: a Mux node uses a Load two times IFF it's used in the compare AND in the result */
 	if (mode_is_float(mode)) {
-		ir_node  *cmp         = get_Proj_pred(cond);
-		ir_node  *cmp_left    = get_Cmp_left(cmp);
-		ir_node  *cmp_right   = get_Cmp_right(cmp);
-		int       pnc         = get_Proj_proj(cond);
+		ir_node    *cmp_left  = get_Cmp_left(sel);
+		ir_node    *cmp_right = get_Cmp_right(sel);
+		ir_relation relation  = get_Cmp_relation(sel);
 
 		if (ia32_cg_config.use_sse2) {
-			if (pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le) {
+			if (relation == ir_relation_less || relation == ir_relation_less_equal) {
 				if (cmp_left == mux_true && cmp_right == mux_false) {
 					/* Mux(a <= b, a, b) => MIN */
 					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMin,
@@ -3384,7 +3363,7 @@ static ir_node *gen_Mux(ir_node *node)
 					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMax,
 			                 match_commutative | match_am | match_two_users);
 				}
-			} else if (pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge) {
+			} else if (relation == ir_relation_greater || relation == ir_relation_greater_equal) {
 				if (cmp_left == mux_true && cmp_right == mux_false) {
 					/* Mux(a >= b, a, b) => MAX */
 					return gen_binop(node, cmp_left, cmp_right, new_bd_ia32_xMax,
@@ -3403,7 +3382,7 @@ static ir_node *gen_Mux(ir_node *node)
 			ir_mode             *new_mode;
 			unsigned            scale;
 
-			flags    = get_flags_node(cond, &cc);
+			flags    = get_flags_node(sel, &cc);
 			new_node = create_set_32bit(dbgi, new_block, flags, cc, node);
 
 			if (ia32_cg_config.use_sse2) {
@@ -3474,37 +3453,34 @@ static ir_node *gen_Mux(ir_node *node)
 	} else {
 		assert(ia32_mode_needs_gp_reg(mode));
 
-		if (is_Proj(cond)) {
-			ir_node *cmp = get_Proj_pred(cond);
-			if (is_Cmp(cmp)) {
-				ir_node  *cmp_left  = get_Cmp_left(cmp);
-				ir_node  *cmp_right = get_Cmp_right(cmp);
-				ir_node  *val_true  = mux_true;
-				ir_node  *val_false = mux_false;
-				int       pnc       = get_Proj_proj(cond);
+		if (is_Cmp(sel)) {
+			ir_node    *cmp_left  = get_Cmp_left(sel);
+			ir_node    *cmp_right = get_Cmp_right(sel);
+			ir_relation relation  = get_Cmp_relation(sel);
+			ir_node    *val_true  = mux_true;
+			ir_node    *val_false = mux_false;
 
-				if (is_Const(val_true) && is_Const_null(val_true)) {
-					ir_node *tmp = val_false;
-					val_false = val_true;
-					val_true  = tmp;
-					pnc       = get_negated_pnc(pnc, get_irn_mode(cmp_left));
+			if (is_Const(val_true) && is_Const_null(val_true)) {
+				ir_node *tmp = val_false;
+				val_false = val_true;
+				val_true  = tmp;
+				relation  = get_negated_relation(relation);
+			}
+			if (is_Const_0(val_false) && is_Sub(val_true)) {
+				if ((relation & ir_relation_greater)
+					&& get_Sub_left(val_true) == cmp_left
+					&& get_Sub_right(val_true) == cmp_right) {
+					return create_doz(node, cmp_left, cmp_right);
 				}
-				if (is_Const_0(val_false) && is_Sub(val_true)) {
-					if ((pnc == pn_Cmp_Gt || pnc == pn_Cmp_Ge)
-						&& get_Sub_left(val_true) == cmp_left
-						&& get_Sub_right(val_true) == cmp_right) {
-						return create_doz(node, cmp_left, cmp_right);
-					}
-					if ((pnc == pn_Cmp_Lt || pnc == pn_Cmp_Le)
-						&& get_Sub_left(val_true) == cmp_right
-						&& get_Sub_right(val_true) == cmp_left) {
-						return create_doz(node, cmp_right, cmp_left);
-					}
+				if ((relation & ir_relation_less)
+					&& get_Sub_left(val_true) == cmp_right
+					&& get_Sub_right(val_true) == cmp_left) {
+					return create_doz(node, cmp_right, cmp_left);
 				}
 			}
 		}
 
-		flags = get_flags_node(cond, &cc);
+		flags = get_flags_node(sel, &cc);
 
 		if (is_Const(mux_true) && is_Const(mux_false)) {
 			/* both are const, good */
@@ -3561,7 +3537,7 @@ static ir_node *gen_Mux(ir_node *node)
 				}
 			}
 		} else {
-			new_node = create_CMov(node, cond, flags, cc);
+			new_node = create_CMov(node, sel, flags, cc);
 		}
 		return new_node;
 	}

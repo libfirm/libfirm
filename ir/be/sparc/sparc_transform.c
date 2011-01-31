@@ -878,15 +878,11 @@ static ir_node *gen_Const(ir_node *node)
 
 static ir_mode *get_cmp_mode(ir_node *b_value)
 {
-	ir_node *pred;
 	ir_node *op;
 
-	if (!is_Proj(b_value))
-		panic("can't determine cond signednes");
-	pred = get_Proj_pred(b_value);
-	if (!is_Cmp(pred))
+	if (!is_Cmp(b_value))
 		panic("can't determine cond signednes (no cmp)");
-	op = get_Cmp_left(pred);
+	op = get_Cmp_left(b_value);
 	return get_irn_mode(op);
 }
 
@@ -939,14 +935,14 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 
 static ir_node *gen_Cond(ir_node *node)
 {
-	ir_node  *selector = get_Cond_selector(node);
-	ir_mode  *mode     = get_irn_mode(selector);
-	ir_mode  *cmp_mode;
-	ir_node  *block;
-	ir_node  *flag_node;
-	bool      is_unsigned;
-	pn_Cmp    pnc;
-	dbg_info *dbgi;
+	ir_node    *selector = get_Cond_selector(node);
+	ir_mode    *mode     = get_irn_mode(selector);
+	ir_mode    *cmp_mode;
+	ir_node    *block;
+	ir_node    *flag_node;
+	bool        is_unsigned;
+	ir_relation relation;
+	dbg_info   *dbgi;
 
 	// switch/case jumps
 	if (mode != mode_b) {
@@ -954,21 +950,20 @@ static ir_node *gen_Cond(ir_node *node)
 	}
 
 	// regular if/else jumps
-	assert(is_Proj(selector));
-	assert(is_Cmp(get_Proj_pred(selector)));
+	assert(is_Cmp(selector));
 
 	cmp_mode = get_cmp_mode(selector);
 
 	block       = be_transform_node(get_nodes_block(node));
 	dbgi        = get_irn_dbg_info(node);
 	flag_node   = be_transform_node(get_Proj_pred(selector));
-	pnc         = get_Proj_pn_cmp(selector);
+	relation    = get_Cmp_relation(selector);
 	is_unsigned = !mode_is_signed(cmp_mode);
 	if (mode_is_float(cmp_mode)) {
 		assert(!is_unsigned);
-		return new_bd_sparc_fbfcc(dbgi, block, flag_node, pnc);
+		return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
 	} else {
-		return new_bd_sparc_Bicc(dbgi, block, flag_node, pnc, is_unsigned);
+		return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
 	}
 }
 

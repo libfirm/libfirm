@@ -373,8 +373,8 @@ Bicc => {
 	state     => "pinned",
 	mode      => "mode_T",
 	attr_type => "sparc_jmp_cond_attr_t",
-	attr      => "pn_Cmp pnc, bool is_unsigned",
-	init_attr => "\tinit_sparc_jmp_cond_attr(res, pnc, is_unsigned);",
+	attr      => "ir_relation relation, bool is_unsigned",
+	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
 },
 
@@ -383,8 +383,8 @@ fbfcc => {
 	state     => "pinned",
 	mode      => "mode_T",
 	attr_type => "sparc_jmp_cond_attr_t",
-	attr      => "pn_Cmp pnc",
-	init_attr => "\tinit_sparc_jmp_cond_attr(res, pnc, false);",
+	attr      => "ir_relation relation",
+	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
 	reg_req   => { in => [ "fpflags" ], out => [ "none", "none" ] },
 },
 
