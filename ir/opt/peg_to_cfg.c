@@ -636,11 +636,12 @@ static void ct_acpeg_to_ppeg_walk(ir_node *irn, void *ctx)
 		ir_node *block  = get_nodes_block(irn);
 		ir_node *header = get_EtaA_header(irn);
 		ir_node *repeat = get_EtaA_repeat(irn);
+		ir_node *proxy;
 
 		/* Exchange the theta proxies by phi nodes. */
 		assert(get_irn_arity(header) == get_irn_arity(repeat));
 		for (i = 0; i < get_irn_arity(header); i++) {
-			ir_node *proxy = get_irn_n(header, i);
+			proxy = get_irn_n(header, i);
 
 			/* Proxies may be used by multiple loops. */
 			if (is_Proxy(proxy)) {
@@ -652,8 +653,12 @@ static void ct_acpeg_to_ppeg_walk(ir_node *irn, void *ctx)
 			}
 		}
 
-		/* And the eta by its result. */
-		exchange(irn, get_EtaA_result(irn));
+		/* And the eta by a proxy of its result (the proxy prevents loop
+		 * fusion, when a loop accesses the result of another loop with the
+		 * some condition). */
+		proxy = new_r_Proxy(block, get_EtaA_result(irn), get_irn_mode(irn));
+		ct_transfer_regions(cti, irn, proxy);
+		exchange(irn, proxy);
 	}
 }
 
