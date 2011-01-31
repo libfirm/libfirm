@@ -2618,7 +2618,7 @@ static void compute(node_t *node)
 }  /* compute */
 
 /*
- * Identity functions: Note that one might thing that identity() is just a
+ * Identity functions: Note that one might think that identity() is just a
  * synonym for equivalent_node(). While this is true, we cannot use it for the algorithm
  * here, because it expects that the identity node is one of the inputs, which is NOT
  * always true for equivalent_node() which can handle (and does sometimes) DAGs.
