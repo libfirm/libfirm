@@ -1299,19 +1299,17 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
                                ir_node *next, ir_mode *mode, int depth);
 
-/** Constructor for an "acyclic" Theta node.
+/** Constructor for a Proxy node.
  *
- * A variant of the theta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
- * will replace the initial value on repeated evaluation.
+ * The sole purpose of the proxy node is to serve as a placeholder/proxy for
+ * its value. It can be used, when a node is needed to reference a given value.
  *
- * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
- * @param *init       The initial value to take.
- * @param *mode       The mode of the node and init.
+ * @param *value      The value to represent.
+ * @param *mode       The mode of the proxy.
  */
-FIRM_API ir_node *new_rd_ThetaA(dbg_info *db, ir_node *block, ir_node *init,
-                                ir_mode *mode);
+FIRM_API ir_node *new_rd_Proxy(dbg_info *db, ir_node *block, ir_node *init,
+                               ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1508,17 +1506,16 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
 FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
-/** Constructor for an "acyclic" Theta node.
+/** Constructor for a Proxy node.
  *
- * A variant of the theta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
- * will replace the initial value on repeated evaluation.
+ * The sole purpose of the proxy node is to serve as a placeholder/proxy for
+ * its value. It can be used, when a node is needed to reference a given value.
  *
  * @param *block      The IR block the node belongs to.
- * @param *init       The initial value to take.
- * @param *mode       The mode of the node and init.
+ * @param *value      The value to represent.
+ * @param *mode       The mode of the proxy.
  */
-FIRM_API ir_node *new_r_ThetaA(ir_node *block, ir_node *init, ir_mode *mode);
+FIRM_API ir_node *new_r_Proxy(ir_node *block, ir_node *init, ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1725,17 +1722,16 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
 FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
 
-/** Constructor for an "acyclic" Theta node.
+/** Constructor for a Proxy node.
  *
- * A variant of the theta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
- * will replace the initial value on repeated evaluation.
+ * The sole purpose of the proxy node is to serve as a placeholder/proxy for
+ * its value. It can be used, when a node is needed to reference a given value.
  *
  * @param *db         A pointer for debug information.
- * @param *init       The initial value to take.
- * @param *mode       The mode of the node and init.
+ * @param *value      The value to represent.
+ * @param *mode       The mode of the proxy.
  */
-FIRM_API ir_node *new_d_ThetaA(dbg_info *db, ir_node *init, ir_mode *mode);
+FIRM_API ir_node *new_d_Proxy(dbg_info *db, ir_node *value, ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1923,16 +1919,15 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
 FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
                             int depth);
 
-/** Constructor for an "acyclic" Theta node.
+/** Constructor for a Proxy node.
  *
- * A variant of the theta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. The corresponding "acyclic" eta node
- * will replace the initial value on repeated evaluation.
+ * The sole purpose of the proxy node is to serve as a placeholder/proxy for
+ * its value. It can be used, when a node is needed to reference a given value.
  *
- * @param *init       The initial value to take.
- * @param *mode       The mode of the node and init.
+ * @param *value      The value to represent.
+ * @param *mode       The mode of the proxy.
  */
-FIRM_API ir_node *new_ThetaA(ir_node *init, ir_mode *mode);
+FIRM_API ir_node *new_Proxy(ir_node *init, ir_mode *mode);
 
 /** Constructor for a Eta node.
  *

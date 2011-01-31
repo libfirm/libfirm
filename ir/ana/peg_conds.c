@@ -37,6 +37,7 @@
 #include "irphase_t.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "irgwalk.h"
 
 //#define LOG_COMBINE 1
 
@@ -412,7 +413,7 @@ static const gc_cond *gc_new_edge_cond(gc_info *gci, ir_node *src, ir_node *dst)
 		/* Only create a while edge if the target is loop-nested. The header
 		 * and repeat tuples are forced to be nested. The force tuple isn't. */
 		if (target_depth > source_depth) {
-			res = gc_get_cond(gci, gct_while_true, cond);
+			res = gc_concat(gci, gc_get_cond(gci, gct_while_true, cond), res);
 		}
 
 		return res;
@@ -562,7 +563,7 @@ static void gc_compute_conds(gc_info *gci, ir_node *irn)
 
 #ifdef LOG_COMBINE
 			if (plist_count(un_path->conds) > 0) {
-				printf("%4li -- %4li:         ",
+				printf("%5li -- %5li:         ",
 					get_irn_node_nr(ir_src),
 					get_irn_node_nr(ir_dst)
 				);
@@ -599,7 +600,7 @@ static void gc_compute_conds(gc_info *gci, ir_node *irn)
 
 #ifdef LOG_COMBINE
 			if (plist_count(un_full->conds) > 0) {
-				printf("%4li -> %4li %s> %4li: ",
+				printf("%5li -> %5li %s> %5li: ",
 					get_irn_node_nr(ir_src),
 					get_irn_node_nr(ir_dst),
 					(j == 0) ? "-" : "#",
@@ -744,6 +745,29 @@ void gc_dump(gc_info *gci, FILE *f)
  * Acyclic PEG creation.                                                      *
  ******************************************************************************/
 
+static void peg_to_acpeg_walk(ir_node *irn, void *ctx)
+{
+	pl_info *pli = ctx;
+
+	/* Insert proxies for the gamma arguments. They belong solely to the
+	 * gamma and will be placed in the according branch, even if the real
+	 * arguments aren't. This serves as replacement for an assignment that
+	 * firm doesn't need. */
+	if (is_Gamma(irn)) {
+		ir_mode *mode     = get_irn_mode(irn);
+		ir_node *block    = get_nodes_block(irn);
+		ir_node *ir_true  = get_Gamma_true(irn);
+		ir_node *ir_false = get_Gamma_false(irn);
+		ir_node *p_true   = new_r_Proxy(block, ir_true, mode);
+		ir_node *p_false  = new_r_Proxy(block, ir_false, mode);
+		pl_copy_info(pli, irn, p_true);
+		pl_copy_info(pli, irn, p_false);
+
+		set_Gamma_true(irn, p_true);
+		set_Gamma_false(irn, p_false);
+	}
+}
+
 void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 {
 	obstack obst;
@@ -776,9 +800,19 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 		/* Collect the nodes. */
 		index = 0;
 		foreach_pl_thetas(pli, eta, theta, it_theta) {
+			ir_node *theta_next = get_Theta_next(theta);
+			ir_mode *theta_mode = get_irn_mode(theta);
+			ir_node *proxy      = new_r_Proxy(block, theta_next, theta_mode);
+			pl_copy_info(pli, theta, proxy);
+
+			/* Insert proxies on the next edges. They will stick to the repeat
+			 * region, while the theta proxy itself (created below) will stick
+			 * to the header. So when replacing the theta by a phi later, the
+			 * proxy allows detection of the backedge by preventing movement of
+			 * the value to the header, where the phi would be. */
 			assert(pl_get_depth(pli, theta) == (depth + 1));
 			header_ins[index] = theta;
-			repeat_ins[index] = get_Theta_next(theta);
+			repeat_ins[index] = proxy;
 			index++;
 		}
 
@@ -799,7 +833,7 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 		pl_set_depth(pli, header, depth + 1);
 		pl_set_depth(pli, repeat, depth + 1);
 		pl_set_depth(pli, force,  depth);
-		pl_copy_info(pli, eta, eta_a);
+		pl_copy_info(pli, eta,    eta_a);
 		exchange(eta, eta_a);
 
 		obstack_free(&obst, force_ins);
@@ -807,18 +841,20 @@ void peg_to_acpeg(ir_graph *irg, pl_info *pli)
 		obstack_free(&obst, header_ins);
 	}
 
-	/* Replace thetas by "acyclic" thetas. */
+	/* Replace thetas by proxies. */
 	foreach_pl_irg_thetas(pli, theta, it_theta) {
-		ir_node *block   = get_nodes_block(theta);
-		ir_mode *mode    = get_irn_mode(theta);
-		ir_node *init    = get_Theta_init(theta);
-		ir_node *theta_a = new_r_ThetaA(block, init, mode);
+		ir_node *block = get_nodes_block(theta);
+		ir_mode *mode  = get_irn_mode(theta);
+		ir_node *init  = get_Theta_init(theta);
+		ir_node *proxy = new_r_Proxy(block, init, mode);
 
-		pl_copy_info(pli, theta, theta_a);
-		exchange(theta, theta_a);
+		pl_copy_info(pli, theta, proxy);
+		exchange(theta, proxy);
 	}
 
 	obstack_free(&obst, NULL);
+
+	irg_walk_graph(irg, peg_to_acpeg_walk, NULL, pli);
 }
 
 /******************************************************************************

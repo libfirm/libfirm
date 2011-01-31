@@ -6312,11 +6312,11 @@ static int node_cmp_attr_Theta(ir_node *a, ir_node *b)
 	return get_Theta_depth(a) != get_Theta_depth(b);
 }
 
-static int node_cmp_attr_ThetaA(ir_node *a, ir_node *b)
+static int node_cmp_attr_Proxy(ir_node *a, ir_node *b)
 {
 	(void) a;
 	(void) b;
-	return 1; /* Never CSE ThetaA. */
+	return 1; /* Never CSE Proxies. */
 }
 
 /**
@@ -6357,7 +6357,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Builtin);
 	CASE(Dummy);
 	CASE(Theta);
-	CASE(ThetaA);
+	CASE(Proxy);
 	/* FIXME CopyB */
 	default:
 		/* leave NULL */

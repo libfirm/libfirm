@@ -959,8 +959,8 @@ class Eta(Op):
 	flags  = []
 	pinned = "no"
 
-class ThetaA(Op):
-	ins    = [ "init" ]
+class Proxy(Op):
+	ins    = [ "value" ]
 	flags  = []
 	pinned = "no"
 
