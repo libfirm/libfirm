@@ -3255,8 +3255,20 @@ static void exchange_leader(ir_node *irn, ir_node *leader)
 		 * the number of Conv due to CSE. */
 		ir_node  *block = get_nodes_block(leader);
 		dbg_info *dbg   = get_irn_dbg_info(irn);
+		ir_node  *nlead = new_rd_Conv(dbg, block, leader, mode);
 
-		leader = new_rd_Conv(dbg, block, leader, mode);
+		if (nlead != leader) {
+			/* Note: this newly create irn has no node info because
+			 * it is created after the analysis. However, this node
+			 * replaces the node irn and should not be visited again,
+			 * so set its visited count to the count of irn.
+			 * Otherwise we might visited this node more than once if
+			 * irn had more than one user.
+			 */
+			set_irn_node(nlead, NULL);
+			set_irn_visited(nlead, get_irn_visited(irn));
+			leader = nlead;
+		}
 	}
 	exchange(irn, leader);
 }  /* exchange_leader */
