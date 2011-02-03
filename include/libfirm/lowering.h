@@ -26,6 +26,8 @@
 #ifndef FIRM_LOWERING_H
 #define FIRM_LOWERING_H
 
+#include <stddef.h>
+
 #include "firm_types.h"
 
 #include "begin.h"

@@ -26,6 +26,8 @@
 #ifndef FIRM_ADT_PDEQ_H
 #define FIRM_ADT_PDEQ_H
 
+#include <stddef.h>
+
 #include "../begin.h"
 
 /**
