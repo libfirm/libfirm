@@ -2750,7 +2750,8 @@ static void set_loop_params(void)
 void loop_optimization(ir_graph *irg)
 {
 	ir_loop *loop;
-	int     i, sons, nr;
+	int     sons, nr;
+	size_t  i;
 
 	set_loop_params();
 

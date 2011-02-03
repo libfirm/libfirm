@@ -270,7 +270,8 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 {
 	walk_env *env = (walk_env*) ctx;
 	ir_region *reg = (ir_region*) get_irn_link(blk);
-	int i, j, len;
+	int i, len;
+	size_t j;
 
 	if (blk == env->start_block) {
 		/* handle Firm's self loop: Start block has no predecessors */
@@ -278,7 +279,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 	} else {
 		len = get_Block_n_cfgpreds(blk);
 		reg->pred = NEW_ARR_D(ir_region *, env->obst, len);
-		for (i = j = 0; i < len; ++i) {
+		for (j = i = 0; i < len; ++i) {
 			ir_node *pred = get_Block_cfgpred_block(blk, i);
 			reg->pred[j++] = (ir_region*) get_irn_link(pred);
 		}
@@ -287,7 +288,7 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 
 	len = get_Block_n_cfg_outs(blk);
 	reg->succ = NEW_ARR_D(ir_region *, env->obst, len);
-	for (i = j = 0; i < len; ++i) {
+	for (j = i = 0; i < len; ++i) {
 		ir_node *succ = get_Block_cfg_out(blk, i);
 		reg->succ[j++] = (ir_region*) get_irn_link(succ);
 	}
