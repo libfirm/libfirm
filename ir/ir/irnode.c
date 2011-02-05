@@ -144,7 +144,7 @@ struct struct_align {
  * If arity is negative, a node with a dynamic array is created.
  */
 ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block, ir_op *op,
-                     ir_mode *mode, int arity, ir_node **in)
+                     ir_mode *mode, int arity, ir_node *const *in)
 {
 	ir_node *res;
 	unsigned align = offsetof(struct struct_align, s) - 1;

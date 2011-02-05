@@ -236,7 +236,7 @@ def preprocess_node(node):
 				name    = "arity",
 				comment = "size of additional inputs array"))
 		arguments.append(dict(
-				type    = "ir_node **",
+				type    = "ir_node *const *",
 				name    = "in",
 				comment = "additional inputs"))
 

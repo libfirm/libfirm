@@ -231,7 +231,7 @@ FIRM_API op_pin_state is_irn_pinned_in_irg(const ir_node *node);
  */
 FIRM_API ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block,
                               ir_op *op, ir_mode *mode,
-                              int arity, ir_node *in[]);
+                              int arity, ir_node *const *in);
 
 /**
  * Return the block the node belongs to.  This is only
