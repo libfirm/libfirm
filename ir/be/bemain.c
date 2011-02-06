@@ -547,9 +547,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		Get the filename for the profiling data.
 		Beware: '\0' is already included in sizeof(suffix)
 	*/
-	memset(prof_filename, 0, sizeof(prof_filename));
-	strncpy(prof_filename, cup_name, sizeof(prof_filename) - sizeof(suffix));
-	strcat(prof_filename, suffix);
+	sprintf(prof_filename, "%.*s%s\n", (int)(sizeof(prof_filename) - sizeof(suffix)), cup_name, suffix);
 
 	/*
 		Next: Either instruments all irgs with profiling code
