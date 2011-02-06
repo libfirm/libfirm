@@ -1383,6 +1383,27 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env)
 }
 
 /**
+ * Remember the new argument index of this value type entity in the lowered
+ * method type.
+ *
+ * @param ent  the entity
+ * @param pos  the argument index of this entity
+ */
+static inline void set_entity_arg_idx(ir_entity *ent, int pos)
+{
+	set_entity_link(ent, INT_TO_PTR(pos));
+}
+
+/**
+ * Retrieve the argument index of a value type entity.
+ *
+ * @param ent  the entity
+ */
+static int get_entity_arg_idx(const ir_entity *ent) {
+	return (int)PTR_TO_INT(get_entity_link(ent));
+}
+
+/**
  * Lower the method type.
  *
  * @param env  the lower environment
@@ -1401,11 +1422,11 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 
 	entry = pmap_find(lowered_type, mtp);
 	if (! entry) {
-		int i, n, r, n_param, n_res;
+		int i, orig_n_params, orig_n_res, n_param, n_res;
 
 		/* count new number of params */
-		n_param = n = get_method_n_params(mtp);
-		for (i = n_param - 1; i >= 0; --i) {
+		n_param = orig_n_params = get_method_n_params(mtp);
+		for (i = orig_n_params - 1; i >= 0; --i) {
 			ir_type *tp = get_method_param_type(mtp, i);
 
 			if (is_Primitive_type(tp)) {
@@ -1418,8 +1439,8 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 		}
 
 		/* count new number of results */
-		n_res = r = get_method_n_ress(mtp);
-		for (i = n_res - 1; i >= 0; --i) {
+		n_res = orig_n_res = get_method_n_ress(mtp);
+		for (i = orig_n_res - 1; i >= 0; --i) {
 			ir_type *tp = get_method_res_type(mtp, i);
 
 			if (is_Primitive_type(tp)) {
@@ -1434,7 +1455,7 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 		res = new_type_method(n_param, n_res);
 
 		/* set param types and result types */
-		for (i = n_param = 0; i < n; ++i) {
+		for (i = n_param = 0; i < orig_n_params; ++i) {
 			ir_type *tp = get_method_param_type(mtp, i);
 
 			if (is_Primitive_type(tp)) {
@@ -1453,7 +1474,7 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 				set_method_param_type(res, n_param++, tp);
 			}
 		}
-		for (i = n_res = 0; i < r; ++i) {
+		for (i = n_res = 0; i < orig_n_res; ++i) {
 			ir_type *tp = get_method_res_type(mtp, i);
 
 			if (is_Primitive_type(tp)) {
@@ -1480,13 +1501,13 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 			/* this creates a new value parameter type */
 			(void)get_method_value_param_ent(res, 0);
 
-			/* set new param positions */
-			for (i = n_param = 0; i < n; ++i) {
+			/* set new param positions for all entities of the value type */
+			for (i = n_param = 0; i < orig_n_params; ++i) {
 				ir_type   *tp  = get_method_param_type(mtp, i);
 				ident     *id  = get_method_param_ident(mtp, i);
 				ir_entity *ent = get_method_value_param_ent(mtp, i);
 
-				set_entity_link(ent, INT_TO_PTR(n_param));
+				set_entity_arg_idx(ent, n_param);
 				if (is_Primitive_type(tp)) {
 					ir_mode *mode = get_type_mode(tp);
 
@@ -1955,7 +1976,7 @@ static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env)
 	if (env->value_param_tp != NULL) {
 		ir_entity *ent = get_Sel_entity(sel);
 	    if (get_entity_owner(ent) == env->value_param_tp) {
-			int pos = PTR_TO_INT(get_entity_link(ent));
+			int pos = get_entity_arg_idx(ent);
 
 			ent = get_method_value_param_ent(env->l_mtp, pos);
 			set_Sel_entity(sel, ent);

@@ -154,9 +154,27 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	return 0;
 }
 
+/**
+ * Retrieve the scheduled index (the "step") of this node in its
+ * block.
+ *
+ * @param node  the node
+ */
 static inline unsigned get_step(const ir_node *node)
 {
-	return PTR_TO_INT(get_irn_link(node));
+	return (unsigned)PTR_TO_INT(get_irn_link(node));
+}
+
+/**
+ * Set the scheduled index (the "step") of this node in its
+ * block.
+ *
+ * @param node  the node
+ * @param step  the scheduled index of the node
+ */
+static inline void set_step(ir_node *node, unsigned step)
+{
+	set_irn_link(node, INT_TO_PTR(step));
 }
 
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
@@ -303,6 +321,13 @@ be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
 	return get_next_use(env, from, from_step, def, skip_from_uses);
 }
 
+/**
+ * Pre-block walker, set the step number for every scheduled node
+ * in increasing order.
+ *
+ * After this, two scheduled nodes can be easily compared for the
+ * "scheduled earlier in block" property.
+ */
 static void set_sched_step_walker(ir_node *block, void *data)
 {
 	ir_node  *node;
@@ -310,7 +335,7 @@ static void set_sched_step_walker(ir_node *block, void *data)
 	(void) data;
 
 	sched_foreach(block, node) {
-		set_irn_link(node, INT_TO_PTR(step));
+		set_step(node, step);
 		if (is_Phi(node))
 			continue;
 		++step;
