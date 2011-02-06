@@ -1370,7 +1370,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	const ia32_asm_reg_t  *asm_reg;
 	char                   c;
 	char                   modifier = 0;
-	int                    num      = -1;
+	int                    num;
 	int                    p;
 
 	assert(*s == '%');
@@ -1411,8 +1411,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 	}
 
 	/* parse number */
-	sscanf(s, "%d%n", &num, &p);
-	if (num < 0) {
+	if (sscanf(s, "%d%n", &num, &p) != 1) {
 		ir_fprintf(stderr, "Warning: Couldn't parse assembler operand (%+F)\n",
 		           node);
 		return s;
