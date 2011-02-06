@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -55,17 +55,23 @@ typedef struct be_use_t {
 	const ir_node *node;
 	int outermost_loop;
 	unsigned next_use;
-	unsigned visited;
+	ir_visited_t visited;
 } be_use_t;
 
+/**
+ * The "uses" environment.
+ */
 struct be_uses_t {
-	set *uses;
-	ir_graph *irg;
-	const be_lv_t *lv;
-	unsigned visited_counter;
-	DEBUG_ONLY(firm_dbg_module_t *dbg;)
+	set *uses;                          /**< cache: contains all computed uses so far. */
+	ir_graph *irg;                      /**< the graph for this environment. */
+	const be_lv_t *lv;                  /**< the liveness for the graph. */
+	ir_visited_t visited_counter;       /**< current search counter. */
+	DEBUG_ONLY(firm_dbg_module_t *dbg;  /**< debug module for debug messages. */)
 };
 
+/**
+ * Set-compare two uses.
+ */
 static int cmp_use(const void *a, const void *b, size_t n)
 {
 	const be_use_t *p = (const be_use_t*)a;
@@ -76,9 +82,16 @@ static int cmp_use(const void *a, const void *b, size_t n)
 }
 
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
-								  unsigned from_step, const ir_node *def,
-								  int skip_from_uses);
+								  const ir_node *def, int skip_from_uses);
 
+/**
+ * Return the use for the given definition in the given block if exists,
+ * else create it.
+ *
+ * @param env    the uses environment
+ * @param block  the block we search the use in
+ * @param def    the definition of the value we are searching
+ */
 static const be_use_t *get_or_set_use_block(be_uses_t *env,
                                             const ir_node *block,
                                             const ir_node *def)
@@ -104,17 +117,28 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		be_next_use_t next_use;
 
 		result->visited = env->visited_counter;
-		next_use = get_next_use(env, sched_first(block), 0, def, 0);
+		next_use = get_next_use(env, sched_first(block), def, 0);
 		if (next_use.outermost_loop >= 0) {
 			result->next_use = next_use.time;
 			result->outermost_loop = next_use.outermost_loop;
-			DBG((env->dbg, LEVEL_5, "Setting nextuse of %+F in block %+F to %u (outermostloop %d)\n", def, block, result->next_use, result->outermost_loop));
+			DBG((env->dbg, LEVEL_5, "Setting nextuse of %+F in block %+F to %u (outermostloop %d)\n",
+				def, block, result->next_use, result->outermost_loop));
 		}
 	}
 
 	return result;
 }
 
+/**
+ * Check if a value of the given definition is used in the given block
+ * as a Phi argument.
+ *
+ * @param block  the block to check
+ * @param def    the definition of the value
+ *
+ * @return non-zero if the value is used in the given block as a Phi argument
+ * in one of its successor blocks.
+ */
 static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 {
 	ir_node *node;
@@ -131,20 +155,27 @@ static int be_is_phi_argument(const ir_node *block, const ir_node *def)
 	succ_block = get_first_block_succ(block);
 
 	arity = get_Block_n_cfgpreds(succ_block);
-	if (arity <= 1)
+	if (arity <= 1) {
+		/* no Phis in the successor */
 		return 0;
+	}
 
+	/* find the index of block in its successor */
 	for (i = 0; i < arity; ++i) {
 		if (get_Block_cfgpred_block(succ_block, i) == block)
 			break;
 	}
 	assert(i < arity);
 
+	/* iterate over the Phi nodes in the successor and check if def is
+	 * one of its arguments */
 	sched_foreach(succ_block, node) {
 		ir_node *arg;
 
-		if (!is_Phi(node))
+		if (!is_Phi(node)) {
+			/* found first non-Phi node, we can stop the search here */
 			break;
+		}
 
 		arg = get_irn_n(node, i);
 		if (arg == def)
@@ -177,11 +208,18 @@ static inline void set_step(ir_node *node, unsigned step)
 	set_irn_link(node, INT_TO_PTR(step));
 }
 
+/**
+ * Find the next use of a value defined by def, starting at node from.
+ *
+ * @param env             the uses environment
+ * @param from            the node at which we should start the search
+ * @param def             the definition of the value
+ * @param skip_from_uses  if non-zero, ignore from uses
+ */
 static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
-								  unsigned from_step, const ir_node *def,
-								  int skip_from_uses)
+								  const ir_node *def, int skip_from_uses)
 {
-	unsigned  step  = from_step;
+	unsigned  step;
 	ir_node  *block = get_nodes_block(from);
 	ir_node  *next_use;
 	ir_node  *node;
@@ -314,11 +352,10 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 }
 
 be_next_use_t be_get_next_use(be_uses_t *env, ir_node *from,
-                         unsigned from_step, const ir_node *def,
-                         int skip_from_uses)
+                         const ir_node *def, int skip_from_uses)
 {
-	env->visited_counter++;
-	return get_next_use(env, from, from_step, def, skip_from_uses);
+	++env->visited_counter;
+	return get_next_use(env, from, def, skip_from_uses);
 }
 
 /**

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -30,6 +30,9 @@
 #include "firm_types.h"
 #include "belive.h"
 
+/**
+ * Describes a use of a value.
+ */
 typedef struct be_next_use_t {
 	unsigned       time;
 	int            outermost_loop;
@@ -52,11 +55,21 @@ static inline int USES_IS_PENDING(unsigned time)
 typedef struct be_uses_t be_uses_t;
 
 be_next_use_t be_get_next_use(be_uses_t *uses, ir_node *from,
-                         unsigned from_step, const ir_node *def,
-                         int skip_from_uses);
+                         const ir_node *def, int skip_from_uses);
 
+/**
+ * Creates a new uses environment for a graph.
+ *
+ * @param irg  the graph
+ * @param lv   liveness information for the graph
+ */
 be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv);
 
+/**
+ * Destroys the given uses environment.
+ *
+ * @param uses  the environment
+ */
 void be_end_uses(be_uses_t *uses);
 
 #endif /* FIRM_BE_BEUSES_H */

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -89,8 +89,6 @@ static workset_t                   *ws;     /**< the main workset used while
 	                                             processing a block. */
 static be_uses_t                   *uses;   /**< env for the next-use magic */
 static ir_node                     *instr;  /**< current instruction */
-static unsigned                     instr_nr; /**< current instruction number
-	                                               (relative to block start) */
 static spill_env_t                 *senv;   /**< see bespill.h */
 static ir_node                    **blocklist;
 
@@ -281,8 +279,7 @@ static inline void set_block_info(ir_node *block, block_info_t *info)
 /**
  * @return The distance to the next use or 0 if irn has dont_spill flag set
  */
-static unsigned get_distance(ir_node *from, unsigned from_step,
-                             const ir_node *def, int skip_from_uses)
+static unsigned get_distance(ir_node *from, const ir_node *def, int skip_from_uses)
 {
 	be_next_use_t use;
 	unsigned      costs;
@@ -290,7 +287,7 @@ static unsigned get_distance(ir_node *from, unsigned from_step,
 
 	assert(!arch_irn_is_ignore(def));
 
-	use  = be_get_next_use(uses, from, from_step, def, skip_from_uses);
+	use  = be_get_next_use(uses, from, def, skip_from_uses);
 	time = use.time;
 	if (USES_IS_INFINITE(time))
 		return USES_INFINITY;
@@ -365,7 +362,7 @@ static void displace(workset_t *new_vals, int is_usage)
 		/* calculate current next-use distance for live values */
 		for (i = 0; i < len; ++i) {
 			ir_node  *val  = workset_get_val(ws, i);
-			unsigned  dist = get_distance(instr, instr_nr, val, !is_usage);
+			unsigned  dist = get_distance(instr, val, !is_usage);
 			workset_set_time(ws, i, dist);
 		}
 
@@ -488,7 +485,7 @@ static loc_t to_take_or_not_to_take(ir_node* first, ir_node *node,
 		return loc;
 	}
 
-	next_use = be_get_next_use(uses, first, 0, node, 0);
+	next_use = be_get_next_use(uses, first, node, 0);
 	if (USES_IS_INFINITE(next_use.time)) {
 		/* the nodes marked as live in shouldn't be dead, so it must be a phi */
 		assert(is_Phi(node));
@@ -795,7 +792,6 @@ static void process_block(ir_node *block)
 
 	/* process the block from start to end */
 	DB((dbg, DBG_WSETS, "Processing...\n"));
-	instr_nr = 0;
 	/* TODO: this leaks (into the obstack)... */
 	new_vals = new_workset();
 
@@ -832,8 +828,6 @@ static void process_block(ir_node *block)
 			workset_insert(new_vals, value, false);
 		);
 		displace(new_vals, 0);
-
-		instr_nr++;
 	}
 
 	/* Remember end-workset for this block */

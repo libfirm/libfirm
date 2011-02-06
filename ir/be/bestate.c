@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -260,7 +260,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 			continue;
 
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
-		next_use = be_get_next_use(env->uses, first, 0, node, 0);
+		next_use = be_get_next_use(env->uses, first, node, 0);
 
 		if (USES_IS_INFINITE(next_use.time)) {
 			DBG((dbg, LEVEL_2, "\tnot taken (dead)\n"));
@@ -310,7 +310,7 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 			continue;
 
 		DBG((dbg, LEVEL_2, "\t...checking %+F\n", node));
-		next_use = be_get_next_use(env->uses, first, 0, node, 0);
+		next_use = be_get_next_use(env->uses, first, node, 0);
 
 		if (USES_IS_INFINITE(next_use.time)) {
 			DBG((dbg, LEVEL_2, "\tnot taken (dead)\n"));
