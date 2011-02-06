@@ -470,45 +470,78 @@ result_unknown_X:
 				if (is_Cmp(pred)) { // TODO generalize
 					bitinfo* const l = get_bitinfo(get_Cmp_left(pred));
 					bitinfo* const r = get_bitinfo(get_Cmp_right(pred));
-					if (l == NULL || r == NULL)
+					if (l == NULL || r == NULL) {
 						goto result_unknown; // Cmp compares something we cannot evaluate.
-					switch (get_Proj_proj(irn)) {
-						case pn_Cmp_Lg: {
-							ir_tarval* const lz = l->z;
-							ir_tarval* const lo = l->o;
-							ir_tarval* const rz = r->z;
-							ir_tarval* const ro = r->o;
-							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-									!tarval_is_null(tarval_andnot(lo, rz))) {
-								// At least one bit differs.
-								z = o = get_tarval_b_true();
-							} else if (lz == lo && rz == ro && lz == rz) {
-								z = o = get_tarval_b_false();
-							} else {
-								goto result_unknown;
-							}
-							break;
-						}
+					} else {
+						ir_tarval* const lz = l->z;
+						ir_tarval* const lo = l->o;
+						ir_tarval* const rz = r->z;
+						ir_tarval* const ro = r->o;
+						pn_Cmp     const pn = get_Proj_proj(irn);
+						switch (pn) {
+							case pn_Cmp_Lg:
+								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+										!tarval_is_null(tarval_andnot(lo, rz))) {
+									// At least one bit differs.
+									z = o = get_tarval_b_true();
+								} else if (lz == lo && rz == ro && lz == rz) {
+									z = o = get_tarval_b_false();
+								} else {
+									goto result_unknown;
+								}
+								break;
 
-						case pn_Cmp_Eq: {
-							ir_tarval* const lz = l->z;
-							ir_tarval* const lo = l->o;
-							ir_tarval* const rz = r->z;
-							ir_tarval* const ro = r->o;
-							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-									!tarval_is_null(tarval_andnot(lo, rz))) {
-								// At least one bit differs.
-								z = o = get_tarval_b_false();
-							} else if (lz == lo && rz == ro && lz == rz) {
-								z = o = get_tarval_b_true();
-							} else {
-								goto result_unknown;
-							}
-							break;
-						}
+							case pn_Cmp_Eq:
+								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+										!tarval_is_null(tarval_andnot(lo, rz))) {
+									// At least one bit differs.
+									z = o = get_tarval_b_false();
+								} else if (lz == lo && rz == ro && lz == rz) {
+									z = o = get_tarval_b_true();
+								} else {
+									goto result_unknown;
+								}
+								break;
 
-						default:
-							goto cannot_analyse;
+							case pn_Cmp_Le:
+							case pn_Cmp_Lt:
+								/* TODO handle negative values */
+								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+										tarval_is_negative(rz) || tarval_is_negative(ro))
+									goto result_unknown;
+
+								if (tarval_cmp(lz, ro) & pn) {
+									/* Left upper bound is smaller(/equal) than right lower bound. */
+									z = o = get_tarval_b_true();
+								} else if (!(tarval_cmp(lo, rz) & pn)) {
+									/* Left lower bound is not smaller(/equal) than right upper bound. */
+									z = o = get_tarval_b_false();
+								} else {
+									goto result_unknown;
+								}
+								break;
+
+							case pn_Cmp_Ge:
+							case pn_Cmp_Gt:
+								/* TODO handle negative values */
+								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+										tarval_is_negative(rz) || tarval_is_negative(ro))
+									goto result_unknown;
+
+								if (!(tarval_cmp(lz, ro) & pn)) {
+									/* Left upper bound is not greater(/equal) than right lower bound. */
+									z = o = get_tarval_b_false();
+								} else if (tarval_cmp(lo, rz) & pn) {
+									/* Left lower bound is greater(/equal) than right upper bound. */
+									z = o = get_tarval_b_true();
+								} else {
+									goto result_unknown;
+								}
+								break;
+
+							default:
+								goto cannot_analyse;
+						}
 					}
 				} else {
 					goto cannot_analyse;
