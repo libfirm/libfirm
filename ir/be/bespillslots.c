@@ -591,7 +591,7 @@ static void assign_spillslots(be_fec_env_t *env)
 	int           spillcount = set_count(env->spills);
 	spill_slot_t *spillslots = ALLOCANZ(spill_slot_t, spillcount);
 	spill_t      *spill;
-	int           i;
+	size_t        i;
 
 	/* construct spillslots */
 	foreach_set(env->spills, spill_t*, spill) {

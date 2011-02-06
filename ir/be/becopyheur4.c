@@ -736,13 +736,13 @@ static void build_affinity_chunks(co_mst_env_t *env)
 
 static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chunk_t *chunk)
 {
-	pqueue_t *grow = new_pqueue();
-	const ir_node *max_node = NULL;
-	int max_weight = 0;
-	int i;
+	pqueue_t      *grow       = new_pqueue();
+	ir_node const *max_node   = NULL;
+	int            max_weight = 0;
+	size_t         i;
 
-	for (i = ARR_LEN(chunk->n) - 1; i >= 0; i--) {
-		const ir_node   *irn = chunk->n[i];
+	for (i = ARR_LEN(chunk->n); i != 0;) {
+		const ir_node   *irn = chunk->n[--i];
 		affinity_node_t *an  = get_affinity_info(env->co, irn);
 		int w = 0;
 		neighb_t *neigh;
@@ -764,8 +764,8 @@ static __attribute__((unused)) void chunk_order_nodes(co_mst_env_t *env, aff_chu
 	if (max_node) {
 		bitset_t *visited = bitset_irg_malloc(env->co->irg);
 
-		for (i = ARR_LEN(chunk->n) - 1; i >= 0; --i)
-			bitset_add_irn(visited, chunk->n[i]);
+		for (i = ARR_LEN(chunk->n); i != 0;)
+			bitset_add_irn(visited, chunk->n[--i]);
 
 		pqueue_put(grow, (void *) max_node, max_weight);
 		bitset_remv_irn(visited, max_node);
@@ -1183,7 +1183,11 @@ static void color_aff_chunk(co_mst_env_t *env, aff_chunk_t *c)
 	waitq       *best_starts  = NULL;
 	col_cost_t  *order        = ALLOCANZ(col_cost_t, env->n_regs);
 	bitset_t    *visited;
-	int         idx, len, i, nidx, pos;
+	int         i;
+	size_t      idx;
+	size_t      len;
+	size_t      nidx;
+	size_t      pos;
 	struct list_head changed;
 
 	DB((dbg, LEVEL_2, "fragmentizing chunk #%u", c->id));

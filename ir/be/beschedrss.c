@@ -1195,9 +1195,9 @@ static void compute_killing_function(rss_t *rss)
 		ir_nodeset_t y;
 		ir_nodeset_iterator_t iter;
 		child_t **sks    = NEW_ARR_F(child_t *, 20);
-		int     cur_len  = 0;
-		int     cur_size = 20;
-		int     i;
+		size_t  cur_len  =  0;
+		size_t  cur_size = 20;
+		size_t  i;
 
 		ir_nodeset_init_size(&x, 10);
 		ir_nodeset_init_size(&y, 10);
@@ -1218,8 +1218,8 @@ static void compute_killing_function(rss_t *rss)
 			t = select_child_max_cost(rss, &x, &y, t, cbc);
 
 			if (cur_len >= cur_size) {
-				ARR_EXTO(child_t *, sks, cur_size * 2);
 				cur_size *= 2;
+				ARR_EXTO(child_t *, sks, cur_size);
 			}
 
 			DBG((rss->dbg, LEVEL_2, "\t\tinsert child %+F (%.3f) into SKS at pos %d\n", t->irn, t->cost, cur_len));
@@ -1237,8 +1237,8 @@ static void compute_killing_function(rss_t *rss)
 		DBG((rss->dbg, LEVEL_2, "\tprocessing SKS for cbc %d:\n", cbc->nr));
 
 		/* build killing function */
-		for (i = cur_len - 1; i >= 0; --i) { /* loop over sks in decreasing cost order */
-			child_t         *t = sks[i];
+		for (i = cur_len; i != 0;) { /* loop over sks in decreasing cost order */
+			child_t         *t = sks[--i];
 			rss_irn_t       *rt = get_rss_irn(rss, t->irn);
 			plist_element_t *p_el;
 

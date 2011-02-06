@@ -151,7 +151,7 @@ static inline int get_irn_dfn(ir_node *n)
 /** An IR-node stack */
 static ir_node **stack = NULL;
 /** The top (index) of the IR-node stack */
-static int tos = 0;
+static size_t    tos = 0;
 
 /**
  * Initializes the IR-node stack
@@ -467,9 +467,10 @@ static int largest_dfn_pred(ir_node *n)
 static ir_node *find_tail(ir_node *n)
 {
 	ir_node *m;
-	int i, res_index = -2;
+	int      res_index = -2;
+	size_t   i;
 
-	m = stack[tos-1];  /* tos = top of stack */
+	m = stack[tos - 1];  /* tos = top of stack */
 	if (is_head(m, n)) {
 		res_index = smallest_dfn_pred(m, 0);
 		if ((res_index == -2) &&  /* no smallest dfn pred found. */
@@ -478,16 +479,15 @@ static ir_node *find_tail(ir_node *n)
 	} else {
 		if (m == n)
 			return NULL;
-		for (i = tos-2; i >= 0; --i) {
-
-			m = stack[i];
+		for (i = tos - 1; i != 0;) {
+			m = stack[--i];
 			if (is_head(m, n)) {
 				res_index = smallest_dfn_pred(m, get_irn_dfn(m) + 1);
 				if (res_index == -2)  /* no smallest dfn pred found. */
 					res_index = largest_dfn_pred(m);
 
 				if ((m == n) && (res_index == -2)) {
-					i = -1;
+					i = (size_t)-1;
 				}
 				break;
 			}
@@ -496,15 +496,15 @@ static ir_node *find_tail(ir_node *n)
 			/* We should not walk past our selves on the stack:  The upcoming nodes
 			   are not in this loop. We assume a loop not reachable from Start. */
 			if (m == n) {
-				i = -1;
+				i = (size_t)-1;
 				break;
 			}
 		}
 
-		if (i < 0) {
+		if (i == (size_t)-1) {
 			/* A dead loop not reachable from Start. */
-			for (i = tos-2; i >= 0; --i) {
-				m = stack[i];
+			for (i = tos - 1; i != 0;) {
+				m = stack[--i];
 				if (is_endless_head(m, n)) {
 					res_index = smallest_dfn_pred (m, get_irn_dfn(m) + 1);
 					if (res_index == -2)  /* no smallest dfn pred found. */

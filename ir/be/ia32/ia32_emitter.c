@@ -1420,7 +1420,7 @@ static const char* emit_asm_operand(const ir_node *node, const char *s)
 		s += p;
 	}
 
-	if (num < 0 || ARR_LEN(asm_regs) <= num) {
+	if (num < 0 || ARR_LEN(asm_regs) <= (size_t)num) {
 		ir_fprintf(stderr,
 				"Error: Custom assembler references invalid input/output (%+F)\n",
 				node);

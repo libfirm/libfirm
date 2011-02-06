@@ -159,7 +159,7 @@ typedef struct block_sched_env_t {
  */
 static inline int is_already_scheduled(block_sched_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].already_sched;
@@ -170,7 +170,7 @@ static inline int is_already_scheduled(block_sched_env_t *env, ir_node *n)
  */
 static inline void set_already_scheduled(block_sched_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].already_sched = 1;
@@ -264,7 +264,7 @@ static void make_users_ready(block_sched_env_t *env, ir_node *irn)
  */
 static inline int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].num_not_sched_user;
@@ -275,7 +275,7 @@ static inline int get_irn_not_sched_user(block_sched_env_t *env, ir_node *n)
  */
 static inline void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].num_not_sched_user = num;
@@ -286,7 +286,7 @@ static inline void set_irn_not_sched_user(block_sched_env_t *env, ir_node *n, in
  */
 static inline int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int num)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].num_not_sched_user += num;

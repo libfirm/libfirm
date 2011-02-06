@@ -74,7 +74,7 @@ static ir_node *get_nodeset_node(const ir_nodeset_t *nodeset)
  */
 static inline unsigned is_root_node(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].is_root;
@@ -85,7 +85,7 @@ static inline unsigned is_root_node(trace_env_t *env, ir_node *n)
  */
 static inline void mark_root_node(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].is_root = 1;
@@ -96,7 +96,7 @@ static inline void mark_root_node(trace_env_t *env, ir_node *n)
  */
 static inline sched_timestep_t get_irn_delay(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].delay;
@@ -107,7 +107,7 @@ static inline sched_timestep_t get_irn_delay(trace_env_t *env, ir_node *n)
  */
 static inline void set_irn_delay(trace_env_t *env, ir_node *n, sched_timestep_t delay)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].delay = delay;
@@ -118,7 +118,7 @@ static inline void set_irn_delay(trace_env_t *env, ir_node *n, sched_timestep_t 
  */
 static inline sched_timestep_t get_irn_etime(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].etime;
@@ -129,7 +129,7 @@ static inline sched_timestep_t get_irn_etime(trace_env_t *env, ir_node *n)
  */
 static inline void set_irn_etime(trace_env_t *env, ir_node *n, sched_timestep_t etime)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].etime = etime;
@@ -140,7 +140,7 @@ static inline void set_irn_etime(trace_env_t *env, ir_node *n, sched_timestep_t 
  */
 static inline unsigned get_irn_num_user(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].num_user;
@@ -151,7 +151,7 @@ static inline unsigned get_irn_num_user(trace_env_t *env, ir_node *n)
  */
 static inline void set_irn_num_user(trace_env_t *env, ir_node *n, unsigned num_user)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].num_user = num_user;
@@ -162,7 +162,7 @@ static inline void set_irn_num_user(trace_env_t *env, ir_node *n, unsigned num_u
  */
 static inline int get_irn_reg_diff(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].reg_diff;
@@ -173,7 +173,7 @@ static inline int get_irn_reg_diff(trace_env_t *env, ir_node *n)
  */
 static inline void set_irn_reg_diff(trace_env_t *env, ir_node *n, int reg_diff)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].reg_diff = reg_diff;
@@ -184,7 +184,7 @@ static inline void set_irn_reg_diff(trace_env_t *env, ir_node *n, int reg_diff)
  */
 static inline int get_irn_preorder(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].preorder;
@@ -195,7 +195,7 @@ static inline int get_irn_preorder(trace_env_t *env, ir_node *n)
  */
 static inline void set_irn_preorder(trace_env_t *env, ir_node *n, int pos)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].preorder = pos;
@@ -206,7 +206,7 @@ static inline void set_irn_preorder(trace_env_t *env, ir_node *n, int pos)
  */
 static inline unsigned get_irn_critical_path_len(trace_env_t *env, ir_node *n)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	return env->sched_info[idx].critical_path_len;
@@ -217,7 +217,7 @@ static inline unsigned get_irn_critical_path_len(trace_env_t *env, ir_node *n)
  */
 static inline void set_irn_critical_path_len(trace_env_t *env, ir_node *n, unsigned len)
 {
-	int idx = get_irn_idx(n);
+	unsigned const idx = get_irn_idx(n);
 
 	assert(idx < ARR_LEN(env->sched_info));
 	env->sched_info[idx].critical_path_len = len;

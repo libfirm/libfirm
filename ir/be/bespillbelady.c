@@ -617,7 +617,7 @@ static void decide_start_workset(const ir_node *block)
 	}
 
 	pressure            = be_get_loop_pressure(loop_ana, cls, loop);
-	assert(ARR_LEN(delayed) <= (signed)pressure);
+	assert(ARR_LEN(delayed) <= pressure);
 	free_slots          = n_regs - ARR_LEN(starters);
 	free_pressure_slots = n_regs - (pressure - ARR_LEN(delayed));
 	free_slots          = MIN(free_slots, free_pressure_slots);
@@ -628,7 +628,8 @@ static void decide_start_workset(const ir_node *block)
 	DB((dbg, DBG_START, "Loop pressure %d, taking %d delayed vals\n",
 	    pressure, free_slots));
 	if (free_slots > 0) {
-		int i;
+		size_t i;
+
 		qsort(delayed, ARR_LEN(delayed), sizeof(delayed[0]), loc_compare);
 
 		for (i = 0; i < ARR_LEN(delayed) && free_slots > 0; ++i) {

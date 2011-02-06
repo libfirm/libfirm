@@ -939,8 +939,9 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
  */
 static void replace_pred(ir_region *succ, ir_region *reg)
 {
-	int i, len = get_region_n_preds(succ);
-	int have_one = 0;
+	int    have_one = 0;
+	size_t len      = get_region_n_preds(succ);
+	size_t i;
 
 	for (i = 0; i < len; ++i) {
 		ir_region *pred = get_region_pred(succ, i);
@@ -971,8 +972,9 @@ static void replace_pred(ir_region *succ, ir_region *reg)
  */
 static void replace_succ(ir_region *pred, ir_region *reg)
 {
-	int i, len = get_region_n_succs(pred);
-	int have_one = 0;
+	int    have_one = 0;
+	size_t len      = get_region_n_succs(pred);
+	size_t i;
 
 	for (i = 0; i < len; ++i) {
 		ir_region *succ = get_region_succ(pred, i);

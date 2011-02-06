@@ -240,10 +240,10 @@ static void rsm_set_reg_value(register_state_mapping_t *rsm,
 static ir_node *rsm_create_barrier(register_state_mapping_t *rsm,
                                    ir_node *block)
 {
-	int       n_barrier_outs = ARR_LEN(rsm->regs);
+	size_t    n_barrier_outs = ARR_LEN(rsm->regs);
 	ir_node **in             = rsm->value_map;
 	ir_node  *barrier;
-	int       o;
+	size_t    o;
 
 	assert(ARR_LEN(rsm->value_map) == n_barrier_outs);
 
@@ -409,11 +409,11 @@ ir_node *be_epilog_create_barrier(beabi_helper_env_t *env, ir_node *block)
 ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
                                  ir_node *block)
 {
-	int       n_return_in = ARR_LEN(env->epilog.regs);
+	size_t    n_return_in = ARR_LEN(env->epilog.regs);
 	ir_node **in          = env->epilog.value_map;
 	int       n_res       = 1; /* TODO */
 	unsigned  pop         = 0; /* TODO */
-	int       i;
+	size_t    i;
 	ir_node  *ret;
 
 	assert(ARR_LEN(env->epilog.value_map) == n_return_in);

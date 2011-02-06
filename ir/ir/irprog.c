@@ -342,7 +342,7 @@ void add_irp_opcode(ir_op *opcode)
 /* Removes opcode from the list of opcodes and shrinks the list by one. */
 void remove_irp_opcode(ir_op *opcode)
 {
-	assert((int) opcode->code < ARR_LEN(irp->opcodes));
+	assert(opcode->code < ARR_LEN(irp->opcodes));
 	irp->opcodes[opcode->code] = NULL;
 }
 
