@@ -58,7 +58,7 @@ static int loop_node_cnt = 0;
 /** Counter to generate depth first numbering of visited nodes. */
 static int current_dfn = 1;
 
-static int max_loop_depth = 0;
+static unsigned max_loop_depth = 0;
 
 void link_to_reg_end(ir_node *n, void *env);
 void set_projx_link(ir_node *cb_projx, ir_node *end_projx);
@@ -824,7 +824,7 @@ void free_loop_information(ir_graph *irg)
 
 void free_all_loop_information(void)
 {
-	int i;
+	size_t i;
 	for (i = 0; i < get_irp_n_irgs(); i++) {
 		free_loop_information(get_irp_irg(i));
 	}

@@ -50,10 +50,12 @@
 #include "bearch.h"
 #include "beuses.h"
 
+#define UNKNOWN_OUTERMOST_LOOP  ((unsigned)-1)
+
 typedef struct be_use_t {
 	const ir_node *block;
 	const ir_node *node;
-	int outermost_loop;
+	unsigned outermost_loop;
 	unsigned next_use;
 	ir_visited_t visited;
 } be_use_t;
@@ -108,17 +110,17 @@ static const be_use_t *get_or_set_use_block(be_uses_t *env,
 		// insert templ first as we might end in a loop in the get_next_use
 		// call otherwise
 		temp.next_use = USES_INFINITY;
-		temp.outermost_loop = -1;
+		temp.outermost_loop = UNKNOWN_OUTERMOST_LOOP;
 		temp.visited = 0;
 		result = (be_use_t*)set_insert(env->uses, &temp, sizeof(temp), hash);
 	}
 
-	if (result->outermost_loop < 0 && result->visited < env->visited_counter) {
+	if (result->outermost_loop == UNKNOWN_OUTERMOST_LOOP && result->visited < env->visited_counter) {
 		be_next_use_t next_use;
 
 		result->visited = env->visited_counter;
 		next_use = get_next_use(env, sched_first(block), def, 0);
-		if (next_use.outermost_loop >= 0) {
+		if (next_use.outermost_loop != UNKNOWN_OUTERMOST_LOOP) {
 			result->next_use = next_use.time;
 			result->outermost_loop = next_use.outermost_loop;
 			DBG((env->dbg, LEVEL_5, "Setting nextuse of %+F in block %+F to %u (outermostloop %d)\n",
@@ -279,15 +281,15 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	}
 
 	{
-	unsigned next_use   = USES_INFINITY;
-	int outermost_loop;
+	unsigned  next_use   = USES_INFINITY;
+	unsigned  outermost_loop;
 	be_next_use_t result;
-	ir_loop *loop       = get_irn_loop(block);
-	int loopdepth       = get_loop_depth(loop);
-	int found_visited   = 0;
-	int found_use       = 0;
-	ir_graph *irg       = get_irn_irg(block);
-	ir_node *startblock = get_irg_start_block(irg);
+	ir_loop  *loop          = get_irn_loop(block);
+	unsigned  loopdepth     = get_loop_depth(loop);
+	int       found_visited = 0;
+	int       found_use     = 0;
+	ir_graph *irg           = get_irn_irg(block);
+	ir_node  *startblock    = get_irg_start_block(irg);
 
 	result.before  = NULL;
 	outermost_loop = loopdepth;
@@ -308,10 +310,10 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		}
 
 		use = get_or_set_use_block(env, succ_block, def);
-		DBG((env->dbg, LEVEL_5, "Found %u (loopdepth %d) (we're in block %+F)\n", use->next_use,
+		DBG((env->dbg, LEVEL_5, "Found %u (loopdepth %u) (we're in block %+F)\n", use->next_use,
 					use->outermost_loop, block));
 		if (USES_IS_INFINITE(use->next_use)) {
-			if (use->outermost_loop < 0) {
+			if (use->outermost_loop == UNKNOWN_OUTERMOST_LOOP) {
 				found_visited = 1;
 			}
 			continue;
@@ -344,9 +346,9 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	if (!found_use && found_visited) {
 		// the current result is correct for the current search, but isn't
 		// generally correct, so mark it
-		result.outermost_loop = -1;
+		result.outermost_loop = UNKNOWN_OUTERMOST_LOOP;
 	}
-	DBG((env->dbg, LEVEL_5, "Result: %d (outerloop: %d)\n", result.time, result.outermost_loop));
+	DBG((env->dbg, LEVEL_5, "Result: %d (outerloop: %u)\n", result.time, result.outermost_loop));
 	return result;
 	}
 }

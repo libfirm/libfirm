@@ -363,6 +363,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
 	int                     i, n, destroy_all_regs;
+	size_t                  s;
 	dbg_info               *dbgi;
 
 	/* Let the isa fill out the abi description for that call node. */
@@ -580,8 +581,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	}
 
 	/* add state registers ins */
-	for (i = 0; i < ARR_LEN(states); ++i) {
-		const arch_register_t       *reg = states[i];
+	for (s = 0; s < ARR_LEN(states); ++s) {
+		const arch_register_t       *reg = states[s];
 		const arch_register_class_t *cls = arch_register_get_class(reg);
 #if 0
 		ir_node *regnode = be_abi_reg_map_get(env->regs, reg);
@@ -697,6 +698,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	{
 		ir_node               **in, *keep;
 		int                   i;
+		size_t                d;
 		int                   n = 0;
 		int                   curr_res_proj = pn_be_Call_first_res + n_reg_results;
 		int                   n_ins;
@@ -708,8 +710,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		set_irn_link(curr_sp, (void*) sp);
 		in[n++] = curr_sp;
 
-		for (i = 0; i < ARR_LEN(destroyed_regs); ++i) {
-			const arch_register_t *reg = destroyed_regs[i];
+		for (d = 0; d < ARR_LEN(destroyed_regs); ++d) {
+			const arch_register_t *reg = destroyed_regs[d];
 			ir_node *proj = new_r_Proj(low_call, reg->reg_class->mode, curr_res_proj);
 
 			/* memorize the register in the link field. we need afterwards to set the register class of the keep correctly. */

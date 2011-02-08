@@ -80,7 +80,8 @@ int be_nodes_equal(ir_node *node1, ir_node *node2)
 	const backend_info_t *info1 = be_get_info(node1);
 	const backend_info_t *info2 = be_get_info(node2);
 	size_t                len   = ARR_LEN(info1->out_infos);
-	size_t                arity = get_irn_arity(node1);
+	int                   arity = get_irn_arity(node1);
+	int                   in;
 	size_t                i;
 
 	if (ARR_LEN(info2->out_infos) != len)
@@ -88,8 +89,8 @@ int be_nodes_equal(ir_node *node1, ir_node *node2)
 
 	assert(arity == get_irn_arity(node2));
 
-	for (i = 0; i < arity; ++i) {
-		if (info1->in_reqs[i] != info2->in_reqs[i])
+	for (in = 0; in < arity; ++in) {
+		if (info1->in_reqs[in] != info2->in_reqs[in])
 			return false;
 	}
 

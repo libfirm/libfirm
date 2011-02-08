@@ -36,7 +36,7 @@ typedef struct compound_graph_path  compound_graph_path, *ir_compound_graph_path
  * @deprecated
  * Creates a new compound graph path of given length.
  */
-FIRM_API compound_graph_path *new_compound_graph_path(ir_type *tp, int length);
+FIRM_API compound_graph_path *new_compound_graph_path(ir_type *tp, size_t length);
 
 /**
  * @deprecated
@@ -54,32 +54,32 @@ FIRM_API void free_compound_graph_path(compound_graph_path *gr);
  * @deprecated
  * Returns the length of a graph path
  */
-FIRM_API int get_compound_graph_path_length(const compound_graph_path *gr);
+FIRM_API size_t get_compound_graph_path_length(const compound_graph_path *gr);
 
 /**
  * @deprecated
  * Get the entity node of an compound graph path at position pos.
  */
-ir_entity *get_compound_graph_path_node(const compound_graph_path *gr, int pos);
+ir_entity *get_compound_graph_path_node(const compound_graph_path *gr, size_t pos);
 
 /**
  * @deprecated
  * Set the entity node of an compound graph path at position pos.
  */
-FIRM_API void set_compound_graph_path_node(compound_graph_path *gr, int pos,
+FIRM_API void set_compound_graph_path_node(compound_graph_path *gr, size_t pos,
                                            ir_entity *node);
 
 /**
  * @deprecated
  * Get the index of an compound graph path at position pos.
  */
-FIRM_API int get_compound_graph_path_array_index(const compound_graph_path *gr, int pos);
+FIRM_API long get_compound_graph_path_array_index(const compound_graph_path *gr, size_t pos);
 
 /**
  * @deprecated
  * Set the index of an compound graph path at position pos.
  */
-FIRM_API void set_compound_graph_path_array_index(compound_graph_path *gr, int pos, int index);
+FIRM_API void set_compound_graph_path_array_index(compound_graph_path *gr, size_t pos, long index);
 
 /**
  * @deprecated
@@ -92,7 +92,7 @@ FIRM_API ir_type *get_compound_graph_path_type(const compound_graph_path *gr);
  * Checks whether the path up to pos is correct. If the path contains a NULL,
  *  assumes the path is not complete and returns non-zero.
  */
-FIRM_API int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
+FIRM_API int is_proper_compound_graph_path(compound_graph_path *gr, size_t pos);
 
 /**
  * @deprecated
@@ -100,13 +100,13 @@ FIRM_API int is_proper_compound_graph_path(compound_graph_path *gr, int pos);
  * corresponding access path to the member of the compound.
  */
 FIRM_API void add_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path);
-FIRM_API void set_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path, int pos);
+FIRM_API void set_compound_ent_value_w_path(ir_entity *ent, ir_node *val, compound_graph_path *path, size_t pos);
 
 /**
  * @deprecated
  * Returns the access path for value at position pos.
  */
-FIRM_API compound_graph_path *get_compound_ent_value_path(const ir_entity *ent, int pos);
+FIRM_API compound_graph_path *get_compound_ent_value_path(const ir_entity *ent, size_t pos);
 
 /**
  * @deprecated
@@ -137,14 +137,14 @@ FIRM_API void add_compound_ent_value(ir_entity *ent, ir_node *val, ir_entity *me
  * @deprecated
  * Returns the last member in the path
  */
-FIRM_API ir_entity *get_compound_ent_value_member(const ir_entity *ent, int pos);
+FIRM_API ir_entity *get_compound_ent_value_member(const ir_entity *ent, size_t pos);
 
 /**
  * @deprecated
  * Sets the path at pos 0
  */
 FIRM_API void set_compound_ent_value(ir_entity *ent, ir_node *val,
-                                     ir_entity *member, int pos);
+                                     ir_entity *member, size_t pos);
 
 /**
  * @deprecated
@@ -155,7 +155,7 @@ FIRM_API void set_compound_ent_value(ir_entity *ent, ir_node *val,
  * fits into the given array size.  Does not test whether the
  * values have the proper mode for the array.
  */
-FIRM_API void set_array_entity_values(ir_entity *ent, ir_tarval **values, int num_vals);
+FIRM_API void set_array_entity_values(ir_entity *ent, ir_tarval **values, size_t num_vals);
 
 /**
  * @deprecated
@@ -166,7 +166,7 @@ FIRM_API void set_array_entity_values(ir_entity *ent, ir_tarval **values, int nu
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-FIRM_API unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *ent, int pos);
+FIRM_API unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *ent, size_t pos);
 
 /**
  * @deprecated
@@ -178,20 +178,20 @@ FIRM_API unsigned get_compound_ent_value_offset_bit_remainder(const ir_entity *e
  * @param ent Any entity of compound type with at least pos initialization values.
  * @param pos The position of the value for which the offset is requested.
  */
-FIRM_API unsigned get_compound_ent_value_offset_bytes(const ir_entity *ent, int pos);
+FIRM_API unsigned get_compound_ent_value_offset_bytes(const ir_entity *ent, size_t pos);
 
 /**
  * @deprecated
  * Returns the number of constant values needed to initialize the entity.
  * Asserts if the entity has variability_uninitialized.
  */
-FIRM_API int get_compound_ent_n_values(const ir_entity *ent);
+FIRM_API size_t get_compound_ent_n_values(const ir_entity *ent);
 
 /**
  * @deprecated
  * Returns a constant value given the position.
  */
-FIRM_API ir_node *get_compound_ent_value(const ir_entity *ent, int pos);
+FIRM_API ir_node *get_compound_ent_value(const ir_entity *ent, size_t pos);
 
 /**
  * @deprecated

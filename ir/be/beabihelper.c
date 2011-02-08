@@ -52,7 +52,7 @@ typedef struct reg_flag_t {
  */
 typedef struct register_state_mapping_t {
 	ir_node   **value_map;     /**< mapping of state indices to values */
-	int       **reg_index_map; /**< mapping of regclass,regnum to an index
+	size_t    **reg_index_map; /**< mapping of regclass,regnum to an index
 	                                into the value_map */
 	reg_flag_t *regs;          /**< registers (and memory values) that form a
 	                                state */
@@ -90,15 +90,15 @@ static void prepare_rsm(register_state_mapping_t *rsm,
 	ARR_APP1(reg_flag_t, rsm->regs, memory);
 
 	rsm->value_map     = NULL;
-	rsm->reg_index_map = XMALLOCN(int*, n_reg_classes);
+	rsm->reg_index_map = XMALLOCN(size_t*, n_reg_classes);
 	for (c = 0; c < n_reg_classes; ++c) {
 		const arch_register_class_t *cls    = &arch_env->register_classes[c];
 		unsigned                     n_regs = arch_register_class_n_regs(cls);
 		unsigned                     r;
 
-		rsm->reg_index_map[c] = XMALLOCN(int, n_regs);
+		rsm->reg_index_map[c] = XMALLOCN(size_t, n_regs);
 		for (r = 0; r < n_regs; ++r) {
-			rsm->reg_index_map[c][r] = -1;
+			rsm->reg_index_map[c][r] = (size_t)-1;
 		}
 	}
 }
@@ -150,7 +150,7 @@ static void rsm_clear_regs(register_state_mapping_t *rsm,
 		unsigned                     r;
 
 		for (r = 0; r < n_regs; ++r) {
-			rsm->reg_index_map[c][r] = -1;
+			rsm->reg_index_map[c][r] = (size_t)-1;
 		}
 	}
 	ARR_RESIZE(reg_flag_t, rsm->regs, 0);
@@ -170,13 +170,13 @@ static int rsm_add_reg(register_state_mapping_t *rsm,
                        const arch_register_t *reg,
                        arch_register_req_type_t flags)
 {
-	int        input_idx = ARR_LEN(rsm->regs);
+	size_t     input_idx = ARR_LEN(rsm->regs);
 	int        cls_idx   = reg->reg_class->index;
 	int        reg_idx   = reg->index;
 	reg_flag_t regflag   = { reg, flags };
 
 	/* we must not have used get_value yet */
-	assert(rsm->reg_index_map[cls_idx][reg_idx] == -1);
+	assert(rsm->reg_index_map[cls_idx][reg_idx] == (size_t)-1);
 	rsm->reg_index_map[cls_idx][reg_idx] = input_idx;
 	ARR_APP1(reg_flag_t, rsm->regs, regflag);
 
@@ -190,9 +190,9 @@ static int rsm_add_reg(register_state_mapping_t *rsm,
 /**
  * Retrieve the ir_node stored at the given index in the register state map.
  */
-static ir_node *rsm_get_value(register_state_mapping_t *rsm, int index)
+static ir_node *rsm_get_value(register_state_mapping_t *rsm, size_t index)
 {
-	assert(0 <= index && index < ARR_LEN(rsm->value_map));
+	assert(index < ARR_LEN(rsm->value_map));
 	return rsm->value_map[index];
 }
 
@@ -202,9 +202,9 @@ static ir_node *rsm_get_value(register_state_mapping_t *rsm, int index)
 static ir_node *rsm_get_reg_value(register_state_mapping_t *rsm,
                                   const arch_register_t *reg)
 {
-	int cls_idx   = reg->reg_class->index;
-	int reg_idx   = reg->index;
-	int input_idx = rsm->reg_index_map[cls_idx][reg_idx];
+	int    cls_idx   = reg->reg_class->index;
+	int    reg_idx   = reg->index;
+	size_t input_idx = rsm->reg_index_map[cls_idx][reg_idx];
 
 	return rsm_get_value(rsm, input_idx);
 }
@@ -212,10 +212,10 @@ static ir_node *rsm_get_reg_value(register_state_mapping_t *rsm,
 /**
  * Enter a ir_node at the given index in the register state map.
  */
-static void rsm_set_value(register_state_mapping_t *rsm, int index,
+static void rsm_set_value(register_state_mapping_t *rsm, size_t index,
                           ir_node *value)
 {
-	assert(0 <= index && index < ARR_LEN(rsm->value_map));
+	assert(index < ARR_LEN(rsm->value_map));
 	rsm->value_map[index] = value;
 }
 
@@ -225,9 +225,9 @@ static void rsm_set_value(register_state_mapping_t *rsm, int index,
 static void rsm_set_reg_value(register_state_mapping_t *rsm,
                               const arch_register_t *reg, ir_node *value)
 {
-	int cls_idx   = reg->reg_class->index;
-	int reg_idx   = reg->index;
-	int input_idx = rsm->reg_index_map[cls_idx][reg_idx];
+	int    cls_idx   = reg->reg_class->index;
+	int    reg_idx   = reg->index;
+	size_t input_idx = rsm->reg_index_map[cls_idx][reg_idx];
 	rsm_set_value(rsm, input_idx, value);
 }
 

@@ -210,7 +210,7 @@ static int firm_emit(lc_appendable_t *app,
 	}
 	case k_ir_loop: {
 		ir_loop *loop = (ir_loop*)X;
-		snprintf(buf, sizeof(buf), "loop[%d:%d]", get_loop_loop_nr(loop), get_loop_depth(loop));
+		snprintf(buf, sizeof(buf), "loop[%ld:%u]", get_loop_loop_nr(loop), get_loop_depth(loop));
 		break;
 	}
 	case k_ir_op: {
@@ -228,7 +228,7 @@ static int firm_emit(lc_appendable_t *app,
 			strncat(buf, ".", sizeof(buf)-1);
 			strncat(buf, get_entity_name(ent), sizeof(buf)-1);
 			if (is_Array_type(get_entity_owner(ent))) {
-				snprintf(add, sizeof(add), "[%d]",
+				snprintf(add, sizeof(add), "[%ld]",
 					get_compound_graph_path_array_index(path, i));
 				strncat(buf, add, sizeof(buf)-1);
 			}

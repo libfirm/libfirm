@@ -61,17 +61,17 @@ typedef enum loop_flags {
  * nodes in the loop.
  */
 struct ir_loop {
-	firm_kind kind;                   /**< A type tag, set to k_ir_loop. */
-	int depth;                        /**< Nesting depth */
-	int n_sons;                       /**< Number of ir_nodes in array "children" */
-	int n_nodes;                      /**< Number of loop_nodes in array "children" */
-	unsigned flags;                   /**< a set of loop_flags_t */
+	firm_kind       kind;             /**< A type tag, set to k_ir_loop. */
+	unsigned        depth;            /**< Nesting depth */
+	size_t          n_sons;           /**< Number of ir_nodes in array "children" */
+	size_t          n_nodes;          /**< Number of loop_nodes in array "children" */
+	unsigned        flags;            /**< a set of loop_flags_t */
 	struct ir_loop *outer_loop;       /**< The outer loop */
 	loop_element   *children;         /**< Mixed flexible array: Contains sons and loop_nodes */
-	ir_tarval *loop_iter_start;       /**< counting loop: the start value */
-	ir_tarval *loop_iter_end;         /**< counting loop: the last value reached */
-	ir_tarval *loop_iter_increment;   /**< counting loop: the increment */
-	ir_node *loop_iter_variable;      /**< The iteration variable of counting loop.*/
+	ir_tarval      *loop_iter_start;  /**< counting loop: the start value */
+	ir_tarval      *loop_iter_end;    /**< counting loop: the last value reached */
+	ir_tarval      *loop_iter_increment; /**< counting loop: the increment */
+	ir_node        *loop_iter_variable;  /**< The iteration variable of counting loop.*/
 
 	void *link;                       /**< link field. */
 #ifdef DEBUG_libfirm
@@ -129,13 +129,13 @@ static inline ir_loop *_get_loop_outer_loop(const ir_loop *loop)
 	return loop->outer_loop;
 }
 
-static inline int _get_loop_depth(const ir_loop *loop)
+static inline unsigned _get_loop_depth(const ir_loop *loop)
 {
 	assert(_is_ir_loop(loop));
 	return loop->depth;
 }
 
-static inline int _get_loop_n_sons(const ir_loop *loop)
+static inline size_t _get_loop_n_sons(const ir_loop *loop)
 {
 	assert(_is_ir_loop(loop));
 	return loop->n_sons;

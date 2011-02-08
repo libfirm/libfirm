@@ -35,19 +35,20 @@
  */
 typedef struct be_next_use_t {
 	unsigned       time;
-	int            outermost_loop;
+	unsigned       outermost_loop;
+	/* point of the next use is at the beginning of this node. */
 	const ir_node *before;
 } be_next_use_t;
 
 #define USES_INFINITY  10000000
 #define USES_PENDING   9999999
 
-static inline int USES_IS_INFINITE(unsigned time)
+static inline bool USES_IS_INFINITE(unsigned time)
 {
 	return time >= USES_INFINITY;
 }
 
-static inline int USES_IS_PENDING(unsigned time)
+static inline bool USES_IS_PENDING(unsigned time)
 {
 	return time == USES_PENDING;
 }
@@ -55,7 +56,7 @@ static inline int USES_IS_PENDING(unsigned time)
 typedef struct be_uses_t be_uses_t;
 
 be_next_use_t be_get_next_use(be_uses_t *uses, ir_node *from,
-                         const ir_node *def, int skip_from_uses);
+                              const ir_node *def, int skip_from_uses);
 
 /**
  * Creates a new uses environment for a graph.
@@ -72,4 +73,4 @@ be_uses_t *be_begin_uses(ir_graph *irg, const be_lv_t *lv);
  */
 void be_end_uses(be_uses_t *uses);
 
-#endif /* FIRM_BE_BEUSES_H */
+#endif

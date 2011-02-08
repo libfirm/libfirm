@@ -137,7 +137,7 @@ typedef enum {
 #define PRINT_IRGID(X)        fprintf(F, "g%ld", get_irg_graph_nr(X))
 #define PRINT_CONSTID(X,Y)    fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
 #define PRINT_CONSTBLKID(X,Y) fprintf(F, "n%ldb%ld", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_LOOPID(X)       fprintf(F, "l%d", get_loop_loop_nr(X))
+#define PRINT_LOOPID(X)       fprintf(F, "l%ld", get_loop_loop_nr(X))
 #define PRINT_ITEMID(X,Y)     fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
 #define PRINT_EXTBBID(X)      fprintf(F, "x%ld", get_irn_node_nr(X))
 

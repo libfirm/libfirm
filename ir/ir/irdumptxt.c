@@ -123,8 +123,8 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	if (get_irg_loopinfo_state(irg) & loopinfo_valid) {
 		ir_loop *loop = get_irn_loop(n);
 		if (loop != NULL) {
-			fprintf(F, "  in loop %d with depth %d\n",
-				get_loop_loop_nr(loop), get_loop_depth(loop));
+			fprintf(F, "  in loop %ld with depth %u\n",
+			        get_loop_loop_nr(loop), get_loop_depth(loop));
 		}
 	}
 
@@ -448,7 +448,7 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 
 static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *prefix)
 {
-	int i, j;
+	int i;
 	ir_type *owner, *type;
 
 	assert(is_entity(ent));
@@ -572,8 +572,10 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			need_nl = 1;
 			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
 		} else if (entity_has_compound_ent_values(ent)) {
+			size_t i;
 			fprintf(F, "%s  compound values:", prefix);
 			for (i = 0; i < get_compound_ent_n_values(ent); ++i) {
+				size_t j;
 				compound_graph_path *path = get_compound_ent_value_path(ent, i);
 				ir_entity *ent0 = get_compound_graph_path_node(path, 0);
 				fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
@@ -584,7 +586,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 					ir_entity *node = get_compound_graph_path_node(path, j);
 					fprintf(F, ".%s", get_entity_name(node));
 					if (is_Array_type(get_entity_owner(node)))
-						fprintf(F, "[%d]", get_compound_graph_path_array_index(path, j));
+						fprintf(F, "[%ld]", get_compound_graph_path_array_index(path, j));
 				}
 				fprintf(F, "\t = ");
 				dump_node_opcode(F, get_compound_ent_value(ent, i));

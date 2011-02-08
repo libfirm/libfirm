@@ -24,7 +24,7 @@
  * @date     7.2002
  * @version  $Id: irloop_t.h 17143 2008-01-02 20:56:33Z beck $
  */
-# include "config.h"
+#include "config.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -95,13 +95,13 @@ ir_loop *(get_loop_outer_loop)(const ir_loop *loop)
 }
 
 /* Returns nesting depth of this loop */
-int (get_loop_depth)(const ir_loop *loop)
+unsigned (get_loop_depth)(const ir_loop *loop)
 {
 	return _get_loop_depth(loop);
 }
 
 /* Returns the number of inner loops */
-int (get_loop_n_sons)(const ir_loop *loop)
+size_t (get_loop_n_sons)(const ir_loop *loop)
 {
 	return _get_loop_n_sons(loop);
 }
@@ -109,78 +109,75 @@ int (get_loop_n_sons)(const ir_loop *loop)
 /* Returns the pos`th loop_node-child              *
  * TODO: This method isn`t very efficient !        *
  * Returns NULL if there isn`t a pos`th loop_node */
-ir_loop *get_loop_son(ir_loop *loop, int pos)
+ir_loop *get_loop_son(ir_loop *loop, size_t pos)
 {
 	size_t child_nr = 0;
-	int loop_nr = -1;
+	size_t loop_nr = 0;
 
 	assert(loop && loop->kind == k_ir_loop);
 	for (child_nr = 0; child_nr < ARR_LEN(loop->children); ++child_nr) {
-		if (*(loop->children[child_nr].kind) == k_ir_loop)
-			loop_nr++;
+		if (*(loop->children[child_nr].kind) != k_ir_loop)
+			continue;
 		if (loop_nr == pos)
 			return loop->children[child_nr].son;
+		loop_nr++;
 	}
 	return NULL;
 }
 
 /* Returns the number of nodes in the loop */
-int get_loop_n_nodes(const ir_loop *loop)
+size_t get_loop_n_nodes(const ir_loop *loop)
 {
-	assert(loop); assert(loop->kind == k_ir_loop);
+	assert(loop);
+	assert(loop->kind == k_ir_loop);
 	return loop->n_nodes;
 }
 
 /* Returns the pos'th ir_node-child                *
  * TODO: This method isn't very efficient !        *
  * Returns NULL if there isn't a pos'th ir_node   */
-ir_node *get_loop_node(const ir_loop *loop, int pos)
+ir_node *get_loop_node(const ir_loop *loop, size_t pos)
 {
+	size_t node_nr = 0;
 	size_t child_nr;
-	int node_nr = -1;
 
 	assert(loop && loop->kind == k_ir_loop);
 	assert(pos < get_loop_n_nodes(loop));
 
 	for (child_nr = 0; child_nr < ARR_LEN(loop->children); ++child_nr) {
-		if (*(loop->children[child_nr].kind) == k_ir_node)
-			node_nr++;
+		if (*(loop->children[child_nr].kind) != k_ir_node)
+			continue;
 		if (node_nr == pos)
 			return loop -> children[child_nr].node;
+		node_nr++;
 	}
-
 	panic("no child at pos found");
 }
 
 /* Returns the number of elements contained in loop.  */
-int get_loop_n_elements(const ir_loop *loop)
+size_t get_loop_n_elements(const ir_loop *loop)
 {
 	assert(loop && loop->kind == k_ir_loop);
 	return(ARR_LEN(loop->children));
 }
 
-/*
-Returns the pos`th loop element.
-This may be a loop_node or a ir_node. The caller of this function has
-to check the *(loop_element.kind) field for "k_ir_node" or "k_ir_loop"
-and then select the appropriate "loop_element.node" or "loop_element.son".
-*/
-loop_element get_loop_element(const ir_loop *loop, int pos)
+loop_element get_loop_element(const ir_loop *loop, size_t pos)
 {
 	assert(loop && loop->kind == k_ir_loop && pos < ARR_LEN(loop->children));
 	return(loop -> children[pos]);
 }
 
-int get_loop_element_pos(const ir_loop *loop, void *le)
+size_t get_loop_element_pos(const ir_loop *loop, void *le)
 {
-	int i, n;
+	size_t n;
+	size_t i;
 	assert(loop && loop->kind == k_ir_loop);
 
 	n = get_loop_n_elements(loop);
 	for (i = 0; i < n; i++)
 		if (get_loop_element(loop, i).node == le)
 			return i;
-	return -1;
+	return (size_t)-1;
 }
 
 
@@ -197,13 +194,13 @@ ir_loop *(get_irn_loop)(const ir_node *n)
 	return _get_irn_loop(n);
 }
 
-int get_loop_loop_nr(const ir_loop *loop)
+long get_loop_loop_nr(const ir_loop *loop)
 {
 	assert(loop && loop->kind == k_ir_loop);
 #ifdef DEBUG_libfirm
 	return loop->loop_nr;
 #else
-	return (int)loop;
+	return (long)loop;
 #endif
 }
 

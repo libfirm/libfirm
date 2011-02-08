@@ -171,7 +171,8 @@ static void create_suffix(char *suffix, size_t n, const char *pass_name)
 int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
 {
 	ir_graph_pass_t *pass;
-	int             i, res = 0;
+	size_t           i;
+	int              res = 0;
 	ir_graph        *rem = current_ir_graph;
 
 	/* on all graphs: beware: number of irgs might be changed */
@@ -213,9 +214,11 @@ int ir_graph_pass_mgr_run(ir_graph_pass_manager_t *mgr)
  */
 static int irp_verify_irgs(void)
 {
-	int i, res = 1;
+	int    res = 1;
+	size_t i;
+	size_t n_irgs = get_irp_n_irgs();
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+	for (i = 0; i < n_irgs; ++i)
 		res &= irg_verify(get_irp_irg(i), 0);
 	return res;
 }

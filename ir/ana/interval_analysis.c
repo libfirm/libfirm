@@ -580,7 +580,7 @@ static void dump_interval_loop(FILE *F, ir_loop *l)
 
 	fprintf(F, "graph: { title: \"");
 	PRINT_LOOPID(l);
-	fprintf(F, "\" label: \"loop %d", get_loop_loop_nr(l));
+	fprintf(F, "\" label: \"loop %ld", get_loop_loop_nr(l));
 	fprintf(F, " freq: %9.4lf", get_region_exec_freq(l));
 	fprintf(F, " n_outs: %d", get_region_n_outs(l));
 	fprintf(F, " n_exc_outs: %d", get_region_n_exc_outs(l));

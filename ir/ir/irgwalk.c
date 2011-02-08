@@ -488,9 +488,11 @@ static void walk_entity(ir_entity *ent, void *env)
 /* Walks over all code in const_code_irg. */
 void walk_const_code(irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	int i, j, n_types;
+	int j;
 	walk_env my_env;
 	ir_segment_t s;
+	size_t i;
+	size_t n_types;
 
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = get_const_code_irg();

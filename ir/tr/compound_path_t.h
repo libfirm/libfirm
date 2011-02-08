@@ -31,10 +31,10 @@
 /** A path in a compound graph. */
 struct compound_graph_path {
 	firm_kind kind;       /**< The dynamic type tag for compound graph path. */
-	ir_type *tp;          /**< The type this path belongs to. */
-	int len;              /**< The length of the path. */
+	ir_type  *tp;          /**< The type this path belongs to. */
+	size_t    len;              /**< The length of the path. */
 	struct tuple {
-		int       index;    /**< Array index.  To compute position of array elements */
+		long       index;    /**< Array index.  To compute position of array elements */
 		ir_entity *node;    /**< The accessed entity. */
 	} list[1];            /**< List of entity/index tuple of length len to express the
 	                           access path. */

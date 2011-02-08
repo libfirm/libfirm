@@ -2039,7 +2039,7 @@ static void dump_loop_label(FILE *F, ir_loop *loop)
 static void dump_loop_info(FILE *F, ir_loop *loop)
 {
 	fprintf(F, " info1: \"");
-	fprintf(F, " loop nr: %d", get_loop_loop_nr(loop));
+	fprintf(F, " loop nr: %ld", get_loop_loop_nr(loop));
 #ifdef DEBUG_libfirm   /* GL @@@ debug analyses */
 	fprintf(F, "\n The loop was analyzed %d times.", PTR_TO_INT(get_loop_link(loop)));
 #endif
@@ -2464,7 +2464,8 @@ void dump_class_hierarchy(FILE *out)
 
 static void dump_loops_standalone(FILE *F, ir_loop *loop)
 {
-	int i = 0, loop_node_started = 0, son_number = 0, first = 0;
+	size_t i;
+	int loop_node_started = 0, son_number = 0, first = 0;
 	loop_element le;
 	ir_loop *son = NULL;
 
@@ -2566,7 +2567,9 @@ void dump_callgraph_loop_tree(FILE *out)
 
 static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
 {
-	int i, son_number = 0, node_number = 0;
+	size_t i;
+	int    son_number = 0;
+	int    node_number = 0;
 
 	if (flags & ir_dump_flag_loops)
 		dump_loop_node(F, loop);
@@ -2589,7 +2592,8 @@ static void collect_nodeloop(FILE *F, ir_loop *loop, eset *loopnodes)
 static void collect_nodeloop_external_nodes(ir_loop *loop, eset *loopnodes,
                                             eset *extnodes)
 {
-	int i, j, start;
+	size_t i;
+	int j, start;
 
 	for (i = 0; i < get_loop_n_elements(loop); i++) {
 		loop_element le = get_loop_element(loop, i);
@@ -2619,7 +2623,7 @@ void dump_loop(FILE *F, ir_loop *l)
 	ir_node *n, *b;
 	char name[50];
 
-	snprintf(name, sizeof(name), "loop_%d", get_loop_loop_nr(l));
+	snprintf(name, sizeof(name), "loop_%ld", get_loop_loop_nr(l));
 	dump_vcg_header(F, name, NULL, NULL);
 
 	/* collect all nodes to dump */

@@ -236,12 +236,12 @@ void remove_irp_irg(ir_graph *irg)
 	remove_irp_irg_from_list(irg);
 }
 
-int (get_irp_n_irgs)(void)
+size_t (get_irp_n_irgs)(void)
 {
 	return _get_irp_n_irgs();
 }
 
-ir_graph *(get_irp_irg)(int pos)
+ir_graph *(get_irp_irg)(size_t pos)
 {
 	return _get_irp_irg(pos);
 }
@@ -251,10 +251,10 @@ int get_irp_last_idx(void)
 	return irp->max_irg_idx;
 }
 
-void set_irp_irg(int pos, ir_graph *irg)
+void set_irp_irg(size_t pos, ir_graph *irg)
 {
 	assert(irp && irg);
-	assert(pos < (ARR_LEN(irp->graphs)));
+	assert(pos < ARR_LEN(irp->graphs));
 	irp->graphs[pos] = irg;
 }
 
@@ -284,31 +284,31 @@ void remove_irp_type(ir_type *typ)
 	}
 }
 
-int (get_irp_n_types) (void)
+size_t (get_irp_n_types) (void)
 {
 	return _get_irp_n_types();
 }
 
-ir_type *(get_irp_type) (int pos)
+ir_type *(get_irp_type) (size_t pos)
 {
 	return _get_irp_type(pos);
 }
 
-void set_irp_type(int pos, ir_type *typ)
+void set_irp_type(size_t pos, ir_type *typ)
 {
 	assert(irp && typ);
-	assert(pos < (ARR_LEN((irp)->types)));
+	assert(pos < ARR_LEN((irp)->types));
 	irp->types[pos] = typ;
 }
 
 /* Returns the number of all modes in the irp. */
-int (get_irp_n_modes)(void)
+size_t (get_irp_n_modes)(void)
 {
 	return _get_irp_n_modes();
 }
 
 /* Returns the mode at position pos in the irp. */
-ir_mode *(get_irp_mode)(int pos)
+ir_mode *(get_irp_mode)(size_t pos)
 {
 	return _get_irp_mode(pos);
 }
@@ -347,19 +347,19 @@ void remove_irp_opcode(ir_op *opcode)
 }
 
 /* Returns the number of all opcodes in the irp. */
-int (get_irp_n_opcodes)(void)
+size_t (get_irp_n_opcodes)(void)
 {
 	return _get_irp_n_opcodes();
 }
 
 /* Returns the opcode at position pos in the irp. */
-ir_op *(get_irp_opcode)(int pos)
+ir_op *(get_irp_opcode)(size_t pos)
 {
 	return _get_irp_opcode(pos);
 }
 
 /* Sets the generic function pointer of all opcodes to NULL */
-void  clear_irp_opcodes_generic_func(void)
+void clear_irp_opcodes_generic_func(void)
 {
 	int i;
 
@@ -370,7 +370,7 @@ void  clear_irp_opcodes_generic_func(void)
 }
 
 /*- File name / executable name or the like -*/
-void   set_irp_prog_name(ident *name)
+void set_irp_prog_name(ident *name)
 {
 	irp->name = name;
 }
@@ -493,15 +493,15 @@ void add_irp_asm(ident *asm_string)
 }
 
 /* Return the number of global asm includes. */
-int get_irp_n_asms(void)
+size_t get_irp_n_asms(void)
 {
 	return ARR_LEN(irp->global_asms);
 }
 
 /* Return the global asm include at position pos. */
-ident *get_irp_asm(int pos)
+ident *get_irp_asm(size_t pos)
 {
-	assert(0 <= pos && pos < get_irp_n_asms());
+	assert(pos < get_irp_n_asms());
 	return irp->global_asms[pos];
 }
 

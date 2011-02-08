@@ -53,7 +53,7 @@ static int loop_node_cnt = 0;
 /** Counter to generate depth first numbering of visited nodes. */
 static int current_dfn = 1;
 
-static int max_loop_depth = 0;
+static unsigned max_loop_depth = 0;
 
 void link_to_reg_end(ir_node *n, void *env);
 

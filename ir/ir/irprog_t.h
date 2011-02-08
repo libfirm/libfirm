@@ -58,50 +58,51 @@ static inline ir_type *_get_tls_type(void)
 	return _get_segment_type(IR_SEGMENT_THREAD_LOCAL);
 }
 
-static inline int _get_irp_n_irgs(void)
+static inline size_t _get_irp_n_irgs(void)
 {
 	assert(irp && irp->graphs);
-	return (int)ARR_LEN(irp->graphs);
+	return ARR_LEN(irp->graphs);
 }
 
-static inline ir_graph *_get_irp_irg(int pos)
+static inline ir_graph *_get_irp_irg(size_t pos)
 {
-	assert(0 <= pos && pos <= (int)ARR_LEN(irp->graphs));
+	assert(pos < ARR_LEN(irp->graphs));
 	return irp->graphs[pos];
 }
 
-static inline int _get_irp_n_types(void)
+static inline size_t _get_irp_n_types(void)
 {
 	assert(irp && irp->types);
-	return (int)ARR_LEN(irp->types);
+	return ARR_LEN(irp->types);
 }
 
-static inline ir_type *_get_irp_type(int pos)
+static inline ir_type *_get_irp_type(size_t pos)
 {
 	assert(irp->types);
+	assert(pos < ARR_LEN(irp->types));
 	/* Don't set the skip_tid result so that no double entries are generated. */
 	return irp->types[pos];
 }
 
-static inline int _get_irp_n_modes(void)
+static inline size_t _get_irp_n_modes(void)
 {
 	assert(irp->modes);
-	return (int)ARR_LEN(irp->modes);
+	return ARR_LEN(irp->modes);
 }
 
-static inline ir_mode *_get_irp_mode(int pos)
+static inline ir_mode *_get_irp_mode(size_t pos)
 {
 	assert(irp && irp->modes);
 	return irp->modes[pos];
 }
 
-static inline int _get_irp_n_opcodes(void)
+static inline size_t _get_irp_n_opcodes(void)
 {
 	assert(irp && irp->opcodes);
-	return (int)ARR_LEN(irp->opcodes);
+	return ARR_LEN(irp->opcodes);
 }
 
-static inline ir_op *_get_irp_opcode(int pos)
+static inline ir_op *_get_irp_opcode(size_t pos)
 {
 	assert(irp && irp->opcodes);
 	return irp->opcodes[pos];

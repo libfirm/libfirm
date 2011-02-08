@@ -41,6 +41,7 @@
 #ifndef FIRM_IR_IRPROG_H
 #define FIRM_IR_IRPROG_H
 
+#include <stddef.h>
 #include "firm_types.h"
 #include "irgraph.h"
 #include "begin.h"
@@ -142,13 +143,13 @@ FIRM_API void remove_irp_irg(ir_graph *irg);
 FIRM_API int get_irp_last_idx(void);
 
 /** Returns the number of ir graphs in the irp. */
-FIRM_API int get_irp_n_irgs(void);
+FIRM_API size_t get_irp_n_irgs(void);
 
 /** Returns the ir graph at position pos in the irp. */
-FIRM_API ir_graph *get_irp_irg(int pos);
+FIRM_API ir_graph *get_irp_irg(size_t pos);
 
 /** Sets the ir graph at position pos. */
-FIRM_API void set_irp_irg(int pos, ir_graph *irg);
+FIRM_API void set_irp_irg(size_t pos, ir_graph *irg);
 
 /**
  * Returns the type containing the entities for a segment.
@@ -188,25 +189,25 @@ FIRM_API void remove_irp_type(ir_type *typ);
  * Returns the number of all types in the irp.
  * @deprecated
  */
-FIRM_API int get_irp_n_types(void);
+FIRM_API size_t get_irp_n_types(void);
 
 /**
  * Returns the type at position pos in the irp.
  * @deprecated
  */
-FIRM_API ir_type *get_irp_type(int pos);
+FIRM_API ir_type *get_irp_type(size_t pos);
 
 /**
  * Overwrites the type at position pos with another type.
  * @deprecated
  */
-FIRM_API void set_irp_type(int pos, ir_type *typ);
+FIRM_API void set_irp_type(size_t pos, ir_type *typ);
 
 /** Returns the number of all modes in the irp. */
-FIRM_API int get_irp_n_modes(void);
+FIRM_API size_t get_irp_n_modes(void);
 
 /** Returns the mode at position pos in the irp. */
-FIRM_API ir_mode *get_irp_mode(int pos);
+FIRM_API ir_mode *get_irp_mode(size_t pos);
 
 /** Adds opcode to the list of opcodes in irp. */
 FIRM_API void add_irp_opcode(ir_op *opcode);
@@ -216,10 +217,10 @@ FIRM_API void add_irp_opcode(ir_op *opcode);
 FIRM_API void remove_irp_opcode(ir_op *opcode);
 
 /** Returns the number of all opcodes in the irp. */
-FIRM_API int get_irp_n_opcodes(void);
+FIRM_API size_t get_irp_n_opcodes(void);
 
 /** Returns the opcode at position pos in the irp. */
-FIRM_API ir_op *get_irp_opcode(int pos);
+FIRM_API ir_op *get_irp_opcode(size_t pos);
 
 /** Sets the generic function pointer of all opcodes to NULL */
 FIRM_API void clear_irp_opcodes_generic_func(void);
@@ -277,10 +278,10 @@ FIRM_API ir_label_t get_irp_next_label_nr(void);
 FIRM_API void add_irp_asm(ident *asm_string);
 
 /** Return the number of global asm includes. */
-FIRM_API int get_irp_n_asms(void);
+FIRM_API size_t get_irp_n_asms(void);
 
 /** Return the global asm include at position pos. */
-FIRM_API ident *get_irp_asm(int pos);
+FIRM_API ident *get_irp_asm(size_t pos);
 
 #include "end.h"
 
