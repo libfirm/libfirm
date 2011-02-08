@@ -173,9 +173,7 @@
 
 /** Set a length smaller than the current length of the array.  Do not
  *  resize. len must be <= ARR_LEN(arr). */
-#define ARR_SHRINKLEN(arr,len)                                          \
-   (ARR_VRFY((arr)), assert(ARR_DESCR((arr))->nelts >= len),             \
-    ARR_DESCR((arr))->nelts = len)
+static inline void ARR_SHRINKLEN(void *arr, size_t new_len);
 
 /**
  * Resize a flexible array by growing it by delta elements.
@@ -254,6 +252,13 @@ FIRM_API void ir_verify_arr(const void *elts);
 
 #define ARR_ELTS_OFFS offsetof(ir_arr_descr, elts)
 #define ARR_DESCR(elts) ((ir_arr_descr *)(void *)((char *)(elts) - ARR_ELTS_OFFS))
+
+static inline void ARR_SHRINKLEN(void *arr, size_t new_len)
+{
+	ARR_VRFY(arr);
+	assert(ARR_DESCR(arr)->nelts >= new_len);
+	ARR_DESCR(arr)->nelts = new_len;
+}
 
 #include "../end.h"
 
