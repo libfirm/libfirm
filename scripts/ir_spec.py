@@ -477,34 +477,6 @@ class Div(Op):
 	op_index    = 1
 	arity_override = "oparity_binary"
 
-class DivMod(Op):
-	"""divides its 2 operands and computes the remainder of the division"""
-	ins   = [
-		("mem",   "memory dependency"),
-		("left",  "first operand"),
-		("right", "second operand"),
-	]
-	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res_div",   "result of computation a/b",             "pn_Generic_other"),
-		("res_mod",   "result of computation a%b"),
-	]
-	flags = [ "fragile", "uses_memory" ]
-	attrs_name = "divmod"
-	attrs = [
-		dict(
-			type    = "ir_mode*",
-			name    = "resmode",
-			comment = "mode of the result value",
-		),
-	]
-	attr_struct = "divmod_attr"
-	pinned      = "exception"
-	op_index    = 1
-	arity_override = "oparity_binary"
-
 class Dummy(Op):
 	"""A placeholder value. This is used when constructing cyclic graphs where
 	you have cases where not all predecessors of a phi-node are known. Dummy

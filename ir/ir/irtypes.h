@@ -289,7 +289,7 @@ typedef struct conv_attr {
 	char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
 } conv_attr;
 
-/** Div/Mod/DivMod/Quot attribute. */
+/** Div/Mod/Quot attribute. */
 typedef struct divmod_attr {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 	ir_mode        *resmode;      /**< Result mode for the division. */
@@ -336,7 +336,7 @@ typedef union ir_attr {
 	copyb_attr     copyb;         /**< For CopyB operation */
 	bound_attr     bound;         /**< For Bound operation */
 	conv_attr      conv;          /**< For Conv operation */
-	divmod_attr    divmod;        /**< For Div/Mod/DivMod operation */
+	divmod_attr    divmod;        /**< For Div/Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
 } ir_attr;
 

@@ -724,9 +724,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 	case iro_Mod:
 		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Mod_resmode(n), NULL));
 		break;
-	case iro_DivMod:
-		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_DivMod_resmode(n), NULL));
-		break;
 	case iro_Builtin:
 		fprintf(F, "%s[%s]", get_irn_opname(n), get_builtin_kind_name(get_Builtin_kind(n)));
 		break;
@@ -845,17 +842,6 @@ static const pns_lookup_t quot_lut[] = {
 #undef X
 };
 
-/** the lookup table for Proj(DivMod) names */
-static const pns_lookup_t divmod_lut[] = {
-#define X(a)    { pn_DivMod_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res_div),
-	X(res_mod)
-#undef X
-};
-
 /** the lookup table for Proj(Div) names */
 static const pns_lookup_t div_lut[] = {
 #define X(a)    { pn_Div_##a, #a }
@@ -949,7 +935,6 @@ static const proj_lookup_t proj_lut[] = {
 	{ iro_Cond,    E(cond_lut) },
 	{ iro_Call,    E(call_lut) },
 	{ iro_Quot,    E(quot_lut) },
-	{ iro_DivMod,  E(divmod_lut) },
 	{ iro_Div,     E(div_lut) },
 	{ iro_Mod,     E(mod_lut) },
 	{ iro_Load,    E(load_lut) },

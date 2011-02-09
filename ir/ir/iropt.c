@@ -594,24 +594,6 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 }  /* do_computed_value_Mod */
 
 /**
- * Return the value of a Proj(DivMod).
- */
-static ir_tarval *computed_value_Proj_DivMod(const ir_node *n)
-{
-	long proj_nr = get_Proj_proj(n);
-
-	/* compute either the Div or the Mod part */
-	if (proj_nr == pn_DivMod_res_div) {
-		const ir_node *a = get_Proj_pred(n);
-		return do_computed_value_Div(get_DivMod_left(a), get_DivMod_right(a));
-	} else if (proj_nr == pn_DivMod_res_mod) {
-		const ir_node *a = get_Proj_pred(n);
-		return do_computed_value_Mod(get_DivMod_left(a), get_DivMod_right(a));
-	}
-	return tarval_bad;
-}  /* computed_value_Proj_DivMod */
-
-/**
  * Return the value of a Proj(Div).
  */
 static ir_tarval *computed_value_Proj_Div(const ir_node *n)
@@ -723,7 +705,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE(Mux);
 	CASE(Confirm);
 	CASE_PROJ(Cmp);
-	CASE_PROJ(DivMod);
 	CASE_PROJ(Div);
 	CASE_PROJ(Mod);
 	CASE_PROJ(Quot);
@@ -1566,40 +1547,6 @@ static ir_node *equivalent_node_Proj_Quot(ir_node *proj)
 }  /* equivalent_node_Proj_Quot */
 
 /**
- * Optimize a / 1 = a.
- */
-static ir_node *equivalent_node_Proj_DivMod(ir_node *proj)
-{
-	ir_node   *oldn   = proj;
-	ir_node   *divmod = get_Proj_pred(proj);
-	ir_node   *b      = get_DivMod_right(divmod);
-	ir_tarval *tb     = value_of(b);
-
-	/* Div is not commutative. */
-	if (tarval_is_one(tb)) { /* div(x, 1) == x */
-		switch (get_Proj_proj(proj)) {
-		case pn_DivMod_M:
-			proj = get_DivMod_mem(divmod);
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
-			return proj;
-
-		case pn_DivMod_res_div:
-			proj = get_DivMod_left(divmod);
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
-			return proj;
-
-		default:
-			/* we cannot replace the exception Proj's here, this is done in
-			   transform_node_Proj_DivMod().
-			   Note further that the pn_DivMod_res_div case is handled in
-			   computed_value_Proj(). */
-			return proj;
-		}
-	}
-	return proj;
-}  /* equivalent_node_Proj_DivMod */
-
-/**
  * Optimize CopyB(mem, x, x) into a Nop.
  */
 static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
@@ -1949,7 +1896,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE_PROJ(Tuple);
 	CASE_PROJ(Div);
 	CASE_PROJ(Quot);
-	CASE_PROJ(DivMod);
 	CASE_PROJ(CopyB);
 	CASE_PROJ(Bound);
 	CASE_PROJ(Load);
@@ -3072,121 +3018,6 @@ make_tuple:
 }  /* transform_node_Mod */
 
 /**
- * Transform a DivMod node.
- */
-static ir_node *transform_node_DivMod(ir_node *n)
-{
-	const ir_node *dummy;
-	ir_node       *a = get_DivMod_left(n);
-	ir_node       *b = get_DivMod_right(n);
-	ir_mode       *mode = get_DivMod_resmode(n);
-	ir_node       *va, *vb;
-	ir_graph      *irg = get_irn_irg(n);
-	ir_tarval     *ta, *tb;
-	int           evaluated = 0;
-
-	if (is_Const(b) && is_const_Phi(a)) {
-		/* check for Div(Phi, Const) */
-		va = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_div, mode, 0);
-		vb = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_mod, mode, 0);
-		if (va && vb) {
-			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
-			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
-			goto make_tuple;
-		}
-	}
-	else if (is_Const(a) && is_const_Phi(b)) {
-		/* check for Div(Const, Phi) */
-		va = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
-		vb = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_mod, mode, 1);
-		if (va && vb) {
-			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
-			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
-			goto make_tuple;
-		}
-	}
-	else if (is_const_Phi(a) && is_const_Phi(b)) {
-		/* check for Div(Phi, Phi) */
-		va = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
-		vb = apply_binop_on_2_phis(a, b, (eval_func) tarval_mod, mode);
-		if (va && vb) {
-			DBG_OPT_ALGSIM0(n, va, FS_OPT_CONST_PHI);
-			DBG_OPT_ALGSIM0(n, vb, FS_OPT_CONST_PHI);
-			goto make_tuple;
-		}
-	}
-
-	ta = value_of(a);
-	tb = value_of(b);
-	if (tb != tarval_bad) {
-		if (tb == get_mode_one(get_tarval_mode(tb))) {
-			va = a;
-			vb = new_r_Const(irg, get_mode_null(mode));
-			DBG_OPT_CSTEVAL(n, vb);
-			goto make_tuple;
-		} else if (ta != tarval_bad) {
-			ir_tarval *resa, *resb;
-			resa = tarval_div(ta, tb);
-			if (resa == tarval_bad) return n; /* Causes exception!!! Model by replacing through
-			                                     Jmp for X result!? */
-			resb = tarval_mod(ta, tb);
-			if (resb == tarval_bad) return n; /* Causes exception! */
-			va = new_r_Const(irg, resa);
-			vb = new_r_Const(irg, resb);
-			DBG_OPT_CSTEVAL(n, va);
-			DBG_OPT_CSTEVAL(n, vb);
-			goto make_tuple;
-		} else if (mode_is_signed(mode) && tb == get_mode_minus_one(mode)) {
-			va = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
-			vb = new_r_Const(irg, get_mode_null(mode));
-			DBG_OPT_CSTEVAL(n, va);
-			DBG_OPT_CSTEVAL(n, vb);
-			goto make_tuple;
-		} else { /* Try architecture dependent optimization */
-			va = a;
-			vb = b;
-			arch_dep_replace_divmod_by_const(&va, &vb, n);
-			evaluated = va != NULL;
-		}
-	} else if (a == b) {
-		if (value_not_zero(a, &dummy)) {
-			/* a/a && a != 0 */
-			va = new_r_Const(irg, get_mode_one(mode));
-			vb = new_r_Const(irg, get_mode_null(mode));
-			DBG_OPT_CSTEVAL(n, va);
-			DBG_OPT_CSTEVAL(n, vb);
-			goto make_tuple;
-		} else {
-			/* BEWARE: it is NOT possible to optimize a/a to 1, as this may cause a exception */
-			return n;
-		}
-	} else if (ta == get_mode_null(mode) && value_not_zero(b, &dummy)) {
-		/* 0 / non-Const = 0 */
-		vb = va = a;
-		goto make_tuple;
-	}
-
-	if (evaluated) { /* replace by tuple */
-		ir_node *mem, *blk;
-
-make_tuple:
-		mem = get_DivMod_mem(n);
-		/* skip a potential Pin */
-		mem = skip_Pin(mem);
-
-		blk = get_nodes_block(n);
-		turn_into_tuple(n, pn_DivMod_max);
-		set_Tuple_pred(n, pn_DivMod_M,         mem);
-		set_Tuple_pred(n, pn_DivMod_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_DivMod_X_except,  get_irg_bad(irg)); /*no exception*/
-		set_Tuple_pred(n, pn_DivMod_res_div,   va);
-		set_Tuple_pred(n, pn_DivMod_res_mod,   vb);
-	}
-
-	return n;
-}  /* transform_node_DivMod */
-
-/**
  * Optimize x / c to x * (1/c)
  */
 static ir_node *transform_node_Quot(ir_node *n)
@@ -3978,71 +3809,6 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 }  /* transform_node_Proj_Mod */
 
 /**
- * Transform a Proj(DivMod) with a non-zero value.
- * Removes the exceptions and routes the memory to the NoMem node.
- */
-static ir_node *transform_node_Proj_DivMod(ir_node *proj)
-{
-	ir_node *divmod = get_Proj_pred(proj);
-	ir_node *b      = get_DivMod_right(divmod);
-	ir_node *res, *new_mem;
-	const ir_node *confirm;
-	long proj_nr;
-
-	if (value_not_zero(b, &confirm)) {
-		/* DivMod(x, y) && y != 0 */
-		proj_nr = get_Proj_proj(proj);
-
-		if (confirm == NULL) {
-			/* we are sure we have a Const != 0 */
-			new_mem = get_DivMod_mem(divmod);
-			new_mem = skip_Pin(new_mem);
-			set_DivMod_mem(divmod, new_mem);
-			set_irn_pinned(divmod, op_pin_state_floats);
-		}
-
-		switch (proj_nr) {
-
-		case pn_DivMod_X_regular:
-			return new_r_Jmp(get_nodes_block(divmod));
-
-		case pn_DivMod_X_except: {
-			/* we found an exception handler, remove it */
-			ir_graph *irg = get_irn_irg(proj);
-			DBG_OPT_EXC_REM(proj);
-			return get_irg_bad(irg);
-		}
-
-		case pn_DivMod_M: {
-			ir_graph *irg = get_irn_irg(proj);
-			res = get_DivMod_mem(divmod);
-			new_mem = get_irg_no_mem(irg);
-
-			if (confirm) {
-				/* This node can only float up to the Confirm block */
-				new_mem = new_r_Pin(get_nodes_block(confirm), new_mem);
-			}
-			/* this is a DivMod without exception, we can remove the memory edge */
-			set_DivMod_mem(divmod, new_mem);
-			return res;
-		}
-
-		case pn_DivMod_res_mod:
-			if (get_DivMod_left(divmod) == b) {
-				/* a % a = 0 if a != 0 */
-				ir_graph *irg  = get_irn_irg(proj);
-				ir_mode  *mode = get_irn_mode(proj);
-				ir_node  *res  = new_r_Const(irg, get_mode_null(mode));
-
-				DBG_OPT_CSTEVAL(divmod, res);
-				return res;
-			}
-		}
-	}
-	return proj;
-}  /* transform_node_Proj_DivMod */
-
-/**
  * Optimizes jump tables (CondIs or CondIu) by removing all impossible cases.
  */
 static ir_node *transform_node_Proj_Cond(ir_node *proj)
@@ -4735,8 +4501,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 	if ((proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg) && is_Const(right) && is_Const_null(right) && is_Proj(left)) {
 		ir_node *op = get_Proj_pred(left);
 
-		if ((is_Mod(op) && get_Proj_proj(left) == pn_Mod_res) ||
-		    (is_DivMod(op) && get_Proj_proj(left) == pn_DivMod_res_mod)) {
+		if (is_Mod(op) && get_Proj_proj(left) == pn_Mod_res) {
 			ir_node *c = get_binop_right(op);
 
 			if (is_Const(c)) {
@@ -6092,7 +5857,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Mul);
 	CASE_PROJ_EX(Div);
 	CASE_PROJ_EX(Mod);
-	CASE_PROJ_EX(DivMod);
 	CASE(Quot);
 	CASE_PROJ_EX(Cmp);
 	CASE_PROJ_EX(Cond);
@@ -6259,25 +6023,25 @@ static int node_cmp_attr_Div(ir_node *a, ir_node *b)
 		   ma->no_remainder  != mb->no_remainder;
 }  /* node_cmp_attr_Div */
 
-/** Compares the attributes of two DivMod nodes. */
-static int node_cmp_attr_DivMod(ir_node *a, ir_node *b)
+/** Compares the attributes of two Div or Mod nodes. */
+static int node_cmp_attr_Div_Mod(ir_node *a, ir_node *b)
 {
 	const divmod_attr *ma = &a->attr.divmod;
 	const divmod_attr *mb = &b->attr.divmod;
 	return ma->exc.pin_state != mb->exc.pin_state ||
 		   ma->resmode       != mb->resmode;
-}  /* node_cmp_attr_DivMod */
+}  /* node_cmp_attr_Div_Mod */
 
 /** Compares the attributes of two Mod nodes. */
 static int node_cmp_attr_Mod(ir_node *a, ir_node *b)
 {
-	return node_cmp_attr_DivMod(a, b);
+	return node_cmp_attr_Div_Mod(a, b);
 }  /* node_cmp_attr_Mod */
 
 /** Compares the attributes of two Quot nodes. */
 static int node_cmp_attr_Quot(ir_node *a, ir_node *b)
 {
-	return node_cmp_attr_DivMod(a, b);
+	return node_cmp_attr_Div_Mod(a, b);
 }  /* node_cmp_attr_Quot */
 
 /** Compares the attributes of two Confirm nodes. */
@@ -6381,7 +6145,6 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(Confirm);
 	CASE(ASM);
 	CASE(Div);
-	CASE(DivMod);
 	CASE(Mod);
 	CASE(Quot);
 	CASE(Bound);

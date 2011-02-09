@@ -1116,7 +1116,6 @@ static ir_mode *get_irn_res_mode(ir_node *node)
 	case iro_Quot:   return get_Quot_resmode(node);
 	case iro_Div:    return get_Div_resmode(node);
 	case iro_Mod:    return get_Mod_resmode(node);
-	case iro_DivMod: return get_DivMod_resmode(node);
 	default: return NULL;
 	}
 }  /* get_irn_res_mode */

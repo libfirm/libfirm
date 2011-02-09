@@ -269,7 +269,6 @@
  *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Mulh   (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state;
  *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -699,15 +698,6 @@
  *    Output:
  *      A tuple containing a memory and a execution for modeling exceptions
  *      and the result of the arithmetic operation.
- *
- *    ir_node *new_DivMod (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
- *    ---------------------------------------------------------------------------------------------------
- *
- *    Performs Div and Mod on integer values.
- *
- *    Output:
- *      A tuple containing a memory and a execution for modeling exceptions
- *      and the two result of the arithmetic operations.
  *
  *    ir_node *new_Div (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
  *    ------------------------------------------------------------------------------------------------

@@ -820,7 +820,7 @@ static struct mu magicu(ir_tarval *d)
 /**
  * Build the Mulh replacement code for n / tv.
  *
- * Note that 'div' might be a mod or DivMod operation as well
+ * Note that 'div' might be a Mod operation as well
  */
 static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 {
@@ -1087,112 +1087,4 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 		hook_arch_dep_replace_division_by_const(irn);
 
 	return res;
-}
-
-/* Replace DivMods with Shifts and Add/Subs and Mulh. */
-void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod, ir_node *irn)
-{
-	const ir_settings_arch_dep_t *params = be_get_backend_param()->dep_param;
-	*div = *mod = NULL;
-
-	/* If the architecture dependent optimizations were not initialized
-	   or this optimization was not enabled. */
-	if (params == NULL ||
-		((opts & (arch_dep_div_by_const|arch_dep_mod_by_const)) != (arch_dep_div_by_const|arch_dep_mod_by_const)))
-		return;
-
-	if (is_DivMod(irn)) {
-		ir_node *c = get_DivMod_right(irn);
-		ir_node *block, *left;
-		ir_mode *mode;
-		ir_tarval *tv, *ntv;
-		dbg_info *dbg;
-		int n, bits;
-		int k;
-		int n_flag = 0;
-
-		if (! is_Const(c))
-			return;
-
-		tv = get_Const_tarval(c);
-
-		/* check for division by zero */
-		if (tarval_is_null(tv))
-			return;
-
-		left  = get_DivMod_left(irn);
-		mode  = get_irn_mode(left);
-		block = get_irn_n(irn, -1);
-		dbg   = get_irn_dbg_info(irn);
-
-		bits = get_mode_size_bits(mode);
-		n    = (bits + 7) / 8;
-
-		k = -1;
-		if (mode_is_signed(mode)) {
-			/* for signed divisions, the algorithm works for a / -2^k by negating the result */
-			ntv = tarval_neg(tv);
-			n_flag = 1;
-			k = tv_ld2(ntv, n);
-		}
-
-		if (k < 0) {
-			n_flag = 0;
-			k = tv_ld2(tv, n);
-		}
-
-		if (k >= 0) { /* division by 2^k or -2^k */
-			ir_graph *irg = get_irn_irg(irn);
-			if (mode_is_signed(mode)) {
-				ir_node *k_node, *c_k;
-				ir_node *curr = left;
-
-				if (k != 1) {
-					k_node = new_r_Const_long(irg, mode_Iu, k - 1);
-					curr   = new_rd_Shrs(dbg, block, left, k_node, mode);
-				}
-
-				k_node = new_r_Const_long(irg, mode_Iu, bits - k);
-				curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
-
-				curr   = new_rd_Add(dbg, block, left, curr, mode);
-
-				c_k    = new_r_Const_long(irg, mode_Iu, k);
-
-				*div   = new_rd_Shrs(dbg, block, curr, c_k, mode);
-
-				if (n_flag) { /* negate the div result */
-					ir_node *k_node = new_r_Const(irg, get_mode_null(mode));
-					*div = new_rd_Sub(dbg, block, k_node, *div, mode);
-				}
-
-				k_node = new_r_Const_long(irg, mode, (-1) << k);
-				curr   = new_rd_And(dbg, block, curr, k_node, mode);
-
-				*mod   = new_rd_Sub(dbg, block, left, curr, mode);
-			} else {      /* unsigned case */
-				ir_node *k_node = new_r_Const_long(irg, mode_Iu, k);
-				*div   = new_rd_Shr(dbg, block, left, k_node, mode);
-
-				k_node = new_r_Const_long(irg, mode, (1 << k) - 1);
-				*mod   = new_rd_And(dbg, block, left, k_node, mode);
-			}
-		} else {
-			/* other constant */
-			if (allow_Mulh(params, mode)) {
-				ir_node *t;
-
-				*div = replace_div_by_mulh(irn, tv);
-
-				t    = new_rd_Mul(dbg, block, *div, c, mode);
-
-				/* t = arch_dep_mul_to_shift(t); */
-
-				*mod = new_rd_Sub(dbg, block, left, t, mode);
-			}
-		}
-	}
-
-	if (*div)
-		hook_arch_dep_replace_division_by_const(irn);
 }

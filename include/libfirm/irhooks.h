@@ -159,7 +159,7 @@ typedef struct hook_entry {
 		/** This hook is called after a Mul was replaced by a series of Shift and Add/Sub operations. */
 		void (*_hook_arch_dep_replace_mul_with_shifts)(void *context, ir_node *irn);
 
-		/** This hook is called after a Div/Mod/DivMod by a constant value was replaced. */
+		/** This hook is called after a Div/Mod by a constant value was replaced. */
 		void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
 
 		/** This hook is called after a new mode was registered. */

@@ -466,40 +466,6 @@ static int verify_node_Proj_Quot(ir_node *n, ir_node *p)
 }
 
 /**
- * verify a Proj(DivMod) node
- */
-static int verify_node_Proj_DivMod(ir_node *n, ir_node *p)
-{
-	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
-
-	ASSERT_AND_RET_DBG(
-		(
-			(proj == pn_DivMod_M         && mode == mode_M) ||
-			(proj == pn_DivMod_X_regular && mode == mode_X) ||
-			(proj == pn_DivMod_X_except  && mode == mode_X) ||
-			(proj == pn_DivMod_res_div   && mode_is_int(mode) && mode == get_DivMod_resmode(n)) ||
-			(proj == pn_DivMod_res_mod   && mode_is_int(mode) && mode == get_DivMod_resmode(n))
-		),
-		"wrong Proj from DivMod", 0,
-		show_proj_failure(p);
-	);
-	if (proj == pn_DivMod_X_regular)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Regular Proj from unpinned DivMod", 0);
-	else if (proj == pn_DivMod_X_except)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Exception Proj from unpinned DivMod", 0);
-	else if (proj == pn_DivMod_M)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Memory Proj from unpinned DivMod", 0);
-	return 1;
-}
-
-/**
  * verify a Proj(Div) node
  */
 static int verify_node_Proj_Div(ir_node *n, ir_node *p)
@@ -1328,28 +1294,6 @@ static int verify_node_Quot(ir_node *n, ir_graph *irg)
 		"Quot node",0,
 		show_binop_failure(n, "/* Quot: BB x M x float x float --> M x X x float */");
 	);
-	return 1;
-}
-
-/**
- * verify a DivMod node
- */
-static int verify_node_DivMod(ir_node *n, ir_graph *irg)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_DivMod_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_DivMod_left(n));
-	ir_mode *op3mode = get_irn_mode(get_DivMod_right(n));
-	(void) irg;
-
-	ASSERT_AND_RET(
-		/* DivMod: BB x M x int x int --> M x X x int x int */
-		op1mode == mode_M &&
-		mode_is_int(op2mode) &&
-		op3mode == op2mode &&
-		mymode == mode_T,
-		"DivMod node", 0
-		);
 	return 1;
 }
 
@@ -2213,7 +2157,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Mul);
 	CASE(Mulh);
 	CASE(Quot);
-	CASE(DivMod);
 	CASE(Div);
 	CASE(Mod);
 	CASE(And);
@@ -2254,7 +2197,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(InstOf);
 	CASE(Call);
 	CASE(Quot);
-	CASE(DivMod);
 	CASE(Div);
 	CASE(Mod);
 	CASE(Cmp);

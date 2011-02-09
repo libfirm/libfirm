@@ -250,8 +250,6 @@ static ir_mode *get_irn_op_mode(ir_node *node)
 		return get_Load_mode(node);
 	case iro_Store:
 		return get_irn_mode(get_Store_value(node));
-	case iro_DivMod:
-		return get_irn_mode(get_DivMod_left(node));
 	case iro_Div:
 		return get_irn_mode(get_Div_left(node));
 	case iro_Mod:
@@ -626,14 +624,6 @@ static void lower_Mod(ir_node *node, ir_mode *mode, lower_env_t *env)
 		 * into out new nodes. */
 		mark_irn_visited(proj);
 	}
-}
-
-static void lower_DivMod(ir_node *node, ir_mode *mode, lower_env_t *env)
-{
-	(void) node;
-	(void) mode;
-	(void) env;
-	panic("DivMod is deprecated, no doubleword lowering");
 }
 
 /**
@@ -2366,7 +2356,6 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	enter_lower_func(op_Const,   lower_Const);
 	enter_lower_func(op_Conv,    lower_Conv);
 	enter_lower_func(op_Div,     lower_Div);
-	enter_lower_func(op_DivMod,  lower_DivMod);
 	enter_lower_func(op_Eor,     lower_Eor);
 	enter_lower_func(op_Load,    lower_Load);
 	enter_lower_func(op_Minus,   lower_Unop);

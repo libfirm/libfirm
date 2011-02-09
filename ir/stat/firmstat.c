@@ -65,9 +65,6 @@ static ir_op _op_DivC;
 /** The Div by Const node. */
 static ir_op _op_ModC;
 
-/** The Div by Const node. */
-static ir_op _op_DivModC;
-
 /** The Quot by Const node. */
 static ir_op _op_QuotC;
 
@@ -593,12 +590,6 @@ static ir_op *stat_get_irn_op(ir_node *node)
 			op = status->op_ModC ? status->op_ModC : op;
 		}  /* if */
 		break;
-	case iro_DivMod:
-		if (is_Const(get_DivMod_right(node))) {
-			/* special case, a division/modulo by a const, count on extra counter */
-			op = status->op_DivModC ? status->op_DivModC : op;
-		}  /* if */
-		break;
 	case iro_Quot:
 		if (is_Const(get_Quot_right(node))) {
 			/* special case, a floating point division by a const, count on extra counter */
@@ -1113,8 +1104,6 @@ static ir_mode *get_irn_op_mode(ir_node *node)
 		return get_Load_mode(node);
 	case iro_Store:
 		return get_irn_mode(get_Store_value(node));
-	case iro_DivMod:
-		return get_irn_mode(get_DivMod_left(node));
 	case iro_Div:
 		return get_irn_mode(get_Div_left(node));
 	case iro_Mod:
@@ -2386,9 +2375,6 @@ void firm_init_stat(unsigned enable_options)
 		_op_ModC.code    = --num;
 		_op_ModC.name    = new_id_from_chars(X("ModC"));
 
-		_op_DivModC.code = --num;
-		_op_DivModC.name = new_id_from_chars(X("DivModC"));
-
 		_op_QuotC.code   = --num;
 		_op_QuotC.name   = new_id_from_chars(X("QuotC"));
 
@@ -2398,7 +2384,6 @@ void firm_init_stat(unsigned enable_options)
 		status->op_MulC    = &_op_MulC;
 		status->op_DivC    = &_op_DivC;
 		status->op_ModC    = &_op_ModC;
-		status->op_DivModC = &_op_DivModC;
 		status->op_QuotC   = &_op_QuotC;
 	} else {
 		status->op_Phi0    = NULL;
@@ -2407,7 +2392,6 @@ void firm_init_stat(unsigned enable_options)
 		status->op_MulC    = NULL;
 		status->op_DivC    = NULL;
 		status->op_ModC    = NULL;
-		status->op_DivModC = NULL;
 		status->op_QuotC   = NULL;
 	}  /* if */
 

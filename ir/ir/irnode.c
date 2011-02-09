@@ -968,15 +968,6 @@ void set_Sel_index(ir_node *node, int pos, ir_node *index)
 	set_irn_n(node, pos + SEL_INDEX_OFFSET, index);
 }
 
-
-/* For unary and binary arithmetic operations the access to the
-   operands can be factored out.  Left is the first, right the
-   second arithmetic value  as listed in tech report 0999-33.
-   unops are: Minus, Abs, Not, Conv, Cast
-   binops are: Add, Sub, Mul, Quot, DivMod, Div, Mod, And, Or, Eor, Shl,
-   Shr, Shrs, Rotate, Cmp */
-
-
 ir_node **get_Call_param_arr(ir_node *node)
 {
 	assert(is_Call(node));
@@ -1585,7 +1576,6 @@ ir_node *get_fragile_op_mem(ir_node *node)
 	switch (get_irn_opcode(node)) {
 	case iro_Call  :
 	case iro_Quot  :
-	case iro_DivMod:
 	case iro_Div   :
 	case iro_Mod   :
 	case iro_Load  :
@@ -1597,19 +1587,6 @@ ir_node *get_fragile_op_mem(ir_node *node)
 	case iro_Bad   :
 	case iro_Unknown:
 		return node;
-	default:
-		panic("should not be reached");
-	}
-}
-
-/* Returns the result mode of a Div operation. */
-ir_mode *get_divop_resmod(const ir_node *node)
-{
-	switch (get_irn_opcode(node)) {
-	case iro_Quot  : return get_Quot_resmode(node);
-	case iro_DivMod: return get_DivMod_resmode(node);
-	case iro_Div   : return get_Div_resmode(node);
-	case iro_Mod   : return get_Mod_resmode(node);
 	default:
 		panic("should not be reached");
 	}

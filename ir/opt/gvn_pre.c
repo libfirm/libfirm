@@ -191,7 +191,7 @@ static int is_nice_value(ir_node *n)
 		return 0;
 	mode = get_irn_mode(n);
 	if (!mode_is_data(mode)) {
-		if (! is_Div(n) && ! is_Mod(n) && ! is_DivMod(n))
+		if (! is_Div(n) && ! is_Mod(n))
 			return 0;
 		if (! is_NoMem(get_fragile_op_mem(n)))
 			return 0;

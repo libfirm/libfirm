@@ -1066,8 +1066,14 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	match_flags_t        flags = match_commutative;
 
 	/* happens for div nodes... */
-	if (mode == mode_T)
-		mode = get_divop_resmod(node);
+	if (mode == mode_T) {
+		if (is_Div(node))
+			mode = get_Div_resmode(node);
+		else if (is_Mod(node))
+			mode = get_Mod_resmode(node);
+		else
+			panic("can't determine mode");
+	}
 
 	/* cannot use address mode with long double on x87 */
 	if (get_mode_size_bits(mode) <= 64)
@@ -1533,7 +1539,7 @@ static ir_node *create_sex_32_64(dbg_info *dbgi, ir_node *block,
 }
 
 /**
- * Generates an ia32 DivMod with additional infrastructure for the
+ * Generates an ia32 Div with additional infrastructure for the
  * register allocator if needed.
  */
 static ir_node *create_Div(ir_node *node)
@@ -1564,12 +1570,6 @@ static ir_node *create_Div(ir_node *node)
 		op2     = get_Mod_right(node);
 		mem     = get_Mod_mem(node);
 		mode    = get_Mod_resmode(node);
-		break;
-	case iro_DivMod:
-		op1     = get_DivMod_left(node);
-		op2     = get_DivMod_right(node);
-		mem     = get_DivMod_mem(node);
-		mode    = get_DivMod_resmode(node);
 		break;
 	default:
 		panic("invalid divmod node %+F", node);
@@ -1620,15 +1620,6 @@ static ir_node *gen_Div(ir_node *node)
 {
 	return create_Div(node);
 }
-
-/**
- * Generates an ia32 DivMod.
- */
-static ir_node *gen_DivMod(ir_node *node)
-{
-	return create_Div(node);
-}
-
 
 
 /**
@@ -4583,9 +4574,9 @@ static ir_node *gen_Proj_Load(ir_node *node)
 }
 
 /**
- * Transform and renumber the Projs from a DivMod like instruction.
+ * Transform and renumber the Projs from a Div or Mod instruction.
  */
-static ir_node *gen_Proj_DivMod(ir_node *node)
+static ir_node *gen_Proj_Div_Mod(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -4624,28 +4615,11 @@ static ir_node *gen_Proj_DivMod(ir_node *node)
 			break;
 		}
 		break;
-	case iro_DivMod:
-		switch (proj) {
-		case pn_DivMod_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_Div_M);
-		case pn_DivMod_res_div:
-			return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_ia32_Div_div_res);
-		case pn_DivMod_res_mod:
-			return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_ia32_Div_mod_res);
-		case pn_DivMod_X_regular:
-			return new_rd_Jmp(dbgi, block);
-		case pn_DivMod_X_except:
-			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_exc);
-		default:
-			break;
-		}
-		break;
 	default:
 		break;
 	}
 
-	panic("No idea how to transform proj->DivMod");
+	panic("No idea how to transform proj->Div/Mod");
 }
 
 /**
@@ -5625,8 +5599,7 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Builtin(node);
 	case iro_Div:
 	case iro_Mod:
-	case iro_DivMod:
-		return gen_Proj_DivMod(node);
+		return gen_Proj_Div_Mod(node);
 	case iro_CopyB:
 		return gen_Proj_CopyB(node);
 	case iro_Quot:
@@ -5706,7 +5679,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_Conv,             gen_Conv);
 	be_set_transform_function(op_CopyB,            ia32_gen_CopyB);
 	be_set_transform_function(op_Div,              gen_Div);
-	be_set_transform_function(op_DivMod,           gen_DivMod);
 	be_set_transform_function(op_Eor,              gen_Eor);
 	be_set_transform_function(op_ia32_l_Adc,       gen_ia32_l_Adc);
 	be_set_transform_function(op_ia32_l_Add,       gen_ia32_l_Add);

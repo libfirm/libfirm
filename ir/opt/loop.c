@@ -1675,7 +1675,7 @@ static void create_duffs_block(void)
 	ir_mode *mode;
 
 	ir_node *block1, *count_block, *duff_block;
-	ir_node *ems, *ems_divmod, *ems_mod_proj, *cmp_null,
+	ir_node *ems, *ems_mod, *ems_div, *ems_mod_proj, *cmp_null,
 	        *cmp_proj, *ems_mode_cond, *x_true, *x_false, *const_null;
 	ir_node *true_val, *false_val;
 	ir_node *ins[2];
@@ -1713,17 +1713,23 @@ static void create_duffs_block(void)
 	ems = new_Sub(loop_info.end_val, loop_info.start_val,
 		get_irn_mode(loop_info.end_val));
 
-	DB((dbg, LEVEL_4, "divmod ins %N %N\n", ems, loop_info.step));
-	ems_divmod = new_r_DivMod(block1,
+	DB((dbg, LEVEL_4, "mod ins %N %N\n", ems, loop_info.step));
+	ems_mod = new_r_Mod(block1,
+		new_NoMem(),
+		ems,
+		loop_info.step,
+		mode,
+		op_pin_state_pinned);
+	ems_div = new_r_Div(block1,
 		new_NoMem(),
 		ems,
 		loop_info.step,
 		mode,
 		op_pin_state_pinned);
 
-	DB((dbg, LEVEL_4, "New module node %N\n", ems_divmod));
+	DB((dbg, LEVEL_4, "New module node %N\n", ems_mod));
 
-	ems_mod_proj = new_r_Proj(ems_divmod, mode_Iu, pn_DivMod_res_mod);
+	ems_mod_proj = new_r_Proj(ems_mod, mode_Iu, pn_Mod_res);
 	cmp_null = new_r_Cmp(block1, ems_mod_proj, const_null);
 	cmp_proj = new_r_Proj(cmp_null, mode_b, pn_Cmp_Eq);
 	ems_mode_cond = new_r_Cond(block1, cmp_proj);
@@ -1767,7 +1773,7 @@ static void create_duffs_block(void)
 
 	correction = new_r_Phi(count_block, 2, ins, mode);
 
-	count = new_r_Proj(ems_divmod, mode, pn_DivMod_res_div);
+	count = new_r_Proj(ems_div, mode, pn_Div_res);
 
 	/* (end - start) / step  +  correction */
 	count = new_Add(count, correction, mode);

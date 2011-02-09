@@ -140,25 +140,6 @@ FIRM_API ir_node *arch_dep_replace_div_by_const(ir_node *irn);
  */
 FIRM_API ir_node *arch_dep_replace_mod_by_const(ir_node *irn);
 
-/**
- * Replace DivMods with Shifts and Add/Subs and Mulh.
- * This function is driven by the 3 parameters:
- * - allow_mulhu
- * - allow_mulhs
- * - max_bits_for_mulh
- *
- * If irn is a DivMod with a Const, the constant is inspected if it meets the
- * requirements of the variables stated above. If a Shl/Add/Sub/Mulh
- * sequence can be generated that meets these requirements, this expression
- * is returned. In each other case irn is returned unmodified.
- *
- * @param div       After call contains the Firm node div result or NULL.
- * @param mod       After call contains the Firm node mod result or NULL.
- * @param irn       The Firm node to inspect.
- */
-FIRM_API void arch_dep_replace_divmod_by_const(ir_node **div, ir_node **mod,
-                                               ir_node *irn);
-
 #include "end.h"
 
 #endif
