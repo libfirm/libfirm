@@ -968,7 +968,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 {
 	inline_irg_env   *env;
 	ir_graph         *irg;
-	int              i, n_irgs;
+	size_t           i, n_irgs;
 	ir_graph         *rem;
 	int              did_inline;
 	wenv_t           wenv;
@@ -1473,16 +1473,18 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	return entry->benefice = weight;
 }
 
-static ir_graph **irgs;
-static int      last_irg;
+typedef struct walk_env_t {
+	ir_graph **irgs;
+	size_t   last_irg;
+} walk_env_t;
 
 /**
  * Callgraph walker, collect all visited graphs.
  */
 static void callgraph_walker(ir_graph *irg, void *data)
 {
-	(void) data;
-	irgs[last_irg++] = irg;
+	walk_env_t *env = (walk_env_t *)data;
+	env->irgs[env->last_irg++] = irg;
 }
 
 /**
@@ -1492,21 +1494,22 @@ static void callgraph_walker(ir_graph *irg, void *data)
  */
 static ir_graph **create_irg_list(void)
 {
-	ir_entity **free_methods;
-	int       n_irgs = get_irp_n_irgs();
+	ir_entity  **free_methods;
+	size_t     n_irgs = get_irp_n_irgs();
+	walk_env_t env;
 
 	cgana(&free_methods);
 	xfree(free_methods);
 
 	compute_callgraph();
 
-	last_irg = 0;
-	irgs     = XMALLOCNZ(ir_graph*, n_irgs);
+	env.irgs     = XMALLOCNZ(ir_graph*, n_irgs);
+	env.last_irg = 0;
 
-	callgraph_walk(NULL, callgraph_walker, NULL);
-	assert(n_irgs == last_irg);
+	callgraph_walk(NULL, callgraph_walker, &env);
+	assert(n_irgs == env.last_irg);
 
-	return irgs;
+	return env.irgs;
 }
 
 /**
@@ -1721,7 +1724,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
                       opt_ptr after_inline_opt)
 {
 	inline_irg_env   *env;
-	int              i, n_irgs;
+	size_t           i, n_irgs;
 	ir_graph         *rem;
 	wenv_t           wenv;
 	pmap             *copied_graphs;

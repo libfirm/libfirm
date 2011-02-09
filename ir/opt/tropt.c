@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -44,9 +44,9 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /* - statistics ---------------------------------------------- */
 
-static int n_casts_normalized = 0;
-static int n_casts_removed    = 0;
-static int n_sels_concretized = 0;
+static size_t n_casts_normalized = 0;
+static size_t n_casts_removed    = 0;
+static size_t n_sels_concretized = 0;
 
 /* - Cast normalization. ------------------------------------- */
 
@@ -81,7 +81,7 @@ static ir_type *default_gen_pointer_type_to(ir_type *tp)
 }
 
 /** Return a type that is a depth times pointer to type. */
-static ir_type *pointerize_type(ir_type *tp, int depth)
+static ir_type *pointerize_type(ir_type *tp, size_t depth)
 {
 	for (; depth > 0; --depth) {
 		tp = gen_pointer_type_to(tp);
@@ -95,14 +95,14 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 	ir_type *fromtype = get_irn_typeinfo_type(pred);
 	ir_node *new_cast = pred;
 	ir_node *block;
-	int ref_depth = 0;
+	size_t  ref_depth = 0;
 
 	if (totype == fromtype) return pred;   /* Case for optimization! */
 
 	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
 		totype   = get_pointer_points_to_type(totype);
 		fromtype = get_pointer_points_to_type(fromtype);
-		ref_depth++;
+		++ref_depth;
 	}
 
 	if (!is_Class_type(totype))   return pred;
@@ -133,7 +133,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			new_type = pointerize_type(new_type, ref_depth);
 			new_cast = new_r_Cast(block, pred, new_type);
 			pred = new_cast;
-			n_casts_normalized ++;
+			++n_casts_normalized;
 			set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
 			if (get_trouts_state() != outs_none) add_type_cast(new_type, new_cast);
 		}
@@ -154,7 +154,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			new_type = pointerize_type(new_type, ref_depth);
 			new_cast = new_r_Cast(block, pred, new_type);
 			pred = new_cast;
-			n_casts_normalized ++;
+			++n_casts_normalized;
 			set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
 			if (get_trouts_state() != outs_none) add_type_cast(new_type, new_cast);
 		}
@@ -215,7 +215,7 @@ void normalize_irg_class_casts(ir_graph *irg, gen_pointer_type_to_func gppt_fct)
 
 void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct)
 {
-	int i;
+	size_t i, n;
 	if (gppt_fct) gen_pointer_type_to = gppt_fct;
 
 #if 0
@@ -223,14 +223,15 @@ void normalize_irp_class_casts(gen_pointer_type_to_func gppt_fct)
 		simple_analyse_types();
 #endif
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		pure_normalize_irg_class_casts(get_irp_irg(i));
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		pure_normalize_irg_class_casts(irg);
 	}
 
 	set_irp_class_cast_state(ir_class_casts_normalized);
 	gen_pointer_type_to = default_gen_pointer_type_to;
 
-	DB((dbg, SET_LEVEL_1, " Cast normalization: %d Casts inserted.\n", n_casts_normalized));
+	DB((dbg, SET_LEVEL_1, " Cast normalization: %zu Casts inserted.\n", n_casts_normalized));
 }
 
 
@@ -486,14 +487,14 @@ void optimize_class_casts(void)
 	all_irg_walk(NULL, irn_optimize_class_cast, &changed);
 
 	if (changed) {
-		int i;
+		size_t i, n;
 
 		set_trouts_inconsistent();
-		for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+		for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 			set_irg_outs_inconsistent(get_irp_irg(i));
 	}
 
-	DB((dbg, SET_LEVEL_1, " Cast optimization: %d Casts removed, %d Sels concretized.\n",
+	DB((dbg, SET_LEVEL_1, " Cast optimization: %zu Casts removed, %zu Sels concretized.\n",
 		n_casts_removed, n_sels_concretized));
 }
 

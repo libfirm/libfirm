@@ -1115,7 +1115,7 @@ ir_reg_tree *construct_region_tree(ir_graph *irg)
  */
 static void region_tree_walk2(ir_region *reg, irg_reg_walk_func *pre, irg_reg_walk_func *post, void *env)
 {
-	int i, n;
+	size_t i, n;
 
 	if (pre)
 		pre(reg, env);

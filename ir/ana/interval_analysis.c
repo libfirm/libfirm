@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -198,7 +198,7 @@ static int find_outer_loop(ir_loop *inner, ir_loop *outer, ir_node *blk, ir_node
  */
 static int test_loop_nest(ir_node *blk, ir_loop *loop)
 {
-	int i, n_elems = get_loop_n_elements(loop);
+	size_t i, n_elems = get_loop_n_elements(loop);
 
 	for (i = 0; i < n_elems; ++i) {
 		loop_element e = get_loop_element(loop, i);
@@ -231,7 +231,7 @@ static int test_loop_nest(ir_node *blk, ir_loop *loop)
  */
 static int find_inner_loop(ir_node *blk, ir_loop *l, ir_node *pred, ir_node *cfop)
 {
-	int i, n_elems = get_loop_n_elements(l);
+	size_t i, n_elems = get_loop_n_elements(l);
 	int found = 0;
 
 	for (i = 0; i < n_elems; ++i) {
@@ -275,14 +275,14 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b,
                               ir_node *pred_b, ir_node *cfop)
 {
 	ir_loop *outer = get_loop_outer_loop(l);
-	int found, i;
-	int l_pos = get_loop_element_pos(outer, l);
+	int found;
+	size_t i, l_pos = get_loop_element_pos(outer, l);
 	(void) pred_l;
-	assert(l_pos > -1);
+	assert(l_pos != INVALID_LOOP_POS);
 	assert(l_pos > 0 && "Is this a necessary condition?  There could be a perfect nest ...");
 
-	for (i = l_pos -1, found = 0; i > -1 && !found; --i) {
-		ir_loop *k = get_loop_element(outer, i).son;
+	for (i = l_pos, found = 0; i > 0;) {
+		ir_loop *k = get_loop_element(outer, --i).son;
 		if (is_ir_loop(k)) {
 			found = test_loop_nest(pred_b, k);
 			if (found) {
@@ -291,6 +291,7 @@ static int find_previous_loop(ir_loop *l, ir_loop *pred_l, ir_node *b,
 				add_loop_cfop(l, cfop);
 				/* placeholder: the edge is in the loop region */
 				add_region_in(b, NULL);
+				break;
 			}
 		}
 	}
@@ -402,7 +403,7 @@ static void construct_interval_block(ir_node *blk, ir_loop *l)
  */
 static void construct_interval_edges(ir_loop *l)
 {
-	int i, n_elems = get_loop_n_elements(l);
+	size_t i, n_elems = get_loop_n_elements(l);
 	for (i = 0; i < n_elems; ++i) {
 		loop_element e = get_loop_element(l, i);
 		switch (*e.kind) {
@@ -576,7 +577,7 @@ static void dump_interval_block(FILE *F, ir_node *block)
 
 static void dump_interval_loop(FILE *F, ir_loop *l)
 {
-	int i, n_elems = get_loop_n_elements(l);
+	size_t i, n_elems = get_loop_n_elements(l);
 
 	fprintf(F, "graph: { title: \"");
 	PRINT_LOOPID(l);

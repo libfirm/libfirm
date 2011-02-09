@@ -909,7 +909,7 @@ static void lower_method_types(type_or_ent tore, void *env)
  */
 void lower_calls_with_compounds(const lower_params_t *params)
 {
-	int i;
+	size_t i, n;
 	ir_graph *irg;
 	lower_params_t param = *params;
 
@@ -920,7 +920,7 @@ void lower_calls_with_compounds(const lower_params_t *params)
 		type_map = NULL;
 
 	/* first step: Transform all graphs */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		irg = get_irp_irg(i);
 
 		transform_irg(&param, irg);

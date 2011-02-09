@@ -2067,10 +2067,10 @@ static void setup_modes(lower_env_t *env)
 	unsigned           size_bits           = env->params->doubleword_size;
 	ir_mode           *doubleword_signed   = NULL;
 	ir_mode           *doubleword_unsigned = NULL;
-	int                n_modes             = get_irp_n_modes();
+	size_t             n_modes             = get_irp_n_modes();
 	ir_mode_arithmetic arithmetic;
 	unsigned           modulo_shift;
-	int                i;
+	size_t             i;
 
 	/* search for doubleword modes... */
 	for (i = 0; i < n_modes; ++i) {
@@ -2284,7 +2284,7 @@ static void lower_irg(lower_env_t *env, ir_graph *irg)
 void lower_dw_ops(const lwrdw_param_t *param)
 {
 	lower_env_t lenv;
-	int         i;
+	size_t      i, n;
 
 	assert(param != NULL);
 	FIRM_DBG_REGISTER(dbg, "firm.lower.dw");
@@ -2393,7 +2393,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	lenv.next_id       = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);
 
 	/* transform all graphs */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_irg(&lenv, irg);
 	}

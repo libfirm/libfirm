@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -130,7 +130,7 @@ static void do_type_walk(type_or_ent tore,
 		if (ent->initializer != NULL) {
 			walk_initializer(ent->initializer, pre, post, env);
 		} else if (entity_has_compound_ent_values(ent)) {
-			n_mem = get_compound_ent_n_values(ent);
+			size_t i, n_mem = get_compound_ent_n_values(ent);
 			for (i = 0; i < n_mem; ++i) {
 				n = get_compound_ent_value(ent, i);
 				irn_type_walker(n, pre, post, env);
@@ -260,7 +260,7 @@ static void start_type_walk(ir_node *node, void *ctx)
 /* walker: walks over all types */
 void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 {
-	int         i, n_types = get_irp_n_types();
+	size_t      i, n_types = get_irp_n_types();
 	type_or_ent cont;
 
 	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
@@ -276,7 +276,7 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 
 void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env)
 {
-	int i, n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 	type_or_ent cont;
 
 	type_walk(pre, post, env);
@@ -415,7 +415,7 @@ void type_walk_super2sub(type_walk_func *pre,
                          void *env)
 {
 	type_or_ent cont;
-	int         i, n_types = get_irp_n_types();
+	size_t      i, n_types = get_irp_n_types();
 
 	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
@@ -499,7 +499,7 @@ static void type_walk_super_2(type_or_ent tore, type_walk_func *pre,
 
 void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env)
 {
-	int         i, n_types = get_irp_n_types();
+	size_t      i, n_types = get_irp_n_types();
 	type_or_ent cont;
 
 	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
@@ -551,7 +551,7 @@ void class_walk_super2sub(class_walk_func *pre,
                           class_walk_func *post,
                           void *env)
 {
-	int i, n_types = get_irp_n_types();
+	size_t i, n_types = get_irp_n_types();
 	ir_type *tp;
 
 	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);

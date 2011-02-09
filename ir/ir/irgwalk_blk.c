@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -99,20 +99,20 @@ static block_entry_t *block_find_entry(ir_node *block, blk_collect_data_t *ctx)
  */
 static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_func *pre, void *env)
 {
-	int j;
+	size_t j;
 
-	for (j = ARR_LEN(entry->cf_list) - 1; j >= 0; --j) {
-		ir_node *node = entry->cf_list[j];
+	for (j = ARR_LEN(entry->cf_list); j > 0;) {
+		ir_node *node = entry->cf_list[--j];
 		pre(node, env);
 	}
 
-	for (j = ARR_LEN(entry->df_list) - 1; j >= 0; --j) {
-		ir_node *node = entry->df_list[j];
+	for (j = ARR_LEN(entry->df_list); j > 0;) {
+		ir_node *node = entry->df_list[--j];
 		pre(node, env);
 	}
 
-	for (j = ARR_LEN(entry->phi_list) - 1; j >= 0; --j) {
-		ir_node *node = entry->phi_list[j];
+	for (j = ARR_LEN(entry->phi_list); j > 0;) {
+		ir_node *node = entry->phi_list[--j];
 		pre(node, env);
 	}
 
@@ -125,7 +125,7 @@ static void traverse_block_pre(ir_node *block, block_entry_t *entry, irg_walk_fu
 static void traverse_block_post(ir_node *block, block_entry_t *entry,
                                 irg_walk_func *post, void *env)
 {
-	int j, n;
+	size_t j, n;
 
 	post(block, env);
 
@@ -150,10 +150,10 @@ static void traverse_block_post(ir_node *block, block_entry_t *entry,
  */
 static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env)
 {
-	int i;
+	size_t i;
 
-	for (i = ARR_LEN(blks->blk_list) - 1; i >= 0; --i) {
-		ir_node       *block = blks->blk_list[i];
+	for (i = ARR_LEN(blks->blk_list); i > 0;) {
+		ir_node       *block = blks->blk_list[--i];
 		block_entry_t *entry = block_find_entry(block, blks);
 
 		traverse_block_pre(block, entry, pre, env);
@@ -170,7 +170,7 @@ static void traverse_pre(blk_collect_data_t *blks, irg_walk_func *pre, void *env
  */
 static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post, void *env)
 {
-	int i, k;
+	size_t i, k;
 
 	for (i = 0, k = ARR_LEN(blks->blk_list); i < k; ++i) {
 		ir_node       *block = blks->blk_list[i];
@@ -190,10 +190,10 @@ static void traverse_post(blk_collect_data_t *blks, irg_walk_func *post, void *e
  */
 static void traverse_both(blk_collect_data_t *blks, irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	int i;
+	size_t i;
 
-	for (i = ARR_LEN(blks->blk_list) - 1; i >= 0; --i) {
-		ir_node       *block = blks->blk_list[i];
+	for (i = ARR_LEN(blks->blk_list); i > 0;) {
+		ir_node       *block = blks->blk_list[--i];
 		block_entry_t *entry = block_find_entry(block, blks);
 
 		traverse_block_pre(block, entry, pre, env);
@@ -389,18 +389,18 @@ static void collect_blks_lists(ir_node *node, ir_node *block,
  */
 static void collect_lists(blk_collect_data_t *env)
 {
-	int             i, j;
+	size_t          i, j;
 	ir_node         *block, *node;
 	block_entry_t   *entry;
 
 	inc_irg_visited(current_ir_graph);
 
-	for (i = ARR_LEN(env->blk_list) - 1; i >= 0; --i) {
-		block = env->blk_list[i];
+	for (i = ARR_LEN(env->blk_list); i > 0;) {
+		block = env->blk_list[--i];
 		entry = block_find_entry(block, env);
 
-		for (j = ARR_LEN(entry->entry_list) - 1; j >= 0; --j) {
-			node = entry->entry_list[j];
+		for (j = ARR_LEN(entry->entry_list); j > 0;) {
+			node = entry->entry_list[--j];
 
 			/* a entry might already be visited due to Phi loops */
 			if (node->visited < current_ir_graph->visited)
@@ -410,7 +410,7 @@ static void collect_lists(blk_collect_data_t *env)
 }
 
 /**
- * Intraprozedural graph walker over blocks.
+ * Intra procedural graph walker over blocks.
  */
 static void do_irg_walk_blk(ir_graph *irg, irg_walk_func *pre,
 	irg_walk_func *post, void *env, unsigned follow_deps,

@@ -69,7 +69,7 @@ ir_type *initial_type = NULL;
  */
 void init_irtypeinfo(void)
 {
-	int i;
+	size_t i, n;
 
 	if (initial_type == NULL)
 		initial_type = new_type_class(new_id_from_str("initial_type"));
@@ -79,7 +79,7 @@ void init_irtypeinfo(void)
 		pmap_destroy(type_node_map);
 	type_node_map = pmap_create();
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 		set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 

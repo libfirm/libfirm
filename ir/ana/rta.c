@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -185,7 +185,7 @@ static bool rta_fill_graph(ir_graph* graph)
  */
 static int rta_fill_incremental(void)
 {
-	int  i;
+	size_t i, n;
 	int  n_runs = 0;
 	bool rerun  = true;
 
@@ -193,15 +193,13 @@ static int rta_fill_incremental(void)
 
 	/* Need to take care of graphs that are externally
 	   visible or sticky. Pretend that they are called: */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *graph = get_irp_irg(i);
 		ir_entity *ent = get_irg_entity(graph);
 		ir_linkage linkage = get_entity_linkage(ent);
 
-		if (entity_is_externally_visible(ent)
-				|| (linkage & IR_LINKAGE_HIDDEN_USER)) {
+		if ((linkage & IR_LINKAGE_HIDDEN_USER) || entity_is_externally_visible(ent))
 			pset_new_insert(_live_graphs, graph);
-		}
 	}
 
 	while (rerun) {
@@ -237,12 +235,12 @@ static int rta_fill_incremental(void)
 /**
  * Count the number of graphs that we have found to be live.
  */
-static int stats(void)
+static size_t stats(void)
 {
-	int i;
-	int n_live_graphs = 0;
+	size_t i, n;
+	size_t n_live_graphs = 0;
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *graph = get_irp_irg(i);
 
 		if (rta_is_alive_graph(graph))
@@ -323,8 +321,8 @@ void rta_init(void)
 
 	n_runs = rta_fill_incremental();
 
-	DB((dbg, LEVEL_1, "RTA: n_graphs      = %i\n", get_irp_n_irgs()));
-	DB((dbg, LEVEL_1, "RTA: n_live_graphs = %i\n", stats()));
+	DB((dbg, LEVEL_1, "RTA: n_graphs      = %zu\n", get_irp_n_irgs()));
+	DB((dbg, LEVEL_1, "RTA: n_live_graphs = %zu\n", stats()));
 	DB((dbg, LEVEL_1, "RTA: n_runs        = %i\n", n_runs));
 
 # ifdef DEBUG_libfirm

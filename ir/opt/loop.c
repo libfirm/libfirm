@@ -2715,13 +2715,13 @@ static void init_analyze(ir_loop *loop)
 static void find_innermost_loop(ir_loop *loop)
 {
 	/* descend into sons */
-	int sons = get_loop_n_sons(loop);
+	size_t sons = get_loop_n_sons(loop);
 
 	if (sons == 0) {
 		ARR_APP1(ir_loop *, loops, loop);
 	} else {
-		int s;
-		for (s=0; s<sons; s++) {
+		size_t s;
+		for (s = 0; s < sons; ++s) {
 			find_innermost_loop(get_loop_son(loop, s));
 		}
 	}
@@ -2750,7 +2750,7 @@ static void set_loop_params(void)
 void loop_optimization(ir_graph *irg)
 {
 	ir_loop *loop;
-	int     sons, nr;
+	size_t  sons, nr;
 	size_t  i;
 
 	set_loop_params();

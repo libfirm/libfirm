@@ -1993,7 +1993,7 @@ void set_pointer_mode(ir_type *tp, ir_mode *mode)
 
 ir_type *find_pointer_type_to_type(ir_type *tp)
 {
-	int i, n = get_irp_n_types();
+	size_t i, n = get_irp_n_types();
 	for (i = 0; i < n; ++i) {
 		ir_type *found = get_irp_type(i);
 		if (is_Pointer_type(found) && get_pointer_points_to_type(found) == tp)

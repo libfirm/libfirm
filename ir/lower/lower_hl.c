@@ -638,7 +638,7 @@ ir_prog_pass_t *lower_const_code_pass(const char *name)
  */
 void lower_highlevel(int lower_bitfields)
 {
-	int i, n;
+	size_t i, n;
 
 	n = get_irp_n_irgs();
 	for (i = 0; i < n; ++i) {

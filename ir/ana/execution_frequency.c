@@ -386,7 +386,7 @@ static void compute_frequency(int default_loop_weight)
 
   while (!pdeq_empty(block_worklist)) {
     ir_loop *l = (ir_loop *)pdeq_getl(block_worklist);
-    int i, n_elems = get_loop_n_elements(l);
+    size_t i, n_elems = get_loop_n_elements(l);
 
     /* The header is initialized with the frequency of the full loop times the iteration weight. */
     check_proper_head(l, get_loop_element(l, 0).son);
@@ -433,7 +433,7 @@ void compute_execution_frequency(ir_graph *irg, int default_loop_weight, double 
 
 void compute_execution_frequencies(int default_loop_weight, double exception_probability)
 {
-  int i, n_irgs = get_irp_n_irgs();
+  size_t i, n_irgs = get_irp_n_irgs();
   free_intervals();
   for (i = 0; i < n_irgs; ++i) {
     compute_execution_frequency(get_irp_irg(i), default_loop_weight, exception_probability);
@@ -444,7 +444,7 @@ void compute_execution_frequencies(int default_loop_weight, double exception_pro
 /** free occupied memory, reset */
 void free_execution_frequency(void)
 {
-  int i, n_irgs = get_irp_n_irgs();
+  size_t i, n_irgs = get_irp_n_irgs();
   free_intervals();
   del_set(exec_freq_set);
 
@@ -485,13 +485,13 @@ exec_freq_state get_irp_exec_freq_state(void)
 /* Sets irp and all irg exec freq states to inconsistent if it is set to consistent. */
 void            set_irp_exec_freq_state_inconsistent(void)
 {
-  if (get_irp_exec_freq_state() != exec_freq_none) {
-    int i, n_irgs = get_irp_n_irgs();
-    set_irp_exec_freq_state(exec_freq_inconsistent);
-    for (i = 0; i < n_irgs; ++i) {
-      ir_graph *irg = get_irp_irg(i);
-      if (get_irg_exec_freq_state(irg) != exec_freq_none)
-	irg->execfreq_state = exec_freq_inconsistent;
-    }
-  }
+	if (get_irp_exec_freq_state() != exec_freq_none) {
+		size_t i, n_irgs = get_irp_n_irgs();
+		set_irp_exec_freq_state(exec_freq_inconsistent);
+		for (i = 0; i < n_irgs; ++i) {
+			ir_graph *irg = get_irp_irg(i);
+			if (get_irg_exec_freq_state(irg) != exec_freq_none)
+				irg->execfreq_state = exec_freq_inconsistent;
+		}
+	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -217,7 +217,7 @@ static inline void pop_scc_to_loop(ir_node *n)
    can't they have two loops as sons? Does it never get that far? ) */
 static void close_loop(ir_loop *l)
 {
-	int last = get_loop_n_elements(l) - 1;
+	size_t last = get_loop_n_elements(l) - 1;
 	loop_element lelement = get_loop_element(l, last);
 	ir_loop *last_son = lelement.son;
 

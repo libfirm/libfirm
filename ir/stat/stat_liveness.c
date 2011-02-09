@@ -71,9 +71,10 @@ static block_entry_t *get_block_entry(ir_node *block)
 static void add_entry(ir_node ***arr, ir_node *irn)
 {
 	ir_node **list = *arr;
-	int i;
+	size_t i;
 
-	for (i = ARR_LEN(list) - 1; i >= 0; --i) {
+	for (i = ARR_LEN(list); i > 0;) {
+		--i;
 		if (list[i] == irn) {
 			/* already there */
 			return;

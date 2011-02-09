@@ -227,12 +227,12 @@ static void sel_methods_walker(ir_node *node, void *env)
  */
 static void sel_methods_init(void)
 {
-	int i;
+	size_t i, n;
 	pmap *ldname_map = pmap_create();   /* Map entity names to entities: to replace
 	                                       SymConst(name) by SymConst(ent). */
 	assert(entities == NULL);
 	entities = eset_create();
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_entity * ent = get_irg_entity(get_irp_irg(i));
 		/* only external visible methods are allowed to call by a SymConst_ptr_name */
 		if (entity_is_externally_visible(ent)) {
@@ -507,12 +507,10 @@ static void add_method_address_inititializer(ir_initializer_t *initializer,
  */
 static void add_method_address(ir_entity *ent, eset *set)
 {
-	ir_node *n;
 	ir_type *tp;
-	int i;
 
 	/* ignore methods: these of course reference it's address
-	 * TODO: remove this later once this incorrect self-intialisation is gone
+	 * TODO: remove this later once this incorrect self-initialisation is gone
 	 */
 	tp = get_entity_type(ent);
 	if (is_Method_type(tp))
@@ -521,12 +519,13 @@ static void add_method_address(ir_entity *ent, eset *set)
 	if (ent->initializer != NULL) {
 		add_method_address_inititializer(get_entity_initializer(ent), set);
 	} else if (entity_has_compound_ent_values(ent)) {
-		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
-			n = get_compound_ent_value(ent, i);
+		size_t i, n;
+		for (i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
+			ir_node *irn = get_compound_ent_value(ent, i);
 
 			/* let's check if it's the address of a function */
-			if (is_Global(n)) {
-				ir_entity *ent = get_Global_entity(n);
+			if (is_Global(irn)) {
+				ir_entity *ent = get_Global_entity(irn);
 
 				if (is_Method_type(get_entity_type(ent)))
 					eset_insert(set, ent);
@@ -548,21 +547,21 @@ static void add_method_address(ir_entity *ent, eset *set)
 static size_t get_free_methods(ir_entity ***free_methods)
 {
 	eset *free_set = eset_create();
-	int i;
+	size_t i, n;
+	int j;
 	ir_entity **arr;
 	ir_entity *ent;
 	ir_graph *irg;
 	ir_type *tp;
 	size_t length;
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_linkage linkage;
 		irg = get_irp_irg(i);
 		ent = get_irg_entity(irg);
 		linkage = get_entity_linkage(ent);
 
-		if (entity_is_externally_visible(ent)
-				|| (linkage & IR_LINKAGE_HIDDEN_USER)) {
+		if ((linkage & IR_LINKAGE_HIDDEN_USER) || entity_is_externally_visible(ent)) {
 			eset_insert(free_set, ent);
 		}
 
@@ -575,13 +574,13 @@ static size_t get_free_methods(ir_entity ***free_methods)
 
 	/* insert all methods that are used in global variables initializers */
 	tp = get_glob_type();
-	for (i = get_class_n_members(tp) - 1; i >= 0; --i) {
-		ent = get_class_member(tp, i);
+	for (j = get_class_n_members(tp) - 1; j >= 0; --j) {
+		ent = get_class_member(tp, j);
 		add_method_address(ent, free_set);
 	}
 	tp = get_tls_type();
-	for (i = get_class_n_members(tp) - 1; i >= 0; --i) {
-		ent = get_class_member(tp, i);
+	for (j = get_class_n_members(tp) - 1; j >= 0; --j) {
+		ent = get_class_member(tp, j);
 		add_method_address(ent, free_set);
 	}
 
@@ -776,9 +775,9 @@ static void remove_Tuples(ir_node *proj, void *env)
  */
 static void callee_ana(void)
 {
-	int i;
+	size_t i, n;
 	/* analyse all graphs */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		irg_walk_graph(irg, callee_walker, remove_Tuples, NULL);
 		set_irg_callee_info_state(irg, irg_callee_info_consistent);
@@ -841,8 +840,8 @@ void free_callee_info(ir_graph *irg)
 
 void free_irp_callee_info(void)
 {
-	int i;
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	size_t i, n;
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		free_callee_info(get_irp_irg(i));
 	}
 }

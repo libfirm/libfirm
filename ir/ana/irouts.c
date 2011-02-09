@@ -479,15 +479,15 @@ void assure_irg_outs(ir_graph *irg)
 
 void compute_irp_outs(void)
 {
-	int i;
-	for (i = get_irp_n_irgs() -1; i >= 0; --i)
+	size_t i, n;
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 		compute_irg_outs(get_irp_irg(i));
 }
 
 void free_irp_outs(void)
 {
-	int i;
-	for (i = get_irp_n_irgs() -1; i >= 0; --i)
+	size_t i, n;
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 		free_irg_outs(get_irp_irg(i));
 }
 

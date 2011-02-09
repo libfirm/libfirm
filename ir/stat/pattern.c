@@ -395,16 +395,20 @@ static int addr_cmp(const void *p1, const void *p2, size_t size)
 	return e1->addr != e2->addr;
 }  /* addr_cmp */
 
-static unsigned find_mode_index(const ir_mode *mode)
+/**
+ * Return the index of a (existing) mode.
+ */
+static size_t find_mode_index(const ir_mode *mode)
 {
-	int n = get_irp_n_modes();
-	int i;
+	size_t i, n = get_irp_n_modes();
 
 	for (i = 0; i < n; ++i) {
 		if (get_irp_mode(i) == mode)
 			return i;
 	}
-	return -1;
+	/* should really not happen */
+	assert(!"Cound not find index of mode in find_mode_index()");
+	return (size_t)-1;
 }
 
 /**

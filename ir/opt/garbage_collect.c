@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -102,8 +102,8 @@ static void visit_entity(ir_entity *entity)
 	if (entity->initializer != NULL) {
 		visit_initializer(entity->initializer);
 	}  else if (entity_has_compound_ent_values(entity)) {
-		int i;
-		int n_members = get_compound_ent_n_values(entity);
+		size_t i;
+		size_t n_members = get_compound_ent_n_values(entity);
 		for (i = 0; i < n_members; ++i) {
 			ir_node *node = get_compound_ent_value(entity, i);
 			start_visit_node(node);
@@ -149,7 +149,7 @@ static void garbage_collect_in_segment(ir_type *segment)
 
 void garbage_collect_entities(void)
 {
-	int          i;
+	size_t       i, n;
 	ir_segment_t s;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.garbagecollect");
@@ -169,7 +169,7 @@ void garbage_collect_entities(void)
 	/* remove graphs of non-visited functions
 	 * (we have to count backwards so we can safely call remove_irp_irg
 	 *  while iterating) */
-	for (i = get_irp_n_irgs()-1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph  *irg    = get_irp_irg(i);
 		ir_entity *entity = get_irg_entity(irg);
 

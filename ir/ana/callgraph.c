@@ -299,7 +299,7 @@ static int graph_cmp(const void *elt, const void *key)
 /* Construct and destruct the callgraph. */
 void compute_callgraph(void)
 {
-	int i, n_irgs;
+	size_t i, n_irgs;
 
 	/* initialize */
 	free_callgraph();
@@ -357,7 +357,7 @@ void compute_callgraph(void)
 /* Destruct the callgraph. */
 void free_callgraph(void)
 {
-	int i, n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		if (irg->callees) DEL_ARR_F(irg->callees);
@@ -400,7 +400,7 @@ static void do_walk(ir_graph *irg, callgraph_walk_func *pre, callgraph_walk_func
 
 void callgraph_walk(callgraph_walk_func *pre, callgraph_walk_func *post, void *env)
 {
-	int i, n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 	++master_cg_visited;
 
 	/* roots are methods which have no callers in the current program */
@@ -663,8 +663,7 @@ static ir_loop *new_loop(void)
 
 static void init_scc(struct obstack *obst)
 {
-	int i;
-	int n_irgs;
+	size_t i, n_irgs;
 
 	current_dfn   = 1;
 	loop_node_cnt = 0;
@@ -918,7 +917,7 @@ static void cgscc(ir_graph *n)
  */
 static void reset_isbe(void)
 {
-	int i, n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -1151,7 +1150,7 @@ static void compute_method_execution_frequency(ir_graph *irg, void *env)
 /* Compute the backedges that represent recursions. */
 void find_callgraph_recursions(void)
 {
-	int i, n_irgs;
+	size_t i, n_irgs;
 	struct obstack temp;
 
 	reset_isbe();

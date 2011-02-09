@@ -1115,9 +1115,6 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
  */
 static void check_initializer(ir_entity *ent)
 {
-	ir_node *n;
-	int i;
-
 	/* Beware: Methods are always initialized with "themself". This does not
 	 * count as a taken address.
 	 * TODO: this initialisation with "themself" is wrong and should be removed
@@ -1128,12 +1125,14 @@ static void check_initializer(ir_entity *ent)
 	if (ent->initializer != NULL) {
 		check_initializer_nodes(ent->initializer);
 	} else if (entity_has_compound_ent_values(ent)) {
-		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
-			n = get_compound_ent_value(ent, i);
+		size_t i, n;
+
+		for (i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
+			ir_node *irn = get_compound_ent_value(ent, i);
 
 			/* let's check if it's an address */
-			if (is_Global(n)) {
-				ir_entity *ent = get_Global_entity(n);
+			if (is_Global(irn)) {
+				ir_entity *ent = get_Global_entity(irn);
 				set_entity_usage(ent, ir_usage_unknown);
 			}
 		}
@@ -1214,7 +1213,7 @@ static void check_global_address(ir_node *irn, void *env)
  */
 static void analyse_irp_globals_entity_usage(void)
 {
-	int i;
+	size_t i, n;
 	ir_segment_t s;
 
 	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
@@ -1227,7 +1226,7 @@ static void analyse_irp_globals_entity_usage(void)
 		check_initializers(type);
 	}
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 
 		assure_irg_outs(irg);
@@ -1325,7 +1324,7 @@ static void update_calls_to_private(ir_node *call, void *env)
 /* Mark all private methods, i.e. those of which all call sites are known. */
 void mark_private_methods(void)
 {
-	int i;
+	size_t i, n;
 	int changed = 0;
 
 	assure_irp_globals_entity_usage_computed();
@@ -1333,13 +1332,12 @@ void mark_private_methods(void)
 	mtp_map = pmap_create();
 
 	/* first step: change the calling conventions of the local non-escaped entities */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph        *irg   = get_irp_irg(i);
 		ir_entity       *ent   = get_irg_entity(irg);
 		ir_entity_usage  flags = get_entity_usage(ent);
 
-		if (!entity_is_externally_visible(ent) &&
-		    !(flags & ir_usage_address_taken)) {
+		if (!(flags & ir_usage_address_taken) && !entity_is_externally_visible(ent)) {
 			ir_type *mtp = get_entity_type(ent);
 
 			add_entity_additional_properties(ent, mtp_property_private);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -190,7 +190,7 @@ void irg_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, void
    current_ir_graph. */
 void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env)
 {
-	int i, n;
+	size_t i, n;
 	ir_graph *irg;
 
 	for (i = 0, n = get_irp_n_irgs(); i < n; i++) {
@@ -478,7 +478,7 @@ static void walk_entity(ir_entity *ent, void *env)
 	if (ent->initializer != NULL) {
 		walk_initializer(ent->initializer, my_env);
 	} else if (entity_has_compound_ent_values(ent)) {
-		int i, n_vals = get_compound_ent_n_values(ent);
+		size_t i, n_vals = get_compound_ent_n_values(ent);
 
 		for (i = 0; i < n_vals; i++)
 			irg_walk(get_compound_ent_value(ent, i), my_env->pre, my_env->post, my_env->env);

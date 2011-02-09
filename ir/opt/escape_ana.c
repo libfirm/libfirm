@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -537,8 +537,7 @@ void escape_enalysis_irg(ir_graph *irg, check_alloc_entity_func callback)
 /* Do simple and fast escape analysis for all graphs. */
 void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
 {
-  ir_graph *irg;
-  int i;
+  size_t i, n;
   struct obstack obst;
   walk_env_t *env, *elist;
   (void) run_scalar_replace;
@@ -564,8 +563,8 @@ void escape_analysis(int run_scalar_replace, check_alloc_entity_func callback)
   env->dead_allocs  = NULL;
   env->callback     = callback;
 
-  for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-    irg = get_irp_irg(i);
+  for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+    ir_graph *irg = get_irp_irg(i);
 
     assure_irg_outs(irg);
 

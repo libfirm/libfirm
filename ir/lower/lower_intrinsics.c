@@ -95,8 +95,8 @@ static void call_mapper(ir_node *node, void *env)
 /* Go through all graphs and map calls to intrinsic functions. */
 size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 {
-	size_t         i;
-	int            idx, n_ops = get_irp_n_opcodes();
+	size_t         i, n;
+	size_t         n_ops = get_irp_n_opcodes();
 	ir_graph       *irg;
 	pmap           *c_map = pmap_create_ex(length);
 	i_instr_record **i_map;
@@ -123,8 +123,8 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 	wenv.c_map = c_map;
 	wenv.i_map = i_map;
 
-	for (idx = get_irp_n_irgs() - 1; idx >= 0; --idx) {
-		irg = get_irp_irg(idx);
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+		irg = get_irp_irg(i);
 
 		if (part_block_used) {
 			ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
@@ -657,9 +657,7 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 		return NULL;
 
 	if (!has_entity_initializer(ent)) {
-		int len = 0;
-		int n;
-		int i = -1;
+		size_t i, n;
 
 		n = get_compound_ent_n_values(ent);
 		for (i = 0; i < n; ++i) {
@@ -670,13 +668,9 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 
 			if (is_Const_null(irn)) {
 				/* found the length */
-				len = i;
-				break;
+				ir_tarval *tv = new_tarval_from_long(i, get_type_mode(res_tp));
+				return new_r_Const(irg, tv);
 			}
-		}
-		if (len >= 0) {
-			ir_tarval *tv = new_tarval_from_long(len, get_type_mode(res_tp));
-			return new_r_Const(irg, tv);
 		}
 		return NULL;
 	}
@@ -739,7 +733,6 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 {
 	ir_type *tp;
 	ir_mode *mode;
-	int     i, n, n_r, res;
 
 	tp = get_entity_type(left);
 	if (! is_Array_type(tp))
@@ -767,12 +760,13 @@ static ir_node *eval_strcmp(ir_graph *irg, ir_entity *left, ir_entity *right,
 
 	if (!has_entity_initializer(left) && !has_entity_initializer(right)) {
 		/* code that uses deprecated compound_graph_path stuff */
+		size_t n   = get_compound_ent_n_values(left);
+		size_t n_r = get_compound_ent_n_values(right);
+		size_t i;
+		int    res = 0;
 
-		n   = get_compound_ent_n_values(left);
-		n_r = get_compound_ent_n_values(right);
 		if (n_r < n)
 			n = n_r;
-		res = 0;
 		for (i = 0; i < n; ++i) {
 			ir_node *irn;
 			long v_l, v_r;
@@ -845,7 +839,7 @@ static int is_empty_string(ir_entity *ent)
 
 	if (!has_entity_initializer(ent)) {
 		/* code for deprecated compound_graph_path stuff */
-		int n = get_compound_ent_n_values(ent);
+		size_t n = get_compound_ent_n_values(ent);
 		if (n < 1)
 			return 0;
 		irn = get_compound_ent_value(ent, 0);

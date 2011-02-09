@@ -334,8 +334,8 @@ static int constants_on_wrong_irg(ir_entity *ent)
 	if (ent->initializer != NULL) {
 		return initializer_constant_on_wrong_irg(ent->initializer);
 	} else if (entity_has_compound_ent_values(ent)) {
-		int i;
-		for (i = get_compound_ent_n_values(ent) - 1; i >= 0; --i) {
+		size_t i, n;
+		for (i = 0, n = get_compound_ent_n_values(ent); i < n; ++i) {
 			if (constant_on_wrong_irg(get_compound_ent_value(ent, i)))
 				return 1;
 		}

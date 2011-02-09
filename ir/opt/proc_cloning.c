@@ -595,8 +595,7 @@ restart:
 void proc_cloning(float threshold)
 {
 	entry_t *entry = NULL, *p;
-	ir_graph *irg;
-	int i;
+	size_t i, n;
 	q_set hmap;
 
 	obstack_init(&hmap.obst);
@@ -604,8 +603,8 @@ void proc_cloning(float threshold)
 	hmap.heavy_uses = NULL;
 
 	/* initially fill our map by visiting all irgs */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		irg = get_irp_irg(i);
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+		ir_graph *irg = get_irp_irg(i);
 		irg_walk_graph(irg, collect_irg_calls, NULL, &hmap);
 	}
 

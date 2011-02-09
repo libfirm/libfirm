@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -105,8 +105,10 @@ FIRM_API size_t get_loop_n_elements(const ir_loop *loop);
 kind pointer, an ir_node* or an ir_loop*. */
 FIRM_API loop_element get_loop_element(const ir_loop *loop, size_t pos);
 
+#define INVALID_LOOP_POS ((size_t)-1)
+
 /** Returns the element number of the loop son in loop.
-*  Returns -1 if not found. O(|elements|). */
+*  Returns INVALID_LOOP_POS if not found. O(|elements|). */
 FIRM_API size_t get_loop_element_pos(const ir_loop *loop, void *le);
 
 /** Returns a unique node number for the loop node to make output

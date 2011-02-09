@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -49,8 +49,8 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
  * The walker environment for updating function calls.
  */
 typedef struct env_t {
-	unsigned n_calls_SymConst;
-	unsigned n_calls_Sel;
+	size_t   n_calls_SymConst;
+	size_t   n_calls_Sel;
 	ir_node  *float_const_call_list;    /**< The list of all floating const function calls that will be changed. */
 	ir_node  *nonfloat_const_call_list; /**< The list of all non-floating const function calls that will be changed. */
 	ir_node  *pure_call_list;           /**< The list of all pure function calls that will be changed. */
@@ -616,13 +616,13 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
  */
 static void handle_const_Calls(env_t *ctx)
 {
-	int i;
+	size_t i, n;
 
 	ctx->n_calls_SymConst = 0;
 	ctx->n_calls_Sel      = 0;
 
 	/* all calls of const functions can be transformed */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < 0; ++i) {
 		ir_graph *irg  = get_irp_irg(i);
 
 		ctx->float_const_call_list    = NULL;
@@ -646,13 +646,13 @@ static void handle_const_Calls(env_t *ctx)
  */
 static void handle_nothrow_Calls(env_t *ctx)
 {
-	int i;
+	size_t i, n;
 
 	ctx->n_calls_SymConst = 0;
 	ctx->n_calls_Sel      = 0;
 
 	/* all calls of const functions can be transformed */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg  = get_irp_irg(i);
 
 		ctx->nothrow_call_list = NULL;
@@ -996,11 +996,12 @@ static void check_for_possible_endless_loops(ir_graph *irg)
  */
 void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 {
-	int i, last_idx;
-	unsigned num_const   = 0;
-	unsigned num_pure    = 0;
-	unsigned num_nothrow = 0;
-	unsigned num_malloc  = 0;
+	size_t i, n;
+	int last_idx;
+	size_t num_const   = 0;
+	size_t num_pure    = 0;
+	size_t num_nothrow = 0;
+	size_t num_malloc  = 0;
 
 	is_alloc_entity = callback;
 
@@ -1011,7 +1012,7 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 
 	/* first step: detect, which functions are nothrow or malloc */
 	DB((dbg, LEVEL_2, "Detecting nothrow and malloc properties ...\n"));
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		unsigned prop = check_nothrow_or_malloc(irg, /*top=*/1);
 
@@ -1030,8 +1031,8 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 		env_t ctx;
 
 		handle_nothrow_Calls(&ctx);
-		DB((dbg, LEVEL_1, "Detected %u nothrow graphs, %u malloc graphs.\n", num_nothrow, num_malloc));
-		DB((dbg, LEVEL_1, "Optimizes %u(SymConst) + %u(Sel) calls to nothrow functions.\n",
+		DB((dbg, LEVEL_1, "Detected %zu nothrow graphs, %zu malloc graphs.\n", num_nothrow, num_malloc));
+		DB((dbg, LEVEL_1, "Optimizes %zu(SymConst) + %zu(Sel) calls to nothrow functions.\n",
 			ctx.n_calls_SymConst, ctx.n_calls_Sel));
 	} else {
 		DB((dbg, LEVEL_1, "No graphs without side effects detected\n"));
@@ -1042,7 +1043,7 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 
 	/* third step: detect, which functions are const or pure */
 	DB((dbg, LEVEL_2, "Detecting const and pure properties ...\n"));
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		unsigned prop = check_const_or_pure_function(irg, /*top=*/1);
 
@@ -1060,7 +1061,7 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 		env_t ctx;
 
 		handle_const_Calls(&ctx);
-		DB((dbg, LEVEL_1, "Detected %u const graphs, %u pure graphs.\n", num_const, num_pure));
+		DB((dbg, LEVEL_1, "Detected %zu const graphs, %zu pure graphs.\n", num_const, num_pure));
 		DB((dbg, LEVEL_1, "Optimizes %u(SymConst) + %u(Sel) calls to const functions.\n",
 		       ctx.n_calls_SymConst, ctx.n_calls_Sel));
 	} else {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -717,14 +717,13 @@ ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
  */
 void opt_tail_recursion(void)
 {
-	int i;
-	int n_opt_applications = 0;
-	ir_graph *irg;
+	size_t i, n;
+	size_t n_opt_applications = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		irg = get_irp_irg(i);
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
+		ir_graph *irg = get_irp_irg(i);
 
 		ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 		if (opt_tail_rec_irg(irg))
@@ -733,7 +732,7 @@ void opt_tail_recursion(void)
 		ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	}
 
-	DB((dbg, LEVEL_1, "Performed tail recursion for %d of %d graphs\n",
+	DB((dbg, LEVEL_1, "Performed tail recursion for %zu of %zu graphs\n",
 	    n_opt_applications, get_irp_n_irgs()));
 }
 

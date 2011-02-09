@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -347,7 +347,7 @@ static void compute_up_closure(ir_type *tp)
  *  transitive closure.    */
 void compute_inh_transitive_closure(void)
 {
-	int i, n_types = get_irp_n_types();
+	size_t i, n_types = get_irp_n_types();
 	free_inh_transitive_closure();
 
 	/* The 'down' relation */
@@ -621,8 +621,8 @@ ir_class_cast_state get_irg_class_cast_state(const ir_graph *irg)
 void set_irp_class_cast_state(ir_class_cast_state s)
 {
 #ifndef NDEBUG
-	int i;
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+	size_t i, n;
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 		assert(get_irg_class_cast_state(get_irp_irg(i)) >= s);
 #endif
 	irp->class_cast_state = s;

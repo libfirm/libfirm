@@ -3519,10 +3519,10 @@ static void apply_end(ir_node *end, environment_t *env)
  */
 static void set_compute_functions(void)
 {
-	int i;
+	size_t i, n;
 
 	/* set the default compute function */
-	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_opcodes(); i < n; ++i) {
 		ir_op *op = get_irp_opcode(i);
 		op->ops.generic = (op_func)default_compute;
 	}

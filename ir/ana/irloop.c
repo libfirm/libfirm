@@ -76,10 +76,10 @@ void mature_loops(ir_loop *loop, struct obstack *obst)
 
 	if (loop->n_sons > 0) {
 		/* we have child loops, mature them */
-		int i;
+		size_t i;
 
-		for (i = ARR_LEN(new_children) - 1; i >= 0; --i) {
-			loop_element child = new_children[i];
+		for (i = ARR_LEN(new_children); i > 0;) {
+			loop_element child = new_children[--i];
 
 			if (*child.kind == k_ir_loop) {
 				mature_loops(child.son, obst);
@@ -177,7 +177,7 @@ size_t get_loop_element_pos(const ir_loop *loop, void *le)
 	for (i = 0; i < n; i++)
 		if (get_loop_element(loop, i).node == le)
 			return i;
-	return (size_t)-1;
+	return INVALID_LOOP_POS;
 }
 
 

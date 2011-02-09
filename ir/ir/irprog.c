@@ -361,9 +361,9 @@ ir_op *(get_irp_opcode)(size_t pos)
 /* Sets the generic function pointer of all opcodes to NULL */
 void clear_irp_opcodes_generic_func(void)
 {
-	int i;
+	size_t i, n;
 
-	for (i = get_irp_n_opcodes() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_opcodes(); i < n; ++i) {
 		ir_op *op = get_irp_opcode(i);
 		op->ops.generic = (op_func)NULL;
 	}
@@ -415,12 +415,12 @@ static int set_irp_phase_state_wrapper(ir_prog *irp, void *context)
 {
 	pass_t         *pass  = (pass_t *)context;
 	irg_phase_state state = pass->state;
-	int             i;
+	size_t          i, n;
 
 	(void)irp;
 
 	/* set the phase of all graphs */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 		set_irg_phase_state(get_irp_irg(i), state);
 
 	/* set the irp phase */

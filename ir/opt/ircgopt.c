@@ -64,7 +64,7 @@ static void collect_call(ir_node *node, void *env)
 void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 {
 	void * MARK = &MARK; /* @@@ gefaehrlich!!! Aber wir markieren hoechstens zu viele ... */
-	int i;
+	size_t i, n;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.cgopt");
 
@@ -123,7 +123,7 @@ void gc_irgs(size_t n_keep, ir_entity ** keep_arr)
 	}
 
 	/* clean */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph  *irg = get_irp_irg(i);
 		ir_entity *ent = get_irg_entity(irg);
 
