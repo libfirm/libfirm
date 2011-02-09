@@ -740,7 +740,7 @@ typedef union {
 static void x86_cpuid(cpuid_registers *regs, unsigned level)
 {
 #if defined(__GNUC__)
-#	ifdef __PIC__ // GCC cannot handle EBX in PIC
+#	if defined(__PIC__) && !defined(__amd64) // GCC cannot handle EBX in PIC
 	__asm (
 		"pushl %%ebx\n\t"
 		"cpuid\n\t"
