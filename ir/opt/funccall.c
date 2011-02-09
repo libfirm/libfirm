@@ -622,7 +622,7 @@ static void handle_const_Calls(env_t *ctx)
 	ctx->n_calls_Sel      = 0;
 
 	/* all calls of const functions can be transformed */
-	for (i = 0, n = get_irp_n_irgs(); i < 0; ++i) {
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg  = get_irp_irg(i);
 
 		ctx->float_const_call_list    = NULL;
