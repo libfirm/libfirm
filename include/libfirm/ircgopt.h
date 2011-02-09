@@ -24,10 +24,8 @@
  * @date    09.06.2002
  * @version $Id$
  * @brief
- *  (TODO: translate to english)
- *  Entfernen von nicht erreichbaren (aufrufbaren) Methoden. Die Menge
- *  der nicht erreichbaren Methoden wird aus der Absch�tzung der
- *  Aufrufrelation bestimmt.
+ *  Removal of unreachable methods. The set of unreachable methods is computed
+ *  by the callgraph.
  */
 #ifndef FIRM_IR_ICGOPT_H
 #define FIRM_IR_ICGOPT_H
