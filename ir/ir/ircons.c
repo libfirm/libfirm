@@ -185,6 +185,42 @@ static inline ir_node *new_rd_Phi0(dbg_info *dbgi, ir_node *block,
 
 static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode);
 
+static void try_remove_unnecessary_phi(ir_node *phi)
+{
+	ir_node *phi_value = NULL;
+	int      arity     = get_irn_arity(phi);
+	int      i;
+
+	/* see if all inputs are either pointing to a single value or
+	 * are self references */
+	for (i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(phi, i);
+		if (in == phi)
+			continue;
+		if (in == phi_value)
+			continue;
+		/** found a different value from the one we already found, can't remove
+		 * the phi (yet) */
+		if (phi_value != NULL)
+			return;
+		phi_value = in;
+	}
+	if (phi_value == NULL)
+		return;
+
+	/* if we're here then all phi inputs have been either phi_value
+	 * or self-references, we can replace the phi by phi_value.
+	 * We do this with an Id-node */
+	exchange(phi, phi_value);
+
+	/* recursively check phi_value, because it could be that we were the last
+	 * phi-node in a loop-body. Then our arguments is an unnecessary phi in
+	 * the loop header which can be eliminated now */
+	if (is_Phi(phi_value)) {
+		try_remove_unnecessary_phi(phi_value);
+	}
+}
+
 /**
  * Computes the predecessors for the real phi node, and then
  * allocates and returns this node.  The routine called to allocate the
@@ -198,8 +234,6 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 	int       arity        = get_irn_arity(block);
 	ir_node **in           = ALLOCAN(ir_node*, arity);
 	ir_mode  *mode         = get_irn_mode(phi);
-	ir_node  *phi_value    = NULL;
-	bool      no_phi_value = false;
 	int       i;
 
 	/* This loop goes to all predecessor blocks of the block the Phi node
@@ -213,33 +247,21 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 		} else {
 			value = get_r_value_internal(cfgpred, pos, mode);
 		}
-		if (!no_phi_value && value != phi) {
-			if (phi_value == NULL) {
-				phi_value = value;
-			} else if (value != phi_value) {
-				no_phi_value = true;
-				phi_value = NULL;
-			}
-		}
 		in[i] = value;
-	}
-
-	if (phi_value != NULL && !no_phi_value) {
-		exchange(phi, phi_value);
-		return phi_value;
 	}
 
 	phi->attr.phi.u.backedge = new_backedge_arr(irg->obst, arity);
 	set_irn_in(phi, arity, in);
 	set_irn_op(phi, op_Phi);
 
-	phi = optimize_in_place_2(phi);
 	irn_verify_irg(phi, irg);
 
 	/* Memory Phis in endless loops must be kept alive.
 	   As we can't distinguish these easily we keep all of them alive. */
 	if (is_Phi(phi) && mode == mode_M)
 		add_End_keepalive(get_irg_end(irg), phi);
+
+	try_remove_unnecessary_phi(phi);
 	return phi;
 }
 
