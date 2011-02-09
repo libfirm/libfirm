@@ -489,7 +489,8 @@ static void emit_visibility(const ir_entity *entity)
 	}
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-			&& (linkage & IR_LINKAGE_HIDDEN_USER)) {
+			&& (linkage & IR_LINKAGE_HIDDEN_USER)
+			&& get_entity_ld_name(entity)[0] != '\0') {
 		be_emit_cstring("\t.no_dead_strip ");
 		be_gas_emit_entity(entity);
 		be_emit_char('\n');
