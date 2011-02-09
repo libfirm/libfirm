@@ -399,14 +399,14 @@ int i_mapper_pow(ir_node *call, void *ctx)
 
 	if (irn == NULL) {
 		ir_mode *mode = get_irn_mode(left);
-		ir_node *quot;
+		ir_node *div;
 
 		irn  = new_r_Const(irg, get_mode_one(mode));
-		quot = new_rd_Quot(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
-		mem  = new_r_Proj(quot, mode_M, pn_Quot_M);
-		irn  = new_r_Proj(quot, mode, pn_Quot_res);
-		reg_jmp = new_r_Proj(quot, mode_X, pn_Quot_X_regular);
-		exc_jmp = new_r_Proj(quot, mode_X, pn_Quot_X_except);
+		div  = new_rd_Div(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
+		mem  = new_r_Proj(div, mode_M, pn_Div_M);
+		irn  = new_r_Proj(div, mode, pn_Div_res);
+		reg_jmp = new_r_Proj(div, mode_X, pn_Div_X_regular);
+		exc_jmp = new_r_Proj(div, mode_X, pn_Div_X_except);
 	}
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_POW);
 	replace_call(irn, call, mem, reg_jmp, exc_jmp);
@@ -1113,7 +1113,6 @@ static ir_mode *get_irn_res_mode(ir_node *node)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Load:   return get_Load_mode(node);
-	case iro_Quot:   return get_Quot_resmode(node);
 	case iro_Div:    return get_Div_resmode(node);
 	case iro_Mod:    return get_Mod_resmode(node);
 	default: return NULL;

@@ -268,7 +268,6 @@
  *    ir_node *new_Minus  (ir_node *op,  ir_mode *mode);
  *    ir_node *new_Mul    (ir_node *op1, ir_node *op2, ir_mode *mode);
  *    ir_node *new_Mulh   (ir_node *op1, ir_node *op2, ir_mode *mode);
- *    ir_node *new_Quot   (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Div    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state);
  *    ir_node *new_Mod    (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state;
  *    ir_node *new_And    (ir_node *op1, ir_node *op2, ir_mode *mode);
@@ -685,19 +684,6 @@
  *    ------------------------------------------------------------
  *
  *    Returns the high order bits of a n*n=2n multiplication.
- *
- *    ir_node *new_Quot (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
- *    -------------------------------------------------------------------------------------------------
- *
- *    Quot performs exact division of floating point numbers.  It's mode
- *    is Tuple, the mode of the result must match the Proj mode
- *    that extracts the result of the arithmetic operations.
- *
- *    Inputs:
- *      The store needed to model exceptions and the two operands.
- *    Output:
- *      A tuple containing a memory and a execution for modeling exceptions
- *      and the result of the arithmetic operation.
  *
  *    ir_node *new_Div (ir_node *memop, ir_node *op1, ir_node *op2, ir_mode *mode, op_pin_state state)
  *    ------------------------------------------------------------------------------------------------

@@ -832,16 +832,6 @@ static const pns_lookup_t call_lut[] = {
 #undef X
 };
 
-/** the lookup table for Proj(Quot) names */
-static const pns_lookup_t quot_lut[] = {
-#define X(a)    { pn_Quot_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
 /** the lookup table for Proj(Div) names */
 static const pns_lookup_t div_lut[] = {
 #define X(a)    { pn_Div_##a, #a }
@@ -934,7 +924,6 @@ static const proj_lookup_t proj_lut[] = {
 	{ iro_Start,   E(start_lut) },
 	{ iro_Cond,    E(cond_lut) },
 	{ iro_Call,    E(call_lut) },
-	{ iro_Quot,    E(quot_lut) },
 	{ iro_Div,     E(div_lut) },
 	{ iro_Mod,     E(mod_lut) },
 	{ iro_Load,    E(load_lut) },

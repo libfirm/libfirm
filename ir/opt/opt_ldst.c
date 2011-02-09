@@ -1201,7 +1201,7 @@ static void update_Call_memop(memop_t *m)
 }  /* update_Call_memop */
 
 /**
- * Update a memop for a Div/Mod/Quot.
+ * Update a memop for a Div/Mod.
  *
  * @param m  the memop
  */
@@ -1291,7 +1291,6 @@ static void collect_memops(ir_node *irn, void *ctx)
 			/* we can those to find the memory edge */
 			break;
 		case iro_Div:
-		case iro_Quot:
 		case iro_Mod:
 			update_DivOp_memop(op);
 			break;

@@ -446,7 +446,7 @@ class CopyB(Op):
 	pinned_init = "op_pin_state_pinned"
 
 class Div(Op):
-	"""returns the quotient of its 2 operands, integer version"""
+	"""returns the quotient of its 2 operands"""
 	ins   = [
 		("mem",   "memory dependency"),
 		("left",  "first operand"),
@@ -737,33 +737,6 @@ class Proj(Op):
 		),
 	]
 	attr_struct = "proj_attr"
-
-class Quot(Op):
-	"""returns the quotient of its 2 operands, floatingpoint version"""
-	ins   = [
-	   ("mem",   "memory dependency"),
-	   ("left",  "first operand"),
-	   ("right", "second operand"),
-	]
-	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "result of computation",                 "pn_Generic_other"),
-	]
-	flags = [ "fragile", "uses_memory" ]
-	attrs_name = "divmod"
-	attrs = [
-		dict(
-			type    = "ir_mode*",
-			name    = "resmode",
-			comment = "mode of the result value",
-		),
-	]
-	attr_struct = "divmod_attr"
-	pinned      = "exception"
-	op_index    = 1
-	arity_override = "oparity_binary"
 
 class Raise(Op):
 	"""Raises an exception. Unconditional change of control flow. Writes an

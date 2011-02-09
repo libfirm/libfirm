@@ -1215,46 +1215,34 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 }
 
 /*
- * floating point division
- */
-ir_tarval *tarval_quo(ir_tarval *a, ir_tarval *b)
-{
-	assert((a->mode == b->mode) && mode_is_float(a->mode));
-
-	carry_flag = -1;
-
-	if (no_float)
-		return tarval_bad;
-
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
-	fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
-	return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), a->mode);
-}
-
-/*
- * integer division
+ * division
  * overflow is impossible, but look out for division by zero
  */
 ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 {
-	assert((a->mode == b->mode) && mode_is_int(a->mode));
+	ir_mode *mode = a->mode;
+	assert(mode == b->mode);
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
+	if (get_mode_n_vector_elems(mode) > 1) {
 		/* vector arithmetic not implemented yet */
 		return tarval_bad;
 	}
 
-	/* x/0 error */
-	if (b == get_mode_null(b->mode)) return tarval_bad;
-	/* modes of a,b are equal */
-	sc_div(a->value, b->value, NULL);
-	return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	if (mode_is_int(mode)) {
+		/* x/0 error */
+		if (b == get_mode_null(mode))
+			return tarval_bad;
+
+		/* modes of a,b are equal */
+		sc_div(a->value, b->value, NULL);
+		return get_tarval(sc_get_buffer(), sc_get_buffer_length(), a->mode);
+	} else {
+		assert(mode_is_float(mode));
+		fc_div((const fp_value*) a->value, (const fp_value*) b->value, NULL);
+		return get_tarval_overflow(fc_get_buffer(), fc_get_buffer_length(), mode);
+	}
 }
 
 /*

@@ -77,8 +77,10 @@ static ir_node *gen_Eor(ir_node *node)
 	return transform_binop(node, new_bd_TEMPLATE_Xor);
 }
 
-static ir_node *gen_Quot(ir_node *node)
+static ir_node *gen_Div(ir_node *node)
 {
+	ir_mode *mode = get_Div_resmode(node);
+	assert(mode_is_float(mode));
 	return transform_binop(node, new_bd_TEMPLATE_fDiv);
 }
 
@@ -254,6 +256,7 @@ static void TEMPLATE_register_transformers(void)
 	be_set_transform_function(op_Add,   gen_Add);
 	be_set_transform_function(op_And,   gen_And);
 	be_set_transform_function(op_Const, gen_Const);
+	be_set_transform_function(op_Div,   gen_Div);
 	be_set_transform_function(op_Eor,   gen_Eor);
 	be_set_transform_function(op_Jmp,   gen_Jmp);
 	be_set_transform_function(op_Load,  gen_Load);
@@ -262,7 +265,6 @@ static void TEMPLATE_register_transformers(void)
 	be_set_transform_function(op_Not,   gen_Not);
 	be_set_transform_function(op_Or,    gen_Or);
 	be_set_transform_function(op_Phi,   gen_Phi);
-	be_set_transform_function(op_Quot,  gen_Quot);
 	be_set_transform_function(op_Shl,   gen_Shl);
 	be_set_transform_function(op_Shr,   gen_Shr);
 	be_set_transform_function(op_Store, gen_Store);

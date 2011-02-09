@@ -65,9 +65,6 @@ static ir_op _op_DivC;
 /** The Div by Const node. */
 static ir_op _op_ModC;
 
-/** The Quot by Const node. */
-static ir_op _op_QuotC;
-
 /** The memory Proj node. */
 static ir_op _op_ProjM;
 
@@ -588,12 +585,6 @@ static ir_op *stat_get_irn_op(ir_node *node)
 		if (is_Const(get_Mod_right(node))) {
 			/* special case, a module by a const, count on extra counter */
 			op = status->op_ModC ? status->op_ModC : op;
-		}  /* if */
-		break;
-	case iro_Quot:
-		if (is_Const(get_Quot_right(node))) {
-			/* special case, a floating point division by a const, count on extra counter */
-			op = status->op_QuotC ? status->op_QuotC : op;
 		}  /* if */
 		break;
 	case iro_Sel:
@@ -2375,16 +2366,12 @@ void firm_init_stat(unsigned enable_options)
 		_op_ModC.code    = --num;
 		_op_ModC.name    = new_id_from_chars(X("ModC"));
 
-		_op_QuotC.code   = --num;
-		_op_QuotC.name   = new_id_from_chars(X("QuotC"));
-
 		status->op_Phi0    = &_op_Phi0;
 		status->op_PhiM    = &_op_PhiM;
 		status->op_ProjM   = &_op_ProjM;
 		status->op_MulC    = &_op_MulC;
 		status->op_DivC    = &_op_DivC;
 		status->op_ModC    = &_op_ModC;
-		status->op_QuotC   = &_op_QuotC;
 	} else {
 		status->op_Phi0    = NULL;
 		status->op_PhiM    = NULL;
@@ -2392,7 +2379,6 @@ void firm_init_stat(unsigned enable_options)
 		status->op_MulC    = NULL;
 		status->op_DivC    = NULL;
 		status->op_ModC    = NULL;
-		status->op_QuotC   = NULL;
 	}  /* if */
 
 	/* for Florian: count the Sel depth */

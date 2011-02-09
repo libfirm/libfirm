@@ -523,16 +523,6 @@ FIRM_API ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode);
 FIRM_API ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b);
 
 /**
- * Division of two floating point tarvals.
- *
- * @param a  the first tarval
- * @param b  the second tarval
- *
- * @return a / b or tarval_bad
- */
-FIRM_API ir_tarval *tarval_quo(ir_tarval *a, ir_tarval *b);
-
-/**
  * Integer division of two tarvals.
  *
  * @param a  the first tarval

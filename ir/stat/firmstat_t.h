@@ -329,7 +329,6 @@ typedef struct statistic_info_t {
 	ir_op                   *op_MulC;            /**< pseudo op for multiplication by const */
 	ir_op                   *op_DivC;            /**< pseudo op for division by const */
 	ir_op                   *op_ModC;            /**< pseudo op for modulo by const */
-	ir_op                   *op_QuotC;           /**< pseudo op for floating point division by const */
 	ir_op                   *op_SelSel;          /**< pseudo op for Sel(Sel) */
 	ir_op                   *op_SelSelSel;       /**< pseudo op for Sel(Sel(Sel)) */
 	dumper_t                *dumper;             /**< list of dumper */

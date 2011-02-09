@@ -640,7 +640,11 @@ static ir_node *gen_Div(ir_node *node)
 	ir_node  *right     = get_Div_right(node);
 	ir_node  *res;
 
-	assert(!mode_is_float(mode));
+	if (mode_is_float(mode)) {
+		return gen_helper_binfpop(node, mode, new_bd_sparc_fdiv_s,
+								  new_bd_sparc_fdiv_d, new_bd_sparc_fdiv_q);
+	}
+
 	if (mode_is_signed(mode)) {
 		ir_node *left_high = gen_sign_extension_value(left);
 
@@ -667,14 +671,6 @@ static ir_node *gen_Div(ir_node *node)
 	}
 
 	return res;
-}
-
-static ir_node *gen_Quot(ir_node *node)
-{
-	ir_mode *mode = get_Quot_resmode(node);
-	assert(mode_is_float(mode));
-	return gen_helper_binfpop(node, mode, new_bd_sparc_fdiv_s,
-	                          new_bd_sparc_fdiv_d, new_bd_sparc_fdiv_q);
 }
 
 #if 0
@@ -1844,6 +1840,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	assert(is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred));
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);
 	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_UDiv_M);
+	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_fdiv_res);
+	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_fdiv_M);
 	switch (pn) {
 	case pn_Div_res:
 		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_res);
@@ -1853,24 +1851,6 @@ static ir_node *gen_Proj_Div(ir_node *node)
 		break;
 	}
 	panic("Unsupported Proj from Div");
-}
-
-static ir_node *gen_Proj_Quot(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	long      pn       = get_Proj_proj(node);
-
-	assert(is_sparc_fdiv(new_pred));
-	switch (pn) {
-	case pn_Quot_res:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_fdiv_res);
-	case pn_Quot_M:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_fdiv_M);
-	default:
-		break;
-	}
-	panic("Unsupported Proj from Quot");
 }
 
 static ir_node *get_frame_base(void)
@@ -2047,8 +2027,6 @@ static ir_node *gen_Proj(ir_node *node)
 		return be_duplicate_node(node);
 	case iro_Div:
 		return gen_Proj_Div(node);
-	case iro_Quot:
-		return gen_Proj_Quot(node);
 	case iro_Start:
 		return gen_Proj_Start(node);
 	case iro_Proj: {
@@ -2102,7 +2080,6 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Or,           gen_Or);
 	be_set_transform_function(op_Phi,          gen_Phi);
 	be_set_transform_function(op_Proj,         gen_Proj);
-	be_set_transform_function(op_Quot,         gen_Quot);
 	be_set_transform_function(op_Return,       gen_Return);
 	be_set_transform_function(op_Sel,          gen_Sel);
 	be_set_transform_function(op_Shl,          gen_Shl);

@@ -482,7 +482,7 @@ FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
    operands can be factored out.  Left is the first, right the
    second arithmetic value  as listed in tech report 1999-44.
    unops are: Minus, Abs, Not, Conv, Cast
-   binops are: Add, Sub, Mul, Quot, Div, Mod, And, Or, Eor, Shl,
+   binops are: Add, Sub, Mul, Div, Mod, And, Or, Eor, Shl,
    Shr, Shrs, Rotl, Cmp */
 FIRM_API int      is_unop(const ir_node *node);
 FIRM_API ir_node *get_unop_op(const ir_node *node);
@@ -619,7 +619,7 @@ FIRM_API ir_node *skip_HighLevel_ops(ir_node *node);
 FIRM_API int is_cfop(const ir_node *node);
 
 /** Returns true if the operation can change the control flow because
-    of an exception: Call, Quot, Div, Mod, Load, Store, Alloc,
+    of an exception: Call, Div, Mod, Load, Store, Alloc,
     Bad. Raise is not fragile, but a unconditional jump. */
 FIRM_API int is_fragile_op(const ir_node *node);
 /** Returns the memory operand of fragile operations. */

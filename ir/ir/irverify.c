@@ -433,39 +433,6 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p)
 }
 
 /**
- * verify a Proj(Quot) node
- */
-static int verify_node_Proj_Quot(ir_node *n, ir_node *p)
-{
-	ir_mode *mode = get_irn_mode(p);
-	long proj     = get_Proj_proj(p);
-
-	ASSERT_AND_RET_DBG(
-		(
-			(proj == pn_Quot_M         && mode == mode_M) ||
-			(proj == pn_Quot_X_regular && mode == mode_X) ||
-			(proj == pn_Quot_X_except  && mode == mode_X) ||
-			(proj == pn_Quot_res       && mode_is_float(mode) && mode == get_Quot_resmode(n))
-		),
-		"wrong Proj from Quot", 0,
-		show_proj_failure(p);
-	);
-	if (proj == pn_Quot_X_regular)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Regular Proj from unpinned Quot", 0);
-	else if (proj == pn_Quot_X_except)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Exception Proj from unpinned Quot", 0);
-	else if (proj == pn_Quot_M)
-		ASSERT_AND_RET(
-			get_irn_pinned(n) == op_pin_state_pinned,
-			"Memory Proj from unpinned Quot", 0);
-	return 1;
-}
-
-/**
  * verify a Proj(Div) node
  */
 static int verify_node_Proj_Div(ir_node *n, ir_node *p)
@@ -478,7 +445,7 @@ static int verify_node_Proj_Div(ir_node *n, ir_node *p)
 			(proj == pn_Div_M         && mode == mode_M) ||
 			(proj == pn_Div_X_regular && mode == mode_X) ||
 			(proj == pn_Div_X_except  && mode == mode_X) ||
-			(proj == pn_Div_res       && mode_is_int(mode) && mode == get_Div_resmode(n))
+			(proj == pn_Div_res       && mode == get_Div_resmode(n))
 		),
 		"wrong Proj from Div", 0,
 		show_proj_failure(p);
@@ -511,7 +478,7 @@ static int verify_node_Proj_Mod(ir_node *n, ir_node *p)
 			(proj == pn_Mod_M         && mode == mode_M) ||
 			(proj == pn_Mod_X_regular && mode == mode_X) ||
 			(proj == pn_Mod_X_except  && mode == mode_X) ||
-			(proj == pn_Mod_res       && mode_is_int(mode) && mode == get_Mod_resmode(n))
+			(proj == pn_Mod_res       && mode == get_Mod_resmode(n))
 		),
 		"wrong Proj from Mod", 0,
 		show_proj_failure(p);
@@ -1276,28 +1243,6 @@ static int verify_node_Mulh(ir_node *n, ir_graph *irg)
 }
 
 /**
- * verify a Quot node
- */
-static int verify_node_Quot(ir_node *n, ir_graph *irg)
-{
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Quot_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Quot_left(n));
-	ir_mode *op3mode = get_irn_mode(get_Quot_right(n));
-	(void) irg;
-
-	ASSERT_AND_RET_DBG(
-		/* Quot: BB x M x float x float --> M x X x float */
-		op1mode == mode_M && op2mode == op3mode &&
-		get_mode_sort(op2mode) == irms_float_number &&
-		mymode == mode_T,
-		"Quot node",0,
-		show_binop_failure(n, "/* Quot: BB x M x float x float --> M x X x float */");
-	);
-	return 1;
-}
-
-/**
  * verify a Div node
  */
 static int verify_node_Div(ir_node *n, ir_graph *irg)
@@ -1312,7 +1257,7 @@ static int verify_node_Div(ir_node *n, ir_graph *irg)
 		/* Div: BB x M x int x int --> M x X x int */
 		op1mode == mode_M &&
 		op2mode == op3mode &&
-		mode_is_int(op2mode) &&
+		mode_is_data(op2mode) &&
 		mymode == mode_T,
 		"Div node", 0
 		);
@@ -2156,7 +2101,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Minus);
 	CASE(Mul);
 	CASE(Mulh);
-	CASE(Quot);
 	CASE(Div);
 	CASE(Mod);
 	CASE(And);
@@ -2196,7 +2140,6 @@ void firm_set_default_verifyer(ir_opcode code, ir_op_ops *ops)
 	CASE(Raise);
 	CASE(InstOf);
 	CASE(Call);
-	CASE(Quot);
 	CASE(Div);
 	CASE(Mod);
 	CASE(Cmp);

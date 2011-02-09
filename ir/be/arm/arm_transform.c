@@ -568,17 +568,19 @@ static ir_node *gen_Mul(ir_node *node)
 	return new_bd_arm_Mul(dbg, block, new_op1, new_op2);
 }
 
-static ir_node *gen_Quot(ir_node *node)
+static ir_node *gen_Div(ir_node *node)
 {
 	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_Quot_left(node);
+	ir_node  *op1     = get_Div_left(node);
 	ir_node  *new_op1 = be_transform_node(op1);
-	ir_node  *op2     = get_Quot_right(node);
+	ir_node  *op2     = get_Div_right(node);
 	ir_node  *new_op2 = be_transform_node(op2);
-	ir_mode  *mode    = get_irn_mode(node);
+	ir_mode  *mode    = get_Div_resmode(node);
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
 	assert(mode != mode_E && "IEEE Extended FP not supported");
+	/* integer division should be replaced by builtin call */
+	assert(mode_is_float(mode));
 
 	if (USE_FPA(isa)) {
 		return new_bd_arm_Dvf(dbg, block, new_op1, new_op2, mode);
@@ -1378,7 +1380,7 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	panic("Unsupported Proj from CopyB");
 }
 
-static ir_node *gen_Proj_Quot(ir_node *node)
+static ir_node *gen_Proj_Div(ir_node *node)
 {
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
@@ -1387,20 +1389,14 @@ static ir_node *gen_Proj_Quot(ir_node *node)
 	long     proj      = get_Proj_proj(node);
 
 	switch (proj) {
-	case pn_Quot_M:
-		if (is_arm_Dvf(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_Dvf_M);
-		}
-		break;
-	case pn_Quot_res:
-		if (is_arm_Dvf(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode, pn_arm_Dvf_res);
-		}
-		break;
+	case pn_Div_M:
+		return new_rd_Proj(dbgi, new_pred, mode_M, pn_arm_Dvf_M);
+	case pn_Div_res:
+		return new_rd_Proj(dbgi, new_pred, mode, pn_arm_Dvf_res);
 	default:
 		break;
 	}
-	panic("Unsupported Proj from Quot");
+	panic("Unsupported Proj from Div");
 }
 
 /**
@@ -1592,8 +1588,8 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Call(node);
 	case iro_CopyB:
 		return gen_Proj_CopyB(node);
-	case iro_Quot:
-		return gen_Proj_Quot(node);
+	case iro_Div:
+		return gen_Proj_Div(node);
 	case iro_Cmp:
 		return gen_Proj_Cmp(node);
 	case iro_Start:
@@ -2095,6 +2091,7 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Const,    gen_Const);
 	be_set_transform_function(op_Conv,     gen_Conv);
 	be_set_transform_function(op_CopyB,    gen_CopyB);
+	be_set_transform_function(op_Div,      gen_Div);
 	be_set_transform_function(op_Eor,      gen_Eor);
 	be_set_transform_function(op_Jmp,      gen_Jmp);
 	be_set_transform_function(op_Load,     gen_Load);
@@ -2104,7 +2101,6 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Or,       gen_Or);
 	be_set_transform_function(op_Phi,      gen_Phi);
 	be_set_transform_function(op_Proj,     gen_Proj);
-	be_set_transform_function(op_Quot,     gen_Quot);
 	be_set_transform_function(op_Return,   gen_Return);
 	be_set_transform_function(op_Rotl,     gen_Rotl);
 	be_set_transform_function(op_Sel,      gen_Sel);

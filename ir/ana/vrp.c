@@ -370,7 +370,7 @@ static int vrp_update_node(ir_node *node)
 	is_End(node) is_Free(node)
 	is_IJmp(node) is_InstOf(node) is_Jmp(node) is_Load(node) is_Minus(node)
 	is_Mod(node) is_Mul(node) is_Mulh(node) is_Mux(node) is_NoMem(node)
-	is_Pin(node) is_Proj(node) is_Quot(node)
+	is_Pin(node) is_Proj(node)
 	is_Raise(node) is_Return(node) is_Sel(node) is_Start(node) is_Store(node)
 	is_SymConst(node) is_Sync(node) is_Tuple(node)
 	*/

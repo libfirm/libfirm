@@ -544,20 +544,6 @@ static ir_tarval *computed_value_Proj_Cmp(const ir_node *n)
 }  /* computed_value_Proj_Cmp */
 
 /**
- * Return the value of a floating point Quot.
- */
-static ir_tarval *do_computed_value_Quot(const ir_node *a, const ir_node *b)
-{
-	ir_tarval *ta = value_of(a);
-	ir_tarval *tb = value_of(b);
-
-	/* cannot optimize 0 / b = 0 because of NaN */
-	if (ta != tarval_bad && tb != tarval_bad)
-		return tarval_quo(ta, tb);
-	return tarval_bad;
-}  /* do_computed_value_Quot */
-
-/**
  * Calculate the value of an integer Div of two nodes.
  * Special case: 0 / b
  */
@@ -620,20 +606,6 @@ static ir_tarval *computed_value_Proj_Mod(const ir_node *n)
 	}
 	return tarval_bad;
 }  /* computed_value_Proj_Mod */
-
-/**
- * Return the value of a Proj(Quot).
- */
-static ir_tarval *computed_value_Proj_Quot(const ir_node *n)
-{
-	long proj_nr = get_Proj_proj(n);
-
-	if (proj_nr == pn_Quot_res) {
-		const ir_node *a = get_Proj_pred(n);
-		return do_computed_value_Quot(get_Quot_left(a), get_Quot_right(a));
-	}
-	return tarval_bad;
-}  /* computed_value_Proj_Quot */
 
 /**
  * Return the value of a Proj.
@@ -707,7 +679,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	CASE_PROJ(Cmp);
 	CASE_PROJ(Div);
 	CASE_PROJ(Mod);
-	CASE_PROJ(Quot);
 	CASE(Proj);
 	default:
 		/* leave NULL */
@@ -1515,38 +1486,6 @@ static ir_node *equivalent_node_Proj_Div(ir_node *proj)
 }  /* equivalent_node_Proj_Div */
 
 /**
- * Optimize a / 1.0 = a.
- */
-static ir_node *equivalent_node_Proj_Quot(ir_node *proj)
-{
-	ir_node   *oldn = proj;
-	ir_node   *quot = get_Proj_pred(proj);
-	ir_node   *b    = get_Quot_right(quot);
-	ir_tarval *tb   = value_of(b);
-
-	/* Div is not commutative. */
-	if (tarval_is_one(tb)) { /* Quot(x, 1) == x */
-		switch (get_Proj_proj(proj)) {
-		case pn_Quot_M:
-			proj = get_Quot_mem(quot);
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
-			return proj;
-
-		case pn_Quot_res:
-			proj = get_Quot_left(quot);
-			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NEUTRAL_1);
-			return proj;
-
-		default:
-			/* we cannot replace the exception Proj's here, this is done in
-			   transform_node_Proj_Quot() */
-			return proj;
-		}
-	}
-	return proj;
-}  /* equivalent_node_Proj_Quot */
-
-/**
  * Optimize CopyB(mem, x, x) into a Nop.
  */
 static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
@@ -1895,7 +1834,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(Sync);
 	CASE_PROJ(Tuple);
 	CASE_PROJ(Div);
-	CASE_PROJ(Quot);
 	CASE_PROJ(CopyB);
 	CASE_PROJ(Bound);
 	CASE_PROJ(Load);
@@ -2863,16 +2801,14 @@ static ir_node *transform_node_Div(ir_node *n)
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
 		}
-	}
-	else if (is_Const(a) && is_const_Phi(b)) {
+	} else if (is_Const(a) && is_const_Phi(b)) {
 		/* check for Div(Const, Phi) */
 		value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
 		if (value) {
 			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
 			goto make_tuple;
 		}
-	}
-	else if (is_const_Phi(a) && is_const_Phi(b)) {
+	} else if (is_const_Phi(a) && is_const_Phi(b)) {
 		/* check for Div(Phi, Phi) */
 		value = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
 		if (value) {
@@ -2883,26 +2819,64 @@ static ir_node *transform_node_Div(ir_node *n)
 
 	value = n;
 
-	if (a == b && value_not_zero(a, &dummy)) {
-		ir_graph *irg = get_irn_irg(n);
-		/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
-		value = new_r_Const(irg, get_mode_one(mode));
-		DBG_OPT_CSTEVAL(n, value);
-		goto make_tuple;
-	} else {
-		if (mode_is_signed(mode) && is_Const(b)) {
-			ir_tarval *tv = get_Const_tarval(b);
+	if (mode_is_float(mode)) {
+		/* Optimize x/c to x*(1/c) */
+		if (get_mode_arithmetic(mode) == irma_ieee754) {
+			ir_tarval *tv = value_of(b);
 
-			if (tv == get_mode_minus_one(mode)) {
-				/* a / -1 */
-				value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
-				DBG_OPT_CSTEVAL(n, value);
-				goto make_tuple;
+			if (tv != tarval_bad) {
+				int rem = tarval_fp_ops_enabled();
+
+				/*
+				 * Floating point constant folding might be disabled here to
+				 * prevent rounding.
+				 * However, as we check for exact result, doing it is safe.
+				 * Switch it on.
+				 */
+				tarval_enable_fp_ops(1);
+				tv = tarval_div(get_mode_one(mode), tv);
+				tarval_enable_fp_ops(rem);
+
+				/* Do the transformation if the result is either exact or we are
+				   not using strict rules. */
+				if (tv != tarval_bad &&
+					(tarval_ieee754_get_exact() || (get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic) == 0)) {
+					ir_node  *block = get_nodes_block(n);
+					ir_graph *irg   = get_irn_irg(block);
+					ir_node  *c     = new_r_Const(irg, tv);
+					dbg_info *dbgi  = get_irn_dbg_info(n);
+					value = new_rd_Mul(dbgi, block, a, c, mode);
+
+					goto make_tuple;
+				}
 			}
 		}
-		/* Try architecture dependent optimization */
-		value = arch_dep_replace_div_by_const(n);
+
+	} else {
+		assert(mode_is_int(mode));
+
+		if (a == b && value_not_zero(a, &dummy)) {
+			ir_graph *irg = get_irn_irg(n);
+			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
+			value = new_r_Const(irg, get_mode_one(mode));
+			DBG_OPT_CSTEVAL(n, value);
+			goto make_tuple;
+		} else {
+			if (mode_is_signed(mode) && is_Const(b)) {
+				ir_tarval *tv = get_Const_tarval(b);
+
+				if (tv == get_mode_minus_one(mode)) {
+					/* a / -1 */
+					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
+					DBG_OPT_CSTEVAL(n, value);
+					goto make_tuple;
+				}
+			}
+			/* Try architecture dependent optimization */
+			value = arch_dep_replace_div_by_const(n);
+		}
 	}
+
 
 	if (value != n) {
 		ir_node *mem, *blk;
@@ -3016,56 +2990,6 @@ make_tuple:
 	}
 	return n;
 }  /* transform_node_Mod */
-
-/**
- * Optimize x / c to x * (1/c)
- */
-static ir_node *transform_node_Quot(ir_node *n)
-{
-	ir_mode *mode = get_Quot_resmode(n);
-	ir_node *oldn = n;
-
-	if (get_mode_arithmetic(mode) == irma_ieee754) {
-		ir_node   *b  = get_Quot_right(n);
-		ir_tarval *tv = value_of(b);
-
-		if (tv != tarval_bad) {
-			int rem = tarval_fp_ops_enabled();
-
-			/*
-			 * Floating point constant folding might be disabled here to
-			 * prevent rounding.
-			 * However, as we check for exact result, doing it is safe.
-			 * Switch it on.
-			 */
-			tarval_enable_fp_ops(1);
-			tv = tarval_quo(get_mode_one(mode), tv);
-			tarval_enable_fp_ops(rem);
-
-			/* Do the transformation if the result is either exact or we are not
-			   using strict rules. */
-			if (tv != tarval_bad &&
-			    (tarval_ieee754_get_exact() || (get_irg_fp_model(get_irn_irg(n)) & fp_strict_algebraic) == 0)) {
-				ir_node *blk = get_nodes_block(n);
-				ir_graph *irg = get_irn_irg(blk);
-				ir_node *c = new_r_Const(irg, tv);
-				ir_node *a = get_Quot_left(n);
-				ir_node *m = new_rd_Mul(get_irn_dbg_info(n), blk, a, c, mode);
-				ir_node *mem = get_Quot_mem(n);
-
-				/* skip a potential Pin */
-				mem = skip_Pin(mem);
-				turn_into_tuple(n, pn_Quot_max);
-				set_Tuple_pred(n, pn_Quot_M, mem);
-				set_Tuple_pred(n, pn_Quot_X_regular, new_r_Jmp(blk));
-				set_Tuple_pred(n, pn_Quot_X_except,  get_irg_bad(irg));
-				set_Tuple_pred(n, pn_Quot_res, m);
-				DBG_OPT_ALGSIM1(oldn, a, b, m, FS_OPT_FP_INV_MUL);
-			}
-		}
-	}
-	return n;
-}  /* transform_node_Quot */
 
 /**
  * Optimize -a CMP -b into b CMP a.
@@ -5857,7 +5781,6 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Mul);
 	CASE_PROJ_EX(Div);
 	CASE_PROJ_EX(Mod);
-	CASE(Quot);
 	CASE_PROJ_EX(Cmp);
 	CASE_PROJ_EX(Cond);
 	CASE(And);
@@ -6038,12 +5961,6 @@ static int node_cmp_attr_Mod(ir_node *a, ir_node *b)
 	return node_cmp_attr_Div_Mod(a, b);
 }  /* node_cmp_attr_Mod */
 
-/** Compares the attributes of two Quot nodes. */
-static int node_cmp_attr_Quot(ir_node *a, ir_node *b)
-{
-	return node_cmp_attr_Div_Mod(a, b);
-}  /* node_cmp_attr_Quot */
-
 /** Compares the attributes of two Confirm nodes. */
 static int node_cmp_attr_Confirm(ir_node *a, ir_node *b)
 {
@@ -6146,7 +6063,6 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 	CASE(ASM);
 	CASE(Div);
 	CASE(Mod);
-	CASE(Quot);
 	CASE(Bound);
 	CASE(Builtin);
 	CASE(Dummy);

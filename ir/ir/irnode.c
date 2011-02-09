@@ -1575,7 +1575,6 @@ ir_node *get_fragile_op_mem(ir_node *node)
 
 	switch (get_irn_opcode(node)) {
 	case iro_Call  :
-	case iro_Quot  :
 	case iro_Div   :
 	case iro_Mod   :
 	case iro_Load  :

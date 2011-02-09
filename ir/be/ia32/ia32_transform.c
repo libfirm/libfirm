@@ -1069,8 +1069,6 @@ static ir_node *gen_binop_x87_float(ir_node *node, ir_node *op1, ir_node *op2,
 	if (mode == mode_T) {
 		if (is_Div(node))
 			mode = get_Div_resmode(node);
-		else if (is_Mod(node))
-			mode = get_Mod_resmode(node);
 		else
 			panic("can't determine mode");
 	}
@@ -1618,27 +1616,20 @@ static ir_node *gen_Mod(ir_node *node)
  */
 static ir_node *gen_Div(ir_node *node)
 {
+	ir_mode *mode = get_Div_resmode(node);
+	if (mode_is_float(mode)) {
+		ir_node *op1 = get_Div_left(node);
+		ir_node *op2 = get_Div_right(node);
+
+		if (ia32_cg_config.use_sse2) {
+			return gen_binop(node, op1, op2, new_bd_ia32_xDiv, match_am);
+		} else {
+			return gen_binop_x87_float(node, op1, op2, new_bd_ia32_vfdiv);
+		}
+	}
+
 	return create_Div(node);
 }
-
-
-/**
- * Creates an ia32 floating Div.
- *
- * @return The created ia32 xDiv node
- */
-static ir_node *gen_Quot(ir_node *node)
-{
-	ir_node *op1 = get_Quot_left(node);
-	ir_node *op2 = get_Quot_right(node);
-
-	if (ia32_cg_config.use_sse2) {
-		return gen_binop(node, op1, op2, new_bd_ia32_xDiv, match_am);
-	} else {
-		return gen_binop_x87_float(node, op1, op2, new_bd_ia32_vfdiv);
-	}
-}
-
 
 /**
  * Creates an ia32 Shl.
@@ -4576,7 +4567,7 @@ static ir_node *gen_Proj_Load(ir_node *node)
 /**
  * Transform and renumber the Projs from a Div or Mod instruction.
  */
-static ir_node *gen_Proj_Div_Mod(ir_node *node)
+static ir_node *gen_Proj_Div(ir_node *node)
 {
 	ir_node  *block    = be_transform_node(get_nodes_block(node));
 	ir_node  *pred     = get_Proj_pred(node);
@@ -4584,42 +4575,68 @@ static ir_node *gen_Proj_Div_Mod(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
-	assert(is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred));
+	assert(pn_ia32_Div_M == pn_ia32_IDiv_M);
+	assert(pn_ia32_Div_div_res == pn_ia32_IDiv_div_res);
 
-	switch (get_irn_opcode(pred)) {
-	case iro_Div:
-		switch (proj) {
-		case pn_Div_M:
+	switch (proj) {
+	case pn_Div_M:
+		if (is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred)) {
 			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_Div_M);
-		case pn_Div_res:
+		} else if (is_ia32_xDiv(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_xDiv_M);
+		} else if (is_ia32_vfdiv(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_vfdiv_M);
+		} else {
+			panic("Div transformed to unexpected thing %+F", new_pred);
+		}
+	case pn_Div_res:
+		if (is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred)) {
 			return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_ia32_Div_div_res);
-		case pn_Div_X_regular:
-			return new_rd_Jmp(dbgi, block);
-		case pn_Div_X_except:
-			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_exc);
-		default:
-			break;
+		} else if (is_ia32_xDiv(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode_xmm, pn_ia32_xDiv_res);
+		} else if (is_ia32_vfdiv(new_pred)) {
+			return new_rd_Proj(dbgi, new_pred, mode_vfp, pn_ia32_vfdiv_res);
+		} else {
+			panic("Div transformed to unexpected thing %+F", new_pred);
 		}
-		break;
-	case iro_Mod:
-		switch (proj) {
-		case pn_Mod_M:
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_Div_M);
-		case pn_Mod_res:
-			return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_ia32_Div_mod_res);
-		case pn_Mod_X_except:
-			set_ia32_exc_label(new_pred, 1);
-			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_exc);
-		default:
-			break;
-		}
-		break;
+	case pn_Div_X_regular:
+		return new_rd_Jmp(dbgi, block);
+	case pn_Div_X_except:
+		set_ia32_exc_label(new_pred, 1);
+		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_exc);
 	default:
 		break;
 	}
 
-	panic("No idea how to transform proj->Div/Mod");
+	panic("No idea how to transform proj->Div");
+}
+
+/**
+ * Transform and renumber the Projs from a Div or Mod instruction.
+ */
+static ir_node *gen_Proj_Mod(ir_node *node)
+{
+	ir_node  *pred     = get_Proj_pred(node);
+	ir_node  *new_pred = be_transform_node(pred);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
+	long     proj      = get_Proj_proj(node);
+
+	assert(is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred));
+	assert(pn_ia32_Div_M == pn_ia32_IDiv_M);
+	assert(pn_ia32_Div_mod_res == pn_ia32_IDiv_mod_res);
+
+	switch (proj) {
+	case pn_Mod_M:
+		return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_Div_M);
+	case pn_Mod_res:
+		return new_rd_Proj(dbgi, new_pred, mode_Iu, pn_ia32_Div_mod_res);
+	case pn_Mod_X_except:
+		set_ia32_exc_label(new_pred, 1);
+		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_exc);
+	default:
+		break;
+	}
+	panic("No idea how to transform proj->Mod");
 }
 
 /**
@@ -4645,40 +4662,6 @@ static ir_node *gen_Proj_CopyB(ir_node *node)
 	}
 
 	panic("No idea how to transform proj->CopyB");
-}
-
-/**
- * Transform and renumber the Projs from a Quot.
- */
-static ir_node *gen_Proj_Quot(ir_node *node)
-{
-	ir_node  *pred     = get_Proj_pred(node);
-	ir_node  *new_pred = be_transform_node(pred);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	long     proj      = get_Proj_proj(node);
-
-	switch (proj) {
-	case pn_Quot_M:
-		if (is_ia32_xDiv(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_xDiv_M);
-		} else if (is_ia32_vfdiv(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_M, pn_ia32_vfdiv_M);
-		}
-		break;
-	case pn_Quot_res:
-		if (is_ia32_xDiv(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_xmm, pn_ia32_xDiv_res);
-		} else if (is_ia32_vfdiv(new_pred)) {
-			return new_rd_Proj(dbgi, new_pred, mode_vfp, pn_ia32_vfdiv_res);
-		}
-		break;
-	case pn_Quot_X_regular:
-	case pn_Quot_X_except:
-	default:
-		break;
-	}
-
-	panic("No idea how to transform proj->Quot");
 }
 
 static ir_node *gen_be_Call(ir_node *node)
@@ -5598,12 +5581,11 @@ static ir_node *gen_Proj(ir_node *node)
 	case iro_Builtin:
 		return gen_Proj_Builtin(node);
 	case iro_Div:
+		return gen_Proj_Div(node);
 	case iro_Mod:
-		return gen_Proj_Div_Mod(node);
+		return gen_Proj_Mod(node);
 	case iro_CopyB:
 		return gen_Proj_CopyB(node);
-	case iro_Quot:
-		return gen_Proj_Quot(node);
 	case beo_SubSP:
 		return gen_Proj_be_SubSP(node);
 	case beo_AddSP:
@@ -5713,7 +5695,6 @@ static void register_transformers(void)
 	be_set_transform_function(op_Or,               gen_Or);
 	be_set_transform_function(op_Phi,              gen_Phi);
 	be_set_transform_function(op_Proj,             gen_Proj);
-	be_set_transform_function(op_Quot,             gen_Quot);
 	be_set_transform_function(op_Rotl,             gen_Rotl);
 	be_set_transform_function(op_Shl,              gen_Shl);
 	be_set_transform_function(op_Shr,              gen_Shr);
