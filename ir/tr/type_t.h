@@ -68,14 +68,14 @@ typedef struct {
 
 /** Method type attributes. */
 typedef struct {
-	int n_params;                   /**< Number of parameters. */
+	size_t       n_params;          /**< Number of parameters. */
 	tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
-	ir_type *value_params;          /**< A type whose entities represent copied value arguments. */
-	int n_res;                      /**< Number of results. */
+	ir_type     *value_params;      /**< A type whose entities represent copied value arguments. */
+	size_t       n_res;             /**< Number of results. */
 	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
-	ir_type *value_ress;            /**< A type whose entities represent copied value results. */
-	ir_variadicity variadicity;        /**< The variadicity of the method. */
-	int first_variadic_param;       /**< The index of the first variadic parameter or -1 if non-variadic .*/
+	ir_type     *value_ress;        /**< A type whose entities represent copied value results. */
+	ir_variadicity variadicity;     /**< The variadicity of the method. */
+	size_t first_variadic_param;    /**< The index of the first variadic parameter or -1 if non-variadic .*/
 	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
@@ -87,7 +87,7 @@ typedef struct {
 
 /** Array type attributes. */
 typedef struct {
-	int     n_dimensions;   /**< Number of array dimensions.  */
+	size_t  n_dimensions;   /**< Number of array dimensions.  */
 	ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
 	ir_node **upper_bound;  /**< Upper bounds or dimensions. */
 	int     *order;         /**< Ordering of dimensions. */
@@ -403,49 +403,48 @@ static inline void _set_type_dbg_info(ir_type *tp, type_dbg_info *db)
 
 static inline int _is_type(const void *thing)
 {
-	return (get_kind(thing) == k_type);
+	return get_kind(thing) == k_type;
 }
 
 static inline int _is_class_type(const ir_type *clss)
 {
-	assert(clss);
-	return (clss->type_op == type_class);
+	return clss->type_op == type_class;
 }
 
-static inline int _get_class_n_members(const ir_type *clss)
+static inline size_t _get_class_n_members(const ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
-	return (int)(ARR_LEN(clss->attr.ca.members));
+	assert(clss->type_op == type_class);
+	return ARR_LEN(clss->attr.ca.members);
 }
 
-static inline ir_entity *_get_class_member(const ir_type *clss, int pos)
+static inline ir_entity *_get_class_member(const ir_type *clss, size_t pos)
 {
-	assert(clss && (clss->type_op == type_class));
-	assert(pos >= 0 && pos < _get_class_n_members(clss));
+	assert(clss->type_op == type_class);
+	assert(pos < _get_class_n_members(clss));
 	return clss->attr.ca.members[pos];
 }
 
 static inline unsigned _get_class_vtable_size(const ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	return clss->attr.ca.vtable_size;
 }
 
 static inline void _set_class_vtable_size(ir_type *clss, unsigned vtable_size)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	clss->attr.ca.vtable_size = vtable_size;
 }
 
 static inline int _is_class_final(const ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	return clss->attr.ca.clss_flags & cf_final_class;
 }
 
 static inline void _set_class_final(ir_type *clss, int final)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	if (final)
 		clss->attr.ca.clss_flags |= cf_final_class;
 	else
@@ -454,13 +453,13 @@ static inline void _set_class_final(ir_type *clss, int final)
 
 static inline int _is_class_interface(const ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	return clss->attr.ca.clss_flags & cf_interface_class;
 }
 
 static inline void _set_class_interface(ir_type *clss, int final)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	if (final)
 		clss->attr.ca.clss_flags |= cf_interface_class;
 	else
@@ -469,13 +468,13 @@ static inline void _set_class_interface(ir_type *clss, int final)
 
 static inline int _is_class_abstract(const ir_type *clss)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	return clss->attr.ca.clss_flags & cf_absctract_class;
 }
 
 static inline void _set_class_abstract(ir_type *clss, int final)
 {
-	assert(clss && (clss->type_op == type_class));
+	assert(clss->type_op == type_class);
 	if (final)
 		clss->attr.ca.clss_flags |= cf_absctract_class;
 	else
@@ -484,75 +483,69 @@ static inline void _set_class_abstract(ir_type *clss, int final)
 
 static inline int _is_struct_type(const ir_type *strct)
 {
-	assert(strct);
 	return (strct->type_op == type_struct);
 }
 
 static inline int _is_method_type(const ir_type *method)
 {
-	assert(method);
 	return (method->type_op == type_method);
 }
 
 static inline int _is_union_type(const ir_type *uni)
 {
-	assert(uni);
 	return (uni->type_op == type_union);
 }
 
 static inline int _is_array_type(const ir_type *array)
 {
-	assert(array);
 	return (array->type_op == type_array);
 }
 
 static inline int _is_enumeration_type(const ir_type *enumeration)
 {
-	assert(enumeration);
 	return (enumeration->type_op == type_enumeration);
 }
 
 static inline int _is_pointer_type(const ir_type *pointer)
 {
-	assert(pointer);
 	return (pointer->type_op == type_pointer);
 }
 
 /** Returns true if a type is a primitive type. */
 static inline int _is_primitive_type(const ir_type *primitive)
 {
-	assert(primitive && primitive->kind == k_type);
+	assert(primitive->kind == k_type);
 	return (primitive->type_op == type_primitive);
 }
 
 static inline int _is_atomic_type(const ir_type *tp)
 {
-	assert(tp && tp->kind == k_type);
+	assert(tp->kind == k_type);
 	return (_is_primitive_type(tp) || _is_pointer_type(tp) ||
 	        _is_enumeration_type(tp));
 }
 
-static inline int _get_method_n_params(const ir_type *method)
+static inline size_t _get_method_n_params(const ir_type *method)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	return method->attr.ma.n_params;
 }
 
-static inline int _get_method_n_ress(const ir_type *method)
+static inline size_t _get_method_n_ress(const ir_type *method)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	return method->attr.ma.n_res;
 }
 
 static inline mtp_additional_properties _get_method_additional_properties(const ir_type *method)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	return method->attr.ma.additional_properties;
 }
 
 static inline void _set_method_additional_properties(ir_type *method, mtp_additional_properties mask)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
@@ -561,7 +554,7 @@ static inline void _set_method_additional_properties(ir_type *method, mtp_additi
 
 static inline void _add_method_additional_properties(ir_type *method, mtp_additional_properties flag)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 
 	/* do not allow to set the mtp_property_inherited flag or
 	 * the automatic inheritance of flags will not work */
@@ -570,13 +563,13 @@ static inline void _add_method_additional_properties(ir_type *method, mtp_additi
 
 static inline unsigned _get_method_calling_convention(const ir_type *method)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	return method->attr.ma.irg_calling_conv;
 }
 
 static inline void _set_method_calling_convention(ir_type *method, unsigned cc_mask)
 {
-	assert(method && (method->type_op == type_method));
+	assert(method->type_op == type_method);
 	method->attr.ma.irg_calling_conv = cc_mask;
 }
 

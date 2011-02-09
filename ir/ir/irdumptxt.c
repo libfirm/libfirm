@@ -149,6 +149,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		/* not dumped: mature    */
 	}  break;
 	case iro_Start: {
+		size_t   i;
 		ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
 		ir_fprintf(F, "  start of method of type %+F\n", tp);
 		for (i = 0; i < get_method_n_params(tp); ++i)
@@ -185,6 +186,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  tail call\n");
 		ir_fprintf(F, "  calling method of type %+F\n", tp);
 		if (get_unknown_type() != tp) {
+			size_t i;
 			for (i = 0; i < get_method_n_params(tp); ++i)
 				ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 			for (i = 0; i < get_method_n_ress(tp); ++i)
@@ -201,6 +203,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		ir_fprintf(F, "  cast to type: %+F\n", get_Cast_type(n));
 	} break;
 	case iro_Return: {
+		size_t   i;
 		ir_type *tp = get_entity_type(get_irg_entity(get_irn_irg(n)));
 		ir_fprintf(F, "  return in method of type %+F\n", tp);
 		for (i = 0; i < get_method_n_ress(tp); ++i) {
@@ -448,7 +451,6 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 
 static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *prefix)
 {
-	int i;
 	ir_type *owner, *type;
 
 	assert(is_entity(ent));
@@ -467,6 +469,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 
 		if (is_Class_type(get_entity_owner(ent))) {
 			if (get_entity_n_overwrites(ent) > 0) {
+				size_t i;
 				fprintf(F, "%s  overwrites:\n", prefix);
 				for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
 					ir_entity *ov = get_entity_overwrites(ent, i);
@@ -477,6 +480,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 				fprintf(F, "%s  Does not overwrite other entities.\n", prefix);
 			}
 			if (get_entity_n_overwrittenby(ent) > 0) {
+				size_t i;
 				fprintf(F, "%s  overwritten by:\n", prefix);
 				for (i = 0; i < get_entity_n_overwrittenby(ent); ++i) {
 					ir_entity *ov = get_entity_overwrittenby(ent, i);
@@ -630,7 +634,7 @@ void dump_entity_to_file(FILE *out, ir_entity *ent)
 
 void dump_type_to_file(FILE *F, ir_type *tp)
 {
-	int i;
+	size_t i;
 
 	if ((is_Class_type(tp))       && (verbosity & dump_verbosity_noClassTypes)) return;
 	if ((is_Struct_type(tp))      && (verbosity & dump_verbosity_noStructTypes)) return;
@@ -764,13 +768,15 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 	case tpo_method:
 		if (verbosity & dump_verbosity_typeattrs) {
 			fprintf(F, "\n  variadicity: %s", get_variadicity_name(get_method_variadicity(tp)));
-			fprintf(F, "\n  return types: %d", get_method_n_ress(tp));
+			fprintf(F, "\n  return types: %lu",
+			        (unsigned long) get_method_n_ress(tp));
 			for (i = 0; i < get_method_n_ress(tp); ++i) {
 				ir_type *rtp = get_method_res_type(tp, i);
 				ir_fprintf(F, "\n    %+F", rtp);
 			}
 
-			fprintf(F, "\n  parameter types: %d", get_method_n_params(tp));
+			fprintf(F, "\n  parameter types: %lu",
+			        (unsigned long) get_method_n_params(tp));
 			for (i = 0; i < get_method_n_params(tp); ++i) {
 				ir_type *ptp = get_method_param_type(tp, i);
 				ir_fprintf(F, "\n    %+F", ptp);

@@ -537,10 +537,11 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 	ir_node *p, *n, *src, *mem, *blk;
 	ir_entity *ent;
 	ir_type *owner;
-	int idx, n_args;
+	int n_args;
 
 	n_args = 0;
 	for (p = entry->copyb; p; p = n) {
+		size_t idx;
 		n   = (ir_node*)get_irn_link(p);
 		src = get_CopyB_src(p);
 
@@ -574,7 +575,8 @@ static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *
 	/* now create dummy entities for function with ignored return value */
 	if (n_args < n_com) {
 		ir_type *ctp = get_Call_type(entry->call);
-		int i, j;
+		size_t   i;
+		size_t   j;
 
 		if (is_lowered_type(ctp))
 			ctp = get_associated_type(ctp);

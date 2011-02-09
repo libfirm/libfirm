@@ -42,7 +42,7 @@
  * If the pos'th parameter is NOT of a pointer type, ptr_access_none
  * is returned;
  */
-FIRM_API ptr_access_kind get_method_param_access(ir_entity *ent, int pos);
+FIRM_API ptr_access_kind get_method_param_access(ir_entity *ent, size_t pos);
 
 /**
  * Analyze how pointer arguments of a given
@@ -59,7 +59,7 @@ FIRM_API void analyze_irg_args(ir_graph *irg);
  *
  * The values are calculation on demand only.
  */
-FIRM_API unsigned get_method_param_weight(ir_entity *ent, int pos);
+FIRM_API unsigned get_method_param_weight(ir_entity *ent, size_t pos);
 
 /**
  * Analyze the parameters of a given ir graph.

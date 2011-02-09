@@ -515,16 +515,16 @@ FIRM_API ir_initializer_t *get_entity_initializer(const ir_entity *entity);
    Overwrittenby is the inverse of overwrites.  Both add routines add
    both relations, they only differ in the order of arguments. */
 FIRM_API void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
-FIRM_API int get_entity_n_overwrites(const ir_entity *ent);
-FIRM_API int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten);
-FIRM_API ir_entity *get_entity_overwrites(const ir_entity *ent, int pos);
-FIRM_API void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten);
+FIRM_API size_t get_entity_n_overwrites(const ir_entity *ent);
+FIRM_API size_t get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten);
+FIRM_API ir_entity *get_entity_overwrites(const ir_entity *ent, size_t pos);
+FIRM_API void set_entity_overwrites(ir_entity *ent, size_t pos, ir_entity *overwritten);
 FIRM_API void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
 
-FIRM_API int get_entity_n_overwrittenby(const ir_entity *ent);
-FIRM_API int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites);
-FIRM_API ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos);
-FIRM_API void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites);
+FIRM_API size_t get_entity_n_overwrittenby(const ir_entity *ent);
+FIRM_API size_t get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites);
+FIRM_API ir_entity *get_entity_overwrittenby(const ir_entity *ent, size_t pos);
+FIRM_API void set_entity_overwrittenby(ir_entity *ent, size_t pos, ir_entity *overwrites);
 FIRM_API void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites);
 
 /**
@@ -1380,13 +1380,13 @@ FIRM_API ident *get_class_ident(const ir_type *clss);
 FIRM_API const char *get_class_name(const ir_type *clss);
 
 /** Returns the number of members of this class. */
-FIRM_API int get_class_n_members(const ir_type *clss);
+FIRM_API size_t get_class_n_members(const ir_type *clss);
 
 /** Returns the member at position pos, 0 <= pos < n_member */
-FIRM_API ir_entity *get_class_member(const ir_type *clss, int pos);
+FIRM_API ir_entity *get_class_member(const ir_type *clss, size_t pos);
 
 /** Returns index of mem in clss, -1 if not contained. */
-FIRM_API int get_class_member_index(const ir_type *clss, ir_entity *mem);
+FIRM_API size_t get_class_member_index(const ir_type *clss, ir_entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same
  *  name returns one of them.  Returns NULL if no member found. */
@@ -1399,22 +1399,22 @@ FIRM_API ir_entity *get_class_member_by_name(ir_type *clss, ident *name);
 FIRM_API void add_class_subtype(ir_type *clss, ir_type *subtype);
 
 /** Returns the number of subtypes */
-FIRM_API int get_class_n_subtypes(const ir_type *clss);
+FIRM_API size_t get_class_n_subtypes(const ir_type *clss);
 
 /** Gets the subtype at position pos, 0 <= pos < n_subtype. */
-FIRM_API ir_type *get_class_subtype(ir_type *clss, int pos);
+FIRM_API ir_type *get_class_subtype(ir_type *clss, size_t pos);
 
 /** Returns the index to access subclass as subtype of class.
  *
  *  If subclass is no direct subtype of class returns -1.
  */
-FIRM_API int get_class_subtype_index(ir_type *clss, const ir_type *subclass);
+FIRM_API size_t get_class_subtype_index(ir_type *clss, const ir_type *subclass);
 
 /** Sets the subtype at position pos, 0 <= pos < n_subtype.
  *
  *  Does not set the corresponding supertype relation for subtype: this might
  *  be a different position! */
-FIRM_API void set_class_subtype(ir_type *clss, ir_type *subtype, int pos);
+FIRM_API void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos);
 
 /** Finds subtype in the list of subtypes and removes it  */
 FIRM_API void remove_class_subtype(ir_type *clss, ir_type *subtype);
@@ -1434,22 +1434,22 @@ FIRM_API void remove_class_subtype(ir_type *clss, ir_type *subtype);
 FIRM_API void add_class_supertype(ir_type *clss, ir_type *supertype);
 
 /** Returns the number of supertypes */
-FIRM_API int get_class_n_supertypes(const ir_type *clss);
+FIRM_API size_t get_class_n_supertypes(const ir_type *clss);
 
 /** Returns the index to access superclass as supertype of class.
  *
  *  If superclass is no direct supertype of class returns -1.
  */
-FIRM_API int get_class_supertype_index(ir_type *clss, ir_type *super_clss);
+FIRM_API size_t get_class_supertype_index(ir_type *clss, ir_type *super_clss);
 
 /** Gets the supertype at position pos,  0 <= pos < n_supertype. */
-FIRM_API ir_type *get_class_supertype(ir_type *clss, int pos);
+FIRM_API ir_type *get_class_supertype(ir_type *clss, size_t pos);
 
 /** Sets the supertype at position pos, 0 <= pos < n_supertype.
  *
  *  Does not set the corresponding subtype relation for supertype: this might
  *  be at a different position! */
-FIRM_API void set_class_supertype(ir_type *clss, ir_type *supertype, int pos);
+FIRM_API void set_class_supertype(ir_type *clss, ir_type *supertype, size_t pos);
 
 /** Finds supertype in the list of supertypes and removes it */
 FIRM_API void remove_class_supertype(ir_type *clss, ir_type *supertype);
@@ -1525,13 +1525,13 @@ FIRM_API ident *get_struct_ident(const ir_type *strct);
 FIRM_API const char *get_struct_name(const ir_type *strct);
 
 /** Returns the number of members of this struct. */
-FIRM_API int get_struct_n_members(const ir_type *strct);
+FIRM_API size_t get_struct_n_members(const ir_type *strct);
 
-/** Returns the member at position pos, 0 <= pos < n_member */
-FIRM_API ir_entity *get_struct_member(const ir_type *strct, int pos);
+/** Returns the member at position pos, pos < n_member */
+FIRM_API ir_entity *get_struct_member(const ir_type *strct, size_t pos);
 
 /** Returns index of member in strct, -1 if not contained. */
-FIRM_API int get_struct_member_index(const ir_type *strct, ir_entity *member);
+FIRM_API size_t get_struct_member_index(const ir_type *strct, ir_entity *member);
 
 /** Returns true if a type is a struct type. */
 FIRM_API int is_Struct_type(const ir_type *strct);
@@ -1583,7 +1583,7 @@ FIRM_API int is_Struct_type(const ir_type *strct);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_API ir_type *new_type_method(int n_param, int n_res);
+FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res);
 
 /** Create a new method type with debug information.
  *
@@ -1594,22 +1594,23 @@ FIRM_API ir_type *new_type_method(int n_param, int n_res);
  * The arrays for the parameter and result types are not initialized by
  * the constructor.
  */
-FIRM_API ir_type *new_d_type_method(int n_param, int n_res, type_dbg_info *db);
+FIRM_API ir_type *new_d_type_method(size_t n_param, size_t n_res,
+                                    type_dbg_info *db);
 
 /* -- manipulate private fields of method. -- */
 
 /** Returns the number of parameters of this method. */
-FIRM_API int get_method_n_params(const ir_type *method);
+FIRM_API size_t get_method_n_params(const ir_type *method);
 
 /** Returns the type of the parameter at position pos of a method. */
-FIRM_API ir_type *get_method_param_type(ir_type *method, int pos);
+FIRM_API ir_type *get_method_param_type(ir_type *method, size_t pos);
 /** Sets the type of the parameter at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
-FIRM_API void set_method_param_type(ir_type *method, int pos, ir_type *tp);
+FIRM_API void set_method_param_type(ir_type *method, size_t pos, ir_type *tp);
 /** Returns an entity that represents the copied value argument.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-FIRM_API ir_entity *get_method_value_param_ent(ir_type *method, int pos);
+FIRM_API ir_entity *get_method_value_param_ent(ir_type *method, size_t pos);
 /**
  * Sets the type that represents the copied value arguments.
  */
@@ -1621,24 +1622,24 @@ FIRM_API void set_method_value_param_type(ir_type *method, ir_type *tp);
 FIRM_API ir_type *get_method_value_param_type(const ir_type *method);
 /** Returns an ident representing the parameters name. Returns NULL if not set.
     For debug support only. */
-FIRM_API ident *get_method_param_ident(ir_type *method, int pos);
+FIRM_API ident *get_method_param_ident(ir_type *method, size_t pos);
 /** Returns a string representing the parameters name. Returns NULL if not set.
     For debug support only. */
-FIRM_API const char *get_method_param_name(ir_type *method, int pos);
+FIRM_API const char *get_method_param_name(ir_type *method, size_t pos);
 /** Sets an ident representing the parameters name. For debug support only. */
-FIRM_API void set_method_param_ident(ir_type *method, int pos, ident *id);
+FIRM_API void set_method_param_ident(ir_type *method, size_t pos, ident *id);
 
 /** Returns the number of results of a method type. */
-FIRM_API int get_method_n_ress(const ir_type *method);
+FIRM_API size_t get_method_n_ress(const ir_type *method);
 /** Returns the return type of a method type at position pos. */
-FIRM_API ir_type *get_method_res_type(ir_type *method, int pos);
+FIRM_API ir_type *get_method_res_type(ir_type *method, size_t pos);
 /** Sets the type of the result at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
-FIRM_API void set_method_res_type(ir_type *method, int pos, ir_type *tp);
+FIRM_API void set_method_res_type(ir_type *method, size_t pos, ir_type *tp);
 /** Returns an entity that represents the copied value result.  Only necessary
    for compounds passed by value. This information is constructed only on demand. */
-FIRM_API ir_entity *get_method_value_res_ent(ir_type *method, int pos);
+FIRM_API ir_entity *get_method_value_res_ent(ir_type *method, size_t pos);
 
 /**
  * Returns a type that represents the copied value results.
@@ -1670,7 +1671,7 @@ FIRM_API void set_method_variadicity(ir_type *method, ir_variadicity vari);
  * of the method type plus one is returned for variadic functions.
  * Non-variadic function types always return -1 here.
  */
-FIRM_API int get_method_first_variadic_param_index(const ir_type *method);
+FIRM_API size_t get_method_first_variadic_param_index(const ir_type *method);
 
 /**
  * Sets the first variadic parameter index. This allows to specify
@@ -1678,7 +1679,8 @@ FIRM_API int get_method_first_variadic_param_index(const ir_type *method);
  * but still have the knowledge, which parameter must be passed as
  * variadic one.
  */
-FIRM_API void set_method_first_variadic_param_index(ir_type *method, int index);
+FIRM_API void set_method_first_variadic_param_index(ir_type *method,
+                                                    size_t index);
 
 /** Returns the mask of the additional graph properties. */
 FIRM_API mtp_additional_properties get_method_additional_properties(const ir_type *method);
@@ -1796,13 +1798,13 @@ FIRM_API ident *get_union_ident(const ir_type *uni);
 FIRM_API const char *get_union_name(const ir_type *uni);
 
 /** Returns the number of unioned types of this union */
-FIRM_API int get_union_n_members(const ir_type *uni);
+FIRM_API size_t get_union_n_members(const ir_type *uni);
 
 /** Returns the entity at position pos of a union */
-FIRM_API ir_entity *get_union_member(const ir_type *uni, int pos);
+FIRM_API ir_entity *get_union_member(const ir_type *uni, size_t pos);
 
 /** Returns index of member in uni, -1 if not contained. */
-FIRM_API int get_union_member_index(const ir_type *uni, ir_entity *member);
+FIRM_API size_t get_union_member_index(const ir_type *uni, ir_entity *member);
 
 /** Returns true if a type is a union type. */
 FIRM_API int is_Union_type(const ir_type *uni);
@@ -1845,59 +1847,59 @@ FIRM_API ir_type *new_d_type_array(int n_dims, ir_type *element_type,
 /* --- manipulate private fields of array type --- */
 
 /** Returns the number of array dimensions of this type. */
-FIRM_API int get_array_n_dimensions(const ir_type *array);
+FIRM_API size_t get_array_n_dimensions(const ir_type *array);
 
 /**
  * Allocates Const nodes of mode_Is for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
-FIRM_API void set_array_bounds_int(ir_type *array, int dimension,
+FIRM_API void set_array_bounds_int(ir_type *array, size_t dimension,
                                    int lower_bound, int upper_bound);
 /**
  * Sets the bounds for one array dimension.
  * Upper bound in Firm is the element next to the last, i.e. [lower,upper[
  */
-FIRM_API void set_array_bounds(ir_type *array, int dimension,
+FIRM_API void set_array_bounds(ir_type *array, size_t dimension,
                                ir_node *lower_bound, ir_node *upper_bound);
 /** Sets the lower bound for one array dimension, i.e. [lower,upper[ */
-FIRM_API void set_array_lower_bound(ir_type *array, int dimension,
+FIRM_API void set_array_lower_bound(ir_type *array, size_t dimension,
                                     ir_node *lower_bound);
 
 /** Allocates Const nodes of mode_Is for the lower bound of an array
     dimension, i.e. [lower,upper[ */
-FIRM_API void set_array_lower_bound_int(ir_type *array, int dimension,
+FIRM_API void set_array_lower_bound_int(ir_type *array, size_t dimension,
                                         int lower_bound);
 
 /** Sets the upper bound for one array dimension, i.e. [lower,upper[ */
-FIRM_API void set_array_upper_bound(ir_type *array, int dimension,
+FIRM_API void set_array_upper_bound(ir_type *array, size_t dimension,
                                     ir_node *upper_bound);
 
 /** Allocates Const nodes of mode_Is for the upper bound of an array
     dimension, i.e. [lower,upper[. */
-FIRM_API void set_array_upper_bound_int(ir_type *array, int dimension,
+FIRM_API void set_array_upper_bound_int(ir_type *array, size_t dimension,
                                         int upper_bound);
 
 /** Returns true if lower bound != Unknown. */
-FIRM_API int has_array_lower_bound(const ir_type *array, int dimension);
+FIRM_API int has_array_lower_bound(const ir_type *array, size_t dimension);
 /** Returns the lower bound of an array. */
-FIRM_API ir_node *get_array_lower_bound(const ir_type *array, int dimension);
+FIRM_API ir_node *get_array_lower_bound(const ir_type *array, size_t dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_API long get_array_lower_bound_int(const ir_type *array, int dimension);
+FIRM_API long get_array_lower_bound_int(const ir_type *array, size_t dimension);
 /** returns true if lower bound != Unknown */
-FIRM_API int has_array_upper_bound(const ir_type *array, int dimension);
+FIRM_API int has_array_upper_bound(const ir_type *array, size_t dimension);
 /** Returns the upper bound of an array. */
-FIRM_API ir_node *get_array_upper_bound(const ir_type *array, int dimension);
+FIRM_API ir_node *get_array_upper_bound(const ir_type *array, size_t dimension);
 /** Works only if bound is Const node with tarval that can be converted to long. */
-FIRM_API long get_array_upper_bound_int(const ir_type *array, int dimension);
+FIRM_API long get_array_upper_bound_int(const ir_type *array, size_t dimension);
 
 /** Sets an array dimension to a specific order. */
-FIRM_API void set_array_order(ir_type *array, int dimension, int order);
+FIRM_API void set_array_order(ir_type *array, size_t dimension, int order);
 
 /** Returns the order of an array dimension. */
-FIRM_API int get_array_order(const ir_type *array, int dimension);
+FIRM_API int get_array_order(const ir_type *array, size_t dimension);
 
 /** Find the array dimension that is placed at order order. */
-FIRM_API int find_array_dimension(const ir_type *array, int order);
+FIRM_API size_t find_array_dimension(const ir_type *array, int order);
 
 /** Sets the array element type. */
 FIRM_API void set_array_element_type(ir_type *array, ir_type* tp);
@@ -1928,10 +1930,10 @@ FIRM_API int is_Array_type(const ir_type *array);
  */
 
 /** Create a new type enumeration -- set the enumerators independently. */
-FIRM_API ir_type *new_type_enumeration(ident *name, int n_enums);
+FIRM_API ir_type *new_type_enumeration(ident *name, size_t n_enums);
 
 /** Create a new type enumeration with debug information -- set the enumerators independently. */
-FIRM_API ir_type *new_d_type_enumeration(ident *name, int n_enums,
+FIRM_API ir_type *new_d_type_enumeration(ident *name, size_t n_enums,
                                          type_dbg_info *db);
 
 /* --- manipulate fields of enumeration type. --- */
@@ -1943,15 +1945,15 @@ FIRM_API ident *get_enumeration_ident(const ir_type *enumeration);
 FIRM_API const char *get_enumeration_name(const ir_type *enumeration);
 
 /** Set an enumeration constant to a enumeration type at a given position. */
-FIRM_API void set_enumeration_const(ir_type *enumeration, int pos,
+FIRM_API void set_enumeration_const(ir_type *enumeration, size_t pos,
                                     ident *nameid, ir_tarval *con);
 
 /** Returns the number of enumeration values of this enumeration */
-FIRM_API int get_enumeration_n_enums(const ir_type *enumeration);
+FIRM_API size_t get_enumeration_n_enums(const ir_type *enumeration);
 
 /** Returns the enumeration constant at a given position. */
 FIRM_API ir_enum_const *get_enumeration_const(const ir_type *enumeration,
-                                              int pos);
+                                              size_t pos);
 
 /** Returns the enumeration type owner of an enumeration constant. */
 FIRM_API ir_type *get_enumeration_owner(const ir_enum_const *enum_cnst);
@@ -2105,7 +2107,7 @@ FIRM_API const char *get_compound_name(const ir_type *tp);
  *
  * @return Number of members in the compound type.
  */
-FIRM_API int get_compound_n_members(const ir_type *tp);
+FIRM_API size_t get_compound_n_members(const ir_type *tp);
 
 /**
  * Gets the member of a Firm compound type at position pos.
@@ -2115,10 +2117,10 @@ FIRM_API int get_compound_n_members(const ir_type *tp);
  *
  * @return The member entity at position pos.
  */
-FIRM_API ir_entity *get_compound_member(const ir_type *tp, int pos);
+FIRM_API ir_entity *get_compound_member(const ir_type *tp, size_t pos);
 
 /** Returns index of member in tp, -1 if not contained. */
-FIRM_API int get_compound_member_index(const ir_type *tp, ir_entity *member);
+FIRM_API size_t get_compound_member_index(const ir_type *tp, ir_entity *member);
 
 /**
  * layout members of a struct/union or class type in a default way.

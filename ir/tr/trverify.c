@@ -86,7 +86,7 @@ static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw)
 {
 	ir_type *owner = get_entity_owner(ent);
 	ir_type *ov_own = get_entity_owner(ovw);
-	int i;
+	size_t   i;
 
 	fprintf(stderr, "Type verification error:\n");
 	ir_fprintf(stderr, "Entity %+F::%+e owerwrites ", owner, ent);
@@ -105,25 +105,31 @@ static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw)
 static void show_ent_overwrite_cnt(ir_entity *ent)
 {
 	ir_type *owner = get_entity_owner(ent);
-	int i, j, k, found, show_stp = 0;
+	size_t i;
+	size_t j;
+	size_t k;
+	bool   found;
+	bool   show_stp = false;
 
 	fprintf(stderr, "Type verification error:\n");
 	ir_fprintf(stderr, "Entity %t::%e owerwrites\n", owner, ent);
 	for (i = 0; i < get_entity_n_overwrites(ent); ++i) {
 		ir_entity *ovw = get_entity_overwrites(ent, i);
 		ir_type *ov_own = get_entity_owner(ovw);
+		size_t n_supertypes = get_class_n_supertypes(owner);
 
 		ir_fprintf(stderr, "  %t::%e\n", ov_own, ovw);
-		for (k = 0; k < i; ++k)
+		for (k = 0; k < i; ++k) {
 			if (ovw == get_entity_overwrites(ent, k)) {
 				ir_fprintf(stderr, "  ->%t::%e entered more than once\n", ov_own, ovw);
 				break;
 			}
+		}
 
-		found = 0;
-		for (j = get_class_n_supertypes(owner) - 1; j >= 0; --j) {
+		found = false;
+		for (j = 0; j < n_supertypes; ++j) {
 			if (ov_own == get_class_supertype(owner, j)) {
-				show_stp = found = 1;
+				show_stp = found = true;
 				break;
 			}
 		}
@@ -180,7 +186,7 @@ static int check_class(ir_type *tp)
 			the representation is correct. */
 			found = 0;
 			for (k = get_class_n_supertypes(tp) - 1; k >= 0; --k) {
-				if (get_class_member_index(get_class_supertype(tp, k), ovw) >= 0) {
+				if (get_class_member_index(get_class_supertype(tp, k), ovw) != (size_t)-1) {
 					found = 1;
 					break;
 				}
@@ -438,7 +444,7 @@ int tr_verify(void)
 
 	for (s = IR_SEGMENT_FIRST; s <= IR_SEGMENT_LAST; ++s) {
 		const ir_type *type = get_segment_type(s);
-		int            e;
+		size_t         e;
 		for (e = 0; e < get_compound_n_members(type); ++e) {
 			ir_entity *entity = get_compound_member(type, e);
 			ASSERT_AND_RET(get_entity_ld_ident(entity) != NULL ||

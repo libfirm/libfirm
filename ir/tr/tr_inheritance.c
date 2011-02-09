@@ -50,7 +50,10 @@ ident *default_mangle_inherited_name(const ir_entity *super, const ir_type *clss
     by an entity of this class. */
 static void copy_entities_from_superclass(ir_type *clss, void *env)
 {
-	int i, j, k, l;
+	size_t i;
+	size_t j;
+	size_t k;
+	size_t l;
 	int overwritten;
 	ir_type *super, *inhenttype;
 	ir_entity *inhent, *thisent;
@@ -677,14 +680,11 @@ static void verify_irn_class_cast_state(ir_node *n, void *env)
 	if (!is_Class_type(totype)) return;
 
 	if (is_SubClass_of(totype, fromtype) ||
-		is_SubClass_of(fromtype, totype)   ) {
+		is_SubClass_of(fromtype, totype)) {
 		this_state = ir_class_casts_transitive;
-		if ((get_class_supertype_index(totype, fromtype) != -1) ||
-		    (get_class_supertype_index(fromtype, totype) != -1) ||
+		if ((get_class_supertype_index(totype, fromtype) != (size_t)-1) ||
+		    (get_class_supertype_index(fromtype, totype) != (size_t)-1) ||
 		    fromtype == totype) {
-			/*   Das ist doch alt?  Aus dem cvs aufgetaucht ...
-			if ((get_class_supertype_index(totype, fromtype) == -1) &&
-			    (get_class_supertype_index(fromtype, totype) == -1) ) {  */
 			this_state = ir_class_casts_normalized;
 		}
 	}

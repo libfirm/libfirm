@@ -1736,7 +1736,7 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *incsp;
 	ir_node   *sp;
 	ir_node   *barrier;
-	int        i;
+	size_t     i;
 
 	/* stackpointer is important at function prolog */
 	be_prolog_add_reg(abihelper, sp_reg,
@@ -1750,7 +1750,7 @@ static ir_node *gen_Start(ir_node *node)
 			be_prolog_add_reg(abihelper, param->reg1, arch_register_req_type_none);
 	}
 	/* announce that we need the values of the callee save regs */
-	for (i = 0; i < (int) (sizeof(callee_saves)/sizeof(callee_saves[0])); ++i) {
+	for (i = 0; i < (sizeof(callee_saves)/sizeof(callee_saves[0])); ++i) {
 		be_prolog_add_reg(abihelper, callee_saves[i], arch_register_req_type_none);
 	}
 
@@ -1854,8 +1854,8 @@ static ir_node *gen_Call(ir_node *node)
 	dbg_info             *dbgi         = get_irn_dbg_info(node);
 	ir_type              *type         = get_Call_type(node);
 	calling_convention_t *cconv        = arm_decide_calling_convention(NULL, type);
-	int                   n_params     = get_Call_n_params(node);
-	int                   n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
+	size_t                n_params     = get_Call_n_params(node);
+	size_t                n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
 	/* max inputs: memory, callee, register arguments */
 	int                   max_inputs   = 2 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);
@@ -1871,7 +1871,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node              *incsp        = NULL;
 	int                   mem_pos;
 	ir_node              *res;
-	int                   p;
+	size_t                p;
 	int                   o;
 	int                   out_arity;
 

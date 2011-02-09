@@ -108,8 +108,8 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 	if (!is_Class_type(totype))   return pred;
 	if (!is_Class_type(fromtype)) return pred;
 
-	if ((get_class_supertype_index(totype, fromtype) != -1) ||
-		(get_class_supertype_index(fromtype, totype) != -1) ) {
+	if ((get_class_supertype_index(totype, fromtype) != (size_t)-1) ||
+		(get_class_supertype_index(fromtype, totype) != (size_t)-1) ) {
 			/* It's just what we want ... */
 			return pred;
 	}
@@ -118,11 +118,12 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 
 	if (is_SubClass_of(totype, fromtype)) {
 		/* downcast */
-		while (get_class_subtype_index(fromtype, totype) == -1) {
+		while (get_class_subtype_index(fromtype, totype) == (size_t)-1) {
 			/* Insert a cast to a subtype of fromtype. */
 			ir_type *new_type = NULL;
 			ir_node *new_cast;
-			int i, n_subtypes = get_class_n_subtypes(fromtype);
+			size_t   i;
+			size_t   n_subtypes = get_class_n_subtypes(fromtype);
 			for (i = 0; i < n_subtypes && !new_type; ++i) {
 				ir_type *new_sub = get_class_subtype(fromtype, i);
 				if (is_SuperClass_of(new_sub, totype))
@@ -140,7 +141,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 	} else {
 		assert(is_SuperClass_of(totype, fromtype));
 		/* upcast */
-		while (get_class_supertype_index(fromtype, totype) == -1) {
+		while (get_class_supertype_index(fromtype, totype) == (size_t)-1) {
 			/* Insert a cast to a supertype of fromtype. */
 			ir_type *new_type = NULL;
 			int i, n_supertypes = get_class_n_supertypes(fromtype);
@@ -175,7 +176,8 @@ static void normalize_irn_class_cast(ir_node *n, void *env)
 		res = normalize_values_type(totype, pred);
 		set_Cast_op(n, res);
 	} else if (is_Call(n)) {
-		int i, n_params = get_Call_n_params(n);
+		size_t n_params = get_Call_n_params(n);
+		size_t i;
 		ir_type *tp = get_Call_type(n);
 		for (i = 0; i < n_params; ++i) {
 			res = normalize_values_type(get_method_param_type(tp, i), get_Call_param(n, i));
@@ -336,13 +338,13 @@ static int concretize_selected_entity(ir_node *sel)
 
 		/* The sel entity should be a member of the cast_tp, else
 		   the graph was not properly typed. */
-		if (get_class_member_index(cast_tp, sel_ent) == -1)
+		if (get_class_member_index(cast_tp, sel_ent) == (size_t)-1)
 			return res;
 
 		new_ent = resolve_ent_polymorphy(orig_tp, sel_ent);
 
 		/* New ent must be member of orig_tp. */
-		if (get_class_member_index(orig_tp, new_ent) == -1)
+		if (get_class_member_index(orig_tp, new_ent) == (size_t)-1)
 			return res;
 
 		/* all checks done, we can remove the Cast and update the Sel */

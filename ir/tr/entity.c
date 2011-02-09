@@ -753,31 +753,31 @@ void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 	ARR_APP1(ir_entity *, overwritten->overwrittenby, ent);
 }
 
-int get_entity_n_overwrites(const ir_entity *ent)
+size_t get_entity_n_overwrites(const ir_entity *ent)
 {
 	if (ent->overwrites == NULL)
 		return 0;
 	return ARR_LEN(ent->overwrites);
 }
 
-int get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten)
+size_t get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten)
 {
-	int i, n;
-	n = get_entity_n_overwrites(ent);
+	size_t i;
+	size_t n = get_entity_n_overwrites(ent);
 	for (i = 0; i < n; ++i) {
 		if (get_entity_overwrites(ent, i) == overwritten)
 			return i;
 	}
-	return -1;
+	return (size_t)-1;
 }
 
-ir_entity *get_entity_overwrites(const ir_entity *ent, int pos)
+ir_entity *get_entity_overwrites(const ir_entity *ent, size_t pos)
 {
 	assert(pos < get_entity_n_overwrites(ent));
 	return ent->overwrites[pos];
 }
 
-void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten)
+void set_entity_overwrites(ir_entity *ent, size_t pos, ir_entity *overwritten)
 {
 	assert(pos < get_entity_n_overwrites(ent));
 	ent->overwrites[pos] = overwritten;
@@ -785,8 +785,8 @@ void set_entity_overwrites(ir_entity *ent, int pos, ir_entity *overwritten)
 
 void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 {
-	int i, n;
-	n = get_entity_n_overwrites(ent);
+	size_t i;
+	size_t n = get_entity_n_overwrites(ent);
 	for (i = 0; i < n; ++i) {
 		if (ent->overwrites[i] == overwritten) {
 			for (; i < n - 1; i++)
@@ -798,31 +798,32 @@ void remove_entity_overwrites(ir_entity *ent, ir_entity *overwritten)
 }
 
 
-int get_entity_n_overwrittenby(const ir_entity *ent)
+size_t get_entity_n_overwrittenby(const ir_entity *ent)
 {
 	if (ent->overwrittenby == NULL)
 		return 0;
 	return ARR_LEN(ent->overwrittenby);
 }
 
-int get_entity_overwrittenby_index(const ir_entity *ent, ir_entity *overwrites)
+size_t get_entity_overwrittenby_index(const ir_entity *ent,
+                                      ir_entity *overwrites)
 {
-	int i, n;
-	n = get_entity_n_overwrittenby(ent);
+	size_t i;
+	size_t n = get_entity_n_overwrittenby(ent);
 	for (i = 0; i < n; ++i) {
 		if (get_entity_overwrittenby(ent, i) == overwrites)
 			return i;
 	}
-	return -1;
+	return (size_t)-1;
 }
 
-ir_entity *get_entity_overwrittenby(const ir_entity *ent, int pos)
+ir_entity *get_entity_overwrittenby(const ir_entity *ent, size_t pos)
 {
 	assert(pos < get_entity_n_overwrittenby(ent));
 	return ent->overwrittenby[pos];
 }
 
-void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites)
+void set_entity_overwrittenby(ir_entity *ent, size_t pos, ir_entity *overwrites)
 {
 	assert(pos < get_entity_n_overwrittenby(ent));
 	ent->overwrittenby[pos] = overwrites;
@@ -830,9 +831,8 @@ void set_entity_overwrittenby(ir_entity *ent, int pos, ir_entity *overwrites)
 
 void remove_entity_overwrittenby(ir_entity *ent, ir_entity *overwrites)
 {
-	int i, n;
-
-	n = get_entity_n_overwrittenby(ent);
+	size_t i;
+	size_t n = get_entity_n_overwrittenby(ent);
 	for (i = 0; i < n; ++i) {
 		if (ent->overwrittenby[i] == overwrites) {
 			for (; i < n - 1; ++i)

@@ -652,7 +652,8 @@ static void dump_tbl_line(const distrib_entry_t *entry, void *env)
 {
 	dumper_t *dmp = (dumper_t*)env;
 
-	fprintf(dmp->f, "%d : %u\n", PTR_TO_INT(entry->object), cnt_to_uint(&entry->cnt));
+	fprintf(dmp->f, "%ld : %u\n", (long int)PTR_TO_INT(entry->object),
+	        cnt_to_uint(&entry->cnt));
 }  /* dump_tbl_line */
 
 /**

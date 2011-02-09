@@ -233,7 +233,7 @@ static void show_node_on_graph(ir_graph *irg, ir_node *n)
  */
 static void show_call_param(ir_node *n, ir_type *mt)
 {
-	int i;
+	size_t i;
 	char type_name[256];
 	ir_print_type(type_name, sizeof(type_name), mt);
 
@@ -273,9 +273,10 @@ static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt)
 	ir_entity *ent = get_irg_entity(irg);
 
 	show_entity_failure(n);
-	fprintf(stderr, "  Return node %ld in entity \"%s\" has %d results different from type %d\n",
+	fprintf(stderr, "  Return node %ld in entity \"%s\" has %lu results different from type %lu\n",
 		get_irn_node_nr(n), get_entity_name(ent),
-		get_Return_n_ress(n), get_method_n_ress(mt));
+		(unsigned long) get_Return_n_ress(n),
+		(unsigned long) get_method_n_ress(mt));
 }
 
 /**
@@ -711,7 +712,7 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p)
 				(proj >= 0 && mode_is_datab(mode)),
 				"wrong Proj from Proj from Start", 0);
 			ASSERT_AND_RET(
-				(proj < get_method_n_params(mt)),
+				(proj < (int)get_method_n_params(mt)),
 				"More Projs for args than args in type", 0
 				);
 			if ((mode_is_reference(mode)) && is_compound_type(get_method_param_type(mt, proj)))
@@ -736,7 +737,7 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p)
 			ASSERT_AND_RET(mt == get_unknown_type() || is_Method_type(mt),
 					"wrong call type on call", 0);
 			ASSERT_AND_RET(
-				(proj < get_method_n_ress(mt)),
+				(proj < (int)get_method_n_ress(mt)),
 				"More Projs for results than results in type.", 0);
 			if ((mode_is_reference(mode)) && is_compound_type(get_method_res_type(mt, proj)))
 				/* value result */ break;
@@ -970,7 +971,7 @@ static int verify_node_Return(ir_node *n, ir_graph *irg)
 	ASSERT_AND_RET( mymode == mode_X, "Result X", 0 );   /* result X */
 	/* Compare returned results with result types of method type */
 	mt = get_entity_type(get_irg_entity(irg));
-	ASSERT_AND_RET_DBG( get_Return_n_ress(n) == get_method_n_ress(mt),
+	ASSERT_AND_RET_DBG(get_Return_n_ress(n) == get_method_n_ress(mt),
 		"Number of results for Return doesn't match number of results in type.", 0,
 		show_return_nres(irg, n, mt););
 	for (i = get_Return_n_ress(n) - 1; i >= 0; --i) {
@@ -1118,7 +1119,8 @@ static int verify_node_Call(ir_node *n, ir_graph *irg)
 	ir_mode *op1mode = get_irn_mode(get_Call_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Call_ptr(n));
 	ir_type *mt;
-	int i;
+	size_t i;
+	size_t n_params;
 	(void) irg;
 
 	/* Call: BB x M x ref x data1 x ... x datan
@@ -1133,7 +1135,8 @@ static int verify_node_Call(ir_node *n, ir_graph *irg)
 		return 1;
 	}
 
-	for (i = get_Call_n_params(n) - 1; i >= 0; --i) {
+	n_params = get_Call_n_params(n);
+	for (i = 0; i < n_params; ++i) {
 		ASSERT_AND_RET( mode_is_datab(get_irn_mode(get_Call_param(n, i))), "Call node", 0 );  /* operand datai */
 	}
 

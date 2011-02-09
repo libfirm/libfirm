@@ -190,11 +190,11 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	ir_entity          *called      = get_irg_entity(called_graph);
 	ir_type            *called_type = get_entity_type(called);
 	ir_type            *call_type   = get_Call_type(call);
-	int                 n_params    = get_method_n_params(called_type);
-	int                 n_arguments = get_method_n_params(call_type);
-	int                 n_res       = get_method_n_ress(called_type);
+	size_t              n_params    = get_method_n_params(called_type);
+	size_t              n_arguments = get_method_n_params(call_type);
+	size_t              n_res       = get_method_n_ress(called_type);
 	irg_inline_property prop        = get_irg_inline_property(called_graph);
-	int                 i;
+	size_t              i;
 	bool                res;
 
 	if (prop == irg_inline_forbidden)
@@ -214,7 +214,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 	 * It is implementation dependent what happens in that case.
 	 * We support inlining, if the bitsize of the types matches AND
 	 * the same arithmetic is used. */
-	for (i = n_params - 1; i >= 0; --i) {
+	for (i = 0; i < n_params; ++i) {
 		ir_type *param_tp = get_method_param_type(called_type, i);
 		ir_type *arg_tp   = get_method_param_type(call_type, i);
 
@@ -231,7 +231,7 @@ static bool can_inline(ir_node *call, ir_graph *called_graph)
 			/* otherwise we can simply "reinterpret" the bits */
 		}
 	}
-	for (i = n_res - 1; i >= 0; --i) {
+	for (i = 0; i < n_res; ++i) {
 		ir_type *decl_res_tp = get_method_res_type(called_type, i);
 		ir_type *used_res_tp = get_method_res_type(call_type, i);
 
@@ -1345,17 +1345,12 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
  * After inlining, the local variable might be transformed into a
  * SSA variable by scalar_replacement().
  */
-static unsigned get_method_local_adress_weight(ir_graph *callee, int pos)
+static unsigned get_method_local_adress_weight(ir_graph *callee, size_t pos)
 {
 	inline_irg_env *env = (inline_irg_env*)get_irg_link(callee);
 
-	if (env->local_weights != NULL) {
-		if (pos < ARR_LEN(env->local_weights))
-			return env->local_weights[pos];
-		return 0;
-	}
-
-	analyze_irg_local_weights(env, callee);
+	if (env->local_weights == NULL)
+		analyze_irg_local_weights(env, callee);
 
 	if (pos < ARR_LEN(env->local_weights))
 		return env->local_weights[pos];

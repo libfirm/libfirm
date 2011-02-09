@@ -237,16 +237,16 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 
 
 	for (i = 0; i < arity; i++) {
-		if (i < ARR_LEN(*pOld_in)-1)
+		if (i < (int)ARR_LEN(*pOld_in)-1)
 			edges_notify_edge(node, i, in[i], (*pOld_in)[i+1], irg);
 		else
 			edges_notify_edge(node, i, in[i], NULL,            irg);
 	}
-	for (;i < ARR_LEN(*pOld_in)-1; i++) {
+	for (;i < (int)ARR_LEN(*pOld_in)-1; i++) {
 		edges_notify_edge(node, i, NULL, (*pOld_in)[i+1], irg);
 	}
 
-	if (arity != ARR_LEN(*pOld_in) - 1) {
+	if (arity != (int)ARR_LEN(*pOld_in) - 1) {
 		ir_node * block = (*pOld_in)[0];
 		*pOld_in = NEW_ARR_D(ir_node *, irg->obst, arity + 1);
 		(*pOld_in)[0] = block;
@@ -729,12 +729,13 @@ void set_End_keepalive(ir_node *end, int pos, ir_node *ka)
 /* Set new keep-alives */
 void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 {
-	int i;
+	size_t e;
+	int    i;
 	ir_graph *irg = get_irn_irg(end);
 
 	/* notify that edges are deleted */
-	for (i = END_KEEPALIVE_OFFSET; i < ARR_LEN(end->in) - 1; ++i) {
-		edges_notify_edge(end, i, NULL, end->in[i + 1], irg);
+	for (e = END_KEEPALIVE_OFFSET; e < ARR_LEN(end->in) - 1; ++e) {
+		edges_notify_edge(end, e, NULL, end->in[e + 1], irg);
 	}
 	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 
@@ -826,10 +827,10 @@ void free_End(ir_node *end)
 	                     in array afterwards ... */
 }
 
-int get_Return_n_ress(const ir_node *node)
+size_t get_Return_n_ress(const ir_node *node)
 {
 	assert(is_Return(node));
-	return (get_irn_arity(node) - RETURN_RESULT_OFFSET);
+	return (size_t)(get_irn_arity(node) - RETURN_RESULT_OFFSET);
 }
 
 ir_node **get_Return_res_arr(ir_node *node)
@@ -841,17 +842,11 @@ ir_node **get_Return_res_arr(ir_node *node)
 		return NULL;
 }
 
-/*
-void set_Return_n_res(ir_node *node, int results)
-{
-	assert(is_Return(node));
-}
-*/
-
 ir_node *get_Return_res(const ir_node *node, int pos)
 {
 	assert(is_Return(node));
-	assert(get_Return_n_ress(node) > pos);
+	assert(pos >= 0);
+	assert(get_Return_n_ress(node) > (size_t)pos);
 	return get_irn_n(node, pos + RETURN_RESULT_OFFSET);
 }
 
@@ -988,10 +983,10 @@ ir_node **get_Call_param_arr(ir_node *node)
 	return &get_irn_in(node)[CALL_PARAM_OFFSET + 1];
 }
 
-int get_Call_n_params(const ir_node *node)
+size_t get_Call_n_params(const ir_node *node)
 {
 	assert(is_Call(node));
-	return (get_irn_arity(node) - CALL_PARAM_OFFSET);
+	return (size_t) (get_irn_arity(node) - CALL_PARAM_OFFSET);
 }
 
 ir_node *get_Call_param(const ir_node *node, int pos)

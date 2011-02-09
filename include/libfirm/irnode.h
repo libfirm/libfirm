@@ -370,7 +370,7 @@ FIRM_API void remove_End_Bads_and_doublets(ir_node *end);
 FIRM_API void free_End(ir_node *end);
 
 FIRM_API ir_node **get_Return_res_arr(ir_node *node);
-FIRM_API int       get_Return_n_ress(const ir_node *node);
+FIRM_API size_t    get_Return_n_ress(const ir_node *node);
 FIRM_API ir_node  *get_Return_res(const ir_node *node, int pos);
 FIRM_API void      set_Return_res(ir_node *node, int pos, ir_node *res);
 
@@ -429,7 +429,7 @@ FIRM_API void       set_Sel_index(ir_node *node, int pos, ir_node *index);
 
 FIRM_API ir_node **get_Call_param_arr(ir_node *node);
 /** Gets the number of parameters of a call. */
-FIRM_API int      get_Call_n_params(const ir_node *node);
+FIRM_API size_t   get_Call_n_params(const ir_node *node);
 /** Gets the call parameter at position pos. */
 FIRM_API ir_node *get_Call_param(const ir_node *node, int pos);
 /** Sets the call parameter at position pos. */

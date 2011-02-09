@@ -175,7 +175,7 @@ const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
 
 static inline reg_out_info_t *get_out_info(const ir_node *node)
 {
-	int                   pos  = 0;
+	size_t                pos  = 0;
 	const backend_info_t *info;
 
 	assert(get_irn_mode(node) != mode_T);
@@ -185,7 +185,7 @@ static inline reg_out_info_t *get_out_info(const ir_node *node)
 	}
 
 	info = be_get_info(node);
-	assert(pos >= 0 && pos < ARR_LEN(info->out_infos));
+	assert(pos < ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
 
@@ -194,7 +194,7 @@ static inline reg_out_info_t *get_out_info_n(const ir_node *node, int pos)
 {
 	const backend_info_t *info = be_get_info(node);
 	assert(!is_Proj(node));
-	assert(pos >= 0 && pos < ARR_LEN(info->out_infos));
+	assert(pos >= 0 && pos < (int)ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
 

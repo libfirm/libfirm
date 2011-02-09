@@ -599,7 +599,8 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 			write_long(env, get_type_nr(get_method_param_type(tp, i)));
 		for (i = 0; i < nresults; i++)
 			write_long(env, get_type_nr(get_method_res_type(tp, i)));
-		fprintf(f, "%d ", get_method_first_variadic_param_index(tp));
+		fprintf(f, "%lu ",
+		        (unsigned long) get_method_first_variadic_param_index(tp));
 		break;
 	}
 
@@ -1663,7 +1664,7 @@ static ir_node *read_ASM(io_env_t *env, int numpreds, ir_node **preds)
 		ARR_APP1(ident*, clobbers, clobber);
 	}
 
-	assert(ARR_LEN(input_constraints) == numpreds-1);
+	assert(ARR_LEN(input_constraints) == (size_t)numpreds-1);
 
 	newnode = new_r_ASM(preds[0], numpreds-1, preds+1,
 			input_constraints,

@@ -1301,7 +1301,7 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *start;
 	ir_node   *sp;
 	ir_node   *barrier;
-	int        i;
+	size_t     i;
 
 	/* stackpointer is important at function prolog */
 	be_prolog_add_reg(abihelper, sp_reg,
@@ -1387,9 +1387,9 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *mem            = get_Return_mem(node);
 	ir_node  *new_mem        = be_transform_node(mem);
 	ir_node  *sp             = get_stack_pointer_for(node);
-	int       n_res          = get_Return_n_ress(node);
+	size_t    n_res          = get_Return_n_ress(node);
 	ir_node  *bereturn;
-	int       i;
+	size_t    i;
 
 	be_epilog_begin(abihelper);
 	be_epilog_set_memory(abihelper, new_mem);
@@ -1515,8 +1515,8 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node         *new_mem      = be_transform_node(mem);
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
 	ir_type         *type         = get_Call_type(node);
-	int              n_params     = get_Call_n_params(node);
-	int              n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
+	size_t           n_params     = get_Call_n_params(node);
+	size_t           n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
 	/* max inputs: memory, callee, register arguments */
 	int              max_inputs   = 2 + n_param_regs;
 	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
@@ -1535,7 +1535,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_node         *incsp;
 	int              mem_pos;
 	ir_node         *res;
-	int              p;
+	size_t           p;
 	int              i;
 	int              o;
 	int              out_arity;

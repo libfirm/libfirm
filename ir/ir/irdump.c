@@ -2032,8 +2032,9 @@ static void dump_out_edge(ir_node *n, void *env)
 
 static void dump_loop_label(FILE *F, ir_loop *loop)
 {
-	fprintf(F, "loop %d, %d sons, %d nodes",
-	        get_loop_depth(loop), get_loop_n_sons(loop), get_loop_n_nodes(loop));
+	fprintf(F, "loop %u, %lu sons, %lu nodes",
+	        get_loop_depth(loop), (unsigned long) get_loop_n_sons(loop),
+	        (unsigned long) get_loop_n_nodes(loop));
 }
 
 static void dump_loop_info(FILE *F, ir_loop *loop)
@@ -2041,7 +2042,7 @@ static void dump_loop_info(FILE *F, ir_loop *loop)
 	fprintf(F, " info1: \"");
 	fprintf(F, " loop nr: %ld", get_loop_loop_nr(loop));
 #ifdef DEBUG_libfirm   /* GL @@@ debug analyses */
-	fprintf(F, "\n The loop was analyzed %d times.", PTR_TO_INT(get_loop_link(loop)));
+	fprintf(F, "\n The loop was analyzed %ld times.", (long int) PTR_TO_INT(get_loop_link(loop)));
 #endif
 	fprintf(F, "\"");
 }
@@ -2075,8 +2076,8 @@ static void dump_loop_son_edge(FILE *F, ir_loop *loop, int i)
 	PRINT_LOOPID(loop);
 	fprintf(F, "\" targetname: \"");
 	PRINT_LOOPID(get_loop_son(loop, i));
-	fprintf(F, "\" color: darkgreen label: \"%d\"}\n",
-	        get_loop_element_pos(loop, get_loop_son(loop, i)));
+	fprintf(F, "\" color: darkgreen label: \"%lu\"}\n",
+	        (unsigned long) get_loop_element_pos(loop, get_loop_son(loop, i)));
 }
 
 static void dump_loops(FILE *F, ir_loop *loop)
@@ -2465,7 +2466,9 @@ void dump_class_hierarchy(FILE *out)
 static void dump_loops_standalone(FILE *F, ir_loop *loop)
 {
 	size_t i;
-	int loop_node_started = 0, son_number = 0, first = 0;
+	bool   loop_node_started = false;
+	size_t first      = 0;
+	size_t son_number = 0;
 	loop_element le;
 	ir_loop *son = NULL;
 
@@ -2486,8 +2489,11 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 				PRINT_LOOPID(loop);
 				fprintf(F, "\" targetname: \"");
 				PRINT_LOOPID(loop);
-				fprintf(F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
-				loop_node_started = 0;
+				fprintf(F, "-%lu-nodes\" label:\"%lu...%lu\"}\n",
+						(unsigned long) first,
+						(unsigned long) first,
+				        (unsigned long) i-1);
+				loop_node_started = false;
 			}
 			dump_loop_son_edge(F, loop, son_number++);
 			dump_loops_standalone(F, son);
@@ -2499,8 +2505,9 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 				/* Start a new node which contains all firm nodes of the current loop */
 				fprintf(F, "node: { title: \"");
 				PRINT_LOOPID(loop);
-				fprintf(F, "-%d-nodes\" color: lightyellow label: \"", i);
-				loop_node_started = 1;
+				fprintf(F, "-%lu-nodes\" color: lightyellow label: \"",
+				        (unsigned long)i);
+				loop_node_started = true;
 				first = i;
 			} else
 				fprintf(F, "\n");
@@ -2518,8 +2525,9 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 				/* Start a new node which contains all firm nodes of the current loop */
 				fprintf(F, "node: { title: \"");
 				PRINT_LOOPID(loop);
-				fprintf(F, "-%d-nodes\" color: lightyellow label: \"", i);
-				loop_node_started = 1;
+				fprintf(F, "-%lu-nodes\" color: lightyellow label: \"",
+				        (unsigned long)i);
+				loop_node_started = true;
 				first = i;
 			} else
 				fprintf(F, "\n");
@@ -2534,8 +2542,11 @@ static void dump_loops_standalone(FILE *F, ir_loop *loop)
 		PRINT_LOOPID(loop);
 		fprintf(F, "\" targetname: \"");
 		PRINT_LOOPID(loop);
-		fprintf(F, "-%d-nodes\" label:\"%d...%d\"}\n", first, first, i-1);
-		loop_node_started = 0;
+		fprintf(F, "-%lu-nodes\" label:\"%lu...%lu\"}\n",
+		        (unsigned long) first,
+		        (unsigned long) first,
+		        (unsigned long) i-1);
+		loop_node_started = false;
 	}
 }
 

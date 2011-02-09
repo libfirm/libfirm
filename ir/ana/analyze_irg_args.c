@@ -278,13 +278,13 @@ void analyze_irg_args(ir_graph *irg)
  * Compute for a method with pointer parameter(s)
  * if they will be read or written.
  */
-ptr_access_kind get_method_param_access(ir_entity *ent, int pos)
+ptr_access_kind get_method_param_access(ir_entity *ent, size_t pos)
 {
 #ifndef NDEBUG
 	ir_type *mtp = get_entity_type(ent);
 	int is_variadic = get_method_variadicity(mtp) == variadicity_variadic;
 
-	assert(0 <= pos && (is_variadic || pos < get_method_n_params(mtp)));
+	assert(is_variadic || pos < get_method_n_params(mtp));
 #endif
 
 	if (ent->attr.mtd_attr.param_access) {
@@ -472,7 +472,7 @@ static void analyze_method_params_weight(ir_entity *ent)
  * @return the parameter weight or null_weight if pos is greater
  * than the number of arguments.
  */
-unsigned get_method_param_weight(ir_entity *ent, int pos)
+unsigned get_method_param_weight(ir_entity *ent, size_t pos)
 {
 	if (ent->attr.mtd_attr.param_weight) {
 		if (pos < ARR_LEN(ent->attr.mtd_attr.param_weight))

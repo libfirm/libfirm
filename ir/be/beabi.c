@@ -336,7 +336,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	ir_type *call_tp           = get_Call_type(irn);
 	ir_node *call_ptr          = get_Call_ptr(irn);
-	int n_params               = get_method_n_params(call_tp);
+	size_t   n_params          = get_method_n_params(call_tp);
 	ir_node *curr_mem          = get_Call_mem(irn);
 	ir_node *bl                = get_nodes_block(irn);
 	int stack_size             = 0;
@@ -364,6 +364,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int                    *stack_param_idx;
 	int                     i, n, destroy_all_regs;
 	size_t                  s;
+	size_t                  p;
 	dbg_info               *dbgi;
 
 	/* Let the isa fill out the abi description for that call node. */
@@ -372,26 +373,26 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* Insert code to put the stack arguments on the stack. */
 	assert(get_Call_n_params(irn) == n_params);
 	stack_param_idx = ALLOCAN(int, n_params);
-	for (i = 0; i < n_params; ++i) {
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 0);
+	for (p = 0; p < n_params; ++p) {
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, p, 0);
 		assert(arg);
 		if (arg->on_stack) {
-			int arg_size = get_type_size_bytes(get_method_param_type(call_tp, i));
+			int arg_size = get_type_size_bytes(get_method_param_type(call_tp, p));
 
 			stack_size += round_up2(arg->space_before, arg->alignment);
 			stack_size += round_up2(arg_size, arg->alignment);
 			stack_size += round_up2(arg->space_after, arg->alignment);
 
-			stack_param_idx[n_stack_params++] = i;
+			stack_param_idx[n_stack_params++] = p;
 		}
 	}
 
 	/* Collect all arguments which are passed in registers. */
 	reg_param_idxs = ALLOCAN(int, n_params);
-	for (i = 0; i < n_params; ++i) {
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 0);
+	for (p = 0; p < n_params; ++p) {
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, p, 0);
 		if (arg && arg->in_reg) {
-			reg_param_idxs[n_reg_params++] = i;
+			reg_param_idxs[n_reg_params++] = p;
 		}
 	}
 
