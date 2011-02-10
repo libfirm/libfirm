@@ -68,7 +68,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	int i, i2;
 
 	/* Insert a copy for constraint inputs attached to a value which can't
-	 * fullfil the constraint
+	 * fulfill the constraint
 	 * (typical example: stack pointer as input to copyb)
 	 * TODO: This really just checks precolored registers at the moment and
 	 *       ignores the general case of not matching in/out constraints
