@@ -556,16 +556,16 @@ static ir_tarval *do_computed_value_Div(const ir_node *div)
 	ir_tarval     *tb;
 	const ir_node *dummy;
 
+	/* cannot optimize 0 / b = 0 because of NaN */
 	if (!mode_is_float(mode)) {
-		/* Compute c1 / c2 or 0 / a, a != 0 */
 		if (tarval_is_null(ta) && value_not_zero(b, &dummy))
-			return ta;  /* 0 / b == 0 */
+			return ta;  /* 0 / b == 0 if b != 0 */
 	}
 	tb = value_of(b);
 	if (ta != tarval_bad && tb != tarval_bad)
 		return tarval_div(ta, tb);
 	return tarval_bad;
-}  /* do_computed_value_integer_Div */
+}  /* do_computed_value_Div */
 
 /**
  * Calculate the value of an integer Mod of two nodes.
