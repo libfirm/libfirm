@@ -387,8 +387,8 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			break;
 		case tpo_enumeration: {
 #ifndef NDEBUG
-			assert(get_type_mode(tp) != NULL);
 			size_t n_enums = get_enumeration_n_enums(tp);
+			assert(get_type_mode(tp) != NULL);
 			for (i = 0; i < n_enums; ++i) {
 				ir_enum_const *ec = get_enumeration_const(tp, i);
 				ir_tarval     *tv = get_enumeration_value(ec);
