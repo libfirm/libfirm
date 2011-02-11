@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -85,7 +85,7 @@ void init_irtypeinfo(void)
 
 void free_irtypeinfo(void)
 {
-	int i;
+	size_t i, n;
 
 	if (initial_type != NULL) {
 		free_type(initial_type);
@@ -97,7 +97,7 @@ void free_irtypeinfo(void)
 		type_node_map = NULL;
 	}
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
 		set_irg_typeinfo_state(get_irp_irg(i), ir_typeinfo_none);
 }
 

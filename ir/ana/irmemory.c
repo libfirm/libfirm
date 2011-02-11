@@ -958,10 +958,11 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 {
 	ir_type *ft = get_irg_frame_type(irg);
 	ir_node *irg_frame;
-	int i, j, k, static_link_arg;
+	size_t i, n;
+	int j, k, static_link_arg;
 
 	/* set initial state to not_taken, as this is the "smallest" state */
-	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
+	for (i = 0, n = get_class_n_members(ft); i < n; ++i) {
 		ir_entity *ent = get_class_member(ft, i);
 
 		/* methods can only be analyzed globally */
@@ -977,8 +978,8 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 	irg_frame = get_irg_frame(irg);
 
-	for (i = get_irn_n_outs(irg_frame) - 1; i >= 0; --i) {
-		ir_node        *succ = get_irn_out(irg_frame, i);
+	for (j = get_irn_n_outs(irg_frame) - 1; j >= 0; --j) {
+		ir_node        *succ = get_irn_out(irg_frame, j);
 		ir_entity      *entity;
 		unsigned        flags;
 
@@ -993,7 +994,7 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 	/* check inner functions accessing outer frame */
 	static_link_arg = 0;
-	for (i = get_class_n_members(ft) - 1; i >= 0; --i) {
+	for (i = 0, n = get_class_n_members(ft); i < n; ++i) {
 		ir_entity *ent = get_class_member(ft, i);
 		ir_graph  *inner_irg;
 		ir_node   *args;
@@ -1060,10 +1061,10 @@ void assure_irg_entity_usage_computed(ir_graph *irg)
  */
 static void init_entity_usage(ir_type *tp)
 {
-	int i;
+	size_t i, n;
 
 	/* We have to be conservative: All external visible entities are unknown */
-	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
+	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity       *ent   = get_compound_member(tp, i);
 		unsigned         flags = ir_usage_none;
 
@@ -1147,9 +1148,9 @@ static void check_initializer(ir_entity *ent)
  */
 static void check_initializers(ir_type *tp)
 {
-	int i;
+	size_t i, n;
 
-	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
+	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *ent = get_compound_member(tp, i);
 
 		check_initializer(ent);
@@ -1162,10 +1163,10 @@ static void check_initializers(ir_type *tp)
  *
  * @param tp  a compound type
  */
-static void print_entity_usage_flags(ir_type *tp)
+static void print_entity_usage_flags(const ir_type *tp)
 {
-	int i;
-	for (i = get_compound_n_members(tp) - 1; i >= 0; --i) {
+	size_t i, n;
+	for (i = 0, n = get_compound_n_members(tp); i < n; ++i) {
 		ir_entity *ent = get_compound_member(tp, i);
 		ir_entity_usage flags = get_entity_usage(ent);
 
