@@ -547,34 +547,25 @@ static ir_tarval *computed_value_Proj_Cmp(const ir_node *n)
  * Calculate the value of an integer Div.
  * Special case: 0 / b
  */
-static ir_tarval *do_computed_value_integer_Div(const ir_node *a, const ir_node *b)
+static ir_tarval *do_computed_value_Div(const ir_node *div)
 {
-	ir_tarval     *ta = value_of(a);
+	const ir_node *a    = get_Div_left(div);
+	const ir_node *b    = get_Div_right(div);
+	const ir_mode *mode = get_Div_resmode(div);
+	ir_tarval     *ta   = value_of(a);
 	ir_tarval     *tb;
 	const ir_node *dummy;
 
-	/* Compute c1 / c2 or 0 / a, a != 0 */
-	if (tarval_is_null(ta) && value_not_zero(b, &dummy))
-		return ta;  /* 0 / b == 0 */
+	if (!mode_is_float(mode)) {
+		/* Compute c1 / c2 or 0 / a, a != 0 */
+		if (tarval_is_null(ta) && value_not_zero(b, &dummy))
+			return ta;  /* 0 / b == 0 */
+	}
 	tb = value_of(b);
 	if (ta != tarval_bad && tb != tarval_bad)
 		return tarval_div(ta, tb);
 	return tarval_bad;
 }  /* do_computed_value_integer_Div */
-
-/**
- * Return the value of a floating point Div.
- */
-static ir_tarval *do_computed_value_float_Div(const ir_node *a, const ir_node *b)
-{
-	ir_tarval *ta = value_of(a);
-	ir_tarval *tb = value_of(b);
-
-	/* cannot optimize 0 / b = 0 because of NaN */
-	if (ta != tarval_bad && tb != tarval_bad)
-		return tarval_quo(ta, tb);
-	return tarval_bad;
-}  /* do_computed_value_float_Div */
 
 /**
  * Calculate the value of an integer Mod of two nodes.
@@ -599,16 +590,10 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 static ir_tarval *computed_value_Proj_Div(const ir_node *n)
 {
 	long proj_nr = get_Proj_proj(n);
+	if (proj_nr != pn_Div_res)
+		return tarval_bad;
 
-	if (proj_nr == pn_Div_res) {
-		const ir_node *div = get_Proj_pred(n);
-		const ir_mode *mode = get_irn_mode(get_Div_resmode(div));
-		if (mode_is_int(mode))
-			return do_computed_value_integer_Div(get_Div_left(div), get_Div_right(div));
-		else if (mode_is_float(mode))
-			return do_computed_value_float_Div(get_Div_left(div), get_Div_right(div));
-	}
-	return tarval_bad;
+	return do_computed_value_Div(get_Proj_pred(n));
 }  /* computed_value_Proj_Div */
 
 /**
