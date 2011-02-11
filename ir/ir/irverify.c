@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -445,7 +445,7 @@ static int verify_node_Proj_Div(ir_node *n, ir_node *p)
 			(proj == pn_Div_M         && mode == mode_M) ||
 			(proj == pn_Div_X_regular && mode == mode_X) ||
 			(proj == pn_Div_X_except  && mode == mode_X) ||
-			(proj == pn_Div_res       && mode == get_Div_resmode(n))
+			(proj == pn_Div_res       && mode_is_data(mode) && mode == get_Div_resmode(n))
 		),
 		"wrong Proj from Div", 0,
 		show_proj_failure(p);
@@ -1254,7 +1254,7 @@ static int verify_node_Div(ir_node *n, ir_graph *irg)
 	(void) irg;
 
 	ASSERT_AND_RET(
-		/* Div: BB x M x int x int --> M x X x int */
+		/* Div: BB x M x data x data --> M x X x data */
 		op1mode == mode_M &&
 		op2mode == op3mode &&
 		mode_is_data(op2mode) &&

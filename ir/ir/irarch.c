@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -925,6 +925,11 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 
 		left  = get_Div_left(irn);
 		mode  = get_irn_mode(left);
+
+		/* can only handle integer Div's */
+		if (!mode_is_int(mode))
+			return irn;
+
 		block = get_irn_n(irn, -1);
 		dbg   = get_irn_dbg_info(irn);
 

@@ -544,10 +544,10 @@ static ir_tarval *computed_value_Proj_Cmp(const ir_node *n)
 }  /* computed_value_Proj_Cmp */
 
 /**
- * Calculate the value of an integer Div of two nodes.
+ * Calculate the value of an integer Div.
  * Special case: 0 / b
  */
-static ir_tarval *do_computed_value_Div(const ir_node *a, const ir_node *b)
+static ir_tarval *do_computed_value_integer_Div(const ir_node *a, const ir_node *b)
 {
 	ir_tarval     *ta = value_of(a);
 	ir_tarval     *tb;
@@ -560,7 +560,21 @@ static ir_tarval *do_computed_value_Div(const ir_node *a, const ir_node *b)
 	if (ta != tarval_bad && tb != tarval_bad)
 		return tarval_div(ta, tb);
 	return tarval_bad;
-}  /* do_computed_value_Div */
+}  /* do_computed_value_integer_Div */
+
+/**
+ * Return the value of a floating point Div.
+ */
+static ir_tarval *do_computed_value_float_Div(const ir_node *a, const ir_node *b)
+{
+	ir_tarval *ta = value_of(a);
+	ir_tarval *tb = value_of(b);
+
+	/* cannot optimize 0 / b = 0 because of NaN */
+	if (ta != tarval_bad && tb != tarval_bad)
+		return tarval_quo(ta, tb);
+	return tarval_bad;
+}  /* do_computed_value_float_Div */
 
 /**
  * Calculate the value of an integer Mod of two nodes.
@@ -587,8 +601,12 @@ static ir_tarval *computed_value_Proj_Div(const ir_node *n)
 	long proj_nr = get_Proj_proj(n);
 
 	if (proj_nr == pn_Div_res) {
-		const ir_node *a = get_Proj_pred(n);
-		return do_computed_value_Div(get_Div_left(a), get_Div_right(a));
+		const ir_node *div = get_Proj_pred(n);
+		const ir_mode *mode = get_irn_mode(get_Div_resmode(div));
+		if (mode_is_int(mode))
+			return do_computed_value_integer_Div(get_Div_left(div), get_Div_right(div));
+		else if (mode_is_float(mode))
+			return do_computed_value_float_Div(get_Div_left(div), get_Div_right(div));
 	}
 	return tarval_bad;
 }  /* computed_value_Proj_Div */
@@ -601,8 +619,8 @@ static ir_tarval *computed_value_Proj_Mod(const ir_node *n)
 	long proj_nr = get_Proj_proj(n);
 
 	if (proj_nr == pn_Mod_res) {
-		const ir_node *a = get_Proj_pred(n);
-		return do_computed_value_Mod(get_Mod_left(a), get_Mod_right(a));
+		const ir_node *mod = get_Proj_pred(n);
+		return do_computed_value_Mod(get_Mod_left(mod), get_Mod_right(mod));
 	}
 	return tarval_bad;
 }  /* computed_value_Proj_Mod */
@@ -2791,35 +2809,56 @@ static ir_node *transform_node_Div(ir_node *n)
 	ir_mode *mode = get_Div_resmode(n);
 	ir_node *a = get_Div_left(n);
 	ir_node *b = get_Div_right(n);
-	ir_node *value;
+	ir_node *value = n;
 	const ir_node *dummy;
 
-	if (is_Const(b) && is_const_Phi(a)) {
-		/* check for Div(Phi, Const) */
-		value = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_div, mode, 0);
-		if (value) {
-			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
-			goto make_tuple;
+	if (mode_is_int(mode)) {
+		if (is_Const(b) && is_const_Phi(a)) {
+			/* check for Div(Phi, Const) */
+			value = apply_binop_on_phi(a, get_Const_tarval(b), (eval_func) tarval_div, mode, 0);
+			if (value) {
+				DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+				goto make_tuple;
+			}
+		} else if (is_Const(a) && is_const_Phi(b)) {
+			/* check for Div(Const, Phi) */
+			value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
+			if (value) {
+				DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+				goto make_tuple;
+			}
+		} else if (is_const_Phi(a) && is_const_Phi(b)) {
+			/* check for Div(Phi, Phi) */
+			value = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
+			if (value) {
+				DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
+				goto make_tuple;
+			}
 		}
-	} else if (is_Const(a) && is_const_Phi(b)) {
-		/* check for Div(Const, Phi) */
-		value = apply_binop_on_phi(b, get_Const_tarval(a), (eval_func) tarval_div, mode, 1);
-		if (value) {
-			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
-			goto make_tuple;
-		}
-	} else if (is_const_Phi(a) && is_const_Phi(b)) {
-		/* check for Div(Phi, Phi) */
-		value = apply_binop_on_2_phis(a, b, (eval_func) tarval_div, mode);
-		if (value) {
-			DBG_OPT_ALGSIM0(n, value, FS_OPT_CONST_PHI);
-			goto make_tuple;
-		}
-	}
 
-	value = n;
+		if (a == b && value_not_zero(a, &dummy)) {
+			ir_graph *irg = get_irn_irg(n);
+			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
+			value = new_r_Const(irg, get_mode_one(mode));
+			DBG_OPT_CSTEVAL(n, value);
+			goto make_tuple;
+		} else {
+			if (mode_is_signed(mode) && is_Const(b)) {
+				ir_tarval *tv = get_Const_tarval(b);
 
-	if (mode_is_float(mode)) {
+				if (tv == get_mode_minus_one(mode)) {
+					/* a / -1 */
+					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
+					DBG_OPT_CSTEVAL(n, value);
+					goto make_tuple;
+				}
+			}
+			/* Try architecture dependent optimization */
+			value = arch_dep_replace_div_by_const(n);
+		}
+	} else {
+		assert(mode_is_float(mode));
+
 		/* Optimize x/c to x*(1/c) */
 		if (get_mode_arithmetic(mode) == irma_ieee754) {
 			ir_tarval *tv = value_of(b);
@@ -2851,32 +2890,7 @@ static ir_node *transform_node_Div(ir_node *n)
 				}
 			}
 		}
-
-	} else {
-		assert(mode_is_int(mode));
-
-		if (a == b && value_not_zero(a, &dummy)) {
-			ir_graph *irg = get_irn_irg(n);
-			/* BEWARE: we can optimize a/a to 1 only if this cannot cause a exception */
-			value = new_r_Const(irg, get_mode_one(mode));
-			DBG_OPT_CSTEVAL(n, value);
-			goto make_tuple;
-		} else {
-			if (mode_is_signed(mode) && is_Const(b)) {
-				ir_tarval *tv = get_Const_tarval(b);
-
-				if (tv == get_mode_minus_one(mode)) {
-					/* a / -1 */
-					value = new_rd_Minus(get_irn_dbg_info(n), get_nodes_block(n), a, mode);
-					DBG_OPT_CSTEVAL(n, value);
-					goto make_tuple;
-				}
-			}
-			/* Try architecture dependent optimization */
-			value = arch_dep_replace_div_by_const(n);
-		}
 	}
-
 
 	if (value != n) {
 		ir_node *mem, *blk;
