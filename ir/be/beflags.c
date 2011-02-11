@@ -87,7 +87,8 @@ static bool default_check_modifies(const ir_node *node)
 static bool can_move(ir_node *node, ir_node *after)
 {
 	const ir_edge_t *edge;
-	assert(get_nodes_block(node) == get_nodes_block(after));
+	ir_node *node_block = get_nodes_block(node);
+	assert(node_block == get_nodes_block(after));
 
 	/* TODO respect dep edges */
 	assert(get_irn_n_edges_kind(node, EDGE_KIND_DEP) == 0);
@@ -100,6 +101,8 @@ static bool can_move(ir_node *node, ir_node *after)
 			assert(get_irn_n_edges_kind(out, EDGE_KIND_DEP) == 0);
 			foreach_out_edge(out, edge2) {
 				ir_node *out2 = get_edge_src_irn(edge2);
+				if (get_nodes_block(out2) != node_block)
+					continue;
 				/* Phi or End represents a usage at block end. */
 				if (is_Phi(out2) || is_End(out2))
 					continue;
@@ -120,6 +123,8 @@ static bool can_move(ir_node *node, ir_node *after)
 				}
 			}
 		} else {
+			if (get_nodes_block(out) != node_block)
+				continue;
 			/* phi represents a usage at block end */
 			if (is_Phi(out))
 				continue;
