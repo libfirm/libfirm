@@ -76,66 +76,56 @@ static eset *entities = NULL;
 
 /** Collect the entity representing the implementation of this
  *  method (not the same if inherited) and all entities for overwriting
- *  implementations in "set".
- *  If the implementation of the method is not included in the
- *  compilation unit "open" is set to true.
+ *  implementations in parameter set.
  *  A recursive descend in the overwritten relation.
  *  Cycle-free, therefore must terminate.
  *
- * @param method
+ * @param method   the overwritten method
  * @param set      A set of entities.
- * @param size     Number of entities in set.
- * @param open
+ *
+ * @return Number of entities in set.
  */
-static void collect_impls(ir_entity *method, eset *set, int *size, int *open)
+static size_t collect_impls(ir_entity *method, eset *set)
 {
-	int i;
+	size_t i;
+	size_t size = 0;
 
 	if (get_entity_irg(method) != NULL) {
+		/* has an implementation */
 		eset_insert(set, method);
-		++(*size);
+		++size;
 	}
 
 	/*- recursive descent -*/
-	for (i = get_entity_n_overwrittenby(method) - 1; i >= 0; --i)
-		collect_impls(get_entity_overwrittenby(method, i), set, size, open);
+	for (i = get_entity_n_overwrittenby(method); i > 0;)
+		size += collect_impls(get_entity_overwrittenby(method, --i), set);
+	return size;
 }
 
-/** Alle Methoden bestimmen, die die �bergebene Methode �berschreiben
- *  (und implementieren). In der zur�ckgegebenen Reihung kommt jede
- *  Methode nur einmal vor. Der Wert 'NULL' steht f�r unbekannte
- *  (externe) Methoden. Die zur�ckgegebene Reihung mu� vom Aufrufer
- *  wieder freigegeben werden (siehe "DEL_ARR_F"). Gibt es �berhaupt
- *  keine Methoden, die "method" �berschreiben, so gibt die Methode
- *  "NULL" zur�ck.
+/**
+ * Determine all methods that overwrite the given method (and implement it).
+ * The returned array must be freed by the caller (see DEL_ARR_F).
+ * If the set of overwriting methods is empty, returns NULL.
  *
- *  @param method
+ * @param method  the method
  */
-static ir_entity ** get_impl_methods(ir_entity * method)
+static ir_entity **get_impl_methods(ir_entity *method)
 {
-	eset * set = eset_create();
-	int size = 0;
-	ir_entity ** arr;
-	int open = 0;
+	ir_entity **arr;
+	eset      *set = eset_create();
+	size_t    size;
 
 	/* Collect all method entities that can be called here */
-	collect_impls(method, set, &size, &open);
+	size = collect_impls(method, set);
 
-	/* Vorgaenger einfuegen. */
-	if (size == 0 && !open) {
-		/* keine implementierte �berschriebene Methode */
+	if (size == 0) {
+		/* no overwriting methods found */
 		arr = NULL;
-	} else if (open) {
-		ir_entity * ent;
-		arr = NEW_ARR_F(ir_entity *, size + 1);
-		arr[0] = NULL;  /* Represents open method */
-		for (ent = (ir_entity*) eset_first(set); size > 0; ent = (ir_entity*) eset_next(set), --size)
-			arr[size] = ent;
 	} else {
 		ir_entity * ent;
 		arr = NEW_ARR_F(ir_entity *, size);
-		for (size -= 1, ent = (ir_entity*) eset_first(set); size >= 0; ent = (ir_entity*) eset_next(set), --size)
-			arr[size] = ent;
+		for (ent = (ir_entity*) eset_first(set); size > 0; ent = (ir_entity*) eset_next(set))
+			arr[--size] = ent;
 	}
 	eset_destroy(set);
 	return arr;
