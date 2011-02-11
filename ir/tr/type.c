@@ -303,7 +303,7 @@ unsigned get_type_alignment_bytes(ir_type *tp)
 	else if (is_Array_type(tp))
 		align = get_type_alignment_bytes(get_array_element_type(tp));
 	else if (is_compound_type(tp)) {
-		int i, n = get_compound_n_members(tp);
+		size_t i, n = get_compound_n_members(tp);
 
 		align = 0;
 		for (i = 0; i < n; ++i) {
@@ -763,9 +763,9 @@ ir_type *new_type_class(ident *name)
 
 void free_class_entities(ir_type *clss)
 {
-	int i;
+	size_t i, n;
 	assert(clss && (clss->type_op == type_class));
-	for (i = get_class_n_members(clss) - 1; i >= 0; --i)
+	for (i = 0, n = get_class_n_members(clss); i < n; ++i)
 		free_entity(get_class_member(clss, i));
 	/* do NOT free the type info here. It belongs to another class */
 }
@@ -811,7 +811,7 @@ size_t get_class_member_index(const ir_type *clss, ir_entity *mem)
 		if (get_class_member(clss, i) == mem)
 			return i;
 	}
-	return (size_t)-1;
+	return INVALID_MEMBER_INDEX;
 }
 
 ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
@@ -821,12 +821,13 @@ ir_entity *(get_class_member)(const ir_type *clss, size_t pos)
 
 ir_entity *get_class_member_by_name(ir_type *clss, ident *name)
 {
-	int i, n_mem;
+	size_t i, n_mem;
 	assert(clss && (clss->type_op == type_class));
 	n_mem = get_class_n_members(clss);
 	for (i = 0; i < n_mem; ++i) {
 		ir_entity *mem = get_class_member(clss, i);
-		if (get_entity_ident(mem) == name) return mem;
+		if (get_entity_ident(mem) == name)
+			return mem;
 	}
 	return NULL;
 }
@@ -1074,9 +1075,9 @@ ir_type *new_type_struct(ident *name)
 
 void free_struct_entities(ir_type *strct)
 {
-	int i;
+	size_t i, n;
 	assert(strct && (strct->type_op == type_struct));
-	for (i = get_struct_n_members(strct)-1; i >= 0; --i)
+	for (i = 0, n = get_struct_n_members(strct); i < n; ++i)
 		free_entity(get_struct_member(strct, i));
 }
 
@@ -1173,14 +1174,14 @@ void set_struct_size(ir_type *tp, unsigned size)
  * @param len     number of fields
  * @param tps     array of field types with length len
  */
-static ir_type *build_value_type(char const* name, int len, tp_ent_pair *tps)
+static ir_type *build_value_type(char const* name, size_t len, tp_ent_pair *tps)
 {
-	int i;
+	size_t i;
 	ir_type *res = new_type_struct(new_id_from_str(name));
 	res->flags |= tf_value_param_type;
 	/* Remove type from type list.  Must be treated differently than other types. */
 	remove_irp_type(res);
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < len; ++i) {
 		ident *id = tps[i].param_name;
 
 		/* use res as default if corresponding type is not yet set. */
@@ -1534,9 +1535,9 @@ ir_type *new_type_union(ident *name)
 
 void free_union_entities(ir_type *uni)
 {
-	int i;
+	size_t i, n;
 	assert(uni && (uni->type_op == type_union));
-	for (i = get_union_n_members(uni) - 1; i >= 0; --i)
+	for (i = 0, n = get_union_n_members(uni); i < n; ++i)
 		free_entity(get_union_member(uni, i));
 }
 
@@ -2183,7 +2184,7 @@ ir_type *new_type_frame(void)
 ir_type *clone_frame_type(ir_type *type)
 {
 	ir_type *res;
-	int     i, n;
+	size_t  i, n;
 
 	assert(is_frame_type(type));
 	/* the entity link resource should be allocated if this function is called */
@@ -2262,7 +2263,7 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 	ident *name;
 	char buf[32];
 	unsigned frame_align;
-	int i, offset, frame_size;
+	int offset, frame_size;
 	static unsigned area_cnt = 0;
 	static ir_type *a_byte = NULL;
 
@@ -2287,8 +2288,9 @@ ir_entity *frame_alloc_area(ir_type *frame_type, int size, unsigned alignment,
 
 	frame_size = get_type_size_bytes(frame_type);
 	if (at_start) {
+		size_t i, n;
 		/* fix all offsets so far */
-		for (i = get_class_n_members(frame_type) - 1; i >= 0; --i) {
+		for (i = 0, n = get_class_n_members(frame_type); i < n; ++i) {
 			ir_entity *ent = get_class_member(frame_type, i);
 
 			set_entity_offset(ent, get_entity_offset(ent) + size);

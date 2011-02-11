@@ -645,12 +645,13 @@ void set_value(int pos, ir_node *value)
 
 int r_find_value(ir_graph *irg, ir_node *value)
 {
-	int i;
+	size_t i;
 	ir_node *bl = irg->current_block;
 
-	for (i = ARR_LEN(bl->attr.block.graph_arr) - 1; i >= 1; --i)
-		if (bl->attr.block.graph_arr[i] == value)
+	for (i = ARR_LEN(bl->attr.block.graph_arr); i > 1;) {
+		if (bl->attr.block.graph_arr[--i] == value)
 			return i - 1;
+	}
 	return -1;
 }
 
@@ -736,8 +737,8 @@ void irg_finalize_cons(ir_graph *irg)
 
 void irp_finalize_cons(void)
 {
-	int i;
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	size_t i, n;
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		irg_finalize_cons(get_irp_irg(i));
 	}
 	irp->phase_state = phase_high;

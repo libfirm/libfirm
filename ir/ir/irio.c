@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2009 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -35,6 +35,7 @@
 #include "irnode_t.h"
 #include "irprog.h"
 #include "irgraph_t.h"
+#include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irflag_t.h"
@@ -545,7 +546,7 @@ static void export_type_pre(io_env_t *env, ir_type *tp)
 static void export_type_post(io_env_t *env, ir_type *tp)
 {
 	FILE *f = env->file;
-	int i;
+	size_t i;
 
 	/* skip types already handled by pre walker */
 	switch (get_type_tpop_code(tp)) {
@@ -569,8 +570,8 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 
 	switch (get_type_tpop_code(tp)) {
 	case tpo_array: {
-		int n = get_array_n_dimensions(tp);
-		fprintf(f, "%d %ld ", n, get_type_nr(get_array_element_type(tp)));
+		size_t n = get_array_n_dimensions(tp);
+		ir_fprintf(f, "%zu %ld ", n, get_type_nr(get_array_element_type(tp)));
 		for (i = 0; i < n; i++) {
 			ir_node *lower = get_array_lower_bound(tp, i);
 			ir_node *upper = get_array_upper_bound(tp, i);
@@ -591,16 +592,15 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 	}
 
 	case tpo_method: {
-		int nparams  = get_method_n_params(tp);
-		int nresults = get_method_n_ress(tp);
-		fprintf(f, "%u %u %d %d ", get_method_calling_convention(tp),
+		size_t nparams  = get_method_n_params(tp);
+		size_t nresults = get_method_n_ress(tp);
+		ir_fprintf(f, "%u %u %zu %zu ", get_method_calling_convention(tp),
 			get_method_additional_properties(tp), nparams, nresults);
 		for (i = 0; i < nparams; i++)
 			write_long(env, get_type_nr(get_method_param_type(tp, i)));
 		for (i = 0; i < nresults; i++)
 			write_long(env, get_type_nr(get_method_res_type(tp, i)));
-		fprintf(f, "%lu ",
-		        (unsigned long) get_method_first_variadic_param_index(tp));
+		ir_fprintf(f, "%zu ", get_method_first_variadic_param_index(tp));
 		break;
 	}
 
@@ -670,9 +670,9 @@ static void export_entity(io_env_t *env, ir_entity *ent)
 		fputs("initializer ", env->file);
 		write_initializer(env, get_entity_initializer(ent));
 	} else if (entity_has_compound_ent_values(ent)) {
-		int i, n = get_compound_ent_n_values(ent);
+		size_t i, n = get_compound_ent_n_values(ent);
 		fputs("compoundgraph ", env->file);
-		fprintf(env->file, "%d ", n);
+		ir_fprintf(env->file, "%zu ", n);
 		for (i = 0; i < n; i++) {
 			ir_entity *member = get_compound_ent_value_member(ent, i);
 			ir_node   *irn    = get_compound_ent_value(ent, i);
@@ -825,7 +825,7 @@ static const char *get_mode_sort_name(ir_mode_sort sort)
 
 static void export_modes(io_env_t *env)
 {
-	int i, n_modes = get_irp_n_modes();
+	size_t i, n_modes = get_irp_n_modes();
 
 	fputs("modes {\n", env->file);
 
@@ -901,7 +901,7 @@ void ir_export(const char *filename)
 void ir_export_file(FILE *file, const char *outputname)
 {
 	io_env_t env;
-	int i, n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 
 	(void) outputname;
 	env.file = file;
@@ -1240,7 +1240,7 @@ static ir_entity *read_entity(io_env_t *env)
 static ir_mode *read_mode(io_env_t *env)
 {
 	char *str = read_word(env);
-	int i, n;
+	size_t i, n;
 
 	n = get_irp_n_modes();
 	for (i = 0; i < n; i++) {
@@ -1874,7 +1874,7 @@ void ir_import_file(FILE *input, const char *inputname)
 	firm_verification_t oldver = get_node_verification_mode();
 	io_env_t ioenv;
 	io_env_t *env = &ioenv;
-	int i, n;
+	size_t i, n;
 
 	symtbl_init();
 

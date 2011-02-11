@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1385,7 +1385,9 @@ FIRM_API size_t get_class_n_members(const ir_type *clss);
 /** Returns the member at position pos, 0 <= pos < n_member */
 FIRM_API ir_entity *get_class_member(const ir_type *clss, size_t pos);
 
-/** Returns index of mem in clss, -1 if not contained. */
+#define INVALID_MEMBER_INDEX ((size_t)-1)
+
+/** Returns index of mem in clss, INVALID_MEMBER_INDEX if not contained. */
 FIRM_API size_t get_class_member_index(const ir_type *clss, ir_entity *mem);
 
 /** Finds the member with name 'name'. If several members with the same

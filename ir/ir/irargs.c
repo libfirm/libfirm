@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -118,7 +118,7 @@ static int firm_emit(lc_appendable_t *app,
 
 	void *X = (void*)arg->v_ptr;
 	firm_kind *obj = (firm_kind*)X;
-	int i, n;
+	size_t i, n;
 	ir_node *block;
 	char add[64];
 	char buf[256];

@@ -158,9 +158,9 @@ ir_node *ir_create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 
 static void adjust_method_type(ir_type *method_type)
 {
-	int i;
-	int n_params;
-	int n_res;
+	size_t i;
+	size_t n_params;
+	size_t n_res;
 
 	n_params = get_method_n_params(method_type);
 	for (i = 0; i < n_params; ++i) {

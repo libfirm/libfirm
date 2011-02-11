@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -153,10 +153,9 @@ static void show_ent_overwrite_cnt(ir_entity *ent)
  */
 static int check_class(ir_type *tp)
 {
-	int i, j, k;
-	int found;
+	size_t i, n, j, m;
 
-	for (i = get_class_n_members(tp) - 1; i >= 0; --i) {
+	for (i = 0, n = get_class_n_members(tp); i < n; ++i) {
 		ir_entity *mem = get_class_member(tp, i);
 
 		ASSERT_AND_RET_DBG(
@@ -169,7 +168,7 @@ static int check_class(ir_type *tp)
 			mem,
 			"NULL members not allowed",
 			error_null_mem,
-			ir_fprintf(stderr, "Type verification error:\n%+F member %d is NULL\n", tp, i)
+			ir_fprintf(stderr, "Type verification error:\n%+F member %zu is NULL\n", tp, i)
 		);
 
 		ASSERT_AND_RET_DBG(
@@ -179,24 +178,23 @@ static int check_class(ir_type *tp)
 			show_ent_overwrite_cnt(mem)
 		);
 
-		for (j = get_entity_n_overwrites(mem) - 1; j >= 0; --j) {
+		for (j = 0, m = get_entity_n_overwrites(mem); j < m; ++j) {
 			ir_entity *ovw = get_entity_overwrites(mem, j);
-			/*printf(" overwrites: "); DDME(ovw);*/
+			size_t    k, n_super;
+
 			/* Check whether ovw is member of one of tp's supertypes. If so,
-			the representation is correct. */
-			found = 0;
-			for (k = get_class_n_supertypes(tp) - 1; k >= 0; --k) {
-				if (get_class_member_index(get_class_supertype(tp, k), ovw) != (size_t)-1) {
-					found = 1;
+			   the representation is correct. */
+			for (k = 0, n_super = get_class_n_supertypes(tp); k < n_super; ++k) {
+				if (get_class_member_index(get_class_supertype(tp, k), ovw) != INVALID_MEMBER_INDEX) {
+					ASSERT_AND_RET_DBG(
+						0,
+						"overwrites an entity not contained in direct supertype",
+						error_ent_not_cont,
+						show_ent_not_supertp(mem, ovw)
+					);
 					break;
 				}
 			}
-			ASSERT_AND_RET_DBG(
-				found,
-				"overwrites an entity not contained in direct supertype",
-				error_ent_not_cont,
-				show_ent_not_supertp(mem, ovw)
-			);
 		}
 	}
 	return 0;
@@ -205,16 +203,16 @@ static int check_class(ir_type *tp)
 /**
  * Check an array.
  */
-static int check_array(ir_type *tp)
+static int check_array(const ir_type *tp)
 {
-	int i, n_dim = get_array_n_dimensions(tp);
+	size_t i, n_dim = get_array_n_dimensions(tp);
 
 	for (i = 0; i < n_dim; ++i) {
 		ASSERT_AND_RET_DBG(
 			has_array_lower_bound(tp, i) || has_array_upper_bound(tp, i),
 			"array bound missing",
 			1,
-			ir_fprintf(stderr, "%+F in dimension %d\n", tp, i)
+			ir_fprintf(stderr, "%+F in dimension %zu\n", tp, i)
 		);
 	}
 	return 0;
@@ -434,7 +432,7 @@ int tr_verify(void)
 	ir_type      *constructors;
 	ir_type      *destructors;
 	ir_type      *thread_locals;
-	int           i;
+	size_t        i, n;
 	ir_segment_t  s;
 
 	if (empty == NULL)
@@ -455,7 +453,7 @@ int tr_verify(void)
 	}
 
 	constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-	for (i = get_compound_n_members(constructors)-1; i >= 0; --i) {
+	for (i = 0, n = get_compound_n_members(constructors); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(constructors, i);
 		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
 		               "entity without LINKAGE_HIDDEN_USER in constructors is pointless",
@@ -465,7 +463,7 @@ int tr_verify(void)
 		               "entity in constructors should have ld_ident=''", 1);
 	}
 	destructors = get_segment_type(IR_SEGMENT_DESTRUCTORS);
-	for (i = get_compound_n_members(destructors)-1; i >= 0; --i) {
+	for (i = 0, n = get_compound_n_members(destructors); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(destructors, i);
 		ASSERT_AND_RET(get_entity_linkage(entity) & IR_LINKAGE_HIDDEN_USER,
 		               "entity without LINKAGE_HIDDEN_USER in destructors is pointless",
@@ -475,7 +473,7 @@ int tr_verify(void)
 		               "entity in destructors should have ld_ident=''", 1);
 	}
 	thread_locals = get_segment_type(IR_SEGMENT_THREAD_LOCAL);
-	for (i = get_compound_n_members(thread_locals)-1; i >= 0; --i) {
+	for (i = 0, n = get_compound_n_members(thread_locals); i < n; ++i) {
 		const ir_entity *entity = get_compound_member(thread_locals, i);
 		/* this is odd and should not be allowed I think */
 		ASSERT_AND_RET(!is_method_entity(entity),

@@ -236,7 +236,7 @@ static pset *get_type_map(const ir_type *tp, dir d)
 static void compute_down_closure(ir_type *tp)
 {
 	pset *myset, *subset;
-	int i, n_subtypes, n_members, n_supertypes;
+	size_t i, n_subtypes, n_members, n_supertypes;
 	ir_visited_t master_visited = get_master_type_visited();
 
 	assert(is_Class_type(tp));
@@ -265,7 +265,7 @@ static void compute_down_closure(ir_type *tp)
 	n_members = get_class_n_members(tp);
 	for (i = 0; i < n_members; ++i) {
 		ir_entity *mem = get_class_member(tp, i);
-		int j, n_overwrittenby = get_entity_n_overwrittenby(mem);
+		size_t j, n_overwrittenby = get_entity_n_overwrittenby(mem);
 
 		myset = get_entity_map(mem, d_down);
 		for (j = 0; j < n_overwrittenby; ++j) {
@@ -291,7 +291,7 @@ static void compute_down_closure(ir_type *tp)
 static void compute_up_closure(ir_type *tp)
 {
 	pset *myset, *subset;
-	int i, n_subtypes, n_members, n_supertypes;
+	size_t i, n_subtypes, n_members, n_supertypes;
 	ir_visited_t master_visited = get_master_type_visited();
 
 	assert(is_Class_type(tp));
@@ -320,7 +320,7 @@ static void compute_up_closure(ir_type *tp)
 	n_members = get_class_n_members(tp);
 	for (i = 0; i < n_members; ++i) {
 		ir_entity *mem = get_class_member(tp, i);
-		int j, n_overwrites = get_entity_n_overwrites(mem);
+		size_t j, n_overwrites = get_entity_n_overwrites(mem);
 
 		myset = get_entity_map(mem, d_up);
 		for (j = 0; j < n_overwrites; ++j) {
@@ -360,7 +360,7 @@ void compute_inh_transitive_closure(void)
 	for (i = 0; i < n_types; ++i) {
 		ir_type *tp = get_irp_type(i);
 		if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
-			int j, n_subtypes = get_class_n_subtypes(tp);
+			size_t j, n_subtypes = get_class_n_subtypes(tp);
 			int has_unmarked_subtype = 0;
 
 			assert(get_type_visited(tp) < get_master_type_visited()-1);
@@ -384,7 +384,7 @@ void compute_inh_transitive_closure(void)
 	for (i = 0; i < n_types; ++i) {
 		ir_type *tp = get_irp_type(i);
 		if (is_Class_type(tp) && type_not_visited(tp)) { /* For others there is nothing to accumulate. */
-			int j, n_supertypes = get_class_n_supertypes(tp);
+			size_t j, n_supertypes = get_class_n_supertypes(tp);
 			int has_unmarked_supertype = 0;
 
 			assert(get_type_visited(tp) < get_master_type_visited()-1);
@@ -494,7 +494,7 @@ ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent)
 /** Returns true if low is subclass of high. */
 static int check_is_SubClass_of(ir_type *low, ir_type *high)
 {
-	int i, n_subtypes;
+	size_t i, n_subtypes;
 
 	/* depth first search from high downwards. */
 	n_subtypes = get_class_n_subtypes(high);
@@ -542,7 +542,7 @@ int is_SubClass_ptr_of(ir_type *low, ir_type *high)
 
 int is_overwritten_by(ir_entity *high, ir_entity *low)
 {
-	int i, n_overwrittenby;
+	size_t i, n_overwrittenby;
 	assert(is_entity(low) && is_entity(high));
 
 	if (get_irp_inh_transitive_closure_state() == inh_transitive_closure_valid) {
@@ -571,7 +571,7 @@ int is_overwritten_by(ir_entity *high, ir_entity *low)
  */
 static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *static_ent)
 {
-	int i, n_overwrittenby;
+	size_t i, n_overwrittenby;
 
 	if (get_entity_owner(static_ent) == dynamic_class) return static_ent;
 

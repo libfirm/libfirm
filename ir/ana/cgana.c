@@ -417,16 +417,19 @@ static void free_ana_walker(ir_node *node, void *env)
 		/* nothing */
 		break;
 	case iro_Call:
+	{
+		size_t i, n;
 		/* we must handle Call nodes specially, because their call address input
 		   do not expose a method address. */
 		set_irn_link(node, MARK);
-		for (i = get_Call_n_params(node) - 1; i >= 0; --i) {
+		for (i = 0, n = get_Call_n_params(node); i < n; ++i) {
 			ir_node *pred = get_Call_param(node, i);
 			if (mode_is_reference(get_irn_mode(pred))) {
 				free_mark(pred, set);
 			}
 		}
 		break;
+	}
 	default:
 		/* other nodes: Alle anderen Knoten nehmen wir als Verr�ter an, bis
 		 * jemand das Gegenteil implementiert. */
@@ -537,8 +540,7 @@ static void add_method_address(ir_entity *ent, eset *set)
 static size_t get_free_methods(ir_entity ***free_methods)
 {
 	eset *free_set = eset_create();
-	size_t i, n;
-	int j;
+	size_t i, n, j, m;
 	ir_entity **arr;
 	ir_entity *ent;
 	ir_graph *irg;
@@ -564,12 +566,12 @@ static size_t get_free_methods(ir_entity ***free_methods)
 
 	/* insert all methods that are used in global variables initializers */
 	tp = get_glob_type();
-	for (j = get_class_n_members(tp) - 1; j >= 0; --j) {
+	for (j = 0, m = get_class_n_members(tp); j < m; ++j) {
 		ent = get_class_member(tp, j);
 		add_method_address(ent, free_set);
 	}
 	tp = get_tls_type();
-	for (j = get_class_n_members(tp) - 1; j >= 0; --j) {
+	for (j = 0, m = get_class_n_members(tp); j < m; ++j) {
 		ent = get_class_member(tp, j);
 		add_method_address(ent, free_set);
 	}

@@ -77,9 +77,9 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 {
 	ir_type *lowered, *ptr_tp, *value_type;
 	ir_type **params, **results, *res_tp;
-	int     *param_map;
+	size_t  *param_map;
 	ir_mode *modes[MAX_REGISTER_RET_VAL];
-	int n_ress, n_params, nn_ress, nn_params, i, first_variadic;
+	size_t  n_ress, n_params, nn_ress, nn_params, i, first_variadic;
 	add_hidden hidden_params;
 	int        changed = 0;
 	ir_variadicity var;
@@ -99,7 +99,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	n_params = get_method_n_params(mtp);
 	NEW_ARR_A(ir_type *, params, n_params + n_ress);
 
-	NEW_ARR_A(int, param_map, n_params + n_ress);
+	NEW_ARR_A(size_t, param_map, n_params + n_ress);
 
 	first_variadic = get_method_first_variadic_param_index(mtp);
 
@@ -128,7 +128,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 					   address will be transmitted as a hidden parameter. */
 					ptr_tp = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
 					params[nn_params]    = ptr_tp;
-					param_map[nn_params] = -1 - i;
+					param_map[nn_params] = n_params + i;
 					++nn_params;
 					changed++;
 					if (lp->flags & LF_RETURN_HIDDEN)
@@ -162,7 +162,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 
 			if (is_compound_type(res_tp)) {
 				params[nn_params] = lp->find_pointer_type(res_tp, get_modeP_data(), lp->def_ptr_alignment);
-				param_map[nn_params] = -1 - i;
+				param_map[nn_params] = n_params + i;
 				++nn_params;
 			} else {
 				results[nn_ress++] = res_tp;
@@ -196,11 +196,11 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 		/* set new param positions */
 		for (i = 0; i < nn_params; ++i) {
 			ir_entity *ent = get_method_value_param_ent(lowered, i);
-			int       pos  = param_map[i];
+			size_t    pos  = param_map[i];
 			ident     *id;
 
 			set_entity_link(ent, INT_TO_PTR(pos));
-			if (pos < 0) {
+			if (pos >= n_params) {
 				/* formally return value, ignore for now */
 				continue;
 			}
@@ -232,8 +232,8 @@ struct cl_entry {
  * Walker environment for fix_args_and_collect_calls().
  */
 typedef struct wlk_env_t {
-	int                  arg_shift;        /**< The Argument index shift for parameters. */
-	int                  first_hidden;     /**< The index of the first hidden argument. */
+	size_t               arg_shift;        /**< The Argument index shift for parameters. */
+	size_t               first_hidden;     /**< The index of the first hidden argument. */
 	struct obstack       obst;             /**< An obstack to allocate the data on. */
 	cl_entry             *cl_list;         /**< The call list. */
 	pmap                 *dummy_map;       /**< A map for finding the dummy arguments. */
@@ -327,7 +327,6 @@ static void check_ptr(ir_node *ptr, wlk_env *env)
 static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 {
 	wlk_env *env = (wlk_env*)ctx;
-	int      i;
 	ir_type *ctp;
 	ir_node *ptr;
 
@@ -337,7 +336,7 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 			ir_entity *ent = get_Sel_entity(n);
 
 			if (get_entity_owner(ent) == env->value_params) {
-				int pos = get_struct_member_index(env->value_params, ent) + env->arg_shift;
+				size_t pos = get_struct_member_index(env->value_params, ent) + env->arg_shift;
 				ir_entity *new_ent;
 
 				new_ent = get_method_value_param_ent(env->lowered_mtp, pos);
@@ -374,7 +373,8 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		ctp = get_Call_type(n);
 		if (env->params->flags & LF_COMPOUND_RETURN) {
 			/* check for compound returns */
-			for (i = get_method_n_ress(ctp) -1; i >= 0; --i) {
+			size_t i, n_res;
+			for (i = 0, n_res = get_method_n_ress(ctp); i < n_res; ++i) {
 				if (is_compound_type(get_method_res_type(ctp, i))) {
 					/*
 					 * This is a call with a compound return. As the result
@@ -532,12 +532,12 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_en
  * @param entry  the call list
  * @param env    the environment
  */
-static void add_hidden_param(ir_graph *irg, int n_com, ir_node **ins, cl_entry *entry, wlk_env *env)
+static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins, cl_entry *entry, wlk_env *env)
 {
 	ir_node *p, *n, *src, *mem, *blk;
 	ir_entity *ent;
 	ir_type *owner;
-	int n_args;
+	size_t n_args;
 
 	n_args = 0;
 	for (p = entry->copyb; p; p = n) {
@@ -605,7 +605,7 @@ static void fix_call_list(ir_graph *irg, wlk_env *env)
 	ir_node *call, **new_in;
 	ir_type *ctp, *lowered_mtp;
 	add_hidden hidden_params;
-	int i, n_params, n_com, pos;
+	size_t i, n_res, n_params, n_com, pos;
 
 	new_in = NEW_ARR_F(ir_node *, 0);
 	for (p = env->cl_list; p; p = p->next) {
@@ -622,7 +622,7 @@ static void fix_call_list(ir_graph *irg, wlk_env *env)
 		n_params = get_Call_n_params(call);
 
 		n_com = 0;
-		for (i = get_method_n_ress(ctp) - 1; i >= 0; --i) {
+		for (i = 0, n_res = get_method_n_ress(ctp); i < n_res; ++i) {
 			if (is_compound_type(get_method_res_type(ctp, i)))
 				++n_com;
 		}
@@ -661,7 +661,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 	ir_graph   *rem = current_ir_graph;
 	ir_entity  *ent = get_irg_entity(irg);
 	ir_type    *mtp, *lowered_mtp, *tp, *ft;
-	int        i, j, k, n_ress = 0, n_ret_com = 0;
+	size_t     i, j, k, n_ress = 0, n_ret_com = 0;
 	size_t     n_cr_opt;
 	ir_node    **new_in, *ret, *endbl, *bl, *mem, *copy;
 	cr_pair    *cr_opt;
@@ -733,6 +733,8 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 	}
 
 	if (n_ret_com) {
+		int idx;
+
 		/*
 		 * Now fix the Return node of the current graph.
 		 */
@@ -741,8 +743,8 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 		/* STEP 1: find the return. This is simple, we have normalized the graph. */
 		endbl = get_irg_end_block(irg);
 		ret = NULL;
-		for (i = get_Block_n_cfgpreds(endbl) - 1; i >= 0; --i) {
-			ir_node *pred = get_Block_cfgpred(endbl, i);
+		for (idx = get_Block_n_cfgpreds(endbl) - 1; idx >= 0; --idx) {
+			ir_node *pred = get_Block_cfgpred(endbl, idx);
 
 			if (is_Return(pred)) {
 				ret = pred;
@@ -844,7 +846,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
  */
 static int must_be_lowered(const lower_params_t *lp, ir_type *tp)
 {
-  int i, n_ress;
+  size_t i, n_ress;
   ir_type *res_tp;
 
   if (is_Method_type(tp)) {

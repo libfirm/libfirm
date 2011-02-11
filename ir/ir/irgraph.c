@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -742,8 +742,8 @@ void (set_irg_loopinfo_inconsistent)(ir_graph *irg)
 
 void set_irp_loopinfo_inconsistent(void)
 {
-	int i;
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
+	size_t i, n;
+	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		set_irg_loopinfo_inconsistent(get_irp_irg(i));
 	}
 }

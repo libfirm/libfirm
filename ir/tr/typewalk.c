@@ -90,7 +90,7 @@ static void do_type_walk(type_or_ent tore,
                          type_walk_func *post,
                          void *env)
 {
-	int         i, n_types, n_mem;
+	size_t      i, n_types, n_mem;
 	ir_entity   *ent = NULL;
 	ir_type     *tp = NULL;
 	ir_node     *n;
