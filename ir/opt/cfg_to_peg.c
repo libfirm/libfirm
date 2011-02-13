@@ -863,14 +863,6 @@ static ir_node *equivalent_node_gamma(ir_node *gamma)
 		return ir_true;
 	}
 
-	if (get_irn_mode(gamma) != mode_b) return gamma;
-
-	/* Gamma(cond, true, false) --> cond */
-	if (is_Const(ir_true)  && is_Const_one(ir_true) &&
-		is_Const(ir_false) && is_Const_null(ir_false)) {
-		return cond;
-	}
-
 	/* Gamma(Not(cond), a, b) --> Gamma(cond, b, a) */
 	if (is_Not(cond)) {
 		cond = get_Not_op(cond);
@@ -878,6 +870,14 @@ static ir_node *equivalent_node_gamma(ir_node *gamma)
 		set_Gamma_false(gamma, ir_true);
 		set_Gamma_true(gamma, ir_false);
 		return gamma;
+	}
+
+	if (get_irn_mode(gamma) != mode_b) return gamma;
+
+	/* Gamma(cond, true, false) --> cond */
+	if (is_Const(ir_true)  && is_Const_one(ir_true) &&
+		is_Const(ir_false) && is_Const_null(ir_false)) {
+		return cond;
 	}
 
 	return gamma;
