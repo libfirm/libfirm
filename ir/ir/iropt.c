@@ -4077,7 +4077,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 			if (is_And(left)) {
 				ir_node *and0 = get_And_left(left);
 				ir_node *and1 = get_And_right(left);
-				if (is_single_bit(and1)) {
+				if (and1 == right) {
 					ir_node *tmp = and0;
 					and0 = and1;
 					and1 = tmp;
