@@ -3848,6 +3848,29 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 }  /* transform_node_Proj_Cond */
 
 /**
+ * return true if the operation returns a value with exactly 1 bit set
+ * or none set
+ */
+static bool is_single_bit(const ir_node *node)
+{
+	/* a first implementation, could be extended with vrp and others... */
+	if (is_Shl(node)) {
+		ir_node *shl_l  = get_Shl_left(node);
+		ir_mode *mode   = get_irn_mode(node);
+		int      modulo = get_mode_modulo_shift(mode);
+		/* this works if we shift a 1 and we have modulo shift */
+		if (is_Const(shl_l) && is_Const_one(shl_l)
+				&& 0 < modulo && modulo <= (int)get_mode_size_bits(mode)) {
+			return true;
+		}
+	} else if (is_Const(node)) {
+		ir_tarval *tv = get_Const_tarval(node);
+		return tarval_is_single_bit(tv);
+	}
+	return false;
+}
+
+/**
  * Create a 0 constant of given mode.
  */
 static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
@@ -3868,7 +3891,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 	ir_node     *right   = get_Cmp_right(n);
 	ir_tarval   *tv      = NULL;
 	int          changed = 0;
-	ir_mode     *mode    = NULL;
+	ir_mode     *mode    = get_irn_mode(left);
 	long         proj_nr = get_Proj_proj(proj);
 
 	/* we can evaluate some cases directly */
@@ -3882,7 +3905,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 		return new_r_Const(irg, get_tarval_b_true());
 	}
 	case pn_Cmp_Leg:
-		if (!mode_is_float(get_irn_mode(left))) {
+		if (!mode_is_float(mode)) {
 			ir_graph *irg = get_irn_irg(proj);
 			return new_r_Const(irg, get_tarval_b_true());
 		}
@@ -3898,7 +3921,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 	/* Remove unnecessary conversions */
 	/* TODO handle constants */
 	if (is_Conv(left) && is_Conv(right)) {
-		ir_mode *mode        = get_irn_mode(left);
 		ir_node *op_left     = get_Conv_op(left);
 		ir_node *op_right    = get_Conv_op(right);
 		ir_mode *mode_left   = get_irn_mode(op_left);
@@ -3933,7 +3955,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 		 * The following operations are NOT safe for floating point operations, for instance
 		 * 1.0 + inf == 2.0 + inf, =/=> x == y
 		 */
-		if (mode_is_int(get_irn_mode(left))) {
+		if (mode_is_int(mode)) {
 			unsigned lop = get_irn_opcode(left);
 
 			if (lop == get_irn_opcode(right)) {
@@ -4028,7 +4050,7 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 				if (ll == right) {
 					ir_graph *irg = get_irn_irg(n);
 					left     = lr;
-					right    = create_zero_const(irg, get_irn_mode(left));
+					right    = create_zero_const(irg, mode);
 					changed |= 1;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
@@ -4045,11 +4067,29 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 				if (rl == left) {
 					ir_graph *irg = get_irn_irg(n);
 					left     = rr;
-					right    = create_zero_const(irg, get_irn_mode(left));
+					right    = create_zero_const(irg, mode);
 					changed |= 1;
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
 			}
+			/* Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
+			 * by the simpler Cmp(And(1bit), val), 0) negated pnc */
+			if (is_And(left)) {
+				ir_node *and0 = get_And_left(left);
+				ir_node *and1 = get_And_right(left);
+				if (is_single_bit(and1)) {
+					ir_node *tmp = and0;
+					and0 = and1;
+					and1 = tmp;
+				}
+				if (and0 == right && is_single_bit(and0)) {
+					ir_graph *irg = get_irn_irg(n);
+					proj_nr = get_negated_pnc(proj_nr, mode);
+					right = create_zero_const(irg, mode);
+					changed |= 1;
+				}
+			}
+
 			if (is_And(left) && is_Const(right)) {
 				ir_node *ll = get_binop_left(left);
 				ir_node *lr = get_binop_right(left);

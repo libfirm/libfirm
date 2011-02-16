@@ -1933,28 +1933,24 @@ static ir_node *get_flags_node(ir_node *node, int *pnc_out)
 					ir_node *ra = get_And_right(l);
 					if (is_Shl(la)) {
 						ir_node *c = get_Shl_left(la);
-						if (is_Const_1(c) && (is_Const_0(r) || r == la)) {
+						if (is_Const_1(c) && is_Const_0(r)) {
 							/* (1 << n) & ra) */
 							ir_node *n = get_Shl_right(la);
 							flags    = gen_bt(pred, ra, n);
 							/* we must generate a Jc/Jnc jump */
 							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Lt : pn_Cmp_Ge;
-							if (r == la)
-								pnc ^= pn_Cmp_Leg;
 							*pnc_out = ia32_pn_Cmp_unsigned | pnc;
 							return flags;
 						}
 					}
 					if (is_Shl(ra)) {
 						ir_node *c = get_Shl_left(ra);
-						if (is_Const_1(c) && (is_Const_0(r) || r == ra)) {
+						if (is_Const_1(c) && is_Const_0(r)) {
 							/* la & (1 << n)) */
 							ir_node *n = get_Shl_right(ra);
 							flags    = gen_bt(pred, la, n);
 							/* we must generate a Jc/Jnc jump */
 							pnc = pnc == pn_Cmp_Lg ? pn_Cmp_Lt : pn_Cmp_Ge;
-							if (r == ra)
-								pnc ^= pn_Cmp_Leg;
 							*pnc_out = ia32_pn_Cmp_unsigned | pnc;
 							return flags;
 						}
