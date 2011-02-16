@@ -180,10 +180,4 @@ extern const list_sched_selector_t normal_selector;
  */
 void list_sched(ir_graph *irg);
 
-/**
- * List schedule a block.
- * Same as list_sched but only for a certain block (needed for ILP fallback).
- */
-void list_sched_single_block(ir_graph *irg, ir_node *block);
-
 #endif
