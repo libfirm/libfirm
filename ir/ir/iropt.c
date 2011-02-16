@@ -3849,7 +3849,6 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 
 /**
  * return true if the operation returns a value with exactly 1 bit set
- * or none set
  */
 static bool is_single_bit(const ir_node *node)
 {
