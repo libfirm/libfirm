@@ -3577,42 +3577,6 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
 					return new_r_Jmp(blk);
 				}
 			}
-		} else if (get_irn_mode(proj) == mode_M) {
-			/* non-volatile loads in sequence can be parallelized (then synced) */
-			ir_node *load = get_Proj_pred(proj);
-			if (get_Load_volatility(load) == volatility_non_volatile) {
-				ir_node *pred = get_Load_mem(load);
-				if (is_Proj(pred) && get_nodes_block(pred) == get_nodes_block(proj)) {
-					ir_node *loadpred = get_Proj_pred(pred);
-					if (is_Load(loadpred)) {
-						/* duplicate load */
-						ir_node *block = get_nodes_block(proj);
-						ir_graph *irg = get_irn_irg(proj);
-						ir_node *common_mem = get_Load_mem(loadpred);
-						ir_cons_flags flags = cons_none;
-						if (get_Load_align(load) == align_non_aligned)
-							flags &= cons_unaligned;
-						if (get_irn_pinned(load) == op_pin_state_floats)
-							flags &= cons_floats;
-						ir_node *newload = new_r_Load(block, common_mem, get_Load_ptr(load), get_Load_mode(load), flags);
-						ir_node *newprojres = new_r_Proj(newload, get_Load_mode(load), pn_Load_res);
-						ir_node *newprojmem = new_r_Proj(newload, mode_M, pn_Load_M);
-
-						/* create sync */
-						ir_node *ins[2] = {pred, newprojmem};
-						ir_node *sync = new_r_Sync(block, 2, ins);
-
-						/* prepare exchange */
-						turn_into_tuple(load, pn_Load_max);
-						set_Tuple_pred(load, pn_Load_M, sync);
-						set_Tuple_pred(load, pn_Load_res, newprojres);
-						set_Tuple_pred(load, pn_Load_X_regular, new_r_Bad(irg));
-						set_Tuple_pred(load, pn_Load_X_except, new_r_Bad(irg));
-
-						return sync;
-					}
-				}
-			}
 		}
 	}
 	return proj;
