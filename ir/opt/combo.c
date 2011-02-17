@@ -261,6 +261,23 @@ static void check_partition(const partition_t *T)
 }  /* check_partition */
 
 /**
+ * return the result mode of a node (part of combo's opcode).
+ */
+static ir_mode *get_irn_resmode(const ir_node *irn)
+{
+	switch (get_irn_opcode(irn)) {
+	case iro_Load:
+		return get_Load_mode(irn);
+	case iro_Div:
+		return get_Div_resmode(irn);
+	case iro_Mod:
+		return get_Mod_resmode(irn);
+	default:
+		return get_irn_mode(irn);
+	}
+}  /* get_irn_resmode */
+
+/**
  * check that all leader nodes in the partition have the same opcode.
  */
 static void check_opcode(const partition_t *Z)
@@ -274,7 +291,7 @@ static void check_opcode(const partition_t *Z)
 
 		if (first) {
 			key.code   = get_irn_opcode(irn);
-			key.mode   = get_irn_mode(irn);
+			key.mode   = get_irn_resmode(irn);
 			key.arity  = get_irn_arity(irn);
 			key.u.proj = 0;
 			key.u.ent  = NULL;
@@ -290,17 +307,10 @@ static void check_opcode(const partition_t *Z)
 				key.u.intVal = get_Conv_strict(irn);
 				break;
 			case iro_Div:
-				key.mode = get_Div_resmode(irn);
 				key.u.intVal = get_Div_no_remainder(irn);
-				break;
-			case iro_Mod:
-				key.mode = get_Mod_resmode(irn);
 				break;
 			case iro_Block:
 				key.u.block = irn;
-				break;
-			case iro_Load:
-				key.mode = get_Load_mode(irn);
 				break;
 			case iro_Builtin:
 				key.u.intVal = get_Builtin_kind(irn);
@@ -310,42 +320,30 @@ static void check_opcode(const partition_t *Z)
 			}
 			first = 0;
 		} else {
-			assert((unsigned)key.code  == get_irn_opcode(irn));
+			assert((unsigned)key.code == get_irn_opcode(irn));
+			assert(key.mode  == get_irn_resmode(irn));
 			assert(key.arity == get_irn_arity(irn));
 
 			switch (get_irn_opcode(irn)) {
 			case iro_Proj:
-				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.proj == get_Proj_proj(irn));
 				break;
 			case iro_Sel:
-				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.ent == get_Sel_entity(irn));
 				break;
 			case iro_Conv:
-				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.intVal == get_Conv_strict(irn));
 				break;
 			case iro_Div:
-				assert(key.mode  == get_Div_resmode(irn));
 				assert(key.u.intVal == get_Div_no_remainder(irn));
 				break;
-			case iro_Mod:
-				assert(key.mode == get_Mod_resmode(irn));
-				break;
 			case iro_Block:
-				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.block == irn);
 				break;
-			case iro_Load:
-				assert(key.mode == get_Load_mode(irn));
-				break;
 			case iro_Builtin:
-				assert(key.mode  == get_irn_mode(irn));
-				assert(key.u.intVal == (int) get_Builtin_kind(irn));
+				assert(key.u.intVal == (int)get_Builtin_kind(irn));
 				break;
 			default:
-				assert(key.mode  == get_irn_mode(irn));
 				break;
 			}
 		}
@@ -1740,7 +1738,7 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 	ir_node      *irn = node->node;
 
 	key.code   = get_irn_opcode(irn);
-	key.mode   = get_irn_mode(irn);
+	key.mode   = get_irn_resmode(irn);
 	key.arity  = get_irn_arity(irn);
 	key.u.proj = 0;
 	key.u.ent  = NULL;
@@ -1766,9 +1764,6 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 		 * which cannot be detected by combo either.
 		 */
 		key.u.block = irn;
-		break;
-	case iro_Load:
-		key.mode = get_Load_mode(irn);
 		break;
 	case iro_Builtin:
 		key.u.intVal = get_Builtin_kind(irn);
