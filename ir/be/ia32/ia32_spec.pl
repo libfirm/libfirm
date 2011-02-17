@@ -961,6 +961,20 @@ Cmp8Bit => {
 	modified_flags => $status_flags
 },
 
+XorHighLow => {
+	irn_flags => [ "rematerializable" ],
+	state     => "exc_pinned",
+	reg_req   => { in => [ "eax ebx ecx edx" ],
+	               out => [ "in_r1", "flags" ] },
+	emit      => '. xorb %SH0, %SB0',
+	ins       => [ "value" ],
+	outs      => [ "res", "flags" ],
+	units     => [ "GP" ],
+	latency   => 1,
+	mode      => $mode_gp,
+	modified_flags => $status_flags,
+},
+
 Test => {
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",

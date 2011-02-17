@@ -5016,7 +5016,7 @@ static ir_node *gen_ffs(ir_node *node)
 	flag = new_r_Proj(real, mode_b, pn_ia32_flags);
 
 	/* sete */
-	set = new_bd_ia32_Setcc(dbgi, block, flag, pn_Cmp_Eq);
+	set = new_bd_ia32_Setcc(dbgi, block, flag, ia32_cc_equal);
 	SET_IA32_ORIG_NODE(set, node);
 
 	/* conv to 32bit */
@@ -5061,32 +5061,31 @@ static ir_node *gen_ctz(ir_node *node)
  */
 static ir_node *gen_parity(ir_node *node)
 {
-	ir_node *param      = get_Builtin_param(node, 0);
 	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *param     = get_Builtin_param(node, 0);
+	ir_node  *new_param = be_transform_node(param);
+	ir_node  *new_node;
 
-	ir_node *block      = get_nodes_block(node);
+	/* the x86 parity bit is stupid: it only looks at the lowest byte,
+	 * so we have to do complicated xoring first.
+	 * (we should also better lower this before the backend so we still have a
+	 * chance for CSE, constant folding and other goodies for some of these
+	 * operations)
+	 */
+	ir_node *count = ia32_create_Immediate(NULL, 0, 16);
+	ir_node *shr = new_bd_ia32_Shr(dbgi, new_block, new_param, count);
+	ir_node *xor = new_bd_ia32_Xor(dbgi, new_block, noreg_GP, noreg_GP, nomem,
+	                               shr, new_param);
+	ir_node *xor2 = new_bd_ia32_XorHighLow(dbgi, new_block, xor);
+	ir_node *flags;
 
-	ir_node *new_block  = be_transform_node(block);
-	ir_node *imm, *cmp, *new_node;
-
-	ia32_address_mode_t am;
-	ia32_address_t      *addr = &am.addr;
-
-
-	/* cmp param, 0 */
-	match_arguments(&am, block, NULL, param, NULL, match_am);
-	imm = ia32_create_Immediate(NULL, 0, 0);
-	cmp = new_bd_ia32_Cmp(dbgi, new_block, addr->base, addr->index,
-	                      addr->mem, imm, am.new_op2, am.ins_permuted);
-	set_am_attributes(cmp, &am);
-	set_ia32_ls_mode(cmp, mode_Iu);
-
-	SET_IA32_ORIG_NODE(cmp, node);
-
-	cmp = fix_mem_proj(cmp, &am);
+	set_irn_mode(xor2, mode_T);
+	flags = new_r_Proj(xor2, mode_Iu, pn_ia32_XorHighLow_flags);
 
 	/* setp */
-	new_node = new_bd_ia32_Setcc(dbgi, new_block, cmp, ia32_cc_parity);
+	new_node = new_bd_ia32_Setcc(dbgi, new_block, flags, ia32_cc_not_parity);
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	/* conv to 32bit */
@@ -5129,6 +5128,13 @@ static ir_node *gen_popcount(ir_node *node)
 	new_param = be_transform_node(param);
 
 	/* do the standard popcount algo */
+	/* TODO: This is stupid, we should transform this before the backend,
+	 * to get CSE, localopts, etc. for the operations
+	 * TODO: This is also not the optimal algorithm (it is just the starting
+	 * example in hackers delight, they optimize it more on the following page)
+	 * But I'm too lazy to fix this now, as the code should get lowered before
+	 * the backend anyway.
+	 */
 
 	/* m1 = x & 0x55555555 */
 	imm = ia32_create_Immediate(NULL, 0, 0x55555555);
@@ -5136,7 +5142,7 @@ static ir_node *gen_popcount(ir_node *node)
 
 	/* s1 = x >> 1 */
 	simm = ia32_create_Immediate(NULL, 0, 1);
-	s1 = new_bd_ia32_Shl(dbgi, new_block, new_param, simm);
+	s1 = new_bd_ia32_Shr(dbgi, new_block, new_param, simm);
 
 	/* m2 = s1 & 0x55555555 */
 	m2 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s1, imm);
@@ -5150,7 +5156,7 @@ static ir_node *gen_popcount(ir_node *node)
 
 	/* s2 = m3 >> 2 */
 	simm = ia32_create_Immediate(NULL, 0, 2);
-	s2 = new_bd_ia32_Shl(dbgi, new_block, m3, simm);
+	s2 = new_bd_ia32_Shr(dbgi, new_block, m3, simm);
 
 	/* m5 = s2 & 0x33333333 */
 	m5 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s2, imm);
@@ -5164,7 +5170,7 @@ static ir_node *gen_popcount(ir_node *node)
 
 	/* s3 = m6 >> 4 */
 	simm = ia32_create_Immediate(NULL, 0, 4);
-	s3 = new_bd_ia32_Shl(dbgi, new_block, m6, simm);
+	s3 = new_bd_ia32_Shr(dbgi, new_block, m6, simm);
 
 	/* m8 = s3 & 0x0F0F0F0F */
 	m8 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s3, imm);
@@ -5178,7 +5184,7 @@ static ir_node *gen_popcount(ir_node *node)
 
 	/* s4 = m9 >> 8 */
 	simm = ia32_create_Immediate(NULL, 0, 8);
-	s4 = new_bd_ia32_Shl(dbgi, new_block, m9, simm);
+	s4 = new_bd_ia32_Shr(dbgi, new_block, m9, simm);
 
 	/* m11 = s4 & 0x00FF00FF */
 	m11 = new_bd_ia32_And(dbgi, new_block, noreg_GP, noreg_GP, nomem, s4, imm);
@@ -5192,7 +5198,7 @@ static ir_node *gen_popcount(ir_node *node)
 
 	/* s5 = m12 >> 16 */
 	simm = ia32_create_Immediate(NULL, 0, 16);
-	s5 = new_bd_ia32_Shl(dbgi, new_block, m12, simm);
+	s5 = new_bd_ia32_Shr(dbgi, new_block, m12, simm);
 
 	/* res = m13 + s5 */
 	return new_bd_ia32_Lea(dbgi, new_block, m13, s5);
