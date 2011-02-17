@@ -758,15 +758,16 @@ ir_type *new_d_type_class(ident *name, type_dbg_info *db)
 
 ir_type *new_type_class(ident *name)
 {
-	return new_d_type_class (name, NULL);
+	return new_d_type_class(name, NULL);
 }
 
 void free_class_entities(ir_type *clss)
 {
-	size_t i, n;
+	size_t i;
 	assert(clss && (clss->type_op == type_class));
-	for (i = 0, n = get_class_n_members(clss); i < n; ++i)
-		free_entity(get_class_member(clss, i));
+	/* we must iterate backward here */
+	for (i = get_class_n_members(clss); i > 0;)
+		free_entity(get_class_member(clss, --i));
 	/* do NOT free the type info here. It belongs to another class */
 }
 
@@ -1075,10 +1076,11 @@ ir_type *new_type_struct(ident *name)
 
 void free_struct_entities(ir_type *strct)
 {
-	size_t i, n;
+	size_t i;
 	assert(strct && (strct->type_op == type_struct));
-	for (i = 0, n = get_struct_n_members(strct); i < n; ++i)
-		free_entity(get_struct_member(strct, i));
+	/* we must iterate backward here */
+	for (i = get_struct_n_members(strct); i > 0;)
+		free_entity(get_struct_member(strct, --i));
 }
 
 void free_struct_attrs(ir_type *strct)
@@ -1535,13 +1537,14 @@ ir_type *new_type_union(ident *name)
 
 void free_union_entities(ir_type *uni)
 {
-	size_t i, n;
+	size_t i;
 	assert(uni && (uni->type_op == type_union));
-	for (i = 0, n = get_union_n_members(uni); i < n; ++i)
-		free_entity(get_union_member(uni, i));
+	/* we must iterate backward here */
+	for (i = get_union_n_members(uni); i > 0;)
+		free_entity(get_union_member(uni, --i));
 }
 
-void free_union_attrs (ir_type *uni)
+void free_union_attrs(ir_type *uni)
 {
 	assert(uni && (uni->type_op == type_union));
 	DEL_ARR_F(uni->attr.ua.members);
