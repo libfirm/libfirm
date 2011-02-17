@@ -462,7 +462,7 @@ typedef struct cr_pair {
  * Post walker: fixes all entities addresses for the copy-return
  * optimization.
  *
- * Note: We expect the length of the cr_pair array (ie number of compound
+ * Note: We expect the length of the cr_pair array (i.e. number of compound
  * return values) to be 1 (C, C++) in almost all cases, so ignore the
  * linear search complexity here.
  */

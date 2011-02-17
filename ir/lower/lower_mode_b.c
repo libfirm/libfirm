@@ -32,7 +32,7 @@
  *   - The only nodes producing mode_b are: Proj(Cmp) and ConvB(X) (where X
  *     is some mode that can be converted to the lowered mode).
  *     ConvB will usually be implemented by a comparison with 0 producing some
- *     flags in the backends. It's debatable wether ConvB(X) is a goode idea.
+ *     flags in the backends. It's debatable whether ConvB(X) is a good idea.
  *     Maybe we should rather introduce a Test node.
  * All other former uses should be converted to manipulations with an integer
  * mode that was specified in the pass configuration.
