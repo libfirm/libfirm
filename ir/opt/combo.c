@@ -290,7 +290,11 @@ static void check_opcode(const partition_t *Z)
 				key.u.intVal = get_Conv_strict(irn);
 				break;
 			case iro_Div:
+				key.mode = get_Div_resmode(irn);
 				key.u.intVal = get_Div_no_remainder(irn);
+				break;
+			case iro_Mod:
+				key.mode = get_Mod_resmode(irn);
 				break;
 			case iro_Block:
 				key.u.block = irn;
@@ -307,32 +311,41 @@ static void check_opcode(const partition_t *Z)
 			first = 0;
 		} else {
 			assert((unsigned)key.code  == get_irn_opcode(irn));
-			assert(key.mode  == get_irn_mode(irn));
 			assert(key.arity == get_irn_arity(irn));
 
 			switch (get_irn_opcode(irn)) {
 			case iro_Proj:
+				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.proj == get_Proj_proj(irn));
 				break;
 			case iro_Sel:
+				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.ent == get_Sel_entity(irn));
 				break;
 			case iro_Conv:
+				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.intVal == get_Conv_strict(irn));
 				break;
 			case iro_Div:
+				assert(key.mode  == get_Div_resmode(irn));
 				assert(key.u.intVal == get_Div_no_remainder(irn));
 				break;
+			case iro_Mod:
+				assert(key.mode == get_Mod_resmode(irn));
+				break;
 			case iro_Block:
+				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.block == irn);
 				break;
 			case iro_Load:
 				assert(key.mode == get_Load_mode(irn));
 				break;
 			case iro_Builtin:
+				assert(key.mode  == get_irn_mode(irn));
 				assert(key.u.intVal == (int) get_Builtin_kind(irn));
 				break;
 			default:
+				assert(key.mode  == get_irn_mode(irn));
 				break;
 			}
 		}
