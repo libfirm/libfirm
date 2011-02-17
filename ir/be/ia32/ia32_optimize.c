@@ -153,7 +153,6 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	ir_node                     *op;
 	ia32_attr_t           const *attr;
 	int                          ins_permuted;
-	int                          cmp_unsigned;
 	ir_node                     *test;
 	arch_register_t       const *reg;
 	ir_edge_t             const *edge;
@@ -178,14 +177,13 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	op           = get_irn_n(node, n_ia32_Cmp_left);
 	attr         = get_ia32_attr(node);
 	ins_permuted = attr->data.ins_permuted;
-	cmp_unsigned = attr->data.cmp_unsigned;
 
 	if (is_ia32_Cmp(node)) {
 		test = new_bd_ia32_Test(dbgi, block, noreg, noreg, nomem,
-		                        op, op, ins_permuted, cmp_unsigned);
+		                        op, op, ins_permuted);
 	} else {
 		test = new_bd_ia32_Test8Bit(dbgi, block, noreg, noreg, nomem,
-		                            op, op, ins_permuted, cmp_unsigned);
+		                            op, op, ins_permuted);
 	}
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
 
@@ -248,10 +246,10 @@ static void peephole_ia32_Test(ir_node *node)
 
 		/* make sure only Lg/Eq tests are used */
 		foreach_out_edge(node, edge) {
-			ir_node *user = get_edge_src_irn(edge);
-			int      pnc  = get_ia32_condcode(user);
+			ir_node              *user = get_edge_src_irn(edge);
+			ia32_condition_code_t cc  = get_ia32_condcode(user);
 
-			if (pnc != pn_Cmp_Eq && pnc != pn_Cmp_Lg) {
+			if (cc != ia32_cc_equal && cc != ia32_cc_not_equal) {
 				return;
 			}
 		}
@@ -262,15 +260,15 @@ static void peephole_ia32_Test(ir_node *node)
 
 			case produces_flag_carry:
 				foreach_out_edge(node, edge) {
-					ir_node *user = get_edge_src_irn(edge);
-					int      pnc  = get_ia32_condcode(user);
+					ir_node              *user = get_edge_src_irn(edge);
+					ia32_condition_code_t cc   = get_ia32_condcode(user);
 
-					switch (pnc) {
-						case pn_Cmp_Eq: pnc = ia32_pn_Cmp_not_carry; break;
-						case pn_Cmp_Lg: pnc = ia32_pn_Cmp_carry;     break;
-						default: panic("unexpected pn");
+					switch (cc) {
+					case ia32_cc_equal:     cc = ia32_cc_above_equal; break; /* CF = 0 */
+					case ia32_cc_not_equal: cc = ia32_cc_below;       break; /* CF = 1 */
+					default: panic("unexpected pn");
 					}
-					set_ia32_condcode(user, pnc);
+					set_ia32_condcode(user, cc);
 				}
 				break;
 

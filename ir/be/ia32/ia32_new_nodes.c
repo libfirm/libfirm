@@ -29,6 +29,7 @@
 #include "config.h"
 
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "irargs_t.h"
 #include "irprog_t.h"
@@ -185,14 +186,11 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 
 			/* dump pn code */
 			if (is_ia32_SwitchJmp(n)) {
-				fprintf(F, "pn_code = %ld\n", get_ia32_condcode(n));
+				fprintf(F, "default_pn = %ld\n", get_ia32_default_pn(n));
 			} else if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
 				ia32_attr_t *attr = get_ia32_attr(n);
-				long pnc = get_ia32_condcode(n);
-				fprintf(F, "pn_code = 0x%X (%s)\n", (unsigned) pnc,
-				        get_pnc_string(pnc & pn_Cmp_True));
+				fprintf(F, "condition_code = 0x%X\n", get_ia32_condcode(n));
 				fprintf(F, "ins_permuted = %u \n", attr->data.ins_permuted);
-				fprintf(F, "cmp_unsigned = %u \n", attr->data.cmp_unsigned);
 			}
 			else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
@@ -306,6 +304,20 @@ const ia32_condcode_attr_t *get_ia32_condcode_attr_const(const ir_node *node)
 	const ia32_condcode_attr_t *cc_attr = CONST_CAST_IA32_ATTR(ia32_condcode_attr_t, attr);
 
 	return cc_attr;
+}
+
+ia32_switch_attr_t *get_ia32_switch_attr(ir_node *node)
+{
+	ia32_attr_t        *attr        = get_ia32_attr(node);
+	ia32_switch_attr_t *switch_attr = CAST_IA32_ATTR(ia32_switch_attr_t, attr);
+	return switch_attr;
+}
+
+const ia32_switch_attr_t *get_ia32_switch_attr_const(const ir_node *node)
+{
+	const ia32_attr_t        *attr        = get_ia32_attr_const(node);
+	const ia32_switch_attr_t *switch_attr = CONST_CAST_IA32_ATTR(ia32_switch_attr_t, attr);
+	return switch_attr;
 }
 
 ia32_call_attr_t *get_ia32_call_attr(ir_node *node)
@@ -652,19 +664,25 @@ unsigned get_ia32_latency(const ir_node *node)
 /**
  * Returns the condition code of a node.
  */
-long get_ia32_condcode(const ir_node *node)
+ia32_condition_code_t get_ia32_condcode(const ir_node *node)
 {
 	const ia32_condcode_attr_t *attr = get_ia32_condcode_attr_const(node);
-	return attr->pn_code;
+	return attr->condition_code;
 }
 
 /**
  * Sets the condition code of a node
  */
-void set_ia32_condcode(ir_node *node, long code)
+void set_ia32_condcode(ir_node *node, ia32_condition_code_t code)
 {
 	ia32_condcode_attr_t *attr = get_ia32_condcode_attr(node);
-	attr->pn_code = code;
+	attr->condition_code = code;
+}
+
+long get_ia32_default_pn(const ir_node *node)
+{
+	const ia32_switch_attr_t *attr = get_ia32_switch_attr_const(node);
+	return attr->default_pn;
 }
 
 /**
@@ -874,14 +892,14 @@ void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 	attr->size = size;
 }
 
-void init_ia32_condcode_attributes(ir_node *res, long pnc)
+void init_ia32_condcode_attributes(ir_node *res, ia32_condition_code_t cc)
 {
 	ia32_condcode_attr_t *attr = (ia32_condcode_attr_t*)get_irn_generic_attr(res);
 
 #ifndef NDEBUG
 	attr->attr.attr_type  |= IA32_ATTR_ia32_condcode_attr_t;
 #endif
-	attr->pn_code = pnc;
+	attr->condition_code = cc;
 }
 
 void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
@@ -892,6 +910,15 @@ void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 	attr->attr.attr_type  |= IA32_ATTR_ia32_climbframe_attr_t;
 #endif
 	attr->count = count;
+}
+
+void init_ia32_switch_attributes(ir_node *res, long default_pn)
+{
+	ia32_switch_attr_t *attr = (ia32_switch_attr_t*) get_irn_generic_attr(res);
+#ifndef NDEBUG
+	attr->attr.attr_type |= IA32_ATTR_ia32_switch_attr_t;
+#endif
+	attr->default_pn = default_pn;
 }
 
 
@@ -923,8 +950,7 @@ static int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 	if (a->data.has_except_label != b->data.has_except_label)
 		return 1;
 
-	if (a->data.ins_permuted != b->data.ins_permuted
-			|| a->data.cmp_unsigned != b->data.cmp_unsigned)
+	if (a->data.ins_permuted != b->data.ins_permuted)
 		return 1;
 
 	return 0;
@@ -951,7 +977,25 @@ static int ia32_compare_condcode_attr(ir_node *a, ir_node *b)
 	attr_a = get_ia32_condcode_attr_const(a);
 	attr_b = get_ia32_condcode_attr_const(b);
 
-	if (attr_a->pn_code != attr_b->pn_code)
+	if (attr_a->condition_code != attr_b->condition_code)
+		return 1;
+
+	return 0;
+}
+
+/** Compare node attributes for nodes with condition code. */
+static int ia32_compare_switch_attr(ir_node *a, ir_node *b)
+{
+	const ia32_switch_attr_t *attr_a;
+	const ia32_switch_attr_t *attr_b;
+
+	if (ia32_compare_nodes_attr(a, b))
+		return 1;
+
+	attr_a = get_ia32_switch_attr_const(a);
+	attr_b = get_ia32_switch_attr_const(b);
+
+	if (attr_a->default_pn != attr_b->default_pn)
 		return 1;
 
 	return 0;

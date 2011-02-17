@@ -177,7 +177,10 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_condcode_attributes(res, pnc);",
+		"\tinit_ia32_condcode_attributes(res, condition_code);",
+	ia32_switch_attr_t =>
+		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_switch_attributes(res, default_pn);",
 	ia32_copyb_attr_t =>
 		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
@@ -193,10 +196,11 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 );
 
 %compare_attr = (
-	ia32_asm_attr_t       => "ia32_compare_asm_attr",
+	ia32_asm_attr_t        => "ia32_compare_asm_attr",
 	ia32_attr_t            => "ia32_compare_nodes_attr",
 	ia32_call_attr_t       => "ia32_compare_call_attr",
 	ia32_condcode_attr_t   => "ia32_compare_condcode_attr",
+	ia32_switch_attr_t     => "ia32_compare_switch_attr",
 	ia32_copyb_attr_t      => "ia32_compare_copyb_attr",
 	ia32_immediate_attr_t  => "ia32_compare_immediate_attr",
 	ia32_x87_attr_t        => "ia32_compare_x87_attr",
@@ -932,9 +936,8 @@ Cmp => {
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	emit      => '. cmp%M %binop',
-	attr      => "int ins_permuted, int cmp_unsigned",
-	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
-	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	attr      => "bool ins_permuted",
+	init_attr => "attr->data.ins_permuted   = ins_permuted;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_flags,
@@ -950,9 +953,8 @@ Cmp8Bit => {
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	emit      => '. cmpb %binop',
-	attr      => "int ins_permuted, int cmp_unsigned",
-	init_attr => "attr->data.ins_permuted   = ins_permuted;\n".
-	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	attr      => "bool ins_permuted",
+	init_attr => "attr->data.ins_permuted   = ins_permuted;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_flags,
@@ -968,9 +970,8 @@ Test => {
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	emit      => '. test%M %binop',
-	attr      => "int ins_permuted, int cmp_unsigned",
-	init_attr => "attr->data.ins_permuted = ins_permuted;\n".
-	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	attr      => "bool ins_permuted",
+	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_flags,
@@ -986,9 +987,8 @@ Test8Bit => {
 	outs      => [ "eflags", "unused", "M" ],
 	am        => "source,binary",
 	emit      => '. testb %binop',
-	attr      => "int ins_permuted, int cmp_unsigned",
-	init_attr => "attr->data.ins_permuted = ins_permuted;\n".
-	             "\tattr->data.cmp_unsigned = cmp_unsigned;\n",
+	attr      => "bool ins_permuted",
+	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_flags,
@@ -1001,11 +1001,11 @@ Setcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "res" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "int pnc",
+	attr      => "ia32_condition_code_t condition_code",
 	# The way we handle Setcc with float nodes (potentially) destroys the flags
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
-		. "\tif ((pnc & ia32_pn_Cmp_float) && ((pnc & 0xf) != pn_Cmp_Uo) && ((pnc & 0xf) != pn_Cmp_Leg)) {\n"
+		. "\tif (condition_code & ia32_cc_additional_float_cases) {\n"
 		. "\t\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n"
 		. "\t\t/* attr->latency = 3; */\n"
 		. "\t}\n",
@@ -1020,7 +1020,7 @@ SetccMem => {
 	reg_req   => { in => [ "gp", "gp", "none", "eflags" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem","eflags" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "int pnc",
+	attr      => "ia32_condition_code_t condition_code",
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n",
 	emit      => '. set%CMP3 %AM',
 	latency   => 1,
@@ -1039,7 +1039,7 @@ CMovcc => {
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "int pnc",
+	attr      => "ia32_condition_code_t condition_code",
 	latency   => 1,
 	units     => [ "GP" ],
 	mode      => $mode_gp,
@@ -1052,7 +1052,7 @@ Jcc => {
 	ins       => [ "eflags" ],
 	outs      => [ "false", "true" ],
 	attr_type => "ia32_condcode_attr_t",
-	attr      => "int pnc",
+	attr      => "ia32_condition_code_t condition_code",
 	latency   => 2,
 	units     => [ "BRANCH" ],
 },
@@ -1062,8 +1062,8 @@ SwitchJmp => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	reg_req   => { in => [ "gp" ] },
 	mode      => "mode_T",
-	attr_type => "ia32_condcode_attr_t",
-	attr      => "long pnc",
+	attr_type => "ia32_switch_attr_t",
+	attr      => "long default_pn",
 	latency   => 3,
 	units     => [ "BRANCH" ],
 	modified_flags => $status_flags,
@@ -1849,7 +1849,7 @@ Ucomi => {
 	ins       => [ "base", "index", "mem", "left", "right" ],
 	outs      => [ "flags" ],
 	am        => "source,binary",
-	attr      => "int ins_permuted",
+	attr      => "bool ins_permuted",
 	init_attr => "attr->data.ins_permuted = ins_permuted;",
 	emit      => ' .ucomi%XXM %binop',
 	latency   => 3,
@@ -2258,7 +2258,7 @@ vFucomFnstsw => {
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eax" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
-	attr      => "int ins_permuted",
+	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
 	units     => [ "VFP" ],
@@ -2271,7 +2271,7 @@ vFucomi => {
 	reg_req   => { in => [ "vfp", "vfp" ], out => [ "eflags" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "flags" ],
-	attr      => "int ins_permuted",
+	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
 	units     => [ "VFP" ],
@@ -2284,7 +2284,7 @@ vFtstFnstsw => {
 	reg_req   => { in => [ "vfp" ], out => [ "eax" ] },
 	ins       => [ "left" ],
 	outs      => [ "flags" ],
-	attr      => "int ins_permuted",
+	attr      => "bool ins_permuted",
 	init_attr => "attr->attr.data.ins_permuted = ins_permuted;",
 	latency   => 3,
 	units     => [ "VFP" ],

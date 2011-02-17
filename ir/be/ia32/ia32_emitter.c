@@ -24,12 +24,14 @@
  * @version     $Id$
  *
  * Summary table for x86 floatingpoint compares:
+ * (remember effect of unordered on x86: ZF=1, PF=1, CF=1)
+ *
  *   pnc_Eq  => !P && E
  *   pnc_Lt  => !P && B
  *   pnc_Le  => !P && BE
  *   pnc_Gt  => A
  *   pnc_Ge  => AE
- *   pnc_Lg  => P || NE
+ *   pnc_Lg  => NE
  *   pnc_Leg => NP  (ordered)
  *   pnc_Uo  => P
  *   pnc_Ue  => E
@@ -37,7 +39,7 @@
  *   pnc_Ule => BE
  *   pnc_Ug  => P || A
  *   pnc_Uge => P || AE
- *   pnc_Ne  => NE
+ *   pnc_Ne  => P || NE
  */
 #include "config.h"
 
@@ -497,53 +499,43 @@ static void ia32_emit_cfop_target(const ir_node *node)
 	be_gas_emit_block_name(block);
 }
 
-/*
- * positive conditions for signed compares
- */
-static const char *const cmp2condition_s[] = {
-	NULL, /* always false */
-	"e",  /* == */
-	"l",  /* <  */
-	"le", /* <= */
-	"g",  /* >  */
-	"ge", /* >= */
-	"ne", /* != */
-	NULL  /* always true */
-};
-
-/*
- * positive conditions for unsigned compares
- */
-static const char *const cmp2condition_u[] = {
-	NULL, /* always false */
-	"e",  /* == */
-	"b",  /* <  */
-	"be", /* <= */
-	"a",  /* >  */
-	"ae", /* >= */
-	"ne", /* != */
-	NULL  /* always true */
-};
-
 /**
  * Emit the suffix for a compare instruction.
  */
-static void ia32_emit_cmp_suffix(int pnc)
+static void ia32_emit_condition_code(ia32_condition_code_t cc)
 {
-	const char *str;
-
-	if (pnc == ia32_pn_Cmp_parity) {
-		be_emit_char('p');
-		return;
+	switch (cc) {
+	case ia32_cc_overflow:      be_emit_cstring("o");  return;
+	case ia32_cc_not_overflow:  be_emit_cstring("no"); return;
+	case ia32_cc_float_below:
+	case ia32_cc_float_unordered_below:
+	case ia32_cc_below:         be_emit_cstring("b");  return;
+	case ia32_cc_float_above_equal:
+	case ia32_cc_float_unordered_above_equal:
+	case ia32_cc_above_equal:   be_emit_cstring("ae"); return;
+	case ia32_cc_float_equal:
+	case ia32_cc_equal:         be_emit_cstring("e");  return;
+	case ia32_cc_float_not_equal:
+	case ia32_cc_not_equal:     be_emit_cstring("ne"); return;
+	case ia32_cc_float_below_equal:
+	case ia32_cc_float_unordered_below_equal:
+	case ia32_cc_below_equal:   be_emit_cstring("be"); return;
+	case ia32_cc_float_above:
+	case ia32_cc_float_unordered_above:
+	case ia32_cc_above:         be_emit_cstring("a");  return;
+	case ia32_cc_sign:          be_emit_cstring("s");  return;
+	case ia32_cc_not_sign:      be_emit_cstring("ns"); return;
+	case ia32_cc_parity:        be_emit_cstring("p");  return;
+	case ia32_cc_not_parity:    be_emit_cstring("np"); return;
+	case ia32_cc_less:          be_emit_cstring("l");  return;
+	case ia32_cc_greater_equal: be_emit_cstring("ge"); return;
+	case ia32_cc_less_equal:    be_emit_cstring("le"); return;
+	case ia32_cc_greater:       be_emit_cstring("g");  return;
+	case ia32_cc_float_parity_cases:
+	case ia32_cc_additional_float_cases:
+		break;
 	}
-
-	if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
-		str = cmp2condition_u[pnc & 7];
-	} else {
-		str = cmp2condition_s[pnc & 7];
-	}
-
-	be_emit_string(str);
+	panic("Invalid ia32 condition code");
 }
 
 typedef enum ia32_emit_mod_t {
@@ -749,8 +741,8 @@ emit_AM:
 			}
 
 			case 'P': {
-				int pnc = va_arg(ap, int);
-				ia32_emit_cmp_suffix(pnc);
+				ia32_condition_code_t cc = va_arg(ap, ia32_condition_code_t);
+				ia32_emit_condition_code(cc);
 				break;
 			}
 
@@ -939,7 +931,7 @@ static ir_node *find_original_value(ir_node *node)
 	}
 }
 
-static int determine_final_pnc(const ir_node *node, int flags_pos, int pnc)
+static int determine_final_cc(const ir_node *node, int flags_pos, int cc)
 {
 	ir_node           *flags = get_irn_n(node, flags_pos);
 	const ia32_attr_t *flags_attr;
@@ -957,40 +949,21 @@ static int determine_final_pnc(const ir_node *node, int flags_pos, int pnc)
 		}
 
 		flags_attr = get_ia32_attr_const(cmp);
-		if (flags_attr->data.ins_permuted)
-			pnc = get_mirrored_pnc(pnc);
-		pnc |= ia32_pn_Cmp_float;
-	} else if (is_ia32_Ucomi(flags) || is_ia32_Fucomi(flags)
-			|| is_ia32_Fucompi(flags)) {
-		flags_attr = get_ia32_attr_const(flags);
-
-		if (flags_attr->data.ins_permuted)
-			pnc = get_mirrored_pnc(pnc);
-		pnc |= ia32_pn_Cmp_float;
 	} else {
 		flags_attr = get_ia32_attr_const(flags);
-
-		if (flags_attr->data.ins_permuted)
-			pnc = get_mirrored_pnc(pnc);
-		if (flags_attr->data.cmp_unsigned)
-			pnc |= ia32_pn_Cmp_unsigned;
 	}
 
-	return pnc;
-}
-
-static int ia32_get_negated_pnc(int pnc)
-{
-	ir_mode *mode = pnc & ia32_pn_Cmp_float ? mode_F : mode_Iu;
-	return get_negated_pnc(pnc, mode);
+	if (flags_attr->data.ins_permuted)
+		cc = ia32_invert_condition_code(cc);
+	return cc;
 }
 
 void ia32_emit_cmp_suffix_node(const ir_node *node, int flags_pos)
 {
-	int pnc = get_ia32_condcode(node);
-	pnc = determine_final_pnc(node, flags_pos, pnc);
+	ia32_condition_code_t cc = get_ia32_condcode(node);
+	cc = determine_final_cc(node, flags_pos, cc);
 
-	ia32_emit_cmp_suffix(pnc);
+	ia32_emit_condition_code(cc);
 }
 
 /**
@@ -1037,12 +1010,12 @@ static int can_be_fallthrough(const ir_node *node)
  */
 static void emit_ia32_Jcc(const ir_node *node)
 {
-	int            need_parity_label = 0;
-	const ir_node *proj_true;
-	const ir_node *proj_false;
-	int            pnc = get_ia32_condcode(node);
+	int                   need_parity_label = 0;
+	ia32_condition_code_t cc                = get_ia32_condcode(node);
+	const ir_node        *proj_true;
+	const ir_node        *proj_false;
 
-	pnc = determine_final_pnc(node, 0, pnc);
+	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
 	proj_true = get_proj(node, pn_ia32_Jcc_true);
@@ -1057,25 +1030,15 @@ static void emit_ia32_Jcc(const ir_node *node)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		pnc        = ia32_get_negated_pnc(pnc);
+		cc         = ia32_negate_condition_code(cc);
 	}
 
-	if (pnc & ia32_pn_Cmp_float) {
+	if (cc & ia32_cc_float_parity_cases) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
-		switch (pnc & 0x0f) {
-		case pn_Cmp_Uo: {
+		if (cc & ia32_cc_negated) {
 			ia32_emitf(proj_true, "\tjp %L\n");
-			break;
-		}
-
-		case pn_Cmp_Leg:
-			ia32_emitf(proj_true, "\tjnp %L\n");
-			break;
-
-		case pn_Cmp_Eq:
-		case pn_Cmp_Lt:
-		case pn_Cmp_Le:
+		} else {
 			/* we need a local label if the false proj is a fallthrough
 			 * as the falseblock might have no label emitted then */
 			if (can_be_fallthrough(proj_false)) {
@@ -1084,22 +1047,9 @@ static void emit_ia32_Jcc(const ir_node *node)
 			} else {
 				ia32_emitf(proj_false, "\tjp %L\n");
 			}
-			goto emit_jcc;
-
-		case pn_Cmp_Ug:
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ne:
-			ia32_emitf(proj_true, "\tjp %L\n");
-			goto emit_jcc;
-
-		default:
-			goto emit_jcc;
 		}
-	} else {
-emit_jcc:
-		ia32_emitf(proj_true, "\tj%P %L\n", pnc);
 	}
-
+	ia32_emitf(proj_true, "\tj%P %L\n", cc);
 	if (need_parity_label) {
 		ia32_emitf(NULL, "1:\n");
 	}
@@ -1120,56 +1070,38 @@ static void emit_ia32_Setcc(const ir_node *node)
 {
 	const arch_register_t *dreg = get_out_reg(node, pn_ia32_Setcc_res);
 
-	int pnc = get_ia32_condcode(node);
-	pnc     = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
-	if (pnc & ia32_pn_Cmp_float) {
-		switch (pnc & 0x0f) {
-		case pn_Cmp_Uo:
-			ia32_emitf(node, "\tsetp %#R\n", dreg);
-			return;
-
-		case pn_Cmp_Leg:
-			ia32_emitf(node, "\tsetnp %#R\n", dreg);
-			return;
-
-		case pn_Cmp_Eq:
-		case pn_Cmp_Lt:
-		case pn_Cmp_Le:
-			ia32_emitf(node, "\tset%P %<R\n", pnc, dreg);
-			ia32_emitf(node, "\tsetnp %>R\n", dreg);
-			ia32_emitf(node, "\tandb %>R, %<R\n", dreg, dreg);
-			return;
-
-		case pn_Cmp_Ug:
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ne:
-			ia32_emitf(node, "\tset%P %<R\n", pnc, dreg);
+	ia32_condition_code_t cc = get_ia32_condcode(node);
+	cc = determine_final_cc(node, n_ia32_Setcc_eflags, cc);
+	if (cc & ia32_cc_float_parity_cases) {
+		if (cc & ia32_cc_negated) {
+			ia32_emitf(node, "\tset%P %<R\n", cc, dreg);
 			ia32_emitf(node, "\tsetp %>R\n", dreg);
 			ia32_emitf(node, "\torb %>R, %<R\n", dreg, dreg);
-			return;
-
-		default:
-			break;
+		} else {
+			ia32_emitf(node, "\tset%P %<R\n", cc, dreg);
+			ia32_emitf(node, "\tsetnp %>R\n", dreg);
+			ia32_emitf(node, "\tandb %>R, %<R\n", dreg, dreg);
 		}
+	} else {
+		ia32_emitf(node, "\tset%P %#R\n", cc, dreg);
 	}
-	ia32_emitf(node, "\tset%P %#R\n", pnc, dreg);
 }
 
 static void emit_ia32_CMovcc(const ir_node *node)
 {
 	const ia32_attr_t     *attr = get_ia32_attr_const(node);
 	const arch_register_t *out  = arch_irn_get_register(node, pn_ia32_res);
-	int                    pnc  = get_ia32_condcode(node);
+	ia32_condition_code_t  cc   = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
-	pnc = determine_final_pnc(node, n_ia32_CMovcc_eflags, pnc);
+	cc = determine_final_cc(node, n_ia32_CMovcc_eflags, cc);
 	/* although you can't set ins_permuted in the constructor it might still
 	 * be set by memory operand folding
 	 * Permuting inputs of a cmov means the condition is negated!
 	 */
 	if (attr->data.ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
+		cc = ia32_negate_condition_code(cc);
 
 	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
 	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
@@ -1182,7 +1114,7 @@ static void emit_ia32_CMovcc(const ir_node *node)
 
 		assert(get_ia32_op_type(node) == ia32_Normal);
 
-		pnc = ia32_get_negated_pnc(pnc);
+		cc = ia32_negate_condition_code(cc);
 
 		tmp      = in_true;
 		in_true  = in_false;
@@ -1192,22 +1124,11 @@ static void emit_ia32_CMovcc(const ir_node *node)
 		ia32_emitf(node, "\tmovl %R, %R\n", in_false, out);
 	}
 
-	/* TODO: handling of Nans isn't correct yet */
-	if (pnc & ia32_pn_Cmp_float) {
-		switch (pnc & 0x0f) {
-		case pn_Cmp_Uo:
-		case pn_Cmp_Leg:
-		case pn_Cmp_Eq:
-		case pn_Cmp_Lt:
-		case pn_Cmp_Le:
-		case pn_Cmp_Ug:
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ne:
-			panic("CMov with floatingpoint compare/parity not supported yet");
-		}
+	if (cc & ia32_cc_float_parity_cases) {
+		panic("CMov with floatingpoint compare/parity not supported yet");
 	}
 
-	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", pnc, in_true, out);
+	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", cc, in_true, out);
 }
 
 
@@ -1244,8 +1165,7 @@ static int ia32_cmp_branch_t(const void *a, const void *b)
 static void generate_jump_table(jmp_tbl_t *tbl, const ir_node *node)
 {
 	int                 i;
-	long                pnc;
-	long                default_pn;
+	long                default_pn = get_ia32_default_pn(node);
 	ir_node            *proj;
 	const ir_edge_t    *edge;
 
@@ -1257,26 +1177,26 @@ static void generate_jump_table(jmp_tbl_t *tbl, const ir_node *node)
 	tbl->min_value    = LONG_MAX;
 	tbl->max_value    = LONG_MIN;
 
-	default_pn = get_ia32_condcode(node);
 	i = 0;
 	/* go over all proj's and collect them */
 	foreach_out_edge(node, edge) {
+		long pn;
 		proj = get_edge_src_irn(edge);
 		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
 
-		pnc = get_Proj_proj(proj);
+		pn = get_Proj_proj(proj);
 
 		/* check for default proj */
-		if (pnc == default_pn) {
+		if (pn == default_pn) {
 			assert(tbl->defProj == NULL && "found two default Projs at SwitchJmp");
 			tbl->defProj = proj;
 		} else {
-			tbl->min_value = pnc < tbl->min_value ? pnc : tbl->min_value;
-			tbl->max_value = pnc > tbl->max_value ? pnc : tbl->max_value;
+			tbl->min_value = pn < tbl->min_value ? pn : tbl->min_value;
+			tbl->max_value = pn > tbl->max_value ? pn : tbl->max_value;
 
 			/* create branch entry */
 			tbl->branches[i].target = proj;
-			tbl->branches[i].value  = pnc;
+			tbl->branches[i].value  = pn;
 			++i;
 		}
 
@@ -2222,8 +2142,6 @@ static const lc_opt_table_entry_t ia32_emitter_options[] = {
 static unsigned char reg_gp_map[N_ia32_gp_REGS];
 //static unsigned char reg_mmx_map[N_ia32_mmx_REGS];
 //static unsigned char reg_sse_map[N_ia32_xmm_REGS];
-static unsigned char pnc_map_signed[8];
-static unsigned char pnc_map_unsigned[8];
 
 static void build_reg_map(void)
 {
@@ -2235,35 +2153,12 @@ static void build_reg_map(void)
 	reg_gp_map[REG_GP_EBP] = 0x5;
 	reg_gp_map[REG_GP_ESI] = 0x6;
 	reg_gp_map[REG_GP_EDI] = 0x7;
-
-	pnc_map_signed[pn_Cmp_Eq]    = 0x04;
-	pnc_map_signed[pn_Cmp_Lt]    = 0x0C;
-	pnc_map_signed[pn_Cmp_Le]    = 0x0E;
-	pnc_map_signed[pn_Cmp_Gt]    = 0x0F;
-	pnc_map_signed[pn_Cmp_Ge]    = 0x0D;
-	pnc_map_signed[pn_Cmp_Lg]    = 0x05;
-
-	pnc_map_unsigned[pn_Cmp_Eq]    = 0x04;
-	pnc_map_unsigned[pn_Cmp_Lt]    = 0x02;
-	pnc_map_unsigned[pn_Cmp_Le]    = 0x06;
-	pnc_map_unsigned[pn_Cmp_Gt]    = 0x07;
-	pnc_map_unsigned[pn_Cmp_Ge]    = 0x03;
-	pnc_map_unsigned[pn_Cmp_Lg]    = 0x05;
 }
 
 /** Returns the encoding for a pnc field. */
-static unsigned char pnc2cc(int pnc)
+static unsigned char pnc2cc(ia32_condition_code_t cc)
 {
-	unsigned char cc;
-	if (pnc == ia32_pn_Cmp_parity) {
-		cc = 0x0A;
-	} else if (pnc & ia32_pn_Cmp_float || pnc & ia32_pn_Cmp_unsigned) {
-		cc = pnc_map_unsigned[pnc & 0x07];
-	} else {
-		cc = pnc_map_signed[pnc & 0x07];
-	}
-	assert(cc != 0);
-	return cc;
+	return cc & 0xf;
 }
 
 /** Sign extension bit values for binops */
@@ -2875,48 +2770,13 @@ static void bemit_setcc(const ir_node *node)
 {
 	const arch_register_t *dreg = get_out_reg(node, pn_ia32_Setcc_res);
 
-	int pnc = get_ia32_condcode(node);
-	pnc     = determine_final_pnc(node, n_ia32_Setcc_eflags, pnc);
-	if (pnc & ia32_pn_Cmp_float) {
-		switch (pnc & 0x0f) {
-		case pn_Cmp_Uo:
-			 /* setp <dreg */
-			bemit8(0x0F);
-			bemit8(0x9A);
-			bemit_modrm8(REG_LOW, dreg);
-			return;
-
-		case pn_Cmp_Leg:
-			 /* setnp <dreg*/
-			bemit8(0x0F);
-			bemit8(0x9B);
-			bemit_modrm8(REG_LOW, dreg);
-			return;
-
-		case pn_Cmp_Eq:
-		case pn_Cmp_Lt:
-		case pn_Cmp_Le:
-			 /* set%PNC <dreg */
-			bemit8(0x0F);
-			bemit8(0x90 | pnc2cc(pnc));
-			bemit_modrm8(REG_LOW, dreg);
-
-			/* setnp >dreg */
-			bemit8(0x0F);
-			bemit8(0x9B);
-			bemit_modrm8(REG_HIGH, dreg);
-
-			/* andb %>dreg, %<dreg */
-			bemit8(0x20);
-			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
-			return;
-
-		case pn_Cmp_Ug:
-		case pn_Cmp_Uge:
-		case pn_Cmp_Ne:
+	ia32_condition_code_t cc = get_ia32_condcode(node);
+	cc = determine_final_cc(node, n_ia32_Setcc_eflags, cc);
+	if (cc & ia32_cc_float_parity_cases) {
+		if (cc & ia32_cc_negated) {
 			/* set%PNC <dreg */
 			bemit8(0x0F);
-			bemit8(0x90 | pnc2cc(pnc));
+			bemit8(0x90 | pnc2cc(cc));
 			bemit_modrm8(REG_LOW, dreg);
 
 			/* setp >dreg */
@@ -2927,16 +2787,27 @@ static void bemit_setcc(const ir_node *node)
 			/* orb %>dreg, %<dreg */
 			bemit8(0x08);
 			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
-			return;
+		} else {
+			 /* set%PNC <dreg */
+			bemit8(0x0F);
+			bemit8(0x90 | pnc2cc(cc));
+			bemit_modrm8(REG_LOW, dreg);
 
-		default:
-			break;
+			/* setnp >dreg */
+			bemit8(0x0F);
+			bemit8(0x9B);
+			bemit_modrm8(REG_HIGH, dreg);
+
+			/* andb %>dreg, %<dreg */
+			bemit8(0x20);
+			bemit_modrr8(REG_LOW, dreg, REG_HIGH, dreg);
 		}
+	} else {
+		/* set%PNC <dreg */
+		bemit8(0x0F);
+		bemit8(0x90 | pnc2cc(cc));
+		bemit_modrm8(REG_LOW, dreg);
 	}
-	/* set%PNC <dreg */
-	bemit8(0x0F);
-	bemit8(0x90 | pnc2cc(pnc));
-	bemit_modrm8(REG_LOW, dreg);
 }
 
 static void bemit_cmovcc(const ir_node *node)
@@ -2944,11 +2815,11 @@ static void bemit_cmovcc(const ir_node *node)
 	const ia32_attr_t     *attr         = get_ia32_attr_const(node);
 	int                    ins_permuted = attr->data.ins_permuted;
 	const arch_register_t *out          = arch_irn_get_register(node, pn_ia32_res);
-	int                    pnc          = get_ia32_condcode(node);
+	ia32_condition_code_t  cc           = get_ia32_condcode(node);
 	const arch_register_t *in_true;
 	const arch_register_t *in_false;
 
-	pnc = determine_final_pnc(node, n_ia32_CMovcc_eflags, pnc);
+	cc = determine_final_cc(node, n_ia32_CMovcc_eflags, cc);
 
 	in_true  = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_true));
 	in_false = arch_get_irn_register(get_irn_n(node, n_ia32_CMovcc_val_false));
@@ -2967,12 +2838,13 @@ static void bemit_cmovcc(const ir_node *node)
 	}
 
 	if (ins_permuted)
-		pnc = ia32_get_negated_pnc(pnc);
+		cc = ia32_negate_condition_code(cc);
 
-	/* TODO: handling of Nans isn't correct yet */
+	if (cc & ia32_cc_float_parity_cases)
+		panic("cmov can't handle parity float cases");
 
 	bemit8(0x0F);
-	bemit8(0x40 | pnc2cc(pnc));
+	bemit8(0x40 | pnc2cc(cc));
 	if (get_ia32_op_type(node) == ia32_Normal) {
 		bemit_modrr(in_true, out);
 	} else {
@@ -3500,14 +3372,14 @@ static void bemit_jp(bool odd, const ir_node *dest_block)
 
 static void bemit_ia32_jcc(const ir_node *node)
 {
-	int            pnc = get_ia32_condcode(node);
-	const ir_node *proj_true;
-	const ir_node *proj_false;
-	const ir_node *dest_true;
-	const ir_node *dest_false;
-	const ir_node *block;
+	ia32_condition_code_t cc = get_ia32_condcode(node);
+	const ir_node        *proj_true;
+	const ir_node        *proj_false;
+	const ir_node        *dest_true;
+	const ir_node        *dest_false;
+	const ir_node        *block;
 
-	pnc = determine_final_pnc(node, 0, pnc);
+	cc = determine_final_cc(node, 0, cc);
 
 	/* get both Projs */
 	proj_true = get_proj(node, pn_ia32_Jcc_true);
@@ -3524,51 +3396,29 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 		proj_true  = proj_false;
 		proj_false = t;
-		pnc        = ia32_get_negated_pnc(pnc);
+		cc         = ia32_negate_condition_code(cc);
 	}
 
 	dest_true  = get_cfop_target_block(proj_true);
 	dest_false = get_cfop_target_block(proj_false);
 
-	if (pnc & ia32_pn_Cmp_float) {
+	if (cc & ia32_cc_float_parity_cases) {
 		/* Some floating point comparisons require a test of the parity flag,
 		 * which indicates that the result is unordered */
-		switch (pnc & 15) {
-			case pn_Cmp_Uo: {
-				bemit_jp(false, dest_true);
-				break;
+		if (cc & ia32_cc_negated) {
+			bemit_jp(false, dest_true);
+		} else {
+			/* we need a local label if the false proj is a fallthrough
+			 * as the falseblock might have no label emitted then */
+			if (can_be_fallthrough(proj_false)) {
+				bemit8(0x7A);
+				bemit8(0x06);  // jp + 6
+			} else {
+				bemit_jp(false, dest_false);
 			}
-
-			case pn_Cmp_Leg:
-				bemit_jp(true, dest_true);
-				break;
-
-			case pn_Cmp_Eq:
-			case pn_Cmp_Lt:
-			case pn_Cmp_Le:
-				/* we need a local label if the false proj is a fallthrough
-				 * as the falseblock might have no label emitted then */
-				if (can_be_fallthrough(proj_false)) {
-					bemit8(0x7A);
-					bemit8(0x06);  // jp + 6
-				} else {
-					bemit_jp(false, dest_false);
-				}
-				goto emit_jcc;
-
-			case pn_Cmp_Ug:
-			case pn_Cmp_Uge:
-			case pn_Cmp_Ne:
-				bemit_jp(false, dest_true);
-				goto emit_jcc;
-
-			default:
-				goto emit_jcc;
 		}
-	} else {
-emit_jcc:
-		bemit_jcc(pnc, dest_true);
 	}
+	bemit_jcc(cc, dest_true);
 
 	/* the second Proj might be a fallthrough */
 	if (can_be_fallthrough(proj_false)) {

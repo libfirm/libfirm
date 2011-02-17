@@ -244,16 +244,15 @@ void set_ia32_frame_ent(ir_node *node, ir_entity *ent);
 /**
  * Returns the condition code of a node.
  */
-long get_ia32_condcode(const ir_node *node);
+ia32_condition_code_t get_ia32_condcode(const ir_node *node);
 
 /**
  * Sets the condition code of a node
  */
-void set_ia32_condcode(ir_node *node, long code);
+void set_ia32_condcode(ir_node *node, ia32_condition_code_t code);
 
-/**
- * Returns the condition code of a node.
- */
+long get_ia32_default_pn(const ir_node *node);
+
 unsigned get_ia32_copyb_size(const ir_node *node);
 
 /**
@@ -327,7 +326,7 @@ int is_ia32_AddrModeS(const ir_node *node);
 int is_ia32_AddrModeD(const ir_node *node);
 
 /**
- * Swaps left/right input of a node (and adjusts pnc if needed)
+ * Swaps left/right input of a node (and sets ins_permuted accordingly)
  */
 void ia32_swap_left_right(ir_node *node);
 
@@ -346,7 +345,7 @@ void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
 									long offset);
 void init_ia32_call_attributes(ir_node *res, unsigned pop, ir_type *call_tp);
 void init_ia32_copyb_attributes(ir_node *res, unsigned size);
-void init_ia32_condcode_attributes(ir_node *res, long pnc);
+void init_ia32_condcode_attributes(ir_node *res, ia32_condition_code_t cc);
 void init_ia32_climbframe_attributes(ir_node *res, unsigned count);
 
 /* Include the generated headers */
