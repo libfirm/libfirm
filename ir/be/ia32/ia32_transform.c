@@ -1498,8 +1498,13 @@ static ir_node *transform_AM_mem(ir_node *const block,
 			ins[n++] = be_transform_node(pred);
 		}
 
-		ins[n++] = am_mem;
+		if (n==1 && ins[0] == am_mem) {
+			return am_mem;
+			/* creating a new Sync and relying on CSE may fail,
+			 * if am_mem is a ProjM, which does not yet verify. */
+		}
 
+		ins[n++] = am_mem;
 		return new_r_Sync(block, n, ins);
 	} else {
 		ir_node *ins[2];
