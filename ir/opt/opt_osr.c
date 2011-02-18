@@ -1406,9 +1406,9 @@ static void fix_adds_and_subs(ir_node *irn, void *ctx)
 			if (mode_is_int(l_mode)) {
 				/* Usually, Sub(I*,P) is an error, hence the verifier rejects it.
 				 * However, it is correct in this case, so add Conv to make verifier happy. */
-				assert (mode_is_reference(r_mode));
 				ir_node *block = get_nodes_block(right);
-				ir_node *lconv = new_r_Conv(block,left,r_mode);
+				ir_node *lconv = new_r_Conv(block, left, r_mode);
+				assert(mode_is_reference(r_mode));
 				set_Sub_left(irn, lconv);
 			}
 		}
