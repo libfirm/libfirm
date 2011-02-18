@@ -114,7 +114,7 @@ struct opcode_key_t {
 		ir_entity *ent;   /**< For Sel Nodes, its entity */
 		int       intVal; /**< For Conv/Div Nodes: strict/remainderless */
 		unsigned  uintVal;/**< for Builtin: the kind */
-		ir_node   *block; /**< for Block: itself */
+		ir_node   *irn;   /**< for nodes that never be construent: the node itself */
 		void      *ptr;   /**< generic pointer for hash/cmp */
 	} u;
 };
@@ -310,7 +310,8 @@ static void check_opcode(const partition_t *Z)
 				key.u.intVal = get_Div_no_remainder(irn);
 				break;
 			case iro_Block:
-				key.u.block = irn;
+			case iro_ASM:
+				key.u.irn = irn;
 				break;
 			case iro_Builtin:
 				key.u.intVal = get_Builtin_kind(irn);
@@ -338,7 +339,8 @@ static void check_opcode(const partition_t *Z)
 				assert(key.u.intVal == get_Div_no_remainder(irn));
 				break;
 			case iro_Block:
-				assert(key.u.block == irn);
+			case iro_ASM:
+				assert(key.u.irn == irn);
 				break;
 			case iro_Builtin:
 				assert(key.u.intVal == (int)get_Builtin_kind(irn));
@@ -1763,7 +1765,17 @@ static void *lambda_opcode(const node_t *node, environment_t *env)
 		 * We fix it by never letting blocks be congruent
 		 * which cannot be detected by combo either.
 		 */
-		key.u.block = irn;
+		key.u.irn = irn;
+		break;
+	case iro_ASM:
+		/*
+		 * If is difficult to detect when two ASM nodes are congruent: even
+		 * if the assembler "text" is identical, the instruction might
+		 * have a side effect like flag toggle or function call.
+		 * So, do not even try it.
+		 *
+		 */
+		key.u.irn = irn;
 		break;
 	case iro_Builtin:
 		key.u.intVal = get_Builtin_kind(irn);
