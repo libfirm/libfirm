@@ -1144,8 +1144,12 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 	/* lowered shift instruction may have a dependency operand, handle it here */
 	if (get_irn_arity(node) == 3) {
 		/* we have a dependency */
-		ir_node *new_dep = be_transform_node(get_irn_n(node, 2));
-		add_irn_dep(new_node, new_dep);
+		ir_node* dep = get_irn_n(node, 2);
+		if (get_irn_n_edges(dep) > 1) {
+			/* ... which has at least one user other than 'node' */
+			ir_node *new_dep = be_transform_node(dep);
+			add_irn_dep(new_node, new_dep);
+		}
 	}
 
 	return new_node;
