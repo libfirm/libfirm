@@ -188,9 +188,6 @@ FIRM_API void edges_init_dbg(int do_dbg);
 FIRM_API ir_graph_pass_t *irg_verify_edges_pass(const char *name,
                                                 unsigned assert_on_problem);
 
-FIRM_API const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src,
-                                       int pos);
-
 #define edges_reroute(old, nw, irg)                     edges_reroute_kind(old, nw, EDGE_KIND_NORMAL, irg)
 #define edges_activated(irg)                            (edges_activated_kind(irg, EDGE_KIND_NORMAL) && edges_activated_kind(irg, EDGE_KIND_BLOCK))
 

@@ -250,18 +250,6 @@ const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, i
 }
 
 /**
- * Get the edge object of an outgoing edge at a node.
- * Looks for an edge for all kinds.
- */
-const ir_edge_t *get_irn_edge(ir_graph *irg, const ir_node *src, int pos)
-{
-	const ir_edge_t *edge;
-	if ((edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_NORMAL)) == NULL)
-		edge = get_irn_edge_kind(irg, src, pos, EDGE_KIND_BLOCK);
-	return(edge);
-}
-
-/**
  * Change the out count
  *
  * @param tgt  the edge target
