@@ -2404,19 +2404,19 @@ restart:
 		/* a - (b - c) -> a + (c - b)
 		 *             -> (a - b) + c iff (b - c) is a pointer */
 		dbg_info *s_dbg   = get_irn_dbg_info(b);
-		ir_node  *s_block = get_nodes_block(b);
 		ir_node  *s_left  = get_Sub_left(b);
 		ir_node  *s_right = get_Sub_right(b);
 		ir_mode  *s_mode  = get_irn_mode(b);
 		if (mode_is_reference(s_mode)) {
-			ir_node  *sub     = new_rd_Sub(s_dbg, s_block, a, s_left, mode);
+			ir_node  *lowest_block = get_nodes_block(n); /* a and b are live here */
+			ir_node  *sub     = new_rd_Sub(s_dbg, lowest_block, a, s_left, mode);
 			dbg_info *a_dbg   = get_irn_dbg_info(n);
-			ir_node  *a_block = get_nodes_block(n);
 
 			if (s_mode != mode)
-				s_right = new_r_Conv(a_block, s_right, mode);
-			n = new_rd_Add(a_dbg, a_block, sub, s_right, mode);
+				s_right = new_r_Conv(lowest_block, s_right, mode);
+			n = new_rd_Add(a_dbg, lowest_block, sub, s_right, mode);
 		} else {
+			ir_node  *s_block = get_nodes_block(b);
 			ir_node  *sub     = new_rd_Sub(s_dbg, s_block, s_right, s_left, s_mode);
 			dbg_info *a_dbg   = get_irn_dbg_info(n);
 			ir_node  *a_block = get_nodes_block(n);
