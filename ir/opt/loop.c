@@ -424,7 +424,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	/* create a new Phi */
 	NEW_ARR_A(ir_node*, in, n_cfgpreds);
 	for (i = 0; i < n_cfgpreds; ++i)
-		in[i] = new_Unknown(mode);
+		in[i] = new_r_Dummy(irg, mode);
 
 	phi = new_r_Phi(block, n_cfgpreds, in, mode);
 	/* Important: always keep block phi list up to date. */
@@ -1059,6 +1059,7 @@ static void fix_copy_inversion(void)
 	ir_node **phis;
 	ir_node *phi, *next;
 	ir_node *head_cp = get_inversion_copy(loop_head);
+	ir_graph *irg    = get_irn_irg(head_cp);
 	int arity        = get_irn_arity(head_cp);
 	int backedges    = get_backedge_n(head_cp, 0);
 	int new_arity    = arity - backedges;
@@ -1074,7 +1075,7 @@ static void fix_copy_inversion(void)
 			ins[pos++] = get_irn_n(head_cp, i);
 	}
 
-	new_head = new_Block(new_arity, ins);
+	new_head = new_r_Block(irg, new_arity, ins);
 
 	phis = NEW_ARR_F(ir_node *, 0);
 
@@ -1113,6 +1114,7 @@ static void fix_head_inversion(void)
 	ir_node **ins;
 	ir_node *phi, *next;
 	ir_node **phis;
+	ir_graph *irg = get_irn_irg(loop_head);
 	int arity     = get_irn_arity(loop_head);
 	int backedges = get_backedge_n(loop_head, 0);
 	int new_arity = backedges;
@@ -1128,7 +1130,7 @@ static void fix_head_inversion(void)
 			ins[pos++] = get_irn_n(loop_head, i);
 	}
 
-	new_head = new_Block(new_arity, ins);
+	new_head = new_r_Block(irg, new_arity, ins);
 
 	phis = NEW_ARR_F(ir_node *, 0);
 
