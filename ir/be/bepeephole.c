@@ -254,6 +254,25 @@ static void kill_node_and_preds(ir_node *node)
 	kill_node(node);
 }
 
+static void keep_alive_barrier_operand(ir_node *block, const ir_node* barrier, int pos)
+{
+	ir_node *operand = get_irn_n(barrier, pos);
+	ir_node *keep    = sched_next(skip_Proj(operand));
+
+	/* There already is a keep in the schedule. */
+	if (be_is_Keep(keep)) {
+		const arch_register_class_t *cls = arch_get_irn_reg_class(barrier, pos);
+
+		be_Keep_add_node(keep, cls, operand);
+	}
+	else {
+		ir_node *in[1] = {operand};
+
+		keep = be_new_Keep(block, 1, in);
+		sched_add_after(skip_Proj(operand), keep);
+	}
+}
+
 /**
  * Walk through the block schedule and skip all barrier nodes.
  */
@@ -288,6 +307,38 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 
 			rbitset_set(used, pn);
 
+			/* We may need to reschedule be_Keeps to keep live-ranges short. */
+			if (get_irn_n_edges(proj) == 1) {
+				const ir_edge_t *proj_edge = get_irn_out_edge_first(proj);
+				ir_node         *proj_succ = get_edge_src_irn(proj_edge);
+
+				if (be_is_Keep(proj_succ)) {
+					int succ_arity = get_irn_arity(proj_succ);
+
+					keep_alive_barrier_operand(block, irn, pn);
+
+					/* Disconnect old be_Keep. */
+					if (succ_arity > 1) {
+						int      edge_pos        = get_edge_src_pos(proj_edge);
+						int      new_arity       = succ_arity - 1;
+						int      pos;
+						int      new_pos         = 0;
+						ir_node *ins[succ_arity];
+
+						for (pos = 0; pos < succ_arity; ++pos) {
+							if (pos != edge_pos)
+								ins[new_pos++] = get_irn_n(proj_succ, pos);
+						}
+
+						set_irn_in(proj_succ, new_arity, ins);
+					}
+					else {
+						sched_remove(proj_succ);
+						kill_node(proj_succ);
+					}
+				}
+			}
+
 			edges_reroute_kind(proj, pred, EDGE_KIND_NORMAL, irg);
 			edges_reroute_kind(proj, pred, EDGE_KIND_DEP, irg);
 		}
@@ -296,21 +347,14 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 		 * we now have to create an explicit Keep for them */
 		n_used = rbitset_popcount(used, arity);
 		if (n_used < (size_t) arity) {
-			int       n_in = arity - (int) n_used;
-			ir_node **in   = ALLOCAN(ir_node*, n_in);
-			int       i    = 0;
-			int       n    = 0;
-			ir_node  *keep;
+			int i;
 
 			for (i = 0; i < arity; ++i) {
 				if (rbitset_is_set(used, i))
 					continue;
-				assert(n < n_in);
-				in[n++] = get_irn_n(irn, i);
+
+				keep_alive_barrier_operand(block, irn, i);
 			}
-			keep = be_new_Barrier(get_nodes_block(irn), n_in, in);
-			keep_alive(keep);
-			sched_add_before(irn, keep);
 		}
 
 		kill_node_and_preds(irn);
