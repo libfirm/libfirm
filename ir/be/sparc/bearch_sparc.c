@@ -20,6 +20,7 @@
 /**
  * @file
  * @brief    The main sparc backend driver file.
+ * @author   Hannes Rapp, Matthias Braun
  * @version  $Id$
  */
 #include "config.h"

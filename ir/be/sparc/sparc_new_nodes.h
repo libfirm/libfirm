@@ -20,6 +20,7 @@
 /**
  * @file
  * @brief   Function prototypes for the assembler ir node constructors.
+ * @author  Hannes Rapp, Matthias Braun
  * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_SPARC_NEW_NODES_H

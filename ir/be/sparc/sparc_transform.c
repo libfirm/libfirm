@@ -20,6 +20,7 @@
 /**
  * @file
  * @brief   code selection (transform FIRM into SPARC FIRM)
+ * @author  Hannes Rapp, Matthias Braun
  * @version $Id$
  */
 #include "config.h"

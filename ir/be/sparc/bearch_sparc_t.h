@@ -20,6 +20,7 @@
 /**
  * @file
  * @brief   declarations for SPARC backend -- private header
+ * @author  Hannes Rapp, Matthias Braun
  * @version $Id$
  */
 #ifndef FIRM_BE_SPARC_BEARCH_SPARC_T_H
