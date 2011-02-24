@@ -459,7 +459,7 @@ class Div(Op):
 		("res",       "result of computation",                 "pn_Generic_other"),
 	]
 	flags = [ "fragile", "uses_memory" ]
-	attrs_name = "divmod"
+	attrs_name = "div"
 	attrs = [
 		dict(
 			type    = "ir_mode*",
@@ -472,7 +472,7 @@ class Div(Op):
 			init = "0",
 		)
 	]
-	attr_struct = "divmod_attr"
+	attr_struct = "div_attr"
 	pinned      = "exception"
 	op_index    = 1
 	arity_override = "oparity_binary"
@@ -638,7 +638,7 @@ class Mod(Op):
 		("res",       "result of computation",                 "pn_Generic_other"),
 	]
 	flags = [ "fragile", "uses_memory" ]
-	attrs_name = "divmod"
+	attrs_name = "mod"
 	attrs = [
 		dict(
 			type    = "ir_mode*",
@@ -646,7 +646,7 @@ class Mod(Op):
 			comment = "mode of the result",
 		),
 	]
-	attr_struct = "divmod_attr"
+	attr_struct = "mod_attr"
 	pinned      = "exception"
 	op_index    = 1
 	arity_override = "oparity_binary"

@@ -289,12 +289,18 @@ typedef struct conv_attr {
 	char           strict;        /**< If set, this is a strict Conv that cannot be removed. */
 } conv_attr;
 
-/** Div/Mod attribute. */
-typedef struct divmod_attr {
+/** Div attribute. */
+typedef struct div_attr {
 	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
 	ir_mode        *resmode;      /**< Result mode for the division. */
 	char           no_remainder;  /**< Set, if known that a division can be done without a remainder. */
-} divmod_attr;
+} div_attr;
+
+/** Mod attribute. */
+typedef struct mod_attr {
+	except_attr    exc;           /**< The exception attribute. MUST be the first one. */
+	ir_mode        *resmode;      /**< Result mode for the division. */
+} mod_attr;
 
 /** Inline Assembler support attribute. */
 typedef struct asm_attr {
@@ -336,7 +342,8 @@ typedef union ir_attr {
 	copyb_attr     copyb;         /**< For CopyB operation */
 	bound_attr     bound;         /**< For Bound operation */
 	conv_attr      conv;          /**< For Conv operation */
-	divmod_attr    divmod;        /**< For Div/Mod operation */
+	div_attr       div;           /**< For Div operation */
+	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
 } ir_attr;
 

@@ -5980,26 +5980,20 @@ static int node_cmp_exception(ir_node *a, ir_node *b)
 /** Compares the attributes of two Div nodes. */
 static int node_cmp_attr_Div(ir_node *a, ir_node *b)
 {
-	const divmod_attr *ma = &a->attr.divmod;
-	const divmod_attr *mb = &b->attr.divmod;
+	const div_attr *ma = &a->attr.div;
+	const div_attr *mb = &b->attr.div;
 	return ma->exc.pin_state != mb->exc.pin_state ||
 		   ma->resmode       != mb->resmode ||
 		   ma->no_remainder  != mb->no_remainder;
 }  /* node_cmp_attr_Div */
 
-/** Compares the attributes of two Div or Mod nodes. */
-static int node_cmp_attr_Div_Mod(ir_node *a, ir_node *b)
-{
-	const divmod_attr *ma = &a->attr.divmod;
-	const divmod_attr *mb = &b->attr.divmod;
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode;
-}  /* node_cmp_attr_Div_Mod */
-
 /** Compares the attributes of two Mod nodes. */
 static int node_cmp_attr_Mod(ir_node *a, ir_node *b)
 {
-	return node_cmp_attr_Div_Mod(a, b);
+	const mod_attr *ma = &a->attr.mod;
+	const mod_attr *mb = &b->attr.mod;
+	return ma->exc.pin_state != mb->exc.pin_state ||
+		   ma->resmode       != mb->resmode;
 }  /* node_cmp_attr_Mod */
 
 /** Compares the attributes of two Confirm nodes. */

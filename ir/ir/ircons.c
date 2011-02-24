@@ -457,9 +457,9 @@ ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node
 	in[2] = irn_right;
 
 	res = new_ir_node(dbgi, irg, block, op_Div, mode_T, 3, in);
-	res->attr.divmod.resmode = resmode;
-	res->attr.divmod.no_remainder = 1;
-	res->attr.divmod.exc.pin_state = pin_state;
+	res->attr.div.resmode = resmode;
+	res->attr.div.no_remainder = 1;
+	res->attr.div.exc.pin_state = pin_state;
 	res = optimize_node(res);
 	irn_verify_irg(res, irg);
 	return res;
