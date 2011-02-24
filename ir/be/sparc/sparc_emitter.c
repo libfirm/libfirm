@@ -944,7 +944,7 @@ static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
 
 static const arch_register_t *get_next_fp_reg(const arch_register_t *reg)
 {
-	unsigned index = reg->index;
+	unsigned index = reg->global_index;
 	assert(reg == &sparc_registers[index]);
 	index++;
 	assert(index - REG_F0 < N_sparc_fp_REGS);

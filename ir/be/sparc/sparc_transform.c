@@ -841,7 +841,7 @@ static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 	ir_mode   *mode   = get_tarval_mode(tv);
 	ir_node   *new_op
 		= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
-	ir_node   *proj   = new_Proj(new_op, mode, pn_sparc_Ldf_res);
+	ir_node   *proj   = new_r_Proj(new_op, mode, pn_sparc_Ldf_res);
 
 	set_irn_pinned(new_op, op_pin_state_floats);
 	return proj;
@@ -953,7 +953,7 @@ static ir_node *gen_Cond(ir_node *node)
 
 	block       = be_transform_node(get_nodes_block(node));
 	dbgi        = get_irn_dbg_info(node);
-	flag_node   = be_transform_node(get_Proj_pred(selector));
+	flag_node   = be_transform_node(selector);
 	relation    = get_Cmp_relation(selector);
 	is_unsigned = !mode_is_signed(cmp_mode);
 	if (mode_is_float(cmp_mode)) {
@@ -1827,7 +1827,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *new_pred = be_transform_node(pred);
 	long      pn       = get_Proj_proj(node);
 
-	assert(is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred));
+	assert(is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred)
+	       || is_sparc_fdiv(new_pred));
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);
 	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_UDiv_M);
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_fdiv_res);
