@@ -253,7 +253,7 @@ static int cmp_irn_opcode(const ir_node *a, const ir_node *b)
 	}
 
 	/*
-	 * here, we already now that the nodes are identical except their
+	 * here, we already know that the nodes are identical except their
 	 * attributes
 	 */
 	if (a->op->ops.node_cmp_attr)
@@ -292,15 +292,13 @@ static void check_partition(const partition_t *T)
 static void check_opcode(const partition_t *Z)
 {
 	node_t        *node;
-	const ir_node *repr;
-	int           first = 1;
+	const ir_node *repr = NULL;
 
 	list_for_each_entry(node_t, node, &Z->Leader, node_list) {
 		ir_node *irn = node->node;
 
-		if (first) {
-			repr  = irn;
-			first = 0;
+		if (repr == NULL) {
+			repr = irn;
 		} else {
 			assert(cmp_irn_opcode(repr, irn) == 0);
 		}
