@@ -6500,6 +6500,12 @@ ir_node *optimize_in_place_2(ir_node *n)
 	if (iro == iro_Deleted)
 		return n;
 
+	/* Remove nodes with dead (Bad) input.
+	   Run always for transformation induced Bads.  */
+	n = gigo(n);
+	if (is_Bad(n))
+		return n;
+
 	/* constant expression evaluation / constant folding */
 	if (get_opt_constant_folding()) {
 		/* neither constants nor Tuple values can be evaluated */
@@ -6544,10 +6550,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 		(iro == iro_Cond) ||
 		(iro == iro_Proj))     /* Flags tested local. */
 		n = transform_node(n);
-
-	/* Remove nodes with dead (Bad) input.
-	   Run always for transformation induced Bads.  */
-	n = gigo(n);
 
 	/* Now we can verify the node, as it has no dead inputs any more. */
 	irn_verify(n);
