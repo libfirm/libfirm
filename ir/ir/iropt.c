@@ -4035,23 +4035,6 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
 			}
-			/* Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
-			 * by the simpler Cmp(And(1bit), val), 0) negated pnc */
-			if (is_And(left)) {
-				ir_node *and0 = get_And_left(left);
-				ir_node *and1 = get_And_right(left);
-				if (and1 == right) {
-					ir_node *tmp = and0;
-					and0 = and1;
-					and1 = tmp;
-				}
-				if (and0 == right && is_single_bit(and0)) {
-					ir_graph *irg = get_irn_irg(n);
-					proj_nr = get_negated_pnc(proj_nr, mode);
-					right = create_zero_const(irg, mode);
-					changed |= 1;
-				}
-			}
 
 			if (is_And(left) && is_Const(right)) {
 				ir_node *ll = get_binop_left(left);
@@ -4087,6 +4070,26 @@ static ir_node *transform_node_Proj_Cmp(ir_node *proj)
 			}
 		}  /* mode_is_int(...) */
 	}  /* proj_nr == pn_Cmp_Eq || proj_nr == pn_Cmp_Lg */
+
+	/* Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
+	 * by the simpler Cmp(And(1bit), val), 0) negated pnc */
+	if (mode_is_int(mode) && is_And(left) && (proj_nr == pn_Cmp_Eq
+			|| (mode_is_signed(mode) && proj_nr == pn_Cmp_Lg)
+			|| (!mode_is_signed(mode) && (proj_nr & pn_Cmp_Le) == pn_Cmp_Lt))) {
+		ir_node *and0 = get_And_left(left);
+		ir_node *and1 = get_And_right(left);
+		if (and1 == right) {
+			ir_node *tmp = and0;
+			and0 = and1;
+			and1 = tmp;
+		}
+		if (and0 == right && is_single_bit(and0)) {
+			ir_graph *irg = get_irn_irg(n);
+			proj_nr = proj_nr == pn_Cmp_Eq ? pn_Cmp_Lg : pn_Cmp_Eq;
+			right = create_zero_const(irg, mode);
+			changed |= 1;
+		}
+	}
 
 	/* replace mode_b compares with ands/ors */
 	if (get_irn_mode(left) == mode_b) {

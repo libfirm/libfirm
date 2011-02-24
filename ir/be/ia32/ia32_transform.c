@@ -2012,8 +2012,9 @@ static ir_node *get_flags_node_cmp(ir_node *node, ia32_condition_code_t *cc_out)
 
 	/* check for bit-test */
 	if (ia32_cg_config.use_bt
-			&& (pnc == pn_Cmp_Lg || pnc == pn_Cmp_Eq || pnc == pn_Cmp_Ne
-				|| pnc == pn_Cmp_Ue)) {
+			&& (pnc == pn_Cmp_Eq
+			    || (mode_is_signed(mode) && pnc == pn_Cmp_Lg)
+				|| (!mode_is_signed(mode) && (pnc & pn_Cmp_Ge) == pn_Cmp_Gt))) {
 		ir_node *l = get_Cmp_left(cmp);
 		ir_node *r = get_Cmp_right(cmp);
 		if (is_And(l)) {
