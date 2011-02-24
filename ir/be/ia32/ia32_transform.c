@@ -5367,7 +5367,8 @@ static ir_node *gen_inner_trampoline(ir_node *node)
 	if (is_SymConst(callee)) {
 		rel = new_bd_ia32_Const(dbgi, new_block, get_SymConst_entity(callee), 0, 0, -10);
 	} else {
-		rel = new_bd_ia32_Lea(dbgi, new_block, be_transform_node(callee), ia32_create_Immediate(NULL, 0, -10));
+		rel = new_bd_ia32_Lea(dbgi, new_block, be_transform_node(callee), noreg_GP);
+		add_ia32_am_offs_int(rel, -10);
 	}
 	rel = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP, nomem, rel, trampoline);
 
