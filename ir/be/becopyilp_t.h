@@ -63,7 +63,7 @@ size_red_t *new_size_red(copy_opt_t *co);
 /**
  * Checks if a node has already been removed
  */
-#define sr_is_removed(sr, irn)		pset_find_ptr((sr)->all_removed, irn)
+#define sr_is_removed(sr, irn)   pset_find_ptr((sr)->all_removed, irn)
 
 /**
  * Virtually remove all nodes not related to the problem

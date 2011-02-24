@@ -101,15 +101,15 @@ void free_copy_opt(copy_opt_t *co);
 /**
  * Computes the costs of a copy according to loop depth
  * @param co   The copy opt object.
- * @param pos	the argument position of arg in the root arguments
- * @return Must be >= 0 in all cases.
+ * @param pos  the argument position of arg in the root arguments
+ * @return     Must be >= 0 in all cases.
  */
 int co_get_costs_loop_depth(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
 /**
  * Computes the costs of a copy according to execution frequency
  * @param co   The copy opt object.
- * @param pos	the argument position of arg in the root arguments
+ * @param pos  the argument position of arg in the root arguments
  * @return Must be >= 0 in all cases.
  */
 int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
@@ -125,15 +125,15 @@ int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int 
 typedef          __int64 long64;
 typedef unsigned __int64 ulong64;
 
-#define LL_FMT	"i64"
-#define ULL_FMT	"ui64"
+#define LL_FMT   "i64"
+#define ULL_FMT  "ui64"
 
 #else
 typedef          long long long64;
 typedef unsigned long long ulong64;
 
-#define LL_FMT	"ll"
-#define ULL_FMT	"llu"
+#define LL_FMT   "ll"
+#define ULL_FMT  "llu"
 
 #endif
 

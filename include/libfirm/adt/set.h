@@ -42,10 +42,10 @@ typedef struct set set;
 
 /** The entry of a set, representing an element in the set and it's meta-information */
 typedef struct set_entry {
-  unsigned hash;    /**< the hash value of the element */
-  size_t size;      /**< the size of the element */
-  int dptr[1];	    /**< the element itself, data copied in must not need more
-		          alignment than this */
+	unsigned hash;  /**< the hash value of the element */
+	size_t size;    /**< the size of the element */
+	int dptr[1];    /**< the element itself, data copied in must not need more
+	                     alignment than this */
 } set_entry;
 
 /**

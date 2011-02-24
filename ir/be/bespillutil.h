@@ -22,7 +22,7 @@
  * @brief       higher level abstraction for the creation of spill and reload
  *              instructions and rematerialisation of values.
  * @author      Daniel Grund, Sebastian Hack, Matthias Braun
- * @date		29.09.2005
+ * @date        29.09.2005
  * @version     $Id$
  */
 #ifndef FIRM_BE_BESPILLUTIL_H

@@ -40,8 +40,8 @@ struct dfs_node_t {
 	const void *ancestor;
 	int pre_num;
 	int max_pre_num;
-	int	post_num;
-	int	level;
+	int post_num;
+	int level;
 };
 
 struct dfs_edge_t {

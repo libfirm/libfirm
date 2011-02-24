@@ -59,7 +59,7 @@ typedef pset hmap_distrib_entry_t;
  * An entry in a distribution table
  */
 typedef struct distrib_entry_t {
-	counter_t	 cnt;       /**< the current count */
+	counter_t   cnt;      /**< the current count */
 	const void *object;   /**< the object which is counted */
 } distrib_entry_t;
 

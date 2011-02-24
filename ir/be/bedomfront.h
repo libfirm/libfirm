@@ -45,9 +45,10 @@ void be_free_dominance_frontiers(be_dom_front_info_t *info);
 
 /**
  * Get the dominance frontier of a block.
- * @param info 	A pointer to the dominance frontier information.
- * @param block The block whose dominance frontier you want.
- * @return A list containing the all blocks in the dominance frontier of @p block.
+ * @param info    A pointer to the dominance frontier information.
+ * @param block   The block whose dominance frontier you want.
+ * @return        A list containing the all blocks in the dominance frontier of
+ *                @p block.
  */
 ir_node **be_get_dominance_frontier(const be_dom_front_info_t *info, ir_node *block);
 

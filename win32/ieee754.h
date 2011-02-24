@@ -40,7 +40,7 @@ union ieee754_float
 	unsigned int mantissa:23;
 	unsigned int exponent:8;
 	unsigned int negative:1;
-#endif				/* Little endian.  */
+#endif              /* Little endian.  */
       } ieee;
 
     /* This format makes it easier to see if a NaN is a signalling NaN.  */
@@ -56,11 +56,11 @@ union ieee754_float
 	unsigned int quiet_nan:1;
 	unsigned int exponent:8;
 	unsigned int negative:1;
-#endif				/* Little endian.  */
+#endif             /* Little endian.  */
       } ieee_nan;
   };
 
-#define IEEE754_FLOAT_BIAS	0x7f /* Added to exponent.  */
+#define IEEE754_FLOAT_BIAS 0x7f /* Added to exponent.  */
 
 
 union ieee754_double
@@ -77,7 +77,7 @@ union ieee754_double
 	unsigned int mantissa0:20;
 	unsigned int mantissa1:32;
 #else
-# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+# if __FLOAT_WORD_ORDER == BIG_ENDIAN
 	unsigned int mantissa0:20;
 	unsigned int exponent:11;
 	unsigned int negative:1;
@@ -89,7 +89,7 @@ union ieee754_double
 	unsigned int exponent:11;
 	unsigned int negative:1;
 # endif
-#endif				/* Little endian.  */
+#endif              /* Little endian.  */
       } ieee;
 
     /* This format makes it easier to see if a NaN is a signalling NaN.  */
@@ -103,7 +103,7 @@ union ieee754_double
 	unsigned int mantissa0:19;
 	unsigned int mantissa1:32;
 #else
-# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+# if __FLOAT_WORD_ORDER == BIG_ENDIAN
 	unsigned int mantissa0:19;
 	unsigned int quiet_nan:1;
 	unsigned int exponent:11;
@@ -121,7 +121,7 @@ union ieee754_double
       } ieee_nan;
   };
 
-#define IEEE754_DOUBLE_BIAS	0x3ff /* Added to exponent.  */
+#define IEEE754_DOUBLE_BIAS 0x3ff /* Added to exponent.  */
 
 
 union ieee854_long_double
@@ -138,7 +138,7 @@ union ieee854_long_double
 	unsigned int mantissa0:32;
 	unsigned int mantissa1:32;
 #else
-# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+# if __FLOAT_WORD_ORDER == BIG_ENDIAN
 	unsigned int exponent:15;
 	unsigned int negative:1;
 	unsigned int empty:16;
@@ -166,7 +166,7 @@ union ieee854_long_double
 	unsigned int mantissa0:30;
 	unsigned int mantissa1:32;
 #else
-# if	__FLOAT_WORD_ORDER == BIG_ENDIAN
+# if __FLOAT_WORD_ORDER == BIG_ENDIAN
 	unsigned int exponent:15;
 	unsigned int negative:1;
 	unsigned int empty:16;

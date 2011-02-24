@@ -29,11 +29,11 @@
 
 #define LC_ARRSIZE(x)             (sizeof(x) / sizeof(x[0]))
 
-#define LC_MIN(x,y)			          ((x) < (y) ? (x) : (y))
-#define LC_MAX(x,y)			          ((x) > (y) ? (x) : (y))
+#define LC_MIN(x,y)               ((x) < (y) ? (x) : (y))
+#define LC_MAX(x,y)               ((x) > (y) ? (x) : (y))
 
 /** define a readable fourcc code */
 #define LC_FOURCC(a,b,c,d)        ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
-#define LC_FOURCC_STR(str)			  LC_FOURCC(str[0], str[1], str[2], str[3])
+#define LC_FOURCC_STR(str)        LC_FOURCC(str[0], str[1], str[2], str[3])
 
 #endif

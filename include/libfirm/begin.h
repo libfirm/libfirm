@@ -50,9 +50,9 @@
 #endif
 
 #ifdef __cplusplus
-#	define FIRM_NOTHROW throw ()
+# define FIRM_NOTHROW throw ()
 #else
-#	define FIRM_NOTHROW
+# define FIRM_NOTHROW
 #endif
 
 /**
@@ -61,9 +61,9 @@
  * string and variadic argument.
  */
 #if defined(__GNUC__)
-#	define FIRM_PRINTF(a,b) __attribute__((__format__(__printf__, a, b)))
+# define FIRM_PRINTF(a,b) __attribute__((__format__(__printf__, a, b)))
 #else
-#	define FIRM_PRINTF(a,b)
+# define FIRM_PRINTF(a,b)
 #endif
 
 #endif

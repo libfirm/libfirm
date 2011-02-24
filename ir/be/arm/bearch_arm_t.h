@@ -112,10 +112,10 @@ enum arm_fp_architectures {
 };
 
 /** Returns non-zero if FPA instructions should be issued. */
-#define USE_FPA(isa)	 ((isa)->fpu_arch & ARM_FPU_FPA_EXT_V1)
+#define USE_FPA(isa)     ((isa)->fpu_arch & ARM_FPU_FPA_EXT_V1)
 
 /** Returns non-zero if VFP instructions should be issued. */
-#define USE_VFP(isa)	 ((isa)->fpu_arch & ARM_FPU_VFP_EXT_V1xD)
+#define USE_VFP(isa)     ((isa)->fpu_arch & ARM_FPU_VFP_EXT_V1xD)
 
 /** Types of processor to generate code for. */
 enum arm_processor_types {

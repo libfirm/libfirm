@@ -568,6 +568,7 @@ FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{att
 /** @} */
 
 #endif
+
 ''')
 
 opcodes_h_template = env.from_string(
@@ -614,6 +615,7 @@ FIRM_API ir_op *get_op_{{node.name}}(void);
 {%- endfor %}
 
 #endif
+
 ''')
 
 #############################

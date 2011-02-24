@@ -93,7 +93,7 @@ typedef const ir_node *ir_node_cnst_ptr;
 typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mode, int pos);
 
 #ifdef __cplusplus
-#	define ENUM_BITSET(type) \
+# define ENUM_BITSET(type) \
 	extern "C++" { \
 		static inline type operator ~  (type  a)         { return     (type)~(int)a;           } \
 		static inline type operator &  (type  a, type b) { return     (type)((int)a & (int)b); } \
@@ -104,17 +104,17 @@ typedef ir_node *uninitialized_local_variable_func_t(ir_graph *irg, ir_mode *mod
 		static inline type operator |= (type& a, type b) { return a = (type)((int)a | (int)b); } \
 	}
 #else
-#	define ENUM_BITSET(type)
+# define ENUM_BITSET(type)
 #endif
 
 #ifdef __cplusplus
-#	define ENUM_COUNTABLE(type) \
+# define ENUM_COUNTABLE(type) \
 	extern "C++" { \
 		static inline type operator ++(type& a) { return a = (type)((int)a + 1); } \
 		static inline type operator --(type& a) { return a = (type)((int)a - 1); } \
 	}
 #else
-#	define ENUM_COUNTABLE(type)
+# define ENUM_COUNTABLE(type)
 #endif
 
 /**

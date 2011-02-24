@@ -62,28 +62,28 @@ typedef struct timeval timing_ticks_t;
  * /usr/include/sys/time.h
  */
 #define timing_ticks_cmp(a, b, CMP)   \
-  (((a).tv_sec == (b).tv_sec) ? 	  \
+  (((a).tv_sec == (b).tv_sec) ?       \
    ((a).tv_usec CMP (b).tv_usec) :    \
    ((a).tv_sec CMP (b).tv_sec))
 
 #define timing_ticks_add(r, a)                       \
-	do {							                 \
+	do {                                             \
 		(r).tv_sec = (r).tv_sec + (a).tv_sec;        \
 		(r).tv_usec = (r).tv_usec + (a).tv_usec;     \
-		if ((r).tv_usec >= 1000000) {			     \
+		if ((r).tv_usec >= 1000000) {                \
 			++(r).tv_sec;                            \
 			(r).tv_usec -= 1000000;                  \
-		}									         \
+		}                                            \
 	} while (0)
 
 #define timing_ticks_sub(r, a)                        \
-	do {									          \
-		(r).tv_sec = (r).tv_sec - (a).tv_sec;	      \
+	do {                                              \
+		(r).tv_sec = (r).tv_sec - (a).tv_sec;         \
 		(r).tv_usec = (r).tv_usec - (a).tv_usec;      \
-		if ((r).tv_usec < 0) {					      \
-			--(r).tv_sec;						      \
-			(r).tv_usec += 1000000;					  \
-		}									          \
+		if ((r).tv_usec < 0) {                        \
+			--(r).tv_sec;                             \
+			(r).tv_usec += 1000000;                   \
+		}                                             \
 	} while (0)
 
 #define timing_ticks_ulong(t)        ((unsigned long) ((t).tv_usec + 1000000 * (t).tv_sec))

@@ -47,7 +47,7 @@
  * @return A pointer to the flexible array (can be used as a pointer to the
  *         first element of this array).
  */
-#define NEW_ARR_F(type, nelts)						\
+#define NEW_ARR_F(type, nelts) \
   ((type *)ir_new_arr_f((nelts), sizeof(type) * (nelts)))
 
 /**
@@ -63,7 +63,7 @@
  * @return A pointer to the flexible array (can be used as a pointer to the
  *         first element of this array).
  */
-#define CLONE_ARR_F(type, arr)			\
+#define CLONE_ARR_F(type, arr) \
   NEW_ARR_F(type, ARR_LEN((arr)))
 
 /**
@@ -78,7 +78,7 @@
  * @return A pointer to the flexible array (can be used as a pointer to the
  *         first element of this array).
  */
-#define DUP_ARR_F(type, arr)							\
+#define DUP_ARR_F(type, arr) \
   ((type*) memcpy(CLONE_ARR_F(type, (arr)), (arr), sizeof(type) * ARR_LEN((arr))))
 
 /**
@@ -101,9 +101,9 @@
  * @return A pointer to the dynamic array (can be used as a pointer to the
  *         first element of this array).
  */
-#define NEW_ARR_D(type, obstack, nelts)					\
-  (  nelts								\
-   ? (type *)ir_new_arr_d((obstack), (nelts), sizeof(type) * (nelts))	\
+#define NEW_ARR_D(type, obstack, nelts)                                 \
+  (  nelts                                                              \
+   ? (type *)ir_new_arr_d((obstack), (nelts), sizeof(type) * (nelts))   \
    : (type *)arr_mt_descr.elts)
 
 /**
@@ -120,7 +120,7 @@
  * @return A pointer to the dynamic array (can be used as a pointer to the
  *         first element of this array).
  */
-#define CLONE_ARR_D(type, obstack, arr)		\
+#define CLONE_ARR_D(type, obstack, arr) \
   NEW_ARR_D(type, (obstack), ARR_LEN((arr)))
 
 /**
@@ -136,7 +136,7 @@
  * @return A pointer to the dynamic array (can be used as a pointer to the
  *         first element of this array).
  */
-#define DUP_ARR_D(type, obstack, arr)							\
+#define DUP_ARR_D(type, obstack, arr) \
   ((type*)memcpy(CLONE_ARR_D(type, (obstack), (arr)), (arr), sizeof(type) * ARR_LEN ((arr))))
 
 /**
@@ -156,7 +156,7 @@
  *
  * @remark  This macro may change arr, so update all references!
  */
-#define ARR_RESIZE(type, arr, n)					\
+#define ARR_RESIZE(type, arr, n) \
   ((arr) = (type*) ir_arr_resize((void *)(arr), (n), sizeof(type)))
 
 /**
@@ -168,7 +168,7 @@
  *
  * @remark  This macro may change arr, so update all references!
  */
-#define ARR_SETLEN(type, arr, n)					\
+#define ARR_SETLEN(type, arr, n) \
   ((arr) = (type*) ir_arr_setlen((void *)(arr), (n), sizeof(type) * (n)))
 
 /** Set a length smaller than the current length of the array.  Do not
@@ -184,7 +184,7 @@ static inline void ARR_SHRINKLEN(void *arr, size_t new_len);
  *
  * @remark  This macro may change arr, so update all references!
  */
-#define ARR_EXTEND(type, arr, delta)			\
+#define ARR_EXTEND(type, arr, delta) \
   ARR_RESIZE(type, (arr), ARR_LEN((arr)) + (delta))
 
 /**
@@ -197,7 +197,7 @@ static inline void ARR_SHRINKLEN(void *arr, size_t new_len);
  *
  * @remark  This macro may change arr, so update all references!
  */
-#define ARR_EXTO(type, arr, n)						\
+#define ARR_EXTO(type, arr, n) \
   ((n) >= ARR_LEN((arr)) ? ARR_RESIZE(type, (arr), (n)+1) : (arr))
 
 /**
@@ -207,7 +207,7 @@ static inline void ARR_SHRINKLEN(void *arr, size_t new_len);
  * @param arr      The array, which must be an lvalue.
  * @param elt      The new element, must be of type (type).
  */
-#define ARR_APP1(type, arr, elt)					\
+#define ARR_APP1(type, arr, elt) \
   (ARR_EXTEND(type, (arr), 1), (arr)[ARR_LEN((arr))-1] = (elt))
 
 #ifdef NDEBUG
@@ -215,7 +215,7 @@ static inline void ARR_SHRINKLEN(void *arr, size_t new_len);
 # define ARR_IDX_VRFY(arr, idx) ((void)0)
 #else
 # define ARR_VRFY(arr)          ir_verify_arr(arr)
-# define ARR_IDX_VRFY(arr, idx)				\
+# define ARR_IDX_VRFY(arr, idx) \
     assert((0 <= (idx)) && ((idx) < ARR_LEN((arr))))
 #endif
 

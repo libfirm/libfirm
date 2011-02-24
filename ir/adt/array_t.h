@@ -27,14 +27,14 @@
 
 #include "array.h"
 
-#define ARR_D_MAGIC	FOURCC('A','R','R','D')
-#define ARR_A_MAGIC	FOURCC('A','R','R','A')
-#define ARR_F_MAGIC	FOURCC('A','R','R','F')
+#define ARR_D_MAGIC FOURCC('A','R','R','D')
+#define ARR_A_MAGIC FOURCC('A','R','R','A')
+#define ARR_F_MAGIC FOURCC('A','R','R','F')
 
 #ifdef NDEBUG
 # define ARR_SET_DBGINF(descr, co, es)
 #else
-# define ARR_SET_DBGINF(descr, co, es)					\
+# define ARR_SET_DBGINF(descr, co, es) \
     ( (descr)->magic = (co), (descr)->eltsize = (es) )
 #endif
 
@@ -49,12 +49,12 @@
  * This macro creates a dynamic array on the functions stack of a given type at runtime.
  * The size of the array cannot be changed later.
  */
-#define NEW_ARR_A(type, var, n)									\
-  do {												\
-    size_t nelts = (n);										\
-    (var) = (type *)((ir_arr_descr *)alloca(ARR_ELTS_OFFS + sizeof(type) * nelts))->elts;	\
-    ARR_SET_DBGINF(ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type));				\
-    (void)(ARR_DESCR((var))->nelts = nelts);							\
+#define NEW_ARR_A(type, var, n)                                    \
+  do {                                                             \
+    size_t nelts = (n);                                            \
+    (var) = (type *)((ir_arr_descr *)alloca(ARR_ELTS_OFFS + sizeof(type) * nelts))->elts; \
+    ARR_SET_DBGINF(ARR_DESCR ((var)), ARR_A_MAGIC, sizeof (type)); \
+    (void)(ARR_DESCR((var))->nelts = nelts);                       \
   } while (0)
 
 /**
@@ -71,7 +71,7 @@
  * @return A pointer to the dynamic array (can be used as a pointer to the
  *         first element of this array).
  */
-#define CLONE_ARR_A(type, var, arr)		\
+#define CLONE_ARR_A(type, var, arr)        \
   NEW_ARR_A(type, (var), ARR_LEN((arr)))
 
 /**
@@ -87,9 +87,9 @@
  * @return A pointer to the dynamic array (can be used as a pointer to the
  *         first element of this array).
  */
-#define DUP_ARR_A(type, var, arr)					\
-  do { CLONE_ARR_A(type, (var), (arr));					\
-       memcpy((var), (arr), sizeof (type) * ARR_LEN((arr))); }	\
+#define DUP_ARR_A(type, var, arr)                               \
+  do { CLONE_ARR_A(type, (var), (arr));                         \
+       memcpy((var), (arr), sizeof (type) * ARR_LEN((arr))); }  \
   while (0)
 
 #endif

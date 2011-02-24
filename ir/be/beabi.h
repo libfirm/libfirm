@@ -101,7 +101,7 @@ struct be_abi_callbacks_t {
 /**
  * Set the flags for a call.
  * @param call          The call.
- * @param flags	        Some flags to be set.
+ * @param flags         Some flags to be set.
  * @param cb            The call callbacks for that call.
  * @note                The ABI phase might change the flags due to analysis.
  */

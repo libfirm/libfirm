@@ -47,7 +47,7 @@ struct copy_opt_t {
 	cost_fct_t                  get_costs;   /**< function ptr used to get costs for copies */
 
 	/** Representation as optimization units */
-	struct list_head units;	   /**< all units to optimize in specific order */
+	struct list_head units;  /**< all units to optimize in specific order */
 
 	/** Representation in graph structure. Only build on demand */
 	struct obstack obst;
@@ -55,15 +55,15 @@ struct copy_opt_t {
 };
 
 /* Helpers */
-#define ASSERT_OU_AVAIL(co)		assert((co)->units.next && "Representation as optimization-units not build")
-#define ASSERT_GS_AVAIL(co)		assert((co)->nodes && "Representation as graph not build")
+#define ASSERT_OU_AVAIL(co)     assert((co)->units.next && "Representation as optimization-units not build")
+#define ASSERT_GS_AVAIL(co)     assert((co)->nodes && "Representation as graph not build")
 
-#define get_irn_col(irn)          arch_register_get_index(arch_get_irn_register(irn))
+#define get_irn_col(irn)        arch_register_get_index(arch_get_irn_register(irn))
 #define set_irn_col(co, irn, col) arch_set_irn_register(irn, arch_register_for_index((co)->cls, col))
 
 #define list_entry_units(lh) list_entry(lh, unit_t, units)
 
-#define is_Reg_Phi(irn)						(is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
+#define is_Reg_Phi(irn)        (is_Phi(irn) && mode_is_data(get_irn_mode(irn)))
 
 #define get_Perm_src(irn) (get_irn_n(get_Proj_pred(irn), get_Proj_proj(irn)))
 #define is_Perm_Proj(irn) (is_Proj(irn) && be_is_Perm(get_Proj_pred(irn)))
@@ -98,7 +98,7 @@ typedef struct unit_t {
 	int              sort_key;           /**< maximum costs. controls the order of ou's in the struct list_head units. */
 
 	/* for heuristic */
-	struct list_head queue;		         /**< list of qn's sorted by weight of qn-mis */
+	struct list_head queue;              /**< list of qn's sorted by weight of qn-mis */
 } unit_t;
 
 
@@ -140,12 +140,12 @@ static inline affinity_node_t *get_affinity_info(const copy_opt_t *co, const ir_
 	return (affinity_node_t*)set_find(co->nodes, &find, sizeof(find), hash_irn(irn));
 }
 
-#define co_gs_nodes_begin(co)			set_first((co)->nodes)
-#define co_gs_nodes_next(co)			set_next((co)->nodes)
-#define co_gs_nodes_break(co)			set_break((co)->nodes)
+#define co_gs_nodes_begin(co)         set_first((co)->nodes)
+#define co_gs_nodes_next(co)          set_next((co)->nodes)
+#define co_gs_nodes_break(co)         set_break((co)->nodes)
 
-#define co_gs_foreach_aff_node(co, aff_node)	for (aff_node = (affinity_node_t*)co_gs_nodes_begin(co); aff_node != NULL; aff_node = (affinity_node_t*)co_gs_nodes_next(co))
-#define co_gs_foreach_neighb(aff_node, neighb)	for (neighb = (neighb_t*)aff_node->neighbours; neighb != NULL; neighb = (neighb_t*)neighb->next)
+#define co_gs_foreach_aff_node(co, aff_node)     for (aff_node = (affinity_node_t*)co_gs_nodes_begin(co); aff_node != NULL; aff_node = (affinity_node_t*)co_gs_nodes_next(co))
+#define co_gs_foreach_neighb(aff_node, neighb)   for (neighb = (neighb_t*)aff_node->neighbours; neighb != NULL; neighb = (neighb_t*)neighb->next)
 
 
 #endif /* FIRM_BE_BECOPYOPT_T_H */

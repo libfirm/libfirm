@@ -39,23 +39,25 @@
 #include "lc_appendable.h"
 
 typedef struct lc_arg_occ_t {
-	int width;								/**< The width, or 0 if not given. */
-	int precision;						/**< The precision, or 0 if not given */
+	int width;                 /**< The width, or 0 if not given. */
+	int precision;             /**< The precision, or 0 if not given */
 
-	const char *modifier;			/**< A string of of modifiers preceding the
-															conversion specifier. Attention: This string is not
-															zero terminated. Use @c modifier_length to get the
-															number of valid chars in it. */
-	size_t modifier_length;		/**< The number of valid chars in @c modifier. */
-	char conversion;					/**< The conversion specifier. */
-	int lc_arg_type;							/**< The type of the argument as determined by the
-															@c get_lc_arg_type member function of the handler. */
+	const char *modifier;      /**< A string of of modifiers preceding the
+	                                conversion specifier. Attention: This string
+	                                is not zero terminated. Use
+	                                @c modifier_length to get the number of
+	                                valid chars in it. */
+	size_t modifier_length;    /**< The number of valid chars in @c modifier. */
+	char conversion;           /**< The conversion specifier. */
+	int lc_arg_type;           /**< The type of the argument as determined by
+	                                the @c get_lc_arg_type member function of
+	                                the handler. */
 
-	unsigned flag_hash : 1;		/**< @c # flag was seen. */
-	unsigned flag_zero : 1;		/**< @c 0 flag was seen. */
-	unsigned flag_minus : 1;	/**< @c - flag was seen. */
-	unsigned flag_plus : 1;		/**< @c + flag was seen. */
-	unsigned flag_space : 1;	/**< A space flag was seen. */
+	unsigned flag_hash : 1;    /**< @c # flag was seen. */
+	unsigned flag_zero : 1;    /**< @c 0 flag was seen. */
+	unsigned flag_minus : 1;   /**< @c - flag was seen. */
+	unsigned flag_plus : 1;    /**< @c + flag was seen. */
+	unsigned flag_space : 1;   /**< A space flag was seen. */
 } lc_arg_occ_t;
 
 /**

@@ -280,7 +280,7 @@ FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
 FIRM_API ir_mode *mode_M; /**< memory */
 
 /* -- A set of predefined, numerical modes according to Techreport 1999-44 -- */
-FIRM_API ir_mode *mode_F;	  /**< signed float(32) */
+FIRM_API ir_mode *mode_F;   /**< signed float(32) */
 FIRM_API ir_mode *mode_D;   /**< signed double(64) */
 FIRM_API ir_mode *mode_E;   /**< signed extended(80) */
 FIRM_API ir_mode *mode_Bs;  /**< signed byte (former char) */

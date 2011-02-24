@@ -70,8 +70,7 @@ ENUM_COUNTABLE(ir_segment_t)
  * This variable should be considered constant. Moreover, one should use get_irp()
  * to get access the the irp.
  *
- * @note
- * 	Think of the irp as the "handle" of a program.
+ * @note Think of the irp as the "handle" of a program.
  */
 FIRM_API ir_prog *irp;
 

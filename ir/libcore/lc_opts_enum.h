@@ -48,10 +48,10 @@ _LC_OPT_DECL_ENUM(unsigned, mask)
 _LC_OPT_DECL_ENUM(void *, ptr)
 _LC_OPT_DECL_ENUM(const void *, const_ptr)
 
-#define LC_OPT_ENT_ENUM_INT(name, desc, var)				_LC_OPT_ENT_ENUM(int, name, desc, var)
-#define LC_OPT_ENT_ENUM_MASK(name, desc, var)				_LC_OPT_ENT_ENUM(mask, name, desc, var)
-#define LC_OPT_ENT_ENUM_PTR(name, desc, var)				_LC_OPT_ENT_ENUM(ptr, name, desc, var)
-#define LC_OPT_ENT_ENUM_CONST_PTR(name, desc, var)			_LC_OPT_ENT_ENUM(const_ptr, name, desc, var)
+#define LC_OPT_ENT_ENUM_INT(name, desc, var)                _LC_OPT_ENT_ENUM(int, name, desc, var)
+#define LC_OPT_ENT_ENUM_MASK(name, desc, var)               _LC_OPT_ENT_ENUM(mask, name, desc, var)
+#define LC_OPT_ENT_ENUM_PTR(name, desc, var)                _LC_OPT_ENT_ENUM(ptr, name, desc, var)
+#define LC_OPT_ENT_ENUM_CONST_PTR(name, desc, var)          _LC_OPT_ENT_ENUM(const_ptr, name, desc, var)
 
 typedef struct {
 	const char *name;

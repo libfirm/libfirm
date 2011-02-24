@@ -114,7 +114,7 @@ FIRM_API void plist_free(plist_t *list);
  * @return The number of elements in a pointer list.
  */
 #define plist_count(list) \
- 	((list)->element_count)
+	((list)->element_count)
 
 /**
  * Inserts an element at the back of a pointer list.
@@ -135,7 +135,7 @@ FIRM_API void plist_insert_front(plist_t *list, void *value);
  * which must be non null.
  * @param list the pointer list to insert the new element into.
  * @param element the list element before which the new element should
- * 		be inserted. This element must be a part of @p list.
+ *                be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
 FIRM_API void plist_insert_before(plist_t *list, plist_element_t *element, void *value);
@@ -145,7 +145,7 @@ FIRM_API void plist_insert_before(plist_t *list, plist_element_t *element, void 
  * which must be non null.
  * @param list the pointer list to insert the new element into.
  * @param element the list element after which the new element should
- * 		be inserted. This element must be a part of @p list.
+ *                be inserted. This element must be a part of @p list.
  * @param value the element value to insert.
  */
 FIRM_API void plist_insert_after(plist_t *list, plist_element_t *element, void *value);
@@ -170,7 +170,7 @@ FIRM_API plist_element_t *plist_find_value(plist_t *list, void *value);
  * Erases the specified element from the pointer list.
  * @param list the pointer list from which the element should be erased.
  * @param element the list element to erase. This element must be a part
- * 		of @p list.
+ *                of @p list.
  */
 FIRM_API void plist_erase(plist_t *list, plist_element_t *element);
 
@@ -186,7 +186,7 @@ FIRM_API void plist_clear(plist_t *list);
  * @return a pointer to the element or NULL if the list is empty
  */
 #define plist_first(list) \
- 	((list)->first_element)
+	((list)->first_element)
 
 /**
  * Returns the last element of a pointer list.
@@ -194,12 +194,12 @@ FIRM_API void plist_clear(plist_t *list);
  * @return a pointer to the element or NULL if the list is empty
  */
 #define plist_last(list) \
- 	((list)->last_element)
+	((list)->last_element)
 
 /**
  * Checks whether a pointer list element has a successor or not.
  * @param element the list element that should be queried for existence
- * 		of a successor.
+ *                of a successor.
  * @return TRUE if @p element has a successor, otherwise FALSE.
  */
 #define plist_element_has_next(element) \
@@ -208,7 +208,7 @@ FIRM_API void plist_clear(plist_t *list);
 /**
  * Checks whether a pointer list element has a predecessor or not.
  * @param element the list element that should be queried for existence
- * 		of a predecessor.
+ *                of a predecessor.
  * @return TRUE if @p element has a successor, otherwise FALSE.
  */
 #define plist_element_has_prev(element) \
@@ -218,7 +218,7 @@ FIRM_API void plist_clear(plist_t *list);
  * Gets the successor of the passed list element.
  * @param element the list element to return the successor of.
  * @return The successor of @p element or NULL if @p element is the last
- * 		element in the sequence.
+ *         element in the sequence.
  */
 #define plist_element_get_next(element) \
 	((element)->next)
@@ -227,7 +227,7 @@ FIRM_API void plist_clear(plist_t *list);
  * Gets the predecessor of the passed list element.
  * @param element the list element to return the predecessor of.
  * @return The predecessor of @p element or NULL if @p element is the last
- * 		element in the sequence.
+ *         element in the sequence.
  */
 #define plist_element_get_prev(element) \
 	((element)->prev)

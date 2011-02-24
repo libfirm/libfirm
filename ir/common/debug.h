@@ -96,7 +96,7 @@ void firm_dbg_set_file(firm_dbg_module_t *module, FILE *file);
 
 /* If we have C99 use the __func__ variable for calling functions name. */
 #if defined(__STD_VERSION__) && __STD_VERSION >= 199901L
-#define _DBG(args) 	_DBG_MAIN(__func__, args)
+#define _DBG(args)  _DBG_MAIN(__func__, args)
 #else
 
 /* Else, check for gcc and use the proprietary __FUNCTION__ macro. */

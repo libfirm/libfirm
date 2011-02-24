@@ -7,10 +7,10 @@
 
 #ifndef __cplusplus
 
-#define bool	int
-#define true	1
-#define false	0
+#define bool    int
+#define true    1
+#define false   0
 
 #endif /* __cplusplus */
 
-#endif	/* stdbool.h */
+#endif /* stdbool.h */

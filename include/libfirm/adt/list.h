@@ -45,8 +45,8 @@ struct list_head {
  * the prev/next entries already!
  */
 static inline void __list_add(struct list_head *new_node,
-			      struct list_head *prev,
-			      struct list_head *next)
+                              struct list_head *prev,
+                              struct list_head *next)
 {
 	next->prev = new_node;
 	new_node->next = next;
@@ -136,7 +136,7 @@ static inline void list_move(struct list_head *list, struct list_head *head)
  * @param head   the head that will follow our entry
  */
 static inline void list_move_tail(struct list_head *list,
-				  struct list_head *head)
+                                  struct list_head *head)
 {
         __list_del(list->prev, list->next);
         list_add_tail(list, head);
@@ -152,7 +152,7 @@ static inline int list_empty(const struct list_head *head)
 }
 
 static inline void __list_splice(struct list_head *list,
-				 struct list_head *head)
+                                 struct list_head *head)
 {
 	struct list_head *first = list->next;
 	struct list_head *last = list->prev;
@@ -202,17 +202,17 @@ static inline void list_splice_init(struct list_head *list,
 	_list_container_of(ptr, type, member)
 
 /**
- * list_for_each	-	iterate over a list
- * @param pos	the &struct list_head to use as a loop counter.
- * @param head	the head for your list.
+ * list_for_each - iterate over a list
+ * @param pos   the &struct list_head to use as a loop counter.
+ * @param head  the head for your list.
  */
 #define list_for_each(pos, head) \
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
- * __list_for_each	-	iterate over a list
- * @param pos	the &struct list_head to use as a loop counter.
- * @param head	the head for your list.
+ * __list_for_each - iterate over a list
+ * @param pos   the &struct list_head to use as a loop counter.
+ * @param head  the head for your list.
  *
  * This variant differs from list_for_each() in that it's the
  * simplest possible list iteration code, no ing is done.
@@ -223,33 +223,33 @@ static inline void list_splice_init(struct list_head *list,
 	for (pos = (head)->next; pos != (head); pos = pos->next)
 
 /**
- * list_for_each_prev	-	iterate over a list backwards
- * @param pos	the &struct list_head to use as a loop counter.
- * @param head	the head for your list.
+ * list_for_each_prev - iterate over a list backwards
+ * @param pos   the &struct list_head to use as a loop counter.
+ * @param head  the head for your list.
  */
 #define list_for_each_prev(pos, head) \
 	for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
 /**
- * list_for_each_safe	-	iterate over a list safe against removal of list entry
- * @param pos	the &struct list_head to use as a loop counter.
- * @param n	another &struct list_head to use as temporary storage
- * @param head	the head for your list.
+ * list_for_each_safe - iterate over a list safe against removal of list entry
+ * @param pos   the &struct list_head to use as a loop counter.
+ * @param n     another &struct list_head to use as temporary storage
+ * @param head  the head for your list.
  */
 #define list_for_each_safe(pos, n, head) \
 	for (pos = (head)->next, n = pos->next; pos != (head); \
 		pos = n, n = pos->next)
 
 /**
- * list_for_each_entry	-	iterate over list of given type
+ * list_for_each_entry - iterate over list of given type
  * @param type    the type of the struct where the listhead is embedded in
  * @param pos     the type * to use as a loop counter.
  * @param head    the head for your list.
  * @param member  the name of the list_struct within the struct.
  */
-#define list_for_each_entry(type, pos, head, member)				\
-	for (pos = list_entry((head)->next, type, member);	\
-	     &pos->member != (head); 					\
+#define list_for_each_entry(type, pos, head, member)    \
+	for (pos = list_entry((head)->next, type, member);  \
+	     &pos->member != (head);                        \
 	     pos = list_entry(pos->member.next, type, member))
 
 /**
@@ -259,9 +259,9 @@ static inline void list_splice_init(struct list_head *list,
  * @param head    the head for your list.
  * @param member  the name of the list_struct within the struct.
  */
-#define list_for_each_entry_reverse(type, pos, head, member)			\
-	for (pos = list_entry((head)->prev, type, member);	\
-	     &pos->member != (head); 					\
+#define list_for_each_entry_reverse(type, pos, head, member) \
+	for (pos = list_entry((head)->prev, type, member);       \
+	     &pos->member != (head);                             \
 	     pos = list_entry(pos->member.prev, type, member))
 
 
@@ -273,10 +273,10 @@ static inline void list_splice_init(struct list_head *list,
  * @param head    the head for your list.
  * @param member  the name of the list_struct within the struct.
  */
-#define list_for_each_entry_safe(type, pos, n, head, member)			\
-	for (pos = list_entry((head)->next, type, member),	\
-		n = list_entry(pos->member.next, type, member);	\
-	     &pos->member != (head); 					\
+#define list_for_each_entry_safe(type, pos, n, head, member) \
+	for (pos = list_entry((head)->next, type, member),       \
+		n = list_entry(pos->member.next, type, member);      \
+	     &pos->member != (head);                             \
 	     pos = n, n = list_entry(n->member.next, type, member))
 
 #include "../end.h"

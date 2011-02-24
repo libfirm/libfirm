@@ -80,22 +80,24 @@ typedef int (lc_opt_dump_vals_t)(char *buf, size_t n, const char *name, lc_opt_t
 typedef int (lc_opt_error_handler_t)(const char *prefix, const lc_opt_err_info_t *err);
 
 typedef struct {
-	const char *name;				/**< The name of the option. */
-	const char *desc;				/**< A description for the option. */
-	lc_opt_type_t type;				/**< The type of the option (see enum). */
-	void *value;					/**< A pointer to the area, where the value
-								 		of the option shall be put to. May be NULL. */
+	const char *name;               /**< The name of the option. */
+	const char *desc;               /**< A description for the option. */
+	lc_opt_type_t type;             /**< The type of the option (see enum). */
+	void *value;                    /**< A pointer to the area, where the value
+	                                     of the option shall be put to. May be
+	                                     NULL. */
 
-	size_t len;						/**< The amount of bytes available at the
-								 		location value points to. */
-	lc_opt_callback_t *cb;			/**< A callback that is called, when the option is set.
-							     		This may never be NULL. */
+	size_t len;                     /**< The amount of bytes available at the
+	                                     location value points to. */
+	lc_opt_callback_t *cb;          /**< A callback that is called, when the
+	                                     option is set. This may never be NULL. */
 
-	lc_opt_dump_t *dump;			/**< A function which is able to format the options value
-							     		into a string. May be NULL. */
+	lc_opt_dump_t *dump;            /**< A function which is able to format the
+	                                     options value into a string. May be
+	                                     NULL. */
 
-	lc_opt_dump_vals_t *dump_vals;	/**< A function which is able to format the possible values
-									  for this option into a string. May be NULL. */
+	lc_opt_dump_vals_t *dump_vals;  /**< A function which is able to format the possible values
+	                                     for this option into a string. May be NULL. */
 
 
 } lc_opt_table_entry_t;
@@ -159,7 +161,7 @@ lc_opt_entry_t *lc_opt_get_grp(lc_opt_entry_t *parent, const char *name);
  * @param desc      A description of the option.
  * @param type      The data type of the option (see lc_opt_type_*)
  * @param value     A pointer to the memory, where the value shall be stored.
- * 									(May be NULL).
+ *                  (May be NULL).
  * @param length    Amount of bytes available at the memory location
  *                  indicated by @p value.
  * @param cb        A callback function to be called, as the option's value
@@ -168,14 +170,14 @@ lc_opt_entry_t *lc_opt_get_grp(lc_opt_entry_t *parent, const char *name);
  * @return          The handle for the option.
  */
 lc_opt_entry_t *lc_opt_add_opt(lc_opt_entry_t *grp,
-							   const char *name,
-							   const char *desc,
-							   lc_opt_type_t type,
-							   void *value, size_t length,
-							   lc_opt_callback_t *cb,
-							   lc_opt_dump_t *dump,
-							   lc_opt_dump_vals_t *dump_vals,
-							   lc_opt_err_info_t *err);
+                               const char *name,
+                               const char *desc,
+                               lc_opt_type_t type,
+                               void *value, size_t length,
+                               lc_opt_callback_t *cb,
+                               lc_opt_dump_t *dump,
+                               lc_opt_dump_vals_t *dump_vals,
+                               lc_opt_err_info_t *err);
 
 int lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t length, ...);
 
@@ -284,30 +286,30 @@ void lc_opt_from_file(const char *filenmame, FILE *f, lc_opt_error_handler_t *ha
  * The same as lc_opt_from_single_arg() only for an array of arguments.
  */
 int lc_opt_from_argv(const lc_opt_entry_t *root,
-					 const char *opt_prefix,
-					 int argc, const char *argv[],
-					 lc_opt_error_handler_t *handler);
+                     const char *opt_prefix,
+                     int argc, const char *argv[],
+                     lc_opt_error_handler_t *handler);
 
 /**
  * Set options from a single (command line) argument.
- * @param root			The root group we start resolving from.
- * @param opt_prefix	The option prefix which shall be stripped of (mostly --).
- * @param arg			The command line argument itself.
+ * @param root          The root group we start resolving from.
+ * @param opt_prefix    The option prefix which shall be stripped of (mostly --).
+ * @param arg           The command line argument itself.
  * @param handler       An error handler.
  * @return              1, if the argument was set, 0 if not.
  */
 int lc_opt_from_single_arg(const lc_opt_entry_t *grp,
-						   const char *opt_prefix,
-						   const char *arg,
-						   lc_opt_error_handler_t *handler);
+                           const char *opt_prefix,
+                           const char *arg,
+                           lc_opt_error_handler_t *handler);
 
 /**
  * Get printf environment for the option module.
  * Currently implemented options are:
- * %{opt:value} (%V)		Value of an option.
- * %{opt:type}  (%T)		Type of an option.
- * %{opt:name}  (%O)		Name of an option.
- * %{opt:desc}  (%D)		Description of an option.
+ * %{opt:value} (%V)       Value of an option.
+ * %{opt:type}  (%T)       Type of an option.
+ * %{opt:name}  (%O)       Name of an option.
+ * %{opt:desc}  (%D)       Description of an option.
  * @return The option printf environment.
  */
 const lc_arg_env_t *lc_opt_get_arg_env(void);

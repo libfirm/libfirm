@@ -54,9 +54,9 @@ static inline void uf_init(int* data, size_t n_elems)
  * Merge 2 sets (union operation). Note that you have to pass the
  * representatives of the sets and not just random elements
  *
- * @param data	The union find data
- * @param set1	Representative of set1
- * @param set2	Representative of set2
+ * @param data  The union find data
+ * @param set1  Representative of set1
+ * @param set2  Representative of set2
  * @return      the new representative of the set (which is set1 or set2)
  */
 static inline int uf_union(int* data, int set1, int set2)
@@ -91,9 +91,9 @@ static inline int uf_union(int* data, int set1, int set2)
  * the same/different representatives, then the elements are in the
  * the same/different sets.
  *
- * @param data	The union find data
- * @param e		The element
- * @return		The representative of the set that contains @p e
+ * @param data  The union find data
+ * @param e     The element
+ * @return      The representative of the set that contains @p e
  */
 static inline int uf_find(int* data, int e)
 {
