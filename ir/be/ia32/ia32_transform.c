@@ -3437,7 +3437,7 @@ static ir_node *gen_Mux(ir_node *node)
 			case 16:
 				/* arg, shift 16 NOT supported */
 				scale = 3;
-				new_node = new_bd_ia32_Add(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, new_node);
+				new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
 				break;
 			default:
 				panic("Unsupported constant size");
@@ -3519,8 +3519,8 @@ static ir_node *gen_Mux(ir_node *node)
 
 				switch (res.steps[step].transform) {
 				case SETCC_TR_ADD:
-					imm = ia32_immediate_from_long(res.steps[step].val);
-					new_node = new_bd_ia32_Add(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_node, imm);
+					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, noreg_GP);
+					add_ia32_am_offs_int(new_node, res.steps[step].val);
 					break;
 				case SETCC_TR_ADDxx:
 					new_node = new_bd_ia32_Lea(dbgi, new_block, new_node, new_node);
@@ -5014,7 +5014,7 @@ static ir_node *gen_ffs(ir_node *node)
 	ir_node  *real  = skip_Proj(bsf);
 	dbg_info *dbgi  = get_irn_dbg_info(real);
 	ir_node  *block = get_nodes_block(real);
-	ir_node  *flag, *set, *conv, *neg, *orn;
+	ir_node  *flag, *set, *conv, *neg, *orn, *add;
 
 	/* bsf x */
 	if (get_irn_mode(real) != mode_T) {
@@ -5040,7 +5040,9 @@ static ir_node *gen_ffs(ir_node *node)
 	set_ia32_commutative(orn);
 
 	/* add 1 */
-	return new_bd_ia32_Add(dbgi, block, noreg_GP, noreg_GP, nomem, orn, ia32_create_Immediate(NULL, 0, 1));
+	add = new_bd_ia32_Lea(dbgi, block, orn, noreg_GP);
+	add_ia32_am_offs_int(add, 1);
+	return add;
 }
 
 /**
