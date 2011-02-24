@@ -63,5 +63,12 @@ struct sparc_transform_env_t {
  *            incrementing the stack pointer
  */
 #define SPARC_MIN_STACKSIZE 92
+#define SPARC_IMMEDIATE_MIN -4096
+#define SPARC_IMMEDIATE_MAX  4095
+
+static inline bool sparc_is_value_imm_encodeable(int32_t value)
+{
+	return SPARC_IMMEDIATE_MIN <= value && value <= SPARC_IMMEDIATE_MAX;
+}
 
 #endif

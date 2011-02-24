@@ -163,11 +163,6 @@ typedef ir_node* (*new_binop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *
 typedef ir_node* (*new_binop_imm_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_entity *entity, int32_t immediate);
 typedef ir_node* (*new_unop_fp_func) (dbg_info *dbgi, ir_node *block, ir_node *op1, ir_mode *mode);
 
-static bool is_value_imm_encodeable(int32_t value)
-{
-	return -4096 <= value && value <= 4095;
-}
-
 /**
  * checks if a node's value can be encoded as a immediate
  */
@@ -178,7 +173,7 @@ static bool is_imm_encodeable(const ir_node *node)
 		return false;
 
 	value = get_tarval_long(get_Const_tarval(node));
-	return is_value_imm_encodeable(value);
+	return sparc_is_value_imm_encodeable(value);
 }
 
 static bool needs_extension(ir_mode *mode)
@@ -376,7 +371,7 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 		ptr2 = be_transform_node(get_Add_right(base));
 		base = be_transform_node(get_Add_left(base));
 	} else {
-		if (is_value_imm_encodeable(offset)) {
+		if (sparc_is_value_imm_encodeable(offset)) {
 			base = be_transform_node(base);
 		} else {
 			base   = be_transform_node(ptr);
@@ -862,7 +857,7 @@ static ir_node *gen_Const(ir_node *node)
 	value = get_tarval_long(tv);
 	if (value == 0) {
 		return get_g0();
-	} else if (-4096 <= value && value <= 4095) {
+	} else if (sparc_is_value_imm_encodeable(value)) {
 		return new_bd_sparc_Or_imm(dbgi, block, get_g0(), NULL, value);
 	} else {
 		ir_node *hi = new_bd_sparc_SetHi(dbgi, block, NULL, value);
