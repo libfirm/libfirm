@@ -2032,9 +2032,9 @@ static ir_node *get_flags_node_cmp(ir_node *node, ia32_condition_code_t *cc_out)
 					flags    = gen_bt(cmp, ra, n);
 					/* the bit is copied into the CF flag */
 					if (pnc & pn_Cmp_Eq)
-						*cc_out = ia32_cc_below; /* ==0, so we test for CF=1 */
-					else
 						*cc_out = ia32_cc_above_equal; /* test for CF=0 */
+					else
+						*cc_out = ia32_cc_below;       /* test for CF=1 */
 					return flags;
 				}
 			}
