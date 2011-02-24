@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -75,7 +75,7 @@ static void new_phi_copy_attr(ir_graph *irg, const ir_node *old_node,
 	old_phi_copy_attr(irg, old_node, new_node);
 }
 
-int be_nodes_equal(ir_node *node1, ir_node *node2)
+int be_nodes_equal(const ir_node *node1, const ir_node *node2)
 {
 	const backend_info_t *info1 = be_get_info(node1);
 	const backend_info_t *info2 = be_get_info(node2);

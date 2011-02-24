@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -957,7 +957,7 @@ static int ia32_compare_attr(const ia32_attr_t *a, const ia32_attr_t *b)
 }
 
 /** Compare nodes attributes for all "normal" nodes. */
-static int ia32_compare_nodes_attr(ir_node *a, ir_node *b)
+static int ia32_compare_nodes_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_attr_t* attr_a = get_ia32_attr_const(a);
 	const ia32_attr_t* attr_b = get_ia32_attr_const(b);
@@ -966,7 +966,7 @@ static int ia32_compare_nodes_attr(ir_node *a, ir_node *b)
 }
 
 /** Compare node attributes for nodes with condition code. */
-static int ia32_compare_condcode_attr(ir_node *a, ir_node *b)
+static int ia32_compare_condcode_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_condcode_attr_t *attr_a;
 	const ia32_condcode_attr_t *attr_b;
@@ -984,7 +984,7 @@ static int ia32_compare_condcode_attr(ir_node *a, ir_node *b)
 }
 
 /** Compare node attributes for nodes with condition code. */
-static int ia32_compare_switch_attr(ir_node *a, ir_node *b)
+static int ia32_compare_switch_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_switch_attr_t *attr_a;
 	const ia32_switch_attr_t *attr_b;
@@ -1002,7 +1002,7 @@ static int ia32_compare_switch_attr(ir_node *a, ir_node *b)
 }
 
 /** Compare node attributes for call nodes. */
-static int ia32_compare_call_attr(ir_node *a, ir_node *b)
+static int ia32_compare_call_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_call_attr_t *attr_a;
 	const ia32_call_attr_t *attr_b;
@@ -1023,7 +1023,7 @@ static int ia32_compare_call_attr(ir_node *a, ir_node *b)
 }
 
 /** Compare node attributes for CopyB nodes. */
-static int ia32_compare_copyb_attr(ir_node *a, ir_node *b)
+static int ia32_compare_copyb_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_copyb_attr_t *attr_a;
 	const ia32_copyb_attr_t *attr_b;
@@ -1042,7 +1042,7 @@ static int ia32_compare_copyb_attr(ir_node *a, ir_node *b)
 
 
 /** Compare ASM node attributes. */
-static int ia32_compare_asm_attr(ir_node *a, ir_node *b)
+static int ia32_compare_asm_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_asm_attr_t *attr_a;
 	const ia32_asm_attr_t *attr_b;
@@ -1070,7 +1070,7 @@ static unsigned ia32_hash_Immediate(const ir_node *irn)
 }
 
 /** Compare node attributes for Immediates. */
-static int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
+static int ia32_compare_immediate_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_immediate_attr_t *attr_a = get_ia32_immediate_attr_const(a);
 	const ia32_immediate_attr_t *attr_b = get_ia32_immediate_attr_const(b);
@@ -1086,13 +1086,13 @@ static int ia32_compare_immediate_attr(ir_node *a, ir_node *b)
 }
 
 /** Compare node attributes for x87 nodes. */
-static int ia32_compare_x87_attr(ir_node *a, ir_node *b)
+static int ia32_compare_x87_attr(const ir_node *a, const ir_node *b)
 {
 	return ia32_compare_nodes_attr(a, b);
 }
 
 /** Compare node attributes for ClimbFrame nodes. */
-static int ia32_compare_climbframe_attr(ir_node *a, ir_node *b)
+static int ia32_compare_climbframe_attr(const ir_node *a, const ir_node *b)
 {
 	const ia32_climbframe_attr_t *attr_a;
 	const ia32_climbframe_attr_t *attr_b;

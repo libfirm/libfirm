@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -112,7 +112,7 @@ ir_op *op_be_Barrier;
  *
  * @return zero if both nodes have identically attributes
  */
-static int FrameAddr_cmp_attr(ir_node *a, ir_node *b)
+static int FrameAddr_cmp_attr(const ir_node *a, const ir_node *b)
 {
 	const be_frame_attr_t *a_attr = (const be_frame_attr_t*)get_irn_generic_attr_const(a);
 	const be_frame_attr_t *b_attr = (const be_frame_attr_t*)get_irn_generic_attr_const(b);
@@ -128,7 +128,7 @@ static int FrameAddr_cmp_attr(ir_node *a, ir_node *b)
  *
  * @return zero if both nodes have identically attributes
  */
-static int Return_cmp_attr(ir_node *a, ir_node *b)
+static int Return_cmp_attr(const ir_node *a, const ir_node *b)
 {
 	const be_return_attr_t *a_attr = (const be_return_attr_t*)get_irn_generic_attr_const(a);
 	const be_return_attr_t *b_attr = (const be_return_attr_t*)get_irn_generic_attr_const(b);
@@ -148,7 +148,7 @@ static int Return_cmp_attr(ir_node *a, ir_node *b)
  *
  * @return zero if both nodes have identically attributes
  */
-static int IncSP_cmp_attr(ir_node *a, ir_node *b)
+static int IncSP_cmp_attr(const ir_node *a, const ir_node *b)
 {
 	const be_incsp_attr_t *a_attr = (const be_incsp_attr_t*)get_irn_generic_attr_const(a);
 	const be_incsp_attr_t *b_attr = (const be_incsp_attr_t*)get_irn_generic_attr_const(b);
@@ -164,7 +164,7 @@ static int IncSP_cmp_attr(ir_node *a, ir_node *b)
  *
  * @return zero if both nodes have identically attributes
  */
-static int Call_cmp_attr(ir_node *a, ir_node *b)
+static int Call_cmp_attr(const ir_node *a, const ir_node *b)
 {
 	const be_call_attr_t *a_attr = (const be_call_attr_t*)get_irn_generic_attr_const(a);
 	const be_call_attr_t *b_attr = (const be_call_attr_t*)get_irn_generic_attr_const(b);

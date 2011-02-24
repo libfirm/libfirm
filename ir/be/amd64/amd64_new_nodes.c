@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -153,7 +153,7 @@ static void init_amd64_SymConst_attributes(ir_node *node, ir_entity *entity)
 }
 
 /** Compare node attributes for SymConst. */
-static int cmp_amd64_attr_SymConst(ir_node *a, ir_node *b)
+static int cmp_amd64_attr_SymConst(const ir_node *a, const ir_node *b)
 {
 	const amd64_SymConst_attr_t *attr_a = get_amd64_SymConst_attr_const(a);
 	const amd64_SymConst_attr_t *attr_b = get_amd64_SymConst_attr_const(b);
@@ -166,7 +166,7 @@ static int cmp_amd64_attr_SymConst(ir_node *a, ir_node *b)
 }
 
 /** Compare common amd64 node attributes. */
-static int cmp_amd64_attr(ir_node *a, ir_node *b)
+static int cmp_amd64_attr(const ir_node *a, const ir_node *b)
 {
 	const amd64_attr_t *attr_a = get_amd64_attr_const(a);
 	const amd64_attr_t *attr_b = get_amd64_attr_const(b);

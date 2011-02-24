@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -299,7 +299,7 @@ static void sparc_copy_attr(ir_graph *irg, const ir_node *old_node,
 /**
  * compare some node's attributes
  */
-static int cmp_attr_sparc(ir_node *a, ir_node *b)
+static int cmp_attr_sparc(const ir_node *a, const ir_node *b)
 {
 	const sparc_attr_t *attr_a = get_sparc_attr_const(a);
 	const sparc_attr_t *attr_b = get_sparc_attr_const(b);
@@ -308,7 +308,7 @@ static int cmp_attr_sparc(ir_node *a, ir_node *b)
 		|| attr_a->immediate_value_entity != attr_b->immediate_value_entity;
 }
 
-static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)
+static int cmp_attr_sparc_load_store(const ir_node *a, const ir_node *b)
 {
 	const sparc_load_store_attr_t *attr_a = get_sparc_load_store_attr_const(a);
 	const sparc_load_store_attr_t *attr_b = get_sparc_load_store_attr_const(b);
@@ -320,7 +320,7 @@ static int cmp_attr_sparc_load_store(ir_node *a, ir_node *b)
 			|| attr_a->load_store_mode != attr_b->load_store_mode;
 }
 
-static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
+static int cmp_attr_sparc_jmp_cond(const ir_node *a, const ir_node *b)
 {
 	const sparc_jmp_cond_attr_t *attr_a = get_sparc_jmp_cond_attr_const(a);
 	const sparc_jmp_cond_attr_t *attr_b = get_sparc_jmp_cond_attr_const(b);
@@ -332,7 +332,7 @@ static int cmp_attr_sparc_jmp_cond(ir_node *a, ir_node *b)
 	    || attr_a->is_unsigned != attr_b->is_unsigned;
 }
 
-static int cmp_attr_sparc_switch_jmp(ir_node *a, ir_node *b)
+static int cmp_attr_sparc_switch_jmp(const ir_node *a, const ir_node *b)
 {
 	const sparc_switch_jmp_attr_t *attr_a = get_sparc_switch_jmp_attr_const(a);
 	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
@@ -343,7 +343,7 @@ static int cmp_attr_sparc_switch_jmp(ir_node *a, ir_node *b)
 	return attr_a->default_proj_num != attr_b->default_proj_num;
 }
 
-static int cmp_attr_sparc_fp(ir_node *a, ir_node *b)
+static int cmp_attr_sparc_fp(const ir_node *a, const ir_node *b)
 {
 	const sparc_fp_attr_t *attr_a = get_sparc_fp_attr_const(a);
 	const sparc_fp_attr_t *attr_b = get_sparc_fp_attr_const(b);
@@ -354,7 +354,7 @@ static int cmp_attr_sparc_fp(ir_node *a, ir_node *b)
 	return attr_a->fp_mode != attr_b->fp_mode;
 }
 
-static int cmp_attr_sparc_fp_conv(ir_node *a, ir_node *b)
+static int cmp_attr_sparc_fp_conv(const ir_node *a, const ir_node *b)
 {
 	const sparc_fp_conv_attr_t *attr_a = get_sparc_fp_conv_attr_const(a);
 	const sparc_fp_conv_attr_t *attr_b = get_sparc_fp_conv_attr_const(b);

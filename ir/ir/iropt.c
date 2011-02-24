@@ -5863,19 +5863,19 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 #define N_IR_NODES 512
 
 /** Compares the attributes of two Const nodes. */
-static int node_cmp_attr_Const(ir_node *a, ir_node *b)
+static int node_cmp_attr_Const(const ir_node *a, const ir_node *b)
 {
 	return get_Const_tarval(a) != get_Const_tarval(b);
 }
 
 /** Compares the attributes of two Proj nodes. */
-static int node_cmp_attr_Proj(ir_node *a, ir_node *b)
+static int node_cmp_attr_Proj(const ir_node *a, const ir_node *b)
 {
 	return a->attr.proj.proj != b->attr.proj.proj;
 }  /* node_cmp_attr_Proj */
 
 /** Compares the attributes of two Alloc nodes. */
-static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
+static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
 {
 	const alloc_attr *pa = &a->attr.alloc;
 	const alloc_attr *pb = &b->attr.alloc;
@@ -5883,7 +5883,7 @@ static int node_cmp_attr_Alloc(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Alloc */
 
 /** Compares the attributes of two Free nodes. */
-static int node_cmp_attr_Free(ir_node *a, ir_node *b)
+static int node_cmp_attr_Free(const ir_node *a, const ir_node *b)
 {
 	const free_attr *pa = &a->attr.free;
 	const free_attr *pb = &b->attr.free;
@@ -5891,7 +5891,7 @@ static int node_cmp_attr_Free(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Free */
 
 /** Compares the attributes of two SymConst nodes. */
-static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
+static int node_cmp_attr_SymConst(const ir_node *a, const ir_node *b)
 {
 	const symconst_attr *pa = &a->attr.symc;
 	const symconst_attr *pb = &b->attr.symc;
@@ -5900,7 +5900,7 @@ static int node_cmp_attr_SymConst(ir_node *a, ir_node *b)
 }
 
 /** Compares the attributes of two Call nodes. */
-static int node_cmp_attr_Call(ir_node *a, ir_node *b)
+static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
 {
 	const call_attr *pa = &a->attr.call;
 	const call_attr *pb = &b->attr.call;
@@ -5909,7 +5909,7 @@ static int node_cmp_attr_Call(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Call */
 
 /** Compares the attributes of two Sel nodes. */
-static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
+static int node_cmp_attr_Sel(const ir_node *a, const ir_node *b)
 {
 	const ir_entity *a_ent = get_Sel_entity(a);
 	const ir_entity *b_ent = get_Sel_entity(b);
@@ -5917,7 +5917,7 @@ static int node_cmp_attr_Sel(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Sel */
 
 /** Compares the attributes of two Phi nodes. */
-static int node_cmp_attr_Phi(ir_node *a, ir_node *b)
+static int node_cmp_attr_Phi(const ir_node *a, const ir_node *b)
 {
 	/* we can only enter this function if both nodes have the same number of inputs,
 	   hence it is enough to check if one of them is a Phi0 */
@@ -5929,19 +5929,19 @@ static int node_cmp_attr_Phi(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Phi */
 
 /** Compares the attributes of two Conv nodes. */
-static int node_cmp_attr_Conv(ir_node *a, ir_node *b)
+static int node_cmp_attr_Conv(const ir_node *a, const ir_node *b)
 {
 	return get_Conv_strict(a) != get_Conv_strict(b);
 }  /* node_cmp_attr_Conv */
 
 /** Compares the attributes of two Cast nodes. */
-static int node_cmp_attr_Cast(ir_node *a, ir_node *b)
+static int node_cmp_attr_Cast(const ir_node *a, const ir_node *b)
 {
 	return get_Cast_type(a) != get_Cast_type(b);
 }  /* node_cmp_attr_Cast */
 
 /** Compares the attributes of two Load nodes. */
-static int node_cmp_attr_Load(ir_node *a, ir_node *b)
+static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
 {
 	if (get_Load_volatility(a) == volatility_is_volatile ||
 	    get_Load_volatility(b) == volatility_is_volatile)
@@ -5955,7 +5955,7 @@ static int node_cmp_attr_Load(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Load */
 
 /** Compares the attributes of two Store nodes. */
-static int node_cmp_attr_Store(ir_node *a, ir_node *b)
+static int node_cmp_attr_Store(const ir_node *a, const ir_node *b)
 {
 	/* do not CSE Stores with different alignment. Be conservative. */
 	if (get_Store_align(a) != get_Store_align(b))
@@ -5967,7 +5967,7 @@ static int node_cmp_attr_Store(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Store */
 
 /** Compares two exception attributes */
-static int node_cmp_exception(ir_node *a, ir_node *b)
+static int node_cmp_exception(const ir_node *a, const ir_node *b)
 {
 	const except_attr *ea = &a->attr.except;
 	const except_attr *eb = &b->attr.except;
@@ -5978,7 +5978,7 @@ static int node_cmp_exception(ir_node *a, ir_node *b)
 #define node_cmp_attr_Bound  node_cmp_exception
 
 /** Compares the attributes of two Div nodes. */
-static int node_cmp_attr_Div(ir_node *a, ir_node *b)
+static int node_cmp_attr_Div(const ir_node *a, const ir_node *b)
 {
 	const div_attr *ma = &a->attr.div;
 	const div_attr *mb = &b->attr.div;
@@ -5988,7 +5988,7 @@ static int node_cmp_attr_Div(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Div */
 
 /** Compares the attributes of two Mod nodes. */
-static int node_cmp_attr_Mod(ir_node *a, ir_node *b)
+static int node_cmp_attr_Mod(const ir_node *a, const ir_node *b)
 {
 	const mod_attr *ma = &a->attr.mod;
 	const mod_attr *mb = &b->attr.mod;
@@ -5997,21 +5997,21 @@ static int node_cmp_attr_Mod(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_Mod */
 
 /** Compares the attributes of two Confirm nodes. */
-static int node_cmp_attr_Confirm(ir_node *a, ir_node *b)
+static int node_cmp_attr_Confirm(const ir_node *a, const ir_node *b)
 {
 	/* no need to compare the bound, as this is a input */
 	return (get_Confirm_cmp(a) != get_Confirm_cmp(b));
 }  /* node_cmp_attr_Confirm */
 
 /** Compares the attributes of two Builtin nodes. */
-static int node_cmp_attr_Builtin(ir_node *a, ir_node *b)
+static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
 {
 	/* no need to compare the type, equal kind means equal type */
 	return get_Builtin_kind(a) != get_Builtin_kind(b);
 }  /* node_cmp_attr_Builtin */
 
 /** Compares the attributes of two ASM nodes. */
-static int node_cmp_attr_ASM(ir_node *a, ir_node *b)
+static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 {
 	int i, n;
 	const ir_asm_constraint *ca;
@@ -6058,7 +6058,7 @@ static int node_cmp_attr_ASM(ir_node *a, ir_node *b)
 }  /* node_cmp_attr_ASM */
 
 /** Compares the inexistent attributes of two Dummy nodes. */
-static int node_cmp_attr_Dummy(ir_node *a, ir_node *b)
+static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -420,14 +420,14 @@ static void init_arm_CopyB_attributes(ir_node *res, unsigned size)
 	attr->size = size;
 }
 
-static int cmp_attr_arm(ir_node *a, ir_node *b)
+static int cmp_attr_arm(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;
 	return 0;
 }
 
-static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b)
+static int cmp_attr_arm_SymConst(const ir_node *a, const ir_node *b)
 {
 	const arm_SymConst_attr_t *attr_a;
 	const arm_SymConst_attr_t *attr_b;
@@ -441,7 +441,7 @@ static int cmp_attr_arm_SymConst(ir_node *a, ir_node *b)
 		|| attr_a->fp_offset != attr_b->fp_offset;
 }
 
-static int cmp_attr_arm_CopyB(ir_node *a, ir_node *b)
+static int cmp_attr_arm_CopyB(const ir_node *a, const ir_node *b)
 {
 	const arm_CopyB_attr_t *attr_a;
 	const arm_CopyB_attr_t *attr_b;
@@ -454,7 +454,7 @@ static int cmp_attr_arm_CopyB(ir_node *a, ir_node *b)
 	return attr_a->size != attr_b->size;
 }
 
-static int cmp_attr_arm_CondJmp(ir_node *a, ir_node *b)
+static int cmp_attr_arm_CondJmp(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;
@@ -462,7 +462,7 @@ static int cmp_attr_arm_CondJmp(ir_node *a, ir_node *b)
 	return 1;
 }
 
-static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b)
+static int cmp_attr_arm_SwitchJmp(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;
@@ -470,7 +470,7 @@ static int cmp_attr_arm_SwitchJmp(ir_node *a, ir_node *b)
 	return 1;
 }
 
-static int cmp_attr_arm_fConst(ir_node *a, ir_node *b)
+static int cmp_attr_arm_fConst(const ir_node *a, const ir_node *b)
 {
 	const arm_fConst_attr_t *attr_a;
 	const arm_fConst_attr_t *attr_b;

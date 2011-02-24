@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -165,7 +165,7 @@ typedef ir_node *(*transform_node_func)(ir_node *self);
  * Compares the nodes attributes of two nodes of identical opcode
  * and returns 0 if the attributes are identical, 1 if they differ.
  */
-typedef int (*node_cmp_attr_func)(ir_node *a, ir_node *b);
+typedef int (*node_cmp_attr_func)(const ir_node *a, const ir_node *b);
 
 /**
  * The reassociation operation.
