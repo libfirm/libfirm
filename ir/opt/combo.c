@@ -106,17 +106,7 @@ typedef void (*compute_func)(node_t *node);
  * An opcode map key.
  */
 struct opcode_key_t {
-	unsigned    code;   /**< The Firm opcode. */
-	ir_mode     *mode;  /**< The mode of all nodes in the partition. */
-	int         arity;  /**< The arity of this opcode (needed for Phi etc. */
-	union {
-		long      proj;   /**< For Proj nodes, its proj number */
-		ir_entity *ent;   /**< For Sel Nodes, its entity */
-		int       intVal; /**< For Conv/Div Nodes: strict/remainderless */
-		unsigned  uintVal;/**< for Builtin: the kind */
-		ir_node   *irn;   /**< for nodes that never be construent: the node itself */
-		void      *ptr;   /**< generic pointer for hash/cmp */
-	} u;
+	ir_node *irn;    /**< An IR node representing this opcode. */
 };
 
 /**
@@ -236,6 +226,42 @@ static ir_tarval *tarval_UNKNOWN;
 /* forward */
 static node_t *identity(node_t *node);
 
+/**
+ * Compare two opcode representatives.
+ */
+static int cmp_irn_opcode(const ir_node *a, const ir_node *b)
+{
+	int arity;
+
+	if ((get_irn_op(a) != get_irn_op(b)) ||
+	    (get_irn_mode(a) != get_irn_mode(b)))
+		return 1;
+
+	/* compare if a's in and b's in are of equal length */
+	arity = get_irn_arity(a);
+	if (arity != get_irn_arity(b))
+		return 1;
+
+	if (is_Block(a)) {
+		/*
+		 * Some ugliness here: Two Blocks having the same
+		 * IJmp predecessor would be congruent, which of course is wrong.
+		 * We fix it by never letting blocks be congruent
+		 * which cannot be detected by combo either.
+		 */
+		return 1;
+	}
+
+	/*
+	 * here, we already now that the nodes are identical except their
+	 * attributes
+	 */
+	if (a->op->ops.node_cmp_attr)
+		return a->op->ops.node_cmp_attr(a, b);
+
+	return 0;
+}  /* cmp_irn_opcode */
+
 #ifdef CHECK_PARTITIONS
 /**
  * Check a partition.
@@ -261,93 +287,22 @@ static void check_partition(const partition_t *T)
 }  /* check_partition */
 
 /**
- * return the result mode of a node (part of combo's opcode).
- */
-static ir_mode *get_irn_resmode(const ir_node *irn)
-{
-	switch (get_irn_opcode(irn)) {
-	case iro_Load:
-		return get_Load_mode(irn);
-	case iro_Div:
-		return get_Div_resmode(irn);
-	case iro_Mod:
-		return get_Mod_resmode(irn);
-	default:
-		return get_irn_mode(irn);
-	}
-}  /* get_irn_resmode */
-
-/**
  * check that all leader nodes in the partition have the same opcode.
  */
 static void check_opcode(const partition_t *Z)
 {
-	node_t       *node;
-	opcode_key_t key;
-	int          first = 1;
+	node_t        *node;
+	const ir_node *repr;
+	int           first = 1;
 
 	list_for_each_entry(node_t, node, &Z->Leader, node_list) {
 		ir_node *irn = node->node;
 
 		if (first) {
-			key.code   = get_irn_opcode(irn);
-			key.mode   = get_irn_resmode(irn);
-			key.arity  = get_irn_arity(irn);
-			key.u.proj = 0;
-			key.u.ent  = NULL;
-
-			switch (get_irn_opcode(irn)) {
-			case iro_Proj:
-				key.u.proj = get_Proj_proj(irn);
-				break;
-			case iro_Sel:
-				key.u.ent = get_Sel_entity(irn);
-				break;
-			case iro_Conv:
-				key.u.intVal = get_Conv_strict(irn);
-				break;
-			case iro_Div:
-				key.u.intVal = get_Div_no_remainder(irn);
-				break;
-			case iro_Block:
-			case iro_ASM:
-				key.u.irn = irn;
-				break;
-			case iro_Builtin:
-				key.u.intVal = get_Builtin_kind(irn);
-				break;
-			default:
-				break;
-			}
+			repr  = irn;
 			first = 0;
 		} else {
-			assert((unsigned)key.code == get_irn_opcode(irn));
-			assert(key.mode  == get_irn_resmode(irn));
-			assert(key.arity == get_irn_arity(irn));
-
-			switch (get_irn_opcode(irn)) {
-			case iro_Proj:
-				assert(key.u.proj == get_Proj_proj(irn));
-				break;
-			case iro_Sel:
-				assert(key.u.ent == get_Sel_entity(irn));
-				break;
-			case iro_Conv:
-				assert(key.u.intVal == get_Conv_strict(irn));
-				break;
-			case iro_Div:
-				assert(key.u.intVal == get_Div_no_remainder(irn));
-				break;
-			case iro_Block:
-			case iro_ASM:
-				assert(key.u.irn == irn);
-				break;
-			case iro_Builtin:
-				assert(key.u.intVal == (int)get_Builtin_kind(irn));
-				break;
-			default:
-				break;
-			}
+			assert(cmp_irn_opcode(repr, irn) == 0);
 		}
 	}
 }  /* check_opcode */
@@ -610,7 +565,18 @@ static listmap_entry_t *listmap_find(listmap_t *map, void *id)
  */
 static unsigned opcode_hash(const opcode_key_t *entry)
 {
-	return (unsigned)(PTR_TO_INT(entry->mode) * 9 + entry->code + entry->u.proj * 3 + HASH_PTR(entry->u.ptr) + entry->arity);
+	/* we cannot use the ir ops hash function here, because it hashes the
+	 * predecessors. */
+	const ir_node *n = entry->irn;
+	ir_opcode code  = get_irn_opcode(n);
+	ir_mode   *mode = get_irn_mode(n);
+	unsigned hash = (unsigned)(PTR_TO_INT(mode) * 9 + code) + get_irn_arity(n);
+
+	if (code == iro_Const)
+		hash ^= (unsigned)HASH_PTR(get_Const_tarval(n));
+	else if (code == iro_Proj)
+		hash += (unsigned)get_Proj_proj(n);
+	return hash;
 }  /* opcode_hash */
 
 /**
@@ -622,11 +588,8 @@ static int cmp_opcode(const void *elt, const void *key, size_t size)
 	const opcode_key_t *o2 = (opcode_key_t*)key;
 
 	(void) size;
-	return o1->code != o2->code || o1->mode != o2->mode ||
-	       o1->arity != o2->arity ||
-	       o1->u.proj != o2->u.proj ||
-	       o1->u.intVal != o2->u.intVal || /* this already checks uIntVal */
-	       o1->u.ptr != o2->u.ptr;
+
+	return cmp_irn_opcode(o1->irn, o2->irn);
 }  /* cmp_opcode */
 
 /**
@@ -1737,52 +1700,8 @@ static void *lambda_type(const node_t *node, environment_t *env)
 static void *lambda_opcode(const node_t *node, environment_t *env)
 {
 	opcode_key_t key, *entry;
-	ir_node      *irn = node->node;
 
-	key.code   = get_irn_opcode(irn);
-	key.mode   = get_irn_resmode(irn);
-	key.arity  = get_irn_arity(irn);
-	key.u.proj = 0;
-	key.u.ent  = NULL;
-
-	switch (get_irn_opcode(irn)) {
-	case iro_Proj:
-		key.u.proj = get_Proj_proj(irn);
-		break;
-	case iro_Sel:
-		key.u.ent = get_Sel_entity(irn);
-		break;
-	case iro_Conv:
-		key.u.intVal = get_Conv_strict(irn);
-		break;
-	case iro_Div:
-		key.u.intVal = get_Div_no_remainder(irn);
-		break;
-	case iro_Block:
-		/*
-		 * Some ugliness here: Two Blocks having the same
-		 * IJmp predecessor would be congruent, which of course is wrong.
-		 * We fix it by never letting blocks be congruent
-		 * which cannot be detected by combo either.
-		 */
-		key.u.irn = irn;
-		break;
-	case iro_ASM:
-		/*
-		 * If is difficult to detect when two ASM nodes are congruent: even
-		 * if the assembler "text" is identical, the instruction might
-		 * have a side effect like flag toggle or function call.
-		 * So, do not even try it.
-		 *
-		 */
-		key.u.irn = irn;
-		break;
-	case iro_Builtin:
-		key.u.intVal = get_Builtin_kind(irn);
-		break;
-	default:
-		break;
-	}
+	key.irn = node->node;
 
 	entry = (opcode_key_t*)set_insert(env->opcode2id_map, &key, sizeof(key), opcode_hash(&key));
 	return entry;
