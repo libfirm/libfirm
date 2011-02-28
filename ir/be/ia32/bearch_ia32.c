@@ -1986,19 +1986,16 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 		return true;
 
 	/* Check Cmp before the node */
-	if (is_Proj(sel)) {
-		ir_node *cmp = get_Proj_pred(sel);
-		if (is_Cmp(cmp)) {
-			ir_mode *cmp_mode = get_irn_mode(get_Cmp_left(cmp));
+	if (is_Cmp(sel)) {
+		ir_mode *cmp_mode = get_irn_mode(get_Cmp_left(sel));
 
-			/* we can't handle 64bit compares */
-			if (get_mode_size_bits(cmp_mode) > 32)
-				return false;
+		/* we can't handle 64bit compares */
+		if (get_mode_size_bits(cmp_mode) > 32)
+			return false;
 
-			/* we can't handle float compares */
-			if (mode_is_float(cmp_mode))
-				return false;
-		}
+		/* we can't handle float compares */
+		if (mode_is_float(cmp_mode))
+			return false;
 	}
 
 	/* did we disable cmov generation? */
