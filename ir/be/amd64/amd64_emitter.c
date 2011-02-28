@@ -317,7 +317,7 @@ static void emit_amd64_Jcc(const ir_node *irn)
 		relation   = get_negated_relation(relation);
 	}
 
-	switch (relation) {
+	switch (relation & ir_relation_less_equal_greater) {
 		case ir_relation_equal:              suffix = "e"; break;
 		case ir_relation_less:               suffix = is_signed ? "l"  : "b"; break;
 		case ir_relation_less_equal:         suffix = is_signed ? "le" : "be"; break;
