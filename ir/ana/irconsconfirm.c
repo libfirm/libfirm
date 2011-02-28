@@ -428,29 +428,23 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 	mode = get_irn_mode(selector);
 
 	if (mode == mode_b) {
-		ir_node *cmp;
 		ir_relation rel;
 
 		handle_modeb(block, selector, (pn_Cond) get_Proj_proj(proj), env);
 
-		/* this should be an IF, check this */
-		if (! is_Proj(selector))
+		if (! is_Cmp(selector))
 			return;
 
-		cmp = get_Proj_pred(selector);
-		if (! is_Cmp(cmp))
-			return;
-
-		rel = get_Cmp_relation(cmp);
+		rel = get_Cmp_relation(selector);
 
 		if (get_Proj_proj(proj) != pn_Cond_true) {
 			/* it's the false branch */
-			mode = get_irn_mode(get_Cmp_left(cmp));
+			mode = get_irn_mode(get_Cmp_left(selector));
 			rel = get_negated_relation(rel);
 		}
-		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, cmp, rel));
+		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, selector, rel));
 
-		handle_if(block, cmp, rel, env);
+		handle_if(block, selector, rel, env);
 	} else if (mode_is_int(mode)) {
 		long proj_nr = get_Proj_proj(proj);
 
