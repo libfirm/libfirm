@@ -72,4 +72,6 @@ static inline bool sparc_is_value_imm_encodeable(int32_t value)
 	return SPARC_IMMEDIATE_MIN <= value && value <= SPARC_IMMEDIATE_MAX;
 }
 
+void sparc_finish(ir_graph *irg);
+
 #endif

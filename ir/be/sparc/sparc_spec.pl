@@ -305,6 +305,7 @@ St => {
 Save => {
 	emit      => '. save %S0, %R1I, %D0',
 	outs      => [ "stack" ],
+	ins       => [ "stack" ],
 	constructors => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -317,11 +318,13 @@ Save => {
 			ins        => [ "stack", "increment" ],
 		}
 	},
+	mode => $mode_gp,
 },
 
 Restore => {
 	emit => '. restore %S0, %R1I, %D0',
 	outs => [ "stack" ],
+	ins  => [ "stack" ],
 	constructors => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -334,13 +337,15 @@ Restore => {
 			ins        => [ "stack", "increment" ],
 		}
 	},
+	mode => $mode_gp,
 },
 
 RestoreZero => {
 	emit => '. restore',
-	outs => [ ],
-	ins  => [ ],
-	mode => "mode_T",
+	reg_req => { out => [ "sp:I|S" ] },
+	outs    => [ "stack" ],
+	ins     => [ ],
+	mode    => $mode_gp,
 },
 
 SubSP => {

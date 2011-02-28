@@ -237,24 +237,25 @@ static void process_block(ir_node *block, void *data)
 /**
  * Check whether the node has only one user.  Explicitly ignore the anchor.
  */
-static int has_only_one_user(ir_node *node)
+bool be_has_only_one_user(ir_node *node)
 {
 	int              n = get_irn_n_edges(node);
+	int              n_users;
 	const ir_edge_t *edge;
 
 	if (n <= 1)
 		return 1;
 
-	if (n > 2)
-		return 0;
-
+	n_users = 0;
 	foreach_out_edge(node, edge) {
 		ir_node *src = get_edge_src_irn(edge);
-		if (is_Anchor(src))
-			return 1;
+		/* ignore anchor and keep-alive edges */
+		if (is_Anchor(src) || is_End(src))
+			continue;
+		n_users++;
 	}
 
-	return 0;
+	return n_users == 1;
 }
 
 /*
@@ -271,7 +272,7 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 	if (!be_is_IncSP(pred))
 		return node;
 
-	if (!has_only_one_user(pred))
+	if (!be_has_only_one_user(pred))
 		return node;
 
 	pred_offs = be_get_IncSP_offset(pred);

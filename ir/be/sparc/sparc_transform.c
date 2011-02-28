@@ -1324,8 +1324,8 @@ static ir_node *gen_Start(ir_node *node)
 		ir_node *save = new_bd_sparc_Save_imm(NULL, block, sp, NULL,
 		                                      -SPARC_MIN_STACKSIZE);
 		arch_irn_add_flags(save, arch_irn_flags_prolog);
-		sp = new_r_Proj(save, mode_gp, pn_sparc_Save_stack);
-		arch_set_irn_register(sp, sp_reg);
+		arch_set_irn_register(save, sp_reg);
+		sp = save;
 	}
 
 	sp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
@@ -1364,13 +1364,14 @@ static ir_node *get_stack_pointer_for(ir_node *node)
  */
 static ir_node *gen_Return(ir_node *node)
 {
-	ir_node  *block          = get_nodes_block(node);
-	ir_node  *new_block      = be_transform_node(block);
-	dbg_info *dbgi           = get_irn_dbg_info(node);
-	ir_node  *mem            = get_Return_mem(node);
-	ir_node  *new_mem        = be_transform_node(mem);
-	ir_node  *sp             = get_stack_pointer_for(node);
-	size_t    n_res          = get_Return_n_ress(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *mem       = get_Return_mem(node);
+	ir_node  *new_mem   = be_transform_node(mem);
+	ir_node  *sp        = get_stack_pointer_for(node);
+	size_t    n_res     = get_Return_n_ress(node);
+	ir_node  *barrier;
 	ir_node  *bereturn;
 	size_t    i;
 
@@ -1405,17 +1406,19 @@ static ir_node *gen_Return(ir_node *node)
 		}
 	}
 
-	/* epilog code: an incsp */
-	sp = be_epilog_get_reg_value(abihelper, sp_reg);
-	sp = be_new_IncSP(sp_reg, new_block, sp,
-	                  BE_STACK_FRAME_SIZE_SHRINK, 0);
-	be_epilog_set_reg_value(abihelper, sp_reg, sp);
-
 	/* we need a restore instruction */
 	if (!cconv->omit_fp) {
 		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block);
 		arch_irn_add_flags(restore, arch_irn_flags_epilog);
-		keep_alive(restore);
+		add_irn_dep(restore, barrier);
+		arch_set_irn_register(restore, sp_reg);
+		be_epilog_set_reg_value(abihelper, sp_reg, restore);
+	} else {
+		/* epilog code: an incsp */
+		sp = be_epilog_get_reg_value(abihelper, sp_reg);
+		sp = be_new_IncSP(sp_reg, new_block, sp,
+						  BE_STACK_FRAME_SIZE_SHRINK, 0);
+		be_epilog_set_reg_value(abihelper, sp_reg, sp);
 	}
 
 	bereturn = be_epilog_create_return(abihelper, dbgi, new_block);

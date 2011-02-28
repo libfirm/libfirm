@@ -71,6 +71,8 @@ void be_peephole_exchange(ir_node *old, ir_node *nw);
  */
 ir_node *be_peephole_IncSP_IncSP(ir_node *node);
 
+bool be_has_only_one_user(ir_node *node);
+
 /**
  * Do peephole optimisations. It traverses the schedule of all blocks in
  * backward direction. The register_values variable indicates which (live)

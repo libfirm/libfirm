@@ -647,7 +647,7 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_prepare_graph,
 	sparc_before_ra,
 	sparc_after_ra,
-	NULL, /* finish */
+	sparc_finish,
 	sparc_emit_routine,
 };
 
