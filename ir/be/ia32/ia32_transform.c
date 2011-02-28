@@ -2007,40 +2007,48 @@ static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 {
 	/* must have a Cmp as input */
 	ir_relation relation = get_Cmp_relation(cmp);
+	ir_relation possible;
 	ir_node    *l        = get_Cmp_left(cmp);
+	ir_node    *r        = get_Cmp_right(cmp);
 	ir_mode    *mode     = get_irn_mode(l);
 	ir_node    *flags;
 
 	/* check for bit-test */
 	if (ia32_cg_config.use_bt && (relation == ir_relation_equal
 		        || (mode_is_signed(mode) && relation == ir_relation_less_greater)
-		        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))) {
-		ir_node *l = get_Cmp_left(cmp);
-		ir_node *r = get_Cmp_right(cmp);
-		if (is_And(l)) {
-			ir_node *la = get_And_left(l);
-			ir_node *ra = get_And_right(l);
-			if (is_Shl(ra)) {
-				ir_node *tmp = la;
-				la = ra;
-				ra = tmp;
-			}
-			if (is_Shl(la)) {
-				ir_node *c = get_Shl_left(la);
-				if (is_Const_1(c) && is_Const_0(r)) {
-					/* (1 << n) & ra) */
-					ir_node *n = get_Shl_right(la);
-					flags    = gen_bt(cmp, ra, n);
-					/* the bit is copied into the CF flag */
-					if (relation & ir_relation_equal)
-						*cc_out = ia32_cc_above_equal; /* test for CF=0 */
-					else
-						*cc_out = ia32_cc_below;       /* test for CF=1 */
-					return flags;
-				}
+		        || (!mode_is_signed(mode) && ((relation & ir_relation_greater_equal) == ir_relation_greater)))
+		    && is_And(l)) {
+		ir_node *la = get_And_left(l);
+		ir_node *ra = get_And_right(l);
+		if (is_Shl(ra)) {
+			ir_node *tmp = la;
+			la = ra;
+			ra = tmp;
+		}
+		if (is_Shl(la)) {
+			ir_node *c = get_Shl_left(la);
+			if (is_Const_1(c) && is_Const_0(r)) {
+				/* (1 << n) & ra) */
+				ir_node *n = get_Shl_right(la);
+				flags    = gen_bt(cmp, ra, n);
+				/* the bit is copied into the CF flag */
+				if (relation & ir_relation_equal)
+					*cc_out = ia32_cc_above_equal; /* test for CF=0 */
+				else
+					*cc_out = ia32_cc_below;       /* test for CF=1 */
+				return flags;
 			}
 		}
 	}
+
+	/* the middle-end tries to eliminate impossible relations, so a ptr != 0
+	 * test becomes ptr > 0. But for x86 an equal comparison is preferable to
+	 * a >0 (we can sometimes eliminate the cmp in favor of flags produced by
+	 * a predecessor node). So add the < bit */
+	possible = ir_get_possible_cmp_relations(l, r);
+	if (((relation & ir_relation_less) && !(possible & ir_relation_greater))
+	  || ((relation & ir_relation_greater) && !(possible & ir_relation_less)))
+		relation |= ir_relation_less_greater;
 
 	/* just do a normal transformation of the Cmp */
 	*cc_out = relation_to_condition_code(relation, mode);

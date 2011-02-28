@@ -447,8 +447,8 @@ static ir_tarval *computed_value_Confirm(const ir_node *n)
  * gives a (conservative) estimation of possible relation when comparing
  * left+right
  */
-static ir_relation determine_possible_cmp_relations(const ir_node *left,
-                                                    const ir_node *right)
+ir_relation ir_get_possible_cmp_relations(const ir_node *left,
+                                          const ir_node *right)
 {
 	ir_relation possible = ir_relation_true;
 	ir_tarval  *tv_l     = value_of(left);
@@ -498,7 +498,7 @@ static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 {
 	ir_node    *left     = get_Cmp_left(cmp);
 	ir_node    *right    = get_Cmp_right(cmp);
-	ir_relation possible = determine_possible_cmp_relations(left, right);
+	ir_relation possible = ir_get_possible_cmp_relations(left, right);
 	ir_relation relation = get_Cmp_relation(cmp);
 
 	/* if none of the requested relations is possible, return false */
@@ -3800,7 +3800,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	bool        changed  = false;
 	bool        changedc = false;
 	ir_relation relation = get_Cmp_relation(n);
-	ir_relation possible = determine_possible_cmp_relations(left, right);
+	ir_relation possible = ir_get_possible_cmp_relations(left, right);
 
 	/* mask out impossible relations */
 	ir_relation new_relation = relation & possible;
@@ -4774,7 +4774,7 @@ static ir_node *transform_node_Or_Rotl(ir_node *irn_or)
 
 	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
 	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
-	if (!is_negated_value(c1, c2)) {
+	if (!ir_is_negated_value(c1, c2)) {
 		return irn_or;
 	}
 
@@ -5356,7 +5356,7 @@ static ir_node *transform_node_End(ir_node *n)
 	return n;
 }  /* transform_node_End */
 
-bool is_negated_value(ir_node *a, ir_node *b)
+int ir_is_negated_value(const ir_node *a, const ir_node *b)
 {
 	if (is_Minus(a) && get_Minus_op(a) == b)
 		return true;

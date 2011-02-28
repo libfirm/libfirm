@@ -493,7 +493,7 @@ int be_mux_is_abs(ir_node *sel, ir_node *mux_true, ir_node *mux_false)
 	if ((relation & ir_relation_less_greater) == 0)
 		return 0;
 
-	if (!is_negated_value(mux_true, mux_false))
+	if (!ir_is_negated_value(mux_true, mux_false))
 		return 0;
 
 	/* must be x cmp 0 */
