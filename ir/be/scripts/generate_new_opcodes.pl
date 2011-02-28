@@ -596,14 +596,14 @@ EOF
 	if (exists($n{"cmp_attr"})) {
 		my $cmpcode = $n{"cmp_attr"};
 
-		push(@obst_cmp_attr, "static int cmp_attr_$op(ir_node *a, ir_node *b) {\n");
+		push(@obst_cmp_attr, "static int cmp_attr_$op(const ir_node *a, const ir_node *b) {\n");
 		if($cmpcode =~ m/attr_a/) {
-			push(@obst_cmp_attr, "\t${attr_type} *attr_a = get_irn_generic_attr(a);\n");
+			push(@obst_cmp_attr, "\tconst ${attr_type} *attr_a = get_irn_generic_attr_const(a);\n");
 		} else {
 			push(@obst_cmp_attr, "\t(void) a;\n");
 		}
 		if($cmpcode =~ m/attr_b/) {
-			push(@obst_cmp_attr, "\t${attr_type} *attr_b = get_irn_generic_attr(b);\n");
+			push(@obst_cmp_attr, "\tconst ${attr_type} *attr_b = get_irn_generic_attr_const(b);\n");
 		} else {
 			push(@obst_cmp_attr, "\t(void) b;\n");
 		}

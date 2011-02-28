@@ -121,7 +121,7 @@ static void set_TEMPLATE_value(ir_node *node, ir_tarval *value)
 	attr->value = value;
 }
 
-static int TEMPLATE_compare_attr(ir_node *a, ir_node *b)
+static int TEMPLATE_compare_attr(const ir_node *a, const ir_node *b)
 {
 	const TEMPLATE_attr_t *attr_a = get_TEMPLATE_attr_const(a);
 	const TEMPLATE_attr_t *attr_b = get_TEMPLATE_attr_const(b);

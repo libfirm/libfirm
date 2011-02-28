@@ -516,7 +516,7 @@ const arm_cmp_attr_t *get_arm_cmp_attr_const(const ir_node *node)
 	return (const arm_cmp_attr_t*) get_irn_generic_attr_const(node);
 }
 
-static int cmp_attr_arm_load_store(ir_node *a, ir_node *b)
+static int cmp_attr_arm_load_store(const ir_node *a, const ir_node *b)
 {
 	const arm_load_store_attr_t *attr_a;
 	const arm_load_store_attr_t *attr_b;
@@ -524,8 +524,8 @@ static int cmp_attr_arm_load_store(ir_node *a, ir_node *b)
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_load_store_attr(a);
-	attr_b = get_arm_load_store_attr(b);
+	attr_a = get_arm_load_store_attr_const(a);
+	attr_b = get_arm_load_store_attr_const(b);
 	if (attr_a->entity != attr_b->entity
 			|| attr_a->entity_sign != attr_b->entity_sign
 			|| attr_a->offset != attr_b->offset)
@@ -534,7 +534,7 @@ static int cmp_attr_arm_load_store(ir_node *a, ir_node *b)
 	return 0;
 }
 
-static int cmp_attr_arm_shifter_operand(ir_node *a, ir_node *b)
+static int cmp_attr_arm_shifter_operand(const ir_node *a, const ir_node *b)
 {
 	const arm_shifter_operand_t *attr_a;
 	const arm_shifter_operand_t *attr_b;
@@ -542,8 +542,8 @@ static int cmp_attr_arm_shifter_operand(ir_node *a, ir_node *b)
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_shifter_operand_attr(a);
-	attr_b = get_arm_shifter_operand_attr(b);
+	attr_a = get_arm_shifter_operand_attr_const(a);
+	attr_b = get_arm_shifter_operand_attr_const(b);
 	if (attr_a->shift_modifier != attr_b->shift_modifier
 			|| attr_a->immediate_value != attr_b->immediate_value
 			|| attr_a->shift_immediate != attr_b->shift_immediate)
@@ -552,7 +552,7 @@ static int cmp_attr_arm_shifter_operand(ir_node *a, ir_node *b)
 	return 0;
 }
 
-static int cmp_attr_arm_cmp(ir_node *a, ir_node *b)
+static int cmp_attr_arm_cmp(const ir_node *a, const ir_node *b)
 {
 	const arm_cmp_attr_t *attr_a;
 	const arm_cmp_attr_t *attr_b;
@@ -560,15 +560,15 @@ static int cmp_attr_arm_cmp(ir_node *a, ir_node *b)
 	if (cmp_attr_arm(a, b))
 		return 1;
 
-	attr_a = get_arm_cmp_attr(a);
-	attr_b = get_arm_cmp_attr(b);
+	attr_a = get_arm_cmp_attr_const(a);
+	attr_b = get_arm_cmp_attr_const(b);
 	if (attr_a->ins_permuted != attr_b->ins_permuted
 			|| attr_a->is_unsigned != attr_b->is_unsigned)
 		return 1;
 	return 0;
 }
 
-static int cmp_attr_arm_farith(ir_node *a, ir_node *b)
+static int cmp_attr_arm_farith(const ir_node *a, const ir_node *b)
 {
 	const arm_farith_attr_t *attr_a;
 	const arm_farith_attr_t *attr_b;
