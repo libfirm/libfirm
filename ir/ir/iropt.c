@@ -6349,6 +6349,17 @@ ir_node *optimize_node(ir_node *n)
 	/* Always optimize Phi nodes: part of the construction. */
 	if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
 
+	/* Remove nodes with dead (Bad) input.
+	   Run always for transformation induced Bads. */
+	n = gigo(n);
+	if (n != oldn) {
+		edges_node_deleted(oldn, irg);
+
+		/* We found an existing, better node, so we can deallocate the old node. */
+		irg_kill_node(irg, oldn);
+		return n;
+	}
+
 	/* constant expression evaluation / constant folding */
 	if (get_opt_constant_folding()) {
 		/* neither constants nor Tuple values can be evaluated */
@@ -6418,10 +6429,6 @@ ir_node *optimize_node(ir_node *n)
 	    (iro == iro_Cond) ||
 	    (iro == iro_Proj))     /* Flags tested local. */
 		n = transform_node(n);
-
-	/* Remove nodes with dead (Bad) input.
-	   Run always for transformation induced Bads. */
-	n = gigo(n);
 
 	/* Now we have a legal, useful node. Enter it in hash table for CSE */
 	if (get_opt_cse() && (get_irn_opcode(n) != iro_Block)) {
