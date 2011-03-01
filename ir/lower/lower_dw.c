@@ -1328,14 +1328,13 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m, lower_env_t *env)
 		                  relation);
 		res = new_rd_Or(db, blk, low, high, mode_b);
 	} else {
+		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
+		ir_node *high1 = new_rd_Cmp(db, blk, lentry->high_word,
+			rentry->high_word, relation & ~ir_relation_equal);
 		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
 		                  relation);
 		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
 		                  ir_relation_equal);
-
-		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
-		ir_node *high1 = new_rd_Cmp(db, blk, lentry->high_word,
-		                            rentry->high_word, relation & ~ir_relation_equal);
 		t = new_rd_And(db, blk, low, high, mode_b);
 		res = new_rd_Or(db, blk, high1, t, mode_b);
 	}

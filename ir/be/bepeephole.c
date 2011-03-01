@@ -25,6 +25,7 @@
  */
 #include "config.h"
 
+#include "array_t.h"
 #include "bepeephole.h"
 
 #include "iredges_t.h"
@@ -323,8 +324,9 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 						int      new_arity       = succ_arity - 1;
 						int      pos;
 						int      new_pos         = 0;
-						ir_node *ins[succ_arity];
+						ir_node **ins;
 
+						NEW_ARR_A(ir_node *, ins, succ_arity);
 						for (pos = 0; pos < succ_arity; ++pos) {
 							if (pos != edge_pos)
 								ins[new_pos++] = get_irn_n(proj_succ, pos);

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -64,62 +64,61 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
  */
 static bool find_cond_pair(ir_node *const l, ir_node *const r, cond_pair *const res)
 {
-	if (!is_Cmp(l) || !is_Cmp(r))
-		return false;
+	if (is_Cmp(l) && is_Cmp(r)) {
+		ir_node    *const lol   = get_Cmp_left(l);
+		ir_node    *const lor   = get_Cmp_right(l);
+		ir_node    *const rol   = get_Cmp_left(r);
+		ir_node    *const ror   = get_Cmp_right(r);
+		ir_relation const pnc_l = get_Cmp_relation(l);
+		ir_relation const pnc_r = get_Cmp_relation(r);
 
-	ir_node    *const lol   = get_Cmp_left(l);
-	ir_node    *const lor   = get_Cmp_right(l);
-	ir_node    *const rol   = get_Cmp_left(r);
-	ir_node    *const ror   = get_Cmp_right(r);
-	ir_relation const pnc_l = get_Cmp_relation(l);
-	ir_relation const pnc_r = get_Cmp_relation(r);
-
-	if (is_Const(lor) && is_Const_null(lor) &&
-		is_Const(ror) && is_Const_null(ror) &&
-		pnc_l == pnc_r &&
-		(pnc_l == ir_relation_less_greater || pnc_l == ir_relation_equal)) {
-		/* l == (lol !=|== NULL) && r == (rol !=|== NULL) */
-		res->cmp_lo  = l;
-		res->cmp_hi  = r;
-		res->rel_lo  = pnc_l;
-		res->rel_hi  = pnc_l;
-		res->tv_lo   = get_Const_tarval(lor);
-		res->tv_hi   = get_Const_tarval(ror);
-		res->lo_mode = get_irn_mode(lor);
-
-		return true;
-	}
-
-	if (lol == rol && lor != ror && is_Const(lor) && is_Const(ror)) {
-		/* l == (x CMP c_l), r == (x cmp c_r) */
-		ir_tarval  *const tv_l  = get_Const_tarval(lor);
-		ir_tarval  *const tv_r  = get_Const_tarval(ror);
-		ir_relation const rel   = tarval_cmp(tv_l, tv_r);
-
-		res->lo_mode = get_irn_mode(lol);
-
-		if (rel == ir_relation_less) {
-			/* c_l < c_r */
+		if (is_Const(lor) && is_Const_null(lor) &&
+			is_Const(ror) && is_Const_null(ror) &&
+			pnc_l == pnc_r &&
+			(pnc_l == ir_relation_less_greater || pnc_l == ir_relation_equal)) {
+			/* l == (lol !=|== NULL) && r == (rol !=|== NULL) */
 			res->cmp_lo  = l;
 			res->cmp_hi  = r;
 			res->rel_lo  = pnc_l;
-			res->rel_hi  = pnc_r;
-			res->tv_lo   = tv_l;
-			res->tv_hi   = tv_r;
-		} else if (rel == ir_relation_greater) {
-			/* c_l > c_r */
-			res->cmp_lo  = r;
-			res->cmp_hi  = l;
-			res->rel_lo  = pnc_r;
 			res->rel_hi  = pnc_l;
-			res->tv_lo   = tv_r;
-			res->tv_hi   = tv_l;
-		} else {
-			/* The constants shall be unequal but comparable.
-			 * Local optimizations handle the equal case. */
-			return false;
+			res->tv_lo   = get_Const_tarval(lor);
+			res->tv_hi   = get_Const_tarval(ror);
+			res->lo_mode = get_irn_mode(lor);
+
+			return true;
 		}
-		return true;
+
+		if (lol == rol && lor != ror && is_Const(lor) && is_Const(ror)) {
+			/* l == (x CMP c_l), r == (x cmp c_r) */
+			ir_tarval  *const tv_l  = get_Const_tarval(lor);
+			ir_tarval  *const tv_r  = get_Const_tarval(ror);
+			ir_relation const rel   = tarval_cmp(tv_l, tv_r);
+
+			res->lo_mode = get_irn_mode(lol);
+
+			if (rel == ir_relation_less) {
+				/* c_l < c_r */
+				res->cmp_lo  = l;
+				res->cmp_hi  = r;
+				res->rel_lo  = pnc_l;
+				res->rel_hi  = pnc_r;
+				res->tv_lo   = tv_l;
+				res->tv_hi   = tv_r;
+			} else if (rel == ir_relation_greater) {
+				/* c_l > c_r */
+				res->cmp_lo  = r;
+				res->cmp_hi  = l;
+				res->rel_lo  = pnc_r;
+				res->rel_hi  = pnc_l;
+				res->tv_lo   = tv_r;
+				res->tv_hi   = tv_l;
+			} else {
+				/* The constants shall be unequal but comparable.
+				 * Local optimizations handle the equal case. */
+				return false;
+			}
+			return true;
+		}
 	}
 	return false;
 }
