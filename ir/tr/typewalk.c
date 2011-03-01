@@ -344,7 +344,6 @@ static void type_walk_s2s_2(type_or_ent tore,
                             void *env)
 {
 	type_or_ent cont;
-	int         i, n;
 
 	/* marked? */
 	switch (get_kind(tore.ent)) {
@@ -367,6 +366,8 @@ static void type_walk_s2s_2(type_or_ent tore,
 			switch (get_type_tpop_code(tp)) {
 			case tpo_class:
 				{
+					size_t i, n;
+
 					n = get_class_n_supertypes(tp);
 					for (i = 0; i < n; ++i) {
 						cont.typ = get_class_supertype(tp, i);
@@ -434,7 +435,6 @@ static void type_walk_super_2(type_or_ent tore, type_walk_func *pre,
                               type_walk_func *post, void *env)
 {
 	type_or_ent cont;
-	int         i, n;
 
 	/* marked? */
 	switch (get_kind(tore.ent)) {
@@ -459,6 +459,8 @@ static void type_walk_super_2(type_or_ent tore, type_walk_func *pre,
 			switch (get_type_tpop_code(tp)) {
 			case tpo_class:
 				{
+					size_t i, n;
+
 					/* execute pre method */
 					if (pre)
 						pre(tore, env);
@@ -519,7 +521,7 @@ void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env)
 static void class_walk_s2s_2(ir_type *tp, class_walk_func *pre,
                              class_walk_func *post, void *env)
 {
-	int i, n;
+	size_t i, n;
 
 	/* marked? */
 	if (type_visited(tp)) return;
@@ -575,7 +577,7 @@ void walk_types_entities(ir_type *tp,
                          entity_walk_func *doit,
                          void *env)
 {
-	int i, n;
+	size_t i, n;
 
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:

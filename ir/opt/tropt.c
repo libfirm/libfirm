@@ -144,7 +144,7 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 		while (get_class_supertype_index(fromtype, totype) == (size_t)-1) {
 			/* Insert a cast to a supertype of fromtype. */
 			ir_type *new_type = NULL;
-			int i, n_supertypes = get_class_n_supertypes(fromtype);
+			size_t i, n_supertypes = get_class_n_supertypes(fromtype);
 			for (i = 0; i < n_supertypes && !new_type; ++i) {
 				ir_type *new_super = get_class_supertype(fromtype, i);
 				if (is_SubClass_of(new_super, totype))
