@@ -631,6 +631,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			assert(be_check_dominance(irg) && "Dominance verification failed");
 		}
 
+		dump(DUMP_PREPARED, irg, "code-selection");
+
 		be_timer_push(T_EXECFREQ);
 		/**
 		 * Create execution frequencies from profile data or estimate some
