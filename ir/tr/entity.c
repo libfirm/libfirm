@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -622,13 +622,14 @@ ir_initializer_t *create_initializer_tarval(ir_tarval *tv)
 	return initializer;
 }
 
-ir_initializer_t *create_initializer_compound(unsigned n_entries)
+ir_initializer_t *create_initializer_compound(size_t n_entries)
 {
 	struct obstack *obst = get_irg_obstack(get_const_code_irg());
 
 	size_t i;
 	size_t size  = sizeof(ir_initializer_compound_t)
-	             + (n_entries-1) * sizeof(ir_initializer_t*);
+	             + n_entries * sizeof(ir_initializer_t*)
+	             - sizeof(ir_initializer_t*);
 
 	ir_initializer_t *initializer
 		= (ir_initializer_t*)obstack_alloc(obst, size);
@@ -654,14 +655,14 @@ ir_tarval *get_initializer_tarval_value(const ir_initializer_t *initializer)
 	return initializer->tarval.value;
 }
 
-unsigned get_initializer_compound_n_entries(const ir_initializer_t *initializer)
+size_t get_initializer_compound_n_entries(const ir_initializer_t *initializer)
 {
 	assert(initializer->kind == IR_INITIALIZER_COMPOUND);
 	return initializer->compound.n_initializers;
 }
 
 void set_initializer_compound_value(ir_initializer_t *initializer,
-                                    unsigned index, ir_initializer_t *value)
+                                    size_t index, ir_initializer_t *value)
 {
 	assert(initializer->kind == IR_INITIALIZER_COMPOUND);
 	assert(index < initializer->compound.n_initializers);
@@ -670,7 +671,7 @@ void set_initializer_compound_value(ir_initializer_t *initializer,
 }
 
 ir_initializer_t *get_initializer_compound_value(
-		const ir_initializer_t *initializer, unsigned index)
+		const ir_initializer_t *initializer, size_t index)
 {
 	assert(initializer->kind == IR_INITIALIZER_COMPOUND);
 	assert(index < initializer->compound.n_initializers);

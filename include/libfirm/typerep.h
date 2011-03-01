@@ -481,19 +481,19 @@ FIRM_API ir_node *get_initializer_const_value(const ir_initializer_t *initialize
 FIRM_API ir_tarval *get_initializer_tarval_value(const ir_initializer_t *initialzier);
 
 /** creates a compound initializer which holds @p n_entries entries */
-FIRM_API ir_initializer_t *create_initializer_compound(unsigned n_entries);
+FIRM_API ir_initializer_t *create_initializer_compound(size_t n_entries);
 
 /** returns the number of entries in a compound initializer */
-FIRM_API unsigned get_initializer_compound_n_entries(const ir_initializer_t *initializer);
+FIRM_API size_t get_initializer_compound_n_entries(const ir_initializer_t *initializer);
 
 /** sets entry with index @p index to the initializer @p value */
 FIRM_API void set_initializer_compound_value(ir_initializer_t *initializer,
-                                             unsigned index,
+                                             size_t index,
                                              ir_initializer_t *value);
 
 /** returns the value with index @p index of a compound initializer */
 FIRM_API ir_initializer_t *get_initializer_compound_value(
-		const ir_initializer_t *initializer, unsigned index);
+		const ir_initializer_t *initializer, size_t index);
 
 /** Sets the new style initializers of an entity. */
 FIRM_API void set_entity_initializer(ir_entity *entity, ir_initializer_t *initializer);

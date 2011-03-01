@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -42,7 +42,7 @@ typedef struct ir_initializer_base_t {
  */
 typedef struct ir_initializer_compound_t {
 	ir_initializer_base_t  base;
-	unsigned               n_initializers;
+	size_t                 n_initializers;
 	ir_initializer_t      *initializers[1];
 } ir_initializer_compound_t;
 

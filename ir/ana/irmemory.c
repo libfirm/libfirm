@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2010 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -1082,8 +1082,8 @@ static void init_entity_usage(ir_type *tp)
  */
 static void check_initializer_nodes(ir_initializer_t *initializer)
 {
-	unsigned i;
-	ir_node  *n;
+	size_t  i;
+	ir_node *n;
 
 	switch (initializer->kind) {
 	case IR_INITIALIZER_CONST:
