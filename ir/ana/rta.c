@@ -97,8 +97,8 @@ static bool add_class(ir_type *clazz)
 */
 static bool add_implementing_graphs(ir_entity *method)
 {
-	int i;
-	int n_over = get_entity_n_overwrittenby(method);
+	size_t i;
+	size_t n_over = get_entity_n_overwrittenby(method);
 	ir_graph *graph = get_entity_irg(method);
 	bool change = false;
 
@@ -264,7 +264,7 @@ static size_t stats(void)
 static void init_tables(void)
 {
 	ir_type  *tp;
-	int      i, n;
+	size_t    i, n;
 	ir_graph *irg;
 
 	_live_classes = XMALLOC(pset_new_t);
@@ -309,9 +309,9 @@ void rta_init(void)
 
 # ifdef DEBUG_libfirm
 	{
-		int i;
-		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			irg_verify(get_irp_irg(i), 0);
+		size_t i;
+		for (i = get_irp_n_irgs(); i > 0;) {
+			irg_verify(get_irp_irg(--i), 0);
 		}
 		tr_verify();
 	}
@@ -327,10 +327,10 @@ void rta_init(void)
 
 # ifdef DEBUG_libfirm
 	{
-		int i;
+		size_t i;
 
-		for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-			irg_verify(get_irp_irg(i), 0);
+		for (i = get_irp_n_irgs(); i > 0;) {
+			irg_verify(get_irp_irg(--i), 0);
 		}
 		tr_verify();
 	}
@@ -365,15 +365,15 @@ static void make_entity_to_description(type_or_ent tore, void *env)
 */
 void rta_delete_dead_graphs(void)
 {
-	int      i, n_dead_irgs, n_graphs = get_irp_n_irgs();
+	size_t   i, n_dead_irgs, n_graphs = get_irp_n_irgs();
 	ir_graph *irg, *next_irg, *dead_irgs;
 
 	irp_reserve_resources(irp, IR_RESOURCE_IRG_LINK);
 
 	n_dead_irgs = 0;
 	dead_irgs = NULL;
-	for (i = n_graphs - 1; i >= 0; --i) {
-		irg = get_irp_irg(i);
+	for (i = n_graphs; i > 0;) {
+		irg = get_irp_irg(--i);
 
 		if (! rta_is_alive_graph(irg)) {
 			set_irg_link(irg, dead_irgs);
@@ -389,7 +389,7 @@ void rta_delete_dead_graphs(void)
 		remove_irp_irg(irg);
 	}
 
-	DB((dbg, LEVEL_1, "RTA: dead methods = %i\n", n_dead_irgs));
+	DB((dbg, LEVEL_1, "RTA: dead methods = %zu\n", n_dead_irgs));
 
 	irp_free_resources(irp, IR_RESOURCE_IRG_LINK);
 }
@@ -398,9 +398,9 @@ void rta_delete_dead_graphs(void)
 void rta_cleanup(void)
 {
 # ifdef DEBUG_libfirm
-	int i;
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		irg_verify(get_irp_irg(i), 0);
+	size_t i;
+	for (i = get_irp_n_irgs(); i > 0;) {
+		irg_verify(get_irp_irg(--i), 0);
 	}
 	tr_verify();
 # endif /* defined DEBUG_libfirm */
@@ -433,7 +433,7 @@ int rta_is_alive_graph(ir_graph *graph)
 /* dump our opinion */
 void rta_report(void)
 {
-	int i, n;
+	size_t i, n;
 
 	n = get_irp_n_types();
 	for (i = 0; i < n; ++i) {
