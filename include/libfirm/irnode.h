@@ -459,13 +459,13 @@ FIRM_API int is_self_recursive_Call(const ir_node *call);
  *  @param node A Call node.
  */
 FIRM_API int        Call_has_callees(const ir_node *node);
-FIRM_API int        get_Call_n_callees(const ir_node *node);
-FIRM_API ir_entity *get_Call_callee(const ir_node *node, int pos);
+FIRM_API size_t     get_Call_n_callees(const ir_node *node);
+FIRM_API ir_entity *get_Call_callee(const ir_node *node, size_t pos);
 
 /** Set the full callee array.
  *
  *  The passed array is copied. Assumes current_ir_graph set properly! */
-FIRM_API void set_Call_callee_arr(ir_node *node, const int n, ir_entity **arr);
+FIRM_API void set_Call_callee_arr(ir_node *node, size_t n, ir_entity **arr);
 FIRM_API void remove_Call_callee_arr(ir_node *node);
 
 FIRM_API ir_node         **get_Builtin_param_arr(ir_node *node);

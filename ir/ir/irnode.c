@@ -1045,19 +1045,19 @@ int Call_has_callees(const ir_node *node)
 	        (node->attr.call.callee_arr != NULL));
 }
 
-int get_Call_n_callees(const ir_node *node)
+size_t get_Call_n_callees(const ir_node *node)
 {
   assert(is_Call(node) && node->attr.call.callee_arr);
   return ARR_LEN(node->attr.call.callee_arr);
 }
 
-ir_entity *get_Call_callee(const ir_node *node, int pos)
+ir_entity *get_Call_callee(const ir_node *node, size_t pos)
 {
-	assert(pos >= 0 && pos < get_Call_n_callees(node));
+	assert(pos < get_Call_n_callees(node));
 	return node->attr.call.callee_arr[pos];
 }
 
-void set_Call_callee_arr(ir_node *node, const int n, ir_entity ** arr)
+void set_Call_callee_arr(ir_node *node, size_t n, ir_entity ** arr)
 {
 	ir_graph *irg = get_irn_irg(node);
 

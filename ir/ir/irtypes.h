@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -445,7 +445,7 @@ enum irg_anchors {
 typedef struct cg_callee_entry {
 	ir_graph  *irg;        /**< The called irg. */
 	ir_node  **call_list;  /**< The list of all calls to the irg. */
-	int        max_depth;  /**< Maximum depth of all Call nodes to irg. */
+	size_t     max_depth;  /**< Maximum depth of all Call nodes to irg. */
 } cg_callee_entry;
 
 /**
@@ -505,8 +505,8 @@ struct ir_graph {
 	cg_callee_entry **callees;         /**< For callgraph analysis: list of callee calls */
 	unsigned *callee_isbe;             /**< For callgraph analysis: raw bitset if backedge info calculated. */
 	ir_loop   *l;                            /**< For callgraph analysis. */
-	int        callgraph_loop_depth;         /**< For callgraph analysis */
-	int        callgraph_recursion_depth;    /**< For callgraph analysis */
+	size_t     callgraph_loop_depth;         /**< For callgraph analysis */
+	size_t     callgraph_recursion_depth;    /**< For callgraph analysis */
 	double     method_execution_frequency;   /**< For callgraph analysis */
 
 
@@ -588,8 +588,8 @@ struct ir_prog {
 	irp_callgraph_state callgraph_state; /**< The state of the callgraph. */
 	ir_loop *outermost_cg_loop;          /**< For callgraph analysis: entry point
 	                                              to looptree over callgraph. */
-	int max_callgraph_loop_depth;        /**< needed in callgraph. */
-	int max_callgraph_recursion_depth;   /**< needed in callgraph. */
+	size_t max_callgraph_loop_depth;        /**< needed in callgraph. */
+	size_t max_callgraph_recursion_depth;   /**< needed in callgraph. */
 	double max_method_execution_frequency;  /**< needed in callgraph. */
 	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
 	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
