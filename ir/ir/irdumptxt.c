@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -319,14 +319,14 @@ void dump_graph_as_text(FILE *out, ir_graph *irg)
  *  "prefix"    node16, node17\n
  */
 static void dump_node_list(FILE *F, firm_kind *k, const char *prefix,
-                           int (*get_entity_n_nodes)(firm_kind *ent),
-                           ir_node *(*get_entity_node)(firm_kind *ent, int pos),
+                           size_t (*get_entity_n_nodes)(firm_kind *ent),
+                           ir_node *(*get_entity_node)(firm_kind *ent, size_t pos),
                            const char *name)
 {
-	int i, n_nodes = get_entity_n_nodes(k);
+	size_t i, n_nodes = get_entity_n_nodes(k);
 	const char *comma = "";
 
-	fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
+	ir_fprintf(F, "%s  %s (%zu):", prefix, name, n_nodes);
 	for (i = 0; i < n_nodes; ++i) {
 		if (i > 7 && !(i & 7)) { /* line break every eight node. */
 			fprintf(F, ",\n%s   ", prefix);
@@ -346,14 +346,14 @@ static void dump_node_list(FILE *F, firm_kind *k, const char *prefix,
  *  "prefix"    node16, node17\n
  */
 static void dump_type_list(FILE *F, ir_type *tp, const char *prefix,
-                           int (*get_n_types)(const ir_type *tp),
-                           ir_type *(*get_type)(const ir_type *tp, int pos),
+                           size_t (*get_n_types)(const ir_type *tp),
+                           ir_type *(*get_type)(const ir_type *tp, size_t pos),
                            const char *name)
 {
-	int i, n_nodes = get_n_types(tp);
+	size_t i, n_nodes = get_n_types(tp);
 	const char *comma = "";
 
-	fprintf(F, "%s  %s (%d):", prefix, name, n_nodes);
+	ir_fprintf(F, "%s  %s (%zu):", prefix, name, n_nodes);
 	for (i = 0; i < n_nodes; ++i) {
 		if (i > 7 && !(i & 7)) { /* line break every eight node. */
 			fprintf(F, ",\n%s   ", prefix);
@@ -623,10 +623,10 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 
 	if (get_trouts_state()) {
 		fprintf(F, "%s  Entity outs:\n", prefix);
-		dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_accesses,
-			(ir_node *(*)(firm_kind *, int))get_entity_access, "Accesses");
-		dump_node_list(F, (firm_kind *)ent, prefix, (int(*)(firm_kind *))get_entity_n_references,
-			(ir_node *(*)(firm_kind *, int))get_entity_reference, "References");
+		dump_node_list(F, (firm_kind *)ent, prefix, (size_t(*)(firm_kind *))get_entity_n_accesses,
+			(ir_node *(*)(firm_kind *, size_t))get_entity_access, "Accesses");
+		dump_node_list(F, (firm_kind *)ent, prefix, (size_t(*)(firm_kind *))get_entity_n_references,
+			(ir_node *(*)(firm_kind *, size_t))get_entity_reference, "References");
 	}
 }
 
@@ -719,7 +719,7 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 	case tpo_array:
 		if (verbosity & dump_verbosity_typeattrs) {
-			int i, n_dim;
+			size_t i, n_dim;
 			ir_type *elem_tp = get_array_element_type(tp);
 
 			fprintf(F, "\n  array ");
@@ -820,10 +820,10 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 	if (get_trouts_state()) {
 		fprintf(F, "\n  Type outs:\n");
-		dump_node_list(F, (firm_kind *)tp, "  ", (int(*)(firm_kind *))get_type_n_allocs,
-			(ir_node *(*)(firm_kind *, int))get_type_alloc, "Allocations");
-		dump_node_list(F, (firm_kind *)tp, "  ", (int(*)(firm_kind *))get_type_n_casts,
-			(ir_node *(*)(firm_kind *, int))get_type_cast, "Casts");
+		dump_node_list(F, (firm_kind *)tp, "  ", (size_t(*)(firm_kind *))get_type_n_allocs,
+			(ir_node *(*)(firm_kind *, size_t))get_type_alloc, "Allocations");
+		dump_node_list(F, (firm_kind *)tp, "  ", (size_t(*)(firm_kind *))get_type_n_casts,
+			(ir_node *(*)(firm_kind *, size_t))get_type_cast, "Casts");
 		dump_type_list(F, tp, "  ", get_type_n_pointertypes_to, get_type_pointertype_to, "PointerTpsTo");
 	}
 
@@ -832,8 +832,7 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 void dump_types_as_text(FILE *out)
 {
-	int i;
-	int n_types = get_irp_n_types();
+	size_t i, n_types = get_irp_n_types();
 
 	for (i = 0; i < n_types; ++i) {
 		ir_type *type = get_irp_type(i);
@@ -844,8 +843,8 @@ void dump_types_as_text(FILE *out)
 void dump_globals_as_text(FILE *out)
 {
 	ir_type *global_type = get_glob_type();
-	int      n_members   = get_class_n_members(global_type);
-	int      i;
+	size_t   n_members   = get_class_n_members(global_type);
+	size_t   i;
 
 	for (i = 0; i < n_members; ++i) {
 		ir_entity *entity = get_class_member(global_type, i);

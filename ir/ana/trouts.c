@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -213,7 +213,7 @@ static void set_type_arraytype_array(const ir_type *tp, ir_type **pts)
 /*   Access routines for entities                                    */
 /**------------------------------------------------------------------*/
 
-int get_entity_n_accesses(const ir_entity *ent)
+size_t get_entity_n_accesses(const ir_entity *ent)
 {
 	ir_node ** accs;
 
@@ -260,7 +260,7 @@ void set_entity_access(const ir_entity *ent, int pos, ir_node *n)
 
 /*------------------------------------------------------------------*/
 
-int get_entity_n_references(const ir_entity *ent)
+size_t get_entity_n_references(const ir_entity *ent)
 {
 	ir_node ** refs;
 
@@ -270,11 +270,11 @@ int get_entity_n_references(const ir_entity *ent)
 	return ARR_LEN(refs);
 }
 
-ir_node *get_entity_reference(const ir_entity *ent, int pos)
+ir_node *get_entity_reference(const ir_entity *ent, size_t pos)
 {
 	ir_node ** refs;
 
-	assert(0 <= pos && pos < get_entity_n_references(ent));
+	assert( pos < get_entity_n_references(ent));
 
 	refs = get_entity_reference_array(ent);
 	return refs[pos];
@@ -310,7 +310,7 @@ void set_entity_reference(const ir_entity *ent, int pos, ir_node *n)
 /**------------------------------------------------------------------*/
 
 /* Number of Alloc nodes that create an instance of this type */
-int get_type_n_allocs(const ir_type *tp)
+size_t get_type_n_allocs(const ir_type *tp)
 {
 	ir_node **allocs;
 
@@ -321,10 +321,10 @@ int get_type_n_allocs(const ir_type *tp)
 }
 
 /* Alloc node that creates an instance of this type */
-ir_node *get_type_alloc(const ir_type *tp, int pos)
+ir_node *get_type_alloc(const ir_type *tp, size_t pos)
 {
 	ir_node **allocs;
-	assert(0 <= pos && pos < get_type_n_allocs(tp));
+	assert( pos < get_type_n_allocs(tp));
 
 	allocs = get_type_alloc_array(tp);
 	return allocs[pos];
@@ -356,7 +356,7 @@ void set_type_alloc(const ir_type *tp, int pos, ir_node *n)
 #endif
 
 /* Number of Cast nodes that create an instance of this type */
-int get_type_n_casts(const ir_type *tp)
+size_t get_type_n_casts(const ir_type *tp)
 {
 	ir_node **casts;
 
@@ -367,10 +367,10 @@ int get_type_n_casts(const ir_type *tp)
 }
 
 
-int get_class_n_upcasts(const ir_type *clss)
+size_t get_class_n_upcasts(const ir_type *clss)
 {
-	int i, n_casts = get_type_n_casts(clss);
-	int n_instances = 0;
+	size_t i, n_casts = get_type_n_casts(clss);
+	size_t n_instances = 0;
 	for (i = 0; i < n_casts; ++i) {
 		ir_node *cast = get_type_cast(clss, i);
 		if (is_Cast_upcast(cast))
@@ -379,10 +379,10 @@ int get_class_n_upcasts(const ir_type *clss)
 	return n_instances;
 }
 
-int get_class_n_downcasts(const ir_type *clss)
+size_t get_class_n_downcasts(const ir_type *clss)
 {
-	int i, n_casts = get_type_n_casts(clss);
-	int n_instances = 0;
+	size_t i, n_casts = get_type_n_casts(clss);
+	size_t n_instances = 0;
 	for (i = 0; i < n_casts; ++i) {
 		ir_node *cast = get_type_cast(clss, i);
 		if (is_Cast_downcast(cast))
@@ -392,10 +392,10 @@ int get_class_n_downcasts(const ir_type *clss)
 }
 
 /* Cast node that creates an instance of this type */
-ir_node *get_type_cast(const ir_type *tp, int pos)
+ir_node *get_type_cast(const ir_type *tp, size_t pos)
 {
 	ir_node **casts;
-	assert(0 <= pos && pos < get_type_n_casts(tp));
+	assert(pos < get_type_n_casts(tp));
 
 	casts = get_type_cast_array(tp);
 	return casts[pos];
@@ -414,11 +414,11 @@ void add_type_cast(const ir_type *tp, ir_node *n)
 }
 
 #if 0
-void set_type_cast(const ir_type *tp, int pos, ir_node *n)
+void set_type_cast(const ir_type *tp, size_t pos, ir_node *n)
 {
 	ir_node **casts;
 
-	assert(0 <= pos && pos < get_type_n_casts(tp));
+	assert(pos < get_type_n_casts(tp));
 	assert(n && is_ir_node(n));
 
 	casts = get_type_cast_array(tp);
@@ -428,7 +428,7 @@ void set_type_cast(const ir_type *tp, int pos, ir_node *n)
 
 /*------------------------------------------------------------------*/
 
-int get_type_n_pointertypes_to(const ir_type *tp)
+size_t get_type_n_pointertypes_to(const ir_type *tp)
 {
 	ir_type ** pts;
 
@@ -438,11 +438,11 @@ int get_type_n_pointertypes_to(const ir_type *tp)
 	return ARR_LEN(pts);
 }
 
-ir_type *get_type_pointertype_to(const ir_type *tp, int pos)
+ir_type *get_type_pointertype_to(const ir_type *tp, size_t pos)
 {
 	ir_type ** pts;
 
-	assert(0 <= pos && pos < get_type_n_pointertypes_to(tp));
+	assert(pos < get_type_n_pointertypes_to(tp));
 
 	pts = get_type_pointertype_array(tp);
 	return pts[pos];
@@ -475,7 +475,7 @@ void set_type_pointertype_to(const ir_type *tp, int pos, ir_type *ptp)
 
 /*------------------------------------------------------------------*/
 
-int get_type_n_arraytypes_of(const ir_type *tp)
+size_t get_type_n_arraytypes_of(const ir_type *tp)
 {
 	ir_type ** pts;
 
@@ -485,11 +485,11 @@ int get_type_n_arraytypes_of(const ir_type *tp)
 	return ARR_LEN(pts);
 }
 
-ir_type *get_type_arraytype_of(const ir_type *tp, int pos)
+ir_type *get_type_arraytype_of(const ir_type *tp, size_t pos)
 {
 	ir_type ** pts;
 
-	assert(0 <= pos && pos < get_type_n_arraytypes_of(tp));
+	assert(pos < get_type_n_arraytypes_of(tp));
 
 	pts = get_type_arraytype_array(tp);
 	return pts[pos];
@@ -650,20 +650,22 @@ void set_trouts_inconsistent(void)
 /* compute the trouts data structures. */
 void compute_trouts(void)
 {
-	int i;
+	size_t i;
 
 	free_trouts();
 	init_trouts();
 
 	/* Compute outs for IR nodes. */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		irg_walk_graph(get_irp_irg(i), NULL, chain_accesses, NULL);
+	for (i = get_irp_n_irgs(); i > 0;) {
+		ir_graph *irg = get_irp_irg(--i);
+		irg_walk_graph(irg, NULL, chain_accesses, NULL);
 	}
 	walk_const_code(NULL, chain_accesses, NULL);
 
 	/* Compute outs for types */
-	for (i = get_irp_n_types() - 1; i >= 0; --i) {
-		chain_types(get_irp_type(i));
+	for (i = get_irp_n_types(); i > 0;) {
+		ir_type *type = get_irp_type(--i);
+		chain_types(type);
 	}
 
 	irp->trouts_state = outs_consistent;
