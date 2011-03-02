@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -149,17 +149,19 @@ void ir_init(const firm_parameter_t *param)
 
 void ir_finish(void)
 {
-	int i;
+	size_t i;
 
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i)
-		free_ir_graph(get_irp_irg(i));
+	/* must iterate backwards here */
+	for (i = get_irp_n_irgs(); i > 0;)
+		free_ir_graph(get_irp_irg(--i));
 
 	free_type_entities(get_glob_type());
-	for (i = get_irp_n_types() - 1; i >= 0; --i)
-		free_type_entities(get_irp_type(i));
+	/* must iterate backwards here */
+	for (i = get_irp_n_types(); i > 0;)
+		free_type_entities(get_irp_type(--i));
 
-	for (i = get_irp_n_types() - 1; i >= 0; --i)
-		free_type(get_irp_type(i));
+	for (i = get_irp_n_types(); i > 0;)
+		free_type(get_irp_type(--i));
 
 	free_ir_prog();
 
