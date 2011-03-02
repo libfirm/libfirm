@@ -118,8 +118,8 @@ typedef enum {
 #define ENUM_ITEM_NODE_ATTR      "color: green"
 #define ENT_TYPE_EDGE_ATTR       "class: 3 label: \"type\" color: red"
 #define ENT_OWN_EDGE_ATTR        "class: 4 label: \"owner\" color: black"
-#define METH_PAR_EDGE_ATTR       "class: 5 label: \"param %d\" color: green"
-#define METH_RES_EDGE_ATTR       "class: 6 label: \"res %d\" color: green"
+#define METH_PAR_EDGE_ATTR       "class: 5 label: \"param %zu\" color: green"
+#define METH_RES_EDGE_ATTR       "class: 6 label: \"res %zu\" color: green"
 #define TYPE_SUPER_EDGE_ATTR     "class: 7 label: \"supertype\" color: red"
 #define UNION_EDGE_ATTR          "class: 8 label: \"component\" color: blue"
 #define PTR_PTS_TO_EDGE_ATTR     "class: 9 label: \"points to\" color:green"
@@ -127,19 +127,19 @@ typedef enum {
 #define ARR_ENT_EDGE_ATTR        "class: 10 label: \"arr ent\" color: green"
 #define ENT_OVERWRITES_EDGE_ATTR "class: 11 label: \"overwrites\" color:red"
 #define ENT_VALUE_EDGE_ATTR      "label: \"value %d\""
-#define ENT_CORR_EDGE_ATTR       "label: \"value %d corresponds to \" "
+#define ENT_CORR_EDGE_ATTR       "label: \"value %zu corresponds to \" "
 #define TYPE_MEMBER_EDGE_ATTR    "class: 12 label: \"member\" color:blue"
 /* #define CALLGRAPH_EDGE_ATTR      "calls" */
 
-#define PRINT_NODEID(X)       fprintf(F, "n%ld", get_irn_node_nr(X))
-#define PRINT_TYPEID(X)       fprintf(F, "\"t%ld\"", get_type_nr(X))
-#define PRINT_ENTID(X)        fprintf(F, "e%ld", get_entity_nr(X))
-#define PRINT_IRGID(X)        fprintf(F, "g%ld", get_irg_graph_nr(X))
-#define PRINT_CONSTID(X,Y)    fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_CONSTBLKID(X,Y) fprintf(F, "n%ldb%ld", get_irn_node_nr(X),get_irn_node_nr(Y))
-#define PRINT_LOOPID(X)       fprintf(F, "l%ld", get_loop_loop_nr(X))
-#define PRINT_ITEMID(X,Y)     fprintf(F, "i%ldT%d", get_type_nr(X), (Y))
-#define PRINT_EXTBBID(X)      fprintf(F, "x%ld", get_irn_node_nr(X))
+#define PRINT_NODEID(X)       ir_fprintf(F, "n%ld", get_irn_node_nr(X))
+#define PRINT_TYPEID(X)       ir_fprintf(F, "\"t%ld\"", get_type_nr(X))
+#define PRINT_ENTID(X)        ir_fprintf(F, "e%ld", get_entity_nr(X))
+#define PRINT_IRGID(X)        ir_fprintf(F, "g%ld", get_irg_graph_nr(X))
+#define PRINT_CONSTID(X,Y)    ir_fprintf(F, "\"n%ldn%ld\"", get_irn_node_nr(X),get_irn_node_nr(Y))
+#define PRINT_CONSTBLKID(X,Y) ir_fprintf(F, "n%ldb%ld", get_irn_node_nr(X),get_irn_node_nr(Y))
+#define PRINT_LOOPID(X)       ir_fprintf(F, "l%ld", get_loop_loop_nr(X))
+#define PRINT_ITEMID(X,Y)     ir_fprintf(F, "i%ldT%zu", get_type_nr(X), (Y))
+#define PRINT_EXTBBID(X)      ir_fprintf(F, "x%ld", get_irn_node_nr(X))
 
 void dump_vcg_header(FILE *out, const char *name, const char *layout, const char *orientation);
 void dump_vcg_footer(FILE *out);
