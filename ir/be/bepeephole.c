@@ -255,22 +255,23 @@ static void kill_node_and_preds(ir_node *node)
 	kill_node(node);
 }
 
-static void keep_alive_barrier_operand(ir_node *block, const ir_node* barrier, int pos)
+static void keep_alive_barrier_operand(ir_node* operand)
 {
-	ir_node *operand = get_irn_n(barrier, pos);
-	ir_node *keep    = sched_next(skip_Proj(operand));
+	ir_node *schedpoint = skip_Proj(operand);
+
+	do {
+		schedpoint = sched_next(schedpoint);
+	} while (is_Phi(schedpoint));
 
 	/* There already is a keep in the schedule. */
-	if (be_is_Keep(keep)) {
-		const arch_register_class_t *cls = arch_get_irn_reg_class(barrier, pos);
-
-		be_Keep_add_node(keep, cls, operand);
-	}
-	else {
+	if (be_is_Keep(schedpoint)) {
+		const arch_register_class_t *cls = arch_get_irn_reg_class_out(operand);
+		be_Keep_add_node(schedpoint, cls, operand);
+	} else {
+		ir_node *block = get_nodes_block(operand);
 		ir_node *in[1] = {operand};
-
-		keep = be_new_Keep(block, 1, in);
-		sched_add_after(skip_Proj(operand), keep);
+		ir_node *keep =  be_new_Keep(block, 1, in);
+		sched_add_before(schedpoint, keep);
 	}
 }
 
@@ -315,8 +316,9 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 
 				if (be_is_Keep(proj_succ)) {
 					int succ_arity = get_irn_arity(proj_succ);
+					ir_node *operand = get_irn_n(irn, pn);
 
-					keep_alive_barrier_operand(block, irn, pn);
+					keep_alive_barrier_operand(operand);
 
 					/* Disconnect old be_Keep. */
 					if (succ_arity > 1) {
@@ -352,10 +354,12 @@ static void skip_barrier(ir_node *block, ir_graph *irg)
 			int i;
 
 			for (i = 0; i < arity; ++i) {
+				ir_node *operand;
 				if (rbitset_is_set(used, i))
 					continue;
 
-				keep_alive_barrier_operand(block, irn, i);
+				operand = get_irn_n(irn, i);
+				keep_alive_barrier_operand(operand);
 			}
 		}
 
