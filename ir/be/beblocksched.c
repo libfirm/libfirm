@@ -88,7 +88,7 @@ static lc_opt_enum_int_var_t algo_var = {
 };
 
 static const lc_opt_table_entry_t be_blocksched_options[] = {
-	LC_OPT_ENT_ENUM_INT ("algo", "the block scheduling algorithm", &algo_var),
+	LC_OPT_ENT_ENUM_INT ("blockscheduler", "the block scheduling algorithm", &algo_var),
 	LC_OPT_LAST
 };
 
@@ -726,9 +726,8 @@ BE_REGISTER_MODULE_CONSTRUCTOR(be_init_blocksched);
 void be_init_blocksched(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *blocksched_grp = lc_opt_get_grp(be_grp, "blocksched");
 
-	lc_opt_add_table(blocksched_grp, be_blocksched_options);
+	lc_opt_add_table(be_grp, be_blocksched_options);
 
 	FIRM_DBG_REGISTER(dbg, "firm.be.blocksched");
 }

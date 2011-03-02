@@ -65,9 +65,7 @@ struct be_options_t {
 	int  opt_profile;         /**< instrument code for profiling */
 	int  omit_fp;             /**< try to omit the frame pointer */
 	int  pic;                 /**< create position independent code */
-	int  gprof;               /**< create gprof compatible profiling code */
 	int  verify_option;       /**< backend verify option */
-	char target_os[128];      /**< target operating system name */
 	char ilp_server[128];     /**< the ilp server name */
 	char ilp_solver[128];     /**< the ilp solver name */
 	int  statev;              /**< enable stat event dumping */

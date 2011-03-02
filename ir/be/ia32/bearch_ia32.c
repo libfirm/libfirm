@@ -790,10 +790,11 @@ static const arch_irn_ops_t ia32_irn_ops = {
 };
 
 static ir_entity *mcount = NULL;
+static int gprof = 0;
 
 static void ia32_before_abi(ir_graph *irg)
 {
-	if (be_get_irg_options(irg)->gprof) {
+	if (gprof) {
 		if (mcount == NULL) {
 			ir_type *tp = new_type_method(0, 0);
 			ident   *id = new_id_from_str("mcount");
@@ -1400,7 +1401,7 @@ static void ia32_init_graph(ir_graph *irg)
 
 	irg_data->dump = (be_get_irg_options(irg)->dump_flags & DUMP_BE) ? 1 : 0;
 
-	if (be_get_irg_options(irg)->gprof) {
+	if (gprof) {
 		/* Linux gprof implementation needs base pointer */
 		be_get_irg_options(irg)->omit_fp = 0;
 	}
@@ -2163,8 +2164,9 @@ static const lc_opt_table_entry_t ia32_options[] = {
 #ifdef FIRM_GRGEN_BE
 	LC_OPT_ENT_ENUM_INT("transformer", "the transformer used for code selection", &transformer_var),
 #endif
-	LC_OPT_ENT_INT("stackalign", "set power of two stack alignment for calls",
-	               &ia32_isa_template.base.stack_alignment),
+	LC_OPT_ENT_INT ("stackalign", "set power of two stack alignment for calls",
+	                &ia32_isa_template.base.stack_alignment),
+	LC_OPT_ENT_BOOL("gprof",      "create gprof profiling code",                                    &gprof),
 	LC_OPT_LAST
 };
 

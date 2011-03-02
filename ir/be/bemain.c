@@ -83,17 +83,12 @@ static be_options_t be_options = {
 	0,                                 /* no opt profile */
 	0,                                 /* try to omit frame pointer */
 	0,                                 /* create PIC code */
-	0,                                 /* create gprof compatible profiling code */
 	BE_VERIFY_WARN,                    /* verification level: warn */
-	"linux",                           /* target OS name */
 	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
 	"cplex",                           /* ilp solver */
 	0,                                 /* enable statistic event dumping */
 	"",                                /* print stat events */
 };
-
-/* config file. */
-static char config_file[256] = { 0 };
 
 /* back end instruction set architecture to use */
 static const arch_isa_if_t *isa_if = NULL;
@@ -129,15 +124,12 @@ static lc_opt_enum_int_var_t verify_var = {
 };
 
 static const lc_opt_table_entry_t be_main_options[] = {
-	LC_OPT_ENT_STR      ("config",     "read another config file containing backend options", config_file, sizeof(config_file)),
 	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
-	LC_OPT_ENT_BOOL     ("gprof",      "create gprof profiling code",                         &be_options.gprof),
 	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
-	LC_OPT_ENT_STR      ("os",         "specify target operating system",                     &be_options.target_os, sizeof(be_options.target_os)),
 #ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
 	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
@@ -815,18 +807,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 void be_main(FILE *file_handle, const char *cup_name)
 {
 	ir_timer_t *t = NULL;
-
-	/* The user specified another config file to read. do that now. */
-	if (config_file[0] != '\0') {
-		FILE *f = fopen(config_file, "rt");
-
-		if (f != NULL) {
-			lc_opt_from_file(config_file, f, NULL);
-			fclose(f);
-		} else {
-			fprintf(stderr, "Warning: Cannot open config file '%s'\n", config_file);
-		}
-	}
 
 	if (be_options.timing == BE_TIME_ON) {
 		t = ir_timer_new();
