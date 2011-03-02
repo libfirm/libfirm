@@ -157,16 +157,14 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	ir_node *node;
 	ir_node *non_phi_found = NULL;
 	int cfchange_found = 0;
-	/* TODO ask arch about delay branches */
-	int delay_branches = 0;
 	int last_timestep = INT_MIN;
 
 	/*
 	 * Tests for the following things:
-	 *   1. Make sure that all phi nodes are scheduled at the beginning of the block
-	 *   2. There is 1 or no control flow changing node scheduled and exactly delay_branches operations after it.
-	 *   3. No value is defined after it has been used
-	 *   4. mode_T nodes have all projs scheduled behind them followed by Keeps
+	 *   1. Make sure that all phi nodes are scheduled at the beginning of the
+	 *      block
+	 *   2. No value is defined after it has been used
+	 *   3. mode_T nodes have all projs scheduled behind them followed by Keeps
 	 *       (except mode_X projs)
 	 */
 	sched_foreach(block, node) {
@@ -218,14 +216,9 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		} else if (cfchange_found) {
 			/* proj and keepany aren't real instructions... */
 			if (!is_Proj(node) && !be_is_Keep(node)) {
-				/* check for delay branches */
-				if (delay_branches == 0) {
-					ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node (+delay branches) in block %+F (%s)\n",
-						node, block, get_irg_dump_name(env->irg));
-					env->problem_found = 1;
-				} else {
-					delay_branches--;
-				}
+				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
+				           node, block, get_irg_dump_name(env->irg));
+				env->problem_found = 1;
 			}
 		}
 
@@ -281,13 +274,6 @@ static void verify_schedule_walker(ir_node *block, void *data)
 				env->problem_found = 1;
 			}
 		}
-	}
-
-	/* check that all delay branches are filled (at least with NOPs) */
-	if (cfchange_found && delay_branches != 0) {
-		ir_fprintf(stderr, "Verify warning: Not all delay slots filled after jump (%d/%d) in block %+F (%s)\n",
-			block, get_irg_dump_name(env->irg));
-		env->problem_found = 1;
 	}
 }
 
