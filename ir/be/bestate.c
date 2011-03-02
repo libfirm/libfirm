@@ -47,6 +47,7 @@
 #include "belive_t.h"
 #include "bemodule.h"
 #include "benode.h"
+#include "beirgmod.h"
 #include "bessaconstr.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

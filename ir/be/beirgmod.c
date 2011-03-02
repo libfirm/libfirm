@@ -274,6 +274,60 @@ int be_remove_empty_blocks(ir_graph *irg)
 	return blocks_removed;
 }
 
+//---------------------------------------------------------------------------
+
+typedef struct remove_dead_nodes_env_t_ {
+	bitset_t *reachable;
+	ir_graph *irg;
+	be_lv_t  *lv;
+} remove_dead_nodes_env_t;
+
+/**
+ * Post-walker: remember all visited nodes in a bitset.
+ */
+static void mark_dead_nodes_walker(ir_node *node, void *data)
+{
+	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
+	bitset_set(env->reachable, get_irn_idx(node));
+}
+
+/**
+ * Post-block-walker:
+ * Walk through the schedule of every block and remove all dead nodes from it.
+ */
+static void remove_dead_nodes_walker(ir_node *block, void *data)
+{
+	remove_dead_nodes_env_t *env = (remove_dead_nodes_env_t*) data;
+	ir_node                 *node, *next;
+
+	for (node = sched_first(block); ! sched_is_end(node); node = next) {
+		/* get next node now, as after calling sched_remove it will be invalid */
+		next = sched_next(node);
+
+		if (bitset_is_set(env->reachable, get_irn_idx(node)))
+			continue;
+
+		if (env->lv)
+			be_liveness_remove(env->lv, node);
+		sched_remove(node);
+		kill_node(node);
+	}
+}
+
+void be_remove_dead_nodes_from_schedule(ir_graph *irg)
+{
+	remove_dead_nodes_env_t env;
+	env.reachable = bitset_alloca(get_irg_last_idx(irg));
+	env.lv        = be_get_irg_liveness(irg);
+	env.irg       = irg;
+
+	// mark all reachable nodes
+	irg_walk_graph(irg, mark_dead_nodes_walker, NULL, &env);
+
+	// walk schedule and remove non-marked nodes
+	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_irgmod);
 void be_init_irgmod(void)
 {

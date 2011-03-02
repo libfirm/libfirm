@@ -50,6 +50,7 @@
 #include "beflags.h"
 #include "bearch.h"
 #include "beirg.h"
+#include "beirgmod.h"
 #include "besched.h"
 #include "benode.h"
 #include "belive.h"

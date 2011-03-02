@@ -966,7 +966,9 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 	reload = be_new_Reload(cls, cls_frame, bl, frame, spill, mode);
 
 	if (is_Block(insert)) {
-		insert = sched_skip(insert, 0, sched_skip_cf_predicator, NULL);
+		do {
+			insert = sched_prev(insert);
+		} while (is_cfop(insert));
 		sched_add_after(insert, reload);
 	} else {
 		sched_add_before(insert, reload);

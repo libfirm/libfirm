@@ -169,7 +169,10 @@ static void insert_all_perms_walker(ir_node *bl, void *data)
 			perm = be_new_Perm(chordal_env->cls, pred_bl, n_projs, in);
 			be_stat_ev("phi_perm", n_projs);
 
-			insert_after = sched_skip(sched_last(pred_bl), 0, sched_skip_cf_predicator, NULL);
+			insert_after = pred_bl;
+			do {
+				insert_after = sched_prev(insert_after);
+			} while (is_cfop(insert_after));
 			sched_add_after(insert_after, perm);
 
 			/*
@@ -268,6 +271,8 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 			}
 
 			if (be_values_interfere(lv, phi, arg)) {
+				ir_node *schedpoint;
+
 				/*
 					Insert a duplicate in arguments block,
 					make it the new phi arg,
@@ -279,7 +284,11 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
-				sched_add_after(sched_skip(sched_last(arg_block), 0, sched_skip_cf_predicator, NULL), dupl);
+				schedpoint = arg_block;
+				do {
+					schedpoint = sched_prev(schedpoint);
+				} while (is_cfop(schedpoint));
+				sched_add_after(schedpoint, dupl);
 				pin_irn(dupl, phi_block);
 				be_liveness_introduce(lv, dupl);
 				be_liveness_update(lv, arg);

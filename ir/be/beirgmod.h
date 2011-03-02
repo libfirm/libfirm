@@ -55,4 +55,10 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
  */
 int be_remove_empty_blocks(ir_graph *irg);
 
+/**
+ * Removes dead nodes from schedule
+ * @param irg  the graph
+ */
+void be_remove_dead_nodes_from_schedule(ir_graph *irg);
+
 #endif

@@ -52,6 +52,7 @@
 #include "besched.h"
 #include "beschedmris.h"
 #include "beirg.h"
+#include "belistsched.h"
 
 struct mris_env_t {
 	ir_phase          ph;

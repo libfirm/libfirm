@@ -45,6 +45,7 @@
 #include "benode.h"
 #include "beirg.h"
 #include "beintlive_t.h"
+#include "belistsched.h"
 
 static int my_values_interfere(const ir_node *a, const ir_node *b);
 
@@ -225,7 +226,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 		/* Check that all uses come before their definitions */
 		if (!is_Phi(node)) {
-			int nodetime = sched_get_time_step(node);
+			sched_timestep_t nodetime = sched_get_time_step(node);
 			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 				ir_node *arg = get_irn_n(node, i);
 				if (get_nodes_block(arg) != block

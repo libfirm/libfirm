@@ -57,6 +57,7 @@
 #include "bestatevent.h"
 #include "bessaconstr.h"
 #include "beirg.h"
+#include "beirgmod.h"
 #include "beintlive_t.h"
 #include "bemodule.h"
 #include "be_t.h"
