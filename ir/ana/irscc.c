@@ -274,7 +274,7 @@ static inline void pop_scc_to_loop(ir_node *n)
    can't they have two loops as sons? Does it never get that far? ) */
 static void close_loop(ir_loop *l)
 {
-	int last = get_loop_n_elements(l) - 1;
+	size_t last = get_loop_n_elements(l) - 1;
 	loop_element lelement = get_loop_element(l, last);
 	ir_loop *last_son = lelement.son;
 
@@ -836,7 +836,7 @@ void free_all_loop_information(void)
 
 static int is_loop_variant(ir_loop *l, ir_loop *b)
 {
-	int i, n_elems;
+	size_t i, n_elems;
 
 	if (l == b) return 1;
 

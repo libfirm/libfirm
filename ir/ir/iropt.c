@@ -5650,7 +5650,7 @@ static ir_node *transform_node_Call(ir_node *call)
 	ir_graph *irg;
 	type_dbg_info *tdb;
 	dbg_info *db;
-	int      i, n_res, n_param;
+	size_t   i, n_res, n_param;
 	ir_variadicity var;
 
 	if (! is_Proj(callee))

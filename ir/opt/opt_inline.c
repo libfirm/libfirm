@@ -283,8 +283,8 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 {
 	ir_type *from_frame = get_irg_frame_type(from);
 	ir_type *to_frame   = get_irg_frame_type(to);
-	int      n_members  = get_class_n_members(from_frame);
-	int      i;
+	size_t   n_members  = get_class_n_members(from_frame);
+	size_t   i;
 	assert(from_frame != to_frame);
 
 	for (i = 0; i < n_members; ++i) {
@@ -1318,7 +1318,9 @@ static void analyze_irg_local_weights(inline_irg_env *env, ir_graph *irg)
 {
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type  *mtp;
-	int      nparams, i, proj_nr;
+	size_t   nparams;
+	int      i;
+	long     proj_nr;
 	ir_node  *irg_args, *arg;
 
 	mtp      = get_entity_type(ent);

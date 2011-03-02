@@ -454,9 +454,9 @@ static void write_initializer(io_env_t *env, ir_initializer_t *ini)
 		break;
 
 	case IR_INITIALIZER_COMPOUND: {
-		unsigned i, n = get_initializer_compound_n_entries(ini);
-		fprintf(f, "%u ", n);
-		for (i = 0; i < n; i++)
+		size_t i, n = get_initializer_compound_n_entries(ini);
+		ir_fprintf(f, "%zu ", n);
+		for (i = 0; i < n; ++i)
 			write_initializer(env, get_initializer_compound_value(ini, i));
 		break;
 	}
@@ -1157,6 +1157,12 @@ static unsigned read_unsigned(io_env_t *env)
 	return (unsigned) read_long(env);
 }
 
+static size_t read_size_t(io_env_t *env)
+{
+	/* FIXME */
+	return (size_t) read_unsigned(env);
+}
+
 static void expect_list_begin(io_env_t *env)
 {
 	skip_ws(env);
@@ -1355,7 +1361,7 @@ static ir_initializer_t *read_initializer(io_env_t *env)
 		return get_initializer_null();
 
 	case IR_INITIALIZER_COMPOUND: {
-		unsigned i, n = (unsigned) read_long(env);
+		size_t i, n = read_size_t(env);
 		ir_initializer_t *ini = create_initializer_compound(n);
 		for (i = 0; i < n; i++) {
 			ir_initializer_t *curini = read_initializer(env);
