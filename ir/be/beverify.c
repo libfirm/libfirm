@@ -254,21 +254,28 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 
 		if (be_is_Keep(node) || be_is_CopyKeep(node)) {
-			/* at least 1 of the keep arguments has to be it schedule
+			/* at least 1 of the keep arguments has to be its schedule
 			 * predecessor */
 			int      arity   = get_irn_arity(node);
-			int      problem = 1;
+			bool     found   = false;
 			ir_node *prev    = sched_prev(node);
 			while (be_is_Keep(prev) || be_is_CopyKeep(prev))
 				prev = sched_prev(prev);
 
-			for (i = 0; i < arity; ++i) {
-				ir_node *in = get_irn_n(node, i);
-				in = skip_Proj(in);
-				if (in == prev)
-					problem = 0;
+			while (true) {
+				for (i = 0; i < arity; ++i) {
+					ir_node *in = get_irn_n(node, i);
+					in = skip_Proj(in);
+					if (in == prev)
+						found = true;
+				}
+				if (found)
+					break;
+				prev = sched_prev(prev);
+				if (!is_Phi(prev))
+					break;
 			}
-			if (problem) {
+			if (!found) {
 				ir_fprintf(stderr, "%+F not scheduled after its pred node in block %+F (%s)\n",
 				           node, block, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
