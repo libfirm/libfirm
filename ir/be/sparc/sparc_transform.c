@@ -1853,17 +1853,19 @@ static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
-	ir_node *barrier   = be_transform_node(get_Proj_pred(node));
 	long     pn        = get_Proj_proj(node);
+	/* make sure prolog is constructed */
+	be_transform_node(get_Proj_pred(node));
 
 	switch ((pn_Start) pn) {
 	case pn_Start_X_initial_exec:
 		/* exchange ProjX with a jump */
 		return new_bd_sparc_Ba(NULL, new_block);
 	case pn_Start_M:
-		return new_r_Proj(barrier, mode_M, 0);
+		return be_prolog_get_memory(abihelper);
 	case pn_Start_T_args:
-		return barrier;
+		/* we should never need this explicitely */
+		return new_r_Bad(get_irn_irg(block));
 	case pn_Start_P_frame_base:
 		return get_frame_base();
 	case pn_Start_P_tls:
