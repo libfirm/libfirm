@@ -38,7 +38,6 @@ void be_init_blocksched(void);
 void be_init_spill(void);
 void be_init_spilloptions(void);
 void be_init_listsched(void);
-void be_init_schedrss(void);
 void be_init_chordal(void);
 void be_init_pbqp_coloring(void);
 void be_init_chordal_main(void);
@@ -99,7 +98,6 @@ void be_init_modules(void)
 	be_init_spilloptions();
 	be_init_dbgout();
 	be_init_listsched();
-	be_init_schedrss();
 	be_init_chordal_main();
 	be_init_chordal_common();
 	be_init_chordal();

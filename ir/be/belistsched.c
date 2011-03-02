@@ -53,8 +53,6 @@
 #include "beutil.h"
 #include "belive_t.h"
 #include "belistsched.h"
-#include "beschedmris.h"
-#include "beschedrss.h"
 #include "bearch.h"
 #include "bestat.h"
 #include "beirg.h"
@@ -82,12 +80,10 @@ enum {
 
 typedef struct list_sched_options_t {
 	int select;  /**< the node selector */
-	int prep;    /**< schedule preparation */
 } list_sched_options_t;
 
 static list_sched_options_t list_sched_options = {
 	BE_SCHED_SELECT_NORMAL,   /* mueller heuristic selector */
-	BE_SCHED_PREP_NONE,       /* no scheduling preparation */
 };
 
 /* schedule selector options. */
@@ -102,24 +98,11 @@ static const lc_opt_enum_int_items_t sched_select_items[] = {
 	{ NULL,       0 }
 };
 
-/* schedule preparation options. */
-static const lc_opt_enum_int_items_t sched_prep_items[] = {
-	{ "none", BE_SCHED_PREP_NONE },
-	{ "mris", BE_SCHED_PREP_MRIS },
-	{ "rss",  BE_SCHED_PREP_RSS  },
-	{ NULL,   0 }
-};
-
 static lc_opt_enum_int_var_t sched_select_var = {
 	&list_sched_options.select, sched_select_items
 };
 
-static lc_opt_enum_int_var_t sched_prep_var = {
-	&list_sched_options.prep, sched_prep_items
-};
-
 static const lc_opt_table_entry_t list_sched_option_table[] = {
-	LC_OPT_ENT_ENUM_PTR("prep",   "schedule preparation",   &sched_prep_var),
 	LC_OPT_ENT_ENUM_PTR("select", "node selector",          &sched_select_var),
 	LC_OPT_LAST
 };
@@ -523,7 +506,6 @@ void list_sched(ir_graph *irg)
 {
 	int num_nodes;
 	sched_env_t env;
-	mris_env_t *mris = NULL;
 	const list_sched_selector_t *selector;
 
 	/* Select a scheduler based on backend options */
@@ -549,17 +531,6 @@ void list_sched(ir_graph *irg)
 	edges_activate(irg);
 #endif
 
-	switch (list_sched_options.prep) {
-		case BE_SCHED_PREP_MRIS:
-			mris = be_sched_mris_preprocess(irg);
-			break;
-		case BE_SCHED_PREP_RSS:
-			rss_schedule_preparation(irg);
-			break;
-		default:
-			break;
-	}
-
 	num_nodes = get_irg_last_idx(irg);
 
 	/* initialize environment for list scheduler */
@@ -577,9 +548,6 @@ void list_sched(ir_graph *irg)
 
 	if (env.selector->finish_graph)
 		env.selector->finish_graph(env.selector_env);
-
-	if (list_sched_options.prep == BE_SCHED_PREP_MRIS)
-		be_sched_mris_free(mris);
 
 	DEL_ARR_F(env.sched_info);
 }

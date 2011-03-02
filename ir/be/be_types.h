@@ -67,11 +67,6 @@ typedef struct be_stack_layout_t        be_stack_layout_t;
 
 typedef struct be_dom_front_info_t      be_dom_front_info_t;
 
-typedef struct list_sched_selector_t    list_sched_selector_t;
-
-typedef struct ilp_sched_selector_t     ilp_sched_selector_t;
-typedef struct ilp_sched_selector_if_t  ilp_sched_selector_if_t;
-
 typedef struct be_execution_unit_type_t be_execution_unit_type_t;
 typedef struct be_execution_unit_t      be_execution_unit_t;
 typedef struct be_machine_t             be_machine_t;
