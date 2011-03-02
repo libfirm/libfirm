@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief       Primitive list scheduling with different node selectors.
+ * @brief       Common functions for creating listscheduling algorithms
  * @author      Sebastian Hack
  * @date        20.10.2004
  * @version     $Id$
@@ -68,7 +68,7 @@ static inline bool to_appear_in_schedule(const ir_node *irn)
  * You can implement your own list scheduler by implementing these
  * functions.
  */
-struct list_sched_selector_t {
+typedef struct list_sched_selector_t {
 
 	/**
 	 * Called before a graph is being scheduled.
@@ -78,7 +78,7 @@ struct list_sched_selector_t {
 	 * @param irg      The backend graph.
 	 * @return         The environment pointer that is passed to all other functions in this struct.
 	 */
-	void *(*init_graph)(const list_sched_selector_t *vtab, ir_graph *irg);
+	void *(*init_graph)(ir_graph *irg);
 
 	/**
 	 * Called before scheduling starts on a block.
@@ -125,28 +125,6 @@ struct list_sched_selector_t {
 	void (*node_selected)(void *block_env, ir_node *irn);
 
 	/**
-	 * Returns the execution time of node irn.
-	 * May be NULL.
-	 *
-	 * @param block_env The block environment.
-	 * @param irn       The selected node.
-	 */
-	unsigned (*exectime)(void *block_env, const ir_node *irn);
-
-	/**
-	 * Calculates the latency of executing cycle curr_cycle of node curr in cycle pred_cycle
-	 * of node pred.
-	 * May be NULL.
-	 *
-	 * @param block_env   The block environment.
-	 * @param pred        The previous node.
-	 * @param pred_cycle  The previous node execution cycle.
-	 * @param curr        The current node.
-	 * @param curr_cycle  The current node execution cycle.
-	 */
-	unsigned (*latency)(void *block_env, const ir_node *pred, int pred_cycle, const ir_node *curr, int curr_cycle);
-
-	/**
 	 * Called after a block has been scheduled.
 	 * May be NULL.
 	 *
@@ -162,41 +140,7 @@ struct list_sched_selector_t {
 	 * @param env The environment.
 	 */
 	void (*finish_graph)(void *env);
-};
-
-
-/**
- * A trivial selector, that just selects the first ready node.
- */
-extern const list_sched_selector_t trivial_selector;
-
-/**
- * A trivial selector that selects a pseudo-random-node (deterministic).
- */
-extern const list_sched_selector_t random_selector;
-
-/**
- * A selector that tries to minimize the register pressure.
- * @note Not really operational yet.
- */
-extern const list_sched_selector_t reg_pressure_selector;
-
-/**
- * A selector based on trace scheduling as introduced by Muchnik[TM]
- */
-extern const list_sched_selector_t muchnik_selector;
-
-/**
- * A selector based on trace scheduling as introduced by Muchnik[TM]
- * but using the Mueller heuristic selector.
- */
-extern const list_sched_selector_t heuristic_selector;
-
-/**
- * A selector based on the strong normal form theorem (ie minimizing
- * the register pressure).
- */
-extern const list_sched_selector_t normal_selector;
+} list_sched_selector_t;
 
 /**
  * List schedule a graph.
@@ -206,6 +150,6 @@ extern const list_sched_selector_t normal_selector;
  *
  * @param irg     The backend irg.
  */
-void list_sched(ir_graph *irg);
+void be_list_sched_graph(ir_graph *irg, const list_sched_selector_t *selector);
 
 #endif

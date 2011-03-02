@@ -34,6 +34,7 @@
 #include "belistsched.h"
 #include "benode.h"
 #include "belive.h"
+#include "bemodule.h"
 
 /* we need a special mark */
 static char _mark;
@@ -52,8 +53,6 @@ typedef struct trace_irn {
 typedef struct trace_env {
 	trace_irn_t      *sched_info;               /**< trace scheduling information about the nodes */
 	sched_timestep_t curr_time;                 /**< current time of the scheduler */
-	void             *selector_env;             /**< the backend selector environment */
-	const list_sched_selector_t *selector;      /**< the actual backend selector */
 	be_lv_t          *liveness;                 /**< The liveness for the irg */
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 } trace_env_t;
@@ -228,10 +227,13 @@ static inline void set_irn_critical_path_len(trace_env_t *env, ir_node *n, unsig
  */
 static sched_timestep_t exectime(trace_env_t *env, ir_node *n)
 {
+	(void) env;
 	if (be_is_Keep(n) || is_Proj(n))
 		return 0;
+#if 0
 	if (env->selector->exectime)
 		return env->selector->exectime(env->selector_env, n);
+#endif
 	return 1;
 }
 
@@ -240,6 +242,8 @@ static sched_timestep_t exectime(trace_env_t *env, ir_node *n)
  */
 static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle, ir_node *curr, int curr_cycle)
 {
+	(void) pred_cycle;
+	(void) curr_cycle;
 	/* a Keep hides a root */
 	if (be_is_Keep(curr))
 		return exectime(env, pred);
@@ -252,8 +256,11 @@ static sched_timestep_t latency(trace_env_t *env, ir_node *pred, int pred_cycle,
 	if (is_Proj(pred))
 		pred = get_Proj_pred(pred);
 
+#if 0
 	if (env->selector->latency)
 		return env->selector->latency(env->selector_env, pred, pred_cycle, curr, curr_cycle);
+#endif
+
 	return 1;
 }
 
@@ -621,11 +628,9 @@ force_mcands:
 	return irn;
 }
 
-static void *muchnik_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
+static void *muchnik_init_graph(ir_graph *irg)
 {
 	trace_env_t *env  = trace_init(irg);
-	env->selector     = vtab;
-	env->selector_env = (void*) be_get_irg_arch_env(irg);
 	return (void *)env;
 }
 
@@ -636,17 +641,19 @@ static void *muchnik_init_block(void *graph_env, ir_node *bl)
 	return graph_env;
 }
 
-const list_sched_selector_t muchnik_selector = {
-	muchnik_init_graph,
-	muchnik_init_block,
-	muchnik_select,
-	trace_node_ready,    /* node_ready */
-	trace_update_time,   /* node_selected */
-	NULL,                /* exectime */
-	NULL,                /* latency */
-	NULL,                /* finish_block */
-	trace_free           /* finish_graph */
-};
+static void sched_muchnik(ir_graph *irg)
+{
+	static const list_sched_selector_t muchnik_selector = {
+		muchnik_init_graph,
+		muchnik_init_block,
+		muchnik_select,
+		trace_node_ready,    /* node_ready */
+		trace_update_time,   /* node_selected */
+		NULL,                /* finish_block */
+		trace_free           /* finish_graph */
+	};
+	be_list_sched_graph(irg, &muchnik_selector);
+}
 
 /**
  * Execute the heuristic function.
@@ -723,14 +730,23 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 	return cand;
 }
 
-const list_sched_selector_t heuristic_selector = {
-	muchnik_init_graph,
-	muchnik_init_block,
-	heuristic_select,
-	trace_node_ready,    /* node_ready */
-	trace_update_time,   /* node_selected */
-	NULL,                /* exectime */
-	NULL,                /* latency */
-	NULL,                /* finish_block */
-	trace_free           /* finish_graph */
-};
+static void sched_heuristic(ir_graph *irg)
+{
+	static const list_sched_selector_t heuristic_selector = {
+		muchnik_init_graph,
+		muchnik_init_block,
+		heuristic_select,
+		trace_node_ready,    /* node_ready */
+		trace_update_time,   /* node_selected */
+		NULL,                /* finish_block */
+		trace_free           /* finish_graph */
+	};
+	be_list_sched_graph(irg, &heuristic_selector);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_trace);
+void be_init_sched_trace(void)
+{
+	be_register_scheduler("heur", sched_heuristic);
+	be_register_scheduler("muchnik", sched_muchnik);
+}

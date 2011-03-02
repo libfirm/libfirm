@@ -30,6 +30,7 @@
 
 #include "besched.h"
 #include "belistsched.h"
+#include "bemodule.h"
 
 /**
  * The random selector:
@@ -75,13 +76,10 @@ static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
 	return irn;
 }
 
-static void *random_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
+static void *random_init_graph(ir_graph *irg)
 {
-	(void)vtab;
 	(void)irg;
-	/* Using time(NULL) as a seed here gives really random results,
-	   but is NOT deterministic which makes debugging impossible.
-	   Moreover no-one want non-deterministic compilers ... */
+	/* TODO: add commandline option for the seed */
 	srand(0x4711);
 	return NULL;
 }
@@ -93,14 +91,22 @@ static void *random_init_block(void *graph_env, ir_node *block)
 	return NULL;
 }
 
-const list_sched_selector_t random_selector = {
-	random_init_graph,
-	random_init_block,
-	random_select,
-	NULL,                /* node_ready */
-	NULL,                /* node_selected */
-	NULL,                /* exectime */
-	NULL,                /* latency */
-	NULL,                /* finish_block */
-	NULL                 /* finish_graph */
-};
+static void sched_random(ir_graph *irg)
+{
+	static const list_sched_selector_t random_selector = {
+		random_init_graph,
+		random_init_block,
+		random_select,
+		NULL,                /* node_ready */
+		NULL,                /* node_selected */
+		NULL,                /* finish_block */
+		NULL                 /* finish_graph */
+	};
+	be_list_sched_graph(irg, &random_selector);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_rand);
+void be_init_sched_rand(void)
+{
+	be_register_scheduler("random", sched_random);
+}

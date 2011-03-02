@@ -44,6 +44,10 @@
 #include "belistsched.h"
 #include "belive.h"
 
+#include "lc_opts.h"
+#include "lc_opts_enum.h"
+#include "irtools.h"
+
 #define SCHED_INITIAL_GRANULARITY (1 << 14)
 
 static void sched_renumber(const ir_node *block)
@@ -145,7 +149,27 @@ void sched_remove(ir_node *irn)
 	info->prev      = NULL;
 }
 
+
+
+static be_module_list_entry_t *schedulers;
+static schedule_func           scheduler;
+
+void be_register_scheduler(const char *name, schedule_func func)
+{
+	if (scheduler == NULL)
+		scheduler = func;
+	be_add_module_to_list(&schedulers, name, func);
+}
+
+void be_schedule_graph(ir_graph *irg)
+{
+	scheduler(irg);
+}
+
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched);
 void be_init_sched(void)
 {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	be_add_module_list_opt(be_grp, "scheduler", "scheduling algorithm",
+	                       &schedulers, (void**)&scheduler);
 }

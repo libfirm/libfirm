@@ -228,4 +228,19 @@ static inline bool sched_comes_after(const ir_node *n1, const ir_node *n2)
 #define sched_foreach_Phi(block,phi) \
 	for (phi = sched_first(block); is_Phi(phi); phi = sched_next(phi))
 
+/**
+ * Type for a function scheduling a graph
+ */
+typedef void (*schedule_func) (ir_graph *irg);
+
+/**
+ * Register new scheduling algorithm
+ */
+void be_register_scheduler(const char *name, schedule_func func);
+
+/**
+ * schedule a graph with the currenty selected scheduler.
+ */
+void be_schedule_graph(ir_graph *irg);
+
 #endif

@@ -34,6 +34,7 @@
 #include "irtools.h"
 #include "irgwalk.h"
 #include "benode.h"
+#include "bemodule.h"
 #include "array_t.h"
 
 // XXX there is no one time init for schedulers
@@ -376,13 +377,10 @@ static void normal_sched_block(ir_node* block, void* env)
 }
 
 
-static void *normal_init_graph(const list_sched_selector_t *vtab,
-                               ir_graph *irg)
+static void *normal_init_graph(ir_graph *irg)
 {
 	instance_t   *inst = XMALLOC(instance_t);
 	ir_heights_t *heights;
-
-	(void)vtab;
 
 	be_clear_links(irg);
 
@@ -438,14 +436,22 @@ static void normal_finish_graph(void *env)
 	xfree(inst);
 }
 
-const list_sched_selector_t normal_selector = {
-	normal_init_graph,
-	normal_init_block,
-	normal_select,
-	NULL,              /* node_ready */
-	NULL,              /* node_selected */
-	NULL,              /* exectime */
-	NULL,              /* latency */
-	NULL,              /* finish_block */
-	normal_finish_graph
-};
+static void sched_normal(ir_graph *irg)
+{
+	static const list_sched_selector_t normal_selector = {
+		normal_init_graph,
+		normal_init_block,
+		normal_select,
+		NULL,              /* node_ready */
+		NULL,              /* node_selected */
+		NULL,              /* finish_block */
+		normal_finish_graph
+	};
+	be_list_sched_graph(irg, &normal_selector);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_normal);
+void be_init_sched_normal(void)
+{
+	be_register_scheduler("normal", sched_normal);
+}

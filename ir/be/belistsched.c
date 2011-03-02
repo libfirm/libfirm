@@ -62,51 +62,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
-enum {
-	BE_SCHED_SELECT_TRIVIAL,
-	BE_SCHED_SELECT_REGPRESS,
-	BE_SCHED_SELECT_MUCHNIK,
-	BE_SCHED_SELECT_HEUR,
-	BE_SCHED_SELECT_HMUCHNIK,
-	BE_SCHED_SELECT_RANDOM,
-	BE_SCHED_SELECT_NORMAL,
-};
-
-enum {
-	BE_SCHED_PREP_NONE = 0,
-	BE_SCHED_PREP_MRIS = 2,
-	BE_SCHED_PREP_RSS  = 3
-};
-
-typedef struct list_sched_options_t {
-	int select;  /**< the node selector */
-} list_sched_options_t;
-
-static list_sched_options_t list_sched_options = {
-	BE_SCHED_SELECT_NORMAL,   /* mueller heuristic selector */
-};
-
-/* schedule selector options. */
-static const lc_opt_enum_int_items_t sched_select_items[] = {
-	{ "trivial",  BE_SCHED_SELECT_TRIVIAL  },
-	{ "random",   BE_SCHED_SELECT_RANDOM   },
-	{ "regpress", BE_SCHED_SELECT_REGPRESS },
-	{ "normal",   BE_SCHED_SELECT_NORMAL   },
-	{ "muchnik",  BE_SCHED_SELECT_MUCHNIK  },
-	{ "heur",     BE_SCHED_SELECT_HEUR     },
-	{ "hmuchnik", BE_SCHED_SELECT_HMUCHNIK },
-	{ NULL,       0 }
-};
-
-static lc_opt_enum_int_var_t sched_select_var = {
-	&list_sched_options.select, sched_select_items
-};
-
-static const lc_opt_table_entry_t list_sched_option_table[] = {
-	LC_OPT_ENT_ENUM_PTR("select", "node selector",          &sched_select_var),
-	LC_OPT_LAST
-};
-
 /**
  * All scheduling info needed per node.
  */
@@ -502,23 +457,10 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 }
 
 /* List schedule a graph. */
-void list_sched(ir_graph *irg)
+void be_list_sched_graph(ir_graph *irg, const list_sched_selector_t *selector)
 {
 	int num_nodes;
 	sched_env_t env;
-	const list_sched_selector_t *selector;
-
-	/* Select a scheduler based on backend options */
-	switch (list_sched_options.select) {
-		case BE_SCHED_SELECT_TRIVIAL:  selector = &trivial_selector;      break;
-		case BE_SCHED_SELECT_RANDOM:   selector = &random_selector;       break;
-		case BE_SCHED_SELECT_REGPRESS: selector = &reg_pressure_selector; break;
-		case BE_SCHED_SELECT_MUCHNIK:  selector = &muchnik_selector;      break;
-		case BE_SCHED_SELECT_HEUR:     selector = &heuristic_selector;    break;
-		case BE_SCHED_SELECT_NORMAL:   selector = &normal_selector;       break;
-		default:
-		case BE_SCHED_SELECT_HMUCHNIK: selector = &heuristic_selector;    break;
-	}
 
 #if 1
 	/* Matze: This is very slow, we should avoid it to improve backend speed,
@@ -540,14 +482,14 @@ void list_sched(ir_graph *irg)
 
 	memset(env.sched_info, 0, num_nodes * sizeof(env.sched_info[0]));
 
-	if (env.selector->init_graph)
-		env.selector_env = env.selector->init_graph(env.selector, irg);
+	if (selector->init_graph != NULL)
+		env.selector_env = selector->init_graph(irg);
 
 	/* Schedule each single block. */
 	irg_block_walk_graph(irg, list_sched_block, NULL, &env);
 
-	if (env.selector->finish_graph)
-		env.selector->finish_graph(env.selector_env);
+	if (selector->finish_graph != NULL)
+		selector->finish_graph(env.selector_env);
 
 	DEL_ARR_F(env.sched_info);
 }
@@ -555,10 +497,5 @@ void list_sched(ir_graph *irg)
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched);
 void be_init_listsched(void)
 {
-	lc_opt_entry_t *be_grp    = lc_opt_get_grp(firm_opt_get_root(), "be");
-	lc_opt_entry_t *sched_grp = lc_opt_get_grp(be_grp, "listsched");
-
-	lc_opt_add_table(sched_grp, list_sched_option_table);
-
 	FIRM_DBG_REGISTER(dbg, "firm.be.sched");
 }

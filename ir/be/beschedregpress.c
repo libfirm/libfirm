@@ -35,6 +35,7 @@
 #include "besched.h"
 #include "belistsched.h"
 #include "benode.h"
+#include "bemodule.h"
 
 
 typedef struct usage_stats_t {
@@ -47,12 +48,7 @@ typedef struct usage_stats_t {
 } usage_stats_t;
 
 typedef struct {
-	const list_sched_selector_t *vtab;
-} reg_pressure_main_env_t;
-
-typedef struct {
 	struct obstack obst;
-	const reg_pressure_main_env_t *main_env;
 	usage_stats_t *root;
 	ir_nodeset_t already_scheduled;
 } reg_pressure_selector_env_t;
@@ -171,25 +167,22 @@ static int compute_max_hops(reg_pressure_selector_env_t *env, ir_node *irn)
 	return res;
 }
 
-static void *reg_pressure_graph_init(const list_sched_selector_t *vtab, ir_graph *irg)
+static void *reg_pressure_graph_init(ir_graph *irg)
 {
-	reg_pressure_main_env_t *main_env = XMALLOC(reg_pressure_main_env_t);
-
-	main_env->vtab = vtab;
 	irg_walk_graph(irg, firm_clear_link, NULL, NULL);
 
-	return main_env;
+	return NULL;
 }
 
 static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 {
 	ir_node *irn;
 	reg_pressure_selector_env_t *env = XMALLOC(reg_pressure_selector_env_t);
+	(void) graph_env;
 
 	obstack_init(&env->obst);
 	ir_nodeset_init(&env->already_scheduled);
 	env->root              = NULL;
-	env->main_env          = (reg_pressure_main_env_t*)graph_env;
 
 	/*
 	* Collect usage statistics.
@@ -305,14 +298,22 @@ static ir_node *reg_pressure_select(void *block_env, ir_nodeset_t *ready_set,
 	return res;
 }
 
-const list_sched_selector_t reg_pressure_selector = {
-	reg_pressure_graph_init,
-	reg_pressure_block_init,
-	reg_pressure_select,
-	NULL,                    /* node_ready */
-	NULL,                    /* node_selected */
-	NULL,                    /* exectime */
-	NULL,                    /* latency */
-	reg_pressure_block_free,
-	free
-};
+static void sched_reg_pressure(ir_graph *irg)
+{
+	static const list_sched_selector_t reg_pressure_selector = {
+		reg_pressure_graph_init,
+		reg_pressure_block_init,
+		reg_pressure_select,
+		NULL,                    /* node_ready */
+		NULL,                    /* node_selected */
+		reg_pressure_block_free,
+		free
+	};
+	be_list_sched_graph(irg, &reg_pressure_selector);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_regpress);
+void be_init_sched_regpress(void)
+{
+	be_register_scheduler("regpress", sched_reg_pressure);
+}

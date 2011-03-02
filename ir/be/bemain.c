@@ -659,7 +659,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		/* schedule the irg */
 		be_timer_push(T_SCHED);
-		list_sched(irg);
+		be_schedule_graph(irg);
 		be_timer_pop(T_SCHED);
 
 		dump(DUMP_SCHED, irg, "sched");

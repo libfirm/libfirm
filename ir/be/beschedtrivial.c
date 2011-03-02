@@ -34,6 +34,8 @@
 
 #include "bearch.h"
 #include "belistsched.h"
+#include "bemodule.h"
+#include "besched.h"
 
 /**
  * The trivial selector:
@@ -62,9 +64,8 @@ static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
 	return irn;
 }
 
-static void *trivial_init_graph(const list_sched_selector_t *vtab, ir_graph *irg)
+static void *trivial_init_graph(ir_graph *irg)
 {
-	(void)vtab;
 	(void)irg;
 	return NULL;
 }
@@ -76,14 +77,22 @@ static void *trivial_init_block(void *graph_env, ir_node *block)
 	return NULL;
 }
 
-const list_sched_selector_t trivial_selector = {
-	trivial_init_graph,
-	trivial_init_block,
-	trivial_select,
-	NULL,                /* node_ready */
-	NULL,                /* node_selected */
-	NULL,                /* exectime */
-	NULL,                /* latency */
-	NULL,                /* finish_block */
-	NULL                 /* finish_graph */
-};
+static void sched_trivial(ir_graph *irg)
+{
+	static const list_sched_selector_t trivial_selector = {
+		trivial_init_graph,
+		trivial_init_block,
+		trivial_select,
+		NULL,                /* node_ready */
+		NULL,                /* node_selected */
+		NULL,                /* finish_block */
+		NULL                 /* finish_graph */
+	};
+	be_list_sched_graph(irg, &trivial_selector);
+}
+
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_trivial);
+void be_init_sched_trivial(void)
+{
+	be_register_scheduler("trivial", sched_trivial);
+}
