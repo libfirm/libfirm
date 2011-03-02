@@ -203,7 +203,7 @@ static void belady(minibelady_env_t *env, ir_node *block);
  * Collects all values live-in at block @p block and all phi results in this
  * block.
  * Then it adds the best values (at most n_regs) to the blocks start_workset.
- * The phis among the remaining values get spilled: Introduce psudo-copies of
+ * The phis among the remaining values get spilled: Introduce pseudo-copies of
  * their args to break interference and make it possible to spill them to the
  * same spill slot.
  */
@@ -557,7 +557,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	info = env.spills;
 	while (info != NULL) {
 		be_ssa_construction_env_t senv;
-		int i, len;
+		size_t i, len;
 		ir_node **phis;
 
 		be_ssa_construction_init(&senv, irg);
