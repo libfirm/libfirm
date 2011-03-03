@@ -85,9 +85,10 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 #define IDENT(x)  new_id_from_chars(x, sizeof(x) - 1)
 
 	irp->name = new_id_from_str(module_name);
-	irp->segment_types[IR_SEGMENT_GLOBAL] = new_type_class(IDENT("GlobalType"));
+	irp->segment_types[IR_SEGMENT_GLOBAL]
+		= new_type_class(IDENT("GlobalType"));
 	irp->segment_types[IR_SEGMENT_THREAD_LOCAL]
-		= new_type_class(IDENT("ThreadLocal"));
+		= new_type_struct(IDENT("ThreadLocal"));
 	irp->segment_types[IR_SEGMENT_CONSTRUCTORS]
 		= new_type_class(IDENT("Constructors"));
 	irp->segment_types[IR_SEGMENT_DESTRUCTORS]
