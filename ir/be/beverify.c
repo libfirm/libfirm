@@ -282,7 +282,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 static void check_schedule(ir_node *node, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*)data;
-	bool should_be = to_appear_in_schedule(node);
+	bool should_be = !is_Proj(node) && !(arch_irn_get_flags(node) & arch_irn_flags_not_scheduled);
 	bool scheduled = bitset_is_set(env->scheduled, get_irn_idx(node));
 
 	if (should_be != scheduled) {

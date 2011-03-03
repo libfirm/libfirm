@@ -114,7 +114,7 @@ static inline void set_already_scheduled(block_sched_env_t *env, ir_node *n)
 	env->sched_info[idx].already_sched = 1;
 }
 
-static void add_to_sched(block_sched_env_t *env, ir_node *irn);
+static void selected(block_sched_env_t *env, ir_node *irn);
 
 /**
  * Try to put a node in the ready set.
@@ -153,8 +153,8 @@ static inline int make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn
 			return 0;
 	}
 
-	if (! to_appear_in_schedule(irn)) {
-		add_to_sched(env, irn);
+	if (is_Proj(irn) || (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled)) {
+		selected(env, irn);
 		DB((dbg, LEVEL_3, "\tmaking immediately available: %+F\n", irn));
 	} else {
 		ir_nodeset_insert(&env->cands, irn);
@@ -301,6 +301,18 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn)
 	}
 }
 
+static void selected(block_sched_env_t *env, ir_node *node)
+{
+	/* notify the selector about the finally selected node. */
+	if (env->selector->node_selected)
+		env->selector->node_selected(env->selector_block_env, node);
+
+    /* Insert the node in the set of all available scheduled nodes. */
+    set_already_scheduled(env, node);
+
+	make_users_ready(env, node);
+}
+
 /**
  * Append an instruction to a schedule.
  * @param env The block scheduling environment.
@@ -309,26 +321,17 @@ static void update_sched_liveness(block_sched_env_t *env, ir_node *irn)
  */
 static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
-    /* If the node consumes/produces data, it is appended to the schedule
-     * list, otherwise, it is not put into the list */
-    if (to_appear_in_schedule(irn)) {
-		update_sched_liveness(env, irn);
-		sched_add_before(env->block, irn);
+	assert(! (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled));
 
-		DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
+	update_sched_liveness(env, irn);
+	sched_add_before(env->block, irn);
 
-		/* Remove the node from the ready set */
-		ir_nodeset_remove(&env->cands, irn);
-    }
+	DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
 
-	/* notify the selector about the finally selected node. */
-	if (env->selector->node_selected)
-		env->selector->node_selected(env->selector_block_env, irn);
+	/* Remove the node from the ready set */
+	ir_nodeset_remove(&env->cands, irn);
 
-    /* Insert the node in the set of all available scheduled nodes. */
-    set_already_scheduled(env, irn);
-
-	make_users_ready(env, irn);
+	selected(env, irn);
 }
 
 /**
@@ -380,9 +383,10 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		}
 
 		users = get_irn_n_edges(irn);
-		if (users == 0)
+		if (users == 0) {
 			continue;
-		else if (users == 1) { /* ignore nodes that are only hold by the anchor */
+		} else if (users == 1) {
+			/* ignore nodes that are only hold by the anchor */
 			const ir_edge_t *edge = get_irn_out_edge_first_kind(irn, EDGE_KIND_NORMAL);
 			ir_node *user = get_edge_src_irn(edge);
 			if (is_Anchor(user))
@@ -390,10 +394,8 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		}
 
 		if (is_Phi(irn)) {
-			/*
-			   Phi functions are scheduled immediately, since they only
-			   transfer data flow from the predecessors to this block.
-			*/
+			/* Phi functions are scheduled immediately, since they only
+			 * transfer data flow from the predecessors to this block. */
 			add_to_sched(&be, irn);
 		} else if (be_is_Start(irn)) {
 			/* The start block will be scheduled as the first node */
@@ -435,8 +437,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 			}
 		}
 
-		if (! irn) {
-			/* Keeps must be immediately scheduled */
+		if (irn == NULL) {
 			irn = be.selector->select(be.selector_block_env, &be.cands, &be.live);
 		}
 

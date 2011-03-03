@@ -188,21 +188,19 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	* Collect usage statistics.
 	*/
 	sched_foreach(bl, irn) {
-		if (to_appear_in_schedule(irn)) {
-			int i, n;
+		int i, n;
+		if (is_Proj(irn)
+				|| (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled))
+			continue;
 
-			for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
-				//ir_node *op = get_irn_n(irn, i);
-				if (to_appear_in_schedule(irn)) {
-					usage_stats_t *us = get_or_set_usage_stats(env, irn);
+		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
+			usage_stats_t *us = get_or_set_usage_stats(env, irn);
 #if 0 /* Liveness is not computed here! */
-					if (is_live_end(bl, op))
-						us->uses_in_block = 99999;
-					else
+			if (is_live_end(bl, op))
+				us->uses_in_block = 99999;
+			else
 #endif
-						us->uses_in_block++;
-				}
-			}
+				us->uses_in_block++;
 		}
 	}
 
@@ -247,8 +245,11 @@ static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 	for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
 		ir_node *op = get_irn_n(irn, i);
 
-		if (to_appear_in_schedule(op))
-			sum += compute_max_hops(env, op);
+		if (is_Proj(op)
+		    || (arch_irn_get_flags(op) & arch_irn_flags_not_scheduled))
+			continue;
+
+		sum += compute_max_hops(env, op);
 	}
 
 	sum += get_result_hops_sum(env, irn);
