@@ -1621,25 +1621,13 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_graph *irg,
  */
 static void fix_start_block(ir_graph *irg)
 {
-	ir_node         *initial_X   = get_irg_initial_exec(irg);
-	ir_node         *start_block = get_irg_start_block(irg);
-	const ir_edge_t *edge;
+	ir_node *initial_X   = get_irg_initial_exec(irg);
+	ir_node *start_block = get_irg_start_block(irg);
+	ir_node *jmp         = new_r_Jmp(start_block);
 
 	assert(is_Proj(initial_X));
-
-	foreach_out_edge(initial_X, edge) {
-		ir_node *block = get_edge_src_irn(edge);
-
-		if (is_Anchor(block))
-			continue;
-		if (block != start_block) {
-			ir_node *jmp = new_r_Jmp(start_block);
-			set_Block_cfgpred(block, get_edge_src_pos(edge), jmp);
-			set_irg_initial_exec(irg, jmp);
-			return;
-		}
-	}
-	panic("Initial exec has no follow block in %+F", irg);
+	exchange(initial_X, jmp);
+	set_irg_initial_exec(irg, new_r_Bad(irg));
 }
 
 /**
@@ -1866,6 +1854,7 @@ static void modify_irg(ir_graph *irg)
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
 	start_bl   = get_irg_start_block(irg);
 	env->start = be_new_Start(NULL, start_bl, pmap_count(env->regs) + 1);
+	set_irg_start(irg, env->start);
 
 	/*
 	 * make proj nodes for the callee save registers.
