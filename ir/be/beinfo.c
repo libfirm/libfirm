@@ -41,7 +41,6 @@ void be_info_new_node(ir_node *node)
 {
 	struct obstack *obst;
 	backend_info_t *info;
-	unsigned        opcode;
 
 	/* Projs need no be info, their tuple holds all information */
 	if (is_Proj(node))
@@ -53,32 +52,34 @@ void be_info_new_node(ir_node *node)
 	assert(node->backend_info == NULL);
 	node->backend_info = info;
 
-	/* Hack! We still have middle end nodes in the backend (which was probably
-	   a bad decision back then), which have no register constraints.
-	   Set some none_requirements here.
+	/*
+	 * Set backend info for some middleend nodes which still appear in
+	 * backend graphs
 	 */
-	opcode = get_irn_opcode(node);
-	if (opcode <= iro_Last) {
-		ir_mode *mode = get_irn_mode(node);
-		if (mode != mode_T) {
-			info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
-			memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
-			info->out_infos[0].req = arch_no_register_req;
-		}
-
-		switch (opcode) {
-		case iro_Anchor:
-		case iro_Bad:
-		case iro_Block:
-		case iro_Dummy:
-		case iro_End:
-		case iro_NoMem:
-		case iro_Pin:
-		case iro_Sync:
-		case iro_Unknown:
-			info->flags |= arch_irn_flags_not_scheduled;
-			break;
-		}
+	switch (get_irn_opcode(node)) {
+	case iro_Anchor:
+	case iro_Bad:
+	case iro_Block:
+	case iro_Dummy:
+	case iro_End:
+	case iro_NoMem:
+	case iro_Unknown:
+		info->flags |= arch_irn_flags_not_scheduled;
+		break;
+	case iro_Pin:
+	case iro_Sync:
+		info->flags |= arch_irn_flags_not_scheduled;
+		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
+		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
+		info->out_infos[0].req = arch_no_register_req;
+		break;
+	case iro_Phi:
+		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
+		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
+		info->out_infos[0].req = arch_no_register_req;
+		break;
+	default:
+		break;
 	}
 }
 
