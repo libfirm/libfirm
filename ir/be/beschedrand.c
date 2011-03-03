@@ -36,14 +36,12 @@
  * The random selector:
  * Just assure that branches are executed last, otherwise select a random node
  */
-static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set,
-                              ir_nodeset_t *live_set)
+static ir_node *random_select(void *block_env, ir_nodeset_t *ready_set)
 {
 	ir_nodeset_iterator_t iter;
 	ir_node          *irn      = NULL;
 	int only_branches_left = 1;
 	(void)block_env;
-	(void)live_set;
 
 	/* assure that branches and constants are executed last */
 	ir_nodeset_iterator_init(&iter, ready_set);

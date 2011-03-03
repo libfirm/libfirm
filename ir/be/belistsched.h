@@ -71,11 +71,9 @@ typedef struct list_sched_selector_t {
 	 * @param block_env   Some private information as returned by init_block().
 	 * @param sched_head  The schedule so far.
 	 * @param ready_set   A set containing all ready nodes. Pick one of these nodes.
-	 * @param live_set    A set containing all nodes currently alive.
 	 * @return The chosen node.
 	 */
-	ir_node *(*select)(void *block_env, ir_nodeset_t *ready_set,
-                       ir_nodeset_t *live_set);
+	ir_node *(*select)(void *block_env, ir_nodeset_t *ready_set);
 
 	/**
 	 * This function gets executed after a node finally has been made ready.

@@ -42,13 +42,11 @@
  * Just assure that branches are executed last, otherwise select
  * the first node ready.
  */
-static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set,
-                               ir_nodeset_t *live_set)
+static ir_node *trivial_select(void *block_env, ir_nodeset_t *ready_set)
 {
 	ir_node               *irn;
 	ir_nodeset_iterator_t  iter;
 	(void)block_env;
-	(void)live_set;
 
 	/* assure that branches and constants are executed last */
 	foreach_ir_nodeset(ready_set, irn, iter) {

@@ -87,7 +87,6 @@ typedef struct block_sched_env_t {
 	ir_nodeset_t cands;                         /**< the set of candidates */
 	ir_node *block;                             /**< the current block */
 	sched_env_t *sched_env;                     /**< the scheduler environment */
-	ir_nodeset_t live;                          /**< simple liveness during scheduling */
 	const list_sched_selector_t *selector;
 	void *selector_block_env;
 } block_sched_env_t;
@@ -231,76 +230,6 @@ static inline int add_irn_not_sched_user(block_sched_env_t *env, ir_node *n, int
 	return env->sched_info[idx].num_not_sched_user;
 }
 
-/**
- * Returns the number of users of a node having mode datab.
- */
-static int get_num_successors(ir_node *irn)
-{
-	int             sum = 0;
-	const ir_edge_t *edge;
-
-	if (get_irn_mode(irn) == mode_T) {
-		/* for mode_T nodes: count the users of all Projs */
-		foreach_out_edge(irn, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			ir_mode *mode = get_irn_mode(proj);
-
-			if (mode == mode_T) {
-				sum += get_num_successors(proj);
-			} else if (mode_is_datab(mode)) {
-				sum += get_irn_n_edges(proj);
-			}
-		}
-	}
-	else {
-		/* do not count keep-alive edges */
-		foreach_out_edge(irn, edge) {
-			if (get_irn_opcode(get_edge_src_irn(edge)) != iro_End)
-				sum++;
-		}
-	}
-
-	return sum;
-}
-
-/**
- * Adds irn to @p live, updates all inputs that this user is scheduled
- * and counts all of its non scheduled users.
- */
-static void update_sched_liveness(block_sched_env_t *env, ir_node *irn)
-{
-	int i;
-
-	/* ignore Projs */
-	if (is_Proj(irn))
-		return;
-
-	for (i = get_irn_ins_or_deps(irn) - 1; i >= 0; --i) {
-		ir_node *in = get_irn_in_or_dep(irn, i);
-
-		/* if in is a proj: update predecessor */
-		in = skip_Proj(in);
-
-		/* if in is still in the live set: reduce number of users by one */
-		if (ir_nodeset_contains(&env->live, in)) {
-			if (add_irn_not_sched_user(env, in, -1) <= 0)
-				ir_nodeset_remove(&env->live, in);
-		}
-	}
-
-	/*
-		get_num_successors returns the number of all users. This includes
-		users in different blocks as well. As the each block is scheduled separately
-		the liveness info of those users will not be updated and so these
-		users will keep up the register pressure as it is desired.
-	*/
-	i = get_num_successors(irn);
-	if (i > 0) {
-		set_irn_not_sched_user(env, irn, i);
-		ir_nodeset_insert(&env->live, irn);
-	}
-}
-
 static void selected(block_sched_env_t *env, ir_node *node)
 {
 	/* notify the selector about the finally selected node. */
@@ -323,7 +252,6 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
 	assert(! (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled));
 
-	update_sched_liveness(env, irn);
 	sched_add_before(env->block, irn);
 
 	DBG((dbg, LEVEL_2, "\tadding %+F\n", irn));
@@ -362,7 +290,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.sched_info = env->sched_info;
 	be.block      = block;
 	ir_nodeset_init_size(&be.cands, get_irn_n_edges(block));
-	ir_nodeset_init_size(&be.live, get_irn_n_edges(block));
 	be.selector   = selector;
 	be.sched_env  = env;
 
@@ -412,9 +339,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 				if (get_nodes_block(operand) == block) {
 					ready = 0;
 					break;
-				} else {
-					/* live in values increase register pressure */
-					ir_nodeset_insert(&be.live, operand);
 				}
 			}
 
@@ -438,7 +362,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		}
 
 		if (irn == NULL) {
-			irn = be.selector->select(be.selector_block_env, &be.cands, &be.live);
+			irn = be.selector->select(be.selector_block_env, &be.cands);
 		}
 
 		DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
@@ -454,7 +378,6 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 		selector->finish_block(be.selector_block_env);
 
 	ir_nodeset_destroy(&be.cands);
-	ir_nodeset_destroy(&be.live);
 }
 
 /* List schedule a graph. */

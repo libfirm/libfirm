@@ -570,14 +570,13 @@ static ir_node *basic_selection(ir_nodeset_t *ready_set)
 /**
 * The muchnik selector.
 */
-static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set, ir_nodeset_t *live_set)
+static ir_node *muchnik_select(void *block_env, ir_nodeset_t *ready_set)
 {
 	trace_env_t *env = (trace_env_t*)block_env;
 	ir_nodeset_t mcands, ecands;
 	ir_nodeset_iterator_t iter;
 	sched_timestep_t max_delay = 0;
 	ir_node *irn;
-	(void) live_set;
 
 	/* calculate the max delay of all candidates */
 	foreach_ir_nodeset(ready_set, irn, iter) {
@@ -658,15 +657,18 @@ static void sched_muchnik(ir_graph *irg)
 /**
  * Execute the heuristic function.
  */
-static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t *lv)
+static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns)
 {
 	trace_env_t *trace_env   = (trace_env_t*)block_env;
 	ir_node     *irn, *cand  = NULL;
 	int         max_prio     = INT_MIN;
 	int         cur_prio     = INT_MIN;
-	int         cur_pressure = ir_nodeset_size(lv);
 	int         reg_fact, cand_reg_fact;
 	ir_nodeset_iterator_t iter;
+	/* Note: register pressure calculation needs an overhaul, you need correct
+	 * tracking for each register class indidually and weight by each class
+	int         cur_pressure = ir_nodeset_size(lv); */
+	int         cur_pressure = 1;
 
 	/* prefer instructions which can be scheduled early */
 #define PRIO_TIME        3
@@ -689,7 +691,6 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns, ir_nodeset_t
 			int sign  = rdiff < 0;
 			int chg   = (rdiff < 0 ? -rdiff : rdiff) << PRIO_CHG_PRESS;
 
-			/* reg_fact = chg << cur_pressure; */
 			reg_fact = chg * cur_pressure;
 			if (reg_fact < chg)
 				reg_fact = INT_MAX - 2;
