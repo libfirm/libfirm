@@ -263,9 +263,8 @@ static size_t stats(void)
 */
 static void init_tables(void)
 {
-	ir_type  *tp;
-	size_t    i, n;
-	ir_graph *irg;
+	ir_graph     *irg;
+	ir_segment_t segment;
 
 	_live_classes = XMALLOC(pset_new_t);
 	pset_new_init(_live_classes);
@@ -278,24 +277,18 @@ static void init_tables(void)
 		pset_new_insert(_live_graphs, irg);
 	}
 
-	/* Find static allocated classes */
-	tp = get_glob_type();
-	n  = get_class_n_members(tp);
-	for (i = 0; i < n; ++i) {
-		ir_type *member_type = get_entity_type(get_class_member(tp, i));
-		if (is_Class_type(member_type))
-			pset_new_insert(_live_classes, member_type);
-	}
+	/* Find static allocated classes in all segments */
+	for (segment = IR_SEGMENT_FIRST; segment <= IR_SEGMENT_LAST; ++segment) {
+		ir_type *tp = get_segment_type(segment);
+		size_t  n   = get_compound_n_members(tp);
+		size_t  i;
 
-	tp = get_tls_type();
-	n  = get_class_n_members(tp);
-	for (i = 0; i < n; ++i) {
-		ir_type *member_type = get_entity_type(get_class_member(tp, i));
-		if (is_Class_type(member_type))
-			pset_new_insert(_live_classes, member_type);
+		for (i = 0; i < n; ++i) {
+			ir_type *member_type = get_entity_type(get_compound_member(tp, i));
+			if (is_Class_type(member_type))
+				pset_new_insert(_live_classes, member_type);
+		}
 	}
-
-	/** @FIXME: add constructors/destructors */
 }
 
 /*
