@@ -288,9 +288,9 @@ static void init_tables(void)
 	}
 
 	tp = get_tls_type();
-	n  = get_struct_n_members(tp);
+	n  = get_class_n_members(tp);
 	for (i = 0; i < n; ++i) {
-		ir_type *member_type = get_entity_type(get_struct_member(tp, i));
+		ir_type *member_type = get_entity_type(get_class_member(tp, i));
 		if (is_Class_type(member_type))
 			pset_new_insert(_live_classes, member_type);
 	}
