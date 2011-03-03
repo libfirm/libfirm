@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -158,7 +158,7 @@ FIRM_API int is_region(const void *thing);
  *
  * @param reg  the region
  */
-FIRM_API int get_region_n_preds(const ir_region *reg);
+FIRM_API size_t get_region_n_preds(const ir_region *reg);
 
 /**
  * Return the predecessor region at position pos.
@@ -166,7 +166,7 @@ FIRM_API int get_region_n_preds(const ir_region *reg);
  * @param reg  the region
  * @param pos  the position number
  */
-FIRM_API ir_region *get_region_pred(const ir_region *reg, int pos);
+FIRM_API ir_region *get_region_pred(const ir_region *reg, size_t pos);
 
 /**
  * Set the predecessor region at position pos.
@@ -175,14 +175,14 @@ FIRM_API ir_region *get_region_pred(const ir_region *reg, int pos);
  * @param pos  the position number
  * @param n    the new predecessor region
  */
-FIRM_API void set_region_pred(ir_region *reg, int pos, ir_region *n);
+FIRM_API void set_region_pred(ir_region *reg, size_t pos, ir_region *n);
 
 /**
  * Return the number of successors in a region.
  *
  * @param reg  the region
  */
-FIRM_API int get_region_n_succs(const ir_region *reg);
+FIRM_API size_t get_region_n_succs(const ir_region *reg);
 
 /**
  * Return the successor region at position pos.
@@ -190,7 +190,7 @@ FIRM_API int get_region_n_succs(const ir_region *reg);
  * @param reg  the region
  * @param pos  the position number
  */
-FIRM_API ir_region *get_region_succ(const ir_region *reg, int pos);
+FIRM_API ir_region *get_region_succ(const ir_region *reg, size_t pos);
 
 /**
  * Set the successor region at position pos.
@@ -199,7 +199,7 @@ FIRM_API ir_region *get_region_succ(const ir_region *reg, int pos);
  * @param pos  the position number
  * @param n    the new successor region
  */
-FIRM_API void set_region_succ(ir_region *reg, int pos, ir_region *n);
+FIRM_API void set_region_succ(ir_region *reg, size_t pos, ir_region *n);
 
 /**
  * Construct the region tree of a graph by doing

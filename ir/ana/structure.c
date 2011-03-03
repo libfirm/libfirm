@@ -26,6 +26,8 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "firm_common.h"
 #include "irnode_t.h"
 #include "structure.h"
@@ -55,8 +57,8 @@ struct ir_region {
 	ir_reg_or_blk  *parts;    /**< The list of all region parts. */
 	ir_region      **pred;    /**< The predecessor (control flow) regions of this region. */
 	ir_region      **succ;    /**< The successor (control flow) regions of this region. */
-	unsigned       prenum;    /**< DFS pre-oder number */
-	unsigned       postnum;   /**< DFS post-oder number */
+	size_t         prenum;    /**< DFS pre-oder number */
+	size_t         postnum;   /**< DFS post-oder number */
 	void           *link;     /**< A link field. */
 	unsigned long  nr;        /**< for debugging */
 	unsigned       visited:1; /**< The visited flag. */
@@ -130,7 +132,7 @@ int is_region(const void *thing)
 /**
  * Return the number of predecessors of a region.
  */
-int get_region_n_preds(const ir_region *reg)
+size_t get_region_n_preds(const ir_region *reg)
 {
 	return ARR_LEN(reg->pred);
 }
@@ -138,25 +140,25 @@ int get_region_n_preds(const ir_region *reg)
 /**
  * Return the predecessor region at position pos.
  */
-ir_region *get_region_pred(const ir_region *reg, int pos)
+ir_region *get_region_pred(const ir_region *reg, size_t pos)
 {
-	assert(0 <= pos && pos <= get_region_n_preds(reg));
+	assert(pos <= get_region_n_preds(reg));
 	return reg->pred[pos];
 }
 
 /**
  * Set the predecessor region at position pos.
  */
-void set_region_pred(ir_region *reg, int pos, ir_region *n)
+void set_region_pred(ir_region *reg, size_t pos, ir_region *n)
 {
-	assert(0 <= pos && pos <= get_region_n_preds(reg));
+	assert(pos <= get_region_n_preds(reg));
 	reg->pred[pos] = n;
 }
 
 /**
  * Return the number of successors in a region.
  */
-int get_region_n_succs(const ir_region *reg)
+size_t get_region_n_succs(const ir_region *reg)
 {
 	return ARR_LEN(reg->succ);
 }
@@ -164,18 +166,18 @@ int get_region_n_succs(const ir_region *reg)
 /**
  * Return the successor region at position pos.
  */
-ir_region *get_region_succ(const ir_region *reg, int pos)
+ir_region *get_region_succ(const ir_region *reg, size_t pos)
 {
-	assert(0 <= pos && pos <= get_region_n_succs(reg));
+	assert(pos <= get_region_n_succs(reg));
 	return reg->succ[pos];
 }
 
 /**
  * Set the successor region at position pos.
  */
-void set_region_succ(ir_region *reg, int pos, ir_region *n)
+void set_region_succ(ir_region *reg, size_t pos, ir_region *n)
 {
-	assert(0 <= pos && pos <= get_region_n_succs(reg));
+	assert(pos <= get_region_n_succs(reg));
 	reg->succ[pos] = n;
 }
 
@@ -185,9 +187,9 @@ void set_region_succ(ir_region *reg, int pos, ir_region *n)
 typedef struct walk_env {
 	struct obstack *obst;  /**< An obstack to allocate from. */
 	ir_region **post;      /**< The list of all currently existent top regions. */
-	unsigned l_post;       /**< The length of the allocated regions array. */
-	unsigned premax;       /**< maximum pre counter */
-	unsigned postmax;      /**< maximum post counter */
+	size_t l_post;         /**< The length of the allocated regions array. */
+	size_t premax;         /**< maximum pre counter */
+	size_t postmax;        /**< maximum post counter */
 	ir_node *start_block;  /**< The start block of the graph. */
 	ir_node *end_block;    /**< The end block of the graph. */
 } walk_env;
@@ -198,7 +200,7 @@ typedef struct walk_env {
  */
 static void dfs_walk2(ir_region *reg, walk_env *env)
 {
-	int i, n;
+	size_t i, n;
 
 	if (reg->visited == 0) {
 		reg->visited = 1;
@@ -296,35 +298,37 @@ static void update_BasicBlock_regions(ir_node *blk, void *ctx)
 }  /* update_BasicBlock_regions */
 
 /** Allocate a new region on an obstack */
-#define ALLOC_REG(obst, reg, tp) \
-	do { \
-		(reg)          = OALLOC((obst), ir_region); \
-		(reg)->kind    = k_ir_region; \
-		(reg)->type    = tp; \
-		(reg)->parent  = NULL; \
-		(reg)->prenum  = 0; \
-		(reg)->postnum = 0; \
-		(reg)->visited = 0; \
-		(reg)->exit    = 0; \
-		(reg)->enter   = 0; \
-		(reg)->link    = NULL; \
-	} while (0)
+static ir_region *alloc_region(struct obstack *obst, ir_region_kind type)
+{
+	ir_region *reg = OALLOC(obst, ir_region);
+	reg->kind    = k_ir_region;
+	reg->type    = type;
+	reg->parent  = NULL;
+	reg->prenum  = 0;
+	reg->postnum = 0;
+	reg->visited = 0;
+	reg->exit    = 0;
+	reg->enter   = 0;
+	reg->link    = NULL;
+
+	return reg;
+}  /* alloc_region */
 
 /**
  * Creates a new Sequence region.
  */
-static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_len)
+static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, size_t nset_len)
 {
-	ir_region *reg, *next;
-	int i;
-
-	ALLOC_REG(obst, reg, ir_rk_Sequence);
+	ir_region *reg  = alloc_region(obst, ir_rk_Sequence);
+	ir_region *next;
+	size_t    i;
 
 	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, nset_len);
 
 	/* beware: list is in reverse order, reverse */
 	next = nset;
-	for (i = nset_len - 1; i >= 0; --i) {
+	for (i = nset_len; i > 0;) {
+		--i;
 		nset = next;
 		reg->parts[i].region = nset;
 		nset->parent = reg;
@@ -339,7 +343,7 @@ static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_l
 	DEBUG_ONLY(
 		DB((dbg, LEVEL_2, " Created Sequence "));
 		for (i = 0; i < nset_len; ++i) {
-			DB((dbg, LEVEL_2, "(%u)", reg->parts[i].region->nr));
+			DB((dbg, LEVEL_2, "(%lu)", reg->parts[i].region->nr));
 		}
 		DB((dbg, LEVEL_2, "\n"));
 	)
@@ -351,9 +355,7 @@ static ir_region *new_Sequence(struct obstack *obst, ir_region *nset, int nset_l
  */
 static ir_region *new_IfThenElse(struct obstack *obst, ir_region *if_b, ir_region *then_b, ir_region *else_b)
 {
-	ir_region *reg;
-
-	ALLOC_REG(obst, reg, ir_rk_IfThenElse);
+	ir_region *reg = alloc_region(obst, ir_rk_IfThenElse);
 
 	reg->nr    = if_b->nr;
 	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, 3);
@@ -365,7 +367,7 @@ static ir_region *new_IfThenElse(struct obstack *obst, ir_region *if_b, ir_regio
 	reg->pred = DUP_ARR_D(ir_region *, obst, if_b->pred);
 	reg->succ = DUP_ARR_D(ir_region *, obst, then_b->succ);
 
-	DB((dbg, LEVEL_2, " Created If(%u)Then(%u)Else(%u)\n", reg->nr, then_b->nr, else_b->nr));
+	DB((dbg, LEVEL_2, " Created If(%lu)Then(%lu)Else(%lu)\n", reg->nr, then_b->nr, else_b->nr));
 
 	return reg;
 }  /* new_IfThenElse */
@@ -375,9 +377,7 @@ static ir_region *new_IfThenElse(struct obstack *obst, ir_region *if_b, ir_regio
  */
 static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *then_b)
 {
-	ir_region *reg;
-
-	ALLOC_REG(obst, reg, ir_rk_IfThen);
+	ir_region *reg = alloc_region(obst, ir_rk_IfThen);
 
 	reg->nr    = if_b->nr;
 	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, 2);
@@ -388,7 +388,7 @@ static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *t
 	reg->pred = DUP_ARR_D(ir_region *, obst, if_b->pred);
 	reg->succ = DUP_ARR_D(ir_region *, obst, then_b->succ);
 
-	DB((dbg, LEVEL_2, " Created If(%u)Then(%u)\n", reg->nr, then_b->nr));
+	DB((dbg, LEVEL_2, " Created If(%lu)Then(%lu)\n", reg->nr, then_b->nr));
 
 	return reg;
 }  /* new_IfThenElse */
@@ -397,11 +397,12 @@ static ir_region *new_IfThen(struct obstack *obst, ir_region *if_b, ir_region *t
  * Create a new Switch/case region.
  */
 static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_region *head, ir_region *exit,
-                                 ir_region *cases, int cases_len)
+                                 ir_region *cases, size_t cases_len)
 {
-	ir_region *reg, *c, *n;
-	int i;
-	int add = 1;
+	ir_region *reg = alloc_region(obst, type);
+	ir_region *c, *n;
+	int       add = 1;
+	size_t    i;
 
 	/* check, if the exit block is in the list */
 	for (c = cases; c != NULL; c = (ir_region*) c->link) {
@@ -410,8 +411,6 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 			break;
 		}
 	}
-
-	ALLOC_REG(obst, reg, type);
 
 	reg->nr    = head->nr;
 	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, cases_len + add);
@@ -435,9 +434,9 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 		size_t i;
 		DB((dbg, LEVEL_2, " Created %s(%u)\n", reg->type == ir_rk_Switch ? "Switch" : "Case", reg->nr));
 		for (i = 1; i < ARR_LEN(reg->parts); ++i) {
-			DB((dbg, LEVEL_2, "  Case(%u)\n", reg->parts[i].region->nr));
+			DB((dbg, LEVEL_2, "  Case(%lu)\n", reg->parts[i].region->nr));
 		}
-		DB((dbg, LEVEL_2, "  Exit(%u)\n", exit->nr));
+		DB((dbg, LEVEL_2, "  Exit(%lu)\n", exit->nr));
 	})
 	return reg;
 }  /* new_SwitchCase */
@@ -447,13 +446,12 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
  */
 static ir_region *new_SelfLoop(struct obstack *obst, ir_region *head)
 {
-	ir_region *reg, *succ;
-	int i, j, len;
+	ir_region *reg = alloc_region(obst, ir_rk_SelfLoop);
+	ir_region *succ;
+	size_t i, j, len;
 
-	ALLOC_REG(obst, reg, ir_rk_SelfLoop);
-
-	reg->nr      = head->nr;
-	reg->parts   = NEW_ARR_D(ir_reg_or_blk, obst, 1);
+	reg->nr    = head->nr;
+	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, 1);
 
 	reg->parts[0].region = head; head->parent = reg;
 
@@ -475,7 +473,7 @@ static ir_region *new_SelfLoop(struct obstack *obst, ir_region *head)
 	else
 		reg->succ[0] = get_region_succ(head, 1);
 
-	DB((dbg, LEVEL_2, " Created SelfLoop(%u)\n", reg->nr));
+	DB((dbg, LEVEL_2, " Created SelfLoop(%lu)\n", reg->nr));
 
 	return reg;
 }  /* new_SelfLoop */
@@ -485,12 +483,11 @@ static ir_region *new_SelfLoop(struct obstack *obst, ir_region *head)
  */
 static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_region *body)
 {
-	ir_region *reg, *succ;
+	ir_region *reg = alloc_region(obst, ir_rk_RepeatLoop);
+	ir_region *succ;
 
-	ALLOC_REG(obst, reg, ir_rk_RepeatLoop);
-
-	reg->nr      = head->nr;
-	reg->parts   = NEW_ARR_D(ir_reg_or_blk, obst, 2);
+	reg->nr    = head->nr;
+	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, 2);
 
 	reg->parts[0].region = head; head->parent = reg;
 	reg->parts[1].region = body; body->parent = reg;
@@ -505,7 +502,7 @@ static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_regio
 	else
 		reg->succ[0] = get_region_succ(body, 1);
 
-	DB((dbg, LEVEL_2, " Created RepeatLoop(%u)Body(%u)\n", reg->nr, body->nr));
+	DB((dbg, LEVEL_2, " Created RepeatLoop(%lu)Body(%lu)\n", reg->nr, body->nr));
 
 	return reg;
 }  /* new_RepeatLoop */
@@ -515,16 +512,15 @@ static ir_region *new_RepeatLoop(struct obstack *obst, ir_region *head, ir_regio
  */
 static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head)
 {
-	ir_region *reg, *succ;
+	ir_region *reg  = alloc_region(obst, ir_rk_WhileLoop);
 	ir_region *body = (ir_region*) head->link;
-	int i, j, len;
+	ir_region *succ;
+	size_t i, j, len;
 
 	head->link = NULL;
 
-	ALLOC_REG(obst, reg, ir_rk_WhileLoop);
-
-	reg->nr      = head->nr;
-	reg->parts   = NEW_ARR_D(ir_reg_or_blk, obst, 2);
+	reg->nr    = head->nr;
+	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, 2);
 
 	reg->parts[0].region = head; head->parent = reg;
 	reg->parts[1].region = body; body->parent = reg;
@@ -547,7 +543,7 @@ static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head)
 	else
 		reg->succ[0] = get_region_succ(head, 1);
 
-	DB((dbg, LEVEL_2, " Created WhileLoop(%u)Body(%u)\n", reg->nr, body->nr));
+	DB((dbg, LEVEL_2, " Created WhileLoop(%lu)Body(%lu)\n", reg->nr, body->nr));
 
 	return reg;
 }  /* new_WhileLoop */
@@ -557,17 +553,16 @@ static ir_region *new_WhileLoop(struct obstack *obst, ir_region *head)
  */
 static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 {
-	ir_region *reg, *c, *n;
-	int i, j, k, len, n_pred, n_succ;
+	ir_region *reg = alloc_region(obst, ir_rk_WhileLoop);
+	ir_region *c, *n;
+	size_t i, j, k, len, n_pred, n_succ;
 
 	/* count number of parts */
 	for (len = 0, c = head; c != NULL; c = (ir_region*) c->link)
 		++len;
 
-	ALLOC_REG(obst, reg, ir_rk_WhileLoop);
-
-	reg->nr      = head->nr;
-	reg->parts   = NEW_ARR_D(ir_reg_or_blk, obst, len);
+	reg->nr    = head->nr;
+	reg->parts = NEW_ARR_D(ir_reg_or_blk, obst, len);
 
 	/* enter all parts */
 	for (i = 0, c = head; c != NULL; c = n) {
@@ -579,14 +574,14 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 
 	/* count number of preds */
 	n_pred = 0;
-	for (i = get_region_n_preds(head) - 1; i >= 0; --i) {
-		ir_region *pred = get_region_pred(head, i);
+	for (i = get_region_n_preds(head); i > 0;) {
+		ir_region *pred = get_region_pred(head, --i);
 		if (pred->parent != reg)
 			++n_pred;
 	}
 	reg->pred = NEW_ARR_D(ir_region *, obst, n_pred);
-	for (j = 0, i = get_region_n_preds(head) - 1; i >= 0; --i) {
-		ir_region *pred = get_region_pred(head, i);
+	for (j = 0, i = get_region_n_preds(head); i > 0;) {
+		ir_region *pred = get_region_pred(head, --i);
 		if (pred->parent != reg)
 			reg->pred[j++] = pred;
 	}
@@ -595,8 +590,8 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 	n_succ = 0;
 	for (j = 0; j < len; ++j) {
 		ir_region *pc = reg->parts[j].region;
-		for (i = get_region_n_succs(pc) - 1; i >= 0; --i) {
-			ir_region *succ = get_region_succ(pc, i);
+		for (i = get_region_n_succs(pc); i > 0;) {
+			ir_region *succ = get_region_succ(pc, --i);
 			if (succ->parent != reg)
 				++n_succ;
 		}
@@ -605,8 +600,8 @@ static ir_region *new_NaturalLoop(struct obstack *obst, ir_region *head)
 	k = 0;
 	for (j = 0; j < len; ++j) {
 		ir_region *pc = reg->parts[j].region;
-		for (i = get_region_n_succs(pc) - 1; i >= 0; --i) {
-			ir_region *succ = get_region_succ(pc, i);
+		for (i = get_region_n_succs(pc); i > 0;) {
+			ir_region *succ = get_region_succ(pc, --i);
 			if (succ->parent != reg)
 				reg->succ[k++] = succ;
 		}
@@ -633,27 +628,27 @@ static int is_ancestor(const ir_region *a, const ir_region *b)
 /**
  * Return true if region pred is a predecessor of region n.
  */
-static int pred_of(const ir_region *pred, const ir_region *n)
+static bool pred_of(const ir_region *pred, const ir_region *n)
 {
-	int i;
-	for (i = get_region_n_preds(n) - 1; i >= 0; --i) {
+	size_t i, n_preds;
+	for (i = 0, n_preds = get_region_n_preds(n); i < n_preds; ++i) {
 		if (get_region_pred(n, i) == pred)
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }
 
 /**
  * Return true if region succ is a successor of region n.
  */
-static int succ_of(const ir_region *succ, const ir_region *n)
+static bool succ_of(const ir_region *succ, const ir_region *n)
 {
-	int i;
-	for (i = get_region_n_succs(n) - 1; i >= 0; --i) {
+	size_t i, n_succs;
+	for (i = 0, n_succs = get_region_n_succs(n); i < n_succs; ++i) {
 		if (get_region_succ(n, i) == succ)
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }
 
 /**
@@ -676,22 +671,22 @@ static struct ir_region *reverse_list(ir_region *n)
  */
 static ir_region *find_cyclic_region(ir_region *node)
 {
-	int i;
+	size_t i;
 	ir_region *last = node;
 	int improper = 0;
 
-	for (i = get_region_n_preds(node) - 1; i >= 0; --i) {
-		ir_region *pred = get_region_pred(node, i);
+	for (i = get_region_n_preds(node); i > 0;) {
+		ir_region *pred = get_region_pred(node, --i);
 
 		/* search backedges */
 		if (!pred->link && pred != last && is_ancestor(node, pred)) {
 			ir_region *rem = last;
-			int j;
+			size_t j;
 
 			last->link = pred;
 			last       = pred;
-			for (j = get_region_n_preds(pred) - 1; j >= 0; --j) {
-				ir_region *p = get_region_pred(pred, j);
+			for (j = get_region_n_preds(pred); j > 0;) {
+				ir_region *p = get_region_pred(pred, --j);
 
 				/* Search regions we didn't visited yet and
 				   link them into the list. */
@@ -706,7 +701,7 @@ static ir_region *find_cyclic_region(ir_region *node)
 			}
 			/* reverse the list. */
 			last = (ir_region*) rem->link;
-			rem->link = reverse_list((ir_region*) rem->link);
+			rem->link = reverse_list(last);
 		}
 	}
 
@@ -717,14 +712,12 @@ static ir_region *find_cyclic_region(ir_region *node)
 	return node;
 }
 
-#define LINK(list) ((ir_region *)list->link)
-
 /**
  * Detect a cyclic region.
  */
 static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node)
 {
-	ir_region *list;
+	ir_region *list, *next;
 
 	/* simple cases first */
 	if (succ_of(node, node)) {
@@ -738,8 +731,9 @@ static ir_region *cyclic_region_type(struct obstack *obst, ir_region *node)
 	}
 	list = find_cyclic_region(node);
 
-	if (list->link) {
-		if (!LINK(list)->link && get_region_n_succs((ir_region*) list->link) == 1) {
+	next = (ir_region*) list->link;
+	if (next) {
+		if (!next->link && get_region_n_succs(next) == 1) {
 			/* only one body block with only one successor (the head) */
 			return new_WhileLoop(obst, list);
 		}
@@ -771,21 +765,22 @@ static void clear_list(ir_region *list)
 static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 {
 	ir_region *n, *m;
-	int p, s, i, k;
+	bool p, s;
+	size_t k;
 	ir_region *nset = NULL;
-	int nset_len = 0;
+	size_t nset_len = 0;
 	ir_region *res;
 
 	/* check for a block containing node */
 	n = node;
 	p = get_region_n_preds(n) == 1;
-	s = 1;
+	s = true;
 	while (p & s) {
 		n = get_region_pred(n, 0);
 		p = get_region_n_preds(n) == 1;
 		s = get_region_n_succs(n) == 1;
 	}
-	p = 1;
+	p = true;
 	s = get_region_n_succs(n) == 1;
 	while (p & s) {
 		ADD_LIST(nset, n);
@@ -806,7 +801,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 	/* check for IfThenElse */
 	k = get_region_n_succs(node);
 	if (k == 2) {
-		int n_succs, m_succs, n_preds, m_preds;
+		size_t n_succs, m_succs, n_preds, m_preds;
 
 		n = get_region_succ(node, 0);
 		m = get_region_succ(node, 1);
@@ -846,10 +841,10 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 	/* check for Switch, case */
 	if (k > 0) {
 		ir_region *rexit = NULL;
+		size_t i, p = 0;
 		nset = NULL; nset_len = 0;
-		p = 0;
-		for (i = k - 1; i >= 0; --i) {
-			n = get_region_succ(node, i);
+		for (i = k; i > 0;) {
+			n = get_region_succ(node, i--);
 			ADD_LIST(nset, n);
 			if (get_region_n_succs(n) != 1) {
 				/* must be the exit */
@@ -865,7 +860,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			ir_region *pos_exit_2 = NULL;
 
 			/* find the exit */
-			for (m = (ir_region*) nset; m != NULL; m = (ir_region*) m->link) {
+			for (m = nset; m != NULL; m = (ir_region*) m->link) {
 				if (get_region_n_succs(m) != 1) {
 					/* must be the exit block */
 					if (rexit == NULL) {
@@ -902,7 +897,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			}
 			if (rexit != NULL) {
 				/* do the checks */
-				for (n = (ir_region*) nset; n != NULL; n = (ir_region*) n->link) {
+				for (n = nset; n != NULL; n = (ir_region*) n->link) {
 					ir_region *succ;
 					if (n == rexit) {
 						/* good, default fall through */
@@ -1004,21 +999,21 @@ static void replace_succ(ir_region *pred, ir_region *reg)
  */
 static void reduce(walk_env *env, ir_region *reg)
 {
-	int i;
+	size_t i;
 	ir_region *head = reg->parts[0].region;
-	unsigned maxorder = head->postnum;
-	unsigned minorder = head->prenum;
+	size_t maxorder = head->postnum;
+	size_t minorder = head->prenum;
 
 	/* second step: replace all preds in successors */
-	for (i = get_region_n_succs(reg) - 1; i >= 0; --i) {
-		ir_region *succ = get_region_succ(reg, i);
+	for (i = get_region_n_succs(reg); i > 0;) {
+		ir_region *succ = get_region_succ(reg, --i);
 
 		replace_pred(succ, reg);
 	}
 
 	/* third step: replace all succs in predessors */
-	for (i = get_region_n_preds(reg) - 1; i >= 0; --i) {
-		ir_region *pred = get_region_pred(reg, i);
+	for (i = get_region_n_preds(reg); i > 0;) {
+		ir_region *pred = get_region_pred(reg, --i);
 
 		replace_succ(pred, reg);
 	}
@@ -1049,7 +1044,7 @@ ir_reg_tree *construct_region_tree(ir_graph *irg)
 	FIRM_DBG_REGISTER(dbg, "firm.ana.structure");
 	firm_dbg_set_mask(dbg, SET_LEVEL_5);
 
-	DB((dbg, LEVEL_1, "Structural analysis on %+F starts...\n", irg));
+	DB((dbg, LEVEL_1, "Structural analysis on %+F started ...\n", irg));
 
 	/* we need dominance info */
 	assure_doms(irg);
@@ -1058,6 +1053,8 @@ ir_reg_tree *construct_region_tree(ir_graph *irg)
 
 	env.start_block = get_irg_start_block(irg);
 	env.end_block   = get_irg_end_block(irg);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* create the Block wrapper and count them */
 	env.l_post = 0;
@@ -1070,9 +1067,9 @@ ir_reg_tree *construct_region_tree(ir_graph *irg)
 	/* do the DFS walk */
 	dfs_walk(irg, &env);
 
-	DB((dbg, LEVEL_1, "%d regions left\n", env.postmax));
+	DB((dbg, LEVEL_1, "%zu regions left\n", env.postmax));
 	if (env.postmax > 1) {
-		unsigned postctr = 0;
+		size_t postctr = 0;
 		do {
 			ir_region *reg, *n = env.post[postctr];
 			do {
@@ -1096,6 +1093,8 @@ ir_reg_tree *construct_region_tree(ir_graph *irg)
 		} while (postctr < env.postmax);
 	}
 	DB((dbg, LEVEL_1, "Structural analysis finished.\n"));
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	DEL_ARR_F(env.post);
 	current_ir_graph = rem;
