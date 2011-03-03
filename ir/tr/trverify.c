@@ -313,8 +313,7 @@ static int initializer_constant_on_wrong_irg(ir_initializer_t *initializer)
 	case IR_INITIALIZER_CONST:
 		return constant_on_wrong_irg(get_initializer_const_value(initializer));
 	case IR_INITIALIZER_COMPOUND: {
-		int n = get_initializer_compound_n_entries(initializer);
-		int i;
+		size_t i, n = get_initializer_compound_n_entries(initializer);
 		for (i = 0; i < n; ++i) {
 			ir_initializer_t *sub
 				= get_initializer_compound_value(initializer, i);

@@ -1366,7 +1366,7 @@ static void lower_Conv(ir_node *node, ir_mode *mode, lower_env_t *env)
  * @param ent  the entity
  * @param pos  the argument index of this entity
  */
-static inline void set_entity_arg_idx(ir_entity *ent, int pos)
+static inline void set_entity_arg_idx(ir_entity *ent, size_t pos)
 {
 	set_entity_link(ent, INT_TO_PTR(pos));
 }
@@ -1376,8 +1376,8 @@ static inline void set_entity_arg_idx(ir_entity *ent, int pos)
  *
  * @param ent  the entity
  */
-static int get_entity_arg_idx(const ir_entity *ent) {
-	return (int)PTR_TO_INT(get_entity_link(ent));
+static size_t get_entity_arg_idx(const ir_entity *ent) {
+	return PTR_TO_INT(get_entity_link(ent));
 }
 
 /**
@@ -1399,12 +1399,12 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 
 	entry = pmap_find(lowered_type, mtp);
 	if (! entry) {
-		int i, orig_n_params, orig_n_res, n_param, n_res;
+		size_t i, orig_n_params, orig_n_res, n_param, n_res;
 
 		/* count new number of params */
 		n_param = orig_n_params = get_method_n_params(mtp);
-		for (i = orig_n_params - 1; i >= 0; --i) {
-			ir_type *tp = get_method_param_type(mtp, i);
+		for (i = orig_n_params; i > 0;) {
+			ir_type *tp = get_method_param_type(mtp, --i);
 
 			if (is_Primitive_type(tp)) {
 				ir_mode *mode = get_type_mode(tp);
@@ -1417,8 +1417,8 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 
 		/* count new number of results */
 		n_res = orig_n_res = get_method_n_ress(mtp);
-		for (i = orig_n_res - 1; i >= 0; --i) {
-			ir_type *tp = get_method_res_type(mtp, i);
+		for (i = orig_n_res; i > 0;) {
+			ir_type *tp = get_method_res_type(mtp, --i);
 
 			if (is_Primitive_type(tp)) {
 				ir_mode *mode = get_type_mode(tp);
@@ -1525,7 +1525,7 @@ static void lower_Return(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *mtp = get_entity_type(ent);
 	ir_node  **in;
-	int        i, j, n;
+	size_t     i, j, n;
 	int        need_conv = 0;
 	(void) mode;
 
@@ -1576,7 +1576,8 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_type   *tp  = get_entity_type(ent);
 	ir_type   *mtp;
 	long      *new_projs;
-	int       i, j, n_params, rem;
+	size_t    i, j, n_params;
+	int       rem;
 	ir_node   *proj, *args;
 	(void) mode;
 
@@ -1665,7 +1666,7 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_type  *tp = get_Call_type(node);
 	ir_type  *call_tp;
 	ir_node  **in, *proj, *results;
-	int      n_params, n_res;
+	size_t   n_params, n_res;
 	bool     need_lower = false;
 	int      i, j;
 	long     *res_numbers = NULL;
@@ -1757,8 +1758,7 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 		/* switch off optimization for new Proj nodes or they might be CSE'ed
 		   with not patched one's */
 		set_optimize(0);
-		for (i = j = 0, proj = (ir_node*)get_irn_link(results); proj;
-		     proj = (ir_node*)get_irn_link(proj), ++i, ++j) {
+		for (proj = (ir_node*)get_irn_link(results); proj; proj = (ir_node*)get_irn_link(proj)) {
 			if (get_Proj_pred(proj) == results) {
 				long      proj_nr   = get_Proj_proj(proj);
 				ir_mode  *proj_mode = get_irn_mode(proj);
@@ -1953,7 +1953,7 @@ static void lower_Sel(ir_node *sel, ir_mode *mode, lower_env_t *env)
 	if (env->value_param_tp != NULL) {
 		ir_entity *ent = get_Sel_entity(sel);
 	    if (get_entity_owner(ent) == env->value_param_tp) {
-			int pos = get_entity_arg_idx(ent);
+			size_t pos = get_entity_arg_idx(ent);
 
 			ent = get_method_value_param_ent(env->l_mtp, pos);
 			set_Sel_entity(sel, ent);
@@ -2020,8 +2020,7 @@ static void enter_lower_func(ir_op *op, lower_func func)
  */
 static bool mtp_must_be_lowered(lower_env_t *env, ir_type *mtp)
 {
-	int n_params = get_method_n_params(mtp);
-	int i;
+	size_t i, n_params = get_method_n_params(mtp);
 
 	/* first check if we have parameters that must be fixed */
 	for (i = 0; i < n_params; ++i) {
