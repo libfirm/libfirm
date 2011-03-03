@@ -155,8 +155,8 @@ static void verify_schedule_walker(ir_node *block, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*) data;
 	ir_node *node;
-	ir_node *non_phi_found = NULL;
-	int cfchange_found = 0;
+	ir_node *non_phi_found  = NULL;
+	ir_node *cfchange_found = NULL;
 	int last_timestep = INT_MIN;
 
 	/*
@@ -205,15 +205,16 @@ static void verify_schedule_walker(ir_node *block, void *data)
 		}
 
 		/* Check for control flow changing nodes */
-		if (is_cfop(node) && get_irn_opcode(node) != iro_Start) {
+		if (is_cfop(node)) {
 			/* check, that only one CF operation is scheduled */
-			if (cfchange_found == 1) {
-				ir_fprintf(stderr, "Verify Warning: More than 1 control flow changing node (%+F) scheduled in block %+F (%s)\n",
-					node, block, get_irg_dump_name(env->irg));
+			if (cfchange_found != NULL) {
+				ir_fprintf(stderr, "Verify Warning: Additional control flow changing node %+F scheduled after %+F in block %+F (%s)\n",
+					node, block, cfchange_found, get_irg_dump_name(env->irg));
 				env->problem_found = 1;
+			} else {
+				cfchange_found = node;
 			}
-			cfchange_found = 1;
-		} else if (cfchange_found) {
+		} else if (cfchange_found != NULL) {
 			/* proj and keepany aren't real instructions... */
 			if (!is_Proj(node) && !be_is_Keep(node)) {
 				ir_fprintf(stderr, "Verify Warning: Node %+F scheduled after control flow changing node in block %+F (%s)\n",
