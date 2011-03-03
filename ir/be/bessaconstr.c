@@ -126,12 +126,9 @@ static ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 		ins[i] = dummy;
 	}
 	phi = be_new_Phi(block, n_preds, ins, env->mode, env->phi_cls);
+	sched_add_after(block, phi);
 	if (env->new_phis != NULL) {
 		ARR_APP1(ir_node*, env->new_phis, phi);
-	}
-
-	if (env->mode != mode_M) {
-		sched_add_after(block, phi);
 	}
 
 	DBG((dbg, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, block));
