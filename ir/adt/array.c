@@ -193,6 +193,10 @@ void *ir_arr_resize(void *elts, size_t nelts, size_t eltsize)
 }
 
 #ifdef DEBUG_libfirm
+/* forward declarations to avoid warnings */
+size_t array_len(const void *arr);
+ir_arr_descr *array_descr(const void *arr);
+
 /**
  * This function returns the length of a flexible array.
  * Do NOT use is in code, use ARR_LEN() macro!

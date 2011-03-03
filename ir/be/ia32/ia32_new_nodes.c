@@ -810,10 +810,10 @@ void ia32_swap_left_right(ir_node *node)
 /**
  * Initializes the nodes attributes.
  */
-void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
-                          const arch_register_req_t **in_reqs,
-                          const be_execution_unit_t ***execution_units,
-                          int n_res)
+static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
+                                 const arch_register_req_t **in_reqs,
+                                 const be_execution_unit_t ***execution_units,
+                                 int n_res)
 {
 	ir_graph        *irg  = get_irn_irg(node);
 	struct obstack  *obst = get_irg_obstack(irg);
@@ -833,7 +833,7 @@ void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	memset(info->out_infos, 0, n_res * sizeof(info->out_infos[0]));
 }
 
-void init_ia32_x87_attributes(ir_node *res)
+static void init_ia32_x87_attributes(ir_node *res)
 {
 	ir_graph        *irg      = get_irn_irg(res);
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
@@ -846,7 +846,7 @@ void init_ia32_x87_attributes(ir_node *res)
 	irg_data->do_x87_sim = 1;
 }
 
-void init_ia32_asm_attributes(ir_node *res)
+static void init_ia32_asm_attributes(ir_node *res)
 {
 #ifndef NDEBUG
 	ia32_attr_t *attr  = get_ia32_attr(res);
@@ -856,9 +856,9 @@ void init_ia32_asm_attributes(ir_node *res)
 #endif
 }
 
-void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
-                                    int symconst_sign, int no_pic_adjust,
-                                    long offset)
+static void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
+                                           int symconst_sign, int no_pic_adjust,
+                                           long offset)
 {
 	ia32_immediate_attr_t *attr = (ia32_immediate_attr_t*)get_irn_generic_attr(res);
 
@@ -871,7 +871,8 @@ void init_ia32_immediate_attributes(ir_node *res, ir_entity *symconst,
 	attr->offset        = offset;
 }
 
-void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
+static void init_ia32_call_attributes(ir_node* res, unsigned pop,
+                                      ir_type* call_tp)
 {
 	ia32_call_attr_t *attr = (ia32_call_attr_t*)get_irn_generic_attr(res);
 
@@ -882,7 +883,7 @@ void init_ia32_call_attributes(ir_node* res, unsigned pop, ir_type* call_tp)
 	attr->call_tp = call_tp;
 }
 
-void init_ia32_copyb_attributes(ir_node *res, unsigned size)
+static void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 {
 	ia32_copyb_attr_t *attr = (ia32_copyb_attr_t*)get_irn_generic_attr(res);
 
@@ -892,7 +893,8 @@ void init_ia32_copyb_attributes(ir_node *res, unsigned size)
 	attr->size = size;
 }
 
-void init_ia32_condcode_attributes(ir_node *res, ia32_condition_code_t cc)
+static void init_ia32_condcode_attributes(ir_node *res,
+                                          ia32_condition_code_t cc)
 {
 	ia32_condcode_attr_t *attr = (ia32_condcode_attr_t*)get_irn_generic_attr(res);
 
@@ -902,7 +904,7 @@ void init_ia32_condcode_attributes(ir_node *res, ia32_condition_code_t cc)
 	attr->condition_code = cc;
 }
 
-void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
+static void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 {
 	ia32_climbframe_attr_t *attr = (ia32_climbframe_attr_t*)get_irn_generic_attr(res);
 
@@ -912,7 +914,7 @@ void init_ia32_climbframe_attributes(ir_node *res, unsigned count)
 	attr->count = count;
 }
 
-void init_ia32_switch_attributes(ir_node *res, long default_pn)
+static void init_ia32_switch_attributes(ir_node *res, long default_pn)
 {
 	ia32_switch_attr_t *attr = (ia32_switch_attr_t*) get_irn_generic_attr(res);
 #ifndef NDEBUG

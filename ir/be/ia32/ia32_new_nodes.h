@@ -95,6 +95,9 @@ const ia32_copyb_attr_t *get_ia32_copyb_attr_const(const ir_node *node);
 ia32_climbframe_attr_t *get_ia32_climbframe_attr(ir_node *node);
 const ia32_climbframe_attr_t *get_ia32_climbframe_attr_const(const ir_node *node);
 
+ia32_switch_attr_t *get_ia32_switch_attr(ir_node *node);
+const ia32_switch_attr_t *get_ia32_switch_attr_const(const ir_node *node);
+
 /**
  * Gets the type of an ia32 node.
  */
@@ -330,25 +333,7 @@ int is_ia32_AddrModeD(const ir_node *node);
  */
 void ia32_swap_left_right(ir_node *node);
 
-/**
- * Initializes the nodes attributes.
- */
-void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
-                          const arch_register_req_t **in_reqs,
-                          const be_execution_unit_t ***execution_units,
-                          int n_res);
-
-void init_ia32_x87_attributes(ir_node *node);
-void init_ia32_asm_attributes(ir_node *node);
-void init_ia32_immediate_attributes(ir_node *node, ir_entity *symconst,
-                                    int symconst_sign, int no_pic_adjust,
-									long offset);
-void init_ia32_call_attributes(ir_node *res, unsigned pop, ir_type *call_tp);
-void init_ia32_copyb_attributes(ir_node *res, unsigned size);
-void init_ia32_condcode_attributes(ir_node *res, ia32_condition_code_t cc);
-void init_ia32_climbframe_attributes(ir_node *res, unsigned count);
-
 /* Include the generated headers */
 #include "gen_ia32_new_nodes.h"
 
-#endif /* FIRM_BE_IA32_IA32_NEW_NODES_H */
+#endif
