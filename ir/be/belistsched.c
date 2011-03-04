@@ -61,6 +61,9 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
+/* we have prolog, "normal" and epilog */
+#define N_PRIORITY_CLASSES  3
+
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
 /**
@@ -76,19 +79,35 @@ typedef struct sched_env_t {
  * Environment for a block scheduler.
  */
 typedef struct block_sched_env_t {
-	unsigned *scheduled;         /**< scheduling info per node, copied from the
-	                                  global scheduler object */
-	ir_nodeset_t cands;          /**< the set of candidates */
-	ir_node *block;              /**< the current block */
-	sched_env_t *sched_env;      /**< the scheduler environment */
+	/** scheduling info per node, copied from the global scheduler object */
+	unsigned                    *scheduled;
+	/** the set of candidates */
+	ir_nodeset_t                 cands[N_PRIORITY_CLASSES];
+	ir_node                     *block;     /**< the current block */
+	sched_env_t                 *sched_env; /**< the scheduler environment */
 	const list_sched_selector_t *selector;
-	void *selector_block_env;
+	void                        *selector_block_env;
 } block_sched_env_t;
+
+/**
+ * map prolog/normal/epilog into 3 priority levels
+ */
+static unsigned get_priority(const ir_node *node)
+{
+	arch_irn_flags_t flags = arch_irn_get_flags(node);
+	if (flags & arch_irn_flags_prolog) {
+		assert(! (flags & arch_irn_flags_epilog));
+		return 0;
+	} else if (flags & arch_irn_flags_epilog) {
+		return 2;
+	}
+	return 1;
+}
 
 /**
  * Returns non-zero if the node is already scheduled
  */
-static bool is_already_scheduled(block_sched_env_t *env, ir_node *n)
+static bool is_already_scheduled(const sched_env_t *env, ir_node *n)
 {
 	unsigned idx = get_irn_idx(n);
 	return rbitset_is_set(env->scheduled, idx);
@@ -97,7 +116,7 @@ static bool is_already_scheduled(block_sched_env_t *env, ir_node *n)
 /**
  * Mark a node as already scheduled
  */
-static void set_already_scheduled(block_sched_env_t *env, ir_node *n)
+static void set_already_scheduled(sched_env_t *env, ir_node *n)
 {
 	unsigned idx = get_irn_idx(n);
 	rbitset_set(env->scheduled, idx);
@@ -120,7 +139,8 @@ static void node_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 		/* Keeps must be scheduled immediately */
 		add_to_sched(env, irn);
 	} else {
-		ir_nodeset_insert(&env->cands, irn);
+		unsigned priority = get_priority(irn);
+		ir_nodeset_insert(&env->cands[priority], irn);
 
 		/* Notify selector about the ready node. */
 		if (env->selector->node_ready)
@@ -154,7 +174,8 @@ static void try_make_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 
 		/* If the operand is local to the scheduled block and not yet
 		 * scheduled, this nodes cannot be made ready, so exit. */
-		if (get_nodes_block(op) == env->block && !is_already_scheduled(env, op))
+		if (get_nodes_block(op) == env->block
+				&& !is_already_scheduled(env->sched_env, op))
 			return;
 	}
 
@@ -170,7 +191,7 @@ static void selected(block_sched_env_t *env, ir_node *node)
 		env->selector->node_selected(env->selector_block_env, node);
 
     /* Insert the node in the set of all available scheduled nodes. */
-    set_already_scheduled(env, node);
+    set_already_scheduled(env->sched_env, node);
 
     /* check users, they might be ready now */
 	foreach_out_edge(node, edge) {
@@ -191,6 +212,8 @@ static void selected(block_sched_env_t *env, ir_node *node)
  */
 static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
+	unsigned priority = get_priority(irn);
+
 	assert(! (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled));
 
 	sched_add_before(env->block, irn);
@@ -198,7 +221,7 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 	DB((dbg, LEVEL_2, "\tschedule %+F\n", irn));
 
 	/* Remove the node from the ready set */
-	ir_nodeset_remove(&env->cands, irn);
+	ir_nodeset_remove(&env->cands[priority], irn);
 
 	selected(env, irn);
 }
@@ -221,16 +244,18 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	block_sched_env_t be;
 	const ir_edge_t *edge;
+	unsigned p;
 
 	/* Initialize the block's list head that will hold the schedule. */
 	sched_init_block(block);
 
 	/* Initialize the block scheduling environment */
-	be.scheduled  = env->scheduled;
-	be.block      = block;
-	ir_nodeset_init_size(&be.cands, get_irn_n_edges(block));
-	be.selector   = selector;
-	be.sched_env  = env;
+	be.block     = block;
+	be.selector  = selector;
+	be.sched_env = env;
+	for (p = 0; p < N_PRIORITY_CLASSES; ++p) {
+		ir_nodeset_init_size(&be.cands[p], get_irn_n_edges(block));
+	}
 
 	DB((dbg, LEVEL_1, "scheduling %+F\n", block));
 
@@ -254,20 +279,29 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	}
 
 	/* Iterate over all remaining nodes */
-	while (ir_nodeset_size(&be.cands) > 0) {
-		ir_node *irn = be.selector->select(be.selector_block_env, &be.cands);
-		DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
+	for (p = 0; p < N_PRIORITY_CLASSES; ++p) {
+		ir_nodeset_t *p_cands = &be.cands[p];
+		while (ir_nodeset_size(p_cands) > 0) {
+			ir_node *irn = be.selector->select(be.selector_block_env, p_cands);
+			DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
 
-		/* remove the scheduled node from the ready list. */
-		ir_nodeset_remove(&be.cands, irn);
-		/* Add the node to the schedule. */
-		add_to_sched(&be, irn);
+			/* remove the scheduled node from the ready list. */
+			ir_nodeset_remove(p_cands, irn);
+			/* Add the node to the schedule. */
+			add_to_sched(&be, irn);
+		}
 	}
 
 	if (selector->finish_block)
 		selector->finish_block(be.selector_block_env);
 
-	ir_nodeset_destroy(&be.cands);
+	for (p = 0; p < N_PRIORITY_CLASSES; ++p) {
+		/** all cand lists should be empty. Otherwise there was some invalid
+		 * dependencies between priority classes (ie. priority 0 value depending
+		 * on a priority 1 value) */
+		assert(ir_nodeset_size(&be.cands[p]) == 0);
+		ir_nodeset_init_size(&be.cands[p], get_irn_n_edges(block));
+	}
 }
 
 /* List schedule a graph. */

@@ -50,7 +50,13 @@ typedef enum arch_irn_flags_t {
 	                                                implementation in beflags */
 	arch_irn_flags_simple_jump      = 1U << 3, /**< a simple jump instruction */
 	arch_irn_flags_not_scheduled    = 1U << 4, /**< node must not be scheduled*/
-	arch_irn_flags_backend          = 1U << 5, /**< begin of custom backend
+	/** mark node as belonging to the prolog. No spill instructions must appear
+	 * in a schedule before a prolog node */
+	arch_irn_flags_prolog           = 1U << 5,
+	/** mark node as belonging to the epilog. No spill instructions must appear
+	 * after an epilog node */
+	arch_irn_flags_epilog           = 1U << 6,
+	arch_irn_flags_backend          = 1U << 7, /**< begin of custom backend
 	                                                flags */
 } arch_irn_flags_t;
 ENUM_BITSET(arch_irn_flags_t)
