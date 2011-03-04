@@ -1128,6 +1128,7 @@ static void ia32_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 	new_info->in_reqs = old_info->in_reqs;
+	new_info->flags = old_info->flags;
 }
 
 /* Include the generated constructor functions */

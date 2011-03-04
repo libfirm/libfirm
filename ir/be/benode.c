@@ -1262,6 +1262,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 
 	memcpy(new_attr, old_attr, get_op_attr_size(get_irn_op(old_node)));
 
+	new_info->flags = old_info->flags;
 	if (old_info->out_infos != NULL) {
 		unsigned n_outs = ARR_LEN(old_info->out_infos);
 		/* need dyanmic out infos? */

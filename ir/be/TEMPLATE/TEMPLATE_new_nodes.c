@@ -144,6 +144,7 @@ static void TEMPLATE_copy_attr(ir_graph *irg, const ir_node *old_node,
 	memcpy(attr_new, attr_old, get_op_attr_size(get_irn_op(old_node)));
 
 	/* copy out flags */
+	new_info->flags = old_info->flags;
 	new_info->out_infos =
 		DUP_ARR_D(reg_out_info_t, obst, old_info->out_infos);
 	new_info->in_reqs = old_info->in_reqs;
