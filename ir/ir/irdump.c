@@ -1910,7 +1910,7 @@ static void dump_type_info(type_or_ent tore, void *env)
 			}
 			break;
 		case tpo_union:
-			for (i = get_union_n_members(tp); i >= 0;) {
+			for (i = get_union_n_members(tp); i > 0;) {
 				 --i;
 				print_type_ent_edge(F, tp, get_union_member(tp, i), UNION_EDGE_ATTR);
 			}

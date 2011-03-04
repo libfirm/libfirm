@@ -51,7 +51,7 @@
 /** Number of Load/Store nodes that possibly access this entity. */
 FIRM_API size_t get_entity_n_accesses(const ir_entity *ent);
 /** Load/Store node that possibly access this entity. */
-FIRM_API ir_node *get_entity_access(const ir_entity *ent, int pos);
+FIRM_API ir_node *get_entity_access(const ir_entity *ent, size_t pos);
 
 /** Number of references to an entity, in form of SymConst/Sel.
  *  Including references from constant entities and the like. */

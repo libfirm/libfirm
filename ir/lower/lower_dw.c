@@ -1668,7 +1668,8 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_node  **in, *proj, *results;
 	size_t   n_params, n_res;
 	bool     need_lower = false;
-	int      i, j;
+	size_t   i, j;
+	size_t   p;
 	long     *res_numbers = NULL;
 	(void) mode;
 
@@ -1681,8 +1682,8 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 	assert(! is_lowered_type(call_tp));
 
 	n_params = get_method_n_params(call_tp);
-	for (i = 0; i < n_params; ++i) {
-		ir_type *tp = get_method_param_type(call_tp, i);
+	for (p = 0; p < n_params; ++p) {
+		ir_type *tp = get_method_param_type(call_tp, p);
 
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);

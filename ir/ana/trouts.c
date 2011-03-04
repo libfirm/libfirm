@@ -223,11 +223,11 @@ size_t get_entity_n_accesses(const ir_entity *ent)
 	return ARR_LEN(accs);
 }
 
-ir_node *get_entity_access(const ir_entity *ent, int pos)
+ir_node *get_entity_access(const ir_entity *ent, size_t pos)
 {
 	ir_node ** accs;
 
-	assert(0 <= pos && pos < get_entity_n_accesses(ent));
+	assert(pos < get_entity_n_accesses(ent));
 
 	accs = get_entity_access_array(ent);
 	return accs[pos];

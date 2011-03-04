@@ -121,7 +121,6 @@ static size_t reverse_pos(const ir_graph *callee, size_t pos_caller)
 {
 	ir_graph *caller = get_irg_caller(callee, pos_caller);
 	/* search the other relation for the corresponding edge. */
-	int pos_callee = -1;
 	size_t i, n_callees = get_irg_n_callees(caller);
 	for (i = 0; i < n_callees; ++i) {
 		if (get_irg_callee(caller, i) == callee) {
@@ -251,7 +250,7 @@ static void ana_Call(ir_node *n, void *env)
 		if (callee) {
 			cg_callee_entry buf;
 			cg_callee_entry *found;
-			int depth;
+			unsigned        depth;
 
 			buf.irg = callee;
 
