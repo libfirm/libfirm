@@ -2048,9 +2048,6 @@ static void ia32_lower_for_target(void)
 		NULL,                                  /* ret_compound_in_regs */
 	};
 
-	/* lower compound param handling */
-	lower_calls_with_compounds(&params);
-
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
 		1,  /* little endian */
@@ -2058,6 +2055,10 @@ static void ia32_lower_for_target(void)
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,
 	};
+
+	/* lower compound param handling */
+	lower_calls_with_compounds(&params);
+
 	lower_dw_ops(&lower_dw_params);
 
 	for (i = 0; i < n_irgs; ++i) {
