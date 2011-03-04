@@ -571,8 +571,8 @@ static size_t get_free_methods(ir_entity ***free_methods)
 		add_method_address(ent, free_set);
 	}
 	tp = get_tls_type();
-	for (j = 0, m = get_class_n_members(tp); j < m; ++j) {
-		ent = get_class_member(tp, j);
+	for (j = 0, m = get_compound_n_members(tp); j < m; ++j) {
+		ent = get_compound_member(tp, j);
 		add_method_address(ent, free_set);
 	}
 
