@@ -88,14 +88,6 @@ void be_duplicate_deps(ir_node *old_node, ir_node *new_node)
 	}
 }
 
-void be_dep_on_frame(ir_node* node)
-{
-	ir_graph *const irg = current_ir_graph;
-
-	if (get_irg_start_block(irg) == get_nodes_block(node))
-		add_irn_dep(node, get_irg_frame(irg));
-}
-
 void be_set_transform_function(ir_op *op, be_transform_func func)
 {
 	/* shouldn't be assigned twice (except for exchanging the default
@@ -110,7 +102,6 @@ void be_start_transform_setup(void)
 	clear_irp_opcodes_generic_func();
 
 	be_set_transform_function(op_Bad,         be_duplicate_node);
-	be_set_transform_function(op_be_Barrier,  be_duplicate_node);
 	be_set_transform_function(op_be_Copy,     be_duplicate_node);
 	be_set_transform_function(op_be_CopyKeep, be_duplicate_node);
 	be_set_transform_function(op_be_IncSP,    be_duplicate_node);

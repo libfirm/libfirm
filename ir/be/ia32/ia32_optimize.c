@@ -366,7 +366,6 @@ static void peephole_ia32_Return(ir_node *node)
 			continue;
 		case iro_Start:
 		case beo_Start:
-		case beo_Barrier:
 			/* ignore no code generated */
 			continue;
 		case beo_IncSP:

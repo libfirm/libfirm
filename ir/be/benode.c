@@ -105,7 +105,6 @@ ir_op *op_be_AddSP;
 ir_op *op_be_SubSP;
 ir_op *op_be_Start;
 ir_op *op_be_FrameAddr;
-ir_op *op_be_Barrier;
 
 /**
  * Compare the attributes of two be_FrameAddr nodes.
@@ -735,35 +734,6 @@ void be_set_CopyKeep_op(ir_node *cpy, ir_node *op)
 	set_irn_n(cpy, be_pos_CopyKeep_op, op);
 }
 
-ir_node *be_new_Barrier(ir_node *bl, int n, ir_node *in[])
-{
-	ir_node *res;
-	int i;
-	ir_graph *irg = get_Block_irg(bl);
-
-	res = new_ir_node(NULL, irg, bl, op_be_Barrier, mode_T, -1, NULL);
-	init_node_attr(res, -1, -1);
-	for (i = 0; i < n; ++i) {
-		add_irn_n(res, in[i]);
-		add_register_req_in(res);
-		add_register_req_out(res);
-	}
-
-	return res;
-}
-
-ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node)
-{
-	ir_mode *mode = get_irn_mode(node);
-	int n = add_irn_n(barrier, node);
-
-	ir_node *proj = new_r_Proj(barrier, mode, n);
-	add_register_req_in(barrier);
-	add_register_req_out(barrier);
-
-	return proj;
-}
-
 static bool be_has_frame_entity(const ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
@@ -1266,7 +1236,7 @@ static void copy_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node)
 	if (old_info->out_infos != NULL) {
 		unsigned n_outs = ARR_LEN(old_info->out_infos);
 		/* need dyanmic out infos? */
-		if (be_is_Barrier(new_node) || be_is_Perm(new_node)) {
+		if (be_is_Perm(new_node)) {
 			new_info->out_infos = NEW_ARR_F(reg_out_info_t, n_outs);
 		} else {
 			new_info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_outs);
@@ -1337,7 +1307,6 @@ void be_init_op(void)
 	op_be_IncSP     = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
 	op_be_Start     = new_ir_op(beo_Start,     "be_Start",     op_pin_state_pinned, irop_flag_none,                          oparity_zero,     0, 0,                         &be_node_op_ops);
 	op_be_FrameAddr = new_ir_op(beo_FrameAddr, "be_FrameAddr", op_pin_state_floats, irop_flag_none,                          oparity_unary,    0, sizeof(be_frame_attr_t),   &be_node_op_ops);
-	op_be_Barrier   = new_ir_op(beo_Barrier,   "be_Barrier",   op_pin_state_pinned, irop_flag_none,                          oparity_dynamic,  0, 0,                         &be_node_op_ops);
 
 	op_be_Spill->ops.node_cmp_attr     = FrameAddr_cmp_attr;
 	op_be_Reload->ops.node_cmp_attr    = FrameAddr_cmp_attr;
@@ -1353,7 +1322,6 @@ void be_init_op(void)
 	op_be_IncSP->ops.node_cmp_attr     = IncSP_cmp_attr;
 	op_be_Start->ops.node_cmp_attr     = be_nodes_equal;
 	op_be_FrameAddr->ops.node_cmp_attr = FrameAddr_cmp_attr;
-	op_be_Barrier->ops.node_cmp_attr   = be_nodes_equal;
 
 	/* attach out dummy_ops to middle end nodes */
 	for (opc = iro_First; opc <= iro_Last; ++opc) {

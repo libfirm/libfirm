@@ -231,47 +231,6 @@ static void rsm_set_reg_value(register_state_mapping_t *rsm,
 	rsm_set_value(rsm, input_idx, value);
 }
 
-/**
- * Create a Barrier from the registers stored at a register state map.
- *
- * @param rsm    the register state map
- * @param block  the block to create the Barrier on
- */
-static ir_node *rsm_create_barrier(register_state_mapping_t *rsm,
-                                   ir_node *block)
-{
-	size_t    n_barrier_outs = ARR_LEN(rsm->regs);
-	ir_node **in             = rsm->value_map;
-	ir_node  *barrier;
-	size_t    o;
-
-	assert(ARR_LEN(rsm->value_map) == n_barrier_outs);
-
-	barrier = be_new_Barrier(block, n_barrier_outs, in);
-
-	for (o = 0; o < n_barrier_outs; ++o) {
-		const reg_flag_t      *regflag = &rsm->regs[o];
-		const arch_register_t *reg     = regflag->reg;
-		ir_node               *proj;
-		if (reg == NULL) {
-			arch_set_out_register_req(barrier, o, arch_no_register_req);
-			proj = new_r_Proj(barrier, mode_M, o);
-		} else {
-			be_set_constr_single_reg_in(barrier, o, reg, arch_register_req_type_none);
-			be_set_constr_single_reg_out(barrier, o, reg, regflag->flags);
-			proj = new_r_Proj(barrier, reg->reg_class->mode, o);
-		}
-		rsm->value_map[o] = proj;
-	}
-
-	rsm->last_barrier = barrier;
-
-	return barrier;
-}
-
-
-
-
 
 beabi_helper_env_t *be_abihelper_prepare(ir_graph *irg)
 {
@@ -309,6 +268,8 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
 	ir_node *start        = be_new_Start(dbgi, block, n_start_outs);
 	int      o;
 
+	arch_irn_add_flags(start, arch_irn_flags_prolog);
+
 	assert(env->prolog.value_map == NULL);
 	env->prolog.value_map = NEW_ARR_F(ir_node*, n_start_outs);
 
@@ -329,15 +290,9 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
 	}
 
 	/* start node should really be the first thing constructed */
-	assert(env->prolog.last_barrier == NULL);
 	env->prolog.last_barrier = start;
 
 	return start;
-}
-
-ir_node *be_prolog_create_barrier(beabi_helper_env_t *env, ir_node *block)
-{
-	return rsm_create_barrier(&env->prolog, block);
 }
 
 ir_node *be_prolog_get_reg_value(beabi_helper_env_t *env,
@@ -401,11 +356,6 @@ ir_node *be_epilog_get_memory(beabi_helper_env_t *env)
 	return rsm_get_value(&env->epilog, 0);
 }
 
-ir_node *be_epilog_create_barrier(beabi_helper_env_t *env, ir_node *block)
-{
-	return rsm_create_barrier(&env->epilog, block);
-}
-
 ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
                                  ir_node *block)
 {
@@ -420,6 +370,7 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 
 	ret = be_new_Return(dbgi, get_irn_irg(block), block, n_res, pop,
 	                    n_return_in, in);
+	arch_irn_add_flags(ret, arch_irn_flags_epilog);
 	for (i = 0; i < n_return_in; ++i) {
 		const reg_flag_t      *regflag = &env->epilog.regs[i];
 		const arch_register_t *reg     = regflag->reg;

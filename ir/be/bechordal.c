@@ -171,7 +171,7 @@ static void pair_up_operands(const be_chordal_alloc_env_t *alloc_env, be_insn_t 
 }
 
 static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
-                                   ir_node *irn, int *silent)
+                                   ir_node *irn)
 {
 	int n_regs;
 	bitset_t *bs;
@@ -188,7 +188,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 	void *base             = obstack_base(env->obst);
 	be_insn_t *insn        = chordal_scan_insn(env, irn);
 	ir_node *res           = insn->next_insn;
-	int be_silent          = *silent;
 	bipartite_t *bp;
 
 	if (insn->pre_colored) {
@@ -196,19 +195,6 @@ static ir_node *handle_constraints(be_chordal_alloc_env_t *alloc_env,
 		for (i = 0; i < insn->use_start; ++i)
 			pset_insert_ptr(alloc_env->pre_colored, insn->ops[i].carrier);
 	}
-
-	/*
-	 * If the current node is a barrier toggle the silent flag.
-	 * If we are in the start block, we are ought to be silent at the beginning,
-	 * so the toggling activates the constraint handling but skips the barrier.
-	 * If we are in the end block we handle the in requirements of the barrier
-	 * and set the rest to silent.
-	 */
-	if (be_is_Barrier(irn))
-		*silent = !*silent;
-
-	if (be_silent)
-		goto end;
 
 	/*
 	 * Perms inserted before the constraint handling phase are considered to be
@@ -407,21 +393,11 @@ end:
  */
 static void constraints(ir_node *bl, void *data)
 {
-	/*
-	 * Start silent in the start block.
-	 * The silence remains until the first barrier is seen.
-	 * Each other block is begun loud.
-	 */
-	int                     silent = bl == get_irg_start_block(get_irn_irg(bl));
 	be_chordal_alloc_env_t *env    = (be_chordal_alloc_env_t*)data;
 	ir_node                *irn;
 
-	/*
-	 * If the block is the start block search the barrier and
-	 * start handling constraints from there.
-	 */
 	for (irn = sched_first(bl); !sched_is_end(irn);) {
-		irn = handle_constraints(env, irn, &silent);
+		irn = handle_constraints(env, irn);
 	}
 }
 

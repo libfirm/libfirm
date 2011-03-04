@@ -163,9 +163,6 @@ static ir_node *gen_Const(ir_node *node)
 
 	result = new_bd_TEMPLATE_Const(dbgi, new_block, value);
 
-	/* make sure the node does not float above the barrier into the prologue */
-	be_dep_on_frame(result);
-
 	return result;
 }
 

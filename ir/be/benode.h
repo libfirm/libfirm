@@ -53,7 +53,6 @@ extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SubSP;
 extern ir_op *op_be_Start;
 extern ir_op *op_be_FrameAddr;
-extern ir_op *op_be_Barrier;
 
 /**
  * A "symbolic constant" for the size of the stack frame to use with IncSP nodes.
@@ -371,13 +370,6 @@ int be_Return_append_node(ir_node *ret, ir_node *node);
 
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 
-ir_node *be_new_Barrier(ir_node *block, int n, ir_node *in[]);
-
-/**
- * Appends a node to a barrier, returns the result proj of the node
- */
-ir_node *be_Barrier_append_node(ir_node *barrier, ir_node *node);
-
 /**
  * Make a spill node.
  *
@@ -513,6 +505,5 @@ static inline int be_is_AddSP    (const ir_node *irn) { return get_irn_opcode(ir
 static inline int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_SubSP    ; }
 static inline int be_is_Start    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Start; }
 static inline int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
-static inline int be_is_Barrier  (const ir_node *irn) { return get_irn_opcode(irn) == beo_Barrier  ; }
 
 #endif

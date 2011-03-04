@@ -91,8 +91,6 @@ static ir_node *gen_Const(ir_node *node) {
 	ir_node *res = create_const_graph(node, block);
 	(void) mode;
 
-	be_dep_on_frame(res);
-
 	return res;
 }
 
@@ -109,7 +107,6 @@ static ir_node *gen_SymConst(ir_node *node)
 	ir_node   *new_node;
 
 	new_node = new_bd_amd64_SymConst(dbgi, block, entity);
-	be_dep_on_frame(new_node);
 	return new_node;
 }
 
@@ -128,7 +125,6 @@ static ir_node *gen_Add(ir_node *node) {
 	ir_node  *new_op2 = be_transform_node(op2);
 
 	ir_node *res = new_bd_amd64_Add(dbgi, block, new_op1, new_op2);
-	be_dep_on_frame (res);
 	return res;
 }
 
@@ -147,7 +143,6 @@ static ir_node *gen_Sub(ir_node *node) {
 	ir_node  *new_op2 = be_transform_node(op2);
 
 	ir_node *res = new_bd_amd64_Sub(dbgi, block, new_op1, new_op2);
-	be_dep_on_frame (res);
 	return res;
 }
 
@@ -161,7 +156,6 @@ static ir_node *gen_Mul(ir_node *node) {
 	ir_node  *new_op2 = be_transform_node(op2);
 
 	ir_node *res = new_bd_amd64_Mul(dbgi, block, new_op1, new_op2);
-	be_dep_on_frame (res);
 	return res;
 }
 

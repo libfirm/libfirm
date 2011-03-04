@@ -599,13 +599,7 @@ static void create_pbqp_coloring_instance(ir_node *block, void *data)
 
 static void insert_perms(ir_node *block, void *data)
 {
-	/*
-	 * Start silent in the start block.
-	 * The silence remains until the first barrier is seen.
-	 * Each other block is begun loud.
-	 */
 	be_chordal_env_t *env    = (be_chordal_env_t*)data;
-	int               silent = block == get_irg_start_block(get_irn_irg(block));
 	ir_node          *irn;
 
 	/*
@@ -613,15 +607,8 @@ static void insert_perms(ir_node *block, void *data)
 	 * start handling constraints from there.
 	 */
 	for (irn = sched_first(block); !sched_is_end(irn);) {
-		int silent_old = silent;    /* store old silent value */
-		if (be_is_Barrier(irn))
-			silent = !silent;       /* toggle silent flag */
-
 		be_insn_t *insn = chordal_scan_insn(env, irn);
 		irn             = insn->next_insn;
-
-		if (silent_old)
-			continue;
 
 		if (!insn->has_constraints)
 			continue;

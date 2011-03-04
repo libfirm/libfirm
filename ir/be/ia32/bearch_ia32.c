@@ -293,6 +293,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 		/* push ebp */
 		push    = new_bd_ia32_Push(NULL, bl, noreg, noreg, *mem, curr_bp, curr_sp);
+		arch_irn_add_flags(push, arch_irn_flags_prolog);
 		curr_sp = new_r_Proj(push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
 		*mem    = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
@@ -304,11 +305,13 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 
 		/* move esp to ebp */
 		curr_bp = be_new_Copy(arch_env->bp->reg_class, bl, curr_sp);
+		arch_irn_add_flags(curr_bp, arch_irn_flags_prolog);
 		be_set_constr_single_reg_out(curr_bp, 0, arch_env->bp,
 		                             arch_register_req_type_ignore);
 
 		/* beware: the copy must be done before any other sp use */
 		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
+		arch_irn_add_flags(curr_sp, arch_irn_flags_prolog);
 		be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
 				                     arch_register_req_type_produces_sp);
 
@@ -341,6 +344,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 	if (env->flags.try_omit_fp) {
 		/* simply remove the stack frame here */
 		curr_sp = be_new_IncSP(arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
+		arch_irn_add_flags(curr_sp, arch_irn_flags_epilog);
 	} else {
 		ir_mode *mode_bp = arch_env->bp->reg_class->mode;
 
@@ -351,23 +355,22 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			leave   = new_bd_ia32_Leave(NULL, bl, curr_bp);
 			curr_bp = new_r_Proj(leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
+			arch_irn_add_flags(leave, arch_irn_flags_epilog);
 		} else {
 			ir_node *pop;
-
-			/* the old SP is not needed anymore (kill the proj) */
-			assert(is_Proj(curr_sp));
-			kill_node(curr_sp);
 
 			/* copy ebp to esp */
 			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], bl, curr_bp);
 			arch_set_irn_register(curr_sp, arch_env->sp);
 			be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
 				                         arch_register_req_type_ignore);
+			arch_irn_add_flags(curr_sp, arch_irn_flags_epilog);
 
 			/* pop ebp */
 			pop     = new_bd_ia32_PopEbp(NULL, bl, *mem, curr_sp);
 			curr_bp = new_r_Proj(pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
+			arch_irn_add_flags(pop, arch_irn_flags_epilog);
 
 			*mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
 		}
@@ -1387,7 +1390,6 @@ static ir_node *ia32_get_pic_base(ir_graph *irg)
 	get_eip           = new_bd_ia32_GetEIP(NULL, block);
 	irg_data->get_eip = get_eip;
 
-	be_dep_on_frame(get_eip);
 	return get_eip;
 }
 

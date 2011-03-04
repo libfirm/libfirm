@@ -665,7 +665,6 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			assert(outreq->type & arch_register_req_type_limited);
 			in_reg_reqs[arity] = outreq;
 			in[arity]          = new_bd_ia32_ProduceVal(NULL, block);
-			be_dep_on_frame(in[arity]);
 			++arity;
 		}
 	} else {
@@ -732,9 +731,6 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	new_node = new_bd_ia32_Asm(dbgi, new_block, arity, in, out_arity,
 	                           get_ASM_text(node), register_map);
 
-	if (arity == 0)
-		be_dep_on_frame(new_node);
-
 	info = be_get_info(new_node);
 	for (i = 0; i < out_arity; ++i) {
 		info->out_infos[i].req = out_reg_reqs[i];
@@ -767,7 +763,6 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 		size >>= 2;
 
 		res = new_bd_ia32_Const(dbgi, block, NULL, 0, 0, size);
-		be_dep_on_frame(res);
 
 		res = new_bd_ia32_CopyB(dbgi, block, new_dst, new_src, res, new_mem, rem);
 	} else {
@@ -813,7 +808,6 @@ ir_node *ia32_gen_Unknown(ir_node *node)
 		panic("unsupported Unknown-Mode");
 	}
 
-	be_dep_on_frame(res);
 	return res;
 }
 

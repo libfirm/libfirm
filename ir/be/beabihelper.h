@@ -63,14 +63,8 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
                                 ir_node *block);
 
 /**
- * Creates a barrier node which lets all registers specified by prolog_add_reg
- * pass through
- */
-ir_node *be_prolog_create_barrier(beabi_helper_env_t *env, ir_node *block);
-
-/**
  * Get "value" of a register.
- * This usually creates a Proj node for the start-node or barrier-node.
+ * This usually creates a Proj node for the start-node.
  * Or returns the value set by a abi_helper_set_reg_value call
  */
 ir_node *be_prolog_get_reg_value(beabi_helper_env_t *env,
@@ -106,8 +100,6 @@ void be_epilog_set_memory(beabi_helper_env_t *env, ir_node *value);
 ir_node *be_epilog_get_memory(beabi_helper_env_t *env);
 
 void be_epilog_begin(beabi_helper_env_t *env);
-
-ir_node *be_epilog_create_barrier(beabi_helper_env_t *env, ir_node *block);
 
 /**
  * Create return node and finishes epilog handling

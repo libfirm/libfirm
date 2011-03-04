@@ -94,7 +94,6 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 	if (vn.ops < v.ops) {
 		/* remove bits */
 		result = new_bd_arm_Mvn_imm(dbgi, block, vn.values[0], vn.rors[0]);
-		be_dep_on_frame(result);
 
 		for (cnt = 1; cnt < vn.ops; ++cnt) {
 			result = new_bd_arm_Bic_imm(dbgi, block, result,
@@ -103,7 +102,6 @@ static ir_node *create_const_graph_value(dbg_info *dbgi, ir_node *block,
 	} else {
 		/* add bits */
 		result = new_bd_arm_Mov_imm(dbgi, block, v.values[0], v.rors[0]);
-		be_dep_on_frame(result);
 
 		for (cnt = 1; cnt < v.ops; ++cnt) {
 			result = new_bd_arm_Or_imm(dbgi, block, result,
@@ -1131,7 +1129,6 @@ static ir_node *gen_Const(ir_node *node)
 		if (USE_FPA(isa)) {
 			ir_tarval *tv = get_Const_tarval(node);
 			node          = new_bd_arm_fConst(dbg, block, tv);
-			be_dep_on_frame(node);
 			return node;
 		} else if (USE_VFP(isa)) {
 			assert(mode != mode_E && "IEEE Extended FP not supported");
@@ -1151,7 +1148,6 @@ static ir_node *gen_SymConst(ir_node *node)
 	ir_node   *new_node;
 
 	new_node = new_bd_arm_SymConst(dbgi, block, entity, 0);
-	be_dep_on_frame(new_node);
 	return new_node;
 }
 
@@ -1644,7 +1640,6 @@ static ir_node *gen_Unknown(ir_node *node)
 	if (mode_is_float(mode)) {
 		ir_tarval *tv   = get_mode_null(mode);
 		ir_node   *node = new_bd_arm_fConst(dbgi, new_block, tv);
-		be_dep_on_frame(node);
 		return node;
 	} else if (mode_needs_gp_reg(mode)) {
 		return create_const_graph_value(dbgi, new_block, 0);
@@ -1733,7 +1728,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *start;
 	ir_node   *incsp;
 	ir_node   *sp;
-	ir_node   *barrier;
 	size_t     i;
 
 	/* stackpointer is important at function prolog */
@@ -1756,9 +1750,8 @@ static ir_node *gen_Start(ir_node *node)
 	sp    = be_prolog_get_reg_value(abihelper, sp_reg);
 	incsp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
 	be_prolog_set_reg_value(abihelper, sp_reg, incsp);
-	barrier = be_prolog_create_barrier(abihelper, new_block);
 
-	return barrier;
+	return start;
 }
 
 static ir_node *get_stack_pointer_for(ir_node *node)
@@ -1825,9 +1818,6 @@ static ir_node *gen_Return(ir_node *node)
 		ir_node               *value = be_prolog_get_reg_value(abihelper, reg);
 		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none, value);
 	}
-
-	/* create the barrier before the epilog code */
-	be_epilog_create_barrier(abihelper, new_block);
 
 	/* epilog code: an incsp */
 	sp_proj = be_epilog_get_reg_value(abihelper, sp_reg);

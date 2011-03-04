@@ -1225,75 +1225,13 @@ static void reg_map_to_arr(reg_node_map_t *res, pmap *reg_map)
 }
 
 /**
- * Creates a barrier.
- */
-static ir_node *create_barrier(ir_node *bl, ir_node **mem, pmap *regs,
-                               int in_req)
-{
-	int             n_regs = pmap_count(regs);
-	int             n;
-	ir_node        *irn;
-	ir_node       **in;
-	reg_node_map_t *rm;
-
-	in = ALLOCAN(ir_node*, n_regs+1);
-	rm = ALLOCAN(reg_node_map_t, n_regs);
-	reg_map_to_arr(rm, regs);
-	for (n = 0; n < n_regs; ++n) {
-		in[n] = rm[n].irn;
-	}
-
-	if (mem) {
-		in[n++] = *mem;
-	}
-
-	irn = be_new_Barrier(bl, n, in);
-
-	for (n = 0; n < n_regs; ++n) {
-		ir_node                  *pred     = rm[n].irn;
-		const arch_register_t    *reg      = rm[n].reg;
-		arch_register_req_type_t  add_type = arch_register_req_type_none;
-		ir_node                  *proj;
-		const backend_info_t     *info;
-
-		/* stupid workaround for now... as not all nodes report register
-		 * requirements. */
-		info = be_get_info(skip_Proj(pred));
-		if (info != NULL && info->out_infos != NULL) {
-			const arch_register_req_t *ireq = arch_get_register_req_out(pred);
-			if (ireq->type & arch_register_req_type_ignore)
-				add_type |= arch_register_req_type_ignore;
-			if (ireq->type & arch_register_req_type_produces_sp)
-				add_type |= arch_register_req_type_produces_sp;
-		}
-
-		proj = new_r_Proj(irn, get_irn_mode(pred), n);
-		be_node_set_reg_class_in(irn, n, reg->reg_class);
-		if (in_req) {
-			be_set_constr_single_reg_in(irn, n, reg,
-			                            arch_register_req_type_none);
-		}
-		be_set_constr_single_reg_out(irn, n, reg, add_type);
-		arch_set_irn_register(proj, reg);
-
-		pmap_insert(regs, (void *) reg, proj);
-	}
-
-	if (mem) {
-		*mem = new_r_Proj(irn, mode_M, n);
-	}
-
-	return irn;
-}
-
-/**
  * Creates a be_Return for a Return node.
  *
- * @param @env    the abi environment
- * @param irn     the Return node or NULL if there was none
- * @param bl      the block where the be_Retun should be placed
- * @param mem     the current memory
- * @param n_res   number of return results
+ * @param @env  the abi environment
+ * @param irn   the Return node or NULL if there was none
+ * @param bl    the block where the be_Retun should be placed
+ * @param mem   the current memory
+ * @param n_res number of return results
  */
 static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 		ir_node *mem, int n_res)
@@ -1345,7 +1283,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	be_abi_reg_map_set(reg_map, arch_env->sp, stack);
 
 	/* Make the Epilogue node and call the arch's epilogue maker. */
-	create_barrier(bl, &mem, reg_map, 1);
 	call->cb->epilogue(env->cb, bl, &mem, reg_map);
 
 	/*
@@ -1392,13 +1329,14 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	/* we have to pop the shadow parameter in in case of struct returns */
 	pop = call->pop;
 	ret = be_new_Return(dbgi, irg, bl, n_res, pop, n, in);
+	arch_irn_add_flags(ret, arch_irn_flags_epilog);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for (i = 0; i < n; ++i) {
 		if (regs[i] == NULL)
 			continue;
 
-		be_node_set_reg_class_in(ret, i, regs[i]->reg_class);
+		be_set_constr_single_reg_in(ret, i, regs[i], arch_register_req_type_none);
 	}
 
 	/* Free the space of the Epilog's in array and the register <-> proj map. */
@@ -1735,8 +1673,6 @@ static void modify_irg(ir_graph *irg)
 
 	DBG((dbg, LEVEL_1, "introducing abi on %+F\n", irg));
 
-	/* Must fetch memory here, otherwise the start Barrier gets the wrong
-	 * memory, which leads to loops in the DAG. */
 	old_mem = get_irg_initial_mem(irg);
 
 	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
@@ -1854,6 +1790,7 @@ static void modify_irg(ir_graph *irg)
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
 	start_bl   = get_irg_start_block(irg);
 	env->start = be_new_Start(NULL, start_bl, pmap_count(env->regs) + 1);
+	arch_irn_add_flags(env->start, arch_irn_flags_prolog);
 	set_irg_start(irg, env->start);
 
 	/*
@@ -1895,13 +1832,10 @@ static void modify_irg(ir_graph *irg)
 	/* Generate the Prologue */
 	fp_reg = call->cb->prologue(env->cb, &mem, env->regs, &stack_layout->initial_bias);
 
-	/* do the stack allocation BEFORE the barrier, or spill code
-	   might be added before it */
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	env->init_sp = be_new_IncSP(sp, start_bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
+	arch_irn_add_flags(env->init_sp, arch_irn_flags_prolog);
 	be_abi_reg_map_set(env->regs, sp, env->init_sp);
-
-	create_barrier(start_bl, &mem, env->regs, 0);
 
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
 	arch_set_irn_register(env->init_sp, sp);

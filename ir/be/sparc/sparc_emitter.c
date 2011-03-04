@@ -372,8 +372,7 @@ static bool is_no_instruction(const ir_node *node)
 	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
 		return true;
 
-	return be_is_Keep(node) || be_is_Barrier(node) || be_is_Start(node)
-		|| is_Phi(node);
+	return be_is_Keep(node) || be_is_Start(node) || is_Phi(node);
 }
 
 static bool has_delay_slot(const ir_node *node)
@@ -1023,7 +1022,6 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 
 	/* no need to emit anything for the following nodes */
-	set_emitter(op_be_Barrier, emit_nothing);
 	set_emitter(op_be_Keep,    emit_nothing);
 	set_emitter(op_be_Start,   emit_nothing);
 	set_emitter(op_Phi,        emit_nothing);

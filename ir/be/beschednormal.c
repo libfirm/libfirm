@@ -172,7 +172,6 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 				ir_node*       real_pred;
 
 				cost = normal_tree_cost(pred, inst);
-				if (be_is_Barrier(pred)) cost = 1; // XXX hack: the barrier causes all users to have a reguse of #regs
 				if (!arch_irn_is_ignore(pred)) {
 					real_pred = (is_Proj(pred) ? get_Proj_pred(pred) : pred);
 					pred_fc = get_irn_fc(real_pred);

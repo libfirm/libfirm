@@ -255,6 +255,14 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 
 	assert(!is_Proj(before) && !be_is_Keep(before));
 
+	/* adjust before point to not be in the epilog */
+	while (true) {
+		ir_node *before_prev = sched_prev(before);
+		if (! (arch_irn_get_flags(before_prev) & arch_irn_flags_epilog))
+			break;
+		before = sched_prev(before);
+	}
+
 	/* put reload into list */
 	rel                   = OALLOC(&env->obst, reloader_t);
 	rel->next             = info->reloaders;
@@ -294,11 +302,17 @@ ir_node *be_get_end_of_block_insertion_point(const ir_node *block)
 	return last;
 }
 
-static ir_node *skip_keeps_phis(ir_node *node)
+/**
+ * determine final spill position: it should be after all phis, keep nodes
+ * and behind nodes marked as prolog
+ */
+static ir_node *determine_spill_point(ir_node *node)
 {
+	node = skip_Proj(node);
 	while (true) {
 		ir_node *next = sched_next(node);
-		if (!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next))
+		if (!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next)
+				&& !(arch_irn_get_flags(next) & arch_irn_flags_prolog))
 			break;
 		node = next;
 	}
@@ -365,7 +379,7 @@ void be_spill_phi(spill_env_t *env, ir_node *node)
 			insert = be_get_end_of_block_insertion_point(pred_block);
 			insert = sched_prev(insert);
 		} else {
-			insert = skip_keeps_phis(arg);
+			insert = determine_spill_point(arg);
 		}
 
 		be_add_spill(env, arg, insert);
@@ -417,7 +431,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 		ir_node *after = spill->after;
 		ir_node *block = get_block(after);
 
-		after = skip_keeps_phis(after);
+		after = determine_spill_point(after);
 
 		spill->spill = be_spill(block, to_spill);
 		sched_add_after(skip_Proj(after), spill->spill);
@@ -466,7 +480,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* override or replace spills list... */
 	spill         = OALLOC(&env->obst, spill_t);
-	spill->after  = skip_keeps_phis(phi);
+	spill->after  = determine_spill_point(phi);
 	spill->spill  = be_new_Phi(block, arity, ins, mode_M, NULL);
 	spill->next   = NULL;
 	sched_add_after(block, spill->spill);
@@ -805,7 +819,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 
 	/* override spillinfos or create a new one */
 	spill        = OALLOC(&env->obst, spill_t);
-	spill->after = skip_keeps_phis(to_spill);
+	spill->after = determine_spill_point(to_spill);
 	spill->next  = NULL;
 	spill->spill = NULL;
 

@@ -923,7 +923,6 @@ static void arm_register_emitters(void)
 	set_emitter(op_Phi,           emit_nothing);
 	set_emitter(op_be_Keep,       emit_nothing);
 	set_emitter(op_be_Start,      emit_nothing);
-	set_emitter(op_be_Barrier,    emit_nothing);
 }
 
 /**
