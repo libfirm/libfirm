@@ -232,29 +232,6 @@ void be_add_spill(spill_env_t *env, ir_node *to_spill, ir_node *after)
 	spill_info->spills = spill;
 }
 
-void be_add_remat(spill_env_t *env, ir_node *to_spill, ir_node *before,
-                  ir_node *rematted_node)
-{
-	spill_info_t *spill_info;
-	reloader_t *reloader;
-
-	spill_info = get_spillinfo(env, to_spill);
-
-	/* add the remat information */
-	reloader                   = OALLOC(&env->obst, reloader_t);
-	reloader->next             = spill_info->reloaders;
-	reloader->reloader         = before;
-	reloader->rematted_node    = rematted_node;
-	reloader->remat_cost_delta = 0; /* We will never have a cost win over a
-	                                   reload since we're not even allowed to
-	                                   create a reload */
-
-	spill_info->reloaders  = reloader;
-
-	DBG((dbg, LEVEL_1, "creating spillinfo for %+F, will be rematerialized before %+F\n",
-		to_spill, before));
-}
-
 void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 		ir_node *can_spill_after, const arch_register_class_t *reload_cls,
 		int allow_remat)
