@@ -338,6 +338,16 @@ static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void TEMPLATE_lower_for_target(void)
 {
+	lower_params_t params = {
+		4,                                     /* def_ptr_alignment */
+		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
+		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
+		NULL,                                  /* find pointer type */
+		NULL,                                  /* ret_compound_in_regs */
+	};
+
+	/* lower compound param handling */
+	lower_calls_with_compounds(&params);
 }
 
 static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,

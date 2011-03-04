@@ -543,6 +543,15 @@ static void sparc_lower_for_target(void)
 		sparc_create_set,
 		0,
 	};
+	lower_params_t params = {
+		4,                                     /* def_ptr_alignment */
+		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
+		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
+		NULL,                                  /* find pointer type */
+		NULL,                                  /* ret_compound_in_regs */
+	};
+
+	lower_calls_with_compounds(&params);
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);

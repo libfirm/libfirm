@@ -936,3 +936,4 @@ void lower_calls_with_compounds(const lower_params_t *params)
 	if (type_map)
 		pmap_destroy(type_map);
 }
+

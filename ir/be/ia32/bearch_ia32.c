@@ -2037,6 +2037,16 @@ static void ia32_lower_for_target(void)
 		ia32_create_set,
 		0,        /* don't lower direct compares */
 	};
+	lower_params_t params = {
+		4,                                     /* def_ptr_alignment */
+		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
+		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
+		NULL,                                  /* find pointer type */
+		NULL,                                  /* ret_compound_in_regs */
+	};
+
+	/* lower compound param handling */
+	lower_calls_with_compounds(&params);
 
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
