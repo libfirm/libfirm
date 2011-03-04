@@ -1371,7 +1371,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node  *new_mem   = be_transform_node(mem);
 	ir_node  *sp        = get_stack_pointer_for(node);
 	size_t    n_res     = get_Return_n_ress(node);
-	ir_node  *barrier;
 	ir_node  *bereturn;
 	size_t    i;
 
@@ -1410,7 +1409,6 @@ static ir_node *gen_Return(ir_node *node)
 	if (!cconv->omit_fp) {
 		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block);
 		arch_irn_add_flags(restore, arch_irn_flags_epilog);
-		add_irn_dep(restore, barrier);
 		arch_set_irn_register(restore, sp_reg);
 		be_epilog_set_reg_value(abihelper, sp_reg, restore);
 	} else {
@@ -1418,6 +1416,7 @@ static ir_node *gen_Return(ir_node *node)
 		sp = be_epilog_get_reg_value(abihelper, sp_reg);
 		sp = be_new_IncSP(sp_reg, new_block, sp,
 						  BE_STACK_FRAME_SIZE_SHRINK, 0);
+		arch_irn_add_flags(sp, arch_irn_flags_epilog);
 		be_epilog_set_reg_value(abihelper, sp_reg, sp);
 	}
 
