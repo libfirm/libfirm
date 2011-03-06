@@ -1426,10 +1426,10 @@ static const tarval_mode_info mo_integer = {
  */
 static void set_tarval_output_modes(void)
 {
-	int i;
+	size_t i;
 
-	for (i = get_irp_n_modes() - 1; i >= 0; --i) {
-		ir_mode *mode = get_irp_mode(i);
+	for (i = get_irp_n_modes(); i > 0;) {
+		ir_mode *mode = get_irp_mode(--i);
 
 		if (mode_is_int(mode))
 			set_tarval_mode_output_option(mode, &mo_integer);
@@ -1518,7 +1518,7 @@ static void init_asm_constraints(void)
 static arch_env_t *ia32_init(FILE *file_handle)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
-	int        i, n;
+	size_t     i, n;
 
 	set_tarval_output_modes();
 
@@ -2033,8 +2033,7 @@ static ir_node *ia32_create_set(ir_node *cond)
 
 static void ia32_lower_for_target(void)
 {
-	int n_irgs = get_irp_n_irgs();
-	int i;
+	size_t i, n_irgs = get_irp_n_irgs();
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,  /* lowered mode */
 		ia32_create_set,

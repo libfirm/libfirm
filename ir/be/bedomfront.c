@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -72,7 +72,7 @@ static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
 	const ir_edge_t *edge;
 	ir_node **df_list = NEW_ARR_F(ir_node *, 0);
 	ir_node **df;
-	int len;
+	size_t len;
 
 	/* Add local dominance frontiers */
 	foreach_block_succ(blk, edge) {
@@ -89,11 +89,11 @@ static ir_node **compute_df(ir_node *blk, be_dom_front_info_t *info)
 	 * dominated by the given block.
 	 */
 	for (c = get_Block_dominated_first(blk); c; c = get_Block_dominated_next(c)) {
-		int i;
+		size_t i;
 		ir_node **df_c_list = compute_df(c, info);
 
-		for (i = ARR_LEN(df_c_list) - 1; i >= 0; --i) {
-			ir_node *w = df_c_list[i];
+		for (i = ARR_LEN(df_c_list); i > 0;) {
+			ir_node *w = df_c_list[--i];
 			if (get_idom(w) != blk)
 				ARR_APP1(ir_node *, df_list, w);
 		}

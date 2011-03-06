@@ -114,11 +114,11 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
 static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
                                          const arch_register_class_t *cls)
 {
-	int            i, max;
+	size_t         i, max;
 	unsigned       pressure;
 	be_loop_info_t *entry, key;
 
-	DBG((dbg, LEVEL_1, "\nProcessing Loop %d\n", loop->loop_nr));
+	DBG((dbg, LEVEL_1, "\nProcessing Loop %ld\n", loop->loop_nr));
 	assert(get_loop_n_elements(loop) > 0);
 	pressure = 0;
 
@@ -136,7 +136,7 @@ static unsigned be_compute_loop_pressure(be_loopana_t *loop_ana, ir_loop *loop,
 
 		pressure = MAX(pressure, son_pressure);
 	}
-	DBG((dbg, LEVEL_1, "Done with loop %d, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
+	DBG((dbg, LEVEL_1, "Done with loop %ld, pressure %u for class %s\n", loop->loop_nr, pressure, cls->name));
 
 	/* update info in set */
 	key.loop            = loop;

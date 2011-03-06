@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -469,12 +469,12 @@ ir_timer_t *be_timers[T_LAST+1];
 
 void be_lower_for_target(void)
 {
-	int i;
+	size_t i;
 
 	isa_if->lower_for_target();
 	/* set the phase to low */
-	for (i = get_irp_n_irgs() - 1; i >= 0; --i) {
-		ir_graph *irg = get_irp_irg(i);
+	for (i = get_irp_n_irgs(); i > 0;) {
+		ir_graph *irg = get_irp_irg(--i);
 		set_irg_phase_state(irg, phase_low);
 	}
 	set_irp_phase_state(phase_low);
@@ -492,7 +492,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 {
 	static const char suffix[] = ".prof";
 
-	int           i, num_birgs, stat_active = 0;
+	size_t        i, num_birgs;
+	int           stat_active = 0;
 	be_main_env_t env;
 	char          prof_filename[256];
 	be_irg_t      *birgs;

@@ -537,8 +537,7 @@ static ir_node *sparc_create_set(ir_node *cond)
 
 static void sparc_lower_for_target(void)
 {
-	int i;
-	int n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,
 		sparc_create_set,

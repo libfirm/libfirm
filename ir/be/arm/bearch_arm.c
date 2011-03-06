@@ -538,8 +538,7 @@ static int arm_is_valid_clobber(const char *clobber)
 
 static void arm_lower_for_target(void)
 {
-	int i;
-	int n_irgs = get_irp_n_irgs();
+	size_t i, n_irgs = get_irp_n_irgs();
 
 	lower_params_t params = {
 		4,                                     /* def_ptr_alignment */

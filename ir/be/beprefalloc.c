@@ -93,7 +93,7 @@ static unsigned                     n_regs;
 static unsigned                    *normal_regs;
 static int                         *congruence_classes;
 static ir_node                    **block_order;
-static int                          n_block_order;
+static size_t                       n_block_order;
 static int                          create_preferences        = true;
 static int                          create_congruence_classes = true;
 static int                          propagate_phi_registers   = true;
@@ -1736,13 +1736,13 @@ static int cmp_block_costs(const void *d1, const void *d2)
 
 static void determine_block_order(void)
 {
-	int i;
+	size_t    i;
 	ir_node **blocklist = be_get_cfgpostorder(irg);
-	int       n_blocks  = ARR_LEN(blocklist);
+	size_t    n_blocks  = ARR_LEN(blocklist);
 	int       dfs_num   = 0;
 	pdeq     *worklist  = new_pdeq();
 	ir_node **order     = XMALLOCN(ir_node*, n_blocks);
-	int       order_p   = 0;
+	size_t    order_p   = 0;
 
 	/* clear block links... */
 	for (i = 0; i < n_blocks; ++i) {
@@ -1753,9 +1753,9 @@ static void determine_block_order(void)
 	/* walk blocks in reverse postorder, the costs for each block are the
 	 * sum of the costs of its predecessors (excluding the costs on backedges
 	 * which we can't determine) */
-	for (i = n_blocks-1; i >= 0; --i) {
+	for (i = n_blocks; i > 0;) {
 		block_costs_t *cost_info;
-		ir_node *block = blocklist[i];
+		ir_node *block = blocklist[--i];
 
 		float execfreq   = (float)get_block_execfreq(execfreqs, block);
 		float costs      = execfreq;
@@ -1840,7 +1840,7 @@ static void determine_block_order(void)
  */
 static void be_pref_alloc_cls(void)
 {
-	int i;
+	size_t i;
 
 	lv = be_assure_liveness(irg);
 	be_liveness_assure_sets(lv);

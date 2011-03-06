@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -44,7 +44,7 @@ void opt_frame_irg(ir_graph *irg)
 	ir_type   *frame_tp = get_irg_frame_type(irg);
 	ir_entity *ent, *list;
 	ir_node   *frame, *sel;
-	int       i, n = get_class_n_members(frame_tp);
+	size_t    i, n = get_class_n_members(frame_tp);
 
 	if (n <= 0)
 		return;
@@ -52,8 +52,8 @@ void opt_frame_irg(ir_graph *irg)
 	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
 
 	/* clear all entity links */
-	for (i = n - 1; i >= 0; --i) {
-		ent = get_class_member(frame_tp, i);
+	for (i = n; i > 0;) {
+		ent = get_class_member(frame_tp, --i);
 		set_entity_link(ent, NULL);
 	}
 
@@ -72,6 +72,8 @@ void opt_frame_irg(ir_graph *irg)
 			}
 		}
 	} else {
+		int i;
+
 		/* use traditionally out edges */
 		assure_irg_outs(irg);
 
@@ -89,8 +91,8 @@ void opt_frame_irg(ir_graph *irg)
 
 	/* link unused ones */
 	list = NULL;
-	for (i = n - 1; i >= 0; --i) {
-		ent = get_class_member(frame_tp, i);
+	for (i = n; i > 0;) {
+		ent = get_class_member(frame_tp, --i);
 		/* beware of inner functions: those are NOT unused */
 		if (get_entity_link(ent) == NULL && !is_method_entity(ent)) {
 			set_entity_link(ent, list);

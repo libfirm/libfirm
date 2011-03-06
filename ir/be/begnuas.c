@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -977,9 +977,9 @@ static size_t get_initializer_size(const ir_initializer_t *initializer,
 		if (!is_type_variable_size(type)) {
 			return get_type_size_bytes(type);
 		} else {
-			unsigned n_entries
+			size_t n_entries
 				= get_initializer_compound_n_entries(initializer);
-			unsigned i;
+			size_t i;
 			unsigned initializer_size = get_type_size_bytes(type);
 			for (i = 0; i < n_entries; ++i) {
 				ir_entity *entity = get_compound_member(type, i);
@@ -1620,7 +1620,7 @@ static void emit_global(be_gas_decl_env_t *env, const ir_entity *entity)
  */
 static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
 {
-	int i, n = get_compound_n_members(gt);
+	size_t i, n = get_compound_n_members(gt);
 
 	for (i = 0; i < n; i++) {
 		ir_entity *ent = get_compound_member(gt, i);
