@@ -381,6 +381,46 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 	return ret;
 }
 
+/**
+ * Tests wether a node has a real user and is not just kept by the End or
+ * Anchor node
+ */
+static bool has_real_user(const ir_node *node)
+{
+	const ir_edge_t *edge;
+	foreach_out_edge(node, edge) {
+		ir_node *user = get_edge_src_irn(edge);
+		if (!is_End(user) && !is_Anchor(user))
+			return true;
+	}
+	return false;
+}
+
+static ir_node *add_to_keep(ir_node *last_keep,
+                            const arch_register_class_t *cls, ir_node *node)
+{
+	const ir_node *op;
+	if (last_keep != NULL) {
+		be_Keep_add_node(last_keep, cls, node);
+	} else {
+		ir_node *in[1] = { node };
+		ir_node *block = get_nodes_block(node);
+		ir_node *schedpoint;
+		last_keep = be_new_Keep(block, 1, in);
+
+		schedpoint = skip_Proj(node);
+		if (sched_is_scheduled(schedpoint)) {
+			sched_add_after(schedpoint, last_keep);
+		}
+	}
+	op = skip_Proj_const(node);
+	if (arch_irn_get_flags(op) & arch_irn_flags_prolog)
+		arch_irn_add_flags(last_keep, arch_irn_flags_prolog);
+	if (arch_irn_get_flags(op) & arch_irn_flags_epilog)
+		arch_irn_add_flags(last_keep, arch_irn_flags_epilog);
+	return last_keep;
+}
+
 static void add_missing_keep_walker(ir_node *node, void *data)
 {
 	int              n_outs, i;
@@ -389,8 +429,19 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	ir_mode         *mode = get_irn_mode(node);
 	ir_node         *last_keep;
 	(void) data;
-	if (mode != mode_T)
+	if (mode != mode_T) {
+		if (!has_real_user(node)) {
+			const arch_register_req_t   *req = arch_get_register_req_out(node);
+			const arch_register_class_t *cls = req->cls;
+			if (cls == NULL
+					|| (cls->flags & arch_register_class_flag_manual_ra)) {
+				return;
+			}
+
+			add_to_keep(NULL, cls, node);
+		}
 		return;
+	}
 
 	n_outs = arch_irn_get_n_outs(node);
 	if (n_outs <= 0)
@@ -405,8 +456,9 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		/* The node could be kept */
 		if (is_End(succ) || is_Anchor(succ))
 			continue;
-
 		if (mode == mode_M || mode == mode_X)
+			continue;
+		if (!has_real_user(succ))
 			continue;
 
 		pn = get_Proj_proj(succ);
@@ -414,12 +466,10 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		rbitset_set(found_projs, pn);
 	}
 
-
 	/* are keeps missing? */
 	last_keep = NULL;
 	for (i = 0; i < n_outs; ++i) {
-		ir_node                     *block;
-		ir_node                     *in[1];
+		ir_node                     *value;
 		const arch_register_req_t   *req;
 		const arch_register_class_t *cls;
 
@@ -433,16 +483,8 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		block = get_nodes_block(node);
-		in[0] = new_r_Proj(node, arch_register_class_mode(cls), i);
-		if (last_keep != NULL) {
-			be_Keep_add_node(last_keep, cls, in[0]);
-		} else {
-			last_keep = be_new_Keep(block, 1, in);
-			if (sched_is_scheduled(node)) {
-				sched_add_after(node, last_keep);
-			}
-		}
+		value     = new_r_Proj(node, arch_register_class_mode(cls), i);
+		last_keep = add_to_keep(last_keep, cls, value);
 	}
 }
 
