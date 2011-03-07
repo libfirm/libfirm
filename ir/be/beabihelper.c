@@ -56,7 +56,6 @@ typedef struct register_state_mapping_t {
 	                                into the value_map */
 	reg_flag_t *regs;          /**< registers (and memory values) that form a
 	                                state */
-	ir_node    *last_barrier;
 } register_state_mapping_t;
 
 /**
@@ -289,9 +288,6 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
 		env->prolog.value_map[o] = proj;
 	}
 
-	/* start node should really be the first thing constructed */
-	env->prolog.last_barrier = start;
-
 	return start;
 }
 
@@ -381,7 +377,6 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 	}
 
 	rsm_clear_regs(&env->epilog, be_get_irg_arch_env(env->irg));
-	env->epilog.last_barrier = NULL;
 
 	return ret;
 }
