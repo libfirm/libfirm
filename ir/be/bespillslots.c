@@ -74,6 +74,8 @@ struct be_fec_env_t {
 	affinity_edge_t      **affinity_edges;
 	set                   *memperms;
 	set_frame_entity_func  set_frame_entity;
+	bool                   at_begin;  /**< frame entities should be allocate at
+	                                       the beginning of the stackframe */
 };
 
 /** Compare 2 affinity edges (used in quicksort) */
@@ -522,12 +524,10 @@ static memperm_t *get_memperm(be_fec_env_t *env, ir_node *block)
 
 static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
 {
-	ir_graph *irg  = env->irg;
-	ir_type *frame = get_irg_frame_type(irg);
-	/* TODO: backend should be able to specify wether we want spill slots
-	 * at begin or end of frame */
-	int        at_start = 1;
-	ir_entity *res = frame_alloc_area(frame, slot->size, slot->align, at_start);
+	ir_graph  *irg   = env->irg;
+	ir_type   *frame = get_irg_frame_type(irg);
+	ir_entity *res   = frame_alloc_area(frame, slot->size, slot->align,
+	                                    env->at_begin);
 
 	/* adjust size of the entity type... */
 	ir_type *enttype = get_entity_type(res);
@@ -783,9 +783,11 @@ void be_free_frame_entity_coalescer(be_fec_env_t *env)
 }
 
 void be_assign_entities(be_fec_env_t *env,
-                        set_frame_entity_func set_frame_entity)
+                        set_frame_entity_func set_frame_entity,
+                        bool alloc_entities_at_begin)
 {
 	env->set_frame_entity = set_frame_entity;
+	env->at_begin         = alloc_entities_at_begin;
 
 	stat_ev_dbl("spillslots", set_count(env->spills));
 
