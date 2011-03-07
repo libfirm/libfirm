@@ -602,10 +602,6 @@ static void insert_perms(ir_node *block, void *data)
 	be_chordal_env_t *env    = (be_chordal_env_t*)data;
 	ir_node          *irn;
 
-	/*
-	 * If the block is the start block search the barrier and
-	 * start handling constraints from there.
-	 */
 	for (irn = sched_first(block); !sched_is_end(irn);) {
 		be_insn_t *insn = chordal_scan_insn(env, irn);
 		irn             = insn->next_insn;

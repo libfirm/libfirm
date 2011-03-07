@@ -600,9 +600,8 @@ typedef enum ir_opcode {
 	beo_IncSP,
 	beo_Start,
 	beo_FrameAddr,
-	beo_Barrier,
 	/* last backend node number */
-	beo_Last = beo_Barrier,
+	beo_Last = beo_FrameAddr,
 	iro_MaxOpcode
 } ir_opcode;
 

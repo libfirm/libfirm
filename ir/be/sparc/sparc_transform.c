@@ -1271,7 +1271,7 @@ static void create_stacklayout(ir_graph *irg)
 }
 
 /**
- * transform the start node to the prolog code + initial barrier
+ * transform the start node to the prolog code
  */
 static ir_node *gen_Start(ir_node *node)
 {
@@ -2085,27 +2085,6 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_sparc_Save,   be_duplicate_node);
 }
 
-/* hack to avoid unused fp proj at start barrier */
-static void assure_fp_keep(void)
-{
-	unsigned         n_users = 0;
-	const ir_edge_t *edge;
-	ir_node         *fp_proj = be_prolog_get_reg_value(abihelper, fp_reg);
-
-	foreach_out_edge(fp_proj, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
-		if (is_End(succ) || is_Anchor(succ))
-			continue;
-		++n_users;
-	}
-
-	if (n_users == 0) {
-		ir_node *block = get_nodes_block(fp_proj);
-		ir_node *in[1] = { fp_proj };
-		be_new_Keep(block, 1, in);
-	}
-}
-
 /**
  * Transform a Firm graph into a SPARC graph.
  */
@@ -2129,8 +2108,6 @@ void sparc_transform_graph(ir_graph *irg)
 	create_stacklayout(irg);
 
 	be_transform_graph(irg, NULL);
-	if (!cconv->omit_fp)
-		assure_fp_keep();
 
 	be_abihelper_finish(abihelper);
 	sparc_free_calling_convention(cconv);

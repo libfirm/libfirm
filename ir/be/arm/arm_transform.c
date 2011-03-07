@@ -1411,7 +1411,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 {
 	ir_node *block     = get_nodes_block(node);
 	ir_node *new_block = be_transform_node(block);
-	ir_node *barrier   = be_transform_node(get_Proj_pred(node));
 	long     proj      = get_Proj_proj(node);
 
 	switch ((pn_Start) proj) {
@@ -1420,10 +1419,11 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_bd_arm_Jmp(NULL, new_block);
 
 	case pn_Start_M:
-		return new_r_Proj(barrier, mode_M, 0);
+		return be_prolog_get_memory(abihelper);
 
 	case pn_Start_T_args:
-		return barrier;
+		/* we should never need this explicitely */
+		return new_r_Bad(get_irn_irg(node));
 
 	case pn_Start_P_frame_base:
 		return be_prolog_get_reg_value(abihelper, sp_reg);
@@ -1715,7 +1715,7 @@ static void create_stacklayout(ir_graph *irg)
 }
 
 /**
- * transform the start node to the prolog code + initial barrier
+ * transform the start node to the prolog code
  */
 static ir_node *gen_Start(ir_node *node)
 {
