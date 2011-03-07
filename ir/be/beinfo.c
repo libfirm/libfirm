@@ -57,7 +57,6 @@ void be_info_new_node(ir_node *node)
 	 * backend graphs
 	 */
 	switch (get_irn_opcode(node)) {
-	case iro_Anchor:
 	case iro_Bad:
 	case iro_Block:
 	case iro_Dummy:
@@ -66,6 +65,7 @@ void be_info_new_node(ir_node *node)
 	case iro_Unknown:
 		info->flags |= arch_irn_flags_not_scheduled;
 		break;
+	case iro_Anchor:
 	case iro_Pin:
 	case iro_Sync:
 		info->flags |= arch_irn_flags_not_scheduled;

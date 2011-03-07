@@ -98,6 +98,53 @@ void be_set_transform_function(ir_op *op, be_transform_func func)
 	op->ops.generic = (op_func) func;
 }
 
+/**
+ * Transform helper for blocks.
+ */
+static ir_node *transform_block(ir_node *node)
+{
+	ir_graph *irg             = current_ir_graph;
+	dbg_info *dbgi            = get_irn_dbg_info(node);
+	ir_node  *block;
+
+	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
+	                    get_irn_arity(node), get_irn_in(node) + 1);
+	copy_node_attr(irg, node, block);
+	block->node_nr = node->node_nr;
+
+	/* put the preds in the worklist */
+	be_enqueue_preds(node);
+
+	return block;
+}
+
+static ir_node *transform_end(ir_node *node)
+{
+	/* end has to be duplicated manually because we need a dynamic in array */
+	ir_graph *irg   = current_ir_graph;
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = be_transform_node(get_nodes_block(node));
+	int      i, arity;
+	ir_node  *new_end;
+
+	new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
+	copy_node_attr(irg, node, new_end);
+	be_duplicate_deps(node, new_end);
+
+	set_irg_end(irg, new_end);
+
+	/* do not transform predecessors yet to keep the pre-transform
+	 * phase from visiting all the graph */
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; ++i) {
+		ir_node *in = get_irn_n(node, i);
+		add_End_keepalive(new_end, in);
+	}
+	be_enqueue_preds(node);
+
+	return new_end;
+}
+
 void be_start_transform_setup(void)
 {
 	clear_irp_opcodes_generic_func();
@@ -109,6 +156,8 @@ void be_start_transform_setup(void)
 	be_set_transform_function(op_be_Keep,     be_duplicate_node);
 	be_set_transform_function(op_be_Return,   be_duplicate_node);
 	be_set_transform_function(op_be_Start,    be_duplicate_node);
+	be_set_transform_function(op_Block,       transform_block);
+	be_set_transform_function(op_End,         transform_end);
 	be_set_transform_function(op_NoMem,       be_duplicate_node);
 	be_set_transform_function(op_Pin,         be_duplicate_node);
 	be_set_transform_function(op_Start,       be_duplicate_node);
@@ -276,23 +325,6 @@ static void kill_unused_anchor(int anchor)
 	}
 }
 
-static ir_node *new_be_Anchor(ir_graph *irg)
-{
-	struct obstack *obst = be_get_be_obst(irg);
-	backend_info_t *info;
-	ir_node        *new_anchor;
-
-	/* Hack: some places in the code ask the Anchor for its register
-	   requirements */
-	new_anchor = new_r_Anchor(irg);
-	info = be_get_info(new_anchor);
-	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
-	memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));
-	info->out_infos[0].req = arch_no_register_req;
-
-	return new_anchor;
-}
-
 /**
  * Transforms all nodes. Deletes the old obstack and creates a new one.
  */
@@ -305,9 +337,9 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	inc_irg_visited(irg);
 
-	env.irg         = irg;
-	env.worklist    = new_waitq();
-	env.old_anchor  = irg->anchor;
+	env.irg        = irg;
+	env.worklist   = new_waitq();
+	env.old_anchor = irg->anchor;
 
 	old_end = get_irg_end(irg);
 
@@ -320,13 +352,15 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		waitq_put(env.worklist, anchor);
 	}
 
-	new_anchor  = new_be_Anchor(irg);
+	new_anchor  = new_r_Anchor(irg);
 	irg->anchor = new_anchor;
 
 	/* pre transform some anchors (so they are available in the other transform
 	 * functions) */
 	pre_transform_anchor(anchor_bad);
 	pre_transform_anchor(anchor_no_mem);
+	pre_transform_anchor(anchor_end_block);
+	pre_transform_anchor(anchor_end);
 	pre_transform_anchor(anchor_start_block);
 	pre_transform_anchor(anchor_start);
 	pre_transform_anchor(anchor_frame);
@@ -363,53 +397,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	hook_dead_node_elim(irg, 0);
 }
 
-/**
- * Transform helper for blocks.
- */
-static ir_node *gen_Block(ir_node *node)
-{
-	ir_graph *irg             = current_ir_graph;
-	dbg_info *dbgi            = get_irn_dbg_info(node);
-	ir_node  *block;
-
-	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
-	                    get_irn_arity(node), get_irn_in(node) + 1);
-	copy_node_attr(irg, node, block);
-	block->node_nr = node->node_nr;
-
-	/* put the preds in the worklist */
-	be_enqueue_preds(node);
-
-	return block;
-}
-
-static ir_node *gen_End(ir_node *node)
-{
-	/* end has to be duplicated manually because we need a dynamic in array */
-	ir_graph *irg   = current_ir_graph;
-	dbg_info *dbgi  = get_irn_dbg_info(node);
-	ir_node  *block = be_transform_node(get_nodes_block(node));
-	int      i, arity;
-	ir_node  *new_end;
-
-	new_end = new_ir_node(dbgi, irg, block, op_End, mode_X, -1, NULL);
-	copy_node_attr(irg, node, new_end);
-	be_duplicate_deps(node, new_end);
-
-	set_irg_end(irg, new_end);
-
-	/* transform preds */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *in     = get_irn_n(node, i);
-		ir_node *new_in = be_transform_node(in);
-
-		add_End_keepalive(new_end, new_in);
-	}
-
-	return new_end;
-}
-
 void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 {
 	ir_graph *old_current_ir_graph = current_ir_graph;
@@ -432,10 +419,6 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 
 	/* create new value table for CSE */
 	new_identities(irg);
-
-	/* enter special helper */
-	op_Block->ops.generic = (op_func)gen_Block;
-	op_End->ops.generic   = (op_func)gen_End;
 
 	/* do the main transformation */
 	transform_nodes(irg, func);
