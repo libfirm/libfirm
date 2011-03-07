@@ -216,9 +216,33 @@ static void amd64_after_ra_walker(ir_node *block, void *data)
 	}
 }
 
+static void amd64_set_frame_entity(ir_node *node, ir_entity *entity)
+{
+	assert(be_is_Reload(node));
+	be_node_set_frame_entity(node, entity);
+}
+
+/**
+ * Collects nodes that need frame entities assigned.
+ */
+static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
+{
+	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
+		be_fec_env_t  *env   = (be_fec_env_t*)data;
+		const ir_mode *mode  = get_irn_mode(node);
+		int            align = get_mode_size_bytes(mode);
+		be_node_needs_frame_entity(env, node, mode, align);
+	}
+}
+
 static void amd64_after_ra(ir_graph *irg)
 {
-	be_coalesce_spillslots(irg);
+	be_fec_env_t *fec_env = be_new_frame_entity_coalescer(irg);
+
+	/* create and coalesce frame entities */
+	irg_walk_graph(irg, NULL, amd64_collect_frame_entity_nodes, fec_env);
+	be_assign_entities(fec_env, amd64_set_frame_entity);
+	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);
 }

@@ -800,43 +800,6 @@ void be_assign_entities(be_fec_env_t *env,
 	create_memperms(env);
 }
 
-/**
- * This walker function searches for reloads and collects all the spills
- * and memphis attached to them.
- */
-static void collect_spills_walker(ir_node *node, void *data)
-{
-	be_fec_env_t                *env = (be_fec_env_t*)data;
-	const ir_mode               *mode;
-	const arch_register_class_t *cls;
-	int                          align;
-	ir_graph                    *irg;
-	const arch_env_t            *arch_env;
-
-	if (! (arch_irn_classify(node) & arch_irn_class_reload))
-		return;
-
-	mode     = get_irn_mode(node);
-	cls      = arch_get_irn_reg_class_out(node);
-	irg      = get_irn_irg(node);
-	arch_env = be_get_irg_arch_env(irg);
-	align    = arch_env_get_reg_class_alignment(arch_env, cls);
-
-	be_node_needs_frame_entity(env, node, mode, align);
-}
-
-void be_coalesce_spillslots(ir_graph *irg)
-{
-	be_fec_env_t *env = be_new_frame_entity_coalescer(irg);
-
-	/* collect reloads */
-	irg_walk_graph(irg, NULL, collect_spills_walker, env);
-
-	be_assign_entities(env, be_node_set_frame_entity);
-
-	be_free_frame_entity_coalescer(env);
-}
-
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillslots);
 void be_init_spillslots(void)
 {

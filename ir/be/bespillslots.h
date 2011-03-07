@@ -62,15 +62,4 @@ typedef void (*set_frame_entity_func)(ir_node *node, ir_entity *entity);
  */
 void be_assign_entities(be_fec_env_t *env, set_frame_entity_func set_frame);
 
-//-------------------------------------------------------------------
-// Old API
-//-------------------------------------------------------------------
-
-/**
- * Assigns frame entities to all spill nodes in the irg.
- * Coalesces spillslots and minimizes the number of memcopies induced by
- * memory-phis.
- */
-void be_coalesce_spillslots(ir_graph *irg);
-
 #endif
