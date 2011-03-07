@@ -342,9 +342,9 @@ Restore => {
 
 RestoreZero => {
 	emit => '. restore',
-	reg_req => { out => [ "sp:I|S" ] },
+	reg_req => { in => [ "frame_pointer" ], out => [ "sp:I|S" ] },
+	ins     => [ "frame_pointer" ],
 	outs    => [ "stack" ],
-	ins     => [ ],
 	mode    => $mode_gp,
 },
 

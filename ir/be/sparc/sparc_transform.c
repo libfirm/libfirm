@@ -1326,6 +1326,7 @@ static ir_node *gen_Start(ir_node *node)
 		arch_irn_add_flags(save, arch_irn_flags_prolog);
 		arch_set_irn_register(save, sp_reg);
 		sp = save;
+		keep_alive(save);
 	}
 
 	sp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
@@ -1407,7 +1408,8 @@ static ir_node *gen_Return(ir_node *node)
 
 	/* we need a restore instruction */
 	if (!cconv->omit_fp) {
-		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block);
+		ir_node *fp      = be_prolog_get_reg_value(abihelper, fp_reg);
+		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block, fp);
 		arch_irn_add_flags(restore, arch_irn_flags_epilog);
 		arch_set_irn_register(restore, sp_reg);
 		be_epilog_set_reg_value(abihelper, sp_reg, restore);
