@@ -379,6 +379,28 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 		arch_set_irn_register(phi, arch_env->sp);
 	}
 	be_ssa_construction_destroy(&senv);
-
 	DEL_ARR_F(walker_env.sp_nodes);
+
+	/* when doing code with frame-pointers then often the last incsp-nodes are
+	 * not used anymore because we copy the framepointer to the stack pointer
+	 * when leaving the function. Though the last incsp is often keeped (because
+	 * you often don't know which incsp is the last one and fixstack should find
+	 * them all). Remove unnecessary keeps and IncSP nodes */
+	{
+		ir_node  *end    = get_irg_end(irg);
+		int       arity  = get_irn_arity(end);
+		int       i;
+		for (i = arity-1; i >= 0; --i) {
+			ir_node *in = get_irn_n(end, i);
+			if (!be_is_IncSP(in)) {
+				continue;
+			}
+
+			remove_End_keepalive(end, in);
+			if (get_irn_n_edges(in) == 0) {
+				sched_remove(in);
+				kill_node(in);
+			}
+		}
+	}
 }
