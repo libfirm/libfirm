@@ -258,6 +258,11 @@ static int ia32_get_sp_bias(const ir_node *node)
 	if (is_ia32_Pop(node) || is_ia32_PopMem(node))
 		return -4;
 
+	if (is_ia32_Leave(node) || (be_is_Copy(node)
+	    && arch_get_irn_register(node) == &ia32_registers[REG_ESP])) {
+		return SP_BIAS_RESET;
+	}
+
 	return 0;
 }
 

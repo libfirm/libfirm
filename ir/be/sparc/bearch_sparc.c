@@ -117,6 +117,8 @@ static int sparc_get_sp_bias(const ir_node *node)
 		 * calculates that! */
 		assert(attr->immediate_value <= -SPARC_MIN_STACKSIZE);
 		return attr->immediate_value + SPARC_MIN_STACKSIZE;
+	} else if (is_sparc_RestoreZero(node)) {
+		return SP_BIAS_RESET;
 	}
 	return 0;
 }

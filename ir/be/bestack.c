@@ -183,9 +183,8 @@ static int process_stack_bias(ir_node *bl, int real_bias)
 		 * If the node modifies the stack pointer by a constant offset,
 		 * record that in the bias.
 		 */
-		ofs = arch_get_sp_bias(irn);
-
 		if (be_is_IncSP(irn)) {
+			ofs = be_get_IncSP_offset(irn);
 			/* fill in real stack frame size */
 			if (ofs == BE_STACK_FRAME_SIZE_EXPAND) {
 				ir_type *frame_type = get_irg_frame_type(irg);
@@ -217,10 +216,18 @@ static int process_stack_bias(ir_node *bl, int real_bias)
 					}
 				}
 			}
+			real_bias   += ofs;
+			wanted_bias += ofs;
+		} else {
+			ofs = arch_get_sp_bias(irn);
+			if (ofs == SP_BIAS_RESET) {
+				real_bias   = 0;
+				wanted_bias = 0;
+			} else {
+				real_bias   += ofs;
+				wanted_bias += ofs;
+			}
 		}
-
-		real_bias   += ofs;
-		wanted_bias += ofs;
 	}
 
 	assert(real_bias == wanted_bias);

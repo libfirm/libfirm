@@ -40,6 +40,13 @@
 #include "beirg.h"
 #include "error.h"
 
+/**
+ * this constant is returned by the get_sp_bias functions if the stack
+ * is reset (usually because the frame pointer is copied to the stack
+ * pointer
+ */
+#define SP_BIAS_RESET      INT_MIN
+
 typedef enum arch_register_class_flags_t {
 	arch_register_class_flag_none      = 0,
 	/** don't do automatic register allocation for this class */
