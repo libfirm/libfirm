@@ -233,6 +233,30 @@ static void peephole_sparc_FrameAddr(ir_node *node)
 	(void) node;
 }
 
+static void finish_be_Return(ir_node *node)
+{
+	ir_node *schedpoint = node;
+	ir_node *restore;
+	/* see that there is no code between Return and restore, if there is move
+	 * it in front of the restore */
+	while (true) {
+		if (!sched_has_prev(schedpoint))
+			return;
+		schedpoint = sched_prev(schedpoint);
+		if (is_sparc_Restore(schedpoint) || is_sparc_RestoreZero(schedpoint))
+			break;
+	}
+	restore = schedpoint;
+	schedpoint = sched_prev(node);
+	/* move all code between return and restore up */
+	while (schedpoint != restore) {
+		ir_node *next_schedpoint = sched_prev(schedpoint);
+		sched_remove(schedpoint);
+		sched_add_before(restore, schedpoint);
+		schedpoint = next_schedpoint;
+	}
+}
+
 static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 {
 	assert(op->ops.generic == NULL);
@@ -248,11 +272,12 @@ void sparc_finish(ir_graph *irg)
 
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
-	register_peephole_optimisation(op_sparc_Save,      finish_sparc_Save);
+	register_peephole_optimisation(op_be_Return,       finish_be_Return);
 	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
 	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_LdSt);
-	register_peephole_optimisation(op_sparc_St,        finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_Ldf,       finish_sparc_LdSt);
+	register_peephole_optimisation(op_sparc_Save,      finish_sparc_Save);
+	register_peephole_optimisation(op_sparc_St,        finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_LdSt);
 	be_peephole_opt(irg);
 }
