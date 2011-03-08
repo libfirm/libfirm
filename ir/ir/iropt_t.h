@@ -131,29 +131,4 @@ static inline ir_tarval *value_of(const ir_node *n)
  */
 ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops);
 
-/** NOTE: Survive DCE is considered a bad hack - don't use */
-typedef struct survive_dce_t survive_dce_t;
-
-/**
- * Make a new Survive DCE environment.
- * NOTE: Survive DCE is considered a bad hack - don't use
- */
-survive_dce_t *new_survive_dce(void);
-
-/**
- * Free a Survive DCE environment.
- * NOTE: Survive DCE is considered a bad hack - don't use
- */
-void free_survive_dce(survive_dce_t *sd);
-
-/**
- * Register a node pointer to be patched upon DCE.
- * When DCE occurs, the node pointer specified by @p place will be
- * patched to the new address of the node it is pointing to.
- *
- * @param sd    The Survive DCE environment.
- * @param place The address of the node pointer.
- */
-void survive_dce_register_irn(survive_dce_t *sd, ir_node **place);
-
 #endif

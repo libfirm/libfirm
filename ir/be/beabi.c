@@ -55,6 +55,7 @@
 #include "beirg.h"
 #include "bessaconstr.h"
 #include "bemodule.h"
+#include "betranshlp.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -86,8 +87,6 @@ struct be_abi_call_t {
  * The ABI information for the current graph.
  */
 struct be_abi_irg_t {
-	survive_dce_t        *dce_survivor;
-
 	be_abi_call_t        *call;         /**< The ABI call information. */
 
 	ir_node              *init_sp;      /**< The node representing the stack pointer
@@ -2130,7 +2129,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	struct obstack   *obst        = &birg->obst;
 	unsigned          r;
 
-	pmap_entry *ent;
 	ir_node *dummy;
 
 	/* determine allocatable registers */
@@ -2151,7 +2149,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 
 	be_omit_fp      = options->omit_fp;
 
-	env->dce_survivor = new_survive_dce();
 	env->keep_map     = pmap_create();
 	env->call         = be_abi_call_new(arch_env->sp->reg_class);
 	arch_env_get_call_abi(arch_env, method_type, env->call);
@@ -2190,12 +2187,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	exchange(dummy, env->init_sp);
 	exchange(old_frame, get_irg_frame(irg));
 
-	/* Make some important node pointers survive the dead node elimination. */
-	survive_dce_register_irn(env->dce_survivor, &env->init_sp);
-	foreach_pmap(env->regs, ent) {
-		survive_dce_register_irn(env->dce_survivor, (ir_node **) &ent->value);
-	}
-
 	env->call->cb->done(env->cb);
 	env->cb = NULL;
 	return env;
@@ -2207,13 +2198,33 @@ void be_abi_free(ir_graph *irg)
 
 	if (env->call != NULL)
 		be_abi_call_free(env->call);
-	if (env->dce_survivor != NULL)
-		free_survive_dce(env->dce_survivor);
 	if (env->regs != NULL)
 		pmap_destroy(env->regs);
 	free(env);
 
 	be_set_irg_abi(irg, NULL);
+}
+
+/**
+ * called after nodes have been transformed so some node references can be
+ * replaced with new nodes
+ */
+void be_abi_transform_fixup(ir_graph *irg)
+{
+	be_abi_irg_t *abi = be_get_irg_abi(irg);
+	pmap         *new_regs;
+	pmap_entry   *entry;
+	if (abi == NULL || abi->regs == NULL)
+		return;
+
+	new_regs = pmap_create();
+	foreach_pmap(abi->regs, entry) {
+		ir_node *value       = (ir_node*)entry->value;
+		ir_node *transformed = be_transform_node(value);
+		pmap_insert(new_regs, entry->key, transformed);
+	}
+	pmap_destroy(abi->regs);
+	abi->regs = new_regs;
 }
 
 void be_put_allocatable_regs(const ir_graph *irg,

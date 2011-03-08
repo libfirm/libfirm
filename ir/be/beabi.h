@@ -183,6 +183,11 @@ ir_type *be_abi_call_get_method_type(const be_abi_call_t *call);
 
 be_abi_irg_t *be_abi_introduce(ir_graph *irg);
 
+/**
+ * should be called by betranshlp.c while the graph is transformed
+ */
+void be_abi_transform_fixup(ir_graph *irg);
+
 void be_abi_free(ir_graph *irg);
 
 ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);

@@ -40,6 +40,7 @@
 #include "debug.h"
 
 #include "beirg.h"
+#include "beabi.h"
 #include "betranshlp.h"
 #include "belive.h"
 #include "benode.h"
@@ -339,6 +340,10 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		ir_node *node = (ir_node*)waitq_get(env.worklist);
 		be_transform_node(node);
 	}
+
+	/* let beabi grab new nodes */
+	be_abi_transform_fixup(irg);
+	assert(waitq_empty(env.worklist)); // let's hope this didn't trigger new transforms
 
 	/* fix loops and set new anchors*/
 	inc_irg_visited(irg);
