@@ -419,8 +419,8 @@ static void belady(minibelady_env_t *env, ir_node *block)
 		}
 		/* create a reload to match state if necessary */
 		if (need_val != NULL && need_val != current_state) {
-			DBG((dbg, LEVEL_3, "\t... reloading %+F\n", need_val));
 			ir_node *before = get_reload_point(node);
+			DBG((dbg, LEVEL_3, "\t... reloading %+F\n", need_val));
 			create_reload(env, need_val, before, current_state);
 			current_state = need_val;
 		}
