@@ -57,8 +57,11 @@ static be_transform_env_t env;
 
 void be_set_transformed_node(ir_node *old_node, ir_node *new_node)
 {
+	ir_graph *irg = get_irn_irg(old_node);
+
 	set_irn_link(old_node, new_node);
 	mark_irn_visited(old_node);
+	hook_dead_node_elim_subst(irg, old_node, new_node);
 }
 
 int be_is_transformed(const ir_node *node)
@@ -103,8 +106,8 @@ void be_set_transform_function(ir_op *op, be_transform_func func)
  */
 static ir_node *transform_block(ir_node *node)
 {
-	ir_graph *irg             = current_ir_graph;
-	dbg_info *dbgi            = get_irn_dbg_info(node);
+	ir_graph *irg  = get_irn_irg(node);
+	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node  *block;
 
 	block = new_ir_node(dbgi, irg, NULL, get_irn_op(node), get_irn_mode(node),
@@ -121,7 +124,7 @@ static ir_node *transform_block(ir_node *node)
 static ir_node *transform_end(ir_node *node)
 {
 	/* end has to be duplicated manually because we need a dynamic in array */
-	ir_graph *irg   = current_ir_graph;
+	ir_graph *irg   = get_irn_irg(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = be_transform_node(get_nodes_block(node));
 	int      i, arity;
@@ -220,7 +223,6 @@ ir_node *be_transform_node(ir_node *node)
 	assert(new_node != NULL);
 
 	be_set_transformed_node(node, new_node);
-	hook_dead_node_elim_subst(current_ir_graph, node, new_node);
 	return new_node;
 }
 
@@ -309,11 +311,11 @@ ir_node *be_pre_transform_node(ir_node *place)
 	return be_transform_node(place);
 }
 
-static void pre_transform_anchor(int anchor)
+static void pre_transform_anchor(ir_graph *irg, int anchor)
 {
 	ir_node *old_anchor_node = get_irn_n(env.old_anchor, anchor);
 	ir_node *transformed     = be_transform_node(old_anchor_node);
-	set_irg_anchor(current_ir_graph, anchor, transformed);
+	set_irg_anchor(irg, anchor, transformed);
 }
 
 static void kill_unused_anchor(int anchor)
@@ -357,13 +359,13 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	/* pre transform some anchors (so they are available in the other transform
 	 * functions) */
-	pre_transform_anchor(anchor_bad);
-	pre_transform_anchor(anchor_no_mem);
-	pre_transform_anchor(anchor_end_block);
-	pre_transform_anchor(anchor_end);
-	pre_transform_anchor(anchor_start_block);
-	pre_transform_anchor(anchor_start);
-	pre_transform_anchor(anchor_frame);
+	pre_transform_anchor(irg, anchor_bad);
+	pre_transform_anchor(irg, anchor_no_mem);
+	pre_transform_anchor(irg, anchor_end_block);
+	pre_transform_anchor(irg, anchor_end);
+	pre_transform_anchor(irg, anchor_start_block);
+	pre_transform_anchor(irg, anchor_start);
+	pre_transform_anchor(irg, anchor_frame);
 	kill_unused_anchor(anchor_tls);
 
 	if (pre_transform)
