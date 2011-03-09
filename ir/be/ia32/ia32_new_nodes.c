@@ -23,7 +23,7 @@
  * @author      Christian Wuerdig
  * @version     $Id$
  *
- * This file implements the creation of the achitecture specific firm opcodes
+ * This file implements the creation of the architecture specific firm opcodes
  * and the corresponding node constructors for the ia32 assembler irg.
  */
 #include "config.h"

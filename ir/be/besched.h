@@ -52,8 +52,8 @@ static inline bool sched_is_scheduled(const ir_node *irn)
 }
 
 /**
- * returns the time step of a node. Each node in a block has a timestep
- * unique to that block. a node schedule before another node has a lower
+ * Returns the time step of a node. Each node in a block has a timestep
+ * unique to that block. A node schedule before another node has a lower
  * timestep than this node.
  * @param irn The node.
  * @return The time step in the schedule.
