@@ -56,7 +56,7 @@ int firm_gaussjordansolve(double *A, double *vec, int nsize)
 		x[i] = i;
 
 	/* triangularize A */
-	/* ie A has zeros below it's diagonal */
+	/* ie A has zeros below its diagonal */
 	for (col = 0; col < nsize - 1; ++col) {
 		big = 0;
 		/* find the largest left in LRH box */

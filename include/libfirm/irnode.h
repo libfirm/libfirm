@@ -164,7 +164,7 @@ FIRM_API unsigned get_irn_opcode(const ir_node *node);
 FIRM_API const char *get_irn_opname(const ir_node *node);
 /** Get the ident for a string representation of the opcode. */
 FIRM_API ident *get_irn_opident(const ir_node *node);
-/** If arg is an argument of the node, returns it's position, -1 otherwise */
+/** If arg is an argument of the node, returns its position, -1 otherwise */
 FIRM_API int get_irn_pred_pos(ir_node *node, ir_node *arg);
 /** Gets the visited counter of a node. */
 FIRM_API ir_visited_t get_irn_visited(const ir_node *node);

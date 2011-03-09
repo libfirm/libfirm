@@ -1028,7 +1028,7 @@ sub get_reg_class {
 }
 
 ###
-# Returns the index of a given register within it's register class.
+# Returns the index of a given register within its register class.
 # @return index or undef
 ###
 sub get_reg_index {

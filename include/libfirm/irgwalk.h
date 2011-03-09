@@ -137,7 +137,7 @@ FIRM_API void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  * @param post  walker function, executed after the predecessor of a node are visited
  * @param env   environment, passed to pre and post
  *
- * This function Walks only over Block nodes in the graph. Has it's own visited
+ * This function Walks only over Block nodes in the graph. Has its own visited
  * flag, so that it can be interleaved with the other walker.
  * If a none block is passed, starts at the block this node belongs to.
  * If end is passed also visits kept alive blocks. Does not use the link field.

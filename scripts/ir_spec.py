@@ -901,7 +901,7 @@ class Tuple(Op):
 	following Proj nodes have not to be changed. (They are hard to find due to
 	the implementation with pointers in only one direction.) The Tuple node is
 	smaller than any other node, so that a node can be changed into a Tuple by
-	just changing it's opcode and giving it a new in array."""
+	just changing its opcode and giving it a new in array."""
 	arity  = "variable"
 	mode   = "mode_T"
 	pinned = "no"

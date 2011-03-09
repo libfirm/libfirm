@@ -105,7 +105,7 @@ static unsigned be_compute_block_pressure(const ir_graph *irg,
 }
 
 /**
- * Compute the highest register pressure in a loop and it's sub-loops.
+ * Compute the highest register pressure in a loop and its sub-loops.
  * @param loop_ana  The loop ana object.
  * @param loop      The loop to compute pressure for.
  * @param cls       The register class to compute pressure for.

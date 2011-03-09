@@ -540,7 +540,7 @@ static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *pos
 }
 
 /**
- * Walker, allocates an array for all blocks and puts it's nodes non-floating
+ * Walker, allocates an array for all blocks and puts their non-floating
  * nodes into this array.
  */
 static void collect_node(ir_node *node, void *env)
@@ -1370,7 +1370,7 @@ static void print_mem_edge_vcgattr(FILE *F, ir_node *from, int to)
 		fprintf(F, INTER_MEM_EDGE_ATTR);
 }
 
-/** Print the vcg attributes for the edge from node from to it's to's input */
+/** Print the vcg attributes for the edge from node "from" to its "to"th input */
 static void print_edge_vcgattr(FILE *F, ir_node *from, int to)
 {
 	assert(from);
@@ -1831,7 +1831,7 @@ static void dump_entity_initializer(FILE *F, const ir_entity *ent)
 	(void) ent;
 }
 
-/** Dumps a type or entity and it's edges. */
+/** Dumps a type or entity and its edges. */
 static void dump_type_info(type_or_ent tore, void *env)
 {
 	FILE *F = (FILE*)env;

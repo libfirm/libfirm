@@ -91,6 +91,6 @@ void types_calc_finalization(void)
 
 	FIRM_DBG_REGISTER(dbg, "firm.tr.finalization");
 
-	/* types must be visited before it's entities */
+	/* types must be visited before their entities */
 	type_walk(do_finalization, NULL, get_glob_type());
 }

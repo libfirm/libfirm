@@ -29,7 +29,7 @@
  * to their closest copy while introducing phis as necessary.
  *
  * Algorithm: Mark all blocks in the iterated dominance frontiers of the value
- * and it's copies. Link the copies ordered by dominance to the blocks.  Then
+ * and its copies. Link the copies ordered by dominance to the blocks.  Then
  * we search for each use all definitions in the current block, if none is
  * found, then we search one in the immediate dominator. If we are in a block
  * of the dominance frontier, create a phi and do the same search for all

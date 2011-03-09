@@ -1440,8 +1440,8 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	env.process_scc   = process_scc;
 
 	/* Clear all links and move Proj nodes into the
-	   the same block as it's predecessors.
-	   This can improve the placement of new nodes.
+	 * the same block as its predecessors.
+	 * This can improve the placement of new nodes.
 	 */
 	projs_moved = 0;
 	irg_walk_graph(irg, NULL, clear_and_fix, &projs_moved);

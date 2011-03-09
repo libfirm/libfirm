@@ -132,9 +132,9 @@ void be_peephole_new_node(ir_node * nw)
 /**
  * must be called from peephole optimisations before a node will be killed
  * and its users will be redirected to new_node.
- * so bepeephole can update it's internal state.
+ * so bepeephole can update its internal state.
  *
- * Note: killing a node and rewiring os only allowed if new_node produces
+ * Note: killing a node and rewiring is only allowed if new_node produces
  * the same registers as old_node.
  */
 static void be_peephole_before_exchange(const ir_node *old_node,

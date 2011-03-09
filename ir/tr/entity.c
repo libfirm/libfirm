@@ -105,7 +105,7 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		res->attr.code_attr.label = (ir_label_t) -1;
 	}
 
-	/* Remember entity in it's owner. */
+	/* Remember entity in its owner. */
 	if (owner != NULL)
 		add_compound_member(owner, res);
 

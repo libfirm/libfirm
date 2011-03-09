@@ -51,7 +51,7 @@ struct firm_dbg_module_t {
 };
 
 /**
- * Compares two modules by comparing it's names
+ * Compares two modules by comparing their names
  */
 static int module_cmp(const void *p1, const void *p2, size_t size)
 {

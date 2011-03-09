@@ -155,7 +155,7 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
 
 /**
  * Data flow optimization walker.
- * Optimizes all nodes and enqueue it's users
+ * Optimizes all nodes and enqueue its users
  * if done.
  */
 static void opt_walker(ir_node *n, void *env)

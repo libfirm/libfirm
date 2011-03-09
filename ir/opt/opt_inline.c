@@ -1154,7 +1154,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					/* call was inlined, Phi/Projs for current graph must be recomputed */
 					phiproj_computed = 0;
 
-					/* callee was inline. Append it's call list. */
+					/* callee was inline. Append its call list. */
 					env->got_inline = 1;
 					--env->n_call_nodes;
 					append_call_list(env, callee_env, entry->loop_depth);
@@ -1679,7 +1679,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 		/* remove it from the caller list */
 		list_del(&curr_call->list);
 
-		/* callee was inline. Append it's call list. */
+		/* callee was inline. Append its call list. */
 		env->got_inline = 1;
 		--env->n_call_nodes;
 

@@ -83,7 +83,7 @@ int is_irg_caller_backedge(const ir_graph *irg, size_t pos)
 	return irg->caller_isbe != NULL ? rbitset_is_set(irg->caller_isbe, pos) : 0;
 }
 
-/** Search the caller in the list of all callers and set it's backedge property. */
+/** Search the caller in the list of all callers and set its backedge property. */
 static void set_irg_caller_backedge(ir_graph *irg, const ir_graph *caller)
 {
 	size_t i, n_callers = get_irg_n_callers(irg);

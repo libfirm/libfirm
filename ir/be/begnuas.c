@@ -722,7 +722,7 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 	case iro_Const:
 		tv = get_Const_tarval(init);
 
-		/* it's a arithmetic value */
+		/* it's an arithmetic value */
 		emit_arith_tarval(tv, bytes);
 		return;
 

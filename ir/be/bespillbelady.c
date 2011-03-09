@@ -766,7 +766,7 @@ static void process_block(ir_node *block)
 		/* no predecessor -> empty set */
 		workset_clear(ws);
 	} else if (arity == 1) {
-		/* one predecessor, copy it's end workset */
+		/* one predecessor, copy its end workset */
 		ir_node      *pred_block = get_Block_cfgpred_block(block, 0);
 		block_info_t *pred_info  = get_block_info(pred_block);
 

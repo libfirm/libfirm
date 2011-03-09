@@ -81,7 +81,7 @@ FIRM_API ir_node *get_Block_cfg_out_ka(const ir_node *node, int pos);
 FIRM_API void irg_out_walk(ir_node *node, irg_walk_func *pre,
                            irg_walk_func *post, void *env);
 
-/** Walks only over Block nodes in the graph.  Has it's own visited
+/** Walks only over Block nodes in the graph.  Has its own visited
    flag, so that it can be interleaved with the other walker.
    node must be either op_Block or mode_X.  */
 FIRM_API void irg_out_block_walk(ir_node *node, irg_walk_func *pre,

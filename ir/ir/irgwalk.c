@@ -373,7 +373,7 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre,
 }
 
 
-/* walks only over Block nodes in the graph.  Has it's own visited
+/* walks only over Block nodes in the graph.  Has its own visited
    flag, so that it can be interleaved with the other walker.         */
 void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
 {

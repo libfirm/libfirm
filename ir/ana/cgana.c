@@ -448,7 +448,7 @@ static void free_ana_walker(ir_node *node, void *env)
  * Add all method addresses in global new style initializers to the set.
  *
  * @note
- * We do NOT check the type here, just it it's an entity address.
+ * We do NOT check the type here, just if it's an entity address.
  * The reason for this is code like:
  *
  * void *p = function;
@@ -491,7 +491,7 @@ static void add_method_address_inititializer(ir_initializer_t *initializer,
  * Add all method addresses in global initializers to the set.
  *
  * @note
- * We do NOT check the type here, just it it's an entity address.
+ * We do NOT check the type here, just if it's an entity address.
  * The reason for this is code like:
  *
  * void *p = function;
@@ -502,7 +502,7 @@ static void add_method_address(ir_entity *ent, eset *set)
 {
 	ir_type *tp;
 
-	/* ignore methods: these of course reference it's address
+	/* ignore methods: these of course reference their addresses
 	 * TODO: remove this later once this incorrect self-initialisation is gone
 	 */
 	tp = get_entity_type(ent);

@@ -55,7 +55,7 @@ static int is_Block_unreachable(ir_node *block)
  * all "living" nodes into a living block. That's why we must
  * move nodes in dead block with "live" successors into a valid
  * block.
- * We move them just into the same block as it's successor (or
+ * We move them just into the same block as its successor (or
  * in case of a Phi into the effective use block). For Phi successors,
  * this may still be a dead block, but then there is no real use, as
  * the control flow will be dead later.
@@ -319,7 +319,7 @@ static inline int get_block_loop_depth(ir_node *block)
 }
 
 /**
- * Move n to a block with less loop depth than it's current block. The
+ * Move n to a block with less loop depth than its current block. The
  * new block must be dominated by early.
  *
  * @param n      the node that should be moved

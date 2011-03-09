@@ -89,7 +89,7 @@ struct tp_op {
 /**
  * Returns a new type opcode.
  *
- * Allocates a new tp_op struct and initializes it's fields with
+ * Allocates a new tp_op struct and initializes its fields with
  * the passed values.  This function is only to be used during
  * initialization of the library.
  *

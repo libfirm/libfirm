@@ -49,7 +49,7 @@ void be_free_birg(ir_graph *irg);
 /**
  * This type describes the stack layout.
  * The stack is divided into 3 parts:
- * - arg_type:     A struct type describing the stack arguments and it's order.
+ * - arg_type:     A struct type describing the stack arguments and its order.
  * - between_type: A struct type describing the stack layout between arguments
  *                 and frame type. In architectures that put the return address
  *                 automatically on the stack, the return address is put here.

@@ -181,7 +181,7 @@ ir_graph_pass_t *normalize_one_return_pass(const char *name)
  * with the Return, otherwise they are dead (because the Return leaves
  * the graph, so no more users of the other nodes can exists.
  *
- * We can move a Return, if it's predecessors are Phi nodes or
+ * We can move a Return, if its predecessors are Phi nodes or
  * comes from another block. In the later case, it is always possible
  * to move the Return one block up, because the predecessor block must
  * dominate the Return block (SSA) and then it dominates the predecessor

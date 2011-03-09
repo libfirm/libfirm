@@ -142,7 +142,7 @@ void irg_set_nloc(ir_graph *res, int n_loc)
 }
 
 /* Allocates a list of nodes:
-    - The start block containing a start node and Proj nodes for it's four
+    - The start block containing a start node and Proj nodes for its four
       results (X, M, P, Tuple).
     - The end block containing an end node. This block is not matured after
       new_ir_graph as predecessors need to be added to it.

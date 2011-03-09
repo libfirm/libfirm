@@ -567,7 +567,7 @@ static ir_alias_relation _get_alias_relation(
 	/*
 	 * Bitfields can be constructed as Sels from its base address.
 	 * As they have different entities, the disambiguator would find that they are
-	 * alias free. While this is true for it's values, it is false for the addresses
+	 * alias free. While this is true for its values, it is false for the addresses
 	 * (strictly speaking, the Sel's are NOT the addresses of the bitfields).
 	 * So, skip those bitfield selecting Sel's.
 	 */

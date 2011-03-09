@@ -76,7 +76,7 @@
  *                   with a Sel node the pointer to a thread local variable.
  *
  * - args            The ir_node that produces the arguments of the method as
- *                   it's result.  This is a Proj node on the fourth output of
+ *                   its result.  This is a Proj node on the fourth output of
  *                   the start node.  This output is tagged as pn_Start_T_args.
  *
  * - proj_args       The proj nodes of the args node.
@@ -138,11 +138,11 @@ FIRM_API void set_current_ir_graph(ir_graph *graph);
  * to point to this graph. Further it allocates the following nodes needed
  * for every procedure:
  *
- * - The start block containing a start node and Proj nodes for it's
+ * - The start block containing a start node and Proj nodes for its
  *   seven results (X, M, P, P, P, T, P).
  * - The end block containing an end node. This block is not matured
  *   after executing new_ir_graph() as predecessors need to be added to it.
- *   (Maturing a block means fixing it's number of predecessors.)
+ *   (Maturing a block means fixing its number of predecessors.)
  * - The current block, which is empty and also not matured.
  *
  * Further it enters the global store into the data structure of the start

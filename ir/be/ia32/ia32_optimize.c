@@ -1271,7 +1271,7 @@ void ia32_peephole_optimization(ir_graph *irg)
 
 /**
  * Removes node from schedule if it is not used anymore. If irn is a mode_T node
- * all it's Projs are removed as well.
+ * all its Projs are removed as well.
  * @param irn  The irn to be removed from schedule
  */
 static inline void try_kill(ir_node *node)

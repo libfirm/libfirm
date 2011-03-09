@@ -40,7 +40,7 @@
  */
 typedef struct set set;
 
-/** The entry of a set, representing an element in the set and it's meta-information */
+/** The entry of a set, representing an element in the set and its meta-information */
 typedef struct set_entry {
 	unsigned hash;  /**< the hash value of the element */
 	size_t size;    /**< the size of the element */

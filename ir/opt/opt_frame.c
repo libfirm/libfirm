@@ -106,7 +106,7 @@ void opt_frame_irg(ir_graph *irg)
 			list = (ir_entity*)get_entity_link(ent);
 			free_entity(ent);
 		}
-		/* we changed the frame type, it's layout should be redefined */
+		/* we changed the frame type, its layout should be redefined */
 		set_type_state(frame_tp, layout_undefined);
 	}
 	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);

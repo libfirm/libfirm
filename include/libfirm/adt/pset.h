@@ -64,7 +64,7 @@ typedef struct pset pset;
 #define pset_new_ptr(slots)       new_pset(pset_default_ptr_cmp, slots)
 #define pset_new_ptr_default()    pset_new_ptr(64)
 
-/** The entry of a pset, representing an element pointer in the set and it's meta-information */
+/** The entry of a pset, representing an element pointer in the set and its meta-information */
 typedef struct {
   unsigned hash;
   void *dptr;
@@ -99,7 +99,7 @@ FIRM_API pset *new_pset(pset_cmp_fun func, size_t slots);
  * @param pset   the pset
  *
  * @note
- *    This does NOT delete the elements of this pset, just it's pointers!
+ *    This does NOT delete the elements of this pset, just its pointers!
  */
 FIRM_API void del_pset(pset *pset);
 

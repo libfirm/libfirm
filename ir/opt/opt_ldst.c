@@ -1235,7 +1235,7 @@ static void update_DivOp_memop(memop_t *m)
  */
 static void update_Phi_memop(memop_t *m)
 {
-	/* the Phi is it's own mem */
+	/* the Phi is its own mem */
 	m->mem = m->node;
 }  /* update_Phi_memop */
 

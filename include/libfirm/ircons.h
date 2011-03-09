@@ -803,7 +803,7 @@
  *    Parameter
  *      arity            number of predecessors
  *      **in             array with predecessors
- *      *mode            The mode of it's inputs and output.
+ *      *mode            The mode of its inputs and output.
  *    Inputs:
  *      A Phi node has as many inputs as the block it belongs to.
  *      Each input points to a definition of the same value on a
@@ -959,7 +959,7 @@
  *    replaced by the Tuple operation so that the following Proj nodes have not to
  *    be changed.  (They are hard to find due to the implementation with pointers
  *    in only one direction.)  The Tuple node is smaller than any other
- *    node, so that a node can be changed into a Tuple by just changing it's
+ *    node, so that a node can be changed into a Tuple by just changing its
  *    opcode and giving it a new in array.
  *
  *    Parameters
@@ -970,7 +970,7 @@
  *    ir_node *new_Id (ir_node *val, ir_mode *mode)
  *    ---------------------------------------------
  *
- *    The single output of the Id operation is it's input.  Also needed
+ *    The single output of the Id operation is its input.  Also needed
  *    for optimizations.
  *
  *
@@ -1060,7 +1060,7 @@
  *    e.g. if there is only one definition of this value, but this
  *    definition reaches the currend block on several different
  *    paths.  This Phi node will be eliminated if optimizations are
- *    turned on right after it's creation.
+ *    turned on right after its creation.
  *    Requires current_block to be set correctly.
  *
  *    There are two special routines for the global store:

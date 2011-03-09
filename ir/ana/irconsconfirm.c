@@ -57,7 +57,7 @@ typedef struct env_t {
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
- * Return the effective use block of a node and it's predecessor on
+ * Return the effective use block of a node and its predecessor on
  * position pos.
  *
  * @param node  the node
@@ -319,7 +319,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 						/*
 						 * The user of the user is dominated by our true/false
 						 * block. So, create a copy of user WITH the constant
-						 * replacing it's pos'th input.
+						 * replacing its pos'th input.
 						 *
 						 * This is always good for unop's and might be good
 						 * for binops.

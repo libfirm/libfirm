@@ -100,7 +100,7 @@ void be_add_reload_on_edge(spill_env_t *senv, ir_node *to_spill, ir_node *bl,
 void be_insert_spills_reloads(spill_env_t *senv);
 
 /**
- * There are 2 possibilities to spill a phi node: Only it's value, or replacing
+ * There are 2 possibilities to spill a phi node: Only its value, or replacing
  * the whole phi-node with a memory phi. Normally only the value of a phi will
  * be spilled unless you mark the phi with be_spill_phi.
  * (Remember that each phi needs a register, so you have to spill phis when

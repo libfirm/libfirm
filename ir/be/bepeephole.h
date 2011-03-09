@@ -62,7 +62,7 @@ void be_peephole_new_node(ir_node *nw);
 void be_peephole_exchange(ir_node *old, ir_node *nw);
 
 /**
- * Tries to optimize a beIncSp node with it's previous IncSP node.
+ * Tries to optimize a beIncSp node with its previous IncSP node.
  * Must be run from a be_peephole_opt() context.
  *
  * @param node  a be_IncSP node

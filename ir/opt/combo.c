@@ -845,7 +845,7 @@ static void add_to_cprop(node_t *y, environment_t *env)
 	irn = y->node;
 	if (get_irn_mode(irn) == mode_T) {
 		/* mode_T nodes always produce tarval_bottom, so we must explicitly
-		   add it's Proj's to get constant evaluation to work */
+		 * add its Projs to get constant evaluation to work */
 		int i;
 
 		for (i = get_irn_n_outs(irn) - 1; i >= 0; --i) {
@@ -1813,7 +1813,7 @@ static void split_by(partition_t *X, environment_t *env)
 	dump_partition("split_by", X);
 
 	if (X->n_leader == 1) {
-		/* we have only one leader, no need to split, just check it's type */
+		/* we have only one leader, no need to split, just check its type */
 		node_t *x = get_first_node(X);
 		X->type_is_T_or_C = x->type.tv == tarval_top || is_con(x->type);
 		return;

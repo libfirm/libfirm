@@ -1118,7 +1118,7 @@ static int recolor_nodes(co_mst_env_t *env, co_mst_irn_t *node, col_cost_t *cost
 }
 
 /**
- * Tries to bring node @p node and all it's neighbours to color @p tgt_col.
+ * Tries to bring node @p node and all its neighbours to color @p tgt_col.
  * @return 1 if color @p col could be applied, 0 otherwise
  */
 static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col, struct list_head *changed)
@@ -1135,7 +1135,7 @@ static int change_node_color(co_mst_env_t *env, co_mst_irn_t *node, int tgt_col,
 
 	/*
 		Node has not yet a fixed color and target color is admissible
-		-> try to recolor node and it's affinity neighbours
+		-> try to recolor node and its affinity neighbours
 	*/
 	if (is_loose(node) && bitset_is_set(node->adm_colors, tgt_col)) {
 		col_cost_t *costs = env->single_cols[tgt_col];

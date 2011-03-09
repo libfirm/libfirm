@@ -380,7 +380,7 @@ static void irg_extblock_walk_2(ir_extblk *blk, extbb_walk_func *pre, extbb_walk
 	}
 }
 
-/* walks only over extended Block nodes in the graph.  Has it's own visited
+/* walks only over extended Block nodes in the graph.  Has its own visited
    flag, so that it can be interleaved with the other walker.         */
 void irg_extblock_walk(ir_extblk *blk, extbb_walk_func *pre, extbb_walk_func *post, void *env)
 {

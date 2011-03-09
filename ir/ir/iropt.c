@@ -1075,11 +1075,11 @@ static ir_node *equivalent_node_Or(ir_node *n)
 	ir_tarval *tv;
 
 	if (a == b) {
-		n = a;    /* Or has it's own neutral element */
+		n = a;    /* idempotence */
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_OR);
 		return n;
 	}
-	/* constants are cormalized to right, check this site first */
+	/* constants are normalized to right, check this side first */
 	tv = value_of(b);
 	if (tarval_is_null(tv)) {
 		n = a;
@@ -1108,11 +1108,11 @@ static ir_node *equivalent_node_And(ir_node *n)
 	ir_tarval *tv;
 
 	if (a == b) {
-		n = a;    /* And has it's own neutral element */
+		n = a;    /* idempotence */
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_AND);
 		return n;
 	}
-	/* constants are normalized to right, check this site first */
+	/* constants are normalized to right, check this side first */
 	tv = value_of(b);
 	if (tarval_is_all_one(tv)) {
 		n = a;
@@ -1322,11 +1322,11 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		first_val = get_Phi_pred(n, i);
 		if (   (first_val != n)                            /* not self pointer */
 #if 0
-		    /* BEWARE: when the if is changed to 1, Phi's will ignore it's Bad
-		     * predecessors. Then, Phi nodes in dead code might be removed, causing
-		     * nodes pointing to themself (Add's for instance).
-		     * This is really bad and causes endless recursions in several
-		     * code pathes, so we do NOT optimize such a code.
+		    /* BEWARE: when the if is changed to 1, Phis will ignore their Bad
+		     * predecessors. Then, Phi nodes in unreachable code might be removed,
+		     * causing nodes pointing to themselev (Adds for instance).
+		     * This is really bad and causes endless recursion on several
+		     * code pathes, so we do NOT optimize such code.
 		     * This is not that bad as it sounds, optimize_cf() removes bad control flow
 		     * (and bad Phi predecessors), so live code is optimized later.
 		     */
@@ -1592,7 +1592,7 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj)
 }  /* equivalent_node_Proj_Store */
 
 /**
- * Does all optimizations on nodes that must be done on it's Proj's
+ * Does all optimizations on nodes that must be done on its Projs
  * because of creating new nodes.
  */
 static ir_node *equivalent_node_Proj(ir_node *proj)
@@ -4537,7 +4537,7 @@ static ir_node *transform_node_Proj_Bound(ir_node *proj)
 }  /* transform_node_Proj_Bound */
 
 /**
- * Does all optimizations on nodes that must be done on it's Proj's
+ * Does all optimizations on nodes that must be done on its Projs
  * because of creating new nodes.
  */
 static ir_node *transform_node_Proj(ir_node *proj)
@@ -6308,7 +6308,7 @@ static ir_node *gigo(ir_node *node)
 #if 0
 			/* Propagating Unknowns here seems to be a bad idea, because
 			   sometimes we need a node as a input and did not want that
-			   it kills it's user.
+			   it kills its user.
 			   However, it might be useful to move this into a later phase
 			   (if you think that optimizing such code is useful). */
 			if (is_Unknown(pred) && mode_is_data(get_irn_mode(node)))
@@ -6371,7 +6371,7 @@ ir_node *optimize_node(ir_node *n)
 				size_t node_size;
 
 				/*
-				 * we MUST copy the node here temporary, because it's still
+				 * we MUST copy the node here temporarily, because it's still
 				 * needed for DBG_OPT_CSTEVAL
 				 */
 				node_size = offsetof(ir_node, attr) +  n->op->attr_size;

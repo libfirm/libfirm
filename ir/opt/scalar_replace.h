@@ -30,7 +30,7 @@
 
 /**
  * Returns non-zero, if the address of an entity
- * represented by a Sel node (or it's successor Sels) is taken.
+ * represented by a Sel node (or its successor Sels) is taken.
  *
  * @param sel  the Sel node
  */

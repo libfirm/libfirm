@@ -52,7 +52,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_constr;)
 DEBUG_ONLY(static firm_dbg_module_t *dbg_permmove;)
 
-/** Associates an ir_node with it's copy and CopyKeep. */
+/** Associates an ir_node with its copy and CopyKeep. */
 typedef struct {
 	ir_nodeset_t copies; /**< all non-spillable copies of this irn */
 	const arch_register_class_t *cls;
@@ -554,7 +554,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 		sched_add_before(skip_Proj(irn), cpy);
 	sched_add_after(skip_Proj(irn), keep);
 
-	/* insert the other different and it's copies into the map */
+	/* insert the other different and its copies into the map */
 	entry = (op_copy_assoc_t*)ir_nodemap_get(op_set, other_different);
 	if (! entry) {
 		entry      = OALLOC(&env->obst, op_copy_assoc_t);
@@ -804,7 +804,7 @@ void assure_constraints(ir_graph *irg)
 
 		DB((dbg_constr, LEVEL_1, "\n"));
 
-		/* introduce the copies for the operand and it's copies */
+		/* introduce the copies for the operand and its copies */
 		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, map_entry.node);
 		be_ssa_construction_add_copies(&senv, nodes, n);

@@ -343,7 +343,7 @@ FIRM_API ir_graph_pass_t *opt_ldst_pass(const char *name);
  *
  * @param irg  The graph whose loops will be processed
  *
- * This function did not change the graph, only it's frame type.
+ * This function did not change the graph, only its frame type.
  * The layout state of the frame type will be set to layout_undefined
  * if entities were removed.
  */
@@ -355,7 +355,7 @@ FIRM_API void loop_optimization(ir_graph *irg);
  *
  * @param irg  The graph whose frame type will be optimized
  *
- * This function did not change the graph, only it's frame type.
+ * This function did not change the graph, only its frame type.
  * The layout state of the frame type will be set to layout_undefined
  * if entities were removed.
  */

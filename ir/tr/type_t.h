@@ -216,7 +216,7 @@ struct ir_type {
 	                              when fixing the layout of this class.  Size must be
 	                              given in bytes. */
 	unsigned align;          /**< Alignment of an ir_entity of this type. This should be
-	                              set according to the source language needs. If not set it's
+	                              set according to the source language needs. If not set, it's
 	                              calculated automatically by get_type_alignment().
 	                              Alignment must be given in bytes. */
 	ir_mode *mode;           /**< The mode for atomic types */

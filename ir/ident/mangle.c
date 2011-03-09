@@ -127,7 +127,7 @@ ident *id_mangle_dot(ident *first, ident *scnd)
 	return id_mangle_3(first, '.', scnd);
 }
 
-/* returns a mangled name for a Win32 function using it's calling convention */
+/* returns a mangled name for a Win32 function using its calling convention */
 ident *id_decorate_win32_c_fkt(const ir_entity *ent, ident *id)
 {
 	ir_type *tp      = get_entity_type(ent);

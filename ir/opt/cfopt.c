@@ -179,7 +179,7 @@ static void merge_blocks(ir_node *node, void *ctx)
 			}
 
 			/* normally, we would create a Bad block here, but this must be
-			 * prevented, so just set it's cf to Bad.
+			 * prevented, so just set its cf to Bad.
 			 */
 			if (is_Block_dead(new_block)) {
 				ir_graph *irg = get_irn_irg(node);

@@ -264,7 +264,7 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
 	ir_graph *irg = get_irn_irg(tgt);
 	assert(info->out_count >= 0);
 	if (info->out_count == 0 && kind == EDGE_KIND_NORMAL) {
-		/* tgt lost it's last user */
+		/* tgt lost its last user */
 		int i;
 
 		for (i = get_irn_arity(tgt) - 1; i >= -1; --i) {

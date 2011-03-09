@@ -172,7 +172,7 @@ static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
 
 /*
  * Returns non-zero, if the address of an entity
- * represented by a Sel node (or it's successor Sels) is taken.
+ * represented by a Sel node (or its successor Sels) is taken.
  */
 int is_address_taken(ir_node *sel)
 {
@@ -321,7 +321,7 @@ static void *ADDRESS_TAKEN = &_x;
  *
  * This function finds variables on the (members of the) frame type
  * that can be scalar replaced, because their address is never taken.
- * If such a variable is found, it's entity link will hold a list of all
+ * If such a variable is found, its entity link will hold a list of all
  * Sel nodes, that selects the atomic fields of this entity.
  * Otherwise, the link will be ADDRESS_TAKEN or NULL.
  *
@@ -431,7 +431,7 @@ static int find_possible_replacements(ir_graph *irg)
 }
 
 /**
- * Return a path from the Sel node sel to it's root.
+ * Return a path from the Sel node "sel" to its root.
  *
  * @param sel  the Sel node
  * @param len  the length of the path so far
