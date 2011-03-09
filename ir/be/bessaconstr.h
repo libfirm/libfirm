@@ -71,7 +71,7 @@ typedef struct be_ssa_construction_env_t {
 /**
  * Initializes an SSA construction environment.
  *
- * @param env    an SSA empty construction environment
+ * @param env    an empty SSA construction environment
  * @param irg    the graph
  */
 void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg);
@@ -86,7 +86,7 @@ void be_ssa_construction_set_ignore_uses(be_ssa_construction_env_t *env,
                                          const ir_nodeset_t *ignore_uses);
 
 /**
- * Reconstructs the ssa form for all users of node @p node
+ * Reconstructs the SSA form for all users of node @p node
  */
 void be_ssa_construction_fix_users(be_ssa_construction_env_t *env,
                                    ir_node *node);
@@ -104,7 +104,7 @@ void be_ssa_construction_update_liveness_phis(be_ssa_construction_env_t *env,
 ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env);
 
 /**
- * Destroys an ssa construction environment.
+ * Destroys an SSA construction environment.
  */
 void be_ssa_construction_destroy(be_ssa_construction_env_t *env);
 

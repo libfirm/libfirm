@@ -47,7 +47,7 @@ ir_phase *new_phase(ir_graph *irg, phase_irn_init *data_init);
 /**
  * Variant for custom memory-management/classes. Just initialize given phase
  * structure (performs no allocation, you do not need to call this for phases
- * allocated wiht new_phase)
+ * allocated with new_phase)
  */
 void phase_init(ir_phase *phase, ir_graph *irg, phase_irn_init *data_init);
 
