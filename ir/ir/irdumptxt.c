@@ -196,7 +196,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			size_t i;
 			fprintf(F, "  possible callees:\n");
 			for (i = 0; i < get_Call_n_callees(n); i++) {
-				fprintf(F, "    %d: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
+				ir_fprintf(F, "    %zu: %s\n", i, get_ent_dump_name(get_Call_callee(n, i)));
 			}
 		}
 	} break;
