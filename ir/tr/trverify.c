@@ -178,6 +178,7 @@ static int check_class(ir_type *tp)
 			show_ent_overwrite_cnt(mem)
 		);
 
+#if 0
 		for (j = 0, m = get_entity_n_overwrites(mem); j < m; ++j) {
 			ir_entity *ovw = get_entity_overwrites(mem, j);
 			size_t    k, n_super;
@@ -196,6 +197,8 @@ static int check_class(ir_type *tp)
 				}
 			}
 		}
+#endif
+
 	}
 	return 0;
 }
