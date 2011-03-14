@@ -573,7 +573,12 @@ static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *s
 {
 	size_t i, n_overwrittenby;
 
-	if (get_entity_owner(static_ent) == dynamic_class) return static_ent;
+	ir_type *owner = get_entity_owner(static_ent);
+	if (owner == dynamic_class) return static_ent;
+
+	// if the owner of the static_ent already is more special than the dynamic
+	// type to check against - stop here.
+	if (! is_SubClass_of(dynamic_class, owner)) return NULL;
 
 	n_overwrittenby = get_entity_n_overwrittenby(static_ent);
 	for (i = 0; i < n_overwrittenby; ++i) {
@@ -581,7 +586,9 @@ static ir_entity *do_resolve_ent_polymorphy(ir_type *dynamic_class, ir_entity *s
 		ent = do_resolve_ent_polymorphy(dynamic_class, ent);
 		if (ent) return ent;
 	}
-	return NULL;
+
+	// No further specialization of static_ent has been found
+	return static_ent;
 }
 
 /* Resolve polymorphy in the inheritance relation.
