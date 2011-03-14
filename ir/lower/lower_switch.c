@@ -237,7 +237,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 
 	/* check for out-of-bounds */
 	max_const  = new_r_Const_long(irg, cmp_mode, env->switch_max);
-	cmp        = new_rd_Cmp(dbgi, block, sel, max_const, ir_relation_less);
+	cmp        = new_rd_Cmp(dbgi, block, sel, max_const, ir_relation_less_equal);
 	oob_cond   = new_rd_Cond(dbgi, block, cmp);
 	proj_true  = new_r_Proj(oob_cond, mode_X, pn_Cond_true);
 	proj_false = new_r_Proj(oob_cond, mode_X, pn_Cond_false);
