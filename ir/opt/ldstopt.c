@@ -2190,6 +2190,8 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 			dfs(get_Raise_mem(pred), env);
 		else if (is_fragile_op(pred))
 			dfs(get_fragile_op_mem(pred), env);
+		else if (is_Bad(pred))
+			/* ignore non-optimized block predecessor */;
 		else {
 			assert(0 && "Unknown EndBlock predecessor");
 		}
