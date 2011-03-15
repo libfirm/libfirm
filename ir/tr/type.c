@@ -364,11 +364,10 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			if (tp != get_glob_type()) {
 				size_t n_mem = get_class_n_members(tp);
 				for (i = 0; i < n_mem; i++) {
-					assert(get_entity_offset(get_class_member(tp, i)) > -1);
-					/* TR ??
-					assert(is_Method_type(get_entity_type(get_class_member(tp, i))) ||
-					(get_entity_allocation(get_class_member(tp, i)) == allocation_automatic));
-					*/
+					ir_entity *entity = get_class_member(tp, i);
+					if (is_Method_type(get_entity_type(entity)))
+						continue;
+					assert(get_entity_offset(entity) > -1);
 				}
 			}
 			break;
@@ -378,12 +377,8 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			}
 			break;
 		case tpo_union:
-			/* ?? */
 			break;
 		case tpo_array:
-			/* ??
-			   Check order?
-			   Assure that only innermost dimension is dynamic? */
 			break;
 		case tpo_enumeration: {
 #ifndef NDEBUG
@@ -398,7 +393,7 @@ void set_type_state(ir_type *tp, ir_type_state state)
 			break;
 		}
 		default: break;
-		} /* switch (tp) */
+		}
 	}
 	if (state == layout_fixed)
 		tp->flags |= tf_layout_fixed;
