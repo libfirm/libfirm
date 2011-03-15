@@ -153,7 +153,7 @@ static void show_ent_overwrite_cnt(ir_entity *ent)
  */
 static int check_class(ir_type *tp)
 {
-	size_t i, n, j, m;
+	size_t i, n;
 
 	for (i = 0, n = get_class_n_members(tp); i < n; ++i) {
 		ir_entity *mem = get_class_member(tp, i);
@@ -178,27 +178,29 @@ static int check_class(ir_type *tp)
 			show_ent_overwrite_cnt(mem)
 		);
 
-#if 0
-		for (j = 0, m = get_entity_n_overwrites(mem); j < m; ++j) {
-			ir_entity *ovw = get_entity_overwrites(mem, j);
-			size_t    k, n_super;
+		if (false) {
+			size_t j, m;
+			/* check if the overwrite relation is flat, i.e. every overwrite
+			 * is visible in every direct superclass. */
+			for (j = 0, m = get_entity_n_overwrites(mem); j < m; ++j) {
+				ir_entity *ovw = get_entity_overwrites(mem, j);
+				size_t    k, n_super;
 
-			/* Check whether ovw is member of one of tp's supertypes. If so,
-			   the representation is correct. */
-			for (k = 0, n_super = get_class_n_supertypes(tp); k < n_super; ++k) {
-				if (get_class_member_index(get_class_supertype(tp, k), ovw) != INVALID_MEMBER_INDEX) {
-					ASSERT_AND_RET_DBG(
-						0,
-						"overwrites an entity not contained in direct supertype",
-						error_ent_not_cont,
-						show_ent_not_supertp(mem, ovw)
-					);
-					break;
+				/* Check whether ovw is member of one of tp's supertypes. If so,
+				   the representation is correct. */
+				for (k = 0, n_super = get_class_n_supertypes(tp); k < n_super; ++k) {
+					if (get_class_member_index(get_class_supertype(tp, k), ovw) != INVALID_MEMBER_INDEX) {
+						ASSERT_AND_RET_DBG(
+							0,
+							"overwrites an entity not contained in direct supertype",
+							error_ent_not_cont,
+							show_ent_not_supertp(mem, ovw)
+						);
+						break;
+					}
 				}
 			}
 		}
-#endif
-
 	}
 	return 0;
 }
