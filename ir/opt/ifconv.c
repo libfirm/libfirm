@@ -294,6 +294,8 @@ restart:
 			ir_node* cond;
 			int j;
 
+			if (dependency == block) continue;
+
 			if (projx0 == NULL) continue;
 
 			cond = get_Proj_pred(projx0);
