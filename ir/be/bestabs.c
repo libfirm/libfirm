@@ -628,6 +628,12 @@ static void gen_types(stabs_handle *h)
 static void stabs_unit_begin(dbg_handle *handle, const char *filename)
 {
 	stabs_handle *h = (stabs_handle *)handle;
+
+	/* needed for the debug support */
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	be_emit_irprintf("%stext0:\n", be_gas_get_private_prefix());
+	be_emit_write_line();
+
 	h->main_file = h->curr_file = filename;
 	be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,%stext0\n", filename, N_SO, be_gas_get_private_prefix());
 	be_emit_write_line();

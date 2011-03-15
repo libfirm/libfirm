@@ -1554,11 +1554,6 @@ static arch_env_t *ia32_init(FILE *file_handle)
 		be_emit_cstring("\n#NO_APP\n");
 	}
 
-	/* needed for the debug support */
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	be_emit_irprintf("%stext0:\n", be_gas_get_private_prefix());
-	be_emit_write_line();
-
 	return &isa->base;
 }
 

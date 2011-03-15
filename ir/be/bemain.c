@@ -362,7 +362,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
 	env->arch_env = arch_env_init(isa_if, file_handle, env);
 
-	be_dbg_open();
 	return env;
 }
 
@@ -371,9 +370,6 @@ static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
  */
 static void be_done_env(be_main_env_t *env)
 {
-	arch_env_done(env->arch_env);
-	be_dbg_close();
-
 	pmap_destroy(env->ent_trampoline_map);
 	pmap_destroy(env->ent_pic_symbol_map);
 	free_type(env->pic_trampolines_type);
@@ -511,6 +507,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_init_env(&env, file_handle);
 	env.cup_name = cup_name;
 
+	be_dbg_open();
 	be_dbg_unit_begin(cup_name);
 	be_dbg_types();
 
@@ -801,7 +798,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_ctx_pop("bemain_irg");
 	}
 
+	arch_env_done(arch_env);
+
 	be_dbg_unit_end();
+	be_dbg_close();
 
 	ir_profile_free();
 	be_done_env(&env);
