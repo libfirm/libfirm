@@ -73,6 +73,7 @@
 #include "be_dbgout.h"
 #include "beirg.h"
 #include "bestack.h"
+#include "beemitter.h"
 
 #define NEW_ID(s) new_id_from_chars(s, sizeof(s) - 1)
 
@@ -476,6 +477,17 @@ void be_lower_for_target(void)
 	set_irp_phase_state(phase_low);
 }
 
+static void emit_global_asms(void)
+{
+	size_t n = get_irp_n_asms();
+	size_t i;
+	for (i = 0; i < n; ++i) {
+		be_emit_cstring("#APP\n");
+		be_emit_ident(get_irp_asm(i));
+		be_emit_cstring("\n#NO_APP\n");
+	}
+}
+
 /**
  * The Firm backend main loop.
  * Do architecture specific lowering for all graphs
@@ -510,6 +522,8 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_dbg_open();
 	be_dbg_unit_begin(cup_name);
 	be_dbg_types();
+
+	emit_global_asms();
 
 	arch_env = env.arch_env;
 
