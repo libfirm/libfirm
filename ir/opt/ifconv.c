@@ -189,7 +189,7 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
 
 
 /**
- * Remove the j-th predecessors from the i-th predecessor of block and add it to block
+ * Remove the j-th predecessor from the i-th predecessor of block and add it to block
  */
 static void split_block(ir_node* block, int i, int j)
 {
