@@ -2124,6 +2124,9 @@ FIRM_API ir_entity *get_compound_member(const ir_type *tp, size_t pos);
 /** Returns index of member in tp, -1 if not contained. */
 FIRM_API size_t get_compound_member_index(const ir_type *tp, ir_entity *member);
 
+/** Remove a member from a compound type. */
+FIRM_API void remove_compound_member(ir_type *compound, ir_entity *entity);
+
 /**
  * layout members of a struct/union or class type in a default way.
  */

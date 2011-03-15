@@ -284,7 +284,6 @@ void set_class_dfn(ir_type *clss, int dfn);
 int  get_class_dfn(const ir_type *clss);
 
 void add_compound_member(ir_type *compound, ir_entity *entity);
-void remove_compound_member(ir_type *compound, ir_entity *entity);
 
 /** Initialize the type module. */
 void ir_init_type(void);
