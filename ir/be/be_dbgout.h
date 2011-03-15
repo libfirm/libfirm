@@ -35,11 +35,11 @@ void be_dbg_open(void);
 /** close a debug handler. */
 void be_dbg_close(void);
 
-/** start a new source object (compilation unit) */
-void be_dbg_so(const char *filename);
+/** start a compilation unit */
+void be_dbg_unit_begin(const char *filename);
 
-/** Main program */
-void be_dbg_main_program(void);
+/** end compilation unit */
+void be_dbg_unit_end(void);
 
 /** debug for a method begin */
 void be_dbg_method_begin(const ir_entity *ent);

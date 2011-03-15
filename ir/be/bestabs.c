@@ -625,27 +625,24 @@ static void gen_types(stabs_handle *h)
 /**
  * start a new source object (compilation unit)
  */
-static void stabs_so(dbg_handle *handle, const char *filename)
+static void stabs_unit_begin(dbg_handle *handle, const char *filename)
 {
 	stabs_handle *h = (stabs_handle *)handle;
 	h->main_file = h->curr_file = filename;
 	be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,%stext0\n", filename, N_SO, be_gas_get_private_prefix());
 	be_emit_write_line();
-}  /* stabs_so */
+}
 
-/**
- * Main Program
- */
-static void stabs_main_program(dbg_handle *handle)
+static void stabs_unit_end(dbg_handle *handle)
 {
 	ir_graph *irg = get_irp_main_irg();
-
 	(void) handle;
 	if (irg) {
-		be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n", get_entity_name(get_irg_entity(irg)), N_MAIN);
-		be_emit_write_line();
+		ir_entity *entity = get_irg_entity(irg);
+		be_emit_irprintf("\t.stabs\t\"%s\",%d,0,0,0\n",
+		                 get_entity_ld_name(entity), N_MAIN);
 	}
-}  /* stabs_main_program */
+}
 
 static void stabs_set_dbg_info(dbg_handle *h, dbg_info *dbgi)
 {
@@ -852,8 +849,8 @@ static void stabs_close(dbg_handle *handle)
 /** The stabs operations. */
 static const debug_ops stabs_ops = {
 	stabs_close,
-	stabs_so,
-	stabs_main_program,
+	stabs_unit_begin,
+	stabs_unit_end,
 	stabs_method_begin,
 	stabs_method_end,
 	stabs_types,

@@ -38,16 +38,16 @@ void be_dbg_close(void)
 		handle->ops->close(handle);
 }
 
-void be_dbg_so(const char *filename)
+void be_dbg_unit_begin(const char *filename)
 {
-	if (handle->ops->so)
-		handle->ops->so(handle, filename);
+	if (handle->ops->unit_begin)
+		handle->ops->unit_begin(handle, filename);
 }
 
-void be_dbg_main_program(void)
+void be_dbg_unit_end(void)
 {
-	if (handle->ops->main_program)
-		handle->ops->main_program(handle);
+	if (handle->ops->unit_end)
+		handle->ops->unit_end(handle);
 }
 
 void be_dbg_method_begin(const ir_entity *ent)

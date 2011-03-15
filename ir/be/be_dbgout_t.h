@@ -41,11 +41,11 @@ typedef struct debug_ops {
 	/** close the stabs handler. */
 	void (*close)(dbg_handle *handle);
 
-	/** start a new source object (compilation unit) */
-	void (*so)(dbg_handle *handle, const char *filename);
+	/** start a compilation unit */
+	void (*unit_begin)(dbg_handle *handle, const char *filename);
 
-	/** Main Program */
-	void (*main_program)(dbg_handle *handle);
+	/** end compilation unit */
+	void (*unit_end)(dbg_handle *handle);
 
 	/** dumps the stabs for a method begin */
 	void (*method_begin)(dbg_handle *handle, const ir_entity *ent);

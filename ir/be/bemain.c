@@ -511,7 +511,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	be_init_env(&env, file_handle);
 	env.cup_name = cup_name;
 
-	be_dbg_so(cup_name);
+	be_dbg_unit_begin(cup_name);
 	be_dbg_types();
 
 	arch_env = env.arch_env;
@@ -800,6 +800,9 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_free_birg(irg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
+
+	be_dbg_unit_end();
+
 	ir_profile_free();
 	be_done_env(&env);
 
