@@ -206,13 +206,7 @@ static void lower_sel(ir_node *sel)
 			tv   = new_tarval_from_long(get_entity_offset(ent), mode_Int);
 			cnst = new_rd_Const(dbg, irg, tv);
 			add  = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
-#ifdef DO_CACHEOPT  /* cacheopt version */
-			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), sel, ent_mode, cons_none);
-			cacheopt_map_addrs_register_node(newn);
-			set_Load_ptr(newn, add);
-#else /* normal code */
 			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, cons_none);
-#endif
 			newn = new_r_Proj(newn, ent_mode, pn_Load_res);
 
 		} else if (get_entity_owner(ent) != get_glob_type()) {

@@ -48,14 +48,11 @@
 #include "irphase_t.h"
 #include "irgopt.h"
 #include "set.h"
+#include "be.h"
 #include "debug.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
-
-#ifdef DO_CACHEOPT
-#include "cacheopt/cachesim.h"
-#endif
 
 #undef IMAX
 #define IMAX(a,b)   ((a) > (b) ? (a) : (b))
