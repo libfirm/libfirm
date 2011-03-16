@@ -348,6 +348,7 @@ restart:
 					cond, projx0, projx1
 				));
 
+				/* remove critical edges */
 				env->changed = true;
 				prepare_path(block, i, dependency);
 				prepare_path(block, j, dependency);
@@ -355,7 +356,7 @@ restart:
 
 				mux_block = get_nodes_block(cond);
 				cond_dbg = get_irn_dbg_info(cond);
-				do {
+				do { /* generate Mux nodes in mux_block for Phis in block */
 					ir_node* val_i = get_irn_n(phi, i);
 					ir_node* val_j = get_irn_n(phi, j);
 					ir_node* mux;
@@ -393,6 +394,7 @@ restart:
 					phi = next_phi;
 				} while (phi != NULL);
 
+				/* move mux operands into mux_block */
 				exchange(get_nodes_block(get_irn_n(block, i)), mux_block);
 				exchange(get_nodes_block(get_irn_n(block, j)), mux_block);
 
