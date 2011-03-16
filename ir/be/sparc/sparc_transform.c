@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #include "irnode_t.h"
 #include "irgraph_t.h"
@@ -70,9 +71,14 @@ static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
 
-static inline int mode_needs_gp_reg(ir_mode *mode)
+static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
-	return mode_is_int(mode) || mode_is_reference(mode);
+	if (mode_is_int(mode) || mode_is_reference(mode)) {
+		/* we should only see 32bit code */
+		assert(get_mode_size_bits(mode) <= 32);
+		return true;
+	}
+	return false;
 }
 
 /**
@@ -239,6 +245,9 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	}
 	mode1 = get_irn_mode(op1);
 	mode2 = get_irn_mode(op2);
+	/* we shouldn't see 64bit code */
+	assert(get_mode_size_bits(mode1) <= 32);
+	assert(get_mode_size_bits(mode2) <= 32);
 
 	if (is_imm_encodeable(op2)) {
 		ir_node *new_op1   = be_transform_node(op1);
@@ -557,6 +566,7 @@ static ir_node *gen_Store(ir_node *node)
 		new_store = create_stf(dbgi, block, new_val, address.ptr, new_mem,
 		                       mode, address.entity, address.offset, false);
 	} else {
+		assert(get_mode_size_bits(mode) <= 32);
 		match_address(ptr, &address, true);
 		if (address.ptr2 != NULL) {
 			assert(address.entity == NULL && address.offset == 0);
