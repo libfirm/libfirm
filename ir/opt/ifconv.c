@@ -261,7 +261,7 @@ static void prepare_path(ir_node* block, int i, const ir_node* dependency)
 	for (j = 0; j < pred_arity; ++j) {
 		ir_node* pred_pred = get_nodes_block(get_irn_n(pred, j));
 
-		if (is_cdep_on(pred_pred, dependency)) {
+		if (pred_pred != dependency && is_cdep_on(pred_pred, dependency)) {
 			prepare_path(pred, j, dependency);
 			split_block(block, i, j);
 			break;
@@ -293,8 +293,6 @@ restart:
 			ir_node* projx0 = walk_to_projx(pred0, dependency);
 			ir_node* cond;
 			int j;
-
-			if (dependency == block) continue;
 
 			if (projx0 == NULL) continue;
 
