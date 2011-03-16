@@ -191,10 +191,10 @@ static void finish_sparc_LdSt(ir_node *node)
 	if (attr->is_frame_entity) {
 		ir_node *base;
 		bool     sp_relative;
-		if (is_sparc_Ld(node)) {
+		if (is_sparc_Ld(node) || is_sparc_Ldf(node)) {
 			base = get_irn_n(node, n_sparc_Ld_ptr);
 		} else {
-			assert(is_sparc_St(node));
+			assert(is_sparc_St(node) || is_sparc_Stf(node));
 			base = get_irn_n(node, n_sparc_St_ptr);
 		}
 		sp_relative = arch_get_irn_register(base) == &sparc_registers[REG_SP];
@@ -252,5 +252,7 @@ void sparc_finish(ir_graph *irg)
 	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
 	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_St,        finish_sparc_LdSt);
+	register_peephole_optimisation(op_sparc_Ldf,       finish_sparc_LdSt);
+	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_LdSt);
 	be_peephole_opt(irg);
 }
