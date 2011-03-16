@@ -746,17 +746,26 @@ static void reduce_adr_usage(ir_node *ptr)
  */
 static int can_use_stored_value(ir_mode *old_mode, ir_mode *new_mode)
 {
+	unsigned old_size;
+	unsigned new_size;
 	if (old_mode == new_mode)
-		return 1;
+		return true;
+
+	old_size = get_mode_size_bits(old_mode);
+	new_size = get_mode_size_bits(new_mode);
 
 	/* if both modes are two-complement ones, we can always convert the
-	   Stored value into the needed one. */
-	if (get_mode_size_bits(old_mode) >= get_mode_size_bits(new_mode) &&
+	   Stored value into the needed one. (on big endian machines we currently
+	   only support this for modes of same size) */
+	if (old_size >= new_size &&
 		  get_mode_arithmetic(old_mode) == irma_twos_complement &&
-		  get_mode_arithmetic(new_mode) == irma_twos_complement)
-		return 1;
-	return 0;
-}  /* can_use_stored_value */
+		  get_mode_arithmetic(new_mode) == irma_twos_complement &&
+		  (!be_get_backend_param()->byte_order_big_endian
+	        || old_size == new_size)) {
+		return true;
+	}
+	return false;
+}
 
 /**
  * Check whether a Call is at least pure, ie. does only read memory.
@@ -867,7 +876,10 @@ static int try_load_after_store(ir_node *load,
 	store_value    = get_Store_value(store);
 
 	if (delta != 0 || store_mode != load_mode) {
-		if (delta < 0 || delta + load_mode_len > store_mode_len)
+		/* TODO: implement for big-endian */
+		if (delta < 0 || delta + load_mode_len > store_mode_len
+				|| (be_get_backend_param()->byte_order_big_endian
+				    && load_mode_len != store_mode_len))
 			return 0;
 
 		if (get_mode_arithmetic(store_mode) != irma_twos_complement ||
@@ -880,7 +892,6 @@ static int try_load_after_store(ir_node *load,
 			ir_node *cnst;
 			ir_graph *irg = get_irn_irg(load);
 
-			/* FIXME: only true for little endian */
 			cnst        = new_r_Const_long(irg, mode_Iu, delta * 8);
 			store_value = new_r_Shr(get_nodes_block(load),
 									store_value, cnst, store_mode);
@@ -976,6 +987,9 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 			 * Here, there is no need to check if the previous Load has an
 			 * exception hander because they would have exact the same
 			 * exception...
+			 *
+			 * TODO: implement load-after-load with different mode for big
+			 *       endian
 			 */
 			if (info->projs[pn_Load_X_except] == NULL
 					|| get_nodes_block(load) == get_nodes_block(pred)) {
