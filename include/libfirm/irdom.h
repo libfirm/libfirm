@@ -32,6 +32,9 @@
  *     - dom_depth: a number giving the depth of the block in the dominator
  *       tree.
  *     - pre_num:  Number in preorder traversal.
+ *
+ * We generally presume (like Tarjan) that endless loops do not exist. The
+ * implementation assumes a control dependency from End to loop header.
  */
 #ifndef FIRM_ANA_IRDOM_H
 #define FIRM_ANA_IRDOM_H
@@ -59,8 +62,6 @@ FIRM_API void set_Block_dom_pre_num(ir_node *bl, int num);
  *
  * These routines only work properly if the ir_graph is in state
  * dom_consistent or dom_inconsistent.
- *
- * If the block is not reachable from End, returns a Bad node.
  */
 FIRM_API ir_node *get_Block_ipostdom(const ir_node *bl);
 FIRM_API void set_Block_ipostdom(ir_node *bl, ir_node *n);
