@@ -38,9 +38,6 @@
 #include "beirg.h"
 #include "beifg.h"
 
-/** Defines an invalid register index. */
-#define NO_COLOR (-1)
-
 /**
  * A liveness interval border.
  */

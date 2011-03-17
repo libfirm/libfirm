@@ -47,6 +47,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+/** Defines an invalid register index. */
+#define NO_COLOR (-1)
+
 #define SEARCH_FREE_COLORS
 
 #define SLOTS_PINNED_GLOBAL 64
