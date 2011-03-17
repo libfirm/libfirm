@@ -75,7 +75,7 @@ static ir_type *def_find_pointer_type(ir_type *e_type, ir_mode *mode,
  */
 static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 {
-	ir_type *lowered, *ptr_tp, *value_type;
+	ir_type *lowered, *ptr_tp;
 	ir_type **params, **results, *res_tp;
 	size_t  *param_map;
 	ir_mode *modes[MAX_REGISTER_RET_VAL];
@@ -183,30 +183,6 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	}
 
 	set_lowered_type(mtp, lowered);
-
-	value_type = get_method_value_param_type(mtp);
-	if (value_type != NULL) {
-		/* set new param positions */
-		for (i = 0; i < nn_params; ++i) {
-			ir_entity *ent = get_method_value_param_ent(lowered, i);
-			size_t    pos  = param_map[i];
-			ident     *id;
-
-			set_entity_link(ent, INT_TO_PTR(pos));
-			if (pos >= n_params) {
-				/* formally return value, ignore for now */
-				continue;
-			}
-
-			id = get_method_param_ident(mtp, pos);
-			if (id != NULL) {
-				set_method_param_ident(lowered, i, id);
-				set_entity_ident(ent, id);
-			}
-		}
-
-		set_lowered_type(value_type, get_method_value_param_type(lowered));
-	}
 
 	return lowered;
 }

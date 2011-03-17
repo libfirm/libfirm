@@ -1409,7 +1409,6 @@ static size_t get_entity_arg_idx(const ir_entity *ent) {
 static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 {
 	pmap_entry *entry;
-	ident      *lid;
 	ir_type    *res, *value_type;
 
 	if (is_lowered_type(mtp))
@@ -1499,7 +1498,6 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 			/* set new param positions for all entities of the value type */
 			for (i = n_param = 0; i < orig_n_params; ++i) {
 				ir_type   *tp  = get_method_param_type(mtp, i);
-				ident     *id  = get_method_param_ident(mtp, i);
 				ir_entity *ent = get_method_value_param_ent(mtp, i);
 
 				set_entity_arg_idx(ent, n_param);
@@ -1507,21 +1505,9 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 					ir_mode *mode = get_type_mode(tp);
 
 					if (mode == env->high_signed || mode == env->high_unsigned) {
-						if (id != NULL) {
-							lid = id_mangle(id, env->first_id);
-							set_method_param_ident(res, n_param, lid);
-							set_entity_ident(get_method_value_param_ent(res, n_param), lid);
-							lid = id_mangle(id, env->next_id);
-							set_method_param_ident(res, n_param + 1, lid);
-							set_entity_ident(get_method_value_param_ent(res, n_param + 1), lid);
-						}
 						n_param += 2;
 						continue;
 					}
-				}
-				if (id != NULL) {
-					set_method_param_ident(res, n_param, id);
-					set_entity_ident(get_method_value_param_ent(res, n_param), id);
 				}
 				++n_param;
 			}

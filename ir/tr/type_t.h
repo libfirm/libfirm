@@ -61,9 +61,8 @@ typedef struct {
 
 /** A (type, ir_entity) pair. */
 typedef struct {
-	ir_type *tp;         /**< A type. */
-	ir_entity  *ent;     /**< An ir_entity. */
-	ident   *param_name; /**< For debugging purposes: the name of the parameter */
+	ir_type   *tp;      /**< A type. */
+	ir_entity *ent;     /**< An ir_entity. */
 } tp_ent_pair;
 
 /** Method type attributes. */

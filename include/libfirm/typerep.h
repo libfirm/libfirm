@@ -1604,15 +1604,6 @@ FIRM_API void set_method_value_param_type(ir_type *method, ir_type *tp);
  * was allocated, else NULL.
  */
 FIRM_API ir_type *get_method_value_param_type(const ir_type *method);
-/** Returns an ident representing the parameters name. Returns NULL if not set.
-    For debug support only. */
-FIRM_API ident *get_method_param_ident(ir_type *method, size_t pos);
-/** Returns a string representing the parameters name. Returns NULL if not set.
-    For debug support only. */
-FIRM_API const char *get_method_param_name(ir_type *method, size_t pos);
-/** Sets an ident representing the parameters name. For debug support only. */
-FIRM_API void set_method_param_ident(ir_type *method, size_t pos, ident *id);
-
 /** Returns the number of results of a method type. */
 FIRM_API size_t get_method_n_ress(const ir_type *method);
 /** Returns the return type of a method type at position pos. */

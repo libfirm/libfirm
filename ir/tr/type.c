@@ -82,12 +82,10 @@ ir_type *get_unknown_type(void)
 }
 
 /* Suffixes added to types used for pass-by-value representations. */
-static ident *value_params_suffix = NULL;
 static ident *value_ress_suffix = NULL;
 
 void ir_init_type(void)
 {
-	value_params_suffix = new_id_from_str(VALUE_PARAMS_SUFFIX);
 	value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
 
 	/* construct none and unknown type. */
@@ -120,7 +118,6 @@ void ir_finish_type(void)
 		free_type(firm_unknown_type);
 		firm_unknown_type = NULL;
 	}
-	value_params_suffix = NULL;
 	value_ress_suffix = NULL;
 }
 
@@ -1169,15 +1166,10 @@ static ir_type *build_value_type(char const* name, size_t len, tp_ent_pair *tps)
 	/* Remove type from type list.  Must be treated differently than other types. */
 	remove_irp_type(res);
 	for (i = 0; i < len; ++i) {
-		ident *id = tps[i].param_name;
+		ident *id = new_id_from_str("elt");
 
 		/* use res as default if corresponding type is not yet set. */
 		ir_type *elt_type = tps[i].tp ? tps[i].tp : res;
-
-		/* use the parameter name if specified */
-		if (id == NULL) {
-			id = new_id_from_str("elt");
-		}
 		tps[i].ent = new_entity(res, id, elt_type);
 		set_entity_allocation(tps[i].ent, allocation_parameter);
 	}
@@ -1292,26 +1284,6 @@ void set_method_param_type(ir_type *method, size_t pos, ir_type *tp)
 		assert(get_method_n_params(method) == get_struct_n_members(method->attr.ma.value_params));
 		set_entity_type(get_struct_member(method->attr.ma.value_params, pos), tp);
 	}
-}
-
-ident *get_method_param_ident(ir_type *method, size_t pos)
-{
-	assert(method->type_op == type_method);
-	assert(pos < get_method_n_params(method));
-	return method->attr.ma.params[pos].param_name;
-}
-
-const char *get_method_param_name(ir_type *method, size_t pos)
-{
-	ident *id = get_method_param_ident(method, pos);
-	return id ? get_id_str(id) : NULL;
-}
-
-void set_method_param_ident(ir_type *method, size_t pos, ident *id)
-{
-	assert(method->type_op == type_method);
-	assert(pos < get_method_n_params(method));
-	method->attr.ma.params[pos].param_name = id;
 }
 
 ir_entity *get_method_value_param_ent(ir_type *method, size_t pos)

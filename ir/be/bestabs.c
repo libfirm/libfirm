@@ -718,7 +718,7 @@ static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent)
 	between_size = get_type_size_bytes(layout->between_type);
 	for (i = 0, n = get_method_n_params(mtp); i < n; ++i) {
 		ir_type *ptp      = get_method_param_type(mtp, i);
-        const char *name  = get_method_param_name(mtp, i);
+        const char *name  = NULL;
 		unsigned type_num = get_type_number(h, ptp);
         char buf[16];
         int ofs = 0;
