@@ -236,7 +236,6 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
 	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
 	set_Tuple_pred(call, pn_Call_T_result, irn);
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_r_Bad(irg));
 }  /* replace_call */
 
 /* A mapper for the integer abs. */

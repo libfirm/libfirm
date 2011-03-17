@@ -72,7 +72,6 @@ typedef struct {
 	ir_type     *value_params;      /**< A type whose entities represent copied value arguments. */
 	size_t       n_res;             /**< Number of results. */
 	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
-	ir_type     *value_ress;        /**< A type whose entities represent copied value results. */
 	ir_variadicity variadicity;     /**< The variadicity of the method. */
 mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */

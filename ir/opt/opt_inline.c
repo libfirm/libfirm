@@ -558,9 +558,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	/* handle the regular call */
 	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(post_bl));
 
-	/* For now, we cannot inline calls with value_base */
-	set_Tuple_pred(call, pn_Call_P_value_res_base, new_r_Bad(irg));
-
 	/* Finally the exception control flow.
 	   We have two possible situations:
 	   First if the Call branches to an exception handler:

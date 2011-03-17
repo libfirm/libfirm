@@ -828,7 +828,6 @@ static const pns_lookup_t call_lut[] = {
 	X(X_regular),
 	X(X_except),
 	X(T_result),
-	X(P_value_res_base)
 #undef X
 };
 

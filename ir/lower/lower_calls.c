@@ -364,32 +364,17 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		if (env->params->flags & LF_COMPOUND_RETURN) {
 			/* check for compound returns */
 			ir_node *src = get_CopyB_src(n);
-			/* older scheme using value_res_ent */
-			if (is_Sel(src)) {
-				ir_node *proj = get_Sel_ptr(src);
-				if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_P_value_res_base) {
+			if (is_Proj(src)) {
+				ir_node *proj = get_Proj_pred(src);
+				if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
 					ir_node *call = get_Proj_pred(proj);
 					if (is_Call(call)) {
-						/* found a CopyB from compound Call result */
-						cl_entry *e = get_Call_entry(call, env);
-						set_irn_link(n, e->copyb);
-						e->copyb = n;
-					}
-				}
-			} else {
-				/* new scheme: compound results are determined by the call type only */
-				if (is_Proj(src)) {
-					ir_node *proj = get_Proj_pred(src);
-					if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
-						ir_node *call = get_Proj_pred(proj);
-						if (is_Call(call)) {
-							ctp = get_Call_type(call);
-							if (is_compound_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
-								/* found a CopyB from compound Call result */
-								cl_entry *e = get_Call_entry(call, env);
-								set_irn_link(n, e->copyb);
-								e->copyb = n;
-							}
+						ctp = get_Call_type(call);
+						if (is_compound_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
+							/* found a CopyB from compound Call result */
+							cl_entry *e = get_Call_entry(call, env);
+							set_irn_link(n, e->copyb);
+							e->copyb = n;
 						}
 					}
 				}
@@ -503,31 +488,14 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp, wlk_en
  */
 static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins, cl_entry *entry, wlk_env *env)
 {
-	ir_node *p, *n, *src, *mem, *blk;
-	ir_entity *ent;
-	ir_type *owner;
+	ir_node *p, *n, *mem, *blk;
 	size_t n_args;
 
 	n_args = 0;
 	for (p = entry->copyb; p; p = n) {
-		size_t idx;
-		n   = (ir_node*)get_irn_link(p);
-		src = get_CopyB_src(p);
-
-		/* old scheme using value_res_ent */
-		if (is_Sel(src)) {
-			ent = get_Sel_entity(src);
-			owner = get_entity_owner(ent);
-
-			/* find the hidden parameter index */
-			for (idx = 0; idx < get_struct_n_members(owner); ++idx)
-				if (get_struct_member(owner, idx) == ent)
-					break;
-			assert(idx < get_struct_n_members(owner));
-		} else {
-			/* new scheme: compound returns are determined by the call type and are Proj's */
-			idx = get_Proj_proj(src);
-		}
+		ir_node *src = get_CopyB_src(p);
+		size_t   idx = get_Proj_proj(src);
+		n = (ir_node*)get_irn_link(p);
 
 		ins[idx] = get_CopyB_dst(p);
 		mem      = get_CopyB_mem(p);

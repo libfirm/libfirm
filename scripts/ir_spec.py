@@ -259,7 +259,6 @@ class Call(Op):
 		("X_regular",        "control flow when no exception occurs", "pn_Generic_X_regular"),
 		("X_except",         "control flow when exception occured",   "pn_Generic_X_except"),
 		("T_result",         "tuple containing all results",          "pn_Generic_other"),
-		("P_value_res_base", "pointer to memory register containing copied results passed by value"),
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [

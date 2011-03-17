@@ -1969,7 +1969,6 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
-	case pn_Call_P_value_res_base:
 	case pn_Call_max:
 		break;
 	}

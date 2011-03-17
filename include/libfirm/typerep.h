@@ -1548,10 +1548,6 @@ FIRM_API int is_Struct_type(const ir_type *strct);
  * - res_type:   A list with the types of parameters.  This list is ordered.
  *               The nth type in this list corresponds to the nth input to
  *               Return nodes.  (See ircons.h for more information.)
- *
- * - value_res_ents
- *               A list of entities (whose owner is a struct private to the
- *               method type) that represent results passed by value.
  */
 
 /* These macros define the suffixes for the types and entities used
@@ -1612,14 +1608,6 @@ FIRM_API ir_type *get_method_res_type(ir_type *method, size_t pos);
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
 FIRM_API void set_method_res_type(ir_type *method, size_t pos, ir_type *tp);
-/** Returns an entity that represents the copied value result.  Only necessary
-   for compounds passed by value. This information is constructed only on demand. */
-FIRM_API ir_entity *get_method_value_res_ent(ir_type *method, size_t pos);
-
-/**
- * Returns a type that represents the copied value results.
- */
-FIRM_API ir_type *get_method_value_res_type(const ir_type *method);
 
 /**
  * This enum flags the variadicity of methods (methods with a

@@ -81,13 +81,8 @@ ir_type *get_unknown_type(void)
 	return firm_unknown_type;
 }
 
-/* Suffixes added to types used for pass-by-value representations. */
-static ident *value_ress_suffix = NULL;
-
 void ir_init_type(void)
 {
-	value_ress_suffix   = new_id_from_str(VALUE_RESS_SUFFIX);
-
 	/* construct none and unknown type. */
 	firm_none_type = new_type(tpop_none, mode_BAD, NULL);
 	set_type_size_bytes(firm_none_type, 0);
@@ -118,7 +113,6 @@ void ir_finish_type(void)
 		free_type(firm_unknown_type);
 		firm_unknown_type = NULL;
 	}
-	value_ress_suffix = NULL;
 }
 
 /** the global type visited flag */
@@ -1189,7 +1183,6 @@ ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 	res->attr.ma.value_params         = NULL;
 	res->attr.ma.n_res                = n_res;
 	res->attr.ma.res_type             = XMALLOCNZ(tp_ent_pair, n_res);
-	res->attr.ma.value_ress           = NULL;
 	res->attr.ma.variadicity          = variadicity_non_variadic;
 	res->attr.ma.additional_properties = mtp_no_property;
 	hook_new_type(res);
@@ -1228,7 +1221,6 @@ ir_type *clone_type_method(ir_type *tp)
 	res->attr.ma.n_res                 = n_res;
 	res->attr.ma.res_type              = XMALLOCN(tp_ent_pair, n_res);
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
-	res->attr.ma.value_ress            = tp->attr.ma.value_ress;
 	res->attr.ma.variadicity           = tp->attr.ma.variadicity;
 	res->attr.ma.additional_properties = tp->attr.ma.additional_properties;
 	res->attr.ma.irg_calling_conv      = tp->attr.ma.irg_calling_conv;
@@ -1253,10 +1245,6 @@ void free_method_attrs(ir_type *method)
 		free_type(method->attr.ma.value_params);
 	}
 	*/
-	if (method->attr.ma.value_ress) {
-		free_type_entities(method->attr.ma.value_ress);
-		free_type(method->attr.ma.value_ress);
-	}
 }
 
 size_t (get_method_n_params)(const ir_type *method)
@@ -1351,36 +1339,6 @@ void set_method_res_type(ir_type *method, size_t pos, ir_type *tp)
 	/* set the result ir_type */
 	method->attr.ma.res_type[pos].tp = tp;
 	/* If information constructed set pass-by-value representation. */
-	if (method->attr.ma.value_ress) {
-		assert(get_method_n_ress(method) == get_struct_n_members(method->attr.ma.value_ress));
-		set_entity_type(get_struct_member(method->attr.ma.value_ress, pos), tp);
-	}
-}
-
-ir_entity *get_method_value_res_ent(ir_type *method, size_t pos)
-{
-	assert(method->type_op == type_method);
-	assert(pos < get_method_n_ress(method));
-
-	if (!method->attr.ma.value_ress) {
-		/* result value type not created yet, build */
-		method->attr.ma.value_ress = build_value_type("<value result>",
-			get_method_n_ress(method), method->attr.ma.res_type);
-	}
-	/*
-	 * build_value_type() sets the method->attr.ma.value_ress type as default if
-	 * no type is set!
-	 */
-	assert((get_entity_type(method->attr.ma.res_type[pos].ent) != method->attr.ma.value_ress)
-	       && "result type not yet set");
-
-	return method->attr.ma.res_type[pos].ent;
-}
-
-ir_type *get_method_value_res_type(const ir_type *method)
-{
-	assert(method->type_op == type_method);
-	return method->attr.ma.value_ress;
 }
 
 const char *get_variadicity_name(ir_variadicity vari)

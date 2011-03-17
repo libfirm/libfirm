@@ -414,8 +414,7 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p)
 			(proj == pn_Call_M                && mode == mode_M) ||
 			(proj == pn_Call_X_regular        && mode == mode_X) ||
 			(proj == pn_Call_X_except         && mode == mode_X) ||
-			(proj == pn_Call_T_result         && mode == mode_T) ||
-			(proj == pn_Call_P_value_res_base && mode_is_reference(mode))
+			(proj == pn_Call_T_result         && mode == mode_T)
 		),
 		"wrong Proj from Call", 0,
 		show_proj_failure(p);
