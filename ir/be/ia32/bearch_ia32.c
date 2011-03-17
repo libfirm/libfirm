@@ -1525,7 +1525,6 @@ static void init_asm_constraints(void)
 static arch_env_t *ia32_init(FILE *file_handle)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
-	size_t     i, n;
 
 	set_tarval_output_modes();
 
