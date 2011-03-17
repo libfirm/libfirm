@@ -279,15 +279,6 @@ FIRM_API void add_entity_linkage(ir_entity *entity, ir_linkage linkage);
 FIRM_API void remove_entity_linkage(ir_entity *entity, ir_linkage linkage);
 
 /**
- * This enumeration flags the volatility of entities and Loads/Stores.
- * @deprecated
- */
-typedef enum {
-	volatility_non_volatile,    /**< The entity is not volatile. Default. */
-	volatility_is_volatile      /**< The entity is volatile. */
-} ir_volatility;
-
-/**
  * Returns the volatility of an entity.
  * @deprecated
  */
@@ -311,15 +302,6 @@ FIRM_API unsigned get_entity_alignment(const ir_entity *entity);
  */
 FIRM_API void set_entity_alignment(ir_entity *entity, unsigned alignment);
 
-
-/**
- * This enumeration flags the align of Loads/Stores.
- * @deprecated
- */
-typedef enum {
-	align_non_aligned,    /**< The entity is not aligned. */
-	align_is_aligned      /**< The entity is aligned. Default */
-} ir_align;
 
 /**
  * Returns indication whether entity is aligned in memory.

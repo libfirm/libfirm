@@ -587,8 +587,19 @@ class Load(Op):
 		dict(
 			type      = "ir_mode*",
 			name      = "mode",
-			java_name = "load_mode",
 			comment   = "mode of the value to be loaded",
+		),
+		dict(
+			type      = "ir_volatility",
+			name      = "volatility",
+			comment   = "volatile loads are a visible side-effect and may not be optimized",
+			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+		),
+		dict(
+			type      = "ir_align",
+			name      = "unaligned",
+			comment   = "pointers to unaligned loads don't need to respect the load-mode/type alignments",
+			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
 		),
 	]
 	attr_struct = "load_attr"
@@ -600,10 +611,6 @@ class Load(Op):
 		),
 	]
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
-	init = '''
-	res->attr.load.volatility = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
-	res->attr.load.aligned = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
-	'''
 
 class Minus(Unop):
 	"""returns the difference between its operands"""
@@ -830,6 +837,20 @@ class Store(Op):
 	pinned   = "exception"
 	attr_struct = "store_attr"
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
+	attrs = [
+		dict(
+			type      = "ir_volatility",
+			name      = "volatility",
+			comment   = "volatile stores are a visible side-effect and may not be optimized",
+			init      = "flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile",
+		),
+		dict(
+			type      = "ir_align",
+			name      = "unaligned",
+			comment   = "pointers to unaligned stores don't need to respect the load-mode/type alignments",
+			init      = "flags & cons_unaligned ? align_non_aligned : align_is_aligned",
+		),
+	]
 	constructor_args = [
 		dict(
 			type    = "ir_cons_flags",
@@ -837,10 +858,6 @@ class Store(Op):
 			comment = "specifies alignment, volatility and pin state",
 		),
 	]
-	init = '''
-	res->attr.store.volatility = flags & cons_volatile ? volatility_is_volatile : volatility_non_volatile;
-	res->attr.store.aligned = flags & cons_unaligned ? align_non_aligned : align_is_aligned;
-	'''
 
 class Sub(Binop):
 	"""returns the difference of its operands"""

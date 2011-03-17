@@ -1261,55 +1261,6 @@ void set_memop_ptr(ir_node *node, ir_node *ptr)
 	set_irn_n(node, 1, ptr);
 }
 
-ir_volatility get_Load_volatility(const ir_node *node)
-{
-	assert(is_Load(node));
-	return (ir_volatility)node->attr.load.volatility;
-}
-
-void set_Load_volatility(ir_node *node, ir_volatility volatility)
-{
-	assert(is_Load(node));
-	node->attr.load.volatility = volatility;
-}
-
-ir_align get_Load_align(const ir_node *node)
-{
-	assert(is_Load(node));
-	return (ir_align)node->attr.load.aligned;
-}
-
-void set_Load_align(ir_node *node, ir_align align)
-{
-	assert(is_Load(node));
-	node->attr.load.aligned = align;
-}
-
-
-ir_volatility get_Store_volatility(const ir_node *node)
-{
-	assert(is_Store(node));
-	return (ir_volatility)node->attr.store.volatility;
-}
-
-void set_Store_volatility(ir_node *node, ir_volatility volatility)
-{
-	assert(is_Store(node));
-	node->attr.store.volatility = volatility;
-}
-
-ir_align get_Store_align(const ir_node *node)
-{
-	assert(is_Store(node));
-	return (ir_align)node->attr.store.aligned;
-}
-
-void set_Store_align(ir_node *node, ir_align align)
-{
-	assert(is_Store(node));
-	node->attr.store.aligned = align;
-}
-
 
 ir_node **get_Sync_preds_arr(ir_node *node)
 {

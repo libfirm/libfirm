@@ -520,6 +520,10 @@ static ir_node *gen_Load(ir_node *node)
 	ir_node  *new_load = NULL;
 	address_t address;
 
+	if (get_Load_unaligned(node) == align_non_aligned) {
+		panic("sparc: transformation of unaligned Loads not implemented yet");
+	}
+
 	if (mode_is_float(mode)) {
 		match_address(ptr, &address, false);
 		new_load = create_ldf(dbgi, block, address.ptr, new_mem, mode,
@@ -559,6 +563,10 @@ static ir_node *gen_Store(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *new_store = NULL;
 	address_t address;
+
+	if (get_Store_unaligned(node) == align_non_aligned) {
+		panic("sparc: transformation of unaligned Stores not implemented yet");
+	}
 
 	if (mode_is_float(mode)) {
 		/* TODO: variants with reg+reg address mode */

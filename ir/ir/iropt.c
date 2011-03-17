@@ -5929,7 +5929,7 @@ static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
 		/* NEVER do CSE on volatile Loads */
 		return 1;
 	/* do not CSE Loads with different alignment. Be conservative. */
-	if (get_Load_align(a) != get_Load_align(b))
+	if (get_Load_unaligned(a) != get_Load_unaligned(b))
 		return 1;
 
 	return get_Load_mode(a) != get_Load_mode(b);
@@ -5939,7 +5939,7 @@ static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
 static int node_cmp_attr_Store(const ir_node *a, const ir_node *b)
 {
 	/* do not CSE Stores with different alignment. Be conservative. */
-	if (get_Store_align(a) != get_Store_align(b))
+	if (get_Store_unaligned(a) != get_Store_unaligned(b))
 		return 1;
 
 	/* NEVER do CSE on volatile Stores */

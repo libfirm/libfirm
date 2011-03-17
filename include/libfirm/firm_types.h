@@ -286,6 +286,22 @@ typedef enum ir_value_classify_sign {
 	                                      no signed zero exists or < 0 else */
 } ir_value_classify_sign;
 
+/**
+ * This enumeration flags the volatility of entities and Loads/Stores.
+ */
+typedef enum {
+	volatility_non_volatile,    /**< The entity is not volatile. Default. */
+	volatility_is_volatile      /**< The entity is volatile. */
+} ir_volatility;
+
+/**
+ * This enumeration flags the align of Loads/Stores.
+ */
+typedef enum {
+	align_is_aligned = 0, /**< The entity is aligned. Default */
+	align_non_aligned,    /**< The entity is not aligned. */
+} ir_align;
+
 #include "end.h"
 
 #endif

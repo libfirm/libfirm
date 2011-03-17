@@ -547,16 +547,6 @@ FIRM_API void     set_memop_mem(ir_node *node, ir_node *mem);
 FIRM_API ir_node *get_memop_ptr(const ir_node *node);
 FIRM_API void     set_memop_ptr(ir_node *node, ir_node *ptr);
 
-FIRM_API ir_volatility  get_Load_volatility(const ir_node *node);
-FIRM_API void           set_Load_volatility(ir_node *node, ir_volatility volatility);
-FIRM_API ir_align       get_Load_align(const ir_node *node);
-FIRM_API void           set_Load_align(ir_node *node, ir_align align);
-
-FIRM_API ir_volatility  get_Store_volatility(const ir_node *node);
-FIRM_API void           set_Store_volatility(ir_node *node, ir_volatility volatility);
-FIRM_API ir_align       get_Store_align(const ir_node *node);
-FIRM_API void           set_Store_align(ir_node *node, ir_align align);
-
 FIRM_API ir_node **get_Sync_preds_arr(ir_node *node);
 FIRM_API int       get_Sync_n_preds(const ir_node *node);
 FIRM_API ir_node  *get_Sync_pred(const ir_node *node, int pos);

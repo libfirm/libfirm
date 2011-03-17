@@ -497,24 +497,6 @@ static void lower_bitfields_stores(ir_node *store)
 }  /* lower_bitfields_stores */
 
 /**
- * Lowers unaligned Loads.
- */
-static void lower_unaligned_Load(ir_node *load)
-{
-  (void) load;
-	/* NYI */
-}
-
-/**
- * Lowers unaligned Stores
- */
-static void lower_unaligned_Store(ir_node *store)
-{
-	(void) store;
-	/* NYI */
-}
-
-/**
  * lowers IR-nodes, called from walker
  */
 static void lower_irnode(ir_node *irn, void *env)
@@ -526,14 +508,6 @@ static void lower_irnode(ir_node *irn, void *env)
 		break;
 	case iro_SymConst:
 		lower_symconst(irn);
-		break;
-	case iro_Load:
-		if (env != NULL && get_Load_align(irn) == align_non_aligned)
-			lower_unaligned_Load(irn);
-		break;
-	case iro_Store:
-		if (env != NULL && get_Store_align(irn) == align_non_aligned)
-			lower_unaligned_Store(irn);
 		break;
 	case iro_Cast:
 		exchange(irn, get_Cast_op(irn));

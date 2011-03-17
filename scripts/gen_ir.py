@@ -252,7 +252,6 @@ def preprocess_node(node):
 		if "init" in attr:
 			continue
 		arguments.append(attr)
-		#arguments.append(prepare_attr(attr))
 
 	# dynamic pin state means more constructor arguments
 	if is_dynamic_pinned(node):

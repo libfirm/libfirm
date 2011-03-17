@@ -396,17 +396,8 @@ static void write_tarval(io_env_t *env, ir_tarval *tv)
 	fputc(' ', env->file);
 }
 
-static void write_align(io_env_t *env, ir_node *irn)
+static void write_align(io_env_t *env, ir_align align)
 {
-	ir_align align;
-
-	if (is_Load(irn))
-		align = get_Load_align(irn);
-	else if (is_Store(irn))
-		align = get_Store_align(irn);
-	else
-		panic("Invalid optype for write_align");
-
 	fputs(get_align_name(align), env->file);
 	fputc(' ', env->file);
 }
@@ -472,17 +463,8 @@ static void write_pin_state(io_env_t *env, ir_node *irn)
 	fputc(' ', env->file);
 }
 
-static void write_volatility(io_env_t *env, ir_node *irn)
+static void write_volatility(io_env_t *env, ir_volatility vol)
 {
-	ir_volatility vol;
-
-	if (is_Load(irn))
-		vol = get_Load_volatility(irn);
-	else if (is_Store(irn))
-		vol = get_Store_volatility(irn);
-	else
-		panic("Invalid optype for write_volatility");
-
 	fputs(get_volatility_name(vol), env->file);
 	fputc(' ', env->file);
 }

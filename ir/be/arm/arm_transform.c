@@ -913,6 +913,9 @@ static ir_node *gen_Load(ir_node *node)
 	dbg_info *dbgi      = get_irn_dbg_info(node);
 	ir_node  *new_load = NULL;
 
+	if (get_Load_unaligned(node) == align_non_aligned)
+		panic("arm: unaligned Loads not supported yet");
+
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {
 			new_load = new_bd_arm_Ldf(dbgi, block, new_ptr, new_mem, mode,
@@ -952,6 +955,9 @@ static ir_node *gen_Store(ir_node *node)
 	ir_mode  *mode     = get_irn_mode(val);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node *new_store = NULL;
+
+	if (get_Store_unaligned(node) == align_non_aligned)
+		panic("arm: unaligned Stores not supported yet");
 
 	if (mode_is_float(mode)) {
 		if (USE_FPA(isa)) {

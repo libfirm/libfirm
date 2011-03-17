@@ -691,12 +691,12 @@ void dump_node_opcode(FILE *F, ir_node *n)
 	} break;
 
 	case iro_Load:
-		if (get_Load_align(n) == align_non_aligned)
+		if (get_Load_unaligned(n) == align_non_aligned)
 			fprintf(F, "ua");
 		fprintf(F, "%s[%s]", get_irn_opname(n), get_mode_name_ex(get_Load_mode(n), NULL));
 		break;
 	case iro_Store:
-		if (get_Store_align(n) == align_non_aligned)
+		if (get_Store_unaligned(n) == align_non_aligned)
 			fprintf(F, "ua");
 		fprintf(F, "%s", get_irn_opname(n));
 		break;

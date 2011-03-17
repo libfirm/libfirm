@@ -53,26 +53,25 @@ def get_io_type(type, attrname, node):
 		exportcmd = "write_mode(env, %(val)s);"
 	elif type == "ir_entity*":
 		importcmd = "ir_entity *%s = read_entity(env);" % attrname
-		exportcmd = """write_entity_ref(env, %(val)s);"""
+		exportcmd = "write_entity_ref(env, %(val)s);"
 	elif type == "ir_type*":
 		importcmd = "ir_type *%s = read_type(env);" % attrname
-		exportcmd = """write_type_ref(env, %(val)s);"""
+		exportcmd = "write_type_ref(env, %(val)s);"
 	elif type == "long" and node.name == "Proj":
 		importcmd = "long %s = read_long(env);" % attrname
-		exportcmd = """write_long(env, %(val)s);"""
+		exportcmd = "write_long(env, %(val)s);"
 	elif type == "ir_relation" or type == "ir_where_alloc":
 		importcmd = "%s %s = (%s) read_long(env);" % (type, attrname, type)
-		exportcmd = """write_long(env, (long) %(val)s);"""
-	elif type == "ir_cons_flags" and node.name == "Store":
+		exportcmd = "write_long(env, (long) %(val)s);"
+	elif type == "ir_align":
+		importcmd = "ir_align %s = read_align(env);" % attrname
+		exportcmd = "write_align(env, %(val)s);"
+	elif type == "ir_volatility":
+		importcmd = "ir_volatility %s = read_volatility(env);" % attrname
+		exportcmd = "write_volatility(env, %(val)s);"
+	elif type == "ir_cons_flags":
 		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
-		exportcmd = """write_pin_state(env, irn);
-			write_volatility(env, irn);
-			write_align(env, irn);"""
-	elif type == "ir_cons_flags" and node.name == "Load":
-		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
-		exportcmd = """write_pin_state(env, irn);
-			write_volatility(env, irn);
-			write_align(env, irn);"""
+		exportcmd = "" # can't really export cons_flags
 	elif type == "op_pin_state":
 		importcmd = "op_pin_state %s = read_pin_state(env);" % attrname
 		exportcmd = "write_pin_state(env, irn);"
@@ -87,13 +86,13 @@ def get_io_type(type, attrname, node):
 		exportcmd = "write_cond_jmp_predicate(env, irn);"
 	elif type == "int":
 		importcmd = "int %s = read_int(env);" % attrname
-		exportcmd = """write_int(env, %(val)s);"""
+		exportcmd = "write_int(env, %(val)s);"
 	elif type == "unsigned":
 		importcmd = "unsigned %s = read_unsigned(env);" % attrname
-		exportcmd = """write_unsigned(env, %(val)s);"""
+		exportcmd = "write_unsigned(env, %(val)s);"
 	elif type == "long":
 		importcmd = "long %s = read_long(env);" % attrname
-		exportcmd = """write_long(env, %(val)s);"""
+		exportcmd = "write_long(env, %(val)s);"
 	else:
 		warning("cannot generate import/export for node %s: unsupported attribute type: %s" % (node.name, type))
 		importcmd = """// BAD: %s %s

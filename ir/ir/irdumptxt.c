@@ -252,11 +252,11 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	case iro_Load:
 		fprintf(F, "  mode of loaded value: %s\n", get_mode_name_ex(get_Load_mode(n), NULL));
 		fprintf(F, "  volatility: %s\n", get_volatility_name(get_Load_volatility(n)));
-		fprintf(F, "  align: %s\n", get_align_name(get_Load_align(n)));
+		fprintf(F, "  align: %s\n", get_align_name(get_Load_unaligned(n)));
 		break;
 	case iro_Store:
 		fprintf(F, "  volatility: %s\n", get_volatility_name(get_Store_volatility(n)));
-		fprintf(F, "  align: %s\n", get_align_name(get_Store_align(n)));
+		fprintf(F, "  align: %s\n", get_align_name(get_Store_unaligned(n)));
 		break;
 	case iro_Confirm:
 		fprintf(F, "  compare operation: %s\n", get_relation_string(get_Confirm_relation(n)));

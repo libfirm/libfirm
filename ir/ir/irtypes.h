@@ -243,7 +243,7 @@ typedef struct cast_attr {
 typedef struct load_attr {
 	except_attr   exc;            /**< The exception attribute. MUST be the first one. */
     unsigned      volatility:1;   /**< The volatility of this Load operation. */
-    unsigned      aligned:1;      /**< The align attribute of this Load operation. */
+    unsigned      unaligned:1;    /**< The align attribute of this Load operation. */
 	ir_mode       *mode;          /**< The mode of this Load operation. */
 } load_attr;
 
@@ -251,7 +251,7 @@ typedef struct load_attr {
 typedef struct store_attr {
 	except_attr   exc;            /**< the exception attribute. MUST be the first one. */
 	unsigned      volatility:1;   /**< The volatility of this Store operation. */
-	unsigned      aligned:1;      /**< The align attribute of this Store operation. */
+	unsigned      unaligned:1;    /**< The align attribute of this Store operation. */
 } store_attr;
 
 typedef struct phi_attr {
