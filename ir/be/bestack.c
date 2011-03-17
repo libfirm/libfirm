@@ -383,7 +383,7 @@ void be_abi_fix_stack_nodes(ir_graph *irg)
 
 	/* when doing code with frame-pointers then often the last incsp-nodes are
 	 * not used anymore because we copy the framepointer to the stack pointer
-	 * when leaving the function. Though the last incsp is often keeped (because
+	 * when leaving the function. Though the last incsp is often kept (because
 	 * you often don't know which incsp is the last one and fixstack should find
 	 * them all). Remove unnecessary keeps and IncSP nodes */
 	{
