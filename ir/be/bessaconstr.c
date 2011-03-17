@@ -20,7 +20,8 @@
 /**
  * @file
  * @brief       SSA construction for a set of nodes
- * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig
+ * @author      Sebastian Hack, Daniel Grund, Matthias Braun, Christian Wuerdig,
+ *              Sebastian Buchwald
  * @date        04.05.2005
  * @version     $Id$
  *
@@ -64,11 +65,117 @@
 #include "pdeq.h"
 #include "array.h"
 #include "irdom.h"
+#include "irnodeset.h"
 
 #include "ircons.h"
 #include "iredges_t.h"
+#include "irphase_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
+
+static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
+                                        ir_node *block);
+
+struct constr_info {
+	bool is_definition;
+	bool is_use;
+	bool already_processed;
+	union {
+		/* Since we only consider scheduled nodes,
+		 * this points to the real definition (e.g. a Proj). */
+		ir_node *definition;
+
+		/* Last definition of a block. */
+		ir_node *last_definition;
+	};
+};
+
+typedef struct constr_info constr_info;
+
+/**
+ * @return Whether the block contains a definition.
+ */
+static inline bool has_definition(be_ssa_construction_env_t *env, ir_node *block)
+{
+	(void)env;
+
+	return irn_visited(block);
+}
+
+/**
+ * @return Whether the block contains a use.
+ */
+static inline bool has_use(be_ssa_construction_env_t *env, ir_node *block)
+{
+	constr_info *info = phase_get_or_set_irn_data(env->phase, block);
+
+	return info->is_use;
+}
+
+/**
+ * @return Whether the node is a definition.
+ */
+static inline bool is_definition(be_ssa_construction_env_t *env, ir_node *node)
+{
+	constr_info *info = phase_get_irn_data(env->phase, node);
+
+	return info && info->is_definition;
+}
+
+/**
+ * @return Whether the node is a use.
+ */
+static inline bool is_use(const be_ssa_construction_env_t *env, ir_node *node)
+{
+	constr_info *info = phase_get_irn_data(env->phase, node);
+
+	return info && info->is_use;
+}
+
+/**
+ * Introduces a definition at the corresponding block.
+ */
+static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
+{
+	ir_node     *block      = get_nodes_block(def);
+	ir_phase    *phase      = env->phase;
+	constr_info *def_info   = phase_get_or_set_irn_data(phase, def);
+	ir_node     *skip       = skip_Proj(def);
+	constr_info *skip_info  = phase_get_or_set_irn_data(phase, skip);
+	constr_info *block_info = phase_get_or_set_irn_data(phase, block);
+
+	DBG((dbg, LEVEL_2, "\tintroducing definition %+F in %+F\n", def, block));
+
+	def_info->is_definition = true;
+
+	skip_info->is_definition = true;
+	skip_info->definition    = def;
+
+	// Set the last definition if we only introduce one definition for the block
+	if (has_definition(env, block)) {
+		assert(!block_info->already_processed);
+		block_info->last_definition = NULL;
+	}
+	else {
+		mark_irn_visited(block);
+		block_info->last_definition = def;
+	}
+}
+
+static void introduce_use(be_ssa_construction_env_t *env, ir_node *use)
+{
+	ir_node     *block      = get_nodes_block(use);
+	ir_phase    *phase      = env->phase;
+	constr_info *info       = phase_get_or_set_irn_data(phase, use);
+	constr_info *block_info = phase_get_or_set_irn_data(phase, block);
+
+	DBG((dbg, LEVEL_2, "\tintroducing use %+F in %+F\n", use, block));
+
+	info->is_use       = true;
+	block_info->is_use = true;
+
+	waitq_put(env->worklist, use);
+}
 
 /**
  * Calculates the iterated dominance frontier of a set of blocks. Marks the
@@ -107,17 +214,23 @@ static void mark_iterated_dominance_frontiers(
 	DBG((dbg, LEVEL_3, "\n"));
 }
 
-static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
-                                        ir_node *block);
-
-static ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
-                           ir_node *link_with)
+/**
+ * Inserts a new phi at the given block.
+ *
+ * The constructed phi has only Dummy operands,
+ * but can be used as definition for other nodes.
+ *
+ * @see fix_phi_arguments
+ */
+static ir_node *insert_dummy_phi(be_ssa_construction_env_t *env, ir_node *block)
 {
 	int i, n_preds = get_Block_n_cfgpreds(block);
 	ir_graph *irg = get_Block_irg(block);
 	ir_node **ins = ALLOCAN(ir_node*, n_preds);
 	ir_node  *dummy;
 	ir_node  *phi;
+
+	DBG((dbg, LEVEL_3, "\t...create phi at block %+F\n", block));
 
 	assert(n_preds > 1);
 
@@ -132,112 +245,178 @@ static ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 	}
 
 	DBG((dbg, LEVEL_2, "\tcreating phi %+F in %+F\n", phi, block));
-	set_irn_link(link_with, phi);
-	mark_irn_visited(block);
+	introduce_definition(env, phi);
 
-	for (i = 0; i < n_preds; ++i) {
-		ir_node *pred_block = get_Block_cfgpred_block(block, i);
-		ir_node *pred_def   = search_def_end_of_block(env, pred_block);
-
-		set_irn_n(phi, i, pred_def);
-	}
+	waitq_put(env->worklist, phi);
 
 	return phi;
 }
 
+/**
+ * @return Last definition of the immediate dominator.
+ */
 static ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
 {
 	ir_node *dom = get_Block_idom(block);
 	assert(dom != NULL);
+	DBG((dbg, LEVEL_3, "\t...continue at idom %+F\n", dom));
 	return search_def_end_of_block(env, dom);
 }
 
+/**
+ * Fixes all operands of a use.
+ *
+ * If an operand of the use is a (original) definition,
+ * it will be replaced by the given definition.
+ */
+static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *def)
+{
+	constr_info *info  = phase_get_irn_data(env->phase, use);
+	int          arity = get_irn_arity(use);
+	int          i;
+
+	for (i = 0; i < arity; ++i) {
+		ir_node *op = get_irn_n(use, i);
+
+		if (is_definition(env, op)) {
+			DBG((dbg, LEVEL_1, "\t...%+F(%d) -> %+F\n", use, i, def));
+			set_irn_n(use, i, def);
+		}
+	}
+
+	info->already_processed = true;
+}
+
+/**
+ * Fixes all uses of the given block.
+ */
+static void process_block(be_ssa_construction_env_t *env, ir_node *block)
+{
+	ir_node     *node;
+	ir_node     *def        = NULL;
+	constr_info *block_info = phase_get_or_set_irn_data(env->phase, block);
+
+	assert(has_definition(env, block));
+	assert(!block_info->already_processed && "Block already processed");
+
+	DBG((dbg, LEVEL_3, "\tprocessing block  %+F\n", block));
+
+	sched_foreach(block, node) {
+		if (is_use(env, node) && !is_Phi(node)) {
+			DBG((dbg, LEVEL_3, "\t...found use %+F\n", node));
+
+			if (def == NULL) {
+				/* Create a phi if the block is in the dominance frontier. */
+				if (Block_block_visited(block)) {
+					def = insert_dummy_phi(env, block);
+				}
+				else {
+					def = get_def_at_idom(env, block);
+				}
+			}
+
+			set_operands(env, node, def);
+		}
+
+		if (is_definition(env, node)) {
+			constr_info *info = phase_get_irn_data(env->phase, node);
+			def = info->definition;
+			DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
+		}
+	}
+
+	block_info->already_processed = true;
+	block_info->last_definition   = def;
+}
+
+/**
+ * @return Last definition of the given block.
+ */
 static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
                                         ir_node *block)
 {
-	if (irn_visited(block)) {
-		assert(get_irn_link(block) != NULL);
-		return (ir_node*)get_irn_link(block);
+	constr_info *block_info      = phase_get_or_set_irn_data(env->phase, block);
+	ir_node     *last_definition = block_info->last_definition;
+
+	if (last_definition != NULL)
+		return last_definition;
+
+	if (has_definition(env, block)) {
+		if (has_use(env, block)) {
+			if (!block_info->already_processed) {
+				process_block(env, block);
+			}
+		}
+		else {
+			ir_node *def = NULL;
+
+			/* Search the last definition of the block. */
+			sched_foreach_reverse(block, def) {
+				if (is_definition(env, def)) {
+					constr_info *info = phase_get_irn_data(env->phase, def);
+					def = info->definition;
+					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
+
+					break;
+				}
+			}
+
+			assert(def && "No definition found");
+
+			block_info->last_definition = def;
+		}
+
+		return block_info->last_definition;
 	} else if (Block_block_visited(block)) {
-		return create_phi(env, block, block);
+		ir_node *phi = insert_dummy_phi(env, block);
+
+		block_info->last_definition = phi;
+
+		return phi;
 	} else {
 		ir_node *def = get_def_at_idom(env, block);
-		mark_irn_visited(block);
-		set_irn_link(block, def);
+
+		block_info->last_definition = def;
+
 		return def;
 	}
 }
 
-static ir_node *search_def(be_ssa_construction_env_t *env, ir_node *at)
+/**
+ * Fixes all operands of the given use.
+ */
+static void search_def_at_block(be_ssa_construction_env_t *env, ir_node *use)
 {
-	ir_node *block = get_nodes_block(at);
-	ir_node *node;
-	ir_node *def;
+	ir_node     *block      = get_nodes_block(use);
+	constr_info *block_info = phase_get_or_set_irn_data(env->phase, block);
 
-	DBG((dbg, LEVEL_3, "\t...searching def at %+F\n", at));
+	if (block_info->already_processed)
+		return;
 
-	/* no defs in the current block we can do the normal searching */
-	if (!irn_visited(block) && !Block_block_visited(block)) {
-		DBG((dbg, LEVEL_3, "\t...continue at idom\n"));
-		return get_def_at_idom(env, block);
+	if (has_definition(env, block)) {
+		process_block(env, block);
+	} else if (Block_block_visited(block)) {
+		ir_node *phi = insert_dummy_phi(env, block);
+
+		set_operands(env, use, phi);
+	} else {
+		ir_node *def = get_def_at_idom(env, block);
+
+		set_operands(env, use, def);
 	}
-
-	/* there are defs in the current block, walk the linked list to find
-	   the one immediately dominating us
-	 */
-	node = block;
-	def  = (ir_node*)get_irn_link(node);
-	while (def != NULL) {
-		if (!value_dominates(at, def)) {
-			DBG((dbg, LEVEL_3, "\t...found dominating def %+F\n", def));
-			return def;
-		}
-
-		node = def;
-		def  = (ir_node*)get_irn_link(node);
-	}
-
-	/* block in dominance frontier? create a phi then */
-	if (Block_block_visited(block)) {
-		DBG((dbg, LEVEL_3, "\t...create phi at block %+F\n", block));
-		assert(!is_Phi(node));
-		return create_phi(env, block, node);
-	}
-
-	DBG((dbg, LEVEL_3, "\t...continue at idom (after checking block)\n"));
-	return get_def_at_idom(env, block);
 }
 
-/**
- * Adds a definition into the link field of the block. The definitions are
- * sorted by dominance. A non-visited block means no definition has been
- * inserted yet.
- */
-static void introduce_def_at_block(ir_node *block, ir_node *def)
+static void *init_constr_info(ir_phase *phase, const ir_node *node)
 {
-	if (irn_visited_else_mark(block)) {
-		ir_node *node = block;
-		ir_node *current_def;
+	constr_info *info = phase_alloc(phase, sizeof(constr_info));
+	(void)node;
 
-		for (;;) {
-			current_def = (ir_node*)get_irn_link(node);
-			if (current_def == def) {
-				/* already in block */
-				return;
-			}
-			if (current_def == NULL)
-				break;
-			if (value_dominates(current_def, def))
-				break;
-			node = current_def;
-		}
+	info->is_definition     = false;
+	info->is_use            = false;
+	info->already_processed = false;
+	info->definition        = NULL;
 
-		set_irn_link(node, def);
-		set_irn_link(def, current_def);
-	} else {
-		set_irn_link(block, def);
-		set_irn_link(def, NULL);
-	}
+	return info;
 }
 
 void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
@@ -258,6 +437,7 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 	env->domfronts = be_get_irg_dom_front(irg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
+	env->phase     = new_phase(irg, init_constr_info);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED
 			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
@@ -273,6 +453,7 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 {
 	stat_ev_int("bessaconstr_phis", ARR_LEN(env->new_phis));
+	phase_free(env->phase);
 	del_waitq(env->worklist);
 	DEL_ARR_F(env->new_phis);
 
@@ -299,10 +480,10 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 
 	block = get_nodes_block(copy);
 
-	if (!irn_visited(block)) {
+	if (!has_definition(env, block)) {
 		waitq_put(env->worklist, block);
 	}
-	introduce_def_at_block(block, copy);
+	introduce_definition(env, copy);
 }
 
 void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
@@ -322,10 +503,10 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 		ir_node *block = get_nodes_block(copy);
 
 		assert(env->mode == get_irn_mode(copy));
-		if (!irn_visited(block)) {
+		if (!has_definition(env, block)) {
 			waitq_put(env->worklist, block);
 		}
-		introduce_def_at_block(block, copy);
+		introduce_definition(env, copy);
 	}
 }
 
@@ -340,10 +521,38 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
 	return env->new_phis;
 }
 
+/**
+ * Fixes all arguments of a newly constructed phi.
+ *
+ * @see insert_dummy_phi
+ */
+static void fix_phi_arguments(be_ssa_construction_env_t *env, ir_node *phi)
+{
+	constr_info *info    = phase_get_irn_data(env->phase, phi);
+	ir_node     *block   = get_nodes_block(phi);
+	int          i;
+	int          n_preds = get_Block_n_cfgpreds(block);
+
+	DBG((dbg, LEVEL_3, "\tfixing phi arguments  %+F\n", phi));
+
+	for (i = 0; i < n_preds; ++i) {
+		ir_node *op = get_irn_n(phi, i);
+
+		if (is_definition(env, op) || is_Dummy(op)) {
+			ir_node *pred_block = get_Block_cfgpred_block(block, i);
+			ir_node *pred_def   = search_def_end_of_block(env, pred_block);
+
+			DBG((dbg, LEVEL_1, "\t...%+F(%d) -> %+F\n", phi, i, pred_def));
+			set_irn_n(phi, i, pred_def);
+		}
+	}
+
+	info->already_processed = true;
+}
+
 void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
                                          ir_node **nodes, size_t nodes_len)
 {
-	const ir_edge_t *edge, *next;
 	size_t i;
 	stat_ev_cnt_decl(uses);
 
@@ -354,42 +563,52 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 		env->iterated_domfront_calculated = 1;
 	}
 
-	stat_ev_tim_push();
-	for (i = 0; i < nodes_len; ++i) {
-		ir_node *value = nodes[i];
+	DBG((dbg, LEVEL_1, "\tfixing users array\n"));
 
-		/*
-		 * Search the valid def for each use and set it.
-		 */
+	assert(waitq_empty(env->worklist));
+
+	stat_ev_tim_push();
+
+	for (i = 0; i < nodes_len; ++i) {
+		const ir_edge_t *edge, *next;
+		ir_node *value = nodes[i];
+		DBG((dbg, LEVEL_3, "\tfixing users of %+F\n", value));
+		introduce_definition(env, value);
+
 		foreach_out_edge_safe(value, edge, next) {
-			ir_node *use = get_edge_src_irn(edge);
-			ir_node *at  = use;
-			int pos      = get_edge_src_pos(edge);
-			ir_node *def;
+			ir_node *use   = get_edge_src_irn(edge);
 
 			if (env->ignore_uses != NULL &&
-			   ir_nodeset_contains(env->ignore_uses, use))
+					ir_nodeset_contains(env->ignore_uses, use))
 				continue;
+
 			if (is_Anchor(use) || is_End(use))
 				continue;
 
-			if (is_Phi(use)) {
-				ir_node *block     = get_nodes_block(use);
-				ir_node *predblock = get_Block_cfgpred_block(block, pos);
-				at = sched_last(predblock);
-			}
-
-			def = search_def(env, at);
-
-			if (def == NULL) {
-				panic("no definition found for %+F at position %d", use, pos);
-			}
-
-			DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));
-			set_irn_n(use, pos, def);
-			stat_ev_cnt_inc(uses);
+			introduce_use(env, use);
 		}
 	}
+
+	assert(!waitq_empty(env->worklist));
+
+	while (!waitq_empty(env->worklist)) {
+		ir_node     *use  = (ir_node *)waitq_get(env->worklist);
+		constr_info *info = phase_get_irn_data(env->phase, use);
+
+		if (info->already_processed)
+			continue;
+
+		if (is_Phi(use)) {
+			fix_phi_arguments(env, use);
+		}
+		else {
+			DBG((dbg, LEVEL_3, "\tsearching def for %+F at %+F\n", use, get_nodes_block(use)));
+			search_def_at_block(env, use);
+		}
+
+		stat_ev_cnt_inc(uses);
+	}
+
 	be_timer_pop(T_SSA_CONSTR);
 
 	stat_ev_tim_pop("bessaconstr_fix_time");
