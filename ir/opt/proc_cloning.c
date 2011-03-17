@@ -132,9 +132,6 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 	 * magic
 	 */
 	mtp = get_Call_type(call);
-	if (get_method_variadicity(mtp) != variadicity_non_variadic) {
-		n_params = get_method_first_variadic_param_index(mtp) - 1;
-	}
 
 	/* In this for loop we collect the calls, that have
 	   an constant parameter. */

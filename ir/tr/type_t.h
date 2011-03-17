@@ -75,8 +75,7 @@ typedef struct {
 	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
 	ir_type     *value_ress;        /**< A type whose entities represent copied value results. */
 	ir_variadicity variadicity;     /**< The variadicity of the method. */
-	size_t first_variadic_param;    /**< The index of the first variadic parameter or -1 if non-variadic .*/
-	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
+mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
 } mtd_attr;
 

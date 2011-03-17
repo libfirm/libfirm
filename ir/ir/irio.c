@@ -582,7 +582,7 @@ static void export_type_post(io_env_t *env, ir_type *tp)
 			write_long(env, get_type_nr(get_method_param_type(tp, i)));
 		for (i = 0; i < nresults; i++)
 			write_long(env, get_type_nr(get_method_res_type(tp, i)));
-		ir_fprintf(f, "%zu ", get_method_first_variadic_param_index(tp));
+		ir_fprintf(f, "%u ", get_method_variadicity(tp));
 		break;
 	}
 
@@ -1412,7 +1412,7 @@ static void import_type(io_env_t *env)
 		mtp_additional_properties addprops    = (mtp_additional_properties) read_long(env);
 		int nparams          = (int)      read_long(env);
 		int nresults         = (int)      read_long(env);
-		int variaindex;
+		int variadicity;
 
 		type = new_type_method(nparams, nresults);
 
@@ -1429,12 +1429,8 @@ static void import_type(io_env_t *env)
 			set_method_res_type(type, i, restype);
 		}
 
-		variaindex = (int) read_long(env);
-		if (variaindex != -1) {
-			set_method_variadicity(type, variadicity_variadic);
-			if (variaindex != nparams)
-				set_method_first_variadic_param_index(type, variaindex);
-		}
+		variadicity = (int) read_long(env);
+		set_method_variadicity(type, variadicity);
 
 		set_method_calling_convention(type, callingconv);
 		set_method_additional_properties(type, addprops);

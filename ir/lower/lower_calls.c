@@ -79,7 +79,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	ir_type **params, **results, *res_tp;
 	size_t  *param_map;
 	ir_mode *modes[MAX_REGISTER_RET_VAL];
-	size_t  n_ress, n_params, nn_ress, nn_params, i, first_variadic;
+	size_t  n_ress, n_params, nn_ress, nn_params, i;
 	add_hidden hidden_params;
 	int        changed = 0;
 	ir_variadicity var;
@@ -100,8 +100,6 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	NEW_ARR_A(ir_type *, params, n_params + n_ress);
 
 	NEW_ARR_A(size_t, param_map, n_params + n_ress);
-
-	first_variadic = get_method_first_variadic_param_index(mtp);
 
 	hidden_params = lp->hidden_params;
 	if (hidden_params == ADD_HIDDEN_SMART &&
@@ -139,9 +137,6 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 				results[nn_ress++] = res_tp;
 			}
 		}
-
-		/* move the index of the first variadic parameter */
-		first_variadic += nn_params;
 
 		for (i = 0; i < n_params; ++i, ++nn_params) {
 			params[nn_params]    = get_method_param_type(mtp, i);
@@ -181,8 +176,6 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 
 	var = get_method_variadicity(mtp);
 	set_method_variadicity(lowered, var);
-	if (var == variadicity_variadic)
-		set_method_first_variadic_param_index(lowered, first_variadic);
 
 	/* associate the lowered type with the original one for easier access */
 	if (changed) {

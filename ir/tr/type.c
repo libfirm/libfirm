@@ -526,13 +526,8 @@ int equal_type(ir_type *typ1, ir_type *typ2)
 		if (get_method_calling_convention(typ1) !=
 		    get_method_calling_convention(typ2)) return 0;
 
-		if (get_method_variadicity(typ1) == variadicity_non_variadic) {
-			n_param1 = get_method_n_params(typ1);
-			n_param2 = get_method_n_params(typ2);
-		} else {
-			n_param1 = get_method_first_variadic_param_index(typ1);
-			n_param2 = get_method_first_variadic_param_index(typ2);
-		}
+		n_param1 = get_method_n_params(typ1);
+		n_param2 = get_method_n_params(typ2);
 
 		if (n_param1 != n_param2) return 0;
 
@@ -643,13 +638,8 @@ int smaller_type(ir_type *st, ir_type *lt)
 		if (get_method_calling_convention(st) !=
 		    get_method_calling_convention(lt)) return 0;
 
-		if (get_method_variadicity(st) == variadicity_non_variadic) {
-			n_param1 = get_method_n_params(st);
-			n_param2 = get_method_n_params(lt);
-		} else {
-			n_param1 = get_method_first_variadic_param_index(st);
-			n_param2 = get_method_first_variadic_param_index(lt);
-		}
+		n_param1 = get_method_n_params(st);
+		n_param2 = get_method_n_params(lt);
 
 		if (n_param1 != n_param2) return 0;
 
@@ -1209,7 +1199,6 @@ ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 	res->attr.ma.res_type             = XMALLOCNZ(tp_ent_pair, n_res);
 	res->attr.ma.value_ress           = NULL;
 	res->attr.ma.variadicity          = variadicity_non_variadic;
-	res->attr.ma.first_variadic_param = -1;
 	res->attr.ma.additional_properties = mtp_no_property;
 	hook_new_type(res);
 	return res;
@@ -1249,7 +1238,6 @@ ir_type *clone_type_method(ir_type *tp)
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
 	res->attr.ma.value_ress            = tp->attr.ma.value_ress;
 	res->attr.ma.variadicity           = tp->attr.ma.variadicity;
-	res->attr.ma.first_variadic_param  = tp->attr.ma.first_variadic_param;
 	res->attr.ma.additional_properties = tp->attr.ma.additional_properties;
 	res->attr.ma.irg_calling_conv      = tp->attr.ma.irg_calling_conv;
 	hook_new_type(res);
@@ -1445,26 +1433,6 @@ void set_method_variadicity(ir_type *method, ir_variadicity vari)
 {
 	assert(method && (method->type_op == type_method));
 	method->attr.ma.variadicity = vari;
-}
-
-size_t get_method_first_variadic_param_index(const ir_type *method)
-{
-	assert(method->type_op == type_method);
-
-	if (method->attr.ma.variadicity == variadicity_non_variadic)
-		return (size_t)-1;
-
-	if (method->attr.ma.first_variadic_param == (size_t)-1)
-		return get_method_n_params(method);
-	return method->attr.ma.first_variadic_param;
-}
-
-void set_method_first_variadic_param_index(ir_type *method, size_t index)
-{
-	assert(method->type_op == type_method);
-	assert(index <= get_method_n_params(method));
-
-	method->attr.ma.first_variadic_param = index;
 }
 
 mtp_additional_properties (get_method_additional_properties)(const ir_type *method)

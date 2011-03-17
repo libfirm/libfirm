@@ -1649,23 +1649,6 @@ FIRM_API ir_variadicity get_method_variadicity(const ir_type *method);
 /** Sets the variadicity of a method. */
 FIRM_API void set_method_variadicity(ir_type *method, ir_variadicity vari);
 
-/**
- * Returns the first variadic parameter index of a type.
- * If this index was NOT set, the index of the last parameter
- * of the method type plus one is returned for variadic functions.
- * Non-variadic function types always return -1 here.
- */
-FIRM_API size_t get_method_first_variadic_param_index(const ir_type *method);
-
-/**
- * Sets the first variadic parameter index. This allows to specify
- * a complete call type (containing the type of all parameters)
- * but still have the knowledge, which parameter must be passed as
- * variadic one.
- */
-FIRM_API void set_method_first_variadic_param_index(ir_type *method,
-                                                    size_t index);
-
 /** Returns the mask of the additional graph properties. */
 FIRM_API mtp_additional_properties get_method_additional_properties(const ir_type *method);
 
