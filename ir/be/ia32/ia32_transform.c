@@ -5689,11 +5689,11 @@ static void ia32_pretransform_node(void)
 	ir_graph        *irg      = current_ir_graph;
 	ia32_irg_data_t *irg_data = ia32_get_irg_data(current_ir_graph);
 
-	irg_data->noreg_gp  = be_pre_transform_node(irg_data->noreg_gp);
-	irg_data->noreg_vfp = be_pre_transform_node(irg_data->noreg_vfp);
-	irg_data->noreg_xmm = be_pre_transform_node(irg_data->noreg_xmm);
-	assert(irg_data->fpu_trunc_mode == NULL);
-	assert(irg_data->get_eip == NULL);
+	irg_data->noreg_gp       = be_pre_transform_node(irg_data->noreg_gp);
+	irg_data->noreg_vfp      = be_pre_transform_node(irg_data->noreg_vfp);
+	irg_data->noreg_xmm      = be_pre_transform_node(irg_data->noreg_xmm);
+	irg_data->get_eip        = be_pre_transform_node(irg_data->get_eip);
+	irg_data->fpu_trunc_mode = be_pre_transform_node(irg_data->fpu_trunc_mode);
 
 	nomem    = get_irg_no_mem(irg);
 	noreg_GP = ia32_new_NoReg_gp(irg);
