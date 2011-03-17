@@ -69,8 +69,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-#define NO_COLOR (-1)
-
 #define DUMP_INTERVALS
 
 typedef struct be_chordal_alloc_env_t {
@@ -467,7 +465,7 @@ static void assign(ir_node *block, void *env_ptr)
 		 */
 		if (b->is_def && !be_is_live_in(lv, block, irn)) {
 			const arch_register_t *reg;
-			int col = NO_COLOR;
+			int col;
 
 			if (ignore || pset_find_ptr(alloc_env->pre_colored, irn)) {
 				reg = arch_get_irn_register(irn);
