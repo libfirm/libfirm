@@ -1344,6 +1344,7 @@ Leave => {
 	outs      => [ "frame", "stack" ],
 	latency   => 3,
 	units     => [ "GP" ],
+	state     => "exc_pinned",
 },
 
 AddSP => {

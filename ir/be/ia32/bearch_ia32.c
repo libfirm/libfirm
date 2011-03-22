@@ -301,6 +301,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		arch_irn_add_flags(push, arch_irn_flags_prolog);
 		curr_sp = new_r_Proj(push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
 		*mem    = new_r_Proj(push, mode_M, pn_ia32_Push_M);
+		set_irn_pinned(push, op_pin_state_pinned);
 
 		/* the push must have SP out register */
 		arch_set_irn_register(curr_sp, arch_env->sp);
@@ -313,6 +314,7 @@ static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap 
 		arch_irn_add_flags(curr_bp, arch_irn_flags_prolog);
 		be_set_constr_single_reg_out(curr_bp, 0, arch_env->bp,
 		                             arch_register_req_type_ignore);
+		set_irn_pinned(curr_bp, op_pin_state_pinned);
 
 		/* beware: the copy must be done before any other sp use */
 		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
@@ -350,6 +352,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 		/* simply remove the stack frame here */
 		curr_sp = be_new_IncSP(arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
 		arch_irn_add_flags(curr_sp, arch_irn_flags_epilog);
+		set_irn_pinned(curr_sp, op_pin_state_pinned);
 	} else {
 		ir_mode *mode_bp = arch_env->bp->reg_class->mode;
 
@@ -361,6 +364,7 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			curr_bp = new_r_Proj(leave, mode_bp, pn_ia32_Leave_frame);
 			curr_sp = new_r_Proj(leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
 			arch_irn_add_flags(leave, arch_irn_flags_epilog);
+			set_irn_pinned(leave, op_pin_state_pinned);
 		} else {
 			ir_node *pop;
 
@@ -370,12 +374,14 @@ static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_
 			be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
 				                         arch_register_req_type_ignore);
 			arch_irn_add_flags(curr_sp, arch_irn_flags_epilog);
+			set_irn_pinned(curr_sp, op_pin_state_pinned);
 
 			/* pop ebp */
 			pop     = new_bd_ia32_PopEbp(NULL, bl, *mem, curr_sp);
 			curr_bp = new_r_Proj(pop, mode_bp, pn_ia32_Pop_res);
 			curr_sp = new_r_Proj(pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
 			arch_irn_add_flags(pop, arch_irn_flags_epilog);
+			set_irn_pinned(pop, op_pin_state_pinned);
 
 			*mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
 		}
