@@ -227,7 +227,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	projX                   = new_r_Proj(start, mode_X, pn_Start_X_initial_exec);
 	set_irg_initial_exec    (res, projX);
 	set_irg_frame           (res, new_r_Proj(start, mode_P_data, pn_Start_P_frame_base));
-	set_irg_tls             (res, new_r_Proj(start, mode_P_data, pn_Start_P_tls));
 	set_irg_args            (res, new_r_Proj(start, mode_T,      pn_Start_T_args));
 	initial_mem             = new_r_Proj(start, mode_M, pn_Start_M);
 	set_irg_initial_mem(res, initial_mem);
@@ -563,16 +562,6 @@ ir_node *(get_irg_frame)(const ir_graph *irg)
 void (set_irg_frame)(ir_graph *irg, ir_node *node)
 {
 	_set_irg_frame(irg, node);
-}
-
-ir_node *(get_irg_tls)(const ir_graph *irg)
-{
-	return _get_irg_tls(irg);
-}
-
-void (set_irg_tls)(ir_graph *irg, ir_node *node)
-{
-	_set_irg_tls(irg, node);
 }
 
 ir_node *(get_irg_initial_mem)(const ir_graph *irg)

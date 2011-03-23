@@ -166,16 +166,6 @@ static inline void _set_irg_frame(ir_graph *irg, ir_node *node)
 	set_irn_n(irg->anchor, anchor_frame, node);
 }
 
-static inline ir_node *_get_irg_tls(const ir_graph *irg)
-{
-	return get_irn_n(irg->anchor, anchor_tls);
-}
-
-static inline void _set_irg_tls(ir_graph *irg, ir_node *node)
-{
-	set_irn_n(irg->anchor, anchor_tls, node);
-}
-
 static inline ir_node *_get_irg_initial_mem(const ir_graph *irg)
 {
 	return get_irn_n(irg->anchor, anchor_initial_mem);
@@ -536,8 +526,6 @@ static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
 #define set_irg_initial_exec(irg, node)       _set_irg_initial_exec(irg, node)
 #define get_irg_frame(irg)                    _get_irg_frame(irg)
 #define set_irg_frame(irg, node)              _set_irg_frame(irg, node)
-#define get_irg_tls(irg)                      _get_irg_tls(irg)
-#define set_irg_tls(irg, node)                _set_irg_tls(irg, node)
 #define get_irg_initial_mem(irg)              _get_irg_initial_mem(irg)
 #define set_irg_initial_mem(irg, node)        _set_irg_initial_mem(irg, node)
 #define get_irg_args(irg)                     _get_irg_args(irg)

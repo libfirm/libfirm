@@ -393,7 +393,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	in[pn_Start_M]              = get_Call_mem(call);
 	in[pn_Start_X_initial_exec] = new_r_Jmp(post_bl);
 	in[pn_Start_P_frame_base]   = get_irg_frame(irg);
-	in[pn_Start_P_tls]          = get_irg_tls(irg);
 	in[pn_Start_T_args]         = new_r_Tuple(post_bl, n_params, args_in);
 	pre_call = new_r_Tuple(post_bl, pn_Start_max, in);
 	post_call = call;

@@ -177,6 +177,7 @@ struct ia32_attr_t {
 		unsigned am_sc_sign:1;          /**< The sign bit of the address mode symconst. */
 
 		unsigned am_sc_no_pic_adjust : 1;/**< AM symconst can be relative to EIP */
+		unsigned am_tls_segment:1;       /**< addresses are relative to TLS */
 		unsigned use_frame:1;           /**< Indicates whether the operation uses the frame pointer or not. */
 		unsigned has_except_label:1;        /**< Set if this node needs a label because of possible exception. */
 

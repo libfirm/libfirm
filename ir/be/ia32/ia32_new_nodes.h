@@ -155,6 +155,10 @@ void clear_ia32_am_sc_sign(ir_node *node);
  */
 int is_ia32_am_sc_sign(const ir_node *node);
 
+void set_ia32_am_tls_segment(ir_node *node, bool value);
+
+bool get_ia32_am_tls_segment(const ir_node *node);
+
 /**
  * Gets the addr mode const.
  */

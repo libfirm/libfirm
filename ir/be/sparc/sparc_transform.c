@@ -1887,8 +1887,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_r_Bad(get_irn_irg(block));
 	case pn_Start_P_frame_base:
 		return get_frame_base();
-	case pn_Start_P_tls:
-		return new_r_Bad(current_ir_graph);
 	case pn_Start_max:
 		break;
 	}

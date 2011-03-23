@@ -470,6 +470,18 @@ int is_ia32_am_sc_sign(const ir_node *node)
 	return attr->data.am_sc_sign;
 }
 
+void set_ia32_am_tls_segment(ir_node *node, bool value)
+{
+	ia32_attr_t *attr = get_ia32_attr(node);
+	attr->data.am_tls_segment = value;
+}
+
+bool get_ia32_am_tls_segment(const ir_node *node)
+{
+	const ia32_attr_t *attr = get_ia32_attr_const(node);
+	return attr->data.am_tls_segment;
+}
+
 /**
  * Gets the addr mode const.
  */

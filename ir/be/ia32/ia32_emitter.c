@@ -563,6 +563,9 @@ void ia32_emit_am(const ir_node *node)
 	/* just to be sure... */
 	assert(!is_ia32_use_frame(node) || get_ia32_frame_ent(node) != NULL);
 
+	if (get_ia32_am_tls_segment(node))
+		be_emit_cstring("%gs:");
+
 	/* emit offset */
 	if (ent != NULL) {
 		const ia32_attr_t *attr = get_ia32_attr_const(node);
@@ -1606,14 +1609,6 @@ static void emit_ia32_Const(const ir_node *node)
 	ia32_emitf(node, "\tmovl %I, %D0\n");
 }
 
-/**
- * Emits code to load the TLS base
- */
-static void emit_ia32_LdTls(const ir_node *node)
-{
-	ia32_emitf(node, "\tmovl %%gs:0, %D0\n");
-}
-
 /* helper function for emit_ia32_Minus64Bit */
 static void emit_mov(const ir_node* node, const arch_register_t *src, const arch_register_t *dst)
 {
@@ -1779,7 +1774,6 @@ static void ia32_register_emitters(void)
 	IA32_EMIT(IMul);
 	IA32_EMIT(Jcc);
 	IA32_EMIT(Setcc);
-	IA32_EMIT(LdTls);
 	IA32_EMIT(Minus64Bit);
 	IA32_EMIT(SwitchJmp);
 	IA32_EMIT(ClimbFrame);

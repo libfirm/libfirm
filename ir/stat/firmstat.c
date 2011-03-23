@@ -919,10 +919,7 @@ static void stat_update_address(ir_node *node, graph_entry_t *graph)
 	case iro_Sel:
 		base = find_base_adr(node);
 		irg = current_ir_graph;
-		if (base == get_irg_tls(irg)) {
-			/* a TLS variable, like a global. */
-			cnt_inc(&graph->cnt[gcnt_global_adr]);
-		} else if (base == get_irg_frame(irg)) {
+		if (base == get_irg_frame(irg)) {
 			/* a local Variable. */
 			cnt_inc(&graph->cnt[gcnt_local_adr]);
 		} else {

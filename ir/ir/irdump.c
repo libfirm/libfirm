@@ -808,7 +808,6 @@ static const pns_lookup_t start_lut[] = {
 #define X(a)    { pn_Start_##a, #a }
 	X(X_initial_exec),
 	X(P_frame_base),
-	X(P_tls),
 	X(T_args),
 #undef X
 };

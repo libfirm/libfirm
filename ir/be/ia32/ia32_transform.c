@@ -370,7 +370,14 @@ static ir_node *gen_SymConst(ir_node *node)
 			panic("backend only support symconst_addr_ent (at %+F)", node);
 		}
 		entity = get_SymConst_entity(node);
-		cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0, 0);
+		if (get_entity_owner(entity) == get_tls_type()) {
+			ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
+			ir_node *lea     = new_bd_ia32_Lea(dbgi, block, tls_base, noreg_GP);
+			set_ia32_am_sc(lea, entity);
+			cnst = lea;
+		} else {
+			cnst = new_bd_ia32_Const(dbgi, block, entity, 0, 0, 0);
+		}
 	}
 
 	SET_IA32_ORIG_NODE(cnst, node);
@@ -636,6 +643,7 @@ static void build_address(ia32_address_mode_t *am, ir_node *node,
 		addr->index        = noreg_GP;
 		addr->mem          = nomem;
 		addr->symconst_ent = entity;
+		addr->tls_segment  = false;
 		addr->use_frame    = 1;
 		am->ls_mode        = get_type_mode(get_entity_type(entity));
 		am->pinned         = op_pin_state_floats;
@@ -664,6 +672,7 @@ static void set_address(ir_node *node, const ia32_address_t *addr)
 	set_ia32_am_scale(node, addr->scale);
 	set_ia32_am_sc(node, addr->symconst_ent);
 	set_ia32_am_offs_int(node, addr->offset);
+	set_ia32_am_tls_segment(node, addr->tls_segment);
 	if (addr->symconst_sign)
 		set_ia32_am_sc_sign(node);
 	if (addr->use_frame)
@@ -1198,6 +1207,18 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 		index = noreg_GP;
 	} else {
 		index = be_transform_node(index);
+	}
+
+	/* segment overrides are ineffective for Leas :-( so we have to patch
+	 * around... */
+	if (addr->tls_segment) {
+		assert(addr->symconst_ent != NULL);
+		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
+		if (base == noreg_GP)
+			base = tls_base;
+		else
+			base = new_bd_ia32_Lea(dbgi, block, tls_base, base);
+		addr->tls_segment = false;
 	}
 
 	res = new_bd_ia32_Lea(dbgi, block, base, index);
@@ -4338,6 +4359,7 @@ static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
 		am.addr.offset        = 0;
 		am.addr.scale         = 2;
 		am.addr.symconst_ent  = ia32_gen_fp_known_const(ia32_ULLBIAS);
+		am.addr.tls_segment   = false;
 		am.addr.use_frame     = 0;
 		am.addr.frame_entity  = NULL;
 		am.addr.symconst_sign = 0;
@@ -5585,9 +5607,6 @@ static ir_node *gen_Proj(ir_node *node)
 
 				return jump;
 			}
-
-			case pn_Start_P_tls:
-				return ia32_gen_Proj_tls(node);
 		}
 		break;
 

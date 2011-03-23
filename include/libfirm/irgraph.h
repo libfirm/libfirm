@@ -227,11 +227,6 @@ FIRM_API ir_node *get_irg_frame(const ir_graph *irg);
 /** Sets the node that represents the frame pointer of the given IR graph. */
 FIRM_API void set_irg_frame(ir_graph *irg, ir_node *node);
 
-/** Returns the node that represents the tls pointer of the given IR graph. */
-FIRM_API ir_node *get_irg_tls(const ir_graph *irg);
-/** Sets the node that represents the tls pointer of the given IR graph. */
-FIRM_API void set_irg_tls(ir_graph *irg, ir_node *node);
-
 /** Returns the node that represents the initial memory of the given IR graph. */
 FIRM_API ir_node *get_irg_initial_mem(const ir_graph *irg);
 /** Sets the node that represents the initial memory of the given IR graph. */

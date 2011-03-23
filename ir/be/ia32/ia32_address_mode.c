@@ -55,7 +55,7 @@ static bitset_t *non_address_mode_nodes;
  *
  * @return non-zero if the DAG represents an immediate, 0 else
  */
-static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
+static bool do_is_immediate(const ir_node *node, int *symconsts, bool negate)
 {
 	ir_node *left;
 	ir_node *right;
@@ -69,44 +69,43 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
 			           "Optimisation warning tarval of %+F(%+F) is not a long.\n",
 			           node, current_ir_graph);
 #endif
-			return 0;
+			return false;
 		}
-		return 1;
+		return true;
 	case iro_SymConst:
 		/* the first SymConst of a DAG can be fold into an immediate */
 #ifndef SUPPORT_NEGATIVE_SYMCONSTS
 		/* unfortunately the assembler/linker doesn't support -symconst */
 		if (negate)
-			return 0;
+			return false;
 #endif
-
 		if (get_SymConst_kind(node) != symconst_addr_ent)
-			return 0;
+			return false;
 		if (++*symconsts > 1)
-			return 0;
+			return false;
 
-		return 1;
+		return true;
 	case iro_Unknown:
 		/* we can use '0' for Unknowns */
-		return 1;
+		return true;
 	case iro_Add:
 	case iro_Sub:
 		/* Add's and Sub's are typically supported as long as both operands are
 		 * immediates */
 		if (ia32_is_non_address_mode_node(node))
-			return 0;
+			return false;
 
 		left = get_binop_left(node);
 		if (!do_is_immediate(left, symconsts, negate))
-			return 0;
+			return false;
 		right = get_binop_right(node);
 		if (!do_is_immediate(right, symconsts, is_Sub(node) ? !negate : negate))
-			return 0;
+			return false;
 
-		return 1;
+		return true;
 	default:
 		/* all other nodes are NO immediates */
-		return 0;
+		return false;
 	}
 }
 
@@ -118,7 +117,7 @@ static int do_is_immediate(const ir_node *node, int *symconsts, int negate)
  * @param node    the node
  * @param negate  if set, the immediate must be negated
  */
-static int is_immediate(ia32_address_t *addr, const ir_node *node, int negate)
+static int is_immediate(ia32_address_t *addr, const ir_node *node, bool negate)
 {
 	int symconsts = (addr->symconst_ent != NULL);
 	return do_is_immediate(node, &symconsts, negate);
@@ -131,7 +130,7 @@ static int is_immediate(ia32_address_t *addr, const ir_node *node, int negate)
  * @param node    the node
  * @param negate  if set, the immediate must be negated
  */
-static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
+static void eat_immediate(ia32_address_t *addr, ir_node *node, bool negate)
 {
 	ir_tarval *tv;
 	ir_node   *left;
@@ -155,6 +154,8 @@ static void eat_immediate(ia32_address_t *addr, ir_node *node, int negate)
 			panic("Internal error: more than 1 symconst in address calculation");
 		}
 		addr->symconst_ent  = get_SymConst_entity(node);
+		if (get_entity_owner(addr->symconst_ent) == get_tls_type())
+			addr->tls_segment = true;
 #ifndef SUPPORT_NEGATIVE_SYMCONSTS
 		assert(!negate);
 #endif

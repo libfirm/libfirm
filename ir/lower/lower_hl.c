@@ -73,160 +73,148 @@ static void lower_sel(ir_node *sel)
 
 	mode_Int = get_reference_mode_signed_eq(mode);
 
-	/* TLS access, must be handled by the linker */
-	if (get_tls_type() == owner) {
-		symconst_symbol sym;
+	assert(get_type_state(get_entity_owner(ent)) == layout_fixed);
+	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
 
-		sym.entity_p = ent;
-		bl = get_nodes_block(sel);
+	bl = get_nodes_block(sel);
+	if (0 < get_Sel_n_indexs(sel)) {
+		/* an Array access */
+		basetyp = get_entity_type(ent);
+		if (is_Primitive_type(basetyp))
+			basemode = get_type_mode(basetyp);
+		else
+			basemode = mode_P_data;
 
-		cnst = new_rd_SymConst(dbg, irg, mode, sym, symconst_addr_ent);
-		newn = new_rd_Add(dbg, bl, ptr, cnst, mode);
-	} else {
-		/* not TLS */
+		assert(basemode && "no mode for lowering Sel");
+		assert((get_mode_size_bits(basemode) % 8 == 0) && "can not deal with unorthodox modes");
+		index = get_Sel_index(sel, 0);
 
-		assert(get_type_state(get_entity_owner(ent)) == layout_fixed);
-		assert(get_type_state(get_entity_type(ent)) == layout_fixed);
+		if (is_Array_type(owner)) {
+			ir_type *arr_ty = owner;
+			int      dims   = get_array_n_dimensions(arr_ty);
+			int     *map    = ALLOCAN(int, dims);
+			ir_node *last_size;
+			int      i;
 
-		bl = get_nodes_block(sel);
-		if (0 < get_Sel_n_indexs(sel)) {
-			/* an Array access */
-			basetyp = get_entity_type(ent);
-			if (is_Primitive_type(basetyp))
-				basemode = get_type_mode(basetyp);
-			else
-				basemode = mode_P_data;
+			assert(dims == get_Sel_n_indexs(sel)
+				&& "array dimension must match number of indices of Sel node");
 
-			assert(basemode && "no mode for lowering Sel");
-			assert((get_mode_size_bits(basemode) % 8 == 0) && "can not deal with unorthodox modes");
-			index = get_Sel_index(sel, 0);
+			for (i = 0; i < dims; i++) {
+				int order = get_array_order(arr_ty, i);
 
-			if (is_Array_type(owner)) {
-				ir_type *arr_ty = owner;
-				int      dims   = get_array_n_dimensions(arr_ty);
-				int     *map    = ALLOCAN(int, dims);
-				ir_node *last_size;
-				int      i;
+				assert(order < dims &&
+					"order of a dimension must be smaller than the arrays dim");
+				map[order] = i;
+			}
+			newn = get_Sel_ptr(sel);
 
-				assert(dims == get_Sel_n_indexs(sel)
-					&& "array dimension must match number of indices of Sel node");
+			/* Size of the array element */
+			tv = new_tarval_from_long(get_type_size_bytes(basetyp), mode_Int);
+			last_size = new_rd_Const(dbg, irg, tv);
 
-				for (i = 0; i < dims; i++) {
-					int order = get_array_order(arr_ty, i);
+			/*
+			 * We compute the offset part of dimension d_i recursively
+			 * with the the offset part of dimension d_{i-1}
+			 *
+			 *     off_0 = sizeof(array_element_type);
+			 *     off_i = (u_i - l_i) * off_{i-1}  ; i >= 1
+			 *
+			 * whereas u_i is the upper bound of the current dimension
+			 * and l_i the lower bound of the current dimension.
+			 */
+			for (i = dims - 1; i >= 0; i--) {
+				int dim = map[i];
+				ir_node *lb, *ub, *elms, *n, *ind;
 
-					assert(order < dims &&
-						"order of a dimension must be smaller than the arrays dim");
-					map[order] = i;
-				}
-				newn = get_Sel_ptr(sel);
+				elms = NULL;
+				lb = get_array_lower_bound(arr_ty, dim);
+				ub = get_array_upper_bound(arr_ty, dim);
 
-				/* Size of the array element */
-				tv = new_tarval_from_long(get_type_size_bytes(basetyp), mode_Int);
-				last_size = new_rd_Const(dbg, irg, tv);
+				assert(irg == current_ir_graph);
+				if (! is_Unknown(lb))
+					lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb, bl), mode_Int);
+				else
+					lb = NULL;
+
+				if (! is_Unknown(ub))
+					ub = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), ub, bl), mode_Int);
+				else
+					ub = NULL;
 
 				/*
-				 * We compute the offset part of dimension d_i recursively
-				 * with the the offset part of dimension d_{i-1}
-				 *
-				 *     off_0 = sizeof(array_element_type);
-				 *     off_i = (u_i - l_i) * off_{i-1}  ; i >= 1
-				 *
-				 * whereas u_i is the upper bound of the current dimension
-				 * and l_i the lower bound of the current dimension.
+				 * If the array has more than one dimension, lower and upper
+				 * bounds have to be set in the non-last dimension.
 				 */
-				for (i = dims - 1; i >= 0; i--) {
-					int dim = map[i];
-					ir_node *lb, *ub, *elms, *n, *ind;
+				if (i > 0) {
+					assert(lb != NULL && "lower bound has to be set in multi-dim array");
+					assert(ub != NULL && "upper bound has to be set in multi-dim array");
 
-					elms = NULL;
-					lb = get_array_lower_bound(arr_ty, dim);
-					ub = get_array_upper_bound(arr_ty, dim);
-
-					assert(irg == current_ir_graph);
-					if (! is_Unknown(lb))
-						lb = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), lb, bl), mode_Int);
-					else
-						lb = NULL;
-
-					if (! is_Unknown(ub))
-						ub = new_rd_Conv(dbg, bl, copy_const_value(get_irn_dbg_info(sel), ub, bl), mode_Int);
-					else
-						ub = NULL;
-
-					/*
-					 * If the array has more than one dimension, lower and upper
-					 * bounds have to be set in the non-last dimension.
-					 */
-					if (i > 0) {
-						assert(lb != NULL && "lower bound has to be set in multi-dim array");
-						assert(ub != NULL && "upper bound has to be set in multi-dim array");
-
-						/* Elements in one Dimension */
-						elms = new_rd_Sub(dbg, bl, ub, lb, mode_Int);
-					}
-
-					ind = new_rd_Conv(dbg, bl, get_Sel_index(sel, dim), mode_Int);
-
-					/*
-					 * Normalize index, id lower bound is set, also assume
-					 * lower bound == 0
-					 */
-					if (lb != NULL)
-						ind = new_rd_Sub(dbg, bl, ind, lb, mode_Int);
-
-					n = new_rd_Mul(dbg, bl, ind, last_size, mode_Int);
-
-					/*
-					 * see comment above.
-					 */
-					if (i > 0)
-						last_size = new_rd_Mul(dbg, bl, last_size, elms, mode_Int);
-
-					newn = new_rd_Add(dbg, bl, newn, n, mode);
+					/* Elements in one Dimension */
+					elms = new_rd_Sub(dbg, bl, ub, lb, mode_Int);
 				}
-			} else {
-				/* no array type */
-				ir_mode   *idx_mode = get_irn_mode(index);
-				ir_tarval *tv       = new_tarval_from_long(get_mode_size_bytes(basemode), idx_mode);
 
-				newn = new_rd_Add(dbg, bl, get_Sel_ptr(sel),
-					new_rd_Mul(dbg, bl, index,
-					new_r_Const(irg, tv),
-					idx_mode),
-					mode);
-			}
-		} else if (is_Method_type(get_entity_type(ent)) &&
-		           is_Class_type(owner) &&
-		           (owner != get_glob_type()) &&
-		           (!is_frame_type(owner)))  {
-			ir_node *add;
-			ir_mode *ent_mode = get_type_mode(get_entity_type(ent));
+				ind = new_rd_Conv(dbg, bl, get_Sel_index(sel, dim), mode_Int);
 
-			/* We need an additional load when accessing methods from a dispatch table. */
-			tv   = new_tarval_from_long(get_entity_offset(ent), mode_Int);
-			cnst = new_rd_Const(dbg, irg, tv);
-			add  = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
-			newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, cons_none);
-			newn = new_r_Proj(newn, ent_mode, pn_Load_res);
+				/*
+				 * Normalize index, id lower bound is set, also assume
+				 * lower bound == 0
+				 */
+				if (lb != NULL)
+					ind = new_rd_Sub(dbg, bl, ind, lb, mode_Int);
 
-		} else if (get_entity_owner(ent) != get_glob_type()) {
-			int offset;
+				n = new_rd_Mul(dbg, bl, ind, last_size, mode_Int);
 
-			/* replace Sel by add(obj, const(ent.offset)) */
-			newn   = get_Sel_ptr(sel);
-			offset = get_entity_offset(ent);
-			if (offset != 0) {
-				ir_mode *mode_UInt = get_reference_mode_unsigned_eq(mode);
+				/*
+				 * see comment above.
+				 */
+				if (i > 0)
+					last_size = new_rd_Mul(dbg, bl, last_size, elms, mode_Int);
 
-				tv = new_tarval_from_long(offset, mode_UInt);
-				cnst = new_r_Const(irg, tv);
-				newn = new_rd_Add(dbg, bl, newn, cnst, mode);
+				newn = new_rd_Add(dbg, bl, newn, n, mode);
 			}
 		} else {
-			/* global_type */
-			newn = new_rd_SymConst_addr_ent(NULL, irg, mode, ent);
+			/* no array type */
+			ir_mode   *idx_mode = get_irn_mode(index);
+			ir_tarval *tv       = new_tarval_from_long(get_mode_size_bytes(basemode), idx_mode);
+
+			newn = new_rd_Add(dbg, bl, get_Sel_ptr(sel),
+				new_rd_Mul(dbg, bl, index,
+				new_r_Const(irg, tv),
+				idx_mode),
+				mode);
 		}
+	} else if (is_Method_type(get_entity_type(ent)) &&
+			   is_Class_type(owner) &&
+			   (owner != get_glob_type()) &&
+			   (!is_frame_type(owner)))  {
+		ir_node *add;
+		ir_mode *ent_mode = get_type_mode(get_entity_type(ent));
+
+		/* We need an additional load when accessing methods from a dispatch table. */
+		tv   = new_tarval_from_long(get_entity_offset(ent), mode_Int);
+		cnst = new_rd_Const(dbg, irg, tv);
+		add  = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
+		newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, cons_none);
+		newn = new_r_Proj(newn, ent_mode, pn_Load_res);
+
+	} else if (get_entity_owner(ent) != get_glob_type()) {
+		int offset;
+
+		/* replace Sel by add(obj, const(ent.offset)) */
+		newn   = get_Sel_ptr(sel);
+		offset = get_entity_offset(ent);
+		if (offset != 0) {
+			ir_mode *mode_UInt = get_reference_mode_unsigned_eq(mode);
+
+			tv = new_tarval_from_long(offset, mode_UInt);
+			cnst = new_r_Const(irg, tv);
+			newn = new_rd_Add(dbg, bl, newn, cnst, mode);
+		}
+	} else {
+		/* global_type */
+		newn = new_rd_SymConst_addr_ent(NULL, irg, mode, ent);
 	}
+
 	/* run the hooks */
 	hook_lower(sel);
 

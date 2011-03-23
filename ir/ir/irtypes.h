@@ -431,8 +431,6 @@ enum irg_anchors {
 	anchor_start,            /**< start node of this ir_graph */
 	anchor_initial_exec,     /**< methods initial control flow */
 	anchor_frame,            /**< methods frame */
-	anchor_tls,              /**< pointer to the thread local storage containing all
-	                              thread local data. */
 	anchor_initial_mem,      /**< initial memory of this graph */
 	anchor_args,             /**< methods arguments */
 	anchor_bad,              /**< bad node of this ir_graph, the one and

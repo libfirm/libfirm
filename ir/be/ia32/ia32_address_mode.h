@@ -27,6 +27,7 @@
 #ifndef IA32_ADDRESS_MODE_H
 #define IA32_ADDRESS_MODE_H
 
+#include <stdbool.h>
 #include "irtypes.h"
 #include "../beirg.h"
 
@@ -41,9 +42,10 @@ struct ia32_address_t {
 	int        offset;        /**< An integer offset. */
 	int        scale;         /**< An integer scale. {0,1,2,3} */
 	ir_entity *symconst_ent;  /**< A SynConst entity if any. */
-	int        use_frame;     /**< Set, if the frame is accessed */
+	bool       use_frame;     /**< Set, if the frame is accessed */
+	bool       tls_segment;   /**< Set if AM is relative to TLS */
 	ir_entity *frame_entity;  /**< The accessed frame entity if any. */
-	int        symconst_sign; /**< The "sign" of the symconst. */
+	bool       symconst_sign; /**< The "sign" of the symconst. */
 };
 
 /**

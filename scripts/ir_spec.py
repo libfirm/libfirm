@@ -809,7 +809,6 @@ class Start(Op):
 		("X_initial_exec", "control flow"),
 		("M",              "initial memory"),
 		("P_frame_base",   "frame base pointer"),
-		("P_tls",          "pointer to thread local storage segment"),
 		("T_args",         "function arguments")
 	]
 	mode             = "mode_T"

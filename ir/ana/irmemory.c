@@ -437,15 +437,12 @@ ir_storage_class_class_t classify_pointer(const ir_node *irn,
 	ir_storage_class_class_t res = ir_sc_pointer;
 	if (is_Global(irn)) {
 		ir_entity *entity = get_Global_entity(irn);
-		res = ir_sc_globalvar;
+		ir_type   *owner  = get_entity_owner(entity);
+		res = owner == get_tls_type() ? ir_sc_tls : ir_sc_globalvar;
 		if (! (get_entity_usage(entity) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
 	} else if (irn == get_irg_frame(irg)) {
 		res = ir_sc_localvar;
-		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
-			res |= ir_sc_modifier_nottaken;
-	} else if (irn == get_irg_tls(irg)) {
-		res = ir_sc_tls;
 		if (ent != NULL && !(get_entity_usage(ent) & ir_usage_address_taken))
 			res |= ir_sc_modifier_nottaken;
 	} else if (is_Proj(irn) && is_malloc_Result(irn)) {
@@ -1189,18 +1186,15 @@ static void print_entity_usage_flags(const ir_type *tp)
 /**
  * Post-walker: check for global entity address
  */
-static void check_global_address(ir_node *irn, void *env)
+static void check_global_address(ir_node *irn, void *data)
 {
-	ir_node *tls = (ir_node*) env;
 	ir_entity *ent;
 	unsigned flags;
+	(void) data;
 
 	if (is_Global(irn)) {
 		/* A global. */
 		ent = get_Global_entity(irn);
-	} else if (is_Sel(irn) && get_Sel_ptr(irn) == tls) {
-		/* A TLS variable. */
-		ent = get_Sel_entity(irn);
 	} else
 		return;
 
@@ -1231,7 +1225,7 @@ static void analyse_irp_globals_entity_usage(void)
 		ir_graph *irg = get_irp_irg(i);
 
 		assure_irg_outs(irg);
-		irg_walk_graph(irg, NULL, check_global_address, get_irg_tls(irg));
+		irg_walk_graph(irg, NULL, check_global_address, NULL);
 	}
 
 #ifdef DEBUG_libfirm

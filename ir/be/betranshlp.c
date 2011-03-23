@@ -318,15 +318,6 @@ static void pre_transform_anchor(ir_graph *irg, int anchor)
 	set_irg_anchor(irg, anchor, transformed);
 }
 
-static void kill_unused_anchor(int anchor)
-{
-	ir_node *old_anchor_node = get_irn_n(env.old_anchor, anchor);
-	ir_node *old_bad         = get_irn_n(env.old_anchor, anchor_bad);
-	if (old_anchor_node != NULL && get_irn_n_edges(old_anchor_node) <= 1) {
-		set_irn_n(env.old_anchor, anchor, old_bad);
-	}
-}
-
 /**
  * Transforms all nodes. Deletes the old obstack and creates a new one.
  */
@@ -366,7 +357,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 	pre_transform_anchor(irg, anchor_start_block);
 	pre_transform_anchor(irg, anchor_start);
 	pre_transform_anchor(irg, anchor_frame);
-	kill_unused_anchor(anchor_tls);
 
 	if (pre_transform)
 		pre_transform();

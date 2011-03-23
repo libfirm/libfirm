@@ -781,10 +781,7 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 ir_node *ia32_gen_Proj_tls(ir_node *node)
 {
 	ir_node *block = get_new_node(get_nodes_block(node));
-	ir_node *res   = NULL;
-
-	res = new_bd_ia32_LdTls(NULL, block, mode_Iu);
-
+	ir_node *res   = new_bd_ia32_LdTls(NULL, block);
 	return res;
 }
 
@@ -931,12 +928,12 @@ int ia32_prevents_AM(ir_node *const block, ir_node *const am_candidate,
 
 ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type)
 {
-	long         val = 0;
-	ir_entity   *symconst_ent  = NULL;
-	ir_mode     *mode;
-	ir_node     *cnst          = NULL;
-	ir_node     *symconst      = NULL;
-	ir_node     *new_node;
+	long       val = 0;
+	ir_entity *symconst_ent  = NULL;
+	ir_mode   *mode;
+	ir_node   *cnst          = NULL;
+	ir_node   *symconst      = NULL;
+	ir_node   *new_node;
 
 	mode = get_irn_mode(node);
 	if (!mode_is_int(mode) && !mode_is_reference(mode)) {
@@ -946,16 +943,17 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 	if (is_Const(node)) {
 		cnst     = node;
 		symconst = NULL;
-	} else if (is_Global(node)) {
+	} else if (is_SymConst_addr_ent(node)
+			&& get_entity_owner(get_SymConst_entity(node)) != get_tls_type()) {
 		cnst     = NULL;
 		symconst = node;
 	} else if (is_Add(node)) {
 		ir_node *left  = get_Add_left(node);
 		ir_node *right = get_Add_right(node);
-		if (is_Const(left) && is_Global(right)) {
+		if (is_Const(left) && is_SymConst_addr_ent(right)) {
 			cnst     = left;
 			symconst = right;
-		} else if (is_Global(left) && is_Const(right)) {
+		} else if (is_SymConst_addr_ent(left) && is_Const(right)) {
 			cnst     = right;
 			symconst = left;
 		}

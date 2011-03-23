@@ -1384,6 +1384,8 @@ LdTls => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { out => [ "gp" ] },
 	units     => [ "GP" ],
+	emit      => ". movl %%gs:0, %D0",
+	mode      => $mode_gp,
 	latency   => 1,
 },
 

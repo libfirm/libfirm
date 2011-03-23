@@ -255,12 +255,6 @@ FIRM_API void set_nodes_block (ir_node *node, ir_node *block);
  * from Start.  If so returns frame type, else Null. */
 FIRM_API ir_type *is_frame_pointer(const ir_node *n);
 
-/** Test whether arbitrary node is the thread local storage (tls) pointer.
- *
- * Test whether arbitrary node is tls pointer, i.e. Proj(pn_Start_P_tls)
- * from Start.  If so returns tls type, else Null. */
-FIRM_API ir_type *is_tls_pointer(const ir_node *n);
-
 /** Return the number of control flow predecessors of a block. */
 FIRM_API int get_Block_n_cfgpreds(const ir_node *block);
 /** Return the control flow predecessor of a block at a given position. */
