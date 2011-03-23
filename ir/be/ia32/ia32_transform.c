@@ -3451,6 +3451,7 @@ static ir_node *gen_Mux(ir_node *node)
 			am.addr.offset        = 0;
 			am.addr.scale         = scale;
 			am.addr.use_frame     = 0;
+			am.addr.tls_segment   = false;
 			am.addr.frame_entity  = NULL;
 			am.addr.symconst_sign = 0;
 			am.mem_proj           = am.addr.mem;
