@@ -43,43 +43,23 @@
  */
 static void lower_sel(ir_node *sel)
 {
-	ir_graph  *irg = current_ir_graph;
-	ir_entity *ent;
-	ir_node   *newn, *cnst, *index, *ptr, *bl;
-	ir_tarval *tv;
-	ir_mode   *basemode, *mode, *mode_Int;
-	ir_type   *basetyp, *owner;
-	dbg_info  *dbg;
+	ir_graph  *irg   = get_irn_irg(sel);
+	ir_entity *ent   = get_Sel_entity(sel);
+	ir_type   *owner = get_entity_owner(ent);
+	dbg_info  *dbg   = get_irn_dbg_info(sel);
+	ir_mode   *mode  = get_irn_mode(sel);
+	ir_node   *bl    = get_nodes_block(sel);
+	ir_node   *newn;
 
-	assert(is_Sel(sel));
-
-	/* Do not lower frame type/global offset table access: must be lowered by the backend. */
-	ptr = get_Sel_ptr(sel);
-	if (ptr == get_irg_frame(current_ir_graph))
+	/* we can only replace Sels when the layout of the owner type is decided. */
+	if (get_type_state(owner) != layout_fixed)
 		return;
 
-	ent   = get_Sel_entity(sel);
-	owner = get_entity_owner(ent);
-
-	/*
-	 * Cannot handle value param entities or frame type entities here.
-	 * Must be lowered by the backend.
-	 */
-	if (is_value_param_type(owner) || is_frame_type(owner))
-		return;
-
-	dbg  = get_irn_dbg_info(sel);
-	mode = get_irn_mode(sel);
-
-	mode_Int = get_reference_mode_signed_eq(mode);
-
-	assert(get_type_state(get_entity_owner(ent)) == layout_fixed);
-	assert(get_type_state(get_entity_type(ent)) == layout_fixed);
-
-	bl = get_nodes_block(sel);
 	if (0 < get_Sel_n_indexs(sel)) {
 		/* an Array access */
-		basetyp = get_entity_type(ent);
+		ir_type *basetyp = get_entity_type(ent);
+		ir_mode *basemode;
+		ir_node *index;
 		if (is_Primitive_type(basetyp))
 			basemode = get_type_mode(basetyp);
 		else
@@ -93,6 +73,8 @@ static void lower_sel(ir_node *sel)
 			ir_type *arr_ty = owner;
 			int      dims   = get_array_n_dimensions(arr_ty);
 			int     *map    = ALLOCAN(int, dims);
+			ir_mode *mode_Int = get_reference_mode_signed_eq(mode);
+			ir_tarval *tv;
 			ir_node *last_size;
 			int      i;
 
@@ -158,7 +140,7 @@ static void lower_sel(ir_node *sel)
 				/*
 				 * Normalize index, id lower bound is set, also assume
 				 * lower bound == 0
-				 */
+			 */
 				if (lb != NULL)
 					ind = new_rd_Sub(dbg, bl, ind, lb, mode_Int);
 
@@ -183,43 +165,39 @@ static void lower_sel(ir_node *sel)
 				idx_mode),
 				mode);
 		}
-	} else if (is_Method_type(get_entity_type(ent)) &&
-			   is_Class_type(owner) &&
-			   (owner != get_glob_type()) &&
-			   (!is_frame_type(owner)))  {
-		ir_node *add;
-		ir_mode *ent_mode = get_type_mode(get_entity_type(ent));
-
-		/* We need an additional load when accessing methods from a dispatch table. */
-		tv   = new_tarval_from_long(get_entity_offset(ent), mode_Int);
-		cnst = new_rd_Const(dbg, irg, tv);
-		add  = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
-		newn = new_rd_Load(dbg, bl, get_Sel_mem(sel), add, ent_mode, cons_none);
+	} else if (is_Method_type(get_entity_type(ent)) && is_Class_type(owner)) {
+		/* We need an additional load when accessing methods from a dispatch
+		 * table.
+		 * Matze TODO: Is this really still used? At least liboo does its own
+		 * lowering of Method-Sels...
+		 */
+		ir_mode   *ent_mode = get_type_mode(get_entity_type(ent));
+		int        offset   = get_entity_offset(ent);
+		ir_mode   *mode_Int = get_reference_mode_signed_eq(mode);
+		ir_tarval *tv       = new_tarval_from_long(offset, mode_Int);
+		ir_node   *cnst     = new_rd_Const(dbg, irg, tv);
+		ir_node   *add      = new_rd_Add(dbg, bl, get_Sel_ptr(sel), cnst, mode);
+		ir_node   *mem      = get_Sel_mem(sel);
+		newn = new_rd_Load(dbg, bl, mem, add, ent_mode, cons_none);
 		newn = new_r_Proj(newn, ent_mode, pn_Load_res);
-
-	} else if (get_entity_owner(ent) != get_glob_type()) {
-		int offset;
+	} else {
+		int offset = get_entity_offset(ent);
 
 		/* replace Sel by add(obj, const(ent.offset)) */
-		newn   = get_Sel_ptr(sel);
-		offset = get_entity_offset(ent);
+		newn = get_Sel_ptr(sel);
 		if (offset != 0) {
-			ir_mode *mode_UInt = get_reference_mode_unsigned_eq(mode);
-
-			tv = new_tarval_from_long(offset, mode_UInt);
-			cnst = new_r_Const(irg, tv);
+			ir_mode   *mode_UInt = get_reference_mode_unsigned_eq(mode);
+			ir_tarval *tv        = new_tarval_from_long(offset, mode_UInt);
+			ir_node   *cnst      = new_r_Const(irg, tv);
 			newn = new_rd_Add(dbg, bl, newn, cnst, mode);
 		}
-	} else {
-		/* global_type */
-		newn = new_rd_SymConst_addr_ent(NULL, irg, mode, ent);
 	}
 
 	/* run the hooks */
 	hook_lower(sel);
 
 	exchange(sel, newn);
-}  /* lower_sel */
+}
 
 /**
  * Lower a all possible SymConst nodes.
