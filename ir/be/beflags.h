@@ -35,7 +35,7 @@
 typedef ir_node * (*func_rematerialize) (ir_node *node, ir_node *after);
 
 /**
- * Callback function that checks wether a node modifies the flags
+ * Callback function that checks whether a node modifies the flags
  */
 typedef bool (*check_modifies_flags) (const ir_node *node);
 

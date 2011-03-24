@@ -322,13 +322,13 @@ typedef enum {
 } ir_align;
 
 /**
- * Returns indication wether entity is aligned in memory.
+ * Returns indication whether entity is aligned in memory.
  * @deprecated
  */
 FIRM_API ir_align get_entity_aligned(const ir_entity *ent);
 
 /**
- * Sets indication wether entity is aligned in memory
+ * Sets indication whether entity is aligned in memory
  * @deprecated
  */
 FIRM_API void set_entity_aligned(ir_entity *ent, ir_align a);
@@ -2142,7 +2142,7 @@ FIRM_API void default_layout_compound_type(ir_type *tp);
 FIRM_API int is_compound_type(const ir_type *tp);
 
 /**
- * Checks wether a type is a code type.
+ * Checks whether a type is a code type.
  */
 FIRM_API int is_code_type(const ir_type *tp);
 

@@ -597,7 +597,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 		return REMAT_COST_INFINITE;
 	}
 	/* never rematerialize a node which modifies the flags.
-	 * (would be better to test wether the flags are actually live at point
+	 * (would be better to test whether the flags are actually live at point
 	 * reloader...)
 	 */
 	if (arch_irn_is(insn, modify_flags)) {

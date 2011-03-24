@@ -382,7 +382,7 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 }
 
 /**
- * Tests wether a node has a real user and is not just kept by the End or
+ * Tests whether a node has a real user and is not just kept by the End or
  * Anchor node
  */
 static bool has_real_user(const ir_node *node)

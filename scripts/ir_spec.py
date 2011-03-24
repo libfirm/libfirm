@@ -302,7 +302,7 @@ class Cast(Unop):
 	init     = "assert(is_atomic_type(type));"
 
 class Cmp(Binop):
-	"""Compares its two operands and checks wether a specified
+	"""Compares its two operands and checks whether a specified
 	   relation (like less or equal) is fulfilled."""
 	flags = []
 	mode  = "mode_b"
@@ -539,7 +539,7 @@ class IJmp(Op):
 	flags    = [ "cfopcode", "forking", "keep" ]
 
 class InstOf(Op):
-	"""Tests wether an object is an instance of a class-type"""
+	"""Tests whether an object is an instance of a class-type"""
 	ins   = [
 	   ("store", "memory dependency"),
 	   ("obj",   "pointer to object being queried")

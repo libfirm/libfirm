@@ -532,7 +532,7 @@ ENUM_BITSET(ir_graph_state_t)
 FIRM_API void set_irg_state(ir_graph *irg, ir_graph_state_t state);
 /** clear some state flags of the graph */
 FIRM_API void clear_irg_state(ir_graph *irg, ir_graph_state_t state);
-/** query wether a set of graph state flags are activated */
+/** query whether a set of graph state flags are activated */
 FIRM_API int is_irg_state(const ir_graph *irg, ir_graph_state_t state);
 
 /** Set a description for local value n. */

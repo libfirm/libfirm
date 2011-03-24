@@ -77,7 +77,7 @@ FIRM_API void hungarian_remove(hungarian_problem_t *p, unsigned left,
  * Prepares the cost matrix dependent on the given mode.
  *
  * @param p     The hungarian object
- * @param mode  specify wether to minimize or maximize the costs
+ * @param mode  specify whether to minimize or maximize the costs
  */
 FIRM_API void hungarian_prepare_cost_matrix(hungarian_problem_t *p,
                                             hungarian_mode_t mode);

@@ -578,8 +578,8 @@ static void peephole_store_incsp(ir_node *store)
 	/* we have to be at offset 0 */
 	int my_offset = get_ia32_am_offs_int(store);
 	if (my_offset != 0) {
-		/* TODO here: find out wether there is a store with offset 0 before
-		 * us and wether we can move it down to our place */
+		/* TODO here: find out whether there is a store with offset 0 before
+		 * us and whether we can move it down to our place */
 		return;
 	}
 	ir_mode *ls_mode = get_ia32_ls_mode(store);

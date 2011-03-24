@@ -420,7 +420,7 @@ static inline void rbitset_xor(unsigned *dst, const unsigned *src, size_t size)
  * @param bitset   the bitset
  * @param from     first bit to set
  * @param to       last bit (the first bit which is not set anymore)
- * @param val      wether to set to 1 or 0
+ * @param val      whether to set to 1 or 0
  */
 static inline void rbitset_set_range(unsigned *bitset, size_t from,
                                      size_t to, bool val)
@@ -487,7 +487,7 @@ static inline bool rbitsets_equal(const unsigned *bitset1,
 }
 
 /**
- * Tests wether 2 bitsets wether at least 1 bit is set in both.
+ * Tests whether 2 bitsets have at least one common set bit.
  *
  * @param bitset1  the first bitset
  * @param bitset2  the second bitset
@@ -506,7 +506,7 @@ static inline bool rbitsets_have_common(const unsigned *bitset1,
 }
 
 /**
- * Tests wether all bits set in bitset1 are also set in bitset2.
+ * Tests whether all bits set in bitset1 are also set in bitset2.
  *
  * @param bitset1  the first bitset
  * @param bitset2  the second bitset

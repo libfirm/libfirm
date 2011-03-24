@@ -1239,7 +1239,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	permute_values(live_nodes, node, assignment);
 }
 
-/** test wether a node @p n is a copy of the value of node @p of */
+/** test whether a node @p n is a copy of the value of node @p of */
 static bool is_copy_of(ir_node *value, ir_node *test_value)
 {
 	allocation_info_t *test_info;

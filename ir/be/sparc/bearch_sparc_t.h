@@ -51,14 +51,14 @@ struct sparc_transform_env_t {
 };
 
 /**
- * Sparc ABI requires some space which is always available at the top of
+ * SPARC ABI requires some space which is always available at the top of
  * the stack. It contains:
  * 16*4 bytes space for spilling the register window
- * 1*4 byte   holding a pointer to space for agregate returns (the space is
- *            always reserved, regardless wether we have an agregate return
+ * 1*4 byte   holding a pointer to space for aggregate returns (the space is
+ *            always reserved, regardless whether we have an aggregate return
  *            or not)
  * 6*4 bytes  Space for spilling parameters 0-5. For the cases when someone
- *            takes the adress of a parameter. I guess this is also there so
+ *            takes the address of a parameter. I guess this is also there so
  *            the implementation of va_args gets easier -> We can simply store
  *            param 0-5 in this spaces and then handle va_next by simply
  *            incrementing the stack pointer
