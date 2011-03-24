@@ -104,7 +104,7 @@ FIRM_API ir_relation ir_get_possible_cmp_relations(const ir_node *left,
                                                    const ir_node *right);
 
 /**
- * tests whether a given Cmp node is an equal/not-equal test with 0
+ * tests whether a given Cmp node is a non-floating point equal/not-equal test with 0
  * (this is a bit tricky because it has to catch x!=0 for the signed case and
  *  x>0 for the unsigned case)
  */
