@@ -3176,7 +3176,7 @@ static ir_node *transform_node_And(ir_node *n)
 			if (get_irn_mode(n_b_left) != mode) {
 				n_b_left = new_rd_Conv(dbgi, block, b_left, mode);
 			}
-			ir_node     *or       = new_rd_Or(dbgi, block, a_left, b_left, mode);
+			ir_node     *or       = new_rd_Or(dbgi, block, a_left, n_b_left, mode);
 			ir_graph    *irg      = get_irn_irg(n);
 			ir_node     *zero     = create_zero_const(irg, mode);
 			return new_rd_Cmp(dbgi, block, or, zero, relation);
