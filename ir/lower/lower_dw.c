@@ -138,6 +138,8 @@ struct lower_env_t {
 	ir_type  *value_param_tp;     /**< the old value param type */
 };
 
+static void lower_node(lower_env_t *env, ir_node *node);
+
 /**
  * Create a method type for a Conv emulation from imode to omode.
  */
@@ -980,6 +982,25 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env)
 	set_lowered(env, node, res_low, res_high);
 }
 
+static bool is_cmp_0_equality(ir_node *cmp)
+{
+	ir_relation relation = get_Cmp_relation(cmp);
+	ir_node    *right    = get_Cmp_right(cmp);
+	ir_node    *left     = get_Cmp_right(cmp);
+	ir_mode    *mode     = get_irn_mode(left);
+	/* assume constants are normalized to the right side */
+	if (!is_Const(right) || !is_Const_null(right))
+		return false;
+	/* assume unordered bites have been optimized away */
+	if (relation == ir_relation_equal)
+		return true;
+	if (mode_is_signed(mode) && relation == ir_relation_less_greater)
+		return true;
+	if (relation == ir_relation_greater)
+		return true;
+	return false;
+}
+
 /**
  * Translate a Cond.
  */
@@ -1005,18 +1026,25 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 			/* bad we can't really handle Switch with 64bit offsets */
 			panic("Cond with 64bit jumptable not supported");
 		}
+		lower_node(env, sel);
 		return;
 	}
 
-	if (!is_Cmp(sel))
+	if (!is_Cmp(sel)) {
+		lower_node(env, sel);
 		return;
+	}
 
 	left     = get_Cmp_left(sel);
 	cmp_mode = get_irn_mode(left);
-	if (cmp_mode != env->high_signed && cmp_mode != env->high_unsigned)
+	if (cmp_mode != env->high_signed && cmp_mode != env->high_unsigned) {
+		lower_node(env, sel);
 		return;
+	}
 
 	right  = get_Cmp_right(sel);
+	lower_node(env, left);
+	lower_node(env, right);
 	lentry = get_node_entry(env, left);
 	rentry = get_node_entry(env, right);
 
@@ -1043,17 +1071,15 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	dbg      = get_irn_dbg_info(sel);
 	relation = get_Cmp_relation(sel);
 
-	if (is_Const(right) && is_Const_null(right)) {
-		if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
-			/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
-			ir_mode *mode   = env->low_unsigned;
-			ir_node *low    = new_r_Conv(block, lentry->low_word, mode);
-			ir_node *high   = new_r_Conv(block, lentry->high_word, mode);
-			ir_node *ornode = new_rd_Or(dbg, block, low, high, mode);
-			ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
-			set_Cond_selector(node, cmp);
-			return;
-		}
+	if (is_cmp_0_equality(sel)) {
+		/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
+		ir_mode *mode   = env->low_unsigned;
+		ir_node *low    = new_r_Conv(block, lentry->low_word, mode);
+		ir_node *high   = new_r_Conv(block, lentry->high_word, mode);
+		ir_node *ornode = new_rd_Or(dbg, block, low, high, mode);
+		ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+		set_Cond_selector(node, cmp);
+		return;
 	}
 
 	if (relation == ir_relation_equal) {
@@ -1296,47 +1322,58 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m, lower_env_t *env)
 	ir_mode  *mode = get_irn_mode(l);
 	ir_node  *r, *low, *high, *t, *res;
 	ir_relation relation;
-	ir_node  *blk;
-	dbg_info *db;
+	ir_node  *block;
+	dbg_info *dbg;
 	const node_entry_t *lentry;
 	const node_entry_t *rentry;
 	(void) m;
 
-	if (mode != env->high_signed && mode != env->high_unsigned) {
+	if (mode != env->high_signed && mode != env->high_unsigned)
 		return;
-	}
 
 	r        = get_Cmp_right(cmp);
 	lentry   = get_node_entry(env, l);
 	rentry   = get_node_entry(env, r);
 	relation = get_Cmp_relation(cmp);
-	blk      = get_nodes_block(cmp);
-	db       = get_irn_dbg_info(cmp);
+	block    = get_nodes_block(cmp);
+	dbg      = get_irn_dbg_info(cmp);
+
+	/* easy case for x ==/!= 0 (see lower_Cond for details) */
+	if (ir_is_equality_cmp_0(cmp)) {
+		ir_graph *irg     = get_irn_irg(cmp);
+		ir_mode  *mode    = env->low_unsigned;
+		ir_node  *low     = new_r_Conv(block, lentry->low_word, mode);
+		ir_node  *high    = new_r_Conv(block, lentry->high_word, mode);
+		ir_node  *ornode  = new_rd_Or(dbg, block, low, high, mode);
+		ir_node  *new_cmp = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+		exchange(cmp, new_cmp);
+		return;
+	}
 
 	if (relation == ir_relation_equal) {
 		/* simple case:a == b <==> a_h == b_h && a_l == b_l */
-		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
+		low  = new_rd_Cmp(dbg, block, lentry->low_word, rentry->low_word,
 		                  relation);
-		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
+		high = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
 		                  relation);
-		res  = new_rd_And(db, blk, low, high, mode_b);
+		res  = new_rd_And(dbg, block, low, high, mode_b);
 	} else if (relation == ir_relation_less_greater) {
 		/* simple case:a != b <==> a_h != b_h || a_l != b_l */
-		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
+		low  = new_rd_Cmp(dbg, block, lentry->low_word, rentry->low_word,
 		                  relation);
-		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
+		high = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
 		                  relation);
-		res = new_rd_Or(db, blk, low, high, mode_b);
+		res = new_rd_Or(dbg, block, low, high, mode_b);
 	} else {
 		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
-		ir_node *high1 = new_rd_Cmp(db, blk, lentry->high_word,
+		ir_node *high1 = new_rd_Cmp(dbg, block, lentry->high_word,
 			rentry->high_word, relation & ~ir_relation_equal);
-		low  = new_rd_Cmp(db, blk, lentry->low_word, rentry->low_word,
+		low  = new_rd_Cmp(dbg, block, lentry->low_word, rentry->low_word,
 		                  relation);
-		high = new_rd_Cmp(db, blk, lentry->high_word, rentry->high_word,
+		high = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
 		                  ir_relation_equal);
-		t = new_rd_And(db, blk, low, high, mode_b);
-		res = new_rd_Or(db, blk, high1, t, mode_b);
+		t = new_rd_And(dbg, block, low, high, mode_b);
+		res = new_rd_Or(dbg, block, high1, t, mode_b);
 	}
 	exchange(cmp, res);
 }
@@ -2152,10 +2189,12 @@ static void lower_node(lower_env_t *env, ir_node *node)
 		lower_node(env, block);
 	}
 
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		ir_node *pred = get_irn_n(node, i);
-		lower_node(env, pred);
+	if (!is_Cond(node)) {
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node *pred = get_irn_n(node, i);
+			lower_node(env, pred);
+		}
 	}
 
 	op   = get_irn_op(node);
