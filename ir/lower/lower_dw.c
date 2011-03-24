@@ -982,25 +982,6 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env)
 	set_lowered(env, node, res_low, res_high);
 }
 
-static bool is_cmp_0_equality(ir_node *cmp)
-{
-	ir_relation relation = get_Cmp_relation(cmp);
-	ir_node    *right    = get_Cmp_right(cmp);
-	ir_node    *left     = get_Cmp_right(cmp);
-	ir_mode    *mode     = get_irn_mode(left);
-	/* assume constants are normalized to the right side */
-	if (!is_Const(right) || !is_Const_null(right))
-		return false;
-	/* assume unordered bites have been optimized away */
-	if (relation == ir_relation_equal)
-		return true;
-	if (mode_is_signed(mode) && relation == ir_relation_less_greater)
-		return true;
-	if (relation == ir_relation_greater)
-		return true;
-	return false;
-}
-
 /**
  * Translate a Cond.
  */
@@ -1071,7 +1052,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	dbg      = get_irn_dbg_info(sel);
 	relation = get_Cmp_relation(sel);
 
-	if (is_cmp_0_equality(sel)) {
+	if (ir_is_equality_cmp_0(sel)) {
 		/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
 		ir_mode *mode   = env->low_unsigned;
 		ir_node *low    = new_r_Conv(block, lentry->low_word, mode);

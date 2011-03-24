@@ -3107,6 +3107,38 @@ static ir_node *transform_bitwise_distributive(ir_node *n,
 	return n;
 }
 
+int ir_is_equality_cmp_0(const ir_node *node)
+{
+	ir_relation relation = get_Cmp_relation(node);
+	ir_node    *left     = get_Cmp_left(node);
+	ir_node    *right    = get_Cmp_right(node);
+	ir_mode    *mode     = get_irn_mode(left);
+
+	/* this probably makes no sense if unordered is involved */
+	assert(!mode_is_float(mode));
+
+	if (!is_Const(right) || !is_Const_null(right))
+		return false;
+	if (relation == ir_relation_equal)
+		return true;
+	if (mode_is_signed(mode) && relation == ir_relation_less_greater)
+		return true;
+	if (relation == ir_relation_greater)
+		return true;
+	return false;
+}
+
+/**
+ * Create a 0 constant of given mode.
+ */
+static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
+{
+	ir_tarval *tv   = get_mode_null(mode);
+	ir_node   *cnst = new_r_Const(irg, tv);
+
+	return cnst;
+}
+
 /**
  * Transform an And.
  */
@@ -3118,12 +3150,13 @@ static ir_node *transform_node_And(ir_node *n)
 	ir_mode *mode;
 	vrp_attr *a_vrp, *b_vrp;
 
-	/* we can combine the relations of two compares with the same operands */
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node *a_left  = get_Cmp_left(a);
 		ir_node *a_right = get_Cmp_left(a);
 		ir_node *b_left  = get_Cmp_left(b);
 		ir_node *b_right = get_Cmp_right(b);
+		/* we can combine the relations of two compares with the same
+		 * operands */
 		if (a_left == b_left && b_left == b_right) {
 			dbg_info   *dbgi         = get_irn_dbg_info(n);
 			ir_node    *block        = get_nodes_block(n);
@@ -3131,6 +3164,22 @@ static ir_node *transform_node_And(ir_node *n)
 			ir_relation b_relation   = get_Cmp_relation(b);
 			ir_relation new_relation = a_relation & b_relation;
 			return new_rd_Cmp(dbgi, block, a_left, a_right, new_relation);
+		}
+		/* Cmp(a, 0) and Cmp(b,0) can be optimized to Cmp(a|b, 0) */
+		if (ir_is_equality_cmp_0(a) && ir_is_equality_cmp_0(b)
+				&& (get_Cmp_relation(a) & ir_relation_equal) == (get_Cmp_relation(b) & ir_relation_equal)) {
+			dbg_info    *dbgi     = get_irn_dbg_info(n);
+			ir_node     *block    = get_nodes_block(n);
+			ir_relation  relation = get_Cmp_relation(a);
+			ir_mode     *mode     = get_irn_mode(a_left);
+			ir_node     *n_b_left = b_left;
+			if (get_irn_mode(n_b_left) != mode) {
+				n_b_left = new_rd_Conv(dbgi, block, b_left, mode);
+			}
+			ir_node     *or       = new_rd_Or(dbgi, block, a_left, b_left, mode);
+			ir_graph    *irg      = get_irn_irg(n);
+			ir_node     *zero     = create_zero_const(irg, mode);
+			return new_rd_Cmp(dbgi, block, or, zero, relation);
 		}
 	}
 
@@ -3775,17 +3824,6 @@ static bool is_single_bit(const ir_node *node)
 		return tarval_is_single_bit(tv);
 	}
 	return false;
-}
-
-/**
- * Create a 0 constant of given mode.
- */
-static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
-{
-	ir_tarval *tv   = get_mode_null(mode);
-	ir_node   *cnst = new_r_Const(irg, tv);
-
-	return cnst;
 }
 
 /**
