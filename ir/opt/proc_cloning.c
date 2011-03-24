@@ -57,7 +57,7 @@
  */
 typedef struct quadruple {
 	ir_entity *ent;     /**< The entity of our Call. */
-	int       pos;      /**< Position of a constant argument of our Call. */
+	size_t    pos;      /**< Position of a constant argument of our Call. */
 	ir_tarval *tv;      /**< The tarval of this argument if Const node. */
 	ir_node   **calls;  /**< The list of all calls with the same characteristics */
 } quadruple_t;
@@ -95,9 +95,9 @@ static int entry_cmp(const void *elt, const void *key)
  *
  * @param entry  The element to be hashed.
  */
-static int hash_entry(const entry_t *entry)
+static unsigned hash_entry(const entry_t *entry)
 {
-	return HASH_PTR(entry->q.ent) ^ HASH_PTR(entry->q.tv) ^ (entry->q.pos * 9);
+	return HASH_PTR(entry->q.ent) ^ HASH_PTR(entry->q.tv) ^ (unsigned)(entry->q.pos * 9);
 }
 
 /**
@@ -123,7 +123,7 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 	ir_type *mtp;
 	entry_t *key, *entry;
 	ir_node *call_param;
-	int i, n_params;
+	size_t i, n_params;
 
 	n_params = get_Call_n_params(call);
 
@@ -138,8 +138,8 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 
 	/* In this for loop we collect the calls, that have
 	   an constant parameter. */
-	for (i = n_params - 1; i >= 0; --i) {
-		call_param = get_Call_param(call, i);
+	for (i = n_params; i > 0;) {
+		call_param = get_Call_param(call, --i);
 		if (is_Const(call_param)) {
 			/* we have found a Call to collect and we save the informations,
 			   which we need.*/
@@ -213,11 +213,11 @@ static void collect_irg_calls(ir_node *call, void *env)
  * @param pos The "pos" from our quadruplet.
  * @param nr  A counter for the clones.
  */
-static ident *get_clone_ident(ident *id, int pos, unsigned nr)
+static ident *get_clone_ident(ident *id, size_t pos, size_t nr)
 {
 	char clone_postfix[32];
 
-	snprintf(clone_postfix, sizeof(clone_postfix), "_cl_%d_%u", pos, nr);
+	ir_snprintf(clone_postfix, sizeof(clone_postfix), "_cl_%zu_%zu", pos, nr);
 
 	return id_mangle(id, new_id_from_str(clone_postfix));
 }
@@ -272,7 +272,7 @@ static void set_preds(ir_node *irn, void *env)
 	irn_copy = (ir_node*)get_irn_link(irn);
 
 	if (is_Block(irn)) {
-		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; i--) {
+		for (i = get_Block_n_cfgpreds(irn) - 1; i >= 0; --i) {
 			pred = get_Block_cfgpred(irn, i);
 			/* "End" block must be handled extra, because it is not matured.*/
 			if (get_irg_end_block(current_ir_graph) == irn)
@@ -303,7 +303,7 @@ static void set_preds(ir_node *irn, void *env)
  * @param irg  irg that must be cloned.
  * @param pos  The position of the argument.
  */
-static ir_node *get_irg_arg(ir_graph *irg, int pos)
+static ir_node *get_irg_arg(ir_graph *irg, size_t pos)
 {
 	ir_node *irg_args = get_irg_args(irg), *arg = NULL;
 	int i;
@@ -318,7 +318,7 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos)
 			if (arg) {
 				/*
 				 * More than one arg node found:
-				 * We rely on the fact the only one arg exists, so do
+				 * We rely on the fact that only one arg exists, so do
 				 * a cheap CSE in this case.
 				 */
 				set_irn_out(irg_args, i, arg, 0);
@@ -338,7 +338,7 @@ static ir_node *get_irg_arg(ir_graph *irg, int pos)
  * @param ent The entity of the method that must be cloned.
  * @param q   Our quadruplet.
  */
-static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q)
+static void create_clone_proc_irg(ir_entity *ent, const quadruple_t *q)
 {
 	ir_graph *method_irg, *clone_irg;
 	ir_node *arg, *const_arg;
@@ -375,10 +375,10 @@ static void create_clone_proc_irg(ir_entity *ent, quadruple_t *q)
  * @param ent The entity of the clone.
  * @param nr  A pointer to the counter of clones.
  **/
-static void change_entity_type(quadruple_t *q, ir_entity *ent)
+static void change_entity_type(const quadruple_t *q, ir_entity *ent)
 {
 	ir_type *mtp, *new_mtp, *tp;
-	int     i, j, n_params, n_ress;
+	size_t  i, j, n_params, n_ress;
 
 	mtp      = get_entity_type(q->ent);
 	n_params = get_method_n_params(mtp);
@@ -390,11 +390,11 @@ static void change_entity_type(quadruple_t *q, ir_entity *ent)
 
 	/* We must set the type of the methods parameters.*/
 	for (i = j = 0; i < n_params; ++i) {
-		if (i == q->pos)
-		/* This is the position of the argument, that we have
-		replaced. */
-		continue;
-
+		if (i == q->pos) {
+			/* This is the position of the argument, that we have
+			   replaced. */
+			continue;
+		}
 		tp = get_method_param_type(mtp, i);
 		set_method_param_type(new_mtp, j++, tp);
 	}
@@ -411,13 +411,13 @@ static void change_entity_type(quadruple_t *q, ir_entity *ent)
  *
  * @param q   Contains information for the method to clone.
  */
-static ir_entity *clone_method(quadruple_t *q)
+static ir_entity *clone_method(const quadruple_t *q)
 {
 	ir_entity *new_entity;
 	ident *clone_ident;
 	symconst_symbol sym;
 	/* A counter for the clones.*/
-	static unsigned nr = 0;
+	static size_t nr = 0;
 
 	/* We get a new ident for our clone method.*/
 	clone_ident = get_clone_ident(get_entity_ident(q->ent), q->pos, nr);
@@ -453,10 +453,10 @@ static ir_entity *clone_method(quadruple_t *q)
  * @param new_entity  The entity of the cloned function.
  * @param pos         The position of the replaced parameter of this call.
  **/
-static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
+static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, size_t pos)
 {
 	ir_node **in;
-	int i, n_params, new_params = 0;
+	size_t i, n_params, new_params = 0;
 	ir_node *callee;
 	symconst_symbol sym;
 	ir_graph *irg = get_irn_irg(call);
@@ -470,7 +470,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
 
 	/* we save the parameters of the new call in the array "in" without the
 	 * parameter in position "pos", that is replaced with a constant.*/
-	for (i = 0; i < n_params; i++){
+	for (i = 0; i < n_params; ++i) {
 		if (pos != i)
 			in[new_params++] = get_Call_param(call, i);
 	}
@@ -488,7 +488,7 @@ static ir_node *new_cl_Call(ir_node *call, ir_entity *new_entity, int pos)
  */
 static void exchange_calls(quadruple_t *q, ir_entity *cloned_ent)
 {
-	int pos = q->pos;
+	size_t pos = q->pos;
 	ir_node *new_call, *call;
 	size_t i;
 
@@ -598,6 +598,11 @@ void proc_cloning(float threshold)
 	size_t i, n;
 	q_set hmap;
 
+	DEBUG_ONLY(firm_dbg_module_t *dbg;)
+
+	/* register a debug mask */
+	FIRM_DBG_REGISTER(dbg, "firm.opt.proc_cloning");
+
 	obstack_init(&hmap.obst);
 	hmap.map        = NULL;
 	hmap.heavy_uses = NULL;
@@ -652,18 +657,22 @@ void proc_cloning(float threshold)
 			hmap.map = NULL;
 		}
 
+#ifdef DEBUG_libfirm
 		/* Print some information about the list. */
-		printf("-----------------\n");
+		DB((dbg, LEVEL_2, "-----------------\n"));
 		for (entry = hmap.heavy_uses; entry; entry = entry->next) {
-			printf("\nweight: is %f\n", entry->weight);
-			ir_printf("Call for Method %E\n", entry->q.ent);
-			printf("Position %i\n", entry->q.pos);
-			ir_printf("Value %T\n", entry->q.tv);
+			DB((dbg, LEVEL_2, "\nweight: is %f\n", entry->weight));
+			DB((dbg, LEVEL_2, "Call for Method %E\n", entry->q.ent));
+			DB((dbg, LEVEL_2, "Position %zu\n", entry->q.pos));
+			DB((dbg, LEVEL_2, "Value %T\n", entry->q.tv));
 		}
-
+#endif
 		entry = hmap.heavy_uses;
 		if (entry) {
-			ir_entity *ent = clone_method(&entry->q);
+			quadruple_t *qp = &entry->q;
+
+			ir_entity *ent = clone_method(qp);
+			DB((dbg, LEVEL_1, "Cloned <%+F, %zu, %T> info %+F\n", qp->ent, qp->pos, qp->tv, ent));
 
 			hmap.heavy_uses = entry->next;
 
