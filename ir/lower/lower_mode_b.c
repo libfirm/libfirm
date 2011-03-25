@@ -278,14 +278,14 @@ static ir_node *lower_node(ir_node *node)
 	}
 
 	case iro_Cmp: {
-		ir_node *left  = get_Cmp_left(node);
-		ir_node *right = get_Cmp_right(node);
-		ir_mode *cmp_mode  = get_irn_mode(left);
+		ir_node    *left     = get_Cmp_left(node);
+		ir_node    *right    = get_Cmp_right(node);
+		ir_mode    *cmp_mode = get_irn_mode(left);
+		ir_relation relation = get_Cmp_relation(node);
 
 		if ((mode_is_int(cmp_mode) || mode_is_reference(cmp_mode)) &&
 			(get_mode_size_bits(cmp_mode) < get_mode_size_bits(mode) ||
-			(mode_is_signed(cmp_mode) && is_Const(right) && is_Const_null(right)))) {
-			ir_relation relation = get_Cmp_relation(node);
+			(mode_is_signed(cmp_mode) && is_Const(right) && is_Const_null(right) && relation != ir_relation_greater))) {
 			int         need_not = 0;
 			ir_node    *a        = NULL;
 			ir_node    *b        = NULL;
