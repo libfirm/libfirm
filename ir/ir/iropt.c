@@ -3121,11 +3121,11 @@ int ir_is_equality_cmp_0(const ir_node *node)
 		return false;
 	if (relation == ir_relation_equal)
 		return true;
-	if (mode_is_signed(mode) && relation == ir_relation_less_greater)
-		return true;
-	if (relation == ir_relation_greater)
-		return true;
-	return false;
+	if (mode_is_signed(mode)) {
+		return relation == ir_relation_less_greater;
+	} else {
+		return relation == ir_relation_greater;
+	}
 }
 
 /**
