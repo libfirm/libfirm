@@ -3036,7 +3036,7 @@ static ir_node *create_CMov(ir_node *node, ir_node *flags, ir_node *new_flags,
 			match_commutative | match_am | match_16bit_am | match_mode_neutral);
 
 	if (am.ins_permuted)
-		cc = ia32_invert_condition_code(cc);
+		cc = ia32_negate_condition_code(cc);
 
 	new_node = new_bd_ia32_CMovcc(dbgi, new_block, addr->base, addr->index,
 	                              addr->mem, am.new_op1, am.new_op2, new_flags,
