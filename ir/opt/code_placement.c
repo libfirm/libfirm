@@ -518,10 +518,15 @@ static void place_late(ir_graph *irg, waitq *worklist)
 	}
 }
 
-/* Code Placement. */
 void place_code(ir_graph *irg)
 {
 	waitq *worklist;
+
+	/* perform gcse which currently only works immediately before performing
+	 * code placement (we should fix this) */
+	set_opt_global_cse(1);
+	optimize_graph_df(irg);
+	set_opt_global_cse(0);
 
 	remove_critical_cf_edges(irg);
 
@@ -529,11 +534,7 @@ void place_code(ir_graph *irg)
 	assert(get_irg_phase_state(irg) != phase_building);
 	assure_irg_outs(irg);
 	assure_doms(irg);
-
-	if (1 || get_irg_loopinfo_state(irg) != loopinfo_consistent) {
-		free_loop_information(irg);
-		construct_cf_backedges(irg);
-	}
+	assure_cf_loop(irg);
 
 	/* Place all floating nodes as early as possible. This guarantees
 	 a legal code placement. */
@@ -557,10 +558,7 @@ void place_code(ir_graph *irg)
  */
 static void place_code_wrapper(ir_graph *irg)
 {
-	set_opt_global_cse(1);
-	optimize_graph_df(irg);
 	place_code(irg);
-	set_opt_global_cse(0);
 }
 
 ir_graph_pass_t *place_code_pass(const char *name)
