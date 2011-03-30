@@ -1158,15 +1158,14 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 				if (mode != NULL) {
 					size_t offset_bits
 						= get_entity_offset_bits_remainder(member);
-					size_t value_len = get_mode_size_bits(mode);
 
-					if (offset_bits != 0 ||
-						(value_len != 8 && value_len != 16 && value_len != 32
-						 && value_len != 64) ||
-						(is_Primitive_type(subtype) && get_primitive_base_type(subtype) != NULL)) {
+					if (is_Primitive_type(subtype)
+							&& get_primitive_base_type(subtype) != NULL) {
 						emit_bitfield(&vals[offset], offset_bits,
 						              sub_initializer, subtype);
 						continue;
+					} else {
+						assert(offset_bits == 0);
 					}
 				}
 
