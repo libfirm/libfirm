@@ -168,22 +168,8 @@ FIRM_API void escape_analysis(int run_scalar_replace,
  * graphs.
  *
  * If callee information is valid, we also optimize polymorphic Calls.
- *
- * @param force_run  if non-zero, an optimization run is started even
- *                   if no const function graph was detected.
- *                   Else calls are only optimized if at least one
- *                   const function graph was detected.
- * @param callback   a callback function to check whether a
- *                   given entity is a allocation call
- *
- * If the frontend created external entities with the irg_const_function
- * property set, the force_run parameter should be set, else
- * should be unset.
- *
- * @note This optimization destroys the link fields of nodes.
  */
-FIRM_API void optimize_funccalls(int force_run,
-                                 check_alloc_entity_func callback);
+FIRM_API void optimize_funccalls(void);
 
 /**
  * Creates an ir_prog pass for optimize_funccalls().
@@ -198,9 +184,7 @@ FIRM_API void optimize_funccalls(int force_run,
  *
  * @return  the newly created ir_prog pass
  */
-FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name,
-                                                 int force_run,
-                                                 check_alloc_entity_func callback);
+FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name);
 
 /**
  * Does Partial Redundancy Elimination combined with

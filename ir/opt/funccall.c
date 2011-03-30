@@ -58,9 +58,6 @@ typedef struct env_t {
 	ir_node  *proj_list;                /**< The list of all potential Proj nodes that must be fixed. */
 } env_t;
 
-/** If non-null, evaluates entities for being a heap alloc. */
-static check_alloc_entity_func is_alloc_entity = NULL;
-
 /** Ready IRG's are marked in the ready set. */
 static unsigned *ready_set;
 
@@ -679,16 +676,9 @@ static int is_malloc_call_result(const ir_node *node)
 		/* Firm style high-level allocation */
 		return 1;
 	}
-	if (is_alloc_entity != NULL && is_Call(node)) {
-		ir_node *ptr = get_Call_ptr(node);
-
-		if (is_Global(ptr)) {
-			ir_entity *ent = get_Global_entity(ptr);
-			return is_alloc_entity(ent);
-		}
-	}
+	/* TODO: check mtp_malloc */
 	return 0;
-}  /* is_malloc_call_result */
+}
 
 /**
  * Update a property depending on a call property.
@@ -994,16 +984,15 @@ static void check_for_possible_endless_loops(ir_graph *irg)
 /*
  * optimize function calls by handling const functions
  */
-void optimize_funccalls(int force_run, check_alloc_entity_func callback)
+void optimize_funccalls(void)
 {
 	size_t i, n;
 	int last_idx;
+	env_t  ctx;
 	size_t num_const   = 0;
 	size_t num_pure    = 0;
 	size_t num_nothrow = 0;
 	size_t num_malloc  = 0;
-
-	is_alloc_entity = callback;
 
 	/* prepare: mark all graphs as not analyzed */
 	last_idx  = get_irp_last_idx();
@@ -1027,16 +1016,10 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 
 	/* second step: remove exception edges: this must be done before the
 	   detection of const and pure functions take place. */
-	if (force_run || num_nothrow > 0) {
-		env_t ctx;
-
-		handle_nothrow_Calls(&ctx);
-		DB((dbg, LEVEL_1, "Detected %zu nothrow graphs, %zu malloc graphs.\n", num_nothrow, num_malloc));
-		DB((dbg, LEVEL_1, "Optimizes %zu(SymConst) + %zu(Sel) calls to nothrow functions.\n",
-			ctx.n_calls_SymConst, ctx.n_calls_Sel));
-	} else {
-		DB((dbg, LEVEL_1, "No graphs without side effects detected\n"));
-	}
+	handle_nothrow_Calls(&ctx);
+	DB((dbg, LEVEL_1, "Detected %zu nothrow graphs, %zu malloc graphs.\n", num_nothrow, num_malloc));
+	DB((dbg, LEVEL_1, "Optimizes %zu(SymConst) + %zu(Sel) calls to nothrow functions.\n",
+		ctx.n_calls_SymConst, ctx.n_calls_Sel));
 
 	rbitset_clear_all(ready_set, last_idx);
 	rbitset_clear_all(busy_set, last_idx);
@@ -1057,54 +1040,23 @@ void optimize_funccalls(int force_run, check_alloc_entity_func callback)
 		}
 	}
 
-	if (force_run || num_const > 0) {
-		env_t ctx;
+	handle_const_Calls(&ctx);
+	DB((dbg, LEVEL_1, "Detected %zu const graphs, %zu pure graphs.\n", num_const, num_pure));
+	DB((dbg, LEVEL_1, "Optimizes %u(SymConst) + %u(Sel) calls to const functions.\n",
+		   ctx.n_calls_SymConst, ctx.n_calls_Sel));
 
-		handle_const_Calls(&ctx);
-		DB((dbg, LEVEL_1, "Detected %zu const graphs, %zu pure graphs.\n", num_const, num_pure));
-		DB((dbg, LEVEL_1, "Optimizes %u(SymConst) + %u(Sel) calls to const functions.\n",
-		       ctx.n_calls_SymConst, ctx.n_calls_Sel));
-	} else {
-		DB((dbg, LEVEL_1, "No graphs without side effects detected\n"));
-	}
 	xfree(busy_set);
 	xfree(ready_set);
-}  /* optimize_funccalls */
+}
 
 /* initialize the funccall optimization */
 void firm_init_funccalls(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.opt.funccalls");
-}  /* firm_init_funccalls */
-
-typedef struct pass_t {
-	ir_prog_pass_t          pass;
-	int                     force_run;
-	check_alloc_entity_func callback;
-} pass_t;
-
-/**
- * Wrapper for running optimize_funccalls() as an ir_prog pass.
- */
-static int pass_wrapper(ir_prog *irp, void *context)
-{
-	pass_t *pass = (pass_t*)context;
-
-	(void)irp;
-	optimize_funccalls(pass->force_run, pass->callback);
-	return 0;
-}  /* pass_wrapper */
+}
 
 /* Creates an ir_prog pass for optimize_funccalls. */
-ir_prog_pass_t *optimize_funccalls_pass(
-	const char *name,
-	int force_run, check_alloc_entity_func callback)
+ir_prog_pass_t *optimize_funccalls_pass(const char *name)
 {
-	struct pass_t *pass = XMALLOCZ(struct pass_t);
-
-	pass->force_run = force_run;
-	pass->callback  = callback;
-
-	return def_prog_pass_constructor(
-		&pass->pass, name ? name : "funccall", pass_wrapper);
-}  /* optimize_funccalls_pass */
+	return def_prog_pass(name ? name : "funccall", optimize_funccalls);
+}
