@@ -221,8 +221,8 @@ static void memory_operand_walker(ir_node *irn, void *env)
 	if (get_irn_n_edges(irn) == 0) {
 		ir_graph *irg = get_irn_irg(irn);
 		sched_remove(irn);
-		set_irn_n(irn, be_pos_Reload_mem, new_r_Bad(irg));
-		set_irn_n(irn, be_pos_Reload_frame, new_r_Bad(irg));
+		set_irn_n(irn, n_be_Reload_mem, new_r_Bad(irg));
+		set_irn_n(irn, n_be_Reload_frame, new_r_Bad(irg));
 	}
 }
 

@@ -661,7 +661,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		Set the register class of the call address to
 		the backend provided class (default: stack pointer class)
 	*/
-	be_node_set_reg_class_in(low_call, be_pos_Call_ptr, call->cls_addr);
+	be_node_set_reg_class_in(low_call, n_be_Call_ptr, call->cls_addr);
 
 	DBG((dbg, LEVEL_3, "\tcreated backend call %+F\n", low_call));
 
@@ -671,7 +671,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		be_abi_call_arg_t *arg = get_call_arg(call, 0, index, 0);
 		assert(arg->reg != NULL);
 
-		be_set_constr_single_reg_in(low_call, be_pos_Call_first_arg + i,
+		be_set_constr_single_reg_in(low_call, n_be_Call_first_arg + i,
 		                            arg->reg, arch_register_req_type_none);
 	}
 

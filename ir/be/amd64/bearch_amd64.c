@@ -157,7 +157,7 @@ static void transform_Reload(ir_node *node)
 	ir_node   *block  = get_nodes_block(node);
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *ptr    = get_irg_frame(irg);
-	ir_node   *mem    = get_irn_n(node, be_pos_Reload_mem);
+	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
 	ir_mode   *mode   = get_irn_mode(node);
 	ir_entity *entity = be_get_frame_entity(node);
 	const arch_register_t *reg;
@@ -185,7 +185,7 @@ static void transform_Spill(ir_node *node)
 	dbg_info  *dbgi   = get_irn_dbg_info(node);
 	ir_node   *ptr    = get_irg_frame(irg);
 	ir_node   *mem    = new_r_NoMem(irg);
-	ir_node   *val    = get_irn_n(node, be_pos_Spill_val);
+	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
 	//ir_mode   *mode   = get_irn_mode(val);
 	ir_entity *entity = be_get_frame_entity(node);
 	ir_node   *sched_point;

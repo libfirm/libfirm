@@ -3953,8 +3953,8 @@ static ir_node *gen_be_FrameAddr(ir_node *node)
 static ir_node *gen_be_Return(ir_node *node)
 {
 	ir_graph  *irg         = current_ir_graph;
-	ir_node   *ret_val     = get_irn_n(node, be_pos_Return_val);
-	ir_node   *ret_mem     = get_irn_n(node, be_pos_Return_mem);
+	ir_node   *ret_val     = get_irn_n(node, n_be_Return_val);
+	ir_node   *ret_mem     = get_irn_n(node, n_be_Return_mem);
 	ir_node   *new_ret_val = be_transform_node(ret_val);
 	ir_node   *new_ret_mem = be_transform_node(ret_mem);
 	ir_entity *ent         = get_irg_entity(irg);
@@ -4030,8 +4030,8 @@ static ir_node *gen_be_Return(ir_node *node)
  */
 static ir_node *gen_be_AddSP(ir_node *node)
 {
-	ir_node *sz = get_irn_n(node, be_pos_AddSP_size);
-	ir_node *sp = get_irn_n(node, be_pos_AddSP_old_sp);
+	ir_node *sz = get_irn_n(node, n_be_AddSP_size);
+	ir_node *sp = get_irn_n(node, n_be_AddSP_old_sp);
 
 	ir_node *new_node = gen_binop(node, sp, sz, new_bd_ia32_SubSP,
 	                              match_am | match_immediate);
@@ -4046,8 +4046,8 @@ static ir_node *gen_be_AddSP(ir_node *node)
  */
 static ir_node *gen_be_SubSP(ir_node *node)
 {
-	ir_node *sz = get_irn_n(node, be_pos_SubSP_size);
-	ir_node *sp = get_irn_n(node, be_pos_SubSP_old_sp);
+	ir_node *sz = get_irn_n(node, n_be_SubSP_size);
+	ir_node *sp = get_irn_n(node, n_be_SubSP_old_sp);
 
 	ir_node *new_node = gen_binop(node, sp, sz, new_bd_ia32_AddSP,
 	                              match_am | match_immediate);
@@ -4687,10 +4687,10 @@ static ir_node *gen_be_Call(ir_node *node)
 	dbg_info       *const dbgi      = get_irn_dbg_info(node);
 	ir_node        *const src_block = get_nodes_block(node);
 	ir_node        *const block     = be_transform_node(src_block);
-	ir_node        *const src_mem   = get_irn_n(node, be_pos_Call_mem);
-	ir_node        *const src_sp    = get_irn_n(node, be_pos_Call_sp);
+	ir_node        *const src_mem   = get_irn_n(node, n_be_Call_mem);
+	ir_node        *const src_sp    = get_irn_n(node, n_be_Call_sp);
 	ir_node        *const sp        = be_transform_node(src_sp);
-	ir_node        *const src_ptr   = get_irn_n(node, be_pos_Call_ptr);
+	ir_node        *const src_ptr   = get_irn_n(node, n_be_Call_ptr);
 	ia32_address_mode_t   am;
 	ia32_address_t *const addr      = &am.addr;
 	ir_node        *      mem;
@@ -4730,7 +4730,7 @@ static ir_node *gen_be_Call(ir_node *node)
 
 	i    = get_irn_arity(node) - 1;
 	fpcw = be_transform_node(get_irn_n(node, i--));
-	for (; i >= be_pos_Call_first_arg; --i) {
+	for (; i >= n_be_Call_first_arg; --i) {
 		arch_register_req_t const *const req = arch_get_register_req(node, i);
 		ir_node *const reg_parm = be_transform_node(get_irn_n(node, i));
 

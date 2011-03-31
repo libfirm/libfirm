@@ -991,7 +991,7 @@ static void transform_to_Load(ir_node *node)
 	ir_node *noreg       = ia32_new_NoReg_gp(irg);
 	ir_node *sched_point = NULL;
 	ir_node *ptr         = get_irg_frame(irg);
-	ir_node *mem         = get_irn_n(node, be_pos_Reload_mem);
+	ir_node *mem         = get_irn_n(node, n_be_Reload_mem);
 	ir_node *new_op, *proj;
 	const arch_register_t *reg;
 
@@ -1045,12 +1045,12 @@ static void transform_to_Store(ir_node *node)
 	dbg_info *dbg  = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
 	ir_entity *ent = be_get_frame_entity(node);
-	const ir_node *spillval = get_irn_n(node, be_pos_Spill_val);
+	const ir_node *spillval = get_irn_n(node, n_be_Spill_val);
 	ir_mode *mode  = get_spill_mode(spillval);
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
 	ir_node *nomem = new_r_NoMem(irg);
 	ir_node *ptr   = get_irg_frame(irg);
-	ir_node *val   = get_irn_n(node, be_pos_Spill_val);
+	ir_node *val   = get_irn_n(node, n_be_Spill_val);
 	ir_node *store;
 	ir_node *sched_point = NULL;
 

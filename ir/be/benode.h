@@ -75,8 +75,8 @@ void be_init_op(void);
  * Position numbers for the be_Spill inputs.
  */
 enum {
-	be_pos_Spill_frame = 0,
-	be_pos_Spill_val   = 1
+	n_be_Spill_frame = 0,
+	n_be_Spill_val   = 1
 };
 
 /**
@@ -90,8 +90,8 @@ ir_node *be_new_Spill(const arch_register_class_t *cls,
  * Position numbers for the be_Reload inputs.
  */
 enum {
-	be_pos_Reload_frame = 0,
-	be_pos_Reload_mem   = 1
+	n_be_Reload_frame = 0,
+	n_be_Reload_mem   = 1
 };
 
 /**
@@ -105,7 +105,7 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
  * Position numbers for the be_Copy inputs.
  */
 enum {
-	be_pos_Copy_op = 0
+	n_be_Copy_op = 0
 };
 
 /**
@@ -156,7 +156,7 @@ void be_Keep_add_node(ir_node *keep, const arch_register_class_t *cls,
  * Position numbers for the be_FrameAddr inputs
  */
 enum {
-	be_pos_FrameAddr_ptr = 0
+	n_be_FrameAddr_ptr = 0
 };
 
 /** Create a new FrameAddr node. */
@@ -172,9 +172,9 @@ ir_entity *be_get_FrameAddr_entity(const ir_node *node);
  * Position numbers for the be_AddSP inputs
  */
 enum {
-	be_pos_AddSP_old_sp = 0,
-	be_pos_AddSP_size   = 1,
-	be_pos_AddSP_last   = 2
+	n_be_AddSP_old_sp = 0,
+	n_be_AddSP_size   = 1,
+	n_be_AddSP_last   = 2
 };
 
 enum {
@@ -203,9 +203,9 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *block,
  * Position numbers for the be_SubSP inputs
  */
 enum {
-	be_pos_SubSP_old_sp = 0,
-	be_pos_SubSP_size   = 1,
-	be_pos_SubSP_last   = 2
+	n_be_SubSP_old_sp = 0,
+	n_be_SubSP_size   = 1,
+	n_be_SubSP_last   = 2
 };
 
 enum {
@@ -282,10 +282,10 @@ unsigned be_Call_get_pop(const ir_node *call);
  * Position numbers for the be_Call inputs.
  */
 enum {
-	be_pos_Call_mem       = 0,  /**< memory input of a be_Call node */
-	be_pos_Call_sp        = 1,  /**< stack pointer input of a be_Call node */
-	be_pos_Call_ptr       = 2,  /**< call pointer input of a be_Call node */
-	be_pos_Call_first_arg = 3   /**< first argument input of a be_Call node */
+	n_be_Call_mem       = 0,  /**< memory input of a be_Call node */
+	n_be_Call_sp        = 1,  /**< stack pointer input of a be_Call node */
+	n_be_Call_ptr       = 2,  /**< call pointer input of a be_Call node */
+	n_be_Call_first_arg = 3   /**< first argument input of a be_Call node */
 };
 
 /**
@@ -321,9 +321,9 @@ ir_node *be_new_Call(dbg_info *dbg, ir_graph *irg, ir_node *block, ir_node *mem,
  * Position numbers for the be_Return inputs.
  */
 enum {
-	be_pos_Return_mem  = 0,     /**< memory input of a be_Return node */
-	be_pos_Return_sp   = 1,     /**< stack pointer input of a be_Return node */
-	be_pos_Return_val  = 2,     /**< first "real" return value if any */
+	n_be_Return_mem  = 0,     /**< memory input of a be_Return node */
+	n_be_Return_sp   = 1,     /**< stack pointer input of a be_Return node */
+	n_be_Return_val  = 2,     /**< first "real" return value if any */
 };
 
 /**
@@ -393,7 +393,7 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert,
                    ir_mode *mode, ir_node *spill);
 
 enum {
-	be_pos_CopyKeep_op = 0
+	n_be_CopyKeep_op = 0
 };
 ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *block,
                          ir_node *src, int n, ir_node *in_keep[],
