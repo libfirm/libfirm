@@ -1151,7 +1151,7 @@ static void transform_MemPerm(ir_node *node)
 {
 	ir_node         *block = get_nodes_block(node);
 	ir_graph        *irg   = get_irn_irg(node);
-	ir_node         *sp    = be_abi_get_ignore_irn(be_get_irg_abi(irg), &ia32_registers[REG_ESP]);
+	ir_node         *sp    = be_abi_get_ignore_irn(irg, &ia32_registers[REG_ESP]);
 	int              arity = be_get_MemPerm_entity_arity(node);
 	ir_node        **pops  = ALLOCAN(ir_node*, arity);
 	ir_node         *in[1];

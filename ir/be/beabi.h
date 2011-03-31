@@ -190,8 +190,8 @@ void be_abi_transform_fixup(ir_graph *irg);
 
 void be_abi_free(ir_graph *irg);
 
-ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg);
-ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg);
+ir_node *be_abi_get_callee_save_irn(ir_graph *irg, const arch_register_t *reg);
+ir_node *be_abi_get_ignore_irn(ir_graph *irg, const arch_register_t *reg);
 
 static inline ir_node *be_abi_reg_map_get(pmap *map, const arch_register_t *reg)
 {

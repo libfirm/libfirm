@@ -2267,15 +2267,17 @@ void be_set_allocatable_regs(const ir_graph *irg,
 	}
 }
 
-ir_node *be_abi_get_callee_save_irn(be_abi_irg_t *abi, const arch_register_t *reg)
+ir_node *be_abi_get_callee_save_irn(ir_graph *irg, const arch_register_t *reg)
 {
+	const be_abi_irg_t *abi = be_get_irg_abi(irg);
 	assert(reg->type & arch_register_type_callee_save);
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }
 
-ir_node *be_abi_get_ignore_irn(be_abi_irg_t *abi, const arch_register_t *reg)
+ir_node *be_abi_get_ignore_irn(ir_graph *irg, const arch_register_t *reg)
 {
+	const be_abi_irg_t *abi = be_get_irg_abi(irg);
 	assert(reg->type & arch_register_type_ignore);
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return (ir_node*)pmap_get(abi->regs, (void *) reg);

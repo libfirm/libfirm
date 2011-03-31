@@ -251,7 +251,7 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 	env.state_nodes = NEW_ARR_F(ir_node*, 0);
 	irg_walk_graph(irg, collect_fpu_mode_nodes_walker, NULL, &env);
 
-	initial_value = be_abi_get_ignore_irn(be_get_irg_abi(irg), reg);
+	initial_value = be_abi_get_ignore_irn(irg, reg);
 
 	/* nothing needs to be done, in fact we must not continue as for endless
 	 * loops noone is using the initial_value and it will point to a bad node

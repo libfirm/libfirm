@@ -1042,7 +1042,7 @@ static ir_node *get_fpcw(void)
 	if (initial_fpcw != NULL)
 		return initial_fpcw;
 
-	fpcw         = be_abi_get_ignore_irn(be_get_irg_abi(current_ir_graph),
+	fpcw         = be_abi_get_ignore_irn(current_ir_graph,
 	                                     &ia32_registers[REG_FPCW]);
 	initial_fpcw = be_transform_node(fpcw);
 
