@@ -246,9 +246,7 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	struct obstack *obst;
 	int i;
 
-	edges_deactivate(irg);
-	edges_activate(irg);
-	compute_doms(irg);
+	assure_doms(irg);
 
 	stat_ev_tim_push();
 	phase_init(&res->ph, irg, init_block_data);
@@ -261,19 +259,6 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 	res->back_edge_src = bitset_obstack_alloc(obst, res->n_blocks);
 	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
 	res->map           = OALLOCNZ(obst, bl_info_t*, res->n_blocks);
-
-#if 0
-	{
-		char name[256];
-		FILE *f;
-		ir_snprintf(name, sizeof(name), "dfs_%F.dot", irg);
-		if ((f = fopen(name, "wt")) != NULL) {
-			dfs_dump(res->dfs, f);
-			fclose(f);
-		}
-		dump_ir_block_graph(irg, "-lvchk");
-	}
-#endif
 
 	/* fill the map which maps pre_num to block infos */
 	for (i = res->n_blocks - 1; i >= 0; --i) {
@@ -313,178 +298,6 @@ void lv_chk_free(lv_chk_t *lv)
 	phase_deinit(&lv->ph);
 	xfree(lv);
 }
-
-#if 0
-/**
- * Check if a node is live at the end of a block.
- * This function is for internal use as its code is shared between
- * the in/end routines below. It is almost the "live_end" routine
- * but passing in the bitset for recording the blocks where the variable
- * is used saves some effort in the "live_in" routine. See below for
- * details.
- *
- * @param lv    The liveness check environment.
- * @param what  The node to check for.
- * @param bl    The block under investigation.
- * @param uses  A bitset where this routine records all ids of blocks
- *              where this variable is used. Note that the bitset
- *              is only guaranteed to be filled if the node was not
- *              live at the end of the block.
- * @return      1, if @p what is live at the end at @p bl.
- */
-unsigned lv_chk_bl_in_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
-{
-	ir_node *def_bl;
-	const ir_edge_t *edge;
-
-	stat_ev_cnt_decl(uses);
-
-	int res = 0;
-
-	assert(is_Block(bl) && "can only check for liveness in a block");
-
-	if (!is_liveness_node(var))
-		return 0;
-
-	def_bl = get_nodes_block(var);
-	if (def_bl == bl || !block_dominates(def_bl, bl)) {
-		goto end;
-	}
-
-	else {
-		bitset_t *uses = bitset_alloca(lv->n_blocks);
-		bitset_t *tmp  = bitset_alloca(lv->n_blocks);
-		int min_dom    = get_Block_dom_tree_pre_num(def_bl) + 1;
-		int max_dom    = get_Block_dom_max_subtree_pre_num(def_bl);
-		bl_info_t *bli = get_block_info(lv, bl);
-		int i;
-
-		DBG((lv->dbg, LEVEL_2, "lv check of %+F, def=%+F,%d != q=%+F,%d\n",
-					var, def_bl, min_dom - 1, bl, bli->id));
-
-		foreach_out_edge (var, edge) {
-			ir_node *user = get_edge_src_irn(edge);
-			ir_node *use_bl;
-			bl_info_t *bi;
-
-			if (!is_liveness_node(user))
-				continue;
-
-			stat_ev_cnt_inc(uses);
-			use_bl = get_nodes_block(user);
-			if (is_Phi(user)) {
-				int pos = get_edge_src_pos(edge);
-				use_bl  = get_Block_cfgpred_block(use_bl, pos);
-			}
-
-			if (use_bl == bl) {
-				res = lv_chk_state_in;
-				DBG((lv->dbg, LEVEL_2, "\tuse directly in block %+F by %+F\n", use_bl, user));
-				goto end;
-			}
-
-			bi = get_block_info(lv, use_bl);
-			bitset_set(uses, bi->id);
-		}
-
-		DBG((lv->dbg, LEVEL_2, "\tuses: %B\n", uses));
-
-		{
-
-			bitset_copy(tmp, bli->be_tgt_reach);
-			bitset_set(tmp, bli->id);
-
-			DBG((lv->dbg, LEVEL_2, "\tbe tgt reach: %B, dom span: [%d, %d]\n", tmp, min_dom, max_dom));
-			for (i = bitset_next_set(tmp, min_dom); i >= 0 && i <= max_dom; i = bitset_next_set(tmp, i + 1)) {
-				bl_info_t *ti = lv->map[i];
-				DBG((lv->dbg, LEVEL_2, "\tlooking from %d: seeing %B\n", ti->id, ti->red_reachable));
-				if (bitset_intersect(ti->red_reachable, uses)) {
-					res = lv_chk_state_in;
-					goto end;
-				}
-
-				bitset_andnot(tmp, ti->red_reachable);
-			}
-		}
-	}
-
-end:
-	return res;
-}
-
-unsigned lv_chk_bl_end_mask(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
-{
-	ir_node *def_bl;
-	const ir_edge_t *edge;
-
-	stat_ev_cnt_decl(uses);
-
-	int res = 0;
-
-	assert(is_Block(bl) && "can only check for liveness in a block");
-
-	if (!is_liveness_node(var))
-		return 0;
-
-	def_bl = get_nodes_block(var);
-	if (!block_dominates(def_bl, bl)) {
-		goto end;
-	} else {
-		bitset_t *uses = bitset_alloca(lv->n_blocks);
-		bitset_t *tmp  = bitset_alloca(lv->n_blocks);
-		int min_dom    = get_Block_dom_tree_pre_num(def_bl) + 1;
-		int max_dom    = get_Block_dom_max_subtree_pre_num(def_bl);
-		bl_info_t *bli = get_block_info(lv, bl);
-		int i;
-
-		DBG((lv->dbg, LEVEL_2, "lv end check of %+F, def=%+F,%d != q=%+F,%d\n",
-					var, def_bl, min_dom - 1, bl, bli->id));
-
-		foreach_out_edge (var, edge) {
-			ir_node *user = get_edge_src_irn(edge);
-			ir_node *use_bl;
-			bl_info_t *bi;
-
-			if (!is_liveness_node(user))
-				continue;
-
-			stat_ev_cnt_inc(uses);
-			use_bl = get_nodes_block(user);
-			if (is_Phi(user)) {
-				int pos = get_edge_src_pos(edge);
-				use_bl  = get_Block_cfgpred_block(use_bl, pos);
-
-				if (bl == use_bl)
-					res |= lv_chk_state_end;
-			}
-
-			bi = get_block_info(lv, use_bl);
-			if (use_bl != bl || bitset_is_set(lv->back_edge_tgt, bi->id))
-				bitset_set(uses, bi->id);
-		}
-
-		DBG((lv->dbg, LEVEL_2, "\tuses: %B\n", uses));
-
-		bitset_copy(tmp, bli->be_tgt_reach);
-		bitset_set(tmp, bli->id);
-
-		DBG((lv->dbg, LEVEL_2, "\tbe tgt reach + current: %B, dom span: [%d, %d]\n", tmp, min_dom, max_dom));
-		for (i = bitset_next_set(tmp, min_dom); i >= 0 && i <= max_dom; i = bitset_next_set(tmp, i + 1)) {
-			bl_info_t *ti = lv->map[i];
-			DBG((lv->dbg, LEVEL_2, "\tlooking from %d: seeing %B\n", ti->id, ti->red_reachable));
-			if (bitset_intersect(ti->red_reachable, uses)) {
-				res = lv_chk_state_out | lv_chk_state_end;
-				goto end;
-			}
-
-			bitset_andnot(tmp, ti->red_reachable);
-		}
-	}
-
-end:
-	return res;
-}
-#endif
 
 /**
  * Check a nodes liveness situation of a block.
