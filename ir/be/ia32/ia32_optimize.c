@@ -283,7 +283,7 @@ static void peephole_ia32_Test(ir_node *node)
 			if (get_irn_n_edges(left) != 2) {
 				ir_node *res = new_r_Proj(left, mode_Iu, pn_ia32_res);
 
-				edges_reroute(left, res, current_ir_graph);
+				edges_reroute(left, res);
 				/* Reattach the result proj to left */
 				set_Proj_pred(res, left);
 			}

@@ -1494,7 +1494,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_graph *irg,
 		restore_optimization_state(&state);
 
 		/* reroute all edges to the new memory source */
-		edges_reroute(imem, nmem, irg);
+		edges_reroute(imem, nmem);
 
 		store   = NULL;
 		mem     = imem;

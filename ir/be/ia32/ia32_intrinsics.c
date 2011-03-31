@@ -70,9 +70,8 @@ void ia32_handle_intrinsics(void)
  * @param proj   the pn_Call_T_result Proj
  * @param l_res  the lower 32 bit result
  * @param h_res  the upper 32 bit result or NULL
- * @param irg    the graph to replace on
  */
-static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res, ir_graph *irg)
+static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res)
 {
 	const ir_edge_t *edge, *next;
 
@@ -81,9 +80,9 @@ static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res, ir_gra
 		long    pn    = get_Proj_proj(proj);
 
 		if (pn == 0) {
-			edges_reroute(proj, l_res, irg);
+			edges_reroute(proj, l_res);
 		} else if (pn == 1 && h_res != NULL) {
-			edges_reroute(proj, h_res, irg);
+			edges_reroute(proj, h_res);
 		} else {
 			panic("Unsupported Result-Proj from Call found");
 		}
@@ -126,19 +125,19 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 				set_opt_cse(0);
 				jmp = new_r_Jmp(block);
 				set_opt_cse(old_cse);
-				edges_reroute(proj, jmp, irg);
+				edges_reroute(proj, jmp);
 				break;
 
 			case pn_Call_X_except:
 				/* should not happen here */
-				edges_reroute(proj, bad, irg);
+				edges_reroute(proj, bad);
 				break;
 			case pn_Call_M:
 				/* should not happen here */
-				edges_reroute(proj, nomem, irg);
+				edges_reroute(proj, nomem);
 				break;
 			case pn_Call_T_result:
-				reroute_result(proj, l_res, h_res, irg);
+				reroute_result(proj, l_res, h_res);
 				break;
 			default:
 				panic("Wrong Proj from Call");

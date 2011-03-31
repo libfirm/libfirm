@@ -82,9 +82,9 @@ void exchange(ir_node *old, ir_node *nw)
 		/* copy all dependencies from old to new */
 		add_irn_deps(nw, old);
 
-		edges_reroute(old, nw, irg);
-		edges_reroute_kind(old, nw, EDGE_KIND_DEP, irg);
-		edges_node_deleted(old, irg);
+		edges_reroute(old, nw);
+		edges_reroute_kind(old, nw, EDGE_KIND_DEP);
+		edges_node_deleted(old);
 		/* noone is allowed to reference this node anymore */
 		set_irn_op(old, op_Deleted);
 	} else {

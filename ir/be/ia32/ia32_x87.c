@@ -1222,7 +1222,7 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				arch_set_irn_register(rproj, op2);
 
 				/* reroute all former users of the store memory to the load memory */
-				edges_reroute(mem, mproj, irg);
+				edges_reroute(mem, mproj);
 				/* set the memory input of the load to the store memory */
 				set_irn_n(vfld, n_ia32_vfld_mem, mem);
 

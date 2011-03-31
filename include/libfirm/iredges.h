@@ -112,7 +112,7 @@ FIRM_API int get_edge_src_pos(const ir_edge_t *edge);
  * @return      The corresponding edge object or NULL,
  *              if no such edge exists.
  */
-FIRM_API const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *irn,
+FIRM_API const ir_edge_t *get_irn_edge_kind(const ir_node *irn,
                                             int pos, ir_edge_kind_t kind);
 
 /**
@@ -155,10 +155,8 @@ FIRM_API void edges_deactivate_kind(ir_graph *irg, ir_edge_kind_t kind);
  * @param old   the old node
  * @param nw    the new node
  * @param kind  the edge kind
- * @param irg   the graph on which the rerouting occurs
  */
-FIRM_API void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind,
-                                 ir_graph *irg);
+FIRM_API void edges_reroute_kind(ir_node *old, ir_node *nw, ir_edge_kind_t kind);
 
 /**
  * Verifies the out edges of graph @p irg.
@@ -188,7 +186,7 @@ FIRM_API void edges_init_dbg(int do_dbg);
 FIRM_API ir_graph_pass_t *irg_verify_edges_pass(const char *name,
                                                 unsigned assert_on_problem);
 
-#define edges_reroute(old, nw, irg)                     edges_reroute_kind(old, nw, EDGE_KIND_NORMAL, irg)
+#define edges_reroute(old, nw)                      edges_reroute_kind(old, nw, EDGE_KIND_NORMAL)
 #define edges_activated(irg)                            (edges_activated_kind(irg, EDGE_KIND_NORMAL) && edges_activated_kind(irg, EDGE_KIND_BLOCK))
 
 #ifndef get_irn_n_edges
@@ -243,13 +241,7 @@ FIRM_API int edges_assure(ir_graph *irg);
  */
 FIRM_API int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind);
 
-FIRM_API void edges_node_deleted(ir_node *irn, ir_graph *irg);
-
-/**
- * Notify normal and block edges.
- */
-FIRM_API void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
-                                ir_node *old_tgt, ir_graph *irg);
+FIRM_API void edges_node_deleted(ir_node *irn);
 
 /**
  * Walks only over Block nodes in the graph. Uses the block visited

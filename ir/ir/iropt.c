@@ -6222,7 +6222,7 @@ ir_node *identify_remember(ir_node *n)
 
 	if (nn != n) {
 		/* n is reachable again */
-		edges_node_revival(nn, get_irn_irg(nn));
+		edges_node_revival(nn);
 	}
 
 	return nn;
@@ -6386,7 +6386,7 @@ ir_node *optimize_node(ir_node *n)
 	   Run always for transformation induced Bads. */
 	n = gigo(n);
 	if (n != oldn) {
-		edges_node_deleted(oldn, irg);
+		edges_node_deleted(oldn);
 
 		/* We found an existing, better node, so we can deallocate the old node. */
 		irg_kill_node(irg, oldn);
@@ -6417,7 +6417,7 @@ ir_node *optimize_node(ir_node *n)
 				memcpy(oldn->in, n->in, ARR_LEN(n->in) * sizeof(n->in[0]));
 
 				/* note the inplace edges module */
-				edges_node_deleted(n, irg);
+				edges_node_deleted(n);
 
 				/* evaluation was successful -- replace the node. */
 				irg_kill_node(irg, n);
@@ -6448,7 +6448,7 @@ ir_node *optimize_node(ir_node *n)
 		n = identify_cons(n);
 
 	if (n != oldn) {
-		edges_node_deleted(oldn, irg);
+		edges_node_deleted(oldn);
 
 		/* We found an existing, better node, so we can deallocate the old node. */
 		irg_kill_node(irg, oldn);

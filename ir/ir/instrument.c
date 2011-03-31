@@ -93,7 +93,7 @@ void instrument_initcall(ir_graph *irg, ir_entity *ent)
 	new_mem = new_r_Proj(call, mode_M, pn_Call_M);
 
 	initial_mem = get_irg_initial_mem(irg);
-	edges_reroute(initial_mem, new_mem, irg);
+	edges_reroute(initial_mem, new_mem);
 	/* beware: reroute routes anchor edges also, revert this */
 	set_irg_initial_mem(irg, initial_mem);
 	set_Call_mem(call, initial_mem);

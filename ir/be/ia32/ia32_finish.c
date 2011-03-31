@@ -110,7 +110,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 
 		/* exchange the add and the sub */
-		edges_reroute(irn, res, irg);
+		edges_reroute(irn, res);
 
 		/* add to schedule */
 		sched_add_before(irn, res);
@@ -148,7 +148,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			set_ia32_commutative(res);
 
 			/* exchange the add and the sub */
-			edges_reroute(irn, res, irg);
+			edges_reroute(irn, res);
 
 			/* add to schedule */
 			sched_add_before(irn, res);

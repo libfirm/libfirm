@@ -142,21 +142,12 @@ static size_t edges_private_size = 0;
  */
 static int edges_dbg = 0;
 
-#ifdef DEBUG_libfirm
-/* a static variable holding the last number assigned to a new edge */
-static long last_edge_num = -1;
-#endif
-
 /**
  * Returns an ID for the given edge.
  */
 static inline long edge_get_id(const ir_edge_t *e)
 {
-#ifdef DEBUG_libfirm
-	return e->edge_nr;
-#else /* DEBUG_libfirm */
 	return (long)e;
-#endif /* DEBUG_libfirm */
 }
 
 /**
@@ -234,8 +225,9 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind)
  * @return      The corresponding edge object or NULL,
  *              if no such edge exists.
  */
-const ir_edge_t *get_irn_edge_kind(ir_graph *irg, const ir_node *src, int pos, ir_edge_kind_t kind)
+const ir_edge_t *get_irn_edge_kind(const ir_node *src, int pos, ir_edge_kind_t kind)
 {
+	ir_graph *irg = get_irn_irg(src);
 	if (edges_activated_kind(irg, kind)) {
 		irg_edge_info_t *info = _get_irg_edge_info(irg, kind);
 		ir_edge_t       key;
@@ -259,27 +251,6 @@ static inline void edge_change_cnt(ir_node *tgt, ir_edge_kind_t kind, int ofs)
 {
 	irn_edge_info_t *info = _get_irn_edge_info(tgt, kind);
 	info->out_count += ofs;
-
-#if 0
-	ir_graph *irg = get_irn_irg(tgt);
-	assert(info->out_count >= 0);
-	if (info->out_count == 0 && kind == EDGE_KIND_NORMAL) {
-		/* tgt lost its last user */
-		int i;
-
-		for (i = get_irn_arity(tgt) - 1; i >= -1; --i) {
-			ir_node *prev = get_irn_n(tgt, i);
-
-			edges_notify_edge(tgt, i, NULL, prev, irg);
-		}
-		for (i = get_irn_deps(tgt) - 1; i >= 0; --i) {
-			ir_node *prev = get_irn_dep(tgt, i);
-
-			edges_notify_edge_kind(tgt, i, NULL, prev, EDGE_KIND_DEP, irg);
-
-		}
-	}
-#endif
 }
 
 /**
@@ -375,9 +346,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			edge->invalid = 1;
 			edge->pos = -2;
 			edge->src = NULL;
-#ifdef DEBUG_libfirm
-			edge->edge_nr = -1;
-#endif /* DEBUG_libfirm */
 			edge_change_cnt(old_tgt, kind, -1);
 		} else {
 			/* If the edge was not found issue a warning on the debug stream */
@@ -425,7 +393,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 			edge->list.next = NULL;
 			edge->list.prev = NULL;
 			memset(edge + 1, 0, edges_private_size);
-			DEBUG_ONLY(edge->src_nr = get_irn_node_nr(src));
 
 			new_edge = ir_edgeset_insert(edges, edge);
 			if (new_edge != edge) {
@@ -434,7 +401,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 			msg = "adding";
 			list_add(&edge->list, head);
-			DEBUG_ONLY(edge->edge_nr = ++last_edge_num);
 		}
 
 		edge_change_cnt(tgt, kind, +1);
@@ -453,7 +419,8 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	DBG((dbg, LEVEL_5, "announce out edge: %+F %d-> %+F(%+F): %s\n", src, pos, tgt, old_tgt, msg));
 }
 
-void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir_graph *irg)
+void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
+                       ir_graph *irg)
 {
 	if (edges_activated_kind(irg, EDGE_KIND_NORMAL)) {
 		edges_notify_edge_kind(src, pos, tgt, old_tgt, EDGE_KIND_NORMAL, irg);
@@ -477,9 +444,10 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt, ir
  * @param kind  the kind of edges to remove
  * @param irg   the irg of the old node
  */
-static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph *irg)
+static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind)
 {
 	int i, n;
+	ir_graph *irg = get_irn_irg(old);
 
 	if (!edges_activated_kind(irg, kind))
 		return;
@@ -499,10 +467,11 @@ static void edges_node_deleted_kind(ir_node *old, ir_edge_kind_t kind, ir_graph 
  * @param kind  the kind of edges to remove
  * @param irg   the irg of the old node
  */
-static void edges_node_revival_kind(ir_node *irn, ir_edge_kind_t kind, ir_graph *irg)
+static void edges_node_revival_kind(ir_node *irn, ir_edge_kind_t kind)
 {
 	irn_edge_info_t *info;
 	int             i, n;
+	ir_graph        *irg = get_irn_irg(irn);
 
 	if (!edges_activated_kind(irg, kind))
 		return;
@@ -521,7 +490,6 @@ static void edges_node_revival_kind(ir_node *irn, ir_edge_kind_t kind, ir_graph 
 }
 
 typedef struct build_walker {
-	ir_graph       *irg;
 	ir_edge_kind_t kind;
 	bitset_t       *reachable;
 	unsigned       problem_found;
@@ -535,7 +503,7 @@ static void build_edges_walker(ir_node *irn, void *data)
 	build_walker          *w = (build_walker*)data;
 	int                   i, n;
 	ir_edge_kind_t        kind = w->kind;
-	ir_graph              *irg = w->irg;
+	ir_graph              *irg = get_irn_irg(irn);
 	get_edge_src_n_func_t *get_n;
 
 	get_n = edge_kind_info[kind].get_n;
@@ -642,7 +610,6 @@ void edges_activate_kind(ir_graph *irg, ir_edge_kind_t kind)
 	irg_edge_info_t     *info = _get_irg_edge_info(irg, kind);
 	visitor_info_t      visit;
 
-	w.irg  = irg;
 	w.kind = kind;
 
 	visit.data = &w;
@@ -689,8 +656,9 @@ int (edges_activated_kind)(const ir_graph *irg, ir_edge_kind_t kind)
  *             sent to.
  * @param irg  The graph.
  */
-void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind, ir_graph *irg)
+void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind)
 {
+	ir_graph *irg = get_irn_irg(from);
 	set_edge_func_t *set_edge = edge_kind_info[kind].set_edge;
 
 	if (set_edge && edges_activated_kind(irg, kind)) {
@@ -709,7 +677,8 @@ void edges_reroute_kind(ir_node *from, ir_node *to, ir_edge_kind_t kind, ir_grap
 static void verify_set_presence(ir_node *irn, void *data)
 {
 	build_walker *w     = (build_walker*)data;
-	ir_edgeset_t *edges = &_get_irg_edge_info(w->irg, w->kind)->edges;
+	ir_graph     *irg   = get_irn_irg(irn);
+	ir_edgeset_t *edges = &_get_irg_edge_info(irg, w->kind)->edges;
 	int i, n;
 
 	foreach_tgt(irn, i, n, w->kind) {
@@ -723,10 +692,6 @@ static void verify_set_presence(ir_node *irn, void *data)
 			e->present = 1;
 		} else {
 			w->problem_found = 1;
-#if 0
-			ir_fprintf(stderr, "Edge Verifier: edge %+F,%d -> %+F (kind: \"%s\") is missing\n",
-				irn, i, get_n(irn, i, w->kind), get_kind_str(w->kind));
-#endif
 		}
 	}
 }
@@ -746,10 +711,6 @@ static void verify_list_presence(ir_node *irn, void *data)
 
 		if (w->kind == EDGE_KIND_NORMAL && get_irn_arity(e->src) <= e->pos) {
 			w->problem_found = 1;
-#if 0
-			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F -> %+F recorded at src position %d, but src has arity %d\n",
-				edge_get_id(e), e->src, irn, e->pos, get_irn_arity(e->src));
-#endif
 			continue;
 		}
 
@@ -757,10 +718,6 @@ static void verify_list_presence(ir_node *irn, void *data)
 
 		if (irn != tgt) {
 			w->problem_found = 1;
-#if 0
-			ir_fprintf(stderr, "Edge Verifier: edge(%ld) %+F,%d (kind \"%s\") is no out edge of %+F but of %+F\n",
-				edge_get_id(e), e->src, e->pos, get_kind_str(w->kind), irn, tgt);
-#endif
 		}
 	}
 }
@@ -772,7 +729,6 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
 	ir_edge_t           *e;
 	ir_edgeset_iterator_t  iter;
 
-	w.irg           = irg;
 	w.kind          = kind;
 	w.reachable     = bitset_alloca(get_irg_last_idx(irg));
 	w.problem_found = 0;
@@ -806,15 +762,17 @@ int edges_verify_kind(ir_graph *irg, ir_edge_kind_t kind)
  */
 static void clear_links(ir_node *irn, void *env)
 {
-	build_walker *w = (build_walker*)env;
 	bitset_t     *bs;
+	ir_graph     *irg;
+	(void) env;
 
 	if (IGNORE_NODE(irn)) {
 		set_irn_link(irn, NULL);
 		return;
 	}
 
-	bs = bitset_malloc(get_irg_last_idx(w->irg));
+	irg = get_irn_irg(irn);
+	bs  = bitset_malloc(get_irg_last_idx(irg));
 	set_irn_link(irn, bs);
 }
 
@@ -850,6 +808,7 @@ static void verify_edge_counter(ir_node *irn, void *env)
 	size_t                 idx;
 	const struct list_head *head;
 	const struct list_head *pos;
+	ir_graph               *irg;
 
 	if (IGNORE_NODE(irn))
 		return;
@@ -867,10 +826,11 @@ static void verify_edge_counter(ir_node *irn, void *env)
 
 	/* check all nodes that reference us and count edges that point number
 	 * of ins that actually point to us */
+	irg = get_irn_irg(irn);
 	ref_cnt = 0;
 	bitset_foreach(bs, idx) {
 		int i, arity;
-		ir_node *src = get_idx_irn(w->irg, idx);
+		ir_node *src = get_idx_irn(irg, idx);
 
 		arity = get_irn_arity(src);
 		for (i = 0; i < arity; ++i) {
@@ -890,26 +850,6 @@ static void verify_edge_counter(ir_node *irn, void *env)
 		w->problem_found = 1;
 		ir_fprintf(stderr, "Edge Verifier: %+F reachable by %d node(s), but the list contains %d edge(s)\n",
 			irn, ref_cnt, list_cnt);
-
-		/* Matze: buggy if a node has multiple ins pointing at irn */
-#if 0
-		list_for_each(pos, head) {
-			ir_edge_t *edge = list_entry(pos, ir_edge_t, list);
-			bitset_flip(bs, get_irn_idx(edge->src));
-		}
-
-		if (ref_cnt < list_cnt)
-			fprintf(stderr,"               following nodes are recorded in list, but not as user:\n");
-		else
-			fprintf(stderr,"               following nodes are user, but not recorded in list:\n");
-
-		fprintf(stderr,"              ");
-		bitset_foreach(bs, idx) {
-			ir_node *src = get_idx_irn(w->irg, idx);
-			ir_fprintf(stderr, " %+F", src);
-		}
-		fprintf(stderr, "\n");
-#endif
 	}
 
 	bitset_free(bs);
@@ -926,7 +866,6 @@ int edges_verify(ir_graph *irg)
 	/* verify normal edges only */
 	problem_found  = edges_verify_kind(irg, EDGE_KIND_NORMAL);
 
-	w.irg           = irg;
 	w.kind          = EDGE_KIND_NORMAL;
 	w.problem_found = 0;
 
@@ -1024,16 +963,16 @@ int edges_assure_kind(ir_graph *irg, ir_edge_kind_t kind)
 	return activated;
 }
 
-void edges_node_deleted(ir_node *irn, ir_graph *irg)
+void edges_node_deleted(ir_node *irn)
 {
-	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL, irg);
-	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK, irg);
+	edges_node_deleted_kind(irn, EDGE_KIND_NORMAL);
+	edges_node_deleted_kind(irn, EDGE_KIND_BLOCK);
 }
 
-void edges_node_revival(ir_node *irn, ir_graph *irg)
+void edges_node_revival(ir_node *irn)
 {
-	edges_node_revival_kind(irn, EDGE_KIND_NORMAL, irg);
-	edges_node_revival_kind(irn, EDGE_KIND_BLOCK, irg);
+	edges_node_revival_kind(irn, EDGE_KIND_NORMAL);
+	edges_node_revival_kind(irn, EDGE_KIND_BLOCK);
 }
 
 const ir_edge_t *(get_irn_out_edge_first_kind)(const ir_node *irn, ir_edge_kind_t kind)

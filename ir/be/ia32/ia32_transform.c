@@ -5804,7 +5804,7 @@ static void postprocess_fp_call_results(void)
 						new_mem = new_r_Proj(xld, mode_M, pn_ia32_xLoad_M);
 
 						if (old_mem != NULL) {
-							edges_reroute(old_mem, new_mem, current_ir_graph);
+							edges_reroute(old_mem, new_mem);
 							kill_node(old_mem);
 						}
 					}

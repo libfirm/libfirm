@@ -85,7 +85,7 @@ static void maybe_kill_node(ir_node *node)
 	}
 	set_nodes_block(node, new_r_Bad(irg));
 
-	edges_node_deleted(node, irg);
+	edges_node_deleted(node);
 }
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)

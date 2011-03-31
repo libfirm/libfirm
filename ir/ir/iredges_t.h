@@ -50,10 +50,6 @@ struct ir_edge_t {
 	unsigned present : 1;   /**< Used by the verifier. Don't rely on its content. */
 	unsigned kind    : 4;   /**< The kind of the edge. */
 	struct list_head list;  /**< The list head to queue all out edges at a node. */
-#ifdef DEBUG_libfirm
-	long src_nr;            /**< The node number of the source node. */
-	long edge_nr;           /**< A unique number identifying the edge. */
-#endif
 };
 
 
@@ -103,16 +99,7 @@ static inline const ir_edge_t *_get_irn_out_edge_next(const ir_node *irn, const 
 */
 static inline int _get_irn_n_edges_kind(const ir_node *irn, int kind)
 {
-	/* Perhaps out_count was buggy. This code does it more safely. */
-#if 0
-	int res = 0;
-	const struct list_head *pos, *head = _get_irn_outs_head(irn, kind);
-	list_for_each(pos, head)
-		res++;
-	return res;
-#else
 	return _get_irn_edge_info(irn, kind)->out_count;
-#endif
 }
 
 static inline int _edges_activated_kind(const ir_graph *irg, ir_edge_kind_t kind)
@@ -135,9 +122,9 @@ void edges_init_graph_kind(ir_graph *irg, ir_edge_kind_t kind);
 /**
  * A node might be revivaled by CSE.
  */
-void edges_node_revival(ir_node *node, ir_graph *irg);
+void edges_node_revival(ir_node *node);
 
-void edges_invalidate_kind(ir_node *irn, ir_edge_kind_t kind, ir_graph *irg);
+void edges_invalidate_kind(ir_node *irn, ir_edge_kind_t kind);
 
 /**
 * Register additional memory in an edge.
@@ -177,13 +164,19 @@ static inline int _get_edge_src_pos(const ir_edge_t *edge)
 */
 extern void init_edges(void);
 
-void edges_invalidate_all(ir_node *irn, ir_graph *irg);
+void edges_invalidate_all(ir_node *irn);
 
 /**
  * Helper function to dump the edge set of a graph,
  * unused in normal code.
  */
 void edges_dump_kind(ir_graph *irg, ir_edge_kind_t kind);
+
+/**
+ * Notify normal and block edges.
+ */
+void edges_notify_edge(ir_node *src, int pos, ir_node *tgt,
+                       ir_node *old_tgt, ir_graph *irg);
 
 #define get_irn_n_edges_kind(irn, kind)   _get_irn_n_edges_kind(irn, kind)
 #define get_edge_src_irn(edge)            _get_edge_src_irn(edge)
