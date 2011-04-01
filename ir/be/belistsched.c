@@ -61,9 +61,6 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
-/* we have prolog, "normal" and epilog */
-#define N_PRIORITY_CLASSES  3
-
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
 
 /**
@@ -82,27 +79,12 @@ typedef struct block_sched_env_t {
 	/** scheduling info per node, copied from the global scheduler object */
 	unsigned                    *scheduled;
 	/** the set of candidates */
-	ir_nodeset_t                 cands[N_PRIORITY_CLASSES];
+	ir_nodeset_t                 cands;
 	ir_node                     *block;     /**< the current block */
 	sched_env_t                 *sched_env; /**< the scheduler environment */
 	const list_sched_selector_t *selector;
 	void                        *selector_block_env;
 } block_sched_env_t;
-
-/**
- * map prolog/normal/epilog into 3 priority levels
- */
-static unsigned get_priority(const ir_node *node)
-{
-	arch_irn_flags_t flags = arch_irn_get_flags(node);
-	if (flags & arch_irn_flags_prolog) {
-		assert(! (flags & arch_irn_flags_epilog));
-		return 0;
-	} else if (flags & arch_irn_flags_epilog) {
-		return 2;
-	}
-	return 1;
-}
 
 /**
  * Returns non-zero if the node is already scheduled
@@ -139,8 +121,7 @@ static void node_ready(block_sched_env_t *env, ir_node *pred, ir_node *irn)
 		/* Keeps must be scheduled immediately */
 		add_to_sched(env, irn);
 	} else {
-		unsigned priority = get_priority(irn);
-		ir_nodeset_insert(&env->cands[priority], irn);
+		ir_nodeset_insert(&env->cands, irn);
 
 		/* Notify selector about the ready node. */
 		if (env->selector->node_ready)
@@ -212,8 +193,6 @@ static void selected(block_sched_env_t *env, ir_node *node)
  */
 static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 {
-	unsigned priority = get_priority(irn);
-
 	assert(! (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled));
 
 	sched_add_before(env->block, irn);
@@ -221,7 +200,7 @@ static void add_to_sched(block_sched_env_t *env, ir_node *irn)
 	DB((dbg, LEVEL_2, "\tschedule %+F\n", irn));
 
 	/* Remove the node from the ready set */
-	ir_nodeset_remove(&env->cands[priority], irn);
+	ir_nodeset_remove(&env->cands, irn);
 
 	selected(env, irn);
 }
@@ -244,7 +223,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 
 	block_sched_env_t be;
 	const ir_edge_t *edge;
-	unsigned p;
+	ir_nodeset_t *cands = &be.cands;
 
 	/* Initialize the block's list head that will hold the schedule. */
 	sched_init_block(block);
@@ -253,9 +232,7 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	be.block     = block;
 	be.selector  = selector;
 	be.sched_env = env;
-	for (p = 0; p < N_PRIORITY_CLASSES; ++p) {
-		ir_nodeset_init_size(&be.cands[p], get_irn_n_edges(block));
-	}
+	ir_nodeset_init_size(cands, get_irn_n_edges(block));
 
 	DB((dbg, LEVEL_1, "scheduling %+F\n", block));
 
@@ -279,29 +256,18 @@ static void list_sched_block(ir_node *block, void *env_ptr)
 	}
 
 	/* Iterate over all remaining nodes */
-	for (p = 0; p < N_PRIORITY_CLASSES; ++p) {
-		ir_nodeset_t *p_cands = &be.cands[p];
-		while (ir_nodeset_size(p_cands) > 0) {
-			ir_node *irn = be.selector->select(be.selector_block_env, p_cands);
-			DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
+	while (ir_nodeset_size(cands) > 0) {
+		ir_node *irn = be.selector->select(be.selector_block_env, cands);
+		DB((dbg, LEVEL_2, "\tpicked node %+F\n", irn));
 
-			/* remove the scheduled node from the ready list. */
-			ir_nodeset_remove(p_cands, irn);
-			/* Add the node to the schedule. */
-			add_to_sched(&be, irn);
-		}
+		/* remove the scheduled node from the ready list. */
+		ir_nodeset_remove(cands, irn);
+		/* Add the node to the schedule. */
+		add_to_sched(&be, irn);
 	}
 
 	if (selector->finish_block)
 		selector->finish_block(be.selector_block_env);
-
-	for (p = 0; p < N_PRIORITY_CLASSES; ++p) {
-		/** all cand lists should be empty. Otherwise there was some invalid
-		 * dependencies between priority classes (ie. priority 0 value depending
-		 * on a priority 1 value) */
-		assert(ir_nodeset_size(&be.cands[p]) == 0);
-		ir_nodeset_init_size(&be.cands[p], get_irn_n_edges(block));
-	}
 }
 
 /* List schedule a graph. */

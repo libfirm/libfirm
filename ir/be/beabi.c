@@ -98,8 +98,6 @@ struct be_abi_irg_t {
 
 	int                  start_block_bias; /**< The stack bias at the end of the start block. */
 
-	void                 *cb;           /**< ABI Callback self pointer. */
-
 	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
 
 	ir_node              **calls;       /**< flexible array containing all be_Call nodes */
@@ -1272,9 +1270,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 
 	be_abi_reg_map_set(reg_map, arch_env->sp, stack);
 
-	/* Make the Epilogue node and call the arch's epilogue maker. */
-	call->cb->epilogue(env->cb, bl, &mem, reg_map);
-
 	/*
 		Maximum size of the in array for Return nodes is
 		return args + callee save/ignore registers + memory + stack pointer
@@ -1319,7 +1314,6 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	/* we have to pop the shadow parameter in in case of struct returns */
 	pop = call->pop;
 	ret = be_new_Return(dbgi, irg, bl, n_res, pop, n, in);
-	arch_irn_add_flags(ret, arch_irn_flags_epilog);
 
 	/* Set the register classes of the return's parameter accordingly. */
 	for (i = 0; i < n; ++i) {
@@ -1744,10 +1738,10 @@ static void modify_irg(ir_graph *irg)
 		}
 	}
 
-	bet_type = call->cb->get_between_type(env->cb);
+	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
+	bet_type = call->cb->get_between_type(irg);
 	stack_frame_init(stack_layout, arg_type, bet_type,
 	                 get_irg_frame_type(irg), param_map);
-	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */
 	for (i = 0; i < n_params; ++i) {
@@ -1773,6 +1767,9 @@ static void modify_irg(ir_graph *irg)
 		}
 	}
 
+	fp_reg = call->flags.bits.try_omit_fp ? arch_env->sp : arch_env->bp;
+	rbitset_clear(birg->allocatable_regs, fp_reg->global_index);
+
 	/* handle start block here (place a jump in the block) */
 	fix_start_block(irg);
 
@@ -1780,17 +1777,15 @@ static void modify_irg(ir_graph *irg)
 	pmap_insert(env->regs, (void *) arch_env->bp, NULL);
 	start_bl   = get_irg_start_block(irg);
 	env->start = be_new_Start(NULL, start_bl, pmap_count(env->regs) + 1);
-	arch_irn_add_flags(env->start, arch_irn_flags_prolog);
 	set_irg_start(irg, env->start);
 
 	/*
 	 * make proj nodes for the callee save registers.
 	 * memorize them, since Return nodes get those as inputs.
 	 *
-	 * Note, that if a register corresponds to an argument, the regs map contains
-	 * the old Proj from start for that argument.
+	 * Note, that if a register corresponds to an argument, the regs map
+	 * contains the old Proj from start for that argument.
 	 */
-
 	rm = ALLOCAN(reg_node_map_t, pmap_count(env->regs));
 	reg_map_to_arr(rm, env->regs);
 	for (i = 0, n = pmap_count(env->regs); i < n; ++i) {
@@ -1801,7 +1796,10 @@ static void modify_irg(ir_graph *irg)
 		ir_node                  *proj;
 
 		if (reg == sp)
-			add_type |= arch_register_req_type_produces_sp | arch_register_req_type_ignore;
+			add_type |= arch_register_req_type_produces_sp;
+		if (!rbitset_is_set(birg->allocatable_regs, reg->global_index)) {
+			add_type |= arch_register_req_type_ignore;
+		}
 
 		assert(nr >= 0);
 		proj = new_r_Proj(env->start, mode, nr + 1);
@@ -1819,20 +1817,11 @@ static void modify_irg(ir_graph *irg)
 	mem = new_mem_proj;
 	set_irg_initial_mem(irg, mem);
 
-	/* Generate the Prologue */
-	fp_reg = call->cb->prologue(env->cb, &mem, env->regs, &stack_layout->initial_bias);
-
 	env->init_sp = be_abi_reg_map_get(env->regs, sp);
-	env->init_sp = be_new_IncSP(sp, start_bl, env->init_sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
-	arch_irn_add_flags(env->init_sp, arch_irn_flags_prolog);
-	be_abi_reg_map_set(env->regs, sp, env->init_sp);
 
-	env->init_sp = be_abi_reg_map_get(env->regs, sp);
-	arch_set_irn_register(env->init_sp, sp);
-
+	/* set new frame_pointer */
 	frame_pointer = be_abi_reg_map_get(env->regs, fp_reg);
 	set_irg_frame(irg, frame_pointer);
-	rbitset_clear(birg->allocatable_regs, fp_reg->global_index);
 
 	/* rewire old mem users to new mem */
 	exchange(old_mem, mem);
@@ -2118,9 +2107,9 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	ir_type          *method_type = get_entity_type(entity);
 	be_irg_t         *birg        = be_birg_from_irg(irg);
 	struct obstack   *obst        = &birg->obst;
+	ir_node          *dummy       = new_r_Dummy(irg,
+	                                            arch_env->sp->reg_class->mode);
 	unsigned          r;
-
-	ir_node *dummy;
 
 	/* determine allocatable registers */
 	assert(birg->allocatable_regs == NULL);
@@ -2144,7 +2133,7 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	env->call         = be_abi_call_new(arch_env->sp->reg_class);
 	arch_env_get_call_abi(arch_env, method_type, env->call);
 
-	env->init_sp = dummy = new_r_Dummy(irg, arch_env->sp->reg_class->mode);
+	env->init_sp = dummy;
 	env->calls   = NEW_ARR_F(ir_node*, 0);
 
 	if (options->pic) {
@@ -2153,12 +2142,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 
 	/* Lower all call nodes in the IRG. */
 	process_calls(irg);
-
-	/*
-		Beware: init backend abi call object after processing calls,
-		otherwise some information might be not yet available.
-	*/
-	env->cb = env->call->cb->init(env->call, irg);
 
 	/* Process the IRG */
 	modify_irg(irg);
@@ -2178,8 +2161,6 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	exchange(dummy, env->init_sp);
 	exchange(old_frame, get_irg_frame(irg));
 
-	env->call->cb->done(env->cb);
-	env->cb = NULL;
 	return env;
 }
 
@@ -2269,7 +2250,6 @@ ir_node *be_abi_get_callee_save_irn(ir_graph *irg, const arch_register_t *reg)
 ir_node *be_abi_get_ignore_irn(ir_graph *irg, const arch_register_t *reg)
 {
 	const be_abi_irg_t *abi = be_get_irg_abi(irg);
-	assert(reg->type & arch_register_type_ignore);
 	assert(pmap_contains(abi->regs, (void *) reg));
 	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }

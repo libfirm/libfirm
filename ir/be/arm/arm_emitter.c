@@ -134,16 +134,21 @@ static const arch_register_t *get_out_reg(const ir_node *node, int pos)
     return reg;
 }
 
+static void arm_emit_register(const arch_register_t *reg)
+{
+	be_emit_string(arch_register_get_name(reg));
+}
+
 void arm_emit_source_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_in_reg(node, pos);
-	be_emit_string(arch_register_get_name(reg));
+	arm_emit_register(reg);
 }
 
 void arm_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_out_reg(node, pos);
-	be_emit_string(arch_register_get_name(reg));
+	arm_emit_register(reg);
 }
 
 void arm_emit_offset(const ir_node *node)
@@ -739,11 +744,11 @@ static void emit_be_IncSP(const ir_node *irn)
 		be_emit_cstring(", ");
 		arm_emit_source_register(irn, 0);
 		be_emit_irprintf(", #0x%X", offs);
+		be_emit_finish_line_gas(irn);
 	} else {
 		/* omitted IncSP(0) */
 		return;
 	}
-	be_emit_finish_line_gas(irn);
 }
 
 static void emit_be_Copy(const ir_node *irn)
@@ -847,8 +852,39 @@ static void emit_be_MemPerm(const ir_node *node)
 	assert(sp_change == 0);
 }
 
+static void emit_be_Start(const ir_node *node)
+{
+	ir_graph *irg        = get_irn_irg(node);
+	ir_type  *frame_type = get_irg_frame_type(irg);
+	unsigned  size       = get_type_size_bytes(frame_type);
+
+	/* allocate stackframe */
+	if (size > 0) {
+		be_emit_cstring("\tsub ");
+		arm_emit_register(&arm_registers[REG_SP]);
+		be_emit_cstring(", ");
+		arm_emit_register(&arm_registers[REG_SP]);
+		be_emit_irprintf(", #0x%X", size);
+		be_emit_finish_line_gas(node);
+	}
+}
+
 static void emit_be_Return(const ir_node *node)
 {
+	ir_graph *irg        = get_irn_irg(node);
+	ir_type  *frame_type = get_irg_frame_type(irg);
+	unsigned  size       = get_type_size_bytes(frame_type);
+
+	/* deallocate stackframe */
+	if (size > 0) {
+		be_emit_cstring("\tadd ");
+		arm_emit_register(&arm_registers[REG_SP]);
+		be_emit_cstring(", ");
+		arm_emit_register(&arm_registers[REG_SP]);
+		be_emit_irprintf(", #0x%X", size);
+		be_emit_finish_line_gas(node);
+	}
+
 	be_emit_cstring("\tmov pc, lr");
 	be_emit_finish_line_gas(node);
 }
@@ -918,11 +954,11 @@ static void arm_register_emitters(void)
 	set_emitter(op_be_MemPerm,    emit_be_MemPerm);
 	set_emitter(op_be_Perm,       emit_be_Perm);
 	set_emitter(op_be_Return,     emit_be_Return);
+	set_emitter(op_be_Start,      emit_be_Start);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_Phi,           emit_nothing);
 	set_emitter(op_be_Keep,       emit_nothing);
-	set_emitter(op_be_Start,      emit_nothing);
 }
 
 /**

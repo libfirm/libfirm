@@ -99,7 +99,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 ir_mode         *ia32_mode_fpcw       = NULL;
 
 /** The current omit-fp state */
-static unsigned ia32_curr_fp_ommitted  = 0;
 static ir_type *omit_fp_between_type   = NULL;
 static ir_type *between_type           = NULL;
 static ir_entity *old_bp_ent           = NULL;
@@ -258,163 +257,11 @@ static int ia32_get_sp_bias(const ir_node *node)
 	if (is_ia32_Pop(node) || is_ia32_PopMem(node))
 		return -4;
 
-	if (is_ia32_Leave(node) || (be_is_Copy(node)
-	    && arch_get_irn_register(node) == &ia32_registers[REG_ESP])) {
+	if (is_ia32_Leave(node) || is_ia32_CopyEbpEsp(node)) {
 		return SP_BIAS_RESET;
 	}
 
 	return 0;
-}
-
-/**
- * Generate the routine prologue.
- *
- * @param self       The callback object.
- * @param mem        A pointer to the mem node. Update this if you define new memory.
- * @param reg_map    A map mapping all callee_save/ignore/parameter registers to their defining nodes.
- * @param stack_bias Points to the current stack bias, can be modified if needed.
- *
- * @return           The register which shall be used as a stack frame base.
- *
- * All nodes which define registers in @p reg_map must keep @p reg_map current.
- */
-static const arch_register_t *ia32_abi_prologue(void *self, ir_node **mem, pmap *reg_map, int *stack_bias)
-{
-	ia32_abi_env_t   *env      = (ia32_abi_env_t*)self;
-	ir_graph         *irg      = env->irg;
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
-
-	ia32_curr_fp_ommitted = env->flags.try_omit_fp;
-	if (! env->flags.try_omit_fp) {
-		ir_node  *bl      = get_irg_start_block(env->irg);
-		ir_node  *curr_sp = be_abi_reg_map_get(reg_map, arch_env->sp);
-		ir_node  *curr_bp = be_abi_reg_map_get(reg_map, arch_env->bp);
-		ir_node  *noreg   = ia32_new_NoReg_gp(irg);
-		ir_node  *push;
-
-		/* mark bp register as ignore */
-		be_set_constr_single_reg_out(get_Proj_pred(curr_bp),
-				get_Proj_proj(curr_bp), arch_env->bp, arch_register_req_type_ignore);
-
-		/* push ebp */
-		push    = new_bd_ia32_Push(NULL, bl, noreg, noreg, *mem, curr_bp, curr_sp);
-		arch_irn_add_flags(push, arch_irn_flags_prolog);
-		curr_sp = new_r_Proj(push, get_irn_mode(curr_sp), pn_ia32_Push_stack);
-		*mem    = new_r_Proj(push, mode_M, pn_ia32_Push_M);
-		set_irn_pinned(push, op_pin_state_pinned);
-
-		/* the push must have SP out register */
-		arch_set_irn_register(curr_sp, arch_env->sp);
-
-		/* this modifies the stack bias, because we pushed 32bit */
-		*stack_bias -= 4;
-
-		/* move esp to ebp */
-		curr_bp = be_new_Copy(arch_env->bp->reg_class, bl, curr_sp);
-		arch_irn_add_flags(curr_bp, arch_irn_flags_prolog);
-		be_set_constr_single_reg_out(curr_bp, 0, arch_env->bp,
-		                             arch_register_req_type_ignore);
-		set_irn_pinned(curr_bp, op_pin_state_pinned);
-
-		/* beware: the copy must be done before any other sp use */
-		curr_sp = be_new_CopyKeep_single(arch_env->sp->reg_class, bl, curr_sp, curr_bp, get_irn_mode(curr_sp));
-		arch_irn_add_flags(curr_sp, arch_irn_flags_prolog);
-		be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
-				                     arch_register_req_type_produces_sp);
-
-		be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
-		be_abi_reg_map_set(reg_map, arch_env->bp, curr_bp);
-
-		return arch_env->bp;
-	}
-
-	return arch_env->sp;
-}
-
-/**
- * Generate the routine epilogue.
- * @param self    The callback object.
- * @param bl      The block for the epilog
- * @param mem     A pointer to the mem node. Update this if you define new memory.
- * @param reg_map A map mapping all callee_save/ignore/parameter registers to their defining nodes.
- * @return        The register which shall be used as a stack frame base.
- *
- * All nodes which define registers in @p reg_map must keep @p reg_map current.
- */
-static void ia32_abi_epilogue(void *self, ir_node *bl, ir_node **mem, pmap *reg_map)
-{
-	ia32_abi_env_t   *env      = (ia32_abi_env_t*)self;
-	const arch_env_t *arch_env = be_get_irg_arch_env(env->irg);
-	ir_node          *curr_sp  = be_abi_reg_map_get(reg_map, arch_env->sp);
-	ir_node          *curr_bp  = be_abi_reg_map_get(reg_map, arch_env->bp);
-
-	if (env->flags.try_omit_fp) {
-		/* simply remove the stack frame here */
-		curr_sp = be_new_IncSP(arch_env->sp, bl, curr_sp, BE_STACK_FRAME_SIZE_SHRINK, 0);
-		arch_irn_add_flags(curr_sp, arch_irn_flags_epilog);
-		set_irn_pinned(curr_sp, op_pin_state_pinned);
-	} else {
-		ir_mode *mode_bp = arch_env->bp->reg_class->mode;
-
-		if (ia32_cg_config.use_leave) {
-			ir_node *leave;
-
-			/* leave */
-			leave   = new_bd_ia32_Leave(NULL, bl, curr_bp);
-			curr_bp = new_r_Proj(leave, mode_bp, pn_ia32_Leave_frame);
-			curr_sp = new_r_Proj(leave, get_irn_mode(curr_sp), pn_ia32_Leave_stack);
-			arch_irn_add_flags(leave, arch_irn_flags_epilog);
-			set_irn_pinned(leave, op_pin_state_pinned);
-		} else {
-			ir_node *pop;
-
-			/* copy ebp to esp */
-			curr_sp = be_new_Copy(&ia32_reg_classes[CLASS_ia32_gp], bl, curr_bp);
-			arch_set_irn_register(curr_sp, arch_env->sp);
-			be_set_constr_single_reg_out(curr_sp, 0, arch_env->sp,
-				                         arch_register_req_type_ignore);
-			arch_irn_add_flags(curr_sp, arch_irn_flags_epilog);
-			set_irn_pinned(curr_sp, op_pin_state_pinned);
-
-			/* pop ebp */
-			pop     = new_bd_ia32_PopEbp(NULL, bl, *mem, curr_sp);
-			curr_bp = new_r_Proj(pop, mode_bp, pn_ia32_Pop_res);
-			curr_sp = new_r_Proj(pop, get_irn_mode(curr_sp), pn_ia32_Pop_stack);
-			arch_irn_add_flags(pop, arch_irn_flags_epilog);
-			set_irn_pinned(pop, op_pin_state_pinned);
-
-			*mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
-		}
-		arch_set_irn_register(curr_sp, arch_env->sp);
-		arch_set_irn_register(curr_bp, arch_env->bp);
-	}
-
-	be_abi_reg_map_set(reg_map, arch_env->sp, curr_sp);
-	be_abi_reg_map_set(reg_map, arch_env->bp, curr_bp);
-}
-
-/**
- * Initialize the callback object.
- * @param call The call object.
- * @param irg  The graph with the method.
- * @return     Some pointer. This pointer is passed to all other callback functions as self object.
- */
-static void *ia32_abi_init(const be_abi_call_t *call, ir_graph *irg)
-{
-	ia32_abi_env_t      *env = XMALLOC(ia32_abi_env_t);
-	be_abi_call_flags_t  fl  = be_abi_call_get_flags(call);
-	env->flags = fl.bits;
-	env->irg   = irg;
-	return env;
-}
-
-/**
- * Destroy the callback object.
- * @param self The callback object.
- */
-static void ia32_abi_done(void *self)
-{
-	free(self);
 }
 
 /**
@@ -451,30 +298,31 @@ static void ia32_build_between_type(void)
  * it will contain the return address and space to store the old base pointer.
  * @return The Firm type modeling the ABI between type.
  */
-static ir_type *ia32_abi_get_between_type(void *self)
+static ir_type *ia32_abi_get_between_type(ir_graph *irg)
 {
-	ia32_abi_env_t *env = (ia32_abi_env_t*)self;
-
+	const be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	ia32_build_between_type();
-	return env->flags.try_omit_fp ? omit_fp_between_type : between_type;
+	return layout->sp_relative ? omit_fp_between_type : between_type;
 }
 
 /**
  * Return the stack entity that contains the return address.
  */
-ir_entity *ia32_get_return_address_entity(void)
+ir_entity *ia32_get_return_address_entity(ir_graph *irg)
 {
+	const be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	ia32_build_between_type();
-	return ia32_curr_fp_ommitted ? omit_fp_ret_addr_ent : ret_addr_ent;
+	return layout->sp_relative ? omit_fp_ret_addr_ent : ret_addr_ent;
 }
 
 /**
  * Return the stack entity that contains the frame address.
  */
-ir_entity *ia32_get_frame_address_entity(void)
+ir_entity *ia32_get_frame_address_entity(ir_graph *irg)
 {
+	const be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 	ia32_build_between_type();
-	return ia32_curr_fp_ommitted ? NULL : old_bp_ent;
+	return layout->sp_relative ? NULL : old_bp_ent;
 }
 
 /**
@@ -581,7 +429,6 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 
 	switch (get_ia32_irn_opcode(irn)) {
 		case iro_ia32_Add:
-#if 0
 			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
 				/* we have an add with a const here */
 				/* invers == add with negated const */
@@ -603,10 +450,8 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 				inverse->nodes[0] = new_bd_ia32_Sub(dbg, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, i ^ 1));
 				inverse->costs   += 2;
 			}
-#endif
 			break;
 		case iro_ia32_Sub:
-#if 0
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* we have a sub with a const/symconst here */
 				/* invers == add with this const */
@@ -624,10 +469,8 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 				}
 				inverse->costs += 1;
 			}
-#endif
 			break;
 		case iro_ia32_Xor:
-#if 0
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* xor with const: inverse = xor */
 				inverse->nodes[0] = new_bd_ia32_Xor(dbg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
@@ -639,7 +482,6 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 				inverse->nodes[0] = new_bd_ia32_Xor(dbg, block, noreg, noreg, nomem, (ir_node *) irn, get_irn_n(irn, i));
 				inverse->costs   += 1;
 			}
-#endif
 			break;
 		case iro_ia32_Not: {
 			inverse->nodes[0] = new_bd_ia32_Not(dbg, block, (ir_node*) irn);
@@ -784,11 +626,7 @@ static void ia32_perform_memory_operand(ir_node *irn, ir_node *spill,
 }
 
 static const be_abi_callbacks_t ia32_abi_callbacks = {
-	ia32_abi_init,
-	ia32_abi_done,
 	ia32_abi_get_between_type,
-	ia32_abi_prologue,
-	ia32_abi_epilogue
 };
 
 /* register allocator interface */
@@ -1333,6 +1171,142 @@ need_stackent:
 	be_node_needs_frame_entity(env, node, mode, align);
 }
 
+static int determine_ebp_input(ir_node *ret)
+{
+	const arch_register_t *bp = &ia32_registers[REG_EBP];
+	int   arity               = get_irn_arity(ret);
+	int   i;
+
+	for (i = 0; i < arity; ++i) {
+		ir_node *input = get_irn_n(ret, i);
+		if (arch_get_irn_register(input) == bp)
+			return i;
+	}
+	panic("no ebp input found at %+F", ret);
+}
+
+static void introduce_epilog(ir_node *ret)
+{
+	const arch_register_t *sp         = &ia32_registers[REG_ESP];
+	const arch_register_t *bp         = &ia32_registers[REG_EBP];
+	ir_graph              *irg        = get_irn_irg(ret);
+	ir_type               *frame_type = get_irg_frame_type(irg);
+	unsigned               frame_size = get_type_size_bytes(frame_type);
+	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
+	ir_node               *block      = get_nodes_block(ret);
+	ir_node               *first_sp   = get_irn_n(ret, n_be_Return_sp);
+	ir_node               *curr_sp    = first_sp;
+	ir_mode               *mode_gp    = mode_Iu;
+
+	if (!layout->sp_relative) {
+		int      n_ebp   = determine_ebp_input(ret);
+		ir_node *curr_bp = get_irn_n(ret, n_ebp);
+		if (ia32_cg_config.use_leave) {
+			ir_node *leave = new_bd_ia32_Leave(NULL, block, curr_bp);
+			curr_bp        = new_r_Proj(leave, mode_gp, pn_ia32_Leave_frame);
+			curr_sp        = new_r_Proj(leave, mode_gp, pn_ia32_Leave_stack);
+			arch_set_irn_register(curr_bp, bp);
+			arch_set_irn_register(curr_sp, sp);
+			sched_add_before(ret, leave);
+		} else {
+			ir_node *pop;
+			ir_node *curr_mem = get_irn_n(ret, n_be_Return_mem);
+			/* copy ebp to esp */
+			curr_sp = new_bd_ia32_CopyEbpEsp(NULL, block, curr_bp);
+			arch_set_irn_register(curr_sp, sp);
+			sched_add_before(ret, curr_sp);
+
+			/* pop ebp */
+			pop      = new_bd_ia32_PopEbp(NULL, block, curr_mem, curr_sp);
+			curr_bp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_res);
+			curr_sp  = new_r_Proj(pop, mode_gp, pn_ia32_PopEbp_stack);
+			curr_mem = new_r_Proj(pop, mode_M, pn_ia32_Pop_M);
+			arch_set_irn_register(curr_bp, bp);
+			arch_set_irn_register(curr_sp, sp);
+			sched_add_before(ret, pop);
+
+			set_irn_n(ret, n_be_Return_mem, curr_mem);
+		}
+		set_irn_n(ret, n_ebp, curr_bp);
+	} else {
+		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, -(int)frame_size, 0);
+		sched_add_before(ret, incsp);
+		curr_sp = incsp;
+	}
+	set_irn_n(ret, n_be_Return_sp, curr_sp);
+
+	/* keep verifier happy... */
+	if (get_irn_n_edges(first_sp) == 0 && is_Proj(first_sp)) {
+		kill_node(first_sp);
+	}
+}
+
+/**
+ * put the Prolog code at the beginning, epilog code before each return
+ */
+static void introduce_prolog_epilog(ir_graph *irg)
+{
+	const arch_register_t *sp         = &ia32_registers[REG_ESP];
+	const arch_register_t *bp         = &ia32_registers[REG_EBP];
+	ir_node               *start      = get_irg_start(irg);
+	ir_node               *block      = get_nodes_block(start);
+	ir_type               *frame_type = get_irg_frame_type(irg);
+	unsigned               frame_size = get_type_size_bytes(frame_type);
+	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
+	ir_node               *initial_sp = be_abi_get_ignore_irn(irg, sp);
+	ir_node               *curr_sp    = initial_sp;
+	ir_mode               *mode_gp    = mode_Iu;
+
+	if (!layout->sp_relative) {
+		layout->initial_bias = -4;
+
+		/* push ebp */
+		ir_node *mem        = get_irg_initial_mem(irg);
+		ir_node *noreg      = ia32_new_NoReg_gp(irg);
+		ir_node *initial_bp = be_abi_get_ignore_irn(irg, bp);
+		ir_node *curr_bp    = initial_bp;
+		ir_node *push
+			= new_bd_ia32_Push(NULL, block, noreg, noreg, mem, curr_bp, curr_sp);
+		curr_sp = new_r_Proj(push, mode_gp, pn_ia32_Push_stack);
+		mem     = new_r_Proj(push, mode_M, pn_ia32_Push_M);
+		arch_set_irn_register(curr_sp, sp);
+		sched_add_after(start, push);
+
+		/* move esp to ebp */
+		curr_bp = be_new_Copy(bp->reg_class, block, curr_sp);
+		sched_add_after(push, curr_bp);
+		be_set_constr_single_reg_out(curr_bp, 0, bp, arch_register_req_type_ignore);
+		curr_sp = be_new_CopyKeep_single(sp->reg_class, block, curr_sp, curr_bp, mode_gp);
+		sched_add_after(curr_bp, curr_sp);
+		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
+		edges_reroute(initial_bp, curr_bp);
+		set_irn_n(push, n_ia32_Push_val, initial_bp);
+
+		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
+		edges_reroute(initial_sp, incsp);
+		set_irn_n(push, n_ia32_Push_stack, initial_sp);
+		sched_add_after(curr_sp, incsp);
+	} else {
+		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
+		edges_reroute(initial_sp, incsp);
+		be_set_IncSP_pred(incsp, curr_sp);
+		sched_add_after(start, incsp);
+	}
+
+	/* introduce epilog for every return node */
+	{
+		ir_node *end_block = get_irg_end_block(irg);
+		int      arity     = get_irn_arity(end_block);
+		int      i;
+
+		for (i = 0; i < arity; ++i) {
+			ir_node *ret = get_irn_n(end_block, i);
+			assert(be_is_Return(ret));
+			introduce_epilog(ret);
+		}
+	}
+}
+
 /**
  * We transform Spill and Reload here. This needs to be done before
  * stack biasing otherwise we would miss the corrected offset for these nodes.
@@ -1349,6 +1323,8 @@ static void ia32_after_ra(ir_graph *irg)
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
+
+	introduce_prolog_epilog(irg);
 }
 
 /**

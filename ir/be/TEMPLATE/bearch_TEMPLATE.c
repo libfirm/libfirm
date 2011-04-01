@@ -200,32 +200,16 @@ static const arch_register_class_t *TEMPLATE_get_reg_class_for_mode(const ir_mod
 		return &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp];
 }
 
-
-
-typedef struct {
-	be_abi_call_flags_bits_t flags;
-	ir_graph                *irg;
-} TEMPLATE_abi_env_t;
-
-static void *TEMPLATE_abi_init(const be_abi_call_t *call, ir_graph *irg)
-{
-	TEMPLATE_abi_env_t *env = XMALLOC(TEMPLATE_abi_env_t);
-	be_abi_call_flags_t fl = be_abi_call_get_flags(call);
-	env->flags    = fl.bits;
-	env->irg      = irg;
-	return env;
-}
-
 /**
  * Get the between type for that call.
  * @param self The callback object.
  * @return The between type of for that call.
  */
-static ir_type *TEMPLATE_get_between_type(void *self)
+static ir_type *TEMPLATE_get_between_type(ir_graph *irg)
 {
 	static ir_type *between_type = NULL;
 	static ir_entity *old_bp_ent = NULL;
-	(void) self;
+	(void) irg;
 
 	if (!between_type) {
 		ir_entity *ret_addr_ent;
@@ -244,39 +228,8 @@ static ir_type *TEMPLATE_get_between_type(void *self)
 	return between_type;
 }
 
-/**
- * Build the prolog, return the BASE POINTER register
- */
-static const arch_register_t *TEMPLATE_abi_prologue(void *self, ir_node **mem,
-                                                    pmap *reg_map, int *stack_bias)
-{
-	TEMPLATE_abi_env_t *env      = (TEMPLATE_abi_env_t*)self;
-	const arch_env_t   *arch_env = be_get_irg_arch_env(env->irg);
-	(void) reg_map;
-	(void) mem;
-	(void) stack_bias;
-
-	if (env->flags.try_omit_fp)
-		return arch_env->sp;
-	return arch_env->bp;
-}
-
-/* Build the epilog */
-static void TEMPLATE_abi_epilogue(void *self, ir_node *bl, ir_node **mem,
-                                  pmap *reg_map)
-{
-	(void) self;
-	(void) bl;
-	(void) mem;
-	(void) reg_map;
-}
-
 static const be_abi_callbacks_t TEMPLATE_abi_callbacks = {
-	TEMPLATE_abi_init,
-	free,
 	TEMPLATE_get_between_type,
-	TEMPLATE_abi_prologue,
-	TEMPLATE_abi_epilogue,
 };
 
 /**

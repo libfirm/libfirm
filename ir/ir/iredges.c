@@ -785,7 +785,7 @@ static void count_user(ir_node *irn, void *env)
 	int first;
 	(void) env;
 
-	first = -1;
+	first = is_Block(irn) ? 0 : -1;
 	for (i = get_irn_arity(irn) - 1; i >= first; --i) {
 		ir_node  *op = get_irn_n(irn, i);
 		bitset_t *bs = (bitset_t*)get_irn_link(op);

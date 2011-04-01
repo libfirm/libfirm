@@ -135,8 +135,7 @@ static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int for
 		do {
 			after = next;
 			next = sched_next(after);
-		} while (is_Proj(next) || is_Phi(next) || be_is_Keep(next)
-		        || (arch_irn_get_flags(next) & arch_irn_flags_prolog));
+		} while (is_Proj(next) || is_Phi(next) || be_is_Keep(next));
 	} else {
 		after = state;
 	}
@@ -352,17 +351,6 @@ static block_info_t *compute_block_start_state(minibelady_env_t *env, ir_node *b
 	return block_info;
 }
 
-static ir_node *get_reload_point(ir_node *before)
-{
-	while (true) {
-		ir_node *prev = sched_prev(before);
-		if (! (arch_irn_get_flags(prev) & arch_irn_flags_epilog))
-			break;
-		before = prev;
-	}
-	return before;
-}
-
 /**
  * For the given block @p block, decide for each values
  * whether it is used from a register or is reloaded
@@ -419,7 +407,7 @@ static void belady(minibelady_env_t *env, ir_node *block)
 		}
 		/* create a reload to match state if necessary */
 		if (need_val != NULL && need_val != current_state) {
-			ir_node *before = get_reload_point(node);
+			ir_node *before = node;
 			DBG((dbg, LEVEL_3, "\t... reloading %+F\n", need_val));
 			create_reload(env, need_val, before, current_state);
 			current_state = need_val;

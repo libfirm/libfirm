@@ -43,6 +43,7 @@
 
 #include "TEMPLATE_emitter.h"
 #include "gen_TEMPLATE_emitter.h"
+#include "gen_TEMPLATE_regalloc_if.h"
 #include "TEMPLATE_nodes_attr.h"
 #include "TEMPLATE_new_nodes.h"
 
@@ -110,16 +111,21 @@ void TEMPLATE_emit_immediate(const ir_node *node)
 	be_emit_tarval(attr->value);
 }
 
+static void emit_register(const arch_register_t *reg)
+{
+	be_emit_string(arch_register_get_name(reg));
+}
+
 void TEMPLATE_emit_source_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_in_reg(node, pos);
-	be_emit_string(arch_register_get_name(reg));
+	emit_register(reg);
 }
 
 void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
 {
 	const arch_register_t *reg = get_out_reg(node, pos);
-	be_emit_string(arch_register_get_name(reg));
+	emit_register(reg);
 }
 
 /**
@@ -164,8 +170,42 @@ static void emit_be_IncSP(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
+static void emit_be_Start(const ir_node *node)
+{
+	ir_graph *irg        = get_irn_irg(node);
+	ir_type  *frame_type = get_irg_frame_type(irg);
+	unsigned  size       = get_type_size_bytes(frame_type);
+
+	/* emit function prolog */
+
+	/* allocate stackframe */
+	if (size > 0) {
+		be_emit_cstring("\tsub ");
+		emit_register(&TEMPLATE_registers[REG_SP]);
+		be_emit_irprintf(", %u, ", size);
+		emit_register(&TEMPLATE_registers[REG_SP]);
+		be_emit_finish_line_gas(node);
+	}
+}
+
 static void emit_be_Return(const ir_node *node)
 {
+	ir_graph *irg        = get_irn_irg(node);
+	ir_type  *frame_type = get_irg_frame_type(irg);
+	unsigned  size       = get_type_size_bytes(frame_type);
+
+	/* emit function epilog here */
+
+	/* deallocate stackframe */
+	if (size > 0) {
+		be_emit_cstring("\tadd ");
+		emit_register(&TEMPLATE_registers[REG_SP]);
+		be_emit_irprintf(", %u, ", size);
+		emit_register(&TEMPLATE_registers[REG_SP]);
+		be_emit_finish_line_gas(node);
+	}
+
+	/* return */
 	be_emit_cstring("\tret");
 	be_emit_finish_line_gas(node);
 }
@@ -199,13 +239,13 @@ static void TEMPLATE_register_emitters(void)
 
 	/* custom emitters not provided by the spec */
 	set_emitter(op_TEMPLATE_Jmp,   emit_TEMPLATE_Jmp);
-	set_emitter(op_be_Return,      emit_be_Return);
 	set_emitter(op_be_IncSP,       emit_be_IncSP);
+	set_emitter(op_be_Return,      emit_be_Return);
+	set_emitter(op_be_Start,       emit_be_Start);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_Phi,            emit_nothing);
 	set_emitter(op_be_Keep,        emit_nothing);
-	set_emitter(op_be_Start,       emit_nothing);
 }
 
 typedef void (*emit_func_ptr) (const ir_node *);

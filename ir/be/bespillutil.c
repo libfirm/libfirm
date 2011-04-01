@@ -255,14 +255,6 @@ void be_add_reload2(spill_env_t *env, ir_node *to_spill, ir_node *before,
 
 	assert(!is_Proj(before) && !be_is_Keep(before));
 
-	/* adjust before point to not be in the epilog */
-	while (true) {
-		ir_node *before_prev = sched_prev(before);
-		if (! (arch_irn_get_flags(before_prev) & arch_irn_flags_epilog))
-			break;
-		before = sched_prev(before);
-	}
-
 	/* put reload into list */
 	rel                   = OALLOC(&env->obst, reloader_t);
 	rel->next             = info->reloaders;
@@ -311,8 +303,7 @@ static ir_node *determine_spill_point(ir_node *node)
 	node = skip_Proj(node);
 	while (true) {
 		ir_node *next = sched_next(node);
-		if (!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next)
-				&& !(arch_irn_get_flags(next) & arch_irn_flags_prolog))
+		if (!is_Phi(next) && !be_is_Keep(next) && !be_is_CopyKeep(next))
 			break;
 		node = next;
 	}

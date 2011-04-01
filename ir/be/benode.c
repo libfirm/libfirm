@@ -1193,13 +1193,7 @@ static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 			}
 			if (be_is_IncSP(irn)) {
 				const be_incsp_attr_t *attr = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
-				if (attr->offset == BE_STACK_FRAME_SIZE_EXPAND) {
-					fprintf(f, " [Setup Stackframe] ");
-				} else if (attr->offset == BE_STACK_FRAME_SIZE_SHRINK) {
-					fprintf(f, " [Destroy Stackframe] ");
-				} else {
-					fprintf(f, " [%d] ", attr->offset);
-				}
+				fprintf(f, " [%d] ", attr->offset);
 			}
 			break;
 		case dump_node_info_txt:
@@ -1219,12 +1213,7 @@ static void dump_node(FILE *f, ir_node *irn, dump_reason_t reason)
 			case beo_IncSP: {
 				const be_incsp_attr_t *a = (const be_incsp_attr_t*)get_irn_generic_attr_const(irn);
 				fprintf(f, "align: %d\n", a->align);
-				if (a->offset == BE_STACK_FRAME_SIZE_EXPAND)
-					fprintf(f, "offset: FRAME_SIZE\n");
-				else if (a->offset == BE_STACK_FRAME_SIZE_SHRINK)
-					fprintf(f, "offset: -FRAME SIZE\n");
-				else
-					fprintf(f, "offset: %d\n", a->offset);
+				fprintf(f, "offset: %d\n", a->offset);
 				break;
 			}
 			case beo_Call: {

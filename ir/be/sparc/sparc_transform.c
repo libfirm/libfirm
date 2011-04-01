@@ -1300,7 +1300,7 @@ static ir_node *gen_Start(ir_node *node)
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	ir_node   *mem;
 	ir_node   *start;
-	ir_node   *sp;
+ir_node   *sp;
 	size_t     i;
 
 	/* stackpointer is important at function prolog */
@@ -1334,6 +1334,7 @@ static ir_node *gen_Start(ir_node *node)
 	}
 
 	start = be_prolog_create_start(abihelper, dbgi, new_block);
+#if 0
 	mem   = be_prolog_get_memory(abihelper);
 	sp    = be_prolog_get_reg_value(abihelper, sp_reg);
 
@@ -1350,6 +1351,7 @@ static ir_node *gen_Start(ir_node *node)
 	arch_irn_add_flags(sp, arch_irn_flags_prolog);
 	be_prolog_set_reg_value(abihelper, sp_reg, sp);
 	be_prolog_set_memory(abihelper, mem);
+#endif
 
 	return start;
 }
@@ -1423,6 +1425,7 @@ static ir_node *gen_Return(ir_node *node)
 		}
 	}
 
+#if 0
 	/* we need a restore instruction */
 	if (!cconv->omit_fp) {
 		ir_node *fp      = be_prolog_get_reg_value(abihelper, fp_reg);
@@ -1438,10 +1441,9 @@ static ir_node *gen_Return(ir_node *node)
 		arch_irn_add_flags(sp, arch_irn_flags_epilog);
 		be_epilog_set_reg_value(abihelper, sp_reg, sp);
 	}
+#endif
 
 	bereturn = be_epilog_create_return(abihelper, dbgi, new_block);
-	arch_irn_add_flags(bereturn, arch_irn_flags_epilog);
-
 	return bereturn;
 }
 

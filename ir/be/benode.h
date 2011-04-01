@@ -55,13 +55,6 @@ extern ir_op *op_be_Start;
 extern ir_op *op_be_FrameAddr;
 
 /**
- * A "symbolic constant" for the size of the stack frame to use with IncSP nodes.
- * It gets back-patched to the real size as soon it is known.
- */
-#define BE_STACK_FRAME_SIZE_EXPAND INT_MAX
-#define BE_STACK_FRAME_SIZE_SHRINK INT_MIN
-
-/**
  * Determines if irn is a be_node.
  */
 int is_be_node(const ir_node *irn);

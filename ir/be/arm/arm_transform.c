@@ -1727,8 +1727,6 @@ static ir_node *gen_Start(ir_node *node)
 	ir_node   *new_block     = be_transform_node(block);
 	dbg_info  *dbgi          = get_irn_dbg_info(node);
 	ir_node   *start;
-	ir_node   *incsp;
-	ir_node   *sp;
 	size_t     i;
 
 	/* stackpointer is important at function prolog */
@@ -1748,10 +1746,6 @@ static ir_node *gen_Start(ir_node *node)
 	}
 
 	start = be_prolog_create_start(abihelper, dbgi, new_block);
-	sp    = be_prolog_get_reg_value(abihelper, sp_reg);
-	incsp = be_new_IncSP(sp_reg, new_block, sp, BE_STACK_FRAME_SIZE_EXPAND, 0);
-	be_prolog_set_reg_value(abihelper, sp_reg, incsp);
-
 	return start;
 }
 
@@ -1792,7 +1786,6 @@ static ir_node *gen_Return(ir_node *node)
 	ir_node   *sp_proj        = get_stack_pointer_for(node);
 	int        n_res          = get_Return_n_ress(node);
 	ir_node   *bereturn;
-	ir_node   *incsp;
 	int        i;
 
 	be_epilog_begin(abihelper);
@@ -1821,13 +1814,7 @@ static ir_node *gen_Return(ir_node *node)
 	}
 
 	/* epilog code: an incsp */
-	sp_proj = be_epilog_get_reg_value(abihelper, sp_reg);
-	incsp   = be_new_IncSP(sp_reg, new_block, sp_proj,
-	                       BE_STACK_FRAME_SIZE_SHRINK, 0);
-	be_epilog_set_reg_value(abihelper, sp_reg, incsp);
-
 	bereturn = be_epilog_create_return(abihelper, dbgi, new_block);
-
 	return bereturn;
 }
 

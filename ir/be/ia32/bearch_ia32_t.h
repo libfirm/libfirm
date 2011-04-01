@@ -147,11 +147,11 @@ ir_entity *ia32_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 /**
  * Return the stack entity that contains the return address.
  */
-ir_entity *ia32_get_return_address_entity(void);
+ir_entity *ia32_get_return_address_entity(ir_graph *irg);
 
 /**
  * Return the stack entity that contains the frame address.
  */
-ir_entity *ia32_get_frame_address_entity(void);
+ir_entity *ia32_get_frame_address_entity(ir_graph *irg);
 
 #endif

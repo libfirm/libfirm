@@ -4798,6 +4798,7 @@ static ir_node *gen_return_address(ir_node *node)
 	ir_node   *frame    = get_Builtin_param(node, 1);
 	dbg_info  *dbgi     = get_irn_dbg_info(node);
 	ir_tarval *tv       = get_Const_tarval(param);
+	ir_graph  *irg      = get_irn_irg(node);
 	unsigned long value = get_tarval_long(tv);
 
 	ir_node *block  = be_transform_node(get_nodes_block(node));
@@ -4819,7 +4820,7 @@ static ir_node *gen_return_address(ir_node *node)
 
 	set_ia32_am_offs_int(load, 0);
 	set_ia32_use_frame(load);
-	set_ia32_frame_ent(load, ia32_get_return_address_entity());
+	set_ia32_frame_ent(load, ia32_get_return_address_entity(irg));
 
 	if (get_irn_pinned(node) == op_pin_state_floats) {
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_vfld_res
@@ -4841,6 +4842,7 @@ static ir_node *gen_frame_address(ir_node *node)
 	ir_node   *frame    = get_Builtin_param(node, 1);
 	dbg_info  *dbgi     = get_irn_dbg_info(node);
 	ir_tarval *tv       = get_Const_tarval(param);
+	ir_graph  *irg      = get_irn_irg(node);
 	unsigned long value = get_tarval_long(tv);
 
 	ir_node *block  = be_transform_node(get_nodes_block(node));
@@ -4861,7 +4863,7 @@ static ir_node *gen_frame_address(ir_node *node)
 	set_ia32_op_type(load, ia32_AddrModeS);
 	set_ia32_ls_mode(load, mode_Iu);
 
-	ent = ia32_get_frame_address_entity();
+	ent = ia32_get_frame_address_entity(irg);
 	if (ent != NULL) {
 		set_ia32_am_offs_int(load, 0);
 		set_ia32_use_frame(load);

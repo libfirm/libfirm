@@ -221,14 +221,15 @@ static void peephole_ia32_Test(ir_node *node)
 		ir_node         *flags_proj;
 		ir_mode         *flags_mode;
 		ir_node         *schedpoint;
+		ir_node         *op = left;
 		const ir_edge_t *edge;
 
 		if (get_nodes_block(left) != block)
 			return;
 
-		if (is_Proj(left)) {
-			pn   = get_Proj_proj(left);
-			left = get_Proj_pred(left);
+		if (is_Proj(op)) {
+			pn = get_Proj_proj(op);
+			op = get_Proj_pred(op);
 		}
 
 		/* walk schedule up and abort when we find left or some other node
@@ -236,7 +237,7 @@ static void peephole_ia32_Test(ir_node *node)
 		schedpoint = node;
 		for (;;) {
 			schedpoint = sched_prev(schedpoint);
-			if (schedpoint == left)
+			if (schedpoint == op)
 				break;
 			if (arch_irn_is(schedpoint, modify_flags))
 				return;
@@ -254,7 +255,7 @@ static void peephole_ia32_Test(ir_node *node)
 			}
 		}
 
-		switch (produces_test_flag(left, pn)) {
+		switch (produces_test_flag(op, pn)) {
 			case produces_flag_zero:
 				break;
 
@@ -276,21 +277,24 @@ static void peephole_ia32_Test(ir_node *node)
 				return;
 		}
 
-		if (get_irn_mode(left) != mode_T) {
-			set_irn_mode(left, mode_T);
+		if (get_irn_mode(op) != mode_T) {
+			set_irn_mode(op, mode_T);
 
 			/* If there are other users, reroute them to result proj */
-			if (get_irn_n_edges(left) != 2) {
-				ir_node *res = new_r_Proj(left, mode_Iu, pn_ia32_res);
+			if (get_irn_n_edges(op) != 2) {
+				ir_node *res = new_r_Proj(op, mode_Iu, pn_ia32_res);
 
-				edges_reroute(left, res);
+				edges_reroute(op, res);
 				/* Reattach the result proj to left */
-				set_Proj_pred(res, left);
+				set_Proj_pred(res, op);
 			}
+		} else {
+			if (get_irn_n_edges(left) == 2)
+				kill_node(left);
 		}
 
 		flags_mode = ia32_reg_classes[CLASS_ia32_flags].mode;
-		flags_proj = new_r_Proj(left, flags_mode, pn_ia32_flags);
+		flags_proj = new_r_Proj(op, flags_mode, pn_ia32_flags);
 		arch_set_irn_register(flags_proj, &ia32_registers[REG_EFLAGS]);
 
 		assert(get_irn_mode(node) != mode_T);

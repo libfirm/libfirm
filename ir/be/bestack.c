@@ -185,34 +185,24 @@ static int process_stack_bias(ir_node *bl, int real_bias)
 		if (be_is_IncSP(irn)) {
 			ofs = be_get_IncSP_offset(irn);
 			/* fill in real stack frame size */
-			if (ofs == BE_STACK_FRAME_SIZE_EXPAND) {
-				ir_type *frame_type = get_irg_frame_type(irg);
-				ofs = (int) get_type_size_bytes(frame_type);
-				be_set_IncSP_offset(irn, ofs);
-			} else if (ofs == BE_STACK_FRAME_SIZE_SHRINK) {
-				ir_type *frame_type = get_irg_frame_type(irg);
-				ofs = - (int)get_type_size_bytes(frame_type);
-				be_set_IncSP_offset(irn, ofs);
+			if (be_get_IncSP_align(irn)) {
+				/* patch IncSP to produce an aligned stack pointer */
+				ir_type *between_type = layout->between_type;
+				int      between_size = get_type_size_bytes(between_type);
+				int      alignment    = 1 << arch_env->stack_alignment;
+				int      delta        = (real_bias + ofs + between_size) & (alignment - 1);
+				assert(ofs >= 0);
+				if (delta > 0) {
+					be_set_IncSP_offset(irn, ofs + alignment - delta);
+					real_bias += alignment - delta;
+				}
 			} else {
-				if (be_get_IncSP_align(irn)) {
-					/* patch IncSP to produce an aligned stack pointer */
-					ir_type *between_type = layout->between_type;
-					int      between_size = get_type_size_bytes(between_type);
-					int      alignment    = 1 << arch_env->stack_alignment;
-					int      delta        = (real_bias + ofs + between_size) & (alignment - 1);
-					assert(ofs >= 0);
-					if (delta > 0) {
-						be_set_IncSP_offset(irn, ofs + alignment - delta);
-						real_bias += alignment - delta;
-					}
-				} else {
-					/* adjust so real_bias corresponds with wanted_bias */
-					int delta = wanted_bias - real_bias;
-					assert(delta <= 0);
-					if (delta != 0) {
-						be_set_IncSP_offset(irn, ofs + delta);
-						real_bias += delta;
-					}
+				/* adjust so real_bias corresponds with wanted_bias */
+				int delta = wanted_bias - real_bias;
+				assert(delta <= 0);
+				if (delta != 0) {
+					be_set_IncSP_offset(irn, ofs + delta);
+					real_bias += delta;
 				}
 			}
 			real_bias   += ofs;

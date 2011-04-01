@@ -267,8 +267,6 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
 	ir_node *start        = be_new_Start(dbgi, block, n_start_outs);
 	int      o;
 
-	arch_irn_add_flags(start, arch_irn_flags_prolog);
-
 	assert(env->prolog.value_map == NULL);
 	env->prolog.value_map = NEW_ARR_F(ir_node*, n_start_outs);
 
@@ -366,7 +364,6 @@ ir_node *be_epilog_create_return(beabi_helper_env_t *env, dbg_info *dbgi,
 
 	ret = be_new_Return(dbgi, get_irn_irg(block), block, n_res, pop,
 	                    n_return_in, in);
-	arch_irn_add_flags(ret, arch_irn_flags_epilog);
 	for (i = 0; i < n_return_in; ++i) {
 		const reg_flag_t      *regflag = &env->epilog.regs[i];
 		const arch_register_t *reg     = regflag->reg;
@@ -414,10 +411,6 @@ static ir_node *add_to_keep(ir_node *last_keep,
 		}
 	}
 	op = skip_Proj_const(node);
-	if (arch_irn_get_flags(op) & arch_irn_flags_prolog)
-		arch_irn_add_flags(last_keep, arch_irn_flags_prolog);
-	if (arch_irn_get_flags(op) & arch_irn_flags_epilog)
-		arch_irn_add_flags(last_keep, arch_irn_flags_epilog);
 	return last_keep;
 }
 
@@ -428,6 +421,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	const ir_edge_t *edge;
 	ir_mode         *mode = get_irn_mode(node);
 	ir_node         *last_keep;
+	ir_node        **existing_projs;
 	(void) data;
 	if (mode != mode_T) {
 		if (!has_real_user(node)) {
@@ -448,6 +442,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		return;
 
 	rbitset_alloca(found_projs, n_outs);
+	existing_projs = ALLOCANZ(ir_node*, n_outs);
 	foreach_out_edge(node, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 		ir_mode *mode = get_irn_mode(succ);
@@ -458,10 +453,11 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		if (mode == mode_M || mode == mode_X)
 			continue;
+		pn                 = get_Proj_proj(succ);
+		existing_projs[pn] = succ;
 		if (!has_real_user(succ))
 			continue;
 
-		pn = get_Proj_proj(succ);
 		assert(pn < n_outs);
 		rbitset_set(found_projs, pn);
 	}
@@ -483,7 +479,9 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		value     = new_r_Proj(node, arch_register_class_mode(cls), i);
+		value = existing_projs[i];
+		if (value == NULL)
+			value = new_r_Proj(node, arch_register_class_mode(cls), i);
 		last_keep = add_to_keep(last_keep, cls, value);
 	}
 }

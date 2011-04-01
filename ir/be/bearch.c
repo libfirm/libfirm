@@ -354,12 +354,6 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 		if (flags & arch_irn_flags_not_scheduled) {
 			fprintf(F, " not_scheduled");
 		}
-		if (flags & arch_irn_flags_prolog) {
-			fprintf(F, " prolog");
-		}
-		if (flags & arch_irn_flags_epilog) {
-			fprintf(F, " epilog");
-		}
 	}
 	fprintf(F, " (%d)\n", flags);
 }

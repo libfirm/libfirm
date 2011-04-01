@@ -1320,6 +1320,17 @@ PopEbp => {
 	units     => [ "GP" ],
 },
 
+CopyEbpEsp => {
+	state     => "exc_pinned",
+	reg_req   => { in => [ "ebp" ], out => [ "esp:I|S" ] },
+	ins       => [ "ebp" ],
+	outs      => [ "esp" ],
+	emit      => '. movl %S0, %D0',
+	latency   => 1,
+	units     => [ "GP" ],
+	mode      => $mode_gp,
+},
+
 PopMem => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "esp" ], out => [ "none", "none", "none", "esp:I|S" ] },

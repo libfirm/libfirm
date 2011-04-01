@@ -277,23 +277,7 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node)
 
 	pred_offs = be_get_IncSP_offset(pred);
 	curr_offs = be_get_IncSP_offset(node);
-
-	if (pred_offs == BE_STACK_FRAME_SIZE_EXPAND) {
-		if (curr_offs != BE_STACK_FRAME_SIZE_SHRINK) {
-			return node;
-		}
-		offs = 0;
-	} else if (pred_offs == BE_STACK_FRAME_SIZE_SHRINK) {
-		if (curr_offs != BE_STACK_FRAME_SIZE_EXPAND) {
-			return node;
-		}
-		offs = 0;
-	} else if (curr_offs == BE_STACK_FRAME_SIZE_EXPAND ||
-	           curr_offs == BE_STACK_FRAME_SIZE_SHRINK) {
-		return node;
-	} else {
-		offs = curr_offs + pred_offs;
-	}
+	offs = curr_offs + pred_offs;
 
 	/* add node offset to pred and remove our IncSP */
 	be_set_IncSP_offset(pred, offs);

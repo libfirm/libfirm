@@ -54,48 +54,11 @@ union be_abi_call_flags_t {
 
 struct be_abi_callbacks_t {
 	/**
-	 * Initialize the callback object.
-	 * @param call The call object.
-	 * @param irg  The graph with the method.
-	 * @return     Some pointer. This pointer is passed to all other callback functions as self object.
-	 */
-	void *(*init)(const be_abi_call_t *call, ir_graph *irg);
-
-	/**
-	 * Destroy the callback object.
-	 * @param self The callback object.
-	 */
-	void (*done)(void *self);
-
-	/**
 	 * Get the between type for that call.
 	 * @param self The callback object.
 	 * @return The between type of for that call.
 	 */
-	ir_type *(*get_between_type)(void *self);
-
-	/**
-	 * Generate the prologue.
-	 * @param self       The callback object.
-	 * @param mem        A pointer to the mem node. Update this if you define new memory.
-	 * @param reg_map    A map mapping all callee_save/ignore/parameter registers to their defining nodes.
-	 * @param stack_bias Points to the current stack bias, can be modified if needed.
-	 * @return           The register which shall be used as a stack frame base.
-	 *
-	 * All nodes which define registers in @p reg_map must keep @p reg_map current.
-	 */
-	const arch_register_t *(*prologue)(void *self, ir_node **mem, pmap *reg_map, int *stack_bias);
-
-	/**
-	 * Generate the epilogue.
-	 * @param self    The callback object.
-	 * @param mem     Memory one can attach to.
-	 * @param reg_map A mapping mapping all callee_save/ignore/return registers to their defining nodes.
-	 *
-     * All nodes which define registers in @p reg_map must keep @p reg_map current.
-	 * Also, the @p mem variable must be updated, if memory producing nodes are inserted.
-	 */
-	void (*epilogue)(void *self, ir_node *bl, ir_node **mem, pmap *reg_map);
+	ir_type *(*get_between_type)(ir_graph *irg);
 };
 
 /**
