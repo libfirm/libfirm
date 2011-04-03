@@ -281,7 +281,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	if (res != NULL)
 		return res;
 
-	/* in a matured block we can immediated determine the phi arguments */
+	/* in a matured block we can immediately determine the phi arguments */
 	if (block->attr.block.is_matured) {
 		int arity = get_irn_arity(block);
 		/* no predecessors: use unknown value */
@@ -543,11 +543,13 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 
 void set_cur_block(ir_node *target)
 {
+	assert(current_ir_graph == get_irn_irg(target));
 	current_ir_graph->current_block = target;
 }
 
 void set_r_cur_block(ir_graph *irg, ir_node *target)
 {
+	assert(irg == get_irn_irg(target));
 	irg->current_block = target;
 }
 
