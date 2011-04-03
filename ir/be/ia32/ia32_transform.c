@@ -1212,8 +1212,8 @@ static ir_node *create_lea_from_address(dbg_info *dbgi, ir_node *block,
 	/* segment overrides are ineffective for Leas :-( so we have to patch
 	 * around... */
 	if (addr->tls_segment) {
-		assert(addr->symconst_ent != NULL);
 		ir_node *tls_base = new_bd_ia32_LdTls(NULL, block);
+		assert(addr->symconst_ent != NULL);
 		if (base == noreg_GP)
 			base = tls_base;
 		else
