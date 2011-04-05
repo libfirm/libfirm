@@ -428,7 +428,6 @@ static arm_isa_t arm_isa_template = {
 		&arm_registers[REG_SP],  /* stack pointer */
 		&arm_registers[REG_R11], /* base pointer */
 		&arm_reg_classes[CLASS_arm_gp],  /* static link pointer class */
-		-1,                    /* stack direction */
 		2,                     /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                  /* main environment */
 		7,                     /* spill costs */

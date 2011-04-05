@@ -310,7 +310,6 @@ static sparc_isa_t sparc_isa_template = {
 		&sparc_registers[REG_SP],           /* stack pointer register */
 		&sparc_registers[REG_FRAME_POINTER],/* base pointer register */
 		&sparc_reg_classes[CLASS_sparc_gp], /* link pointer register class */
-		-1,                                 /* stack direction */
 		3,                                  /* power of two stack alignment
 		                                       for calls */
 		NULL,                               /* main environment */

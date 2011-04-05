@@ -618,8 +618,6 @@ struct arch_env_t {
 	const arch_register_t *bp;               /**< The base pointer register. */
 	const arch_register_class_t *link_class; /**< The static link pointer
 	                                              register class. */
-	int                    stack_dir;        /**< -1 for decreasing, 1 for
-	                                              increasing. */
 	int                    stack_alignment;  /**< power of 2 stack alignment */
 	const be_main_env_t   *main_env;         /**< the be main environment */
 	int                    spill_cost;       /**< cost for a be_Spill node */

@@ -1466,7 +1466,6 @@ static ia32_isa_t ia32_isa_template = {
 		&ia32_registers[REG_ESP],  /* stack pointer register */
 		&ia32_registers[REG_EBP],  /* base pointer register */
 		&ia32_reg_classes[CLASS_ia32_gp],  /* static link pointer register class */
-		-1,                      /* stack direction */
 		2,                       /* power of two stack alignment, 2^2 == 4 */
 		NULL,                    /* main environment */
 		7,                       /* costs for a spill instruction */

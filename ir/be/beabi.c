@@ -280,13 +280,12 @@ static void be_abi_call_free(be_abi_call_t *call)
  * @param args      the stack argument layout type
  * @param between   the between layout type
  * @param locals    the method frame type
- * @param stack_dir the stack direction: < 0 decreasing, > 0 increasing addresses
  * @param param_map an array mapping method argument positions to the stack argument type
  *
  * @return the initialized stack layout
  */
 static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *args,
-                                           ir_type *between, ir_type *locals, int stack_dir,
+                                           ir_type *between, ir_type *locals,
                                            ir_entity *param_map[])
 {
 	frame->arg_type       = args;
@@ -294,19 +293,13 @@ static be_stack_layout_t *stack_frame_init(be_stack_layout_t *frame, ir_type *ar
 	frame->frame_type     = locals;
 	frame->initial_offset = 0;
 	frame->initial_bias   = 0;
-	frame->stack_dir      = stack_dir;
 	frame->order[1]       = between;
 	frame->param_map      = param_map;
 
-	if (stack_dir > 0) {
-		frame->order[0] = args;
-		frame->order[2] = locals;
-	} else {
-		/* typical decreasing stack: locals have the
-		 * lowest addresses, arguments the highest */
-		frame->order[0] = locals;
-		frame->order[2] = args;
-	}
+	/* typical decreasing stack: locals have the
+	 * lowest addresses, arguments the highest */
+	frame->order[0] = locals;
+	frame->order[2] = args;
 	return frame;
 }
 
@@ -339,7 +332,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	ir_node *curr_mem          = get_Call_mem(irn);
 	ir_node *bl                = get_nodes_block(irn);
 	int stack_size             = 0;
-	int stack_dir              = arch_env->stack_dir;
 	const arch_register_t *sp  = arch_env->sp;
 	be_abi_call_t *call        = be_abi_call_new(sp->reg_class);
 	ir_mode *mach_mode         = sp->reg_class->mode;
@@ -404,7 +396,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	 * Note: we also have to do this for stack_size == 0, because we may have
 	 * to adjust stack alignment for the call.
 	 */
-	if (stack_dir < 0 && !do_seq && !no_alloc) {
+	if (!do_seq && !no_alloc) {
 		curr_sp = be_new_IncSP(sp, bl, curr_sp, stack_size, 1);
 	}
 
@@ -420,7 +412,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		 * We must them reverse again if they are pushed (not stored) and the stack
 		 * direction is downwards.
 		 */
-		if (call->flags.bits.left_to_right ^ (do_seq && stack_dir < 0)) {
+		if (call->flags.bits.left_to_right ^ do_seq) {
 			for (i = 0; i < n_stack_params >> 1; ++i) {
 				int other  = n_stack_params - i - 1;
 				int tmp    = stack_param_idx[i];
@@ -1146,9 +1138,8 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, ir_graph *irg,
 								 ir_type *method_type, ir_type *val_param_tp,
 								 ir_entity ***param_map)
 {
-	const arch_env_t *arch_env = be_get_irg_arch_env(irg);
 	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
-	int inc  = arch_env->stack_dir * dir;
+	int inc  = -dir;
 	int n    = get_method_n_params(method_type);
 	int curr = inc > 0 ? 0 : n - 1;
 	struct obstack *obst = be_get_be_obst(irg);
@@ -1755,7 +1746,7 @@ static void modify_irg(ir_graph *irg)
 
 	bet_type = call->cb->get_between_type(env->cb);
 	stack_frame_init(stack_layout, arg_type, bet_type,
-	                 get_irg_frame_type(irg), arch_env->stack_dir, param_map);
+	                 get_irg_frame_type(irg), param_map);
 	stack_layout->sp_relative = call->flags.bits.try_omit_fp;
 
 	/* Count the register params and add them to the number of Projs for the RegParams node */

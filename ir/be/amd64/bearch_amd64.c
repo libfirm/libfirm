@@ -295,7 +295,6 @@ static amd64_isa_t amd64_isa_template = {
 		&amd64_registers[REG_RSP],  /* stack pointer register */
 		&amd64_registers[REG_RBP],  /* base pointer register */
 		&amd64_reg_classes[CLASS_amd64_gp],  /* link pointer register class */
-		-1,                          /* stack direction */
 		3,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */

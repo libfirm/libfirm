@@ -1279,7 +1279,6 @@ static void create_stacklayout(ir_graph *irg)
 	layout->arg_type       = arg_type;
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
-	layout->stack_dir      = -1;
 	layout->sp_relative    = cconv->omit_fp;
 
 	assert(N_FRAME_TYPES == 3);

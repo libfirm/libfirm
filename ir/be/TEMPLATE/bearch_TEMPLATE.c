@@ -148,7 +148,6 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 		&TEMPLATE_registers[REG_SP],  /* stack pointer register */
 		&TEMPLATE_registers[REG_BP],  /* base pointer register */
 		&TEMPLATE_reg_classes[CLASS_TEMPLATE_gp],  /* link pointer register class */
-		-1,                          /* stack direction */
 		2,                           /* power of two stack alignment for calls, 2^2 == 4 */
 		NULL,                        /* main environment */
 		7,                           /* costs for a spill instruction */
