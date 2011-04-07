@@ -35,8 +35,6 @@
 #include "begin.h"
 #include "nodeops.h"
 
-ENUM_BITSET(pn_Cmp)
-
 /**
  * @defgroup ir_node Declarations of an ir node.
  *
