@@ -1846,21 +1846,21 @@ int irg_verify(ir_graph *irg, unsigned flags)
 {
 	int res = 1;
 #ifdef DEBUG_libfirm
+	int pinned = get_irg_pinned(irg) == op_pin_state_pinned;
 
 #ifndef NDEBUG
-    last_irg_error = NULL;
+	last_irg_error = NULL;
 #endif /* NDEBUG */
 
-	assert(get_irg_pinned(irg) == op_pin_state_pinned && "Verification need pinned graph");
-
-	if (flags & VERIFY_ENFORCE_SSA)
+	if ((flags & VERIFY_ENFORCE_SSA) && pinned)
 		compute_doms(irg);
 
 	irg_walk_anchors(
 		irg,
-		get_irg_dom_state(irg) == dom_consistent &&
-		get_irg_pinned(irg) == op_pin_state_pinned ? verify_wrap_ssa : verify_wrap,
-		NULL, &res
+		pinned && get_irg_dom_state(irg) == dom_consistent
+			? verify_wrap_ssa : verify_wrap,
+		NULL,
+		&res
 	);
 
 	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && ! res) {
