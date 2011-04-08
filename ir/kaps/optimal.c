@@ -106,7 +106,6 @@ void fill_node_buckets(pbqp_t *pbqp)
 	unsigned node_index;
 	unsigned node_len;
 
-	assert(pbqp);
 	node_len = pbqp->num_nodes;
 
 	#if KAPS_TIMING
@@ -150,17 +149,11 @@ static void normalize_towards_source(pbqp_edge_t *edge)
 	unsigned        src_index;
 	unsigned        new_infinity = 0;
 
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(src_node);
-	assert(tgt_node);
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
-	assert(src_vec);
-	assert(tgt_vec);
 
 	src_len = src_vec->len;
 	tgt_len = tgt_vec->len;
@@ -168,7 +161,6 @@ static void normalize_towards_source(pbqp_edge_t *edge)
 	assert(tgt_len > 0);
 
 	mat = edge->costs;
-	assert(mat);
 
 	/* Normalize towards source node. */
 	for (src_index = 0; src_index < src_len; ++src_index) {
@@ -216,17 +208,11 @@ static void normalize_towards_target(pbqp_edge_t *edge)
 	unsigned        tgt_index;
 	unsigned        new_infinity = 0;
 
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(src_node);
-	assert(tgt_node);
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
-	assert(src_vec);
-	assert(tgt_vec);
 
 	src_len = src_vec->len;
 	tgt_len = tgt_vec->len;
@@ -234,7 +220,6 @@ static void normalize_towards_target(pbqp_edge_t *edge)
 	assert(tgt_len > 0);
 
 	mat = edge->costs;
-	assert(mat);
 
 	/* Normalize towards target node. */
 	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
@@ -291,18 +276,11 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 	unsigned        edge_index;
 	unsigned        edge_len;
 
-	assert(pbqp);
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(src_node);
-	assert(tgt_node);
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
-	assert(src_vec);
-	assert(tgt_vec);
 
 	src_len = src_vec->len;
 	tgt_len = tgt_vec->len;
@@ -312,7 +290,6 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 	assert(tgt_len > 1);
 
 	mat = edge->costs;
-	assert(mat);
 
 	mapping = NEW_ARR_F(unsigned, tgt_len);
 
@@ -369,12 +346,10 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 		unsigned       tgt_index;
 
 		assert(old_edge);
-
 		if (old_edge == edge)
 			continue;
 
 		old_matrix = old_edge->costs;
-		assert(old_matrix);
 
 		if (old_edge->tgt == src_node) {
 			other_node = old_edge->src;
@@ -384,7 +359,6 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 			other_node = old_edge->tgt;
 			other_len = old_matrix->cols;
 		}
-		assert(other_node);
 		other_vec = other_node->costs;
 
 		new_matrix = pbqp_matrix_alloc(pbqp, tgt_len, other_len);
@@ -465,18 +439,11 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 	unsigned        edge_index;
 	unsigned        edge_len;
 
-	assert(pbqp);
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(src_node);
-	assert(tgt_node);
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
-	assert(src_vec);
-	assert(tgt_vec);
 
 	src_len = src_vec->len;
 	tgt_len = tgt_vec->len;
@@ -486,7 +453,6 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 	assert(tgt_len > 1);
 
 	mat = edge->costs;
-	assert(mat);
 
 	mapping = NEW_ARR_F(unsigned, src_len);
 
@@ -548,7 +514,6 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 			continue;
 
 		old_matrix = old_edge->costs;
-		assert(old_matrix);
 
 		if (old_edge->tgt == tgt_node) {
 			other_node = old_edge->src;
@@ -558,7 +523,6 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 			other_node = old_edge->tgt;
 			other_len = old_matrix->cols;
 		}
-		assert(other_node);
 		other_vec = other_node->costs;
 
 		new_matrix = pbqp_matrix_alloc(pbqp, src_len, other_len);
@@ -627,9 +591,6 @@ void apply_RM(pbqp_t *pbqp, pbqp_node_t *node)
 	unsigned      edge_index;
 	unsigned      edge_len;
 
-	assert(node);
-	assert(pbqp);
-
 	edges    = node->edges;
 	edge_len = pbqp_node_get_degree(node);
 
@@ -643,7 +604,6 @@ void apply_RM(pbqp_t *pbqp, pbqp_node_t *node)
 	/* ALAP: Merge neighbors into given node. */
 	while(edge_bucket_get_length(rm_bucket) > 0) {
 		pbqp_edge_t *edge = edge_bucket_pop(&rm_bucket);
-		assert(edge);
 
 		/* If the edge is not deleted: Try a merge. */
 		if (edge->src == node)
@@ -701,9 +661,6 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 	int            src_len;
 	int            tgt_len;
 
-	assert(pbqp);
-	assert(edge);
-
 	(void) pbqp;
 
 	src_node = edge->src;
@@ -725,8 +682,6 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
-	assert(src_vec);
-	assert(tgt_vec);
 
 	src_len = src_vec->len;
 	tgt_len = tgt_vec->len;
@@ -734,7 +689,6 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 	assert(tgt_len > 0);
 
 	mat = edge->costs;
-	assert(mat);
 
 #if	KAPS_DUMP
 	if (pbqp->dump_file) {
@@ -772,8 +726,6 @@ void initial_simplify_edges(pbqp_t *pbqp)
 {
 	unsigned node_index;
 	unsigned node_len;
-
-	assert(pbqp);
 
 	#if KAPS_TIMING
 		ir_timer_t *t_int_simpl = ir_timer_new();
@@ -834,8 +786,6 @@ num determine_solution(pbqp_t *pbqp)
 	FILE     *file;
 #endif
 
-	assert(pbqp);
-
 	(void) pbqp;
 
 #if	KAPS_DUMP
@@ -856,7 +806,6 @@ num determine_solution(pbqp_t *pbqp)
 
 	for (node_index = 0; node_index < node_len; ++node_index) {
 		pbqp_node_t *node = node_buckets[0][node_index];
-		assert(node);
 
 		node->solution = vector_get_min_index(node->costs);
 		solution       = pbqp_add(solution,
@@ -896,10 +845,6 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 	pbqp_matrix_t *mat;
 	vector_t      *vec;
 	int            is_src;
-
-	assert(pbqp);
-	assert(node);
-
 	(void) pbqp;
 
 	edge = node->edges[0];
@@ -909,13 +854,9 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 
 	if (is_src) {
 		other = edge->tgt;
-		assert(other);
-
 		node->solution = pbqp_matrix_get_col_min_index(mat, other->solution, vec);
 	} else {
 		other = edge->src;
-		assert(other);
-
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
@@ -940,8 +881,6 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 	vector_t      *node_vec;
 	unsigned       col_index;
 	unsigned       row_index;
-
-	assert(pbqp);
 
 	if (src_is_src) {
 		src_node = src_edge->tgt;
@@ -1010,8 +949,6 @@ void back_propagate(pbqp_t *pbqp)
 	unsigned node_index;
 	unsigned node_len   = node_bucket_get_length(reduced_bucket);
 
-	assert(pbqp);
-
 #if	KAPS_DUMP
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Back Propagation");
@@ -1050,7 +987,7 @@ void apply_RI(pbqp_t *pbqp)
 	int            is_src = edge->src == node;
 	pbqp_node_t   *other_node;
 
-	(void ) pbqp;
+	(void) pbqp;
 	assert(pbqp_node_get_degree(node) == 1);
 
 	if (is_src) {
@@ -1120,7 +1057,6 @@ void apply_RII(pbqp_t *pbqp)
 	unsigned       row_len;
 	unsigned       node_len;
 
-	assert(pbqp);
 	assert(pbqp_node_get_degree(node) == 2);
 
 	if (src_is_src) {
@@ -1251,17 +1187,11 @@ static void select_column(pbqp_edge_t *edge, unsigned col_index)
 	unsigned        src_index;
 	unsigned        new_infinity = 0;
 
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(src_node);
-	assert(tgt_node);
 
 	src_vec = src_node->costs;
 	tgt_vec = tgt_node->costs;
-	assert(src_vec);
-	assert(tgt_vec);
 
 	src_len = src_vec->len;
 	tgt_len = tgt_vec->len;
@@ -1269,7 +1199,6 @@ static void select_column(pbqp_edge_t *edge, unsigned col_index)
 	assert(tgt_len > 0);
 
 	mat = edge->costs;
-	assert(mat);
 
 	for (src_index = 0; src_index < src_len; ++src_index) {
 		num elem = mat->entries[src_index * tgt_len + col_index];
@@ -1309,20 +1238,15 @@ static void select_row(pbqp_edge_t *edge, unsigned row_index)
 	unsigned        tgt_index;
 	unsigned        new_infinity = 0;
 
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(tgt_node);
 
 	tgt_vec = tgt_node->costs;
-	assert(tgt_vec);
 
 	tgt_len = tgt_vec->len;
 	assert(tgt_len > 0);
 
 	mat = edge->costs;
-	assert(mat);
 
 	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
 		num elem = mat->entries[row_index * tgt_len + tgt_index];
@@ -1360,7 +1284,6 @@ void select_alternative(pbqp_node_t *node, unsigned selected_index)
 	vector_t *node_vec;
 	unsigned  max_degree = pbqp_node_get_degree(node);
 
-	assert(node);
 	node->solution = selected_index;
 	node_vec = node->costs;
 	node_len = node_vec->len;
@@ -1419,8 +1342,6 @@ unsigned get_local_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node)
 	num            min          = INF_COSTS;
 	int            is_src;
 
-	assert(pbqp);
-	assert(node);
 	node_vec   = node->costs;
 	node_len   = node_vec->len;
 	max_degree = pbqp_node_get_degree(node);

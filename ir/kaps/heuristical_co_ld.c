@@ -36,11 +36,6 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 	vector_t      *vec;
 	int            is_src;
 
-	assert(pbqp);
-	assert(node);
-
-	(void) pbqp;
-
 	edge = node->edges[0];
 	mat = edge->costs;
 	is_src = edge->src == node;
@@ -48,13 +43,9 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 
 	if (is_src) {
 		other = edge->tgt;
-		assert(other);
-
 		node->solution = pbqp_matrix_get_col_min_index(mat, other->solution, vec);
 	} else {
 		other = edge->src;
-		assert(other);
-
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
@@ -225,7 +216,6 @@ static void merge_into_RN_node(pbqp_t *pbqp, plist_t *rpeo)
 		plist_insert_front(rpeo, node);
 	} while(node_is_reduced(node));
 
-	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
 	/* Check whether we can merge a neighbor into the current node. */
@@ -241,7 +231,6 @@ static void apply_RN_co_without_selection(pbqp_t *pbqp)
 
 	node        = merged_node;
 	merged_node = NULL;
-	assert(node);
 
 	if (node_is_reduced(node))
 		return;
@@ -262,10 +251,8 @@ static void apply_RN_co_without_selection(pbqp_t *pbqp)
 
 		/* get neighbor node */
 		edge = node->edges[edge_index];
-		assert(edge);
 
 		neighbor = edge->src == node ? edge->tgt : edge->src;
-		assert(neighbor);
 
 		assert(neighbor != node);
 

@@ -77,7 +77,6 @@ static unsigned get_minimal_alternative(pbqp_t *pbqp, pbqp_node_t *node)
 	unsigned  bucket_index;
 
 	assert(pbqp);
-	assert(node);
 	node_vec     = node->costs;
 	node_len     = node_vec->len;
 	bucket_index = node->bucket_index;
@@ -151,7 +150,6 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 
 	/* We want to reduce a node with maximum degree. */
 	node = get_node_with_max_degree();
-	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
 #if	KAPS_DUMP
@@ -202,7 +200,6 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 	int            is_src;
 
 	assert(pbqp);
-	assert(node);
 
 	edge = node->edges[0];
 	mat = edge->costs;
@@ -211,7 +208,6 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 
 	if (is_src) {
 		other = edge->tgt;
-		assert(other);
 
 		/* Update pointer for brute force solver. */
 		other = pbqp->nodes[other->index];
@@ -219,7 +215,6 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 		node->solution = pbqp_matrix_get_col_min_index(mat, other->solution, vec);
 	} else {
 		other = edge->src;
-		assert(other);
 
 		/* Update pointer for brute force solver. */
 		other = pbqp->nodes[other->index];

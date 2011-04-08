@@ -58,7 +58,6 @@ vector_t *vector_alloc(pbqp_t *pbqp, unsigned length)
 {
 	assert(length > 0);
 	vector_t *vec = (vector_t*)obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
-	assert(vec);
 
 	vec->len = length;
 	memset(vec->entries, 0, sizeof(*vec->entries) * length);
@@ -80,8 +79,6 @@ void vector_add(vector_t *sum, vector_t *summand)
 	int i;
 	int len;
 
-	assert(sum);
-	assert(summand);
 	assert(sum->len == summand->len);
 
 	len = sum->len;
@@ -111,8 +108,6 @@ void vector_add_value(vector_t *vec, num value)
 	unsigned index;
 	unsigned len;
 
-	assert(vec);
-
 	len = vec->len;
 
 	for (index = 0; index < len; ++index) {
@@ -125,8 +120,6 @@ void vector_add_matrix_col(vector_t *vec, pbqp_matrix_t *mat, unsigned col_index
 	unsigned index;
 	unsigned len;
 
-	assert(vec);
-	assert(mat);
 	assert(vec->len == mat->rows);
 	assert(col_index < mat->cols);
 
@@ -142,8 +135,6 @@ void vector_add_matrix_row(vector_t *vec, pbqp_matrix_t *mat, unsigned row_index
 	unsigned index;
 	unsigned len;
 
-	assert(vec);
-	assert(mat);
 	assert(vec->len == mat->cols);
 	assert(row_index < mat->rows);
 
@@ -160,8 +151,6 @@ num vector_get_min(vector_t *vec)
 	unsigned index;
 	unsigned len;
 	num      min = INF_COSTS;
-
-	assert(vec);
 
 	len = vec->len;
 	assert(len > 0);
@@ -183,8 +172,6 @@ unsigned vector_get_min_index(vector_t *vec)
 	unsigned len;
 	unsigned min_index = 0;
 	num      min       = INF_COSTS;
-
-	assert(vec);
 
 	len = vec->len;
 	assert(len > 0);

@@ -35,13 +35,12 @@
 
 pbqp_matrix_t *pbqp_matrix_alloc(pbqp_t *pbqp, unsigned rows, unsigned cols)
 {
-	assert(cols> 0);
-	assert(rows> 0);
+	assert(cols > 0);
+	assert(rows > 0);
 
 	unsigned length = rows * cols;
 
 	pbqp_matrix_t *mat = (pbqp_matrix_t*)obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(*mat->entries) * length);
-	assert(mat);
 
 	mat->cols = cols;
 	mat->rows = rows;
@@ -67,7 +66,6 @@ pbqp_matrix_t *pbqp_matrix_copy_and_transpose(pbqp_t *pbqp, pbqp_matrix_t *m)
 	unsigned       rows = m->rows;
 	unsigned       len  = rows * cols;
 	pbqp_matrix_t *copy = (pbqp_matrix_t*)obstack_alloc(&pbqp->obstack, sizeof(*copy) + sizeof(*copy->entries) * len);
-	assert(copy);
 
 	for (i = 0; i < rows; ++i) {
 		for (j = 0; j < cols; ++j) {
@@ -85,7 +83,6 @@ void pbqp_matrix_transpose(pbqp_t *pbqp, pbqp_matrix_t *mat)
 {
 	unsigned len;
 
-	assert(mat);
 	len = mat->rows * mat->cols;
 
 	pbqp_matrix_t *tmp = pbqp_matrix_copy_and_transpose(pbqp, mat);
@@ -100,8 +97,6 @@ void pbqp_matrix_add(pbqp_matrix_t *sum, pbqp_matrix_t *summand)
 	int i;
 	int len;
 
-	assert(sum);
-	assert(summand);
 	assert(sum->cols == summand->cols);
 	assert(sum->rows == summand->rows);
 
@@ -117,7 +112,6 @@ void pbqp_matrix_set_col_value(pbqp_matrix_t *mat, unsigned col, num value)
 	unsigned row_index;
 	unsigned row_len;
 
-	assert(mat);
 	assert(col < mat->cols);
 
 	row_len = mat->rows;
@@ -132,7 +126,6 @@ void pbqp_matrix_set_row_value(pbqp_matrix_t *mat, unsigned row, num value)
 	unsigned col_index;
 	unsigned col_len;
 
-	assert(mat);
 	assert(row < mat->rows);
 
 	col_len = mat->cols;
@@ -144,7 +137,6 @@ void pbqp_matrix_set_row_value(pbqp_matrix_t *mat, unsigned row, num value)
 
 void pbqp_matrix_set(pbqp_matrix_t *mat, unsigned row, unsigned col, num value)
 {
-	assert(mat);
 	assert(col < mat->cols);
 	assert(row < mat->rows);
 
@@ -156,8 +148,6 @@ num pbqp_matrix_get_col_min(pbqp_matrix_t *matrix, unsigned col_index, vector_t 
 	unsigned row_index;
 	num min = INF_COSTS;
 
-	assert(matrix);
-	assert(flags);
 	assert(matrix->rows == flags->len);
 
 	unsigned col_len = matrix->cols;
@@ -183,8 +173,6 @@ unsigned pbqp_matrix_get_col_min_index(pbqp_matrix_t *matrix, unsigned col_index
 	unsigned min_index = 0;
 	num      min       = INF_COSTS;
 
-	assert(matrix);
-	assert(flags);
 	assert(matrix->rows == flags->len);
 
 	unsigned col_len = matrix->cols;
@@ -212,8 +200,6 @@ void pbqp_matrix_sub_col_value(pbqp_matrix_t *matrix, unsigned col_index,
 	unsigned row_index;
 	unsigned row_len;
 
-	assert(matrix);
-	assert(flags);
 	assert(matrix->rows == flags->len);
 
 	col_len = matrix->cols;
@@ -237,8 +223,6 @@ num pbqp_matrix_get_row_min(pbqp_matrix_t *matrix, unsigned row_index, vector_t 
 	unsigned col_index;
 	num min = INF_COSTS;
 
-	assert(matrix);
-	assert(flags);
 	assert(matrix->cols == flags->len);
 
 	unsigned len = flags->len;
@@ -263,8 +247,6 @@ unsigned pbqp_matrix_get_row_min_index(pbqp_matrix_t *matrix, unsigned row_index
 	unsigned min_index = 0;
 	num      min       = INF_COSTS;
 
-	assert(matrix);
-	assert(flags);
 	assert(matrix->cols == flags->len);
 
 	unsigned len = flags->len;
@@ -290,8 +272,6 @@ void pbqp_matrix_sub_row_value(pbqp_matrix_t *matrix, unsigned row_index,
 	unsigned col_index;
 	unsigned col_len;
 
-	assert(matrix);
-	assert(flags);
 	assert(matrix->cols == flags->len);
 
 	col_len = matrix->cols;
@@ -316,9 +296,6 @@ int pbqp_matrix_is_zero(pbqp_matrix_t *mat, vector_t *src_vec, vector_t *tgt_vec
 	unsigned row_index;
 	unsigned row_len;
 
-	assert(mat);
-	assert(src_vec);
-	assert(tgt_vec);
 	assert(mat->cols = tgt_vec->len);
 	assert(mat->rows = src_vec->len);
 
@@ -346,8 +323,6 @@ void pbqp_matrix_add_to_all_cols(pbqp_matrix_t *mat, vector_t *vec)
 	unsigned row_index;
 	unsigned row_len;
 
-	assert(mat);
-	assert(vec);
 	assert(mat->rows == vec->len);
 
 	col_len = mat->cols;
@@ -369,8 +344,6 @@ void pbqp_matrix_add_to_all_rows(pbqp_matrix_t *mat, vector_t *vec)
 	unsigned row_index;
 	unsigned row_len;
 
-	assert(mat);
-	assert(vec);
 	assert(mat->cols == vec->len);
 
 	col_len = mat->cols;

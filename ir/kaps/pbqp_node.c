@@ -40,7 +40,6 @@
 pbqp_node_t *alloc_node(pbqp_t *pbqp, unsigned node_index, vector_t *costs)
 {
 	pbqp_node_t *node = OALLOC(&pbqp->obstack, pbqp_node_t);
-	assert(node);
 
 	node->edges = NEW_ARR_F(pbqp_edge_t *, 0);
 	node->costs = vector_copy(pbqp, costs);
@@ -58,8 +57,6 @@ int is_connected(pbqp_node_t *node, pbqp_edge_t *edge)
 	unsigned      edge_len;
 
 	assert(node);
-	assert(edge);
-
 	if (edge->src != node && edge->tgt != node) return 0;
 
 	edges = node->edges;
@@ -96,7 +93,6 @@ void disconnect_edge(pbqp_node_t *node, pbqp_edge_t *edge)
 
 unsigned pbqp_node_get_degree(pbqp_node_t *node)
 {
-	assert(node);
 	return ARR_LEN(node->edges);
 }
 
@@ -106,8 +102,6 @@ pbqp_node_t *pbqp_node_deep_copy(pbqp_t *pbqp, pbqp_node_bucket_t new_bucket,
 	unsigned     edge_index;
 	unsigned     edge_length = pbqp_node_get_degree(node);
 	pbqp_node_t *copy        = OALLOC(&pbqp->obstack, pbqp_node_t);
-
-	assert(copy);
 
 	copy->edges        = NEW_ARR_F(pbqp_edge_t *, 0);
 	for (edge_index = 0; edge_index < edge_length; ++edge_index) {

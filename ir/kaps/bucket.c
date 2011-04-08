@@ -35,8 +35,6 @@
 
 int edge_bucket_contains(pbqp_edge_bucket_t bucket, pbqp_edge_t *edge)
 {
-	assert(edge);
-
 	return edge->bucket_index < edge_bucket_get_length(bucket)
 			&& bucket[edge->bucket_index] == edge;
 }
@@ -85,8 +83,6 @@ void node_bucket_shrink(pbqp_node_bucket_t *bucket, unsigned len)
 
 int node_bucket_contains(pbqp_node_bucket_t bucket, pbqp_node_t *node)
 {
-	assert(node);
-
 	return node->bucket_index < node_bucket_get_length(bucket)
 			&& bucket[node->bucket_index] == node;
 }
@@ -141,7 +137,6 @@ pbqp_node_t *node_bucket_pop(pbqp_node_bucket_t *bucket)
 	assert(bucket_len > 0);
 
 	node = (*bucket)[bucket_len - 1];
-	assert(node);
 
 	ARR_SHRINKLEN(*bucket, (int)bucket_len - 1);
 	node->bucket_index = UINT_MAX;
@@ -155,9 +150,7 @@ void node_bucket_remove(pbqp_node_bucket_t *bucket, pbqp_node_t *node)
 	unsigned     node_index;
 	pbqp_node_t *other;
 
-	assert(node);
 	assert(node_bucket_contains(*bucket, node));
-	assert(bucket_len > 0);
 
 	node_index            = node->bucket_index;
 	other                 = (*bucket)[bucket_len - 1];

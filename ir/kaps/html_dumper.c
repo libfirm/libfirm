@@ -53,7 +53,6 @@ static const char *cost2a(num const cost)
 static void dump_vector(FILE *f, vector_t *vec)
 {
 	unsigned index;
-	assert(vec);
 
 	fprintf(f, "<span class=\"vector\">( ");
 	unsigned len = vec->len;
@@ -72,11 +71,10 @@ static void dump_vector(FILE *f, vector_t *vec)
 static void dump_matrix(FILE *f, pbqp_matrix_t *mat)
 {
 	unsigned row, col;
-	assert(mat);
 	num *p = mat->entries;
 
-	assert(mat->cols> 0);
-	assert(mat->rows> 0);
+	assert(mat->cols > 0);
+	assert(mat->rows > 0);
 	fprintf(f, "\t\\begin{pmatrix}\n");
 	for (row = 0; row < mat->rows; ++row) {
 		fprintf(f, "\t %s", cost2a(*p++));
@@ -102,9 +100,6 @@ static void dump_edge_costs(pbqp_t *pbqp)
 {
 	unsigned src_index;
 
-	assert(pbqp);
-	assert(pbqp->dump_file);
-
 	fputs("<p>", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *src_node = get_node(pbqp, src_index);
@@ -127,8 +122,6 @@ static void dump_edge_costs(pbqp_t *pbqp)
 
 void dump_node(FILE *file, pbqp_node_t *node)
 {
-	assert(file);
-
 	if (node) {
 		fprintf(file, "\tc<sub>%d</sub> = ", node->index);
 		dump_vector(file, node->costs);
@@ -140,9 +133,6 @@ static void dump_node_costs(pbqp_t *pbqp)
 {
 	unsigned index;
 
-	assert(pbqp);
-	assert(pbqp->dump_file);
-
 	/* dump node costs */
 	fputs("<p>", pbqp->dump_file);
 	for (index = 0; index < pbqp->num_nodes; ++index) {
@@ -153,17 +143,12 @@ static void dump_node_costs(pbqp_t *pbqp)
 
 void dump_section(FILE *f, int level, const char *txt)
 {
-	assert(f);
-
 	fprintf(f, "<h%d>%s</h%d>\n", level, txt, level);
 }
 
 void pbqp_dump_graph(pbqp_t *pbqp)
 {
 	unsigned src_index;
-
-	assert(pbqp);
-	assert(pbqp->dump_file);
 
 	fputs("<p>\n<graph>\n\tgraph input {\n", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
@@ -202,9 +187,6 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 
 void pbqp_dump_input(pbqp_t *pbqp)
 {
-	assert(pbqp);
-	assert(pbqp->dump_file);
-
 	dump_section(pbqp->dump_file, 1, "1. PBQP Problem");
 	dump_section(pbqp->dump_file, 2, "1.1 Topology");
 	pbqp_dump_graph(pbqp);
@@ -216,9 +198,6 @@ void pbqp_dump_input(pbqp_t *pbqp)
 
 void dump_simplifyedge(pbqp_t *pbqp, pbqp_edge_t *edge)
 {
-	assert(pbqp);
-	assert(pbqp->dump_file);
-
 	dump_node(pbqp->dump_file, edge->src);
 	dump_edge(pbqp->dump_file, edge);
 	dump_node(pbqp->dump_file, edge->tgt);

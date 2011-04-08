@@ -55,7 +55,6 @@ static void apply_RN(pbqp_t *pbqp)
 
 	/* We want to reduce a node with maximum degree. */
 	node = get_node_with_max_degree();
-	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
 #if	KAPS_DUMP

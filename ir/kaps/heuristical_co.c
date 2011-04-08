@@ -63,7 +63,6 @@ static void merge_into_RN_node(pbqp_t *pbqp, plist_t *rpeo)
 		plist_insert_back(rpeo, node);
 	} while(node_is_reduced(node));
 
-	assert(node);
 	assert(pbqp_node_get_degree(node) > 2);
 
 	/* Check whether we can merge a neighbor into the current node. */
@@ -79,7 +78,6 @@ static void apply_RN_co(pbqp_t *pbqp)
 
 	node        = merged_node;
 	merged_node = NULL;
-	assert(node);
 
 	if (node_is_reduced(node))
 		return;

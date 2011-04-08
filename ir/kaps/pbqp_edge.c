@@ -52,13 +52,10 @@ pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
 	}
 
 	pbqp_edge_t *edge = OALLOC(&pbqp->obstack, pbqp_edge_t);
-	assert(edge);
 
 	pbqp_node_t *src_node = get_node(pbqp, src_index);
-	assert(src_node);
 
 	pbqp_node_t *tgt_node = get_node(pbqp, tgt_index);
-	assert(tgt_node);
 
 	if (transpose) {
 		edge->costs = pbqp_matrix_copy_and_transpose(pbqp, costs);
@@ -84,12 +81,8 @@ void delete_edge(pbqp_edge_t *edge)
 	pbqp_node_t  *src_node;
 	pbqp_node_t  *tgt_node;
 
-	assert(edge);
-
 	src_node = edge->src;
 	tgt_node = edge->tgt;
-	assert(src_node);
-	assert(tgt_node);
 
 	disconnect_edge(src_node, edge);
 	disconnect_edge(tgt_node, edge);
@@ -104,8 +97,6 @@ void delete_edge(pbqp_edge_t *edge)
 unsigned is_deleted(pbqp_edge_t *edge)
 {
 	unsigned deleted;
-
-	assert(edge);
 
 	deleted = (edge->src == NULL) && (edge-> tgt == NULL);
 

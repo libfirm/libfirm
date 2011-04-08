@@ -55,7 +55,6 @@ pbqp_edge_t *get_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index)
 
 	pbqp_node_t *src_node = get_node(pbqp, src_index);
 	pbqp_node_t *tgt_node = get_node(pbqp, tgt_index);
-	assert(src_node);
 	assert(tgt_node);
 
 	len = ARR_LEN(src_node->edges);
@@ -134,7 +133,6 @@ void add_edge_costs(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index,
 num get_node_solution(pbqp_t *pbqp, unsigned node_index)
 {
 	pbqp_node_t *node = get_node(pbqp, node_index);
-	assert(node);
 
 	return node->solution;
 }
@@ -147,7 +145,6 @@ num get_solution(pbqp_t *pbqp)
 #if	KAPS_DUMP
 void set_dumpfile(pbqp *pbqp, FILE *f)
 {
-	assert(pbqp);
 	pbqp->dump_file = f;
 }
 #endif
