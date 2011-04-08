@@ -57,9 +57,7 @@ enum {
 	CO_ALGO_HEUR2,
 	CO_ALGO_HEUR4,
 	CO_ALGO_ILP,
-#ifdef FIRM_KAPS
 	CO_ALGO_PBQP,
-#endif
 	CO_ALGO_LAST
 };
 
