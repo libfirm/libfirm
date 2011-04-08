@@ -139,7 +139,6 @@ static ir_node *create_phi(be_ssa_construction_env_t *env, ir_node *block,
 		ir_node *pred_block = get_Block_cfgpred_block(block, i);
 		ir_node *pred_def   = search_def_end_of_block(env, pred_block);
 
-		DBG((dbg, LEVEL_1, "\t%+F(%d) -> %+F\n", phi, i, pred_def));
 		set_irn_n(phi, i, pred_def);
 	}
 
@@ -355,8 +354,6 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 		env->iterated_domfront_calculated = 1;
 	}
 
-	DBG((dbg, LEVEL_1, "\tfixing users array\n"));
-
 	stat_ev_tim_push();
 	for (i = 0; i < nodes_len; ++i) {
 		ir_node *value = nodes[i];
@@ -388,7 +385,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 				panic("no definition found for %+F at position %d", use, pos);
 			}
 
-			DBG((dbg, LEVEL_1, "\t%+F(%d) -> %+F\n", use, pos, def));
+			DBG((dbg, LEVEL_2, "\t%+F(%d) -> %+F\n", use, pos, def));
 			set_irn_n(use, pos, def);
 			stat_ev_cnt_inc(uses);
 		}
