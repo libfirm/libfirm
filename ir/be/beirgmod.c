@@ -307,9 +307,23 @@ static void remove_dead_nodes_walker(ir_node *block, void *data)
 		if (bitset_is_set(env->reachable, get_irn_idx(node)))
 			continue;
 
-		if (env->lv)
+		if (env->lv != NULL)
 			be_liveness_remove(env->lv, node);
 		sched_remove(node);
+
+		/* kill projs */
+		if (get_irn_mode(node) == mode_T) {
+			const ir_edge_t *edge;
+			const ir_edge_t *next_edge;
+			foreach_out_edge_safe(node, edge, next_edge) {
+				ir_node *proj = get_edge_src_irn(edge);
+				if (!is_Proj(proj))
+					continue;
+				if (env->lv != NULL)
+					be_liveness_remove(env->lv, proj);
+				kill_node(proj);
+			}
+		}
 		kill_node(node);
 	}
 }
