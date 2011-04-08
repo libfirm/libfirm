@@ -73,6 +73,7 @@ libfirm_DIRS := \
 	ir/stat    \
 	ir/tr      \
 	ir/tv      \
+	ir/kaps    \
 	ir/be
 libfirm_SOURCES  = $(foreach dir,$(libfirm_DIRS),$(wildcard $(dir)/*.c))
 libfirm_a        = $(builddir)/libfirm.a

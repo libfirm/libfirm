@@ -120,9 +120,7 @@ void be_init_modules(void)
 #ifdef WITH_ILP
 	be_init_copyilp2();
 #endif
-#ifdef FIRM_KAPS
 	be_init_pbqp_coloring();
-#endif
 	be_init_copynone();
 	be_init_copystat();
 	be_init_peephole();

@@ -28,8 +28,6 @@
 /* miscellaneous includes */
 #include "config.h"
 
-#ifdef FIRM_KAPS
-
 #include "debug.h"
 #include "error.h"
 
@@ -797,5 +795,3 @@ void be_init_pbqp_coloring(void)
 	lc_opt_add_table(pbqp_grp, options);
 	be_register_chordal_coloring("pbqp", &coloring);
 }
-
-#endif
