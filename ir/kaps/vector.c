@@ -34,9 +34,11 @@
 
 num pbqp_add(num x, num y)
 {
+	num res;
+
 	if (x == INF_COSTS || y == INF_COSTS) return INF_COSTS;
 
-	num res = x + y;
+	res = x + y;
 
 #if !KAPS_USE_UNSIGNED
 	/* No positive overflow. */
@@ -56,8 +58,8 @@ num pbqp_add(num x, num y)
 
 vector_t *vector_alloc(pbqp_t *pbqp, unsigned length)
 {
-	assert(length > 0);
 	vector_t *vec = (vector_t*)obstack_alloc(&pbqp->obstack, sizeof(*vec) + sizeof(*vec->entries) * length);
+	assert(length > 0);
 
 	vec->len = length;
 	memset(vec->entries, 0, sizeof(*vec->entries) * length);

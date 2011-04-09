@@ -35,12 +35,11 @@
 
 pbqp_matrix_t *pbqp_matrix_alloc(pbqp_t *pbqp, unsigned rows, unsigned cols)
 {
+	unsigned length = rows * cols;
+	pbqp_matrix_t *mat = (pbqp_matrix_t*)obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(*mat->entries) * length);
+
 	assert(cols > 0);
 	assert(rows > 0);
-
-	unsigned length = rows * cols;
-
-	pbqp_matrix_t *mat = (pbqp_matrix_t*)obstack_alloc(&pbqp->obstack, sizeof(*mat) + sizeof(*mat->entries) * length);
 
 	mat->cols = cols;
 	mat->rows = rows;
@@ -82,10 +81,11 @@ pbqp_matrix_t *pbqp_matrix_copy_and_transpose(pbqp_t *pbqp, pbqp_matrix_t *m)
 void pbqp_matrix_transpose(pbqp_t *pbqp, pbqp_matrix_t *mat)
 {
 	unsigned len;
+	pbqp_matrix_t *tmp;
 
 	len = mat->rows * mat->cols;
 
-	pbqp_matrix_t *tmp = pbqp_matrix_copy_and_transpose(pbqp, mat);
+	tmp = pbqp_matrix_copy_and_transpose(pbqp, mat);
 
 	memcpy(mat, tmp, sizeof(*mat) + sizeof(*mat->entries) * len);
 
@@ -148,16 +148,18 @@ num pbqp_matrix_get_col_min(pbqp_matrix_t *matrix, unsigned col_index, vector_t 
 	unsigned row_index;
 	num min = INF_COSTS;
 
-	assert(matrix->rows == flags->len);
-
 	unsigned col_len = matrix->cols;
 	unsigned row_len = matrix->rows;
 
+	assert(matrix->rows == flags->len);
+
 	for (row_index = 0; row_index < row_len; ++row_index) {
+		num elem;
+
 		/* Ignore virtual deleted columns. */
 		if (flags->entries[row_index].data == INF_COSTS) continue;
 
-		num elem = matrix->entries[row_index * col_len + col_index];
+		elem = matrix->entries[row_index * col_len + col_index];
 
 		if (elem < min) {
 			min = elem;
@@ -173,16 +175,18 @@ unsigned pbqp_matrix_get_col_min_index(pbqp_matrix_t *matrix, unsigned col_index
 	unsigned min_index = 0;
 	num      min       = INF_COSTS;
 
-	assert(matrix->rows == flags->len);
-
 	unsigned col_len = matrix->cols;
 	unsigned row_len = matrix->rows;
 
+	assert(matrix->rows == flags->len);
+
 	for (row_index = 0; row_index < row_len; ++row_index) {
+		num elem;
+
 		/* Ignore virtual deleted columns. */
 		if (flags->entries[row_index].data == INF_COSTS) continue;
 
-		num elem = matrix->entries[row_index * col_len + col_index];
+		elem = matrix->entries[row_index * col_len + col_index];
 
 		if (elem < min) {
 			min = elem;
@@ -223,15 +227,17 @@ num pbqp_matrix_get_row_min(pbqp_matrix_t *matrix, unsigned row_index, vector_t 
 	unsigned col_index;
 	num min = INF_COSTS;
 
-	assert(matrix->cols == flags->len);
-
 	unsigned len = flags->len;
 
+	assert(matrix->cols == len);
+
 	for (col_index = 0; col_index < len; ++col_index) {
+		num elem;
+
 		/* Ignore virtual deleted columns. */
 		if (flags->entries[col_index].data == INF_COSTS) continue;
 
-		num elem = matrix->entries[row_index * len + col_index];
+		elem = matrix->entries[row_index * len + col_index];
 
 		if (elem < min) {
 			min = elem;
@@ -247,15 +253,17 @@ unsigned pbqp_matrix_get_row_min_index(pbqp_matrix_t *matrix, unsigned row_index
 	unsigned min_index = 0;
 	num      min       = INF_COSTS;
 
-	assert(matrix->cols == flags->len);
-
 	unsigned len = flags->len;
 
+	assert(matrix->cols == len);
+
 	for (col_index = 0; col_index < len; ++col_index) {
+		num elem;
+
 		/* Ignore virtual deleted columns. */
 		if (flags->entries[col_index].data == INF_COSTS) continue;
 
-		num elem = matrix->entries[row_index * len + col_index];
+		elem = matrix->entries[row_index * len + col_index];
 
 		if (elem < min) {
 			min = elem;

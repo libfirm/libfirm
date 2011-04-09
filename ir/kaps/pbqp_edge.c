@@ -42,6 +42,9 @@ pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
                         pbqp_matrix_t *costs)
 {
 	int transpose = 0;
+	pbqp_edge_t *edge = OALLOC(&pbqp->obstack, pbqp_edge_t);
+	pbqp_node_t *src_node;
+	pbqp_node_t *tgt_node;
 
 	if (tgt_index < src_index) {
 		int tmp = src_index;
@@ -51,11 +54,9 @@ pbqp_edge_t *alloc_edge(pbqp_t *pbqp, int src_index, int tgt_index,
 		transpose = 1;
 	}
 
-	pbqp_edge_t *edge = OALLOC(&pbqp->obstack, pbqp_edge_t);
+	src_node = get_node(pbqp, src_index);
 
-	pbqp_node_t *src_node = get_node(pbqp, src_index);
-
-	pbqp_node_t *tgt_node = get_node(pbqp, tgt_index);
+	tgt_node = get_node(pbqp, tgt_index);
 
 	if (transpose) {
 		edge->costs = pbqp_matrix_copy_and_transpose(pbqp, costs);

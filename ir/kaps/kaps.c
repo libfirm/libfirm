@@ -46,6 +46,8 @@ pbqp_edge_t *get_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index)
 {
 	int i;
 	int len;
+	pbqp_node_t *src_node;
+	pbqp_node_t *tgt_node;
 
 	if (tgt_index < src_index) {
 		unsigned tmp = src_index;
@@ -53,8 +55,8 @@ pbqp_edge_t *get_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index)
 		tgt_index    = tmp;
 	}
 
-	pbqp_node_t *src_node = get_node(pbqp, src_index);
-	pbqp_node_t *tgt_node = get_node(pbqp, tgt_index);
+	src_node = get_node(pbqp, src_index);
+	tgt_node = get_node(pbqp, tgt_index);
 	assert(tgt_node);
 
 	len = ARR_LEN(src_node->edges);

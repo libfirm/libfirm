@@ -1046,6 +1046,7 @@ void apply_RII(pbqp_t *pbqp)
 	pbqp_matrix_t *tgt_mat;
 	pbqp_node_t   *src_node;
 	pbqp_node_t   *tgt_node;
+	pbqp_edge_t   *edge;
 	pbqp_matrix_t *mat;
 	vector_t      *vec;
 	vector_t      *node_vec;
@@ -1138,7 +1139,7 @@ void apply_RII(pbqp_t *pbqp)
 		}
 	}
 
-	pbqp_edge_t *edge = get_edge(pbqp, src_node->index, tgt_node->index);
+	edge = get_edge(pbqp, src_node->index, tgt_node->index);
 
 	/* Disconnect node. */
 	disconnect_edge(src_node, src_edge);

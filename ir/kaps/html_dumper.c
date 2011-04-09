@@ -53,9 +53,9 @@ static const char *cost2a(num const cost)
 static void dump_vector(FILE *f, vector_t *vec)
 {
 	unsigned index;
+	unsigned len = vec->len;
 
 	fprintf(f, "<span class=\"vector\">( ");
-	unsigned len = vec->len;
 	assert(len > 0);
 	for (index = 0; index < len; ++index) {
 #if KAPS_ENABLE_VECTOR_NAMES
@@ -103,12 +103,13 @@ static void dump_edge_costs(pbqp_t *pbqp)
 	fputs("<p>", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *src_node = get_node(pbqp, src_index);
+		unsigned edge_index;
+		unsigned len;
 
 		if (!src_node)
 			continue;
 
-		unsigned edge_index;
-		unsigned len = ARR_LEN(src_node->edges);
+		len = ARR_LEN(src_node->edges);
 		for (edge_index = 0; edge_index < len; ++edge_index) {
 			pbqp_edge_t *edge      = src_node->edges[edge_index];
 			unsigned     tgt_index = edge->tgt->index;
@@ -160,6 +161,8 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *node = get_node(pbqp, src_index);
+		unsigned len;
+		unsigned edge_index;
 
 		if (!node)
 			continue;
@@ -167,8 +170,7 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 		if (node_is_reduced(node))
 			continue;
 
-		unsigned len = ARR_LEN(node->edges);
-		unsigned edge_index;
+		len = ARR_LEN(node->edges);
 		for (edge_index = 0; edge_index < len; ++edge_index) {
 			pbqp_node_t *tgt_node  = node->edges[edge_index]->tgt;
 			unsigned     tgt_index = tgt_node->index;

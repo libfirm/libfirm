@@ -621,7 +621,11 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 	be_pbqp_alloc_env_t          pbqp_alloc_env;
 	unsigned                     col;
 	unsigned                     row;
-
+	pbqp_matrix_t               *ife_matrix;
+	num                          solution;
+#if KAPS_DUMP
+	FILE                        *file_before;
+#endif
 #if TIMER
 	ir_timer_t *t_ra_pbqp_alloc_create     = ir_timer_new();
 	ir_timer_t *t_ra_pbqp_alloc_solve      = ir_timer_new();
@@ -659,7 +663,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 
 	/* create costs matrix template for interference edges */
-	pbqp_matrix_t *ife_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
+	ife_matrix = pbqp_matrix_alloc(pbqp_alloc_env.pbqp_inst, colors_n, colors_n);
 	/* set costs */
 	for (row = 0, col = 0; row < colors_n; row++, col++)
 		pbqp_matrix_set(ife_matrix, row, col, INF_COSTS);
@@ -709,18 +713,20 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 
 #if KAPS_DUMP
 	// dump graph before solving pbqp
-	FILE *file_before = my_open(env, "", "-pbqp_coloring.html");
+	file_before = my_open(env, "", "-pbqp_coloring.html");
 	set_dumpfile(pbqp_alloc_env.pbqp_inst, file_before);
 #endif
 
-	/* print out reverse perfect eleminiation order */
+	/* print out reverse perfect elimination order */
 #if PRINT_RPEO
-	plist_element_t *elements;
-	foreach_plist(pbqp_alloc_env.rpeo, elements) {
-		pbqp_node_t *node = elements->data;
-		printf(" %d(%lu);", node->index, get_idx_irn(irg, node->index)->node_nr);
+	{
+		plist_element_t *elements;
+		foreach_plist(pbqp_alloc_env.rpeo, elements) {
+			pbqp_node_t *node = elements->data;
+			printf(" %d(%ld);", node->index, get_idx_irn(irg, node->index)->node_nr);
+		}
+		printf("\n");
 	}
-	printf("\n");
 #endif
 
 	/* solve pbqp instance */
@@ -738,7 +744,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #endif
 
 
-	num solution = get_solution(pbqp_alloc_env.pbqp_inst);
+	solution = get_solution(pbqp_alloc_env.pbqp_inst);
 	if (solution == INF_COSTS)
 		panic("No PBQP solution found");
 
