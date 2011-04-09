@@ -717,7 +717,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 #if PRINT_RPEO
 	plist_element_t *elements;
 	foreach_plist(pbqp_alloc_env.rpeo, elements) {
-		pbqp_node *node = elements->data;
+		pbqp_node_t *node = elements->data;
 		printf(" %d(%lu);", node->index, get_idx_irn(irg, node->index)->node_nr);
 	}
 	printf("\n");
