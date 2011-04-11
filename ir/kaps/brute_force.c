@@ -32,7 +32,7 @@
 #include "bucket.h"
 #include "brute_force.h"
 #include "optimal.h"
-#if	KAPS_DUMP
+#if KAPS_DUMP
 #include "html_dumper.h"
 #endif
 #include "kaps.h"
@@ -152,7 +152,7 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 	node = get_node_with_max_degree();
 	assert(pbqp_node_get_degree(node) > 2);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "BF-Reduction of Node n%d", node->index);
@@ -168,7 +168,7 @@ static void apply_Brute_Force(pbqp_t *pbqp)
 	min_index = get_minimal_alternative(pbqp, node);
 	node = pbqp->nodes[node->index];
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);
@@ -222,7 +222,7 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -303,7 +303,7 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 	node->solution = vector_get_min_index(vec);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -319,7 +319,7 @@ static void back_propagate_brute_force(pbqp_t *pbqp)
 
 	assert(pbqp);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}

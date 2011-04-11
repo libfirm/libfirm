@@ -79,7 +79,7 @@ pbqp_t *alloc_pbqp(unsigned number_nodes)
 
 	pbqp->solution = 0;
 	pbqp->num_nodes = number_nodes;
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	pbqp->dump_file = NULL;
 #endif
 	pbqp->nodes = OALLOCNZ(&pbqp->obstack, pbqp_node_t*, number_nodes);
@@ -144,7 +144,7 @@ num get_solution(pbqp_t *pbqp)
 	return pbqp->solution;
 }
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 void set_dumpfile(pbqp *pbqp, FILE *f)
 {
 	pbqp->dump_file = f;

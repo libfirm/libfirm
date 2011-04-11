@@ -33,7 +33,7 @@
 #include "bucket.h"
 #include "heuristical_co.h"
 #include "optimal.h"
-#if	KAPS_DUMP
+#if KAPS_DUMP
 #include "html_dumper.h"
 #endif
 #include "kaps.h"
@@ -82,7 +82,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 	if (node_is_reduced(node))
 		return;
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RN-Reduction of Node n%d", node->index);
@@ -93,7 +93,7 @@ static void apply_RN_co(pbqp_t *pbqp)
 
 	min_index = get_local_minimal_alternative(pbqp, node);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br><br>\n",
 					node->index, min_index);

@@ -31,7 +31,7 @@
 #include "error.h"
 
 #include "bucket.h"
-#if	KAPS_DUMP
+#if KAPS_DUMP
 #include "html_dumper.h"
 #endif
 #include "kaps.h"
@@ -325,7 +325,7 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 	pbqp->num_rm++;
 #endif
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Merging n%d into n%d", src_node->index, tgt_node->index);
@@ -488,7 +488,7 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 	pbqp->num_rm++;
 #endif
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Merging n%d into n%d", tgt_node->index, src_node->index);
@@ -672,7 +672,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 	if (is_deleted(edge))
 		return;
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char txt[100];
 		sprintf(txt, "Simplification of Edge n%d-n%d", src_node->index, tgt_node->index);
@@ -690,7 +690,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 
 	mat = edge->costs;
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("Input:<br>\n", pbqp->dump_file);
 		dump_simplifyedge(pbqp, edge);
@@ -700,7 +700,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 	normalize_towards_source(edge);
 	normalize_towards_target(edge);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nOutput:<br>\n", pbqp->dump_file);
 		dump_simplifyedge(pbqp, edge);
@@ -708,7 +708,7 @@ void simplify_edge(pbqp_t *pbqp, pbqp_edge_t *edge)
 #endif
 
 	if (pbqp_matrix_is_zero(mat, src_vec, tgt_vec)) {
-#if	KAPS_DUMP
+#if KAPS_DUMP
 		if (pbqp->dump_file) {
 			fputs("edge has been eliminated<br>\n", pbqp->dump_file);
 		}
@@ -732,7 +732,7 @@ void initial_simplify_edges(pbqp_t *pbqp)
 		ir_timer_start(t_int_simpl);
 	#endif
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		pbqp_dump_input(pbqp);
 		dump_section(pbqp->dump_file, 1, "2. Simplification of Cost Matrices");
@@ -782,13 +782,13 @@ num determine_solution(pbqp_t *pbqp)
 		ir_timer_reset_and_start(t_det_solution);
 	#endif
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	FILE     *file;
 #endif
 
 	(void) pbqp;
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	file = pbqp->dump_file;
 
 	if (file) {
@@ -811,7 +811,7 @@ num determine_solution(pbqp_t *pbqp)
 		solution       = pbqp_add(solution,
 				node->costs->entries[node->solution].data);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 		if (file) {
 			fprintf(file, "node n%d is set to %d<br>\n", node->index, node->solution);
 			dump_node(file, node);
@@ -819,7 +819,7 @@ num determine_solution(pbqp_t *pbqp)
 #endif
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (file) {
 		dump_section(file, 2, "Minimum");
 #if KAPS_USE_UNSIGNED
@@ -860,7 +860,7 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -935,7 +935,7 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 	node->solution = vector_get_min_index(vec);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -949,7 +949,7 @@ void back_propagate(pbqp_t *pbqp)
 	unsigned node_index;
 	unsigned node_len   = node_bucket_get_length(reduced_bucket);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
@@ -996,7 +996,7 @@ void apply_RI(pbqp_t *pbqp)
 		other_node = edge->src;
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RI-Reduction of Node n%d", node->index);
@@ -1018,7 +1018,7 @@ void apply_RI(pbqp_t *pbqp)
 	}
 	disconnect_edge(other_node, edge);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
 		dump_node(pbqp->dump_file, other_node);
@@ -1089,7 +1089,7 @@ void apply_RII(pbqp_t *pbqp)
 		tgt_is_src = tgt_edge->src == node;
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RII-Reduction of Node n%d", node->index);
@@ -1165,7 +1165,7 @@ void apply_RII(pbqp_t *pbqp)
 		reorder_node_after_edge_deletion(tgt_node);
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fputs("<br>\nAfter reduction:<br>\n", pbqp->dump_file);
 		dump_edge(pbqp->dump_file, edge);

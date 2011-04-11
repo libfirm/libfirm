@@ -14,7 +14,7 @@
 #include "bucket.h"
 #include "heuristical_co_ld.h"
 #include "optimal.h"
-#if	KAPS_DUMP
+#if KAPS_DUMP
 #include "html_dumper.h"
 #endif
 #include "kaps.h"
@@ -49,7 +49,7 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 		node->solution = pbqp_matrix_get_row_min_index(mat, other->solution, vec);
 	}
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -126,7 +126,7 @@ static void back_propagate_RII(pbqp_t *pbqp, pbqp_node_t *node)
 
 	node->solution = vector_get_min_index(vec);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -162,7 +162,7 @@ static void back_propagate_RN(pbqp_t *pbqp, pbqp_node_t *node)
 	assert(vector_get_min(vec) != INF_COSTS);
 	node->solution = vector_get_min_index(vec);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		fprintf(pbqp->dump_file, "node n%d is set to %d<br>\n", node->index, node->solution);
 	}
@@ -178,7 +178,7 @@ static void back_propagate_ld(pbqp_t *pbqp)
 
 	assert(pbqp);
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		dump_section(pbqp->dump_file, 2, "Back Propagation");
 	}
@@ -235,7 +235,7 @@ static void apply_RN_co_without_selection(pbqp_t *pbqp)
 	if (node_is_reduced(node))
 		return;
 
-#if	KAPS_DUMP
+#if KAPS_DUMP
 	if (pbqp->dump_file) {
 		char     txt[100];
 		sprintf(txt, "RN-Reduction of Node n%d", node->index);
