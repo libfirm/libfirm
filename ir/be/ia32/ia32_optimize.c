@@ -53,7 +53,6 @@
 #include "ia32_common_transform.h"
 #include "ia32_transform.h"
 #include "ia32_dbg_stat.h"
-#include "ia32_util.h"
 #include "ia32_architecture.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)

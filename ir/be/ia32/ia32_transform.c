@@ -62,7 +62,6 @@
 #include "ia32_new_nodes.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_optimize.h"
-#include "ia32_util.h"
 #include "ia32_address_mode.h"
 #include "ia32_architecture.h"
 

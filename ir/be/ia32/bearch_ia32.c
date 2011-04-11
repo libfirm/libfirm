@@ -84,7 +84,6 @@
 #include "ia32_x87.h"
 #include "ia32_dbg_stat.h"
 #include "ia32_finish.h"
-#include "ia32_util.h"
 #include "ia32_fpu.h"
 #include "ia32_architecture.h"
 
