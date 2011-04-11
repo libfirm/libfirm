@@ -2249,7 +2249,8 @@ static ir_node *dest_am_binop(ir_node *node, ir_node *op1, ir_node *op2,
 
 	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_node);
 	mem_proj = be_transform_node(am.mem_proj);
-	be_set_transformed_node(mem_proj ? mem_proj : am.mem_proj, new_node);
+	be_set_transformed_node(am.mem_proj, new_node);
+	be_set_transformed_node(mem_proj, new_node);
 
 	return new_node;
 }
@@ -2284,7 +2285,8 @@ static ir_node *dest_am_unop(ir_node *node, ir_node *op, ir_node *mem,
 
 	be_set_transformed_node(get_Proj_pred(am.mem_proj), new_node);
 	mem_proj = be_transform_node(am.mem_proj);
-	be_set_transformed_node(mem_proj ? mem_proj : am.mem_proj, new_node);
+	be_set_transformed_node(am.mem_proj, new_node);
+	be_set_transformed_node(mem_proj, new_node);
 
 	return new_node;
 }
