@@ -95,7 +95,6 @@ struct be_abi_irg_t {
 	ir_node              *start;        /**< The be_Start params node. */
 	pmap                 *regs;         /**< A map of all callee-save and ignore regs to
 	                                         their Projs to the RegParams node. */
-
 	int                  start_block_bias; /**< The stack bias at the end of the start block. */
 
 	pmap                 *keep_map;     /**< mapping blocks to keep nodes. */
@@ -107,6 +106,17 @@ static ir_heights_t *ir_heights;
 
 /** Flag: if set, try to omit the frame pointer in all routines. */
 static int be_omit_fp = 1;
+
+static ir_node *be_abi_reg_map_get(pmap *map, const arch_register_t *reg)
+{
+	return (ir_node*)pmap_get(map, reg);
+}
+
+static void be_abi_reg_map_set(pmap *map, const arch_register_t* reg,
+                               ir_node *node)
+{
+	pmap_insert(map, reg, node);
+}
 
 /*
      _    ____ ___    ____      _ _ _                _
@@ -574,10 +584,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	for (s = 0; s < ARR_LEN(states); ++s) {
 		const arch_register_t       *reg = states[s];
 		const arch_register_class_t *cls = arch_register_get_class(reg);
-#if 0
-		ir_node *regnode = be_abi_reg_map_get(env->regs, reg);
-		ir_fprintf(stderr, "Adding %+F\n", regnode);
-#endif
 		ir_node *regnode = new_r_Unknown(irg, arch_register_class_mode(cls));
 		in[n_ins++]      = regnode;
 	}
