@@ -164,10 +164,7 @@ void be_register_chordal_coloring(const char *name, be_ra_chordal_coloring_t *co
 
 static void be_ra_chordal_coloring(be_chordal_env_t *env)
 {
-	assert(selected_coloring != NULL);
-	if (selected_coloring != NULL) {
-		selected_coloring->allocate(env);
-	}
+	selected_coloring->allocate(env);
 }
 
 static void dump(unsigned mask, ir_graph *irg,
