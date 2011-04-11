@@ -718,6 +718,10 @@ void fixpoint_vrp(ir_graph* const irg)
 
 	obstack_init(&obst);
 
+	/* HACK: to avoid finding dead code */
+	edges_deactivate(irg);
+	edges_activate(irg);
+
 	edges_assure(irg);
 	assure_doms(irg);
 
