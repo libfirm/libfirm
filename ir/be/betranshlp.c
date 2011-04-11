@@ -367,10 +367,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 		be_transform_node(node);
 	}
 
-	/* let beabi grab new nodes */
-	be_abi_transform_fixup(irg);
-	assert(waitq_empty(env.worklist)); // let's hope this didn't trigger new transforms
-
 	/* fix loops and set new anchors*/
 	inc_irg_visited(irg);
 	for (i = get_irg_n_anchors(irg) - 1; i >= 0; --i) {

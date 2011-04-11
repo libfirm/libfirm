@@ -2103,7 +2103,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 	}
 }
 
-be_abi_irg_t *be_abi_introduce(ir_graph *irg)
+void be_abi_introduce(ir_graph *irg)
 {
 	be_abi_irg_t     *env         = XMALLOCZ(be_abi_irg_t);
 	ir_node          *old_frame   = get_irg_frame(irg);
@@ -2167,7 +2167,8 @@ be_abi_irg_t *be_abi_introduce(ir_graph *irg)
 	exchange(dummy, env->init_sp);
 	exchange(old_frame, get_irg_frame(irg));
 
-	return env;
+	pmap_destroy(env->regs);
+	env->regs = NULL;
 }
 
 void be_abi_free(ir_graph *irg)
@@ -2176,33 +2177,10 @@ void be_abi_free(ir_graph *irg)
 
 	if (env->call != NULL)
 		be_abi_call_free(env->call);
-	if (env->regs != NULL)
-		pmap_destroy(env->regs);
 	free(env);
+	assert(env->regs == NULL);
 
 	be_set_irg_abi(irg, NULL);
-}
-
-/**
- * called after nodes have been transformed so some node references can be
- * replaced with new nodes
- */
-void be_abi_transform_fixup(ir_graph *irg)
-{
-	be_abi_irg_t *abi = be_get_irg_abi(irg);
-	pmap         *new_regs;
-	pmap_entry   *entry;
-	if (abi == NULL || abi->regs == NULL)
-		return;
-
-	new_regs = pmap_create();
-	foreach_pmap(abi->regs, entry) {
-		ir_node *value       = (ir_node*)entry->value;
-		ir_node *transformed = be_transform_node(value);
-		pmap_insert(new_regs, entry->key, transformed);
-	}
-	pmap_destroy(abi->regs);
-	abi->regs = new_regs;
 }
 
 void be_put_allocatable_regs(const ir_graph *irg,
@@ -2243,21 +2221,6 @@ void be_set_allocatable_regs(const ir_graph *irg,
 		if (rbitset_is_set(allocatable_regs, reg->global_index))
 			rbitset_set(raw_bitset, i);
 	}
-}
-
-ir_node *be_abi_get_callee_save_irn(ir_graph *irg, const arch_register_t *reg)
-{
-	const be_abi_irg_t *abi = be_get_irg_abi(irg);
-	assert(reg->type & arch_register_type_callee_save);
-	assert(pmap_contains(abi->regs, (void *) reg));
-	return (ir_node*)pmap_get(abi->regs, (void *) reg);
-}
-
-ir_node *be_abi_get_ignore_irn(ir_graph *irg, const arch_register_t *reg)
-{
-	const be_abi_irg_t *abi = be_get_irg_abi(irg);
-	assert(pmap_contains(abi->regs, (void *) reg));
-	return (ir_node*)pmap_get(abi->regs, (void *) reg);
 }
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);

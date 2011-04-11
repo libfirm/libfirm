@@ -89,6 +89,7 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+static ir_node         *old_initial_fpcw = NULL;
 static ir_node         *initial_fpcw = NULL;
 int                     ia32_no_pic_adjust;
 
@@ -1037,14 +1038,10 @@ static ir_node *gen_binop_flags(ir_node *node, construct_binop_flags_func *func,
 
 static ir_node *get_fpcw(void)
 {
-	ir_node *fpcw;
 	if (initial_fpcw != NULL)
 		return initial_fpcw;
 
-	fpcw         = be_abi_get_ignore_irn(current_ir_graph,
-	                                     &ia32_registers[REG_FPCW]);
-	initial_fpcw = be_transform_node(fpcw);
-
+	initial_fpcw = be_transform_node(old_initial_fpcw);
 	return initial_fpcw;
 }
 
@@ -5720,8 +5717,6 @@ static void ia32_pretransform_node(void)
 
 	nomem    = get_irg_no_mem(irg);
 	noreg_GP = ia32_new_NoReg_gp(irg);
-
-	get_fpcw();
 }
 
 /**
@@ -5826,6 +5821,9 @@ void ia32_transform_graph(ir_graph *irg)
 	register_transformers();
 	initial_fpcw       = NULL;
 	ia32_no_pic_adjust = 0;
+
+	old_initial_fpcw
+		= ia32_get_initial_reg_value(irg, &ia32_registers[REG_FPCW]);
 
 	be_timer_push(T_HEIGHTS);
 	ia32_heights = heights_new(irg);

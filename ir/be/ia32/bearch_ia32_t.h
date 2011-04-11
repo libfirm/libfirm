@@ -154,4 +154,9 @@ ir_entity *ia32_get_return_address_entity(ir_graph *irg);
  */
 ir_entity *ia32_get_frame_address_entity(ir_graph *irg);
 
+/**
+ * Get node representing the initial value of a register
+ */
+ir_node *ia32_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
+
 #endif
