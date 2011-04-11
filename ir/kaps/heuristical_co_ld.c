@@ -36,6 +36,8 @@ static void back_propagate_RI(pbqp_t *pbqp, pbqp_node_t *node)
 	vector_t      *vec;
 	int            is_src;
 
+	(void) pbqp;
+
 	edge = node->edges[0];
 	mat = edge->costs;
 	is_src = edge->src == node;
