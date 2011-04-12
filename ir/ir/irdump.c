@@ -807,6 +807,7 @@ typedef struct proj_lookup {
 static const pns_lookup_t start_lut[] = {
 #define X(a)    { pn_Start_##a, #a }
 	X(X_initial_exec),
+	X(M),
 	X(P_frame_base),
 	X(T_args),
 #undef X
