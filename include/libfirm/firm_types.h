@@ -179,10 +179,17 @@ typedef enum mtp_additional_properties {
 	mtp_no_property            = 0x00000000, /**< no additional properties, default */
 	mtp_property_const         = 0x00000001, /**< This method did not access memory and calculates
 	                                              its return values solely from its parameters.
+	                                              The only observable effect of a const function must be its
+	                                              return value. So they must not exhibit infinite loops or wait
+	                                              for user input. The return value must not depend on any
+	                                              global variables/state.
 	                                              GCC: __attribute__((const)). */
 	mtp_property_pure          = 0x00000002, /**< This method did NOT write to memory and calculates
 	                                              its return values solely from its parameters and
 	                                              the memory they points to (or global vars).
+	                                              The only observable effect of a const function must be its
+	                                              return value. So they must not exhibit infinite loops or wait
+	                                              for user input.
 	                                              GCC: __attribute__((pure)). */
 	mtp_property_noreturn      = 0x00000004, /**< This method did not return due to an aborting system
 	                                              call.
