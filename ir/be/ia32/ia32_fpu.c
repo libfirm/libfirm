@@ -105,7 +105,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 		ir_graph *irg = get_irn_irg(state);
 		ir_node *block = get_nodes_block(state);
 		ir_node *noreg = ia32_new_NoReg_gp(irg);
-		ir_node *nomem = new_r_NoMem(irg);
+		ir_node *nomem = get_irg_no_mem(irg);
 		ir_node *frame = get_irg_frame(irg);
 
 		spill = new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem, state);
@@ -123,7 +123,7 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)
 {
 	ir_graph *irg   = get_irn_irg(block);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *reload;
 
@@ -171,7 +171,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		sched_add_before(before, reload);
 	} else {
 		ir_mode *lsmode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
-		ir_node *nomem  = new_r_NoMem(irg);
+		ir_node *nomem  = get_irg_no_mem(irg);
 		ir_node *cwstore, *load, *load_res, *orn, *store, *fldcw;
 		ir_node *or_const;
 

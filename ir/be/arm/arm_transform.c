@@ -1165,7 +1165,7 @@ static ir_node *ints_to_double(dbg_info *dbgi, ir_node *block, ir_node *node0,
 	 * registers... */
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *str0  = new_bd_arm_Str(dbgi, block, stack, node0, nomem, mode_gp,
 	                                 NULL, 0, 0, true);
 	ir_node  *str1  = new_bd_arm_Str(dbgi, block, stack, node1, nomem, mode_gp,
@@ -1186,7 +1186,7 @@ static ir_node *int_to_float(dbg_info *dbgi, ir_node *block, ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *str   = new_bd_arm_Str(dbgi, block, stack, node, nomem, mode_gp,
 	                                 NULL, 0, 0, true);
 	ir_node  *ldf;
@@ -1202,7 +1202,7 @@ static ir_node *float_to_int(dbg_info *dbgi, ir_node *block, ir_node *node)
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_F,
 	                                 NULL, 0, 0, true);
 	ir_node  *ldr;
@@ -1219,7 +1219,7 @@ static void double_to_ints(dbg_info *dbgi, ir_node *block, ir_node *node,
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = new_bd_arm_Stf(dbgi, block, stack, node, nomem, mode_D,
 	                                 NULL, 0, 0, true);
 	ir_node  *ldr0, *ldr1;

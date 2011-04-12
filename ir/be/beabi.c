@@ -470,7 +470,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 			/* Insert a store for primitive arguments. */
 			if (is_atomic_type(param_type)) {
-				ir_node *mem_input = do_seq ? curr_mem : new_r_NoMem(irg);
+				ir_node *nomem     = get_irg_no_mem(irg);
+				ir_node *mem_input = do_seq ? curr_mem : nomem;
 				ir_node *store     = new_rd_Store(dbgi, bl, mem_input, addr, param, cons_none);
 				mem   = new_r_Proj(store, mode_M, pn_Store_M);
 			} else {
@@ -1861,8 +1862,9 @@ static void modify_irg(ir_graph *irg)
 				if (is_atomic_type(param_type) && get_irn_n_edges(args[i]) > 0) {
 					ir_mode *mode      = get_type_mode(param_type);
 					ir_mode *load_mode = arg->load_mode;
+					ir_node *nomem     = get_irg_no_mem(irg);
 
-					ir_node *load = new_r_Load(start_bl, new_r_NoMem(irg), addr, load_mode, cons_floats);
+					ir_node *load = new_r_Load(start_bl, nomem, addr, load_mode, cons_floats);
 					repl = new_r_Proj(load, load_mode, pn_Load_res);
 
 					if (mode != load_mode) {
@@ -2096,7 +2098,7 @@ static void fix_pic_symconsts(ir_node *node, void *data)
 		/* we need an extra indirection for global data outside our current
 		   module. The loads are always safe and can therefore float
 		   and need no memory input */
-		load     = new_r_Load(block, new_r_NoMem(irg), add, mode, cons_floats);
+		load     = new_r_Load(block, get_irg_no_mem(irg), add, mode, cons_floats);
 		load_res = new_r_Proj(load, mode, pn_Load_res);
 
 		set_irn_n(node, i, load_res);

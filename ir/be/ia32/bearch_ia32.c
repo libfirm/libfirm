@@ -275,8 +275,11 @@ static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 			= arch_get_out_register_req(start, i);
 		if (! (out_req->type & arch_register_req_type_limited))
 			continue;
-		if (rbitset_is_set(out_req->limited, reg->index))
-			return i;
+		if (out_req->cls != arch_register_get_class(reg))
+			continue;
+		if (!rbitset_is_set(out_req->limited, reg->index))
+			continue;
+		return i;
 	}
 	panic("Tried querying undefined register '%s' at Start", reg->name);
 }
@@ -455,7 +458,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 	mode     = get_irn_mode(irn);
 	irn_mode = get_irn_mode(irn);
 	noreg    = get_irn_n(irn, 0);
-	nomem    = new_r_NoMem(irg);
+	nomem    = get_irg_no_mem(irg);
 	dbg      = get_irn_dbg_info(irn);
 
 	/* initialize structure */
@@ -755,7 +758,7 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ia32_copy_am_attrs(load, node);
 	if (is_ia32_is_reload(node))
 		set_ia32_is_reload(load);
-	set_irn_n(node, n_ia32_mem, new_r_NoMem(irg));
+	set_irn_n(node, n_ia32_mem, get_irg_no_mem(irg));
 
 	switch (get_ia32_am_support(node)) {
 		case ia32_am_unary:
@@ -922,7 +925,7 @@ static void transform_to_Store(ir_node *node)
 	const ir_node *spillval = get_irn_n(node, n_be_Spill_val);
 	ir_mode *mode  = get_spill_mode(spillval);
 	ir_node *noreg = ia32_new_NoReg_gp(irg);
-	ir_node *nomem = new_r_NoMem(irg);
+	ir_node *nomem = get_irg_no_mem(irg);
 	ir_node *ptr   = get_irg_frame(irg);
 	ir_node *val   = get_irn_n(node, n_be_Spill_val);
 	ir_node *store;
@@ -990,7 +993,8 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg, new_r_NoMem(irg), sp);
+	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg,
+	                                  get_irg_no_mem(irg), sp);
 
 	set_ia32_frame_ent(pop, ent);
 	set_ia32_use_frame(pop);

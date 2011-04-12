@@ -851,7 +851,7 @@ static ir_node *gen_float_const(dbg_info *dbgi, ir_node *block, ir_tarval *tv)
 {
 	ir_entity *entity = create_float_const_entity(tv);
 	ir_node   *hi     = new_bd_sparc_SetHi(dbgi, block, entity, 0);
-	ir_node   *mem    = new_r_NoMem(current_ir_graph);
+	ir_node   *mem    = get_irg_no_mem(current_ir_graph);
 	ir_mode   *mode   = get_tarval_mode(tv);
 	ir_node   *new_op
 		= create_ldf(dbgi, block, hi, mem, mode, entity, 0, false);
@@ -937,7 +937,7 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	index = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
 	/* load from jumptable */
 	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, index,
-	                           new_r_NoMem(current_ir_graph),
+	                           get_irg_no_mem(current_ir_graph),
 	                           mode_gp);
 	address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 
@@ -1094,7 +1094,7 @@ static ir_node *create_ftoi(dbg_info *dbgi, ir_node *block, ir_node *op,
 	{
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = create_stf(dbgi, block, ftoi, sp, nomem, src_mode,
 	                             NULL, 0, true);
 	ir_node  *ld    = new_bd_sparc_Ld_imm(dbgi, block, sp, stf, mode_gp,
@@ -1111,7 +1111,7 @@ static ir_node *create_itof(dbg_info *dbgi, ir_node *block, ir_node *op,
 {
 	ir_graph *irg   = get_irn_irg(block);
 	ir_node  *sp    = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, op, sp, nomem,
 	                                      mode_gp, NULL, 0, true);
 	ir_node  *ldf   = new_bd_sparc_Ldf_s(dbgi, block, sp, st, mode_fp,
@@ -1452,7 +1452,7 @@ static ir_node *bitcast_int_to_float(dbg_info *dbgi, ir_node *block,
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *sp    = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *st    = new_bd_sparc_St_imm(dbgi, block, value0, sp, nomem,
 	                                      mode_gp, NULL, 0, true);
 	ir_mode  *mode;
@@ -1485,7 +1485,7 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 {
 	ir_graph *irg   = current_ir_graph;
 	ir_node  *stack = get_irg_frame(irg);
-	ir_node  *nomem = new_r_NoMem(irg);
+	ir_node  *nomem = get_irg_no_mem(irg);
 	ir_node  *stf   = create_stf(dbgi, block, node, stack, nomem, float_mode,
 	                             NULL, 0, true);
 	int       bits  = get_mode_size_bits(float_mode);

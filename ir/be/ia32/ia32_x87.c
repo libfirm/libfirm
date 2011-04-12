@@ -1195,14 +1195,15 @@ static int sim_store(x87_state *state, ir_node *n, ir_op *op, ir_op *op_p)
 				x87_patch_insn(n, op_p);
 			} else {
 				ir_node  *vfld, *mem, *block, *rproj, *mproj;
-				ir_graph *irg = get_irn_irg(n);
+				ir_graph *irg   = get_irn_irg(n);
+				ir_node  *nomem = get_irg_no_mem(irg);
 
 				/* stack full here: need fstp + load */
 				x87_pop(state);
 				x87_patch_insn(n, op_p);
 
 				block = get_nodes_block(n);
-				vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), new_r_NoMem(irg), get_ia32_ls_mode(n));
+				vfld  = new_bd_ia32_vfld(NULL, block, get_irn_n(n, 0), get_irn_n(n, 1), nomem, get_ia32_ls_mode(n));
 
 				/* copy all attributes */
 				set_ia32_frame_ent(vfld, get_ia32_frame_ent(n));

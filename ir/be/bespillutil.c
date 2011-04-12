@@ -411,7 +411,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	if (!sched_is_scheduled(insn)) {
 		/* override spillinfos or create a new one */
 		ir_graph *irg = get_irn_irg(to_spill);
-		spillinfo->spills->spill = new_r_NoMem(irg);
+		spillinfo->spills->spill = get_irg_no_mem(irg);
 		DB((dbg, LEVEL_1, "don't spill %+F use NoMem\n", to_spill));
 		return;
 	}
@@ -763,7 +763,7 @@ static void determine_spill_costs(spill_env_t *env, spill_info_t *spillinfo)
 		spill_t *spill = OALLOC(&env->obst, spill_t);
 		spill->after = NULL;
 		spill->next  = NULL;
-		spill->spill = new_r_NoMem(irg);
+		spill->spill = get_irg_no_mem(irg);
 
 		spillinfo->spills      = spill;
 		spillinfo->spill_costs = 0;
