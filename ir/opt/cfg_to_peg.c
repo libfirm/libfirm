@@ -40,10 +40,40 @@
 #include "bitset.h"
 #include "pmap.h"
 #include "obstack.h"
+#include "irphase_t.h"
+
+typedef struct obstack obstack;
 
 /******************************************************************************
  * Utility functions.                                                         *
  ******************************************************************************/
+
+/**
+ * Determines whether the given node is nested somewhere inside the specified
+ * loop by walking up the loop tree.
+ */
+static int is_in_loop(ir_node *node, ir_loop *outer_loop)
+{
+	ir_loop *last, *loop;
+	assert(node && outer_loop);
+
+	/* get_irn_loop will return NULL on a node. */
+	if (!is_Block(node)) node = get_nodes_block(node);
+
+	loop = get_irn_loop(node);
+	if (loop == NULL) return 0;
+
+	do {
+		if (loop == outer_loop) return 1;
+
+		/* Stop when get_loop_outer_loop returns loop again. */
+		last = loop;
+		loop = get_loop_outer_loop(loop);
+	}
+	while(loop != last);
+
+	return 0;
+}
 
 /**
  * Given two blocks, where pred_block is a predecessor of block, returns the
@@ -75,56 +105,6 @@ static ir_node *get_pred_in_block(ir_node *block, ir_node *pred_block)
 	return get_Block_cfgpred(block, pred_index);
 }
 
-/**
- * Determines whether the given node is nested somewhere inside the specified
- * loop by walking up the loop tree.
- */
-static int is_in_loop(ir_node *node, ir_loop *outer_loop)
-{
-	ir_loop *last, *loop;
-	assert(node && outer_loop);
-
-	/* get_irn_loop will return NULL on a node. */
-	if (!is_Block(node)) node = get_nodes_block(node);
-
-	loop = get_irn_loop(node);
-	if (loop == NULL) return 0;
-
-	do {
-		if (loop == outer_loop) return 1;
-
-		/* Stop when get_loop_outer_loop returns loop again. */
-		last = loop;
-		loop = get_loop_outer_loop(loop);
-	}
-	while(loop != last);
-
-	return 0;
-}
-
-/**
- * Determines the transitive closure of the predecessor relation between
- * blocks, that is all blocks that the given block transitively depends on,
- * up to a given end node, which is where computation stops.
- */
-static void find_pred_closure(bitset_t *closure, ir_node *block, ir_node *end)
-{
-	int i;
-	assert(is_Block(block));
-
-	bitset_set(closure, get_irn_idx(block));
-	if (block == end) return;
-
-	/* Simple recurse to the pred blocks if they weren't visited before. */
-	for (i = 0; i < get_Block_n_cfgpreds(block); i++) {
-		ir_node *pred = get_Block_cfgpred(block, i);
-		pred = get_nodes_block(pred);
-
-		if (!bitset_is_set(closure, get_irn_idx(pred))) {
-			find_pred_closure(closure, pred, end);
-		}
-	}
-}
 
 /******************************************************************************
  * Phase 1-1: Create gamma graphs for value selection.                        *
@@ -174,127 +154,119 @@ static ir_node *find_values_dom(int num_values, select_value *values)
 	return dom;
 }
 
-typedef struct build_gammas_ctx
-{
-	bitset_t      *path;
-	ir_node       *cons_block;
-	int            num_values;
-	select_value  *values;
-	bitset_t     **closures;
+typedef struct bg_node {
+	ir_node  *result;
+	int       on_path;
 
-} build_gammas_ctx;
+	int       num_values;
+	ir_node  *values[2];
+	ir_node  *blocks[2];
+} bg_node;
 
-static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
+typedef struct bg_info {
+	ir_phase     *phase;
+	ir_node      *cons_block;
+	int           num_values;
+	select_value *values;
+	obstack       obst;
+} bg_info;
+
+static void *bg_init_node(ir_phase *phase, const ir_node *irn)
 {
+	bg_info *bgi = phase_get_private(phase);
+	bg_node *bgn = OALLOCZ(&bgi->obst, bg_node);
+
+	(void)irn;
+
+	return bgn;
+}
+
+static void init_closure(bg_info *bgi, ir_node *block, ir_node *end)
+{
+	int i;
+	bg_node *bgn = phase_get_irn_data(bgi->phase, block);
+	if (bgn) return; /* Already visited. */
+
+	bgn = phase_get_or_set_irn_data(bgi->phase, block);
+	if (block == end) return;
+
+	/* Recurse. */
+	for (i = 0; i < get_Block_n_cfgpreds(block); i++) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+		pred = get_nodes_block(pred);
+		init_closure(bgi, pred, end);
+	}
+}
+
+static ir_node *build_gammas_walk(bg_info *bgi, ir_node *block)
+{
+	int i;
 	const ir_edge_t *edge;
 
-	int i, j, block_idx;
-	int num_closures = 0, num_edges = 0;
+	/* Get the node data or cancel for nodes outside of the marked region. */
+	bg_node *bgn = phase_get_irn_data(bgi->phase, block);
+	if (!bgn) return NULL;
 
-	select_edge  edges[2];
-	ir_node     *values[2];
-	ir_node     *closure_value;
+	/* Backedge detection. Don't recurse here. */
+	if (bgn->on_path) return NULL;
 
-	/* Find overlapping closures and outgoing edges. */
-	block_idx = get_irn_idx(block);
+	/* If we already have a value, return that. */
+	if (bgn->result) return bgn->result;
 
-	/* Return NULL on backedges. If there would be a value, the previous node
-	 * wouldn't have recursed here. Cancel recursion to avoid a loop. */
-	if (bitset_is_set(ctx->path, block_idx)) return NULL;
-
-	for (i = 0; i < ctx->num_values; i++) {
-		/* Check the closure of every value. */
-		if (bitset_is_set(ctx->closures[i], block_idx)) {
-			select_value *value = &ctx->values[i];
-
-			/* Store the closures value (to get it if there is only one). */
-			num_closures++;
-			closure_value = value->value;
-
-			/* Scan edges for the closures we are in. */
-			for (j = 0; j < value->num_edges; j++) {
-				if (value->edges[j].src == block) {
-					assert((num_edges < 2) && "More than two out-edges.");
-
-					/* For any adjoining edge store edge and value. */
-					edges[num_edges]  = value->edges[j];
-					values[num_edges] = value->value;
-					num_edges++;
-				}
-			}
-		}
-	}
-
-	/* We are about to leave all transitive closures. Recurse back. */
-	if (num_closures == 0) return NULL;
-
-	/* If we overlap with only one closure, don't recurse further. */
-	if (num_closures == 1) return closure_value;
-
-	/* There are two successors and we are in more than one closure. We may
-	 * already have <=2 values from adjoing edges in values and edges. Try
-	 * get remaining values by recursion. */
-
+	/* Add values from recursion. Note if an adjoining edge has a value, it is
+	 * already stored in bgn->values and bgn->blocks. So skip the successors
+	 * that are mentioned in bgn->blocks. */
 	foreach_block_succ(block, edge) {
-		int      have_value = 0;
-		ir_node *succ       = get_edge_src_irn(edge);
-		ir_node *value      = NULL;
+		int      skip = 0;
+		ir_node *succ = get_edge_src_irn(edge);
+		ir_node *value;
 
-		/* If this is an edge we have a value for, don't recurse there. */
-		for (i = 0; i < num_edges; i++) {
-			if (edges[i].dst == succ) {
-				have_value = 1;
+		/* Determine edges that we have a value for. */
+		for (i = 0; i < bgn->num_values; i++) {
+			if (bgn->blocks[i] == succ) {
+				skip = 1;
 				break;
 			}
 		}
 
-		/* Continue with the next edge instead. */
-		if (have_value) continue;
+		if (skip) continue;
 
-		/* Try to recurse, to get another value. This may return NULL, if we
-		 * leave all transitive hulls by that edge. */
-		bitset_set(ctx->path, block_idx);
-		value = build_gammas_walk(succ, ctx);
-		bitset_clear(ctx->path, block_idx);
+		/* Try to get a value by recursing. */
+		bgn->on_path = 1;
+		value = build_gammas_walk(bgi, succ);
+		bgn->on_path = 0;
 
-		/* Store the value and the edge we used. */
 		if (value) {
-			assert((num_edges < 2) && "More than two out-edges.");
-
-			edges[num_edges].src = block;
-			edges[num_edges].dst = succ;
-			values[num_edges]    = value;
-			num_edges++;
+			assert(bgn->num_values < 2);
+			bgn->values[bgn->num_values] = value;
+			bgn->blocks[bgn->num_values] = succ;
+			bgn->num_values++;
 		}
 	}
 
-	/* Backtrack if we can get no value. This will happen on paths that end
-	 * up in an already visited block without encountering a value edge (if
-	 * such an edge had beed encountered, the last unvisited block would have
-	 * had num_edges >= 1 and returned non-NULL). */
-	if (num_edges <= 0) return NULL;
-
-	/* One path must have reached a backedge and backtracked or it has left
-	 * all closures and leads to nowhere. Return the value we have for sure. */
-	if (num_edges == 1) return values[0];
-
-	/* We have exactly two values to select from here. */
-	assert((num_edges == 2) && "Unexpected value count.");
-	{
+	/* If no value is available (backtracking after encountering a backedge
+	 * without a value), it is set to null. If one value is available, the
+	 * value is taken from the array. */
+	if (bgn->num_values <= 1) {
+		bgn->result = bgn->values[0];
+	} else {
 		int      is_flipped;
 		ir_node *jump_proj, *ir_false, *ir_true, *cond, *sel;
 		ir_mode *mode;
 
-		/* Get the jump proj to reach value[0]. */
-		jump_proj = get_pred_in_block(edges[0].dst, block);
+		assert(bgn->num_values == 2);
+
+		/* Get the jump proj to reach bgn->value[0]. */
+		jump_proj = get_pred_in_block(bgn->blocks[0], block);
 		assert(is_Proj(jump_proj) && "Unexpected jump nodes on branch.");
 
-		/* We have the proj of values[0]. So if it has pn_Cond_false, ir_false
-		 * is obviously values[0]. If not, indices are simply flipped. */
+		/* We have the proj of bgn->values[0]. So if it has pn_Cond_false,
+		 * ir_false is obviously bgn->values[0]. If not, indices are simply
+		 * flipped. */
 
 		is_flipped = (get_Proj_proj(jump_proj) != pn_Cond_false);
-		ir_false   = values[is_flipped ? 1 : 0];
-		ir_true    = values[is_flipped ? 0 : 1];
+		ir_false   = bgn->values[is_flipped ? 1 : 0];
+		ir_true    = bgn->values[is_flipped ? 0 : 1];
 
 		/* Get the condition value. */
 		cond = get_Proj_pred(jump_proj);
@@ -304,59 +276,64 @@ static ir_node *build_gammas_walk(ir_node *block, build_gammas_ctx *ctx)
 		assert((mode == get_irn_mode(ir_true)) && "Mode mismatch.");
 
 		/* Create the gamma node. */
-		return new_r_Gamma(ctx->cons_block, sel, ir_false, ir_true, mode);
+		bgn->result = new_r_Gamma(bgi->cons_block, sel, ir_false, ir_true, mode);
 	}
+
+	return bgn->result;
 }
 
 static ir_node *build_gammas(ir_node *start_block, ir_node *cons_block,
 	int num_values, select_value *values)
 {
-	int        i, j, max_idx;
-	ir_node   *result;
-	ir_graph  *irg;
-	bitset_t **closures;
-	build_gammas_ctx ctx;
+	int       i, j;
+	ir_graph *irg;
+	ir_phase *phase;
+	bg_info   info;
+	ir_node  *result;
 
 	assert(is_Block(start_block) && is_Block(cons_block));
 	assert((num_values > 0) && values);
 
-	/* Initialize bitsets for the transitive closure of each value. */
-	irg      = get_irn_irg(cons_block);
-	max_idx  = get_irg_last_idx(irg);
-	closures = XMALLOCN(bitset_t*, num_values);
+	/* Setup the info structure. */
+	info.cons_block = cons_block;
+	info.num_values = num_values;
+	info.values     = values;
+	obstack_init(&info.obst);
+
+	/* Create the phase. */
+	irg = get_irn_irg(cons_block);
+
+	phase = new_phase(irg, bg_init_node);
+	phase_set_private(phase, &info);
+	info.phase = phase;
 
 	for (i = 0; i < num_values; i++) {
-		closures[i] = bitset_malloc(max_idx);
-
-		/**
-		 * Calculate the closure of the value by calculating the union of the
-		 * individual source block closures. This is used later to determine
-		 * which blocks can still reach the source blocks of any of the edges.
-		 */
 		assert(values[i].num_edges > 0);
+
 		for (j = 0; j < values[i].num_edges; j++) {
 			select_edge *edge = &values[i].edges[j];
-			find_pred_closure(closures[i], edge->src, start_block);
+			bg_node     *bgn;
+
+			/* Initialize the closure up to start_block. */
+			init_closure(&info, edge->src, start_block);
+
+			/* Also remember this edge at the source block. */
+			bgn = phase_get_irn_data(phase, edge->src);
+			assert(bgn);
+
+			assert(bgn->num_values < 2);
+			bgn->values[bgn->num_values] = values[i].value;
+			bgn->blocks[bgn->num_values] = edge->dst;
+			bgn->num_values++;
 		}
 	}
 
-	/* Store recursion-independ data in a structure to make things easier. */
-	ctx.path       = bitset_malloc(max_idx);
-	ctx.cons_block = cons_block;
-	ctx.num_values = num_values;
-	ctx.values     = values;
-	ctx.closures   = closures;
+	/* Do the actual work. */
+	result = build_gammas_walk(&info, start_block);
 
-	result = build_gammas_walk(start_block, &ctx);
-
-	bitset_free(ctx.path);
-
-	/* Free the transitive closures again. */
-	for (i = 0; i < num_values; i++) {
-		bitset_free(closures[i]);
-	}
-
-	xfree(closures);
+	/* Cleanup. */
+	phase_free(phase);
+	obstack_free(&info.obst, NULL);
 
 	return result;
 }

@@ -223,6 +223,8 @@ static void ct_pull_nodes(ct_info *cti, ir_node *irn, ct_region *region);
 static void ct_place_node(ct_info *cti, ir_node *irn, gc_cond *gc,
                           ct_region *region)
 {
+	gc_type type = gc ? gc_get_cond_type(gc) : gct_once;
+
 	switch (gc_get_cond_type(gc)) {
 	case gct_once: {
 		/* No condition. Place in reg and be done. */
@@ -580,6 +582,66 @@ static void ct_duplicate_walk(ct_info *cti, ir_node *irn)
 			}
 		} else {
 			ct_node *ct_src = ctn;
+
+			pset_new_t set;
+			ct_region *cur = reg;
+			int found = 0;
+
+			pset_new_init(&set);
+			while (cur)
+			{
+				pset_new_insert(&set, cur);
+
+				if ((cur->template->type == ctt_loop) && (cur->index == 1))
+				{
+					pset_new_insert(&set, cur->template->children[0]);
+				}
+
+				cur = cur->template->region;
+			}
+
+			while (ct_dep) {
+				ct_region *rg_dep = plist_first(ct_dep->regions)->data;
+				assert(plist_count(ct_dep->regions) == 1);
+
+				if (pset_new_contains(&set, rg_dep))
+				{
+					printf("f %ld\n", get_irn_node_nr(ct_dep->irn));
+					found++;
+				}
+				else if (rg_dep->template->region == reg)
+				{
+					printf("f %ld\n", get_irn_node_nr(ct_dep->irn));
+					found++;
+				}
+				else if ((rg_dep->template->region->template == reg->template) &&
+						(reg->template->type == ctt_loop))
+				{
+					printf("f %ld\n", get_irn_node_nr(ct_dep->irn));
+					found++;
+				}
+
+				ct_dep = ct_dep->copy;
+			}
+
+			pset_new_destroy(&set);
+
+			if (!found)
+			{
+				ct_dump(cti, stderr);
+				printf("%ld -> %ld\n", get_irn_node_nr(irn), get_irn_node_nr(ir_dep));
+				assert(0 && "Found no copies.");
+			}
+			else if (found > 1)
+			{
+				ct_dump(cti, stderr);
+				printf("%ld -> %ld\n", get_irn_node_nr(irn), get_irn_node_nr(ir_dep));
+				assert(0 && "Found multiple copies.");
+			}
+
+
+			ct_dep = phase_get_irn_data(cti->phase, ir_dep); /* del */
+
 			while (ct_src) {
 				/* Resolve multiple deps. */
 				if (ct_dep && ct_dep->copy) {
@@ -910,6 +972,7 @@ static ct_region *ct_determine_region(ct_info *cti, ct_region *link,
 			pred   = NULL;
 			*block = &scope->block;
 	    }
+	    /* TODO: go up 1 level on branches? */
 	}
 
 	/* Scope may already be what we are looking for. */

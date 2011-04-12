@@ -94,7 +94,6 @@ void pl_set_depth(pl_info *pli, ir_node *irn, int depth)
 static void *pl_init_node(ir_phase *phase, const ir_node *irn)
 {
 	pl_info *pli = phase_get_private(phase);
-	(void)irn;
 
 	if (is_Eta(irn) || is_EtaA(irn)) {
 		pl_node_eta *pln = OALLOC(&pli->obst, pl_node_eta);
