@@ -903,6 +903,9 @@ static ir_node *make_address(dbg_info *dbgi, ir_node *block, ir_entity *entity,
 {
 	ir_node *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
 	ir_node *low = new_bd_sparc_Or_imm(dbgi, block, hi, entity, offset);
+
+	if (get_entity_owner(entity) == get_tls_type())
+		panic("thread local storage not supported yet in sparc backend");
 	return low;
 }
 
