@@ -1726,7 +1726,6 @@ FIRM_API void set_r_store(ir_graph *irg, ir_node *store);
  * @param ka The node to keep alive.
  */
 FIRM_API void keep_alive(ir_node *ka);
-FIRM_API void r_keep_alive(ir_graph *irg, ir_node *ka);
 
 /* --- initialize and finalize IR construction --- */
 

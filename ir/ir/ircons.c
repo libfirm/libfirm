@@ -716,14 +716,10 @@ void set_store(ir_node *store)
 	set_r_store(current_ir_graph, store);
 }
 
-void r_keep_alive(ir_graph *irg, ir_node *ka)
-{
-	add_End_keepalive(get_irg_end(irg), ka);
-}
-
 void keep_alive(ir_node *ka)
 {
-	r_keep_alive(current_ir_graph, ka);
+	ir_graph *irg = get_irn_irg(ka);
+	add_End_keepalive(get_irg_end(irg), ka);
 }
 
 void ir_set_uninitialized_local_variable_func(
