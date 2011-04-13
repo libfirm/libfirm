@@ -292,6 +292,8 @@ static void sparc_after_ra(ir_graph *irg)
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, sparc_after_ra_walker, NULL);
+
+	sparc_introduce_prolog_epilog(irg);
 }
 
 static void sparc_init_graph(ir_graph *irg)

@@ -479,6 +479,17 @@ void be_dump_phi_reg_reqs(FILE *out, ir_node *node, dump_reason_t reason);
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
                     const arch_register_class_t *cls);
 
+/**
+ * Search for output of start node with a specific register
+ */
+ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg);
+
+/**
+ * Search for input of a return node with a specific register and return
+ * its number.
+ */
+int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg);
+
 static inline int be_is_Spill    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Spill    ; }
 static inline int be_is_Reload   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Reload   ; }
 static inline int be_is_Copy     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Copy     ; }
@@ -491,7 +502,7 @@ static inline int be_is_Return   (const ir_node *irn) { return get_irn_opcode(ir
 static inline int be_is_IncSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_IncSP    ; }
 static inline int be_is_AddSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_AddSP    ; }
 static inline int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_SubSP    ; }
-static inline int be_is_Start    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Start; }
+static inline int be_is_Start    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Start    ; }
 static inline int be_is_FrameAddr(const ir_node *irn) { return get_irn_opcode(irn) == beo_FrameAddr; }
 
 #endif

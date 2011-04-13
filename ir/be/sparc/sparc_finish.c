@@ -44,10 +44,119 @@
 #include "sparc_new_nodes.h"
 #include "irprog.h"
 #include "irgmod.h"
+#include "ircons.h"
 
 #include "../bepeephole.h"
 #include "../benode.h"
 #include "../besched.h"
+
+static void kill_unused_stacknodes(ir_node *node)
+{
+	if (get_irn_n_edges(node) > 0)
+		return;
+
+	if (be_is_IncSP(node)) {
+		sched_remove(node);
+		kill_node(node);
+	} else if (is_Phi(node)) {
+		int       arity = get_irn_arity(node);
+		ir_node **ins   = ALLOCAN(ir_node*, arity);
+		int       i;
+		sched_remove(node);
+		memcpy(ins, get_irn_in(node), arity*sizeof(ins[0]));
+		kill_node(node);
+
+		for (i = 0; i < arity; ++i)
+			kill_unused_stacknodes(ins[i]);
+	}
+}
+
+static void introduce_epilog(ir_node *ret)
+{
+	const arch_register_t *sp_reg     = &sparc_registers[REG_SP];
+	ir_graph              *irg        = get_irn_irg(ret);
+	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
+	ir_node               *block      = get_nodes_block(ret);
+	ir_type               *frame_type = get_irg_frame_type(irg);
+	unsigned               frame_size = get_type_size_bytes(frame_type);
+	int                    sp_idx     = be_find_return_reg_input(ret, sp_reg);
+	ir_node               *sp         = get_irn_n(ret, sp_idx);
+
+	if (!layout->sp_relative) {
+		const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
+		ir_node *fp      = be_get_initial_reg_value(irg, fp_reg);
+		ir_node *restore = new_bd_sparc_RestoreZero(NULL, block, fp);
+		sched_add_before(ret, restore);
+		arch_set_irn_register(restore, sp_reg);
+		set_irn_n(ret, sp_idx, restore);
+
+		kill_unused_stacknodes(sp);
+	} else {
+		ir_node *incsp  = be_new_IncSP(sp_reg, block, sp, frame_size, 0);
+		set_irn_n(ret, sp_idx, incsp);
+		sched_add_before(ret, incsp);
+	}
+}
+
+void sparc_introduce_prolog_epilog(ir_graph *irg)
+{
+	const arch_register_t *sp_reg     = &sparc_registers[REG_SP];
+	ir_node               *start      = get_irg_start(irg);
+	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
+	ir_node               *block      = get_nodes_block(start);
+	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp_reg);
+	ir_node               *sp         = initial_sp;
+	ir_node               *schedpoint = start;
+	ir_type               *frame_type = get_irg_frame_type(irg);
+	unsigned               frame_size = get_type_size_bytes(frame_type);
+
+	/* introduce epilog for every return node */
+	{
+		ir_node *end_block = get_irg_end_block(irg);
+		int      arity     = get_irn_arity(end_block);
+		int      i;
+
+		for (i = 0; i < arity; ++i) {
+			ir_node *ret = get_irn_n(end_block, i);
+			assert(be_is_Return(ret));
+			introduce_epilog(ret);
+		}
+	}
+
+	while (be_is_Keep(sched_next(schedpoint)))
+		schedpoint = sched_next(schedpoint);
+
+	if (!layout->sp_relative) {
+		ir_node *incsp;
+		ir_node *save = new_bd_sparc_Save_imm(NULL, block, sp, NULL,
+		                                      -SPARC_MIN_STACKSIZE);
+		arch_set_irn_register(save, sp_reg);
+		sched_add_after(schedpoint, save);
+		schedpoint = save;
+
+		incsp = be_new_IncSP(sp_reg, block, save, frame_size, 0);
+		edges_reroute(initial_sp, incsp);
+		set_irn_n(save, n_sparc_Save_stack, initial_sp);
+		sched_add_after(schedpoint, incsp);
+		schedpoint = incsp;
+
+		/* we still need the IncSP even if noone is explicitely using the
+		 * value. (TODO: this isn't 100% correct yet, something at the end of
+		 * the function should hold the IncSP, even if we use a restore
+		 * which just overrides it instead of using the value)
+		 */
+		if (get_irn_n_edges(incsp) == 0) {
+			ir_node *in[] = { incsp };
+			ir_node *keep = be_new_Keep(block, 1, in);
+			sched_add_after(schedpoint, keep);
+		}
+	} else {
+		ir_node *incsp = be_new_IncSP(sp_reg, block, sp, frame_size, 0);
+		edges_reroute(initial_sp, incsp);
+		be_set_IncSP_pred(incsp, sp);
+		sched_add_after(schedpoint, incsp);
+	}
+}
 
 static void finish_sparc_Save(ir_node *node)
 {
@@ -265,11 +374,13 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 
 void sparc_finish(ir_graph *irg)
 {
+	/* perform peephole optimizations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
 	be_peephole_opt(irg);
 
+	/* perform legalizations (mostly fix nodes with too big immediates) */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
 	register_peephole_optimisation(op_be_Return,       finish_be_Return);

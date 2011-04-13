@@ -74,4 +74,6 @@ static inline bool sparc_is_value_imm_encodeable(int32_t value)
 
 void sparc_finish(ir_graph *irg);
 
+void sparc_introduce_prolog_epilog(ir_graph *irg);
+
 #endif

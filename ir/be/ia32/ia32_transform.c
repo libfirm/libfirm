@@ -5822,8 +5822,7 @@ void ia32_transform_graph(ir_graph *irg)
 	initial_fpcw       = NULL;
 	ia32_no_pic_adjust = 0;
 
-	old_initial_fpcw
-		= ia32_get_initial_reg_value(irg, &ia32_registers[REG_FPCW]);
+	old_initial_fpcw = be_get_initial_reg_value(irg, &ia32_registers[REG_FPCW]);
 
 	be_timer_push(T_HEIGHTS);
 	ia32_heights = heights_new(irg);

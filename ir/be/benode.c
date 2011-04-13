@@ -1050,6 +1050,63 @@ static const arch_irn_ops_t be_node_irn_ops = {
 	NULL,    /* perform_memory_operand  */
 };
 
+static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
+{
+	ir_node *start  = get_irg_start(irg);
+	unsigned n_outs = arch_irn_get_n_outs(start);
+	int      i;
+
+	/* do a naive linear search... */
+	for (i = 0; i < (int)n_outs; ++i) {
+		const arch_register_req_t *out_req
+			= arch_get_out_register_req(start, i);
+		if (! (out_req->type & arch_register_req_type_limited))
+			continue;
+		if (out_req->cls != arch_register_get_class(reg))
+			continue;
+		if (!rbitset_is_set(out_req->limited, reg->index))
+			continue;
+		return i;
+	}
+	panic("Tried querying undefined register '%s' at Start", reg->name);
+}
+
+ir_node *be_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
+{
+	int      i     = get_start_reg_index(irg, reg);
+	ir_node *start = get_irg_start(irg);
+	ir_mode *mode  = arch_register_class_mode(arch_register_get_class(reg));
+	const ir_edge_t *edge;
+
+	foreach_out_edge(start, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj)) // maybe End/Anchor
+			continue;
+		if (get_Proj_proj(proj) == i) {
+			return proj;
+		}
+	}
+	return new_r_Proj(start, mode, i);
+}
+
+int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
+{
+	int arity = get_irn_arity(ret);
+	int i;
+	/* do a naive linear search... */
+	for (i = 0; i < arity; ++i) {
+		const arch_register_req_t *req = arch_get_in_register_req(ret, i);
+		if (! (req->type & arch_register_req_type_limited))
+			continue;
+		if (req->cls != arch_register_get_class(reg))
+			continue;
+		if (!rbitset_is_set(req->limited, reg->index))
+			continue;
+		return i;
+	}
+	panic("Tried querying undefined register '%s' at Return", reg->name);
+}
+
 static arch_irn_class_t dummy_classify(const ir_node *node)
 {
 	(void) node;

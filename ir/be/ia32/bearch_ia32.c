@@ -263,45 +263,6 @@ static int ia32_get_sp_bias(const ir_node *node)
 	return 0;
 }
 
-static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
-{
-	ir_node *start  = get_irg_start(irg);
-	unsigned n_outs = arch_irn_get_n_outs(start);
-	int      i;
-
-	/* do a naive linear search... */
-	for (i = 0; i < (int)n_outs; ++i) {
-		const arch_register_req_t *out_req
-			= arch_get_out_register_req(start, i);
-		if (! (out_req->type & arch_register_req_type_limited))
-			continue;
-		if (out_req->cls != arch_register_get_class(reg))
-			continue;
-		if (!rbitset_is_set(out_req->limited, reg->index))
-			continue;
-		return i;
-	}
-	panic("Tried querying undefined register '%s' at Start", reg->name);
-}
-
-ir_node *ia32_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
-{
-	int      i     = get_start_reg_index(irg, reg);
-	ir_node *start = get_irg_start(irg);
-	ir_mode *mode  = arch_register_class_mode(arch_register_get_class(reg));
-	const ir_edge_t *edge;
-
-	foreach_out_edge(start, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		if (!is_Proj(proj)) // maybe End/Anchor
-			continue;
-		if (get_Proj_proj(proj) == i) {
-			return proj;
-		}
-	}
-	return new_r_Proj(start, mode, i);
-}
-
 /**
  * Build the between type and entities if not already build.
  */
@@ -1028,7 +989,7 @@ static void transform_MemPerm(ir_node *node)
 {
 	ir_node         *block = get_nodes_block(node);
 	ir_graph        *irg   = get_irn_irg(node);
-	ir_node         *sp    = ia32_get_initial_reg_value(irg, &ia32_registers[REG_ESP]);
+	ir_node         *sp    = be_get_initial_reg_value(irg, &ia32_registers[REG_ESP]);
 	int              arity = be_get_MemPerm_entity_arity(node);
 	ir_node        **pops  = ALLOCAN(ir_node*, arity);
 	ir_node         *in[1];
@@ -1292,7 +1253,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 	ir_type               *frame_type = get_irg_frame_type(irg);
 	unsigned               frame_size = get_type_size_bytes(frame_type);
 	be_stack_layout_t     *layout     = be_get_irg_stack_layout(irg);
-	ir_node               *initial_sp = ia32_get_initial_reg_value(irg, sp);
+	ir_node               *initial_sp = be_get_initial_reg_value(irg, sp);
 	ir_node               *curr_sp    = initial_sp;
 	ir_mode               *mode_gp    = mode_Iu;
 
@@ -1300,7 +1261,7 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		/* push ebp */
 		ir_node *mem        = get_irg_initial_mem(irg);
 		ir_node *noreg      = ia32_new_NoReg_gp(irg);
-		ir_node *initial_bp = ia32_get_initial_reg_value(irg, bp);
+		ir_node *initial_bp = be_get_initial_reg_value(irg, bp);
 		ir_node *curr_bp    = initial_bp;
 		ir_node *push       = new_bd_ia32_Push(NULL, block, noreg, noreg, mem, curr_bp, curr_sp);
 		ir_node *incsp;

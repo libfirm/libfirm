@@ -260,7 +260,7 @@ static void rewire_fpu_mode_nodes(ir_graph *irg)
 		return;
 	}
 
-	initial_value = ia32_get_initial_reg_value(irg, reg);
+	initial_value = be_get_initial_reg_value(irg, reg);
 	be_ssa_construction_init(&senv, irg);
 	be_ssa_construction_add_copies(&senv, env.state_nodes,
 	                               ARR_LEN(env.state_nodes));
