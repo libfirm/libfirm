@@ -86,10 +86,11 @@ static void block_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_node->attr.block.block_visited = 0;
 	memset(&new_node->attr.block.dom, 0, sizeof(new_node->attr.block.dom));
 	memset(&new_node->attr.block.pdom, 0, sizeof(new_node->attr.block.pdom));
-	/* TODO: we should probably create a new entity. But we somehow have to
-	 * patch the stuff at the same time */
-	new_node->attr.block.entity            = NULL;
-	new_node->attr.block.phis              = NULL;
+	/* It should be safe to copy the entity here, as it has no back-link to the old block.
+	 * It serves just as a label number, so copying a labeled block results in an exact copy.
+	 * This is at least what we need for DCE to work. */
+	new_node->attr.block.entity         = old_node->attr.block.entity;
+	new_node->attr.block.phis           = NULL;
 	INIT_LIST_HEAD(&new_node->attr.block.succ_head);
 }
 
