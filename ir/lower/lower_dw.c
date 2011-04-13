@@ -982,6 +982,27 @@ static void lower_Not(ir_node *node, ir_mode *mode, lower_env_t *env)
 	set_lowered(env, node, res_low, res_high);
 }
 
+static bool is_equality_cmp_0(const ir_node *node)
+{
+	ir_relation relation = get_Cmp_relation(node);
+	ir_node    *left     = get_Cmp_left(node);
+	ir_node    *right    = get_Cmp_right(node);
+	ir_mode    *mode     = get_irn_mode(left);
+
+	/* this probably makes no sense if unordered is involved */
+	assert(!mode_is_float(mode));
+
+	if (!is_Const(right) || !is_Const_null(right))
+		return false;
+	if (relation == ir_relation_equal)
+		return true;
+	if (mode_is_signed(mode)) {
+		return relation == ir_relation_less_greater;
+	} else {
+		return relation == ir_relation_greater;
+	}
+}
+
 /**
  * Translate a Cond.
  */
@@ -1052,7 +1073,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	dbg      = get_irn_dbg_info(sel);
 	relation = get_Cmp_relation(sel);
 
-	if (ir_is_equality_cmp_0(sel)) {
+	if (is_equality_cmp_0(sel)) {
 		/* x ==/!= 0 ==> or(low,high) ==/!= 0 */
 		ir_mode *mode   = env->low_unsigned;
 		ir_node *low    = new_r_Conv(block, lentry->low_word, mode);
@@ -1320,7 +1341,7 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m, lower_env_t *env)
 	dbg      = get_irn_dbg_info(cmp);
 
 	/* easy case for x ==/!= 0 (see lower_Cond for details) */
-	if (ir_is_equality_cmp_0(cmp)) {
+	if (is_equality_cmp_0(cmp)) {
 		ir_graph *irg     = get_irn_irg(cmp);
 		ir_mode  *mode    = env->low_unsigned;
 		ir_node  *low     = new_r_Conv(block, lentry->low_word, mode);
