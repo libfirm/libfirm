@@ -479,11 +479,6 @@ void be_dump_phi_reg_reqs(FILE *out, ir_node *node, dump_reason_t reason);
 ir_node *be_new_Phi(ir_node *block, int n_ins, ir_node **ins, ir_mode *mode,
                     const arch_register_class_t *cls);
 
-/**
- * irn handler for common be nodes and Phi's.
- */
-const void *be_node_get_irn_ops(const ir_node *irn);
-
 static inline int be_is_Spill    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Spill    ; }
 static inline int be_is_Reload   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Reload   ; }
 static inline int be_is_Copy     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Copy     ; }
