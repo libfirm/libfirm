@@ -2179,8 +2179,8 @@ void be_abi_free(ir_graph *irg)
 
 	if (env->call != NULL)
 		be_abi_call_free(env->call);
-	free(env);
 	assert(env->regs == NULL);
+	free(env);
 
 	be_set_irg_abi(irg, NULL);
 }
