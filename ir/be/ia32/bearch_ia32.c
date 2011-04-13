@@ -299,8 +299,7 @@ ir_node *ia32_get_initial_reg_value(ir_graph *irg, const arch_register_t *reg)
 			return proj;
 		}
 	}
-	ir_node *res = new_r_Proj(start, mode, i);
-	return res;
+	return new_r_Proj(start, mode, i);
 }
 
 /**
