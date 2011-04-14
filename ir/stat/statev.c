@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <regex.h>
 
 #include "util.h"
 #include "stat_timing.h"
@@ -41,10 +42,6 @@
 
 #ifndef DISABLE_STATEV
 
-#ifdef HAVE_REGEX_H
-#define FIRM_HAVE_REGEX
-#endif
-
 #define MAX_TIMER 256
 
 static FILE* stat_ev_file  = NULL;
@@ -54,8 +51,6 @@ int            stat_ev_timer_sp = 0;
 timing_ticks_t stat_ev_timer_elapsed[MAX_TIMER];
 timing_ticks_t stat_ev_timer_start[MAX_TIMER];
 
-#ifdef FIRM_HAVE_REGEX
-#include <regex.h>
 static regex_t regex;
 static regex_t *filter = NULL;
 static inline int key_matches(const char *key)
@@ -65,22 +60,6 @@ static inline int key_matches(const char *key)
 
 	return regexec(filter, key, 0, NULL, 0) == 0;
 }
-
-#else
-static char filter[128] = { '\0' };
-static inline int key_matches(const char *key)
-{
-	int i = 0;
-
-	for (i = 0; filter[i] != '\0'; ++i) {
-		if (key[i] != filter[i])
-			return 0;
-	}
-
-	return 1;
-}
-#endif /* FIRM_HAVE_REGEX */
-
 
 void stat_ev_printf(char ev, const char *key, const char *fmt, ...)
 {
@@ -108,13 +87,9 @@ void stat_ev_begin(const char *prefix, const char *filt)
 	stat_ev_file = fopen(buf, "wt");
 
 	if (filt && filt[0] != '\0') {
-#ifdef FIRM_HAVE_REGEX
 		filter = NULL;
 		if (regcomp(&regex, filt, REG_EXTENDED) == 0)
 			filter = &regex;
-#else
-		strncpy(filter, filt, sizeof(filter) - sizeof(filter[0]));
-#endif /* FIRM_HAVE_REGEX */
 	}
 
 	stat_ev_enabled = stat_ev_file != NULL;
@@ -125,6 +100,9 @@ void stat_ev_end(void)
 	if (stat_ev_file) {
 		fclose(stat_ev_file);
 	}
+	if (filter != NULL)
+		regfree(filter);
+	regfree(filter);
 }
 
 #endif
