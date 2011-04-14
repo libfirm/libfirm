@@ -106,12 +106,10 @@ struct spill_env_t {
 	ir_nodeset_t      mem_phis;       /**< set of all spilled phis. */
 	ir_exec_freq     *exec_freq;
 
-#ifdef FIRM_STATISTICS
 	unsigned          spill_count;
 	unsigned          reload_count;
 	unsigned          remat_count;
 	unsigned          spilled_phi_count;
-#endif
 };
 
 /**
@@ -162,12 +160,10 @@ spill_env_t *be_new_spill_env(ir_graph *irg)
 	env->exec_freq      = be_get_irg_exec_freq(irg);
 	obstack_init(&env->obst);
 
-#ifdef FIRM_STATISTICS
 	env->spill_count       = 0;
 	env->reload_count      = 0;
 	env->remat_count       = 0;
 	env->spilled_phi_count = 0;
-#endif
 
 	return env;
 }
@@ -427,9 +423,7 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 		spill->spill = be_spill(block, to_spill);
 		sched_add_after(skip_Proj(after), spill->spill);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
-#ifdef FIRM_STATISTICS
 		env->spill_count++;
-#endif
 	}
 	DBG((dbg, LEVEL_1, "\n"));
 }
@@ -477,9 +471,7 @@ static void spill_phi(spill_env_t *env, spill_info_t *spillinfo)
 	sched_add_after(block, spill->spill);
 
 	spillinfo->spills = spill;
-#ifdef FIRM_STATISTICS
 	env->spilled_phi_count++;
-#endif
 
 	for (i = 0; i < arity; ++i) {
 		ir_node      *arg      = get_irn_n(phi, i);
@@ -647,10 +639,8 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 			ins[i] = arg;
 		} else {
 			ins[i] = do_remat(env, arg, reloader);
-#ifdef FIRM_STATISTICS
 			/* don't count the recursive call as remat */
 			env->remat_count--;
-#endif
 		}
 	}
 
@@ -667,9 +657,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 		/* insert in schedule */
 		sched_reset(res);
 		sched_add_before(reloader, res);
-#ifdef FIRM_STATISTICS
 		env->remat_count++;
-#endif
 	}
 
 	return res;
@@ -959,9 +947,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 				assert(si->spills != NULL);
 				copy = be_reload(si->reload_cls, rld->reloader, mode,
 				                 si->spills->spill);
-#ifdef FIRM_STATISTICS
 				env->reload_count++;
-#endif
 			}
 
 			DBG((dbg, LEVEL_1, " %+F of %+F before %+F\n",

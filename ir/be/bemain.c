@@ -131,10 +131,8 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
-#ifdef FIRM_STATISTICS
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
 	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
-#endif
 
 #ifdef WITH_ILP
 	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
@@ -564,9 +562,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		ir_profile_read(prof_filename);
 	}
 
-#ifdef FIRM_STATISTICS
 	stat_active = stat_is_active();
-#endif /* FIRM_STATISTICS */
 
 	/* For all graphs */
 	for (i = 0; i < num_birgs; ++i) {
@@ -717,9 +713,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* Do register allocation */
 		be_allocate_registers(irg);
 
-#ifdef FIRM_STATISTICS
 		stat_ev_dbl("bemain_costs_before_ra", be_estimate_irg_costs(irg, birg->exec_freq));
-#endif
 
 		dump(DUMP_RA, irg, "ra");
 
@@ -838,7 +832,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 		ir_timer_reset_and_start(t);
 	}
 
-#ifdef FIRM_STATISTICS
 	if (be_options.statev) {
 		const char *dot = strrchr(cup_name, '.');
 		const char *pos = dot ? dot : cup_name + strlen(cup_name);
@@ -850,7 +843,6 @@ void be_main(FILE *file_handle, const char *cup_name)
 		stat_ev_begin(buf, be_options.filtev);
 		stat_ev_ctx_push_str("bemain_compilation_unit", cup_name);
 	}
-#endif
 
 	be_main_loop(file_handle, cup_name);
 
@@ -865,12 +857,10 @@ void be_main(FILE *file_handle, const char *cup_name)
 		}
 	}
 
-#ifdef FIRM_STATISTICS
 	if (be_options.statev) {
 		stat_ev_ctx_pop("bemain_compilation_unit");
 		stat_ev_end();
 	}
-#endif
 }
 
 static int do_lower_for_target(ir_prog *irp, void *context)

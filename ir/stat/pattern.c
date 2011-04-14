@@ -42,8 +42,6 @@
 #include "error.h"
 #include "lc_printf.h"
 
-#ifdef FIRM_STATISTICS
-
 /*
  * just be make some things clear :-), the
  * poor man "generics"
@@ -930,5 +928,3 @@ void stat_finish_pattern_history(const char *fname)
 
 	status->enable = 0;
 }  /* stat_finish_pattern_history */
-
-#endif /* FIRM_STATISTICS */

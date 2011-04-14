@@ -82,9 +82,6 @@
    first (like Motorola and SPARC, unlike Intel and VAX). */
 /* #undef WORDS_BIGENDIAN */
 
-/* Define to 1 if Firm statistics are activated */
-#define FIRM_STATISTICS 1
-
 /* Define the right volatile token */
 /* #undef volatile */
 

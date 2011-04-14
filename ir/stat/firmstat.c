@@ -25,8 +25,6 @@
  */
 #include "config.h"
 
-#ifdef FIRM_STATISTICS
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -2452,16 +2450,3 @@ int stat_is_active(void)
 {
 	return status != (stat_info_t *)&status_disable;
 }  /* stat_is_active */
-
-#else
-
-/* initialize the statistics module. */
-void firm_init_stat(unsigned enable_options) {}
-
-/* Dumps a statistics snapshot */
-void stat_dump_snapshot(const char *name, const char *phase) {}
-
-/* terminates the statistics module, frees all memory */
-void stat_term(void);
-
-#endif /* FIRM_STATISTICS */

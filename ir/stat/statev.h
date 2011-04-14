@@ -28,7 +28,7 @@
 #ifndef FIRM_STATEVENT_H
 #define FIRM_STATEVENT_H
 
-#if !defined(FIRM_STATISTICS) || defined(DISABLE_STATEV)
+#ifdef DISABLE_STATEV
 
 #define stat_ev_do(expr)
 #define stat_ev_enabled             0
@@ -151,4 +151,4 @@ void stat_ev_end(void);
 
 #endif
 
-#endif /* FIRM_STATEVENT_H */
+#endif
