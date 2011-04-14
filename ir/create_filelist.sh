@@ -3,7 +3,7 @@
 # Little helper script used to create the file list for Makefile.am
 # automatically
 
-DIRS="adt ana be common debug ident ir libcore lower obstack opt stat tr tv"
+DIRS="adt ana be common debug ident ir libcore lower obstack opt stat tr tv kaps"
 
 echo "libfirm_la_SOURCES = \\" > FILELIST
 for dir in $DIRS; do

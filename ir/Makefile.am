@@ -14,6 +14,7 @@ INCLUDES += \
 	-I$(top_srcdir)/ir/debug \
 	-I$(top_srcdir)/ir/ident \
 	-I$(top_srcdir)/ir/ir \
+	-I$(top_srcdir)/ir/kaps \
 	-I$(top_srcdir)/ir/libcore \
 	-I$(top_srcdir)/ir/lower \
 	-I$(top_srcdir)/ir/net \
@@ -49,8 +50,7 @@ libfirm_la_SOURCES = \
 	ana/dfs.c \
 	ana/execfreq.c \
 	ana/execution_frequency.c \
-	ana/field_temperature.c \
-	ana/height.c \
+	ana/heights.c \
 	ana/interval_analysis.c \
 	ana/irbackedge.c \
 	ana/ircfscc.c \
@@ -63,13 +63,13 @@ libfirm_la_SOURCES = \
 	ana/irmemory.c \
 	ana/irouts.c \
 	ana/irscc.c \
-	ana/irsimpletype.c \
 	ana/irtypeinfo.c \
 	ana/rta.c \
 	ana/structure.c \
 	ana/trouts.c \
 	ana/vrp.c \
 	be/beabi.c \
+	be/beabihelper.c \
 	be/bearch.c \
 	be/beblocksched.c \
 	be/bechordal.c \
@@ -79,21 +79,17 @@ libfirm_la_SOURCES = \
 	be/becopyheur2.c \
 	be/becopyheur4.c \
 	be/becopyheur.c \
-	be/becopyilp1.c \
 	be/becopyilp2.c \
 	be/becopyilp.c \
 	be/becopyopt.c \
-	be/becopypbqp.c \
 	be/becopystat.c \
 	be/bedbgout.c \
 	be/bedomfront.c \
-	be/bedump_minir.c \
 	be/beemitter_binary.c \
 	be/beemitter.c \
 	be/beflags.c \
 	be/begnuas.c \
 	be/beifg.c \
-	be/beilpsched.c \
 	be/beinfo.c \
 	be/beinsn.c \
 	be/beirg.c \
@@ -109,18 +105,13 @@ libfirm_la_SOURCES = \
 	be/bepbqpcoloring.c \
 	be/bepeephole.c \
 	be/beprefalloc.c \
-	be/bepressurestat.c \
 	be/bera.c \
 	be/besched.c \
-	be/beschedmris.c \
 	be/beschednormal.c \
 	be/beschedrand.c \
 	be/beschedregpress.c \
-	be/beschedrss.c \
 	be/beschedtrace.c \
 	be/beschedtrivial.c \
-	be/bespillbelady2.c \
-	be/bespillbelady3.c \
 	be/bespillbelady.c \
 	be/bespill.c \
 	be/bespilldaemel.c \
@@ -129,6 +120,7 @@ libfirm_la_SOURCES = \
 	be/bessaconstr.c \
 	be/bessadestr.c \
 	be/bestabs.c \
+	be/bestack.c \
 	be/bestat.c \
 	be/bestate.c \
 	be/betranshlp.c \
@@ -143,13 +135,11 @@ libfirm_la_SOURCES = \
 	common/timing.c \
 	debug/dbginfo.c \
 	debug/debugger.c \
-	debug/seqnumbers.c \
 	ident/ident.c \
 	ident/mangle.c \
 	ir/instrument.c \
 	ir/irarch.c \
 	ir/irargs.c \
-	ir/ircgcons.c \
 	ir/ircons.c \
 	ir/irdump.c \
 	ir/irdumptxt.c \
@@ -176,11 +166,9 @@ libfirm_la_SOURCES = \
 	ir/irprofile.c \
 	ir/irprog.c \
 	ir/irssacons.c \
-	ir/irvrfy.c \
+	ir/irverify.c \
 	ir/valueset.c \
 	libcore/lc_appendable.c \
-	libcore/lc_config_lexer.c \
-	libcore/lc_config_parser.c \
 	libcore/lc_opts.c \
 	libcore/lc_opts_enum.c \
 	libcore/lc_printf.c \
@@ -233,19 +221,30 @@ libfirm_la_SOURCES = \
 	stat/pattern_dmp.c \
 	stat/stat_dmp.c \
 	stat/statev.c \
-	stat/stat_liveness.c \
 	stat/stat_timing.c \
 	tr/compound_path.c \
 	tr/entity.c \
 	tr/tpop.c \
 	tr/tr_inheritance.c \
-	tr/trvrfy.c \
+	tr/trverify.c \
 	tr/type.c \
 	tr/type_finalization.c \
 	tr/typewalk.c \
 	tv/fltcalc.c \
 	tv/strcalc.c \
-	tv/tv.c
+	tv/tv.c \
+	kaps/brute_force.c \
+	kaps/bucket.c \
+	kaps/heuristical.c \
+	kaps/heuristical_co.c \
+	kaps/heuristical_co_ld.c \
+	kaps/html_dumper.c \
+	kaps/kaps.c \
+	kaps/matrix.c \
+	kaps/optimal.c \
+	kaps/pbqp_edge.c \
+	kaps/pbqp_node.c \
+	kaps/vector.c
 
 EXTRA_DIST = \
 	adt/array_t.h \
@@ -268,6 +267,7 @@ EXTRA_DIST = \
 	be/be_t.h \
 	be/be_types.h \
 	be/beabi.h \
+	be/beabihelper.h \
 	be/bearch.h \
 	be/beblocksched.h \
 	be/bechordal.h \
@@ -277,16 +277,13 @@ EXTRA_DIST = \
 	be/becopyilp_t.h \
 	be/becopyopt.h \
 	be/becopyopt_t.h \
-	be/becopypbqp.h \
 	be/becopystat.h \
 	be/bedomfront.h \
-	be/bedump_minir.h \
 	be/beemitter.h \
 	be/beemitter_binary.h \
 	be/beflags.h \
 	be/begnuas.h \
 	be/beifg.h \
-	be/beilpsched.h \
 	be/beinfo.h \
 	be/beinsn_t.h \
 	be/beintlive_t.h \
@@ -298,27 +295,25 @@ EXTRA_DIST = \
 	be/beloopana.h \
 	be/belower.h \
 	be/bemachine.h \
-	be/benode.h \
 	be/bemodule.h \
 	be/bemodule_t.h \
-	be/besched.h \
+	be/benode.h \
 	be/bepbqpcoloring.h \
 	be/bepeephole.h \
-	be/bepressurestat.h \
 	be/bera.h \
-	be/beschedmris.h \
-	be/beutil.h \
-	be/beschedrss.h \
+	be/besched.h \
 	be/bespill.h \
 	be/bespillslots.h \
 	be/bespillutil.h \
 	be/bessaconstr.h \
 	be/bessadestr.h \
+	be/bestack.h \
 	be/bestat.h \
 	be/bestate.h \
 	be/bestatevent.h \
 	be/betranshlp.h \
 	be/beuses.h \
+	be/beutil.h \
 	be/beverify.h \
 	common/debug.h \
 	common/error.h \
@@ -336,44 +331,38 @@ EXTRA_DIST = \
 	ir/irflag_t.def \
 	ir/irflag_t.h \
 	ir/irgraph_t.h \
-	ir/irlinkednodemap.h \
-	ir/irlinkednodeset.h \
 	ir/irmode_t.h \
 	ir/irnode_t.h \
-	ir/irnodemap.h \
-	ir/irnodeset.h \
 	ir/irop_t.h \
 	ir/iropt_t.h \
-	ir/irpass_t.h \
-	ir/irphase.h \
 	ir/irphase_t.h \
 	ir/irprintf_t.h \
-	ir/irprofile.h \
 	ir/irprog_t.h \
+	ir/irlinkednodemap.h \
+	ir/irlinkednodeset.h \
+	ir/irnodemap.h \
+	ir/irnodeset.h \
+	ir/irpass_t.h \
+	ir/irphase.h \
+	ir/irprofile.h \
 	ir/irtypes.h \
-	ir/irvrfy_t.h \
+	ir/irverify_t.h \
 	ir/valueset.h \
 	ir/gen_irnode.h \
-	libcore/do_bisonflex.sh \
 	libcore/lc_appendable.h \
 	libcore/lc_common_t.h \
 	libcore/lc_config.h \
-	libcore/lc_config_lexer.l \
-	libcore/lc_config_parser.h \
-	libcore/lc_config_parser.y \
-	libcore/lc_defines.h \
 	libcore/lc_opts.h \
+	libcore/lc_defines.h \
 	libcore/lc_opts_enum.h \
 	libcore/lc_opts_t.h \
-	libcore/lc_parser_t.h \
 	libcore/lc_printf.h \
 	libcore/lc_printf_arg_types.def \
-	opt/iropt_dbg.h \
-	opt/opt_confirms.h \
-	opt/opt_init.h \
 	opt/opt_polymorphy.h \
 	opt/reassoc_t.h \
 	opt/scalar_replace.h \
+	opt/iropt_dbg.h \
+	opt/opt_init.h \
 	stat/counter.h \
 	stat/dags.h \
 	stat/firmstat_t.h \
@@ -389,6 +378,24 @@ EXTRA_DIST = \
 	tv/fltcalc.h \
 	tv/strcalc.h \
 	tv/tv_t.h \
+	kaps/brute_force.h \
+	kaps/bucket.h \
+	kaps/bucket_t.h \
+	kaps/heuristical.h \
+	kaps/heuristical_co.h \
+	kaps/heuristical_co_ld.h \
+	kaps/html_dumper.h \
+	kaps/kaps.h \
+	kaps/matrix.h \
+	kaps/matrix_t.h \
+	kaps/optimal.h \
+	kaps/pbqp_edge.h \
+	kaps/pbqp_edge_t.h \
+	kaps/pbqp_node.h \
+	kaps/pbqp_node_t.h \
+	kaps/pbqp_t.h \
+	kaps/vector.h \
+	kaps/vector_t.h \
 	ir/gen_ir_cons.c.inl \
 	ir/gen_irnode.c.inl \
 	ir/gen_irop.c.inl \
@@ -402,7 +409,6 @@ EXTRA_DIST = \
 	be/scripts/generate_regalloc_if.pl
 
 # ia32 backend
-
 ia32_sources = \
 	be/ia32/bearch_ia32.c \
 	be/ia32/ia32_address_mode.c \
@@ -412,11 +418,9 @@ ia32_sources = \
 	be/ia32/ia32_finish.c \
 	be/ia32/ia32_fpu.c \
 	be/ia32/ia32_intrinsics.c \
-	be/ia32/ia32_map_regs.c \
 	be/ia32/ia32_new_nodes.c \
 	be/ia32/ia32_optimize.c \
 	be/ia32/ia32_transform.c \
-	be/ia32/ia32_util.c \
 	be/ia32/ia32_x87.c
 
 ia32_built_sources = \
@@ -441,13 +445,11 @@ EXTRA_DIST += \
 	be/ia32/ia32_emitter.h \
 	be/ia32/ia32_finish.h \
 	be/ia32/ia32_fpu.h \
-	be/ia32/ia32_map_regs.h \
 	be/ia32/ia32_new_nodes.h \
 	be/ia32/ia32_nodes_attr.h \
 	be/ia32/ia32_optimize.h \
 	be/ia32/ia32_spec.pl \
 	be/ia32/ia32_transform.h \
-	be/ia32/ia32_util.h \
 	be/ia32/ia32_x87.h
 
 $(srcdir)/be/ia32/gen_ia32_new_nodes.c.inl $(srcdir)/be/ia32/gen_ia32_new_nodes.h: \
@@ -470,10 +472,11 @@ $(srcdir)/be/ia32/gen_ia32_regalloc_if.c $(srcdir)/be/ia32/gen_ia32_regalloc_if.
 
 arm_sources = \
 	be/arm/arm_emitter.c \
-	be/arm/arm_map_regs.c \
 	be/arm/arm_new_nodes.c \
 	be/arm/arm_optimize.c \
 	be/arm/arm_transform.c \
+	be/arm/arm_map_regs.c \
+	be/arm/arm_cconv.c \
 	be/arm/bearch_arm.c
 arm_built_sources = \
 	be/arm/gen_arm_emitter.c \
@@ -491,13 +494,13 @@ libfirm_la_SOURCES += $(arm_sources) $(arm_built_sources)
 
 EXTRA_DIST += \
 	be/arm/arm_emitter.h \
-	be/arm/arm_map_regs.h \
 	be/arm/arm_new_nodes.h \
 	be/arm/arm_nodes_attr.h \
 	be/arm/arm_optimize.h \
 	be/arm/arm_spec.pl \
 	be/arm/arm_transform.h \
-	be/arm/bearch_arm.h \
+	be/arm/arm_map_regs.h \
+	be/arm/arm_cconv.h \
 	be/arm/bearch_arm_t.h
 
 $(srcdir)/be/arm/gen_arm_new_nodes.c.inl $(srcdir)/be/arm/gen_arm_new_nodes.h: \
@@ -520,9 +523,10 @@ $(srcdir)/be/arm/gen_arm_regalloc_if.c $(srcdir)/be/arm/gen_arm_regalloc_if.h: \
 
 sparc_sources = \
 	be/sparc/sparc_emitter.c \
-	be/sparc/sparc_map_regs.c \
 	be/sparc/sparc_new_nodes.c \
 	be/sparc/sparc_transform.c \
+	be/sparc/sparc_cconv.c \
+	be/sparc/sparc_finish.c \
 	be/sparc/bearch_sparc.c
 sparc_built_sources = \
 	be/sparc/gen_sparc_emitter.c \
@@ -539,12 +543,11 @@ libfirm_la_SOURCES += $(sparc_sources) $(sparc_built_sources)
 
 EXTRA_DIST += \
 	be/sparc/sparc_emitter.h \
-	be/sparc/sparc_map_regs.h \
 	be/sparc/sparc_new_nodes.h \
 	be/sparc/sparc_nodes_attr.h \
 	be/sparc/sparc_spec.pl \
+	be/sparc/sparc_cconv.h \
 	be/sparc/sparc_transform.h \
-	be/sparc/bearch_sparc.h \
 	be/sparc/bearch_sparc_t.h
 
 $(srcdir)/be/sparc/gen_sparc_new_nodes.c.inl $(srcdir)/be/sparc/gen_sparc_new_nodes.h: \

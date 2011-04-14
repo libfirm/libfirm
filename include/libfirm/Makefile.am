@@ -1,8 +1,8 @@
 libfirmincludedir=$(includedir)/libfirm
 libfirminclude_HEADERS = \
 	analyze_irg_args.h \
-	be.h \
 	begin.h \
+	be.h \
 	callgraph.h \
 	cdep.h \
 	cgana.h \
@@ -16,11 +16,10 @@ libfirminclude_HEADERS = \
 	firm.h \
 	firmstat.h \
 	firm_types.h \
-	height.h \
+	heights.h \
 	ident.h \
 	interval_analysis.h \
 	irarch.h \
-	ircgcons.h \
 	ircgopt.h \
 	irconsconfirm.h \
 	ircons.h \
@@ -47,12 +46,12 @@ libfirminclude_HEADERS = \
 	irpass.h \
 	irprintf.h \
 	irprog.h \
-	irsimpletype.h \
 	irtypeinfo.h \
 	irverify.h \
 	lowering.h \
+	nodeops.h \
+	opcodes.h \
 	rta.h \
-	seqnumbers.h \
 	structure.h \
 	timing.h \
 	trouts.h \

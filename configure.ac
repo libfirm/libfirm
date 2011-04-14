@@ -30,7 +30,9 @@ m4_define([lt_release],  [firm_major_version])
 
 AC_INIT([libfirm], [firm_version], [firm@ipd.info.uni-karlsruhe.de])
 AC_CONFIG_SRCDIR([ir/common/firm.c])
-AM_INIT_AUTOMAKE([foreign dist-bzip2 1.9])
+AM_INIT_AUTOMAKE([foreign dist-bzip2 silent-rules 1.11])
+
+AM_SILENT_RULES([yes])
 
 AC_DEFINE([libfirm_VERSION_MAJOR], [firm_major_version], [Firms major version number])
 AC_DEFINE([libfirm_VERSION_MINOR], [firm_minor_version], [Firms minor version number])
@@ -50,6 +52,8 @@ AC_CONFIG_HEADER([config.h])
 
 AC_DEFINE([FIRM_BUILD], [], [Defined when firm library is built])
 AC_DEFINE([FIRM_DLL], [], [Define when a dynamically loadable shared library is built])
+
+AC_CONFIG_MACRO_DIR([m4])
 
 dnl Package options
 dnl ===============
@@ -78,24 +82,6 @@ if test "$enable_assert" = no; then
   AC_DEFINE([NDEBUG], [], [define to disable asserts])
 fi
 AC_SUBST([enable_assert])
-
-dnl enable ILP solver support
-dnl --------------------------------
-AC_ARG_ENABLE([ilp],
-[AS_HELP_STRING([--enable-ilp], [enable ilp solver])],
-[enable_ilp="$enableval"], [enable_ilp="no"])
-
-if test "$enable_ilp" = yes; then
-  AC_DEFINE([WITH_ILP], [], [enable to build code using ilp solvers])
-fi
-
-dnl disable backend
-dnl ---------------
-AC_ARG_ENABLE([backend],
-[AS_HELP_STRING([--disable-backend], [disable backends])],
-[enable_backend="$enableval"], [enable_backend="yes"])
-
-AC_SUBST(enable_backend)
 
 dnl Checks for programs.
 dnl ====================
@@ -148,20 +134,4 @@ AC_CONFIG_FILES([
 	libfirm.pc
 ])
 
-BACKENDS=""
-if test "$enable_backend" = yes; then
-	BACKENDS="arm ia32 sparc amd64"
-fi
-AC_SUBST([BACKENDS])
-
 AC_OUTPUT
-
-dnl output summary of firm configuration
-echo ""
-echo "firm configuration summary:"
-echo "     backends              $BACKENDS"
-echo "     profiling             $enable_profile_libfirm"
-echo "     debug/verifiers       $enable_debug_libfirm"
-echo "     assertions            $enable_assert"
-echo "     ilp                   $enable_ilp"
-echo ""
