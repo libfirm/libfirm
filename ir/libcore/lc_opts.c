@@ -49,7 +49,6 @@
 #include "lc_common_t.h"
 #include "lc_opts_t.h"
 #include "lc_opts_enum.h"
-#include "lc_parser_t.h"
 #include "hashptr.h"
 #include "lc_printf.h"
 #include "xmalloc.h"
@@ -711,15 +710,6 @@ static int lc_opts_default_error_handler(const char *prefix, const lc_opt_err_in
 	return 0;
 }
 
-void lc_opt_from_file(const char *filename, FILE *f, lc_opt_error_handler_t *handler)
-{
-	if (handler == NULL)
-		handler = lc_opts_default_error_handler;
-	PMANGLE(in) = f;
-	lc_opt_init_parser(filename, handler);
-	PMANGLE(parse)();
-}
-
 int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 						   const char *opt_prefix,
 						   const char *arg, lc_opt_error_handler_t *handler)
@@ -735,29 +725,6 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *root,
 
 	if (n >= n_prefix && strncmp(opt_prefix, arg, n_prefix) == 0) {
 		arg = arg + n_prefix;
-
-		/*
-		 * check, if the next character is a @.
-		 * This means, that we want to read options
-		 * from a file.
-		 */
-		if (arg[0] == '@') {
-			size_t n    = strcspn(&arg[1], " \t\n");
-			char *fname = (char*)alloca(n + 1);
-			FILE *f;
-
-			strncpy(fname, &arg[1], n);
-			if ((f = fopen(fname, "rt")) != NULL) {
-				lc_opt_from_file(fname, f, handler);
-				fclose(f);
-				set_error(&err, lc_opt_err_none, NULL);
-			}
-
-			else
-				set_error(&err, lc_opt_err_file_not_found, arg);
-
-			return !lc_opt_raise_error(&err, handler, "Unable to open file: %s", fname);
-		}
 
 		/* find the next delimiter (the -) and extract the string up to
 		 * there. */
@@ -896,59 +863,4 @@ const lc_arg_env_t *lc_opt_get_arg_env(void)
 	}
 
 	return env;
-}
-
-void lc_opt_default_configs(const char *ini_name)
-{
-	FILE *f;
-	char path[MAX_PATH];
-	char local_ini_file[MAX_PATH];
-	char home_dir_ini_file[MAX_PATH];
-
-	/* <cmnt>.ini */
-	strncpy(local_ini_file, ini_name, sizeof(local_ini_file));
-	strncat(local_ini_file, ".ini", sizeof(local_ini_file)-1);
-	local_ini_file[sizeof(local_ini_file) - 1] = '\0';
-	path[0] = '\0';
-
-#ifdef _WIN32
-#if _MSC_VER > 1200
-	/* ARG: need newer SDK to compile this */
-	SHGetFolderPath(NULL, CSIDL_LOCAL_APPDATA, NULL, 0, path);
-	strncat(path, "\\", sizeof(path)-1);
-#endif
-	strncpy(home_dir_ini_file, local_ini_file, sizeof(home_dir_ini_file));
-	home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
-#else
-	{
-		struct passwd *entry = getpwuid(getuid());
-		if (entry != NULL) {
-			strcpy(path, entry->pw_dir);
-			strncat(path, "/", sizeof(path)-1);
-			/* .<cmnt>rc */
-			snprintf(home_dir_ini_file, sizeof(home_dir_ini_file), ".%src", ini_name);
-			home_dir_ini_file[sizeof(home_dir_ini_file) - 1] = '\0';
-		} else {
-			/* FIXME: some error occurred */
-			home_dir_ini_file[0] = '\0';
-		}
-	}
-#endif
-
-	strncat(path, home_dir_ini_file, sizeof(path)-1);
-	path[sizeof(path) - 1] = '\0';
-
-	/* Process ini file in user's home. */
-	f = fopen(path, "rt");
-	if (f) {
-		lc_opt_from_file(path, f, lc_opts_default_error_handler);
-		fclose(f);
-	}
-
-	/* Process ini file in current directory. */
-	f = fopen(local_ini_file, "rt");
-	if (f) {
-		lc_opt_from_file(local_ini_file, f, lc_opts_default_error_handler);
-		fclose(f);
-	}
 }

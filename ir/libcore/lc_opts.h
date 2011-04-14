@@ -280,8 +280,6 @@ void lc_opt_print_tree(lc_opt_entry_t *ent, FILE *f);
 
 int lc_opt_add_table(lc_opt_entry_t *grp, const lc_opt_table_entry_t *table);
 
-void lc_opt_from_file(const char *filenmame, FILE *f, lc_opt_error_handler_t *handler);
-
 /**
  * The same as lc_opt_from_single_arg() only for an array of arguments.
  */
@@ -313,15 +311,5 @@ int lc_opt_from_single_arg(const lc_opt_entry_t *grp,
  * @return The option printf environment.
  */
 const lc_arg_env_t *lc_opt_get_arg_env(void);
-
-/**
- * This function tries to open a ini file in the user's homedir
- * (On win32 this is \Documents and Settings\Application Data)
- * which is called .<ini_name>rc (on win32 <ini_name>.ini)
- *
- * and an ini file in the current directory which is called <ini_name>.ini on
- * both systems.
- */
-void lc_opt_default_configs(const char *init_name);
 
 #endif
