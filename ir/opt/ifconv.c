@@ -400,7 +400,7 @@ restart:
 
 				if (arity == 2) {
 					unsigned mark;
-#if 1
+#if 0
 					DB((dbg, LEVEL_1,  "Welding block %+F and %+F\n", block, mux_block));
 					/* copy the block-info from the Mux-block to the block before merging */
 
