@@ -130,20 +130,6 @@ static int max_precision;
 /** Exact flag. */
 static int fc_exact = 1;
 
-#if 0
-static void fail_char(const char *str, unsigned int len, int pos)
-{
-	if (*(str+pos))
-		printf("ERROR: Unexpected character '%c'\n", *(str + pos));
-	else
-		printf("ERROR: Unexpected end of string\n");
-	while (len-- && *str) printf("%c", *str++); printf("\n");
-	while (pos--) printf(" "); printf("^\n");
-	/* the front end has to to check constant strings */
-	exit(-1);
-}
-#endif
-
 /** pack machine-like */
 static void *pack(const fp_value *int_float, void *packed)
 {
