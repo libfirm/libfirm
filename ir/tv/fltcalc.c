@@ -884,7 +884,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
 #endif
 
 #ifdef HAVE_LONG_DOUBLE
-	TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", ((int*)&l)[2], ((int*)&l)[1], ((int*)&l)[0]));/* srcval.val.high, srcval.val.mid, srcval.val.low)); */
+	TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", srcval.val.high & 0xFFFF, srcval.val.mid, srcval.val.low));
 	DEBUGPRINTF(("(%d-%.4X-%.8X%.8X)\n", sign, exponent, mantissa0, mantissa1));
 #else
 	TRACEPRINTF(("val_from_float(%.8X%.8X)\n", srcval.val.high, srcval.val.low));
