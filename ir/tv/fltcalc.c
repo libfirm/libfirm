@@ -62,45 +62,28 @@ static inline int isinf(double x)
 
 typedef uint32_t UINT32;
 
+typedef union {
+	struct {
+#ifdef WORDS_BIGENDIAN
+		UINT32 high;
+#else
+		UINT32 low;
+#endif
 #ifdef HAVE_LONG_DOUBLE
-#ifdef WORDS_BIGENDIAN
-typedef union {
-	struct {
-		UINT32 high;
 		UINT32 mid;
-		UINT32 low;
-	} val;
-	volatile long double d;
-} value_t;
-#else
-typedef union {
-	struct {
-		UINT32 low;
-		UINT32 mid;
-		UINT32 high;
-	} val;
-	volatile long double d;
-} value_t;
 #endif
-#else
 #ifdef WORDS_BIGENDIAN
-typedef union {
-	struct {
-		UINT32 high;
 		UINT32 low;
-	} val;
-	volatile double d;
-} value_t;
 #else
-typedef union {
-	struct {
-		UINT32 low;
 		UINT32 high;
+#endif
 	} val;
+#ifdef HAVE_LONG_DOUBLE
+	volatile long double d;
+#else
 	volatile double d;
+#endif
 } value_t;
-#endif
-#endif
 
 #define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
 
