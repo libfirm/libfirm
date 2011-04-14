@@ -87,8 +87,6 @@
 
 /* map some non-POSIX names for Win32 */
 #define snprintf    _snprintf
-#define strcasecmp  stricmp
-#define strncasecmp _strnicmp
 #define __attribute__(x)
 
 typedef unsigned __int16 uint16_t;
