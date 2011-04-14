@@ -2,9 +2,6 @@
 /* always debug heap support */
 #include "crtdbg.h"
 
-/* Define to 1 if you have the <alloca.h> header file. */
-/* #undef HAVE_ALLOCA_H */
-
 /* Define to 1 if you have the <malloc.h> header file. */
 #define HAVE_MALLOC_H 1
 

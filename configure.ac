@@ -119,7 +119,6 @@ dnl ========================
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS([math.h], , AC_MSG_ERROR("math header file not found"))
-AC_CHECK_HEADERS([alloca.h])
 
 dnl Checks for libraries.
 dnl =====================
