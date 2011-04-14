@@ -45,25 +45,9 @@
 #define FIRM_HAVE_REGEX
 #endif
 
-#if defined HAVE_LIBZ && defined HAVE_ZLIB_H
-#define FIRM_HAVE_LIBZ
-#endif
-
-
 #define MAX_TIMER 256
 
-#ifdef FIRM_HAVE_LIBZ
-#include <zlib.h>
-
-#define mfprintf   gzprintf
-static gzFile      stat_ev_file  = NULL;
-
-#else
-
-#define mfprintf   fprintf
-static FILE*       stat_ev_file  = NULL;
-
-#endif /* FIRM_HAVE_LIBZ */
+static FILE* stat_ev_file  = NULL;
 
 int            stat_ev_enabled = 0;
 int            stat_ev_timer_sp = 0;
@@ -103,7 +87,7 @@ void stat_ev_printf(char ev, const char *key, const char *fmt, ...)
 	if (!key_matches(key))
 		return;
 
-	mfprintf(stat_ev_file, "%c;%s", ev, key);
+	fprintf(stat_ev_file, "%c;%s", ev, key);
 	if (fmt != NULL) {
 		char buf[256];
 		va_list args;
@@ -111,22 +95,17 @@ void stat_ev_printf(char ev, const char *key, const char *fmt, ...)
 		va_start(args, fmt);
 		ir_vsnprintf(buf, sizeof(buf), fmt, args);
 		va_end(args);
-		mfprintf(stat_ev_file, ";%s", buf);
+		fprintf(stat_ev_file, ";%s", buf);
 	}
-	mfprintf(stat_ev_file, "\n");
+	fprintf(stat_ev_file, "\n");
 }
 
 void stat_ev_begin(const char *prefix, const char *filt)
 {
 	char buf[512];
 
-#ifdef FIRM_HAVE_LIBZ
-	snprintf(buf, sizeof(buf), "%s.ev.gz", prefix);
-	stat_ev_file = gzopen(buf, "wt9");
-#else
 	snprintf(buf, sizeof(buf), "%s.ev", prefix);
 	stat_ev_file = fopen(buf, "wt");
-#endif
 
 	if (filt && filt[0] != '\0') {
 #ifdef FIRM_HAVE_REGEX
@@ -144,12 +123,7 @@ void stat_ev_begin(const char *prefix, const char *filt)
 void stat_ev_end(void)
 {
 	if (stat_ev_file) {
-#ifdef FIRM_HAVE_LIBZ
-		gzflush(stat_ev_file, 1);
-		gzclose(stat_ev_file);
-#else
 		fclose(stat_ev_file);
-#endif
 	}
 }
 
