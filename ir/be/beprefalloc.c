@@ -635,12 +635,12 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	ir_node               *original_insn;
 	ir_node               *block;
 	ir_node               *copy;
-	unsigned               r;
+	unsigned               r = 0;
 	unsigned               from_r;
 	unsigned               i;
 	allocation_info_t     *info = get_allocation_info(to_split);
 	reg_pref_t            *prefs;
-	float                  delta;
+	float                  delta = 0;
 	float                  split_threshold;
 
 	(void) pref;
@@ -747,7 +747,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	ir_node                   *in_node;
 	unsigned                   i;
 	const unsigned            *allowed_regs;
-	unsigned                   r;
+	unsigned                   r = 0;
 
 	assert(!is_Phi(node));
 	/* preassigned register? */
@@ -1964,7 +1964,7 @@ static void be_pref_alloc(ir_graph *new_irg)
 	obstack_free(&obst, NULL);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pref_alloc)
 void be_init_pref_alloc(void)
 {
 	static be_ra_t be_ra_pref = {

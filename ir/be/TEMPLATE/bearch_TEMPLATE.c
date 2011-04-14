@@ -375,7 +375,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_emit_routine,
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)
 void be_init_arch_TEMPLATE(void)
 {
 	be_register_isa_if("TEMPLATE", &TEMPLATE_isa_if);

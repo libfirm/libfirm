@@ -89,7 +89,7 @@ static void sched_trivial(ir_graph *irg)
 	be_list_sched_graph(irg, &trivial_selector);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_trivial);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_trivial)
 void be_init_sched_trivial(void)
 {
 	be_register_scheduler("trivial", sched_trivial);

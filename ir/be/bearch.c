@@ -295,7 +295,7 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 	}
 
 	if (req->width != 1) {
-		fprintf(F, " width:%u", req->width);
+		fprintf(F, " width:%d", req->width);
 	}
 	if (arch_register_req_is(req, aligned)) {
 		fprintf(F, " aligned");
@@ -355,7 +355,7 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 			fprintf(F, " not_scheduled");
 		}
 	}
-	fprintf(F, " (%d)\n", flags);
+	fprintf(F, " (%d)\n", (int)flags);
 }
 
 static const arch_register_req_t no_requirement = {

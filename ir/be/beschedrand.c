@@ -103,7 +103,7 @@ static void sched_random(ir_graph *irg)
 	be_list_sched_graph(irg, &random_selector);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_rand);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_rand)
 void be_init_sched_rand(void)
 {
 	be_register_scheduler("random", sched_random);

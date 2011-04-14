@@ -387,7 +387,7 @@ static void be_spill_daemel(ir_graph *irg, const arch_register_class_t *new_cls)
 	be_delete_spill_env(spill_env);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_daemelspill)
 void be_init_daemelspill(void)
 {
 	static be_spiller_t daemel_spiller = {

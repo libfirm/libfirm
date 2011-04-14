@@ -1132,7 +1132,7 @@ static void ifg_dump_at_end(FILE *file, void *self)
 		neighb_t *n;
 
 		if (ai->mst_parent != ai)
-			fprintf(file, "\tn%d -- n%d [style=dotted color=blue arrowhead=normal];\n", idx, get_irn_idx(ai->mst_parent->inh.irn));
+			fprintf(file, "\tn%d -- n%u [style=dotted color=blue arrowhead=normal];\n", idx, get_irn_idx(ai->mst_parent->inh.irn));
 
 		co_gs_foreach_neighb(a, n) {
 			int nidx = get_irn_idx(n->irn);
@@ -1258,7 +1258,7 @@ int co_solve_heuristic_new(copy_opt_t *co)
 	return 0;
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur2)
 void be_init_copyheur2(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

@@ -302,7 +302,7 @@ void be_list_sched_graph(ir_graph *irg, const list_sched_selector_t *selector)
 	free(env.scheduled);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_listsched)
 void be_init_listsched(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.sched");

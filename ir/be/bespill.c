@@ -281,7 +281,7 @@ void be_do_spill(ir_graph *irg, const arch_register_class_t *cls)
 	selected_spiller->spill(irg, cls);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spilloptions);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spilloptions)
 void be_init_spilloptions(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

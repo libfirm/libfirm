@@ -2225,7 +2225,7 @@ void be_set_allocatable_regs(const ir_graph *irg,
 	}
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_abi)
 void be_init_abi(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.abi");

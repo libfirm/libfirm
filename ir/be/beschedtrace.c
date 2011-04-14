@@ -745,7 +745,7 @@ static void sched_heuristic(ir_graph *irg)
 	be_list_sched_graph(irg, &heuristic_selector);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_trace);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_trace)
 void be_init_sched_trace(void)
 {
 	be_register_scheduler("heur", sched_heuristic);

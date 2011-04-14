@@ -900,7 +900,7 @@ found_front:
 	while (!sched_is_begin(node)) {
 		const arch_register_req_t *req;
 		int                        input = -1;
-		ir_node                   *proj;
+		ir_node                   *proj  = NULL;
 
 		/* search if node is a INPUT of Perm */
 		foreach_out_edge(perm, edge) {

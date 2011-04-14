@@ -60,7 +60,7 @@ void be_allocate_registers(ir_graph *irg)
 	}
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ra);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ra)
 void be_init_ra(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

@@ -555,7 +555,7 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_gen_routine,
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)
 void be_init_arch_amd64(void)
 {
 	be_register_isa_if("amd64", &amd64_isa_if);

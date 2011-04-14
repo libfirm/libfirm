@@ -903,7 +903,7 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 	obstack_free(&obst, NULL);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_live);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_live)
 void be_init_live(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.liveness");

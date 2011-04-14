@@ -152,7 +152,7 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 					fprintf(F, "AM Source (Load)");
 					break;
 				default:
-					fprintf(F, "unknown (%d)", get_ia32_op_type(n));
+					fprintf(F, "unknown (%d)", (int)get_ia32_op_type(n));
 					break;
 			}
 			fprintf(F, "\n");
@@ -165,7 +165,7 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 				case ia32_am_binary: fputs("source (binary)\n", F); break;
 
 				default:
-					fprintf(F, "unknown (%d)\n", get_ia32_am_support(n));
+					fprintf(F, "unknown (%d)\n", (int)get_ia32_am_support(n));
 					break;
 			}
 
@@ -189,7 +189,7 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 				fprintf(F, "default_pn = %ld\n", get_ia32_default_pn(n));
 			} else if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
 				ia32_attr_t *attr = get_ia32_attr(n);
-				fprintf(F, "condition_code = 0x%X\n", get_ia32_condcode(n));
+				fprintf(F, "condition_code = 0x%X\n", (unsigned)get_ia32_condcode(n));
 				fprintf(F, "ins_permuted = %u \n", attr->data.ins_permuted);
 			}
 			else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {

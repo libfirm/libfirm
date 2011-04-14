@@ -315,7 +315,7 @@ void be_peephole_opt(ir_graph *irg)
 	xfree(register_values);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_peephole)
 void be_init_peephole(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.peephole");

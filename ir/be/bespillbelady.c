@@ -999,7 +999,7 @@ static void be_spill_belady(ir_graph *irg, const arch_register_class_t *rcls)
 	obstack_free(&obst, NULL);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillbelady)
 void be_init_spillbelady(void)
 {
 	static be_spiller_t belady_spiller = {

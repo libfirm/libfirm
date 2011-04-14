@@ -105,7 +105,7 @@ static dbg_handle *create_null_dbgout_module(void)
 	return &null_handle;
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dbgout);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_dbgout)
 void be_init_dbgout(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

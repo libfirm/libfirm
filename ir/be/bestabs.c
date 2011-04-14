@@ -831,11 +831,11 @@ static void stabs_variable(dbg_handle *handle, const ir_entity *ent)
 		if (linkage & IR_LINKAGE_CONSTANT)
 			kind = N_ROSYM;
 		snprintf(buf, sizeof(buf), "\t.stabs\t\"%s:S%u\",%d,0,0,%s\n",
-			get_entity_name(ent), tp_num, kind, get_entity_ld_name(ent));
+		         get_entity_name(ent), tp_num, kind, get_entity_ld_name(ent));
 	} else {
 		/* a global variable */
 		snprintf(buf, sizeof(buf), "\t.stabs\t\"%s:G%u\",%d,0,0,0\n",
-			get_entity_name(ent), tp_num, N_GSYM);
+		         get_entity_name(ent), tp_num, (int)N_GSYM);
 	}
 	buf[sizeof(buf) - 1] = '\0';
 
@@ -875,7 +875,7 @@ static dbg_handle *be_stabs_open(void)
 	return &h->base;
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_stabs);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_stabs)
 void be_init_stabs(void)
 {
 	be_register_dbgout_module("stabs", be_stabs_open);

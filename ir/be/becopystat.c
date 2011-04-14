@@ -113,7 +113,7 @@ int curr_vals[ASIZE];
 static ir_nodeset_t *all_phi_nodes;
 static ir_nodeset_t *all_copy_nodes;
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copystat)
 void be_init_copystat(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.copystat");
@@ -123,7 +123,7 @@ void be_init_copystat(void)
 	memset(curr_vals, 0, sizeof(curr_vals));
 }
 
-BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat);
+BE_REGISTER_MODULE_DESTRUCTOR(be_quit_copystat)
 void be_quit_copystat(void)
 {
 	if (all_phi_nodes != NULL) {
@@ -242,7 +242,7 @@ void copystat_dump(ir_graph *irg)
 	buf[sizeof(buf) - 1] = '\0';
 	out = be_ffopen(buf, "stat", "wt");
 
-	fprintf(out, "%d\n", ASIZE);
+	fprintf(out, "%d\n", (int)ASIZE);
 	for (i = 0; i < ASIZE; i++) {
 #if 0
 		if (i >= I_PHI_ARITY_S && i <= I_PHI_ARITY_E)

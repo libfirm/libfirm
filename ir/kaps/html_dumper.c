@@ -90,7 +90,7 @@ static void dump_matrix(FILE *f, pbqp_matrix_t *mat)
 void dump_edge(FILE *file, pbqp_edge_t *edge)
 {
 	fputs("<tex>\n", file);
-	fprintf(file, "\t\\overline\n{C}_{%d,%d}=\n",
+	fprintf(file, "\t\\overline\n{C}_{%u,%u}=\n",
 			edge->src->index, edge->tgt->index);
 	dump_matrix(file, edge->costs);
 	fputs("</tex><br>", file);
@@ -124,7 +124,7 @@ static void dump_edge_costs(pbqp_t *pbqp)
 void dump_node(FILE *file, pbqp_node_t *node)
 {
 	if (node) {
-		fprintf(file, "\tc<sub>%d</sub> = ", node->index);
+		fprintf(file, "\tc<sub>%u</sub> = ", node->index);
 		dump_vector(file, node->costs);
 		fputs("<br>\n", file);
 	}
@@ -155,7 +155,7 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *node = get_node(pbqp, src_index);
 		if (node && !node_is_reduced(node)) {
-			fprintf(pbqp->dump_file, "\t n%d;\n", src_index);
+			fprintf(pbqp->dump_file, "\t n%u;\n", src_index);
 		}
 	}
 
@@ -179,7 +179,7 @@ void pbqp_dump_graph(pbqp_t *pbqp)
 				continue;
 
 			if (src_index < tgt_index) {
-				fprintf(pbqp->dump_file, "\t n%d -- n%d;\n", src_index,
+				fprintf(pbqp->dump_file, "\t n%u -- n%u;\n", src_index,
 						tgt_index);
 			}
 		}

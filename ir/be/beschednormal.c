@@ -446,7 +446,7 @@ static void sched_normal(ir_graph *irg)
 	be_list_sched_graph(irg, &normal_selector);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_normal);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_normal)
 void be_init_sched_normal(void)
 {
 	be_register_scheduler("normal", sched_normal);

@@ -1020,7 +1020,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 	be_timer_pop(T_RA_SPILL_APPLY);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spill)
 void be_init_spill(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.spill");

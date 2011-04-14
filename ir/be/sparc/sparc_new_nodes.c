@@ -110,7 +110,7 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		if (has_jmp_cond_attr(n)) {
 			const sparc_jmp_cond_attr_t *attr
 				= get_sparc_jmp_cond_attr_const(n);
-			fprintf(F, "relation: %d (%s)\n", attr->relation,
+			fprintf(F, "relation: %d (%s)\n", (int)attr->relation,
 			        get_relation_string(attr->relation));
 			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
 		}

@@ -458,7 +458,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 	be_timer_pop(T_RA_OTHER);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_main)
 void be_init_chordal_main(void)
 {
 	static be_ra_t be_ra_chordal_allocator = {

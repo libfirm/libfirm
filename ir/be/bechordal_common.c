@@ -293,7 +293,7 @@ ir_node *pre_process_constraints(be_chordal_env_t *env, be_insn_t **the_insn)
 	return perm;
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_common);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal_common)
 void be_init_chordal_common(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.chordal_common");

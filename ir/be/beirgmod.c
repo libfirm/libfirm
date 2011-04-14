@@ -342,7 +342,7 @@ void be_remove_dead_nodes_from_schedule(ir_graph *irg)
 	irg_block_walk_graph(irg, remove_dead_nodes_walker, NULL, &env);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_irgmod);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_irgmod)
 void be_init_irgmod(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.irgmod");

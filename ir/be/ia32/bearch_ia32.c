@@ -2171,7 +2171,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_emit,           /* emit && done */
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)
 void be_init_arch_ia32(void)
 {
 	lc_opt_entry_t *be_grp   = lc_opt_get_grp(firm_opt_get_root(), "be");

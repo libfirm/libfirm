@@ -1515,7 +1515,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_LAST
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur4);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur4)
 void be_init_copyheur4(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

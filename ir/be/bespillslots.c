@@ -802,7 +802,7 @@ void be_assign_entities(be_fec_env_t *env,
 	create_memperms(env);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillslots);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_spillslots)
 void be_init_spillslots(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.spillslots");

@@ -404,7 +404,6 @@ static void print_enum_item_edge(FILE *F, const ir_type *tp, size_t item, const 
 /* global and ahead declarations                                   */
 /*-----------------------------------------------------------------*/
 
-static void dump_node_with_edges(ir_node *n, void *env);
 static void dump_loop_nodes_into_graph(FILE *F, ir_graph *irg);
 
 /*-----------------------------------------------------------------*/
@@ -2663,7 +2662,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			PRINT_NODEID(b);
 			fprintf(F, "\"  label: \"");
 			dump_node_opcode(F, b);
-			fprintf(F, " %ld:%d", get_irn_node_nr(b), get_irn_idx(b));
+			fprintf(F, " %ld:%u", get_irn_node_nr(b), get_irn_idx(b));
 			fprintf(F, "\" status:clustered color:yellow\n");
 
 			/* dump the blocks edges */
@@ -2690,7 +2689,7 @@ void dump_loop(FILE *F, ir_loop *l)
 			PRINT_NODEID(b);
 			fprintf(F, "\"  label: \"");
 			dump_node_opcode(F, b);
-			fprintf(F, " %ld:%d", get_irn_node_nr(b), get_irn_idx(b));
+			fprintf(F, " %ld:%u", get_irn_node_nr(b), get_irn_idx(b));
 			fprintf(F, "\" status:clustered color:lightblue\n");
 
 			/* dump the nodes that go into the block */

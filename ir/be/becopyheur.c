@@ -658,7 +658,7 @@ int co_solve_heuristic(copy_opt_t *co)
 	return 0;
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyheur)
 void be_init_copyheur(void)
 {
 	static co_algo_info copyheur = {

@@ -554,7 +554,7 @@ void be_ra_chordal_color(be_chordal_env_t *chordal_env)
 	del_pset(env.pre_colored);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_chordal)
 void be_init_chordal(void)
 {
 	static be_ra_chordal_coloring_t coloring = {

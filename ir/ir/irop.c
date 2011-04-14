@@ -171,7 +171,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 
 	firm_set_default_operations(code, &res->ops);
 	firm_set_default_copy_attr(code, &res->ops);
-	firm_set_default_verifyer(code, &res->ops);
+	firm_set_default_verifier(code, &res->ops);
 	firm_set_default_reassoc(code, &res->ops);
 
 	add_irp_opcode(res);

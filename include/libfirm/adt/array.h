@@ -171,10 +171,6 @@
 #define ARR_SETLEN(type, arr, n) \
   ((arr) = (type*) ir_arr_setlen((void *)(arr), (n), sizeof(type) * (n)))
 
-/** Set a length smaller than the current length of the array.  Do not
- *  resize. len must be <= ARR_LEN(arr). */
-static inline void ARR_SHRINKLEN(void *arr, size_t new_len);
-
 /**
  * Resize a flexible array by growing it by delta elements.
  *
@@ -253,6 +249,8 @@ FIRM_API void ir_verify_arr(const void *elts);
 #define ARR_ELTS_OFFS offsetof(ir_arr_descr, elts)
 #define ARR_DESCR(elts) ((ir_arr_descr *)(void *)((char *)(elts) - ARR_ELTS_OFFS))
 
+/** Set a length smaller than the current length of the array.  Do not
+ *  resize. len must be <= ARR_LEN(arr). */
 static inline void ARR_SHRINKLEN(void *arr, size_t new_len)
 {
 	ARR_VRFY(arr);

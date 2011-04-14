@@ -58,7 +58,6 @@ void be_init_daemelspill(void);
 void be_init_dbgout(void);
 void be_init_arch_ia32(void);
 void be_init_arch_arm(void);
-void be_init_arch_sparc(void);
 void be_init_arch_amd64(void);
 void be_init_arch_sta(void);
 void be_init_arch_sparc(void);

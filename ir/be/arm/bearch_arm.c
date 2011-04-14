@@ -627,7 +627,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_gen_routine,
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)
 void be_init_arch_arm(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

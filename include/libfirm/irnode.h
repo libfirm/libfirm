@@ -545,10 +545,6 @@ FIRM_API ir_node  *get_Sync_pred(const ir_node *node, int pos);
 FIRM_API void      set_Sync_pred(ir_node *node, int pos, ir_node *pred);
 FIRM_API void      add_Sync_pred(ir_node *node, ir_node *pred);
 
-/** Return the projection number of a Proj node. */
-FIRM_API long      get_Proj_proj(const ir_node *node);
-FIRM_API void      set_Proj_proj(ir_node *node, long proj);
-
 /**
  * Returns non-zero if a node is a routine parameter.
  *

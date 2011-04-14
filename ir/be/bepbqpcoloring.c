@@ -785,7 +785,7 @@ static void be_pbqp_coloring(be_chordal_env_t *env)
 /**
  * Initializes this module.
  */
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pbqp_coloring);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_pbqp_coloring)
 void be_init_pbqp_coloring(void)
 {
 	lc_opt_entry_t *be_grp       = lc_opt_get_grp(firm_opt_get_root(), "be");

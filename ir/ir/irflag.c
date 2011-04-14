@@ -60,7 +60,6 @@ optimization_state_t libFIRM_verb = 0;
 
 /* silence warnings */
 void set_opt_optimize(int value);
-int get_opt_optimize(void);
 
 /* an external flag can be set and get from outside */
 #define E_FLAG(name, value, def)           \

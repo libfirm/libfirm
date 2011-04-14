@@ -637,7 +637,7 @@ void be_ssa_construction_update_liveness_phis(be_ssa_construction_env_t *env,
 	be_timer_pop(T_SSA_CONSTR);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ssaconstr);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_ssaconstr)
 void be_init_ssaconstr(void)
 {
 	FIRM_DBG_REGISTER(dbg, "firm.be.ssaconstr");

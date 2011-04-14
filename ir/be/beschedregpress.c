@@ -311,7 +311,7 @@ static void sched_reg_pressure(ir_graph *irg)
 	be_list_sched_graph(irg, &reg_pressure_selector);
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_regpress);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_sched_regpress)
 void be_init_sched_regpress(void)
 {
 	be_register_scheduler("regpress", sched_reg_pressure);
