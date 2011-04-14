@@ -396,11 +396,9 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void
 		for (i = 0; i < arity; i++) {
 			pred = get_irn_n(node, i);
 			if (!is_Block(pred)) {
-				pred = get_nodes_block(pred);
-				if (!is_Block(pred)) {
-					/* if rare cases a kept node might have a bad block input */
-					continue;
-				}
+				/* It is sufficient to enter endless loops just at kept blocks, because
+				 * every endless loop must have one. */
+				continue;
 			}
 			/* Sometimes the blocks died, but are still reachable through kept nodes.
 			 * Make sure the algorithms that try to remove these reach them. */
