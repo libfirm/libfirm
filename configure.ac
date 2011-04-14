@@ -136,12 +136,6 @@ AC_C_CONST
 AC_C_VOLATILE
 AC_C_INLINE
 AC_C_BIGENDIAN(,,,)
-AC_C_LONG_DOUBLE
-
-dnl Checks for library functions.
-dnl =============================
-
-AC_FUNC_STRTOLD
 
 dnl Error messaging
 dnl ===============

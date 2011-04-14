@@ -30,14 +30,6 @@
 #include <stdlib.h>
 #include "firm_types.h"
 
-#ifdef HAVE_LONG_DOUBLE
-/* XXX Set this via autoconf */
-#define HAVE_EXPLICIT_ONE
-typedef long double LLDBL;
-#else
-typedef double LLDBL;
-#endif
-
 enum {
 	FC_DEC,
 	FC_HEX,
@@ -95,9 +87,9 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
  * float number passed.
- * If the wished precision is less than the precision of LLDBL the value built
- * will be rounded. Therefore only an approximation of the passed float can be
- * expected in this case.
+ * If the wished precision is less than the precision of long double the value
+ * built will be rounded. Therefore only an approximation of the passed float
+ * can be expected in this case.
  *
  * @param l       The floating point number to build a representation for
  * @param desc    The floating point descriptor
@@ -109,12 +101,13 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
  * @return  The result pointer passed to the function. If this was NULL this returns
  *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc,
+                              fp_value *result);
 
 /** retrieve the float value of an internal value
- * This function casts the internal value to LLDBL and returns a LLDBL with
- * that value.
- * This implies that values of higher precision than LLDBL are subject to
+ * This function casts the internal value to long double and returns a
+ * long double with that value.
+ * This implies that values of higher precision than long double are subject to
  * rounding, so the returned value might not the same than the actually
  * represented value.
  *
@@ -122,7 +115,7 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
  *
  * @return a float value approximating the represented value
  */
-LLDBL fc_val_to_ieee754(const fp_value *val);
+long double fc_val_to_ieee754(const fp_value *val);
 
 /** cast a value to another precision
  * This function changes the precision of a float representation.

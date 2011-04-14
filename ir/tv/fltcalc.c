@@ -52,36 +52,29 @@ static inline int isinf(double x)
 	return !_finite(x) && !_isnan(x);
 }
 #define strtold(s, e) strtod(s, e)
-#else
-#define HAVE_LONG_DOUBLE
+#define SIZEOF_LONG_DOUBLE_8
 #endif
 
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
 
-typedef uint32_t UINT32;
-
 typedef union {
 	struct {
 #ifdef WORDS_BIGENDIAN
-		UINT32 high;
+		uint32_t high;
 #else
-		UINT32 low;
+		uint32_t low;
 #endif
-#ifdef HAVE_LONG_DOUBLE
-		UINT32 mid;
+#ifndef SIZEOF_LONG_DOUBLE_8
+		uint32_t mid;
 #endif
 #ifdef WORDS_BIGENDIAN
-		UINT32 low;
+		uint32_t low;
 #else
-		UINT32 high;
+		uint32_t high;
 #endif
 	} val;
-#ifdef HAVE_LONG_DOUBLE
 	volatile long double d;
-#else
-	volatile double d;
-#endif
 } value_t;
 
 #define CLEAR_BUFFER(buffer) memset(buffer, 0, calc_buffer_size)
@@ -822,7 +815,7 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
 	char *buffer;
 
 	/* XXX excuse of an implementation to make things work */
-	LLDBL             val;
+	long double        val;
 	fp_value          *tmp = (fp_value*) alloca(calc_buffer_size);
 	ieee_descriptor_t tmp_desc;
 
@@ -841,39 +834,31 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
 	return fc_cast(tmp, desc, (fp_value*) result);
 }
 
-fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc, fp_value *result)
 {
 	char    *temp;
-	int     bias_res, bias_val, mant_val;
-	value_t srcval;
-	char    sign;
-	UINT32  exponent, mantissa0, mantissa1;
+	int      bias_res, bias_val, mant_val;
+	value_t  srcval;
+	char     sign;
+	uint32_t exponent, mantissa0, mantissa1;
 
 	srcval.d = l;
 	bias_res = ((1 << (desc->exponent_size - 1)) - 1);
 
-#ifdef HAVE_LONG_DOUBLE
-	mant_val  = 63;
-	bias_val  = 0x3fff;
-	sign      = (srcval.val.high & 0x00008000) != 0;
-	exponent  = (srcval.val.high & 0x00007FFF) ;
-	mantissa0 = srcval.val.mid;
-	mantissa1 = srcval.val.low;
-#else /* no long double */
+#ifdef SIZEOF_LONG_DOUBLE_8
 	mant_val  = 52;
 	bias_val  = 0x3ff;
 	sign      = (srcval.val.high & 0x80000000) != 0;
 	exponent  = (srcval.val.high & 0x7FF00000) >> 20;
 	mantissa0 = srcval.val.high & 0x000FFFFF;
 	mantissa1 = srcval.val.low;
-#endif
-
-#ifdef HAVE_LONG_DOUBLE
-	TRACEPRINTF(("val_from_float(%.8X%.8X%.8X)\n", srcval.val.high & 0xFFFF, srcval.val.mid, srcval.val.low));
-	DEBUGPRINTF(("(%d-%.4X-%.8X%.8X)\n", sign, exponent, mantissa0, mantissa1));
 #else
-	TRACEPRINTF(("val_from_float(%.8X%.8X)\n", srcval.val.high, srcval.val.low));
-	DEBUGPRINTF(("(%d-%.3X-%.5X%.8X)\n", sign, exponent, mantissa0, mantissa1));
+	mant_val  = 63;
+	bias_val  = 0x3fff;
+	sign      = (srcval.val.high & 0x00008000) != 0;
+	exponent  = (srcval.val.high & 0x00007FFF) ;
+	mantissa0 = srcval.val.mid;
+	mantissa1 = srcval.val.low;
 #endif
 
 	if (result == NULL) result = calc_buffer;
@@ -946,31 +931,31 @@ fp_value *fc_val_from_ieee754(LLDBL l, const ieee_descriptor_t *desc, fp_value *
 	return result;
 }
 
-LLDBL fc_val_to_ieee754(const fp_value *val)
+long double fc_val_to_ieee754(const fp_value *val)
 {
 	fp_value *value;
 	fp_value *temp = NULL;
 
 	int byte_offset;
 
-	UINT32 sign;
-	UINT32 exponent;
-	UINT32 mantissa0;
-	UINT32 mantissa1;
+	uint32_t sign;
+	uint32_t exponent;
+	uint32_t mantissa0;
+	uint32_t mantissa1;
 
 	value_t           buildval;
 	ieee_descriptor_t desc;
 	unsigned          mantissa_size;
 
-#ifdef HAVE_LONG_DOUBLE
-	desc.exponent_size = 15;
-	desc.mantissa_size = 63;
-	desc.explicit_one  = 1;
-	desc.clss          = NORMAL;
-#else
+#ifdef SIZEOF_LONG_DOUBLE_8
 	desc.exponent_size = 11;
 	desc.mantissa_size = 52;
 	desc.explicit_one  = 0;
+	desc.clss          = NORMAL;
+#else
+	desc.exponent_size = 15;
+	desc.mantissa_size = 63;
+	desc.explicit_one  = 1;
 	desc.clss          = NORMAL;
 #endif
 	mantissa_size = desc.mantissa_size + desc.explicit_one;
@@ -996,16 +981,16 @@ LLDBL fc_val_to_ieee754(const fp_value *val)
 	for (; (byte_offset<<3) < desc.mantissa_size; byte_offset++)
 		mantissa0 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
 
-#ifdef HAVE_LONG_DOUBLE
-	buildval.val.high = sign << 15;
-	buildval.val.high |= exponent;
-	buildval.val.mid = mantissa0;
-	buildval.val.low = mantissa1;
-#else /* no long double */
+#ifdef SIZEOF_LONG_DOUBLE_8
 	mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
 	buildval.val.high = sign << 31;
 	buildval.val.high |= exponent << 20;
 	buildval.val.high |= mantissa0;
+	buildval.val.low = mantissa1;
+#else
+	buildval.val.high = sign << 15;
+	buildval.val.high |= exponent;
+	buildval.val.mid = mantissa0;
 	buildval.val.low = mantissa1;
 #endif
 
@@ -1256,7 +1241,7 @@ int fc_is_subnormal(const fp_value *a)
 char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 {
 	char *mul_1;
-	LLDBL flt_val;
+	long double flt_val;
 
 	mul_1 = (char*) alloca(calc_buffer_size);
 
@@ -1274,12 +1259,8 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 			break;
 		default:
 			flt_val = fc_val_to_ieee754(val);
-#ifdef HAVE_LONG_DOUBLE
 			/* XXX 30 is arbitrary */
 			snprintf(buf, buflen, "%.30LE", flt_val);
-#else
-			snprintf(buf, buflen, "%.18E", flt_val);
-#endif
 		}
 		break;
 
@@ -1296,11 +1277,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 			break;
 		default:
 			flt_val = fc_val_to_ieee754(val);
-#ifdef HAVE_LONG_DOUBLE
 			snprintf(buf, buflen, "%LA", flt_val);
-#else
-			snprintf(buf, buflen, "%A", flt_val);
-#endif
 		}
 		break;
 
@@ -1401,16 +1378,6 @@ void init_fltcalc(int precision)
 		calc_buffer = (fp_value*) xmalloc(calc_buffer_size);
 		memset(calc_buffer, 0, calc_buffer_size);
 		DEBUGPRINTF(("init fltcalc:\n\tVALUE_SIZE = %d\ntCALC_BUFFER_SIZE = %d\n\tcalc_buffer = %p\n\n", value_size, calc_buffer_size, calc_buffer));
-#ifdef HAVE_LONG_DOUBLE
-		DEBUGPRINTF(("\tUsing long double (1-15-64) interface\n"));
-#else
-		DEBUGPRINTF(("\tUsing double (1-11-52) interface\n"));
-#endif
-#ifdef WORDS_BIGENDIAN
-		DEBUGPRINTF(("\tWord order is big endian\n\n"));
-#else
-		DEBUGPRINTF(("\tWord order is little endian\n\n"));
-#endif
 	}
 }
 
