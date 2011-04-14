@@ -74,10 +74,6 @@
 /* Define to disable assertion checking.  */
 /* #undef NDEBUG */
 
-/* Define to 1 if long double works and has more range or precision than
-   double. */
-/* #undef HAVE_LONG_DOUBLE */
-
 /* Define to 1 if your processor stores words with the most significant byte
    first (like Motorola and SPARC, unlike Intel and VAX). */
 /* #undef WORDS_BIGENDIAN */

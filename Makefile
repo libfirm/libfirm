@@ -51,7 +51,6 @@ $(srcdir)config.h:
 	$(Q)echo "#define libfirm_VERSION_MAJOR 1" >> $@
 	$(Q)echo "#define libfirm_VERSION_MICRO 0" >> $@
 	$(Q)echo "#define libfirm_VERSION_MINOR 20" >> $@
-	$(Q)echo "#define HAVE_LONG_DOUBLE 1" >> $@
 
 # libFirm
 libfirm_DIRS := \

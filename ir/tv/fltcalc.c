@@ -44,10 +44,6 @@
 
 #include "xmalloc.h"
 
-#ifndef HAVE_STRTOLD
-#define strtold(s, e) strtod(s, e)
-#endif
-
 #ifdef _MSC_VER
 #include <float.h>
 #define isnan(x)   _isnan(x)
@@ -55,6 +51,9 @@ static inline int isinf(double x)
 {
 	return !_finite(x) && !_isnan(x);
 }
+#define strtold(s, e) strtod(s, e)
+#else
+#define HAVE_LONG_DOUBLE
 #endif
 
 /** The number of extra precision rounding bits */
