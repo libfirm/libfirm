@@ -30,20 +30,24 @@
 #include "irnode_t.h"
 #include "irgwalk.h"
 
+/** Note: start and finish must use the same kind of walker */
+static void (*ssa_cons_walker)(ir_graph *, irg_walk_func *, irg_walk_func *, void *)
+	= irg_block_walk_graph;
+
 /**
  * Post-walker: prepare the graph nodes for new SSA construction cycle by
  * allocation new arrays.
  */
-static void prepare_blocks(ir_node *irn, void *env)
+static void prepare_blocks(ir_node *block, void *env)
 {
 	(void)env;
 	unsigned        n_loc = current_ir_graph->n_loc;
 	struct obstack *obst  = current_ir_graph->obst;
 	/* reset mature flag */
-	set_Block_matured(irn, 0);
-	irn->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
-	memset(irn->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
-	irn->attr.block.phis       = NULL;
+	set_Block_matured(block, 0);
+	block->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
+	memset(block->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
+	set_Block_phis(NULL);
 }
 
 /*
@@ -72,7 +76,7 @@ void ssa_cons_start(ir_graph *irg, int n_loc)
 	 * seems worth to do this.  First, we have to check if they really exists and
 	 * then clear them.  We do not expect SSA construction is used often.
 	 */
-	irg_block_walk_graph(irg, NULL, prepare_blocks, NULL);
+	ssa_cons_walker(irg, NULL, prepare_blocks, NULL);
 }
 
 /**
@@ -92,6 +96,6 @@ static void finish_block(ir_node *block, void *env)
  */
 void ssa_cons_finish(ir_graph *irg)
 {
-	irg_block_walk_graph(irg, NULL, finish_block, NULL);
+	ssa_cons_walker(irg, NULL, finish_block, NULL);
 	irg_finalize_cons(irg);
 }
