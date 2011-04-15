@@ -47,7 +47,7 @@ static void prepare_blocks(ir_node *block, void *env)
 	set_Block_matured(block, 0);
 	block->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
 	memset(block->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
-	set_Block_phis(NULL);
+	set_Block_phis(block, NULL);
 }
 
 /*
