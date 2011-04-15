@@ -30,7 +30,13 @@
 
 #if defined(__GNUC__)
 typedef unsigned long long timing_ticks_t;
-static inline timing_ticks_t __timing_ticks(void) { timing_ticks_t result; __asm__ __volatile__ ("rdtsc" : "=A" (result)); return result; }
+static inline timing_ticks_t __timing_ticks(void)
+{
+	unsigned h;
+	unsigned l;
+	__asm__ volatile("rdtsc" : "=a" (l), "=d" (h));
+	return (timing_ticks_t)h << 32 | l;
+}
 
 #elif defined(_MSC_VER)
 #include <intrin.h>
