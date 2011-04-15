@@ -1939,30 +1939,106 @@ static void lower_Mux(ir_node *mux, ir_mode *mode, lower_env_t *env)
  */
 static void lower_ASM(ir_node *asmn, ir_mode *mode, lower_env_t *env)
 {
-	ir_mode *his = env->high_signed;
-	ir_mode *hiu = env->high_unsigned;
+	ir_mode           *high_signed        = env->high_signed;
+	ir_mode           *high_unsigned      = env->high_unsigned;
+	int                n_outs             = get_ASM_n_output_constraints(asmn);
+	ir_asm_constraint *output_constraints = get_ASM_output_constraints(asmn);
+	ir_asm_constraint *input_constraints  = get_ASM_input_constraints(asmn);
+	unsigned           n_64bit_outs       = 0;
 	int      i;
 	ir_node *n;
 
 	(void)mode;
 
 	for (i = get_irn_arity(asmn) - 1; i >= 0; --i) {
-		ir_mode *op_mode = get_irn_mode(get_irn_n(asmn, i));
-		if (op_mode == his || op_mode == hiu) {
-			panic("lowering ASM unimplemented");
+		ir_node *op      = get_irn_n(asmn, i);
+		ir_mode *op_mode = get_irn_mode(op);
+		if (op_mode == high_signed || op_mode == high_unsigned) {
+			panic("lowering ASM 64bit input unimplemented");
 		}
 	}
 
-	for (n = asmn;;) {
-		ir_mode *proj_mode;
+	for (i = 0; i < n_outs; ++i) {
+		const ir_asm_constraint *constraint = &output_constraints[i];
+		if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
+			const char *constr = get_id_str(constraint->constraint);
+			++n_64bit_outs;
+			/* TODO: How to do this architecture neutral? This is very
+			 * i386 specific... */
+			if (constr[0] != '=' || constr[1] != 'A') {
+				panic("lowering ASM 64bit output only supports '=A' currently");
+			}
+		}
+	}
 
-		n = (ir_node*)get_irn_link(n);
-		if (n == NULL)
-			break;
+	if (n_64bit_outs == 0)
+		return;
 
-		proj_mode = get_irn_mode(n);
-		if (proj_mode == his || proj_mode == hiu) {
-			panic("lowering ASM unimplemented");
+	{
+		dbg_info          *dbgi       = get_irn_dbg_info(asmn);
+		ir_node           *block      = get_nodes_block(asmn);
+		int                arity      = get_irn_arity(asmn);
+		ir_node          **in         = get_irn_in(asmn) + 1;
+		int                n_outs     = get_ASM_n_output_constraints(asmn);
+		int                new_n_outs = 0;
+		int                n_clobber  = get_ASM_n_clobbers(asmn);
+		long              *proj_map   = ALLOCAN(long, n_outs);
+		ident            **clobbers   = get_ASM_clobbers(asmn);
+		ident             *asm_text   = get_ASM_text(asmn);
+		ir_asm_constraint *new_outputs
+			= ALLOCAN(ir_asm_constraint, n_outs+n_64bit_outs);
+		ir_node           *new_asm;
+
+		for (i = 0; i < n_outs; ++i) {
+			const ir_asm_constraint *constraint = &output_constraints[i];
+			if (constraint->mode == high_signed || constraint->mode == high_unsigned) {
+				new_outputs[new_n_outs].pos        = constraint->pos;
+				new_outputs[new_n_outs].constraint = new_id_from_str("=a");
+				new_outputs[new_n_outs].mode       = env->low_unsigned;
+				proj_map[i] = new_n_outs;
+				++new_n_outs;
+				new_outputs[new_n_outs].pos        = constraint->pos;
+				new_outputs[new_n_outs].constraint = new_id_from_str("=d");
+				if (constraint->mode == high_signed)
+					new_outputs[new_n_outs].mode = env->low_signed;
+				else
+					new_outputs[new_n_outs].mode = env->low_unsigned;
+				++new_n_outs;
+			} else {
+				new_outputs[new_n_outs] = *constraint;
+				proj_map[i] = new_n_outs;
+				++new_n_outs;
+			}
+		}
+		assert(new_n_outs == n_outs+(int)n_64bit_outs);
+
+		new_asm = new_rd_ASM(dbgi, block, arity, in, input_constraints,
+		                     new_n_outs, new_outputs, n_clobber, clobbers,
+		                     asm_text);
+
+		for (n = asmn;;) {
+			long pn;
+			ir_mode *proj_mode;
+			n = (ir_node*)get_irn_link(n);
+			if (n == NULL)
+				break;
+			proj_mode = get_irn_mode(n);
+			pn = get_Proj_proj(n);
+			if (pn < n_outs)
+				pn = proj_map[pn];
+			else
+				pn = new_n_outs + pn - n_outs;
+
+			if (proj_mode == high_signed || proj_mode == high_unsigned) {
+				ir_mode *high_mode
+					= proj_mode == high_signed ? env->low_signed : env->low_unsigned;
+				ir_node *np_low  = new_r_Proj(new_asm, env->low_unsigned, pn);
+				ir_node *np_high = new_r_Proj(new_asm, high_mode, pn+1);
+				set_lowered(env, n, np_low, np_high);
+			} else {
+				ir_node *np = new_r_Proj(new_asm, proj_mode, pn);
+				exchange(n, np);
+			}
 		}
 	}
 }

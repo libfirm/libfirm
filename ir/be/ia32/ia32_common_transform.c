@@ -511,7 +511,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	for (out_idx = 0; out_idx < n_out_constraints; ++out_idx) {
 		const ir_asm_constraint   *constraint = &out_constraints[out_idx];
 		const char                *c       = get_id_str(constraint->constraint);
-		unsigned                   pos        = constraint->pos;
+		unsigned                   pos     = constraint->pos;
 		constraint_t               parsed_constraint;
 		const arch_register_req_t *req;
 
@@ -519,6 +519,12 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		req = ia32_make_register_req(&parsed_constraint, n_out_constraints,
 		                        out_reg_reqs, out_idx);
 		out_reg_reqs[out_idx] = req;
+
+		/* multiple constraints for same pos. This can happen for example when
+		 * a =A constraint gets lowered to two constraints: =a and =d for the
+		 * same pos */
+		if (register_map[pos].valid)
+			continue;
 
 		register_map[pos].use_input = 0;
 		register_map[pos].valid     = 1;
