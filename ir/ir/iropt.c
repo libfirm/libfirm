@@ -6626,7 +6626,7 @@ static unsigned hash_SymConst(const ir_node *node)
  * @return
  *    The operations.
  */
-static ir_op_ops *firm_set_default_hash(ir_opcode code, ir_op_ops *ops)
+static ir_op_ops *firm_set_default_hash(unsigned code, ir_op_ops *ops)
 {
 #define CASE(a)                                    \
 	case iro_##a:                                  \
@@ -6652,7 +6652,7 @@ static ir_op_ops *firm_set_default_hash(ir_opcode code, ir_op_ops *ops)
 /*
  * Sets the default operation for an ir_ops.
  */
-ir_op_ops *firm_set_default_operations(ir_opcode code, ir_op_ops *ops)
+ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops)
 {
 	ops = firm_set_default_hash(code, ops);
 	ops = firm_set_default_computed_value(code, ops);

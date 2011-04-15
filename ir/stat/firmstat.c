@@ -1429,7 +1429,7 @@ void stat_register_dumper_func(dump_graph_FUNC func)
 /*
  * Helper: get an ir_op from an opcode.
  */
-ir_op *stat_get_op_from_opcode(ir_opcode code)
+ir_op *stat_get_op_from_opcode(unsigned code)
 {
 	return opcode_find_entry(code, status->ir_op_hash);
 }  /* stat_get_op_from_opcode */

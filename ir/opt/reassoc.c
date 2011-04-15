@@ -1004,7 +1004,7 @@ ir_graph_pass_t *optimize_reassociation_pass(const char *name)
 }  /* optimize_reassociation_pass */
 
 /* Sets the default reassociation operation for an ir_op_ops. */
-ir_op_ops *firm_set_default_reassoc(ir_opcode code, ir_op_ops *ops)
+ir_op_ops *firm_set_default_reassoc(unsigned code, ir_op_ops *ops)
 {
 #define CASE(a) case iro_##a: ops->reassociate  = reassoc_##a; break
 
