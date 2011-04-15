@@ -6021,29 +6021,31 @@ static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 	/* Should we really check the constraints here? Should be better, but is strange. */
 	n = get_ASM_n_input_constraints(a);
 	if (n != get_ASM_n_input_constraints(b))
-		return 0;
+		return 1;
 
 	ca = get_ASM_input_constraints(a);
 	cb = get_ASM_input_constraints(b);
 	for (i = 0; i < n; ++i) {
-		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint)
+		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint
+		    || ca[i].mode != cb[i].mode)
 			return 1;
 	}
 
 	n = get_ASM_n_output_constraints(a);
 	if (n != get_ASM_n_output_constraints(b))
-		return 0;
+		return 1;
 
 	ca = get_ASM_output_constraints(a);
 	cb = get_ASM_output_constraints(b);
 	for (i = 0; i < n; ++i) {
-		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint)
+		if (ca[i].pos != cb[i].pos || ca[i].constraint != cb[i].constraint
+		    || ca[i].mode != cb[i].mode)
 			return 1;
 	}
 
 	n = get_ASM_n_clobbers(a);
 	if (n != get_ASM_n_clobbers(b))
-		return 0;
+		return 1;
 
 	cla = get_ASM_clobbers(a);
 	clb = get_ASM_clobbers(b);
