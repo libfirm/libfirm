@@ -42,7 +42,7 @@ static void prepare_nodes(ir_node *irn, void *env)
 		unsigned        n_loc = current_ir_graph->n_loc;
 		struct obstack *obst  = current_ir_graph->obst;
 		/* reset mature flag */
-		irn->attr.block.is_matured = 0;
+		set_Block_matured(irn, 0);
 		irn->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
 		memset(irn->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
 		irn->attr.block.phis       = NULL;

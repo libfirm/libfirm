@@ -282,7 +282,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 		return res;
 
 	/* in a matured block we can immediately determine the phi arguments */
-	if (block->attr.block.is_matured) {
+	if (get_Block_matured(block)) {
 		int arity = get_irn_arity(block);
 		/* no predecessors: use unknown value */
 		if (arity == 0 && block == get_irg_start_block(get_irn_irg(block))) {
@@ -357,7 +357,7 @@ void mature_immBlock(ir_node *block)
 		}
 	}
 
-	block->attr.block.is_matured = 1;
+	set_Block_matured(block, 1);
 
 	/* Now, as the block is a finished Firm node, we can optimize it.
 	   Since other nodes have been allocated since the block was created
@@ -491,7 +491,7 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	/* creates a new dynamic in-array as length of in is -1 */
 	res = new_ir_node(dbgi, irg, NULL, op_Block, mode_BB, -1, NULL);
 
-	res->attr.block.is_matured  = 0;
+	set_Block_matured(res, 0);
 	res->attr.block.is_dead     = 0;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
@@ -533,7 +533,7 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 	int n = ARR_LEN(block->in) - 1;
 
 	assert(is_Block(block) && "Error: Must be a Block");
-	assert(!block->attr.block.is_matured && "Error: Block already matured!\n");
+	assert(!get_Block_matured(block) && "Error: Block already matured!\n");
 	assert(is_ir_node(jmp));
 
 	ARR_APP1(ir_node *, block->in, jmp);
