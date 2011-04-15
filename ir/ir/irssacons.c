@@ -34,19 +34,16 @@
  * Post-walker: prepare the graph nodes for new SSA construction cycle by
  * allocation new arrays.
  */
-static void prepare_nodes(ir_node *irn, void *env)
+static void prepare_blocks(ir_node *irn, void *env)
 {
 	(void)env;
-
-	if (is_Block(irn)) {
-		unsigned        n_loc = current_ir_graph->n_loc;
-		struct obstack *obst  = current_ir_graph->obst;
-		/* reset mature flag */
-		set_Block_matured(irn, 0);
-		irn->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
-		memset(irn->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
-		irn->attr.block.phis       = NULL;
-	}
+	unsigned        n_loc = current_ir_graph->n_loc;
+	struct obstack *obst  = current_ir_graph->obst;
+	/* reset mature flag */
+	set_Block_matured(irn, 0);
+	irn->attr.block.graph_arr  = NEW_ARR_D(ir_node *, obst, n_loc);
+	memset(irn->attr.block.graph_arr, 0, sizeof(ir_node*) * n_loc);
+	irn->attr.block.phis       = NULL;
 }
 
 /*
@@ -75,7 +72,7 @@ void ssa_cons_start(ir_graph *irg, int n_loc)
 	 * seems worth to do this.  First, we have to check if they really exists and
 	 * then clear them.  We do not expect SSA construction is used often.
 	 */
-	irg_walk_graph(irg, NULL, prepare_nodes, NULL);
+	irg_block_walk_graph(irg, NULL, prepare_blocks, NULL);
 }
 
 /**
