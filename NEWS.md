@@ -1,15 +1,21 @@
-====== libFirm 1.19.0 (1011-03-15) ======
+libFirm 1.19.0 (1011-03-15)
+---------------------------
+
 * Includes "SSA-Based Register Allocation with PBQP"
 * Improved Sparc backend
 * New (optimistic) fixpoint based value-range propagation/bit analysis
 * Code cleanup and refactoring
 * Bugfixes
 
-====== libFirm 1.18.1 (1010-05-05) ======
+libFirm 1.18.1 (1010-05-05)
+---------------------------
+
 * Fix bug where stackframe was not always setup for -fno-omit-frame-pointer
 * bugfixes in Asm handling
 
-====== libFirm 1.18.0 (2010-04-15) ======
+libFirm 1.18.0 (2010-04-15)
+---------------------------
+
 * Includes "Preference Guided Register Assignment" algorithm
 * Experimental Value Range Propagation
 * Loop Inversion and experimental Loop Unrolling code
@@ -19,7 +25,9 @@
 * code cleanup, smaller improvements in API specification
 * bugfixes
 
-====== libFirm 1.17.0 (2009-05-15) ======
+libFirm 1.17.0 (2009-05-15)
+---------------------------
+
 * bugfixes
 * advanced load/store optimisation which hoists loads out of loops
 * Internal restruturing: Alot of node structures are automatically generated
@@ -29,14 +37,19 @@
 * Support and optimisations for trampolines
 * fix PIC support
 
-====== libFirm 1.16.0 (2009-01-28) ======
+libFirm 1.16.0 (2009-01-28)
+---------------------------
+
 * bugfixes
 * support for builtin nodes
 
-====== libFirm 1.15.0 (2008-12-01) ======
+libFirm 1.15.0 (2008-12-01)
+---------------------------
 * bugfixes
 
-====== libFirm 1.14.0 (2008-11-22) ======
+libFirm 1.14.0 (2008-11-22)
+---------------------------
+
 * Implementation of Clicks Combined Analysis/Optimisations
 * New switch lowering code
 * support for global asm statements
@@ -49,7 +62,8 @@
 * improve peephole optimisations for x86
 * bugfixes
 
-====== libFirm 1.13.0 (2008-07-31) ======
+libFirm 1.13.0 (2008-07-31)
+---------------------------
 
 * VanDrunen's GVN-PRE fixed
 * operator strength reduce fixed and improved
@@ -69,12 +83,14 @@
 * ARM Backend: fixed frame access
 * support for special segments (like constructors, destructors)
 
-====== libFirm 1.12.1 (2008-02-18) ======
+libFirm 1.12.1 (2008-02-18)
+---------------------------
 
 * bugfixes for new style initializers with bitfield types
 * make lowerer look at constant initializers too
 
-====== libFirm 1.12.0 (2008-02-14) ======
+libFirm 1.12.0 (2008-02-14)
+---------------------------
 
 * dependency on libcore and libobstack dropped
 * there's an alternative easier to use way to construct compound initializers
@@ -83,7 +99,8 @@
 * speed improvements
 * optimisation of known libc functions
 
-====== libFirm 1.11.0 (2008-11-05) ======
+libFirm 1.11.0 (2008-11-05)
+---------------------------
 
 * Lots of bugfixes
 * Compilation speed improved
@@ -94,5 +111,4 @@
 * New backend peephole optimisations
 * Explicit status flag modeling (only for x86 for now)
 * Improvements of Load/Store optimisation and alias analysis
-
--> All C benchmarks from Spec CINT2000 work now (with our edg frontend)
+* All C benchmarks from Spec CINT2000 work now (with our edg frontend)
