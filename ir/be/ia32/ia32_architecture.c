@@ -911,7 +911,7 @@ void ia32_setup_cg_config(void)
 	c->use_pxor             = FLAGS(opt_arch, arch_netburst);
 	c->use_mov_0            = FLAGS(opt_arch, arch_k6) && !opt_size;
 	c->use_short_sex_eax    = !FLAGS(opt_arch, arch_k6) && !opt_size;
-	c->use_pad_return       = FLAGS(opt_arch, arch_athlon_plus | arch_core2 | arch_generic32) && !opt_size;
+	c->use_pad_return       = FLAGS(opt_arch, arch_athlon_plus) && !opt_size;
 	c->use_bt               = FLAGS(opt_arch, arch_core2 | arch_athlon_plus) || opt_size;
 	c->use_fisttp           = FLAGS(opt_arch & arch, arch_feature_sse3);
 	c->use_sse_prefetch     = FLAGS(arch, (arch_feature_3DNowE | arch_feature_sse1));
