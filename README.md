@@ -1,15 +1,8 @@
-                                   libFirm
-                   A graph based SSA intermediate representation
-
-Contents:
-1. Introduction
-2. Building and Installation
-3. Usage
-4. Contact
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+libFirm -- A graph based SSA intermediate representation
+========================================================
 
 1. Introduction
+---------------
 
 The Firm library implements the Firm intermediate representation (ir). An old
 description of Firm can be found in [TLB:99].
@@ -17,9 +10,10 @@ description of Firm can be found in [TLB:99].
 libFirm contains algorithms for construction of the SSA form directly from the
 attributed syntax tree. A set of analyses and optimisation phases is provided.
 This version includes a complete backend for the IA32 architecture, as well as
-some unfinished backends for MIPS, ARM, PPC32.
+some unfinished backends for SPARC, ARM
 
 1.1. Features
+-------------
 
 - works exculsively on a graph based SSA represenation up to the code emission.
   Based on the work of C. Click and M. Trapp
@@ -46,44 +40,44 @@ some unfinished backends for MIPS, ARM, PPC32.
   spilling and copy coalescing. Instruction and block scheduling, support for
   ABI handling.
 - working ia32 backend with support for x87 and SSE2 floating point
-- unfinished backends for MIPS, ARM, PPC32
+- unfinished backends for SPARC, ARM
 
 - connections to the Edison Design Group C and java frontends available.
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 2. Building and Installation
+----------------------------
 
-These are instruction for the gcc compiler on unix variants or cygwin.
+Prerequisites for the build:
 
- 1. Change into the directory containing libfirms source
+* python (>=2.4)
+* perl
+* an ANSI C89 compiler (gcc, msvc known to work)
 
- 2. Create a directory named build 'mkdir build'. Change into this directory
-    and execute the configure script. 'cd build ; ../configure'
+Building on unix variants/cygwin:
 
- 3. Type 'make' to compile the package
-
- 4. You may install libfirm as super user by typing 'make install'
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1. Change into the directory containing libfirms source
+2. Create a directory named build 'mkdir build'. Change into this directory
+   and execute the configure script. 'cd build ; ../configure'
+3. Type 'make' to compile the package
+4. You may install libfirm as super user by typing 'make install'
 
 3. Usage
+--------
 
 To generate FIRM code from a compiler frontend read the documentation
 "libFIRM: A Library for Compiler Optimization Reaserch Implementing
 Firm", UKA tech-report 2002-5. About Firm you can learn in UKA
 tech-report 1999-14.
 
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 4. Contact
+----------
 
 You can contact us at
-	firm@ipd.info.uni-karlsruhe.de
+	<firm@ipd.info.uni-karlsruhe.de>
 
 There's a mailing list here:
-	https://lists.sourceforge.net/lists/listinfo/libfirm-user
+	<https://lists.sourceforge.net/lists/listinfo/libfirm-user>
 
 We have a bugtracker at:
-	http://pp.info.uni-karlsruhe.de/~firm/bugs
+	<http://pp.info.uni-karlsruhe.de/~firm/bugs>
