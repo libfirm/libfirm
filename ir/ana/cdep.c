@@ -43,13 +43,11 @@ typedef struct cdep_info {
 
 static cdep_info *cdep_data;
 
-/* Return a list of all control dependences of a block. */
 ir_cdep *find_cdep(const ir_node *block)
 {
 	return (ir_cdep*) pmap_get(cdep_data->cdep_map, block);
 }
 
-/* Replace the control dependence info of old by the info of nw. */
 void exchange_cdep(ir_node *old, const ir_node *nw)
 {
 	ir_cdep *cdep = find_cdep(nw);
@@ -62,9 +60,6 @@ void exchange_cdep(ir_node *old, const ir_node *nw)
 static void add_cdep(ir_node *node, ir_node *dep_on)
 {
 	ir_cdep *dep = find_cdep(node);
-#if 0
-	ir_fprintf(stderr, "Adding cdep of %+F on %+F\n", node, dep_on);
-#endif
 
 	if (dep == NULL) {
 		ir_cdep *newdep = OALLOC(&cdep_data->obst, ir_cdep);
@@ -129,17 +124,6 @@ static int cdep_edge_hook(FILE *F, ir_node *block)
 {
 	ir_cdep *cd;
 
-#if 0
-	ir_node *pdom = get_Block_ipostdom(block);
-	if (pdom != NULL) {
-		fprintf(
-			F,
-			"edge:{sourcename:\"n%ld\" targetname:\"n%ld\" color:gold}\n",
-			get_irn_node_nr(pdom), get_irn_node_nr(block)
-		);
-	}
-#endif
-
 	for (cd = find_cdep(block); cd != NULL; cd = cd->next) {
 		fprintf(
 			F,
@@ -152,7 +136,6 @@ static int cdep_edge_hook(FILE *F, ir_node *block)
 	return 0;
 }
 
-/* Compute the control dependence graph for a graph. */
 void compute_cdep(ir_graph *irg)
 {
 	ir_node *rem;
@@ -190,7 +173,6 @@ void compute_cdep(ir_graph *irg)
 	set_Block_ipostdom(env.start_block, rem);
 }
 
-/* Free the control dependence info. */
 void free_cdep(ir_graph *irg)
 {
 	(void) irg;
@@ -202,7 +184,6 @@ void free_cdep(ir_graph *irg)
 	}
 }
 
-/* Check whether dependee is (directly) control dependent on candidate. */
 int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 {
 	const ir_cdep *dep;
@@ -213,20 +194,6 @@ int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 	return 0;
 }
 
-/* Check whether dependee is (possible iterated) control dependent on candidate. */
-int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate)
-{
-	const ir_cdep *dep;
-
-	while ((dep = find_cdep(dependee)) != NULL) {
-		if (dep->next != NULL) return 0;
-		if (dep->node == candidate) return 1;
-		dependee = dep->node;
-	}
-	return 0;
-}
-
-/* If block is control dependent on exactly one node, return this node, else NULL. */
 ir_node *get_unique_cdep(const ir_node *block)
 {
 	ir_cdep *cdep = find_cdep(block);
@@ -234,7 +201,6 @@ ir_node *get_unique_cdep(const ir_node *block)
 	return cdep != NULL && cdep->next == NULL ? cdep->node : NULL;
 }
 
-/* Check if the given block is control dependent of more than one node. */
 int has_multiple_cdep(const ir_node *block)
 {
 	ir_cdep *cdep = find_cdep(block);

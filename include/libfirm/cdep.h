@@ -62,15 +62,8 @@ FIRM_API void exchange_cdep(ir_node *old, const ir_node *nw);
 FIRM_API int is_cdep_on(const ir_node *dependee, const ir_node *candidate);
 
 /**
- * Check whether dependee is (possible iterated) control dependent on candidate.
- *
- * @param dependee   the (possible) dependent block
- * @param candidate  the (possible) block on which dependee is dependent
- */
-FIRM_API int is_iterated_cdep_on(ir_node *dependee, ir_node *candidate);
-
-/**
- * If block is control dependent on exactly one node, return this node, else NULL.
+ * If block is control dependent on exactly one node, return this node,
+ * else NULL.
  *
  * @param block  the block to check
  */
