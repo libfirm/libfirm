@@ -31,7 +31,7 @@
 #include "iroptimize.h"
 #include "obst.h"
 #include "irnode_t.h"
-#include "cdep.h"
+#include "cdep_t.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgopt.h"
@@ -288,8 +288,8 @@ restart:
 		ir_cdep* cdep;
 
 		pred0 = get_Block_cfgpred_block(block, i);
-		for (cdep = find_cdep(pred0); cdep != NULL; cdep = cdep->next) {
-			const ir_node* dependency = cdep->node;
+		for (cdep = find_cdep(pred0); cdep != NULL; cdep = get_cdep_next(cdep)) {
+			const ir_node* dependency = get_cdep_node(cdep);
 			ir_node* projx0 = walk_to_projx(pred0, dependency);
 			ir_node* cond;
 			int j;

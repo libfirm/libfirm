@@ -29,19 +29,17 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/**
- * An entry in the control dependence list.
- */
-struct ir_cdep {
-	ir_node *node;  /**< A node on which the current block is control dependent on. */
-	ir_cdep    *next;  /**< Link to the next one if any. */
-};
-
 /** Compute the control dependence graph for a graph. */
 FIRM_API void compute_cdep(ir_graph *irg);
 
 /** Free the control dependence info. */
 FIRM_API void free_cdep(ir_graph *irg);
+
+/** Return control dependent block */
+FIRM_API ir_node *get_cdep_node(const ir_cdep *cdep);
+
+/** Get next entry in a list of cdeps */
+FIRM_API ir_cdep *get_cdep_next(const ir_cdep *cdep);
 
 /**
  * Return a list of all control dependences of a block.

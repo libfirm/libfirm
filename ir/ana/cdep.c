@@ -32,7 +32,7 @@
 #include "pmap.h"
 #include "obst.h"
 #include "xmalloc.h"
-#include "cdep.h"
+#include "cdep_t.h"
 #include "irprintf.h"
 #include "irdump.h"
 
@@ -43,14 +43,27 @@ typedef struct cdep_info {
 
 static cdep_info *cdep_data;
 
+ir_node *(get_cdep_node)(const ir_cdep *cdep)
+{
+	return _get_cdep_node(cdep);
+}
+
+ir_cdep *(get_cdep_next)(const ir_cdep *cdep)
+{
+	return _get_cdep_next(cdep);
+}
+
+/* Return a list of all control dependences of a block. */
 ir_cdep *find_cdep(const ir_node *block)
 {
+	assert(is_Block(block));
 	return (ir_cdep*) pmap_get(cdep_data->cdep_map, block);
 }
 
 void exchange_cdep(ir_node *old, const ir_node *nw)
 {
 	ir_cdep *cdep = find_cdep(nw);
+	assert(is_Block(old));
 	pmap_insert(cdep_data->cdep_map, old, cdep);
 }
 
@@ -61,6 +74,7 @@ static void add_cdep(ir_node *node, ir_node *dep_on)
 {
 	ir_cdep *dep = find_cdep(node);
 
+	assert(is_Block(dep_on));
 	if (dep == NULL) {
 		ir_cdep *newdep = OALLOC(&cdep_data->obst, ir_cdep);
 
@@ -71,7 +85,7 @@ static void add_cdep(ir_node *node, ir_node *dep_on)
 		ir_cdep *newdep;
 
 		for (;;) {
-			if (dep->node == dep_on) return;
+			if (get_cdep_node(dep) == dep_on) return;
 			if (dep->next == NULL) break;
 			dep = dep->next;
 		}
@@ -189,7 +203,7 @@ int is_cdep_on(const ir_node *dependee, const ir_node *candidate)
 	const ir_cdep *dep;
 
 	for (dep = find_cdep(dependee); dep != NULL; dep = dep->next) {
-		if (dep->node == candidate) return 1;
+		if (get_cdep_node(dep) == candidate) return 1;
 	}
 	return 0;
 }
@@ -198,7 +212,7 @@ ir_node *get_unique_cdep(const ir_node *block)
 {
 	ir_cdep *cdep = find_cdep(block);
 
-	return cdep != NULL && cdep->next == NULL ? cdep->node : NULL;
+	return cdep != NULL && cdep->next == NULL ? get_cdep_node(cdep) : NULL;
 }
 
 int has_multiple_cdep(const ir_node *block)
