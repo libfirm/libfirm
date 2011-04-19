@@ -139,6 +139,7 @@ struct lower_env_t {
 };
 
 static void lower_node(lower_env_t *env, ir_node *node);
+static bool mtp_must_be_lowered(lower_env_t *env, ir_type *mtp);
 
 /**
  * Create a method type for a Conv emulation from imode to omode.
@@ -1432,9 +1433,6 @@ static ir_type *lower_mtp(lower_env_t *env, ir_type *mtp)
 	pmap_entry *entry;
 	ir_type    *res, *value_type;
 
-	if (is_lowered_type(mtp))
-		return mtp;
-
 	entry = pmap_find(lowered_type, mtp);
 	if (! entry) {
 		size_t i, orig_n_params, orig_n_res, n_param, n_res;
@@ -1599,29 +1597,21 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 	ir_graph  *irg = get_irn_irg(node);
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *tp  = get_entity_type(ent);
-	ir_type   *mtp;
 	long      *new_projs;
 	size_t    i, j, n_params;
 	int       rem;
 	ir_node   *proj, *args;
 	(void) mode;
 
-	if (is_lowered_type(tp)) {
-		mtp = get_associated_type(tp);
-	} else {
-		mtp = tp;
-	}
-	assert(! is_lowered_type(mtp));
+	if (!mtp_must_be_lowered(env, tp)) return;
 
-	n_params = get_method_n_params(mtp);
-	if (n_params <= 0)
-		return;
+	n_params = get_method_n_params(tp);
 
 	NEW_ARR_A(long, new_projs, n_params);
 
-	/* first check if we have parameters that must be fixed */
+	/* Calculate mapping of proj numbers in new_projs */
 	for (i = j = 0; i < n_params; ++i, ++j) {
-		ir_type *ptp = get_method_param_type(mtp, i);
+		ir_type *ptp = get_method_param_type(tp, i);
 
 		new_projs[i] = j;
 		if (is_Primitive_type(ptp)) {
@@ -1632,18 +1622,17 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 				++j;
 		}
 	}
-	if (i == j)
-		return;
 
-	mtp = lower_mtp(env, mtp);
-	set_entity_type(ent, mtp);
+	/* lower method type */
+	tp = lower_mtp(env, tp);
+	set_entity_type(ent, tp);
 
 	/* switch off optimization for new Proj nodes or they might be CSE'ed
 	   with not patched one's */
 	rem = get_optimize();
 	set_optimize(0);
 
-	/* ok, fix all Proj's and create new ones */
+	/* fix all Proj's and create new ones */
 	args = get_irg_args(irg);
 	for (proj = (ir_node*)get_irn_link(node); proj;
 	     proj = (ir_node*)get_irn_link(proj)) {
@@ -2305,8 +2294,8 @@ static void lower_irg(lower_env_t *env, ir_graph *irg)
 
 	if (mtp_must_be_lowered(env, mtp)) {
 		ir_type *ltp = lower_mtp(env, mtp);
+		/* Do not update the entity type yet, this will be done by lower_Start! */
 		env->flags |= MUST_BE_LOWERED;
-		set_entity_type(ent, ltp);
 		env->l_mtp = ltp;
 		env->value_param_tp = get_method_value_param_type(mtp);
 	}
