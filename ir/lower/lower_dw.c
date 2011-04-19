@@ -1621,11 +1621,11 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 	/* first check if we have parameters that must be fixed */
 	for (i = j = 0; i < n_params; ++i, ++j) {
-		ir_type *tp = get_method_param_type(mtp, i);
+		ir_type *ptp = get_method_param_type(mtp, i);
 
 		new_projs[i] = j;
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
+		if (is_Primitive_type(ptp)) {
+			ir_mode *mode = get_type_mode(ptp);
 
 			if (mode == env->high_signed ||
 				mode == env->high_unsigned)
