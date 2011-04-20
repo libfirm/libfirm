@@ -2213,9 +2213,8 @@ static void lower_node(lower_env_t *env, ir_node *node)
 	unsigned      idx;
 	node_entry_t *entry;
 
-	if (irn_visited(node))
+	if (irn_visited_else_mark(node))
 		return;
-	mark_irn_visited(node);
 
 	/* cycles are always broken at Phi and Block nodes. So we don't need special
 	 * magic in all the other lower functions */

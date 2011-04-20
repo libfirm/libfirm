@@ -1005,9 +1005,8 @@ static void irg_walk_edges2(ir_node *node, irg_walk_func *pre,
 {
 	const ir_edge_t *edge, *next;
 
-	if (irn_visited(node))
+	if (irn_visited_else_mark(node))
 		return;
-	mark_irn_visited(node);
 
 	if (pre != NULL)
 		pre(node, env);

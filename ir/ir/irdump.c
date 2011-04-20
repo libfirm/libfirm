@@ -1191,8 +1191,7 @@ static void dump_const_node_local(FILE *F, ir_node *n)
 
 	for (i = 0; i < get_irn_arity(n); i++) {
 		ir_node *con = get_irn_n(n, i);
-		if (is_constlike_node(con) && !irn_visited(con)) {
-			mark_irn_visited(con);
+		if (is_constlike_node(con) && !irn_visited_else_mark(con)) {
 			/* Generate a new name for the node by appending the names of
 			n and const. */
 			fprintf(F, "node: {title: "); PRINT_CONSTID(n, con);

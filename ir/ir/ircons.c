@@ -285,12 +285,10 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 		return res;
 
 	/* We ran into a cycle. This may happen in unreachable loops. */
-	if (irn_visited(block)) {
+	if (irn_visited_else_mark(block)) {
 		/* Since the loop is unreachable, return a Bad. */
 		return new_r_Bad(irg);
 	}
-
-	mark_irn_visited(block);
 
 	/* in a matured block we can immediately determine the phi arguments */
 	if (get_Block_matured(block)) {
@@ -598,9 +596,8 @@ static ir_mode *guess_recursively(ir_node *block, int pos)
 	int      n_preds;
 	int      i;
 
-	if (irn_visited(block))
+	if (irn_visited_else_mark(block))
 		return NULL;
-	mark_irn_visited(block);
 
 	/* already have a defintion -> we can simply look at its mode */
 	value = block->attr.block.graph_arr[pos];
