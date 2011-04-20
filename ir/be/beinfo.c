@@ -61,10 +61,10 @@ void be_info_new_node(ir_node *node)
 	case iro_Block:
 	case iro_Dummy:
 	case iro_End:
-	case iro_NoMem:
 	case iro_Unknown:
 		info->flags |= arch_irn_flags_not_scheduled;
 		break;
+	case iro_NoMem:
 	case iro_Anchor:
 	case iro_Pin:
 	case iro_Sync:
