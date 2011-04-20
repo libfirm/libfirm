@@ -666,11 +666,6 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 	if (n_ret_com) {
 		int idx;
 
-		/*
-		 * Now fix the Return node of the current graph.
-		 */
-		env.changed = 1;
-
 		/* STEP 1: find the return. This is simple, we have normalized the graph. */
 		endbl = get_irg_end_block(irg);
 		ret = NULL;
@@ -682,8 +677,14 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 				break;
 			}
 		}
-		/* there should always be a return */
-		assert(ret);
+
+		/* in case of infinite loops, there might be no return */
+		if (ret == NULL) goto return_fixed;
+
+		/*
+		 * Now fix the Return node of the current graph.
+		 */
+		env.changed = 1;
 
 		/*
 		 * STEP 2: fix it. For all compound return values add a CopyB,
@@ -756,6 +757,7 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 			}
 		}
 	} /* if (n_ret_com) */
+return_fixed:
 
 	pmap_destroy(env.dummy_map);
 	obstack_free(&env.obst, NULL);
