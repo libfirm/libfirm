@@ -5686,6 +5686,66 @@ static ir_node *transform_node_Sync(ir_node *n)
 	return n;
 }  /* transform_node_Sync */
 
+static ir_node *transform_node_Load(ir_node *n)
+{
+	/* if our memory predecessor is a load from the same address, then reuse the
+	 * previous result */
+	ir_node *mem = get_Load_mem(n);
+	ir_node *mem_pred;
+
+	if (!is_Proj(mem))
+		return n;
+	/* don't touch volatile loads */
+	if (get_Load_volatility(n) == volatility_is_volatile)
+		return n;
+	mem_pred = get_Proj_pred(mem);
+	if (is_Load(mem_pred)) {
+		ir_node *pred_load = mem_pred;
+
+		/* conservatively compare the 2 loads. TODO: This could be less strict
+		 * with fixup code in some situations (like smaller/bigger modes) */
+		if (get_Load_ptr(pred_load) != get_Load_ptr(n))
+			return n;
+		if (get_Load_mode(pred_load) != get_Load_mode(n))
+			return n;
+		/* all combinations of aligned/unaligned pred/n should be fine so we do
+		 * not compare the unaligned attribute */
+		{
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *jmp   = new_r_Jmp(block);
+			ir_graph *irg   = get_irn_irg(n);
+			ir_node  *bad   = new_r_Bad(irg);
+			ir_mode  *mode  = get_Load_mode(n);
+			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
+			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
+			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
+			return tuple;
+		}
+	} else if (is_Store(mem_pred)) {
+		ir_node *pred_store = mem_pred;
+		ir_node *value      = get_Store_value(pred_store);
+
+		if (get_Store_ptr(pred_store) != get_Load_ptr(n))
+			return n;
+		if (get_irn_mode(value) != get_Load_mode(n))
+			return n;
+		/* all combinations of aligned/unaligned pred/n should be fine so we do
+		 * not compare the unaligned attribute */
+		{
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *jmp   = new_r_Jmp(block);
+			ir_graph *irg   = get_irn_irg(n);
+			ir_node  *bad   = new_r_Bad(irg);
+			ir_node  *res   = value;
+			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
+			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
+			return tuple;
+		}
+	}
+
+	return n;
+}
+
 /**
  * optimize a trampoline Call into a direct Call
  */
@@ -5829,11 +5889,14 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Sync);
 	CASE_PROJ(Bound);
 	CASE_PROJ(CopyB);
-	CASE_PROJ(Load);
 	CASE_PROJ(Store);
 	CASE_PROJ_EX(Cond);
 	CASE_PROJ_EX(Div);
 	CASE_PROJ_EX(Mod);
+	case iro_Load:
+		ops->transform_node      = transform_node_Load;
+		ops->transform_node_Proj = transform_node_Proj_Load;
+		break;
 	default:
 	  /* leave NULL */;
 	}
