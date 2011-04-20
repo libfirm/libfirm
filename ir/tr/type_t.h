@@ -308,6 +308,19 @@ static inline void _set_master_type_visited(ir_visited_t val) { firm_type_visite
 static inline ir_visited_t _get_master_type_visited(void)     { return firm_type_visited; }
 static inline void _inc_master_type_visited(void)             { ++firm_type_visited; }
 
+static inline ir_type *get_type_unlowered(const ir_type *tp)
+{
+	assert (is_lowered_type(tp));
+	return tp->assoc_type;
+}
+
+static inline ir_type *get_type_lowered(const ir_type *tp)
+{
+	assert (tp->assoc_type == NULL || is_lowered_type(tp->assoc_type));
+	return tp->assoc_type;
+}
+
+
 static inline void *_get_type_link(const ir_type *tp)
 {
 	assert(tp && tp->kind == k_type);
