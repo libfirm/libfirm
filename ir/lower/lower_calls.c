@@ -84,8 +84,6 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	int        changed = 0;
 	ir_variadicity var;
 
-	assert(!is_lowered_type(mtp) && "lowered types not yet implemented");
-
 	lowered = get_type_lowered(mtp);
 	if (lowered != NULL)
 		return lowered;
