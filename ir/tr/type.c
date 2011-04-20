@@ -2100,6 +2100,10 @@ void set_lowered_type(ir_type *tp, ir_type *lowered_type)
 {
 	assert(is_type(tp) && is_type(lowered_type));
 	lowered_type->flags |= tf_lowered_type;
+	/* there might be a chain of lowerings, get to the start */
+	while (is_lowered_type(tp)) {
+		tp = tp->assoc_type;
+	}
 	tp->assoc_type = lowered_type;
 	lowered_type->assoc_type = tp;
 }
