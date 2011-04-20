@@ -679,85 +679,84 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 		}
 
 		/* in case of infinite loops, there might be no return */
-		if (ret == NULL) goto return_fixed;
+		if (ret != NULL) {
+			/*
+			 * Now fix the Return node of the current graph.
+			 */
+			env.changed = 1;
 
-		/*
-		 * Now fix the Return node of the current graph.
-		 */
-		env.changed = 1;
+			/*
+			 * STEP 2: fix it. For all compound return values add a CopyB,
+			 * all others are copied.
+			 */
+			NEW_ARR_A(ir_node *, new_in, n_ress + 1);
 
-		/*
-		 * STEP 2: fix it. For all compound return values add a CopyB,
-		 * all others are copied.
-		 */
-		NEW_ARR_A(ir_node *, new_in, n_ress + 1);
+			bl  = get_nodes_block(ret);
+			mem = get_Return_mem(ret);
 
-		bl  = get_nodes_block(ret);
-		mem = get_Return_mem(ret);
+			ft = get_irg_frame_type(irg);
+			NEW_ARR_A(cr_pair, cr_opt, n_ret_com);
+			n_cr_opt = 0;
+			for (j = 1, i = k = 0; i < n_ress; ++i) {
+				ir_node *pred = get_Return_res(ret, i);
+				tp = get_method_res_type(mtp, i);
 
-		ft = get_irg_frame_type(irg);
-		NEW_ARR_A(cr_pair, cr_opt, n_ret_com);
-		n_cr_opt = 0;
-		for (j = 1, i = k = 0; i < n_ress; ++i) {
-			ir_node *pred = get_Return_res(ret, i);
-			tp = get_method_res_type(mtp, i);
+				if (is_compound_type(tp)) {
+					ir_node *arg = get_irg_args(irg);
+					arg = new_r_Proj(arg, mode_P_data, env.first_hidden + k);
+					++k;
 
-			if (is_compound_type(tp)) {
-				ir_node *arg = get_irg_args(irg);
-				arg = new_r_Proj(arg, mode_P_data, env.first_hidden + k);
-				++k;
-
-				if (is_Unknown(pred)) {
-					/* The Return(Unknown) is the Firm construct for a missing return.
-					   Do nothing. */
-				} else {
-					/**
-					 * Sorrily detecting that copy-return is possible isn't that simple.
-					 * We must check, that the hidden address is alias free during the whole
-					 * function.
-					 * A simple heuristic: all Loads/Stores inside
-					 * the function access only local frame.
-					 */
-					if (env.only_local_mem && is_compound_address(ft, pred)) {
-						/* we can do the copy-return optimization here */
-						cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
-						cr_opt[n_cr_opt].arg = arg;
-						++n_cr_opt;
-					} else { /* copy-return optimization is impossible, do the copy. */
-						copy = new_r_CopyB(
-							bl,
-							mem,
-							arg,
-							pred,
-							tp
-							);
-						mem = new_r_Proj(copy, mode_M, pn_CopyB_M);
+					if (is_Unknown(pred)) {
+						/* The Return(Unknown) is the Firm construct for a missing return.
+							Do nothing. */
+					} else {
+						/**
+						 * Sorrily detecting that copy-return is possible isn't that simple.
+						 * We must check, that the hidden address is alias free during the whole
+						 * function.
+						 * A simple heuristic: all Loads/Stores inside
+						 * the function access only local frame.
+						 */
+						if (env.only_local_mem && is_compound_address(ft, pred)) {
+							/* we can do the copy-return optimization here */
+							cr_opt[n_cr_opt].ent = get_Sel_entity(pred);
+							cr_opt[n_cr_opt].arg = arg;
+							++n_cr_opt;
+						} else { /* copy-return optimization is impossible, do the copy. */
+							copy = new_r_CopyB(
+									bl,
+									mem,
+									arg,
+									pred,
+									tp
+									);
+							mem = new_r_Proj(copy, mode_M, pn_CopyB_M);
+						}
 					}
-				}
-				if (lp->flags & LF_RETURN_HIDDEN) {
-					new_in[j] = arg;
+					if (lp->flags & LF_RETURN_HIDDEN) {
+						new_in[j] = arg;
+						++j;
+					}
+				} else { /* scalar return value */
+					new_in[j] = pred;
 					++j;
 				}
-			} else { /* scalar return value */
-				new_in[j] = pred;
-				++j;
 			}
-		}
-		/* replace the in of the Return */
-		new_in[0] = mem;
-		set_irn_in(ret, j, new_in);
+			/* replace the in of the Return */
+			new_in[0] = mem;
+			set_irn_in(ret, j, new_in);
 
-		if (n_cr_opt > 0) {
-			size_t i, n;
+			if (n_cr_opt > 0) {
+				size_t i, n;
 
-			irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
+				irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
 
-			for (i = 0, n = ARR_LEN(cr_opt); i < n; ++i) {
-				free_entity(cr_opt[i].ent);
+				for (i = 0, n = ARR_LEN(cr_opt); i < n; ++i) {
+					free_entity(cr_opt[i].ent);
+				}
 			}
 		}
 	} /* if (n_ret_com) */
-return_fixed:
 
 	pmap_destroy(env.dummy_map);
 	obstack_free(&env.obst, NULL);
