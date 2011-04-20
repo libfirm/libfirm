@@ -2101,11 +2101,6 @@ FIRM_API int is_frame_type(const ir_type *tp);
 FIRM_API int is_value_param_type(const ir_type *tp);
 
 /**
- * Checks, whether a type is a lowered type.
- */
-FIRM_API int is_lowered_type(const ir_type *tp);
-
-/**
  * Makes a new value type. Value types are struct types,
  * so all struct access functions work.
  * Value types are not in the global list of types.
@@ -2125,18 +2120,6 @@ FIRM_API ir_type *new_type_frame(void);
  * vice versa.
  */
 FIRM_API ir_type *clone_frame_type(ir_type *type);
-
-/**
- * Sets a lowered type for a type. This sets both associations
- * and marks lowered_type as a "lowered" one.
- */
-FIRM_API void set_lowered_type(ir_type *tp, ir_type *lowered_type);
-
-/**
- * Gets the lowered/unlowered type of a type or NULL if this type
- * has no lowered/unlowered one.
- */
-FIRM_API ir_type *get_associated_type(const ir_type *tp);
 
 /**
  * Allocate an area of size bytes aligned at alignment

@@ -2045,11 +2045,6 @@ int is_value_param_type(const ir_type *tp)
 	return tp->flags & tf_value_param_type;
 }
 
-int is_lowered_type(const ir_type *tp)
-{
-	return tp->flags & tf_lowered_type;
-}
-
 ir_type *new_type_value(void)
 {
 	ir_type *res = new_type_struct(new_id_from_str("<value_type>"));
@@ -2094,23 +2089,6 @@ ir_type *clone_frame_type(ir_type *type)
 		set_entity_link(nent, ent);
 	}
 	return res;
-}
-
-void set_lowered_type(ir_type *tp, ir_type *lowered_type)
-{
-	assert(is_type(tp) && is_type(lowered_type));
-	lowered_type->flags |= tf_lowered_type;
-	/* there might be a chain of lowerings, get to the start */
-	while (is_lowered_type(tp)) {
-		tp = tp->assoc_type;
-	}
-	tp->assoc_type = lowered_type;
-	lowered_type->assoc_type = tp;
-}
-
-ir_type *get_associated_type(const ir_type *tp)
-{
-	return tp->assoc_type;
 }
 
 void set_default_size(ir_type *tp, unsigned size)
