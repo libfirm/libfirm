@@ -5892,11 +5892,8 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE_PROJ(Store);
 	CASE_PROJ_EX(Cond);
 	CASE_PROJ_EX(Div);
+	CASE_PROJ_EX(Load);
 	CASE_PROJ_EX(Mod);
-	case iro_Load:
-		ops->transform_node      = transform_node_Load;
-		ops->transform_node_Proj = transform_node_Proj_Load;
-		break;
 	default:
 	  /* leave NULL */;
 	}
