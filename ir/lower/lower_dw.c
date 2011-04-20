@@ -1687,13 +1687,7 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 	long     *res_numbers = NULL;
 	(void) mode;
 
-	if (is_lowered_type(tp)) {
-		call_tp = get_associated_type(tp);
-	} else {
-		call_tp = tp;
-	}
-
-	assert(! is_lowered_type(call_tp));
+	call_tp = tp;
 
 	n_params = get_method_n_params(call_tp);
 	for (p = 0; p < n_params; ++p) {
