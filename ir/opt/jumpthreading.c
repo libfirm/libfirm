@@ -84,7 +84,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	ir_node *dummy;
 
 	/* This is needed because we create bads sometimes */
-	if (is_Bad(block)) {
+	if (is_Bad(block) || is_Block_dead(block)) {
 		ir_graph *irg = get_irn_irg(block);
 		return new_r_Bad(irg);
 	}
