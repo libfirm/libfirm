@@ -1678,7 +1678,6 @@ static void lower_Start(ir_node *node, ir_mode *mode, lower_env_t *env)
 static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 {
 	ir_type  *tp = get_Call_type(node);
-	ir_type  *call_tp;
 	ir_node  **in, *proj, *results;
 	size_t   n_params, n_res;
 	bool     need_lower = false;
@@ -1687,14 +1686,12 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 	long     *res_numbers = NULL;
 	(void) mode;
 
-	call_tp = tp;
-
-	n_params = get_method_n_params(call_tp);
+	n_params = get_method_n_params(tp);
 	for (p = 0; p < n_params; ++p) {
-		ir_type *tp = get_method_param_type(call_tp, p);
+		ir_type *ptp = get_method_param_type(tp, p);
 
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
+		if (is_Primitive_type(ptp)) {
+			ir_mode *mode = get_type_mode(ptp);
 
 			if (mode == env->high_signed || mode == env->high_unsigned) {
 				need_lower = true;
@@ -1702,16 +1699,16 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 			}
 		}
 	}
-	n_res = get_method_n_ress(call_tp);
+	n_res = get_method_n_ress(tp);
 	if (n_res > 0) {
 		NEW_ARR_A(long, res_numbers, n_res);
 
 		for (i = j = 0; i < n_res; ++i, ++j) {
-			ir_type *tp = get_method_res_type(call_tp, i);
+			ir_type *ptp = get_method_res_type(tp, i);
 
 			res_numbers[i] = j;
-			if (is_Primitive_type(tp)) {
-				ir_mode *mode = get_type_mode(tp);
+			if (is_Primitive_type(ptp)) {
+				ir_mode *mode = get_type_mode(ptp);
 
 				if (mode == env->high_signed || mode == env->high_unsigned) {
 					need_lower = true;
@@ -1725,10 +1722,10 @@ static void lower_Call(ir_node *node, ir_mode *mode, lower_env_t *env)
 		return;
 
 	/* let's lower it */
-	call_tp = lower_mtp(env, call_tp);
-	set_Call_type(node, call_tp);
+	tp = lower_mtp(env, tp);
+	set_Call_type(node, tp);
 
-	NEW_ARR_A(ir_node *, in, get_method_n_params(call_tp) + 2);
+	NEW_ARR_A(ir_node *, in, get_method_n_params(tp) + 2);
 
 	in[0] = get_Call_mem(node);
 	in[1] = get_Call_ptr(node);
