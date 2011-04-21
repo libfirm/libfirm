@@ -34,14 +34,9 @@
 #include "irgopt.h"
 #include "irpass.h"
 
-/**
- * Returns non-zero, is a block is not reachable from Start.
- *
- * @param block  the block to test
- */
 static int is_Block_unreachable(ir_node *block)
 {
-	return is_Block_dead(block) || get_Block_dom_depth(block) < 0;
+	return get_Block_dom_depth(block) < 0;
 }
 
 /**
@@ -125,8 +120,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 			   place_early() has already been finished on them.
 			   We do not have any unfinished inputs! */
 			pred_block = get_nodes_block(pred);
-			if ((!is_Block_dead(pred_block)) &&
-				(get_Block_dom_depth(pred_block) > depth)) {
+			if (get_Block_dom_depth(pred_block) > depth) {
 				b = pred_block;
 				depth = get_Block_dom_depth(pred_block);
 			}
@@ -262,12 +256,9 @@ static ir_node *calc_dom_dca(ir_node *dca, ir_node *block)
 {
 	assert(block != NULL);
 
-	/* we do not want to place nodes in dead blocks */
-	if (is_Block_dead(block))
-		return dca;
-
 	/* We found a first legal placement. */
-	if (!dca) return block;
+	if (!dca)
+		return block;
 
 	/* Find a placement that is dominates both, dca and block. */
 	while (get_Block_dom_depth(block) > get_Block_dom_depth(dca))
@@ -302,6 +293,8 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 		for (i = 0;  i < arity; i++) {
 			if (get_Phi_pred(consumer, i) == producer) {
 				ir_node *new_block = get_Block_cfgpred_block(phi_block, i);
+				if (is_Bad(new_block))
+					continue;
 
 				if (!is_Block_unreachable(new_block))
 					dca = calc_dom_dca(dca, new_block);
@@ -435,6 +428,7 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 	if (!is_Block(n) &&
 	    (!is_cfop(n)) &&
 	    (get_irn_mode(n) != mode_X)) {
+	    ir_op *op;
 		/* Remember the early_blk placement of this block to move it
 		   out of loop no further than the early_blk placement. */
 		early_blk = get_nodes_block(n);
@@ -459,27 +453,25 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 				place_floats_late(succ, worklist);
 		}
 
-		if (! is_Block_dead(early_blk)) {
-			/* do only move things that where not dead */
-			ir_op *op = get_irn_op(n);
+		/* do only move things that where not dead */
+		op = get_irn_op(n);
 
-			/* We have to determine the final block of this node... except for
-			   constants and Projs */
-			if ((get_irn_pinned(n) == op_pin_state_floats) &&
-			    (op != op_Const)    &&
-			    (op != op_SymConst) &&
-			    (op != op_Proj))
-			{
-				/* deepest common ancestor in the dominator tree of all nodes'
-				   blocks depending on us; our final placement has to dominate
-				   DCA. */
-				ir_node *dca = get_deepest_common_dom_ancestor(n, NULL);
-				if (dca != NULL) {
-					set_nodes_block(n, dca);
-					move_out_of_loops(n, early_blk);
-					if (get_irn_mode(n) == mode_T) {
-						set_projs_block(n, get_nodes_block(n));
-					}
+		/* We have to determine the final block of this node... except for
+		   constants and Projs */
+		if ((get_irn_pinned(n) == op_pin_state_floats) &&
+			(op != op_Const)    &&
+			(op != op_SymConst) &&
+			(op != op_Proj))
+		{
+			/* deepest common ancestor in the dominator tree of all nodes'
+			   blocks depending on us; our final placement has to dominate
+			   DCA. */
+			ir_node *dca = get_deepest_common_dom_ancestor(n, NULL);
+			if (dca != NULL) {
+				set_nodes_block(n, dca);
+				move_out_of_loops(n, early_blk);
+				if (get_irn_mode(n) == mode_T) {
+					set_projs_block(n, get_nodes_block(n));
 				}
 			}
 		}

@@ -83,8 +83,8 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	ir_node **in;
 	ir_node *dummy;
 
-	/* This is needed because we create bads sometimes */
-	if (is_Block_dead(block)) {
+	/* In case of a bad input to a block we need to return the bad value */
+	if (is_Bad(block)) {
 		ir_graph *irg = get_irn_irg(block);
 		return new_r_Bad(irg);
 	}
@@ -762,10 +762,6 @@ void opt_jumpthreading(ir_graph* irg)
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-
-		/* Dead code might be created. Optimize it away as it is dangerous
-		 * to call optimize_df() an dead code. */
-		optimize_cf(irg);
 	}
 }
 

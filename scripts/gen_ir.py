@@ -59,7 +59,7 @@ def format_irgassign(node):
 	if hasattr(node, "knownBlock"):
 		return ""
 	else:
-		return "ir_graph *irg = get_Block_irg(block);\n"
+		return "ir_graph *irg = get_irn_irg(block);\n"
 
 def format_curblock(node):
 	if hasattr(node, "knownBlock"):

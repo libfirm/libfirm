@@ -298,13 +298,6 @@ FIRM_API void set_Block_matured(ir_node *block, int matured);
 FIRM_API ir_visited_t get_Block_block_visited(const ir_node *block);
 FIRM_API void set_Block_block_visited(ir_node *block, ir_visited_t visit);
 
-/**
- * Marks a block as dead but do not replace it with a Bad node.
- * Dead blocks are removed in the con
- */
-FIRM_API ir_node *set_Block_dead(ir_node *block);
-FIRM_API int is_Block_dead(const ir_node *block);
-
 /* For this current_ir_graph must be set. */
 FIRM_API void mark_Block_block_visited(ir_node *node);
 FIRM_API int Block_block_visited(const ir_node *node);

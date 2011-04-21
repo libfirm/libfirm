@@ -780,7 +780,8 @@ static void init_block_phis(ir_node *irn, void *ctx)
 	(void) ctx;
 
 	if (is_Phi(irn)) {
-		add_Block_phi(get_nodes_block(irn), irn);
+		ir_node *block = get_nodes_block(irn);
+		add_Block_phi(block, irn);
 	}
 }  /* init_block_phis */
 
@@ -3001,18 +3002,21 @@ static void apply_cf(ir_node *block, void *ctx)
 			ir_node *pred = get_Block_cfgpred(block, i);
 
 			if (! is_Bad(pred)) {
-				node_t *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
+				ir_node *pred_block = get_nodes_block(skip_Proj(pred));
+				if (!is_Bad(pred_block)) {
+					node_t *pred_bl = get_irn_node(pred_block);
 
-				if (pred_bl->flagged == 0) {
-					pred_bl->flagged = 3;
+					if (pred_bl->flagged == 0) {
+						pred_bl->flagged = 3;
 
-					if (pred_bl->type.tv == tarval_reachable) {
-						/*
-						 * We will remove an edge from block to its pred.
-						 * This might leave the pred block as an endless loop
-						 */
-						if (! is_backedge(block, i))
-							keep_alive(pred_bl->node);
+						if (pred_bl->type.tv == tarval_reachable) {
+							/*
+							 * We will remove an edge from block to its pred.
+							 * This might leave the pred block as an endless loop
+							 */
+							if (! is_backedge(block, i))
+								keep_alive(pred_bl->node);
+						}
 					}
 				}
 			}
@@ -3022,7 +3026,9 @@ static void apply_cf(ir_node *block, void *ctx)
 		   finds out the opposite :-) */
 		if (block != get_irg_end_block(current_ir_graph)) {
 			/* mark dead blocks */
-			set_Block_dead(block);
+			//set_Block_dead(block);
+			//ir_graph *irg = get_irn_irg(block);
+			//exchange(block, get_irg_bad(irg));
 			DB((dbg, LEVEL_1, "Removing dead %+F\n", block));
 		} else {
 			/* the endblock is unreachable */
@@ -3057,18 +3063,21 @@ static void apply_cf(ir_node *block, void *ctx)
 		} else {
 			DB((dbg, LEVEL_1, "Removing dead input %d from %+F (%+F)\n", i, block, pred));
 			if (! is_Bad(pred)) {
-				node_t *pred_bl = get_irn_node(get_nodes_block(skip_Proj(pred)));
+				ir_node *pred_block = get_nodes_block(skip_Proj(pred));
+				if (!is_Bad(pred_block)) {
+					node_t *pred_bl = get_irn_node(pred_block);
 
-				if (pred_bl->flagged == 0) {
-					pred_bl->flagged = 3;
+					if (!is_Bad(pred_bl->node) && pred_bl->flagged == 0) {
+						pred_bl->flagged = 3;
 
-					if (pred_bl->type.tv == tarval_reachable) {
-						/*
-						 * We will remove an edge from block to its pred.
-						 * This might leave the pred block as an endless loop
-						 */
-						if (! is_backedge(block, i))
-							keep_alive(pred_bl->node);
+						if (pred_bl->type.tv == tarval_reachable) {
+							/*
+							 * We will remove an edge from block to its pred.
+							 * This might leave the pred block as an endless loop
+							 */
+							if (! is_backedge(block, i))
+								keep_alive(pred_bl->node);
+						}
 					}
 				}
 			}
@@ -3397,13 +3406,22 @@ static void apply_end(ir_node *end, environment_t *env)
 
 	/* fix the keep alive */
 	for (i = j = 0; i < n; i++) {
-		ir_node *ka   = get_End_keepalive(end, i);
-		node_t  *node = get_irn_node(ka);
+		ir_node *ka = get_End_keepalive(end, i);
+		ir_node *block;
+		node_t  *node;
 
-		if (! is_Block(ka))
-			node = get_irn_node(get_nodes_block(ka));
+		if (is_Bad(ka))
+			continue;
+		if (!is_Block(ka)) {
+			block = get_nodes_block(ka);
+			if (is_Bad(block))
+				continue;
+		} else {
+			block = ka;
+		}
 
-		if (node->type.tv != tarval_unreachable && !is_Bad(ka))
+		node = get_irn_node(block);
+		if (node->type.tv != tarval_unreachable)
 			in[j++] = ka;
 	}
 	if (j != n) {

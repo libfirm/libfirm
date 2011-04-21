@@ -112,7 +112,8 @@ static void kill_dead_blocks(ir_node *block, void *env)
 		 * Note that the new dominance code correctly handles
 		 * the End block, i.e. it is always reachable from Start
 		 */
-		set_Block_dead(block);
+		ir_graph *irg = get_irn_irg(block);
+		exchange(block, get_irg_bad(irg));
 	}
 }
 
@@ -121,9 +122,6 @@ void local_optimize_graph(ir_graph *irg)
 {
 	ir_graph *rem = current_ir_graph;
 	current_ir_graph = irg;
-
-	if (get_irg_dom_state(irg) == dom_consistent)
-		irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
 	do_local_optimize(get_irg_end(irg));
 
@@ -186,6 +184,7 @@ int optimize_graph_df(ir_graph *irg)
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
+	set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
 
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
@@ -225,6 +224,8 @@ int optimize_graph_df(ir_graph *irg)
 	   Doing this AFTER edges where deactivated saves cycles */
 	end  = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
+
+	clear_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
 
 	current_ir_graph = rem;
 	return changed;

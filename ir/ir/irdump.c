@@ -700,8 +700,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		fprintf(F, "%s", get_irn_opname(n));
 		break;
 	case iro_Block:
-		if (is_Block_dead(n))
-			fputs("Dead ", F);
 		if (n == get_irg_start_block(get_irn_irg(n)))
 			fputs("Start ", F);
 		if (n == get_irg_end_block(get_irn_irg(n)))
@@ -1098,10 +1096,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 		print_vcg_color(F, ird_color_error);
 		break;
 	case iro_Block:
-		if (is_Block_dead(n))
-			print_vcg_color(F, ird_color_dead_block_background);
-		else
-			print_vcg_color(F, ird_color_block_background);
+		print_vcg_color(F, ird_color_block_background);
 		break;
 	case iro_Phi:
 		print_vcg_color(F, ird_color_phi);
@@ -1559,8 +1554,6 @@ static void dump_whole_block(FILE *F, ir_node *block)
 	/* colorize blocks */
 	if (! get_Block_matured(block))
 		color = ird_color_block_background;
-	if (is_Block_dead(block))
-		color = ird_color_dead_block_background;
 
 	fprintf(F, "\" status:clustered ");
 	print_vcg_color(F, color);

@@ -420,29 +420,6 @@ static inline int _Block_block_visited(const ir_node *node)
 	return node->attr.block.block_visited >= get_irg_block_visited(irg);
 }
 
-static inline ir_node *_set_Block_dead(ir_node *block)
-{
-	assert(_get_irn_op(block) == op_Block);
-	block->attr.block.dom.dom_depth = -1;
-	block->attr.block.is_dead = 1;
-	return block;
-}
-
-static inline int _is_Block_dead(const ir_node *block)
-{
-	ir_op *op = _get_irn_op(block);
-
-	/* we can have Bad, Anchor and Block nodes as block input */
-	if (op == op_Bad) {
-		return 1;
-	} else if (op == op_Anchor) {
-		return 0;
-	} else {
-		assert(op == op_Block);
-		return block->attr.block.is_dead;
-	}
-}
-
 static inline ir_graph *_get_Block_irg(const ir_node *block)
 {
 	assert(is_Block(block));
@@ -575,6 +552,7 @@ static inline ir_node *_get_Phi_next(const ir_node *phi)
 /** Add a Phi node to the list of Block Phi's. */
 static inline void _add_Block_phi(ir_node *block, ir_node *phi)
 {
+	assert(_is_Block(block));
 	_set_Phi_next(phi, _get_Block_phis(block));
 	_set_Block_phis(block, phi);
 }
@@ -640,8 +618,6 @@ void init_irnode(void);
 #define set_Block_block_visited(node, visit)  _set_Block_block_visited(node, visit)
 #define mark_Block_block_visited(node)        _mark_Block_block_visited(node)
 #define Block_block_visited(node)             _Block_block_visited(node)
-#define set_Block_dead(block)                 _set_Block_dead(block)
-#define is_Block_dead(block)                  _is_Block_dead(block)
 #define get_Block_irg(block)                  _get_Block_irg(block)
 #define get_Const_tarval(node)                _get_Const_tarval(node)
 #define is_Const_null(node)                   _is_Const_null(node)

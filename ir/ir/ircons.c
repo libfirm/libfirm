@@ -501,7 +501,6 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res = new_ir_node(dbgi, irg, NULL, op_Block, mode_BB, -1, NULL);
 
 	set_Block_matured(res, 0);
-	res->attr.block.is_dead     = 0;
 	res->attr.block.irg.irg     = irg;
 	res->attr.block.backedge    = NULL;
 	res->attr.block.in_cg       = NULL;

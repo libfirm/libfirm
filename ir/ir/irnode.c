@@ -586,16 +586,6 @@ int (Block_block_visited)(const ir_node *node)
 	return _Block_block_visited(node);
 }
 
-ir_node *(set_Block_dead)(ir_node *block)
-{
-	return _set_Block_dead(block);
-}
-
-int (is_Block_dead)(const ir_node *block)
-{
-	return _is_Block_dead(block);
-}
-
 ir_extblk *get_Block_extbb(const ir_node *block)
 {
 	ir_extblk *res;

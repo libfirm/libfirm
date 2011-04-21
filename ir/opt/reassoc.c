@@ -597,14 +597,6 @@ static void wq_walker(ir_node *n, void *env)
 
 	set_irn_link(n, NULL);
 	if (!is_Block(n)) {
-		ir_node *blk = get_nodes_block(n);
-
-		if (is_Block_dead(blk) || get_Block_dom_depth(blk) < 0) {
-			/* We are in a dead block, do not optimize or we may fall into an endless
-			   loop. We check this here instead of requiring that all dead blocks are removed
-			   which or cf_opt do not guarantee yet. */
-			return;
-		}
 		waitq_put(wenv->wq, n);
 		set_irn_link(n, wenv->wq);
 	}
@@ -623,13 +615,6 @@ static void do_reassociation(walker_t *wenv)
 		set_irn_link(n, NULL);
 
 		blk = get_nodes_block(n);
-		if (is_Block_dead(blk) || get_Block_dom_depth(blk) < 0) {
-			/* We are in a dead block, do not optimize or we may fall into an endless
-			   loop. We check this here instead of requiring that all dead blocks are removed
-			   which or cf_opt do not guarantee yet. */
-			continue;
-		}
-
 
 		hook_reassociate(1);
 

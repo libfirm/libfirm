@@ -672,10 +672,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
  *
  * If all predecessors of a block are bad or lies in a dead
  * block, the current block is dead as well.
- *
- * Note, that blocks are NEVER turned into Bad's, instead
- * the dead_block flag is set. So, never test for is_Bad(block),
- * always use is_dead_Block(block).
  */
 static ir_node *equivalent_node_Block(ir_node *n)
 {
@@ -684,7 +680,7 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	ir_graph *irg;
 
 	/* don't optimize dead or labeled blocks */
-	if (is_Block_dead(n) || has_Block_entity(n))
+	if (has_Block_entity(n))
 		return n;
 
 	n_preds = get_Block_n_cfgpreds(n);
@@ -696,31 +692,14 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	irg = get_irn_irg(n);
 
 	/* Straightening: a single entry Block following a single exit Block
-	   can be merged, if it is not the Start block. */
-	/* !!! Beware, all Phi-nodes of n must have been optimized away.
-	   This should be true, as the block is matured before optimize is called.
-	   But what about Phi-cycles with the Phi0/Id that could not be resolved?
-	   Remaining Phi nodes are just Ids. */
+	 * can be merged. */
 	if (n_preds == 1) {
-		ir_node *pred = skip_Proj(get_Block_cfgpred(n, 0));
+		ir_node *pred = get_Block_cfgpred(n, 0);
 
 		if (is_Jmp(pred)) {
-			ir_node *predblock = get_nodes_block(pred);
-			if (predblock == oldn) {
-				/* Jmp jumps into the block it is in -- deal self cycle. */
-				n = set_Block_dead(n);
-				DBG_OPT_DEAD_BLOCK(oldn, n);
-			} else {
-				n = predblock;
-				DBG_OPT_STG(oldn, n);
-			}
-		} else if (is_Cond(pred)) {
-			ir_node *predblock = get_nodes_block(pred);
-			if (predblock == oldn) {
-				/* Jmp jumps into the block it is in -- deal self cycle. */
-				n = set_Block_dead(n);
-				DBG_OPT_DEAD_BLOCK(oldn, n);
-			}
+			ir_node *pred_block = get_nodes_block(pred);
+			DBG_OPT_STG(n, pred_block);
+			return pred_block;
 		}
 	} else if (n_preds == 2) {
 		/* Test whether Cond jumps twice to this block
@@ -735,63 +714,32 @@ static ir_node *equivalent_node_Block(ir_node *n)
 
 		    if (cond == get_Proj_pred(b) && is_Cond(cond) &&
 		        get_irn_mode(get_Cond_selector(cond)) == mode_b) {
-				/* Also a single entry Block following a single exit Block.  Phis have
-				   twice the same operand and will be optimized away. */
+				/* Also a single entry Block following a single exit Block.
+				 * Phis have twice the same operand and will be optimized away.
+				 */
 				n = get_nodes_block(cond);
 				DBG_OPT_IFSIM1(oldn, a, b, n);
 			}
 		}
-	} else if (get_opt_unreachable_code() &&
-	           (n != get_irg_start_block(irg)) &&
-	           (n != get_irg_end_block(irg))) {
+	} else if (is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK)) {
 		int i;
+		int n_cfgpreds = get_Block_n_cfgpreds(n);
 
-		/* If all inputs are dead, this block is dead too, except if it is
-		   the start or end block.  This is one step of unreachable code
-		   elimination */
-		for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
+		for (i = 0; i < n_cfgpreds; ++i) {
 			ir_node *pred = get_Block_cfgpred(n, i);
-			ir_node *pred_blk;
-
-			if (is_Bad(pred)) continue;
-			pred_blk = get_nodes_block(skip_Proj(pred));
-
-			if (is_Block_dead(pred_blk)) continue;
-
-			if (pred_blk != n) {
-				/* really found a living input */
+			if (!is_Bad(pred))
 				break;
-			}
 		}
-		if (i < 0) {
-			n = set_Block_dead(n);
-			DBG_OPT_DEAD_BLOCK(oldn, n);
+		/* only bad unreachable inputs? It's unreachable code (unless it is the
+		 * start or end block) */
+		if (i >= n_cfgpreds && n != get_irg_start_block(irg)
+		    && n != get_irg_end_block(irg)) {
+		    return get_irg_bad(irg);
 		}
 	}
 
 	return n;
 }  /* equivalent_node_Block */
-
-/**
- * Returns a equivalent node for a Jmp, a Bad :-)
- * Of course this only happens if the Block of the Jmp is dead.
- */
-static ir_node *equivalent_node_Jmp(ir_node *n)
-{
-	ir_node *oldn = n;
-
-	/* unreachable code elimination */
-	if (is_Block_dead(get_nodes_block(n))) {
-		ir_graph *irg = get_irn_irg(n);
-		n = get_irg_bad(irg);
-		DBG_OPT_DEAD_BLOCK(oldn, n);
-	}
-	return n;
-}  /* equivalent_node_Jmp */
-
-/** Raise is handled in the same way as Jmp. */
-#define equivalent_node_Raise   equivalent_node_Jmp
-
 
 /* We do not evaluate Cond here as we replace it by a new node, a Jmp.
    See transform_node_Proj_Cond(). */
@@ -1309,31 +1257,18 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	n_preds = get_Phi_n_preds(n);
 
 	block = get_nodes_block(n);
-	/* Control dead */
-	if (is_Block_dead(block)) {
-		ir_graph *irg = get_irn_irg(n);
-		return get_irg_bad(irg);
-	}
 
-	if (n_preds == 0) return n;           /* Phi of dead Region without predecessors. */
+	/* Phi of dead Region without predecessors. */
+	if (n_preds == 0)
+		return n;
 
 	/* Find first non-self-referencing input */
 	for (i = 0; i < n_preds; ++i) {
 		first_val = get_Phi_pred(n, i);
-		if (   (first_val != n)                            /* not self pointer */
-#if 0
-		    /* BEWARE: when the if is changed to 1, Phis will ignore their Bad
-		     * predecessors. Then, Phi nodes in unreachable code might be removed,
-		     * causing nodes pointing to themselev (Adds for instance).
-		     * This is really bad and causes endless recursion on several
-		     * code pathes, so we do NOT optimize such code.
-		     * This is not that bad as it sounds, optimize_cf() removes bad control flow
-		     * (and bad Phi predecessors), so live code is optimized later.
-		     */
-			&& (! is_Bad(get_Block_cfgpred(block, i)))
-#endif
-		   ) {        /* value not dead */
-			break;          /* then found first value. */
+		/* not self pointer */
+		if (first_val != n) {
+			/* then found first value. */
+			break;
 		}
 	}
 
@@ -1347,13 +1282,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	are non-self-referencing */
 	while (++i < n_preds) {
 		ir_node *scnd_val = get_Phi_pred(n, i);
-		if (   (scnd_val != n)
-		    && (scnd_val != first_val)
-#if 0
-		    /* see above */
-		    && (! is_Bad(get_Block_cfgpred(block, i)))
-#endif
-			) {
+		if (scnd_val != n && scnd_val != first_val) {
 			break;
 		}
 	}
@@ -1598,14 +1527,6 @@ static ir_node *equivalent_node_Proj_Store(ir_node *proj)
 static ir_node *equivalent_node_Proj(ir_node *proj)
 {
 	ir_node *n = get_Proj_pred(proj);
-
-	if (get_irn_mode(proj) == mode_X) {
-		if (is_Block_dead(get_nodes_block(n))) {
-			/* Remove dead control flow -- early gigo(). */
-			ir_graph *irg = get_irn_irg(proj);
-			return get_irg_bad(irg);
-		}
-	}
 	if (n->op->ops.equivalent_node_Proj)
 		return n->op->ops.equivalent_node_Proj(proj);
 	return proj;
@@ -1785,8 +1706,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 
 	switch (code) {
 	CASE(Block);
-	CASE(Jmp);
-	CASE(Raise);
 	CASE(Eor);
 	CASE(Add);
 	CASE(Shl);
@@ -4566,14 +4485,24 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	return proj;
 }  /* transform_node_Proj */
 
-/**
- * Move Confirms down through Phi nodes.
- */
 static ir_node *transform_node_Phi(ir_node *phi)
 {
-	int i, n;
-	ir_mode *mode = get_irn_mode(phi);
+	int       n     = get_irn_arity(phi);
+	ir_mode  *mode  = get_irn_mode(phi);
+	ir_node  *block = get_nodes_block(phi);
+	ir_graph *irg   = get_irn_irg(phi);
+	ir_node  *bad   = get_irg_bad(irg);
+	int       i;
 
+	/* Set phi-operands for bad-block inputs to bad */
+	for (i = 0; i < n; ++i) {
+		ir_node *pred = get_Block_cfgpred(block, i);
+		if (!is_Bad(pred))
+			continue;
+		set_irn_n(phi, i, bad);
+	}
+
+	/* Move Confirms down through Phi nodes. */
 	if (mode_is_reference(mode)) {
 		n = get_irn_arity(phi);
 
@@ -5385,14 +5314,7 @@ static ir_node *transform_node_End(ir_node *n)
 
 	for (i = j = 0; i < n_keepalives; ++i) {
 		ir_node *ka = get_End_keepalive(n, i);
-		if (is_Block(ka)) {
-			if (! is_Block_dead(ka)) {
-				in[j++] = ka;
-			}
-			continue;
-		} else if (is_irn_pinned_in_irg(ka) && is_Block_dead(get_nodes_block(ka))) {
-			continue;
-		} else if (is_Bad(ka)) {
+		if (is_Bad(ka)) {
 			/* no need to keep Bad */
 			continue;
 		}
@@ -5714,7 +5636,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *jmp   = new_r_Jmp(block);
 			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = new_r_Bad(irg);
+			ir_node  *bad   = get_irg_bad(irg);
 			ir_mode  *mode  = get_Load_mode(n);
 			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
 			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
@@ -5735,7 +5657,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *jmp   = new_r_Jmp(block);
 			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = new_r_Bad(irg);
+			ir_node  *bad   = get_irg_bad(irg);
 			ir_node  *res   = value;
 			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
 			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
@@ -6350,91 +6272,37 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
  */
 static ir_node *gigo(ir_node *node)
 {
-	int i, irn_arity;
 	ir_op *op = get_irn_op(node);
 
-	/* remove garbage blocks by looking at control flow that leaves the block
-	   and replacing the control flow by Bad. */
-	if (get_irn_mode(node) == mode_X) {
-		ir_node  *block = get_nodes_block(skip_Proj(node));
-		ir_graph *irg   = get_irn_irg(block);
-
-		/* Don't optimize nodes in immature blocks. */
-		if (!get_Block_matured(block))
-			return node;
-		/* Don't optimize End, may have Bads. */
-		if (op == op_End) return node;
-
-		if (is_Block(block)) {
-			if (is_Block_dead(block)) {
-				/* control flow from dead block is dead */
-				return get_irg_bad(irg);
-			}
-
-			for (i = get_irn_arity(block) - 1; i >= 0; --i) {
-				if (!is_Bad(get_irn_n(block, i)))
-					break;
-			}
-			if (i < 0) {
-				ir_graph *irg = get_irn_irg(block);
-				/* the start block is never dead */
-				if (block != get_irg_start_block(irg)
-					&& block != get_irg_end_block(irg)) {
-					/*
-					 * Do NOT kill control flow without setting
-					 * the block to dead of bad things can happen:
-					 * We get a Block that is not reachable be irg_block_walk()
-					 * but can be found by irg_walk()!
-					 */
-					set_Block_dead(block);
-					return get_irg_bad(irg);
-				}
-			}
-		}
+	/* Nodes in bad blocks are bad.
+	 * Beware: we can only read the block of a non-floating node. */
+	if (op != op_Block && is_irn_pinned_in_irg(node)
+	    && is_Bad(get_nodes_block(node))) {
+	    ir_graph *irg = get_irn_irg(node);
+		return get_irg_bad(irg);
 	}
 
 	/* Blocks, Phis and Tuples may have dead inputs, e.g., if one of the
 	   blocks predecessors is dead. */
-	if (op != op_Block && op != op_Phi && op != op_Tuple && op != op_Anchor) {
+	if (op != op_Block && op != op_Phi && op != op_Tuple && op != op_Anchor
+			&& op != op_Sync && op != op_End) {
 		ir_graph *irg = get_irn_irg(node);
-		irn_arity = get_irn_arity(node);
-
-		/*
-		 * Beware: we can only read the block of a non-floating node.
-		 */
-		if (is_irn_pinned_in_irg(node) &&
-			is_Block_dead(get_nodes_block(skip_Proj(node))))
-			return get_irg_bad(irg);
+		int irn_arity = get_irn_arity(node);
+		int i;
 
 		for (i = 0; i < irn_arity; i++) {
 			ir_node *pred = get_irn_n(node, i);
 
-			if (is_Bad(pred))
-				return get_irg_bad(irg);
-#if 0
-			/* Propagating Unknowns here seems to be a bad idea, because
-			   sometimes we need a node as a input and did not want that
-			   it kills its user.
-			   However, it might be useful to move this into a later phase
-			   (if you think that optimizing such code is useful). */
-			if (is_Unknown(pred) && mode_is_data(get_irn_mode(node)))
-				return new_r_Unknown(irg, get_irn_mode(node));
-#endif
+			if (is_Bad(pred)) {
+				/* be careful not to kill cfopts too early or we might violate
+				 * the 1 cfop per block property */
+				if (!is_cfop(node)
+						|| is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+					return get_irg_bad(irg);
+			}
 		}
 	}
-#if 0
-	/* With this code we violate the agreement that local_optimize
-	   only leaves Bads in Block, Phi and Tuple nodes. */
-	/* If Block has only Bads as predecessors it's garbage. */
-	/* If Phi has only Bads as predecessors it's garbage. */
-	if ((op == op_Block && get_Block_matured(node)) || op == op_Phi)  {
-		irn_arity = get_irn_arity(node);
-		for (i = 0; i < irn_arity; i++) {
-			if (!is_Bad(get_irn_n(node, i))) break;
-		}
-		if (i == irn_arity) node = get_irg_bad(irg);
-	}
-#endif
+
 	return node;
 }  /* gigo */
 

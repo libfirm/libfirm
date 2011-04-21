@@ -1711,20 +1711,23 @@ static int check_dominance_for_node(ir_node *use)
 		ir_node *bl = get_nodes_block(use);
 
 		for (i = get_irn_arity(use) - 1; i >= 0; --i) {
-			ir_node *def    = get_irn_n(use, i);
-			ir_node *def_bl = get_nodes_block(def);
-			ir_node *use_bl = bl;
+			ir_node  *def    = get_irn_n(use, i);
+			ir_node  *def_bl = get_nodes_block(def);
+			ir_node  *use_bl = bl;
 			ir_graph *irg;
 
-			/* ignore dead definition blocks, will be removed */
-			if (is_Block_dead(def_bl) || get_Block_dom_depth(def_bl) == -1)
+			/* we have no dominance relation for unreachable blocks, so we can't
+			 * check the dominance property there */
+			if (!is_Block(def_bl) || get_Block_dom_depth(def_bl) == -1)
 				continue;
 
-			if (is_Phi(use))
+			if (is_Phi(use)) {
+				if (is_Bad(def))
+					continue;
 				use_bl = get_Block_cfgpred_block(bl, i);
+			}
 
-			/* ignore dead use blocks, will be removed */
-			if (is_Block_dead(use_bl) || get_Block_dom_depth(use_bl) == -1)
+			if (!is_Block(use_bl) || get_Block_dom_depth(use_bl) == -1)
 				continue;
 
 			irg = get_irn_irg(use);
@@ -1744,7 +1747,6 @@ static int check_dominance_for_node(ir_node *use)
 /* Tests the modes of n and its predecessors. */
 int irn_verify_irg(ir_node *n, ir_graph *irg)
 {
-	int i;
 	ir_op *op;
 
 	if (!get_node_verification_mode())
@@ -1775,15 +1777,6 @@ int irn_verify_irg(ir_node *n, ir_graph *irg)
 
 	op = get_irn_op(n);
 
-	/* We don't want to test nodes whose predecessors are Bad,
-	   as we would have to special case that for each operation. */
-	if (op != op_Phi && op != op_Block) {
-		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-			if (is_Bad(get_irn_n(n, i)))
-				return 1;
-		}
-	}
-
 	if (_get_op_pinned(op) >= op_pin_state_exc_pinned) {
 		op_pin_state state = get_irn_pinned(n);
 		ASSERT_AND_RET_DBG(
@@ -1791,6 +1784,21 @@ int irn_verify_irg(ir_node *n, ir_graph *irg)
 			state == op_pin_state_pinned,
 			"invalid pin state", 0,
 			ir_printf("node %+F", n));
+	} else if (!is_Block(n) && is_irn_pinned_in_irg(n)
+	           && !is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK)) {
+		ASSERT_AND_RET_DBG(is_Block(get_nodes_block(n)) || is_Anchor(n),
+				"block input is not a block", 0,
+				ir_printf("node %+F", n));
+	}
+
+	/* We don't want to test nodes whose predecessors are Bad,
+	   as we would have to special case that for each operation. */
+	if (op != op_Phi && op != op_Block) {
+		int i;
+		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
+			if (is_Bad(get_irn_n(n, i)))
+				return 1;
+		}
 	}
 
 	if (op->ops.verify_node)

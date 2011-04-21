@@ -148,7 +148,6 @@ typedef struct block_attr {
 	ir_visited_t block_visited; /**< For the walker that walks over all blocks. */
 	/* Attributes private to construction: */
 	unsigned is_matured:1;      /**< If set, all in-nodes of the block are fixed. */
-	unsigned is_dead:1;         /**< If set, the block is dead (and could be replace by a Bad. */
 	unsigned marked:1;          /**< Can be set/unset to temporary mark a block. */
 	ir_node **graph_arr;        /**< An array to store all parameters. */
 	/* Attributes holding analyses information */

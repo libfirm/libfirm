@@ -1509,10 +1509,6 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 
 	block = get_nodes_block(store);
 
-	/* abort on dead blocks */
-	if (is_Block_dead(block))
-		return 0;
-
 	/* check if the block is post dominated by Phi-block
 	   and has no exception exit */
 	bl_info = (block_info_t*)get_irn_link(block);
@@ -1548,10 +1544,7 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		if (exc != info->exc_block)
 			return 0;
 
-		/* abort on dead blocks */
 		block = get_nodes_block(pred);
-		if (is_Block_dead(block))
-			return 0;
 
 		/* check if the block is post dominated by Phi-block
 		   and has no exception exit. Note that block must be different from

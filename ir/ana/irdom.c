@@ -471,9 +471,6 @@ static void count_and_init_blocks_pdom(ir_node *bl, void *env)
 {
 	int *n_blocks = (int *) env;
 
-	if (is_Block_dead(bl))
-		return;
-
 	(*n_blocks) ++;
 
 	memset(get_pdom_info(bl), 0, sizeof(ir_dom_info));
@@ -517,9 +514,6 @@ static void init_tmp_dom_info(ir_node *bl, tmp_dom_info *parent,
 	tmp_dom_info *tdi;
 	int i;
 
-	if (is_Block_dead(bl))
-		return;
-
 	assert(is_Block(bl));
 	if (Block_block_visited(bl))
 	  return;
@@ -558,9 +552,6 @@ static void init_tmp_pdom_info(ir_node *bl, tmp_dom_info *parent,
 {
 	tmp_dom_info *tdi;
 	int i;
-
-	if (is_Block_dead(bl))
-		return;
 
 	assert(is_Block(bl));
 	if (get_irg_block_visited(current_ir_graph) == get_Block_block_visited(bl))
@@ -640,8 +631,6 @@ inline static void dom_link(tmp_dom_info *v, tmp_dom_info *w)
 static void count_and_init_blocks_dom(ir_node *bl, void *env)
 {
 	int *n_blocks = (int *) env;
-	if (is_Block_dead(bl))
-		return;
 
 	(*n_blocks) ++;
 
@@ -715,7 +704,7 @@ void compute_doms(ir_graph *irg)
 				ir_node *pred = get_irn_n(end, j);
 				tmp_dom_info *u;
 
-				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1 || is_Block_dead(pred))
+				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
 					continue;   /* control-dead */
 
 				u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
