@@ -739,6 +739,10 @@ void opt_jumpthreading(ir_graph* irg)
 
 	remove_critical_cf_edges(irg);
 
+	/* ugly: jump threading might get confused by garbage nodes
+	 * of mode_X in copy_and_fix_node(), so remove all garbage edges. */
+	edges_deactivate(irg);
+
 	edges_assure(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
