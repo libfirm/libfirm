@@ -87,7 +87,7 @@ typedef struct {
 	size_t  n_dimensions;   /**< Number of array dimensions.  */
 	ir_node **lower_bound;  /**< Lower bounds of dimensions.  Usually all 0. */
 	ir_node **upper_bound;  /**< Upper bounds or dimensions. */
-	int     *order;         /**< Ordering of dimensions. */
+	size_t  *order;         /**< Ordering of dimensions. */
 	ir_type *element_type;  /**< The type of the array elements. */
 	ir_entity *element_ent; /**< entity for the array elements, to be used for
 	                             element selection with a Sel node. */

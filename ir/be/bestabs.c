@@ -336,18 +336,18 @@ static void gen_pointer_type(wenv_t *env, ir_type *tp)
 static void print_array_type(stabs_handle *h, ir_type *tp, int local)
 {
 	ir_type      *etp     = get_array_element_type(tp);
-	int          i, n     = get_array_n_dimensions(tp);
+	size_t       i, n     = get_array_n_dimensions(tp);
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
 	int          *perm;
 
 	be_emit_irprintf("%u=a", type_num);
-	NEW_ARR_A(int, perm, n);
+	NEW_ARR_A(size_t, perm, n);
 	for (i = 0; i < n; ++i) {
 		perm[i] = get_array_order(tp, i);
 	}
 
 	for (i = 0; i < n; ++i) {
-		int dim = perm[i];
+		size_t dim = perm[i];
 
 		if (is_Const(get_array_lower_bound(tp, dim)) && is_Const(get_array_upper_bound(tp, dim))) {
 			long min = get_array_lower_bound_int(tp, dim);

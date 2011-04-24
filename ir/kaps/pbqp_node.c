@@ -53,8 +53,8 @@ pbqp_node_t *alloc_node(pbqp_t *pbqp, unsigned node_index, vector_t *costs)
 int is_connected(pbqp_node_t *node, pbqp_edge_t *edge)
 {
 	pbqp_edge_t **edges;
-	unsigned      edge_index;
-	unsigned      edge_len;
+	size_t        edge_index;
+	size_t        edge_len;
 
 	assert(node);
 	if (edge->src != node && edge->tgt != node) return 0;
@@ -75,8 +75,8 @@ int is_connected(pbqp_node_t *node, pbqp_edge_t *edge)
 void disconnect_edge(pbqp_node_t *node, pbqp_edge_t *edge)
 {
 	pbqp_edge_t **edges;
-	unsigned      edge_index;
-	unsigned      edge_len;
+	size_t        edge_index;
+	size_t        edge_len;
 
 	edges = node->edges;
 	edge_len = ARR_LEN(edges);

@@ -1513,11 +1513,11 @@ void set_union_size(ir_type *tp, unsigned size)
 
 
 
-ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
+ir_type *new_d_type_array(size_t n_dimensions, ir_type *element_type,
                           type_dbg_info *db)
 {
 	ir_type *res;
-	int i;
+	size_t i;
 	ir_node *unk;
 	ir_graph *irg = get_const_code_irg();
 
@@ -1527,7 +1527,7 @@ ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
 	res->attr.aa.n_dimensions = n_dimensions;
 	res->attr.aa.lower_bound  = XMALLOCNZ(ir_node*, n_dimensions);
 	res->attr.aa.upper_bound  = XMALLOCNZ(ir_node*, n_dimensions);
-	res->attr.aa.order        = XMALLOCNZ(int,      n_dimensions);
+	res->attr.aa.order        = XMALLOCNZ(size_t,   n_dimensions);
 
 	unk = new_r_Unknown(irg, mode_Iu);
 	for (i = 0; i < n_dimensions; i++) {
@@ -1545,7 +1545,7 @@ ir_type *new_d_type_array(int n_dimensions, ir_type *element_type,
 	return res;
 }
 
-ir_type *new_type_array(int n_dimensions, ir_type *element_type)
+ir_type *new_type_array(size_t n_dimensions, ir_type *element_type)
 {
 	return new_d_type_array(n_dimensions, element_type, NULL);
 }
@@ -1668,19 +1668,19 @@ long get_array_upper_bound_int(const ir_type *array, size_t dimension)
 	return get_tarval_long(get_Const_tarval(node));
 }
 
-void set_array_order(ir_type *array, size_t dimension, int order)
+void set_array_order(ir_type *array, size_t dimension, size_t order)
 {
 	assert(array && (array->type_op == type_array));
 	array->attr.aa.order[dimension] = order;
 }
 
-int get_array_order(const ir_type *array, size_t dimension)
+size_t get_array_order(const ir_type *array, size_t dimension)
 {
 	assert(array && (array->type_op == type_array));
 	return array->attr.aa.order[dimension];
 }
 
-size_t find_array_dimension(const ir_type *array, int order)
+size_t find_array_dimension(const ir_type *array, size_t order)
 {
 	size_t dim;
 

@@ -100,7 +100,7 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 		           is_Sel(ptr) &&
 		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
 			/* If all possible callees are const functions, we can remove the memory edge. */
-			int i, n_callees = get_Call_n_callees(call);
+			size_t i, n_callees = get_Call_n_callees(call);
 			if (n_callees == 0) {
 				/* This is kind of strange:  dying code or a Call that will raise an exception
 				   when executed as there is no implementation to call.  So better not
@@ -276,7 +276,7 @@ static void collect_nothrow_calls(ir_node *node, void *env)
 		           is_Sel(ptr) &&
 		           get_irg_callee_info_state(get_irn_irg(node)) == irg_callee_info_consistent) {
 			/* If all possible callees are nothrow functions, we can remove the exception edge. */
-			int i, n_callees = get_Call_n_callees(call);
+			size_t i, n_callees = get_Call_n_callees(call);
 			if (n_callees == 0) {
 				/* This is kind of strange:  dying code or a Call that will raise an exception
 				   when executed as there is no implementation to call.  So better not
@@ -722,11 +722,11 @@ static int is_stored(const ir_node *n)
 			ptr = get_Call_ptr(succ);
 			if (is_Global(ptr)) {
 				ir_entity *ent = get_Global_entity(ptr);
-				int       i;
+				size_t    i;
 
 				/* we know the called entity */
-				for (i = get_Call_n_params(succ) - 1; i >= 0; --i) {
-					if (get_Call_param(succ, i) == n) {
+				for (i = get_Call_n_params(succ); i > 0;) {
+					if (get_Call_param(succ, --i) == n) {
 						/* n is the i'th param of the call */
 						if (get_method_param_access(ent, i) & ptr_access_store) {
 							/* n is store in ent */
@@ -755,17 +755,18 @@ static int is_stored(const ir_node *n)
 static mtp_additional_properties check_stored_result(ir_graph *irg)
 {
 	ir_node  *end_blk = get_irg_end_block(irg);
-	int      i, j;
+	int      i;
 	mtp_additional_properties res = ~mtp_no_property;
 	int      old_edges = edges_assure_kind(irg, EDGE_KIND_NORMAL);
 
 	for (i = get_Block_n_cfgpreds(end_blk) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(end_blk, i);
+		size_t  j;
 
 		if (! is_Return(pred))
 			continue;
-		for (j = get_Return_n_ress(pred) - 1; j >= 0; --j) {
-			const ir_node *irn = get_Return_res(pred, j);
+		for (j = get_Return_n_ress(pred); j > 0;) {
+			const ir_node *irn = get_Return_res(pred, --j);
 
 			if (is_stored(irn)) {
 				/* bad, might create an alias */
@@ -792,7 +793,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 	ir_node                  *end_blk   = get_irg_end_block(irg);
 	ir_entity *ent;
 	ir_type   *mtp;
-	int       i, j;
+	int       i;
 
 	if (IS_IRG_READY(irg)) {
 		/* already checked */
@@ -816,9 +817,11 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 
 		if (is_Return(pred)) {
 			if (curr_prop & mtp_property_malloc) {
+				size_t j;
+
 				/* check, if malloc is called here */
-				for (j = get_Return_n_ress(pred) - 1; j >= 0; --j) {
-					ir_node *res = get_Return_res(pred, j);
+				for (j = get_Return_n_ress(pred); j > 0;) {
+					ir_node *res = get_Return_res(pred, --j);
 
 					/* skip Confirms and Casts */
 					res = skip_HighLevel_ops(res);
@@ -847,7 +850,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 						           is_Sel(ptr) &&
 						           get_irg_callee_info_state(irg) == irg_callee_info_consistent) {
 							/* check if all possible callees are malloc functions. */
-							int i, n_callees = get_Call_n_callees(res);
+							size_t i, n_callees = get_Call_n_callees(res);
 							if (n_callees == 0) {
 								/* This is kind of strange:  dying code or a Call that will raise an exception
 								   when executed as there is no implementation to call.  So better not
@@ -905,7 +908,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 				           is_Sel(ptr) &&
 				           get_irg_callee_info_state(irg) == irg_callee_info_consistent) {
 					/* check if all possible callees are nothrow functions. */
-					int i, n_callees = get_Call_n_callees(pred);
+					size_t i, n_callees = get_Call_n_callees(pred);
 					if (n_callees == 0) {
 						/* This is kind of strange:  dying code or a Call that will raise an exception
 						   when executed as there is no implementation to call.  So better not

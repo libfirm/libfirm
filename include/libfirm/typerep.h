@@ -1777,7 +1777,7 @@ FIRM_API int is_Union_type(const ir_type *uni);
  * The entity for array elements is built automatically.
  * Set dimension sizes after call to constructor with set_* routines.
  */
-FIRM_API ir_type *new_type_array(int n_dims, ir_type *element_type);
+FIRM_API ir_type *new_type_array(size_t n_dims, ir_type *element_type);
 
 /** Create a new type array with debug information.
  *
@@ -1787,7 +1787,7 @@ FIRM_API ir_type *new_type_array(int n_dims, ir_type *element_type);
  * Set dimension sizes after call to constructor with set_* routines.
  * A legal array type must have at least one dimension set.
  */
-FIRM_API ir_type *new_d_type_array(int n_dims, ir_type *element_type,
+FIRM_API ir_type *new_d_type_array(size_t n_dims, ir_type *element_type,
                                    type_dbg_info* db);
 
 /* --- manipulate private fields of array type --- */
@@ -1839,16 +1839,16 @@ FIRM_API ir_node *get_array_upper_bound(const ir_type *array, size_t dimension);
 FIRM_API long get_array_upper_bound_int(const ir_type *array, size_t dimension);
 
 /** Sets an array dimension to a specific order. */
-FIRM_API void set_array_order(ir_type *array, size_t dimension, int order);
+FIRM_API void set_array_order(ir_type *array, size_t dimension, size_t order);
 
 /** Returns the order of an array dimension. */
-FIRM_API int get_array_order(const ir_type *array, size_t dimension);
+FIRM_API size_t get_array_order(const ir_type *array, size_t dimension);
 
 /** Find the array dimension that is placed at order order. */
-FIRM_API size_t find_array_dimension(const ir_type *array, int order);
+FIRM_API size_t find_array_dimension(const ir_type *array, size_t order);
 
 /** Sets the array element type. */
-FIRM_API void set_array_element_type(ir_type *array, ir_type* tp);
+FIRM_API void set_array_element_type(ir_type *array, ir_type *tp);
 
 /** Gets the array element type. */
 FIRM_API ir_type *get_array_element_type(const ir_type *array);

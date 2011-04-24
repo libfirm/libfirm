@@ -640,11 +640,11 @@ static long get_Sel_array_index_long(ir_node *n, int dim)
  * @param depth  current depth in steps upward from the root
  *               of the address
  */
-static compound_graph_path *rec_get_accessed_path(ir_node *ptr, int depth)
+static compound_graph_path *rec_get_accessed_path(ir_node *ptr, size_t depth)
 {
 	compound_graph_path *res = NULL;
 	ir_entity           *root, *field, *ent;
-	int                 path_len, pos, idx;
+	size_t              path_len, pos, idx;
 	ir_tarval           *tv;
 	ir_type             *tp;
 
@@ -799,7 +799,7 @@ static compound_graph_path *get_accessed_path(ir_node *ptr)
 typedef struct path_entry {
 	ir_entity         *ent;
 	struct path_entry *next;
-	long              index;
+	size_t            index;
 } path_entry;
 
 static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
@@ -809,7 +809,7 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
 	ir_initializer_t *initializer;
 	ir_tarval        *tv;
 	ir_type          *tp;
-	unsigned         n;
+	size_t           n;
 
 	entry.next = next;
 	if (is_SymConst(ptr)) {
@@ -832,7 +832,7 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
 					continue;
 				}
 			}
-			if (p->index >= (int) n)
+			if (p->index >= n)
 				return NULL;
 			initializer = get_initializer_compound_value(initializer, p->index);
 
@@ -865,7 +865,7 @@ static ir_node *rec_find_compound_ent_value(ir_node *ptr, path_entry *next)
 			assert(get_Sel_n_indexs(ptr) == 1 && "multi dim arrays not implemented");
 			entry.index = get_Sel_array_index_long(ptr, 0) - get_array_lower_bound_int(tp, 0);
 		} else {
-			int i, n_members = get_compound_n_members(tp);
+			size_t i, n_members = get_compound_n_members(tp);
 			for (i = 0; i < n_members; ++i) {
 				if (get_compound_member(tp, i) == field)
 					break;
@@ -923,7 +923,7 @@ ptr_arith:
 		for (ent = field;;) {
 			unsigned  size;
 			ir_tarval *sz, *tv_index, *tlower, *tupper;
-			long      index;
+			size_t    index;
 			ir_node   *bound;
 
 			tp = get_entity_type(ent);

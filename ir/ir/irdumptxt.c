@@ -752,7 +752,7 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 			fprintf(F, "\n  order: ");
 			for (i = 0; i < n_dim; ++i)
-				fprintf(F, "<%d>", get_array_order(tp, i));
+				fprintf(F, "<%zu>", get_array_order(tp, i));
 
 			fprintf(F, "\n");
 

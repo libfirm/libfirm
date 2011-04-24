@@ -143,7 +143,7 @@ static ir_node *is_depend_alloc(ir_node *adr)
  */
 static int can_escape(ir_node *n)
 {
-  int i, j, k;
+  int i;
 
   /* should always be pointer mode or we made some mistake */
   assert(mode_is_reference(get_irn_mode(n)));
@@ -183,30 +183,33 @@ static int can_escape(ir_node *n)
       ir_entity *ent;
 
       if (is_SymConst_addr_ent(ptr)) {
+        size_t j;
         ent = get_SymConst_entity(ptr);
 
         /* we know the called entity */
-        for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
-          if (get_Call_param(succ, j) == n) {
+        for (j = get_Call_n_params(succ); j > 0;) {
+          if (get_Call_param(succ, --j) == n) {
             /* n is the j'th param of the call */
             if (get_method_param_access(ent, j) & ptr_access_store)
               /* n is store in ent */
               return 1;
           }
         }
-      }
-      else if (is_Sel(ptr)) {
+      } else if (is_Sel(ptr)) {
+        size_t k;
+
         /* go through all possible callees */
-        for (k = get_Call_n_callees(succ) - 1; k >= 0; --k) {
-          ent = get_Call_callee(succ, k);
+        for (k = get_Call_n_callees(succ); k > 0;) {
+          size_t j;
+          ent = get_Call_callee(succ, --k);
 
           if (ent == unknown_entity) {
             /* we don't know what will be called, a possible escape */
             return 1;
           }
 
-          for (j = get_Call_n_params(succ) - 1; j >= 0; --j) {
-            if (get_Call_param(succ, j) == n) {
+          for (j = get_Call_n_params(succ); j > 0;) {
+            if (get_Call_param(succ, --j) == n) {
               /* n is the j'th param of the call */
               if (get_method_param_access(ent, j) & ptr_access_store)
                 /* n is store in ent */
@@ -214,8 +217,7 @@ static int can_escape(ir_node *n)
             }
           }
         }
-      }
-      else /* we don't know want will called */
+      } else /* we don't know want will called */
         return 1;
 
       break;
@@ -233,6 +235,7 @@ static int can_escape(ir_node *n)
 
     case iro_Tuple: {
       ir_node *proj;
+      int j, k;
 
       /* Bad: trace the tuple backwards */
       for (j = get_irn_arity(succ) - 1; j >= 0; --j)

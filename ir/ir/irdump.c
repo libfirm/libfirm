@@ -1921,8 +1921,8 @@ static void dump_type_info(type_or_ent tore, void *env)
 				 --i;
 				upper = get_array_upper_bound(tp, i);
 				lower = get_array_lower_bound(tp, i);
-				print_node_type_edge(F, upper, tp, "label: \"upper %d\"", get_array_order(tp, i));
-				print_node_type_edge(F, lower, tp, "label: \"lower %d\"", get_array_order(tp, i));
+				print_node_type_edge(F, upper, tp, "label: \"upper %zu\"", get_array_order(tp, i));
+				print_node_type_edge(F, lower, tp, "label: \"lower %zu\"", get_array_order(tp, i));
 				dump_const_expression(F, upper);
 				dump_const_expression(F, lower);
 			}

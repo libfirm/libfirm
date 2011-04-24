@@ -103,8 +103,8 @@ static void dump_edge_costs(pbqp_t *pbqp)
 	fputs("<p>", pbqp->dump_file);
 	for (src_index = 0; src_index < pbqp->num_nodes; ++src_index) {
 		pbqp_node_t *src_node = get_node(pbqp, src_index);
-		unsigned edge_index;
-		unsigned len;
+		size_t edge_index;
+		size_t len;
 
 		if (!src_node)
 			continue;

@@ -640,8 +640,8 @@ static ir_node *eval_strlen(ir_graph *irg, ir_entity *ent, ir_type *res_tp)
 	ir_type *tp = get_entity_type(ent);
 	ir_mode *mode;
 	ir_initializer_t *initializer;
-	unsigned          size;
-	unsigned          i;
+	size_t            size;
+	size_t            i;
 
 	if (! is_Array_type(tp))
 		return NULL;

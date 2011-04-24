@@ -44,8 +44,8 @@ pbqp_node_t *get_node(pbqp_t *pbqp, unsigned index)
 
 pbqp_edge_t *get_edge(pbqp_t *pbqp, unsigned src_index, unsigned tgt_index)
 {
-	int i;
-	int len;
+	size_t i;
+	size_t len;
 	pbqp_node_t *src_node;
 	pbqp_node_t *tgt_node;
 

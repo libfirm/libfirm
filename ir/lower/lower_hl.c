@@ -71,18 +71,18 @@ static void lower_sel(ir_node *sel)
 
 		if (is_Array_type(owner)) {
 			ir_type *arr_ty = owner;
-			int      dims   = get_array_n_dimensions(arr_ty);
-			int     *map    = ALLOCAN(int, dims);
+			size_t   dims   = get_array_n_dimensions(arr_ty);
+			size_t  *map    = ALLOCAN(size_t, dims);
 			ir_mode *mode_Int = get_reference_mode_signed_eq(mode);
 			ir_tarval *tv;
 			ir_node *last_size;
-			int      i;
+			size_t   i;
 
 			assert(dims == get_Sel_n_indexs(sel)
 				&& "array dimension must match number of indices of Sel node");
 
 			for (i = 0; i < dims; i++) {
-				int order = get_array_order(arr_ty, i);
+				size_t order = get_array_order(arr_ty, i);
 
 				assert(order < dims &&
 					"order of a dimension must be smaller than the arrays dim");
@@ -104,8 +104,8 @@ static void lower_sel(ir_node *sel)
 			 * whereas u_i is the upper bound of the current dimension
 			 * and l_i the lower bound of the current dimension.
 			 */
-			for (i = dims - 1; i >= 0; i--) {
-				int dim = map[i];
+			for (i = dims; i > 0;) {
+				size_t dim = map[--i];
 				ir_node *lb, *ub, *elms, *n, *ind;
 
 				elms = NULL;
