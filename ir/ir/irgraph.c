@@ -494,7 +494,7 @@ long get_irg_graph_nr(const ir_graph *irg)
 }
 #endif
 
-int get_irg_idx(const ir_graph *irg)
+size_t get_irg_idx(const ir_graph *irg)
 {
 	return irg->index;
 }

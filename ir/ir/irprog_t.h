@@ -115,7 +115,7 @@ static inline long get_irp_new_node_nr(void)
 	return irp->max_node_nr++;
 }
 
-static inline int get_irp_new_irg_idx(void)
+static inline size_t get_irp_new_irg_idx(void)
 {
 	assert(irp);
 	return irp->max_irg_idx++;

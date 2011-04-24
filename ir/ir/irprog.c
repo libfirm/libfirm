@@ -247,7 +247,7 @@ ir_graph *(get_irp_irg)(size_t pos)
 	return _get_irp_irg(pos);
 }
 
-int get_irp_last_idx(void)
+size_t get_irp_last_idx(void)
 {
 	return irp->max_irg_idx;
 }

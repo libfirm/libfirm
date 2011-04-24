@@ -987,7 +987,7 @@ static void check_for_possible_endless_loops(ir_graph *irg)
 void optimize_funccalls(void)
 {
 	size_t i, n;
-	int last_idx;
+	size_t last_idx;
 	env_t  ctx;
 	size_t num_const   = 0;
 	size_t num_pure    = 0;

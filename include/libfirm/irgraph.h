@@ -256,7 +256,7 @@ FIRM_API long get_irg_graph_nr(const ir_graph *irg);
  * smaller than get_irp_last_idx()
  * Note: you cannot use this number for get_irp_irg()
  */
-FIRM_API int get_irg_idx(const ir_graph *irg);
+FIRM_API size_t get_irg_idx(const ir_graph *irg);
 
 /**
  * Get the node for an index.

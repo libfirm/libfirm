@@ -522,7 +522,7 @@ struct ir_graph {
 	irg_edges_info_t edge_info;        /**< edge info for automatic outs */
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
-	int index;                         /**< a unique number for each graph */
+	size_t index;                      /**< a unique number for each graph */
 	ir_phase *phases[PHASE_LAST+1];    /**< Phase information. */
 	void     *be_data;                 /**< backend can put in private data here */
 
@@ -597,7 +597,7 @@ struct ir_prog {
 
 	ir_exc_region_t last_region_nr;      /**< The last exception region number that was assigned. */
 	ir_label_t last_label_nr;            /**< The highest label number for generating unique labels. */
-	int  max_irg_idx;                    /**< highest unused irg index */
+	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 	unsigned dump_nr;                    /**< number of program info dumps */
 #ifndef NDEBUG

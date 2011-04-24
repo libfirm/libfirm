@@ -139,7 +139,7 @@ FIRM_API void remove_irp_irg_from_list(ir_graph *irg);
 FIRM_API void remove_irp_irg(ir_graph *irg);
 
 /** returns the biggest not used irg index number */
-FIRM_API int get_irp_last_idx(void);
+FIRM_API size_t get_irp_last_idx(void);
 
 /** Returns the number of ir graphs in the irp. */
 FIRM_API size_t get_irp_n_irgs(void);
