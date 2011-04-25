@@ -313,15 +313,12 @@ static inline int is_lowered_type(const ir_type *tp)
 	return tp->flags & tf_lowered_type;
 }
 
-static inline ir_type *get_type_unlowered(const ir_type *tp)
+/**
+ * Gets the lowered/unlowered type of a type or NULL if this type
+ * has no lowered/unlowered one.
+ */
+static inline ir_type *get_associated_type(const ir_type *tp)
 {
-	assert (is_lowered_type(tp));
-	return tp->assoc_type;
-}
-
-static inline ir_type *get_type_lowered(const ir_type *tp)
-{
-	assert (tp->assoc_type == NULL || is_lowered_type(tp->assoc_type));
 	return tp->assoc_type;
 }
 
@@ -329,10 +326,6 @@ static inline void set_lowered_type(ir_type *tp, ir_type *lowered_type)
 {
 	assert (is_type(tp) && is_type(lowered_type));
 	lowered_type->flags |= tf_lowered_type;
-	/* there might be a chain of lowerings, get to the start */
-	while (is_lowered_type(tp)) {
-		tp = tp->assoc_type;
-	}
 	tp->assoc_type = lowered_type;
 	lowered_type->assoc_type = tp;
 }

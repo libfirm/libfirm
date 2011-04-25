@@ -699,7 +699,8 @@ static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent)
 
 	/* create the method entry */
 	mtp = get_entity_type(ent);
-	mtp = get_type_unlowered(mtp);
+	if (is_lowered_type(mtp))
+		mtp = get_associated_type(mtp);
 	if (get_method_n_ress(mtp) > 0)
 		rtp = get_method_res_type(mtp, 0);
 	else

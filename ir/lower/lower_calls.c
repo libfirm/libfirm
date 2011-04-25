@@ -84,7 +84,7 @@ static ir_type *create_modified_mtd_type(const lower_params_t *lp, ir_type *mtp)
 	int        changed = 0;
 	ir_variadicity var;
 
-	lowered = get_type_lowered(mtp);
+	lowered = get_associated_type(mtp);
 	if (lowered != NULL)
 		return lowered;
 
@@ -510,7 +510,8 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins, cl_entr
 		size_t   i;
 		size_t   j;
 
-		ctp = get_type_unlowered(ctp);
+		if (is_lowered_type(ctp))
+			ctp = get_associated_type(ctp);
 
 		for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
 			ir_type *rtp = get_method_res_type(ctp, i);
