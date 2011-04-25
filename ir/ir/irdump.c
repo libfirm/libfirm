@@ -1767,11 +1767,11 @@ void dump_type_node(FILE *F, ir_type *tp)
 {
 	fprintf(F, "node: {title: ");
 	PRINT_TYPEID(tp);
-	fprintf(F, " label: \"%s ", get_type_tpop_name(tp));
+	fprintf(F, " label: \"");
 	if (tp->dbi != NULL) {
-		char buf[256];
+		char buf[1024];
 		ir_print_type(buf, sizeof(buf), tp);
-		fprintf(F, "'%s'", buf);
+		fprintf(F, "%s '%s'", get_type_tpop_name(tp), buf);
 	} else {
 		ir_fprintf(F, "%+F", tp);
 	}
@@ -1828,7 +1828,9 @@ static void dump_entity_initializer(FILE *F, const ir_entity *ent)
 	(void) ent;
 }
 
-/** Dumps a type or entity and its edges. */
+/**
+ * type-walker: Dumps a type or entity and its edges.
+ */
 static void dump_type_info(type_or_ent tore, void *env)
 {
 	FILE *F = (FILE*)env;
