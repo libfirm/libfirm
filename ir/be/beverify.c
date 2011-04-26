@@ -785,6 +785,11 @@ static void value_def(ir_node *node)
 
 	reg_node = registers[reg->index];
 
+	/* a little cheat, since its so hard to remove all outedges to dead code
+	 * in the backend. This particular case should never be a problem. */
+	if (reg_node == NULL && get_irn_n_edges(node) == 0)
+		return;
+
 	if (reg_node != node) {
 		ir_fprintf(stderr, "Verify warning: Node %+F not registered as value for Register %s (but %+F) in block %+F(%s)\n",
 			       node, reg->name, reg_node, get_nodes_block(node), get_irg_dump_name(irg));
