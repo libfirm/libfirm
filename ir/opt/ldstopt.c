@@ -709,7 +709,8 @@ static void handle_load_update(ir_node *load)
 		ir_node *mem = get_Load_mem(load);
 
 		/* a Load whose value is neither used nor exception checked, remove it */
-		exchange(info->projs[pn_Load_M], mem);
+		if (info->projs[pn_Load_M])
+			exchange(info->projs[pn_Load_M], mem);
 		if (info->projs[pn_Load_X_regular])
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 		kill_node(load);
