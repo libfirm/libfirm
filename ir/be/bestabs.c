@@ -341,7 +341,7 @@ static void print_array_type(stabs_handle *h, ir_type *tp, int local)
 	size_t       *perm;
 
 	be_emit_irprintf("%u=a", type_num);
-	NEW_ARR_A(size_t, perm, n);
+	perm = ALLOCAN(size_t, n);
 	for (i = 0; i < n; ++i) {
 		perm[i] = get_array_order(tp, i);
 	}

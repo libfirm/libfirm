@@ -78,7 +78,7 @@ static void lower_sel(ir_node *sel)
 			ir_node *last_size;
 			size_t   i;
 
-			assert(dims == get_Sel_n_indexs(sel)
+			assert(dims == (size_t)get_Sel_n_indexs(sel)
 				&& "array dimension must match number of indices of Sel node");
 
 			for (i = 0; i < dims; i++) {
