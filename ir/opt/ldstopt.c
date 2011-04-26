@@ -709,8 +709,7 @@ static void handle_load_update(ir_node *load)
 		ir_node *mem = get_Load_mem(load);
 
 		/* a Load whose value is neither used nor exception checked, remove it */
-		if (info->projs[pn_Load_M])
-			exchange(info->projs[pn_Load_M], mem);
+		exchange(info->projs[pn_Load_M], mem);
 		if (info->projs[pn_Load_X_regular])
 			exchange(info->projs[pn_Load_X_regular], new_r_Jmp(get_nodes_block(load)));
 		kill_node(load);
@@ -1927,7 +1926,12 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
 
 					ninfo->projs[pn_Load_M] = mem = new_r_Proj(irn, mode_M, pn_Load_M);
-					set_Phi_pred(phi, pos, mem);
+					if (res == NULL) {
+						/* irn is from cache, so do not set phi pred again.
+						 * There might be other Loads between phi and irn already.
+						 */
+						set_Phi_pred(phi, pos, mem);
+					}
 
 					ninfo->projs[pn_Load_res] = new_r_Proj(irn, load_mode, pn_Load_res);
 				}
