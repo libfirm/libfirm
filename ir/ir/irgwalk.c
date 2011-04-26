@@ -375,35 +375,31 @@ static void irg_block_walk_2(ir_node *node, irg_walk_func *pre,
 
 /* walks only over Block nodes in the graph.  Has its own visited
    flag, so that it can be interleaved with the other walker.         */
-void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post, void *env)
+void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
+                    void *env)
 {
-	ir_graph *irg = get_irn_irg(node);
-	ir_node *block, *pred;
-	int i;
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *block = is_Block(node) ? node : get_nodes_block(node);
 
 	hook_irg_block_walk(irg, node, (generic_func *)pre, (generic_func *)post);
 
-	assert(node);
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
-	block = is_Block(node) ? node : get_nodes_block(node);
-	assert(is_Block(block));
 	irg_block_walk_2(block, pre, post, env);
 
-	/* keepalive: the endless loops ... */
+	/* Some blocks might be only reachable through keep-alive edges */
 	if (is_End(node)) {
 		int arity = get_irn_arity(node);
+		int i;
 		for (i = 0; i < arity; i++) {
-			pred = get_irn_n(node, i);
+			ir_node *pred = get_irn_n(node, i);
 			if (!is_Block(pred)) {
 				pred = get_nodes_block(pred);
-				if (!is_Block(pred)) {
-					/* if rare cases a kept node might have a bad block input */
-					continue;
-				}
 			}
-			/* Sometimes the blocks died, but are still reachable through kept nodes.
-			 * Make sure the algorithms that try to remove these reach them. */
+			/* this walker is also used during optimize_graph_df where we can
+			 * temporarily have Bad as block inputs */
+			if (is_Bad(pred))
+				continue;
 			irg_block_walk_2(pred, pre, post, env);
 		}
 	}
