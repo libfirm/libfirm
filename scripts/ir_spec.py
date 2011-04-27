@@ -959,15 +959,33 @@ class Eta(Op):
 	flags  = []
 	pinned = "no"
 
-class Proxy(Op):
-	ins    = [ "value" ]
+class Weak(Op):
+	ins    = []
 	flags  = []
 	pinned = "no"
+	attrs  = [
+		dict(
+			type = "ir_node*",
+			name = "target"
+		)
+	]
+	attr_struct = "weak_attr"
 
-class EtaA(Op):
-	ins    = [ "header", "repeat", "result", "cond", "force" ]
-	flags  = []
+class Loop(Op):
+	arity  = "variable"
 	pinned = "no"
+	flags  = []
+	attrs  = [
+		dict(
+			type = "ir_node*",
+			name = "eta"
+		),
+		dict(
+			type = "ir_node*",
+			name = "next"
+		)
+	]
+	attr_struct = "loop_attr"
 
 # Prepare node list
 

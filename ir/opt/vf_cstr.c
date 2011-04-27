@@ -19,7 +19,7 @@
 
 /**
  * @file
- * @brief   Convert firm graphs to program expression graphs.
+ * @brief   Convert firm graphs to vfirm.
  * @author  Olaf Liebe
  * @version $Id: $
  */
@@ -883,13 +883,10 @@ static ir_node *transform_node_gamma(ir_node *gamma)
  ******************************************************************************/
 
 /**
- * Converts the given firm graph to the PEG representation.
+ * Converts the given firm graph to the vfirm representation.
  */
-void cfg_to_peg(ir_graph *irg)
+void vf_construct(ir_graph *irg)
 {
-	//cc_test();
-	//return;
-
 	/* Use automatic out edges. Makes things easier later. */
 	int had_edges = edges_assure(irg);
 
@@ -898,7 +895,7 @@ void cfg_to_peg(ir_graph *irg)
 	op_Gamma->ops.transform_node  = transform_node_gamma;
 
 	assert(irg);
-	dump_ir_graph(irg, "cfg");
+	dump_ir_graph(irg, "firm");
 
 	/* Eliminate all switch nodes, we can't represent them in a PEG. */
 	lower_switch(irg, 0, 0);
@@ -930,7 +927,7 @@ void cfg_to_peg(ir_graph *irg)
 
 	/* Unfold tuples on gammas and thetas. */
 	unfold_tuples(irg);
-	dump_ir_graph(irg, "unfold");
+	dump_ir_graph(irg, "vfirm");
 	ir_remove_dump_flags(ir_dump_flag_hide_control_flow);
 
 	/* Most data is probably inconsistent now. */

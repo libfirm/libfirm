@@ -1090,18 +1090,18 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
 /**
- * Convert a firm graph to a programm expression graph.
+ * Convert a firm graph to vfirm graph.
  *
  * @param irg    The firm graph to convert.
  */
-FIRM_API void cfg_to_peg(ir_graph *irg);
+FIRM_API void vf_construct(ir_graph *irg);
 
 /**
- * Convert a programm expression graph to a firm graph.
+ * Convert a vfirm graph to a firm graph.
  *
- * @param irg    The program expression graph to convert.
+ * @param irg    The vfirm graph to convert.
  */
-FIRM_API void peg_to_cfg(ir_graph *irg);
+FIRM_API void vf_destruct(ir_graph *irg);
 
 #include "end.h"
 

@@ -1263,7 +1263,7 @@ FIRM_API ir_node *new_rd_ASM(dbg_info *db, ir_node *block,
 /** Constructor for a Gamma node.
  *
  * A value selection node similar to Mux, with lazy evaluation semantics.
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
@@ -1287,7 +1287,7 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
  * A value can be fetched from those lists by using an extract node, for each
  * level of indirection.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
@@ -1298,18 +1298,6 @@ FIRM_API ir_node *new_rd_Gamma(dbg_info *db, ir_node *block, ir_node *cond,
  */
 FIRM_API ir_node *new_rd_Theta(dbg_info *db, ir_node *block, ir_node *init,
                                ir_node *next, ir_mode *mode, int depth);
-
-/** Constructor for a Proxy node.
- *
- * The sole purpose of the proxy node is to serve as a placeholder/proxy for
- * its value. It can be used, when a node is needed to reference a given value.
- *
- * @param *block      The IR block the node belongs to.
- * @param *value      The value to represent.
- * @param *mode       The mode of the proxy.
- */
-FIRM_API ir_node *new_rd_Proxy(dbg_info *db, ir_node *block, ir_node *init,
-                               ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1322,7 +1310,7 @@ FIRM_API ir_node *new_rd_Proxy(dbg_info *db, ir_node *block, ir_node *init,
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
@@ -1333,24 +1321,45 @@ FIRM_API ir_node *new_rd_Proxy(dbg_info *db, ir_node *block, ir_node *init,
 FIRM_API ir_node *new_rd_Eta(dbg_info *db, ir_node *block, ir_node *value,
                              ir_node *cond, ir_mode *mode);
 
-/** Constructor for an "acyclic" Eta node.
+/** Constructor for a Weak node.
  *
- * A variant of the eta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. It takes control of a loop by repeated
- * evaluation of its dependencies and by replacing the linked theta values.
+ * Represents a "weak" link to a target node. The link can't be navigated using
+ * the usual get_irn_n interface, so it is hidden from usual code. However you
+ * can access the target if needed. This is used for VFirm conversion for nodes
+ * whose evaluation occurs "somewhere else", enforced by a Barrier node. Nodes
+ * that are replaced by a weak node are so-called "weakened" nodes.
+ *
+ * One of the basic nodes of the VFirm representation.
+ *
+ * @param *block      The IR block the node belongs to.
+ * @param *mode       The mode of the target node.
+ * @param *target     The target node.
+ *
+ */
+FIRM_API ir_node *new_rd_Weak(dbg_info *db, ir_node *block, ir_mode *mode,
+                              ir_node *target);
+
+/** Constructor for a Loop node.
+ *
+ * Represents a loop subgraph as single node. This is used during construction,
+ * to treat the loop as a single entity and skip all the inner nodes. The loop
+ * nodes dependencies reflect the dependencies of the loop (ie. nodes that are
+ * accessed from the inside). After arranging nodes, similar loops may be fused
+ * together using the next attribute and then processed as subgraph.
+ *
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *block      The IR block the node belongs to.
- * @param *header     A tuple of nodes to evaluate in the header.
- * @param *repeat     A tuple of values to calculate on repeat.
- * @param *result     The value to calculate on exit.
- * @param *cond       The condition of the loop.
- * @param *force      A tuple of nodes to evaluate before the loop.
- * @param *mode       The mode of the node and value.
+ * @param arity       The number of loop dependencies.
+ * @param **in        An array containing pointers to loop dependencies.
+ * @param *mode       The mode of the loops result.
+ * @param *eta        The eta node associated with the loop.
+ * @param *next       The next node in a circular list of fused nodes.
  */
-FIRM_API ir_node *new_rd_EtaA(dbg_info *db, ir_node *block, ir_node *header,
-                              ir_node *repeat, ir_node *result, ir_node *cond,
-                              ir_node *force, ir_mode *mode);
+FIRM_API ir_node *new_rd_Loop(dbg_info *db, ir_node *block, int arity,
+                              ir_node *in[], ir_mode *mode, ir_node *eta,
+                              ir_node *next);
 
 /*-------------------------------------------------------------------------*/
 /* The raw interface without debug support                                 */
@@ -1473,7 +1482,7 @@ FIRM_API ir_node *new_r_ASM(ir_node *block,
 /** Constructor for a Gamma node.
  *
  * A value selection node similar to Mux, with lazy evaluation semantics.
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *block      The IR block the node belongs to.
  * @param *cond       The condition used to select the true of false value.
@@ -1495,7 +1504,7 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
  * A value can be fetched from those lists by using an extract node, for each
  * level of indirection.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *block      The IR block the node belongs to.
  * @param *init       The initial value of the recursion.
@@ -1505,17 +1514,6 @@ FIRM_API ir_node *new_r_Gamma(ir_node *block, ir_node *cond, ir_node *ir_false,
  */
 FIRM_API ir_node *new_r_Theta(ir_node *block, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
-
-/** Constructor for a Proxy node.
- *
- * The sole purpose of the proxy node is to serve as a placeholder/proxy for
- * its value. It can be used, when a node is needed to reference a given value.
- *
- * @param *block      The IR block the node belongs to.
- * @param *value      The value to represent.
- * @param *mode       The mode of the proxy.
- */
-FIRM_API ir_node *new_r_Proxy(ir_node *block, ir_node *init, ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1528,7 +1526,7 @@ FIRM_API ir_node *new_r_Proxy(ir_node *block, ir_node *init, ir_mode *mode);
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *block      The IR block the node belongs to.
  * @param *value      The "nested" value node.
@@ -1538,23 +1536,42 @@ FIRM_API ir_node *new_r_Proxy(ir_node *block, ir_node *init, ir_mode *mode);
 FIRM_API ir_node *new_r_Eta(ir_node *block, ir_node *value, ir_node *cond,
                             ir_mode *mode);
 
-/** Constructor for an "acyclic" Eta node.
+/** Constructor for a Weak node.
  *
- * A variant of the eta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. It takes control of a loop by repeated
- * evaluation of its dependencies and by replacing the linked theta values.
+ * Represents a "weak" link to a target node. The link can't be navigated using
+ * the usual get_irn_n interface, so it is hidden from usual code. However you
+ * can access the target if needed. This is used for VFirm conversion for nodes
+ * whose evaluation occurs "somewhere else", enforced by a Barrier node. Nodes
+ * that are replaced by a weak node are so-called "weakened" nodes.
+ *
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *block      The IR block the node belongs to.
- * @param *header     A tuple of nodes to evaluate in the header.
- * @param *repeat     A tuple of values to calculate on repeat.
- * @param *result     The value to calculate on exit.
- * @param *cond       The condition of the loop.
- * @param *force      A tuple of nodes to evaluate before the loop.
- * @param *mode       The mode of the node and value.
+ * @param *mode       The mode of the target node.
+ * @param *target     The target node.
+ *
  */
-FIRM_API ir_node *new_r_EtaA(ir_node *block, ir_node *header, ir_node *repeat,
-                             ir_node *result, ir_node *cond, ir_node *force,
-                             ir_mode *mode);
+FIRM_API ir_node *new_r_Weak(ir_node *block, ir_mode *mode, ir_node *target);
+
+/** Constructor for a Loop node.
+ *
+ * Represents a loop subgraph as single node. This is used during construction,
+ * to treat the loop as a single entity and skip all the inner nodes. The loop
+ * nodes dependencies reflect the dependencies of the loop (ie. nodes that are
+ * accessed from the inside). After arranging nodes, similar loops may be fused
+ * together using the next attribute and then processed as subgraph.
+ *
+ * One of the basic nodes of the VFirm representation.
+ *
+ * @param *block      The IR block the node belongs to.
+ * @param arity       The number of loop dependencies.
+ * @param **in        An array containing pointers to loop dependencies.
+ * @param *mode       The mode of the loops result.
+ * @param *eta        The eta node associated with the loop.
+ * @param *next       The next node in a circular list of fused nodes.
+ */
+FIRM_API ir_node *new_r_Loop(ir_node *block, int arity, ir_node *in[],
+                             ir_mode *mode, ir_node *eta, ir_node *next);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface                                          */
@@ -1689,7 +1706,7 @@ FIRM_API ir_node *new_d_ASM(dbg_info *db, int arity, ir_node *in[],
 /** Constructor for a Gamma node.
  *
  * A value selection node similar to Mux, with lazy evaluation semantics.
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *cond       The condition used to select the true of false value.
@@ -1711,7 +1728,7 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
  * A value can be fetched from those lists by using an extract node, for each
  * level of indirection.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *init       The initial value of the recursion.
@@ -1721,17 +1738,6 @@ FIRM_API ir_node *new_d_Gamma(dbg_info *db, ir_node *cond, ir_node *ir_false,
  */
 FIRM_API ir_node *new_d_Theta(dbg_info *db, ir_node *init, ir_node *next,
                               ir_mode *mode, int depth);
-
-/** Constructor for a Proxy node.
- *
- * The sole purpose of the proxy node is to serve as a placeholder/proxy for
- * its value. It can be used, when a node is needed to reference a given value.
- *
- * @param *db         A pointer for debug information.
- * @param *value      The value to represent.
- * @param *mode       The mode of the proxy.
- */
-FIRM_API ir_node *new_d_Proxy(dbg_info *db, ir_node *value, ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1744,7 +1750,7 @@ FIRM_API ir_node *new_d_Proxy(dbg_info *db, ir_node *value, ir_mode *mode);
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
  * @param *value      The "nested" value node.
@@ -1754,23 +1760,42 @@ FIRM_API ir_node *new_d_Proxy(dbg_info *db, ir_node *value, ir_mode *mode);
 FIRM_API ir_node *new_d_Eta(dbg_info *db, ir_node *value, ir_node *cond,
                             ir_mode *mode);
 
-/** Constructor for an "acyclic" Eta node.
+/** Constructor for a Weak node.
  *
- * A variant of the eta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. It takes control of a loop by repeated
- * evaluation of its dependencies and by replacing the linked theta values.
+ * Represents a "weak" link to a target node. The link can't be navigated using
+ * the usual get_irn_n interface, so it is hidden from usual code. However you
+ * can access the target if needed. This is used for VFirm conversion for nodes
+ * whose evaluation occurs "somewhere else", enforced by a Barrier node. Nodes
+ * that are replaced by a weak node are so-called "weakened" nodes.
+ *
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *db         A pointer for debug information.
- * @param *header     A tuple of nodes to evaluate in the header.
- * @param *repeat     A tuple of values to calculate on repeat.
- * @param *result     The value to calculate on exit.
- * @param *cond       The condition of the loop.
- * @param *force      A tuple of nodes to evaluate before the loop.
- * @param *mode       The mode of the node and value.
+ * @param *mode       The mode of the target node.
+ * @param *target     The target node.
+ *
  */
-FIRM_API ir_node *new_d_EtaA(dbg_info *db, ir_node *header, ir_node *repeat,
-                             ir_node *result, ir_node *cond, ir_node *force,
-                             ir_mode *mode);
+FIRM_API ir_node *new_d_Weak(dbg_info *db, ir_mode *mode, ir_node *target);
+
+/** Constructor for a Loop node.
+ *
+ * Represents a loop subgraph as single node. This is used during construction,
+ * to treat the loop as a single entity and skip all the inner nodes. The loop
+ * nodes dependencies reflect the dependencies of the loop (ie. nodes that are
+ * accessed from the inside). After arranging nodes, similar loops may be fused
+ * together using the next attribute and then processed as subgraph.
+ *
+ * One of the basic nodes of the VFirm representation.
+ *
+ * @param *db         A pointer for debug information.
+ * @param arity       The number of loop dependencies.
+ * @param **in        An array containing pointers to loop dependencies.
+ * @param *mode       The mode of the loops result.
+ * @param *eta        The eta node associated with the loop.
+ * @param *next       The next node in a circular list of fused nodes.
+ */
+FIRM_API ir_node *new_d_Loop(dbg_info *db, int arity, ir_node *in[],
+                             ir_mode *mode, ir_node *eta, ir_node *next);
 
 /*-----------------------------------------------------------------------*/
 /* The block oriented interface without debug support                    */
@@ -1888,7 +1913,7 @@ FIRM_API ir_node *new_ASM(int arity, ir_node *in[], ir_asm_constraint *inputs,
 /** Constructor for a Gamma node.
  *
  * A value selection node similar to Mux, with lazy evaluation semantics.
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *cond       The condition used to select the true of false value.
  * @param *ir_false   The false value.
@@ -1909,7 +1934,7 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
  * A value can be fetched from those lists by using an extract node, for each
  * level of indirection.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *init       The initial value of the recursion.
  * @param *next       The recursively defined next value.
@@ -1918,16 +1943,6 @@ FIRM_API ir_node *new_Gamma(ir_node *cond, ir_node *ir_false, ir_node *ir_true,
  */
 FIRM_API ir_node *new_Theta(ir_node *init, ir_node *next, ir_mode *mode,
                             int depth);
-
-/** Constructor for a Proxy node.
- *
- * The sole purpose of the proxy node is to serve as a placeholder/proxy for
- * its value. It can be used, when a node is needed to reference a given value.
- *
- * @param *value      The value to represent.
- * @param *mode       The mode of the proxy.
- */
-FIRM_API ir_node *new_Proxy(ir_node *init, ir_mode *mode);
 
 /** Constructor for a Eta node.
  *
@@ -1940,7 +1955,7 @@ FIRM_API ir_node *new_Proxy(ir_node *init, ir_mode *mode);
  * In other terms: given an infinite condition list, the first index with value
  * "true" is determined and used to access the value from the value list.
  *
- * One of the basic nodes of the PEG representation.
+ * One of the basic nodes of the VFirm representation.
  *
  * @param *value      The "nested" value node.
  * @param *cond       The "nested" condition node.
@@ -1948,21 +1963,40 @@ FIRM_API ir_node *new_Proxy(ir_node *init, ir_mode *mode);
  */
 FIRM_API ir_node *new_Eta(ir_node *value, ir_node *cond, ir_mode *mode);
 
-/** Constructor for an "acyclic" Eta node.
+/** Constructor for a Weak node.
  *
- * A variant of the eta node, used in acyclic PEGs, which are needed inside
- * the PEG to CFG transformation phase. It takes control of a loop by repeated
- * evaluation of its dependencies and by replacing the linked theta values.
+ * Represents a "weak" link to a target node. The link can't be navigated using
+ * the usual get_irn_n interface, so it is hidden from usual code. However you
+ * can access the target if needed. This is used for VFirm conversion for nodes
+ * whose evaluation occurs "somewhere else", enforced by a Barrier node. Nodes
+ * that are replaced by a weak node are so-called "weakened" nodes.
  *
- * @param *header     A tuple of nodes to evaluate in the header.
- * @param *repeat     A tuple of values to calculate on repeat.
- * @param *result     The value to calculate on exit.
- * @param *cond       The condition of the loop.
- * @param *force      A tuple of nodes to evaluate before the loop.
- * @param *mode       The mode of the node and value.
+ * One of the basic nodes of the VFirm representation.
+ *
+ * @param *mode       The mode of the target node.
+ * @param *target     The target node.
+ *
  */
-FIRM_API ir_node *new_EtaA(ir_node *header, ir_node *repeat, ir_node *result,
-                           ir_node *cond, ir_node *force, ir_mode *mode);
+FIRM_API ir_node *new_Weak(ir_mode *mode, ir_node *target);
+
+/** Constructor for a Loop node.
+ *
+ * Represents a loop subgraph as single node. This is used during construction,
+ * to treat the loop as a single entity and skip all the inner nodes. The loop
+ * nodes dependencies reflect the dependencies of the loop (ie. nodes that are
+ * accessed from the inside). After arranging nodes, similar loops may be fused
+ * together using the next attribute and then processed as subgraph.
+ *
+ * One of the basic nodes of the VFirm representation.
+ *
+ * @param arity       The number of loop dependencies.
+ * @param **in        An array containing pointers to loop dependencies.
+ * @param *mode       The mode of the loops result.
+ * @param *eta        The eta node associated with the loop.
+ * @param *next       The next node in a circular list of fused nodes.
+ */
+FIRM_API ir_node *new_Loop(int arity, ir_node *in[], ir_mode *mode,
+                           ir_node *eta, ir_node *next);
 
 /*---------------------------------------------------------------------*/
 /* The comfortable interface.                                          */

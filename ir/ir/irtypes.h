@@ -335,6 +335,18 @@ typedef struct {
 	int            depth;         /**< The theta nodes lood depth. */
 } theta_attr;
 
+/** Weak attribute. */
+typedef struct {
+	ir_node *target;              /**< The weak links target node. */
+} weak_attr;
+
+/** Loop attribute. */
+typedef struct {
+	ir_node *eta;                 /**< The eta nodes associated with the loop. */
+	ir_node *prev;                /**< Used to chain similar loops together. */
+	ir_node *next;                /**< Used to chain similar loops together. */
+} loop_attr;
+
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union ir_attr {
@@ -366,6 +378,8 @@ typedef union ir_attr {
 	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
 	theta_attr     theta;         /**< For Theta. */
+	weak_attr      weak;          /**< For Weak. */
+	loop_attr      loop;          /**< For Loop. */
 } ir_attr;
 
 /**
