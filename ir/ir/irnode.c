@@ -1491,6 +1491,11 @@ int is_cfop(const ir_node *node)
 	return is_op_cfopcode(get_irn_op(node));
 }
 
+int is_unknown_jump(const ir_node *node)
+{
+	return is_op_unknown_jump(get_irn_op(node));
+}
+
 /* Returns true if the operation can change the control flow because
    of an exception. */
 int is_fragile_op(const ir_node *node)

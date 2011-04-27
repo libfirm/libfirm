@@ -73,7 +73,7 @@ static void walk_critical_cf_edges(ir_node *n, void *env)
 					continue;
 				goto insert;
 			}
-			if (is_IJmp(pre)) {
+			if (is_unknown_jump(pre)) {
 				/* we can't add blocks in between ijmp and its destinations
 				 * TODO: What now, we can't split all critical edges because of this... */
 				fprintf(stderr, "libfirm warning: Couldn't split all critical edges (compiler will probably fail now)\n");

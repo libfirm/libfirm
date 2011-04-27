@@ -1096,7 +1096,7 @@ Jmp => {
 
 IJmp => {
 	state     => "pinned",
-	op_flags  => [ "cfopcode" ],
+	op_flags  => [ "cfopcode", "unknown_jump" ],
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ] },
 	ins       => [ "base", "index", "mem", "target" ],
 	am        => "source,unary",

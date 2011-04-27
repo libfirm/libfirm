@@ -591,6 +591,9 @@ FIRM_API ir_node *skip_HighLevel_ops(ir_node *node);
 /** Returns true if the operation manipulates control flow:
    Start, End, Jmp, Cond, Return, Raise, Bad */
 FIRM_API int is_cfop(const ir_node *node);
+/** returns true if the operation jumps to an unknown destination.
+ * See irop_flag_unknown_jump for a detailed explanation */
+FIRM_API int is_unknown_jump(const ir_node *node);
 
 /** Returns true if the operation can change the control flow because
     of an exception: Call, Div, Mod, Load, Store, Alloc,

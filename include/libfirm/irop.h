@@ -76,7 +76,11 @@ typedef enum {
 	irop_flag_machine      = 1U << 13, /**< This operation is a machine operation. */
 	irop_flag_machine_op   = 1U << 14, /**< This operation is a machine operand. */
 	irop_flag_cse_neutral  = 1U << 15, /**< This operation is CSE neutral to its users. */
-	irop_flag_user         = 1U << 16, /**< This flag and all higher ones are free for machine user. */
+	/** This operation jumps to an unknown destination. The CFG is a
+	 * conservative aproximation in this case. You cannot change the destination
+	 * of an unknown_jump */
+	irop_flag_unknown_jump = 1U << 16,
+	irop_flag_user         = 1U << 17, /**< This flag and all higher ones are free for machine user. */
 } irop_flags;
 
 /** Returns the ident for the opcode name */

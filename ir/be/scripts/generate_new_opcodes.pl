@@ -670,10 +670,10 @@ EOF
 	}
 
 	my %known_flags = map { $_ => 1 } (
-		"none", "labeled", "commutative", "cfopcode", "op_cfopcode",
-		"fragile", "forking", "highlevel", "constlike", "always_opt",
-		"keep", "start_block", "uses_memory", "dump_noblock",
-		"dump_noinput", "machine", "machine_op", "cse_neutral"
+		"none", "labeled", "commutative", "cfopcode", "unknown_jump", "fragile",
+		"forking", "highlevel", "constlike", "always_opt", "keep",
+		"start_block", "uses_memory", "dump_noblock", "dump_noinput",
+		"machine", "machine_op", "cse_neutral"
 	);
 	foreach my $flag (@{$n{"op_flags"}}) {
 		if (not defined($known_flags{$flag})) {

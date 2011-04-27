@@ -72,6 +72,11 @@ static inline bool is_op_cfopcode(const ir_op *op)
 	return op->flags & irop_flag_cfopcode;
 }
 
+static inline bool is_op_unknown_jump(const ir_op *op)
+{
+	return op->flags & irop_flag_unknown_jump;
+}
+
 /** Returns non-zero if operation is commutative */
 static inline bool is_op_commutative(const ir_op *op)
 {

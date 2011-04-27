@@ -535,7 +535,7 @@ class IJmp(Op):
 	ins      = [
 	   ("target", "target address of the jump"),
 	]
-	flags    = [ "cfopcode", "forking", "keep" ]
+	flags    = [ "cfopcode", "forking", "keep", "unknown_jump" ]
 
 class InstOf(Op):
 	"""Tests whether an object is an instance of a class-type"""
