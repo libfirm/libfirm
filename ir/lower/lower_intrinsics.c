@@ -476,7 +476,8 @@ static int i_mapper_one_to_zero(ir_node *call, void *ctx, int reason)
  */
 static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 {
-	ir_node *val  = get_Call_param(call, 0);
+	int      changed = 0;
+	ir_node *val     = get_Call_param(call, 0);
 	(void) ctx;
 
 	if (is_strictConv(val)) {
@@ -495,12 +496,14 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 			}
 			DBG_OPT_ALGSIM2(call, op, call, FS_OPT_RTS_SYMMETRIC);
 			set_Call_param(call, 0, val);
+			changed = 1;
 		}
 	} else if (is_Minus(val)) {
 		/* f(-x) = f(x) */
 		val = get_Minus_op(val);
 		DBG_OPT_ALGSIM2(call, val, call, FS_OPT_RTS_SYMMETRIC);
 		set_Call_param(call, 0, val);
+		changed = 1;
 	}
 
 	if (is_Const(val) && is_Const_null(val)) {
@@ -511,9 +514,9 @@ static int i_mapper_symmetric_zero_to_one(ir_node *call, void *ctx, int reason)
 		ir_node *mem   = get_Call_mem(call);
 		DBG_OPT_ALGSIM0(call, irn, reason);
 		replace_call(irn, call, mem, NULL, NULL);
-		return 1;
+		changed = 1;
 	}
-	return 0;
+	return changed;
 }  /* i_mapper_symmetric_zero_to_one */
 
 /* A mapper for the floating point log. */
