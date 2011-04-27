@@ -801,22 +801,6 @@ $obst_constructor
  * needed for the assembler irgs.
  */
 void $arch\_create_opcodes(const arch_irn_ops_t *be_ops) {
-#define N   irop_flag_none
-#define L   irop_flag_labeled
-#define C   irop_flag_commutative
-#define X   irop_flag_cfopcode
-#define F   irop_flag_fragile
-#define Y   irop_flag_forking
-#define H   irop_flag_highlevel
-#define c   irop_flag_constlike
-#define K   irop_flag_keep
-#define M   irop_flag_machine
-#define O   irop_flag_machine_op
-#define NB  irop_flag_dump_noblock
-#define NI  irop_flag_dump_noinput
-#define n   irop_flag_cse_neutral
-#define R   (irop_flag_user << 0)
-
 	ir_op_ops  ops;
 	int        cur_opcode;
 	static int run_once = 0;
