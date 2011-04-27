@@ -36,6 +36,7 @@
 #include "irouts.h"
 #include "irflag_t.h"
 #include "irpass_t.h"
+#include "irnodeset.h"
 
 /** if this flag is set, verify entity types in Load & Store nodes */
 static int verify_entities = 0;
@@ -768,7 +769,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 		ASSERT_AND_RET(
 			is_Bad(pred) || (get_irn_mode(pred) == mode_X),
 			"Block node must have a mode_X predecessor", 0);
-		ASSERT_AND_RET(is_cfop(skip_Proj(pred)), "Block predecessor must be a cfop", 0);
+		ASSERT_AND_RET(is_cfop(skip_Proj(skip_Tuple(pred))), "Block predecessor must be a cfop", 0);
 	}
 
 	if (n == get_irg_start_block(irg)) {
@@ -1839,6 +1840,121 @@ static void verify_wrap_ssa(ir_node *node, void *env)
 
 #endif /* DEBUG_libfirm */
 
+typedef struct check_cfg_env_t {
+	pmap *branch_nodes; /**< map blocks to their branching nodes,
+	                         map mode_X nodes to the blocks they branch to */
+	int   res;
+	ir_nodeset_t ignore_nodes;
+	ir_nodeset_t kept_nodes;
+} check_cfg_env_t;
+
+static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
+{
+	pmap    *branch_nodes = env->branch_nodes;
+	ir_mode *mode         = get_irn_mode(node);
+
+	if (ir_nodeset_contains(&env->ignore_nodes, node))
+		return 1;
+
+	if (mode == mode_X) {
+		ir_node *block         = get_nodes_block(node);
+		ir_node *former_branch = pmap_get(branch_nodes, block);
+		ir_node *branch        = node;
+
+		if (is_Proj(branch)) {
+			branch = skip_Proj(skip_Tuple(branch));
+		}
+
+		ASSERT_AND_RET_DBG(former_branch == NULL || former_branch == branch,
+		                   "Multiple branching nodes in a block", 0,
+		                   ir_printf("nodes %+F,%+F in block %+F\n",
+		                             node, former_branch, block));
+		pmap_insert(branch_nodes, block, branch);
+	} else if (is_Block(node)) {
+		int n_cfgpreds = get_Block_n_cfgpreds(node);
+		int i;
+
+		for (i = 0; i < n_cfgpreds; ++i) {
+			ir_node *branch = get_Block_cfgpred(node, i);
+			ir_node *former_dest;
+			if (is_Bad(branch))
+				continue;
+			former_dest = pmap_get(branch_nodes, branch);
+			ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
+			                   "Multiple users on mode_X node", 0,
+			                   ir_printf("node %+F\n", node));
+			pmap_insert(branch_nodes, branch, node);
+		}
+	} else if (is_Tuple(node)) {
+		int arity = get_irn_arity(node);
+		int i;
+
+		for (i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(node, i);
+			ir_nodeset_insert(&env->ignore_nodes, in);
+		}
+	}
+
+	return 1;
+}
+
+static void check_cfg_walk_func(ir_node *node, void *data)
+{
+	check_cfg_env_t *env = (check_cfg_env_t*)data;
+	int              res = check_cfg_node(node, env);
+	env->res &= res;
+}
+
+static int verify_block_branch(ir_node *block, check_cfg_env_t *env)
+{
+	ir_node *branch = pmap_get(env->branch_nodes, block);
+	ASSERT_AND_RET_DBG(branch != NULL || ir_nodeset_contains(&env->kept_nodes, block),
+	                   "block contains no cfop", 0,
+	                   ir_printf("block %+F\n", block));
+	return 1;
+}
+
+static void assert_branch(ir_node *node, void *data)
+{
+	check_cfg_env_t *env = (check_cfg_env_t*)data;
+	if (is_Block(node)) {
+		env->res &= verify_block_branch(node, env);
+	}
+}
+
+/**
+ * Checks CFG well-formedness
+ */
+static int check_cfg(ir_graph *irg)
+{
+	check_cfg_env_t env;
+	env.branch_nodes = pmap_create(); /**< map blocks to branch nodes */
+	env.res          = 1;
+	ir_nodeset_init(&env.ignore_nodes);
+
+	/* note that we do not use irg_walk_block because it will miss these
+	 * invalid blocks without a jump instruction which we want to detect
+	 * here */
+	irg_walk_graph(irg, check_cfg_walk_func, NULL, &env);
+	ir_nodeset_destroy(&env.ignore_nodes);
+
+	ir_nodeset_init(&env.kept_nodes);
+	{
+		ir_node *end   = get_irg_end(irg);
+		int      arity = get_irn_arity(end);
+		int      i;
+		for (i = 0; i < arity; ++i) {
+			ir_node *n = get_irn_n(end, i);
+			ir_nodeset_insert(&env.kept_nodes, n);
+		}
+	}
+	irg_walk_graph(irg, assert_branch, NULL, &env);
+
+	ir_nodeset_destroy(&env.kept_nodes);
+	pmap_destroy(env.branch_nodes);
+	return env.res;
+}
+
 /*
  * Calls irn_verify for each node in irg.
  * Graph must be in state "op_pin_state_pinned".
@@ -1864,6 +1980,9 @@ int irg_verify(ir_graph *irg, unsigned flags)
 		NULL,
 		&res
 	);
+
+	if (!check_cfg(irg))
+		res = 0;
 
 	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && ! res) {
 		ir_entity *ent = get_irg_entity(irg);
