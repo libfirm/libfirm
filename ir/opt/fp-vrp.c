@@ -163,13 +163,19 @@ static int transfer(ir_node* const irn)
 	ir_tarval*     o;
 
 	if (m == mode_X) {
+		ir_tarval* const f = get_tarval_b_false();
+		bitinfo*   const b = get_bitinfo(get_nodes_block(irn));
+
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
-		switch (get_irn_opcode(irn)) {
+
+		if (b->z == f && b->o == f) {
+			z = f;
+			o = f;
+		} else switch (get_irn_opcode(irn)) {
 			case iro_Proj: {
 				ir_node* const pred = get_Proj_pred(irn);
 				if (is_Start(pred)) {
-					z = get_tarval_b_true();
-					o = get_tarval_b_false();
+					goto result_unknown_X;
 				} else if (is_Cond(pred)) {
 					ir_node*   const selector = get_Cond_selector(pred);
 					bitinfo*   const b        = get_bitinfo(selector);
@@ -210,12 +216,8 @@ static int transfer(ir_node* const irn)
 				break;
 			}
 
-			case iro_Jmp: {
-				bitinfo* const b = get_bitinfo(get_nodes_block(irn));
-				z = b->z;
-				o = b->o;
-				break;
-			}
+			case iro_Jmp:
+				goto result_unknown_X;
 
 			default:
 cannot_analyse_X:
@@ -239,8 +241,15 @@ result_unknown_X:
 			}
 		}
 
+		if (!reachable) {
+			ir_graph *const irg = get_Block_irg(irn);
+			reachable =
+				irn == get_irg_start_block(irg) ||
+				irn == get_irg_end_block(irg);
+		}
+
 		o = get_tarval_b_false();
-		z = reachable || irn == get_irg_start_block(get_irn_irg(irn)) ? get_tarval_b_true() : o;
+		z = reachable ? get_tarval_b_true() : o;
 	} else if (mode_is_intb(m)) {
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 		switch (get_irn_opcode(irn)) {
@@ -577,10 +586,23 @@ static void first_round(ir_node* const irn, void* const env)
 static void apply_result(ir_node* const irn, void* ctx)
 {
 	environment_t* env = (environment_t*)ctx;
-	bitinfo* const b   = get_bitinfo(irn);
+	bitinfo*       b;
 	ir_tarval*     z;
 	ir_tarval*     o;
 
+	ir_node* const block = is_Block(irn) ? irn : get_nodes_block(irn);
+	if (is_Bad(block)) {
+		exchange(irn, block);
+		return;
+	}
+
+	bitinfo* const block_b = get_bitinfo(block);
+	if (block_b && block_b->z == block_b->o && block_b->z == get_tarval_b_false()) {
+		exchange(irn, get_irg_bad(get_Block_irg(block)));
+		return;
+	}
+
+	b = get_bitinfo(irn);
 	if (!b) return;
 	if (is_Const(irn)) return; // It cannot get any better than a Const.
 
@@ -598,8 +620,7 @@ static void apply_result(ir_node* const irn, void* ctx)
 			ir_graph *irg = get_irn_irg(irn);
 			n = new_r_Const(irg, z);
 		} else if (m == mode_X) {
-			ir_node*  const block = get_nodes_block(irn);
-			ir_graph* const irg   = get_Block_irg(block);
+			ir_graph* const irg = get_Block_irg(block);
 			if (z == get_tarval_b_true()) {
 				// Might produce an endless loop, so keep the block.
 				add_End_keepalive(get_irg_end(irg), block);
@@ -732,11 +753,11 @@ void fixpoint_vrp(ir_graph* const irg)
 
 		/* We need this extra step because the dom tree does not contain unreachable
 		   blocks in Firm. Moreover build phi list. */
-		irg_walk_graph(irg, clear_links, build_phi_lists, NULL);
+		irg_walk_anchors(irg, clear_links, build_phi_lists, NULL);
 
 		/* TODO Improve iteration order. Best is reverse postorder in data flow
 		 * direction and respecting loop nesting for fastest convergence. */
-		irg_walk_blkwise_dom_top_down(irg, firm_clear_link, first_round, q);
+		irg_walk_blkwise_dom_top_down(irg, NULL, first_round, q);
 
 		while (!pdeq_empty(q)) {
 			ir_node* const n = (ir_node*)pdeq_getl(q);
