@@ -81,7 +81,8 @@
 static be_options_t be_options = {
 	DUMP_NONE,                         /* dump flags */
 	BE_TIME_OFF,                       /* no timing */
-	0,                                 /* no opt profile */
+	false,                             /* profile_generate */
+	false,                             /* profile_use */
 	0,                                 /* try to omit frame pointer */
 	0,                                 /* create PIC code */
 	BE_VERIFY_WARN,                    /* verification level: warn */
@@ -130,7 +131,8 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
 	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
-	LC_OPT_ENT_BOOL     ("profile",    "instrument the code for execution count profiling",   &be_options.opt_profile),
+	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling",   &be_options.opt_profile_generate),
+	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                           &be_options.opt_profile_use),
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
 	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
 
@@ -548,18 +550,21 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		Get the filename for the profiling data.
 		Beware: '\0' is already included in sizeof(suffix)
 	*/
-	sprintf(prof_filename, "%.*s%s\n", (int)(sizeof(prof_filename) - sizeof(suffix)), cup_name, suffix);
+	sprintf(prof_filename, "%.*s%s",
+	        (int)(sizeof(prof_filename) - sizeof(suffix)), cup_name, suffix);
 
-	/*
-		Next: Either instruments all irgs with profiling code
-		or try to read in profile data for current translation unit.
-	*/
-	if (be_options.opt_profile) {
-		ir_graph *prof_init_irg = ir_profile_instrument(prof_filename, profile_default);
+	if (be_options.opt_profile_use) {
+		bool res = ir_profile_read(prof_filename);
+		if (!res) {
+			fprintf(stderr, "Warning: Couldn't read profile data '%s'\n",
+			        prof_filename);
+		}
+	}
+	if (be_options.opt_profile_generate) {
+		ir_graph *prof_init_irg
+			= ir_profile_instrument(prof_filename);
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
-	} else {
-		ir_profile_read(prof_filename);
 	}
 
 	stat_active = stat_is_active();

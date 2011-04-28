@@ -27,14 +27,9 @@
 #ifndef FIRM_BE_BEPROFILE_H
 #define FIRM_BE_BEPROFILE_H
 
+#include <stdbool.h>
 #include "irgraph.h"
 #include "irnode.h"
-
-/** Additional flags for profiling */
-enum profile_flags {
-	profile_with_locations = 0x0001,   /**< create location table */
-	profile_default        = 0         /**< default settings */
-};
 
 /**
  * Instruments irgs with profile code
@@ -44,14 +39,14 @@ enum profile_flags {
  *
  * @return The irg doing the profile initialization.
  */
-ir_graph *ir_profile_instrument(const char *filename, unsigned flags);
+ir_graph *ir_profile_instrument(const char *filename);
 
 /**
  * Reads the corresponding profile info file if it exists and returns a
  * profile info struct
  * @param filename The name of the file containing profile information
  */
-void ir_profile_read(const char *filename);
+bool ir_profile_read(const char *filename);
 
 /**
  * Frees the profile info
@@ -61,7 +56,7 @@ void ir_profile_free(void);
 /**
  * Get block execution count as determined be profiling
  */
-unsigned int ir_profile_get_block_execcount(const ir_node * block);
+unsigned int ir_profile_get_block_execcount(const ir_node *block);
 
 /**
  * Initializes exec_freq structure for an irg based on profile data
@@ -71,6 +66,6 @@ ir_exec_freq *ir_create_execfreqs_from_profile(ir_graph *irg);
 /**
  * Tells whether profile module has acquired data
  */
-int ir_profile_has_data(void);
+bool ir_profile_has_data(void);
 
-#endif /* FIRM_BE_BEPROFILE_H */
+#endif

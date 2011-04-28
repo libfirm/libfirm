@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -20,23 +20,22 @@
 /**
  * @file
  * @brief       Code instrumentation and execution count profiling.
- * @author      Adam M. Szalkowski
- * @date        06.04.2006
+ * @author      Adam M. Szalkowski, Steven Schaefer
+ * @date        06.04.2006, 11.11.2010
  * @version     $Id$
  */
 #include "config.h"
 
 #include <math.h>
+#include <stdio.h>
 
 #include "hashptr.h"
 #include "debug.h"
 #include "obst.h"
+#include "xmalloc.h"
 #include "set.h"
-#include "list.h"
-#include "pmap.h"
-#include "array_t.h"
+#include "irtools.h"
 
-#include "irprintf.h"
 #include "irgwalk.h"
 #include "irdump_t.h"
 #include "irnode_t.h"
@@ -44,31 +43,48 @@
 #include "execfreq.h"
 #include "typerep.h"
 
-#include "dbginfo.h"
-#include "irhooks.h"
-#include "iredges.h"
-
 #include "irprofile.h"
 
-/** An entry in the id-to-location map */
-typedef struct loc_entry {
-	ir_entity    *fname;   /**< the entity holding the file name */
-	unsigned int lineno;   /**< line number */
-} loc_entry;
-
+/* Instrument blocks walker. */
 typedef struct block_id_walker_data_t {
-	ir_tarval      **array;    /**< the entity the holds the block counts */
-	unsigned int   id;         /**< current block id number */
-	ir_node        *symconst;  /**< the SymConst representing array */
-	pmap           *fname_map; /**< set containing all found filenames */
-	loc_entry      *locs;      /**< locations */
-	ir_type        *tp_char;   /**< the character type */
-	unsigned       flags;      /**< profile flags */
+	unsigned int id;   /**< current block id number */
+	ir_node *symconst; /**< the SymConst representing the counter array */
 } block_id_walker_data_t;
 
+/* Associate counters with blocks. */
+typedef struct block_assoc_t {
+	unsigned int i;          /**< current block id number */
+	unsigned int *counters;  /**< block execution counts */
+} block_assoc_t;
+
+typedef struct intialize_execfreq_env_t {
+	ir_graph *irg;
+	ir_exec_freq *execfreqs;
+	double freq_factor;
+} initialize_execfreq_env_t;
+
+/* maximal filename size */
+#define MAX_NAME_SIZE 0x100
+
+/* minimal execution frequency (an execfreq of 0 confuses algos) */
+#define MIN_EXECFREQ 0.00001
+
+/* keep the execcounts here because they are only read once per compiler run */
+static set *profile = NULL;
+
+/* Hook for vcg output. */
+DEBUG_ONLY(static void *hook;)
+
+/* The debug module handle. */
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
+
+/* Since the backend creates a new firm graph we cannot associate counts with
+ * blocks directly. Instead we associate them with the block ids, which are
+ * maintained.
+ */
 typedef struct execcount_t {
-	unsigned long block;
-	unsigned int count;
+	unsigned long block; /**< block id */
+	unsigned int  count; /**< execution count */
 } execcount_t;
 
 /**
@@ -85,40 +101,166 @@ static int cmp_execcount(const void *a, const void *b, size_t size)
 /**
  * Block walker, count number of blocks.
  */
-static void block_counter(ir_node * bb, void * data)
+static void block_counter(ir_node *bb, void *data)
 {
-	unsigned *count = (unsigned*)data;
 	(void) bb;
-	*count = *count + 1;
+	unsigned *count = (unsigned*) data;
+	(*count)++;
 }
 
 /**
- * Return the number of blocks the given graph.
+ * Returns the number of blocks the given graph.
  */
-static unsigned int count_blocks(ir_graph *irg)
+static unsigned int get_irg_n_blocks(ir_graph *irg)
 {
 	unsigned int count = 0;
-
 	irg_block_walk_graph(irg, block_counter, NULL, &count);
 	return count;
 }
 
-/* keep the execcounts here because they are only read once per compiler run */
-static set * profile = NULL;
-static hook_entry_t hook;
+/**
+ * Returns the number of basic blocks in the current ir program.
+ */
+static unsigned int get_irp_n_blocks(void)
+{
+	int i, n = get_irp_n_irgs();
+	unsigned int count = 0;
+
+	for (i = 0; i < n; i++) {
+		ir_graph *irg = get_irp_irg(i);
+		count += get_irg_n_blocks(irg);
+	}
+
+	return count;
+}
+
+/* vcg helper */
+static void dump_profile_node_info(void *ctx, FILE *f, const ir_node *irn)
+{
+	(void) ctx;
+	if (is_Block(irn)) {
+		unsigned int execcount = ir_profile_get_block_execcount(irn);
+		fprintf(f, "profiled execution count: %u\n", execcount);
+	}
+}
 
 /**
- * Instrument a block with code needed for profiling
+ * Add the given method entity as a constructor.
+ */
+static void add_constructor(ir_entity *method)
+{
+    ir_type   *method_type  = get_entity_type(method);
+    ir_type   *ptr_type     = new_type_pointer(method_type);
+
+    ir_type   *constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
+	/* Mach-O does not like labels in the constructor segment, but with ELF
+	 * the linker dies horribly if there is no label. */
+	ident     *ide = id_unique("constructor_ptr.%u");
+    ir_entity *ptr = new_entity(constructors, ide, ptr_type);
+    ir_graph  *irg = get_const_code_irg();
+    ir_node   *val = new_rd_SymConst_addr_ent(NULL, irg, mode_P_code, method);
+
+	set_entity_ld_ident(ptr, new_id_from_chars("", 0));
+    set_entity_compiler_generated(ptr, 1);
+    set_entity_linkage(ptr, IR_LINKAGE_CONSTANT | IR_LINKAGE_HIDDEN_USER);
+    set_entity_visibility(ptr, ir_visibility_private);
+    set_atomic_ent_value(ptr, val);
+}
+
+/**
+ * Returns an entity representing the __init_firmprof function from libfirmprof
+ * This is the equivalent of:
+ * extern void __init_firmprof(char *filename, uint *counters, uint size)
+ */
+static ir_entity *get_init_firmprof_ref(void)
+{
+	ident   *init_name = new_id_from_str("__init_firmprof");
+	ir_type *init_type = new_type_method(3, 0);
+	ir_type *uint      = new_type_primitive(mode_Iu);
+	ir_type *uintptr   = new_type_pointer(uint);
+	ir_type *string    = new_type_pointer(new_type_primitive(mode_Bs));
+	ir_entity *result;
+
+	set_method_param_type(init_type, 0, string);
+	set_method_param_type(init_type, 1, uintptr);
+	set_method_param_type(init_type, 2, uint);
+
+	result = new_entity(get_glob_type(), init_name, init_type);
+	set_entity_visibility(result, ir_visibility_external);
+
+	return result;
+}
+
+/**
+ * Generates a new irg which calls the initializer
+ *
+ * Pseudocode:
+ *    static void __firmprof_initializer(void) __attribute__ ((constructor))
+ *    {
+ *        __init_firmprof(ent_filename, bblock_counts, n_blocks);
+ *    }
+ */
+static ir_graph *gen_initializer_irg(ir_entity *ent_filename,
+                                     ir_entity *bblock_counts, int n_blocks)
+{
+	ir_graph *irg;
+	ir_node  *ins[3];
+	ir_node  *bb, *ret, *call, *symconst;
+	ir_type  *empty_frame_type;
+	symconst_symbol sym;
+
+	ir_entity *init_ent = get_init_firmprof_ref();
+
+	ident     *name = new_id_from_str("__firmprof_initializer");
+	ir_entity *ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
+	set_entity_visibility(ent, ir_visibility_local);
+	set_entity_ld_ident(ent, name);
+
+	/* create the new ir_graph */
+	irg = new_ir_graph(ent, 0);
+	set_current_ir_graph(irg);
+	empty_frame_type = get_irg_frame_type(irg);
+	set_type_size_bytes(empty_frame_type, 0);
+	set_type_state(empty_frame_type, layout_fixed);
+
+	bb = get_r_cur_block(irg);
+
+	sym.entity_p = init_ent;
+	symconst     = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+
+	sym.entity_p = ent_filename;
+	ins[0] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+	sym.entity_p = bblock_counts;
+	ins[1] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+	ins[2] = new_r_Const_long(irg, mode_Iu, n_blocks);
+
+	call = new_r_Call(bb, get_irg_initial_mem(irg), symconst, 3, ins,
+	        get_entity_type(init_ent));
+	ret  = new_r_Return(bb, new_r_Proj(call, mode_M, pn_Call_M), 0, NULL);
+	mature_immBlock(bb);
+
+	add_immBlock_pred(get_irg_end_block(irg), ret);
+	mature_immBlock(get_irg_end_block(irg));
+
+	irg_finalize_cons(irg);
+
+	/* add a pointer to the new function in the constructor section */
+	add_constructor(ent);
+
+	return irg;
+}
+
+/**
+ * Instrument a block with code needed for profiling.
+ * This just inserts the instruction nodes, it doesn't connect the memory
+ * nodes in a meaningful way.
  */
 static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 {
 	ir_graph *irg = get_irn_irg(bb);
-	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown;
-	ir_node  *cnst;
+	ir_node  *load, *store, *offset, *add, *projm, *proji, *unknown, *cnst;
 
-	/**
-	 * We can't instrument the end block as there are no real instructions there
-	 */
+	/* We can't instrument the end block */
 	if (bb == get_irg_end_block(irg))
 		return;
 
@@ -132,452 +274,322 @@ static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 	add     = new_r_Add(bb, proji, cnst, mode_Iu);
 	store   = new_r_Store(bb, projm, offset, add, cons_none);
 	projm   = new_r_Proj(store, mode_M, pn_Store_M);
+
 	set_irn_link(bb, projm);
 	set_irn_link(projm, load);
 }
 
-typedef struct fix_env {
-	ir_node *end_block;
-} fix_env;
-
 /**
- * SSA Construction for instrumentation code memory
+ * SSA Construction for instrumentation code memory.
+ *
+ * This introduces a new memory node and connects it to the instrumentation
+ * codes, inserting phiM nodes as necessary. Note that afterwards, the new
+ * memory is not connected to any return nodes and thus still dead.
  */
 static void fix_ssa(ir_node *bb, void *data)
 {
-	fix_env *env = (fix_env*)data;
-	ir_node *mem;
-	int     arity = get_Block_n_cfgpreds(bb);
+	ir_graph *irg = get_irn_irg(bb);
+	ir_node *mem, *proj, *load;
+	int n, arity = get_Block_n_cfgpreds(bb);
 
-	/* end block are not instrumented, skip! */
-	if (bb == env->end_block)
+	(void) data;
+
+	/* end blocks are not instrumented, skip! */
+	if (bb == get_irg_end_block(irg))
 		return;
 
-	if (bb == get_irg_start_block(get_irn_irg(bb))) {
-		mem = get_irg_initial_mem(get_irn_irg(bb));
+	if (bb == get_irg_start_block(irg)) {
+		mem = get_irg_initial_mem(irg);
 	} else if (arity == 1) {
-		mem = (ir_node*)get_irn_link(get_Block_cfgpred_block(bb, 0));
+		ir_node *pred = get_Block_cfgpred_block(bb, 0);
+		if (!is_Bad(pred))
+			mem = (ir_node*) get_irn_link(pred);
+		else
+			mem = new_r_NoMem(irg);
 	} else {
-		int n;
-		ir_node **ins;
-
-		NEW_ARR_A(ir_node*, ins, arity);
+		ir_node **ins = ALLOCAN(ir_node*, arity);
 		for (n = arity - 1; n >= 0; --n) {
-			ins[n] = (ir_node*)get_irn_link(get_Block_cfgpred_block(bb, n));
+			ir_node *pred = get_Block_cfgpred_block(bb, n);
+			if (!is_Bad(pred))
+				ins[n] = (ir_node*) get_irn_link(pred);
+			else
+				ins[n] = new_r_NoMem(irg);
 		}
 		mem = new_r_Phi(bb, arity, ins, mode_M);
 	}
-	set_Load_mem((ir_node*)get_irn_link((ir_node*)get_irn_link(bb)), mem);
-}
 
-static void add_constructor(ir_entity *method)
-{
-    ir_type   *method_type  = get_entity_type(method);
-    ir_type   *ptr_type     = new_type_pointer(method_type);
-
-    ir_type   *constructors = get_segment_type(IR_SEGMENT_CONSTRUCTORS);
-    ident     *ide          = id_unique("constructor_ptr.%u");
-    ir_entity *ptr          = new_entity(constructors, ide, ptr_type);
-	ir_graph  *irg          = get_const_code_irg();
-    ir_node   *val          = new_rd_SymConst_addr_ent(NULL, irg, mode_P_code,
-	                                                   method);
-
-    set_entity_compiler_generated(ptr, 1);
-    set_entity_linkage(ptr, IR_LINKAGE_CONSTANT);
-    set_atomic_ent_value(ptr, val);
+	/* The block link fields point to the projm from the instrumentation code,
+	 * the projm in turn links to the initial load which lacks a memory
+	 * argument at this point. */
+	proj = (ir_node*) get_irn_link(bb);
+	load = (ir_node*) get_irn_link(proj);
+	set_Load_mem(load, mem);
 }
 
 /**
- * Generates a new irg which calls the initializer
- *
- * Pseudocode:
- *    void __firmprof_initializer(void) { __init_firmprof(ent_filename, bblock_id, bblock_counts, n_blocks); }
+ * Instrument a single block.
  */
-static ir_graph *gen_initializer_irg(ir_entity *ent_filename, ir_entity *bblock_id, ir_entity *bblock_counts, int n_blocks)
-{
-	ir_node   *ins[4];
-	ident     *name = new_id_from_str("__firmprof_initializer");
-	ir_entity *ent  = new_entity(get_glob_type(), name, new_type_method(0, 0));
-	ir_node   *ret, *call, *symconst;
-	symconst_symbol sym;
-
-	ident     *init_name = new_id_from_str("__init_firmprof");
-	ir_type   *init_type = new_type_method(4, 0);
-	ir_type   *uint, *uintptr, *string;
-	ir_entity *init_ent;
-	ir_graph  *irg;
-	ir_node   *bb;
-	ir_type   *empty_frame_type;
-
-	set_entity_ld_ident(ent, name);
-
-	uint    = new_type_primitive(mode_Iu);
-	uintptr = new_type_pointer(uint);
-	string  = new_type_pointer(new_type_primitive(mode_Bs));
-
-	set_method_param_type(init_type, 0, string);
-	set_method_param_type(init_type, 1, uintptr);
-	set_method_param_type(init_type, 2, uintptr);
-	set_method_param_type(init_type, 3, uint);
-	init_ent = new_entity(get_glob_type(), init_name, init_type);
-	set_entity_ld_ident(init_ent, init_name);
-
-	irg = new_ir_graph(ent, 0);
-	empty_frame_type = get_irg_frame_type(irg);
-	set_type_size_bytes(empty_frame_type, 0);
-	set_type_state(empty_frame_type, layout_fixed);
-
-	bb = get_cur_block();
-
-	sym.entity_p = init_ent;
-	symconst     = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-
-	sym.entity_p = ent_filename;
-	ins[0] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-	sym.entity_p = bblock_id;
-	ins[1] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-	sym.entity_p = bblock_counts;
-	ins[2] = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-	ins[3] = new_r_Const_long(irg, mode_Iu, n_blocks);
-
-	call = new_r_Call(bb, get_irg_initial_mem(irg), symconst, 4, ins, init_type);
-	ret = new_r_Return(bb, new_r_Proj(call, mode_M, pn_Call_M), 0, NULL);
-	mature_immBlock(bb);
-
-	add_immBlock_pred(get_irg_end_block(irg), ret);
-	mature_immBlock(get_irg_end_block(irg));
-
-	irg_finalize_cons(irg);
-
-	add_constructor(ent);
-
-	return irg;
-}
-
-/**
- * Create the location data for the given debug info.
- */
-static void create_location_data(dbg_info *dbg, block_id_walker_data_t *wd)
-{
-	unsigned lineno;
-	const char *fname = ir_retrieve_dbg_info(dbg, &lineno);
-
-	if (fname) {
-		pmap_entry *entry = pmap_find(wd->fname_map, (void *)fname);
-		ir_entity  *ent;
-
-		if (! entry) {
-			static unsigned nr = 0;
-			ident       *id;
-			char        buf[128];
-			ir_type     *arr;
-			size_t      i, len = strlen(fname) + 1;
-			ir_tarval **tarval_string;
-
-			snprintf(buf, sizeof(buf), "firm_name_arr.%u", nr);
-			arr = new_type_array(1, wd->tp_char);
-			set_array_bounds_int(arr, 0, 0, len);
-
-			snprintf(buf, sizeof(buf), "__firm_name.%u", nr++);
-			id = new_id_from_str(buf);
-			ent = new_entity(get_glob_type(), id, arr);
-			set_entity_ld_ident(ent, id);
-
-			pmap_insert(wd->fname_map, (void *)fname, ent);
-
-			/* initialize file name string constant */
-			tarval_string = ALLOCAN(ir_tarval*, len);
-			for (i = 0; i < len; ++i) {
-				tarval_string[i] = new_tarval_from_long(fname[i], mode_Bs);
-			}
-			set_entity_linkage(ent, IR_LINKAGE_CONSTANT);
-			set_array_entity_values(ent, tarval_string, len);
-		} else {
-			ent = (ir_entity*)entry->value;
-		}
-		wd->locs[wd->id].fname  = ent;
-		wd->locs[wd->id].lineno = lineno;
-	} else {
-		wd->locs[wd->id].fname  = NULL;
-		wd->locs[wd->id].lineno = 0;
-	}
-}
-
-/**
- * Walker: assigns an ID to every block.
- * Builds the string table
- */
-static void block_id_walker(ir_node *bb, void *data)
+static void block_instrument_walker(ir_node *bb, void *data)
 {
 	block_id_walker_data_t *wd = (block_id_walker_data_t*)data;
-
-	wd->array[wd->id] = new_tarval_from_long(get_irn_node_nr(bb), mode_Iu);
 	instrument_block(bb, wd->symconst, wd->id);
-
-	if (wd->flags & profile_with_locations) {
-		dbg_info *dbg = get_irn_dbg_info(bb);
-		create_location_data(dbg, wd);
-	}
 	++wd->id;
 }
 
-#define IDENT(x)    new_id_from_chars(x, sizeof(x) - 1)
-
-ir_graph *ir_profile_instrument(const char *filename, unsigned flags)
+/**
+ * Synchronize the original memory input of node with the additional operand
+ * from the profiling code.
+ */
+static ir_node *sync_mem(ir_node *bb, ir_node *mem)
 {
-	int n, i;
-	int n_blocks = 0;
-	ir_entity  *bblock_id;
-	ir_entity  *bblock_counts;
-	ir_entity  *ent_filename;
-	ir_entity  *ent_locations = NULL;
-	ir_entity  *loc_lineno = NULL;
-	ir_entity  *loc_name = NULL;
-	ir_entity  *ent;
-	ir_type    *array_type;
-	ir_type    *uint_type;
-	ir_type    *string_type;
-	ir_type    *character_type;
-	ir_type    *loc_type = NULL;
-	ir_type    *charptr_type;
-	ir_type    *gtp;
-	ir_tarval **tarval_array;
-	ir_tarval **tarval_string;
-	ir_tarval *tv;
-	int filename_len = strlen(filename)+1;
-	ident *cur_ident;
-	unsigned align_l, align_n, size;
-	block_id_walker_data_t  wd;
-	symconst_symbol sym;
-
-	/* count the number of block first */
-	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph *irg = get_irp_irg(n);
-
-		n_blocks += count_blocks(irg);
-	}
-
-	/* create all the necessary types and entities. Note that the
-	   types must have a fixed layout, because we already running in the
-	   backend */
-	uint_type      = new_type_primitive(mode_Iu);
-	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
-
-	array_type     = new_type_array(1, uint_type);
-	set_array_bounds_int(array_type, 0, 0, n_blocks);
-	set_type_size_bytes(array_type, n_blocks * get_mode_size_bytes(mode_Iu));
-	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
-	set_type_state(array_type, layout_fixed);
-
-	character_type = new_type_primitive(mode_Bs);
-	string_type    = new_type_array(1, character_type);
-	set_array_bounds_int(string_type, 0, 0, filename_len);
-	set_type_size_bytes(string_type, filename_len);
-	set_type_alignment_bytes(string_type, 1);
-	set_type_state(string_type, layout_fixed);
-
-	gtp            = get_glob_type();
-
-	cur_ident      = IDENT("__FIRMPROF__BLOCK_IDS");
-	bblock_id      = new_entity(gtp, cur_ident, array_type);
-	set_entity_ld_ident(bblock_id, cur_ident);
-
-	cur_ident      = IDENT("__FIRMPROF__BLOCK_COUNTS");
-	bblock_counts  = new_entity(gtp, cur_ident, array_type);
-	set_entity_ld_ident(bblock_counts, cur_ident);
-
-	cur_ident      = IDENT("__FIRMPROF__FILE_NAME");
-	ent_filename   = new_entity(gtp, cur_ident, string_type);
-	set_entity_ld_ident(ent_filename, cur_ident);
-
-	if (flags & profile_with_locations) {
-		loc_type       = new_type_struct(IDENT("__location"));
-		loc_lineno     = new_entity(loc_type, IDENT("lineno"), uint_type);
-		align_l        = get_type_alignment_bytes(uint_type);
-		size           = get_type_size_bytes(uint_type);
-		set_entity_offset(loc_lineno, 0);
-
-		charptr_type   = new_type_pointer(character_type);
-		align_n        = get_type_size_bytes(charptr_type);
-		set_type_alignment_bytes(charptr_type, align_n);
-		loc_name       = new_entity(loc_type, IDENT("name"), charptr_type);
-		size           = (size + align_n - 1) & ~(align_n - 1);
-		set_entity_offset(loc_name, size);
-		size          += align_n;
-
-		if (align_n > align_l)
-			align_l = align_n;
-		size = (size + align_l - 1) & ~(align_l - 1);
-		set_type_size_bytes(loc_type, size);
-		set_type_state(loc_type, layout_fixed);
-
-		loc_type = new_type_array(1, loc_type);
-		set_array_bounds_int(string_type, 0, 0, n_blocks);
-
-		cur_ident     = IDENT("__FIRMPROF__LOCATIONS");
-		ent_locations = new_entity(gtp, cur_ident, loc_type);
-		set_entity_ld_ident(ent_locations, cur_ident);
-	}
-
-	/* initialize count array */
-	NEW_ARR_A(ir_tarval *, tarval_array, n_blocks);
-	tv = get_mode_null(mode_Iu);
-	for (i = 0; i < n_blocks; ++i) {
-		tarval_array[i] = tv;
-	}
-	set_array_entity_values(bblock_counts, tarval_array, n_blocks);
-
-	/* initialize function name string constant */
-	tarval_string = ALLOCAN(ir_tarval*, filename_len);
-	for (i = 0; i < filename_len; ++i) {
-		tarval_string[i] = new_tarval_from_long(filename[i], mode_Bs);
-	}
-	set_entity_linkage(ent_filename, IR_LINKAGE_CONSTANT);
-	set_array_entity_values(ent_filename, tarval_string, filename_len);
-
-	/* initialize block id array and instrument blocks */
-	wd.array     = tarval_array;
-	wd.id        = 0;
-	wd.tp_char   = character_type;
-	wd.flags     = flags;
-	if (flags & profile_with_locations) {
-		wd.fname_map = pmap_create();
-		NEW_ARR_A(loc_entry, wd.locs, n_blocks);
-	}
-
-	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
-		ir_graph *irg   = get_irp_irg(i);
-		ir_node  *endbb = get_irg_end_block(irg);
-		int       i;
-		fix_env   env;
-
-		/* generate a symbolic constant pointing to the count array */
-		sym.entity_p = bblock_counts;
-		wd.symconst  = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-
-		irg_block_walk_graph(irg, block_id_walker, NULL, &wd);
-		env.end_block = get_irg_end_block(irg);
-		irg_block_walk_graph(irg, fix_ssa, NULL, &env);
-		for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
-			ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
-			ir_node *bb   = get_Block_cfgpred_block(endbb, i);
-			ir_node *sync;
-			ir_node *ins[2];
-
-			switch (get_irn_opcode(node)) {
-			case iro_Return:
-				ins[0] = (ir_node*)get_irn_link(bb);
-				ins[1] = get_Return_mem(node);
-				sync   = new_r_Sync(bb, 2, ins);
-				set_Return_mem(node, sync);
-				break;
-			case iro_Raise:
-				ins[0] = (ir_node*)get_irn_link(bb);
-				ins[1] = get_Raise_mem(node);
-				sync   = new_r_Sync(bb, 2, ins);
-				set_Raise_mem(node, sync);
-				break;
-			default:
-				/* a fragile's op exception. There should be another path to End,
-				   so ignore it */
-				assert(is_fragile_op(node) && "unexpected End control flow predecessor");
-			}
-		}
-	}
-	set_array_entity_values(bblock_id, tarval_array, n_blocks);
-
-	if (flags & profile_with_locations) {
-		ir_graph *irg = get_const_code_irg();
-		/* build the initializer for the locations */
-		ent = get_array_element_entity(loc_type);
-		set_entity_linkage(ent_locations, IR_LINKAGE_CONSTANT);
-		for (i = 0; i < n_blocks; ++i) {
-			compound_graph_path *path;
-			ir_tarval *tv;
-			ir_node *n;
-
-			/* lineno */
-			path = new_compound_graph_path(loc_type, 2);
-			set_compound_graph_path_array_index(path, 0, i);
-			set_compound_graph_path_node(path, 0, ent);
-			set_compound_graph_path_node(path, 1, loc_lineno);
-			tv = new_tarval_from_long(wd.locs[i].lineno, mode_Iu);
-			add_compound_ent_value_w_path(ent_locations, new_r_Const(irg, tv), path);
-
-			/* name */
-			path = new_compound_graph_path(loc_type, 2);
-			set_compound_graph_path_array_index(path, 0, i);
-			set_compound_graph_path_node(path, 0, ent);
-			set_compound_graph_path_node(path, 1, loc_name);
-			if (wd.locs[i].fname) {
-				sym.entity_p = wd.locs[i].fname;
-				n = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
-			} else {
-				n = new_r_Const(irg, get_mode_null(mode_P_data));
-			}
-			add_compound_ent_value_w_path(ent_locations, n, path);
-		}
-		pmap_destroy(wd.fname_map);
-	}
-	return gen_initializer_irg(ent_filename, bblock_id, bblock_counts, n_blocks);
-}
-
-static void profile_node_info(void *ctx, FILE *f, const ir_node *irn)
-{
-	(void) ctx;
-	if (is_Block(irn)) {
-		fprintf(f, "profiled execution count: %u\n", ir_profile_get_block_execcount(irn));
-	}
-}
-
-static void register_vcg_hook(void)
-{
-	memset(&hook, 0, sizeof(hook));
-	hook.hook._hook_node_info = profile_node_info;
-	register_hook(hook_node_info, &hook);
-}
-
-static void unregister_vcg_hook(void)
-{
-	unregister_hook(hook_node_info, &hook);
+	ir_node *ins[2];
+	ins[0] = (ir_node*) get_irn_link(bb);
+	ins[1] = mem;
+	return new_r_Sync(bb, 2, ins);
 }
 
 /**
- * Reads the corresponding profile info file if it exists and returns a
- * profile info struct
+ * Instrument a single ir_graph, counters should point to the bblock
+ * counters array.
  */
-void ir_profile_read(const char *filename)
+static void instrument_irg(ir_graph *irg, ir_entity *counters,
+                           block_id_walker_data_t *wd)
 {
-	FILE   *f;
-	char    buf[8];
-	size_t  ret;
+	ir_node *end   = get_irg_end(irg);
+	ir_node *endbb = get_irg_end_block(irg);
+	int i;
 
-	f = fopen(filename, "r");
-	if (f == NULL) {
-		return;
+	/* generate a symbolic constant pointing to the count array */
+	symconst_symbol sym;
+	sym.entity_p = counters;
+	wd->symconst = new_r_SymConst(irg, mode_P_data, sym, symconst_addr_ent);
+
+	/* instrument each block in the current irg */
+	irg_block_walk_graph(irg, block_instrument_walker, NULL, wd);
+	irg_block_walk_graph(irg, fix_ssa, NULL, NULL);
+
+	/* connect the new memory nodes to the return nodes */
+	for (i = get_Block_n_cfgpreds(endbb) - 1; i >= 0; --i) {
+		ir_node *node = skip_Proj(get_Block_cfgpred(endbb, i));
+		ir_node *bb   = get_Block_cfgpred_block(endbb, i);
+		ir_node *mem;
+
+		switch (get_irn_opcode(node)) {
+		case iro_Return:
+			mem = get_Return_mem(node);
+			set_Return_mem(node, sync_mem(bb, mem));
+			break;
+		case iro_Raise:
+			mem = get_Raise_mem(node);
+			set_Raise_mem(node, sync_mem(bb, mem));
+			break;
+		case iro_Bad:
+			break;
+		default:
+			/* A fragile's op exception. There should be another path to End,
+			 * so ignore it.
+			 */
+			assert(is_fragile_op(node) && \
+				"unexpected End control flow predecessor");
+		}
 	}
-	printf("found profile data '%s'.\n", filename);
 
-	/* check magic */
+	/* as well as calls with attribute noreturn */
+	for (i = get_End_n_keepalives(end) - 1; i >= 0; --i) {
+		ir_node *node = get_End_keepalive(end, i);
+		if (is_Call(node)) {
+			ir_node *bb  = get_nodes_block(node);
+			ir_node *mem = get_Call_mem(node);
+			set_Call_mem(node, sync_mem(bb, mem));
+		}
+	}
+}
+
+/**
+ * Creates a new entity representing the equivalent of
+ * static unsigned int name[size]
+ */
+static ir_entity *new_array_entity(ident *name, int size)
+{
+	ir_entity *result;
+	ir_type *uint_type, *array_type;
+
+	uint_type = new_type_primitive(mode_Iu);
+	set_type_alignment_bytes(uint_type, get_type_size_bytes(uint_type));
+
+	array_type = new_type_array(1, uint_type);
+	set_array_bounds_int(array_type, 0, 0, size);
+	set_type_size_bytes(array_type, size * get_mode_size_bytes(mode_Iu));
+	set_type_alignment_bytes(array_type, get_mode_size_bytes(mode_Iu));
+	set_type_state(array_type, layout_fixed);
+
+	result = new_entity(get_glob_type(), name, array_type);
+	set_entity_visibility(result, ir_visibility_local);
+	set_entity_compiler_generated(result, 1);
+
+	return result;
+}
+
+/**
+ * Creates a new entity representing the equivalent of
+ * static const char name[strlen(string)+1] = string
+ */
+static ir_entity *new_static_string_entity(ident *name, const char *string)
+{
+	ir_entity *result;
+
+	ir_type *char_type   = new_type_primitive(mode_Bs);
+	ir_type *string_type = new_type_array(1, char_type);
+
+	ir_initializer_t *contents;
+
+	size_t i, length = strlen(string)+1;
+
+	/* Create the type for a fixed-length string */
+	set_array_bounds_int(string_type, 0, 0, length);
+	set_type_size_bytes(string_type, length);
+	set_type_alignment_bytes(string_type, 1);
+	set_type_state(string_type, layout_fixed);
+
+	result = new_entity(get_glob_type(), name, string_type);
+	set_entity_visibility(result, ir_visibility_local);
+	set_entity_linkage(result, IR_LINKAGE_CONSTANT);
+	set_entity_compiler_generated(result, 1);
+
+	/* There seems to be no simpler way to do this. Or at least, cparser
+	 * does exactly the same thing... */
+	contents = create_initializer_compound(length);
+	for (i = 0; i < length; i++) {
+		ir_tarval *c = new_tarval_from_long(string[i], mode_Bs);
+		ir_initializer_t *init = create_initializer_tarval(c);
+		set_initializer_compound_value(contents, i, init);
+	}
+	set_entity_initializer(result, contents);
+
+	return result;
+}
+
+/**
+ * Instrument all ir_graphs in the current ir_program. Currently this only
+ * works for graphs in the backend. Additionally, the resulting program
+ * has to be linked with libfirmprof.
+ *
+ * @param filename the name of the profile file (usually module_name.prof)
+ * @returns the module initializer, may be NULL
+ */
+ir_graph *ir_profile_instrument(const char *filename)
+{
+	int n, n_blocks = 0;
+	ident *counter_id, *filename_id;
+	ir_entity *bblock_counts, *ent_filename;
+	block_id_walker_data_t wd;
+	FIRM_DBG_REGISTER(dbg, "firm.ir.profile");
+
+	/* Don't do anything for modules without code. Else the linker will
+	 * complain. */
+	if (get_irp_n_irgs() == 0)
+		return NULL;
+
+	/* count the number of block first */
+	n_blocks = get_irp_n_blocks();
+
+	/* create all the necessary types and entities. Note that the
+	 * types must have a fixed layout, because we are already running in the
+	 * backend */
+	counter_id    = new_id_from_str("__FIRMPROF__BLOCK_COUNTS");
+	bblock_counts = new_array_entity(counter_id, n_blocks);
+
+	filename_id  = new_id_from_str("__FIRMPROF__FILE_NAME");
+	ent_filename = new_static_string_entity(filename_id, filename);
+
+	/* initialize block id array and instrument blocks */
+	wd.id  = 0;
+	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
+		ir_graph *irg = get_irp_irg(n);
+		instrument_irg(irg, bblock_counts, &wd);
+	}
+
+	return gen_initializer_irg(ent_filename, bblock_counts, n_blocks);
+}
+
+static unsigned int *
+parse_profile(const char *filename, unsigned int num_blocks)
+{
+	unsigned int *result = NULL;
+	char buf[8];
+	size_t ret;
+
+	FILE *f = fopen(filename, "rb");
+	if (!f) {
+		DBG((dbg, LEVEL_2, "Failed to open profile file (%s)\n", filename));
+		return NULL;
+	}
+
+	/* check header */
 	ret = fread(buf, 8, 1, f);
 	if (ret == 0 || strncmp(buf, "firmprof", 8) != 0) {
-		return;
+		DBG((dbg, LEVEL_2, "Broken fileheader in profile\n"));
+		goto end;
 	}
 
-	if (profile) ir_profile_free();
+	result = XMALLOCN(unsigned int, num_blocks);
+	if (fread(result, sizeof(unsigned int) * num_blocks, 1, f) < 1) {
+		DBG((dbg, LEVEL_4, "Failed to read counters... (size: %u)\n",
+		    sizeof(unsigned int) * num_blocks));
+		xfree(result);
+		result = NULL;
+	}
+
+end:
+	fclose(f);
+	return result;
+}
+
+/**
+ * Reads the corresponding profile info file if it exists.
+ */
+
+static void block_associate_walker(ir_node *bb, void *env)
+{
+	block_assoc_t *b = (block_assoc_t*) env;
+	execcount_t query;
+
+	query.block = get_irn_node_nr(bb);
+	query.count = b->counters[(b->i)++];
+	DBG((dbg, LEVEL_4, "execcount(%+F, %u): %u\n", bb, query.block,
+	    query.count));
+	set_insert(profile, &query, sizeof(query), query.block);
+}
+
+static void irp_associate_blocks(block_assoc_t *env)
+{
+	int n;
+	for (n = get_irp_n_irgs() - 1; n >= 0; --n) {
+		ir_graph *irg = get_irp_irg(n);
+		irg_block_walk_graph(irg, block_associate_walker, NULL, env);
+	}
+}
+
+bool ir_profile_read(const char *filename)
+{
+	block_assoc_t env;
+	FIRM_DBG_REGISTER(dbg, "firm.ir.profile");
+
+	env.i = 0;
+	env.counters = parse_profile(filename, get_irp_n_blocks());
+	if (!env.counters)
+		return false;
+
+	if (profile)
+		ir_profile_free();
 	profile = new_set(cmp_execcount, 16);
 
-	for (;;) {
-		execcount_t  query;
-		ret = fread(&query, sizeof(unsigned int), 2, f);
+	irp_associate_blocks(&env);
+	xfree(env.counters);
 
-		if (ret != 2) break;
-
-		set_insert(profile, &query, sizeof(query), query.block);
-	}
-
-	fclose(f);
-	register_vcg_hook();
+	/* register the vcg hook */
+	hook = dump_add_node_info_callback(dump_profile_node_info, NULL);
+	return true;
 }
 
 /**
@@ -586,50 +598,45 @@ void ir_profile_read(const char *filename)
 void ir_profile_free(void)
 {
 	if (profile) {
-		unregister_vcg_hook();
 		del_set(profile);
+		profile = NULL;
+	}
+
+	if (hook != NULL) {
+		dump_remove_node_info_callback(hook);
+		hook = NULL;
 	}
 }
 
 /**
  * Tells whether profile module has acquired data
  */
-int ir_profile_has_data(void)
+bool ir_profile_has_data(void)
 {
-	return (profile != NULL);
+	return profile != NULL;
 }
 
 /**
- * Get block execution count as determined be profiling
+ * Get block execution count as determined by profiling
  */
-unsigned int
-ir_profile_get_block_execcount(const ir_node *block)
+unsigned int ir_profile_get_block_execcount(const ir_node *block)
 {
 	execcount_t *ec, query;
 
-	if (!profile)
+	if (!ir_profile_has_data())
 		return 1;
 
 	query.block = get_irn_node_nr(block);
-	ec = (execcount_t*)set_find(profile, &query, sizeof(query), get_irn_node_nr(block));
+	ec = (execcount_t*)set_find(profile, &query, sizeof(query), query.block);
 
 	if (ec != NULL) {
 		return ec->count;
 	} else {
-		ir_fprintf(stderr, "Warning: Profile contains no data for %+F\n",
-		           block);
+		DBG((dbg, LEVEL_3,
+			"Warning: Profile contains no data for %+F\n", block));
 		return 1;
 	}
 }
-
-typedef struct intialize_execfreq_env_t {
-	ir_graph *irg;
-	ir_exec_freq *execfreqs;
-	double freq_factor;
-} initialize_execfreq_env_t;
-
-// minimal execution frequency (an execfreq of 0 confuses algos)
-static const double MIN_EXECFREQ = 0.00001;
 
 static void initialize_execfreq(ir_node *block, void *data)
 {
@@ -657,13 +664,13 @@ ir_exec_freq *ir_create_execfreqs_from_profile(ir_graph *irg)
 
 	env.irg = irg;
 	env.execfreqs = create_execfreq(irg);
-	start_block = get_irg_start_block(irg);
 
+	/* Find the first block containing instructions */
+	start_block = get_irg_start_block(irg);
 	count = ir_profile_get_block_execcount(start_block);
 	if (count == 0) {
-		// the function was never executed, so fallback to estimated freqs
+		/* the function was never executed, so fallback to estimated freqs */
 		free_execfreq(env.execfreqs);
-
 		return compute_execfreq(irg, 10);
 	}
 

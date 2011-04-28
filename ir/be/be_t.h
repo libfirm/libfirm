@@ -60,16 +60,17 @@ enum {
 
 /** Backend options */
 struct be_options_t {
-	unsigned dump_flags;      /**< backend dumping flags */
-	int  timing;              /**< time the backend phases */
-	int  opt_profile;         /**< instrument code for profiling */
-	int  omit_fp;             /**< try to omit the frame pointer */
-	int  pic;                 /**< create position independent code */
-	int  verify_option;       /**< backend verify option */
-	char ilp_server[128];     /**< the ilp server name */
-	char ilp_solver[128];     /**< the ilp solver name */
-	int  statev;              /**< enable stat event dumping */
-	char filtev[128];         /**< filter mask for stat events (regex is supported) */
+	unsigned dump_flags;       /**< backend dumping flags */
+	int  timing;               /**< time the backend phases */
+	int  opt_profile_generate; /**< instrument code for profiling */
+	int  opt_profile_use;      /**< use existing profile data */
+	int  omit_fp;              /**< try to omit the frame pointer */
+	int  pic;                  /**< create position independent code */
+	int  verify_option;        /**< backend verify option */
+	char ilp_server[128];      /**< the ilp server name */
+	char ilp_solver[128];      /**< the ilp solver name */
+	int  statev;               /**< enable stat event dumping */
+	char filtev[128];          /**< filter mask for stat events */
 };
 
 struct be_main_env_t {
