@@ -137,8 +137,13 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
 		if (get_irg_dom_state(get_irn_irg(n)) != dom_none) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
-			fprintf(F, "  tree pre num %d\n", get_Block_dom_tree_pre_num(n));
+			fprintf(F, "  domtree pre num %d\n", get_Block_dom_tree_pre_num(n));
 			fprintf(F, "  max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(n));
+		}
+		if (get_irg_postdom_state(get_irn_irg(n)) != dom_none) {
+			fprintf(F, "  pdom depth %d\n", get_Block_postdom_depth(n));
+			fprintf(F, "  pdomtree pre num %d\n", get_Block_pdom_tree_pre_num(n));
+			fprintf(F, "  max pdomsubtree pre num %d\n", get_Block_pdom_max_subtree_pre_num(n));
 		}
 
 		fprintf(F, "  Execution frequency statistics:\n");
