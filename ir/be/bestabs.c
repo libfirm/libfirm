@@ -338,7 +338,7 @@ static void print_array_type(stabs_handle *h, ir_type *tp, int local)
 	ir_type      *etp     = get_array_element_type(tp);
 	size_t       i, n     = get_array_n_dimensions(tp);
 	unsigned     type_num = local ? h->next_type_nr++ : get_type_number(h, tp);
-	int          *perm;
+	size_t       *perm;
 
 	be_emit_irprintf("%u=a", type_num);
 	NEW_ARR_A(size_t, perm, n);
