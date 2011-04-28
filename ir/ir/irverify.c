@@ -1846,6 +1846,8 @@ typedef struct check_cfg_env_t {
 	int   res;
 	ir_nodeset_t ignore_nodes;
 	ir_nodeset_t kept_nodes;
+	ir_nodeset_t true_projs;
+	ir_nodeset_t false_projs;
 } check_cfg_env_t;
 
 static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
@@ -1859,10 +1861,11 @@ static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
 	if (mode == mode_X) {
 		ir_node *block         = get_nodes_block(node);
 		ir_node *former_branch = pmap_get(branch_nodes, block);
-		ir_node *branch        = node;
+		ir_node *skipped       = skip_Tuple(node);
+		ir_node *branch        = skipped;
 
 		if (is_Proj(branch)) {
-			branch = skip_Proj(skip_Tuple(branch));
+			branch = skip_Proj(branch);
 		}
 
 		ASSERT_AND_RET_DBG(former_branch == NULL || former_branch == branch,
@@ -1870,6 +1873,20 @@ static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
 		                   ir_printf("nodes %+F,%+F in block %+F\n",
 		                             node, former_branch, block));
 		pmap_insert(branch_nodes, block, branch);
+
+		if (is_Cond(branch)) {
+			long pn = get_Proj_proj(skipped);
+			if (get_irn_mode(get_Cond_selector(branch)) == mode_b) {
+				if (pn == pn_Cond_true)
+					ir_nodeset_insert(&env->true_projs, branch);
+				if (pn == pn_Cond_false)
+					ir_nodeset_insert(&env->false_projs, branch);
+			} else {
+				int default_pn = get_Cond_default_proj(branch);
+				if (pn == default_pn)
+					ir_nodeset_insert(&env->true_projs, branch);
+			}
+		}
 	} else if (is_Block(node)) {
 		int n_cfgpreds = get_Block_n_cfgpreds(node);
 		int i;
@@ -1914,11 +1931,30 @@ static int verify_block_branch(ir_node *block, check_cfg_env_t *env)
 	return 1;
 }
 
+static int verify_cond_projs(ir_node *cond, check_cfg_env_t *env)
+{
+	if (get_irn_mode(get_Cond_selector(cond)) == mode_b) {
+		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
+						   "Cond node lacks true proj", 0,
+						   ir_printf("Cond %+F\n", cond));
+		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->false_projs, cond),
+						   "Cond node lacks false proj", 0,
+						   ir_printf("Cond %+F\n", cond));
+	} else {
+		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
+		                   "Cond node lacks default Proj", 0,
+		                   ir_printf("Cond %+F\n", cond));
+	}
+	return 1;
+}
+
 static void assert_branch(ir_node *node, void *data)
 {
 	check_cfg_env_t *env = (check_cfg_env_t*)data;
 	if (is_Block(node)) {
 		env->res &= verify_block_branch(node, env);
+	} else if (is_Cond(node)) {
+		env->res &= verify_cond_projs(node, env);
 	}
 }
 
@@ -1931,6 +1967,8 @@ static int check_cfg(ir_graph *irg)
 	env.branch_nodes = pmap_create(); /**< map blocks to branch nodes */
 	env.res          = 1;
 	ir_nodeset_init(&env.ignore_nodes);
+	ir_nodeset_init(&env.true_projs);
+	ir_nodeset_init(&env.false_projs);
 
 	/* note that we do not use irg_walk_block because it will miss these
 	 * invalid blocks without a jump instruction which we want to detect
@@ -1950,6 +1988,8 @@ static int check_cfg(ir_graph *irg)
 	}
 	irg_walk_graph(irg, assert_branch, NULL, &env);
 
+	ir_nodeset_destroy(&env.false_projs);
+	ir_nodeset_destroy(&env.true_projs);
 	ir_nodeset_destroy(&env.kept_nodes);
 	pmap_destroy(env.branch_nodes);
 	return env.res;
