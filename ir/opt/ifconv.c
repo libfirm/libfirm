@@ -193,13 +193,14 @@ static void rewire(ir_node* node, int i, int j, ir_node* new_pred)
  */
 static void split_block(ir_node* block, int i, int j)
 {
-	ir_node* pred_block = get_nodes_block(get_irn_n(block, i));
-	int arity = get_irn_arity(block);
-	int new_pred_arity;
-	ir_node *phi, *next;
-	ir_node **ins = ALLOCAN(ir_node*, arity+1);
+	ir_node  *pred_block = get_nodes_block(get_irn_n(block, i));
+	int       arity      = get_irn_arity(block);
+	ir_node **ins        = ALLOCAN(ir_node*, arity + 1);
+	int       new_pred_arity;
+	ir_node  *phi;
+	ir_node  *next;
 	ir_node **pred_ins;
-	int k;
+	int       k;
 
 	DB((dbg, LEVEL_1, "Splitting predecessor %d of predecessor %d of %+F\n", j, i, block));
 
@@ -210,7 +211,6 @@ static void split_block(ir_node* block, int i, int j)
 		ins[k++] = copy;
 		for (; k < arity; ++k) ins[k] = get_irn_n(phi, k);
 		ins[k++] = get_irn_n(phi, i);
-		assert(k == arity+1);
 		set_irn_in(phi, k, ins);
 	}
 
@@ -218,31 +218,28 @@ static void split_block(ir_node* block, int i, int j)
 	ins[k++] = get_irn_n(pred_block, j);
 	for (; k < arity; ++k) ins[k] = get_irn_n(block, k);
 	ins[k++] = get_irn_n(block, i);
-	assert(k == arity+1);
 	set_irn_in(block, k, ins);
 
 	new_pred_arity = get_irn_arity(pred_block) - 1;
-	pred_ins = ALLOCAN(ir_node*, new_pred_arity);
+	pred_ins       = ALLOCAN(ir_node*, new_pred_arity);
 
 	for (phi = get_Block_phis(pred_block); phi != NULL; phi = next) {
-		for (k = 0; k < j; ++k) pred_ins[k] = get_irn_n(phi, k);
-		for (; k < new_pred_arity; ++k) pred_ins[k] = get_irn_n(phi, k + 1);
-		assert(k == new_pred_arity);
 		next = get_Phi_next(phi);
-		if (new_pred_arity > 1) {
-			set_irn_in(phi, k, pred_ins);
-		} else {
+		for (k = 0; k != j;              ++k) pred_ins[k] = get_irn_n(phi, k);
+		for (;      k != new_pred_arity; ++k) pred_ins[k] = get_irn_n(phi, k + 1);
+		if (k == 1) {
 			exchange(phi, pred_ins[0]);
+		} else {
+			set_irn_in(phi, k, pred_ins);
 		}
 	}
 
-	for (k = 0; k < j; ++k) pred_ins[k] = get_irn_n(pred_block, k);
-	for (; k < new_pred_arity; ++k) pred_ins[k] = get_irn_n(pred_block, k + 1);
-	assert(k == new_pred_arity);
-	if (new_pred_arity > 1) {
-		set_irn_in(pred_block, k, pred_ins);
-	} else {
+	for (k = 0; k != j;              ++k) pred_ins[k] = get_irn_n(pred_block, k);
+	for (;      k != new_pred_arity; ++k) pred_ins[k] = get_irn_n(pred_block, k + 1);
+	if (k == 1) {
 		exchange(pred_block, get_nodes_block(pred_ins[0]));
+	} else {
+		set_irn_in(pred_block, k, pred_ins);
 	}
 }
 
