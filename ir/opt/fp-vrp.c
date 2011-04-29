@@ -258,6 +258,15 @@ result_unknown_X:
 				break;
 			}
 
+			case iro_Confirm: {
+				ir_node* const v = get_Confirm_value(irn);
+				bitinfo* const b = get_bitinfo(v);
+				/* TODO Use bound and relation. */
+				z = b->z;
+				o = b->o;
+				break;
+			}
+
 			case iro_Shl: {
 				bitinfo*   const l  = get_bitinfo(get_Shl_left(irn));
 				bitinfo*   const r  = get_bitinfo(get_Shl_right(irn));
