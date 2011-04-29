@@ -586,19 +586,26 @@ static void first_round(ir_node* const irn, void* const env)
 static void apply_result(ir_node* const irn, void* ctx)
 {
 	environment_t* env = (environment_t*)ctx;
+	ir_node*       block;
 	bitinfo*       b;
 	ir_tarval*     z;
 	ir_tarval*     o;
 
-	ir_node* const block = is_Block(irn) ? irn : get_nodes_block(irn);
-	if (is_Bad(block)) {
-		exchange(irn, block);
+	if (is_Block(irn)) {
+		bitinfo* const block_b = get_bitinfo(irn);
+		/* Trivially unreachable blocks have no info. */
+		if (block_b == NULL || block_b->z == get_tarval_b_false()) {
+			exchange(irn, get_irg_bad(get_Block_irg(irn)));
+			env->modified = 1;
+		}
 		return;
 	}
 
-	bitinfo* const block_b = get_bitinfo(block);
-	if (block_b && block_b->z == block_b->o && block_b->z == get_tarval_b_false()) {
-		exchange(irn, get_irg_bad(get_Block_irg(block)));
+	/* Unreachable blocks are replaced before the nodes in them. */
+	block = get_nodes_block(irn);
+	if (is_Bad(block)) {
+		exchange(irn, block);
+		env->modified = 1;
 		return;
 	}
 
