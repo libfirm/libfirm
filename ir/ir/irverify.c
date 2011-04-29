@@ -2018,7 +2018,10 @@ int irg_verify(ir_graph *irg, unsigned flags)
 	last_irg_error = NULL;
 #endif /* NDEBUG */
 
-	if ((flags & VERIFY_ENFORCE_SSA) && pinned)
+	if (!check_cfg(irg))
+		res = 0;
+
+	if (res == 1 && (flags & VERIFY_ENFORCE_SSA) && pinned)
 		compute_doms(irg);
 
 	irg_walk_anchors(
@@ -2028,9 +2031,6 @@ int irg_verify(ir_graph *irg, unsigned flags)
 		NULL,
 		&res
 	);
-
-	if (!check_cfg(irg))
-		res = 0;
 
 	if (get_node_verification_mode() == FIRM_VERIFICATION_REPORT && ! res) {
 		ir_entity *ent = get_irg_entity(irg);
