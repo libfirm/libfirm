@@ -19,13 +19,19 @@
 
 /**
  * @file
- * @brief    Code Placement.  Pins all floating nodes to a block where they
- *           will be executed only if needed.
+ * @brief    Move nodes to a block where they will be executed the least
+ *           often.
  * @author   Christian Schaefer, Goetz Lindenmaier, Sebastian Felis,
  *           Michael Beck
  * @version  $Id$
+ *
+ * The idea here is to push nodes as deep into the dominance tree as their
+ * dependencies allow. After pushing them back up out of as many loops as
+ * possible.
  */
 #include "config.h"
+
+#include <stdbool.h>
 
 #include "iroptimize.h"
 #include "adt/pdeq.h"
@@ -34,17 +40,22 @@
 #include "irgopt.h"
 #include "irpass.h"
 
-static int is_Block_unreachable(ir_node *block)
+static bool is_block_reachable(ir_node *block)
 {
-	return get_Block_dom_depth(block) < 0;
+	return get_Block_dom_depth(block) >= 0;
+}
+
+/* mark node as not-visited */
+static void clear_irn_visited(ir_node *node)
+{
+	ir_graph    *irg     = get_irn_irg(node);
+	ir_visited_t visited = get_irg_visited(irg);
+	set_irn_visited(node, visited-1);
 }
 
 /**
  * Find the earliest correct block for node n.  --- Place n into the
  * same Block as its dominance-deepest Input.
- *
- * We have to avoid calls to get_nodes_block() here
- * because the graph is floating.
  *
  * move_out_of_loops() expects that place_floats_early() have placed
  * all "living" nodes into a living block. That's why we must
@@ -54,167 +65,95 @@ static int is_Block_unreachable(ir_node *block)
  * in case of a Phi into the effective use block). For Phi successors,
  * this may still be a dead block, but then there is no real use, as
  * the control flow will be dead later.
- *
- * @param n         the node to be placed
- * @param worklist  a worklist, predecessors of non-floating nodes are placed here
  */
 static void place_floats_early(ir_node *n, waitq *worklist)
 {
-	int i, irn_arity;
+	int       i;
+	int       arity;
+	ir_node  *block;
+	int       new_depth;
+	ir_graph *irg;
+	ir_node  *start_block;
+	ir_node  *new_block;
 
 	/* we must not run into an infinite loop */
-	assert(!irn_visited(n));
-	mark_irn_visited(n);
+	if (irn_visited_else_mark(n))
+		return;
 
-	/* Place floating nodes. */
-	if (get_irn_pinned(n) == op_pin_state_floats) {
-		ir_node *curr_block = get_nodes_block(n);
-		int in_dead_block   = is_Block_unreachable(curr_block);
-		int depth           = 0;
-		ir_node *b          = NULL;   /* The block to place this node in */
-		ir_graph *irg       = get_irn_irg(n);
-
-		assert(!is_Block(n));
-
-		if (is_irn_start_block_placed(n)) {
-			/* These nodes will not be placed by the loop below. */
-			b = get_irg_start_block(irg);
-			depth = 1;
-		}
-
-		/* find the block for this node. */
-		irn_arity = get_irn_arity(n);
-		for (i = 0; i < irn_arity; i++) {
-			ir_node *pred = get_irn_n(n, i);
-			ir_node *pred_block;
-
-			if (!irn_visited(pred)
-			    && (get_irn_pinned(pred) == op_pin_state_floats)) {
-
-				/*
-				 * If the current node is NOT in a dead block, but one of its
-				 * predecessors is, we must move the predecessor to a live
-				 * block.
-				 * Such thing can happen, if global CSE chose a node from a
-				 * dead block. We move it simply to our block.
-				 * Note that neither Phi nor End nodes are floating, so we don't
-				 * need to handle them here.
-				 */
-				if (! in_dead_block) {
-					if (get_irn_pinned(pred) == op_pin_state_floats &&
-						is_Block_unreachable(get_nodes_block(pred)))
-						set_nodes_block(pred, curr_block);
-				}
-				place_floats_early(pred, worklist);
-			}
-
-			/*
-			 * A node in the Bad block must stay in the bad block,
-			 * so don't compute a new block for it.
-			 */
-			if (in_dead_block)
-				continue;
-
-			/* Because all loops contain at least one op_pin_state_pinned node,
-			   now all our inputs are either op_pin_state_pinned or
-			   place_early() has already been finished on them.
-			   We do not have any unfinished inputs! */
-			pred_block = get_nodes_block(pred);
-			if (get_Block_dom_depth(pred_block) > depth) {
-				b = pred_block;
-				depth = get_Block_dom_depth(pred_block);
-			}
-			/* Avoid that the node is placed in the Start block if we are not
-			   in the backend phase. */
-			if (depth == 1 &&
-					get_Block_dom_depth(get_nodes_block(n)) > 1 &&
-					get_irg_phase_state(irg) != phase_backend) {
-				b = get_Block_cfg_out(get_irg_start_block(irg), 0);
-				assert(b != get_irg_start_block(irg));
-				depth = 2;
-			}
-		}
-		if (b)
-			set_nodes_block(n, b);
-	}
-
-	/*
-	 * Add predecessors of non floating nodes and non-floating predecessors
-	 * of floating nodes to worklist and fix their blocks if the are in dead
-	 * block.
+	/* The algorithm relies on the fact that all predecessors of a block are
+	 * moved up after a call to place_float_early of the predecessors
+	 * (see the loop below).
+	 * However we have to break cycles somewhere. Relying on the visited flag
+	 * will result in nodes not being moved up despite their place_floats_early
+	 * call.
+	 * Instead we break cycles at pinned nodes which won't move anyway:
+	 * This works because in firm each cycle contains a Phi or Block node
+	 * (which are pinned)
 	 */
-	irn_arity = get_irn_arity(n);
-
-	if (is_End(n)) {
-		/*
-		 * Simplest case: End node. Predecessors are keep-alives,
-		 * no need to move out of dead block.
-		 */
-		for (i = -1; i < irn_arity; ++i) {
+	if (get_irn_pinned(n) != op_pin_state_floats) {
+		/* we can't move pinned nodes */
+		arity = get_irn_arity(n);
+		for (i = 0; i < arity; ++i) {
 			ir_node *pred = get_irn_n(n, i);
-			if (!irn_visited(pred))
-				waitq_put(worklist, pred);
+			pdeq_putr(worklist, pred);
 		}
-	} else if (is_Block(n)) {
-		/*
-		 * Blocks: Predecessors are control flow, no need to move
-		 * them out of dead block.
-		 */
-		for (i = irn_arity - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(n, i);
-			if (!irn_visited(pred))
-				waitq_put(worklist, pred);
-		}
-	} else if (is_Phi(n)) {
-		ir_node *pred;
-		ir_node *curr_block = get_nodes_block(n);
-		int in_dead_block   = is_Block_unreachable(curr_block);
+		if (!is_Block(n))
+			pdeq_putr(worklist, get_nodes_block(n));
+		return;
+	}
 
-		/*
-		 * Phi nodes: move nodes from dead blocks into the effective use
-		 * of the Phi-input if the Phi is not in a bad block.
-		 */
-		pred = get_nodes_block(n);
-		if (!irn_visited(pred))
-			waitq_put(worklist, pred);
+	block = get_nodes_block(n);
+	/* do not move unreachable code (or its predecessors around) since dominance
+	 * is inalid there */
+	if (!is_block_reachable(block))
+		return;
 
-		for (i = irn_arity - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(n, i);
+	/* first move predecessors up */
+	arity = get_irn_arity(n);
+	place_floats_early(block, worklist);
+	for (i = 0; i < arity; ++i) {
+		ir_node *pred       = get_irn_n(n, i);
+		ir_node *pred_block = get_nodes_block(pred);
 
-			if (!irn_visited(pred)) {
-				if (! in_dead_block &&
-					get_irn_pinned(pred) == op_pin_state_floats &&
-					is_Block_unreachable(get_nodes_block(pred))) {
-					set_nodes_block(pred, get_Block_cfgpred_block(curr_block, i));
-				}
-				waitq_put(worklist, pred);
+		/* gcse can lead to predecessors of reachable code being unreachable.
+		 * Move them into the current block in this case */
+		if (!is_block_reachable(pred_block)) {
+			ir_node *new_pred_block = block;
+			assert(get_irn_pinned(pred) == op_pin_state_floats);
+			if (is_Phi(n)) {
+				new_pred_block = get_Block_cfgpred_block(block, i);
 			}
+			set_nodes_block(pred, new_pred_block);
+			clear_irn_visited(pred);
 		}
-	} else {
-		ir_node *pred;
-		ir_node *curr_block = get_nodes_block(n);
-		int in_dead_block   = is_Block_unreachable(curr_block);
+		place_floats_early(pred, worklist);
+	}
 
-		/*
-		 * All other nodes: move nodes from dead blocks into the same block.
-		 */
-		pred = get_nodes_block(n);
-		if (!irn_visited(pred))
-			waitq_put(worklist, pred);
-
-		for (i = irn_arity - 1; i >= 0; --i) {
-			ir_node *pred = get_irn_n(n, i);
-
-			if (!irn_visited(pred)) {
-				if (! in_dead_block &&
-					get_irn_pinned(pred) == op_pin_state_floats &&
-					is_Block_unreachable(get_nodes_block(pred))) {
-					set_nodes_block(pred, curr_block);
-				}
-				waitq_put(worklist, pred);
-			}
+	/* determine earliest point */
+	new_block = NULL;
+	new_depth = 0;
+	for (i = 0; i < arity; ++i) {
+		ir_node *pred       = get_irn_n(n, i);
+		ir_node *pred_block = get_nodes_block(pred);
+		int      pred_depth = get_Block_dom_depth(pred_block);
+		if (pred_depth > new_depth) {
+			new_depth = pred_depth;
+			new_block = pred_block;
 		}
 	}
+
+	/* avoid moving nodes into the start block if we are not in the backend */
+	irg         = get_irn_irg(n);
+	start_block = get_irg_start_block(irg);
+	if (new_block == start_block && block != start_block &&
+	    get_irg_phase_state(irg) != phase_backend) {
+		assert(get_Block_n_cfg_outs(start_block) == 1);
+		new_block = get_Block_cfg_out(start_block, 0);
+	}
+
+	/* Set the new block */
+	if (new_block != NULL)
+		set_nodes_block(n, new_block);
 }
 
 /**
@@ -279,7 +218,8 @@ static ir_node *calc_dom_dca(ir_node *dca, ir_node *block)
  * I.e., DCA is the block where we might place PRODUCER.
  * A data flow edge points from producer to consumer.
  */
-static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *producer)
+static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer,
+                                 ir_node *producer)
 {
 	/* Compute the last block into which we can place a node so that it is
 	   before consumer. */
@@ -296,7 +236,7 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer, ir_node *produ
 				if (is_Bad(new_block))
 					continue;
 
-				if (!is_Block_unreachable(new_block))
+				if (is_block_reachable(new_block))
 					dca = calc_dom_dca(dca, new_block);
 			}
 		}
@@ -320,22 +260,21 @@ static inline int get_block_loop_depth(ir_node *block)
  */
 static void move_out_of_loops(ir_node *n, ir_node *early)
 {
-	ir_node *best, *dca;
-	assert(n && early);
-
+	ir_node *block      = get_nodes_block(n);
+	ir_node *best       = block;
+	int      best_depth = get_block_loop_depth(best);
 
 	/* Find the region deepest in the dominator tree dominating
 	   dca with the least loop nesting depth, but still dominated
 	   by our early placement. */
-	dca = get_nodes_block(n);
-
-	best = dca;
-	while (dca != early) {
-		dca = get_Block_idom(dca);
-		if (!dca || is_Bad(dca)) break; /* may be Bad if not reachable from Start */
-		if (get_block_loop_depth(dca) < get_block_loop_depth(best)) {
-			best = dca;
+	while (block != early) {
+		ir_node *idom       = get_Block_idom(block);
+		int      idom_depth = get_block_loop_depth(idom);
+		if (idom_depth < best_depth) {
+			best       = idom;
+			best_depth = idom_depth;
 		}
+		block = idom;
 	}
 	if (best != get_nodes_block(n))
 		set_nodes_block(n, best);
@@ -358,22 +297,18 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 	for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(node, i);
 
-		if (is_End(succ)) {
-			/*
-			 * This consumer is the End node, a keep alive edge.
-			 * This is not a real consumer, so we ignore it
-			 */
+		/* keepalive edges are special and don't respect the dominance */
+		if (is_End(succ))
 			continue;
-		}
 
 		if (is_Proj(succ)) {
 			/* Proj nodes are in the same block as node, so
 			 * the users of Proj are our users. */
 			dca = get_deepest_common_dom_ancestor(succ, dca);
 		} else {
-			/* ignore if succ is in dead code */
+			/* ignore successors in unreachable code */
 			ir_node *succ_blk = get_nodes_block(succ);
-			if (is_Block_unreachable(succ_blk))
+			if (!is_block_reachable(succ_blk))
 				continue;
 			dca = consumer_dom_dca(dca, succ, node);
 		}
@@ -410,80 +345,60 @@ static void set_projs_block(ir_node *node, ir_node *block)
  * with the least loop-nesting-depth.  This places N out of as many
  * loops as possible and then makes it as control dependent as
  * possible.
- *
- * @param n         the node to be placed
- * @param worklist  a worklist, all successors of non-floating nodes are
- *                  placed here
  */
 static void place_floats_late(ir_node *n, pdeq *worklist)
 {
-	int i, n_outs;
-	ir_node *early_blk;
+	int      n_outs;
+	int      i;
+	ir_node *block;
+	ir_node *dca;
 
-	assert(!irn_visited(n)); /* no multiple placement */
+	if (irn_visited_else_mark(n))
+		return;
 
-	mark_irn_visited(n);
-
-	/* no need to place block nodes, control nodes are already placed. */
-	if (!is_Block(n) &&
-	    (!is_cfop(n)) &&
-	    (get_irn_mode(n) != mode_X)) {
-	    ir_op *op;
-		/* Remember the early_blk placement of this block to move it
-		   out of loop no further than the early_blk placement. */
-		early_blk = get_nodes_block(n);
-
-		/*
-		 * BEWARE: Here we also get code, that is live, but
-		 * was in a dead block.  If the node is life, but because
-		 * of CSE in a dead block, we still might need it.
-		 */
-
-		/* Assure that our users are all placed, except the Phi-nodes.
-		--- Each data flow cycle contains at least one Phi-node.  We
-		    have to break the `user has to be placed before the
-		    producer' dependence cycle and the Phi-nodes are the
-		    place to do so, because we need to base our placement on the
-		    final region of our users, which is OK with Phi-nodes, as they
-		    are op_pin_state_pinned, and they never have to be placed after a
-		    producer of one of their inputs in the same block anyway. */
-		for (i = get_irn_n_outs(n) - 1; i >= 0; --i) {
+	n_outs = get_irn_n_outs(n);
+	/* break cycles at pinned nodes (see place place_floats_early) as to why */
+	if (get_irn_pinned(n) != op_pin_state_floats) {
+		for (i = 0; i < n_outs; ++i) {
 			ir_node *succ = get_irn_out(n, i);
-			if (!irn_visited(succ) && !is_Phi(succ))
-				place_floats_late(succ, worklist);
+			pdeq_putr(worklist, succ);
 		}
-
-		/* do only move things that where not dead */
-		op = get_irn_op(n);
-
-		/* We have to determine the final block of this node... except for
-		   constants and Projs */
-		if ((get_irn_pinned(n) == op_pin_state_floats) &&
-			(op != op_Const)    &&
-			(op != op_SymConst) &&
-			(op != op_Proj))
-		{
-			/* deepest common ancestor in the dominator tree of all nodes'
-			   blocks depending on us; our final placement has to dominate
-			   DCA. */
-			ir_node *dca = get_deepest_common_dom_ancestor(n, NULL);
-			if (dca != NULL) {
-				set_nodes_block(n, dca);
-				move_out_of_loops(n, early_blk);
-				if (get_irn_mode(n) == mode_T) {
-					set_projs_block(n, get_nodes_block(n));
-				}
-			}
-		}
+		return;
 	}
 
-	/* Add successors of all non-floating nodes on list. (Those of floating
-	   nodes are placed already and therefore are marked.)  */
-	n_outs = get_irn_n_outs(n);
-	for (i = 0; i < n_outs; i++) {
+	/* place our users */
+	for (i = 0; i < n_outs; ++i) {
 		ir_node *succ = get_irn_out(n, i);
-		if (!irn_visited(succ)) {
-			pdeq_putr(worklist, succ);
+		place_floats_late(succ, worklist);
+	}
+
+	/* no point in moving Projs around, they are moved with their predecessor */
+	if (is_Proj(n))
+		return;
+	/* some nodes should simply stay in the startblock */
+	if (is_irn_start_block_placed(n)) {
+#ifndef NDEBUG
+		ir_graph *irg         = get_irn_irg(n);
+		ir_node  *start_block = get_irg_start_block(irg);
+		assert(get_nodes_block(n) == start_block);
+#endif
+		return;
+	}
+
+	/* don't move unreachable code around */
+	block = get_nodes_block(n);
+	if (!is_block_reachable(block))
+		return;
+
+	/* deepest common ancestor in the dominator tree of all nodes'
+	   blocks depending on us; our final placement has to dominate
+	   DCA. */
+	dca = get_deepest_common_dom_ancestor(n, NULL);
+	if (dca != NULL) {
+		set_nodes_block(n, dca);
+		move_out_of_loops(n, block);
+		if (get_irn_mode(n) == mode_T) {
+			set_projs_block(n, get_nodes_block(n));
 		}
 	}
 }
