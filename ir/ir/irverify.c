@@ -1852,38 +1852,52 @@ typedef struct check_cfg_env_t {
 	pmap *branch_nodes; /**< map blocks to their branching nodes,
 	                         map mode_X nodes to the blocks they branch to */
 	int   res;
-	ir_nodeset_t ignore_nodes;
 	ir_nodeset_t kept_nodes;
 	ir_nodeset_t true_projs;
 	ir_nodeset_t false_projs;
 } check_cfg_env_t;
 
-static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
+static int check_block_cfg(ir_node *block, check_cfg_env_t *env)
 {
-	pmap    *branch_nodes = env->branch_nodes;
-	ir_mode *mode         = get_irn_mode(node);
+	pmap *branch_nodes;
+	int   n_cfgpreds;
+	int   i;
 
-	if (ir_nodeset_contains(&env->ignore_nodes, node))
-		return 1;
+	n_cfgpreds   = get_Block_n_cfgpreds(block);
+	branch_nodes = env->branch_nodes;
+	for (i = 0; i < n_cfgpreds; ++i) {
+		/* check that each mode_X node is only connected
+		 * to 1 user */
+		ir_node *branch = get_Block_cfgpred(block, i);
+		ir_node *former_dest;
+		ir_node *former_branch;
+		ir_node *branch_proj;
+		ir_node *branch_block;
+		branch = skip_Tuple(branch);
+		if (is_Bad(branch))
+			continue;
+		former_dest = pmap_get(branch_nodes, branch);
+		ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
+						   "Multiple users on mode_X node", 0,
+						   ir_printf("node %+F\n", branch));
+		pmap_insert(branch_nodes, branch, block);
 
-	if (mode == mode_X) {
-		ir_node *block         = get_nodes_block(node);
-		ir_node *former_branch = pmap_get(branch_nodes, block);
-		ir_node *skipped       = skip_Tuple(node);
-		ir_node *branch        = skipped;
-
+		/* check that there's only 1 branching instruction in each block */
+		branch_block = get_nodes_block(branch);
+		branch_proj  = branch;
 		if (is_Proj(branch)) {
 			branch = skip_Proj(branch);
 		}
+		former_branch = pmap_get(branch_nodes, branch_block);
 
 		ASSERT_AND_RET_DBG(former_branch == NULL || former_branch == branch,
-		                   "Multiple branching nodes in a block", 0,
-		                   ir_printf("nodes %+F,%+F in block %+F\n",
-		                             node, former_branch, block));
-		pmap_insert(branch_nodes, block, branch);
+						   "Multiple branching nodes in a block", 0,
+						   ir_printf("nodes %+F,%+F in block %+F\n",
+									 branch, former_branch, branch_block));
+		pmap_insert(branch_nodes, branch_block, branch);
 
 		if (is_Cond(branch)) {
-			long pn = get_Proj_proj(skipped);
+			long pn = get_Proj_proj(branch_proj);
 			if (get_irn_mode(get_Cond_selector(branch)) == mode_b) {
 				if (pn == pn_Cond_true)
 					ir_nodeset_insert(&env->true_projs, branch);
@@ -1895,29 +1909,6 @@ static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
 					ir_nodeset_insert(&env->true_projs, branch);
 			}
 		}
-	} else if (is_Block(node)) {
-		int n_cfgpreds = get_Block_n_cfgpreds(node);
-		int i;
-
-		for (i = 0; i < n_cfgpreds; ++i) {
-			ir_node *branch = get_Block_cfgpred(node, i);
-			ir_node *former_dest;
-			if (is_Bad(branch))
-				continue;
-			former_dest = pmap_get(branch_nodes, branch);
-			ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
-			                   "Multiple users on mode_X node", 0,
-			                   ir_printf("node %+F\n", node));
-			pmap_insert(branch_nodes, branch, node);
-		}
-	} else if (is_Tuple(node)) {
-		int arity = get_irn_arity(node);
-		int i;
-
-		for (i = 0; i < arity; ++i) {
-			ir_node *in = get_irn_n(node, i);
-			ir_nodeset_insert(&env->ignore_nodes, in);
-		}
 	}
 
 	return 1;
@@ -1926,14 +1917,17 @@ static int check_cfg_node(ir_node *node, check_cfg_env_t *env)
 static void check_cfg_walk_func(ir_node *node, void *data)
 {
 	check_cfg_env_t *env = (check_cfg_env_t*)data;
-	int              res = check_cfg_node(node, env);
-	env->res &= res;
+	if (!is_Block(node))
+		return;
+	env->res &= check_block_cfg(node, env);
 }
 
 static int verify_block_branch(ir_node *block, check_cfg_env_t *env)
 {
 	ir_node *branch = pmap_get(env->branch_nodes, block);
-	ASSERT_AND_RET_DBG(branch != NULL || ir_nodeset_contains(&env->kept_nodes, block),
+	ASSERT_AND_RET_DBG(branch != NULL
+	                   || ir_nodeset_contains(&env->kept_nodes, block)
+	                   || block == get_irg_end_block(get_irn_irg(block)),
 	                   "block contains no cfop", 0,
 	                   ir_printf("block %+F\n", block));
 	return 1;
@@ -1974,7 +1968,6 @@ static int check_cfg(ir_graph *irg)
 	check_cfg_env_t env;
 	env.branch_nodes = pmap_create(); /**< map blocks to branch nodes */
 	env.res          = 1;
-	ir_nodeset_init(&env.ignore_nodes);
 	ir_nodeset_init(&env.true_projs);
 	ir_nodeset_init(&env.false_projs);
 
@@ -1982,7 +1975,6 @@ static int check_cfg(ir_graph *irg)
 	 * invalid blocks without a jump instruction which we want to detect
 	 * here */
 	irg_walk_graph(irg, check_cfg_walk_func, NULL, &env);
-	ir_nodeset_destroy(&env.ignore_nodes);
 
 	ir_nodeset_init(&env.kept_nodes);
 	{
