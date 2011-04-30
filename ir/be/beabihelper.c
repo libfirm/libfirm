@@ -165,9 +165,9 @@ static void rsm_clear_regs(register_state_mapping_t *rsm,
  * Add a register and its constraint flags to a register state map
  * and return its index inside the map.
  */
-static int rsm_add_reg(register_state_mapping_t *rsm,
-                       const arch_register_t *reg,
-                       arch_register_req_type_t flags)
+static size_t rsm_add_reg(register_state_mapping_t *rsm,
+                          const arch_register_t *reg,
+                           arch_register_req_type_t flags)
 {
 	size_t     input_idx = ARR_LEN(rsm->regs);
 	int        cls_idx   = reg->reg_class->index;
@@ -324,7 +324,7 @@ void be_epilog_begin(beabi_helper_env_t *env)
 void be_epilog_add_reg(beabi_helper_env_t *env, const arch_register_t *reg,
                        arch_register_req_type_t flags, ir_node *value)
 {
-	int index = rsm_add_reg(&env->epilog, reg, flags);
+	size_t index = rsm_add_reg(&env->epilog, reg, flags);
 	rsm_set_value(&env->epilog, index, value);
 }
 

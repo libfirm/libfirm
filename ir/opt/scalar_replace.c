@@ -332,26 +332,29 @@ static int find_possible_replacements(ir_graph *irg)
 {
 	ir_node *irg_frame;
 	ir_type *frame_tp;
-	int     i, j, k, static_link_arg;
+	size_t  mem_idx;
+	int     i;
+	long    static_link_arg;
 	int     res = 0;
 
 	/*
 	 * First, clear the link field of all interesting entities.
 	 */
 	frame_tp = get_irg_frame_type(irg);
-	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
-		ir_entity *ent = get_class_member(frame_tp, i);
+	for (mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
+		ir_entity *ent = get_class_member(frame_tp, --mem_idx);
 		set_entity_link(ent, NULL);
 	}
 
 	/* check for inner functions:
 	 * FIXME: need a way to get the argument position for the static link */
 	static_link_arg = 0;
-	for (i = get_class_n_members(frame_tp) - 1; i >= 0; --i) {
-		ir_entity *ent = get_class_member(frame_tp, i);
+	for (mem_idx = get_class_n_members(frame_tp); mem_idx > 0;) {
+		ir_entity *ent = get_class_member(frame_tp, --mem_idx);
 		if (is_method_entity(ent)) {
 			ir_graph *inner_irg = get_entity_irg(ent);
 			ir_node  *args;
+			int      j;
 
 			assure_irg_outs(inner_irg);
 			args = get_irg_args(inner_irg);
@@ -359,6 +362,7 @@ static int find_possible_replacements(ir_graph *irg)
 				ir_node *arg = get_irn_out(args, j);
 
 				if (get_Proj_proj(arg) == static_link_arg) {
+					int k;
 					for (k = get_irn_n_outs(arg) - 1; k >= 0; --k) {
 						ir_node *succ = get_irn_out(arg, k);
 
