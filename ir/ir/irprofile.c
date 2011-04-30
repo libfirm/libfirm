@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -103,9 +103,9 @@ static int cmp_execcount(const void *a, const void *b, size_t size)
  */
 static void block_counter(ir_node *bb, void *data)
 {
-	(void) bb;
 	unsigned *count = (unsigned*) data;
-	(*count)++;
+	(void) bb;
+	++(*count);
 }
 
 /**
