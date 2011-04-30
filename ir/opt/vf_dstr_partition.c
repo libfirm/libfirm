@@ -174,6 +174,11 @@ void vp_combine(vp_info *vpi)
 		foreach_vl_eta_theta(vpi->vli, eta, theta, it_theta) {
 			ir_node *weak = get_Theta_next(theta);
 
+			printf(
+				"eta %ld, theta %ld.\n",
+				get_irn_node_nr(eta), get_irn_node_nr(theta)
+			);
+
 			if (is_Weak(weak)) {
 				assert(!is_Weak(get_Weak_target(weak)));
 				set_Theta_next(theta, get_Weak_target(weak));

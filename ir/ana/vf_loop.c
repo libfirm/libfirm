@@ -407,3 +407,26 @@ int vl_eta_invar_it_next(vl_eta_invar_it *it, vl_edge *edge)
 	*it = plist_element_get_next(*it);
 	return 1;
 }
+
+void vl_eta_theta_change(vl_info *vli, ir_node *eta, ir_node *old, ir_node *new)
+{
+	plist_element_t *it;
+
+	vl_node_eta *vln = phase_get_irn_data(vli->phase, eta);
+	assert(vln && "No loop information for the given node.");
+	assert((vln->base.type == vl_type_eta) && "Not an eta node.");
+
+	vl_node *vl_old = phase_get_irn_data(vli->phase, old);
+
+	it = plist_find_value(vln->thetas, vl_old);
+	if (it) {
+		vl_node *vl_new = phase_get_or_set_irn_data(vli->phase, new);
+		vl_new->depth = vl_old->depth;
+		vl_new->etas  = vl_old->etas;
+		vl_new->irn   = new;
+		vl_new->type  = vl_old->type;
+
+		plist_insert_after(vln->thetas, it, vl_new);
+		plist_erase(vln->thetas, it);
+	}
+}

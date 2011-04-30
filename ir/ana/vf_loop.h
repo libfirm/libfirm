@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include "firm_types.h"
 #include "plist.h"
+#include "pset_new.h"
 
 /**
  * Loop analysis. This collects all sorts of information about loops in VFirm
@@ -59,6 +60,9 @@ void vl_free(vl_info *vli);
 /** Get the associated graph. */
 ir_graph *vl_get_irg(vl_info *vli);
 
+/** Disable invariants. Required for cloning nodes. */
+void vl_invar_disable(vl_info *vli);
+
 /** Get the loop depth of the given node. */
 int vl_node_get_depth(vl_info *vli, ir_node *irn);
 
@@ -86,6 +90,8 @@ int vl_eta_get_theta_count(vl_info *vli, ir_node *eta);
 void vl_eta_invar_it_init(vl_info *vli, vl_eta_invar_it *it, ir_node *eta);
 int vl_eta_invar_it_next(vl_eta_invar_it *it, vl_edge *edge);
 int vl_eta_get_invar_count(vl_info *vli, ir_node *eta);
+
+void vl_eta_theta_change(vl_info *vli, ir_node *eta, ir_node *old, ir_node *new);
 
 /** Dumps loop analysis debug information to the specified file. */
 void vl_dump(vl_info *vli, FILE* f);

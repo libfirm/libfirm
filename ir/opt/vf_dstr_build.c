@@ -31,6 +31,7 @@
 #include "irnode_t.h"
 #include "irgmod.h"
 #include "irdump.h"
+#include "irphase_t.h"
 #include "vf_dstr_build.h"
 #include "vf_dstr_arrange.h"
 #include "vf_dstr_partition.h"
@@ -53,8 +54,26 @@ typedef struct vb_info {
 	plist_t    *gammas;
 	ir_node    *old_block; /* The block that hosts the VFirm graph. */
 	ir_node    *block;
-	pset_new_t  todo;      /* Remaining loop subgraphs to process. */
+	plist_t    *todo;      /* Remaining loop subgraphs to process. */
+	ir_phase   *phase;
+
+	vl_info *vli; /* TODO: clean this up. */
 } vb_info;
+
+typedef struct vb_node {
+	char     on_todo;    /* Is the node on the todo list? */
+	ir_node *loop_copy;  /* The copy that belongs to the last seen loop. */
+	ir_node *loop;       /* The loop that was last seen. */
+} vb_node;
+
+/**
+ * Loop nodes:
+ * - When adding them, mark all fused nodes with on_todo, to prevent adding
+ *   them, too.
+ * - Process loops by depth. Put a NULL after loops from one phase to detect
+ *   when the next phase begins.
+ * - Duplicate loop nodes between phases.
+ */
 
 static int vb_skip_node(vb_info *vbi, ir_node *irn)
 {
@@ -181,6 +200,29 @@ static int vb_node_move_to_region_block(vb_info *vbi, va_info *vai,
 	return 0;
 }
 
+static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
+{
+	vb_node *vbn = phase_get_or_set_irn_data(vbi->phase, first_loop);
+
+	/* If the loop is already on the todo list, do nothing. */
+	if (!vbn->on_todo) {
+		va_loop_loop_it it;
+		ir_node        *loop;
+
+		/* Insert the node to the list and mark it. */
+		plist_insert_back(vbi->todo, first_loop);
+		vbn->on_todo = 1;
+
+		/* Mark all fused loops as being on the todo list, too. */
+		foreach_va_loop_loop(first_loop, loop, it) {
+			if (loop == first_loop) continue;
+
+			vbn = phase_get_or_set_irn_data(vbi->phase, loop);
+			vbn->on_todo = 1;
+		}
+	}
+}
+
 static void vb_process_nodes_walk(vb_info *vbi, va_info *vai, ir_node *irn,
                                   ir_node *header_block)
 {
@@ -192,7 +234,8 @@ static void vb_process_nodes_walk(vb_info *vbi, va_info *vai, ir_node *irn,
 	mark_irn_visited(irn);
 
 	if (is_Loop(irn)) {
-		pset_new_insert(&vbi->todo, irn);
+		/* Enqueue loop nodes for later processing. */
+		vb_enqueue_loop(vbi, irn);
 	}
 
 	for (i = 0; i < get_irn_arity(irn); i++) {
@@ -293,9 +336,6 @@ static ir_node *vb_build_loop_root(vb_info *vbi, vl_info *vli,
 	foreach_va_loop_eta(first_loop, loop, eta, it) {
 		vl_eta_theta_it  it_theta;
 		ir_node         *theta;
-
-		/* Remove the loop from the processing list. */
-		pset_new_remove(&vbi->todo, loop);
 
 		/* Value and condition must be calculated in the header. */
 		pset_new_insert(&roots, get_Eta_value(eta));
@@ -509,11 +549,130 @@ static void vb_replace_gating_nodes(vb_info *vbi, vl_info *vli)
 	}
 }
 
+/* Clone the given node if needed (the clone or original irn is returned). */
+static ir_node *vb_clone_dep(vb_info *vbi, ir_node *ir_dep, ir_node *loop)
+{
+	vb_node *vb_dep = phase_get_or_set_irn_data(vbi->phase, ir_dep);
+
+	if (vb_dep->loop == NULL) {
+		/* Let the loop take ownership of the unowned node. */
+		vb_dep->loop      = loop;
+		vb_dep->loop_copy = ir_dep; /* Use the original, no copy. */
+
+#if VB_DEBUG_BUILD
+		printf("Assigning node %ld to loop %ld.\n",
+			get_irn_node_nr(ir_dep), get_irn_node_nr(loop)
+		);
+#endif
+	} else if (vb_dep->loop == loop) {
+		/* We already processed that node for the current loop. */
+		ir_dep = vb_dep->loop_copy; /* Get the stored copy. */
+
+	} else if (vb_dep->loop != loop) {
+		/* The node belongs to another loop. Clone it. */
+		ir_node *clone = exact_copy(ir_dep);
+
+#if VB_DEBUG_BUILD
+		printf("Cloning node %ld (now %ld) for loop %ld.\n",
+			get_irn_node_nr(ir_dep), get_irn_node_nr(clone),
+			get_irn_node_nr(loop)
+		);
+#endif
+
+		if (is_Theta(ir_dep)) {
+			va_loop_loop_it it;
+			ir_node *it_loop, *eta;
+
+			foreach_va_loop_eta(loop, it_loop, eta, it) {
+				vl_eta_theta_change(vbi->vli, eta, ir_dep, clone);
+				printf(
+					"eta %ld: theta %ld -> theta %ld.\n",
+					get_irn_node_nr(eta), get_irn_node_nr(ir_dep),
+					get_irn_node_nr(clone)
+				);
+			}
+		}
+
+		/* That shouldn't happen. */
+		assert(!is_Eta(ir_dep));
+
+		/* Remember the clone on the original node. */
+		vb_dep->loop      = loop;
+		vb_dep->loop_copy = clone;
+
+		/* And then return the clone. */
+		ir_dep = clone;
+	}
+
+	assert(vb_dep->loop == loop);
+	return ir_dep;
+}
+
+static void vb_clone_walk(vb_info *vbi, ir_node *irn, ir_node *loop)
+{
+	int i;
+
+	if (irn_visited(irn)) return;
+	mark_irn_visited(irn);
+
+	if (is_Weak(irn)) {
+		ir_node *ir_dep = get_Weak_target(irn);
+
+		if (!vb_skip_node(vbi, ir_dep)) {
+			/* Clone the target if needed, similar to below. */
+			ir_dep = vb_clone_dep(vbi, ir_dep, loop);
+			set_Weak_target(irn, ir_dep);
+			vb_clone_walk(vbi, ir_dep, loop);
+		}
+	} else {
+		/* Scan dependencies for nodes to copy. */
+		for (i = 0; i < get_irn_arity(irn); i++) {
+			ir_node *ir_dep = get_irn_n(irn, i);
+
+			/* Skip already assigned nodes. */
+			if (vb_skip_node(vbi, ir_dep)) continue;
+
+			/* Clone the node if needed, redirect the edge and recurse. */
+			ir_dep = vb_clone_dep(vbi, ir_dep, loop);
+			set_irn_n(irn, i, ir_dep); /* May be a no-op. */
+			vb_clone_walk(vbi, ir_dep, loop);
+		}
+	}
+}
+
+static void vb_clone_loop(vb_info *vbi, ir_node *first_loop)
+{
+	va_loop_loop_it it;
+
+	ir_node  *loop, *eta;
+	ir_graph *irg = get_irn_irg(first_loop);
+
+	inc_irg_visited(irg);
+
+#if VB_DEBUG_BUILD
+	printf("Assigning nodes to loop %ld.\n", get_irn_node_nr(first_loop));
+#endif
+
+	/* Start to discover nodes from the eta nodes deps. */
+	foreach_va_loop_eta(first_loop, loop, eta, it) {
+		vb_clone_walk(vbi, eta, first_loop);
+	}
+}
+
+static void *vb_init_node(ir_phase *phase, const ir_node *irn)
+{
+	vb_info *vbi = phase_get_private(phase);
+
+	(void)irn;
+	return OALLOCZ(&vbi->obst, vb_node);
+}
+
 void vb_build(ir_graph *irg)
 {
 	ir_node *ins[1], *block, *end, *ret;
 	vb_info  vbi;
 	vp_info *vpi;
+	int      depth;
 
 	/* Partition the graph in subgraphs. NOTE: be careful not to use exchange
 	 * on the partitioned graph, as weak links won't be updated. Postpone that
@@ -530,12 +689,16 @@ void vb_build(ir_graph *irg)
 	assert(is_Return(ret) && "Invalid VFirm graph.");
 
 	vbi.old_block = get_nodes_block(ret);
+	vbi.vli = vp_get_vl_info(vpi);
 
 	obstack_init(&vbi.obst);
 	pmap_new_init(&vbi.merges);
 	pmap_new_init(&vbi.blocks);
-	pset_new_init(&vbi.todo);
+
 	vbi.gammas = plist_obstack_new(&vbi.obst);
+	vbi.todo   = plist_obstack_new(&vbi.obst);
+	vbi.phase  = new_phase(irg, vb_init_node);
+	phase_set_private(vbi.phase, &vbi);
 
 	dump_ir_graph(irg, "build");
 
@@ -545,20 +708,39 @@ void vb_build(ir_graph *irg)
 	dump_ir_graph(irg, "build");
 
 	/* Process remaining loop nodes. */
-	while (pset_new_size(&vbi.todo) > 0) {
-		pset_new_iterator_t it;
-		ir_node *loop;
+	for (depth = 0; plist_count(vbi.todo) > 0; depth++) {
+		plist_element_t *it;
 
-		pset_new_iterator_init(&it, &vbi.todo);
-		loop = pset_new_iterator_next(&it);
-		assert(loop);
+		/* Duplicate nodes utilized by unshared loops. */
+		foreach_plist(vbi.todo, it) {
+			ir_node *loop = plist_element_get_value(it);
+			vb_clone_loop(&vbi, loop);
+		}
 
-		/* This will remove the loop and all fused loops from todo. */
-		vb_build_loop(&vbi, vp_get_vl_info(vpi), loop);
-		dump_ir_graph(irg, "build");
+		dump_ir_graph(irg, "clone");
+
+		/* Add a terminator for the current depth. */
+		plist_insert_back(vbi.todo, NULL);
+
+		/* Pop off loops until we hit the terminator. */
+		while (1) {
+			ir_node *loop;
+			it = plist_first(vbi.todo);
+			plist_erase(vbi.todo, it);
+
+			loop = plist_element_get_value(it);
+			if (!loop) break; /* Terminator found. */
+
+			/* Process the loop. */
+			vb_build_loop(&vbi, vp_get_vl_info(vpi), loop);
+			dump_ir_graph(irg, "build");
+		}
+
+#if VB_DEBUG_BUILD
+		printf("Finished processing loops of depth %d.\n", depth);
+#endif
 	}
 
-	pset_new_destroy(&vbi.todo);
 	pmap_new_destroy(&vbi.merges);
 	pmap_new_destroy(&vbi.blocks);
 
@@ -570,6 +752,8 @@ void vb_build(ir_graph *irg)
 	/* Replace gating nodes by phis. */
 	vb_replace_gating_nodes(&vbi, vp_get_vl_info(vpi));
 
+	phase_free(vbi.phase);
+	plist_free(vbi.todo);
 	plist_free(vbi.gammas);
 	obstack_free(&vbi.obst, NULL);
 	vp_free(vpi);
