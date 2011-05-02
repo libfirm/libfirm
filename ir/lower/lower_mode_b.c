@@ -215,10 +215,10 @@ static ir_node *lower_node(ir_node *node)
 		ARR_APP1(ir_node*, lowered_nodes, node);
 
 		for (i = 0; i < arity; ++i) {
-			ir_node *in     = get_irn_n(node, i);
-			ir_node *low_in = lower_node(in);
+			ir_node *in         = get_irn_n(node, i);
+			ir_node *lowered_in = is_Bad(in) ? in : lower_node(in);
 
-			set_irn_n(new_phi, i, low_in);
+			set_irn_n(new_phi, i, lowered_in);
 		}
 
 		return new_phi;
