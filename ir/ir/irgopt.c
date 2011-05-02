@@ -187,15 +187,15 @@ int optimize_graph_df(ir_graph *irg)
 
 	if (get_opt_global_cse()) {
 		set_irg_pinned(irg, op_pin_state_floats);
-	} else {
-		/* The following enables unreachable code elimination (=Blocks may be
-		 * Bad). We cannot enable it in global_cse nodes since we can't
-		 * determine a nodes block there and therefore can't remove all code
-		 * in unreachable blocks */
-		set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
-		if (get_irg_dom_state(irg) == dom_consistent)
-			irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 	}
+
+	/* The following enables unreachable code elimination (=Blocks may be
+	 * Bad). We cannot enable it in global_cse nodes since we can't
+	 * determine a nodes block there and therefore can't remove all code
+	 * in unreachable blocks */
+	set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
+	if (get_irg_dom_state(irg) == dom_consistent)
+		irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
 	/* invalidate info */
 	set_irg_outs_inconsistent(irg);

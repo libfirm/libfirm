@@ -45,14 +45,6 @@ static bool is_block_reachable(ir_node *block)
 	return get_Block_dom_depth(block) >= 0;
 }
 
-/* mark node as not-visited */
-static void clear_irn_visited(ir_node *node)
-{
-	ir_graph    *irg     = get_irn_irg(node);
-	ir_visited_t visited = get_irg_visited(irg);
-	set_irn_visited(node, visited-1);
-}
-
 /**
  * Find the earliest correct block for node n.  --- Place n into the
  * same Block as its dominance-deepest Input.
@@ -112,20 +104,7 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	arity = get_irn_arity(n);
 	place_floats_early(block, worklist);
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred       = get_irn_n(n, i);
-		ir_node *pred_block = get_nodes_block(pred);
-
-		/* gcse can lead to predecessors of reachable code being unreachable.
-		 * Move them into the current block in this case */
-		if (!is_block_reachable(pred_block)) {
-			ir_node *new_pred_block = block;
-			assert(get_irn_pinned(pred) == op_pin_state_floats);
-			if (is_Phi(n)) {
-				new_pred_block = get_Block_cfgpred_block(block, i);
-			}
-			set_nodes_block(pred, new_pred_block);
-			clear_irn_visited(pred);
-		}
+		ir_node *pred = get_irn_n(n, i);
 		place_floats_early(pred, worklist);
 	}
 

@@ -6274,10 +6274,8 @@ static ir_node *gigo(ir_node *node)
 {
 	ir_op *op = get_irn_op(node);
 
-	/* Nodes in bad blocks are bad.
-	 * Beware: we can only read the block of a non-floating node. */
-	if (op != op_Block && is_irn_pinned_in_irg(node)
-	    && is_Bad(get_nodes_block(node))) {
+	/* Code in "Bad" blocks is unreachable and can be replaced by Bad */
+	if (op != op_Block && is_Bad(get_nodes_block(node))) {
 	    ir_graph *irg = get_irn_irg(node);
 		return get_irg_bad(irg);
 	}
@@ -6304,7 +6302,7 @@ static ir_node *gigo(ir_node *node)
 	}
 
 	return node;
-}  /* gigo */
+}
 
 /**
  * These optimizations deallocate nodes from the obstack.
