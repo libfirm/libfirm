@@ -2258,11 +2258,11 @@ static void compute_Cmp(node_t *node)
 	} else if (r->part == l->part && !mode_is_float(get_irn_mode(l->node))) {
 		tv = relation & ir_relation_equal ? tarval_b_true : tarval_b_false;
 
-		/* if the node was ONCE evaluated by all constants, but now
+		/* if the node was ONCE evaluated to a constant, but now
 		   this breaks AND we get from the argument partitions a different
-		   result, switch to bottom.
+		   result, ensure monotony by fall to bottom.
 		   This happens because initially all nodes are in the same partition ... */
-		if (node->type.tv != tv)
+		if (node->type.tv != tv && is_constant_type(node->type))
 			tv = tarval_bottom;
 		node->type.tv = tv;
 	} else {
