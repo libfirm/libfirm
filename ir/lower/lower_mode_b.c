@@ -471,5 +471,9 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 
 	if (changed) {
 		set_irg_outs_inconsistent(irg);
+		/* lowering might create new blocks, so be sure to handle this */
+		set_irg_extblk_inconsistent(irg);
+		set_irg_doms_inconsistent(irg);
+		set_irg_loopinfo_inconsistent(irg);
 	}
 }
