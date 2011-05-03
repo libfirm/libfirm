@@ -29,7 +29,6 @@
 
 #include <stdio.h>
 #include "firm_types.h"
-#include "vf_loop.h"
 #include "plist.h"
 
 /**

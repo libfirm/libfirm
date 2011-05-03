@@ -19,29 +19,35 @@
 
 /**
  * @file
- * @brief   Partition or  VFirm graphs for Firm construction.
+ * @brief   Compute loop depth information for VFirm graphs.
  * @author  Olaf Liebe
  * @version $Id: $
  */
 
-#ifndef FIRM_OPT_VF_DSTR_PARTITION_H
-#define FIRM_OPT_VF_DSTR_PARTITION_H
+#ifndef FIRM_ANA_VF_DEPTH_H
+#define FIRM_ANA_VF_DEPTH_H
 
+#include <stdio.h>
 #include "firm_types.h"
-#include "vf_loop.h"
 
-typedef struct vp_info vp_info;
+typedef struct vl_info vl_info;
 
-/** Partition the graph in acyclic subgraphs with the given loop info. */
-vp_info *vp_partition(ir_graph *irg);
+/** Compute the loop depth information for the given irg. */
+vl_info *vl_init(ir_graph *irg);
 
-/** Combine the subgraphs again. */
-void vp_combine(vp_info *vpi);
+/** Free the loop depth information for the given tree. */
+void vl_free(vl_info *vli);
 
-/** Free the partition data again. */
-void vp_free(vp_info *vpi);
+/** Get the associated graph. */
+ir_graph *vl_get_irg(vl_info *vli);
 
-/** Get the loop analyses information from the restore data. */
-vl_info *vp_get_vl_info(vp_info *vpi);
+/** Get the loop depth of the given node. */
+int vl_node_get_depth(vl_info *vli, ir_node *irn);
+
+/** Dumps loop depth analysis debug information to the specified file. */
+void vl_dump(vl_info *vli, FILE* f);
+
+/** Explicitly set the depth for a node. This is used for cloning. */
+void vl_node_set_depth(vl_info *vli, ir_node *irn, int depth);
 
 #endif

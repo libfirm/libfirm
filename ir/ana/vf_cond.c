@@ -237,6 +237,8 @@ static void vc_compute_conds(vc_info *vci, ir_node *irn)
 	if (vc_skip_node(vci, irn)) return;
 	vc_src = phase_get_or_set_irn_data(vci->phase, irn);
 
+	assert(!is_Eta(irn));
+
 	/* Recurse to the children. */
 	foreach_vd_node_child(vci->vdi, ir_src, ir_dst, it_path) {
 		vc_compute_conds(vci, ir_dst);

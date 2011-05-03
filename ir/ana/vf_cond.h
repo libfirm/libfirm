@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include "firm_types.h"
 #include "vf_dom.h"
-#include "vf_loop.h"
 #include "vf_formula.h"
 
 /**
