@@ -158,13 +158,14 @@ static int mode_is_intb(ir_mode const* const m)
 
 static int transfer(ir_node* const irn)
 {
-	ir_mode* const m = get_irn_mode(irn);
-	ir_tarval*     z;
-	ir_tarval*     o;
+	ir_tarval* const f = get_tarval_b_false();
+	ir_tarval* const t = get_tarval_b_true();
+	ir_mode*   const m = get_irn_mode(irn);
+	ir_tarval*       z;
+	ir_tarval*       o;
 
 	if (m == mode_X) {
-		ir_tarval* const f = get_tarval_b_false();
-		bitinfo*   const b = get_bitinfo(get_nodes_block(irn));
+		bitinfo* const b = get_bitinfo(get_nodes_block(irn));
 
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
@@ -183,10 +184,10 @@ static int transfer(ir_node* const irn)
 					ir_tarval* const bo       = b->o;
 					if (get_irn_mode(selector) == mode_b) {
 						if (bz == bo) {
-							if ((bz == get_tarval_b_true()) == get_Proj_proj(irn)) {
-								z = o = get_tarval_b_true();
+							if ((bz == t) == get_Proj_proj(irn)) {
+								z = o = t;
 							} else {
-								z = o = get_tarval_b_false();
+								z = o = f;
 							}
 						} else {
 							goto result_unknown_X;
@@ -198,10 +199,10 @@ static int transfer(ir_node* const irn)
 							if (!tarval_is_null(tarval_andnot(tv, bz)) ||
 									!tarval_is_null(tarval_andnot(bo, tv))) {
 								// At least one bit differs.
-								z = o = get_tarval_b_false();
+								z = o = f;
 #if 0 // TODO must handle default Proj
 							} else if (bz == bo && bz == tv) {
-								z = o = get_tarval_b_true();
+								z = o = t;
 #endif
 							} else {
 								goto result_unknown_X;
@@ -223,8 +224,8 @@ static int transfer(ir_node* const irn)
 cannot_analyse_X:
 				DB((dbg, LEVEL_4, "cannot analyse %+F\n", irn));
 result_unknown_X:
-				z = get_tarval_b_true();
-				o = get_tarval_b_false();
+				z = t;
+				o = f;
 				break;
 		}
 	} else if (is_Block(irn)) {
@@ -235,7 +236,7 @@ result_unknown_X:
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 		for (i = 0; i != arity; ++i) {
 			bitinfo* const b = get_bitinfo(get_Block_cfgpred(irn, i));
-			if (b != NULL && b->z == get_tarval_b_true()) {
+			if (b != NULL && b->z == t) {
 				reachable = 1;
 				break;
 			}
@@ -248,8 +249,8 @@ result_unknown_X:
 				irn == get_irg_end_block(irg);
 		}
 
-		o = get_tarval_b_false();
-		z = reachable ? get_tarval_b_true() : o;
+		o = f;
+		z = reachable ? t : f;
 	} else if (mode_is_intb(m)) {
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 		switch (get_irn_opcode(irn)) {
@@ -449,18 +450,18 @@ result_unknown_X:
 			}
 
 			case iro_Mux: {
-				bitinfo* const f = get_bitinfo(get_Mux_false(irn));
-				bitinfo* const t = get_bitinfo(get_Mux_true(irn));
-				bitinfo* const c = get_bitinfo(get_Mux_sel(irn));
-				if (c->o == get_tarval_b_true()) {
-					z = t->z;
-					o = t->o;
-				} else if (c->z == get_tarval_b_false()) {
-					z = f->z;
-					o = f->o;
+				bitinfo* const bf = get_bitinfo(get_Mux_false(irn));
+				bitinfo* const bt = get_bitinfo(get_Mux_true(irn));
+				bitinfo* const c  = get_bitinfo(get_Mux_sel(irn));
+				if (c->o == t) {
+					z = bt->z;
+					o = bt->o;
+				} else if (c->z == f) {
+					z = bf->z;
+					o = bf->o;
 				} else {
-					z = tarval_or( f->z, t->z);
-					o = tarval_and(f->o, t->o);
+					z = tarval_or( bf->z, bt->z);
+					o = tarval_and(bf->o, bt->o);
 				}
 				break;
 			}
@@ -474,7 +475,7 @@ result_unknown_X:
 				o = get_tarval_all_one(m);
 				for (i = 0; i != arity; ++i) {
 					bitinfo* const b_cfg = get_bitinfo(get_Block_cfgpred(block, i));
-					if (b_cfg != NULL && b_cfg->z != get_tarval_b_false()) {
+					if (b_cfg != NULL && b_cfg->z != f) {
 						bitinfo* const b = get_bitinfo(get_Phi_pred(irn, i));
 						z = tarval_or( z, b->z);
 						o = tarval_and(o, b->o);
@@ -499,9 +500,9 @@ result_unknown_X:
 							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
 									!tarval_is_null(tarval_andnot(lo, rz))) {
 								// At least one bit differs.
-								z = o = get_tarval_b_true();
+								z = o = t;
 							} else if (lz == lo && rz == ro && lz == rz) {
-								z = o = get_tarval_b_false();
+								z = o = f;
 							} else {
 								goto result_unknown;
 							}
@@ -511,9 +512,9 @@ result_unknown_X:
 							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
 									!tarval_is_null(tarval_andnot(lo, rz))) {
 								// At least one bit differs.
-								z = o = get_tarval_b_false();
+								z = o = f;
 							} else if (lz == lo && rz == ro && lz == rz) {
-								z = o = get_tarval_b_true();
+								z = o = t;
 							} else {
 								goto result_unknown;
 							}
@@ -528,10 +529,10 @@ result_unknown_X:
 
 							if (tarval_cmp(lz, ro) & relation) {
 								/* Left upper bound is smaller(/equal) than right lower bound. */
-								z = o = get_tarval_b_true();
+								z = o = t;
 							} else if (!(tarval_cmp(lo, rz) & relation)) {
 								/* Left lower bound is not smaller(/equal) than right upper bound. */
-								z = o = get_tarval_b_false();
+								z = o = f;
 							} else {
 								goto result_unknown;
 							}
@@ -546,10 +547,10 @@ result_unknown_X:
 
 							if (!(tarval_cmp(lz, ro) & relation)) {
 								/* Left upper bound is not greater(/equal) than right lower bound. */
-								z = o = get_tarval_b_false();
+								z = o = f;
 							} else if (tarval_cmp(lo, rz) & relation) {
 								/* Left lower bound is greater(/equal) than right upper bound. */
-								z = o = get_tarval_b_true();
+								z = o = t;
 							} else {
 								goto result_unknown;
 							}
