@@ -772,6 +772,12 @@ void fixpoint_vrp(ir_graph* const irg)
 		   blocks in Firm. Moreover build phi list. */
 		irg_walk_anchors(irg, clear_links, build_phi_lists, NULL);
 
+		{ ir_tarval* const f = get_tarval_b_false();
+			ir_tarval* const t = get_tarval_b_true();
+			set_bitinfo(get_irg_bad(irg),       f, t); /* Undefined. */
+			set_bitinfo(get_irg_end_block(irg), t, f); /* Reachable. */
+		}
+
 		/* TODO Improve iteration order. Best is reverse postorder in data flow
 		 * direction and respecting loop nesting for fastest convergence. */
 		irg_walk_blkwise_dom_top_down(irg, NULL, first_round, q);
