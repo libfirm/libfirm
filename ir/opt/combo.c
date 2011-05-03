@@ -2262,7 +2262,9 @@ static void compute_Cmp(node_t *node)
 		   this breaks AND we get from the argument partitions a different
 		   result, ensure monotony by fall to bottom.
 		   This happens because initially all nodes are in the same partition ... */
-		if (node->type.tv != tv && is_constant_type(node->type))
+		if (node->type.tv == tarval_bottom)
+			tv = tarval_bottom;
+		else if (node->type.tv != tv && is_constant_type(node->type))
 			tv = tarval_bottom;
 		node->type.tv = tv;
 	} else {
