@@ -971,6 +971,9 @@ class Weak(Op):
 	]
 	attr_struct = "weak_attr"
 
+	# Prevents a warning. Not intended for export.
+	customSerializer = True
+
 class Loop(Op):
 	arity  = "variable"
 	pinned = "no"
@@ -986,6 +989,9 @@ class Loop(Op):
 		)
 	]
 	attr_struct = "loop_attr"
+
+	# Prevents a warning. Not intended for export.
+	customSerializer = True
 
 # Prepare node list
 

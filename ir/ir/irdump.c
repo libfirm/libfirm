@@ -544,6 +544,8 @@ static void ird_walk_graph(ir_graph *irg, irg_walk_func *pre, irg_walk_func *pos
  */
 static void collect_node(ir_node *node, void *env)
 {
+	(void)env;
+
 	if (is_Block(node)
 	    || node_floats(node)
 	    || (get_op_flags(get_irn_op(node)) & irop_flag_dump_noblock)) {
