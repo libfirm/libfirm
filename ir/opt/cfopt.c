@@ -369,8 +369,9 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 				if (get_Block_idom(b) != predb) {
 					/* predb is not the dominator. There can't be uses of pred's Phi nodes, kill them .*/
-					ir_graph *irg = get_irn_irg(b);
-					exchange(phi, get_irg_bad(irg));
+					ir_graph *irg  = get_irn_irg(b);
+					ir_mode  *mode = get_irn_mode(phi);
+					exchange(phi, new_r_Bad(irg, mode));
 				} else {
 					/* predb is the direct dominator of b. There might be uses of the Phi nodes from
 					   predb in further block, so move this phi from the predecessor into the block b */
@@ -455,8 +456,8 @@ static void optimize_blocks(ir_node *b, void *ctx)
 				in[n_preds++] = predpred;
 			}
 			/* Remove block+jump as it might be kept alive. */
-			exchange(pred, get_irg_bad(get_irn_irg(b)));
-			exchange(predb, get_irg_bad(get_irn_irg(b)));
+			exchange(pred, new_r_Bad(get_irn_irg(b), mode_X));
+			exchange(predb, new_r_Bad(get_irn_irg(b), mode_BB));
 		} else {
 			/* case 3: */
 			in[n_preds++] = pred;
@@ -521,7 +522,7 @@ static bool handle_switch_cond(ir_node *cond)
 			long      num     = get_tarval_long(tv);
 			long      def_num = get_Cond_default_proj(cond);
 			ir_graph *irg     = get_irn_irg(cond);
-			ir_node  *bad     = get_irg_bad(irg);
+			ir_node  *bad     = new_r_Bad(irg, mode_X);
 
 			if (def_num == get_Proj_proj(proj1)) {
 				/* first one is the defProj */

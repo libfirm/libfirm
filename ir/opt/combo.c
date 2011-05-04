@@ -3253,7 +3253,9 @@ static void apply_result(ir_node *irn, void *ctx)
 		node_t *block = get_irn_node(get_nodes_block(irn));
 
 		if (block->type.tv == tarval_unreachable) {
-			ir_node *bad = get_irg_bad(current_ir_graph);
+			ir_graph *irg  = get_irn_irg(irn);
+			ir_mode  *mode = get_irn_mode(node->node);
+			ir_node  *bad  = new_r_Bad(irg, mode);
 
 			/* here, bad might already have a node, but this can be safely ignored
 			   as long as bad has at least ONE valid node */

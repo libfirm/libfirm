@@ -227,7 +227,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 		set_opt_cse(0);
 		reg_jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
-		exc_jmp = new_r_Bad(irg);
+		exc_jmp = new_r_Bad(irg, mode_X);
 	}
 	irn = new_r_Tuple(block, 1, &irn);
 
@@ -1217,8 +1217,6 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 		/* we are ready */
 		turn_into_tuple(node, n_proj);
 
-		for (i = 0; i < n_proj; ++i)
-			set_Tuple_pred(node, i, new_r_Bad(irg));
 		if (rt->mem_proj_nr >= 0)
 			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(call, mode_M, pn_Call_M));
 		if (!is_NoMem(mem)) {

@@ -1065,7 +1065,7 @@ static void update_Load_memop(memop_t *m)
 		/* no exception, clear the m fields as it might be checked later again */
 		if (m->projs[pn_Load_X_except]) {
 			ir_graph *irg = get_irn_irg(ptr);
-			exchange(m->projs[pn_Load_X_except], new_r_Bad(irg));
+			exchange(m->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
 			m->projs[pn_Load_X_except] = NULL;
 			m->flags &= ~FLAG_EXCEPTION;
 			env.changed = 1;
@@ -1746,7 +1746,7 @@ static void replace_load(memop_t *op)
 	proj = op->projs[pn_Load_X_except];
 	if (proj != NULL) {
 		ir_graph *irg = get_irn_irg(load);
-		exchange(proj, new_r_Bad(irg));
+		exchange(proj, new_r_Bad(irg, mode_X));
 	}
 	proj = op->projs[pn_Load_X_regular];
 	if (proj != NULL) {
@@ -1773,7 +1773,7 @@ static void remove_store(memop_t *op)
 	proj = op->projs[pn_Store_X_except];
 	if (proj != NULL) {
 		ir_graph *irg = get_irn_irg(store);
-		exchange(proj, new_r_Bad(irg));
+		exchange(proj, new_r_Bad(irg, mode_X));
 	}
 	proj = op->projs[pn_Store_X_regular];
 	if (proj != NULL) {

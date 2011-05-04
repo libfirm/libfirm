@@ -137,7 +137,7 @@ static void kill_dead_blocks(ir_node *block, void *env)
 		 */
 		ir_graph *irg = get_irn_irg(block);
 		enqueue_users(block, waitq);
-		exchange(block, get_irg_bad(irg));
+		exchange(block, new_r_Bad(irg, mode_BB));
 	}
 }
 

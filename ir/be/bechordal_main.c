@@ -217,9 +217,10 @@ static void memory_operand_walker(ir_node *irn, void *env)
 	/* kill the Reload */
 	if (get_irn_n_edges(irn) == 0) {
 		ir_graph *irg = get_irn_irg(irn);
+		ir_mode  *frame_mode = get_irn_mode(get_irn_n(irn, n_be_Reload_frame));
 		sched_remove(irn);
-		set_irn_n(irn, n_be_Reload_mem, new_r_Bad(irg));
-		set_irn_n(irn, n_be_Reload_frame, new_r_Bad(irg));
+		set_irn_n(irn, n_be_Reload_mem, new_r_Bad(irg, mode_X));
+		set_irn_n(irn, n_be_Reload_frame, new_r_Bad(irg, frame_mode));
 	}
 }
 

@@ -116,7 +116,7 @@ int get_Block_n_cfg_outs(const ir_node *bl)
 #endif /* defined DEBUG_libfirm */
 	for (i = 1; i <= bl->out[0].pos; ++i) {
 		ir_node *succ = bl->out[i].use;
-		if (get_irn_mode(succ) == mode_X && !is_End(succ))
+		if (get_irn_mode(succ) == mode_X && !is_End(succ) && !is_Bad(succ))
 			n_cfg_outs += succ->out[0].pos;
 	}
 	return n_cfg_outs;
@@ -133,7 +133,8 @@ int get_Block_n_cfg_outs_ka(const ir_node *bl)
 	for (i = 1; i <= bl->out[0].pos; ++i) {
 		ir_node *succ = bl->out[i].use;
 		if (get_irn_mode(succ) == mode_X) {
-
+			if (is_Bad(succ))
+				continue;
 			if (is_End(succ)) {
 				/* ignore End if we are in the Endblock */
 				if (get_nodes_block(succ) == bl)
@@ -157,7 +158,7 @@ ir_node *get_Block_cfg_out(const ir_node *bl, int pos)
 #endif /* defined DEBUG_libfirm */
 	for (i = 1; i <= bl->out[0].pos; ++i) {
 		ir_node *succ = bl->out[i].use;
-		if (get_irn_mode(succ) == mode_X && !is_End(succ)) {
+		if (get_irn_mode(succ) == mode_X && !is_End(succ) && !is_Bad(succ)) {
 			int n_outs = succ->out[0].pos;
 			if (pos < n_outs)
 				return succ->out[pos + 1].use;
@@ -179,6 +180,8 @@ ir_node *get_Block_cfg_out_ka(const ir_node *bl, int pos)
 	for (i = 1; i <= bl->out[0].pos; ++i) {
 		ir_node *succ = bl->out[i].use;
 		if (get_irn_mode(succ) == mode_X) {
+			if (is_Bad(succ))
+				continue;
 			if (is_End(succ)) {
 				ir_node *end_bl = get_nodes_block(succ);
 				if (end_bl == bl) {

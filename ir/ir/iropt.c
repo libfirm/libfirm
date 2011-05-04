@@ -679,36 +679,15 @@ static ir_node *equivalent_node_Block(ir_node *n)
 	int     n_preds;
 	ir_graph *irg;
 
-	/* don't optimize dead or labeled blocks */
+	/* don't optimize labeled blocks */
 	if (has_Block_entity(n))
+		return n;
+	if (!get_Block_matured(n))
 		return n;
 
 	n_preds = get_Block_n_cfgpreds(n);
 
-	/* The Block constructor does not call optimize, but mature_immBlock()
-	   calls the optimization. */
-	assert(get_Block_matured(n));
-
 	irg = get_irn_irg(n);
-
-	/* if all predecessors of a block are unreachable, then the block is
-	 * unreachable */
-	if (is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK)) {
-		int i;
-		int n_cfgpreds = get_Block_n_cfgpreds(n);
-
-		for (i = 0; i < n_cfgpreds; ++i) {
-			ir_node *pred = get_Block_cfgpred(n, i);
-			if (!is_Bad(pred))
-				break;
-		}
-		/* only bad inputs? It's unreachable code (unless it is the start or
-		 * end block) */
-		if (i >= n_cfgpreds && n != get_irg_start_block(irg)
-		    && n != get_irg_end_block(irg)) {
-		    return get_irg_bad(irg);
-		}
-	}
 
 	/* Straightening: a single entry Block following a single exit Block
 	 * can be merged. */
@@ -1276,12 +1255,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		}
 	}
 
-	if (i >= n_preds) {
-		ir_graph *irg = get_irn_irg(n);
-		/* A totally Bad or self-referencing Phi (we didn't break the above loop) */
-		return get_irg_bad(irg);
-	}
-
 	/* search for rest of inputs, determine if any of these
 	are non-self-referencing */
 	while (++i < n_preds) {
@@ -1298,49 +1271,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	}
 	return n;
 }  /* equivalent_node_Phi */
-
-/**
- * Several optimizations:
- * - fold Sync-nodes, iff they have only one predecessor except
- *   themselves.
- */
-static ir_node *equivalent_node_Sync(ir_node *n)
-{
-	int arity = get_Sync_n_preds(n);
-	int i;
-
-	for (i = 0; i < arity;) {
-		ir_node *pred = get_Sync_pred(n, i);
-		int      j;
-
-		/* Remove Bad predecessors */
-		if (is_Bad(pred)) {
-			del_Sync_n(n, i);
-			--arity;
-			continue;
-		}
-
-		/* Remove duplicate predecessors */
-		for (j = 0;; ++j) {
-			if (j >= i) {
-				++i;
-				break;
-			}
-			if (get_Sync_pred(n, j) == pred) {
-				del_Sync_n(n, i);
-				--arity;
-				break;
-			}
-		}
-	}
-
-	if (arity == 0) {
-		ir_graph *irg = get_irn_irg(n);
-		return get_irg_bad(irg);
-	}
-	if (arity == 1) return get_Sync_pred(n, 0);
-	return n;
-}  /* equivalent_node_Sync */
 
 /**
  * Optimize Proj(Tuple).
@@ -1406,13 +1336,6 @@ static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
 			proj = get_CopyB_mem(copyb);
 			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
 			break;
-
-		case pn_CopyB_X_except: {
-			ir_graph *irg = get_irn_irg(proj);
-			DBG_OPT_EXC_REM(proj);
-			proj = get_irg_bad(irg);
-			break;
-		}
 		}
 	}
 	return proj;
@@ -1456,12 +1379,6 @@ static ir_node *equivalent_node_Proj_Bound(ir_node *proj)
 			DBG_OPT_EXC_REM(proj);
 			proj = get_Bound_mem(bound);
 			break;
-		case pn_Bound_X_except: {
-			ir_graph *irg = get_irn_irg(proj);
-			DBG_OPT_EXC_REM(proj);
-			proj = get_irg_bad(irg);
-			break;
-		}
 		case pn_Bound_res:
 			proj = idx;
 			DBG_OPT_ALGSIM0(oldn, proj, FS_OPT_NOP);
@@ -1473,56 +1390,6 @@ static ir_node *equivalent_node_Proj_Bound(ir_node *proj)
 	}
 	return proj;
 }  /* equivalent_node_Proj_Bound */
-
-/**
- * Optimize an Exception Proj(Load) with a non-null address.
- */
-static ir_node *equivalent_node_Proj_Load(ir_node *proj)
-{
-	if (get_opt_ldst_only_null_ptr_exceptions()) {
-		if (get_irn_mode(proj) == mode_X) {
-			ir_node *load = get_Proj_pred(proj);
-
-			/* get the Load address */
-			const ir_node *addr = get_Load_ptr(load);
-			const ir_node *confirm;
-
-			if (value_not_null(addr, &confirm)) {
-				if (get_Proj_proj(proj) == pn_Load_X_except) {
-					ir_graph *irg = get_irn_irg(proj);
-					DBG_OPT_EXC_REM(proj);
-					return get_irg_bad(irg);
-				}
-			}
-		}
-	}
-	return proj;
-}  /* equivalent_node_Proj_Load */
-
-/**
- * Optimize an Exception Proj(Store) with a non-null address.
- */
-static ir_node *equivalent_node_Proj_Store(ir_node *proj)
-{
-	if (get_opt_ldst_only_null_ptr_exceptions()) {
-		if (get_irn_mode(proj) == mode_X) {
-			ir_node *store = get_Proj_pred(proj);
-
-			/* get the load/store address */
-			const ir_node *addr = get_Store_ptr(store);
-			const ir_node *confirm;
-
-			if (value_not_null(addr, &confirm)) {
-				if (get_Proj_proj(proj) == pn_Store_X_except) {
-					ir_graph *irg = get_irn_irg(proj);
-					DBG_OPT_EXC_REM(proj);
-					return get_irg_bad(irg);
-				}
-			}
-		}
-	}
-	return proj;
-}  /* equivalent_node_Proj_Store */
 
 /**
  * Does all optimizations on nodes that must be done on its Projs
@@ -1724,13 +1591,10 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	CASE(And);
 	CASE(Conv);
 	CASE(Phi);
-	CASE(Sync);
 	CASE_PROJ(Tuple);
 	CASE_PROJ(Div);
 	CASE_PROJ(CopyB);
 	CASE_PROJ(Bound);
-	CASE_PROJ(Load);
-	CASE_PROJ(Store);
 	CASE(Proj);
 	CASE(Id);
 	CASE(Mux);
@@ -2782,7 +2646,7 @@ make_tuple:
 		turn_into_tuple(n, pn_Div_max);
 		set_Tuple_pred(n, pn_Div_M,         mem);
 		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_Div_X_except,  get_irg_bad(irg));
+		set_Tuple_pred(n, pn_Div_X_except,  new_r_Bad(irg, mode_X));
 		set_Tuple_pred(n, pn_Div_res,       value);
 	}
 	return n;
@@ -2874,7 +2738,7 @@ make_tuple:
 		turn_into_tuple(n, pn_Mod_max);
 		set_Tuple_pred(n, pn_Mod_M,         mem);
 		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(n, pn_Mod_X_except,  get_irg_bad(irg));
+		set_Tuple_pred(n, pn_Mod_X_except,  new_r_Bad(irg, mode_X));
 		set_Tuple_pred(n, pn_Mod_res,       value);
 	}
 	return n;
@@ -2907,11 +2771,11 @@ static ir_node *transform_node_Cond(ir_node *n)
 		jmp = new_r_Jmp(blk);
 		turn_into_tuple(n, pn_Cond_max);
 		if (ta == tarval_b_true) {
-			set_Tuple_pred(n, pn_Cond_false, get_irg_bad(irg));
+			set_Tuple_pred(n, pn_Cond_false, new_r_Bad(irg, mode_X));
 			set_Tuple_pred(n, pn_Cond_true, jmp);
 		} else {
 			set_Tuple_pred(n, pn_Cond_false, jmp);
-			set_Tuple_pred(n, pn_Cond_true, get_irg_bad(irg));
+			set_Tuple_pred(n, pn_Cond_true, new_r_Bad(irg, mode_X));
 		}
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
@@ -3465,7 +3329,7 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
 				if (get_Proj_proj(proj) == pn_Load_X_except) {
 					ir_graph *irg = get_irn_irg(proj);
 					DBG_OPT_EXC_REM(proj);
-					return get_irg_bad(irg);
+					return new_r_Bad(irg, mode_X);
 				} else {
 					ir_node *blk = get_nodes_block(load);
 					return new_r_Jmp(blk);
@@ -3497,7 +3361,7 @@ static ir_node *transform_node_Proj_Store(ir_node *proj)
 				if (get_Proj_proj(proj) == pn_Store_X_except) {
 					ir_graph *irg = get_irn_irg(proj);
 					DBG_OPT_EXC_REM(proj);
-					return get_irg_bad(irg);
+					return new_r_Bad(irg, mode_X);
 				} else {
 					ir_node *blk = get_nodes_block(store);
 					return new_r_Jmp(blk);
@@ -3539,7 +3403,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 			ir_graph *irg = get_irn_irg(proj);
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
-			return get_irg_bad(irg);
+			return new_r_Bad(irg, mode_X);
 		}
 
 		case pn_Div_M: {
@@ -3594,7 +3458,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 			ir_graph *irg = get_irn_irg(proj);
 			/* we found an exception handler, remove it */
 			DBG_OPT_EXC_REM(proj);
-			return get_irg_bad(irg);
+			return new_r_Bad(irg, mode_X);
 		}
 
 		case pn_Mod_M: {
@@ -3651,7 +3515,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 				} else {
 					ir_graph *irg = get_irn_irg(proj);
 					/* this case will NEVER be taken, kill it */
-					return get_irg_bad(irg);
+					return new_r_Bad(irg, mode_X);
 				}
 			}
 		} else {
@@ -3665,19 +3529,19 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 					ir_relation cmp_result = tarval_cmp(b_vrp->range_bottom, tp);
 					ir_relation cmp_result2 = tarval_cmp(b_vrp->range_top, tp);
 
-					if ((cmp_result & ir_relation_greater) == cmp_result && (cmp_result2
-								& ir_relation_less) == cmp_result2) {
+					if ((cmp_result & ir_relation_greater) == cmp_result
+					    && (cmp_result2 & ir_relation_less) == cmp_result2) {
 						ir_graph *irg = get_irn_irg(proj);
-						return get_irg_bad(irg);
+						return new_r_Bad(irg, mode_X);
 					}
 				} else if (b_vrp->range_type == VRP_ANTIRANGE) {
 					ir_relation cmp_result = tarval_cmp(b_vrp->range_bottom, tp);
 					ir_relation cmp_result2 = tarval_cmp(b_vrp->range_top, tp);
 
-					if ((cmp_result & ir_relation_less_equal) == cmp_result && (cmp_result2
-								& ir_relation_greater_equal) == cmp_result2) {
+					if ((cmp_result & ir_relation_less_equal) == cmp_result
+					     && (cmp_result2 & ir_relation_greater_equal) == cmp_result2) {
 						ir_graph *irg = get_irn_irg(proj);
-						return get_irg_bad(irg);
+						return new_r_Bad(irg, mode_X);
 					}
 				}
 
@@ -3686,7 +3550,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 								b_vrp->bits_set
 								) == ir_relation_equal)) {
 					ir_graph *irg = get_irn_irg(proj);
-					return get_irg_bad(irg);
+					return new_r_Bad(irg, mode_X);
 				}
 
 				if (!(tarval_cmp(
@@ -3696,10 +3560,8 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 								tarval_not(b_vrp->bits_not_set))
 								 == ir_relation_equal)) {
 					ir_graph *irg = get_irn_irg(proj);
-					return get_irg_bad(irg);
+					return new_r_Bad(irg, mode_X);
 				}
-
-
 			}
 		}
 	}
@@ -4408,10 +4270,12 @@ static ir_node *transform_node_Proj_CopyB(ir_node *proj)
 			DBG_OPT_EXC_REM(proj);
 			proj = new_r_Jmp(get_nodes_block(copyb));
 			break;
-		case pn_CopyB_X_except:
+		case pn_CopyB_X_except: {
+			ir_graph *irg = get_irn_irg(proj);
 			DBG_OPT_EXC_REM(proj);
-			proj = get_irg_bad(get_irn_irg(proj));
+			proj = new_r_Bad(irg, mode_X);
 			break;
+		}
 		default:
 			break;
 		}
@@ -4459,7 +4323,7 @@ static ir_node *transform_node_Proj_Bound(ir_node *proj)
 			break;
 		case pn_Bound_X_except:
 			DBG_OPT_EXC_REM(proj);
-			proj = get_irg_bad(get_irn_irg(proj));
+			proj = new_r_Bad(get_irn_irg(proj), mode_X);
 			break;
 		case pn_Bound_res:
 			proj = idx;
@@ -4489,13 +4353,45 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	return proj;
 }  /* transform_node_Proj */
 
+static ir_node *transform_node_Block(ir_node *block)
+{
+	ir_graph *irg = get_irn_irg(block);
+
+	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+		return block;
+	/* don't optimize labeled blocks */
+	if (has_Block_entity(block))
+		return block;
+	if (!get_Block_matured(block))
+		return block;
+
+	/* remove blocks with only Bad inputs (or no inputs) */
+	{
+		int i;
+		int n_cfgpreds = get_Block_n_cfgpreds(block);
+
+		for (i = 0; i < n_cfgpreds; ++i) {
+			ir_node *pred = get_Block_cfgpred(block, i);
+			if (!is_Bad(pred))
+				break;
+		}
+		/* only bad unreachable inputs? It's unreachable code (unless it is the
+		 * start or end block) */
+		if (i >= n_cfgpreds && block != get_irg_start_block(irg)
+		    && block != get_irg_end_block(irg)) {
+		    return new_r_Bad(irg, mode_BB);
+		}
+	}
+	return block;
+}
+
 static ir_node *transform_node_Phi(ir_node *phi)
 {
 	int       n     = get_irn_arity(phi);
 	ir_mode  *mode  = get_irn_mode(phi);
 	ir_node  *block = get_nodes_block(phi);
 	ir_graph *irg   = get_irn_irg(phi);
-	ir_node  *bad   = get_irg_bad(irg);
+	ir_node  *bad   = NULL;
 	int       i;
 
 	/* Set phi-operands for bad-block inputs to bad */
@@ -4503,6 +4399,8 @@ static ir_node *transform_node_Phi(ir_node *phi)
 		ir_node *pred = get_Block_cfgpred(block, i);
 		if (!is_Bad(pred))
 			continue;
+		if (bad == NULL)
+			bad = new_r_Bad(irg, mode);
 		set_irn_n(phi, i, bad);
 	}
 
@@ -5582,6 +5480,24 @@ static ir_node *transform_node_Sync(ir_node *n)
 		int      pred_arity;
 		int      j;
 
+		/* Remove Bad predecessors */
+		if (is_Bad(pred)) {
+			del_Sync_n(n, i);
+			--arity;
+			continue;
+		}
+
+		/* Remove duplicate predecessors */
+		for (j = 0; j < i; ++j) {
+			if (get_Sync_pred(n, j) == pred) {
+				del_Sync_n(n, i);
+				--arity;
+				break;
+			}
+		}
+		if (j < i)
+			continue;
+
 		if (!is_Sync(pred)) {
 			++i;
 			continue;
@@ -5606,11 +5522,18 @@ static ir_node *transform_node_Sync(ir_node *n)
 		}
 	}
 
+	if (arity == 0) {
+		ir_graph *irg = get_irn_irg(n);
+		return new_r_Bad(irg, mode_M);
+	}
+	if (arity == 1) {
+		return get_Sync_pred(n, 0);
+	}
+
 	/* rehash the sync node */
 	add_identities(n);
-
 	return n;
-}  /* transform_node_Sync */
+}
 
 static ir_node *transform_node_Load(ir_node *n)
 {
@@ -5640,7 +5563,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *jmp   = new_r_Jmp(block);
 			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = get_irg_bad(irg);
+			ir_node  *bad   = new_r_Bad(irg, mode_X);
 			ir_mode  *mode  = get_Load_mode(n);
 			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
 			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
@@ -5661,7 +5584,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_node  *block = get_nodes_block(n);
 			ir_node  *jmp   = new_r_Jmp(block);
 			ir_graph *irg   = get_irn_irg(n);
-			ir_node  *bad   = get_irg_bad(irg);
+			ir_node  *bad   = new_r_Bad(irg, mode_X);
 			ir_node  *res   = value;
 			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
 			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
@@ -5794,6 +5717,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	switch (code) {
 	CASE(Add);
 	CASE(And);
+	CASE(Block);
 	CASE(Call);
 	CASE(Cmp);
 	CASE(Conv);
@@ -6270,18 +6194,13 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 	current_ir_graph = rem;
 }  /* visit_all_identities */
 
-/**
- * Garbage in, garbage out. If a node has a dead input, i.e., the
- * Bad node is input to the node, return the Bad node.
- */
-static ir_node *gigo(ir_node *node)
+static bool is_unreachable(ir_node *node)
 {
 	ir_op *op = get_irn_op(node);
 
 	/* Code in "Bad" blocks is unreachable and can be replaced by Bad */
 	if (op != op_Block && is_Bad(get_nodes_block(node))) {
-	    ir_graph *irg = get_irn_irg(node);
-		return get_irg_bad(irg);
+	    return true;
 	}
 
 	return false;
@@ -6306,13 +6225,11 @@ ir_node *optimize_node(ir_node *n)
 
 	/* Remove nodes with dead (Bad) input.
 	   Run always for transformation induced Bads. */
-	n = gigo(n);
-	if (n != oldn) {
-		edges_node_deleted(oldn);
-
-		/* We found an existing, better node, so we can deallocate the old node. */
-		irg_kill_node(irg, oldn);
-		return n;
+	if (is_unreachable(n)) {
+		ir_mode *mode = get_irn_mode(n);
+		edges_node_deleted(n);
+		irg_kill_node(irg, n);
+		return new_r_Bad(irg, mode);
 	}
 
 	/* constant expression evaluation / constant folding */
@@ -6415,9 +6332,11 @@ ir_node *optimize_in_place_2(ir_node *n)
 
 	/* Remove nodes with dead (Bad) input.
 	   Run always for transformation induced Bads.  */
-	n = gigo(n);
-	if (is_Bad(n))
-		return n;
+	if (is_unreachable(n)) {
+		ir_graph *irg  = get_irn_irg(n);
+		ir_mode  *mode = get_irn_mode(n);
+		return new_r_Bad(irg, mode);
+	}
 
 	/* constant expression evaluation / constant folding */
 	if (get_opt_constant_folding()) {

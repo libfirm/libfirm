@@ -619,8 +619,10 @@ static ir_node *find_tail(ir_node *n)
 		/* It's a completely bad loop: without Phi/Block nodes that can
 		   be a head. I.e., the code is "dying".  We break the loop by
 		   setting Bad nodes. */
-		int arity = get_irn_arity(n);
-		ir_node *bad = get_irg_bad(get_irn_irg(n));
+		ir_graph *irg   = get_irn_irg(n);
+		ir_mode  *mode  = get_irn_mode(n);
+		ir_node  *bad   = new_r_Bad(irg, mode);
+		int       arity = get_irn_arity(n);
 		for (i = -1; i < arity; ++i) {
 			set_irn_n(n, i, bad);
 		}

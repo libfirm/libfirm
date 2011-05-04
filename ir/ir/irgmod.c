@@ -47,11 +47,12 @@ void turn_into_tuple(ir_node *node, int arity)
 {
 	ir_graph *irg = get_irn_irg(node);
 	ir_node **in  = ALLOCAN(ir_node*, arity);
+	ir_node  *bad = new_r_Bad(irg, mode_ANY);
 	int       i;
 
 	/* construct a new in array, with every input being bad */
 	for (i = 0; i < arity; ++i) {
-		in[i] = new_r_Bad(irg);
+		in[i] = bad;
 	}
 	set_irn_in(node, arity, in);
 	set_irn_op(node, op_Tuple);
@@ -284,11 +285,10 @@ ir_node *part_block_edges(ir_node *node)
 void kill_node(ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);
-	ir_node *bad = get_irg_bad(irg);
-	int i;
 
-	for (i = get_irn_arity(node) - 1; i >= -1; --i) {
-		set_irn_n(node, i, bad);
+	if (edges_activated(irg)) {
+		edges_node_deleted(node);
 	}
-	exchange(node, bad);
+	/* noone is allowed to reference this node anymore */
+	set_irn_op(node, op_Deleted);
 }

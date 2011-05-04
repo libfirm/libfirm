@@ -69,23 +69,10 @@ static ir_node                    **check_later;
  */
 static void maybe_kill_node(ir_node *node)
 {
-	ir_graph *irg;
-	int       i, arity;
-
 	if (get_irn_n_edges(node) != 0)
 		return;
 
-	irg = get_irn_irg(node);
-
-	assert(!is_Bad(node));
-
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		set_irn_n(node, i, new_r_Bad(irg));
-	}
-	set_nodes_block(node, new_r_Bad(irg));
-
-	edges_node_deleted(node);
+	kill_node(node);
 }
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)

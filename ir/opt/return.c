@@ -340,7 +340,7 @@ void normalize_n_returns(ir_graph *irg)
 			}
 
 			/* remove the Jmp, we have placed a Return here */
-			exchange(jmp, new_r_Bad(irg));
+			exchange(jmp, new_r_Bad(irg, mode_X));
 		}
 
 		/*
@@ -353,7 +353,7 @@ void normalize_n_returns(ir_graph *irg)
 			n = get_End_n_keepalives(end);
 			for (i = 0; i < n; ++i) {
 				if (get_End_keepalive(end, i) == phiM) {
-					set_End_keepalive(end, i, new_r_Bad(irg));
+					set_End_keepalive(end, i, new_r_Bad(irg, mode_M));
 					break;
 				}
 			}

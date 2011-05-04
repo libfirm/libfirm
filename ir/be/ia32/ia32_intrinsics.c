@@ -101,7 +101,6 @@ static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res)
 static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph *irg, ir_node *block)
 {
 	ir_node *jmp, *res, *in[2];
-	ir_node *bad   = get_irg_bad(irg);
 	ir_node *nomem = get_irg_no_mem(irg);
 	int     old_cse;
 
@@ -130,7 +129,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 
 			case pn_Call_X_except:
 				/* should not happen here */
-				edges_reroute(proj, bad);
+				edges_reroute(proj, new_r_Bad(irg, mode_X));
 				break;
 			case pn_Call_M:
 				/* should not happen here */
@@ -168,10 +167,10 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 		jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
 
-		set_Tuple_pred(call, pn_Call_M,                nomem);
-		set_Tuple_pred(call, pn_Call_X_regular,        jmp);
-		set_Tuple_pred(call, pn_Call_X_except,         bad);
-		set_Tuple_pred(call, pn_Call_T_result,         res);
+		set_Tuple_pred(call, pn_Call_M,         nomem);
+		set_Tuple_pred(call, pn_Call_X_regular, jmp);
+		set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));
+		set_Tuple_pred(call, pn_Call_T_result,  res);
 	}
 }
 

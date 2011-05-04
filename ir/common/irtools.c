@@ -58,9 +58,7 @@ void copy_irn_to_irg(ir_node *n, ir_graph *irg)
 	ir_node *nn = NULL;
 
 	/* do not copy standard nodes */
-	if (op == op_Bad)
-		nn = get_irg_bad(irg);
-	else if (op == op_NoMem)
+	if (op == op_NoMem)
 		n = get_irg_no_mem(irg);
 	else if (op == op_Block) {
 		old_irg = get_irn_irg(n);

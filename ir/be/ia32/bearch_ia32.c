@@ -1022,7 +1022,7 @@ static void transform_MemPerm(ir_node *node)
 			sp = create_spproj(node, push, pn_ia32_Push_stack);
 		}
 
-		set_irn_n(node, i, new_r_Bad(irg));
+		set_irn_n(node, i, new_r_Bad(irg, mode_X));
 	}
 
 	/* create pops */
@@ -1068,11 +1068,8 @@ static void transform_MemPerm(ir_node *node)
 	}
 
 	/* remove memperm */
-	arity = get_irn_arity(node);
-	for (i = 0; i < arity; ++i) {
-		set_irn_n(node, i, new_r_Bad(irg));
-	}
 	sched_remove(node);
+	kill_node(node);
 }
 
 /**

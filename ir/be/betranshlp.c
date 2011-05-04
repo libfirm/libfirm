@@ -350,7 +350,6 @@ static void transform_nodes(ir_graph *irg, arch_pretrans_nodes *pre_transform)
 
 	/* pre transform some anchors (so they are available in the other transform
 	 * functions) */
-	pre_transform_anchor(irg, anchor_bad);
 	pre_transform_anchor(irg, anchor_no_mem);
 	pre_transform_anchor(irg, anchor_end_block);
 	pre_transform_anchor(irg, anchor_end);

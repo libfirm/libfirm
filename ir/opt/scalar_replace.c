@@ -612,7 +612,7 @@ static void topologic_walker(ir_node *node, void *ctx)
 		set_Tuple_pred(node, pn_Load_M,         mem);
 		set_Tuple_pred(node, pn_Load_res,       val);
 		set_Tuple_pred(node, pn_Load_X_regular, new_r_Jmp(block));
-		set_Tuple_pred(node, pn_Load_X_except,  new_r_Bad(irg));
+		set_Tuple_pred(node, pn_Load_X_except,  new_r_Bad(irg, mode_X));
 	} else if (is_Store(node)) {
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 
@@ -648,7 +648,7 @@ static void topologic_walker(ir_node *node, void *ctx)
 		turn_into_tuple(node, pn_Store_max);
 		set_Tuple_pred(node, pn_Store_M,         mem);
 		set_Tuple_pred(node, pn_Store_X_regular, new_r_Jmp(block));
-		set_Tuple_pred(node, pn_Store_X_except,  new_r_Bad(irg));
+		set_Tuple_pred(node, pn_Store_X_except,  new_r_Bad(irg, mode_X));
 	}
 }
 

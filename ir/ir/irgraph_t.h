@@ -186,16 +186,6 @@ static inline void _set_irg_args(ir_graph *irg, ir_node *node)
 	set_irn_n(irg->anchor, anchor_args, node);
 }
 
-static inline ir_node *_get_irg_bad(const ir_graph *irg)
-{
-	return get_irn_n(irg->anchor, anchor_bad);
-}
-
-static inline void _set_irg_bad(ir_graph *irg, ir_node *node)
-{
-	set_irn_n(irg->anchor, anchor_bad, node);
-}
-
 static inline ir_node * _get_irg_no_mem(const ir_graph *irg)
 {
 	return get_irn_n(irg->anchor, anchor_no_mem);
@@ -425,7 +415,8 @@ static inline int _is_irg_state(const ir_graph *irg, ir_graph_state_t state)
  * @param irn The node.
  * @return    The index allocated for the node.
  */
-static inline unsigned irg_register_node_idx(ir_graph *irg, ir_node *irn) {
+static inline unsigned irg_register_node_idx(ir_graph *irg, ir_node *irn)
+{
 	unsigned idx = irg->last_node_idx++;
 	if (idx >= (unsigned)ARR_LEN(irg->idx_irn_map))
 		ARR_RESIZE(ir_node *, irg->idx_irn_map, idx + 1);
@@ -530,8 +521,6 @@ static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
 #define set_irg_initial_mem(irg, node)        _set_irg_initial_mem(irg, node)
 #define get_irg_args(irg)                     _get_irg_args(irg)
 #define set_irg_args(irg, node)               _set_irg_args(irg, node)
-#define get_irg_bad(irg)                      _get_irg_bad(irg)
-#define set_irg_bad(irg, node)                _set_irg_bad(irg, node)
 #define get_irg_no_mem(irg)                   _get_irg_no_mem(irg)
 #define set_irn_no_mem(irg, node)             _set_irn_no_mem(irg, node)
 #define get_irg_entity(irg)                   _get_irg_entity(irg)

@@ -924,12 +924,6 @@
  *    SPECIAL OPERATIONS
  *    ------------------
  *
- *    ir_node *new_Bad (void)
- *    -----------------------
- *
- *    Returns the unique Bad node current_ir_graph->bad.
- *    This node is used to express results of dead code elimination.
- *
  *    ir_node *new_NoMem (void)
  *    -----------------------------------------------------------------------------------
  *

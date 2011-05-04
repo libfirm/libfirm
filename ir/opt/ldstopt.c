@@ -913,7 +913,7 @@ static int try_load_after_store(ir_node *load,
 	/* no exception */
 	if (info->projs[pn_Load_X_except]) {
 		ir_graph *irg = get_irn_irg(load);
-		exchange( info->projs[pn_Load_X_except], new_r_Bad(irg));
+		exchange( info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
 		res |= CF_CHANGED;
 	}
 	if (info->projs[pn_Load_X_regular]) {
@@ -1019,7 +1019,7 @@ static unsigned follow_Mem_chain(ir_node *load, ir_node *curr)
 				/* no exception */
 				if (info->projs[pn_Load_X_except]) {
 					ir_graph *irg = get_irn_irg(load);
-					exchange(info->projs[pn_Load_X_except], new_r_Bad(irg));
+					exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
 					res |= CF_CHANGED;
 				}
 				if (info->projs[pn_Load_X_regular]) {
@@ -1156,7 +1156,7 @@ static unsigned optimize_load(ir_node *load)
 			/* no exception, clear the info field as it might be checked later again */
 			if (info->projs[pn_Load_X_except]) {
 				ir_graph *irg = get_irn_irg(load);
-				exchange(info->projs[pn_Load_X_except], new_r_Bad(irg));
+				exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
 				info->projs[pn_Load_X_except] = NULL;
 				res |= CF_CHANGED;
 			}
@@ -1191,7 +1191,7 @@ static unsigned optimize_load(ir_node *load)
 		/* we completely replace the load by this value */
 		if (info->projs[pn_Load_X_except]) {
 			ir_graph *irg = get_irn_irg(load);
-			exchange(info->projs[pn_Load_X_except], new_r_Bad(irg));
+			exchange(info->projs[pn_Load_X_except], new_r_Bad(irg, mode_X));
 			info->projs[pn_Load_X_except] = NULL;
 			res |= CF_CHANGED;
 		}

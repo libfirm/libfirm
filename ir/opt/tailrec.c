@@ -292,7 +292,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 
 	if (n_locs > 0) {
-		ir_node *bad, *start_block;
+		ir_node *start_block;
 		ir_node **in;
 		ir_mode **modes;
 
@@ -318,8 +318,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		mature_immBlock(start_block);
 
 		/* no: we can kill all returns */
-		bad = get_irg_bad(irg);
-
 		for (p = env->rets; p; p = n) {
 			ir_node *block = get_nodes_block(p);
 			ir_node *call, *mem, *jmp, *tuple;
@@ -338,20 +336,21 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			set_optimize(rem);
 
 			for (i = 0; i < env->n_ress; ++i) {
+				ir_mode *mode = modes[i];
 				if (env->variants[i] != TR_DIRECT) {
-					in[i] = get_r_value(irg, i, modes[i]);
+					in[i] = get_r_value(irg, i, mode);
 				} else {
-					in[i] = bad;
+					in[i] = new_r_Bad(irg, mode);
 				}
 			}
 			/* create a new tuple for the return values */
 			tuple = new_r_Tuple(block, env->n_ress, in);
 
 			turn_into_tuple(call, pn_Call_max);
-			set_Tuple_pred(call, pn_Call_M,                mem);
-			set_Tuple_pred(call, pn_Call_X_regular,        jmp);
-			set_Tuple_pred(call, pn_Call_X_except,         bad);
-			set_Tuple_pred(call, pn_Call_T_result,         tuple);
+			set_Tuple_pred(call, pn_Call_M,         mem);
+			set_Tuple_pred(call, pn_Call_X_regular, jmp);
+			set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));
+			set_Tuple_pred(call, pn_Call_T_result,  tuple);
 
 			for (i = 0; i < env->n_ress; ++i) {
 				ir_node *res = get_Return_res(p, i);
@@ -360,7 +359,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 				}
 			}
 
-			exchange(p, bad);
+			exchange(p, new_r_Bad(irg, mode_X));
 		}
 
 		/* finally fix all other returns */
@@ -402,7 +401,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 		}
 		ssa_cons_finish(irg);
 	} else {
-		ir_node *bad = get_irg_bad(irg);
+		ir_node *bad = new_r_Bad(irg, mode_X);
 
 		/* no: we can kill all returns */
 		for (p = env->rets; p; p = n) {

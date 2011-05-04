@@ -353,8 +353,7 @@ static int verify_node_Proj_Cond(ir_node *pred, ir_node *p)
 	ASSERT_AND_RET_DBG(
 		(
 			(proj >= 0 && mode == mode_X && get_irn_mode(get_Cond_selector(pred)) == mode_b) ||   /* compare */
-			(mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred)))) ||             /* switch */
-			is_Bad(get_Cond_selector(pred))                                                       /* rare */
+			(mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred))))                /* switch */
 		),
 		"wrong Proj from Cond", 0,
 		show_proj_failure(p);
@@ -662,10 +661,6 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p)
 		/* We don't test */
 		break;
 
-	case iro_Bad:
-		/* hmm, optimization did not remove it */
-		break;
-
 	default:
 		/* ASSERT_AND_RET(0, "Unknown opcode", 0); */
 		break;
@@ -720,9 +715,6 @@ static int verify_node_Proj_Bound(ir_node *n, ir_node *p)
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
 
-	/* ignore Bound checks of Bad */
-	if (is_Bad(get_Bound_index(n)))
-		return 1;
 	ASSERT_AND_RET_DBG(
 		(
 			(proj == pn_Bound_M         && mode == mode_M) ||
@@ -766,8 +758,7 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(n, i);
-		ASSERT_AND_RET(
-			is_Bad(pred) || (get_irn_mode(pred) == mode_X),
+		ASSERT_AND_RET(get_irn_mode(pred) == mode_X,
 			"Block node must have a mode_X predecessor", 0);
 		ASSERT_AND_RET(is_cfop(skip_Proj(skip_Tuple(pred))), "Block predecessor must be a cfop", 0);
 	}
@@ -1437,29 +1428,21 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg)
 	/* Phi: BB x dataM^n --> dataM */
 	for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
 		ir_node *pred = get_Phi_pred(n, i);
-		if (!is_Bad(pred)) {
-			ASSERT_AND_RET_DBG(
-				get_irn_mode(pred) == mymode,
-				"Phi node", 0,
-				show_phi_failure(n, pred, i);
-			);
-		}
+		ASSERT_AND_RET_DBG(get_irn_mode(pred) == mymode,
+		                   "Phi node", 0, show_phi_failure(n, pred, i);
+		);
 	}
 	ASSERT_AND_RET(mode_is_dataM(mymode) || mymode == mode_b, "Phi node", 0 );
 
+#if 0
 	if (mymode == mode_M) {
 		for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
 			int j;
 			ir_node *pred_i = get_Phi_pred(n, i);
 
-			if (is_Bad(pred_i))
-				continue;
 			for (j = i - 1; j >= 0; --j) {
 				ir_node *pred_j = get_Phi_pred(n, j);
 
-				if (is_Bad(pred_j))
-					continue;
-#if 0
 				/* currently this checks fails for blocks with exception
 				   outputs (and these are NOT basic blocks).  So it is disabled yet. */
 				ASSERT_AND_RET_DBG(
@@ -1468,10 +1451,10 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg)
 					0,
 					ir_printf("%+F and %+F of %+F are in %+F\n", pred_i, pred_j, n, get_irn_n(pred_i, -1))
 				);
-#endif
 			}
 		}
 	}
+#endif
 	return 1;
 }
 
@@ -1789,16 +1772,6 @@ int irn_verify_irg(ir_node *n, ir_graph *irg)
 		ASSERT_AND_RET_DBG(is_Block(get_nodes_block(n)) || is_Anchor(n),
 				"block input is not a block", 0,
 				ir_printf("node %+F", n));
-	}
-
-	/* We don't want to test nodes whose predecessors are Bad,
-	   as we would have to special case that for each operation. */
-	if (op != op_Phi && op != op_Block) {
-		int i;
-		for (i = get_irn_arity(n) - 1; i >= 0; --i) {
-			if (is_Bad(get_irn_n(n, i)))
-				return 1;
-		}
 	}
 
 	if (op->ops.verify_node)

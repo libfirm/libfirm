@@ -637,6 +637,18 @@ static void first_round(ir_node* const irn, void* const env)
 	}
 }
 
+static ir_node *make_bad_block(ir_graph *irg)
+{
+	ir_node *bad = new_r_Bad(irg, mode_BB);
+	bitinfo *bb  = get_bitinfo(bad);
+	if (bb == NULL) {
+		ir_tarval* const f = get_tarval_b_false();
+		ir_tarval* const t = get_tarval_b_true();
+		set_bitinfo(bad, f, t); /* Undefined. */
+	}
+	return bad;
+}
+
 static void apply_result(ir_node* const irn, void* ctx)
 {
 	environment_t* env = (environment_t*)ctx;
@@ -650,7 +662,8 @@ static void apply_result(ir_node* const irn, void* ctx)
 		block_b = get_bitinfo(irn);
 		/* Trivially unreachable blocks have no info. */
 		if (block_b == NULL || block_b->z == get_tarval_b_false()) {
-			exchange(irn, get_irg_bad(get_Block_irg(irn)));
+			ir_node  *bad = make_bad_block(get_irn_irg(irn));
+			exchange(irn, bad);
 			env->modified = 1;
 		}
 		return;
@@ -661,7 +674,10 @@ static void apply_result(ir_node* const irn, void* ctx)
 	/* Trivially unreachable blocks have no info. */
 	if (block_b == NULL || block_b->z == get_tarval_b_false()) {
 		/* Unreachable blocks might be replaced before the nodes in them. */
-		exchange(irn, is_Bad(block) ? block : get_irg_bad(get_Block_irg(block)));
+		ir_mode  *mode = get_irn_mode(irn);
+		ir_graph *irg  = get_irn_irg(irn);
+		ir_node  *bad  = new_r_Bad(irg, mode);
+		exchange(irn, bad);
 		env->modified = 1;
 		return;
 	}
@@ -690,7 +706,7 @@ static void apply_result(ir_node* const irn, void* ctx)
 				add_End_keepalive(get_irg_end(irg), block);
 				n = new_r_Jmp(block);
 			} else {
-				n = new_r_Bad(irg);
+				n = new_r_Bad(irg, mode_X);
 				/* Transferring analysis information to the bad node makes it a
 				 * candidate for replacement. */
 				goto exchange_only;
@@ -815,13 +831,13 @@ void fixpoint_vrp(ir_graph* const irg)
 	{
 		pdeq* const q = new_pdeq();
 
-		/* We need this extra step because the dom tree does not contain unreachable
-		   blocks in Firm. Moreover build phi list. */
+		/* We need this extra step because the dom tree does not contain
+		 * unreachable blocks in Firm. Moreover build phi list. */
 		irg_walk_anchors(irg, clear_links, build_phi_lists, NULL);
 
-		{ ir_tarval* const f = get_tarval_b_false();
+		{
+			ir_tarval* const f = get_tarval_b_false();
 			ir_tarval* const t = get_tarval_b_true();
-			set_bitinfo(get_irg_bad(irg),       f, t); /* Undefined. */
 			set_bitinfo(get_irg_end_block(irg), t, f); /* Reachable. */
 		}
 

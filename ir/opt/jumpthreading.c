@@ -86,7 +86,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode,
 	/* In case of a bad input to a block we need to return the bad value */
 	if (is_Bad(block)) {
 		ir_graph *irg = get_irn_irg(block);
-		return new_r_Bad(irg);
+		return new_r_Bad(irg, mode);
 	}
 
 	/* the other defs can't be marked for cases where a user of the original
@@ -631,7 +631,7 @@ static void thread_jumps(ir_node* block, void* data)
 	int      selector_evaluated;
 	const ir_edge_t *edge, *next;
 	ir_graph *irg;
-	ir_node *bad;
+	ir_node *badX;
 	int      cnst_pos;
 
 	if (get_Block_n_cfgpreds(block) != 1)
@@ -693,7 +693,7 @@ static void thread_jumps(ir_node* block, void* data)
 
 	if (selector_evaluated == 0) {
 		ir_graph *irg = get_irn_irg(block);
-		bad = new_r_Bad(irg);
+		ir_node  *bad = new_r_Bad(irg, mode_X);
 		exchange(projx, bad);
 		*changed = 1;
 		return;
@@ -719,18 +719,20 @@ static void thread_jumps(ir_node* block, void* data)
 	/* we have to remove the edge towards the pred as the pred now
 	 * jumps into the true_block. We also have to shorten Phis
 	 * in our block because of this */
-	bad      = new_r_Bad(irg);
+	badX     = new_r_Bad(irg, mode_X);
 	cnst_pos = env.cnst_pos;
 
 	/* shorten Phis */
 	foreach_out_edge_safe(env.cnst_pred, edge, next) {
 		ir_node *node = get_edge_src_irn(edge);
 
-		if (is_Phi(node))
+		if (is_Phi(node)) {
+			ir_node *bad = new_r_Bad(irg, get_irn_mode(node));
 			set_Phi_pred(node, cnst_pos, bad);
+		}
 	}
 
-	set_Block_cfgpred(env.cnst_pred, cnst_pos, bad);
+	set_Block_cfgpred(env.cnst_pred, cnst_pos, badX);
 
 	/* the graph is changed now */
 	*changed = 1;

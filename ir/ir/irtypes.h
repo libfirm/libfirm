@@ -432,8 +432,6 @@ enum irg_anchors {
 	anchor_frame,            /**< methods frame */
 	anchor_initial_mem,      /**< initial memory of this graph */
 	anchor_args,             /**< methods arguments */
-	anchor_bad,              /**< bad node of this ir_graph, the one and
-	                              only in this graph */
 	anchor_no_mem,           /**< NoMem node of this ir_graph, the one and only in this graph */
 	anchor_last
 };

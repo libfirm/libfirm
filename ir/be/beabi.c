@@ -1556,7 +1556,7 @@ static void fix_start_block(ir_graph *irg)
 
 	assert(is_Proj(initial_X));
 	exchange(initial_X, jmp);
-	set_irg_initial_exec(irg, new_r_Bad(irg));
+	set_irg_initial_exec(irg, new_r_Bad(irg, mode_X));
 }
 
 /**
@@ -1893,7 +1893,7 @@ static void modify_irg(ir_graph *irg)
 	/* the arg proj is not needed anymore now and should be only used by the anchor */
 	assert(get_irn_n_edges(arg_tuple) == 1);
 	kill_node(arg_tuple);
-	set_irg_args(irg, new_r_Bad(irg));
+	set_irg_args(irg, new_r_Bad(irg, mode_T));
 
 	/* All Return nodes hang on the End node, so look for them there. */
 	end = get_irg_end_block(irg);

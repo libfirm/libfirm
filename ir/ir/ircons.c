@@ -243,7 +243,7 @@ static ir_node *set_phi_arguments(ir_node *phi, int pos)
 		ir_node *cfgpred = get_Block_cfgpred_block(block, i);
 		ir_node *value;
 		if (is_Bad(cfgpred)) {
-			value = new_r_Bad(irg);
+			value = new_r_Bad(irg, mode);
 		} else {
 			inc_irg_visited(irg);
 
@@ -287,7 +287,7 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 	/* We ran into a cycle. This may happen in unreachable loops. */
 	if (irn_visited_else_mark(block)) {
 		/* Since the loop is unreachable, return a Bad. */
-		return new_r_Bad(irg);
+		return new_r_Bad(irg, mode);
 	}
 
 	/* in a matured block we can immediately determine the phi arguments */
@@ -306,11 +306,12 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 			}
 		/* one predecessor just use its value */
 		} else if (arity == 1) {
-			ir_node *cfgpred = get_Block_cfgpred_block(block, 0);
+			ir_node *cfgpred = get_Block_cfgpred(block, 0);
 			if (is_Bad(cfgpred)) {
-				res = cfgpred;
+				res = new_r_Bad(irg, mode);
 			} else {
-				res = get_r_value_internal(cfgpred, pos, mode);
+				ir_node *cfgpred_block = get_nodes_block(cfgpred);
+				res = get_r_value_internal(cfgpred_block, pos, mode);
 			}
 		/* multiple predecessors construct Phi */
 		} else {

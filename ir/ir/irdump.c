@@ -2402,7 +2402,7 @@ void dump_cfg(FILE *F, ir_graph *irg)
 
 	/* walk over the blocks in the graph */
 	irg_block_walk(get_irg_end(irg), dump_block_to_cfg, NULL, F);
-	dump_node(F, get_irg_bad(irg));
+	/* dump_node(F, get_irg_bad(irg)); */
 
 	dump_vcg_footer(F);
 }

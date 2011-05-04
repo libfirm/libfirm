@@ -1429,7 +1429,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 	case pn_Start_T_args:
 		/* we should never need this explicitely */
-		return new_r_Bad(get_irn_irg(node));
+		break;
 
 	case pn_Start_P_frame_base:
 		return be_prolog_get_reg_value(abihelper, sp_reg);

@@ -414,7 +414,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	{
 		ir_node *start_block;
 		ir_node *start;
-		ir_node *bad;
 		ir_node *nomem;
 
 		start_block = get_irg_start_block(called_graph);
@@ -424,10 +423,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		start = get_irg_start(called_graph);
 		set_new_node(start, pre_call);
 		mark_irn_visited(start);
-
-		bad = get_irg_bad(called_graph);
-		set_new_node(bad, get_irg_bad(irg));
-		mark_irn_visited(bad);
 
 		nomem = get_irg_no_mem(called_graph);
 		set_new_node(nomem, get_irg_no_mem(irg));
@@ -540,7 +535,8 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				ir_mode *mode = get_irn_mode(cf_pred[0]);
 				phi = new_r_Phi(post_bl, n_ret, cf_pred, mode);
 			} else {
-				phi = new_r_Bad(irg);
+				ir_mode *mode = get_irn_mode(cf_pred[0]);
+				phi = new_r_Bad(irg, mode);
 			}
 			res_pred[j] = phi;
 			/* Conserve Phi-list for further inlinings -- but might be optimized */
@@ -552,7 +548,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		result_tuple = new_r_Tuple(post_bl, n_res, res_pred);
 		set_Tuple_pred(call, pn_Call_T_result, result_tuple);
 	} else {
-		set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg));
+		set_Tuple_pred(call, pn_Call_T_result, new_r_Bad(irg, mode_T));
 	}
 	/* handle the regular call */
 	set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(post_bl));
@@ -588,7 +584,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 				set_Tuple_pred(call, pn_Call_X_except, new_r_Jmp(block));
 			}
 		} else {
-			set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
+			set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg, mode_X));
 		}
 	} else {
 		ir_node *main_end_bl;
@@ -615,7 +611,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 		for (i = 0; i < n_exc; ++i)
 			end_preds[main_end_bl_arity + i] = cf_pred[i];
 		set_irn_in(main_end_bl, n_exc + main_end_bl_arity, end_preds);
-		set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg));
+		set_Tuple_pred(call, pn_Call_X_except, new_r_Bad(irg, mode_X));
 		free(end_preds);
 	}
 	free(res_pred);

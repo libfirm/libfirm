@@ -225,7 +225,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		}
 		case pn_Call_X_except:
 			exc_changed = 1;
-			exchange(proj, get_irg_bad(irg));
+			exchange(proj, new_r_Bad(irg, mode_X));
 			break;
 		case pn_Call_X_regular: {
 			ir_node *block = get_nodes_block(call);
@@ -360,7 +360,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 		switch (get_Proj_proj(proj)) {
 		case pn_Call_X_except:
 			exc_changed = 1;
-			exchange(proj, get_irg_bad(irg));
+			exchange(proj, new_r_Bad(irg, mode_X));
 			break;
 		case pn_Call_X_regular: {
 			ir_node *block = get_nodes_block(call);

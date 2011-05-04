@@ -216,7 +216,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
-	set_irg_bad        (res, new_r_Bad(res));
 	set_irg_no_mem     (res, new_r_NoMem(res));
 	start = new_r_Start(res);
 	set_irg_start      (res, start);
@@ -260,7 +259,6 @@ ir_graph *new_ir_graph(ir_entity *ent, int n_loc)
 ir_graph *new_const_code_irg(void)
 {
 	ir_graph *res = alloc_graph();
-	ir_node  *bad;
 	ir_node  *body_block;
 	ir_node  *end;
 	ir_node  *end_block;
@@ -303,8 +301,6 @@ ir_graph *new_const_code_irg(void)
 	/* -- The start block -- */
 	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
-	bad = new_r_Bad(res);
-	set_irg_bad(res, bad);
 	no_mem = new_r_NoMem(res);
 	set_irg_no_mem(res, no_mem);
 	start = new_r_Start(res);
@@ -323,7 +319,6 @@ ir_graph *new_const_code_irg(void)
 	set_Block_block_visited(body_block, -1);
 	set_Block_block_visited(start_block, -1);
 	set_irn_visited(start_block, -1);
-	set_irn_visited(bad, -1);
 	set_irn_visited(no_mem, -1);
 
 	return res;
@@ -420,7 +415,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 	/* -- The start block -- */
 	set_irg_start_block(res, get_new_node(get_irg_start_block(irg)));
-	set_irg_bad        (res, get_new_node(get_irg_bad(irg)));
 	set_irg_no_mem     (res, get_new_node(get_irg_no_mem(irg)));
 	set_irg_start      (res, get_new_node(get_irg_start(irg)));
 
@@ -580,16 +574,6 @@ ir_node *(get_irg_args)(const ir_graph *irg)
 void (set_irg_args)(ir_graph *irg, ir_node *node)
 {
 	_set_irg_args(irg, node);
-}
-
-ir_node *(get_irg_bad)(const ir_graph *irg)
-{
-	return _get_irg_bad(irg);
-}
-
-void (set_irg_bad)(ir_graph *irg, ir_node *node)
-{
-	_set_irg_bad(irg, node);
 }
 
 ir_node *(get_irg_no_mem)(const ir_graph *irg)

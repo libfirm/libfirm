@@ -378,7 +378,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 {
 	int i;
 	int n_cfgpreds;
-	ir_graph *irg;
+	ir_graph *irg = get_irn_irg(block);
 	ir_node *phi;
 	ir_node **in;
 
@@ -388,7 +388,7 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 	 * Dead and bad blocks. */
 	if (get_irn_arity(block) < 1 || is_Bad(block)) {
 		DB((dbg, LEVEL_5, "ssa bad %N\n", block));
-		return new_Bad();
+		return new_r_Bad(irg, mode);
 	}
 
 	if (block == ssa_second_def_block && !first) {
@@ -403,7 +403,6 @@ static ir_node *search_def_and_create_phis(ir_node *block, ir_mode *mode, int fi
 		return value;
 	}
 
-	irg = get_irn_irg(block);
 	assert(block != get_irg_start_block(irg));
 
 	/* a Block with only 1 predecessor needs no Phi */

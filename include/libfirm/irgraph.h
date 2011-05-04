@@ -81,9 +81,6 @@
  *
  * - proj_args       The proj nodes of the args node.
  *
- * - bad             The Bad node is an auxiliary node. It is needed only once,
- *                   so there is this globally reachable node.
- *
  * - no_mem          The NoMem node is an auxiliary node. It is needed only once,
  *                   so there is this globally reachable node.
  *
@@ -237,11 +234,7 @@ FIRM_API ir_node *get_irg_args(const ir_graph *irg);
 /** Sets the node that represents the argument pointer of the given IR graph. */
 FIRM_API void set_irg_args(ir_graph *irg, ir_node *node);
 
-/** Returns the Bad node of the given IR graph.  Use new_Bad() instead!! */
-FIRM_API ir_node *get_irg_bad(const ir_graph *irg);
-FIRM_API void set_irg_bad(ir_graph *irg, ir_node *node);
-
-/** Returns the NoMem node of the given IR graph.  Use new_NoMem() instead!! */
+/** Returns the NoMem node of the given IR graph. */
 FIRM_API ir_node *get_irg_no_mem(const ir_graph *irg);
 FIRM_API void set_irg_no_mem(ir_graph *irg, ir_node *node);
 
