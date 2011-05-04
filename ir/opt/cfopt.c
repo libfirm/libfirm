@@ -80,6 +80,8 @@ static void clear_link(ir_node *node, void *ctx)
 {
 	(void) ctx;
 	set_irn_link(node, NULL);
+	if (is_Block(node))
+		set_Block_removable(node, true);
 }
 
 /**
