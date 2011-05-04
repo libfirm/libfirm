@@ -181,6 +181,7 @@ int optimize_graph_df(ir_graph *irg)
 	current_ir_graph = irg;
 
 	state = edges_assure(irg);
+	assure_doms(irg);
 
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
@@ -194,8 +195,7 @@ int optimize_graph_df(ir_graph *irg)
 	 * determine a nodes block there and therefore can't remove all code
 	 * in unreachable blocks */
 	set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
-	if (get_irg_dom_state(irg) == dom_consistent)
-		irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
+	irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
 	/* invalidate info */
 	set_irg_outs_inconsistent(irg);
