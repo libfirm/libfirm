@@ -169,9 +169,9 @@ static int transfer(ir_node* const irn)
 
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
-		if (b->z == f && b->o == f) {
+		if (b->z == f) {
 			z = f;
-			o = f;
+			o = t;
 		} else switch (get_irn_opcode(irn)) {
 			case iro_Proj: {
 				ir_node* const pred = get_Proj_pred(irn);
@@ -249,8 +249,13 @@ result_unknown_X:
 				irn == get_irg_end_block(irg);
 		}
 
-		o = f;
-		z = reachable ? t : f;
+		if (reachable) {
+			z = t;
+			o = f;
+		} else {
+			z = f;
+			o = t;
+		}
 	} else if (mode_is_intb(m)) {
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 		switch (get_irn_opcode(irn)) {
