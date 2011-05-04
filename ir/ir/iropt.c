@@ -691,6 +691,25 @@ static ir_node *equivalent_node_Block(ir_node *n)
 
 	irg = get_irn_irg(n);
 
+	/* if all predecessors of a block are unreachable, then the block is
+	 * unreachable */
+	if (is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK)) {
+		int i;
+		int n_cfgpreds = get_Block_n_cfgpreds(n);
+
+		for (i = 0; i < n_cfgpreds; ++i) {
+			ir_node *pred = get_Block_cfgpred(n, i);
+			if (!is_Bad(pred))
+				break;
+		}
+		/* only bad inputs? It's unreachable code (unless it is the start or
+		 * end block) */
+		if (i >= n_cfgpreds && n != get_irg_start_block(irg)
+		    && n != get_irg_end_block(irg)) {
+		    return get_irg_bad(irg);
+		}
+	}
+
 	/* Straightening: a single entry Block following a single exit Block
 	 * can be merged. */
 	if (n_preds == 1) {
@@ -720,21 +739,6 @@ static ir_node *equivalent_node_Block(ir_node *n)
 				n = get_nodes_block(cond);
 				DBG_OPT_IFSIM1(oldn, a, b, n);
 			}
-		}
-	} else if (is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK)) {
-		int i;
-		int n_cfgpreds = get_Block_n_cfgpreds(n);
-
-		for (i = 0; i < n_cfgpreds; ++i) {
-			ir_node *pred = get_Block_cfgpred(n, i);
-			if (!is_Bad(pred))
-				break;
-		}
-		/* only bad unreachable inputs? It's unreachable code (unless it is the
-		 * start or end block) */
-		if (i >= n_cfgpreds && n != get_irg_start_block(irg)
-		    && n != get_irg_end_block(irg)) {
-		    return get_irg_bad(irg);
 		}
 	}
 
