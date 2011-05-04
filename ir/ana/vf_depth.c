@@ -31,6 +31,7 @@
 #include "plist.h"
 #include "obstack.h"
 #include "irtools.h"
+#include "irgmod.h"
 
 #define VLD_DEBUG_DEPTHS 0
 
