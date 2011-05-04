@@ -32,7 +32,7 @@
 #include "obstack.h"
 #include "irtools.h"
 
-#define VLD_DEBUG_DEPTHS 1
+#define VLD_DEBUG_DEPTHS 0
 
 typedef struct obstack obstack;
 
@@ -49,13 +49,40 @@ int vl_node_get_depth(vl_info *vli, ir_node *irn)
 {
 	vl_node *vln = phase_get_irn_data(vli->phase, irn);
 	assert(vln && "No depth information for the given node.");
+	assert(vln->depth >= 0);
 	return vln->depth;
+}
+
+void vl_node_copy_depth(vl_info *vli, ir_node *src, ir_node *dst)
+{
+	vl_node *vl_src = phase_get_irn_data(vli->phase, src);
+	vl_node *vl_dst;
+
+	if (!vl_src || (vl_src->depth < 0)) return;
+
+	vl_dst = phase_get_or_set_irn_data(vli->phase, dst);
+	assert(vl_dst->depth < 0);
+	vl_dst->depth = vl_src->depth;
+}
+
+ir_node *vl_exact_copy(vl_info *vli, ir_node *irn)
+{
+	ir_node *copy = exact_copy(irn);
+	if (vli) vl_node_copy_depth(vli, irn, copy);
+	return copy;
+}
+
+void vl_exchange(vl_info *vli, ir_node *ir_old, ir_node *ir_new)
+{
+	if (vli) vl_node_copy_depth(vli, ir_old, ir_new);
+	exchange(ir_old, ir_new);
 }
 
 static void *vl_init_node(ir_phase *phase, const ir_node *irn)
 {
 	vl_info *vli = phase_get_private(phase);
 	vl_node *vln = OALLOCZ(&vli->obst, vl_node);
+	vln->depth = -1;
 	(void)irn;
 	return vln;
 }
@@ -184,10 +211,4 @@ void vl_dump(vl_info *vli, FILE* f)
 	/* Walk the tree and dump every node. */
 	inc_irg_visited(irg);
 	vl_dump_walk(vli, ret, f);
-}
-
-void vl_node_set_depth(vl_info *vli, ir_node *irn, int depth)
-{
-	vl_node *vln = phase_get_or_set_irn_data(vli->phase, irn);
-	vln->depth = depth;
 }

@@ -95,6 +95,7 @@ struct va_info {
 	int        counter;
 	int        copy_count;
 	ir_node   *block;
+	vl_info   *vli;
 };
 
 static int va_skip_node(va_info *vai, ir_node *irn)
@@ -639,7 +640,7 @@ static void va_region_place_multiple(va_info *vai, va_node *van)
 		if (it == plist_first(van->hints)) {
 			va_copy = van;
 		} else {
-			ir_copy = exact_copy(van->irn);
+			ir_copy = vl_exact_copy(vai->vli, van->irn);
 			va_copy = phase_get_or_set_irn_data(vai->phase, ir_copy);
 			va_node_inc_dep_markers(vai, ir_copy);
 			vai->copy_count++;
@@ -754,7 +755,7 @@ static void *va_init_node(ir_phase *phase, const ir_node *irn)
 	return van;
 }
 
-va_info *va_init_root(ir_node *root, int keep_block)
+va_info *va_init_root(vl_info *vli, ir_node *root, int keep_block)
 {
 	va_info  *vai = XMALLOC(va_info);
 	ir_graph *irg = get_irn_irg(root);
@@ -765,6 +766,7 @@ va_info *va_init_root(ir_node *root, int keep_block)
 	vai->phase = new_phase(irg, va_init_node);
 	phase_set_private(vai->phase, vai);
 
+	vai->vli        = vli;
 	vai->counter    = 0;
 	vai->copy_count = 0;
 	vai->root       = va_region_new_root(vai);

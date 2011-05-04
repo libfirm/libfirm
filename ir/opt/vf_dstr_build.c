@@ -40,6 +40,7 @@
 #include "pset_new.h"
 #include "pmap_new.h"
 #include "iredges.h"
+#include "irgwalk.h"
 #include <assert.h>
 #include <string.h>
 
@@ -49,7 +50,8 @@ typedef struct obstack obstack;
 
 typedef struct vb_info {
 	vl_info    *vli;
-	obstack     obst;
+	obstack     obst;      /* For long-time allocations. */
+	obstack     temp_obst; /* For temporary allocations inside functions. */
 	pmap_new_t  blocks;
 	pmap_new_t  merges;
 	ir_node    *old_block; /* The block that hosts the VFirm graph. */
@@ -162,12 +164,11 @@ static ir_node *vb_build_lane(vb_info *vbi, va_info *vai, va_region *region,
 }
 
 /* Try to move a gamma node to the associated branches merge block. */
-static void vb_place_and_build_gamma_phi(vb_info *vbi, va_info *vai,
+static void vb_gamma_move_to_merge_block(vb_info *vbi, va_info *vai,
                                          ir_node *irn)
 {
 	va_region *branch_region;
-	ir_node   *block, *phi, *ins[2];
-	ir_mode   *mode;
+	ir_node   *block;
 
 	/* Determine the gammas branch region (implements value selection). */
 	assert(is_Gamma(irn));
@@ -178,17 +179,7 @@ static void vb_place_and_build_gamma_phi(vb_info *vbi, va_info *vai,
 	block = pmap_new_get(&vbi->merges, branch_region);
 	assert(block);
 
-	/* Create a phi node in the block. */
-	mode   = get_irn_mode(irn);
-	ins[0] = get_Gamma_true(irn); /* Order as in vb_build_child. */
-	ins[1] = get_Gamma_false(irn);
-	phi    = new_r_Phi(block, 2, ins, mode);
-
-	vl_node_set_depth(vbi->vli, phi,
-		vl_node_get_depth(vbi->vli, irn)
-	);
-
-	exchange(irn, phi);
+	set_nodes_block(irn, block);
 }
 
 /* Try to move a node to the block of its associated region. */
@@ -211,7 +202,6 @@ static int vb_node_move_to_region_block(vb_info *vbi, va_info *vai,
 static void vb_enqueue_loop(vb_info *vbi, ir_node *first_loop)
 {
 	vb_node *vbn = phase_get_or_set_irn_data(vbi->phase, first_loop);
-	printf("sirtae %d.\n", vbn->on_todo);
 
 	/* If the loop is already on the todo list, do nothing. */
 	if (!vbn->on_todo) {
@@ -253,7 +243,7 @@ static void vb_place_nodes_walk(vb_info *vbi, va_info *vai, ir_node *irn)
 
 	if (is_Gamma(irn)) {
 		/* Try to move gammas to their merge region and make them phi. */
-		vb_place_and_build_gamma_phi(vbi, vai, irn);
+		vb_gamma_move_to_merge_block(vbi, vai, irn);
 	} else if (is_Proj(irn)) {
 		/* Move to the same block as pred. */
 		set_nodes_block(irn, get_nodes_block(get_Proj_pred(irn)));
@@ -270,10 +260,8 @@ static void vb_place_nodes(vb_info *vbi, va_info *vai, ir_node *irn)
 }
 
 /* Scan the loop and collect information on the non-NULL arrays. */
-static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, int first,
-                              int loop_depth, plist_t *header_roots,
-                              plist_t *body_roots, plist_t *thetas,
-                              plist_t *etas, plist_t *invars)
+static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, int loop_depth,
+                              plist_t *thetas, plist_t *etas, plist_t *invars)
 {
 	int i, depth;
 
@@ -287,26 +275,12 @@ static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, int first,
 
 	assert(depth >= loop_depth);
 
-	/* We can in fact skip these. If we end up here, irn is not invariant.
-	 * This should only happen on the base region, for the start block, so
-	 * we won't find further invariants and we certainly don't find any of
-	 * the other nodes here. */
-	if (vb_skip_node(vbi, irn)) {
-		assert(depth == 0);
-		return;
-	}
-
+	if (vb_skip_node(vbi, irn)) return;
 	if (irn_visited(irn)) return;
 	mark_irn_visited(irn);
 
 	/* Collect thetas and etas of the current loop on the way. */
 	if (depth == loop_depth) {
-
-		/* The first nodes we encounter are part of the header root. */
-		if (header_roots && first) {
-			assert(!plist_find_value(header_roots, irn));
-			plist_insert_back(header_roots, irn);
-		}
 
 		/* Eta nodes in the current loop depth. */
 		if (etas && is_Eta(irn)) {
@@ -314,40 +288,16 @@ static void vb_scan_area_walk(vb_info *vbi, ir_node *irn, int first,
 			plist_insert_back(etas, irn);
 		}
 
-		if (is_Theta(irn)) {
-			ir_node *next = get_Theta_next(irn);
+		if (thetas && is_Theta(irn)) {
 			assert(get_Theta_depth(irn) == depth);
-
-			/* Theta nodes in the current loop depth. */
-			if (thetas) {
-				assert(!plist_find_value(thetas, irn));
-				plist_insert_back(thetas, irn);
-			}
-
-			/* Thetas are also header roots (already collected if first). */
-			if (header_roots && !first) {
-				assert(!plist_find_value(header_roots, irn));
-				plist_insert_back(header_roots, irn);
-			}
-
-			/* Theta nexts go to body_roots. */
-			if (body_roots) {
-				/* Make sure it is not yet added and not skipped. */
-				if (!irn_visited(next) && !vb_skip_node(vbi, next)) {
-					assert(!plist_find_value(body_roots, next));
-					plist_insert_back(body_roots, next);
-				}
-			}
+			assert(!plist_find_value(thetas, irn));
+			plist_insert_back(thetas, irn);
 		}
 	}
 
 	for (i = 0; i < get_irn_arity(irn); i++) {
 		ir_node *ir_dep = get_irn_n(irn, i);
-
-		vb_scan_area_walk(
-			vbi, ir_dep, 0, loop_depth, header_roots,
-			body_roots, thetas, etas, invars
-		);
+		vb_scan_area_walk(vbi, ir_dep, loop_depth, thetas, etas, invars);
 	}
 }
 
@@ -359,33 +309,82 @@ static void vb_scan_area(vb_info *vbi, ir_node *root, int reset,
 {
 	int depth = vl_node_get_depth(vbi->vli, root);
 	if (reset) inc_irg_visited(get_irn_irg(root));
-	vb_scan_area_walk(vbi, root, 1, depth, NULL, NULL, thetas, etas, invars);
+	vb_scan_area_walk(vbi, root, depth, thetas, etas, invars);
 }
 
 /* Same as vb_scan_area, but it does scan all the areas belonging to the given
  * list of fused loops. There are a lot of nodes that can be selected, but we
  * usually only need a part of them and most often clear space after that. */
-static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *header_roots,
-                         plist_t *body_roots, plist_t *thetas, plist_t *etas,
-                         plist_t *invars)
+static void vb_scan_loop(vb_info *vbi, ir_node *loop, plist_t *thetas,
+                         plist_t *etas, plist_t *invars)
 {
 	va_loop_loop_it it;
-	ir_node *loop_cur, *eta;
-	int depth = vl_node_get_depth(vbi->vli, loop) + 1;
 
-	inc_irg_visited(get_irn_irg(loop));
+	ir_node  *loop_cur, *eta;
+	ir_graph *irg   = get_irn_irg(loop);
+	int       depth = vl_node_get_depth(vbi->vli, loop) + 1;
+
+	inc_irg_visited(irg);
 
 	/* Scan the conditions and values of all the fused loops etas. */
 	foreach_va_loop_eta(loop, loop_cur, eta, it) {
-		vb_scan_area_walk(
-			vbi, get_Eta_cond(eta), 1, depth, header_roots,
-			body_roots, thetas, etas, invars
-		);
+		vb_scan_area_walk(vbi, get_Eta_cond(eta),  depth, thetas, etas, invars);
+		vb_scan_area_walk(vbi, get_Eta_value(eta), depth, thetas, etas, invars);
+	}
+}
 
-		vb_scan_area_walk(
-			vbi, get_Eta_value(eta), 1, depth, header_roots,
-			body_roots, thetas, etas, invars
-		);
+/* Insert nested and unvisited nodes into the list and visit them. */
+static void vb_insert_visit_nested(vb_info *vbi, int depth, ir_node *irn,
+                                   plist_t *list)
+{
+	if (irn_visited(irn)) return;
+	if (vl_node_get_depth(vbi->vli, irn) < depth) return;
+
+	plist_insert_back(list, irn);
+	mark_irn_visited(irn);
+}
+
+static void vb_get_header_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
+                                plist_t *roots)
+{
+	va_loop_loop_it  it;
+	plist_element_t *it_theta;
+
+	ir_node  *eta, *loop_cur;
+	ir_graph *irg   = get_irn_irg(loop);
+	int       depth = vl_node_get_depth(vbi->vli, loop) + 1;
+
+	inc_irg_visited(irg);
+
+	/* Add the eta deps, if they are nested. */
+	foreach_va_loop_eta(loop, loop_cur, eta, it) {
+		vb_insert_visit_nested(vbi, depth, get_Eta_cond(eta),  roots);
+		vb_insert_visit_nested(vbi, depth, get_Eta_value(eta), roots);
+	}
+
+	/* And add all theta nodes. */
+	foreach_plist(thetas, it_theta) {
+		ir_node *theta = plist_element_get_value(it_theta);
+		vb_insert_visit_nested(vbi, depth, theta, roots);
+	}
+}
+
+static void vb_get_body_roots(vb_info *vbi, ir_node *loop, plist_t *thetas,
+                              plist_t *roots)
+{
+	plist_element_t *it;
+
+	ir_graph *irg   = get_irn_irg(loop);
+	int       depth = vl_node_get_depth(vbi->vli, loop) + 1;
+
+	inc_irg_visited(irg);
+	assert(thetas);
+
+	/* Add all thetas next nodes. */
+	foreach_plist(thetas, it) {
+		ir_node *theta = plist_element_get_value(it);
+		ir_node *next  = get_Theta_next(theta);
+		vb_insert_visit_nested(vbi, depth, next, roots);
 	}
 }
 
@@ -416,13 +415,13 @@ static void vb_detach_etas(vb_info *vbi, plist_t *etas)
 		int        count, offset;
 
 		/* Collect the invariant nodes for the given eta. */
-		invars = plist_obstack_new(&vbi->obst);
+		invars = plist_obstack_new(&vbi->temp_obst);
 		vb_scan_area(vbi, get_Eta_cond(eta),  1, NULL, NULL, invars);
 		vb_scan_area(vbi, get_Eta_value(eta), 0, NULL, NULL, invars);
 
 		/* Create a loop node to detach the eta. */
 		count = plist_count(invars);
-		ins   = OALLOCN(&vbi->obst, ir_node*, count);
+		ins   = OALLOCN(&vbi->temp_obst, ir_node*, count);
 		block = get_nodes_block(eta);
 		mode  = get_irn_mode(eta);
 
@@ -434,16 +433,13 @@ static void vb_detach_etas(vb_info *vbi, plist_t *etas)
 
 		loop = new_r_Loop(block, count, ins, mode, eta, NULL);
 		set_Loop_next(loop, loop);
-
-		vl_node_set_depth(vbi->vli, loop,
-			vl_node_get_depth(vbi->vli, eta)
-		);
+		vl_node_copy_depth(vbi->vli, eta, loop);
 
 		/* Reroute edges to the new loop. */
 		edges_reroute(eta, loop, get_irn_irg(eta));
 
 		plist_free(invars);
-		//obstack_free(&vbi->obst, invars);
+		obstack_free(&vbi->temp_obst, invars);
 
 		/* Link the nodes. */
 		vb_set_link(vbi, eta, loop);
@@ -498,14 +494,34 @@ static void vb_detach_theta_nexts(vb_info *vbi, plist_t *thetas)
 	}
 }
 
-static void vb_detach_etas_in_loop(vb_info *vbi, ir_node *loop)
+static void vb_collect_all_etas(ir_node *irn, plist_t *etas)
 {
-	/* This is the usual detach plus scanning the lopo. */
-	plist_t *etas = plist_obstack_new(&vbi->obst);
-	vb_scan_loop(vbi, loop, NULL, NULL, NULL, etas, NULL);
+	int i;
+
+	if (irn_visited(irn)) return;
+	mark_irn_visited(irn);
+
+	if (is_Eta(irn)) {
+		plist_insert_back(etas, irn);
+	}
+
+	for (i = 0; i < get_irn_arity(irn); i++) {
+		ir_node *ir_dep = get_irn_n(irn, i);
+		vb_collect_all_etas(ir_dep, etas);
+	}
+}
+
+static void vb_detach_all_etas(vb_info *vbi, ir_node *root)
+{
+	/* Can't use the obstack, vb_detach_etas allocates there (the link). */
+	plist_t *etas = plist_obstack_new(&vbi->temp_obst);
+
+	inc_irg_visited(get_irn_irg(root));
+	vb_collect_all_etas(root, etas);
 	vb_detach_etas(vbi, etas);
+
 	plist_free(etas);
-	//obstack_free(&vbi->obst, etas);
+	obstack_free(&vbi->temp_obst, etas);
 }
 
 /* For all theta nodes in the list, which have a weakened theta, attach the
@@ -534,22 +550,10 @@ static ir_node *vb_build_base(vb_info *vbi, ir_node *root, ir_node *pred)
 {
 	va_info *vai;
 	ir_node *last;
-	plist_t *etas;
-
-	/* Find eta nodes in the base region. */
-	etas = plist_obstack_new(&vbi->obst);
-	vb_scan_area(vbi, root, 1, NULL, etas, NULL);
-
-	/* And then detach them, to skip their processing. */
-	vb_detach_etas(vbi, etas);
-	dump_ir_graph(get_irn_irg(root), "base-etas-detached");
-
-	plist_free(etas);
-	//obstack_free(&vbi->obst, etas);
 
 	/* Arrange the VFirm graph below root in loop-less regions. */
 	assert(get_nodes_block(root) == vbi->old_block);
-	vai = va_init_root(root, 1);
+	vai = va_init_root(vbi->vli, root, 1);
 
 	/* Build the block structure for the partial graph and process nodes. */
 	last = vb_build_lane(vbi, vai, va_get_root_region(vai), pred);
@@ -580,7 +584,7 @@ static ir_node *vb_build_tuple(vb_info *vbi, plist_t *list)
 	int offset = 0;
 	ir_node **ins, *tuple;
 
-	ins = OALLOCN(&vbi->obst, ir_node*, count);
+	ins = OALLOCN(&vbi->temp_obst, ir_node*, count);
 
 	offset = 0;
 	foreach_plist(list, it) {
@@ -597,7 +601,7 @@ static ir_node *vb_build_tuple(vb_info *vbi, plist_t *list)
 	}
 
 	tuple = new_r_Tuple(vbi->old_block, count, ins);
-	//obstack_free(&vbi->obst, ins);
+	obstack_free(&vbi->temp_obst, ins);
 
 	return tuple;
 }
@@ -639,28 +643,6 @@ static va_region *vb_region_get_first_child(va_region *region)
 	return va_region_child_it_next(&it);
 }
 
-static void vb_build_theta_phis(vb_info *vbi, plist_t *thetas, ir_node *block)
-{
-	plist_element_t *it;
-	foreach_plist(thetas, it) {
-		ir_node *theta = plist_element_get_value(it);
-		ir_mode *mode  = get_irn_mode(theta);
-		ir_node *phi, *ins[2];
-
-		/* The order is specified by construction in vb_build_loop. */
-		ins[0] = get_Theta_init(theta);
-		ins[1] = get_Theta_next(theta);
-
-		phi = new_r_Phi(block, 2, ins, mode);
-
-		vl_node_set_depth(vbi->vli, phi,
-			vl_node_get_depth(vbi->vli, theta)
-		);
-
-		exchange(theta, phi);
-	}
-}
-
 static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 {
 	plist_t   *thetas, *header_roots, *body_roots;
@@ -687,12 +669,14 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 	 * cleanup after arranging.
 	 */
 
-	thetas       = plist_new(); /* Kept after arrangement. */
-	header_roots = plist_obstack_new(&vbi->obst);
-	body_roots   = plist_obstack_new(&vbi->obst);
+	thetas       = plist_obstack_new(&vbi->temp_obst);
+	header_roots = plist_obstack_new(&vbi->temp_obst);
+	body_roots   = plist_obstack_new(&vbi->temp_obst);
 
 	/* Go ahead and collect all those nodes. */
-	vb_scan_loop(vbi, first_loop, header_roots, body_roots, thetas, NULL, NULL);
+	vb_scan_loop        (vbi, first_loop, thetas, NULL, NULL);
+	vb_get_header_roots (vbi, first_loop, thetas, header_roots);
+	vb_get_body_roots   (vbi, first_loop, thetas, body_roots);
 
 	/* Detach next nodes of the thetas. */
 	vb_detach_theta_nexts(vbi, thetas);
@@ -704,7 +688,7 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 	/* Clean up the mess. */
 	plist_free(body_roots);
 	plist_free(header_roots);
-	//obstack_free(&vbi->obst, header_roots);
+	obstack_free(&vbi->temp_obst, header_roots);
 
 	/**
 	 * Now things get funny. We can arrange the new graph from the newly built
@@ -736,7 +720,7 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 	 * Start by initiating arrangment and selecting the proper regions.
 	 */
 
-	vai = va_init_root(root, 1); /* TODO: stuff goes wrong here? */
+	vai = va_init_root(vbi->vli, root, 1);
 
 	/* Find the regions of the loop header and body. */
 	root_region = va_get_root_region(vai);
@@ -795,13 +779,12 @@ static void vb_build_loop(vb_info *vbi, ir_node *first_loop)
 	/* Now re-attach the thetas next edges and of course the loop itself and
 	 * then we are done with the loop. */
 	vb_attach_theta_nexts(vbi, thetas);
+	vb_attach_loop_values(vbi, first_loop);
 
 	dump_ir_graph(get_irn_irg(first_loop), "loop-thetas-reattached");
 
-	vb_build_theta_phis(vbi, thetas, header_block);
 	plist_free(thetas);
-
-	dump_ir_graph(get_irn_irg(first_loop), "loop-thetas-to-phis");
+	obstack_free(&vbi->temp_obst, thetas);
 }
 
 /* Clone the given node if needed (the clone or original irn is returned). */
@@ -828,12 +811,7 @@ static ir_node *vb_clone_dep(vb_info *vbi, ir_node *ir_dep, ir_node *loop)
 
 	} else if (vb_dep->loop != loop) {
 		/* The node belongs to another loop. Clone it. */
-		ir_node *clone = exact_copy(ir_dep);
-
-		/* Make sure that depth data stays in-sync. */
-		vl_node_set_depth(vbi->vli, clone,
-			vl_node_get_depth(vbi->vli, ir_dep)
-		);
+		ir_node *clone = vl_exact_copy(vbi->vli, ir_dep);
 
 #if VB_DEBUG_BUILD
 		printf("Cloning node %ld (now %ld) for loop %ld.\n",
@@ -848,6 +826,10 @@ static ir_node *vb_clone_dep(vb_info *vbi, ir_node *ir_dep, ir_node *loop)
 
 		/* And then return the clone. */
 		ir_dep = clone;
+
+		if (is_Loop(clone)) {
+			set_Loop_next(clone, clone);
+		}
 	}
 
 	assert(vb_dep->loop == loop);
@@ -867,6 +849,10 @@ static void vb_clone_walk(vb_info *vbi, ir_node *irn, ir_node *loop)
 
 		/* Skip already assigned nodes. */
 		if (vb_skip_node(vbi, ir_dep)) continue;
+
+		/* Do not traverse to other loops. If they need to be cloned, that
+		 * was already done at the outer level. */
+		if (is_Loop(ir_dep)) continue;
 
 		/* Clone the node if needed, redirect the edge and recurse. */
 		ir_dep = vb_clone_dep(vbi, ir_dep, loop);
@@ -901,6 +887,36 @@ static void *vb_init_node(ir_phase *phase, const ir_node *irn)
 	return OALLOCZ(&vbi->obst, vb_node);
 }
 
+static void vb_ungate_walk(ir_node *irn, void *ctx)
+{
+	vb_info *vbi = ctx;
+
+	if (is_Gamma(irn) || is_Theta(irn)) {
+		ir_node *ins[2], *phi;
+		ir_mode *mode  = get_irn_mode(irn);
+		ir_node *block = get_nodes_block(irn);
+
+		if (is_Gamma(irn)) {
+			/* Order is defined by vb_build_child. */
+			ins[0] = get_Gamma_true(irn);
+			ins[1] = get_Gamma_false(irn);
+		} else if (is_Theta(irn)) {
+			/* Order is defined by vb_build_loop. */
+			ins[0] = get_Theta_init(irn);
+			ins[1] = get_Theta_next(irn);
+		}
+
+		phi = new_r_Phi(block, 2, ins, mode);
+		vl_exchange(vbi->vli, irn, phi);
+	}
+}
+
+static void vb_ungate(vb_info *vbi)
+{
+	ir_graph *irg = phase_get_irg(vbi->phase);
+	irg_walk_graph(irg, NULL, vb_ungate_walk, vbi);
+}
+
 /* TODO: 1. Clone keeps loop depth.
  * TODO: 2. Replacement of loop nodes (former combine phase).
  * TODO: 3. Fixing gating nodes. Keep a list of thetas? Pass-in to make_root? */
@@ -924,12 +940,16 @@ void vb_build(ir_graph *irg)
 	vbi.old_block = get_nodes_block(ret);
 
 	obstack_init(&vbi.obst);
+	obstack_init(&vbi.temp_obst);
 	pmap_new_init(&vbi.merges);
 	pmap_new_init(&vbi.blocks);
 
 	vbi.todo  = plist_obstack_new(&vbi.obst);
 	vbi.phase = new_phase(irg, vb_init_node);
 	phase_set_private(vbi.phase, &vbi);
+
+	/* Detach all loops in the graph. */
+	vb_detach_all_etas(&vbi, ret);
 
 	/* Construct the base layer first. */
 	vb_build_base(&vbi, ret, block);
@@ -938,22 +958,11 @@ void vb_build(ir_graph *irg)
 	for (depth = 0; plist_count(vbi.todo) > 0; depth++) {
 		plist_element_t *it;
 
-		/* Attach the loops to the graph and detach nested loops. */
-		foreach_plist(vbi.todo, it) {
-			ir_node *loop = plist_element_get_value(it);
-			vb_attach_loop_values(&vbi, loop);
-			vb_detach_etas_in_loop(&vbi, loop);
-		}
-
-		dump_ir_graph(irg, "loops-reattached");
-
 		/* Duplicate nodes for loops (needs detached nested loops). */
 		foreach_plist(vbi.todo, it) {
 			ir_node *loop = plist_element_get_value(it);
 			vb_clone_loop(&vbi, loop);
 		}
-
-		dump_ir_graph(irg, "loops-cloned");
 
 		/* Add a terminator for the current depth. */
 		plist_insert_back(vbi.todo, NULL);
@@ -979,11 +988,14 @@ void vb_build(ir_graph *irg)
 	pmap_new_destroy(&vbi.merges);
 	pmap_new_destroy(&vbi.blocks);
 
-	dump_ir_graph(irg, "gated");
+	/* Ungate the graph. */
+	vb_ungate(&vbi);
+	dump_ir_graph(irg, "ungated");
 
 	phase_free(vbi.phase);
 	plist_free(vbi.todo);
 	vl_free(vbi.vli);
 
+	obstack_free(&vbi.temp_obst, NULL);
 	obstack_free(&vbi.obst, NULL);
 }

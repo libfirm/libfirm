@@ -31,6 +31,7 @@
 #include "plist.h"
 #include "pmap_new.h"
 #include "vf_cond.h"
+#include "vf_depth.h"
 
 typedef struct va_info    va_info;
 typedef struct va_region  va_region;
@@ -44,9 +45,10 @@ typedef struct va_region_child_it {
 
 /**
  * Calculate arrangement information. If "keep_block" is true, the analysis is
- * restricted to the root nodes block.
+ * restricted to the root nodes block. The loop depth info can be provided and
+ * will be used, to keep depth information up-to-date.
  */
-va_info *va_init_root(ir_node *root, int keep_block);
+va_info *va_init_root(vl_info *vli, ir_node *root, int keep_block);
 
 /** Free the arrangement information. */
 void va_free(va_info *vai);
