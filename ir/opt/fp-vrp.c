@@ -169,7 +169,8 @@ static int transfer(ir_node* const irn)
 
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
-		if (b->z == f) {
+		/* Unreachble blocks might have no bitinfo. */
+		if (b == NULL || b->z == f) {
 			z = f;
 			o = t;
 		} else switch (get_irn_opcode(irn)) {
