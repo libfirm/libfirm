@@ -275,7 +275,7 @@ result_unknown_X:
 
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
 
-		if (b->z == f) {
+		if (b == NULL || b->z == f) {
 undefined:
 			z = get_tarval_null(m);
 			o = get_tarval_all_one(m);
