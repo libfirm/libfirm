@@ -25,6 +25,8 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "adt/pdeq.h"
 #include "adt/obst.h"
 #include "adt/xmalloc.h"
@@ -131,6 +133,11 @@ typedef struct environment_t {
 	unsigned modified:1;     /**< Set, if the graph was modified. */
 } environment_t;
 
+static bool is_undefined(bitinfo const* const b)
+{
+	return tarval_is_null(b->z) && tarval_is_all_one(b->o);
+}
+
 static inline bitinfo* get_bitinfo(ir_node const* const irn)
 {
 	return (bitinfo*)get_irn_link(irn);
@@ -171,6 +178,7 @@ static int transfer(ir_node* const irn)
 
 		/* Unreachble blocks might have no bitinfo. */
 		if (b == NULL || b->z == f) {
+unreachable_X:
 			z = f;
 			o = t;
 		} else switch (get_irn_opcode(irn)) {
@@ -181,11 +189,11 @@ static int transfer(ir_node* const irn)
 				} else if (is_Cond(pred)) {
 					ir_node*   const selector = get_Cond_selector(pred);
 					bitinfo*   const b        = get_bitinfo(selector);
-					ir_tarval* const bz       = b->z;
-					ir_tarval* const bo       = b->o;
-					if (get_irn_mode(selector) == mode_b) {
-						if (bz == bo) {
-							if ((bz == t) == get_Proj_proj(irn)) {
+					if (is_undefined(b)) {
+						goto unreachable_X;
+					} else if (get_irn_mode(selector) == mode_b) {
+						if (b->z == b->o) {
+							if ((b->z == t) == get_Proj_proj(irn)) {
 								z = o = t;
 							} else {
 								z = o = f;
@@ -197,12 +205,12 @@ static int transfer(ir_node* const irn)
 						long const val = get_Proj_proj(irn);
 						if (val != get_Cond_default_proj(pred)) {
 							ir_tarval* const tv = new_tarval_from_long(val, get_irn_mode(selector));
-							if (!tarval_is_null(tarval_andnot(tv, bz)) ||
-									!tarval_is_null(tarval_andnot(bo, tv))) {
+							if (!tarval_is_null(tarval_andnot(tv, b->z)) ||
+									!tarval_is_null(tarval_andnot(b->o, tv))) {
 								// At least one bit differs.
 								z = o = f;
 #if 0 // TODO must handle default Proj
-							} else if (bz == bo && bz == tv) {
+							} else if (b->z == b->o && b->z == tv) {
 								z = o = t;
 #endif
 							} else {
@@ -258,324 +266,344 @@ result_unknown_X:
 			o = t;
 		}
 	} else if (mode_is_intb(m)) {
+		bitinfo* const b = get_bitinfo(get_nodes_block(irn));
+
 		DB((dbg, LEVEL_3, "transfer %+F\n", irn));
-		switch (get_irn_opcode(irn)) {
-			case iro_Const: {
-				z = o = get_Const_tarval(irn);
-				break;
-			}
 
-			case iro_Confirm: {
-				ir_node* const v = get_Confirm_value(irn);
-				bitinfo* const b = get_bitinfo(v);
-				/* TODO Use bound and relation. */
-				z = b->z;
-				o = b->o;
-				break;
-			}
+		if (b->z == f) {
+undefined:
+			z = get_tarval_null(m);
+			o = get_tarval_all_one(m);
+		} else if (is_Phi(irn)) {
+			ir_node* const block = get_nodes_block(irn);
+			int      const arity = get_Phi_n_preds(irn);
+			int            i;
 
-			case iro_Shl: {
-				bitinfo*   const l  = get_bitinfo(get_Shl_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Shl_right(irn));
-				ir_tarval* const rz = r->z;
-				if (rz == r->o) {
-					z = tarval_shl(l->z, rz);
-					o = tarval_shl(l->o, rz);
-				} else {
-					goto cannot_analyse;
+			z = get_tarval_null(m);
+			o = get_tarval_all_one(m);
+			for (i = 0; i != arity; ++i) {
+				bitinfo* const b_cfg = get_bitinfo(get_Block_cfgpred(block, i));
+				if (b_cfg != NULL && b_cfg->z != f) {
+					bitinfo* const b = get_bitinfo(get_Phi_pred(irn, i));
+					/* Only use input if it's not undefined. */
+					if (!is_undefined(b)) {
+						z = tarval_or( z, b->z);
+						o = tarval_and(o, b->o);
+					}
 				}
-				break;
+			}
+		} else {
+			int const arity = get_irn_arity(irn);
+			int       i;
+
+			/* Undefined if any input is undefined. */
+			for (i = 0; i != arity; ++i) {
+				ir_node* const pred   = get_irn_n(irn, i);
+				bitinfo* const pred_b = get_bitinfo(pred);
+				if (pred_b != NULL && is_undefined(pred_b))
+					goto undefined;
 			}
 
-			case iro_Shr: {
-				bitinfo*   const l  = get_bitinfo(get_Shr_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Shr_right(irn));
-				ir_tarval* const rz = r->z;
-				if (rz == r->o) {
-					z = tarval_shr(l->z, rz);
-					o = tarval_shr(l->o, rz);
-				} else {
-					goto cannot_analyse;
+			switch (get_irn_opcode(irn)) {
+				case iro_Const: {
+					z = o = get_Const_tarval(irn);
+					break;
 				}
-				break;
-			}
 
-			case iro_Shrs: {
-				bitinfo*   const l  = get_bitinfo(get_Shrs_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Shrs_right(irn));
-				ir_tarval* const rz = r->z;
-				if (rz == r->o) {
-					z = tarval_shrs(l->z, rz);
-					o = tarval_shrs(l->o, rz);
-				} else {
-					goto cannot_analyse;
+				case iro_Confirm: {
+					ir_node* const v = get_Confirm_value(irn);
+					bitinfo* const b = get_bitinfo(v);
+					/* TODO Use bound and relation. */
+					z = b->z;
+					o = b->o;
+					break;
 				}
-				break;
-			}
 
-			case iro_Rotl: {
-				bitinfo*   const l  = get_bitinfo(get_Rotl_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Rotl_right(irn));
-				ir_tarval* const rz = r->z;
-				if (rz == r->o) {
-					z = tarval_rotl(l->z, rz);
-					o = tarval_rotl(l->o, rz);
-				} else {
-					goto cannot_analyse;
+				case iro_Shl: {
+					bitinfo*   const l  = get_bitinfo(get_Shl_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Shl_right(irn));
+					ir_tarval* const rz = r->z;
+					if (rz == r->o) {
+						z = tarval_shl(l->z, rz);
+						o = tarval_shl(l->o, rz);
+					} else {
+						goto cannot_analyse;
+					}
+					break;
 				}
-				break;
-			}
 
-			case iro_Add: {
-				bitinfo*   const l  = get_bitinfo(get_Add_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Add_right(irn));
-				ir_tarval* const lz = l->z;
-				ir_tarval* const lo = l->o;
-				ir_tarval* const rz = r->z;
-				ir_tarval* const ro = r->o;
-				if (lz == lo && rz == ro) {
-					z = o = tarval_add(lz, rz);
-				} else {
-					// TODO improve: can only do lower disjoint bits
-					/* Determine where any of the operands has zero bits, i.e. where no
-					 * carry out is generated if there is not carry in */
-					ir_tarval* const no_c_in_no_c_out = tarval_and(lz, rz);
-					/* Generate a mask of the lower consecutive zeroes: x | -x.  In this
-					 * range the addition is disjoint and therefore Add behaves like Or.
-					 */
-					ir_tarval* const low_zero_mask = tarval_or(no_c_in_no_c_out, tarval_neg(no_c_in_no_c_out));
-					ir_tarval* const low_one_mask  = tarval_not(low_zero_mask);
-					z = tarval_or( tarval_or(lz, rz), low_zero_mask);
-					o = tarval_and(tarval_or(lo, ro), low_one_mask);
+				case iro_Shr: {
+					bitinfo*   const l  = get_bitinfo(get_Shr_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Shr_right(irn));
+					ir_tarval* const rz = r->z;
+					if (rz == r->o) {
+						z = tarval_shr(l->z, rz);
+						o = tarval_shr(l->o, rz);
+					} else {
+						goto cannot_analyse;
+					}
+					break;
 				}
-				break;
-			}
 
-			case iro_Sub: {
-				bitinfo* const l = get_bitinfo(get_Sub_left(irn));
-				bitinfo* const r = get_bitinfo(get_Sub_right(irn));
-				if (l != NULL && r != NULL) { // Sub might subtract pointers.
+				case iro_Shrs: {
+					bitinfo*   const l  = get_bitinfo(get_Shrs_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Shrs_right(irn));
+					ir_tarval* const rz = r->z;
+					if (rz == r->o) {
+						z = tarval_shrs(l->z, rz);
+						o = tarval_shrs(l->o, rz);
+					} else {
+						goto cannot_analyse;
+					}
+					break;
+				}
+
+				case iro_Rotl: {
+					bitinfo*   const l  = get_bitinfo(get_Rotl_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Rotl_right(irn));
+					ir_tarval* const rz = r->z;
+					if (rz == r->o) {
+						z = tarval_rotl(l->z, rz);
+						o = tarval_rotl(l->o, rz);
+					} else {
+						goto cannot_analyse;
+					}
+					break;
+				}
+
+				case iro_Add: {
+					bitinfo*   const l  = get_bitinfo(get_Add_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Add_right(irn));
 					ir_tarval* const lz = l->z;
 					ir_tarval* const lo = l->o;
 					ir_tarval* const rz = r->z;
 					ir_tarval* const ro = r->o;
 					if (lz == lo && rz == ro) {
-						z = o = tarval_sub(lz, rz, NULL);
-					} else if (tarval_is_null(tarval_andnot(rz, lo))) {
-						/* Every possible one of the subtrahend is backed by a safe one of the
-						 * minuend, i.e. there are no borrows. */
-						// TODO extend no-borrow like carry for Add above
-						z = tarval_andnot(lz, ro);
-						o = tarval_andnot(lo, rz);
+						z = o = tarval_add(lz, rz);
+					} else {
+						// TODO improve: can only do lower disjoint bits
+						/* Determine where any of the operands has zero bits, i.e. where no
+						 * carry out is generated if there is not carry in */
+						ir_tarval* const no_c_in_no_c_out = tarval_and(lz, rz);
+						/* Generate a mask of the lower consecutive zeroes: x | -x.  In this
+						 * range the addition is disjoint and therefore Add behaves like Or.
+						 */
+						ir_tarval* const low_zero_mask = tarval_or(no_c_in_no_c_out, tarval_neg(no_c_in_no_c_out));
+						ir_tarval* const low_one_mask  = tarval_not(low_zero_mask);
+						z = tarval_or( tarval_or(lz, rz), low_zero_mask);
+						o = tarval_and(tarval_or(lo, ro), low_one_mask);
+					}
+					break;
+				}
+
+				case iro_Sub: {
+					bitinfo* const l = get_bitinfo(get_Sub_left(irn));
+					bitinfo* const r = get_bitinfo(get_Sub_right(irn));
+					if (l != NULL && r != NULL) { // Sub might subtract pointers.
+						ir_tarval* const lz = l->z;
+						ir_tarval* const lo = l->o;
+						ir_tarval* const rz = r->z;
+						ir_tarval* const ro = r->o;
+						if (lz == lo && rz == ro) {
+							z = o = tarval_sub(lz, rz, NULL);
+						} else if (tarval_is_null(tarval_andnot(rz, lo))) {
+							/* Every possible one of the subtrahend is backed by a safe one of the
+							 * minuend, i.e. there are no borrows. */
+							// TODO extend no-borrow like carry for Add above
+							z = tarval_andnot(lz, ro);
+							o = tarval_andnot(lo, rz);
+						} else {
+							goto cannot_analyse;
+						}
 					} else {
 						goto cannot_analyse;
 					}
-				} else {
-					goto cannot_analyse;
+					break;
 				}
-				break;
-			}
 
-			case iro_Mul: {
-				bitinfo*   const l  = get_bitinfo(get_Mul_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Mul_right(irn));
-				ir_tarval* const lz = l->z;
-				ir_tarval* const lo = l->o;
-				ir_tarval* const rz = r->z;
-				ir_tarval* const ro = r->o;
-				if (lz == lo && rz == ro) {
-					z = o = tarval_mul(lz, rz);
-				} else {
-					// TODO improve
-					// Determine safe lower zeroes: x | -x.
-					ir_tarval* const lzn = tarval_or(lz, tarval_neg(lz));
-					ir_tarval* const rzn = tarval_or(rz, tarval_neg(rz));
-					// Concatenate safe lower zeroes.
-					if (tarval_cmp(lzn, rzn) == ir_relation_less) {
-						z = tarval_mul(tarval_eor(lzn, tarval_shl(lzn, get_tarval_one(m))), rzn);
+				case iro_Mul: {
+					bitinfo*   const l  = get_bitinfo(get_Mul_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Mul_right(irn));
+					ir_tarval* const lz = l->z;
+					ir_tarval* const lo = l->o;
+					ir_tarval* const rz = r->z;
+					ir_tarval* const ro = r->o;
+					if (lz == lo && rz == ro) {
+						z = o = tarval_mul(lz, rz);
 					} else {
-						z = tarval_mul(tarval_eor(rzn, tarval_shl(rzn, get_tarval_one(m))), lzn);
+						// TODO improve
+						// Determine safe lower zeroes: x | -x.
+						ir_tarval* const lzn = tarval_or(lz, tarval_neg(lz));
+						ir_tarval* const rzn = tarval_or(rz, tarval_neg(rz));
+						// Concatenate safe lower zeroes.
+						if (tarval_cmp(lzn, rzn) == ir_relation_less) {
+							z = tarval_mul(tarval_eor(lzn, tarval_shl(lzn, get_tarval_one(m))), rzn);
+						} else {
+							z = tarval_mul(tarval_eor(rzn, tarval_shl(rzn, get_tarval_one(m))), lzn);
+						}
+						o = get_tarval_null(m);
 					}
-					o = get_tarval_null(m);
+					break;
 				}
-				break;
-			}
 
-			case iro_Minus: {
-				bitinfo* const b = get_bitinfo(get_Minus_op(irn));
-				if (b->z == b->o) {
-					z = o = tarval_neg(b->z);
-				} else {
-					goto cannot_analyse;
-				}
-				break;
-			}
-
-			case iro_And: {
-				bitinfo* const l = get_bitinfo(get_And_left(irn));
-				bitinfo* const r = get_bitinfo(get_And_right(irn));
-				z = tarval_and(l->z, r->z);
-				o = tarval_and(l->o, r->o);
-				break;
-			}
-
-			case iro_Or: {
-				bitinfo* const l = get_bitinfo(get_Or_left(irn));
-				bitinfo* const r = get_bitinfo(get_Or_right(irn));
-				z = tarval_or(l->z, r->z);
-				o = tarval_or(l->o, r->o);
-				break;
-			}
-
-			case iro_Eor: {
-				bitinfo*   const l  = get_bitinfo(get_Eor_left(irn));
-				bitinfo*   const r  = get_bitinfo(get_Eor_right(irn));
-				ir_tarval* const lz = l->z;
-				ir_tarval* const lo = l->o;
-				ir_tarval* const rz = r->z;
-				ir_tarval* const ro = r->o;
-				z = tarval_or(tarval_andnot(lz, ro), tarval_andnot(rz, lo));
-				o = tarval_or(tarval_andnot(ro, lz), tarval_andnot(lo, rz));
-				break;
-			}
-
-			case iro_Not: {
-				bitinfo* const b = get_bitinfo(get_Not_op(irn));
-				z = tarval_not(b->o);
-				o = tarval_not(b->z);
-				break;
-			}
-
-			case iro_Conv: {
-				bitinfo* const b = get_bitinfo(get_Conv_op(irn));
-				if (b == NULL) // Happens when converting from float values.
-					goto result_unknown;
-				z = tarval_convert_to(b->z, m);
-				o = tarval_convert_to(b->o, m);
-				break;
-			}
-
-			case iro_Mux: {
-				bitinfo* const bf = get_bitinfo(get_Mux_false(irn));
-				bitinfo* const bt = get_bitinfo(get_Mux_true(irn));
-				bitinfo* const c  = get_bitinfo(get_Mux_sel(irn));
-				if (c->o == t) {
-					z = bt->z;
-					o = bt->o;
-				} else if (c->z == f) {
-					z = bf->z;
-					o = bf->o;
-				} else {
-					z = tarval_or( bf->z, bt->z);
-					o = tarval_and(bf->o, bt->o);
-				}
-				break;
-			}
-
-			case iro_Phi: {
-				ir_node* const block = get_nodes_block(irn);
-				int      const arity = get_Phi_n_preds(irn);
-				int            i;
-
-				z = get_tarval_null(m);
-				o = get_tarval_all_one(m);
-				for (i = 0; i != arity; ++i) {
-					bitinfo* const b_cfg = get_bitinfo(get_Block_cfgpred(block, i));
-					if (b_cfg != NULL && b_cfg->z != f) {
-						bitinfo* const b = get_bitinfo(get_Phi_pred(irn, i));
-						z = tarval_or( z, b->z);
-						o = tarval_and(o, b->o);
+				case iro_Minus: {
+					bitinfo* const b = get_bitinfo(get_Minus_op(irn));
+					if (b->z == b->o) {
+						z = o = tarval_neg(b->z);
+					} else {
+						goto cannot_analyse;
 					}
+					break;
 				}
-				break;
-			}
 
-			case iro_Cmp: {
-				bitinfo* const l = get_bitinfo(get_Cmp_left(irn));
-				bitinfo* const r = get_bitinfo(get_Cmp_right(irn));
-				if (l == NULL || r == NULL) {
-					goto result_unknown; // Cmp compares something we cannot evaluate.
-				} else {
-					ir_tarval*  const lz       = l->z;
-					ir_tarval*  const lo       = l->o;
-					ir_tarval*  const rz       = r->z;
-					ir_tarval*  const ro       = r->o;
-					ir_relation const relation = get_Cmp_relation(irn);
-					switch (relation) {
-						case ir_relation_less_greater:
-							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-									!tarval_is_null(tarval_andnot(lo, rz))) {
-								// At least one bit differs.
-								z = o = t;
-							} else if (lz == lo && rz == ro && lz == rz) {
-								z = o = f;
-							} else {
-								goto result_unknown;
-							}
-							break;
+				case iro_And: {
+					bitinfo* const l = get_bitinfo(get_And_left(irn));
+					bitinfo* const r = get_bitinfo(get_And_right(irn));
+					z = tarval_and(l->z, r->z);
+					o = tarval_and(l->o, r->o);
+					break;
+				}
 
-						case ir_relation_equal:
-							if (!tarval_is_null(tarval_andnot(ro, lz)) ||
-									!tarval_is_null(tarval_andnot(lo, rz))) {
-								// At least one bit differs.
-								z = o = f;
-							} else if (lz == lo && rz == ro && lz == rz) {
-								z = o = t;
-							} else {
-								goto result_unknown;
-							}
-							break;
+				case iro_Or: {
+					bitinfo* const l = get_bitinfo(get_Or_left(irn));
+					bitinfo* const r = get_bitinfo(get_Or_right(irn));
+					z = tarval_or(l->z, r->z);
+					o = tarval_or(l->o, r->o);
+					break;
+				}
 
-						case ir_relation_less_equal:
-						case ir_relation_less:
-							/* TODO handle negative values */
-							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-									tarval_is_negative(rz) || tarval_is_negative(ro))
-								goto result_unknown;
+				case iro_Eor: {
+					bitinfo*   const l  = get_bitinfo(get_Eor_left(irn));
+					bitinfo*   const r  = get_bitinfo(get_Eor_right(irn));
+					ir_tarval* const lz = l->z;
+					ir_tarval* const lo = l->o;
+					ir_tarval* const rz = r->z;
+					ir_tarval* const ro = r->o;
+					z = tarval_or(tarval_andnot(lz, ro), tarval_andnot(rz, lo));
+					o = tarval_or(tarval_andnot(ro, lz), tarval_andnot(lo, rz));
+					break;
+				}
 
-							if (tarval_cmp(lz, ro) & relation) {
-								/* Left upper bound is smaller(/equal) than right lower bound. */
-								z = o = t;
-							} else if (!(tarval_cmp(lo, rz) & relation)) {
-								/* Left lower bound is not smaller(/equal) than right upper bound. */
-								z = o = f;
-							} else {
-								goto result_unknown;
-							}
-							break;
+				case iro_Not: {
+					bitinfo* const b = get_bitinfo(get_Not_op(irn));
+					z = tarval_not(b->o);
+					o = tarval_not(b->z);
+					break;
+				}
 
-						case ir_relation_greater_equal:
-						case ir_relation_greater:
-							/* TODO handle negative values */
-							if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
-									tarval_is_negative(rz) || tarval_is_negative(ro))
-								goto result_unknown;
+				case iro_Conv: {
+					bitinfo* const b = get_bitinfo(get_Conv_op(irn));
+					if (b == NULL) // Happens when converting from float values.
+						goto result_unknown;
+					z = tarval_convert_to(b->z, m);
+					o = tarval_convert_to(b->o, m);
+					break;
+				}
 
-							if (!(tarval_cmp(lz, ro) & relation)) {
-								/* Left upper bound is not greater(/equal) than right lower bound. */
-								z = o = f;
-							} else if (tarval_cmp(lo, rz) & relation) {
-								/* Left lower bound is greater(/equal) than right upper bound. */
-								z = o = t;
-							} else {
-								goto result_unknown;
-							}
-							break;
-
-						default:
-							goto cannot_analyse;
+				case iro_Mux: {
+					bitinfo* const bf = get_bitinfo(get_Mux_false(irn));
+					bitinfo* const bt = get_bitinfo(get_Mux_true(irn));
+					bitinfo* const c  = get_bitinfo(get_Mux_sel(irn));
+					if (c->o == t) {
+						z = bt->z;
+						o = bt->o;
+					} else if (c->z == f) {
+						z = bf->z;
+						o = bf->o;
+					} else {
+						z = tarval_or( bf->z, bt->z);
+						o = tarval_and(bf->o, bt->o);
 					}
+					break;
 				}
-				break;
-			}
 
-			default: {
+				case iro_Cmp: {
+					bitinfo* const l = get_bitinfo(get_Cmp_left(irn));
+					bitinfo* const r = get_bitinfo(get_Cmp_right(irn));
+					if (l == NULL || r == NULL) {
+						goto result_unknown; // Cmp compares something we cannot evaluate.
+					} else {
+						ir_tarval*  const lz       = l->z;
+						ir_tarval*  const lo       = l->o;
+						ir_tarval*  const rz       = r->z;
+						ir_tarval*  const ro       = r->o;
+						ir_relation const relation = get_Cmp_relation(irn);
+						switch (relation) {
+							case ir_relation_less_greater:
+								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+										!tarval_is_null(tarval_andnot(lo, rz))) {
+									// At least one bit differs.
+									z = o = t;
+								} else if (lz == lo && rz == ro && lz == rz) {
+									z = o = f;
+								} else {
+									goto result_unknown;
+								}
+								break;
+
+							case ir_relation_equal:
+								if (!tarval_is_null(tarval_andnot(ro, lz)) ||
+										!tarval_is_null(tarval_andnot(lo, rz))) {
+									// At least one bit differs.
+									z = o = f;
+								} else if (lz == lo && rz == ro && lz == rz) {
+									z = o = t;
+								} else {
+									goto result_unknown;
+								}
+								break;
+
+							case ir_relation_less_equal:
+							case ir_relation_less:
+								/* TODO handle negative values */
+								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+										tarval_is_negative(rz) || tarval_is_negative(ro))
+									goto result_unknown;
+
+								if (tarval_cmp(lz, ro) & relation) {
+									/* Left upper bound is smaller(/equal) than right lower bound. */
+									z = o = t;
+								} else if (!(tarval_cmp(lo, rz) & relation)) {
+									/* Left lower bound is not smaller(/equal) than right upper bound. */
+									z = o = f;
+								} else {
+									goto result_unknown;
+								}
+								break;
+
+							case ir_relation_greater_equal:
+							case ir_relation_greater:
+								/* TODO handle negative values */
+								if (tarval_is_negative(lz) || tarval_is_negative(lo) ||
+										tarval_is_negative(rz) || tarval_is_negative(ro))
+									goto result_unknown;
+
+								if (!(tarval_cmp(lz, ro) & relation)) {
+									/* Left upper bound is not greater(/equal) than right lower bound. */
+									z = o = f;
+								} else if (tarval_cmp(lo, rz) & relation) {
+									/* Left lower bound is greater(/equal) than right upper bound. */
+									z = o = t;
+								} else {
+									goto result_unknown;
+								}
+								break;
+
+							default:
+								goto cannot_analyse;
+						}
+					}
+					break;
+				}
+
+				default: {
 cannot_analyse:
-				DB((dbg, LEVEL_4, "cannot analyse %+F\n", irn));
+					DB((dbg, LEVEL_4, "cannot analyse %+F\n", irn));
 result_unknown:
-				z = get_tarval_all_one(m);
-				o = get_tarval_null(m);
-				break;
+					z = get_tarval_all_one(m);
+					o = get_tarval_null(m);
+					break;
+				}
 			}
 		}
 	} else {
