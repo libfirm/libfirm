@@ -153,9 +153,6 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			/* verify here */
 			irg_verify(irg, VERIFY_NORMAL);
 
-			/* Optimize it, tuple might be created. */
-			optimize_graph_df(irg);
-
 			nr_of_intrinsics += wenv.nr_of_intrinsics;
 		}
 	}
@@ -1229,11 +1226,14 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 				set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(call, mode_M, pn_Call_M));
 		}
 
-		if (rt->res_proj_nr >= 0)
-			for (i = 0; i < n_res; ++i)
-				set_Tuple_pred(node, rt->res_proj_nr + i,
-				new_r_Proj(res_proj, get_type_mode(get_method_res_type(mtp, i)), i));
-			return 1;
+		if (rt->res_proj_nr >= 0) {
+			for (i = 0; i < n_res; ++i) {
+				ir_mode *mode = get_type_mode(get_method_res_type(mtp, i));
+				ir_node *proj = new_r_Proj(res_proj, mode, i);
+				set_Tuple_pred(node, rt->res_proj_nr + i, proj);
+			}
+		}
+		return 1;
 	} else {
 		/* only one return value supported */
 		if (n_res > 0) {
