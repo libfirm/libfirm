@@ -319,23 +319,6 @@ static inline void finish_scc(void)
 	finish_stack();
 }
 
-/**
- * Condition for breaking the recursion: n is the block
- * that gets the initial control flow from the Start node.
- */
-static int is_outermost_StartBlock(ir_node *n)
-{
-	/* Test whether this is the outermost Start node.  If so
-	   recursion must end. */
-	assert(is_Block(n));
-	if (get_Block_n_cfgpreds(n) == 1  &&
-	    is_Start(skip_Proj(get_Block_cfgpred(n, 0))) &&
-	    get_Block_cfgpred_block(n, 0) == n) {
-		return 1;
-	}
-	return 0;
-}
-
 /** Returns non-zero if n is a loop header, i.e., it is a Block node
  *  and has predecessors within the cfloop and out of the cfloop.
  *
@@ -350,21 +333,19 @@ static int is_head(ir_node *n, ir_node *root)
 
 	assert(is_Block(n));
 
-	if (!is_outermost_StartBlock(n)) {
-		arity = get_Block_n_cfgpreds(n);
-		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
-			/* ignore Bad control flow: it cannot happen */
-			if (is_Bad(pred))
-				continue;
-			if (is_backedge(n, i))
-				continue;
-			if (!irn_is_in_stack(pred)) {
-				some_outof_loop = 1;
-			} else {
-				assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-				some_in_loop = 1;
-			}
+	arity = get_Block_n_cfgpreds(n);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred = get_Block_cfgpred_block(n, i);
+		/* ignore Bad control flow: it cannot happen */
+		if (is_Bad(pred))
+			continue;
+		if (is_backedge(n, i))
+			continue;
+		if (!irn_is_in_stack(pred)) {
+			some_outof_loop = 1;
+		} else {
+			assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+			some_in_loop = 1;
 		}
 	}
 	return some_outof_loop & some_in_loop;
@@ -387,21 +368,19 @@ static int is_endless_head(ir_node *n, ir_node *root)
 
 	assert(is_Block(n));
 	/* Test for legal loop header: Block, Phi, ... */
-	if (!is_outermost_StartBlock(n)) {
-		arity = get_Block_n_cfgpreds(n);
-		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
-			/* ignore Bad control flow: it cannot happen */
-			if (is_Bad(pred))
-				continue;
-			if (is_backedge(n, i))
-				continue;
-			if (!irn_is_in_stack(pred)) {
-				none_outof_loop = 0;
-			} else {
-				assert(get_irn_uplink(pred) >= get_irn_uplink(root));
-				some_in_loop = 1;
-			}
+	arity = get_Block_n_cfgpreds(n);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred = get_Block_cfgpred_block(n, i);
+		/* ignore Bad control flow: it cannot happen */
+		if (is_Bad(pred))
+			continue;
+		if (is_backedge(n, i))
+			continue;
+		if (!irn_is_in_stack(pred)) {
+			none_outof_loop = 0;
+		} else {
+			assert(get_irn_uplink(pred) >= get_irn_uplink(root));
+			some_in_loop = 1;
 		}
 	}
 	return none_outof_loop && some_in_loop;
@@ -415,19 +394,17 @@ static int smallest_dfn_pred(ir_node *n, int limit)
 {
 	int i, index = -2, min = -1;
 
-	if (!is_outermost_StartBlock(n)) {
-		int arity = get_Block_n_cfgpreds(n);
-		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
-			/* ignore Bad control flow: it cannot happen */
-			if (is_Bad(pred))
-				continue;
-			if (is_backedge(n, i) || !irn_is_in_stack(pred))
-				continue;
-			if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
-				index = i;
-				min = get_irn_dfn(pred);
-			}
+	int arity = get_Block_n_cfgpreds(n);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred = get_Block_cfgpred_block(n, i);
+		/* ignore Bad control flow: it cannot happen */
+		if (is_Bad(pred))
+			continue;
+		if (is_backedge(n, i) || !irn_is_in_stack(pred))
+			continue;
+		if (get_irn_dfn(pred) >= limit && (min == -1 || get_irn_dfn(pred) < min)) {
+			index = i;
+			min = get_irn_dfn(pred);
 		}
 	}
 	return index;
@@ -440,19 +417,17 @@ static int largest_dfn_pred(ir_node *n)
 {
 	int i, index = -2, max = -1;
 
-	if (!is_outermost_StartBlock(n)) {
-		int arity = get_Block_n_cfgpreds(n);
-		for (i = 0; i < arity; i++) {
-			ir_node *pred = get_Block_cfgpred_block(n, i);
-			/* ignore Bad control flow: it cannot happen */
-			if (is_Bad(pred))
-				continue;
-			if (is_backedge(n, i) || !irn_is_in_stack(pred))
-				continue;
-			if (get_irn_dfn(pred) > max) {
-				index = i;
-				max = get_irn_dfn(pred);
-			}
+	int arity = get_Block_n_cfgpreds(n);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred = get_Block_cfgpred_block(n, i);
+		/* ignore Bad control flow: it cannot happen */
+		if (is_Bad(pred))
+			continue;
+		if (is_backedge(n, i) || !irn_is_in_stack(pred))
+			continue;
+		if (get_irn_dfn(pred) > max) {
+			index = i;
+			max = get_irn_dfn(pred);
 		}
 	}
 	return index;
@@ -519,7 +494,7 @@ static ir_node *find_tail(ir_node *n)
 	assert(res_index > -2);
 
 	set_backedge(m, res_index);
-	return is_outermost_StartBlock(n) ? NULL : get_Block_cfgpred_block(m, res_index);
+	return get_Block_cfgpred_block(m, res_index);
 }
 
 /**
@@ -539,6 +514,7 @@ inline static int is_outermost_loop(ir_loop *l)
  */
 static void cfscc(ir_node *n)
 {
+	int arity;
 	int i;
 
 	assert(is_Block(n));
@@ -552,26 +528,24 @@ static void cfscc(ir_node *n)
 	++current_dfn;
 	push(n);
 
-	if (!is_outermost_StartBlock(n)) {
-		int arity = get_Block_n_cfgpreds(n);
+	arity = get_Block_n_cfgpreds(n);
 
-		for (i = 0; i < arity; i++) {
-			ir_node *m;
+	for (i = 0; i < arity; i++) {
+		ir_node *m;
 
-			if (is_backedge(n, i))
-				continue;
-			m = get_Block_cfgpred_block(n, i);
-			/* ignore Bad control flow: it cannot happen */
-			if (is_Bad(m))
-				continue;
+		if (is_backedge(n, i))
+			continue;
+		m = get_Block_cfgpred_block(n, i);
+		/* ignore Bad control flow: it cannot happen */
+		if (is_Bad(m))
+			continue;
 
-			cfscc(m);
-			if (irn_is_in_stack(m)) {
-				/* Uplink of m is smaller if n->m is a backedge.
-				   Propagate the uplink to mark the cfloop. */
-				if (get_irn_uplink(m) < get_irn_uplink(n))
-					set_irn_uplink(n, get_irn_uplink(m));
-			}
+		cfscc(m);
+		if (irn_is_in_stack(m)) {
+			/* Uplink of m is smaller if n->m is a backedge.
+			   Propagate the uplink to mark the cfloop. */
+			if (get_irn_uplink(m) < get_irn_uplink(n))
+				set_irn_uplink(n, get_irn_uplink(m));
 		}
 	}
 
