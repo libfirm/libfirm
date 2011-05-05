@@ -1825,6 +1825,7 @@ typedef struct check_cfg_env_t {
 	pmap *branch_nodes; /**< map blocks to their branching nodes,
 	                         map mode_X nodes to the blocks they branch to */
 	int   res;
+	ir_nodeset_t reachable_blocks;
 	ir_nodeset_t kept_nodes;
 	ir_nodeset_t true_projs;
 	ir_nodeset_t false_projs;
@@ -1835,6 +1836,10 @@ static int check_block_cfg(ir_node *block, check_cfg_env_t *env)
 	pmap *branch_nodes;
 	int   n_cfgpreds;
 	int   i;
+
+	ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->reachable_blocks, block),
+	                   "Block is not reachable by blockwalker (endless loop with no kept block?)", 0,
+	                   ir_printf("block %+F\n", block));
 
 	n_cfgpreds   = get_Block_n_cfgpreds(block);
 	branch_nodes = env->branch_nodes;
@@ -1933,6 +1938,12 @@ static void assert_branch(ir_node *node, void *data)
 	}
 }
 
+static void collect_reachable_blocks(ir_node *block, void *data)
+{
+	ir_nodeset_t *reachable_blocks = (ir_nodeset_t*) data;
+	ir_nodeset_insert(reachable_blocks, block);
+}
+
 /**
  * Checks CFG well-formedness
  */
@@ -1941,8 +1952,12 @@ static int check_cfg(ir_graph *irg)
 	check_cfg_env_t env;
 	env.branch_nodes = pmap_create(); /**< map blocks to branch nodes */
 	env.res          = 1;
+	ir_nodeset_init(&env.reachable_blocks);
 	ir_nodeset_init(&env.true_projs);
 	ir_nodeset_init(&env.false_projs);
+
+	irg_block_walk_graph(irg, collect_reachable_blocks, NULL,
+	                     &env.reachable_blocks);
 
 	/* note that we do not use irg_walk_block because it will miss these
 	 * invalid blocks without a jump instruction which we want to detect
@@ -1964,6 +1979,7 @@ static int check_cfg(ir_graph *irg)
 	ir_nodeset_destroy(&env.false_projs);
 	ir_nodeset_destroy(&env.true_projs);
 	ir_nodeset_destroy(&env.kept_nodes);
+	ir_nodeset_destroy(&env.reachable_blocks);
 	pmap_destroy(env.branch_nodes);
 	return env.res;
 }

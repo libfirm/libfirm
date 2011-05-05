@@ -393,12 +393,7 @@ void irg_block_walk(ir_node *node, irg_walk_func *pre, irg_walk_func *post,
 		int i;
 		for (i = 0; i < arity; i++) {
 			ir_node *pred = get_irn_n(node, i);
-			if (!is_Block(pred)) {
-				pred = get_nodes_block(pred);
-			}
-			/* this walker is also used during optimize_graph_df where we can
-			 * temporarily have Bad as block inputs */
-			if (is_Bad(pred))
+			if (!is_Block(pred))
 				continue;
 			irg_block_walk_2(pred, pre, post, env);
 		}
