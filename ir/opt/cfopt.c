@@ -136,20 +136,6 @@ static bool is_pred_of(ir_node *pred, ir_node *b)
 	return false;
 }
 
-static unsigned count_non_bad_inputs(const ir_node *node)
-{
-	int      arity  = get_irn_arity(node);
-	unsigned result = 0;
-	int      i;
-
-	for (i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
-		if (!is_Bad(in))
-			++result;
-	}
-	return result;
-}
-
 /** Test whether we can optimize away pred block pos of b.
  *
  *  @param  b    A block node.
@@ -182,11 +168,9 @@ static unsigned test_whether_dispensable(ir_node *b, int pos)
 	ir_node *pred  = get_Block_cfgpred(b, pos);
 	ir_node *predb = get_nodes_block(pred);
 
-	/* Bad blocks will be optimized away, so we don't need space for them */
-	if (is_Bad(pred))
-		return 0;
-	if (!is_Block_removable(predb))
+	if (is_Bad(pred) || !is_Block_removable(predb))
 		return 1;
+
 	/* can't remove self-loops */
 	if (predb == b)
 		goto non_dispensable;
@@ -230,7 +214,7 @@ static unsigned test_whether_dispensable(ir_node *b, int pos)
 	if (Block_block_visited(predb))
 		return 1;
 	/* if we get here, the block is dispensable, count useful preds */
-	return count_non_bad_inputs(predb);
+	return get_irn_arity(predb);
 
 non_dispensable:
 	set_Block_removable(predb, false);
@@ -310,17 +294,19 @@ static void optimize_blocks(ir_node *b, void *ctx)
 			pred = get_Block_cfgpred_block(b, i);
 
 			if (is_Bad(pred)) {
-				/* case Phi 1: Do nothing */
+				/* case Phi 1: maintain Bads, as somebody else is responsible to remove them */
+				in[p_preds++] = pred;
 			} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 				/* case Phi 2: It's an empty block and not yet visited. */
 				ir_node *phi_pred = get_Phi_pred(phi, i);
 
 				for (j = 0, k = get_Block_n_cfgpreds(pred); j < k; j++) {
 					ir_node *pred_pred = get_Block_cfgpred(pred, j);
-					/* because of breaking loops, not all predecessors are
-					 * Bad-clean, so we must check this here again */
-					if (is_Bad(pred_pred))
+
+					if (is_Bad(pred_pred)) {
+						in[p_preds++] = pred_pred;
 						continue;
+					}
 
 					if (get_nodes_block(phi_pred) == pred) {
 						/* case Phi 2a: */
@@ -341,7 +327,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 
 		/* Fix the node */
 		if (p_preds == 1)
-			/* By removal of Bad ins the Phi might be degenerated. */
 			exchange(phi, in[0]);
 		else
 			set_irn_in(phi, p_preds, in);
@@ -442,17 +427,20 @@ static void optimize_blocks(ir_node *b, void *ctx)
 		ir_node *predb = get_nodes_block(pred);
 
 		/* case 1: Do nothing */
-		if (is_Bad(pred))
+		if (is_Bad(pred)) {
+			in[n_preds++] = pred;
 			continue;
+		}
 		if (is_Block_removable(predb) && !Block_block_visited(predb)) {
 			/* case 2: It's an empty block and not yet visited. */
 			for (j = 0; j < get_Block_n_cfgpreds(predb); j++) {
 				ir_node *predpred = get_Block_cfgpred(predb, j);
 
-				/* because of breaking loops, not all predecessors are
-				 * Bad-clean, so we must check this here again */
-				if (is_Bad(predpred))
+				if (is_Bad(predpred)) {
+					in[n_preds++] = predpred;
 					continue;
+				}
+
 				in[n_preds++] = predpred;
 			}
 			/* Remove block+jump as it might be kept alive. */
@@ -684,15 +672,6 @@ restart:
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-	}
-
-	/* the verifier doesn't work yet with floating nodes */
-	if (get_irg_pinned(irg) == op_pin_state_pinned) {
-		/* after optimize_cf(), only Bad data flow may remain. */
-		if (irg_verify_bads(irg, BAD_DF | BAD_BLOCK | TUPLE)) {
-			dump_ir_graph(irg, "-verify-cf");
-			fprintf(stderr, "VERIFY_BAD in optimize_cf()\n");
-		}
 	}
 }
 
