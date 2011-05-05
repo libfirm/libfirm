@@ -760,6 +760,7 @@ void remove_End_Bads_and_doublets(ir_node *end)
 	pset_new_t keeps;
 	int        idx, n = get_End_n_keepalives(end);
 	ir_graph   *irg;
+	bool       changed = false;
 
 	if (n <= 0)
 		return;
@@ -771,6 +772,7 @@ void remove_End_Bads_and_doublets(ir_node *end)
 		ir_node *ka = get_End_keepalive(end, idx);
 
 		if (is_Bad(ka) || is_NoMem(ka) || pset_new_contains(&keeps, ka)) {
+			changed = true;
 			/* remove the edge */
 			edges_notify_edge(end, idx, NULL, ka, irg);
 
@@ -790,6 +792,10 @@ void remove_End_Bads_and_doublets(ir_node *end)
 	ARR_RESIZE(ir_node *, end->in, n + 1 + END_KEEPALIVE_OFFSET);
 
 	pset_new_destroy(&keeps);
+
+	if (changed) {
+		set_irg_outs_inconsistent(irg);
+	}
 }
 
 void free_End(ir_node *end)
