@@ -1847,8 +1847,10 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			}
 		}
 	}
-	/* no Phis no fun */
-	assert(phi_list != NULL && "DFS found a loop without Phi");
+
+	/* Within unreachable code, there might be memory loops without Phis. */
+	if (phi_list == NULL)
+		return;
 
 	/* for now, we cannot handle more than one input (only reducible cf) */
 	if (phi_list->next != NULL)
