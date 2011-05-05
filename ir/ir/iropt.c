@@ -6284,28 +6284,7 @@ static ir_node *gigo(ir_node *node)
 		return get_irg_bad(irg);
 	}
 
-	/* Blocks, Phis and Tuples may have dead inputs, e.g., if one of the
-	   blocks predecessors is dead. */
-	if (op != op_Block && op != op_Phi && op != op_Tuple && op != op_Anchor
-			&& op != op_Sync && op != op_End) {
-		ir_graph *irg = get_irn_irg(node);
-		int irn_arity = get_irn_arity(node);
-		int i;
-
-		for (i = 0; i < irn_arity; i++) {
-			ir_node *pred = get_irn_n(node, i);
-
-			if (is_Bad(pred)) {
-				/* be careful not to kill cfopts too early or we might violate
-				 * the 1 cfop per block property */
-				if (!is_cfop(node)
-						|| is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
-					return get_irg_bad(irg);
-			}
-		}
-	}
-
-	return node;
+	return false;
 }
 
 /**

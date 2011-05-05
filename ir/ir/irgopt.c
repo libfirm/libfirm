@@ -101,34 +101,6 @@ void local_optimize_node(ir_node *n)
 }
 
 /**
- * Block-Walker: uses dominance depth to mark dead blocks.
- */
-static void kill_dead_blocks(ir_node *block, void *env)
-{
-	(void) env;
-
-	if (get_Block_dom_depth(block) < 0) {
-		/*
-		 * Note that the new dominance code correctly handles
-		 * the End block, i.e. it is always reachable from Start
-		 */
-		ir_graph *irg = get_irn_irg(block);
-		exchange(block, get_irg_bad(irg));
-	}
-}
-
-/* Applies local optimizations (see iropt.h) to all nodes reachable from node n. */
-void local_optimize_graph(ir_graph *irg)
-{
-	ir_graph *rem = current_ir_graph;
-	current_ir_graph = irg;
-
-	do_local_optimize(get_irg_end(irg));
-
-	current_ir_graph = rem;
-}
-
-/**
  * Enqueue all users of a node to a wait queue.
  * Handles mode_T nodes.
  */
@@ -149,6 +121,35 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
 			enqueue_users(succ, waitq);
 		}
 	}
+}
+
+/**
+ * Block-Walker: uses dominance depth to mark dead blocks.
+ */
+static void kill_dead_blocks(ir_node *block, void *env)
+{
+	pdeq *waitq = (pdeq*) env;
+
+	if (get_Block_dom_depth(block) < 0) {
+		/*
+		 * Note that the new dominance code correctly handles
+		 * the End block, i.e. it is always reachable from Start
+		 */
+		ir_graph *irg = get_irn_irg(block);
+		enqueue_users(block, waitq);
+		exchange(block, get_irg_bad(irg));
+	}
+}
+
+/* Applies local optimizations (see iropt.h) to all nodes reachable from node n. */
+void local_optimize_graph(ir_graph *irg)
+{
+	ir_graph *rem = current_ir_graph;
+	current_ir_graph = irg;
+
+	do_local_optimize(get_irg_end(irg));
+
+	current_ir_graph = rem;
 }
 
 /**
@@ -181,7 +182,6 @@ int optimize_graph_df(ir_graph *irg)
 	current_ir_graph = irg;
 
 	state = edges_assure(irg);
-	assure_doms(irg);
 
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
@@ -191,11 +191,8 @@ int optimize_graph_df(ir_graph *irg)
 	}
 
 	/* The following enables unreachable code elimination (=Blocks may be
-	 * Bad). We cannot enable it in global_cse nodes since we can't
-	 * determine a nodes block there and therefore can't remove all code
-	 * in unreachable blocks */
+	 * Bad). */
 	set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
-	irg_block_walk_graph(irg, NULL, kill_dead_blocks, NULL);
 
 	/* invalidate info */
 	set_irg_outs_inconsistent(irg);
@@ -211,11 +208,17 @@ int optimize_graph_df(ir_graph *irg)
 	 * so if it's not empty, the graph has been changed */
 	changed = !pdeq_empty(waitq);
 
-	/* finish the wait queue */
-	while (! pdeq_empty(waitq)) {
-		ir_node *n = (ir_node*)pdeq_getl(waitq);
-		opt_walker(n, waitq);
-	}
+	do {
+		/* finish the wait queue */
+		while (! pdeq_empty(waitq)) {
+			ir_node *n = (ir_node*)pdeq_getl(waitq);
+			opt_walker(n, waitq);
+		}
+		/* kill newly generated unreachable code */
+		set_irg_outs_inconsistent(irg);
+		compute_doms(irg);
+		irg_block_walk_graph(irg, NULL, kill_dead_blocks, waitq);
+	} while (! pdeq_empty(waitq));
 
 	del_pdeq(waitq);
 
@@ -226,7 +229,7 @@ int optimize_graph_df(ir_graph *irg)
 
 	/* Finally kill BAD and doublets from the keep alives.
 	   Doing this AFTER edges where deactivated saves cycles */
-	end  = get_irg_end(irg);
+	end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
 
 	clear_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
