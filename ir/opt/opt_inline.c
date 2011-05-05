@@ -1639,6 +1639,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			set_irg_link(copy, callee_env);
 
 			assure_cf_loop(copy);
+			memset(&wenv, 0, sizeof(wenv));
 			wenv.x              = callee_env;
 			wenv.ignore_callers = 1;
 			irg_walk_graph(copy, NULL, collect_calls2, &wenv);
