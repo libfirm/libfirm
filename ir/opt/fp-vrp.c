@@ -321,6 +321,11 @@ undefined:
 					/* TODO Use bound and relation. */
 					z = b->z;
 					o = b->o;
+					if ((get_Confirm_relation(irn) & ~ir_relation_unordered) == ir_relation_equal) {
+						bitinfo* const bound_b = get_bitinfo(get_Confirm_bound(irn));
+						z = tarval_and(z, bound_b->z);
+						z = tarval_or( o, bound_b->o);
+					}
 					break;
 				}
 
