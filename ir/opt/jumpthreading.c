@@ -275,6 +275,13 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		ir_node *copy;
 		ir_mode *mode;
 
+		if (is_End(node)) {
+			/* edge is a Keep edge. If the end block is unreachable via normal control flow,
+			 * we must maintain end's reachability with Keeps.
+			 */
+			keep_alive(copy_block);
+			continue;
+		}
 		/* ignore control flow */
 		mode = get_irn_mode(node);
 		if (mode == mode_X || is_Cond(node))
