@@ -154,7 +154,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 {
 	ir_graph *res;
 	ir_node  *first_block;
-	ir_node  *end, *start, *start_block, *initial_mem, *projX, *bad;
+	ir_node  *start, *start_block, *initial_mem, *projX;
 
 	res = alloc_graph();
 
@@ -212,13 +212,11 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 
 	/*-- Nodes needed in every graph --*/
 	set_irg_end_block (res, new_r_immBlock(res));
-	end = new_r_End(res, 0, NULL);
-	set_irg_end(res, end);
+	set_irg_end(res, new_r_End(res, 0, NULL));
 
 	start_block = new_r_Block_noopt(res, 0, NULL);
 	set_irg_start_block(res, start_block);
-	bad = new_r_Bad(res);
-	set_irg_bad        (res, bad);
+	set_irg_bad        (res, new_r_Bad(res));
 	set_irg_no_mem     (res, new_r_NoMem(res));
 	start = new_r_Start(res);
 	set_irg_start      (res, start);
