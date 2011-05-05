@@ -467,12 +467,10 @@ static mtp_additional_properties follow_mem_(ir_node *node)
 				ir_entity *ent = get_SymConst_entity(ptr);
 				ir_graph  *irg = get_entity_irg(ent);
 
-				if (irg == get_irn_irg(node)) {
-					/* A self-recursive call. The property did not depend on this call. */
-				} else if (irg == NULL) {
+				if (irg == NULL) {
 					m = get_entity_additional_properties(ent) & (mtp_property_const|mtp_property_pure);
 					mode = max_property(mode, m);
-				} else if (irg != NULL) {
+				} else {
 					/* we have a graph, analyze it. */
 					m = check_const_or_pure_function(irg, /*top=*/0);
 					mode = max_property(mode, m);
@@ -528,9 +526,10 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 		return mtp_no_property;
 	}
 	if (IS_IRG_BUSY(irg)) {
-		/* we are still evaluate this method. Be optimistic,
-		   return the best possible so far but mark the result as temporary. */
-		return mtp_temporary | mtp_property_const;
+		/* We are still evaluate this method.
+		 * The function (indirectly) calls itself and thus may not terminate.
+		 */
+		return mtp_no_property;
 	}
 	SET_IRG_BUSY(irg);
 
@@ -590,17 +589,13 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 		}
 	}
 
-	if (prop != mtp_no_property) {
-		if (top || (prop & mtp_temporary) == 0) {
-			/* We use the temporary flag here to mark optimistic result.
-			   Set the property only if we are sure that it does NOT base on
-			   temporary results OR if we are at top-level. */
-			add_irg_additional_properties(irg, prop & ~mtp_temporary);
-			SET_IRG_READY(irg);
+	if (top) {
+		/* Set the property only if we are at top-level. */
+		if (prop != mtp_no_property) {
+			add_irg_additional_properties(irg, prop);
 		}
-	}
-	if (top)
 		SET_IRG_READY(irg);
+	}
 	CLEAR_IRG_BUSY(irg);
 	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 	return prop;
