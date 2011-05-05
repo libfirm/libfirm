@@ -283,6 +283,8 @@ restart:
 		ir_cdep* cdep;
 
 		pred0 = get_Block_cfgpred_block(block, i);
+		if (pred0 == block) continue;
+
 		for (cdep = find_cdep(pred0); cdep != NULL; cdep = get_cdep_next(cdep)) {
 			const ir_node* dependency = get_cdep_node(cdep);
 			ir_node* projx0 = walk_to_projx(pred0, dependency);
@@ -310,6 +312,7 @@ restart:
 				dbg_info* cond_dbg;
 
 				pred1 = get_Block_cfgpred_block(block, j);
+				if (pred1 == block) continue;
 
 				if (!is_cdep_on(pred1, dependency)) continue;
 
