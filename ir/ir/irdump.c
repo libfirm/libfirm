@@ -2329,8 +2329,12 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 static void dump_block_to_cfg(ir_node *block, void *env)
 {
 	FILE *F = (FILE*)env;
-	int i, fl = 0;
+	int i;
 	ir_node *pred;
+
+	if (is_Bad(block) && get_irn_mode(block) == mode_X) {
+		dump_node(F, block);
+	}
 
 	if (is_Block(block)) {
 		/* This is a block. Dump a node for the block. */
@@ -2349,30 +2353,25 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 		/* the generic version. */
 		dump_irnode_to_file(F, block);
 
-		/* Check whether we have bad predecessors to color the block. */
-		for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
-			if ((fl = is_Bad(get_Block_cfgpred(block, i))))
-				break;
-
 		fprintf(F, "\"");  /* closing quote of info */
 
 		if ((block == get_irg_start_block(get_irn_irg(block))) ||
 			(block == get_irg_end_block(get_irn_irg(block)))     )
 			fprintf(F, " color:blue ");
-		else if (fl)
-			fprintf(F, " color:yellow ");
 
 		fprintf(F, "}\n");
+
 		/* Dump the edges */
-		for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i)
-			if (!is_Bad(skip_Proj(get_Block_cfgpred(block, i)))) {
-				pred = get_nodes_block(skip_Proj(get_Block_cfgpred(block, i)));
-				fprintf(F, "edge: { sourcename: \"");
-				PRINT_NODEID(block);
-				fprintf(F, "\" targetname: \"");
-				PRINT_NODEID(pred);
-				fprintf(F, "\"}\n");
-			}
+		for (i = get_Block_n_cfgpreds(block) - 1; i >= 0; --i) {
+			ir_node *pred = get_Block_cfgpred(block, i);
+			if (!is_Bad(pred))
+				pred = get_nodes_block(pred);
+			fprintf(F, "edge: { sourcename: \"");
+			PRINT_NODEID(block);
+			fprintf(F, "\" targetname: \"");
+			PRINT_NODEID(pred);
+			fprintf(F, "\"}\n");
+		}
 
 		/* Dump dominator/postdominator edge */
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
@@ -2401,8 +2400,7 @@ void dump_cfg(FILE *F, ir_graph *irg)
 	dump_vcg_header(F, get_irg_dump_name(irg), NULL, NULL);
 
 	/* walk over the blocks in the graph */
-	irg_block_walk(get_irg_end(irg), dump_block_to_cfg, NULL, F);
-	/* dump_node(F, get_irg_bad(irg)); */
+	irg_walk_graph(irg, dump_block_to_cfg, NULL, F);
 
 	dump_vcg_footer(F);
 }
