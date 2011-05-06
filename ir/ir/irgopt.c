@@ -98,6 +98,14 @@ void local_optimize_node(ir_node *n)
 	current_ir_graph = rem;
 }
 
+static void enqueue_node(ir_node *node, pdeq *waitq)
+{
+	if (get_irn_link(node) == waitq)
+		return;
+	pdeq_putr(waitq, node);
+	set_irn_link(node, waitq);
+}
+
 /**
  * Enqueue all users of a node to a wait queue.
  * Handles mode_T nodes.
@@ -109,10 +117,7 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
 	foreach_out_edge(n, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
 
-		if (get_irn_link(succ) != waitq) {
-			pdeq_putr(waitq, succ);
-			set_irn_link(succ, waitq);
-		}
+		enqueue_node(succ, waitq);
 		if (get_irn_mode(succ) == mode_T) {
 		/* A mode_T node has Proj's. Because most optimizations
 			run on the Proj's we have to enqueue them also. */
@@ -124,18 +129,26 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
 /**
  * Block-Walker: uses dominance depth to mark dead blocks.
  */
-static void kill_dead_blocks(ir_node *block, void *env)
+static void find_unreachable_blocks(ir_node *block, void *env)
 {
 	pdeq *waitq = (pdeq*) env;
 
 	if (get_Block_dom_depth(block) < 0) {
-		/*
-		 * Note that the new dominance code correctly handles
-		 * the End block, i.e. it is always reachable from Start
-		 */
 		ir_graph *irg = get_irn_irg(block);
-		enqueue_users(block, waitq);
-		exchange(block, new_r_Bad(irg, mode_BB));
+		ir_node  *end = get_irg_end(irg);
+
+		const ir_edge_t *edge;
+		foreach_block_succ(block, edge) {
+			const ir_edge_t *edge2;
+			ir_node *succ_block = get_edge_src_irn(edge);
+			enqueue_node(succ_block, waitq);
+			foreach_out_edge(succ_block, edge2) {
+				ir_node *succ = get_edge_src_irn(edge2);
+				if (is_Phi(succ))
+					enqueue_node(succ, waitq);
+			}
+		}
+		enqueue_node(end, waitq);
 	}
 }
 
@@ -298,6 +311,9 @@ int optimize_graph_df(ir_graph *irg)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
+	/* Calculate dominance so we can kill unreachable code */
+	assure_doms(irg);
+
 	/* walk over the graph, but don't touch keep-alives */
 	irg_walk_graph(irg, NULL, opt_walker, waitq);
 
@@ -305,16 +321,17 @@ int optimize_graph_df(ir_graph *irg)
 	 * so if it's not empty, the graph has been changed */
 	changed = !pdeq_empty(waitq);
 
-	do {
+	while (!pdeq_empty(waitq)) {
 		/* finish the wait queue */
 		while (! pdeq_empty(waitq)) {
 			ir_node *n = (ir_node*)pdeq_getl(waitq);
 			opt_walker(n, waitq);
 		}
-		/* kill newly generated unreachable code */
+		/* Calculate dominance so we can kill unreachable code */
 		compute_doms(irg);
-		irg_block_walk_graph(irg, NULL, kill_dead_blocks, waitq);
-	} while (! pdeq_empty(waitq));
+		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
+	}
+	set_irg_doms_inconsistent(irg);
 
 	del_pdeq(waitq);
 

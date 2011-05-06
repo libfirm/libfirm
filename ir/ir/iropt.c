@@ -3977,19 +3977,6 @@ static ir_node *transform_node_Cmp(ir_node *n)
 
 				/* the following reassociations work only for == and != */
 				if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
-
-#if 0 /* Might be not that good in general */
-					/* a-b == 0  ==>  a == b,  a-b != 0  ==>  a != b */
-					if (tarval_is_null(tv) && is_Sub(left)) {
-						right = get_Sub_right(left);
-						left  = get_Sub_left(left);
-
-						tv = value_of(right);
-						changed = 1;
-						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_C);
-					}
-#endif
-
 					if (tv != tarval_bad) {
 						/* a-c1 == c2  ==>  a == c2+c1,  a-c1 != c2  ==>  a != c2+c1 */
 						if (is_Sub(left)) {
@@ -4353,35 +4340,34 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	return proj;
 }  /* transform_node_Proj */
 
+static bool is_block_unreachable(const ir_node *block)
+{
+	const ir_graph *irg = get_irn_irg(block);
+	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+		return false;
+	return get_Block_dom_depth(block) < 0;
+}
+
 static ir_node *transform_node_Block(ir_node *block)
 {
-	ir_graph *irg = get_irn_irg(block);
+	ir_graph *irg   = get_irn_irg(block);
+	int       arity = get_irn_arity(block);
+	ir_node  *bad   = NULL;
+	int       i;
 
 	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
 		return block;
-	/* don't optimize labeled blocks */
-	if (has_Block_entity(block))
-		return block;
-	if (!get_Block_matured(block))
-		return block;
 
-	/* remove blocks with only Bad inputs (or no inputs) */
-	{
-		int i;
-		int n_cfgpreds = get_Block_n_cfgpreds(block);
-
-		for (i = 0; i < n_cfgpreds; ++i) {
-			ir_node *pred = get_Block_cfgpred(block, i);
-			if (!is_Bad(pred))
-				break;
-		}
-		/* only bad unreachable inputs? It's unreachable code (unless it is the
-		 * start or end block) */
-		if (i >= n_cfgpreds && block != get_irg_start_block(irg)
-		    && block != get_irg_end_block(irg)) {
-		    return new_r_Bad(irg, mode_BB);
-		}
+	for (i = 0; i < arity; ++i) {
+		ir_node *pred       = get_Block_cfgpred(block, i);
+		ir_node *pred_block = get_nodes_block(pred);
+		if (!is_Bad(pred) && !is_block_unreachable(pred_block))
+			continue;
+		if (bad == NULL)
+			bad = new_r_Bad(irg, mode_X);
+		set_irn_n(block, i, bad);
 	}
+
 	return block;
 }
 
@@ -4397,11 +4383,11 @@ static ir_node *transform_node_Phi(ir_node *phi)
 	/* Set phi-operands for bad-block inputs to bad */
 	for (i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(block, i);
-		if (!is_Bad(pred))
-			continue;
-		if (bad == NULL)
-			bad = new_r_Bad(irg, mode);
-		set_irn_n(phi, i, bad);
+		if (is_Bad(pred) || is_block_unreachable(get_nodes_block(pred))) {
+			if (bad == NULL)
+				bad = new_r_Bad(irg, mode);
+			set_irn_n(phi, i, bad);
+		}
 	}
 
 	/* Move Confirms down through Phi nodes. */
@@ -5216,10 +5202,14 @@ static ir_node *transform_node_End(ir_node *n)
 
 	for (i = j = 0; i < n_keepalives; ++i) {
 		ir_node *ka = get_End_keepalive(n, i);
-		if (is_Bad(ka)) {
-			/* no need to keep Bad */
+		ir_node *block;
+		/* no need to keep Bad */
+		if (is_Bad(ka))
 			continue;
-		}
+		/* dont keep unreachable code */
+		block = is_Block(ka) ? ka : get_nodes_block(ka);
+		if (is_block_unreachable(block))
+			continue;
 		in[j++] = ka;
 	}
 	if (j != n_keepalives)
@@ -6194,18 +6184,6 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 	current_ir_graph = rem;
 }  /* visit_all_identities */
 
-static bool is_unreachable(ir_node *node)
-{
-	ir_op *op = get_irn_op(node);
-
-	/* Code in "Bad" blocks is unreachable and can be replaced by Bad */
-	if (op != op_Block && is_Bad(get_nodes_block(node))) {
-	    return true;
-	}
-
-	return false;
-}
-
 /**
  * These optimizations deallocate nodes from the obstack.
  * It can only be called if it is guaranteed that no other nodes
@@ -6222,15 +6200,6 @@ ir_node *optimize_node(ir_node *n)
 
 	/* Always optimize Phi nodes: part of the construction. */
 	if ((!get_opt_optimize()) && (iro != iro_Phi)) return n;
-
-	/* Remove nodes with dead (Bad) input.
-	   Run always for transformation induced Bads. */
-	if (is_unreachable(n)) {
-		ir_mode *mode = get_irn_mode(n);
-		edges_node_deleted(n);
-		irg_kill_node(irg, n);
-		return new_r_Bad(irg, mode);
-	}
 
 	/* constant expression evaluation / constant folding */
 	if (get_opt_constant_folding()) {
@@ -6329,14 +6298,6 @@ ir_node *optimize_in_place_2(ir_node *n)
 
 	if (iro == iro_Deleted)
 		return n;
-
-	/* Remove nodes with dead (Bad) input.
-	   Run always for transformation induced Bads.  */
-	if (is_unreachable(n)) {
-		ir_graph *irg  = get_irn_irg(n);
-		ir_mode  *mode = get_irn_mode(n);
-		return new_r_Bad(irg, mode);
-	}
 
 	/* constant expression evaluation / constant folding */
 	if (get_opt_constant_folding()) {
