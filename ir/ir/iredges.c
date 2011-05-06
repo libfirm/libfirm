@@ -427,11 +427,11 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 	}
 
 	if (edges_activated_kind(irg, EDGE_KIND_BLOCK) && is_Block(src)) {
-		ir_node *bl_old = old_tgt ? get_nodes_block(skip_Proj(old_tgt)) : NULL;
+		ir_node *bl_old = old_tgt ? get_nodes_block(old_tgt) : NULL;
 		ir_node *bl_tgt = NULL;
 
 		if (tgt)
-			bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(skip_Proj(tgt));
+			bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(tgt);
 
 		edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
 	}
