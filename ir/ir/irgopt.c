@@ -333,8 +333,10 @@ int optimize_graph_df(ir_graph *irg)
 	end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
 
-	if (remove_Bads(irg))
+	if (remove_Bads(irg)) {
 		edges_deactivate(irg);
+		set_irg_outs_inconsistent(irg);
+	}
 
 	clear_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
 
