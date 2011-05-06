@@ -678,25 +678,28 @@ void compute_doms(ir_graph *irg)
 
 
 	for (i = n_blocks-1; i > 0; i--) {  /* Don't iterate the root, it's done. */
-		int irn_arity;
-		tmp_dom_info *w = &tdi_list[i];
+		tmp_dom_info *w     = &tdi_list[i];
+		ir_node      *block = w->block;
 		tmp_dom_info *v;
+		int           irn_arity;
 
 		/* Step 2 */
-		irn_arity = get_irn_arity(w->block);
+		irn_arity = get_irn_arity(block);
 		for (j = 0; j < irn_arity;  j++) {
-			ir_node *pred = get_Block_cfgpred_block(w->block, j);
+			ir_node *pred       = get_Block_cfgpred(block, j);
+			ir_node *pred_block = get_nodes_block(pred);
 			tmp_dom_info *u;
 
-			if (is_Bad(pred) || (get_Block_dom_pre_num (pred) == -1))
-				continue;    /* control-dead */
+			if (is_Bad(pred) || (get_Block_dom_pre_num (pred_block) == -1))
+				continue;    /* unreachable */
 
-			u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
-			if (u->semi < w->semi) w->semi = u->semi;
+			u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred_block)]);
+			if (u->semi < w->semi)
+				w->semi = u->semi;
 		}
 
 		/* handle keep-alives if we are at the end block */
-		if (w->block == get_irg_end_block(irg)) {
+		if (block == get_irg_end_block(irg)) {
 			ir_node *end = get_irg_end(irg);
 
 			irn_arity = get_irn_arity(end);
@@ -705,10 +708,11 @@ void compute_doms(ir_graph *irg)
 				tmp_dom_info *u;
 
 				if (!is_Block(pred) || get_Block_dom_pre_num(pred) == -1)
-					continue;   /* control-dead */
+					continue;   /* unreachable */
 
 				u = dom_eval (&tdi_list[get_Block_dom_pre_num(pred)]);
-				if (u->semi < w->semi) w->semi = u->semi;
+				if (u->semi < w->semi)
+					w->semi = u->semi;
 			}
 		}
 
@@ -745,7 +749,8 @@ void compute_doms(ir_graph *irg)
 		if (! w->dom)
 			continue; /* control dead */
 
-		if (w->dom != w->semi) w->dom = w->dom->dom;
+		if (w->dom != w->semi)
+			w->dom = w->dom->dom;
 		set_Block_idom(w->block, w->dom->block);
 
 		/* blocks dominated by dead one's are still dead */
@@ -762,7 +767,7 @@ void compute_doms(ir_graph *irg)
 	{
 		unsigned tree_pre_order = 0;
 		dom_tree_walk_irg(irg, assign_tree_dom_pre_order,
-			assign_tree_dom_pre_order_max, &tree_pre_order);
+		                  assign_tree_dom_pre_order_max, &tree_pre_order);
 	}
 	current_ir_graph = rem;
 }
