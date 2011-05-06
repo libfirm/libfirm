@@ -68,7 +68,7 @@ int get_irn_n_outs(const ir_node *node)
 {
 	assert(node && node->kind == k_ir_node);
 #ifdef DEBUG_libfirm
-	/* assert(node->out_valid); */
+	assert(node->out_valid);
 #endif /* defined DEBUG_libfirm */
 	/* we misuse the first for the size info of the out array */
 	return node->out[0].pos;
@@ -79,7 +79,7 @@ ir_node *get_irn_out(const ir_node *def, int pos)
 {
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
-	/* assert(def->out_valid); */
+	assert(def->out_valid);
 #endif /* defined DEBUG_libfirm */
 	return def->out[pos+1].use;
 }
@@ -89,7 +89,7 @@ ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos)
 {
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
-	/* assert(def->out_valid); */
+	assert(def->out_valid);
 #endif /* defined DEBUG_libfirm */
 	*in_pos = def->out[pos+1].pos;
 	return def->out[pos+1].use;
@@ -100,7 +100,7 @@ void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos)
 	assert(def && use);
 	assert(pos >= 0 && pos < get_irn_n_outs(def));
 #ifdef DEBUG_libfirm
-	def->out_valid = 1;          /* assume that this function is used correctly */
+	assert(def->out_valid);
 #endif /* defined DEBUG_libfirm */
 	def->out[pos+1].use = use;
 	def->out[pos+1].pos = in_pos;
