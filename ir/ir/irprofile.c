@@ -63,9 +63,6 @@ typedef struct intialize_execfreq_env_t {
 	double freq_factor;
 } initialize_execfreq_env_t;
 
-/* maximal filename size */
-#define MAX_NAME_SIZE 0x100
-
 /* minimal execution frequency (an execfreq of 0 confuses algos) */
 #define MIN_EXECFREQ 0.00001
 
@@ -73,7 +70,7 @@ typedef struct intialize_execfreq_env_t {
 static set *profile = NULL;
 
 /* Hook for vcg output. */
-DEBUG_ONLY(static void *hook;)
+static void *hook;
 
 /* The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
