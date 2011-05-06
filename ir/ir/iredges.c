@@ -426,14 +426,29 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 		edges_notify_edge_kind(src, pos, tgt, old_tgt, EDGE_KIND_NORMAL, irg);
 	}
 
-	if (edges_activated_kind(irg, EDGE_KIND_BLOCK) && is_Block(src)) {
-		ir_node *bl_old = old_tgt ? get_nodes_block(old_tgt) : NULL;
-		ir_node *bl_tgt = NULL;
+	if (edges_activated_kind(irg, EDGE_KIND_BLOCK)) {
+		if (is_Block(src)) {
+			ir_node *bl_old = old_tgt ? get_nodes_block(old_tgt) : NULL;
+			ir_node *bl_tgt = NULL;
 
-		if (tgt)
-			bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(tgt);
+			if (tgt)
+				bl_tgt = is_Bad(tgt) ? tgt : get_nodes_block(tgt);
 
-		edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
+			edges_notify_edge_kind(src, pos, bl_tgt, bl_old, EDGE_KIND_BLOCK, irg);
+		} else if (get_irn_mode(src) == mode_X && old_tgt != NULL && is_Block(old_tgt)) {
+			/* moving a jump node from one block to another */
+			const ir_edge_t *edge;
+			const ir_edge_t *next;
+			foreach_out_edge_kind_safe(old_tgt, edge, next, EDGE_KIND_BLOCK) {
+				ir_node *succ       = get_edge_src_irn(edge);
+				int      pos        = get_edge_src_pos(edge);
+				ir_node *block_pred = get_Block_cfgpred(succ, pos);
+				if (block_pred != src)
+					continue;
+				edges_notify_edge_kind(succ, pos, tgt, old_tgt,
+				                       EDGE_KIND_BLOCK, irg);
+			}
+		}
 	}
 }
 
