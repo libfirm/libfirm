@@ -294,7 +294,6 @@ extern const arch_register_t ${arch}_registers[N_${archuc}_REGISTERS];
 extern arch_register_class_t ${arch}_reg_classes[N_${archuc}_CLASSES];
 
 void ${arch}_register_init(void);
-unsigned ${arch}_get_n_regs(void);
 
 #endif
 EOF
