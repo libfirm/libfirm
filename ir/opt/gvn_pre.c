@@ -892,10 +892,6 @@ void do_gvn_pre(ir_graph *irg)
 	/* pin the graph again: This is needed due to the use of set_opt_global_cse(1) */
 	set_irg_pinned(irg, op_pin_state_pinned);
 	restore_optimization_state(&state);
-
-	if (a_env.pairs) {
-		set_irg_loopinfo_inconsistent(irg);
-	}
 }  /* do_gvn_pre */
 
 /* Creates an ir_graph pass for do_gvn_pre. */

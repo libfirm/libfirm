@@ -164,7 +164,6 @@ void normalize_one_return(ir_graph *irg)
 	 */
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
 }
 
 /* Create a graph pass. */
@@ -379,7 +378,6 @@ void normalize_n_returns(ir_graph *irg)
 	 */
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);  /* may not be needed */
-	set_irg_loopinfo_inconsistent(irg);
 }
 
 /* Create a graph pass. */

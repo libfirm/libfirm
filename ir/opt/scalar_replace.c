@@ -767,8 +767,6 @@ int scalar_replacement_opt(ir_graph *irg)
 			 * neither changed control flow, cf-backedges should be still
 			 * consistent.
 			 */
-			set_irg_loopinfo_inconsistent(irg);
-
 			res = 1;
 		}
 		del_pset(sels);

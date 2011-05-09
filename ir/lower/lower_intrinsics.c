@@ -144,7 +144,6 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			/* Exception control flow might have changed / new block might have added. */
 			set_irg_doms_inconsistent(irg);
 			set_irg_extblk_inconsistent(irg);
-			set_irg_loopinfo_inconsistent(irg);
 
 			/* Calls might be removed/added. */
 			set_trouts_inconsistent();

@@ -2323,7 +2323,6 @@ static void lower_irg(lower_env_t *env, ir_graph *irg)
 			/* control flow changed, dominance info is invalid */
 			set_irg_doms_inconsistent(irg);
 			set_irg_extblk_inconsistent(irg);
-			set_irg_loopinfo_inconsistent(irg);
 		}
 	}
 

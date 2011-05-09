@@ -968,11 +968,6 @@ int optimize_reassociation(ir_graph *irg)
 	}
 	set_reassoc_running(0);
 
-	/* Handle graph state */
-	if (env.changes) {
-		set_irg_loopinfo_inconsistent(irg);
-	}
-
 #ifdef NEW_REASSOC
 	obstack_free(&commutative_args, NULL);
 #endif

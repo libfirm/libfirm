@@ -168,7 +168,6 @@ void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes)
 {
 	walk_env_t env;
 	entry_t   *entry;
-	bool       changed = false;
 
 	obstack_init(&env.obst);
 	env.max_size = max_size;
@@ -177,11 +176,6 @@ void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes)
 
 	list_for_each_entry(entry_t, entry, &env.list, list) {
 		lower_copyb_nodes(entry->copyb, native_mode_bytes);
-		changed = true;
-	}
-
-	if (changed) {
-		set_irg_loopinfo_inconsistent(irg);
 	}
 
 	obstack_free(&env.obst, NULL);

@@ -139,7 +139,6 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
 	}
 	DEL_ARR_F(env.muxes);
 }

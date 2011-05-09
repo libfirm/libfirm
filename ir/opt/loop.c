@@ -1394,8 +1394,6 @@ static void loop_inversion(void)
 
 		/* Duplicated blocks changed doms */
 		set_irg_doms_inconsistent(current_ir_graph);
-		/* Loop content changed */
-		set_irg_loopinfo_inconsistent(current_ir_graph);
 
 		count_stats(stats.inverted);
 	}
@@ -2630,7 +2628,6 @@ static void unroll_loop(void)
 			count_stats(stats.invariant_unroll);
 
 		set_irg_doms_inconsistent(current_ir_graph);
-		set_irg_loopinfo_inconsistent(current_ir_graph);
 
 		DEL_ARR_F(loop_entries);
 	}

@@ -155,9 +155,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 
-	/* we add a new loop */
-	set_irg_loopinfo_inconsistent(irg);
-
 	/* calls are removed */
 	set_trouts_inconsistent();
 

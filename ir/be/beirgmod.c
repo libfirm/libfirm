@@ -268,7 +268,6 @@ int be_remove_empty_blocks(ir_graph *irg)
 		/* invalidate analysis info */
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
 	}
 	return blocks_removed;
 }

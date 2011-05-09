@@ -495,7 +495,6 @@ void opt_if_conv(ir_graph *irg)
 
 		/* graph has changed, invalidate analysis info */
 		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 	}
 

@@ -762,10 +762,6 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 	pmap_destroy(env.dummy_map);
 	obstack_free(&env.obst, NULL);
 
-	if (env.changed) {
-		/* invalidate the analysis info */
-		set_irg_loopinfo_state(irg, loopinfo_inconsistent);
-	}
 	current_ir_graph = rem;
 }
 

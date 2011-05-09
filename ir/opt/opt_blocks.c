@@ -1267,7 +1267,6 @@ int shape_blocks(ir_graph *irg)
 		/* control flow changed */
 		set_irg_extblk_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
 
 		/* Calls might be removed. */
 		set_trouts_inconsistent();

@@ -768,7 +768,6 @@ void opt_jumpthreading(ir_graph* irg)
 		/* control flow changed, some blocks may become dead */
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 	}
 }

@@ -592,11 +592,6 @@ void construct_confirms(ir_graph *irg)
 		irg_block_walk_graph(irg, insert_Confirm_in_block, NULL, &env);
 	}
 
-	if (env.num_confirms | env.num_consts | env.num_eq) {
-		/* the new nodes are not in the loop info */
-		set_irg_loopinfo_inconsistent(irg);
-	}
-
 	DB((dbg, LEVEL_1, "# Confirms inserted : %u\n", env.num_confirms));
 	DB((dbg, LEVEL_1, "# Const replacements: %u\n", env.num_consts));
 	DB((dbg, LEVEL_1, "# node equalities   : %u\n", env.num_eq));

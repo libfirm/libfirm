@@ -740,7 +740,6 @@ void opt_bool(ir_graph *const irg)
 	if (env.changed) {
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
-		set_irg_loopinfo_inconsistent(irg);
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);

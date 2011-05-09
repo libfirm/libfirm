@@ -79,7 +79,6 @@ static inline void do_local_optimize(ir_node *n)
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
 	set_irg_doms_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
 
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
@@ -296,7 +295,6 @@ int optimize_graph_df(ir_graph *irg)
 
 	/* invalidate info */
 	set_irg_doms_inconsistent(irg);
-	set_irg_loopinfo_inconsistent(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
