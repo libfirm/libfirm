@@ -151,9 +151,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 	assert(env->n_tail_calls > 0);
 
-	/* we add new nodes, so the outs are inconsistent */
-	set_irg_outs_inconsistent(irg);
-
 	/* we add new blocks and change the control flow */
 	set_irg_doms_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
@@ -274,7 +271,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 	/* tail recursion was done, all info is invalid */
 	set_irg_doms_inconsistent(irg);
-	set_irg_outs_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 	set_trouts_inconsistent();

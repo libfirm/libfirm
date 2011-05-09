@@ -2319,9 +2319,6 @@ static void lower_irg(lower_env_t *env, ir_graph *irg)
 
 		ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
-		/* outs are invalid, we changed the graph */
-		set_irg_outs_inconsistent(irg);
-
 		if (env->flags & CF_CHANGED) {
 			/* control flow changed, dominance info is invalid */
 			set_irg_doms_inconsistent(irg);

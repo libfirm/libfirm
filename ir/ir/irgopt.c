@@ -78,7 +78,6 @@ static inline void do_local_optimize(ir_node *n)
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
-	set_irg_outs_inconsistent(irg);
 	set_irg_doms_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
@@ -296,7 +295,6 @@ int optimize_graph_df(ir_graph *irg)
 	set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
 
 	/* invalidate info */
-	set_irg_outs_inconsistent(irg);
 	set_irg_doms_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 
@@ -316,7 +314,6 @@ int optimize_graph_df(ir_graph *irg)
 			opt_walker(n, waitq);
 		}
 		/* kill newly generated unreachable code */
-		set_irg_outs_inconsistent(irg);
 		compute_doms(irg);
 		irg_block_walk_graph(irg, NULL, kill_dead_blocks, waitq);
 	} while (! pdeq_empty(waitq));
@@ -335,7 +332,6 @@ int optimize_graph_df(ir_graph *irg)
 
 	if (remove_Bads(irg)) {
 		edges_deactivate(irg);
-		set_irg_outs_inconsistent(irg);
 	}
 
 	clear_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);

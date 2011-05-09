@@ -970,7 +970,6 @@ int optimize_reassociation(ir_graph *irg)
 
 	/* Handle graph state */
 	if (env.changes) {
-		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
 

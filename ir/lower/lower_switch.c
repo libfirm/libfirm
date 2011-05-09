@@ -421,7 +421,6 @@ void lower_switch(ir_graph *irg, unsigned spare_size, int allow_out_of_bounds)
 
 	if (env.changed) {
 		/* control flow changed */
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);

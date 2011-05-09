@@ -738,7 +738,6 @@ void opt_bool(ir_graph *const irg)
 	irg_block_walk_graph(irg, NULL, find_cf_and_or_walker, &env);
 
 	if (env.changed) {
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);

@@ -1396,8 +1396,6 @@ static void loop_inversion(void)
 		set_irg_doms_inconsistent(current_ir_graph);
 		/* Loop content changed */
 		set_irg_loopinfo_inconsistent(current_ir_graph);
-		/* TODO are they? Depends on set_irn_in and set_irn_n exchange and new_node. */
-		set_irg_outs_inconsistent(current_ir_graph);
 
 		count_stats(stats.inverted);
 	}
@@ -2633,8 +2631,6 @@ static void unroll_loop(void)
 
 		set_irg_doms_inconsistent(current_ir_graph);
 		set_irg_loopinfo_inconsistent(current_ir_graph);
-		/* TODO is it? */
-		set_irg_outs_inconsistent(current_ir_graph);
 
 		DEL_ARR_F(loop_entries);
 	}

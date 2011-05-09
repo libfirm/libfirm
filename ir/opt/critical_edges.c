@@ -105,7 +105,6 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 	irg_block_walk_graph(irg, NULL, walk_critical_cf_edges, &env);
 	if (env.changed) {
 		/* control flow changed */
-		set_irg_outs_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);

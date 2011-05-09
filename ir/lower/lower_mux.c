@@ -137,7 +137,6 @@ void lower_mux(ir_graph *irg, lower_mux_callback *cb_func)
 		/* Cleanup, verify the graph. */
 		ir_free_resources(irg, resources);
 
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);

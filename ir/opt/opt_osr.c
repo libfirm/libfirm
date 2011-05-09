@@ -1275,7 +1275,6 @@ static void lftr(ir_graph *irg, iv_env *env)
  */
 static void clear_and_fix(ir_node *irn, void *env)
 {
-	int *moved = (int*)env;
 	set_irn_link(irn, NULL);
 
 	if (is_Proj(irn)) {
@@ -1284,7 +1283,6 @@ static void clear_and_fix(ir_node *irn, void *env)
 
 		if (get_nodes_block(irn) != pred_block) {
 			set_nodes_block(irn, pred_block);
-			*moved = 1;
 		}
 	}
 }  /* clear_and_fix */
@@ -1294,7 +1292,6 @@ static void clear_and_fix(ir_node *irn, void *env)
 void remove_phi_cycles(ir_graph *irg)
 {
 	iv_env env;
-	int    projs_moved;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.remove_phi");
 
@@ -1317,10 +1314,7 @@ void remove_phi_cycles(ir_graph *irg)
 	 * the same block as their predecessors.
 	 * This can improve the placement of new nodes.
 	 */
-	projs_moved = 0;
-	irg_walk_graph(irg, NULL, clear_and_fix, &projs_moved);
-	if (projs_moved)
-		set_irg_outs_inconsistent(irg);
+	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
 
 	/* we need outs for calculating the post order */
 	assure_irg_outs(irg);
@@ -1334,7 +1328,6 @@ void remove_phi_cycles(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	if (env.replaced) {
-		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "remove_phi_cycles: %u Cycles removed\n\n", env.replaced));
 	}
 
@@ -1420,7 +1413,6 @@ void opt_osr(ir_graph *irg, unsigned flags)
 {
 	iv_env   env;
 	int      edges;
-	int      projs_moved;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.osr");
 
@@ -1443,10 +1435,7 @@ void opt_osr(ir_graph *irg, unsigned flags)
 	 * the same block as its predecessors.
 	 * This can improve the placement of new nodes.
 	 */
-	projs_moved = 0;
-	irg_walk_graph(irg, NULL, clear_and_fix, &projs_moved);
-	if (projs_moved)
-		set_irg_outs_inconsistent(irg);
+	irg_walk_graph(irg, NULL, clear_and_fix, NULL);
 
 	/* we need dominance */
 	assure_doms(irg);
@@ -1469,7 +1458,6 @@ void opt_osr(ir_graph *irg, unsigned flags)
 		lftr(irg, &env);
 		(void)lftr;
 
-		set_irg_outs_inconsistent(irg);
 		DB((dbg, LEVEL_1, "Replacements: %u + %u (lftr)\n\n", env.replaced, env.lftr_replaced));
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);

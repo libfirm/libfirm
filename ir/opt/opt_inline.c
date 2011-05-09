@@ -343,7 +343,6 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-	set_irg_outs_inconsistent(irg);
 	set_irg_extblk_inconsistent(irg);
 	set_irg_doms_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);

@@ -181,7 +181,6 @@ void lower_CopyB(ir_graph *irg, unsigned max_size, unsigned native_mode_bytes)
 	}
 
 	if (changed) {
-		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
 

@@ -139,7 +139,6 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 
 		if (wenv.nr_of_intrinsics > 0) {
 			/* Changes detected: we might have added/removed nodes. */
-			set_irg_outs_inconsistent(irg);
 			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 			/* Exception control flow might have changed / new block might have added. */

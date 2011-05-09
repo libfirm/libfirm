@@ -602,7 +602,6 @@ restart:
 
 	if (env.changed) {
 		/* Handle graph state if was changed. */
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
@@ -634,10 +633,6 @@ restart:
 		n = get_End_n_keepalives(end);
 		if (n > 0) {
 			NEW_ARR_A(ir_node *, in, n);
-			if (env.changed) {
-				/* Handle graph state if was changed. */
-				set_irg_outs_inconsistent(irg);
-			}
 			assure_irg_outs(irg);
 
 			for (i = j = 0; i < n; ++i) {
@@ -668,7 +663,6 @@ restart:
 
 	if (env.changed) {
 		/* Handle graph state if was changed. */
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);

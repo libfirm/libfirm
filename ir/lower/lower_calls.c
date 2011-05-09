@@ -764,7 +764,6 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 
 	if (env.changed) {
 		/* invalidate the analysis info */
-		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_state(irg, loopinfo_inconsistent);
 	}
 	current_ir_graph = rem;

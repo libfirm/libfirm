@@ -239,7 +239,6 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 	}
 
 	/* changes were done ... */
-	set_irg_outs_inconsistent(irg);
 	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 
 	if (exc_changed) {
@@ -374,7 +373,6 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 	}
 
 	/* changes were done ... */
-	set_irg_outs_inconsistent(irg);
 	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 
 	if (exc_changed) {

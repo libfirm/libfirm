@@ -460,13 +460,9 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
   }
 
   /* if allocs were removed somehow */
-  if (env->nr_removed | env->nr_deads) {
-    set_irg_outs_inconsistent(irg);
-
-    if (env->nr_deads) {
-      /* exception control flow might have been changed */
-      set_irg_doms_inconsistent(irg);
-    }
+  if (env->nr_removed && env->nr_deads) {
+	  /* exception control flow might have been changed */
+	  set_irg_doms_inconsistent(irg);
   }
 }
 

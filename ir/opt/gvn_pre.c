@@ -894,7 +894,6 @@ void do_gvn_pre(ir_graph *irg)
 	restore_optimization_state(&state);
 
 	if (a_env.pairs) {
-		set_irg_outs_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);
 	}
 }  /* do_gvn_pre */

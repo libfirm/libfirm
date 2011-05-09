@@ -6410,8 +6410,6 @@ ir_node *optimize_in_place(ir_node *n)
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
-	if (get_irg_outs_state(irg) == outs_consistent)
-		set_irg_outs_inconsistent(irg);
 
 	/* FIXME: Maybe we could also test whether optimizing the node can
 	   change the control graph. */

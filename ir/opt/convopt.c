@@ -315,9 +315,6 @@ int conv_opt(ir_graph *irg)
 		invalidate |= changed;
 	} while (changed);
 
-	if (invalidate) {
-		set_irg_outs_inconsistent(irg);
-	}
 	return invalidate;
 }
 

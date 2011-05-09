@@ -429,7 +429,6 @@ void place_code(ir_graph *irg)
 	   unnecessary executions of the node. */
 	place_late(irg, worklist);
 
-	set_irg_outs_inconsistent(irg);
 	set_irg_loopinfo_inconsistent(irg);
 	del_waitq(worklist);
 }

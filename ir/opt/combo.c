@@ -3595,7 +3595,6 @@ void combo(ir_graph *irg)
 
 	if (env.modified) {
 		/* control flow might changed */
-		set_irg_outs_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_loopinfo_inconsistent(irg);

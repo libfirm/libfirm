@@ -492,8 +492,6 @@ void optimize_class_casts(void)
 		size_t i, n;
 
 		set_trouts_inconsistent();
-		for (i = 0, n = get_irp_n_irgs(); i < n; ++i)
-			set_irg_outs_inconsistent(get_irp_irg(i));
 	}
 
 	DB((dbg, SET_LEVEL_1, " Cast optimization: %zu Casts removed, %zu Sels concretized.\n",

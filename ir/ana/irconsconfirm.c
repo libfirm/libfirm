@@ -593,9 +593,6 @@ void construct_confirms(ir_graph *irg)
 	}
 
 	if (env.num_confirms | env.num_consts | env.num_eq) {
-		/* we have add nodes or changed DF edges */
-		set_irg_outs_inconsistent(irg);
-
 		/* the new nodes are not in the loop info */
 		set_irg_loopinfo_inconsistent(irg);
 	}
