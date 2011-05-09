@@ -112,6 +112,9 @@ void exchange(ir_node *old, ir_node *nw)
 		old->in[0] = block;
 		old->in[1] = nw;
 	}
+
+	/* update irg flags */
+	set_irg_outs_inconsistent(irg);
 }
 
 /*--------------------------------------------------------------------*/

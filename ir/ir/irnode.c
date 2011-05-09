@@ -251,6 +251,9 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 	fix_backedges(irg->obst, node);
 
 	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
+
+	/* update irg flags */
+	set_irg_outs_inconsistent(irg);
 }
 
 ir_node *(get_irn_n)(const ir_node *node, int n)
@@ -273,6 +276,9 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	edges_notify_edge(node, n, in, node->in[n + 1], irg);
 
 	node->in[n + 1] = in;
+
+	/* update irg flags */
+	set_irg_outs_inconsistent(irg);
 }
 
 int add_irn_n(ir_node *node, ir_node *in)
@@ -717,6 +723,9 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 		end->in[1 + END_KEEPALIVE_OFFSET + i] = in[i];
 		edges_notify_edge(end, END_KEEPALIVE_OFFSET + i, end->in[1 + END_KEEPALIVE_OFFSET + i], NULL, irg);
 	}
+
+	/* update irg flags */
+	set_irg_outs_inconsistent(irg);
 }
 
 /* Set new keep-alives from old keep-alives, skipping irn */
@@ -752,6 +761,9 @@ found:
 	}
 	/* now n - 1 keeps, 1 block input */
 	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
+
+	/* update irg flags */
+	set_irg_outs_inconsistent(irg);
 }
 
 /* remove Bads, NoMems and doublets from the keep-alive set */
