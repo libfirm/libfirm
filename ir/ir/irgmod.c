@@ -115,6 +115,7 @@ void exchange(ir_node *old, ir_node *nw)
 
 	/* update irg flags */
 	set_irg_outs_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
 }
 
 /*--------------------------------------------------------------------*/

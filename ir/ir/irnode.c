@@ -254,6 +254,7 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 
 	/* update irg flags */
 	set_irg_outs_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
 }
 
 ir_node *(get_irn_n)(const ir_node *node, int n)
@@ -279,6 +280,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 
 	/* update irg flags */
 	set_irg_outs_inconsistent(irg);
+	set_irg_loopinfo_inconsistent(irg);
 }
 
 int add_irn_n(ir_node *node, ir_node *in)
