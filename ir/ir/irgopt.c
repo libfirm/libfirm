@@ -182,58 +182,71 @@ static void opt_walker(ir_node *n, void *env)
 	}
 }
 
-static int count_non_bads(ir_node *node) {
+/**
+ * Return the number of non-Bad predecessors of the given node.
+ */
+static int count_non_bads(ir_node *node)
+{
 	int arity = get_irn_arity(node);
 	int count = 0;
 	int i;
-	for (i=0; i<arity; ++i) {
+	for (i = 0; i < arity; ++i) {
 		if (!is_Bad(get_irn_n(node, i)))
-			count++;
+			++count;
 	}
 	return count;
 }
 
-static void block_remove_bads(ir_node *block, int *changed) {
+/**
+ * Block-walker, remove Bad block predecessors and shorten Phis.
+ * Phi links must be uptodate.
+ */
+static void block_remove_bads(ir_node *block, void *env)
+{
+	int *changed = (int *)env;
 	int i, j;
-	ir_node **new_in;
+	ir_node **new_in, *new_block, *phi;
 	const int max = get_irn_arity(block);
 	const int new_max = count_non_bads(block);
-	assert (max >= new_max);
+	assert(max >= new_max);
 
-	if (is_Bad(block) || max == new_max) return;
+	if (is_Bad(block) || max == new_max)
+		return;
 
 	new_in = ALLOCAN(ir_node*, new_max);
 	*changed = 1;
 
-	assert (get_Block_dom_depth(block) >= 0);
+	assert(get_Block_dom_depth(block) >= 0);
 
 	/* 1. Create a new block without Bad inputs */
-	j = 0;
-	for (i = 0; i < max; ++i) {
+	for (i = j = 0; i < max; ++i) {
 		ir_node *block_pred = get_irn_n(block, i);
 		if (!is_Bad(block_pred)) {
 			new_in[j++] = block_pred;
 		}
 	}
-	assert (j == new_max);
+	assert(j == new_max);
 
 	/* If the end block is unreachable, it might have zero predecessors. */
-	ir_node *end_block = get_irg_end_block(get_irn_irg(block));
-	if (new_max == 0 && block == end_block) {
-		set_irn_in(block, new_max, new_in);
-		return;
+	if (new_max == 0) {
+		ir_node *end_block = get_irg_end_block(get_irn_irg(block));
+		if (block == end_block) {
+			set_irn_in(block, new_max, new_in);
+			return;
+		}
 	}
 
-	ir_node *new_block =  new_r_Block(get_irn_irg(block), new_max, new_in);
+	new_block = new_r_Block(get_irn_irg(block), new_max, new_in);
 
 	/* 2. Remove inputs on Phis, where the block input is Bad. */
-	ir_node *phi = get_Block_phis(block);
+	phi = get_Block_phis(block);
 	if (phi != NULL) {
 		do {
-			ir_node* next = get_Phi_next(phi);
+			ir_node *next = get_Phi_next(phi);
 			if (get_irn_arity(phi) != new_max) {
-				j = 0;
-				for (i = 0; i < max; ++i) {
+				ir_node *new_phi;
+
+				for (i = j = 0; i < max; ++i) {
 					ir_node *block_pred = get_irn_n(block, i);
 
 					if (!is_Bad(block_pred)) {
@@ -241,9 +254,9 @@ static void block_remove_bads(ir_node *block, int *changed) {
 						new_in[j++] = pred;
 					}
 				}
-				assert (j == new_max);
+				assert(j == new_max);
 
-				ir_node *new_phi = new_r_Phi(new_block, new_max, new_in, get_irn_mode(phi));
+				new_phi = new_r_Phi(new_block, new_max, new_in, get_irn_mode(phi));
 				exchange(phi, new_phi);
 			}
 			phi = next;
@@ -258,13 +271,14 @@ static void block_remove_bads(ir_node *block, int *changed) {
  * Precondition: No unreachable code.
  * Postcondition: No Bad nodes.
  */
-static int remove_Bads(ir_graph *irg) {
+static int remove_Bads(ir_graph *irg)
+{
 	int changed = 0;
 	/* build phi list per block */
 	irg_walk_graph(irg, firm_clear_block_phis, firm_collect_block_phis, NULL);
 
 	/* actually remove Bads */
-	irg_block_walk_graph(irg, NULL, (void (*)(struct ir_node *, void *)) block_remove_bads, &changed);
+	irg_block_walk_graph(irg, NULL, block_remove_bads, (void *)&changed);
 
 	return changed;
 }
