@@ -52,7 +52,7 @@ new_tpop(tp_opcode code, ident *name, unsigned flags, size_t attr_size, const tp
 	res->attr_size     = attr_size;
 
 	if (ops)
-		memcpy(&res->ops, ops, sizeof(res->ops));
+		res->ops = *ops;
 	else
 		memset(&res->ops, 0, sizeof(res->ops));
 

@@ -443,7 +443,7 @@ static arm_isa_t arm_isa_template = {
 static arch_env_t *arm_init(FILE *file_handle)
 {
 	arm_isa_t *isa = XMALLOC(arm_isa_t);
-	memcpy(isa, &arm_isa_template, sizeof(*isa));
+	*isa = arm_isa_template;
 
 	arm_register_init();
 

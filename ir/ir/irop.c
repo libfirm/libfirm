@@ -166,7 +166,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 	res->tag       = 0;
 
 	if (ops)
-		memcpy(&res->ops, ops, sizeof(res->ops));
+		res->ops = *ops;
 	else /* no given ops, set all operations to NULL */
 		memset(&res->ops, 0, sizeof(res->ops));
 

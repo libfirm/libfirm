@@ -414,7 +414,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 			be_do_stat_reg_pressure(irg, cls);
 		}
 
-		memcpy(&pse.cenv, &chordal_env, sizeof(chordal_env));
+		pse.cenv = chordal_env;
 		pse.irg = irg;
 		pre_spill(&pse, cls);
 

@@ -385,7 +385,7 @@ pattern_dumper_t *new_text_dumper(void)
 {
 	pattern_dumper_t *res = XMALLOC(pattern_dumper_t);
 
-	memcpy(res, &stdout_dump, sizeof(*res));
+	*res = stdout_dump;
 	res->data = stdout;
 
 	if (res->dump_start)

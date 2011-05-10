@@ -807,7 +807,7 @@ static HASH_MAP(pattern_entry_t) *read_pattern(const char *fname)
 		for (j = 0; j < tmp.len; ++j)
 			put_byte(&buf, fgetc(f));
 		entry = pattern_get_entry(&buf, pattern_hash);
-		memcpy(&entry->count, &tmp.count, sizeof(entry->count));
+		entry->count = tmp.count;
 	}  /* for */
 	fclose(f);
 

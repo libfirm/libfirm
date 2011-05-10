@@ -162,7 +162,7 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 static arch_env_t *TEMPLATE_init(FILE *outfile)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
-	memcpy(isa, &TEMPLATE_isa_template, sizeof(*isa));
+	*isa = TEMPLATE_isa_template;
 
 	be_emit_init(outfile);
 

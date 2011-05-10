@@ -199,7 +199,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 
 	if (in_val != out_val)   {
 		out_val->sign = in_val->sign;
-		memcpy(&out_val->desc, &in_val->desc, sizeof(out_val->desc));
+		out_val->desc = in_val->desc;
 	}
 
 	out_val->desc.clss = NORMAL;

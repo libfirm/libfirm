@@ -1305,8 +1305,7 @@ static void update_graph_stat_2(graph_entry_t *global, graph_entry_t *graph)
 static void stat_register_dumper(const dumper_t *dumper)
 {
 	dumper_t *p = XMALLOC(dumper_t);
-
-	memcpy(p, dumper, sizeof(*p));
+	*p = *dumper;
 
 	p->next        = status->dumper;
 	p->status      = status;

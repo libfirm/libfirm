@@ -1507,7 +1507,7 @@ static arch_env_t *ia32_init(FILE *file_handle)
 
 	set_tarval_output_modes();
 
-	memcpy(isa, &ia32_isa_template, sizeof(*isa));
+	*isa = ia32_isa_template;
 
 	if (ia32_mode_fpcw == NULL) {
 		ia32_mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);

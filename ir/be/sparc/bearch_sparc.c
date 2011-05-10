@@ -484,7 +484,7 @@ static void sparc_handle_intrinsics(void)
 static arch_env_t *sparc_init(FILE *outfile)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
-	memcpy(isa, &sparc_isa_template, sizeof(*isa));
+	*isa = sparc_isa_template;
 	isa->constants = pmap_create();
 
 	be_emit_init(outfile);

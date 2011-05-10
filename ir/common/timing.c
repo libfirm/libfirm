@@ -218,7 +218,7 @@ int ir_timer_enter_high_priority(void)
 	algo = sched_getscheduler(pid);
 	max  = sched_get_priority_max(algo);
 
-	memcpy(&p, &std_sched_param, sizeof(p));
+	p = std_sched_param;
 	p.sched_priority = max;
 	res = sched_setparam(pid, &p);
 
