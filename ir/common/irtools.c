@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -49,6 +49,20 @@ void firm_clear_node_and_phi_links(ir_node *n, void *env)
 		set_Block_phis(n, NULL);
 	else if (is_Phi(n))
 		set_Phi_next(n, NULL);
+}
+
+void firm_clear_block_phis(ir_node *node, void *env)
+{
+	(void) env;
+	if (is_Block(node))
+		set_Block_phis(node, NULL);
+}
+
+void firm_collect_block_phis(ir_node *node, void *env)
+{
+	(void) env;
+	if (is_Phi(node))
+		add_Block_phi(get_nodes_block(node), node);
 }
 
 void copy_irn_to_irg(ir_node *n, ir_graph *irg)

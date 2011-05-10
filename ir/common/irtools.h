@@ -77,9 +77,22 @@ void firm_clear_link(ir_node *n, void *env);
  * The famous clear_link_and_block_lists() walker-function.
  * Sets all links fields of visited nodes to NULL.
  * Additionally, clear all Phi-lists of visited blocks.
- * Do not implement it by yourself, use this one
+ * Do not implement it by yourself, use this one.
  */
 void firm_clear_node_and_phi_links(ir_node *n, void *env);
+
+/**
+ * Walker function, sets all phi list heads fields of visited Blocks
+ * to NULL.
+ * Use in conjunction with firm_collect_block_phis().
+ */
+void firm_clear_block_phis(ir_node *node, void *env);
+
+/**
+ * Walker function, links all visited Phi nodes into its block links.
+ * Use in conjunction with firm_clear_block_phis().
+ */
+void firm_collect_block_phis(ir_node *node, void *env);
 
 /**
  * Creates an exact copy of a node with same inputs and attributes in the

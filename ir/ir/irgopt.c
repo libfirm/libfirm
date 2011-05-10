@@ -182,20 +182,6 @@ static void opt_walker(ir_node *n, void *env)
 	}
 }
 
-static void clear_block_phis(ir_node *node, void *env) {
-	(void) env;
-	if (is_Block(node)) {
-		set_Block_phis(node, NULL);
-	}
-}
-
-static void collect_block_phis(ir_node *node, void *env) {
-	(void) env;
-	if (is_Phi(node)) {
-		add_Block_phi(get_nodes_block(node), node);
-	}
-}
-
 static int count_non_bads(ir_node *node) {
 	int arity = get_irn_arity(node);
 	int count = 0;
@@ -275,7 +261,7 @@ static void block_remove_bads(ir_node *block, int *changed) {
 static int remove_Bads(ir_graph *irg) {
 	int changed = 0;
 	/* build phi list per block */
-	irg_walk_graph(irg, clear_block_phis, collect_block_phis, NULL);
+	irg_walk_graph(irg, firm_clear_block_phis, firm_collect_block_phis, NULL);
 
 	/* actually remove Bads */
 	irg_block_walk_graph(irg, NULL, (void (*)(struct ir_node *, void *)) block_remove_bads, &changed);
