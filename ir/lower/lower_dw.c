@@ -1811,6 +1811,18 @@ static void lower_Unknown(ir_node *node, ir_mode *mode, lower_env_t *env)
 }
 
 /**
+ * Translate a Bad into two.
+ */
+static void lower_Bad(ir_node *node, ir_mode *mode, lower_env_t *env)
+{
+	ir_mode  *low_mode = env->low_unsigned;
+	ir_graph *irg      = get_irn_irg(node);
+	ir_node  *res_low  = new_r_Bad(irg, low_mode);
+	ir_node  *res_high = new_r_Bad(irg, mode);
+	set_lowered(env, node, res_low, res_high);
+}
+
+/**
  * Translate a Phi.
  *
  * First step: just create two templates
@@ -2416,6 +2428,7 @@ void lower_dw_ops(const lwrdw_param_t *param)
 	enter_lower_func(op_ASM,     lower_ASM);
 	enter_lower_func(op_Add,     lower_binop);
 	enter_lower_func(op_And,     lower_And);
+	enter_lower_func(op_Bad,     lower_Bad);
 	enter_lower_func(op_Call,    lower_Call);
 	enter_lower_func(op_Cmp,     lower_Cmp);
 	enter_lower_func(op_Cond,    lower_Cond);
