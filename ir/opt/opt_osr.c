@@ -1275,6 +1275,8 @@ static void lftr(ir_graph *irg, iv_env *env)
  */
 static void clear_and_fix(ir_node *irn, void *env)
 {
+	(void)env;
+
 	set_irn_link(irn, NULL);
 
 	if (is_Proj(irn)) {

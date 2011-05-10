@@ -489,8 +489,6 @@ void optimize_class_casts(void)
 	all_irg_walk(NULL, irn_optimize_class_cast, &changed);
 
 	if (changed) {
-		size_t i, n;
-
 		set_trouts_inconsistent();
 	}
 
