@@ -326,14 +326,14 @@ int optimize_graph_df(ir_graph *irg)
 	if (! state)
 		edges_deactivate(irg);
 
+	if (remove_Bads(irg)) {
+		edges_deactivate(irg);
+	}
+
 	/* Finally kill BAD and doublets from the keep alives.
 	   Doing this AFTER edges where deactivated saves cycles */
 	end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
-
-	if (remove_Bads(irg)) {
-		edges_deactivate(irg);
-	}
 
 	clear_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
 
