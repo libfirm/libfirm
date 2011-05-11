@@ -174,6 +174,33 @@ my %binop_operand_constructors = (
 	},
 );
 
+my %binopcc_operand_constructors = (
+	imm => {
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+		reg_req    => { in => [ "gp" ], out => [ "gp", "flags" ] },
+		ins        => [ "left" ],
+	},
+	reg => {
+		reg_req    => { in => [ "gp", "gp" ], out => [ "gp", "flags" ] },
+		ins        => [ "left", "right" ],
+	},
+);
+
+my %binopx_operand_constructors = (
+	imm => {
+		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
+		custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
+		reg_req    => { in => [ "gp", "flags" ], out => [ "gp" ] },
+		ins        => [ "left", "carry" ],
+	},
+	reg => {
+		reg_req    => { in => [ "gp", "gp", "flags" ], out => [ "gp" ] },
+		ins        => [ "left", "right", "carry" ],
+	},
+);
+
+
 my %binopcczero_operand_constructors = (
 	imm => {
 		attr       => "ir_entity *immediate_entity, int32_t immediate_value",
@@ -237,11 +264,63 @@ Add => {
 	constructors => \%binop_operand_constructors,
 },
 
+AddCC => {
+	irn_flags    => [ "rematerializable" ],
+	emit         => '. addcc %S0, %R1I, %D0',
+	outs         => [ "res", "flags" ],
+	constructors => \%binopcc_operand_constructors,
+},
+
+AddX => {
+	# At the moment not rematerializable because of assert in beflags.c/
+	# (it claims that spiller can't rematerialize flag stuff correctly)
+	#irn_flags    => [ "rematerializable" ],
+	emit         => '. addx %S0, %R1I, %D0',
+	constructors => \%binopx_operand_constructors,
+	mode         => $mode_gp,
+},
+
+AddCC_t => {
+	ins       => [ "left", "right" ],
+	outs      => [ "res", "flags" ],
+	attr_type => "",
+},
+
+AddX_t => {
+	ins       => [ "left", "right", "flags_input" ],
+	attr_type => "",
+},
+
 Sub => {
 	irn_flags    => [ "rematerializable" ],
 	mode         => $mode_gp,
 	emit         => '. sub %S0, %R1I, %D0',
 	constructors => \%binop_operand_constructors,
+},
+
+SubCC => {
+	irn_flags    => [ "rematerializable" ],
+	emit         => '. subcc %S0, %R1I, %D0',
+	outs         => [ "res", "flags" ],
+	constructors => \%binopcc_operand_constructors,
+},
+
+SubX => {
+	# Not rematerializable (see AddX)
+	emit         => '. subx %S0, %R1I, %D0',
+	constructors => \%binopx_operand_constructors,
+	mode         => $mode_gp,
+},
+
+SubCC_t => {
+	ins       => [ "left", "right" ],
+	outs      => [ "res", "flags" ],
+	attr_type => "",
+},
+
+SubX_t => {
+	ins       => [ "left", "right", "flags_input" ],
+	attr_type => "",
 },
 
 # Load / Store

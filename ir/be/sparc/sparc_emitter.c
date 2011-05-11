@@ -176,12 +176,12 @@ void sparc_emit_dest_register(const ir_node *node, int pos)
  */
 void sparc_emit_reg_or_imm(const ir_node *node, int pos)
 {
-	if (get_irn_arity(node) > pos) {
-		// we have reg input
-		sparc_emit_source_register(node, pos);
-	} else {
+	if (arch_irn_get_flags(node) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form)) {
 		// we have a imm input
 		sparc_emit_immediate(node);
+	} else {
+		// we have reg input
+		sparc_emit_source_register(node, pos);
 	}
 }
 

@@ -304,6 +304,11 @@ void ir_set_dw_lowered(ir_node *old, ir_node *new_low, ir_node *new_high)
 	entry->high_word = new_high;
 }
 
+ir_mode *ir_get_low_unsigned_mode(void)
+{
+	return env->low_unsigned;
+}
+
 /**
  * Translate a Constant: create two.
  */
@@ -532,8 +537,11 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_M);
 			break;
-		case pn_Div_X_except:  /* Execution result if exception occurred. */
-			/* reroute to the call */
+		case pn_Div_X_regular:
+			set_Proj_pred(proj, call);
+			set_Proj_proj(proj, pn_Call_X_regular);
+			break;
+		case pn_Div_X_except:
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_X_except);
 			break;
@@ -604,8 +612,11 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_M);
 			break;
-		case pn_Mod_X_except:  /* Execution result if exception occurred. */
-			/* reroute to the call */
+		case pn_Div_X_regular:
+			set_Proj_pred(proj, call);
+			set_Proj_proj(proj, pn_Call_X_regular);
+			break;
+		case pn_Mod_X_except:
 			set_Proj_pred(proj, call);
 			set_Proj_proj(proj, pn_Call_X_except);
 			break;
@@ -975,7 +986,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 		ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right,
 		                                   low_unsigned);
 		ir_node *conv         = create_conv(block_true, left_low, mode);
-		ir_node *one          = new_r_Const(irg, get_mode_one(mode));
+		ir_node *one          = new_r_Const(irg, get_mode_one(low_unsigned));
 		ir_node *carry0       = new_rd_Shr(dbgi, block_true, conv, one, mode);
 		ir_node *carry1       = new_rd_Shr(dbgi, block_true, carry0,
 		                                   not_shiftval, mode);

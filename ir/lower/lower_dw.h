@@ -105,6 +105,12 @@ static inline ir_node *get_lowered_high(ir_node *node)
 }
 
 /**
+ * Return the unsigned variant of the lowered mode
+ * Note: you must only call this during a dw_lowering (= in a lowering callback)
+ */
+ir_mode *ir_get_low_unsigned_mode(void);
+
+/**
  * Default implementation. Context is unused.
  */
 ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,

@@ -50,6 +50,8 @@ struct sparc_transform_env_t {
 	ir_mode  *mode;     /**< The mode of the irn */
 };
 
+extern const arch_irn_ops_t sparc_irn_ops;
+
 /**
  * SPARC ABI requires some space which is always available at the top of
  * the stack. It contains:
@@ -75,5 +77,7 @@ static inline bool sparc_is_value_imm_encodeable(int32_t value)
 void sparc_finish(ir_graph *irg);
 
 void sparc_introduce_prolog_epilog(ir_graph *irg);
+
+void sparc_lower_64bit(void);
 
 #endif

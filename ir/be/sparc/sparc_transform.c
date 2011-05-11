@@ -66,6 +66,7 @@ static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 static const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
 static calling_convention_t  *cconv  = NULL;
 static ir_mode               *mode_gp;
+static ir_mode               *mode_flags;
 static ir_mode               *mode_fp;
 static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
@@ -336,6 +337,45 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
 	panic("unsupported mode %+F for float op", mode);
 }
 
+typedef ir_node* (*new_binopx_imm_func)(dbg_info *dbgi, ir_node *block,
+                                        ir_node *op1, ir_node *flags,
+                                        ir_entity *imm_entity, int32_t imm);
+
+typedef ir_node* (*new_binopx_reg_func)(dbg_info *dbgi, ir_node *block,
+                                        ir_node *op1, ir_node *op2,
+                                        ir_node *flags);
+
+static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
+                                  new_binopx_reg_func new_binopx_reg,
+                                  new_binopx_imm_func new_binopx_imm)
+{
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = be_transform_node(get_nodes_block(node));
+	ir_node  *op1       = get_irn_n(node, 0);
+	ir_node  *op2       = get_irn_n(node, 1);
+	ir_node  *flags     = get_irn_n(node, 2);
+	ir_node  *new_flags = be_transform_node(flags);
+	ir_node  *new_op1;
+	ir_node  *new_op2;
+
+	/* only support for mode-neutral implemented so far */
+	assert(match_flags & MATCH_MODE_NEUTRAL);
+
+	if (is_imm_encodeable(op2)) {
+		ir_node *new_op1   = be_transform_node(op1);
+		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
+		return new_binopx_imm(dbgi, block, new_op1, new_flags, NULL, immediate);
+	}
+	new_op2 = be_transform_node(op2);
+	if ((match_flags & MATCH_COMMUTATIVE) && is_imm_encodeable(op1)) {
+		int32_t immediate = get_tarval_long(get_Const_tarval(op1));
+		return new_binopx_imm(dbgi, block, new_op2, new_flags, NULL, immediate);
+	}
+	new_op1 = be_transform_node(op1);
+	return new_binopx_reg(dbgi, block, new_op1, new_op2, new_flags);
+
+}
+
 static ir_node *get_g0(void)
 {
 	return be_prolog_get_reg_value(abihelper, &sparc_registers[REG_G0]);
@@ -446,6 +486,34 @@ static ir_node *gen_Add(ir_node *node)
 	                        new_bd_sparc_Add_reg, new_bd_sparc_Add_imm);
 }
 
+static ir_node *gen_AddCC_t(ir_node *node)
+{
+	return gen_helper_binop(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_AddCC_reg, new_bd_sparc_AddCC_imm);
+}
+
+static ir_node *gen_Proj_AddCC_t(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+
+	switch (pn) {
+	case pn_sparc_AddCC_t_res:
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_AddCC_res);
+	case pn_sparc_AddCC_t_flags:
+		return new_r_Proj(new_pred, mode_flags, pn_sparc_AddCC_flags);
+	default:
+		panic("Invalid AddCC_t proj found");
+	}
+}
+
+static ir_node *gen_AddX_t(ir_node *node)
+{
+	return gen_helper_binopx(node, MATCH_COMMUTATIVE | MATCH_MODE_NEUTRAL,
+	                         new_bd_sparc_AddX_reg, new_bd_sparc_AddX_imm);
+}
+
 /**
  * Creates an sparc Sub.
  *
@@ -463,6 +531,34 @@ static ir_node *gen_Sub(ir_node *node)
 
 	return gen_helper_binop(node, MATCH_MODE_NEUTRAL,
 	                        new_bd_sparc_Sub_reg, new_bd_sparc_Sub_imm);
+}
+
+static ir_node *gen_SubCC_t(ir_node *node)
+{
+	return gen_helper_binop(node, MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_SubCC_reg, new_bd_sparc_SubCC_imm);
+}
+
+static ir_node *gen_Proj_SubCC_t(ir_node *node)
+{
+	long     pn       = get_Proj_proj(node);
+	ir_node *pred     = get_Proj_pred(node);
+	ir_node *new_pred = be_transform_node(pred);
+
+	switch (pn) {
+	case pn_sparc_SubCC_t_res:
+		return new_r_Proj(new_pred, mode_gp, pn_sparc_SubCC_res);
+	case pn_sparc_SubCC_t_flags:
+		return new_r_Proj(new_pred, mode_flags, pn_sparc_SubCC_flags);
+	default:
+		panic("Invalid SubCC_t proj found");
+	}
+}
+
+static ir_node *gen_SubX_t(ir_node *node)
+{
+	return gen_helper_binopx(node, MATCH_MODE_NEUTRAL,
+	                         new_bd_sparc_SubX_reg, new_bd_sparc_SubX_imm);
 }
 
 static ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
@@ -2012,6 +2108,11 @@ static ir_node *gen_Proj(ir_node *node)
 		/* FALLTHROUGH */
 	}
 	default:
+		if (is_sparc_AddCC_t(pred)) {
+			return gen_Proj_AddCC_t(node);
+		} else if (is_sparc_SubCC_t(pred)) {
+			return gen_Proj_SubCC_t(node);
+		}
 		panic("code selection didn't expect Proj after %+F\n", pred);
 	}
 }
@@ -2064,7 +2165,11 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_SymConst,     gen_SymConst);
 	be_set_transform_function(op_Unknown,      gen_Unknown);
 
+	be_set_transform_function(op_sparc_AddX_t, gen_AddX_t);
+	be_set_transform_function(op_sparc_AddCC_t,gen_AddCC_t);
 	be_set_transform_function(op_sparc_Save,   be_duplicate_node);
+	be_set_transform_function(op_sparc_SubX_t, gen_SubX_t);
+	be_set_transform_function(op_sparc_SubCC_t,gen_SubCC_t);
 }
 
 /**
@@ -2079,9 +2184,10 @@ void sparc_transform_graph(ir_graph *irg)
 
 	node_to_stack = pmap_create();
 
-	mode_gp  = mode_Iu;
-	mode_fp  = mode_F;
-	mode_fp2 = mode_D;
+	mode_gp    = mode_Iu;
+	mode_fp    = mode_F;
+	mode_fp2   = mode_D;
+	mode_flags = mode_Bu;
 	//mode_fp4 = ?
 
 	abihelper = be_abihelper_prepare(irg);

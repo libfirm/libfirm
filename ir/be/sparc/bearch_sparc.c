@@ -38,6 +38,7 @@
 #include "irtools.h"
 #include "irdump.h"
 #include "lowering.h"
+#include "lower_dw.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -125,7 +126,7 @@ static int sparc_get_sp_bias(const ir_node *node)
 
 /* fill register allocator interface */
 
-static const arch_irn_ops_t sparc_irn_ops = {
+const arch_irn_ops_t sparc_irn_ops = {
 	sparc_classify,
 	sparc_get_frame_entity,
 	sparc_set_frame_offset,
@@ -555,8 +556,9 @@ static void sparc_lower_for_target(void)
 		NULL,                                  /* find pointer type */
 		NULL,                                  /* ret_compound_in_regs */
 	};
-
 	lower_calls_with_compounds(&params);
+
+	sparc_lower_64bit();
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);

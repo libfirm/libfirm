@@ -93,6 +93,9 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_info_txt:
+		if (is_sparc_AddX_t(n) || is_sparc_AddCC_t(n))
+			break;
+
 		arch_dump_reqs_and_registers(F, n);
 		attr = get_sparc_attr_const(n);
 		if (attr->immediate_value_entity) {
@@ -141,6 +144,7 @@ static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
 	sparc_attr_t *attr           = (sparc_attr_t*)get_irn_generic_attr(res);
 	attr->immediate_value_entity = entity;
 	attr->immediate_value        = immediate_value;
+	arch_irn_add_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form);
 }
 
 static void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
