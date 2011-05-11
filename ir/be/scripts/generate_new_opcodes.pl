@@ -270,9 +270,10 @@ sub create_constructor {
 
 	# emit constructor code
 	$temp = <<EOF;
-	ir_node          *res;
+	ir_graph         *irg     = get_irn_irg(block);
 	ir_op            *op      = op_${arch}_${op};
 	arch_irn_flags_t  flags   = arch_irn_flags_none;
+	ir_node          *res;
 	backend_info_t   *info;
 EOF
 
@@ -450,7 +451,7 @@ EOF
 	$temp .= <<EOF;
 	/* create node */
 	assert(op != NULL);
-	res = new_ir_node(dbgi, current_ir_graph, block, op, mode, arity, in);
+	res = new_ir_node(dbgi, irg, block, op, mode, arity, in);
 
 	/* init node attributes */
 	${attr_init_code}
@@ -469,7 +470,7 @@ EOF
 	$temp .= <<EOF;
 	/* optimize node */
 	res = optimize_node(res);
-	irn_verify_irg(res, current_ir_graph);
+	irn_verify_irg(res, irg);
 
 	return res;
 EOF
