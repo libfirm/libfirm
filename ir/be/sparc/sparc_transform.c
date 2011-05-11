@@ -461,7 +461,8 @@ static ir_node *gen_Sub(ir_node *node)
 		                          new_bd_sparc_fsub_d, new_bd_sparc_fsub_q);
 	}
 
-	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sub_reg, new_bd_sparc_Sub_imm);
+	return gen_helper_binop(node, MATCH_MODE_NEUTRAL,
+	                        new_bd_sparc_Sub_reg, new_bd_sparc_Sub_imm);
 }
 
 static ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
