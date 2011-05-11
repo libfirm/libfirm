@@ -432,9 +432,12 @@ EOF
 	}
 
 	# lookup init function
-	my $attr_init_code = $init_attr{$attr_type};
-	if(!defined($attr_init_code)) {
-		die "Fatal error: Couldn't find attribute initialisation code for type '${attr_type}'";
+	my $attr_init_code = "(void)in;(void)exec_units;(void)flags;(void)in_reqs;(void)n_res;";
+	if ($attr_type ne "") {
+		$attr_init_code = $init_attr{$attr_type};
+		if(!defined($attr_init_code)) {
+			die "Fatal error: Couldn't find attribute initialisation code for type '${attr_type}'";
+		}
 	}
 	my $custominit = "";
 	if(defined($custom_init_attr_func)) {
@@ -611,6 +614,8 @@ EOF
 		push(@obst_cmp_attr, "}\n\n");
 
 		$cmp_attr_func = "cmp_attr_${op}";
+	} elsif ($attr_type eq "") {
+		$cmp_attr_func = "NULL";
 	} else {
 		if(defined($compare_attr{${attr_type}})) {
 			$cmp_attr_func = $compare_attr{${attr_type}};
@@ -683,9 +688,14 @@ EOF
 	my @mapped = map { "irop_flag_$_" } @{$n{"op_flags"}};
 	my $op_flags = join('|', @mapped);
 
+	my $attr_size = "0";
+	if ($attr_type ne "") {
+		$attr_size = "sizeof(${attr_type})"
+	}
+
 	$n_opcodes++;
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
-	$temp .= "|irop_flag_machine, ".translate_arity($arity).", 0, sizeof(${attr_type}), &ops);\n";
+	$temp .= "|irop_flag_machine, ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
 	push(@obst_new_irop, $temp);
 	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
 	if(defined($default_op_attr_type)) {
