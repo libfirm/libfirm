@@ -32,7 +32,7 @@
 #include "irnode_t.h"
 #include "ircons.h"
 #include "irprog_t.h"
-#include "lowering.h"
+#include "lower_dw.h"
 #include "array.h"
 #include "error.h"
 

@@ -51,6 +51,7 @@
 #include "iroptimize.h"
 #include "instrument.h"
 #include "iropt_t.h"
+#include "lower_dw.h"
 
 #include "../beabi.h"
 #include "../beirg.h"
@@ -2030,7 +2031,8 @@ static void ia32_lower_for_target(void)
 	/* lower compound param handling */
 	lower_calls_with_compounds(&params);
 
-	lower_dw_ops(&lower_dw_params);
+	ir_prepare_dw_lowering(&lower_dw_params);
+	ir_lower_dw_ops();
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);

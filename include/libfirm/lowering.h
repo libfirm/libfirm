@@ -170,44 +170,6 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned spare_size,
                            int allow_out_of_bounds);
 
 /**
- * A callback type for creating an intrinsic entity for a given opcode.
- *
- * @param method   the method type of the emulation function entity
- * @param op       the emulated ir_op
- * @param imode    the input mode of the emulated opcode
- * @param omode    the output mode of the emulated opcode
- * @param context  the context parameter
- */
-typedef ir_entity *(create_intrinsic_fkt)(ir_type *method, const ir_op *op,
-                                          const ir_mode *imode,
-                                          const ir_mode *omode, void *context);
-
-/**
- * The lowering parameter description.
- */
-typedef struct lwrdw_param_t {
-	unsigned              little_endian : 1; /**< if true should be lowered for little endian, else big endian */
-	unsigned              doubleword_size;   /**< bitsize of the doubleword mode */
-	create_intrinsic_fkt *create_intrinsic;  /**< callback that creates the intrinsic entity */
-	void                 *ctx;               /**< context parameter for the creator function */
-} lwrdw_param_t;
-
-/**
- * Lower all double word operations.
- *
- * @param param  parameter for lowering
- */
-FIRM_API void lower_dw_ops(const lwrdw_param_t *param);
-
-/**
- * Default implementation. Context is unused.
- */
-FIRM_API ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
-                                             const ir_mode *imode,
-                                             const ir_mode *omode,
-                                             void *context);
-
-/**
  * Replaces SymConsts by a real constant if possible.
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle bit fields by added And/Or calculations.
