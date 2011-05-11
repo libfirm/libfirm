@@ -1428,8 +1428,7 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return be_prolog_get_memory(abihelper);
 
 	case pn_Start_T_args:
-		/* we should never need this explicitely */
-		break;
+		return new_r_Bad(get_irn_irg(block), mode_T);
 
 	case pn_Start_P_frame_base:
 		return be_prolog_get_reg_value(abihelper, sp_reg);
