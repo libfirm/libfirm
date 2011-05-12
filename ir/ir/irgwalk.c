@@ -422,8 +422,10 @@ void irg_walk_anchors(ir_graph *irg, irg_walk_func *pre, irg_walk_func *post, vo
 	ir_graph * rem = current_ir_graph;
 	current_ir_graph = irg;
 
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);
 	irg_walk_2(irg->anchor, pre, post, env);
+	ir_free_resources(irg, IR_RESOURCE_IRN_VISITED);
 
 	current_ir_graph = rem;
 }
