@@ -2284,6 +2284,7 @@ int optimize_load_store(ir_graph *irg)
 	/* Handle graph state */
 	if (env.changes) {
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+		edges_deactivate(irg);
 	}
 
 	if (env.changes & CF_CHANGED) {
