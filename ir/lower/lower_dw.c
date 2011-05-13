@@ -1156,6 +1156,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 	} else {
 		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
 		ir_node *dstT, *dstF, *newbl_eq, *newbl_l;
+		ir_node *projEqF;
 		pmap_entry *entry;
 
 		entry = pmap_find(env->proj_2_block, projT);
@@ -1173,8 +1174,6 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 
 		projHT = new_r_Proj(irn, mode_X, pn_Cond_true);
 		mark_irn_visited(projHT);
-		exchange(projT, projHT);
-		projT = projHT;
 
 		projHF = new_r_Proj(irn, mode_X, pn_Cond_false);
 		mark_irn_visited(projHF);
@@ -1185,10 +1184,8 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		                 ir_relation_equal);
 		irn = new_rd_Cond(dbg, newbl_eq, irn);
 
-		proj = new_r_Proj(irn, mode_X, pn_Cond_false);
-		mark_irn_visited(proj);
-		exchange(projF, proj);
-		projF = proj;
+		projEqF = new_r_Proj(irn, mode_X, pn_Cond_false);
+		mark_irn_visited(projEqF);
 
 		proj = new_r_Proj(irn, mode_X, pn_Cond_true);
 		mark_irn_visited(proj);
@@ -1208,6 +1205,9 @@ static void lower_Cond(ir_node *node, ir_mode *mode, lower_env_t *env)
 		proj = new_r_Proj(irn, mode_X, pn_Cond_false);
 		mark_irn_visited(proj);
 		add_block_cf_input(dstF, projF, proj);
+
+		exchange(projT, projHT);
+		exchange(projF, projEqF);
 	}
 
 	/* we have changed the control flow */
