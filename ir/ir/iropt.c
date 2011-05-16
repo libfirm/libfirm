@@ -6131,9 +6131,9 @@ ir_node *identify_remember(ir_node *n)
 
 	if (get_opt_global_cse()) {
 		/* do not remember unreachable nodes */
-		if (get_irg_dom_state(irg) == dom_consistent && !is_Block(n)) {
+		if (!is_Block(n)) {
 			ir_node *block = get_nodes_block(n);
-			if (get_Block_dom_depth(block) < 0) {
+			if (is_block_unreachable(block)) {
 				return n;
 			}
 		}
