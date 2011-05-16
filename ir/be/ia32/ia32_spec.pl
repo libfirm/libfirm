@@ -643,12 +643,6 @@ ShlMem => {
 	modified_flags => $status_flags
 },
 
-l_ShlDep => {
-	cmp_attr => "return 1;",
-	reg_req  => { in => [ "none", "none", "none" ], out => [ "none" ] },
-	ins      => [ "val", "count", "dep" ],
-},
-
 ShlD => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp", "ecx" ],
@@ -660,12 +654,6 @@ ShlD => {
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
-},
-
-l_ShlD => {
-	cmp_attr  => "return 1;",
-	reg_req  => { in => [ "none", "none", "none" ], out => [ "none" ] },
-	ins       => [ "val_high", "val_low", "count" ],
 },
 
 Shr => {
@@ -693,12 +681,6 @@ ShrMem => {
 	modified_flags => $status_flags
 },
 
-l_ShrDep => {
-	cmp_attr  => "return 1;",
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
-	ins       => [ "val", "count", "dep" ],
-},
-
 ShrD => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "gp", "gp", "ecx" ],
@@ -710,12 +692,6 @@ ShrD => {
 	units     => [ "GP" ],
 	mode      => $mode_gp,
 	modified_flags => $status_flags
-},
-
-l_ShrD => {
-	cmp_attr  => "return 1;",
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
-	ins       => [ "val_high", "val_low", "count" ],
 },
 
 Sar => {
@@ -741,12 +717,6 @@ SarMem => {
 	latency   => 1,
 	mode      => "mode_M",
 	modified_flags => $status_flags
-},
-
-l_SarDep => {
-	cmp_attr  => "return 1;",
-	ins       => [ "val", "count", "dep" ],
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 },
 
 Ror => {

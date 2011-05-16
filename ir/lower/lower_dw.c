@@ -66,7 +66,7 @@ static set *conv_types;
 static pmap *lowered_type;
 
 /** The types for the binop and unop intrinsics. */
-static ir_type *binop_tp_u, *binop_tp_s, *unop_tp_u, *unop_tp_s, *shiftop_tp_u, *shiftop_tp_s, *tp_s, *tp_u;
+static ir_type *binop_tp_u, *binop_tp_s, *unop_tp_u, *unop_tp_s, *tp_s, *tp_u;
 
 /** the debug handle */
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
@@ -107,7 +107,6 @@ typedef struct lower_dw_env_t {
 	ir_tarval *tv_mode_bits;       /**< a tarval containing the number of bits in the lowered modes */
 	pdeq      *waitq;              /**< a wait queue of all nodes that must be handled later */
 	ir_node  **lowered_phis;       /**< list of lowered phis */
-	pmap      *proj_2_block;       /**< a map from ProjX to its destination blocks */
 	ir_mode   *high_signed;        /**< doubleword signed type */
 	ir_mode   *high_unsigned;      /**< doubleword unsigned type */
 	ir_mode   *low_signed;         /**< word signed type */
@@ -188,7 +187,8 @@ static ir_type *get_conv_type(ir_mode *imode, ir_mode *omode)
 static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
 {
 	int i, arity = get_irn_arity(block);
-	ir_node **in, *phi;
+	ir_node **in;
+	const ir_edge_t *edge;
 
 	assert(nr < arity);
 
@@ -199,7 +199,11 @@ static void add_block_cf_input_nr(ir_node *block, int nr, ir_node *cf)
 
 	set_irn_in(block, i + 1, in);
 
-	for (phi = get_Block_phis(block); phi != NULL; phi = get_Phi_next(phi)) {
+	foreach_out_edge(block, edge) {
+		ir_node *phi = get_edge_src_irn(edge);
+		if (!is_Phi(phi))
+			continue;
+
 		for (i = 0; i < arity; ++i)
 			in[i] = get_irn_n(phi, i);
 		in[i] = in[nr];
@@ -256,7 +260,6 @@ static void prepare_links(ir_node *node)
 {
 	ir_mode         *mode = get_irn_op_mode(node);
 	lower64_entry_t *link;
-	int              i;
 
 	if (mode == env->high_signed || mode == env->high_unsigned) {
 		unsigned idx = get_irn_idx(node);
@@ -284,27 +287,6 @@ static void prepare_links(ir_node *node)
 			env->flags |= MUST_BE_LOWERED;
 		}
 		return;
-	}
-
-	if (is_Proj(node)) {
-		/* link all Proj nodes to its predecessor:
-		   Note that Tuple Proj's and its Projs are linked either. */
-		ir_node *pred = get_Proj_pred(node);
-
-		set_irn_link(node, get_irn_link(pred));
-		set_irn_link(pred, node);
-	} else if (is_Phi(node)) {
-		/* link all Phi nodes to its block */
-		ir_node *block = get_nodes_block(node);
-		add_Block_phi(block, node);
-	} else if (is_Block(node)) {
-		/* fill the Proj -> Block map */
-		for (i = get_Block_n_cfgpreds(node) - 1; i >= 0; --i) {
-			ir_node *pred = get_Block_cfgpred(node, i);
-
-			if (is_Proj(pred))
-				pmap_insert(env->proj_2_block, pred, node);
-		}
 	}
 }
 
@@ -354,6 +336,8 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	ir_node    *block = get_nodes_block(node);
 	ir_cons_flags volatility = get_Load_volatility(node) == volatility_is_volatile
 	                         ? cons_volatile : cons_none;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 
 	if (env->params->little_endian) {
 		low  = adr;
@@ -369,10 +353,11 @@ static void lower_Load(ir_node *node, ir_mode *mode)
 	proj = new_r_Proj(low, mode_M, pn_Load_M);
 	high = new_rd_Load(dbg, block, proj, high, mode, volatility);
 
-	ir_set_dw_lowered(node, low, high);
+	foreach_out_edge_safe(node, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
 
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
 		case pn_Load_M:         /* Memory result. */
 			/* put it to the second one */
@@ -410,6 +395,8 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	const lower64_entry_t *entry = get_node_entry(value);
 	ir_cons_flags volatility = get_Store_volatility(node) == volatility_is_volatile
 	                           ? cons_volatile : cons_none;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 	(void) mode;
 
 	assert(entry);
@@ -439,10 +426,11 @@ static void lower_Store(ir_node *node, ir_mode *mode)
 	proj = new_r_Proj(low, mode_M, pn_Store_M);
 	high = new_rd_Store(dbg, block, proj, high, entry->high_word, volatility);
 
-	ir_set_dw_lowered(node, low, high);
+	foreach_out_edge_safe(node, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
 
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
 		switch (get_Proj_proj(proj)) {
 		case pn_Store_M:         /* Memory result. */
 			/* put it to the second one */
@@ -533,8 +521,11 @@ static void lower_Div(ir_node *node, ir_mode *mode)
 	resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
+	foreach_out_edge_safe(node, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+
 		switch (get_Proj_proj(proj)) {
 		case pn_Div_M:         /* Memory result. */
 			/* reroute to the call */
@@ -602,8 +593,11 @@ static void lower_Mod(ir_node *node, ir_mode *mode)
 	resproj = new_r_Proj(call, mode_T, pn_Call_T_result);
 	set_irn_pinned(call, get_irn_pinned(node));
 
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
+	foreach_out_edge_safe(node, edge, next) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+
 		switch (get_Proj_proj(proj)) {
 		case pn_Mod_M:         /* Memory result. */
 			/* reroute to the call */
@@ -679,192 +673,338 @@ static void lower_binop(ir_node *node, ir_mode *mode)
 	}
 }
 
-/**
- * Translate a Shiftop.
- *
- * Create an intrinsic Call.
- */
-static void lower_Shiftop(ir_node *node, ir_mode *mode)
+static ir_node *create_conv(ir_node *block, ir_node *node, ir_mode *dest_mode)
 {
-	ir_node               *block      = get_nodes_block(node);
-	ir_node               *left       = get_binop_left(node);
-	const lower64_entry_t *left_entry = get_node_entry(left);
-	ir_node               *right      = get_binop_right(node);
-	ir_node               *in[3]      = {
-		left_entry->low_word, left_entry->high_word,
-		/* it should be safe to conv to low_unsigned */
-		new_r_Conv(block, right, env->low_unsigned)
-	};
-	dbg_info           *dbgi       = get_irn_dbg_info(node);
-	ir_graph           *irg        = get_irn_irg(block);
-	ir_type            *mtp
-		= mode_is_signed(mode) ? shiftop_tp_s : shiftop_tp_u;
-	ir_node            *addr
-		= get_intrinsic_address(mtp, get_irn_op(node), mode, mode);
-	ir_node            *call
-		= new_rd_Call(dbgi, block, get_irg_no_mem(irg), addr, 3, in, mtp);
-	ir_node            *resproj  = new_r_Proj(call, mode_T, pn_Call_T_result);
-	ir_node            *res_low  = new_r_Proj(resproj, env->low_unsigned, 0);
-	ir_node            *res_high = new_r_Proj(resproj, mode,              1);
-
-	set_irn_pinned(call, get_irn_pinned(node));
-	ir_set_dw_lowered(node, res_low, res_high);
+	if (get_irn_mode(node) == dest_mode)
+		return node;
+	return new_r_Conv(block, node, dest_mode);
 }
 
 /**
- * Translate a Shr and handle special cases.
+ * Moves node and all predecessors of node from from_bl to to_bl.
+ * Does not move predecessors of Phi nodes (or block nodes).
  */
+static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
+{
+	int i, arity;
+
+	/* move this node */
+	set_nodes_block(node, to_bl);
+
+	/* move its Projs */
+	if (get_irn_mode(node) == mode_T) {
+		const ir_edge_t *edge;
+		foreach_out_edge(node, edge) {
+			ir_node *proj = get_edge_src_irn(edge);
+			if (!is_Proj(proj))
+				continue;
+			move(proj, from_bl, to_bl);
+		}
+	}
+
+	/* We must not move predecessors of Phi nodes, even if they are in
+	 * from_bl. (because these are values from an earlier loop iteration
+	 * which are not predecessors of node here)
+	 */
+	if (is_Phi(node))
+		return;
+
+	/* recursion ... */
+	arity = get_irn_arity(node);
+	for (i = 0; i < arity; i++) {
+		ir_node *pred      = get_irn_n(node, i);
+		ir_mode *pred_mode = get_irn_mode(pred);
+		if (get_nodes_block(pred) == from_bl)
+			move(pred, from_bl, to_bl);
+		if (pred_mode == env->high_signed || pred_mode == env->high_unsigned) {
+			ir_node *pred_low  = get_lowered_low(pred);
+			ir_node *pred_high = get_lowered_high(pred);
+			if (get_nodes_block(pred_low) == from_bl)
+				move(pred_low, from_bl, to_bl);
+			if (pred_high != NULL && get_nodes_block(pred_high) == from_bl)
+				move(pred_high, from_bl, to_bl);
+		}
+	}
+}
+
+/**
+ * We need a custom version of part_block_edges because during transformation
+ * not all data-dependencies are explicit yet if a lowered nodes users are not
+ * lowered yet.
+ * We can fix this by modifying move to look for such implicit dependencies.
+ * Additionally we have to keep the proj_2_block map updated
+ */
+static ir_node *part_block_dw(ir_node *node)
+{
+	ir_graph *irg        = get_irn_irg(node);
+	ir_node  *old_block  = get_nodes_block(node);
+	int       n_cfgpreds = get_Block_n_cfgpreds(old_block);
+	ir_node **cfgpreds   = get_Block_cfgpred_arr(old_block);
+	ir_node  *new_block  = new_r_Block(irg, n_cfgpreds, cfgpreds);
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
+
+	/* old_block has no predecessors anymore for now */
+	set_irn_in(old_block, 0, NULL);
+
+	/* move node and its predecessors to new_block */
+	move(node, old_block, new_block);
+
+	/* move Phi nodes to new_block */
+	foreach_out_edge_safe(old_block, edge, next) {
+		ir_node *phi = get_edge_src_irn(edge);
+		if (!is_Phi(phi))
+			continue;
+		set_nodes_block(phi, new_block);
+	}
+	return old_block;
+}
+
+typedef ir_node* (*new_rd_shr_func)(dbg_info *dbgi, ir_node *block,
+                                    ir_node *left, ir_node *right,
+                                    ir_mode *mode);
+
+static void lower_shr_helper(ir_node *node, ir_mode *mode,
+                             new_rd_shr_func new_rd_shrs)
+{
+	ir_node  *right         = get_binop_right(node);
+	ir_node  *left          = get_binop_left(node);
+	ir_mode  *shr_mode      = get_irn_mode(node);
+	unsigned  modulo_shift  = get_mode_modulo_shift(shr_mode);
+	ir_mode  *low_unsigned  = env->low_unsigned;
+	unsigned  modulo_shift2 = get_mode_modulo_shift(mode);
+	ir_graph *irg           = get_irn_irg(node);
+	ir_node  *left_low      = get_lowered_low(left);
+	ir_node  *left_high     = get_lowered_high(left);
+	dbg_info *dbgi          = get_irn_dbg_info(node);
+	ir_node  *lower_block;
+	ir_node  *block;
+	ir_node  *cnst;
+	ir_node  *and;
+	ir_node  *cmp;
+	ir_node  *cond;
+	ir_node  *proj_true;
+	ir_node  *proj_false;
+	ir_node  *phi_low;
+	ir_node  *phi_high;
+	ir_node  *lower_in[2];
+	ir_node  *phi_low_in[2];
+	ir_node  *phi_high_in[2];
+
+	/* this version is optimized for modulo shift architectures
+	 * (and can't handle anything else) */
+	if (modulo_shift != get_mode_size_bits(shr_mode)
+			|| modulo_shift2<<1 != modulo_shift) {
+		panic("Shr lowering only implemented for modulo shift shr operations");
+	}
+	if (!is_po2(modulo_shift) || !is_po2(modulo_shift2)) {
+		panic("Shr lowering only implemented for power-of-2 modes");
+	}
+	/* without 2-complement the -x instead of (bit_width-x) trick won't work */
+	if (get_mode_arithmetic(shr_mode) != irma_twos_complement) {
+		panic("Shr lowering only implemented for two-complement modes");
+	}
+
+	/* if the right operand is a 64bit value, we're only interested in the
+	 * lower word */
+	if (get_irn_mode(right) == env->high_unsigned) {
+		right = get_lowered_low(right);
+	} else {
+		/* shift should never have signed mode on the right */
+		assert(get_irn_mode(right) != env->high_signed);
+		ir_node *block = get_nodes_block(node);
+		right = create_conv(block, right, low_unsigned);
+	}
+
+	lower_block = part_block_dw(node);
+	env->flags |= CF_CHANGED;
+	block = get_nodes_block(node);
+
+	/* add a Cmp to test if highest bit is set <=> wether we shift more
+	 * than half the word width */
+	cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
+	and        = new_r_And(block, right, cnst, low_unsigned);
+	cnst       = new_r_Const(irg, get_mode_null(low_unsigned));
+	cmp        = new_rd_Cmp(dbgi, block, and, cnst, ir_relation_equal);
+	cond       = new_rd_Cond(dbgi, block, cmp);
+	proj_true  = new_r_Proj(cond, mode_X, pn_Cond_true);
+	proj_false = new_r_Proj(cond, mode_X, pn_Cond_false);
+
+	/* the true block => shift_width < 1word */
+	{
+		/* In theory the low value (for 64bit shifts) is:
+		 *    Or(High << (32-x)), Low >> x)
+		 * In practice High << 32-x will fail when x is zero (since we have
+		 * modulo shift and 32 will be 0). So instead we use:
+		 *    Or(High<<1<<~x, Low >> x)
+		 */
+		ir_node *in[1]        = { proj_true };
+		ir_node *block_true   = new_r_Block(irg, ARRAY_SIZE(in), in);
+		ir_node *res_high     = new_rd_shrs(dbgi, block_true, left_high,
+		                                    right, mode);
+		ir_node *shift_low    = new_rd_Shr(dbgi, block_true, left_low, right,
+		                                   low_unsigned);
+		ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right,
+		                                   low_unsigned);
+		ir_node *conv         = create_conv(block_true, left_high,
+		                                    low_unsigned);
+		ir_node *one          = new_r_Const(irg, get_mode_one(low_unsigned));
+		ir_node *carry0       = new_rd_Shl(dbgi, block_true, conv, one,
+		                                   low_unsigned);
+		ir_node *carry1       = new_rd_Shl(dbgi, block_true, carry0,
+		                                   not_shiftval, low_unsigned);
+		ir_node *res_low      = new_rd_Or(dbgi, block_true, shift_low, carry1,
+		                                  low_unsigned);
+		lower_in[0]           = new_r_Jmp(block_true);
+		phi_low_in[0]         = res_low;
+		phi_high_in[0]        = res_high;
+	}
+
+	/* false block => shift_width > 1word */
+	{
+		ir_node *in[1]       = { proj_false };
+		ir_node *block_false = new_r_Block(irg, ARRAY_SIZE(in), in);
+		ir_node *conv        = create_conv(block_false, left_high, low_unsigned);
+		ir_node *res_low     = new_rd_shrs(dbgi, block_false, conv, right,
+		                                   low_unsigned);
+		int      cnsti       = modulo_shift2-1;
+		ir_node *cnst        = new_r_Const_long(irg, low_unsigned, cnsti);
+		ir_node *res_high;
+		if (new_rd_shrs == new_rd_Shrs) {
+			res_high = new_rd_shrs(dbgi, block_false, left_high, cnst, mode);
+		} else {
+			res_high = new_r_Const(irg, get_mode_null(mode));
+		}
+		lower_in[1]          = new_r_Jmp(block_false);
+		phi_low_in[1]        = res_low;
+		phi_high_in[1]       = res_high;
+	}
+
+	/* patch lower block */
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	phi_low  = new_r_Phi(lower_block, ARRAY_SIZE(phi_low_in), phi_low_in,
+	                     low_unsigned);
+	phi_high = new_r_Phi(lower_block, ARRAY_SIZE(phi_high_in), phi_high_in,
+	                     mode);
+	ir_set_dw_lowered(node, phi_low, phi_high);
+}
+
 static void lower_Shr(ir_node *node, ir_mode *mode)
 {
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *right = get_Shr_right(node);
-
-	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		ir_tarval *tv = get_Const_tarval(right);
-
-		if (tarval_is_long(tv) &&
-		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
-			ir_node *block        = get_nodes_block(node);
-			ir_node *left         = get_Shr_left(node);
-			ir_mode *low_unsigned = env->low_unsigned;
-			long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
-			const lower64_entry_t *left_entry = get_node_entry(left);
-			ir_node *res_low;
-			ir_node *res_high;
-
-			left = left_entry->high_word;
-
-			/* convert high word into low_unsigned mode if necessary */
-			if (get_irn_mode(left) != low_unsigned)
-				left = new_r_Conv(block, left, low_unsigned);
-
-			if (shf_cnt > 0) {
-				ir_node *c = new_r_Const_long(irg, low_unsigned, shf_cnt);
-				res_low = new_r_Shr(block, left, c, low_unsigned);
-			} else {
-				res_low = left;
-			}
-			res_high = new_r_Const(irg, get_mode_null(mode));
-			ir_set_dw_lowered(node, res_low, res_high);
-
-			return;
-		}
-	}
-	lower_Shiftop(node, mode);
+	lower_shr_helper(node, mode, new_rd_Shr);
 }
 
-/**
- * Translate a Shl and handle special cases.
- */
-static void lower_Shl(ir_node *node, ir_mode *mode)
-{
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *right = get_Shl_right(node);
-
-	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		ir_tarval *tv = get_Const_tarval(right);
-
-		if (tarval_is_long(tv)) {
-			long value = get_tarval_long(tv);
-		    if (value >= (long)get_mode_size_bits(mode)) {
-				/* simple case: shift above the lower word */
-				ir_mode *mode_l;
-				ir_node *block = get_nodes_block(node);
-				ir_node *left = get_Shl_left(node);
-				ir_node *c;
-				long shf_cnt = get_tarval_long(tv) - get_mode_size_bits(mode);
-				const lower64_entry_t *left_entry = get_node_entry(left);
-				ir_node  *res_low;
-				ir_node  *res_high;
-
-				left = left_entry->low_word;
-				left = new_r_Conv(block, left, mode);
-
-				mode_l = env->low_unsigned;
-				if (shf_cnt > 0) {
-					c        = new_r_Const_long(irg, mode_l, shf_cnt);
-					res_high = new_r_Shl(block, left, c, mode);
-				} else {
-					res_high = left;
-				}
-				res_low = new_r_Const(irg, get_mode_null(mode_l));
-				ir_set_dw_lowered(node, res_low, res_high);
-
-				return;
-			}
-			if (value == 1) {
-				/* left << 1 == left + left */
-				ir_node               *left        = get_binop_left(node);
-				const lower64_entry_t *left_entry  = get_node_entry(left);
-				ir_node               *in[4]       = {
-					left_entry->low_word, left_entry->high_word,
-					left_entry->low_word, left_entry->high_word,
-				};
-				dbg_info           *dbgi        = get_irn_dbg_info(node);
-				ir_node            *block       = get_nodes_block(node);
-				ir_graph           *irg         = get_irn_irg(block);
-				ir_type            *mtp
-					= mode_is_signed(mode) ? binop_tp_s : binop_tp_u;
-				ir_node            *addr
-					= get_intrinsic_address(mtp, op_Add, mode, mode);
-				ir_node            *call
-					= new_rd_Call(dbgi, block, get_irg_no_mem(irg), addr, 4, in, mtp);
-				ir_node            *resproj  = new_r_Proj(call, mode_T, pn_Call_T_result);
-				ir_node            *res_low  = new_r_Proj(resproj, env->low_unsigned, 0);
-				ir_node            *res_high = new_r_Proj(resproj, mode,              1);
-				set_irn_pinned(call, get_irn_pinned(node));
-				ir_set_dw_lowered(node, res_low, res_high);
-
-				return;
-			}
-		}
-	}
-	lower_Shiftop(node, mode);
-}
-
-/**
- * Translate a Shrs and handle special cases.
- */
 static void lower_Shrs(ir_node *node, ir_mode *mode)
 {
-	ir_graph *irg   = get_irn_irg(node);
-	ir_node  *right = get_Shrs_right(node);
+	lower_shr_helper(node, mode, new_rd_Shrs);
+}
 
-	if (get_mode_arithmetic(mode) == irma_twos_complement && is_Const(right)) {
-		ir_tarval *tv = get_Const_tarval(right);
+static void lower_Shl(ir_node *node, ir_mode *mode)
+{
+	ir_node  *right         = get_binop_right(node);
+	ir_node  *left          = get_binop_left(node);
+	ir_mode  *shr_mode      = get_irn_mode(node);
+	unsigned  modulo_shift  = get_mode_modulo_shift(shr_mode);
+	ir_mode  *low_unsigned  = env->low_unsigned;
+	unsigned  modulo_shift2 = get_mode_modulo_shift(mode);
+	ir_graph *irg           = get_irn_irg(node);
+	ir_node  *left_low      = get_lowered_low(left);
+	ir_node  *left_high     = get_lowered_high(left);
+	dbg_info *dbgi          = get_irn_dbg_info(node);
+	ir_node  *lower_block   = get_nodes_block(node);
+	ir_node  *block;
+	ir_node  *cnst;
+	ir_node  *and;
+	ir_node  *cmp;
+	ir_node  *cond;
+	ir_node  *proj_true;
+	ir_node  *proj_false;
+	ir_node  *phi_low;
+	ir_node  *phi_high;
+	ir_node  *lower_in[2];
+	ir_node  *phi_low_in[2];
+	ir_node  *phi_high_in[2];
 
-		if (tarval_is_long(tv) &&
-		    get_tarval_long(tv) >= (long)get_mode_size_bits(mode)) {
-			ir_node *block         = get_nodes_block(node);
-			ir_node *left          = get_Shrs_left(node);
-			ir_mode *low_unsigned  = env->low_unsigned;
-			long     shf_cnt       = get_tarval_long(tv) - get_mode_size_bits(mode);
-			const lower64_entry_t *left_entry = get_node_entry(left);
-			ir_node *left_unsigned = left;
-			ir_node *res_low;
-			ir_node *res_high;
-			ir_node *c;
-
-			left = left_entry->high_word;
-
-			/* convert high word into low_unsigned mode if necessary */
-			if (get_irn_mode(left_unsigned) != low_unsigned)
-				left_unsigned = new_r_Conv(block, left, low_unsigned);
-
-			if (shf_cnt > 0) {
-				c       = new_r_Const_long(irg, low_unsigned, shf_cnt);
-				res_low = new_r_Shrs(block, left_unsigned, c, low_unsigned);
-			} else {
-				res_low = left_unsigned;
-			}
-
-			c        = new_r_Const(irg, get_mode_all_one(low_unsigned));
-			res_high = new_r_Shrs(block, left, c, mode);
-			ir_set_dw_lowered(node, res_low, res_high);
-			return;
-		}
+	/* this version is optimized for modulo shift architectures
+	 * (and can't handle anything else) */
+	if (modulo_shift != get_mode_size_bits(shr_mode)
+			|| modulo_shift2<<1 != modulo_shift) {
+		panic("Shr lowering only implemented for modulo shift shr operations");
 	}
-	lower_Shiftop(node, mode);
+	if (!is_po2(modulo_shift) || !is_po2(modulo_shift2)) {
+		panic("Shr lowering only implemented for power-of-2 modes");
+	}
+	/* without 2-complement the -x instead of (bit_width-x) trick won't work */
+	if (get_mode_arithmetic(shr_mode) != irma_twos_complement) {
+		panic("Shr lowering only implemented for two-complement modes");
+	}
+
+	/* if the right operand is a 64bit value, we're only interested in the
+	 * lower word */
+	if (get_irn_mode(right) == env->high_unsigned) {
+		right = get_lowered_low(right);
+	} else {
+		/* shift should never have signed mode on the right */
+		assert(get_irn_mode(right) != env->high_signed);
+		right = create_conv(lower_block, right, low_unsigned);
+	}
+
+	part_block_dw(node);
+	env->flags |= CF_CHANGED;
+	block = get_nodes_block(node);
+
+	/* add a Cmp to test if highest bit is set <=> wether we shift more
+	 * than half the word width */
+	cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
+	and        = new_r_And(block, right, cnst, low_unsigned);
+	cnst       = new_r_Const(irg, get_mode_null(low_unsigned));
+	cmp        = new_rd_Cmp(dbgi, block, and, cnst, ir_relation_equal);
+	cond       = new_rd_Cond(dbgi, block, cmp);
+	proj_true  = new_r_Proj(cond, mode_X, pn_Cond_true);
+	proj_false = new_r_Proj(cond, mode_X, pn_Cond_false);
+
+	/* the true block => shift_width < 1word */
+	{
+		ir_node *in[1]        = { proj_true };
+		ir_node *block_true   = new_r_Block(irg, ARRAY_SIZE(in), in);
+
+		ir_node *res_low      = new_rd_Shl(dbgi, block_true, left_low,
+		                                   right, low_unsigned);
+		ir_node *shift_high   = new_rd_Shl(dbgi, block_true, left_high, right,
+		                                   mode);
+		ir_node *not_shiftval = new_rd_Not(dbgi, block_true, right,
+		                                   low_unsigned);
+		ir_node *conv         = create_conv(block_true, left_low, mode);
+		ir_node *one          = new_r_Const(irg, get_mode_one(mode));
+		ir_node *carry0       = new_rd_Shr(dbgi, block_true, conv, one, mode);
+		ir_node *carry1       = new_rd_Shr(dbgi, block_true, carry0,
+		                                   not_shiftval, mode);
+		ir_node *res_high     = new_rd_Or(dbgi, block_true, shift_high, carry1,
+		                                  mode);
+		lower_in[0]           = new_r_Jmp(block_true);
+		phi_low_in[0]         = res_low;
+		phi_high_in[0]        = res_high;
+	}
+
+	/* false block => shift_width > 1word */
+	{
+		ir_node *in[1]       = { proj_false };
+		ir_node *block_false = new_r_Block(irg, ARRAY_SIZE(in), in);
+		ir_node *res_low     = new_r_Const(irg, get_mode_null(low_unsigned));
+		ir_node *conv        = create_conv(block_false, left_low, mode);
+		ir_node *res_high    = new_rd_Shl(dbgi, block_false, conv, right, mode);
+		lower_in[1]          = new_r_Jmp(block_false);
+		phi_low_in[1]        = res_low;
+		phi_high_in[1]       = res_high;
+	}
+
+	/* patch lower block */
+	set_irn_in(lower_block, ARRAY_SIZE(lower_in), lower_in);
+	phi_low  = new_r_Phi(lower_block, ARRAY_SIZE(phi_low_in), phi_low_in,
+	                     low_unsigned);
+	phi_high = new_r_Phi(lower_block, ARRAY_SIZE(phi_high_in), phi_high_in,
+	                     mode);
+	ir_set_dw_lowered(node, phi_low, phi_high);
 }
 
 /**
@@ -1038,6 +1178,14 @@ static bool is_equality_cmp_0(const ir_node *node)
 	}
 }
 
+static ir_node *get_cfop_destination(const ir_node *cfop)
+{
+	const ir_edge_t *first = get_irn_out_edge_first(cfop);
+	/* we should only have 1 destination */
+	assert(get_irn_n_edges(cfop) == 1);
+	return get_edge_src_irn(first);
+}
+
 /**
  * Translate a Cond.
  */
@@ -1055,6 +1203,8 @@ static void lower_Cond(ir_node *node, ir_mode *mode)
 	ir_relation relation;
 	ir_graph *irg;
 	dbg_info *dbg;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 
 	(void) mode;
 
@@ -1086,9 +1236,12 @@ static void lower_Cond(ir_node *node, ir_mode *mode)
 	rentry = get_node_entry(right);
 
 	/* all right, build the code */
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
-		long proj_nr = get_Proj_proj(proj);
+	foreach_out_edge_safe(node, edge, next) {
+		ir_node *proj    = get_edge_src_irn(edge);
+		long     proj_nr;
+		if (!is_Proj(proj))
+			continue;
+		proj_nr = get_Proj_proj(proj);
 
 		if (proj_nr == pn_Cond_true) {
 			assert(projT == NULL && "more than one Proj(true)");
@@ -1121,10 +1274,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode)
 
 	if (relation == ir_relation_equal) {
 		/* simple case:a == b <==> a_h == b_h && a_l == b_l */
-		pmap_entry *entry = pmap_find(env->proj_2_block, projF);
-
-		assert(entry);
-		dst_blk = (ir_node*)entry->value;
+		dst_blk = get_cfop_destination(projF);
 
 		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
 		                 ir_relation_equal);
@@ -1155,10 +1305,7 @@ static void lower_Cond(ir_node *node, ir_mode *mode)
 		exchange(projT, proj);
 	} else if (relation == ir_relation_less_greater) {
 		/* simple case:a != b <==> a_h != b_h || a_l != b_l */
-		pmap_entry *entry = pmap_find(env->proj_2_block, projT);
-
-		assert(entry);
-		dst_blk = (ir_node*)entry->value;
+		dst_blk = get_cfop_destination(projT);
 
 		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
 		                 ir_relation_less_greater);
@@ -1191,15 +1338,9 @@ static void lower_Cond(ir_node *node, ir_mode *mode)
 		/* a rel b <==> a_h REL b_h || (a_h == b_h && a_l rel b_l) */
 		ir_node *dstT, *dstF, *newbl_eq, *newbl_l;
 		ir_node *projEqF;
-		pmap_entry *entry;
 
-		entry = pmap_find(env->proj_2_block, projT);
-		assert(entry);
-		dstT = (ir_node*)entry->value;
-
-		entry = pmap_find(env->proj_2_block, projF);
-		assert(entry);
-		dstF = (ir_node*)entry->value;
+		dstT = get_cfop_destination(projT);
+		dstF = get_cfop_destination(projF);
 
 		irn = new_rd_Cmp(dbg, block, lentry->high_word, rentry->high_word,
 		                 relation & ~ir_relation_equal);
@@ -1337,6 +1478,7 @@ static void lower_Conv_from_Ll(ir_node *node)
 		ir_node *irn, *call, *in[2];
 		ir_mode *imode = get_irn_mode(op);
 		ir_type *mtp   = get_conv_type(imode, omode);
+		ir_node *res;
 
 		irn   = get_intrinsic_address(mtp, get_irn_op(node), imode, omode);
 		in[0] = entry->low_word;
@@ -1345,8 +1487,9 @@ static void lower_Conv_from_Ll(ir_node *node)
 		call = new_rd_Call(dbg, block, get_irg_no_mem(irg), irn, 2, in, mtp);
 		set_irn_pinned(call, get_irn_pinned(node));
 		irn = new_r_Proj(call, mode_T, pn_Call_T_result);
+		res = new_r_Proj(irn, omode, 0);
 
-		exchange(node, new_r_Proj(irn, omode, 0));
+		exchange(node, res);
 	}
 }
 
@@ -1645,10 +1788,11 @@ static void lower_Start(ir_node *node, ir_mode *mode)
 	ir_graph  *irg = get_irn_irg(node);
 	ir_entity *ent = get_irg_entity(irg);
 	ir_type   *tp  = get_entity_type(ent);
+	ir_node   *args;
 	long      *new_projs;
 	size_t    i, j, n_params;
-	int       rem;
-	ir_node   *proj, *args;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 	(void) mode;
 
 	if (!mtp_must_be_lowered(tp))
@@ -1675,54 +1819,59 @@ static void lower_Start(ir_node *node, ir_mode *mode)
 	tp = lower_mtp(tp);
 	set_entity_type(ent, tp);
 
-	/* switch off optimization for new Proj nodes or they might be CSE'ed
-	   with not patched one's */
-	rem = get_optimize();
-	set_optimize(0);
+	args = NULL;
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+		if (get_Proj_proj(proj) == pn_Start_T_args) {
+			args = proj;
+			break;
+		}
+	}
+	if (args == NULL)
+		return;
 
 	/* fix all Proj's and create new ones */
-	args = get_irg_args(irg);
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
-		ir_node *pred = get_Proj_pred(proj);
-		long proj_nr;
-		ir_mode *mode;
-		ir_mode *mode_l;
+	foreach_out_edge_safe(args, edge, next) {
+		ir_node *proj   = get_edge_src_irn(edge);
+		ir_mode *mode   = get_irn_mode(proj);
+		ir_mode *mode_l = env->low_unsigned;
+		ir_node *pred;
+		long     proj_nr;
 		ir_mode *mode_h;
 		ir_node *res_low;
 		ir_node *res_high;
 		dbg_info *dbg;
 
-		/* do not visit this node again */
-		mark_irn_visited(proj);
-
-		if (pred != args)
+		if (!is_Proj(proj))
 			continue;
-
+		pred    = get_Proj_pred(proj);
 		proj_nr = get_Proj_proj(proj);
-		set_Proj_proj(proj, new_projs[proj_nr]);
 
-		mode = get_irn_mode(proj);
-		mode_l = env->low_unsigned;
 		if (mode == env->high_signed) {
 			mode_h = env->low_signed;
 		} else if (mode == env->high_unsigned) {
 			mode_h = env->low_unsigned;
 		} else {
+			long new_pn = new_projs[proj_nr];
+			if (new_pn != proj_nr) {
+				ir_node *new_proj = new_r_Proj(pred, mode, new_pn);
+				exchange(proj, new_proj);
+			}
 			continue;
 		}
 
 		dbg = get_irn_dbg_info(proj);
 		if (env->params->little_endian) {
-			res_low  = new_rd_Proj(dbg, args, mode_l, new_projs[proj_nr]);
-			res_high = new_rd_Proj(dbg, args, mode_h, new_projs[proj_nr] + 1);
+			res_low  = new_rd_Proj(dbg, pred, mode_l, new_projs[proj_nr]);
+			res_high = new_rd_Proj(dbg, pred, mode_h, new_projs[proj_nr] + 1);
 		} else {
-			res_high = new_rd_Proj(dbg, args, mode_h, new_projs[proj_nr]);
-			res_low  = new_rd_Proj(dbg, args, mode_l, new_projs[proj_nr] + 1);
+			res_high = new_rd_Proj(dbg, pred, mode_h, new_projs[proj_nr]);
+			res_low  = new_rd_Proj(dbg, pred, mode_l, new_projs[proj_nr] + 1);
 		}
 		ir_set_dw_lowered(proj, res_low, res_high);
 	}
-	set_optimize(rem);
 }
 
 /**
@@ -1731,12 +1880,15 @@ static void lower_Start(ir_node *node, ir_mode *mode)
 static void lower_Call(ir_node *node, ir_mode *mode)
 {
 	ir_type  *tp = get_Call_type(node);
-	ir_node  **in, *proj, *results;
+	ir_node  **in;
 	size_t   n_params, n_res;
 	bool     need_lower = false;
 	size_t   i, j;
 	size_t   p;
 	long     *res_numbers = NULL;
+	ir_node  *resproj;
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 	(void) mode;
 
 	n_params = get_method_n_params(tp);
@@ -1803,65 +1955,59 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 
 	set_irn_in(node, j, in);
 
-	/* fix the results */
-	results = NULL;
-	for (proj = (ir_node*)get_irn_link(node); proj;
-	     proj = (ir_node*)get_irn_link(proj)) {
-		long proj_nr = get_Proj_proj(proj);
-
-		if (proj_nr == pn_Call_T_result && get_Proj_pred(proj) == node) {
-			/* found the result proj */
-			results = proj;
+	/* find results T */
+	resproj = NULL;
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+		if (get_Proj_proj(proj) == pn_Call_T_result) {
+			resproj = proj;
 			break;
 		}
 	}
+	if (resproj == NULL)
+		return;
 
-	if (results != NULL) {    /* there are results */
-		int rem = get_optimize();
+	/* fix the results */
+	foreach_out_edge_safe(resproj, edge, next) {
+		ir_node  *proj      = get_edge_src_irn(edge);
+		ir_mode  *proj_mode = get_irn_mode(proj);
+		ir_mode  *mode_l    = env->low_unsigned;
+		ir_node  *pred;
+		long      proj_nr;
+		ir_mode  *mode_h;
+		ir_node  *res_low;
+		ir_node  *res_high;
+		dbg_info *dbg;
 
-		/* switch off optimization for new Proj nodes or they might be CSE'ed
-		   with not patched one's */
-		set_optimize(0);
-		for (proj = (ir_node*)get_irn_link(results); proj; proj = (ir_node*)get_irn_link(proj)) {
-			if (get_Proj_pred(proj) == results) {
-				long      proj_nr   = get_Proj_proj(proj);
-				ir_mode  *proj_mode = get_irn_mode(proj);
-				ir_mode  *mode_l;
-				ir_mode  *mode_h;
-				ir_node  *res_low;
-				ir_node  *res_high;
-				dbg_info *dbg;
+		if (!is_Proj(proj))
+			continue;
+		pred    = get_Proj_pred(proj);
+		proj_nr = get_Proj_proj(proj);
 
-				/* found a result */
-				mark_irn_visited(proj);
-
-				set_Proj_proj(proj, res_numbers[proj_nr]);
-
-				mode_l = env->low_unsigned;
-				if (proj_mode == env->high_signed) {
-					mode_h = env->low_signed;
-				} else if (proj_mode == env->high_unsigned) {
-					mode_h = env->low_unsigned;
-				} else {
-					continue;
-				}
-
-				dbg      = get_irn_dbg_info(proj);
-				if (env->params->little_endian) {
-					res_low  = new_rd_Proj(dbg, results, mode_l,
-					                       res_numbers[proj_nr]);
-					res_high = new_rd_Proj(dbg, results, mode_h,
-					                       res_numbers[proj_nr] + 1);
-				} else {
-					res_high = new_rd_Proj(dbg, results, mode_h,
-					                       res_numbers[proj_nr]);
-					res_low  = new_rd_Proj(dbg, results, mode_l,
-					                       res_numbers[proj_nr] + 1);
-				}
-				ir_set_dw_lowered(proj, res_low, res_high);
+		if (proj_mode == env->high_signed) {
+			mode_h = env->low_signed;
+		} else if (proj_mode == env->high_unsigned) {
+			mode_h = env->low_unsigned;
+		} else {
+			long new_nr = res_numbers[proj_nr];
+			if (proj_nr != new_nr) {
+				ir_node *new_proj = new_r_Proj(pred, proj_mode, new_nr);
+				exchange(proj, new_proj);
 			}
+			continue;
 		}
-		set_optimize(rem);
+
+		dbg = get_irn_dbg_info(proj);
+		if (env->params->little_endian) {
+			res_low  = new_rd_Proj(dbg, pred, mode_l, res_numbers[proj_nr]);
+			res_high = new_rd_Proj(dbg, pred, mode_h, res_numbers[proj_nr] + 1);
+		} else {
+			res_high = new_rd_Proj(dbg, pred, mode_h, res_numbers[proj_nr]);
+			res_low  = new_rd_Proj(dbg, pred, mode_l, res_numbers[proj_nr] + 1);
+		}
+		ir_set_dw_lowered(proj, res_low, res_high);
 	}
 }
 
@@ -1943,13 +2089,6 @@ static void lower_Phi(ir_node *phi)
 
 	/* remember that we need to fixup the predecessors later */
 	ARR_APP1(ir_node*, env->lowered_phis, phi);
-
-	/* Don't forget to link the new Phi nodes into the block.
-	 * Beware that some Phis might be optimized away. */
-	if (is_Phi(phi_l))
-		add_Block_phi(block, phi_l);
-	if (is_Phi(phi_h))
-		add_Block_phi(block, phi_h);
 }
 
 static void fixup_phi(ir_node *phi)
@@ -2005,7 +2144,6 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 	ir_asm_constraint *input_constraints  = get_ASM_input_constraints(asmn);
 	unsigned           n_64bit_outs       = 0;
 	int      i;
-	ir_node *n;
 
 	(void)mode;
 
@@ -2047,6 +2185,8 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		ir_asm_constraint *new_outputs
 			= ALLOCAN(ir_asm_constraint, n_outs+n_64bit_outs);
 		ir_node           *new_asm;
+		const ir_edge_t   *edge;
+		const ir_edge_t   *next;
 
 		for (i = 0; i < n_outs; ++i) {
 			const ir_asm_constraint *constraint = &output_constraints[i];
@@ -2075,14 +2215,15 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 		                     new_n_outs, new_outputs, n_clobber, clobbers,
 		                     asm_text);
 
-		for (n = asmn;;) {
-			long pn;
-			ir_mode *proj_mode;
-			n = (ir_node*)get_irn_link(n);
-			if (n == NULL)
-				break;
-			proj_mode = get_irn_mode(n);
-			pn = get_Proj_proj(n);
+		foreach_out_edge_safe(asmn, edge, next) {
+			ir_node *proj      = get_edge_src_irn(edge);
+			ir_mode *proj_mode = get_irn_mode(proj);
+			long     pn;
+
+			if (!is_Proj(proj))
+				continue;
+			pn = get_Proj_proj(proj);
+
 			if (pn < n_outs)
 				pn = proj_map[pn];
 			else
@@ -2093,10 +2234,10 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 					= proj_mode == high_signed ? env->low_signed : env->low_unsigned;
 				ir_node *np_low  = new_r_Proj(new_asm, env->low_unsigned, pn);
 				ir_node *np_high = new_r_Proj(new_asm, high_mode, pn+1);
-				ir_set_dw_lowered(n, np_low, np_high);
+				ir_set_dw_lowered(proj, np_low, np_high);
 			} else {
 				ir_node *np = new_r_Proj(new_asm, proj_mode, pn);
-				exchange(n, np);
+				exchange(proj, np);
 			}
 		}
 	}
@@ -2337,6 +2478,20 @@ static void lower_node(ir_node *node)
 	}
 }
 
+static void clear_node_and_phi_links(ir_node *node, void *data)
+{
+	(void) data;
+	if (get_irn_mode(node) == mode_T) {
+		set_irn_link(node, node);
+	} else {
+		set_irn_link(node, NULL);
+	}
+	if (is_Block(node))
+		set_Block_phis(node, NULL);
+	else if (is_Phi(node))
+		set_Phi_next(node, NULL);
+}
+
 static void lower_irg(ir_graph *irg)
 {
 	ir_entity *ent;
@@ -2344,6 +2499,10 @@ static void lower_irg(ir_graph *irg)
 	unsigned   n_idx;
 
 	obstack_init(&env->obst);
+
+	/* just here for debugging */
+	current_ir_graph = irg;
+	edges_assure(irg);
 
 	n_idx = get_irg_last_idx(irg);
 	n_idx = n_idx + (n_idx >> 2);  /* add 25% */
@@ -2354,7 +2513,6 @@ static void lower_irg(ir_graph *irg)
 	env->irg            = irg;
 	env->l_mtp          = NULL;
 	env->flags          = 0;
-	env->proj_2_block   = pmap_create();
 	env->value_param_tp = NULL;
 
 	ent = get_irg_entity(irg);
@@ -2370,8 +2528,8 @@ static void lower_irg(ir_graph *irg)
 
 	/* first step: link all nodes and allocate data */
 	ir_reserve_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
-	irg_walk_graph(irg, firm_clear_node_and_phi_links,
-	               prepare_links_and_handle_rotl, env);
+	visit_all_identities(irg, clear_node_and_phi_links, NULL);
+	irg_walk_graph(irg, NULL, prepare_links_and_handle_rotl, env);
 
 	if (env->flags & MUST_BE_LOWERED) {
 		size_t i;
@@ -2406,7 +2564,6 @@ static void lower_irg(ir_graph *irg)
 
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
 
-	pmap_destroy(env->proj_2_block);
 	DEL_ARR_F(env->entries);
 	obstack_free(&env->obst, NULL);
 }
@@ -2505,22 +2662,6 @@ void ir_lower_dw_ops(void)
 			set_method_res_type(binop_tp_s, 0, tp_s);
 			set_method_res_type(binop_tp_s, 1, tp_u);
 		}
-	}
-	if (! shiftop_tp_u) {
-		shiftop_tp_u = new_type_method(3, 2);
-		set_method_param_type(shiftop_tp_u, 0, tp_u);
-		set_method_param_type(shiftop_tp_u, 1, tp_u);
-		set_method_param_type(shiftop_tp_u, 2, tp_u);
-		set_method_res_type(shiftop_tp_u, 0, tp_u);
-		set_method_res_type(shiftop_tp_u, 1, tp_u);
-	}
-	if (! shiftop_tp_s) {
-		shiftop_tp_s = new_type_method(3, 2);
-		set_method_param_type(shiftop_tp_s, 0, tp_u);
-		set_method_param_type(shiftop_tp_s, 1, tp_s);
-		set_method_param_type(shiftop_tp_s, 2, tp_u);
-		set_method_res_type(shiftop_tp_s, 0, tp_u);
-		set_method_res_type(shiftop_tp_s, 1, tp_s);
 	}
 	if (! unop_tp_u) {
 		unop_tp_u = new_type_method(2, 2);

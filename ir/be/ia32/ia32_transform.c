@@ -43,6 +43,7 @@
 #include "irprintf.h"
 #include "debug.h"
 #include "irdom.h"
+#include "iropt.h"
 #include "error.h"
 #include "array_t.h"
 #include "heights.h"
@@ -1418,7 +1419,116 @@ static ir_node *gen_And(ir_node *node)
 			match_commutative | match_mode_neutral | match_am | match_immediate);
 }
 
+/**
+ * test wether 2 values result in 'x' and '32-x' when interpreted as a shift
+ * value.
+ */
+static bool is_complementary_shifts(ir_node *value1, ir_node *value2)
+{
+	if (is_Const(value1) && is_Const(value2)) {
+		ir_tarval *tv1 = get_Const_tarval(value1);
+		ir_tarval *tv2 = get_Const_tarval(value2);
+		if (tarval_is_long(tv1) && tarval_is_long(tv2)) {
+			long v1 = get_tarval_long(tv1);
+			long v2 = get_tarval_long(tv2);
+			return v1 < v2 && v2 == 32-v1;
+		}
+	}
+	return false;
+}
 
+typedef ir_node* (*new_shiftd_func)(dbg_info *dbgi, ir_node *block,
+                                    ir_node *high, ir_node *low,
+                                    ir_node *count);
+
+/**
+ * Transforms a l_ShlD/l_ShrD into a ShlD/ShrD. Those nodes have 3 data inputs:
+ * op1 - target to be shifted
+ * op2 - contains bits to be shifted into target
+ * op3 - shift count
+ * Only op3 can be an immediate.
+ */
+static ir_node *gen_64bit_shifts(dbg_info *dbgi, ir_node *block,
+                                 ir_node *high, ir_node *low, ir_node *count,
+                                 new_shiftd_func func)
+{
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *new_high  = be_transform_node(high);
+	ir_node  *new_low   = be_transform_node(low);
+	ir_node  *new_count;
+	ir_node  *new_node;
+
+	/* the shift amount can be any mode that is bigger than 5 bits, since all
+	 * other bits are ignored anyway */
+	while (is_Conv(count)              &&
+	       get_irn_n_edges(count) == 1 &&
+	       mode_is_int(get_irn_mode(count))) {
+		assert(get_mode_size_bits(get_irn_mode(count)) >= 5);
+		count = get_Conv_op(count);
+	}
+	new_count = create_immediate_or_transform(count, 0);
+
+	new_node = func(dbgi, new_block, new_high, new_low, new_count);
+	return new_node;
+}
+
+static ir_node *match_64bit_shift(ir_node *node)
+{
+	ir_node *op1 = get_Or_left(node);
+	ir_node *op2 = get_Or_right(node);
+
+	if (is_Shr(op1)) {
+		ir_node *tmp = op1;
+		op1 = op2;
+		op2 = tmp;
+	}
+
+	/* match ShlD operation */
+	if (is_Shl(op1) && is_Shr(op2)) {
+		ir_node *shl_right = get_Shl_right(op1);
+		ir_node *shl_left  = get_Shl_left(op1);
+		ir_node *shr_right = get_Shr_right(op2);
+		ir_node *shr_left  = get_Shr_left(op2);
+		/* constant ShlD operation */
+		if (is_complementary_shifts(shl_right, shr_right)) {
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = get_nodes_block(node);
+			return gen_64bit_shifts(dbgi, block, shl_left, shr_left, shl_right,
+			                        new_bd_ia32_ShlD);
+		}
+		/* constant ShrD operation */
+		if (is_complementary_shifts(shr_right, shl_right)) {
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = get_nodes_block(node);
+			return gen_64bit_shifts(dbgi, block, shr_left, shl_left, shr_right,
+			                        new_bd_ia32_ShrD);
+		}
+		/* lower_dw produces the following for ShlD:
+		 * Or(Shr(Shr(high,1),Not(c)),Shl(low,c)) */
+		if (is_Shr(shr_left) && is_Not(shr_right)
+			&& is_Const_1(get_Shr_right(shr_left))
+		    && get_Not_op(shr_right) == shl_right) {
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = get_nodes_block(node);
+			ir_node  *val_h = get_Shr_left(shr_left);
+			return gen_64bit_shifts(dbgi, block, shl_left, val_h, shl_right,
+			                        new_bd_ia32_ShlD);
+		}
+		/* lower_dw produces the following for ShrD:
+		 * Or(Shl(Shl(high,1),Not(c)), Shr(low,c)) */
+		if (is_Shl(shl_left) && is_Not(shl_right)
+		    && is_Const_1(get_Shl_right(shl_left))
+		    && get_Not_op(shl_right) == shr_right) {
+			dbg_info *dbgi  = get_irn_dbg_info(node);
+			ir_node  *block = get_nodes_block(node);
+			ir_node  *val_h = get_Shl_left(shl_left);
+		    return gen_64bit_shifts(dbgi, block, shr_left, val_h, shr_right,
+		                            new_bd_ia32_ShrD);
+		}
+	}
+
+	return NULL;
+}
 
 /**
  * Creates an ia32 Or.
@@ -1429,6 +1539,11 @@ static ir_node *gen_Or(ir_node *node)
 {
 	ir_node *op1 = get_Or_left(node);
 	ir_node *op2 = get_Or_right(node);
+	ir_node *res;
+
+	res = match_64bit_shift(node);
+	if (res != NULL)
+		return res;
 
 	assert (! mode_is_float(get_irn_mode(node)));
 	return gen_binop(node, op1, op2, new_bd_ia32_Or, match_commutative
@@ -4139,31 +4254,6 @@ static ir_node *gen_IJmp(ir_node *node)
 	return new_node;
 }
 
-static ir_node *gen_ia32_l_ShlDep(ir_node *node)
-{
-	ir_node *left  = get_irn_n(node, n_ia32_l_ShlDep_val);
-	ir_node *right = get_irn_n(node, n_ia32_l_ShlDep_count);
-
-	return gen_shift_binop(node, left, right, new_bd_ia32_Shl,
-	                       match_immediate | match_mode_neutral);
-}
-
-static ir_node *gen_ia32_l_ShrDep(ir_node *node)
-{
-	ir_node *left  = get_irn_n(node, n_ia32_l_ShrDep_val);
-	ir_node *right = get_irn_n(node, n_ia32_l_ShrDep_count);
-	return gen_shift_binop(node, left, right, new_bd_ia32_Shr,
-	                       match_immediate);
-}
-
-static ir_node *gen_ia32_l_SarDep(ir_node *node)
-{
-	ir_node *left  = get_irn_n(node, n_ia32_l_SarDep_val);
-	ir_node *right = get_irn_n(node, n_ia32_l_SarDep_count);
-	return gen_shift_binop(node, left, right, new_bd_ia32_Sar,
-	                       match_immediate);
-}
-
 static ir_node *gen_ia32_l_Add(ir_node *node)
 {
 	ir_node *left    = get_irn_n(node, n_ia32_l_Add_left);
@@ -4238,62 +4328,6 @@ static ir_node *gen_ia32_l_Sbb(ir_node *node)
 {
 	return gen_binop_flags(node, new_bd_ia32_Sbb,
 			match_am | match_immediate | match_mode_neutral);
-}
-
-/**
- * Transforms a l_ShlD/l_ShrD into a ShlD/ShrD. Those nodes have 3 data inputs:
- * op1 - target to be shifted
- * op2 - contains bits to be shifted into target
- * op3 - shift count
- * Only op3 can be an immediate.
- */
-static ir_node *gen_lowered_64bit_shifts(ir_node *node, ir_node *high,
-                                         ir_node *low, ir_node *count)
-{
-	ir_node  *block     = get_nodes_block(node);
-	ir_node  *new_block = be_transform_node(block);
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_high  = be_transform_node(high);
-	ir_node  *new_low   = be_transform_node(low);
-	ir_node  *new_count;
-	ir_node  *new_node;
-
-	/* the shift amount can be any mode that is bigger than 5 bits, since all
-	 * other bits are ignored anyway */
-	while (is_Conv(count)              &&
-	       get_irn_n_edges(count) == 1 &&
-	       mode_is_int(get_irn_mode(count))) {
-		assert(get_mode_size_bits(get_irn_mode(count)) >= 5);
-		count = get_Conv_op(count);
-	}
-	new_count = create_immediate_or_transform(count, 0);
-
-	if (is_ia32_l_ShlD(node)) {
-		new_node = new_bd_ia32_ShlD(dbgi, new_block, new_high, new_low,
-		                            new_count);
-	} else {
-		new_node = new_bd_ia32_ShrD(dbgi, new_block, new_high, new_low,
-		                            new_count);
-	}
-	SET_IA32_ORIG_NODE(new_node, node);
-
-	return new_node;
-}
-
-static ir_node *gen_ia32_l_ShlD(ir_node *node)
-{
-	ir_node *high  = get_irn_n(node, n_ia32_l_ShlD_val_high);
-	ir_node *low   = get_irn_n(node, n_ia32_l_ShlD_val_low);
-	ir_node *count = get_irn_n(node, n_ia32_l_ShlD_count);
-	return gen_lowered_64bit_shifts(node, high, low, count);
-}
-
-static ir_node *gen_ia32_l_ShrD(ir_node *node)
-{
-	ir_node *high  = get_irn_n(node, n_ia32_l_ShrD_val_high);
-	ir_node *low   = get_irn_n(node, n_ia32_l_ShrD_val_low);
-	ir_node *count = get_irn_n(node, n_ia32_l_ShrD_count);
-	return gen_lowered_64bit_shifts(node, high, low, count);
 }
 
 static ir_node *gen_ia32_l_LLtoFloat(ir_node *node)
@@ -5665,12 +5699,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_ia32_l_IMul,      gen_ia32_l_IMul);
 	be_set_transform_function(op_ia32_l_LLtoFloat, gen_ia32_l_LLtoFloat);
 	be_set_transform_function(op_ia32_l_Mul,       gen_ia32_l_Mul);
-	be_set_transform_function(op_ia32_l_SarDep,    gen_ia32_l_SarDep);
 	be_set_transform_function(op_ia32_l_Sbb,       gen_ia32_l_Sbb);
-	be_set_transform_function(op_ia32_l_ShlDep,    gen_ia32_l_ShlDep);
-	be_set_transform_function(op_ia32_l_ShlD,      gen_ia32_l_ShlD);
-	be_set_transform_function(op_ia32_l_ShrDep,    gen_ia32_l_ShrDep);
-	be_set_transform_function(op_ia32_l_ShrD,      gen_ia32_l_ShrD);
 	be_set_transform_function(op_ia32_l_Sub,       gen_ia32_l_Sub);
 	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
 	be_set_transform_function(op_ia32_Minus64Bit,  be_duplicate_node);

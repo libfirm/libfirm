@@ -25,6 +25,8 @@
 #ifndef FIRM_LOWER_LOWER_DW_H
 #define FIRM_LOWER_LOWER_DW_H
 
+#include "firm_types.h"
+
 /**
  * Every double word node will be replaced,
  * we need some store to hold the replacement:
