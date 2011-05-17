@@ -95,10 +95,6 @@ static void place_floats_early(ir_node *n, waitq *worklist)
 	}
 
 	block = get_nodes_block(n);
-	/* do not move unreachable code (or its predecessors around) since dominance
-	 * is inalid there */
-	if (!is_block_reachable(block))
-		return;
 
 	/* first move predecessors up */
 	arity = get_irn_arity(n);
@@ -215,8 +211,8 @@ static ir_node *consumer_dom_dca(ir_node *dca, ir_node *consumer,
 				if (is_Bad(new_block))
 					continue;
 
-				if (is_block_reachable(new_block))
-					dca = calc_dom_dca(dca, new_block);
+				assert(is_block_reachable(new_block));
+				dca = calc_dom_dca(dca, new_block);
 			}
 		}
 	} else {
@@ -285,10 +281,7 @@ static ir_node *get_deepest_common_dom_ancestor(ir_node *node, ir_node *dca)
 			 * the users of Proj are our users. */
 			dca = get_deepest_common_dom_ancestor(succ, dca);
 		} else {
-			/* ignore successors in unreachable code */
-			ir_node *succ_blk = get_nodes_block(succ);
-			if (!is_block_reachable(succ_blk))
-				continue;
+			assert(is_block_reachable(get_nodes_block(succ)));
 			dca = consumer_dom_dca(dca, succ, node);
 		}
 	}
@@ -364,10 +357,8 @@ static void place_floats_late(ir_node *n, pdeq *worklist)
 		return;
 	}
 
-	/* don't move unreachable code around */
 	block = get_nodes_block(n);
-	if (!is_block_reachable(block))
-		return;
+	assert(is_block_reachable(block));
 
 	/* deepest common ancestor in the dominator tree of all nodes'
 	   blocks depending on us; our final placement has to dominate
@@ -421,6 +412,9 @@ void place_code(ir_graph *irg)
 	 a legal code placement. */
 	worklist = new_waitq();
 	place_early(irg, worklist);
+
+	/* While GCSE might place nodes in unreachable blocks,
+	 * these are now placed in reachable blocks. */
 
 	/* Note: place_early changes only blocks, no data edges. So, the
 	 * data out edges are still valid, no need to recalculate them here. */

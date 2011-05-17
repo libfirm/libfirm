@@ -6129,16 +6129,6 @@ ir_node *identify_remember(ir_node *n)
 	if (value_table == NULL)
 		return n;
 
-	if (get_opt_global_cse()) {
-		/* do not remember unreachable nodes */
-		if (!is_Block(n)) {
-			ir_node *block = get_nodes_block(n);
-			if (is_block_unreachable(block)) {
-				return n;
-			}
-		}
-	}
-
 	ir_normalize_node(n);
 	/* lookup or insert in hash table with given hash key. */
 	nn = (ir_node*)pset_insert(value_table, n, ir_node_hash(n));

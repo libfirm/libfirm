@@ -1999,7 +1999,7 @@ int irg_verify(ir_graph *irg, unsigned flags)
 	last_irg_error = NULL;
 #endif /* NDEBUG */
 
-	if (!check_cfg(irg))
+	if (pinned && !check_cfg(irg))
 		res = 0;
 
 	if (res == 1 && (flags & VERIFY_ENFORCE_SSA) && pinned)
