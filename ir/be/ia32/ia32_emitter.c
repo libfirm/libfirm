@@ -486,7 +486,7 @@ void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
  */
 static ir_node *get_cfop_target_block(const ir_node *irn)
 {
-	assert(get_irn_mode(irn) == mode_X);
+	// assert(get_irn_mode(irn) == mode_X);
 	return (ir_node*)get_irn_link(irn);
 }
 
@@ -1720,6 +1720,8 @@ static void ia32_emit_node(ir_node *node)
 		be_dbg_set_dbg_info(get_irn_dbg_info(node));
 
 		(*func) (node);
+	} else if (op == op_Jmp) {
+		emit_Nothing(node);
 	} else {
 		emit_Nothing(node);
 		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, current_ir_graph);
@@ -1977,6 +1979,17 @@ void ia32_gen_routine(ir_graph *irg)
 	be_emit_write_line();
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	be_emit_cstring("__");
+	be_gas_emit_entity(entity);
+	be_emit_cstring("_LSDA:\n");
+	be_emit_write_line();
+
+	size_t n_excs = ARR_LEN(exc_list);
+	be_emit_cstring("\t.long ");
+	be_emit_tarval(new_tarval_from_long(n_excs, mode_Iu));
+	be_emit_char('\n');
+	be_emit_write_line();
 
 	/* Sort the exception table using the exception label id's.
 	   Those are ascending with ascending addresses. */

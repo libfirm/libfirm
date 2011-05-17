@@ -1305,8 +1305,9 @@ static void introduce_prolog_epilog(ir_graph *irg)
 
 		for (i = 0; i < arity; ++i) {
 			ir_node *ret = get_irn_n(end_block, i);
-			assert(be_is_Return(ret));
-			introduce_epilog(ret);
+			//assert(be_is_Return(ret));
+			if (be_is_Return(ret))
+				introduce_epilog(ret);
 		}
 	}
 }

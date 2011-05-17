@@ -5590,6 +5590,15 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	if (proj == pn_be_Call_M) {
 		return new_rd_Proj(dbgi, new_call, mode_M, n_ia32_Call_mem);
 	}
+
+	if (proj == pn_be_Call_X_regular) {
+		ir_node *block = be_transform_node(get_nodes_block(node));
+		return new_rd_Jmp(dbgi, block);
+	} else if (proj == pn_be_Call_X_except) {
+		set_ia32_exc_label(new_call, 1);
+		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_exc);
+	}
+
 	/* transform call modes */
 	if (mode_is_data(mode)) {
 		const arch_register_class_t *cls = arch_get_irn_reg_class_out(node);

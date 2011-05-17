@@ -45,6 +45,8 @@
 #include "beemitter.h"
 #include "be_dbgout.h"
 
+#define FIRM_EXCEPTIONS
+
 /** by default, we generate assembler code for the Linux gas */
 object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
 bool                  be_gas_emit_types         = true;
@@ -552,10 +554,30 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 	be_gas_emit_entity(entity);
 	be_emit_cstring(":\n");
 	be_emit_write_line();
+
+#ifdef FIRM_EXCEPTIONS
+	be_emit_cstring(".cfi_startproc\n");
+	be_emit_write_line();
+	be_emit_cstring(".cfi_personality 0x0,oo_rt_throw\n");
+	be_emit_write_line();
+	be_emit_cstring(".cfi_lsda        0x0,__");
+	be_gas_emit_entity(entity);
+	be_emit_cstring("_LSDA\n");
+	be_emit_write_line();
+	be_emit_cstring(".cfi_def_cfa 5, 8\n");
+	be_emit_write_line();
+	be_emit_cstring(".cfi_offset 5, -8\n");
+	be_emit_write_line();
+#endif
 }
 
 void be_gas_emit_function_epilog(const ir_entity *entity)
 {
+#ifdef FIRM_EXCEPTIONS
+	be_emit_cstring(".cfi_endproc\n");
+	be_emit_write_line();
+#endif
+
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");
 		be_gas_emit_entity(entity);
