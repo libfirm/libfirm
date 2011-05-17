@@ -556,7 +556,7 @@ FIRM_API int is_{{node.name}}(const ir_node *node);
 {% for node in nodes %}
 {% for in in node.ins -%}
 FIRM_API ir_node *get_{{node.name}}_{{in[0]}}(const ir_node *node);
-void set_{{node.name}}_{{in[0]}}(ir_node *node, ir_node *{{in[0]|escape_keywords}});
+FIRM_API void set_{{node.name}}_{{in[0]}}(ir_node *node, ir_node *{{in[0]|escape_keywords}});
 {% endfor -%}
 {% for attr in node.attrs|hasnot("noprop") -%}
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);
