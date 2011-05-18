@@ -716,6 +716,10 @@ static void thread_jumps(ir_node* block, void* data)
 	if (copy_block == NULL)
 		return;
 
+	/* We might thread the condition block of an infinite loop,
+	 * such that there is no path to End anymore. */
+	keep_alive(block);
+
 	/* we have to remove the edge towards the pred as the pred now
 	 * jumps into the true_block. We also have to shorten Phis
 	 * in our block because of this */
