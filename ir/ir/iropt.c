@@ -4717,6 +4717,7 @@ static ir_node *transform_node_shift(ir_node *n)
 	ir_tarval *tv1, *tv2, *res;
 	ir_node *in[2], *irn, *block;
 	ir_graph *irg;
+	int       modulo_shf;
 
 	left = get_binop_left(n);
 
@@ -4725,7 +4726,7 @@ static ir_node *transform_node_shift(ir_node *n)
 		return n;
 
 	right = get_binop_right(n);
-	tv1 = value_of(right);
+	tv1   = value_of(right);
 	if (tv1 == tarval_bad)
 		return n;
 
@@ -4733,13 +4734,25 @@ static ir_node *transform_node_shift(ir_node *n)
 	if (tv2 == tarval_bad)
 		return n;
 
+	mode       = get_irn_mode(n);
+	modulo_shf = get_mode_modulo_shift(mode);
+
+	if (modulo_shf > 0) {
+		ir_mode   *sc_mode     = get_tarval_mode(tv1);
+		ir_tarval *modulo_mask = new_tarval_from_long(modulo_shf-1, sc_mode);
+
+		/* modulo shifts should always be a power of 2 (otherwise modulo_mask
+		 * above will be invalid) */
+		assert(modulo_shf<=0 || is_po2(modulo_shf));
+
+		tv1 = tarval_and(tv1, modulo_mask);
+		tv2 = tarval_and(tv2, modulo_mask);
+	}
 	res  = tarval_add(tv1, tv2);
-	mode = get_irn_mode(n);
 	irg  = get_irn_irg(n);
 
 	/* beware: a simple replacement works only, if res < modulo shift */
 	if (!is_Rotl(n)) {
-		int modulo_shf = get_mode_modulo_shift(mode);
 		if (modulo_shf > 0) {
 			ir_tarval *modulo = new_tarval_from_long(modulo_shf,
 			                                         get_tarval_mode(res));
@@ -4751,7 +4764,7 @@ static ir_node *transform_node_shift(ir_node *n)
 				if (is_Shrs(n)) {
 					ir_node  *block = get_nodes_block(n);
 					dbg_info *dbgi  = get_irn_dbg_info(n);
-					ir_mode  *smode  = get_irn_mode(right);
+					ir_mode  *smode = get_irn_mode(right);
 					ir_node  *cnst  = new_r_Const_long(irg, smode, get_mode_size_bits(mode) - 1);
 					return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
 				}
