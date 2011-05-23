@@ -2721,5 +2721,6 @@ ir_entity *def_create_intrinsic_fkt(ir_type *method, const ir_op *op,
 
 	ent = new_entity(get_glob_type(), id, method);
 	set_entity_ld_ident(ent, get_entity_ident(ent));
+	set_entity_visibility(ent, ir_visibility_external);
 	return ent;
 }

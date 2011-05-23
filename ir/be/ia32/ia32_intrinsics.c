@@ -424,7 +424,7 @@ static ir_entity *create_compiler_lib_entity(const char *name, ir_type *type)
 		id = id_mangle3("__", id, "");
 	}
 	entity = new_entity(glob, id, type);
-	set_entity_visibility(entity, ir_visibility_local);
+	set_entity_visibility(entity, ir_visibility_external);
 	set_entity_ld_ident(entity, id);
 	return entity;
 }
