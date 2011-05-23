@@ -260,10 +260,6 @@ static void assure_should_be_same_requirements(ir_node *node)
 	for (i = 0; i < n_res; i++) {
 		int                          i2, arity;
 		int                          same_pos;
-		ir_node                     *perm;
-		ir_node                     *in[2];
-		ir_node                     *perm_proj0;
-		ir_node                     *perm_proj1;
 		ir_node                     *uses_out_reg;
 		const arch_register_req_t   *req = arch_get_out_register_req(node, i);
 		const arch_register_class_t *cls;
@@ -342,38 +338,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 			continue;
 		}
 
-#ifdef DEBUG_libfirm
-		ir_fprintf(stderr, "Note: need perm to resolve should_be_same constraint at %+F (this is unsafe and should not happen in theory...)\n", node);
-#endif
-		/* the out reg is used as node input: we need to permutate our input
-		 * and the other (this is allowed, since the other node can't be live
-		 * after! the operation as we will override the register. */
-		in[0] = in_node;
-		in[1] = uses_out_reg;
-		perm  = be_new_Perm(cls, block, 2, in);
-
-		perm_proj0 = new_r_Proj(perm, get_irn_mode(in[0]), 0);
-		perm_proj1 = new_r_Proj(perm, get_irn_mode(in[1]), 1);
-
-		arch_set_irn_register(perm_proj0, out_reg);
-		arch_set_irn_register(perm_proj1, in_reg);
-
-		sched_add_before(node, perm);
-
-		DBG((dbg, LEVEL_1,
-			"created perm %+F for should be same argument at input %d of %+F (need permutate with %+F)\n",
-			perm, same_pos, node, uses_out_reg));
-
-		/* use the perm results */
-		for (i2 = 0; i2 < arity; ++i2) {
-			ir_node *in = get_irn_n(node, i2);
-
-			if (in == in_node) {
-				set_irn_n(node, i2, perm_proj0);
-			} else if (in == uses_out_reg) {
-				set_irn_n(node, i2, perm_proj1);
-			}
-		}
+		panic("Unresolved should_be_same constraint");
 	}
 }
 
