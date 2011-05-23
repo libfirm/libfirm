@@ -1510,6 +1510,7 @@ static void fix_address_of_parameter_access(be_abi_irg_t *env, ir_graph *irg,
 		/* the new memory Proj gets the last Proj from store */
 		set_Proj_pred(nmem, store);
 		set_Proj_proj(nmem, pn_Store_M);
+		set_nodes_block(nmem, get_nodes_block(store));
 
 		/* move all entities to the frame type */
 		frame_tp = get_irg_frame_type(irg);

@@ -662,72 +662,6 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 }  /* firm_set_default_computed_value */
 
 /**
- * Returns a equivalent block for another block.
- * If the block has only one predecessor, this is
- * the equivalent one. If the only predecessor of a block is
- * the block itself, this is a dead block.
- *
- * If both predecessors of a block are the branches of a binary
- * Cond, the equivalent block is Cond's block.
- *
- * If all predecessors of a block are bad or lies in a dead
- * block, the current block is dead as well.
- */
-static ir_node *equivalent_node_Block(ir_node *n)
-{
-	ir_node *oldn = n;
-	int     n_preds;
-	ir_graph *irg;
-
-	/* don't optimize labeled blocks */
-	if (has_Block_entity(n))
-		return n;
-	if (!get_Block_matured(n))
-		return n;
-
-	n_preds = get_Block_n_cfgpreds(n);
-
-	irg = get_irn_irg(n);
-
-	/* Straightening: a single entry Block following a single exit Block
-	 * can be merged. */
-	if (n_preds == 1) {
-		ir_node *pred = get_Block_cfgpred(n, 0);
-
-		if (is_Jmp(pred)) {
-			ir_node *pred_block = get_nodes_block(pred);
-			DBG_OPT_STG(n, pred_block);
-			return pred_block;
-		}
-	} else if (n_preds == 2) {
-		/* Test whether Cond jumps twice to this block
-		 * The more general case which more than 2 predecessors is handles
-		 * in optimize_cf(), we handle only this special case for speed here.
-		 */
-		ir_node *a = get_Block_cfgpred(n, 0);
-		ir_node *b = get_Block_cfgpred(n, 1);
-
-		if (is_Proj(a) && is_Proj(b)) {
-			ir_node *cond = get_Proj_pred(a);
-
-		    if (cond == get_Proj_pred(b) && is_Cond(cond) &&
-		        get_irn_mode(get_Cond_selector(cond)) == mode_b) {
-				/* Also a single entry Block following a single exit Block.
-				 * Phis have twice the same operand and will be optimized away.
-				 */
-				n = get_nodes_block(cond);
-				DBG_OPT_IFSIM1(oldn, a, b, n);
-			}
-		}
-	}
-
-	return n;
-}  /* equivalent_node_Block */
-
-/* We do not evaluate Cond here as we replace it by a new node, a Jmp.
-   See transform_node_Proj_Cond(). */
-
-/**
  * Optimize operations that are commutative and have neutral 0,
  * so a op 0 = 0 op a = a.
  */
@@ -1576,7 +1510,6 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 		break
 
 	switch (code) {
-	CASE(Block);
 	CASE(Eor);
 	CASE(Add);
 	CASE(Shl);
