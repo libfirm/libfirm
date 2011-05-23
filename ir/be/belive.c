@@ -735,8 +735,7 @@ void be_liveness_dumpto(const be_lv_t *lv, const char *cls_name)
 }
 
 /**
- * Walker: checks the every predecessors of a node dominate
- * the note.
+ * Walker: checks that every predecessors of a node dominates the node.
  */
 static void dom_check(ir_node *irn, void *data)
 {
