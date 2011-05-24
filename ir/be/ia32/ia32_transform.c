@@ -4127,6 +4127,28 @@ static ir_node *gen_be_Return(ir_node *node)
 	return new_node;
 }
 
+static ir_node *gen_be_Raise(ir_node *node)
+{
+	ir_graph  *irg           = current_ir_graph;
+	dbg_info  *dbgi          = get_irn_dbg_info(node);
+	ir_node   *block         = be_transform_node(get_nodes_block(node));
+	int        arity         = get_irn_arity(node);
+	int        i;
+	ir_node  **in;
+	ir_node   *new_node;
+
+	in = ALLOCAN(ir_node *, arity);
+	for (i = 0; i < arity; ++i) {
+		ir_node *op = get_irn_n(node, i);
+		in[i] = be_transform_node(op);
+	}
+
+	new_node = be_new_Raise(dbgi, irg, block, arity, in);
+	copy_node_attr(irg, node, new_node);
+
+	return new_node;
+}
+
 /**
  * Transform a be_AddSP into an ia32_SubSP.
  */
@@ -5592,8 +5614,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	}
 
 	if (proj == pn_be_Call_X_regular) {
-		ir_node *block = be_transform_node(get_nodes_block(node));
-		return new_rd_Jmp(dbgi, block);
+		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_reg);
 	} else if (proj == pn_be_Call_X_except) {
 		set_ia32_exc_label(new_call, 1);
 		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_exc);
@@ -5767,6 +5788,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_be_FrameAddr,     gen_be_FrameAddr);
 	be_set_transform_function(op_be_IncSP,         gen_be_IncSP);
 	be_set_transform_function(op_be_Return,        gen_be_Return);
+	be_set_transform_function(op_be_Raise,         gen_be_Raise);
 	be_set_transform_function(op_be_SubSP,         gen_be_SubSP);
 	be_set_transform_function(op_Builtin,          gen_Builtin);
 	be_set_transform_function(op_Cmp,              gen_Cmp);

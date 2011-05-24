@@ -1352,6 +1352,85 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
 	return ret;
 }
 
+/**
+ * Creates a be_Raise for a Raise node.
+ *
+ * @param @env  the abi environment
+ * @param irn   the Raise node or NULL if there was none
+ * @param bl    the block where the be_Raise should be placed
+ * @param mem   the current memory
+ */
+static ir_node *create_be_raise(be_abi_irg_t *env, ir_node *irn, ir_node *bl, ir_node *exo_ptr, ir_node *mem)
+{
+	ir_graph         *irg      = get_Block_irg(bl);
+	dbg_info *dbgi;
+	pmap *reg_map  = pmap_create();
+	size_t in_max;
+	ir_node *be_raise;
+	int i, n;
+	ir_node **in;
+	const arch_register_t **regs;
+	pmap_entry *ent;
+
+	/* Add uses of the callee save registers. */
+	foreach_pmap(env->regs, ent) {
+		const arch_register_t *reg = (const arch_register_t*)ent->key;
+		if (reg->type & (arch_register_type_callee_save | arch_register_type_ignore))
+			pmap_insert(reg_map, ent->key, ent->value);
+	}
+
+	/*
+		Maximum size of the in array for Raise nodes is
+		exception object + callee save/ignore registers + memory + stack pointer
+	*/
+	in_max = 1 + pmap_count(reg_map) + 1;
+
+	in   = ALLOCAN(ir_node*,               in_max);
+	regs = ALLOCAN(arch_register_t const*, in_max);
+
+	in[0]   = mem;
+	in[1]   = exo_ptr;
+	regs[0] = NULL;
+	regs[1] = NULL;
+	n       = 2;
+
+	/* grow the rest of the stuff. */
+	foreach_pmap(reg_map, ent) {
+		if (ent->value) {
+			in[n]     = (ir_node*)ent->value;
+			regs[n++] = (const arch_register_t*)ent->key;
+		}
+	}
+
+	/* The in array for the new back end return is now ready. */
+	if (irn != NULL) {
+		dbgi = get_irn_dbg_info(irn);
+	} else {
+		dbgi = NULL;
+	}
+	be_raise = be_new_Raise(dbgi, irg, bl, n, in);
+
+	/* Set the register classes of the raise's parameter accordingly. */
+	for (i = 0; i < n; ++i) {
+		if (regs[i] == NULL)
+			continue;
+
+		be_set_constr_single_reg_in(be_raise, i, regs[i], arch_register_req_type_none);
+	}
+
+	/* Free the space of the Epilog's in array and the register <-> proj map. */
+	pmap_destroy(reg_map);
+
+	return be_raise;
+}
+
+typedef struct ent_pos_pair ent_pos_pair;
+struct ent_pos_pair {
+	ir_entity    *ent;   /**< a value param entity */
+	int          pos;    /**< its parameter number */
+	ent_pos_pair *next;  /**< for linking */
+};
+
 typedef struct lower_frame_sels_env_t {
 	ir_entity   **value_param_list;          /**< the list of all value param entities */
 	ir_node      *frame;                     /**< the current frame */
@@ -1830,6 +1909,13 @@ static void modify_irg(ir_graph *irg)
 			ir_node *mem = get_Return_mem(irn);
 			ir_node *ret = create_be_return(env, irn, blk, mem, get_Return_n_ress(irn));
 			exchange(irn, ret);
+		} else if (is_Proj(irn) && is_Raise(get_Proj_pred(irn))) {
+			ir_node *raise = get_Proj_pred(irn);
+			ir_node *blk = get_nodes_block(raise);
+			ir_node *mem = get_Raise_mem(raise);
+			ir_node *exo_ptr = get_Raise_exo_ptr(raise);
+			ir_node *be_raise = create_be_raise(env, raise, blk, exo_ptr, mem);
+			exchange(irn, be_raise);
 		}
 	}
 

@@ -117,7 +117,7 @@ static int is_fallthrough(const ir_node *cfgpred)
 static int block_needs_label(const ir_node *block)
 {
 	int need_label = 1;
-	int  n_cfgpreds = get_Block_n_cfgpreds(block);
+	int n_cfgpreds = get_Block_n_cfgpreds(block);
 
 	if (has_Block_entity(block))
 		return 1;
@@ -129,7 +129,8 @@ static int block_needs_label(const ir_node *block)
 		ir_node *cfgpred_block = get_nodes_block(cfgpred);
 
 		if (get_prev_block_sched(block) == cfgpred_block
-				&& is_fallthrough(cfgpred)) {
+				&& is_fallthrough(cfgpred)
+				&& ! is_ia32_Call(skip_Proj(cfgpred))) {
 			need_label = 0;
 		}
 	}
@@ -1603,6 +1604,15 @@ static void emit_be_Return(const ir_node *node)
 	}
 }
 
+static void emit_be_Raise(const ir_node *node)
+{
+	ir_node *exo_ptr = get_irn_n(node, n_be_Raise_exo_ptr);
+	ia32_emitf(node, "\tpushl ");
+	ia32_emit_dest_register(exo_ptr, 0);
+	ia32_emitf(node, "\n");
+	ia32_emitf(node, "\tcall oo_rt_throw\n"); // FIXME: hardcoded unwind function name
+}
+
 static void emit_Nothing(const ir_node *node)
 {
 	(void) node;
@@ -1655,6 +1665,7 @@ static void ia32_register_emitters(void)
 	BE_EMIT(IncSP);
 	BE_EMIT(Perm);
 	BE_EMIT(Return);
+	BE_EMIT(Raise);
 
 	BE_IGN(Keep);
 	BE_IGN(Start);

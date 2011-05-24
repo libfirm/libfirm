@@ -48,6 +48,7 @@ extern ir_op *op_be_Keep;
 extern ir_op *op_be_CopyKeep;
 extern ir_op *op_be_Call;
 extern ir_op *op_be_Return;
+extern ir_op *op_be_Raise;
 extern ir_op *op_be_IncSP;
 extern ir_op *op_be_AddSP;
 extern ir_op *op_be_SubSP;
@@ -361,6 +362,25 @@ void be_Return_set_emit_pop(ir_node *ret, int emit_pop);
 
 /** appends a node to the return node, returns the position of the node */
 int be_Return_append_node(ir_node *ret, ir_node *node);
+
+/**
+ * Position numbers for the be_Raise inputs.
+ */
+enum {
+	n_be_Raise_mem      = 0,     /**< memory input of a be_Return node */
+	n_be_Raise_exo_ptr  = 1      /**< exception object pointer */
+};
+
+/**
+ * Construct a new be_Raise.
+ *
+ * @param dbg    debug info
+ * @param irg    the graph where the new node will be placed
+ * @param block  the block where the new node will be placed
+ * @param n      number of inputs
+ * @param in     input array
+ */
+ir_node *be_new_Raise(dbg_info *dbg, ir_graph *irg, ir_node *block, int n, ir_node *in[]);
 
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 

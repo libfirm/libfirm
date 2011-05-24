@@ -109,6 +109,7 @@ ir_op *op_be_Keep;
 ir_op *op_be_CopyKeep;
 ir_op *op_be_Call;
 ir_op *op_be_Return;
+ir_op *op_be_Raise;
 ir_op *op_be_IncSP;
 ir_op *op_be_AddSP;
 ir_op *op_be_SubSP;
@@ -610,6 +611,26 @@ int be_Return_append_node(ir_node *ret, ir_node *node)
 	add_register_req_in(ret);
 
 	return pos;
+}
+
+ir_node *be_new_Raise(dbg_info *dbg, ir_graph *irg, ir_node *block, int n, ir_node *in[])
+{
+	be_node_attr_t *a;
+	ir_node *res;
+	int i;
+
+	res = new_ir_node(dbg, irg, block, op_be_Raise, mode_X, -1, NULL);
+	init_node_attr(res, -1, 1);
+	for (i = 0; i < n; ++i) {
+		add_irn_n(res, in[i]);
+		add_register_req_in(res);
+	}
+	be_set_constr_out(res, 0, arch_no_register_req);
+
+	a = (be_node_attr_t*)get_irn_generic_attr(res);
+	a->exc.pin_state = op_pin_state_pinned;
+
+	return res;
 }
 
 ir_node *be_new_IncSP(const arch_register_t *sp, ir_node *bl,
@@ -1386,6 +1407,7 @@ void be_init_op(void)
 	op_be_Call      = new_ir_op(beo_Call,      "be_Call",      op_pin_state_exc_pinned, irop_flag_fragile|irop_flag_uses_memory, oparity_variable, 0, sizeof(be_call_attr_t),    &be_node_op_ops);
 	ir_op_set_fragile_indices(op_be_Call, n_be_Call_mem, pn_be_Call_X_regular, pn_be_Call_X_except);
 	op_be_Return    = new_ir_op(beo_Return,    "be_Return",    op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_dynamic,  0, sizeof(be_return_attr_t),  &be_node_op_ops);
+	op_be_Raise     = new_ir_op(beo_Raise,     "be_Raise",     op_pin_state_exc_pinned, irop_flag_cfopcode,                      oparity_dynamic,  0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_AddSP     = new_ir_op(beo_AddSP,     "be_AddSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_SubSP     = new_ir_op(beo_SubSP,     "be_SubSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_node_attr_t),    &be_node_op_ops);
 	op_be_IncSP     = new_ir_op(beo_IncSP,     "be_IncSP",     op_pin_state_exc_pinned, irop_flag_none,                          oparity_unary,    0, sizeof(be_incsp_attr_t),   &be_node_op_ops);
@@ -1401,6 +1423,7 @@ void be_init_op(void)
 	op_be_CopyKeep->ops.node_cmp_attr  = be_nodes_equal;
 	op_be_Call->ops.node_cmp_attr      = Call_cmp_attr;
 	op_be_Return->ops.node_cmp_attr    = Return_cmp_attr;
+	op_be_Raise->ops.node_cmp_attr     = be_nodes_equal;
 	op_be_AddSP->ops.node_cmp_attr     = be_nodes_equal;
 	op_be_SubSP->ops.node_cmp_attr     = be_nodes_equal;
 	op_be_IncSP->ops.node_cmp_attr     = IncSP_cmp_attr;

@@ -785,6 +785,12 @@ static int verify_node_Block(const ir_node *n)
 		ASSERT_AND_RET(get_irn_mode(pred) == mode_X,
 			"Block node must have a mode_X predecessor", 0);
 		ASSERT_AND_RET(is_cfop(skipped_pred) || is_Bad(skipped_pred), "Block predecessor must be a cfop (or Bad)", 0);
+
+		/* XXX: still needed?
+		ir_node *transitive_pred = skip_Proj(skip_Tuple(pred));
+		ASSERT_AND_RET(is_cfop(transitive_pred) || is_fragile_op(transitive_pred),
+				"Block predecessor must be a cfop of fragile", 0);
+		*/
 	}
 
 	if (n == get_irg_start_block(irg)) {
