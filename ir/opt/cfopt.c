@@ -465,21 +465,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 }
 
 /**
- * Block walker: optimize all blocks using the default optimizations.
- * This removes Blocks with only a Jmp predecessor.
- */
-static void remove_simple_blocks(ir_node *block, void *ctx)
-{
-	merge_env *env = (merge_env*)ctx;
-	ir_node   *new_blk = equivalent_node(block);
-
-	if (new_blk != block) {
-		exchange(block, new_blk);
-		env->changed = true;
-	}
-}
-
-/**
  * Optimize table-switch Conds.
  *
  * @param cond the switch-Cond
@@ -619,7 +604,7 @@ void optimize_cf(ir_graph *irg)
 
 	/* Optimize the standard code. */
 	assure_doms(irg);
-	irg_block_walk_graph(irg, optimize_blocks, remove_simple_blocks, &env);
+	irg_block_walk_graph(irg, optimize_blocks, NULL, &env);
 
 	new_end = optimize_in_place(end);
 	if (new_end != end) {
