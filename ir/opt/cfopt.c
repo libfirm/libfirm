@@ -56,6 +56,7 @@
 #include "irflag_t.h"
 #include "firmstat.h"
 #include "irpass.h"
+#include "irphase_t.h"
 
 #include "iropt_dbg.h"
 
@@ -535,21 +536,176 @@ static bool handle_switch_cond(ir_node *cond)
 	return false;
 }
 
-/* Optimizations of the control flow that also require changes of Phi nodes.
+static bool is_switch_Cond(ir_node *cond) {
+	return get_irn_mode(get_Cond_selector(cond)) != mode_b;
+}
+
+static bool get_phase_flag(ir_phase *block_info, ir_node *block, int offset) {
+	return ((int)phase_get_irn_data(block_info, block)) & (1<<offset);
+}
+static void set_phase_flag(ir_phase *block_info, ir_node *block, int offset) {
+	int data = (int)phase_get_irn_data(block_info, block);
+	data |= (1<<offset);
+	phase_set_irn_data(block_info, block, (void*)data);
+}
+
+static bool has_operations(ir_phase *block_info, ir_node *block) {
+	return get_phase_flag(block_info, block, 1);
+}
+static void set_has_operations(ir_phase *block_info, ir_node *block) {
+	set_phase_flag(block_info, block, 1);
+}
+
+static bool has_phis(ir_phase *block_info, ir_node *block) {
+	return get_phase_flag(block_info, block, 2);
+}
+static void set_has_phis(ir_phase *block_info, ir_node *block) {
+	set_phase_flag(block_info, block, 2);
+}
+
+static bool is_unknown_jump_target(ir_phase *block_info, ir_node *block) {
+	return get_phase_flag(block_info, block, 3);
+}
+static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block) {
+	set_phase_flag(block_info, block, 3);
+}
+
+/**
+ * Optimize Conds, where true and false jump to the same block into a Jmp
  *
- * This optimization performs two passes over the graph.
- *
- * The first pass collects all Phi nodes in a link list in the block
- * nodes.  Further it performs simple control flow optimizations.
- * Finally it marks all blocks that do not contain useful
- * computations, i.e., these blocks might be removed.
- *
- * The second pass performs the optimizations intended by this algorithm.
- * It walks only over block nodes and adapts these and the Phi nodes in these
- * blocks, which it finds in a linked list computed by the first pass.
- *
- * We use the mark flag to mark removable blocks in the first phase.
+ *        Cond
+ *       /    \
+ *  projA      projB   =>   Jmp     Bad
+ *       \    /                \   /
+ *       block                 block
  */
+static bool optimize_pred_cond(ir_node *block, int i, int j)
+{
+	ir_node *projA, *projB, *cond, *pred_block, *jmp, *bad;
+	assert(i != j);
+
+	projA = get_Block_cfgpred(block, i);
+	if (!is_Proj(projA)) return false;
+	projB = get_Block_cfgpred(block, j);
+	if (!is_Proj(projB)) return false;
+	cond  = get_Proj_pred(projA);
+	if (!is_Cond(cond))  return false;
+
+	if (cond != get_Proj_pred(projB)) return false;
+	if (is_switch_Cond(cond)) return false;
+
+	/* cond should actually be a Jmp */
+	pred_block = get_nodes_block(cond);
+	jmp = new_r_Jmp(pred_block);
+	bad = new_r_Bad(get_irn_irg(block), mode_X);
+
+	assert(projA != projB);
+	exchange(projA, jmp);
+	exchange(projB, bad);
+	return true;
+}
+
+static void compute_block_info(ir_node *n, void *x)
+{
+	ir_phase *block_info = (ir_phase *)x;
+
+	if (is_Block(n)) {
+		int i, max = get_Block_n_cfgpreds(n);
+		for (i=0; i<max; i++) {
+			ir_node *pred = get_Block_cfgpred(n,i);
+			if (is_unknown_jump(pred)) {
+				set_is_unknown_jump_target(block_info, n);
+			}
+		}
+	} else if (is_Phi(n)) {
+		ir_node *block = get_nodes_block(n);
+		set_has_phis(block_info, block);
+	} else if (is_Jmp(n) || is_Cond(n) || is_Cmp(n) || is_Proj(n)) {
+		/* ignore */
+	} else {
+		ir_node *block = get_nodes_block(n);
+		set_has_operations(block_info, block);
+	}
+}
+
+typedef struct skip_env {
+	bool changed;
+	ir_phase *phase;
+} skip_env;
+
+static void optimize_conds(ir_node *b, void *x)
+{
+	skip_env *env = (skip_env*)x;
+	int i, j;
+	int n_preds = get_Block_n_cfgpreds(b);
+
+	if (has_phis(env->phase,b)) return;
+
+	/* optimize Cond predecessors (might produce Bad predecessors) */
+	for (i = 0; i < n_preds; i++) {
+		for (j = i+1; j < n_preds; j++) {
+			optimize_pred_cond(b, i, j);
+		}
+	}
+}
+
+static void remove_empty_blocks(ir_node *b, void *x)
+{
+	skip_env *env = (skip_env*)x;
+	int i;
+	int n_preds = get_Block_n_cfgpreds(b);
+
+	for (i = 0; i < n_preds; ++i) {
+		ir_node *jmp, *jmp_block, *pred, *pred_block;
+
+		jmp = get_Block_cfgpred(b, i);
+		if (!is_Jmp(jmp)) continue;
+		if (is_unknown_jump(jmp)) continue;
+		jmp_block = get_nodes_block(jmp);
+		if (is_unknown_jump_target(env->phase, jmp_block)) continue;
+		if (has_operations(env->phase,jmp_block)) continue;
+		/* jmp_block is an empty block! */
+
+		if (get_Block_n_cfgpreds(jmp_block) != 1) continue;
+		pred = get_Block_cfgpred(jmp_block, 0);
+		exchange(jmp, pred);
+		env->changed = true;
+
+		/* cleanup: jmp_block might have a Keep edge! */
+		pred_block = get_nodes_block(pred);
+		exchange(jmp_block, pred_block);
+	}
+}
+
+/*
+ * Some cfg optimizations, which do not touch Phi nodes */
+static void cfgopt_ignoring_phis(ir_graph *irg) {
+	ir_phase *block_info = new_phase(irg, NULL);
+	skip_env env = { false, block_info };
+
+	irg_walk_graph(irg, compute_block_info, NULL, block_info);
+
+	for(;;) {
+		env.changed = false;
+
+		/* Conds => Jmp optimization; might produce empty blocks */
+		irg_block_walk_graph(irg, optimize_conds, NULL, &env);
+
+		/* Remove empty blocks */
+		irg_block_walk_graph(irg, remove_empty_blocks, NULL, &env);
+		if (env.changed) {
+			set_irg_doms_inconsistent(irg);
+			/* Removing blocks might enable more Cond optimizations */
+			continue;
+		} else {
+			break;
+		}
+	}
+
+	phase_free(block_info);
+}
+
+/* Optimizations of the control flow that also require changes of Phi nodes.  */
 void optimize_cf(ir_graph *irg)
 {
 	int i, j, n;
@@ -568,10 +724,12 @@ void optimize_cf(ir_graph *irg)
 	 * here. Fix the edges! */
 	edges_deactivate(irg);
 
+	cfgopt_ignoring_phis(irg);
+
 	/* we use the mark flag to mark removable blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK);
 
-	/* The Cond optimization might expose unreachable code, so we loop */
+	/* The switch Cond optimization might expose unreachable code, so we loop */
 	for (;;) {
 		int length;
 		env.changed    = false;
@@ -579,6 +737,12 @@ void optimize_cf(ir_graph *irg)
 
 		assure_doms(irg);
 
+		/*
+		 * This pass collects all Phi nodes in a link list in the block
+		 * nodes.  Further it performs simple control flow optimizations.
+		 * Finally it marks all blocks that do not contain useful
+		 * computations, i.e., these blocks might be removed.
+		 */
 		env.switch_conds = NEW_ARR_F(ir_node*, 0);
 		irg_walk(end, clear_link, collect_nodes, &env);
 
@@ -602,7 +766,10 @@ void optimize_cf(ir_graph *irg)
 	 * 2. phi lists are up to date
 	 */
 
-	/* Optimize the standard code. */
+	/* Optimize the standard code.
+	 * It walks only over block nodes and adapts these and the Phi nodes in these
+	 * blocks, which it finds in a linked list computed before.
+	 * */
 	assure_doms(irg);
 	irg_block_walk_graph(irg, optimize_blocks, NULL, &env);
 
