@@ -1731,7 +1731,7 @@ static void ia32_emit_node(ir_node *node)
 		be_dbg_set_dbg_info(get_irn_dbg_info(node));
 
 		(*func) (node);
-	} else if (op == op_Jmp) {
+	} else if (op == op_Jmp) { // FIXME: why is this needed?
 		emit_Nothing(node);
 	} else {
 		emit_Nothing(node);

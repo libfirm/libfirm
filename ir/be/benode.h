@@ -520,6 +520,7 @@ static inline int be_is_MemPerm  (const ir_node *irn) { return get_irn_opcode(ir
 static inline int be_is_Keep     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Keep     ; }
 static inline int be_is_Call     (const ir_node *irn) { return get_irn_opcode(irn) == beo_Call     ; }
 static inline int be_is_Return   (const ir_node *irn) { return get_irn_opcode(irn) == beo_Return   ; }
+static inline int be_is_Raise    (const ir_node *irn) { return get_irn_opcode(irn) == beo_Raise    ; }
 static inline int be_is_IncSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_IncSP    ; }
 static inline int be_is_AddSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_AddSP    ; }
 static inline int be_is_SubSP    (const ir_node *irn) { return get_irn_opcode(irn) == beo_SubSP    ; }
