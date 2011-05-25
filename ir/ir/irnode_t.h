@@ -390,10 +390,14 @@ static inline ir_node *_get_Block_cfgpred(const ir_node *node, int pos)
  */
 static inline ir_node  *_get_Block_cfgpred_block(const ir_node *node, int pos)
 {
-	ir_node *res = skip_Proj(get_Block_cfgpred(node, pos));
-	if (!is_Bad(res))
-		res = get_nodes_block(res);
-	return res;
+	ir_node *res = get_Block_cfgpred(node, pos);
+	if (is_Bad(res)) {
+		/* must return a Bad with mode_BB! */
+		ir_graph *irg = get_irn_irg(node);
+		return new_r_Bad(irg, mode_BB);
+	} else {
+		return get_nodes_block(skip_Proj(res));
+	}
 }
 
 static inline ir_visited_t _get_Block_block_visited(const ir_node *node)
