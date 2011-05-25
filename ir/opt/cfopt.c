@@ -585,33 +585,37 @@ void optimize_cf(ir_graph *irg)
 
 	/* we use the mark flag to mark removable blocks */
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_IRN_LINK);
-restart:
-	env.changed    = false;
-	env.phis_moved = false;
 
-	assure_doms(irg);
+	/* The Cond optimization might expose unreachable code, so we loop */
+	for (;;) {
+		int length;
+		env.changed    = false;
+		env.phis_moved = false;
 
-	env.switch_conds = NEW_ARR_F(ir_node*, 0);
-	irg_walk(end, clear_link, collect_nodes, &env);
+		assure_doms(irg);
 
-	/* handle all collected switch-Conds */
-	n = ARR_LEN(env.switch_conds);
-	for (i = 0; i < n; ++i) {
-		ir_node *cond = env.switch_conds[i];
-		env.changed |= handle_switch_cond(cond);
-	}
-	DEL_ARR_F(env.switch_conds);
+		env.switch_conds = NEW_ARR_F(ir_node*, 0);
+		irg_walk(end, clear_link, collect_nodes, &env);
 
-	if (env.changed) {
-		/* Handle graph state if was changed. */
+		/* handle all collected switch-Conds */
+		length = ARR_LEN(env.switch_conds);
+		for (i = 0; i < length; ++i) {
+			ir_node *cond = env.switch_conds[i];
+			env.changed |= handle_switch_cond(cond);
+		}
+		DEL_ARR_F(env.switch_conds);
+
+		if (!env.changed) break;
+
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-
-		/* The Cond optimization might generate unreachable code, so restart if
-		   it happens. */
-		goto restart;
 	}
+
+	/* assert due to collect_nodes:
+	 * 1. removable blocks are now marked as such
+	 * 2. phi lists are up to date
+	 */
 
 	/* Optimize the standard code. */
 	assure_doms(irg);
