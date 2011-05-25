@@ -222,8 +222,8 @@ non_dispensable:
 }
 
 /**
- * This method removed Bad cf predecessors from Blocks and Phis, and removes
- * empty blocks.  A block is empty if it only contains Phi and Jmp nodes.
+ * This method removes empty blocks.  A block is empty if it only contains Phi
+ * and Jmp nodes.
  *
  * We first adapt Phi nodes, then Block nodes, as we need the old ins
  * of the Block to adapt the Phi nodes.  We do this by computing new
