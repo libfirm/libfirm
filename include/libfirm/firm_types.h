@@ -274,16 +274,6 @@ typedef enum ir_builtin_kind {
 } ir_builtin_kind;
 
 /**
- * Some projection numbers must be always equal to support automatic phi construction
- */
-enum pn_generic {
-	pn_Generic_M         = 0,  /**< The memory result. */
-	pn_Generic_X_regular = 1,  /**< Execution result if no exception occurred. */
-	pn_Generic_X_except  = 2,  /**< The control flow result branching to the exception handler */
-	pn_Generic_other     = 3   /**< First free projection number */
-};
-
-/**
  * Possible return values of value_classify().
  */
 typedef enum ir_value_classify_sign {

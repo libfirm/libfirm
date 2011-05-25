@@ -60,8 +60,9 @@ typedef enum {
 	irop_flag_labeled      = 1U << 0, /**< If set, output edge labels on in-edges in vcg graph. */
 	irop_flag_commutative  = 1U << 1, /**< This operation is commutative. */
 	irop_flag_cfopcode     = 1U << 2, /**< This operation is a control flow operation. */
-	irop_flag_fragile      = 1U << 3, /**< Set if the operation can change the control flow because
-	                               of an exception. */
+	irop_flag_fragile      = 1U << 3, /**< Set if the operation can change the
+	                                       control flow because of an exception.
+	                                   */
 	irop_flag_forking      = 1U << 4, /**< Forking control flow at this operation. */
 	irop_flag_highlevel    = 1U << 5, /**< This operation is a pure high-level one and can be
 	                                      skipped in low-level optimizations. */
@@ -279,6 +280,13 @@ typedef struct {
 FIRM_API ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
                           unsigned flags, op_arity opar, int op_index,
                           size_t attr_size, const ir_op_ops *ops);
+
+/**
+ * Set proj-number for X_regular and X_except projs of fragile nodes.
+ * Note: should only be used immediately after new_ir_op
+ */
+FIRM_API void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
+                                        int pn_x_regular, int pn_x_except);
 
 /** Returns the ir_op_ops of an ir_op. */
 FIRM_API const ir_op_ops *get_op_ops(const ir_op *op);

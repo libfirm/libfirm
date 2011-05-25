@@ -1306,6 +1306,28 @@ int (is_arg_Proj)(const ir_node *node)
 	return _is_arg_Proj(node);
 }
 
+int is_x_except_Proj(const ir_node *node)
+{
+	ir_node *pred;
+	if (!is_Proj(node))
+		return false;
+	pred = get_Proj_pred(node);
+	if (!is_fragile_op(pred))
+		return false;
+	return get_Proj_proj(node) == pred->op->pn_x_except;
+}
+
+int is_x_regular_Proj(const ir_node *node)
+{
+	ir_node *pred;
+	if (!is_Proj(node))
+		return false;
+	pred = get_Proj_pred(node);
+	if (!is_fragile_op(pred))
+		return false;
+	return get_Proj_proj(node) == pred->op->pn_x_except;
+}
+
 ir_node **get_Tuple_preds_arr(ir_node *node)
 {
 	assert(is_Tuple(node));
@@ -1521,23 +1543,7 @@ int is_fragile_op(const ir_node *node)
 ir_node *get_fragile_op_mem(ir_node *node)
 {
 	assert(node && is_fragile_op(node));
-
-	switch (get_irn_opcode(node)) {
-	case iro_Call  :
-	case iro_Div   :
-	case iro_Mod   :
-	case iro_Load  :
-	case iro_Store :
-	case iro_Alloc :
-	case iro_Bound :
-	case iro_CopyB :
-		return get_irn_n(node, pn_Generic_M);
-	case iro_Bad   :
-	case iro_Unknown:
-		return node;
-	default:
-		panic("should not be reached");
-	}
+	return get_irn_n(node, node->op->fragile_mem_index);
 }
 
 /* Returns true if the operation is a forking control flow operation. */

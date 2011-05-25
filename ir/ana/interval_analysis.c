@@ -343,7 +343,7 @@ static void construct_interval_block(ir_node *blk, ir_loop *l)
 		cfop = get_Block_cfgpred(blk, i);
 		if (is_Proj(cfop)) {
 			ir_node *op = skip_Proj(cfop);
-			if (is_fragile_op(op) && get_Proj_proj(cfop) == pn_Generic_X_except) {
+			if (is_x_except_Proj(cfop)) {
 				/*
 				 * Skip the Proj for the exception flow only, leave the
 				 * not exception flow Proj's intact.

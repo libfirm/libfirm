@@ -1205,7 +1205,7 @@ static void update_Call_memop(memop_t *m)
  *
  * @param m  the memop
  */
-static void update_DivOp_memop(memop_t *m)
+static void update_Div_memop(memop_t *m)
 {
 	ir_node *div = m->node;
 	int     i;
@@ -1218,15 +1218,38 @@ static void update_DivOp_memop(memop_t *m)
 			continue;
 
 		switch (get_Proj_proj(proj)) {
-		case pn_Generic_X_except:
+		case pn_Div_X_except:
 			m->flags |= FLAG_EXCEPTION;
 			break;
-		case pn_Generic_M:
+		case pn_Div_M:
 			m->mem = proj;
 			break;
 		}
 	}
-}  /* update_DivOp_memop */
+}
+
+static void update_Mod_memop(memop_t *m)
+{
+	ir_node *div = m->node;
+	int     i;
+
+	for (i = get_irn_n_outs(div) - 1; i >= 0; --i) {
+		ir_node *proj = get_irn_out(div, i);
+
+		/* beware of keep edges */
+		if (is_End(proj))
+			continue;
+
+		switch (get_Proj_proj(proj)) {
+		case pn_Mod_X_except:
+			m->flags |= FLAG_EXCEPTION;
+			break;
+		case pn_Mod_M:
+			m->mem = proj;
+			break;
+		}
+	}
+}
 
 /**
  * Update a memop for a Phi.
@@ -1291,8 +1314,10 @@ static void collect_memops(ir_node *irn, void *ctx)
 			/* we can those to find the memory edge */
 			break;
 		case iro_Div:
+			update_Div_memop(op);
+			break;
 		case iro_Mod:
-			update_DivOp_memop(op);
+			update_Mod_memop(op);
 			break;
 
 		case iro_Builtin:

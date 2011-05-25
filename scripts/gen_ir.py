@@ -455,6 +455,9 @@ void init_op(void)
 			{{node|attr_size}}
 			NULL
 		{% endfilter %});
+	{%- if "fragile" in node.flags: %}
+	ir_op_set_fragile_indices(op_{{node.name}}, n_{{node.name}}_mem, pn_{{node.name}}_X_regular, pn_{{node.name}}_X_except);
+	{%- endif -%}
 	{%- endfor %}
 
 	be_init_op();

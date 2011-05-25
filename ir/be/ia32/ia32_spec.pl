@@ -594,9 +594,9 @@ IDiv => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
-	               out => [ "eax", "flags", "none", "edx", "none" ] },
+	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
-	outs      => [ "div_res", "flags", "M", "mod_res", "X_exc" ],
+	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
 	am        => "source,unary",
 	emit      => ". idiv%M %unop3",
 	latency   => 25,
@@ -608,9 +608,9 @@ Div => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "eax", "edx" ],
-	               out => [ "eax", "flags", "none", "edx", "none" ] },
+	               out => [ "eax", "flags", "none", "edx", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "divisor", "dividend_low", "dividend_high" ],
-	outs      => [ "div_res", "flags", "M", "mod_res", "X_exc" ],
+	outs      => [ "div_res", "flags", "M", "mod_res", "X_regular", "X_except" ],
 	am        => "source,unary",
 	emit      => ". div%M %unop3",
 	latency   => 25,
@@ -1152,7 +1152,7 @@ ChangeCW => {
 },
 
 FldCW => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "fpcw:I" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1164,7 +1164,7 @@ FldCW => {
 },
 
 FnstCW => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "fp_cw" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem", "fpcw" ],
@@ -1175,7 +1175,7 @@ FnstCW => {
 },
 
 FnstCWNOP => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "pinned",
 	reg_req   => { in => [ "fp_cw" ], out => [ "none" ] },
 	ins       => [ "fpcw" ],
@@ -1203,9 +1203,9 @@ Load => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
-	               out => [ "gp", "none", "none", "none" ] },
+	               out => [ "gp", "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem" ],
-	outs      => [ "res", "unused", "M", "X_exc" ],
+	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	latency   => 0,
 	emit      => ". mov%EX%.l %AM, %D0",
 	units     => [ "GP" ],
@@ -1214,9 +1214,10 @@ Load => {
 Store => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "gp" ], out => [ "none", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
+	               out => [ "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_exc" ],
+	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => '. mov%M %SI3, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1226,9 +1227,10 @@ Store => {
 Store8Bit => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ], out => ["none", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
+	               out => ["none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_exc" ],
+	outs      => [ "M", "X_regular", "X_except" ],
 	emit      => '. mov%M %SB3, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
@@ -1554,7 +1556,7 @@ Inport => {
 # Intel style prefetching
 #
 Prefetch0 => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1565,7 +1567,7 @@ Prefetch0 => {
 },
 
 Prefetch1 => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1576,7 +1578,7 @@ Prefetch1 => {
 },
 
 Prefetch2 => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1587,7 +1589,7 @@ Prefetch2 => {
 },
 
 PrefetchNTA => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1601,7 +1603,7 @@ PrefetchNTA => {
 # 3DNow! prefetch instructions
 #
 Prefetch => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1612,7 +1614,7 @@ Prefetch => {
 },
 
 PrefetchW => {
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "base", "index", "mem" ],
@@ -1860,9 +1862,9 @@ xLoad => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
-	               out => [ "xmm", "none", "none", "none" ] },
+	               out => [ "xmm", "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem" ],
-	outs      => [ "res", "unused", "M", "X_exc" ],
+	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	emit      => '. mov%XXM %AM, %D0',
 	attr      => "ir_mode *load_mode",
 	init_attr => "attr->ls_mode = load_mode;",
@@ -1873,9 +1875,10 @@ xLoad => {
 xStore => {
 	op_flags => [ "fragile", "labeled" ],
 	state    => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ], out => [ "none", "none" ] },
+	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
+	              out => [ "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_exc" ],
+	outs      => [ "M", "X_regular", "X_except" ],
 	emit     => '. mov%XXM %S3, %AM',
 	latency  => 0,
 	units    => [ "SSE" ],
@@ -1885,9 +1888,10 @@ xStore => {
 xStoreSimple => {
 	op_flags => [ "fragile", "labeled" ],
 	state    => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ], out => [ "none" ] },
+	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
+	              out => [ "none", "none", "none" ] },
 	ins      => [ "base", "index", "mem", "val" ],
-	outs     => [ "M" ],
+	outs     => [ "M", "X_regular", "X_except" ],
 	emit     => '. mov%XXM %S3, %AM',
 	latency  => 0,
 	units    => [ "SSE" ],
@@ -1895,7 +1899,7 @@ xStoreSimple => {
 },
 
 CvtSI2SS => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
@@ -1907,7 +1911,7 @@ CvtSI2SS => {
 },
 
 CvtSI2SD => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req  => { in => [ "gp", "gp", "none", "gp" ], out => [ "xmm" ] },
 	ins      => [ "base", "index", "mem", "val" ],
@@ -1920,14 +1924,14 @@ CvtSI2SD => {
 
 
 l_LLtoFloat => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "labeled" ],
 	cmp_attr => "return 1;",
 	ins      => [ "val_high", "val_low" ],
 	reg_req  => { in => [ "none", "none" ], out => [ "none" ] }
 },
 
 l_FloattoLL => {
-	op_flags => [ "fragile", "labeled" ],
+	op_flags => [ "labeled" ],
 	cmp_attr => "return 1;",
 	ins      => [ "val" ],
 	outs     => [ "res_high", "res_low" ],
@@ -1937,12 +1941,14 @@ l_FloattoLL => {
 CopyB => {
 	op_flags  => [ "fragile" ],
 	state     => "pinned",
-	reg_req   => { in => [ "edi", "esi", "ecx", "none" ], out => [ "edi", "esi", "ecx", "none" ] },
-	outs      => [ "DST", "SRC", "CNT", "M" ],
+	reg_req   => { in => [ "edi", "esi", "ecx", "none" ],
+	               out => [ "edi", "esi", "ecx", "none", "none", "none" ] },
+	ins       => [ "dest", "source", "count", "mem" ],
+	outs      => [ "dest", "source", "count", "M", "X_regular", "X_except" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
 	units     => [ "GP" ],
-	latency  => 3,
+	latency   => 3,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },
@@ -1950,12 +1956,14 @@ CopyB => {
 CopyB_i => {
 	op_flags  => [ "fragile" ],
 	state     => "pinned",
-	reg_req   => { in => [ "edi", "esi", "none" ], out => [  "edi", "esi", "none" ] },
-	outs      => [ "DST", "SRC", "M" ],
+	reg_req   => { in => [ "edi", "esi", "none" ],
+	               out => [  "edi", "esi", "none", "none", "none" ] },
+	ins       => [ "dest", "source", "mem" ],
+	outs      => [ "dest", "source", "M", "X_regular", "X_except" ],
 	attr_type => "ia32_copyb_attr_t",
 	attr      => "unsigned size",
 	units     => [ "GP" ],
-	latency  => 3,
+	latency   => 3,
 # we don't care about this flag, so no need to mark this node
 #	modified_flags => [ "DF" ]
 },
@@ -2120,9 +2128,9 @@ vfld => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ],
-	               out => [ "vfp", "none", "none", "none" ] },
+	               out => [ "vfp", "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem" ],
-	outs      => [ "res", "unused", "M", "X_exc" ],
+	outs      => [ "res", "unused", "M", "X_regular", "X_except" ],
 	attr      => "ir_mode *load_mode",
 	init_attr => "attr->attr.ls_mode = load_mode;",
 	latency   => 2,
@@ -2135,9 +2143,9 @@ vfst => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
-	               out => [ "none", "none" ] },
+	               out => [ "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "M", "X_exc" ],
+	outs      => [ "M", "X_regular", "X_except" ],
 	attr      => "ir_mode *store_mode",
 	init_attr => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
@@ -2441,7 +2449,7 @@ fchs => {
 
 fld => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fld%XM %AM',
 	attr_type => "ia32_x87_attr_t",
@@ -2451,7 +2459,7 @@ fld => {
 
 fst => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fst%XM %AM',
 	mode      => "mode_M",
@@ -2462,7 +2470,7 @@ fst => {
 
 fstp => {
 	irn_flags => [ "rematerializable" ],
-	op_flags  => [ "fragile", "labeled" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	emit      => '. fstp%XM %AM',
 	mode      => "mode_M",
@@ -2693,9 +2701,11 @@ FtstFnstsw => {
 xxLoad => {
 	op_flags  => [ "fragile", "labeled" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "xmm", "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none" ],
+	               out => [ "xmm", "none", "none", "none" ] },
 	emit      => '. movdqu %D0, %AM',
-	outs      => [ "res", "M" ],
+	ins       => [ "base", "index", "mem" ],
+	outs      => [ "res", "M", "X_regular", "X_except" ],
 	units     => [ "SSE" ],
 	latency   => 1,
 },
@@ -2703,11 +2713,13 @@ xxLoad => {
 xxStore => {
 	op_flags => [ "fragile", "labeled" ],
 	state    => "exc_pinned",
-	reg_req  => { in => [ "gp", "gp", "none", "xmm" ] },
+	reg_req  => { in => [ "gp", "gp", "none", "xmm" ],
+	              out => [ "none", "none", "none" ] },
 	ins      => [ "base", "index", "mem", "val" ],
+	outs     => [ "M", "X_regular", "X_except" ],
 	emit     => '. movdqu %binop',
 	units    => [ "SSE" ],
-	latency   => 1,
+	latency  => 1,
 	mode     => "mode_M",
 },
 

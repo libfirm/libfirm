@@ -272,7 +272,7 @@ Jcc => {
 	mode      => "mode_T",
 },
 Load => {
-	op_flags  => [ "labeled", "fragile" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ],
 	               out => [ "gp", "none" ] },
@@ -292,7 +292,7 @@ FrameAddr => {
 	mode      => $mode_gp,
 },
 Store => {
-	op_flags  => [ "labeled", "fragile" ],
+	op_flags  => [ "labeled" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ], out => [ "none" ] },
 	ins       => [ "ptr", "val", "mem" ],

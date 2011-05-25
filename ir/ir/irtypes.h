@@ -61,17 +61,25 @@ ENUM_COUNTABLE(ir_phase_id)
 
 /** The type of an ir_op. */
 struct ir_op {
-	unsigned code;          /**< The unique opcode of the op. */
-	ident *name;            /**< The name of the op. */
-	size_t attr_size;       /**< Space needed in memory for private attributes. */
-	op_pin_state pin_state; /**< How to deal with the node in CSE, PRE. */
-	op_arity opar;          /**< The arity of operator. */
-	int op_index;           /**< The index of the first data operand, 0 for most cases, 1 for Div etc. */
-	unsigned flags;         /**< Flags describing the behavior of the ir_op, a bitmasks of irop_flags. */
-	unsigned tag;           /**< Some custom TAG value the op's creator set to. */
-	void *attr;             /**< custom pointer where op's creator can attach attribute stuff to. */
-
-	ir_op_ops ops;          /**< The operations of the this op. */
+	unsigned code;            /**< The unique opcode of the op. */
+	ident *name;              /**< The name of the op. */
+	size_t attr_size;         /**< Space needed in memory for private attributes
+	                               */
+	op_pin_state pin_state;   /**< How to deal with the node in CSE, PRE. */
+	op_arity opar;            /**< The arity of operator. */
+	int op_index;             /**< The index of the first data operand, 0 for
+	                               most cases, 1 for Div etc. */
+	int fragile_mem_index;    /**< index of memory input for fragile nodes */
+	int pn_x_regular;         /**< for fragile ops the position of the
+	                               X_regular output */
+	int pn_x_except;          /**< for fragile ops the position of the
+	                               X_except output */
+	unsigned flags;           /**< Flags describing the behavior of the ir_op,
+	                               a bitmasks of irop_flags. */
+	unsigned tag;             /**< Some custom TAG value the op's creator set */
+	void *attr;               /**< custom pointer where op's creator can attach
+	                               attribute stuff to. */
+	ir_op_ops ops;            /**< The operations of the this op. */
 };
 
 /**

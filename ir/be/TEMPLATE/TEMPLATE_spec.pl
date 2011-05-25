@@ -233,7 +233,7 @@ Jmp => {
 # Load / Store
 
 Load => {
-	op_flags  => [ "labeled", "fragile" ],
+	op_flags  => [ "labeled" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "gp" ] },
@@ -241,7 +241,7 @@ Load => {
 },
 
 Store => {
-	op_flags  => [ "labeled", "fragile" ],
+	op_flags  => [ "labeled" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none" ] },
@@ -301,7 +301,7 @@ fConst => {
 # Load / Store
 
 fLoad => {
-	op_flags  => [ "labeled", "fragile" ],
+	op_flags  => [ "labeled" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "none" ], out => [ "fp" ] },
@@ -309,7 +309,7 @@ fLoad => {
 },
 
 fStore => {
-	op_flags  => [ "labeled", "fragile" ],
+	op_flags  => [ "labeled" ],
 	irn_flags => [ "rematerializable" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "fp", "none" ] },

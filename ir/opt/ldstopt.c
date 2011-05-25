@@ -215,7 +215,7 @@ static void collect_nodes(ir_node *node, void *env)
 
 			if (is_Proj(proj)) {
 				pred   = get_Proj_pred(proj);
-				is_exc = get_Proj_proj(proj) == pn_Generic_X_except;
+				is_exc = is_x_except_Proj(proj);
 			}
 
 			/* ignore Bad predecessors, they will be removed later */

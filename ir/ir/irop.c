@@ -189,6 +189,14 @@ void free_ir_op(ir_op *code)
 	free(code);
 }  /* free_ir_op */
 
+void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
+                               int pn_x_regular, int pn_x_except)
+{
+	op->fragile_mem_index = fragile_mem_index;
+	op->pn_x_regular = pn_x_regular;
+	op->pn_x_except = pn_x_except;
+}
+
 /* Returns the string for the opcode. */
 const char *get_op_name (const ir_op *op)
 {

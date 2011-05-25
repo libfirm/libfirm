@@ -38,10 +38,10 @@ class Alloc(Op):
 		("count", "number of objects to allocate" ),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "pointer to newly allocated memory",     "pn_Generic_other"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
+		("res",       "pointer to newly allocated memory"),
 	]
 	attrs = [
 		dict(
@@ -201,10 +201,10 @@ class Bound(Op):
 		("upper",  "upper bound (exclusive)"),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "the checked index",                     "pn_Generic_other"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
+		("res",       "the checked index"),
 	]
  	flags  = [ "fragile", "highlevel" ]
 	pinned = "exception"
@@ -219,8 +219,8 @@ class Builtin(Op):
 	]
 	arity    = "variable"
 	outs     = [
-		("M",        "memory result", "pn_Generic_M"),
-		("1_result", "first result",  "pn_Generic_other"),
+		("M",        "memory result"),
+		("1_result", "first result"),
 	]
 	flags    = [ "uses_memory" ]
 	attrs    = [
@@ -253,10 +253,10 @@ class Call(Op):
 	]
 	arity    = "variable"
 	outs     = [
-		("M",                "memory result",                         "pn_Generic_M"),
-		("X_regular",        "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",         "control flow when exception occured",   "pn_Generic_X_except"),
-		("T_result",         "tuple containing all results",          "pn_Generic_other"),
+		("M",                "memory result"),
+		("X_regular",        "control flow when no exception occurs"),
+		("X_except",         "control flow when exception occured"),
+		("T_result",         "tuple containing all results"),
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [
@@ -417,9 +417,9 @@ class CopyB(Op):
 		("src",  "source address"),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs = [
@@ -442,10 +442,10 @@ class Div(Op):
 		("right", "second operand"),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "result of computation",                 "pn_Generic_other"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
+		("res",       "result of computation"),
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "div"
@@ -542,10 +542,10 @@ class InstOf(Op):
 	   ("obj",   "pointer to object being queried")
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "checked object pointer",                "pn_Generic_other"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
+		("res",       "checked object pointer"),
 	]
 	flags = [ "highlevel" ]
 	attrs = [
@@ -573,10 +573,10 @@ class Load(Op):
 		("ptr",  "address to load from"),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "result of load operation",              "pn_Generic_other"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
+		("res",       "result of load operation"),
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"
@@ -628,10 +628,10 @@ class Mod(Op):
 		("right", "second operand"),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
-		("res",       "result of computation",                 "pn_Generic_other"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
+		("res",       "result of computation"),
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "mod"
@@ -743,8 +743,8 @@ class Raise(Op):
 		("exo_ptr", "pointer to exception object to be thrown"),
 	]
 	outs  = [
-		("M", "memory result",                     "pn_Generic_M"),
-		("X", "control flow to exception handler", "pn_Generic_X_regular"),
+		("M", "memory result"),
+		("X", "control flow to exception handler"),
 	]
 	flags  = [ "highlevel", "cfopcode" ]
 	pinned = "yes"
@@ -825,9 +825,9 @@ class Store(Op):
 	   ("value", "value to store"),
 	]
 	outs  = [
-		("M",         "memory result",                         "pn_Generic_M"),
-		("X_regular", "control flow when no exception occurs", "pn_Generic_X_regular"),
-		("X_except",  "control flow when exception occured",   "pn_Generic_X_except"),
+		("M",         "memory result"),
+		("X_regular", "control flow when no exception occurs"),
+		("X_except",  "control flow when exception occured"),
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"

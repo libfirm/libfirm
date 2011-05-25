@@ -69,7 +69,7 @@ static void walk_critical_cf_edges(ir_node *n, void *env)
 
 			cfop = get_irn_op(skip_Proj(pre));
 			if (is_op_fragile(cfop)) {
-				if (cenv->ignore_exc_edges && get_Proj_proj(pre) == pn_Generic_X_except)
+				if (cenv->ignore_exc_edges && is_x_except_Proj(pre))
 					continue;
 				goto insert;
 			}

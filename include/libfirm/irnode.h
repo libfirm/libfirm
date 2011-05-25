@@ -478,6 +478,16 @@ FIRM_API void     set_binop_left(ir_node *node, ir_node *left);
 FIRM_API ir_node *get_binop_right(const ir_node *node);
 FIRM_API void     set_binop_right(ir_node *node, ir_node *right);
 
+/**
+ * Test wether a node is the X_except Proj of a fragile operation
+ */
+FIRM_API int      is_x_except_Proj(const ir_node *node);
+
+/**
+ * Test wether a node is the X_regular Proj of a fragile operation
+ */
+FIRM_API int      is_x_regular_Proj(const ir_node *node);
+
 /** returns the name of an ir_relation */
 FIRM_API const char *get_relation_string(ir_relation relation);
 

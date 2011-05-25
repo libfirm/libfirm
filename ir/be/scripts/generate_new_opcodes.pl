@@ -681,9 +681,13 @@ EOF
 		"start_block", "uses_memory", "dump_noblock", "dump_noinput",
 		"machine", "machine_op", "cse_neutral"
 	);
+	my $is_fragile = 0;
 	foreach my $flag (@{$n{"op_flags"}}) {
 		if (not defined($known_flags{$flag})) {
 			print STDERR "WARNING: Flag '$flag' in opcode $op is unknown\n";
+		}
+		if ($flag eq "fragile") {
+			$is_fragile = 1;
 		}
 	}
 	my @mapped = map { "irop_flag_$_" } @{$n{"op_flags"}};
@@ -698,6 +702,9 @@ EOF
 	$temp  = "\top_$op = new_ir_op(cur_opcode + iro_$op, \"$op\", op_pin_state_".$n{"state"}.", $op_flags";
 	$temp .= "|irop_flag_machine, ".translate_arity($arity).", 0, ${attr_size}, &ops);\n";
 	push(@obst_new_irop, $temp);
+	if ($is_fragile) {
+		push(@obst_new_irop, "\tir_op_set_fragile_indices(op_${op}, n_${op}_mem, pn_${op}_X_regular, pn_${op}_X_except);\n");
+	}
 	push(@obst_new_irop, "\tset_op_tag(op_$op, $arch\_op_tag);\n");
 	if(defined($default_op_attr_type)) {
 		push(@obst_new_irop, "\tattr = &attrs[iro_$op];\n");
