@@ -77,6 +77,11 @@ static bool is_Block_removable(ir_node *block)
 	return get_Block_mark(block);
 }
 
+static bool is_switch_Cond(ir_node *cond) {
+	ir_node *sel = get_Cond_selector(cond);
+	return get_irn_mode(sel) != mode_b;
+}
+
 static void clear_link(ir_node *node, void *ctx)
 {
 	(void) ctx;
@@ -114,12 +119,9 @@ static void collect_nodes(ir_node *n, void *ctx)
 			ir_node *pred = get_Proj_pred(n);
 			set_irn_link(n, get_irn_link(pred));
 			set_irn_link(pred, n);
-		} else if (is_Cond(n)) {
-			ir_node *sel = get_Cond_selector(n);
-			if (get_irn_mode(sel) != mode_b) {
-				/* found a switch-Cond, collect */
-				ARR_APP1(ir_node*, env->switch_conds, n);
-			}
+		} else if (is_Cond(n) && is_switch_Cond(n)) {
+			/* found a switch-Cond, collect */
+			ARR_APP1(ir_node*, env->switch_conds, n);
 		}
 	}
 }
@@ -534,10 +536,6 @@ static bool handle_switch_cond(ir_node *cond)
 		}
 	}
 	return false;
-}
-
-static bool is_switch_Cond(ir_node *cond) {
-	return get_irn_mode(get_Cond_selector(cond)) != mode_b;
 }
 
 static bool get_phase_flag(ir_phase *block_info, ir_node *block, int offset) {
