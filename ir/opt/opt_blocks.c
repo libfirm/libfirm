@@ -1074,7 +1074,7 @@ static void find_liveouts(ir_node *irn, void *ctx)
 }  /* find_liveouts */
 
 /**
- * Check if the current block is the meet block of a its predecessors.
+ * Check if the current block is the meet block of its predecessors.
  */
 static void check_for_cf_meet(ir_node *block, void *ctx)
 {

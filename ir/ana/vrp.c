@@ -574,7 +574,7 @@ void set_vrp_data(ir_graph *irg)
 
 		if (vrp_update_node(node)) {
 			/* if something changed, add successors to worklist*/
-			for (i = get_irn_n_outs(node) - 1; i >=0; --i) {
+			for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
 				succ =  get_irn_out(node, i);
 				waitq_put(env->workqueue, node);
 			}
