@@ -1325,7 +1325,7 @@ int is_x_regular_Proj(const ir_node *node)
 	pred = get_Proj_pred(node);
 	if (!is_fragile_op(pred))
 		return false;
-	return get_Proj_proj(node) == pred->op->pn_x_except;
+	return get_Proj_proj(node) == pred->op->pn_x_regular;
 }
 
 ir_node **get_Tuple_preds_arr(ir_node *node)
