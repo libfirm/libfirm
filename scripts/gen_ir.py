@@ -419,17 +419,17 @@ void (set_{{node.name}}_{{attr.name}})(ir_node *node, {{attr.type}} {{attr.name}
 {% endfor -%}
 
 {%- for node in nodes %}
-{%- for in in node.ins %}
-ir_node *(get_{{node.name}}_{{in[0]}})(const ir_node *node)
+{%- for input in node.ins %}
+ir_node *(get_{{node.name}}_{{input[0]}})(const ir_node *node)
 {
 	assert(is_{{node.name}}(node));
-	return get_irn_n(node, {{node.ins.index(in)}});
+	return get_irn_n(node, n_{{node.name}}_{{input[0]}});
 }
 
-void (set_{{node.name}}_{{in[0]}})(ir_node *node, ir_node *{{in[0]|escape_keywords}})
+void (set_{{node.name}}_{{input[0]}})(ir_node *node, ir_node *{{input[0]|escape_keywords}})
 {
 	assert(is_{{node.name}}(node));
-	set_irn_n(node, {{node.ins.index(in)}}, {{in[0]|escape_keywords}});
+	set_irn_n(node, n_{{node.name}}_{{input[0]}}, {{input[0]|escape_keywords}});
 }
 {% endfor %}
 {% endfor %}
@@ -482,6 +482,16 @@ nodeops_h_template = env.from_string(
  */
 
 {% for node in nodes -%}
+{% if node.ins %}
+/**
+ * Input numbers for {{node.name}} node
+ */
+typedef enum {
+	{%- for input in node.ins %}
+	n_{{node.name}}_{{input[0]}},
+	{%- endfor %}
+} n_{{node.name}};
+{% endif %}
 {% if node.outs %}
 /**
  * Projection numbers for result of {{node.name}} node (use for Proj nodes)
@@ -554,9 +564,9 @@ FIRM_API int is_{{node.name}}(const ir_node *node);
 {%- endfor %}
 
 {% for node in nodes %}
-{% for in in node.ins -%}
-FIRM_API ir_node *get_{{node.name}}_{{in[0]}}(const ir_node *node);
-FIRM_API void set_{{node.name}}_{{in[0]}}(ir_node *node, ir_node *{{in[0]|escape_keywords}});
+{% for input in node.ins -%}
+FIRM_API ir_node *get_{{node.name}}_{{input[0]}}(const ir_node *node);
+FIRM_API void set_{{node.name}}_{{input[0]}}(ir_node *node, ir_node *{{input[0]|escape_keywords}});
 {% endfor -%}
 {% for attr in node.attrs|hasnot("noprop") -%}
 FIRM_API {{attr.type}} get_{{node.name}}_{{attr.name}}(const ir_node *node);

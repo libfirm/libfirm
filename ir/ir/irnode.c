@@ -1237,24 +1237,28 @@ int is_memop(const ir_node *node)
 ir_node *get_memop_mem(const ir_node *node)
 {
 	assert(is_memop(node));
+	assert(n_Load_mem == 0 && n_Store_mem == 0);
 	return get_irn_n(node, 0);
 }
 
 void set_memop_mem(ir_node *node, ir_node *mem)
 {
 	assert(is_memop(node));
+	assert(n_Load_mem == 0 && n_Store_mem == 0);
 	set_irn_n(node, 0, mem);
 }
 
 ir_node *get_memop_ptr(const ir_node *node)
 {
 	assert(is_memop(node));
+	assert(n_Load_mem == 1 && n_Store_mem == 1);
 	return get_irn_n(node, 1);
 }
 
 void set_memop_ptr(ir_node *node, ir_node *ptr)
 {
 	assert(is_memop(node));
+	assert(n_Load_mem == 1 && n_Store_mem == 1);
 	set_irn_n(node, 1, ptr);
 }
 
