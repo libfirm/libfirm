@@ -4625,8 +4625,8 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	long     proj      = get_Proj_proj(node);
 
-	assert(pn_ia32_Div_M == pn_ia32_IDiv_M);
-	assert(pn_ia32_Div_div_res == pn_ia32_IDiv_div_res);
+	assert((long)pn_ia32_Div_M == (long)pn_ia32_IDiv_M);
+	assert((long)pn_ia32_Div_div_res == (long)pn_ia32_IDiv_div_res);
 
 	switch (proj) {
 	case pn_Div_M:
@@ -4672,8 +4672,8 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 	long     proj      = get_Proj_proj(node);
 
 	assert(is_ia32_Div(new_pred) || is_ia32_IDiv(new_pred));
-	assert(pn_ia32_Div_M == pn_ia32_IDiv_M);
-	assert(pn_ia32_Div_mod_res == pn_ia32_IDiv_mod_res);
+	assert((long)pn_ia32_Div_M == (long)pn_ia32_IDiv_M);
+	assert((long)pn_ia32_Div_mod_res == (long)pn_ia32_IDiv_mod_res);
 
 	switch (proj) {
 	case pn_Mod_M:
