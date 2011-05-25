@@ -1866,10 +1866,7 @@ static void lower_Start(ir_node *node, ir_mode *mode)
 			mode_h = env->low_unsigned;
 		} else {
 			long new_pn = new_projs[proj_nr];
-			if (new_pn != proj_nr) {
-				ir_node *new_proj = new_r_Proj(pred, mode, new_pn);
-				exchange(proj, new_proj);
-			}
+			set_Proj_proj(proj, new_pn);
 			continue;
 		}
 
@@ -2003,10 +2000,7 @@ static void lower_Call(ir_node *node, ir_mode *mode)
 			mode_h = env->low_unsigned;
 		} else {
 			long new_nr = res_numbers[proj_nr];
-			if (proj_nr != new_nr) {
-				ir_node *new_proj = new_r_Proj(pred, proj_mode, new_nr);
-				exchange(proj, new_proj);
-			}
+			set_Proj_proj(proj, new_nr);
 			continue;
 		}
 
