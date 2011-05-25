@@ -146,7 +146,7 @@ class Bad(Op):
 	they are set to Bad, and the actual removal is left to the control flow
 	optimisation phase. Block, Phi, Tuple with only Bad inputs however are
 	replaced by Bad right away."""
-	flags         = [ "cfopcode", "start_block", "dump_noblock" ]
+	flags         = [ "start_block", "dump_noblock" ]
 	pinned        = "yes"
 	knownBlock    = True
 	block         = "get_irg_start_block(irg)"
@@ -926,7 +926,7 @@ class Unknown(Op):
 	knownBlock = True
 	pinned     = "yes"
 	block      = "get_irg_start_block(irg)"
-	flags      = [ "cfopcode", "start_block", "constlike", "dump_noblock" ]
+	flags      = [ "start_block", "constlike", "dump_noblock" ]
 
 # Prepare node list
 

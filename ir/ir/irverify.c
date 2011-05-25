@@ -757,10 +757,11 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 	int i;
 
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
-		ir_node *pred = get_Block_cfgpred(n, i);
+		ir_node *pred         = get_Block_cfgpred(n, i);
+		ir_node *skipped_pred = skip_Proj(skip_Tuple(pred));
 		ASSERT_AND_RET(get_irn_mode(pred) == mode_X,
 			"Block node must have a mode_X predecessor", 0);
-		ASSERT_AND_RET(is_cfop(skip_Proj(skip_Tuple(pred))), "Block predecessor must be a cfop", 0);
+		ASSERT_AND_RET(is_cfop(skipped_pred) || is_Bad(skipped_pred), "Block predecessor must be a cfop (or Bad)", 0);
 	}
 
 	if (n == get_irg_start_block(irg)) {
