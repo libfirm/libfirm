@@ -394,7 +394,9 @@ static void optimize_blocks(ir_node *b, void *ctx)
 						pred = get_Block_cfgpred_block(b, i);
 
 						if (is_Bad(pred)) {
-							in[q_preds++] = pred;
+							ir_graph *irg  = get_irn_irg(b);
+							ir_mode  *mode = get_irn_mode(phi);
+							in[q_preds++] = new_r_Bad(irg, mode);
 						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
