@@ -64,7 +64,6 @@
 typedef struct merge_env {
 	bool      changed;      /**< Set if the graph was changed. */
 	bool      phis_moved;   /**< Set if Phi nodes were moved. */
-	ir_node **switch_conds; /**< Helper list for all found Switch Conds. */
 } merge_env;
 
 static void set_Block_removable(ir_node *block, bool removable)
@@ -99,7 +98,7 @@ static void clear_link(ir_node *node, void *ctx)
  */
 static void collect_nodes(ir_node *n, void *ctx)
 {
-	merge_env *env = (merge_env*)ctx;
+	ir_node ***switch_conds = (ir_node***)ctx;
 
 	if (is_Phi(n)) {
 		/* Collect Phi nodes to compact ins along with block's ins. */
@@ -121,7 +120,7 @@ static void collect_nodes(ir_node *n, void *ctx)
 			set_irn_link(pred, n);
 		} else if (is_Cond(n) && is_switch_Cond(n)) {
 			/* found a switch-Cond, collect */
-			ARR_APP1(ir_node*, env->switch_conds, n);
+			ARR_APP1(ir_node*, *switch_conds, n);
 		}
 	}
 }
@@ -730,6 +729,7 @@ void optimize_cf(ir_graph *irg)
 	/* The switch Cond optimization might expose unreachable code, so we loop */
 	for (;;) {
 		int length;
+		ir_node **switch_conds = NULL;
 		env.changed    = false;
 		env.phis_moved = false;
 
@@ -741,16 +741,16 @@ void optimize_cf(ir_graph *irg)
 		 * Finally it marks all blocks that do not contain useful
 		 * computations, i.e., these blocks might be removed.
 		 */
-		env.switch_conds = NEW_ARR_F(ir_node*, 0);
-		irg_walk(end, clear_link, collect_nodes, &env);
+		switch_conds = NEW_ARR_F(ir_node*, 0);
+		irg_walk(end, clear_link, collect_nodes, &switch_conds);
 
 		/* handle all collected switch-Conds */
-		length = ARR_LEN(env.switch_conds);
+		length = ARR_LEN(switch_conds);
 		for (i = 0; i < length; ++i) {
-			ir_node *cond = env.switch_conds[i];
+			ir_node *cond = switch_conds[i];
 			env.changed |= handle_switch_cond(cond);
 		}
-		DEL_ARR_F(env.switch_conds);
+		DEL_ARR_F(switch_conds);
 
 		if (!env.changed) break;
 
