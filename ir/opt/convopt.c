@@ -47,6 +47,7 @@
 #include "irgmod.h"
 #include "irgopt.h"
 #include "irnode_t.h"
+#include "iropt_t.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
 #include "irprintf.h"
@@ -58,7 +59,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg);
 
 static inline int imin(int a, int b) { return a < b ? a : b; }
 
-static bool is_optimizable_node(const ir_node *node)
+static bool is_optimizable_node(const ir_node *node, ir_mode *dest_mode)
 {
 	switch (get_irn_opcode(node)) {
 	case iro_Add:
@@ -69,9 +70,17 @@ static bool is_optimizable_node(const ir_node *node)
 	case iro_Not:
 	case iro_Or:
 	case iro_Phi:
-	case iro_Shl:
 	case iro_Sub:
 		return true;
+	case iro_Shl: {
+		int modulo_shift = get_mode_modulo_shift(dest_mode);
+		int old_shift    = get_mode_modulo_shift(get_irn_mode(node));
+		/* bail out if modulo shift changes */
+		if (modulo_shift != old_shift)
+			return false;
+		return true;
+	}
+
 	default:
 		return false;
 	}
@@ -116,6 +125,10 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return 1;
 	}
 
+	if (ir_zero_when_converted(node, dest_mode)) {
+		return -1;
+	}
+
 #if 0 // TODO
 	/* Take the minimum of the conversion costs for Phi predecessors as only one
 	 * branch is actually executed at a time */
@@ -149,7 +162,7 @@ static int get_conv_costs(const ir_node *node, ir_mode *dest_mode)
 		return get_conv_costs(get_Conv_op(node), dest_mode) - 1;
 	}
 
-	if (!is_optimizable_node(node)) {
+	if (!is_optimizable_node(node, dest_mode)) {
 		return 1;
 	}
 
@@ -218,7 +231,7 @@ static ir_node *conv_transform(ir_node *node, ir_mode *dest_mode)
 		return conv_transform(get_Conv_op(node), dest_mode);
 	}
 
-	if (!is_optimizable_node(node)) {
+	if (!is_optimizable_node(node, dest_mode)) {
 		return place_conv(node, dest_mode);
 	}
 
