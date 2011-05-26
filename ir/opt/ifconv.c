@@ -477,6 +477,8 @@ void opt_if_conv(ir_graph *irg)
 
 	DB((dbg, LEVEL_1, "Running if-conversion on %+F\n", irg));
 
+	env.changed |= remove_bads(irg);
+
 	normalize_one_return(irg);
 	remove_critical_cf_edges(irg);
 
