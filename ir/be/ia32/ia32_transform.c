@@ -1431,7 +1431,7 @@ static bool is_complementary_shifts(ir_node *value1, ir_node *value2)
 		if (tarval_is_long(tv1) && tarval_is_long(tv2)) {
 			long v1 = get_tarval_long(tv1);
 			long v2 = get_tarval_long(tv2);
-			return v1 < v2 && v2 == 32-v1;
+			return v1 <= v2 && v2 == 32-v1;
 		}
 	}
 	return false;
