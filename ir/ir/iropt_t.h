@@ -121,6 +121,11 @@ static inline ir_tarval *value_of(const ir_node *n)
 }
 
 /**
+ * returns true if a value becomes zero when converted to mode @p mode
+ */
+bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode);
+
+/**
  * Sets the default operations for an ir_op_ops.
  *
  * @param code   the opcode for the default operation

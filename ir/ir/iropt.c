@@ -328,6 +328,28 @@ static ir_tarval *computed_value_Not(const ir_node *n)
 }  /* computed_value_Not */
 
 /**
+ * Tests wether a shift shifts more bits than available in the mode
+ */
+static bool is_oversize_shift(const ir_node *n)
+{
+	ir_node   *count = get_binop_right(n);
+	ir_mode   *mode  = get_irn_mode(n);
+	ir_tarval *tv    = value_of(count);
+	long       modulo_shift;
+	long       shiftval;
+	if (tv == tarval_bad)
+		return false;
+	if (!tarval_is_long(tv))
+		return false;
+	shiftval     = get_tarval_long(tv);
+	modulo_shift = get_mode_modulo_shift(mode);
+	if (shiftval < 0 || (modulo_shift > 0 && shiftval >= modulo_shift))
+		return false;
+
+	return shiftval >= (long)get_mode_size_bits(mode);
+}
+
+/**
  * Return the value of a Shl.
  */
 static ir_tarval *computed_value_Shl(const ir_node *n)
@@ -341,6 +363,10 @@ static ir_tarval *computed_value_Shl(const ir_node *n)
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_shl(ta, tb);
 	}
+
+	if (is_oversize_shift(n))
+		return get_mode_null(get_irn_mode(n));
+
 	return tarval_bad;
 }  /* computed_value_Shl */
 
@@ -358,6 +384,9 @@ static ir_tarval *computed_value_Shr(const ir_node *n)
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_shr(ta, tb);
 	}
+	if (is_oversize_shift(n))
+		return get_mode_null(get_irn_mode(n));
+
 	return tarval_bad;
 }  /* computed_value_Shr */
 
@@ -395,16 +424,51 @@ static ir_tarval *computed_value_Rotl(const ir_node *n)
 	return tarval_bad;
 }  /* computed_value_Rotl */
 
+bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode)
+{
+	ir_mode *mode = get_irn_mode(node);
+	if (get_mode_arithmetic(mode) != irma_twos_complement
+	    || get_mode_arithmetic(dest_mode) != irma_twos_complement)
+	    return false;
+
+	if (is_Shl(node)) {
+		ir_node *count = get_Shl_right(node);
+		if (is_Const(count)) {
+			ir_tarval *tv = get_Const_tarval(count);
+			if (tarval_is_long(tv)) {
+				long shiftval = get_tarval_long(tv);
+				long destbits = get_mode_size_bits(dest_mode);
+				if (shiftval >= destbits
+				    && shiftval < (long)get_mode_modulo_shift(mode))
+					return true;
+			}
+		}
+	}
+	if (is_And(node)) {
+		ir_node *right = get_And_right(node);
+		if (is_Const(right)) {
+			ir_tarval *tv     = get_Const_tarval(right);
+			ir_tarval *conved = tarval_convert_to(tv, dest_mode);
+			return tarval_is_null(conved);
+		}
+	}
+	return false;
+}
+
 /**
  * Return the value of a Conv.
  */
 static ir_tarval *computed_value_Conv(const ir_node *n)
 {
-	ir_node *a = get_Conv_op(n);
-	ir_tarval *ta = value_of(a);
+	ir_node   *a    = get_Conv_op(n);
+	ir_tarval *ta   = value_of(a);
+	ir_mode   *mode = get_irn_mode(n);
 
 	if (ta != tarval_bad)
 		return tarval_convert_to(ta, get_irn_mode(n));
+
+	if (ir_zero_when_converted(a, mode))
+		return get_mode_null(mode);
 
 	return tarval_bad;
 }  /* computed_value_Conv */
@@ -4647,6 +4711,7 @@ static ir_node *transform_node_shift(ir_node *n)
 {
 	ir_node *left, *right;
 	ir_mode *mode;
+	ir_mode *count_mode;
 	ir_tarval *tv1, *tv2, *res;
 	ir_node *in[2], *irn, *block;
 	ir_graph *irg;
@@ -4667,13 +4732,20 @@ static ir_node *transform_node_shift(ir_node *n)
 	if (tv2 == tarval_bad)
 		return n;
 
+	count_mode = get_tarval_mode(tv1);
+	if (get_tarval_mode(tv2) != count_mode) {
+		/* TODO: search bigger mode or something and convert... */
+		return n;
+	}
+
 	mode       = get_irn_mode(n);
 	modulo_shf = get_mode_modulo_shift(mode);
 
 	if (modulo_shf > 0) {
-		ir_mode   *sc_mode     = get_tarval_mode(tv1);
-		ir_tarval *modulo_mask = new_tarval_from_long(modulo_shf-1, sc_mode);
+		ir_tarval *modulo_mask = new_tarval_from_long(modulo_shf-1, count_mode);
 
+		/* I'm not so sure what happens in one complement... */
+		assert(get_mode_arithmetic(count_mode) == irma_twos_complement);
 		/* modulo shifts should always be a power of 2 (otherwise modulo_mask
 		 * above will be invalid) */
 		assert(modulo_shf<=0 || is_po2(modulo_shf));
@@ -4681,35 +4753,34 @@ static ir_node *transform_node_shift(ir_node *n)
 		tv1 = tarval_and(tv1, modulo_mask);
 		tv2 = tarval_and(tv2, modulo_mask);
 	}
-	res  = tarval_add(tv1, tv2);
-	irg  = get_irn_irg(n);
+	res = tarval_add(tv1, tv2);
+	irg = get_irn_irg(n);
 
 	/* beware: a simple replacement works only, if res < modulo shift */
-	if (!is_Rotl(n)) {
-		if (modulo_shf > 0) {
-			ir_tarval *modulo = new_tarval_from_long(modulo_shf,
-			                                         get_tarval_mode(res));
-
-			assert(modulo_shf >= (int) get_mode_size_bits(mode));
-
-			/* shifting too much */
-			if (!(tarval_cmp(res, modulo) & ir_relation_less)) {
-				if (is_Shrs(n)) {
-					ir_node  *block = get_nodes_block(n);
-					dbg_info *dbgi  = get_irn_dbg_info(n);
-					ir_mode  *smode = get_irn_mode(right);
-					ir_node  *cnst  = new_r_Const_long(irg, smode, get_mode_size_bits(mode) - 1);
-					return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
-				}
-
-				return new_r_Const(irg, get_mode_null(mode));
-			}
-		}
+	if (is_Rotl(n)) {
+		int        bits   = get_mode_size_bits(mode);
+		ir_tarval *modulo = new_tarval_from_long(bits, count_mode);
+		res = tarval_mod(res, modulo);
 	} else {
-		res = tarval_mod(res, new_tarval_from_long(get_mode_size_bits(mode), get_tarval_mode(res)));
+		long       bits      = get_mode_size_bits(mode);
+		ir_tarval *mode_size = new_tarval_from_long(bits, count_mode);
+
+		/* shifting too much */
+		if (!(tarval_cmp(res, mode_size) & ir_relation_less)) {
+			if (is_Shrs(n)) {
+				ir_node  *block = get_nodes_block(n);
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_mode  *smode = get_irn_mode(right);
+				ir_node  *cnst  = new_r_Const_long(irg, smode, get_mode_size_bits(mode) - 1);
+				return new_rd_Shrs(dbgi, block, get_binop_left(left), cnst, mode);
+			}
+
+			return new_r_Const(irg, get_mode_null(mode));
+		}
 	}
 
 	/* ok, we can replace it */
+	assert(modulo_shf >= (int) get_mode_size_bits(mode));
 	block = get_nodes_block(n);
 
 	in[0] = get_binop_left(left);
@@ -4720,7 +4791,7 @@ static ir_node *transform_node_shift(ir_node *n)
 	DBG_OPT_ALGSIM0(n, irn, FS_OPT_REASSOC_SHIFT);
 
 	return transform_node(irn);
-}  /* transform_node_shift */
+}
 
 /**
  * normalisation: (x & c1) >> c2   to   (x >> c2) & (c1 >> c2)
@@ -5027,6 +5098,16 @@ static ir_node *transform_node_Shrs(ir_node *n)
 	ir_node *a    = get_Shrs_left(n);
 	ir_node *b    = get_Shrs_right(n);
 	ir_mode *mode = get_irn_mode(n);
+
+	if (is_oversize_shift(n)) {
+		ir_node  *block = get_nodes_block(n);
+		dbg_info *dbgi  = get_irn_dbg_info(n);
+		ir_mode  *cmode = get_irn_mode(b);
+		long      val   = get_mode_size_bits(cmode)-1;
+		ir_graph *irg   = get_irn_irg(n);
+		ir_node  *cnst  = new_r_Const_long(irg, cmode, val);
+		return new_rd_Shrs(dbgi, block, a, cnst, mode);
+	}
 
 	HANDLE_BINOP_PHI((eval_func) tarval_shrs, a, b, c, mode);
 	n = transform_node_shift(n);
