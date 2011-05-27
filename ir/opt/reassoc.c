@@ -608,13 +608,11 @@ static void wq_walker(ir_node *n, void *env)
 static void do_reassociation(walker_t *wenv)
 {
 	int i, res, changed;
-	ir_node *n, *blk;
+	ir_node *n;
 
 	while (! waitq_empty(wenv->wq)) {
 		n = (ir_node*)waitq_get(wenv->wq);
 		set_irn_link(n, NULL);
-
-		blk = get_nodes_block(n);
 
 		hook_reassociate(1);
 

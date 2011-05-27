@@ -55,7 +55,7 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 	size_t k;
 	size_t l;
 	int overwritten;
-	ir_type *super, *inhenttype;
+	ir_type *super;
 	ir_entity *inhent, *thisent;
 	mangle_inherited_name_func *mfunc = *(mangle_inherited_name_func **)env;
 
@@ -64,7 +64,6 @@ static void copy_entities_from_superclass(ir_type *clss, void *env)
 		assert(is_Class_type(super) && "not a class");
 		for (j = 0; j < get_class_n_members(super); j++) {
 			inhent = get_class_member(super, j);
-			inhenttype = get_entity_type(inhent);
 			/* check whether inhent is already overwritten */
 			overwritten = 0;
 			for (k = 0; (k < get_class_n_members(clss)) && (overwritten == 0); k++) {

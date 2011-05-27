@@ -1228,7 +1228,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 	int i, n_preds;
 
 	ir_node *oldn = n;
-	ir_node *block;
 	ir_node *first_val = NULL; /* to shutup gcc */
 
 	if (!get_opt_optimize() &&
@@ -1236,8 +1235,6 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		return n;
 
 	n_preds = get_Phi_n_preds(n);
-
-	block = get_nodes_block(n);
 
 	/* Phi of dead Region without predecessors. */
 	if (n_preds == 0)

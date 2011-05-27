@@ -641,7 +641,6 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left
 	ir_relation l_relation, res_relation, neg_relation;
 	interval_t  l_iv, r_iv;
 	ir_tarval  *tv;
-	ir_mode    *mode;
 
 	if (is_Confirm(right)) {
 		/* we want the Confirm on the left side */
@@ -722,7 +721,6 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left
 			 * We know that a CMP b and check for a ~CMP b
 			 */
 			else {
-				mode    = get_irn_mode(left);
 				neg_relation = get_negated_relation(relation);
 
 				if ((r_relation == neg_relation) || (r_relation == (neg_relation & ~ir_relation_equal))) {
@@ -767,7 +765,6 @@ FIRM_API ir_tarval *computed_value_Cmp_Confirm(const ir_node *cmp, ir_node *left
 		 * We know that a CMP b and check for a ~CMP b
 		 */
 		else {
-			mode = get_irn_mode(left);
 			neg_relation = get_negated_relation(relation);
 
 			if ((l_relation == neg_relation) || (l_relation == (neg_relation & ~ir_relation_equal))) {

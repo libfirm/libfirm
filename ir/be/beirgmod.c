@@ -87,7 +87,7 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 	ir_nodeset_t          live;
 	ir_nodeset_iterator_t iter;
 
-	ir_node *curr, *irn, *perm, **nodes;
+	ir_node *irn, *perm, **nodes;
 	size_t i, n;
 
 	DBG((dbg, LEVEL_1, "Insert Perm after: %+F\n", pos));
@@ -116,7 +116,6 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 	sched_add_after(pos, perm);
 	free(nodes);
 
-	curr = perm;
 	for (i = 0; i < n; ++i) {
 		ir_node *perm_op = get_irn_n(perm, i);
 		const arch_register_t *reg = arch_get_irn_register(perm_op);
@@ -125,8 +124,6 @@ ir_node *insert_Perm_after(ir_graph *irg, const arch_register_class_t *cls,
 		ir_mode *mode = get_irn_mode(perm_op);
 		ir_node *proj = new_r_Proj(perm, mode, i);
 		arch_set_irn_register(proj, reg);
-
-		curr = proj;
 
 		be_ssa_construction_init(&senv, irg);
 		be_ssa_construction_add_copy(&senv, perm_op);

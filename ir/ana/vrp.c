@@ -171,11 +171,10 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Rotl: {
-		const vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left;
 		const ir_node *right = get_Rotl_right(node);
 
 		vrp_left = get_vrp_attr(get_Rotl_left(node));
-		vrp_right = get_vrp_attr(get_Rotl_right(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -187,10 +186,9 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Shl: {
-		const vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shl_right(node);
 		vrp_left = get_vrp_attr(get_Shl_left(node));
-		vrp_right = get_vrp_attr(get_Shl_right(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -201,11 +199,10 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Shr: {
-		const vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shr_right(node);
 
 		vrp_left = get_vrp_attr(get_Shr_left(node));
-		vrp_right = get_vrp_attr(get_Shr_right(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -216,11 +213,10 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Shrs: {
-		const vrp_attr *vrp_left, *vrp_right;
+		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shrs_right(node);
 
 		vrp_left = get_vrp_attr(get_Shrs_left(node));
-		vrp_right = get_vrp_attr(get_Shrs_right(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {

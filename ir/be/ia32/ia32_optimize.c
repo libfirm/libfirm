@@ -354,12 +354,10 @@ static void peephole_ia32_Test(ir_node *node)
  */
 static void peephole_ia32_Return(ir_node *node)
 {
-	ir_node *block, *irn;
+	ir_node *irn;
 
 	if (!ia32_cg_config.use_pad_return)
 		return;
-
-	block = get_nodes_block(node);
 
 	/* check if this return is the first on the block */
 	sched_foreach_reverse_from(node, irn) {
@@ -662,7 +660,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 	int      i, maxslot, inc_ofs, ofs;
 	ir_node  *node, *pred_sp, *block;
 	ir_node  *loads[MAXPUSH_OPTIMIZE];
-	ir_graph *irg;
 	unsigned regmask = 0;
 	unsigned copymask = ~0;
 
@@ -772,7 +769,6 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 
 	/* create a new IncSP if needed */
 	block = get_nodes_block(irn);
-	irg   = get_irn_irg(irn);
 	if (inc_ofs > 0) {
 		pred_sp = be_new_IncSP(esp, block, pred_sp, -inc_ofs, be_get_IncSP_align(irn));
 		sched_add_before(irn, pred_sp);

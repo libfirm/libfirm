@@ -811,13 +811,11 @@ static void autodetect_arch(void)
 	/* We use the cpuid instruction to detect the CPU features */
 	if (x86_toogle_cpuid()) {
 		cpuid_registers   regs;
-		unsigned          highest_level;
 		char              vendorid[13];
 		x86_cpu_info_t    cpu_info;
 
 		/* get vendor ID */
 		x86_cpuid(&regs, 0);
-		highest_level = regs.r.eax;
 		memcpy(&vendorid[0], &regs.r.ebx, 4);
 		memcpy(&vendorid[4], &regs.r.edx, 4);
 		memcpy(&vendorid[8], &regs.r.ecx, 4);

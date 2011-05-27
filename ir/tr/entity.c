@@ -486,15 +486,12 @@ void set_atomic_ent_value(ir_entity *entity, ir_node *val)
  *  const_code_irg. */
 int is_irn_const_expression(ir_node *n)
 {
-	ir_mode *m;
-
 	/* we are in danger iff an exception will arise. TODO: be more precisely,
 	 * for instance Div. will NOT rise if divisor != 0
 	 */
 	if (is_binop(n) && !is_fragile_op(n))
 		return is_irn_const_expression(get_binop_left(n)) && is_irn_const_expression(get_binop_right(n));
 
-	m = get_irn_mode(n);
 	switch (get_irn_opcode(n)) {
 	case iro_Const:
 	case iro_SymConst:

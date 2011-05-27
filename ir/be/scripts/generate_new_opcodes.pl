@@ -464,6 +464,7 @@ EOF
 
 	if (exists($n->{"init_attr"})) {
 		$temp .= "\tattr = (${attr_type}*)get_irn_generic_attr(res);\n";
+		$temp .= "\t(void) attr; /* avoid potential warning */\n";
 		$temp .= "\t".$n->{"init_attr"}."\n";
 	}
 

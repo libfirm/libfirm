@@ -1480,7 +1480,10 @@ static unsigned optimize_store(ir_node *store)
 static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 {
 	int i, n;
-	ir_node *store, *old_store, *ptr, *block, *phi_block, *phiM, *phiD, *exc, *projM;
+	ir_node *store, *ptr, *block, *phi_block, *phiM, *phiD, *exc, *projM;
+#ifdef DO_CACHEOPT
+	ir_node *old_store;
+#endif
 	ir_mode *mode;
 	ir_node **inM, **inD, **projMs;
 	int *idx;
@@ -1503,7 +1506,9 @@ static unsigned optimize_phi(ir_node *phi, walk_env_t *wenv)
 		return 0;
 
 	store = skip_Proj(projM);
+#ifdef DO_CACHEOPT
 	old_store = store;
+#endif
 	if (!is_Store(store))
 		return 0;
 
@@ -1814,7 +1819,6 @@ static unsigned hash_cache_entry(const avail_entry_t *entry)
 static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 {
 	ir_node   *phi, *load, *next, *other, *next_other;
-	ir_entity *ent;
 	int       j;
 	phi_entry *phi_list = NULL;
 	set       *avail;
@@ -1870,7 +1874,6 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 			/* for now, we can only move Load(Global) */
 			if (! is_Global(ptr))
 				continue;
-			ent       = get_Global_entity(ptr);
 			load_mode = get_Load_mode(load);
 			for (other = pscc->head; other != NULL; other = next_other) {
 				node_entry *ne = get_irn_ne(other, env);

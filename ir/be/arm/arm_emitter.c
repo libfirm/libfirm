@@ -329,7 +329,6 @@ static void emit_arm_SymConst(const ir_node *irn)
 {
 	const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
 	sym_or_tv_t key, *entry;
-	unsigned label;
 
 	key.u.entity  = attr->entity;
 	key.is_entity = true;
@@ -339,7 +338,6 @@ static void emit_arm_SymConst(const ir_node *irn)
 		/* allocate a label */
 		entry->label = get_unique_label();
 	}
-	label = entry->label;
 
 	/* load the symbol indirect */
 	be_emit_cstring("\tldr ");
@@ -368,7 +366,6 @@ static void emit_arm_FrameAddr(const ir_node *irn)
 static void emit_arm_fConst(const ir_node *irn)
 {
 	sym_or_tv_t key, *entry;
-	unsigned label;
 	ir_mode *mode;
 
 	key.u.tv      = get_fConst_value(irn);
@@ -379,7 +376,6 @@ static void emit_arm_fConst(const ir_node *irn)
 		/* allocate a label */
 		entry->label = get_unique_label();
 	}
-	label = entry->label;
 
 	/* load the tarval indirect */
 	mode = get_irn_mode(irn);

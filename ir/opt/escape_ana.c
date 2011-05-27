@@ -472,7 +472,6 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 {
 	ir_node *call, *next, *mem, *blk;
-	ir_type *ftp;
 
 	/* kill all dead allocs */
 	for (call = env->dead_allocs; call; call = next) {
@@ -492,7 +491,6 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 	}
 
 	/* convert all non-escaped heap allocs into frame variables */
-	ftp = get_irg_frame_type(irg);
 	for (call = env->found_allocs; call; call = next) {
 		next = (ir_node*)get_irn_link(call);
 	}

@@ -605,7 +605,6 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
    and backwards without loss. */
 int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 {
-	int sm_bits, lm_bits;
 	ir_mode_arithmetic arith;
 
 	assert(sm);
@@ -615,9 +614,6 @@ int values_in_mode(const ir_mode *sm, const ir_mode *lm)
 
 	if (sm == mode_b)
 		return mode_is_int(lm);
-
-	sm_bits = get_mode_size_bits(sm);
-	lm_bits = get_mode_size_bits(lm);
 
 	arith = get_mode_arithmetic(sm);
 	if (arith != get_mode_arithmetic(lm))

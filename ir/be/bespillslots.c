@@ -199,15 +199,14 @@ void be_node_needs_frame_entity(be_fec_env_t *env, ir_node *node,
                                 const ir_mode *mode, int align)
 {
 	ir_node *spillnode = get_memory_edge(node);
-	spill_t *spill;
 
 	assert(spillnode != NULL);
 
 	/* walk upwards and collect all phis and spills on this way */
 	if (is_Phi(spillnode)) {
-		spill = collect_memphi(env, spillnode, mode, align);
+		collect_memphi(env, spillnode, mode, align);
 	} else {
-		spill = collect_spill(env, spillnode, mode, align);
+		collect_spill(env, spillnode, mode, align);
 	}
 
 	ARR_APP1(ir_node *, env->reloads, node);

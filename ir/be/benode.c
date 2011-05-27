@@ -641,7 +641,6 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp,
 {
 	ir_node *irn;
 	ir_node *in[n_be_AddSP_last];
-	const arch_register_class_t *cls;
 	ir_graph *irg;
 	be_node_attr_t *attr;
 
@@ -660,8 +659,6 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp,
 	be_node_set_reg_class_in(irn, n_be_AddSP_size, arch_register_get_class(sp));
 	be_set_constr_single_reg_out(irn, pn_be_AddSP_sp, sp,
 	                             arch_register_req_type_produces_sp);
-
-	cls = arch_register_get_class(sp);
 
 	return irn;
 }

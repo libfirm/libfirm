@@ -228,7 +228,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	if (n_params > 0) {
 		ir_node *calls;
 		ir_node *args;
-		ir_node *args_bl;
 
 		NEW_ARR_A(ir_node **, call_params, env->n_tail_calls);
 
@@ -241,7 +240,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 
 		/* build new Proj's and Phi's */
 		args    = get_irg_args(irg);
-		args_bl = get_nodes_block(args);
 		for (i = 0; i < n_params; ++i) {
 			ir_mode *mode = get_type_mode(get_method_param_type(method_tp, i));
 

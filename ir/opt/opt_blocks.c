@@ -1098,13 +1098,10 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
 	k = 0;
 	for (i = n - 1; i >= 0; --i) {
 		ir_node *pred = get_Block_cfgpred(block, i);
-		ir_node *pred_block;
 
 		/* pred must be a direct jump to us */
 		if (! is_Jmp(pred) && ! is_Raise(pred) && !is_Bad(pred))
 			continue;
-
-		pred_block = get_nodes_block(skip_Proj(pred));
 
 		preds[k].pred  = pred;
 		preds[k].index = i;

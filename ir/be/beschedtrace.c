@@ -663,7 +663,7 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns)
 	ir_node     *irn, *cand  = NULL;
 	int         max_prio     = INT_MIN;
 	int         cur_prio     = INT_MIN;
-	int         reg_fact, cand_reg_fact;
+	int         reg_fact;
 	ir_nodeset_iterator_t iter;
 	/* Note: register pressure calculation needs an overhaul, you need correct
 	 * tracking for each register class indidually and weight by each class
@@ -706,7 +706,6 @@ static ir_node *heuristic_select(void *block_env, ir_nodeset_t *ns)
 			if (cur_prio > max_prio) {
 				cand          = irn;
 				max_prio      = cur_prio;
-				cand_reg_fact = reg_fact;
 			}
 
 			DBG((trace_env->dbg, LEVEL_4, "checked NODE %+F\n", irn));

@@ -1752,7 +1752,6 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 {
 	/* get predecessor in stack_order list */
 	ir_node *stack_pred = be_get_stack_pred(abihelper, node);
-	ir_node *stack_pred_transformed;
 	ir_node *stack;
 
 	if (stack_pred == NULL) {
@@ -1762,8 +1761,8 @@ static ir_node *get_stack_pointer_for(ir_node *node)
 		return sp_proj;
 	}
 
-	stack_pred_transformed = be_transform_node(stack_pred);
-	stack                  = (ir_node*)pmap_get(node_to_stack, stack_pred);
+	be_transform_node(stack_pred);
+	stack = (ir_node*)pmap_get(node_to_stack, stack_pred);
 	if (stack == NULL) {
 		return get_stack_pointer_for(stack_pred);
 	}

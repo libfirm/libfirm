@@ -120,7 +120,6 @@ static void kill_entry(entry_t *entry)
  */
 static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 {
-	ir_type *mtp;
 	entry_t *key, *entry;
 	ir_node *call_param;
 	size_t i, n_params;
@@ -131,7 +130,6 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 	 * last non-variadic one, which might be needed for the va_start()
 	 * magic
 	 */
-	mtp = get_Call_type(call);
 
 	/* In this for loop we collect the calls, that have
 	   an constant parameter. */
@@ -412,7 +410,6 @@ static ir_entity *clone_method(const quadruple_t *q)
 {
 	ir_entity *new_entity;
 	ident *clone_ident;
-	symconst_symbol sym;
 	/* A counter for the clones.*/
 	static size_t nr = 0;
 
@@ -432,9 +429,6 @@ static ir_entity *clone_method(const quadruple_t *q)
 
 	/* We need now a new ir_graph for our clone method. */
 	create_clone_proc_irg(new_entity, q);
-
-	/* We must set the atomic value of our "new_entity". */
-	sym.entity_p = new_entity;
 
 	/* The "new_entity" don't have this information. */
 	new_entity->attr.mtd_attr.param_access = NULL;

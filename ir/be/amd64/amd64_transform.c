@@ -361,7 +361,6 @@ static ir_node *gen_Conv(ir_node *node)
 	} else { /* complete in gp registers */
 		int src_bits = get_mode_size_bits(src_mode);
 		int dst_bits = get_mode_size_bits(dst_mode);
-		int min_bits;
 		ir_mode *min_mode;
 
 		if (src_bits == dst_bits) {
@@ -370,10 +369,8 @@ static ir_node *gen_Conv(ir_node *node)
 		}
 
 		if (src_bits < dst_bits) {
-			min_bits = src_bits;
 			min_mode = src_mode;
 		} else {
-			min_bits = dst_bits;
 			min_mode = dst_mode;
 		}
 

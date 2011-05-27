@@ -1262,11 +1262,6 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
  */
 static void emit_ia32_Jmp(const ir_node *node)
 {
-	ir_node *block;
-
-	/* for now, the code works for scheduled and non-schedules blocks */
-	block = get_nodes_block(node);
-
 	/* we have a block schedule */
 	if (can_be_fallthrough(node)) {
 		ia32_emitf(node, "\t/* fallthrough to %L */\n");
@@ -3370,7 +3365,6 @@ static void bemit_ia32_jcc(const ir_node *node)
 	const ir_node        *proj_false;
 	const ir_node        *dest_true;
 	const ir_node        *dest_false;
-	const ir_node        *block;
 
 	cc = determine_final_cc(node, 0, cc);
 
@@ -3380,8 +3374,6 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 	proj_false = get_proj(node, pn_ia32_Jcc_false);
 	assert(proj_false && "Jcc without false Proj");
-
-	block = get_nodes_block(node);
 
 	if (can_be_fallthrough(proj_true)) {
 		/* exchange both proj's so the second one can be omitted */

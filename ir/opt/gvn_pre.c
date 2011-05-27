@@ -537,7 +537,7 @@ static void compute_antic(ir_node *block, void *ctx)
 static void insert_nodes(ir_node *block, void *ctx)
 {
 	pre_env    *env = (pre_env*)ctx;
-	ir_node    *value, *expr, *idom, *first_s, *worklist;
+	ir_node    *value, *expr, *idom, *first_s;
 	block_info *curr_info, *idom_info;
 	int        pos, arity = get_irn_arity(block);
 	int        all_same, by_some, updated;
@@ -571,7 +571,6 @@ static void insert_nodes(ir_node *block, void *ctx)
 
 	/* convert the set into a list. This allows the removal of
 	 * elements from the set */
-	worklist = NULL;
 	foreach_valueset(curr_info->antic_in, value, expr, iter) {
 		ir_mode *mode;
 

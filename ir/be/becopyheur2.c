@@ -842,14 +842,13 @@ static void apply_coloring(co2_cloud_irn_t *ci, col_t col, int depth)
 {
 	const ir_node *irn = ci->inh.irn;
 	int *front   = FRONT_BASE(ci, col);
-	int i, ok;
+	int i;
 	struct list_head changed;
 
 	INIT_LIST_HEAD(&changed);
 
 	DBG((ci->cloud->env->dbg, LEVEL_2, "%2{firm:indent}setting %+F to %d\n", depth, irn, col));
-	ok = change_color_single(ci->cloud->env, irn, col, &changed, depth);
-	// assert(ok && "Color changing may not fail while committing the coloring");
+	change_color_single(ci->cloud->env, irn, col, &changed, depth);
 	materialize_coloring(&changed);
 
 	for (i = 0; i < ci->mst_n_childs; ++i) {

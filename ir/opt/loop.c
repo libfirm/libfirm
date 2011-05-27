@@ -1286,7 +1286,6 @@ static void loop_inversion(void)
 	int      depth_adaption = opt_params.depth_adaption;
 
 	unsigned do_inversion = 1;
-	unsigned has_cc = 0;
 
 	/* Depth of 0 is the procedure and 1 a topmost loop. */
 	loop_depth = get_loop_depth(cur_loop) - 1;
@@ -1348,7 +1347,7 @@ static void loop_inversion(void)
 	/* Search for condition chains and temporarily save the blocks in an array. */
 	cc_blocks = NEW_ARR_F(ir_node *, 0);
 	inc_irg_visited(current_ir_graph);
-	has_cc = find_condition_chain(loop_head);
+	find_condition_chain(loop_head);
 
 	unmark_not_allowed_cc_blocks();
 	DEL_ARR_F(cc_blocks);
@@ -2141,7 +2140,7 @@ static unsigned get_unroll_decision_invariant(void)
 {
 
 	ir_node   *projres, *loop_condition, *iteration_path;
-	unsigned   success, is_latest_val;
+	unsigned   success;
 	ir_tarval *step_tar;
 	ir_mode   *mode;
 
@@ -2170,9 +2169,6 @@ static unsigned get_unroll_decision_invariant(void)
 	 * Until now we only have end_val. */
 	if (is_Add(iteration_path) || is_Sub(iteration_path)) {
 
-		/* We test against the latest value of the iv. */
-		is_latest_val = 1;
-
 		loop_info.add = iteration_path;
 		DB((dbg, LEVEL_4, "Case 1: Got add %N (maybe not sane)\n", loop_info.add));
 
@@ -2198,9 +2194,6 @@ static unsigned get_unroll_decision_invariant(void)
 
 	} else if (is_Phi(iteration_path)) {
 		ir_node *new_iteration_phi;
-
-		/* We compare with the value the iv had entering this run. */
-		is_latest_val = 0;
 
 		loop_info.iteration_phi = iteration_path;
 		DB((dbg, LEVEL_4, "Case 2: Got phi %N\n", loop_info.iteration_phi));

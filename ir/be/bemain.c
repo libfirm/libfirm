@@ -501,7 +501,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 	static const char suffix[] = ".prof";
 
 	size_t        i, num_birgs;
-	int           stat_active = 0;
 	be_main_env_t env;
 	char          prof_filename[256];
 	be_irg_t      *birgs;
@@ -566,8 +565,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		initialize_birg(&birgs[num_birgs], prof_init_irg, &env);
 		num_birgs++;
 	}
-
-	stat_active = stat_is_active();
 
 	/* For all graphs */
 	for (i = 0; i < num_birgs; ++i) {

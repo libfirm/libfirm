@@ -608,13 +608,12 @@ static int is_counter_iv(ir_node *iv, iv_env *env)
  */
 static int check_users_for_reg_pressure(ir_node *iv, iv_env *env)
 {
-	ir_node    *irn, *header;
+	ir_node    *irn;
 	ir_node    *have_user = NULL;
 	ir_node    *have_cmp  = NULL;
 	node_entry *e         = get_irn_ne(iv, env);
 	scc        *pscc      = e->pscc;
 
-	header = e->header;
 	for (irn = pscc->head; irn != NULL; irn = e->next) {
 		const ir_edge_t *edge;
 

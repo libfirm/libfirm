@@ -446,19 +446,11 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	const ir_asm_constraint    *in_constraints;
 	const ir_asm_constraint    *out_constraints;
 	ident                     **clobbers;
-	int                         clobbers_flags = 0;
 	unsigned                    clobber_bits[N_IA32_CLASSES];
 	int                         out_size;
 	backend_info_t             *info;
 
 	memset(&clobber_bits, 0, sizeof(clobber_bits));
-
-	/* workaround for lots of buggy code out there as most people think volatile
-	 * asm is enough for everything and forget the flags (linux kernel, etc.)
-	 */
-	if (get_irn_pinned(node) == op_pin_state_pinned) {
-		clobbers_flags = 1;
-	}
 
 	arity = get_irn_arity(node);
 	in    = ALLOCANZ(ir_node*, arity);
@@ -472,7 +464,6 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		if (strcmp(c, "memory") == 0)
 			continue;
 		if (strcmp(c, "cc") == 0) {
-			clobbers_flags = 1;
 			continue;
 		}
 

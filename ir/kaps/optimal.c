@@ -1056,7 +1056,6 @@ void apply_RII(pbqp_t *pbqp)
 	unsigned       col_len;
 	unsigned       row_index;
 	unsigned       row_len;
-	unsigned       node_len;
 
 	assert(pbqp_node_get_degree(node) == 2);
 
@@ -1113,7 +1112,6 @@ void apply_RII(pbqp_t *pbqp)
 
 	row_len  = src_vec->len;
 	col_len  = tgt_vec->len;
-	node_len = node_vec->len;
 
 	mat = pbqp_matrix_alloc(pbqp, row_len, col_len);
 
@@ -1232,14 +1230,12 @@ static void select_column(pbqp_edge_t *edge, unsigned col_index)
 static void select_row(pbqp_edge_t *edge, unsigned row_index)
 {
 	pbqp_matrix_t  *mat;
-	pbqp_node_t    *src_node;
 	pbqp_node_t    *tgt_node;
 	vector_t       *tgt_vec;
 	unsigned        tgt_len;
 	unsigned        tgt_index;
 	unsigned        new_infinity = 0;
 
-	src_node = edge->src;
 	tgt_node = edge->tgt;
 
 	tgt_vec = tgt_node->costs;

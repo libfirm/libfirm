@@ -396,7 +396,6 @@ static bool has_real_user(const ir_node *node)
 static ir_node *add_to_keep(ir_node *last_keep,
                             const arch_register_class_t *cls, ir_node *node)
 {
-	const ir_node *op;
 	if (last_keep != NULL) {
 		be_Keep_add_node(last_keep, cls, node);
 	} else {
@@ -410,7 +409,6 @@ static ir_node *add_to_keep(ir_node *last_keep,
 			sched_add_after(schedpoint, last_keep);
 		}
 	}
-	op = skip_Proj_const(node);
 	return last_keep;
 }
 
