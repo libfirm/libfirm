@@ -267,7 +267,7 @@ static char const shrs_table[16][4][2] = {
                                    };
 
 /** converting a digit to a binary string */
-static const char *binary_table[16] = {
+static char const *const binary_table[] = {
 	"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111",
 	"1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"
 };
