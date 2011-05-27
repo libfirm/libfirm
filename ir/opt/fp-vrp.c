@@ -176,6 +176,8 @@ static int transfer(ir_node* const irn)
 	ir_tarval*       z;
 	ir_tarval*       o;
 
+	if (is_Bad(irn)) return 0;
+
 	if (m == mode_X) {
 		bitinfo* const b = get_bitinfo(get_nodes_block(irn));
 
