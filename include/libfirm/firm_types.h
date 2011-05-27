@@ -68,7 +68,6 @@ typedef void irg_reg_walk_func(ir_region *, void *);
 
 /* settings */
 typedef struct ir_settings_arch_dep_t ir_settings_arch_dep_t;
-typedef struct ir_settings_if_conv_t  ir_settings_if_conv_t;
 
 /* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
 typedef const ir_node *ir_node_cnst_ptr;
