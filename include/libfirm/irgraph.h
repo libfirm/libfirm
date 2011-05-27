@@ -259,7 +259,7 @@ FIRM_API size_t get_irg_idx(const ir_graph *irg);
  *            index.
  * @note      The node you got might be dead.
  */
-FIRM_API ir_node *get_idx_irn(ir_graph *irg, unsigned idx);
+FIRM_API ir_node *get_idx_irn(const ir_graph *irg, unsigned idx);
 
 
 /******************************************************************************/

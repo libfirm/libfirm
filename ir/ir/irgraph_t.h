@@ -447,7 +447,7 @@ static inline void irg_kill_node(ir_graph *irg, ir_node *n)
  * @return    The node with that index or NULL, if there is no node with that index.
  * @note      The node you got might be dead.
  */
-static inline ir_node *_get_idx_irn(ir_graph *irg, unsigned idx)
+static inline ir_node *_get_idx_irn(const ir_graph *irg, unsigned idx)
 {
 	assert(idx < (unsigned) ARR_LEN(irg->idx_irn_map));
 	return irg->idx_irn_map[idx];

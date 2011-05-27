@@ -491,7 +491,7 @@ size_t get_irg_idx(const ir_graph *irg)
 	return irg->index;
 }
 
-ir_node *(get_idx_irn)(ir_graph *irg, unsigned idx)
+ir_node *(get_idx_irn)(const ir_graph *irg, unsigned idx)
 {
 	return _get_idx_irn(irg, idx);
 }
