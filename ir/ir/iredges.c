@@ -519,9 +519,7 @@ static void build_edges_walker(ir_node *irn, void *data)
 	int                   i, n;
 	ir_edge_kind_t        kind = w->kind;
 	ir_graph              *irg = get_irn_irg(irn);
-	get_edge_src_n_func_t *get_n;
 
-	get_n = edge_kind_info[kind].get_n;
 	foreach_tgt(irn, i, n, kind) {
 		ir_node *pred = get_n(irn, i, kind);
 		edges_notify_edge_kind(irn, i, pred, NULL, kind, irg);
