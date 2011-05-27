@@ -131,6 +131,12 @@ static ir_tarval *computed_value_Add(const ir_node *n)
 	if ((ta != tarval_bad) && (tb != tarval_bad))
 		return tarval_add(ta, tb);
 
+	/* x+~x => -1 */
+	if ((is_Not(a) && get_Not_op(a) == b)
+	    || (is_Not(b) && get_Not_op(b) == a)) {
+		return get_mode_all_one(get_irn_mode(n));
+	}
+
 	return tarval_bad;
 }  /* computed_value_Add */
 
@@ -264,10 +270,17 @@ static ir_tarval *computed_value_And(const ir_node *n)
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_and (ta, tb);
-	} else {
-		if (tarval_is_null(ta)) return ta;
-		if (tarval_is_null(tb)) return tb;
 	}
+
+	if (tarval_is_null(ta)) return ta;
+	if (tarval_is_null(tb)) return tb;
+
+	/* x&~x => 0 */
+	if ((is_Not(a) && get_Not_op(a) == b)
+	    || (is_Not(b) && get_Not_op(b) == a)) {
+		return get_mode_null(get_irn_mode(n));
+	}
+
 	return tarval_bad;
 }  /* computed_value_And */
 
@@ -284,9 +297,15 @@ static ir_tarval *computed_value_Or(const ir_node *n)
 
 	if ((ta != tarval_bad) && (tb != tarval_bad)) {
 		return tarval_or (ta, tb);
-	} else {
-		if (tarval_is_all_one(ta)) return ta;
-		if (tarval_is_all_one(tb)) return tb;
+	}
+
+	if (tarval_is_all_one(ta)) return ta;
+	if (tarval_is_all_one(tb)) return tb;
+
+	/* x|~x => -1 */
+	if ((is_Not(a) && get_Not_op(a) == b)
+	    || (is_Not(b) && get_Not_op(b) == a)) {
+		return get_mode_all_one(get_irn_mode(n));
 	}
 	return tarval_bad;
 }  /* computed_value_Or */
@@ -303,6 +322,11 @@ static ir_tarval *computed_value_Eor(const ir_node *n)
 
 	if (a == b)
 		return get_mode_null(get_irn_mode(n));
+	/* x^~x => -1 */
+	if ((is_Not(a) && get_Not_op(a) == b)
+	    || (is_Not(b) && get_Not_op(b) == a)) {
+		return get_mode_all_one(get_irn_mode(n));
+	}
 
 	ta = value_of(a);
 	tb = value_of(b);
@@ -2014,22 +2038,6 @@ static ir_node *transform_node_Add(ir_node *n)
 					ir_node *blk = get_nodes_block(n);
 					n = new_rd_Minus(get_irn_dbg_info(n), blk, op, mode);
 					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_PLUS_1);
-					return n;
-				}
-				if (op == b) {
-					/* ~x + x = -1 */
-					n = new_r_Const(irg, get_mode_minus_one(mode));
-					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
-					return n;
-				}
-			}
-			if (is_Not(b)) {
-				ir_node *op = get_Not_op(b);
-
-				if (op == a) {
-					/* x + ~x = -1 */
-					n = new_r_Const(irg, get_mode_minus_one(mode));
-					DBG_OPT_ALGSIM0(oldn, n, FS_OPT_ADD_X_NOT_X);
 					return n;
 				}
 			}
