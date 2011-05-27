@@ -831,7 +831,7 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 	env->flags |= CF_CHANGED;
 	block = get_nodes_block(node);
 
-	/* add a Cmp to test if highest bit is set <=> wether we shift more
+	/* add a Cmp to test if highest bit is set <=> whether we shift more
 	 * than half the word width */
 	cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
 	and        = new_r_And(block, right, cnst, low_unsigned);
@@ -964,7 +964,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	env->flags |= CF_CHANGED;
 	block = get_nodes_block(node);
 
-	/* add a Cmp to test if highest bit is set <=> wether we shift more
+	/* add a Cmp to test if highest bit is set <=> whether we shift more
 	 * than half the word width */
 	cnst       = new_r_Const_long(irg, low_unsigned, modulo_shift2);
 	and        = new_r_And(block, right, cnst, low_unsigned);
