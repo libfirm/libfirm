@@ -93,7 +93,7 @@ struct obstack *get_irg_obstack(const ir_graph *irg);
  * @param irg   the IR graph
  * @param n the IR node
  */
-int node_is_in_irgs_storage(ir_graph *irg, ir_node *n);
+int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n);
 
 /*-------------------------------------------------------------------*/
 /* inline functions for graphs                                       */

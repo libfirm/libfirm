@@ -69,7 +69,7 @@ static ir_graph *last_irg_error = NULL;
  *
  * @param node  the node caused the failure
  */
-static void show_entity_failure(ir_node *node)
+static void show_entity_failure(const ir_node *node)
 {
 	ir_graph *irg = get_irn_irg(node);
 
@@ -107,7 +107,7 @@ static const char *get_irn_modename(const ir_node *node)
 /**
  * Prints a failure for a Node
  */
-static void show_node_failure(ir_node *n)
+static void show_node_failure(const ir_node *n)
 {
 	show_entity_failure(n);
 	fprintf(stderr, "  node %ld %s%s\n" ,
@@ -119,7 +119,7 @@ static void show_node_failure(ir_node *n)
 /**
  * Prints a failure message for a binop
  */
-static void show_binop_failure(ir_node *n, const char *text)
+static void show_binop_failure(const ir_node *n, const char *text)
 {
 	ir_node *left  = get_binop_left(n);
 	ir_node *right = get_binop_right(n);
@@ -136,7 +136,7 @@ static void show_binop_failure(ir_node *n, const char *text)
 /**
  * Prints a failure message for an unop
  */
-static void show_unop_failure(ir_node *n, const char *text)
+static void show_unop_failure(const ir_node *n, const char *text)
 {
 	ir_node *op  = get_unop_op(n);
 
@@ -151,7 +151,7 @@ static void show_unop_failure(ir_node *n, const char *text)
 /**
  * Prints a failure message for an op with 3 operands
  */
-static void show_triop_failure(ir_node *n, const char *text)
+static void show_triop_failure(const ir_node *n, const char *text)
 {
 	ir_node *op0  = get_irn_n(n, 0);
 	ir_node *op1  = get_irn_n(n, 1);
@@ -170,7 +170,7 @@ static void show_triop_failure(ir_node *n, const char *text)
 /**
  * Prints a failure message for a proj
  */
-static void show_proj_failure(ir_node *n)
+static void show_proj_failure(const ir_node *n)
 {
 	ir_node *op  = get_Proj_pred(n);
 	int proj     = get_Proj_proj(n);
@@ -185,7 +185,7 @@ static void show_proj_failure(ir_node *n)
 /**
  * Prints a failure message for a proj from Start
  */
-static void show_proj_mode_failure(ir_node *n, ir_type *ty)
+static void show_proj_mode_failure(const ir_node *n, ir_type *ty)
 {
 	long proj  = get_Proj_proj(n);
 	ir_mode *m = get_type_mode(ty);
@@ -204,7 +204,7 @@ static void show_proj_mode_failure(ir_node *n, ir_type *ty)
 /**
  * Prints a failure message for a proj
  */
-static void show_proj_failure_ent(ir_node *n, ir_entity *ent)
+static void show_proj_failure_ent(const ir_node *n, ir_entity *ent)
 {
 	ir_node *op  = get_Proj_pred(n);
 	int proj     = get_Proj_proj(n);
@@ -224,7 +224,7 @@ static void show_proj_failure_ent(ir_node *n, ir_entity *ent)
 /**
  * Show a node and a graph
  */
-static void show_node_on_graph(ir_graph *irg, ir_node *n)
+static void show_node_on_graph(const ir_graph *irg, const ir_node *n)
 {
 	ir_fprintf(stderr, "\nFIRM: irn_verify_irg() of %+F, node %+F\n", irg, n);
 }
@@ -232,7 +232,7 @@ static void show_node_on_graph(ir_graph *irg, ir_node *n)
 /**
  * Show call parameters
  */
-static void show_call_param(ir_node *n, ir_type *mt)
+static void show_call_param(const ir_node *n, ir_type *mt)
 {
 	size_t i;
 	char type_name[256];
@@ -254,7 +254,8 @@ static void show_call_param(ir_node *n, ir_type *mt)
 /**
  * Show return modes
  */
-static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i)
+static void show_return_modes(const ir_graph *irg, const ir_node *n,
+                              ir_type *mt, int i)
 {
 	ir_entity *ent = get_irg_entity(irg);
 
@@ -269,7 +270,7 @@ static void show_return_modes(ir_graph *irg, ir_node *n, ir_type *mt, int i)
 /**
  * Show return number of results
  */
-static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt)
+static void show_return_nres(const ir_graph *irg, const ir_node *n, ir_type *mt)
 {
 	ir_entity *ent = get_irg_entity(irg);
 
@@ -283,7 +284,7 @@ static void show_return_nres(ir_graph *irg, ir_node *n, ir_type *mt)
 /**
  * Show Phi input
  */
-static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
+static void show_phi_failure(const ir_node *phi, const ir_node *pred, int pos)
 {
 	(void) pos;
 	show_entity_failure(phi);
@@ -295,7 +296,7 @@ static void show_phi_failure(ir_node *phi, ir_node *pred, int pos)
 /**
  * Show Phi inputs
  */
-static void show_phi_inputs(ir_node *phi, ir_node *block)
+static void show_phi_inputs(const ir_node *phi, const ir_node *block)
 {
 	show_entity_failure(phi);
 	fprintf(stderr, "  Phi node %ld has %d inputs, its Block %ld has %d\n",
@@ -310,7 +311,7 @@ static void show_phi_inputs(ir_node *phi, ir_node *block)
  *
  * @param ptr  the node representing the address
  */
-static ir_entity *get_ptr_entity(ir_node *ptr)
+static ir_entity *get_ptr_entity(const ir_node *ptr)
 {
 	if (is_Sel(ptr)) {
 		return get_Sel_entity(ptr);
@@ -323,11 +324,10 @@ static ir_entity *get_ptr_entity(ir_node *ptr)
 /**
  * verify a Proj(Start) node
  */
-static int verify_node_Proj_Start(ir_node *n, ir_node *p)
+static int verify_node_Proj_Start(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
-	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -345,9 +345,10 @@ static int verify_node_Proj_Start(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Cond) node
  */
-static int verify_node_Proj_Cond(ir_node *pred, ir_node *p)
+static int verify_node_Proj_Cond(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *pred = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -364,11 +365,10 @@ static int verify_node_Proj_Cond(ir_node *pred, ir_node *p)
 /**
  * verify a Proj(Raise) node
  */
-static int verify_node_Proj_Raise(ir_node *n, ir_node *p)
+static int verify_node_Proj_Raise(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
-	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		((proj == pn_Raise_X && mode == mode_X) || (proj == pn_Raise_M && mode == mode_M)),
@@ -381,11 +381,10 @@ static int verify_node_Proj_Raise(ir_node *n, ir_node *p)
 /**
  * verify a Proj(InstOf) node
  */
-static int verify_node_Proj_InstOf(ir_node *n, ir_node *p)
+static int verify_node_Proj_InstOf(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
-	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -403,9 +402,10 @@ static int verify_node_Proj_InstOf(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Call) node
  */
-static int verify_node_Proj_Call(ir_node *n, ir_node *p)
+static int verify_node_Proj_Call(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -433,9 +433,10 @@ static int verify_node_Proj_Call(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Div) node
  */
-static int verify_node_Proj_Div(ir_node *n, ir_node *p)
+static int verify_node_Proj_Div(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -466,9 +467,10 @@ static int verify_node_Proj_Div(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Mod) node
  */
-static int verify_node_Proj_Mod(ir_node *n, ir_node *p)
+static int verify_node_Proj_Mod(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -499,9 +501,10 @@ static int verify_node_Proj_Mod(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Load) node
  */
-static int verify_node_Proj_Load(ir_node *n, ir_node *p)
+static int verify_node_Proj_Load(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	if (proj == pn_Load_res) {
@@ -551,9 +554,10 @@ static int verify_node_Proj_Load(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Store) node
  */
-static int verify_node_Proj_Store(ir_node *n, ir_node *p)
+static int verify_node_Proj_Store(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -580,11 +584,10 @@ static int verify_node_Proj_Store(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Alloc) node
  */
-static int verify_node_Proj_Alloc(ir_node *n, ir_node *p)
+static int verify_node_Proj_Alloc(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
 	long proj     = get_Proj_proj(p);
-	(void) n;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -602,9 +605,10 @@ static int verify_node_Proj_Alloc(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Proj) node
  */
-static int verify_node_Proj_Proj(ir_node *pred, ir_node *p)
+static int verify_node_Proj_Proj(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *pred = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 	long nr       = get_Proj_proj(pred);
 	ir_type *mt; /* A method type */
@@ -671,9 +675,8 @@ static int verify_node_Proj_Proj(ir_node *pred, ir_node *p)
 /**
  * verify a Proj(Tuple) node
  */
-static int verify_node_Proj_Tuple(ir_node *n, ir_node *p)
+static int verify_node_Proj_Tuple(const ir_node *p)
 {
-	(void) n;
 	(void) p;
 	/* We don't test */
 	return 1;
@@ -682,9 +685,10 @@ static int verify_node_Proj_Tuple(ir_node *n, ir_node *p)
 /**
  * verify a Proj(CopyB) node
  */
-static int verify_node_Proj_CopyB(ir_node *n, ir_node *p)
+static int verify_node_Proj_CopyB(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -710,9 +714,10 @@ static int verify_node_Proj_CopyB(ir_node *n, ir_node *p)
 /**
  * verify a Proj(Bound) node
  */
-static int verify_node_Proj_Bound(ir_node *n, ir_node *p)
+static int verify_node_Proj_Bound(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
+	ir_node *n    = get_Proj_pred(p);
 	long proj     = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
@@ -731,8 +736,9 @@ static int verify_node_Proj_Bound(ir_node *n, ir_node *p)
 /**
  * verify a Proj node
  */
-static int verify_node_Proj(ir_node *p, ir_graph *irg)
+static int verify_node_Proj(const ir_node *p)
 {
+	ir_graph *irg = get_irn_irg(p);
 	ir_node *pred;
 	ir_op *op;
 
@@ -741,9 +747,8 @@ static int verify_node_Proj(ir_node *p, ir_graph *irg)
 	ASSERT_AND_RET(get_irg_pinned(irg) == op_pin_state_floats || get_nodes_block(pred) == get_nodes_block(p), "Proj must be in same block as its predecessor", 0);
 
 	op = get_irn_op(pred);
-
 	if (op->ops.verify_proj_node)
-		return op->ops.verify_proj_node(pred, p);
+		return op->ops.verify_proj_node(p);
 
 	/* all went ok */
 	return 1;
@@ -752,8 +757,9 @@ static int verify_node_Proj(ir_node *p, ir_graph *irg)
 /**
  * verify a Block node
  */
-static int verify_node_Block(ir_node *n, ir_graph *irg)
+static int verify_node_Block(const ir_node *n)
 {
+	ir_graph *irg = get_irn_irg(n);
 	int i;
 
 	for (i = get_Block_n_cfgpreds(n) - 1; i >= 0; --i) {
@@ -792,10 +798,9 @@ static int verify_node_Block(ir_node *n, ir_graph *irg)
 /**
  * verify a Start node
  */
-static int verify_node_Start(ir_node *n, ir_graph *irg)
+static int verify_node_Start(const ir_node *n)
 {
 	ir_mode *mymode = get_irn_mode(n);
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Start: BB --> X x M x ref x data1 x ... x datan x ref */
@@ -807,10 +812,9 @@ static int verify_node_Start(ir_node *n, ir_graph *irg)
 /**
  * verify a Jmp node
  */
-static int verify_node_Jmp(ir_node *n, ir_graph *irg)
+static int verify_node_Jmp(const ir_node *n)
 {
 	ir_mode *mymode = get_irn_mode(n);
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Jmp: BB --> X */
@@ -822,11 +826,10 @@ static int verify_node_Jmp(ir_node *n, ir_graph *irg)
 /**
  * verify an IJmp node
  */
-static int verify_node_IJmp(ir_node *n, ir_graph *irg)
+static int verify_node_IJmp(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_IJmp_target(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* IJmp: BB x ref --> X */
@@ -838,11 +841,10 @@ static int verify_node_IJmp(ir_node *n, ir_graph *irg)
 /**
  * verify a Cond node
  */
-static int verify_node_Cond(ir_node *n, ir_graph *irg)
+static int verify_node_Cond(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cond_selector(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Cond: BB x b --> X x X */
@@ -858,12 +860,13 @@ static int verify_node_Cond(ir_node *n, ir_graph *irg)
 /**
  * verify a Return node
  */
-static int verify_node_Return(ir_node *n, ir_graph *irg)
+static int verify_node_Return(const ir_node *n)
 {
-	int i;
-	ir_mode *mymode   = get_irn_mode(n);
-	ir_mode *mem_mode = get_irn_mode(get_Return_mem(n));
-	ir_type *mt;
+	ir_graph *irg      = get_irn_irg(n);
+	ir_mode  *mymode   = get_irn_mode(n);
+	ir_mode  *mem_mode = get_irn_mode(get_Return_mem(n));
+	ir_type  *mt;
+	int       i;
 
 	/* Return: BB x M x data1 x ... x datan --> X */
 
@@ -903,12 +906,11 @@ static int verify_node_Return(ir_node *n, ir_graph *irg)
 /**
  * verify a Raise node
  */
-static int verify_node_Raise(ir_node *n, ir_graph *irg)
+static int verify_node_Raise(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Raise_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Raise_exo_ptr(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Sel: BB x M x ref --> X x M */
@@ -921,10 +923,9 @@ static int verify_node_Raise(ir_node *n, ir_graph *irg)
 /**
  * verify a Const node
  */
-static int verify_node_Const(ir_node *n, ir_graph *irg)
+static int verify_node_Const(const ir_node *n)
 {
 	ir_mode *mymode = get_irn_mode(n);
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Const: BB --> data */
@@ -943,10 +944,9 @@ static int verify_node_Const(ir_node *n, ir_graph *irg)
 /**
  * verify a SymConst node
  */
-static int verify_node_SymConst(ir_node *n, ir_graph *irg)
+static int verify_node_SymConst(const ir_node *n)
 {
 	ir_mode *mymode = get_irn_mode(n);
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* SymConst: BB --> int*/
@@ -960,14 +960,13 @@ static int verify_node_SymConst(ir_node *n, ir_graph *irg)
 /**
  * verify a Sel node
  */
-static int verify_node_Sel(ir_node *n, ir_graph *irg)
+static int verify_node_Sel(const ir_node *n)
 {
 	int i;
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Sel_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Sel_ptr(n));
 	ir_entity *ent;
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Sel: BB x M x ref x int^n --> ref */
@@ -986,11 +985,10 @@ static int verify_node_Sel(ir_node *n, ir_graph *irg)
 /**
  * verify an InstOf node
  */
-static int verify_node_InstOf(ir_node *n, ir_graph *irg)
+static int verify_node_InstOf(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_InstOf_obj(n));
-	(void) irg;
 
 	ASSERT_AND_RET(mode_T == mymode, "mode of Instof is not a tuple", 0);
 	ASSERT_AND_RET(mode_is_data(op1mode), "Instof not on data", 0);
@@ -1000,7 +998,7 @@ static int verify_node_InstOf(ir_node *n, ir_graph *irg)
 /**
  * Check if the pinned state is right.
  */
-static int verify_right_pinned(ir_node *n)
+static int verify_right_pinned(const ir_node *n)
 {
 	ir_node *mem;
 
@@ -1017,15 +1015,15 @@ static int verify_right_pinned(ir_node *n)
 /**
  * verify a Call node
  */
-static int verify_node_Call(ir_node *n, ir_graph *irg)
+static int verify_node_Call(const ir_node *n)
 {
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Call_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Call_ptr(n));
-	ir_type *mt;
-	size_t i;
-	size_t n_params;
-	(void) irg;
+	ir_graph *irg     = get_irn_irg(n);
+	ir_mode  *mymode  = get_irn_mode(n);
+	ir_mode  *op1mode = get_irn_mode(get_Call_mem(n));
+	ir_mode  *op2mode = get_irn_mode(get_Call_ptr(n));
+	ir_type  *mt;
+	size_t    i;
+	size_t    n_params;
 
 	/* Call: BB x M x ref x data1 x ... x datan
 	--> M x datan+1 x ... x data n+m */
@@ -1086,25 +1084,17 @@ static int verify_node_Call(ir_node *n, ir_graph *irg)
 		}
 	}
 
-#if 0
-	if (Call_has_callees(n)) {
-		for (i = 0; i < get_Call_n_callees(n); i++) {
-			ASSERT_AND_RET(is_entity(get_Call_callee(n, i)), "callee array must contain entities.", 0);
-		}
-	}
-#endif
 	return 1;
 }
 
 /**
  * verify an Add node
  */
-static int verify_node_Add(ir_node *n, ir_graph *irg)
+static int verify_node_Add(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Add_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Add_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1126,12 +1116,11 @@ static int verify_node_Add(ir_node *n, ir_graph *irg)
 /**
  * verify a Sub node
  */
-static int verify_node_Sub(ir_node *n, ir_graph *irg)
+static int verify_node_Sub(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Sub_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Sub_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1153,11 +1142,10 @@ static int verify_node_Sub(ir_node *n, ir_graph *irg)
 /**
  * verify a Minus node
  */
-static int verify_node_Minus(ir_node *n, ir_graph *irg)
+static int verify_node_Minus(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Minus_op(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Minus: BB x num --> num */
@@ -1170,12 +1158,11 @@ static int verify_node_Minus(ir_node *n, ir_graph *irg)
 /**
  * verify a Mul node
  */
-static int verify_node_Mul(ir_node *n, ir_graph *irg)
+static int verify_node_Mul(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mul_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Mul_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1195,12 +1182,11 @@ static int verify_node_Mul(ir_node *n, ir_graph *irg)
 /**
  * verify a Mulh node
  */
-static int verify_node_Mulh(ir_node *n, ir_graph *irg)
+static int verify_node_Mulh(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mulh_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Mulh_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		(
@@ -1216,13 +1202,12 @@ static int verify_node_Mulh(ir_node *n, ir_graph *irg)
 /**
  * verify a Div node
  */
-static int verify_node_Div(ir_node *n, ir_graph *irg)
+static int verify_node_Div(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Div_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Div_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Div_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Div: BB x M x data x data --> M x X x data */
@@ -1238,13 +1223,12 @@ static int verify_node_Div(ir_node *n, ir_graph *irg)
 /**
  * verify a Mod node
  */
-static int verify_node_Mod(ir_node *n, ir_graph *irg)
+static int verify_node_Mod(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mod_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Mod_left(n));
 	ir_mode *op3mode = get_irn_mode(get_Mod_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Mod: BB x M x int x int --> M x X x int */
@@ -1260,12 +1244,11 @@ static int verify_node_Mod(ir_node *n, ir_graph *irg)
 /**
  * verify a logical And, Or, Eor node
  */
-static int verify_node_Logic(ir_node *n, ir_graph *irg)
+static int verify_node_Logic(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
 	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* And or Or or Eor: BB x int x int --> int */
@@ -1278,18 +1261,28 @@ static int verify_node_Logic(ir_node *n, ir_graph *irg)
 	return 1;
 }
 
-#define verify_node_And   verify_node_Logic
-#define verify_node_Or    verify_node_Logic
-#define verify_node_Eor   verify_node_Logic
+static int verify_node_And(const ir_node *n)
+{
+	return verify_node_Logic(n);
+}
+
+static int verify_node_Or(const ir_node *n)
+{
+	return verify_node_Logic(n);
+}
+
+static int verify_node_Eor(const ir_node *n)
+{
+	return verify_node_Logic(n);
+}
 
 /**
  * verify a Not node
  */
-static int verify_node_Not(ir_node *n, ir_graph *irg)
+static int verify_node_Not(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Not_op(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Not: BB x int --> int */
@@ -1304,12 +1297,11 @@ static int verify_node_Not(ir_node *n, ir_graph *irg)
 /**
  * verify a Cmp node
  */
-static int verify_node_Cmp(ir_node *n, ir_graph *irg)
+static int verify_node_Cmp(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cmp_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Cmp_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Cmp: BB x datab x datab --> b16 */
@@ -1325,12 +1317,11 @@ static int verify_node_Cmp(ir_node *n, ir_graph *irg)
 /**
  * verify a Shift node
  */
-static int verify_node_Shift(ir_node *n, ir_graph *irg)
+static int verify_node_Shift(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_binop_left(n));
 	ir_mode *op2mode = get_irn_mode(get_binop_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Shl, Shr or Shrs: BB x int x int_u --> int */
@@ -1344,19 +1335,29 @@ static int verify_node_Shift(ir_node *n, ir_graph *irg)
 	return 1;
 }
 
-#define verify_node_Shl   verify_node_Shift
-#define verify_node_Shr   verify_node_Shift
-#define verify_node_Shrs  verify_node_Shift
+static int verify_node_Shl(const ir_node *n)
+{
+	return verify_node_Shift(n);
+}
+
+static int verify_node_Shr(const ir_node *n)
+{
+	return verify_node_Shift(n);
+}
+
+static int verify_node_Shrs(const ir_node *n)
+{
+	return verify_node_Shift(n);
+}
 
 /**
  * verify a Rotl node
  */
-static int verify_node_Rotl(ir_node *n, ir_graph *irg)
+static int verify_node_Rotl(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Rotl_left(n));
 	ir_mode *op2mode = get_irn_mode(get_Rotl_right(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Rotl: BB x int x int --> int */
@@ -1372,11 +1373,11 @@ static int verify_node_Rotl(ir_node *n, ir_graph *irg)
 /**
  * verify a Conv node
  */
-static int verify_node_Conv(ir_node *n, ir_graph *irg)
+static int verify_node_Conv(const ir_node *n)
 {
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Conv_op(n));
-	(void) irg;
+	ir_graph *irg     = get_irn_irg(n);
+	ir_mode  *mymode  = get_irn_mode(n);
+	ir_mode  *op1mode = get_irn_mode(get_Conv_op(n));
 
 	ASSERT_AND_RET_DBG(
 		is_irg_state(irg, IR_GRAPH_STATE_BCONV_ALLOWED) ||
@@ -1390,11 +1391,10 @@ static int verify_node_Conv(ir_node *n, ir_graph *irg)
 /**
  * verify a Cast node
  */
-static int verify_node_Cast(ir_node *n, ir_graph *irg)
+static int verify_node_Cast(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cast_op(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Conv: BB x datab1 --> datab2 */
@@ -1408,12 +1408,11 @@ static int verify_node_Cast(ir_node *n, ir_graph *irg)
 /**
  * verify a Phi node
  */
-static int verify_node_Phi(ir_node *n, ir_graph *irg)
+static int verify_node_Phi(const ir_node *n)
 {
 	ir_mode *mymode = get_irn_mode(n);
 	ir_node *block  = get_nodes_block(n);
 	int i;
-	(void) irg;
 
 	/* a Phi node MUST have the same number of inputs as its block
 	 * Exception is a phi with 0 inputs which is used when (re)constructing the
@@ -1435,38 +1434,18 @@ static int verify_node_Phi(ir_node *n, ir_graph *irg)
 	}
 	ASSERT_AND_RET(mode_is_dataM(mymode) || mymode == mode_b, "Phi node", 0 );
 
-#if 0
-	if (mymode == mode_M) {
-		for (i = get_Phi_n_preds(n) - 1; i >= 0; --i) {
-			int j;
-			ir_node *pred_i = get_Phi_pred(n, i);
-
-			for (j = i - 1; j >= 0; --j) {
-				ir_node *pred_j = get_Phi_pred(n, j);
-
-				/* currently this checks fails for blocks with exception
-				   outputs (and these are NOT basic blocks).  So it is disabled yet. */
-				ASSERT_AND_RET_DBG(
-					(pred_i == pred_j) || (get_irn_n(pred_i, -1) != get_irn_n(pred_j, -1)),
-					"At least two different PhiM predecessors are in the same block",
-					0,
-					ir_printf("%+F and %+F of %+F are in %+F\n", pred_i, pred_j, n, get_irn_n(pred_i, -1))
-				);
-			}
-		}
-	}
-#endif
 	return 1;
 }
 
 /**
  * verify a Load node
  */
-static int verify_node_Load(ir_node *n, ir_graph *irg)
+static int verify_node_Load(const ir_node *n)
 {
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_Load_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_Load_ptr(n));
+	ir_graph *irg     = get_irn_irg(n);
+	ir_mode  *mymode  = get_irn_mode(n);
+	ir_mode  *op1mode = get_irn_mode(get_Load_mem(n));
+	ir_mode  *op2mode = get_irn_mode(get_Load_ptr(n));
 
 	ASSERT_AND_RET(op1mode == mode_M, "Load node", 0);
 	if (get_irg_phase_state(irg) != phase_backend) {
@@ -1495,8 +1474,9 @@ static int verify_node_Load(ir_node *n, ir_graph *irg)
 /**
  * verify a Store node
  */
-static int verify_node_Store(ir_node *n, ir_graph *irg)
+static int verify_node_Store(const ir_node *n)
 {
+	ir_graph  *irg = get_irn_irg(n);
 	ir_entity *target;
 
 	ir_mode *mymode  = get_irn_mode(n);
@@ -1527,12 +1507,11 @@ static int verify_node_Store(ir_node *n, ir_graph *irg)
 /**
  * verify an Alloc node
  */
-static int verify_node_Alloc(ir_node *n, ir_graph *irg)
+static int verify_node_Alloc(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Alloc_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Alloc_count(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Alloc: BB x M x int_u --> M x X x ref */
@@ -1549,13 +1528,12 @@ static int verify_node_Alloc(ir_node *n, ir_graph *irg)
 /**
  * verify a Free node
  */
-static int verify_node_Free(ir_node *n, ir_graph *irg)
+static int verify_node_Free(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Free_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Free_ptr(n));
 	ir_mode *op3mode = get_irn_mode(get_Free_size(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Free: BB x M x ref x int_u --> M */
@@ -1572,11 +1550,10 @@ static int verify_node_Free(ir_node *n, ir_graph *irg)
 /**
  * verify a Sync node
  */
-static int verify_node_Sync(ir_node *n, ir_graph *irg)
+static int verify_node_Sync(const ir_node *n)
 {
 	int i;
 	ir_mode *mymode  = get_irn_mode(n);
-	(void) irg;
 
 	/* Sync: BB x M^n --> M */
 	for (i = get_Sync_n_preds(n) - 1; i >= 0; --i) {
@@ -1589,12 +1566,11 @@ static int verify_node_Sync(ir_node *n, ir_graph *irg)
 /**
  * verify a Confirm node
  */
-static int verify_node_Confirm(ir_node *n, ir_graph *irg)
+static int verify_node_Confirm(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Confirm_value(n));
 	ir_mode *op2mode = get_irn_mode(get_Confirm_bound(n));
-	(void) irg;
 
 	ASSERT_AND_RET_DBG(
 		/* Confirm: BB x T x T --> T */
@@ -1609,13 +1585,12 @@ static int verify_node_Confirm(ir_node *n, ir_graph *irg)
 /**
  * verify a Mux node
  */
-static int verify_node_Mux(ir_node *n, ir_graph *irg)
+static int verify_node_Mux(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Mux_sel(n));
 	ir_mode *op2mode = get_irn_mode(get_Mux_true(n));
 	ir_mode *op3mode = get_irn_mode(get_Mux_false(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Mux: BB x b x datab x datab --> datab */
@@ -1631,13 +1606,14 @@ static int verify_node_Mux(ir_node *n, ir_graph *irg)
 /**
  * verify a CopyB node
  */
-static int verify_node_CopyB(ir_node *n, ir_graph *irg)
+static int verify_node_CopyB(const ir_node *n)
 {
-	ir_mode *mymode  = get_irn_mode(n);
-	ir_mode *op1mode = get_irn_mode(get_CopyB_mem(n));
-	ir_mode *op2mode = get_irn_mode(get_CopyB_dst(n));
-	ir_mode *op3mode = get_irn_mode(get_CopyB_src(n));
-	ir_type *t = get_CopyB_type(n);
+	ir_graph *irg     = get_irn_irg(n);
+	ir_mode  *mymode  = get_irn_mode(n);
+	ir_mode  *op1mode = get_irn_mode(get_CopyB_mem(n));
+	ir_mode  *op2mode = get_irn_mode(get_CopyB_dst(n));
+	ir_mode  *op3mode = get_irn_mode(get_CopyB_src(n));
+	ir_type  *t = get_CopyB_type(n);
 
 	/* CopyB: BB x M x ref x ref --> M x X */
 	ASSERT_AND_RET(mymode == mode_T && op1mode == mode_M, "CopyB node", 0);
@@ -1659,14 +1635,13 @@ static int verify_node_CopyB(ir_node *n, ir_graph *irg)
 /**
  * verify a Bound node
  */
-static int verify_node_Bound(ir_node *n, ir_graph *irg)
+static int verify_node_Bound(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Bound_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Bound_index(n));
 	ir_mode *op3mode = get_irn_mode(get_Bound_lower(n));
 	ir_mode *op4mode = get_irn_mode(get_Bound_upper(n));
-	(void) irg;
 
 	/* Bound: BB x M x int x int x int --> M x X */
 	ASSERT_AND_RET(
@@ -1687,7 +1662,7 @@ static int verify_node_Bound(ir_node *n, ir_graph *irg)
  *
  * @return non-zero on success, 0 on dominance error
  */
-static int check_dominance_for_node(ir_node *use)
+static int check_dominance_for_node(const ir_node *use)
 {
 	/* This won't work for blocks and the end node */
 	if (!is_Block(use) && !is_End(use) && !is_Anchor(use)) {
@@ -1729,7 +1704,7 @@ static int check_dominance_for_node(ir_node *use)
 }
 
 /* Tests the modes of n and its predecessors. */
-int irn_verify_irg(ir_node *n, ir_graph *irg)
+int irn_verify_irg(const ir_node *n, ir_graph *irg)
 {
 	ir_op *op;
 
@@ -1776,13 +1751,13 @@ int irn_verify_irg(ir_node *n, ir_graph *irg)
 	}
 
 	if (op->ops.verify_node)
-		return op->ops.verify_node(n, irg);
+		return op->ops.verify_node(n);
 
 	/* All went ok */
 	return 1;
 }
 
-int irn_verify(ir_node *n)
+int irn_verify(const ir_node *n)
 {
 #ifdef DEBUG_libfirm
 	return irn_verify_irg(n, get_irn_irg(n));
@@ -1832,7 +1807,7 @@ typedef struct check_cfg_env_t {
 	ir_nodeset_t false_projs;
 } check_cfg_env_t;
 
-static int check_block_cfg(ir_node *block, check_cfg_env_t *env)
+static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 {
 	pmap *branch_nodes;
 	int   n_cfgpreds;
@@ -1859,7 +1834,7 @@ static int check_block_cfg(ir_node *block, check_cfg_env_t *env)
 		ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
 						   "Multiple users on mode_X node", 0,
 						   ir_printf("node %+F\n", branch));
-		pmap_insert(branch_nodes, branch, block);
+		pmap_insert(branch_nodes, branch, (void*)block);
 
 		/* check that there's only 1 branching instruction in each block */
 		branch_block = get_nodes_block(branch);
@@ -1901,7 +1876,7 @@ static void check_cfg_walk_func(ir_node *node, void *data)
 	env->res &= check_block_cfg(node, env);
 }
 
-static int verify_block_branch(ir_node *block, check_cfg_env_t *env)
+static int verify_block_branch(const ir_node *block, check_cfg_env_t *env)
 {
 	ir_node *branch = pmap_get(env->branch_nodes, block);
 	ASSERT_AND_RET_DBG(branch != NULL
@@ -1912,7 +1887,7 @@ static int verify_block_branch(ir_node *block, check_cfg_env_t *env)
 	return 1;
 }
 
-static int verify_cond_projs(ir_node *cond, check_cfg_env_t *env)
+static int verify_cond_projs(const ir_node *cond, check_cfg_env_t *env)
 {
 	if (get_irn_mode(get_Cond_selector(cond)) == mode_b) {
 		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
@@ -2064,7 +2039,8 @@ ir_graph_pass_t *irg_verify_pass(const char *name, unsigned flags)
 }
 
 /* create a verify pass */
-int irn_verify_irg_dump(ir_node *n, ir_graph *irg, const char **bad_string)
+int irn_verify_irg_dump(const ir_node *n, ir_graph *irg,
+                        const char **bad_string)
 {
 	int res;
 	firm_verification_t old = get_node_verification_mode();

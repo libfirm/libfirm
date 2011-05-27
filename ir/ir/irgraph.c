@@ -630,7 +630,7 @@ struct obstack *
  *
  * Implementation is GLIBC specific as is uses the internal _obstack_chunk implementation.
  */
-int node_is_in_irgs_storage(ir_graph *irg, ir_node *n)
+int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 {
 	struct _obstack_chunk *p;
 

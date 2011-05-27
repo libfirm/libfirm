@@ -208,7 +208,7 @@ typedef ir_entity *(*get_entity_attr_func)(const ir_node *self);
  *
  * @see do_node_verification()
  */
-typedef int (*verify_node_func)(ir_node *self, ir_graph *irg);
+typedef int (*verify_node_func)(const ir_node *node);
 
 /**
  * The verify_node operation for Proj(X).
@@ -217,7 +217,7 @@ typedef int (*verify_node_func)(ir_node *self, ir_graph *irg);
  *
  * @see do_node_verification()
  */
-typedef int (*verify_proj_node_func)(ir_node *self, ir_node *proj);
+typedef int (*verify_proj_node_func)(const ir_node *proj);
 
 /**
  * Reasons to call the dump_node operation:

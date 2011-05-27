@@ -35,7 +35,7 @@
  *
  * @return NON-zero on success
  */
-FIRM_API int irn_verify(ir_node *checknode);
+FIRM_API int irn_verify(const ir_node *checknode);
 
 /**
  * Tests the modes of checknode and its predecessors.
@@ -43,14 +43,15 @@ FIRM_API int irn_verify(ir_node *checknode);
  *
  * @return NON-zero on success
  */
-FIRM_API int irn_verify_irg(ir_node *checknode, ir_graph *irg);
+FIRM_API int irn_verify_irg(const ir_node *checknode, ir_graph *irg);
 
 /**
  * Same as irn_verify_irg, but temporary sets verification mode to
  * NODE_VERIFICATION_ERROR_ONLY.
  * @return NON-zero on success
  */
-FIRM_API int irn_verify_irg_dump(ir_node *checknode, ir_graph *irg, const char **bad_string);
+FIRM_API int irn_verify_irg_dump(const ir_node *checknode, ir_graph *irg,
+                                 const char **bad_string);
 
 /**
  * Flags for irg_verify().
