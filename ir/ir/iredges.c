@@ -591,6 +591,8 @@ static void visitor(ir_node *irn, void *data)
 
 	if (is_Deleted(irn))
 		return;
+	if (!is_Block(irn) && is_Deleted(get_nodes_block(irn)))
+		return;
 
 	if (!irn_visited_else_mark(irn)) {
 		info->visit(irn, info->data);
