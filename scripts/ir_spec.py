@@ -56,7 +56,8 @@ class Alloc(Op):
 		)
 	]
 	flags       = [ "fragile", "uses_memory" ]
-	pinned      = "yes"
+	pinned      = "exception"
+	pinned_init = "op_pin_state_pinned"
 	attr_struct = "alloc_attr"
 
 class Anchor(Op):
