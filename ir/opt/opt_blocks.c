@@ -1103,8 +1103,8 @@ static void check_for_cf_meet(ir_node *block, void *ctx)
 		if (! is_Jmp(pred) && ! is_Raise(pred) && !is_Bad(pred))
 			continue;
 
-		preds[k].pred  = pred;
-		preds[k].index = i;
+		preds[k++].pred  = pred;
+		preds[k++].index = i;
 	}
 
 	if (k > 1)

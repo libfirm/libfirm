@@ -126,7 +126,8 @@ static void process_call(ir_node *call, ir_entity *callee, q_set *hmap)
 
 	n_params = get_Call_n_params(call);
 
-	/* Beware: we cannot clone variadic parameters as well as the
+	/* TODO
+	 * Beware: we cannot clone variadic parameters as well as the
 	 * last non-variadic one, which might be needed for the va_start()
 	 * magic
 	 */

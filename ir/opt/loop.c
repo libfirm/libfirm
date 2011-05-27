@@ -955,7 +955,7 @@ static void get_head_outs(ir_node *node, void *env)
  * (Some blocks need to be removed once again.)
  * Returns 1 if the given block belongs to the condition chain.
  */
-static unsigned find_condition_chain(ir_node *block)
+static void find_condition_chain(ir_node *block)
 {
 	const    ir_edge_t *edge;
 	unsigned mark = 0;
@@ -978,7 +978,7 @@ static unsigned find_condition_chain(ir_node *block)
 	 * continuing with another subtree. */
 	if (loop_info.cc_size + nodes_n > opt_params.max_cc_size) {
 		set_Block_mark(block, 0);
-		return 0;
+		return;
 	}
 
 	/* Check if block only has a jmp instruction. */
@@ -1041,8 +1041,6 @@ static unsigned find_condition_chain(ir_node *block)
 		if (is_in_loop(src) && ! irn_visited(src))
 			find_condition_chain(src);
 	}
-
-	return mark;
 }
 
 /**

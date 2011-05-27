@@ -178,9 +178,8 @@ static int vrp_update_node(ir_node *node)
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
-			ir_tarval *bits_set, *bits_not_set;
-			bits_set = tarval_rotl(vrp_left->bits_set, get_Const_tarval(right));
-			bits_not_set = tarval_rotl(vrp_left->bits_not_set, get_Const_tarval(right));
+			new_bits_set = tarval_rotl(vrp_left->bits_set, get_Const_tarval(right));
+			new_bits_not_set = tarval_rotl(vrp_left->bits_not_set, get_Const_tarval(right));
 		}
 		break;
 	}
@@ -572,7 +571,7 @@ void set_vrp_data(ir_graph *irg)
 			/* if something changed, add successors to worklist*/
 			for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
 				succ =  get_irn_out(node, i);
-				waitq_put(env->workqueue, node);
+				waitq_put(env->workqueue, succ);
 			}
 		}
 	}
