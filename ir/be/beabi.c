@@ -1558,6 +1558,21 @@ static void fix_start_block(ir_graph *irg)
 	assert(is_Proj(initial_X));
 	exchange(initial_X, jmp);
 	set_irg_initial_exec(irg, new_r_Bad(irg, mode_X));
+
+	/* merge start block with successor if possible */
+	{
+		const ir_edge_t *edge;
+		foreach_out_edge(jmp, edge) {
+			ir_node *succ = get_edge_src_irn(edge);
+			if (!is_Block(succ))
+				continue;
+
+			if (get_irn_arity(succ) == 1) {
+				exchange(succ, start_block);
+			}
+			break;
+		}
+	}
 }
 
 /**
