@@ -2360,8 +2360,8 @@ restart:
 	}
 
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
+		/* c - ~X = X + (c+1) */
 		if (is_Const(a) && is_Not(b)) {
-			/* c - ~X = X + (c+1) */
 			ir_tarval *tv = get_Const_tarval(a);
 
 			tv = tarval_add(tv, get_mode_one(mode));
@@ -2372,6 +2372,24 @@ restart:
 				n = new_rd_Add(get_irn_dbg_info(n), blk, get_Not_op(b), c, mode);
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_C_NOT_X);
 				return n;
+			}
+		}
+		/* x-(x&y) = x & ~y */
+		if (is_And(b)) {
+			ir_node *and_left  = get_And_left(b);
+			ir_node *and_right = get_And_right(b);
+			if (and_right == a) {
+				ir_node *tmp = and_left;
+				and_left  = and_right;
+				and_right = tmp;
+			}
+			if (and_left == a) {
+				dbg_info *dbgi  = get_irn_dbg_info(n);
+				ir_node  *block = get_nodes_block(n);
+				ir_mode  *mode  = get_irn_mode(n);
+				ir_node  *notn  = new_rd_Not(dbgi, block, and_right, mode);
+				ir_node  *and   = new_rd_And(dbgi, block, a, notn, mode);
+				return and;
 			}
 		}
 	}
