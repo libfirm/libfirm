@@ -822,8 +822,8 @@ static void lower_shr_helper(ir_node *node, ir_mode *mode,
 		right = get_lowered_low(right);
 	} else {
 		/* shift should never have signed mode on the right */
-		assert(get_irn_mode(right) != env->high_signed);
 		ir_node *block = get_nodes_block(node);
+		assert(get_irn_mode(right) != env->high_signed);
 		right = create_conv(block, right, low_unsigned);
 	}
 
