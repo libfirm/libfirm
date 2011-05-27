@@ -379,8 +379,13 @@ static void optimize_blocks(ir_node *b, void *ctx)
 						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-								if (! is_Bad(get_Block_cfgpred(pred, j)))
+								if (! is_Bad(get_Block_cfgpred(pred, j))) {
 									in[q_preds++] = phi;
+								} else {
+									ir_graph *irg  = get_irn_irg(b);
+									ir_mode  *mode = get_irn_mode(phi);
+									in[q_preds++] = new_r_Bad(irg, mode);
+								}
 							}
 						} else {
 							in[q_preds++] = phi;
@@ -404,8 +409,13 @@ static void optimize_blocks(ir_node *b, void *ctx)
 						} else if (is_Block_removable(pred) && !Block_block_visited(pred)) {
 							/* It's an empty block and not yet visited. */
 							for (j = 0; j < get_Block_n_cfgpreds(pred); j++) {
-								if (! is_Bad(get_Block_cfgpred(pred, j)))
+								if (! is_Bad(get_Block_cfgpred(pred, j))) {
 									in[q_preds++] = phi;
+								} else {
+									ir_graph *irg  = get_irn_irg(b);
+									ir_mode  *mode = get_irn_mode(phi);
+									in[q_preds++] = new_r_Bad(irg, mode);
+								}
 							}
 						} else {
 							in[q_preds++] = phi;
