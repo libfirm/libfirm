@@ -191,8 +191,7 @@ ir_prog_pass_t *lower_intrinsics_pass(
 	const char *name,
 	i_record *list, size_t length, int part_block_used)
 {
-	pass_t *pass = (pass_t*)xmalloc(sizeof(*pass) + (length-1) * sizeof(pass->list[0]));
-
+	pass_t *const pass = XMALLOCF(pass_t, list, length);
 	memcpy(pass->list, list, sizeof(list[0]) * length);
 	pass->length          = length;
 	pass->part_block_used = part_block_used;
