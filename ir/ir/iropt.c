@@ -3632,30 +3632,50 @@ static ir_node *transform_node_Cmp(ir_node *n)
 	}
 
 	/* Remove unnecessary conversions */
-	/* TODO handle conv+constant */
 	if (is_Conv(left) && is_Conv(right)) {
-		ir_node *op_left     = get_Conv_op(left);
-		ir_node *op_right    = get_Conv_op(right);
-		ir_mode *mode_left   = get_irn_mode(op_left);
-		ir_mode *mode_right  = get_irn_mode(op_right);
+		ir_node *op_left    = get_Conv_op(left);
+		ir_node *op_right   = get_Conv_op(right);
+		ir_mode *mode_left  = get_irn_mode(op_left);
+		ir_mode *mode_right = get_irn_mode(op_right);
 
 		if (smaller_mode(mode_left, mode) && smaller_mode(mode_right, mode)
 				&& mode_left != mode_b && mode_right != mode_b) {
-			ir_node  *block = get_nodes_block(n);
+			ir_node *block = get_nodes_block(n);
 
 			if (mode_left == mode_right) {
-				left  = op_left;
-				right = op_right;
+				left    = op_left;
+				right   = op_right;
 				changed = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV_CONV);
 			} else if (smaller_mode(mode_left, mode_right)) {
-				left  = new_r_Conv(block, op_left, mode_right);
-				right = op_right;
+				left    = new_r_Conv(block, op_left, mode_right);
+				right   = op_right;
 				changed = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
 			} else if (smaller_mode(mode_right, mode_left)) {
-				left  = op_left;
-				right = new_r_Conv(block, op_right, mode_left);
+				left    = op_left;
+				right   = new_r_Conv(block, op_right, mode_left);
+				changed = true;
+				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
+			}
+			mode = get_irn_mode(left);
+		}
+	}
+	if (is_Conv(left) && is_Const(right)) {
+		ir_node   *op_left   = get_Conv_op(left);
+		ir_mode   *mode_left = get_irn_mode(op_left);
+		if (smaller_mode(mode_left, mode) && mode_left != mode_b) {
+			ir_tarval *tv        = get_Const_tarval(right);
+			tarval_int_overflow_mode_t last_mode
+				= tarval_get_integer_overflow_mode();
+			ir_tarval *new_tv;
+			tarval_set_integer_overflow_mode(TV_OVERFLOW_BAD);
+			new_tv = tarval_convert_to(tv, mode_left);
+			tarval_set_integer_overflow_mode(last_mode);
+			if (new_tv != tarval_bad) {
+				ir_graph *irg = get_irn_irg(n);
+				left    = op_left;
+				right   = new_r_Const(irg, new_tv);
 				changed = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
 			}
