@@ -5306,19 +5306,118 @@ int ir_is_negated_value(const ir_node *a, const ir_node *b)
 	return false;
 }
 
+static const ir_node *skip_upconv(const ir_node *node)
+{
+	while (is_Conv(node)) {
+		ir_mode       *mode    = get_irn_mode(node);
+		const ir_node *op      = get_Conv_op(node);
+		ir_mode       *op_mode = get_irn_mode(op);
+		if (!smaller_mode(op_mode, mode))
+			break;
+		node = op;
+	}
+	return node;
+}
+
+int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_true,
+                  const ir_node *mux_false)
+{
+	ir_node    *cmp_left;
+	ir_node    *cmp_right;
+	ir_mode    *mode;
+	ir_relation relation;
+
+	if (!is_Cmp(sel))
+		return 0;
+
+	/**
+	 * Note further that these optimization work even for floating point
+	 * with NaN's because -NaN == NaN.
+	 * However, if +0 and -0 is handled differently, we cannot use the Abs/-Abs
+	 * transformations.
+	 */
+	mode = get_irn_mode(mux_true);
+	if (mode_honor_signed_zeros(mode))
+		return 0;
+
+	/* must be <, <=, >=, > */
+	relation = get_Cmp_relation(sel);
+	if ((relation & ir_relation_less_greater) == 0)
+		return 0;
+
+	if (!ir_is_negated_value(mux_true, mux_false))
+		return 0;
+
+	mux_true  = skip_upconv(mux_true);
+	mux_false = skip_upconv(mux_false);
+
+	/* must be x cmp 0 */
+	cmp_right = get_Cmp_right(sel);
+	if (!is_Const(cmp_right) || !is_Const_null(cmp_right))
+		return 0;
+
+	cmp_left = get_Cmp_left(sel);
+	if (cmp_left == mux_false) {
+		if (relation & ir_relation_less) {
+			return 1;
+		} else {
+			assert(relation & ir_relation_greater);
+			return -1;
+		}
+	} else if (cmp_left == mux_true) {
+		if (relation & ir_relation_less) {
+			return -1;
+		} else {
+			assert(relation & ir_relation_greater);
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_true,
+                       ir_node *mux_false)
+{
+	ir_node *cmp_left = get_Cmp_left(sel);
+	return cmp_left == skip_upconv(mux_false) ? mux_false : mux_true;
+}
+
 /**
  * Optimize a Mux into some simpler cases.
  */
 static ir_node *transform_node_Mux(ir_node *n)
 {
-	ir_node *oldn = n, *sel = get_Mux_sel(n);
-	ir_mode *mode = get_irn_mode(n);
-	ir_node  *t   = get_Mux_true(n);
-	ir_node  *f   = get_Mux_false(n);
-	ir_graph *irg = get_irn_irg(n);
+	ir_node  *oldn = n;
+	ir_node  *sel  = get_Mux_sel(n);
+	ir_mode  *mode = get_irn_mode(n);
+	ir_node  *t    = get_Mux_true(n);
+	ir_node  *f    = get_Mux_false(n);
+	ir_graph *irg  = get_irn_irg(n);
 
 	if (is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX))
 		return n;
+
+	/* implement integer abs: abs(x) = x^(x >>s 31) - (x >>s 31) */
+	if (get_mode_arithmetic(mode) == irma_twos_complement) {
+		int abs = ir_mux_is_abs(sel, t, f);
+		if (abs != 0) {
+			dbg_info *dbgi       = get_irn_dbg_info(n);
+			ir_node  *block      = get_nodes_block(n);
+			ir_node  *op         = ir_get_abs_op(sel, t, f);
+			int       bits       = get_mode_size_bits(mode);
+			ir_node  *shiftconst = new_r_Const_long(irg, mode_Iu, bits-1);
+			ir_node  *sext       = new_rd_Shrs(dbgi, block, op, shiftconst, mode);
+			ir_node  *xorn       = new_rd_Eor(dbgi, block, op, sext, mode);
+			ir_node  *res;
+			if (abs > 0) {
+				res = new_rd_Sub(dbgi, block, xorn, sext, mode);
+			} else {
+				res = new_rd_Sub(dbgi, block, sext, xorn, mode);
+			}
+			return res;
+		}
+	}
 
 	if (is_Mux(t)) {
 		ir_node*  block = get_nodes_block(n);

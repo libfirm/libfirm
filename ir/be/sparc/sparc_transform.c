@@ -784,27 +784,6 @@ static ir_node *gen_Div(ir_node *node)
 	return res;
 }
 
-#if 0
-static ir_node *gen_Abs(ir_node *node)
-{
-	ir_mode *const mode = get_irn_mode(node);
-
-	if (mode_is_float(mode)) {
-		return gen_helper_unfpop(node, mode, new_bd_sparc_fabs_s,
-		                         new_bd_sparc_fabs_d, new_bd_sparc_fabs_q);
-	} else {
-		ir_node  *const block  = be_transform_node(get_nodes_block(node));
-		dbg_info *const dbgi   = get_irn_dbg_info(node);
-		ir_node  *const op     = get_Abs_op(node);
-		ir_node  *const new_op = be_transform_node(op);
-		ir_node  *const sra    = new_bd_sparc_Sra_imm(dbgi, block, new_op, NULL, 31);
-		ir_node  *const xor    = new_bd_sparc_Xor_reg(dbgi, block, new_op, sra);
-		ir_node  *const sub    = new_bd_sparc_Sub_reg(dbgi, block, xor,    sra);
-		return sub;
-	}
-}
-#endif
-
 /**
  * Transforms a Not node.
  *

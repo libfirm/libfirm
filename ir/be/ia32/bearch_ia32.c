@@ -1952,7 +1952,7 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	if (get_mode_size_bits(mode) > 32)
 		return false;
 	/* we can handle Abs for all modes and compares (except 64bit) */
-	if (be_mux_is_abs(sel, mux_true, mux_false) != 0)
+	if (ir_mux_is_abs(sel, mux_true, mux_false) != 0)
 		return true;
 	/* we can't handle MuxF yet */
 	if (mode_is_float(mode))

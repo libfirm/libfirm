@@ -136,4 +136,10 @@ bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode);
  */
 ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops);
 
+int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_true,
+                  const ir_node *mux_false);
+
+ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_true,
+                       ir_node *mux_false);
+
 #endif

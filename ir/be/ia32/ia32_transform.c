@@ -1998,30 +1998,6 @@ static ir_node *create_abs(dbg_info *dbgi, ir_node *block, ir_node *op,
 				SET_IA32_ORIG_NODE(new_node, node);
 			}
 		}
-	} else {
-		ir_node *xorn;
-		ir_node *sign_extension;
-
-		if (get_mode_size_bits(mode) == 32) {
-			new_op = be_transform_node(op);
-		} else {
-			new_op = create_I2I_Conv(mode, mode_Is, dbgi, block, op, node);
-		}
-
-		sign_extension = create_sex_32_64(dbgi, new_block, new_op, node);
-
-		xorn = new_bd_ia32_Xor(dbgi, new_block, noreg_GP, noreg_GP,
-		                      nomem, new_op, sign_extension);
-		SET_IA32_ORIG_NODE(xorn, node);
-
-		if (negate) {
-			new_node = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP,
-									   nomem, sign_extension, xorn);
-		} else {
-			new_node = new_bd_ia32_Sub(dbgi, new_block, noreg_GP, noreg_GP,
-									   nomem, xorn, sign_extension);
-		}
-		SET_IA32_ORIG_NODE(new_node, node);
 	}
 
 	return new_node;
@@ -3475,9 +3451,15 @@ static ir_node *gen_Mux(ir_node *node)
 
 	assert(get_irn_mode(sel) == mode_b);
 
-	is_abs = be_mux_is_abs(sel, mux_true, mux_false);
+	is_abs = ir_mux_is_abs(sel, mux_true, mux_false);
 	if (is_abs != 0) {
-		return create_abs(dbgi, block, be_get_abs_op(sel), is_abs < 0, node);
+		if (ia32_mode_needs_gp_reg(mode)) {
+			ir_fprintf(stderr, "Optimisation warning: Integer abs %+F not transformed\n",
+			           node);
+		} else {
+			ir_node *op = ir_get_abs_op(sel, mux_true, mux_false);
+			return create_abs(dbgi, block, op, is_abs < 0, node);
+		}
 	}
 
 	/* Note: a Mux node uses a Load two times IFF it's used in the compare AND in the result */
