@@ -183,7 +183,9 @@ static void dump(unsigned mask, ir_graph *irg,
 }
 
 /**
- * Checks for every reload if its user can perform the load on itself.
+ * Post-Walker: Checks for the given reload if has only one user that can perform the
+ * reload as part of its address mode.
+ * Fold the reload into the user it that is possible.
  */
 static void memory_operand_walker(ir_node *irn, void *env)
 {
@@ -214,7 +216,7 @@ static void memory_operand_walker(ir_node *irn, void *env)
 		}
 	}
 
-	/* kill the Reload */
+	/* kill the Reload if it was folded */
 	if (get_irn_n_edges(irn) == 0) {
 		ir_graph *irg = get_irn_irg(irn);
 		ir_mode  *frame_mode = get_irn_mode(get_irn_n(irn, n_be_Reload_frame));

@@ -68,6 +68,9 @@ ir_node *be_get_Proj_for_pn(const ir_node *irn, long pn)
 	return NULL;
 }
 
+/**
+ * Block-walker: adds the visited block to a flexible array.
+ */
 static void add_to_postorder(ir_node *block, void *data)
 {
 	ir_node ***list = (ir_node***) data;
