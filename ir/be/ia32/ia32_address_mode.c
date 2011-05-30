@@ -418,7 +418,8 @@ int ia32_is_non_address_mode_node(ir_node const *node)
 }
 
 /**
- * Check if a given value is last used (i.e. die after) the block of some other node.
+ * Check if a given value is last used (i.e. die after) the block of some
+ * other node.
  */
 static int value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 {
@@ -439,6 +440,12 @@ static int value_last_used_here(be_lv_t *lv, ir_node *here, ir_node *value)
 	}
 
 	return 1;
+}
+
+static bool simple_is_immediate(const ir_node *node)
+{
+	int symconsts = 0;
+	return do_is_immediate(node, &symconsts, false);
 }
 
 /**
@@ -486,12 +493,17 @@ static void mark_non_address_nodes(ir_node *node, void *env)
 		left  = get_binop_left(node);
 		right = get_binop_right(node);
 
-		/* Fold AM if any of the two operands does not die here.  This duplicates
+		/* if any of the operands is an immediate then this will not
+		 * increase register pressure */
+		if (simple_is_immediate(left) || simple_is_immediate(right))
+			return;
+
+		/* Fold AM if any of the two operands does not die here. This duplicates
 		 * an addition and has the same register pressure for the case that only
 		 * one operand dies, but is faster (on Pentium 4).
 		 * && instead of || only folds AM if both operands do not die here */
 		if (!value_last_used_here(lv, node, left) ||
-				!value_last_used_here(lv, node, right)) {
+		    !value_last_used_here(lv, node, right)) {
 			return;
 		}
 
