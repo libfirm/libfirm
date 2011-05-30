@@ -1687,6 +1687,13 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			 * but we need Call nodes in our graph. Luckily the inliner leaves
 			 * this information in the link field. */
 			new_call = (ir_node*)get_irn_link(centry->call);
+			if (get_irn_irg(new_call) != irg) {
+				/* centry->call has not been copied, which means it is dead.
+				 * This might happen during inlining, if a const function,
+				 * which cannot be inlined is only used as an unused argument
+				 * of another function, which is inlined. */
+				continue;
+			}
 			assert(is_Call(new_call));
 
 			new_entry = duplicate_call_entry(centry, new_call, loop_depth);
