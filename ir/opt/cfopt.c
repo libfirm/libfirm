@@ -283,6 +283,11 @@ static void optimize_blocks(ir_node *b, void *ctx)
 	ir_node **in;
 	merge_env *env = (merge_env*)ctx;
 
+	if (get_Block_dom_depth(b) < 0) {
+		/* ignore unreachable blocks */
+		return;
+	}
+
 	/* Count the number of predecessor if this block is merged with pred blocks
 	   that are empty. */
 	max_preds = 0;
