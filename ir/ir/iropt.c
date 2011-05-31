@@ -3864,6 +3864,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				ir_graph *irg = get_irn_irg(n);
 				left    = op_left;
 				right   = new_r_Const(irg, new_tv);
+				mode    = get_irn_mode(left);
 				changed = true;
 				DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_CONV);
 			}
