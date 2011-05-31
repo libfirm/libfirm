@@ -600,7 +600,7 @@ typedef enum block_flags_t {
 static bool get_phase_flag(ir_phase *block_info, ir_node *block, int flag) {
 	return ((int)phase_get_irn_data(block_info, block)) & flag;
 }
-static void set_phase_flag(ir_phase *block_info, ir_node *block, int flag) {
+static void set_phase_flag(ir_phase *block_info, ir_node *block, block_flags_t flag) {
 	int data = (int)phase_get_irn_data(block_info, block);
 	data |= flag;
 	phase_set_irn_data(block_info, block, (void*)data);
@@ -727,14 +727,14 @@ static void cfgopt_ignoring_phis(ir_graph *irg) {
 	for (;;) {
 		env.changed = false;
 
-		/* useless if optimization: will not touch empty blocks */
+		/* optimize useless ifs: will not touch empty blocks */
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		/* Remove empty blocks */
 		irg_block_walk_graph(irg, remove_empty_blocks, NULL, &env);
 		if (env.changed) {
 			set_irg_doms_inconsistent(irg);
-			/* Removing blocks might enable more Cond optimizations */
+			/* Removing blocks might enable more useless-if optimizations */
 			continue;
 		} else {
 			break;
@@ -799,7 +799,6 @@ void optimize_cf(ir_graph *irg)
 		if (!changed)
 			break;
 
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
@@ -864,7 +863,6 @@ void optimize_cf(ir_graph *irg)
 
 	if (env.changed) {
 		/* Handle graph state if was changed. */
-		set_irg_outs_inconsistent(irg);
 		set_irg_doms_inconsistent(irg);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
