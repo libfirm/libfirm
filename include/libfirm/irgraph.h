@@ -514,6 +514,12 @@ typedef enum {
 	IR_GRAPH_STATE_ARCH_DEP      = 1U << 1,  /**< should not construct more nodes which irarch potentially breaks down */
 	IR_GRAPH_STATE_BCONV_ALLOWED = 1U << 2,  /**< Conv(mode_b) to Iu is allowed as set command */
 	IR_GRAPH_STATE_BAD_BLOCK     = 1U << 3,  /**< a node may have Bad in its block input */
+	/**
+	 * There are normalisations where there is no "best" representative.
+	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
+	 * later in the other (NORMALISATION2).
+	 */
+	IR_GRAPH_STATE_NORMALISATION2        = 1U << 4,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 
