@@ -327,7 +327,7 @@ static inline op_pin_state _get_irn_pinned(const ir_node *node)
 	state = _get_op_pinned(_get_irn_op(node));
 
 	if (state >= op_pin_state_exc_pinned)
-		return node->attr.except.pin_state;
+		return (op_pin_state)node->attr.except.pin_state;
 
 	return state;
 }

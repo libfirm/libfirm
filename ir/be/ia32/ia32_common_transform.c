@@ -751,6 +751,7 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 	ir_node  *res      = NULL;
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	int      size      = get_type_size_bytes(get_CopyB_type(node));
+	int      throws_exception = ir_throws_exception(node);
 	int      rem;
 
 	/* If we have to copy more than 32 bytes, we use REP MOVSx and */
@@ -769,6 +770,7 @@ ir_node *ia32_gen_CopyB(ir_node *node)
 		}
 		res = new_bd_ia32_CopyB_i(dbgi, block, new_dst, new_src, new_mem, size);
 	}
+	ir_set_throws_exception(res, throws_exception);
 
 	SET_IA32_ORIG_NODE(res, node);
 

@@ -1328,6 +1328,20 @@ int is_x_regular_Proj(const ir_node *node)
 	return get_Proj_proj(node) == pred->op->pn_x_regular;
 }
 
+void ir_set_throws_exception(ir_node *node, int throws_exception)
+{
+	except_attr *attr = &node->attr.except;
+	assert(is_fragile_op(node));
+	attr->throws_exception = throws_exception;
+}
+
+int ir_throws_exception(const ir_node *node)
+{
+	const except_attr *attr = &node->attr.except;
+	assert(is_fragile_op(node));
+	return attr->throws_exception;
+}
+
 ir_node **get_Tuple_preds_arr(ir_node *node)
 {
 	assert(is_Tuple(node));
@@ -1524,6 +1538,9 @@ int (is_SymConst_addr_ent)(const ir_node *node)
 /* Returns true if the operation manipulates control flow. */
 int is_cfop(const ir_node *node)
 {
+	if (is_fragile_op(node) && ir_throws_exception(node))
+		return true;
+
 	return is_op_cfopcode(get_irn_op(node));
 }
 

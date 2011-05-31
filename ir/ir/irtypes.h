@@ -202,9 +202,12 @@ typedef struct sel_attr {
 
 /** Exception attributes. */
 typedef struct except_attr {
-	op_pin_state   pin_state;     /**< the pin state for operations that might generate a exception:
-									 If it's know that no exception will be generated, could be set to
-									 op_pin_state_floats. */
+	unsigned  pin_state : 2;         /**< the pin state for operations with
+	                                      variable pinned state. Contains a
+	                                      op_pin_state */
+	unsigned  throws_exception : 1; /**< if true a fragile op throws and
+	                                     must produce X_except and X_regular
+	                                     values */
 } except_attr;
 
 /** Call attributes. */

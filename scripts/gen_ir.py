@@ -272,6 +272,11 @@ def preprocess_node(node):
 				fqname = ".exc.pin_state",
 				init   = "pin_state"
 			))
+	if hasattr(node, "throws_init"):
+		initattrs.append(dict(
+			fqname = ".exc.throws_exception",
+			init   = node.throws_init
+		))
 
 	for arg in node.constructor_args:
 		arguments.append(prepare_attr(arg))

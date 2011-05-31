@@ -209,28 +209,34 @@ ir_prog_pass_t *lower_intrinsics_pass(
  * @param reg_jmp  new regular control flow, if NULL, a Jmp will be used
  * @param exc_jmp  new exception control flow, if reg_jmp == NULL, a Bad will be used
  */
-static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg_jmp, ir_node *exc_jmp)
+static void replace_call(ir_node *irn, ir_node *call, ir_node *mem,
+                         ir_node *reg_jmp, ir_node *exc_jmp)
 {
 	ir_node  *block = get_nodes_block(call);
 	ir_graph *irg   = get_irn_irg(block);
+	ir_node  *rest  = new_r_Tuple(block, 1, &irn);
 
-	if (reg_jmp == NULL) {
-
-		/* Beware: do we need here a protection against CSE? Better we do it. */
-		int old_cse = get_opt_cse();
-		set_opt_cse(0);
-		reg_jmp = new_r_Jmp(block);
-		set_opt_cse(old_cse);
-		exc_jmp = new_r_Bad(irg, mode_X);
+	if (ir_throws_exception(call)) {
+		turn_into_tuple(call, pn_Call_max+1);
+		if (reg_jmp == NULL) {
+			reg_jmp = new_r_Jmp(block);
+		}
+		if (exc_jmp == NULL) {
+			exc_jmp = new_r_Bad(irg, mode_X);
+		}
+		set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
+		set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
+	} else {
+		assert(reg_jmp == NULL);
+		assert(exc_jmp == NULL);
+		turn_into_tuple(call, pn_Call_T_result+1);
+		assert(pn_Call_M <= pn_Call_T_result);
+		assert(pn_Call_X_regular > pn_Call_T_result);
+		assert(pn_Call_X_except > pn_Call_T_result);
 	}
-	irn = new_r_Tuple(block, 1, &irn);
-
-	turn_into_tuple(call, pn_Call_max+1);
 	set_Tuple_pred(call, pn_Call_M, mem);
-	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
-	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);
-	set_Tuple_pred(call, pn_Call_T_result, irn);
-}  /* replace_call */
+	set_Tuple_pred(call, pn_Call_T_result, rest);
+}
 
 /* A mapper for the integer abs. */
 int i_mapper_abs(ir_node *call, void *ctx)
@@ -298,9 +304,15 @@ int i_mapper_alloca(ir_node *call, void *ctx)
 
 	irn    = new_rd_Alloc(dbg, block, mem, op, firm_unknown_type, stack_alloc);
 	mem    = new_rd_Proj(dbg, irn, mode_M, pn_Alloc_M);
-	no_exc = new_rd_Proj(dbg, irn, mode_X, pn_Alloc_X_regular);
-	exc    = new_rd_Proj(dbg, irn, mode_X, pn_Alloc_X_except);
 	irn    = new_rd_Proj(dbg, irn, get_modeP_data(), pn_Alloc_res);
+	if (ir_throws_exception(call)) {
+		no_exc = new_rd_Proj(dbg, irn, mode_X, pn_Alloc_X_regular);
+		exc    = new_rd_Proj(dbg, irn, mode_X, pn_Alloc_X_except);
+		ir_set_throws_exception(irn, true);
+	} else {
+		no_exc = NULL;
+		exc    = NULL;
+	}
 
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_ALLOCA);
 	replace_call(irn, call, mem, no_exc, exc);
@@ -356,13 +368,15 @@ int i_mapper_cbrt(ir_node *call, void *ctx)
 /* A mapper for the floating point pow. */
 int i_mapper_pow(ir_node *call, void *ctx)
 {
+	ir_node  *left    = get_Call_param(call, 0);
+	ir_node  *right   = get_Call_param(call, 1);
+	ir_node  *block   = get_nodes_block(call);
+	ir_graph *irg     = get_irn_irg(block);
+	ir_node  *reg_jmp = NULL;
+	ir_node  *exc_jmp = NULL;
+	ir_node  *irn;
 	dbg_info *dbg;
 	ir_node  *mem;
-	ir_node  *left  = get_Call_param(call, 0);
-	ir_node  *right = get_Call_param(call, 1);
-	ir_node  *block = get_nodes_block(call);
-	ir_graph *irg   = get_irn_irg(block);
-	ir_node  *irn, *reg_jmp = NULL, *exc_jmp = NULL;
 	(void) ctx;
 
 	if (is_Const(left) && is_Const_one(left)) {
@@ -397,8 +411,11 @@ int i_mapper_pow(ir_node *call, void *ctx)
 		div  = new_rd_Div(dbg, block, mem, irn, left, mode, op_pin_state_pinned);
 		mem  = new_r_Proj(div, mode_M, pn_Div_M);
 		irn  = new_r_Proj(div, mode, pn_Div_res);
-		reg_jmp = new_r_Proj(div, mode_X, pn_Div_X_regular);
-		exc_jmp = new_r_Proj(div, mode_X, pn_Div_X_except);
+		if (ir_throws_exception(call)) {
+			reg_jmp = new_r_Proj(div, mode_X, pn_Div_X_regular);
+			exc_jmp = new_r_Proj(div, mode_X, pn_Div_X_except);
+			ir_set_throws_exception(div, true);
+		}
 	}
 	DBG_OPT_ALGSIM0(call, irn, FS_OPT_RTS_POW);
 	replace_call(irn, call, mem, reg_jmp, exc_jmp);
@@ -919,9 +936,15 @@ replace_by_call:
 			/* replace the strcmp by (*x) */
 			irn = new_rd_Load(dbg, block, mem, v, mode, cons_none);
 			mem = new_r_Proj(irn, mode_M, pn_Load_M);
-			exc = new_r_Proj(irn, mode_X, pn_Load_X_except);
-			reg = new_r_Proj(irn, mode_X, pn_Load_X_regular);
 			irn = new_r_Proj(irn, mode, pn_Load_res);
+			if (ir_throws_exception(call)) {
+				exc = new_r_Proj(irn, mode_X, pn_Load_X_except);
+				reg = new_r_Proj(irn, mode_X, pn_Load_X_regular);
+				ir_set_throws_exception(irn, true);
+			} else {
+				exc = NULL;
+				reg = NULL;
+			}
 
 			/* conv to the result mode */
 			mode = get_type_mode(res_tp);

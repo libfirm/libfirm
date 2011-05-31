@@ -39,9 +39,9 @@ class Alloc(Op):
 	]
 	outs  = [
 		("M",         "memory result"),
+		("res",       "pointer to newly allocated memory"),
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
-		("res",       "pointer to newly allocated memory"),
 	]
 	attrs = [
 		dict(
@@ -57,6 +57,7 @@ class Alloc(Op):
 	]
 	flags       = [ "fragile", "uses_memory" ]
 	pinned      = "exception"
+	throws_init = "false"
 	pinned_init = "op_pin_state_pinned"
 	attr_struct = "alloc_attr"
 
@@ -203,13 +204,14 @@ class Bound(Op):
 	]
 	outs  = [
 		("M",         "memory result"),
+		("res",       "the checked index"),
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
-		("res",       "the checked index"),
 	]
  	flags  = [ "fragile", "highlevel" ]
 	pinned = "exception"
 	pinned_init = "op_pin_state_pinned"
+	throws_init = "false"
 	attr_struct = "bound_attr"
 	attrs_name  = "bound"
 
@@ -255,9 +257,9 @@ class Call(Op):
 	arity    = "variable"
 	outs     = [
 		("M",                "memory result"),
+		("T_result",         "tuple containing all results"),
 		("X_regular",        "control flow when no exception occurs"),
 		("X_except",         "control flow when exception occured"),
-		("T_result",         "tuple containing all results"),
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	attrs    = [
@@ -276,6 +278,7 @@ class Call(Op):
 	attr_struct = "call_attr"
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
+	throws_init = "false"
 	init = '''
 	assert((get_unknown_type() == type) || is_Method_type(type));
 	'''
@@ -434,6 +437,7 @@ class CopyB(Op):
 	attrs_name  = "copyb"
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
+	throws_init = "false"
 
 class Div(Op):
 	"""returns the quotient of its 2 operands"""
@@ -444,9 +448,9 @@ class Div(Op):
 	]
 	outs  = [
 		("M",         "memory result"),
+		("res",       "result of computation"),
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
-		("res",       "result of computation"),
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "div"
@@ -464,6 +468,7 @@ class Div(Op):
 	]
 	attr_struct = "div_attr"
 	pinned      = "exception"
+	throws_init = "false"
 	op_index    = 1
 	arity_override = "oparity_binary"
 
@@ -544,9 +549,9 @@ class InstOf(Op):
 	]
 	outs  = [
 		("M",         "memory result"),
+		("res",       "checked object pointer"),
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
-		("res",       "checked object pointer"),
 	]
 	flags = [ "highlevel" ]
 	attrs = [
@@ -575,9 +580,9 @@ class Load(Op):
 	]
 	outs  = [
 		("M",         "memory result"),
+		("res",       "result of load operation"),
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
-		("res",       "result of load operation"),
 	]
 	flags    = [ "fragile", "uses_memory" ]
 	pinned   = "exception"
@@ -609,6 +614,7 @@ class Load(Op):
 		),
 	]
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
+	throws_init = "(flags & cons_throws_exception) != 0"
 
 class Minus(Unop):
 	"""returns the difference between its operands"""
@@ -630,9 +636,9 @@ class Mod(Op):
 	]
 	outs  = [
 		("M",         "memory result"),
+		("res",       "result of computation"),
 		("X_regular", "control flow when no exception occurs"),
 		("X_except",  "control flow when exception occured"),
-		("res",       "result of computation"),
 	]
 	flags = [ "fragile", "uses_memory" ]
 	attrs_name = "mod"
@@ -645,6 +651,7 @@ class Mod(Op):
 	]
 	attr_struct = "mod_attr"
 	pinned      = "exception"
+	throws_init = "false"
 	op_index    = 1
 	arity_override = "oparity_binary"
 
@@ -834,6 +841,7 @@ class Store(Op):
 	pinned   = "exception"
 	attr_struct = "store_attr"
 	pinned_init = "flags & cons_floats ? op_pin_state_floats : op_pin_state_pinned"
+	throws_init = "(flags & cons_throws_exception) != 0"
 	attrs = [
 		dict(
 			type      = "ir_volatility",

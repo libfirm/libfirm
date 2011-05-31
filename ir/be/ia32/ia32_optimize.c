@@ -483,12 +483,15 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		ir_node *val, *mem, *mem_proj;
 		ir_node *store = stores[i];
 		ir_node *noreg = ia32_new_NoReg_gp(irg);
+		const ir_edge_t *edge;
+		const ir_edge_t *next;
 
 		val = get_irn_n(store, n_ia32_unary_op);
 		mem = get_irn_n(store, n_ia32_mem);
 		spreg = arch_get_irn_register(curr_sp);
 
-		push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg, mem, val, curr_sp);
+		push = new_bd_ia32_Push(get_irn_dbg_info(store), block, noreg, noreg,
+		                        mem, val, curr_sp);
 		copy_mark(store, push);
 
 		if (first_push == NULL)
@@ -503,8 +506,22 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		/* create memory Proj */
 		mem_proj = new_r_Proj(push, mode_M, pn_ia32_Push_M);
 
+		/* rewire Store Projs */
+		foreach_out_edge_safe(store, edge, next) {
+			ir_node *proj = get_edge_src_irn(edge);
+			if (!is_Proj(proj))
+				continue;
+			switch (get_Proj_proj(proj)) {
+			case pn_ia32_Store_M:
+				exchange(proj, mem_proj);
+				break;
+			default:
+				panic("unexpected Proj on Store->IncSp");
+			}
+		}
+
 		/* use the memproj now */
-		be_peephole_exchange(store, mem_proj);
+		be_peephole_exchange(store, push);
 
 		inc_ofs -= 4;
 	}

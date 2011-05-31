@@ -143,10 +143,13 @@ ENUM_BITSET(ir_relation)
  * constrained flags for memory operations.
  */
 typedef enum ir_cons_flags {
-	cons_none      = 0,        /**< No constrains. */
-	cons_volatile  = 1U << 0,  /**< Memory operation is volatile. */
-	cons_unaligned = 1U << 1,  /**< Memory operation is unaligned. */
-	cons_floats    = 1U << 2   /**< Memory operation can float. */
+	cons_none             = 0,        /**< No constrains. */
+	cons_volatile         = 1U << 0,  /**< Memory operation is volatile. */
+	cons_unaligned        = 1U << 1,  /**< Memory operation is unaligned. */
+	cons_floats           = 1U << 2,  /**< Memory operation can float. */
+	cons_throws_exception = 1U << 3,  /**< fragile op throws exception (and
+	                                       produces X_regular and X_except
+	                                       values) */
 } ir_cons_flags;
 ENUM_BITSET(ir_cons_flags)
 

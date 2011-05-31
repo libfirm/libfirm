@@ -889,6 +889,7 @@ static void transform_to_Store(ir_node *node)
 	ir_node *nomem = get_irg_no_mem(irg);
 	ir_node *ptr   = get_irg_frame(irg);
 	ir_node *val   = get_irn_n(node, n_be_Spill_val);
+	ir_node *res;
 	ir_node *store;
 	ir_node *sched_point = NULL;
 
@@ -897,17 +898,23 @@ static void transform_to_Store(ir_node *node)
 	}
 
 	if (mode_is_float(mode)) {
-		if (ia32_cg_config.use_sse2)
+		if (ia32_cg_config.use_sse2) {
 			store = new_bd_ia32_xStore(dbg, block, ptr, noreg, nomem, val);
-		else
+			res   = new_r_Proj(store, mode_M, pn_ia32_xStore_M);
+		} else {
 			store = new_bd_ia32_vfst(dbg, block, ptr, noreg, nomem, val, mode);
+			res   = new_r_Proj(store, mode_M, pn_ia32_vfst_M);
+		}
 	} else if (get_mode_size_bits(mode) == 128) {
 		/* Spill 128 bit SSE registers */
 		store = new_bd_ia32_xxStore(dbg, block, ptr, noreg, nomem, val);
+		res   = new_r_Proj(store, mode_M, pn_ia32_xxStore_M);
 	} else if (get_mode_size_bits(mode) == 8) {
 		store = new_bd_ia32_Store8Bit(dbg, block, ptr, noreg, nomem, val);
+		res   = new_r_Proj(store, mode_M, pn_ia32_Store8Bit_M);
 	} else {
 		store = new_bd_ia32_Store(dbg, block, ptr, noreg, nomem, val);
+		res   = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 	}
 
 	set_ia32_op_type(store, ia32_AddrModeD);
@@ -923,7 +930,7 @@ static void transform_to_Store(ir_node *node)
 		sched_remove(node);
 	}
 
-	exchange(node, store);
+	exchange(node, res);
 }
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)

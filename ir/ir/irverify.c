@@ -733,6 +733,17 @@ static int verify_node_Proj_Bound(const ir_node *p)
 	return 1;
 }
 
+static int verify_node_Proj_fragile(const ir_node *node)
+{
+	ir_node *pred             = get_Proj_pred(node);
+	int      throws_exception = ir_throws_exception(pred);
+	ASSERT_AND_RET((!is_x_except_Proj(node) || throws_exception)
+	    && (!is_x_regular_Proj(node) || throws_exception),
+	    "X_except und X_regular Proj only allowed when throws_exception is set",
+	    0);
+	return 1;
+}
+
 /**
  * verify a Proj node
  */
@@ -745,6 +756,12 @@ static int verify_node_Proj(const ir_node *p)
 	pred = skip_Id(get_Proj_pred(p));
 	ASSERT_AND_RET(get_irn_mode(pred) == mode_T, "mode of a 'projed' node is not Tuple", 0);
 	ASSERT_AND_RET(get_irg_pinned(irg) == op_pin_state_floats || get_nodes_block(pred) == get_nodes_block(p), "Proj must be in same block as its predecessor", 0);
+
+	if (is_fragile_op(pred)) {
+		int res = verify_node_Proj_fragile(p);
+		if (res != 1)
+			return res;
+	}
 
 	op = get_irn_op(pred);
 	if (op->ops.verify_proj_node)

@@ -488,6 +488,17 @@ FIRM_API int      is_x_except_Proj(const ir_node *node);
  */
 FIRM_API int      is_x_regular_Proj(const ir_node *node);
 
+/**
+ * Set throws exception attribute of a fragile node
+ * @p throws_exception must be 0 or 1
+ */
+FIRM_API void     ir_set_throws_exception(ir_node *node, int throws_exception);
+
+/**
+ * Returns throws_exception attribute of a fragile node
+ */
+FIRM_API int      ir_throws_exception(const ir_node *node);
+
 /** returns the name of an ir_relation */
 FIRM_API const char *get_relation_string(ir_relation relation);
 

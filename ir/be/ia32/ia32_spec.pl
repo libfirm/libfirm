@@ -1221,7 +1221,6 @@ Store => {
 	emit      => '. mov%M %SI3, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
-	mode      => "mode_M",
 },
 
 Store8Bit => {
@@ -1234,7 +1233,6 @@ Store8Bit => {
 	emit      => '. mov%M %SB3, %AM',
 	latency   => 2,
 	units     => [ "GP" ],
-	mode      => "mode_M",
 },
 
 Lea => {
@@ -1436,13 +1434,14 @@ Popcnt => {
 },
 
 Call => {
+	op_flags  => [ "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => {
 		in  => [ "gp", "gp", "none", "gp", "esp", "fpcw", "eax", "ecx", "edx" ],
-		out => [ "esp:I|S", "fpcw:I", "none", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ]
+		out => [ "esp:I|S", "fpcw:I", "none", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "none", "none" ]
 	},
 	ins       => [ "base", "index", "mem", "addr", "stack", "fpcw", "eax", "ecx", "edx" ],
-	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7" ],
+	outs      => [ "stack", "fpcw", "M", "eax", "ecx", "edx", "vf0", "vf1", "vf2", "vf3", "vf4", "vf5", "vf6", "vf7", "xmm0", "xmm1", "xmm2", "xmm3", "xmm4", "xmm5", "xmm6", "xmm7", "X_regular", "X_except" ],
 	attr_type => "ia32_call_attr_t",
 	attr      => "unsigned pop, ir_type *call_tp",
 	am        => "source,unary",
@@ -1882,7 +1881,6 @@ xStore => {
 	emit     => '. mov%XXM %S3, %AM',
 	latency  => 0,
 	units    => [ "SSE" ],
-	mode     => "mode_M",
 },
 
 xStoreSimple => {
@@ -1895,7 +1893,6 @@ xStoreSimple => {
 	emit     => '. mov%XXM %S3, %AM',
 	latency  => 0,
 	units    => [ "SSE" ],
-	mode     => "mode_M",
 },
 
 CvtSI2SS => {
@@ -1980,11 +1977,12 @@ Cwtl => {
 },
 
 Conv_I2I => {
+	op_flags  => [ "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp" ],
-	               out => [ "gp", "none", "none" ] },
+	               out => [ "gp", "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "res", "flags", "M" ],
+	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
 	am        => "source,unary",
 	units     => [ "GP" ],
 	latency   => 1,
@@ -1994,11 +1992,12 @@ Conv_I2I => {
 },
 
 Conv_I2I8Bit => {
+	op_flags  => [ "fragile" ],
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "eax ebx ecx edx" ],
-	               out => [ "gp", "none", "none" ] },
+	               out => [ "gp", "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "res", "flags", "M" ],
+	outs      => [ "res", "flags", "M", "X_regular", "X_except" ],
 	am        => "source,unary",
 	units     => [ "GP" ],
 	latency   => 1,
@@ -2150,7 +2149,6 @@ vfst => {
 	init_attr => "attr->attr.ls_mode = store_mode;",
 	latency   => 2,
 	units     => [ "VFP" ],
-	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 },
 
@@ -2166,22 +2164,25 @@ vfild => {
 },
 
 vfist => {
+	op_flags  => [ "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ], out => [ "none" ] },
+	reg_req   => { in => [ "gp", "gp", "none", "vfp", "fpcw" ],
+	               out => [ "none", "none", "none", "none" ] },
 	ins       => [ "base", "index", "mem", "val", "fpcw" ],
-	outs      => [ "M" ],
+	outs      => [ "dummy", "M", "X_regular", "X_except" ],
 	latency   => 4,
 	units     => [ "VFP" ],
-	mode      => "mode_M",
 	attr_type => "ia32_x87_attr_t",
 },
 
 # SSE3 fisttp instruction
 vfisttp => {
+	op_flags  => [ "fragile" ],
 	state     => "exc_pinned",
-	reg_req   => { in => [ "gp", "gp", "none", "vfp" ], out => [ "in_r4", "none" ]},
+	reg_req   => { in => [ "gp", "gp", "none", "vfp" ],
+	               out => [ "in_r4", "none", "none", "none" ]},
 	ins       => [ "base", "index", "mem", "val" ],
-	outs      => [ "res", "M" ],
+	outs      => [ "res", "M", "X_regular", "X_except" ],
 	latency   => 4,
 	units     => [ "VFP" ],
 	attr_type => "ia32_x87_attr_t",
@@ -2720,7 +2721,6 @@ xxStore => {
 	emit     => '. movdqu %binop',
 	units    => [ "SSE" ],
 	latency  => 1,
-	mode     => "mode_M",
 },
 
 ); # end of %nodes

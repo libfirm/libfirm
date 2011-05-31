@@ -173,6 +173,7 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		ir_mode *lsmode = ia32_reg_classes[CLASS_ia32_fp_cw].mode;
 		ir_node *nomem  = get_irg_no_mem(irg);
 		ir_node *cwstore, *load, *load_res, *orn, *store, *fldcw;
+		ir_node *store_proj;
 		ir_node *or_const;
 
 		assert(last_state != NULL);
@@ -204,9 +205,10 @@ static ir_node *create_fpu_mode_reload(void *env, ir_node *state,
 		/* use mode_Iu, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(store, mode_Iu);
 		set_ia32_use_frame(store);
+		store_proj = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 		sched_add_before(before, store);
 
-		fldcw = new_bd_ia32_FldCW(NULL, block, frame, noreg, store);
+		fldcw = new_bd_ia32_FldCW(NULL, block, frame, noreg, store_proj);
 		set_ia32_op_type(fldcw, ia32_AddrModeS);
 		set_ia32_ls_mode(fldcw, lsmode);
 		set_ia32_use_frame(fldcw);

@@ -362,6 +362,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
 	int                     i, n, destroy_all_regs;
+	int                     throws_exception;
 	size_t                  s;
 	size_t                  p;
 	dbg_info               *dbgi;
@@ -591,6 +592,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	assert(n_ins == (int) (n_reg_params + ARR_LEN(states)));
 
 	/* ins collected, build the call */
+	throws_exception = ir_throws_exception(irn);
 	if (env->call->flags.bits.call_has_imm && is_SymConst(call_ptr)) {
 		/* direct call */
 		low_call = be_new_Call(dbgi, irg, bl, curr_mem, curr_sp, curr_sp,
@@ -603,6 +605,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		                       n_reg_results + pn_be_Call_first_res + ARR_LEN(destroyed_regs),
 		                       n_ins, in, get_Call_type(irn));
 	}
+	ir_set_throws_exception(low_call, throws_exception);
 	be_Call_set_pop(low_call, call->pop);
 
 	/* put the call into the list of all calls for later processing */
@@ -616,9 +619,9 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 
 	/* now handle results */
 	for (i = 0; i < n_res; ++i) {
-		int pn;
 		ir_node           *proj = res_projs[i];
 		be_abi_call_arg_t *arg  = get_call_arg(call, 1, i, 0);
+		long               pn   = i + pn_be_Call_first_res;
 
 		/* returns values on stack not supported yet */
 		assert(arg->in_reg);
@@ -753,7 +756,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 
 		if (! mem_proj) {
-			mem_proj = new_r_Proj(low_call, mode_M, pn_be_Call_M_regular);
+			mem_proj = new_r_Proj(low_call, mode_M, pn_be_Call_M);
 			keep_alive(mem_proj);
 		}
 	}
