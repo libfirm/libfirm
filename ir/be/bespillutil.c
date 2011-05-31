@@ -639,8 +639,8 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 			ins[i] = arg;
 		} else {
 			ins[i] = do_remat(env, arg, reloader);
-			/* don't count the recursive call as remat */
-			env->remat_count--;
+			/* don't count the argument rematerialization as an extra remat */
+			--env->remat_count;
 		}
 	}
 
@@ -657,7 +657,7 @@ static ir_node *do_remat(spill_env_t *env, ir_node *spilled, ir_node *reloader)
 		/* insert in schedule */
 		sched_reset(res);
 		sched_add_before(reloader, res);
-		env->remat_count++;
+		++env->remat_count;
 	}
 
 	return res;
