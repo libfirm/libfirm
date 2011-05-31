@@ -617,6 +617,7 @@ typedef enum ir_opcode {
 	beo_CopyKeep,
 	beo_Call,
 	beo_Return,
+	beo_Raise,
 	beo_AddSP,
 	beo_SubSP,
 	beo_IncSP,
