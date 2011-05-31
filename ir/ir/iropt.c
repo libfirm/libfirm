@@ -5503,9 +5503,6 @@ static ir_node *transform_node_Mux(ir_node *n)
 	ir_node  *f    = get_Mux_false(n);
 	ir_graph *irg  = get_irn_irg(n);
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX))
-		return n;
-
 	/* implement integer abs: abs(x) = x^(x >>s 31) - (x >>s 31) */
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
 		int abs = ir_mux_is_abs(sel, t, f);
@@ -5526,6 +5523,9 @@ static ir_node *transform_node_Mux(ir_node *n)
 			return res;
 		}
 	}
+
+	if (is_irg_state(irg, IR_GRAPH_STATE_KEEP_MUX))
+		return n;
 
 	if (is_Mux(t)) {
 		ir_node*  block = get_nodes_block(n);
