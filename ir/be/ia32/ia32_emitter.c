@@ -130,7 +130,7 @@ static int block_needs_label(const ir_node *block)
 
 		if (get_prev_block_sched(block) == cfgpred_block
 				&& is_fallthrough(cfgpred)
-				&& ! is_ia32_Call(skip_Proj(cfgpred))) {
+				&& ! is_x_except_Proj(cfgpred)) {
 			need_label = 0;
 		}
 	}
@@ -487,7 +487,11 @@ void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
  */
 static ir_node *get_cfop_target_block(const ir_node *irn)
 {
-	// assert(get_irn_mode(irn) == mode_X);
+	/** this method is called with the fragile op directly instead of a X_except Proj
+	 *  from ia32_assign_exc_label. However, ia32_gen_labels links the same target
+	 *  block info into the fragile op, making this work.
+	 */
+	assert(get_irn_mode(irn) == mode_X || is_fragile_op(irn));
 	return (ir_node*)get_irn_link(irn);
 }
 
@@ -966,6 +970,23 @@ static void ia32_emit_exc_label(const ir_node *node)
 }
 
 /**
+ * Assign and emit an exception label if the current instruction can fail.
+ */
+static void ia32_assign_exc_label(ir_node *node)
+{
+	/* assign a new ID to the instruction */
+	set_ia32_exc_label_id(node, ++exc_label_id);
+	/* print it */
+	ia32_emit_exc_label(node);
+	be_emit_char(':');
+	be_emit_pad_comment();
+	be_emit_cstring("/* exception to Block ");
+	ia32_emit_cfop_target(node);
+	be_emit_cstring(" */\n");
+	be_emit_write_line();
+}
+
+/**
  * Returns the Proj with projection number proj and NOT mode_M
  */
 static ir_node *get_proj(const ir_node *node, long proj)
@@ -1133,17 +1154,21 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
 }
 
-/**
- * Emits code for a unconditional jump.
- */
-static void emit_ia32_Jmp(const ir_node *node)
+static void emit_jump(const ir_node *node)
 {
-	/* we have a block schedule */
 	if (can_be_fallthrough(node)) {
 		ia32_emitf(node, "\t/* fallthrough to %L */\n");
 	} else {
 		ia32_emitf(node, "\tjmp %L\n");
 	}
+}
+
+/**
+ * Emits code for a unconditional jump.
+ */
+static void emit_ia32_Jmp(const ir_node *node)
+{
+	emit_jump(node);
 }
 
 /**
@@ -1382,6 +1407,24 @@ static void emit_ia32_Conv_I2I(const ir_node *node)
 }
 
 /**
+ * Fragile ops end a basic block - make sure a Jmp is inserted if necessary.
+ */
+static void emit_exception_cf(const ir_node *node)
+{
+	assert (is_fragile_op(node));
+	const ir_edge_t *edge;
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (! is_Proj(proj))
+			continue;
+
+		if (is_x_regular_Proj(proj)) {
+			emit_jump(proj);
+		}
+	}
+}
+
+/**
  * Emits a call
  */
 static void emit_ia32_Call(const ir_node *node)
@@ -1389,6 +1432,11 @@ static void emit_ia32_Call(const ir_node *node)
 	/* Special case: Call must not have its immediates prefixed by $, instead
 	 * address mode is prefixed by *. */
 	ia32_emitf(node, "\tcall %*AS3\n");
+	if (get_ia32_exc_label(node)) {
+		/* emit the exception label of this instruction */
+		ia32_assign_exc_label((ir_node*)node);
+	}
+	emit_exception_cf(node);
 }
 
 
@@ -1683,23 +1731,6 @@ static void ia32_register_emitters(void)
 typedef void (*emit_func_ptr) (const ir_node *);
 
 /**
- * Assign and emit an exception label if the current instruction can fail.
- */
-static void ia32_assign_exc_label(ir_node *node)
-{
-	/* assign a new ID to the instruction */
-	set_ia32_exc_label_id(node, ++exc_label_id);
-	/* print it */
-	ia32_emit_exc_label(node);
-	be_emit_char(':');
-	be_emit_pad_comment();
-	be_emit_cstring("/* exception to Block ");
-	ia32_emit_cfop_target(node);
-	be_emit_cstring(" */\n");
-	be_emit_write_line();
-}
-
-/**
  * Emits code for a node.
  */
 static void ia32_emit_node(ir_node *node)
@@ -1709,10 +1740,7 @@ static void ia32_emit_node(ir_node *node)
 	DBG((dbg, LEVEL_1, "emitting code for %+F\n", node));
 
 	if (is_ia32_irn(node)) {
-		if (get_ia32_exc_label(node)) {
-			/* emit the exception label of this instruction */
-			ia32_assign_exc_label(node);
-		}
+
 		if (mark_spill_reload) {
 			if (is_ia32_is_spill(node)) {
 				ia32_emitf(NULL, "\txchg %ebx, %ebx        /* spill mark */\n");
@@ -1731,8 +1759,6 @@ static void ia32_emit_node(ir_node *node)
 		be_dbg_set_dbg_info(get_irn_dbg_info(node));
 
 		(*func) (node);
-	} else if (op == op_Jmp) { // FIXME: why is this needed?
-		emit_Nothing(node);
 	} else {
 		emit_Nothing(node);
 		ir_fprintf(stderr, "Error: No emit handler for node %+F (%+G, graph %+F)\n", node, node, current_ir_graph);
@@ -1909,21 +1935,23 @@ typedef struct exc_entry {
 static void ia32_gen_labels(ir_node *block, void *data)
 {
 	exc_entry **exc_list = (exc_entry**)data;
-	ir_node *pred;
+	ir_node *pred, *proj_pred;
 	int     n;
 
 	for (n = get_Block_n_cfgpreds(block) - 1; n >= 0; --n) {
 		pred = get_Block_cfgpred(block, n);
 		set_irn_link(pred, block);
 
-		pred = skip_Proj(pred);
-		if (is_ia32_irn(pred) && get_ia32_exc_label(pred)) {
+		if (! is_Proj(pred)) continue;
+		proj_pred = get_Proj_pred(pred);
+
+		if (is_ia32_irn(proj_pred) && get_ia32_exc_label(proj_pred) && is_x_except_Proj(pred)) {
 			exc_entry e;
 
-			e.exc_instr = pred;
+			e.exc_instr = proj_pred;
 			e.block     = block;
 			ARR_APP1(exc_entry, *exc_list, e);
-			set_irn_link(pred, block);
+			set_irn_link(proj_pred, block);
 		}
 	}
 }

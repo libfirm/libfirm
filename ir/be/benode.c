@@ -1438,4 +1438,7 @@ void be_init_op(void)
 	}
 
 	op_Phi->ops.be_ops = &phi_irn_ops;
+
+	/* mark mem and control flow proj numbers */
+	ir_op_set_fragile_indices(op_be_Call, pn_be_Call_M_regular, pn_be_Call_X_regular, pn_be_Call_X_except);
 }

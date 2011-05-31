@@ -5613,11 +5613,11 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 		return new_rd_Proj(dbgi, new_call, mode_M, n_ia32_Call_mem);
 	}
 
-	if (proj == pn_be_Call_X_regular) {
-		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_reg);
-	} else if (proj == pn_be_Call_X_except) {
+	if (is_x_regular_Proj(node)) {
+		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_regular);
+	} else if (is_x_except_Proj(node)) {
 		set_ia32_exc_label(new_call, 1);
-		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_exc);
+		return new_rd_Proj(dbgi, new_call, mode_X, pn_ia32_Call_X_except);
 	}
 
 	/* transform call modes */

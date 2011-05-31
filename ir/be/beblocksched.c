@@ -134,7 +134,7 @@ struct blocksched_env_t {
 static void collect_egde_frequency(ir_node *block, void *data)
 {
 	blocksched_env_t   *env = (blocksched_env_t*)data;
-	int                arity;
+	int                arity, i;
 	edge_t             edge;
 	blocksched_entry_t *entry;
 	ir_loop            *loop;
@@ -148,6 +148,12 @@ static void collect_egde_frequency(ir_node *block, void *data)
 	loop = get_irn_loop(block);
 
 	arity = get_Block_n_cfgpreds(block);
+
+	for (i = 0; i < arity; i++) {
+		ir_node *cfgpred = get_Block_cfgpred(block, i);
+		if (is_x_except_Proj(cfgpred))
+			return;
+	}
 
 	if (arity == 0) {
 		/* must be the start block (or end-block for endless loops),
