@@ -681,7 +681,7 @@ static void optimize_ifs(ir_node *block, void *x)
 }
 
 /**
- * Post-Block walker: remove empty blocks that are
+ * Pre-Block walker: remove empty blocks that are
  * predecessors of the current block.
  */
 static void remove_empty_blocks(ir_node *block, void *x)
@@ -731,7 +731,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg) {
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		/* Remove empty blocks */
-		irg_block_walk_graph(irg, NULL, remove_empty_blocks, &env);
+		irg_block_walk_graph(irg, remove_empty_blocks, NULL, &env);
 		if (env.changed) {
 			set_irg_doms_inconsistent(irg);
 			/* Removing blocks might enable more Cond optimizations */
