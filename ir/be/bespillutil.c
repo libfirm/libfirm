@@ -614,7 +614,7 @@ static int check_remat_conditions_costs(spill_env_t *env,
 /**
  * Re-materialize a node.
  *
- * @param senv      the spill environment
+ * @param env       the spill environment
  * @param spilled   the node that was spilled
  * @param reloader  a irn that requires a reload
  */
