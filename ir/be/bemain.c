@@ -610,10 +610,11 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 			dump(DUMP_ABI, irg, "abi");
 		}
 
-		/* we have to do cfopt+remove_critical_edges as we can't have Bad-blocks
-		 * or critical edges in the backend */
-		optimize_cf(irg);
+		/* We can't have Bad-blocks or critical edges in the backend.
+		 * Before removing Bads, we remove unreachable code. */
+		optimize_graph_df(irg);
 		remove_critical_cf_edges(irg);
+		remove_bads(irg);
 
 		/* We often have dead code reachable through out-edges here. So for
 		 * now we rebuild edges (as we need correct user count for code
