@@ -552,8 +552,7 @@ void add_immBlock_pred(ir_node *block, ir_node *jmp)
 
 void set_cur_block(ir_node *target)
 {
-	assert(target == NULL || current_ir_graph == get_irn_irg(target));
-	current_ir_graph->current_block = target;
+	set_r_cur_block(current_ir_graph, target);
 }
 
 void set_r_cur_block(ir_graph *irg, ir_node *target)
