@@ -2574,6 +2574,7 @@ static void lower_irg(ir_graph *irg)
 			set_irg_doms_inconsistent(irg);
 			set_irg_extblk_inconsistent(irg);
 		}
+		edges_deactivate(irg);
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_PHI_LIST | IR_RESOURCE_IRN_LINK);
