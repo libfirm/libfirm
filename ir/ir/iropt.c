@@ -6316,10 +6316,23 @@ int identities_cmp(const void *elt, const void *key)
 		/* for pinned nodes, the block inputs must be equal */
 		if (get_irn_n(a, -1) != get_irn_n(b, -1))
 			return 1;
-	} else if (! get_opt_global_cse()) {
-		/* for block-local CSE both nodes must be in the same Block */
-		if (get_nodes_block(a) != get_nodes_block(b))
-			return 1;
+	} else {
+		ir_node *block_a = get_nodes_block(a);
+		ir_node *block_b = get_nodes_block(b);
+		if (! get_opt_global_cse()) {
+			/* for block-local CSE both nodes must be in the same Block */
+			if (block_a != block_b)
+				return 1;
+		} else {
+			/* The optimistic approach would be to do nothing here.
+			 * However doing GCSE optimisatically produces alot of partially dead code which appears
+			 * to be worse in practice than the missed opportunities.
+			 * So we use a very conservative variant here and only CSE if 1 value dominates the
+			 * other. */
+			if (!block_dominates(block_a, block_b)
+			    && !block_dominates(block_b, block_a))
+			    return 1;
+		}
 	}
 
 	/* compare a->in[0..ins] with b->in[0..ins] */
