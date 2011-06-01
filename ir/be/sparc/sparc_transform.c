@@ -1926,8 +1926,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 		return new_r_Bad(get_irn_irg(block), mode_T);
 	case pn_Start_P_frame_base:
 		return get_frame_base();
-	case pn_Start_max:
-		break;
 	}
 	panic("Unexpected start proj: %ld\n", pn);
 }
@@ -2006,7 +2004,6 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
-	case pn_Call_max:
 		break;
 	}
 	panic("Unexpected Call proj %ld\n", pn);

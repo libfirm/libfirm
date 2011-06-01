@@ -49,10 +49,10 @@
 
 /* some constants fixing the positions of nodes predecessors
    in the in array */
-#define CALL_PARAM_OFFSET     2
-#define BUILDIN_PARAM_OFFSET  1
-#define SEL_INDEX_OFFSET      2
-#define RETURN_RESULT_OFFSET  1  /* mem is not a result */
+#define CALL_PARAM_OFFSET     (n_Call_max+1)
+#define BUILTIN_PARAM_OFFSET  (n_Builtin_max+1)
+#define SEL_INDEX_OFFSET      (n_Sel_max+1)
+#define RETURN_RESULT_OFFSET  (n_Return_max+1)
 #define END_KEEPALIVE_OFFSET  0
 
 static const char *relation_names [] = {
@@ -989,25 +989,25 @@ void set_Call_param(ir_node *node, int pos, ir_node *param)
 ir_node **get_Builtin_param_arr(ir_node *node)
 {
 	assert(is_Builtin(node));
-	return &get_irn_in(node)[BUILDIN_PARAM_OFFSET + 1];
+	return &get_irn_in(node)[BUILTIN_PARAM_OFFSET + 1];
 }
 
 int get_Builtin_n_params(const ir_node *node)
 {
 	assert(is_Builtin(node));
-	return (get_irn_arity(node) - BUILDIN_PARAM_OFFSET);
+	return (get_irn_arity(node) - BUILTIN_PARAM_OFFSET);
 }
 
 ir_node *get_Builtin_param(const ir_node *node, int pos)
 {
 	assert(is_Builtin(node));
-	return get_irn_n(node, pos + BUILDIN_PARAM_OFFSET);
+	return get_irn_n(node, pos + BUILTIN_PARAM_OFFSET);
 }
 
 void set_Builtin_param(ir_node *node, int pos, ir_node *param)
 {
 	assert(is_Builtin(node));
-	set_irn_n(node, pos + BUILDIN_PARAM_OFFSET, param);
+	set_irn_n(node, pos + BUILTIN_PARAM_OFFSET, param);
 }
 
 /* Returns a human readable string for the ir_builtin_kind. */

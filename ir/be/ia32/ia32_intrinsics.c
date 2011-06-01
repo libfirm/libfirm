@@ -154,7 +154,6 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 			res = new_r_Tuple(block, 2, in);
 		}
 
-		turn_into_tuple(call, pn_Call_max);
 		/*
 		 * Beware:
 		 * We do not check here if this call really has exception and regular Proj's.
@@ -167,6 +166,7 @@ static void resolve_call(ir_node *call, ir_node *l_res, ir_node *h_res, ir_graph
 		jmp = new_r_Jmp(block);
 		set_opt_cse(old_cse);
 
+		turn_into_tuple(call, pn_Call_max+1);
 		set_Tuple_pred(call, pn_Call_M,         nomem);
 		set_Tuple_pred(call, pn_Call_X_regular, jmp);
 		set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));

@@ -90,7 +90,7 @@ struct memop_t {
 	memop_t  *next;      /**< links to the next memory op in the block in forward order. */
 	memop_t  *prev;      /**< links to the previous memory op in the block in forward order. */
 	unsigned flags;      /**< memop flags */
-	ir_node  *projs[MAX_PROJ]; /**< Projs of this memory op */
+	ir_node  *projs[MAX_PROJ+1]; /**< Projs of this memory op */
 };
 
 /**

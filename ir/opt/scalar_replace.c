@@ -608,7 +608,7 @@ static void topologic_walker(ir_node *node, void *ctx)
 			val = new_rd_Conv(get_irn_dbg_info(node), block, val, mode);
 
 		mem = get_Load_mem(node);
-		turn_into_tuple(node, pn_Load_max);
+		turn_into_tuple(node, pn_Load_max+1);
 		set_Tuple_pred(node, pn_Load_M,         mem);
 		set_Tuple_pred(node, pn_Load_res,       val);
 		set_Tuple_pred(node, pn_Load_X_regular, new_r_Jmp(block));
@@ -645,7 +645,7 @@ static void topologic_walker(ir_node *node, void *ctx)
 		set_value(vnum, val);
 
 		mem = get_Store_mem(node);
-		turn_into_tuple(node, pn_Store_max);
+		turn_into_tuple(node, pn_Store_max+1);
 		set_Tuple_pred(node, pn_Store_M,         mem);
 		set_Tuple_pred(node, pn_Store_X_regular, new_r_Jmp(block));
 		set_Tuple_pred(node, pn_Store_X_except,  new_r_Bad(irg, mode_X));

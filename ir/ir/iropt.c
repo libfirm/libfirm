@@ -2665,7 +2665,7 @@ make_tuple:
 
 		/* skip a potential Pin */
 		mem = skip_Pin(mem);
-		turn_into_tuple(n, pn_Div_max);
+		turn_into_tuple(n, pn_Div_max+1);
 		set_Tuple_pred(n, pn_Div_M,         mem);
 		set_Tuple_pred(n, pn_Div_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(n, pn_Div_X_except,  new_r_Bad(irg, mode_X));
@@ -2757,7 +2757,7 @@ make_tuple:
 
 		/* skip a potential Pin */
 		mem = skip_Pin(mem);
-		turn_into_tuple(n, pn_Mod_max);
+		turn_into_tuple(n, pn_Mod_max+1);
 		set_Tuple_pred(n, pn_Mod_M,         mem);
 		set_Tuple_pred(n, pn_Mod_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(n, pn_Mod_X_except,  new_r_Bad(irg, mode_X));
@@ -2791,7 +2791,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
 		ir_node *blk = get_nodes_block(n);
 		jmp = new_r_Jmp(blk);
-		turn_into_tuple(n, pn_Cond_max);
+		turn_into_tuple(n, pn_Cond_max+1);
 		if (ta == tarval_b_true) {
 			set_Tuple_pred(n, pn_Cond_false, new_r_Bad(irg, mode_X));
 			set_Tuple_pred(n, pn_Cond_true, jmp);
@@ -5833,7 +5833,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_node  *bad   = new_r_Bad(irg, mode_X);
 			ir_mode  *mode  = get_Load_mode(n);
 			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
-			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
+			ir_node  *in[pn_Load_max+1] = { mem, jmp, bad, res };
 			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
 			return tuple;
 		}
@@ -5853,7 +5853,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_graph *irg   = get_irn_irg(n);
 			ir_node  *bad   = new_r_Bad(irg, mode_X);
 			ir_node  *res   = value;
-			ir_node  *in[pn_Load_max] = { mem, jmp, bad, res };
+			ir_node  *in[pn_Load_max+1] = { mem, jmp, bad, res };
 			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
 			return tuple;
 		}

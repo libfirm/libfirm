@@ -118,7 +118,7 @@ static void lower_copyb_nodes(ir_node *irn, unsigned mode_bytes)
 		mode_bytes /= 2;
 	}
 
-	turn_into_tuple(irn, pn_CopyB_max);
+	turn_into_tuple(irn, pn_CopyB_max+1);
 	set_Tuple_pred(irn, pn_CopyB_M,         mem);
 	set_Tuple_pred(irn, pn_CopyB_X_regular, new_r_Bad(irg, mode_X));
 	set_Tuple_pred(irn, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));

@@ -4538,8 +4538,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Load_X_except);
 		case pn_Load_X_regular:
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Load_X_regular);
-		case pn_Load_max:
-			break;
 		}
 	} else if (is_ia32_Conv_I2I(new_pred) ||
 	           is_ia32_Conv_I2I8Bit(new_pred)) {
@@ -4561,8 +4559,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_xLoad_X_except);
 		case pn_Load_X_regular:
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_xLoad_X_regular);
-		case pn_Load_max:
-			break;
 		}
 	} else if (is_ia32_vfld(new_pred)) {
 		switch ((pn_Load)proj) {
@@ -4576,8 +4572,6 @@ static ir_node *gen_Proj_Load(ir_node *node)
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_vfld_X_except);
 		case pn_Load_X_regular:
 			return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_vfld_X_regular);
-		case pn_Load_max:
-			break;
 		}
 	} else {
 		/* can happen for ProJMs when source address mode happened for the
@@ -4634,8 +4628,6 @@ static ir_node *gen_Proj_Div(ir_node *node)
 		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_except);
 	case pn_Div_X_regular:
 		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_regular);
-	case pn_Div_max:
-		break;
 	}
 
 	panic("No idea how to transform proj->Div");
@@ -4665,8 +4657,6 @@ static ir_node *gen_Proj_Mod(ir_node *node)
 		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_except);
 	case pn_Mod_X_regular:
 		return new_rd_Proj(dbgi, new_pred, mode_X, pn_ia32_Div_X_regular);
-	case pn_Mod_max:
-		break;
 	}
 	panic("No idea how to transform proj->Mod");
 }

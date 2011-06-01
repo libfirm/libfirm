@@ -497,7 +497,7 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins, cl_entr
 		blk      = get_nodes_block(p);
 
 		/* get rid of the CopyB */
-		turn_into_tuple(p, pn_CopyB_max);
+		turn_into_tuple(p, pn_CopyB_max+1);
 		set_Tuple_pred(p, pn_CopyB_M,         mem);
 		set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(p, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));

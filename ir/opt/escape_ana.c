@@ -393,7 +393,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 
 		mem = get_Alloc_mem(alloc);
 		blk = get_nodes_block(alloc);
-		turn_into_tuple(alloc, pn_Alloc_max);
+		turn_into_tuple(alloc, pn_Alloc_max+1);
 		set_Tuple_pred(alloc, pn_Alloc_M, mem);
 		set_Tuple_pred(alloc, pn_Alloc_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(alloc, pn_Alloc_X_except, new_r_Bad(irg, mode_X));
@@ -438,7 +438,7 @@ static void transform_allocs(ir_graph *irg, walk_env_t *env)
 			sel = new_rd_simpleSel(dbg, get_nodes_block(alloc), get_irg_no_mem(irg), get_irg_frame(irg), ent);
 			mem = get_Alloc_mem(alloc);
 
-			turn_into_tuple(alloc, pn_Alloc_max);
+			turn_into_tuple(alloc, pn_Alloc_max+1);
 			set_Tuple_pred(alloc, pn_Alloc_M, mem);
 			set_Tuple_pred(alloc, pn_Alloc_X_regular, new_r_Jmp(blk));
 			set_Tuple_pred(alloc, pn_Alloc_X_except, new_r_Bad(irg, mode_X));
@@ -481,7 +481,7 @@ static void transform_alloc_calls(ir_graph *irg, walk_env_t *env)
 
 		mem = get_Call_mem(call);
 		blk = get_nodes_block(call);
-		turn_into_tuple(call, pn_Call_max);
+		turn_into_tuple(call, pn_Call_max+1);
 		set_Tuple_pred(call, pn_Call_M,         mem);
 		set_Tuple_pred(call, pn_Call_X_regular, new_r_Jmp(blk));
 		set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));

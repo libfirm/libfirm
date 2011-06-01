@@ -299,7 +299,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 {
 	ir_node       *pre_call;
 	ir_node       *post_call, *post_bl;
-	ir_node       *in[pn_Start_max];
+	ir_node       *in[pn_Start_max+1];
 	ir_node       *end, *end_bl, *block;
 	ir_node       **res_pred;
 	ir_node       **cf_pred;
@@ -392,7 +392,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	in[pn_Start_X_initial_exec] = new_r_Jmp(post_bl);
 	in[pn_Start_P_frame_base]   = get_irg_frame(irg);
 	in[pn_Start_T_args]         = new_r_Tuple(post_bl, n_params, args_in);
-	pre_call = new_r_Tuple(post_bl, pn_Start_max, in);
+	pre_call = new_r_Tuple(post_bl, pn_Start_max+1, in);
 	post_call = call;
 
 	/* --
@@ -485,7 +485,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 
 	/* build a Tuple for all results of the method.
 	 * add Phi node if there was more than one Return. */
-	turn_into_tuple(post_call, pn_Call_max);
+	turn_into_tuple(post_call, pn_Call_max+1);
 	/* First the Memory-Phi */
 	n_mem_phi = 0;
 	for (i = 0; i < arity; i++) {

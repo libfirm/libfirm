@@ -225,7 +225,7 @@ static void replace_call(ir_node *irn, ir_node *call, ir_node *mem, ir_node *reg
 	}
 	irn = new_r_Tuple(block, 1, &irn);
 
-	turn_into_tuple(call, pn_Call_max);
+	turn_into_tuple(call, pn_Call_max+1);
 	set_Tuple_pred(call, pn_Call_M, mem);
 	set_Tuple_pred(call, pn_Call_X_regular, reg_jmp);
 	set_Tuple_pred(call, pn_Call_X_except, exc_jmp);

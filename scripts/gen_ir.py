@@ -493,6 +493,7 @@ typedef enum {
 	{%- for input in node.ins %}
 	n_{{node.name}}_{{input[0]}},
 	{%- endfor %}
+	n_{{node.name}}_max = n_{{node.name}}_{{node.ins[-1][0]}}
 } n_{{node.name}};
 {% endif %}
 {% if node.outs %}
@@ -504,7 +505,7 @@ typedef enum {
 	pn_{{node.name}}_{{out[0]}}
 	{%- if out.__len__() > 2 %} = {{out[2]}}{% endif %}, /**< {{out[1]}} */
 	{% endfor -%}
-	pn_{{node.name}}_max
+	pn_{{node.name}}_max = pn_{{node.name}}_{{node.outs[-1][0]}}
 } pn_{{node.name}};
 {% endif %}
 {%- endfor %}

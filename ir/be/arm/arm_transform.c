@@ -1432,9 +1432,6 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 	case pn_Start_P_frame_base:
 		return be_prolog_get_reg_value(abihelper, sp_reg);
-
-	case pn_Start_max:
-		break;
 	}
 	panic("unexpected start proj: %ld\n", proj);
 }
@@ -1560,7 +1557,6 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	case pn_Call_X_regular:
 	case pn_Call_X_except:
 	case pn_Call_T_result:
-	case pn_Call_max:
 		break;
 	}
 	panic("Unexpected Call proj %ld\n", pn);

@@ -337,7 +337,7 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 			/* create a new tuple for the return values */
 			tuple = new_r_Tuple(block, env->n_ress, in);
 
-			turn_into_tuple(call, pn_Call_max);
+			turn_into_tuple(call, pn_Call_max+1);
 			set_Tuple_pred(call, pn_Call_M,         mem);
 			set_Tuple_pred(call, pn_Call_X_regular, jmp);
 			set_Tuple_pred(call, pn_Call_X_except,  new_r_Bad(irg, mode_X));

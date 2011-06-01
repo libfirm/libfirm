@@ -74,7 +74,7 @@ typedef struct walk_env_t {
 
 /** A Load/Store info. */
 typedef struct ldst_info_t {
-	ir_node  *projs[MAX_PROJ];    /**< list of Proj's of this node */
+	ir_node  *projs[MAX_PROJ+1];  /**< list of Proj's of this node */
 	ir_node  *exc_block;          /**< the exception block if available */
 	int      exc_idx;             /**< predecessor index in the exception block */
 	unsigned visited;             /**< visited counter for breaking loops */
