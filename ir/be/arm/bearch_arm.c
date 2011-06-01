@@ -549,7 +549,7 @@ static void arm_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_switch(irg, 256, true);
+		lower_switch(irg, 4, 256, true);
 	}
 }
 

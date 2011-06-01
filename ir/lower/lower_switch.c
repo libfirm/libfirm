@@ -44,6 +44,7 @@
 
 typedef struct walk_env_t {
 	unsigned      spare_size; /**< the allowed spare size for table switches */
+	unsigned      small_switch;
 	bool          allow_out_of_bounds;
 	bool          changed;    /**< indicates whether a change was performed */
 	ir_nodeset_t  processed;
@@ -311,6 +312,7 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	dbg_info    *dbgi;
 	cond_env_t   cond_env;
 	unsigned long spare;
+	bool         lower_switch = false;
 
 	/* because we split critical blocks only blocks with 1 predecessors may
 	 * contain Proj->Cond nodes */
@@ -349,7 +351,10 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	spare = (unsigned long) cond_env.switch_max
 		- (unsigned long) cond_env.switch_min
 		- (unsigned long) cond_env.num_cases + 1;
-	if (spare < env->spare_size) {
+	lower_switch |= spare >= env->spare_size;
+	lower_switch |= cond_env.num_cases <= env->small_switch;
+
+	if (!lower_switch) {
 		/* we won't decompose the switch. But we might have to add
 		 * out-of-bounds checking */
 		if (!env->allow_out_of_bounds) {
@@ -405,11 +410,13 @@ static void find_cond_nodes(ir_node *block, void *ctx)
 	DEL_ARR_F(cond_env.defusers);
 }
 
-void lower_switch(ir_graph *irg, unsigned spare_size, int allow_out_of_bounds)
+void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,
+                  int allow_out_of_bounds)
 {
 	walk_env_t env;
 	env.changed             = false;
 	env.spare_size          = spare_size;
+	env.small_switch        = small_switch;
 	env.allow_out_of_bounds = allow_out_of_bounds;
 	ir_nodeset_init(&env.processed);
 
