@@ -207,7 +207,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 	ir_node       *block         = get_nodes_block(cond);
 	ir_mode       *cmp_mode      = get_irn_mode(sel);
 	ir_node      **default_preds = NEW_ARR_F(ir_node*, 0);
-	unsigned long  default_pn    = get_Cond_default_proj(cond);
+	long           default_pn    = get_Cond_default_proj(cond);
 	long           delta         = 0;
 	ir_node       *max_const;
 	ir_node       *proj_true;
@@ -252,11 +252,11 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 
 	/* adapt projs */
 	foreach_out_irn(cond, i, proj) {
-		unsigned long pn     = get_Proj_proj(proj);
-		unsigned long new_pn = pn - delta;
+		long pn     = get_Proj_proj(proj);
+		long new_pn = pn - delta;
 		if (pn == default_pn) {
 			/* we might have to choose a new default_pn */
-			if (pn < (unsigned long) env->switch_max) {
+			if (pn < env->switch_max) {
 				new_pn = env->switch_max + 1;
 				set_Cond_default_proj(cond, new_pn);
 			} else {

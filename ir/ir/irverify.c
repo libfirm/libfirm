@@ -1875,7 +1875,7 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 				if (pn == pn_Cond_false)
 					ir_nodeset_insert(&env->false_projs, branch);
 			} else {
-				int default_pn = get_Cond_default_proj(branch);
+				long default_pn = get_Cond_default_proj(branch);
 				if (pn == default_pn)
 					ir_nodeset_insert(&env->true_projs, branch);
 			}
