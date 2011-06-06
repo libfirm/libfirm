@@ -45,12 +45,13 @@
 #include "beemitter.h"
 #include "be_dbgout.h"
 
-#define FIRM_EXCEPTIONS
-
 /** by default, we generate assembler code for the Linux gas */
-object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
-bool                  be_gas_emit_types         = true;
-char                  be_gas_elf_type_char      = '@';
+object_file_format_t  be_gas_object_file_format  = OBJECT_FILE_FORMAT_ELF;
+bool                  be_gas_emit_types          = true;
+char                  be_gas_elf_type_char       = '@';
+bool                  be_gas_emit_cfi_directives = false;
+
+const char *          be_gas_personality_routine = "firm_personality";
 
 static be_gas_section_t current_section = (be_gas_section_t) -1;
 
@@ -555,28 +556,30 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 	be_emit_cstring(":\n");
 	be_emit_write_line();
 
-#ifdef FIRM_EXCEPTIONS
-	be_emit_cstring(".cfi_startproc\n");
-	be_emit_write_line();
-	be_emit_cstring(".cfi_personality 0x0,oo_rt_throw\n");
-	be_emit_write_line();
-	be_emit_cstring(".cfi_lsda        0x0,__");
-	be_gas_emit_entity(entity);
-	be_emit_cstring("_LSDA\n");
-	be_emit_write_line();
-	be_emit_cstring(".cfi_def_cfa 5, 8\n");
-	be_emit_write_line();
-	be_emit_cstring(".cfi_offset 5, -8\n");
-	be_emit_write_line();
-#endif
+	if (be_gas_emit_cfi_directives) {
+		be_emit_cstring(".cfi_startproc\n");
+		be_emit_write_line();
+		be_emit_cstring(".cfi_personality 0x0,");
+		be_emit_string(be_gas_personality_routine);
+		be_emit_cstring("\n");
+		be_emit_write_line();
+		be_emit_cstring(".cfi_lsda        0x0,__");
+		be_gas_emit_entity(entity);
+		be_emit_cstring("_LSDA\n");
+		be_emit_write_line();
+		be_emit_cstring(".cfi_def_cfa 5, 8\n");
+		be_emit_write_line();
+		be_emit_cstring(".cfi_offset 5, -8\n");
+		be_emit_write_line();
+	}
 }
 
 void be_gas_emit_function_epilog(const ir_entity *entity)
 {
-#ifdef FIRM_EXCEPTIONS
-	be_emit_cstring(".cfi_endproc\n");
-	be_emit_write_line();
-#endif
+	if (be_gas_emit_cfi_directives) {
+		be_emit_cstring(".cfi_endproc\n");
+		be_emit_write_line();
+	}
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF) {
 		be_emit_cstring("\t.size\t");

@@ -67,6 +67,11 @@ extern bool                 be_gas_emit_types;
  */
 extern char                 be_gas_elf_type_char;
 
+/** emit cfi directives required for exception handling */
+extern bool                 be_gas_emit_cfi_directives;
+/** name of the personality routine used by exception handling */
+extern const char *         be_gas_personality_routine;
+
 /**
  * Generate all entities.
  * @param main_env          the main backend environment

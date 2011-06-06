@@ -1672,7 +1672,7 @@ static void emit_be_Raise(const ir_node *node)
 	ia32_emitf(node, "\tpushl ");
 	ia32_emit_dest_register(exo_ptr, 0);
 	ia32_emitf(node, "\n");
-	ia32_emitf(node, "\tcall oo_rt_throw\n"); // FIXME: hardcoded unwind function name
+	ia32_emitf(node, "\tcall %s\n", be_gas_personality_routine);
 }
 
 static void emit_Nothing(const ir_node *node)
@@ -2033,30 +2033,32 @@ void ia32_gen_routine(ir_graph *irg)
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-	be_emit_cstring("__");
-	be_gas_emit_entity(entity);
-	be_emit_cstring("_LSDA:\n");
-	be_emit_write_line();
+	if (be_gas_emit_cfi_directives) {
+		be_emit_cstring("__");
+		be_gas_emit_entity(entity);
+		be_emit_cstring("_LSDA:\n");
+		be_emit_write_line();
 
-	size_t n_excs = ARR_LEN(exc_list);
-	be_emit_cstring("\t.long ");
-	be_emit_tarval(new_tarval_from_long(n_excs, mode_Iu));
-	be_emit_char('\n');
-	be_emit_write_line();
+		size_t n_excs = ARR_LEN(exc_list);
+		be_emit_cstring("\t.long ");
+		be_emit_tarval(new_tarval_from_long(n_excs, mode_Iu));
+		be_emit_char('\n');
+		be_emit_write_line();
 
-	/* Sort the exception table using the exception label id's.
-	   Those are ascending with ascending addresses. */
-	qsort(exc_list, ARR_LEN(exc_list), sizeof(exc_list[0]), cmp_exc_entry);
-	{
-		size_t e;
+		/* Sort the exception table using the exception label id's.
+		   Those are ascending with ascending addresses. */
+		qsort(exc_list, ARR_LEN(exc_list), sizeof(exc_list[0]), cmp_exc_entry);
+		{
+			size_t e;
 
-		for (e = 0; e < ARR_LEN(exc_list); ++e) {
-			be_emit_cstring("\t.long ");
-			ia32_emit_exc_label(exc_list[e].exc_instr);
-			be_emit_char('\n');
-			be_emit_cstring("\t.long ");
-			be_gas_emit_block_name(exc_list[e].block);
-			be_emit_char('\n');
+			for (e = 0; e < ARR_LEN(exc_list); ++e) {
+				be_emit_cstring("\t.long ");
+				ia32_emit_exc_label(exc_list[e].exc_instr);
+				be_emit_char('\n');
+				be_emit_cstring("\t.long ");
+				be_gas_emit_block_name(exc_list[e].block);
+				be_emit_char('\n');
+			}
 		}
 	}
 	DEL_ARR_F(exc_list);
@@ -2064,6 +2066,7 @@ void ia32_gen_routine(ir_graph *irg)
 
 static const lc_opt_table_entry_t ia32_emitter_options[] = {
 	LC_OPT_ENT_BOOL("mark_spill_reload",   "mark spills and reloads with ud opcodes", &mark_spill_reload),
+	LC_OPT_ENT_BOOL("emit_cfi_directives", "emit cfi directives required for exception handling", &be_gas_emit_cfi_directives),
 	LC_OPT_LAST
 };
 
