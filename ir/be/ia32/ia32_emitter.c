@@ -487,11 +487,16 @@ void ia32_emit_source_register_or_immediate(const ir_node *node, int pos)
  */
 static ir_node *get_cfop_target_block(const ir_node *irn)
 {
-	/** this method is called with the fragile op directly instead of a X_except Proj
-	 *  from ia32_assign_exc_label. However, ia32_gen_labels links the same target
-	 *  block info into the fragile op, making this work.
-	 */
-	assert(get_irn_mode(irn) == mode_X || is_fragile_op(irn));
+	assert(get_irn_mode(irn) == mode_X);
+	return (ir_node*)get_irn_link(irn);
+}
+
+/**
+ * Returns the exception handler block for a fragile node.
+ */
+static ir_node *get_fragile_op_exception_handler_block(const ir_node *irn)
+{
+	assert(ir_throws_exception(irn));
 	return (ir_node*)get_irn_link(irn);
 }
 
@@ -501,6 +506,15 @@ static ir_node *get_cfop_target_block(const ir_node *irn)
 static void ia32_emit_cfop_target(const ir_node *node)
 {
 	ir_node *block = get_cfop_target_block(node);
+	be_gas_emit_block_name(block);
+}
+
+/**
+ * Emits the exception handler label for a fragile node.
+ */
+static void ia32_emit_fragile_op_exception_handler(const ir_node *node)
+{
+	ir_node *block = get_fragile_op_exception_handler_block(node);
 	be_gas_emit_block_name(block);
 }
 
@@ -981,7 +995,7 @@ static void ia32_assign_exc_label(ir_node *node)
 	be_emit_char(':');
 	be_emit_pad_comment();
 	be_emit_cstring("/* exception to Block ");
-	ia32_emit_cfop_target(node);
+	ia32_emit_fragile_op_exception_handler(node);
 	be_emit_cstring(" */\n");
 	be_emit_write_line();
 }
