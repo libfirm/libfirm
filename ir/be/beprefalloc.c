@@ -859,7 +859,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
  * First we count how many destinations a single value has. At the same time
  * we can be sure that each destination register has at most 1 source register
  * (it can have 0 which means we don't care what value is in it).
- * We ignore all fullfilled permuations (like 7->7)
+ * We ignore all fulfilled permuations (like 7->7)
  * In a first pass we create as much copy instructions as possible as they
  * are generally cheaper than exchanges. We do this by counting into how many
  * destinations a register has to be copied (in the example it's 2 for register
@@ -867,8 +867,8 @@ static void assign_reg(const ir_node *block, ir_node *node,
  * We can then create a copy into every destination register when the usecount
  * of that register is 0 (= noone else needs the value in the register).
  *
- * After this step we should have cycles left. We implement a cyclic permutation
- * of n registers with n-1 transpositions.
+ * After this step we should only have cycles left. We implement a cyclic
+ * permutation of n registers with n-1 transpositions.
  *
  * @param live_nodes   the set of live nodes, updated due to live range split
  * @param before       the node before we add the permutation
