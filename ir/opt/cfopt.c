@@ -79,7 +79,8 @@ static bool is_Block_removable(ir_node *block)
 }
 
 /** checks if a given Cond node is a switch Cond. */
-static bool is_switch_Cond(ir_node *cond) {
+static bool is_switch_Cond(ir_node *cond)
+{
 	ir_node *sel = get_Cond_selector(cond);
 	return get_irn_mode(sel) != mode_b;
 }
@@ -602,33 +603,46 @@ typedef enum block_flags_t {
 	BF_IS_UNKNOWN_JUMP_TARGET = 1 << 2,
 } block_flags_t;
 
-static bool get_phase_flag(ir_phase *block_info, ir_node *block, int flag) {
-	return ((int)phase_get_irn_data(block_info, block)) & flag;
-}
-static void set_phase_flag(ir_phase *block_info, ir_node *block, block_flags_t flag) {
-	int data = (int)phase_get_irn_data(block_info, block);
-	data |= flag;
-	phase_set_irn_data(block_info, block, (void*)data);
+static bool get_phase_flag(ir_phase *block_info, ir_node *block, int flag)
+{
+	return PTR_TO_INT(phase_get_irn_data(block_info, block)) & flag;
 }
 
-static bool has_operations(ir_phase *block_info, ir_node *block) {
+static void set_phase_flag(ir_phase *block_info, ir_node *block,
+                           block_flags_t flag)
+{
+	int data = PTR_TO_INT(phase_get_irn_data(block_info, block));
+	data |= flag;
+	phase_set_irn_data(block_info, block, INT_TO_PTR(data));
+}
+
+static bool has_operations(ir_phase *block_info, ir_node *block)
+{
 	return get_phase_flag(block_info, block, BF_HAS_OPERATIONS);
 }
-static void set_has_operations(ir_phase *block_info, ir_node *block) {
+
+static void set_has_operations(ir_phase *block_info, ir_node *block)
+{
 	set_phase_flag(block_info, block, BF_HAS_OPERATIONS);
 }
 
-static bool has_phis(ir_phase *block_info, ir_node *block) {
+static bool has_phis(ir_phase *block_info, ir_node *block)
+{
 	return get_phase_flag(block_info, block, BF_HAS_PHIS);
 }
-static void set_has_phis(ir_phase *block_info, ir_node *block) {
+
+static void set_has_phis(ir_phase *block_info, ir_node *block)
+{
 	set_phase_flag(block_info, block, BF_HAS_PHIS);
 }
 
-static bool is_unknown_jump_target(ir_phase *block_info, ir_node *block) {
+static bool is_unknown_jump_target(ir_phase *block_info, ir_node *block)
+{
 	return get_phase_flag(block_info, block, BF_IS_UNKNOWN_JUMP_TARGET);
 }
-static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block) {
+
+static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block)
+{
 	set_phase_flag(block_info, block, BF_IS_UNKNOWN_JUMP_TARGET);
 }
 
@@ -723,7 +737,8 @@ static void remove_empty_blocks(ir_node *block, void *x)
 /*
  * Some cfg optimizations, which do not touch Phi nodes
  */
-static void cfgopt_ignoring_phis(ir_graph *irg) {
+static void cfgopt_ignoring_phis(ir_graph *irg)
+{
 	ir_phase *block_info = new_phase(irg, NULL);
 	skip_env env = { false, block_info };
 
