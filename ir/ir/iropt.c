@@ -352,7 +352,7 @@ static ir_tarval *computed_value_Not(const ir_node *n)
 }  /* computed_value_Not */
 
 /**
- * Tests wether a shift shifts more bits than available in the mode
+ * Tests whether a shift shifts more bits than available in the mode
  */
 static bool is_oversize_shift(const ir_node *n)
 {
@@ -957,7 +957,7 @@ static ir_node *equivalent_node_Sub(ir_node *n)
 
 
 /**
- * Optimize an "self-inverse unary op", ie op(op(n)) = n.
+ * Optimize an "self-inverse unary op", i.e. op(op(n)) = n.
  *
  * @todo
  *   -(-a) == a, but might overflow two times.
@@ -5147,7 +5147,7 @@ typedef ir_node*(*new_shift_func)(dbg_info *dbgi, ir_node *block,
  * then we can use that to minimize the value of Add(x, const) or
  * Sub(Const, x). In particular this often avoids 1 instruction in some
  * backends for the Shift(x, Sub(Const, y)) case because it can be replaced
- * by Shift(x, Minus(y)) which doesnt't need an explicit Const constructed.
+ * by Shift(x, Minus(y)) which does not need an explicit Const constructed.
  */
 static ir_node *transform_node_shift_modulo(ir_node *n,
                                             new_shift_func new_shift)
@@ -5384,7 +5384,7 @@ static ir_node *transform_node_End(ir_node *n)
 		/* no need to keep Bad */
 		if (is_Bad(ka))
 			continue;
-		/* dont keep unreachable code */
+		/* do not keep unreachable code */
 		block = is_Block(ka) ? ka : get_nodes_block(ka);
 		if (is_block_unreachable(block))
 			continue;
@@ -6325,7 +6325,7 @@ int identities_cmp(const void *elt, const void *key)
 				return 1;
 		} else {
 			/* The optimistic approach would be to do nothing here.
-			 * However doing GCSE optimisatically produces alot of partially dead code which appears
+			 * However doing GCSE optimistically produces a lot of partially dead code which appears
 			 * to be worse in practice than the missed opportunities.
 			 * So we use a very conservative variant here and only CSE if 1 value dominates the
 			 * other. */
