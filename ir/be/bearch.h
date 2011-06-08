@@ -58,24 +58,18 @@ ENUM_BITSET(arch_register_class_flags_t)
 
 typedef enum arch_register_type_t {
 	arch_register_type_none         = 0,
-	/** The register must be saved by the caller upon a function call. It thus
-	 * can be overwritten in the called function. */
-	arch_register_type_caller_save  = 1U << 0,
-	/** The register must be saved by the caller upon a function call. It thus
-	 * can be overwritten in the called function. */
-	arch_register_type_callee_save  = 1U << 1,
 	/** Do not consider this register when allocating. */
-	arch_register_type_ignore       = 1U << 2,
+	arch_register_type_ignore       = 1U << 0,
 	/** The emitter can choose an arbitrary register. The register fulfills any
 	 * register constraints as long as the register class matches */
-	arch_register_type_joker        = 1U << 3,
+	arch_register_type_joker        = 1U << 1,
 	/** This is just a virtual register. Virtual registers fulfill any register
 	 * constraints as long as the register class matches. It is a allowed to
 	 * have multiple definitions for the same virtual register at a point */
-	arch_register_type_virtual      = 1U << 4,
+	arch_register_type_virtual      = 1U << 2,
 	/** The register represents a state that should be handled by bestate
 	 * code */
-	arch_register_type_state        = 1U << 5,
+	arch_register_type_state        = 1U << 3,
 } arch_register_type_t;
 ENUM_BITSET(arch_register_type_t)
 
@@ -588,6 +582,11 @@ struct arch_isa_if_t {
 	 * The code generator must also be de-allocated here.
 	 */
 	void (*emit)(ir_graph *irg);
+
+	/**
+	 * Checks if the given register is callee/caller saved.
+	 */
+	int (*register_saved_by)(const arch_register_t *reg, int callee);
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))
@@ -726,6 +725,30 @@ static inline const arch_register_req_t **arch_get_in_register_reqs(
 {
 	backend_info_t *info = be_get_info(node);
 	return info->in_reqs;
+}
+
+/**
+ * Check if the given register is callee save, ie. will be save by the callee.
+ */
+static inline bool arch_register_is_callee_save(
+	const arch_env_t      *arch_env,
+	const arch_register_t *reg)
+{
+	if (arch_env->impl->register_saved_by)
+		return arch_env->impl->register_saved_by(reg, /*callee=*/1);
+	return false;
+}
+
+/**
+ * Check if the given register is caller save, ie. must be save by the caller.
+ */
+static inline bool arch_register_is_caller_save(
+	const arch_env_t      *arch_env,
+	const arch_register_t *reg)
+{
+	if (arch_env->impl->register_saved_by)
+		return arch_env->impl->register_saved_by(reg, /*callee=*/0);
+	return false;
 }
 
 /**

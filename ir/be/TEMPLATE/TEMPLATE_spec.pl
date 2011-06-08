@@ -61,47 +61,48 @@ $mode_fp  = "mode_E";  # mode used by floatingpoint registers
 #
 # register types:
 #   0 - no special type
-#   1 - caller save (register must be saved by the caller of a function)
-#   2 - callee save (register must be saved by the called function)
-#   4 - ignore (do not assign this register)
+#   1 - ignore (do not assign this register)
+#   2 - emitter can choose an arbitrary register of this class
+#   4 - the register is a virtual one
+#   8 - register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "r0", type => 1 },
-		{ name => "r1", type => 1 },
-		{ name => "r2", type => 1 },
-		{ name => "r3", type => 1 },
-		{ name => "r4", type => 1 },
-		{ name => "r5", type => 1 },
-		{ name => "r6", type => 1 },
-		{ name => "r7", type => 2 },
-		{ name => "r8", type => 2 },
-		{ name => "r9", type => 2 },
-		{ name => "r10", type => 2 },
-		{ name => "r11", type => 2 },
-		{ name => "r12", type => 2 },
-		{ name => "r13", type => 2 },
-		{ name => "sp", realname => "r14", type => 4 },  # stackpointer
-		{ name => "bp", realname => "r15", type => 4 },  # basepointer
+		{ name => "r0" },
+		{ name => "r1" },
+		{ name => "r2" },
+		{ name => "r3" },
+		{ name => "r4" },
+		{ name => "r5" },
+		{ name => "r6" },
+		{ name => "r7" },
+		{ name => "r8" },
+		{ name => "r9" },
+		{ name => "r10" },
+		{ name => "r11" },
+		{ name => "r12" },
+		{ name => "r13" },
+		{ name => "sp", realname => "r14", type => 1 },  # stackpointer
+		{ name => "bp", realname => "r15", type => 1 },  # basepointer
 		{ mode => $mode_gp }
 	],
 	fp => [
-		{ name => "f0", type => 1 },
-		{ name => "f1", type => 1 },
-		{ name => "f2", type => 1 },
-		{ name => "f3", type => 1 },
-		{ name => "f4", type => 1 },
-		{ name => "f5", type => 1 },
-		{ name => "f6", type => 1 },
-		{ name => "f7", type => 1 },
-		{ name => "f8", type => 1 },
-		{ name => "f9", type => 1 },
-		{ name => "f10", type => 1 },
-		{ name => "f11", type => 1 },
-		{ name => "f12", type => 1 },
-		{ name => "f13", type => 1 },
-		{ name => "f14", type => 1 },
-		{ name => "f15", type => 1 },
+		{ name => "f0" },
+		{ name => "f1" },
+		{ name => "f2" },
+		{ name => "f3" },
+		{ name => "f4" },
+		{ name => "f5" },
+		{ name => "f6" },
+		{ name => "f7" },
+		{ name => "f8" },
+		{ name => "f9" },
+		{ name => "f10" },
+		{ name => "f11" },
+		{ name => "f12" },
+		{ name => "f13" },
+		{ name => "f14" },
+		{ name => "f15" },
 		{ mode => $mode_fp }
 	]
 );

@@ -531,6 +531,45 @@ static int amd64_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
+static int amd64_register_saved_by(const arch_register_t *reg, int callee)
+{
+	if (callee) {
+		/* check for callee saved */
+		if (reg->reg_class == &amd64_reg_classes[CLASS_amd64_gp]) {
+			switch (reg->index) {
+			case REG_GP_RBX:
+			case REG_GP_RBP:
+			case REG_GP_R12:
+			case REG_GP_R13:
+			case REG_GP_R14:
+			case REG_GP_R15:
+				return 1;
+			default:
+				return 0;
+			}
+		}
+	} else {
+		/* check for caller saved */
+		if (reg->reg_class == &amd64_reg_classes[CLASS_amd64_gp]) {
+			switch (reg->index) {
+			case REG_GP_RAX:
+			case REG_GP_RCX:
+			case REG_GP_RDX:
+			case REG_GP_RSI:
+			case REG_GP_RDI:
+			case REG_GP_R8:
+			case REG_GP_R9:
+			case REG_GP_R10:
+			case REG_GP_R11:
+				return 1;
+			default:
+				return 0;
+			}
+		}
+	}
+	return 0;
+}
+
 const arch_isa_if_t amd64_isa_if = {
 	amd64_init,
 	amd64_lower_for_target,
@@ -553,6 +592,7 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_after_ra,
 	amd64_finish_irg,
 	amd64_gen_routine,
+	amd64_register_saved_by,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

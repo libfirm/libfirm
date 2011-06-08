@@ -351,6 +351,50 @@ static int TEMPLATE_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
+/**
+ * Check if the given register is callee or caller save.
+ */
+static int TEMPLATE_register_saved_by(const arch_register_t *reg, int callee)
+{
+	if (callee) {
+		/* check for callee saved */
+		if (reg->reg_class == &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp]) {
+			switch (reg->index) {
+			case REG_GP_R7:
+			case REG_GP_R8:
+			case REG_GP_R9:
+			case REG_GP_R10:
+			case REG_GP_R11:
+			case REG_GP_R12:
+			case REG_GP_R13:
+				return 1;
+			default:
+				return 0;
+			}
+		}
+	} else {
+		/* check for caller saved */
+		if (reg->reg_class == &TEMPLATE_reg_classes[CLASS_TEMPLATE_gp]) {
+			switch (reg->index) {
+			case REG_GP_R0:
+			case REG_GP_R1:
+			case REG_GP_R2:
+			case REG_GP_R3:
+			case REG_GP_R4:
+			case REG_GP_R5:
+			case REG_GP_R6:
+				return 1;
+			default:
+				return 0;
+			}
+		} else if (reg->reg_class == &TEMPLATE_reg_classes[CLASS_TEMPLATE_fp]) {
+			/* all FP registers are caller save */
+			return 1;
+		}
+	}
+	return 0;
+}
+
 const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_init,
 	TEMPLATE_lower_for_target,
@@ -373,6 +417,7 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_after_ra,
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
+	TEMPLATE_register_saved_by,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

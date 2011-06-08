@@ -55,55 +55,53 @@ $arch = "amd64";
 #
 # register types:
 $normal      =  0; # no special type
-$caller_save =  1; # caller save (register must be saved by the caller of a function)
-$callee_save =  2; # callee save (register must be saved by the called function)
-$ignore      =  4; # ignore (do not assign this register)
-$arbitrary   =  8; # emitter can choose an arbitrary register of this class
-$virtual     = 16; # the register is a virtual one
-$state       = 32; # register represents a state
+$ignore      =  1; # ignore (do not assign this register)
+$arbitrary   =  2; # emitter can choose an arbitrary register of this class
+$virtual     =  4; # the register is a virtual one
+$state       =  8; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "rax", type => $caller_save },
-		{ name => "rcx", type => $caller_save },
-		{ name => "rdx", type => $caller_save },
-		{ name => "rsi", type => $caller_save },
-		{ name => "rdi", type => $caller_save },
-		{ name => "rbx", type => $callee_save },
-		{ name => "rbp", type => $callee_save },
-		{ name => "rsp", type => 4 }, # stackpointer?
-		{ name => "r8",  type => $caller_save },
-		{ name => "r9",  type => $caller_save },
-		{ name => "r10", type => $caller_save },
-		{ name => "r11", type => $caller_save },
-		{ name => "r12", type => $callee_save },
-		{ name => "r13", type => $callee_save },
-		{ name => "r14", type => $callee_save },
-		{ name => "r15", type => $callee_save },
+		{ name => "rax" },
+		{ name => "rcx" },
+		{ name => "rdx" },
+		{ name => "rsi" },
+		{ name => "rdi" },
+		{ name => "rbx" },
+		{ name => "rbp" },
+		{ name => "rsp", type => $ignore }, # stackpointer?
+		{ name => "r8" },
+		{ name => "r9" },
+		{ name => "r10" },
+		{ name => "r11" },
+		{ name => "r12" },
+		{ name => "r13" },
+		{ name => "r14" },
+		{ name => "r15" },
 #		{ name => "gp_NOREG", type => $ignore }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Lu" }
 	],
 #	fp => [
-#		{ name => "xmm0", type => $caller_save },
-#		{ name => "xmm1", type => $caller_save },
-#		{ name => "xmm2", type => $caller_save },
-#		{ name => "xmm3", type => $caller_save },
-#		{ name => "xmm4", type => $caller_save },
-#		{ name => "xmm5", type => $caller_save },
-#		{ name => "xmm6", type => $caller_save },
-#		{ name => "xmm7", type => $caller_save },
-#		{ name => "xmm8", type => $caller_save },
-#		{ name => "xmm9", type => $caller_save },
-#		{ name => "xmm10", type => $caller_save },
-#		{ name => "xmm11", type => $caller_save },
-#		{ name => "xmm12", type => $caller_save },
-#		{ name => "xmm13", type => $caller_save },
-#		{ name => "xmm14", type => $caller_save },
-#		{ name => "xmm15", type => $caller_save },
+#		{ name => "xmm0" },
+#		{ name => "xmm1" },
+#		{ name => "xmm2" },
+#		{ name => "xmm3" },
+#		{ name => "xmm4" },
+#		{ name => "xmm5" },
+#		{ name => "xmm6" },
+#		{ name => "xmm7" },
+#		{ name => "xmm8" },
+#		{ name => "xmm9" },
+#		{ name => "xmm10" },
+#		{ name => "xmm11" },
+#		{ name => "xmm12" },
+#		{ name => "xmm13" },
+#		{ name => "xmm14" },
+#		{ name => "xmm15" },
 #		{ mode => "mode_D" }
 #	]
 	flags => [
-		{ name => "eflags", type => 0 },
+		{ name => "eflags" },
 		{ mode => "mode_Iu", flags => "manual_ra" }
 	],
 );

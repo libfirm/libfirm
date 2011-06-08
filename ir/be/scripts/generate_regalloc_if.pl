@@ -61,26 +61,18 @@ sub translate_reg_type {
 		my @types;
 
 		if ($t & 1) {
-			push(@types, "arch_register_type_caller_save");
-		}
-
-		if ($t & 2) {
-			push(@types, "arch_register_type_callee_save");
-		}
-
-		if ($t & 4) {
 			push(@types, "arch_register_type_ignore");
 		}
 
-		if ($t & 8) {
+		if ($t & 2) {
 			push(@types, "arch_register_type_joker");
 		}
 
-		if ($t & 16) {
+		if ($t & 4) {
 			push(@types, "arch_register_type_virtual");
 		}
 
-		if ($t & 32) {
+		if ($t & 8) {
 			push(@types, "arch_register_type_state");
 		}
 

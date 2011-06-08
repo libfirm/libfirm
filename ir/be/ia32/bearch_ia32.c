@@ -2118,6 +2118,46 @@ static const backend_params *ia32_get_libfirm_params(void)
 	return &p;
 }
 
+/**
+ * Check if the given register is callee or caller save.
+ */
+static int ia32_register_saved_by(const arch_register_t *reg, int callee)
+{
+	if (callee) {
+		/* check for callee saved */
+		if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_gp]) {
+			switch (reg->index) {
+			case REG_GP_EBX:
+			case REG_GP_ESI:
+			case REG_GP_EDI:
+			case REG_GP_EBP:
+				return 1;
+			default:
+				return 0;
+			}
+		}
+	} else {
+		/* check for caller saved */
+		if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_gp]) {
+			switch (reg->index) {
+			case REG_GP_EDX:
+			case REG_GP_ECX:
+			case REG_GP_EAX:
+				return 1;
+			default:
+				return 0;
+			}
+		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_xmm]) {
+			/* all XMM registers are caller save */
+			return reg->index != REG_XMM_NOREG;
+		} else if (reg->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]) {
+			/* all VFP registers are caller save */
+			return reg->index != REG_VFP_NOREG;
+		}
+	}
+	return 0;
+}
+
 static const lc_opt_enum_int_items_t gas_items[] = {
 	{ "elf",   OBJECT_FILE_FORMAT_ELF    },
 	{ "mingw", OBJECT_FILE_FORMAT_COFF   },
@@ -2175,6 +2215,7 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_after_ra,       /* after register allocation hook */
 	ia32_finish,         /* called before codegen */
 	ia32_emit,           /* emit && done */
+	ia32_register_saved_by,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

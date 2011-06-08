@@ -6,22 +6,20 @@ $arch = "ia32";
 
 # register types:
 $normal      =  0; # no special type
-$caller_save =  1; # caller save (register must be saved by the caller of a function)
-$callee_save =  2; # callee save (register must be saved by the called function)
-$ignore      =  4; # ignore (do not assign this register)
-$arbitrary   =  8; # emitter can choose an arbitrary register of this class
-$virtual     = 16; # the register is a virtual one
-$state       = 32; # register represents a state
+$ignore      =  1; # ignore (do not assign this register)
+$arbitrary   =  2; # emitter can choose an arbitrary register of this class
+$virtual     =  4; # the register is a virtual one
+$state       =  8; # register represents a state
 # NOTE: Last entry of each class is the largest Firm-Mode a register can hold
 %reg_classes = (
 	gp => [
-		{ name => "edx", type => $caller_save },
-		{ name => "ecx", type => $caller_save },
-		{ name => "eax", type => $caller_save },
-		{ name => "ebx", type => $callee_save },
-		{ name => "esi", type => $callee_save },
-		{ name => "edi", type => $callee_save },
-		{ name => "ebp", type => $callee_save },
+		{ name => "edx" },
+		{ name => "ecx" },
+		{ name => "eax" },
+		{ name => "ebx" },
+		{ name => "esi" },
+		{ name => "edi" },
+		{ name => "ebp" },
 		{ name => "esp", type => $ignore },
 		{ name => "gp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_Iu" }
@@ -38,26 +36,26 @@ $state       = 32; # register represents a state
 		{ mode => "mode_E", flags => "manual_ra" }
 	],
 	xmm => [
-		{ name => "xmm0", type => $caller_save },
-		{ name => "xmm1", type => $caller_save },
-		{ name => "xmm2", type => $caller_save },
-		{ name => "xmm3", type => $caller_save },
-		{ name => "xmm4", type => $caller_save },
-		{ name => "xmm5", type => $caller_save },
-		{ name => "xmm6", type => $caller_save },
-		{ name => "xmm7", type => $caller_save },
+		{ name => "xmm0" },
+		{ name => "xmm1" },
+		{ name => "xmm2" },
+		{ name => "xmm3" },
+		{ name => "xmm4" },
+		{ name => "xmm5" },
+		{ name => "xmm6" },
+		{ name => "xmm7" },
 		{ name => "xmm_NOREG", type => $ignore | $virtual },     # we need a dummy register for NoReg nodes
 		{ mode => "mode_E" }
 	],
 	vfp => [
-		{ name => "vf0", type => $caller_save },
-		{ name => "vf1", type => $caller_save },
-		{ name => "vf2", type => $caller_save },
-		{ name => "vf3", type => $caller_save },
-		{ name => "vf4", type => $caller_save },
-		{ name => "vf5", type => $caller_save },
-		{ name => "vf6", type => $caller_save },
-		{ name => "vf7", type => $caller_save },
+		{ name => "vf0" },
+		{ name => "vf1" },
+		{ name => "vf2" },
+		{ name => "vf3" },
+		{ name => "vf4" },
+		{ name => "vf5" },
+		{ name => "vf6" },
+		{ name => "vf7" },
 		{ name => "vfp_NOREG", type => $ignore | $arbitrary | $virtual }, # we need a dummy register for NoReg nodes
 		{ mode => "mode_E" }
 	],

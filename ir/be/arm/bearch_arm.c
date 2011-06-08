@@ -625,6 +625,7 @@ const arch_isa_if_t arm_isa_if = {
 	arm_after_ra,
 	arm_finish_irg,
 	arm_gen_routine,
+	NULL, /* register_saved_by */
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)
