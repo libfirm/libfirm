@@ -194,19 +194,6 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	}
 }
 
-static void split_critical_edge(ir_node *block, int pos)
-{
-	ir_graph *irg = get_irn_irg(block);
-	ir_node *in[1];
-	ir_node *new_block;
-	ir_node *new_jmp;
-
-	in[0] = get_Block_cfgpred(block, pos);
-	new_block = new_r_Block(irg, 1, in);
-	new_jmp = new_r_Jmp(new_block);
-	set_Block_cfgpred(block, pos, new_jmp);
-}
-
 typedef struct jumpthreading_env_t {
 	ir_node       *true_block;
 	ir_node       *cmp;        /**< The Compare node that might be partial evaluated */
@@ -468,8 +455,6 @@ static ir_node *find_const_or_confirm(jumpthreading_env_t *env, ir_node *jump,
 		/* adjust true_block to point directly towards our jump */
 		add_pred(env->true_block, jump);
 
-		split_critical_edge(env->true_block, 0);
-
 		/* we need a bigger visited nr when going back */
 		env->visited_nr++;
 
@@ -532,8 +517,6 @@ static ir_node *find_candidate(jumpthreading_env_t *env, ir_node *jump,
 
 		/* adjust true_block to point directly towards our jump */
 		add_pred(env->true_block, jump);
-
-		split_critical_edge(env->true_block, 0);
 
 		/* we need a bigger visited nr when going back */
 		env->visited_nr++;
