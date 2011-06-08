@@ -329,8 +329,8 @@ ir_node *new_rd_{{node.name}}(
 	res->attr.{{node.attrs_name}}{{attr["fqname"]}} = {{ attr["init"] -}};
 	{%- endfor %}
 	{{- node.init }}
-	res = optimize_node(res);
 	irn_verify_irg(res, irg);
+	res = optimize_node(res);
 	{{- node.init_after_opt }}
 	return res;
 }

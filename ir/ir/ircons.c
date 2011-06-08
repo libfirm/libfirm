@@ -87,8 +87,8 @@ ir_node *new_rd_ASM(dbg_info *db, ir_node *block, int arity, ir_node *in[],
 	memcpy(res->attr.assem.output_constraints, outputs, sizeof(outputs[0]) * n_outs);
 	memcpy(res->attr.assem.clobbers, clobber, sizeof(clobber[0]) * n_clobber);
 
-	res = optimize_node(res);
 	irn_verify_irg(res, irg);
+	res = optimize_node(res);
 	return res;
 }
 
@@ -106,8 +106,8 @@ ir_node *new_rd_SymConst(dbg_info *db, ir_graph *irg, ir_mode *mode,
 	res->attr.symc.kind = symkind;
 	res->attr.symc.sym  = value;
 
-	res = optimize_node(res);
 	irn_verify_irg(res, irg);
+	res = optimize_node(res);
 	return res;
 }
 
@@ -377,8 +377,8 @@ void mature_immBlock(ir_node *block)
 	   nodes refer to the unoptimized node.
 	   We can call optimize_in_place_2(), as global cse has no effect on blocks.
 	 */
-	block = optimize_in_place_2(block);
 	irn_verify_irg(block, irg);
+	block = optimize_in_place_2(block);
 }
 
 ir_node *new_d_Const_long(dbg_info *db, ir_mode *mode, long value)
@@ -433,8 +433,8 @@ ir_node *new_rd_strictConv(dbg_info *dbgi, ir_node *block, ir_node * irn_op, ir_
 
 	res = new_ir_node(dbgi, irg, block, op_Conv, mode, 1, in);
 	res->attr.conv.strict = 1;
-	res = optimize_node(res);
 	irn_verify_irg(res, irg);
+	res = optimize_node(res);
 	return res;
 }
 
@@ -470,8 +470,8 @@ ir_node *new_rd_DivRL(dbg_info *dbgi, ir_node *block, ir_node * irn_mem, ir_node
 	res->attr.div.resmode = resmode;
 	res->attr.div.no_remainder = 1;
 	res->attr.div.exc.pin_state = pin_state;
-	res = optimize_node(res);
 	irn_verify_irg(res, irg);
+	res = optimize_node(res);
 	return res;
 }
 
