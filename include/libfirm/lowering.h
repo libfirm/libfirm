@@ -233,13 +233,13 @@ typedef ir_node* (*create_set_func)(ir_node *cond);
 /**
  * implementation of create_set_func which produces a Mux node with 0/1 input
  */
-ir_node *ir_create_mux_set(ir_node *cond, ir_mode *dest_mode);
+FIRM_API ir_node *ir_create_mux_set(ir_node *cond, ir_mode *dest_mode);
 
 /**
  * implementation of create_set_func which produces a cond with control
  * flow
  */
-ir_node *ir_create_cond_set(ir_node *cond, ir_mode *dest_mode);
+FIRM_API ir_node *ir_create_cond_set(ir_node *cond, ir_mode *dest_mode);
 
 typedef struct lower_mode_b_config_t {
 	/* mode that is used to transport 0/1 values */
