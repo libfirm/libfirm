@@ -484,6 +484,8 @@ nodeops_h_template = env.from_string(
 
 #include "firm_types.h"
 
+#include "begin.h"
+
 /**
  * @addtogroup ir_node
  * @{
@@ -584,6 +586,8 @@ FIRM_API void set_{{node.name}}_{{attr.name}}(ir_node *node, {{attr.type}} {{att
 {% endfor -%}
 
 /** @} */
+
+#include "end.h"
 
 #endif
 
