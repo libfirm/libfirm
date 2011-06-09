@@ -64,7 +64,6 @@ typedef enum float_to_int_mode {
 
 static float_to_int_mode current_float_to_int_mode = TRUNCATE;
 
-#define SWITCH_NOINFINITY 0
 #define SWITCH_NODENORMALS 0
 
 /****************************************************************************
@@ -266,13 +265,6 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length, ir_mode 
 		break;
 
 	case irms_float_number:
-#ifdef SWITCH_NOINFINITY
-		if (fc_is_inf((const fp_value*) value)) {
-			/* clip infinity to maximum value */
-			return fc_is_negative((const fp_value*) value) ? get_mode_min(mode) : get_mode_max(mode);
-		}
-#endif
-
 #ifdef SWITCH_NODENORMALS
 		if (fc_is_subnormal((const fp_value*) value)) {
 			/* clip denormals to zero */
