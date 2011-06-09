@@ -568,7 +568,7 @@ FIRM_API ir_node *new_{{node.name}}(
 {% endfor %}
 
 {% for node in nodes %}
-/** Return true of the node is a {{node.name}} node. */
+/** Return true if the node is a {{node.name}} node. */
 FIRM_API int is_{{node.name}}(const ir_node *node);
 {%- endfor %}
 
