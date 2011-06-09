@@ -845,78 +845,17 @@ static void emit_sparc_Ba(const ir_node *node)
 	be_emit_finish_line_gas(node);
 }
 
-static void emit_jump_table(const ir_node *node)
-{
-	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
-	long             switch_max    = LONG_MIN;
-	long             default_pn    = attr->default_proj_num;
-	ir_entity       *entity        = attr->jump_table;
-	ir_node         *default_block = NULL;
-	unsigned long    length;
-	const ir_edge_t *edge;
-	unsigned         i;
-	ir_node        **table;
-
-	/* go over all proj's and collect them */
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
-
-		/* check for default proj */
-		if (pn == default_pn) {
-			assert(default_block == NULL); /* more than 1 default_pn? */
-			default_block = get_jump_target(proj);
-		} else {
-			switch_max = pn > switch_max ? pn : switch_max;
-		}
-	}
-	assert(switch_max > LONG_MIN);
-
-	length = (unsigned long) switch_max + 1;
-	/* the 16000 isn't a real limit of the architecture. But should protect us
-	 * from seamingly endless compiler runs */
-	if (length > 16000) {
-		/* switch lowerer should have broken this monster to pieces... */
-		panic("too large switch encountered");
-	}
-
-	table = XMALLOCNZ(ir_node*, length);
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
-		if (pn == default_pn)
-			continue;
-
-		table[pn] = get_jump_target(proj);
-	}
-
-	/* emit table */
-	be_gas_emit_switch_section(GAS_SECTION_RODATA);
-	be_emit_cstring("\t.align 4\n");
-	be_gas_emit_entity(entity);
-	be_emit_cstring(":\n");
-	for (i = 0; i < length; ++i) {
-		ir_node *block = table[i];
-		if (block == NULL)
-			block = default_block;
-		be_emit_cstring("\t.long ");
-		be_gas_emit_block_name(block);
-		be_emit_char('\n');
-		be_emit_write_line();
-	}
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
-
-	xfree(table);
-}
-
 static void emit_sparc_SwitchJmp(const ir_node *node)
 {
+	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
+
 	be_emit_cstring("\tjmp ");
 	sparc_emit_source_register(node, 0);
 	be_emit_finish_line_gas(node);
 	fill_delay_slot();
 
-	emit_jump_table(node);
+	emit_jump_table(node, attr->default_proj_num, attr->jump_table,
+	                get_jump_target);
 }
 
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,

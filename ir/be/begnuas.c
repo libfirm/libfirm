@@ -1659,3 +1659,65 @@ void be_gas_emit_decls(const be_main_env_t *main_env)
 		be_emit_write_line();
 	}
 }
+
+void emit_jump_table(const ir_node *node, long default_pn, ir_entity *entity,
+                     get_cfop_target_func get_cfop_target)
+{
+	long             switch_max    = LONG_MIN;
+	ir_node         *default_block = NULL;
+	unsigned long    length;
+	const ir_edge_t *edge;
+	unsigned         i;
+	ir_node        **table;
+
+	/* go over all proj's and collect them */
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long     pn   = get_Proj_proj(proj);
+
+		/* check for default proj */
+		if (pn == default_pn) {
+			assert(default_block == NULL); /* more than 1 default_pn? */
+			default_block = get_cfop_target(proj);
+		} else {
+			switch_max = pn > switch_max ? pn : switch_max;
+		}
+	}
+	assert(switch_max > LONG_MIN);
+
+	length = (unsigned long) switch_max + 1;
+	/* the 16000 isn't a real limit of the architecture. But should protect us
+	 * from seamingly endless compiler runs */
+	if (length > 16000) {
+		/* switch lowerer should have broken this monster to pieces... */
+		panic("too large switch encountered");
+	}
+
+	table = XMALLOCNZ(ir_node*, length);
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		long     pn   = get_Proj_proj(proj);
+		if (pn == default_pn)
+			continue;
+
+		table[pn] = get_cfop_target(proj);
+	}
+
+	/* emit table */
+	be_gas_emit_switch_section(GAS_SECTION_RODATA);
+	be_emit_cstring("\t.align 4\n");
+	be_gas_emit_entity(entity);
+	be_emit_cstring(":\n");
+	for (i = 0; i < length; ++i) {
+		ir_node *block = table[i];
+		if (block == NULL)
+			block = default_block;
+		be_emit_cstring("\t.long ");
+		be_gas_emit_block_name(block);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+
+	xfree(table);
+}

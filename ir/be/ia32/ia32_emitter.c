@@ -1134,127 +1134,17 @@ static void emit_ia32_CMovcc(const ir_node *node)
 	ia32_emitf(node, "\tcmov%P %#AR, %#R\n", cc, in_true, out);
 }
 
-
-/* jump table entry (target and corresponding number) */
-typedef struct branch_t {
-	ir_node *target;
-	int      value;
-} branch_t;
-
-/* jump table for switch generation */
-typedef struct jmp_tbl_t {
-	ir_node  *defProj;                 /**< default target */
-	long      min_value;               /**< smallest switch case */
-	long      max_value;               /**< largest switch case */
-	long      num_branches;            /**< number of jumps */
-	char      label[SNPRINTF_BUF_LEN]; /**< label of the jump table */
-	branch_t *branches;                /**< jump array */
-} jmp_tbl_t;
-
 /**
- * Compare two variables of type branch_t. Used to sort all switch cases
- */
-static int ia32_cmp_branch_t(const void *a, const void *b)
-{
-	branch_t *b1 = (branch_t *)a;
-	branch_t *b2 = (branch_t *)b;
-
-	if (b1->value <= b2->value)
-		return -1;
-	else
-		return 1;
-}
-
-static void generate_jump_table(jmp_tbl_t *tbl, const ir_node *node)
-{
-	int                 i;
-	long                default_pn = get_ia32_default_pn(node);
-	ir_node            *proj;
-	const ir_edge_t    *edge;
-
-	/* fill the table structure */
-	get_unique_label(tbl->label, SNPRINTF_BUF_LEN, "TBL_");
-	tbl->defProj      = NULL;
-	tbl->num_branches = get_irn_n_edges(node) - 1;
-	tbl->branches     = XMALLOCNZ(branch_t, tbl->num_branches);
-	tbl->min_value    = LONG_MAX;
-	tbl->max_value    = LONG_MIN;
-
-	i = 0;
-	/* go over all proj's and collect them */
-	foreach_out_edge(node, edge) {
-		long pn;
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-		pn = get_Proj_proj(proj);
-
-		/* check for default proj */
-		if (pn == default_pn) {
-			assert(tbl->defProj == NULL && "found two default Projs at SwitchJmp");
-			tbl->defProj = proj;
-		} else {
-			tbl->min_value = pn < tbl->min_value ? pn : tbl->min_value;
-			tbl->max_value = pn > tbl->max_value ? pn : tbl->max_value;
-
-			/* create branch entry */
-			tbl->branches[i].target = proj;
-			tbl->branches[i].value  = pn;
-			++i;
-		}
-
-	}
-	assert(i == tbl->num_branches);
-
-	/* sort the branches by their number */
-	qsort(tbl->branches, tbl->num_branches, sizeof(tbl->branches[0]), ia32_cmp_branch_t);
-}
-
-/**
- * Emits code for a SwitchJmp (creates a jump table if
- * possible otherwise a cmp-jmp cascade). Port from
- * cggg ia32 backend
+ * Emits code for a SwitchJmp
  */
 static void emit_ia32_SwitchJmp(const ir_node *node)
 {
-	unsigned long       interval;
-	int                 last_value, i;
-	jmp_tbl_t           tbl;
+	ir_entity *jump_table = get_ia32_am_sc(node);
+	long       default_pn = get_ia32_default_pn(node);
 
-	/* fill the table structure */
-	generate_jump_table(&tbl, node);
+	ia32_emitf(node, "\tjmp *%AM\n", node);
 
-	/* two-complement's magic make this work without overflow */
-	interval = tbl.max_value - tbl.min_value;
-
-	/* emit the table */
-	ia32_emitf(node,        "\tcmpl $%u, %S0\n", interval);
-	ia32_emitf(tbl.defProj, "\tja %L\n");
-
-	if (tbl.num_branches > 1) {
-		/* create table */
-		ia32_emitf(node, "\tjmp *%s(,%S0,4)\n", tbl.label);
-
-		be_gas_emit_switch_section(GAS_SECTION_RODATA);
-		ia32_emitf(NULL, "\t.align 4\n");
-		ia32_emitf(NULL, "%s:\n", tbl.label);
-
-		last_value = tbl.branches[0].value;
-		for (i = 0; i != tbl.num_branches; ++i) {
-			while (last_value != tbl.branches[i].value) {
-				ia32_emitf(tbl.defProj, ".long %L\n");
-				++last_value;
-			}
-			ia32_emitf(tbl.branches[i].target, ".long %L\n");
-			++last_value;
-		}
-		be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	} else {
-		/* one jump is enough */
-		ia32_emitf(tbl.branches[0].target, "\tjmp %L\n");
-	}
-
-	free(tbl.branches);
+	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
 }
 
 /**
@@ -3415,63 +3305,13 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 static void bemit_switchjmp(const ir_node *node)
 {
-	unsigned long          interval;
-	int                    last_value;
-	int                    i;
-	jmp_tbl_t              tbl;
-	const arch_register_t *in;
+	ir_entity *jump_table = get_ia32_am_sc(node);
+	long       default_pn = get_ia32_default_pn(node);
 
-	/* fill the table structure */
-	generate_jump_table(&tbl, node);
+	bemit8(0xFF); // jmp *tbl.label(,%in,4)
+	bemit_mod_am(0x05, node);
 
-	/* two-complement's magic make this work without overflow */
-	interval = tbl.max_value - tbl.min_value;
-
-	in = get_in_reg(node, 0);
-	/* emit the table */
-	if (get_signed_imm_size(interval) == 1) {
-		bemit8(0x83); // cmpl $imm8, %in
-		bemit_modru(in, 7);
-		bemit8(interval);
-	} else {
-		bemit8(0x81); // cmpl $imm32, %in
-		bemit_modru(in, 7);
-		bemit32(interval);
-	}
-	bemit8(0x0F); // ja tbl.defProj
-	bemit8(0x87);
-	ia32_emitf(tbl.defProj, ".long %L - . - 4\n");
-
-	if (tbl.num_branches > 1) {
-		/* create table */
-		bemit8(0xFF); // jmp *tbl.label(,%in,4)
-		bemit8(MOD_IND | ENC_REG(4) | ENC_RM(0x04));
-		bemit8(ENC_SIB(2, reg_gp_map[in->index], 0x05));
-		be_emit_irprintf("\t.long %s\n", tbl.label);
-
-		be_gas_emit_switch_section(GAS_SECTION_RODATA);
-		be_emit_cstring(".align 4\n");
-		be_emit_irprintf("%s:\n", tbl.label);
-
-		last_value = tbl.branches[0].value;
-		for (i = 0; i != tbl.num_branches; ++i) {
-			while (last_value != tbl.branches[i].value) {
-				ia32_emitf(tbl.defProj, ".long %L\n");
-				++last_value;
-			}
-			ia32_emitf(tbl.branches[i].target, ".long %L\n");
-			++last_value;
-		}
-		be_gas_emit_switch_section(GAS_SECTION_TEXT);
-	} else {
-		/* one jump is enough */
-		panic("switch only has one case");
-		//ia32_emitf(tbl.branches[0].target, "\tjmp %L\n");
-	}
-
-	be_emit_write_line();
-
-	free(tbl.branches);
+	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
 }
 
 /**

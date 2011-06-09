@@ -1042,13 +1042,13 @@ Jcc => {
 SwitchJmp => {
 	state     => "pinned",
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
-	reg_req   => { in => [ "gp" ] },
+	reg_req   => { in => [ "gp", "gp" ] },
+	ins       => [ "base", "index" ],
 	mode      => "mode_T",
 	attr_type => "ia32_switch_attr_t",
 	attr      => "long default_pn",
-	latency   => 3,
+	latency   => 2,
 	units     => [ "BRANCH" ],
-	modified_flags => $status_flags,
 	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 

@@ -2815,45 +2815,28 @@ static ir_node *gen_Store(ir_node *node)
  */
 static ir_node *create_Switch(ir_node *node)
 {
-	dbg_info *dbgi       = get_irn_dbg_info(node);
-	ir_node  *block      = be_transform_node(get_nodes_block(node));
-	ir_node  *sel        = get_Cond_selector(node);
-	ir_node  *new_sel    = be_transform_node(sel);
-	long      switch_min = LONG_MAX;
-	long      switch_max = LONG_MIN;
-	long      default_pn = get_Cond_default_proj(node);
-	ir_node  *new_node;
-	const ir_edge_t *edge;
+	dbg_info  *dbgi       = get_irn_dbg_info(node);
+	ir_node   *block      = be_transform_node(get_nodes_block(node));
+	ir_node   *sel        = get_Cond_selector(node);
+	ir_node   *new_sel    = be_transform_node(sel);
+	long       default_pn = get_Cond_default_proj(node);
+	ir_node   *new_node;
+	ir_entity *entity;
 
 	assert(get_mode_size_bits(get_irn_mode(sel)) == 32);
 
-	/* determine the smallest switch case value */
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
-		if (pn == default_pn)
-			continue;
+	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
+	set_entity_visibility(entity, ir_visibility_private);
+	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
-		if (pn < switch_min)
-			switch_min = pn;
-		if (pn > switch_max)
-			switch_max = pn;
-	}
-
-	if ((unsigned long) (switch_max - switch_min) > 128000) {
-		panic("Size of switch %+F bigger than 128000", node);
-	}
-
-	if (switch_min != 0) {
-		/* if smallest switch case is not 0 we need an additional sub */
-		new_sel = new_bd_ia32_Lea(dbgi, block, new_sel, noreg_GP);
-		add_ia32_am_offs_int(new_sel, -switch_min);
-		set_ia32_op_type(new_sel, ia32_AddrModeS);
-
-		SET_IA32_ORIG_NODE(new_sel, node);
-	}
-
-	new_node = new_bd_ia32_SwitchJmp(dbgi, block, new_sel, default_pn);
+	/* TODO: we could perform some more matching here to also use the base
+	 * register of the address mode */
+	new_node
+		= new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel, default_pn);
+	set_ia32_am_scale(new_node, 2);
+	set_ia32_am_sc(new_node, entity);
+	set_ia32_op_type(new_node, ia32_AddrModeS);
+	set_ia32_ls_mode(new_node, mode_Iu);
 	SET_IA32_ORIG_NODE(new_node, node);
 
 	return new_node;

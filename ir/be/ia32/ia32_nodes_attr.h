@@ -237,6 +237,7 @@ typedef struct ia32_switch_attr_t ia32_switch_attr_t;
 struct ia32_switch_attr_t {
 	ia32_attr_t  attr;        /**< generic attribute */
 	long         default_pn;
+	ir_entity   *jump_table;
 };
 
 /**

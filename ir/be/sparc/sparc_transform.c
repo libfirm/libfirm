@@ -1005,11 +1005,6 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
-	/* TODO: this code does not construct code to check for access
-	 * out-of bounds of the jumptable yet. I think we should put this stuff
-	 * into the switch_lowering phase to get some additional optimisations
-	 * done. */
-
 	/* construct base address */
 	table_address = make_address(dbgi, block, entity, 0);
 	/* scale index */
