@@ -60,7 +60,7 @@ static void add_pred(ir_node* node, ir_node* x)
 	int n;
 	int i;
 
-	assert(is_Block(node) || is_Phi(node));
+	assert(is_Block(node));
 
 	n = get_irn_arity(node);
 	NEW_ARR_A(ir_node*, ins, n + 1);
@@ -194,6 +194,16 @@ static void construct_ssa(ir_node *orig_block, ir_node *orig_val,
 	}
 }
 
+/**
+ * jumpthreading produces critical edges, e.g. B-C:
+ *     A         A
+ *  \ /       \  |
+ *   B    =>   B |
+ *  / \       / \|
+ *     C         C
+ *
+ * By splitting this critical edge more threadings might be possible.
+ */
 static void split_critical_edge(ir_node *block, int pos)
 {
 	ir_graph *irg = get_irn_irg(block);
@@ -634,6 +644,7 @@ static void thread_jumps(ir_node* block, void* data)
 	ir_node *badX;
 	int      cnst_pos;
 
+	/* we do not deal with Phis, so restrict this to exactly one cfgpred */
 	if (get_Block_n_cfgpreds(block) != 1)
 		return;
 
