@@ -44,7 +44,7 @@
  * Does not assert whether the backarray is correct -- use
  * very careful!
  */
-static bitset_t *mere_get_backarray(ir_node *n)
+static bitset_t *mere_get_backarray(const ir_node *n)
 {
 	switch (get_irn_opcode(n)) {
 	case iro_Block:
@@ -65,7 +65,7 @@ static bitset_t *mere_get_backarray(ir_node *n)
  * Returns backarray if the node can have backedges, else returns
  * NULL.
  */
-static bitset_t *get_backarray(ir_node *n)
+static bitset_t *get_backarray(const ir_node *n)
 {
 	bitset_t *ba = mere_get_backarray(n);
 
@@ -85,7 +85,7 @@ static bitset_t *get_backarray(ir_node *n)
  * Returns non-zero if node has no backarray, or
  *                  if size of backarray == size of in array.
  */
-static int legal_backarray(ir_node *n)
+static int legal_backarray(const ir_node *n)
 {
 	bitset_t *ba = mere_get_backarray(n);
 	if (ba && (bitset_size(ba) != (unsigned) get_irn_arity(n)))
@@ -119,7 +119,7 @@ void fix_backedges(struct obstack *obst, ir_node *n)
 }
 
 /* Returns non-zero if the predecessor pos is a backedge. */
-int is_backedge(ir_node *n, int pos)
+int is_backedge(const ir_node *n, int pos)
 {
 	bitset_t *ba = get_backarray(n);
 	if (ba)
@@ -144,7 +144,7 @@ void set_not_backedge(ir_node *n, int pos)
 }
 
 /* Returns non-zero if n has backedges. */
-int has_backedges(ir_node *n)
+int has_backedges(const ir_node *n)
 {
 	bitset_t *ba = get_backarray(n);
 	if (ba != NULL) {
