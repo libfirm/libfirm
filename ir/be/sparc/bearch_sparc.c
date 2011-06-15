@@ -604,7 +604,9 @@ static const backend_params *sparc_get_backend_params(void)
 		1,     /* big endian */
 		&arch_dep,              /* will be set later */
 		sparc_is_mux_allowed,   /* parameter for if conversion */
+		32,    /* machine size */
 		NULL,  /* float arithmetic mode */
+		128,   /* size of long double */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */

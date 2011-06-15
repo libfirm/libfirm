@@ -573,7 +573,9 @@ static const backend_params *arm_get_libfirm_params(void)
 		1,     /* big endian */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
+		32,    /* machine size */
 		NULL,  /* float arithmetic mode (TODO) */
+		0,     /* size of long double */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */

@@ -78,11 +78,18 @@ typedef struct backend_params {
 	/** Backend settings for if-conversion. */
 	arch_allow_ifconv_func allow_ifconv;
 
+	/** size of machine words. This is usually the size of the general purpose
+	 * integer registers. */
+	unsigned machine_size;
+
 	/**
 	 * some backends like x87 can only do arithmetic in a specific float
-	 * mode (but convert to/from other float modes).
+	 * mode (load/store are still done in the "normal" float/double modes).
 	 */
 	ir_mode *mode_float_arithmetic;
+
+	/** size of a long double floating mode in bits (or 0 if not supported) */
+	unsigned long_double_size;
 
 	/** Size of the trampoline code. */
 	unsigned trampoline_size;

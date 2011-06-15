@@ -2092,7 +2092,9 @@ static const backend_params *ia32_get_libfirm_params(void)
 		0,     /* little endian */
 		NULL,  /* will be set later */
 		ia32_is_mux_allowed,
+		32,    /* machine_size */
 		NULL,  /* float arithmetic mode, will be set below */
+		0,     /* size of long double */
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */
 		ia32_create_trampoline_fkt,
@@ -2106,8 +2108,13 @@ static const backend_params *ia32_get_libfirm_params(void)
 	init_asm_constraints();
 
 	p.dep_param    = &ad;
-	if (! ia32_cg_config.use_sse2)
+	if (! ia32_cg_config.use_sse2) {
 		p.mode_float_arithmetic = mode_E;
+		p.long_double_size = 96;
+	} else {
+		p.mode_float_arithmetic = NULL;
+		p.long_double_size = 64;
+	}
 	return &p;
 }
 

@@ -502,7 +502,9 @@ static const backend_params *amd64_get_backend_params(void) {
 		0,     /* little endian */
 		NULL,  /* will be set later */
 		amd64_is_mux_allowed,  /* parameter for if conversion */
+		64,    /* machine size */
 		NULL,  /* float arithmetic mode */
+		0,     /* size of long double */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
