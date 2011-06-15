@@ -314,16 +314,16 @@ static void peephole_ia32_Test(ir_node *node)
 			if ((offset & 0xFFFFFF00) == 0) {
 				/* attr->am_offs += 0; */
 			} else if ((offset & 0xFFFF00FF) == 0) {
-				ir_node *imm = ia32_create_Immediate(NULL, 0, offset >>  8);
-				set_irn_n(node, n_ia32_Test_right, imm);
+				ir_node *imm_node = ia32_create_Immediate(NULL, 0, offset>>8);
+				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 1;
 			} else if ((offset & 0xFF00FFFF) == 0) {
-				ir_node *imm = ia32_create_Immediate(NULL, 0, offset >> 16);
-				set_irn_n(node, n_ia32_Test_right, imm);
+				ir_node *imm_node = ia32_create_Immediate(NULL, 0, offset>>16);
+				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 2;
 			} else if ((offset & 0x00FFFFFF) == 0) {
-				ir_node *imm = ia32_create_Immediate(NULL, 0, offset >> 24);
-				set_irn_n(node, n_ia32_Test_right, imm);
+				ir_node *imm_node = ia32_create_Immediate(NULL, 0, offset>>24);
+				set_irn_n(node, n_ia32_Test_right, imm_node);
 				attr->am_offs += 3;
 			} else {
 				return;
@@ -483,8 +483,6 @@ static void peephole_IncSP_Store_to_push(ir_node *irn)
 		ir_node *val, *mem, *mem_proj;
 		ir_node *store = stores[i];
 		ir_node *noreg = ia32_new_NoReg_gp(irg);
-		const ir_edge_t *edge;
-		const ir_edge_t *next;
 
 		val = get_irn_n(store, n_ia32_unary_op);
 		mem = get_irn_n(store, n_ia32_mem);

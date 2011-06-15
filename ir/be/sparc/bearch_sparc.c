@@ -658,7 +658,7 @@ const arch_isa_if_t sparc_isa_if = {
 	NULL, /* register_saved_by */
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)
 void be_init_arch_sparc(void)
 {
 	be_register_isa_if("sparc", &sparc_isa_if);

@@ -67,15 +67,15 @@ void ia32_handle_intrinsics(void)
 /**
  * Reroute edges from the pn_Call_T_result proj of a call.
  *
- * @param proj   the pn_Call_T_result Proj
- * @param l_res  the lower 32 bit result
- * @param h_res  the upper 32 bit result or NULL
+ * @param resproj  the pn_Call_T_result Proj
+ * @param l_res    the lower 32 bit result
+ * @param h_res    the upper 32 bit result or NULL
  */
-static void reroute_result(ir_node *proj, ir_node *l_res, ir_node *h_res)
+static void reroute_result(ir_node *resproj, ir_node *l_res, ir_node *h_res)
 {
 	const ir_edge_t *edge, *next;
 
-	foreach_out_edge_safe(proj, edge, next) {
+	foreach_out_edge_safe(resproj, edge, next) {
 		ir_node *proj = get_edge_src_irn(edge);
 		long    pn    = get_Proj_proj(proj);
 

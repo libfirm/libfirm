@@ -557,8 +557,8 @@ void ia32_emit_am(const ir_node *node)
 	int        offs      = get_ia32_am_offs_int(node);
 	ir_node   *base      = get_irn_n(node, n_ia32_base);
 	int        has_base  = !is_ia32_NoReg_GP(base);
-	ir_node   *index     = get_irn_n(node, n_ia32_index);
-	int        has_index = !is_ia32_NoReg_GP(index);
+	ir_node   *idx       = get_irn_n(node, n_ia32_index);
+	int        has_index = !is_ia32_NoReg_GP(idx);
 
 	/* just to be sure... */
 	assert(!is_ia32_use_frame(node) || get_ia32_frame_ent(node) != NULL);
@@ -708,7 +708,6 @@ emit_AM:
 							assert(get_ia32_op_type(node) == ia32_Normal);
 							goto emit_S;
 						}
-						break;
 
 					default: goto unknown;
 				}
@@ -1385,8 +1384,8 @@ static void emit_ia32_Conv_FP2FP(const ir_node *node)
  */
 static void emit_ia32_Conv_I2I(const ir_node *node)
 {
-	ir_mode *smaller_mode = get_ia32_ls_mode(node);
-	int      signed_mode  = mode_is_signed(smaller_mode);
+	ir_mode    *smaller_mode = get_ia32_ls_mode(node);
+	int         signed_mode  = mode_is_signed(smaller_mode);
 	const char *sign_suffix;
 
 	assert(!mode_is_float(smaller_mode));
@@ -1814,10 +1813,10 @@ static int should_align_block(const ir_node *block)
  */
 static void ia32_emit_block_header(ir_node *block)
 {
-	ir_graph     *irg = current_ir_graph;
+	ir_graph     *irg        = current_ir_graph;
 	int           need_label = block_needs_label(block);
-	int           i, arity;
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
+	ir_exec_freq *exec_freq  = be_get_irg_exec_freq(irg);
+	int           arity;
 
 	if (block == get_irg_end_block(irg))
 		return;
@@ -1867,6 +1866,7 @@ static void ia32_emit_block_header(ir_node *block)
 	if (arity <= 0) {
 		be_emit_cstring(" none");
 	} else {
+		int i;
 		for (i = 0; i < arity; ++i) {
 			ir_node *predblock = get_Block_cfgpred_block(block, i);
 			be_emit_irprintf(" %d", get_irn_node_nr(predblock));
@@ -1996,14 +1996,14 @@ void ia32_gen_routine(ir_graph *irg)
 	   Those are ascending with ascending addresses. */
 	qsort(exc_list, ARR_LEN(exc_list), sizeof(exc_list[0]), cmp_exc_entry);
 	{
-		size_t i;
+		size_t e;
 
-		for (i = 0; i < ARR_LEN(exc_list); ++i) {
+		for (e = 0; e < ARR_LEN(exc_list); ++e) {
 			be_emit_cstring("\t.long ");
-			ia32_emit_exc_label(exc_list[i].exc_instr);
+			ia32_emit_exc_label(exc_list[e].exc_instr);
 			be_emit_char('\n');
 			be_emit_cstring("\t.long ");
-			be_gas_emit_block_name(exc_list[i].block);
+			be_gas_emit_block_name(exc_list[e].block);
 			be_emit_char('\n');
 		}
 	}
@@ -2209,8 +2209,8 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 	int        offs      = get_ia32_am_offs_int(node);
 	ir_node   *base      = get_irn_n(node, n_ia32_base);
 	int        has_base  = !is_ia32_NoReg_GP(base);
-	ir_node   *index     = get_irn_n(node, n_ia32_index);
-	int        has_index = !is_ia32_NoReg_GP(index);
+	ir_node   *idx       = get_irn_n(node, n_ia32_index);
+	int        has_index = !is_ia32_NoReg_GP(idx);
 	unsigned   modrm     = 0;
 	unsigned   sib       = 0;
 	unsigned   emitoffs  = 0;
@@ -2245,7 +2245,7 @@ static void bemit_mod_am(unsigned reg, const ir_node *node)
 
 	/* Determine if we need a SIB byte. */
 	if (has_index) {
-		const arch_register_t *reg_index = arch_get_irn_register(index);
+		const arch_register_t *reg_index = arch_get_irn_register(idx);
 		int                    scale     = get_ia32_am_scale(node);
 		assert(scale < 4);
 		/* R/M set to ESP means SIB in 32bit mode. */
@@ -3068,8 +3068,8 @@ static void bemit_load(const ir_node *node)
 	if (out->index == REG_GP_EAX) {
 		ir_node   *base      = get_irn_n(node, n_ia32_base);
 		int        has_base  = !is_ia32_NoReg_GP(base);
-		ir_node   *index     = get_irn_n(node, n_ia32_index);
-		int        has_index = !is_ia32_NoReg_GP(index);
+		ir_node   *idx       = get_irn_n(node, n_ia32_index);
+		int        has_index = !is_ia32_NoReg_GP(idx);
 		if (!has_base && !has_index) {
 			ir_entity *ent  = get_ia32_am_sc(node);
 			int        offs = get_ia32_am_offs_int(node);
@@ -3113,8 +3113,8 @@ static void bemit_store(const ir_node *node)
 		if (in->index == REG_GP_EAX) {
 			ir_node   *base      = get_irn_n(node, n_ia32_base);
 			int        has_base  = !is_ia32_NoReg_GP(base);
-			ir_node   *index     = get_irn_n(node, n_ia32_index);
-			int        has_index = !is_ia32_NoReg_GP(index);
+			ir_node   *idx       = get_irn_n(node, n_ia32_index);
+			int        has_index = !is_ia32_NoReg_GP(idx);
 			if (!has_base && !has_index) {
 				ir_entity *ent  = get_ia32_am_sc(node);
 				int        offs = get_ia32_am_offs_int(node);

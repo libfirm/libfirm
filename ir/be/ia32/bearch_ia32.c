@@ -94,9 +94,7 @@
 transformer_t be_transformer = TRANSFORMER_DEFAULT;
 #endif
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
-
-ir_mode         *ia32_mode_fpcw       = NULL;
+ir_mode *ia32_mode_fpcw = NULL;
 
 /** The current omit-fp state */
 static ir_type *omit_fp_between_type   = NULL;
@@ -118,7 +116,7 @@ static ia32_intrinsic_env_t intrinsic_env = {
 };
 
 
-typedef ir_node *(*create_const_node_func) (dbg_info *dbg, ir_node *block);
+typedef ir_node *(*create_const_node_func) (dbg_info *dbgi, ir_node *block);
 
 /**
  * Used to create per-graph unique pseudo nodes.
@@ -396,7 +394,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 	ir_mode  *mode;
 	ir_mode  *irn_mode;
 	ir_node  *block, *noreg, *nomem;
-	dbg_info *dbg;
+	dbg_info *dbgi;
 
 	/* we cannot invert non-ia32 irns */
 	if (! is_ia32_irn(irn))
@@ -420,7 +418,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 	irn_mode = get_irn_mode(irn);
 	noreg    = get_irn_n(irn, 0);
 	nomem    = get_irg_no_mem(irg);
-	dbg      = get_irn_dbg_info(irn);
+	dbgi     = get_irn_dbg_info(irn);
 
 	/* initialize structure */
 	inverse->nodes = obstack_alloc(obst, 2 * sizeof(inverse->nodes[0]));
@@ -432,7 +430,7 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 			if (get_ia32_immop_type(irn) == ia32_ImmConst) {
 				/* we have an add with a const here */
 				/* invers == add with negated const */
-				inverse->nodes[0] = new_bd_ia32_Add(dbg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
+				inverse->nodes[0] = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 				set_ia32_Immop_tarval(inverse->nodes[0], tarval_neg(get_ia32_Immop_tarval(irn)));
@@ -441,13 +439,13 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 			else if (get_ia32_immop_type(irn) == ia32_ImmSymConst) {
 				/* we have an add with a symconst here */
 				/* invers == sub with const */
-				inverse->nodes[0] = new_bd_ia32_Sub(dbg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
+				inverse->nodes[0] = new_bd_ia32_Sub(dbgi, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += 2;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal add: inverse == sub */
-				inverse->nodes[0] = new_bd_ia32_Sub(dbg, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, i ^ 1));
+				inverse->nodes[0] = new_bd_ia32_Sub(dbgi, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, i ^ 1));
 				inverse->costs   += 2;
 			}
 			break;
@@ -455,17 +453,17 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* we have a sub with a const/symconst here */
 				/* invers == add with this const */
-				inverse->nodes[0] = new_bd_ia32_Add(dbg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
+				inverse->nodes[0] = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal sub */
 				if (i == n_ia32_binary_left) {
-					inverse->nodes[0] = new_bd_ia32_Add(dbg, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, 3));
+					inverse->nodes[0] = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, (ir_node*) irn, get_irn_n(irn, 3));
 				}
 				else {
-					inverse->nodes[0] = new_bd_ia32_Sub(dbg, block, noreg, noreg, nomem, get_irn_n(irn, n_ia32_binary_left), (ir_node*) irn);
+					inverse->nodes[0] = new_bd_ia32_Sub(dbgi, block, noreg, noreg, nomem, get_irn_n(irn, n_ia32_binary_left), (ir_node*) irn);
 				}
 				inverse->costs += 1;
 			}
@@ -473,23 +471,23 @@ static arch_inverse_t *ia32_get_inverse(const ir_node *irn, int i, arch_inverse_
 		case iro_ia32_Xor:
 			if (get_ia32_immop_type(irn) != ia32_ImmNone) {
 				/* xor with const: inverse = xor */
-				inverse->nodes[0] = new_bd_ia32_Xor(dbg, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
+				inverse->nodes[0] = new_bd_ia32_Xor(dbgi, block, noreg, noreg, nomem, get_irn_n(irn, i), noreg);
 				inverse->costs   += (get_ia32_immop_type(irn) == ia32_ImmSymConst) ? 5 : 1;
 				copy_ia32_Immop_attr(inverse->nodes[0], (ir_node *)irn);
 			}
 			else {
 				/* normal xor */
-				inverse->nodes[0] = new_bd_ia32_Xor(dbg, block, noreg, noreg, nomem, (ir_node *) irn, get_irn_n(irn, i));
+				inverse->nodes[0] = new_bd_ia32_Xor(dbgi, block, noreg, noreg, nomem, (ir_node *) irn, get_irn_n(irn, i));
 				inverse->costs   += 1;
 			}
 			break;
 		case iro_ia32_Not: {
-			inverse->nodes[0] = new_bd_ia32_Not(dbg, block, (ir_node*) irn);
+			inverse->nodes[0] = new_bd_ia32_Not(dbgi, block, (ir_node*) irn);
 			inverse->costs   += 1;
 			break;
 		}
 		case iro_ia32_Neg: {
-			inverse->nodes[0] = new_bd_ia32_Neg(dbg, block, (ir_node*) irn);
+			inverse->nodes[0] = new_bd_ia32_Neg(dbgi, block, (ir_node*) irn);
 			inverse->costs   += 1;
 			break;
 		}
@@ -709,11 +707,11 @@ ir_node *ia32_turn_back_am(ir_node *node)
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_node  *base  = get_irn_n(node, n_ia32_base);
-	ir_node  *index = get_irn_n(node, n_ia32_index);
+	ir_node  *idx   = get_irn_n(node, n_ia32_index);
 	ir_node  *mem   = get_irn_n(node, n_ia32_mem);
 	ir_node  *noreg;
 
-	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, index, mem);
+	ir_node  *load     = new_bd_ia32_Load(dbgi, block, base, idx, mem);
 	ir_node  *load_res = new_rd_Proj(dbgi, load, mode_Iu, pn_ia32_Load_res);
 
 	ia32_copy_am_attrs(load, node);
@@ -787,7 +785,6 @@ static ir_node *flags_remat(ir_node *node, ir_node *after)
 		case ia32_AddrModeD:
 			/* TODO implement this later... */
 			panic("found DestAM with flag user %+F this should not happen", node);
-			break;
 
 		default: assert(type == ia32_Normal); break;
 	}
@@ -821,7 +818,7 @@ static void ia32_before_ra(ir_graph *irg)
 static void transform_to_Load(ir_node *node)
 {
 	ir_graph *irg        = get_irn_irg(node);
-	dbg_info *dbg        = get_irn_dbg_info(node);
+	dbg_info *dbgi       = get_irn_dbg_info(node);
 	ir_node *block       = get_nodes_block(node);
 	ir_entity *ent       = be_get_frame_entity(node);
 	ir_mode *mode        = get_irn_mode(node);
@@ -839,16 +836,16 @@ static void transform_to_Load(ir_node *node)
 
 	if (mode_is_float(spillmode)) {
 		if (ia32_cg_config.use_sse2)
-			new_op = new_bd_ia32_xLoad(dbg, block, ptr, noreg, mem, spillmode);
+			new_op = new_bd_ia32_xLoad(dbgi, block, ptr, noreg, mem, spillmode);
 		else
-			new_op = new_bd_ia32_vfld(dbg, block, ptr, noreg, mem, spillmode);
+			new_op = new_bd_ia32_vfld(dbgi, block, ptr, noreg, mem, spillmode);
 	}
 	else if (get_mode_size_bits(spillmode) == 128) {
 		/* Reload 128 bit SSE registers */
-		new_op = new_bd_ia32_xxLoad(dbg, block, ptr, noreg, mem);
+		new_op = new_bd_ia32_xxLoad(dbgi, block, ptr, noreg, mem);
 	}
 	else
-		new_op = new_bd_ia32_Load(dbg, block, ptr, noreg, mem);
+		new_op = new_bd_ia32_Load(dbgi, block, ptr, noreg, mem);
 
 	set_ia32_op_type(new_op, ia32_AddrModeS);
 	set_ia32_ls_mode(new_op, spillmode);
@@ -858,7 +855,7 @@ static void transform_to_Load(ir_node *node)
 
 	DBG_OPT_RELOAD2LD(node, new_op);
 
-	proj = new_rd_Proj(dbg, new_op, mode, pn_ia32_Load_res);
+	proj = new_rd_Proj(dbgi, new_op, mode, pn_ia32_Load_res);
 
 	if (sched_point) {
 		sched_add_after(sched_point, new_op);
@@ -880,7 +877,7 @@ static void transform_to_Load(ir_node *node)
 static void transform_to_Store(ir_node *node)
 {
 	ir_graph *irg  = get_irn_irg(node);
-	dbg_info *dbg  = get_irn_dbg_info(node);
+	dbg_info *dbgi = get_irn_dbg_info(node);
 	ir_node *block = get_nodes_block(node);
 	ir_entity *ent = be_get_frame_entity(node);
 	const ir_node *spillval = get_irn_n(node, n_be_Spill_val);
@@ -899,21 +896,21 @@ static void transform_to_Store(ir_node *node)
 
 	if (mode_is_float(mode)) {
 		if (ia32_cg_config.use_sse2) {
-			store = new_bd_ia32_xStore(dbg, block, ptr, noreg, nomem, val);
+			store = new_bd_ia32_xStore(dbgi, block, ptr, noreg, nomem, val);
 			res   = new_r_Proj(store, mode_M, pn_ia32_xStore_M);
 		} else {
-			store = new_bd_ia32_vfst(dbg, block, ptr, noreg, nomem, val, mode);
+			store = new_bd_ia32_vfst(dbgi, block, ptr, noreg, nomem, val, mode);
 			res   = new_r_Proj(store, mode_M, pn_ia32_vfst_M);
 		}
 	} else if (get_mode_size_bits(mode) == 128) {
 		/* Spill 128 bit SSE registers */
-		store = new_bd_ia32_xxStore(dbg, block, ptr, noreg, nomem, val);
+		store = new_bd_ia32_xxStore(dbgi, block, ptr, noreg, nomem, val);
 		res   = new_r_Proj(store, mode_M, pn_ia32_xxStore_M);
 	} else if (get_mode_size_bits(mode) == 8) {
-		store = new_bd_ia32_Store8Bit(dbg, block, ptr, noreg, nomem, val);
+		store = new_bd_ia32_Store8Bit(dbgi, block, ptr, noreg, nomem, val);
 		res   = new_r_Proj(store, mode_M, pn_ia32_Store8Bit_M);
 	} else {
-		store = new_bd_ia32_Store(dbg, block, ptr, noreg, nomem, val);
+		store = new_bd_ia32_Store(dbgi, block, ptr, noreg, nomem, val);
 		res   = new_r_Proj(store, mode_M, pn_ia32_Store_M);
 	}
 
@@ -935,13 +932,13 @@ static void transform_to_Store(ir_node *node)
 
 static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_node *mem, ir_entity *ent)
 {
-	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_node *block = get_nodes_block(node);
-	ir_graph *irg = get_irn_irg(node);
-	ir_node *noreg = ia32_new_NoReg_gp(irg);
-	ir_node *frame = get_irg_frame(irg);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_graph *irg   = get_irn_irg(node);
+	ir_node  *noreg = ia32_new_NoReg_gp(irg);
+	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *push = new_bd_ia32_Push(dbg, block, frame, noreg, mem, noreg, sp);
+	ir_node *push = new_bd_ia32_Push(dbgi, block, frame, noreg, mem, noreg, sp);
 
 	set_ia32_frame_ent(push, ent);
 	set_ia32_use_frame(push);
@@ -955,13 +952,13 @@ static ir_node *create_push(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_
 
 static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_entity *ent)
 {
-	dbg_info *dbg   = get_irn_dbg_info(node);
+	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
 	ir_graph *irg   = get_irn_irg(node);
 	ir_node  *noreg = ia32_new_NoReg_gp(irg);
 	ir_node  *frame = get_irg_frame(irg);
 
-	ir_node *pop = new_bd_ia32_PopMem(dbg, block, frame, noreg,
+	ir_node *pop = new_bd_ia32_PopMem(dbgi, block, frame, noreg,
 	                                  get_irg_no_mem(irg), sp);
 
 	set_ia32_frame_ent(pop, ent);
@@ -977,12 +974,12 @@ static ir_node *create_pop(ir_node *node, ir_node *schedpoint, ir_node *sp, ir_e
 
 static ir_node* create_spproj(ir_node *node, ir_node *pred, int pos)
 {
-	dbg_info *dbg = get_irn_dbg_info(node);
-	ir_mode *spmode = mode_Iu;
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	ir_mode  *spmode = mode_Iu;
 	const arch_register_t *spreg = &ia32_registers[REG_ESP];
 	ir_node *sp;
 
-	sp = new_rd_Proj(dbg, pred, spmode, pos);
+	sp = new_rd_Proj(dbgi, pred, spmode, pos);
 	arch_set_irn_register(sp, spreg);
 
 	return sp;
@@ -1662,8 +1659,6 @@ static const arch_register_t *ia32_get_RegParam_reg(unsigned cc, unsigned nr,
 static void ia32_get_call_abi(const void *self, ir_type *method_type,
                               be_abi_call_t *abi)
 {
-	ir_type  *tp;
-	ir_mode  *mode;
 	unsigned  cc;
 	int       n, i, regnum;
 	int                 pop_amount = 0;
@@ -1701,11 +1696,10 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 
 	n = get_method_n_params(method_type);
 	for (i = regnum = 0; i < n; i++) {
-		ir_mode               *mode;
-		const arch_register_t *reg = NULL;
+		const arch_register_t *reg  = NULL;
+		ir_type               *tp   = get_method_param_type(method_type, i);
+		ir_mode               *mode = get_type_mode(tp);
 
-		tp   = get_method_param_type(method_type, i);
-		mode = get_type_mode(tp);
 		if (mode != NULL) {
 			reg  = ia32_get_RegParam_reg(cc, regnum, mode);
 		}
@@ -1740,8 +1734,8 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 
 	/* In case of 64bit returns, we will have two 32bit values */
 	if (n == 2) {
-		tp   = get_method_res_type(method_type, 0);
-		mode = get_type_mode(tp);
+		ir_type *tp   = get_method_res_type(method_type, 0);
+		ir_mode *mode = get_type_mode(tp);
 
 		assert(!mode_is_float(mode) && "two FP results not supported");
 
@@ -1754,11 +1748,10 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 		be_abi_call_res_reg(abi, 1, &ia32_registers[REG_EDX], ABI_CONTEXT_BOTH);
 	}
 	else if (n == 1) {
+		ir_type *tp   = get_method_res_type(method_type, 0);
+		ir_mode *mode = get_type_mode(tp);
 		const arch_register_t *reg;
-
-		tp   = get_method_res_type(method_type, 0);
 		assert(is_atomic_type(tp));
-		mode = get_type_mode(tp);
 
 		reg = mode_is_float(mode) ? &ia32_registers[REG_VF0] : &ia32_registers[REG_EAX];
 
@@ -2226,8 +2219,6 @@ void be_init_arch_ia32(void)
 
 	lc_opt_add_table(ia32_grp, ia32_options);
 	be_register_isa_if("ia32", &ia32_isa_if);
-
-	FIRM_DBG_REGISTER(dbg, "firm.be.ia32.cg");
 
 	ia32_init_emitter();
 	ia32_init_finish();

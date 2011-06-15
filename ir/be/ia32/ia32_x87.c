@@ -1783,8 +1783,6 @@ static int sim_Copy(x87_state *state, ir_node *n)
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
 	if (is_vfp_live(arch_register_get_index(op1), live)) {
-		ir_node *pred = get_irn_n(n, 0);
-
 		/* Operand is still live, a real copy. We need here an fpush that can
 		   hold a a register, so use the fpushCopy or recreate constants */
 		node = create_Copy(state, n);

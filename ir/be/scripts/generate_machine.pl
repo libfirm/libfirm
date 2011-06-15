@@ -81,7 +81,6 @@ foreach my $unit_type (keys(%cpu)) {
 	push(@obst_unit_tp_defs, "\t$tp_name,\n");
 	push(@obst_init, "\n\t\t/* init of execution unit type $tp_name */\n");
 	push(@obst_init, "\t\tcur_unit_tp = &$arch\_execution_unit_types[$tp_name];\n");
-	push(@obst_init, "\t\t(void) cur_unit_tp; /* avoid warning */\n");
 
 	push(@obst_unit_defs, "/* enum for execution units of type $unit_type */\n");
 	push(@obst_unit_defs, "enum $arch\_execunit_tp_$unit_type\_vals {\n");
@@ -161,7 +160,7 @@ print OUT @obst_execunits;
 if ($num_unit_types > 0) {
 print OUT<<EOF;
 
-be_execution_unit_type_t $arch\_execution_unit_types[] = {
+static be_execution_unit_type_t $arch\_execution_unit_types[] = {
 EOF
 }
 
@@ -176,7 +175,7 @@ if ($num_unit_types > 0) {
 }
 
 print OUT<<EOF;
-be_machine_t $arch\_cpu = {
+static be_machine_t $arch\_cpu = {
 	$bundle_size,
 	$bundles_per_cycle,
 	$num_unit_types,
@@ -190,7 +189,7 @@ const be_machine_t *$arch\_init_machine_description(void) {
 	static int initialized = 0;
 
 	if (! initialized) {
-		be_execution_unit_type_t *cur_unit_tp;
+		be_execution_unit_type_t *cur_unit_tp = NULL;
 		(void) cur_unit_tp; /* avoid warning */
 
 		be_machine_init_dummy_unit();

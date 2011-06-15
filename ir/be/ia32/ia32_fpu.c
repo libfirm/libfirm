@@ -87,7 +87,6 @@ static void create_fpcw_entities(void)
 static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
                                       ir_node *after)
 {
-	ir_node *spill = NULL;
 	(void) env;
 
 	/* we don't spill the fpcw in unsafe mode */
@@ -107,17 +106,18 @@ static ir_node *create_fpu_mode_spill(void *env, ir_node *state, int force,
 		ir_node *noreg = ia32_new_NoReg_gp(irg);
 		ir_node *nomem = get_irg_no_mem(irg);
 		ir_node *frame = get_irg_frame(irg);
-
-		spill = new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem, state);
+		ir_node *spill
+			= new_bd_ia32_FnstCW(NULL, block, frame, noreg, nomem, state);
 		set_ia32_op_type(spill, ia32_AddrModeD);
 		/* use mode_Iu, as movl has a shorter opcode than movw */
 		set_ia32_ls_mode(spill, mode_Iu);
 		set_ia32_use_frame(spill);
 
 		sched_add_after(skip_Proj(after), spill);
+		return spill;
 	}
 
-	return spill;
+	return NULL;
 }
 
 static ir_node *create_fldcw_ent(ir_node *block, ir_entity *entity)

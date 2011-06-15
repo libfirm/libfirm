@@ -371,11 +371,9 @@ static void parse_asm_constraints(constraint_t *constraint, const char *c,
 		case 'e': /* not available in 32 bit mode */
 			panic("unsupported asm constraint '%c' found in (%+F)",
 			      *c, current_ir_graph);
-			break;
 		default:
 			panic("unknown asm constraint '%c' found in (%+F)", *c,
 			      current_ir_graph);
-			break;
 		}
 		++c;
 	}
@@ -562,7 +560,6 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		}
 
 		if (input == NULL) {
-			ir_node *pred = get_irn_n(node, i);
 			input = get_new_node(pred);
 
 			if (parsed_constraint.cls == NULL
@@ -597,8 +594,8 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	/* count inputs which are real values (and not memory) */
 	value_arity = 0;
 	for (i = 0; i < arity; ++i) {
-		ir_node *in = get_irn_n(node, i);
-		if (get_irn_mode(in) == mode_M)
+		ir_node *node_in = get_irn_n(node, i);
+		if (get_irn_mode(node_in) == mode_M)
 			continue;
 		++value_arity;
 	}
@@ -621,7 +618,6 @@ ir_node *ia32_gen_ASM(ir_node *node)
 		int       o;
 		bitset_t *used_ins = bitset_alloca(arity);
 		for (o = 0; o < out_arity; ++o) {
-			int   i;
 			const arch_register_req_t *outreq = out_reg_reqs[o];
 
 			if (outreq->cls == NULL) {
@@ -665,7 +661,6 @@ ir_node *ia32_gen_ASM(ir_node *node)
 			++arity;
 		}
 	} else {
-		int       i;
 		bitset_t *used_outs = bitset_alloca(out_arity);
 		int       orig_out_arity = out_arity;
 		for (i = 0; i < arity; ++i) {

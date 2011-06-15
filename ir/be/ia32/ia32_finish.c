@@ -58,7 +58,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 	ir_graph *irg;
 	ir_node *in1, *in2, *noreg, *nomem, *res;
 	ir_node *noreg_fp, *block;
-	dbg_info *dbg;
+	dbg_info *dbgi;
 	const arch_register_t *in1_reg, *in2_reg, *out_reg;
 
 	/* fix_am will solve this for AddressMode variants */
@@ -83,7 +83,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		return;
 
 	block = get_nodes_block(irn);
-	dbg   = get_irn_dbg_info(irn);
+	dbgi   = get_irn_dbg_info(irn);
 
 	/* generate the neg src2 */
 	if (is_ia32_xSub(irn)) {
@@ -93,7 +93,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 
 		assert(get_irn_mode(irn) != mode_T);
 
-		res = new_bd_ia32_xXor(dbg, block, noreg, noreg, nomem, in2, noreg_fp);
+		res = new_bd_ia32_xXor(dbgi, block, noreg, noreg, nomem, in2, noreg_fp);
 		size = get_mode_size_bits(op_mode);
 		entity = ia32_gen_fp_known_const(size == 32 ? ia32_SSIGN : ia32_DSIGN);
 		set_ia32_am_sc(res, entity);
@@ -106,7 +106,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		sched_add_before(irn, res);
 
 		/* generate the add */
-		res = new_bd_ia32_xAdd(dbg, block, noreg, noreg, nomem, res, in1);
+		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
 
 		/* exchange the add and the sub */
@@ -136,14 +136,14 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		}
 
 		if (flags_proj == NULL) {
-			res = new_bd_ia32_Neg(dbg, block, in2);
+			res = new_bd_ia32_Neg(dbgi, block, in2);
 			arch_set_irn_register(res, in2_reg);
 
 			/* add to schedule */
 			sched_add_before(irn, res);
 
 			/* generate the add */
-			res = new_bd_ia32_Add(dbg, block, noreg, noreg, nomem, res, in1);
+			res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, res, in1);
 			arch_set_irn_register(res, out_reg);
 			set_ia32_commutative(res);
 
@@ -165,15 +165,15 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			 *
 			 * a + -b = a + (~b + 1)  would set the carry flag IF a == b ...
 			 */
-			nnot = new_bd_ia32_Not(dbg, block, in2);
+			nnot = new_bd_ia32_Not(dbgi, block, in2);
 			arch_set_irn_register(nnot, in2_reg);
 			sched_add_before(irn, nnot);
 
-			stc = new_bd_ia32_Stc(dbg, block);
+			stc = new_bd_ia32_Stc(dbgi, block);
 			arch_set_irn_register(stc, &ia32_registers[REG_EFLAGS]);
 			sched_add_before(irn, stc);
 
-			adc = new_bd_ia32_Adc(dbg, block, noreg, noreg, nomem, nnot, in1, stc);
+			adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, stc);
 			arch_set_irn_register(adc, out_reg);
 			sched_add_before(irn, adc);
 
@@ -181,7 +181,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
 			arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
 
-			cmc = new_bd_ia32_Cmc(dbg, block, adc_flags);
+			cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
 			arch_set_irn_register(cmc, &ia32_registers[REG_EFLAGS]);
 			sched_add_before(irn, cmc);
 
@@ -287,14 +287,14 @@ static void assure_should_be_same_requirements(ir_node *node)
 		uses_out_reg_pos = -1;
 		for (i2 = 0; i2 < arity; ++i2) {
 			ir_node               *in     = get_irn_n(node, i2);
-			const arch_register_t *in_reg;
+			const arch_register_t *other_in_reg;
 
 			if (!mode_is_data(get_irn_mode(in)))
 				continue;
 
-			in_reg = arch_get_irn_register(in);
+			other_in_reg = arch_get_irn_register(in);
 
-			if (in_reg != out_reg)
+			if (other_in_reg != out_reg)
 				continue;
 
 			if (uses_out_reg != NULL && in != uses_out_reg) {

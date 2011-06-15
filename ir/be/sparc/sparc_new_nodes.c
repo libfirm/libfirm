@@ -82,7 +82,7 @@ static bool has_fp_conv_attr(const ir_node *node)
  */
 static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 {
-	const sparc_attr_t *attr;
+	const sparc_attr_t *sparc_attr;
 
 	switch (reason) {
 	case dump_node_opcode_txt:
@@ -97,12 +97,13 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			break;
 
 		arch_dump_reqs_and_registers(F, n);
-		attr = get_sparc_attr_const(n);
-		if (attr->immediate_value_entity) {
+		sparc_attr = get_sparc_attr_const(n);
+		if (sparc_attr->immediate_value_entity) {
 			ir_fprintf(F, "entity: %+F (offset %d)\n",
-			           attr->immediate_value_entity, attr->immediate_value);
+			           sparc_attr->immediate_value_entity,
+			           sparc_attr->immediate_value);
 		} else {
-			ir_fprintf(F, "immediate value: %d\n", attr->immediate_value);
+			ir_fprintf(F, "immediate value: %d\n", sparc_attr->immediate_value);
 		}
 		if (sparc_has_load_store_attr(n)) {
 			const sparc_load_store_attr_t *attr = get_sparc_load_store_attr_const(n);
@@ -371,7 +372,7 @@ static int cmp_attr_sparc_fp_conv(const ir_node *a, const ir_node *b)
 		return 1;
 
 	return attr_a->src_mode != attr_b->src_mode
-	    || attr_a->dest_mode != attr_b->dest_mode;;
+	    || attr_a->dest_mode != attr_b->dest_mode;
 }
 
 /* Include the generated constructor functions */

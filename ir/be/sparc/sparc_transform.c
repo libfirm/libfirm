@@ -64,7 +64,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static beabi_helper_env_t    *abihelper;
 static const arch_register_t *sp_reg = &sparc_registers[REG_SP];
 static const arch_register_t *fp_reg = &sparc_registers[REG_FRAME_POINTER];
-static calling_convention_t  *cconv  = NULL;
+static calling_convention_t  *current_cconv = NULL;
 static ir_mode               *mode_gp;
 static ir_mode               *mode_flags;
 static ir_mode               *mode_fp;
@@ -251,8 +251,8 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	assert(get_mode_size_bits(mode2) <= 32);
 
 	if (is_imm_encodeable(op2)) {
-		ir_node *new_op1   = be_transform_node(op1);
 		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
+		new_op1 = be_transform_node(op1);
 		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
 			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 		}
@@ -362,8 +362,8 @@ static ir_node *gen_helper_binopx(ir_node *node, match_flags_t match_flags,
 	assert(match_flags & MATCH_MODE_NEUTRAL);
 
 	if (is_imm_encodeable(op2)) {
-		ir_node *new_op1   = be_transform_node(op1);
 		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
+		new_op1 = be_transform_node(op1);
 		return new_binopx_imm(dbgi, block, new_op1, new_flags, NULL, immediate);
 	}
 	new_op2 = be_transform_node(op2);
@@ -994,7 +994,7 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	long             default_pn   = get_Cond_default_proj(node);
 	ir_entity       *entity;
 	ir_node         *table_address;
-	ir_node         *index;
+	ir_node         *idx;
 	ir_node         *load;
 	ir_node         *address;
 
@@ -1008,9 +1008,9 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	/* construct base address */
 	table_address = make_address(dbgi, block, entity, 0);
 	/* scale index */
-	index = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
+	idx = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
 	/* load from jumptable */
-	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, index,
+	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, idx,
 	                           get_irg_no_mem(current_ir_graph),
 	                           mode_gp);
 	address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
@@ -1211,7 +1211,7 @@ static ir_node *gen_Conv(ir_node *node)
 	ir_node  *op       = get_Conv_op(node);
 	ir_mode  *src_mode = get_irn_mode(op);
 	ir_mode  *dst_mode = get_irn_mode(node);
-	dbg_info *dbg      = get_irn_dbg_info(node);
+	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *new_op;
 
 	int src_bits = get_mode_size_bits(src_mode);
@@ -1230,21 +1230,21 @@ static ir_node *gen_Conv(ir_node *node)
 		if (mode_is_float(src_mode)) {
 			if (mode_is_float(dst_mode)) {
 				/* float -> float conv */
-				return create_fftof(dbg, block, new_op, src_mode, dst_mode);
+				return create_fftof(dbgi, block, new_op, src_mode, dst_mode);
 			} else {
 				/* float -> int conv */
 				if (!mode_is_signed(dst_mode))
 					panic("float to unsigned not implemented yet");
-				return create_ftoi(dbg, block, new_op, src_mode);
+				return create_ftoi(dbgi, block, new_op, src_mode);
 			}
 		} else {
 			/* int -> float conv */
 			if (src_bits < 32) {
-				new_op = gen_extension(dbg, block, new_op, src_mode);
+				new_op = gen_extension(dbgi, block, new_op, src_mode);
 			} else if (src_bits == 32 && !mode_is_signed(src_mode)) {
 				panic("unsigned to float not lowered!");
 			}
-			return create_itof(dbg, block, new_op, dst_mode);
+			return create_itof(dbgi, block, new_op, dst_mode);
 		}
 	} else if (src_mode == mode_b) {
 		panic("ConvB not lowered %+F", node);
@@ -1270,9 +1270,9 @@ static ir_node *gen_Conv(ir_node *node)
 		}
 
 		if (mode_is_signed(min_mode)) {
-			return gen_sign_extension(dbg, block, new_op, min_bits);
+			return gen_sign_extension(dbgi, block, new_op, min_bits);
 		} else {
-			return gen_zero_extension(dbg, block, new_op, min_bits);
+			return gen_zero_extension(dbgi, block, new_op, min_bits);
 		}
 	}
 }
@@ -1300,7 +1300,7 @@ static ir_type *sparc_get_between_type(void)
 	static ir_type *between_type  = NULL;
 	static ir_type *between_type0 = NULL;
 
-	if (cconv->omit_fp) {
+	if (current_cconv->omit_fp) {
 		if (between_type0 == NULL) {
 			between_type0
 				= new_type_class(new_id_from_str("sparc_between_type"));
@@ -1327,13 +1327,13 @@ static void create_stacklayout(ir_graph *irg)
 	int                n_params;
 
 	/* calling conventions must be decided by now */
-	assert(cconv != NULL);
+	assert(current_cconv != NULL);
 
 	/* construct argument type */
 	arg_type = new_type_struct(id_mangle_u(get_entity_ident(entity), new_id_from_chars("arg_type", 8)));
 	n_params = get_method_n_params(function_type);
 	for (p = 0; p < n_params; ++p) {
-		reg_or_stackslot_t *param = &cconv->parameters[p];
+		reg_or_stackslot_t *param = &current_cconv->parameters[p];
 		char                buf[128];
 		ident              *id;
 
@@ -1353,7 +1353,7 @@ static void create_stacklayout(ir_graph *irg)
 	layout->arg_type       = arg_type;
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
-	layout->sp_relative    = cconv->omit_fp;
+	layout->sp_relative    = current_cconv->omit_fp;
 
 	assert(N_FRAME_TYPES == 3);
 	layout->order[0] = layout->frame_type;
@@ -1382,7 +1382,7 @@ static ir_node *gen_Start(ir_node *node)
 	        arch_register_req_type_ignore);
 	/* function parameters in registers */
 	for (i = 0; i < get_method_n_params(function_type); ++i) {
-		const reg_or_stackslot_t *param = &cconv->parameters[i];
+		const reg_or_stackslot_t *param = &current_cconv->parameters[i];
 		if (param->reg0 != NULL) {
 			be_prolog_add_reg(abihelper, param->reg0,
 			                  arch_register_req_type_none);
@@ -1394,7 +1394,7 @@ static ir_node *gen_Start(ir_node *node)
 	}
 	/* we need the values of the callee saves (Note: non omit-fp mode has no
 	 * callee saves) */
-	if (cconv->omit_fp) {
+	if (current_cconv->omit_fp) {
 		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
 		size_t c;
 		for (c = 0; c < n_callee_saves; ++c) {
@@ -1458,16 +1458,15 @@ static ir_node *gen_Return(ir_node *node)
 	for (i = 0; i < n_res; ++i) {
 		ir_node                  *res_value     = get_Return_res(node, i);
 		ir_node                  *new_res_value = be_transform_node(res_value);
-		const reg_or_stackslot_t *slot          = &cconv->results[i];
+		const reg_or_stackslot_t *slot          = &current_cconv->results[i];
 		const arch_register_t    *reg           = slot->reg0;
 		assert(slot->reg1 == NULL);
 		be_epilog_add_reg(abihelper, reg, arch_register_req_type_none,
 		                  new_res_value);
 	}
 	/* callee saves */
-	if (cconv->omit_fp) {
+	if (current_cconv->omit_fp) {
 		size_t n_callee_saves = ARRAY_SIZE(omit_fp_callee_saves);
-		size_t i;
 		for (i = 0; i < n_callee_saves; ++i) {
 			const arch_register_t *reg   = omit_fp_callee_saves[i];
 			ir_node               *value
@@ -1899,7 +1898,7 @@ static ir_node *gen_Proj_Div(ir_node *node)
 
 static ir_node *get_frame_base(void)
 {
-	const arch_register_t *reg = cconv->omit_fp ? sp_reg : fp_reg;
+	const arch_register_t *reg = current_cconv->omit_fp ? sp_reg : fp_reg;
 	return be_prolog_get_reg_value(abihelper, reg);
 }
 
@@ -1938,7 +1937,7 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 	/* Proj->Proj->Start must be a method argument */
 	assert(get_Proj_proj(get_Proj_pred(node)) == pn_Start_T_args);
 
-	param = &cconv->parameters[pn];
+	param = &current_cconv->parameters[pn];
 
 	if (param->reg0 != NULL) {
 		/* argument transmitted in register */
@@ -2162,13 +2161,14 @@ void sparc_transform_graph(ir_graph *irg)
 
 	abihelper = be_abihelper_prepare(irg);
 	be_collect_stacknodes(abihelper);
-	cconv = sparc_decide_calling_convention(get_entity_type(entity), irg);
+	current_cconv
+		= sparc_decide_calling_convention(get_entity_type(entity), irg);
 	create_stacklayout(irg);
 
 	be_transform_graph(irg, NULL);
 
 	be_abihelper_finish(abihelper);
-	sparc_free_calling_convention(cconv);
+	sparc_free_calling_convention(current_cconv);
 
 	frame_type = get_irg_frame_type(irg);
 	if (get_type_state(frame_type) == layout_undefined)
