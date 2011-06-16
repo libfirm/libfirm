@@ -6,11 +6,13 @@
  * Copyright (C) 2011 Saarland University
  * Released under the LGPL
  */
+#include "config.h"
 
 #include <unistd.h>
 
 #include "lpp_cplex.h"
 #include "lpp_solvers.h"
+#include "lpp_gurobi.h"
 
 static void dummy_solver(lpp_t *lpp)
 {
@@ -47,7 +49,12 @@ static void segv_solver(lpp_t *lpp)
 }
 
 lpp_solver_t lpp_solvers[] = {
+#ifdef WITH_CPLEX
   { lpp_solve_cplex,   "cplex",   1 },
+#endif
+#ifdef WITH_GUROBI
+  { lpp_solve_gurobi,  "gurobi",  1 },
+#endif
   { dummy_solver,      "dummy",   2 },
   { segv_solver,       "segv",    2 },
   { NULL,              NULL,      0 }

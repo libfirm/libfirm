@@ -10,6 +10,8 @@
 
 #include "lpp.h"
 
+#ifdef WITH_CPLEX
 void lpp_solve_cplex(lpp_t *lpp);
+#endif
 
 #endif /*_LPP_CPLEX_H_*/

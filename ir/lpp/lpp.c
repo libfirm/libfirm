@@ -27,6 +27,7 @@
 #include "lpp_t.h"
 #include "lpp_comm.h"
 #include "lpp_solvers.h"
+#include "lpp_net.h"
 
 #define HASH_NAME_T(n) HASH_STR((n)->name, strlen((n)->name))
 
