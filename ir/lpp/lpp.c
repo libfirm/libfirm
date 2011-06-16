@@ -26,6 +26,7 @@
 #include "mps.h"
 #include "lpp_t.h"
 #include "lpp_comm.h"
+#include "lpp_solvers.h"
 
 #define HASH_NAME_T(n) HASH_STR((n)->name, strlen((n)->name))
 
@@ -582,3 +583,17 @@ void lpp_deserialize_stats(lpp_comm_t *comm, lpp_t *lpp)
 	lpp->objval     = lpp_readd(comm);
 	lpp->best_bound = lpp_readd(comm);
 }
+
+void lpp_solve(lpp_t *lpp, const char* host, const char* solver)
+{
+	if (host == NULL || strlen(host) == 0) {
+		lpp_solver_func_t* f = lpp_find_solver(solver);
+		if (f != NULL)
+			f(lpp);
+	}
+
+	else {
+		lpp_solve_net(lpp, host, solver);
+	}
+}
+

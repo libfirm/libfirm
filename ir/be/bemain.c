@@ -86,7 +86,7 @@ static be_options_t be_options = {
 	0,                                 /* try to omit frame pointer */
 	0,                                 /* create PIC code */
 	BE_VERIFY_WARN,                    /* verification level: warn */
-	"i44pc52.info.uni-karlsruhe.de",   /* ilp server */
+	"",                                /* ilp server */
 	"cplex",                           /* ilp solver */
 	0,                                 /* enable statistic event dumping */
 	"",                                /* print stat events */

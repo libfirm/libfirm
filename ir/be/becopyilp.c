@@ -34,6 +34,8 @@
 #include "bemodule.h"
 #include "error.h"
 
+#include "lpp.h"
+
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
@@ -229,7 +231,7 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 	if (solve_log)
 		lpp_set_log(ienv->lp, stdout);
 
-	lpp_solve_net(ienv->lp, options->ilp_server, options->ilp_solver);
+	lpp_solve(ienv->lp, options->ilp_server, options->ilp_solver);
 
 	//be_stat_ev_dbl("co_ilp_objval",     ienv->lp->objval);
 	//be_stat_ev_dbl("co_ilp_best_bound", ienv->lp->best_bound);

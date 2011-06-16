@@ -300,4 +300,12 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f);
  */
 #define lpp_unset_bound(lpp)          ((lpp)->set_bound = 0)
 
+/**
+ * Solve an ILP.
+ * @param lpp    The problem.
+ * @param host   The host to solve on.
+ * @param solver The solver to use.
+ */
+void lpp_solve(lpp_t *lpp, const char* host, const char* solver);
+
 #endif /* _LPP_H */

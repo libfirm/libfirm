@@ -213,6 +213,9 @@ static void cpx_solve(cpx_t *cpx) {
 					? CPX_PARAM_OBJLLIM : CPX_PARAM_OBJULIM), lpp->bound);
 	}
 
+	/* turn on the fancy messages :) */
+	// CPXsetintparam (cpx->env, CPX_PARAM_SCRIND, CPX_ON);
+
 	/* solve */
 	gettimeofday(&tvb, NULL);
 	cpx->status = CPXmipopt(cpx->env, cpx->prob);

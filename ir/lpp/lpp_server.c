@@ -44,7 +44,7 @@
 
 #include "lpp_t.h"
 #include "lpp_comm.h"
-#include "lpp_cplex.h"
+#include "lpp_solvers.h"
 
 #define MAX_JOBS 128
 
@@ -65,8 +65,6 @@ static int n_children = 0;
 
 extern char** environ;
 
-typedef void (solver_func_t)(lpp_t *lpp);
-
 typedef struct _job_t {
 	struct list_head list;
 	int id;
@@ -74,7 +72,7 @@ typedef struct _job_t {
 	pthread_t session;
 	lpp_comm_t *comm;
 	lpp_t *lpp;
-	solver_func_t *solver_func;
+	lpp_solver_func_t *solver_func;
 	time_t received;
 	int csock;
 } job_t;
@@ -114,7 +112,7 @@ static void initproctitle(int argc, char **argv) {
 	--title_length;
 }
 
-static void job_init(job_t *job, lpp_comm_t *comm, lpp_t *lpp, solver_func_t *solver_func)
+static void job_init(job_t *job, lpp_comm_t *comm, lpp_t *lpp, lpp_solver_func_t *solver_func)
 {
   /* TODO MAXJOBS */
   memset(job, 0, sizeof(job[0]));
@@ -159,64 +157,6 @@ static int passive_tcp(uint16_t port, int queue_len)
   }
 
   return s;
-}
-
-static void dummy_solver(lpp_t *lpp)
-{
-  int i;
-
-  for(i = 0; i < lpp->var_next; ++i) {
-    lpp->vars[i]->value = i;
-    lpp->vars[i]->value_kind = lpp_value_solution;
-  }
-
-  if(lpp->log)
-	  fprintf(lpp->log, "dummy solver exiting now.\n");
-
-  sleep(1);
-  lpp->sol_time = 0.0;
-  lpp->iterations = 0;
-  lpp->sol_state = lpp_optimal;
-}
-
-static void segv_solver(lpp_t *lpp)
-{
-  int i;
-
-  for(i = 0; i < lpp->var_next; ++i) {
-    lpp->vars[i]->value = i;
-    lpp->vars[i]->value_kind = lpp_value_solution;
-  }
-
-  if(lpp->log)
-	  fprintf(lpp->log, "segv dummy solver exiting now.\n");
-
-  sleep(1);
-  *((int *) 0) = 1;
-}
-
-#define DEFAULT_SOLVER lpp_solve_cplex
-
-struct {
-  solver_func_t *solver;
-  const char    *name;
-  int           n_instances;
-} solvers[] = {
-  { lpp_solve_cplex,   "cplex",   1 },
-  { dummy_solver,      "dummy",   2 },
-  { segv_solver,       "segv",    2 },
-};
-
-
-static solver_func_t *find_solver(const char *name)
-{
-  unsigned i;
-
-  for(i = 0; i < sizeof(solvers) / sizeof(solvers[0]); ++i)
-    if(strcmp(solvers[i].name, name) == 0)
-      return solvers[i].solver;
-
-  return NULL;
 }
 
 static void *solver_thread(void * data)
@@ -345,8 +285,8 @@ static int solve(lpp_comm_t *comm, job_t *job)
 
 static void *session(int fd)
 {
-	solver_func_t *solver = DEFAULT_SOLVER;
-	lpp_comm_t *comm      = lpp_comm_new(fd, LPP_BUFSIZE);
+	lpp_solver_func_t *solver = lpp_find_solver("dummy");
+	lpp_comm_t *comm          = lpp_comm_new(fd, LPP_BUFSIZE);
 
 	DBG((dbg, LEVEL_1, "starting session thread pid %d tid %d\n", getpid(), pthread_self()));
 	setproctitle("lpp_server [child]");
@@ -393,17 +333,20 @@ static void *session(int fd)
 
 			case LPP_CMD_SOLVER:
 				lpp_readbuf(comm, buf, sizeof(buf));
-				solver = find_solver(buf);
+				solver = lpp_find_solver(buf);
 				DBG((dbg, LEVEL_2, "setting solver to: %s\n", buf));
 				//lpp_send_res(comm, solver != NULL, "could not find solver: %s", buf);
 				break;
 
 			case LPP_CMD_SOLVERS:
 				{
-					int i, n = ARRAY_SIZE(solvers);
-					lpp_writel(comm, n);
-					for(i = 0; i < n; ++i)
-						lpp_writes(comm, solvers[i].name);
+					int i;
+
+					for(i = 0; lpp_solvers[i].solver != NULL; i++);
+					lpp_writel(comm, i);
+
+					for(i = 0; lpp_solvers[i].solver != NULL; i++)
+						lpp_writes(comm, lpp_solvers[i].name);
 					lpp_flush(comm);
 				}
 				break;
