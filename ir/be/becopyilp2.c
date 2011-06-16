@@ -46,8 +46,6 @@
  */
 #include "config.h"
 
-#ifdef WITH_ILP
-
 #include "bitset.h"
 #include "raw_bitset.h"
 #include "pdeq.h"
@@ -590,11 +588,3 @@ int co_solve_ilp2(copy_opt_t *co)
 
 	return sol_state == lpp_optimal;
 }
-
-#else /* WITH_ILP */
-
-static inline void only_that_you_can_compile_without_WITH_ILP_defined(void)
-{
-}
-
-#endif /* WITH_ILP */

@@ -4,11 +4,14 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
+#include "config.h"
 
 #include "lpp_cplex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef WITH_CPLEX
 
 
 #ifdef _WIN32
@@ -266,3 +269,5 @@ void lpp_solve_cplex(lpp_t *lpp) {
 	cpx_solve(cpx);
 	free_cpx(cpx);
 }
+
+#endif

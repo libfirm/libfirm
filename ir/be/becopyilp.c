@@ -37,8 +37,6 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
-#ifdef WITH_ILP
-
 #define DUMP_ILP 1
 #define DUMP_SOL 2
 
@@ -265,11 +263,3 @@ void free_ilp_env(ilp_env_t *ienv)
 	free_lpp(ienv->lp);
 	free(ienv);
 }
-
-#else /* WITH_ILP */
-
-static inline void only_that_you_can_compile_without_WITH_ILP_defined(void)
-{
-}
-
-#endif /* WITH_ILP */
