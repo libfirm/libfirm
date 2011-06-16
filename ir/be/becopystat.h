@@ -40,15 +40,11 @@ void copystat_add_heur_time(int time);
 void copystat_dump(ir_graph *irg);
 void copystat_dump_pretty(ir_graph *irg);
 
-#ifdef WITH_ILP
-
 void copystat_add_ilp_5_sec_costs(int costs);
 void copystat_add_ilp_30_sec_costs(int costs);
 void copystat_add_ilp_time(int time);
 void copystat_add_ilp_vars(int vars);
 void copystat_add_ilp_csts(int csts);
 void copystat_add_ilp_iter(int iters);
-
-#endif /* WITH_ILP */
 
 #endif

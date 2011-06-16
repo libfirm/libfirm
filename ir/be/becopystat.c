@@ -186,8 +186,6 @@ void copystat_add_heur_time(int time)
 	curr_vals[I_HEUR_TIME] += time;
 }
 
-#ifdef WITH_ILP
-
 void copystat_add_ilp_5_sec_costs(int costs)
 {
 	curr_vals[I_COPIES_5SEC] += costs;
@@ -212,8 +210,6 @@ void copystat_add_ilp_iter(int iters)
 {
 	curr_vals[I_ILP_ITER] += iters;
 }
-
-#endif /* WITH_ILP */
 
 /**
  * Opens a file named base.ext with the mode mode.

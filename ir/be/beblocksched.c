@@ -61,10 +61,8 @@
 #include "lc_opts.h"
 #include "lc_opts_enum.h"
 
-#ifdef WITH_ILP
-#include <lpp/lpp.h>
-#include <lpp/lpp_net.h>
-#endif /* WITH_ILP */
+#include "lpp.h"
+#include "lpp_net.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -77,9 +75,7 @@ static int algo = BLOCKSCHED_GREEDY;
 static const lc_opt_enum_int_items_t blockschedalgo_items[] = {
 	{ "naiv",   BLOCKSCHED_NAIV },
 	{ "greedy", BLOCKSCHED_GREEDY },
-#ifdef WITH_ILP
 	{ "ilp",    BLOCKSCHED_ILP },
-#endif /* WITH_ILP */
 	{ NULL,     0 }
 };
 
@@ -534,7 +530,6 @@ static ir_node **create_block_schedule_greedy(ir_graph *irg, ir_exec_freq *execf
  *
  */
 
-#ifdef WITH_ILP
 typedef struct ilp_edge_t {
 	ir_node *block;   /**< source block */
 	int     pos;      /**< number of cfg predecessor (target) */
@@ -712,7 +707,6 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 
 	return block_list;
 }
-#endif /* WITH_ILP */
 
 /*
  *  __  __       _
@@ -740,10 +734,8 @@ ir_node **be_create_block_schedule(ir_graph *irg)
 	case BLOCKSCHED_GREEDY:
 	case BLOCKSCHED_NAIV:
 		return create_block_schedule_greedy(irg, execfreqs);
-#ifdef WITH_ILP
 	case BLOCKSCHED_ILP:
 		return create_block_schedule_ilp(irg, execfreqs);
-#endif /* WITH_ILP */
 	}
 
 	panic("unknown blocksched algo");

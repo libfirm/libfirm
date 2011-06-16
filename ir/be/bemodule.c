@@ -116,9 +116,7 @@ void be_init_modules(void)
 	be_init_copyheur4();
 	be_init_copyheur();
 	be_init_copyheur2();
-#ifdef WITH_ILP
 	be_init_copyilp2();
-#endif
 	be_init_pbqp_coloring();
 	be_init_copynone();
 	be_init_copystat();
@@ -137,9 +135,7 @@ void be_init_modules(void)
 	be_init_arch_amd64();
 	be_init_arch_TEMPLATE();
 
-#ifdef WITH_ILP
 	be_init_copyilp();
-#endif /* WITH_ILP */
 
 #if PLUGIN_IR_BE_STA
 	be_init_arch_sta();
