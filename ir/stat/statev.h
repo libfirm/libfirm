@@ -30,26 +30,26 @@
 
 #ifdef DISABLE_STATEV
 
-#define stat_ev_do(expr)
-#define stat_ev_enabled             0
-#define stat_ev_if                  if (0)
-#define stat_ev_dbl(name, val)
-#define stat_ev_int(name, val)
-#define stat_ev(name)
-#define stat_ev_emit(name, value)
+#define stat_ev_do(expr)                         0
+#define stat_ev_enabled                          0
+#define stat_ev_if                               if (0)
+#define stat_ev_dbl(name, val)                   ((void)0)
+#define stat_ev_int(name, val)                   ((void)0)
+#define stat_ev(name)                            ((void)0)
+#define stat_ev_emit(name, value)                ((void)0)
 
-#define stat_ev_cnt_decl(var)
-#define stat_ev_cnt_inc(var)
-#define stat_ev_cnt_done(name, var)
-#define stat_ev_tim_push()
-#define stat_ev_tim_pop(name)
+#define stat_ev_cnt_decl(var)                    ((void)0)
+#define stat_ev_cnt_inc(var)                     ((void)0)
+#define stat_ev_cnt_done(name, var)              ((void)0)
+#define stat_ev_tim_push()                       ((void)0)
+#define stat_ev_tim_pop(name)                    ((void)0)
 
-#define stat_ev_ctx_push(key)
-#define stat_ev_ctx_push_str(key, str)
-#define stat_ev_ctx_push_fmt(key, fmt, value)
-#define stat_ev_ctx_push_fobj(key, firm_object)
-#define stat_ev_ctx_pop(key)
-#define stat_ev_flush()
+#define stat_ev_ctx_push(key)                    ((void)0)
+#define stat_ev_ctx_push_str(key, str)           ((void)0)
+#define stat_ev_ctx_push_fmt(key, fmt, value)    ((void)0)
+#define stat_ev_ctx_push_fobj(key, firm_object)  ((void)0)
+#define stat_ev_ctx_pop(key)                     ((void)0)
+#define stat_ev_flush()                          ((void)0)
 
 #else
 
