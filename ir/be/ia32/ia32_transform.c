@@ -2837,6 +2837,8 @@ static ir_node *create_Switch(ir_node *node)
 	set_ia32_op_type(new_node, ia32_AddrModeS);
 	set_ia32_ls_mode(new_node, mode_Iu);
 	SET_IA32_ORIG_NODE(new_node, node);
+	// FIXME This seems wrong. GCC uses PIC for switch on OS X.
+	get_ia32_attr(new_node)->data.am_sc_no_pic_adjust = true;
 
 	return new_node;
 }
