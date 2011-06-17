@@ -597,6 +597,16 @@ static ir_alias_relation _get_alias_relation(
 	class1 = get_base_sc(mod1);
 	class2 = get_base_sc(mod2);
 
+	/* struct-access cannot alias with variables */
+	if (ent1 == NULL && ent2 != NULL && is_compound_type(get_entity_owner(ent2))
+		&& (class1 == ir_sc_globalvar || class1 == ir_sc_localvar || class1 == ir_sc_tls || class1 == ir_sc_globaladdr)) {
+		return ir_no_alias;
+	}
+	if (ent2 == NULL && ent1 != NULL && is_compound_type(get_entity_owner(ent1))
+		&& (class2 == ir_sc_globalvar || class2 == ir_sc_localvar || class2 == ir_sc_tls || class2 == ir_sc_globaladdr)) {
+		return ir_no_alias;
+	}
+
 	if (class1 == ir_sc_pointer || class2 == ir_sc_pointer) {
 		/* swap pointer class to class1 */
 		if (class2 == ir_sc_pointer) {
