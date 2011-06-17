@@ -675,6 +675,9 @@ static void ia32_emitf(const ir_node *node, const char *fmt, ...)
 end_of_mods:
 
 		switch (*fmt++) {
+			arch_register_t const *reg;
+			ir_node         const *imm;
+
 			case '%':
 				be_emit_char('%');
 				break;
@@ -688,17 +691,13 @@ emit_AM:
 						ia32_emit_am(node);
 						break;
 
-					case 'R': {
-						const arch_register_t *reg = va_arg(ap, const arch_register_t*);
+					case 'R':
+						reg = va_arg(ap, const arch_register_t*);
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
 							goto emit_AM;
 						} else {
-							if (mod & EMIT_ALTERNATE_AM)
-								be_emit_char('*');
-							emit_register(reg, NULL);
+							goto emit_R;
 						}
-						break;
-					}
 
 					case 'S':
 						if (get_ia32_op_type(node) == ia32_AddrModeS) {
@@ -714,33 +713,27 @@ emit_AM:
 				break;
 			}
 
-			case 'D': {
-				unsigned               pos;
-				const arch_register_t *reg;
-
+			case 'D':
 				if (*fmt < '0' || '9' <= *fmt)
 					goto unknown;
-
-				pos = *fmt++ - '0';
-				reg = get_out_reg(node, pos);
-				emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
-				break;
-			}
+				reg = get_out_reg(node, *fmt++ - '0');
+				goto emit_R;
 
 			case 'I':
+				imm = node;
+emit_I:
 				if (!(mod & EMIT_ALTERNATE_AM))
 					be_emit_char('$');
-				emit_ia32_Immediate_no_prefix(node);
+				emit_ia32_Immediate_no_prefix(imm);
 				break;
 
 			case 'L':
 				ia32_emit_cfop_target(node);
 				break;
 
-			case 'M': {
+			case 'M':
 				ia32_emit_mode_suffix_mode(get_ia32_ls_mode(node));
 				break;
-			}
 
 			case 'P': {
 				ia32_condition_code_t cc = va_arg(ap, ia32_condition_code_t);
@@ -748,8 +741,11 @@ emit_AM:
 				break;
 			}
 
-			case 'R': {
-				const arch_register_t *reg = va_arg(ap, const arch_register_t*);
+			case 'R':
+				reg = va_arg(ap, const arch_register_t*);
+emit_R:
+				if (mod & EMIT_ALTERNATE_AM)
+					be_emit_char('*');
 				if (mod & EMIT_HIGH_REG) {
 					emit_8bit_register_high(reg);
 				} else if (mod & EMIT_LOW_REG) {
@@ -758,31 +754,22 @@ emit_AM:
 					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
 				}
 				break;
-			}
 
 emit_S:
 			case 'S': {
-				unsigned       pos;
-				const ir_node *in;
+				unsigned pos;
 
 				if (*fmt < '0' || '9' <= *fmt)
 					goto unknown;
 
 				pos = *fmt++ - '0';
-				in  = get_irn_n(node, pos);
-				if (is_ia32_Immediate(in)) {
-					if (!(mod & EMIT_ALTERNATE_AM))
-						be_emit_char('$');
-					emit_ia32_Immediate_no_prefix(in);
+				imm = get_irn_n(node, pos);
+				if (is_ia32_Immediate(imm)) {
+					goto emit_I;
 				} else {
-					const arch_register_t *reg;
-
-					if (mod & EMIT_ALTERNATE_AM)
-						be_emit_char('*');
 					reg = get_in_reg(node, pos);
-					emit_register(reg, mod & EMIT_RESPECT_LS ? get_ia32_ls_mode(node) : NULL);
+					goto emit_R;
 				}
-				break;
 			}
 
 			case 's': {
