@@ -756,7 +756,7 @@ class InternalName(Expr):
     yourself but the parser provides a
     :meth:`~jinja2.parser.Parser.free_identifier` method that creates
     a new identifier for you.  This identifier is not available from the
-    template and is not threated specially by the compiler.
+    template and is not treated specially by the compiler.
     """
     fields = ('name',)
 

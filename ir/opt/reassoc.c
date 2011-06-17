@@ -941,7 +941,7 @@ int optimize_reassociation(ir_graph *irg)
 
 	/*
 	 * Calculate loop info, so we could identify loop-invariant
-	 * code and threat it like a constant.
+	 * code and treat it like a constant.
 	 * We only need control flow loops here but can handle generic
 	 * INTRA info as well.
 	 */
