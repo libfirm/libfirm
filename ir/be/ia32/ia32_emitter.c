@@ -1128,8 +1128,7 @@ static void emit_ia32_SwitchJmp(const ir_node *node)
 	ir_entity *jump_table = get_ia32_am_sc(node);
 	long       default_pn = get_ia32_default_pn(node);
 
-	ia32_emitf(node, "\tjmp *%AM\n", node);
-
+	ia32_emitf(node, "\tjmp %*AM\n");
 	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
 }
 
