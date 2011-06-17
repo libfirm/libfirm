@@ -255,13 +255,7 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 		long pn     = get_Proj_proj(proj);
 		long new_pn = pn - delta;
 		if (pn == default_pn) {
-			/* we might have to choose a new default_pn */
-			if (pn < env->switch_max) {
-				new_pn = env->switch_max + 1;
-				set_Cond_default_proj(cond, new_pn);
-			} else {
-				new_pn = default_pn;
-			}
+			set_Cond_default_proj(cond, new_pn);
 			ARR_APP1(ir_node*, default_preds, proj);
 		}
 
