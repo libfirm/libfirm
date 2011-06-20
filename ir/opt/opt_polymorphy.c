@@ -91,7 +91,7 @@ static ir_type *get_dynamic_type(ir_node *ptr)
 			ptr = get_Confirm_value(ptr);
 			continue;
 		default:
-			;
+			break;
 		}
 		break;
 	}

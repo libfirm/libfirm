@@ -1678,7 +1678,7 @@ static void do_load_store_optimize(ir_node *n, void *env)
 		break;
 
 	default:
-		;
+		break;
 	}
 }  /* do_load_store_optimize */
 
@@ -2196,15 +2196,15 @@ static void do_dfs(ir_graph *irg, loop_env *env)
 		ir_node *pred = get_Block_cfgpred(endblk, i);
 
 		pred = skip_Proj(pred);
-		if (is_Return(pred))
+		if (is_Return(pred)) {
 			dfs(get_Return_mem(pred), env);
-		else if (is_Raise(pred))
+		} else if (is_Raise(pred)) {
 			dfs(get_Raise_mem(pred), env);
-		else if (is_fragile_op(pred))
+		} else if (is_fragile_op(pred)) {
 			dfs(get_fragile_op_mem(pred), env);
-		else if (is_Bad(pred))
-			/* ignore non-optimized block predecessor */;
-		else {
+		} else if (is_Bad(pred)) {
+			/* ignore non-optimized block predecessor */
+		} else {
 			assert(0 && "Unknown EndBlock predecessor");
 		}
 	}

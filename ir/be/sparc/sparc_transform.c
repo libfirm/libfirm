@@ -72,6 +72,69 @@ static ir_mode               *mode_fp2;
 //static ir_mode               *mode_fp4;
 static pmap                  *node_to_stack;
 
+static const arch_register_t *const caller_saves[] = {
+	&sparc_registers[REG_G1],
+	&sparc_registers[REG_G2],
+	&sparc_registers[REG_G3],
+	&sparc_registers[REG_G4],
+	&sparc_registers[REG_O0],
+	&sparc_registers[REG_O1],
+	&sparc_registers[REG_O2],
+	&sparc_registers[REG_O3],
+	&sparc_registers[REG_O4],
+	&sparc_registers[REG_O5],
+
+	&sparc_registers[REG_F0],
+	&sparc_registers[REG_F1],
+	&sparc_registers[REG_F2],
+	&sparc_registers[REG_F3],
+	&sparc_registers[REG_F4],
+	&sparc_registers[REG_F5],
+	&sparc_registers[REG_F6],
+	&sparc_registers[REG_F7],
+	&sparc_registers[REG_F8],
+	&sparc_registers[REG_F9],
+	&sparc_registers[REG_F10],
+	&sparc_registers[REG_F11],
+	&sparc_registers[REG_F12],
+	&sparc_registers[REG_F13],
+	&sparc_registers[REG_F14],
+	&sparc_registers[REG_F15],
+	&sparc_registers[REG_F16],
+	&sparc_registers[REG_F17],
+	&sparc_registers[REG_F18],
+	&sparc_registers[REG_F19],
+	&sparc_registers[REG_F20],
+	&sparc_registers[REG_F21],
+	&sparc_registers[REG_F22],
+	&sparc_registers[REG_F23],
+	&sparc_registers[REG_F24],
+	&sparc_registers[REG_F25],
+	&sparc_registers[REG_F26],
+	&sparc_registers[REG_F27],
+	&sparc_registers[REG_F28],
+	&sparc_registers[REG_F29],
+	&sparc_registers[REG_F30],
+	&sparc_registers[REG_F31],
+};
+
+static const arch_register_t *const omit_fp_callee_saves[] = {
+	&sparc_registers[REG_L0],
+	&sparc_registers[REG_L1],
+	&sparc_registers[REG_L2],
+	&sparc_registers[REG_L3],
+	&sparc_registers[REG_L4],
+	&sparc_registers[REG_L5],
+	&sparc_registers[REG_L6],
+	&sparc_registers[REG_L7],
+	&sparc_registers[REG_I0],
+	&sparc_registers[REG_I1],
+	&sparc_registers[REG_I2],
+	&sparc_registers[REG_I3],
+	&sparc_registers[REG_I4],
+	&sparc_registers[REG_I5],
+};
+
 static inline bool mode_needs_gp_reg(ir_mode *mode)
 {
 	if (mode_is_int(mode) || mode_is_reference(mode)) {
@@ -1554,16 +1617,16 @@ static ir_node *gen_Call(ir_node *node)
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
 	ir_type         *type         = get_Call_type(node);
 	size_t           n_params     = get_Call_n_params(node);
-	size_t           n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
 	/* max inputs: memory, callee, register arguments */
-	int              max_inputs   = 2 + n_param_regs;
-	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
 	struct obstack  *obst         = be_get_be_obst(irg);
-	const arch_register_req_t **in_req
-		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
 	calling_convention_t *cconv
 		= sparc_decide_calling_convention(type, NULL);
+	size_t           n_param_regs = cconv->n_param_regs;
+	unsigned         max_inputs   = 2 + n_param_regs;
+	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
+	const arch_register_req_t **in_req
+		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
 	int              in_arity     = 0;
 	int              sync_arity   = 0;
 	int              n_caller_saves
@@ -1648,7 +1711,7 @@ static ir_node *gen_Call(ir_node *node)
 		set_irn_pinned(str, op_pin_state_floats);
 		sync_ins[sync_arity++] = str;
 	}
-	assert(in_arity <= max_inputs);
+	assert(in_arity <= (int)max_inputs);
 
 	/* construct memory input */
 	if (sync_arity == 0) {

@@ -107,7 +107,7 @@ static void emit(FILE *file, const unsigned char *buffer, size_t len)
 		size_t i2;
 		fputs("\t.byte ", file);
 		for (i2 = i; i2 < i + 30 && i2 < len; ++i2) {
-			fprintf(file, "0x%02X", buffer[i2]);
+			fprintf(file, "0x%02X", (unsigned)buffer[i2]);
 		}
 		i = i2;
 		fputs("\n", file);

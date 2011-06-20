@@ -325,7 +325,7 @@ void set_type_alignment_bytes(ir_type *tp, unsigned align)
 
 const char *get_type_state_name(ir_type_state s)
 {
-#define X(a)    case a: return #a;
+#define X(a)    case a: return #a
 	switch (s) {
 		X(layout_undefined);
 		X(layout_fixed);

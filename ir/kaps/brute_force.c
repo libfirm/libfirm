@@ -337,7 +337,6 @@ static void back_propagate_brute_force(pbqp_t *pbqp)
 				break;
 			default:
 				panic("Only nodes with degree one or two should be in this bucket");
-				break;
 		}
 	}
 }

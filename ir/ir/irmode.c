@@ -567,7 +567,6 @@ int smaller_mode(const ir_mode *sm, const ir_mode *lm)
 				}
 				return sm_bits <= lm_bits;
 			}
-			break;
 
 		case irms_float_number:
 			/* int to float works if the float is large enough */

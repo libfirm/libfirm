@@ -31,7 +31,7 @@
 /* We define a generic dummy unit */
 be_execution_unit_t be_machine_execution_units_DUMMY[1];
 
-be_execution_unit_type_t be_machine_execution_unit_types[] = {
+static be_execution_unit_type_t be_machine_execution_unit_types[] = {
 	{ 1, 1, "DUMMY", be_machine_execution_units_DUMMY },
 };
 

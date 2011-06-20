@@ -431,7 +431,6 @@ static ir_region *new_SwitchCase(struct obstack *obst, ir_region_kind type, ir_r
 	reg->succ[0] = exit;
 
 	DEBUG_ONLY({
-		size_t i;
 		DB((dbg, LEVEL_2, " Created %s(%u)\n", reg->type == ir_rk_Switch ? "Switch" : "Case", reg->nr));
 		for (i = 1; i < ARR_LEN(reg->parts); ++i) {
 			DB((dbg, LEVEL_2, "  Case(%lu)\n", reg->parts[i].region->nr));
@@ -841,7 +840,7 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 	/* check for Switch, case */
 	if (k > 0) {
 		ir_region *rexit = NULL;
-		size_t i, p = 0;
+		size_t i, pos = 0;
 		nset = NULL; nset_len = 0;
 		for (i = k; i > 0;) {
 			n = get_region_succ(node, i--);
@@ -849,12 +848,12 @@ static ir_region *acyclic_region_type(struct obstack *obst, ir_region *node)
 			if (get_region_n_succs(n) != 1) {
 				/* must be the exit */
 				rexit = n;
-				++p;
-				if (p > 1)
+				++pos;
+				if (pos > 1)
 					break;
 			}
 		}
-		if (p <= 1) {
+		if (pos <= 1) {
 			ir_region_kind kind = ir_rk_Case;
 			ir_region *pos_exit_1 = NULL;
 			ir_region *pos_exit_2 = NULL;

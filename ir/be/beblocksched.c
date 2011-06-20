@@ -385,7 +385,7 @@ static void pick_block_successor(blocksched_entry_t *entry, blocksched_env_t *en
 				break;
 			}
 			succ_entry = succ_entry->prev;
-		};
+		}
 
 		if (irn_visited(succ_entry->block))
 			continue;

@@ -136,8 +136,8 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
 	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
 
-	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
-	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
+	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", &be_options.ilp_server, sizeof(be_options.ilp_server)),
+	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", &be_options.ilp_solver, sizeof(be_options.ilp_solver)),
 	LC_OPT_LAST
 };
 
@@ -573,7 +573,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		/* set the current graph (this is important for several firm functions) */
 		current_ir_graph = irg;
 
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			stat_ev_ctx_push_fobj("bemain_irg", irg);
 			be_stat_ev("bemain_insns_start", be_count_insns(irg));
 			be_stat_ev("bemain_blocks_start", be_count_blocks(irg));
@@ -704,7 +704,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_sched_verify(irg, be_options.verify_option);
 		be_timer_pop(T_VERIFY);
 
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_costs_before_ra",
 					be_estimate_irg_costs(irg, birg->exec_freq));
 			be_stat_ev("bemain_insns_before_ra", be_count_insns(irg));
@@ -740,7 +740,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_FINAL, irg, "finish");
 
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			be_stat_ev("bemain_insns_finish", be_count_insns(irg));
 			be_stat_ev("bemain_blocks_finish", be_count_blocks(irg));
 		}
@@ -850,7 +850,7 @@ void be_main(FILE *file_handle, const char *cup_name)
 	if (be_options.timing == BE_TIME_ON) {
 		ir_timer_stop(t);
 		ir_timer_leave_high_priority();
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			stat_ev_dbl("bemain_backend_time", ir_timer_elapsed_msec(t));
 		} else {
 			double val = ir_timer_elapsed_usec(t) / 1000.0;

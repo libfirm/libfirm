@@ -775,7 +775,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 		return;
 	}
 
-	if (exp_val > a->desc.mantissa_size) {
+	if (exp_val > (long)a->desc.mantissa_size) {
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
 
@@ -936,7 +936,7 @@ long double fc_val_to_ieee754(const fp_value *val)
 	fp_value *value;
 	fp_value *temp = NULL;
 
-	int byte_offset;
+	unsigned byte_offset;
 
 	uint32_t sign;
 	uint32_t exponent;
@@ -1338,7 +1338,7 @@ int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc
 	if (0 < v && v < (1 << desc->exponent_size) - 1) {
 		/* exponent can be encoded, now check the mantissa */
 		v = value->desc.mantissa_size + ROUNDING_BITS - sc_get_lowest_set_bit(_mant(value));
-		return v <= desc->mantissa_size;
+		return v <= (int)desc->mantissa_size;
 	}
 	return 0;
 }

@@ -67,6 +67,35 @@ static arm_isa_t             *isa;
 
 static pmap                  *node_to_stack;
 
+static const arch_register_t *const callee_saves[] = {
+	&arm_registers[REG_R4],
+	&arm_registers[REG_R5],
+	&arm_registers[REG_R6],
+	&arm_registers[REG_R7],
+	&arm_registers[REG_R8],
+	&arm_registers[REG_R9],
+	&arm_registers[REG_R10],
+	&arm_registers[REG_R11],
+	&arm_registers[REG_LR],
+};
+
+static const arch_register_t *const caller_saves[] = {
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3],
+	&arm_registers[REG_LR],
+
+	&arm_registers[REG_F0],
+	&arm_registers[REG_F1],
+	&arm_registers[REG_F2],
+	&arm_registers[REG_F3],
+	&arm_registers[REG_F4],
+	&arm_registers[REG_F5],
+	&arm_registers[REG_F6],
+	&arm_registers[REG_F7],
+};
+
 static bool mode_needs_gp_reg(ir_mode *mode)
 {
 	return mode_is_int(mode) || mode_is_reference(mode);
@@ -395,7 +424,7 @@ static ir_node *gen_int_binop(ir_node *node, match_flags_t flags,
 	}
 
 	if (try_encode_as_immediate(op2, &imm)) {
-		ir_node *new_op1 = be_transform_node(op1);
+		new_op1 = be_transform_node(op1);
 		return factory->new_binop_imm(dbgi, block, new_op1, imm.imm_8, imm.rot);
 	}
 	new_op2 = be_transform_node(op2);
@@ -1635,9 +1664,9 @@ static ir_node *gen_Unknown(ir_node *node)
 	/* just produce a 0 */
 	ir_mode *mode = get_irn_mode(node);
 	if (mode_is_float(mode)) {
-		ir_tarval *tv   = get_mode_null(mode);
-		ir_node   *node = new_bd_arm_fConst(dbgi, new_block, tv);
-		return node;
+		ir_tarval *tv     = get_mode_null(mode);
+		ir_node   *fconst = new_bd_arm_fConst(dbgi, new_block, tv);
+		return fconst;
 	} else if (mode_needs_gp_reg(mode)) {
 		return create_const_graph_value(dbgi, new_block, 0);
 	}
@@ -1825,7 +1854,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_type              *type         = get_Call_type(node);
 	calling_convention_t *cconv        = arm_decide_calling_convention(NULL, type);
 	size_t                n_params     = get_Call_n_params(node);
-	size_t                n_param_regs = sizeof(param_regs)/sizeof(param_regs[0]);
+	size_t                n_param_regs = cconv->n_reg_params;
 	/* max inputs: memory, callee, register arguments */
 	int                   max_inputs   = 2 + n_param_regs;
 	ir_node             **in           = ALLOCAN(ir_node*, max_inputs);

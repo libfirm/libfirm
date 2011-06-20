@@ -67,25 +67,25 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
 #define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v) \
   ir_printf("In %e:\na %= %n && b %= %n  ==>  a %= b == %s\n", \
     get_irg_entity(current_ir_graph), \
-    l_relation, l_bound, r_relation, r_bound, relation, v);
+    l_relation, l_bound, r_relation, r_bound, relation, v)
 
 /* right side */
 #define DBG_OUT_R(r_relation, r_bound, left, relation, right, v) \
   ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
     get_irg_entity(current_ir_graph), \
-    r_relation, r_bound, left, relation, right, v);
+    r_relation, r_bound, left, relation, right, v)
 
 /* left side */
 #define DBG_OUT_L(l_relation, l_bound, left, relation, right, v) \
   ir_printf("In %e:\na %= %n ==>  %n %= %n == %s\n", \
     get_irg_entity(current_ir_graph), \
-    l_relation, l_bound, left, relation, right, v);
+    l_relation, l_bound, left, relation, right, v)
 
 #else
 
-#define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v)
-#define DBG_OUT_R(r_relation, r_bound, left, relation, right, v)
-#define DBG_OUT_L(l_relation, l_bound, left, relation, right, v)
+#define DBG_OUT_TR(l_relation, l_bound, r_relation, r_bound, relation, v)  (void)0
+#define DBG_OUT_R(r_relation, r_bound, left, relation, right, v)  (void)0
+#define DBG_OUT_L(l_relation, l_bound, left, relation, right, v)  (void)0
 
 #endif /* DEBUG_CONFIRM */
 
@@ -97,7 +97,7 @@ static tarval *compare_iv_dbg(const interval_t *l_iv, const interval_t *r_iv, ir
  */
 FIRM_API int value_not_zero(const ir_node *n, ir_node_cnst_ptr *confirm)
 {
-#define RET_ON(x)  if (x) { *confirm = n; return 1; }; break
+#define RET_ON(x)  if (x) { *confirm = n; return 1; } break
 
 	ir_tarval *tv;
 	ir_mode *mode = get_irn_mode(n);

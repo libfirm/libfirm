@@ -30,9 +30,7 @@
 
 #ifdef DISABLE_STATEV
 
-#define stat_ev_do(expr)                         0
 #define stat_ev_enabled                          0
-#define stat_ev_if                               if (0)
 #define stat_ev_dbl(name, val)                   ((void)0)
 #define stat_ev_int(name, val)                   ((void)0)
 #define stat_ev(name)                            ((void)0)
@@ -131,9 +129,6 @@ static inline void stat_ev_tim_pop(const char *name) {
 #define stat_ev_cnt_decl(var)       int stat_ev_cnt_var_ ## var = 0
 #define stat_ev_cnt_inc(var)        do { ++stat_ev_cnt_var_ ## var; } while(0)
 #define stat_ev_cnt_done(var, name) stat_ev_emit((name), stat_ev_cnt_var_ ## var)
-
-#define stat_ev_do(expr)            (stat_ev_enabled ? ((expr), 1) : 0)
-#define stat_ev_if                  if (stat_ev_enabled)
 
 /**
  * Initialize the stat ev machinery.

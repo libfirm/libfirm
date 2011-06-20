@@ -47,7 +47,7 @@
 #include "timing.h"
 
 pbqp_edge_t **edge_bucket;
-pbqp_edge_t **rm_bucket;
+static pbqp_edge_t **rm_bucket;
 pbqp_node_t **node_buckets[4];
 pbqp_node_t **reduced_bucket = NULL;
 pbqp_node_t  *merged_node = NULL;
@@ -271,7 +271,6 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 	unsigned       *mapping;
 	unsigned        src_len;
 	unsigned        tgt_len;
-	unsigned        src_index;
 	unsigned        tgt_index;
 	unsigned        edge_index;
 	unsigned        edge_len;
@@ -296,6 +295,7 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 	/* Check that each column has at most one zero entry. */
 	for (tgt_index = 0; tgt_index < tgt_len; ++tgt_index) {
 		unsigned onlyOneZero = 0;
+		unsigned src_index;
 
 		if (tgt_vec->entries[tgt_index].data == INF_COSTS)
 			continue;
@@ -343,7 +343,6 @@ static void merge_source_into_target(pbqp_t *pbqp, pbqp_edge_t *edge)
 		vector_t      *other_vec;
 		unsigned       other_len;
 		unsigned       other_index;
-		unsigned       tgt_index;
 
 		assert(old_edge);
 		if (old_edge == edge)
@@ -435,7 +434,6 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 	unsigned        src_len;
 	unsigned        tgt_len;
 	unsigned        src_index;
-	unsigned        tgt_index;
 	unsigned        edge_index;
 	unsigned        edge_len;
 
@@ -459,6 +457,7 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 	/* Check that each row has at most one zero entry. */
 	for (src_index = 0; src_index < src_len; ++src_index) {
 		unsigned onlyOneZero = 0;
+		unsigned tgt_index;
 
 		if (src_vec->entries[src_index].data == INF_COSTS)
 			continue;
@@ -506,7 +505,6 @@ static void merge_target_into_source(pbqp_t *pbqp, pbqp_edge_t *edge)
 		vector_t      *other_vec;
 		unsigned       other_len;
 		unsigned       other_index;
-		unsigned       src_index;
 
 		assert(old_edge);
 
@@ -967,7 +965,6 @@ void back_propagate(pbqp_t *pbqp)
 				break;
 			default:
 				panic("Only nodes with degree one or two should be in this bucket");
-				break;
 		}
 	}
 }

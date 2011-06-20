@@ -27,7 +27,6 @@
 #include "lc_opts.h"
 #include "list.h"
 
-#include "lc_common_t.h"
 #include "lc_defines.h"
 
 typedef struct {

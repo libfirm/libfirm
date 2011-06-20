@@ -91,11 +91,12 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 					}
 				} else if (is_Sel(ptr) && get_irp_callee_info_state() == irg_callee_info_consistent) {
 					/* is be a polymorphic call but callee information is available */
-					int i, n_params = get_Call_n_params(succ);
+					int n_params = get_Call_n_params(succ);
+					int c;
 
 					/* simply look into ALL possible callees */
-					for (i = get_Call_n_callees(succ) - 1; i >= 0; --i) {
-						meth_ent = get_Call_callee(succ, i);
+					for (c = get_Call_n_callees(succ) - 1; c >= 0; --c) {
+						meth_ent = get_Call_callee(succ, c);
 
 						/* unknown_entity is used to signal that we don't know what is called */
 						if (meth_ent == unknown_entity) {

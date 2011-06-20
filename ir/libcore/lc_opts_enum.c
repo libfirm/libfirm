@@ -15,17 +15,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#include <malloc.h>
-#endif
-
 #include "lc_opts_t.h"
 #include "lc_opts_enum.h"
+#include "xmalloc.h"
 
 static const char *delim = " \t|,";
 
 #define DECL_CB(N, op) \
-int lc_opt_enum_ ## N ## _cb(LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_t type), void *data, size_t len, ...) \
+int lc_opt_enum_ ## N ## _cb(const char *name, lc_opt_type_t type, void *data, size_t len, ...) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data; \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
@@ -36,6 +33,8 @@ int lc_opt_enum_ ## N ## _cb(LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_
 	const char *arg; \
 	int res = 0; \
  \
+	(void) name; \
+	(void) type; \
 	va_start(args, len); \
 	arg = va_arg(args, const char *); \
 	va_end(args); \
@@ -72,7 +71,7 @@ DECL_CB(const_ptr, =)
 DECL_CB(func_ptr, =)
 
 #define DECL_DUMP(T, N, cond) \
-int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_t type), void *data, LC_UNUSED(size_t len)) \
+int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*)data;       \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
@@ -80,6 +79,9 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name),
 	TYPE(value) = *var->value; \
 	int i; \
 	size_t l = strlen(buf); \
+	(void) name; \
+	(void) type; \
+	(void) len; \
  \
 	if (l >= n) \
 		return (int)l; \
@@ -104,13 +106,16 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, LC_UNUSED(const char *name),
 
 
 #define DECL_DUMP_VALS(T, N) \
-int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, LC_UNUSED(const char *name), LC_UNUSED(lc_opt_type_t type), void *data, LC_UNUSED(size_t len)) \
+int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len) \
 { \
 	lc_opt_enum_ ## N ## _var_t *var           = (lc_opt_enum_ ## N ## _var_t*) data;       \
 	const lc_opt_enum_ ## N ## _items_t *items = var->items; \
 	const char *prefix                         = "";         \
 	int i; \
 	size_t l = strlen(buf); \
+	(void) name; \
+	(void) type; \
+	(void) len; \
  \
 	if (l >= n) \
 		return (int)l; \

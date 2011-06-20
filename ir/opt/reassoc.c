@@ -994,7 +994,7 @@ ir_op_ops *firm_set_default_reassoc(unsigned code, ir_op_ops *ops)
 	CASE(Eor);
 	CASE(Shl);
 	default:
-		/* leave NULL */;
+		break;
 	}
 
 	return ops;

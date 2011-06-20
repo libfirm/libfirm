@@ -120,11 +120,11 @@ static void peephole_be_IncSP(ir_node *node)
 	first = node;
 	block = get_nodes_block(node);
 	for (cnt = 1; cnt < v.ops; ++cnt) {
-		int value = sign * arm_ror(v.values[cnt], v.rors[cnt]);
-		ir_node *next = be_new_IncSP(&arm_registers[REG_SP], block, node,
+		int      value = sign * arm_ror(v.values[cnt], v.rors[cnt]);
+		ir_node *incsp = be_new_IncSP(&arm_registers[REG_SP], block, node,
 		                             value, 1);
-		sched_add_after(node, next);
-		node = next;
+		sched_add_after(node, incsp);
+		node = incsp;
 	}
 
 	/* reattach IncSP users */

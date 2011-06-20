@@ -151,7 +151,7 @@ static void ps_finish(plotter_t *_self)
 	fclose(self->f);
 }
 
-const plotter_if_t ps_plotter_vtab = {
+static const plotter_if_t ps_plotter_vtab = {
 	ps_begin,
 	ps_setcolor,
 	get_color,

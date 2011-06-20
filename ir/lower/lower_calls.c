@@ -748,12 +748,13 @@ static void transform_irg(const lower_params_t *lp, ir_graph *irg)
 			set_irn_in(ret, j, new_in);
 
 			if (n_cr_opt > 0) {
-				size_t i, n;
+				size_t c;
+				size_t n;
 
 				irg_walk_graph(irg, NULL, do_copy_return_opt, cr_opt);
 
-				for (i = 0, n = ARR_LEN(cr_opt); i < n; ++i) {
-					free_entity(cr_opt[i].ent);
+				for (c = 0, n = ARR_LEN(cr_opt); c < n; ++c) {
+					free_entity(cr_opt[c].ent);
 				}
 			}
 		}

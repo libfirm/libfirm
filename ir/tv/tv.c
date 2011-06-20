@@ -126,11 +126,12 @@ static void _fail_verify(ir_tarval *tv, const char* file, int line)
 	else
 		panic("%s:%d: Invalid tarval (null)", file, line);
 }
-#ifdef __GNUC__
-inline static void tarval_verify(ir_tarval *tv) __attribute__ ((unused));
-#endif
 
-inline static void tarval_verify(ir_tarval *tv)
+inline static
+#ifdef __GNUC__
+	__attribute__((unused))
+#endif
+void tarval_verify(ir_tarval *tv)
 {
 	assert(tv);
 	assert(tv->mode);
@@ -254,7 +255,7 @@ static ir_tarval *get_tarval_overflow(const void *value, size_t length, ir_mode 
 			case TV_OVERFLOW_SATURATE:
 				return get_mode_min(mode);
 			case TV_OVERFLOW_WRAP: {
-				char *temp = (char*) alloca(sc_get_buffer_length());
+				temp = (char*) alloca(sc_get_buffer_length());
 				memcpy(temp, value, sc_get_buffer_length());
 				sc_truncate(get_mode_size_bits(mode), temp);
 				return get_tarval(temp, length, mode);
@@ -316,6 +317,7 @@ static const ieee_descriptor_t *get_descriptor(const ir_mode *mode)
 										real payload */
 	/* case 128: return &quad_desc; */
 	default:
+		(void) quad_desc;
 		panic("Unsupported mode in get_descriptor()");
 	}
 }
@@ -963,10 +965,10 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 			return get_tarval(buffer, sc_get_buffer_length(), dst_mode);
 
 		default:
-			/* the rest can't be converted */
-			return tarval_bad;
+			break;
 		}
-		break;
+		/* the rest can't be converted */
+		return tarval_bad;
 
 	/* cast int/characters to something */
 	case irms_int_number:
@@ -1599,7 +1601,6 @@ int tarval_snprintf(char *buf, size_t len, ir_tarval *tv)
 		default:
 			return snprintf(buf, len, "%s%s%s", prefix, fc_print((const fp_value*) tv->value, tv_buf, sizeof(tv_buf), FC_DEC), suffix);
 		}
-		break;
 
 	case irms_internal_boolean:
 		switch (mode_info->mode_output) {

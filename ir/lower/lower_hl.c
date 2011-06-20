@@ -297,7 +297,7 @@ static int is_integral_size(int size)
 static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 {
 	ir_node *sel = get_Load_ptr(load);
-	ir_node *block, *n_proj, *res, *ptr;
+	ir_node *block, *res, *ptr;
 	ir_graph *irg;
 	ir_entity *ent;
 	ir_type *bf_type;
@@ -350,7 +350,7 @@ static void lower_bitfields_loads(ir_node *proj, ir_node *load)
 	/* create new proj, switch off CSE or we may get the old one back */
 	old_cse = get_opt_cse();
 	set_opt_cse(0);
-	res = n_proj = new_r_Proj(load, mode, pn_Load_res);
+	res = new_r_Proj(load, mode, pn_Load_res);
 	set_opt_cse(old_cse);
 
 	if (mode_is_signed(mode)) { /* signed */

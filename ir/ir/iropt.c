@@ -2048,9 +2048,9 @@ static ir_node *transform_node_Add(ir_node *n)
 	b_vrp = vrp_get_info(b);
 
 	if (a_vrp && b_vrp) {
-		ir_tarval *c = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
+		ir_tarval *vrp_val = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
 
-		if (tarval_is_null(c)) {
+		if (tarval_is_null(vrp_val)) {
 			dbg_info *dbgi  = get_irn_dbg_info(n);
 			return new_rd_Or(dbgi, get_nodes_block(n), a, b, mode);
 		}
@@ -3099,7 +3099,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 		new_shift = new_rd_Shl(dbg_shift, block, new_bitop, shift_right, mode);
 	} else if (is_Shr(left)) {
 		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right, mode);
-	} else if (is_Rotl(left)) {
+	} else {
 		assert(is_Rotl(left));
 		new_shift = new_rd_Rotl(dbg_shift, block, new_bitop, shift_right, mode);
 	}
@@ -6012,7 +6012,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE_PROJ_EX(Load);
 	CASE_PROJ_EX(Mod);
 	default:
-	  /* leave NULL */;
+		break;
 	}
 
 	return ops;

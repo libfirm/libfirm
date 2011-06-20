@@ -78,6 +78,7 @@ do { \
 
 static const char *firm_verify_failure_msg;
 
+#if 0
 /**
  * Show diagnostic if an entity overwrites another one not
  * in direct superclasses.
@@ -98,6 +99,7 @@ static void show_ent_not_supertp(ir_entity *ent, ir_entity *ovw)
 		ir_fprintf(stderr, " %+F:\n", super);
 	}
 }
+#endif
 
 /**
  * Show diagnostic if an entity overwrites a wrong number of things.
@@ -178,7 +180,8 @@ static int check_class(ir_type *tp)
 			show_ent_overwrite_cnt(mem)
 		);
 
-		if (false) {
+#if 0
+		{
 			size_t j, m;
 			/* check if the overwrite relation is flat, i.e. every overwrite
 			 * is visible in every direct superclass. */
@@ -201,6 +204,7 @@ static int check_class(ir_type *tp)
 				}
 			}
 		}
+#endif
 	}
 	return 0;
 }

@@ -194,7 +194,9 @@
  * @remark  This macro may change arr, so update all references!
  */
 #define ARR_EXTO(type, arr, n) \
-  ((n) >= ARR_LEN((arr)) ? ARR_RESIZE(type, (arr), (n)+1) : (arr))
+	do { \
+		if ((n) >= ARR_LEN(arr)) { ARR_RESIZE(type, arr, (n)+1); } \
+	} while(0)
 
 /**
  * Append one element to a flexible array.

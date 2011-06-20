@@ -108,7 +108,7 @@ enum vals_t {
 /**
  * Holds current values. Values are added till next copystat_reset
  */
-int curr_vals[ASIZE];
+static int curr_vals[ASIZE];
 
 static ir_nodeset_t *all_phi_nodes;
 static ir_nodeset_t *all_copy_nodes;

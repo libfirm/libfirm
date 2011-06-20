@@ -242,49 +242,49 @@ FIRM_API hook_entry_t *hooks[hook_last];
 #define hook_exec(what, args) do {           \
   hook_entry_t *_p;                          \
   for (_p = hooks[what]; _p; _p = _p->next){ \
-    void *ctx = _p->context;                 \
+    void *hook_ctx_ = _p->context;           \
     _p->hook._##what args;                   \
   }                                          \
 } while (0)
 
-#define hook_new_ir_op(op)                hook_exec(hook_new_ir_op, (ctx, op))
-#define hook_free_ir_op(op)               hook_exec(hook_free_ir_op, (ctx, op))
-#define hook_new_node(graph, node)        hook_exec(hook_new_node, (ctx, graph, node))
+#define hook_new_ir_op(op)                hook_exec(hook_new_ir_op, (hook_ctx_, op))
+#define hook_free_ir_op(op)               hook_exec(hook_free_ir_op, (hook_ctx_, op))
+#define hook_new_node(graph, node)        hook_exec(hook_new_node, (hook_ctx_, graph, node))
 #define hook_set_irn_n(src, pos, tgt, old_tgt) \
-  hook_exec(hook_set_irn_n, (ctx, src, pos, tgt, old_tgt))
-#define hook_replace(old, nw)             hook_exec(hook_replace, (ctx, old, nw))
-#define hook_turn_into_id(node)           hook_exec(hook_turn_into_id, (ctx, node))
-#define hook_normalize(node)              hook_exec(hook_normalize, (ctx, node))
-#define hook_new_graph(irg, ent)          hook_exec(hook_new_graph, (ctx, irg, ent))
-#define hook_free_graph(irg)              hook_exec(hook_free_graph, (ctx, irg))
-#define hook_irg_walk(irg, pre, post)     hook_exec(hook_irg_walk, (ctx, irg, pre, post))
+  hook_exec(hook_set_irn_n, (hook_ctx_, src, pos, tgt, old_tgt))
+#define hook_replace(old, nw)             hook_exec(hook_replace, (hook_ctx_, old, nw))
+#define hook_turn_into_id(node)           hook_exec(hook_turn_into_id, (hook_ctx_, node))
+#define hook_normalize(node)              hook_exec(hook_normalize, (hook_ctx_, node))
+#define hook_new_graph(irg, ent)          hook_exec(hook_new_graph, (hook_ctx_, irg, ent))
+#define hook_free_graph(irg)              hook_exec(hook_free_graph, (hook_ctx_, irg))
+#define hook_irg_walk(irg, pre, post)     hook_exec(hook_irg_walk, (hook_ctx_, irg, pre, post))
 #define hook_irg_walk_blkwise(irg, pre, post) \
-  hook_exec(hook_irg_walk_blkwise, (ctx, irg, pre, post))
+  hook_exec(hook_irg_walk_blkwise, (hook_ctx_, irg, pre, post))
 #define hook_irg_block_walk(irg, node, pre, post) \
-  hook_exec(hook_irg_block_walk, (ctx, irg, node, pre, post))
+  hook_exec(hook_irg_block_walk, (hook_ctx_, irg, node, pre, post))
 #define hook_merge_nodes(new_node_array, new_num_entries, old_node_array, old_num_entries, opt) \
-  hook_exec(hook_merge_nodes, (ctx, new_node_array, new_num_entries, old_node_array, old_num_entries, opt))
-#define hook_reassociate(start)           hook_exec(hook_reassociate, (ctx, start))
-#define hook_lower(node)                  hook_exec(hook_lower, (ctx, node))
-#define hook_inline(call, irg)            hook_exec(hook_inline, (ctx, call, irg))
-#define hook_tail_rec(irg, n_calls)       hook_exec(hook_tail_rec, (ctx, irg, n_calls))
+  hook_exec(hook_merge_nodes, (hook_ctx_, new_node_array, new_num_entries, old_node_array, old_num_entries, opt))
+#define hook_reassociate(start)           hook_exec(hook_reassociate, (hook_ctx_, start))
+#define hook_lower(node)                  hook_exec(hook_lower, (hook_ctx_, node))
+#define hook_inline(call, irg)            hook_exec(hook_inline, (hook_ctx_, call, irg))
+#define hook_tail_rec(irg, n_calls)       hook_exec(hook_tail_rec, (hook_ctx_, irg, n_calls))
 #define hook_strength_red(irg, node) \
-  hook_exec(hook_strength_red, (ctx, irg, node))
-#define hook_dead_node_elim(irg, start)   hook_exec(hook_dead_node_elim, (ctx, irg, start))
+  hook_exec(hook_strength_red, (hook_ctx_, irg, node))
+#define hook_dead_node_elim(irg, start)   hook_exec(hook_dead_node_elim, (hook_ctx_, irg, start))
 #define hook_dead_node_elim_subst(irg, old, nw) \
-   hook_exec(hook_dead_node_elim_subst, (ctx, irg, old, nw))
+   hook_exec(hook_dead_node_elim_subst, (hook_ctx_, irg, old, nw))
 #define hook_if_conversion(irg, phi, pos, mux, reason) \
-  hook_exec(hook_if_conversion, (ctx, irg, phi, pos, mux, reason))
+  hook_exec(hook_if_conversion, (hook_ctx_, irg, phi, pos, mux, reason))
 #define hook_func_call(irg, call) \
-  hook_exec(hook_func_call, (ctx, irg, call))
+  hook_exec(hook_func_call, (hook_ctx_, irg, call))
 #define hook_arch_dep_replace_mul_with_shifts(irn) \
-  hook_exec(hook_arch_dep_replace_mul_with_shifts, (ctx, irn))
+  hook_exec(hook_arch_dep_replace_mul_with_shifts, (hook_ctx_, irn))
 #define hook_arch_dep_replace_division_by_const(irn) \
-  hook_exec(hook_arch_dep_replace_division_by_const, (ctx, irn))
-#define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (ctx, tmpl, mode))
-#define hook_new_entity(ent)              hook_exec(hook_new_entity, (ctx, ent))
-#define hook_new_type(tp)                 hook_exec(hook_new_type, (ctx, tp))
-#define hook_node_info(F, node)           hook_exec(hook_node_info, (ctx, F, node))
+  hook_exec(hook_arch_dep_replace_division_by_const, (hook_ctx_, irn))
+#define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (hook_ctx_, tmpl, mode))
+#define hook_new_entity(ent)              hook_exec(hook_new_entity, (hook_ctx_, ent))
+#define hook_new_type(tp)                 hook_exec(hook_new_type, (hook_ctx_, tp))
+#define hook_node_info(F, node)           hook_exec(hook_node_info, (hook_ctx_, F, node))
 
 #include "end.h"
 

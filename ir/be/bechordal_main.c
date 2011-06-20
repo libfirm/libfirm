@@ -105,10 +105,6 @@ static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ NULL, 0 }
 };
 
-static const lc_opt_enum_int_items_t lower_perm_stat_items[] = {
-	{ NULL, 0 }
-};
-
 static const lc_opt_enum_int_items_t dump_items[] = {
 	{ "none",       BE_CH_DUMP_NONE       },
 	{ "spill",      BE_CH_DUMP_SPILL      },
@@ -254,7 +250,9 @@ static void pre_spill(post_spill_env_t *pse, const arch_register_class_t *cls)
 	be_assure_liveness(irg);
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
-	stat_ev_do(pse->pre_spill_cost = be_estimate_irg_costs(irg, exec_freq));
+	if (stat_ev_enabled) {
+		pse->pre_spill_cost = be_estimate_irg_costs(irg, exec_freq);
+	}
 
 	/* put all ignore registers into the ignore register set. */
 	be_put_allocatable_regs(irg, pse->cls, chordal_env->allocatable_regs);
@@ -317,7 +315,7 @@ static void post_spill(post_spill_env_t *pse, int iteration)
 		chordal_env->ifg = be_create_ifg(chordal_env);
 		be_timer_pop(T_RA_IFG);
 
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			be_ifg_stat_t   stat;
 			be_node_stats_t node_stats;
 
@@ -395,7 +393,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 	be_timer_pop(T_RA_PROLOG);
 
-	stat_ev_if {
+	if (stat_ev_enabled) {
 		be_collect_node_stats(&last_node_stats, irg);
 	}
 
@@ -412,7 +410,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 		stat_ev_ctx_push_str("bechordal_cls", cls->name);
 
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			be_do_stat_reg_pressure(irg, cls);
 		}
 
@@ -428,7 +426,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 
 		post_spill(&pse, 0);
 
-		stat_ev_if {
+		if (stat_ev_enabled) {
 			be_node_stats_t node_stats;
 
 			be_collect_node_stats(&node_stats, irg);

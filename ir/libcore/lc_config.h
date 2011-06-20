@@ -30,7 +30,6 @@
 
 #define inline         __inline__
 #define LC_FUNCNAME    __FUNCTION__
-#define LC_UNUSED(x)   x __attribute__((__unused__))
 #define LC_PRINTF(m) __attribute__((format(printf,m,(m)+1)))
 
 #ifdef __STRICT_ANSI__
@@ -44,7 +43,6 @@
 #elif defined(_MSC_VER)
 
 #define LC_FUNCNAME    "<unknown>"
-#define LC_UNUSED(x)   x
 #define LC_PRINTF(m)
 
 #define LC_LONGLONG    __int64
@@ -73,7 +71,6 @@ typedef unsigned __int64   uint64;
 
 #define inline
 #define LC_FUNCNAME "<unknown>"
-#define LC_UNUSED(x)
 #define LC_LONGLONG long
 #define LC_LONGDOUBLE double
 #define LC_PRINTF(m)

@@ -896,14 +896,14 @@ static ir_entity_usage determine_entity_usage(const ir_node *irn, ir_entity *ent
 			res |= determine_entity_usage(succ, entity);
 			break;
 		case iro_Sel: {
-			ir_entity *entity = get_Sel_entity(succ);
+			ir_entity *sel_entity = get_Sel_entity(succ);
 			/* this analysis can't handle unions correctly */
-			if (is_Union_type(get_entity_owner(entity))) {
+			if (is_Union_type(get_entity_owner(sel_entity))) {
 				res |= ir_usage_unknown;
 				break;
 			}
 			/* Check the successor of irn. */
-			res |= determine_entity_usage(succ, entity);
+			res |= determine_entity_usage(succ, sel_entity);
 			break;
 		}
 
@@ -1140,8 +1140,8 @@ static void check_initializer(ir_entity *ent)
 
 			/* let's check if it's an address */
 			if (is_Global(irn)) {
-				ir_entity *ent = get_Global_entity(irn);
-				set_entity_usage(ent, ir_usage_unknown);
+				ir_entity *symconst_ent = get_Global_entity(irn);
+				set_entity_usage(symconst_ent, ir_usage_unknown);
 			}
 		}
 	}

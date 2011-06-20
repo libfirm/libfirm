@@ -295,7 +295,6 @@ static ir_node *get_r_value_internal(ir_node *block, int pos, ir_mode *mode)
 		int arity = get_irn_arity(block);
 		/* no predecessors: use unknown value */
 		if (arity == 0 && block == get_irg_start_block(get_irn_irg(block))) {
-			ir_graph *irg = get_irn_irg(block);
 			if (default_initialize_local_variable != NULL) {
 				ir_node *rem = get_r_cur_block(irg);
 				set_r_cur_block(irg, block);

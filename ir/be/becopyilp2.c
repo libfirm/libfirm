@@ -104,7 +104,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 			cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 1.0);
 
 			bitset_foreach(colors, col) {
-				int var_idx = lpp_add_var(ienv->lp, name_cdd(buf, 'x', node_nr, col), lpp_binary, 0.0);
+				int var_idx = lpp_add_var(ienv->lp, name_cdd(buf, 'x', node_nr, (int)col), lpp_binary, 0.0);
 				lpp_set_start_value(ienv->lp, var_idx, (col == (unsigned) curr_node_color) ? 1.0 : 0.0);
 				lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1);
 
@@ -116,7 +116,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 			/* add register constraint constraints */
 			bitset_foreach_clear(colors, col) {
 				int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_equal, 0.0);
-				int var_idx = lpp_add_var(ienv->lp, name_cdd(buf, 'x', node_nr, col), lpp_binary, 0.0);
+				int var_idx = lpp_add_var(ienv->lp, name_cdd(buf, 'x', node_nr, (int)col), lpp_binary, 0.0);
 				lpp_set_start_value(ienv->lp, var_idx, 0.0);
 				lpp_set_factor_fast(ienv->lp, cst_idx, var_idx, 1);
 
@@ -329,8 +329,8 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 			int growed;
 
 			/* get 2 starting nodes to form a clique */
-			for (e=set_first(edges); !e->n1; e=set_next(edges))
-				/*nothing*/ ;
+			for (e=set_first(edges); !e->n1; e=set_next(edges)) {
+			}
 
 			/* we could be stepped out of the loop before the set iterated to the end */
 			set_break(edges);
@@ -516,7 +516,7 @@ static void ilp2_apply(ilp_env_t *ienv)
 		lpp_sol_state_t  state = lpp_get_solution(ienv->lp, sol, lenv->first_x_var, lenv->last_x_var);
 
 		if (state != lpp_optimal) {
-			printf("WARNING %s: Solution state is not 'optimal': %d\n", ienv->co->name, state);
+			printf("WARNING %s: Solution state is not 'optimal': %d\n", ienv->co->name, (int)state);
 			assert(state >= lpp_feasible && "The solution should at least be feasible!");
 		}
 
@@ -549,7 +549,7 @@ static void ilp2_apply(ilp_env_t *ienv)
 #endif
 }
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp2)
 void be_init_copyilp2(void)
 {
 	static co_algo_info copyheur = {

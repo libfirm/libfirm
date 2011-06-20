@@ -308,14 +308,14 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 				 * left == Const and we found a movable user of left in a
 				 * dominator of the Cond block
 				 */
-				const ir_edge_t *edge, *next;
-				for (edge = get_irn_out_edge_first(user); edge; edge = next) {
-					ir_node *usr_of_usr = get_edge_src_irn(edge);
-					int      npos = get_edge_src_pos(edge);
-					ir_node *blk  = get_effective_use_block(usr_of_usr, npos);
+				const ir_edge_t *user_edge;
+				const ir_edge_t *user_next;
+				foreach_out_edge_safe(user, user_edge, user_next) {
+					ir_node *usr_of_usr = get_edge_src_irn(user_edge);
+					int      npos       = get_edge_src_pos(user_edge);
+					ir_node *user_blk   = get_effective_use_block(usr_of_usr, npos);
 
-					next = get_irn_out_edge_next(user, edge);
-					if (block_dominates(block, blk)) {
+					if (block_dominates(block, user_blk)) {
 						/*
 						 * The user of the user is dominated by our true/false
 						 * block. So, create a copy of user WITH the constant

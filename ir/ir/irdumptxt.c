@@ -61,7 +61,6 @@ ir_dump_verbosity_t ir_get_dump_verbosity(void)
 /* Write the irnode and all its attributes to the file passed. */
 void dump_irnode_to_file(FILE *F, ir_node *n)
 {
-	int      i;
 	char     comma;
 	ir_graph *irg;
 	vrp_attr *vrp_info;
@@ -73,7 +72,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	if (ir_get_dump_flags() & ir_dump_flag_analysed_types)
 		fprintf (F, "  addr:    %p\n", (void *)n);
 	fprintf (F, "  mode:    %s\n", get_mode_name(get_irn_mode(n)));
-	fprintf (F, "  visited: %ld\n", get_irn_visited(n));
+	fprintf (F, "  visited: %lu\n", get_irn_visited(n));
 	irg = get_irn_irg(n);
 	if (irg != get_const_code_irg())
 		fprintf (F, "  irg:     %s\n", get_ent_dump_name(get_irg_entity(irg)));
@@ -93,10 +92,14 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		dump_node_opcode(F, get_irn_n(n, -1));
 		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, -1)));
 	}
-	for ( i = 0; i < get_irn_arity(n); ++i) {
-		fprintf(F, "     %d: %s ", i, is_backedge(n, i) ? "be" : "  ");
-		dump_node_opcode(F, get_irn_n(n, i));
-		fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, i)));
+
+	{
+		int i;
+		for (i = 0; i < get_irn_arity(n); ++i) {
+			fprintf(F, "     %d: %s ", i, is_backedge(n, i) ? "be" : "  ");
+			dump_node_opcode(F, get_irn_n(n, i));
+			fprintf(F, " %ld\n", get_irn_node_nr(get_irn_n(n, i)));
+		}
 	}
 
 	fprintf(F, "  Private Attributes:\n");
@@ -110,8 +113,8 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	}
 
 	/* This is not nice, output it as a marker in the predecessor list. */
-	if (is_Block(n)             ||
-	    get_irn_op(n) == op_Phi) {
+	if (is_Block(n) || get_irn_op(n) == op_Phi) {
+	    int i;
 		fprintf(F, "  backedges:");
 		comma = ' ';
 		for (i = 0; i < get_irn_arity(n); i++)
@@ -133,17 +136,17 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	case iro_Block: {
 		if (has_Block_entity(n))
 			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
-		fprintf(F, "  block visited: %ld\n", get_Block_block_visited(n));
+		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
 		if (get_irg_dom_state(get_irn_irg(n)) == dom_consistent) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
-			fprintf(F, "  domtree pre num %d\n", get_Block_dom_tree_pre_num(n));
-			fprintf(F, "  max subtree pre num %d\n", get_Block_dom_max_subtree_pre_num(n));
+			fprintf(F, "  domtree pre num %u\n", get_Block_dom_tree_pre_num(n));
+			fprintf(F, "  max subtree pre num %u\n", get_Block_dom_max_subtree_pre_num(n));
 		}
 		if (get_irg_postdom_state(get_irn_irg(n)) == dom_consistent) {
 			fprintf(F, "  pdom depth %d\n", get_Block_postdom_depth(n));
-			fprintf(F, "  pdomtree pre num %d\n", get_Block_pdom_tree_pre_num(n));
-			fprintf(F, "  max pdomsubtree pre num %d\n", get_Block_pdom_max_subtree_pre_num(n));
+			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
+			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));
 		}
 
 		fprintf(F, "  Execution frequency statistics:\n");
@@ -274,6 +277,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		fprintf(F, "  assembler text: %s", get_id_str(get_ASM_text(n)));
 		l = get_ASM_n_input_constraints(n);
 		if (l > 0) {
+			int i;
 			fprintf(F, "\n  inputs:  ");
 			cons = get_ASM_input_constraints(n);
 			for (i = 0; i < l; ++i)
@@ -281,6 +285,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		}
 		l = get_ASM_n_output_constraints(n);
 		if (l > 0) {
+			int i;
 			fprintf(F, "\n  outputs: ");
 			cons = get_ASM_output_constraints(n);
 			for (i = 0; i < l; ++i)
@@ -288,6 +293,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		}
 		l = get_ASM_n_clobbers(n);
 		if (l > 0) {
+			int i;
 			fprintf(F, "\n  clobber: ");
 			clobber = get_ASM_clobbers(n);
 			for (i = 0; i < l; ++i)
@@ -592,7 +598,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 				size_t j;
 				compound_graph_path *path = get_compound_ent_value_path(ent, i);
 				ir_entity *ent0 = get_compound_graph_path_node(path, 0);
-				fprintf(F, "\n%s    %3d:%u ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
+				fprintf(F, "\n%s    %3d:%d ", prefix, get_entity_offset(ent0), get_entity_offset_bits_remainder(ent0));
 				if (get_type_state(type) == layout_fixed)
 					fprintf(F, "(%3u:%u) ",   get_compound_ent_value_offset_bytes(ent, i), get_compound_ent_value_offset_bit_remainder(ent, i));
 				fprintf(F, "%s", get_entity_name(ent));
@@ -725,7 +731,7 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 	case tpo_array:
 		if (verbosity & dump_verbosity_typeattrs) {
-			size_t i, n_dim;
+			size_t n_dim;
 			ir_type *elem_tp = get_array_element_type(tp);
 
 			fprintf(F, "\n  array ");

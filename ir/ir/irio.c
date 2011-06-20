@@ -689,7 +689,6 @@ static void export_type_or_ent_post(type_or_ent tore, void *ctx)
 
 	default:
 		panic("export_type_or_ent_post: Unknown type or entity.");
-		break;
 	}
 }
 
@@ -1051,7 +1050,6 @@ static char *read_string(io_env_t *env)
 			default:
 				parse_error(env, "Unknown escape sequence '\\%c'\n", env->c);
 				exit(1);
-				break;
 			}
 		} else {
 			obstack_1grow(&env->obst, env->c);
@@ -1417,14 +1415,14 @@ static void import_type(io_env_t *env)
 		type = new_type_method(nparams, nresults);
 
 		for (i = 0; i < nparams; i++) {
-			long     typenr = read_long(env);
-			ir_type *paramtype = get_type(env, typenr);
+			long ptypenr = read_long(env);
+			ir_type *paramtype = get_type(env, ptypenr);
 
 			set_method_param_type(type, i, paramtype);
 		}
 		for (i = 0; i < nresults; i++) {
-			long typenr = read_long(env);
-			ir_type *restype = get_type(env, typenr);
+			long ptypenr = read_long(env);
+			ir_type *restype = get_type(env, ptypenr);
 
 			set_method_res_type(type, i, restype);
 		}
@@ -1500,23 +1498,23 @@ static void import_entity(io_env_t *env)
 
 	skip_ws(env);
 	while (!isdigit(env->c)) {
-		char     *str = read_word(env);
+		char     *vstr = read_word(env);
 		unsigned  v;
 
 		skip_ws(env);
 
-		v = symbol(str, tt_visibility);
+		v = symbol(vstr, tt_visibility);
 		if (v != SYMERROR) {
 			visibility = (ir_visibility)v;
 			continue;
 		}
-		v = symbol(str, tt_linkage);
+		v = symbol(vstr, tt_linkage);
 		if (v != SYMERROR) {
 			linkage |= (ir_linkage)v;
 			continue;
 		}
 		printf("Parser error, expected visibility or linkage, got '%s'\n",
-		       str);
+		       vstr);
 		break;
 	}
 

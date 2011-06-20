@@ -1004,7 +1004,7 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 		break;
 
 	default:
-		;
+		break;
 	} /* end switch */
 }
 
@@ -2181,12 +2181,12 @@ static void dump_blocks_as_subgraphs(FILE *out, ir_graph *irg)
 	 * from irg.
 	 */
 	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph *irg = get_irp_irg(--i);
-		ir_node **arr = (ir_node**)ird_get_irg_link(irg);
+		ir_graph *other_irg = get_irp_irg(--i);
+		ir_node **arr = (ir_node**)ird_get_irg_link(other_irg);
 		if (arr == NULL)
 			continue;
 
-		dump_graph_from_list(out, irg);
+		dump_graph_from_list(out, other_irg);
 		DEL_ARR_F(arr);
 	}
 }
@@ -2255,20 +2255,20 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 	print_dbg_info(F, get_entity_dbg_info(ent));
 
 	for (i = get_irp_n_irgs(); i > 0;) {
-		ir_graph *irg     = get_irp_irg(--i);
-		list_tuple *lists = (list_tuple*)ird_get_irg_link(irg);
+		ir_graph   *other_irg = get_irp_irg(--i);
+		list_tuple *lists     = (list_tuple*)ird_get_irg_link(other_irg);
 
 		if (lists) {
 			/* dump the extended blocks first */
 			if (ARR_LEN(lists->extbb_list)) {
-				ird_set_irg_link(irg, lists->extbb_list);
-				dump_extblock_graph(F, irg);
+				ird_set_irg_link(other_irg, lists->extbb_list);
+				dump_extblock_graph(F, other_irg);
 			}
 
 			/* we may have blocks without extended blocks, bad for instance */
 			if (ARR_LEN(lists->blk_list)) {
-				ird_set_irg_link(irg, lists->blk_list);
-				dump_block_graph(F, irg);
+				ird_set_irg_link(other_irg, lists->blk_list);
+				dump_block_graph(F, other_irg);
 			}
 
 			DEL_ARR_F(lists->extbb_list);
@@ -2330,7 +2330,6 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 {
 	FILE *F = (FILE*)env;
 	int i;
-	ir_node *pred;
 
 	if (is_Bad(block) && get_irn_mode(block) == mode_X) {
 		dump_node(F, block);
@@ -2376,7 +2375,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 		/* Dump dominator/postdominator edge */
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
 			if (get_irg_dom_state(current_ir_graph) == dom_consistent && get_Block_idom(block)) {
-				pred = get_Block_idom(block);
+				ir_node *pred = get_Block_idom(block);
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);
 				fprintf(F, "\" targetname: \"");
@@ -2384,7 +2383,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 				fprintf(F, "\" " DOMINATOR_EDGE_ATTR "}\n");
 			}
 			if (get_irg_postdom_state(current_ir_graph) == dom_consistent && get_Block_ipostdom(block)) {
-				pred = get_Block_ipostdom(block);
+				ir_node *pred = get_Block_ipostdom(block);
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);
 				fprintf(F, "\" targetname: \"");

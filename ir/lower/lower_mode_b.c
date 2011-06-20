@@ -341,10 +341,8 @@ synth_zero_one:
 			set_irn_mode(node, mode);
 			res = node;
 			goto own_replacement;
-		} else {
-			panic("unexpected projb: %+F (pred: %+F)", node, pred);
 		}
-		break;
+		panic("unexpected projb: %+F (pred: %+F)", node, pred);
 	}
 
 	case iro_Const: {

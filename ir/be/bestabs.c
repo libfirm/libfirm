@@ -244,10 +244,12 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 		return;
 	}  /* if */
 
-	if (0 && get_mode_size_bits(mode) & 7) {
+#if 0
+	if (get_mode_size_bits(mode) & 7) {
 		/* this is a bitfield type, ignore it */
 		return;
 	}  /* if */
+#endif
 
 	type_num = get_type_number(h, tp);
 
@@ -426,19 +428,20 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp)
 		ofs  = get_entity_offset(ent);
 		if (is_Struct_type(mtp) && get_type_mode(mtp) != NULL) {
 			/* this structure is a bitfield, skip */
-			int i, n;
+			int m;
+			int n_members = get_struct_n_members(mtp);
 
-			for (i = 0, n = get_struct_n_members(mtp); i < n; ++i) {
-				ir_entity *ent = get_struct_member(mtp, i);
-				ir_type *tp = get_entity_type(ent);
+			for (m = 0; m < n_members; ++m) {
+				ir_entity *member    = get_struct_member(mtp, m);
+				ir_type   *member_tp = get_entity_type(member);
 				int bofs;
 
-				type_num = get_type_number(h, tp);
-				size = get_type_size_bytes(tp) * 8;
-				bofs = (ofs + get_entity_offset(ent)) * 8 + get_entity_offset_bits_remainder(ent);
+				type_num = get_type_number(h, member_tp);
+				size = get_type_size_bytes(member_tp) * 8;
+				bofs = (ofs + get_entity_offset(member)) * 8 + get_entity_offset_bits_remainder(member);
 
 				/* name:type, bit offset from the start of the struct', number of bits in the element. */
-				be_emit_irprintf("%s:%u,%d,%u;", get_entity_name(ent), type_num, bofs, size);
+				be_emit_irprintf("%s:%u,%d,%u;", get_entity_name(member), type_num, bofs, size);
 			}
 		} else {
 			/* no bitfield */
@@ -719,7 +722,6 @@ static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent)
 	for (i = 0, n = get_method_n_params(mtp); i < n; ++i) {
 		ir_type *ptp      = get_method_param_type(mtp, i);
         const char *name  = NULL;
-		unsigned type_num = get_type_number(h, ptp);
         char buf[16];
         int ofs = 0;
 		ir_entity *stack_ent;
@@ -768,24 +770,24 @@ static void stabs_method_end(dbg_handle *handle)
 	/* create entries for automatic variables on the stack */
 	frame_size = get_type_size_bytes(layout->frame_type);
 	for (i = 0, n = get_compound_n_members(layout->frame_type); i < n; ++i) {
-		ir_entity *ent = get_compound_member(layout->frame_type, i);
+		ir_entity *member = get_compound_member(layout->frame_type, i);
 		ir_type *tp;
 		int ofs;
 		unsigned type_num;
 
 		/* ignore spill slots and other helper objects */
-		if (is_entity_compiler_generated(ent))
+		if (is_entity_compiler_generated(member))
 			continue;
 
-		tp = get_entity_type(ent);
+		tp = get_entity_type(member);
 		/* should not happen in backend but ... */
 		if (is_Method_type(tp))
 			continue;
 		type_num = get_type_number(h, tp);
-		ofs      = -frame_size + get_entity_offset(ent);
+		ofs      = -frame_size + get_entity_offset(member);
 
 		be_emit_irprintf("\t.stabs\t\"%s:%u\",%d,0,0,%d\n",
-			get_entity_name(ent), type_num, N_LSYM, ofs);
+		                 get_entity_name(member), type_num, N_LSYM, ofs);
 		be_emit_write_line();
 	}
 	/* we need a lexical block here */

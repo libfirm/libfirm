@@ -66,7 +66,7 @@ typedef struct walk_env {
 } walk_env_t;
 
 /** debug handle */
-DEBUG_ONLY(firm_dbg_module_t *dbgHandle;)
+DEBUG_ONLY(static firm_dbg_module_t *dbgHandle;)
 
 /**
  * checks whether a Raise leaves a method

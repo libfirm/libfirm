@@ -30,54 +30,6 @@
 #include "../be_types.h"
 #include "gen_arm_regalloc_if.h"
 
-static const arch_register_t *const callee_saves[] = {
-	&arm_registers[REG_R4],
-	&arm_registers[REG_R5],
-	&arm_registers[REG_R6],
-	&arm_registers[REG_R7],
-	&arm_registers[REG_R8],
-	&arm_registers[REG_R9],
-	&arm_registers[REG_R10],
-	&arm_registers[REG_R11],
-	&arm_registers[REG_LR],
-};
-
-static const arch_register_t *const caller_saves[] = {
-	&arm_registers[REG_R0],
-	&arm_registers[REG_R1],
-	&arm_registers[REG_R2],
-	&arm_registers[REG_R3],
-	&arm_registers[REG_LR],
-
-	&arm_registers[REG_F0],
-	&arm_registers[REG_F1],
-	&arm_registers[REG_F2],
-	&arm_registers[REG_F3],
-	&arm_registers[REG_F4],
-	&arm_registers[REG_F5],
-	&arm_registers[REG_F6],
-	&arm_registers[REG_F7],
-};
-
-static const arch_register_t* const param_regs[] = {
-	&arm_registers[REG_R0],
-	&arm_registers[REG_R1],
-	&arm_registers[REG_R2],
-	&arm_registers[REG_R3]
-};
-
-static const arch_register_t* const result_regs[] = {
-	&arm_registers[REG_R0],
-	&arm_registers[REG_R1],
-	&arm_registers[REG_R2],
-	&arm_registers[REG_R3]
-};
-
-static const arch_register_t* const float_result_regs[] = {
-	&arm_registers[REG_F0],
-	&arm_registers[REG_F1]
-};
-
 /** information about a single parameter or result */
 typedef struct reg_or_stackslot_t
 {
@@ -85,7 +37,7 @@ typedef struct reg_or_stackslot_t
 	const arch_register_t *reg1;   /**< if != NULL, the second register used. */
 	ir_type               *type;   /**< indicates that an entity of the specific
 									    type is needed */
-	int                    offset; /**< if transmitted via stack, the offset for this parameter. */
+	unsigned               offset; /**< if transmitted via stack, the offset for this parameter. */
 	ir_entity             *entity; /**< entity in frame type */
 } reg_or_stackslot_t;
 
@@ -93,7 +45,8 @@ typedef struct reg_or_stackslot_t
 typedef struct calling_convention_t
 {
 	reg_or_stackslot_t *parameters;        /**< parameter info. */
-	int                 param_stack_size;  /**< needed stack size for parameters */
+	unsigned            param_stack_size;  /**< needed stack size for parameters */
+	unsigned            n_reg_params;
 	reg_or_stackslot_t *results;           /**< result info. */
 } calling_convention_t;
 

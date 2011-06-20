@@ -453,7 +453,7 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 
 		/* FIXME: No floating point yet */
 		/* be_abi_call_res_reg(abi, 0,
-			mode_is_float(mode) ? &amd64_fp_regs[REG_F0] : &amd64_registers[REG_R0], ABI_CONTEXT_BOTH) */;
+			mode_is_float(mode) ? &amd64_fp_regs[REG_F0] : &amd64_registers[REG_R0], ABI_CONTEXT_BOTH); */
 
 		be_abi_call_res_reg(abi, 0,
 			&amd64_registers[REG_RAX], ABI_CONTEXT_BOTH);

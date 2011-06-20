@@ -62,13 +62,7 @@ typedef struct timeval ir_timer_val_t;
 
 #include <stddef.h>
 
-static inline void _time_get(ir_timer_val_t *val);
 static inline void _time_reset(ir_timer_val_t *val);
-static inline unsigned long _time_to_msec(const ir_timer_val_t *val);
-static inline ir_timer_val_t *_time_add(ir_timer_val_t *res,
-		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs);
-static inline ir_timer_val_t *_time_sub(ir_timer_val_t *res,
-		const ir_timer_val_t *lhs, const ir_timer_val_t *rhs);
 
 /**
  * A timer.

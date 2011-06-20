@@ -1130,16 +1130,17 @@ void arm_gen_routine(ir_graph *irg)
 				be_emit_write_line();
 			} else {
 				ir_tarval *tv = entry->u.tv;
-				int i, size = get_mode_size_bytes(get_tarval_mode(tv));
-				unsigned v;
+				int vi;
+				int size = get_mode_size_bytes(get_tarval_mode(tv));
 
 				/* beware: ARM fpa uses big endian format */
-				for (i = ((size + 3) & ~3) - 4; i >= 0; i -= 4) {
+				for (vi = ((size + 3) & ~3) - 4; vi >= 0; vi -= 4) {
 					/* get 32 bits */
-					v =            get_tarval_sub_bits(tv, i+3);
-					v = (v << 8) | get_tarval_sub_bits(tv, i+2);
-					v = (v << 8) | get_tarval_sub_bits(tv, i+1);
-					v = (v << 8) | get_tarval_sub_bits(tv, i+0);
+					unsigned v;
+					v =            get_tarval_sub_bits(tv, vi+3);
+					v = (v << 8) | get_tarval_sub_bits(tv, vi+2);
+					v = (v << 8) | get_tarval_sub_bits(tv, vi+1);
+					v = (v << 8) | get_tarval_sub_bits(tv, vi+0);
 					be_emit_irprintf("\t.word\t%u\n", v);
 					be_emit_write_line();
 				}

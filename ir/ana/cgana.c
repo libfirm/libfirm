@@ -350,8 +350,6 @@ static void free_mark_proj(ir_node * node, long n, eset * set)
  */
 static void free_mark(ir_node *node, eset * set)
 {
-	size_t i, n;
-
 	if (get_irn_link(node) == MARK)
 		return; /* already visited */
 
@@ -361,6 +359,7 @@ static void free_mark(ir_node *node, eset * set)
 	case iro_Sel: {
 		ir_entity *ent = get_Sel_entity(node);
 		if (is_method_entity(ent)) {
+			size_t i, n;
 			for (i = 0, n = get_Sel_n_methods(node); i < n; ++i) {
 				eset_insert(set, get_Sel_method(node, i));
 			}
@@ -399,7 +398,6 @@ static void free_mark(ir_node *node, eset * set)
 static void free_ana_walker(ir_node *node, void *env)
 {
 	eset *set = (eset*) env;
-	int i;
 
 	if (get_irn_link(node) == MARK) {
 		/* already visited */
@@ -430,7 +428,8 @@ static void free_ana_walker(ir_node *node, void *env)
 		}
 		break;
 	}
-	default:
+	default: {
+		int i;
 		/* other nodes: Alle anderen Knoten nehmen wir als Verr�ter an, bis
 		 * jemand das Gegenteil implementiert. */
 		set_irn_link(node, MARK);
@@ -441,6 +440,7 @@ static void free_ana_walker(ir_node *node, void *env)
 			}
 		}
 		break;
+	}
 	}
 }
 
@@ -518,10 +518,10 @@ static void add_method_address(ir_entity *ent, eset *set)
 
 			/* let's check if it's the address of a function */
 			if (is_Global(irn)) {
-				ir_entity *ent = get_Global_entity(irn);
+				ir_entity *ent2 = get_Global_entity(irn);
 
-				if (is_Method_type(get_entity_type(ent)))
-					eset_insert(set, ent);
+				if (is_Method_type(get_entity_type(ent2)))
+					eset_insert(set, ent2);
 			}
 		}
 	}

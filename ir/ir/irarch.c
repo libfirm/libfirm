@@ -829,7 +829,7 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 	ir_node *block = get_irn_n(div, -1);
 	ir_mode *mode  = get_irn_mode(n);
 	int bits       = get_mode_size_bits(mode);
-	ir_node *q, *t, *c;
+	ir_node *q;
 
 	/* Beware: do not transform bad code */
 	if (is_Bad(n) || is_Bad(block))
@@ -840,7 +840,8 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		struct ms mag = magic(tv);
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(irg, mag.M);
+		ir_node *c = new_r_Const(irg, mag.M);
+		ir_node *t;
 		q = new_rd_Mulh(dbg, block, n, c, mode);
 
 		/* do we need an Add or Sub */
@@ -862,17 +863,16 @@ static ir_node *replace_div_by_mulh(ir_node *div, ir_tarval *tv)
 		q = new_rd_Add(dbg, block, q, t, mode);
 	} else {
 		struct mu mag = magicu(tv);
-		ir_node *c;
 		ir_graph *irg = get_irn_irg(div);
 
 		/* generate the Mulh instruction */
-		c = new_r_Const(irg, mag.M);
+		ir_node *c = new_r_Const(irg, mag.M);
 		q = new_rd_Mulh(dbg, block, n, c, mode);
 
 		if (mag.need_add) {
 			if (mag.s > 0) {
 				/* use the GM scheme */
-				t = new_rd_Sub(dbg, block, n, q, mode);
+				ir_node *t = new_rd_Sub(dbg, block, n, q, mode);
 
 				c = new_r_Const(irg, get_mode_one(mode_Iu));
 				t = new_rd_Shr(dbg, block, t, c, mode);
@@ -974,8 +974,6 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 				res    = new_rd_Shrs(dbg, block, curr, k_node, mode);
 
 				if (n_flag) { /* negate the result */
-					ir_node *k_node;
-
 					k_node = new_r_Const(irg, get_mode_null(mode));
 					res = new_rd_Sub(dbg, block, k_node, res, mode);
 				}

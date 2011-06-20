@@ -52,7 +52,8 @@ void unregister_hook(hook_type_t hook, hook_entry_t *entry)
     return;
   }
 
-  for (p = hooks[hook]; p && p->next != entry; p = p->next);
+  for (p = hooks[hook]; p && p->next != entry; p = p->next) {
+  }
 
   if (p) {
     p->next     = entry->next;

@@ -78,8 +78,8 @@ static ir_entity *arm_get_frame_entity(const ir_node *irn)
 	const arm_attr_t *attr = get_arm_attr_const(irn);
 
 	if (is_arm_FrameAddr(irn)) {
-		const arm_SymConst_attr_t *attr = get_arm_SymConst_attr_const(irn);
-		return attr->entity;
+		const arm_SymConst_attr_t *frame_attr = get_arm_SymConst_attr_const(irn);
+		return frame_attr->entity;
 	}
 	if (attr->is_load_store) {
 		const arm_load_store_attr_t *load_store_attr

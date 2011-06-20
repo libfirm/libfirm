@@ -65,7 +65,7 @@ do { \
 do { \
   if (!(expr)) { \
     firm_verify_failure_msg = #expr " && " string; \
-    if (opt_do_node_verification != FIRM_VERIFICATION_ERROR_ONLY) { blk; } \
+    if (opt_do_node_verification != FIRM_VERIFICATION_ERROR_ONLY) { blk } \
     if (opt_do_node_verification == FIRM_VERIFICATION_REPORT) \
       fprintf(stderr, #expr " : " string "\n"); \
     else if (opt_do_node_verification == FIRM_VERIFICATION_ON) { \

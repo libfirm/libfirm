@@ -670,7 +670,6 @@ static void verify_irn_class_cast_state(ir_node *n, void *env)
 	ccs_env             *ccs = (ccs_env *)env;
 	ir_class_cast_state this_state = ir_class_casts_any;
 	ir_type             *fromtype, *totype;
-	int                 ref_depth = 0;
 
 	if (!is_Cast(n)) return;
 
@@ -680,7 +679,6 @@ static void verify_irn_class_cast_state(ir_node *n, void *env)
 	while (is_Pointer_type(totype) && is_Pointer_type(fromtype)) {
 		totype   = get_pointer_points_to_type(totype);
 		fromtype = get_pointer_points_to_type(fromtype);
-		ref_depth++;
 	}
 
 	if (!is_Class_type(totype)) return;

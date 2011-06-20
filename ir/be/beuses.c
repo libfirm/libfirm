@@ -223,7 +223,7 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 {
 	unsigned  step;
 	ir_node  *block = get_nodes_block(from);
-	ir_node  *next_use;
+	ir_node  *next_use_node;
 	ir_node  *node;
 	unsigned  timestep;
 	unsigned  next_use_step;
@@ -234,12 +234,12 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		from = sched_next(from);
 	}
 
-	next_use      = NULL;
+	next_use_node = NULL;
 	next_use_step = INT_MAX;
 	timestep      = get_step(from);
 	foreach_out_edge(def, edge) {
-		ir_node  *node = get_edge_src_irn(edge);
-		unsigned  node_step;
+		node = get_edge_src_irn(edge);
+		unsigned node_step;
 
 		if (is_Anchor(node))
 			continue;
@@ -252,16 +252,16 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 		if (node_step < timestep)
 			continue;
 		if (node_step < next_use_step) {
-			next_use      = node;
+			next_use_node = node;
 			next_use_step = node_step;
 		}
 	}
 
-	if (next_use != NULL) {
+	if (next_use_node != NULL) {
 		be_next_use_t result;
 		result.time           = next_use_step - timestep + skip_from_uses;
 		result.outermost_loop = get_loop_depth(get_irn_loop(block));
-		result.before         = next_use;
+		result.before         = next_use_node;
 		return result;
 	}
 

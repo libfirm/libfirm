@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "lc_common_t.h"
 #include "lc_defines.h"
 #include "lc_printf.h"
 
@@ -61,12 +60,14 @@ void lc_appendable_init(lc_appendable_t *env, const lc_appendable_funcs_t *app,
 	app->init(env);
 }
 
-static void default_init(UNUSED(lc_appendable_t *env))
+static void default_init(lc_appendable_t *env)
 {
+	(void) env;
 }
 
-static void default_finish(UNUSED(lc_appendable_t *env))
+static void default_finish(lc_appendable_t *env)
 {
+	(void) env;
 }
 
 /*

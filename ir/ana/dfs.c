@@ -274,7 +274,7 @@ void dfs_dump(const dfs_t *dfs, FILE *file)
 	}
 
 	for (i = 0; i < n; ++i) {
-		dfs_node_t *node = nodes[i];
+		node = nodes[i];
 		ir_fprintf(file, "\tn%d [label=\"%d\"]\n", node->pre_num, get_Block_dom_tree_pre_num((ir_node*) node->node));
 #if 0
 		ir_fprintf(file, "\tn%d [shape=box,label=\"%+F\\l%d %d/%d %d\"];\n",

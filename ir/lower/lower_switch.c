@@ -266,18 +266,18 @@ static void create_out_of_bounds_check(cond_env_t *env, ir_node *cond)
 	/* adapt default block */
 	n_default_preds = ARR_LEN(default_preds);
 	if (n_default_preds > 1) {
-		size_t i;
+		size_t p;
 
 		/* create new intermediate blocks so we don't have critical edges */
-		for (i = 0; i < n_default_preds; ++i) {
-			ir_node *proj = default_preds[i];
-			ir_node *block;
-			ir_node *in[1];
+		for (p = 0; p < n_default_preds; ++p) {
+			ir_node *pred = default_preds[p];
+			ir_node *split_block;
+			ir_node *block_in[1];
 
-			in[0] = proj;
-			block = new_r_Block(irg, 1, in);
+			block_in[0] = pred;
+			split_block = new_r_Block(irg, 1, block_in);
 
-			default_preds[i] = new_r_Jmp(block);
+			default_preds[p] = new_r_Jmp(split_block);
 		}
 	}
 	set_irn_in(env->default_block, n_default_preds, default_preds);

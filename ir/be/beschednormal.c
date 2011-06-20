@@ -152,7 +152,6 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 
 	if (fc == NULL) {
 		irn_cost_pair* costs;
-		int            i;
 		ir_node*       block = get_nodes_block(irn);
 
 		fc = OALLOCF(&inst->obst, flag_and_cost, costs, arity);
@@ -161,7 +160,6 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 
 		for (i = 0; i < arity; ++i) {
 			ir_node* pred = get_irn_n(irn, i);
-			int cost;
 
 			if (is_Phi(irn) || get_irn_mode(pred) == mode_M || is_Block(pred)) {
 				cost = 0;

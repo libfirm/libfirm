@@ -161,7 +161,7 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	ir_graph     *irg           = get_irn_irg(phi);
 	ir_node      *block         = get_nodes_block(phi);
 	int           arity         = get_irn_arity(phi);
-	ir_node     **in            = ALLOCAN(ir_node*, arity);
+	ir_node     **phi_in        = ALLOCAN(ir_node*, arity);
 	ir_node      *dummy         = new_r_Dummy(irg, mode_M);
 	ir_node      *spill_to_kill = NULL;
 	spill_info_t *spill_info;
@@ -177,13 +177,13 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 
 	/* create a new phi-M with bad preds */
 	for (i = 0; i < arity; ++i) {
-		in[i] = dummy;
+		phi_in[i] = dummy;
 	}
 
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spill = be_new_Phi(block, arity, in, mode_M, NULL);
+	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M, NULL);
 	sched_add_after(block, spill_info->spill);
 
 	if (spill_to_kill != NULL) {

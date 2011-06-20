@@ -596,7 +596,7 @@ static ir_op *stat_get_irn_op(ir_node *node)
 		}  /* if */
 		break;
 	default:
-		;
+		break;
 	}  /* switch */
 
 	return op;
@@ -946,7 +946,7 @@ end_parameter: ;
 			}  /* if */
 		}  /* if */
 	default:
-		;
+		break;
 	}  /* switch */
 }  /* stat_update_address */
 
@@ -1001,7 +1001,7 @@ static void update_node_stat(ir_node *node, void *env)
 			}
 		}
 	default:
-		;
+		break;
 	}  /* switch */
 
 	/* we want to count the constant IN nodes, not the CSE'ed constant's itself */

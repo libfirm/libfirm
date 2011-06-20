@@ -24,31 +24,12 @@
 #include <string.h>
 #include <ctype.h>
 
-#ifdef _WIN32
-#include <malloc.h>
-#endif
-
-/* Includes to determine user's home directory */
-#ifdef _WIN32
-#include <shlobj.h>
-#else
-#include <sys/types.h>
-#include <unistd.h>
-#include <pwd.h>
-#endif
-
-/* maximum length of a path. */
-#ifndef MAX_PATH
-#define MAX_PATH 2048
-#endif
-
-
-#include "lc_common_t.h"
 #include "lc_opts_t.h"
 #include "lc_opts_enum.h"
 #include "hashptr.h"
 #include "lc_printf.h"
 #include "xmalloc.h"
+#include "obst.h"
 
 #define ERR_STRING "In argument \"%s\": "
 
@@ -358,11 +339,12 @@ static char *strtolower(char *buf, size_t n, const char *str)
 	return buf;
 }
 
-int lc_opt_std_cb(UNUSED(const char *name), lc_opt_type_t type, void *data, size_t length, ...)
+int lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t length, ...)
 {
 	va_list args;
 	int res = 0;
 	int integer;
+	(void) name;
 
 	va_start(args, length);
 
@@ -413,9 +395,11 @@ int lc_opt_std_cb(UNUSED(const char *name), lc_opt_type_t type, void *data, size
 	return res;
 }
 
-int lc_opt_std_dump(char *buf, size_t n, UNUSED(const char *name), lc_opt_type_t type, void *data, UNUSED(size_t length))
+int lc_opt_std_dump(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length)
 {
 	int res;
+	(void) name;
+	(void) length;
 
 	if (data) {
 		switch (type) {
@@ -451,8 +435,12 @@ int lc_opt_std_dump(char *buf, size_t n, UNUSED(const char *name), lc_opt_type_t
 	return res;
 }
 
-int lc_opt_bool_dump_vals(char *buf, size_t n, UNUSED(const char *name), UNUSED(lc_opt_type_t type), UNUSED(void *data), UNUSED(size_t length))
+int lc_opt_bool_dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t length)
 {
+	(void) name;
+	(void) type;
+	(void) data;
+	(void) length;
 	strncpy(buf, "true, false", n);
 	return n;
 }
@@ -802,8 +790,9 @@ int lc_opt_from_argv(const lc_opt_entry_t *root,
 	return options_set;
 }
 
-static int opt_arg_type(UNUSED(const lc_arg_occ_t *occ))
+static int opt_arg_type(const lc_arg_occ_t *occ)
 {
+	(void) occ;
 	return lc_arg_type_ptr;
 }
 

@@ -988,14 +988,14 @@ static int verify_node_Sel(const ir_node *n)
 	ASSERT_AND_RET_DBG(
 		/* Sel: BB x M x ref x int^n --> ref */
 		(op1mode == mode_M && op2mode == mymode && mode_is_reference(mymode)),
-		"Sel node", 0, show_node_failure(n)
+		"Sel node", 0, show_node_failure(n);
 	);
 
 	for (i = get_Sel_n_indexs(n) - 1; i >= 0; --i) {
-		ASSERT_AND_RET_DBG(mode_is_int(get_irn_mode(get_Sel_index(n, i))), "Sel node", 0, show_node_failure(n));
+		ASSERT_AND_RET_DBG(mode_is_int(get_irn_mode(get_Sel_index(n, i))), "Sel node", 0, show_node_failure(n););
 	}
 	ent = get_Sel_entity(n);
-	ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n));
+	ASSERT_AND_RET_DBG(ent, "Sel node with empty entity", 0, show_node_failure(n););
 	return 1;
 }
 
@@ -1575,7 +1575,7 @@ static int verify_node_Sync(const ir_node *n)
 	/* Sync: BB x M^n --> M */
 	for (i = get_Sync_n_preds(n) - 1; i >= 0; --i) {
 		ASSERT_AND_RET( get_irn_mode(get_Sync_pred(n, i)) == mode_M, "Sync node", 0 );
-	};
+	}
 	ASSERT_AND_RET( mymode == mode_M, "Sync node", 0 );
 	return 1;
 }
@@ -1748,7 +1748,8 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 		unsigned idx           = get_irn_idx(n);
 		ir_node *node_from_map = get_idx_irn(irg, idx);
 		ASSERT_AND_RET_DBG(node_from_map == n, "Node index and index map entry differ", 0,
-			ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map));
+			ir_printf("node %+F node in map %+F(%p)\n", n, node_from_map, node_from_map);
+		);
 	}
 
 	op = get_irn_op(n);
@@ -1759,12 +1760,14 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 			state == op_pin_state_floats ||
 			state == op_pin_state_pinned,
 			"invalid pin state", 0,
-			ir_printf("node %+F", n));
+			ir_printf("node %+F", n);
+		);
 	} else if (!is_Block(n) && is_irn_pinned_in_irg(n)
 	           && !is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK)) {
 		ASSERT_AND_RET_DBG(is_Block(get_nodes_block(n)) || is_Anchor(n),
 				"block input is not a block", 0,
-				ir_printf("node %+F", n));
+				ir_printf("node %+F", n);
+		);
 	}
 
 	if (op->ops.verify_node)
@@ -1832,7 +1835,8 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 
 	ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->reachable_blocks, block),
 	                   "Block is not reachable by blockwalker (endless loop with no kept block?)", 0,
-	                   ir_printf("block %+F\n", block));
+	                   ir_printf("block %+F\n", block);
+	);
 
 	n_cfgpreds   = get_Block_n_cfgpreds(block);
 	branch_nodes = env->branch_nodes;
@@ -1850,7 +1854,8 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		former_dest = pmap_get(branch_nodes, branch);
 		ASSERT_AND_RET_DBG(former_dest==NULL || is_unknown_jump(skip_Proj(branch)),
 						   "Multiple users on mode_X node", 0,
-						   ir_printf("node %+F\n", branch));
+						   ir_printf("node %+F\n", branch);
+		);
 		pmap_insert(branch_nodes, branch, (void*)block);
 
 		/* check that there's only 1 branching instruction in each block */
@@ -1864,7 +1869,8 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 		ASSERT_AND_RET_DBG(former_branch == NULL || former_branch == branch,
 						   "Multiple branching nodes in a block", 0,
 						   ir_printf("nodes %+F,%+F in block %+F\n",
-									 branch, former_branch, branch_block));
+									 branch, former_branch, branch_block);
+		);
 		pmap_insert(branch_nodes, branch_block, branch);
 
 		if (is_Cond(branch)) {
@@ -1900,7 +1906,8 @@ static int verify_block_branch(const ir_node *block, check_cfg_env_t *env)
 	                   || ir_nodeset_contains(&env->kept_nodes, block)
 	                   || block == get_irg_end_block(get_irn_irg(block)),
 	                   "block contains no cfop", 0,
-	                   ir_printf("block %+F\n", block));
+	                   ir_printf("block %+F\n", block);
+	);
 	return 1;
 }
 
@@ -1909,14 +1916,17 @@ static int verify_cond_projs(const ir_node *cond, check_cfg_env_t *env)
 	if (get_irn_mode(get_Cond_selector(cond)) == mode_b) {
 		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
 						   "Cond node lacks true proj", 0,
-						   ir_printf("Cond %+F\n", cond));
+						   ir_printf("Cond %+F\n", cond);
+		);
 		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->false_projs, cond),
 						   "Cond node lacks false proj", 0,
-						   ir_printf("Cond %+F\n", cond));
+						   ir_printf("Cond %+F\n", cond);
+		);
 	} else {
 		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
 		                   "Cond node lacks default Proj", 0,
-		                   ir_printf("Cond %+F\n", cond));
+		                   ir_printf("Cond %+F\n", cond);
+		);
 	}
 	return 1;
 }
@@ -2245,7 +2255,7 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
 	CASE(CopyB);
 	CASE(Bound);
 	default:
-		/* leave NULL */;
+		break;
 	}
 #undef CASE
 
@@ -2270,7 +2280,7 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
 	CASE(CopyB);
 	CASE(Bound);
 	default:
-		/* leave NULL */;
+		break;
 	}
 #undef CASE
 }

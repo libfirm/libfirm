@@ -313,7 +313,6 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	irg_edge_info_t *info;
 	ir_edgeset_t    *edges;
 	ir_edge_t        templ;
-	ir_edge_t       *edge;
 
 	assert(edges_activated_kind(irg, kind));
 
@@ -335,7 +334,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 	 */
 	if (tgt == NULL) {
 		/* search the edge in the set. */
-		edge = ir_edgeset_find(edges, &templ);
+		ir_edge_t *edge = ir_edgeset_find(edges, &templ);
 
 		/* mark the edge invalid if it was found */
 		if (edge) {
@@ -365,7 +364,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 
 		/* If the old target is not null, the edge is moved. */
 		if (old_tgt) {
-			edge = ir_edgeset_find(edges, &templ);
+			ir_edge_t *edge = ir_edgeset_find(edges, &templ);
 			assert(edge && "edge to redirect not found!");
 			assert(! edge->invalid && "Invalid edge encountered");
 
@@ -441,11 +440,11 @@ void edges_notify_edge(ir_node *src, int pos, ir_node *tgt, ir_node *old_tgt,
 			const ir_edge_t *next;
 			foreach_out_edge_kind_safe(old_tgt, edge, next, EDGE_KIND_BLOCK) {
 				ir_node *succ       = get_edge_src_irn(edge);
-				int      pos        = get_edge_src_pos(edge);
-				ir_node *block_pred = get_Block_cfgpred(succ, pos);
+				int      succ_pos   = get_edge_src_pos(edge);
+				ir_node *block_pred = get_Block_cfgpred(succ, succ_pos);
 				if (block_pred != src)
 					continue;
-				edges_notify_edge_kind(succ, pos, tgt, old_tgt,
+				edges_notify_edge_kind(succ, succ_pos, tgt, old_tgt,
 				                       EDGE_KIND_BLOCK, irg);
 			}
 		}

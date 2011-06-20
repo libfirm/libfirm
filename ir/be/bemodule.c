@@ -228,7 +228,7 @@ static int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
 	(void) len;
 
 	for (module = *(moddata->list_head); module != NULL; module = module->next) {
-		size_t len = strlen(module->name);
+		size_t name_len = strlen(module->name);
 
 		if (module != *(moddata->list_head)) {
 			p       = strncat(p, ", ", buflen - 1);
@@ -237,10 +237,10 @@ static int dump_opt_module_vals(char *buf, size_t buflen, const char *name,
 
 		p = strncat(p, module->name, buflen - 1);
 
-		if (len >= buflen)
+		if (name_len >= buflen)
 			break;
 
-		buflen -= len;
+		buflen -= name_len;
 	}
 
 	return strlen(buf);

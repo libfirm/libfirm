@@ -41,10 +41,10 @@
 
 #if KAPS_USE_UNSIGNED
 	typedef unsigned num;
-	static const num INF_COSTS = UINT_MAX;
+	#define INF_COSTS UINT_MAX
 #else
 	typedef intmax_t num;
-	static const num INF_COSTS = INTMAX_MAX;
+	#define INF_COSTS INTMAX_MAX
 #endif
 
 #include "matrix_t.h"

@@ -39,11 +39,30 @@ static const unsigned ignore_regs[] = {
 	REG_FL,
 };
 
-/* determine how function parameters and return values are passed. */
+static const arch_register_t* const param_regs[] = {
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3]
+};
+
+static const arch_register_t* const result_regs[] = {
+	&arm_registers[REG_R0],
+	&arm_registers[REG_R1],
+	&arm_registers[REG_R2],
+	&arm_registers[REG_R3]
+};
+
+static const arch_register_t* const float_result_regs[] = {
+	&arm_registers[REG_F0],
+	&arm_registers[REG_F1]
+};
+
 calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
                                                     ir_type *function_type)
 {
-	int                   stack_offset = 0;
+	unsigned              stack_offset      = 0;
+	unsigned              n_param_regs_used = 0;
 	reg_or_stackslot_t   *params;
 	reg_or_stackslot_t   *results;
 	int                   n_param_regs
@@ -90,15 +109,16 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 				const arch_register_t *reg = param_regs[regnum++];
 				param->reg1 = reg;
 			} else {
-				ir_mode *mode = param_regs[0]->reg_class->mode;
-				ir_type *type = get_type_for_mode(mode);
-				param->type   = type;
-				param->offset = stack_offset;
-				assert(get_mode_size_bits(mode) == 32);
+				ir_mode *pmode = param_regs[0]->reg_class->mode;
+				ir_type *type  = get_type_for_mode(pmode);
+				param->type    = type;
+				param->offset  = stack_offset;
+				assert(get_mode_size_bits(pmode) == 32);
 				stack_offset += 4;
 			}
 		}
 	}
+	n_param_regs_used = regnum;
 
 	n_results    = get_method_n_ress(function_type);
 	regnum       = 0;
@@ -133,6 +153,7 @@ calling_convention_t *arm_decide_calling_convention(const ir_graph *irg,
 	cconv                   = XMALLOCZ(calling_convention_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
+	cconv->n_reg_params     = n_param_regs_used;
 	cconv->results          = results;
 
 	/* setup allocatable registers */

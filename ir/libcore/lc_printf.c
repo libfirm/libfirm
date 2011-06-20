@@ -33,7 +33,6 @@
 #include <assert.h>
 #include <ctype.h>
 
-#include "lc_common_t.h"
 #include "xmalloc.h"
 #include "lc_printf.h"
 #include "lc_defines.h"
@@ -72,10 +71,11 @@ lc_arg_env_t *lc_arg_get_default_env(void)
 	return _lc_arg_get_default_env();
 }
 
-static int lc_arg_cmp(const void *p1, const void *p2, UNUSED(size_t size))
+static int lc_arg_cmp(const void *p1, const void *p2, size_t size)
 {
 	const lc_arg_t *a1 = (const lc_arg_t*)p1;
 	const lc_arg_t *a2 = (const lc_arg_t*)p2;
+	(void) size;
 	return strcmp(a1->name, a2->name);
 }
 
@@ -121,8 +121,10 @@ int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_a
 	return ent != NULL;
 }
 
-void lc_arg_unregister(UNUSED(lc_arg_env_t *env), UNUSED(const char *name))
+void lc_arg_unregister(lc_arg_env_t *env, const char *name)
 {
+	(void) env;
+	(void) name;
 }
 
 int lc_arg_append(lc_appendable_t *app, const lc_arg_occ_t *occ, const char *str, size_t len)
@@ -238,7 +240,7 @@ static int std_get_lc_arg_type(const lc_arg_occ_t *occ)
 				return modlen > 1 && mod[1] == 'h' ? lc_arg_type_char : lc_arg_type_short;
 			case 'l':
 				return modlen > 1 && mod[1] == 'l' ? lc_arg_type_long_long : lc_arg_type_long;
-#define TYPE_CASE(letter,type) case letter: return lc_arg_type_ ## type;
+#define TYPE_CASE(letter,type) case letter: return lc_arg_type_ ## type
 			TYPE_CASE('j', intmax_t);
 			TYPE_CASE('z', size_t);
 			TYPE_CASE('t', ptrdiff_t);
@@ -398,12 +400,12 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 
 		/* read the precision if given */
 		if (*s == '.') {
-			int val;
-			s = read_int(s + 1, &val);
+			int precision;
+			s = read_int(s + 1, &precision);
 
 			/* Negative or lacking precision after a '.' is treated as
 			 * precision 0. */
-			occ.precision = LC_MAX(0, val);
+			occ.precision = LC_MAX(0, precision);
 		}
 
 		/*
@@ -423,7 +425,8 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					const char *named = ++s;
 
 					/* Read until the closing brace or end of the string. */
-					for (ch = *s; ch != '}' && ch != '\0'; ch = *++s);
+					for (ch = *s; ch != '}' && ch != '\0'; ch = *++s) {
+					}
 
 					if (s - named) {
 						size_t n = s - named;

@@ -63,7 +63,7 @@ static const lc_opt_table_entry_t options[] = {
 	LC_OPT_LAST
 };
 
-BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp);
+BE_REGISTER_MODULE_CONSTRUCTOR(be_init_copyilp)
 void be_init_copyilp(void)
 {
 	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");

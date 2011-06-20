@@ -895,7 +895,6 @@ void be_set_constr_single_reg_out(ir_node *node, int pos,
 	if (additional_types == 0) {
 		req = reg->single_req;
 	} else {
-		ir_graph       *irg  = get_irn_irg(node);
 		struct obstack *obst = be_get_be_obst(irg);
 		req = be_create_reg_req(obst, reg, additional_types);
 	}

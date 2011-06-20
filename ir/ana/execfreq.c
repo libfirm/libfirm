@@ -295,7 +295,6 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 
 	for (idx = dfs_get_n_nodes(dfs) - 1; idx >= 0; --idx) {
 		ir_node *bb = (ir_node *) dfs_get_post_num_node(dfs, size - idx - 1);
-		freq_t *freq;
 		int i;
 
 		freq = set_insert_freq(freqs, bb);
@@ -354,7 +353,7 @@ ir_exec_freq *compute_execfreq(ir_graph *irg, double loop_weight)
 
 	ef->max = 0.0;
 	set_foreach(freqs, freq_t*, freq) {
-		int idx = freq->idx;
+		idx = freq->idx;
 
 		/* take abs because it sometimes can be -0 in case of endless loops */
 		freq->freq = fabs(x[idx]) * norm;

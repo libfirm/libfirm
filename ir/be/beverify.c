@@ -169,7 +169,6 @@ static void verify_schedule_walker(ir_node *block, void *data)
 	 *       (except mode_X projs)
 	 */
 	sched_foreach(block, node) {
-		int i, arity;
 		int timestep;
 
 		/* this node is scheduled */
@@ -226,6 +225,8 @@ static void verify_schedule_walker(ir_node *block, void *data)
 
 		/* Check that all uses come before their definitions */
 		if (!is_Phi(node)) {
+			int i;
+			int arity;
 			sched_timestep_t nodetime = sched_get_time_step(node);
 			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 				ir_node *arg = get_irn_n(node, i);
@@ -258,6 +259,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 				prev = sched_prev(prev);
 
 			while (true) {
+				int i;
 				for (i = 0; i < arity; ++i) {
 					ir_node *in = get_irn_n(node, i);
 					in = skip_Proj(in);
@@ -727,8 +729,6 @@ static void check_input_constraints(ir_node *node)
 	/* phis should be NOPs at this point, which means all input regs
 	 * must be the same as the output reg */
 	if (is_Phi(node)) {
-		int i, arity;
-
 		reg = arch_get_irn_register(node);
 
 		arity = get_irn_arity(node);
@@ -816,8 +816,8 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		registers = ALLOCANZ(ir_node*, n_regs);
 
 		be_lv_foreach(lv, block, be_lv_state_end, idx) {
-			ir_node *node = be_lv_get_irn(lv, block, idx);
-			value_used(block, node);
+			ir_node *lv_node = be_lv_get_irn(lv, block, idx);
+			value_used(block, lv_node);
 		}
 
 		sched_foreach_reverse(block, node) {
@@ -848,8 +848,8 @@ static void verify_block_register_allocation(ir_node *block, void *data)
 		}
 
 		be_lv_foreach(lv, block, be_lv_state_in, idx) {
-			ir_node *node = be_lv_get_irn(lv, block, idx);
-			value_def(node);
+			ir_node *lv_node = be_lv_get_irn(lv, block, idx);
+			value_def(lv_node);
 		}
 
 		/* set must be empty now */

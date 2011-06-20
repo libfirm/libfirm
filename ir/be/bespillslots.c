@@ -368,7 +368,7 @@ static void do_greedy_coalescing(be_fec_env_t *env)
 
 	DEBUG_ONLY(
 		memset(spilllist, 0, spillcount * sizeof(spilllist[0]));
-	);
+	)
 
 	i = 0;
 	foreach_set(env->spills, spill_t*, spill) {

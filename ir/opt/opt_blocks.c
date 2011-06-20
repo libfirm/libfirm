@@ -735,7 +735,7 @@ static void apply(ir_graph *irg, partition_t *part)
 	ir_node **ins, **phi_ins;
 	phi_t   *repr_phi, *phi;
 	pair_t  *repr_pair, *pair;
-	int     i, j, k, n, block_nr, n_phis;
+	int     i, j, k, n, n_phis;
 
 	list_del(&repr->block_list);
 
@@ -769,10 +769,8 @@ static void apply(ir_graph *irg, partition_t *part)
 
 	/* collect new in arrays */
 	end = get_irg_end(irg);
-	block_nr = 0;
 	list_for_each_entry(block_t, bl, &part->blocks, block_list) {
 		block = bl->block;
-		++block_nr;
 
 		DB((dbg, LEVEL_1, "%+F, ", block));
 

@@ -51,6 +51,22 @@ static const unsigned ignore_regs[] = {
 	REG_Y,
 };
 
+static const arch_register_t* const param_regs[] = {
+	&sparc_registers[REG_I0],
+	&sparc_registers[REG_I1],
+	&sparc_registers[REG_I2],
+	&sparc_registers[REG_I3],
+	&sparc_registers[REG_I4],
+	&sparc_registers[REG_I5],
+};
+
+static const arch_register_t* const float_result_regs[] = {
+	&sparc_registers[REG_F0],
+	&sparc_registers[REG_F1],
+	&sparc_registers[REG_F2],
+	&sparc_registers[REG_F3],
+};
+
 /**
  * Maps an input register representing the i'th register input
  * to the i'th register output.
@@ -82,7 +98,8 @@ static void check_omit_fp(ir_node *node, void *env)
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
                                                       ir_graph *irg)
 {
-	int                   stack_offset        = 0;
+	unsigned              stack_offset        = 0;
+	unsigned              n_param_regs_used   = 0;
 	int                   n_param_regs        = ARRAY_SIZE(param_regs);
 	int                   n_float_result_regs = ARRAY_SIZE(float_result_regs);
 	bool                  omit_fp             = false;
@@ -145,6 +162,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 			}
 		}
 	}
+	n_param_regs_used = regnum;
 
 	/* determine how results are passed */
 	n_results    = get_method_n_ress(function_type);
@@ -182,6 +200,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	cconv                   = XMALLOCZ(calling_convention_t);
 	cconv->parameters       = params;
 	cconv->param_stack_size = stack_offset;
+	cconv->n_param_regs     = n_param_regs_used;
 	cconv->results          = results;
 	cconv->omit_fp          = omit_fp;
 
