@@ -4,9 +4,8 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-#ifndef _LPP_CPLEX_H_
-#define _LPP_CPLEX_H_
+#ifndef LPP_CPLEX_H
+#define LPP_CPLEX_H
 
 #include "lpp.h"
 
@@ -14,4 +13,4 @@
 void lpp_solve_cplex(lpp_t *lpp);
 #endif
 
-#endif /*_LPP_CPLEX_H_*/
+#endif

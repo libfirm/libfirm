@@ -29,27 +29,27 @@
 #include "bitset.h"
 #include "xmalloc.h"
 
-typedef enum _iter_direction_t {
+typedef enum iter_direction_t {
 	down, right, all
 } iter_direction_t;
 
 /**
  * Embedded list pointer.
  */
-typedef struct _sp_matrix_list_head_t {
-	struct _sp_matrix_list_head_t *next;
+typedef struct sp_matrix_list_head_t {
+	struct sp_matrix_list_head_t *next;
 } sp_matrix_list_head_t;
 
 /**
  * A matrix entry.
  */
-typedef struct _entry_t {
+typedef struct entry_t {
 	sp_matrix_list_head_t col_chain; /**< points to next element in same column */
 	sp_matrix_list_head_t row_chain; /**< points to next element in same row */
 	matrix_elem_t         e;         /**< The actual element */
 } entry_t;
 
-struct _sp_matrix_t {
+struct sp_matrix_t {
 	/* These specify the dimensions of the matrix.
 	 * They equal the largest values ever used in matrix_set */
 	int maxrow, maxcol;
@@ -86,7 +86,8 @@ struct _sp_matrix_t {
 /**
  * Returns the size of a single matrix element.
  */
-unsigned matrix_get_elem_size(void) {
+unsigned matrix_get_elem_size(void)
+{
 	return sizeof(entry_t);
 }
 
@@ -94,7 +95,8 @@ unsigned matrix_get_elem_size(void) {
  * Returns the new size for an array of size old_size,
  *  which must at least store an entry at position min.
  */
-static inline int _m_new_size(int old_size, int min) {
+static inline int m_new_size(int old_size, int min)
+{
 	unsigned bits = 0;
 	assert(min >= old_size);
 	while (min > 0) {
@@ -109,7 +111,8 @@ static inline int _m_new_size(int old_size, int min) {
  * Allocates space for @p count entries in the rows array and
  * initializes all entries from @p start to the end.
  */
-static inline void _m_alloc_row(sp_matrix_t *m, int start, int count) {
+static inline void m_alloc_row(sp_matrix_t *m, int start, int count)
+{
 	int p;
 
 	m->rowc        = count;
@@ -127,7 +130,8 @@ static inline void _m_alloc_row(sp_matrix_t *m, int start, int count) {
  * Allocates space for @p count entries in the cols array and
  * initializes all entries from @p start to the end.
  */
-static inline void _m_alloc_col(sp_matrix_t *m, int start, int count) {
+static inline void m_alloc_col(sp_matrix_t *m, int start, int count)
+{
 	int p;
 
 	m->colc        = count;
@@ -148,7 +152,7 @@ static inline void _m_alloc_col(sp_matrix_t *m, int start, int count) {
  *         Else: NULL and @p prev points to the sp_matrix_list_head after which the element would be inserted.
  *         @p prev_prev always points to the previous element of @p prev
  */
-static inline matrix_elem_t *_m_search_in_row_from(const sp_matrix_t *m,
+static inline matrix_elem_t *m_search_in_row_from(const sp_matrix_t *m,
 			int row, int col, sp_matrix_list_head_t *start, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *row_start;
@@ -183,7 +187,7 @@ static inline matrix_elem_t *_m_search_in_row_from(const sp_matrix_t *m,
  *         Else: NULL and @p prev points to the sp_matrix_list_head after which the element would be inserted.
  *         @p prev_prev always points to the previous element of @p prev
  */
-static inline matrix_elem_t *_m_search_in_row(const sp_matrix_t *m,
+static inline matrix_elem_t *m_search_in_row(const sp_matrix_t *m,
 			int row, int col, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *start = m->rows[row];
@@ -197,7 +201,7 @@ static inline matrix_elem_t *_m_search_in_row(const sp_matrix_t *m,
 		}
 	}
 
-	return _m_search_in_row_from(m, row, col, start, prev, prev_prev);
+	return m_search_in_row_from(m, row, col, start, prev, prev_prev);
 }
 
 /**
@@ -207,7 +211,7 @@ static inline matrix_elem_t *_m_search_in_row(const sp_matrix_t *m,
  *         Else: NULL and @p prev points to the sp_matrix_list_head after which the element would be inserted.
  *         @p prev_prev always points to the previous element of @p prev
  */
-static inline matrix_elem_t *_m_search_in_col_from(const sp_matrix_t *m,
+static inline matrix_elem_t *m_search_in_col_from(const sp_matrix_t *m,
 			int row, int col, sp_matrix_list_head_t *start, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *col_start;
@@ -242,7 +246,7 @@ static inline matrix_elem_t *_m_search_in_col_from(const sp_matrix_t *m,
  *         Else: NULL and @p prev points to the sp_matrix_list_head after which the element would be inserted.
  *         @p prev_prev always points to the previous element of @p prev
  */
-static inline matrix_elem_t *_m_search_in_col(const sp_matrix_t *m,
+static inline matrix_elem_t *m_search_in_col(const sp_matrix_t *m,
 			int row, int col, sp_matrix_list_head_t **prev, sp_matrix_list_head_t **prev_prev)
 {
 	sp_matrix_list_head_t *start = m->cols[col];
@@ -256,19 +260,21 @@ static inline matrix_elem_t *_m_search_in_col(const sp_matrix_t *m,
 		}
 	}
 
-	return _m_search_in_col_from(m, row, col, start, prev, prev_prev);
+	return m_search_in_col_from(m, row, col, start, prev, prev_prev);
 }
 
-sp_matrix_t *new_matrix(int row_init, int col_init) {
+sp_matrix_t *new_matrix(int row_init, int col_init)
+{
 	sp_matrix_t *res = XMALLOCZ(sp_matrix_t);
 	res->maxrow = -1;
 	res->maxcol = -1;
-	_m_alloc_row(res, 0, MAX(0, row_init));
-	_m_alloc_col(res, 0, MAX(0, col_init));
+	m_alloc_row(res, 0, MAX(0, row_init));
+	m_alloc_col(res, 0, MAX(0, col_init));
 	return res;
 }
 
-void del_matrix(sp_matrix_t *m) {
+void del_matrix(sp_matrix_t *m)
+{
 	int i;
 
 	for (i = 0; i < m->rowc; ++i) {
@@ -296,7 +302,8 @@ void del_matrix(sp_matrix_t *m) {
 	xfree(m);
 }
 
-void matrix_set(sp_matrix_t *m, int row, int col, double val) {
+void matrix_set(sp_matrix_t *m, int row, int col, double val)
+{
 	matrix_elem_t *me = NULL;
 	entry_t       *entr;
 	sp_matrix_list_head_t *leftof, *above;
@@ -306,19 +313,19 @@ void matrix_set(sp_matrix_t *m, int row, int col, double val) {
 	if (row > m->maxrow) {
 		m->maxrow = row;
 		if (row >= m->rowc)
-			_m_alloc_row(m, m->rowc, _m_new_size(m->rowc, row));
+			m_alloc_row(m, m->rowc, m_new_size(m->rowc, row));
 	}
 	if (col > m->maxcol) {
 		m->maxcol = col;
 		if (col >= m->colc)
-			_m_alloc_col(m, m->colc, _m_new_size(m->colc, col));
+			m_alloc_col(m, m->colc, m_new_size(m->colc, col));
 	}
 
 	/* search for existing entry */
 	if (m->maxrow < m->maxcol)
-		me = _m_search_in_col(m, row, col, &above, &prev_above);
+		me = m_search_in_col(m, row, col, &above, &prev_above);
 	else
-		me = _m_search_in_row(m, row, col, &leftof, &prev_leftof);
+		me = m_search_in_row(m, row, col, &leftof, &prev_leftof);
 
 	/* if it exists, set the value and return */
 	if (me) {
@@ -362,9 +369,9 @@ void matrix_set(sp_matrix_t *m, int row, int col, double val) {
 
 	/* if it does not exist and val != 0 search the other direction */
 	if (m->maxrow >= m->maxcol)
-		_m_search_in_col(m, row, col, &above, &prev_above);
+		m_search_in_col(m, row, col, &above, &prev_above);
 	else
-		_m_search_in_row(m, row, col, &leftof, &prev_leftof);
+		m_search_in_row(m, row, col, &leftof, &prev_leftof);
 	/* now leftof and above are the entry_t's prior the new one in each direction */
 
 	/* insert new entry */
@@ -387,7 +394,8 @@ void matrix_set(sp_matrix_t *m, int row, int col, double val) {
 	m->entries++;
 }
 
-void matrix_set_row_bulk(sp_matrix_t *m, int row, int *cols, int num_cols, double val) {
+void matrix_set_row_bulk(sp_matrix_t *m, int row, int *cols, int num_cols, double val)
+{
 	matrix_elem_t *me = NULL;
 	entry_t       *entr;
 	int           i;
@@ -398,12 +406,12 @@ void matrix_set_row_bulk(sp_matrix_t *m, int row, int *cols, int num_cols, doubl
 	if (row > m->maxrow) {
 		m->maxrow = row;
 		if (row >= m->rowc)
-			_m_alloc_row(m, m->rowc, _m_new_size(m->rowc, row));
+			m_alloc_row(m, m->rowc, m_new_size(m->rowc, row));
 	}
 	if (cols[num_cols - 1] > m->maxcol) {
 		m->maxcol = cols[num_cols - 1];
 		if (cols[num_cols - 1] >= m->colc)
-			_m_alloc_col(m, m->colc, _m_new_size(m->colc, cols[num_cols - 1]));
+			m_alloc_col(m, m->colc, m_new_size(m->colc, cols[num_cols - 1]));
 	}
 
     /* set start values */
@@ -412,7 +420,7 @@ void matrix_set_row_bulk(sp_matrix_t *m, int row, int *cols, int num_cols, doubl
 
 	for (i = 0; i < num_cols; ++i) {
 		/* search for existing entry */
-		me = _m_search_in_row(m, row, cols[i], &leftof, &prev_leftof);
+		me = m_search_in_row(m, row, cols[i], &leftof, &prev_leftof);
 
 		/* if it exists, set the value and return */
 		if (me) {
@@ -456,7 +464,7 @@ void matrix_set_row_bulk(sp_matrix_t *m, int row, int *cols, int num_cols, doubl
 			continue;
 
 		/* we have to search the col list as well, to get the above pointer */
-		_m_search_in_col(m, row, cols[i], &above, &prev_above);
+		m_search_in_col(m, row, cols[i], &above, &prev_above);
 
 		/* now leftof and above are the entry_t's prior the new one in each direction */
 
@@ -481,7 +489,8 @@ void matrix_set_row_bulk(sp_matrix_t *m, int row, int *cols, int num_cols, doubl
 	}
 }
 
-double matrix_get(const sp_matrix_t *m, int row, int col) {
+double matrix_get(const sp_matrix_t *m, int row, int col)
+{
 	sp_matrix_list_head_t *dummy, *dummy2;
 	matrix_elem_t *me;
 
@@ -489,9 +498,9 @@ double matrix_get(const sp_matrix_t *m, int row, int col) {
 		return 0.0;
 
 	if (m->maxrow < m->maxcol)
-		me = _m_search_in_col(m, row, col, &dummy, &dummy2);
+		me = m_search_in_col(m, row, col, &dummy, &dummy2);
 	else
-		me = _m_search_in_row(m, row, col, &dummy, &dummy2);
+		me = m_search_in_row(m, row, col, &dummy, &dummy2);
 
 	if (me)
 		assert(me->col == col && me->row == row);
@@ -499,19 +508,23 @@ double matrix_get(const sp_matrix_t *m, int row, int col) {
 	return me ? me->val : 0.0;
 }
 
-int matrix_get_entries(const sp_matrix_t *m) {
+int matrix_get_entries(const sp_matrix_t *m)
+{
 	return m->entries;
 }
 
-int matrix_get_rowcount(const sp_matrix_t *m) {
+int matrix_get_rowcount(const sp_matrix_t *m)
+{
 	return m->maxrow + 1;
 }
 
-int matrix_get_colcount(const sp_matrix_t *m) {
+int matrix_get_colcount(const sp_matrix_t *m)
+{
 	return m->maxcol + 1;
 }
 
-const matrix_elem_t *matrix_row_first(sp_matrix_t *m, int row) {
+const matrix_elem_t *matrix_row_first(sp_matrix_t *m, int row)
+{
 	if (is_empty_row(row))
 		return NULL;
 
@@ -525,7 +538,8 @@ const matrix_elem_t *matrix_row_first(sp_matrix_t *m, int row) {
 	return list_entry_by_row(m->last);
 }
 
-const matrix_elem_t *matrix_col_first(sp_matrix_t *m, int col) {
+const matrix_elem_t *matrix_col_first(sp_matrix_t *m, int col)
+{
 	if (is_empty_col(col))
 		return NULL;
 
@@ -539,7 +553,8 @@ const matrix_elem_t *matrix_col_first(sp_matrix_t *m, int col) {
 	return list_entry_by_col(m->last);
 }
 
-static inline const matrix_elem_t *matrix_first_from(sp_matrix_t *m, int startrow) {
+static inline const matrix_elem_t *matrix_first_from(sp_matrix_t *m, int startrow)
+{
 	const matrix_elem_t *res;
 	int i;
 
@@ -555,11 +570,13 @@ static inline const matrix_elem_t *matrix_first_from(sp_matrix_t *m, int startro
 	return NULL;
 }
 
-const matrix_elem_t *matrix_first(sp_matrix_t *m) {
+const matrix_elem_t *matrix_first(sp_matrix_t *m)
+{
 	return matrix_first_from(m, 0);
 }
 
-const matrix_elem_t *matrix_next(sp_matrix_t *m) {
+const matrix_elem_t *matrix_next(sp_matrix_t *m)
+{
 	assert(m->first && "Start iteration with matrix_???_first, before calling me!");
 
 	if (m->next == NULL) {
@@ -578,11 +595,13 @@ const matrix_elem_t *matrix_next(sp_matrix_t *m) {
 		return list_entry_by_row(m->last);
 }
 
-static int cmp_count(const void *e1, const void *e2) {
+static int cmp_count(const void *e1, const void *e2)
+{
 	return (int *)e2 - (int *)e1;
 }
 
-static inline void matrix_fill_row(sp_matrix_t *m, int row, bitset_t *fullrow) {
+static inline void matrix_fill_row(sp_matrix_t *m, int row, bitset_t *fullrow)
+{
 	const matrix_elem_t *e;
 	bitset_set(fullrow, row);
 	matrix_foreach_in_col(m, row, e) {
@@ -594,7 +613,8 @@ static inline void matrix_fill_row(sp_matrix_t *m, int row, bitset_t *fullrow) {
 	}
 }
 
-void matrix_optimize(sp_matrix_t *m) {
+void matrix_optimize(sp_matrix_t *m)
+{
 	int i, size, redo;
 	int *c;
 	const matrix_elem_t *e;
@@ -653,7 +673,8 @@ void matrix_optimize(sp_matrix_t *m) {
 	}
 }
 
-void matrix_dump(sp_matrix_t *m, FILE *out, int factor) {
+void matrix_dump(sp_matrix_t *m, FILE *out, int factor)
+{
 	int i, o, last_idx;
 	const matrix_elem_t *e;
 
@@ -674,7 +695,8 @@ void matrix_dump(sp_matrix_t *m, FILE *out, int factor) {
 	}
 }
 
-void matrix_self_test(int d) {
+void matrix_self_test(int d)
+{
 	int i, o;
 	const matrix_elem_t *e;
 	sp_matrix_t *m = new_matrix(10, 10);

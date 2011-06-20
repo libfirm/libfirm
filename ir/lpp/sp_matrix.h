@@ -16,13 +16,13 @@
 /**
  * A matrix element.
  */
-typedef struct _matrix_elem_t {
+typedef struct matrix_elem_t {
 	int   row;  /* row index */
 	int   col;  /* column index */
 	float val;  /* the actual value of the entry */
 } matrix_elem_t;
 
-typedef struct _sp_matrix_t sp_matrix_t;
+typedef struct sp_matrix_t sp_matrix_t;
 
 /**
  * Allocate a new matrix and init internal data for a matrix of size

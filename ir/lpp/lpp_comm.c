@@ -25,16 +25,13 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 #endif
 
 #include "irtools.h"
 #include "debug.h"
 
 #include "lpp_comm.h"
-
-
-/* undef to disable buffering socket i/o */
-#define ENABLE_BUFFERING
 
 /* undef to disable debugging */
 #undef  ENABLE_DEBUGGING
@@ -71,47 +68,46 @@ static inline firm_dbg_module_t *get_dbg_module(void)
  */
 static ssize_t secure_recv(int fd, void *buf, size_t try, size_t at_least)
 {
-  ssize_t res;
-  size_t bytes_read = 0;
-  char *data = buf;
+	ssize_t res;
+	size_t bytes_read = 0;
+	char *data = buf;
 
-  do {
-    res = recv(fd, &data[bytes_read], try - bytes_read, 0);
-    if(res <= 0) {
-      if(res == 0 || errno != EAGAIN)
-        return -1;
-      continue;
-    }
+	do {
+		res = recv(fd, &data[bytes_read], try - bytes_read, 0);
+		if(res <= 0) {
+			if(res == 0 || errno != EAGAIN)
+				return -1;
+			continue;
+		}
 
-    bytes_read += res;
+		bytes_read += res;
 
-  } while(bytes_read < at_least);
+	} while(bytes_read < at_least);
 
-  return bytes_read;
+	return bytes_read;
 }
 
 static ssize_t secure_send(int fd, const void *buf, size_t n)
 {
-  ssize_t res;
-  size_t bytes_written = 0;
-  const char *data = buf;
+	ssize_t res;
+	size_t bytes_written = 0;
+	const char *data = buf;
 
-  do {
-    res = send(fd, &data[bytes_written], n - bytes_written, 0);
-    if(res < 0) {
-      if(errno != EAGAIN)
-        return -1;
-      continue;
-    }
+	do {
+		res = send(fd, &data[bytes_written], n - bytes_written, 0);
+		if(res < 0) {
+			if(errno != EAGAIN)
+				return -1;
+			continue;
+		}
 
-    bytes_written += res;
+		bytes_written += res;
 
-  } while(bytes_written < n);
+	} while(bytes_written < n);
 
-  return n;
+	return n;
 }
 
-#ifdef ENABLE_BUFFERING
 ssize_t lpp_flush(lpp_comm_t *comm)
 {
 	ssize_t res = 0;
@@ -236,23 +232,6 @@ static ssize_t lpp_read(lpp_comm_t *comm, void *buf, size_t len)
 	return len;
 }
 
-#else /* ENABLE_BUFFERING */
-ssize_t lpp_flush(lpp_comm_t *comm)
-{
-	return 0;
-}
-
-static ssize_t lpp_write(lpp_comm_t *comm, const void *buf, size_t len)
-{
-	return secure_send(comm->fd, buf, len);
-}
-
-static ssize_t lpp_read(lpp_comm_t *comm, void *buf, size_t len)
-{
-	return secure_recv(comm->fd, buf, len, len);
-}
-#endif
-
 lpp_comm_t *lpp_comm_new(int fd, size_t buf_size)
 {
 	lpp_comm_t *res = malloc(sizeof(res[0]));
@@ -282,37 +261,37 @@ void lpp_comm_free(lpp_comm_t *comm)
 
 void lpp_print_err(const char *fmt, ...)
 {
-  va_list args;
+	va_list args;
 
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  va_end(args);
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
 }
 
 void lpp_writel(lpp_comm_t *comm, uint32_t x)
 {
-  x = htonl(x);
-  ERRNO_CHECK(lpp_write(comm, &x, sizeof(x)), !=, sizeof(x));
+	x = htonl(x);
+	ERRNO_CHECK(lpp_write(comm, &x, sizeof(x)), !=, (ssize_t)sizeof(x));
 }
 
 void lpp_writed(lpp_comm_t *comm, double dbl)
 {
-  ERRNO_CHECK(lpp_write(comm, &dbl, sizeof(dbl)), !=, sizeof(dbl));
+	ERRNO_CHECK(lpp_write(comm, &dbl, sizeof(dbl)), !=, (ssize_t)sizeof(dbl));
 }
 
 void lpp_writes(lpp_comm_t *comm, const char *str)
 {
-  size_t n = strlen(str);
-  lpp_writel(comm, n);
-  ERRNO_CHECK(lpp_write(comm, str, n), !=, (ssize_t) n);
+	size_t n = strlen(str);
+	lpp_writel(comm, n);
+	ERRNO_CHECK(lpp_write(comm, str, n), !=, (ssize_t) n);
 }
 
 uint32_t lpp_readl(lpp_comm_t *comm)
 {
-  uint32_t res;
+	uint32_t res;
 
-  ERRNO_CHECK(lpp_read(comm, &res, sizeof(res)), !=, sizeof(res));
-  return ntohl(res);
+	ERRNO_CHECK(lpp_read(comm, &res, sizeof(res)), !=, (ssize_t)sizeof(res));
+	return ntohl(res);
 }
 
 int lpp_read_cmd(lpp_comm_t *comm)
@@ -336,96 +315,95 @@ int lpp_read_cmd(lpp_comm_t *comm)
 
 double lpp_readd(lpp_comm_t *comm)
 {
-  double res;
-  ERRNO_CHECK(lpp_read(comm, &res, sizeof(res)), !=, sizeof(res));
-  return res;
+	double res;
+	ERRNO_CHECK(lpp_read(comm, &res, sizeof(res)), !=, (ssize_t)sizeof(res));
+	return res;
 }
 
 char *lpp_reads(lpp_comm_t *comm)
 {
-  size_t len = lpp_readl(comm);
-  char *res = malloc(sizeof(char) * (len + 1));
+	size_t len = lpp_readl(comm);
+	char *res = malloc(sizeof(char) * (len + 1));
 
-  ERRNO_CHECK(lpp_read(comm, res, len), !=, (ssize_t) len);
-  res[len] = '\0';
-  return res;
+	ERRNO_CHECK(lpp_read(comm, res, len), !=, (ssize_t) len);
+	res[len] = '\0';
+	return res;
 }
 
 char *lpp_readbuf(lpp_comm_t *comm, char *buf, size_t buflen)
 {
-  char dummy[1024];
-  size_t i;
-  size_t n         = buflen - 1;
-  size_t len       = lpp_readl(comm);
-  size_t max_read  = n < len ? n : len;
-  size_t rest      = len - max_read;
+	char dummy[1024];
+	size_t i;
+	size_t n         = buflen - 1;
+	size_t len       = lpp_readl(comm);
+	size_t max_read  = n < len ? n : len;
+	size_t rest      = len - max_read;
 
-  if(buflen > 0 && buf != NULL) {
-    ERRNO_CHECK(lpp_read(comm, buf, max_read), !=, (ssize_t) max_read);
-    buf[max_read] = '\0';
-  }
-  else
-    rest = len;
+	if(buflen > 0 && buf != NULL) {
+		ERRNO_CHECK(lpp_read(comm, buf, max_read), !=, (ssize_t) max_read);
+		buf[max_read] = '\0';
+	}
+	else
+		rest = len;
 
-  /* eat up data that didnt fit into the string */
-  for(i = 0, n = rest / sizeof(dummy); i < n; ++i)
-    ERRNO_CHECK(lpp_read(comm, dummy, sizeof(dummy)), !=, sizeof(dummy));
+	/* eat up data that didnt fit into the string */
+	for(i = 0, n = rest / sizeof(dummy); i < n; ++i)
+		ERRNO_CHECK(lpp_read(comm, dummy, sizeof(dummy)), !=, (ssize_t)sizeof(dummy));
 
-  if(rest % sizeof(dummy) > 0)
-    ERRNO_CHECK(lpp_read(comm, dummy, rest % sizeof(dummy)), !=,
-	            (ssize_t) (rest % sizeof(dummy)) );
+	if(rest % sizeof(dummy) > 0)
+		ERRNO_CHECK(lpp_read(comm, dummy, rest % sizeof(dummy)), !=,
+					(ssize_t) (rest % sizeof(dummy)) );
 
-  return buf;
+	return buf;
 }
 
 int lpp_ack(lpp_comm_t *comm, char *buf, size_t buflen)
 {
-  int res = 0;
-  int cmd = lpp_readl(comm);
+	int res = 0;
+	int cmd = lpp_readl(comm);
 
-  switch(cmd) {
-    case LPP_CMD_OK:
-      res = 1;
-      break;
-    case LPP_CMD_BAD:
-      lpp_readbuf(comm, buf, buflen);
-    default:
-      res = 0;
-  }
+	switch(cmd) {
+	case LPP_CMD_OK:
+		res = 1;
+		break;
+	case LPP_CMD_BAD:
+		lpp_readbuf(comm, buf, buflen);
+	default:
+		res = 0;
+	}
 
-  return res;
+	return res;
 }
 
 void lpp_send_res(lpp_comm_t *comm, int ok, const char *fmt, ...)
 {
-  if(!ok) {
-    char buf[1024];
-    va_list args;
+	if(!ok) {
+		char buf[1024];
+		va_list args;
 
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
 
-    lpp_writel(comm, LPP_CMD_BAD);
-    lpp_writes(comm, buf);
-  }
-
-  else
-    lpp_writel(comm, LPP_CMD_OK);
+		lpp_writel(comm, LPP_CMD_BAD);
+		lpp_writes(comm, buf);
+	} else {
+		lpp_writel(comm, LPP_CMD_OK);
+	}
 }
 
 void lpp_send_ack(lpp_comm_t *comm)
 {
-  lpp_send_res(comm, 1, "");
+	lpp_send_res(comm, 1, "");
 }
 
 const char *lpp_get_cmd_name(int cmd)
 {
-  switch(cmd) {
+	switch(cmd) {
 #define LPP_CMD(x) case LPP_CMD_ ## x: return #x;
 #include "lpp_cmd.def"
 #undef LPP_CMD
-  }
+	}
 
-  return "<unknown>";
+	return "<unknown>";
 }

@@ -12,15 +12,6 @@
 
 #ifdef WITH_GUROBI
 
-
-#ifdef _WIN32
-#include <malloc.h>
-#else
-#include <sys/time.h>
-#include <alloca.h>
-#endif
-#include <assert.h>
-
 #include "obst.h"
 
 #include <gurobi_c.h>
@@ -81,10 +72,13 @@ static void free_gurobi(gurobi_t *grb)
 static void gurobi_construct(gurobi_t *grb)
 {
 	const matrix_elem_t *elem;
-	int                  i, o, sv_cnt;
+	int                  i, o;
+	//int                  sv_cnt;
+	//int                 *indices;
+	//double              *startv;
 	int                  numcols, numrows, numentries;
-	int                  objsen, *matbeg, *matcnt, *matind, *indices;
-	double               *obj, *rhs, *matval, *lb, *startv;
+	int                  objsen, *matbeg, *matcnt, *matind;
+	double               *obj, *rhs, *matval, *lb;
 	char                 *sense, *vartype;
 	char                 **colname, **rowname;
 	struct obstack       obst;
@@ -102,8 +96,8 @@ static void gurobi_construct(gurobi_t *grb)
 	colname = obstack_alloc(&obst, numcols * sizeof(*colname));
 	rowname = obstack_alloc(&obst, numrows * sizeof(*rowname));
 	vartype = obstack_alloc(&obst, numcols * sizeof(*vartype));
-	indices = obstack_alloc(&obst, numcols * sizeof(*indices));
-	startv  = obstack_alloc(&obst, numcols * sizeof(*startv));
+	//indices = obstack_alloc(&obst, numcols * sizeof(*indices));
+	//startv  = obstack_alloc(&obst, numcols * sizeof(*startv));
 	matbeg  = obstack_alloc(&obst, numcols * sizeof(*matbeg));
 	matcnt  = obstack_alloc(&obst, numcols * sizeof(*matcnt));
 	matind  = obstack_alloc(&obst, numentries * sizeof(*matind));
@@ -112,7 +106,7 @@ static void gurobi_construct(gurobi_t *grb)
 	sense   = obstack_alloc(&obst, numrows * sizeof(*sense));
 
 	o      = 0;
-	sv_cnt = 0;
+	//sv_cnt = 0;
 	/* fill the CPLEX matrix*/
 	for (i = 0; i < numcols; ++i) {
 		lpp_name_t *curr_var = lpp->vars[1+i];
@@ -169,8 +163,7 @@ static void gurobi_solve(gurobi_t *grb)
 	int error;
 	int numcols = lpp->var_next-1;
 	double *values;
-	struct timeval tvb, tva, tvdiff;
-	double iterations;
+	double  iterations;
 
 	/* set performance parameters */
 	// CPXsetintparam(grb->env, CPX_PARAM_MIPSTART, CPX_ON);
@@ -207,10 +200,8 @@ static void gurobi_solve(gurobi_t *grb)
 	}
 
 	/* solve */
-	gettimeofday(&tvb, NULL);
 	error = GRBoptimize(grb->model);
 	check_gurobi_error(grb, error);
-	gettimeofday(&tva, NULL);
 
 	/* get solution status */
 	error = GRBgetintattr(grb->model, GRB_INT_ATTR_STATUS, &optimstatus);
@@ -241,11 +232,12 @@ static void gurobi_solve(gurobi_t *grb)
 	check_gurobi_error(grb, error);
 
 	/* get some statistics */
-	my_timersub(&tva, &tvb, &tvdiff);
-	lpp->sol_time = tvdiff.tv_sec + tvdiff.tv_usec / 1e6;
 	error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_ITERCOUNT, &iterations);
 	check_gurobi_error(grb, error);
 	lpp->iterations = (unsigned) iterations;
+
+	error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_RUNTIME, &lpp->sol_time);
+	check_gurobi_error(grb, error);
 }
 
 void lpp_solve_gurobi(lpp_t *lpp)

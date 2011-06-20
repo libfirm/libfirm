@@ -12,28 +12,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-
-#ifdef _MSC_VER
-
-typedef size_t              ssize_t;
-typedef unsigned __int16    uint16_t;
-typedef unsigned __int32    uint32_t;
-
-/* disable warning: 'foo' was declared deprecated, use 'bla' instead */
-/* of course MS had to make 'bla' incompatible to 'foo', so a simple */
-/* define will not work :-((( */
-#pragma warning( disable : 4996 )
-
-#else /* _MSC_VER */
-
 #include <stdint.h>
-#include <unistd.h>
-#include <errno.h>
-#include <netinet/in.h>
-
-#endif /* _MSC_VER */
-
-
 
 #define LPP_PORT    2175
 #define LPP_BUFSIZE (1 << 20)
@@ -42,30 +21,30 @@ enum {
 #define LPP_CMD(x) LPP_CMD_ ## x,
 #include "lpp_cmd.def"
 #undef LPP_CMD
-  LPP_CMD_LAST
+	LPP_CMD_LAST
 };
 
 #define BASIC_ERR_CHECK(expr,op,cond,fmt,last) \
-{ \
-  int res; \
-  if((res = (expr)) op cond) { \
+do { \
+  int err_check_res; \
+  if((err_check_res = (expr)) op cond) { \
     fprintf(stderr, "%s(%u): %d = %s(%d): ", \
-        __FILE__, (unsigned) __LINE__, res, #expr, cond); \
+        __FILE__, (unsigned) __LINE__, err_check_res, #expr, cond); \
     lpp_print_err fmt; \
     fprintf(stderr, "\n"); \
     last; \
   } \
-}
+} while(0)
 
 #define BASIC_ERRNO_CHECK(expr,op,cond,last) \
-{ \
+do { \
   int _basic_errno_check_res = (expr); \
   if(_basic_errno_check_res op cond) { \
     fprintf(stderr, "%s(%u): %d = %s(%d): %s\n", \
         __FILE__, (unsigned) __LINE__, _basic_errno_check_res, #expr, (int) cond, strerror(errno)); \
     last; \
   } \
-}
+} while(0)
 
 #define ERR_CHECK_RETURN(expr, op, cond, fmt, retval) \
   BASIC_ERR_CHECK(expr, op, cond, fmt, return retval)
@@ -121,4 +100,4 @@ void lpp_send_ack(lpp_comm_t *comm);
 
 const char *lpp_get_cmd_name(int cmd);
 
-#endif /* _LPP_COMM_H */
+#endif

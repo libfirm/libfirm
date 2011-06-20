@@ -13,14 +13,6 @@
 
 #ifdef WITH_CPLEX
 
-
-#ifdef _WIN32
-#include <malloc.h>
-#else
-#include <sys/time.h>
-#include <alloca.h>
-#endif
-
 #include "obst.h"
 
 #include <ilcplex/cplex.h>
@@ -49,7 +41,8 @@ typedef struct _cpx_t {
 	char buf[1024];
 } cpx_t;
 
-static void chk_cpx_err(cpx_t *cpx) {
+static void chk_cpx_err(cpx_t *cpx)
+{
 	if (cpx->status) {
 		if (CPXgeterrorstring(cpx->env, cpx->status, cpx->buf))
 			printf("%s", cpx->buf);
@@ -59,7 +52,8 @@ static void chk_cpx_err(cpx_t *cpx) {
 	}
 }
 
-static cpx_t *new_cpx(lpp_t *lpp) {
+static cpx_t *new_cpx(lpp_t *lpp)
+{
 	cpx_t *cpx = XMALLOCZ(cpx_t);
 	cpx->lpp = lpp;
 	cpx->env = CPXopenCPLEX(&cpx->status);
@@ -73,7 +67,8 @@ static cpx_t *new_cpx(lpp_t *lpp) {
 	return cpx;
 }
 
-static void free_cpx(cpx_t *cpx) {
+static void free_cpx(cpx_t *cpx)
+{
 	CPXfreeprob(cpx->env, &cpx->prob);
 	CPXcloseCPLEX(&cpx->env);
 	free(cpx);
@@ -83,7 +78,8 @@ static void free_cpx(cpx_t *cpx) {
  * Build CPLEX data structure from LPP matrix.
  * @note: The LPP matrix is freed after this step, to save memory.
  */
-static void cpx_construct(cpx_t *cpx) {
+static void cpx_construct(cpx_t *cpx)
+{
 	const matrix_elem_t *elem;
 	int                  i, o, sv_cnt;
 	int                  numcols, numrows, numentries;
@@ -171,7 +167,8 @@ static void cpx_construct(cpx_t *cpx) {
 	free_lpp_matrix(lpp);
 }
 
-static void cpx_solve(cpx_t *cpx) {
+static void cpx_solve(cpx_t *cpx)
+{
 	int i, CPX_state, numcols;
 	double *values;
 	struct timeval tvb, tva, tvdiff;
@@ -266,7 +263,8 @@ static void cpx_solve(cpx_t *cpx) {
 	lpp->iterations = CPXgetmipitcnt(cpx->env, cpx->prob);
 }
 
-void lpp_solve_cplex(lpp_t *lpp) {
+void lpp_solve_cplex(lpp_t *lpp)
+{
 	cpx_t *cpx = new_cpx(lpp);
 	cpx_construct(cpx);
 	cpx_solve(cpx);

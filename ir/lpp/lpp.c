@@ -33,11 +33,13 @@
 
 static firm_dbg_module_t *dbg = NULL;
 
-static inline char *obst_xstrdup(struct obstack *obst, const char *str) {
+static inline char *obst_xstrdup(struct obstack *obst, const char *str)
+{
 	return obstack_copy0(obst, str, strlen(str));
 }
 
-static int cmp_name_t(const void *x, const void *y, size_t size) {
+static int cmp_name_t(const void *x, const void *y, size_t size)
+{
 	const lpp_name_t *n = x;
 	const lpp_name_t *m = y;
 	(void)size; /* stop warnings */
@@ -47,7 +49,8 @@ static int cmp_name_t(const void *x, const void *y, size_t size) {
 /**
  * Update statistic information about matrix usage.
  */
-static void update_stats(lpp_t *lpp) {
+static void update_stats(lpp_t *lpp)
+{
 	lpp->n_elems    = matrix_get_entries(lpp->m);
 	lpp->matrix_mem = lpp->n_elems * matrix_get_elem_size();
 	lpp->density    = (double)lpp->n_elems / (double)(lpp->cst_next * lpp->var_next) * 100.0;
@@ -55,7 +58,8 @@ static void update_stats(lpp_t *lpp) {
 
 #define INITIAL_SIZE 64
 
-lpp_t *new_lpp(const char *name, lpp_opt_t opt_type) {
+lpp_t *new_lpp(const char *name, lpp_opt_t opt_type)
+{
 	return new_lpp_userdef(name, opt_type, INITIAL_SIZE, INITIAL_SIZE, 2.0);
 }
 
@@ -88,12 +92,14 @@ lpp_t *new_lpp_userdef(const char *name, lpp_opt_t opt_type,
 	return lpp;
 }
 
-void free_lpp_matrix(lpp_t *lpp) {
+void free_lpp_matrix(lpp_t *lpp)
+{
 	del_matrix(lpp->m);
 	lpp->m = NULL;
 }
 
-void free_lpp(lpp_t *lpp) {
+void free_lpp(lpp_t *lpp)
+{
 	obstack_free(&lpp->obst, NULL);
 
 	del_set(lpp->cst2nr);
@@ -109,15 +115,18 @@ void free_lpp(lpp_t *lpp) {
 	free(lpp);
 }
 
-double lpp_get_fix_costs(lpp_t *lpp) {
+double lpp_get_fix_costs(lpp_t *lpp)
+{
 	return matrix_get(lpp->m, 0, 0);
 }
 
-void lpp_set_fix_costs(lpp_t *lpp, double value) {
+void lpp_set_fix_costs(lpp_t *lpp, double value)
+{
 	matrix_set(lpp->m, 0, 0, value);
 }
 
-static inline int name2nr(set *where, const char *name) {
+static inline int name2nr(set *where, const char *name)
+{
 	lpp_name_t find, *found;
 	find.name = name;
 	found = set_find(where, &find, sizeof(find), HASH_NAME_T(&find));
@@ -127,13 +136,15 @@ static inline int name2nr(set *where, const char *name) {
 #define cst_nr(lpp, name) name2nr(lpp->cst2nr, name)
 #define var_nr(lpp, name) name2nr(lpp->var2nr, name)
 
-static inline char *get_next_name(lpp_t *lpp) {
+static inline char *get_next_name(lpp_t *lpp)
+{
 	char *res = obstack_alloc(&lpp->obst, 12);
-	snprintf(res, 12, "_%d", lpp->next_name_number++);
+	snprintf(res, 12, "_%u", lpp->next_name_number++);
 	return res;
 }
 
-int lpp_add_cst(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs) {
+int lpp_add_cst(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs)
+{
 	lpp_name_t n, *inner;
 
 	DBG((dbg, LEVEL_2, "%s %d %g\n", cst_name, cst_type, rhs));
@@ -170,7 +181,8 @@ int lpp_add_cst(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs
 	return inner->nr;
 }
 
-int lpp_add_cst_uniq(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs) {
+int lpp_add_cst_uniq(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, double rhs)
+{
 	if (cst_name) {
 		lpp_name_t n;
 
@@ -182,17 +194,20 @@ int lpp_add_cst_uniq(lpp_t *lpp, const char *cst_name, lpp_cst_t cst_type, doubl
 	return lpp_add_cst(lpp, cst_name, cst_type, rhs);
 }
 
-int lpp_get_cst_idx(lpp_t *lpp, const char *cst_name) {
+int lpp_get_cst_idx(lpp_t *lpp, const char *cst_name)
+{
 	DBG((dbg, LEVEL_2, "%s --> %d\n", cst_name, cst_nr(lpp, cst_name)));
 	return cst_nr(lpp, cst_name);
 }
 
-void lpp_get_cst_name(lpp_t *lpp, int index, char *buf, size_t buf_size) {
+void lpp_get_cst_name(lpp_t *lpp, int index, char *buf, size_t buf_size)
+{
 	DBG((dbg, LEVEL_2, "%d --> %s\n", index, lpp->csts[index]->name));
 	strncpy(buf, lpp->csts[index]->name, buf_size);
 }
 
-int lpp_add_var_default(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj, double startval) {
+int lpp_add_var_default(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj, double startval)
+{
 	int val;
 
 	val = lpp_add_var(lpp, var_name, var_type, obj);
@@ -201,7 +216,8 @@ int lpp_add_var_default(lpp_t *lpp, const char *var_name, lpp_var_t var_type, do
 	return val;
 }
 
-int lpp_add_var(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj) {
+int lpp_add_var(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj)
+{
 	lpp_name_t n, *inner;
 
 	DBG((dbg, LEVEL_2, "%s %d %g\n", var_name, var_type, obj));
@@ -240,17 +256,20 @@ int lpp_add_var(lpp_t *lpp, const char *var_name, lpp_var_t var_type, double obj
 	return inner->nr;
 }
 
-int lpp_get_var_idx(lpp_t *lpp, const char *var_name) {
+int lpp_get_var_idx(lpp_t *lpp, const char *var_name)
+{
 	DBG((dbg, LEVEL_2, "%s --> %d\n", var_name, var_nr(lpp, var_name)));
 	return var_nr(lpp, var_name);
 }
 
-void lpp_get_var_name(lpp_t *lpp, int index, char *buf, size_t buf_size) {
+void lpp_get_var_name(lpp_t *lpp, int index, char *buf, size_t buf_size)
+{
 	DBG((dbg, LEVEL_2, "%d --> %s\n", index, lpp->vars[index]->name));
 	strncpy(buf, lpp->vars[index]->name, buf_size);
 }
 
-int lpp_set_factor(lpp_t *lpp, const char *cst_name, const char *var_name, double value) {
+int lpp_set_factor(lpp_t *lpp, const char *cst_name, const char *var_name, double value)
+{
 	int cst, var;
 
 	cst = cst_nr(lpp, cst_name);
@@ -262,7 +281,8 @@ int lpp_set_factor(lpp_t *lpp, const char *cst_name, const char *var_name, doubl
 	return 0;
 }
 
-int lpp_set_factor_fast(lpp_t *lpp, int cst_idx, int var_idx, double value) {
+int lpp_set_factor_fast(lpp_t *lpp, int cst_idx, int var_idx, double value)
+{
 	assert(cst_idx >= 0 && var_idx >= 0);
 	assert(cst_idx < lpp->cst_next && var_idx < lpp->var_next);
 	DBG((dbg, LEVEL_2, "%s[%d] %s[%d] %g\n", lpp->csts[cst_idx]->name, cst_idx, lpp->vars[var_idx]->name, var_idx, value));
@@ -271,7 +291,8 @@ int lpp_set_factor_fast(lpp_t *lpp, int cst_idx, int var_idx, double value) {
 	return 0;
 }
 
-int lpp_set_factor_fast_bulk(lpp_t *lpp, int cst_idx, int *var_idx, int num_vars, double value) {
+int lpp_set_factor_fast_bulk(lpp_t *lpp, int cst_idx, int *var_idx, int num_vars, double value)
+{
 	assert(cst_idx >= 0 && cst_idx < lpp->cst_next);
 	assert(num_vars < lpp->var_next);
 	DBG((dbg, LEVEL_2, "row %s[%d] %d vars %g\n", lpp->csts[cst_idx]->name, cst_idx, num_vars, value));
@@ -280,14 +301,16 @@ int lpp_set_factor_fast_bulk(lpp_t *lpp, int cst_idx, int *var_idx, int num_vars
 	return 0;
 }
 
-void lpp_set_start_value(lpp_t *lpp, int var_idx, double value) {
+void lpp_set_start_value(lpp_t *lpp, int var_idx, double value)
+{
 	assert(var_idx > 0 && var_idx < lpp->var_next);
 	DBG((dbg, LEVEL_2, "%d %s %g\n", var_idx, lpp->vars[var_idx]->name, value));
 	lpp->vars[var_idx]->value = value;
 	lpp->vars[var_idx]->value_kind = lpp_value_start;
 }
 
-lpp_sol_state_t lpp_get_solution(lpp_t *lpp, double *values, int begin, int end) {
+lpp_sol_state_t lpp_get_solution(lpp_t *lpp, double *values, int begin, int end)
+{
 	int i;
 
 	if (lpp->sol_state < lpp_feasible)
@@ -300,7 +323,8 @@ lpp_sol_state_t lpp_get_solution(lpp_t *lpp, double *values, int begin, int end)
 	return lpp->sol_state;
 }
 
-void lpp_check_startvals(lpp_t *lpp) {
+void lpp_check_startvals(lpp_t *lpp)
+{
 	int cst_idx;
 
 	for (cst_idx = 1; cst_idx < lpp->cst_next; ++cst_idx) {
@@ -339,7 +363,8 @@ next: ;
 	}
 }
 
-void lpp_dump(lpp_t *lpp, const char *filename) {
+void lpp_dump(lpp_t *lpp, const char *filename)
+{
 	FILE *out = fopen(filename, "wt");
 	mps_write_mps(lpp, s_mps_fixed, out);
 	fclose(out);
@@ -353,37 +378,37 @@ void lpp_set_log(lpp_t *lpp, FILE *log)
 
 static const char *lpp_cst_op_to_str(lpp_cst_t cst)
 {
-  switch(cst) {
-    case lpp_equal:
-      return "=";
-    case lpp_less:
-      return "<=";
-    case lpp_greater:
-      return ">=";
+	switch(cst) {
+	case lpp_equal:
+		return "=";
+	case lpp_less:
+		return "<=";
+	case lpp_greater:
+		return ">=";
 	default:
-	  return "";
-  }
+		return "";
+	}
 }
 
 void lpp_dump_plain(lpp_t *lpp, FILE *f)
 {
-  int i;
+	int i;
 
-  for(i = 0; i < lpp->cst_next; ++i) {
-    const matrix_elem_t *elm;
-    lpp_name_t *cst = lpp->csts[i];
+	for(i = 0; i < lpp->cst_next; ++i) {
+		const matrix_elem_t *elm;
+		lpp_name_t *cst = lpp->csts[i];
 
-    fprintf(f, "%16s: ", cst->name);
-    matrix_foreach_in_row(lpp->m, cst->nr, elm) {
-      lpp_name_t *var = lpp->vars[elm->col];
-      /* TODO Perhaps better a define LPP_COL_RHS */
-      if(elm->col > 0)
-        fprintf(f, "%+4.1f*%-16s ", elm->val, var->name);
-    }
+		fprintf(f, "%16s: ", cst->name);
+		matrix_foreach_in_row(lpp->m, cst->nr, elm) {
+			lpp_name_t *var = lpp->vars[elm->col];
+			/* TODO Perhaps better a define LPP_COL_RHS */
+			if(elm->col > 0)
+				fprintf(f, "%+4.1f*%-16s ", elm->val, var->name);
+		}
 
-    fprintf(f, "%3s %+4.1f\n",
-        lpp_cst_op_to_str(cst->type.cst_type), matrix_get(lpp->m, cst->nr, 0));
-  }
+		fprintf(f, "%3s %+4.1f\n",
+				lpp_cst_op_to_str(cst->type.cst_type), matrix_get(lpp->m, cst->nr, 0));
+	}
 }
 
 /**
@@ -488,9 +513,9 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 		name.value_kind    = lpp_readl(comm);
 		name.type.cst_type = lpp_readl(comm);
 
-		if(with_names)
-			name.name          = lpp_reads(comm);
-		else {
+		if(with_names) {
+			name.name = lpp_reads(comm);
+		} else {
 			char* buf = XMALLOCN(char, NAMELEN);
 			snprintf(buf, NAMELEN, "c%d\n", name.nr);
 			name.name = buf;
@@ -507,9 +532,9 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 		name.value_kind    = lpp_readl(comm);
 		name.type.var_type = lpp_readl(comm);
 
-		if(with_names)
-			name.name          = lpp_reads(comm);
-		else {
+		if(with_names) {
+			name.name = lpp_reads(comm);
+		} else {
 			char* buf = XMALLOCN(char, NAMELEN);
 			snprintf(buf, NAMELEN, "v%d\n", name.nr);
 			name.name = buf;
@@ -533,38 +558,38 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 
 void lpp_serialize_values(lpp_comm_t *comm, const lpp_t *lpp, lpp_value_kind_t value_kind)
 {
-  int i, n;
+	int i, n;
 
-  for(i = 0, n = 0; i < lpp->var_next; ++i)
-    n += lpp->vars[i]->value_kind == value_kind;
+	for(i = 0, n = 0; i < lpp->var_next; ++i)
+		n += lpp->vars[i]->value_kind == value_kind;
 
-  /* Write the number of values to expect */
-  lpp_writel(comm, n);
+	/* Write the number of values to expect */
+	lpp_writel(comm, n);
 
-  /* send the values */
-  for(i = 0, n = lpp->var_next; i < n; ++i) {
-    const lpp_name_t *name = lpp->vars[i];
-    if(name->value_kind == value_kind) {
-      lpp_writel(comm, name->nr);
-      lpp_writed(comm, name->value);
-    }
-  }
+	/* send the values */
+	for(i = 0, n = lpp->var_next; i < n; ++i) {
+		const lpp_name_t *name = lpp->vars[i];
+		if(name->value_kind == value_kind) {
+			lpp_writel(comm, name->nr);
+			lpp_writed(comm, name->value);
+		}
+	}
 }
 
 void lpp_deserialize_values(lpp_comm_t *comm, lpp_t *lpp, lpp_value_kind_t value_kind)
 {
-  int i, n;
+	int i, n;
 
-  /* Get the number of values to read */
-  n = lpp_readl(comm);
+	/* Get the number of values to read */
+	n = lpp_readl(comm);
 
-  for(i = 0; i < n; ++i) {
-    int nr = lpp_readl(comm);
-    lpp_name_t *name = lpp->vars[nr];
+	for(i = 0; i < n; ++i) {
+		int nr = lpp_readl(comm);
+		lpp_name_t *name = lpp->vars[nr];
 
-    name->value_kind = value_kind;
-    name->value = lpp_readd(comm);
-  }
+		name->value_kind = value_kind;
+		name->value = lpp_readd(comm);
+	}
 }
 
 void lpp_serialize_stats(lpp_comm_t *comm, const lpp_t *lpp)
@@ -591,9 +616,7 @@ void lpp_solve(lpp_t *lpp, const char* host, const char* solver)
 		lpp_solver_func_t* f = lpp_find_solver(solver);
 		if (f != NULL)
 			f(lpp);
-	}
-
-	else {
+	} else {
 		lpp_solve_net(lpp, host, solver);
 	}
 }

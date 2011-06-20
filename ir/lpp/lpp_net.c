@@ -23,7 +23,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
 #include <unistd.h>
 
 /* solaris fix */
@@ -47,7 +46,8 @@
 #include "lpp_comm.h"
 
 #ifdef _WIN32
-static int winsock_init(void) {
+static int winsock_init(void)
+{
 	WORD wVersionRequested;
 	WSADATA wsaData;
 	int err;
@@ -80,31 +80,31 @@ static int winsock_init(void) {
 
 static int connect_tcp(const char *host, uint16_t port)
 {
-  struct hostent     *phe;
-  struct protoent    *ppe;
-  struct sockaddr_in sin;
-  int s;
+	struct hostent     *phe;
+	struct protoent    *ppe;
+	struct sockaddr_in sin;
+	int s;
 
 #ifdef _WIN32
-  winsock_init();
+	winsock_init();
 #endif
 
-  memset(&sin, 0, sizeof(sin));
-  sin.sin_family = AF_INET;
-  sin.sin_port   = htons(port);
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family = AF_INET;
+	sin.sin_port   = htons(port);
 
-  if ((phe = gethostbyname(host)))
-    memcpy(&sin.sin_addr, phe->h_addr, phe->h_length);
-  else if((sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
-    lpp_print_err("cannot get host entry for %s", host);
-    return -1;
-  }
+	if ((phe = gethostbyname(host)))
+		memcpy(&sin.sin_addr, phe->h_addr, phe->h_length);
+	else if((sin.sin_addr.s_addr = inet_addr(host)) == INADDR_NONE) {
+		lpp_print_err("cannot get host entry for %s", host);
+		return -1;
+	}
 
-  ppe = getprotobyname("tcp");
-  ERRNO_CHECK_RETURN(s = socket(PF_INET, SOCK_STREAM, ppe->p_proto), <, 0, -1);
-  ERRNO_CHECK_RETURN(connect(s, (struct sockaddr *) &sin, sizeof(sin)), <, 0, -1);
+	ppe = getprotobyname("tcp");
+	ERRNO_CHECK_RETURN(s = socket(PF_INET, SOCK_STREAM, ppe->p_proto), <, 0, -1);
+	ERRNO_CHECK_RETURN(connect(s, (struct sockaddr *) &sin, sizeof(sin)), <, 0, -1);
 
-  return s;
+	return s;
 }
 
 char **lpp_get_solvers(const char *host)

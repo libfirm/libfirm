@@ -132,31 +132,31 @@ static firm_dbg_module_t *dbg = NULL;
  */
 static int passive_tcp(uint16_t port, int queue_len)
 {
-  int s;
-  int one = 1;
-  struct protoent    *ppe;
-  struct sockaddr_in sin;
+	int s;
+	int one = 1;
+	struct protoent    *ppe;
+	struct sockaddr_in sin;
 
-  memset(&sin, 0, sizeof(sin));
-  sin.sin_family       = AF_INET;
-  sin.sin_addr.s_addr  = INADDR_ANY;
-  sin.sin_port         = htons(port);
+	memset(&sin, 0, sizeof(sin));
+	sin.sin_family       = AF_INET;
+	sin.sin_addr.s_addr  = INADDR_ANY;
+	sin.sin_port         = htons(port);
 
-  ppe = getprotobyname("tcp");
-  s = socket(PF_INET, SOCK_STREAM, ppe->p_proto);
-  setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
+	ppe = getprotobyname("tcp");
+	s = socket(PF_INET, SOCK_STREAM, ppe->p_proto);
+	setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
 
-  if(bind(s, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
-	  perror("bind server socket");
-	  exit(1);
-  }
+	if(bind(s, (struct sockaddr *) &sin, sizeof(sin)) < 0) {
+		perror("bind server socket");
+		exit(1);
+	}
 
-  if(listen(s, queue_len) < 0) {
-	  perror("listen server socket");
-	  exit(1);
-  }
+	if(listen(s, queue_len) < 0) {
+		perror("listen server socket");
+		exit(1);
+	}
 
-  return s;
+	return s;
 }
 
 static void *solver_thread(void * data)
@@ -249,7 +249,6 @@ static int solve(lpp_comm_t *comm, job_t *job)
 			/* A network message arrived. */
 			if(FD_ISSET(fd_comm, &rfds)) {
 				int cmd;
-				int retval;
 
 				retval = read(fd_comm, &cmd, sizeof(cmd));
 				if(retval == 0) {
@@ -263,7 +262,8 @@ static int solve(lpp_comm_t *comm, job_t *job)
 				switch(cmd) {
 					/* eat senseless data. */
 					default:
-						while(read(fd_comm, &cmd, sizeof(cmd)) > 0);
+						while(read(fd_comm, &cmd, sizeof(cmd)) > 0) {
+						}
 				}
 				res = 1;
 			}
@@ -338,18 +338,18 @@ static void *session(int fd)
 				//lpp_send_res(comm, solver != NULL, "could not find solver: %s", buf);
 				break;
 
-			case LPP_CMD_SOLVERS:
-				{
-					int i;
+			case LPP_CMD_SOLVERS: {
+				int i;
 
-					for(i = 0; lpp_solvers[i].solver != NULL; i++);
-					lpp_writel(comm, i);
-
-					for(i = 0; lpp_solvers[i].solver != NULL; i++)
-						lpp_writes(comm, lpp_solvers[i].name);
-					lpp_flush(comm);
+				for(i = 0; lpp_solvers[i].solver != NULL; i++) {
 				}
+				lpp_writel(comm, i);
+
+				for(i = 0; lpp_solvers[i].solver != NULL; i++)
+					lpp_writes(comm, lpp_solvers[i].name);
+				lpp_flush(comm);
 				break;
+			}
 
 			case LPP_CMD_SET_DEBUG:
 				{
@@ -377,32 +377,32 @@ end:
 
 static void child_handler(int sig)
 {
-  pid_t pid;
-  int status;
+	pid_t pid;
+	int status;
 
-  (void) sig;
+	(void) sig;
 
-  pid = waitpid(-1, &status, WNOHANG);
-  do {
-	  if(WIFEXITED(status)) {
-		  DBG((dbg, LEVEL_1, "child %d died normally with return value %d\n", pid, WEXITSTATUS(status)));
-		  --n_children;
-		  if(n_children != 0)
-			  setproctitle("lpp_server [main (%d %s)]", n_children, (n_children>1)?"children":"child");
-		  else
-			  setproctitle("lpp_server [main]");
-	  } else if(WIFSIGNALED(status)) {
-		  DBG((dbg, LEVEL_1, "child %d died by signal %d\n", pid, WTERMSIG(status)));
-		  --n_children;
-		  if(n_children != 0)
-			  setproctitle("lpp_server [main (%d %s)]", n_children, (n_children>1)?"children":"child");
-		  else
-			  setproctitle("lpp_server [main]");
-	  } else
-		  DBG((dbg, LEVEL_1, "child %d did something unexpected\n", pid));
+	pid = waitpid(-1, &status, WNOHANG);
+	do {
+		if(WIFEXITED(status)) {
+			DBG((dbg, LEVEL_1, "child %d died normally with return value %d\n", pid, WEXITSTATUS(status)));
+			--n_children;
+			if(n_children != 0)
+				setproctitle("lpp_server [main (%d %s)]", n_children, (n_children>1)?"children":"child");
+			else
+				setproctitle("lpp_server [main]");
+		} else if(WIFSIGNALED(status)) {
+			DBG((dbg, LEVEL_1, "child %d died by signal %d\n", pid, WTERMSIG(status)));
+			--n_children;
+			if(n_children != 0)
+				setproctitle("lpp_server [main (%d %s)]", n_children, (n_children>1)?"children":"child");
+			else
+				setproctitle("lpp_server [main]");
+		} else
+			DBG((dbg, LEVEL_1, "child %d did something unexpected\n", pid));
 
-	  pid = waitpid(-1, &status, WNOHANG);
-  } while(pid > 0);
+		pid = waitpid(-1, &status, WNOHANG);
+	} while(pid > 0);
 }
 
 static void main_loop(void)
@@ -446,10 +446,10 @@ static void main_loop(void)
 
 static void toggle_dbg(int num)
 {
-  static int mask = 0;
-  (void) num;
-  mask = ~mask;
-  firm_dbg_set_mask(dbg, mask);
+	static int mask = 0;
+	(void) num;
+	mask = ~mask;
+	firm_dbg_set_mask(dbg, mask);
 }
 
 #define SEMKEYPATH "/tmp/lppkey"

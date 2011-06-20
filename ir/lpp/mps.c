@@ -4,7 +4,6 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
 #include "config.h"
 #include <stdarg.h>
 #include <assert.h>
@@ -68,7 +67,8 @@ static void mps_write_line(FILE *out, style_t style, mps_line_t line_type, ...) 
 	va_end(args);
 }
 
-static int mps_insert_markers(FILE *out, style_t style, lpp_var_t curr, lpp_var_t last, int marker_nr) {
+static int mps_insert_markers(FILE *out, style_t style, lpp_var_t curr, lpp_var_t last, int marker_nr)
+{
 	assert(style == s_mps_fixed || style == s_mps_free);
 	if (last != curr) {
 		/* print end-marker for last */
@@ -82,7 +82,8 @@ static int mps_insert_markers(FILE *out, style_t style, lpp_var_t curr, lpp_var_
 	return marker_nr;
 }
 
-void mps_write_mps(lpp_t *lpp, style_t style, FILE *out) {
+void mps_write_mps(lpp_t *lpp, style_t style, FILE *out)
+{
 	int i, count, marker_nr = 0;
 	const lpp_name_t *curr;
 	const matrix_elem_t *elem, *before = NULL;
@@ -150,7 +151,8 @@ void mps_write_mps(lpp_t *lpp, style_t style, FILE *out) {
 	mps_write_line(out, style, l_ind_end);
 }
 
-void mps_write_mst(lpp_t *lpp, style_t style, FILE *out) {
+void mps_write_mst(lpp_t *lpp, style_t style, FILE *out)
+{
 	int i;
 	mps_write_line(out, style, l_ind_name, "");
 	for (i=0; i<lpp->var_next; ++i) {

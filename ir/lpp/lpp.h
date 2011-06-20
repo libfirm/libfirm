@@ -18,45 +18,45 @@
 #include "sp_matrix.h"
 
 typedef enum _lpp_opt_t {
-  lpp_minimize,
-  lpp_maximize
+	lpp_minimize,
+	lpp_maximize
 } lpp_opt_t;
 
 typedef enum _lpp_cst_t {
-  lpp_objective = 0,
-  lpp_equal     = 1,
-  lpp_less      = 2,
-  lpp_greater   = 3
+	lpp_objective,
+	lpp_equal,
+	lpp_less,
+	lpp_greater
 } lpp_cst_t;
 
 typedef enum _lpp_var_t {
-  lpp_invalid   = 0,
-  lpp_rhs       = 1,
-  lpp_continous = 2,
-  lpp_binary    = 3
+	lpp_invalid,
+	lpp_rhs,
+	lpp_continous,
+	lpp_binary
 } lpp_var_t;
 
 typedef enum _lpp_sol_state_t {
-  lpp_unknown    = 0,
-  lpp_infeasible = 1,
-  lpp_inforunb   = 2,
-  lpp_unbounded  = 3,
-  lpp_feasible   = 4,
-  lpp_optimal    = 5
+	lpp_unknown,
+	lpp_infeasible,
+	lpp_inforunb,
+	lpp_unbounded,
+	lpp_feasible,
+	lpp_optimal
 } lpp_sol_state_t;
 
 typedef enum _lpp_value_kind_t {
-  lpp_none           = 0,
-  lpp_value_start    = 1,
-  lpp_value_solution = 2,
+	lpp_none,
+	lpp_value_start,
+	lpp_value_solution,
 } lpp_value_kind_t;
 
 typedef enum _lpp_emphasis_t {
-  lpp_balanced          = 0,
-  lpp_feasability       = 1,
-  lpp_optimality        = 2,
-  lpp_bestbound         = 3,
-  lpp_hiddenfeasibility = 4
+	lpp_balanced,
+	lpp_feasability,
+	lpp_optimality,
+	lpp_bestbound,
+	lpp_hiddenfeasibility
 } lpp_emphasis_t;
 
 typedef struct _name_t {

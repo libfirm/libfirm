@@ -7,9 +7,8 @@
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
-
-#ifndef _LPP_T_H
-#define _LPP_T_H
+#ifndef LPP_T_H
+#define LPP_T_H
 
 #include "lpp.h"
 #include "lpp_comm.h"
@@ -50,5 +49,4 @@ void lpp_deserialize_values(lpp_comm_t *comm, lpp_t *lpp, lpp_value_kind_t kind)
 void lpp_serialize_stats(lpp_comm_t *comm, const lpp_t *lpp);
 void lpp_deserialize_stats(lpp_comm_t *comm, lpp_t *lpp);
 
-
-#endif /* _LPP_T_H */
+#endif

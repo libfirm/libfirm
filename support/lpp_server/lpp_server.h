@@ -7,8 +7,8 @@
  * Released under the GPL
  */
 
-#ifndef _LPP_SERVER_H
-#define _LPP_SERVER_H
+#ifndef LPP_SERVER_H
+#define LPP_SERVER_H
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -59,121 +59,119 @@ enum {
 
 static void print_err(const char *fmt, ...)
 {
-  va_list args;
+	va_list args;
 
-  va_start(args, fmt);
-  vfprintf(stderr, fmt, args);
-  va_end(args);
+	va_start(args, fmt);
+	vfprintf(stderr, fmt, args);
+	va_end(args);
 }
 
 static  void writel(int fd, uint32_t x)
 {
-  x = htonl(x);
-  ERRNO_CHECK(write(fd, &x, sizeof(x)), == -1);
+	x = htonl(x);
+	ERRNO_CHECK(write(fd, &x, sizeof(x)), == -1);
 }
 
 static  void writed(int fd, double dbl)
 {
-  ERRNO_CHECK(write(fd, &dbl, sizeof(dbl)), == -1);
+	ERRNO_CHECK(write(fd, &dbl, sizeof(dbl)), == -1);
 }
 
 static  void writes(int fd, const char *str)
 {
-  size_t n = strlen(str);
-  writel(fd, n);
-  ERRNO_CHECK(write(fd, str, n), == -1);
+	size_t n = strlen(str);
+	writel(fd, n);
+	ERRNO_CHECK(write(fd, str, n), == -1);
 }
 
 static  uint32_t readl(int fd)
 {
-  uint32_t res;
+	uint32_t res;
 
-  ERRNO_CHECK(read(fd, &res, sizeof(res)), == -1);
-  return ntohl(res);
+	ERRNO_CHECK(read(fd, &res, sizeof(res)), == -1);
+	return ntohl(res);
 }
 
 static  double readd(int fd)
 {
-  double res;
-  ERRNO_CHECK(read(fd, &res, sizeof(res)), == -1);
-  return res;
+	double res;
+	ERRNO_CHECK(read(fd, &res, sizeof(res)), == -1);
+	return res;
 }
 
 static  char *reads(int fd)
 {
-  size_t len = readl(fd);
-  char *res = malloc(sizeof(char) * (len + 1));
+	size_t len = readl(fd);
+	char *res = malloc(sizeof(char) * (len + 1));
 
-  ERRNO_CHECK(read(fd, res, len), == -1);
-  res[len] = '\0';
-  return res;
+	ERRNO_CHECK(read(fd, res, len), == -1);
+	res[len] = '\0';
+	return res;
 }
 
 static char *readbuf(int fd, size_t buflen, char *buf)
 {
-  char dummy[1024];
-  size_t i;
-  size_t n         = buflen - 1;
-  size_t len       = readl(fd);
-  size_t max_read  = n < len ? n : len;
-  size_t rest      = len - max_read;
+	char dummy[1024];
+	size_t i;
+	size_t n         = buflen - 1;
+	size_t len       = readl(fd);
+	size_t max_read  = n < len ? n : len;
+	size_t rest      = len - max_read;
 
-  if(buflen > 0 && buf != NULL) {
-    ERRNO_CHECK(read(fd, buf, max_read), == -1);
-    buf[max_read] = '\0';
-  }
+	if(buflen > 0 && buf != NULL) {
+		ERRNO_CHECK(read(fd, buf, max_read), == -1);
+		buf[max_read] = '\0';
+	}
 
-  /* eat up data that didnt fit into the string */
-  for(i = 0, n = rest / sizeof(dummy); i < n; ++i)
-    read(fd, dummy, sizeof(dummy));
+	/* eat up data that didnt fit into the string */
+	for(i = 0, n = rest / sizeof(dummy); i < n; ++i)
+		read(fd, dummy, sizeof(dummy));
 
-  if(rest % sizeof(dummy) > 0)
-    read(fd, dummy, rest % sizeof(dummy));
+	if(rest % sizeof(dummy) > 0)
+		read(fd, dummy, rest % sizeof(dummy));
 
-  return buf;
+	return buf;
 }
 
 static int ack(int fd, size_t buflen, char *buf)
 {
-  int res = 0;
-  int cmd = readl(fd);
+	int res = 0;
+	int cmd = readl(fd);
 
-  switch(cmd) {
-    case LPP_CMD_OK:
-      res = 1;
-      break;
-    case LPP_CMD_BAD:
-      readbuf(fd, buflen, buf);
-    default:
-      res = 0;
-  }
+	switch(cmd) {
+		case LPP_CMD_OK:
+			res = 1;
+			break;
+		case LPP_CMD_BAD:
+			readbuf(fd, buflen, buf);
+		default:
+			res = 0;
+	}
 
-  return res;
+	return res;
 }
 
 static void send_res(int fd, int ok, const char *fmt, ...)
 {
-  if(!ok) {
-    char buf[1024];
-    va_list args;
+	if(!ok) {
+		char buf[1024];
+		va_list args;
 
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
+		va_start(args, fmt);
+		vsnprintf(buf, sizeof(buf), fmt, args);
+		va_end(args);
 
-    writel(fd, LPP_CMD_BAD);
-    writes(fd, buf);
-  }
+		writel(fd, LPP_CMD_BAD);
+		writes(fd, buf);
+	}
 
-  else
-    writel(fd, LPP_CMD_OK);
+	else
+		writel(fd, LPP_CMD_OK);
 }
 
 static void send_ack(int fd)
 {
-  send_res(fd, 1, "");
+	send_res(fd, 1, "");
 }
 
-
-
-#endif /* _LPP_SERVER_H */
+#endif

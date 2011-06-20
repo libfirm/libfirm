@@ -4,9 +4,8 @@
  * Copyright:   (c) Universitaet Karlsruhe
  * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
  */
-
-#ifndef _MPS_H_
-#define _MPS_H_
+#ifndef MPS_H
+#define MPS_H
 
 #include <stdio.h>
 #include "lpp.h"
@@ -32,4 +31,4 @@ void mps_write_mps(lpp_t *lpp, style_t style, FILE *out);
  */
 void mps_write_mst(lpp_t *lpp, style_t style, FILE *out);
 
-#endif /*_MPS_H_*/
+#endif

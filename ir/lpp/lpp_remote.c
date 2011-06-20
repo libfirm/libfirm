@@ -36,7 +36,8 @@
 #define SSH_PASSWD_FILE "/ben/daniel/.smppw"
 #define EXPECT_FILENAME "runme" /* name of the expect-script */
 
-static FILE *ffopen(const char *base, const char *ext, const char *mode) {
+static FILE *ffopen(const char *base, const char *ext, const char *mode)
+{
 	FILE *out;
 	char buf[1024];
 
@@ -48,7 +49,8 @@ static FILE *ffopen(const char *base, const char *ext, const char *mode) {
 	return out;
 }
 
-static void lpp_write_cmd(lpp_t *lpp) {
+static void lpp_write_cmd(lpp_t *lpp)
+{
 	FILE *out = ffopen(lpp->name, "cmd", "wt");
 	fprintf(out, "set logfile %s.sol\n", lpp->name);
 	fprintf(out, "set mip strategy mipstart 1\n");
@@ -63,7 +65,8 @@ static void lpp_write_cmd(lpp_t *lpp) {
 	fclose(out);
 }
 
-static void lpp_write_exp(lpp_t *lpp) {
+static void lpp_write_exp(lpp_t *lpp)
+{
 	FILE *pwfile, *out;
 	char passwd[128];
 
@@ -87,7 +90,8 @@ static void lpp_write_exp(lpp_t *lpp) {
 	fclose(out);
 }
 
-static void lpp_read_solution(lpp_t *lpp) {
+static void lpp_read_solution(lpp_t *lpp)
+{
 	FILE *in;
 	double sol_time;
 	unsigned iter;
@@ -146,7 +150,8 @@ static void lpp_read_solution(lpp_t *lpp) {
 }
 
 #ifdef DELETE_FILES
-static void lpp_delete_files(lpp_t *lpp) {
+static void lpp_delete_files(lpp_t *lpp)
+{
 	char buf[1024];
 	int end = snprintf(buf, sizeof(buf), "%s", lpp->name);
 
@@ -162,7 +167,8 @@ static void lpp_delete_files(lpp_t *lpp) {
 }
 #endif
 
-void lpp_solve_remote(lpp_t *lpp) {
+void lpp_solve_remote(lpp_t *lpp)
+{
 	FILE *out;
 	out = ffopen(lpp->name, "mps", "wt");
 	mps_write_mps(lpp, s_mps_free, out);
