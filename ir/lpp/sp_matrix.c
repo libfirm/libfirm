@@ -10,13 +10,7 @@
  * Complexity is O(1) then.
  * Random access or right-to-left and bottom-to-top is O(m*n).
  */
-
-#ifdef _WIN32
-#include <malloc.h>
-#endif
-#ifdef HAVE_ALLOCA_H
-#include <alloca.h>
-#endif
+#include "config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

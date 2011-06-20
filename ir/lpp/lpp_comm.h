@@ -18,9 +18,15 @@
 #define LPP_BUFSIZE (1 << 20)
 
 enum {
-#define LPP_CMD(x) LPP_CMD_ ## x,
-#include "lpp_cmd.def"
-#undef LPP_CMD
+	LPP_CMD_BAD,
+	LPP_CMD_OK,
+	LPP_CMD_PROBLEM,
+	LPP_CMD_SOLUTION,
+	LPP_CMD_SOLVER,
+	LPP_CMD_BYE,
+	LPP_CMD_SOLVERS,
+	LPP_CMD_SET_DEBUG,
+	LPP_CMD_INFO,
 	LPP_CMD_LAST
 };
 

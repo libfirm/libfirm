@@ -6,32 +6,21 @@
  */
 #include "config.h"
 
+#ifdef WITH_CPLEX
+
 #include "lpp_cplex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef WITH_CPLEX
-
-#include "obst.h"
-
+#include <assert.h>
 #include <ilcplex/cplex.h>
 
-#include "assert.h"
+#include "obst.h"
+#include "stat_timing.h"
 #include "sp_matrix.h"
 
 static char cpx_cst_encoding[4] = "?ELG";
 static char cpx_var_encoding[4] = "??CB";
-
-#define my_timersub(tvp, uvp, vvp)                     \
-    do {                                \
-        (vvp)->tv_sec = (tvp)->tv_sec - (uvp)->tv_sec;      \
-        (vvp)->tv_usec = (tvp)->tv_usec - (uvp)->tv_usec;   \
-        if ((vvp)->tv_usec < 0) {               \
-            (vvp)->tv_sec--;                \
-            (vvp)->tv_usec += 1000000;          \
-        }                           \
-    } while (0)
 
 typedef struct _cpx_t {
 	lpp_t *lpp;
@@ -171,7 +160,8 @@ static void cpx_solve(cpx_t *cpx)
 {
 	int i, CPX_state, numcols;
 	double *values;
-	struct timeval tvb, tva, tvdiff;
+	timing_ticks_t tvb;
+	timing_ticks_t tva;
 
 	lpp_t *lpp = cpx->lpp;
 	numcols = CPXgetnumcols(cpx->env, cpx->prob);
@@ -214,9 +204,9 @@ static void cpx_solve(cpx_t *cpx)
 	// CPXsetintparam (cpx->env, CPX_PARAM_SCRIND, CPX_ON);
 
 	/* solve */
-	gettimeofday(&tvb, NULL);
+	timing_ticks(&tvb);
 	cpx->status = CPXmipopt(cpx->env, cpx->prob);
-	gettimeofday(&tva, NULL);
+	timing_ticks(&tva);
 	chk_cpx_err(cpx);
 
 	/* get solution status */
@@ -258,8 +248,8 @@ static void cpx_solve(cpx_t *cpx)
 	CPXgetbestobjval(cpx->env, cpx->prob, &lpp->best_bound);
 
 	/* get some statistics */
-	my_timersub(&tva, &tvb, &tvdiff);
-	lpp->sol_time = tvdiff.tv_sec + tvdiff.tv_usec / 1e6;
+	timing_ticks_sub(tva, tvb);
+	lpp->sol_time = timing_ticks_dbl(tva);
 	lpp->iterations = CPXgetmipitcnt(cpx->env, cpx->prob);
 }
 

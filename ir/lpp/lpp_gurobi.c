@@ -5,12 +5,11 @@
  */
 #include "config.h"
 
+#ifdef WITH_GUROBI
 #include "lpp_gurobi.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifdef WITH_GUROBI
 
 #include "obst.h"
 
@@ -21,16 +20,6 @@
 
 static char gurobi_cst_encoding[4] = { 0, GRB_EQUAL, GRB_LESS_EQUAL, GRB_GREATER_EQUAL };
 static char gurobi_var_encoding[4] = { 0, 0, GRB_CONTINUOUS, GRB_BINARY };
-
-#define my_timersub(tvp, uvp, vvp)                     \
-    do {                                \
-        (vvp)->tv_sec = (tvp)->tv_sec - (uvp)->tv_sec;      \
-        (vvp)->tv_usec = (tvp)->tv_usec - (uvp)->tv_usec;   \
-        if ((vvp)->tv_usec < 0) {               \
-            (vvp)->tv_sec--;                \
-            (vvp)->tv_usec += 1000000;          \
-        }                           \
-    } while (0)
 
 typedef struct _gurobi_t {
 	lpp_t *lpp;

@@ -400,9 +400,17 @@ void lpp_send_ack(lpp_comm_t *comm)
 const char *lpp_get_cmd_name(int cmd)
 {
 	switch(cmd) {
-#define LPP_CMD(x) case LPP_CMD_ ## x: return #x;
-#include "lpp_cmd.def"
-#undef LPP_CMD
+	case LPP_CMD_BAD:       return "BAD";
+	case LPP_CMD_OK:        return "OK";
+	case LPP_CMD_PROBLEM:   return "PROBLEM";
+	case LPP_CMD_SOLUTION:  return "SOLUTION";
+	case LPP_CMD_SOLVER:    return "SOLVER";
+	case LPP_CMD_BYE:       return "BYE";
+	case LPP_CMD_SOLVERS:   return "SOLVERS";
+	case LPP_CMD_SET_DEBUG: return "SET_DEBUG";
+	case LPP_CMD_INFO:      return "INFO";
+	case LPP_CMD_LAST:
+		break;
 	}
 
 	return "<unknown>";

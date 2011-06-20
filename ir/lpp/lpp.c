@@ -8,10 +8,6 @@
 
 #include "config.h"
 
-#ifdef HAVE_IO_H
-#include <io.h>
-#endif
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
