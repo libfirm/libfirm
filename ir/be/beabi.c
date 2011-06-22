@@ -1109,6 +1109,63 @@ static void process_ops_in_block(ir_node *bl, void *data)
 	set_irn_link(bl, curr_sp);
 }
 
+static void move_ops_after_fragile_call(ir_node *block, void *env)
+{
+	assert (is_Block(block));
+	ir_node *init_sp = (ir_node *) env;
+
+	int n_cfgpreds = get_Block_n_cfgpreds(block);
+	/* The frontend should create a new block after the call and keep it "private",
+	 * so we don't expect a block to have more than one pred if its pred
+	 * is a Proj_X_regular from a call. */
+	if (n_cfgpreds != 1)
+		return;
+
+	ir_node *cfgpred = get_Block_cfgpred(block, 0);
+	if (! is_x_regular_Proj(cfgpred))
+		return;
+
+	ir_node *cfgpred_block = get_nodes_block(cfgpred);
+	ir_node *sp = get_irn_link(cfgpred_block);
+
+	/* FIXME: other fragile ops will be there in the future */
+	assert (be_is_IncSP(sp));
+
+	ir_node *fragile_call = get_Proj_pred(cfgpred);
+
+	/* FIXME: other fragile ops will be there in the future */
+	assert (be_is_Call(fragile_call) && ir_throws_exception(fragile_call));
+
+	/* XXX: not sure if this is required (telling the block that its last valid SP
+	 * is the one before the call) */
+	set_irn_link(cfgpred_block, get_irn_n(fragile_call, n_be_Call_sp));
+
+	/* move the IncSP and its successors (all be_Keeps) to the current block */
+	const ir_edge_t *edge;
+	foreach_out_edge(sp, edge) {
+		assert (be_is_Keep(edge->src));
+		set_nodes_block(edge->src, block);
+	}
+	set_nodes_block(sp, block);
+
+	/* find the first stack changing node - a node in this block whose pred is init_sp */
+	ir_node *first_stack_user = NULL;
+	foreach_out_edge(init_sp, edge) {
+		if (get_nodes_block(edge->src) != block || first_stack_user)
+			continue;
+
+		first_stack_user = edge->src;
+	}
+
+	if (first_stack_user) {
+		/* rewire the first user from init_sp to the moved node,
+		 * then rewire the moved node to init_sp */
+		int fsu_pos = get_irn_pred_pos(first_stack_user, init_sp);
+		set_irn_n(first_stack_user, fsu_pos, sp);
+	}
+	be_set_IncSP_pred(sp, init_sp);
+}
+
 /**
  * Adjust all call nodes in the graph to the ABI conventions.
  */
@@ -1121,6 +1178,7 @@ static void process_calls(ir_graph *irg)
 
 	ir_heights = heights_new(irg);
 	irg_block_walk_graph(irg, NULL, process_ops_in_block, abi);
+	irg_block_walk_graph(irg, NULL, move_ops_after_fragile_call, abi->init_sp);
 	heights_free(ir_heights);
 }
 
