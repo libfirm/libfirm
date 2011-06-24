@@ -66,6 +66,7 @@ libfirm_DIRS := \
 	ir/ir      \
 	ir/lower   \
 	ir/libcore \
+	ir/lpp     \
 	ir/opt     \
 	ir/st      \
 	ir/stat    \
