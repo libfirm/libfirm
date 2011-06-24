@@ -913,11 +913,11 @@ static ir_node *find_original_value(ir_node *node)
 			return find_original_value(get_irn_n(pred, get_Proj_proj(node) + 1));
 		} else if (is_ia32_Load(pred)) {
 			return find_original_value(get_irn_n(pred, n_ia32_Load_mem));
+		} else if (is_ia32_Store(pred)) {
+			return find_original_value(get_irn_n(pred, n_ia32_Store_val));
 		} else {
 			return node;
 		}
-	} else if (is_ia32_Store(node)) {
-		return find_original_value(get_irn_n(node, n_ia32_Store_val));
 	} else if (is_Phi(node)) {
 		int i, arity;
 		arity = get_irn_arity(node);
