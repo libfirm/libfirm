@@ -238,8 +238,8 @@ static be_next_use_t get_next_use(be_uses_t *env, ir_node *from,
 	next_use_step = INT_MAX;
 	timestep      = get_step(from);
 	foreach_out_edge(def, edge) {
-		node = get_edge_src_irn(edge);
 		unsigned node_step;
+		node = get_edge_src_irn(edge);
 
 		if (is_Anchor(node))
 			continue;
