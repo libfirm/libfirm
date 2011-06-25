@@ -27,17 +27,6 @@
 #ifndef FIRM_COMPILER_H
 #define FIRM_COMPILER_H
 
-/**
- * Asserts that the constant expression x is not zero at compiletime. name has
- * to be a unique identifier.
- *
- * @note This uses the fact, that double case labels are not allowed.
- */
-#define COMPILETIME_ASSERT(x, name) \
-    static __attribute__((unused)) void compiletime_assert_##name (int h) { \
-        switch(h) { case 0: case (x): {} } \
-    }
-
 #ifdef __GNUC__
 /**
  * Indicates to the compiler that the value of x is very likely 1
@@ -58,10 +47,27 @@
  */
 #define PURE        __attribute__((const))
 
+/**
+ * Tell the compiler, that a function is unused, no warning needed.
+ */
+#define UNUSED      __attribute__((unused))
+
 #else
 #define LIKELY(x)   x
 #define UNLIKELY(x) x
 #define PURE
+#define UNUSED
 #endif
+
+/**
+ * Asserts that the constant expression x is not zero at compiletime. name has
+ * to be a unique identifier.
+ *
+ * @note This uses the fact, that double case labels are not allowed.
+ */
+#define COMPILETIME_ASSERT(x, name) \
+    static UNUSED void compiletime_assert_##name (int h) { \
+        switch(h) { case 0: case (x): {} } \
+    }
 
 #endif

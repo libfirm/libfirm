@@ -14,6 +14,11 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#ifdef _WIN32
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 #define LPP_PORT    2175
 #define LPP_BUFSIZE (1 << 20)
 

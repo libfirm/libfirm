@@ -8,7 +8,6 @@
  * Copyright (C) 2005 Universitaet Karlsruhe
  * Released under the GPL
  */
-
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -18,15 +17,14 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
-
-#define vsnprintf _vsnprintf
-
 #else
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #endif
+
+#include "config.h"
 
 #include "irtools.h"
 #include "debug.h"
@@ -62,18 +60,18 @@ static inline firm_dbg_module_t *get_dbg_module(void)
  * Try to read some bytes but block until a certain amount is read.
  * @param fd The file descriptor.
  * @param buf The buffer to read into.
- * @param try The amount of bytes to try to read.
+ * @param try_amount The amount of bytes to try to read.
  * @param at_least block until this many bytes are read.
  * @return The number of bytes read or -1 on error.
  */
-static ssize_t secure_recv(int fd, void *buf, size_t try, size_t at_least)
+static ssize_t secure_recv(int fd, void *buf, size_t try_amount, size_t at_least)
 {
 	ssize_t res;
 	size_t bytes_read = 0;
 	char *data = buf;
 
 	do {
-		res = recv(fd, &data[bytes_read], try - bytes_read, 0);
+		res = recv(fd, &data[bytes_read], try_amount - bytes_read, 0);
 		if(res <= 0) {
 			if(res == 0 || errno != EAGAIN)
 				return -1;
