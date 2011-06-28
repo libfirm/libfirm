@@ -2975,6 +2975,11 @@ static int can_exchange(ir_node *pred, ir_node *block)
 		return 0;
 	else if (is_Jmp(pred))
 		return 1;
+	else if (is_Raise(pred)) {
+		/* Raise is a tuple and usually has only one reachable ProjX,
+		 * but it must not be eliminated like a Jmp */
+		return 0;
+	}
 	else if (get_irn_mode(pred) == mode_T) {
 		/* if the predecessor block has more than one
 		   reachable outputs we cannot remove the block */
