@@ -177,6 +177,8 @@ static ir_node *lower_node(ir_node *node)
 	if (res != NULL)
 		return res;
 
+	node = skip_Tuple(node);
+
 	assert(get_irn_mode(node) == mode_b);
 
 	irg = get_irn_irg(node);
