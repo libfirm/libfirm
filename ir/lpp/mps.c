@@ -17,11 +17,14 @@ static const char *mps_cst_encoding[4] = {"N", "E", "L", "G"};
 /**
  * Diffferent line styles which can be used in a mps file
  */
-typedef enum _mps_line_t {l_raw,
-						  l_ind_name, l_ind_objs, l_ind_rows, l_ind_cols, l_ind_rhs, l_ind_end,
-						  l_data_row, l_data_col1, l_data_col2, l_data_mst, l_marker} mps_line_t;
+typedef enum {
+	l_raw, l_ind_name, l_ind_objs, l_ind_rows, l_ind_cols, l_ind_rhs, l_ind_end,
+	l_data_row, l_data_col1, l_data_col2, l_data_mst, l_marker
+} mps_line_t;
 
-static void mps_write_line(FILE *out, style_t style, mps_line_t line_type, ...) {
+static void mps_write_line(FILE *out, lpp_mps_style_t style,
+                           mps_line_t line_type, ...)
+{
 	va_list args;
 	const char *fmt = "";
 
@@ -67,7 +70,8 @@ static void mps_write_line(FILE *out, style_t style, mps_line_t line_type, ...) 
 	va_end(args);
 }
 
-static int mps_insert_markers(FILE *out, style_t style, lpp_var_t curr, lpp_var_t last, int marker_nr)
+static int mps_insert_markers(FILE *out, lpp_mps_style_t style, lpp_var_t curr,
+                              lpp_var_t last, int marker_nr)
 {
 	assert(style == s_mps_fixed || style == s_mps_free);
 	if (last != curr) {
@@ -82,7 +86,7 @@ static int mps_insert_markers(FILE *out, style_t style, lpp_var_t curr, lpp_var_
 	return marker_nr;
 }
 
-void mps_write_mps(lpp_t *lpp, style_t style, FILE *out)
+void mps_write_mps(lpp_t *lpp, lpp_mps_style_t style, FILE *out)
 {
 	int i, count, marker_nr = 0;
 	const lpp_name_t *curr;
@@ -151,7 +155,7 @@ void mps_write_mps(lpp_t *lpp, style_t style, FILE *out)
 	mps_write_line(out, style, l_ind_end);
 }
 
-void mps_write_mst(lpp_t *lpp, style_t style, FILE *out)
+void mps_write_mst(lpp_t *lpp, lpp_mps_style_t style, FILE *out)
 {
 	int i;
 	mps_write_line(out, style, l_ind_name, "");

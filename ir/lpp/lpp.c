@@ -1,11 +1,26 @@
-/**
- * Author:      Daniel Grund
- * Date:        Fri 13.05.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id: lpp.c 27353 2010-04-07 13:33:16Z matze $
+/*
+ * Copyright (C) 2005-2011 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
 
+/**
+ * @file
+ * @author  Daniel Grund
+ */
 #include "config.h"
 
 #include <stdlib.h>
@@ -38,7 +53,7 @@ static int cmp_name_t(const void *x, const void *y, size_t size)
 {
 	const lpp_name_t *n = x;
 	const lpp_name_t *m = y;
-	(void)size; /* stop warnings */
+	(void)size;
 	return strcmp(n->name, m->name);
 }
 
@@ -52,11 +67,9 @@ static void update_stats(lpp_t *lpp)
 	lpp->density    = (double)lpp->n_elems / (double)(lpp->cst_next * lpp->var_next) * 100.0;
 }
 
-#define INITIAL_SIZE 64
-
 lpp_t *new_lpp(const char *name, lpp_opt_t opt_type)
 {
-	return new_lpp_userdef(name, opt_type, INITIAL_SIZE, INITIAL_SIZE, 2.0);
+	return new_lpp_userdef(name, opt_type, 64, 64, 2.0);
 }
 
 lpp_t *new_lpp_userdef(const char *name, lpp_opt_t opt_type,
@@ -121,7 +134,7 @@ void lpp_set_fix_costs(lpp_t *lpp, double value)
 	matrix_set(lpp->m, 0, 0, value);
 }
 
-static inline int name2nr(set *where, const char *name)
+static int name2nr(set *where, const char *name)
 {
 	lpp_name_t find, *found;
 	find.name = name;
@@ -129,8 +142,15 @@ static inline int name2nr(set *where, const char *name)
 	return (found ? found->nr : -1);
 }
 
-#define cst_nr(lpp, name) name2nr(lpp->cst2nr, name)
-#define var_nr(lpp, name) name2nr(lpp->var2nr, name)
+static int cst_nr(const lpp_t *lpp, const char *name)
+{
+	return name2nr(lpp->cst2nr, name);
+}
+
+static int var_nr(const lpp_t *lpp, const char *name)
+{
+	return name2nr(lpp->var2nr, name);
+}
 
 static inline char *get_next_name(lpp_t *lpp)
 {
@@ -465,8 +485,6 @@ void lpp_serialize(lpp_comm_t *comm, const lpp_t *lpp, int with_names)
 	}
 }
 
-#define NAMELEN 64
-
 /**
  * Deserialize an lpp from a file descriptor.
  * @param comm The file descriptor.
@@ -512,8 +530,8 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 		if(with_names) {
 			name.name = lpp_reads(comm);
 		} else {
-			char* buf = XMALLOCN(char, NAMELEN);
-			snprintf(buf, NAMELEN, "c%d\n", name.nr);
+			char* buf = XMALLOCN(char, 32);
+			snprintf(buf, 32, "c%d\n", name.nr);
 			name.name = buf;
 		}
 
@@ -531,8 +549,8 @@ lpp_t *lpp_deserialize(lpp_comm_t *comm)
 		if(with_names) {
 			name.name = lpp_reads(comm);
 		} else {
-			char* buf = XMALLOCN(char, NAMELEN);
-			snprintf(buf, NAMELEN, "v%d\n", name.nr);
+			char* buf = XMALLOCN(char, 32);
+			snprintf(buf, 32, "v%d\n", name.nr);
 			name.name = buf;
 		}
 
