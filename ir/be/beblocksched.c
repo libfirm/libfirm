@@ -584,7 +584,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	entry->block   = block;
 	entry->next    = NULL;
 	entry->prev    = NULL;
-	entry->out_cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater, out_count - 1);
+	entry->out_cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, out_count - 1);
 	set_irn_link(block, entry);
 
 	if (block == startblock)
@@ -599,7 +599,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 		int i;
 
 		snprintf(name, sizeof(name), "block_in_constr_%ld", get_irn_node_nr(block));
-		cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater, arity - 1);
+		cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, arity - 1);
 
 		for (i = 0; i < arity; ++i) {
 			double     execfreq;

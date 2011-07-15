@@ -41,8 +41,8 @@ typedef enum _lpp_opt_t {
 typedef enum _lpp_cst_t {
 	lpp_objective,
 	lpp_equal,
-	lpp_less,
-	lpp_greater
+	lpp_less_equal,
+	lpp_greater_equal
 } lpp_cst_t;
 
 typedef enum _lpp_var_t {

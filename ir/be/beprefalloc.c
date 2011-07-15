@@ -42,6 +42,7 @@
 #include <float.h>
 #include <stdbool.h>
 #include <math.h>
+#include "lpp.h"
 
 #include "error.h"
 #include "execfreq.h"
@@ -1105,6 +1106,108 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 	}
 }
 
+static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
+                      unsigned *forbidden_regs, unsigned *live_through_regs)
+{
+	unsigned *forbidden_edges = rbitset_malloc(n_regs * n_regs);
+	int      *lpp_vars        = XMALLOCNZ(int, n_regs*n_regs);
+	int       arity           = get_irn_arity(node);
+	int       i;
+	unsigned  l;
+	unsigned  r;
+
+	lpp_t *lpp = lpp_new("prefalloc", lpp_minimize);
+	//lpp_set_time_limit(lpp, 20);
+	lpp_set_log(lpp, stdout);
+
+	/** mark some edges as forbidden */
+	for (i = 0; i < arity; ++i) {
+		ir_node                   *op = get_irn_n(node, i);
+		const arch_register_t     *reg;
+		const arch_register_req_t *req;
+		const unsigned            *limited;
+		unsigned                   current_reg;
+
+		if (!arch_irn_consider_in_reg_alloc(cls, op))
+			continue;
+
+		req = arch_get_register_req(node, i);
+		if (!(req->type & arch_register_req_type_limited))
+			continue;
+
+		limited     = req->limited;
+		reg         = arch_get_irn_register(op);
+		current_reg = arch_register_get_index(reg);
+		for (r = 0; r < n_regs; ++r) {
+			if (rbitset_is_set(limited, r))
+				continue;
+
+			rbitset_set(forbidden_edges, current_reg*n_regs + r);
+		}
+	}
+
+	/* add all combinations, then remove not allowed ones */
+	for (l = 0; l < n_regs; ++l) {
+		for (r = 0; r < n_regs; ++r) {
+			if (!rbitset_is_set(normal_regs, r))
+				continue;
+			if (rbitset_is_set(forbidden_edges, l*n_regs + r))
+				continue;
+			/* livethrough values may not use constrained output registers */
+			if (rbitset_is_set(live_through_regs, l)
+			    && rbitset_is_set(forbidden_regs, r))
+				continue;
+
+			double costs = l==r ? 9 : 8;
+			lpp_vars[l*n_regs+r]
+				= lpp_add_var(lpp, NULL, lpp_binary, costs);
+			assert(lpp_vars[l*n_regs+r] > 0);
+		}
+	}
+	/* add constraints */
+	for (l = 0; l < n_regs; ++l) {
+		/* only 1 destination per register */
+		int constraint = lpp_add_cst(lpp, NULL, lpp_equal, 1);
+		for (r = 0; r < n_regs; ++r) {
+			int var = lpp_vars[l*n_regs+r];
+			if (var == 0)
+				continue;
+			lpp_set_factor_fast(lpp, constraint, var, 1);
+		}
+		/* each destination used by at most 1 value */
+		constraint = lpp_add_cst(lpp, NULL, lpp_less_equal, 1);
+	}
+
+	/* solve lpp */
+	{
+		ir_graph     *irg     = get_irn_irg(node);
+		be_options_t *options = be_get_irg_options(irg);
+		unsigned     *assignment;
+		lpp_solve(lpp, options->ilp_server, options->ilp_solver);
+		if (!lpp_is_sol_valid(lpp))
+			panic("ilp solution not valid!");
+
+		assignment = ALLOCAN(unsigned, n_regs);
+		for (l = 0; l < n_regs; ++l) {
+			unsigned dest_reg = (unsigned)-1;
+			for (r = 0; r < n_regs; ++r) {
+				int var = lpp_vars[l*n_regs+r];
+				if (var == 0)
+					continue;
+				double val = lpp_get_var_sol(lpp, var);
+				if (val == 1) {
+					assert(dest_reg == (unsigned)-1);
+					dest_reg = r;
+				}
+			}
+			assert(dest_reg != (unsigned)-1);
+			assignment[l] = dest_reg;
+		}
+		permute_values(live_nodes, node, assignment);
+	}
+	lpp_free(lpp);
+}
+
 /**
  * Enforce constraints at a node by live range splits.
  *
@@ -1125,6 +1228,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	unsigned *live_through_regs = NULL;
 
 	/* see if any use constraints are not met */
+	bool double_width = false;
 	bool good = true;
 	for (i = 0; i < arity; ++i) {
 		ir_node                   *op = get_irn_n(node, i);
@@ -1138,6 +1242,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 
 		/* are there any limitations for the i'th operand? */
 		req = arch_get_register_req(node, i);
+		if (req->width > 1)
+			double_width = true;
 		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
@@ -1153,6 +1259,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 
 	/* is any of the live-throughs using a constrained output register? */
 	be_foreach_definition(node, cls, value,
+		if (req_->width > 1)
+			double_width = true;
 		if (! (req_->type & arch_register_req_type_limited))
 			continue;
 		if (live_through_regs == NULL) {
@@ -1170,6 +1278,11 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	/* create these arrays if we haven't yet */
 	if (live_through_regs == NULL) {
 		rbitset_alloca(live_through_regs, n_regs);
+	}
+
+	if (double_width) {
+		solve_lpp(live_nodes, node, forbidden_regs, live_through_regs);
+		return;
 	}
 
 	/* at this point we have to construct a bipartite matching problem to see

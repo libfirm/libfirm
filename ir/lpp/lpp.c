@@ -363,14 +363,14 @@ void lpp_check_startvals(lpp_t *lpp)
 					fprintf(stderr, "constraint %s unsatisfied: %g != %g\n", cst->name, sum, cst_val);
 				}
 				break;
-			case lpp_less:
+			case lpp_less_equal:
 				if(sum > cst_val) {
-					fprintf(stderr, "constraint %s unsatisfied: %g > %g\n", cst->name, sum, cst_val);
+					fprintf(stderr, "constraint %s unsatisfied: %g >= %g\n", cst->name, sum, cst_val);
 				}
 				break;
-			case lpp_greater:
+			case lpp_greater_equal:
 				if(sum < cst_val) {
-					fprintf(stderr, "constraint %s unsatisfied: %g < %g\n", cst->name, sum, cst_val);
+					fprintf(stderr, "constraint %s unsatisfied: %g <= %g\n", cst->name, sum, cst_val);
 				}
 				break;
 			default:
@@ -398,9 +398,9 @@ static const char *lpp_cst_op_to_str(lpp_cst_t cst)
 	switch(cst) {
 	case lpp_equal:
 		return "=";
-	case lpp_less:
+	case lpp_less_equal:
 		return "<=";
-	case lpp_greater:
+	case lpp_greater_equal:
 		return ">=";
 	default:
 		return "";
