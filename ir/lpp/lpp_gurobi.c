@@ -58,10 +58,21 @@ static gurobi_t *new_gurobi(lpp_t *lpp)
 
 	gurobi_t *grb = XMALLOCZ(gurobi_t);
 	grb->lpp = lpp;
-	error = GRBloadenv(&grb->env, NULL);
+	/* /tmp/firm_gurobi.log is a hack (see below) */
+	error = GRBloadenv(&grb->env, "/tmp/firm_gurobi.log");
 	check_gurobi_error(grb, error);
+	/* Matze: do not set the FILE* for logging output. Because:
+	 *  a) the function is deprecated
+	 *  b) gurobi closes the FILE handle when it is done, which leads to
+	 *     very unexpected effects when you pass stdout or stderr as logging
+	 *     output.
+	 * The only thing gurobi sanely supports is giving a string with a filename
+	 * :-( ...so we use /tmp/firm_gurobi.log as a temporary measure...
+	 */
+#if 0
 	error = GRBsetlogfile(grb->env, lpp->log);
 	check_gurobi_error(grb, error);
+#endif
 
 	return grb;
 }

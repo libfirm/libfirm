@@ -882,7 +882,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
  *                     registers.
  */
 static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
-                             unsigned *permutation)
+                           unsigned *permutation)
 {
 	unsigned  *n_used = ALLOCANZ(unsigned, n_regs);
 	ir_node   *block;
@@ -1146,8 +1146,15 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 		}
 	}
 
-	/* add all combinations, then remove not allowed ones */
+	/* add all combinations, except for not allowed ones */
 	for (l = 0; l < n_regs; ++l) {
+		if (!rbitset_is_set(normal_regs, l)) {
+			char name[15];
+			snprintf(name, sizeof(name), "%u_to_%u", l, l);
+			lpp_vars[l*n_regs+l] = lpp_add_var(lpp, name, lpp_binary, 1);
+			continue;
+		}
+
 		for (r = 0; r < n_regs; ++r) {
 			if (!rbitset_is_set(normal_regs, r))
 				continue;
@@ -1158,25 +1165,47 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 			    && rbitset_is_set(forbidden_regs, r))
 				continue;
 
+			char name[15];
+			snprintf(name, sizeof(name), "%u_to_%u", l, r);
+
 			double costs = l==r ? 9 : 8;
 			lpp_vars[l*n_regs+r]
-				= lpp_add_var(lpp, NULL, lpp_binary, costs);
+				= lpp_add_var(lpp, name, lpp_binary, costs);
 			assert(lpp_vars[l*n_regs+r] > 0);
 		}
 	}
 	/* add constraints */
 	for (l = 0; l < n_regs; ++l) {
+		int constraint;
 		/* only 1 destination per register */
-		int constraint = lpp_add_cst(lpp, NULL, lpp_equal, 1);
+		constraint = -1;
 		for (r = 0; r < n_regs; ++r) {
 			int var = lpp_vars[l*n_regs+r];
 			if (var == 0)
 				continue;
+			if (constraint < 0) {
+				char name[64];
+				snprintf(name, sizeof(name), "%u_to_dest", l);
+				constraint = lpp_add_cst(lpp, name, lpp_equal, 1);
+			}
 			lpp_set_factor_fast(lpp, constraint, var, 1);
 		}
 		/* each destination used by at most 1 value */
-		constraint = lpp_add_cst(lpp, NULL, lpp_less_equal, 1);
+		constraint = -1;
+		for (r = 0; r < n_regs; ++r) {
+			int var = lpp_vars[r*n_regs+l];
+			if (var == 0)
+				continue;
+			if (constraint < 0) {
+				char name[64];
+				snprintf(name, sizeof(name), "one_to_%u", l);
+				constraint = lpp_add_cst(lpp, name, lpp_less_equal, 1);
+			}
+			lpp_set_factor_fast(lpp, constraint, var, 1);
+		}
 	}
+
+	lpp_dump_plain(lpp, fopen("lppdump.txt", "w"));
 
 	/* solve lpp */
 	{
@@ -1201,8 +1230,15 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 				}
 			}
 			assert(dest_reg != (unsigned)-1);
-			assignment[l] = dest_reg;
+			assignment[dest_reg] = l;
 		}
+
+		fprintf(stderr, "Assignment: ");
+		for (l = 0; l < n_regs; ++l) {
+			fprintf(stderr, "%u ", assignment[l]);
+		}
+		fprintf(stderr, "\n");
+		fflush(stdout);
 		permute_values(live_nodes, node, assignment);
 	}
 	lpp_free(lpp);
@@ -1281,6 +1317,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	}
 
 	if (double_width) {
+		/* only the ILP variant can solve this yet */
 		solve_lpp(live_nodes, node, forbidden_regs, live_through_regs);
 		return;
 	}
