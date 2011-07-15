@@ -492,7 +492,7 @@ static void ilp2_build(ilp_env_t *ienv)
 	local_env_t *lenv = ienv->env;
 	int lower_bound;
 
-	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
+	ienv->lp = lpp_new(ienv->co->name, lpp_minimize);
 	build_coloring_cstr(ienv);
 	build_interference_cstr(ienv);
 	build_affinity_cstr(ienv);

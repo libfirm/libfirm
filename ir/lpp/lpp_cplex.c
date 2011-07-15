@@ -169,7 +169,7 @@ static void cpx_construct(cpx_t *cpx)
 	chk_cpx_err(cpx);
 
 	obstack_free(&obst, NULL);
-	free_lpp_matrix(lpp);
+	lpp_free_matrix(lpp);
 }
 
 static void cpx_solve(cpx_t *cpx)

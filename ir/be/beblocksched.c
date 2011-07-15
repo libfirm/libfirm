@@ -687,7 +687,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 	env.env.blockcount = 0;
 	env.ilpedges       = NEW_ARR_F(ilp_edge_t, 0);
 
-	env.lpp = new_lpp("blockschedule", lpp_minimize);
+	env.lpp = lpp_new("blockschedule", lpp_minimize);
 	lpp_set_time_limit(env.lpp, 20);
 	lpp_set_log(env.lpp, stdout);
 
@@ -702,7 +702,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 	                                      be_get_be_obst(irg));
 
 	DEL_ARR_F(env.ilpedges);
-	free_lpp(env.lpp);
+	lpp_free(env.lpp);
 	obstack_free(&obst, NULL);
 
 	return block_list;

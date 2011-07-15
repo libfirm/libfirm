@@ -159,7 +159,7 @@ static void gurobi_construct(gurobi_t *grb)
 	check_gurobi_error(grb, error);
 
 	obstack_free(&obst, NULL);
-	free_lpp_matrix(lpp);
+	lpp_free_matrix(lpp);
 }
 
 static void gurobi_solve(gurobi_t *grb)

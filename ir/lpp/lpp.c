@@ -67,13 +67,14 @@ static void update_stats(lpp_t *lpp)
 	lpp->density    = (double)lpp->n_elems / (double)(lpp->cst_next * lpp->var_next) * 100.0;
 }
 
-lpp_t *new_lpp(const char *name, lpp_opt_t opt_type)
+lpp_t *lpp_new(const char *name, lpp_opt_t opt_type)
 {
-	return new_lpp_userdef(name, opt_type, 64, 64, 2.0);
+	return lpp_new_userdef(name, opt_type, 64, 64, 2.0);
 }
 
-lpp_t *new_lpp_userdef(const char *name, lpp_opt_t opt_type,
-			   int estimated_vars, int estimated_csts, double grow_factor)
+lpp_t *lpp_new_userdef(const char *name, lpp_opt_t opt_type,
+			           int estimated_vars, int estimated_csts,
+			           double grow_factor)
 {
 	lpp_t *lpp;
 	int   idx;
@@ -101,13 +102,13 @@ lpp_t *new_lpp_userdef(const char *name, lpp_opt_t opt_type,
 	return lpp;
 }
 
-void free_lpp_matrix(lpp_t *lpp)
+void lpp_free_matrix(lpp_t *lpp)
 {
 	del_matrix(lpp->m);
 	lpp->m = NULL;
 }
 
-void free_lpp(lpp_t *lpp)
+void lpp_free(lpp_t *lpp)
 {
 	obstack_free(&lpp->obst, NULL);
 

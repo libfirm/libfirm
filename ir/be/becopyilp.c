@@ -262,6 +262,6 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 void free_ilp_env(ilp_env_t *ienv)
 {
 	free_size_red(ienv->sr);
-	free_lpp(ienv->lp);
+	lpp_free(ienv->lp);
 	free(ienv);
 }

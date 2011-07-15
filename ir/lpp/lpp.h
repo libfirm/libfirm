@@ -136,7 +136,7 @@ typedef struct _lpp_t {
  * Implicit row with name "obj" is inserted.
  * Implicit col with name "rhs" is inserted.
  */
-lpp_t *new_lpp(const char *name, lpp_opt_t opt_type);
+lpp_t *lpp_new(const char *name, lpp_opt_t opt_type);
 
 /**
  * Creates a new problem. Optimization type is minimize or maximize.
@@ -147,18 +147,19 @@ lpp_t *new_lpp(const char *name, lpp_opt_t opt_type);
  * @param grow_factor      By which factor should the problem grow, if there are
  *                         more variables or constraints than estimated.
  */
-lpp_t *new_lpp_userdef(const char *name, lpp_opt_t opt_type,
-					   int estimated_vars, int estimated_csts, double grow_factor);
+lpp_t *lpp_new_userdef(const char *name, lpp_opt_t opt_type,
+					   int estimated_vars, int estimated_csts,
+					   double grow_factor);
 
 /**
  * Frees the matrix embedded in the LPP.
  */
-void free_lpp_matrix(lpp_t *lpp);
+void lpp_free_matrix(lpp_t *lpp);
 
 /**
  * Frees all memory allocated for LPP data structure.
  */
-void free_lpp(lpp_t *lpp);
+void lpp_free(lpp_t *lpp);
 
 /**
  * @return The constant term in the objective function
