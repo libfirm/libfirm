@@ -3079,7 +3079,7 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	if (is_Shl(left)) {
 		tv_bitop = tarval_shr(tv2, tv1);
 	} else if (is_Shr(left)) {
-		if (is_Or(n)) {
+		if (is_Or(n) || is_Eor(n)) {
 			/*
 			 * TODO this can be improved by checking whether
 			 *      the left shift produces an overflow
