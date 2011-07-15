@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 #include <obstack.h>
+#include <stdbool.h>
 
 #include "set.h"
 
@@ -107,7 +108,7 @@ typedef struct _lpp_t {
 	double     grow_factor;          /**< The factor by which the vars and constraints are enlarged */
 
 	/* Solving options */
-	int    set_bound;                /**< IN: Boolean flag to set a bound for the objective function. */
+	bool   set_bound;                /**< IN: Boolean flag to set a bound for the objective function. */
 	double bound;                    /**< IN: The bound. Only valid if set_bound == 1. */
 	double time_limit_secs;          /**< IN: Time limit to obey while solving (0.0 means no time limit) */
 
@@ -288,16 +289,45 @@ void lpp_check_startvals(lpp_t *lpp);
  */
 void lpp_dump_plain(lpp_t *lpp, FILE *f);
 
-#define lpp_get_iter_cnt(lpp)         ((lpp)->iterations)
-#define lpp_get_sol_time(lpp)         ((lpp)->sol_time)
-#define lpp_get_sol_state(lpp)        ((lpp)->sol_state)
-#define lpp_get_var_count(lpp)        ((lpp)->var_next-1)
-#define lpp_get_cst_count(lpp)        ((lpp)->cst_next-1)
-#define lpp_get_sol_state(lpp)        ((lpp)->sol_state)
-#define lpp_get_var_sol(lpp,idx)      ((lpp)->vars[idx]->value)
-#define lpp_is_sol_valid(lpp)         (lpp_get_sol_state(lpp) >= lpp_feasible)
+static inline unsigned lpp_get_iter_cnt(const lpp_t *lpp)
+{
+	return lpp->iterations;
+}
 
-#define lpp_set_time_limit(lpp,secs)  ((lpp)->time_limit_secs = secs)
+static inline double lpp_get_sol_time(const lpp_t *lpp)
+{
+	return lpp->sol_time;
+}
+
+static inline lpp_sol_state_t lpp_get_sol_state(const lpp_t *lpp)
+{
+	return lpp->sol_state;
+}
+
+static inline int lpp_get_var_count(const lpp_t *lpp)
+{
+	return lpp->var_next-1;
+}
+
+static inline int lpp_get_cst_count(const lpp_t *lpp)
+{
+	return lpp->cst_next-1;
+}
+
+static inline double lpp_get_var_sol(const lpp_t *lpp, int idx)
+{
+	return lpp->vars[idx]->value;
+}
+
+static inline bool lpp_is_sol_valid(const lpp_t *lpp)
+{
+	return lpp_get_sol_state(lpp) >= lpp_feasible;
+}
+
+static inline void lpp_set_time_limit(lpp_t *lpp, double secs)
+{
+	lpp->time_limit_secs = secs;
+}
 
 /**
  * Set a bound for the objective function.
@@ -307,13 +337,20 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f);
  *              is a lower bound. If it is a maximization problem,
  *              the bound is an upper bound.
  */
-#define lpp_set_bound(lpp,bnd)        ((lpp)->set_bound = 1, (lpp)->bound = (bnd))
+static inline void lpp_set_bound(lpp_t *lpp, double bound)
+{
+	lpp->set_bound = true;
+	lpp->bound = bound;
+}
 
 /**
  * Clear a set bound.
  * @param lpp The problem.
  */
-#define lpp_unset_bound(lpp)          ((lpp)->set_bound = 0)
+static inline void lpp_unset_bound(lpp_t *lpp)
+{
+	lpp->set_bound = false;
+}
 
 /**
  * Solve an ILP.
