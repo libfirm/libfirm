@@ -393,7 +393,7 @@ typedef enum tarval_int_overflow_mode_t {
 /**
  * Sets the overflow mode for integer operations.
  *
- * @param ov_mode  one of teh overflow modes
+ * @param ov_mode  one of the overflow modes
  */
 FIRM_API void tarval_set_integer_overflow_mode(tarval_int_overflow_mode_t ov_mode);
 
