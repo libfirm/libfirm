@@ -223,20 +223,24 @@ static void gurobi_solve(gurobi_t *grb)
 	default:                    lpp->sol_state = lpp_feasible; break;
 	}
 
-	/* get variable solution values */
-	values = alloca(numcols * sizeof(*values));
-	error = GRBgetdblattrarray(grb->model, GRB_DBL_ATTR_X, 0, numcols, values);
-	check_gurobi_error(grb, error);
-	for(i=0; i<numcols; ++i) {
-		lpp->vars[1+i]->value      = values[i];
-		lpp->vars[1+i]->value_kind = lpp_value_solution;
-	}
+	if (lpp->sol_state >= lpp_feasible) {
+		/* get variable solution values */
+		values = alloca(numcols * sizeof(*values));
+		error = GRBgetdblattrarray(grb->model, GRB_DBL_ATTR_X, 0, numcols,
+		                           values);
+		check_gurobi_error(grb, error);
+		for(i=0; i<numcols; ++i) {
+			lpp->vars[1+i]->value      = values[i];
+			lpp->vars[1+i]->value_kind = lpp_value_solution;
+		}
 
-	/* Get the value of the objective function. */
-	error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_OBJVAL, &lpp->objval);
-	check_gurobi_error(grb, error);
-	error = GRBgetdblattr(grb->model , GRB_DBL_ATTR_OBJBOUND, &lpp->best_bound);
-	check_gurobi_error(grb, error);
+		/* Get the value of the objective function. */
+		error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_OBJVAL, &lpp->objval);
+		check_gurobi_error(grb, error);
+		error = GRBgetdblattr(grb->model , GRB_DBL_ATTR_OBJBOUND,
+		                      &lpp->best_bound);
+		check_gurobi_error(grb, error);
+	}
 
 	/* get some statistics */
 	error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_ITERCOUNT, &iterations);
