@@ -35,7 +35,7 @@
 #include "iredges.h"
 #include "vf_dstr_build.h"
 
-#define VA_DEBUG_DSTR 1
+//#define VA_DEBUG_DSTR 1
 
 /******************************************************************************
  * Public interface.                                                          *

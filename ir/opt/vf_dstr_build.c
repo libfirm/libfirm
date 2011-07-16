@@ -44,7 +44,7 @@
 #include <assert.h>
 #include <string.h>
 
-#define VB_DEBUG_BUILD 1
+//#define VB_DEBUG_BUILD 1
 
 typedef struct obstack obstack;
 

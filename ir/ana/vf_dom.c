@@ -32,7 +32,7 @@
 #include "iredges.h"
 #include "obstack.h"
 
-#define VD_DEBUG_TREE 1
+//#define VD_DEBUG_TREE 1
 
 typedef struct obstack obstack;
 

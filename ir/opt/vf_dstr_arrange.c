@@ -37,8 +37,8 @@
 #include <assert.h>
 
 #define VA_SMART_RE_USE    0
-#define VA_DEBUG_ARRANGE   1
-#define VA_DEBUG_CONSTRUCT 1
+//#define VA_DEBUG_ARRANGE   1
+//#define VA_DEBUG_CONSTRUCT 1
 
 #define foreach_plist_lazy(list, it) \
 	if (list) foreach_plist(list, it)
@@ -480,6 +480,9 @@ static va_node_state va_node_visit(va_info *vai, va_node *van,
 			if (hint->region->base == new_region->base) {
 #endif
 				/* Use the newer region for the hint. */
+
+				/* FIXME: shouldn't this be placed after the loop, so that it
+				 * also runs when searching is cut short? */
 
 				if (new_region->index > hint->region->index) {
 #if VA_SMART_RE_USE

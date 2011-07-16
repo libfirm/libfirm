@@ -39,7 +39,7 @@
 #include "vf_cond.h"
 
 #define VF_DEBUG_CALCULATIONS 0
-#define VF_DEBUG_CONDITIONS   1
+//#define VF_DEBUG_CONDITIONS   1
 
 typedef struct obstack obstack;
 
