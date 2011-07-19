@@ -2101,6 +2101,7 @@ static ir_node *get_flags_mode_b(ir_node *node, ia32_condition_code_t *cc_out)
 	ir_node  *new_block = be_transform_node(get_nodes_block(node));
 	ir_node  *new_op    = be_transform_node(node);
 	ir_node  *flags     = new_bd_ia32_Test(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_op, new_op, false);
+	set_ia32_ls_mode(flags, get_irn_mode(new_op));
 	*cc_out  = ia32_cc_not_equal;
 	return flags;
 }
