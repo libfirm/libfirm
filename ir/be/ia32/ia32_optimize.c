@@ -217,10 +217,11 @@ static void peephole_ia32_Test(ir_node *node)
 	if (left == right) { /* we need a test for 0 */
 		ir_node         *block = get_nodes_block(node);
 		int              pn    = pn_ia32_res;
+		ir_node         *op    = left;
 		ir_node         *flags_proj;
 		ir_mode         *flags_mode;
+		ir_mode         *op_mode;
 		ir_node         *schedpoint;
-		ir_node         *op = left;
 		const ir_edge_t *edge;
 
 		if (get_nodes_block(left) != block)
@@ -275,6 +276,14 @@ static void peephole_ia32_Test(ir_node *node)
 			default:
 				return;
 		}
+
+		op_mode = get_ia32_ls_mode(op);
+		if (op_mode == NULL)
+			op_mode = get_irn_mode(op);
+
+		/* Make sure we operate on the same bit size */
+		if (get_mode_size_bits(op_mode) != get_mode_size_bits(get_ia32_ls_mode(node)))
+			return;
 
 		if (get_irn_mode(op) != mode_T) {
 			set_irn_mode(op, mode_T);
