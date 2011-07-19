@@ -3144,7 +3144,7 @@ static ir_node *transform_node_And(ir_node *n)
 		if (a_relation == b_relation && a_relation == ir_relation_equal
 		    && !mode_is_float(get_irn_mode(a_left))
 		    && !mode_is_float(get_irn_mode(b_left))
-		    && values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
+		    && values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
 			ir_mode  *a_mode = get_irn_mode(a_left);
@@ -4911,7 +4911,7 @@ static ir_node *transform_node_Or(ir_node *n)
 		if (is_cmp_unequal(a) && is_cmp_unequal(b)
 		    && !mode_is_float(get_irn_mode(a_left))
 		    && !mode_is_float(get_irn_mode(b_left))
-		    && values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
+		    && values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
 			ir_graph *irg    = get_irn_irg(n);
 			dbg_info *dbgi   = get_irn_dbg_info(n);
 			ir_node  *block  = get_nodes_block(n);
