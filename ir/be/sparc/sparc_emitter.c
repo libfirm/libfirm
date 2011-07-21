@@ -55,6 +55,7 @@
 #include "sparc_nodes_attr.h"
 #include "sparc_new_nodes.h"
 #include "gen_sparc_regalloc_if.h"
+#include "sparc_architecture.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -578,10 +579,7 @@ static void emit_sparc_Call(const ir_node *node)
 	fill_delay_slot();
 }
 
-/**
- * Emit code for Perm node
- */
-static void emit_be_Perm(const ir_node *irn)
+static void emit_be_Perm_xor(const ir_node *irn)
 {
 	be_emit_cstring("\txor ");
 	sparc_emit_source_register(irn, 1);
@@ -606,6 +604,39 @@ static void emit_be_Perm(const ir_node *irn)
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
 	be_emit_finish_line_gas(irn);
+}
+
+static int map_reg_to_permi_num(const arch_register_t *reg)
+{
+	return reg->index;
+}
+
+static int permi5(int reg0, int reg1, int reg2, int reg3, int reg4)
+{
+	return (reg0 << 20) | (reg1 << 15) | (reg2 << 10) | (reg3 <<  5) | reg4;
+}
+
+static void emit_be_Perm_permi(const ir_node *irn)
+{
+	const arch_register_t *reg1 = get_in_reg(irn, 0);
+	const arch_register_t *reg2 = get_in_reg(irn, 1);
+	const int pn1 = map_reg_to_permi_num(reg1);
+	const int pn2 = map_reg_to_permi_num(reg2);
+	const int n = permi5(pn1, pn2, pn2, pn2, pn2);
+
+	be_emit_irprintf("\tpermi %d", n);
+	be_emit_finish_line_gas(irn);
+}
+
+/**
+ * Emit code for Perm node
+ */
+static void emit_be_Perm(const ir_node *irn)
+{
+	if (sparc_cg_config.use_permi)
+		emit_be_Perm_permi(irn);
+	else
+		emit_be_Perm_xor(irn);
 }
 
 static void emit_be_MemPerm(const ir_node *node)

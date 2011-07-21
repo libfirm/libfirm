@@ -65,6 +65,7 @@
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_transform.h"
 #include "sparc_emitter.h"
+#include "sparc_architecture.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -610,6 +611,9 @@ static const backend_params *sparc_get_backend_params(void)
 		NULL,  /* no trampoline support: no trampoline builder */
 		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
+
+	sparc_setup_cg_config();
+
 	return &p;
 }
 
@@ -665,4 +669,5 @@ void be_init_arch_sparc(void)
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
 	sparc_init_transform();
 	sparc_init_emitter();
+	sparc_init_architecture();
 }
