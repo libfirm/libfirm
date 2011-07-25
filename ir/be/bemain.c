@@ -87,7 +87,7 @@ static be_options_t be_options = {
 	0,                                 /* create PIC code */
 	BE_VERIFY_WARN,                    /* verification level: warn */
 	"",                                /* ilp server */
-	"cplex",                           /* ilp solver */
+	"",                                /* ilp solver */
 	0,                                 /* enable statistic event dumping */
 	"",                                /* print stat events */
 };

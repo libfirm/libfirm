@@ -41,6 +41,9 @@ lpp_solver_func_t *lpp_find_solver(const char *name)
 {
 	int i;
 
+	if (name[0] == '\0')
+		return lpp_solvers[0].solver;
+
 	for(i = 0; lpp_solvers[i].solver != NULL; i++)
 		if(strcmp(lpp_solvers[i].name, name) == 0)
 			return lpp_solvers[i].solver;
