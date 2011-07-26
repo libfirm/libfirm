@@ -4640,8 +4640,34 @@ static ir_node *transform_node_Phi(ir_node *phi)
 		}
 	}
 
+	/* Move Pin nodes down through Phi nodes. */
+	if (mode == mode_M) {
+		n = get_irn_arity(phi);
+
+		/* Beware of Phi0 */
+		if (n > 0) {
+			ir_node **in;
+			ir_node  *new_phi;
+
+			NEW_ARR_A(ir_node *, in, n);
+
+			for (i = 0; i < n; ++i) {
+				ir_node *pred = get_irn_n(phi, i);
+
+				if (!is_Pin(pred))
+					return phi;
+
+				in[i] = get_Pin_op(pred);
+			}
+
+			/* Move the Pin nodes "behind" the Phi. */
+			block   = get_irn_n(phi, -1);
+			new_phi = new_r_Phi(block, n, in, mode_M);
+			return new_r_Pin(block, new_phi);
+		}
+	}
 	/* Move Confirms down through Phi nodes. */
-	if (mode_is_reference(mode)) {
+	else if (mode_is_reference(mode)) {
 		n = get_irn_arity(phi);
 
 		/* Beware of Phi0 */
