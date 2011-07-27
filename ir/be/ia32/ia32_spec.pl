@@ -555,7 +555,7 @@ SubMem8Bit => {
 Sbb => {
 	state     => "exc_pinned",
 	reg_req   => { in => [ "gp", "gp", "none", "gp", "gp", "flags" ],
-	               out => [ "in_r4 !in_r5", "flags", "none" ] },
+	               out => [ "in_r4", "flags", "none" ] },
 	ins       => [ "base", "index", "mem", "minuend", "subtrahend", "eflags" ],
 	outs      => [ "res", "flags", "M" ],
 	am        => "source,binary",

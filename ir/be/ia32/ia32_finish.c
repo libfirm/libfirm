@@ -117,10 +117,13 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 	} else {
 		ir_node         *res_proj   = NULL;
 		ir_node         *flags_proj = NULL;
+		ir_node         *carry;
 		const ir_edge_t *edge;
 
 		if (get_irn_mode(irn) == mode_T) {
 			/* collect the Proj uses */
+			assert(pn_ia32_Sub_res   == pn_ia32_Sbb_res);
+			assert(pn_ia32_Sub_flags == pn_ia32_Sbb_flags);
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				long     pn   = get_Proj_proj(proj);
@@ -135,7 +138,58 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			}
 		}
 
-		if (flags_proj == NULL) {
+		if (is_ia32_Sbb(irn)) {
+			/* Feed borrow (in CF) as carry (via CMC) into NOT+ADC. */
+			carry = get_irn_n(irn, n_ia32_Sbb_eflags);
+			carry = new_bd_ia32_Cmc(dbgi, block, carry);
+			goto carry;
+		} else if (flags_proj != 0) {
+			/*
+			 * ARG, the above technique does NOT set the flags right.
+			 * So, we must produce the following code:
+			 * t1 = ~b
+			 * t2 = a + ~b + Carry
+			 * Complement Carry
+			 *
+			 * a + -b = a + (~b + 1)  would set the carry flag wrong IFF both a and b are zero.
+			 */
+			ir_node *cmc;
+			ir_node *nnot;
+			ir_node *adc;
+			ir_node *adc_flags;
+
+			carry = new_bd_ia32_Stc(dbgi, block);
+
+carry:
+			nnot = new_bd_ia32_Not(dbgi, block, in2);
+			arch_set_irn_register(nnot, in2_reg);
+			sched_add_before(irn, nnot);
+
+			arch_set_irn_register(carry, &ia32_registers[REG_EFLAGS]);
+			sched_add_before(irn, carry);
+
+			adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, carry);
+			arch_set_irn_register(adc, out_reg);
+			sched_add_before(irn, adc);
+
+			set_irn_mode(adc, mode_T);
+			adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
+			arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
+
+			if (flags_proj != NULL) {
+				cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
+				arch_set_irn_register(cmc, &ia32_registers[REG_EFLAGS]);
+				sched_add_before(irn, cmc);
+				exchange(flags_proj, cmc);
+			}
+
+			if (res_proj != NULL) {
+				set_Proj_pred(res_proj, adc);
+				set_Proj_proj(res_proj, pn_ia32_Adc_res);
+			}
+
+			res = adc;
+		} else {
 			res = new_bd_ia32_Neg(dbgi, block, in2);
 			arch_set_irn_register(res, in2_reg);
 
@@ -152,46 +206,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 
 			/* add to schedule */
 			sched_add_before(irn, res);
-		} else {
-			ir_node *stc, *cmc, *nnot, *adc;
-			ir_node *adc_flags;
-
-			/*
-			 * ARG, the above technique does NOT set the flags right.
-			 * So, we must produce the following code:
-			 * t1 = ~b
-			 * t2 = a + ~b + Carry
-			 * Complement Carry
-			 *
-			 * a + -b = a + (~b + 1)  would set the carry flag wrong IFF both a and b are zero.
-			 */
-			nnot = new_bd_ia32_Not(dbgi, block, in2);
-			arch_set_irn_register(nnot, in2_reg);
-			sched_add_before(irn, nnot);
-
-			stc = new_bd_ia32_Stc(dbgi, block);
-			arch_set_irn_register(stc, &ia32_registers[REG_EFLAGS]);
-			sched_add_before(irn, stc);
-
-			adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, stc);
-			arch_set_irn_register(adc, out_reg);
-			sched_add_before(irn, adc);
-
-			set_irn_mode(adc, mode_T);
-			adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
-			arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
-
-			cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
-			arch_set_irn_register(cmc, &ia32_registers[REG_EFLAGS]);
-			sched_add_before(irn, cmc);
-
-			exchange(flags_proj, cmc);
-			if (res_proj != NULL) {
-				set_Proj_pred(res_proj, adc);
-				set_Proj_proj(res_proj, pn_ia32_Adc_res);
-			}
-
-			res = adc;
 		}
 	}
 
@@ -418,7 +432,7 @@ static void ia32_finish_irg_walker(ir_node *block, void *env)
 		next = sched_next(irn);
 
 		/* check if there is a sub which need to be transformed */
-		if (is_ia32_Sub(irn) || is_ia32_xSub(irn)) {
+		if (is_ia32_Sub(irn) || is_ia32_Sbb(irn) || is_ia32_xSub(irn)) {
 			ia32_transform_sub_to_neg_add(irn);
 		}
 	}
