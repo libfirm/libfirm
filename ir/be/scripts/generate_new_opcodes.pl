@@ -70,7 +70,7 @@ if(!defined($default_attr_type)) {
 }
 if(!defined(%init_attr)) {
 	%init_attr = (
-		"$default_attr_type" => "\tinit_${arch}_attributes(res, flags, in_reqs, exec_units, n_res);",
+		"$default_attr_type" => "\tinit_${arch}_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	);
 }
 if(!defined($default_cmp_attr)) {
@@ -270,9 +270,9 @@ sub create_constructor {
 
 	# emit constructor code
 	$temp = <<EOF;
-	ir_graph         *irg     = get_irn_irg(block);
-	ir_op            *op      = op_${arch}_${op};
-	arch_irn_flags_t  flags   = arch_irn_flags_none;
+	ir_graph         *irg        = get_irn_irg(block);
+	ir_op            *op         = op_${arch}_${op};
+	arch_irn_flags_t  irn_flags_ = arch_irn_flags_none;
 	ir_node          *res;
 	backend_info_t   *info;
 EOF
@@ -426,14 +426,14 @@ EOF
 			if (not defined($known_irn_flags{$flag})) {
 				print STDERR "WARNING: irn_flag '$flag' in opcode $op is unknown\n";
 			} else {
-				$temp .= "\tflags |= " . $known_irn_flags{$flag} . ";\n";
+				$temp .= "\tirn_flags_ |= " . $known_irn_flags{$flag} . ";\n";
 			}
 		}
 		$temp .= "\n";
 	}
 
 	# lookup init function
-	my $attr_init_code = "(void)in;(void)exec_units;(void)flags;(void)in_reqs;(void)n_res;";
+	my $attr_init_code = "(void)in;(void)exec_units;(void)irn_flags_;(void)in_reqs;(void)n_res;";
 	if ($attr_type ne "") {
 		$attr_init_code = $init_attr{$attr_type};
 		if(!defined($attr_init_code)) {
