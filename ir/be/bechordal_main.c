@@ -448,8 +448,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 	be_timer_pop(T_VERIFY);
 
 	be_timer_push(T_RA_EPILOG);
-	lower_nodes_after_ra(irg,
-	                     options.lower_perm_opt&BE_CH_LOWER_PERM_COPY ? 1 : 0);
+	lower_nodes_after_ra(irg, options.lower_perm_opt == BE_CH_LOWER_PERM_COPY);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
 	obstack_free(&obst, NULL);
