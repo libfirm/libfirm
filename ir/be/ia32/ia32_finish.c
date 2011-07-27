@@ -49,9 +49,6 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
-COMPILETIME_ASSERT((int)pn_ia32_Sub_res   == pn_ia32_Sbb_res,   pn_ia32_Sub_res);
-COMPILETIME_ASSERT((int)pn_ia32_Sub_flags == pn_ia32_Sbb_flags, pn_ia32_Sub_flags);
-
 /**
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
@@ -111,14 +108,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 		/* generate the add */
 		res = new_bd_ia32_xAdd(dbgi, block, noreg, noreg, nomem, res, in1);
 		set_ia32_ls_mode(res, get_ia32_ls_mode(irn));
-
-		/* exchange the add and the sub */
-		edges_reroute(irn, res);
-
-		/* add to schedule */
-		sched_add_before(irn, res);
 	} else {
-		ir_node         *res_proj   = NULL;
 		ir_node         *flags_proj = NULL;
 		ir_node         *carry;
 		const ir_edge_t *edge;
@@ -128,13 +118,10 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				long     pn   = get_Proj_proj(proj);
-				if (pn == pn_ia32_Sub_res) {
-					assert(res_proj == NULL);
-					res_proj = proj;
-				} else {
-					assert(pn == pn_ia32_Sub_flags);
+				if (pn == pn_ia32_flags) {
 					assert(flags_proj == NULL);
 					flags_proj = proj;
+					break;
 				}
 			}
 		}
@@ -171,22 +158,16 @@ carry:
 
 			adc = new_bd_ia32_Adc(dbgi, block, noreg, noreg, nomem, nnot, in1, carry);
 			arch_set_irn_register(adc, out_reg);
-			sched_add_before(irn, adc);
-
-			set_irn_mode(adc, mode_T);
-			adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
-			arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
+			set_ia32_commutative(adc);
 
 			if (flags_proj != NULL) {
+				adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
+				arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
+
 				cmc = new_bd_ia32_Cmc(dbgi, block, adc_flags);
 				arch_set_irn_register(cmc, &ia32_registers[REG_EFLAGS]);
-				sched_add_before(irn, cmc);
+				sched_add_after(irn, cmc);
 				exchange(flags_proj, cmc);
-			}
-
-			if (res_proj != NULL) {
-				set_Proj_pred(res_proj, adc);
-				set_Proj_proj(res_proj, pn_ia32_Adc_res);
 			}
 
 			res = adc;
@@ -201,14 +182,12 @@ carry:
 			res = new_bd_ia32_Add(dbgi, block, noreg, noreg, nomem, res, in1);
 			arch_set_irn_register(res, out_reg);
 			set_ia32_commutative(res);
-
-			/* exchange the add and the sub */
-			edges_reroute(irn, res);
-
-			/* add to schedule */
-			sched_add_before(irn, res);
 		}
 	}
+
+	/* exchange the add and the sub */
+	edges_reroute(irn, res);
+	sched_add_before(irn, res);
 
 	set_irn_mode(res, get_irn_mode(irn));
 
