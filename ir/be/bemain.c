@@ -134,10 +134,10 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling",   &be_options.opt_profile_generate),
 	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                           &be_options.opt_profile_use),
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
-	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",   be_options.filtev, sizeof(be_options.filtev)),
+	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",   be_options.filtev),
 
-	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
-	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
+	LC_OPT_ENT_STR("ilp.server", "the ilp server name", be_options.ilp_server),
+	LC_OPT_ENT_STR("ilp.solver", "the ilp solver name", be_options.ilp_solver),
 	LC_OPT_LAST
 };
 
