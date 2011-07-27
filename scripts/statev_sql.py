@@ -81,7 +81,7 @@ class EmitMysql(EmitBase):
 
 		keys  = "id, " + ", ".join(evcols)
 		marks = ",".join(['%s'] * (len(evcols)+1))
-		self.evinsert = "insert into `%s` values (%s)" % (self.evtab, marks)
+		self.evinsert = "insert into `%s` (%s) values (%s)" % (self.evtab, keys, marks)
 
 		keys  = ", ".join(ctxcols)
 		marks = ",".join(['%s'] * len(ctxcols))
@@ -163,6 +163,8 @@ class Conv:
 		evind   = 0
 		ctxcols = dict()
 		evcols  = dict()
+		ctxlist = []
+		evlist  = []
 		linenr  = 0
 
 		self.valid_keys = set()
@@ -180,6 +182,7 @@ class Conv:
 					key = fields[i]
 					if not ctxcols.has_key(key):
 						ctxcols[key] = ctxind
+						ctxlist.append(key)
 						ctxind += 1
 
 			elif fields[0] == 'E':
@@ -195,11 +198,12 @@ class Conv:
 					if not evcols.has_key(key):
 						self.valid_keys.add(key)
 						evcols[key] = evind
+						evlist.append(key)
 						evind += 1
 
 		self.ctxcols = ctxcols
 		self.evcols = evcols
-		return (ctxcols, evcols)
+		return (ctxlist, evlist)
 
 	def input(self):
 		return fileinput.FileInput(files=self.files, openhook=fileinput.hook_compressed)
@@ -291,7 +295,7 @@ class Conv:
 						print '%10d / %10d' % (curr_event, self.n_events)
 
 				for p in range(1,len(items),2):
-					key   = items[p]
+					key = items[p]
 					if key not in self.evcols:
 						continue
 
@@ -299,7 +303,7 @@ class Conv:
 					if self.evvals[keyidx] != None:
 						self.flush_events(self.curr_id)
 
-					value          = items[p+1]
+					value = items[p+1]
 					self.evvals[keyidx] = value
 
 	def __init__(self):
