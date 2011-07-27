@@ -354,17 +354,17 @@ int lc_opt_std_cb(const char *name, lc_opt_type_t type, void *data, size_t lengt
 		case lc_opt_type_bit:
 			integer = va_arg(args, int);
 			if (integer)
-				*((int *) data) |= length;
+				*(unsigned*)data |= length;
 			else
-				*((int *) data) &= ~length;
+				*(unsigned*)data &= ~length;
 			break;
 
 		case lc_opt_type_negbit:
 			integer = va_arg(args, int);
 			if (integer)
-				*((int *) data) &= ~length;
+				*(unsigned*)data &= ~length;
 			else
-				*((int *) data) |= length;
+				*(unsigned*)data |= length;
 			break;
 
 		case lc_opt_type_boolean:
