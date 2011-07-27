@@ -102,7 +102,6 @@ void stat_ev_end(void)
 	}
 	if (filter != NULL)
 		regfree(filter);
-	regfree(filter);
 }
 
 #endif
