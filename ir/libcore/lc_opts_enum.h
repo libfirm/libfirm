@@ -41,7 +41,7 @@ int lc_opt_enum_ ## N ## _dump(char *buf, size_t n, const char *name, lc_opt_typ
 int lc_opt_enum_ ## N ## _dump_vals(char *buf, size_t n, const char *name, lc_opt_type_t type, void *data, size_t len); \
 
 #define _LC_OPT_ENT_ENUM(N, name, desc, var) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_enum, var, 0, lc_opt_enum_ ## N ## _cb, lc_opt_enum_ ## N ## _dump, lc_opt_enum_ ## N ## _dump_vals)
+	_LC_OPT_ENT(name, desc, lc_opt_type_enum, lc_opt_enum_ ## N ## _var_t, var, 0, lc_opt_enum_ ## N ## _cb, lc_opt_enum_ ## N ## _dump, lc_opt_enum_ ## N ## _dump_vals)
 
 _LC_OPT_DECL_ENUM(int, int)
 _LC_OPT_DECL_ENUM(unsigned, mask)

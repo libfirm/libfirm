@@ -102,35 +102,32 @@ typedef struct {
 
 } lc_opt_table_entry_t;
 
-#define _LC_OPT_ENT(name, desc, type, value, len, cb, dump, dump_vals) \
-	{ name, desc, type, value, len, cb, dump, dump_vals }
+#define _LC_OPT_ENT(name, desc, type, val_type, value, len, cb, dump, dump_vals) \
+	{ name, desc, type, 1 ? (value) : (val_type*)0 /* Produces a warning, if var has wrong type. */, len, cb, dump, dump_vals }
 
 #define LC_OPT_ENT_INT(name, desc, addr) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, NULL)
+	_LC_OPT_ENT(name, desc, lc_opt_type_int, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_ENT_DBL(name, desc, addr) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_double, addr, 0, lc_opt_std_cb, lc_opt_std_dump, NULL)
+	_LC_OPT_ENT(name, desc, lc_opt_type_double, double, addr, 0, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_ENT_BIT(name, desc, addr, mask) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_bit, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
+	_LC_OPT_ENT(name, desc, lc_opt_type_bit, unsigned, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_ENT_NEGBIT(name, desc, addr, mask) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_negbit, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
+	_LC_OPT_ENT(name, desc, lc_opt_type_negbit, unsigned, addr, mask, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_ENT_BOOL(name, desc, addr) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_boolean, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
+	_LC_OPT_ENT(name, desc, lc_opt_type_boolean, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
 
 #define LC_OPT_ENT_NEGBOOL(name, desc, addr) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_negboolean, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
+	_LC_OPT_ENT(name, desc, lc_opt_type_negboolean, int, addr, 0, lc_opt_std_cb, lc_opt_std_dump, lc_opt_bool_dump_vals)
 
 #define LC_OPT_ENT_STR(name, desc, buf, len) \
-	_LC_OPT_ENT(name, desc, lc_opt_type_string, buf, len, lc_opt_std_cb, lc_opt_std_dump, NULL)
-
-#define LC_OPT_ENT_CB(name, desc, type, data, len, cb, dump, dump_vals) \
-	_LC_OPT_ENT(name, desc, type, data, len, cb, dump, dump_vals)
+	_LC_OPT_ENT(name, desc, lc_opt_type_string, char, buf, len, lc_opt_std_cb, lc_opt_std_dump, NULL)
 
 #define LC_OPT_LAST \
-	_LC_OPT_ENT(NULL, NULL, lc_opt_type_invalid, NULL, 0, NULL, NULL, NULL)
+	_LC_OPT_ENT(NULL, NULL, lc_opt_type_invalid, void, NULL, 0, NULL, NULL, NULL)
 
 /**
  * Get the root option group.
