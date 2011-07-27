@@ -129,15 +129,15 @@ static const lc_opt_table_entry_t be_main_options[] = {
 	LC_OPT_ENT_ENUM_MASK("dump",       "dump irg on several occasions",                       &dump_var),
 	LC_OPT_ENT_BOOL     ("omitfp",     "omit frame pointer",                                  &be_options.omit_fp),
 	LC_OPT_ENT_BOOL     ("pic",        "create PIC code",                                     &be_options.pic),
-	LC_OPT_ENT_ENUM_PTR ("verify",     "verify the backend irg",                              &verify_var),
+	LC_OPT_ENT_ENUM_INT ("verify",     "verify the backend irg",                              &verify_var),
 	LC_OPT_ENT_BOOL     ("time",       "get backend timing statistics",                       &be_options.timing),
 	LC_OPT_ENT_BOOL     ("profilegenerate", "instrument the code for execution count profiling",   &be_options.opt_profile_generate),
 	LC_OPT_ENT_BOOL     ("profileuse",      "use existing profile data",                           &be_options.opt_profile_use),
 	LC_OPT_ENT_BOOL     ("statev",     "dump statistic events",                               &be_options.statev),
-	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",  &be_options.filtev, sizeof(be_options.filtev)),
+	LC_OPT_ENT_STR      ("filtev",     "filter for stat events (regex if support is active",   be_options.filtev, sizeof(be_options.filtev)),
 
-	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", &be_options.ilp_server, sizeof(be_options.ilp_server)),
-	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", &be_options.ilp_solver, sizeof(be_options.ilp_solver)),
+	LC_OPT_ENT_STR ("ilp.server", "the ilp server name", be_options.ilp_server, sizeof(be_options.ilp_server)),
+	LC_OPT_ENT_STR ("ilp.solver", "the ilp solver name", be_options.ilp_solver, sizeof(be_options.ilp_solver)),
 	LC_OPT_LAST
 };
 

@@ -232,19 +232,13 @@ static lc_opt_enum_int_var_t fp_unit_var = {
 };
 
 static const lc_opt_table_entry_t ia32_architecture_options[] = {
-	LC_OPT_ENT_BOOL("size",            "optimize for size", &opt_size),
-	LC_OPT_ENT_ENUM_INT("arch",        "select the instruction architecture",
-	                    &arch_var),
-	LC_OPT_ENT_ENUM_INT("opt",         "optimize for instruction architecture",
-	                    &opt_arch_var),
-	LC_OPT_ENT_ENUM_INT("fpunit",      "select the floating point unit",
-	                    &fp_unit_var),
-	LC_OPT_ENT_NEGBIT("nooptcc",       "do not optimize calling convention",
-	                  &opt_cc, 1),
-	LC_OPT_ENT_BIT("unsafe_floatconv", "do unsafe floating point controlword "
-	               "optimisations", &opt_unsafe_floatconv, 1),
-	LC_OPT_ENT_BOOL("machcode", "output machine code instead of assembler",
-	                &emit_machcode),
+	LC_OPT_ENT_BOOL    ("size",             "optimize for size",                                  &opt_size),
+	LC_OPT_ENT_ENUM_INT("arch",             "select the instruction architecture",                &arch_var),
+	LC_OPT_ENT_ENUM_INT("opt",              "optimize for instruction architecture",              &opt_arch_var),
+	LC_OPT_ENT_ENUM_INT("fpunit",           "select the floating point unit",                     &fp_unit_var),
+	LC_OPT_ENT_NEGBOOL ("nooptcc",          "do not optimize calling convention",                 &opt_cc),
+	LC_OPT_ENT_BOOL    ("unsafe_floatconv", "do unsafe floating point controlword optimisations", &opt_unsafe_floatconv),
+	LC_OPT_ENT_BOOL    ("machcode",         "output machine code instead of assembler",           &emit_machcode),
 	LC_OPT_LAST
 };
 

@@ -105,7 +105,7 @@ static const lc_opt_enum_int_items_t lower_perm_items[] = {
 	{ NULL, 0 }
 };
 
-static const lc_opt_enum_int_items_t dump_items[] = {
+static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "none",       BE_CH_DUMP_NONE       },
 	{ "spill",      BE_CH_DUMP_SPILL      },
 	{ "live",       BE_CH_DUMP_LIVE       },
@@ -132,7 +132,7 @@ static lc_opt_enum_int_var_t lower_perm_var = {
 	&options.lower_perm_opt, lower_perm_items
 };
 
-static lc_opt_enum_int_var_t dump_var = {
+static lc_opt_enum_mask_var_t dump_var = {
 	&options.dump_flags, dump_items
 };
 
@@ -141,9 +141,9 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_PTR ("perm",          "perm lowering options", &lower_perm_var),
+	LC_OPT_ENT_ENUM_INT ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
-	LC_OPT_ENT_ENUM_PTR ("verify",        "verify options", &be_ch_vrfy_var),
+	LC_OPT_ENT_ENUM_INT ("verify",        "verify options", &be_ch_vrfy_var),
 	LC_OPT_LAST
 };
 

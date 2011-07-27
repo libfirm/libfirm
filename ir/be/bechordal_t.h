@@ -109,9 +109,9 @@ enum {
 };
 
 struct be_ra_chordal_opts_t {
-	int dump_flags;
-	int lower_perm_opt;
-	int vrfy_option;
+	unsigned dump_flags;
+	int      lower_perm_opt;
+	int      vrfy_option;
 
 	char ilp_server[128];
 	char ilp_solver[128];

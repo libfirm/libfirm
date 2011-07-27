@@ -75,7 +75,7 @@
 
 static unsigned   dump_flags  = 0;
 static unsigned   style_flags = 0;
-static unsigned   do_stats    = 0;
+static int        do_stats    = 0;
 static cost_fct_t cost_func   = co_get_costs_exec_freq;
 static int        improve     = 1;
 

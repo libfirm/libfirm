@@ -82,7 +82,7 @@ typedef float real_t;
 
 static unsigned last_chunk_id   = 0;
 static int recolor_limit        = 7;
-static real_t dislike_influence = REAL(0.1);
+static double dislike_influence = REAL(0.1);
 
 typedef struct col_cost_t {
 	int     col;
