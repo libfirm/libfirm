@@ -623,7 +623,7 @@ static void assign_spillslots(be_fec_env_t *env)
 			ir_node *block = get_nodes_block(node);
 
 			/* should be a PhiM */
-			assert(is_Phi(node));
+			assert(get_irn_mode(node) == mode_M);
 
 			for (i = 0, arity = get_irn_arity(node); i < arity; ++i) {
 				ir_node *arg = get_irn_n(node, i);
