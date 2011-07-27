@@ -5894,7 +5894,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_node  *bad   = new_r_Bad(irg, mode_X);
 			ir_mode  *mode  = get_Load_mode(n);
 			ir_node  *res   = new_r_Proj(pred_load, mode, pn_Load_res);
-			ir_node  *in[pn_Load_max+1] = { mem, res, jmp, bad };
+			ir_node  *in[]  = { mem, res, jmp, bad };
 			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
 			return tuple;
 		}
@@ -5914,7 +5914,7 @@ static ir_node *transform_node_Load(ir_node *n)
 			ir_graph *irg   = get_irn_irg(n);
 			ir_node  *bad   = new_r_Bad(irg, mode_X);
 			ir_node  *res   = value;
-			ir_node  *in[pn_Load_max+1] = { mem, res, jmp, bad };
+			ir_node  *in[]  = { mem, res, jmp, bad };
 			ir_node  *tuple = new_r_Tuple(block, ARRAY_SIZE(in), in);
 			return tuple;
 		}
