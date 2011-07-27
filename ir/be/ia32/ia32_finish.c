@@ -49,6 +49,9 @@
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
+COMPILETIME_ASSERT((int)pn_ia32_Sub_res   == pn_ia32_Sbb_res,   pn_ia32_Sub_res);
+COMPILETIME_ASSERT((int)pn_ia32_Sub_flags == pn_ia32_Sbb_flags, pn_ia32_Sub_flags);
+
 /**
  * Transforms a Sub or xSub into Neg--Add iff OUT_REG != SRC1_REG && OUT_REG == SRC2_REG.
  * THIS FUNCTIONS MUST BE CALLED AFTER REGISTER ALLOCATION.
@@ -122,8 +125,6 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 
 		if (get_irn_mode(irn) == mode_T) {
 			/* collect the Proj uses */
-			assert(pn_ia32_Sub_res   == pn_ia32_Sbb_res);
-			assert(pn_ia32_Sub_flags == pn_ia32_Sbb_flags);
 			foreach_out_edge(irn, edge) {
 				ir_node *proj = get_edge_src_irn(edge);
 				long     pn   = get_Proj_proj(proj);
