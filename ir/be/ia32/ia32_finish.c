@@ -163,7 +163,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 			 * t2 = a + ~b + Carry
 			 * Complement Carry
 			 *
-			 * a + -b = a + (~b + 1)  would set the carry flag IF a == b ...
+			 * a + -b = a + (~b + 1)  would set the carry flag wrong IFF both a and b are zero.
 			 */
 			nnot = new_bd_ia32_Not(dbgi, block, in2);
 			arch_set_irn_register(nnot, in2_reg);
