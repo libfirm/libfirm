@@ -161,6 +161,7 @@ carry:
 			set_ia32_commutative(adc);
 
 			if (flags_proj != NULL) {
+				set_irn_mode(adc, mode_T);
 				adc_flags = new_r_Proj(adc, mode_Iu, pn_ia32_Adc_flags);
 				arch_set_irn_register(adc_flags, &ia32_registers[REG_EFLAGS]);
 
