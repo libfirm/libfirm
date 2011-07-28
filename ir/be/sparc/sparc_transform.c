@@ -1623,7 +1623,8 @@ static ir_node *gen_Call(ir_node *node)
 	calling_convention_t *cconv
 		= sparc_decide_calling_convention(type, NULL);
 	size_t           n_param_regs = cconv->n_param_regs;
-	unsigned         max_inputs   = 2 + n_param_regs;
+	/* param-regs + mem + stackpointer + callee */
+	unsigned         max_inputs   = 3 + n_param_regs;
 	ir_node        **in           = ALLOCAN(ir_node*, max_inputs);
 	const arch_register_req_t **in_req
 		= OALLOCNZ(obst, const arch_register_req_t*, max_inputs);
@@ -1711,7 +1712,6 @@ static ir_node *gen_Call(ir_node *node)
 		set_irn_pinned(str, op_pin_state_floats);
 		sync_ins[sync_arity++] = str;
 	}
-	assert(in_arity <= (int)max_inputs);
 
 	/* construct memory input */
 	if (sync_arity == 0) {
@@ -1729,6 +1729,7 @@ static ir_node *gen_Call(ir_node *node)
 		in_req[in_arity] = sparc_reg_classes[CLASS_sparc_gp].class_req;
 		++in_arity;
 	}
+	assert(in_arity <= (int)max_inputs);
 
 	/* outputs:
 	 *  - memory
