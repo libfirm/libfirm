@@ -1147,6 +1147,8 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 	ir_type *mtp;
 	ir_node *mem, *bl, *call, *addr, *res_proj;
 	ir_node **in;
+	bool     throws_exception;
+	ir_op   *op;
 	ir_graph *irg;
 	symconst_symbol sym;
 	ir_mode *mode = get_irn_mode(node);
@@ -1187,15 +1189,17 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 			return 0;
 	}
 
-	n_res = get_method_n_ress(mtp);
+	n_res            = get_method_n_ress(mtp);
+	throws_exception = ir_throws_exception(node);
 
 	/* step 0: calculate the number of needed Proj's */
 	n_proj = 0;
 	n_proj = LMAX(n_proj, rt->mem_proj_nr + 1);
-	n_proj = LMAX(n_proj, rt->regular_proj_nr + 1);
-	n_proj = LMAX(n_proj, rt->exc_proj_nr + 1);
-	n_proj = LMAX(n_proj, rt->exc_mem_proj_nr + 1);
 	n_proj = LMAX(n_proj, rt->res_proj_nr + 1);
+	if (throws_exception) {
+		n_proj = LMAX(n_proj, rt->regular_proj_nr + 1);
+		n_proj = LMAX(n_proj, rt->exc_proj_nr + 1);
+	}
 
 	if (n_proj > 0) {
 		if (rt->mode != mode_T) /* must be mode_T */
@@ -1209,6 +1213,7 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 
 	/* ok, when we are here, the number of predecessors match as well as the parameter modes */
 	bl = get_nodes_block(node);
+	op = get_irn_op(node);
 
 	in = NULL;
 	if (n_param > 0) {
@@ -1236,14 +1241,9 @@ int i_mapper_RuntimeCall(ir_node *node, runtime_rt *rt)
 
 		if (rt->mem_proj_nr >= 0)
 			set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(call, mode_M, pn_Call_M));
-		if (!is_NoMem(mem)) {
-			/* Exceptions can only be handled with real memory */
-			if (rt->regular_proj_nr >= 0)
-				set_Tuple_pred(node, rt->regular_proj_nr, new_r_Proj(call, mode_X, pn_Call_X_regular));
-			if (rt->exc_proj_nr >= 0)
-				set_Tuple_pred(node, rt->exc_proj_nr, new_r_Proj(call, mode_X, pn_Call_X_except));
-			if (rt->exc_mem_proj_nr >= 0)
-				set_Tuple_pred(node, rt->mem_proj_nr, new_r_Proj(call, mode_M, pn_Call_M));
+		if (throws_exception) {
+			set_Tuple_pred(node, op->pn_x_regular, new_r_Proj(call, mode_X, pn_Call_X_regular));
+			set_Tuple_pred(node, op->pn_x_except, new_r_Proj(call, mode_X, pn_Call_X_except));
 		}
 
 		if (rt->res_proj_nr >= 0) {

@@ -569,7 +569,6 @@ typedef struct runtime_rt {
 	long      mem_proj_nr;     /**< if >= 0, create a memory ProjM() */
 	long      regular_proj_nr; /**< if >= 0, create a regular ProjX() */
 	long      exc_proj_nr;     /**< if >= 0, create a exception ProjX() */
-	long      exc_mem_proj_nr; /**< if >= 0, create a exception memory ProjM() */
 	long      res_proj_nr;     /**< if >= 0, first result projection number */
 } runtime_rt;
 

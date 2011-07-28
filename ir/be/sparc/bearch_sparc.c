@@ -438,7 +438,6 @@ static void sparc_handle_intrinsics(void)
 		rt_iMod.mem_proj_nr     = pn_Mod_M;
 		rt_iMod.regular_proj_nr = pn_Mod_X_regular;
 		rt_iMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_iMod.exc_mem_proj_nr = pn_Mod_M;
 		rt_iMod.res_proj_nr     = pn_Mod_res;
 
 		set_entity_visibility(rt_iMod.ent, ir_visibility_external);
@@ -464,7 +463,6 @@ static void sparc_handle_intrinsics(void)
 		rt_uMod.mem_proj_nr     = pn_Mod_M;
 		rt_uMod.regular_proj_nr = pn_Mod_X_regular;
 		rt_uMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_uMod.exc_mem_proj_nr = pn_Mod_M;
 		rt_uMod.res_proj_nr     = pn_Mod_res;
 
 		set_entity_visibility(rt_uMod.ent, ir_visibility_external);

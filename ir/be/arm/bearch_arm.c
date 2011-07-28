@@ -323,7 +323,6 @@ static void arm_handle_intrinsics(void)
 		rt_iDiv.mem_proj_nr     = pn_Div_M;
 		rt_iDiv.regular_proj_nr = pn_Div_X_regular;
 		rt_iDiv.exc_proj_nr     = pn_Div_X_except;
-		rt_iDiv.exc_mem_proj_nr = pn_Div_M;
 		rt_iDiv.res_proj_nr     = pn_Div_res;
 
 		add_entity_linkage(rt_iDiv.ent, IR_LINKAGE_CONSTANT);
@@ -350,7 +349,6 @@ static void arm_handle_intrinsics(void)
 		rt_uDiv.mem_proj_nr     = pn_Div_M;
 		rt_uDiv.regular_proj_nr = pn_Div_X_regular;
 		rt_uDiv.exc_proj_nr     = pn_Div_X_except;
-		rt_uDiv.exc_mem_proj_nr = pn_Div_M;
 		rt_uDiv.res_proj_nr     = pn_Div_res;
 
 		set_entity_visibility(rt_uDiv.ent, ir_visibility_external);
@@ -376,7 +374,6 @@ static void arm_handle_intrinsics(void)
 		rt_iMod.mem_proj_nr     = pn_Mod_M;
 		rt_iMod.regular_proj_nr = pn_Mod_X_regular;
 		rt_iMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_iMod.exc_mem_proj_nr = pn_Mod_M;
 		rt_iMod.res_proj_nr     = pn_Mod_res;
 
 		set_entity_visibility(rt_iMod.ent, ir_visibility_external);
@@ -402,7 +399,6 @@ static void arm_handle_intrinsics(void)
 		rt_uMod.mem_proj_nr     = pn_Mod_M;
 		rt_uMod.regular_proj_nr = pn_Mod_X_regular;
 		rt_uMod.exc_proj_nr     = pn_Mod_X_except;
-		rt_uMod.exc_mem_proj_nr = pn_Mod_M;
 		rt_uMod.res_proj_nr     = pn_Mod_res;
 
 		set_entity_visibility(rt_uMod.ent, ir_visibility_external);
