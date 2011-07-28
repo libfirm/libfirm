@@ -46,6 +46,9 @@
 #include "bessaconstr.h"
 #include "beintlive_t.h"
 
+#include "execfreq.h"
+#include "statev.h"
+
 #undef KEEP_ALIVE_COPYKEEP_HACK
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -346,12 +349,25 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 
 	/* check for cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n) > 0) {
-		perm_cycle_t cycle;
-		int          j;
+		perm_cycle_t  cycle;
+		int           j;
+		ir_graph     *irg       = get_irn_irg(block);
+		ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
+		double        freq      = get_block_execfreq(exec_freq, block);
 
 		/* go to the first not-checked pair */
 		for (i = 0; pairs[i].checked; ++i) {}
 		get_perm_cycle(&cycle, pairs, n, i);
+
+		if (cycle.type == PERM_CYCLE) {
+			stat_ev_int("cycle_length", cycle.n_elems);
+			stat_ev_dbl("cycle_weight", freq * cycle.n_elems);
+		}
+		else if (cycle.type == PERM_CHAIN) {
+			stat_ev_int("chain_length", cycle.n_elems);
+			stat_ev_dbl("chain_weight", freq * cycle.n_elems);
+		}
+
 
 		DB((dbg, LEVEL_1, "%+F: following %s created:\n  ", irn, cycle.type == PERM_CHAIN ? "chain" : "cycle"));
 		for (j = 0; j < cycle.n_elems; j++) {
