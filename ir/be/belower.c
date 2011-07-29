@@ -330,8 +330,8 @@ static void emit_stat_info(const ir_node *irn, const perm_move_t *move)
 
 static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs, int do_copy)
 {
-	const arch_register_class_t *const reg_class     = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-	ir_node                     *const block         = get_nodes_block(irn);
+	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+	ir_node                     *const block       = get_nodes_block(irn);
 	/* Get the schedule predecessor node to the perm.
 	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
 	 * nodes after this node, everything should be ok. */
@@ -451,11 +451,11 @@ static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *
  */
 static void lower_perm_node(ir_node *irn, lower_env_t *env)
 {
-	int         const arity     = get_irn_arity(irn);
-	reg_pair_t *const pairs     = ALLOCAN(reg_pair_t, arity);
-	int               n_pairs   = 0;
-	int               keep_perm = 0;
-	int               do_copy   = env->do_copy;
+	int         const arity        = get_irn_arity(irn);
+	reg_pair_t *const pairs        = ALLOCAN(reg_pair_t, arity);
+	int               n_pairs      = 0;
+	int               keep_perm    = 0;
+	int               do_copy      = env->do_copy;
 	ir_node    *      sched_point  = sched_prev(irn);
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
@@ -1052,8 +1052,8 @@ void lower_nodes_after_ra(ir_graph *irg, int do_copy)
 	FIRM_DBG_REGISTER(dbg, "firm.be.lower");
 	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
 
-	env.irg     = irg;
-	env.do_copy = do_copy;
+	env.irg           = irg;
+	env.do_copy       = do_copy;
 
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
