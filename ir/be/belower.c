@@ -293,7 +293,8 @@ static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 		arch_register_t const *const out_reg = arch_get_irn_register(out);
 		reg_pair_t            *      pair;
 
-		/* TODO:  add comment */
+		/* If a register is left untouched by the Perm node, we do not
+		 * have to generate copy/swap instructions later on. */
 		if (in_reg == out_reg) {
 			DBG((dbg, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
 					irn, in, out, out_reg->name));
@@ -455,9 +456,6 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	int               n_pairs   = 0;
 	int               keep_perm = 0;
 	int               do_copy   = env->do_copy;
-	/* Get the schedule predecessor node to the perm.
-	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
-	 * nodes after this node, everything should be ok. */
 	ir_node    *      sched_point  = sched_prev(irn);
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
@@ -472,7 +470,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
 	/* Set do_copy to 0 if it's on but we have no free register */
-	/* TODO Check for free register.  See comment below. */
+	/* TODO Check for free register.  See comment marked as TODO below. */
 	if (do_copy) {
 		do_copy = 0;
 	}
@@ -486,7 +484,9 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 		for (i = 0; pairs[i].checked; ++i) {
 		}
 
-		/* TODO:  comment */
+		/* Identifies cycles or chains in the given list of register pairs.
+		 * Found cycles/chains are written to move.n_elems, the type (cycle
+		 * or chain) is saved in move.type. */
 		get_perm_move_info(&move, pairs, n_pairs, i);
 
 		emit_stat_info(irn, &move);
