@@ -114,6 +114,12 @@ static void visit_entity(ir_entity *entity)
 	if (irg != NULL) {
 		start_visit_node(get_irg_end(irg));
 	}
+
+	size_t n_overwrites = get_entity_n_overwrites(entity), i;
+	for (i = 0; i < n_overwrites; i++) {
+		ir_entity *overwritten = get_entity_overwrites(entity, i);
+		visit_entity(overwritten);
+	}
 }
 
 static void visit_segment(ir_type *segment)
