@@ -1420,20 +1420,21 @@ static ir_node *create_be_return(be_abi_irg_t *env, ir_node *irn, ir_node *bl,
  */
 static ir_node *create_be_raise(be_abi_irg_t *env, ir_node *irn, ir_node *bl, ir_node *exo_ptr, ir_node *mem)
 {
-	ir_graph         *irg      = get_Block_irg(bl);
-	dbg_info *dbgi;
-	pmap *reg_map  = pmap_create();
-	size_t in_max;
-	ir_node *be_raise;
-	int i, n;
-	ir_node **in;
+	ir_graph               *irg      = get_Block_irg(bl);
+	const arch_env_t       *arch_env = be_get_irg_arch_env(irg);
+	pmap                   *reg_map  = pmap_create();
+	dbg_info               *dbgi;
+	size_t                  in_max;
+	ir_node                *be_raise;
+	int                     i, n;
+	ir_node               **in;
 	const arch_register_t **regs;
 	pmap_entry *ent;
 
 	/* Add uses of the callee save registers. */
 	foreach_pmap(env->regs, ent) {
 		const arch_register_t *reg = (const arch_register_t*)ent->key;
-		if (reg->type & (arch_register_type_callee_save | arch_register_type_ignore))
+		if ((reg->type & arch_register_type_ignore) || arch_register_is_callee_save(arch_env, reg))
 			pmap_insert(reg_map, ent->key, ent->value);
 	}
 
