@@ -38,6 +38,21 @@
 void assure_constraints(ir_graph *irg);
 
 /**
+ * Push nodes that do not need to be permed through the Perm.
+ * This is commonly a reload cascade at block ends.
+ * @note This routine needs interference.
+ * @note We can probably implement it a little more efficient.
+ *       Especially searching the frontier lazily might be better.
+ *
+ * @param perm The perm
+ * @param env  The lowerer environment
+ *
+ * @return     1 if there is something left to perm over.
+ *             0 if removed the complete perm.
+ */
+int push_through_perm(ir_node *perm);
+
+/**
  * Walks over all blocks in an irg and performs lowering need to be
  * done after register allocation (e.g. perm lowering).
  *

@@ -66,6 +66,7 @@
 #include "sparc_transform.h"
 #include "sparc_emitter.h"
 #include "sparc_architecture.h"
+#include "icore_lowerperm.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -289,7 +290,10 @@ static void sparc_after_ra(ir_graph *irg)
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
 
-	lower_nodes_after_ra(irg);
+	if (sparc_cg_config.use_permi)
+		icore_lower_nodes_after_ra(irg);
+	else
+		lower_nodes_after_ra(irg);
 
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
