@@ -74,7 +74,6 @@
 
 #include "bespillslots.h"
 #include "bespill.h"
-#include "belower.h"
 
 #include "becopystat.h"
 #include "becopyopt.h"
@@ -436,8 +435,6 @@ static void be_ra_chordal_main(ir_graph *irg)
 	be_timer_pop(T_VERIFY);
 
 	be_timer_push(T_RA_EPILOG);
-	lower_nodes_after_ra(irg);
-	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
 	obstack_free(&obst, NULL);
 	be_liveness_invalidate(be_get_irg_liveness(irg));
@@ -460,5 +457,5 @@ void be_init_chordal_main(void)
 	be_register_allocator("chordal", &be_ra_chordal_allocator);
 
 	lc_opt_add_table(chordal_grp, be_chordal_options);
-	be_add_module_list_opt(chordal_grp, "coloring", "select coloring methode", &colorings, (void**) &selected_coloring);
+	be_add_module_list_opt(chordal_grp, "coloring", "select coloring method", &colorings, (void**) &selected_coloring);
 }
