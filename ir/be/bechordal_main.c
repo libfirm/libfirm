@@ -86,7 +86,6 @@
 
 static be_ra_chordal_opts_t options = {
 	BE_CH_DUMP_NONE,
-	BE_CH_LOWER_PERM_SWAP,
 	BE_CH_VRFY_WARN,
 	"",
 	""
@@ -98,12 +97,6 @@ typedef struct post_spill_env_t {
 	const arch_register_class_t *cls;
 	double                      pre_spill_cost;
 } post_spill_env_t;
-
-static const lc_opt_enum_int_items_t lower_perm_items[] = {
-	{ "copy", BE_CH_LOWER_PERM_COPY },
-	{ "swap", BE_CH_LOWER_PERM_SWAP },
-	{ NULL, 0 }
-};
 
 static const lc_opt_enum_mask_items_t dump_items[] = {
 	{ "none",       BE_CH_DUMP_NONE       },
@@ -128,10 +121,6 @@ static const lc_opt_enum_int_items_t be_ch_vrfy_items[] = {
 	{ NULL, 0 }
 };
 
-static lc_opt_enum_int_var_t lower_perm_var = {
-	&options.lower_perm_opt, lower_perm_items
-};
-
 static lc_opt_enum_mask_var_t dump_var = {
 	&options.dump_flags, dump_items
 };
@@ -141,7 +130,6 @@ static lc_opt_enum_int_var_t be_ch_vrfy_var = {
 };
 
 static const lc_opt_table_entry_t be_chordal_options[] = {
-	LC_OPT_ENT_ENUM_INT ("perm",          "perm lowering options", &lower_perm_var),
 	LC_OPT_ENT_ENUM_MASK("dump",          "select dump phases", &dump_var),
 	LC_OPT_ENT_ENUM_INT ("verify",        "verify options", &be_ch_vrfy_var),
 	LC_OPT_LAST
@@ -448,7 +436,7 @@ static void be_ra_chordal_main(ir_graph *irg)
 	be_timer_pop(T_VERIFY);
 
 	be_timer_push(T_RA_EPILOG);
-	lower_nodes_after_ra(irg, options.lower_perm_opt == BE_CH_LOWER_PERM_COPY);
+	lower_nodes_after_ra(irg);
 	dump(BE_CH_DUMP_LOWER, irg, NULL, "belower-after-ra");
 
 	obstack_free(&obst, NULL);

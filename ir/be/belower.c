@@ -71,7 +71,6 @@ typedef struct {
 /** Lowering walker environment. */
 typedef struct lower_env_t {
 	ir_graph *irg;
-	unsigned  do_copy : 1;
 } lower_env_t;
 
 /** Holds a Perm register pair. */
@@ -328,7 +327,7 @@ static void emit_stat_info(const ir_node *irn, const perm_move_t *move)
 	}
 }
 
-static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs, int do_copy)
+static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
 {
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	ir_node                     *const block       = get_nodes_block(irn);
@@ -352,7 +351,7 @@ static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *
 		 * IN_2  = in  node with register i + 1
 		 * OUT_1 = out node with register i + 1
 		 * OUT_2 = out node with register i */
-		if (move->type == PERM_CYCLE && !do_copy) {
+		if (move->type == PERM_CYCLE) {
 			ir_node *in[2];
 			ir_node *cpyxchg;
 
@@ -455,8 +454,8 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	reg_pair_t *const pairs        = ALLOCAN(reg_pair_t, arity);
 	int               n_pairs      = 0;
 	int               keep_perm    = 0;
-	int               do_copy      = env->do_copy;
 	ir_node    *      sched_point  = sched_prev(irn);
+	(void) env;
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
 	DBG((dbg, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
@@ -468,12 +467,6 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 	build_register_pair_list(pairs, &n_pairs, irn);
 
 	DBG((dbg, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
-
-	/* Set do_copy to 0 if it's on but we have no free register */
-	/* TODO Check for free register.  See comment marked as TODO below. */
-	if (do_copy) {
-		do_copy = 0;
-	}
 
 	/* Check for cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
@@ -506,12 +499,7 @@ static void lower_perm_node(ir_node *irn, lower_env_t *env)
 			/* Otherwise, we want to replace the big Perm node with a series
 			 * of smaller ones. */
 
-			/* TODO:
-			 * iff PERM_CYCLE && do_copy -> determine free temp reg and
-			 * insert copy to/from it before/after the copy cascade (this
-			 * reduces the cycle into a chain) */
-
-			reduce_perm_size(irn, &move, pairs, n_pairs, do_copy);
+			reduce_perm_size(irn, &move, pairs, n_pairs);
 		}
 
 		free(move.elems);
@@ -1045,7 +1033,7 @@ static void lower_nodes_after_ra_walker(ir_node *irn, void *walk_env)
 		lower_perm_node(irn, (lower_env_t*)walk_env);
 }
 
-void lower_nodes_after_ra(ir_graph *irg, int do_copy)
+void lower_nodes_after_ra(ir_graph *irg)
 {
 	lower_env_t env;
 
@@ -1053,7 +1041,6 @@ void lower_nodes_after_ra(ir_graph *irg, int do_copy)
 	FIRM_DBG_REGISTER(dbg_permmove, "firm.be.lower.permmove");
 
 	env.irg           = irg;
-	env.do_copy       = do_copy;
 
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_irg_liveness(irg));

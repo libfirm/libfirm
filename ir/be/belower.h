@@ -42,8 +42,7 @@ void assure_constraints(ir_graph *irg);
  * done after register allocation (e.g. perm lowering).
  *
  * @param irg       The graph
- * @param do_copy   1 == resolve cycles with a free reg if available
  */
-void lower_nodes_after_ra(ir_graph *irg, int do_copy);
+void lower_nodes_after_ra(ir_graph *irg);
 
 #endif
