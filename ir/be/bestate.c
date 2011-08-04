@@ -55,7 +55,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 typedef struct spill_info_t {
 	struct spill_info_t *next;
 	ir_node *value;
-	ir_node *spill;
+	ir_node **spills;
 	ir_node **reloads;
 } spill_info_t;
 
@@ -98,6 +98,7 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 {
 	spill_info_t *spill_info = OALLOCZ(&env->obst, spill_info_t);
 	spill_info->value = state;
+	spill_info->spills  = NEW_ARR_F(ir_node*, 0);
 	spill_info->reloads = NEW_ARR_F(ir_node*, 0);
 
 	ir_nodemap_insert(&env->spill_infos, state, spill_info);
@@ -107,6 +108,12 @@ static inline spill_info_t *create_spill_info(minibelady_env_t *env, ir_node *st
 	env->spills = spill_info;
 
 	return spill_info;
+}
+
+static inline void free_spill_info(spill_info_t *spill_info)
+{
+	DEL_ARR_F(spill_info->spills);
+	DEL_ARR_F(spill_info->reloads);
 }
 
 static inline spill_info_t *get_spill_info(minibelady_env_t *env, const ir_node *node)
@@ -126,7 +133,55 @@ static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int for
 	spill_info = get_spill_info(env, state);
 	if (spill_info == NULL) {
 		spill_info = create_spill_info(env, state);
-	} else if (spill_info->spill != NULL) {
+	} else if (ARR_LEN(spill_info->spills) > 0) {
+		return spill_info;
+	}
+
+	/* everything that is supposed to be executed after a fragile call must be duplicated in both CF successors */
+	if (is_Proj(state) && is_fragile_op(get_Proj_pred(state)) && ir_throws_exception(get_Proj_pred(state))) {
+
+		ir_node *fragile_op = get_Proj_pred(state);
+		ir_node *regular_proj = NULL, *exception_proj = NULL;
+
+		const ir_edge_t *edge;
+		foreach_out_edge(fragile_op, edge) {
+			if (is_x_regular_Proj(edge->src))
+				regular_proj = edge->src;
+			else if (is_x_except_Proj(edge->src))
+				exception_proj = edge->src;
+		}
+		assert (regular_proj && exception_proj);
+
+		ir_node *regular_succ_block = NULL, *exception_succ_block = NULL;
+
+		foreach_out_edge(regular_proj, edge) {
+			if (! is_Block(edge->src))
+				continue;
+			assert (! regular_succ_block);
+			regular_succ_block = edge->src;
+		}
+		assert (regular_succ_block);
+
+		foreach_out_edge(exception_proj, edge) {
+			if (! is_Block(edge->src))
+				continue;
+			assert (! exception_succ_block);
+			exception_succ_block = edge->src;
+		}
+		assert (exception_succ_block);
+
+		ir_node *new_spill = env->create_spill(env->func_env, state, force, regular_succ_block);
+		if (new_spill) {
+			set_nodes_block(new_spill, regular_succ_block);
+			ARR_APP1(ir_node*, spill_info->spills, new_spill);
+		}
+
+		new_spill = env->create_spill(env->func_env, state, force, exception_succ_block);
+		if (new_spill) {
+			set_nodes_block(new_spill, exception_succ_block);
+			ARR_APP1(ir_node*, spill_info->spills, new_spill);
+		}
+
 		return spill_info;
 	}
 
@@ -135,11 +190,14 @@ static spill_info_t *create_spill(minibelady_env_t *env, ir_node *state, int for
 		do {
 			after = next;
 			next = sched_next(after);
-		} while (is_Proj(next) || is_Phi(next) || be_is_Keep(next));
+		} while (is_Phi(next) || be_is_Keep(next));
 	} else {
 		after = state;
 	}
-	spill_info->spill = env->create_spill(env->func_env, state, force, after);
+
+	ir_node *new_spill = env->create_spill(env->func_env, state, force, after);
+	if (new_spill)
+		ARR_APP1(ir_node*, spill_info->spills, new_spill);
 
 	return spill_info;
 }
@@ -148,16 +206,23 @@ static void create_reload(minibelady_env_t *env, ir_node *state,
                           ir_node *before, ir_node *last_state)
 {
 	spill_info_t *spill_info = create_spill(env, state, 0);
-	ir_node *spill = spill_info->spill;
+
+	ir_node *spill = NULL;
+	if (ARR_LEN(spill_info->spills) > 0) {
+		spill = spill_info->spills[0];
+	}
+
 	ir_node *reload;
 
 	reload = env->create_reload(env->func_env, state, spill, before,
-	                            last_state);
+			last_state);
 	ARR_APP1(ir_node*, spill_info->reloads, reload);
 }
 
 static void spill_phi(minibelady_env_t *env, ir_node *phi)
 {
+	assert (0 && "This function has not been adapted to lists of spills");
+
 	ir_graph     *irg           = get_irn_irg(phi);
 	ir_node      *block         = get_nodes_block(phi);
 	int           arity         = get_irn_arity(phi);
@@ -170,7 +235,7 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	/* does a spill exist for the phis value? */
 	spill_info = get_spill_info(env, phi);
 	if (spill_info != NULL) {
-		spill_to_kill = spill_info->spill;
+		spill_to_kill = ARR_LEN(spill_info->spills) > 0 ? spill_info->spills[0] : NULL;
 	} else {
 		spill_info = create_spill_info(env, phi);
 	}
@@ -183,11 +248,11 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spill = be_new_Phi(block, arity, phi_in, mode_M, NULL);
-	sched_add_after(block, spill_info->spill);
+	spill_info->spills[0] = be_new_Phi(block, arity, phi_in, mode_M, NULL);
+	sched_add_after(block, spill_info->spills[0]);
 
 	if (spill_to_kill != NULL) {
-		exchange(spill_to_kill, spill_info->spill);
+		exchange(spill_to_kill, spill_info->spills[0]);
 		sched_remove(spill_to_kill);
 	}
 
@@ -195,7 +260,7 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	for (i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(phi, i);
 		spill_info_t *pred_spill = create_spill(env, in, 1);
-		set_irn_n(spill_info->spill, i, pred_spill->spill);
+		set_irn_n(spill_info->spills[0], i, pred_spill->spills[0]);
 	}
 }
 
@@ -567,7 +632,8 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 		if (sched_is_scheduled(info->value))
 			be_ssa_construction_add_copy(&senv, info->value);
 		be_ssa_construction_add_copies(&senv,
-		                               info->reloads, ARR_LEN(info->reloads));
+				info->reloads, ARR_LEN(info->reloads));
+
 		be_ssa_construction_fix_users(&senv, info->value);
 
 		if (lv != NULL) {
@@ -591,7 +657,19 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 		}
 		be_ssa_construction_destroy(&senv);
 
+		if (ARR_LEN(info->spills) > 0) {
+			be_ssa_construction_env_t spill_senv;
+			be_ssa_construction_init(&spill_senv, irg);
+
+			be_ssa_construction_add_copies(&spill_senv, info->spills, ARR_LEN(info->spills));
+			be_ssa_construction_fix_users(&spill_senv, info->spills[0]);
+
+			be_ssa_construction_destroy(&spill_senv);
+		}
+
+		spill_info_t *tmp_info = info;
 		info = info->next;
+		free_spill_info(tmp_info);
 	}
 
 	/* some nodes might be dead now. */
