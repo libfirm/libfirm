@@ -416,12 +416,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		ir_node **in       = ALLOCAN(ir_node*, n_stack_params+1);
 		unsigned  n_in     = 0;
 
-		/*
-		 * Reverse list of stack parameters if call arguments are from left to right.
-		 * We must them reverse again if they are pushed (not stored) and the stack
-		 * direction is downwards.
-		 */
-		if (call->flags.bits.left_to_right ^ do_seq) {
+		/* push params in reverse direction because stack grows downwards */
+		if (do_seq) {
 			for (i = 0; i < n_stack_params >> 1; ++i) {
 				int other  = n_stack_params - i - 1;
 				int tmp    = stack_param_idx[i];
@@ -1133,7 +1129,6 @@ static void process_calls(ir_graph *irg)
  * Changes a possibly allocated value param type by moving
  * entities to the stack layout type.
  *
- * @param env           the ABI environment
  * @param call          the current call ABI
  * @param method_type   the method type
  * @param val_param_tp  the value parameter type, will be destroyed
@@ -1141,15 +1136,11 @@ static void process_calls(ir_graph *irg)
  *
  * @return the stack argument layout type
  */
-static ir_type *compute_arg_type(be_abi_irg_t *env, ir_graph *irg,
-                                 be_abi_call_t *call,
+static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 								 ir_type *method_type, ir_type *val_param_tp,
 								 ir_entity ***param_map)
 {
-	int dir  = env->call->flags.bits.left_to_right ? 1 : -1;
-	int inc  = -dir;
 	int n    = get_method_n_params(method_type);
-	int curr = inc > 0 ? 0 : n - 1;
 	struct obstack *obst = be_get_be_obst(irg);
 	int ofs  = 0;
 
@@ -1161,9 +1152,9 @@ static ir_type *compute_arg_type(be_abi_irg_t *env, ir_graph *irg,
 
 	*param_map = map = OALLOCN(obst, ir_entity*, n);
 	res = new_type_struct(id_mangle_u(id, new_id_from_chars("arg_type", 8)));
-	for (i = 0; i < n; ++i, curr += inc) {
-		ir_type *param_type    = get_method_param_type(method_type, curr);
-		be_abi_call_arg_t *arg = get_call_arg(call, 0, curr, 1);
+	for (i = 0; i < n; ++i) {
+		ir_type *param_type    = get_method_param_type(method_type, i);
+		be_abi_call_arg_t *arg = get_call_arg(call, 0, i, 1);
 
 		map[i] = NULL;
 		if (arg->on_stack) {
@@ -1700,7 +1691,7 @@ static void modify_irg(ir_graph *irg)
 		}
 	}
 
-	arg_type = compute_arg_type(env, irg, call, method_type, tp, &param_map);
+	arg_type = compute_arg_type(irg, call, method_type, tp, &param_map);
 
 	/* Convert the Sel nodes in the irg to frame addr nodes: */
 	ctx.value_param_list = NEW_ARR_F(ent_pos_pair, 0);

@@ -420,7 +420,6 @@ static void amd64_get_call_abi(const void *self, ir_type *method_type,
 	(void) self;
 
 	/* set abi flags for calls */
-	call_flags.bits.left_to_right         = 0;
 	call_flags.bits.store_args_sequential = 0;
 	call_flags.bits.try_omit_fp           = 1;
 	call_flags.bits.fp_free               = 0;
