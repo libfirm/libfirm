@@ -193,6 +193,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 #ifdef DEBUG_libfirm
 	newe->nr = get_irp_new_node_nr();
 #endif
+	hook_new_entity(newe);
 	return newe;
 }
 
