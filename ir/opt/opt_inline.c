@@ -429,7 +429,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 
 	/* entitiy link is used to link entities on old stackframe to the
 	 * new stackframe */
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* copy entities and nodes */
 	assert(!irn_visited(get_irg_end(called_graph)));
@@ -437,7 +437,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	irg_walk_core(get_irg_end(called_graph), copy_node_inline, set_preds_inline,
 	              irg);
 
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* -- Merge the end of the inlined procedure with the call site -- */
 	/* We will turn the old Call node into a Tuple with the following

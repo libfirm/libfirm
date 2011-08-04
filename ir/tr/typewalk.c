@@ -263,7 +263,7 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 	size_t      i, n_types = get_irp_n_types();
 	type_or_ent cont;
 
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	for (i = 0; i < n_types; ++i) {
 		cont.typ = get_irp_type(i);
@@ -271,7 +271,7 @@ void type_walk(type_walk_func *pre, type_walk_func *post, void *env)
 	}
 	cont.typ = get_glob_type();
 	do_type_walk(cont, pre, post, env);
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env)
@@ -324,7 +324,7 @@ void type_walk_irg(ir_graph *irg,
 	   Here we initially increase the flag.  We only call do_type_walk that does
 	   not increase the flag.
 	*/
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	irg_walk(get_irg_end(irg), start_type_walk, NULL, &type_env);
 
@@ -335,7 +335,7 @@ void type_walk_irg(ir_graph *irg,
 	do_type_walk(cont, pre, post, env);
 
 	current_ir_graph = rem;
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 static void type_walk_s2s_2(type_or_ent tore,
@@ -418,7 +418,7 @@ void type_walk_super2sub(type_walk_func *pre,
 	type_or_ent cont;
 	size_t      i, n_types = get_irp_n_types();
 
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	cont.typ = get_glob_type();
 	type_walk_s2s_2(cont, pre, post, env);
@@ -426,7 +426,7 @@ void type_walk_super2sub(type_walk_func *pre,
 		cont.typ = get_irp_type(i);
 		type_walk_s2s_2(cont, pre, post, env);
 	}
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 /*****************************************************************************/
@@ -504,7 +504,7 @@ void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env)
 	size_t      i, n_types = get_irp_n_types();
 	type_or_ent cont;
 
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	cont.typ = get_glob_type();
 	type_walk_super_2(cont, pre, post, env);
@@ -512,7 +512,7 @@ void type_walk_super(type_walk_func *pre, type_walk_func *post, void *env)
 		cont.typ = get_irp_type(i);
 		type_walk_super_2(cont, pre, post, env);
 	}
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 /*****************************************************************************/
@@ -556,7 +556,7 @@ void class_walk_super2sub(class_walk_func *pre,
 	size_t i, n_types = get_irp_n_types();
 	ir_type *tp;
 
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	for (i = 0; i < n_types; i++) {
 		tp = get_irp_type(i);
@@ -568,7 +568,7 @@ void class_walk_super2sub(class_walk_func *pre,
 			class_walk_s2s_2(tp, pre, post, env);
 		}
 	}
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 

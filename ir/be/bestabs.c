@@ -617,9 +617,14 @@ static void gen_types(stabs_handle *h)
 
 	env.h  = h;
 	env.wq = new_waitq();
+
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK);
 	type_walk(NULL, walk_type, &env);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_LINK);
+
 	finish_types(&env);
 	del_waitq(env.wq);
+
 }  /* gen_types */
 
 

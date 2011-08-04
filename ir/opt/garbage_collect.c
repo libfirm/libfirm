@@ -155,7 +155,7 @@ void garbage_collect_entities(void)
 	FIRM_DBG_REGISTER(dbg, "firm.opt.garbagecollect");
 
 	/* start a type walk for all externally visible entities */
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();
 	inc_max_irg_visited();
 
@@ -185,7 +185,7 @@ void garbage_collect_entities(void)
 		ir_type *type = get_segment_type(s);
 		garbage_collect_in_segment(type);
 	}
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 ir_prog_pass_t *garbage_collect_entities_pass(const char *name)

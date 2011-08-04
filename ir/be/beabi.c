@@ -1685,7 +1685,7 @@ static void modify_irg(ir_graph *irg)
 
 	old_mem = get_irg_initial_mem(irg);
 
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* set the links of all frame entities to NULL, we use it
 	   to detect if an entity is already linked in the value_param_list */
@@ -1751,7 +1751,7 @@ static void modify_irg(ir_graph *irg)
 	fix_address_of_parameter_access(env, irg, ctx.value_param_list);
 
 	DEL_ARR_F(ctx.value_param_list);
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* Fill the argument vector */
 	arg_tuple = get_irg_args(irg);

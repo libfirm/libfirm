@@ -703,7 +703,7 @@ int scalar_replacement_opt(ir_graph *irg)
 
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* Find possible scalar replacements */
 	if (find_possible_replacements(irg)) {
@@ -775,7 +775,7 @@ int scalar_replacement_opt(ir_graph *irg)
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	return res;
 }
