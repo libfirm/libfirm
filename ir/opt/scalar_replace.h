@@ -27,6 +27,7 @@
 #define FIRM_OPT_SCALAR_REPLACE_H
 
 #include "firm_types.h"
+#include <stdbool.h>
 
 /**
  * Returns non-zero, if the address of an entity
@@ -34,6 +35,6 @@
  *
  * @param sel  the Sel node
  */
-int is_address_taken(ir_node *sel);
+bool is_address_taken(ir_node *sel);
 
 #endif /* FIRM_OPT_SCALAR_REPLACE_H */
