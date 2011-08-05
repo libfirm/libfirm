@@ -221,8 +221,6 @@ static void create_reload(minibelady_env_t *env, ir_node *state,
 
 static void spill_phi(minibelady_env_t *env, ir_node *phi)
 {
-	assert (0 && "This function has not been adapted to lists of spills");
-
 	ir_graph     *irg           = get_irn_irg(phi);
 	ir_node      *block         = get_nodes_block(phi);
 	int           arity         = get_irn_arity(phi);
@@ -248,19 +246,27 @@ static void spill_phi(minibelady_env_t *env, ir_node *phi)
 	DBG((dbg, LEVEL_2, "\tcreate Phi-M for %+F\n", phi));
 
 	/* create a Phi-M */
-	spill_info->spills[0] = be_new_Phi(block, arity, phi_in, mode_M, NULL);
-	sched_add_after(block, spill_info->spills[0]);
+	ir_node *spill_phi = be_new_Phi(block, arity, phi_in, mode_M, NULL);
+	sched_add_after(block, spill_phi);
 
 	if (spill_to_kill != NULL) {
-		exchange(spill_to_kill, spill_info->spills[0]);
-		sched_remove(spill_to_kill);
+		exchange(spill_to_kill, spill_phi);
+
+		size_t splen = ARR_LEN(spill_info->spills), j;
+		for (j = 0; j < splen; j++)
+			sched_remove(spill_info->spills[j]);
+
+		ARR_SHRINKLEN(spill_info->spills, 0);
 	}
+
+	ARR_APP1(ir_node*, spill_info->spills, spill_phi);
 
 	/* create spills for the phi values */
 	for (i = 0; i < arity; ++i) {
 		ir_node *in = get_irn_n(phi, i);
 		spill_info_t *pred_spill = create_spill(env, in, 1);
-		set_irn_n(spill_info->spills[0], i, pred_spill->spills[0]);
+		assert (ARR_LEN(pred_spill) > 0);
+		set_irn_n(spill_phi, i, pred_spill->spills[0]);
 	}
 }
 
