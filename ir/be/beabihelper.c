@@ -641,3 +641,59 @@ ir_node *be_get_stack_pred(const beabi_helper_env_t *env, const ir_node *node)
 {
 	return (ir_node*)phase_get_irn_data(env->stack_order, node);
 }
+
+void be_add_parameter_entity_stores(ir_graph *irg)
+{
+	ir_type *frame_type  = get_irg_frame_type(irg);
+	size_t   n           = get_compound_n_members(frame_type);
+	ir_node *frame       = get_irg_frame(irg);
+	ir_node *initial_mem = get_irg_initial_mem(irg);
+	ir_node *mem         = initial_mem;
+	ir_node *first_store = NULL;
+	ir_node *start_block = get_irg_start_block(irg);
+	ir_node *args        = get_irg_args(irg);
+	size_t   i;
+
+	/* all parameter entities left in the frame type require stores.
+	 * (The ones passed on the stack have been moved to the arg type) */
+	for (i = 0; i < n; ++i) {
+		ir_entity *entity = get_compound_member(frame_type, i);
+		ir_node   *addr;
+		size_t     arg;
+		if (!is_parameter_entity(entity))
+			continue;
+
+		arg  = get_entity_parameter_number(entity);
+		addr = new_r_Sel(start_block, mem, frame, 0, NULL, entity);
+		if (entity->attr.parameter.doubleword_low_mode != NULL) {
+			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
+			ir_node *val0      = new_r_Proj(args, mode, arg);
+			ir_node *val1      = new_r_Proj(args, mode, arg+1);
+			ir_node *store0    = new_r_Store(start_block, mem, addr, val0,
+			                                 cons_none);
+			ir_node *mem0      = new_r_Proj(store0, mode_M, pn_Store_M);
+			size_t   offset    = get_mode_size_bits(mode)/8;
+			ir_mode *addr_mode = get_irn_mode(addr);
+			ir_node *cnst      = new_r_Const_long(irg, addr_mode, offset);
+			ir_node *next_addr = new_r_Add(start_block, addr, cnst, addr_mode);
+			ir_node *store1    = new_r_Store(start_block, mem0, next_addr, val1,
+			                                 cons_none);
+			mem = new_r_Proj(store1, mode_M, pn_Store_M);
+			if (first_store == NULL)
+				first_store = store0;
+		} else {
+			ir_type *tp    = get_entity_type(entity);
+			ir_mode *mode  = get_type_mode(tp);
+			ir_node *val   = new_r_Proj(args, mode, arg);
+			ir_node *store = new_r_Store(start_block, mem, addr, val, cons_none);
+			mem = new_r_Proj(store, mode_M, pn_Store_M);
+			if (first_store == NULL)
+				first_store = store;
+		}
+	}
+
+	if (mem != initial_mem) {
+		edges_reroute(initial_mem, mem);
+		set_Store_mem(first_store, initial_mem);
+	}
+}

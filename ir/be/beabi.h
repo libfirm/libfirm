@@ -36,6 +36,7 @@
 #include "beirg.h"
 #include "bearch.h"
 #include "beabi.h"
+#include "beabihelper.h"
 
 struct be_abi_call_flags_bits_t {
 	unsigned store_args_sequential  : 1;  /**< Use sequential stores for arguments. */

@@ -1380,40 +1380,70 @@ static ir_type *sparc_get_between_type(void)
 	return between_type;
 }
 
+static ir_type *compute_arg_type(ir_graph *irg)
+{
+	ir_entity  *entity    = get_irg_entity(irg);
+	ir_type    *mtp       = get_entity_type(entity);
+	size_t      n_params  = get_method_n_params(mtp);
+	ir_entity **param_map = ALLOCANZ(ir_entity*, n_params);
+
+	ir_type *frame_type      = get_irg_frame_type(irg);
+	size_t   n_frame_members = get_compound_n_members(frame_type);
+	size_t   f;
+	size_t   i;
+
+	ir_type *res = new_type_struct(id_mangle_u(get_entity_ident(entity), new_id_from_chars("arg_type", 8)));
+
+	/* search for existing value_param entities */
+	for (f = n_frame_members; f > 0; ) {
+		ir_entity *member = get_compound_member(frame_type, --f);
+		size_t     num;
+		const reg_or_stackslot_t *param;
+
+		if (!is_parameter_entity(member))
+			continue;
+		num = get_entity_parameter_number(member);
+		assert(num < n_params);
+		if (param_map[num] != NULL)
+			panic("multiple entities for parameter %u in %+F found", f, irg);
+
+		param = &current_cconv->parameters[num];
+		if (param->reg0 != NULL)
+			continue;
+
+		param_map[num] = member;
+		/* move to new arg_type */
+		set_entity_owner(member, res);
+	}
+
+	for (i = 0; i < n_params; ++i) {
+		reg_or_stackslot_t *param = &current_cconv->parameters[i];
+		ir_entity          *entity;
+
+		if (param->reg0 != NULL)
+			continue;
+		entity = param_map[i];
+		if (entity == NULL)
+			entity = new_parameter_entity(res, i, param->type);
+		param->entity = entity;
+		set_entity_offset(entity, param->offset);
+	}
+
+	return res;
+}
+
 static void create_stacklayout(ir_graph *irg)
 {
-	ir_entity         *entity        = get_irg_entity(irg);
-	ir_type           *function_type = get_entity_type(entity);
-	be_stack_layout_t *layout        = be_get_irg_stack_layout(irg);
-	ir_type           *arg_type;
-	int                p;
-	int                n_params;
+	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 
 	/* calling conventions must be decided by now */
 	assert(current_cconv != NULL);
-
-	/* construct argument type */
-	arg_type = new_type_struct(id_mangle_u(get_entity_ident(entity), new_id_from_chars("arg_type", 8)));
-	n_params = get_method_n_params(function_type);
-	for (p = 0; p < n_params; ++p) {
-		reg_or_stackslot_t *param = &current_cconv->parameters[p];
-		char                buf[128];
-		ident              *id;
-
-		if (param->type == NULL)
-			continue;
-
-		snprintf(buf, sizeof(buf), "param_%d", p);
-		id            = new_id_from_str(buf);
-		param->entity = new_entity(arg_type, id, param->type);
-		set_entity_offset(param->entity, param->offset);
-	}
 
 	memset(layout, 0, sizeof(*layout));
 
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = sparc_get_between_type();
-	layout->arg_type       = arg_type;
+	layout->arg_type       = compute_arg_type(irg);
 	layout->initial_offset = 0;
 	layout->initial_bias   = 0;
 	layout->sp_relative    = current_cconv->omit_fp;
@@ -2224,6 +2254,7 @@ void sparc_transform_graph(ir_graph *irg)
 	current_cconv
 		= sparc_decide_calling_convention(get_entity_type(entity), irg);
 	create_stacklayout(irg);
+	be_add_parameter_entity_stores(irg);
 
 	be_transform_graph(irg, NULL);
 
