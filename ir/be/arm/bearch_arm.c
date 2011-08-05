@@ -36,7 +36,7 @@
 #include "irgopt.h"
 #include "iroptimize.h"
 #include "irdump.h"
-#include "lowering.h"
+#include "lower_calls.h"
 #include "error.h"
 
 #include "bitset.h"
@@ -532,16 +532,8 @@ static void arm_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
 
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
-
 	/* lower compound param handling */
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);

@@ -420,12 +420,6 @@ FIRM_API ir_node *get_Call_param(const ir_node *node, int pos);
 /** Sets the call parameter at position pos. */
 FIRM_API void     set_Call_param(ir_node *node, int pos, ir_node *param);
 
-/**
- * Returns non-zero if a Call is surely a self-recursive Call.
- * Beware: if this functions returns 0, the call might be self-recursive!
- */
-FIRM_API int is_self_recursive_Call(const ir_node *call);
-
 /** Set, get and remove the callee information for a Call node.
  *
  *  The callee information lists all method entities that can be called

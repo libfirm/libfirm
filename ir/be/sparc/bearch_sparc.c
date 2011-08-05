@@ -39,6 +39,7 @@
 #include "irdump.h"
 #include "lowering.h"
 #include "lower_dw.h"
+#include "lower_calls.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -547,14 +548,7 @@ static void sparc_lower_for_target(void)
 		sparc_create_set,
 		0,
 	};
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
 	sparc_lower_64bit();
 

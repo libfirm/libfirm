@@ -52,6 +52,7 @@
 #include "instrument.h"
 #include "iropt_t.h"
 #include "lower_dw.h"
+#include "lower_calls.h"
 
 #include "../beabi.h"
 #include "../beirg.h"
@@ -2011,13 +2012,6 @@ static void ia32_lower_for_target(void)
 		ia32_create_set,
 		0,        /* don't lower direct compares */
 	};
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
 
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
@@ -2028,7 +2022,7 @@ static void ia32_lower_for_target(void)
 	};
 
 	/* lower compound param handling */
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_lower_dw_ops();
