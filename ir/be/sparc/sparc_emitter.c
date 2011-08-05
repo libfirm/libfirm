@@ -611,19 +611,38 @@ static int map_reg_to_permi_num(const arch_register_t *reg)
 	return reg->index;
 }
 
-static int permi5(int reg0, int reg1, int reg2, int reg3, int reg4)
+static int permi5(int *regs)
 {
-	return (reg0 << 20) | (reg1 << 15) | (reg2 << 10) | (reg3 <<  5) | reg4;
+#if 0
+	return   (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10)
+	       | (regs[3] <<  5) | regs[4];
+#else
+	return   (regs[4] << 20) | (regs[3] << 15) | (regs[2] << 10)
+	       | (regs[1] << 5)  | regs[0];
+#endif
 }
 
 static void emit_be_Perm_permi(const ir_node *irn)
 {
-	const arch_register_t *reg1 = get_in_reg(irn, 0);
-	const arch_register_t *reg2 = get_in_reg(irn, 1);
-	const int pn1 = map_reg_to_permi_num(reg1);
-	const int pn2 = map_reg_to_permi_num(reg2);
-	const int n = permi5(pn1, pn2, pn2, pn2, pn2);
+	const int MAX_PERM_SIZE = 5;
+	const int arity = get_irn_arity(irn);
+	int       pns[MAX_PERM_SIZE];
+	int       i;
 
+	assert(arity >= 2 && arity <= MAX_PERM_SIZE);
+
+	for (i = 0; i < arity; ++i) {
+		const arch_register_t *reg = get_in_reg(irn, i);
+		pns[i] = map_reg_to_permi_num(reg);
+	}
+
+	/* If Perm node is smaller than maximum, fill rest of the slots
+	 * with the last register number we inserted. */
+	while (i < MAX_PERM_SIZE) {
+		pns[i++] = pns[arity - 1];
+	}
+
+	const int n = permi5(pns);
 	be_emit_irprintf("\tpermi %d", n);
 	be_emit_finish_line_gas(irn);
 }
@@ -633,10 +652,11 @@ static void emit_be_Perm_permi(const ir_node *irn)
  */
 static void emit_be_Perm(const ir_node *irn)
 {
-	if (sparc_cg_config.use_permi)
+	if (sparc_cg_config.use_permi) {
 		emit_be_Perm_permi(irn);
-	else
+	} else {
 		emit_be_Perm_xor(irn);
+	}
 }
 
 static void emit_be_MemPerm(const ir_node *node)
