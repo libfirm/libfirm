@@ -158,6 +158,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 
 	/* associate the lowered type with the original one for easier access */
 	set_method_calling_convention(lowered, get_method_calling_convention(mtp) | cc_compound_ret);
+	set_method_additional_properties(lowered, get_method_additional_properties(mtp));
 
 	set_lowered_type(mtp, lowered);
 	pmap_insert(lowered_mtps, mtp, lowered);

@@ -1711,7 +1711,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 		return mtp;
 	}
 
-	res = new_type_method(n_param, n_res);
+	res = new_d_type_method(n_param, n_res, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
 	for (i = n_param = 0; i < orig_n_params; ++i) {
@@ -1764,6 +1764,11 @@ static ir_type *lower_mtp(ir_type *mtp)
 			set_method_res_type(res, n_res++, tp);
 		}
 	}
+
+	set_method_variadicity(res, get_method_variadicity(mtp));
+	set_method_calling_convention(res, get_method_calling_convention(mtp));
+	set_method_additional_properties(res, get_method_additional_properties(mtp));
+
 	set_lowered_type(mtp, res);
 	set_type_link(res, mtp);
 
