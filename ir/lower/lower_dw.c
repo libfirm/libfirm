@@ -102,7 +102,6 @@ typedef struct lower_dw_env_t {
 	lower64_entry_t **entries;     /**< entries per node */
 	ir_graph      *irg;
 	struct obstack obst;           /**< an obstack holding the temporary data */
-	ir_type   *l_mtp;              /**< lowered method type of the current method */
 	ir_tarval *tv_mode_bytes;      /**< a tarval containing the number of bytes in the lowered modes */
 	ir_tarval *tv_mode_bits;       /**< a tarval containing the number of bits in the lowered modes */
 	pdeq      *waitq;              /**< a wait queue of all nodes that must be handled later */
@@ -116,13 +115,11 @@ typedef struct lower_dw_env_t {
 	const lwrdw_param_t *params;   /**< transformation parameter */
 	unsigned flags;                /**< some flags */
 	unsigned n_entries;            /**< number of entries */
-	ir_type  *value_param_tp;      /**< the old value param type */
 } lower_dw_env_t;
 
 static lower_dw_env_t *env;
 
 static void lower_node(ir_node *node);
-static bool mtp_must_be_lowered(ir_type *mtp);
 
 /**
  * Create a method type for a Conv emulation from imode to omode.
@@ -1602,25 +1599,56 @@ static void lower_Conv(ir_node *node, ir_mode *mode)
 	}
 }
 
-/**
- * Remember the new argument index of this value type entity in the lowered
- * method type.
- *
- * @param ent  the entity
- * @param pos  the argument index of this entity
- */
-static inline void set_entity_arg_idx(ir_entity *ent, size_t pos)
+static void fix_parameter_entities(ir_graph *irg)
 {
-	set_entity_link(ent, INT_TO_PTR(pos));
-}
+	ir_entity *entity   = get_irg_entity(irg);
+	ir_type   *mtp      = get_entity_type(entity);
+	ir_type   *orig_mtp = get_type_link(mtp);
 
-/**
- * Retrieve the argument index of a value type entity.
- *
- * @param ent  the entity
- */
-static size_t get_entity_arg_idx(const ir_entity *ent) {
-	return PTR_TO_INT(get_entity_link(ent));
+	size_t      orig_n_params      = get_method_n_params(orig_mtp);
+	ir_entity **parameter_entities = ALLOCANZ(ir_entity*, orig_n_params);
+
+	ir_type *frame_type = get_irg_frame_type(irg);
+	size_t   n          = get_compound_n_members(frame_type);
+	size_t   i;
+	size_t   n_param;
+
+	/* collect parameter entities */
+	for (i = 0; i < n; ++i) {
+		ir_entity *entity = get_compound_member(frame_type, i);
+		size_t     p;
+		if (!is_parameter_entity(entity))
+			continue;
+		p = get_entity_parameter_number(entity);
+		assert(p < orig_n_params);
+		assert(parameter_entities[p] == NULL);
+		parameter_entities[p] = entity;
+	}
+
+	/* adjust indices */
+	n_param = 0;
+	for (i = 0; i < orig_n_params; ++i, ++n_param) {
+		ir_entity *entity = parameter_entities[i];
+		ir_type   *tp     = get_method_param_type(orig_mtp, i);
+		if (entity != NULL)
+			set_entity_parameter_number(entity, n_param);
+
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
+			if (mode == env->high_signed || mode == env->high_unsigned) {
+				++n_param;
+				/* note that we do not change the type of the parameter
+				 * entities, as calling convention fixup later still needs to
+				 * know which is/was a lowered doubleword.
+				 * So we just mark/remember it for later */
+				if (entity != NULL) {
+					assert(entity->attr.parameter.doubleword_low_mode == NULL);
+					entity->attr.parameter.doubleword_low_mode
+						= env->low_unsigned;
+				}
+			}
+		}
+	}
 }
 
 /**
@@ -1633,121 +1661,113 @@ static size_t get_entity_arg_idx(const ir_entity *ent) {
  */
 static ir_type *lower_mtp(ir_type *mtp)
 {
-	pmap_entry *entry;
-	ir_type    *res, *value_type;
+	ir_type *res;
+	size_t   i;
+	size_t   orig_n_params;
+	size_t   orig_n_res;
+	size_t   n_param;
+	size_t   n_res;
+	bool     must_be_lowered;
 
-	entry = pmap_find(lowered_type, mtp);
-	if (! entry) {
-		size_t i, orig_n_params, orig_n_res, n_param, n_res;
+	res = (ir_type*)pmap_get(lowered_type, mtp);
+	if (res != NULL)
+		return res;
 
-		/* count new number of params */
-		n_param = orig_n_params = get_method_n_params(mtp);
-		for (i = orig_n_params; i > 0;) {
-			ir_type *tp = get_method_param_type(mtp, --i);
+	orig_n_params   = get_method_n_params(mtp);
+	orig_n_res      = get_method_n_ress(mtp);
+	n_param         = orig_n_params;
+	n_res           = orig_n_res;
+	must_be_lowered = false;
 
-			if (is_Primitive_type(tp)) {
-				ir_mode *mode = get_type_mode(tp);
+	/* count new number of params */
+	for (i = orig_n_params; i > 0;) {
+		ir_type *tp = get_method_param_type(mtp, --i);
 
-				if (mode == env->high_signed || mode == env->high_unsigned)
-					++n_param;
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
+
+			if (mode == env->high_signed || mode == env->high_unsigned) {
+				++n_param;
+				must_be_lowered = true;
 			}
 		}
+	}
 
-		/* count new number of results */
-		n_res = orig_n_res = get_method_n_ress(mtp);
-		for (i = orig_n_res; i > 0;) {
-			ir_type *tp = get_method_res_type(mtp, --i);
+	/* count new number of results */
+	for (i = orig_n_res; i > 0;) {
+		ir_type *tp = get_method_res_type(mtp, --i);
 
-			if (is_Primitive_type(tp)) {
-				ir_mode *mode = get_type_mode(tp);
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
 
-				if (mode == env->high_signed || mode == env->high_unsigned)
-					++n_res;
+			if (mode == env->high_signed || mode == env->high_unsigned) {
+				++n_res;
+				must_be_lowered = true;
 			}
 		}
+	}
+	if (!must_be_lowered) {
+		set_type_link(mtp, NULL);
+		return mtp;
+	}
 
-		res = new_type_method(n_param, n_res);
+	res = new_type_method(n_param, n_res);
 
-		/* set param types and result types */
-		for (i = n_param = 0; i < orig_n_params; ++i) {
-			ir_type *tp = get_method_param_type(mtp, i);
+	/* set param types and result types */
+	for (i = n_param = 0; i < orig_n_params; ++i) {
+		ir_type *tp = get_method_param_type(mtp, i);
 
-			if (is_Primitive_type(tp)) {
-				ir_mode *mode = get_type_mode(tp);
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
 
-				if (mode == env->high_signed) {
-					if (env->params->little_endian) {
-						set_method_param_type(res, n_param++, tp_u);
-						set_method_param_type(res, n_param++, tp_s);
-					} else {
-						set_method_param_type(res, n_param++, tp_s);
-						set_method_param_type(res, n_param++, tp_u);
-					}
-				} else if (mode == env->high_unsigned) {
+			if (mode == env->high_signed) {
+				if (env->params->little_endian) {
 					set_method_param_type(res, n_param++, tp_u);
-					set_method_param_type(res, n_param++, tp_u);
+					set_method_param_type(res, n_param++, tp_s);
 				} else {
-					set_method_param_type(res, n_param++, tp);
+					set_method_param_type(res, n_param++, tp_s);
+					set_method_param_type(res, n_param++, tp_u);
 				}
+			} else if (mode == env->high_unsigned) {
+				set_method_param_type(res, n_param++, tp_u);
+				set_method_param_type(res, n_param++, tp_u);
 			} else {
-				set_method_param_type(res, n_param++, tp);
+				set_method_param_type(res, n_param, tp);
+				++n_param;
 			}
+		} else {
+			set_method_param_type(res, n_param, tp);
+			++n_param;
 		}
-		for (i = n_res = 0; i < orig_n_res; ++i) {
-			ir_type *tp = get_method_res_type(mtp, i);
+	}
+	for (i = n_res = 0; i < orig_n_res; ++i) {
+		ir_type *tp = get_method_res_type(mtp, i);
 
-			if (is_Primitive_type(tp)) {
-				ir_mode *mode = get_type_mode(tp);
+		if (is_Primitive_type(tp)) {
+			ir_mode *mode = get_type_mode(tp);
 
-				if (mode == env->high_signed) {
-					if (env->params->little_endian) {
-						set_method_res_type(res, n_res++, tp_u);
-						set_method_res_type(res, n_res++, tp_s);
-					} else {
-						set_method_res_type(res, n_res++, tp_s);
-						set_method_res_type(res, n_res++, tp_u);
-					}
-				} else if (mode == env->high_unsigned) {
+			if (mode == env->high_signed) {
+				if (env->params->little_endian) {
 					set_method_res_type(res, n_res++, tp_u);
-					set_method_res_type(res, n_res++, tp_u);
+					set_method_res_type(res, n_res++, tp_s);
 				} else {
-					set_method_res_type(res, n_res++, tp);
+					set_method_res_type(res, n_res++, tp_s);
+					set_method_res_type(res, n_res++, tp_u);
 				}
+			} else if (mode == env->high_unsigned) {
+				set_method_res_type(res, n_res++, tp_u);
+				set_method_res_type(res, n_res++, tp_u);
 			} else {
 				set_method_res_type(res, n_res++, tp);
 			}
+		} else {
+			set_method_res_type(res, n_res++, tp);
 		}
-		set_lowered_type(mtp, res);
-		pmap_insert(lowered_type, mtp, res);
-
-		value_type = get_method_value_param_type(mtp);
-		if (value_type != NULL) {
-			/* this creates a new value parameter type */
-			(void)get_method_value_param_ent(res, 0);
-
-			/* set new param positions for all entities of the value type */
-			for (i = n_param = 0; i < orig_n_params; ++i) {
-				ir_type   *tp  = get_method_param_type(mtp, i);
-				ir_entity *ent = get_method_value_param_ent(mtp, i);
-
-				set_entity_arg_idx(ent, n_param);
-				if (is_Primitive_type(tp)) {
-					ir_mode *mode = get_type_mode(tp);
-
-					if (mode == env->high_signed
-					    || mode == env->high_unsigned) {
-						n_param += 2;
-						continue;
-					}
-				}
-				++n_param;
-			}
-
-			set_lowered_type(value_type, get_method_value_param_type(res));
-		}
-	} else {
-		res = (ir_type*)entry->value;
 	}
+	set_lowered_type(mtp, res);
+	set_type_link(res, mtp);
+
+	pmap_insert(lowered_type, mtp, res);
 	return res;
 }
 
@@ -1778,32 +1798,31 @@ static void lower_Return(ir_node *node, ir_mode *mode)
 	ent = get_irg_entity(irg);
 	mtp = get_entity_type(ent);
 
-	mtp = lower_mtp(mtp);
-	set_entity_type(ent, mtp);
-
 	/* create a new in array */
 	NEW_ARR_A(ir_node *, in, get_method_n_ress(mtp) + 1);
-	in[0] = get_Return_mem(node);
+	j = 0;
+	in[j++] = get_Return_mem(node);
 
-	for (j = i = 0, n = get_Return_n_ress(node); i < n; ++i) {
+	for (i = 0, n = get_Return_n_ress(node); i < n; ++i) {
 		ir_node *pred      = get_Return_res(node, i);
 		ir_mode *pred_mode = get_irn_mode(pred);
 
 		if (pred_mode == env->high_signed || pred_mode == env->high_unsigned) {
 			const lower64_entry_t *entry = get_node_entry(pred);
 			if (env->params->little_endian) {
-				in[++j] = entry->low_word;
-				in[++j] = entry->high_word;
+				in[j++] = entry->low_word;
+				in[j++] = entry->high_word;
 			} else {
-				in[++j] = entry->high_word;
-				in[++j] = entry->low_word;
+				in[j++] = entry->high_word;
+				in[j++] = entry->low_word;
 			}
 		} else {
-			in[++j] = pred;
+			in[j++] = pred;
 		}
 	}
+	assert(j == get_method_n_ress(mtp)+1);
 
-	set_irn_in(node, j+1, in);
+	set_irn_in(node, j, in);
 }
 
 /**
@@ -1811,9 +1830,10 @@ static void lower_Return(ir_node *node, ir_mode *mode)
  */
 static void lower_Start(ir_node *node, ir_mode *high_mode)
 {
-	ir_graph  *irg = get_irn_irg(node);
-	ir_entity *ent = get_irg_entity(irg);
-	ir_type   *tp  = get_entity_type(ent);
+	ir_graph  *irg      = get_irn_irg(node);
+	ir_entity *ent      = get_irg_entity(irg);
+	ir_type   *mtp      = get_entity_type(ent);
+	ir_type   *orig_mtp = get_type_link(mtp);
 	ir_node   *args;
 	long      *new_projs;
 	size_t    i, j, n_params;
@@ -1821,16 +1841,18 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 	const ir_edge_t *next;
 	(void) high_mode;
 
-	if (!mtp_must_be_lowered(tp))
+	/* if type link is NULL then the type was not lowered, hence no changes
+	 * at Start necessary */
+	if (orig_mtp == NULL)
 		return;
 
-	n_params = get_method_n_params(tp);
+	n_params = get_method_n_params(orig_mtp);
 
 	NEW_ARR_A(long, new_projs, n_params);
 
 	/* Calculate mapping of proj numbers in new_projs */
 	for (i = j = 0; i < n_params; ++i, ++j) {
-		ir_type *ptp = get_method_param_type(tp, i);
+		ir_type *ptp = get_method_param_type(orig_mtp, i);
 
 		new_projs[i] = j;
 		if (is_Primitive_type(ptp)) {
@@ -1841,9 +1863,6 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 	}
 
 	/* lower method type */
-	tp = lower_mtp(tp);
-	set_entity_type(ent, tp);
-
 	args = NULL;
 	foreach_out_edge(node, edge) {
 		ir_node *proj = get_edge_src_irn(edge);
@@ -2260,26 +2279,6 @@ static void lower_ASM(ir_node *asmn, ir_mode *mode)
 }
 
 /**
- * Translate a Sel node.
- */
-static void lower_Sel(ir_node *sel, ir_mode *mode)
-{
-	(void) mode;
-
-	/* we must only lower value parameter Sels if we change the
-	   value parameter type. */
-	if (env->value_param_tp != NULL) {
-		ir_entity *ent = get_Sel_entity(sel);
-	    if (get_entity_owner(ent) == env->value_param_tp) {
-			size_t pos = get_entity_arg_idx(ent);
-
-			ent = get_method_value_param_ent(env->l_mtp, pos);
-			set_Sel_entity(sel, ent);
-		}
-	}
-}
-
-/**
  * check for opcodes that must always be lowered.
  */
 static bool always_lower(unsigned code)
@@ -2329,29 +2328,6 @@ static int cmp_conv_tp(const void *elt, const void *key, size_t size)
 void ir_register_dw_lower_function(ir_op *op, lower_dw_func func)
 {
 	op->ops.generic = (op_func)func;
-}
-
-/**
- * Returns non-zero if a method type must be lowered.
- *
- * @param mtp  the method type
- */
-static bool mtp_must_be_lowered(ir_type *mtp)
-{
-	size_t i, n_params = get_method_n_params(mtp);
-
-	/* first check if we have parameters that must be fixed */
-	for (i = 0; i < n_params; ++i) {
-		ir_type *tp = get_method_param_type(mtp, i);
-
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed || mode == env->high_unsigned)
-				return true;
-		}
-	}
-	return false;
 }
 
 /* Determine which modes need to be lowered */
@@ -2512,6 +2488,7 @@ static void lower_irg(ir_graph *irg)
 {
 	ir_entity *ent;
 	ir_type   *mtp;
+	ir_type   *lowered_mtp;
 	unsigned   n_idx;
 
 	obstack_init(&env->obst);
@@ -2527,19 +2504,17 @@ static void lower_irg(ir_graph *irg)
 	memset(env->entries, 0, sizeof(env->entries[0]) * n_idx);
 
 	env->irg            = irg;
-	env->l_mtp          = NULL;
 	env->flags          = 0;
-	env->value_param_tp = NULL;
 
 	ent = get_irg_entity(irg);
 	mtp = get_entity_type(ent);
+	lowered_mtp = lower_mtp(mtp);
 
-	if (mtp_must_be_lowered(mtp)) {
-		ir_type *ltp = lower_mtp(mtp);
-		/* Do not update the entity type yet, this will be done by lower_Start! */
+	if (lowered_mtp != mtp) {
+		set_entity_type(ent, lowered_mtp);
 		env->flags |= MUST_BE_LOWERED;
-		env->l_mtp = ltp;
-		env->value_param_tp = get_method_value_param_type(mtp);
+
+		fix_parameter_entities(irg);
 	}
 
 	/* first step: link all nodes and allocate data */
@@ -2614,7 +2589,6 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 	ir_register_dw_lower_function(op_Not,     lower_Not);
 	ir_register_dw_lower_function(op_Or,      lower_Or);
 	ir_register_dw_lower_function(op_Return,  lower_Return);
-	ir_register_dw_lower_function(op_Sel,     lower_Sel);
 	ir_register_dw_lower_function(op_Shl,     lower_Shl);
 	ir_register_dw_lower_function(op_Shr,     lower_Shr);
 	ir_register_dw_lower_function(op_Shrs,    lower_Shrs);
@@ -2708,11 +2682,13 @@ void ir_lower_dw_ops(void)
 	lenv.first_id      = new_id_from_chars(param->little_endian ? ".l" : ".h", 2);
 	lenv.next_id       = new_id_from_chars(param->little_endian ? ".h" : ".l", 2);
 
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_LINK);
 	/* transform all graphs */
 	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		lower_irg(irg);
 	}
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_LINK);
 	del_pdeq(lenv.waitq);
 
 	env = NULL;

@@ -285,10 +285,6 @@ void type_walk_prog(type_walk_func *pre, type_walk_func *post, void *env)
 		ir_graph *irg = get_irp_irg(i);
 		cont.typ = get_irg_frame_type(irg);
 		do_type_walk(cont, pre, post, env);
-
-		cont.typ = get_method_value_param_type(get_entity_type(get_irg_entity(irg)));
-		if (cont.typ)
-			do_type_walk(cont, pre, post, env);
 	}
 
 	for (i = IR_SEGMENT_FIRST; i <= IR_SEGMENT_LAST; ++i) {

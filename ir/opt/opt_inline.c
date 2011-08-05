@@ -155,6 +155,9 @@ static void find_addr(ir_node *node, void *env)
 				/* access to value_type */
 				*allow_inline = false;
 			}
+			if (is_parameter_entity(ent)) {
+				*allow_inline = false;
+			}
 		}
 	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
 		/* From GCC:

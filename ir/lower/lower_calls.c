@@ -60,6 +60,27 @@ static ir_type *get_pointer_type(ir_type *dest_type)
 	return res;
 }
 
+static void fix_parameter_entities(ir_graph *irg, size_t n_compound_ret)
+{
+	ir_type *frame_type = get_irg_frame_type(irg);
+	size_t   n_compound = get_compound_n_members(frame_type);
+	size_t   i;
+
+	if (n_compound_ret == 0)
+		return;
+
+	for (i = 0; i < n_compound; ++i) {
+		ir_entity *member = get_compound_member(frame_type, i);
+		size_t     num;
+		if (!is_parameter_entity(member))
+			continue;
+
+		/* increase parameter number since we added a new parameter in front */
+		num = get_entity_parameter_number(member);
+		set_entity_parameter_number(member, num + n_compound_ret);
+	}
+}
+
 /**
  * Creates a new lowered type for a method type with compound
  * arguments. The new type is associated to the old one and returned.
@@ -164,7 +185,6 @@ typedef struct wlk_env_t {
 	pmap                 *dummy_map;       /**< A map for finding the dummy arguments. */
 	compound_call_lowering_flags flags;
 	ir_type              *lowered_mtp;     /**< The lowered method type of the current irg if any. */
-	ir_type              *value_params;    /**< The value params type if any. */
 	unsigned             only_local_mem:1; /**< Set if only local memory access was found. */
 	unsigned             changed:1;        /**< Set if the current graph was changed. */
 } wlk_env;
@@ -272,20 +292,6 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 	ir_node *ptr;
 
 	switch (get_irn_opcode(n)) {
-	case iro_Sel:
-		if (env->lowered_mtp != NULL && env->value_params != NULL) {
-			ir_entity *ent = get_Sel_entity(n);
-
-			if (get_entity_owner(ent) == env->value_params) {
-				size_t pos = get_struct_member_index(env->value_params, ent) + env->arg_shift;
-				ir_entity *new_ent;
-
-				new_ent = get_method_value_param_ent(env->lowered_mtp, pos);
-				set_entity_ident(new_ent, get_entity_ident(ent));
-				set_Sel_entity(n, new_ent);
-			}
-		}
-		break;
 	case iro_Load:
 	case iro_Store:
 		if (env->only_local_mem) {
@@ -568,6 +574,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			++n_ret_com;
 	}
 
+	fix_parameter_entities(irg, n_ret_com);
+
 	if (n_ret_com) {
 		/* much easier if we have only one return */
 		normalize_one_return(irg);
@@ -588,7 +596,6 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.dummy_map      = pmap_create_ex(8);
 	env.flags          = flags;
 	env.lowered_mtp    = lowered_mtp;
-	env.value_params   = get_method_value_param_type(mtp);
 	env.only_local_mem = 1;
 	env.changed        = 0;
 

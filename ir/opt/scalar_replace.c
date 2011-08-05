@@ -79,7 +79,10 @@ typedef struct path_t {
 } path_t;
 
 /** The size of a path in bytes. */
-#define PATH_SIZE(p)  (sizeof(*(p)) + sizeof((p)->path[0]) * ((p)->path_len - 1))
+static size_t path_size(path_t *p)
+{
+	return sizeof(*p) + sizeof(p->path[0]) * (p->path_len-1);
+}
 
 typedef struct scalars_t {
 	ir_entity *ent;              /**< A entity for scalar replacement. */
@@ -496,7 +499,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 		pset_insert_ptr(sels, sel);
 
 		key  = find_path(sel, 0);
-		path = (path_t*)set_find(pathes, key, PATH_SIZE(key), path_hash(key));
+		path = (path_t*)set_find(pathes, key, path_size(key), path_hash(key));
 
 		if (path) {
 			set_vnum(sel, path->vnum);
@@ -504,7 +507,7 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 		} else {
 			key->vnum = vnum++;
 
-			set_insert(pathes, key, PATH_SIZE(key), path_hash(key));
+			set_insert(pathes, key, path_size(key), path_hash(key));
 
 			set_vnum(sel, key->vnum);
 			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, key->vnum));
@@ -713,8 +716,9 @@ int scalar_replacement_opt(ir_graph *irg)
 				ir_entity *ent = get_Sel_entity(succ);
 
 				/* we are only interested in entities on the frame, NOT
-				   on the value type */
-				if (get_entity_owner(ent) != frame_tp)
+				   parameters */
+				if (get_entity_owner(ent) != frame_tp
+				    || is_parameter_entity(ent))
 					continue;
 
 				if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)

@@ -2034,10 +2034,6 @@ static ir_node *gen_Sel(ir_node *node)
 	/* must be the frame pointer all other sels must have been lowered
 	 * already */
 	assert(is_Proj(ptr) && is_Start(get_Proj_pred(ptr)));
-	/* we should not have value types from parameters anymore - they should be
-	   lowered */
-	assert(get_entity_owner(entity) !=
-			get_method_value_param_type(get_entity_type(get_irg_entity(get_irn_irg(node)))));
 
 	return new_bd_arm_FrameAddr(dbgi, new_block, new_ptr, entity, 0);
 }
