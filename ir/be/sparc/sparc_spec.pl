@@ -749,7 +749,7 @@ fneg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	# note that we only need the first register even for wide-values
-	emit      => '. fneg %S0, %D0',
+	emit      => '. fnegs %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	ins          => [ "val" ],
