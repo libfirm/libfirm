@@ -130,10 +130,12 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		reg_or_stackslot_t *param      = &params[i];
 
 		if (regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[regnum++];
+			const arch_register_t *reg = param_regs[regnum];
 			if (irg == NULL || omit_fp)
 				reg = map_i_to_o_reg(reg);
-			param->reg0 = reg;
+			param->reg0       = reg;
+			param->reg_offset = regnum;
+			++regnum;
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
@@ -148,10 +150,12 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				panic("only 32 and 64bit modes supported in sparc backend");
 
 			if (regnum < n_param_regs) {
-				const arch_register_t *reg = param_regs[regnum++];
+				const arch_register_t *reg = param_regs[regnum];
 				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
-				param->reg1 = reg;
+				param->reg1       = reg;
+				param->reg_offset = regnum;
+				++regnum;
 			} else {
 				ir_mode *regmode = param_regs[0]->reg_class->mode;
 				ir_type *type    = get_type_for_mode(regmode);

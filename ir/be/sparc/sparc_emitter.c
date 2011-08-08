@@ -368,7 +368,7 @@ static bool has_delay_slot(const ir_node *node)
 	return is_sparc_Bicc(node) || is_sparc_fbfcc(node) || is_sparc_Ba(node)
 		|| is_sparc_SwitchJmp(node) || is_sparc_Call(node)
 		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
-		|| be_is_Return(node);
+		|| is_sparc_Return(node);
 }
 
 /** returns true if the emitter for this sparc node can produce more than one
@@ -414,7 +414,7 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		/* the Call also destroys the value of %o7, but since this is currently
 		 * marked as ignore register in the backend, it should never be used by
 		 * the instruction in the delay slot. */
-	} else if (be_is_Return(node)) {
+	} else if (is_sparc_Return(node)) {
 		/* we only have to check the jump destination value */
 		int arity = get_irn_arity(node);
 		int i;
@@ -664,7 +664,7 @@ static void emit_be_MemPerm(const ir_node *node)
 	assert(sp_change == 0);
 }
 
-static void emit_be_Return(const ir_node *node)
+static void emit_sparc_Return(const ir_node *node)
 {
 	const char *destreg = "%o7";
 
@@ -936,21 +936,21 @@ static void sparc_register_emitters(void)
 	set_emitter(op_be_IncSP,        emit_be_IncSP);
 	set_emitter(op_be_MemPerm,      emit_be_MemPerm);
 	set_emitter(op_be_Perm,         emit_be_Perm);
-	set_emitter(op_be_Return,       emit_be_Return);
 	set_emitter(op_sparc_Ba,        emit_sparc_Ba);
 	set_emitter(op_sparc_Bicc,      emit_sparc_Bicc);
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
+	set_emitter(op_sparc_Return,    emit_sparc_Return);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
 
 	/* no need to emit anything for the following nodes */
-	set_emitter(op_be_Keep,    emit_nothing);
-	set_emitter(op_be_Start,   emit_nothing);
-	set_emitter(op_Phi,        emit_nothing);
+	set_emitter(op_be_Keep,     emit_nothing);
+	set_emitter(op_sparc_Start, emit_nothing);
+	set_emitter(op_Phi,         emit_nothing);
 }
 
 /**

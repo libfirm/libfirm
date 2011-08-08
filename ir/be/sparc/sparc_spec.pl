@@ -480,21 +480,29 @@ Ba => {
 	mode      => "mode_X",
 },
 
+Start => {
+	state     => "pinned",
+	out_arity => "variable",
+	ins       => [],
+},
+
 # This is a JumpLink instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {
+	state     => "pinned",
+	op_flags  => [ "cfopcode" ],
 	arity     => "variable",
-	out_arity => "variable",
+	mode      => "mode_X",
 	constructors => {
 		imm => {
 			attr       => "ir_entity *entity, int32_t offset",
 			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
 			arity     => "variable",
-			out_arity => "variable",
+			reg_req   => { out => [ "none" ] },
 		},
 		reg => {
 			arity     => "variable",
-			out_arity => "variable",
+			reg_req   => { out => [ "none" ] },
 		}
 	},
 },

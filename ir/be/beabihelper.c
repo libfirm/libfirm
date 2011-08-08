@@ -65,7 +65,6 @@ struct beabi_helper_env_t {
 	ir_graph                 *irg;         /**< the graph we operate on */
 	register_state_mapping_t  prolog;      /**< the register state map for the prolog */
 	register_state_mapping_t  epilog;      /**< the register state map for the epilog */
-	ir_phase                 *stack_order; /**< a phase to handle stack dependencies. */
 };
 
 /**
@@ -620,9 +619,17 @@ static void process_ops_in_block(ir_node *block, void *data)
 	xfree(nodes);
 }
 
-void be_collect_stacknodes(beabi_helper_env_t *env)
+
+
+struct be_stackorder_t {
+	ir_phase *stack_order; /**< a phase to handle stack dependencies. */
+};
+
+be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
 {
-	ir_graph *irg = env->irg;
+	be_stackorder_t *env = XMALLOCZ(be_stackorder_t);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* collect all potential^stack accessing nodes */
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, NULL);
@@ -635,11 +642,21 @@ void be_collect_stacknodes(beabi_helper_env_t *env)
 	heights = heights_new(irg);
 	irg_block_walk_graph(irg, NULL, process_ops_in_block, env->stack_order);
 	heights_free(heights);
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	return env;
 }
 
-ir_node *be_get_stack_pred(const beabi_helper_env_t *env, const ir_node *node)
+ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node)
 {
 	return (ir_node*)phase_get_irn_data(env->stack_order, node);
+}
+
+void be_free_stackorder(be_stackorder_t *env)
+{
+	phase_free(env->stack_order);
+	free(env);
 }
 
 void be_add_parameter_entity_stores(ir_graph *irg)

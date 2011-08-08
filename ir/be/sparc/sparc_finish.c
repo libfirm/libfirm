@@ -118,7 +118,7 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 
 		for (i = 0; i < arity; ++i) {
 			ir_node *ret = get_irn_n(end_block, i);
-			assert(be_is_Return(ret));
+			assert(is_sparc_Return(ret));
 			introduce_epilog(ret);
 		}
 	}
@@ -342,7 +342,7 @@ static void peephole_sparc_FrameAddr(ir_node *node)
 	(void) node;
 }
 
-static void finish_be_Return(ir_node *node)
+static void finish_sparc_Return(ir_node *node)
 {
 	ir_node *schedpoint = node;
 	ir_node *restore;
@@ -383,10 +383,10 @@ void sparc_finish(ir_graph *irg)
 	/* perform legalizations (mostly fix nodes with too big immediates) */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
-	register_peephole_optimisation(op_be_Return,       finish_be_Return);
 	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
 	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_Ldf,       finish_sparc_LdSt);
+	register_peephole_optimisation(op_sparc_Return,    finish_sparc_Return);
 	register_peephole_optimisation(op_sparc_Save,      finish_sparc_Save);
 	register_peephole_optimisation(op_sparc_St,        finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_LdSt);

@@ -62,6 +62,7 @@ static const arch_register_t *sp_reg = &arm_registers[REG_SP];
 static ir_mode               *mode_gp;
 static ir_mode               *mode_fp;
 static beabi_helper_env_t    *abihelper;
+static be_stackorder_t       *stackorder;
 static calling_convention_t  *cconv = NULL;
 static arm_isa_t             *isa;
 
@@ -1776,7 +1777,7 @@ static ir_node *gen_Start(ir_node *node)
 static ir_node *get_stack_pointer_for(ir_node *node)
 {
 	/* get predecessor in stack_order list */
-	ir_node *stack_pred = be_get_stack_pred(abihelper, node);
+	ir_node *stack_pred = be_get_stack_pred(stackorder, node);
 	ir_node *stack;
 
 	if (stack_pred == NULL) {
@@ -2173,7 +2174,7 @@ void arm_transform_graph(ir_graph *irg)
 
 	assert(abihelper == NULL);
 	abihelper = be_abihelper_prepare(irg);
-	be_collect_stacknodes(abihelper);
+	stackorder = be_collect_stacknodes(irg);
 	assert(cconv == NULL);
 	cconv = arm_decide_calling_convention(irg, get_entity_type(entity));
 	create_stacklayout(irg);
@@ -2182,6 +2183,8 @@ void arm_transform_graph(ir_graph *irg)
 
 	be_abihelper_finish(abihelper);
 	abihelper = NULL;
+	be_free_stackorder(stackorder);
+	stackorder = NULL;
 
 	arm_free_calling_convention(cconv);
 	cconv = NULL;
