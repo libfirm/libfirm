@@ -443,6 +443,7 @@ static void lower_perm_node(ir_node *irn)
 	int               n_pairs      = 0;
 	int               keep_perm    = 0;
 	ir_node    *      sched_point  = sched_prev(irn);
+	int cycle_count                = 0;
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
 	DBG((dbg_icore, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
@@ -476,6 +477,9 @@ static void lower_perm_node(ir_node *irn)
 			DB((dbg_icore, LEVEL_1, " %s", move.elems[i]->name));
 		}
 		DB((dbg_icore, LEVEL_1, "\n"));
+
+		if (move.type == PERM_CYCLE)
+			++cycle_count;
 
 		if (move.type == PERM_CYCLE && move.n_elems <= MAX_PERM_SIZE) {
 			/* We don't need to do anything if we have a cycle with fewer than
@@ -517,6 +521,8 @@ static void lower_perm_node(ir_node *irn)
 
 		free(move.elems);
 	}
+
+	stat_ev_int("cycle_count", cycle_count);
 
 	/* Remove the perm from schedule */
 	if (!keep_perm) {
