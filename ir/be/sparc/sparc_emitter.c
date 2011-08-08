@@ -782,6 +782,19 @@ static void emit_sparc_Bicc(const ir_node *node)
 
 static void emit_sparc_fbfcc(const ir_node *node)
 {
+	/* if the flags producing node was immediately in front of us, emit
+	 * a nop */
+	ir_node *flags = get_irn_n(node, n_sparc_fbfcc_flags);
+	ir_node *prev  = sched_prev(node);
+	if (is_Block(prev)) {
+		/* TODO: when the flags come from another block, then we have to do
+		 * more complicated tests to see wether the flag producing node is
+		 * potentially in front of us (could happen for fallthroughs) */
+		panic("TODO: fbfcc flags come from other block");
+	}
+	if (skip_Proj(flags) == prev) {
+		be_emit_cstring("\tnop\n");
+	}
 	emit_sparc_branch(node, get_fcc);
 }
 
