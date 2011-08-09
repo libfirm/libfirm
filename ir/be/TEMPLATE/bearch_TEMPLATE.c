@@ -312,11 +312,15 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		0,     /* no inline assembly */
 		0,     /* no support for Rotl nodes */
 		0,     /* 0: little-endian, 1: big-endian */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift efficient */
 		NULL,  /* architecture dependent settings, will be set later */
 		TEMPLATE_is_mux_allowed,  /* parameter for if conversion */
 		32,    /* machine size - a 32bit CPU */
 		NULL,  /* float arithmetic mode */
-		0,     /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* unsigned long long type */
+		NULL,  /* long double type */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */

@@ -738,8 +738,12 @@ static ir_node *make_shift(ir_node *node, match_flags_t flags,
 	ir_node  *op1   = get_binop_left(node);
 	ir_node  *op2   = get_binop_right(node);
 	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_mode  *mode  = get_irn_mode(node);
 	ir_node  *new_op1;
 	ir_node  *new_op2;
+
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo shift!=32 not supported by arm backend");
 
 	if (flags & MATCH_SIZE_NEUTRAL) {
 		op1 = arm_skip_downconv(op1);

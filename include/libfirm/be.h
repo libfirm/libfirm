@@ -71,6 +71,16 @@ typedef struct backend_params {
 	unsigned support_rotl:1;
 	/** the backend uses big-endian byte ordering if set, else little endian */
 	unsigned byte_order_big_endian:1;
+	/** whether the architecure can natively handle modulo shift modes.
+	 * If this is true, then you can assume that shifting in modes with
+	 * module_shift==machine_size (if mode size is <= machine_size) is efficient
+	 */
+	unsigned modulo_shift_efficient:1;
+	/** whether the architecure can natively handle modulo shift modes.
+	 * If this is true, then you can assume that shifting without modulo shift
+	 * is efficient
+	 */
+	unsigned non_modulo_shift_efficient:1;
 
 	/** Settings for architecture dependent optimizations. */
 	const ir_settings_arch_dep_t *dep_param;
@@ -88,8 +98,20 @@ typedef struct backend_params {
 	 */
 	ir_mode *mode_float_arithmetic;
 
-	/** size of a long double floating mode in bits (or 0 if not supported) */
-	unsigned long_double_size;
+	/**
+	 * type used for long long or NULL if none available.
+	 */
+	ir_type *type_long_long;
+
+	/**
+	 * type used for unsigned long long or NULL if none available
+	 */
+	ir_type *type_unsigned_long_long;
+
+	/**
+	 * type used for long double or NULL if none available.
+	 */
+	ir_type *type_long_double;
 
 	/** Size of the trampoline code. */
 	unsigned trampoline_size;

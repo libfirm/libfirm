@@ -2083,16 +2083,29 @@ static const backend_params *ia32_get_libfirm_params(void)
 		1,     /* support inline assembly */
 		1,     /* support Rotl nodes */
 		0,     /* little endian */
-		NULL,  /* will be set later */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift not efficient */
+		&ad,   /* will be set later */
 		ia32_is_mux_allowed,
 		32,    /* machine_size */
 		NULL,  /* float arithmetic mode, will be set below */
-		0,     /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* unsigned long long type */
+		NULL,  /* long double type */
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */
 		ia32_create_trampoline_fkt,
 		4      /* alignment of stack parameter */
 	};
+	ir_mode *mode_long_long
+		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
+		              64);
+	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_mode *mode_unsigned_long_long
+		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
+		              irma_twos_complement, 64);
+	ir_type *type_unsigned_long_long
+		= new_type_primitive(mode_unsigned_long_long);
 
 	ia32_setup_cg_config();
 
@@ -2100,13 +2113,20 @@ static const backend_params *ia32_get_libfirm_params(void)
 	 * is called... */
 	init_asm_constraints();
 
-	p.dep_param    = &ad;
+	p.type_long_long          = type_long_long;
+	p.type_unsigned_long_long = type_unsigned_long_long;
+
 	if (! ia32_cg_config.use_sse2) {
 		p.mode_float_arithmetic = mode_E;
-		p.long_double_size = 96;
+		ir_mode *mode = new_ir_mode("long double", irms_float_number, 80, 1,
+		                            irma_ieee754, 0);
+		ir_type *type = new_type_primitive(mode);
+		set_type_size_bytes(type, 12);
+		set_type_alignment_bytes(type, 4);
+		p.type_long_double = type;
 	} else {
 		p.mode_float_arithmetic = NULL;
-		p.long_double_size = 64;
+		p.type_long_double = NULL;
 	}
 	return &p;
 }

@@ -86,11 +86,17 @@ static ir_node *gen_Div(ir_node *node)
 
 static ir_node *gen_Shl(ir_node *node)
 {
+	ir_mode *mode = get_irn_mode(node);
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo shift!=32 not supported by TEMPLATE backend");
 	return transform_binop(node, new_bd_TEMPLATE_Shl);
 }
 
 static ir_node *gen_Shr(ir_node *node)
 {
+	ir_mode *mode = get_irn_mode(node);
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo shift!=32 not supported by TEMPLATE backend");
 	return transform_binop(node, new_bd_TEMPLATE_Shr);
 }
 

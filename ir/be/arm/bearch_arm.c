@@ -559,11 +559,15 @@ static const backend_params *arm_get_libfirm_params(void)
 		0,     /* don't support inline assembler yet */
 		1,     /* support Rotl nodes */
 		1,     /* big endian */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift not efficient */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		32,    /* machine size */
 		NULL,  /* float arithmetic mode (TODO) */
-		0,     /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* unsigned long long type */
+		NULL,  /* long double type */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */

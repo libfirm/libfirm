@@ -1111,15 +1111,19 @@ static ir_node *gen_shift_binop(ir_node *node, ir_node *op1, ir_node *op2,
 {
 	dbg_info *dbgi;
 	ir_node  *block, *new_block, *new_op1, *new_op2, *new_node;
+	ir_mode  *mode = get_irn_mode(node);
 
-	assert(! mode_is_float(get_irn_mode(node)));
+	assert(! mode_is_float(mode));
 	assert(flags & match_immediate);
 	assert((flags & ~(match_mode_neutral | match_immediate)) == 0);
+
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo shift!=32 not supported by ia32 backend");
 
 	if (flags & match_mode_neutral) {
 		op1     = ia32_skip_downconv(op1);
 		new_op1 = be_transform_node(op1);
-	} else if (get_mode_size_bits(get_irn_mode(node)) != 32) {
+	} else if (get_mode_size_bits(mode) != 32) {
 		new_op1 = create_upconv(op1, node);
 	} else {
 		new_op1 = be_transform_node(op1);

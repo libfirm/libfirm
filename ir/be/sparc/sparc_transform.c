@@ -938,16 +938,25 @@ static ir_node *gen_Eor(ir_node *node)
 
 static ir_node *gen_Shl(ir_node *node)
 {
+	ir_mode *mode = get_irn_mode(node);
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo_shift!=32 not supported by sparc backend");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sll_reg, new_bd_sparc_Sll_imm);
 }
 
 static ir_node *gen_Shr(ir_node *node)
 {
+	ir_mode *mode = get_irn_mode(node);
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo_shift!=32 not supported by sparc backend");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Srl_reg, new_bd_sparc_Srl_imm);
 }
 
 static ir_node *gen_Shrs(ir_node *node)
 {
+	ir_mode *mode = get_irn_mode(node);
+	if (get_mode_modulo_shift(mode) != 32)
+		panic("modulo_shift!=32 not supported by sparc backend");
 	return gen_helper_binop(node, MATCH_NONE, new_bd_sparc_Sra_reg, new_bd_sparc_Sra_imm);
 }
 

@@ -594,16 +594,39 @@ static const backend_params *sparc_get_backend_params(void)
 		0,     /* no inline assembly */
 		0,     /* no support for RotL nodes */
 		1,     /* big endian */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift not efficient */
 		&arch_dep,              /* will be set later */
 		sparc_is_mux_allowed,   /* parameter for if conversion */
 		32,    /* machine size */
 		NULL,  /* float arithmetic mode */
-		128,   /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* usigned long long type */
+		NULL,  /* long double type */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
 		4      /* alignment of stack parameter: typically 4 (32bit) or 8 (64bit) */
 	};
+
+	ir_mode *mode_long_long
+		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
+		              64);
+	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_mode *mode_unsigned_long_long
+		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
+		              irma_twos_complement, 64);
+	ir_type *type_unsigned_long_long
+		= new_type_primitive(mode_unsigned_long_long);
+	ir_mode *mode_long_double
+		= new_ir_mode("long double", irms_float_number, 128, 1,
+		              irma_ieee754, 0);
+	ir_type *type_long_double = new_type_primitive(mode_long_double);
+
+	set_type_alignment_bytes(type_long_double, 8);
+	p.type_long_double        = type_long_double;
+	p.type_long_long          = type_long_long;
+	p.type_unsigned_long_long = type_unsigned_long_long;
 	return &p;
 }
 
