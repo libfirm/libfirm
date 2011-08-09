@@ -96,7 +96,7 @@ static void introduce_epilog(ir_node *ret)
 
 		kill_unused_stacknodes(sp);
 	} else {
-		ir_node *incsp  = be_new_IncSP(sp_reg, block, sp, frame_size, 0);
+		ir_node *incsp  = be_new_IncSP(sp_reg, block, sp, -frame_size, 0);
 		set_irn_n(ret, sp_idx, incsp);
 		sched_add_before(ret, incsp);
 	}
