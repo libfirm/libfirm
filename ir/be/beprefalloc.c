@@ -2032,7 +2032,7 @@ static void spill(void)
 	be_pre_spill_prepare_constr(irg, cls);
 	be_timer_pop(T_RA_CONSTR);
 
-	dump(DUMP_RA, irg, "-spillprepare");
+	dump(DUMP_RA, irg, "spillprepare");
 
 	/* spill */
 	be_timer_push(T_RA_SPILL);
@@ -2043,7 +2043,7 @@ static void spill(void)
 	check_for_memory_operands(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
-	dump(DUMP_RA, irg, "-spill");
+	dump(DUMP_RA, irg, "spill");
 }
 
 /**
