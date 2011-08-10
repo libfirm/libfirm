@@ -29,6 +29,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irdump.h"
 
 #include "bearch.h"
 #include "belower.h"
@@ -44,6 +45,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
 /** TODO:  Once the perm instruction is implemented, this value can be
  * increased */
 static const int MAX_PERM_SIZE = 5;
+static ir_node *sched_point;
 
 /** Holds a Perm register pair. */
 typedef struct reg_pair_t {
@@ -303,10 +305,6 @@ static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t* move, reg_pa
 {
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	ir_node                     *const block       = get_nodes_block(irn);
-	/* Get the schedule predecessor node to the perm.
-	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
-	 * nodes after this node, everything should be ok. */
-	ir_node                     *      sched_point = sched_prev(irn);
 	int                                i;
 
 	assert(get_irn_arity(irn) > MAX_PERM_SIZE);
@@ -348,7 +346,6 @@ static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t* move, reg_pa
 		/* Insert the copy/exchange node in schedule after the magic schedule node
 		 * (see comment in lower_perm_node) */
 		sched_add_after(skip_Proj(sched_point), new_perm);
-
 		DB((dbg_icore, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, new_perm, sched_point));
 
 		/* Set the new scheduling point */
@@ -384,47 +381,38 @@ static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t* move, reg_pa
 		/* Insert the copy/exchange node in schedule after the magic schedule node
 		 * (see comment in lower_perm_node) */
 		sched_add_after(skip_Proj(sched_point), new_perm);
-
 		DB((dbg_icore, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, new_perm, sched_point));
+
+		sched_point = new_perm;
 	}
 }
 
-static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
+static void split_chain_into_copies(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
 {
-	if (move->type == PERM_CYCLE)
-		reduce_perm_cycle_size(irn, move, pairs, n_pairs);
-	else {
-		/* move->type == PERM_CHAIN */
+	/* Build copy nodes from back to front */
+	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+	ir_node                     *const block       = get_nodes_block(irn);
+	int                                i;
 
-		/* Build copy nodes from back to front */
-		const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-		ir_node                     *const block       = get_nodes_block(irn);
-		/* Get the schedule predecessor node to the perm.
-		 * NOTE: This works with auto-magic. If we insert the new copy/exchange
-		 * nodes after this node, everything should be ok. */
-		ir_node                     *      sched_point = sched_prev(irn);
-		int                                i;
+	for (i = move->n_elems - 2; i >= 0; --i) {
+		ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
+		ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
+		ir_node *cpy;
 
-		for (i = move->n_elems - 2; i >= 0; --i) {
-			ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
-			ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
-			ir_node *cpy;
+		DB((dbg_icore, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
+					irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
-			DB((dbg_icore, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
-						irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
+		cpy = be_new_Copy(reg_class, block, arg1);
+		arch_set_irn_register(cpy, move->elems[i + 1]);
 
-			cpy = be_new_Copy(reg_class, block, arg1);
-			arch_set_irn_register(cpy, move->elems[i + 1]);
+		/* exchange copy node and proj */
+		exchange(res2, cpy);
 
-			/* exchange copy node and proj */
-			exchange(res2, cpy);
+		/* insert the copy/exchange node in schedule after the magic schedule node */
+		sched_add_after(skip_Proj(sched_point), cpy);
 
-			/* insert the copy/exchange node in schedule after the magic schedule node (see above) */
-			sched_add_after(skip_Proj(sched_point), cpy);
-
-			/* set the new scheduling point */
-			sched_point = cpy;
-		}
+		/* set the new scheduling point */
+		sched_point = cpy;
 	}
 }
 
@@ -441,19 +429,20 @@ static void lower_perm_node(ir_node *irn)
 	int         const arity        = get_irn_arity(irn);
 	reg_pair_t *const pairs        = ALLOCAN(reg_pair_t, arity);
 	int               n_pairs      = 0;
-	int               keep_perm    = 0;
-	ir_node    *      sched_point  = sched_prev(irn);
 	int cycle_count                = 0;
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
-	DBG((dbg_icore, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
-	assert(sched_point && "Perm is not scheduled or has no predecessor");
-
 	assert(arity == get_irn_n_edges(irn) && "perm's in and out numbers different");
+
+	/* Get the schedule predecessor node to the perm.
+	 * NOTE: This works with auto-magic. If we insert the new copy/exchange
+	 * nodes after this node, everything should be ok. */
+	sched_point = sched_prev(irn);
+	assert(sched_point && "Perm is not scheduled or has no predecessor");
+	DBG((dbg_icore, LEVEL_1, "perm: %+F, sched point is %+F\n", irn, sched_point));
 
 	/* Build the list of register pairs (in, out) */
 	build_register_pair_list(pairs, &n_pairs, irn);
-
 	DBG((dbg_icore, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
 	/* Check for cycles and chains */
@@ -481,42 +470,46 @@ static void lower_perm_node(ir_node *irn)
 		if (move.type == PERM_CYCLE)
 			++cycle_count;
 
-		if (move.type == PERM_CYCLE && move.n_elems <= MAX_PERM_SIZE) {
-			/* We don't need to do anything if we have a cycle with fewer than
-			 * MAX_PERM_SIZE, because those nodes can be directly handled by
-			 * the iCore backend using one permutation instruction. */
+		if (move.type == PERM_CYCLE) {
+			if (move.n_elems <= MAX_PERM_SIZE) {
+				/* We don't need to do anything if we have a cycle with fewer than
+				 * MAX_PERM_SIZE, because those nodes can be directly handled by
+				 * the iCore backend using one permutation instruction. */
 
-			const int new_arity = move.n_elems;
-			ir_node *args[new_arity];
-			ir_node *ress[new_arity];
-			ir_node *new_perm;
-			int j;
-			const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-			ir_node                     *const block       = get_nodes_block(irn);
+				const int new_arity = move.n_elems;
+				ir_node *args[new_arity];
+				ir_node *ress[new_arity];
+				ir_node *new_perm;
+				int j;
+				const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
+				ir_node                     *const block       = get_nodes_block(irn);
 
-			for (j = 0; j < new_arity; ++j) {
-				args[j] = get_node_for_in_register(pairs, n_pairs, move.elems[j]);
-				ress[j] = get_node_for_out_register(pairs, n_pairs, move.elems[j]);
+				for (j = 0; j < new_arity; ++j) {
+					args[j] = get_node_for_in_register(pairs, n_pairs, move.elems[j]);
+					ress[j] = get_node_for_out_register(pairs, n_pairs, move.elems[j]);
+				}
+
+				DBG((dbg_icore, LEVEL_1, "%+F creating smaller perm node with size %d\n",
+										 irn, new_arity));
+
+				new_perm = be_new_Perm(reg_class, block, new_arity, args);
+
+				for (j = 0; j < new_arity; ++j) {
+					set_Proj_pred(ress[j], new_perm);
+					set_Proj_proj(ress[j], j);
+					arch_set_irn_register(ress[j], move.elems[j]);
+				}
+
+				sched_add_after(sched_point, new_perm);
+				sched_point = new_perm;
+			} else {
+				/* Otherwise, we want to replace the big Perm node with a series
+				 * of smaller ones. */
+
+				reduce_perm_cycle_size(irn, &move, pairs, n_pairs);
 			}
-
-			DBG((dbg_icore, LEVEL_1, "%+F creating smaller perm node with size %d\n",
-									 irn, new_arity));
-
-			new_perm = be_new_Perm(reg_class, block, new_arity, args);
-
-			for (j = 0; j < new_arity; ++j) {
-				set_Proj_pred(ress[j], new_perm);
-				set_Proj_proj(ress[j], j);
-				arch_set_irn_register(ress[j], move.elems[j]);
-			}
-
-			exchange(irn, new_perm);
-			sched_add_after(skip_Proj(sched_point), new_perm);
-		} else {
-			/* Otherwise, we want to replace the big Perm node with a series
-			 * of smaller ones. */
-
-			reduce_perm_size(irn, &move, pairs, n_pairs);
+		} else { /* move.type == PERM_CHAIN */
+			split_chain_into_copies(irn, &move, pairs, n_pairs);
 		}
 
 		free(move.elems);
@@ -525,10 +518,8 @@ static void lower_perm_node(ir_node *irn)
 	stat_ev_int("cycle_count", cycle_count);
 
 	/* Remove the perm from schedule */
-	if (!keep_perm) {
-		sched_remove(irn);
-		kill_node(irn);
-	}
+	sched_remove(irn);
+	kill_node(irn);
 }
 
 /**
@@ -557,5 +548,7 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
+	/* dump_ir_graph(irg, "before_icore_lowering"); */
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
+	/* dump_ir_graph(irg, "after_icore_lowering"); */
 }
