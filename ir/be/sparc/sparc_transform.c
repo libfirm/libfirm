@@ -2097,16 +2097,23 @@ static ir_node *gen_Proj_Div(ir_node *node)
 	ir_node  *pred     = get_Proj_pred(node);
 	ir_node  *new_pred = be_transform_node(pred);
 	long      pn       = get_Proj_proj(node);
+	ir_mode  *res_mode;
 
-	assert(is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred)
-	       || is_sparc_fdiv(new_pred));
+	if (is_sparc_SDiv(new_pred) || is_sparc_UDiv(new_pred)) {
+		res_mode = mode_gp;
+	} else if (is_sparc_fdiv(new_pred)) {
+		res_mode = get_Div_resmode(pred);
+	} else {
+		panic("sparc backend: Div transformed to something unexpected: %+F",
+		      new_pred);
+	}
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_UDiv_res);
 	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_UDiv_M);
 	assert((int)pn_sparc_SDiv_res == (int)pn_sparc_fdiv_res);
 	assert((int)pn_sparc_SDiv_M   == (int)pn_sparc_fdiv_M);
 	switch (pn) {
 	case pn_Div_res:
-		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_res);
+		return new_r_Proj(new_pred, res_mode, pn_sparc_SDiv_res);
 	case pn_Div_M:
 		return new_r_Proj(new_pred, mode_gp, pn_sparc_SDiv_M);
 	default:
