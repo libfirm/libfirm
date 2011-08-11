@@ -53,6 +53,7 @@
 #include "iropt_t.h"
 #include "lower_dw.h"
 #include "lower_calls.h"
+#include "lower_softfloat.h"
 
 #include "../beabi.h"
 #include "../beirg.h"
@@ -1455,6 +1456,7 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	NULL,                    /* abstract machine */
+	IA32_FPU_ARCH_X87,       /* FPU architecture */
 };
 
 static void init_asm_constraints(void)
@@ -2024,6 +2026,11 @@ static void ia32_lower_for_target(void)
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
+	/* replace floating point operations by function calls */
+	if (ia32_cg_config.use_softfloat) {
+		lower_floating_point();
+	}
+
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_lower_dw_ops();
 
@@ -2116,7 +2123,10 @@ static const backend_params *ia32_get_libfirm_params(void)
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
 
-	if (! ia32_cg_config.use_sse2) {
+	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
+		p.mode_float_arithmetic = NULL;
+		p.type_long_double = NULL;
+	} else {
 		p.mode_float_arithmetic = mode_E;
 		ir_mode *mode = new_ir_mode("long double", irms_float_number, 80, 1,
 		                            irma_ieee754, 0);
@@ -2124,9 +2134,6 @@ static const backend_params *ia32_get_libfirm_params(void)
 		set_type_size_bytes(type, 12);
 		set_type_alignment_bytes(type, 4);
 		p.type_long_double = type;
-	} else {
-		p.mode_float_arithmetic = NULL;
-		p.type_long_double = NULL;
 	}
 	return &p;
 }

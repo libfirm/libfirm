@@ -150,7 +150,7 @@ static int         opt_size             = 0;
 static int         emit_machcode        = 0;
 static cpu_support arch                 = cpu_generic;
 static cpu_support opt_arch             = cpu_generic;
-static int         use_sse2             = 0;
+static int         fpu_arch             = 0;
 static int         opt_cc               = 1;
 static int         opt_unsafe_floatconv = 0;
 
@@ -222,13 +222,14 @@ static lc_opt_enum_int_var_t opt_arch_var = {
 };
 
 static const lc_opt_enum_int_items_t fp_unit_items[] = {
-	{ "x87" ,    0 },
-	{ "sse2",    1 },
-	{ NULL,      0 }
+	{ "x87" ,      IA32_FPU_ARCH_X87 },
+	{ "sse2",      IA32_FPU_ARCH_SSE2 },
+	{ "softfloat", IA32_FPU_ARCH_SOFTFLOAT },
+	{ NULL,        IA32_FPU_ARCH_NONE }
 };
 
 static lc_opt_enum_int_var_t fp_unit_var = {
-	&use_sse2, fp_unit_items
+	&fpu_arch, fp_unit_items
 };
 
 static const lc_opt_table_entry_t ia32_architecture_options[] = {
@@ -881,7 +882,8 @@ void ia32_setup_cg_config(void)
 	/* P4s don't like inc/decs because they only partially write the flags
 	 * register which produces false dependencies */
 	c->use_incdec           = !FLAGS(opt_arch, arch_netburst | arch_nocona | arch_core2 | arch_geode) || opt_size;
-	c->use_sse2             = use_sse2 && FLAGS(arch, arch_feature_sse2);
+	c->use_softfloat        = FLAGS(fpu_arch, IA32_FPU_ARCH_SOFTFLOAT);
+	c->use_sse2             = FLAGS(fpu_arch, IA32_FPU_ARCH_SSE2) && FLAGS(arch, arch_feature_sse2);
 	c->use_ffreep           = FLAGS(opt_arch, arch_athlon_plus);
 	c->use_ftst             = !FLAGS(arch, arch_feature_p6_insn);
 	/* valgrind can't cope with femms yet and the usefulness of the optimization
