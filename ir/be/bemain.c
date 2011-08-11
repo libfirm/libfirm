@@ -718,21 +718,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 
 		dump(DUMP_RA, irg, "ra");
 
-		/* let the code generator prepare the graph for emitter */
-		be_timer_push(T_FINISH);
-		if (arch_env->impl->after_ra != NULL)
-			arch_env->impl->after_ra(irg);
-		be_timer_pop(T_FINISH);
-
-		/* fix stack offsets */
-		be_timer_push(T_ABI);
-		be_abi_fix_stack_nodes(irg);
-		be_remove_dead_nodes_from_schedule(irg);
-		be_abi_fix_stack_bias(irg);
-		be_timer_pop(T_ABI);
-
-		dump(DUMP_SCHED, irg, "fix_stack_after_ra");
-
 		be_timer_push(T_FINISH);
 		if (arch_env->impl->finish != NULL)
 			arch_env->impl->finish(irg);

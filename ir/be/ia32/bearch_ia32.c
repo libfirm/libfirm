@@ -74,6 +74,7 @@
 #include "../betranshlp.h"
 #include "../belistsched.h"
 #include "../beabihelper.h"
+#include "../bestack.h"
 
 #include "bearch_ia32_t.h"
 
@@ -1313,11 +1314,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 }
 
 /**
- * We transform Spill and Reload here. This needs to be done before
- * stack biasing otherwise we would miss the corrected offset for these nodes.
+ * Last touchups for the graph before emit: x87 simulation to replace the
+ * virtual with real x87 instructions, creating a block schedule and peephole
+ * optimisations.
  */
-static void ia32_after_ra(ir_graph *irg)
+static void ia32_finish(ir_graph *irg)
 {
+	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
@@ -1330,17 +1333,12 @@ static void ia32_after_ra(ir_graph *irg)
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
 
 	introduce_prolog_epilog(irg);
-}
 
-/**
- * Last touchups for the graph before emit: x87 simulation to replace the
- * virtual with real x87 instructions, creating a block schedule and peephole
- * optimisations.
- */
-static void ia32_finish(ir_graph *irg)
-{
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
 
+	/* fix 2-address code constraints */
 	ia32_finish_irg(irg);
 
 	/* we might have to rewrite x87 virtual registers */
@@ -1350,6 +1348,8 @@ static void ia32_finish(ir_graph *irg)
 
 	/* do peephole optimisations */
 	ia32_peephole_optimization(irg);
+
+	be_remove_dead_nodes_from_schedule(irg);
 
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
@@ -2232,7 +2232,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
-	ia32_after_ra,       /* after register allocation hook */
 	ia32_finish,         /* called before codegen */
 	ia32_emit,           /* emit && done */
 	ia32_register_saved_by,

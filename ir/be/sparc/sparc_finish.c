@@ -45,10 +45,14 @@
 #include "irprog.h"
 #include "irgmod.h"
 #include "ircons.h"
+#include "irgwalk.h"
 
 #include "../bepeephole.h"
 #include "../benode.h"
 #include "../besched.h"
+#include "../bespillslots.h"
+#include "../bestack.h"
+#include "../beirgmod.h"
 
 static void kill_unused_stacknodes(ir_node *node)
 {
@@ -372,8 +376,141 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 	op->ops.generic = (op_func) func;
 }
 
+/**
+ * transform reload node => load
+ */
+static void transform_Reload(ir_node *node)
+{
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
+	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
+	ir_mode   *mode   = get_irn_mode(node);
+	ir_entity *entity = be_get_frame_entity(node);
+	const arch_register_t *reg;
+	ir_node   *proj;
+	ir_node   *load;
+
+	ir_node  *sched_point = sched_prev(node);
+
+	load = new_bd_sparc_Ld_imm(dbgi, block, ptr, mem, mode, entity, 0, true);
+	sched_add_after(sched_point, load);
+	sched_remove(node);
+
+	proj = new_rd_Proj(dbgi, load, mode, pn_sparc_Ld_res);
+
+	reg = arch_get_irn_register(node);
+	arch_set_irn_register(proj, reg);
+
+	exchange(node, proj);
+}
+
+/**
+ * transform spill node => store
+ */
+static void transform_Spill(ir_node *node)
+{
+	ir_node   *block  = get_nodes_block(node);
+	dbg_info  *dbgi   = get_irn_dbg_info(node);
+	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_node   *mem    = get_irg_no_mem(irg);
+	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
+	ir_mode   *mode   = get_irn_mode(val);
+	ir_entity *entity = be_get_frame_entity(node);
+	ir_node   *sched_point;
+	ir_node   *store;
+
+	sched_point = sched_prev(node);
+	store = new_bd_sparc_St_imm(dbgi, block, val, ptr, mem, mode, entity, 0, true);
+	sched_remove(node);
+	sched_add_after(sched_point, store);
+
+	exchange(node, store);
+}
+
+/**
+ * walker to transform be_Spill and be_Reload nodes
+ */
+static void sparc_after_ra_walker(ir_node *block, void *data)
+{
+	ir_node *node, *prev;
+	(void) data;
+
+	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
+		prev = sched_prev(node);
+
+		if (be_is_Reload(node)) {
+			transform_Reload(node);
+		} else if (be_is_Spill(node)) {
+			transform_Spill(node);
+		}
+	}
+}
+
+static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
+{
+	be_fec_env_t  *env = (be_fec_env_t*)data;
+	const ir_mode *mode;
+	int            align;
+	ir_entity     *entity;
+	const sparc_load_store_attr_t *attr;
+
+	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
+		mode  = get_irn_mode(node);
+		align = get_mode_size_bytes(mode);
+		be_node_needs_frame_entity(env, node, mode, align);
+		return;
+	}
+
+	if (!is_sparc_Ld(node) && !is_sparc_Ldf(node))
+		return;
+
+	attr   = get_sparc_load_store_attr_const(node);
+	entity = attr->base.immediate_value_entity;
+	mode   = attr->load_store_mode;
+	if (entity != NULL)
+		return;
+	if (!attr->is_frame_entity)
+		return;
+	if (arch_irn_get_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot)
+		mode = mode_Lu;
+	align  = get_mode_size_bytes(mode);
+	be_node_needs_frame_entity(env, node, mode, align);
+}
+
+static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
+{
+	if (is_be_node(node)) {
+		be_node_set_frame_entity(node, entity);
+	} else {
+		/* we only say be_node_needs_frame_entity on nodes with load_store
+		 * attributes, so this should be fine */
+		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
+		assert(attr->is_frame_entity);
+		assert(attr->base.immediate_value_entity == NULL);
+		attr->base.immediate_value_entity = entity;
+	}
+}
+
 void sparc_finish(ir_graph *irg)
 {
+	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
+	bool               at_begin     = stack_layout->sp_relative ? true : false;
+	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
+
+	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
+	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
+	be_free_frame_entity_coalescer(fec_env);
+
+	irg_block_walk_graph(irg, NULL, sparc_after_ra_walker, NULL);
+
+	sparc_introduce_prolog_epilog(irg);
+
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
+
 	/* perform peephole optimizations */
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
@@ -391,4 +528,6 @@ void sparc_finish(ir_graph *irg)
 	register_peephole_optimisation(op_sparc_St,        finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_LdSt);
 	be_peephole_opt(irg);
+
+	be_remove_dead_nodes_from_schedule(irg);
 }

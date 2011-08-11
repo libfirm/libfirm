@@ -566,11 +566,6 @@ struct arch_isa_if_t {
 	void (*before_ra)(ir_graph *irg);
 
 	/**
-	 * Called after register allocation.
-	 */
-	void (*after_ra)(ir_graph *irg);
-
-	/**
 	 * Called directly before done is called. This should be the last place
 	 * where the irg is modified.
 	 */

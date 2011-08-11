@@ -46,6 +46,7 @@
 #include "../belistsched.h"
 #include "../beflags.h"
 #include "../bespillslots.h"
+#include "../bestack.h"
 
 #include "bearch_amd64_t.h"
 
@@ -137,20 +138,10 @@ static void amd64_prepare_graph(ir_graph *irg)
 		dump_ir_graph(irg, "transformed");
 }
 
-
-/**
- * Called immediatly before emit phase.
- */
-static void amd64_finish_irg(ir_graph *irg)
-{
-	(void) irg;
-}
-
 static void amd64_before_ra(ir_graph *irg)
 {
 	be_sched_fix_flags(irg, &amd64_reg_classes[CLASS_amd64_flags], NULL, NULL);
 }
-
 
 static void transform_Reload(ir_node *node)
 {
@@ -236,7 +227,10 @@ static void amd64_collect_frame_entity_nodes(ir_node *node, void *data)
 	}
 }
 
-static void amd64_after_ra(ir_graph *irg)
+/**
+ * Called immediatly before emit phase.
+ */
+static void amd64_finish_irg(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
@@ -248,6 +242,10 @@ static void amd64_after_ra(ir_graph *irg)
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, amd64_after_ra_walker, NULL);
+
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
 }
 
 /**
@@ -587,7 +585,6 @@ const arch_isa_if_t amd64_isa_if = {
 	NULL,              /* before_abi */
 	amd64_prepare_graph,
 	amd64_before_ra,
-	amd64_after_ra,
 	amd64_finish_irg,
 	amd64_gen_routine,
 	amd64_register_saved_by,

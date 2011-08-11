@@ -43,6 +43,7 @@
 #include "../bemodule.h"
 #include "../begnuas.h"
 #include "../belistsched.h"
+#include "../bestack.h"
 
 #include "bearch_TEMPLATE_t.h"
 
@@ -115,7 +116,9 @@ static void TEMPLATE_prepare_graph(ir_graph *irg)
  */
 static void TEMPLATE_finish_irg(ir_graph *irg)
 {
-	(void) irg;
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
 }
 
 
@@ -123,12 +126,6 @@ static void TEMPLATE_before_ra(ir_graph *irg)
 {
 	(void) irg;
 	/* Some stuff you need to do after scheduling but before register allocation */
-}
-
-static void TEMPLATE_after_ra(ir_graph *irg)
-{
-	(void) irg;
-	/* Some stuff you need to do immediatly after register allocation */
 }
 
 static void TEMPLATE_init_graph(ir_graph *irg)
@@ -412,7 +409,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	NULL,   /* before_abi */
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_ra,
-	TEMPLATE_after_ra,
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
 	TEMPLATE_register_saved_by,
