@@ -294,6 +294,8 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 		ir_entity *old_ent = get_class_member(from_frame, i);
 		ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
 		set_entity_link(old_ent, new_ent);
+		/* since the entity is inlined now, this is not a parameter entity */
+		new_ent->is_parameter = 0;
 	}
 }
 
