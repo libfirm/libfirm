@@ -65,6 +65,7 @@
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_transform.h"
 #include "sparc_emitter.h"
+#include "sparc_cconv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -359,6 +360,7 @@ static arch_env_t *sparc_init(FILE *outfile)
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_handle_intrinsics();
+	sparc_cconv_init();
 
 	return &isa->base;
 }

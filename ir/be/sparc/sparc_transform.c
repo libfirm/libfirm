@@ -83,52 +83,6 @@ static ir_node               *frame_base;
 static size_t                 start_params_offset;
 static size_t                 start_callee_saves_offset;
 
-static const arch_register_t *const caller_saves[] = {
-	&sparc_registers[REG_G1],
-	&sparc_registers[REG_G2],
-	&sparc_registers[REG_G3],
-	&sparc_registers[REG_G4],
-	&sparc_registers[REG_O0],
-	&sparc_registers[REG_O1],
-	&sparc_registers[REG_O2],
-	&sparc_registers[REG_O3],
-	&sparc_registers[REG_O4],
-	&sparc_registers[REG_O5],
-
-	&sparc_registers[REG_F0],
-	&sparc_registers[REG_F1],
-	&sparc_registers[REG_F2],
-	&sparc_registers[REG_F3],
-	&sparc_registers[REG_F4],
-	&sparc_registers[REG_F5],
-	&sparc_registers[REG_F6],
-	&sparc_registers[REG_F7],
-	&sparc_registers[REG_F8],
-	&sparc_registers[REG_F9],
-	&sparc_registers[REG_F10],
-	&sparc_registers[REG_F11],
-	&sparc_registers[REG_F12],
-	&sparc_registers[REG_F13],
-	&sparc_registers[REG_F14],
-	&sparc_registers[REG_F15],
-	&sparc_registers[REG_F16],
-	&sparc_registers[REG_F17],
-	&sparc_registers[REG_F18],
-	&sparc_registers[REG_F19],
-	&sparc_registers[REG_F20],
-	&sparc_registers[REG_F21],
-	&sparc_registers[REG_F22],
-	&sparc_registers[REG_F23],
-	&sparc_registers[REG_F24],
-	&sparc_registers[REG_F25],
-	&sparc_registers[REG_F26],
-	&sparc_registers[REG_F27],
-	&sparc_registers[REG_F28],
-	&sparc_registers[REG_F29],
-	&sparc_registers[REG_F30],
-	&sparc_registers[REG_F31],
-};
-
 static const arch_register_t *const omit_fp_callee_saves[] = {
 	&sparc_registers[REG_L0],
 	&sparc_registers[REG_L1],
@@ -392,19 +346,19 @@ static ir_node *gen_helper_unfpop(ir_node *node, ir_mode *mode,
                                   new_unop_fp_func new_func_double,
                                   new_unop_fp_func new_func_quad)
 {
-	ir_node  *block   = be_transform_node(get_nodes_block(node));
-	ir_node  *op1     = get_binop_left(node);
-	ir_node  *new_op1 = be_transform_node(op1);
-	dbg_info *dbgi    = get_irn_dbg_info(node);
-	unsigned  bits    = get_mode_size_bits(mode);
+	ir_node  *block  = be_transform_node(get_nodes_block(node));
+	ir_node  *op     = get_unop_op(node);
+	ir_node  *new_op = be_transform_node(op);
+	dbg_info *dbgi   = get_irn_dbg_info(node);
+	unsigned  bits   = get_mode_size_bits(mode);
 
 	switch (bits) {
 	case 32:
-		return new_func_single(dbgi, block, new_op1, mode);
+		return new_func_single(dbgi, block, new_op, mode);
 	case 64:
-		return new_func_double(dbgi, block, new_op1, mode);
+		return new_func_double(dbgi, block, new_op, mode);
 	case 128:
-		return new_func_quad(dbgi, block, new_op1, mode);
+		return new_func_quad(dbgi, block, new_op, mode);
 	default:
 		break;
 	}
@@ -1522,7 +1476,9 @@ static ir_node *gen_Start(ir_node *node)
 
 	/* first output is memory */
 	start_mem_offset = o;
-	arch_set_out_register_req(start, o++, arch_no_register_req);
+	arch_set_out_register_req(start, o, arch_no_register_req);
+	++o;
+
 	/* the zero register */
 	start_g0_offset = o;
 	req = be_create_reg_req(obst, &sparc_registers[REG_G0],
@@ -1674,10 +1630,9 @@ static ir_node *gen_Return(ir_node *node)
 		ir_node                  *res_value     = get_Return_res(node, i);
 		ir_node                  *new_res_value = be_transform_node(res_value);
 		const reg_or_stackslot_t *slot          = &current_cconv->results[i];
-		const arch_register_t    *reg           = slot->reg0;
-		assert(slot->reg1 == NULL);
+		assert(slot->req1 == NULL);
 		in[p]   = new_res_value;
-		reqs[p] = reg->single_req;
+		reqs[p] = slot->req0;
 		++p;
 	}
 	/* callee saves */
@@ -1776,6 +1731,7 @@ static ir_node *gen_Call(ir_node *node)
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
 	ir_type         *type         = get_Call_type(node);
 	size_t           n_params     = get_Call_n_params(node);
+	size_t           n_ress       = get_method_n_ress(type);
 	/* max inputs: memory, callee, register arguments */
 	ir_node        **sync_ins     = ALLOCAN(ir_node*, n_params);
 	struct obstack  *obst         = be_get_be_obst(irg);
@@ -1790,13 +1746,14 @@ static ir_node *gen_Call(ir_node *node)
 	int              in_arity     = 0;
 	int              sync_arity   = 0;
 	int              n_caller_saves
-		= sizeof(caller_saves)/sizeof(caller_saves[0]);
+		= rbitset_popcount(cconv->caller_saves, N_SPARC_REGISTERS);
 	ir_entity       *entity       = NULL;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
 	ir_node         *incsp;
 	int              mem_pos;
 	ir_node         *res;
 	size_t           p;
+	size_t           r;
 	int              i;
 	int              o;
 	int              out_arity;
@@ -1892,9 +1849,10 @@ static ir_node *gen_Call(ir_node *node)
 
 	/* outputs:
 	 *  - memory
+	 *  - results
 	 *  - caller saves
 	 */
-	out_arity = 1 + n_caller_saves;
+	out_arity = 1 + cconv->n_reg_results + n_caller_saves;
 
 	/* create call node */
 	if (entity != NULL) {
@@ -1908,8 +1866,20 @@ static ir_node *gen_Call(ir_node *node)
 	/* create output register reqs */
 	o = 0;
 	arch_set_out_register_req(res, o++, arch_no_register_req);
-	for (i = 0; i < n_caller_saves; ++i) {
-		const arch_register_t *reg = caller_saves[i];
+	/* add register requirements for the result regs */
+	for (r = 0; r < n_ress; ++r) {
+		const reg_or_stackslot_t  *result_info = &cconv->results[r];
+		const arch_register_req_t *req         = result_info->req0;
+		if (req != NULL) {
+			arch_set_out_register_req(res, o++, req);
+		}
+		assert(result_info->req1 == NULL);
+	}
+	for (i = 0; i < N_SPARC_REGISTERS; ++i) {
+		const arch_register_t *reg;
+		if (!rbitset_is_set(cconv->caller_saves, i))
+			continue;
+		reg = &sparc_registers[i];
 		arch_set_out_register_req(res, o++, reg->single_req);
 	}
 	assert(o == out_arity);
@@ -2245,23 +2215,6 @@ static ir_node *gen_Proj_Call(ir_node *node)
 	panic("Unexpected Call proj %ld\n", pn);
 }
 
-/**
- * Finds number of output value of a mode_T node which is constrained to
- * a single specific register.
- */
-static int find_out_for_reg(ir_node *node, const arch_register_t *reg)
-{
-	int n_outs = arch_irn_get_n_outs(node);
-	int o;
-
-	for (o = 0; o < n_outs; ++o) {
-		const arch_register_req_t *req = arch_get_out_register_req(node, o);
-		if (req == reg->single_req)
-			return o;
-	}
-	return -1;
-}
-
 static ir_node *gen_Proj_Proj_Call(ir_node *node)
 {
 	long                  pn            = get_Proj_proj(node);
@@ -2270,21 +2223,15 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_type              *function_type = get_Call_type(call);
 	calling_convention_t *cconv
 		= sparc_decide_calling_convention(function_type, NULL);
-	const reg_or_stackslot_t *res = &cconv->results[pn];
-	const arch_register_t    *reg = res->reg0;
-	ir_mode                  *mode;
-	int                       regn;
+	const reg_or_stackslot_t  *res = &cconv->results[pn];
+	ir_mode                   *mode;
+	long                       new_pn = 1 + res->reg_offset;
 
-	assert(res->reg0 != NULL && res->reg1 == NULL);
-	regn = find_out_for_reg(new_call, reg);
-	if (regn < 0) {
-		panic("Internal error in calling convention for return %+F", node);
-	}
-	mode = res->reg0->reg_class->mode;
-
+	assert(res->req0 != NULL && res->req1 == NULL);
+	mode = res->req0->cls->mode;
 	sparc_free_calling_convention(cconv);
 
-	return new_r_Proj(new_call, mode, regn);
+	return new_r_Proj(new_call, mode, new_pn);
 }
 
 /**
