@@ -27,6 +27,7 @@
 #define FIRM_BE_SPARC_SPARC_CCONV_H
 
 #include "firm_types.h"
+#include "bearch_sparc_t.h"
 #include "../be_types.h"
 #include "../benode.h"
 #include "gen_sparc_regalloc_if.h"
@@ -50,7 +51,7 @@ typedef struct reg_or_stackslot_t
 } reg_or_stackslot_t;
 
 /** The calling convention info for one call site. */
-typedef struct calling_convention_t
+struct calling_convention_t
 {
 	bool                omit_fp;          /**< do not use frame pointer (and no
 	                                           save/restore) */
@@ -61,7 +62,7 @@ typedef struct calling_convention_t
 	reg_or_stackslot_t *results;          /**< result info. */
 	unsigned            n_reg_results;
 	unsigned           *caller_saves;     /**< bitset of caller save registers */
-} calling_convention_t;
+};
 
 /**
  * Determine how function parameters and return values are passed.

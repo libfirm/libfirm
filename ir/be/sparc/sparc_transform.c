@@ -1339,106 +1339,6 @@ static ir_node *gen_Unknown(ir_node *node)
 }
 
 /**
- * Produces the type which sits between the stack args and the locals on the
- * stack.
- */
-static ir_type *sparc_get_between_type(void)
-{
-	static ir_type *between_type  = NULL;
-	static ir_type *between_type0 = NULL;
-
-	if (current_cconv->omit_fp) {
-		if (between_type0 == NULL) {
-			between_type0
-				= new_type_class(new_id_from_str("sparc_between_type"));
-			set_type_size_bytes(between_type0, 0);
-		}
-		return between_type0;
-	}
-
-	if (between_type == NULL) {
-		between_type = new_type_class(new_id_from_str("sparc_between_type"));
-		set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
-	}
-
-	return between_type;
-}
-
-static ir_type *compute_arg_type(ir_graph *irg)
-{
-	ir_entity  *entity    = get_irg_entity(irg);
-	ir_type    *mtp       = get_entity_type(entity);
-	size_t      n_params  = get_method_n_params(mtp);
-	ir_entity **param_map = ALLOCANZ(ir_entity*, n_params);
-
-	ir_type *frame_type      = get_irg_frame_type(irg);
-	size_t   n_frame_members = get_compound_n_members(frame_type);
-	size_t   f;
-	size_t   i;
-
-	ir_type *res = new_type_struct(id_mangle_u(get_entity_ident(entity), new_id_from_chars("arg_type", 8)));
-
-	/* search for existing value_param entities */
-	for (f = n_frame_members; f > 0; ) {
-		ir_entity *member = get_compound_member(frame_type, --f);
-		size_t     num;
-		const reg_or_stackslot_t *param;
-
-		if (!is_parameter_entity(member))
-			continue;
-		num = get_entity_parameter_number(member);
-		assert(num < n_params);
-		if (param_map[num] != NULL)
-			panic("multiple entities for parameter %u in %+F found", f, irg);
-
-		param = &current_cconv->parameters[num];
-		if (param->reg0 != NULL)
-			continue;
-
-		param_map[num] = member;
-		/* move to new arg_type */
-		set_entity_owner(member, res);
-	}
-
-	for (i = 0; i < n_params; ++i) {
-		reg_or_stackslot_t *param = &current_cconv->parameters[i];
-		ir_entity          *entity;
-
-		if (param->reg0 != NULL)
-			continue;
-		entity = param_map[i];
-		if (entity == NULL)
-			entity = new_parameter_entity(res, i, param->type);
-		param->entity = entity;
-		set_entity_offset(entity, param->offset);
-	}
-
-	return res;
-}
-
-static void create_stacklayout(ir_graph *irg)
-{
-	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
-
-	/* calling conventions must be decided by now */
-	assert(current_cconv != NULL);
-
-	memset(layout, 0, sizeof(*layout));
-
-	layout->frame_type     = get_irg_frame_type(irg);
-	layout->between_type   = sparc_get_between_type();
-	layout->arg_type       = compute_arg_type(irg);
-	layout->initial_offset = 0;
-	layout->initial_bias   = 0;
-	layout->sp_relative    = current_cconv->omit_fp;
-
-	assert(N_FRAME_TYPES == 3);
-	layout->order[0] = layout->frame_type;
-	layout->order[1] = layout->between_type;
-	layout->order[2] = layout->arg_type;
-}
-
-/**
  * transform the start node to the prolog code
  */
 static ir_node *gen_Start(ir_node *node)
@@ -1785,6 +1685,7 @@ static ir_node *gen_Call(ir_node *node)
 		ir_mode                  *mode       = get_type_mode(param_type);
 		ir_node                  *new_values[2];
 		ir_node                  *str;
+		int                       offset;
 
 		if (mode_is_float(mode) && param->reg0 != NULL) {
 			unsigned size_bits = get_mode_size_bits(mode);
@@ -1817,13 +1718,16 @@ static ir_node *gen_Call(ir_node *node)
 			mode      = mode_gp;
 		}
 
-		/* create a parameter frame if necessary */
+		/* we need to skip over our save area when constructing the call
+		 * arguments on stack */
+		offset = param->offset + SPARC_MIN_STACKSIZE;
+
 		if (mode_is_float(mode)) {
 			str = create_stf(dbgi, new_block, new_value, incsp, new_mem,
-			                 mode, NULL, param->offset, true);
+			                 mode, NULL, offset, true);
 		} else {
 			str = new_bd_sparc_St_imm(dbgi, new_block, new_value, incsp,
-			                          new_mem, mode, NULL, param->offset, true);
+			                          new_mem, mode, NULL, offset, true);
 		}
 		set_irn_pinned(str, op_pin_state_floats);
 		sync_ins[sync_arity++] = str;
@@ -2357,7 +2261,7 @@ void sparc_transform_graph(ir_graph *irg)
 	stackorder = be_collect_stacknodes(irg);
 	current_cconv
 		= sparc_decide_calling_convention(get_entity_type(entity), irg);
-	create_stacklayout(irg);
+	sparc_create_stacklayout(irg, current_cconv);
 	be_add_parameter_entity_stores(irg);
 
 	be_transform_graph(irg, NULL);

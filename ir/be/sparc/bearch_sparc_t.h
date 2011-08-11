@@ -32,6 +32,7 @@
 
 typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct sparc_isa_t            sparc_isa_t;
+typedef struct calling_convention_t   calling_convention_t;
 
 struct sparc_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_env_t */
@@ -79,5 +80,8 @@ void sparc_finish(ir_graph *irg);
 void sparc_introduce_prolog_epilog(ir_graph *irg);
 
 void sparc_lower_64bit(void);
+
+void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
+void sparc_fix_stack_bias(ir_graph *irg);
 
 #endif

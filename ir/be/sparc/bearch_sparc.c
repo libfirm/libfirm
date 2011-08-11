@@ -114,11 +114,7 @@ static int sparc_get_sp_bias(const ir_node *node)
 		if (get_irn_arity(node) == 3)
 			panic("no support for _reg variant yet");
 
-		/* Note we do not report the change of the SPARC_MIN_STACKSIZE
-		 * size, since we have additional magic in the emitter which
-		 * calculates that! */
-		assert(attr->immediate_value <= -SPARC_MIN_STACKSIZE);
-		return attr->immediate_value + SPARC_MIN_STACKSIZE;
+		return -attr->immediate_value;
 	} else if (is_sparc_RestoreZero(node)) {
 		return SP_BIAS_RESET;
 	}

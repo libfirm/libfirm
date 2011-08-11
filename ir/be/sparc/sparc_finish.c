@@ -131,26 +131,22 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 		schedpoint = sched_next(schedpoint);
 
 	if (!layout->sp_relative) {
-		ir_node *incsp;
 		ir_node *save = new_bd_sparc_Save_imm(NULL, block, sp, NULL,
-		                                      -SPARC_MIN_STACKSIZE);
+		                                      -SPARC_MIN_STACKSIZE-frame_size);
 		arch_set_irn_register(save, sp_reg);
 		sched_add_after(schedpoint, save);
 		schedpoint = save;
 
-		incsp = be_new_IncSP(sp_reg, block, save, frame_size, 0);
-		edges_reroute(initial_sp, incsp);
+		edges_reroute(initial_sp, save);
 		set_irn_n(save, n_sparc_Save_stack, initial_sp);
-		sched_add_after(schedpoint, incsp);
-		schedpoint = incsp;
 
-		/* we still need the IncSP even if noone is explicitely using the
+		/* we still need the Save even if noone is explicitely using the
 		 * value. (TODO: this isn't 100% correct yet, something at the end of
-		 * the function should hold the IncSP, even if we use a restore
+		 * the function should hold the Save, even if we use a restore
 		 * which just overrides it instead of using the value)
 		 */
-		if (get_irn_n_edges(incsp) == 0) {
-			ir_node *in[] = { incsp };
+		if (get_irn_n_edges(save) == 0) {
+			ir_node *in[] = { save };
 			ir_node *keep = be_new_Keep(block, 1, in);
 			sched_add_after(schedpoint, keep);
 		}
@@ -254,11 +250,6 @@ static void finish_sparc_FrameAddr(ir_node *node)
 	dbg_info     *dbgi   = get_irn_dbg_info(node);
 	ir_node      *block  = get_nodes_block(node);
 	int           sign   = 1;
-	bool          sp_relative
-		= arch_get_irn_register(base) == &sparc_registers[REG_SP];
-	if (sp_relative) {
-		offset += SPARC_MIN_STACKSIZE;
-	}
 
 	if (offset < 0) {
 		sign   = -1;
@@ -296,24 +287,6 @@ static void finish_sparc_FrameAddr(ir_node *node)
 		attr = get_sparc_attr(new_frameaddr);
 	}
 	attr->immediate_value = sign*offset;
-}
-
-static void finish_sparc_LdSt(ir_node *node)
-{
-	sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
-	if (attr->is_frame_entity) {
-		ir_node *base;
-		bool     sp_relative;
-		if (is_sparc_Ld(node) || is_sparc_Ldf(node)) {
-			base = get_irn_n(node, n_sparc_Ld_ptr);
-		} else {
-			assert(is_sparc_St(node) || is_sparc_Stf(node));
-			base = get_irn_n(node, n_sparc_St_ptr);
-		}
-		sp_relative = arch_get_irn_register(base) == &sparc_registers[REG_SP];
-		if (sp_relative)
-			attr->base.immediate_value += SPARC_MIN_STACKSIZE;
-	}
 }
 
 static void peephole_be_IncSP(ir_node *node)
@@ -509,7 +482,7 @@ void sparc_finish(ir_graph *irg)
 
 	/* fix stack entity offsets */
 	be_abi_fix_stack_nodes(irg);
-	be_abi_fix_stack_bias(irg);
+	sparc_fix_stack_bias(irg);
 
 	/* perform peephole optimizations */
 	clear_irp_opcodes_generic_func();
@@ -521,12 +494,8 @@ void sparc_finish(ir_graph *irg)
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
-	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_LdSt);
-	register_peephole_optimisation(op_sparc_Ldf,       finish_sparc_LdSt);
 	register_peephole_optimisation(op_sparc_Return,    finish_sparc_Return);
 	register_peephole_optimisation(op_sparc_Save,      finish_sparc_Save);
-	register_peephole_optimisation(op_sparc_St,        finish_sparc_LdSt);
-	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_LdSt);
 	be_peephole_opt(irg);
 
 	be_remove_dead_nodes_from_schedule(irg);

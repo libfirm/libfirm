@@ -190,7 +190,7 @@ static void ia32_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			} else if (is_ia32_CMovcc(n) || is_ia32_Setcc(n) || is_ia32_Jcc(n)) {
 				ia32_attr_t *attr = get_ia32_attr(n);
 				fprintf(F, "condition_code = 0x%X\n", (unsigned)get_ia32_condcode(n));
-				fprintf(F, "ins_permuted = %u \n", attr->data.ins_permuted);
+				fprintf(F, "ins_permuted = %u\n", (unsigned)attr->data.ins_permuted);
 			}
 			else if (is_ia32_CopyB(n) || is_ia32_CopyB_i(n)) {
 				fprintf(F, "size = %u\n", get_ia32_copyb_size(n));
