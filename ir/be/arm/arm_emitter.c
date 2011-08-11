@@ -70,68 +70,8 @@ static arm_isa_t *isa;
  */
 static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
 {
-	ir_node                *op;
-	const arch_register_t  *reg = NULL;
-
-	assert(get_irn_arity(irn) > pos && "Invalid IN position");
-
-	/* The out register of the operator at position pos is the
-	   in register we need. */
-	op = get_irn_n(irn, pos);
-
-	reg = arch_get_irn_register(op);
-
-	assert(reg && "no in register found");
-
-	/* in case of a joker register: just return a valid register */
-	if (reg->type & arch_register_type_joker) {
-		const arch_register_req_t *req = arch_get_register_req(irn, pos);
-
-		if (arch_register_req_is(req, limited)) {
-			/* in case of limited requirements: get the first allowed register */
-			unsigned idx = rbitset_next(req->limited, 0, 1);
-			reg = arch_register_for_index(req->cls, idx);
-		} else {
-			/* otherwise get first register in class */
-			reg = arch_register_for_index(req->cls, 0);
-		}
-	}
-	return reg;
-}
-
-
-/**
- * Returns the register at out position pos.
- */
-static const arch_register_t *get_out_reg(const ir_node *node, int pos)
-{
-    ir_node                *proj;
-    const arch_register_t  *reg = NULL;
-
-    /* 1st case: irn is not of mode_T, so it has only                 */
-    /*           one OUT register -> good                             */
-    /* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
-    /*           Proj with the corresponding projnum for the register */
-
-    if (get_irn_mode(node) != mode_T) {
-        reg = arch_get_irn_register(node);
-    } else if (is_arm_irn(node)) {
-        reg = arch_irn_get_register(node, pos);
-    } else {
-        const ir_edge_t *edge;
-
-        foreach_out_edge(node, edge) {
-            proj = get_edge_src_irn(edge);
-            assert(is_Proj(proj) && "non-Proj from mode_T node");
-            if (get_Proj_proj(proj) == pos) {
-                reg = arch_get_irn_register(proj);
-                break;
-            }
-        }
-    }
-
-    assert(reg && "no out register found");
-    return reg;
+	ir_node *op = get_irn_n(irn, pos);
+	return arch_get_irn_register(op);
 }
 
 static void arm_emit_register(const arch_register_t *reg)
@@ -147,7 +87,7 @@ void arm_emit_source_register(const ir_node *node, int pos)
 
 void arm_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_out_reg(node, pos);
+	const arch_register_t *reg = arch_irn_get_register(node, pos);
 	arm_emit_register(reg);
 }
 
@@ -751,7 +691,7 @@ static void emit_be_Copy(const ir_node *irn)
 {
 	ir_mode *mode = get_irn_mode(irn);
 
-	if (get_in_reg(irn, 0) == get_out_reg(irn, 0)) {
+	if (get_in_reg(irn, 0) == arch_irn_get_register(irn, 0)) {
 		/* omitted Copy */
 		return;
 	}

@@ -69,53 +69,8 @@ static void sparc_emit_node(const ir_node *node);
  */
 static const arch_register_t *get_in_reg(const ir_node *node, int pos)
 {
-	ir_node                *op;
-	const arch_register_t  *reg = NULL;
-
-	assert(get_irn_arity(node) > pos && "Invalid IN position");
-
-	/* The out register of the operator at position pos is the
-	   in register we need. */
-	op = get_irn_n(node, pos);
-
-	reg = arch_get_irn_register(op);
-
-	assert(reg && "no in register found");
-	return reg;
-}
-
-/**
- * Returns the register at out position pos.
- */
-static const arch_register_t *get_out_reg(const ir_node *node, int pos)
-{
-	ir_node                *proj;
-	const arch_register_t  *reg = NULL;
-
-	/* 1st case: irn is not of mode_T, so it has only                 */
-	/*           one OUT register -> good                             */
-	/* 2nd case: irn is of mode_T -> collect all Projs and ask the    */
-	/*           Proj with the corresponding projnum for the register */
-
-	if (get_irn_mode(node) != mode_T) {
-		reg = arch_get_irn_register(node);
-	} else if (is_sparc_irn(node)) {
-		reg = arch_irn_get_register(node, pos);
-	} else {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(node, edge) {
-			proj = get_edge_src_irn(edge);
-			assert(is_Proj(proj) && "non-Proj from mode_T node");
-			if (get_Proj_proj(proj) == pos) {
-				reg = arch_get_irn_register(proj);
-				break;
-			}
-		}
-	}
-
-	assert(reg && "no out register found");
-	return reg;
+	ir_node *op = get_irn_n(node, pos);
+	return arch_get_irn_register(op);
 }
 
 void sparc_emit_immediate(const ir_node *node)
@@ -164,7 +119,7 @@ void sparc_emit_source_register(const ir_node *node, int pos)
 
 void sparc_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_out_reg(node, pos);
+	const arch_register_t *reg = arch_irn_get_register(node, pos);
 	be_emit_char('%');
 	be_emit_string(arch_register_get_name(reg));
 }
@@ -346,7 +301,7 @@ static bool is_no_instruction(const ir_node *node)
 	/* copies are nops if src_reg == dest_reg */
 	if (be_is_Copy(node) || be_is_CopyKeep(node)) {
 		const arch_register_t *src_reg  = get_in_reg(node, 0);
-		const arch_register_t *dest_reg = get_out_reg(node, 0);
+		const arch_register_t *dest_reg = arch_irn_get_register(node, 0);
 
 		if (src_reg == dest_reg)
 			return true;
@@ -881,7 +836,7 @@ static void emit_be_Copy(const ir_node *node)
 {
 	ir_mode               *mode    = get_irn_mode(node);
 	const arch_register_t *src_reg = get_in_reg(node, 0);
-	const arch_register_t *dst_reg = get_out_reg(node, 0);
+	const arch_register_t *dst_reg = arch_irn_get_register(node, 0);
 
 	if (src_reg == dst_reg)
 		return;
