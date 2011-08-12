@@ -3029,16 +3029,9 @@ static void apply_cf(ir_node *block, void *ctx)
 			}
 		}
 
-		/* the EndBlock is always reachable even if the analysis
-		   finds out the opposite :-) */
-		if (block != get_irg_end_block(current_ir_graph)) {
-			/* mark dead blocks */
-			//set_Block_dead(block);
-			//ir_graph *irg = get_irn_irg(block);
-			//exchange(block, get_irg_bad(irg));
-			DB((dbg, LEVEL_1, "Removing dead %+F\n", block));
-		} else {
-			/* the endblock is unreachable */
+		if (block == get_irg_end_block(current_ir_graph)) {
+			/* Analysis found out that the end block is unreachable,
+			 * hence we remove all its control flow predecessors. */
 			set_irn_in(block, 0, NULL);
 		}
 		return;
