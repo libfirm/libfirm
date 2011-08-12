@@ -199,17 +199,19 @@ static void process_frame_types(ir_graph *irg)
 	/* initially the stackpointer points to the begin of our stackframe.
 	 * Situation at the begin of our function:
 	 *
-	 *      high address |----------------------------|
-	 *                   | ...                        |
-	 *          arg-type | stackarg 1                 |
-	 *                   | stackarg 0                 |
-	 *                   |----------------------------|
-	 *      between type | 92-bytes utility+save area |
-	 *  stack pointer -> |----------------------------|
-	 *                   | high end of stackframe     |
-	 *                   |          ...               |
-	 *                   | low end of stackframe      |
-	 *                   |----------------------------|
+	 *      high address |-----------------------------|
+	 *                   |            ...              |
+	 *          arg-type |         stackarg 1          |
+	 *                   |         stackarg 0          |
+	 *                   |-----------------------------|
+	 *                   | space for storing regarg0-5 |
+	 *      between type | pointer to aggregate return |
+	 *                   |      16 words save are      |
+	 *  stack pointer -> |-----------------------------|
+	 *                   |    high end of stackframe   |
+	 *                   |            ...              |
+	 *                   |    low end of stackframe    |
+	 *      low address  |-----------------------------|
 	 */
 	ir_type *between_type = layout->between_type;
 	unsigned between_size = get_type_size_bytes(between_type);

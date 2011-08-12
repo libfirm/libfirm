@@ -518,14 +518,17 @@ Call => {
 	out_arity => "variable",
 	constructors => {
 		imm => {
-			attr       => "ir_entity *entity, int32_t offset",
-			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
+			attr       => "ir_entity *entity, int32_t offset, bool aggregate_return",
+			custominit => "\tsparc_set_attr_imm(res, entity, offset);".
+			              "\tif (aggregate_return) arch_irn_add_flags(res, sparc_arch_irn_flag_aggregate_return);",
 			arity     => "variable",
 			out_arity => "variable",
 		},
 		reg => {
-			arity     => "variable",
-			out_arity => "variable",
+			attr       => "bool aggregate_return",
+			arity      => "variable",
+			out_arity  => "variable",
+			custominit => "\tif (aggregate_return) arch_irn_add_flags(res, sparc_arch_irn_flag_aggregate_return);",
 		}
 	},
 },

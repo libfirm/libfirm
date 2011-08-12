@@ -1649,6 +1649,8 @@ static ir_node *gen_Call(ir_node *node)
 		= rbitset_popcount(cconv->caller_saves, N_SPARC_REGISTERS);
 	ir_entity       *entity       = NULL;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
+	bool             aggregate_return
+		= type->attr.ma.has_compound_ret_parameter;
 	ir_node         *incsp;
 	int              mem_pos;
 	ir_node         *res;
@@ -1761,9 +1763,10 @@ static ir_node *gen_Call(ir_node *node)
 	/* create call node */
 	if (entity != NULL) {
 		res = new_bd_sparc_Call_imm(dbgi, new_block, in_arity, in, out_arity,
-		                            entity, 0);
+		                            entity, 0, aggregate_return);
 	} else {
-		res = new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, out_arity);
+		res = new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, out_arity,
+		                            aggregate_return);
 	}
 	arch_set_in_register_reqs(res, in_req);
 

@@ -337,6 +337,10 @@ static bool emits_multiple_instructions(const ir_node *node)
 	if (has_delay_slot(node))
 		return true;
 
+	if (is_sparc_Call(node)) {
+		return arch_irn_get_flags(node) & sparc_arch_irn_flag_aggregate_return;
+	}
+
 	return is_sparc_Mulh(node) || is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
 }
@@ -531,6 +535,11 @@ static void emit_sparc_Call(const ir_node *node)
 	be_emit_finish_line_gas(node);
 
 	fill_delay_slot();
+
+	if (arch_irn_get_flags(node) & sparc_arch_irn_flag_aggregate_return) {
+		be_emit_cstring("\tunimp 8\n");
+		be_emit_write_line();
+	}
 }
 
 /**
@@ -621,6 +630,10 @@ static void emit_be_MemPerm(const ir_node *node)
 
 static void emit_sparc_Return(const ir_node *node)
 {
+	ir_graph  *irg    = get_irn_irg(node);
+	ir_entity *entity = get_irg_entity(irg);
+	ir_type   *type   = get_entity_type(entity);
+
 	const char *destreg = "%o7";
 
 	/* hack: we don't explicitely model register changes because of the
@@ -632,7 +645,11 @@ static void emit_sparc_Return(const ir_node *node)
 	}
 	be_emit_cstring("\tjmp ");
 	be_emit_string(destreg);
-	be_emit_cstring("+8");
+	if (type->attr.ma.has_compound_ret_parameter) {
+		be_emit_cstring("+12");
+	} else {
+		be_emit_cstring("+8");
+	}
 	be_emit_finish_line_gas(node);
 	fill_delay_slot();
 }

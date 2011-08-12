@@ -202,6 +202,15 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		int                 bits       = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param      = &params[i];
 
+		if (i == 0 && function_type->attr.ma.has_compound_ret_parameter) {
+			assert(mode_is_reference(mode) && bits == 32);
+			/* special case, we have reserved space for this on the between
+			 * type */
+			param->type   = param_type;
+			param->offset = -SPARC_MIN_STACKSIZE+SPARC_AGGREGATE_RETURN_OFFSET;
+			continue;
+		}
+
 		if (regnum < n_param_regs) {
 			const arch_register_t *reg = param_regs[regnum];
 			if (irg == NULL || omit_fp)
