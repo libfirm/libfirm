@@ -294,8 +294,7 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 		ir_entity *old_ent = get_class_member(from_frame, i);
 		ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
 		set_entity_link(old_ent, new_ent);
-		/* since the entity is inlined now, this is not a parameter entity */
-		new_ent->is_parameter = 0;
+		assert (!is_parameter_entity(old_ent));
 	}
 }
 
@@ -1362,6 +1361,8 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 {
 	ir_node   *call = entry->call;
 	ir_entity *ent  = get_irg_entity(callee);
+	ir_type   *callee_frame;
+	size_t    n_members;
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
@@ -1376,6 +1377,18 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;
+	}
+
+	callee_frame = get_irg_frame_type(callee);
+	n_members = get_class_n_members(callee_frame);
+	for (i = 0; i < n_members; ++i) {
+		ir_entity *frame_ent = get_class_member(callee_frame, i);
+		if (is_parameter_entity(frame_ent)) {
+			// TODO inliner should handle parameter entities by inserting Store operations
+			DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden due to parameter entity\n", call, callee));
+			set_irg_inline_property(callee, irg_inline_forbidden);
+			return entry->benefice = INT_MIN;
+		}
 	}
 
 	if (get_irg_additional_properties(callee) & mtp_property_noreturn) {
