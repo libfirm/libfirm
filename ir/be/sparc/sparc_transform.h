@@ -30,4 +30,13 @@ void sparc_init_transform(void);
 
 void sparc_transform_graph(ir_graph *irg);
 
+ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
+                    ir_node *mem, ir_mode *mode, ir_entity *entity,
+                    long offset, bool is_frame_entity);
+
+ir_node *create_stf(dbg_info *dbgi, ir_node *block, ir_node *value,
+                    ir_node *ptr, ir_node *mem, ir_mode *mode,
+                    ir_entity *entity, long offset,
+                    bool is_frame_entity);
+
 #endif

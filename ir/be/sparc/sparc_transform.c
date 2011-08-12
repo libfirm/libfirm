@@ -595,9 +595,9 @@ static ir_node *gen_SubX_t(ir_node *node)
 	                         new_bd_sparc_SubX_reg, new_bd_sparc_SubX_imm);
 }
 
-static ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
-                           ir_node *mem, ir_mode *mode, ir_entity *entity,
-                           long offset, bool is_frame_entity)
+ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
+                    ir_node *mem, ir_mode *mode, ir_entity *entity,
+                    long offset, bool is_frame_entity)
 {
 	unsigned bits = get_mode_size_bits(mode);
 	assert(mode_is_float(mode));
@@ -614,10 +614,10 @@ static ir_node *create_ldf(dbg_info *dbgi, ir_node *block, ir_node *ptr,
 	}
 }
 
-static ir_node *create_stf(dbg_info *dbgi, ir_node *block, ir_node *value,
-                           ir_node *ptr, ir_node *mem, ir_mode *mode,
-                           ir_entity *entity, long offset,
-                           bool is_frame_entity)
+ir_node *create_stf(dbg_info *dbgi, ir_node *block, ir_node *value,
+                    ir_node *ptr, ir_node *mem, ir_mode *mode,
+                    ir_entity *entity, long offset,
+                    bool is_frame_entity)
 {
 	unsigned bits = get_mode_size_bits(mode);
 	assert(mode_is_float(mode));

@@ -42,6 +42,7 @@
 #include "bearch_sparc_t.h"
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_new_nodes.h"
+#include "sparc_transform.h"
 #include "irprog.h"
 #include "irgmod.h"
 #include "ircons.h"
@@ -366,10 +367,16 @@ static void transform_Reload(ir_node *node)
 
 	ir_node  *sched_point = sched_prev(node);
 
-	load = new_bd_sparc_Ld_imm(dbgi, block, ptr, mem, mode, entity, 0, true);
+	if (mode_is_float(mode)) {
+		load = create_ldf(dbgi, block, ptr, mem, mode, entity, 0, true);
+	} else {
+		load = new_bd_sparc_Ld_imm(dbgi, block, ptr, mem, mode, entity, 0,
+		                           true);
+	}
 	sched_add_after(sched_point, load);
 	sched_remove(node);
 
+	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
 	proj = new_rd_Proj(dbgi, load, mode, pn_sparc_Ld_res);
 
 	reg = arch_get_irn_register(node);
@@ -395,7 +402,12 @@ static void transform_Spill(ir_node *node)
 	ir_node   *store;
 
 	sched_point = sched_prev(node);
-	store = new_bd_sparc_St_imm(dbgi, block, val, ptr, mem, mode, entity, 0, true);
+	if (mode_is_float(mode)) {
+		store = create_stf(dbgi, block, val, ptr, mem, mode, entity, 0, true);
+	} else {
+		store = new_bd_sparc_St_imm(dbgi, block, val, ptr, mem, mode, entity, 0,
+		                            true);
+	}
 	sched_remove(node);
 	sched_add_after(sched_point, store);
 
