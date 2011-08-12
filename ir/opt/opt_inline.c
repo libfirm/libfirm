@@ -1362,11 +1362,11 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	ir_node   *call = entry->call;
 	ir_entity *ent  = get_irg_entity(callee);
 	ir_type   *callee_frame;
-	size_t    n_members;
+	size_t    i, n_members, n_params;
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
-	int       i, n_params, all_const;
+	int       all_const;
 	unsigned  cc, v;
 	irg_inline_property prop;
 
@@ -1403,7 +1403,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	cc       = get_method_calling_convention(mtp);
 	if (cc & cc_reg_param) {
 		/* register parameter, smaller costs for register parameters */
-		int max_regs = cc & ~cc_bits;
+		size_t max_regs = cc & ~cc_bits;
 
 		if (max_regs < n_params)
 			weight += max_regs * 2 + (n_params - max_regs) * 5;
