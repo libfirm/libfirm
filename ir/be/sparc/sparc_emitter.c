@@ -64,15 +64,6 @@ static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
 
 static void sparc_emit_node(const ir_node *node);
 
-/**
- * Returns the register at in position pos.
- */
-static const arch_register_t *get_in_reg(const ir_node *node, int pos)
-{
-	ir_node *op = get_irn_n(node, pos);
-	return arch_get_irn_register(op);
-}
-
 void sparc_emit_immediate(const ir_node *node)
 {
 	const sparc_attr_t *attr   = get_sparc_attr_const(node);
@@ -112,14 +103,14 @@ void sparc_emit_high_immediate(const ir_node *node)
 
 void sparc_emit_source_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_in_reg(node, pos);
+	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
 	be_emit_char('%');
 	be_emit_string(arch_register_get_name(reg));
 }
 
 void sparc_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = arch_irn_get_register(node, pos);
+	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
 	be_emit_char('%');
 	be_emit_string(arch_register_get_name(reg));
 }
@@ -131,7 +122,7 @@ void sparc_emit_dest_register(const ir_node *node, int pos)
  */
 void sparc_emit_reg_or_imm(const ir_node *node, int pos)
 {
-	if (arch_irn_get_flags(node) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form)) {
+	if (arch_get_irn_flags(node) & ((arch_irn_flags_t)sparc_arch_irn_flag_immediate_form)) {
 		// we have a imm input
 		sparc_emit_immediate(node);
 	} else {
@@ -300,8 +291,8 @@ static bool is_no_instruction(const ir_node *node)
 {
 	/* copies are nops if src_reg == dest_reg */
 	if (be_is_Copy(node) || be_is_CopyKeep(node)) {
-		const arch_register_t *src_reg  = get_in_reg(node, 0);
-		const arch_register_t *dest_reg = arch_irn_get_register(node, 0);
+		const arch_register_t *src_reg  = arch_get_irn_register_in(node, 0);
+		const arch_register_t *dest_reg = arch_get_irn_register_out(node, 0);
 
 		if (src_reg == dest_reg)
 			return true;
@@ -338,7 +329,7 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return true;
 
 	if (is_sparc_Call(node)) {
-		return arch_irn_get_flags(node) & sparc_arch_irn_flag_aggregate_return;
+		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 	}
 
 	return is_sparc_Mulh(node) || is_sparc_SDiv(node) || is_sparc_UDiv(node)
@@ -536,7 +527,7 @@ static void emit_sparc_Call(const ir_node *node)
 
 	fill_delay_slot();
 
-	if (arch_irn_get_flags(node) & sparc_arch_irn_flag_aggregate_return) {
+	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return) {
 		be_emit_cstring("\tunimp 8\n");
 		be_emit_write_line();
 	}
@@ -865,8 +856,8 @@ static const arch_register_t *get_next_fp_reg(const arch_register_t *reg)
 static void emit_be_Copy(const ir_node *node)
 {
 	ir_mode               *mode    = get_irn_mode(node);
-	const arch_register_t *src_reg = get_in_reg(node, 0);
-	const arch_register_t *dst_reg = arch_irn_get_register(node, 0);
+	const arch_register_t *src_reg = arch_get_irn_register_in(node, 0);
+	const arch_register_t *dst_reg = arch_get_irn_register_out(node, 0);
 
 	if (src_reg == dst_reg)
 		return;

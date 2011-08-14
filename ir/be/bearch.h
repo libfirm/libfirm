@@ -211,14 +211,6 @@ void arch_irn_add_flags(ir_node *node, arch_irn_flags_t flags);
 #define arch_irn_is(irn, flag) ((arch_irn_get_flags(irn) & arch_irn_flags_ ## flag) != 0)
 
 /**
- * Get the operations of an irn.
- * @param self The handler from which the method is invoked.
- * @param irn Some node.
- * @return Operations for that irn.
- */
-typedef const void *(arch_get_irn_ops_t)(const ir_node *irn);
-
-/**
  * Initialize the architecture environment struct.
  * @param isa           The isa which shall be put into the environment.
  * @param file_handle   The file handle
