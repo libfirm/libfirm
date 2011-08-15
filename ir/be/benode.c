@@ -422,13 +422,15 @@ ir_node *be_new_MemPerm(ir_node *block, int n, ir_node *in[])
 	return irn;
 }
 
-ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *bl, ir_node *op)
+ir_node *be_new_Copy(ir_node *bl, ir_node *op)
 {
 	ir_node *in[1];
 	ir_node *res;
 	arch_register_req_t *req;
 	be_node_attr_t *attr;
 	ir_graph *irg = get_Block_irg(bl);
+	const arch_register_req_t   *in_req = arch_get_irn_register_req(op);
+	const arch_register_class_t *cls    = in_req->cls;
 
 	in[0] = op;
 	res   = new_ir_node(NULL, irg, bl, op_be_Copy, get_irn_mode(op), 1, in);
@@ -440,9 +442,10 @@ ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *bl, ir_node *op)
 
 	req = allocate_reg_req(res);
 	req->cls        = cls;
-	req->type       = arch_register_req_type_should_be_same;
+	req->type       = arch_register_req_type_should_be_same
+		| (in_req->type & arch_register_req_type_aligned);
 	req->other_same = 1U << 0;
-	req->width      = 1;
+	req->width      = in_req->width;
 	be_set_constr_out(res, 0, req);
 
 	return res;
@@ -738,11 +741,14 @@ ir_entity *be_get_FrameAddr_entity(const ir_node *node)
 	return attr->ent;
 }
 
-ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *bl, ir_node *src, int n, ir_node *in_keep[], ir_mode *mode)
+ir_node *be_new_CopyKeep(ir_node *bl, ir_node *src, int n, ir_node *in_keep[])
 {
 	ir_node  *irn;
 	ir_node **in = ALLOCAN(ir_node*, n + 1);
 	ir_graph *irg = get_Block_irg(bl);
+	const arch_register_req_t   *req  = arch_get_irn_register_req(src);
+	const arch_register_class_t *cls  = req->cls;
+	ir_mode                     *mode = get_irn_mode(src);
 	be_node_attr_t *attr;
 
 	in[0] = src;
@@ -757,9 +763,9 @@ ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *bl, ir_node 
 	return irn;
 }
 
-ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls, ir_node *bl, ir_node *src, ir_node *keep, ir_mode *mode)
+ir_node *be_new_CopyKeep_single(ir_node *bl, ir_node *src, ir_node *keep)
 {
-	return be_new_CopyKeep(cls, bl, src, 1, &keep, mode);
+	return be_new_CopyKeep(bl, src, 1, &keep);
 }
 
 ir_node *be_get_CopyKeep_op(const ir_node *cpy)
@@ -960,7 +966,8 @@ ir_node *be_spill(ir_node *block, ir_node *irn)
 	return spill;
 }
 
-ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *mode, ir_node *spill)
+ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert,
+                   ir_mode *mode, ir_node *spill)
 {
 	ir_node  *reload;
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);

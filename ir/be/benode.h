@@ -104,8 +104,7 @@ enum {
 /**
  * Make a new Copy node.
  */
-ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *block,
-                     ir_node *in);
+ir_node *be_new_Copy(ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
 /** Sets the Copy Argument. */
@@ -389,13 +388,10 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert,
 enum {
 	n_be_CopyKeep_op = 0
 };
-ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *block,
-                         ir_node *src, int n, ir_node *in_keep[],
-                         ir_mode *mode);
+ir_node *be_new_CopyKeep(ir_node *block, ir_node *src,
+                         int n, ir_node *in_keep[]);
 
-ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls,
-                                ir_node *block, ir_node *src, ir_node *keep,
-                                ir_mode *mode);
+ir_node *be_new_CopyKeep_single(ir_node *block, ir_node *src, ir_node *keep);
 
 ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 

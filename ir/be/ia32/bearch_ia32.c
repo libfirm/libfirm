@@ -1277,10 +1277,10 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		sched_add_after(start, push);
 
 		/* move esp to ebp */
-		curr_bp = be_new_Copy(bp->reg_class, block, curr_sp);
+		curr_bp = be_new_Copy(block, curr_sp);
 		sched_add_after(push, curr_bp);
 		be_set_constr_single_reg_out(curr_bp, 0, bp, arch_register_req_type_ignore);
-		curr_sp = be_new_CopyKeep_single(sp->reg_class, block, curr_sp, curr_bp, mode_gp);
+		curr_sp = be_new_CopyKeep_single(block, curr_sp, curr_bp);
 		sched_add_after(curr_bp, curr_sp);
 		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
 		edges_reroute(initial_bp, curr_bp);
