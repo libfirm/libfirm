@@ -135,7 +135,7 @@ static void spill_node(ir_node *node)
 
 static unsigned get_value_width(const ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	return req->width;
 }
 

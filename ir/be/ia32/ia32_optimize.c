@@ -186,8 +186,8 @@ static void peephole_ia32_Cmp(ir_node *const node)
 	}
 	set_ia32_ls_mode(test, get_ia32_ls_mode(node));
 
-	reg = arch_irn_get_register(node, pn_ia32_Cmp_eflags);
-	arch_irn_set_register(test, pn_ia32_Test_eflags, reg);
+	reg = arch_get_irn_register_out(node, pn_ia32_Cmp_eflags);
+	arch_set_irn_register_out(test, pn_ia32_Test_eflags, reg);
 
 	foreach_out_edge_safe(node, edge, tmp) {
 		ir_node *const user = get_edge_src_irn(edge);
@@ -765,7 +765,7 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		if (loads[loadslot] != NULL)
 			break;
 
-		dreg = arch_irn_get_register(node, pn_ia32_Load_res);
+		dreg = arch_get_irn_register_out(node, pn_ia32_Load_res);
 		if (regmask & (1 << dreg->index)) {
 			/* this register is already used */
 			break;
@@ -806,10 +806,10 @@ static void peephole_Load_IncSP_to_pop(ir_node *irn)
 		const arch_register_t *reg;
 
 		mem = get_irn_n(load, n_ia32_mem);
-		reg = arch_irn_get_register(load, pn_ia32_Load_res);
+		reg = arch_get_irn_register_out(load, pn_ia32_Load_res);
 
 		pop = new_bd_ia32_Pop(get_irn_dbg_info(load), block, mem, pred_sp);
-		arch_irn_set_register(pop, pn_ia32_Load_res, reg);
+		arch_set_irn_register_out(pop, pn_ia32_Load_res, reg);
 
 		copy_mark(load, pop);
 
@@ -1249,7 +1249,7 @@ static void peephole_ia32_Conv_I2I(ir_node *node)
 	if (get_mode_size_bits(smaller_mode) != 16 ||
 			!mode_is_signed(smaller_mode)          ||
 			eax != arch_get_irn_register(val)      ||
-			eax != arch_irn_get_register(node, pn_ia32_Conv_I2I_res))
+			eax != arch_get_irn_register_out(node, pn_ia32_Conv_I2I_res))
 		return;
 
 	dbgi  = get_irn_dbg_info(node);
@@ -1439,9 +1439,9 @@ static void optimize_conv_conv(ir_node *node)
 
 			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
 			if (get_mode_size_bits(conv_mode) == 8) {
+				const arch_register_req_t **reqs = arch_get_irn_register_reqs_in(node);
 				set_irn_op(pred, op_ia32_Conv_I2I8Bit);
-				arch_set_in_register_reqs(pred,
-				                          arch_get_in_register_reqs(node));
+				arch_set_irn_register_reqs_in(pred, reqs);
 			}
 		} else {
 			/* we don't want to end up with 2 loads, so we better do nothing */
@@ -1454,9 +1454,9 @@ static void optimize_conv_conv(ir_node *node)
 
 			/* Argh:We must change the opcode to 8bit AND copy the register constraints */
 			if (get_mode_size_bits(conv_mode) == 8) {
+				const arch_register_req_t **reqs = arch_get_irn_register_reqs_in(node);
 				set_irn_op(result_conv, op_ia32_Conv_I2I8Bit);
-				arch_set_in_register_reqs(result_conv,
-				                          arch_get_in_register_reqs(node));
+				arch_set_irn_register_reqs_in(result_conv, reqs);
 			}
 		}
 	} else {

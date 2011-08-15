@@ -283,7 +283,7 @@ ir_node *be_new_Spill(const arch_register_class_t *cls,
 	 */
 	be_set_constr_in(res, n_be_Spill_frame, arch_no_register_req);
 
-	arch_set_out_register_req(res, 0, arch_no_register_req);
+	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
 
 	return res;
 }
@@ -305,7 +305,7 @@ ir_node *be_new_Reload(const arch_register_class_t *cls,
 	be_node_set_reg_class_out(res, 0, cls);
 
 	be_node_set_reg_class_in(res, n_be_Reload_frame, cls_frame);
-	arch_irn_set_flags(res, arch_irn_flags_rematerializable);
+	arch_set_irn_flags(res, arch_irn_flags_rematerializable);
 
 	a         = (be_frame_attr_t*) get_irn_generic_attr(res);
 	a->ent    = NULL;
@@ -656,7 +656,7 @@ ir_node *be_new_AddSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp,
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg_in(irn, n_be_AddSP_old_sp, sp,
 	                            arch_register_req_type_none);
-	be_node_set_reg_class_in(irn, n_be_AddSP_size, arch_register_get_class(sp));
+	be_node_set_reg_class_in(irn, n_be_AddSP_size, sp->reg_class);
 	be_set_constr_single_reg_out(irn, pn_be_AddSP_sp, sp,
 	                             arch_register_req_type_produces_sp);
 
@@ -682,7 +682,7 @@ ir_node *be_new_SubSP(const arch_register_t *sp, ir_node *bl, ir_node *old_sp, i
 	/* Set output constraint to stack register. */
 	be_set_constr_single_reg_in(irn, n_be_SubSP_old_sp, sp,
 	                            arch_register_req_type_none);
-	be_node_set_reg_class_in(irn, n_be_SubSP_size, arch_register_get_class(sp));
+	be_node_set_reg_class_in(irn, n_be_SubSP_size, sp->reg_class);
 	be_set_constr_single_reg_out(irn, pn_be_SubSP_sp, sp, arch_register_req_type_produces_sp);
 
 	return irn;
@@ -899,7 +899,7 @@ void be_set_constr_single_reg_out(ir_node *node, int pos,
 		req = be_create_reg_req(obst, reg, additional_types);
 	}
 
-	arch_irn_set_register(node, pos, reg);
+	arch_set_irn_register_out(node, pos, reg);
 	be_set_constr_out(node, pos, req);
 }
 
@@ -952,8 +952,8 @@ ir_node *be_spill(ir_node *block, ir_node *irn)
 {
 	ir_graph                    *irg       = get_Block_irg(block);
 	ir_node                     *frame     = get_irg_frame(irg);
-	const arch_register_class_t *cls       = arch_get_irn_reg_class_out(irn);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
 	ir_node                     *spill;
 
 	spill = be_new_Spill(cls, cls_frame, block, frame, irn);
@@ -966,7 +966,7 @@ ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert, ir_mode *m
 	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
 	ir_graph *irg   = get_Block_irg(bl);
 	ir_node  *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class_out(frame);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
 
 	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
 
@@ -1049,13 +1049,13 @@ static const arch_irn_ops_t be_node_irn_ops = {
 static int get_start_reg_index(ir_graph *irg, const arch_register_t *reg)
 {
 	ir_node *start  = get_irg_start(irg);
-	unsigned n_outs = arch_irn_get_n_outs(start);
+	unsigned n_outs = arch_get_irn_n_outs(start);
 	int      i;
 
 	/* do a naive linear search... */
 	for (i = 0; i < (int)n_outs; ++i) {
 		const arch_register_req_t *out_req
-			= arch_get_out_register_req(start, i);
+			= arch_get_irn_register_req_out(start, i);
 		if (! (out_req->type & arch_register_req_type_limited))
 			continue;
 		if (out_req->cls != arch_register_get_class(reg))
@@ -1091,7 +1091,7 @@ int be_find_return_reg_input(ir_node *ret, const arch_register_t *reg)
 	int i;
 	/* do a naive linear search... */
 	for (i = 0; i < arity; ++i) {
-		const arch_register_req_t *req = arch_get_in_register_req(ret, i);
+		const arch_register_req_t *req = arch_get_irn_register_req_in(ret, i);
 		if (! (req->type & arch_register_req_type_limited))
 			continue;
 		if (req->cls != arch_register_get_class(reg))

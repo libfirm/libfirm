@@ -1376,30 +1376,30 @@ static ir_node *gen_Start(ir_node *node)
 
 	/* first output is memory */
 	start_mem_offset = o;
-	arch_set_out_register_req(start, o, arch_no_register_req);
+	arch_set_irn_register_req_out(start, o, arch_no_register_req);
 	++o;
 
 	/* the zero register */
 	start_g0_offset = o;
 	req = be_create_reg_req(obst, &sparc_registers[REG_G0],
 	                        arch_register_req_type_ignore);
-	arch_set_out_register_req(start, o, req);
-	arch_irn_set_register(start, o, &sparc_registers[REG_G0]);
+	arch_set_irn_register_req_out(start, o, req);
+	arch_set_irn_register_out(start, o, &sparc_registers[REG_G0]);
 	++o;
 
 	/* we need an output for the stackpointer */
 	start_sp_offset = o;
 	req = be_create_reg_req(obst, sp_reg,
 			arch_register_req_type_produces_sp | arch_register_req_type_ignore);
-	arch_set_out_register_req(start, o, req);
-	arch_irn_set_register(start, o, sp_reg);
+	arch_set_irn_register_req_out(start, o, req);
+	arch_set_irn_register_out(start, o, sp_reg);
 	++o;
 
 	if (!current_cconv->omit_fp) {
 		start_fp_offset = o;
 		req = be_create_reg_req(obst, fp_reg, arch_register_req_type_ignore);
-		arch_set_out_register_req(start, o, req);
-		arch_irn_set_register(start, o, fp_reg);
+		arch_set_irn_register_req_out(start, o, req);
+		arch_set_irn_register_out(start, o, fp_reg);
 		++o;
 	}
 
@@ -1410,13 +1410,13 @@ static ir_node *gen_Start(ir_node *node)
 		const arch_register_t    *reg0  = param->reg0;
 		const arch_register_t    *reg1  = param->reg1;
 		if (reg0 != NULL) {
-			arch_set_out_register_req(start, o, reg0->single_req);
-			arch_irn_set_register(start, o, reg0);
+			arch_set_irn_register_req_out(start, o, reg0->single_req);
+			arch_set_irn_register_out(start, o, reg0);
 			++o;
 		}
 		if (reg1 != NULL) {
-			arch_set_out_register_req(start, o, reg1->single_req);
-			arch_irn_set_register(start, o, reg1);
+			arch_set_irn_register_req_out(start, o, reg1->single_req);
+			arch_set_irn_register_out(start, o, reg1);
 			++o;
 		}
 	}
@@ -1428,8 +1428,8 @@ static ir_node *gen_Start(ir_node *node)
 		size_t c;
 		for (c = 0; c < n_callee_saves; ++c) {
 			const arch_register_t *reg = omit_fp_callee_saves[c];
-			arch_set_out_register_req(start, o, reg->single_req);
-			arch_irn_set_register(start, o, reg);
+			arch_set_irn_register_req_out(start, o, reg->single_req);
+			arch_set_irn_register_out(start, o, reg);
 			++o;
 		}
 	}
@@ -1552,7 +1552,7 @@ static ir_node *gen_Return(ir_node *node)
 	assert(p == n_ins);
 
 	bereturn = new_bd_sparc_Return_reg(dbgi, new_block, n_ins, in);
-	arch_set_in_register_reqs(bereturn, reqs);
+	arch_set_irn_register_reqs_in(bereturn, reqs);
 
 	return bereturn;
 }
@@ -1612,8 +1612,8 @@ static void bitcast_float_to_int(dbg_info *dbgi, ir_node *block,
 		set_irn_pinned(ld, op_pin_state_floats);
 		result[1] = new_r_Proj(ld2, mode_gp, pn_sparc_Ld_res);
 
-		arch_irn_add_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
-		arch_irn_add_flags(ld2, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
+		arch_add_irn_flags(ld, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
+		arch_add_irn_flags(ld2, (arch_irn_flags_t)sparc_arch_irn_flag_needs_64bit_spillslot);
 	} else {
 		assert(bits == 32);
 		result[1] = NULL;
@@ -1768,17 +1768,17 @@ static ir_node *gen_Call(ir_node *node)
 		res = new_bd_sparc_Call_reg(dbgi, new_block, in_arity, in, out_arity,
 		                            aggregate_return);
 	}
-	arch_set_in_register_reqs(res, in_req);
+	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
 	o = 0;
-	arch_set_out_register_req(res, o++, arch_no_register_req);
+	arch_set_irn_register_req_out(res, o++, arch_no_register_req);
 	/* add register requirements for the result regs */
 	for (r = 0; r < n_ress; ++r) {
 		const reg_or_stackslot_t  *result_info = &cconv->results[r];
 		const arch_register_req_t *req         = result_info->req0;
 		if (req != NULL) {
-			arch_set_out_register_req(res, o++, req);
+			arch_set_irn_register_req_out(res, o++, req);
 		}
 		assert(result_info->req1 == NULL);
 	}
@@ -1787,7 +1787,7 @@ static ir_node *gen_Call(ir_node *node)
 		if (!rbitset_is_set(cconv->caller_saves, i))
 			continue;
 		reg = &sparc_registers[i];
-		arch_set_out_register_req(res, o++, reg->single_req);
+		arch_set_irn_register_req_out(res, o++, reg->single_req);
 	}
 	assert(o == out_arity);
 
@@ -1895,7 +1895,7 @@ static ir_node *gen_Phi(ir_node *node)
 	phi = new_ir_node(dbgi, irg, block, op_Phi, mode, get_irn_arity(node), get_irn_in(node) + 1);
 	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
-	arch_set_out_register_req(phi, 0, req);
+	arch_set_irn_register_req_out(phi, 0, req);
 	be_enqueue_preds(node);
 	return phi;
 }

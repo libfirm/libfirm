@@ -51,15 +51,6 @@
 
 #include "../benode.h"
 
-/**
- * Returns the register at in position pos.
- */
-static const arch_register_t *get_in_reg(const ir_node *node, int pos)
-{
-	ir_node *op = get_irn_n(node, pos);
-	return arch_get_irn_register(op);
-}
-
 /*************************************************************
  *             _       _    __   _          _
  *            (_)     | |  / _| | |        | |
@@ -93,12 +84,12 @@ void amd64_emit_fp_offset(const ir_node *node)
 
 void amd64_emit_source_register(const ir_node *node, int pos)
 {
-	amd64_emit_register(get_in_reg(node, pos));
+	amd64_emit_register(arch_get_irn_register_in(node, pos));
 }
 
 void amd64_emit_dest_register(const ir_node *node, int pos)
 {
-	amd64_emit_register(arch_irn_get_register(node, pos));
+	amd64_emit_register(arch_get_irn_register_out(node, pos));
 }
 
 /**
@@ -332,7 +323,7 @@ static void emit_be_Copy(const ir_node *irn)
 {
 	ir_mode *mode = get_irn_mode(irn);
 
-	if (get_in_reg(irn, 0) == arch_irn_get_register(irn, 0)) {
+	if (arch_get_irn_register_in(irn, 0) == arch_get_irn_register_out(irn, 0)) {
 		/* omitted Copy */
 		return;
 	}
@@ -454,9 +445,9 @@ static void emit_amd64_binop_op(const ir_node *irn, int second_op)
  */
 static void emit_amd64_binop(const ir_node *irn)
 {
-	const arch_register_t *reg_s1 = get_in_reg(irn, 0);
-	const arch_register_t *reg_s2 = get_in_reg(irn, 1);
-	const arch_register_t *reg_d1 = arch_irn_get_register(irn, 0);
+	const arch_register_t *reg_s1 = arch_get_irn_register_in(irn, 0);
+	const arch_register_t *reg_s2 = arch_get_irn_register_in(irn, 1);
+	const arch_register_t *reg_d1 = arch_get_irn_register_out(irn, 0);
 
 	int second_op = 0;
 

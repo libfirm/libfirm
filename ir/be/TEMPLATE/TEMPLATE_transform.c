@@ -247,7 +247,7 @@ static ir_node *gen_Phi(ir_node *node)
 	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
 
-	arch_set_out_register_req(phi, 0, req);
+	arch_set_irn_register_req_out(phi, 0, req);
 	be_enqueue_preds(node);
 	return phi;
 }

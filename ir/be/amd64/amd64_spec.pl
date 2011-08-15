@@ -116,7 +116,7 @@ sub amd64_custom_init_attr {
 	my $res    = "";
 
 	if(defined($node->{modified_flags})) {
-		$res .= "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n";
+		$res .= "\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);\n";
 	}
 	return $res;
 }

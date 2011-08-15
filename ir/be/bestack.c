@@ -283,12 +283,12 @@ static void collect_stack_nodes_walker(ir_node *node, void *data)
 		insn = get_Proj_pred(node);
 	}
 
-	if (arch_irn_get_n_outs(insn) == 0)
+	if (arch_get_irn_n_outs(insn) == 0)
 		return;
 	if (get_irn_mode(node) == mode_T)
 		return;
 
-	req = arch_get_register_req_out(node);
+	req = arch_get_irn_register_req(node);
 	if (! (req->type & arch_register_req_type_produces_sp))
 		return;
 

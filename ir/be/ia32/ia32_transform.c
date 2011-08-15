@@ -292,7 +292,7 @@ static ir_node *gen_Const(ir_node *node)
 				                             mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
-				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
+				arch_add_irn_flags(load, arch_irn_flags_rematerializable);
 				res = new_r_Proj(load, mode_xmm, pn_ia32_xLoad_res);
 			}
 		} else {
@@ -317,7 +317,7 @@ static ir_node *gen_Const(ir_node *node)
 				                            ls_mode);
 				set_ia32_op_type(load, ia32_AddrModeS);
 				set_ia32_am_sc(load, floatent);
-				arch_irn_add_flags(load, arch_irn_flags_rematerializable);
+				arch_add_irn_flags(load, arch_irn_flags_rematerializable);
 				res = new_r_Proj(load, mode_vfp, pn_ia32_vfld_res);
 			}
 		}
@@ -2245,7 +2245,7 @@ static ir_node *gen_Load(ir_node *node)
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_vfld_res
 				&& (int)pn_ia32_vfld_res == (int)pn_ia32_Load_res
 				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_irn_add_flags(new_node, arch_irn_flags_rematerializable);
+		arch_add_irn_flags(new_node, arch_irn_flags_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(new_node, node);
@@ -4142,8 +4142,8 @@ static ir_node *gen_be_AddSP(ir_node *node)
 	ir_node *new_node = gen_binop(node, sp, sz, new_bd_ia32_SubSP,
 	                              match_am | match_immediate);
 	assert(is_ia32_SubSP(new_node));
-	arch_irn_set_register(new_node, pn_ia32_SubSP_stack,
-	                      &ia32_registers[REG_ESP]);
+	arch_set_irn_register_out(new_node, pn_ia32_SubSP_stack,
+	                          &ia32_registers[REG_ESP]);
 	return new_node;
 }
 
@@ -4158,8 +4158,8 @@ static ir_node *gen_be_SubSP(ir_node *node)
 	ir_node *new_node = gen_binop(node, sp, sz, new_bd_ia32_AddSP,
 	                              match_am | match_immediate);
 	assert(is_ia32_AddSP(new_node));
-	arch_irn_set_register(new_node, pn_ia32_AddSP_stack,
-	                      &ia32_registers[REG_ESP]);
+	arch_set_irn_register_out(new_node, pn_ia32_AddSP_stack,
+	                          &ia32_registers[REG_ESP]);
 	return new_node;
 }
 
@@ -4200,7 +4200,7 @@ static ir_node *gen_Phi(ir_node *node)
 	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
 
-	arch_set_out_register_req(phi, 0, req);
+	arch_set_irn_register_req_out(phi, 0, req);
 
 	be_enqueue_preds(node);
 
@@ -4842,7 +4842,8 @@ static ir_node *gen_be_Call(ir_node *node)
 	i    = get_irn_arity(node) - 1;
 	fpcw = be_transform_node(get_irn_n(node, i--));
 	for (; i >= n_be_Call_first_arg; --i) {
-		arch_register_req_t const *const req = arch_get_register_req(node, i);
+		arch_register_req_t const *const req
+			= arch_get_irn_register_req_in(node, i);
 		ir_node *const reg_parm = be_transform_node(get_irn_n(node, i));
 
 		assert(req->type == arch_register_req_type_limited);
@@ -4938,7 +4939,7 @@ static ir_node *gen_return_address(ir_node *node)
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_vfld_res
 				&& (int)pn_ia32_vfld_res == (int)pn_ia32_Load_res
 				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_irn_add_flags(load, arch_irn_flags_rematerializable);
+		arch_add_irn_flags(load, arch_irn_flags_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
@@ -4989,7 +4990,7 @@ static ir_node *gen_frame_address(ir_node *node)
 		assert((int)pn_ia32_xLoad_res == (int)pn_ia32_vfld_res
 				&& (int)pn_ia32_vfld_res == (int)pn_ia32_Load_res
 				&& (int)pn_ia32_Load_res == (int)pn_ia32_res);
-		arch_irn_add_flags(load, arch_irn_flags_rematerializable);
+		arch_add_irn_flags(load, arch_irn_flags_rematerializable);
 	}
 
 	SET_IA32_ORIG_NODE(load, node);
@@ -5574,7 +5575,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 static ir_node *gen_be_IncSP(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
-	arch_irn_add_flags(res, arch_irn_flags_modify_flags);
+	arch_add_irn_flags(res, arch_irn_flags_modify_flags);
 
 	return res;
 }
@@ -5596,7 +5597,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	}
 	/* transform call modes */
 	if (mode_is_data(mode)) {
-		const arch_register_class_t *cls = arch_get_irn_reg_class_out(node);
+		const arch_register_class_t *cls = arch_get_irn_reg_class(node);
 		mode = cls->mode;
 	}
 
@@ -5610,8 +5611,8 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 	} else if (proj == pn_be_Call_X_regular) {
 		proj = pn_ia32_Call_X_regular;
 	} else {
-		arch_register_req_t const *const req    = arch_get_register_req_out(node);
-		int                        const n_outs = arch_irn_get_n_outs(new_call);
+		arch_register_req_t const *const req    = arch_get_irn_register_req(node);
+		int                        const n_outs = arch_get_irn_n_outs(new_call);
 		int                              i;
 
 		assert(proj      >= pn_be_Call_first_res);
@@ -5619,7 +5620,7 @@ static ir_node *gen_Proj_be_Call(ir_node *node)
 
 		for (i = 0; i < n_outs; ++i) {
 			arch_register_req_t const *const new_req
-				= arch_get_out_register_req(new_call, i);
+				= arch_get_irn_register_req_out(new_call, i);
 
 			if (!(new_req->type & arch_register_req_type_limited) ||
 			    new_req->cls      != req->cls                     ||
@@ -5666,7 +5667,7 @@ static ir_node *gen_Proj_ASM(ir_node *node)
 	long     pos      = get_Proj_proj(node);
 
 	if (mode == mode_M) {
-		pos = arch_irn_get_n_outs(new_pred)-1;
+		pos = arch_get_irn_n_outs(new_pred)-1;
 	} else if (mode_is_int(mode) || mode_is_reference(mode)) {
 		mode = mode_Iu;
 	} else if (mode_is_float(mode)) {

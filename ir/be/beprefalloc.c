@@ -271,7 +271,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 static void check_defs(const ir_nodeset_t *live_nodes, float weight,
                        ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	if (req->type & arch_register_req_type_limited) {
 		const unsigned *limited = req->limited;
 		float           penalty = weight * DEF_FACTOR;
@@ -352,7 +352,7 @@ static void analyze_block(ir_node *block, void *data)
 		info = get_allocation_info(node);
 		for (i = 0; i < arity; ++i) {
 			ir_node                   *op  = get_irn_n(node, i);
-			const arch_register_req_t *req = arch_get_register_req_out(op);
+			const arch_register_req_t *req = arch_get_irn_register_req(op);
 			if (req->cls != cls)
 				continue;
 
@@ -374,7 +374,7 @@ static void analyze_block(ir_node *block, void *data)
 				if (!arch_irn_consider_in_reg_alloc(cls, op))
 					continue;
 
-				req = arch_get_register_req(node, i);
+				req = arch_get_irn_register_req_in(node, i);
 				if (!(req->type & arch_register_req_type_limited))
 					continue;
 
@@ -390,7 +390,7 @@ static void analyze_block(ir_node *block, void *data)
 
 static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 
 	/* should be same constraint? */
 	if (req->type & arch_register_req_type_should_be_same) {
@@ -650,7 +650,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	 * (so we don't split away the values produced because of
 	 *  must_be_different constraints) */
 	original_insn = skip_Proj(info->original_value);
-	if (arch_irn_get_flags(original_insn) & arch_irn_flags_dont_spill)
+	if (arch_get_irn_flags(original_insn) & arch_irn_flags_dont_spill)
 		return false;
 
 	from_reg        = arch_get_irn_register(to_split);
@@ -759,7 +759,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		return;
 	}
 
-	req = arch_get_register_req_out(node);
+	req = arch_get_irn_register_req(node);
 	/* ignore reqs must be preassigned */
 	assert (! (req->type & arch_register_req_type_ignore));
 
@@ -1131,7 +1131,7 @@ static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
 		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
@@ -1277,7 +1277,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 			continue;
 
 		/* are there any limitations for the i'th operand? */
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
 		if (req->width > 1)
 			double_width = true;
 		if (!(req->type & arch_register_req_type_limited))
@@ -1359,7 +1359,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
 		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
@@ -1715,7 +1715,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		int                        p;
 
 		node = be_lv_get_irn(lv, block, i);
-		req  = arch_get_register_req_out(node);
+		req  = arch_get_irn_register_req(node);
 		if (req->cls != cls)
 			continue;
 

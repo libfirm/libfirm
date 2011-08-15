@@ -49,15 +49,6 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-/**
- * Returns the register at in position pos.
- */
-static const arch_register_t *get_in_reg(const ir_node *node, int pos)
-{
-	ir_node *op = get_irn_n(node, pos);
-	return arch_get_irn_register(op);
-}
-
 void TEMPLATE_emit_immediate(const ir_node *node)
 {
 	const TEMPLATE_attr_t *attr = get_TEMPLATE_attr_const(node);
@@ -71,13 +62,13 @@ static void emit_register(const arch_register_t *reg)
 
 void TEMPLATE_emit_source_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_in_reg(node, pos);
+	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
 	emit_register(reg);
 }
 
 void TEMPLATE_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = arch_irn_get_register(node, pos);
+	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
 	emit_register(reg);
 }
 

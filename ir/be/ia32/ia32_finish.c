@@ -73,7 +73,7 @@ static void ia32_transform_sub_to_neg_add(ir_node *irn)
 	in2      = get_irn_n(irn, n_ia32_binary_right);
 	in1_reg  = arch_get_irn_register(in1);
 	in2_reg  = arch_get_irn_register(in2);
-	out_reg  = arch_irn_get_register(irn, 0);
+	out_reg  = arch_get_irn_register_out(irn, 0);
 
 	if (out_reg == in1_reg)
 		return;
@@ -249,7 +249,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 	int                         n_res, i;
 	ir_node                    *in_node, *block;
 
-	n_res = arch_irn_get_n_outs(node);
+	n_res = arch_get_irn_n_outs(node);
 	block = get_nodes_block(node);
 
 	/* check all OUT requirements, if there is a should_be_same */
@@ -257,7 +257,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		int                          i2, arity;
 		int                          same_pos;
 		ir_node                     *uses_out_reg;
-		const arch_register_req_t   *req = arch_get_out_register_req(node, i);
+		const arch_register_req_t   *req = arch_get_irn_register_req_out(node, i);
 		const arch_register_class_t *cls;
 		int                         uses_out_reg_pos;
 
@@ -267,7 +267,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		same_pos = get_first_same(req);
 
 		/* get in and out register */
-		out_reg = arch_irn_get_register(node, i);
+		out_reg = arch_get_irn_register_out(node, i);
 		in_node = get_irn_n(node, same_pos);
 		in_reg  = arch_get_irn_register(in_node);
 
@@ -357,10 +357,10 @@ static void fix_am_source(ir_node *irn)
 	if (get_ia32_am_support(irn) != ia32_am_binary)
 		return;
 
-	n_res = arch_irn_get_n_outs(irn);
+	n_res = arch_get_irn_n_outs(irn);
 
 	for (i = 0; i < n_res; i++) {
-		const arch_register_req_t *req = arch_get_out_register_req(irn, i);
+		const arch_register_req_t *req = arch_get_irn_register_req_out(irn, i);
 		const arch_register_t     *out_reg;
 		int                        same_pos;
 		ir_node                   *same_node;
@@ -371,7 +371,7 @@ static void fix_am_source(ir_node *irn)
 			continue;
 
 		/* get in and out register */
-		out_reg   = arch_irn_get_register(irn, i);
+		out_reg   = arch_get_irn_register_out(irn, i);
 		same_pos  = get_first_same(req);
 		same_node = get_irn_n(irn, same_pos);
 		same_reg  = arch_get_irn_register(same_node);

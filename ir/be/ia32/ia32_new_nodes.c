@@ -832,8 +832,8 @@ static void init_ia32_attributes(ir_node *node, arch_irn_flags_t flags,
 	ia32_attr_t     *attr = get_ia32_attr(node);
 	backend_info_t  *info;
 
-	arch_irn_set_flags(node, flags);
-	arch_set_in_register_reqs(node, in_reqs);
+	arch_set_irn_flags(node, flags);
+	arch_set_irn_register_reqs_in(node, in_reqs);
 
 	attr->exec_units  = execution_units;
 #ifndef NDEBUG

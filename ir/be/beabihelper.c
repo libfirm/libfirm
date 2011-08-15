@@ -274,12 +274,12 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
 		const arch_register_t *reg     = regflag->reg;
 		ir_node               *proj;
 		if (reg == NULL) {
-			arch_set_out_register_req(start, o, arch_no_register_req);
+			arch_set_irn_register_req_out(start, o, arch_no_register_req);
 			proj = new_r_Proj(start, mode_M, o);
 		} else {
 			be_set_constr_single_reg_out(start, o, regflag->reg,
 			                             regflag->flags);
-			arch_irn_set_register(start, o, regflag->reg);
+			arch_set_irn_register_out(start, o, regflag->reg);
 			proj = new_r_Proj(start, reg->reg_class->mode, o);
 		}
 		env->prolog.value_map[o] = proj;
@@ -422,7 +422,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	(void) data;
 	if (mode != mode_T) {
 		if (!has_real_user(node)) {
-			const arch_register_req_t   *req = arch_get_register_req_out(node);
+			const arch_register_req_t   *req = arch_get_irn_register_req(node);
 			const arch_register_class_t *cls = req->cls;
 			if (cls == NULL
 					|| (cls->flags & arch_register_class_flag_manual_ra)) {
@@ -434,7 +434,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		return;
 	}
 
-	n_outs = arch_irn_get_n_outs(node);
+	n_outs = arch_get_irn_n_outs(node);
 	if (n_outs <= 0)
 		return;
 
@@ -470,7 +470,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		req = arch_get_out_register_req(node, i);
+		req = arch_get_irn_register_req_out(node, i);
 		cls = req->cls;
 		if (cls == NULL || (cls->flags & arch_register_class_flag_manual_ra)) {
 			continue;

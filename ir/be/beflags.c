@@ -240,8 +240,9 @@ static void fix_flags_walker(ir_node *block, void *env)
 		/* test whether the current node needs flags */
 		arity = get_irn_arity(node);
 		for (i = 0; i < arity; ++i) {
-			const arch_register_class_t *cls = arch_get_irn_reg_class(node, i);
-			if (cls == flag_class) {
+			const arch_register_req_t *req
+				= arch_get_irn_register_req_in(node, i);
+			if (req->cls == flag_class) {
 				assert(new_flags_needed == NULL);
 				new_flags_needed = get_irn_n(node, i);
 			}

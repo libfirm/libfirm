@@ -284,7 +284,7 @@ static void verify_schedule_walker(ir_node *block, void *data)
 static void check_schedule(ir_node *node, void *data)
 {
 	be_verify_schedule_env_t *env = (be_verify_schedule_env_t*)data;
-	bool should_be = !is_Proj(node) && !(arch_irn_get_flags(node) & arch_irn_flags_not_scheduled);
+	bool should_be = !is_Proj(node) && !(arch_get_irn_flags(node) & arch_irn_flags_not_scheduled);
 	bool scheduled = bitset_is_set(env->scheduled, get_irn_idx(node));
 
 	if (should_be != scheduled) {
@@ -664,13 +664,14 @@ static ir_node                    **registers;
 static void check_output_constraints(ir_node *node)
 {
 	/* verify output register */
-	if (arch_get_irn_reg_class_out(node) == regclass) {
+	if (arch_get_irn_reg_class(node) == regclass) {
+		const arch_register_req_t *req = arch_get_irn_register_req(node);
 		const arch_register_t *reg = arch_get_irn_register(node);
 		if (reg == NULL) {
 			ir_fprintf(stderr, "Verify warning: Node %+F in block %+F(%s) should have a register assigned\n",
 					node, get_nodes_block(node), get_irg_dump_name(irg));
 			problem_found = 1;
-		} else if (!(reg->type & arch_register_type_joker) && !arch_reg_out_is_allocatable(node, reg)) {
+		} else if (!arch_reg_is_allocatable(req, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s assigned as output of %+F not allowed (register constraint) in block %+F(%s)\n",
 					reg->name, node, get_nodes_block(node), get_irg_dump_name(irg));
 			problem_found = 1;
@@ -686,9 +687,9 @@ static void check_input_constraints(ir_node *node)
 	/* verify input register */
 	arity = get_irn_arity(node);
 	for (i = 0; i < arity; ++i) {
-		const arch_register_req_t *req      = arch_get_in_register_req(node, i);
+		const arch_register_req_t *req      = arch_get_irn_register_req_in(node, i);
 		ir_node                   *pred     = get_irn_n(node, i);
-		const arch_register_req_t *pred_req = arch_get_register_req_out(pred);
+		const arch_register_req_t *pred_req = arch_get_irn_register_req(pred);
 
 		if (is_Bad(pred)) {
 			ir_fprintf(stderr, "Verify warning: %+F in block %+F(%s) has Bad as input %d\n",
@@ -719,7 +720,7 @@ static void check_input_constraints(ir_node *node)
 			           pred, get_nodes_block(pred), get_irg_dump_name(irg), node);
 			problem_found = 1;
 			continue;
-		} else if (!(reg->type & arch_register_type_joker) && ! arch_reg_is_allocatable(node, i, reg)) {
+		} else if (!arch_reg_is_allocatable(req, reg)) {
 			ir_fprintf(stderr, "Verify warning: Register %s as input %d of %+F not allowed (register constraint) in block %+F(%s)\n",
 			           reg->name, i, node, get_nodes_block(node), get_irg_dump_name(irg));
 			problem_found = 1;
@@ -753,7 +754,7 @@ static void value_used(ir_node *block, ir_node *node)
 	const arch_register_t *reg;
 	ir_node               *reg_node;
 
-	if (arch_get_irn_reg_class_out(node) != regclass)
+	if (arch_get_irn_reg_class(node) != regclass)
 		return;
 
 	reg = arch_get_irn_register(node);
@@ -776,7 +777,7 @@ static void value_def(ir_node *node)
 	const arch_register_t *reg;
 	ir_node               *reg_node;
 
-	if (arch_get_irn_reg_class_out(node) != regclass)
+	if (arch_get_irn_reg_class(node) != regclass)
 		return;
 
 	reg = arch_get_irn_register(node);

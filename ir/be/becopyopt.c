@@ -235,7 +235,7 @@ static int co_is_optimizable_root(ir_node *irn)
 	if (is_Reg_Phi(irn) || is_Perm_Proj(irn))
 		return 1;
 
-	req = arch_get_register_req_out(irn);
+	req = arch_get_irn_register_req(irn);
 	if (is_2addr_code(req))
 		return 1;
 
@@ -395,7 +395,7 @@ static void co_collect_units(ir_node *irn, void *env)
 
 	if (get_irn_mode(irn) == mode_T)
 		return;
-	req = arch_get_register_req_out(irn);
+	req = arch_get_irn_register_req(irn);
 	if (req->cls != co->cls)
 		return;
 	if (!co_is_optimizable_root(irn))
@@ -422,7 +422,7 @@ static void co_collect_units(ir_node *irn, void *env)
 			int o, arg_pos;
 			ir_node *arg = get_irn_n(irn, i);
 
-			assert(arch_get_irn_reg_class_out(arg) == co->cls && "Argument not in same register class.");
+			assert(arch_get_irn_reg_class(arg) == co->cls && "Argument not in same register class.");
 			if (arg == irn)
 				continue;
 			if (nodes_interfere(co->cenv, irn, arg)) {
@@ -544,7 +544,7 @@ static int compare_ous(const void *k1, const void *k2)
 	/* Units with constraints come first */
 	u1_has_constr = 0;
 	for (i=0; i<u1->node_count; ++i) {
-		arch_get_register_req_out(&req, u1->nodes[i]);
+		arch_get_irn_register_req(&req, u1->nodes[i]);
 		if (arch_register_req_is(&req, limited)) {
 			u1_has_constr = 1;
 			break;
@@ -553,7 +553,7 @@ static int compare_ous(const void *k1, const void *k2)
 
 	u2_has_constr = 0;
 	for (i=0; i<u2->node_count; ++i) {
-		arch_get_register_req_out(&req, u2->nodes[i]);
+		arch_get_irn_register_req(&req, u2->nodes[i]);
 		if (arch_register_req_is(&req, limited)) {
 			u2_has_constr = 1;
 			break;
@@ -803,7 +803,7 @@ static void build_graph_walker(ir_node *irn, void *env)
 
 	if (get_irn_mode(irn) == mode_T)
 		return;
-	req = arch_get_register_req_out(irn);
+	req = arch_get_irn_register_req(irn);
 	if (req->cls != co->cls || arch_irn_is_ignore(irn))
 		return;
 
@@ -872,7 +872,7 @@ static int co_dump_appel_disjoint_constraints(const copy_opt_t *co, ir_node *a, 
 	constr[1] = bitset_alloca(co->cls->n_regs);
 
 	for (j = 0; j < 2; ++j) {
-		const arch_register_req_t *req = arch_get_register_req_out(nodes[j]);
+		const arch_register_req_t *req = arch_get_irn_register_req(nodes[j]);
 		if (arch_register_req_is(req, limited))
 			rbitset_copy_to_bitset(req->limited, constr[j]);
 		else
@@ -925,7 +925,7 @@ void co_dump_appel_graph(const copy_opt_t *co, FILE *f)
 		if (!arch_irn_is_ignore(irn)) {
 			int idx                        = node_map[get_irn_idx(irn)];
 			affinity_node_t           *a   = get_affinity_info(co, irn);
-			const arch_register_req_t *req = arch_get_register_req_out(irn);
+			const arch_register_req_t *req = arch_get_irn_register_req(irn);
 			ir_node                   *adj;
 
 			if (arch_register_req_is(req, limited)) {
@@ -1030,7 +1030,7 @@ static void ifg_dump_node_attr(FILE *f, void *self, ir_node *irn)
 {
 	co_ifg_dump_t             *env     = (co_ifg_dump_t*)self;
 	const arch_register_t     *reg     = arch_get_irn_register(irn);
-	const arch_register_req_t *req     = arch_get_register_req_out(irn);
+	const arch_register_req_t *req     = arch_get_irn_register_req(irn);
 	int                        limited = arch_register_req_is(req, limited);
 
 	if (env->flags & CO_IFG_DUMP_LABELS) {

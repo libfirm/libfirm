@@ -65,15 +65,6 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 static set       *sym_or_tv;
 static arm_isa_t *isa;
 
-/**
- * Returns the register at in position pos.
- */
-static const arch_register_t *get_in_reg(const ir_node *irn, int pos)
-{
-	ir_node *op = get_irn_n(irn, pos);
-	return arch_get_irn_register(op);
-}
-
 static void arm_emit_register(const arch_register_t *reg)
 {
 	be_emit_string(arch_register_get_name(reg));
@@ -81,13 +72,13 @@ static void arm_emit_register(const arch_register_t *reg)
 
 void arm_emit_source_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = get_in_reg(node, pos);
+	const arch_register_t *reg = arch_get_irn_register_in(node, pos);
 	arm_emit_register(reg);
 }
 
 void arm_emit_dest_register(const ir_node *node, int pos)
 {
-	const arch_register_t *reg = arch_irn_get_register(node, pos);
+	const arch_register_t *reg = arch_get_irn_register_out(node, pos);
 	arm_emit_register(reg);
 }
 
@@ -450,16 +441,16 @@ static void emit_arm_CopyB(const ir_node *irn)
 	const arm_CopyB_attr_t *attr = get_arm_CopyB_attr_const(irn);
 	unsigned size = attr->size;
 
-	const char *tgt = arch_register_get_name(get_in_reg(irn, 0));
-	const char *src = arch_register_get_name(get_in_reg(irn, 1));
+	const char *tgt = arch_register_get_name(arch_get_irn_register_in(irn, 0));
+	const char *src = arch_register_get_name(arch_get_irn_register_in(irn, 1));
 	const char *t0, *t1, *t2, *t3;
 
 	const arch_register_t *tmpregs[4];
 
 	/* collect the temporary registers and sort them, we need ascending order */
-	tmpregs[0] = get_in_reg(irn, 2);
-	tmpregs[1] = get_in_reg(irn, 3);
-	tmpregs[2] = get_in_reg(irn, 4);
+	tmpregs[0] = arch_get_irn_register_in(irn, 2);
+	tmpregs[1] = arch_get_irn_register_in(irn, 3);
+	tmpregs[2] = arch_get_irn_register_in(irn, 4);
 	tmpregs[3] = &arm_registers[REG_R12];
 
 	/* Note: R12 is always the last register because the RA did not assign higher ones */
@@ -691,7 +682,7 @@ static void emit_be_Copy(const ir_node *irn)
 {
 	ir_mode *mode = get_irn_mode(irn);
 
-	if (get_in_reg(irn, 0) == arch_irn_get_register(irn, 0)) {
+	if (arch_get_irn_register_in(irn, 0) == arch_get_irn_register_out(irn, 0)) {
 		/* omitted Copy */
 		return;
 	}

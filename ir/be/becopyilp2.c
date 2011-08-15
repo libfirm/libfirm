@@ -89,7 +89,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 
 			pmap_insert(lenv->nr_2_irn, INT_TO_PTR(node_nr), irn);
 
-			req = arch_get_register_req_out(irn);
+			req = arch_get_irn_register_req(irn);
 
 			bitset_clear_all(colors);
 

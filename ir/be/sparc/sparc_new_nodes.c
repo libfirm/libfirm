@@ -145,7 +145,7 @@ static void sparc_set_attr_imm(ir_node *res, ir_entity *entity,
 	sparc_attr_t *attr           = (sparc_attr_t*)get_irn_generic_attr(res);
 	attr->immediate_value_entity = entity;
 	attr->immediate_value        = immediate_value;
-	arch_irn_add_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form);
+	arch_add_irn_flags(res, (arch_irn_flags_t)sparc_arch_irn_flag_immediate_form);
 }
 
 static void init_sparc_jmp_cond_attr(ir_node *node, ir_relation relation,
@@ -241,8 +241,8 @@ static void init_sparc_attributes(ir_node *node, arch_irn_flags_t flags,
 	backend_info_t  *info;
 	(void) execution_units;
 
-	arch_irn_set_flags(node, flags);
-	arch_set_in_register_reqs(node, in_reqs);
+	arch_set_irn_flags(node, flags);
+	arch_set_irn_register_reqs_in(node, in_reqs);
 
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);

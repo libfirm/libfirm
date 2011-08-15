@@ -312,7 +312,7 @@ LinkMovPC => {
 	attr_type    => "arm_shifter_operand_t",
 	attr         => "arm_shift_modifier_t shift_modifier, unsigned char immediate_value, unsigned char immediate_rot",
 	custominit   => "init_arm_shifter_operand(res, immediate_value, shift_modifier, immediate_rot);\n".
-	                "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);",
+	                "\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);",
 	emit         => ". mov lr, pc\n".
 	                ". mov pc, %SO",
 },
@@ -325,7 +325,7 @@ LinkLdrPC => {
 	out_arity    => "variable",
 	attr_type    => "arm_load_store_attr_t",
 	attr         => "ir_mode *ls_mode, ir_entity *entity, int entity_sign, long offset, bool is_frame_entity",
-	custominit   => "arch_irn_add_flags(res, arch_irn_flags_modify_flags);",
+	custominit   => "arch_add_irn_flags(res, arch_irn_flags_modify_flags);",
 	emit         => ". mov lr, pc\n".
 	                ". ldr pc, %SO",
 },
@@ -336,7 +336,7 @@ Bl => {
 	out_arity  => "variable",
 	attr_type  => "arm_SymConst_attr_t",
 	attr       => "ir_entity *entity, int symconst_offset",
-	custominit => "arch_irn_add_flags(res, arch_irn_flags_modify_flags);",
+	custominit => "arch_add_irn_flags(res, arch_irn_flags_modify_flags);",
 	emit       => '. bl %SC',
 },
 

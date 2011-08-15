@@ -145,12 +145,12 @@ static void sparc_prepare_graph(ir_graph *irg)
 
 static bool sparc_modifies_flags(const ir_node *node)
 {
-	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_flags;
+	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_flags;
 }
 
 static bool sparc_modifies_fp_flags(const ir_node *node)
 {
-	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
+	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
 }
 
 static void sparc_before_ra(ir_graph *irg)

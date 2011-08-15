@@ -120,7 +120,7 @@ static int count_result(const ir_node* irn)
 	if (mode == mode_T)
 		return 1;
 
-	if (arch_get_register_req_out(irn)->type & arch_register_req_type_ignore)
+	if (arch_get_irn_register_req(irn)->type & arch_register_req_type_ignore)
 		return 0;
 
 	return 1;
@@ -197,6 +197,8 @@ static int normal_tree_cost(ir_node* irn, instance_t *inst)
 			continue;
 		mode = get_irn_mode(op);
 		if (mode == mode_M)
+			continue;
+		if (arch_get_irn_flags(op) & arch_irn_flags_not_scheduled)
 			continue;
 		if (mode != mode_T && arch_irn_is_ignore(op))
 			continue;

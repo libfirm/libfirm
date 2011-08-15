@@ -1543,11 +1543,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
  */
 static int find_out_for_reg(ir_node *node, const arch_register_t *reg)
 {
-	int n_outs = arch_irn_get_n_outs(node);
+	int n_outs = arch_get_irn_n_outs(node);
 	int o;
 
 	for (o = 0; o < n_outs; ++o) {
-		const arch_register_req_t *req = arch_get_out_register_req(node, o);
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, o);
 		if (req == reg->single_req)
 			return o;
 	}
@@ -2011,13 +2011,13 @@ static ir_node *gen_Call(ir_node *node)
 		pmap_insert(node_to_stack, node, incsp);
 	}
 
-	arch_set_in_register_reqs(res, in_req);
+	arch_set_irn_register_reqs_in(res, in_req);
 
 	/* create output register reqs */
-	arch_set_out_register_req(res, 0, arch_no_register_req);
+	arch_set_irn_register_req_out(res, 0, arch_no_register_req);
 	for (o = 0; o < n_caller_saves; ++o) {
 		const arch_register_t *reg = caller_saves[o];
-		arch_set_out_register_req(res, o+1, reg->single_req);
+		arch_set_irn_register_req_out(res, o+1, reg->single_req);
 	}
 
 	/* copy pinned attribute */
@@ -2072,7 +2072,7 @@ static ir_node *gen_Phi(ir_node *node)
 	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
 
-	arch_set_out_register_req(phi, 0, req);
+	arch_set_irn_register_req_out(phi, 0, req);
 
 	be_enqueue_preds(node);
 

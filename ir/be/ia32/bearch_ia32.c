@@ -177,7 +177,7 @@ ir_node *ia32_new_Fpu_truncate(ir_graph *irg)
 static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 {
 	ir_graph                  *irg = get_irn_irg(irn);
-	const arch_register_req_t *req = arch_get_register_req(irn, pos);
+	const arch_register_req_t *req = arch_get_irn_register_req_in(irn, pos);
 
 	assert(req != NULL && "Missing register requirements");
 	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
@@ -566,7 +566,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 					/* we can't swap left/right for limited registers
 					 * (As this (currently) breaks constraint handling copies)
 					 */
-					req = arch_get_in_register_req(irn, n_ia32_binary_left);
+					req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
 					if (req->type & arch_register_req_type_limited)
 						return 0;
 					break;

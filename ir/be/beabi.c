@@ -118,6 +118,32 @@ static void be_abi_reg_map_set(pmap *map, const arch_register_t* reg,
 	pmap_insert(map, reg, node);
 }
 
+/**
+ * Check if the given register is callee save, ie. will be save by the callee.
+ */
+static bool arch_register_is_callee_save(
+	const arch_env_t      *arch_env,
+	const arch_register_t *reg)
+{
+	if (arch_env->impl->register_saved_by)
+		return arch_env->impl->register_saved_by(reg, /*callee=*/1);
+	return false;
+}
+
+/**
+ * Check if the given register is caller save, ie. must be save by the caller.
+ */
+static bool arch_register_is_caller_save(
+	const arch_env_t      *arch_env,
+	const arch_register_t *reg)
+{
+	if (arch_env->impl->register_saved_by)
+		return arch_env->impl->register_saved_by(reg, /*callee=*/0);
+	return false;
+}
+
+
+
 /*
      _    ____ ___    ____      _ _ _                _
     / \  | __ )_ _|  / ___|__ _| | | |__   __ _  ___| | _____
@@ -581,8 +607,8 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	/* add state registers ins */
 	for (s = 0; s < ARR_LEN(states); ++s) {
 		const arch_register_t       *reg = states[s];
-		const arch_register_class_t *cls = arch_register_get_class(reg);
-		ir_node *regnode = new_r_Unknown(irg, arch_register_class_mode(cls));
+		const arch_register_class_t *cls = reg->reg_class;
+		ir_node *regnode = new_r_Unknown(irg, cls->mode);
 		in[n_ins++]      = regnode;
 	}
 	assert(n_ins == (int) (n_reg_params + ARR_LEN(states)));
@@ -732,7 +758,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		keep = be_new_Keep(bl, n, in);
 		for (i = 0; i < n; ++i) {
 			const arch_register_t *reg = (const arch_register_t*)get_irn_link(in[i]);
-			be_node_set_reg_class_in(keep, i, reg->reg_class);
+			be_node_set_reg_class_in(keep, i, arch_register_get_class(reg));
 		}
 	}
 
@@ -1569,7 +1595,7 @@ static void modify_irg(ir_graph *irg)
 
 	/* create a new initial memory proj */
 	assert(is_Proj(old_mem));
-	arch_set_out_register_req(env->start, 0, arch_no_register_req);
+	arch_set_irn_register_req_out(env->start, 0, arch_no_register_req);
 	new_mem_proj = new_r_Proj(env->start, mode_M, 0);
 	mem = new_mem_proj;
 	set_irg_initial_mem(irg, mem);

@@ -454,7 +454,7 @@ static inline const arch_register_t *x87_get_irn_register(const ir_node *irn)
 static inline const arch_register_t *x87_irn_get_register(const ir_node *irn,
                                                           int pos)
 {
-	const arch_register_t *res = arch_irn_get_register(irn, pos);
+	const arch_register_t *res = arch_get_irn_register_out(irn, pos);
 
 	assert(res->reg_class == &ia32_reg_classes[CLASS_ia32_vfp]);
 	return res;
@@ -1767,7 +1767,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 	int                         op1_idx, out_idx;
 	unsigned                    live;
 
-	cls = arch_get_irn_reg_class_out(n);
+	cls = arch_get_irn_reg_class(n);
 	if (cls != &ia32_reg_classes[CLASS_ia32_vfp])
 		return 0;
 
