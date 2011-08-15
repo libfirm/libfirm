@@ -106,6 +106,9 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 	R1I => "${arch}_emit_reg_or_imm(node, 1);",
 	S0  => "${arch}_emit_source_register(node, 0);",
 	S1  => "${arch}_emit_source_register(node, 1);",
+	S2  => "${arch}_emit_source_register(node, 2);",
+	S3  => "${arch}_emit_source_register(node, 3);",
+	S4  => "${arch}_emit_source_register(node, 4);",
 	D0  => "${arch}_emit_dest_register(node, 0);",
 	HIM => "${arch}_emit_high_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
@@ -667,6 +670,18 @@ UDiv => {
 	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
 	constructors => \%div_operand_constructors,
+},
+
+Permi => {
+	irn_flags  => [ "rematerializable" ],
+	arity     => "variable",
+	out_arity => "variable",
+},
+
+Permi23 => {
+	irn_flags  => [ "rematerializable" ],
+	arity     => "variable",
+	out_arity => "variable",
 },
 
 fcmp => {

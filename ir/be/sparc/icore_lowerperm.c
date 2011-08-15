@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 
+#include "icore_lowerperm.h"
 #include "ircons.h"
 #include "irgmod.h"
 #include "irgwalk.h"
@@ -36,6 +37,9 @@
 #include "benode.h"
 #include "besched.h"
 #include "belive.h"
+#include "beirg.h"
+
+#include "gen_sparc_new_nodes.h"
 
 #include "execfreq.h"
 #include "statev.h"
@@ -270,7 +274,7 @@ static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 		 * have to generate copy/swap instructions later on. */
 		if (in_reg == out_reg) {
 			DBG((dbg_icore, LEVEL_1, "%+F removing equal perm register pair (%+F, %+F, %s)\n",
-					irn, in, out, out_reg->name));
+			                         irn, in, out, out_reg->name));
 			exchange(out, in);
 			continue;
 		}
@@ -284,24 +288,8 @@ static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 	}
 }
 
-static void emit_stat_info(const ir_node *irn, const perm_move_t *move)
-{
-	ir_node      *block     = get_nodes_block(irn);
-	ir_graph     *irg       = get_irn_irg(block);
-	ir_exec_freq *exec_freq = be_get_irg_exec_freq(irg);
-	double        freq      = get_block_execfreq(exec_freq, block);
-
-	if (move->type == PERM_CYCLE) {
-		stat_ev_int("cycle_length", move->n_elems);
-		stat_ev_dbl("cycle_weight", freq * move->n_elems);
-	}
-	else if (move->type == PERM_CHAIN) {
-		stat_ev_int("chain_length", move->n_elems);
-		stat_ev_dbl("chain_weight", freq * move->n_elems);
-	}
-}
-
-static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
+#if 0
+static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
 {
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
 	ir_node                     *const block       = get_nodes_block(irn);
@@ -386,8 +374,104 @@ static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t* move, reg_pa
 		sched_point = new_perm;
 	}
 }
+#endif
 
-static void split_chain_into_copies(ir_node *irn, const perm_move_t* move, reg_pair_t *const pairs, int n_pairs)
+static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
+{
+	const arch_register_class_t *class;
+	const arch_register_req_t *req;
+	const arch_register_req_t **in_reqs;
+	struct obstack *obs;
+	int i;
+	const int arity = get_irn_arity(irn);
+
+	assert(is_sparc_Permi(irn));
+	/* Get register requirement.  Assumes all input/registers belong to the
+	 * same register class and have the same requirements. */
+	class = arch_register_get_class(reg);
+	req = class->class_req;
+
+	/* Set in register requirements. */
+	obs = be_get_be_obst(get_irn_irg(irn));
+	in_reqs = OALLOCNZ(obs, const arch_register_req_t*, arity);
+	for (i = 0; i < arity; ++i) {
+		in_reqs[i] = req;
+	}
+	arch_set_in_register_reqs(irn, in_reqs);
+
+	/* Set out register requirements. */
+	for (i = 0; i < arity; ++i) {
+		arch_set_out_register_req(irn, i, req);
+	}
+}
+
+static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
+{
+	if (move->n_elems <= MAX_PERM_SIZE) {
+		/* If we have a cycle of size smaller of equal to MAX_PERM_SIZE, we
+		 * can handle this directly in the iCore backend. */
+		const int new_arity = move->n_elems;
+		ir_node **args = ALLOCAN(ir_node*, new_arity);
+		ir_node **ress = ALLOCAN(ir_node*, new_arity);
+		ir_node *permi;
+		int i;
+		ir_node *block = get_nodes_block(irn);
+
+		/*
+		 * The order of the registers in move->elems describes a register
+		 * cycle like this:
+		 *   Order       r0, r1, r2, r3, r4
+		 *   describes   r0->r1->r2->r3->r4->r0.
+		 *
+		 * However, the permi instruction works the other way round, i.e.
+		 *   permi       r0, r1, r2, r3, r4
+		 *   means       r0->r4->r3->r2->r1->r0.
+		 *
+		 * Therefore, we have to reverse the ordering:
+		 *   permi       r4, r3, r2, r1, r0
+		 *   means       r4->r0->r1->r2->r3->r4
+		 *
+		 *   or, written in a different way,
+		 *               r0->r1->r2->r3->r4->r0,
+		 *
+		 * which is exactly the cycle described by move->elems.
+		 */
+		for (i = 0; i < new_arity; ++i) {
+			int in  = new_arity - i - 1;
+			int out = (in+1) % new_arity;
+			args[i] = get_node_for_in_register(pairs, n_pairs, move->elems[in]);
+			ress[i] = get_node_for_out_register(pairs, n_pairs, move->elems[out]);
+		}
+
+		permi = new_bd_sparc_Permi(NULL, block, new_arity, args, new_arity);
+		set_Permi_reg_reqs(permi, pairs[0].in_reg);
+		DBG((dbg_icore, LEVEL_1, "%+F created smaller permi node %+F with size %d\n",
+		                         irn, permi, new_arity));
+
+		for (i = 0; i < new_arity; ++i) {
+			int                    orig_index = new_arity-i-1;
+			int                    out        = (orig_index+1) % new_arity;
+			const arch_register_t *reg        = move->elems[out];
+			int                    pn         = i;
+			ir_node               *proj       = ress[i];
+			set_Proj_pred(proj, permi);
+			set_Proj_proj(proj, pn);
+			DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", i, reg->name));
+			arch_irn_set_register(permi, i, reg);
+		}
+
+		sched_add_after(sched_point, permi);
+		sched_point = permi;
+	} else {
+		/* Otherwise, we want to replace the big Perm node with a series
+		 * of smaller ones. */
+
+		assert(false && "reduce_perm_cycle_size not implemented yet");
+		// reduce_perm_cycle_size(irn, move, pairs, n_pairs);
+	}
+}
+
+static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
 {
 	/* Build copy nodes from back to front */
 	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
@@ -399,19 +483,19 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t* move, reg_p
 		ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
 		ir_node *cpy;
 
-		DB((dbg_icore, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
-					irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
-
 		cpy = be_new_Copy(reg_class, block, arg1);
+		DB((dbg_icore, LEVEL_1, "%+F created copy node %+F to implement (%+F, %s) -> (%+F, %s)\n",
+		                        irn, cpy, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
+
 		arch_set_irn_register(cpy, move->elems[i + 1]);
 
-		/* exchange copy node and proj */
+		/* Exchange copy node and proj. */
 		exchange(res2, cpy);
 
-		/* insert the copy/exchange node in schedule after the magic schedule node */
+		/* Insert the copy/exchange node in schedule after the magic schedule node. */
 		sched_add_after(skip_Proj(sched_point), cpy);
 
-		/* set the new scheduling point */
+		/* Set the new scheduling point. */
 		sched_point = cpy;
 	}
 }
@@ -429,7 +513,6 @@ static void lower_perm_node(ir_node *irn)
 	int         const arity        = get_irn_arity(irn);
 	reg_pair_t *const pairs        = ALLOCAN(reg_pair_t, arity);
 	int               n_pairs      = 0;
-	int cycle_count                = 0;
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
 	assert(arity == get_irn_n_edges(irn) && "perm's in and out numbers different");
@@ -450,16 +533,13 @@ static void lower_perm_node(ir_node *irn)
 		perm_move_t move;
 		int         i;
 
-		/* Go to the first not-checked pair */
-		for (i = 0; pairs[i].checked; ++i) {
-		}
+		/* Go to the first unchecked pair */
+		for (i = 0; pairs[i].checked; ++i);
 
 		/* Identifies cycles or chains in the given list of register pairs.
 		 * Found cycles/chains are written to move.n_elems, the type (cycle
 		 * or chain) is saved in move.type. */
 		get_perm_move_info(&move, pairs, n_pairs, i);
-
-		emit_stat_info(irn, &move);
 
 		DB((dbg_icore, LEVEL_1, "%+F: following %s created:\n  ", irn, move.type == PERM_CHAIN ? "chain" : "cycle"));
 		for (i = 0; i < move.n_elems; ++i) {
@@ -467,55 +547,14 @@ static void lower_perm_node(ir_node *irn)
 		}
 		DB((dbg_icore, LEVEL_1, "\n"));
 
-		if (move.type == PERM_CYCLE)
-			++cycle_count;
-
 		if (move.type == PERM_CYCLE) {
-			if (move.n_elems <= MAX_PERM_SIZE) {
-				/* We don't need to do anything if we have a cycle with fewer than
-				 * MAX_PERM_SIZE, because those nodes can be directly handled by
-				 * the iCore backend using one permutation instruction. */
-
-				const int new_arity = move.n_elems;
-				ir_node *args[new_arity];
-				ir_node *ress[new_arity];
-				ir_node *new_perm;
-				int j;
-				const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-				ir_node                     *const block       = get_nodes_block(irn);
-
-				for (j = 0; j < new_arity; ++j) {
-					args[j] = get_node_for_in_register(pairs, n_pairs, move.elems[j]);
-					ress[j] = get_node_for_out_register(pairs, n_pairs, move.elems[j]);
-				}
-
-				DBG((dbg_icore, LEVEL_1, "%+F creating smaller perm node with size %d\n",
-										 irn, new_arity));
-
-				new_perm = be_new_Perm(reg_class, block, new_arity, args);
-
-				for (j = 0; j < new_arity; ++j) {
-					set_Proj_pred(ress[j], new_perm);
-					set_Proj_proj(ress[j], j);
-					arch_set_irn_register(ress[j], move.elems[j]);
-				}
-
-				sched_add_after(sched_point, new_perm);
-				sched_point = new_perm;
-			} else {
-				/* Otherwise, we want to replace the big Perm node with a series
-				 * of smaller ones. */
-
-				reduce_perm_cycle_size(irn, &move, pairs, n_pairs);
-			}
+			handle_cycle(irn, &move, pairs, n_pairs);
 		} else { /* move.type == PERM_CHAIN */
 			split_chain_into_copies(irn, &move, pairs, n_pairs);
 		}
 
 		free(move.elems);
 	}
-
-	stat_ev_int("cycle_count", cycle_count);
 
 	/* Remove the perm from schedule */
 	sched_remove(irn);
@@ -548,7 +587,7 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
-	/* dump_ir_graph(irg, "before_icore_lowering"); */
+	dump_ir_graph(irg, "before_icore_lowering");
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
-	/* dump_ir_graph(irg, "after_icore_lowering"); */
+	dump_ir_graph(irg, "after_icore_lowering");
 }

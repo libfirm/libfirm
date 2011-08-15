@@ -579,71 +579,117 @@ static void emit_sparc_Call(const ir_node *node)
 	fill_delay_slot();
 }
 
-static void emit_be_Perm_xor(const ir_node *irn)
+static int permi5(int *regs)
 {
-	be_emit_cstring("\txor ");
-	sparc_emit_source_register(irn, 1);
-	be_emit_cstring(", ");
-	sparc_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	sparc_emit_source_register(irn, 0);
+	return  (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
+}
+
+static void emit_icore_Permi(const ir_node *irn)
+{
+	const int MAX_CYCLE_SIZE = 5;
+	const arch_register_t *in_regs[MAX_CYCLE_SIZE];
+	const arch_register_t *out_regs[MAX_CYCLE_SIZE];
+	int regns[MAX_CYCLE_SIZE];
+	int i;
+	const int arity = get_irn_arity(irn);
+
+	assert(arity >= 2 && arity <= MAX_CYCLE_SIZE);
+
+	for (i = 0; i < arity; ++i) {
+		in_regs[i]  = get_in_reg(irn, i);
+		regns[i]    = in_regs[i]->index;
+		out_regs[i] = get_out_reg(irn, i);
+	}
+
+	/*
+	 * Sanity check:
+	 *   permi r0, r1, r2, r3, r4   encodes   r0->r4->r3->r2->r1->r0,
+	 *
+	 * which can be seen as a 'left rotation'.
+	 *
+	 * Therefore, the register of output node i must be equal
+	 * to the register of input node i + 1, or, in the case of the
+	 * rightmost node, node 0.  This wrap-around is implemented by
+	 * the modulo operation.
+	 */
+#ifndef NDEBUG
+	for (i = 0; i < arity; ++i) {
+		assert(out_regs[i] == in_regs[(i + arity - 1) % arity] && "Permi node does not represent a cycle of the required form");
+	}
+#endif
+
+	/*
+	 * We have to take care that we generate the correct order for registers
+	 * here.
+	 *   permi r0, r4, r3, r2, r1   encodes   r0->r1->r2->r3->r4->r0
+	 * but
+	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
+	 */
+	while (regns[0] > regns[1]) {
+		/* Rotate until condition holds */
+		int regn0 = regns[0];
+		for (i = 0; i < arity - 1; ++i)
+			regns[i] = regns[i + 1];
+		regns[arity - 1] = regn0;
+	}
+
+	/*
+	 * The permi instruction always operates on five registers.  However,
+	 * it is allowed to supply the same register number multiple times.
+	 * Therefore, e.g., a swap operation on r0 and r1 can be expressed with:
+	 *   permi r0, r1, r1, r1, r1
+	 *
+	 * Hence, we fill the unused elements in regns (if there are any) with
+	 * the last register number we inserted.
+	 */
+	for (i = arity; i < MAX_CYCLE_SIZE; ++i) {
+		regns[i] = regns[arity - 1];
+	}
+
+	/* Print some information about the meaning of the following permi. */
+	be_emit_irprintf("\t/* Cycle: ");
+	for (i = 0; i < arity; ++i) {
+		be_emit_irprintf("%s->", in_regs[i]->name);
+	}
+	be_emit_irprintf("%s */", in_regs[0]->name);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring("\txor ");
-	sparc_emit_source_register(irn, 1);
-	be_emit_cstring(", ");
-	sparc_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	sparc_emit_source_register(irn, 1);
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_cstring("\txor ");
-	sparc_emit_source_register(irn, 1);
-	be_emit_cstring(", ");
-	sparc_emit_source_register(irn, 0);
-	be_emit_cstring(", ");
-	sparc_emit_source_register(irn, 0);
+	be_emit_irprintf("\tpermi %d", permi5(regns));
 	be_emit_finish_line_gas(irn);
 }
 
-static int map_reg_to_permi_num(const arch_register_t *reg)
+static void emit_icore_Permi23(const ir_node *irn)
 {
-	return reg->index;
+	(void) irn;
+	assert(false && "Permi23 not implemented yet");
 }
 
-static int permi5(int *regs)
+static void emit_be_Perm_xor(const ir_node *irn)
 {
-#if 0
-	return   (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10)
-	       | (regs[3] <<  5) | regs[4];
-#else
-	return   (regs[4] << 20) | (regs[3] << 15) | (regs[2] << 10)
-	       | (regs[1] << 5)  | regs[0];
-#endif
-}
+	assert(get_irn_arity(irn) == 2 && "Perm nodes must have arity of 2");
 
-static void emit_be_Perm_permi(const ir_node *irn)
-{
-	const int MAX_PERM_SIZE = 5;
-	const int arity = get_irn_arity(irn);
-	int       pns[MAX_PERM_SIZE];
-	int       i;
+	be_emit_cstring("\txor ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_finish_line_gas(NULL);
 
-	assert(arity >= 2 && arity <= MAX_PERM_SIZE);
+	be_emit_cstring("\txor ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_finish_line_gas(NULL);
 
-	for (i = 0; i < arity; ++i) {
-		const arch_register_t *reg = get_in_reg(irn, i);
-		pns[i] = map_reg_to_permi_num(reg);
-	}
-
-	/* If Perm node is smaller than maximum, fill rest of the slots
-	 * with the last register number we inserted. */
-	while (i < MAX_PERM_SIZE) {
-		pns[i++] = pns[arity - 1];
-	}
-
-	const int n = permi5(pns);
-	be_emit_irprintf("\tpermi %d", n);
+	be_emit_cstring("\txor ");
+	sparc_emit_source_register(irn, 1);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
+	be_emit_cstring(", ");
+	sparc_emit_source_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
 
@@ -652,11 +698,8 @@ static void emit_be_Perm_permi(const ir_node *irn)
  */
 static void emit_be_Perm(const ir_node *irn)
 {
-	if (sparc_cg_config.use_permi) {
-		emit_be_Perm_permi(irn);
-	} else {
-		emit_be_Perm_xor(irn);
-	}
+	assert(!sparc_cg_config.use_permi && "Regular Perm nodes should not show up if permi is available");
+	emit_be_Perm_xor(irn);
 }
 
 static void emit_be_MemPerm(const ir_node *node)
@@ -997,6 +1040,8 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
 	set_emitter(op_sparc_UDiv,      emit_sparc_UDiv);
+	set_emitter(op_sparc_Permi,     emit_icore_Permi);
+	set_emitter(op_sparc_Permi23,   emit_icore_Permi23);
 
 	/* no need to emit anything for the following nodes */
 	set_emitter(op_be_Keep,    emit_nothing);
