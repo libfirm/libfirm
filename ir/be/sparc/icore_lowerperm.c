@@ -417,7 +417,7 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 		ir_node **ress  = ALLOCAN(ir_node*, cycle_size);
 		ir_node  *block = get_nodes_block(irn);
 		ir_node  *permi;
-		int i;
+		int       i;
 
 		/*
 		 * The order of the registers in move->elems describes a cycle
@@ -468,15 +468,17 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	int                                i;
 
 	for (i = move->n_elems - 2; i >= 0; --i) {
-		ir_node *arg1 = get_node_for_in_register(pairs, n_pairs, move->elems[i]);
-		ir_node *res2 = get_node_for_out_register(pairs, n_pairs, move->elems[i + 1]);
-		ir_node *cpy;
+		arch_register_t *in_reg  = move->elems[i];
+		arch_register_t *out_reg = move->elems[i + 1];
+		ir_node         *arg1    = get_node_for_in_register(pairs, n_pairs, in_reg);
+		ir_node         *res2    = get_node_for_out_register(pairs, n_pairs, out_reg);
+		ir_node         *cpy;
 
 		cpy = be_new_Copy(reg_class, block, arg1);
 		DB((dbg_icore, LEVEL_1, "%+F created copy node %+F to implement (%+F, %s) -> (%+F, %s)\n",
-		                        irn, cpy, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
+		                        irn, cpy, arg1, in_reg->name, res2, out_reg->name));
 
-		arch_set_irn_register(cpy, move->elems[i + 1]);
+		arch_set_irn_register(cpy, out_reg);
 
 		/* Exchange copy node and proj. */
 		exchange(res2, cpy);
