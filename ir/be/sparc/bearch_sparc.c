@@ -59,6 +59,7 @@
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../beflags.h"
+#include "../beutil.h"
 
 #include "bearch_sparc_t.h"
 
@@ -536,6 +537,48 @@ static const lc_opt_table_entry_t sparc_options[] = {
 	LC_OPT_LAST
 };
 
+static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
+{
+	ir_node  *block = get_block(after);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_node  *mem   = get_irg_no_mem(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+	ir_node  *store;
+
+	if (mode_is_float(mode)) {
+		store = create_stf(NULL, block, value, frame, mem, mode, NULL, 0, true);
+	} else {
+		store = new_bd_sparc_St_imm(NULL, block, value, frame, mem, mode, NULL,
+		                            0, true);
+	}
+	sched_add_after(after, store);
+	return store;
+}
+
+static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
+                                 ir_node *before)
+{
+	ir_node  *block = get_block(before);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+	ir_node  *load;
+	ir_node  *res;
+
+	if (mode_is_float(mode)) {
+		load = create_ldf(NULL, block, frame, spill, mode, NULL, 0, true);
+	} else {
+		load = new_bd_sparc_Ld_imm(NULL, block, frame, spill, mode, NULL, 0,
+		                           true);
+	}
+	sched_add_before(before, load);
+	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
+	res = new_r_Proj(load, mode, pn_sparc_Ld_res);
+
+	return res;
+}
+
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
 	sparc_lower_for_target,
@@ -558,6 +601,8 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_finish,
 	sparc_emit_routine,
 	NULL, /* register_saved_by */
+	sparc_new_spill,
+	sparc_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

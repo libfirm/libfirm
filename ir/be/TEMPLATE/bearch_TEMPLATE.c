@@ -44,6 +44,7 @@
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../bestack.h"
+#include "../bespillutil.h"
 
 #include "bearch_TEMPLATE_t.h"
 
@@ -412,6 +413,8 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
 	TEMPLATE_register_saved_by,
+	be_new_spill,
+	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

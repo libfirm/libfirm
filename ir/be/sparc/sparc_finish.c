@@ -350,89 +350,6 @@ static void register_peephole_optimisation(ir_op *op, peephole_opt_func func)
 	op->ops.generic = (op_func) func;
 }
 
-/**
- * transform reload node => load
- */
-static void transform_Reload(ir_node *node)
-{
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
-	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
-	ir_mode   *mode   = get_irn_mode(node);
-	ir_entity *entity = be_get_frame_entity(node);
-	const arch_register_t *reg;
-	ir_node   *proj;
-	ir_node   *load;
-
-	ir_node  *sched_point = sched_prev(node);
-
-	if (mode_is_float(mode)) {
-		load = create_ldf(dbgi, block, ptr, mem, mode, entity, 0, true);
-	} else {
-		load = new_bd_sparc_Ld_imm(dbgi, block, ptr, mem, mode, entity, 0,
-		                           true);
-	}
-	sched_add_after(sched_point, load);
-	sched_remove(node);
-
-	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
-	proj = new_rd_Proj(dbgi, load, mode, pn_sparc_Ld_res);
-
-	reg = arch_get_irn_register(node);
-	arch_set_irn_register(proj, reg);
-
-	exchange(node, proj);
-}
-
-/**
- * transform spill node => store
- */
-static void transform_Spill(ir_node *node)
-{
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_node   *mem    = get_irg_no_mem(irg);
-	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
-	ir_mode   *mode   = get_irn_mode(val);
-	ir_entity *entity = be_get_frame_entity(node);
-	ir_node   *sched_point;
-	ir_node   *store;
-
-	sched_point = sched_prev(node);
-	if (mode_is_float(mode)) {
-		store = create_stf(dbgi, block, val, ptr, mem, mode, entity, 0, true);
-	} else {
-		store = new_bd_sparc_St_imm(dbgi, block, val, ptr, mem, mode, entity, 0,
-		                            true);
-	}
-	sched_remove(node);
-	sched_add_after(sched_point, store);
-
-	exchange(node, store);
-}
-
-/**
- * walker to transform be_Spill and be_Reload nodes
- */
-static void sparc_after_ra_walker(ir_node *block, void *data)
-{
-	ir_node *node, *prev;
-	(void) data;
-
-	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
-		prev = sched_prev(node);
-
-		if (be_is_Reload(node)) {
-			transform_Reload(node);
-		} else if (be_is_Spill(node)) {
-			transform_Spill(node);
-		}
-	}
-}
-
 static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
 {
 	be_fec_env_t  *env = (be_fec_env_t*)data;
@@ -487,8 +404,6 @@ void sparc_finish(ir_graph *irg)
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
 	be_free_frame_entity_coalescer(fec_env);
-
-	irg_block_walk_graph(irg, NULL, sparc_after_ra_walker, NULL);
 
 	sparc_introduce_prolog_epilog(irg);
 

@@ -46,6 +46,7 @@
 #include "../belistsched.h"
 #include "../beflags.h"
 #include "../bespillslots.h"
+#include "../bespillutil.h"
 #include "../bestack.h"
 
 #include "bearch_amd64_t.h"
@@ -588,6 +589,8 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_finish_irg,
 	amd64_gen_routine,
 	amd64_register_saved_by,
+	be_new_spill,
+	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

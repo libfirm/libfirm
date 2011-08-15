@@ -66,6 +66,7 @@
 #include "../be_dbgout.h"
 #include "../beblocksched.h"
 #include "../bemachine.h"
+#include "../bespillutil.h"
 #include "../bespillslots.h"
 #include "../bemodule.h"
 #include "../begnuas.h"
@@ -2235,6 +2236,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_finish,         /* called before codegen */
 	ia32_emit,           /* emit && done */
 	ia32_register_saved_by,
+	be_new_spill,
+	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

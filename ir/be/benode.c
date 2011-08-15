@@ -954,44 +954,6 @@ int be_get_IncSP_align(const ir_node *irn)
 	return a->align;
 }
 
-ir_node *be_spill(ir_node *block, ir_node *irn)
-{
-	ir_graph                    *irg       = get_Block_irg(block);
-	ir_node                     *frame     = get_irg_frame(irg);
-	const arch_register_class_t *cls       = arch_get_irn_reg_class(irn);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
-	ir_node                     *spill;
-
-	spill = be_new_Spill(cls, cls_frame, block, frame, irn);
-	return spill;
-}
-
-ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert,
-                   ir_mode *mode, ir_node *spill)
-{
-	ir_node  *reload;
-	ir_node  *bl    = is_Block(insert) ? insert : get_nodes_block(insert);
-	ir_graph *irg   = get_Block_irg(bl);
-	ir_node  *frame = get_irg_frame(irg);
-	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
-
-	assert(be_is_Spill(spill) || (is_Phi(spill) && get_irn_mode(spill) == mode_M));
-
-	reload = be_new_Reload(cls, cls_frame, bl, frame, spill, mode);
-
-	if (is_Block(insert)) {
-		do {
-			insert = sched_prev(insert);
-		} while (is_cfop(insert));
-		sched_add_after(insert, reload);
-	} else {
-		sched_add_before(insert, reload);
-	}
-
-	return reload;
-}
-
-
 static arch_irn_class_t be_node_classify(const ir_node *irn)
 {
 	switch (get_irn_opcode(irn)) {
