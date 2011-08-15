@@ -34,9 +34,17 @@ typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct sparc_isa_t            sparc_isa_t;
 typedef struct calling_convention_t   calling_convention_t;
 
+/** Floating point instruction set. */
+enum sparc_fp_architectures {
+	SPARC_FPU_ARCH_NONE      = 0,
+	SPARC_FPU_ARCH_FPU       = 0x00000001,
+	SPARC_FPU_ARCH_SOFTFLOAT = 0x00000002,
+};
+
 struct sparc_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_env_t */
-    pmap       *constants;
+	pmap       *constants;
+	int         fpu_arch;  /**< FPU architecture */
 };
 
 /**

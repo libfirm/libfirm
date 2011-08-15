@@ -40,6 +40,7 @@
 #include "lowering.h"
 #include "lower_dw.h"
 #include "lower_calls.h"
+#include "lower_softfloat.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -185,7 +186,8 @@ static sparc_isa_t sparc_isa_template = {
 		5,                                  /* costs for a reload instruction */
 		true,                               /* custom abi handling */
 	},
-	NULL,     /* constants */
+	NULL,               /* constants */
+	SPARC_FPU_ARCH_FPU, /* FPU architecture */
 };
 
 /**
@@ -415,6 +417,9 @@ static void sparc_lower_for_target(void)
 	};
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
+	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
+		lower_floating_point();
+
 	sparc_lower_64bit();
 
 	for (i = 0; i < n_irgs; ++i) {
@@ -515,6 +520,22 @@ static int sparc_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
+/* fpu set architectures. */
+static const lc_opt_enum_int_items_t sparc_fpu_items[] = {
+	{ "fpu",       SPARC_FPU_ARCH_FPU },
+	{ "softfloat", SPARC_FPU_ARCH_SOFTFLOAT },
+	{ NULL,        0 }
+};
+
+static lc_opt_enum_int_var_t arch_fpu_var = {
+	&sparc_isa_template.fpu_arch, sparc_fpu_items
+};
+
+static const lc_opt_table_entry_t sparc_options[] = {
+	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &arch_fpu_var),
+	LC_OPT_LAST
+};
+
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
 	sparc_lower_for_target,
@@ -542,6 +563,11 @@ const arch_isa_if_t sparc_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)
 void be_init_arch_sparc(void)
 {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *sparc_grp = lc_opt_get_grp(be_grp, "sparc");
+
+	lc_opt_add_table(sparc_grp, sparc_options);
+
 	be_register_isa_if("sparc", &sparc_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
 	sparc_init_transform();
