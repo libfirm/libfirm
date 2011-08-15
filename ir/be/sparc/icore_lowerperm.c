@@ -412,22 +412,23 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 
 	if (cycle_size <= MAX_CYCLE_SIZE) {
 		/* If we have a cycle of size smaller or equal to MAX_CYCLE_SIZE, we
-		 * can handle this directly in the iCore backend. */
-		ir_node **args = ALLOCAN(ir_node*, cycle_size);
-		ir_node **ress = ALLOCAN(ir_node*, cycle_size);
-		ir_node *permi;
+		 * can handle it directly with one iCore instruction. */
+		ir_node **args  = ALLOCAN(ir_node*, cycle_size);
+		ir_node **ress  = ALLOCAN(ir_node*, cycle_size);
+		ir_node  *block = get_nodes_block(irn);
+		ir_node  *permi;
 		int i;
-		ir_node *block = get_nodes_block(irn);
 
 		/*
-		 * The order of the registers in move->elems describes a register
-		 * cycle like this:
+		 * The order of the registers in move->elems describes a cycle
+		 * like this:
 		 *   Order       r0, r1, r2, r3, r4
 		 *   describes   r0->r1->r2->r3->r4->r0.
 		 */
 		for (i = 0; i < cycle_size; ++i) {
-			int in  = i;
-			int out = (in + 1) % cycle_size;
+			const int in  = i;
+			const int out = (in + 1) % cycle_size;
+
 			args[i] = get_node_for_in_register(pairs, n_pairs, move->elems[in]);
 			ress[i] = get_node_for_out_register(pairs, n_pairs, move->elems[out]);
 		}
@@ -438,13 +439,12 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 		                         irn, permi, cycle_size));
 
 		for (i = 0; i < cycle_size; ++i) {
-			int                    orig_index = i;
-			int                    out        = (orig_index + 1) % cycle_size;
-			const arch_register_t *reg        = move->elems[out];
-			int                    pn         = i;
-			ir_node               *proj       = ress[i];
+			int                    out  = (i + 1) % cycle_size;
+			const arch_register_t *reg  = move->elems[out];
+			ir_node               *proj = ress[i];
+
 			set_Proj_pred(proj, permi);
-			set_Proj_proj(proj, pn);
+			set_Proj_proj(proj, i);
 			DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", i, reg->name));
 			arch_irn_set_register(permi, i, reg);
 		}
