@@ -597,26 +597,47 @@ static void emit_icore_Permi(const ir_node *irn)
 
 	for (i = 0; i < arity; ++i) {
 		in_regs[i]  = get_in_reg(irn, i);
-		regns[i]    = in_regs[i]->index;
 		out_regs[i] = get_out_reg(irn, i);
 	}
 
 	/*
 	 * Sanity check:
-	 *   permi r0, r1, r2, r3, r4   encodes   r0->r4->r3->r2->r1->r0,
 	 *
-	 * which can be seen as a 'left rotation'.
+	 * A Permi node with input registers
+	 *   r0, r1, r2, r3, r4
+	 * encodes the cycle
+	 *   r0->r1->r2->r3->r4->r0
+	 * which can be seen as a 'right rotation'.
 	 *
-	 * Therefore, the register of output node i must be equal
-	 * to the register of input node i + 1, or, in the case of the
-	 * rightmost node, node 0.  This wrap-around is implemented by
-	 * the modulo operation.
+	 *   r0   r1   r2   r3   r4
+	 *   |    |    |    |    |
+	 * ,-----------------------.
+	 * |         Permi         |
+	 * `-----------------------'
+	 *   |    |    |    |    |
+	 *   r1   r2   r3   r4   r0
+	 *
+	 * Therefore, the output register of successor node i must be
+	 * equal to the input register predecessor node i + 1.
 	 */
 #ifndef NDEBUG
 	for (i = 0; i < arity; ++i) {
-		assert(out_regs[i] == in_regs[(i + arity - 1) % arity] && "Permi node does not represent a cycle of the required form");
+		assert(out_regs[i] == in_regs[(i + 1) % arity] && "Permi node does not represent a cycle of the required form");
 	}
 #endif
+
+	/*
+	 * The current hardware implementation of the permi instruction
+	 * describes a 'left rotation', i.e.
+	 *   permi r0, r1, r2, r3, r4
+	 * encodes
+	 *   r0->r4->r3->r2->r1->r0.
+	 * Therefore, we reverse the order of the register numbers for
+	 * actual code generation.
+	 */
+	for (i = 0; i < arity; ++i) {
+		regns[i] = in_regs[arity - i - 1]->index;
+	}
 
 	/*
 	 * We have to take care that we generate the correct order for registers
@@ -626,7 +647,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
 	 */
 	while (regns[0] > regns[1]) {
-		/* Rotate until condition holds */
+		/* Rotate until condition holds. */
 		int regn0 = regns[0];
 		for (i = 0; i < arity - 1; ++i)
 			regns[i] = regns[i + 1];

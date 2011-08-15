@@ -48,7 +48,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
 
 /** TODO:  Once the perm instruction is implemented, this value can be
  * increased */
-static const int MAX_PERM_SIZE = 5;
+static const int MAX_CYCLE_SIZE = 5;
 static ir_node *sched_point;
 
 /** Holds a Perm register pair. */
@@ -407,12 +407,14 @@ static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
 
 static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
 {
-	if (move->n_elems <= MAX_PERM_SIZE) {
-		/* If we have a cycle of size smaller of equal to MAX_PERM_SIZE, we
+	const int cycle_size = move->n_elems;
+	assert(move->type == PERM_CYCLE);
+
+	if (cycle_size <= MAX_CYCLE_SIZE) {
+		/* If we have a cycle of size smaller or equal to MAX_CYCLE_SIZE, we
 		 * can handle this directly in the iCore backend. */
-		const int new_arity = move->n_elems;
-		ir_node **args = ALLOCAN(ir_node*, new_arity);
-		ir_node **ress = ALLOCAN(ir_node*, new_arity);
+		ir_node **args = ALLOCAN(ir_node*, cycle_size);
+		ir_node **ress = ALLOCAN(ir_node*, cycle_size);
 		ir_node *permi;
 		int i;
 		ir_node *block = get_nodes_block(irn);
@@ -422,35 +424,22 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 		 * cycle like this:
 		 *   Order       r0, r1, r2, r3, r4
 		 *   describes   r0->r1->r2->r3->r4->r0.
-		 *
-		 * However, the permi instruction works the other way round, i.e.
-		 *   permi       r0, r1, r2, r3, r4
-		 *   means       r0->r4->r3->r2->r1->r0.
-		 *
-		 * Therefore, we have to reverse the ordering:
-		 *   permi       r4, r3, r2, r1, r0
-		 *   means       r4->r0->r1->r2->r3->r4
-		 *
-		 *   or, written in a different way,
-		 *               r0->r1->r2->r3->r4->r0,
-		 *
-		 * which is exactly the cycle described by move->elems.
 		 */
-		for (i = 0; i < new_arity; ++i) {
-			int in  = new_arity - i - 1;
-			int out = (in+1) % new_arity;
+		for (i = 0; i < cycle_size; ++i) {
+			int in  = i;
+			int out = (in + 1) % cycle_size;
 			args[i] = get_node_for_in_register(pairs, n_pairs, move->elems[in]);
 			ress[i] = get_node_for_out_register(pairs, n_pairs, move->elems[out]);
 		}
 
-		permi = new_bd_sparc_Permi(NULL, block, new_arity, args, new_arity);
+		permi = new_bd_sparc_Permi(NULL, block, cycle_size, args, cycle_size);
 		set_Permi_reg_reqs(permi, pairs[0].in_reg);
 		DBG((dbg_icore, LEVEL_1, "%+F created smaller permi node %+F with size %d\n",
-		                         irn, permi, new_arity));
+		                         irn, permi, cycle_size));
 
-		for (i = 0; i < new_arity; ++i) {
-			int                    orig_index = new_arity-i-1;
-			int                    out        = (orig_index+1) % new_arity;
+		for (i = 0; i < cycle_size; ++i) {
+			int                    orig_index = i;
+			int                    out        = (orig_index + 1) % cycle_size;
 			const arch_register_t *reg        = move->elems[out];
 			int                    pn         = i;
 			ir_node               *proj       = ress[i];
