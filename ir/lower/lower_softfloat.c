@@ -77,7 +77,7 @@ static ir_type *unop_tp_lu_f;
 /** A map from a method type to its lowered type. */
 static pmap *lowered_type;
 
-ir_nodeset_t created_mux_nodes;
+static ir_nodeset_t created_mux_nodes;
 
 /**
  * @return The lowered (floating point) mode.
@@ -313,7 +313,7 @@ static ir_node *create_softfloat_symconst(const ir_node *n, const char *name)
 	assert(double_types <= 3);
 
 	if (float_types + double_types > 1)
-		snprintf(buf, sizeof(buf), "__%s%s%s%s%d", name, first_param, second_param, result, float_types + double_types);
+		snprintf(buf, sizeof(buf), "__%s%s%s%s%u", name, first_param, second_param, result, float_types + double_types);
 	else
 		snprintf(buf, sizeof(buf), "__%s%s%s%s", name, first_param, second_param, result);
 
@@ -475,7 +475,7 @@ static void lower_Call(ir_node *node)
  */
 static void lower_Cmp(ir_node *n)
 {
-	ir_node         *symconst;
+	ir_node         *symconst    = NULL;
 	ir_node         *block       = get_nodes_block(n);
 	ir_node         *call_result = NULL;
 	dbg_info        *dbgi        = get_irn_dbg_info(n);
