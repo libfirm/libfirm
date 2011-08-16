@@ -48,7 +48,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg_icore;)
 
 /** TODO:  Once the perm instruction is implemented, this value can be
  * increased */
-static const int MAX_CYCLE_SIZE = 5;
+static const int MAX_PERMI_SIZE = 5;
 static ir_node *sched_point;
 
 /** Holds a Perm register pair. */
@@ -288,58 +288,99 @@ static void build_register_pair_list(reg_pair_t *pairs, int *n, ir_node *irn)
 	}
 }
 
-#if 0
-static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
+static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
 {
-	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-	ir_node                     *const block       = get_nodes_block(irn);
-	int                                i;
+	const arch_register_class_t *class;
+	const arch_register_req_t *req;
+	const arch_register_req_t **in_reqs;
+	struct obstack *obs;
+	int i;
+	const int arity = get_irn_arity(irn);
 
-	assert(get_irn_arity(irn) > MAX_PERM_SIZE);
+	assert(is_sparc_Permi(irn));
+	/* Get register requirement.  Assumes all input/registers belong to the
+	 * same register class and have the same requirements. */
+	class = arch_register_get_class(reg);
+	req = class->class_req;
 
-	/* In this first step, we place as many Perms of the maximum allowed size as
+	/* Set in register requirements. */
+	obs = be_get_be_obst(get_irn_irg(irn));
+	in_reqs = OALLOCNZ(obs, const arch_register_req_t*, arity);
+	for (i = 0; i < arity; ++i) {
+		in_reqs[i] = req;
+	}
+	arch_set_in_register_reqs(irn, in_reqs);
+
+	/* Set out register requirements. */
+	for (i = 0; i < arity; ++i) {
+		arch_set_out_register_req(irn, i, req);
+	}
+}
+
+static void split_big_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
+{
+	ir_node *const block      = get_nodes_block(irn);
+	int            i;
+	const int      cycle_size = move->n_elems;
+
+	assert(cycle_size > MAX_PERMI_SIZE);
+
+	/* In this first step, we place as many Permis of the maximum allowed size as
 	 * possible.  We stop as soon as the rest of the permutation needs a
 	 * smaller Perm node. */
-	for (i = move->n_elems - MAX_PERM_SIZE; i >= 0; i -= (MAX_PERM_SIZE - 1)) {
-		ir_node *args[MAX_PERM_SIZE];
-		ir_node *ress[MAX_PERM_SIZE];
-		ir_node *new_perm;
-		int pidx, j;
+	for (i = cycle_size - MAX_PERMI_SIZE; i >= 0; i -= MAX_PERMI_SIZE - 1) {
+		ir_node *args[MAX_PERMI_SIZE];
+		ir_node *ress[MAX_PERMI_SIZE];
+		ir_node *permi;
+		int pidx;
+		int j;
+		const int last = MAX_PERMI_SIZE - 1;
 
-		for (j = 0; j < MAX_PERM_SIZE; ++j) {
-			args[j] = get_node_for_in_register(pairs, n_pairs, move->elems[i + j]);
-			ress[j] = get_node_for_out_register(pairs, n_pairs, move->elems[i + j]);
+		for (j = 0; j < MAX_PERMI_SIZE; ++j) {
+			const int in  = j;
+			const int out = (in + 1) % MAX_PERMI_SIZE;
+
+			args[j] = get_node_for_in_register(pairs, n_pairs, move->elems[i + in]);
+			ress[j] = get_node_for_out_register(pairs, n_pairs, move->elems[i + out]);
 		}
 
-		DBG((dbg_icore, LEVEL_1, "%+F creating smaller perm node with size %d\n",
-		                         irn, MAX_PERM_SIZE));
+		permi = new_bd_sparc_Permi(NULL, block, MAX_PERMI_SIZE, args, MAX_PERMI_SIZE);
+		set_Permi_reg_reqs(permi, pairs[i].in_reg);
+		DBG((dbg_icore, LEVEL_1, "%+F created smaller Permi node %+F with size %d\n",
+		                         irn, permi, MAX_PERMI_SIZE));
 
-		new_perm = be_new_Perm(reg_class, block, MAX_PERM_SIZE, args);
+		if (i >= (MAX_PERMI_SIZE - 1)) {
+			/* Cycle is not done yet */
+			pidx = get_pairidx_for_in_regidx(pairs, n_pairs, move->elems[i]->index);
 
-		/* Cycle is not done yet */
-		pidx = get_pairidx_for_in_regidx(pairs, n_pairs, move->elems[i]->index);
+			/* Create intermediate proj */
+			ress[last] = new_r_Proj(permi, get_irn_mode(ress[last]), last);
 
-		/* Create intermediate proj */
-		ress[0] = new_r_Proj(new_perm, get_irn_mode(ress[0]), 0);
+			/* Set as in for next Permi */
+			pairs[pidx].in_node = ress[last];
+		}
 
-		/* Set as in for next Perm */
-		pairs[pidx].in_node = ress[0];
+		for (j = 0; j < MAX_PERMI_SIZE; ++j) {
+			const int out = (j + 1) % MAX_PERMI_SIZE;
 
-		for (j = 0; j < MAX_PERM_SIZE; ++j) {
-			set_Proj_pred(ress[j], new_perm);
+			DBG((dbg_icore, LEVEL_1, "Touching Proj %+F\n", ress[j]));
+			set_Proj_pred(ress[j], permi);
 			set_Proj_proj(ress[j], j);
-			arch_set_irn_register(ress[j], move->elems[i + j]);
+			arch_set_irn_register(ress[j], move->elems[i + out]);
 		}
 
 		/* Insert the copy/exchange node in schedule after the magic schedule node
 		 * (see comment in lower_perm_node) */
-		sched_add_after(skip_Proj(sched_point), new_perm);
-		DB((dbg_icore, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, new_perm, sched_point));
+		sched_add_after(skip_Proj(sched_point), permi);
+		DB((dbg_icore, LEVEL_1, "replacing %+F with %+F, placed new node after %+F\n", irn, permi, sched_point));
 
 		/* Set the new scheduling point */
-		sched_point = ress[0];
+		sched_point = ress[last];
 	}
 
+	assert(i == -(MAX_PERMI_SIZE - 1));
+
+#if 0
 	/* Do we have to place another Perm with size < MAX_PERM_SIZE? */
 	if (move->n_elems % (MAX_PERM_SIZE - 1) != 1) {
 		const int arity = i + MAX_PERM_SIZE;
@@ -373,36 +414,7 @@ static void reduce_perm_cycle_size(ir_node *irn, const perm_move_t *move, reg_pa
 
 		sched_point = new_perm;
 	}
-}
 #endif
-
-static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
-{
-	const arch_register_class_t *class;
-	const arch_register_req_t *req;
-	const arch_register_req_t **in_reqs;
-	struct obstack *obs;
-	int i;
-	const int arity = get_irn_arity(irn);
-
-	assert(is_sparc_Permi(irn));
-	/* Get register requirement.  Assumes all input/registers belong to the
-	 * same register class and have the same requirements. */
-	class = arch_register_get_class(reg);
-	req = class->class_req;
-
-	/* Set in register requirements. */
-	obs = be_get_be_obst(get_irn_irg(irn));
-	in_reqs = OALLOCNZ(obs, const arch_register_req_t*, arity);
-	for (i = 0; i < arity; ++i) {
-		in_reqs[i] = req;
-	}
-	arch_set_in_register_reqs(irn, in_reqs);
-
-	/* Set out register requirements. */
-	for (i = 0; i < arity; ++i) {
-		arch_set_out_register_req(irn, i, req);
-	}
 }
 
 static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
@@ -410,7 +422,7 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 	const int cycle_size = move->n_elems;
 	assert(move->type == PERM_CYCLE);
 
-	if (cycle_size <= MAX_CYCLE_SIZE) {
+	if (cycle_size <= MAX_PERMI_SIZE) {
 		/* If we have a cycle of size smaller or equal to MAX_CYCLE_SIZE, we
 		 * can handle it directly with one iCore instruction. */
 		ir_node **args  = ALLOCAN(ir_node*, cycle_size);
@@ -455,8 +467,7 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 		/* Otherwise, we want to replace the big Perm node with a series
 		 * of smaller ones. */
 
-		assert(false && "reduce_perm_cycle_size not implemented yet");
-		// reduce_perm_cycle_size(irn, move, pairs, n_pairs);
+		split_big_cycle(irn, move, pairs, n_pairs);
 	}
 }
 
@@ -468,8 +479,8 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 	int                                i;
 
 	for (i = move->n_elems - 2; i >= 0; --i) {
-		arch_register_t *in_reg  = move->elems[i];
-		arch_register_t *out_reg = move->elems[i + 1];
+		const arch_register_t *in_reg  = move->elems[i];
+		const arch_register_t *out_reg = move->elems[i + 1];
 		ir_node         *arg1    = get_node_for_in_register(pairs, n_pairs, in_reg);
 		ir_node         *res2    = get_node_for_out_register(pairs, n_pairs, out_reg);
 		ir_node         *cpy;
