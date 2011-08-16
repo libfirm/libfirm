@@ -1096,8 +1096,9 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 		if (is_reinterpret_cast(c_mode, l_mode)) {
 			/* copy the value from the const code irg and cast it */
 			res = new_rd_Conv(dbgi, block, res, l_mode);
+		} else {
+			return NULL;
 		}
-		return NULL;
 	}
 	return res;
 }
