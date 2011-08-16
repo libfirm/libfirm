@@ -513,9 +513,9 @@ static void lower_bf_access(ir_node *irn, void *env)
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle Bitfields by added And/Or calculations.
  */
-void lower_highlevel_graph(ir_graph *irg, int lower_bitfields)
+void lower_highlevel_graph(ir_graph *irg)
 {
-	if (lower_bitfields) {
+	if (is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING)) {
 		/* First step: lower bitfield access: must be run as long as Sels still
 		 * exists. */
 		irg_walk_graph(irg, NULL, lower_bf_access, NULL);
@@ -527,7 +527,6 @@ void lower_highlevel_graph(ir_graph *irg, int lower_bitfields)
 
 typedef struct pass_t {
 	ir_graph_pass_t pass;
-	int            lower_bitfields;
 } pass_t;
 
 /**
@@ -535,17 +534,16 @@ typedef struct pass_t {
  */
 static int lower_highlevel_graph_wrapper(ir_graph *irg, void *context)
 {
-	pass_t *pass = (pass_t*)context;
+	(void)context;
 
-	lower_highlevel_graph(irg, pass->lower_bitfields);
+	lower_highlevel_graph(irg);
 	return 0;
 }  /* lower_highlevel_graph_wrapper */
 
-ir_graph_pass_t *lower_highlevel_graph_pass(const char *name, int lower_bitfields)
+ir_graph_pass_t *lower_highlevel_graph_pass(const char *name)
 {
 	pass_t *pass = XMALLOCZ(pass_t);
 
-	pass->lower_bitfields = lower_bitfields;
 	return def_graph_pass_constructor(
 		&pass->pass, name ? name : "lower_hl", lower_highlevel_graph_wrapper);
 }  /* lower_highlevel_graph_pass */
@@ -568,14 +566,14 @@ ir_prog_pass_t *lower_const_code_pass(const char *name)
  * Replace Sel nodes by address computation.  Also resolves array access.
  * Handle Bitfields by added And/Or calculations.
  */
-void lower_highlevel(int lower_bitfields)
+void lower_highlevel()
 {
 	size_t i, n;
 
 	n = get_irp_n_irgs();
 	for (i = 0; i < n; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_highlevel_graph(irg, lower_bitfields);
+		lower_highlevel_graph(irg);
 	}
 	lower_const_code();
 }  /* lower_highlevel */

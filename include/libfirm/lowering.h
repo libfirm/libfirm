@@ -59,25 +59,20 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
  * Handle bit fields by added And/Or calculations.
  *
  * @param irg               the graph to lower
- * @param lower_bitfields   the graph contains old-style bitfield
- *                          constructs
  *
  * @note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
-FIRM_API void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
+FIRM_API void lower_highlevel_graph(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for lower_highlevel_graph().
  *
  * @param name              the name of this pass or NULL
- * @param lower_bitfields   the graph contains old-style bitfield
- *                          constructs
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name,
-                                                     int lower_bitfields);
+FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name);
 
 /**
  * Replaces SymConsts by a real constant if possible.
@@ -88,7 +83,7 @@ FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name,
  * @note There is NO lowering of objects oriented types. This is highly compiler
  *       and ABI specific and should be placed directly in the compiler.
  */
-FIRM_API void lower_highlevel(int lower_bitfields);
+FIRM_API void lower_highlevel(void);
 
 /**
  * does the same as lower_highlevel for all nodes on the const code irg

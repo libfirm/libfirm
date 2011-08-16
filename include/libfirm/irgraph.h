@@ -508,6 +508,12 @@ typedef enum {
 	 * later in the other (NORMALISATION2).
 	 */
 	IR_GRAPH_STATE_NORMALISATION2        = 1U << 4,
+	/**
+	 * Define the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
+	 * Normally, the frontend is responsible for bitfield masking operations.
+	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking operations.
+	 */
+	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 5,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 
