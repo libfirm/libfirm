@@ -1922,7 +1922,10 @@ static ir_node *gen_Proj_Load(ir_node *node)
 		break;
 	case iro_sparc_Ldf:
 		if (pn == pn_Load_res) {
-			return new_rd_Proj(dbgi, new_load, mode_fp, pn_sparc_Ldf_res);
+			const sparc_load_store_attr_t *attr
+				= get_sparc_load_store_attr_const(new_load);
+			ir_mode *mode = attr->load_store_mode;
+			return new_rd_Proj(dbgi, new_load, mode, pn_sparc_Ldf_res);
 		} else if (pn == pn_Load_M) {
 			return new_rd_Proj(dbgi, new_load, mode_M, pn_sparc_Ld_M);
 		}
