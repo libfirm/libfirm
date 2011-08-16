@@ -681,8 +681,84 @@ static void emit_icore_Permi(const ir_node *irn)
 
 static void emit_icore_Permi23(const ir_node *irn)
 {
-	(void) irn;
-	assert(false && "Permi23 not implemented yet");
+	const arch_register_t *in_regs[5];
+	const arch_register_t *out_regs[5];
+	int regns[5];
+	int i;
+	const int arity = get_irn_arity(irn);
+
+	/* At least two cycles of size 2. */
+	assert(arity >= 4 && arity <= 5);
+
+	for (i = 0; i < arity; ++i) {
+		in_regs[i]  = get_in_reg(irn, i);
+		out_regs[i] = get_out_reg(irn, i);
+	}
+
+	/* Sanity check */
+#ifndef NDEBUG
+	for (i = 0; i < 2; ++i) {
+		assert(out_regs[i] == in_regs[(i + 1) % 2] && "First cycle in Permi23 node does not represent a cycle of the required form");
+	}
+
+	for (i = 0; i < (arity - 2); ++i) {
+		assert(out_regs[2 + i] == in_regs[2 + (i + 1) % (arity - 2)] && "Second cycle in Permi23 node does not represent a cycle of the required form");
+	}
+#endif
+
+	/*
+	 * The current hardware implementation of the permi instruction
+	 * describes a 'left rotation', i.e.
+	 *   permi r0, r1, r2, r3, r4
+	 * encodes
+	 *   r0->r4->r3->r2->r1->r0.
+	 * Therefore, we reverse the order of the register numbers for
+	 * actual code generation.
+	 */
+	for (i = 0; i < arity; ++i) {
+		regns[i] = in_regs[arity - i - 1]->index;
+	}
+
+	/*
+	 * We have to take care that we generate the correct order for registers
+	 * here.
+	 *   permi r0, r4, r3, r2, r1   encodes   r0->r1->r2->r3->r4->r0
+	 * but
+	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
+	 */
+	while (regns[0] < regns[1]) {
+		/* Rotate until condition holds. */
+		int regn0 = regns[0];
+		for (i = 0; i < arity - 1; ++i)
+			regns[i] = regns[i + 1];
+		regns[arity - 1] = regn0;
+	}
+
+	/*
+	 * The permi instruction always operates on five registers.  However,
+	 * it is allowed to supply the same register number multiple times.
+	 * Therefore, e.g., a swap operation on r0 and r1 can be expressed with:
+	 *   permi r0, r1, r1, r1, r1
+	 *
+	 * Hence, we fill the unused elements in regns (if there are any) with
+	 * the last register number we inserted.
+	 */
+	for (i = arity; i < 5; ++i) {
+		regns[i] = regns[arity - 1];
+	}
+
+	/* Print some information about the meaning of the following permi. */
+	be_emit_irprintf("\t/* First cycle: %s->%s->%s */", in_regs[0]->name, in_regs[1]->name, in_regs[0]->name);
+	be_emit_finish_line_gas(NULL);
+	be_emit_irprintf("\t/* Second cycle: ");
+	for (i = 2; i < arity; ++i) {
+		be_emit_irprintf("%s->", in_regs[i]->name);
+	}
+	be_emit_irprintf("%s */", in_regs[2]->name);
+	be_emit_finish_line_gas(NULL);
+
+	be_emit_irprintf("\tpermi %d", permi5(regns));
+	be_emit_finish_line_gas(irn);
 }
 
 static void emit_be_Perm_xor(const ir_node *irn)

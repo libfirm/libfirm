@@ -297,7 +297,7 @@ static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
 	int i;
 	const int arity = get_irn_arity(irn);
 
-	assert(is_sparc_Permi(irn));
+	assert(is_sparc_Permi(irn) || is_sparc_Permi23(irn));
 	/* Get register requirement.  Assumes all input/registers belong to the
 	 * same register class and have the same requirements. */
 	class = arch_register_get_class(reg);
@@ -473,6 +473,105 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 	}
 }
 
+static void combine_cycles(ir_node *irn, reg_pair_t *const pairs, int n_pairs, perm_move_t *cycle2, perm_move_t *cycle3)
+{
+	const int cycle2_size = cycle2->n_elems;
+	const int cycle3_size = cycle3->n_elems;
+	const int arity = cycle2_size + cycle3_size;
+	ir_node **args  = ALLOCAN(ir_node*, arity);
+	ir_node **ress  = ALLOCAN(ir_node*, arity);
+	ir_node  *block = get_nodes_block(irn);
+	ir_node  *permi23;
+	int       i;
+
+	assert(cycle2->type == PERM_CYCLE && cycle2_size == 2);
+	/* The second cycle might be a 3-cycle but can be a 2-cycle, too. */
+	assert(cycle3->type == PERM_CYCLE && cycle3_size <= 3);
+
+	/* Handle 2-cycle.  Cycle always has size 2. */
+	for (i = 0; i < 2; ++i) {
+		const int in  = i;
+		const int out = (i + 1) % 2;
+
+		args[i] = get_node_for_in_register(pairs, n_pairs, cycle2->elems[in]);
+		ress[i] = get_node_for_out_register(pairs, n_pairs, cycle2->elems[out]);
+	}
+
+	/* Handle 3-cycle.  Might have size 2 or size 3. */
+	for (i = 0; i < cycle3_size; ++i) {
+		const int in  = i;
+		const int out = (in + 1) % cycle3_size;
+
+		args[2 + i] = get_node_for_in_register(pairs, n_pairs, cycle3->elems[in]);
+		ress[2 + i] = get_node_for_out_register(pairs, n_pairs, cycle3->elems[out]);
+	}
+
+	permi23 = new_bd_sparc_Permi23(NULL, block, arity, args, arity);
+	set_Permi_reg_reqs(permi23, pairs[0].in_reg);
+	DBG((dbg_icore, LEVEL_1, "%+F created smaller Permi23 node %+F\n",
+							 irn, permi23));
+
+	/* Handle 2-cycle. */
+	for (i = 0; i < 2; ++i) {
+		int                    out  = (i + 1) % 2;
+		const arch_register_t *reg  = cycle2->elems[out];
+		ir_node               *proj = ress[i];
+
+		set_Proj_pred(proj, permi23);
+		set_Proj_proj(proj, i);
+		DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", i, reg->name));
+		arch_irn_set_register(permi23, i, reg);
+	}
+
+	/* Handle 3-cycle. */
+	for (i = 0; i < cycle3_size; ++i) {
+		int                    out  = (i + 1) % cycle3_size;
+		const arch_register_t *reg  = cycle3->elems[out];
+		ir_node               *proj = ress[2 + i];
+
+		set_Proj_pred(proj, permi23);
+		set_Proj_proj(proj, 2 + i);
+		DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", 2 + i, reg->name));
+		arch_irn_set_register(permi23, 2 + i, reg);
+	}
+
+	sched_add_after(sched_point, permi23);
+	sched_point = permi23;
+}
+
+static void search_combinable_cycles(ir_node *irn, reg_pair_t *const pairs, int n_pairs, perm_move_t *cycles2, int n_cycles2, perm_move_t *cycles3, int n_cycles3)
+{
+	int j;
+	int n_used3 = 0;
+	DBG((dbg_icore, LEVEL_1, "%+F: %d cycles of size 2 and %d cycles of size 3 left.\n", irn, n_cycles2, n_cycles3));
+
+	for (j = 0; j < n_cycles2; ++j) {
+		if (n_used3 < n_cycles3) { /* Are there any 3-cycles left? */
+			perm_move_t *cycle2 = &cycles2[j];
+			perm_move_t *cycle3 = &cycles3[n_used3];
+
+			combine_cycles(irn, pairs, n_pairs, cycle2, cycle3);
+
+			++n_used3;
+		} else if (j + 1 < n_cycles2) { /* If not, are there any other 2-cycles left? */
+			perm_move_t *cycle2_1 = &cycles2[j];
+			perm_move_t *cycle2_2 = &cycles2[j + 1];
+
+			combine_cycles(irn, pairs, n_pairs, cycle2_1, cycle2_2);
+
+			++j;
+		} else { /* If not, this must be the last 2-cycle */
+			handle_cycle(irn, &cycles2[j], pairs, n_pairs);
+		}
+	}
+
+	/* There might be 3-cycles left, e.g., if the list of 2-cycles was empty
+	 * but the list of 3-cycles was not. */
+	for (j = n_used3; j < n_cycles3; ++j) {
+		handle_cycle(irn, &cycles3[j], pairs, n_pairs);
+	}
+}
+
 static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
 {
 	/* Build copy nodes from back to front */
@@ -514,9 +613,13 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
  */
 static void lower_perm_node(ir_node *irn)
 {
-	int         const arity        = get_irn_arity(irn);
-	reg_pair_t *const pairs        = ALLOCAN(reg_pair_t, arity);
-	int               n_pairs      = 0;
+	int          const arity     = get_irn_arity(irn);
+	reg_pair_t  *const pairs     = ALLOCAN(reg_pair_t, arity);
+	perm_move_t *      cycles2   = ALLOCAN(perm_move_t, arity); // TODO:  Maybe use arity / 2?
+	perm_move_t *      cycles3   = ALLOCAN(perm_move_t, arity);
+	int                n_pairs   = 0;
+	int                n_cycles2 = 0;
+	int                n_cycles3 = 0;
 
 	assert(be_is_Perm(irn) && "Non-Perm node passed to lower_perm_node");
 	assert(arity == get_irn_n_edges(irn) && "perm's in and out numbers different");
@@ -532,7 +635,7 @@ static void lower_perm_node(ir_node *irn)
 	build_register_pair_list(pairs, &n_pairs, irn);
 	DBG((dbg_icore, LEVEL_1, "%+F has %d unresolved constraints\n", irn, n_pairs));
 
-	/* Check for cycles and chains */
+	/* Collect all cycles and chains */
 	while (get_n_unchecked_pairs(pairs, n_pairs) > 0) {
 		perm_move_t move;
 		int         i;
@@ -545,19 +648,35 @@ static void lower_perm_node(ir_node *irn)
 		 * or chain) is saved in move.type. */
 		get_perm_move_info(&move, pairs, n_pairs, i);
 
-		DB((dbg_icore, LEVEL_1, "%+F: following %s created:\n  ", irn, move.type == PERM_CHAIN ? "chain" : "cycle"));
+		DB((dbg_icore, LEVEL_1, "%+F: following %s found:\n  ", irn, move.type == PERM_CHAIN ? "chain" : "cycle"));
 		for (i = 0; i < move.n_elems; ++i) {
 			DB((dbg_icore, LEVEL_1, " %s", move.elems[i]->name));
 		}
 		DB((dbg_icore, LEVEL_1, "\n"));
 
-		if (move.type == PERM_CYCLE) {
-			handle_cycle(irn, &move, pairs, n_pairs);
-		} else { /* move.type == PERM_CHAIN */
+		if (move.type == PERM_CHAIN) {
 			split_chain_into_copies(irn, &move, pairs, n_pairs);
+		} else { /* move.type == PERM_CYCLE */
+			if (move.n_elems == 2) {
+				cycles2[n_cycles2++] = move; /* Might be combinable, save for later. */
+			} else if (move.n_elems == 3) {
+				cycles3[n_cycles3++] = move; /* Might be combinable, save for later. */
+			} else {
+				handle_cycle(irn, &move, pairs, n_pairs);
+				free(move.elems);
+			}
 		}
+	}
 
-		free(move.elems);
+	search_combinable_cycles(irn, pairs, n_pairs, cycles2, n_cycles2, cycles3, n_cycles3);
+
+	/* Clean up. */
+	while (n_cycles2) {
+		free(cycles2[--n_cycles2].elems);
+	}
+
+	while (n_cycles3) {
+		free(cycles3[--n_cycles3].elems);
 	}
 
 	/* Remove the perm from schedule */
