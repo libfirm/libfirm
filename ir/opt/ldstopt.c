@@ -1168,7 +1168,7 @@ static unsigned optimize_load(ir_node *load)
 			}
 
 			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
-				if (ent->initializer != NULL) {
+				if (has_entity_initializer(ent)) {
 					/* new style initializer */
 					value = find_compound_ent_value(ptr);
 				} else if (entity_has_compound_ent_values(ent)) {
