@@ -710,7 +710,7 @@ void icore_lower_nodes_after_ra(ir_graph *irg)
 	/* we will need interference */
 	be_liveness_assure_chk(be_get_irg_liveness(irg));
 
-	dump_ir_graph(irg, "before_icore_lowering");
+	/* dump_ir_graph(irg, "before_icore_lowering"); */
 	irg_walk_graph(irg, NULL, lower_nodes_after_ra_walker, NULL);
-	dump_ir_graph(irg, "after_icore_lowering");
+	/* dump_ir_graph(irg, "after_icore_lowering"); */
 }
