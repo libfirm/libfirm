@@ -884,7 +884,7 @@ static void emit_string_cst(const ir_entity *ent)
 			if (isprint(c))
 				be_emit_char(c);
 			else
-				be_emit_irprintf("\\%o", c);
+				be_emit_irprintf("\\%03o", c);
 			break;
 		}
 	}
@@ -929,7 +929,7 @@ static size_t emit_string_initializer(const ir_initializer_t *initializer)
 			if (isprint(c))
 				be_emit_char(c);
 			else
-				be_emit_irprintf("\\%o", c);
+				be_emit_irprintf("\\%03o", c);
 			break;
 		}
 	}
