@@ -43,6 +43,8 @@
 #include "gen_sparc_regalloc_if.h"
 #include "sparc_new_nodes.h"
 #include "sparc_transform.h"
+#include "sparc_architecture.h"
+#include "icore_lowerperm.h"
 #include "irprog.h"
 #include "irgmod.h"
 #include "ircons.h"
@@ -54,6 +56,7 @@
 #include "../bespillslots.h"
 #include "../bestack.h"
 #include "../beirgmod.h"
+#include "../belower.h"
 
 static void kill_unused_stacknodes(ir_node *node)
 {
@@ -483,6 +486,11 @@ void sparc_finish(ir_graph *irg)
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
+
+	if (sparc_cg_config.use_permi)
+		icore_lower_nodes_after_ra(irg);
+	else
+		lower_nodes_after_ra(irg);
 
 	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
 	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);

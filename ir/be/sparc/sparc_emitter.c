@@ -551,8 +551,8 @@ static void emit_icore_Permi(const ir_node *irn)
 	assert(arity >= 2 && arity <= MAX_CYCLE_SIZE);
 
 	for (i = 0; i < arity; ++i) {
-		in_regs[i]  = get_in_reg(irn, i);
-		out_regs[i] = get_out_reg(irn, i);
+		in_regs[i]  = arch_get_irn_register_in(irn, i);
+		out_regs[i] = arch_get_irn_register_out(irn, i);
 	}
 
 	/*
@@ -646,8 +646,8 @@ static void emit_icore_Permi23(const ir_node *irn)
 	assert(arity >= 4 && arity <= 5);
 
 	for (i = 0; i < arity; ++i) {
-		in_regs[i]  = get_in_reg(irn, i);
-		out_regs[i] = get_out_reg(irn, i);
+		in_regs[i]  = arch_get_irn_register_in(irn, i);
+		out_regs[i] = arch_get_irn_register_out(irn, i);
 	}
 
 	/* Sanity check */

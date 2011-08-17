@@ -309,11 +309,11 @@ static void set_Permi_reg_reqs(ir_node *irn, const arch_register_t *reg)
 	for (i = 0; i < arity; ++i) {
 		in_reqs[i] = req;
 	}
-	arch_set_in_register_reqs(irn, in_reqs);
+	arch_set_irn_register_reqs_in(irn, in_reqs);
 
 	/* Set out register requirements. */
 	for (i = 0; i < arity; ++i) {
-		arch_set_out_register_req(irn, i, req);
+		arch_set_irn_register_req_out(irn, i, req);
 	}
 }
 
@@ -460,7 +460,7 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 			set_Proj_pred(proj, permi);
 			set_Proj_proj(proj, i);
 			DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", i, reg->name));
-			arch_irn_set_register(permi, i, reg);
+			arch_set_irn_register_out(permi, i, reg);
 		}
 
 		sched_add_after(sched_point, permi);
@@ -520,7 +520,7 @@ static void combine_cycles(ir_node *irn, reg_pair_t *const pairs, int n_pairs, p
 		set_Proj_pred(proj, permi23);
 		set_Proj_proj(proj, i);
 		DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", i, reg->name));
-		arch_irn_set_register(permi23, i, reg);
+		arch_set_irn_register_out(permi23, i, reg);
 	}
 
 	/* Handle 3-cycle. */
@@ -532,7 +532,7 @@ static void combine_cycles(ir_node *irn, reg_pair_t *const pairs, int n_pairs, p
 		set_Proj_pred(proj, permi23);
 		set_Proj_proj(proj, 2 + i);
 		DBG((dbg_icore, LEVEL_1, "   setting register for output %d to %s\n", 2 + i, reg->name));
-		arch_irn_set_register(permi23, 2 + i, reg);
+		arch_set_irn_register_out(permi23, 2 + i, reg);
 	}
 
 	sched_add_after(sched_point, permi23);
