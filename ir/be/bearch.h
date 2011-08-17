@@ -347,19 +347,15 @@ static inline bool reg_reqs_equal(const arch_register_req_t *req1,
 	if (req1 == req2)
 		return true;
 
-	if (req1->type != req2->type
-	    || req1->cls != req2->cls
-	    || req1->other_same != req2->other_same
-	    || req1->other_different != req2->other_different)
+	if (req1->type              != req2->type            ||
+	    req1->cls               != req2->cls             ||
+	    req1->other_same        != req2->other_same      ||
+	    req1->other_different   != req2->other_different ||
+	    (req1->limited != NULL) != (req2->limited != NULL))
 		return false;
 
 	if (req1->limited != NULL) {
-		size_t n_regs;
-
-		if (req2->limited == NULL)
-			return false;
-
-		n_regs = arch_register_class_n_regs(req1->cls);
+		size_t const n_regs = arch_register_class_n_regs(req1->cls);
 		if (!rbitsets_equal(req1->limited, req2->limited, n_regs))
 			return false;
 	}
