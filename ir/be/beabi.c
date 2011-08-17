@@ -1181,9 +1181,8 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 
 	/* collect existing entities for value_param_types */
 	for (f = n_frame_members; f > 0; ) {
-		ir_entity         *entity = get_compound_member(frame_type, --f);
-		size_t             num;
-		be_abi_call_arg_t *arg;
+		ir_entity *entity = get_compound_member(frame_type, --f);
+		size_t     num;
 
 		set_entity_link(entity, NULL);
 		if (!is_parameter_entity(entity))
@@ -1193,9 +1192,7 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 		if (map[num] != NULL)
 			panic("multiple entities for parameter %u in %+F found", f, irg);
 
-		arg = get_call_arg(call, 0, num, 1);
-		if (!arg->on_stack) {
-			map[num] = NULL;
+		if (!get_call_arg(call, 0, num, 1)->on_stack) {
 			/* don't move this entity */
 			continue;
 		}
