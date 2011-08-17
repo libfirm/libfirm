@@ -895,12 +895,10 @@ void ir_export_file(FILE *file, const char *outputname)
 
 	for (i = 0; i < n_irgs; i++) {
 		ir_graph *irg       = get_irp_irg(i);
-		ir_type  *valuetype = get_irg_value_param_type(irg);
 
-		fprintf(env.file, "\nirg %ld %ld %ld {\n",
+		fprintf(env.file, "\nirg %ld %ld {\n",
 		        get_entity_nr(get_irg_entity(irg)),
-		        get_type_nr(get_irg_frame_type(irg)),
-		        valuetype == NULL ? -1 : get_type_nr(valuetype));
+		        get_type_nr(get_irg_frame_type(irg)));
 
 		env.ignoreblocks = 0;
 		irg_block_walk_graph(irg, NULL, export_node, &env);
@@ -1894,14 +1892,8 @@ void ir_import_file(FILE *input, const char *inputname)
 		case kw_irg:
 		{
 			ir_entity *irgent = get_entity(env, read_long(env));
-			long valuetypeid;
 			ir_graph *irg = new_ir_graph(irgent, 0);
 			set_irg_frame_type(irg, get_type(env, read_long(env)));
-			valuetypeid = read_long(env);
-			if (valuetypeid != -1)
-				set_method_value_param_type(get_entity_type(irgent),
-						get_type(env, valuetypeid));
-
 			if (!parse_graph(env, irg)) goto end;
 			break;
 		}

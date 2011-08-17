@@ -507,20 +507,19 @@ ident *get_irp_asm(size_t pos)
 }
 
 #ifndef NDEBUG
-void irp_reserve_resources(ir_prog *irp, ir_resources_t resources)
+void irp_reserve_resources(ir_prog *irp, irp_resources_t resources)
 {
-	assert((resources & ~IR_RESOURCE_GLOBAL_MASK) == 0);
 	assert((irp->reserved_resources & resources) == 0);
 	irp->reserved_resources |= resources;
 }
 
-void irp_free_resources(ir_prog *irp, ir_resources_t resources)
+void irp_free_resources(ir_prog *irp, irp_resources_t resources)
 {
 	assert((irp->reserved_resources & resources) == resources);
 	irp->reserved_resources &= ~resources;
 }
 
-ir_resources_t irp_resources_reserved(const ir_prog *irp)
+irp_resources_t irp_resources_reserved(const ir_prog *irp)
 {
 	return irp->reserved_resources;
 }

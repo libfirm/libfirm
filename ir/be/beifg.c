@@ -379,7 +379,7 @@ static void int_comp_rec(be_ifg_t *ifg, ir_node *n, bitset_t *seen)
 		if (bitset_contains_irn(seen, m))
 			continue;
 
-		if (arch_get_register_req_out(m)->type & arch_register_req_type_ignore)
+		if (arch_get_irn_register_req(m)->type & arch_register_req_type_ignore)
 			continue;
 
 		bitset_add_irn(seen, m);
@@ -400,7 +400,7 @@ static int int_component_stat(ir_graph *irg, be_ifg_t *ifg)
 		if (bitset_contains_irn(seen, n))
 			continue;
 
-		if (arch_get_register_req_out(n)->type & arch_register_req_type_ignore)
+		if (arch_get_irn_register_req(n)->type & arch_register_req_type_ignore)
 			continue;
 
 		++n_comp;

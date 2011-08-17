@@ -978,7 +978,6 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 		case irms_int_number:
 			buffer = (char*) alloca(sc_get_buffer_length());
 			memcpy(buffer, src->value, sc_get_buffer_length());
-			sign_extend(buffer, dst_mode);
 			return get_tarval_overflow(buffer, src->length, dst_mode);
 
 		case irms_internal_boolean:

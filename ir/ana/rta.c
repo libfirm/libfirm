@@ -361,7 +361,7 @@ void rta_delete_dead_graphs(void)
 	size_t   i, n_dead_irgs, n_graphs = get_irp_n_irgs();
 	ir_graph *irg, *next_irg, *dead_irgs;
 
-	irp_reserve_resources(irp, IR_RESOURCE_IRG_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_IRG_LINK);
 
 	n_dead_irgs = 0;
 	dead_irgs = NULL;
@@ -384,7 +384,7 @@ void rta_delete_dead_graphs(void)
 
 	DB((dbg, LEVEL_1, "RTA: dead methods = %zu\n", n_dead_irgs));
 
-	irp_free_resources(irp, IR_RESOURCE_IRG_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_IRG_LINK);
 }
 
 /* Clean up the RTA data structures.  Call this after calling rta_init */

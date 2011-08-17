@@ -89,7 +89,7 @@ static void build_coloring_cstr(ilp_env_t *ienv)
 
 			pmap_insert(lenv->nr_2_irn, INT_TO_PTR(node_nr), irn);
 
-			req = arch_get_register_req_out(irn);
+			req = arch_get_irn_register_req(irn);
 
 			bitset_clear_all(colors);
 
@@ -152,7 +152,7 @@ static void build_interference_cstr(ilp_env_t *ienv)
 
 		/* for all colors */
 		for (col=0; col<n_colors; ++col) {
-			int cst_idx = lpp_add_cst(lpp, NULL, lpp_less, 1.0);
+			int cst_idx = lpp_add_cst(lpp, NULL, lpp_less_equal, 1.0);
 
 			/* for each member of this clique */
 			for (i=0; i<size; ++i) {
@@ -201,7 +201,7 @@ static void build_affinity_cstr(ilp_env_t *ienv)
 
 			/* add constraints relating the affinity var to the color vars */
 			for (col=0; col<n_colors; ++col) {
-				int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_less, 0.0);
+				int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_less_equal, 0.0);
 				root_idx = lpp_get_var_idx(ienv->lp, name_cdd(buf, 'x', root_nr, col));
 				arg_idx  = lpp_get_var_idx(ienv->lp, name_cdd(buf, 'x', arg_nr,  col));
 
@@ -382,7 +382,7 @@ static void build_clique_star_cstr(ilp_env_t *ienv)
 				int var_idx, cst_idx, center_nr, member_nr;
 				char buf[16];
 
-				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater, pset_count(clique)-1);
+				cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, pset_count(clique)-1);
 				center_nr = get_irn_idx(center);
 
 				pset_foreach(clique, member) {
@@ -439,7 +439,7 @@ static void extend_path(ilp_env_t *ienv, pdeq *path, const ir_node *irn)
 		/* And a path of length 2 is covered by a clique star constraint. */
 		if (len > 2) {
 			/* finally build the constraint */
-			int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater, 1.0);
+			int cst_idx = lpp_add_cst(ienv->lp, NULL, lpp_greater_equal, 1.0);
 			for (i=1; i<len; ++i) {
 				char buf[16];
 				int nr_1    = get_irn_idx(curr_path[i-1]);
@@ -492,7 +492,7 @@ static void ilp2_build(ilp_env_t *ienv)
 	local_env_t *lenv = ienv->env;
 	int lower_bound;
 
-	ienv->lp = new_lpp(ienv->co->name, lpp_minimize);
+	ienv->lp = lpp_new(ienv->co->name, lpp_minimize);
 	build_coloring_cstr(ienv);
 	build_interference_cstr(ienv);
 	build_affinity_cstr(ienv);

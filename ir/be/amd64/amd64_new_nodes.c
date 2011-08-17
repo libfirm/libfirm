@@ -129,8 +129,8 @@ static void init_amd64_attributes(ir_node *node, arch_irn_flags_t flags,
 	backend_info_t  *info;
 	(void) execution_units;
 
-	arch_irn_set_flags(node, flags);
-	arch_set_in_register_reqs(node, in_reqs);
+	arch_set_irn_flags(node, flags);
+	arch_set_irn_register_reqs_in(node, in_reqs);
 
 	info            = be_get_info(node);
 	info->out_infos = NEW_ARR_D(reg_out_info_t, obst, n_res);

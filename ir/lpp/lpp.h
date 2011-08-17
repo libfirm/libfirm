@@ -1,17 +1,33 @@
-/**
- * Author:      Daniel Grund
- * Date:        16.05.2005
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
- * CVS-Id:      $Id: lpp.h 16112 2007-10-07 15:50:49Z mallon $
+/*
+ * Copyright (C) 2005-2011 University of Karlsruhe.  All right reserved.
  *
- * Interface for specifying an milp. Does not define a solution method.
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
-#ifndef _LPP_H
-#define _LPP_H
+
+/**
+ * @file
+ * @brief   Interface for specifying an milp. Does not define a solution method.
+ * @author  Daniel Grund
+ */
+#ifndef LPP_LPP_H
+#define LPP_LPP_H
 
 #include <stdio.h>
 #include <obstack.h>
+#include <stdbool.h>
 
 #include "set.h"
 
@@ -25,8 +41,8 @@ typedef enum _lpp_opt_t {
 typedef enum _lpp_cst_t {
 	lpp_objective,
 	lpp_equal,
-	lpp_less,
-	lpp_greater
+	lpp_less_equal,
+	lpp_greater_equal
 } lpp_cst_t;
 
 typedef enum _lpp_var_t {
@@ -92,7 +108,7 @@ typedef struct _lpp_t {
 	double     grow_factor;          /**< The factor by which the vars and constraints are enlarged */
 
 	/* Solving options */
-	int    set_bound;                /**< IN: Boolean flag to set a bound for the objective function. */
+	bool   set_bound;                /**< IN: Boolean flag to set a bound for the objective function. */
 	double bound;                    /**< IN: The bound. Only valid if set_bound == 1. */
 	double time_limit_secs;          /**< IN: Time limit to obey while solving (0.0 means no time limit) */
 
@@ -120,7 +136,7 @@ typedef struct _lpp_t {
  * Implicit row with name "obj" is inserted.
  * Implicit col with name "rhs" is inserted.
  */
-lpp_t *new_lpp(const char *name, lpp_opt_t opt_type);
+lpp_t *lpp_new(const char *name, lpp_opt_t opt_type);
 
 /**
  * Creates a new problem. Optimization type is minimize or maximize.
@@ -131,18 +147,19 @@ lpp_t *new_lpp(const char *name, lpp_opt_t opt_type);
  * @param grow_factor      By which factor should the problem grow, if there are
  *                         more variables or constraints than estimated.
  */
-lpp_t *new_lpp_userdef(const char *name, lpp_opt_t opt_type,
-					   int estimated_vars, int estimated_csts, double grow_factor);
+lpp_t *lpp_new_userdef(const char *name, lpp_opt_t opt_type,
+					   int estimated_vars, int estimated_csts,
+					   double grow_factor);
 
 /**
  * Frees the matrix embedded in the LPP.
  */
-void free_lpp_matrix(lpp_t *lpp);
+void lpp_free_matrix(lpp_t *lpp);
 
 /**
  * Frees all memory allocated for LPP data structure.
  */
-void free_lpp(lpp_t *lpp);
+void lpp_free(lpp_t *lpp);
 
 /**
  * @return The constant term in the objective function
@@ -273,16 +290,45 @@ void lpp_check_startvals(lpp_t *lpp);
  */
 void lpp_dump_plain(lpp_t *lpp, FILE *f);
 
-#define lpp_get_iter_cnt(lpp)         ((lpp)->iterations)
-#define lpp_get_sol_time(lpp)         ((lpp)->sol_time)
-#define lpp_get_sol_state(lpp)        ((lpp)->sol_state)
-#define lpp_get_var_count(lpp)        ((lpp)->var_next-1)
-#define lpp_get_cst_count(lpp)        ((lpp)->cst_next-1)
-#define lpp_get_sol_state(lpp)        ((lpp)->sol_state)
-#define lpp_get_var_sol(lpp,idx)      ((lpp)->vars[idx]->value)
-#define lpp_is_sol_valid(lpp)         (lpp_get_sol_state(lpp) >= lpp_feasible)
+static inline unsigned lpp_get_iter_cnt(const lpp_t *lpp)
+{
+	return lpp->iterations;
+}
 
-#define lpp_set_time_limit(lpp,secs)  ((lpp)->time_limit_secs = secs)
+static inline double lpp_get_sol_time(const lpp_t *lpp)
+{
+	return lpp->sol_time;
+}
+
+static inline lpp_sol_state_t lpp_get_sol_state(const lpp_t *lpp)
+{
+	return lpp->sol_state;
+}
+
+static inline int lpp_get_var_count(const lpp_t *lpp)
+{
+	return lpp->var_next-1;
+}
+
+static inline int lpp_get_cst_count(const lpp_t *lpp)
+{
+	return lpp->cst_next-1;
+}
+
+static inline double lpp_get_var_sol(const lpp_t *lpp, int idx)
+{
+	return lpp->vars[idx]->value;
+}
+
+static inline bool lpp_is_sol_valid(const lpp_t *lpp)
+{
+	return lpp_get_sol_state(lpp) >= lpp_feasible;
+}
+
+static inline void lpp_set_time_limit(lpp_t *lpp, double secs)
+{
+	lpp->time_limit_secs = secs;
+}
 
 /**
  * Set a bound for the objective function.
@@ -292,13 +338,20 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f);
  *              is a lower bound. If it is a maximization problem,
  *              the bound is an upper bound.
  */
-#define lpp_set_bound(lpp,bnd)        ((lpp)->set_bound = 1, (lpp)->bound = (bnd))
+static inline void lpp_set_bound(lpp_t *lpp, double bound)
+{
+	lpp->set_bound = true;
+	lpp->bound = bound;
+}
 
 /**
  * Clear a set bound.
  * @param lpp The problem.
  */
-#define lpp_unset_bound(lpp)          ((lpp)->set_bound = 0)
+static inline void lpp_unset_bound(lpp_t *lpp)
+{
+	lpp->set_bound = false;
+}
 
 /**
  * Solve an ILP.
@@ -308,4 +361,4 @@ void lpp_dump_plain(lpp_t *lpp, FILE *f);
  */
 void lpp_solve(lpp_t *lpp, const char* host, const char* solver);
 
-#endif /* _LPP_H */
+#endif

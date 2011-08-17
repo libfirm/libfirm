@@ -190,9 +190,6 @@ FIRM_API ir_type *get_irg_frame_type(ir_graph *irg);
 /** Sets the frame type of an IR graph. */
 FIRM_API void set_irg_frame_type(ir_graph *irg, ir_type *ftp);
 
-/** Returns the value parameter type of an IR graph. */
-FIRM_API ir_type *get_irg_value_param_type(ir_graph *irg);
-
 /** Returns the start block of an IR graph. */
 FIRM_API ir_node *get_irg_start_block(const ir_graph *irg);
 /** Sets the start block of an IR graph. */
@@ -483,16 +480,7 @@ typedef enum ir_resources_t {
 	IR_RESOURCE_IRN_VISITED   = 1 << 2,  /**< IR-node visited flags are used. */
 	IR_RESOURCE_IRN_LINK      = 1 << 3,  /**< IR-node link fields are used. */
 	IR_RESOURCE_LOOP_LINK     = 1 << 4,  /**< IR-loop link fields are used. */
-	IR_RESOURCE_PHI_LIST      = 1 << 5,  /**< Block Phi lists are used. */
-	IR_RESOURCE_IRG_LINK      = 1 << 6,  /**< IR-graph link fields used. */
-
-	/* global (irp) resources */
-	IR_RESOURCE_ENTITY_LINK   = 1 << 8,  /**< IR-entity link fields are used. */
-	IR_RESOURCE_TYPE_VISITED  = 1 << 9,  /**< type visited flags */
-
-	/* masks */
-	IR_RESOURCE_LOCAL_MASK    = 0x00FF,  /**< Mask for all local resources. */
-	IR_RESOURCE_GLOBAL_MASK   = 0xFF00   /**< Mask for all global resources. */
+	IR_RESOURCE_PHI_LIST      = 1 << 5   /**< Block Phi lists are used. */
 } ir_resources_t;
 ENUM_BITSET(ir_resources_t)
 
@@ -520,6 +508,12 @@ typedef enum {
 	 * later in the other (NORMALISATION2).
 	 */
 	IR_GRAPH_STATE_NORMALISATION2        = 1U << 4,
+	/**
+	 * Define the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
+	 * Normally, the frontend is responsible for bitfield masking operations.
+	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking operations.
+	 */
+	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 5,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 

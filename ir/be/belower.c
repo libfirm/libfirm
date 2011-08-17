@@ -547,7 +547,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 
 	op_set = &env->op_set;
 	block  = get_nodes_block(irn);
-	cls    = arch_get_irn_reg_class_out(other_different);
+	cls    = arch_get_irn_reg_class(other_different);
 
 	/* Make a not spillable copy of the different node   */
 	/* this is needed because the different irn could be */
@@ -558,7 +558,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	cpy = find_copy(skip_Proj(irn), other_different);
 	if (! cpy) {
 		cpy = be_new_Copy(cls, block, other_different);
-		arch_irn_set_flags(cpy, arch_irn_flags_dont_spill);
+		arch_set_irn_flags(cpy, arch_irn_flags_dont_spill);
 		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	} else {
 		DB((dbg_constr, LEVEL_1, "using already existing %+F for value %+F\n", cpy, other_different));
@@ -613,7 +613,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
  */
 static void assure_different_constraints(ir_node *irn, ir_node *skipped_irn, constraint_env_t *env)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(irn);
+	const arch_register_req_t *req = arch_get_irn_register_req(irn);
 
 	if (arch_register_req_is(req, must_be_different)) {
 		const unsigned other = req->other_different;
@@ -884,7 +884,7 @@ int push_through_perm(ir_node *perm)
 	/* get some Proj and find out the register class of that Proj. */
 	const ir_edge_t             *edge     = get_irn_out_edge_first_kind(perm, EDGE_KIND_NORMAL);
 	ir_node                     *one_proj = get_edge_src_irn(edge);
-	const arch_register_class_t *cls      = arch_get_irn_reg_class_out(one_proj);
+	const arch_register_class_t *cls      = arch_get_irn_reg_class(one_proj);
 	assert(is_Proj(one_proj));
 
 	DB((dbg_permmove, LEVEL_1, "perm move %+F irg %+F\n", perm, irg));
@@ -937,7 +937,7 @@ found_front:
 			break;
 		if (arch_irn_is(node, modify_flags))
 			break;
-		req = arch_get_register_req_out(node);
+		req = arch_get_irn_register_req(node);
 		if (req->type != arch_register_req_type_normal)
 			break;
 		for (i = get_irn_arity(node) - 1; i >= 0; --i) {

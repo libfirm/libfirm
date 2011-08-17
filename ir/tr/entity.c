@@ -60,12 +60,10 @@ ir_entity *get_unknown_entity(void) { return unknown_entity; }
 /* ENTITY                                                          */
 /*-----------------------------------------------------------------*/
 
-ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
-                        dbg_info *db)
+static ir_entity *intern_new_entity(ir_type *owner, ident *name, ir_type *type,
+                                    dbg_info *dbgi)
 {
 	ir_entity *res;
-
-	assert(!id_contains_char(name, ' ') && "entity name should not contain spaces");
 
 	res = XMALLOCZ(ir_entity);
 
@@ -85,6 +83,24 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 	res->alignment            = 0;
 	res->link                 = NULL;
 	res->repr_class           = NULL;
+#ifdef DEBUG_libfirm
+	res->nr = get_irp_new_node_nr();
+#endif
+
+	/* Remember entity in its owner. */
+	if (owner != NULL)
+		add_compound_member(owner, res);
+
+	res->visit = 0;
+	set_entity_dbg_info(res, dbgi);
+
+	return res;
+}
+
+ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
+                        dbg_info *db)
+{
+	ir_entity *res = intern_new_entity(owner, name, type, db);
 
 	if (is_Method_type(type)) {
 		ir_graph *irg = get_const_code_irg();
@@ -105,25 +121,36 @@ ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *type,
 		res->attr.code_attr.label = (ir_label_t) -1;
 	}
 
-	/* Remember entity in its owner. */
-	if (owner != NULL)
-		add_compound_member(owner, res);
-
-#ifdef DEBUG_libfirm
-	res->nr = get_irp_new_node_nr();
-#endif
-
-	res->visit = 0;
-	set_entity_dbg_info(res, db);
-
 	hook_new_entity(res);
-
 	return res;
 }
 
 ir_entity *new_entity(ir_type *owner, ident *name, ir_type *type)
 {
 	return new_d_entity(owner, name, type, NULL);
+}
+
+static ident *make_parameter_entity_name(size_t pos)
+{
+	char buf[64];
+	snprintf(buf, sizeof(buf), "parameter.%lu", (unsigned long) pos);
+	return new_id_from_str(buf);
+}
+
+ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos, ir_type *type,
+                                  dbg_info *dbgi)
+{
+	ident     *name            = make_parameter_entity_name(pos);
+	ir_entity *res             = intern_new_entity(owner, name, type, dbgi);
+	res->is_parameter          = true;
+	res->attr.parameter.number = pos;
+	hook_new_entity(res);
+	return res;
+}
+
+ir_entity *new_parameter_entity(ir_type *owner, size_t pos, ir_type *type)
+{
+	return new_d_parameter_entity(owner, pos, type, NULL);
 }
 
 /**
@@ -193,6 +220,7 @@ static ir_entity *deep_entity_copy(ir_entity *old)
 #ifdef DEBUG_libfirm
 	newe->nr = get_irp_new_node_nr();
 #endif
+	hook_new_entity(newe);
 	return newe;
 }
 
@@ -863,6 +891,22 @@ void set_entity_irg(ir_entity *ent, ir_graph *irg)
 	ent->attr.mtd_attr.irg = irg;
 }
 
+int (is_parameter_entity)(const ir_entity *entity)
+{
+	return _is_parameter_entity(entity);
+}
+
+size_t (get_entity_parameter_number)(const ir_entity *entity)
+{
+	return _get_entity_parameter_number(entity);
+}
+
+void set_entity_parameter_number(ir_entity *entity, size_t n)
+{
+	assert(is_parameter_entity(entity));
+	entity->attr.parameter.number = n;
+}
+
 unsigned get_entity_vtable_number(const ir_entity *ent)
 {
 	assert(is_method_entity((ir_entity *)ent));
@@ -893,7 +937,7 @@ int is_compound_entity(const ir_entity *ent)
 	ir_type     *t  = get_entity_type(ent);
 	const tp_op *op = get_type_tpop(t);
 	return (op == type_class || op == type_struct ||
-		op == type_array || op == type_union);
+	        op == type_array || op == type_union);
 }
 
 int is_method_entity(const ir_entity *ent)

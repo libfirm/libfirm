@@ -1,7 +1,25 @@
+/*
+ * Copyright (C) 2005-2011 University of Karlsruhe.  All right reserved.
+ *
+ * This file is part of libFirm.
+ *
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
+ */
+
 /**
- * Author:      Matthias Braun
- * Copyright:   (c) Universitaet Karlsruhe
- * Licence:     This file protected by GPL -  GNU GENERAL PUBLIC LICENSE.
+ * @file
+ * @author  Matthias Braun
  */
 #include "config.h"
 
@@ -40,10 +58,21 @@ static gurobi_t *new_gurobi(lpp_t *lpp)
 
 	gurobi_t *grb = XMALLOCZ(gurobi_t);
 	grb->lpp = lpp;
-	error = GRBloadenv(&grb->env, NULL);
+	/* /tmp/firm_gurobi.log is a hack (see below) */
+	error = GRBloadenv(&grb->env, "/tmp/firm_gurobi.log");
 	check_gurobi_error(grb, error);
+	/* Matze: do not set the FILE* for logging output. Because:
+	 *  a) the function is deprecated
+	 *  b) gurobi closes the FILE handle when it is done, which leads to
+	 *     very unexpected effects when you pass stdout or stderr as logging
+	 *     output.
+	 * The only thing gurobi sanely supports is giving a string with a filename
+	 * :-( ...so we use /tmp/firm_gurobi.log as a temporary measure...
+	 */
+#if 0
 	error = GRBsetlogfile(grb->env, lpp->log);
 	check_gurobi_error(grb, error);
+#endif
 
 	return grb;
 }
@@ -141,7 +170,7 @@ static void gurobi_construct(gurobi_t *grb)
 	check_gurobi_error(grb, error);
 
 	obstack_free(&obst, NULL);
-	free_lpp_matrix(lpp);
+	lpp_free_matrix(lpp);
 }
 
 static void gurobi_solve(gurobi_t *grb)
@@ -205,20 +234,24 @@ static void gurobi_solve(gurobi_t *grb)
 	default:                    lpp->sol_state = lpp_feasible; break;
 	}
 
-	/* get variable solution values */
-	values = alloca(numcols * sizeof(*values));
-	error = GRBgetdblattrarray(grb->model, GRB_DBL_ATTR_X, 0, numcols, values);
-	check_gurobi_error(grb, error);
-	for(i=0; i<numcols; ++i) {
-		lpp->vars[1+i]->value      = values[i];
-		lpp->vars[1+i]->value_kind = lpp_value_solution;
-	}
+	if (lpp->sol_state >= lpp_feasible) {
+		/* get variable solution values */
+		values = alloca(numcols * sizeof(*values));
+		error = GRBgetdblattrarray(grb->model, GRB_DBL_ATTR_X, 0, numcols,
+		                           values);
+		check_gurobi_error(grb, error);
+		for(i=0; i<numcols; ++i) {
+			lpp->vars[1+i]->value      = values[i];
+			lpp->vars[1+i]->value_kind = lpp_value_solution;
+		}
 
-	/* Get the value of the objective function. */
-	error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_OBJVAL, &lpp->objval);
-	check_gurobi_error(grb, error);
-	error = GRBgetdblattr(grb->model , GRB_DBL_ATTR_OBJBOUND, &lpp->best_bound);
-	check_gurobi_error(grb, error);
+		/* Get the value of the objective function. */
+		error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_OBJVAL, &lpp->objval);
+		check_gurobi_error(grb, error);
+		error = GRBgetdblattr(grb->model , GRB_DBL_ATTR_OBJBOUND,
+		                      &lpp->best_bound);
+		check_gurobi_error(grb, error);
+	}
 
 	/* get some statistics */
 	error = GRBgetdblattr(grb->model, GRB_DBL_ATTR_ITERCOUNT, &iterations);

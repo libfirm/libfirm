@@ -49,7 +49,7 @@ void opt_frame_irg(ir_graph *irg)
 	if (n <= 0)
 		return;
 
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* clear all entity links */
 	for (i = n; i > 0;) {
@@ -109,7 +109,7 @@ void opt_frame_irg(ir_graph *irg)
 		/* we changed the frame type, its layout should be redefined */
 		set_type_state(frame_tp, layout_undefined);
 	}
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 }
 
 ir_graph_pass_t *opt_frame_irg_pass(const char *name)

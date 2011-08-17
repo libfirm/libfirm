@@ -1096,8 +1096,9 @@ ir_node *can_replace_load_by_const(const ir_node *load, ir_node *c)
 		if (is_reinterpret_cast(c_mode, l_mode)) {
 			/* copy the value from the const code irg and cast it */
 			res = new_rd_Conv(dbgi, block, res, l_mode);
+		} else {
+			return NULL;
 		}
-		return NULL;
 	}
 	return res;
 }
@@ -1167,7 +1168,7 @@ static unsigned optimize_load(ir_node *load)
 			}
 
 			if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
-				if (ent->initializer != NULL) {
+				if (has_entity_initializer(ent)) {
 					/* new style initializer */
 					value = find_compound_ent_value(ptr);
 				} else if (entity_has_compound_ent_values(ent)) {
@@ -1182,8 +1183,20 @@ static unsigned optimize_load(ir_node *load)
 						free_compound_graph_path(path);
 					}
 				}
-				if (value != NULL)
+				if (value != NULL) {
+					ir_graph *irg = get_irn_irg(load);
 					value = can_replace_load_by_const(load, value);
+					if (value != NULL && is_Sel(ptr) &&
+							!is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING)) {
+						/* frontend has inserted masking operations after bitfield accesses,
+						 * so we might have to shift the const. */
+						unsigned char bit_offset = get_entity_offset_bits_remainder(get_Sel_entity(ptr));
+						ir_tarval *tv_old = get_Const_tarval(value);
+						ir_tarval *tv_offset = new_tarval_from_long(bit_offset, mode_Bu);
+						ir_tarval *tv_new = tarval_shl(tv_old, tv_offset);
+						value = new_r_Const(irg, tv_new);
+					}
+				}
 			}
 		}
 	}

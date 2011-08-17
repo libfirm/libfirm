@@ -155,7 +155,10 @@ static void create_pbqp_node(be_pbqp_alloc_env_t *pbqp_alloc_env, ir_node *irn)
 	/* set costs depending on register constrains */
 	unsigned idx;
 	for (idx = 0; idx < colors_n; idx++) {
-		if (!bitset_is_set(allocatable_regs, idx) || !arch_reg_out_is_allocatable(irn, arch_register_for_index(cls, idx))) {
+		const arch_register_req_t *req = arch_get_irn_register_req(irn);
+		const arch_register_t     *reg = arch_register_for_index(cls, idx);
+		if (!bitset_is_set(allocatable_regs, idx)
+		    || !arch_reg_is_allocatable(req, reg)) {
 			/* constrained */
 			vector_set(costs_vector, idx, INF_COSTS);
 			cntConstrains++;
@@ -259,7 +262,7 @@ static void create_affinity_edges(ir_node *irn, void *env)
 {
 	be_pbqp_alloc_env_t         *pbqp_alloc_env = (be_pbqp_alloc_env_t*)env;
 	const arch_register_class_t *cls            = pbqp_alloc_env->cls;
-	const arch_register_req_t   *req            = arch_get_register_req_out(irn);
+	const arch_register_req_t   *req            = arch_get_irn_register_req(irn);
 	unsigned                     pos;
 	unsigned                     max;
 

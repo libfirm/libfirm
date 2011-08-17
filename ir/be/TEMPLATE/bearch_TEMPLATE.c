@@ -29,6 +29,7 @@
 #include "irprintf.h"
 #include "ircons.h"
 #include "irgmod.h"
+#include "lower_calls.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -42,6 +43,7 @@
 #include "../bemodule.h"
 #include "../begnuas.h"
 #include "../belistsched.h"
+#include "../bestack.h"
 
 #include "bearch_TEMPLATE_t.h"
 
@@ -114,7 +116,9 @@ static void TEMPLATE_prepare_graph(ir_graph *irg)
  */
 static void TEMPLATE_finish_irg(ir_graph *irg)
 {
-	(void) irg;
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
 }
 
 
@@ -122,12 +126,6 @@ static void TEMPLATE_before_ra(ir_graph *irg)
 {
 	(void) irg;
 	/* Some stuff you need to do after scheduling but before register allocation */
-}
-
-static void TEMPLATE_after_ra(ir_graph *irg)
-{
-	(void) irg;
-	/* Some stuff you need to do immediatly after register allocation */
 }
 
 static void TEMPLATE_init_graph(ir_graph *irg)
@@ -248,7 +246,6 @@ static void TEMPLATE_get_call_abi(const void *self, ir_type *method_type,
 	(void) self;
 
 	/* set abi flags for calls */
-	call_flags.bits.left_to_right         = 0;
 	call_flags.bits.store_args_sequential = 1;
 	call_flags.bits.try_omit_fp           = 1;
 	call_flags.bits.fp_free               = 0;
@@ -290,16 +287,8 @@ static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void TEMPLATE_lower_for_target(void)
 {
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
-
 	/* lower compound param handling */
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 }
 
 static int TEMPLATE_is_mux_allowed(ir_node *sel, ir_node *mux_false,
@@ -320,11 +309,15 @@ static const backend_params *TEMPLATE_get_backend_params(void)
 		0,     /* no inline assembly */
 		0,     /* no support for Rotl nodes */
 		0,     /* 0: little-endian, 1: big-endian */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift efficient */
 		NULL,  /* architecture dependent settings, will be set later */
 		TEMPLATE_is_mux_allowed,  /* parameter for if conversion */
 		32,    /* machine size - a 32bit CPU */
 		NULL,  /* float arithmetic mode */
-		0,     /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* unsigned long long type */
+		NULL,  /* long double type */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
@@ -416,7 +409,6 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	NULL,   /* before_abi */
 	TEMPLATE_prepare_graph,
 	TEMPLATE_before_ra,
-	TEMPLATE_after_ra,
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
 	TEMPLATE_register_saved_by,

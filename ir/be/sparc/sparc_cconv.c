@@ -33,6 +33,7 @@
 #include "util.h"
 #include "error.h"
 #include "gen_sparc_regalloc_if.h"
+#include "bitfiddle.h"
 
 static const unsigned ignore_regs[] = {
 	REG_G0,
@@ -65,7 +66,59 @@ static const arch_register_t* const float_result_regs[] = {
 	&sparc_registers[REG_F1],
 	&sparc_registers[REG_F2],
 	&sparc_registers[REG_F3],
+	&sparc_registers[REG_F4],
+	&sparc_registers[REG_F5],
+	&sparc_registers[REG_F6],
+	&sparc_registers[REG_F7],
 };
+static arch_register_req_t float_result_reqs_double[8];
+static arch_register_req_t float_result_reqs_quad[8];
+
+static const arch_register_t *const caller_saves[] = {
+	&sparc_registers[REG_G1],
+	&sparc_registers[REG_G2],
+	&sparc_registers[REG_G3],
+	&sparc_registers[REG_G4],
+	&sparc_registers[REG_O0],
+	&sparc_registers[REG_O1],
+	&sparc_registers[REG_O2],
+	&sparc_registers[REG_O3],
+	&sparc_registers[REG_O4],
+	&sparc_registers[REG_O5],
+	&sparc_registers[REG_F0],
+	&sparc_registers[REG_F1],
+	&sparc_registers[REG_F2],
+	&sparc_registers[REG_F3],
+	&sparc_registers[REG_F4],
+	&sparc_registers[REG_F5],
+	&sparc_registers[REG_F6],
+	&sparc_registers[REG_F7],
+	&sparc_registers[REG_F8],
+	&sparc_registers[REG_F9],
+	&sparc_registers[REG_F10],
+	&sparc_registers[REG_F11],
+	&sparc_registers[REG_F12],
+	&sparc_registers[REG_F13],
+	&sparc_registers[REG_F14],
+	&sparc_registers[REG_F15],
+	&sparc_registers[REG_F16],
+	&sparc_registers[REG_F17],
+	&sparc_registers[REG_F18],
+	&sparc_registers[REG_F19],
+	&sparc_registers[REG_F20],
+	&sparc_registers[REG_F21],
+	&sparc_registers[REG_F22],
+	&sparc_registers[REG_F23],
+	&sparc_registers[REG_F24],
+	&sparc_registers[REG_F25],
+	&sparc_registers[REG_F26],
+	&sparc_registers[REG_F27],
+	&sparc_registers[REG_F28],
+	&sparc_registers[REG_F29],
+	&sparc_registers[REG_F30],
+	&sparc_registers[REG_F31],
+};
+static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
 
 /**
  * Maps an input register representing the i'th register input
@@ -95,13 +148,28 @@ static void check_omit_fp(ir_node *node, void *env)
 	}
 }
 
+static unsigned determine_n_float_regs(ir_mode *mode)
+{
+	unsigned bits = get_mode_size_bits(mode);
+	switch (bits) {
+	case 32:
+		return 1;
+	case 64:
+		return 2;
+	case 128:
+		return 4;
+	default:
+		panic("sparc: Unexpected floatingpoint mode %+F", mode);
+	}
+}
+
 calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
                                                       ir_graph *irg)
 {
 	unsigned              stack_offset        = 0;
 	unsigned              n_param_regs_used   = 0;
 	int                   n_param_regs        = ARRAY_SIZE(param_regs);
-	int                   n_float_result_regs = ARRAY_SIZE(float_result_regs);
+	unsigned              n_float_result_regs = ARRAY_SIZE(float_result_regs);
 	bool                  omit_fp             = false;
 	reg_or_stackslot_t   *params;
 	reg_or_stackslot_t   *results;
@@ -109,14 +177,19 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	int                   n_results;
 	int                   i;
 	int                   regnum;
-	int                   float_regnum;
+	unsigned              float_regnum;
+	unsigned              n_reg_results = 0;
 	calling_convention_t *cconv;
+	unsigned             *caller_saves;
 
 	if (irg != NULL) {
 		const be_options_t *options = be_get_irg_options(irg);
 		omit_fp = options->omit_fp;
 		irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
 	}
+
+	caller_saves = rbitset_malloc(N_SPARC_REGISTERS);
+	rbitset_copy(caller_saves, default_caller_saves, N_SPARC_REGISTERS);
 
 	/* determine how parameters are passed */
 	n_params = get_method_n_params(function_type);
@@ -129,11 +202,23 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		int                 bits       = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param      = &params[i];
 
+		if (i == 0 && function_type->attr.ma.has_compound_ret_parameter) {
+			assert(mode_is_reference(mode) && bits == 32);
+			/* special case, we have reserved space for this on the between
+			 * type */
+			param->type   = param_type;
+			param->offset = -SPARC_MIN_STACKSIZE+SPARC_AGGREGATE_RETURN_OFFSET;
+			continue;
+		}
+
 		if (regnum < n_param_regs) {
-			const arch_register_t *reg = param_regs[regnum++];
+			const arch_register_t *reg = param_regs[regnum];
 			if (irg == NULL || omit_fp)
 				reg = map_i_to_o_reg(reg);
-			param->reg0 = reg;
+			param->reg0       = reg;
+			param->req0       = reg->single_req;
+			param->reg_offset = regnum;
+			++regnum;
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
@@ -148,10 +233,12 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				panic("only 32 and 64bit modes supported in sparc backend");
 
 			if (regnum < n_param_regs) {
-				const arch_register_t *reg = param_regs[regnum++];
+				const arch_register_t *reg = param_regs[regnum];
 				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
-				param->reg1 = reg;
+				param->reg1       = reg;
+				param->req1       = reg->single_req;
+				++regnum;
 			} else {
 				ir_mode *regmode = param_regs[0]->reg_class->mode;
 				ir_type *type    = get_type_for_mode(regmode);
@@ -175,11 +262,31 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		reg_or_stackslot_t *result      = &results[i];
 
 		if (mode_is_float(result_mode)) {
-			if (float_regnum >= n_float_result_regs) {
+			unsigned n_regs   = determine_n_float_regs(result_mode);
+			unsigned next_reg = round_up2(float_regnum, n_regs);
+
+			if (next_reg >= n_float_result_regs) {
 				panic("Too many float results for sparc backend");
 			} else {
-				const arch_register_t *reg = float_result_regs[float_regnum++];
-				result->reg0 = reg;
+				const arch_register_t *reg = float_result_regs[next_reg];
+				rbitset_clear(caller_saves, reg->global_index);
+				result->reg_offset = i;
+				if (n_regs == 1) {
+					result->req0 = reg->single_req;
+				} else if (n_regs == 2) {
+					result->req0 = &float_result_reqs_double[next_reg];
+					rbitset_clear(caller_saves, reg->global_index+1);
+				} else if (n_regs == 4) {
+					result->req0 = &float_result_reqs_quad[next_reg];
+					rbitset_clear(caller_saves, reg->global_index+1);
+					rbitset_clear(caller_saves, reg->global_index+2);
+					rbitset_clear(caller_saves, reg->global_index+3);
+				} else {
+					panic("invalid number of registers in sparc float result");
+				}
+				float_regnum = next_reg + n_regs;
+
+				++n_reg_results;
 			}
 		} else {
 			if (get_mode_size_bits(result_mode) > 32) {
@@ -192,7 +299,10 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				const arch_register_t *reg = param_regs[regnum++];
 				if (irg == NULL || omit_fp)
 					reg = map_i_to_o_reg(reg);
-				result->reg0 = reg;
+				result->req0       = reg->single_req;
+				result->reg_offset = i;
+				rbitset_clear(caller_saves, reg->global_index);
+				++n_reg_results;
 			}
 		}
 	}
@@ -203,6 +313,8 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	cconv->n_param_regs     = n_param_regs_used;
 	cconv->results          = results;
 	cconv->omit_fp          = omit_fp;
+	cconv->caller_saves     = caller_saves;
+	cconv->n_reg_results    = n_reg_results;
 
 	/* setup ignore register array */
 	if (irg != NULL) {
@@ -226,5 +338,27 @@ void sparc_free_calling_convention(calling_convention_t *cconv)
 {
 	free(cconv->parameters);
 	free(cconv->results);
+	free(cconv->caller_saves);
 	free(cconv);
+}
+
+void sparc_cconv_init(void)
+{
+	size_t i;
+	for (i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
+		rbitset_set(default_caller_saves, caller_saves[i]->global_index);
+	}
+
+	for (i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
+		arch_register_req_t *req = &float_result_reqs_double[i];
+		*req = *float_result_regs[i]->single_req;
+		req->type |= arch_register_req_type_aligned;
+		req->width = 2;
+	}
+	for (i = 0; i < ARRAY_SIZE(float_result_reqs_quad); i += 4) {
+		arch_register_req_t *req = &float_result_reqs_quad[i];
+		*req = *float_result_regs[i]->single_req;
+		req->type |= arch_register_req_type_aligned;
+		req->width = 4;
+	}
 }

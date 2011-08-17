@@ -65,7 +65,6 @@ struct beabi_helper_env_t {
 	ir_graph                 *irg;         /**< the graph we operate on */
 	register_state_mapping_t  prolog;      /**< the register state map for the prolog */
 	register_state_mapping_t  epilog;      /**< the register state map for the epilog */
-	ir_phase                 *stack_order; /**< a phase to handle stack dependencies. */
 };
 
 /**
@@ -275,12 +274,12 @@ ir_node *be_prolog_create_start(beabi_helper_env_t *env, dbg_info *dbgi,
 		const arch_register_t *reg     = regflag->reg;
 		ir_node               *proj;
 		if (reg == NULL) {
-			arch_set_out_register_req(start, o, arch_no_register_req);
+			arch_set_irn_register_req_out(start, o, arch_no_register_req);
 			proj = new_r_Proj(start, mode_M, o);
 		} else {
 			be_set_constr_single_reg_out(start, o, regflag->reg,
 			                             regflag->flags);
-			arch_irn_set_register(start, o, regflag->reg);
+			arch_set_irn_register_out(start, o, regflag->reg);
 			proj = new_r_Proj(start, reg->reg_class->mode, o);
 		}
 		env->prolog.value_map[o] = proj;
@@ -423,7 +422,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 	(void) data;
 	if (mode != mode_T) {
 		if (!has_real_user(node)) {
-			const arch_register_req_t   *req = arch_get_register_req_out(node);
+			const arch_register_req_t   *req = arch_get_irn_register_req(node);
 			const arch_register_class_t *cls = req->cls;
 			if (cls == NULL
 					|| (cls->flags & arch_register_class_flag_manual_ra)) {
@@ -435,7 +434,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 		return;
 	}
 
-	n_outs = arch_irn_get_n_outs(node);
+	n_outs = arch_get_irn_n_outs(node);
 	if (n_outs <= 0)
 		return;
 
@@ -471,7 +470,7 @@ static void add_missing_keep_walker(ir_node *node, void *data)
 			continue;
 		}
 
-		req = arch_get_out_register_req(node, i);
+		req = arch_get_irn_register_req_out(node, i);
 		cls = req->cls;
 		if (cls == NULL || (cls->flags & arch_register_class_flag_manual_ra)) {
 			continue;
@@ -620,9 +619,17 @@ static void process_ops_in_block(ir_node *block, void *data)
 	xfree(nodes);
 }
 
-void be_collect_stacknodes(beabi_helper_env_t *env)
+
+
+struct be_stackorder_t {
+	ir_phase *stack_order; /**< a phase to handle stack dependencies. */
+};
+
+be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
 {
-	ir_graph *irg = env->irg;
+	be_stackorder_t *env = XMALLOCZ(be_stackorder_t);
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	/* collect all potential^stack accessing nodes */
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, NULL);
@@ -635,9 +642,75 @@ void be_collect_stacknodes(beabi_helper_env_t *env)
 	heights = heights_new(irg);
 	irg_block_walk_graph(irg, NULL, process_ops_in_block, env->stack_order);
 	heights_free(heights);
+
+	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
+
+	return env;
 }
 
-ir_node *be_get_stack_pred(const beabi_helper_env_t *env, const ir_node *node)
+ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node)
 {
 	return (ir_node*)phase_get_irn_data(env->stack_order, node);
+}
+
+void be_free_stackorder(be_stackorder_t *env)
+{
+	phase_free(env->stack_order);
+	free(env);
+}
+
+void be_add_parameter_entity_stores(ir_graph *irg)
+{
+	ir_type *frame_type  = get_irg_frame_type(irg);
+	size_t   n           = get_compound_n_members(frame_type);
+	ir_node *frame       = get_irg_frame(irg);
+	ir_node *initial_mem = get_irg_initial_mem(irg);
+	ir_node *mem         = initial_mem;
+	ir_node *first_store = NULL;
+	ir_node *start_block = get_irg_start_block(irg);
+	ir_node *args        = get_irg_args(irg);
+	size_t   i;
+
+	/* all parameter entities left in the frame type require stores.
+	 * (The ones passed on the stack have been moved to the arg type) */
+	for (i = 0; i < n; ++i) {
+		ir_entity *entity = get_compound_member(frame_type, i);
+		ir_node   *addr;
+		size_t     arg;
+		if (!is_parameter_entity(entity))
+			continue;
+
+		arg  = get_entity_parameter_number(entity);
+		addr = new_r_Sel(start_block, mem, frame, 0, NULL, entity);
+		if (entity->attr.parameter.doubleword_low_mode != NULL) {
+			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
+			ir_node *val0      = new_r_Proj(args, mode, arg);
+			ir_node *val1      = new_r_Proj(args, mode, arg+1);
+			ir_node *store0    = new_r_Store(start_block, mem, addr, val0,
+			                                 cons_none);
+			ir_node *mem0      = new_r_Proj(store0, mode_M, pn_Store_M);
+			size_t   offset    = get_mode_size_bits(mode)/8;
+			ir_mode *addr_mode = get_irn_mode(addr);
+			ir_node *cnst      = new_r_Const_long(irg, addr_mode, offset);
+			ir_node *next_addr = new_r_Add(start_block, addr, cnst, addr_mode);
+			ir_node *store1    = new_r_Store(start_block, mem0, next_addr, val1,
+			                                 cons_none);
+			mem = new_r_Proj(store1, mode_M, pn_Store_M);
+			if (first_store == NULL)
+				first_store = store0;
+		} else {
+			ir_type *tp    = get_entity_type(entity);
+			ir_mode *mode  = get_type_mode(tp);
+			ir_node *val   = new_r_Proj(args, mode, arg);
+			ir_node *store = new_r_Store(start_block, mem, addr, val, cons_none);
+			mem = new_r_Proj(store, mode_M, pn_Store_M);
+			if (first_store == NULL)
+				first_store = store;
+		}
+	}
+
+	if (mem != initial_mem) {
+		edges_reroute(initial_mem, mem);
+		set_Store_mem(first_store, initial_mem);
+	}
 }

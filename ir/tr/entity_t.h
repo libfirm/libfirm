@@ -27,6 +27,7 @@
 #define FIRM_TR_ENTITY_T_H
 
 #include <assert.h>
+#include <stdbool.h>
 
 #include "typerep.h"
 #include "type_t.h"
@@ -97,74 +98,79 @@ typedef struct code_ent_attr {
 	ir_label_t  label;       /** label of the basic block */
 } code_ent_attr;
 
+typedef struct parameter_ent_attr {
+	/**< parameters might be compounds too */
+	compound_ent_attr  cmpd_attr;
+
+	size_t   number; /**< corresponding parameter number */
+	ir_mode *doubleword_low_mode;/**< entity is a lowered doubleword parameter,
+								so additional stores because of calling
+								convention are correctly performed.
+	                            Matze: This is a hack. In an ideal
+	                            wor^H^H^Hlibfirm we would first establish
+	                            calling conventions and then perform doubleword
+	                            lowering...) */
+} parameter_ent_attr;
+
 
 /**
  * An abstract data type to represent program entities.
- *
- * @see  ir_type
  */
 struct ir_entity {
-	firm_kind kind;       /**< The dynamic type tag for entity. */
-	ident *name;          /**< The name of this entity. */
-	ident *ld_name;       /**< Unique name of this entity, i.e., the mangled
-	                           name.  If the field is read before written a default
-	                           mangling is applies.  The name of the owner is prepended
-	                           to the name of the entity, separated by a underscore.
-	                           E.g.,  for a class `A' with field `a' this
-	                           is the ident for `A_a'. */
-	ir_type *type;        /**< The type of this entity, e.g., a method type, a
-	                           basic type of the language or a class itself. */
-	ir_type *owner;       /**< The compound type (e.g. class type) this entity belongs to. */
-	unsigned linkage:10;        /**< Specifies linkage type */
-	unsigned volatility:1;      /**< Specifies volatility of entities content.*/
-	unsigned aligned:1;         /**< Specifies alignment of entities content. */
-	unsigned usage:4;           /**< flag indicating usage types of this entity,
-	                                 see ir_entity_usage. */
-	unsigned compiler_gen:1;    /**< If set, this entity was compiler generated.
-	                             */
-	unsigned visibility:3;      /**< @deprecated */
-	unsigned allocation:3;      /**< @deprecated */
-	unsigned peculiarity:3;     /**< @deprecated */
-	unsigned final:1;           /**< @deprecated */
-	int offset;                 /**< Offset in bytes for this entity. Fixed
-	                                 when layout of owner is determined. */
-	unsigned alignment;         /**< entity alignment in bytes */
-	unsigned char offset_bit_remainder;
-	                            /**< If the entity is a bit field, this is the
-	                                 offset of the start of the bit field
-	                                 within the byte specified by offset. */
-	ir_visited_t visit;         /**< visited counter for walks of the type
-	                                 information. */
-	struct dbg_info *dbi;       /**< A pointer to information for debug support.
-	                             */
-	void *link;                 /**< To store some intermediate information. */
-	ir_type *repr_class;        /**< If this entity represents a class info, the
-	                                 associated class. */
+	firm_kind kind;          /**< The dynamic type tag for entity. */
+	ident *name;             /**< The name of this entity. */
+	ident *ld_name;          /**< Unique name of this entity, i.e., the mangled
+	                              name. May be NULL to indicate that a default
+	                              mangling based on the name should happen */
+	ir_type *type;           /**< The type of this entity */
+	ir_type *owner;          /**< The compound type (e.g. class type) this
+							      entity belongs to. */
+	unsigned linkage:10;     /**< Specifies linkage type */
+	unsigned volatility:1;   /**< Specifies volatility of entities content.*/
+	unsigned aligned:1;      /**< Specifies alignment of entities content. */
+	unsigned usage:4;        /**< flag indicating usage types of this entity,
+	                              see ir_entity_usage. */
+	unsigned compiler_gen:1; /**< If set, this entity was compiler generated.
+	                          */
+	unsigned visibility:3;   /**< @deprecated */
+	unsigned allocation:3;   /**< @deprecated */
+	unsigned peculiarity:3;  /**< @deprecated */
+	unsigned final:1;        /**< @deprecated */
+	unsigned offset_bit_remainder:8;
+	                         /**< If the entity is a bit field, this is the
+	                              offset of the start of the bit field
+	                              within the byte specified by offset. */
+	unsigned is_parameter:1; /**< 1 if this represents a function parameter */
+	int offset;              /**< Offset in bytes for this entity. Fixed
+	                              when layout of owner is determined. */
+	unsigned alignment;      /**< entity alignment in bytes */
+	ir_visited_t visit;      /**< visited counter for walks of the type
+	                              information. */
+	struct dbg_info *dbi;    /**< A pointer to information for debug support. */
+	void *link;              /**< To store some intermediate information. */
+	ir_type *repr_class;     /**< If this entity represents a class info, the
+	                              associated class. */
 
-	/* ------------- fields for entities owned by a class type ---------------*/
+	ir_entity **overwrites;  /**< A list of entities this entity overwrites. */
+	ir_entity **overwrittenby; /**< A list of entities that overwrite this
+	                                entity. */
 
-	ir_entity **overwrites;     /**< A list of entities this entity overwrites.
-	                             */
-	ir_entity **overwrittenby;  /**< A list of entities that overwrite this
-	                                 entity. */
-
-	/* ------------- fields for atomic entities  --------------- */
 	ir_initializer_t *initializer; /**< entity initializer */
-	union {
-		/* ------------- fields for compound entities -------------- */
-		compound_ent_attr cmpd_attr;
-		/* ------------- fields for method entities ---------------- */
-		method_ent_attr   mtd_attr;
-		/* fields for code entities */
-		code_ent_attr     code_attr;
-	} attr; /**< type specific attributes */
-
-	/* ------------- fields for analyses ---------------*/
-
 #ifdef DEBUG_libfirm
 	long nr;             /**< A unique node number for each node to make output
 	                          readable. */
 #endif
+
+	union {
+		/* ------------- fields for compound entities -------------- */
+		compound_ent_attr  cmpd_attr;
+		/* ------------- fields for method entities ---------------- */
+		method_ent_attr    mtd_attr;
+		/* fields for code entities */
+		code_ent_attr      code_attr;
+		/** parameter number for parameter entities */
+		parameter_ent_attr parameter;
+	} attr; /**< type specific attributes */
 };
 
 /** Initialize the entity module. */
@@ -374,6 +380,17 @@ static inline int _entity_not_visited(const ir_entity *ent)
 	return _get_entity_visited(ent) < firm_type_visited;
 }
 
+static inline int _is_parameter_entity(const ir_entity *entity)
+{
+	return entity->is_parameter;
+}
+
+static inline size_t _get_entity_parameter_number(const ir_entity *entity)
+{
+	assert(entity->is_parameter);
+	return entity->attr.parameter.number;
+}
+
 static inline ir_type *_get_entity_repr_class(const ir_entity *ent)
 {
 	assert(ent && ent->kind == k_entity);
@@ -418,6 +435,8 @@ static inline void _set_entity_dbg_info(ir_entity *ent, dbg_info *db)
 #define get_entity_link(ent)                     _get_entity_link(ent)
 #define set_entity_link(ent, l)                  _set_entity_link(ent, l)
 #define get_entity_irg(ent)                      _get_entity_irg(ent)
+#define is_parameter_entity(ent)                 _is_parameter_entity(ent)
+#define get_entity_parameter_number(ent)         _get_entity_parameter_number(ent)
 #define get_entity_visited(ent)                  _get_entity_visited(ent)
 #define set_entity_visited(ent, num)             _set_entity_visited(ent, num)
 #define mark_entity_visited(ent)                 _mark_entity_visited(ent)

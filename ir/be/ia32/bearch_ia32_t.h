@@ -68,6 +68,7 @@ struct ia32_isa_t {
 	pmap                  *types;           /**< A map of modes to primitivetypes */
 	pmap                  *tv_ent;          /**< A map of entities that store const tarvals */
 	const be_machine_t    *cpu;             /**< the abstract machine */
+	int                    fpu_arch;        /**< FPU architecture */
 };
 
 /**

@@ -226,6 +226,7 @@ void set_modeP_data(ir_mode *p)
 {
 	assert(mode_is_reference(p));
 	mode_P_data = p;
+	mode_P = p;
 }
 
 /**

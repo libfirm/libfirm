@@ -584,7 +584,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 	entry->block   = block;
 	entry->next    = NULL;
 	entry->prev    = NULL;
-	entry->out_cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater, out_count - 1);
+	entry->out_cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, out_count - 1);
 	set_irn_link(block, entry);
 
 	if (block == startblock)
@@ -599,7 +599,7 @@ static void collect_egde_frequency_ilp(ir_node *block, void *data)
 		int i;
 
 		snprintf(name, sizeof(name), "block_in_constr_%ld", get_irn_node_nr(block));
-		cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater, arity - 1);
+		cst = lpp_add_cst_uniq(env->lpp, name, lpp_greater_equal, arity - 1);
 
 		for (i = 0; i < arity; ++i) {
 			double     execfreq;
@@ -687,7 +687,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 	env.env.blockcount = 0;
 	env.ilpedges       = NEW_ARR_F(ilp_edge_t, 0);
 
-	env.lpp = new_lpp("blockschedule", lpp_minimize);
+	env.lpp = lpp_new("blockschedule", lpp_minimize);
 	lpp_set_time_limit(env.lpp, 20);
 	lpp_set_log(env.lpp, stdout);
 
@@ -702,7 +702,7 @@ static ir_node **create_block_schedule_ilp(ir_graph *irg, ir_exec_freq *execfreq
 	                                      be_get_be_obst(irg));
 
 	DEL_ARR_F(env.ilpedges);
-	free_lpp(env.lpp);
+	lpp_free(env.lpp);
 	obstack_free(&obst, NULL);
 
 	return block_list;

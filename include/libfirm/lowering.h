@@ -33,123 +33,6 @@
 #include "begin.h"
 
 /**
- * A type telling where to add hidden parameters.
- */
-typedef enum add_hidden_params {
-	ADD_HIDDEN_ALWAYS_IN_FRONT = 0,   /**< always add hidden parameters in front (default). */
-	ADD_HIDDEN_ALWAYS_LAST     = 1,   /**< always add hidden parameters last, did not work for variadic functions. */
-	ADD_HIDDEN_SMART           = 2    /**< add hidden parameters last for non-variadic and first for variadic functions. */
-} add_hidden;
-
-/**
- * Additional flags for the lowering.
- */
-enum lowering_flags {
-	LF_NONE              = 0, /**< no additional flags */
-	LF_COMPOUND_PARAM    = 1, /**< lower calls with compound parameters */
-	LF_COMPOUND_RETURN   = 2, /**< lower calls with compound returns */
-	LF_RETURN_HIDDEN     = 4, /**< return the hidden address instead of void */
-	LF_SMALL_CMP_IN_REGS = 8  /**< return small compound values in registers */
-};
-
-/** Maximum number of registers that can be used to return compound values. */
-#define MAX_REGISTER_RET_VAL 2
-
-/**
- * A struct containing all control parameters for
- * lower_compound_ret_calls().
- */
-typedef struct {
-	int        def_ptr_alignment;   /**< Default alignment for data pointer. */
-	unsigned   flags;               /**< A bitmask of enum lowering_flags. */
-	add_hidden hidden_params;       /**< Where to add hidden parameters. */
-
-	/**
-	 * A function returning a pointer type for a given type.
-	 * If this pointer is NULL, a new pointer type is always created.
-	 */
-	ir_type *(*find_pointer_type)(ir_type *e_type, ir_mode *mode, int alignment);
-
-	/**
-	 * If the LF_SMALL_CMP_IN_REGS flag is set, this function will be called
-	 * to decide, whether a compound value should be returned in registers.
-	 * This function must return the number of used registers and fill in the modes
-	 * of the registers to use. Up to MAX_REGISTER_RET_VAL registers can be used.
-	 */
-	int (*ret_compound_in_regs)(ir_type *compound_tp, ir_mode **modes);
-} lower_params_t;
-
-/**
- * Lower calls with compound parameter and return types.
- * This function does the following transformations:
- *
- * If LF_COMPOUND_PARAM is set:
- *
- * - Copy compound parameters to a new location on the callers
- *   stack and transmit the address of this new location
- *
- * If LF_COMPOUND_RETURN is set:
- *
- * - Adds a new (hidden) pointer parameter for
- *   any return compound type. The return type is replaced by void
- *   or if LOWERING_FLAGS_RETURN_HIDDEN is set by the address.
- *
- * - Use of the hidden parameters in the function code.
- *
- * - Change all calls to functions with compound return
- *   by providing space for the hidden parameter on the callers
- *   stack.
- *
- * - Replace a possible block copy after the function call.
- *
- * General:
- *
- * - Changes the types of methods and calls to the lowered ones
- *
- * - lower all method types of existing entities
- *
- * In pseudo-code, the following transformation is done:
- *
-   @code
-   struct x ret = func(a, b);
-   @endcode
- *
- * is translated into
-   @code
-   struct x ret;
-   func(&ret, a, b);
-   @endcode
- *
- * If the function returns only one possible result, the copy-on-return
- * optimization is done, ie.
-   @code
-   struct x func(a) {
-     struct x ret;
-     ret.a = a;
-     return ret;
-   }
-   @endcode
- *
- * is transformed into
- *
-   @code
-   void func(struct x *ret, a) {
-     ret->a = a;
-   }
-   @endcode
- *
- * @param params  A structure containing the control parameter for this
- *                transformation.
- *
- * During the transformation, pointer types must be created or reused.
- * The caller can provide params->find_pointer_type for this task to
- * reduce the number of created pointer types.
- * If params->find_pointer_type is NULL, new pointer types
- * are always created automatically.
- */
-FIRM_API void lower_calls_with_compounds(const lower_params_t *params);
-
-/**
  * Lower CopyB nodes of size smaller that max_size into Loads/Stores
  */
 FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_size,
@@ -176,25 +59,20 @@ FIRM_API void lower_switch(ir_graph *irg, unsigned small_switch,
  * Handle bit fields by added And/Or calculations.
  *
  * @param irg               the graph to lower
- * @param lower_bitfields   the graph contains old-style bitfield
- *                          constructs
  *
  * @note: There is NO lowering ob objects oriented types. This is highly compiler
  *        and ABI specific and should be placed directly in the compiler.
  */
-FIRM_API void lower_highlevel_graph(ir_graph *irg, int lower_bitfields);
+FIRM_API void lower_highlevel_graph(ir_graph *irg);
 
 /**
  * Creates an ir_graph pass for lower_highlevel_graph().
  *
  * @param name              the name of this pass or NULL
- * @param lower_bitfields   the graph contains old-style bitfield
- *                          constructs
  *
  * @return  the newly created ir_graph pass
  */
-FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name,
-                                                     int lower_bitfields);
+FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name);
 
 /**
  * Replaces SymConsts by a real constant if possible.
@@ -205,7 +83,7 @@ FIRM_API ir_graph_pass_t *lower_highlevel_graph_pass(const char *name,
  * @note There is NO lowering of objects oriented types. This is highly compiler
  *       and ABI specific and should be placed directly in the compiler.
  */
-FIRM_API void lower_highlevel(int lower_bitfields);
+FIRM_API void lower_highlevel(void);
 
 /**
  * does the same as lower_highlevel for all nodes on the const code irg

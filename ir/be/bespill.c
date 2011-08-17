@@ -64,6 +64,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	unsigned *tmp        = NULL;
 	unsigned *def_constr = NULL;
 	int       arity      = get_irn_arity(node);
+	ir_node  *def;
 
 	int i, i2;
 
@@ -75,7 +76,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	 */
 	for (i = 0; i < arity; ++i) {
 		ir_node                   *op  = get_irn_n(node, i);
-		const arch_register_req_t *req = arch_get_register_req(node, i);
+		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		const arch_register_t     *reg;
 		ir_node                   *copy;
 
@@ -110,7 +111,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		ir_node                   *copy;
 		const arch_register_req_t *req;
 
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
 		if (req->cls != cls)
 			continue;
 
@@ -125,7 +126,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 			ir_node *in2;
 			const arch_register_req_t *req2;
 
-			req2 = arch_get_register_req(node, i2);
+			req2 = arch_get_irn_register_req_in(node, i2);
 			if (req2->cls != cls)
 				continue;
 			if (! (req2->type & arch_register_req_type_limited))
@@ -152,27 +153,14 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 	}
 
 	/* collect all registers occurring in out constraints. */
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-
-		foreach_out_edge(node, edge) {
-			ir_node                   *proj = get_edge_src_irn(edge);
-			const arch_register_req_t *req  = arch_get_register_req_out(proj);
-			if (! (req->type & arch_register_req_type_limited))
-				continue;
-
-			if (def_constr == NULL) {
-				rbitset_alloca(def_constr, cls->n_regs);
-			}
-			rbitset_or(def_constr, req->limited, cls->n_regs);
-		}
-	} else {
-		const arch_register_req_t *req = arch_get_register_req_out(node);
-		if (req->type & arch_register_req_type_limited) {
+	be_foreach_definition(node, cls, def,
+		if (! (req_->type & arch_register_req_type_limited))
+			continue;
+		if (def_constr == NULL) {
 			rbitset_alloca(def_constr, cls->n_regs);
-			rbitset_or(def_constr, req->limited, cls->n_regs);
 		}
-	}
+		rbitset_or(def_constr, req_->limited, cls->n_regs);
+	);
 
 	/* no output constraints => we're good */
 	if (def_constr == NULL) {
@@ -195,7 +183,7 @@ static void prepare_constr_insn(be_pre_spill_env_t *env, ir_node *node)
 		 * 2) lives through the node.
 		 * 3) is constrained to a register occurring in out constraints.
 		 */
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
 		if (req->cls != cls)
 			continue;
 		if (!(req->type & arch_register_req_type_limited))

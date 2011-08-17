@@ -139,57 +139,91 @@ void            arch_perform_memory_operand(ir_node *irn, ir_node *spill,
                                             unsigned int i);
 
 /**
- * Get the register requirements for a node.
- * @note Deprecated API! Preferably use
- *       arch_get_in_register_req and
- *       arch_get_out_register_req.
- *
- * @param irn The node.
- * @param pos The position of the operand you're interested in.
- * @return    A pointer to the register requirements.  If NULL is returned, the
- *            operand was no register operand.
- */
-const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos);
-
-/**
- * Check, if a register is assignable to an operand of a node.
- * @param irn The node.
- * @param pos The position of the operand.
- * @param reg The register.
- * @return    1, if the register might be allocated to the operand 0 if not.
- */
-int arch_reg_is_allocatable(const ir_node *irn, int pos,
-                            const arch_register_t *reg);
-
-#define arch_reg_out_is_allocatable(irn, reg) arch_reg_is_allocatable(irn, -1, reg)
-
-/**
- * Get the register class of an operand of a node.
- * @param irn The node.
- * @param pos The position of the operand, -1 for the output.
- * @return    The register class of the operand or NULL, if
- *            operand is a non-register operand.
- */
-const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn,
-                                                    int pos);
-
-#define arch_get_irn_reg_class_out(irn) arch_get_irn_reg_class(irn, -1)
-
-/**
- * Get the register allocated at a certain output operand of a node.
- * @param irn The node.
- * @return    The register allocated for this operand
+ * Get the register allocated for a value.
  */
 const arch_register_t *arch_get_irn_register(const ir_node *irn);
-const arch_register_t *arch_irn_get_register(const ir_node *irn, int pos);
+
+/**
+ * Assign register to a value
+ */
+void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
 
 /**
  * Set the register for a certain output operand.
- * @param irn The node.
- * @param reg The register.
  */
-void arch_set_irn_register(ir_node *irn, const arch_register_t *reg);
-void arch_irn_set_register(ir_node *irn, int pos, const arch_register_t *reg);
+void arch_set_irn_register_out(ir_node *irn, int pos, const arch_register_t *r);
+
+const arch_register_t *arch_get_irn_register_out(const ir_node *irn, int pos);
+const arch_register_t *arch_get_irn_register_in(const ir_node *irn, int pos);
+
+/**
+ * Get register constraints for an operand at position @p
+ */
+static inline const arch_register_req_t *arch_get_irn_register_req_in(
+		const ir_node *node, int pos)
+{
+	const backend_info_t *info = be_get_info(node);
+	if (info->in_reqs == NULL)
+		return arch_no_register_req;
+	return info->in_reqs[pos];
+}
+
+/**
+ * Get register constraint for a produced result (the @p pos result)
+ */
+static inline const arch_register_req_t *arch_get_irn_register_req_out(
+		const ir_node *node, int pos)
+{
+	const backend_info_t *info = be_get_info(node);
+	if (info->out_infos == NULL)
+		return arch_no_register_req;
+	return info->out_infos[pos].req;
+}
+
+static inline void arch_set_irn_register_req_out(ir_node *node, int pos,
+		const arch_register_req_t *req)
+{
+	backend_info_t *info = be_get_info(node);
+	assert(pos < (int)ARR_LEN(info->out_infos));
+	info->out_infos[pos].req = req;
+}
+
+static inline void arch_set_irn_register_reqs_in(ir_node *node,
+		const arch_register_req_t **reqs)
+{
+	backend_info_t *info = be_get_info(node);
+	info->in_reqs = reqs;
+}
+
+static inline const arch_register_req_t **arch_get_irn_register_reqs_in(
+		const ir_node *node)
+{
+	backend_info_t *info = be_get_info(node);
+	return info->in_reqs;
+}
+
+const arch_register_req_t *arch_get_irn_register_req(const ir_node *node);
+
+/**
+ * Get the flags of a node.
+ * @param irn The node.
+ * @return The flags.
+ */
+arch_irn_flags_t arch_get_irn_flags(const ir_node *irn);
+
+void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags);
+void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags);
+
+#define arch_irn_is(irn, flag) ((arch_get_irn_flags(irn) & arch_irn_flags_ ## flag) != 0)
+
+static inline unsigned arch_get_irn_n_outs(const ir_node *node)
+{
+	backend_info_t *info = be_get_info(node);
+	if (info->out_infos == NULL)
+		return 0;
+
+	return (unsigned)ARR_LEN(info->out_infos);
+}
 
 /**
  * Classify a node.
@@ -197,26 +231,6 @@ void arch_irn_set_register(ir_node *irn, int pos, const arch_register_t *reg);
  * @return A classification of the node.
  */
 arch_irn_class_t arch_irn_classify(const ir_node *irn);
-
-/**
- * Get the flags of a node.
- * @param irn The node.
- * @return The flags.
- */
-arch_irn_flags_t arch_irn_get_flags(const ir_node *irn);
-
-void arch_irn_set_flags(ir_node *node, arch_irn_flags_t flags);
-void arch_irn_add_flags(ir_node *node, arch_irn_flags_t flags);
-
-#define arch_irn_is(irn, flag) ((arch_irn_get_flags(irn) & arch_irn_flags_ ## flag) != 0)
-
-/**
- * Get the operations of an irn.
- * @param self The handler from which the method is invoked.
- * @param irn Some node.
- * @return Operations for that irn.
- */
-typedef const void *(arch_get_irn_ops_t)(const ir_node *irn);
 
 /**
  * Initialize the architecture environment struct.
@@ -327,30 +341,26 @@ struct arch_register_req_t {
 	                                         registers are required */
 };
 
-static inline int reg_reqs_equal(const arch_register_req_t *req1,
-                                 const arch_register_req_t *req2)
+static inline bool reg_reqs_equal(const arch_register_req_t *req1,
+                                  const arch_register_req_t *req2)
 {
 	if (req1 == req2)
-		return 1;
+		return true;
 
-	if (req1->type != req2->type
-			|| req1->cls != req2->cls
-			|| req1->other_same != req2->other_same
-			|| req1->other_different != req2->other_different)
-		return 0;
+	if (req1->type              != req2->type            ||
+	    req1->cls               != req2->cls             ||
+	    req1->other_same        != req2->other_same      ||
+	    req1->other_different   != req2->other_different ||
+	    (req1->limited != NULL) != (req2->limited != NULL))
+		return false;
 
 	if (req1->limited != NULL) {
-		size_t n_regs;
-
-		if (req2->limited == NULL)
-			return 0;
-
-		n_regs = arch_register_class_n_regs(req1->cls);
+		size_t const n_regs = arch_register_class_n_regs(req1->cls);
 		if (!rbitsets_equal(req1->limited, req2->limited, n_regs))
-			return 0;
+			return false;
 	}
 
-	return 1;
+	return true;
 }
 
 /**
@@ -566,11 +576,6 @@ struct arch_isa_if_t {
 	void (*before_ra)(ir_graph *irg);
 
 	/**
-	 * Called after register allocation.
-	 */
-	void (*after_ra)(ir_graph *irg);
-
-	/**
 	 * Called directly before done is called. This should be the last place
 	 * where the irg is modified.
 	 */
@@ -585,6 +590,7 @@ struct arch_isa_if_t {
 
 	/**
 	 * Checks if the given register is callee/caller saved.
+	 * @deprecated, only necessary if backend still uses beabi functions
 	 */
 	int (*register_saved_by)(const arch_register_t *reg, int callee);
 };
@@ -626,129 +632,19 @@ struct arch_env_t {
 	                                              stuff from beabi.h/.c */
 };
 
-static inline unsigned arch_irn_get_n_outs(const ir_node *node)
-{
-	backend_info_t *info = be_get_info(node);
-	if (info->out_infos == NULL)
-		return 0;
-
-	return (unsigned)ARR_LEN(info->out_infos);
-}
-
-static inline const arch_irn_ops_t *get_irn_ops_simple(const ir_node *node)
-{
-	const ir_op          *ops    = get_irn_op(node);
-	const arch_irn_ops_t *be_ops = get_op_ops(ops)->be_ops;
-	assert(!is_Proj(node));
-	return be_ops;
-}
-
-static inline const arch_register_req_t *arch_get_register_req_out(
-		const ir_node *irn)
-{
-	int             pos = 0;
-	backend_info_t *info;
-
-	/* you have to query the Proj nodes for the constraints (or use
-	 * arch_get_out_register_req. Querying a mode_T node and expecting
-	 * arch_no_register_req is a bug in your code! */
-	assert(get_irn_mode(irn) != mode_T);
-
-	if (is_Proj(irn)) {
-		pos = get_Proj_proj(irn);
-		irn = get_Proj_pred(irn);
-	}
-
-	info = be_get_info(irn);
-	if (info->out_infos == NULL)
-		return arch_no_register_req;
-
-	return info->out_infos[pos].req;
-}
-
 static inline bool arch_irn_is_ignore(const ir_node *irn)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(irn);
-	return !!(req->type & arch_register_req_type_ignore);
+	const arch_register_req_t *req = arch_get_irn_register_req(irn);
+	return req->type & arch_register_req_type_ignore;
 }
 
 static inline bool arch_irn_consider_in_reg_alloc(
 		const arch_register_class_t *cls, const ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	return
 		req->cls == cls &&
 		!(req->type & arch_register_req_type_ignore);
-}
-
-/**
- * Get register constraints for an operand at position @p
- */
-static inline const arch_register_req_t *arch_get_in_register_req(
-		const ir_node *node, int pos)
-{
-	const backend_info_t *info = be_get_info(node);
-	if (info->in_reqs == NULL)
-		return arch_no_register_req;
-	return info->in_reqs[pos];
-}
-
-/**
- * Get register constraint for a produced result (the @p pos result)
- */
-static inline const arch_register_req_t *arch_get_out_register_req(
-		const ir_node *node, int pos)
-{
-	const backend_info_t *info = be_get_info(node);
-	if (info->out_infos == NULL)
-		return arch_no_register_req;
-	return info->out_infos[pos].req;
-}
-
-static inline void arch_set_out_register_req(ir_node *node, int pos,
-		const arch_register_req_t *req)
-{
-	backend_info_t *info = be_get_info(node);
-	assert(pos < (int) arch_irn_get_n_outs(node));
-	info->out_infos[pos].req = req;
-}
-
-static inline void arch_set_in_register_reqs(ir_node *node,
-                                            const arch_register_req_t **in_reqs)
-{
-	backend_info_t *info = be_get_info(node);
-	info->in_reqs = in_reqs;
-}
-
-static inline const arch_register_req_t **arch_get_in_register_reqs(
-		const ir_node *node)
-{
-	backend_info_t *info = be_get_info(node);
-	return info->in_reqs;
-}
-
-/**
- * Check if the given register is callee save, ie. will be save by the callee.
- */
-static inline bool arch_register_is_callee_save(
-	const arch_env_t      *arch_env,
-	const arch_register_t *reg)
-{
-	if (arch_env->impl->register_saved_by)
-		return arch_env->impl->register_saved_by(reg, /*callee=*/1);
-	return false;
-}
-
-/**
- * Check if the given register is caller save, ie. must be save by the caller.
- */
-static inline bool arch_register_is_caller_save(
-	const arch_env_t      *arch_env,
-	const arch_register_t *reg)
-{
-	if (arch_env->impl->register_saved_by)
-		return arch_env->impl->register_saved_by(reg, /*callee=*/0);
-	return false;
 }
 
 /**
@@ -764,13 +660,13 @@ static inline bool arch_register_is_caller_save(
 		foreach_out_edge(node, edge_) {                                    \
 			const arch_register_req_t *req_;                               \
 			value = get_edge_src_irn(edge_);                               \
-			req_  = arch_get_register_req_out(value);                      \
+			req_  = arch_get_irn_register_req(value);                      \
 			if (req_->cls != cls)                                          \
 				continue;                                                  \
 			code                                                           \
 		}                                                                  \
 	} else {                                                               \
-		const arch_register_req_t *req_ = arch_get_register_req_out(node); \
+		const arch_register_req_t *req_ = arch_get_irn_register_req(node); \
 		value = node;                                                      \
 		if (req_->cls == cls) {                                            \
 			code                                                           \
@@ -784,5 +680,15 @@ static inline bool arch_register_is_caller_save(
 			continue;                                                      \
 		code                                                               \
 	)
+
+static inline const arch_register_class_t *arch_get_irn_reg_class(
+		const ir_node *node)
+{
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
+	return req->cls;
+}
+
+bool arch_reg_is_allocatable(const arch_register_req_t *req,
+                             const arch_register_t *reg);
 
 #endif

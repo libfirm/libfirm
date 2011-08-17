@@ -33,6 +33,8 @@ typedef struct {
 	unsigned use_leave:1;
 	/** use inc, dec instead of add $1, reg and add $-1, reg */
 	unsigned use_incdec:1;
+	/** use soft float library */
+	unsigned use_softfloat:1;
 	/** use sse2 instructions (instead of x87) */
 	unsigned use_sse2:1;
 	/** use ffreep instead of fpop */
@@ -103,6 +105,14 @@ typedef struct {
 } ia32_code_gen_config_t;
 
 extern ia32_code_gen_config_t  ia32_cg_config;
+
+typedef enum ia32_fp_architectures {
+	IA32_FPU_ARCH_NONE      = 0,
+	IA32_FPU_ARCH_X87       = 0x00000001,
+	IA32_FPU_ARCH_SSE2      = 0x00000002,
+	IA32_FPU_ARCH_SOFTFLOAT = 0x00000004,
+}
+ia32_fp_architectures;
 
 /** Initialize the ia32 architecture module. */
 void ia32_init_architecture(void);

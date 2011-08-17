@@ -139,7 +139,7 @@ sub ia32_custom_init_attr {
 	my $res    = "";
 
 	if(defined($node->{modified_flags})) {
-		$res .= "\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n";
+		$res .= "\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);\n";
 	}
 	if(defined($node->{am})) {
 		my $am = $node->{am};
@@ -165,31 +165,31 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 
 %init_attr = (
 	ia32_asm_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);".
 		"\tinit_ia32_asm_attributes(res);",
 	ia32_attr_t     =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);",
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	ia32_call_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_call_attributes(res, pop, call_tp);",
 	ia32_condcode_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_switch_attributes(res, default_pn);",
 	ia32_copyb_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
 	ia32_immediate_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_immediate_attributes(res, symconst, symconst_sign, no_pic_adjust, offset);",
 	ia32_x87_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_x87_attributes(res);",
 	ia32_climbframe_attr_t =>
-		"\tinit_ia32_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_climbframe_attributes(res, count);",
 );
 
@@ -988,7 +988,7 @@ Setcc => {
 	# (when we emit the setX; setp; orb and the setX;setnp;andb sequences)
 	init_attr => "set_ia32_ls_mode(res, mode_Bu);\n"
 		. "\tif (condition_code & ia32_cc_additional_float_cases) {\n"
-		. "\t\tarch_irn_add_flags(res, arch_irn_flags_modify_flags);\n"
+		. "\t\tarch_add_irn_flags(res, arch_irn_flags_modify_flags);\n"
 		. "\t\t/* attr->latency = 3; */\n"
 		. "\t}\n",
 	latency   => 1,

@@ -42,7 +42,7 @@ void be_info_new_node(ir_node *node)
 	struct obstack *obst;
 	backend_info_t *info;
 
-	/* Projs need no be info, their tuple holds all information */
+	/* Projs need no be info, all info is fetched from their predecessor */
 	if (is_Proj(node))
 		return;
 
@@ -57,17 +57,15 @@ void be_info_new_node(ir_node *node)
 	 * backend graphs
 	 */
 	switch (get_irn_opcode(node)) {
-	case iro_Bad:
 	case iro_Block:
 	case iro_Dummy:
-	case iro_End:
-	case iro_Unknown:
-		info->flags |= arch_irn_flags_not_scheduled;
-		break;
 	case iro_NoMem:
 	case iro_Anchor:
 	case iro_Pin:
 	case iro_Sync:
+	case iro_Bad:
+	case iro_End:
+	case iro_Unknown:
 		info->flags |= arch_irn_flags_not_scheduled;
 		info->out_infos = NEW_ARR_D(reg_out_info_t, obst, 1);
 		memset(info->out_infos, 0, 1 * sizeof(info->out_infos[0]));

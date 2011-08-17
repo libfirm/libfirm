@@ -36,7 +36,7 @@
 #include "irgopt.h"
 #include "iroptimize.h"
 #include "irdump.h"
-#include "lowering.h"
+#include "lower_calls.h"
 #include "error.h"
 
 #include "bitset.h"
@@ -56,6 +56,7 @@
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../beflags.h"
+#include "../bestack.h"
 
 #include "bearch_arm_t.h"
 
@@ -144,18 +145,48 @@ static void arm_prepare_graph(ir_graph *irg)
 	place_code(irg);
 }
 
-/**
- * Called immediately before emit phase.
- */
-static void arm_finish_irg(ir_graph *irg)
+static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
 {
-	/* do peephole optimizations and fix stack offsets */
-	arm_peephole_optimization(irg);
+	be_fec_env_t  *env = (be_fec_env_t*)data;
+	const ir_mode *mode;
+	int            align;
+	ir_entity     *entity;
+	const arm_load_store_attr_t *attr;
+
+	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
+		mode  = get_irn_mode(node);
+		align = get_mode_size_bytes(mode);
+		be_node_needs_frame_entity(env, node, mode, align);
+		return;
+	}
+
+	switch (get_arm_irn_opcode(node)) {
+	case iro_arm_Ldf:
+	case iro_arm_Ldr:
+		break;
+	default:
+		return;
+	}
+
+	attr   = get_arm_load_store_attr_const(node);
+	entity = attr->entity;
+	mode   = attr->load_store_mode;
+	align  = get_mode_size_bytes(mode);
+	if (entity != NULL)
+		return;
+	if (!attr->is_frame_entity)
+		return;
+	be_node_needs_frame_entity(env, node, mode, align);
 }
 
-static void arm_before_ra(ir_graph *irg)
+static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
 {
-	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL);
+	if (is_be_node(node)) {
+		be_node_set_frame_entity(node, entity);
+	} else {
+		arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
+		attr->entity = entity;
+	}
 }
 
 static void transform_Reload(ir_node *node)
@@ -223,51 +254,10 @@ static void arm_after_ra_walker(ir_node *block, void *data)
 	}
 }
 
-static void arm_collect_frame_entity_nodes(ir_node *node, void *data)
-{
-	be_fec_env_t  *env = (be_fec_env_t*)data;
-	const ir_mode *mode;
-	int            align;
-	ir_entity     *entity;
-	const arm_load_store_attr_t *attr;
-
-	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		mode  = get_irn_mode(node);
-		align = get_mode_size_bytes(mode);
-		be_node_needs_frame_entity(env, node, mode, align);
-		return;
-	}
-
-	switch (get_arm_irn_opcode(node)) {
-	case iro_arm_Ldf:
-	case iro_arm_Ldr:
-		break;
-	default:
-		return;
-	}
-
-	attr   = get_arm_load_store_attr_const(node);
-	entity = attr->entity;
-	mode   = attr->load_store_mode;
-	align  = get_mode_size_bytes(mode);
-	if (entity != NULL)
-		return;
-	if (!attr->is_frame_entity)
-		return;
-	be_node_needs_frame_entity(env, node, mode, align);
-}
-
-static void arm_set_frame_entity(ir_node *node, ir_entity *entity)
-{
-	if (is_be_node(node)) {
-		be_node_set_frame_entity(node, entity);
-	} else {
-		arm_load_store_attr_t *attr = get_arm_load_store_attr(node);
-		attr->entity = entity;
-	}
-}
-
-static void arm_after_ra(ir_graph *irg)
+/**
+ * Called immediately before emit phase.
+ */
+static void arm_finish_irg(ir_graph *irg)
 {
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
@@ -280,6 +270,18 @@ static void arm_after_ra(ir_graph *irg)
 	be_free_frame_entity_coalescer(fec_env);
 
 	irg_block_walk_graph(irg, NULL, arm_after_ra_walker, NULL);
+
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
+
+	/* do peephole optimizations and fix stack offsets */
+	arm_peephole_optimization(irg);
+}
+
+static void arm_before_ra(ir_graph *irg)
+{
+	be_sched_fix_flags(irg, &arm_reg_classes[CLASS_arm_flags], NULL, NULL);
 }
 
 /**
@@ -534,16 +536,8 @@ static void arm_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
 
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
-
 	/* lower compound param handling */
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
@@ -569,11 +563,15 @@ static const backend_params *arm_get_libfirm_params(void)
 		0,     /* don't support inline assembler yet */
 		1,     /* support Rotl nodes */
 		1,     /* big endian */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift not efficient */
 		&ad,   /* will be set later */
 		arm_is_mux_allowed, /* allow_ifconv function */
 		32,    /* machine size */
 		NULL,  /* float arithmetic mode (TODO) */
-		0,     /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* unsigned long long type */
+		NULL,  /* long double type */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
@@ -622,7 +620,6 @@ const arch_isa_if_t arm_isa_if = {
 	NULL,  /* before_abi */
 	arm_prepare_graph,
 	arm_before_ra,
-	arm_after_ra,
 	arm_finish_irg,
 	arm_gen_routine,
 	NULL, /* register_saved_by */

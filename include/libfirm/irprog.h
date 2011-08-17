@@ -74,14 +74,23 @@ ENUM_COUNTABLE(ir_segment_t)
  */
 FIRM_API ir_prog *irp;
 
+typedef enum irp_resources_t {
+	IRP_RESOURCE_NONE         = 0,
+	IRP_RESOURCE_IRG_LINK     = 1 << 0,
+	IRP_RESOURCE_ENTITY_LINK  = 1 << 1,
+	IRP_RESOURCE_TYPE_VISITED = 1 << 2,
+	IRP_RESOURCE_TYPE_LINK    = 1 << 3,
+} irp_resources_t;
+ENUM_BITSET(irp_resources_t)
+
 #ifndef NDEBUG
-FIRM_API void irp_reserve_resources(ir_prog *irp, ir_resources_t resources);
-FIRM_API void irp_free_resources(ir_prog *irp, ir_resources_t resources);
-FIRM_API ir_resources_t irp_resources_reserved(const ir_prog *irp);
+FIRM_API void irp_reserve_resources(ir_prog *irp, irp_resources_t resources);
+FIRM_API void irp_free_resources(ir_prog *irp, irp_resources_t resources);
+FIRM_API irp_resources_t irp_resources_reserved(const ir_prog *irp);
 #else
-#define irp_reserve_resources(irp, resources)
-#define irp_free_resources(irp, resources)
-#define irp_resources_reserved(irp)   0
+#define irp_reserve_resources(irp, resources) (void)0
+#define irp_free_resources(irp, resources)    (void)0
+#define irp_resources_reserved(irp)           0
 #endif
 
 /**

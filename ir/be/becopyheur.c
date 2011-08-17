@@ -261,7 +261,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 	ir_node *sub_res, *curr;
 	be_ifg_t *ifg = chordal_env->ifg;
 	neighbours_iter_t iter;
-
+	const arch_register_req_t *req;
 
 	DBG((dbg, LEVEL_3, "\t    %+F \tcaused col(%+F) \t%2d --> %2d\n", trigger, irn, irn_col, col));
 
@@ -277,13 +277,13 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		return irn;
 	}
 
+	req = arch_get_irn_register_req(irn);
 #ifdef SEARCH_FREE_COLORS
 	/* If we resolve conflicts (recursive calls) we can use any unused color.
 	 * In case of the first call @p col must be used.
 	 */
 	if (irn != trigger) {
 		bitset_t *free_cols = bitset_alloca(cls->n_regs);
-		const arch_register_req_t *req;
 		ir_node *curr;
 		int free_col;
 
@@ -291,7 +291,6 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 		bitset_copy(free_cols, co->cenv->allocatable_regs);
 
 		/* Exclude colors not assignable to the irn */
-		req = arch_get_register_req_out(irn);
 		if (arch_register_req_is(req, limited)) {
 			bitset_t *limited = bitset_alloca(cls->n_regs);
 			rbitset_copy_to_bitset(req->limited, limited);
@@ -315,7 +314,7 @@ static ir_node *qnode_color_irn(const qnode_t *qn, ir_node *irn, int col, const 
 #endif /* SEARCH_FREE_COLORS */
 
 	/* If target color is not allocatable changing color is impossible */
-	if (!arch_reg_out_is_allocatable(irn, arch_register_for_index(cls, col))) {
+	if (!arch_reg_is_allocatable(req, arch_register_for_index(cls, col))) {
 		DBG((dbg, LEVEL_3, "\t      %+F impossible\n", irn));
 		return CHANGE_IMPOSSIBLE;
 	}
@@ -567,7 +566,7 @@ static void ou_optimize(unit_t *ou)
 	/* init queue */
 	INIT_LIST_HEAD(&ou->queue);
 
-	req              = arch_get_register_req_out(ou->nodes[0]);
+	req              = arch_get_irn_register_req(ou->nodes[0]);
 	allocatable_regs = ou->co->cenv->allocatable_regs;
 	n_regs           = req->cls->n_regs;
 	if (arch_register_req_is(req, limited)) {

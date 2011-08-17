@@ -727,7 +727,7 @@ ir_node *ia32_gen_ASM(ir_node *node)
 	for (i = 0; i < out_arity; ++i) {
 		info->out_infos[i].req = out_reg_reqs[i];
 	}
-	arch_set_in_register_reqs(new_node, in_reg_reqs);
+	arch_set_irn_register_reqs_in(new_node, in_reg_reqs);
 
 	SET_IA32_ORIG_NODE(new_node, node);
 

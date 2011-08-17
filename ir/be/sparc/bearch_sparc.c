@@ -39,6 +39,8 @@
 #include "irdump.h"
 #include "lowering.h"
 #include "lower_dw.h"
+#include "lower_calls.h"
+#include "lower_softfloat.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -54,7 +56,6 @@
 #include "../bemachine.h"
 #include "../bemodule.h"
 #include "../beirg.h"
-#include "../bespillslots.h"
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../beflags.h"
@@ -67,6 +68,7 @@
 #include "sparc_emitter.h"
 #include "sparc_architecture.h"
 #include "icore_lowerperm.h"
+#include "sparc_cconv.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -115,11 +117,7 @@ static int sparc_get_sp_bias(const ir_node *node)
 		if (get_irn_arity(node) == 3)
 			panic("no support for _reg variant yet");
 
-		/* Note we do not report the change of the SPARC_MIN_STACKSIZE
-		 * size, since we have additional magic in the emitter which
-		 * calculates that! */
-		assert(attr->immediate_value <= -SPARC_MIN_STACKSIZE);
-		return attr->immediate_value + SPARC_MIN_STACKSIZE;
+		return -attr->immediate_value;
 	} else if (is_sparc_RestoreZero(node)) {
 		return SP_BIAS_RESET;
 	}
@@ -150,12 +148,12 @@ static void sparc_prepare_graph(ir_graph *irg)
 
 static bool sparc_modifies_flags(const ir_node *node)
 {
-	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_flags;
+	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_flags;
 }
 
 static bool sparc_modifies_fp_flags(const ir_node *node)
 {
-	return arch_irn_get_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
+	return arch_get_irn_flags(node) & sparc_arch_irn_flag_modifies_fp_flags;
 }
 
 static void sparc_before_ra(ir_graph *irg)
@@ -165,143 +163,6 @@ static void sparc_before_ra(ir_graph *irg)
 	                   NULL, sparc_modifies_flags);
 	be_sched_fix_flags(irg, &sparc_reg_classes[CLASS_sparc_fpflags_class],
 	                   NULL, sparc_modifies_fp_flags);
-}
-
-/**
- * transform reload node => load
- */
-static void transform_Reload(ir_node *node)
-{
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
-	ir_node   *mem    = get_irn_n(node, n_be_Reload_mem);
-	ir_mode   *mode   = get_irn_mode(node);
-	ir_entity *entity = be_get_frame_entity(node);
-	const arch_register_t *reg;
-	ir_node   *proj;
-	ir_node   *load;
-
-	ir_node  *sched_point = sched_prev(node);
-
-	load = new_bd_sparc_Ld_imm(dbgi, block, ptr, mem, mode, entity, 0, true);
-	sched_add_after(sched_point, load);
-	sched_remove(node);
-
-	proj = new_rd_Proj(dbgi, load, mode, pn_sparc_Ld_res);
-
-	reg = arch_get_irn_register(node);
-	arch_set_irn_register(proj, reg);
-
-	exchange(node, proj);
-}
-
-/**
- * transform spill node => store
- */
-static void transform_Spill(ir_node *node)
-{
-	ir_node   *block  = get_nodes_block(node);
-	dbg_info  *dbgi   = get_irn_dbg_info(node);
-	ir_node   *ptr    = get_irn_n(node, n_be_Spill_frame);
-	ir_graph  *irg    = get_irn_irg(node);
-	ir_node   *mem    = get_irg_no_mem(irg);
-	ir_node   *val    = get_irn_n(node, n_be_Spill_val);
-	ir_mode   *mode   = get_irn_mode(val);
-	ir_entity *entity = be_get_frame_entity(node);
-	ir_node   *sched_point;
-	ir_node   *store;
-
-	sched_point = sched_prev(node);
-	store = new_bd_sparc_St_imm(dbgi, block, val, ptr, mem, mode, entity, 0, true);
-	sched_remove(node);
-	sched_add_after(sched_point, store);
-
-	exchange(node, store);
-}
-
-/**
- * walker to transform be_Spill and be_Reload nodes
- */
-static void sparc_after_ra_walker(ir_node *block, void *data)
-{
-	ir_node *node, *prev;
-	(void) data;
-
-	for (node = sched_last(block); !sched_is_begin(node); node = prev) {
-		prev = sched_prev(node);
-
-		if (be_is_Reload(node)) {
-			transform_Reload(node);
-		} else if (be_is_Spill(node)) {
-			transform_Spill(node);
-		}
-	}
-}
-
-static void sparc_collect_frame_entity_nodes(ir_node *node, void *data)
-{
-	be_fec_env_t  *env = (be_fec_env_t*)data;
-	const ir_mode *mode;
-	int            align;
-	ir_entity     *entity;
-	const sparc_load_store_attr_t *attr;
-
-	if (be_is_Reload(node) && be_get_frame_entity(node) == NULL) {
-		mode  = get_irn_mode(node);
-		align = get_mode_size_bytes(mode);
-		be_node_needs_frame_entity(env, node, mode, align);
-		return;
-	}
-
-	if (!is_sparc_Ld(node) && !is_sparc_Ldf(node))
-		return;
-
-	attr   = get_sparc_load_store_attr_const(node);
-	entity = attr->base.immediate_value_entity;
-	mode   = attr->load_store_mode;
-	if (entity != NULL)
-		return;
-	if (!attr->is_frame_entity)
-		return;
-	if (arch_irn_get_flags(node) & sparc_arch_irn_flag_needs_64bit_spillslot)
-		mode = mode_Lu;
-	align  = get_mode_size_bytes(mode);
-	be_node_needs_frame_entity(env, node, mode, align);
-}
-
-static void sparc_set_frame_entity(ir_node *node, ir_entity *entity)
-{
-	if (is_be_node(node)) {
-		be_node_set_frame_entity(node, entity);
-	} else {
-		/* we only say be_node_needs_frame_entity on nodes with load_store
-		 * attributes, so this should be fine */
-		sparc_load_store_attr_t *attr = get_sparc_load_store_attr(node);
-		assert(attr->is_frame_entity);
-		assert(attr->base.immediate_value_entity == NULL);
-		attr->base.immediate_value_entity = entity;
-	}
-}
-
-static void sparc_after_ra(ir_graph *irg)
-{
-	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
-	bool               at_begin     = stack_layout->sp_relative ? true : false;
-	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
-
-	if (sparc_cg_config.use_permi)
-		icore_lower_nodes_after_ra(irg);
-	else
-		lower_nodes_after_ra(irg);
-
-	irg_walk_graph(irg, NULL, sparc_collect_frame_entity_nodes, fec_env);
-	be_assign_entities(fec_env, sparc_set_frame_entity, at_begin);
-	be_free_frame_entity_coalescer(fec_env);
-
-	irg_block_walk_graph(irg, NULL, sparc_after_ra_walker, NULL);
-
-	sparc_introduce_prolog_epilog(irg);
 }
 
 static void sparc_init_graph(ir_graph *irg)
@@ -327,7 +188,8 @@ static sparc_isa_t sparc_isa_template = {
 		5,                                  /* costs for a reload instruction */
 		true,                               /* custom abi handling */
 	},
-	NULL,     /* constants */
+	NULL,               /* constants */
+	SPARC_FPU_ARCH_FPU, /* FPU architecture */
 };
 
 /**
@@ -498,6 +360,7 @@ static arch_env_t *sparc_init(FILE *outfile)
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_handle_intrinsics();
+	sparc_cconv_init();
 
 	return &isa->base;
 }
@@ -554,14 +417,10 @@ static void sparc_lower_for_target(void)
 		sparc_create_set,
 		0,
 	};
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+
+	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
+		lower_floating_point();
 
 	sparc_lower_64bit();
 
@@ -607,11 +466,15 @@ static const backend_params *sparc_get_backend_params(void)
 		0,     /* no inline assembly */
 		0,     /* no support for RotL nodes */
 		1,     /* big endian */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift not efficient */
 		&arch_dep,              /* will be set later */
 		sparc_is_mux_allowed,   /* parameter for if conversion */
 		32,    /* machine size */
 		NULL,  /* float arithmetic mode */
-		128,   /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* usigned long long type */
+		NULL,  /* long double type */
 		0,     /* no trampoline support: size 0 */
 		0,     /* no trampoline support: align 0 */
 		NULL,  /* no trampoline support: no trampoline builder */
@@ -620,6 +483,24 @@ static const backend_params *sparc_get_backend_params(void)
 
 	sparc_setup_cg_config();
 
+	ir_mode *mode_long_long
+		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
+		              64);
+	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_mode *mode_unsigned_long_long
+		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
+		              irma_twos_complement, 64);
+	ir_type *type_unsigned_long_long
+		= new_type_primitive(mode_unsigned_long_long);
+	ir_mode *mode_long_double
+		= new_ir_mode("long double", irms_float_number, 128, 1,
+		              irma_ieee754, 0);
+	ir_type *type_long_double = new_type_primitive(mode_long_double);
+
+	set_type_alignment_bytes(type_long_double, 8);
+	p.type_long_double        = type_long_double;
+	p.type_long_long          = type_long_long;
+	p.type_unsigned_long_long = type_unsigned_long_long;
 	return &p;
 }
 
@@ -643,6 +524,22 @@ static int sparc_is_valid_clobber(const char *clobber)
 	return 0;
 }
 
+/* fpu set architectures. */
+static const lc_opt_enum_int_items_t sparc_fpu_items[] = {
+	{ "fpu",       SPARC_FPU_ARCH_FPU },
+	{ "softfloat", SPARC_FPU_ARCH_SOFTFLOAT },
+	{ NULL,        0 }
+};
+
+static lc_opt_enum_int_var_t arch_fpu_var = {
+	&sparc_isa_template.fpu_arch, sparc_fpu_items
+};
+
+static const lc_opt_table_entry_t sparc_options[] = {
+	LC_OPT_ENT_ENUM_INT("fpunit", "select the floating point unit", &arch_fpu_var),
+	LC_OPT_LAST
+};
+
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
 	sparc_lower_for_target,
@@ -662,7 +559,6 @@ const arch_isa_if_t sparc_isa_if = {
 	NULL, /* before_abi */
 	sparc_prepare_graph,
 	sparc_before_ra,
-	sparc_after_ra,
 	sparc_finish,
 	sparc_emit_routine,
 	NULL, /* register_saved_by */
@@ -671,6 +567,11 @@ const arch_isa_if_t sparc_isa_if = {
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)
 void be_init_arch_sparc(void)
 {
+	lc_opt_entry_t *be_grp = lc_opt_get_grp(firm_opt_get_root(), "be");
+	lc_opt_entry_t *sparc_grp = lc_opt_get_grp(be_grp, "sparc");
+
+	lc_opt_add_table(sparc_grp, sparc_options);
+
 	be_register_isa_if("sparc", &sparc_isa_if);
 	FIRM_DBG_REGISTER(dbg, "firm.be.sparc.cg");
 	sparc_init_transform();

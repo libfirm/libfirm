@@ -471,7 +471,7 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 
 	if (env->mode == NULL) {
 		env->mode    = get_irn_mode(copy);
-		env->phi_cls = arch_get_irn_reg_class_out(copy);
+		env->phi_cls = arch_get_irn_reg_class(copy);
 	} else {
 		assert(env->mode == get_irn_mode(copy));
 	}
@@ -493,7 +493,7 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 
 	if (env->mode == NULL) {
 		env->mode    = get_irn_mode(copies[0]);
-		env->phi_cls = arch_get_irn_reg_class_out(copies[0]);
+		env->phi_cls = arch_get_irn_reg_class(copies[0]);
 	}
 
 	for (i = 0; i < copies_len; ++i) {

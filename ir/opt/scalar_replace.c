@@ -26,6 +26,7 @@
 #include "config.h"
 
 #include <string.h>
+#include <stdbool.h>
 
 #include "iroptimize.h"
 #include "scalar_replace.h"
@@ -47,8 +48,15 @@
 #include "debug.h"
 #include "error.h"
 
-#define SET_VNUM(node, vnum) set_irn_link(node, INT_TO_PTR(vnum))
-#define GET_VNUM(node)       (unsigned)PTR_TO_INT(get_irn_link(node))
+static unsigned get_vnum(const ir_node *node)
+{
+	return (unsigned)PTR_TO_INT(get_irn_link(node));
+}
+
+static void set_vnum(ir_node *node, unsigned vnum)
+{
+	set_irn_link(node, INT_TO_PTR(vnum));
+}
 
 /**
  * A path element entry: it is either an entity
@@ -71,7 +79,10 @@ typedef struct path_t {
 } path_t;
 
 /** The size of a path in bytes. */
-#define PATH_SIZE(p)  (sizeof(*(p)) + sizeof((p)->path[0]) * ((p)->path_len - 1))
+static size_t path_size(path_t *p)
+{
+	return sizeof(*p) + sizeof(p->path[0]) * (p->path_len-1);
+}
 
 typedef struct scalars_t {
 	ir_entity *ent;              /**< A entity for scalar replacement. */
@@ -127,7 +138,7 @@ static unsigned path_hash(const path_t *path)
  *
  * @param sel  the Sel node that will be checked
  */
-static int is_const_sel(ir_node *sel)
+static bool is_const_sel(ir_node *sel)
 {
 	int i, n = get_Sel_n_indexs(sel);
 
@@ -135,9 +146,9 @@ static int is_const_sel(ir_node *sel)
 		ir_node *idx = get_Sel_index(sel, i);
 
 		if (!is_Const(idx))
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
 
 /**
@@ -157,7 +168,7 @@ static int is_const_sel(ir_node *sel)
  * @param mode     the mode of the Load/Store
  * @param ent_mode the mode of the accessed entity
  */
-static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
+static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
 {
 	if (ent_mode != mode) {
 		if (ent_mode == NULL ||
@@ -165,16 +176,16 @@ static int check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
 		    get_mode_sort(ent_mode) != get_mode_sort(mode) ||
 		    get_mode_arithmetic(ent_mode) != irma_twos_complement ||
 		    get_mode_arithmetic(mode) != irma_twos_complement)
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
 
 /*
  * Returns non-zero, if the address of an entity
  * represented by a Sel node (or its successor Sels) is taken.
  */
-int is_address_taken(ir_node *sel)
+bool is_address_taken(ir_node *sel)
 {
 	int       i, input_nr, k;
 	ir_mode   *emode, *mode;
@@ -182,7 +193,7 @@ int is_address_taken(ir_node *sel)
 	ir_entity *ent;
 
 	if (! is_const_sel(sel))
-		return 1;
+		return true;
 
 	for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(sel, i);
@@ -191,29 +202,29 @@ int is_address_taken(ir_node *sel)
 		case iro_Load:
 			/* do not remove volatile variables */
 			if (get_Load_volatility(succ) == volatility_is_volatile)
-				return 1;
+				return true;
 			/* check if this load is not a hidden conversion */
 			mode = get_Load_mode(succ);
 			ent = get_Sel_entity(sel);
 			emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
-				return 1;
+				return true;
 			break;
 
 		case iro_Store:
 			/* check that Sel is not the Store's value */
 			value = get_Store_value(succ);
 			if (value == sel)
-				return 1;
+				return true;
 			/* do not remove volatile variables */
 			if (get_Store_volatility(succ) == volatility_is_volatile)
-				return 1;
+				return true;
 			/* check if this Store is not a hidden conversion */
 			mode = get_irn_mode(value);
 			ent = get_Sel_entity(sel);
 			emode = get_type_mode(get_entity_type(ent));
 			if (! check_load_store_mode(mode, emode))
-				return 1;
+				return true;
 			break;
 
 		case iro_Sel: {
@@ -221,12 +232,12 @@ int is_address_taken(ir_node *sel)
 			ir_entity *entity = get_Sel_entity(succ);
 			/* we can't handle unions correctly yet -> address taken */
 			if (is_Union_type(get_entity_owner(entity)))
-				return 1;
+				return true;
 
 			/* Check the Sel successor of Sel */
 			res = is_address_taken(succ);
 			if (res)
-				return 1;
+				return true;
 			break;
 		}
 
@@ -237,12 +248,12 @@ int is_address_taken(ir_node *sel)
 			 * One special case: If the Call type tells that it's a
 			 * value parameter, the address is NOT taken.
 			 */
-			return 1;
+			return true;
 
 		case iro_Id: {
 			int res = is_address_taken(succ);
 			if (res)
-				return 1;
+				return true;
 			break;
 		}
 
@@ -259,7 +270,7 @@ int is_address_taken(ir_node *sel)
 						if (is_Proj(proj) && get_Proj_proj(proj) == input_nr) {
 							int res = is_address_taken(proj);
 							if (res)
-								return 1;
+								return true;
 						}
 					}
 				}
@@ -268,10 +279,10 @@ int is_address_taken(ir_node *sel)
 
 		default:
 			/* another op, the address is taken */
-			return 1;
+			return true;
 		}
 	}
-	return 0;
+	return false;
 }
 
 /**
@@ -280,16 +291,17 @@ int is_address_taken(ir_node *sel)
  * @param ent  the entity that will be scalar replaced
  * @param sel  a Sel node that selects some fields of this entity
  */
-static int link_all_leave_sels(ir_entity *ent, ir_node *sel)
+static bool link_all_leave_sels(ir_entity *ent, ir_node *sel)
 {
-	int i, is_leave = 1;
+	int i;
+	bool is_leave = true;
 
 	for (i = get_irn_n_outs(sel) - 1; i >= 0; --i) {
 		ir_node *succ = get_irn_out(sel, i);
 
 		if (is_Sel(succ)) {
 			/* the current leave has further Sel's, no leave */
-			is_leave = 0;
+			is_leave = false;
 			link_all_leave_sels(ent, succ);
 		} else if (is_Id(succ)) {
 			is_leave &= link_all_leave_sels(ent, succ);
@@ -401,17 +413,6 @@ static int find_possible_replacements(ir_graph *irg)
 			if (get_entity_link(ent) == ADDRESS_TAKEN)
 				continue;
 
-			/*
-			 * Beware: in rare cases even entities on the frame might be
-			 * volatile. This might happen if the entity serves as a store
-			 * to a value that must survive a exception. Do not optimize
-			 * such entities away.
-			 */
-			if (get_entity_volatility(ent) == volatility_is_volatile) {
-				set_entity_link(ent, ADDRESS_TAKEN);
-				continue;
-			}
-
 			ent_type = get_entity_type(ent);
 
 			/* we can handle arrays, structs and atomic types yet */
@@ -491,25 +492,24 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 
 	DB((dbg, SET_LEVEL_3, "  Visiting Sel nodes of entity %+F\n", ent));
 	/* visit all Sel nodes in the chain of the entity */
-	for (sel = (ir_node*)get_entity_link(ent); sel != NULL;
-	     sel = next) {
+	for (sel = (ir_node*)get_entity_link(ent); sel != NULL; sel = next) {
 		next = (ir_node*)get_irn_link(sel);
 
 		/* we must mark this sel for later */
 		pset_insert_ptr(sels, sel);
 
 		key  = find_path(sel, 0);
-		path = (path_t*)set_find(pathes, key, PATH_SIZE(key), path_hash(key));
+		path = (path_t*)set_find(pathes, key, path_size(key), path_hash(key));
 
 		if (path) {
-			SET_VNUM(sel, path->vnum);
+			set_vnum(sel, path->vnum);
 			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, path->vnum));
 		} else {
 			key->vnum = vnum++;
 
-			set_insert(pathes, key, PATH_SIZE(key), path_hash(key));
+			set_insert(pathes, key, path_size(key), path_hash(key));
 
-			SET_VNUM(sel, key->vnum);
+			set_vnum(sel, key->vnum);
 			DB((dbg, SET_LEVEL_3, "  %+F represents value %u\n", sel, key->vnum));
 
 			ARR_EXTO(ir_mode *, *modes, (key->vnum + 15) & ~15);
@@ -542,51 +542,43 @@ static unsigned allocate_value_numbers(pset *sels, ir_entity *ent, unsigned vnum
 }
 
 /**
- * A list entry for the fixing lists
- */
-typedef struct list_entry_t {
-	ir_node  *node;   /**< the node that must be fixed */
-	unsigned vnum;    /**< the value number of this node */
-} list_entry_t;
-
-/**
  * environment for memory walker
  */
 typedef struct env_t {
-	int          nvals;       /**< number of values */
-	ir_mode      **modes;     /**< the modes of the values */
-	pset         *sels;       /**< A set of all Sel nodes that have a value number */
+	unsigned nvals;      /**< number of values */
+	ir_mode  **modes;    /**< the modes of the values */
+	pset     *sels;      /**< A set of all Sel nodes that have a value number */
 } env_t;
 
 /**
  * topological post-walker.
  */
-static void topologic_walker(ir_node *node, void *ctx)
+static void walker(ir_node *node, void *ctx)
 {
 	env_t    *env = (env_t*)ctx;
 	ir_graph *irg = get_irn_irg(node);
-	ir_node  *adr, *block, *mem, *val;
+	ir_node  *addr, *block, *mem, *val;
 	ir_mode  *mode;
 	unsigned vnum;
 
 	if (is_Load(node)) {
 		/* a load, check if we can resolve it */
-		adr = get_Load_ptr(node);
+		addr = get_Load_ptr(node);
 
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
-		if (! is_Sel(adr)) {
-			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", adr));
+		if (! is_Sel(addr)) {
+			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", addr));
 			return;
 		}
 
-		if (! pset_find_ptr(env->sels, adr)) {
-			DB((dbg, SET_LEVEL_3, "Sel %+F has no VNUM\n", adr));
+		if (! pset_find_ptr(env->sels, addr)) {
+			DB((dbg, SET_LEVEL_3, "Sel %+F has no VNUM\n", addr));
 			return;
 		}
 
 		/* ok, we have a Load that will be replaced */
-		vnum = GET_VNUM(adr);
-		assert(vnum < (unsigned)env->nvals);
+		vnum = get_vnum(addr);
+		assert(vnum < env->nvals);
 
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
@@ -617,20 +609,20 @@ static void topologic_walker(ir_node *node, void *ctx)
 		DB((dbg, SET_LEVEL_3, "  checking %+F for replacement ", node));
 
 		/* a Store always can be replaced */
-		adr = get_Store_ptr(node);
+		addr = get_Store_ptr(node);
 
-		if (! is_Sel(adr)) {
-			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", adr));
+		if (! is_Sel(addr)) {
+			DB((dbg, SET_LEVEL_3, "no Sel input (%+F)\n", addr));
 			return;
 		}
 
-		if (! pset_find_ptr(env->sels, adr)) {
-			DB((dbg, SET_LEVEL_3, "Sel %+F has no VNUM\n", adr));
+		if (! pset_find_ptr(env->sels, addr)) {
+			DB((dbg, SET_LEVEL_3, "Sel %+F has no VNUM\n", addr));
 			return;
 		}
 
-		vnum = GET_VNUM(adr);
-		assert(vnum < (unsigned)env->nvals);
+		vnum = get_vnum(addr);
+		assert(vnum < env->nvals);
 
 		DB((dbg, SET_LEVEL_3, "replacing by value %u\n", vnum));
 
@@ -660,12 +652,12 @@ static void topologic_walker(ir_node *node, void *ctx)
  * @param modes   A flexible array, containing all the modes of
  *                the value numbers.
  */
-static void do_scalar_replacements(ir_graph *irg, pset *sels, int nvals,
+static void do_scalar_replacements(ir_graph *irg, pset *sels, unsigned nvals,
                                    ir_mode **modes)
 {
 	env_t env;
 
-	ssa_cons_start(irg, nvals);
+	ssa_cons_start(irg, (int)nvals);
 
 	env.nvals = nvals;
 	env.modes = modes;
@@ -676,7 +668,7 @@ static void do_scalar_replacements(ir_graph *irg, pset *sels, int nvals,
 	 * and fill the array as much as possible.
 	 */
 	DB((dbg, SET_LEVEL_3, "Substituting Loads and Stores in %+F\n", irg));
-	irg_walk_blkwise_graph(irg, NULL, topologic_walker, &env);
+	irg_walk_blkwise_graph(irg, NULL, walker, &env);
 
 	ssa_cons_finish(irg);
 }
@@ -703,7 +695,7 @@ int scalar_replacement_opt(ir_graph *irg)
 
 	/* we use the link field to store the VNUM */
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* Find possible scalar replacements */
 	if (find_possible_replacements(irg)) {
@@ -724,8 +716,9 @@ int scalar_replacement_opt(ir_graph *irg)
 				ir_entity *ent = get_Sel_entity(succ);
 
 				/* we are only interested in entities on the frame, NOT
-				   on the value type */
-				if (get_entity_owner(ent) != frame_tp)
+				   parameters */
+				if (get_entity_owner(ent) != frame_tp
+				    || is_parameter_entity(ent))
 					continue;
 
 				if (get_entity_link(ent) == NULL || get_entity_link(ent) == ADDRESS_TAKEN)
@@ -775,7 +768,7 @@ int scalar_replacement_opt(ir_graph *irg)
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	return res;
 }

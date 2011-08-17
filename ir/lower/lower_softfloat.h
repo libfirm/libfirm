@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 1995-2008 University of Karlsruhe.  All right reserved.
+ * Copyright (C) 1995-2011 University of Karlsruhe.  All right reserved.
  *
  * This file is part of libFirm.
  *
@@ -19,22 +19,17 @@
 
 /**
  * @file
- * @brief   Scalar replacement of compounds.
- * @author  Beyhan Veliev, Michael Beck
- * @version $Id$
+ * @brief   Lower floating point operations to function calls
+ * @author  Sebastian Buchwald
  */
-#ifndef FIRM_OPT_SCALAR_REPLACE_H
-#define FIRM_OPT_SCALAR_REPLACE_H
-
-#include "firm_types.h"
-#include <stdbool.h>
+#ifndef FIRM_LOWER_LOWER_SOFTFLOAT_H
+#define FIRM_LOWER_LOWER_SOFTFLOAT_H
 
 /**
- * Returns non-zero, if the address of an entity
- * represented by a Sel node (or its successor Sels) is taken.
+ * Lowers all floating-point operations.
  *
- * @param sel  the Sel node
+ * They are replaced by calls into a soft float library.
  */
-bool is_address_taken(ir_node *sel);
+void lower_floating_point(void);
 
-#endif /* FIRM_OPT_SCALAR_REPLACE_H */
+#endif

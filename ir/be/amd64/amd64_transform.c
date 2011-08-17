@@ -180,7 +180,7 @@ static ir_node *gen_Jmp(ir_node *node)
 static ir_node *gen_be_Call(ir_node *node)
 {
 	ir_node *res = be_duplicate_node(node);
-	arch_irn_add_flags(res, arch_irn_flags_modify_flags);
+	arch_add_irn_flags(res, arch_irn_flags_modify_flags);
 
 	return res;
 }
@@ -330,7 +330,7 @@ static ir_node *gen_Phi(ir_node *node)
 	copy_node_attr(irg, node, phi);
 	be_duplicate_deps(node, phi);
 
-	arch_set_out_register_req(phi, 0, req);
+	arch_set_irn_register_req_out(phi, 0, req);
 
 	be_enqueue_preds(node);
 

@@ -40,6 +40,21 @@
 
 #include "irprintf.h"
 
+static const arch_register_req_t no_requirement = {
+	arch_register_req_type_none,
+	NULL,
+	NULL,
+	0,
+	0,
+	0
+};
+const arch_register_req_t *arch_no_register_req = &no_requirement;
+
+static reg_out_info_t dummy_info = {
+	NULL,
+	&no_requirement
+};
+
 /* Initialize the architecture environment struct. */
 arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_main_env_t *main_env)
 {
@@ -53,7 +68,7 @@ arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_mai
  * @param irn The node to get the responsible isa for.
  * @return The irn operations given by the responsible isa.
  */
-static inline const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
+static const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 {
 	const ir_op          *ops;
 	const arch_irn_ops_t *be_ops;
@@ -67,22 +82,6 @@ static inline const arch_irn_ops_t *get_irn_ops(const ir_node *irn)
 	be_ops = get_op_ops(ops)->be_ops;
 
 	return be_ops;
-}
-
-const arch_register_req_t *arch_get_register_req(const ir_node *irn, int pos)
-{
-	if (is_Proj(irn)) {
-		ir_node *pred = get_Proj_pred(irn);
-		long     pn   = get_Proj_proj(irn);
-		assert(pos == -1);
-		return arch_get_out_register_req(pred, pn);
-	}
-
-	if (pos < 0) {
-		return arch_get_out_register_req(irn, -pos-1);
-	} else {
-		return arch_get_in_register_req(irn, pos);
-	}
 }
 
 void arch_set_frame_offset(ir_node *irn, int offset)
@@ -147,37 +146,10 @@ int arch_get_op_estimated_cost(const ir_node *irn)
 	}
 }
 
-int arch_reg_is_allocatable(const ir_node *irn, int pos,
-                            const arch_register_t *reg)
+static reg_out_info_t *get_out_info(const ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req(irn, pos);
-
-	if (req->type == arch_register_req_type_none)
-		return 0;
-
-	if (arch_register_req_is(req, limited)) {
-		if (arch_register_get_class(reg) != req->cls)
-			return 0;
-		return rbitset_is_set(req->limited, arch_register_get_index(reg));
-	}
-
-	return req->cls == reg->reg_class;
-}
-
-const arch_register_class_t *arch_get_irn_reg_class(const ir_node *irn, int pos)
-{
-	const arch_register_req_t *req = arch_get_register_req(irn, pos);
-
-	assert(req->type != arch_register_req_type_none || req->cls == NULL);
-
-	return req->cls;
-}
-
-static inline reg_out_info_t *get_out_info(const ir_node *node)
-{
-	size_t                pos  = 0;
+	size_t                pos = 0;
 	const backend_info_t *info;
-
 	assert(get_irn_mode(node) != mode_T);
 	if (is_Proj(node)) {
 		pos  = get_Proj_proj(node);
@@ -185,12 +157,17 @@ static inline reg_out_info_t *get_out_info(const ir_node *node)
 	}
 
 	info = be_get_info(node);
+	/* We have a problem with the switch-node where there can be arbitrary
+	 * Proj-numbers, so we can't easily allocate an array big-enough to hold
+	 * all of them. So until we rewrite Switch-nodes we need this special case
+	 */
+	if (info->out_infos == NULL)
+		return &dummy_info;
 	assert(pos < ARR_LEN(info->out_infos));
 	return &info->out_infos[pos];
 }
 
-
-static inline reg_out_info_t *get_out_info_n(const ir_node *node, int pos)
+static reg_out_info_t *get_out_info_n(const ir_node *node, int pos)
 {
 	const backend_info_t *info = be_get_info(node);
 	assert(!is_Proj(node));
@@ -205,13 +182,20 @@ const arch_register_t *arch_get_irn_register(const ir_node *node)
 	return out->reg;
 }
 
-const arch_register_t *arch_irn_get_register(const ir_node *node, int pos)
+const arch_register_t *arch_get_irn_register_out(const ir_node *node, int pos)
 {
 	const reg_out_info_t *out = get_out_info_n(node, pos);
 	return out->reg;
 }
 
-void arch_irn_set_register(ir_node *node, int pos, const arch_register_t *reg)
+const arch_register_t *arch_get_irn_register_in(const ir_node *node, int pos)
+{
+	ir_node *op = get_irn_n(node, pos);
+	return arch_get_irn_register(op);
+}
+
+void arch_set_irn_register_out(ir_node *node, int pos,
+                               const arch_register_t *reg)
 {
 	reg_out_info_t *out = get_out_info_n(node, pos);
 	out->reg            = reg;
@@ -223,28 +207,61 @@ void arch_set_irn_register(ir_node *node, const arch_register_t *reg)
 	out->reg = reg;
 }
 
+const arch_register_req_t *arch_get_irn_register_req(const ir_node *node)
+{
+	reg_out_info_t *out = get_out_info(node);
+	return out->req;
+}
+
 arch_irn_class_t arch_irn_classify(const ir_node *node)
 {
 	const arch_irn_ops_t *ops = get_irn_ops(node);
 	return ops->classify(node);
 }
 
-arch_irn_flags_t arch_irn_get_flags(const ir_node *node)
+arch_irn_flags_t arch_get_irn_flags(const ir_node *node)
 {
-	backend_info_t *info = be_get_info(node);
+	backend_info_t *info;
+	if (is_Proj(node))
+		return arch_irn_flags_not_scheduled;
+
+	info = be_get_info(node);
 	return info->flags;
 }
 
-void arch_irn_set_flags(ir_node *node, arch_irn_flags_t flags)
+void arch_set_irn_flags(ir_node *node, arch_irn_flags_t flags)
 {
-	backend_info_t *info = be_get_info(node);
+	backend_info_t *info;
+
+	/* setting flags is only supported for instructions currently.
+	 * (mainly because we found no use for it yet and saved the space for
+	 * be_infos for them */
+	assert(!is_Proj(node));
+	info = be_get_info(node);
 	info->flags = flags;
 }
 
-void arch_irn_add_flags(ir_node *node, arch_irn_flags_t flags)
+void arch_add_irn_flags(ir_node *node, arch_irn_flags_t flags)
 {
-	backend_info_t *info = be_get_info(node);
+	backend_info_t *info;
+	assert(!is_Proj(node));
+	info = be_get_info(node);
 	info->flags |= flags;
+}
+
+bool arch_reg_is_allocatable(const arch_register_req_t *req,
+                             const arch_register_t *reg)
+{
+	if (reg->type & arch_register_type_joker)
+		return true;
+	if (req->type == arch_register_req_type_none)
+		return false;
+	if (req->type & arch_register_req_type_limited) {
+		if (arch_register_get_class(reg) != req->cls)
+			return false;
+		return rbitset_is_set(req->limited, arch_register_get_index(reg));
+	}
+	return req->cls == arch_register_get_class(reg);
 }
 
 void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
@@ -311,25 +328,25 @@ void arch_dump_register_req(FILE *F, const arch_register_req_t *req,
 void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 {
 	int              n_ins  = get_irn_arity(node);
-	int              n_outs = arch_irn_get_n_outs(node);
-	arch_irn_flags_t flags  = arch_irn_get_flags(node);
+	int              n_outs = arch_get_irn_n_outs(node);
+	arch_irn_flags_t flags  = arch_get_irn_flags(node);
 	int              i;
 
 	for (i = 0; i < n_ins; ++i) {
-		const arch_register_req_t *req = arch_get_in_register_req(node, i);
+		const arch_register_req_t *req = arch_get_irn_register_req_in(node, i);
 		fprintf(F, "inreq #%d = ", i);
 		arch_dump_register_req(F, req, node);
 		fputs("\n", F);
 	}
 	for (i = 0; i < n_outs; ++i) {
-		const arch_register_req_t *req = arch_get_out_register_req(node, i);
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
 		fprintf(F, "outreq #%d = ", i);
 		arch_dump_register_req(F, req, node);
 		fputs("\n", F);
 	}
 	for (i = 0; i < n_outs; ++i) {
-		const arch_register_t     *reg = arch_irn_get_register(node, i);
-		const arch_register_req_t *req = arch_get_out_register_req(node, i);
+		const arch_register_t     *reg = arch_get_irn_register_out(node, i);
+		const arch_register_req_t *req = arch_get_irn_register_req_out(node, i);
 		if (req->cls == NULL)
 			continue;
 		fprintf(F, "reg #%d = %s\n", i, reg != NULL ? reg->name : "n/a");
@@ -357,13 +374,3 @@ void arch_dump_reqs_and_registers(FILE *F, const ir_node *node)
 	}
 	fprintf(F, " (%d)\n", (int)flags);
 }
-
-static const arch_register_req_t no_requirement = {
-	arch_register_req_type_none,
-	NULL,
-	NULL,
-	0,
-	0,
-	0
-};
-const arch_register_req_t *arch_no_register_req = &no_requirement;

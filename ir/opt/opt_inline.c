@@ -155,6 +155,9 @@ static void find_addr(ir_node *node, void *env)
 				/* access to value_type */
 				*allow_inline = false;
 			}
+			if (is_parameter_entity(ent)) {
+				*allow_inline = false;
+			}
 		}
 	} else if (is_Alloc(node) && get_Alloc_where(node) == stack_alloc) {
 		/* From GCC:
@@ -291,6 +294,7 @@ static void copy_frame_entities(ir_graph *from, ir_graph *to)
 		ir_entity *old_ent = get_class_member(from_frame, i);
 		ir_entity *new_ent = copy_entity_own(old_ent, to_frame);
 		set_entity_link(old_ent, new_ent);
+		assert (!is_parameter_entity(old_ent));
 	}
 }
 
@@ -429,7 +433,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 
 	/* entitiy link is used to link entities on old stackframe to the
 	 * new stackframe */
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* copy entities and nodes */
 	assert(!irn_visited(get_irg_end(called_graph)));
@@ -437,7 +441,7 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	irg_walk_core(get_irg_end(called_graph), copy_node_inline, set_preds_inline,
 	              irg);
 
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	/* -- Merge the end of the inlined procedure with the call site -- */
 	/* We will turn the old Call node into a Tuple with the following
@@ -1357,10 +1361,12 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 {
 	ir_node   *call = entry->call;
 	ir_entity *ent  = get_irg_entity(callee);
+	ir_type   *callee_frame;
+	size_t    i, n_members, n_params;
 	ir_node   *frame_ptr;
 	ir_type   *mtp;
 	int       weight = 0;
-	int       i, n_params, all_const;
+	int       all_const;
 	unsigned  cc, v;
 	irg_inline_property prop;
 
@@ -1371,6 +1377,18 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 		DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden\n",
 		    call, callee));
 		return entry->benefice = INT_MIN;
+	}
+
+	callee_frame = get_irg_frame_type(callee);
+	n_members = get_class_n_members(callee_frame);
+	for (i = 0; i < n_members; ++i) {
+		ir_entity *frame_ent = get_class_member(callee_frame, i);
+		if (is_parameter_entity(frame_ent)) {
+			// TODO inliner should handle parameter entities by inserting Store operations
+			DB((dbg, LEVEL_2, "In %+F Call to %+F: inlining forbidden due to parameter entity\n", call, callee));
+			set_irg_inline_property(callee, irg_inline_forbidden);
+			return entry->benefice = INT_MIN;
+		}
 	}
 
 	if (get_irg_additional_properties(callee) & mtp_property_noreturn) {
@@ -1385,7 +1403,7 @@ static int calc_inline_benefice(call_entry *entry, ir_graph *callee)
 	cc       = get_method_calling_convention(mtp);
 	if (cc & cc_reg_param) {
 		/* register parameter, smaller costs for register parameters */
-		int max_regs = cc & ~cc_bits;
+		size_t max_regs = cc & ~cc_bits;
 
 		if (max_regs < n_params)
 			weight += max_regs * 2 + (n_params - max_regs) * 5;

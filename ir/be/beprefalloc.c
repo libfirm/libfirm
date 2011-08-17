@@ -42,6 +42,7 @@
 #include <float.h>
 #include <stdbool.h>
 #include <math.h>
+#include "lpp.h"
 
 #include "error.h"
 #include "execfreq.h"
@@ -270,7 +271,7 @@ static void give_penalties_for_limits(const ir_nodeset_t *live_nodes,
 static void check_defs(const ir_nodeset_t *live_nodes, float weight,
                        ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 	if (req->type & arch_register_req_type_limited) {
 		const unsigned *limited = req->limited;
 		float           penalty = weight * DEF_FACTOR;
@@ -351,7 +352,7 @@ static void analyze_block(ir_node *block, void *data)
 		info = get_allocation_info(node);
 		for (i = 0; i < arity; ++i) {
 			ir_node                   *op  = get_irn_n(node, i);
-			const arch_register_req_t *req = arch_get_register_req_out(op);
+			const arch_register_req_t *req = arch_get_irn_register_req(op);
 			if (req->cls != cls)
 				continue;
 
@@ -373,7 +374,7 @@ static void analyze_block(ir_node *block, void *data)
 				if (!arch_irn_consider_in_reg_alloc(cls, op))
 					continue;
 
-				req = arch_get_register_req(node, i);
+				req = arch_get_irn_register_req_in(node, i);
 				if (!(req->type & arch_register_req_type_limited))
 					continue;
 
@@ -389,7 +390,7 @@ static void analyze_block(ir_node *block, void *data)
 
 static void congruence_def(ir_nodeset_t *live_nodes, const ir_node *node)
 {
-	const arch_register_req_t *req = arch_get_register_req_out(node);
+	const arch_register_req_t *req = arch_get_irn_register_req(node);
 
 	/* should be same constraint? */
 	if (req->type & arch_register_req_type_should_be_same) {
@@ -649,7 +650,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 	 * (so we don't split away the values produced because of
 	 *  must_be_different constraints) */
 	original_insn = skip_Proj(info->original_value);
-	if (arch_irn_get_flags(original_insn) & arch_irn_flags_dont_spill)
+	if (arch_get_irn_flags(original_insn) & arch_irn_flags_dont_spill)
 		return false;
 
 	from_reg        = arch_get_irn_register(to_split);
@@ -740,25 +741,25 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 static void assign_reg(const ir_node *block, ir_node *node,
                        unsigned *forbidden_regs)
 {
-	const arch_register_t     *reg;
+	const arch_register_t     *final_reg;
 	allocation_info_t         *info;
 	const arch_register_req_t *req;
 	reg_pref_t                *reg_prefs;
 	ir_node                   *in_node;
-	unsigned                   i;
+	unsigned                   r;
 	const unsigned            *allowed_regs;
-	unsigned                   r = 0;
+	unsigned                   final_reg_index = 0;
 
 	assert(!is_Phi(node));
 	/* preassigned register? */
-	reg = arch_get_irn_register(node);
-	if (reg != NULL) {
-		DB((dbg, LEVEL_2, "Preassignment %+F -> %s\n", node, reg->name));
-		use_reg(node, reg);
+	final_reg = arch_get_irn_register(node);
+	if (final_reg != NULL) {
+		DB((dbg, LEVEL_2, "Preassignment %+F -> %s\n", node, final_reg->name));
+		use_reg(node, final_reg);
 		return;
 	}
 
-	req = arch_get_register_req_out(node);
+	req = arch_get_irn_register_req(node);
 	/* ignore reqs must be preassigned */
 	assert (! (req->type & arch_register_req_type_ignore));
 
@@ -774,21 +775,21 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		for (i = 0; i < arity; ++i) {
 			ir_node               *in;
 			const arch_register_t *reg;
-			unsigned               r;
+			unsigned               reg_index;
 			if (!rbitset_is_set(&req->other_same, i))
 				continue;
 
 			in  = get_irn_n(in_node, i);
 			reg = arch_get_irn_register(in);
 			assert(reg != NULL);
-			r = arch_register_get_index(reg);
+			reg_index = arch_register_get_index(reg);
 
 			/* if the value didn't die here then we should not propagate the
 			 * should_be_same info */
-			if (assignments[r] == in)
+			if (assignments[reg_index] == in)
 				continue;
 
-			info->prefs[r] += weight * AFF_SHOULD_BE_SAME;
+			info->prefs[reg_index] += weight * AFF_SHOULD_BE_SAME;
 		}
 	}
 
@@ -796,15 +797,14 @@ static void assign_reg(const ir_node *block, ir_node *node,
 	DB((dbg, LEVEL_2, "Candidates for %+F:", node));
 	reg_prefs = ALLOCAN(reg_pref_t, n_regs);
 	fill_sort_candidates(reg_prefs, info);
-	for (i = 0; i < n_regs; ++i) {
-		unsigned num = reg_prefs[i].num;
+	for (r = 0; r < n_regs; ++r) {
+		unsigned num = reg_prefs[r].num;
 		const arch_register_t *reg;
 
 		if (!rbitset_is_set(normal_regs, num))
 			continue;
-
 		reg = arch_register_for_index(cls, num);
-		DB((dbg, LEVEL_2, " %s(%f)", reg->name, reg_prefs[i].pref));
+		DB((dbg, LEVEL_2, " %s(%f)", reg->name, reg_prefs[r].pref));
 	}
 	DB((dbg, LEVEL_2, "\n"));
 
@@ -813,33 +813,38 @@ static void assign_reg(const ir_node *block, ir_node *node,
 		allowed_regs = req->limited;
 	}
 
-	for (i = 0; i < n_regs; ++i) {
+	for (r = 0; r < n_regs; ++r) {
 		float   pref, delta;
 		ir_node *before;
 		bool    res;
 
-		r = reg_prefs[i].num;
-		if (!rbitset_is_set(allowed_regs, r))
+		final_reg_index = reg_prefs[r].num;
+		if (!rbitset_is_set(allowed_regs, final_reg_index))
 			continue;
-		if (assignments[r] == NULL)
+		/* alignment constraint? */
+		if (req->width > 1 && (req->type & arch_register_req_type_aligned)
+				&& (final_reg_index % req->width) != 0)
+			continue;
+
+		if (assignments[final_reg_index] == NULL)
 			break;
-		pref   = reg_prefs[i].pref;
-		delta  = i+1 < n_regs ? pref - reg_prefs[i+1].pref : 0;
+		pref   = reg_prefs[r].pref;
+		delta  = r+1 < n_regs ? pref - reg_prefs[r+1].pref : 0;
 		before = skip_Proj(node);
-		res    = try_optimistic_split(assignments[r], before,
+		res    = try_optimistic_split(assignments[final_reg_index], before,
 		                              pref, delta, forbidden_regs, 0);
 		if (res)
 			break;
 	}
-	if (i >= n_regs) {
+	if (r >= n_regs) {
 		/* the common reason to hit this panic is when 1 of your nodes is not
 		 * register pressure faithful */
 		panic("No register left for %+F\n", node);
 	}
 
-	reg = arch_register_for_index(cls, r);
-	DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, reg->name));
-	use_reg(node, reg);
+	final_reg = arch_register_for_index(cls, final_reg_index);
+	DB((dbg, LEVEL_2, "Assign %+F -> %s\n", node, final_reg->name));
+	use_reg(node, final_reg);
 }
 
 /**
@@ -877,7 +882,7 @@ static void assign_reg(const ir_node *block, ir_node *node,
  *                     registers.
  */
 static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
-                             unsigned *permutation)
+                           unsigned *permutation)
 {
 	unsigned  *n_used = ALLOCANZ(unsigned, n_regs);
 	ir_node   *block;
@@ -1101,6 +1106,144 @@ static void determine_live_through_regs(unsigned *bitset, ir_node *node)
 	}
 }
 
+static void solve_lpp(ir_nodeset_t *live_nodes, ir_node *node,
+                      unsigned *forbidden_regs, unsigned *live_through_regs)
+{
+	unsigned *forbidden_edges = rbitset_malloc(n_regs * n_regs);
+	int      *lpp_vars        = XMALLOCNZ(int, n_regs*n_regs);
+	int       arity           = get_irn_arity(node);
+	int       i;
+	unsigned  l;
+	unsigned  r;
+
+	lpp_t *lpp = lpp_new("prefalloc", lpp_minimize);
+	//lpp_set_time_limit(lpp, 20);
+	lpp_set_log(lpp, stdout);
+
+	/** mark some edges as forbidden */
+	for (i = 0; i < arity; ++i) {
+		ir_node                   *op = get_irn_n(node, i);
+		const arch_register_t     *reg;
+		const arch_register_req_t *req;
+		const unsigned            *limited;
+		unsigned                   current_reg;
+
+		if (!arch_irn_consider_in_reg_alloc(cls, op))
+			continue;
+
+		req = arch_get_irn_register_req_in(node, i);
+		if (!(req->type & arch_register_req_type_limited))
+			continue;
+
+		limited     = req->limited;
+		reg         = arch_get_irn_register(op);
+		current_reg = arch_register_get_index(reg);
+		for (r = 0; r < n_regs; ++r) {
+			if (rbitset_is_set(limited, r))
+				continue;
+
+			rbitset_set(forbidden_edges, current_reg*n_regs + r);
+		}
+	}
+
+	/* add all combinations, except for not allowed ones */
+	for (l = 0; l < n_regs; ++l) {
+		if (!rbitset_is_set(normal_regs, l)) {
+			char name[15];
+			snprintf(name, sizeof(name), "%u_to_%u", l, l);
+			lpp_vars[l*n_regs+l] = lpp_add_var(lpp, name, lpp_binary, 1);
+			continue;
+		}
+
+		for (r = 0; r < n_regs; ++r) {
+			if (!rbitset_is_set(normal_regs, r))
+				continue;
+			if (rbitset_is_set(forbidden_edges, l*n_regs + r))
+				continue;
+			/* livethrough values may not use constrained output registers */
+			if (rbitset_is_set(live_through_regs, l)
+			    && rbitset_is_set(forbidden_regs, r))
+				continue;
+
+			char name[15];
+			snprintf(name, sizeof(name), "%u_to_%u", l, r);
+
+			double costs = l==r ? 9 : 8;
+			lpp_vars[l*n_regs+r]
+				= lpp_add_var(lpp, name, lpp_binary, costs);
+			assert(lpp_vars[l*n_regs+r] > 0);
+		}
+	}
+	/* add constraints */
+	for (l = 0; l < n_regs; ++l) {
+		int constraint;
+		/* only 1 destination per register */
+		constraint = -1;
+		for (r = 0; r < n_regs; ++r) {
+			int var = lpp_vars[l*n_regs+r];
+			if (var == 0)
+				continue;
+			if (constraint < 0) {
+				char name[64];
+				snprintf(name, sizeof(name), "%u_to_dest", l);
+				constraint = lpp_add_cst(lpp, name, lpp_equal, 1);
+			}
+			lpp_set_factor_fast(lpp, constraint, var, 1);
+		}
+		/* each destination used by at most 1 value */
+		constraint = -1;
+		for (r = 0; r < n_regs; ++r) {
+			int var = lpp_vars[r*n_regs+l];
+			if (var == 0)
+				continue;
+			if (constraint < 0) {
+				char name[64];
+				snprintf(name, sizeof(name), "one_to_%u", l);
+				constraint = lpp_add_cst(lpp, name, lpp_less_equal, 1);
+			}
+			lpp_set_factor_fast(lpp, constraint, var, 1);
+		}
+	}
+
+	lpp_dump_plain(lpp, fopen("lppdump.txt", "w"));
+
+	/* solve lpp */
+	{
+		ir_graph     *irg     = get_irn_irg(node);
+		be_options_t *options = be_get_irg_options(irg);
+		unsigned     *assignment;
+		lpp_solve(lpp, options->ilp_server, options->ilp_solver);
+		if (!lpp_is_sol_valid(lpp))
+			panic("ilp solution not valid!");
+
+		assignment = ALLOCAN(unsigned, n_regs);
+		for (l = 0; l < n_regs; ++l) {
+			unsigned dest_reg = (unsigned)-1;
+			for (r = 0; r < n_regs; ++r) {
+				int var = lpp_vars[l*n_regs+r];
+				if (var == 0)
+					continue;
+				double val = lpp_get_var_sol(lpp, var);
+				if (val == 1) {
+					assert(dest_reg == (unsigned)-1);
+					dest_reg = r;
+				}
+			}
+			assert(dest_reg != (unsigned)-1);
+			assignment[dest_reg] = l;
+		}
+
+		fprintf(stderr, "Assignment: ");
+		for (l = 0; l < n_regs; ++l) {
+			fprintf(stderr, "%u ", assignment[l]);
+		}
+		fprintf(stderr, "\n");
+		fflush(stdout);
+		permute_values(live_nodes, node, assignment);
+	}
+	lpp_free(lpp);
+}
+
 /**
  * Enforce constraints at a node by live range splits.
  *
@@ -1121,26 +1264,29 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	unsigned *live_through_regs = NULL;
 
 	/* see if any use constraints are not met */
+	bool double_width = false;
 	bool good = true;
 	for (i = 0; i < arity; ++i) {
 		ir_node                   *op = get_irn_n(node, i);
 		const arch_register_t     *reg;
 		const arch_register_req_t *req;
 		const unsigned            *limited;
-		unsigned                  r;
+		unsigned                   reg_index;
 
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
 		/* are there any limitations for the i'th operand? */
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
+		if (req->width > 1)
+			double_width = true;
 		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
-		limited = req->limited;
-		reg     = arch_get_irn_register(op);
-		r       = arch_register_get_index(reg);
-		if (!rbitset_is_set(limited, r)) {
+		limited   = req->limited;
+		reg       = arch_get_irn_register(op);
+		reg_index = arch_register_get_index(reg);
+		if (!rbitset_is_set(limited, reg_index)) {
 			/* found an assignment outside the limited set */
 			good = false;
 			break;
@@ -1149,6 +1295,8 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 
 	/* is any of the live-throughs using a constrained output register? */
 	be_foreach_definition(node, cls, value,
+		if (req_->width > 1)
+			double_width = true;
 		if (! (req_->type & arch_register_req_type_limited))
 			continue;
 		if (live_through_regs == NULL) {
@@ -1166,6 +1314,12 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 	/* create these arrays if we haven't yet */
 	if (live_through_regs == NULL) {
 		rbitset_alloca(live_through_regs, n_regs);
+	}
+
+	if (double_width) {
+		/* only the ILP variant can solve this yet */
+		solve_lpp(live_nodes, node, forbidden_regs, live_through_regs);
+		return;
 	}
 
 	/* at this point we have to construct a bipartite matching problem to see
@@ -1205,7 +1359,7 @@ static void enforce_constraints(ir_nodeset_t *live_nodes, ir_node *node,
 		if (!arch_irn_consider_in_reg_alloc(cls, op))
 			continue;
 
-		req = arch_get_register_req(node, i);
+		req = arch_get_irn_register_req_in(node, i);
 		if (!(req->type & arch_register_req_type_limited))
 			continue;
 
@@ -1261,9 +1415,9 @@ static bool is_copy_of(ir_node *value, ir_node *test_value)
 static int find_value_in_block_info(block_info_t *info, ir_node *value)
 {
 	unsigned   r;
-	ir_node  **assignments = info->assignments;
+	ir_node  **end_assignments = info->assignments;
 	for (r = 0; r < n_regs; ++r) {
-		ir_node *a_value = assignments[r];
+		ir_node *a_value = end_assignments[r];
 
 		if (a_value == NULL)
 			continue;
@@ -1561,7 +1715,7 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 		int                        p;
 
 		node = be_lv_get_irn(lv, block, i);
-		req  = arch_get_register_req_out(node);
+		req  = arch_get_irn_register_req(node);
 		if (req->cls != cls)
 			continue;
 
@@ -1605,9 +1759,9 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 			DB((dbg, LEVEL_3, "Create Phi %+F (for %+F) -", phi, node));
 #ifdef DEBUG_libfirm
 			{
-				int i;
-				for (i = 0; i < n_preds; ++i) {
-					DB((dbg, LEVEL_3, " %+F", phi_ins[i]));
+				int pi;
+				for (pi = 0; pi < n_preds; ++pi) {
+					DB((dbg, LEVEL_3, " %+F", phi_ins[pi]));
 				}
 				DB((dbg, LEVEL_3, "\n"));
 			}
@@ -1654,7 +1808,6 @@ static void allocate_coalesce_block(ir_node *block, void *data)
 
 	/* assign instructions in the block */
 	sched_foreach(block, node) {
-		int i;
 		int arity;
 		ir_node *value;
 
@@ -1736,7 +1889,7 @@ static int cmp_block_costs(const void *d1, const void *d2)
 
 static void determine_block_order(void)
 {
-	size_t    i;
+	size_t    p;
 	ir_node **blocklist = be_get_cfgpostorder(irg);
 	size_t    n_blocks  = ARR_LEN(blocklist);
 	int       dfs_num   = 0;
@@ -1745,24 +1898,24 @@ static void determine_block_order(void)
 	size_t    order_p   = 0;
 
 	/* clear block links... */
-	for (i = 0; i < n_blocks; ++i) {
-		ir_node *block = blocklist[i];
+	for (p = 0; p < n_blocks; ++p) {
+		ir_node *block = blocklist[p];
 		set_irn_link(block, NULL);
 	}
 
 	/* walk blocks in reverse postorder, the costs for each block are the
 	 * sum of the costs of its predecessors (excluding the costs on backedges
 	 * which we can't determine) */
-	for (i = n_blocks; i > 0;) {
+	for (p = n_blocks; p > 0;) {
 		block_costs_t *cost_info;
-		ir_node *block = blocklist[--i];
+		ir_node *block = blocklist[--p];
 
 		float execfreq   = (float)get_block_execfreq(execfreqs, block);
 		float costs      = execfreq;
 		int   n_cfgpreds = get_Block_n_cfgpreds(block);
-		int   p;
-		for (p = 0; p < n_cfgpreds; ++p) {
-			ir_node       *pred_block = get_Block_cfgpred_block(block, p);
+		int   p2;
+		for (p2 = 0; p2 < n_cfgpreds; ++p2) {
+			ir_node       *pred_block = get_Block_cfgpred_block(block, p2);
 			block_costs_t *pred_costs = (block_costs_t*)get_irn_link(pred_block);
 			/* we don't have any info for backedges */
 			if (pred_costs == NULL)
@@ -1782,8 +1935,8 @@ static void determine_block_order(void)
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
 
-	for (i = 0; i < n_blocks; ++i) {
-		ir_node       *block = blocklist[i];
+	for (p = 0; p < n_blocks; ++p) {
+		ir_node       *block = blocklist[p];
 		if (Block_block_visited(block))
 			continue;
 
@@ -1879,7 +2032,7 @@ static void spill(void)
 	be_pre_spill_prepare_constr(irg, cls);
 	be_timer_pop(T_RA_CONSTR);
 
-	dump(DUMP_RA, irg, "-spillprepare");
+	dump(DUMP_RA, irg, "spillprepare");
 
 	/* spill */
 	be_timer_push(T_RA_SPILL);
@@ -1890,7 +2043,7 @@ static void spill(void)
 	check_for_memory_operands(irg);
 	be_timer_pop(T_RA_SPILL_APPLY);
 
-	dump(DUMP_RA, irg, "-spill");
+	dump(DUMP_RA, irg, "spill");
 }
 
 /**

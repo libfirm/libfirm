@@ -46,6 +46,7 @@ enum sparc_arch_irn_flags_t {
 	sparc_arch_irn_flag_modifies_fp_flags     = arch_irn_flags_backend << 1,
 	sparc_arch_irn_flag_needs_64bit_spillslot = arch_irn_flags_backend << 2,
 	sparc_arch_irn_flag_immediate_form        = arch_irn_flags_backend << 3,
+	sparc_arch_irn_flag_aggregate_return      = arch_irn_flags_backend << 4,
 };
 
 /**

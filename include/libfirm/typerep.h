@@ -201,6 +201,19 @@ FIRM_API ir_entity *new_d_entity(ir_type *owner, ident *name, ir_type *tp,
                                  dbg_info *db);
 
 /**
+ * Creates a new entity corresponding to a function parameter.
+ * This must be created on an irgs frame_type
+ */
+FIRM_API ir_entity *new_parameter_entity(ir_type *owner, size_t pos,
+                                         ir_type *type);
+
+/**
+ * Like new_parameter_entity() but with debug information.
+ */
+FIRM_API ir_entity *new_d_parameter_entity(ir_type *owner, size_t pos,
+                                           ir_type *type, dbg_info *dbgi);
+
+/**
  * Copies the entity if the new_owner is different from the
  * owner of the old entity,  else returns the old entity.
  *
@@ -399,6 +412,22 @@ FIRM_API dbg_info *get_entity_dbg_info(const ir_entity *ent);
  * @param db  The debug info.
  */
 FIRM_API void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
+
+/**
+ * returns true if a given entity is a parameter_entity representing the
+ * address of a function parameter
+ */
+FIRM_API int is_parameter_entity(const ir_entity *entity);
+
+/**
+ * returns number of parameter a parameter entitiy represents
+ */
+FIRM_API size_t get_entity_parameter_number(const ir_entity *entity);
+
+/**
+ * set number of parameter an entity represents
+ */
+FIRM_API void set_entity_parameter_number(ir_entity *entity, size_t n);
 
 /* -- Representation of constant values of entities -- */
 /**
@@ -1588,18 +1617,6 @@ FIRM_API ir_type *get_method_param_type(ir_type *method, size_t pos);
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
 FIRM_API void set_method_param_type(ir_type *method, size_t pos, ir_type *tp);
-/** Returns an entity that represents the copied value argument.  Only necessary
-   for compounds passed by value. This information is constructed only on demand. */
-FIRM_API ir_entity *get_method_value_param_ent(ir_type *method, size_t pos);
-/**
- * Sets the type that represents the copied value arguments.
- */
-FIRM_API void set_method_value_param_type(ir_type *method, ir_type *tp);
-/**
- * Returns a type that represents the copied value arguments if one
- * was allocated, else NULL.
- */
-FIRM_API ir_type *get_method_value_param_type(const ir_type *method);
 /** Returns the number of results of a method type. */
 FIRM_API size_t get_method_n_ress(const ir_type *method);
 /** Returns the return type of a method type at position pos. */
@@ -2094,18 +2111,6 @@ FIRM_API int is_code_type(const ir_type *tp);
  * Checks, whether a type is a frame type.
  */
 FIRM_API int is_frame_type(const ir_type *tp);
-
-/**
- * Checks, whether a type is a value parameter type.
- */
-FIRM_API int is_value_param_type(const ir_type *tp);
-
-/**
- * Makes a new value type. Value types are struct types,
- * so all struct access functions work.
- * Value types are not in the global list of types.
- */
-FIRM_API ir_type *new_type_value(void);
 
 /**
  * Makes a new frame type. Frame types are class types,

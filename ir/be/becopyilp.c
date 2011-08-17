@@ -139,7 +139,7 @@ void sr_remove(size_red_t *sr)
 	while (redo) {
 		redo = 0;
 		be_ifg_foreach_node(ifg, &iter, irn) {
-			const arch_register_req_t *req = arch_get_register_req_out(irn);
+			const arch_register_req_t *req = arch_get_irn_register_req(irn);
 
 			if (!arch_register_req_is(req, limited) && !sr_is_removed(sr, irn) && !co_gs_is_optimizable(sr->co, irn)) {
 				if (sr_is_simplicial(sr, irn)) {
@@ -262,6 +262,6 @@ lpp_sol_state_t ilp_go(ilp_env_t *ienv)
 void free_ilp_env(ilp_env_t *ienv)
 {
 	free_size_red(ienv->sr);
-	free_lpp(ienv->lp);
+	lpp_free(ienv->lp);
 	free(ienv);
 }

@@ -353,7 +353,7 @@ void compute_inh_transitive_closure(void)
 	free_inh_transitive_closure();
 
 	/* The 'down' relation */
-	irp_reserve_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_reserve_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 	inc_master_type_visited();  /* Inc twice: one if on stack, second if values computed. */
 	inc_master_type_visited();
 	for (i = 0; i < n_types; ++i) {
@@ -402,7 +402,7 @@ void compute_inh_transitive_closure(void)
 	}
 
 	irp->inh_trans_closure_state = inh_transitive_closure_valid;
-	irp_free_resources(irp, IR_RESOURCE_TYPE_VISITED);
+	irp_free_resources(irp, IRP_RESOURCE_TYPE_VISITED);
 }
 
 /** Free memory occupied by the transitive closure information. */

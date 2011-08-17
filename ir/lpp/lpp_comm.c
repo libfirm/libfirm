@@ -1,13 +1,29 @@
-/**
- * @file   lpp_comm.c
- * @date   21.07.2005
- * @author Sebastian Hack
+/*
+ * Copyright (C) 2005-2011 University of Karlsruhe.  All right reserved.
  *
- * Protocol stuff for lpp server
+ * This file is part of libFirm.
  *
- * Copyright (C) 2005 Universitaet Karlsruhe
- * Released under the GPL
+ * This file may be distributed and/or modified under the terms of the
+ * GNU General Public License version 2 as published by the Free Software
+ * Foundation and appearing in the file LICENSE.GPL included in the
+ * packaging of this file.
+ *
+ * Licensees holding valid libFirm Professional Edition licenses may use
+ * this file in accordance with the libFirm Commercial License.
+ * Agreement provided with the Software.
+ *
+ * This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+ * WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE.
  */
+
+/**
+ * @file
+ * @brief   Protocol stuff for lpp server
+ * @author  Sebastian Hack
+ */
+#include "config.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -24,15 +40,10 @@
 #include <arpa/inet.h>
 #endif
 
-#include "config.h"
-
 #include "irtools.h"
 #include "debug.h"
 
 #include "lpp_comm.h"
-
-/* undef to disable debugging */
-#undef  ENABLE_DEBUGGING
 
 struct _lpp_comm_t {
 	int fd;

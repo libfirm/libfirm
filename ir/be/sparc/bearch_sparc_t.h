@@ -32,10 +32,19 @@
 
 typedef struct sparc_transform_env_t  sparc_transform_env_t;
 typedef struct sparc_isa_t            sparc_isa_t;
+typedef struct calling_convention_t   calling_convention_t;
+
+/** Floating point instruction set. */
+enum sparc_fp_architectures {
+	SPARC_FPU_ARCH_NONE      = 0,
+	SPARC_FPU_ARCH_FPU       = 0x00000001,
+	SPARC_FPU_ARCH_SOFTFLOAT = 0x00000002,
+};
 
 struct sparc_isa_t {
 	arch_env_t  base;      /**< must be derived from arch_env_t */
-    pmap       *constants;
+	pmap       *constants;
+	int         fpu_arch;  /**< FPU architecture */
 };
 
 /**
@@ -65,9 +74,10 @@ extern const arch_irn_ops_t sparc_irn_ops;
  *            param 0-5 in this spaces and then handle va_next by simply
  *            incrementing the stack pointer
  */
-#define SPARC_MIN_STACKSIZE 92
 #define SPARC_IMMEDIATE_MIN -4096
 #define SPARC_IMMEDIATE_MAX  4095
+#define SPARC_MIN_STACKSIZE 92
+#define SPARC_AGGREGATE_RETURN_OFFSET 64
 
 static inline bool sparc_is_value_imm_encodeable(int32_t value)
 {
@@ -79,5 +89,8 @@ void sparc_finish(ir_graph *irg);
 void sparc_introduce_prolog_epilog(ir_graph *irg);
 
 void sparc_lower_64bit(void);
+
+void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
+void sparc_fix_stack_bias(ir_graph *irg);
 
 #endif

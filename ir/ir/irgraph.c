@@ -396,7 +396,7 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	new_identities(res);
 
 	/* clone the frame type here for safety */
-	irp_reserve_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_reserve_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 	res->frame_type  = clone_frame_type(irg->frame_type);
 
 	res->phase_state = irg->phase_state;
@@ -426,7 +426,7 @@ ir_graph *create_irg_copy(ir_graph *irg)
 	res->estimated_node_count = irg->estimated_node_count;
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
-	irp_free_resources(irp, IR_RESOURCE_ENTITY_LINK);
+	irp_free_resources(irp, IRP_RESOURCE_ENTITY_LINK);
 
 	return res;
 }
@@ -604,14 +604,6 @@ ir_type *(get_irg_frame_type)(ir_graph *irg)
 void (set_irg_frame_type)(ir_graph *irg, ir_type *ftp)
 {
 	_set_irg_frame_type(irg, ftp);
-}
-
-/* Returns the value parameter type of an IR graph. */
-ir_type *get_irg_value_param_type(ir_graph *irg)
-{
-	ir_entity *ent = get_irg_entity(irg);
-	ir_type   *mtp = get_entity_type(ent);
-	return get_method_value_param_type(mtp);
 }
 
 int get_irg_n_locs(ir_graph *irg)
@@ -883,7 +875,6 @@ void irg_invalidate_phases(ir_graph *irg)
 #ifndef NDEBUG
 void ir_reserve_resources(ir_graph *irg, ir_resources_t resources)
 {
-	assert((resources & ~IR_RESOURCE_LOCAL_MASK) == 0);
 	assert((irg->reserved_resources & resources) == 0);
 	irg->reserved_resources |= resources;
 }

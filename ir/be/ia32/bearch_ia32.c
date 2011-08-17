@@ -52,6 +52,8 @@
 #include "instrument.h"
 #include "iropt_t.h"
 #include "lower_dw.h"
+#include "lower_calls.h"
+#include "lower_softfloat.h"
 
 #include "../beabi.h"
 #include "../beirg.h"
@@ -72,6 +74,7 @@
 #include "../betranshlp.h"
 #include "../belistsched.h"
 #include "../beabihelper.h"
+#include "../bestack.h"
 
 #include "bearch_ia32_t.h"
 
@@ -174,7 +177,7 @@ ir_node *ia32_new_Fpu_truncate(ir_graph *irg)
 static ir_node *ia32_get_admissible_noreg(ir_node *irn, int pos)
 {
 	ir_graph                  *irg = get_irn_irg(irn);
-	const arch_register_req_t *req = arch_get_register_req(irn, pos);
+	const arch_register_req_t *req = arch_get_irn_register_req_in(irn, pos);
 
 	assert(req != NULL && "Missing register requirements");
 	if (req->cls == &ia32_reg_classes[CLASS_ia32_gp])
@@ -563,7 +566,7 @@ static int ia32_possible_memory_operand(const ir_node *irn, unsigned int i)
 					/* we can't swap left/right for limited registers
 					 * (As this (currently) breaks constraint handling copies)
 					 */
-					req = arch_get_in_register_req(irn, n_ia32_binary_left);
+					req = arch_get_irn_register_req_in(irn, n_ia32_binary_left);
 					if (req->type & arch_register_req_type_limited)
 						return 0;
 					break;
@@ -1311,11 +1314,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 }
 
 /**
- * We transform Spill and Reload here. This needs to be done before
- * stack biasing otherwise we would miss the corrected offset for these nodes.
+ * Last touchups for the graph before emit: x87 simulation to replace the
+ * virtual with real x87 instructions, creating a block schedule and peephole
+ * optimisations.
  */
-static void ia32_after_ra(ir_graph *irg)
+static void ia32_finish(ir_graph *irg)
 {
+	ia32_irg_data_t   *irg_data     = ia32_get_irg_data(irg);
 	be_stack_layout_t *stack_layout = be_get_irg_stack_layout(irg);
 	bool               at_begin     = stack_layout->sp_relative ? true : false;
 	be_fec_env_t      *fec_env      = be_new_frame_entity_coalescer(irg);
@@ -1330,17 +1335,12 @@ static void ia32_after_ra(ir_graph *irg)
 	irg_block_walk_graph(irg, NULL, ia32_after_ra_walker, NULL);
 
 	introduce_prolog_epilog(irg);
-}
 
-/**
- * Last touchups for the graph before emit: x87 simulation to replace the
- * virtual with real x87 instructions, creating a block schedule and peephole
- * optimisations.
- */
-static void ia32_finish(ir_graph *irg)
-{
-	ia32_irg_data_t *irg_data = ia32_get_irg_data(irg);
+	/* fix stack entity offsets */
+	be_abi_fix_stack_nodes(irg);
+	be_abi_fix_stack_bias(irg);
 
+	/* fix 2-address code constraints */
 	ia32_finish_irg(irg);
 
 	/* we might have to rewrite x87 virtual registers */
@@ -1350,6 +1350,8 @@ static void ia32_finish(ir_graph *irg)
 
 	/* do peephole optimisations */
 	ia32_peephole_optimization(irg);
+
+	be_remove_dead_nodes_from_schedule(irg);
 
 	/* create block schedule, this also removes empty blocks which might
 	 * produce critical edges */
@@ -1456,6 +1458,7 @@ static ia32_isa_t ia32_isa_template = {
 	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	NULL,                    /* abstract machine */
+	IA32_FPU_ARCH_X87,       /* FPU architecture */
 };
 
 static void init_asm_constraints(void)
@@ -1669,7 +1672,6 @@ static void ia32_get_call_abi(const void *self, ir_type *method_type,
 	(void) self;
 
 	/* set abi flags for calls */
-	call_flags.bits.left_to_right         = 0;  /* always last arg first on stack */
 	call_flags.bits.store_args_sequential = 0;
 	/* call_flags.bits.try_omit_fp                 not changed: can handle both settings */
 	call_flags.bits.fp_free               = 0;  /* the frame pointer is fixed in IA32 */
@@ -2014,13 +2016,6 @@ static void ia32_lower_for_target(void)
 		ia32_create_set,
 		0,        /* don't lower direct compares */
 	};
-	lower_params_t params = {
-		4,                                     /* def_ptr_alignment */
-		LF_COMPOUND_RETURN | LF_RETURN_HIDDEN, /* flags */
-		ADD_HIDDEN_ALWAYS_IN_FRONT,            /* hidden_params */
-		NULL,                                  /* find pointer type */
-		NULL,                                  /* ret_compound_in_regs */
-	};
 
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
@@ -2031,7 +2026,12 @@ static void ia32_lower_for_target(void)
 	};
 
 	/* lower compound param handling */
-	lower_calls_with_compounds(&params);
+	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+
+	/* replace floating point operations by function calls */
+	if (ia32_cg_config.use_softfloat) {
+		lower_floating_point();
+	}
 
 	ir_prepare_dw_lowering(&lower_dw_params);
 	ir_lower_dw_ops();
@@ -2092,16 +2092,29 @@ static const backend_params *ia32_get_libfirm_params(void)
 		1,     /* support inline assembly */
 		1,     /* support Rotl nodes */
 		0,     /* little endian */
-		NULL,  /* will be set later */
+		1,     /* modulo shift efficient */
+		0,     /* non-modulo shift not efficient */
+		&ad,   /* will be set later */
 		ia32_is_mux_allowed,
 		32,    /* machine_size */
 		NULL,  /* float arithmetic mode, will be set below */
-		0,     /* size of long double */
+		NULL,  /* long long type */
+		NULL,  /* unsigned long long type */
+		NULL,  /* long double type */
 		12,    /* size of trampoline code */
 		4,     /* alignment of trampoline code */
 		ia32_create_trampoline_fkt,
 		4      /* alignment of stack parameter */
 	};
+	ir_mode *mode_long_long
+		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
+		              64);
+	ir_type *type_long_long = new_type_primitive(mode_long_long);
+	ir_mode *mode_unsigned_long_long
+		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
+		              irma_twos_complement, 64);
+	ir_type *type_unsigned_long_long
+		= new_type_primitive(mode_unsigned_long_long);
 
 	ia32_setup_cg_config();
 
@@ -2109,13 +2122,20 @@ static const backend_params *ia32_get_libfirm_params(void)
 	 * is called... */
 	init_asm_constraints();
 
-	p.dep_param    = &ad;
-	if (! ia32_cg_config.use_sse2) {
-		p.mode_float_arithmetic = mode_E;
-		p.long_double_size = 96;
-	} else {
+	p.type_long_long          = type_long_long;
+	p.type_unsigned_long_long = type_unsigned_long_long;
+
+	if (ia32_cg_config.use_sse2 || ia32_cg_config.use_softfloat) {
 		p.mode_float_arithmetic = NULL;
-		p.long_double_size = 64;
+		p.type_long_double = NULL;
+	} else {
+		p.mode_float_arithmetic = mode_E;
+		ir_mode *mode = new_ir_mode("long double", irms_float_number, 80, 1,
+		                            irma_ieee754, 0);
+		ir_type *type = new_type_primitive(mode);
+		set_type_size_bytes(type, 12);
+		set_type_alignment_bytes(type, 4);
+		p.type_long_double = type;
 	}
 	return &p;
 }
@@ -2214,7 +2234,6 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_before_abi,     /* before abi introduce hook */
 	ia32_prepare_graph,
 	ia32_before_ra,      /* before register allocation hook */
-	ia32_after_ra,       /* after register allocation hook */
 	ia32_finish,         /* called before codegen */
 	ia32_emit,           /* emit && done */
 	ia32_register_saved_by,

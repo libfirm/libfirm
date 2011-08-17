@@ -126,14 +126,14 @@ $default_copy_attr = "sparc_copy_attr";
 
 
 %init_attr = (
-	sparc_attr_t             => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);",
-	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+	sparc_attr_t             => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
+	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
+	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
+	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_switch_jmp_attributes(res, default_pn, jump_table);\n",
-	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);\n".
+	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
-	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, flags, in_reqs, exec_units, n_res);".
+	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);".
 	                            "\tinit_sparc_fp_conv_attributes(res, src_mode, dest_mode);\n",
 );
 
@@ -463,6 +463,8 @@ Bicc => {
 	attr      => "ir_relation relation, bool is_unsigned",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, is_unsigned);",
 	reg_req   => { in => [ "flags" ], out => [ "none", "none" ] },
+	ins       => [ "flags" ],
+	outs      => [ "false", "true" ],
 },
 
 fbfcc => {
@@ -473,6 +475,8 @@ fbfcc => {
 	attr      => "ir_relation relation",
 	init_attr => "\tinit_sparc_jmp_cond_attr(res, relation, false);",
 	reg_req   => { in => [ "fpflags" ], out => [ "none", "none" ] },
+	ins       => [ "flags" ],
+	outs      => [ "false", "true" ],
 },
 
 Ba => {
@@ -483,21 +487,29 @@ Ba => {
 	mode      => "mode_X",
 },
 
+Start => {
+	state     => "pinned",
+	out_arity => "variable",
+	ins       => [],
+},
+
 # This is a JumpLink instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {
+	state     => "pinned",
+	op_flags  => [ "cfopcode" ],
 	arity     => "variable",
-	out_arity => "variable",
+	mode      => "mode_X",
 	constructors => {
 		imm => {
 			attr       => "ir_entity *entity, int32_t offset",
 			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
 			arity     => "variable",
-			out_arity => "variable",
+			reg_req   => { out => [ "none" ] },
 		},
 		reg => {
 			arity     => "variable",
-			out_arity => "variable",
+			reg_req   => { out => [ "none" ] },
 		}
 	},
 },
@@ -509,14 +521,17 @@ Call => {
 	out_arity => "variable",
 	constructors => {
 		imm => {
-			attr       => "ir_entity *entity, int32_t offset",
-			custominit => "\tsparc_set_attr_imm(res, entity, offset);",
+			attr       => "ir_entity *entity, int32_t offset, bool aggregate_return",
+			custominit => "\tsparc_set_attr_imm(res, entity, offset);".
+			              "\tif (aggregate_return) arch_add_irn_flags(res, sparc_arch_irn_flag_aggregate_return);",
 			arity     => "variable",
 			out_arity => "variable",
 		},
 		reg => {
-			arity     => "variable",
-			out_arity => "variable",
+			attr       => "bool aggregate_return",
+			arity      => "variable",
+			out_arity  => "variable",
+			custominit => "\tif (aggregate_return) arch_add_irn_flags(res, sparc_arch_irn_flag_aggregate_return);",
 		}
 	},
 },
@@ -756,7 +771,7 @@ fneg => {
 	irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "fp" ], out => [ "fp" ] },
 	# note that we only need the first register even for wide-values
-	emit      => '. fneg %S0, %D0',
+	emit      => '. fnegs %S0, %D0',
 	attr_type => "sparc_fp_attr_t",
 	attr      => "ir_mode *fp_mode",
 	ins          => [ "val" ],

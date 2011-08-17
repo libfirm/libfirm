@@ -27,15 +27,22 @@
 #define FIRM_BE_SPARC_SPARC_CCONV_H
 
 #include "firm_types.h"
+#include "bearch_sparc_t.h"
 #include "../be_types.h"
+#include "../benode.h"
 #include "gen_sparc_regalloc_if.h"
 
 /** information about a single parameter or result */
 typedef struct reg_or_stackslot_t
 {
-	const arch_register_t *reg0;   /**< if != NULL, the first register used for
-	                                    this parameter. */
-	const arch_register_t *reg1;   /**< if != NULL, the second register used. */
+	const arch_register_req_t *req0; /**< if != NULL, register requirements
+	                                      for this parameter (or the first
+	                                      part of it). */
+	const arch_register_req_t *req1; /**< if != NULL, register requirements
+	                                      for the 2nd part of the parameter */
+	const arch_register_t *reg0;
+	const arch_register_t *reg1;
+	size_t                 reg_offset;
 	ir_type               *type;   /**< indicates that an entity of the specific
 									    type is needed */
 	unsigned               offset; /**< if transmitted via stack, the offset for
@@ -44,7 +51,7 @@ typedef struct reg_or_stackslot_t
 } reg_or_stackslot_t;
 
 /** The calling convention info for one call site. */
-typedef struct calling_convention_t
+struct calling_convention_t
 {
 	bool                omit_fp;          /**< do not use frame pointer (and no
 	                                           save/restore) */
@@ -53,7 +60,9 @@ typedef struct calling_convention_t
 	unsigned            n_param_regs;     /**< number of values passed in a
 	                                           register */
 	reg_or_stackslot_t *results;          /**< result info. */
-} calling_convention_t;
+	unsigned            n_reg_results;
+	unsigned           *caller_saves;     /**< bitset of caller save registers */
+};
 
 /**
  * Determine how function parameters and return values are passed.
@@ -70,5 +79,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
  * free memory used by a calling_convention_t
  */
 void sparc_free_calling_convention(calling_convention_t *cconv);
+
+void sparc_cconv_init(void);
 
 #endif

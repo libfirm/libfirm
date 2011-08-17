@@ -159,7 +159,7 @@ static const tp_op_ops
 		NULL,
 		NULL,
 		NULL,
-		NULL,
+		set_default_size,
 		NULL,
 		NULL,
 		NULL

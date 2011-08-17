@@ -1142,34 +1142,6 @@ void set_struct_size(ir_type *tp, unsigned size)
 	tp->size = size;
 }
 
-
-/**
- * Lazy construction of value argument / result representation.
- * Constructs a struct type and its member.  The types of the members
- * are passed in the argument list.
- *
- * @param name    name of the type constructed
- * @param len     number of fields
- * @param tps     array of field types with length len
- */
-static ir_type *build_value_type(char const* name, size_t len, tp_ent_pair *tps)
-{
-	size_t i;
-	ir_type *res = new_type_struct(new_id_from_str(name));
-	res->flags |= tf_value_param_type;
-	/* Remove type from type list.  Must be treated differently than other types. */
-	remove_irp_type(res);
-	for (i = 0; i < len; ++i) {
-		ident *id = new_id_from_str("elt");
-
-		/* use res as default if corresponding type is not yet set. */
-		ir_type *elt_type = tps[i].tp ? tps[i].tp : res;
-		tps[i].ent = new_entity(res, id, elt_type);
-		set_entity_allocation(tps[i].ent, allocation_parameter);
-	}
-	return res;
-}
-
 ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 {
 	ir_type *res;
@@ -1180,7 +1152,6 @@ ir_type *new_d_type_method(size_t n_param, size_t n_res, type_dbg_info *db)
 	res->size                         = get_mode_size_bytes(mode_P_code);
 	res->attr.ma.n_params             = n_param;
 	res->attr.ma.params               = XMALLOCNZ(tp_ent_pair, n_param);
-	res->attr.ma.value_params         = NULL;
 	res->attr.ma.n_res                = n_res;
 	res->attr.ma.res_type             = XMALLOCNZ(tp_ent_pair, n_res);
 	res->attr.ma.variadicity          = variadicity_non_variadic;
@@ -1217,7 +1188,6 @@ ir_type *clone_type_method(ir_type *tp)
 	res->attr.ma.n_params              = n_params;
 	res->attr.ma.params                = XMALLOCN(tp_ent_pair, n_params);
 	memcpy(res->attr.ma.params, tp->attr.ma.params, n_params * sizeof(res->attr.ma.params[0]));
-	res->attr.ma.value_params          = tp->attr.ma.value_params;
 	res->attr.ma.n_res                 = n_res;
 	res->attr.ma.res_type              = XMALLOCN(tp_ent_pair, n_res);
 	memcpy(res->attr.ma.res_type, tp->attr.ma.res_type, n_res * sizeof(res->attr.ma.res_type[0]));
@@ -1239,12 +1209,6 @@ void free_method_attrs(ir_type *method)
 	assert(method && (method->type_op == type_method));
 	free(method->attr.ma.params);
 	free(method->attr.ma.res_type);
-	/* cannot free it yet, type could be cloned ...
-	if (method->attr.ma.value_params) {
-		free_type_entities(method->attr.ma.value_params);
-		free_type(method->attr.ma.value_params);
-	}
-	*/
 }
 
 size_t (get_method_n_params)(const ir_type *method)
@@ -1267,54 +1231,6 @@ void set_method_param_type(ir_type *method, size_t pos, ir_type *tp)
 	assert(method->type_op == type_method);
 	assert(pos < get_method_n_params(method));
 	method->attr.ma.params[pos].tp = tp;
-	/* If information constructed set pass-by-value representation. */
-	if (method->attr.ma.value_params) {
-		assert(get_method_n_params(method) == get_struct_n_members(method->attr.ma.value_params));
-		set_entity_type(get_struct_member(method->attr.ma.value_params, pos), tp);
-	}
-}
-
-ir_entity *get_method_value_param_ent(ir_type *method, size_t pos)
-{
-	assert(method && (method->type_op == type_method));
-	assert(pos < get_method_n_params(method));
-
-	if (!method->attr.ma.value_params) {
-		/* parameter value type not created yet, build */
-		method->attr.ma.value_params = build_value_type("<value param>",
-			get_method_n_params(method), method->attr.ma.params);
-	}
-	/*
-	 * build_value_type() sets the method->attr.ma.value_params type as default if
-	 * no type is set!
-	 */
-	assert((get_entity_type(method->attr.ma.params[pos].ent) != method->attr.ma.value_params)
-	       && "param type not yet set");
-	return method->attr.ma.params[pos].ent;
-}
-
-void set_method_value_param_type(ir_type *method, ir_type *tp)
-{
-	size_t i;
-	size_t n;
-
-	assert(method && (method->type_op == type_method));
-	assert(is_value_param_type(tp));
-	assert(get_method_n_params(method) == get_struct_n_members(tp));
-
-	method->attr.ma.value_params = tp;
-
-	n = get_struct_n_members(tp);
-	for (i = 0; i < n; i++) {
-		ir_entity *ent = get_struct_member(tp, i);
-		method->attr.ma.params[i].ent = ent;
-	}
-}
-
-ir_type *get_method_value_param_type(const ir_type *method)
-{
-	assert(method && (method->type_op == type_method));
-	return method->attr.ma.value_params;
 }
 
 size_t (get_method_n_ress)(const ir_type *method)
@@ -2040,23 +1956,6 @@ int is_frame_type(const ir_type *tp)
 	return tp->flags & tf_frame_type;
 }
 
-int is_value_param_type(const ir_type *tp)
-{
-	return tp->flags & tf_value_param_type;
-}
-
-ir_type *new_type_value(void)
-{
-	ir_type *res = new_type_struct(new_id_from_str("<value_type>"));
-
-	res->flags |= tf_value_param_type;
-
-	/* Remove type from type list.  Must be treated differently than other types. */
-	remove_irp_type(res);
-
-	return res;
-}
-
 ir_type *new_type_frame(void)
 {
 	ir_type *res = new_type_class(new_id_from_str("<frame_type>"));
@@ -2079,7 +1978,7 @@ ir_type *clone_frame_type(ir_type *type)
 
 	assert(is_frame_type(type));
 	/* the entity link resource should be allocated if this function is called */
-	assert(irp_resources_reserved(irp) & IR_RESOURCE_ENTITY_LINK);
+	assert(irp_resources_reserved(irp) & IRP_RESOURCE_ENTITY_LINK);
 
 	res = new_type_frame();
 	for (i = 0, n = get_class_n_members(type); i < n; ++i) {

@@ -36,9 +36,9 @@
 #include "beirg.h"
 #include "bearch.h"
 #include "beabi.h"
+#include "beabihelper.h"
 
 struct be_abi_call_flags_bits_t {
-	unsigned left_to_right          : 1;  /**< Arguments are from left to right. */
 	unsigned store_args_sequential  : 1;  /**< Use sequential stores for arguments. */
 	unsigned try_omit_fp            : 1;  /**< Try to omit the frame pointer. */
 	unsigned fp_free                : 1;  /**< The function can use any register as frame pointer. */

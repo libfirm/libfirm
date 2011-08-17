@@ -190,7 +190,7 @@ static void *reg_pressure_block_init(void *graph_env, ir_node *bl)
 	sched_foreach(bl, irn) {
 		int i, n;
 		if (is_Proj(irn)
-				|| (arch_irn_get_flags(irn) & arch_irn_flags_not_scheduled))
+				|| (arch_get_irn_flags(irn) & arch_irn_flags_not_scheduled))
 			continue;
 
 		for (i = 0, n = get_irn_arity(irn); i < n; ++i) {
@@ -246,7 +246,7 @@ static inline int reg_pr_costs(reg_pressure_selector_env_t *env, ir_node *irn)
 		ir_node *op = get_irn_n(irn, i);
 
 		if (is_Proj(op)
-		    || (arch_irn_get_flags(op) & arch_irn_flags_not_scheduled))
+		    || (arch_get_irn_flags(op) & arch_irn_flags_not_scheduled))
 			continue;
 
 		sum += compute_max_hops(env, op);

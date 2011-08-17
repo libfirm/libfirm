@@ -27,6 +27,7 @@
 #ifndef FIRM_TR_TYPE_T_H
 #define FIRM_TR_TYPE_T_H
 
+#include <stdbool.h>
 #include "typerep.h"
 #include "tpop_t.h"
 #include "irgraph.h"
@@ -69,12 +70,12 @@ typedef struct {
 typedef struct {
 	size_t       n_params;          /**< Number of parameters. */
 	tp_ent_pair *params;            /**< Array of parameter type/value entities pairs. */
-	ir_type     *value_params;      /**< A type whose entities represent copied value arguments. */
 	size_t       n_res;             /**< Number of results. */
 	tp_ent_pair *res_type;          /**< Array of result type/value ir_entity pairs. */
 	ir_variadicity variadicity;     /**< The variadicity of the method. */
-mtp_additional_properties additional_properties; /**< Set of additional method properties. */
+	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
+	bool     has_compound_ret_parameter : 1; /**< first parameter compound return address */
 } mtd_attr;
 
 /** Union type attributes. */
@@ -130,17 +131,17 @@ typedef union {
 
 /** Additional type flags. */
 enum type_flags {
-	tf_none             =   0, /**< No flags. */
-	tf_lowered_type     =   1, /**< Set if this is a lowered type. */
-	tf_layout_fixed     =   2, /**< Set if the layout of a type is fixed */
+	tf_none             = 0, /**< No flags. */
+	tf_lowered_type     = 1U << 0, /**< Set if this is a lowered type. */
+	tf_layout_fixed     = 1U << 1, /**< Set if the layout of a type is fixed */
 
-	tf_frame_type       =   4, /**< Set if this is a frame type. */
-	tf_value_param_type =   8, /**< Set if this is a value param type. */
-	tf_global_type      =  16, /**< Set only for the global type */
-	tf_tls_type         =  32, /**< Set only for the tls type */
-	tf_constructors     =  64, /**< Set only for the constructors segment type */
-	tf_destructors      = 128, /**< Set only for the destructors segment type */
+	tf_frame_type       = 1U << 2, /**< Set if this is a frame type. */
+	tf_global_type      = 1U << 3, /**< Set only for the global type */
+	tf_tls_type         = 1U << 4, /**< Set only for the tls type */
+	tf_constructors     = 1U << 5, /**< Set only for the constructors segment type */
+	tf_destructors      = 1U << 6, /**< Set only for the destructors segment type */
 };
+ENUM_BITSET(type_flags)
 
 /**
  *  An abstract data type to represent types.
