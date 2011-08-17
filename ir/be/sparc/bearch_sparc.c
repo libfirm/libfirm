@@ -39,6 +39,7 @@
 #include "irdump.h"
 #include "lowering.h"
 #include "lower_dw.h"
+#include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
 
@@ -420,6 +421,8 @@ static void sparc_lower_for_target(void)
 
 	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
 		lower_floating_point();
+
+	lower_builtins(0, NULL);
 
 	sparc_lower_64bit();
 

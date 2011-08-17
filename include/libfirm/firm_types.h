@@ -273,6 +273,7 @@ typedef enum ir_builtin_kind {
 	ir_bk_inport,                 /**< in port */
 	ir_bk_outport,                /**< out port */
 	ir_bk_inner_trampoline,       /**< address of a trampoline for GCC inner functions */
+	ir_bk_last = ir_bk_inner_trampoline,
 } ir_builtin_kind;
 
 /**

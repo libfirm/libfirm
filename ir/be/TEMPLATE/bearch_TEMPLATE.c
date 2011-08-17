@@ -30,6 +30,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "lower_calls.h"
+#include "lower_builtins.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -288,6 +289,8 @@ static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void TEMPLATE_lower_for_target(void)
 {
+	lower_builtins(0, NULL);
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 }
