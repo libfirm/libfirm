@@ -173,10 +173,10 @@ typedef struct walker_env {
 
 /* a type is not ready: put it on the wait queue */
 #define SET_TYPE_NOT_READY(wq, tp) \
-  do { \
-    set_type_link(tp, (void *)1);  \
-    waitq_put(wq, tp);             \
-  } while (0)
+	do { \
+		set_type_link(tp, (void *)1);  \
+		waitq_put(wq, tp);             \
+	} while (0)
 
 /* a the is ready */
 #define SET_TYPE_READY(tp)     set_type_link(tp, NULL)
@@ -725,18 +725,18 @@ static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent)
 	/* create parameter entries */
 	between_size = get_type_size_bytes(layout->between_type);
 	for (i = 0, n = get_method_n_params(mtp); i < n; ++i) {
-		ir_type *ptp      = get_method_param_type(mtp, i);
-        const char *name  = NULL;
-        char buf[16];
-        int ofs = 0;
-		ir_entity *stack_ent;
+		ir_type    *ptp  = get_method_param_type(mtp, i);
+		const char *name = NULL;
+		char        buf[16];
+		int         ofs  = 0;
+		ir_entity  *stack_ent;
 
-        if (! name) {
-          snprintf(buf, sizeof(buf), "arg%d", i);
-          name = buf;
-        }
+		if (! name) {
+			snprintf(buf, sizeof(buf), "arg%d", i);
+			name = buf;
+		}
 		/* check if this parameter has a stack entity. If it has, it
-		   it transmitted on the stack, else in a register */
+		 * it transmitted on the stack, else in a register */
 		stack_ent = layout->param_map[i];
 		if (stack_ent) {
 			ofs = get_entity_offset(stack_ent) + between_size;
