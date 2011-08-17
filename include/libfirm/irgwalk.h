@@ -139,7 +139,7 @@ FIRM_API void all_irg_walk(irg_walk_func *pre, irg_walk_func *post, void *env);
  *
  * This function Walks only over Block nodes in the graph. Has its own visited
  * flag, so that it can be interleaved with the other walker.
- * If a none block is passed, starts at the block this node belongs to.
+ * If a non-block is passed, starts at the block this node belongs to.
  * If end is passed also visits kept alive blocks. Does not use the link field.
  */
 FIRM_API void irg_block_walk(ir_node *node, irg_walk_func *pre,
