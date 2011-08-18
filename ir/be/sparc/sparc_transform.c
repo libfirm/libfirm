@@ -1068,7 +1068,6 @@ static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node    *selector = get_Cond_selector(node);
 	ir_mode    *mode     = get_irn_mode(selector);
-	ir_mode    *cmp_mode;
 	ir_node    *block;
 	ir_node    *flag_node;
 	bool        is_unsigned;
@@ -1080,21 +1079,34 @@ static ir_node *gen_Cond(ir_node *node)
 		return gen_SwitchJmp(node);
 	}
 
+	block = be_transform_node(get_nodes_block(node));
+	dbgi  = get_irn_dbg_info(node);
+
 	// regular if/else jumps
-	assert(is_Cmp(selector));
+	if (is_Cmp(selector)) {
+		ir_mode *cmp_mode;
 
-	cmp_mode = get_cmp_mode(selector);
-
-	block       = be_transform_node(get_nodes_block(node));
-	dbgi        = get_irn_dbg_info(node);
-	flag_node   = be_transform_node(selector);
-	relation    = get_Cmp_relation(selector);
-	is_unsigned = !mode_is_signed(cmp_mode);
-	if (mode_is_float(cmp_mode)) {
-		assert(!is_unsigned);
-		return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
+		cmp_mode    = get_cmp_mode(selector);
+		flag_node   = be_transform_node(selector);
+		relation    = get_Cmp_relation(selector);
+		is_unsigned = !mode_is_signed(cmp_mode);
+		if (mode_is_float(cmp_mode)) {
+			assert(!is_unsigned);
+			return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
+		} else {
+			return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
+		}
 	} else {
-		return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
+		ir_node  *new_op;
+		ir_graph *irg;
+		assert(mode == mode_b);
+
+		block     = be_transform_node(get_nodes_block(node));
+		irg       = get_irn_irg(block);
+		dbgi      = get_irn_dbg_info(node);
+		new_op    = be_transform_node(selector);
+		flag_node = new_bd_sparc_OrCCZero_reg(dbgi, block, new_op, get_g0(irg));
+		return new_bd_sparc_Bicc(dbgi, block, flag_node, ir_relation_less_greater, true);
 	}
 }
 
@@ -1300,6 +1312,11 @@ static ir_node *gen_Conv(ir_node *node)
 
 		if (src_bits == dst_bits) {
 			/* kill unnecessary conv */
+			return new_op;
+		}
+
+		if (dst_mode == mode_b) {
+			/* mode_b lowering already took care that we only have 0/1 values */
 			return new_op;
 		}
 
