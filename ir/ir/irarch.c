@@ -966,8 +966,6 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 					curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
 
 					curr   = new_rd_Add(dbg, block, left, curr, mode);
-				} else {
-					k_node = left;
 				}
 
 				k_node = new_r_Const_long(irg, mode_Iu, k);
