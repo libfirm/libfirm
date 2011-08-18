@@ -355,6 +355,9 @@ static arch_env_t *sparc_init(FILE *outfile)
 	*isa = sparc_isa_template;
 	isa->constants = pmap_create();
 
+	be_gas_elf_type_char      = '#';
+	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF_SPARC;
+
 	be_emit_init(outfile);
 
 	sparc_register_init();
