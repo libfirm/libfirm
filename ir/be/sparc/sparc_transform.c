@@ -2154,12 +2154,14 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_type              *function_type = get_Call_type(call);
 	calling_convention_t *cconv
 		= sparc_decide_calling_convention(function_type, NULL);
-	const reg_or_stackslot_t  *res = &cconv->results[pn];
-	ir_mode                   *mode;
+	const reg_or_stackslot_t  *res  = &cconv->results[pn];
+	ir_mode                   *mode = get_irn_mode(node);
 	long                       new_pn = 1 + res->reg_offset;
 
 	assert(res->req0 != NULL && res->req1 == NULL);
-	mode = res->req0->cls->mode;
+	if (mode_needs_gp_reg(mode)) {
+		mode = mode_gp;
+	}
 	sparc_free_calling_convention(cconv);
 
 	return new_r_Proj(new_call, mode, new_pn);
