@@ -436,7 +436,7 @@ static void vb_detach_etas(vb_info *vbi, plist_t *etas)
 		vl_node_copy_depth(vbi->vli, eta, loop);
 
 		/* Reroute edges to the new loop. */
-		edges_reroute(eta, loop, get_irn_irg(eta));
+		edges_reroute(eta, loop);
 
 		plist_free(invars);
 		obstack_free(&vbi->temp_obst, invars);
@@ -453,7 +453,6 @@ static void vb_detach_etas(vb_info *vbi, plist_t *etas)
 static void vb_attach_loop_values(vb_info *vbi, ir_node *first_loop)
 {
 	ir_node  *loop, *next_loop;
-	ir_graph *irg = get_irn_irg(first_loop);
 
 	/* Replace fused loop nodes by their eta values. */
 	loop = first_loop;
@@ -466,7 +465,7 @@ static void vb_attach_loop_values(vb_info *vbi, ir_node *first_loop)
 		vb_set_link(vbi, eta,  NULL);
 
 		next_loop = get_Loop_next(loop);
-		edges_reroute(loop, value, irg);
+		edges_reroute(loop, value);
 
 		loop = next_loop;
 	}

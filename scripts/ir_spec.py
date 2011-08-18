@@ -938,35 +938,71 @@ class Unknown(Op):
 	flags      = [ "start_block", "constlike", "dump_noblock" ]
 
 class Gamma(Op):
-	ins    = [ "cond", "false", "true" ]
+	"""A value selection node similar to Mux, with lazy evaluation semantics.
+	One of the basic nodes of the VFirm representation."""
+	ins    = [
+		("cond",  "condition used to select the true of false value"),
+		("false", "false value"),
+		("true",  "true value")
+	]
 	flags  = []
 	pinned = "no"
 
 class Theta(Op):
-	ins    = [ "init", "next" ]
+	"""Used to define recursive data flow to describe data in loops. Every node
+	that depends on the theta is nested with the thetas nesting depth. Those
+	nodes will act as infinite lists to nodes with a smaller nesting depth. Each
+	nesting level adds one level of indirection. So a theta node with level two
+	will look like an infinite list of lists to the return node.
+	A value can be fetched from those lists by using an extract node, for each
+	level of indirection.
+	One of the basic nodes of the VFirm representation."""
+	ins    = [
+		("init", "initial value of the recursion"),
+		("next", "recursively defined next value")
+	]
 	flags  = []
 	pinned = "no"
 	attrs  = [
 		dict(
 			type = "int",
-			name = "depth"
+			name = "depth",
+			comment = "nesting depth of the node"
 		)
 	]
 	attr_struct = "theta_attr"
 
 class Eta(Op):
-	ins    = [ "value", "cond" ]
+	"""Extracts a value from a list of values produced by a "nested" node. Given
+	two nodes of the same nesting depth, the according theta nodes are iterated
+	simultaneously until the condition value evaluates to true and the value
+	nodes current value is returned. The eta node decreases the nesting depth
+	by one.
+	In other terms: given an infinite condition list, the first index with value
+	"true" is determined and used to access the value from the value list.
+	One of the basic nodes of the VFirm representation."""
+	ins    = [
+		("value", "nested value node"),
+		("cond",  "nested condition node")
+	]
 	flags  = []
 	pinned = "no"
 
 class Weak(Op):
+	"""Represents a "weak" link to a target node. The link can't be navigated using
+	the usual get_irn_n interface, so it is hidden from usual code. However you
+	can access the target if needed. This is used for VFirm conversion for nodes
+	whose evaluation occurs "somewhere else", enforced by a Barrier node. Nodes
+	that are replaced by a weak node are so-called "weakened" nodes.
+	One of the basic nodes of the VFirm representation."""
 	ins    = []
 	flags  = []
 	pinned = "no"
 	attrs  = [
 		dict(
 			type = "ir_node*",
-			name = "target"
+			name = "target",
+			comment = "target node"
 		)
 	]
 	attr_struct = "weak_attr"
@@ -975,17 +1011,25 @@ class Weak(Op):
 	customSerializer = True
 
 class Loop(Op):
+	"""Represents a loop subgraph as single node. This is used during construction,
+	to treat the loop as a single entity and skip all the inner nodes. The loop
+	nodes dependencies reflect the dependencies of the loop (ie. nodes that are
+	accessed from the inside). After arranging nodes, similar loops may be fused
+	together using the next attribute and then processed as subgraph.
+	One of the basic nodes of the VFirm representation."""
 	arity  = "variable"
 	pinned = "no"
 	flags  = []
 	attrs  = [
 		dict(
 			type = "ir_node*",
-			name = "eta"
+			name = "eta",
+			comment = "eta node associated with the loop"
 		),
 		dict(
 			type = "ir_node*",
-			name = "next"
+			name = "next",
+			comment = "next node in a circular list of fused nodes"
 		)
 	]
 	attr_struct = "loop_attr"

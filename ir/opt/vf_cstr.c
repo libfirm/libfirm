@@ -520,7 +520,8 @@ typedef struct iter_exits {
 
 static void find_iter_exits_walk(ir_loop *loop, iter_exits *exits)
 {
-	int       i, j, is_header;
+	size_t    i;
+	int       j, is_header;
 	ir_graph *irg;
 	const ir_edge_t *edge;
 
@@ -898,7 +899,7 @@ void vf_construct(ir_graph *irg)
 	dump_ir_graph(irg, "firm");
 
 	/* Eliminate all switch nodes, we can't represent them in a PEG. */
-	lower_switch(irg, 0, 0);
+	lower_switch(irg, 0, 0, 0);
 	dump_ir_graph(irg, "switch");
 
 	/* Eliminate multiple returns. The program is exactly one value in PEG. */

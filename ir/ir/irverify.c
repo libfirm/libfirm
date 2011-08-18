@@ -1623,13 +1623,12 @@ static int verify_node_Mux(const ir_node *n)
 /**
  * verify a Gamma node
  */
-static int verify_node_Gamma(ir_node *n, ir_graph *irg)
+static int verify_node_Gamma(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Gamma_cond(n));
 	ir_mode *op2mode = get_irn_mode(get_Gamma_true(n));
 	ir_mode *op3mode = get_irn_mode(get_Gamma_false(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Gamma: BB x b x datab|T|M x datab|T|M --> datab|T|M */
@@ -1645,13 +1644,12 @@ static int verify_node_Gamma(ir_node *n, ir_graph *irg)
 /**
  * verify a Theta node
  */
-static int verify_node_Theta(ir_node *n, ir_graph *irg)
+static int verify_node_Theta(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Theta_init(n));
 	ir_mode *op2mode = get_irn_mode(get_Theta_next(n));
 	int      depth   = get_Theta_depth(n);
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Theta: BB x datab|T|M x datab|T|M --> datab|T|M */
@@ -1667,12 +1665,11 @@ static int verify_node_Theta(ir_node *n, ir_graph *irg)
 /**
  * verify an Eta node
  */
-static int verify_node_Eta(ir_node *n, ir_graph *irg)
+static int verify_node_Eta(const ir_node *n)
 {
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Eta_value(n));
 	ir_mode *op2mode = get_irn_mode(get_Eta_cond(n));
-	(void) irg;
 
 	ASSERT_AND_RET(
 		/* Theta: BB x datab|T|M x b --> datab|T|M */

@@ -6307,12 +6307,12 @@ static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
 	return 1;
 }
 
-static int node_cmp_attr_Theta(ir_node *a, ir_node *b)
+static int node_cmp_attr_Theta(const ir_node *a, const ir_node *b)
 {
 	return get_Theta_depth(a) != get_Theta_depth(b);
 }
 
-static int node_cmp_attr_Weak(ir_node *a, ir_node *b)
+static int node_cmp_attr_Weak(const ir_node *a, const ir_node *b)
 {
 	return get_Weak_target(a) != get_Weak_target(b);
 }
