@@ -1291,27 +1291,6 @@ static unsigned read_enum(io_env_t *env, typetag_t typetag)
 #define read_variability(env)        ((ir_variability)        read_enum(env, tt_variability))
 #define read_volatility(env)         ((ir_volatility)         read_enum(env, tt_volatility))
 
-static ir_cons_flags get_cons_flags(io_env_t *env)
-{
-	ir_cons_flags flags = cons_none;
-
-	op_pin_state pinstate = read_pin_state(env);
-	switch (pinstate) {
-	case op_pin_state_floats: flags |= cons_floats; break;
-	case op_pin_state_pinned: break;
-	default:
-		panic("Error in %d: Invalid pinstate: %s", env->line,
-		      get_op_pin_state_name(pinstate));
-	}
-
-	if (read_volatility(env) == volatility_is_volatile)
-		flags |= cons_volatile;
-	if (read_align(env) == align_non_aligned)
-		flags |= cons_unaligned;
-
-	return flags;
-}
-
 static ir_tarval *read_tv(io_env_t *env)
 {
 	ir_mode   *tvmode = read_mode(env);

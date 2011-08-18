@@ -70,7 +70,7 @@ def get_io_type(type, attrname, node):
 		importcmd = "ir_volatility %s = read_volatility(env);" % attrname
 		exportcmd = "write_volatility(env, %(val)s);"
 	elif type == "ir_cons_flags":
-		importcmd = "ir_cons_flags %s = get_cons_flags(env);" % attrname
+		importcmd = "ir_cons_flags %s = cons_none;" % attrname
 		exportcmd = "" # can't really export cons_flags
 	elif type == "op_pin_state":
 		importcmd = "op_pin_state %s = read_pin_state(env);" % attrname
