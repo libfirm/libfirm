@@ -951,7 +951,7 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 		k = tv_ld2(tv, n);
 	}
 
-	if (k >= 0) { /* division by 2^k or -2^k */
+	if (k > 0) { /* division by 2^k or -2^k */
 		ir_graph *irg = get_irn_irg(irn);
 		if (mode_is_signed(mode)) {
 			ir_node *k_node;
@@ -990,10 +990,12 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 			k_node = new_r_Const_long(irg, mode_Iu, k);
 			res    = new_rd_Shr(dbg, block, left, k_node, mode);
 		}
-	} else {
+	} else if (k != 0) {
 		/* other constant */
 		if (allow_Mulh(params, mode))
 			res = replace_div_by_mulh(irn, tv);
+	} else { /* k == 0  i.e. division by 1 */
+		res = left;
 	}
 
 	if (res != irn)
