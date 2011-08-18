@@ -900,99 +900,100 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 	ir_node *res  = irn;
 
 	/* If the architecture dependent optimizations were not initialized
-	or this optimization was not enabled. */
+		or this optimization was not enabled. */
 	if (params == NULL || (opts & arch_dep_div_by_const) == 0)
 		return irn;
 
-	if (is_Div(irn)) {
-		ir_node *c = get_Div_right(irn);
-		ir_node *block, *left;
-		ir_mode *mode;
-		ir_tarval *tv, *ntv;
-		dbg_info *dbg;
-		int n, bits;
-		int k;
-		int n_flag = 0;
+	if (!is_Div(irn))
+		return irn;
 
-		if (! is_Const(c))
-			return irn;
+	ir_node *c = get_Div_right(irn);
+	ir_node *block, *left;
+	ir_mode *mode;
+	ir_tarval *tv, *ntv;
+	dbg_info *dbg;
+	int n, bits;
+	int k;
+	int n_flag = 0;
 
-		tv = get_Const_tarval(c);
+	if (! is_Const(c))
+		return irn;
 
-		/* check for division by zero */
-		if (tarval_is_null(tv))
-			return irn;
+	tv = get_Const_tarval(c);
 
-		left  = get_Div_left(irn);
-		mode  = get_irn_mode(left);
+	/* check for division by zero */
+	if (tarval_is_null(tv))
+		return irn;
 
-		/* can only handle integer Div's */
-		if (!mode_is_int(mode))
-			return irn;
+	left  = get_Div_left(irn);
+	mode  = get_irn_mode(left);
 
-		block = get_irn_n(irn, -1);
-		dbg   = get_irn_dbg_info(irn);
+	/* can only handle integer Div's */
+	if (!mode_is_int(mode))
+		return irn;
 
-		bits = get_mode_size_bits(mode);
-		n    = (bits + 7) / 8;
+	block = get_irn_n(irn, -1);
+	dbg   = get_irn_dbg_info(irn);
 
-		k = -1;
+	bits = get_mode_size_bits(mode);
+	n    = (bits + 7) / 8;
+
+	k = -1;
+	if (mode_is_signed(mode)) {
+		/* for signed divisions, the algorithm works for a / -2^k by negating the result */
+		ntv = tarval_neg(tv);
+		n_flag = 1;
+		k = tv_ld2(ntv, n);
+	}
+
+	if (k < 0) {
+		n_flag = 0;
+		k = tv_ld2(tv, n);
+	}
+
+	if (k >= 0) { /* division by 2^k or -2^k */
+		ir_graph *irg = get_irn_irg(irn);
 		if (mode_is_signed(mode)) {
-			/* for signed divisions, the algorithm works for a / -2^k by negating the result */
-			ntv = tarval_neg(tv);
-			n_flag = 1;
-			k = tv_ld2(ntv, n);
-		}
+			ir_node *k_node;
+			ir_node *curr = left;
 
-		if (k < 0) {
-			n_flag = 0;
-			k = tv_ld2(tv, n);
-		}
-
-		if (k >= 0) { /* division by 2^k or -2^k */
-			ir_graph *irg = get_irn_irg(irn);
-			if (mode_is_signed(mode)) {
-				ir_node *k_node;
-				ir_node *curr = left;
-
-				/* create the correction code for signed values only if there might be a remainder */
-				if (! get_Div_no_remainder(irn)) {
-					if (k != 1) {
-						k_node = new_r_Const_long(irg, mode_Iu, k - 1);
-						curr   = new_rd_Shrs(dbg, block, left, k_node, mode);
-					}
-
-					k_node = new_r_Const_long(irg, mode_Iu, bits - k);
-					curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
-					/* curr is now 2^(k-1) in case left <  0
-					 *          or       0 in case left >= 0
-					 *
-					 * For an example, where this fixup is necessary consider -3 / 2,
-					 * which should compute to -1,
-					 * but simply shifting right by one computes -2.
-					 */
-
-					curr   = new_rd_Add(dbg, block, left, curr, mode);
+			/* create the correction code for signed values only if there might be a remainder */
+			if (! get_Div_no_remainder(irn)) {
+				if (k != 1) {
+					k_node = new_r_Const_long(irg, mode_Iu, k - 1);
+					curr   = new_rd_Shrs(dbg, block, left, k_node, mode);
 				}
 
-				k_node = new_r_Const_long(irg, mode_Iu, k);
-				res    = new_rd_Shrs(dbg, block, curr, k_node, mode);
+				k_node = new_r_Const_long(irg, mode_Iu, bits - k);
+				curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
+				/* curr is now 2^(k-1) in case left <  0
+				 *          or       0 in case left >= 0
+				 *
+				 * For an example, where this fixup is necessary consider -3 / 2,
+				 * which should compute to -1,
+				 * but simply shifting right by one computes -2.
+				 */
 
-				if (n_flag) { /* negate the result */
-					k_node = new_r_Const(irg, get_mode_null(mode));
-					res = new_rd_Sub(dbg, block, k_node, res, mode);
-				}
-			} else {      /* unsigned case */
-				ir_node *k_node;
-
-				k_node = new_r_Const_long(irg, mode_Iu, k);
-				res    = new_rd_Shr(dbg, block, left, k_node, mode);
+				curr   = new_rd_Add(dbg, block, left, curr, mode);
 			}
-		} else {
-			/* other constant */
-			if (allow_Mulh(params, mode))
-				res = replace_div_by_mulh(irn, tv);
+
+			k_node = new_r_Const_long(irg, mode_Iu, k);
+			res    = new_rd_Shrs(dbg, block, curr, k_node, mode);
+
+			if (n_flag) { /* negate the result */
+				k_node = new_r_Const(irg, get_mode_null(mode));
+				res = new_rd_Sub(dbg, block, k_node, res, mode);
+			}
+		} else {      /* unsigned case */
+			ir_node *k_node;
+
+			k_node = new_r_Const_long(irg, mode_Iu, k);
+			res    = new_rd_Shr(dbg, block, left, k_node, mode);
 		}
+	} else {
+		/* other constant */
+		if (allow_Mulh(params, mode))
+			res = replace_div_by_mulh(irn, tv);
 	}
 
 	if (res != irn)
