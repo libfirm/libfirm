@@ -931,6 +931,8 @@ void vf_construct(ir_graph *irg)
 	dump_ir_graph(irg, "vfirm");
 	ir_remove_dump_flags(ir_dump_flag_hide_control_flow);
 
+	set_irg_phase_state(irg, phase_high);
+
 	/* Most data is probably inconsistent now. */
 	set_irg_outs_inconsistent(irg);
 	set_irg_doms_inconsistent(irg);
