@@ -964,6 +964,13 @@ ir_node *arch_dep_replace_div_by_const(ir_node *irn)
 
 					k_node = new_r_Const_long(irg, mode_Iu, bits - k);
 					curr   = new_rd_Shr(dbg, block, curr, k_node, mode);
+					/* curr is now 2^(k-1) in case left <  0
+					 *          or       0 in case left >= 0
+					 *
+					 * For an example, where this fixup is necessary consider -3 / 2,
+					 * which should compute to -1,
+					 * but simply shifting right by one computes -2.
+					 */
 
 					curr   = new_rd_Add(dbg, block, left, curr, mode);
 				}
