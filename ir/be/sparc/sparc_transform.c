@@ -1074,7 +1074,7 @@ static ir_node *gen_Cond(ir_node *node)
 	ir_relation relation;
 	dbg_info   *dbgi;
 
-	// switch/case jumps
+	/* switch/case jumps */
 	if (mode != mode_b) {
 		return gen_SwitchJmp(node);
 	}
@@ -1082,7 +1082,7 @@ static ir_node *gen_Cond(ir_node *node)
 	block = be_transform_node(get_nodes_block(node));
 	dbgi  = get_irn_dbg_info(node);
 
-	// regular if/else jumps
+	/* regular if/else jumps */
 	if (is_Cmp(selector)) {
 		ir_mode *cmp_mode;
 
@@ -1097,6 +1097,9 @@ static ir_node *gen_Cond(ir_node *node)
 			return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
 		}
 	} else {
+		/* in this case, the selector must already deliver a mode_b value.
+		 * this happens, for example, when the Cond is connected to a Conv
+		 * which converts its argument to mode_b. */
 		ir_node  *new_op;
 		ir_graph *irg;
 		assert(mode == mode_b);
@@ -1105,6 +1108,7 @@ static ir_node *gen_Cond(ir_node *node)
 		irg       = get_irn_irg(block);
 		dbgi      = get_irn_dbg_info(node);
 		new_op    = be_transform_node(selector);
+		/* follow the SPARC architecture manual and use orcc for tst */
 		flag_node = new_bd_sparc_OrCCZero_reg(dbgi, block, new_op, get_g0(irg));
 		return new_bd_sparc_Bicc(dbgi, block, flag_node, ir_relation_less_greater, true);
 	}
