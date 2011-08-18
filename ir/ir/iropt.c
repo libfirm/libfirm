@@ -4941,7 +4941,7 @@ static ir_node *transform_node_Or(ir_node *n)
 	/* we can combine the relations of two compares with the same operands */
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node *a_left  = get_Cmp_left(a);
-		ir_node *a_right = get_Cmp_left(a);
+		ir_node *a_right = get_Cmp_right(a);
 		ir_node *b_left  = get_Cmp_left(b);
 		ir_node *b_right = get_Cmp_right(b);
 		if (a_left == b_left && b_left == b_right) {
