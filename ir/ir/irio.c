@@ -383,7 +383,7 @@ static void write_ident_null(io_env_t *env, ident *id)
 
 static void write_mode(io_env_t *env, ir_mode *mode)
 {
-	fputs(get_mode_name(mode), env->file);
+	write_string(env, get_mode_name(mode));
 	fputc(' ', env->file);
 }
 
@@ -775,6 +775,7 @@ static void export_node(ir_node *irn, void *ctx)
 		/* TODO: only symconst_addr_ent implemented yet */
 		assert(get_SymConst_kind(irn) == symconst_addr_ent);
 		fprintf(env->file, "%ld ", get_entity_nr(get_SymConst_entity(irn)));
+		write_mode(env, get_irn_mode(irn));
 		break;
 	case iro_Proj:
 		write_mode(env, get_irn_mode(irn));
@@ -834,6 +835,7 @@ static void export_modes(io_env_t *env)
 		if (mode_is_reference(mode)) {
 			write_mode(env, get_reference_mode_signed_eq(mode));
 			write_mode(env, get_reference_mode_unsigned_eq(mode));
+			write_int(env, (mode == mode_P ? 1 : 0));
 		}
 		fputc('\n', env->file);
 	}
@@ -1223,7 +1225,7 @@ static ir_entity *read_entity(io_env_t *env)
 
 static ir_mode *read_mode(io_env_t *env)
 {
-	char *str = read_word(env);
+	char *str = read_string(env);
 	size_t i, n;
 
 	n = get_irp_n_modes();
@@ -1697,7 +1699,8 @@ static int parse_graph(io_env_t *env, ir_graph *irg)
 			long entnr = read_long(env);
 			union symconst_symbol sym;
 			sym.entity_p = get_entity(env, entnr);
-			newnode = new_r_SymConst(irg, mode_P, sym, symconst_addr_ent);
+			ir_mode *mode = read_mode(env);
+			newnode = new_r_SymConst(irg, mode, sym, symconst_addr_ent);
 			break;
 		}
 
@@ -1773,6 +1776,11 @@ static int parse_modes(io_env_t *env)
 			if (mode_is_reference(mode)) {
 				set_reference_mode_signed_eq(mode, read_mode(env));
 				set_reference_mode_unsigned_eq(mode, read_mode(env));
+				int is_mode_P = read_int(env);
+				if (is_mode_P) {
+					set_modeP_data(mode);
+					set_modeP_code(mode);
+				}
 			}
 			break;
 		}
