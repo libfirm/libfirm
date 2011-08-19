@@ -2049,25 +2049,27 @@ static void ia32_lower_for_target(void)
  */
 static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
 {
-	ir_graph *irg  = get_irn_irg(block);
-	ir_node  *p    = trampoline;
-	ir_mode  *mode = get_irn_mode(p);
-	ir_node  *st;
+	ir_graph *const irg  = get_irn_irg(block);
+	ir_node  *      p    = trampoline;
+	ir_mode  *const mode = get_irn_mode(p);
+	ir_node  *const one  = new_r_Const(irg, get_mode_one(mode_Iu));
+	ir_node  *const four = new_r_Const_long(irg, mode_Iu, 4);
+	ir_node  *      st;
 
 	/* mov  ecx,<env> */
 	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const(irg, get_mode_one(mode_Iu)), mode);
+	p   = new_r_Add(block, p, one, mode);
 	st  = new_r_Store(block, mem, p, env, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
+	p   = new_r_Add(block, p, four, mode);
 	/* jmp  <callee> */
 	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const(irg, get_mode_one(mode_Iu)), mode);
+	p   = new_r_Add(block, p, one, mode);
 	st  = new_r_Store(block, mem, p, callee, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
+	p   = new_r_Add(block, p, four, mode);
 
 	return mem;
 }
