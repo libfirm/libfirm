@@ -566,6 +566,7 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 {
 	const ir_node *n1 = *(const ir_node **) c1;
 	const ir_node *n2 = *(const ir_node **) c2;
+	unsigned h1, h2;
 
 	if (dependent_on(n1, n2))
 		return 1;
@@ -574,8 +575,17 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 		return -1;
 
 	/* The nodes have no depth order, but we need a total order because qsort()
-	 * is not stable. */
-	return get_irn_idx(n2) - get_irn_idx(n1);
+	 * is not stable.
+	 *
+	 * Additionally, we need to respect transitive dependencies. Consider a
+	 * Call a depending on Call b and an independent Call c.
+	 * We MUST NOT order c > a and b > c. */
+	h1 = get_irn_height(heights, n1);
+	h2 = get_irn_height(heights, n2);
+	if (h1 < h2) return -1;
+	if (h1 > h2) return  1;
+	/* Same height, so use a random (but stable) order */
+	return get_irn_idx(n1) - get_irn_idx(n2);
 }
 
 /**
