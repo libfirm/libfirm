@@ -1283,7 +1283,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 		ir_node *xor_low    = new_rd_Eor(dbg, block, low_left, low_right, mode);
 		ir_node *xor_high   = new_rd_Eor(dbg, block, high_left, high_right, mode);
 		ir_node *ornode = new_rd_Or(dbg, block, xor_low, xor_high, mode);
-		ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+		ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const(irg, get_mode_null(mode)), relation);
 		set_Cond_selector(node, cmp);
 		return;
 	}
@@ -1548,7 +1548,7 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m)
 		ir_node  *xor_low    = new_rd_Eor(dbg, block, low_left, low_right, mode);
 		ir_node  *xor_high   = new_rd_Eor(dbg, block, high_left, high_right, mode);
 		ir_node  *ornode     = new_rd_Or(dbg, block, xor_low, xor_high, mode);
-		ir_node  *new_cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+		ir_node  *new_cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const(irg, get_mode_null(mode)), relation);
 		exchange(cmp, new_cmp);
 		return;
 	}

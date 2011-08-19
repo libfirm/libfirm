@@ -485,7 +485,7 @@ static void lower_Cmp(ir_node *n)
 	ir_mode         *op_mode     = get_irn_mode(left);
 	ir_node         *right       = get_Cmp_right(n);
 	ir_node         *symconst2   = NULL;
-	ir_node         *zero        = new_rd_Const_long(dbgi, irg, mode_Is, 0);
+	ir_node         *zero        = new_rd_Const(dbgi, irg, get_mode_null(mode_Is));
 
 	if (! mode_is_float(op_mode))
 		return;

@@ -267,7 +267,7 @@ static void instrument_block(ir_node *bb, ir_node *address, unsigned int id)
 	load    = new_r_Load(bb, unknown, offset, mode_Iu, cons_none);
 	projm   = new_r_Proj(load, mode_M, pn_Load_M);
 	proji   = new_r_Proj(load, mode_Iu, pn_Load_res);
-	cnst    = new_r_Const_long(irg, mode_Iu, 1);
+	cnst    = new_r_Const(irg, get_mode_one(mode_Iu));
 	add     = new_r_Add(bb, proji, cnst, mode_Iu);
 	store   = new_r_Store(bb, projm, offset, add, cons_none);
 	projm   = new_r_Proj(store, mode_M, pn_Store_M);

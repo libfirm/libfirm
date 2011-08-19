@@ -2057,14 +2057,14 @@ static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node
 	/* mov  ecx,<env> */
 	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
+	p   = new_r_Add(block, p, new_r_Const(irg, get_mode_one(mode_Iu)), mode);
 	st  = new_r_Store(block, mem, p, env, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
 	/* jmp  <callee> */
 	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
+	p   = new_r_Add(block, p, new_r_Const(irg, get_mode_one(mode_Iu)), mode);
 	st  = new_r_Store(block, mem, p, callee, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
 	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
