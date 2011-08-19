@@ -1051,7 +1051,13 @@ ir_node *arch_dep_replace_mod_by_const(ir_node *irn)
 			k = tv_ld2(tv, n);
 		}
 
-		if (k >= 0) {
+		/* k == 0  i.e. modulo by 1 */
+		if (k == 0) {
+			ir_graph *irg = get_irn_irg(irn);
+
+			res = new_r_Const(irg, get_mode_null(mode));
+		}
+		else if (k > 0) {
 			ir_graph *irg = get_irn_irg(irn);
 			/* division by 2^k or -2^k:
 			 * we use "modulus" here, so x % y == x % -y that's why is no difference between the case 2^k and -2^k
