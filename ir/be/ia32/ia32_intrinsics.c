@@ -535,7 +535,7 @@ static int map_Conv(ir_node *call, void *ctx)
 			h_res = new_r_Proj(float_to_ll, h_res_mode,
 							   pn_ia32_l_FloattoLL_res_high);
 		} else {
-			/* convert from float to signed 64bit */
+			/* Convert from float to unsigned 64bit. */
 			ir_mode   *flt_mode = get_irn_mode(a_f);
 			ir_tarval *flt_tv   = new_tarval_from_str("9223372036854775808", 19, flt_mode);
 			ir_node   *flt_corr = new_r_Const(irg, flt_tv);
