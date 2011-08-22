@@ -1606,15 +1606,9 @@ static void fix_parameter_entities(ir_graph *irg)
 	ir_type   *orig_mtp = get_type_link(mtp);
 
 	size_t      orig_n_params      = get_method_n_params(orig_mtp);
-	size_t      orig_n_real_params = orig_n_params;
 	ir_entity **parameter_entities;
 
-	/* Allow selecting one past the last parameter to get the variadic
-	 * parameters. */
-	if (get_method_variadicity(orig_mtp) == variadicity_variadic)
-		++orig_n_real_params;
-
-	parameter_entities = ALLOCANZ(ir_entity*, orig_n_real_params);
+	parameter_entities = ALLOCANZ(ir_entity*, orig_n_params);
 
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n          = get_compound_n_members(frame_type);
@@ -1628,22 +1622,21 @@ static void fix_parameter_entities(ir_graph *irg)
 		if (!is_parameter_entity(entity))
 			continue;
 		p = get_entity_parameter_number(entity);
-		assert(p < orig_n_real_params);
+		if (p == IR_VA_START_PARAMETER_NUMBER)
+			continue;
+		assert(p < orig_n_params);
 		assert(parameter_entities[p] == NULL);
 		parameter_entities[p] = entity;
 	}
 
 	/* adjust indices */
 	n_param = 0;
-	for (i = 0; i < orig_n_real_params; ++i, ++n_param) {
+	for (i = 0; i < orig_n_params; ++i, ++n_param) {
 		ir_entity *entity = parameter_entities[i];
 		ir_type   *tp;
 
 		if (entity != NULL)
 			set_entity_parameter_number(entity, n_param);
-
-		if (i == orig_n_params)
-			break;
 
 		tp = get_method_param_type(orig_mtp, i);
 		if (is_Primitive_type(tp)) {

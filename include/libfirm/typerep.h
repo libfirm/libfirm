@@ -413,6 +413,8 @@ FIRM_API dbg_info *get_entity_dbg_info(const ir_entity *ent);
  */
 FIRM_API void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
 
+#define IR_VA_START_PARAMETER_NUMBER  ((size_t)-1)
+
 /**
  * returns true if a given entity is a parameter_entity representing the
  * address of a function parameter

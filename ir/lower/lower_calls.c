@@ -77,6 +77,8 @@ static void fix_parameter_entities(ir_graph *irg, size_t n_compound_ret)
 
 		/* increase parameter number since we added a new parameter in front */
 		num = get_entity_parameter_number(member);
+		if (num == IR_VA_START_PARAMETER_NUMBER)
+			continue;
 		set_entity_parameter_number(member, num + n_compound_ret);
 	}
 }

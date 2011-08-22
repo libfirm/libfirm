@@ -690,7 +690,10 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 		if (!is_parameter_entity(entity))
 			continue;
 
-		arg  = get_entity_parameter_number(entity);
+		arg = get_entity_parameter_number(entity);
+		if (arg == IR_VA_START_PARAMETER_NUMBER)
+			continue;
+
 		addr = new_r_Sel(start_block, mem, frame, 0, NULL, entity);
 		if (entity->attr.parameter.doubleword_low_mode != NULL) {
 			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
