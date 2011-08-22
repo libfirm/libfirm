@@ -1216,7 +1216,7 @@ size_t (get_method_n_params)(const ir_type *method)
 	return _get_method_n_params(method);
 }
 
-ir_type *get_method_param_type(ir_type *method, size_t pos)
+ir_type *get_method_param_type(const ir_type *method, size_t pos)
 {
 	ir_type *res;
 	assert(method->type_op == type_method);
@@ -1238,7 +1238,7 @@ size_t (get_method_n_ress)(const ir_type *method)
 	return _get_method_n_ress(method);
 }
 
-ir_type *get_method_res_type(ir_type *method, size_t pos)
+ir_type *get_method_res_type(const ir_type *method, size_t pos)
 {
 	ir_type *res;
 	assert(method->type_op == type_method);
