@@ -2061,16 +2061,13 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	long       pn          = get_Proj_proj(node);
-	ir_node   *block       = get_nodes_block(node);
-	ir_graph  *irg         = get_irn_irg(node);
-	ir_node   *new_block   = be_transform_node(block);
-	ir_entity *entity      = get_irg_entity(irg);
-	ir_type   *method_type = get_entity_type(entity);
-	ir_type   *param_type  = get_method_param_type(method_type, pn);
-	ir_node   *args        = get_Proj_pred(node);
-	ir_node   *start       = get_Proj_pred(args);
-	ir_node   *new_start   = be_transform_node(start);
+	long      pn        = get_Proj_proj(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *args      = get_Proj_pred(node);
+	ir_node  *start     = get_Proj_pred(args);
+	ir_node  *new_start = be_transform_node(start);
 	const reg_or_stackslot_t *param;
 
 	/* Proj->Proj->Start must be a method argument */
@@ -2080,22 +2077,32 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 
 	if (param->reg0 != NULL) {
 		/* argument transmitted in register */
-		ir_mode               *mode     = get_type_mode(param_type);
 		const arch_register_t *reg      = param->reg0;
 		ir_mode               *reg_mode = reg->reg_class->mode;
-		long                   pn       = param->reg_offset + start_params_offset;
-		ir_node               *value    = new_r_Proj(new_start, reg_mode, pn);
+		long                   new_pn   = param->reg_offset + start_params_offset;
+		ir_node               *value    = new_r_Proj(new_start, reg_mode, new_pn);
+		bool                   is_float = false;
 
-		if (mode_is_float(mode)) {
+		{
+			ir_entity *entity      = get_irg_entity(irg);
+			ir_type   *method_type = get_entity_type(entity);
+			if (pn < (long)get_method_n_params(method_type)) {
+				ir_type *param_type = get_method_param_type(method_type, pn);
+				ir_mode *mode       = get_type_mode(param_type);
+				is_float = mode_is_float(mode);
+			}
+		}
+
+		if (is_float) {
 			const arch_register_t *reg1 = param->reg1;
 			ir_node *value1 = NULL;
 
 			if (reg1 != NULL) {
 				ir_mode *reg1_mode = reg1->reg_class->mode;
-				value1 = new_r_Proj(new_start, reg1_mode, pn+1);
+				value1 = new_r_Proj(new_start, reg1_mode, new_pn+1);
 			} else if (param->entity != NULL) {
-				ir_node *fp      = get_initial_fp(irg);
-				ir_node *mem     = get_initial_mem(irg);
+				ir_node *fp  = get_initial_fp(irg);
+				ir_node *mem = get_initial_mem(irg);
 				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem,
 				                                   mode_gp, param->entity,
 				                                   0, true);
@@ -2108,11 +2115,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		return value;
 	} else {
 		/* argument transmitted on stack */
-		ir_node  *mem     = get_initial_mem(irg);
-		ir_mode  *mode    = get_type_mode(param->type);
-		ir_node  *base    = get_frame_base(irg);
-		ir_node  *load;
-		ir_node  *value;
+		ir_node *mem  = get_initial_mem(irg);
+		ir_mode *mode = get_type_mode(param->type);
+		ir_node *base = get_frame_base(irg);
+		ir_node *load;
+		ir_node *value;
 
 		if (mode_is_float(mode)) {
 			load  = create_ldf(NULL, new_block, base, mem, mode,
@@ -2290,6 +2297,11 @@ void sparc_transform_graph(ir_graph *irg)
 	stackorder = be_collect_stacknodes(irg);
 	current_cconv
 		= sparc_decide_calling_convention(get_entity_type(entity), irg);
+	if (sparc_variadic_fixups(irg, current_cconv)) {
+		sparc_free_calling_convention(current_cconv);
+		current_cconv
+			= sparc_decide_calling_convention(get_entity_type(entity), irg);
+	}
 	sparc_create_stacklayout(irg, current_cconv);
 	be_add_parameter_entity_stores(irg);
 

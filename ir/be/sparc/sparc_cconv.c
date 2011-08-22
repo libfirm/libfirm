@@ -60,6 +60,7 @@ static const arch_register_t* const param_regs[] = {
 	&sparc_registers[REG_I4],
 	&sparc_registers[REG_I5],
 };
+COMPILETIME_ASSERT(ARRAY_SIZE(param_regs) == SPARC_N_PARAM_REGS, sparcparamregs)
 
 static const arch_register_t* const float_result_regs[] = {
 	&sparc_registers[REG_F0],
@@ -323,7 +324,6 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		struct obstack *obst      = &birg->obst;
 		size_t          r;
 
-		assert(birg->allocatable_regs == NULL);
 		birg->allocatable_regs = rbitset_obstack_alloc(obst, N_SPARC_REGISTERS);
 		rbitset_set_all(birg->allocatable_regs, N_SPARC_REGISTERS);
 		for (r = 0; r < n_ignores; ++r) {

@@ -669,10 +669,9 @@ void be_free_stackorder(be_stackorder_t *env)
 	free(env);
 }
 
-void be_add_parameter_entity_stores(ir_graph *irg)
+static void create_stores_for_type(ir_graph *irg, ir_type *type)
 {
-	ir_type *frame_type  = get_irg_frame_type(irg);
-	size_t   n           = get_compound_n_members(frame_type);
+	size_t   n           = get_compound_n_members(type);
 	ir_node *frame       = get_irg_frame(irg);
 	ir_node *initial_mem = get_irg_initial_mem(irg);
 	ir_node *mem         = initial_mem;
@@ -684,7 +683,7 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 	/* all parameter entities left in the frame type require stores.
 	 * (The ones passed on the stack have been moved to the arg type) */
 	for (i = 0; i < n; ++i) {
-		ir_entity *entity = get_compound_member(frame_type, i);
+		ir_entity *entity = get_compound_member(type, i);
 		ir_node   *addr;
 		size_t     arg;
 		if (!is_parameter_entity(entity))
@@ -725,5 +724,17 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 	if (mem != initial_mem) {
 		edges_reroute(initial_mem, mem);
 		set_Store_mem(first_store, initial_mem);
+	}
+}
+
+void be_add_parameter_entity_stores(ir_graph *irg)
+{
+	ir_type           *frame_type   = get_irg_frame_type(irg);
+	be_stack_layout_t *layout       = be_get_irg_stack_layout(irg);
+	ir_type           *between_type = layout->between_type;
+
+	create_stores_for_type(irg, frame_type);
+	if (between_type != NULL) {
+		create_stores_for_type(irg, between_type);
 	}
 }
