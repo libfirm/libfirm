@@ -582,10 +582,10 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 	 * We MUST NOT order c > a and b > c. */
 	h1 = get_irn_height(heights, n1);
 	h2 = get_irn_height(heights, n2);
-	if (h1 < h2) return -1;
-	if (h1 > h2) return  1;
+	if (h1 < h2) return  1;
+	if (h1 > h2) return -1;
 	/* Same height, so use a random (but stable) order */
-	return get_irn_idx(n1) - get_irn_idx(n2);
+	return get_irn_idx(n2) - get_irn_idx(n1);
 }
 
 /**
