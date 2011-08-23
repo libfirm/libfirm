@@ -1292,6 +1292,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		set_irn_n(push, n_ia32_Push_stack, initial_sp);
 		sched_add_after(curr_sp, incsp);
 
+		/* make sure the initial IncSP is really used by someone */
+		if (get_irn_n_edges(incsp) <= 1) {
+			ir_node *in[] = { incsp };
+			ir_node *keep = be_new_Keep(block, 1, in);
+			sched_add_after(incsp, keep);
+		}
+
 		layout->initial_bias = -4;
 	} else {
 		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
