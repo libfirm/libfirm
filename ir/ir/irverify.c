@@ -1550,7 +1550,7 @@ static int verify_node_Free(const ir_node *n)
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Free_mem(n));
 	ir_mode *op2mode = get_irn_mode(get_Free_ptr(n));
-	ir_mode *op3mode = get_irn_mode(get_Free_size(n));
+	ir_mode *op3mode = get_irn_mode(get_Free_count(n));
 
 	ASSERT_AND_RET_DBG(
 		/* Free: BB x M x ref x int_u --> M */

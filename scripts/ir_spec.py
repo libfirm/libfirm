@@ -503,7 +503,7 @@ class Free(Op):
 	ins    = [
 		("mem",   "memory dependency" ),
 		("ptr",   "pointer to the object to free"),
-		("size",  "number of objects to allocate" ),
+		("count", "number of objects to allocate" ),
 	]
 	mode   = "mode_M"
 	flags  = [ "uses_memory" ]

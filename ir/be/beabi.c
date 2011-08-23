@@ -948,11 +948,11 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
 		ir_tarval *tv   = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
 		ir_node   *cnst = new_rd_Const(dbg, irg, tv);
-		ir_node   *mul  = new_rd_Mul(dbg, block, get_Free_size(free),
+		ir_node   *mul  = new_rd_Mul(dbg, block, get_Free_count(free),
 		                             cnst, mode_Iu);
 		size = mul;
 	} else {
-		size = get_Free_size(free);
+		size = get_Free_count(free);
 	}
 
 	stack_alignment = 1 << arch_env->stack_alignment;
