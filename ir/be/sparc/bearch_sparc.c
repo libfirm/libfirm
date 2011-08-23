@@ -39,6 +39,7 @@
 #include "irdump.h"
 #include "lowering.h"
 #include "lower_dw.h"
+#include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
@@ -434,6 +435,7 @@ static void sparc_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, &lower_mode_b_config);
 		lower_switch(irg, 4, 256, false);
+		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, -SPARC_MIN_STACKSIZE);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {

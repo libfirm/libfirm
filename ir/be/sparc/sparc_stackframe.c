@@ -81,7 +81,8 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			irn_bias -= free_bytes;
 
 			new_bias_unaligned = bias + irn_bias;
-			new_bias_aligned   = round_up2(new_bias_unaligned, 8);
+			new_bias_aligned
+				= round_up2(new_bias_unaligned, SPARC_STACK_ALIGNMENT);
 			free_bytes = new_bias_aligned - new_bias_unaligned;
 			set_irn_sp_bias(irn, new_bias_aligned - bias);
 			bias = new_bias_aligned;

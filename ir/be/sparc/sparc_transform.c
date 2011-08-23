@@ -1845,6 +1845,102 @@ static ir_node *gen_Sel(ir_node *node)
 	return new_bd_sparc_FrameAddr(dbgi, new_block, new_ptr, entity, 0);
 }
 
+static ir_node *gen_Alloc(ir_node *node)
+{
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *block      = get_nodes_block(node);
+	ir_node  *new_block  = be_transform_node(block);
+	ir_type  *type       = get_Alloc_type(node);
+	ir_node  *size       = get_Alloc_count(node);
+	ir_node  *stack_pred = get_stack_pointer_for(node);
+	ir_node  *subsp;
+	if (get_Alloc_where(node) != stack_alloc)
+		panic("only stack-alloc supported in sparc backend (at %+F)", node);
+	/* lowerer should have transformed all allocas to byte size */
+	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+		panic("Found non-byte alloc in sparc backend (at %+F)", node);
+
+	if (is_Const(size)) {
+		ir_tarval *tv    = get_Const_tarval(size);
+		long       sizel = get_tarval_long(tv);
+		subsp = be_new_IncSP(sp_reg, new_block, stack_pred, sizel, 0);
+		set_irn_dbg_info(subsp, dbgi);
+	} else {
+		ir_node *new_size = be_transform_node(size);
+		subsp = new_bd_sparc_SubSP(dbgi, new_block, stack_pred, new_size);
+		arch_set_irn_register(subsp, sp_reg);
+	}
+
+	/* if we are the last IncSP producer in a block then we have to keep
+	 * the stack value.
+	 * Note: This here keeps all producers which is more than necessary */
+	keep_alive(subsp);
+
+	pmap_insert(node_to_stack, node, subsp);
+	/* the "result" is the unmodified sp value */
+	return stack_pred;
+}
+
+static ir_node *gen_Proj_Alloc(ir_node *node)
+{
+	ir_node *alloc = get_Proj_pred(node);
+	long     pn    = get_Proj_proj(node);
+
+	switch ((pn_Alloc)pn) {
+	case pn_Alloc_M: {
+		ir_node *alloc_mem = get_Alloc_mem(alloc);
+		return be_transform_node(alloc_mem);
+	}
+	case pn_Alloc_res: {
+		ir_node *new_alloc = be_transform_node(alloc);
+		return new_alloc;
+	}
+	case pn_Alloc_X_regular:
+	case pn_Alloc_X_except:
+		panic("sparc backend: exception output of alloc not supported (at %+F)",
+		      node);
+	}
+	panic("sparc backend: invalid Proj->Alloc");
+}
+
+static ir_node *gen_Free(ir_node *node)
+{
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *block      = get_nodes_block(node);
+	ir_node  *new_block  = be_transform_node(block);
+	ir_type  *type       = get_Free_type(node);
+	ir_node  *size       = get_Free_count(node);
+	ir_node  *mem        = get_Free_mem(node);
+	ir_node  *new_mem    = be_transform_node(mem);
+	ir_node  *stack_pred = get_stack_pointer_for(node);
+	ir_node  *addsp;
+	if (get_Alloc_where(node) != stack_alloc)
+		panic("only stack-alloc supported in sparc backend (at %+F)", node);
+	/* lowerer should have transformed all allocas to byte size */
+	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+		panic("Found non-byte alloc in sparc backend (at %+F)", node);
+
+	if (is_Const(size)) {
+		ir_tarval *tv    = get_Const_tarval(size);
+		long       sizel = get_tarval_long(tv);
+		addsp = be_new_IncSP(sp_reg, new_block, stack_pred, -sizel, 0);
+		set_irn_dbg_info(addsp, dbgi);
+	} else {
+		ir_node *new_size = be_transform_node(size);
+		addsp = new_bd_sparc_AddSP(dbgi, new_block, stack_pred, new_size);
+		arch_set_irn_register(addsp, sp_reg);
+	}
+
+	/* if we are the last IncSP producer in a block then we have to keep
+	 * the stack value.
+	 * Note: This here keeps all producers which is more than necessary */
+	keep_alive(addsp);
+
+	pmap_insert(node_to_stack, node, addsp);
+	/* the "result" is the unmodified sp value */
+	return new_mem;
+}
+
 static const arch_register_req_t float1_req = {
 	arch_register_req_type_normal,
 	&sparc_reg_classes[CLASS_sparc_fp],
@@ -2182,6 +2278,8 @@ static ir_node *gen_Proj(ir_node *node)
 	ir_node *pred = get_Proj_pred(node);
 
 	switch (get_irn_opcode(pred)) {
+	case iro_Alloc:
+		return gen_Proj_Alloc(node);
 	case iro_Store:
 		return gen_Proj_Store(node);
 	case iro_Load:
@@ -2235,6 +2333,7 @@ static void sparc_register_transformers(void)
 	be_start_transform_setup();
 
 	be_set_transform_function(op_Add,          gen_Add);
+	be_set_transform_function(op_Alloc,        gen_Alloc);
 	be_set_transform_function(op_And,          gen_And);
 	be_set_transform_function(op_Call,         gen_Call);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
@@ -2243,6 +2342,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Conv,         gen_Conv);
 	be_set_transform_function(op_Div,          gen_Div);
 	be_set_transform_function(op_Eor,          gen_Eor);
+	be_set_transform_function(op_Free,         gen_Free);
 	be_set_transform_function(op_Jmp,          gen_Jmp);
 	be_set_transform_function(op_Load,         gen_Load);
 	be_set_transform_function(op_Minus,        gen_Minus);
