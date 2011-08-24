@@ -398,6 +398,11 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		if (emits_multiple_instructions(schedpoint))
 			continue;
 
+		/* if check and schedpoint are not in the same block, give up. */
+		if (check != NULL
+				&& get_nodes_block(check) != get_nodes_block(schedpoint))
+			break;
+
 		/* allowed for delayslot: any instruction which is not necessary to
 		 * compute an input to the branch. */
 		if (check != NULL
