@@ -284,6 +284,27 @@ static void prepare_links(ir_node *node)
 			env->flags |= MUST_BE_LOWERED;
 		}
 		return;
+	} else if (is_Call(node)) {
+		/* Special case:  If the result of the Call is never used, we won't
+		 * find a Proj with a mode that potentially triggers MUST_BE_LOWERED
+		 * to be set.  Thus, if we see a call, we check its result types and
+		 * decide whether MUST_BE_LOWERED has to be set.
+		 */
+		ir_type *tp = get_Call_type(node);
+		size_t   n_res, i;
+
+		n_res = get_method_n_ress(tp);
+		for (i = 0; i < n_res; ++i) {
+			ir_type *rtp = get_method_res_type(tp, i);
+
+			if (is_Primitive_type(rtp)) {
+				ir_mode *rmode = get_type_mode(rtp);
+
+				if (rmode == env->high_signed || rmode == env->high_unsigned) {
+					env->flags |= MUST_BE_LOWERED;
+				}
+			}
+		}
 	}
 }
 
