@@ -505,15 +505,22 @@ static const backend_params *sparc_get_backend_params(void)
 		              irma_twos_complement, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
-	ir_mode *mode_long_double
-		= new_ir_mode("long double", irms_float_number, 128, 1,
-		              irma_ieee754, 0);
-	ir_type *type_long_double = new_type_primitive(mode_long_double);
 
-	set_type_alignment_bytes(type_long_double, 8);
-	p.type_long_double        = type_long_double;
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
+
+	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT) {
+		p.mode_float_arithmetic = NULL;
+		p.type_long_double      = NULL;
+	} else {
+		ir_mode *mode_long_double
+			= new_ir_mode("long double", irms_float_number, 128, 1,
+						  irma_ieee754, 0);
+		ir_type *type_long_double = new_type_primitive(mode_long_double);
+
+		set_type_alignment_bytes(type_long_double, 8);
+		p.type_long_double        = type_long_double;
+	}
 	return &p;
 }
 
