@@ -470,8 +470,19 @@ static int amd64_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void amd64_lower_for_target(void)
 {
+	size_t i, n_irgs = get_irp_n_irgs();
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores, and turn all bigger
+		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes
+		 * during code generation yet.
+		 * TODO:  Adapt this once custom CopyB handling is implemented. */
+		lower_CopyB(irg, 64, 65, 4);
+	}
 }
 
 static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,

@@ -2049,6 +2049,14 @@ static void ia32_lower_for_target(void)
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, false);
 	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
+		 * so we can generate rep movs later, and turn all big CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 64, 8193, 4);
+	}
 }
 
 /**
