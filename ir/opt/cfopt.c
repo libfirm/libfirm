@@ -722,7 +722,7 @@ static void remove_empty_blocks(ir_node *block, void *x)
 
 	for (i = 0; i < n_preds; ++i) {
 		ir_node *jmp, *jmp_block, *pred, *pred_block;
-		int n_jpreds = NULL;
+		int n_jpreds = 0;
 
 		jmp = get_Block_cfgpred(block, i);
 		if (!is_Jmp(jmp))
