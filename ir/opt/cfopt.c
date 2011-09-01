@@ -115,9 +115,15 @@ static void collect_nodes(ir_node *n, void *ctx)
 			/* block with a jump label attached cannot be removed. */
 			set_Block_removable(n, false);
 		}
+	} else if (is_Bad(n) || is_Jmp(n)) {
+		/* ignore these */
 		return;
-	} else if (!is_Jmp(n)) {  /* Check for non-empty block. */
+	} else {
+		/* Check for non-empty block. */
 		ir_node *block = get_nodes_block(n);
+		if (is_Bad(block))
+			return;
+
 		set_Block_removable(block, false);
 
 		if (is_Proj(n)) {
