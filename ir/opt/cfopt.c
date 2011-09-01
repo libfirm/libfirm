@@ -675,7 +675,7 @@ static void compute_block_info(ir_node *n, void *x)
 	} else if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
 		set_has_phis(block_info, block);
-	} else if (is_Jmp(n) || is_Cond(n) || is_Cmp(n) || is_Proj(n)) {
+	} else if (is_Jmp(n) || is_Cond(n) || is_Proj(n)) {
 		/* ignore */
 	} else {
 		ir_node *block = get_nodes_block(n);
