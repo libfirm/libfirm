@@ -2055,7 +2055,7 @@ static void ia32_lower_for_target(void)
 		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
 		 * so we can generate rep movs later, and turn all big CopyBs into
 		 * memcpy calls. */
-		lower_CopyB(irg, 64, 8193, 4);
+		lower_CopyB(irg, 64, 8193);
 	}
 }
 

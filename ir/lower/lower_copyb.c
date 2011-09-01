@@ -35,6 +35,7 @@
 #include "irtools.h"
 #include "irgmod.h"
 #include "error.h"
+#include "be.h"
 
 typedef struct entry entry_t;
 struct entry {
@@ -84,6 +85,7 @@ static unsigned max_small_size; /**< The maximum size of a CopyB node
                                      so that it is regarded as 'small'. */
 static unsigned min_large_size; /**< The minimum size of a CopyB node
                                      so that it is regarded as 'large'. */
+static unsigned native_mode_bytes; /**< The size of the native mode in bytes. */
 
 typedef struct walk_env {
 	struct obstack   obst;           /**< the obstack where data is allocated
@@ -91,9 +93,9 @@ typedef struct walk_env {
 	struct list_head list;           /**< the list of copyb nodes. */
 } walk_env_t;
 
-static ir_mode *get_ir_mode(unsigned bytes)
+static ir_mode *get_ir_mode(unsigned mode_bytes)
 {
-	switch (bytes) {
+	switch (mode_bytes) {
 	case 1:  return mode_Bu;
 	case 2:  return mode_Hu;
 	case 4:  return mode_Iu;
@@ -107,9 +109,10 @@ static ir_mode *get_ir_mode(unsigned bytes)
 /**
  * Turn a small CopyB node into a series of Load/Store nodes.
  */
-static void lower_small_copyb_node(ir_node *irn, unsigned mode_bytes)
+static void lower_small_copyb_node(ir_node *irn)
 {
-	ir_graph *irg = get_irn_irg(irn);
+	ir_graph *irg        = get_irn_irg(irn);
+	unsigned  mode_bytes = native_mode_bytes;
 	unsigned  size;
 	unsigned  offset;
 	ir_mode  *mode;
@@ -169,11 +172,12 @@ static void lower_small_copyb_node(ir_node *irn, unsigned mode_bytes)
 
 static ir_type *get_memcpy_methodtype()
 {
-	ir_type *tp = new_type_method(3, 1);
+	ir_type              *tp           = new_type_method(3, 1);
+	ir_mode              *size_t_mode  = get_ir_mode(native_mode_bytes);
 
 	set_method_param_type(tp, 0, get_type_for_mode(mode_P));
 	set_method_param_type(tp, 1, get_type_for_mode(mode_P));
-	set_method_param_type(tp, 2, get_type_for_mode(mode_Lu));
+	set_method_param_type(tp, 2, get_type_for_mode(size_t_mode));
 	set_method_res_type  (tp, 0, get_type_for_mode(mode_P));
 
 	return tp;
@@ -206,15 +210,16 @@ static void lower_large_copyb_node(ir_node *irn)
 	ir_type  *copyb_tp = get_CopyB_type(irn);
 	unsigned  size     = get_type_size_bytes(copyb_tp);
 
-	ir_node  *symconst = get_memcpy_symconst(irg);
-	ir_type  *call_tp  = get_memcpy_methodtype();
+	ir_node  *symconst    = get_memcpy_symconst(irg);
+	ir_type  *call_tp     = get_memcpy_methodtype();
+	ir_mode  *mode_size_t = get_ir_mode(native_mode_bytes);
 	ir_node  *in[3];
 	ir_node  *call;
 	ir_node  *call_mem;
 
 	in[0]    = addr_dst;
 	in[1]    = addr_src;
-	in[2]    = new_r_Const_long(irg, mode_Lu, size);
+	in[2]    = new_r_Const_long(irg, mode_size_t, size);
 	call     = new_rd_Call(dbgi, block, mem, symconst, 3, in, call_tp);
 	call_mem = new_r_Proj(call, mode_M, pn_Call_M);
 
@@ -222,13 +227,13 @@ static void lower_large_copyb_node(ir_node *irn)
 	set_irn_n(irn, pn_CopyB_M, call_mem);
 }
 
-static void lower_copyb_node(ir_node *irn, unsigned native_mode_bytes)
+static void lower_copyb_node(ir_node *irn)
 {
 	ir_type *tp   = get_CopyB_type(irn);
 	unsigned size = get_type_size_bytes(tp);
 
 	if (size <= max_small_size)
-		lower_small_copyb_node(irn, native_mode_bytes);
+		lower_small_copyb_node(irn);
 	else if (size >= min_large_size)
 		lower_large_copyb_node(irn);
 	else
@@ -277,21 +282,24 @@ static void find_copyb_nodes(ir_node *irn, void *ctx)
 	list_add_tail(&entry->list, &env->list);
 }
 
-void lower_CopyB(ir_graph *irg, unsigned max_small_sz,
-                 unsigned min_large_sz, unsigned native_mode_bytes)
+void lower_CopyB(ir_graph *irg, unsigned max_small_sz, unsigned min_large_sz)
 {
-	walk_env_t env;
-	entry_t   *entry;
+	const backend_params *bparams = be_get_backend_param();
+	walk_env_t            env;
+	entry_t              *entry;
+
 	assert(max_small_sz < min_large_sz && "CopyB size ranges must not overlap");
 
+	max_small_size    = max_small_sz;
+	min_large_size    = min_large_sz;
+	native_mode_bytes = bparams->machine_size / 8;
+
 	obstack_init(&env.obst);
-	max_small_size = max_small_sz;
-	min_large_size = min_large_sz;
 	INIT_LIST_HEAD(&env.list);
 	irg_walk_graph(irg, NULL, find_copyb_nodes, &env);
 
 	list_for_each_entry(entry_t, entry, &env.list, list) {
-		lower_copyb_node(entry->copyb, native_mode_bytes);
+		lower_copyb_node(entry->copyb);
 	}
 
 	obstack_free(&env.obst, NULL);

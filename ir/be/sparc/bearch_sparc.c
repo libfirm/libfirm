@@ -440,7 +440,7 @@ static void sparc_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls. */
-		lower_CopyB(irg, 31, 32, 4);
+		lower_CopyB(irg, 31, 32);
 	}
 }
 
