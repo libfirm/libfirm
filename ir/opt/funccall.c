@@ -71,6 +71,23 @@ static unsigned *busy_set;
  */
 #define mtp_temporary  mtp_property_inherited
 
+static bool has_compound_return_type(ir_node *node)
+{
+	ir_type *mtp   = get_Call_type(node);
+	size_t   n_res = get_method_n_ress(mtp);
+	size_t   i;
+
+	for (i = 0; i < n_res; ++i) {
+		ir_type *rtp = get_method_res_type(mtp, i);
+
+		if (is_compound_type(rtp)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 /**
  * Walker: Collect all calls to const and pure functions
  * to lists. Collect all Proj(Call) nodes into a Proj list.
@@ -88,6 +105,16 @@ static void collect_const_and_pure_calls(ir_node *node, void *env)
 
 		/* set the link to NULL for all non-const/pure calls */
 		set_irn_link(call, NULL);
+
+		/* If the backend's calling convention handles compound return types
+		 * via a hidden pointer argument, it is incorrect to regard this
+		 * call as a call to a const/pure function.
+		 * TODO:  This might be overly conservative if the backend uses
+		 *        a different calling convention, e.g., for small structs. */
+		if (has_compound_return_type(node)) {
+			return;
+		}
+
 		ptr = get_Call_ptr(call);
 		if (is_Global(ptr)) {
 			ent = get_Global_entity(ptr);
