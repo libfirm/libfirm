@@ -363,6 +363,16 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 		}
 		break;
 	}
+	case iro_Sel: {
+		ir_entity *ent  = get_Sel_entity(n);
+		ir_type   *type = get_entity_type(ent);
+
+		/* we need to copy compound parameters */
+		if (is_parameter_entity(ent) && is_compound_type(type)) {
+			env->only_local_mem = 0;
+		}
+		break;
+	}
 	default:
 		/* do nothing */
 		break;
