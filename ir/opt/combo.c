@@ -84,6 +84,7 @@
 #include "irpass.h"
 #include "tv_t.h"
 #include "irtools.h"
+#include "opt_manage.h"
 
 #include "irprintf.h"
 #include "irdump.h"
@@ -3491,7 +3492,7 @@ static void add_memory_keeps(ir_node **kept_memory, size_t len)
 	ir_nodeset_destroy(&set);
 }  /* add_memory_keeps */
 
-void combo(ir_graph *irg)
+static ir_graph_state_t do_combo(ir_graph *irg)
 {
 	environment_t env;
 	ir_node       *initial_bl;
@@ -3523,9 +3524,6 @@ void combo(ir_graph *irg)
 	/* options driving the optimization */
 	env.commutative    = 1;
 	env.opt_unknown    = 1;
-
-	assure_irg_outs(irg);
-	assure_cf_loop(irg);
 
 	/* we have our own value_of function */
 	set_value_of_func(get_node_tarval);
@@ -3591,13 +3589,6 @@ void combo(ir_graph *irg)
 		DB((dbg, LEVEL_1, "Unoptimized Control Flow left"));
 	}
 
-	if (env.modified) {
-		/* control flow might changed */
-		set_irg_extblk_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-	}
-
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	/* remove the partition hook */
@@ -3610,7 +3601,20 @@ void combo(ir_graph *irg)
 	/* restore value_of() default behavior */
 	set_value_of_func(NULL);
 	current_ir_graph = rem;
+
+	return 0; // cannot guarantee anything
 }  /* combo */
+
+optdesc_t opt_combo = {
+	"combo",
+	IR_GRAPH_STATE_NO_BAD_BLOCKS | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	do_combo,
+};
+
+void combo(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_combo);
+}
 
 /* Creates an ir_graph pass for combo. */
 ir_graph_pass_t *combo_pass(const char *name)

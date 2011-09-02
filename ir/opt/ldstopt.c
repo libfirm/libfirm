@@ -50,6 +50,7 @@
 #include "set.h"
 #include "be.h"
 #include "debug.h"
+#include "opt_manage.h"
 
 /** The debug handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -2260,9 +2261,10 @@ static int optimize_loops(ir_graph *irg)
 /*
  * do the load store optimization
  */
-int optimize_load_store(ir_graph *irg)
+static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 {
 	walk_env_t env;
+	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.ldstopt");
 
@@ -2270,16 +2272,7 @@ int optimize_load_store(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 		"LoadStore optimization needs pinned graph");
 
-	/* we need landing pads */
-	remove_critical_cf_edges(irg);
-
-	edges_assure(irg);
-
-	/* for Phi optimization post-dominators are needed ... */
-	assure_postdoms(irg);
-
 	if (get_opt_alias_analysis()) {
-		assure_irg_entity_usage_computed(irg);
 		assure_irp_globals_entity_usage_computed();
 	}
 
@@ -2304,12 +2297,26 @@ int optimize_load_store(ir_graph *irg)
 	}
 
 	if (env.changes & CF_CHANGED) {
-		/* is this really needed: Yes, control flow changed, block might
-		have Bad() predecessors. */
+		/* control flow changed, block might have Bad() predecessors. */
 		set_irg_doms_inconsistent(irg);
+	} else {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BAD_BLOCKS;
 	}
-	return env.changes != 0;
-}  /* optimize_load_store */
+
+	return res;
+}
+
+optdesc_t opt_loadstore = {
+	"load-store",
+	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,
+	do_loadstore_opt,
+};
+
+int optimize_load_store(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_loadstore);
+	return 1;
+}
 
 ir_graph_pass_t *optimize_load_store_pass(const char *name)
 {

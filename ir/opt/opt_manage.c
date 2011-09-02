@@ -48,7 +48,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 		clear_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS);
 	if (ir_entity_usage_not_computed == get_irg_entity_usage_state(irg))
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
-	clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS); // FIXME seems to incorrect sometimes
 
 	/* assure that all requirements for the optimization are fulfilled */
 #define PREPARE(st,func) if (st & (required ^ irg->state)) {func(irg); set_irg_state(irg,st);}
