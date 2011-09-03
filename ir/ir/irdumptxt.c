@@ -595,6 +595,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			fprintf(F, "\n%s  Initializers:", prefix);
 			need_nl = 1;
 			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
+			fputc('\n', F);
 		} else if (entity_has_compound_ent_values(ent)) {
 			size_t i;
 			fprintf(F, "%s  compound values:", prefix);
@@ -622,7 +623,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 	if (verbosity & dump_verbosity_entattrs) {
 		fprintf(F, "%s  linkage:", prefix);
 		dump_entity_linkage(F, ent);
-		fprintf(F, "%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
+		fprintf(F, "\n%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
 		fprintf(F, "\n%s  aligned:  %s", prefix, get_align_name(get_entity_aligned(ent)));
 		fprintf(F, "\n%s  alignment:  %u", prefix, get_entity_alignment(ent));
 		fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
