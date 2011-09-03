@@ -530,21 +530,18 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			}
 		}
 
-		fprintf(F, "%s  linkage:", prefix);
-		dump_entity_linkage(F, ent);
-
 		if (is_Method_type(get_entity_type(ent))) {
 			unsigned mask = get_entity_additional_properties(ent);
 			unsigned cc   = get_method_calling_convention(get_entity_type(ent));
 			ir_graph *irg = get_entity_irg(ent);
 
 			if (irg) {
-				fprintf(F, "\n%s  estimated node count: %u", prefix, get_irg_estimated_node_cnt(irg));
-				fprintf(F, "\n%s  maximum node index:   %u", prefix, get_irg_last_idx(irg));
+				fprintf(F, "%s  estimated node count: %u\n", prefix, get_irg_estimated_node_cnt(irg));
+				fprintf(F, "%s  maximum node index:   %u\n", prefix, get_irg_last_idx(irg));
 			}
 
 			if (mask) {
-				fprintf(F, "\n%s  additional prop: ", prefix);
+				fprintf(F, "%s  additional prop: ", prefix);
 
 				if (mask & mtp_property_const)         fputs("const_function, ", F);
 				if (mask & mtp_property_pure)          fputs("pure_function, ", F);
@@ -557,8 +554,9 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 				if (mask & mtp_property_runtime)       fputs("runtime_function, ", F);
 				if (mask & mtp_property_private)       fputs("private_function, ", F);
 				if (mask & mtp_property_has_loop)      fputs("has_loop_function, ", F);
+				fputc('\n', F);
 			}
-			fprintf(F, "\n%s  calling convention: ", prefix);
+			fprintf(F, "%s  calling convention: ", prefix);
 			if (cc & cc_reg_param)           fputs("regparam, ", F);
 			if (cc & cc_this_call)           fputs("thiscall, ", F);
 			if (cc & cc_compound_ret)        fputs("compound_ret, ", F);
@@ -572,10 +570,8 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 				fputs(cc & cc_last_on_top      ? "last param on top, " : "first param on top, ", F);
 				fputs(cc & cc_callee_clear_stk ? "callee clear stack" : "caller clear stack", F);
 			}
-			fprintf(F, "\n%s  vtable number:        %u", prefix, get_entity_vtable_number(ent));
+			fprintf(F, "\n%s  vtable number:        %u\n", prefix, get_entity_vtable_number(ent));
 		}
-
-		fputc('\n', F);
 	} else {  /* no entattrs */
 		ir_fprintf(F, "%s(%3d:%d) %+F: %s", prefix,
 			get_entity_offset(ent), get_entity_offset_bits_remainder(ent),
