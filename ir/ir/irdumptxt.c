@@ -453,6 +453,10 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 {
 	ir_linkage linkage = get_entity_linkage(entity);
 
+	if (linkage == IR_LINKAGE_DEFAULT) {
+		fprintf(F, " default");
+		return;
+	}
 	if (linkage & IR_LINKAGE_CONSTANT)
 		fprintf(F, " constant");
 	if (linkage & IR_LINKAGE_WEAK)
