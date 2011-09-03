@@ -403,8 +403,7 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 		break;
 	case IR_INITIALIZER_CONST:
 		value = get_initializer_const_value(initializer);
-		fprintf(F, "\t = <CONST>");
-		dump_node_opcode(F, value);
+		ir_fprintf(F, "\t = %F", value);
 		break;
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
