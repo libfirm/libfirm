@@ -98,6 +98,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	size_t    nn_ress;
 	size_t    nn_params;
 	size_t    i;
+	mtp_additional_properties mtp_properties;
 
 	if (!is_Method_type(mtp))
 		return mtp;
@@ -159,10 +160,14 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 
 	set_method_variadicity(lowered, get_method_variadicity(mtp));
 
-	/* associate the lowered type with the original one for easier access */
 	set_method_calling_convention(lowered, get_method_calling_convention(mtp) | cc_compound_ret);
-	set_method_additional_properties(lowered, get_method_additional_properties(mtp));
+	mtp_properties = get_method_additional_properties(mtp);
+	/* after lowering the call is not const anymore, since it writes to the
+	 * memory for the return value passed to it */
+	mtp_properties &= ~mtp_property_const;
+	set_method_additional_properties(lowered, mtp_properties);
 
+	/* associate the lowered type with the original one for easier access */
 	set_lowered_type(mtp, lowered);
 	pmap_insert(lowered_mtps, mtp, lowered);
 
@@ -486,8 +491,13 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 		n = (ir_node*)get_irn_link(p);
 
 		ins[idx] = get_CopyB_dst(p);
-		mem      = get_CopyB_mem(p);
 		blk      = get_nodes_block(p);
+
+		/* use the memory output of the call and not the input of the CopyB
+		 * otherwise stuff breaks if the call was mtp_property_const, because
+		 * then the copyb skips the call. But after lowering the call is not
+		 * const anymore, and its memory has to be used */
+		mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
 
 		/* get rid of the CopyB */
 		turn_into_tuple(p, pn_CopyB_max+1);
