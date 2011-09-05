@@ -754,8 +754,13 @@ static ir_node *gen_Mulh(ir_node *node)
 	if (mode_is_float(mode))
 		panic("FP not supported yet");
 
-	mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
-	return new_r_Proj(mul, mode_gp, pn_sparc_Mulh_low);
+	if (mode_is_signed(mode)) {
+		mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_SMulh_reg, new_bd_sparc_SMulh_imm);
+		return new_r_Proj(mul, mode_gp, pn_sparc_SMulh_low);
+	} else {
+		mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_UMulh_reg, new_bd_sparc_UMulh_imm);
+		return new_r_Proj(mul, mode_gp, pn_sparc_UMulh_low);
+	}
 }
 
 static ir_node *gen_sign_extension_value(ir_node *node)

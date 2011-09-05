@@ -664,7 +664,13 @@ Mul => {
 	constructors => \%binop_operand_constructors,
 },
 
-Mulh => {
+SMulh => {
+	irn_flags    => [ "rematerializable" ],
+	outs         => [ "low", "high" ],
+	constructors => \%binop_operand_constructors,
+},
+
+UMulh => {
 	irn_flags    => [ "rematerializable" ],
 	outs         => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,

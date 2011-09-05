@@ -214,16 +214,6 @@ void sparc_emit_store_mode(const ir_node *node)
 	}
 }
 
-/**
- * emit integer signed/unsigned prefix char
- */
-void sparc_emit_mode_sign_prefix(const ir_node *node)
-{
-	ir_mode *mode      = get_irn_mode(node);
-	bool     is_signed = mode_is_signed(mode);
-	be_emit_string(is_signed ? "s" : "u");
-}
-
 static void emit_fp_suffix(const ir_mode *mode)
 {
 	unsigned bits = get_mode_size_bits(mode);
@@ -332,7 +322,8 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 	}
 
-	return is_sparc_Mulh(node) || is_sparc_SDiv(node) || is_sparc_UDiv(node)
+	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
+		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
 }
 
@@ -447,7 +438,12 @@ static void emit_be_IncSP(const ir_node *irn)
 static void emit_sparc_Mulh(const ir_node *irn)
 {
 	be_emit_cstring("\t");
-	sparc_emit_mode_sign_prefix(irn);
+	if (is_sparc_UMulh(irn)) {
+		be_emit_char('u');
+	} else {
+		assert(is_sparc_SMulh(irn));
+		be_emit_char('s');
+	}
 	be_emit_cstring("mul ");
 
 	sparc_emit_source_register(irn, 0);
@@ -922,7 +918,8 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
-	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
+	set_emitter(op_sparc_SMulh,     emit_sparc_Mulh);
+	set_emitter(op_sparc_UMulh,     emit_sparc_Mulh);
 	set_emitter(op_sparc_Return,    emit_sparc_Return);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
