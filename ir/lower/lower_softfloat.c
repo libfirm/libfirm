@@ -1097,10 +1097,24 @@ void lower_floating_point(void)
 		ir_entity *ent         = get_irg_entity(irg);
 		ir_type   *mtp         = get_entity_type(ent);
 		ir_type   *lowered_mtp = lower_method_type(mtp);
+		ir_type   *frame_tp    = get_irg_frame_type(irg);
+		size_t     n_members;
+		size_t     i;
 
 		if (lowered_mtp != mtp)
 			set_entity_type(ent, lowered_mtp);
 
 		irg_walk_graph(irg, NULL, lower_mode, NULL);
+
+		/* fixup parameter entities */
+		n_members = get_compound_n_members(frame_tp);
+		for (i = 0; i < n_members; ++i) {
+			ir_entity *member = get_compound_member(frame_tp, i);
+			ir_type   *type   = get_entity_type(member);
+			if (is_Primitive_type(type)) {
+				ir_type *lowered = lower_type(type);
+				set_entity_type(member, lowered);
+			}
+		}
 	}
 }
