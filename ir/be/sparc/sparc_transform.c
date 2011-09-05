@@ -849,22 +849,23 @@ static ir_node *gen_helper_bitop(ir_node *node,
                                  new_binop_reg_func new_reg,
                                  new_binop_imm_func new_imm,
                                  new_binop_reg_func new_not_reg,
-                                 new_binop_imm_func new_not_imm)
+                                 new_binop_imm_func new_not_imm,
+                                 match_flags_t flags)
 {
 	ir_node *op1 = get_binop_left(node);
 	ir_node *op2 = get_binop_right(node);
 	if (is_Not(op1)) {
 		return gen_helper_binop_args(node, op2, get_Not_op(op1),
-		                             MATCH_MODE_NEUTRAL,
+		                             flags,
 		                             new_not_reg, new_not_imm);
 	}
 	if (is_Not(op2)) {
 		return gen_helper_binop_args(node, op1, get_Not_op(op2),
-		                             MATCH_MODE_NEUTRAL,
+		                             flags,
 		                             new_not_reg, new_not_imm);
 	}
 	return gen_helper_binop_args(node, op1, op2,
-								 MATCH_MODE_NEUTRAL | MATCH_COMMUTATIVE,
+								 flags | MATCH_COMMUTATIVE,
 								 new_reg, new_imm);
 }
 
@@ -874,7 +875,8 @@ static ir_node *gen_And(ir_node *node)
 	                        new_bd_sparc_And_reg,
 	                        new_bd_sparc_And_imm,
 	                        new_bd_sparc_AndN_reg,
-	                        new_bd_sparc_AndN_imm);
+	                        new_bd_sparc_AndN_imm,
+	                        MATCH_MODE_NEUTRAL);
 }
 
 static ir_node *gen_Or(ir_node *node)
@@ -883,7 +885,8 @@ static ir_node *gen_Or(ir_node *node)
 	                        new_bd_sparc_Or_reg,
 	                        new_bd_sparc_Or_imm,
 	                        new_bd_sparc_OrN_reg,
-	                        new_bd_sparc_OrN_imm);
+	                        new_bd_sparc_OrN_imm,
+	                        MATCH_MODE_NEUTRAL);
 }
 
 static ir_node *gen_Eor(ir_node *node)
@@ -892,7 +895,8 @@ static ir_node *gen_Eor(ir_node *node)
 	                        new_bd_sparc_Xor_reg,
 	                        new_bd_sparc_Xor_imm,
 	                        new_bd_sparc_XNor_reg,
-	                        new_bd_sparc_XNor_imm);
+	                        new_bd_sparc_XNor_imm,
+	                        MATCH_MODE_NEUTRAL);
 }
 
 static ir_node *gen_Shl(ir_node *node)
@@ -1155,19 +1159,22 @@ static ir_node *gen_Cmp(ir_node *node)
 			                        new_bd_sparc_AndCCZero_reg,
 			                        new_bd_sparc_AndCCZero_imm,
 			                        new_bd_sparc_AndNCCZero_reg,
-			                        new_bd_sparc_AndNCCZero_imm);
+			                        new_bd_sparc_AndNCCZero_imm,
+			                        MATCH_NONE);
 		} else if (is_Or(op1)) {
 			return gen_helper_bitop(op1,
 			                        new_bd_sparc_OrCCZero_reg,
 			                        new_bd_sparc_OrCCZero_imm,
 			                        new_bd_sparc_OrNCCZero_reg,
-			                        new_bd_sparc_OrNCCZero_imm);
+			                        new_bd_sparc_OrNCCZero_imm,
+			                        MATCH_NONE);
 		} else if (is_Eor(op1)) {
 			return gen_helper_bitop(op1,
 			                        new_bd_sparc_XorCCZero_reg,
 			                        new_bd_sparc_XorCCZero_imm,
 			                        new_bd_sparc_XNorCCZero_reg,
-			                        new_bd_sparc_XNorCCZero_imm);
+			                        new_bd_sparc_XNorCCZero_imm,
+			                        MATCH_NONE);
 		}
 	}
 
