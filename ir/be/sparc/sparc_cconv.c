@@ -199,9 +199,16 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 
 	for (i = 0; i < n_params; ++i) {
 		ir_type            *param_type = get_method_param_type(function_type,i);
-		ir_mode            *mode       = get_type_mode(param_type);
-		int                 bits       = get_mode_size_bits(mode);
-		reg_or_stackslot_t *param      = &params[i];
+		ir_mode            *mode;
+		int                 bits;
+		reg_or_stackslot_t *param;
+
+		if (is_compound_type(param_type))
+			panic("sparc: compound arguments not supported yet");
+
+		mode  = get_type_mode(param_type);
+		bits  = get_mode_size_bits(mode);
+		param = &params[i];
 
 		if (i == 0 &&
 		    (get_method_calling_convention(function_type) & cc_compound_ret)) {
