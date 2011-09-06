@@ -37,7 +37,9 @@
 
 static const unsigned ignore_regs[] = {
 	REG_G0,
-	/* reserved for sparc ABI: */
+	/* used in case an address offset does not fit into an immediate: */
+	REG_G4,
+	/* reserved for SPARC ABI: */
 	REG_G5,
 	REG_G6,
 	REG_G7,
@@ -79,7 +81,6 @@ static const arch_register_t *const caller_saves[] = {
 	&sparc_registers[REG_G1],
 	&sparc_registers[REG_G2],
 	&sparc_registers[REG_G3],
-	&sparc_registers[REG_G4],
 	&sparc_registers[REG_O0],
 	&sparc_registers[REG_O1],
 	&sparc_registers[REG_O2],
