@@ -47,6 +47,7 @@
 
 /** by default, we generate assembler code for the Linux gas */
 object_file_format_t  be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
+elf_variant_t         be_gas_elf_variant        = ELF_VARIANT_NORMAL;
 bool                  be_gas_emit_types         = true;
 char                  be_gas_elf_type_char      = '@';
 
@@ -166,7 +167,7 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
 		emit_section_macho(section);
 		return;
-	} else if(be_gas_object_file_format == OBJECT_FILE_FORMAT_ELF_SPARC) {
+	} else if(be_gas_elf_variant == ELF_VARIANT_SPARC) {
 		emit_section_sparc(section, entity);
 		return;
 	}
@@ -526,7 +527,6 @@ void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 
 	switch (be_gas_object_file_format) {
 	case OBJECT_FILE_FORMAT_ELF:
-	case OBJECT_FILE_FORMAT_ELF_SPARC:
 		be_emit_cstring("\t.type\t");
 		be_gas_emit_entity(entity);
 		be_emit_cstring(", ");
@@ -1406,7 +1406,6 @@ static void emit_common(const ir_entity *entity)
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
-	case OBJECT_FILE_FORMAT_ELF_SPARC:
 		be_emit_cstring("\t.comm ");
 		be_gas_emit_entity(entity);
 		be_emit_irprintf(",%u,%u\n", size, alignment);
@@ -1439,7 +1438,6 @@ static void emit_local_common(const ir_entity *entity)
 		be_emit_write_line();
 		return;
 	case OBJECT_FILE_FORMAT_ELF:
-	case OBJECT_FILE_FORMAT_ELF_SPARC:
 		be_emit_cstring("\t.local ");
 		be_gas_emit_entity(entity);
 		be_emit_cstring("\n");
