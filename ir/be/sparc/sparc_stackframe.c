@@ -65,7 +65,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		if (entity != NULL) {
 			int offset = get_entity_offset(entity);
 			if (sp_relative)
-				offset -= bias;
+				offset += bias;
 			arch_set_frame_offset(irn, offset);
 		}
 
