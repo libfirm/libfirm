@@ -742,6 +742,19 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			continue; /* this block contains operations and cannot be skipped */
 		if (has_phis(env->phase,jmp_block))
 			continue; /* this block contains Phis and is not skipped */
+		if (Block_block_visited(jmp_block)) {
+			continue;
+			/* otherwise we could break the walker,
+			 * if block was reached via KeepAlive edge -> jmp_block -> A ---> block,
+			 * because the walker cannot handle Id nodes.
+			 *
+			 *   A      B
+			 *    \    /
+			 *   jmp_block
+			 *    /    \
+			 * block    End
+			 */
+		}
 
 		/* jmp_block is an empty block and can be optimized! */
 
