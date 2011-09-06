@@ -74,7 +74,11 @@ void sparc_emit_immediate(const ir_node *node)
 		assert(sparc_is_value_imm_encodeable(value));
 		be_emit_irprintf("%d", value);
 	} else {
-		be_emit_cstring("%lo(");
+		if (get_entity_owner(entity) == get_tls_type()) {
+			be_emit_cstring("%tle_lox10(");
+		} else {
+			be_emit_cstring("%lo(");
+		}
 		be_gas_emit_entity(entity);
 		if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
@@ -88,17 +92,21 @@ void sparc_emit_high_immediate(const ir_node *node)
 	const sparc_attr_t *attr   = get_sparc_attr_const(node);
 	ir_entity          *entity = attr->immediate_value_entity;
 
-	be_emit_cstring("%hi(");
 	if (entity == NULL) {
 		uint32_t value = (uint32_t) attr->immediate_value;
-		be_emit_irprintf("0x%X", value);
+		be_emit_irprintf("%%hi(0x%X)", value);
 	} else {
+		if (get_entity_owner(entity) == get_tls_type()) {
+			be_emit_cstring("%tle_hix22(");
+		} else {
+			be_emit_cstring("%hi(");
+		}
 		be_gas_emit_entity(entity);
 		if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
 		}
+		be_emit_char(')');
 	}
-	be_emit_char(')');
 }
 
 void sparc_emit_source_register(const ir_node *node, int pos)

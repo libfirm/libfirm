@@ -75,6 +75,8 @@ static size_t                 start_mem_offset;
 static ir_node               *start_mem;
 static size_t                 start_g0_offset;
 static ir_node               *start_g0;
+static size_t                 start_g7_offset;
+static ir_node               *start_g7;
 static size_t                 start_sp_offset;
 static ir_node               *start_sp;
 static size_t                 start_fp_offset;
@@ -415,6 +417,40 @@ static ir_node *get_g0(ir_graph *irg)
 	return start_g0;
 }
 
+static ir_node *get_g7(ir_graph *irg)
+{
+	if (start_g7 == NULL) {
+		ir_node *start = get_irg_start(irg);
+		assert(is_sparc_Start(start));
+		start_g7 = new_r_Proj(start, mode_gp, start_g7_offset);
+	}
+	return start_g7;
+}
+
+static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
+                                ir_entity *entity, int32_t offset)
+{
+	ir_node  *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
+	ir_node  *low = new_bd_sparc_Xor_imm(dbgi, block, hi, entity, offset);
+	return low;
+}
+
+static ir_node *make_address(dbg_info *dbgi, ir_node *block, ir_entity *entity,
+                             int32_t offset)
+{
+	if (get_entity_owner(entity) == get_tls_type()) {
+		ir_graph *irg     = get_irn_irg(block);
+		ir_node  *g7      = get_g7(irg);
+		ir_node  *offsetn = make_tls_offset(dbgi, block, entity, offset);
+		ir_node  *add     = new_bd_sparc_Add_reg(dbgi, block, g7, offsetn);
+		return add;
+	} else {
+		ir_node *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
+		ir_node *low = new_bd_sparc_Or_imm(dbgi, block, hi, entity, offset);
+		return low;
+	}
+}
+
 typedef struct address_t {
 	ir_node   *ptr;
 	ir_node   *ptr2;
@@ -446,15 +482,28 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 	 * won't save anything but produce multiple sethi+or combinations with
 	 * just different offsets */
 	if (is_SymConst(base) && get_irn_n_edges(base) == 1) {
-		dbg_info *dbgi      = get_irn_dbg_info(ptr);
-		ir_node  *block     = get_nodes_block(ptr);
-		ir_node  *new_block = be_transform_node(block);
-		entity = get_SymConst_entity(base);
-		base   = new_bd_sparc_SetHi(dbgi, new_block, entity, offset);
-	} else if (use_ptr2 && is_Add(base) && entity == NULL && offset == 0) {
+		ir_entity *sc_entity = get_SymConst_entity(base);
+		dbg_info  *dbgi      = get_irn_dbg_info(ptr);
+		ir_node   *block     = get_nodes_block(ptr);
+		ir_node   *new_block = be_transform_node(block);
+
+		if (get_entity_owner(sc_entity) == get_tls_type()) {
+			if (!use_ptr2) {
+				goto only_offset;
+			} else {
+				ptr2   = make_tls_offset(dbgi, new_block, sc_entity, offset);
+				offset = 0;
+				base   = get_g7(get_irn_irg(base));
+			}
+		} else {
+			entity = sc_entity;
+			base   = new_bd_sparc_SetHi(dbgi, new_block, entity, offset);
+		}
+	} else if (use_ptr2 && is_Add(base) && offset == 0) {
 		ptr2 = be_transform_node(get_Add_right(base));
 		base = be_transform_node(get_Add_left(base));
 	} else {
+only_offset:
 		if (sparc_is_value_imm_encodeable(offset)) {
 			base = be_transform_node(base);
 		} else {
@@ -1029,17 +1078,6 @@ static ir_mode *get_cmp_mode(ir_node *b_value)
 	return get_irn_mode(op);
 }
 
-static ir_node *make_address(dbg_info *dbgi, ir_node *block, ir_entity *entity,
-                             int32_t offset)
-{
-	ir_node *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
-	ir_node *low = new_bd_sparc_Or_imm(dbgi, block, hi, entity, offset);
-
-	if (get_entity_owner(entity) == get_tls_type())
-		panic("thread local storage not supported yet in sparc backend");
-	return low;
-}
-
 static ir_node *gen_SwitchJmp(ir_node *node)
 {
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
@@ -1393,7 +1431,7 @@ static ir_node *gen_Start(ir_node *node)
 	assert(obstack_object_size(obst) == 0);
 
 	/* calculate number of outputs */
-	n_outs = 3; /* memory, zero, sp */
+	n_outs = 4; /* memory, g0, g7, sp */
 	if (!current_cconv->omit_fp)
 		++n_outs; /* framepointer */
 	/* function parameters */
@@ -1418,6 +1456,14 @@ static ir_node *gen_Start(ir_node *node)
 	                        arch_register_req_type_ignore);
 	arch_set_irn_register_req_out(start, o, req);
 	arch_set_irn_register_out(start, o, &sparc_registers[REG_G0]);
+	++o;
+
+	/* g7 is used for TLS data */
+	start_g7_offset = o;
+	req = be_create_reg_req(obst, &sparc_registers[REG_G7],
+	                        arch_register_req_type_ignore);
+	arch_set_irn_register_req_out(start, o, req);
+	arch_set_irn_register_out(start, o, &sparc_registers[REG_G7]);
 	++o;
 
 	/* we need an output for the stackpointer */
@@ -2402,6 +2448,7 @@ void sparc_transform_graph(ir_graph *irg)
 
 	start_mem  = NULL;
 	start_g0   = NULL;
+	start_g7   = NULL;
 	start_sp   = NULL;
 	start_fp   = NULL;
 	frame_base = NULL;
