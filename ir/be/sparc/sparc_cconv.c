@@ -203,7 +203,8 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		int                 bits       = get_mode_size_bits(mode);
 		reg_or_stackslot_t *param      = &params[i];
 
-		if (i == 0 && function_type->attr.ma.has_compound_ret_parameter) {
+		if (i == 0 &&
+		    (get_method_calling_convention(function_type) & cc_compound_ret)) {
 			assert(mode_is_reference(mode) && bits == 32);
 			/* special case, we have reserved space for this on the between
 			 * type */

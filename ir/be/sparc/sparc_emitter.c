@@ -645,7 +645,7 @@ static void emit_sparc_Return(const ir_node *node)
 	}
 	be_emit_cstring("\tjmp ");
 	be_emit_string(destreg);
-	if (type->attr.ma.has_compound_ret_parameter) {
+	if (get_method_calling_convention(type) & cc_compound_ret) {
 		be_emit_cstring("+12");
 	} else {
 		be_emit_cstring("+8");

@@ -150,7 +150,6 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 
 	/* create the new type */
 	lowered = new_d_type_method(nn_params, nn_ress, get_type_dbg_info(mtp));
-	lowered->attr.ma.has_compound_ret_parameter = true;
 
 	/* fill it */
 	for (i = 0; i < nn_params; ++i)

@@ -75,7 +75,6 @@ typedef struct {
 	ir_variadicity variadicity;     /**< The variadicity of the method. */
 	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
-	bool     has_compound_ret_parameter : 1; /**< first parameter compound return address */
 } mtd_attr;
 
 /** Union type attributes. */

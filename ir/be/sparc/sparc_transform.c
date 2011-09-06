@@ -1729,7 +1729,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_entity       *entity       = NULL;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
 	bool             aggregate_return
-		= type->attr.ma.has_compound_ret_parameter;
+		= get_method_calling_convention(type) & cc_compound_ret;
 	ir_node         *incsp;
 	int              mem_pos;
 	ir_node         *res;
