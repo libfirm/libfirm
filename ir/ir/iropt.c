@@ -4598,7 +4598,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 static bool is_block_unreachable(const ir_node *block)
 {
 	const ir_graph *irg = get_irn_irg(block);
-	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
 		return false;
 	return get_Block_dom_depth(block) < 0;
 }
@@ -4610,7 +4610,9 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS))
+		return block;
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
 		return block;
 
 	for (i = 0; i < arity; ++i) {

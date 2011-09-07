@@ -501,7 +501,6 @@ typedef enum {
 	IR_GRAPH_STATE_KEEP_MUX      = 1U << 0,  /**< should perform no further optimisations on Mux nodes */
 	IR_GRAPH_STATE_ARCH_DEP      = 1U << 1,  /**< should not construct more nodes which irarch potentially breaks down */
 	IR_GRAPH_STATE_BCONV_ALLOWED = 1U << 2,  /**< Conv(mode_b) to Iu is allowed as set command */
-	IR_GRAPH_STATE_BAD_BLOCK     = 1U << 3,  /**< a node may have Bad in its block input */
 	/**
 	 * There are normalisations where there is no "best" representative.
 	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
@@ -516,7 +515,7 @@ typedef enum {
 	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 5,
 
 	IR_GRAPH_STATE_NO_CRITICAL_EDGES        = 1U << 6,
-	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U << 7, // TODO must be inverse of IR_GRAPH_STATE_BAD_BLOCK
+	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U << 7,
 	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS    = 1U << 8,
 	IR_GRAPH_STATE_ONE_RETURN               = 1U << 9,
 	IR_GRAPH_STATE_CONSISTENT_DOMINANCE     = 1U << 10,

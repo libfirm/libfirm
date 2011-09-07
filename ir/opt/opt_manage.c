@@ -44,8 +44,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	if (loopinfo_inconsistent == get_irg_loopinfo_state(irg))
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
-	if (is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
-		clear_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS);
 	if (ir_entity_usage_not_computed == get_irg_entity_usage_state(irg))
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 

@@ -203,7 +203,7 @@ int optimize_graph_df(ir_graph *irg)
 
 	/* The following enables unreachable code elimination (=Blocks may be
 	 * Bad). */
-	set_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
+	clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS);
 
 	/* invalidate info */
 	set_irg_doms_inconsistent(irg);
@@ -248,7 +248,7 @@ int optimize_graph_df(ir_graph *irg)
 	end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
 
-	clear_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK);
+	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS);
 
 	current_ir_graph = rem;
 	return changed;
