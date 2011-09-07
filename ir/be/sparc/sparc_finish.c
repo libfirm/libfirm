@@ -159,83 +159,72 @@ void sparc_introduce_prolog_epilog(ir_graph *irg)
 	}
 }
 
+/**
+ * Creates a constant from an immediate value.
+ */
+static ir_node *create_constant_from_immediate(ir_node *node, int offset)
+{
+	dbg_info *dbgi  = get_irn_dbg_info(node);
+	ir_node  *block = get_nodes_block(node);
+	ir_node  *high  = new_bd_sparc_SetHi(dbgi, block, NULL, offset);
+
+	sched_add_before(node, high);
+	arch_set_irn_register(high, &sparc_registers[REG_G4]);
+
+	if ((offset & 0x3ff) != 0) {
+		ir_node *low = new_bd_sparc_Or_imm(dbgi, block, high, NULL, offset & 0x3ff);
+
+		sched_add_before(node, low);
+		arch_set_irn_register(low, &sparc_registers[REG_G4]);
+
+		return low;
+	}
+
+	return high;
+}
+
 static void finish_sparc_Save(ir_node *node)
 {
 	sparc_attr_t *attr = get_sparc_attr(node);
 	int offset = attr->immediate_value;
-	ir_node  *schedpoint = node;
-	dbg_info *dbgi;
-	ir_node  *block;
-	ir_node  *new_save;
-	ir_node  *stack;
-	ir_entity *entity;
 
-	if (sparc_is_value_imm_encodeable(offset))
-		return;
+	if (! sparc_is_value_imm_encodeable(offset)) {
+		ir_node               *base     = get_irn_n(node, n_sparc_Save_stack);
+		dbg_info              *dbgi     = get_irn_dbg_info(node);
+		ir_node               *block    = get_nodes_block(node);
+		ir_node               *constant = create_constant_from_immediate(node, offset);
+		ir_node               *new_save = new_bd_sparc_Save_reg(dbgi, block, base, constant);
+		const arch_register_t *reg      = arch_get_irn_register(node);
 
-	/* uhh only works for the imm variant yet */
-	assert(get_irn_arity(node) == 1);
+		/* we have a Save with immediate */
+		assert(get_irn_arity(node) == 1);
 
-	block = get_nodes_block(node);
-	dbgi = get_irn_dbg_info(node);
-	stack = get_irn_n(node, n_sparc_Save_stack);
-	entity = attr->immediate_value_entity;
-	new_save = new_bd_sparc_Save_imm(dbgi, block, stack, entity, 0);
-	arch_set_irn_register(new_save, &sparc_registers[REG_SP]);
-	stack = new_save;
-
-	sched_add_after(node, new_save);
-	schedpoint = new_save;
-	while (offset > SPARC_IMMEDIATE_MAX || offset < SPARC_IMMEDIATE_MIN) {
-		if (offset > 0) {
-			stack = be_new_IncSP(&sparc_registers[REG_SP], block, stack,
-			                     SPARC_IMMEDIATE_MIN, 0);
-			offset -= -SPARC_IMMEDIATE_MIN;
-		} else {
-			stack = be_new_IncSP(&sparc_registers[REG_SP], block, stack,
-			                     -SPARC_IMMEDIATE_MIN, 0);
-			offset -= SPARC_IMMEDIATE_MIN;
-		}
-		sched_add_after(schedpoint, stack);
-		schedpoint = stack;
+		sched_add_before(node, new_save);
+		arch_set_irn_register(new_save, reg);
+		be_peephole_exchange(node, new_save);
 	}
-	attr = get_sparc_attr(new_save);
-	attr->immediate_value = offset;
-	be_peephole_exchange(node, stack);
 }
 
 /**
- * sparc immediates are limited. Split IncSP with bigger immediates if
+ * SPARC immediates are limited. Split IncSP with bigger immediates if
  * necessary.
  */
 static void finish_be_IncSP(ir_node *node)
 {
-	int      sign   = 1;
-	int      offset = be_get_IncSP_offset(node);
-	ir_node *sp     = be_get_IncSP_pred(node);
-	ir_node *block;
+	int offset = be_get_IncSP_offset(node);
 
-	/* we might have to break the IncSP apart if the constant has become too
-	 * big */
-	if (offset < 0) {
-		offset = -offset;
-		sign   = -1;
+	/* we might have to break the IncSP apart if the constant has become too big */
+	if (! sparc_is_value_imm_encodeable(offset) && ! sparc_is_value_imm_encodeable(-offset)) {
+		ir_node               *sp       = be_get_IncSP_pred(node);
+		dbg_info              *dbgi     = get_irn_dbg_info(node);
+		ir_node               *block    = get_nodes_block(node);
+		ir_node               *constant = create_constant_from_immediate(node, offset);
+		ir_node               *sub      = new_bd_sparc_Sub_reg(dbgi, block, sp, constant);
+
+		sched_add_before(node, sub);
+		arch_set_irn_register(sub, &sparc_registers[REG_SP]);
+		be_peephole_exchange(node, sub);
 	}
-
-	if (sparc_is_value_imm_encodeable(-offset))
-		return;
-
-	/* split incsp into multiple instructions */
-	block = get_nodes_block(node);
-	while (offset > -SPARC_IMMEDIATE_MIN) {
-		sp = be_new_IncSP(&sparc_registers[REG_SP], block, sp,
-		                  sign * -SPARC_IMMEDIATE_MIN, 0);
-		sched_add_before(node, sp);
-		offset -= -SPARC_IMMEDIATE_MIN;
-	}
-
-	be_set_IncSP_pred(node, sp);
-	be_set_IncSP_offset(node, sign*offset);
 }
 
 /**
@@ -247,47 +236,19 @@ static void finish_sparc_FrameAddr(ir_node *node)
 	/* adapt to SPARC stack magic */
 	sparc_attr_t *attr   = get_sparc_attr(node);
 	int           offset = attr->immediate_value;
-	ir_node      *base   = get_irn_n(node, n_sparc_FrameAddr_base);
-	dbg_info     *dbgi   = get_irn_dbg_info(node);
-	ir_node      *block  = get_nodes_block(node);
-	int           sign   = 1;
 
-	if (offset < 0) {
-		sign   = -1;
-		offset = -offset;
-	}
+	if (! sparc_is_value_imm_encodeable(offset)) {
+		ir_node               *base          = get_irn_n(node, n_sparc_FrameAddr_base);
+		dbg_info              *dbgi          = get_irn_dbg_info(node);
+		ir_node               *block         = get_nodes_block(node);
+		ir_node               *constant      = create_constant_from_immediate(node, offset);
+		ir_node               *new_frameaddr = new_bd_sparc_Add_reg(dbgi, block, base, constant);
+		const arch_register_t *reg           = arch_get_irn_register(node);
 
-	if (offset > -SPARC_IMMEDIATE_MIN) {
-		ir_entity *entity = attr->immediate_value_entity;
-		ir_node   *new_frameaddr
-			= new_bd_sparc_FrameAddr(dbgi, block, base, entity, 0);
-		ir_node   *schedpoint = node;
-		const arch_register_t *reg = arch_get_irn_register(node);
-
-		sched_add_after(schedpoint, new_frameaddr);
-		schedpoint = new_frameaddr;
+		sched_add_before(node, new_frameaddr);
 		arch_set_irn_register(new_frameaddr, reg);
-		base = new_frameaddr;
-
-		while (offset > -SPARC_IMMEDIATE_MIN) {
-			if (sign > 0) {
-				base = new_bd_sparc_Sub_imm(dbgi, block, base, NULL,
-											SPARC_IMMEDIATE_MIN);
-			} else {
-				base = new_bd_sparc_Add_imm(dbgi, block, base, NULL,
-											SPARC_IMMEDIATE_MIN);
-			}
-			arch_set_irn_register(base, reg);
-			sched_add_after(schedpoint, base);
-			schedpoint = base;
-
-			offset -= -SPARC_IMMEDIATE_MIN;
-		}
-
-		be_peephole_exchange(node, base);
-		attr = get_sparc_attr(new_frameaddr);
+		exchange(node, new_frameaddr);
 	}
-	attr->immediate_value = sign*offset;
 }
 
 static void peephole_be_IncSP(ir_node *node)
