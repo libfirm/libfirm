@@ -66,7 +66,7 @@ struct sparc_fp_conv_attr_t {
 };
 
 /**
- * attributes for load/store adressing modes
+ * attributes for load/store addressing modes
  */
 typedef struct sparc_load_store_attr_t sparc_load_store_attr_t;
 struct sparc_load_store_attr_t {

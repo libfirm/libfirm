@@ -240,11 +240,11 @@ static void finish_be_IncSP(ir_node *node)
 
 /**
  * adjust sp-relative offsets. Split into multiple instructions if offset
- * exceeds sparc immediate range.
+ * exceeds SPARC immediate range.
  */
 static void finish_sparc_FrameAddr(ir_node *node)
 {
-	/* adapt to sparc stack magic */
+	/* adapt to SPARC stack magic */
 	sparc_attr_t *attr   = get_sparc_attr(node);
 	int           offset = attr->immediate_value;
 	ir_node      *base   = get_irn_n(node, n_sparc_FrameAddr_base);
