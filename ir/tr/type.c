@@ -152,7 +152,6 @@ ir_type *new_type(const tp_op *type_op, ir_mode *mode, type_dbg_info *db)
 	res->visit      = 0;
 	res->link       = NULL;
 	res->dbi        = db;
-	res->assoc_type = NULL;
 #ifdef DEBUG_libfirm
 	res->nr         = get_irp_new_node_nr();
 #endif /* defined DEBUG_libfirm */
@@ -1183,7 +1182,7 @@ ir_type *clone_type_method(ir_type *tp)
 	res = new_type(type_method, mode, db);
 
 	res->flags                         = tp->flags;
-	res->assoc_type                    = tp->assoc_type;
+	res->higher_type                   = tp->higher_type;
 	res->size                          = tp->size;
 	res->attr.ma.n_params              = n_params;
 	res->attr.ma.params                = XMALLOCN(tp_ent_pair, n_params);

@@ -1796,7 +1796,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 	set_method_calling_convention(res, get_method_calling_convention(mtp));
 	set_method_additional_properties(res, get_method_additional_properties(mtp));
 
-	set_lowered_type(mtp, res);
+	set_higher_type(res, mtp);
 	set_type_link(res, mtp);
 
 	pmap_insert(lowered_type, mtp, res);

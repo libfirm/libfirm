@@ -167,7 +167,7 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	set_method_additional_properties(lowered, mtp_properties);
 
 	/* associate the lowered type with the original one for easier access */
-	set_lowered_type(mtp, lowered);
+	set_higher_type(lowered, mtp);
 	pmap_insert(lowered_mtps, mtp, lowered);
 
 	return lowered;
@@ -470,15 +470,10 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
 
 /**
  * Add the hidden parameter from the CopyB node to the Call node.
- *
- * @param irg    the graph
- * @param n_com  number of compound results (will be number of hidden parameters)
- * @param ins    in array to store the hidden parameters into
- * @param entry  the call list
- * @param env    the environment
  */
 static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
-                             cl_entry *entry, wlk_env *env)
+                             cl_entry *entry, wlk_env *env,
+                             ir_type *ctp)
 {
 	ir_node *p, *n, *mem, *blk;
 	size_t n_args;
@@ -508,12 +503,8 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 	/* now create dummy entities for function with ignored return value */
 	if (n_args < n_com) {
-		ir_type *ctp = get_Call_type(entry->call);
 		size_t   i;
 		size_t   j;
-
-		if (is_lowered_type(ctp))
-			ctp = get_associated_type(ctp);
 
 		for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
 			ir_type *rtp = get_method_res_type(ctp, i);
@@ -556,7 +547,7 @@ static void fix_call_list(ir_graph *irg, wlk_env *env)
 		pos = 2;
 		ARR_RESIZE(ir_node *, new_in, n_params + n_com + pos);
 		memset(new_in, 0, sizeof(*new_in) * (n_params + n_com + pos));
-		add_hidden_param(irg, n_com, &new_in[pos], p, env);
+		add_hidden_param(irg, n_com, &new_in[pos], p, env, ctp);
 		pos += n_com;
 		/* copy all other parameters */
 		for (i = 0; i < n_params; ++i)

@@ -116,6 +116,13 @@ static void adjust_entity_offsets(ir_type *type, long offset)
 	}
 }
 
+/**
+ * Perform some fixups for variadic functions.
+ * To make the rest of the frontend code easier to understand we add
+ * "dummy" parameters until the number of parameters transmitted in registers.
+ * (because otherwise the backend wouldn't store the value of the register
+ *  parameters into memory for the VLA magic)
+ */
 bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 {
 	ir_entity *entity = get_irg_entity(irg);
@@ -154,7 +161,7 @@ bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv)
 	set_method_variadicity(new_mtp, get_method_variadicity(mtp));
 	set_method_calling_convention(new_mtp, get_method_calling_convention(mtp));
 	set_method_additional_properties(new_mtp, get_method_additional_properties(mtp));
-	set_lowered_type(mtp, new_mtp);
+	set_higher_type(new_mtp, mtp);
 
 	set_entity_type(entity, new_mtp);
 	}
@@ -226,7 +233,7 @@ static ir_type *compute_arg_type(ir_graph *irg, calling_convention_t *cconv,
 	if (va_start_entity != NULL) {
 		/* sparc_variadic_fixups() fiddled with our type, find out the
 		 * original number of parameters */
-		ir_type *non_lowered   = get_associated_type(mtp);
+		ir_type *non_lowered   = get_higher_type(mtp);
 		size_t   orig_n_params = get_method_n_params(non_lowered);
 		long     offset;
 		assert(get_method_variadicity(mtp) == variadicity_variadic);
