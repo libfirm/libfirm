@@ -134,6 +134,7 @@ int remove_bads(ir_graph *irg)
 
 	if (changed) {
 		edges_deactivate(irg);
+		set_irg_outs_inconsistent(irg);
 	}
 
 	return changed;
