@@ -228,12 +228,12 @@ static void finish_be_IncSP(ir_node *node)
 }
 
 /**
- * adjust sp-relative offsets. Split into multiple instructions if offset
- * exceeds SPARC immediate range.
+ * Adjust sp-relative offsets.
+ *
+ * Split into multiple instructions if offset exceeds SPARC immediate range.
  */
 static void finish_sparc_FrameAddr(ir_node *node)
 {
-	/* adapt to SPARC stack magic */
 	sparc_attr_t *attr   = get_sparc_attr(node);
 	int           offset = attr->immediate_value;
 
@@ -249,6 +249,142 @@ static void finish_sparc_FrameAddr(ir_node *node)
 		arch_set_irn_register(new_frameaddr, reg);
 		exchange(node, new_frameaddr);
 	}
+}
+
+static void finish_sparc_Ld(ir_node *node)
+{
+	sparc_attr_t                  *attr            = get_sparc_attr(node);
+	int                            offset          = attr->immediate_value;
+	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
+
+	if (! load_store_attr->is_frame_entity)
+		return;
+
+	if (! sparc_is_value_imm_encodeable(offset)) {
+		ir_node                 *ptr             = get_irn_n(node, n_sparc_Ld_ptr);
+		dbg_info                *dbgi            = get_irn_dbg_info(node);
+		ir_node                 *block           = get_nodes_block(node);
+		ir_node                 *mem             = get_irn_n(node, n_sparc_Ld_mem);
+		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
+		ir_node                 *constant        = create_constant_from_immediate(node, offset);
+		ir_node                 *new_load        = new_bd_sparc_Ld_reg(dbgi, block, ptr, constant, mem, load_store_mode);
+		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
+		unsigned                 n_outs          = arch_get_irn_n_outs(node);
+		unsigned                 i;
+
+		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
+		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
+
+		sched_add_before(node, new_load);
+		for (i = 0; i < n_outs; i++) {
+			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
+		}
+		exchange(node, new_load);
+	}
+
+}
+
+static void finish_sparc_Ldf(ir_node *node)
+{
+	sparc_attr_t                  *attr            = get_sparc_attr(node);
+	int                            offset          = attr->immediate_value;
+	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
+
+	if (! load_store_attr->is_frame_entity)
+		return;
+
+	if (! sparc_is_value_imm_encodeable(offset)) {
+		ir_node                 *ptr             = get_irn_n(node, n_sparc_Ldf_ptr);
+		dbg_info                *dbgi            = get_irn_dbg_info(node);
+		ir_node                 *block           = get_nodes_block(node);
+		ir_node                 *mem             = get_irn_n(node, n_sparc_Ldf_mem);
+		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
+		ir_node                 *constant        = create_constant_from_immediate(node, offset);
+		ir_node                 *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
+		ir_node                 *new_load        = new_bd_sparc_Ldf_s(dbgi, block, new_ptr, mem, load_store_mode, NULL, 0, true);
+		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
+		unsigned                 n_outs          = arch_get_irn_n_outs(node);
+		unsigned                 i;
+
+		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
+		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
+
+		sched_add_before(node, new_load);
+		for (i = 0; i < n_outs; i++) {
+			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
+		}
+		exchange(node, new_load);
+	}
+
+}
+
+static void finish_sparc_St(ir_node *node)
+{
+	sparc_attr_t                  *attr            = get_sparc_attr(node);
+	int                            offset          = attr->immediate_value;
+	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
+
+	if (! load_store_attr->is_frame_entity)
+		return;
+
+	if (! sparc_is_value_imm_encodeable(offset)) {
+		ir_node                 *ptr             = get_irn_n(node, n_sparc_St_ptr);
+		dbg_info                *dbgi            = get_irn_dbg_info(node);
+		ir_node                 *block           = get_nodes_block(node);
+		ir_node                 *mem             = get_irn_n(node, n_sparc_St_mem);
+		ir_node                 *value           = get_irn_n(node, n_sparc_St_val);
+		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
+		ir_node                 *constant        = create_constant_from_immediate(node, offset);
+		ir_node                 *new_load        = new_bd_sparc_St_reg(dbgi, block, value, ptr, constant, mem, load_store_mode);
+		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
+		unsigned                 n_outs          = arch_get_irn_n_outs(node);
+		unsigned                 i;
+
+		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
+		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
+
+		sched_add_before(node, new_load);
+		for (i = 0; i < n_outs; i++) {
+			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
+		}
+		exchange(node, new_load);
+	}
+
+}
+
+static void finish_sparc_Stf(ir_node *node)
+{
+	sparc_attr_t                  *attr            = get_sparc_attr(node);
+	int                            offset          = attr->immediate_value;
+	const sparc_load_store_attr_t *load_store_attr = get_sparc_load_store_attr_const(node);
+
+	if (! load_store_attr->is_frame_entity)
+		return;
+
+	if (! sparc_is_value_imm_encodeable(offset)) {
+		ir_node                 *ptr             = get_irn_n(node, n_sparc_Stf_ptr);
+		dbg_info                *dbgi            = get_irn_dbg_info(node);
+		ir_node                 *block           = get_nodes_block(node);
+		ir_node                 *mem             = get_irn_n(node, n_sparc_Stf_mem);
+		ir_node                 *value           = get_irn_n(node, n_sparc_Stf_val);
+		ir_mode                 *load_store_mode = load_store_attr->load_store_mode;
+		ir_node                 *constant        = create_constant_from_immediate(node, offset);
+		ir_node                 *new_ptr         = new_bd_sparc_Add_reg(dbgi, block, ptr, constant);
+		ir_node                 *new_load        = new_bd_sparc_Stf_s(dbgi, block, value, new_ptr, mem, load_store_mode, NULL, 0, true);
+		sparc_load_store_attr_t *new_load_attr   = get_sparc_load_store_attr(new_load);
+		unsigned                 n_outs          = arch_get_irn_n_outs(node);
+		unsigned                 i;
+
+		new_load_attr->is_frame_entity = load_store_attr->is_frame_entity;
+		new_load_attr->is_reg_reg      = load_store_attr->is_reg_reg;
+
+		sched_add_before(node, new_load);
+		for (i = 0; i < n_outs; i++) {
+			arch_set_irn_register_out(new_load, i, arch_get_irn_register_out(node, i));
+		}
+		exchange(node, new_load);
+	}
+
 }
 
 static void peephole_be_IncSP(ir_node *node)
@@ -382,8 +518,12 @@ void sparc_finish(ir_graph *irg)
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        finish_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, finish_sparc_FrameAddr);
+	register_peephole_optimisation(op_sparc_Ld,        finish_sparc_Ld);
+	register_peephole_optimisation(op_sparc_Ldf,       finish_sparc_Ldf);
 	register_peephole_optimisation(op_sparc_Return,    finish_sparc_Return);
 	register_peephole_optimisation(op_sparc_Save,      finish_sparc_Save);
+	register_peephole_optimisation(op_sparc_St,        finish_sparc_St);
+	register_peephole_optimisation(op_sparc_Stf,       finish_sparc_Stf);
 	be_peephole_opt(irg);
 
 	be_remove_dead_nodes_from_schedule(irg);
