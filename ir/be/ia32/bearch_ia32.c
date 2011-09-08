@@ -2031,8 +2031,14 @@ static void ia32_lower_for_target(void)
 		&intrinsic_env,
 	};
 
-	/* lower compound param handling */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	/* lower compound param handling
+	 * Note: we lower compound arguments ourself, since on ia32 we don't
+	 * have hidden parameters but know where to find the structs on the stack.
+	 * (This also forces us to always allocate space for the compound arguments
+	 *  on the callframe and we can't just use an arbitrary position on the
+	 *  stackframe)
+	 */
+	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS);
 
 	/* replace floating point operations by function calls */
 	if (ia32_cg_config.use_softfloat) {
