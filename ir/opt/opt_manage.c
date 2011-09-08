@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "irgraph_t.h"
+#include "irprog_t.h"
 
 #include "iroptimize.h"
 #include "irgopt.h"
@@ -13,9 +14,6 @@
 #include "irverify.h"
 #include "irdump.h"
 #include "opt_manage.h"
-
-// TODO some API to enable dumping
-static const bool dump_opts = false;
 
 static void deactivate_entity_usage(ir_graph *irg)
 {
@@ -62,12 +60,12 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	PREPARE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    compute_extbb)
 
 	/* now all the requirements for the optimization are fulfilled */
-	if (dump_opts)
+	if (dump)
 		dump_ir_graph(irg, opt->name);
 
 	new_irg_state = opt->optimization(irg);
 
-	if (dump_opts)
+	if (dump)
 		dump_ir_graph(irg, opt->name);
 
 	/* unless the optimization returned that some state is retained,
