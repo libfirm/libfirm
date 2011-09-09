@@ -243,7 +243,7 @@ static bool is_downconv(const ir_node *node)
 		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
-static ir_node *sparc_skip_downconv(ir_node *node)
+static ir_node *skip_downconv(ir_node *node)
 {
 	while (is_downconv(node)) {
 		node = get_Conv_op(node);
@@ -271,8 +271,8 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	ir_mode  *mode2;
 
 	if (flags & MATCH_MODE_NEUTRAL) {
-		op1 = sparc_skip_downconv(op1);
-		op2 = sparc_skip_downconv(op2);
+		op1 = skip_downconv(op1);
+		op2 = skip_downconv(op2);
 	}
 	mode1 = get_irn_mode(op1);
 	mode2 = get_irn_mode(op2);
@@ -738,7 +738,6 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node  *mem      = get_Store_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
 	ir_node  *val      = get_Store_value(node);
-	ir_node  *new_val  = be_transform_node(val);
 	ir_mode  *mode     = get_irn_mode(val);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *new_store = NULL;
@@ -749,12 +748,21 @@ static ir_node *gen_Store(ir_node *node)
 	}
 
 	if (mode_is_float(mode)) {
+		ir_node *new_val = be_transform_node(val);
 		/* TODO: variants with reg+reg address mode */
 		match_address(ptr, &address, false);
 		new_store = create_stf(dbgi, block, new_val, address.ptr, new_mem,
 		                       mode, address.entity, address.offset, false);
 	} else {
-		assert(get_mode_size_bits(mode) <= 32);
+		ir_node *new_val;
+		unsigned dest_bits = get_mode_size_bits(mode);
+		while (is_downconv(node)
+		       && get_mode_size_bits(get_irn_mode(node)) >= dest_bits) {
+		    val = get_Conv_op(val);
+		}
+		new_val = be_transform_node(val);
+
+		assert(dest_bits <= 32);
 		match_address(ptr, &address, true);
 		if (address.ptr2 != NULL) {
 			assert(address.entity == NULL && address.offset == 0);
