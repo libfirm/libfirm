@@ -157,11 +157,86 @@ static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
  * are 0 for unsigned and a copy of the last significant bit for signed
  * numbers.
  */
-static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+static bool upper_bits_clean(ir_node *node, ir_mode *mode)
 {
-	(void) transformed_node;
-	(void) mode;
-	/* TODO */
+	switch ((ir_opcode)get_irn_opcode(node)) {
+	case iro_And:
+		if (!mode_is_signed(mode)) {
+			return upper_bits_clean(get_And_left(node), mode)
+			    || upper_bits_clean(get_And_right(node), mode);
+		}
+		/* FALLTHROUGH */
+	case iro_Or:
+	case iro_Eor:
+		return upper_bits_clean(get_binop_left(node), mode)
+		    && upper_bits_clean(get_binop_right(node), mode);
+
+	case iro_Shr:
+		if (mode_is_signed(mode)) {
+			return false; /* TODO */
+		} else {
+			ir_node *right = get_Shr_right(node);
+			if (is_Const(right)) {
+				ir_tarval *tv  = get_Const_tarval(right);
+				long       val = get_tarval_long(tv);
+				if (val >= 32 - (long)get_mode_size_bits(mode))
+					return true;
+			}
+			return upper_bits_clean(get_Shr_left(node), mode);
+		}
+
+	case iro_Shrs:
+		return upper_bits_clean(get_Shrs_left(node), mode);
+
+	case iro_Const: {
+		ir_tarval *tv  = get_Const_tarval(node);
+		long       val = get_tarval_long(tv);
+		if (mode_is_signed(mode)) {
+			long    shifted = val >> (get_mode_size_bits(mode)-1);
+			return shifted == 0 || shifted == -1;
+		} else {
+			unsigned long shifted = (unsigned long)val;
+			shifted >>= get_mode_size_bits(mode)-1;
+			shifted >>= 1;
+			return shifted == 0;
+		}
+	}
+
+	case iro_Conv: {
+		ir_mode *dest_mode = get_irn_mode(node);
+		ir_node *op        = get_Conv_op(node);
+		ir_mode *src_mode  = get_irn_mode(op);
+		unsigned src_bits  = get_mode_size_bits(src_mode);
+		unsigned dest_bits = get_mode_size_bits(dest_mode);
+		/* downconvs are a nop */
+		if (src_bits <= dest_bits)
+			return upper_bits_clean(op, mode);
+		if (dest_bits <= get_mode_size_bits(mode)
+		    && mode_is_signed(dest_mode) == mode_is_signed(mode))
+			return true;
+		return false;
+	}
+
+	case iro_Proj: {
+		ir_node *pred = get_Proj_pred(node);
+		switch (get_irn_opcode(pred)) {
+		case iro_Load: {
+			ir_mode *load_mode = get_Load_mode(pred);
+			unsigned load_bits = get_mode_size_bits(load_mode);
+			unsigned bits      = get_mode_size_bits(mode);
+			if (load_bits > bits)
+				return false;
+			if (mode_is_signed(mode) != mode_is_signed(load_mode))
+				return false;
+			return true;
+		}
+		default:
+			break;
+		}
+	}
+	default:
+		break;
+	}
 	return false;
 }
 
@@ -177,8 +252,7 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                               ir_mode *orig_mode)
 {
 	int bits = get_mode_size_bits(orig_mode);
-	if (bits == 32)
-		return op;
+	assert(bits < 32);
 
 	if (mode_is_signed(orig_mode)) {
 		return gen_sign_extension(dbgi, block, op, bits);
@@ -214,9 +288,12 @@ static bool is_imm_encodeable(const ir_node *node)
 	return sparc_is_value_imm_encodeable(value);
 }
 
-static bool needs_extension(ir_mode *mode)
+static bool needs_extension(ir_node *op)
 {
-	return get_mode_size_bits(mode) < get_mode_size_bits(mode_gp);
+	ir_mode *mode = get_irn_mode(op);
+	if (get_mode_size_bits(mode) >= get_mode_size_bits(mode_gp))
+		return false;
+	return !upper_bits_clean(op, mode);
 }
 
 /**
@@ -283,13 +360,13 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	if (is_imm_encodeable(op2)) {
 		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
 		new_op1 = be_transform_node(op1);
-		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
+		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
 			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 		}
 		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
 	new_op2 = be_transform_node(op2);
-	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode2)) {
+	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op2)) {
 		new_op2 = gen_extension(dbgi, block, new_op2, mode2);
 	}
 
@@ -299,7 +376,7 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	}
 
 	new_op1 = be_transform_node(op1);
-	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
+	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
 		new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 	}
 	return new_reg(dbgi, block, new_op1, new_op2);
@@ -1340,13 +1417,13 @@ static ir_node *gen_Conv(ir_node *node)
 	if (src_mode == mode_b)
 		panic("ConvB not lowered %+F", node);
 
-	new_op = be_transform_node(op);
 	if (src_mode == dst_mode)
-		return new_op;
+		return be_transform_node(op);
 
 	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
 		assert((src_bits <= 64 && dst_bits <= 64) && "quad FP not implemented");
 
+		new_op = be_transform_node(op);
 		if (mode_is_float(src_mode)) {
 			if (mode_is_float(dst_mode)) {
 				/* float -> float conv */
@@ -1366,20 +1443,13 @@ static ir_node *gen_Conv(ir_node *node)
 			}
 			return create_itof(dbgi, block, new_op, dst_mode);
 		}
-	} else if (src_mode == mode_b) {
-		panic("ConvB not lowered %+F", node);
 	} else { /* complete in gp registers */
 		int min_bits;
 		ir_mode *min_mode;
 
-		if (src_bits == dst_bits) {
+		if (src_bits == dst_bits || dst_mode == mode_b) {
 			/* kill unnecessary conv */
-			return new_op;
-		}
-
-		if (dst_mode == mode_b) {
-			/* mode_b lowering already took care that we only have 0/1 values */
-			return new_op;
+			return be_transform_node(op);
 		}
 
 		if (src_bits < dst_bits) {
@@ -1390,9 +1460,10 @@ static ir_node *gen_Conv(ir_node *node)
 			min_mode = dst_mode;
 		}
 
-		if (upper_bits_clean(new_op, min_mode)) {
-			return new_op;
+		if (upper_bits_clean(op, min_mode)) {
+			return be_transform_node(op);
 		}
+		new_op = be_transform_node(op);
 
 		if (mode_is_signed(min_mode)) {
 			return gen_sign_extension(dbgi, block, new_op, min_bits);
