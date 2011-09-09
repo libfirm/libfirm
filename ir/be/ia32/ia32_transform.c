@@ -3022,7 +3022,8 @@ static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
 				return shifted == 0 || shifted == -1;
 			} else {
 				unsigned long shifted = (unsigned long)attr->offset;
-				shifted >>= get_mode_size_bits(mode);
+				shifted >>= get_mode_size_bits(mode)-1;
+				shifted >>= 1;
 				return shifted == 0;
 			}
 		}
