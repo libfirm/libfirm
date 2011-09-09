@@ -189,6 +189,22 @@ static void move(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	}
 }
 
+static void move_projs(const ir_node *node, ir_node *to_bl)
+{
+	const ir_edge_t *edge;
+
+	if (get_irn_mode(node) != mode_T)
+		return;
+
+	foreach_out_edge(node, edge) {
+		ir_node *proj = get_edge_src_irn(edge);
+		if (!is_Proj(proj))
+			continue;
+		set_nodes_block(proj, to_bl);
+		move_projs(proj, to_bl);
+	}
+}
+
 /**
  * Moves node and all predecessors of node from from_bl to to_bl.
  * Does not move predecessors of Phi nodes (or block nodes).
@@ -201,13 +217,7 @@ static void move_edges(ir_node *node, ir_node *from_bl, ir_node *to_bl)
 	set_nodes_block(node, to_bl);
 
 	/* move its Projs */
-	if (get_irn_mode(node) == mode_T) {
-		const ir_edge_t *edge;
-		foreach_out_edge(node, edge) {
-			ir_node *proj = get_edge_src_irn(edge);
-			set_nodes_block(proj, to_bl);
-		}
-	}
+	move_projs(node, to_bl);
 
 	/* We must not move predecessors of Phi nodes, even if they are in
 	 * from_bl. (because these are values from an earlier loop iteration
