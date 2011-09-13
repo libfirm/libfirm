@@ -2319,7 +2319,7 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 	/* dump the out edges in a separate walk */
 	if ((flags & ir_dump_flag_out_edges)
-			&& (get_irg_outs_state(irg) != outs_none)) {
+			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))) {
 		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
 	}
 

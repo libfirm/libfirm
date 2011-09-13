@@ -479,7 +479,6 @@ struct ir_graph {
 	ir_graph_state_t      state;
 	irg_phase_state       phase_state;       /**< Compiler phase. */
 	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
-	irg_outs_state        outs_state;        /**< Out edges. */
 	irg_dom_state         dom_state;         /**< Dominator state information. */
 	irg_dom_state         pdom_state;        /**< Post Dominator state information. */
 	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
@@ -580,7 +579,7 @@ struct ir_prog {
 	/* -- states of and access to generated information -- */
 	irg_phase_state phase_state;    /**< The state of construction. */
 
-	irg_outs_state outs_state;      /**< The state of out edges of ir nodes. */
+	irg_outs_state outs_state;    /**< The state of out edges of type information. */
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
 	                                     in interprocedural view. */
 	irg_outs_state trouts_state;    /**< The state of out edges of type information. */

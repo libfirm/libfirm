@@ -240,17 +240,6 @@ static inline op_pin_state _get_irg_pinned(const ir_graph *irg)
 	return irg->irg_pinned_state;
 }
 
-static inline irg_outs_state _get_irg_outs_state(const ir_graph *irg)
-{
-	return irg->outs_state;
-}
-
-static inline void _set_irg_outs_inconsistent(ir_graph *irg)
-{
-	if (irg->outs_state == outs_consistent)
-		irg->outs_state = outs_inconsistent;
-}
-
 static inline irg_extblk_info_state _get_irg_extblk_state(const ir_graph *irg)
 {
 	return irg->extblk_state;
@@ -278,6 +267,7 @@ static inline void _set_irg_doms_inconsistent(ir_graph *irg)
 		irg->dom_state = dom_inconsistent;
 	if (irg->pdom_state != dom_none)
 		irg->pdom_state = dom_inconsistent;
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 }
 
 static inline irg_loopinfo_state _get_irg_loopinfo_state(const ir_graph *irg)
@@ -293,6 +283,7 @@ static inline void _set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s)
 static inline void _set_irg_loopinfo_inconsistent(ir_graph *irg)
 {
 	irg->loopinfo_state = (irg_loopinfo_state) (irg->loopinfo_state & ~loopinfo_valid);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 }
 
 static inline void _set_irg_pinned(ir_graph *irg, op_pin_state p)
@@ -531,8 +522,6 @@ static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
 #define get_irg_phase_state(irg)              _get_irg_phase_state(irg)
 #define set_irg_phase_state(irg, state)       _set_irg_phase_state(irg, state)
 #define get_irg_pinned(irg)                   _get_irg_pinned(irg)
-#define get_irg_outs_state(irg)               _get_irg_outs_state(irg)
-#define set_irg_outs_inconsistent(irg)        _set_irg_outs_inconsistent(irg)
 #define get_irg_extblk_state(irg)             _get_irg_extblk_state(irg)
 #define set_irg_extblk_inconsistent(irg)      _set_irg_extblk_inconsistent(irg)
 #define get_irg_dom_state(irg)                _get_irg_dom_state(irg)

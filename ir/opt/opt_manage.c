@@ -38,8 +38,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	// FIXME should not be necessary!
 	if (dom_inconsistent == get_irg_dom_state(irg))
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-	if (outs_inconsistent == get_irg_outs_state(irg))
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	if (loopinfo_inconsistent == get_irg_loopinfo_state(irg))
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	if (ir_entity_usage_not_computed == get_irg_entity_usage_state(irg))
@@ -79,7 +77,7 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	INVALIDATE(IR_GRAPH_STATE_ONE_RETURN,               nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_DOMINANCE,     set_irg_doms_inconsistent)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE, set_irg_postdoms_inconsistent)
-	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUTS,          set_irg_outs_inconsistent)
+	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUTS,          nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,     edges_deactivate)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      set_irg_loopinfo_inconsistent)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  deactivate_entity_usage)

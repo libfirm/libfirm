@@ -316,8 +316,6 @@ typedef enum {
 	outs_inconsistent  /**< Outs have been computed, memory is still allocated,
 	                        but the graph has been changed since. */
 } irg_outs_state;
-FIRM_API irg_outs_state get_irg_outs_state(const ir_graph *irg);
-FIRM_API void set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state:  extended basic block state. */
 typedef enum {

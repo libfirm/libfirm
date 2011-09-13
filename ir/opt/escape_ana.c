@@ -508,7 +508,7 @@ void escape_enalysis_irg(ir_graph *irg, check_alloc_entity_func callback)
 		return;
 	}
 
-	if (get_irg_outs_state(irg) != outs_consistent)
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
 		compute_irg_outs(irg);
 
 	env.found_allocs = NULL;
