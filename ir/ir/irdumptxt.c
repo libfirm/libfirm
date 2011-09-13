@@ -783,6 +783,8 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 	case tpo_method:
 		if (verbosity & dump_verbosity_typeattrs) {
+			mtp_additional_properties mtp = get_method_additional_properties(tp);
+			unsigned cconv = get_method_calling_convention(tp);
 			fprintf(F, "\n  variadicity: %s", get_variadicity_name(get_method_variadicity(tp)));
 			fprintf(F, "\n  return types: %lu",
 			        (unsigned long) get_method_n_ress(tp));
@@ -797,6 +799,46 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 				ir_type *ptp = get_method_param_type(tp, i);
 				ir_fprintf(F, "\n    %+F", ptp);
 			}
+			fprintf(F, "\n  properties:");
+			if (mtp & mtp_property_const)
+				fputs(" const", F);
+			if (mtp & mtp_property_pure)
+				fputs(" pure", F);
+			if (mtp & mtp_property_noreturn)
+				fputs(" noreturn", F);
+			if (mtp & mtp_property_nothrow)
+				fputs(" nothrow", F);
+			if (mtp & mtp_property_naked)
+				fputs(" naked", F);
+			if (mtp & mtp_property_malloc)
+				fputs(" malloc", F);
+			if (mtp & mtp_property_returns_twice)
+				fputs(" returns_twice", F);
+			if (mtp & mtp_property_intrinsic)
+				fputs(" intrinsic", F);
+			if (mtp & mtp_property_runtime)
+				fputs(" runtime", F);
+			if (mtp & mtp_property_private)
+				fputs(" private", F);
+			if (mtp & mtp_property_has_loop)
+				fputs(" has_Loop", F);
+
+			fprintf(F, "\n  calling convention:");
+			if (cconv & cc_reg_param)
+				fputs(" regparam", F);
+			if (cconv & cc_last_on_top)
+				fputs(" last_on_top", F);
+			if (cconv & cc_callee_clear_stk)
+				fputs(" calle_clear_stk", F);
+			if (cconv & cc_this_call)
+				fputs(" this_call", F);
+			if (cconv & cc_compound_ret)
+				fputs(" compound_ret", F);
+			if (cconv & cc_frame_on_caller_stk)
+				fputs(" frame_on_caller_stk", F);
+			if (cconv & cc_fpreg_param)
+				fputs(" fpreg_param", F);
+
 			if (get_method_variadicity(tp)) {
 				fprintf(F, "\n    ...");
 			}
