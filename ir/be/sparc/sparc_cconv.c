@@ -77,50 +77,57 @@ static const arch_register_t* const float_result_regs[] = {
 static arch_register_req_t float_result_reqs_double[8];
 static arch_register_req_t float_result_reqs_quad[8];
 
-static const arch_register_t *const caller_saves[] = {
-	&sparc_registers[REG_G1],
-	&sparc_registers[REG_G2],
-	&sparc_registers[REG_G3],
-	&sparc_registers[REG_O0],
-	&sparc_registers[REG_O1],
-	&sparc_registers[REG_O2],
-	&sparc_registers[REG_O3],
-	&sparc_registers[REG_O4],
-	&sparc_registers[REG_O5],
-	&sparc_registers[REG_F0],
-	&sparc_registers[REG_F1],
-	&sparc_registers[REG_F2],
-	&sparc_registers[REG_F3],
-	&sparc_registers[REG_F4],
-	&sparc_registers[REG_F5],
-	&sparc_registers[REG_F6],
-	&sparc_registers[REG_F7],
-	&sparc_registers[REG_F8],
-	&sparc_registers[REG_F9],
-	&sparc_registers[REG_F10],
-	&sparc_registers[REG_F11],
-	&sparc_registers[REG_F12],
-	&sparc_registers[REG_F13],
-	&sparc_registers[REG_F14],
-	&sparc_registers[REG_F15],
-	&sparc_registers[REG_F16],
-	&sparc_registers[REG_F17],
-	&sparc_registers[REG_F18],
-	&sparc_registers[REG_F19],
-	&sparc_registers[REG_F20],
-	&sparc_registers[REG_F21],
-	&sparc_registers[REG_F22],
-	&sparc_registers[REG_F23],
-	&sparc_registers[REG_F24],
-	&sparc_registers[REG_F25],
-	&sparc_registers[REG_F26],
-	&sparc_registers[REG_F27],
-	&sparc_registers[REG_F28],
-	&sparc_registers[REG_F29],
-	&sparc_registers[REG_F30],
-	&sparc_registers[REG_F31],
+static const unsigned caller_saves[] = {
+	REG_G1,
+	REG_G2,
+	REG_G3,
+	REG_O0,
+	REG_O1,
+	REG_O2,
+	REG_O3,
+	REG_O4,
+	REG_O5,
+	REG_F0,
+	REG_F1,
+	REG_F2,
+	REG_F3,
+	REG_F4,
+	REG_F5,
+	REG_F6,
+	REG_F7,
+	REG_F8,
+	REG_F9,
+	REG_F10,
+	REG_F11,
+	REG_F12,
+	REG_F13,
+	REG_F14,
+	REG_F15,
+	REG_F16,
+	REG_F17,
+	REG_F18,
+	REG_F19,
+	REG_F20,
+	REG_F21,
+	REG_F22,
+	REG_F23,
+	REG_F24,
+	REG_F25,
+	REG_F26,
+	REG_F27,
+	REG_F28,
+	REG_F29,
+	REG_F30,
+	REG_F31,
 };
 static unsigned default_caller_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
+
+static const unsigned returns_twice_saved[] = {
+	REG_SP,
+	REG_FRAME_POINTER,
+	REG_I7
+};
+static unsigned default_returns_twice_saves[BITSET_SIZE_ELEMS(N_SPARC_REGISTERS)];
 
 /**
  * Maps an input register representing the i'th register input
@@ -173,6 +180,8 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	int                   n_param_regs        = ARRAY_SIZE(param_regs);
 	unsigned              n_float_result_regs = ARRAY_SIZE(float_result_regs);
 	bool                  omit_fp             = false;
+	mtp_additional_properties mtp
+		= get_method_additional_properties(function_type);
 	reg_or_stackslot_t   *params;
 	reg_or_stackslot_t   *results;
 	int                   n_params;
@@ -191,7 +200,12 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	}
 
 	caller_saves = rbitset_malloc(N_SPARC_REGISTERS);
-	rbitset_copy(caller_saves, default_caller_saves, N_SPARC_REGISTERS);
+	if (mtp & mtp_property_returns_twice) {
+		rbitset_copy(caller_saves, default_returns_twice_saves,
+		             N_SPARC_REGISTERS);
+	} else {
+		rbitset_copy(caller_saves, default_caller_saves, N_SPARC_REGISTERS);
+	}
 
 	/* determine how parameters are passed */
 	n_params = get_method_n_params(function_type);
@@ -355,7 +369,15 @@ void sparc_cconv_init(void)
 {
 	size_t i;
 	for (i = 0; i < ARRAY_SIZE(caller_saves); ++i) {
-		rbitset_set(default_caller_saves, caller_saves[i]->global_index);
+		rbitset_set(default_caller_saves, caller_saves[i]);
+	}
+
+	rbitset_set_all(default_returns_twice_saves, N_SPARC_REGISTERS);
+	for (i = 0; i < ARRAY_SIZE(returns_twice_saved); ++i) {
+		rbitset_clear(default_returns_twice_saves, returns_twice_saved[i]);
+	}
+	for (i = 0; i < ARRAY_SIZE(ignore_regs); ++i) {
+		rbitset_clear(default_returns_twice_saves, ignore_regs[i]);
 	}
 
 	for (i = 0; i < ARRAY_SIZE(float_result_reqs_double); i += 2) {
