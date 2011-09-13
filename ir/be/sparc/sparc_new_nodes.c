@@ -93,9 +93,6 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 		break;
 
 	case dump_node_info_txt:
-		if (is_sparc_AddX_t(n) || is_sparc_AddCC_t(n))
-			break;
-
 		arch_dump_reqs_and_registers(F, n);
 		sparc_attr = get_sparc_attr_const(n);
 		if (sparc_attr->immediate_value_entity) {
