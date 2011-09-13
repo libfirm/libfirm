@@ -5894,7 +5894,11 @@ static void postprocess_fp_call_results(void)
 					assert((long)pn_ia32_xStore_X_except == (long)pn_ia32_vfst_X_except);
 
 					exchange(succ, st);
-				} else if (new_res == NULL) {
+
+					continue;
+				}
+
+				if (new_res == NULL) {
 					dbg_info *db       = get_irn_dbg_info(call);
 					ir_node  *block    = get_nodes_block(call);
 					ir_node  *frame    = get_irg_frame(current_ir_graph);
