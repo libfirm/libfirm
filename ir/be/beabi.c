@@ -387,7 +387,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const ir_edge_t        *edge;
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
-	int                     i, n, destroy_all_regs;
+	int                     i, n;
 	int                     throws_exception;
 	size_t                  s;
 	size_t                  p;
@@ -524,20 +524,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 	}
 
-	/* check for the return_twice property */
-	destroy_all_regs = 0;
-	if (is_SymConst_addr_ent(call_ptr)) {
-		ir_entity *ent = get_SymConst_entity(call_ptr);
-
-		if (get_entity_additional_properties(ent) & mtp_property_returns_twice)
-			destroy_all_regs = 1;
-	} else {
-		ir_type *call_tp = get_Call_type(irn);
-
-		if (get_method_additional_properties(call_tp) & mtp_property_returns_twice)
-			destroy_all_regs = 1;
-	}
-
 	/* Put caller save into the destroyed set and state registers in the states
 	 * set */
 	for (i = 0, n = arch_env->n_register_classes; i < n; ++i) {
@@ -558,7 +544,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				 * checking */
 				continue;
 			}
-			if (destroy_all_regs || arch_register_is_caller_save(arch_env, reg)) {
+			if (arch_register_is_caller_save(arch_env, reg)) {
 				if (!(reg->type & arch_register_type_ignore)) {
 					ARR_APP1(const arch_register_t*, destroyed_regs, reg);
 				}
