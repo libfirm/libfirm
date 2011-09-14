@@ -413,6 +413,8 @@ FIRM_API dbg_info *get_entity_dbg_info(const ir_entity *ent);
  */
 FIRM_API void set_entity_dbg_info(ir_entity *ent, dbg_info *db);
 
+#define IR_VA_START_PARAMETER_NUMBER  ((size_t)-1)
+
 /**
  * returns true if a given entity is a parameter_entity representing the
  * address of a function parameter
@@ -1612,7 +1614,7 @@ FIRM_API ir_type *new_d_type_method(size_t n_param, size_t n_res,
 FIRM_API size_t get_method_n_params(const ir_type *method);
 
 /** Returns the type of the parameter at position pos of a method. */
-FIRM_API ir_type *get_method_param_type(ir_type *method, size_t pos);
+FIRM_API ir_type *get_method_param_type(const ir_type *method, size_t pos);
 /** Sets the type of the parameter at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */
@@ -1620,7 +1622,7 @@ FIRM_API void set_method_param_type(ir_type *method, size_t pos, ir_type *tp);
 /** Returns the number of results of a method type. */
 FIRM_API size_t get_method_n_ress(const ir_type *method);
 /** Returns the return type of a method type at position pos. */
-FIRM_API ir_type *get_method_res_type(ir_type *method, size_t pos);
+FIRM_API ir_type *get_method_res_type(const ir_type *method, size_t pos);
 /** Sets the type of the result at position pos of a method.
     Also changes the type in the pass-by-value representation by just
     changing the type of the corresponding entity if the representation is constructed. */

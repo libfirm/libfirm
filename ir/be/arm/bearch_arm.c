@@ -53,6 +53,7 @@
 #include "../bemodule.h"
 #include "../beirg.h"
 #include "../bespillslots.h"
+#include "../bespillutil.h"
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../beflags.h"
@@ -543,6 +544,14 @@ static void arm_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		lower_switch(irg, 4, 256, true);
 	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
+		 * memcpy calls.
+		 * TODO:  These constants need arm-specific tuning. */
+		lower_CopyB(irg, 31, 32);
+	}
 }
 
 /**
@@ -623,6 +632,8 @@ const arch_isa_if_t arm_isa_if = {
 	arm_finish_irg,
 	arm_gen_routine,
 	NULL, /* register_saved_by */
+	be_new_spill,
+	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_arm)

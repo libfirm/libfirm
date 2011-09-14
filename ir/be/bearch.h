@@ -593,6 +593,27 @@ struct arch_isa_if_t {
 	 * @deprecated, only necessary if backend still uses beabi functions
 	 */
 	int (*register_saved_by)(const arch_register_t *reg, int callee);
+
+	/**
+	 * Create a spill instruction. We assume that spill instructions
+	 * do not need any additional registers and do not affect cpu-flags in any
+	 * way.
+	 * Construct a sequence of instructions after @p after (the resulting nodes
+	 * are already scheduled).
+	 * Returns a mode_M value which is used as input for a reload instruction.
+	 */
+	ir_node *(*new_spill)(ir_node *value, ir_node *after);
+
+	/**
+	 * Create a reload instruction. We assume that reload instructions do not
+	 * need any additional registers and do not affect cpu-flags in any way.
+	 * Constructs a sequence of instruction before @p before (the resulting
+	 * nodes are already scheduled). A rewiring of users is not performed in
+	 * this function.
+	 * Returns a value representing the restored value.
+	 */
+	ir_node *(*new_reload)(ir_node *value, ir_node *spilled_value,
+	                       ir_node *before);
 };
 
 #define arch_env_done(env)                             ((env)->impl->done(env))
@@ -609,6 +630,9 @@ struct arch_isa_if_t {
 #define arch_env_is_valid_clobber(env,clobber)         ((env)->impl->is_valid_clobber((clobber))
 #define arch_env_mark_remat(env,node) \
 	do { if ((env)->impl->mark_remat != NULL) (env)->impl->mark_remat((node)); } while(0)
+
+#define arch_env_new_spill(env,value,after)            ((env)->impl->new_spill(value, after))
+#define arch_env_new_reload(env,value,spilled,before)  ((env)->impl->new_reload(value, spilled, before))
 
 /**
  * ISA base class.

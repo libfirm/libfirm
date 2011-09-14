@@ -391,7 +391,7 @@ void count_dags_in_graph(graph_entry_t *global, graph_entry_t *graph)
 			entry->num_roots,
 			entry->num_nodes,
 			entry->num_inner_nodes,
-			entry->is_tree,
+			(unsigned)entry->is_tree,
 			get_irn_node_nr(entry->root));
 	}  /* for */
 

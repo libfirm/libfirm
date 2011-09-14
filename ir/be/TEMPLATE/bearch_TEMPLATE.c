@@ -30,6 +30,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "lower_calls.h"
+#include "lower_builtins.h"
 
 #include "bitset.h"
 #include "debug.h"
@@ -44,6 +45,7 @@
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../bestack.h"
+#include "../bespillutil.h"
 
 #include "bearch_TEMPLATE_t.h"
 
@@ -287,6 +289,8 @@ static int TEMPLATE_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void TEMPLATE_lower_for_target(void)
 {
+	lower_builtins(0, NULL);
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 }
@@ -412,6 +416,8 @@ const arch_isa_if_t TEMPLATE_isa_if = {
 	TEMPLATE_finish_irg,
 	TEMPLATE_emit_routine,
 	TEMPLATE_register_saved_by,
+	be_new_spill,
+	be_new_reload,
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_TEMPLATE)

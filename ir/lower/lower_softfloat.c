@@ -77,7 +77,7 @@ static ir_type *unop_tp_lu_f;
 /** A map from a method type to its lowered type. */
 static pmap *lowered_type;
 
-ir_nodeset_t created_mux_nodes;
+static ir_nodeset_t created_mux_nodes;
 
 /**
  * @return The lowered (floating point) mode.
@@ -313,7 +313,7 @@ static ir_node *create_softfloat_symconst(const ir_node *n, const char *name)
 	assert(double_types <= 3);
 
 	if (float_types + double_types > 1)
-		snprintf(buf, sizeof(buf), "__%s%s%s%s%d", name, first_param, second_param, result, float_types + double_types);
+		snprintf(buf, sizeof(buf), "__%s%s%s%s%u", name, first_param, second_param, result, float_types + double_types);
 	else
 		snprintf(buf, sizeof(buf), "__%s%s%s%s", name, first_param, second_param, result);
 
@@ -415,7 +415,7 @@ static ir_type *lower_method_type(ir_type *mtp)
 	set_method_calling_convention(res, get_method_calling_convention(mtp));
 	set_method_additional_properties(res, get_method_additional_properties(mtp));
 
-	set_lowered_type(mtp, res);
+	set_higher_type(res, mtp);
 
 	pmap_insert(lowered_type, mtp, res);
 	return res;
@@ -475,7 +475,7 @@ static void lower_Call(ir_node *node)
  */
 static void lower_Cmp(ir_node *n)
 {
-	ir_node         *symconst;
+	ir_node         *symconst    = NULL;
 	ir_node         *block       = get_nodes_block(n);
 	ir_node         *call_result = NULL;
 	dbg_info        *dbgi        = get_irn_dbg_info(n);
@@ -485,7 +485,7 @@ static void lower_Cmp(ir_node *n)
 	ir_mode         *op_mode     = get_irn_mode(left);
 	ir_node         *right       = get_Cmp_right(n);
 	ir_node         *symconst2   = NULL;
-	ir_node         *zero        = new_rd_Const_long(dbgi, irg, mode_Is, 0);
+	ir_node         *zero        = new_rd_Const(dbgi, irg, get_mode_null(mode_Is));
 
 	if (! mode_is_float(op_mode))
 		return;
@@ -1097,10 +1097,24 @@ void lower_floating_point(void)
 		ir_entity *ent         = get_irg_entity(irg);
 		ir_type   *mtp         = get_entity_type(ent);
 		ir_type   *lowered_mtp = lower_method_type(mtp);
+		ir_type   *frame_tp    = get_irg_frame_type(irg);
+		size_t     n_members;
+		size_t     i;
 
 		if (lowered_mtp != mtp)
 			set_entity_type(ent, lowered_mtp);
 
 		irg_walk_graph(irg, NULL, lower_mode, NULL);
+
+		/* fixup parameter entities */
+		n_members = get_compound_n_members(frame_tp);
+		for (i = 0; i < n_members; ++i) {
+			ir_entity *member = get_compound_member(frame_tp, i);
+			ir_type   *type   = get_entity_type(member);
+			if (is_Primitive_type(type)) {
+				ir_type *lowered = lower_type(type);
+				set_entity_type(member, lowered);
+			}
+		}
 	}
 }

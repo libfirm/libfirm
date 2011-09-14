@@ -425,7 +425,7 @@ static void reduce_perm_size(ir_node *irn, const perm_move_t* move, reg_pair_t *
 			DB((dbg, LEVEL_1, "%+F creating copy node (%+F, %s) -> (%+F, %s)\n",
 						irn, arg1, move->elems[i]->name, res2, move->elems[i + 1]->name));
 
-			cpyxchg = be_new_Copy(reg_class, block, arg1);
+			cpyxchg = be_new_Copy(block, arg1);
 			arch_set_irn_register(cpyxchg, move->elems[i + 1]);
 
 			/* exchange copy node and proj */
@@ -557,7 +557,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* check if already exists such a copy in the schedule immediately before */
 	cpy = find_copy(skip_Proj(irn), other_different);
 	if (! cpy) {
-		cpy = be_new_Copy(cls, block, other_different);
+		cpy = be_new_Copy(block, other_different);
 		arch_set_irn_flags(cpy, arch_irn_flags_dont_spill);
 		DB((dbg_constr, LEVEL_1, "created non-spillable %+F for value %+F\n", cpy, other_different));
 	} else {
@@ -567,7 +567,7 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	/* Add the Keep resp. CopyKeep and reroute the users */
 	/* of the other_different irn in case of CopyKeep.   */
 	if (has_irn_users(other_different)) {
-		keep = be_new_CopyKeep_single(cls, block, cpy, irn, get_irn_mode(other_different));
+		keep = be_new_CopyKeep_single(block, cpy, irn);
 		be_node_set_reg_class_in(keep, 1, cls);
 	} else {
 		ir_node *in[2];
@@ -764,10 +764,10 @@ static void melt_copykeeps(constraint_env_t *cenv)
 				}
 
 #ifdef KEEP_ALIVE_COPYKEEP_HACK
-				new_ck = be_new_CopyKeep(entry->cls, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, mode_ANY);
+				new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
 				keep_alive(new_ck);
 #else
-				new_ck = be_new_CopyKeep(entry->cls, get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in, get_irn_mode(ref));
+				new_ck = be_new_CopyKeep(get_nodes_block(ref), be_get_CopyKeep_op(ref), n_melt, new_ck_in);
 #endif /* KEEP_ALIVE_COPYKEEP_HACK */
 
 				/* set register class for all kept inputs */

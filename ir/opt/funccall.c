@@ -243,7 +243,7 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 
 	if (exc_changed) {
 		/* ... including exception edges */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	}
 }  /* fix_const_call_list */
 
@@ -377,7 +377,7 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 
 	if (exc_changed) {
 		/* ... including exception edges */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	}
 }  /* fix_nothrow_call_list */
 
@@ -508,7 +508,22 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 {
 	ir_node *end, *endbl;
 	int j;
+	ir_entity *entity   = get_irg_entity(irg);
+	ir_type   *type     = get_entity_type(entity);
+	size_t     n_params = get_method_n_params(type);
+	size_t     i;
+	mtp_additional_properties may_be_const = mtp_property_const;
 	mtp_additional_properties prop = get_irg_additional_properties(irg);
+
+	/* libfirm handles aggregate parameters by passing around pointers to
+	 * stuff in memory, so if we have compound parameters we are never const */
+	for (i = 0; i < n_params; ++i) {
+		ir_type *param = get_method_param_type(type, i);
+		if (is_compound_type(param)) {
+			prop        &= ~mtp_property_const;
+			may_be_const = mtp_no_property;
+		}
+	}
 
 	if (prop & mtp_property_const) {
 		/* already marked as a const function */
@@ -533,7 +548,7 @@ static mtp_additional_properties check_const_or_pure_function(ir_graph *irg, int
 
 	end   = get_irg_end(irg);
 	endbl = get_nodes_block(end);
-	prop  = mtp_property_const;
+	prop  = may_be_const;
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED);
 	inc_irg_visited(irg);

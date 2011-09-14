@@ -75,7 +75,6 @@ typedef struct {
 	ir_variadicity variadicity;     /**< The variadicity of the method. */
 	mtp_additional_properties additional_properties; /**< Set of additional method properties. */
 	unsigned irg_calling_conv;      /**< A set of calling convention flags. */
-	bool     has_compound_ret_parameter : 1; /**< first parameter compound return address */
 } mtd_attr;
 
 /** Union type attributes. */
@@ -156,53 +155,6 @@ ENUM_BITSET(type_flags)
  *  the type.  These are distinguished by a type opcode.
  *  A type is described by a set of attributes.  Some of these attributes
  *  are common to all types, others depend on the kind of the type.
- *
- *  The following describes the common attributes.  They can only be
- *  accessed by the functions given below.
- *
- *  The common fields are:
- *
- *  - firm_kind:   A firm_kind tag containing k_type.  This is useful
- *                 for dynamically checking whether a node is a type node.
- *  - type_op:     A tp_op specifying the kind of the type.
- *  - name:        An identifier specifying the name of the type.  To be
- *                 set by the frontend.
- *  - size:        The size of the type, i.e. an entity of this type will
- *                 occupy size bits in memory.  In several cases this is
- *                 determined when fixing the layout of this type (class,
- *                 struct, union, array, enumeration).
- *  - alignment    The alignment of the type, i.e. an entity of this type will
- *                 be allocated an an address in memory with this alignment.
- *                 In several cases this is determined when fixing the layout
- *                 of this type (class, struct, union, array)
- *  - mode:        The mode to be used to represent the type on a machine.
- *  - state:       The state of the type.  The state represents whether the
- *                 layout of the type is undefined or fixed (values: layout_undefined
- *                 or layout_fixed).  Compound types can have an undefined
- *                 layout.  The layout of the basic types primitive and pointer
- *                 is always layout_fixed.  If the layout of
- *                 compound types is fixed all entities must have an offset
- *                 and the size of the type must be set.
- *                 A fixed layout for enumeration types means that each enumeration
- *                 is associated with an implementation value.
- *  - assoc_type:  The associated lowered/upper type.
- *  - visit:       A counter for walks of the type information.
- *  - link:        A void* to associate some additional information with the type.
- *
- *  These fields can only be accessed via access functions.
- *
- *  Depending on the value of @c type_op, i.e., depending on the kind of the
- *  type the adt contains further attributes.  These are documented below.
- *
- *  @see
- *
- *  @link class_type class @endlink, @link struct_type struct @endlink,
- *  @link method_type method @endlink, @link union_type union @endlink,
- *  @link array_type array @endlink, @link enumeration_type enumeration @endlink,
- *  @link pointer_type pointer @endlink, @link primitive_type primitive @endlink
- *
- *  @todo
- *      mode maybe not global field??
  */
 struct ir_type {
 	firm_kind kind;          /**< the firm kind, must be k_type */
@@ -210,27 +162,27 @@ struct ir_type {
 	ident *name;             /**< The name of the type */
 	ir_visibility visibility;/**< Visibility of entities of this type. */
 	unsigned flags;          /**< Type flags, a bitmask of enum type_flags. */
-	unsigned size;           /**< Size of an ir_entity of this type. This is determined
-	                              when fixing the layout of this class.  Size must be
-	                              given in bytes. */
-	unsigned align;          /**< Alignment of an ir_entity of this type. This should be
-	                              set according to the source language needs. If not set, it's
-	                              calculated automatically by get_type_alignment().
+	unsigned size;           /**< Size of an ir_entity of this type. This is
+	                              determined when fixing the layout of this
+	                              class.  Size must be given in bytes. */
+	unsigned align;          /**< Alignment of an ir_entity of this type. This
+	                              should be set according to the source
+	                              language needs. If not set, it's calculated
+	                              automatically by get_type_alignment().
 	                              Alignment must be given in bytes. */
 	ir_mode *mode;           /**< The mode for atomic types */
 	ir_visited_t visit;      /**< visited counter for walks of the type information */
 	void *link;              /**< holds temporary data - like in irnode_t.h */
 	type_dbg_info *dbi;      /**< A pointer to information for debug support. */
-	ir_type *assoc_type;     /**< The associated lowered/unlowered type */
-
-	/* ------------- fields for analyses ---------------*/
+	ir_type *higher_type;    /**< link to highlevel type in case of lowered
+	                              types */
 
 #ifdef DEBUG_libfirm
-	long nr;                 /**< An unique node number for each node to make output
-	                              readable. */
+	long nr;                 /**< An unique node number for each node to make
+	                              output readable. */
 #endif
-	tp_attr attr;            /**< Type kind specific fields. This must be the last
-	                              entry in this struct!  Varying size! */
+	tp_attr attr;            /**< Type kind specific fields. This must be the
+	                              last entry in this struct!  Varying size! */
 };
 
 /**
@@ -299,36 +251,37 @@ void ir_finish_type(void);
  */
 ir_type *clone_type_method(ir_type *tp);
 
-/* ------------------- *
- *  inline functions   *
- * ------------------- */
-
 extern ir_visited_t firm_type_visited;
 
-static inline void _set_master_type_visited(ir_visited_t val) { firm_type_visited = val; }
-static inline ir_visited_t _get_master_type_visited(void)     { return firm_type_visited; }
-static inline void _inc_master_type_visited(void)             { ++firm_type_visited; }
+static inline void _set_master_type_visited(ir_visited_t val)
+{
+	firm_type_visited = val;
+}
+
+static inline ir_visited_t _get_master_type_visited(void)
+{
+	return firm_type_visited;
+}
+
+static inline void _inc_master_type_visited(void)
+{
+	++firm_type_visited;
+}
 
 static inline int is_lowered_type(const ir_type *tp)
 {
 	return tp->flags & tf_lowered_type;
 }
 
-/**
- * Gets the lowered/unlowered type of a type or NULL if this type
- * has no lowered/unlowered one.
- */
-static inline ir_type *get_associated_type(const ir_type *tp)
+static inline ir_type *get_higher_type(const ir_type *tp)
 {
-	return tp->assoc_type;
+	return tp->higher_type;
 }
 
-static inline void set_lowered_type(ir_type *tp, ir_type *lowered_type)
+static inline void set_higher_type(ir_type *tp, ir_type *higher_type)
 {
-	assert (is_type(tp) && is_type(lowered_type));
-	lowered_type->flags |= tf_lowered_type;
-	tp->assoc_type = lowered_type;
-	lowered_type->assoc_type = tp;
+	tp->flags |= tf_lowered_type;
+	tp->higher_type = higher_type;
 }
 
 static inline void *_get_type_link(const ir_type *tp)

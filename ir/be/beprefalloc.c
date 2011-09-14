@@ -721,7 +721,7 @@ static bool try_optimistic_split(ir_node *to_split, ir_node *before,
 		return false;
 
 	reg  = arch_register_for_index(cls, r);
-	copy = be_new_Copy(cls, block, to_split);
+	copy = be_new_Copy(block, to_split);
 	mark_as_copy_of(copy, to_split);
 	/* hacky, but correct here */
 	if (assignments[arch_register_get_index(from_reg)] == to_split)
@@ -922,7 +922,7 @@ static void permute_values(ir_nodeset_t *live_nodes, ir_node *before,
 
 		/* create a copy */
 		src  = assignments[old_r];
-		copy = be_new_Copy(cls, block, src);
+		copy = be_new_Copy(block, src);
 		sched_add_before(before, copy);
 		reg = arch_register_for_index(cls, r);
 		DB((dbg, LEVEL_2, "Copy %+F (from %+F, before %+F) -> %s\n",

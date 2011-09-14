@@ -78,6 +78,9 @@ extern const arch_irn_ops_t sparc_irn_ops;
 #define SPARC_IMMEDIATE_MAX  4095
 #define SPARC_MIN_STACKSIZE 92
 #define SPARC_AGGREGATE_RETURN_OFFSET 64
+#define SPARC_PARAMS_SPILL_OFFSET     68
+#define SPARC_N_PARAM_REGS            6
+#define SPARC_STACK_ALIGNMENT         8
 
 static inline bool sparc_is_value_imm_encodeable(int32_t value)
 {
@@ -90,6 +93,7 @@ void sparc_introduce_prolog_epilog(ir_graph *irg);
 
 void sparc_lower_64bit(void);
 
+bool sparc_variadic_fixups(ir_graph *irg, calling_convention_t *cconv);
 void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv);
 void sparc_fix_stack_bias(ir_graph *irg);
 

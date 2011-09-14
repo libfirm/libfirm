@@ -46,6 +46,7 @@
 #include "iropt_dbg.h"
 #include "irpass.h"
 #include "vrp.h"
+#include "opt_manage.h"
 
 #undef AVOID_PHIB
 
@@ -753,21 +754,15 @@ static void thread_jumps(ir_node* block, void* data)
 	*changed = 1;
 }
 
-void opt_jumpthreading(ir_graph* irg)
+static ir_graph_state_t do_jumpthread(ir_graph* irg)
 {
 	int changed, rerun;
+	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.jumpthreading");
 
 	DB((dbg, LEVEL_1, "===> Performing jumpthreading on %+F\n", irg));
 
-	remove_critical_cf_edges(irg);
-
-	/* ugly: jump threading might get confused by garbage nodes
-	 * of mode_X in copy_and_fix_node(), so remove all garbage edges. */
-	edges_deactivate(irg);
-
-	edges_assure(irg);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
 	changed = 0;
@@ -779,12 +774,22 @@ void opt_jumpthreading(ir_graph* irg)
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_IRN_VISITED);
 
-	if (changed) {
-		/* control flow changed, some blocks may become dead */
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+	if (!changed) {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
 	}
+
+	return res;
+}
+
+optdesc_t opt_jumpthread = {
+	"jumpthreading",
+	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES,
+	do_jumpthread,
+};
+
+void opt_jumpthreading(ir_graph* irg)
+{
+	perform_irg_optimization(irg, &opt_jumpthread);
 }
 
 /* Creates an ir_graph pass for opt_jumpthreading. */

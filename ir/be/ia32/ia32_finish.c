@@ -307,7 +307,7 @@ static void assure_should_be_same_requirements(ir_node *node)
 		 * (the register can't be live since the operation will override it
 		 *  anyway) */
 		if (uses_out_reg == NULL) {
-			ir_node *copy = be_new_Copy(cls, block, in_node);
+			ir_node *copy = be_new_Copy(block, in_node);
 			DBG_OPT_2ADDRCPY(copy);
 
 			/* destination is the out register */

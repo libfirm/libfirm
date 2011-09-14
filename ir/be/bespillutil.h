@@ -166,4 +166,16 @@ void be_get_total_spill_costs(ir_graph *irg, be_total_spill_costs_t *costs);
  */
 int be_is_rematerializable(spill_env_t *env, const ir_node *to_remat, const ir_node *before);
 
+/**
+ * Create a be_Spill node. This function is compatible to the
+ * arch_env->new_spill callback.
+ */
+ir_node *be_new_spill(ir_node *value, ir_node *after);
+
+/**
+ * Create a be_Reload node. This function is compatible to the
+ * arch_env->new_reload interface.
+ */
+ir_node *be_new_reload(ir_node *value, ir_node *spilled, ir_node *before);
+
 #endif

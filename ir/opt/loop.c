@@ -45,6 +45,7 @@
 #include "beutil.h"
 #include "irpass.h"
 #include "irdom.h"
+#include "opt_manage.h"
 
 #include <math.h>
 #include "irbackedge_t.h"
@@ -1354,7 +1355,7 @@ static void loop_inversion(ir_graph *irg)
 		DEL_ARR_F(cur_head_outs);
 
 		/* Duplicated blocks changed doms */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 		set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 
 		++stats.inverted;
@@ -2573,7 +2574,7 @@ static void unroll_loop(void)
 		else
 			++stats.invariant_unroll;
 
-		set_irg_doms_inconsistent(current_ir_graph);
+		clear_irg_state(current_ir_graph, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 		DEL_ARR_F(loop_entries);
 	}
@@ -2679,10 +2680,6 @@ void loop_optimization(ir_graph *irg)
 	/* Preconditions */
 	set_current_ir_graph(irg);
 
-	edges_assure(irg);
-	assure_irg_outs(irg);
-	assure_cf_loop(irg);
-
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 	collect_phiprojs(irg);
 
@@ -2720,23 +2717,53 @@ void loop_optimization(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 }
 
-void do_loop_unrolling(ir_graph *irg)
+static ir_graph_state_t perform_loop_unrolling(ir_graph *irg)
 {
 	loop_op = loop_op_unrolling;
 	loop_optimization(irg);
+	return 0;
 }
 
-void do_loop_inversion(ir_graph *irg)
+static ir_graph_state_t perform_loop_inversion(ir_graph *irg)
 {
 	loop_op = loop_op_inversion;
 	loop_optimization(irg);
+	return 0;
 }
 
-void do_loop_peeling(ir_graph *irg)
+static ir_graph_state_t perform_loop_peeling(ir_graph *irg)
 {
 	loop_op = loop_op_peeling;
 	loop_optimization(irg);
+	return 0;
 }
+
+optdesc_t opt_unroll_loops = {
+	"unroll-loops",
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	perform_loop_unrolling,
+};
+
+optdesc_t opt_invert_loops = {
+	"invert-loops",
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	perform_loop_inversion,
+};
+
+optdesc_t opt_peel_loops = {
+	"peel-loops",
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
+	perform_loop_peeling,
+};
+
+void do_loop_unrolling(ir_graph *irg)
+{ perform_irg_optimization(irg, &opt_unroll_loops); }
+
+void do_loop_inversion(ir_graph *irg)
+{ perform_irg_optimization(irg, &opt_invert_loops); }
+
+void do_loop_peeling(ir_graph *irg)
+{ perform_irg_optimization(irg, &opt_peel_loops); }
 
 ir_graph_pass_t *loop_inversion_pass(const char *name)
 {

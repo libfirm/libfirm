@@ -42,6 +42,7 @@
 #include "irflag_t.h"
 #include "irprintf.h"
 #include "irpass.h"
+#include "opt_manage.h"
 
 typedef struct parallelize_info
 {
@@ -238,14 +239,22 @@ static void walker(ir_node *proj, void *env)
 	ir_nodeset_destroy(&pi.user_mem);
 }
 
+static ir_graph_state_t do_parallelize_mem(ir_graph *irg)
+{
+	irg_walk_graph(irg, NULL, walker, NULL);
+
+	return 0;
+}
+
+optdesc_t opt_parallel_mem = {
+	"parallel-mem",
+	0,
+	do_parallelize_mem,
+};
+
 void opt_parallelize_mem(ir_graph *irg)
 {
-	//assure_irg_entity_usage_computed(irg);
-	//assure_irp_globals_entity_usage_computed();
-
-	irg_walk_graph(irg, NULL, walker, NULL);
-	//optimize_graph_df(irg);
-	//irg_walk_graph(irg, NormaliseSync, NULL, NULL);
+	perform_irg_optimization(irg, &opt_parallel_mem);
 }
 
 ir_graph_pass_t *opt_parallelize_mem_pass(const char *name)

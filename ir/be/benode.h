@@ -104,8 +104,7 @@ enum {
 /**
  * Make a new Copy node.
  */
-ir_node *be_new_Copy(const arch_register_class_t *cls, ir_node *block,
-                     ir_node *in);
+ir_node *be_new_Copy(ir_node *block, ir_node *in);
 /** Returns the Copy Argument. */
 ir_node *be_get_Copy_op(const ir_node *cpy);
 /** Sets the Copy Argument. */
@@ -364,38 +363,13 @@ int be_Return_append_node(ir_node *ret, ir_node *node);
 
 ir_node *be_new_Start(dbg_info *dbgi, ir_node *block, int n_out);
 
-/**
- * Make a spill node.
- *
- * @param irn       The node to be spilled.
- * @param block     the block where the spill should be placed
- * @return          The new spill node.
- */
-ir_node *be_spill(ir_node *block, ir_node *irn);
-
-/**
- * Make a reload and insert it into the schedule.
- *
- * @param cls      The register class of the reloaded value.
- * @param insert   The node in the schedule in front of which the reload is
- *                 inserted.
- * @param mode     The mode of the original (spilled) value.
- * @param spill    The spill node corresponding to this reload.
- * @return         A freshly made reload.
- */
-ir_node *be_reload(const arch_register_class_t *cls, ir_node *insert,
-                   ir_mode *mode, ir_node *spill);
-
 enum {
 	n_be_CopyKeep_op = 0
 };
-ir_node *be_new_CopyKeep(const arch_register_class_t *cls, ir_node *block,
-                         ir_node *src, int n, ir_node *in_keep[],
-                         ir_mode *mode);
+ir_node *be_new_CopyKeep(ir_node *block, ir_node *src,
+                         int n, ir_node *in_keep[]);
 
-ir_node *be_new_CopyKeep_single(const arch_register_class_t *cls,
-                                ir_node *block, ir_node *src, ir_node *keep,
-                                ir_mode *mode);
+ir_node *be_new_CopyKeep_single(ir_node *block, ir_node *src, ir_node *keep);
 
 ir_node *be_get_CopyKeep_op(const ir_node *cpy);
 

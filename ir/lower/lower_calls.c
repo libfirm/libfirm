@@ -20,8 +20,7 @@
 /**
  * @file
  * @brief   Lowering of Calls with compound parameters and return types.
- * @author  Michael Beck
- * @version $Id$
+ * @author  Michael Beck, Matthias Braun
  */
 #include "config.h"
 
@@ -63,13 +62,10 @@ static ir_type *get_pointer_type(ir_type *dest_type)
 static void fix_parameter_entities(ir_graph *irg, size_t n_compound_ret)
 {
 	ir_type *frame_type = get_irg_frame_type(irg);
-	size_t   n_compound = get_compound_n_members(frame_type);
+	size_t   n_members  = get_compound_n_members(frame_type);
 	size_t   i;
 
-	if (n_compound_ret == 0)
-		return;
-
-	for (i = 0; i < n_compound; ++i) {
+	for (i = 0; i < n_members; ++i) {
 		ir_entity *member = get_compound_member(frame_type, i);
 		size_t     num;
 		if (!is_parameter_entity(member))
@@ -77,7 +73,28 @@ static void fix_parameter_entities(ir_graph *irg, size_t n_compound_ret)
 
 		/* increase parameter number since we added a new parameter in front */
 		num = get_entity_parameter_number(member);
+		if (num == IR_VA_START_PARAMETER_NUMBER)
+			continue;
 		set_entity_parameter_number(member, num + n_compound_ret);
+	}
+}
+
+static void remove_compound_param_entities(ir_graph *irg)
+{
+	ir_type *frame_type = get_irg_frame_type(irg);
+	size_t   n_members  = get_compound_n_members(frame_type);
+	size_t   i;
+
+	for (i = n_members; i > 0; ) {
+		ir_entity *member = get_compound_member(frame_type, --i);
+		ir_type   *type;
+		if (!is_parameter_entity(member))
+			continue;
+
+		type = get_entity_type(member);
+		if (is_compound_type(type)) {
+			free_entity(member);
+		}
 	}
 }
 
@@ -96,6 +113,8 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	size_t    nn_ress;
 	size_t    nn_params;
 	size_t    i;
+	unsigned  cconv;
+	mtp_additional_properties mtp_properties;
 
 	if (!is_Method_type(mtp))
 		return mtp;
@@ -105,7 +124,8 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 		return lowered;
 
 	/* check if the type has to be lowered at all */
-	n_ress = get_method_n_ress(mtp);
+	n_params = get_method_n_params(mtp);
+	n_ress   = get_method_n_ress(mtp);
 	for (i = 0; i < n_ress; ++i) {
 		ir_type *res_tp = get_method_res_type(mtp, i);
 		if (is_compound_type(res_tp)) {
@@ -113,10 +133,18 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 			break;
 		}
 	}
+	if (!must_be_lowered && !(flags & LF_DONT_LOWER_ARGUMENTS)) {
+		for (i = 0; i < n_params; ++i) {
+			ir_type *param_type = get_method_param_type(mtp, i);
+			if (is_compound_type(param_type)) {
+				must_be_lowered = true;
+				break;
+			}
+		}
+	}
 	if (!must_be_lowered)
 		return mtp;
 
-	n_params  = get_method_n_params(mtp);
 	results   = ALLOCANZ(ir_type*, n_ress);
 	params    = ALLOCANZ(ir_type*, n_params + n_ress);
 	nn_ress   = 0;
@@ -140,14 +168,19 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 	}
 	/* copy over parameter types */
 	for (i = 0; i < n_params; ++i) {
-		params[nn_params++] = get_method_param_type(mtp, i);
+		ir_type *param_type = get_method_param_type(mtp, i);
+		if (! (flags & LF_DONT_LOWER_ARGUMENTS)
+		    && is_compound_type(param_type)) {
+		    /* turn parameter into a pointer type */
+		    param_type = new_type_pointer(param_type);
+		}
+		params[nn_params++] = param_type;
 	}
 	assert(nn_ress <= n_ress);
 	assert(nn_params <= n_params + n_ress);
 
 	/* create the new type */
 	lowered = new_d_type_method(nn_params, nn_ress, get_type_dbg_info(mtp));
-	lowered->attr.ma.has_compound_ret_parameter = true;
 
 	/* fill it */
 	for (i = 0; i < nn_params; ++i)
@@ -157,11 +190,20 @@ static ir_type *lower_mtp(compound_call_lowering_flags flags, ir_type *mtp)
 
 	set_method_variadicity(lowered, get_method_variadicity(mtp));
 
-	/* associate the lowered type with the original one for easier access */
-	set_method_calling_convention(lowered, get_method_calling_convention(mtp) | cc_compound_ret);
-	set_method_additional_properties(lowered, get_method_additional_properties(mtp));
+	cconv = get_method_calling_convention(mtp);
+	if (nn_params > n_params) {
+		cconv |= cc_compound_ret;
+	}
+	set_method_calling_convention(lowered, cconv);
 
-	set_lowered_type(mtp, lowered);
+	mtp_properties = get_method_additional_properties(mtp);
+	/* after lowering the call is not const anymore, since it writes to the
+	 * memory for the return value passed to it */
+	mtp_properties &= ~mtp_property_const;
+	set_method_additional_properties(lowered, mtp_properties);
+
+	/* associate the lowered type with the original one for easier access */
+	set_higher_type(lowered, mtp);
 	pmap_insert(lowered_mtps, mtp, lowered);
 
 	return lowered;
@@ -175,6 +217,8 @@ struct cl_entry {
 	cl_entry *next;   /**< Pointer to the next entry. */
 	ir_node  *call;   /**< Pointer to the Call node. */
 	ir_node  *copyb;  /**< List of all CopyB nodes. */
+	bool      has_compound_ret   : 1;
+	bool      has_compound_param : 1;
 };
 
 /**
@@ -187,8 +231,8 @@ typedef struct wlk_env_t {
 	pmap                 *dummy_map;       /**< A map for finding the dummy arguments. */
 	compound_call_lowering_flags flags;
 	ir_type              *lowered_mtp;     /**< The lowered method type of the current irg if any. */
-	unsigned             only_local_mem:1; /**< Set if only local memory access was found. */
-	unsigned             changed:1;        /**< Set if the current graph was changed. */
+	bool                  only_local_mem:1;/**< Set if only local memory access was found. */
+	bool                  changed:1;       /**< Set if the current graph was changed. */
 } wlk_env;
 
 /**
@@ -199,7 +243,7 @@ typedef struct wlk_env_t {
  * @param call   A Call node.
  * @param env    The environment.
  */
-static cl_entry *get_Call_entry(ir_node *call, wlk_env *env)
+static cl_entry *get_call_entry(ir_node *call, wlk_env *env)
 {
 	cl_entry *res = (cl_entry*)get_irn_link(call);
 	if (res == NULL) {
@@ -260,7 +304,7 @@ static void check_ptr(ir_node *ptr, wlk_env *env)
 	sc  = get_base_sc(classify_pointer(ptr, ent));
 	if (sc != ir_sc_localvar && sc != ir_sc_malloced) {
 		/* non-local memory access */
-		env->only_local_mem = 0;
+		env->only_local_mem = false;
 	}
 }
 
@@ -276,9 +320,9 @@ static bool is_self_recursive_Call(const ir_node *call)
 		const ir_entity *ent = get_SymConst_entity(callee);
 		const ir_graph  *irg = get_entity_irg(ent);
 		if (irg == get_irn_irg(call))
-			return 1;
+			return true;
 	}
-	return 0;
+	return false;
 }
 
 /**
@@ -290,7 +334,6 @@ static bool is_self_recursive_Call(const ir_node *call)
 static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 {
 	wlk_env *env = (wlk_env*)ctx;
-	ir_type *ctp;
 	ir_node *ptr;
 
 	switch (get_irn_opcode(n)) {
@@ -310,27 +353,38 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 			if (pred == get_irg_args(irg)) {
 				long pnr = get_Proj_proj(n);
 				set_Proj_proj(n, pnr + env->arg_shift);
-				env->changed = 1;
+				env->changed = true;
 			}
 		}
 		break;
 	case iro_Call: {
-		size_t i;
-		size_t n_res;
+		ir_type *ctp      = get_Call_type(n);
+		size_t   n_ress   = get_method_n_ress(ctp);
+		size_t   n_params = get_method_n_params(ctp);
+		size_t   i;
 		if (! is_self_recursive_Call(n)) {
 			/* any non self recursive call might access global memory */
-			env->only_local_mem = 0;
+			env->only_local_mem = false;
 		}
 
-		ctp = get_Call_type(n);
 		/* check for compound returns */
-		for (i = 0, n_res = get_method_n_ress(ctp); i < n_res; ++i) {
-			if (is_compound_type(get_method_res_type(ctp, i))) {
+		for (i = 0; i < n_ress; ++i) {
+			ir_type *type = get_method_res_type(ctp, i);
+			if (is_compound_type(type)) {
 				/*
 				 * This is a call with a compound return. As the result
 				 * might be ignored, we must put it in the list.
 				 */
-				(void)get_Call_entry(n, env);
+				cl_entry *entry = get_call_entry(n, env);
+				entry->has_compound_ret = true;
+				break;
+			}
+		}
+		for (i = 0; i < n_params; ++i) {
+			ir_type *type = get_method_param_type(ctp, i);
+			if (is_compound_type(type)) {
+				cl_entry *entry = get_call_entry(n, env);
+				entry->has_compound_param = true;
 				break;
 			}
 		}
@@ -349,15 +403,37 @@ static void fix_args_and_collect_calls(ir_node *n, void *ctx)
 			if (is_Proj(proj) && get_Proj_proj(proj) == pn_Call_T_result) {
 				ir_node *call = get_Proj_pred(proj);
 				if (is_Call(call)) {
-					ctp = get_Call_type(call);
+					ir_type *ctp = get_Call_type(call);
 					if (is_compound_type(get_method_res_type(ctp, get_Proj_proj(src)))) {
 						/* found a CopyB from compound Call result */
-						cl_entry *e = get_Call_entry(call, env);
+						cl_entry *e = get_call_entry(call, env);
 						set_irn_link(n, e->copyb);
 						e->copyb = n;
 					}
 				}
 			}
+		}
+		break;
+	}
+	case iro_Sel: {
+		ir_entity *entity = get_Sel_entity(n);
+		ir_type   *type   = get_entity_type(entity);
+
+		if (is_parameter_entity(entity) && is_compound_type(type)) {
+			if (! (env->flags & LF_DONT_LOWER_ARGUMENTS)) {
+				/* note that num was already modified by fix_parameter_entities
+				 * so no need to add env->arg_shift again */
+				size_t num = get_entity_parameter_number(entity);
+				ir_graph *irg  = get_irn_irg(n);
+				ir_node  *args = get_irg_args(irg);
+				ir_node  *ptr  = new_r_Proj(args, mode_P, num);
+				exchange(n, ptr);
+				/* hack to avoid us visiting the proj again */
+				mark_irn_visited(ptr);
+			}
+
+			/* we need to copy compound parameters */
+			env->only_local_mem = false;
 		}
 		break;
 	}
@@ -454,15 +530,10 @@ static ir_node *get_dummy_sel(ir_graph *irg, ir_node *block, ir_type *tp,
 
 /**
  * Add the hidden parameter from the CopyB node to the Call node.
- *
- * @param irg    the graph
- * @param n_com  number of compound results (will be number of hidden parameters)
- * @param ins    in array to store the hidden parameters into
- * @param entry  the call list
- * @param env    the environment
  */
 static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
-                             cl_entry *entry, wlk_env *env)
+                             cl_entry *entry, wlk_env *env,
+                             ir_type *ctp)
 {
 	ir_node *p, *n, *mem, *blk;
 	size_t n_args;
@@ -474,8 +545,13 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 		n = (ir_node*)get_irn_link(p);
 
 		ins[idx] = get_CopyB_dst(p);
-		mem      = get_CopyB_mem(p);
 		blk      = get_nodes_block(p);
+
+		/* use the memory output of the call and not the input of the CopyB
+		 * otherwise stuff breaks if the call was mtp_property_const, because
+		 * then the copyb skips the call. But after lowering the call is not
+		 * const anymore, and its memory has to be used */
+		mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
 
 		/* get rid of the CopyB */
 		turn_into_tuple(p, pn_CopyB_max+1);
@@ -487,12 +563,8 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 
 	/* now create dummy entities for function with ignored return value */
 	if (n_args < n_com) {
-		ir_type *ctp = get_Call_type(entry->call);
 		size_t   i;
 		size_t   j;
-
-		if (is_lowered_type(ctp))
-			ctp = get_associated_type(ctp);
 
 		for (j = i = 0; i < get_method_n_ress(ctp); ++i) {
 			ir_type *rtp = get_method_res_type(ctp, i);
@@ -505,45 +577,97 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 	}
 }
 
-/**
- * Fix all calls on a call list by adding hidden parameters.
- *
- * @param irg  the graph
- * @param env  the environment
- */
-static void fix_call_list(ir_graph *irg, wlk_env *env)
+static void fix_compound_ret(wlk_env *env, cl_entry *entry, ir_type *ctp)
 {
-	cl_entry *p;
-	ir_node *call, **new_in;
-	ir_type *ctp, *lowered_mtp;
-	size_t i, n_res, n_params, n_com, pos;
+	ir_node  *call     = entry->call;
+	ir_graph *irg      = get_irn_irg(call);
+	size_t    n_params = get_Call_n_params(call);
+	size_t    n_com    = 0;
+	size_t    n_res    = get_method_n_ress(ctp);
+	size_t    pos      = 0;
+	ir_node **new_in;
+	size_t    i;
 
-	new_in = NEW_ARR_F(ir_node *, 0);
-	for (p = env->cl_list; p; p = p->next) {
-		call = p->call;
-		ctp = get_Call_type(call);
-		lowered_mtp = lower_mtp(env->flags, ctp);
+	for (i = 0; i < n_res; ++i) {
+		ir_type *type = get_method_res_type(ctp, i);
+		if (is_compound_type(type))
+			++n_com;
+	}
+
+	new_in = ALLOCANZ(ir_node*, n_params + n_com + (n_Call_max+1));
+	new_in[pos++] = get_Call_mem(call);
+	new_in[pos++] = get_Call_ptr(call);
+	assert(pos == n_Call_max+1);
+	add_hidden_param(irg, n_com, &new_in[pos], entry, env, ctp);
+	pos += n_com;
+
+	/* copy all other parameters */
+	for (i = 0; i < n_params; ++i) {
+		ir_node *param = get_Call_param(call, i);
+		new_in[pos++] = param;
+	}
+	assert(pos == n_params+n_com+(n_Call_max+1));
+	set_irn_in(call, pos, new_in);
+}
+
+static ir_entity *create_compound_arg_entitiy(ir_graph *irg, ir_type *type)
+{
+	ir_type   *frame  = get_irg_frame_type(irg);
+	ident     *id     = id_unique("$compound_param.%u");
+	ir_entity *entity = new_entity(frame, id, type);
+	/* TODO:
+	 * we could do some optimisations here and create a big union type for all
+	 * different call types in a function */
+	return entity;
+}
+
+static void fix_compound_params(cl_entry *entry, ir_type *ctp)
+{
+	ir_node  *call     = entry->call;
+	dbg_info *dbgi     = get_irn_dbg_info(call);
+	ir_node  *mem      = get_Call_mem(call);
+	ir_graph *irg      = get_irn_irg(call);
+	ir_node  *nomem    = new_r_NoMem(irg);
+	ir_node  *frame    = get_irg_frame(irg);
+	size_t    n_params = get_method_n_params(ctp);
+	size_t    i;
+
+	for (i = 0; i < n_params; ++i) {
+		ir_type   *type = get_method_param_type(ctp, i);
+		ir_node   *block;
+		ir_node   *arg;
+		ir_node   *sel;
+		ir_node   *copyb;
+		ir_entity *arg_entity;
+		if (!is_compound_type(type))
+			continue;
+
+		arg        = get_Call_param(call, i);
+		arg_entity = create_compound_arg_entitiy(irg, type);
+		block      = get_nodes_block(call);
+		sel        = new_rd_simpleSel(dbgi, block, nomem, frame, arg_entity);
+		copyb      = new_rd_CopyB(dbgi, block, mem, sel, arg, type);
+		mem        = new_r_Proj(copyb, mode_M, pn_CopyB_M);
+		set_Call_param(call, i, sel);
+	}
+	set_Call_mem(call, mem);
+}
+
+static void fix_calls(wlk_env *env)
+{
+	cl_entry *entry;
+	for (entry = env->cl_list; entry; entry = entry->next) {
+		ir_node *call        = entry->call;
+		ir_type *ctp         = get_Call_type(call);
+		ir_type *lowered_mtp = lower_mtp(env->flags, ctp);
 		set_Call_type(call, lowered_mtp);
 
-		n_params = get_Call_n_params(call);
-
-		n_com = 0;
-		for (i = 0, n_res = get_method_n_ress(ctp); i < n_res; ++i) {
-			if (is_compound_type(get_method_res_type(ctp, i)))
-				++n_com;
+		if (entry->has_compound_param) {
+			fix_compound_params(entry, ctp);
 		}
-		pos = 2;
-		ARR_RESIZE(ir_node *, new_in, n_params + n_com + pos);
-		memset(new_in, 0, sizeof(*new_in) * (n_params + n_com + pos));
-		add_hidden_param(irg, n_com, &new_in[pos], p, env);
-		pos += n_com;
-		/* copy all other parameters */
-		for (i = 0; i < n_params; ++i)
-			new_in[pos++] = get_Call_param(call, i);
-		new_in[0] = get_Call_mem(call);
-		new_in[1] = get_Call_ptr(call);
-
-		set_irn_in(call, n_params + n_com + 2, new_in);
+		if (entry->has_compound_ret) {
+			fix_compound_ret(env, entry, ctp);
+		}
 	}
 }
 
@@ -557,26 +681,34 @@ static void fix_call_list(ir_graph *irg, wlk_env *env)
  */
 static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 {
-	ir_entity  *ent = get_irg_entity(irg);
-	ir_type    *mtp, *lowered_mtp, *tp, *ft;
-	size_t     i, j, k, n_ress = 0, n_ret_com = 0;
-	size_t     n_cr_opt;
-	ir_node    **new_in, *ret, *endbl, *bl, *mem, *copy;
-	cr_pair    *cr_opt;
-	wlk_env    env;
+	ir_entity *ent         = get_irg_entity(irg);
+	ir_type   *mtp         = get_entity_type(ent);
+	size_t     n_ress      = get_method_n_ress(mtp);
+	size_t     n_params    = get_method_n_params(mtp);
+	size_t     n_ret_com   = 0;
+	size_t     n_param_com = 0;
 
-	mtp = get_entity_type(ent);
+	ir_type   *lowered_mtp, *tp, *ft;
+	size_t    i, j, k;
+	size_t    n_cr_opt;
+	ir_node   **new_in, *ret, *endbl, *bl, *mem, *copy;
+	cr_pair   *cr_opt;
+	wlk_env   env;
 
 	/* calculate the number of compound returns */
-	n_ress = get_method_n_ress(mtp);
 	for (n_ret_com = i = 0; i < n_ress; ++i) {
-		tp = get_method_res_type(mtp, i);
-
-		if (is_compound_type(tp))
+		ir_type *type = get_method_res_type(mtp, i);
+		if (is_compound_type(type))
 			++n_ret_com;
 	}
+	for (i = 0; i < n_params; ++i) {
+		ir_type *type = get_method_param_type(mtp, i);
+		if (is_compound_type(type))
+			++n_param_com;
+	}
 
-	fix_parameter_entities(irg, n_ret_com);
+	if (n_ret_com > 0)
+		fix_parameter_entities(irg, n_ret_com);
 
 	if (n_ret_com) {
 		/* much easier if we have only one return */
@@ -587,7 +719,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 		set_entity_type(ent, lowered_mtp);
 
 		/* hidden arguments are added first */
-		env.arg_shift    = n_ret_com;
+		env.arg_shift = n_ret_com;
 	} else {
 		/* we must only search for calls */
 		env.arg_shift = 0;
@@ -598,16 +730,19 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.dummy_map      = pmap_create_ex(8);
 	env.flags          = flags;
 	env.lowered_mtp    = lowered_mtp;
-	env.only_local_mem = 1;
-	env.changed        = 0;
+	env.only_local_mem = true;
+	env.changed        = false;
 
 	/* scan the code, fix argument numbers and collect calls. */
 	irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
 
+	if (n_param_com > 0 && !(flags & LF_DONT_LOWER_ARGUMENTS))
+		remove_compound_param_entities(irg);
+
 	/* fix all calls */
-	if (env.cl_list) {
-		fix_call_list(irg, &env);
-		env.changed = 1;
+	if (env.cl_list != NULL) {
+		fix_calls(&env);
+		env.changed = true;
 	}
 
 	if (n_ret_com) {
@@ -630,7 +765,7 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 			/*
 			 * Now fix the Return node of the current graph.
 			 */
-			env.changed = 1;
+			env.changed = true;
 
 			/*
 			 * STEP 2: fix it. For all compound return values add a CopyB,

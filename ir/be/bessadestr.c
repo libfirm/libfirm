@@ -242,7 +242,6 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 	     phi = (ir_node*)get_irn_link(phi)) {
 		ir_node                     *phi_block = get_nodes_block(phi);
 		const arch_register_t       *phi_reg   = arch_get_irn_register(phi);
-		const arch_register_class_t *cls       = phi_reg->reg_class;
 		int                          max;
 		int                          i;
 
@@ -280,7 +279,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 					insert it into schedule,
 					pin it
 				*/
-				ir_node *dupl  = be_new_Copy(cls, arg_block, arg);
+				ir_node *dupl = be_new_Copy(arg_block, arg);
 
 				set_irn_n(phi, i, dupl);
 				arch_set_irn_register(dupl, phi_reg);
@@ -336,7 +335,7 @@ static void set_regs_or_place_dupls_walker(ir_node *bl, void *data)
 					pin it
 				*/
 				ir_node *perm = get_Proj_pred(arg);
-				ir_node *dupl = be_new_Copy(cls, arg_block, arg);
+				ir_node *dupl = be_new_Copy(arg_block, arg);
 				ir_node *ins;
 
 				set_irn_n(phi, i, dupl);

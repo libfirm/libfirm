@@ -566,6 +566,7 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 {
 	const ir_node *n1 = *(const ir_node **) c1;
 	const ir_node *n2 = *(const ir_node **) c2;
+	unsigned h1, h2;
 
 	if (dependent_on(n1, n2))
 		return 1;
@@ -574,7 +575,16 @@ static int cmp_call_dependency(const void *c1, const void *c2)
 		return -1;
 
 	/* The nodes have no depth order, but we need a total order because qsort()
-	 * is not stable. */
+	 * is not stable.
+	 *
+	 * Additionally, we need to respect transitive dependencies. Consider a
+	 * Call a depending on Call b and an independent Call c.
+	 * We MUST NOT order c > a and b > c. */
+	h1 = get_irn_height(heights, n1);
+	h2 = get_irn_height(heights, n2);
+	if (h1 < h2) return  1;
+	if (h1 > h2) return -1;
+	/* Same height, so use a random (but stable) order */
 	return get_irn_idx(n2) - get_irn_idx(n1);
 }
 
@@ -659,10 +669,9 @@ void be_free_stackorder(be_stackorder_t *env)
 	free(env);
 }
 
-void be_add_parameter_entity_stores(ir_graph *irg)
+static void create_stores_for_type(ir_graph *irg, ir_type *type)
 {
-	ir_type *frame_type  = get_irg_frame_type(irg);
-	size_t   n           = get_compound_n_members(frame_type);
+	size_t   n           = get_compound_n_members(type);
 	ir_node *frame       = get_irg_frame(irg);
 	ir_node *initial_mem = get_irg_initial_mem(irg);
 	ir_node *mem         = initial_mem;
@@ -674,13 +683,16 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 	/* all parameter entities left in the frame type require stores.
 	 * (The ones passed on the stack have been moved to the arg type) */
 	for (i = 0; i < n; ++i) {
-		ir_entity *entity = get_compound_member(frame_type, i);
+		ir_entity *entity = get_compound_member(type, i);
 		ir_node   *addr;
 		size_t     arg;
 		if (!is_parameter_entity(entity))
 			continue;
 
-		arg  = get_entity_parameter_number(entity);
+		arg = get_entity_parameter_number(entity);
+		if (arg == IR_VA_START_PARAMETER_NUMBER)
+			continue;
+
 		addr = new_r_Sel(start_block, mem, frame, 0, NULL, entity);
 		if (entity->attr.parameter.doubleword_low_mode != NULL) {
 			ir_mode *mode      = entity->attr.parameter.doubleword_low_mode;
@@ -712,5 +724,17 @@ void be_add_parameter_entity_stores(ir_graph *irg)
 	if (mem != initial_mem) {
 		edges_reroute(initial_mem, mem);
 		set_Store_mem(first_store, initial_mem);
+	}
+}
+
+void be_add_parameter_entity_stores(ir_graph *irg)
+{
+	ir_type           *frame_type   = get_irg_frame_type(irg);
+	be_stack_layout_t *layout       = be_get_irg_stack_layout(irg);
+	ir_type           *between_type = layout->between_type;
+
+	create_stores_for_type(irg, frame_type);
+	if (between_type != NULL) {
+		create_stores_for_type(irg, between_type);
 	}
 }

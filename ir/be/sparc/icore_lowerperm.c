@@ -575,9 +575,8 @@ static void search_combinable_cycles(ir_node *irn, reg_pair_t *const pairs, int 
 static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_pair_t *const pairs, int n_pairs)
 {
 	/* Build copy nodes from back to front */
-	const arch_register_class_t *const reg_class   = arch_get_irn_register(get_irn_n(irn, 0))->reg_class;
-	ir_node                     *const block       = get_nodes_block(irn);
-	int                                i;
+	ir_node *const block = get_nodes_block(irn);
+	int      i;
 
 	for (i = move->n_elems - 2; i >= 0; --i) {
 		const arch_register_t *in_reg  = move->elems[i];
@@ -586,7 +585,7 @@ static void split_chain_into_copies(ir_node *irn, const perm_move_t *move, reg_p
 		ir_node         *res2    = get_node_for_out_register(pairs, n_pairs, out_reg);
 		ir_node         *cpy;
 
-		cpy = be_new_Copy(reg_class, block, arg1);
+		cpy = be_new_Copy(block, arg1);
 		DB((dbg_icore, LEVEL_1, "%+F created copy node %+F to implement (%+F, %s) -> (%+F, %s)\n",
 		                        irn, cpy, arg1, in_reg->name, res2, out_reg->name));
 

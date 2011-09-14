@@ -39,6 +39,8 @@
 #include "irdump.h"
 #include "lowering.h"
 #include "lower_dw.h"
+#include "lower_alloc.h"
+#include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
 
@@ -59,6 +61,7 @@
 #include "../begnuas.h"
 #include "../belistsched.h"
 #include "../beflags.h"
+#include "../beutil.h"
 
 #include "bearch_sparc_t.h"
 
@@ -355,6 +358,10 @@ static arch_env_t *sparc_init(FILE *outfile)
 	*isa = sparc_isa_template;
 	isa->constants = pmap_create();
 
+	be_gas_elf_type_char      = '#';
+	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
+	be_gas_elf_variant        = ELF_VARIANT_SPARC;
+
 	be_emit_init(outfile);
 
 	sparc_register_init();
@@ -417,10 +424,13 @@ static void sparc_lower_for_target(void)
 		sparc_create_set,
 		0,
 	};
+
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
 	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
 		lower_floating_point();
+
+	lower_builtins(0, NULL);
 
 	sparc_lower_64bit();
 
@@ -428,6 +438,14 @@ static void sparc_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, &lower_mode_b_config);
 		lower_switch(irg, 4, 256, false);
+		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, -SPARC_MIN_STACKSIZE);
+	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 31, 32);
 	}
 }
 
@@ -492,15 +510,22 @@ static const backend_params *sparc_get_backend_params(void)
 		              irma_twos_complement, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
-	ir_mode *mode_long_double
-		= new_ir_mode("long double", irms_float_number, 128, 1,
-		              irma_ieee754, 0);
-	ir_type *type_long_double = new_type_primitive(mode_long_double);
 
-	set_type_alignment_bytes(type_long_double, 8);
-	p.type_long_double        = type_long_double;
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
+
+	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT) {
+		p.mode_float_arithmetic = NULL;
+		p.type_long_double      = NULL;
+	} else {
+		ir_mode *mode_long_double
+			= new_ir_mode("long double", irms_float_number, 128, 1,
+						  irma_ieee754, 0);
+		ir_type *type_long_double = new_type_primitive(mode_long_double);
+
+		set_type_alignment_bytes(type_long_double, 8);
+		p.type_long_double        = type_long_double;
+	}
 	return &p;
 }
 
@@ -540,6 +565,48 @@ static const lc_opt_table_entry_t sparc_options[] = {
 	LC_OPT_LAST
 };
 
+static ir_node *sparc_new_spill(ir_node *value, ir_node *after)
+{
+	ir_node  *block = get_block(after);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_node  *mem   = get_irg_no_mem(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+	ir_node  *store;
+
+	if (mode_is_float(mode)) {
+		store = create_stf(NULL, block, value, frame, mem, mode, NULL, 0, true);
+	} else {
+		store = new_bd_sparc_St_imm(NULL, block, value, frame, mem, mode, NULL,
+		                            0, true);
+	}
+	sched_add_after(after, store);
+	return store;
+}
+
+static ir_node *sparc_new_reload(ir_node *value, ir_node *spill,
+                                 ir_node *before)
+{
+	ir_node  *block = get_block(before);
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_mode  *mode  = get_irn_mode(value);
+	ir_node  *load;
+	ir_node  *res;
+
+	if (mode_is_float(mode)) {
+		load = create_ldf(NULL, block, frame, spill, mode, NULL, 0, true);
+	} else {
+		load = new_bd_sparc_Ld_imm(NULL, block, frame, spill, mode, NULL, 0,
+		                           true);
+	}
+	sched_add_before(before, load);
+	assert((long)pn_sparc_Ld_res == (long)pn_sparc_Ldf_res);
+	res = new_r_Proj(load, mode, pn_sparc_Ld_res);
+
+	return res;
+}
+
 const arch_isa_if_t sparc_isa_if = {
 	sparc_init,
 	sparc_lower_for_target,
@@ -562,6 +629,8 @@ const arch_isa_if_t sparc_isa_if = {
 	sparc_finish,
 	sparc_emit_routine,
 	NULL, /* register_saved_by */
+	sparc_new_spill,
+	sparc_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_sparc)

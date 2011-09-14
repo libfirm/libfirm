@@ -186,9 +186,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->additional_properties = mtp_property_inherited;  /* inherited from type */
 
 	res->irg_pinned_state    = op_pin_state_pinned;
-	res->outs_state          = outs_none;
-	res->dom_state           = dom_none;
-	res->pdom_state          = dom_none;
 	res->typeinfo_state      = ir_typeinfo_none;
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
@@ -197,7 +194,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->extblk_state        = ir_extblk_info_none;
 	res->execfreq_state      = exec_freq_none;
 	res->fp_model            = fp_model_precise;
-	res->entity_usage_state  = ir_entity_usage_not_computed;
 	res->mem_disambig_opt    = aa_opt_inherited;
 
 	/*-- Type information for the procedure of the graph --*/
@@ -445,8 +441,7 @@ void free_ir_graph(ir_graph *irg)
 	edges_deactivate(irg);
 
 	hook_free_graph(irg);
-	if (irg->outs_state != outs_none)
-		free_irg_outs(irg);
+	free_irg_outs(irg);
 	if (irg->frame_type)
 		free_type(irg->frame_type);
 	del_identities(irg);
@@ -653,16 +648,6 @@ op_pin_state (get_irg_pinned)(const ir_graph *irg)
 	return _get_irg_pinned(irg);
 }
 
-irg_outs_state (get_irg_outs_state)(const ir_graph *irg)
-{
-	return _get_irg_outs_state(irg);
-}
-
-void (set_irg_outs_inconsistent)(ir_graph *irg)
-{
-	_set_irg_outs_inconsistent(irg);
-}
-
 irg_extblk_info_state (get_irg_extblk_state)(const ir_graph *irg)
 {
 	return _get_irg_extblk_state(irg);
@@ -671,21 +656,6 @@ irg_extblk_info_state (get_irg_extblk_state)(const ir_graph *irg)
 void (set_irg_extblk_inconsistent)(ir_graph *irg)
 {
 	_set_irg_extblk_inconsistent(irg);
-}
-
-irg_dom_state (get_irg_dom_state)(const ir_graph *irg)
-{
-	return _get_irg_dom_state(irg);
-}
-
-irg_dom_state (get_irg_postdom_state)(const ir_graph *irg)
-{
-	return _get_irg_postdom_state(irg);
-}
-
-void (set_irg_doms_inconsistent)(ir_graph *irg)
-{
-	_set_irg_doms_inconsistent(irg);
 }
 
 irg_loopinfo_state (get_irg_loopinfo_state)(const ir_graph *irg)

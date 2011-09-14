@@ -138,12 +138,12 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  Label: %lu\n", get_entity_label(get_Block_entity(n)));
 		fprintf(F, "  block visited: %lu\n", get_Block_block_visited(n));
 		fprintf(F, "  block marked: %u\n", get_Block_mark(n));
-		if (get_irg_dom_state(get_irn_irg(n)) == dom_consistent) {
+		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_DOMINANCE)) {
 			fprintf(F, "  dom depth %d\n", get_Block_dom_depth(n));
 			fprintf(F, "  domtree pre num %u\n", get_Block_dom_tree_pre_num(n));
 			fprintf(F, "  max subtree pre num %u\n", get_Block_dom_max_subtree_pre_num(n));
 		}
-		if (get_irg_postdom_state(get_irn_irg(n)) == dom_consistent) {
+		if (is_irg_state(get_irn_irg(n), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE)) {
 			fprintf(F, "  pdom depth %d\n", get_Block_postdom_depth(n));
 			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
 			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));
@@ -403,8 +403,7 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 		break;
 	case IR_INITIALIZER_CONST:
 		value = get_initializer_const_value(initializer);
-		fprintf(F, "\t = <CONST>");
-		dump_node_opcode(F, value);
+		ir_fprintf(F, "\t = %F", value);
 		break;
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
@@ -453,6 +452,10 @@ static void dump_entity_linkage(FILE *F, const ir_entity *entity)
 {
 	ir_linkage linkage = get_entity_linkage(entity);
 
+	if (linkage == IR_LINKAGE_DEFAULT) {
+		fprintf(F, " default");
+		return;
+	}
 	if (linkage & IR_LINKAGE_CONSTANT)
 		fprintf(F, " constant");
 	if (linkage & IR_LINKAGE_WEAK)
@@ -527,21 +530,18 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			}
 		}
 
-		fprintf(F, "%s  linkage:", prefix);
-		dump_entity_linkage(F, ent);
-
 		if (is_Method_type(get_entity_type(ent))) {
 			unsigned mask = get_entity_additional_properties(ent);
 			unsigned cc   = get_method_calling_convention(get_entity_type(ent));
 			ir_graph *irg = get_entity_irg(ent);
 
 			if (irg) {
-				fprintf(F, "\n%s  estimated node count: %u", prefix, get_irg_estimated_node_cnt(irg));
-				fprintf(F, "\n%s  maximum node index:   %u", prefix, get_irg_last_idx(irg));
+				fprintf(F, "%s  estimated node count: %u\n", prefix, get_irg_estimated_node_cnt(irg));
+				fprintf(F, "%s  maximum node index:   %u\n", prefix, get_irg_last_idx(irg));
 			}
 
 			if (mask) {
-				fprintf(F, "\n%s  additional prop: ", prefix);
+				fprintf(F, "%s  additional prop: ", prefix);
 
 				if (mask & mtp_property_const)         fputs("const_function, ", F);
 				if (mask & mtp_property_pure)          fputs("pure_function, ", F);
@@ -554,8 +554,9 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 				if (mask & mtp_property_runtime)       fputs("runtime_function, ", F);
 				if (mask & mtp_property_private)       fputs("private_function, ", F);
 				if (mask & mtp_property_has_loop)      fputs("has_loop_function, ", F);
+				fputc('\n', F);
 			}
-			fprintf(F, "\n%s  calling convention: ", prefix);
+			fprintf(F, "%s  calling convention: ", prefix);
 			if (cc & cc_reg_param)           fputs("regparam, ", F);
 			if (cc & cc_this_call)           fputs("thiscall, ", F);
 			if (cc & cc_compound_ret)        fputs("compound_ret, ", F);
@@ -569,10 +570,8 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 				fputs(cc & cc_last_on_top      ? "last param on top, " : "first param on top, ", F);
 				fputs(cc & cc_callee_clear_stk ? "callee clear stack" : "caller clear stack", F);
 			}
-			fprintf(F, "\n%s  vtable number:        %u", prefix, get_entity_vtable_number(ent));
+			fprintf(F, "\n%s  vtable number:        %u\n", prefix, get_entity_vtable_number(ent));
 		}
-
-		fputc('\n', F);
 	} else {  /* no entattrs */
 		ir_fprintf(F, "%s(%3d:%d) %+F: %s", prefix,
 			get_entity_offset(ent), get_entity_offset_bits_remainder(ent),
@@ -591,6 +590,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 			fprintf(F, "\n%s  Initializers:", prefix);
 			need_nl = 1;
 			dump_ir_initializers_to_file(F, prefix, initializer, get_entity_type(ent));
+			fputc('\n', F);
 		} else if (entity_has_compound_ent_values(ent)) {
 			size_t i;
 			fprintf(F, "%s  compound values:", prefix);
@@ -618,7 +618,7 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 	if (verbosity & dump_verbosity_entattrs) {
 		fprintf(F, "%s  linkage:", prefix);
 		dump_entity_linkage(F, ent);
-		fprintf(F, "%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
+		fprintf(F, "\n%s  volatility:  %s", prefix, get_volatility_name(get_entity_volatility(ent)));
 		fprintf(F, "\n%s  aligned:  %s", prefix, get_align_name(get_entity_aligned(ent)));
 		fprintf(F, "\n%s  alignment:  %u", prefix, get_entity_alignment(ent));
 		fprintf(F, "\n%s  ld_name: %s", prefix, ent->ld_name ? get_entity_ld_name(ent) : "no yet set");
@@ -783,6 +783,8 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 
 	case tpo_method:
 		if (verbosity & dump_verbosity_typeattrs) {
+			mtp_additional_properties mtp = get_method_additional_properties(tp);
+			unsigned cconv = get_method_calling_convention(tp);
 			fprintf(F, "\n  variadicity: %s", get_variadicity_name(get_method_variadicity(tp)));
 			fprintf(F, "\n  return types: %lu",
 			        (unsigned long) get_method_n_ress(tp));
@@ -797,6 +799,46 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 				ir_type *ptp = get_method_param_type(tp, i);
 				ir_fprintf(F, "\n    %+F", ptp);
 			}
+			fprintf(F, "\n  properties:");
+			if (mtp & mtp_property_const)
+				fputs(" const", F);
+			if (mtp & mtp_property_pure)
+				fputs(" pure", F);
+			if (mtp & mtp_property_noreturn)
+				fputs(" noreturn", F);
+			if (mtp & mtp_property_nothrow)
+				fputs(" nothrow", F);
+			if (mtp & mtp_property_naked)
+				fputs(" naked", F);
+			if (mtp & mtp_property_malloc)
+				fputs(" malloc", F);
+			if (mtp & mtp_property_returns_twice)
+				fputs(" returns_twice", F);
+			if (mtp & mtp_property_intrinsic)
+				fputs(" intrinsic", F);
+			if (mtp & mtp_property_runtime)
+				fputs(" runtime", F);
+			if (mtp & mtp_property_private)
+				fputs(" private", F);
+			if (mtp & mtp_property_has_loop)
+				fputs(" has_Loop", F);
+
+			fprintf(F, "\n  calling convention:");
+			if (cconv & cc_reg_param)
+				fputs(" regparam", F);
+			if (cconv & cc_last_on_top)
+				fputs(" last_on_top", F);
+			if (cconv & cc_callee_clear_stk)
+				fputs(" calle_clear_stk", F);
+			if (cconv & cc_this_call)
+				fputs(" this_call", F);
+			if (cconv & cc_compound_ret)
+				fputs(" compound_ret", F);
+			if (cconv & cc_frame_on_caller_stk)
+				fputs(" frame_on_caller_stk", F);
+			if (cconv & cc_fpreg_param)
+				fputs(" fpreg_param", F);
+
 			if (get_method_variadicity(tp)) {
 				fprintf(F, "\n    ...");
 			}

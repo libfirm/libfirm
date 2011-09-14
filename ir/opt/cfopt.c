@@ -47,6 +47,7 @@
 #include "irdump.h"
 #include "irverify.h"
 #include "iredges.h"
+#include "opt_manage.h"
 
 #include "array_t.h"
 
@@ -115,9 +116,15 @@ static void collect_nodes(ir_node *n, void *ctx)
 			/* block with a jump label attached cannot be removed. */
 			set_Block_removable(n, false);
 		}
+	} else if (is_Bad(n) || is_Jmp(n)) {
+		/* ignore these */
 		return;
-	} else if (!is_Jmp(n)) {  /* Check for non-empty block. */
+	} else {
+		/* Check for non-empty block. */
 		ir_node *block = get_nodes_block(n);
+		if (is_Bad(block))
+			return;
+
 		set_Block_removable(block, false);
 
 		if (is_Proj(n)) {
@@ -616,6 +623,11 @@ static void set_phase_flag(ir_phase *block_info, ir_node *block,
 	phase_set_irn_data(block_info, block, INT_TO_PTR(data));
 }
 
+static void clear_phase_flag(ir_phase *block_info, ir_node *block)
+{
+	phase_set_irn_data(block_info, block, NULL);
+}
+
 static bool has_operations(ir_phase *block_info, ir_node *block)
 {
 	return get_phase_flag(block_info, block, BF_HAS_OPERATIONS);
@@ -647,7 +659,7 @@ static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block)
 }
 
 /**
- * Walker: fill block info information.
+ * Pre-Walker: fill block info information.
  */
 static void compute_block_info(ir_node *n, void *x)
 {
@@ -664,12 +676,18 @@ static void compute_block_info(ir_node *n, void *x)
 	} else if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
 		set_has_phis(block_info, block);
-	} else if (is_Jmp(n) || is_Cond(n) || is_Cmp(n) || is_Proj(n)) {
+	} else if (is_Jmp(n) || is_Cond(n) || is_Proj(n)) {
 		/* ignore */
 	} else {
 		ir_node *block = get_nodes_block(n);
 		set_has_operations(block_info, block);
 	}
+}
+
+static void clear_block_info(ir_node *block, void *x)
+{
+	ir_phase *block_info = (ir_phase *)x;
+	clear_phase_flag(block_info, block);
 }
 
 typedef struct skip_env {
@@ -700,8 +718,8 @@ static void optimize_ifs(ir_node *block, void *x)
 }
 
 /**
- * Pre-Block walker: remove empty blocks that are
- * predecessors of the current block.
+ * Pre-Block walker: remove empty blocks (only contain a Jmp)
+ * that are control flow predecessors of the current block.
  */
 static void remove_empty_blocks(ir_node *block, void *x)
 {
@@ -711,50 +729,119 @@ static void remove_empty_blocks(ir_node *block, void *x)
 
 	for (i = 0; i < n_preds; ++i) {
 		ir_node *jmp, *jmp_block, *pred, *pred_block;
+		int n_jpreds = 0;
 
 		jmp = get_Block_cfgpred(block, i);
 		if (!is_Jmp(jmp))
 			continue;
 		jmp_block = get_nodes_block(jmp);
+		if (jmp_block == block)
+			continue; /* this infinite loop cannot be optimized any further */
 		if (is_unknown_jump_target(env->phase, jmp_block))
-			continue;
+			continue; /* unknown jump target must not be optimized */
 		if (has_operations(env->phase,jmp_block))
+			continue; /* this block contains operations and cannot be skipped */
+		if (has_phis(env->phase,jmp_block))
+			continue; /* this block contains Phis and is not skipped */
+		if (Block_block_visited(jmp_block)) {
 			continue;
-		/* jmp_block is an empty block! */
+			/* otherwise we could break the walker,
+			 * if block was reached via KeepAlive edge -> jmp_block -> A ---> block,
+			 * because the walker cannot handle Id nodes.
+			 *
+			 *   A      B
+			 *    \    /
+			 *   jmp_block
+			 *    /    \
+			 * block    End
+			 */
+		}
 
-		if (get_Block_n_cfgpreds(jmp_block) != 1)
-			continue;
-		pred = get_Block_cfgpred(jmp_block, 0);
-		exchange(jmp, pred);
-		env->changed = true;
+		/* jmp_block is an empty block and can be optimized! */
 
-		/* cleanup: jmp_block might have a Keep edge! */
-		pred_block = get_nodes_block(pred);
-		exchange(jmp_block, pred_block);
+		n_jpreds = get_Block_n_cfgpreds(jmp_block);
+		/**
+		 * If the jmp block has only one predecessor this is straightforward.
+		 * However, if there are more predecessors, we only handle this,
+		 * if block has no Phis.
+		 */
+		if (n_jpreds == 1) {
+			/* skip jmp block by rerouting its predecessor to block
+			 *
+			 *     A              A
+			 *     |              |
+			 *  jmp_block   =>    |
+			 *     |              |
+			 *   block          block
+			 */
+			pred = get_Block_cfgpred(jmp_block, 0);
+			exchange(jmp, pred);
+
+			/* cleanup: jmp_block might have a Keep edge! */
+			pred_block = get_nodes_block(pred);
+			exchange(jmp_block, pred_block);
+			env->changed = true;
+		} else if (! has_phis(env->phase, block)) {
+			/* all predecessors can skip the jmp block, so block gets some new predecessors
+			 *
+			 *  A     B                 A  B
+			 *   \   /                  |  |
+			 * jmp_block  C  =>  Bad  C |  |
+			 *      \    /          \ | | /
+			 *      block            block
+			 */
+			ir_node **ins = NULL;
+			int j;
+			NEW_ARR_A(ir_node *, ins, n_preds+n_jpreds);
+			/* first copy the old predecessors, because the outer loop (i) still walks over them */
+			for (j = 0; j < n_preds; ++j) {
+				ins[j] = get_Block_cfgpred(block, j);
+			}
+			/* now append the new predecessors */
+			for (j = 0; j < n_jpreds; ++j) {
+				pred = get_Block_cfgpred(jmp_block, j);
+				ins[n_preds+j] = pred;
+			}
+			set_irn_in(block, n_preds+n_jpreds, ins);
+			/* convert the jmp_block to Bad */
+			ir_graph *irg = get_irn_irg(block);
+			exchange(jmp_block, new_r_Bad(irg, mode_BB));
+			exchange(jmp, new_r_Bad(irg, mode_X));
+			/* let the outer loop walk over the new predecessors as well */
+			n_preds += n_jpreds;
+			env->changed = true;
+			// TODO What if jmp_block had a KeepAlive edge?
+		} else {
+			/* This would involve Phis ... */
+		}
 	}
 }
 
 /*
- * Some cfg optimizations, which do not touch Phi nodes
+ * All cfg optimizations, which do not touch Phi nodes.
+ *
+ * Note that this might create critical edges.
  */
 static void cfgopt_ignoring_phis(ir_graph *irg)
 {
 	ir_phase *block_info = new_phase(irg, NULL);
-	skip_env env = { false, block_info };
+	skip_env env = { true, block_info };
 
-	irg_walk_graph(irg, compute_block_info, NULL, block_info);
-
-	for (;;) {
+	while (env.changed) {
+		irg_walk_graph(irg, compute_block_info, NULL, block_info);
 		env.changed = false;
 
-		/* optimize useless ifs: will not touch empty blocks */
+		/* Remove blocks, which only consist of a Jmp */
+		irg_block_walk_graph(irg, remove_empty_blocks, NULL, &env);
+
+		/* Optimize Cond->Jmp, where then- and else-block are the same. */
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
-		/* Remove empty blocks */
-		irg_block_walk_graph(irg, remove_empty_blocks, NULL, &env);
 		if (env.changed) {
-			set_irg_doms_inconsistent(irg);
-			/* Removing blocks might enable more useless-if optimizations */
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+			/* clear block info, because it must be recomputed */
+			irg_block_walk_graph(irg, clear_block_info, NULL, block_info);
+			/* Removing blocks and Conds might enable more optimizations */
 			continue;
 		} else {
 			break;
@@ -765,7 +852,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
-void optimize_cf(ir_graph *irg)
+static ir_graph_state_t do_cfopt(ir_graph *irg)
 {
 	int i, j, n;
 	ir_node **in = NULL;
@@ -782,10 +869,9 @@ void optimize_cf(ir_graph *irg)
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
 	       "Control flow optimization need a pinned graph");
 
-	/* FIXME: control flow opt destroys block edges. So edges are deactivated
-	 * here. Fix the edges! */
 	edges_deactivate(irg);
 
+	/* First the "simple" optimizations, which do not touch Phis */
 	cfgopt_ignoring_phis(irg);
 
 	/* we use the mark flag to mark removable blocks */
@@ -819,9 +905,9 @@ void optimize_cf(ir_graph *irg)
 		if (!changed)
 			break;
 
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 
 	/* assert due to collect_nodes:
@@ -881,12 +967,17 @@ void optimize_cf(ir_graph *irg)
 		}
 	}
 
-	if (env.changed) {
-		/* Handle graph state if was changed. */
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-	}
+	return 0;
+}
+
+optdesc_t opt_cf = {
+	"control-flow",
+	0,
+	do_cfopt,
+};
+
+void optimize_cf(ir_graph *irg) {
+	perform_irg_optimization(irg, &opt_cf);
 }
 
 /* Creates an ir_graph pass for optimize_cf. */

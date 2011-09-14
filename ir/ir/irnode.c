@@ -253,7 +253,7 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	set_irg_loopinfo_inconsistent(irg);
 }
 
@@ -279,7 +279,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	node->in[n + 1] = in;
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	set_irg_loopinfo_inconsistent(irg);
 }
 
@@ -727,7 +727,7 @@ void set_End_keepalives(ir_node *end, int n, ir_node *in[])
 	}
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 }
 
 /* Set new keep-alives from old keep-alives, skipping irn */
@@ -765,7 +765,7 @@ found:
 	ARR_RESIZE(ir_node *, end->in, (n - 1) + 1 + END_KEEPALIVE_OFFSET);
 
 	/* update irg flags */
-	set_irg_outs_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 }
 
 /* remove Bads, NoMems and doublets from the keep-alive set */
@@ -808,7 +808,7 @@ void remove_End_Bads_and_doublets(ir_node *end)
 	pset_new_destroy(&keeps);
 
 	if (changed) {
-		set_irg_outs_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 	}
 }
 

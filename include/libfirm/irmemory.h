@@ -170,19 +170,11 @@ FIRM_API ir_alias_relation get_alias_relation_ex(
  */
 FIRM_API void mem_disambig_term(void);
 
-FIRM_API ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg);
-
-FIRM_API void set_irg_entity_usage_state(ir_graph *irg,
-                                         ir_entity_usage_computed_state state);
-
 /**
  * Assure that the entity usage flags have been computed for the given graph.
  *
  * This analysis computes the entity usage state for all local variables.
  *
- * Note that this is a conservative estimation that by no Firm transformation
- * can be invalidated, so it's only recomputed if manually triggered by calling
- * set_irg_entity_usage_state(irg, ir_entity_usage_not_computed).
  * Even then the information is not cleaned from the variables, call
  * assure_irg_entity_usage_computed() again for recomputation.
  */

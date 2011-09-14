@@ -46,6 +46,7 @@
 #include "../belistsched.h"
 #include "../beflags.h"
 #include "../bespillslots.h"
+#include "../bespillutil.h"
 #include "../bestack.h"
 
 #include "bearch_amd64_t.h"
@@ -471,8 +472,19 @@ static int amd64_get_reg_class_alignment(const arch_register_class_t *cls)
 
 static void amd64_lower_for_target(void)
 {
+	size_t i, n_irgs = get_irp_n_irgs();
+
 	/* lower compound param handling */
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores, and turn all bigger
+		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes
+		 * during code generation yet.
+		 * TODO:  Adapt this once custom CopyB handling is implemented. */
+		lower_CopyB(irg, 64, 65);
+	}
 }
 
 static int amd64_is_mux_allowed(ir_node *sel, ir_node *mux_false,
@@ -590,6 +602,8 @@ const arch_isa_if_t amd64_isa_if = {
 	amd64_finish_irg,
 	amd64_gen_routine,
 	amd64_register_saved_by,
+	be_new_spill,
+	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_amd64)

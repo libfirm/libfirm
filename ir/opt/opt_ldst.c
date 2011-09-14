@@ -2460,7 +2460,7 @@ int opt_ldst(ir_graph *irg)
 		/* not only invalidate but free them. We might allocate new out arrays
 		   on our obstack which will be deleted yet. */
 		free_irg_outs(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 end:
 

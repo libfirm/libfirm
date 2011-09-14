@@ -57,6 +57,7 @@ static void block_remove_bads(ir_node *block, void *env)
 	int *changed = (int *)env;
 	int i, j;
 	ir_node **new_in, *new_block, *phi;
+	ir_entity *block_entity;
 	const int max = get_irn_arity(block);
 	const int new_max = count_non_bads(block);
 	assert(max >= new_max);
@@ -88,6 +89,9 @@ static void block_remove_bads(ir_node *block, void *env)
 	}
 
 	new_block = new_r_Block(get_irn_irg(block), new_max, new_in);
+	block_entity = get_Block_entity(block);
+	if (block_entity)
+		set_Block_entity(new_block, block_entity);
 
 	/* 2. Remove inputs on Phis, where the block input is Bad. */
 	phi = get_Block_phis(block);
@@ -119,6 +123,8 @@ static void block_remove_bads(ir_node *block, void *env)
 
 /* Remove Bad nodes from Phi and Block inputs.
  *
+ * This does NOT remove unreachable code.
+ *
  * Postcondition: No Bad nodes.
  */
 int remove_bads(ir_graph *irg)
@@ -132,6 +138,8 @@ int remove_bads(ir_graph *irg)
 
 	if (changed) {
 		edges_deactivate(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	}
 
 	return changed;

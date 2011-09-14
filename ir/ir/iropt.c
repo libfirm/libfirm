@@ -1078,8 +1078,13 @@ static ir_node *equivalent_node_And(ir_node *n)
 			ir_node *convop     = get_Conv_op(a);
 			ir_mode *convopmode = get_irn_mode(convop);
 			if (!mode_is_signed(convopmode)) {
-				if (tarval_is_all_one(tarval_convert_to(tv, convopmode))) {
-					/* Conv(X) & all_one(mode(X)) = Conv(X) */
+				/* Check Conv(all_one) & Const = all_one */
+				ir_tarval *one  = get_mode_all_one(convopmode);
+				ir_tarval *conv = tarval_convert_to(one, mode);
+				ir_tarval *and  = tarval_and(conv, tv);
+
+				if (tarval_is_all_one(and)) {
+					/* Conv(X) & Const = X */
 					n = a;
 					DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 					return n;
@@ -4593,7 +4598,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 static bool is_block_unreachable(const ir_node *block)
 {
 	const ir_graph *irg = get_irn_irg(block);
-	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
 		return false;
 	return get_Block_dom_depth(block) < 0;
 }
@@ -4605,7 +4610,9 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (!is_irg_state(irg, IR_GRAPH_STATE_BAD_BLOCK))
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS))
+		return block;
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
 		return block;
 
 	for (i = 0; i < arity; ++i) {
@@ -4936,7 +4943,7 @@ static ir_node *transform_node_Or(ir_node *n)
 	/* we can combine the relations of two compares with the same operands */
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node *a_left  = get_Cmp_left(a);
-		ir_node *a_right = get_Cmp_left(a);
+		ir_node *a_right = get_Cmp_right(a);
 		ir_node *b_left  = get_Cmp_left(b);
 		ir_node *b_right = get_Cmp_right(b);
 		if (a_left == b_left && b_left == b_right) {
@@ -6725,7 +6732,7 @@ ir_node *optimize_in_place(ir_node *n)
 
 	/* FIXME: Maybe we could also test whether optimizing the node can
 	   change the control graph. */
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	return optimize_in_place_2(n);
 }  /* optimize_in_place */
 

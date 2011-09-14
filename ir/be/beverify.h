@@ -27,6 +27,7 @@
 #ifndef FIRM_BE_BEVERIFY_H
 #define FIRM_BE_BEVERIFY_H
 
+#include <stdbool.h>
 #include "irgraph.h"
 
 #include "beirg.h"
@@ -65,8 +66,8 @@ int be_verify_spillslots(ir_graph *irg);
  * assigned.
  *
  * @param irg   The graph to check
- * @return      1 if verify succeeded, 0 otherwise
+ * @return      true if verify succeeded, false otherwise
  */
-int be_verify_register_allocation(ir_graph *irg);
+bool be_verify_register_allocation(ir_graph *irg);
 
 #endif

@@ -66,6 +66,7 @@
 #include "../be_dbgout.h"
 #include "../beblocksched.h"
 #include "../bemachine.h"
+#include "../bespillutil.h"
 #include "../bespillslots.h"
 #include "../bemodule.h"
 #include "../begnuas.h"
@@ -1277,10 +1278,10 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		sched_add_after(start, push);
 
 		/* move esp to ebp */
-		curr_bp = be_new_Copy(bp->reg_class, block, curr_sp);
+		curr_bp = be_new_Copy(block, curr_sp);
 		sched_add_after(push, curr_bp);
 		be_set_constr_single_reg_out(curr_bp, 0, bp, arch_register_req_type_ignore);
-		curr_sp = be_new_CopyKeep_single(sp->reg_class, block, curr_sp, curr_bp, mode_gp);
+		curr_sp = be_new_CopyKeep_single(block, curr_sp, curr_bp);
 		sched_add_after(curr_bp, curr_sp);
 		be_set_constr_single_reg_out(curr_sp, 0, sp, arch_register_req_type_produces_sp);
 		edges_reroute(initial_bp, curr_bp);
@@ -1290,6 +1291,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		edges_reroute(initial_sp, incsp);
 		set_irn_n(push, n_ia32_Push_stack, initial_sp);
 		sched_add_after(curr_sp, incsp);
+
+		/* make sure the initial IncSP is really used by someone */
+		if (get_irn_n_edges(incsp) <= 1) {
+			ir_node *in[] = { incsp };
+			ir_node *keep = be_new_Keep(block, 1, in);
+			sched_add_after(incsp, keep);
+		}
 
 		layout->initial_bias = -4;
 	} else {
@@ -2025,8 +2033,14 @@ static void ia32_lower_for_target(void)
 		&intrinsic_env,
 	};
 
-	/* lower compound param handling */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	/* lower compound param handling
+	 * Note: we lower compound arguments ourself, since on ia32 we don't
+	 * have hidden parameters but know where to find the structs on the stack.
+	 * (This also forces us to always allocate space for the compound arguments
+	 *  on the callframe and we can't just use an arbitrary position on the
+	 *  stackframe)
+	 */
+	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS);
 
 	/* replace floating point operations by function calls */
 	if (ia32_cg_config.use_softfloat) {
@@ -2043,6 +2057,14 @@ static void ia32_lower_for_target(void)
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, false);
 	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
+		 * so we can generate rep movs later, and turn all big CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 64, 8193);
+	}
 }
 
 /**
@@ -2050,25 +2072,27 @@ static void ia32_lower_for_target(void)
  */
 static ir_node *ia32_create_trampoline_fkt(ir_node *block, ir_node *mem, ir_node *trampoline, ir_node *env, ir_node *callee)
 {
-	ir_graph *irg  = get_irn_irg(block);
-	ir_node  *p    = trampoline;
-	ir_mode  *mode = get_irn_mode(p);
-	ir_node  *st;
+	ir_graph *const irg  = get_irn_irg(block);
+	ir_node  *      p    = trampoline;
+	ir_mode  *const mode = get_irn_mode(p);
+	ir_node  *const one  = new_r_Const(irg, get_mode_one(mode_Iu));
+	ir_node  *const four = new_r_Const_long(irg, mode_Iu, 4);
+	ir_node  *      st;
 
 	/* mov  ecx,<env> */
 	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xb9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
+	p   = new_r_Add(block, p, one, mode);
 	st  = new_r_Store(block, mem, p, env, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
+	p   = new_r_Add(block, p, four, mode);
 	/* jmp  <callee> */
 	st  = new_r_Store(block, mem, p, new_r_Const_long(irg, mode_Bu, 0xe9), cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 1), mode);
+	p   = new_r_Add(block, p, one, mode);
 	st  = new_r_Store(block, mem, p, callee, cons_none);
 	mem = new_r_Proj(st, mode_M, pn_Store_M);
-	p   = new_r_Add(block, p, new_r_Const_long(irg, mode_Iu, 4), mode);
+	p   = new_r_Add(block, p, four, mode);
 
 	return mem;
 }
@@ -2237,6 +2261,8 @@ const arch_isa_if_t ia32_isa_if = {
 	ia32_finish,         /* called before codegen */
 	ia32_emit,           /* emit && done */
 	ia32_register_saved_by,
+	be_new_spill,
+	be_new_reload
 };
 
 BE_REGISTER_MODULE_CONSTRUCTOR(be_init_arch_ia32)

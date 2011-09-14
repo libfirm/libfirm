@@ -284,6 +284,27 @@ static void prepare_links(ir_node *node)
 			env->flags |= MUST_BE_LOWERED;
 		}
 		return;
+	} else if (is_Call(node)) {
+		/* Special case:  If the result of the Call is never used, we won't
+		 * find a Proj with a mode that potentially triggers MUST_BE_LOWERED
+		 * to be set.  Thus, if we see a call, we check its result types and
+		 * decide whether MUST_BE_LOWERED has to be set.
+		 */
+		ir_type *tp = get_Call_type(node);
+		size_t   n_res, i;
+
+		n_res = get_method_n_ress(tp);
+		for (i = 0; i < n_res; ++i) {
+			ir_type *rtp = get_method_res_type(tp, i);
+
+			if (is_Primitive_type(rtp)) {
+				ir_mode *rmode = get_type_mode(rtp);
+
+				if (rmode == env->high_signed || rmode == env->high_unsigned) {
+					env->flags |= MUST_BE_LOWERED;
+				}
+			}
+		}
 	}
 }
 
@@ -1283,7 +1304,7 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 		ir_node *xor_low    = new_rd_Eor(dbg, block, low_left, low_right, mode);
 		ir_node *xor_high   = new_rd_Eor(dbg, block, high_left, high_right, mode);
 		ir_node *ornode = new_rd_Or(dbg, block, xor_low, xor_high, mode);
-		ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+		ir_node *cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const(irg, get_mode_null(mode)), relation);
 		set_Cond_selector(node, cmp);
 		return;
 	}
@@ -1548,7 +1569,7 @@ static void lower_Cmp(ir_node *cmp, ir_mode *m)
 		ir_node  *xor_low    = new_rd_Eor(dbg, block, low_left, low_right, mode);
 		ir_node  *xor_high   = new_rd_Eor(dbg, block, high_left, high_right, mode);
 		ir_node  *ornode     = new_rd_Or(dbg, block, xor_low, xor_high, mode);
-		ir_node  *new_cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const_long(irg, mode, 0), relation);
+		ir_node  *new_cmp    = new_rd_Cmp(dbg, block, ornode, new_r_Const(irg, get_mode_null(mode)), relation);
 		exchange(cmp, new_cmp);
 		return;
 	}
@@ -1606,7 +1627,9 @@ static void fix_parameter_entities(ir_graph *irg)
 	ir_type   *orig_mtp = get_type_link(mtp);
 
 	size_t      orig_n_params      = get_method_n_params(orig_mtp);
-	ir_entity **parameter_entities = ALLOCANZ(ir_entity*, orig_n_params);
+	ir_entity **parameter_entities;
+
+	parameter_entities = ALLOCANZ(ir_entity*, orig_n_params);
 
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n          = get_compound_n_members(frame_type);
@@ -1620,6 +1643,8 @@ static void fix_parameter_entities(ir_graph *irg)
 		if (!is_parameter_entity(entity))
 			continue;
 		p = get_entity_parameter_number(entity);
+		if (p == IR_VA_START_PARAMETER_NUMBER)
+			continue;
 		assert(p < orig_n_params);
 		assert(parameter_entities[p] == NULL);
 		parameter_entities[p] = entity;
@@ -1629,10 +1654,12 @@ static void fix_parameter_entities(ir_graph *irg)
 	n_param = 0;
 	for (i = 0; i < orig_n_params; ++i, ++n_param) {
 		ir_entity *entity = parameter_entities[i];
-		ir_type   *tp     = get_method_param_type(orig_mtp, i);
+		ir_type   *tp;
+
 		if (entity != NULL)
 			set_entity_parameter_number(entity, n_param);
 
+		tp = get_method_param_type(orig_mtp, i);
 		if (is_Primitive_type(tp)) {
 			ir_mode *mode = get_type_mode(tp);
 			if (mode == env->high_signed || mode == env->high_unsigned) {
@@ -1769,7 +1796,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 	set_method_calling_convention(res, get_method_calling_convention(mtp));
 	set_method_additional_properties(res, get_method_additional_properties(mtp));
 
-	set_lowered_type(mtp, res);
+	set_higher_type(res, mtp);
 	set_type_link(res, mtp);
 
 	pmap_insert(lowered_type, mtp, res);
@@ -2553,7 +2580,7 @@ static void lower_irg(ir_graph *irg)
 
 		if (env->flags & CF_CHANGED) {
 			/* control flow changed, dominance info is invalid */
-			set_irg_doms_inconsistent(irg);
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 			set_irg_extblk_inconsistent(irg);
 		}
 		edges_deactivate(irg);

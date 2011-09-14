@@ -416,12 +416,9 @@ static void spill_irn(spill_env_t *env, spill_info_t *spillinfo)
 	spill = spillinfo->spills;
 	for ( ; spill != NULL; spill = spill->next) {
 		ir_node *after = spill->after;
-		ir_node *block = get_block(after);
-
 		after = determine_spill_point(after);
 
-		spill->spill = be_spill(block, to_spill);
-		sched_add_after(skip_Proj(after), spill->spill);
+		spill->spill = arch_env_new_spill(env->arch_env, to_spill, after);
 		DB((dbg, LEVEL_1, "\t%+F after %+F\n", spill->spill, after));
 		env->spill_count++;
 	}
@@ -713,6 +710,39 @@ double be_get_reload_costs_on_edge(spill_env_t *env, ir_node *to_spill,
 	return be_get_reload_costs(env, to_spill, before);
 }
 
+ir_node *be_new_spill(ir_node *value, ir_node *after)
+{
+	ir_graph                    *irg       = get_irn_irg(value);
+	ir_node                     *frame     = get_irg_frame(irg);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class(value);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
+	ir_node                     *block     = get_block(after);
+	ir_node                     *spill
+		= be_new_Spill(cls, cls_frame, block, frame, value);
+
+	sched_add_after(after, spill);
+	return spill;
+}
+
+ir_node *be_new_reload(ir_node *value, ir_node *spill, ir_node *before)
+{
+	ir_graph *irg   = get_irn_irg(value);
+	ir_node  *frame = get_irg_frame(irg);
+	ir_node  *block = get_block(before);
+	const arch_register_class_t *cls       = arch_get_irn_reg_class(value);
+	const arch_register_class_t *cls_frame = arch_get_irn_reg_class(frame);
+	ir_mode                     *mode      = get_irn_mode(value);
+	ir_node  *reload;
+
+	assert(be_is_Spill(spill) || is_Phi(spill));
+	assert(get_irn_mode(spill) == mode_M);
+
+	reload = be_new_Reload(cls, cls_frame, block, frame, spill, mode);
+	sched_add_before(before, reload);
+
+	return reload;
+}
+
 /*
  *  ___                     _     ____      _                 _
  * |_ _|_ __  ___  ___ _ __| |_  |  _ \ ___| | ___   __ _  __| |___
@@ -859,12 +889,11 @@ void be_insert_spills_reloads(spill_env_t *env)
 
 	/* process each spilled node */
 	foreach_set(env->spills, spill_info_t*, si) {
-		reloader_t *rld;
 		ir_node  *to_spill        = si->to_spill;
-		ir_mode  *mode            = get_irn_mode(to_spill);
 		ir_node **copies          = NEW_ARR_F(ir_node*, 0);
 		double    all_remat_costs = 0; /** costs when we would remat all nodes */
-		int       force_remat     = 0;
+		bool      force_remat     = false;
+		reloader_t *rld;
 
 		DBG((dbg, LEVEL_1, "\nhandling all reloaders of %+F:\n", to_spill));
 
@@ -924,7 +953,7 @@ void be_insert_spills_reloads(spill_env_t *env)
 			if (all_remat_costs < 0) {
 				DBG((dbg, LEVEL_1, "\nforcing remats of all reloaders (%f)\n",
 				     all_remat_costs));
-				force_remat = 1;
+				force_remat = true;
 			}
 		}
 
@@ -945,8 +974,8 @@ void be_insert_spills_reloads(spill_env_t *env)
 				/* create a reload, use the first spill for now SSA
 				 * reconstruction for memory comes below */
 				assert(si->spills != NULL);
-				copy = be_reload(si->reload_cls, rld->reloader, mode,
-				                 si->spills->spill);
+				copy = arch_env_new_reload(env->arch_env, si->to_spill,
+				                           si->spills->spill, rld->reloader);
 				env->reload_count++;
 			}
 
