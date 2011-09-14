@@ -140,6 +140,20 @@ static inline ir_label_t _get_irp_next_label_nr(void)
 	return ++irp->last_label_nr;
 }
 
+/** Whether optimizations should dump irgs */
+static inline int _get_irp_optimization_dumps(void)
+{
+	assert(irp);
+	return irp->optimization_dumps;
+}
+
+/** Set optimizations to dump irgs */
+static inline void _enable_irp_optimization_dumps(void)
+{
+	assert(irp);
+	irp->optimization_dumps = 1;
+}
+
 void           set_irp_ip_outedges(ir_node ** ip_outedges);
 ir_node**      get_irp_ip_outedges(void);
 
@@ -164,5 +178,7 @@ void init_irprog_2(void);
 #define get_tls_type()            _get_tls_type()
 #define get_irp_next_region_nr()  _get_irp_next_region_nr()
 #define get_irp_next_label_nr()   _get_irp_next_label_nr()
+#define get_irp_optimization_dumps()     _get_irp_optimization_dumps()
+#define enable_irp_optimization_dumps()  _enable_irp_optimization_dumps()
 
 #endif

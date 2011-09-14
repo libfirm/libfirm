@@ -47,6 +47,7 @@
 #include "irdump.h"
 #include "irverify.h"
 #include "iredges.h"
+#include "opt_manage.h"
 
 #include "array_t.h"
 
@@ -837,7 +838,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		if (env.changed) {
-			set_irg_doms_inconsistent(irg);
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 			/* clear block info, because it must be recomputed */
 			irg_block_walk_graph(irg, clear_block_info, NULL, block_info);
 			/* Removing blocks and Conds might enable more optimizations */
@@ -851,7 +852,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
-void optimize_cf(ir_graph *irg)
+static ir_graph_state_t do_cfopt(ir_graph *irg)
 {
 	int i, j, n;
 	ir_node **in = NULL;
@@ -904,9 +905,9 @@ void optimize_cf(ir_graph *irg)
 		if (!changed)
 			break;
 
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 
 	/* assert due to collect_nodes:
@@ -966,12 +967,17 @@ void optimize_cf(ir_graph *irg)
 		}
 	}
 
-	if (env.changed) {
-		/* Handle graph state if was changed. */
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-	}
+	return 0;
+}
+
+optdesc_t opt_cf = {
+	"control-flow",
+	0,
+	do_cfopt,
+};
+
+void optimize_cf(ir_graph *irg) {
+	perform_irg_optimization(irg, &opt_cf);
 }
 
 /* Creates an ir_graph pass for optimize_cf. */

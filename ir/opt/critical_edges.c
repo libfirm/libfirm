@@ -106,7 +106,7 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 	if (env.changed) {
 		/* control flow changed */
 		set_irg_extblk_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	}
 }
 

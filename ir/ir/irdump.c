@@ -2319,7 +2319,7 @@ void dump_ir_graph_file(FILE *out, ir_graph *irg)
 
 	/* dump the out edges in a separate walk */
 	if ((flags & ir_dump_flag_out_edges)
-			&& (get_irg_outs_state(irg) != outs_none)) {
+			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))) {
 		irg_out_walk(get_irg_start(irg), dump_out_edge, NULL, out);
 	}
 
@@ -2374,7 +2374,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 
 		/* Dump dominator/postdominator edge */
 		if (ir_get_dump_flags() & ir_dump_flag_dominance) {
-			if (get_irg_dom_state(current_ir_graph) == dom_consistent && get_Block_idom(block)) {
+			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_DOMINANCE) && get_Block_idom(block)) {
 				ir_node *pred = get_Block_idom(block);
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);
@@ -2382,7 +2382,7 @@ static void dump_block_to_cfg(ir_node *block, void *env)
 				PRINT_NODEID(pred);
 				fprintf(F, "\" " DOMINATOR_EDGE_ATTR "}\n");
 			}
-			if (get_irg_postdom_state(current_ir_graph) == dom_consistent && get_Block_ipostdom(block)) {
+			if (is_irg_state(get_irn_irg(block), IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE) && get_Block_ipostdom(block)) {
 				ir_node *pred = get_Block_ipostdom(block);
 				fprintf(F, "edge: { sourcename: \"");
 				PRINT_NODEID(block);

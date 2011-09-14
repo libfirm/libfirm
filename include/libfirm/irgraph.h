@@ -316,8 +316,6 @@ typedef enum {
 	outs_inconsistent  /**< Outs have been computed, memory is still allocated,
 	                        but the graph has been changed since. */
 } irg_outs_state;
-FIRM_API irg_outs_state get_irg_outs_state(const ir_graph *irg);
-FIRM_API void set_irg_outs_inconsistent(ir_graph *irg);
 
 /** state:  extended basic block state. */
 typedef enum {
@@ -327,24 +325,6 @@ typedef enum {
 } irg_extblk_info_state;
 FIRM_API irg_extblk_info_state get_irg_extblk_state(const ir_graph *irg);
 FIRM_API void set_irg_extblk_inconsistent(ir_graph *irg);
-
-/** state: dom_state
- * Signals the state of the dominator / post dominator information.
- */
-typedef enum {
-	dom_none,             /**< dominator are not computed, no memory is allocated */
-	dom_consistent,       /**< dominator information is computed and correct */
-	dom_inconsistent      /**< dominator information is computed but the graph has been changed since */
-} irg_dom_state;
-
-/** returns the dominator state of an IR graph. */
-FIRM_API irg_dom_state get_irg_dom_state(const ir_graph *irg);
-
-/** returns the post dominator state of an IR graph. */
-FIRM_API irg_dom_state get_irg_postdom_state(const ir_graph *irg);
-
-/** sets the dominator and post dominator state of an IR graph to inconsistent. */
-FIRM_API void set_irg_doms_inconsistent(ir_graph *irg);
 
 /** state: loopinfo_state
  *  Loop information describes the loops within the control and
@@ -501,7 +481,6 @@ typedef enum {
 	IR_GRAPH_STATE_KEEP_MUX      = 1U << 0,  /**< should perform no further optimisations on Mux nodes */
 	IR_GRAPH_STATE_ARCH_DEP      = 1U << 1,  /**< should not construct more nodes which irarch potentially breaks down */
 	IR_GRAPH_STATE_BCONV_ALLOWED = 1U << 2,  /**< Conv(mode_b) to Iu is allowed as set command */
-	IR_GRAPH_STATE_BAD_BLOCK     = 1U << 3,  /**< a node may have Bad in its block input */
 	/**
 	 * There are normalisations where there is no "best" representative.
 	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
@@ -514,6 +493,19 @@ typedef enum {
 	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking operations.
 	 */
 	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 5,
+
+	IR_GRAPH_STATE_NO_CRITICAL_EDGES        = 1U << 6,
+	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U << 7,
+	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS    = 1U << 8,
+	IR_GRAPH_STATE_ONE_RETURN               = 1U << 9,
+	IR_GRAPH_STATE_CONSISTENT_DOMINANCE     = 1U << 10,
+	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE = 1U << 11,
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES     = 1U << 12,
+	IR_GRAPH_STATE_CONSISTENT_OUTS          = 1U << 13,
+	IR_GRAPH_STATE_CONSISTENT_LOOPINFO      = 1U << 14,
+	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE  = 1U << 15,
+	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS    = 1U << 16,
+	IR_GRAPH_STATE_BROKEN_FOR_VERIFIER      = 1U << 17,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 

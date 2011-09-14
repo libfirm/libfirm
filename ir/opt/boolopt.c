@@ -39,6 +39,7 @@
 #include "tv.h"
 #include "irpass.h"
 #include "debug.h"
+#include "opt_manage.h"
 
 /** Describes a pair of relative conditions lo < hi, lo rel_lo x, hi rel_hi x */
 typedef struct cond_pair {
@@ -716,15 +717,13 @@ restart:
 	}
 }
 
-void opt_bool(ir_graph *const irg)
+static ir_graph_state_t do_simplify_bool(ir_graph *const irg)
 {
 	bool_opt_env_t env;
+	ir_graph_state_t res = 0;
 
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.bool");
-
-	/* works better with one return block only */
-	normalize_one_return(irg);
 
 	env.changed = 0;
 
@@ -737,12 +736,24 @@ void opt_bool(ir_graph *const irg)
 	irg_walk_graph(irg, clear_block_infos, collect_phis, NULL);
 	irg_block_walk_graph(irg, NULL, find_cf_and_or_walker, &env);
 
-	if (env.changed) {
-		set_irg_doms_inconsistent(irg);
-		set_irg_extblk_inconsistent(irg);
+	if (! env.changed) {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE;
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_MARK | IR_RESOURCE_PHI_LIST);
+
+	return res;
+}
+
+optdesc_t opt_simplify_bool = {
+	"bool-simplification",
+	IR_GRAPH_STATE_ONE_RETURN, /* works better with one return block only */
+	do_simplify_bool,
+};
+
+void opt_bool(ir_graph *irg)
+{
+	perform_irg_optimization(irg, &opt_simplify_bool);
 }
 
 /* Creates an ir_graph pass for opt_bool. */

@@ -422,7 +422,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	free_irg_outs(irg);
 	free_trouts();
 	free_loop_information(irg);
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	be_liveness_invalidate(be_get_irg_liveness(irg));
 	/* Hack for now, something is buggy with invalidate liveness... */

@@ -44,6 +44,7 @@
 #include "tv.h"
 #include "irpass.h"
 #include "irmemory.h"
+#include "opt_manage.h"
 
 /* TODO:
  * - Implement cleared/set bit calculation for Add, Sub, Minus, Mul, Div, Mod, Shl, Shr, Shrs, Rotl
@@ -812,21 +813,15 @@ static void build_phi_lists(ir_node *irn, void *env)
 		add_Block_phi(get_nodes_block(irn), irn);
 }
 
-void fixpoint_vrp(ir_graph* const irg)
+static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
 {
 	environment_t env;
+	ir_graph_state_t res = 0;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.fp-vrp");
 	DB((dbg, LEVEL_1, "===> Performing constant propagation on %+F\n", irg));
 
 	obstack_init(&obst);
-
-	/* HACK: to avoid finding dead code */
-	edges_deactivate(irg);
-	edges_activate(irg);
-
-	edges_assure(irg);
-	assure_doms(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
@@ -860,16 +855,26 @@ void fixpoint_vrp(ir_graph* const irg)
 	env.modified = 0;
 	irg_walk_graph(irg, NULL, apply_result, &env);
 
-	if (env.modified) {
-		/* control flow might changed */
-		set_irg_extblk_inconsistent(irg);
-		set_irg_doms_inconsistent(irg);
-		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
+	if (! env.modified) {
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE;
 	}
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	obstack_free(&obst, NULL);
+
+	return res;
+}
+
+optdesc_t opt_fpvrp = {
+	"fp-vrp",
+	IR_GRAPH_STATE_NO_BAD_BLOCKS | IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
+	do_fixpoint_vrp,
+};
+
+void fixpoint_vrp(ir_graph* const irg)
+{
+	perform_irg_optimization(irg, &opt_fpvrp);
 }
 
 ir_graph_pass_t *fixpoint_vrp_irg_pass(const char *name)

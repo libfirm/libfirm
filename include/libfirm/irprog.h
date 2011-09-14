@@ -291,6 +291,12 @@ FIRM_API size_t get_irp_n_asms(void);
 /** Return the global asm include at position pos. */
 FIRM_API ident *get_irp_asm(size_t pos);
 
+/** Return whether optimization dump vcg graphs */
+FIRM_API int get_irp_optimization_dumps(void);
+
+/** Enable vcg dumping of optimization */
+FIRM_API void enable_irp_optimization_dumps(void);
+
 #include "end.h"
 
 #endif

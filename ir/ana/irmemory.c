@@ -1041,22 +1041,12 @@ static void analyse_irg_entity_usage(ir_graph *irg)
 
 
 	/* now computed */
-	irg->entity_usage_state = ir_entity_usage_computed;
-}
-
-ir_entity_usage_computed_state get_irg_entity_usage_state(const ir_graph *irg)
-{
-	return irg->entity_usage_state;
-}
-
-void set_irg_entity_usage_state(ir_graph *irg, ir_entity_usage_computed_state state)
-{
-	irg->entity_usage_state = state;
+	set_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 }
 
 void assure_irg_entity_usage_computed(ir_graph *irg)
 {
-	if (irg->entity_usage_state != ir_entity_usage_not_computed)
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
 		return;
 
 	analyse_irg_entity_usage(irg);

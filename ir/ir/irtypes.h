@@ -479,16 +479,12 @@ struct ir_graph {
 	ir_graph_state_t      state;
 	irg_phase_state       phase_state;       /**< Compiler phase. */
 	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
-	irg_outs_state        outs_state;        /**< Out edges. */
-	irg_dom_state         dom_state;         /**< Dominator state information. */
-	irg_dom_state         pdom_state;        /**< Post Dominator state information. */
 	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
 	irg_loopinfo_state    loopinfo_state;    /**< State of loop information. */
 	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
 	irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
 	exec_freq_state       execfreq_state;    /**< Execution frequency state. */
-	ir_entity_usage_computed_state entity_usage_state;
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 
@@ -580,7 +576,7 @@ struct ir_prog {
 	/* -- states of and access to generated information -- */
 	irg_phase_state phase_state;    /**< The state of construction. */
 
-	irg_outs_state outs_state;      /**< The state of out edges of ir nodes. */
+	irg_outs_state outs_state;    /**< The state of out edges of type information. */
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
 	                                     in interprocedural view. */
 	irg_outs_state trouts_state;    /**< The state of out edges of type information. */
@@ -608,6 +604,7 @@ struct ir_prog {
 	size_t max_irg_idx;                  /**< highest unused irg index */
 	long max_node_nr;                    /**< to generate unique numbers for nodes. */
 	unsigned dump_nr;                    /**< number of program info dumps */
+	unsigned optimization_dumps :1;      /**< dump irg on each optimization */
 #ifndef NDEBUG
 	ir_resources_t reserved_resources;   /**< Bitset for tracking used global resources. */
 #endif

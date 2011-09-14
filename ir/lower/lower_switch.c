@@ -422,7 +422,7 @@ void lower_switch(ir_graph *irg, unsigned small_switch, unsigned spare_size,
 
 	if (env.changed) {
 		/* control flow changed */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 		set_irg_extblk_inconsistent(irg);
 	}
 }
