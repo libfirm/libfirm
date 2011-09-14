@@ -57,7 +57,7 @@ static void block_remove_bads(ir_node *block, void *env)
 	int *changed = (int *)env;
 	int i, j;
 	ir_node **new_in, *new_block, *phi;
-	ir_entity *block_entity = NULL;
+	ir_entity *block_entity;
 	const int max = get_irn_arity(block);
 	const int new_max = count_non_bads(block);
 	assert(max >= new_max);
