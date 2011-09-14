@@ -485,7 +485,6 @@ struct ir_graph {
 	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
 	irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
 	exec_freq_state       execfreq_state;    /**< Execution frequency state. */
-	ir_entity_usage_computed_state entity_usage_state;
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 

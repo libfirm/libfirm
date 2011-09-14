@@ -15,11 +15,6 @@
 #include "irdump.h"
 #include "opt_manage.h"
 
-static void deactivate_entity_usage(ir_graph *irg)
-{
-	set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
-}
-
 static void nop(ir_graph *irg) {
 	(void)irg;
 }
@@ -38,8 +33,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	// FIXME should not be necessary!
 	if (loopinfo_inconsistent == get_irg_loopinfo_state(irg))
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
-	if (ir_entity_usage_not_computed == get_irg_entity_usage_state(irg))
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 
 	/* assure that all requirements for the optimization are fulfilled */
 #define PREPARE(st,func) if (st & (required ^ irg->state)) {func(irg); set_irg_state(irg,st);}
@@ -78,7 +71,7 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUTS,          nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,     edges_deactivate)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      set_irg_loopinfo_inconsistent)
-	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  deactivate_entity_usage)
+	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  nop)
 	INVALIDATE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    set_irg_extblk_inconsistent)
 
 	if (!(new_irg_state & IR_GRAPH_STATE_BROKEN_FOR_VERIFIER)) {
