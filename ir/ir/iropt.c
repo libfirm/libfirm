@@ -6732,7 +6732,7 @@ ir_node *optimize_in_place(ir_node *n)
 
 	/* FIXME: Maybe we could also test whether optimizing the node can
 	   change the control graph. */
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	return optimize_in_place_2(n);
 }  /* optimize_in_place */
 

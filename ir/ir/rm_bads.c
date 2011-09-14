@@ -139,6 +139,7 @@ int remove_bads(ir_graph *irg)
 	if (changed) {
 		edges_deactivate(irg);
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	}
 
 	return changed;

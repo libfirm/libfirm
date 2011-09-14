@@ -479,8 +479,6 @@ struct ir_graph {
 	ir_graph_state_t      state;
 	irg_phase_state       phase_state;       /**< Compiler phase. */
 	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
-	irg_dom_state         dom_state;         /**< Dominator state information. */
-	irg_dom_state         pdom_state;        /**< Post Dominator state information. */
 	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
 	irg_loopinfo_state    loopinfo_state;    /**< State of loop information. */

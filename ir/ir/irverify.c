@@ -2010,7 +2010,7 @@ int irg_verify(ir_graph *irg, unsigned flags)
 
 	irg_walk_anchors(
 		irg,
-		pinned && get_irg_dom_state(irg) == dom_consistent
+		pinned && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE)
 			? verify_wrap_ssa : verify_wrap,
 		NULL,
 		&res
@@ -2075,7 +2075,7 @@ int irn_verify_irg_dump(const ir_node *n, ir_graph *irg,
 	firm_verify_failure_msg = NULL;
 	do_node_verification(FIRM_VERIFICATION_ERROR_ONLY);
 	res = irn_verify_irg(n, irg);
-	if (res && get_irg_dom_state(irg) == dom_consistent &&
+	if (res && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE) &&
 	    get_irg_pinned(irg) == op_pin_state_pinned)
 		res = check_dominance_for_node(n);
 	do_node_verification(old);

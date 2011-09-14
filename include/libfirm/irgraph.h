@@ -326,24 +326,6 @@ typedef enum {
 FIRM_API irg_extblk_info_state get_irg_extblk_state(const ir_graph *irg);
 FIRM_API void set_irg_extblk_inconsistent(ir_graph *irg);
 
-/** state: dom_state
- * Signals the state of the dominator / post dominator information.
- */
-typedef enum {
-	dom_none,             /**< dominator are not computed, no memory is allocated */
-	dom_consistent,       /**< dominator information is computed and correct */
-	dom_inconsistent      /**< dominator information is computed but the graph has been changed since */
-} irg_dom_state;
-
-/** returns the dominator state of an IR graph. */
-FIRM_API irg_dom_state get_irg_dom_state(const ir_graph *irg);
-
-/** returns the post dominator state of an IR graph. */
-FIRM_API irg_dom_state get_irg_postdom_state(const ir_graph *irg);
-
-/** sets the dominator and post dominator state of an IR graph to inconsistent. */
-FIRM_API void set_irg_doms_inconsistent(ir_graph *irg);
-
 /** state: loopinfo_state
  *  Loop information describes the loops within the control and
  *  data flow of the procedure.

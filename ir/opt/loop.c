@@ -1355,7 +1355,7 @@ static void loop_inversion(ir_graph *irg)
 		DEL_ARR_F(cur_head_outs);
 
 		/* Duplicated blocks changed doms */
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 		set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 
 		++stats.inverted;
@@ -2574,7 +2574,7 @@ static void unroll_loop(void)
 		else
 			++stats.invariant_unroll;
 
-		set_irg_doms_inconsistent(current_ir_graph);
+		clear_irg_state(current_ir_graph, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 		DEL_ARR_F(loop_entries);
 	}

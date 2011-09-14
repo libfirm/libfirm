@@ -78,7 +78,7 @@ static inline void do_local_optimize(ir_node *n)
 
 	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	/* Clean the value_table in irg for the CSE. */
 	new_identities(irg);
@@ -206,7 +206,7 @@ int optimize_graph_df(ir_graph *irg)
 	clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS);
 
 	/* invalidate info */
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -230,7 +230,7 @@ int optimize_graph_df(ir_graph *irg)
 		compute_doms(irg);
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}
-	set_irg_doms_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 	del_pdeq(waitq);
 

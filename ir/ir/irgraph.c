@@ -186,8 +186,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->additional_properties = mtp_property_inherited;  /* inherited from type */
 
 	res->irg_pinned_state    = op_pin_state_pinned;
-	res->dom_state           = dom_none;
-	res->pdom_state          = dom_none;
 	res->typeinfo_state      = ir_typeinfo_none;
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
@@ -659,21 +657,6 @@ irg_extblk_info_state (get_irg_extblk_state)(const ir_graph *irg)
 void (set_irg_extblk_inconsistent)(ir_graph *irg)
 {
 	_set_irg_extblk_inconsistent(irg);
-}
-
-irg_dom_state (get_irg_dom_state)(const ir_graph *irg)
-{
-	return _get_irg_dom_state(irg);
-}
-
-irg_dom_state (get_irg_postdom_state)(const ir_graph *irg)
-{
-	return _get_irg_postdom_state(irg);
-}
-
-void (set_irg_doms_inconsistent)(ir_graph *irg)
-{
-	_set_irg_doms_inconsistent(irg);
 }
 
 irg_loopinfo_state (get_irg_loopinfo_state)(const ir_graph *irg)

@@ -838,7 +838,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		irg_block_walk_graph(irg, NULL, optimize_ifs, &env);
 
 		if (env.changed) {
-			set_irg_doms_inconsistent(irg);
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 			/* clear block info, because it must be recomputed */
 			irg_block_walk_graph(irg, clear_block_info, NULL, block_info);
 			/* Removing blocks and Conds might enable more optimizations */
@@ -905,7 +905,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 		if (!changed)
 			break;
 
-		set_irg_doms_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 		set_irg_extblk_inconsistent(irg);
 		set_irg_entity_usage_state(irg, ir_entity_usage_not_computed);
 	}

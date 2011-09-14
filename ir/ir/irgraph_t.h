@@ -251,25 +251,6 @@ static inline void _set_irg_extblk_inconsistent(ir_graph *irg)
 		irg->extblk_state = ir_extblk_info_invalid;
 }
 
-static inline irg_dom_state _get_irg_dom_state(const ir_graph *irg)
-{
-	return irg->dom_state;
-}
-
-static inline irg_dom_state _get_irg_postdom_state(const ir_graph *irg)
-{
-	return irg->pdom_state;
-}
-
-static inline void _set_irg_doms_inconsistent(ir_graph *irg)
-{
-	if (irg->dom_state != dom_none)
-		irg->dom_state = dom_inconsistent;
-	if (irg->pdom_state != dom_none)
-		irg->pdom_state = dom_inconsistent;
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-}
-
 static inline irg_loopinfo_state _get_irg_loopinfo_state(const ir_graph *irg)
 {
 	return irg->loopinfo_state;
@@ -524,9 +505,6 @@ static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
 #define get_irg_pinned(irg)                   _get_irg_pinned(irg)
 #define get_irg_extblk_state(irg)             _get_irg_extblk_state(irg)
 #define set_irg_extblk_inconsistent(irg)      _set_irg_extblk_inconsistent(irg)
-#define get_irg_dom_state(irg)                _get_irg_dom_state(irg)
-#define get_irg_postdom_state(irg)            _get_irg_postdom_state(irg)
-#define set_irg_doms_inconsistent(irg)        _set_irg_doms_inconsistent(irg)
 #define get_irg_loopinfo_state(irg)           _get_irg_loopinfo_state(irg)
 #define set_irg_loopinfo_state(irg, s)        _set_irg_loopinfo_state(irg, s)
 #define set_irg_loopinfo_inconsistent(irg)    _set_irg_loopinfo_inconsistent(irg)

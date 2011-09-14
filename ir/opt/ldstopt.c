@@ -2296,10 +2296,7 @@ static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 		edges_deactivate(irg);
 	}
 
-	if (env.changes & CF_CHANGED) {
-		/* control flow changed, block might have Bad() predecessors. */
-		set_irg_doms_inconsistent(irg);
-	} else {
+	if (!(env.changes & CF_CHANGED)) {
 		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BAD_BLOCKS;
 	}
 
