@@ -535,7 +535,7 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
                              cl_entry *entry, wlk_env *env,
                              ir_type *ctp)
 {
-	ir_node *p, *n, *mem, *blk;
+	ir_node *p, *n;
 	size_t n_args;
 
 	n_args = 0;
@@ -544,21 +544,25 @@ static void add_hidden_param(ir_graph *irg, size_t n_com, ir_node **ins,
 		size_t   idx = get_Proj_proj(src);
 		n = (ir_node*)get_irn_link(p);
 
-		ins[idx] = get_CopyB_dst(p);
-		blk      = get_nodes_block(p);
+		/* consider only the first CopyB */
+		if (ins[idx] == NULL) {
+			ir_node *block = get_nodes_block(p);
 
-		/* use the memory output of the call and not the input of the CopyB
-		 * otherwise stuff breaks if the call was mtp_property_const, because
-		 * then the copyb skips the call. But after lowering the call is not
-		 * const anymore, and its memory has to be used */
-		mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
+			/* use the memory output of the call and not the input of the CopyB
+			 * otherwise stuff breaks if the call was mtp_property_const, because
+			 * then the copyb skips the call. But after lowering the call is not
+			 * const anymore, and its memory has to be used */
+			ir_node *mem = new_r_Proj(entry->call, mode_M, pn_Call_M);
 
-		/* get rid of the CopyB */
-		turn_into_tuple(p, pn_CopyB_max+1);
-		set_Tuple_pred(p, pn_CopyB_M,         mem);
-		set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(blk));
-		set_Tuple_pred(p, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
-		++n_args;
+			ins[idx] = get_CopyB_dst(p);
+
+			/* get rid of the CopyB */
+			turn_into_tuple(p, pn_CopyB_max+1);
+			set_Tuple_pred(p, pn_CopyB_M,         mem);
+			set_Tuple_pred(p, pn_CopyB_X_regular, new_r_Jmp(block));
+			set_Tuple_pred(p, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
+			++n_args;
+		}
 	}
 
 	/* now create dummy entities for function with ignored return value */
@@ -734,7 +738,8 @@ static void transform_irg(compound_call_lowering_flags flags, ir_graph *irg)
 	env.changed        = false;
 
 	/* scan the code, fix argument numbers and collect calls. */
-	irg_walk_graph(irg, firm_clear_link, fix_args_and_collect_calls, &env);
+	irg_walk_graph(irg, firm_clear_link, NULL, &env);
+	irg_walk_graph(irg, fix_args_and_collect_calls, NULL, &env);
 
 	if (n_param_com > 0 && !(flags & LF_DONT_LOWER_ARGUMENTS))
 		remove_compound_param_entities(irg);
