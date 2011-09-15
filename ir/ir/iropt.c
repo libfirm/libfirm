@@ -4610,8 +4610,6 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS))
-		return block;
 	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
 		return block;
 
