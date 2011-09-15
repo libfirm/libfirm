@@ -2098,18 +2098,6 @@ static ia32_condition_code_t relation_to_condition_code(ir_relation relation,
 	}
 }
 
-static ir_node *get_flags_mode_b(ir_node *node, ia32_condition_code_t *cc_out)
-{
-	/* a mode_b value, we have to compare it against 0 */
-	dbg_info *dbgi      = get_irn_dbg_info(node);
-	ir_node  *new_block = be_transform_node(get_nodes_block(node));
-	ir_node  *new_op    = be_transform_node(node);
-	ir_node  *flags     = new_bd_ia32_Test(dbgi, new_block, noreg_GP, noreg_GP, nomem, new_op, new_op, false);
-	set_ia32_ls_mode(flags, get_irn_mode(new_op));
-	*cc_out  = ia32_cc_not_equal;
-	return flags;
-}
-
 static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
 {
 	/* must have a Cmp as input */
@@ -2171,10 +2159,8 @@ static ir_node *get_flags_node_cmp(ir_node *cmp, ia32_condition_code_t *cc_out)
  */
 static ir_node *get_flags_node(ir_node *node, ia32_condition_code_t *cc_out)
 {
-	if (is_Cmp(node))
-		return get_flags_node_cmp(node, cc_out);
-	assert(get_irn_mode(node) == mode_b);
-	return get_flags_mode_b(node, cc_out);
+	assert(is_Cmp(node));
+	return get_flags_node_cmp(node, cc_out);
 }
 
 /**
@@ -3656,6 +3642,18 @@ static ir_node *gen_Mux(ir_node *node)
 	}
 }
 
+static ir_node *gen_ia32_l_Setcc(ir_node *node)
+{
+	ia32_condition_code_t cc;
+	dbg_info *dbgi      = get_irn_dbg_info(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *cond      = get_irn_n(node, n_ia32_l_Setcc_cond);
+	ir_node  *flags     = get_flags_node(cond, &cc);
+	ir_node  *new_node  = new_bd_ia32_Setcc(dbgi, new_block, flags, cc);
+	SET_IA32_ORIG_NODE(new_node, node);
+	return new_node;
+}
 
 /**
  * Create a conversion from x87 state register to general purpose.
@@ -5781,6 +5779,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_ia32_l_LLtoFloat, gen_ia32_l_LLtoFloat);
 	be_set_transform_function(op_ia32_l_Mul,       gen_ia32_l_Mul);
 	be_set_transform_function(op_ia32_l_Sbb,       gen_ia32_l_Sbb);
+	be_set_transform_function(op_ia32_l_Setcc,     gen_ia32_l_Setcc);
 	be_set_transform_function(op_ia32_l_Sub,       gen_ia32_l_Sub);
 	be_set_transform_function(op_ia32_GetEIP,      be_duplicate_node);
 	be_set_transform_function(op_ia32_Minus64Bit,  be_duplicate_node);

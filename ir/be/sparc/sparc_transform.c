@@ -1153,16 +1153,6 @@ static ir_node *gen_Const(ir_node *node)
 	}
 }
 
-static ir_mode *get_cmp_mode(ir_node *b_value)
-{
-	ir_node *op;
-
-	if (!is_Cmp(b_value))
-		panic("can't determine cond signednes (no cmp)");
-	op = get_Cmp_left(b_value);
-	return get_irn_mode(op);
-}
-
 static ir_node *gen_SwitchJmp(ir_node *node)
 {
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
@@ -1200,9 +1190,10 @@ static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node    *selector = get_Cond_selector(node);
 	ir_mode    *mode     = get_irn_mode(selector);
+	ir_node    *cmp_left;
+	ir_mode    *cmp_mode;
 	ir_node    *block;
 	ir_node    *flag_node;
-	bool        is_unsigned;
 	ir_relation relation;
 	dbg_info   *dbgi;
 
@@ -1211,38 +1202,18 @@ static ir_node *gen_Cond(ir_node *node)
 		return gen_SwitchJmp(node);
 	}
 
-	block = be_transform_node(get_nodes_block(node));
-	dbgi  = get_irn_dbg_info(node);
-
-	/* regular if/else jumps */
-	if (is_Cmp(selector)) {
-		ir_mode *cmp_mode;
-
-		cmp_mode    = get_cmp_mode(selector);
-		flag_node   = be_transform_node(selector);
-		relation    = get_Cmp_relation(selector);
-		is_unsigned = !mode_is_signed(cmp_mode);
-		if (mode_is_float(cmp_mode)) {
-			assert(!is_unsigned);
-			return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
-		} else {
-			return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
-		}
+	/* note: after lower_mode_b we are guaranteed to have a Cmp input */
+	block       = be_transform_node(get_nodes_block(node));
+	dbgi        = get_irn_dbg_info(node);
+	cmp_left    = get_Cmp_left(selector);
+	cmp_mode    = get_irn_mode(cmp_left);
+	flag_node   = be_transform_node(selector);
+	relation    = get_Cmp_relation(selector);
+	if (mode_is_float(cmp_mode)) {
+		return new_bd_sparc_fbfcc(dbgi, block, flag_node, relation);
 	} else {
-		/* in this case, the selector must already deliver a mode_b value.
-		 * this happens, for example, when the Cond is connected to a Conv
-		 * which converts its argument to mode_b. */
-		ir_node  *new_op;
-		ir_graph *irg;
-		assert(mode == mode_b);
-
-		block     = be_transform_node(get_nodes_block(node));
-		irg       = get_irn_irg(block);
-		dbgi      = get_irn_dbg_info(node);
-		new_op    = be_transform_node(selector);
-		/* follow the SPARC architecture manual and use orcc for tst */
-		flag_node = new_bd_sparc_OrCCZero_reg(dbgi, block, new_op, get_g0(irg));
-		return new_bd_sparc_Bicc(dbgi, block, flag_node, ir_relation_less_greater, true);
+		bool is_unsigned = !mode_is_signed(cmp_mode);
+		return new_bd_sparc_Bicc(dbgi, block, flag_node, relation, is_unsigned);
 	}
 }
 
