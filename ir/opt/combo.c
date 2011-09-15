@@ -219,7 +219,7 @@ DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 DEBUG_ONLY(static const char *what_reason;)
 
 /** Next partition number. */
-DEBUG_ONLY(static unsigned part_nr = 0);
+DEBUG_ONLY(static unsigned part_nr = 0;)
 
 /** The tarval returned by Unknown nodes: set to either tarval_bad OR tarval_top. */
 static ir_tarval *tarval_UNKNOWN;
@@ -3529,7 +3529,7 @@ static ir_graph_state_t do_combo(ir_graph *irg)
 	set_value_of_func(get_node_tarval);
 
 	set_compute_functions();
-	DEBUG_ONLY(part_nr = 0);
+	DEBUG_ONLY(part_nr = 0;)
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
@@ -3544,7 +3544,7 @@ static ir_graph_state_t do_combo(ir_graph *irg)
 	irg_walk_graph(irg, create_initial_partitions, init_block_phis, &env);
 
 	/* set the hook: from now, every node has a partition and a type */
-	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook));
+	DEBUG_ONLY(set_dump_node_vcgattr_hook(dump_partition_hook);)
 
 	/* all nodes on the initial partition have type Top */
 	env.initial->type_is_T_or_C = 1;
@@ -3592,7 +3592,7 @@ static ir_graph_state_t do_combo(ir_graph *irg)
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_PHI_LIST);
 
 	/* remove the partition hook */
-	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL));
+	DEBUG_ONLY(set_dump_node_vcgattr_hook(NULL);)
 
 	DEL_ARR_F(env.kept_memory);
 	del_set(env.opcode2id_map);

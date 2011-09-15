@@ -53,7 +53,7 @@
 #include "irloop_t.h"
 
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Convenience macro for iterating over every phi node of the given block.

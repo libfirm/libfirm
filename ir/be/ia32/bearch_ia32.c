@@ -53,6 +53,7 @@
 #include "iropt_t.h"
 #include "lower_dw.h"
 #include "lower_calls.h"
+#include "lower_mode_b.h"
 #include "lower_softfloat.h"
 
 #include "../beabi.h"
@@ -2010,10 +2011,10 @@ static int ia32_is_valid_clobber(const char *clobber)
 
 static ir_node *ia32_create_set(ir_node *cond)
 {
-	/* ia32-set function produces 8-bit results which have to be converted */
-	ir_node *set   = ir_create_mux_set(cond, mode_Bu);
-	ir_node *block = get_nodes_block(set);
-	return new_r_Conv(block, set, mode_Iu);
+	ir_node  *block = get_nodes_block(cond);
+	ir_node  *set   = new_bd_ia32_l_Setcc(NULL, block, cond);
+	ir_node  *conv  = new_r_Conv(block, set, mode_Iu);
+	return conv;
 }
 
 static void ia32_lower_for_target(void)
@@ -2022,7 +2023,6 @@ static void ia32_lower_for_target(void)
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,  /* lowered mode */
 		ia32_create_set,
-		0,        /* don't lower direct compares */
 	};
 
 	/* perform doubleword lowering */
@@ -2032,6 +2032,8 @@ static void ia32_lower_for_target(void)
 		ia32_create_intrinsic_fkt,
 		&intrinsic_env,
 	};
+
+	ia32_create_opcodes(&ia32_irn_ops);
 
 	/* lower compound param handling
 	 * Note: we lower compound arguments ourself, since on ia32 we don't

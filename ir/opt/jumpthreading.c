@@ -50,7 +50,7 @@
 
 #undef AVOID_PHIB
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Add the new predecessor x to node node, which is either a Block or a Phi

@@ -763,11 +763,20 @@ static void emit_be_Perm(const ir_node *irn)
 	emit_be_Perm_xor(irn);
 }
 
+/* The stack pointer must always be 8 bytes aligned, so get the next bigger
+ * integer that's evenly divisible by 8. */
+static unsigned get_aligned_sp_change(int memperm_arity)
+{
+	const unsigned bytes = ((unsigned) memperm_arity) * 4;
+	return (bytes + 7) & ~7U;
+}
+
 static void emit_be_MemPerm(const ir_node *node)
 {
-	int i;
-	int memperm_arity;
-	int sp_change = 0;
+	int      i;
+	int      memperm_arity;
+	unsigned aligned_sp_change;
+	int      sp_change = 0;
 	ir_graph          *irg    = get_irn_irg(node);
 	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
 
@@ -782,7 +791,8 @@ static void emit_be_MemPerm(const ir_node *node)
 	if (memperm_arity > 8)
 		panic("memperm with more than 8 inputs not supported yet");
 
-	be_emit_irprintf("\tsub %%sp, %d, %%sp", memperm_arity*4);
+	aligned_sp_change = get_aligned_sp_change(memperm_arity);
+	be_emit_irprintf("\tsub %%sp, %u, %%sp", aligned_sp_change);
 	be_emit_finish_line_gas(node);
 
 	for (i = 0; i < memperm_arity; ++i) {
@@ -813,7 +823,7 @@ static void emit_be_MemPerm(const ir_node *node)
 		be_emit_finish_line_gas(node);
 	}
 
-	be_emit_irprintf("\tadd %%sp, %d, %%sp", memperm_arity*4);
+	be_emit_irprintf("\tadd %%sp, %u, %%sp", aligned_sp_change);
 	be_emit_finish_line_gas(node);
 
 	assert(sp_change == 0);

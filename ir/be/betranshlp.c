@@ -211,7 +211,7 @@ ir_node *be_transform_node(ir_node *node)
 	if (new_node != NULL)
 		return new_node;
 
-	DEBUG_ONLY(be_set_transformed_node(node, NULL));
+	DEBUG_ONLY(be_set_transformed_node(node, NULL);)
 
 	op = get_irn_op(node);
 	if (op->ops.generic == NULL) {

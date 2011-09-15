@@ -35,7 +35,7 @@
 #include "irgwalk.h"
 #include "irflag.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /* ----------------------------------------------------------------------- */
 /* Resolve implicit inheritance.                                           */

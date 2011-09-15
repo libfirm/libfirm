@@ -40,7 +40,7 @@
 #include "beloopana.h"
 #include "bemodule.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL);
+DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
 #define HASH_LOOP_INFO(info) (HASH_PTR((info)->loop) ^ HASH_PTR((info)->cls))
 

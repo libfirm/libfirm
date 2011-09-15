@@ -57,7 +57,7 @@ typedef struct {
 	int changed;  /**< Set if the graph was changed. */
 } bool_opt_env_t;
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Check if tho given nodes, l and r, represent two compares with

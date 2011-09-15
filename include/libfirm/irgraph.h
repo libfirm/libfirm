@@ -478,34 +478,33 @@ FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
  * Graph State
  */
 typedef enum {
-	IR_GRAPH_STATE_KEEP_MUX      = 1U << 0,  /**< should perform no further optimisations on Mux nodes */
-	IR_GRAPH_STATE_ARCH_DEP      = 1U << 1,  /**< should not construct more nodes which irarch potentially breaks down */
-	IR_GRAPH_STATE_BCONV_ALLOWED = 1U << 2,  /**< Conv(mode_b) to Iu is allowed as set command */
+	IR_GRAPH_STATE_ARCH_DEP      = 1U << 0,  /**< should not construct more nodes which irarch potentially breaks down */
+	IR_GRAPH_STATE_MODEB_LOWERED = 1U << 1,  /**< the only node which may produce mode_b is Cmp */
 	/**
 	 * There are normalisations where there is no "best" representative.
 	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
 	 * later in the other (NORMALISATION2).
 	 */
-	IR_GRAPH_STATE_NORMALISATION2        = 1U << 4,
+	IR_GRAPH_STATE_NORMALISATION2        = 1U << 2,
 	/**
 	 * Define the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
 	 * Normally, the frontend is responsible for bitfield masking operations.
 	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking operations.
 	 */
-	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 5,
+	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 3,
 
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES        = 1U << 6,
-	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U << 7,
-	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS    = 1U << 8,
-	IR_GRAPH_STATE_ONE_RETURN               = 1U << 9,
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE     = 1U << 10,
-	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE = 1U << 11,
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES     = 1U << 12,
-	IR_GRAPH_STATE_CONSISTENT_OUTS          = 1U << 13,
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO      = 1U << 14,
-	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE  = 1U << 15,
-	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS    = 1U << 16,
-	IR_GRAPH_STATE_BROKEN_FOR_VERIFIER      = 1U << 17,
+	IR_GRAPH_STATE_NO_CRITICAL_EDGES        = 1U << 4,
+	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U << 5,
+	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS    = 1U << 6,
+	IR_GRAPH_STATE_ONE_RETURN               = 1U << 7,
+	IR_GRAPH_STATE_CONSISTENT_DOMINANCE     = 1U << 8,
+	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE = 1U << 9,
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES     = 1U << 10,
+	IR_GRAPH_STATE_CONSISTENT_OUTS          = 1U << 11,
+	IR_GRAPH_STATE_CONSISTENT_LOOPINFO      = 1U << 12,
+	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE  = 1U << 13,
+	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS    = 1U << 14,
+	IR_GRAPH_STATE_BROKEN_FOR_VERIFIER      = 1U << 15,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 

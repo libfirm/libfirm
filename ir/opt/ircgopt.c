@@ -45,7 +45,7 @@
 #include "irtools.h"
 #include "irpass.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Walker: adds Call operations to a head's link list.

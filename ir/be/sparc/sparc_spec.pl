@@ -287,11 +287,13 @@ AddCC_t => {
 	ins       => [ "left", "right" ],
 	outs      => [ "res", "flags" ],
 	attr_type => "",
+	dump_node => "NULL",
 },
 
 AddX_t => {
 	ins       => [ "left", "right", "flags_input" ],
 	attr_type => "",
+	dump_node => "NULL",
 },
 
 Sub => {
@@ -319,11 +321,13 @@ SubCC_t => {
 	ins       => [ "left", "right" ],
 	outs      => [ "res", "flags" ],
 	attr_type => "",
+	dump_node => "NULL",
 },
 
 SubX_t => {
 	ins       => [ "left", "right", "flags_input" ],
 	attr_type => "",
+	dump_node => "NULL",
 },
 
 # Load / Store

@@ -309,14 +309,15 @@ Adc => {
 },
 
 l_Add => {
-	op_flags  => [ "constlike" ],
-	reg_req   => { in => [ "none", "none" ], out => [ "none" ] },
 	ins       => [ "left", "right" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 l_Adc => {
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "left", "right", "eflags" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 Mul => {
@@ -335,14 +336,10 @@ Mul => {
 },
 
 l_Mul => {
-	# we should not rematrialize this node. It produces 2 results and has
-	# very strict constraints
-	op_flags  => [ "constlike" ],
-	cmp_attr  => "return 1;",
-	reg_req   => { in => [ "none", "none" ],
-	               out => [ "none", "none", "none", "none" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 IMul => {
@@ -376,12 +373,10 @@ IMul1OP => {
 },
 
 l_IMul => {
-	op_flags  => [ "constlike" ],
-	cmp_attr  => "return 1;",
-	reg_req   => { in => [ "none", "none" ],
-	               out => [ "none", "none", "none", "none" ] },
 	ins       => [ "left", "right" ],
 	outs      => [ "res_low", "flags", "M", "res_high" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 And => {
@@ -579,13 +574,15 @@ Sbb0 => {
 },
 
 l_Sub => {
-	reg_req   => { in => [ "none", "none" ], out => [ "none" ] },
 	ins       => [ "minuend", "subtrahend" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 l_Sbb => {
-	reg_req   => { in => [ "none", "none", "none" ], out => [ "none" ] },
 	ins       => [ "minuend", "subtrahend", "eflags" ],
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 IDiv => {
@@ -975,6 +972,14 @@ Test8Bit => {
 	units     => [ "GP" ],
 	mode      => $mode_flags,
 	modified_flags => $status_flags
+},
+
+l_Setcc => {
+	ins       => [ "cond" ],
+	outs      => [ "res" ],
+	mode      => "mode_Bu",
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 Setcc => {
@@ -1919,18 +1924,16 @@ CvtSI2SD => {
 
 
 l_LLtoFloat => {
-	op_flags => [ "labeled" ],
-	cmp_attr => "return 1;",
 	ins      => [ "val_high", "val_low" ],
-	reg_req  => { in => [ "none", "none" ], out => [ "none" ] }
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 l_FloattoLL => {
-	op_flags => [ "labeled" ],
-	cmp_attr => "return 1;",
 	ins      => [ "val" ],
 	outs     => [ "res_high", "res_low" ],
-	reg_req  => { in => [ "none" ], out => [ "none", "none" ] }
+	attr_type => "",
+	dump_func => "NULL",
 },
 
 CopyB => {

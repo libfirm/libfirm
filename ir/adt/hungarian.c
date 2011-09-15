@@ -43,7 +43,7 @@
 
 #include "hungarian.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 struct hungarian_problem_t {
 	unsigned      num_rows;      /**< number of rows */

@@ -42,6 +42,7 @@
 #include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
+#include "lower_mode_b.h"
 #include "lower_softfloat.h"
 
 #include "bitset.h"
@@ -422,7 +423,6 @@ static void sparc_lower_for_target(void)
 	lower_mode_b_config_t lower_mode_b_config = {
 		mode_Iu,
 		sparc_create_set,
-		0,
 	};
 
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
