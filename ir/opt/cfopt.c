@@ -972,7 +972,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 
 optdesc_t opt_cf = {
 	"control-flow",
-	0,
+	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS,
 	do_cfopt,
 };
 
