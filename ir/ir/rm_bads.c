@@ -57,6 +57,7 @@ static void block_remove_bads(ir_node *block, void *env)
 	int *changed = (int *)env;
 	int i, j;
 	ir_node **new_in, *new_block, *phi;
+	ir_node *next;
 	ir_entity *block_entity;
 	const int max = get_irn_arity(block);
 	const int new_max = count_non_bads(block);
@@ -94,28 +95,24 @@ static void block_remove_bads(ir_node *block, void *env)
 		set_Block_entity(new_block, block_entity);
 
 	/* 2. Remove inputs on Phis, where the block input is Bad. */
-	phi = get_Block_phis(block);
-	if (phi != NULL) {
-		do {
-			ir_node *next = get_Phi_next(phi);
-			if (get_irn_arity(phi) != new_max) {
-				ir_node *new_phi;
+	for (phi = get_Block_phis(block); phi != NULL; phi = next) {
+		ir_node *new_phi;
 
-				for (i = j = 0; i < max; ++i) {
-					ir_node *block_pred = get_irn_n(block, i);
+		next = get_Phi_next(phi);
+		assert(get_irn_arity(phi) == max);
 
-					if (!is_Bad(block_pred)) {
-						ir_node *pred = get_irn_n(phi, i);
-						new_in[j++] = pred;
-					}
-				}
-				assert(j == new_max);
+		for (i = j = 0; i < max; ++i) {
+			ir_node *block_pred = get_irn_n(block, i);
 
-				new_phi = new_r_Phi(new_block, new_max, new_in, get_irn_mode(phi));
-				exchange(phi, new_phi);
+			if (!is_Bad(block_pred)) {
+				ir_node *pred = get_irn_n(phi, i);
+				new_in[j++] = pred;
 			}
-			phi = next;
-		} while (phi != NULL);
+		}
+		assert(j == new_max);
+
+		new_phi = new_r_Phi(new_block, new_max, new_in, get_irn_mode(phi));
+		exchange(phi, new_phi);
 	}
 
 	exchange(block, new_block);
