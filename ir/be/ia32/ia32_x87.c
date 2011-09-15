@@ -217,7 +217,7 @@ static void x87_set_st(x87_state *state, int reg_idx, ir_node *node, int pos)
 	state->st[MASK_TOS(state->tos + pos)].node    = node;
 
 	DB((dbg, LEVEL_2, "After SET_REG: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 }  /* x87_set_st */
 
 /**
@@ -248,7 +248,7 @@ static void x87_fxch(x87_state *state, int pos)
 	state->st[MASK_TOS(state->tos)] = entry;
 
 	DB((dbg, LEVEL_2, "After FXCH: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 }  /* x87_fxch */
 
 /**
@@ -286,7 +286,7 @@ static void x87_push_dbl(x87_state *state, int reg_idx, ir_node *node)
 	state->st[state->tos].reg_idx = reg_idx;
 	state->st[state->tos].node    = node;
 
-	DB((dbg, LEVEL_2, "After PUSH: ")); DEBUG_ONLY(x87_dump_stack(state));
+	DB((dbg, LEVEL_2, "After PUSH: ")); DEBUG_ONLY(x87_dump_stack(state);)
 }  /* x87_push_dbl */
 
 /**
@@ -316,7 +316,7 @@ static void x87_pop(x87_state *state)
 	--state->depth;
 	state->tos = MASK_TOS(state->tos + 1);
 
-	DB((dbg, LEVEL_2, "After POP: ")); DEBUG_ONLY(x87_dump_stack(state));
+	DB((dbg, LEVEL_2, "After POP: ")); DEBUG_ONLY(x87_dump_stack(state);)
 }  /* x87_pop */
 
 /**
@@ -583,9 +583,9 @@ static x87_state *x87_shuffle(x87_simulator *sim, ir_node *block,
 
 	/* Hmm: permutation needed */
 	DB((dbg, LEVEL_2, "\n%+F needs permutation: from\n", block));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 	DB((dbg, LEVEL_2, "                  to\n"));
-	DEBUG_ONLY(x87_dump_stack(dst_state));
+	DEBUG_ONLY(x87_dump_stack(dst_state);)
 
 
 #ifdef DEBUG_libfirm
@@ -910,9 +910,9 @@ static int sim_binop(x87_state *state, ir_node *n, const exchange_tmpl *tmpl)
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s -> %s\n", n,
 		arch_register_get_name(op1_reg), arch_register_get_name(op2_reg),
 		arch_register_get_name(out)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	op1_idx = x87_on_stack(state, reg_index_1);
 	assert(op1_idx >= 0);
@@ -1071,7 +1071,7 @@ static int sim_unop(x87_state *state, ir_node *n, ir_op *op)
 	unsigned live = vfp_live_args_after(sim, n, REGMASK(out));
 
 	DB((dbg, LEVEL_1, ">>> %+F -> %s\n", n, out->name));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1358,9 +1358,9 @@ static int sim_FtstFnstsw(x87_state *state, ir_node *n)
 	unsigned               live        = vfp_live_args_after(sim, n, 0);
 
 	DB((dbg, LEVEL_1, ">>> %+F %s\n", n, arch_register_get_name(reg1)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 	assert(op1_idx >= 0);
 
 	if (op1_idx != 0) {
@@ -1410,9 +1410,9 @@ static int sim_Fucom(x87_state *state, ir_node *n)
 
 	DB((dbg, LEVEL_1, ">>> %+F %s, %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(op2)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 	DB((dbg, LEVEL_1, "Stack before: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	op1_idx = x87_on_stack(state, reg_index_1);
 	assert(op1_idx >= 0);
@@ -1656,7 +1656,7 @@ static int sim_Keep(x87_state *state, ir_node *node)
 	}
 
 	DB((dbg, LEVEL_1, "Stack after: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	return NO_NODE_ADDED;
 }  /* sim_Keep */
@@ -1778,7 +1778,7 @@ static int sim_Copy(x87_state *state, ir_node *n)
 
 	DB((dbg, LEVEL_1, ">>> %+F %s -> %s\n", n,
 		arch_register_get_name(op1), arch_register_get_name(out)));
-	DEBUG_ONLY(vfp_dump_live(live));
+	DEBUG_ONLY(vfp_dump_live(live);)
 
 	op1_idx = x87_on_stack(state, arch_register_get_index(op1));
 
@@ -1916,7 +1916,7 @@ static int sim_Call(x87_state *state, ir_node *n)
 
 end_call:
 	DB((dbg, LEVEL_1, "Stack after: "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	return NO_NODE_ADDED;
 }  /* sim_Call */
@@ -2038,8 +2038,8 @@ static x87_state *x87_kill_deads(x87_simulator *sim, ir_node *block, x87_state *
 		state = x87_clone_state(sim, state);
 
 		DB((dbg, LEVEL_1, "Killing deads:\n"));
-		DEBUG_ONLY(vfp_dump_live(live));
-		DEBUG_ONLY(x87_dump_stack(state));
+		DEBUG_ONLY(vfp_dump_live(live);)
+		DEBUG_ONLY(x87_dump_stack(state);)
 
 		if (kill_mask != 0 && live == 0) {
 			/* special case: kill all registers */
@@ -2114,7 +2114,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 	DB((dbg, LEVEL_1, "Simulate %+F\n", block));
 	DB((dbg, LEVEL_2, "State at Block begin:\n "));
-	DEBUG_ONLY(x87_dump_stack(state));
+	DEBUG_ONLY(x87_dump_stack(state);)
 
 	/* at block begin, kill all dead registers */
 	state = x87_kill_deads(sim, block, state);
@@ -2151,7 +2151,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 	start_block = get_irg_start_block(get_irn_irg(block));
 
-	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state));
+	DB((dbg, LEVEL_2, "State at Block end:\n ")); DEBUG_ONLY(x87_dump_stack(state);)
 
 	/* check if the state must be shuffled */
 	foreach_block_succ(block, edge) {
@@ -2165,7 +2165,7 @@ static void x87_simulate_block(x87_simulator *sim, ir_node *block)
 
 		if (succ_state->begin == NULL) {
 			DB((dbg, LEVEL_2, "Set begin state for succ %+F:\n", succ));
-			DEBUG_ONLY(x87_dump_stack(state));
+			DEBUG_ONLY(x87_dump_stack(state);)
 			succ_state->begin = state;
 
 			waitq_put(sim->worklist, succ);

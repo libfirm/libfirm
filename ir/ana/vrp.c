@@ -41,7 +41,7 @@
 #include "bitset.h"
 #include "debug.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct vrp_env_t {
 	waitq    *workqueue;

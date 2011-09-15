@@ -40,7 +40,7 @@
 #include "irprintf.h"
 #include "hashptr.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /*------------------------------------------------------------------*/
 /* A new in array via a hashmap. */

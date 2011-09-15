@@ -155,7 +155,7 @@ typedef struct listmap_t {
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /** Next partition number. */
-DEBUG_ONLY(static unsigned part_nr = 0);
+DEBUG_ONLY(static unsigned part_nr = 0;)
 
 #ifdef DEBUG_libfirm
 /**
@@ -293,7 +293,7 @@ static partition_t *create_partition(ir_node *meet_block, environment_t *env)
 	INIT_LIST_HEAD(&part->blocks);
 	part->meet_block = meet_block;
 	part->n_blocks   = 0;
-	DEBUG_ONLY(part->nr = part_nr++);
+	DEBUG_ONLY(part->nr = part_nr++;)
 	list_add_tail(&part->part_list, &env->partitions);
 	return part;
 }  /* create_partition */
@@ -1203,7 +1203,7 @@ int shape_blocks(ir_graph *irg)
 	/* register a debug mask */
 	FIRM_DBG_REGISTER(dbg, "firm.opt.blocks");
 
-	DEBUG_ONLY(part_nr = 0);
+	DEBUG_ONLY(part_nr = 0;)
 	DB((dbg, LEVEL_1, "Shaping blocks for %+F\n", irg));
 
 	/* works better, when returns are placed at the end of the blocks */

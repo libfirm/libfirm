@@ -56,7 +56,7 @@
 #include "vrp.h"
 #include "opt_manage.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 static inline int imin(int a, int b) { return a < b ? a : b; }
 

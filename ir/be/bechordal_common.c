@@ -78,8 +78,8 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 		 */
 		set_irn_link(irn, def);
 
-		DEBUG_ONLY(b->magic = BORDER_FOURCC);
-		DEBUG_ONLY(def->magic = BORDER_FOURCC);
+		DEBUG_ONLY(b->magic = BORDER_FOURCC;)
+		DEBUG_ONLY(def->magic = BORDER_FOURCC;)
 	} else {
 		/*
 		 * If the def is encountered, the use was made and so was the
@@ -88,7 +88,7 @@ static inline border_t *border_add(be_chordal_env_t *env, struct list_head *head
 		 */
 		b = (border_t*)get_irn_link(irn);
 
-		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered"));
+		DEBUG_ONLY(assert(b && b->magic == BORDER_FOURCC && "Illegal border encountered");)
 	}
 
 	b->pressure = pressure;

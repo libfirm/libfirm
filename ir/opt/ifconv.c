@@ -53,7 +53,7 @@ typedef struct walker_env {
 	bool                   changed; /**< Set if the graph was changed. */
 } walker_env;
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * Returns non-zero if a Block can be emptied.

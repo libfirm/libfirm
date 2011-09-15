@@ -47,7 +47,7 @@
 #include "ircons_t.h"
 #include "irpass.h"
 
-DEBUG_ONLY(static firm_dbg_module_t *dbg);
+DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 /**
  * the environment for collecting data

@@ -3929,7 +3929,7 @@ static ir_node *gen_Conv(ir_node *node)
 			}
 		} else {
 			/* this should be optimized already, but who knows... */
-			DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node));
+			DEBUG_ONLY(ir_fprintf(stderr, "Debug warning: conv %+F is pointless\n", node);)
 			DB((dbg, LEVEL_1, "killed Conv(mode, mode) ..."));
 			return be_transform_node(op);
 		}
