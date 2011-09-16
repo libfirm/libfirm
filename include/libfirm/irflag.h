@@ -97,17 +97,6 @@ FIRM_API int get_opt_cse(void);
  */
 FIRM_API void set_opt_global_cse(int value);
 
-/** Enables/Disables unreachable code elimination.
- *
- * If set, evaluate conditions of conditional branch and replace the
- * branch with a Jmp/Bad Tuple.
- *
- * If opt_unreachable_code == 1 replace nodes (except Block,
- * Phi and Tuple) with a Bad predecessor by the Bad node.
- * Default: opt_unreachable_code == 1.
- */
-FIRM_API void set_opt_unreachable_code(int value);
-
 /** Enable/Disable optimization of dynamic method dispatch.
  *
  * This flag enables/disables the optimization of dynamic method dispatch.

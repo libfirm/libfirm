@@ -182,44 +182,31 @@ static void opt_walker(ir_node *n, void *env)
 	}
 }
 
-/* Applies local optimizations to all nodes in the graph until fixpoint. */
 int optimize_graph_df(ir_graph *irg)
 {
 	pdeq     *waitq = new_pdeq();
 	ir_graph *rem = current_ir_graph;
 	ir_node  *end;
-	int      state, changed;
 
 	current_ir_graph = irg;
 
-	state = edges_assure(irg);
-
-	/* Clean the value_table in irg for the CSE. */
-	new_identities(irg);
-
-	if (get_opt_global_cse()) {
+	if (get_opt_global_cse())
 		set_irg_pinned(irg, op_pin_state_floats);
-	}
 
-	/* The following enables unreachable code elimination (=Blocks may be
-	 * Bad). */
-	clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS);
+	/* enable unreachable code elimination */
+	assert(!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE));
+	set_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE);
 
-	/* invalidate info */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-
-	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
-
-	/* Calculate dominance so we can kill unreachable code */
+	new_identities(irg);
+	edges_assure(irg);
 	assure_doms(irg);
 
-	/* walk over the graph, but don't touch keep-alives */
+
+	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 	irg_walk_graph(irg, NULL, opt_walker, waitq);
 
 	/* any optimized nodes are stored in the wait queue,
 	 * so if it's not empty, the graph has been changed */
-	changed = !pdeq_empty(waitq);
-
 	while (!pdeq_empty(waitq)) {
 		/* finish the wait queue */
 		while (! pdeq_empty(waitq)) {
@@ -231,32 +218,33 @@ int optimize_graph_df(ir_graph *irg)
 		compute_doms(irg);
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-
 	del_pdeq(waitq);
-
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
-	if (! state)
-		edges_deactivate(irg);
+	/* disable unreachable code elimination */
+	clear_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE);
+	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 
-	if (remove_bads(irg)) {
-		edges_deactivate(irg);
-	}
+	/* invalidate infos */
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
+	clear_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	edges_deactivate(irg);
 
 	/* Finally kill BAD and doublets from the keep alives.
-	   Doing this AFTER edges where deactivated saves cycles */
+	 * Doing this AFTER edges where deactivated saves cycles */
 	end = get_irg_end(irg);
 	remove_End_Bads_and_doublets(end);
 
-	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS);
-
 	current_ir_graph = rem;
-	return changed;
+
+	/* Note we do not have a reliable way to detect changes, since some
+	 * localopt rules change the inputs of a node and do not return a new
+	 * node, so we conservatively say true here */
+	return true;
 }
 
-/* Creates an ir_graph pass for optimize_graph_df. */
 ir_graph_pass_t *optimize_graph_df_pass(const char *name)
 {
 	return def_graph_pass_ret(name ? name : "optimize_graph_df", optimize_graph_df);
-}  /* optimize_graph_df_pass */
+}

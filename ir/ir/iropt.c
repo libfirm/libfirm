@@ -2790,8 +2790,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		return n;
 
 	if ((ta != tarval_bad) &&
-	    (get_irn_mode(a) == mode_b) &&
-	    (get_opt_unreachable_code())) {
+	    (get_irn_mode(a) == mode_b)) {
 		/* It's a boolean Cond, branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
 		ir_node *blk = get_nodes_block(n);
@@ -3731,9 +3730,6 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 	ir_node *n = get_Proj_pred(proj);
 	ir_node *b = get_Cond_selector(n);
 
-	if (!get_opt_unreachable_code())
-		return n;
-
 	if (mode_is_int(get_irn_mode(b))) {
 		ir_tarval *tb = value_of(b);
 
@@ -4595,10 +4591,21 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	return proj;
 }  /* transform_node_Proj */
 
+/**
+ * Test wether a block is unreachable
+ * Note: That this only returns true when
+ * IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE is set.
+ * This is important, as you easily end up producing invalid constructs in the
+ * unreachable code when optimizing away edges into the unreachable code.
+ * So only set this flag when you iterate localopts to the fixpoint.
+ * When you reach the fixpoint then all unreachable code is dead
+ * (= can't be reached by firm edges) and you won't see the invalid constructs
+ * anymore.
+ */
 static bool is_block_unreachable(const ir_node *block)
 {
 	const ir_graph *irg = get_irn_irg(block);
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
+	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
 		return false;
 	return get_Block_dom_depth(block) < 0;
 }
@@ -4610,7 +4617,7 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
+	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
 		return block;
 
 	for (i = 0; i < arity; ++i) {

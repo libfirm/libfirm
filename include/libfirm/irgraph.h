@@ -475,35 +475,69 @@ FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #endif
 
 /**
- * Graph State
+ * graph state. This is used for 2 things:
+ * - stating properties about a graph
+ * - disallow certain transformations for the graph (typically highlevel
+ *   constructs are disallowed after lowering them)
  */
 typedef enum {
-	IR_GRAPH_STATE_ARCH_DEP      = 1U << 0,  /**< should not construct more nodes which irarch potentially breaks down */
-	IR_GRAPH_STATE_MODEB_LOWERED = 1U << 1,  /**< the only node which may produce mode_b is Cmp */
+	/**
+	 * Should not construct more nodes which irarch potentially breaks down
+	 */
+	IR_GRAPH_STATE_ARCH_DEP                  = 1U << 0,
+	/**
+	 * mode_b nodes have been lowered so you should not create any new nodes
+	 * with mode_b (except for Cmp)
+	 */
+	IR_GRAPH_STATE_MODEB_LOWERED             = 1U << 1,
 	/**
 	 * There are normalisations where there is no "best" representative.
 	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
 	 * later in the other (NORMALISATION2).
 	 */
-	IR_GRAPH_STATE_NORMALISATION2        = 1U << 2,
+	IR_GRAPH_STATE_NORMALISATION2            = 1U << 2,
 	/**
 	 * Define the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
 	 * Normally, the frontend is responsible for bitfield masking operations.
-	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking operations.
+	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking
+	 * operations.
 	 */
-	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 3,
-
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES        = 1U <<  4, /**< irg contains no critical edges */
-	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U <<  5, /**< irg contains no Bads */
-	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS    = 1U <<  6, /**< irg contains no unreachable code */
-	IR_GRAPH_STATE_ONE_RETURN               = 1U <<  7, /**< irg contains at most one return */
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE     = 1U <<  8, /**< dominance information is consistent */
-	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE = 1U <<  9, /**< post-dominance information is consistent */
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES     = 1U << 10, /**< out edges are activated and up to date */
-	IR_GRAPH_STATE_CONSISTENT_OUTS          = 1U << 11, /**< outs are computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO      = 1U << 12, /**< loopinfo is computed and up to date */
-	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE  = 1U << 13, /**< entity usage is computed and up to date */
-	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS    = 1U << 14, /**< extend block info is computed and up to date */
+	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING = 1U << 3,
+	/**
+	 * Allow localopts to remove edges to unreachable code.
+	 * Warning: It is only safe to enable this when you are sure that you
+	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
+	 */
+	IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+	/** graph contains no critical edges */
+	IR_GRAPH_STATE_NO_CRITICAL_EDGES         = 1U << 5,
+	/** graph contains no Bads */
+	IR_GRAPH_STATE_NO_BAD_BLOCKS             = 1U << 6,
+	/**
+	 * there exists no (obviously) unreachable code in the graph.
+	 * Unreachable in this context is code that you can't reach by following
+	 * execution flow from the start block.
+	 */
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE       = 1U << 7,
+	/** graph contains at most one return */
+	IR_GRAPH_STATE_ONE_RETURN                = 1U << 8,
+	/** dominance information about the graph is valid */
+	IR_GRAPH_STATE_CONSISTENT_DOMINANCE      = 1U << 9,
+	/** postdominance information about the graph is valid */
+	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE  = 1U << 10,
+	/**
+	 * out edges (=iredges) are enable and there is no dead code that can be
+	 * reached by following them
+	 */
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES      = 1U << 11,
+	/** outs (irouts) are computed and up to date */
+	IR_GRAPH_STATE_CONSISTENT_OUTS           = 1U << 12,
+	/** loopinfo is computed and up to date */
+	IR_GRAPH_STATE_CONSISTENT_LOOPINFO       = 1U << 13,
+	/** entity usage information is computed and up to date */
+	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 14,
+	/** extended basic blocks have been formed and are up to date */
+	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS     = 1U << 15,
 	IR_GRAPH_STATE_BROKEN_FOR_VERIFIER      = 1U << 15, /**< verifier would unecessarily complain about the graph */
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)

@@ -68,5 +68,5 @@ void remove_unreachable_blocks(ir_graph *irg)
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
 		clear_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS);
 	}
-	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS);
+	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 }

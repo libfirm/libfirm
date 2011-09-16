@@ -771,7 +771,7 @@ static ir_graph_state_t do_scalar_replacement(ir_graph *irg)
 
 optdesc_t opt_scalar_rep = {
 	"scalar-replace",
-	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUTS,
 	do_scalar_replacement,
 };
 
