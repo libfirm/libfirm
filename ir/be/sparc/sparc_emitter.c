@@ -577,7 +577,7 @@ static void emit_be_Perm(const ir_node *irn)
  * the next bigger integer that's evenly divisible by it. */
 static unsigned get_aligned_sp_change(unsigned const memperm_arity)
 {
-	const unsigned bytes = memperm_arity * 4;
+	const unsigned bytes = memperm_arity * SPARC_REGISTER_SIZE;
 	return round_up2(bytes, SPARC_STACK_ALIGNMENT);
 }
 
@@ -616,14 +616,14 @@ static void emit_be_MemPerm(const ir_node *node)
 		/* load from entity */
 		be_emit_irprintf("\tld [%%fp%+d], %%l%d", offset, i);
 		be_emit_finish_line_gas(node);
-		sp_change += 4;
+		sp_change += SPARC_REGISTER_SIZE;
 	}
 
 	for (i = memperm_arity-1; i >= 0; --i) {
 		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
 		int        offset = be_get_stack_entity_offset(layout, entity, 0);
 
-		sp_change -= 4;
+		sp_change -= SPARC_REGISTER_SIZE;
 
 		/* store to new entity */
 		be_emit_irprintf("\tst %%l%d, [%%fp%+d]", i, offset);
