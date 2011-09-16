@@ -140,7 +140,7 @@ static ir_node *lower_node(ir_node *node)
 
 		for (i = 0; i < arity; ++i) {
 			ir_node *in         = get_irn_n(node, i);
-			ir_node *lowered_in = is_Bad(in) ? in : lower_node(in);
+			ir_node *lowered_in = lower_node(in);
 
 			set_irn_n(new_phi, i, lowered_in);
 		}
@@ -268,6 +268,10 @@ synth_zero_one:
 		res = new_r_Unknown(irg, mode);
 		break;
 
+	case iro_Bad:
+		res = new_r_Bad(irg, mode);
+		break;
+
 	default:
 		panic("Don't know how to lower mode_b node %+F", node);
 	}
@@ -297,7 +301,7 @@ static void collect_needs_lowering(ir_node *node, void *env)
 	if (get_irn_mode(node) == mode_b) {
 		assert(is_And(node) || is_Or(node) || is_Eor(node) || is_Phi(node)
 		       || is_Not(node) || is_Mux(node) || is_Cmp(node)
-		       || is_Const(node) || is_Unknown(node));
+		       || is_Const(node) || is_Unknown(node) || is_Bad(node));
 		return;
 	}
 
