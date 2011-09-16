@@ -170,7 +170,7 @@ static void lower_small_copyb_node(ir_node *irn)
 	set_Tuple_pred(irn, pn_CopyB_X_except,  new_r_Bad(irg, mode_X));
 }
 
-static ir_type *get_memcpy_methodtype()
+static ir_type *get_memcpy_methodtype(void)
 {
 	ir_type *tp          = new_type_method(3, 1);
 	ir_mode *size_t_mode = get_ir_mode(native_mode_bytes);
