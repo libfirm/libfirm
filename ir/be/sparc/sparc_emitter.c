@@ -27,6 +27,7 @@
 
 #include <limits.h>
 
+#include "bitfiddle.h"
 #include "xmalloc.h"
 #include "tv.h"
 #include "iredges.h"
@@ -572,12 +573,12 @@ static void emit_be_Perm(const ir_node *irn)
 	be_emit_finish_line_gas(irn);
 }
 
-/* The stack pointer must always be 8 bytes aligned, so get the next bigger
- * integer that's evenly divisible by 8. */
-static unsigned get_aligned_sp_change(int memperm_arity)
+/* The stack pointer must always be SPARC_STACK_ALIGNMENT bytes aligned, so get
+ * the next bigger integer that's evenly divisible by it. */
+static unsigned get_aligned_sp_change(unsigned const memperm_arity)
 {
-	const unsigned bytes = ((unsigned) memperm_arity) * 4;
-	return (bytes + 7) & ~7U;
+	const unsigned bytes = memperm_arity * 4;
+	return round_up2(bytes, SPARC_STACK_ALIGNMENT);
 }
 
 static void emit_be_MemPerm(const ir_node *node)
