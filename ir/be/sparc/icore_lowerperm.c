@@ -463,7 +463,7 @@ static void handle_cycle(ir_node *irn, const perm_move_t *move, reg_pair_t *cons
 			arch_set_irn_register_out(permi, i, reg);
 		}
 
-		sched_add_after(sched_point, permi);
+		sched_add_after(skip_Proj(sched_point), permi);
 		sched_point = permi;
 	} else {
 		/* Otherwise, we want to replace the big Perm node with a series
@@ -535,7 +535,7 @@ static void combine_cycles(ir_node *irn, reg_pair_t *const pairs, int n_pairs, p
 		arch_set_irn_register_out(permi23, 2 + i, reg);
 	}
 
-	sched_add_after(sched_point, permi23);
+	sched_add_after(skip_Proj(sched_point), permi23);
 	sched_point = permi23;
 }
 
