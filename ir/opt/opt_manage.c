@@ -5,7 +5,7 @@
 
 #include "irgraph_t.h"
 #include "irprog_t.h"
-
+#include "irnode.h"
 #include "iroptimize.h"
 #include "irgopt.h"
 #include "irdom.h"
@@ -73,6 +73,8 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      set_irg_loopinfo_inconsistent)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  nop)
 	INVALIDATE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    set_irg_extblk_inconsistent)
+
+	remove_End_Bads_and_doublets(get_irg_end(irg));
 
 	if (!(new_irg_state & IR_GRAPH_STATE_BROKEN_FOR_VERIFIER)) {
 		irg_verify(irg, VERIFY_ENFORCE_SSA);
