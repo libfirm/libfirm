@@ -59,9 +59,9 @@ FIRM_API void local_optimize_graph(ir_graph *irg);
 FIRM_API int optimize_graph_df(ir_graph *irg);
 
 /**
- * Transforms unreachable blocks and nodes in there into Bad nodes
+ * Eliminates (obviously) unreachable code
  */
-FIRM_API void remove_unreachable_blocks(ir_graph *irg);
+FIRM_API void remove_unreachable_code(ir_graph *irg);
 
 /**
  * Removes all Bad nodes from a graph.

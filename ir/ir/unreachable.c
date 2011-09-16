@@ -14,10 +14,15 @@
  */
 
 /**
- * @brief    Convert all unreachable blocks into Bad nodes
+ * @brief    Remove unreachable code
  * @author   Andreas Zwinkau
+ *
+ * This is done by elminiating all edges into the unreachable code. So that
+ * after that the unreachable code should be dead.
  */
 #include "config.h"
+
+#include "irgopt.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -28,45 +33,101 @@
 #include "irgwalk.h"
 #include "irtools.h"
 
+static bool is_block_unreachable(ir_node *block)
+{
+	return get_Block_dom_depth(block) < 0;
+}
+
 /**
- * Block-walker
+ * Eliminate block- and phi-inputs pointing to unreachable code
  */
 static void unreachable_to_bad(ir_node *node, void *env)
 {
 	bool *changed = (bool *)env;
-	ir_graph *irg = get_irn_irg(node);
 
 	if (is_Block(node)) {
-		if (get_Block_dom_depth(node) < 0) {
-			exchange(node, new_r_Bad(irg, mode_BB));
+		ir_graph *irg;
+		int       arity;
+		int       i;
+		/* optimisation: we do not have to do anything inside the unreachable
+		 * code */
+		if (is_block_unreachable(node))
+			return;
+
+		arity = get_irn_arity(node);
+		irg   = get_irn_irg(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node *pred = get_Block_cfgpred(node, i);
+			if (is_Bad(pred) || !is_block_unreachable(get_nodes_block(pred)))
+				continue;
+			set_irn_n(node, i, new_r_Bad(irg, mode_X));
 			*changed = true;
 		}
-	} else if (is_Bad(node)) {
-		/* nothing to do */
-	} else {
-		ir_node *block = get_nodes_block(node);
-		if (is_Bad(block) || get_Block_dom_depth(block) < 0) {
-			exchange(node, new_r_Bad(irg, get_irn_mode(node)));
+	} else if (is_Phi(node)) {
+		ir_node  *block = get_nodes_block(node);
+		int       arity;
+		int       i;
+		ir_graph *irg;
+		/* optimisation: we do not have to do anything inside the unreachable
+		 * code */
+		if (is_block_unreachable(block))
+			return;
+
+		irg   = get_irn_irg(node);
+		arity = get_irn_arity(node);
+		for (i = 0; i < arity; ++i) {
+			ir_node *block_pred;
+			ir_node *phi_pred = get_irn_n(node, i);
+			if (is_Bad(phi_pred))
+				continue;
+			block_pred = get_Block_cfgpred(block, i);
+			if (!is_Bad(block_pred) && !is_block_unreachable(get_nodes_block(block_pred)))
+				continue;
+
+			set_irn_n(node, i, new_r_Bad(irg, get_irn_mode(node)));
 			*changed = true;
 		}
 	}
 }
 
-/*
- * Transforms unreachable blocks and the nodes within into Bad nodes
+/**
+ * remove kept nodes in unreachable blocks
  */
-void remove_unreachable_blocks(ir_graph *irg)
+static void remove_unreachable_keeps(ir_graph *irg)
+{
+	ir_node  *end       = get_irg_end(irg);
+	int       arity     = get_irn_arity(end);
+	ir_node **new_in    = XMALLOCN(ir_node*, arity);
+	int       new_arity = 0;
+	int       i;
+
+	for (i = 0; i < arity; ++i) {
+		ir_node *ka    = get_End_keepalive(end, i);
+		ir_node *block = is_Block(ka) ? ka : get_nodes_block(ka);
+		if (is_block_unreachable(block))
+			continue;
+		new_in[new_arity++] = ka;
+	}
+	if (new_arity != arity)
+		set_End_keepalives(end, new_arity, new_in);
+	free(new_in);
+}
+
+void remove_unreachable_code(ir_graph *irg)
 {
 	bool changed = false;
 
 	assure_doms(irg);
 
 	irg_walk_graph(irg, unreachable_to_bad, NULL, &changed);
+	remove_unreachable_keeps(irg);
 
 	if (changed) {
 		edges_deactivate(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
-		clear_irg_state(irg, IR_GRAPH_STATE_NO_BADS);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS
+		                   | IR_GRAPH_STATE_NO_BADS
+		                   | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	}
 	set_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 }

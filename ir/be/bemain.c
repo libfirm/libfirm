@@ -414,7 +414,7 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	current_ir_graph = irg;
 
 	/* For code generation all unreachable code and Bad nodes should be gone */
-	remove_unreachable_blocks(irg);
+	remove_unreachable_code(irg);
 	remove_bads(irg);
 
 	/* we do this before critical edge split. As this produces less returns,
