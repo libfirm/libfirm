@@ -25,10 +25,6 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	ir_graph_state_t required = opt->requirements;
 	const bool dump = get_irp_optimization_dumps();
 
-	/* no bad block requires no unreachable code */
-	if (required & IR_GRAPH_STATE_NO_BAD_BLOCKS)
-		required |= IR_GRAPH_STATE_NO_UNREACHABLE_CODE;
-
 	/** Some workarounds because information is currently duplicated */
 	// FIXME should not be necessary!
 	if (loopinfo_inconsistent == get_irg_loopinfo_state(irg))
@@ -39,7 +35,7 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	PREPARE(IR_GRAPH_STATE_ONE_RETURN,               normalize_one_return)
 	PREPARE(IR_GRAPH_STATE_NO_CRITICAL_EDGES,        remove_critical_cf_edges)
 	PREPARE(IR_GRAPH_STATE_NO_UNREACHABLE_CODE,      remove_unreachable_blocks)
-	PREPARE(IR_GRAPH_STATE_NO_BAD_BLOCKS,            remove_bads)
+	PREPARE(IR_GRAPH_STATE_NO_BADS,                  remove_bads)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_DOMINANCE,     assure_doms)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE, assure_postdoms)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,     edges_assure)
@@ -64,7 +60,7 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 #define INVALIDATE(state,func) if (!(state & new_irg_state)) {clear_irg_state(irg,state); func(irg);}
 	INVALIDATE(IR_GRAPH_STATE_NO_CRITICAL_EDGES,        nop)
 	INVALIDATE(IR_GRAPH_STATE_NO_UNREACHABLE_CODE,      nop)
-	INVALIDATE(IR_GRAPH_STATE_NO_BAD_BLOCKS,            nop)
+	INVALIDATE(IR_GRAPH_STATE_NO_BADS,                  nop)
 	INVALIDATE(IR_GRAPH_STATE_ONE_RETURN,               nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_DOMINANCE,     nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE, nop)

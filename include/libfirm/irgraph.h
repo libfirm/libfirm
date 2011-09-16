@@ -511,8 +511,8 @@ typedef enum {
 	IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
 	/** graph contains no critical edges */
 	IR_GRAPH_STATE_NO_CRITICAL_EDGES         = 1U << 5,
-	/** graph contains no Bads */
-	IR_GRAPH_STATE_NO_BAD_BLOCKS             = 1U << 6,
+	/** graph contains no Bad nodes */
+	IR_GRAPH_STATE_NO_BADS                   = 1U << 6,
 	/**
 	 * there exists no (obviously) unreachable code in the graph.
 	 * Unreachable in this context is code that you can't reach by following
