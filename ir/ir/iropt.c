@@ -4616,9 +4616,8 @@ static ir_node *transform_node_Block(ir_node *block)
 		return block;
 
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred       = get_Block_cfgpred(block, i);
-		ir_node *pred_block = get_nodes_block(pred);
-		if (!is_Bad(pred) && !is_block_unreachable(pred_block))
+		ir_node *const pred = get_Block_cfgpred(block, i);
+		if (is_Bad(pred) || !is_block_unreachable(get_nodes_block(pred)))
 			continue;
 		if (bad == NULL)
 			bad = new_r_Bad(irg, mode_X);
@@ -4639,11 +4638,13 @@ static ir_node *transform_node_Phi(ir_node *phi)
 
 	/* Set phi-operands for bad-block inputs to bad */
 	for (i = 0; i < n; ++i) {
-		ir_node *pred = get_Block_cfgpred(block, i);
-		if (is_Bad(pred) || is_block_unreachable(get_nodes_block(pred))) {
-			if (bad == NULL)
-				bad = new_r_Bad(irg, mode);
-			set_irn_n(phi, i, bad);
+		if (!is_Bad(get_Phi_pred(phi, i))) {
+			ir_node *pred = get_Block_cfgpred(block, i);
+			if (is_Bad(pred) || is_block_unreachable(get_nodes_block(pred))) {
+				if (bad == NULL)
+					bad = new_r_Bad(irg, mode);
+				set_irn_n(phi, i, bad);
+			}
 		}
 	}
 
