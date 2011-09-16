@@ -2789,8 +2789,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 	if (get_irg_pinned(irg) == op_pin_state_floats)
 		return n;
 
-	if ((ta != tarval_bad) &&
-	    (get_irn_mode(a) == mode_b)) {
+	if (ta != tarval_bad && get_irn_mode(a) == mode_b) {
 		/* It's a boolean Cond, branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
 		ir_node *blk = get_nodes_block(n);
@@ -2805,6 +2804,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		}
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
+		clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 	}
 	return n;
 }  /* transform_node_Cond */
@@ -3745,6 +3745,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 				} else {
 					ir_graph *irg = get_irn_irg(proj);
 					/* this case will NEVER be taken, kill it */
+					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 					return new_r_Bad(irg, mode_X);
 				}
 			}
@@ -3762,6 +3763,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 					if ((cmp_result & ir_relation_greater) == cmp_result
 					    && (cmp_result2 & ir_relation_less) == cmp_result2) {
 						ir_graph *irg = get_irn_irg(proj);
+						clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 						return new_r_Bad(irg, mode_X);
 					}
 				} else if (b_vrp->range_type == VRP_ANTIRANGE) {
@@ -3771,6 +3773,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 					if ((cmp_result & ir_relation_less_equal) == cmp_result
 					     && (cmp_result2 & ir_relation_greater_equal) == cmp_result2) {
 						ir_graph *irg = get_irn_irg(proj);
+						clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 						return new_r_Bad(irg, mode_X);
 					}
 				}
@@ -3780,6 +3783,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 								b_vrp->bits_set
 								) == ir_relation_equal)) {
 					ir_graph *irg = get_irn_irg(proj);
+					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 					return new_r_Bad(irg, mode_X);
 				}
 
@@ -3790,6 +3794,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 								tarval_not(b_vrp->bits_not_set))
 								 == ir_relation_equal)) {
 					ir_graph *irg = get_irn_irg(proj);
+					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 					return new_r_Bad(irg, mode_X);
 				}
 			}
