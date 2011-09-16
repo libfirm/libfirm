@@ -72,8 +72,5 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 
 	remove_End_Bads_and_doublets(get_irg_end(irg));
 
-	if (!(new_irg_state & IR_GRAPH_STATE_BROKEN_FOR_VERIFIER)) {
-		irg_verify(irg, VERIFY_ENFORCE_SSA);
-	}
-
+	irg_verify(irg, VERIFY_ENFORCE_SSA);
 }

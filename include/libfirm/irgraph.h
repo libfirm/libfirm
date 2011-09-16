@@ -538,7 +538,6 @@ typedef enum {
 	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 14,
 	/** extended basic blocks have been formed and are up to date */
 	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS     = 1U << 15,
-	IR_GRAPH_STATE_BROKEN_FOR_VERIFIER      = 1U << 15, /**< verifier would unecessarily complain about the graph */
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 
