@@ -1622,6 +1622,42 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 {
 	fprintf(F, "info1: \"");
 	dump_entity_to_file(F, get_irg_entity(irg));
+	fprintf(F, "\n");
+
+	/* dump graph state */
+	fprintf(F, "state:");
+	if (is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP))
+		fprintf(F, " arch_dep");
+	if (is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED))
+		fprintf(F, " modeb_lowered");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+		fprintf(F, " normalisation2");
+	if (is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING))
+		fprintf(F, " implicit_bitfield_masking");
+	if (is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+		fprintf(F, " optimize_unreachable_code");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES))
+		fprintf(F, " no_critical_edges");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BADS))
+		fprintf(F, " no_bads");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE))
+		fprintf(F, " no_unreachable_code");
+	if (is_irg_state(irg, IR_GRAPH_STATE_ONE_RETURN))
+		fprintf(F, " one_return");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
+		fprintf(F, " consistent_dominance");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
+		fprintf(F, " consistent_postdominance");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUT_EDGES))
+		fprintf(F, " consistent_out_edges");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+		fprintf(F, " consistent_outs");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+		fprintf(F, " consistent_loopinfo");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
+		fprintf(F, " consistent_entity_usage");
+	if (is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
+		fprintf(F, " valid_exended_blocks");
 	fprintf(F, "\"\n");
 }
 
