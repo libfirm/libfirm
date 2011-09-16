@@ -866,7 +866,7 @@ static ir_graph_state_t do_fixpoint_vrp(ir_graph* const irg)
 	return res;
 }
 
-optdesc_t opt_fpvrp = {
+static optdesc_t opt_fpvrp = {
 	"fp-vrp",
 	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
 	do_fixpoint_vrp,

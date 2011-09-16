@@ -970,7 +970,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 	return 0;
 }
 
-optdesc_t opt_cf = {
+static optdesc_t opt_cf = {
 	"control-flow",
 	IR_GRAPH_STATE_NO_UNREACHABLE_CODE,
 	do_cfopt,

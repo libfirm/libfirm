@@ -3605,7 +3605,7 @@ static ir_graph_state_t do_combo(ir_graph *irg)
 	return 0; // cannot guarantee anything
 }  /* combo */
 
-optdesc_t opt_combo = {
+static optdesc_t opt_combo = {
 	"combo",
 	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
 	do_combo,

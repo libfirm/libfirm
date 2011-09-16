@@ -2302,7 +2302,7 @@ static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 	return res;
 }
 
-optdesc_t opt_loadstore = {
+static optdesc_t opt_loadstore = {
 	"load-store",
 	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,
 	do_loadstore_opt,

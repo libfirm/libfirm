@@ -329,7 +329,7 @@ static ir_graph_state_t do_deconv(ir_graph *irg)
 	return 0;
 }
 
-optdesc_t opt_deconv = {
+static optdesc_t opt_deconv = {
 	"deconv",
 	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
 	do_deconv,

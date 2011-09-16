@@ -497,7 +497,7 @@ static ir_graph_state_t do_ifconv(ir_graph *irg)
 	return IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_ONE_RETURN;
 }
 
-optdesc_t opt_ifconv = {
+static optdesc_t opt_ifconv = {
 	"if-conversion",
 	IR_GRAPH_STATE_NO_CRITICAL_EDGES | IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_ONE_RETURN,
 	do_ifconv,

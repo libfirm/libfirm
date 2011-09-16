@@ -745,7 +745,7 @@ static ir_graph_state_t do_simplify_bool(ir_graph *const irg)
 	return res;
 }
 
-optdesc_t opt_simplify_bool = {
+static optdesc_t opt_simplify_bool = {
 	"bool-simplification",
 	IR_GRAPH_STATE_ONE_RETURN, /* works better with one return block only */
 	do_simplify_bool,
