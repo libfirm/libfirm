@@ -226,7 +226,8 @@ int optimize_graph_df(ir_graph *irg)
 			ir_node *n = (ir_node*)pdeq_getl(waitq);
 			opt_walker(n, waitq);
 		}
-		/* Calculate dominance so we can kill unreachable code */
+		/* Calculate dominance so we can kill unreachable code
+		 * We want this intertwined with localopts for better optimization (phase coupling) */
 		compute_doms(irg);
 		irg_block_walk_graph(irg, NULL, find_unreachable_blocks, waitq);
 	}
