@@ -576,13 +576,7 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	return possible;
 }
 
-/**
- * Return the value of a Cmp.
- *
- * The basic idea here is to determine which relations are possible and which
- * one are definitely impossible.
- */
-static ir_tarval *computed_value_Cmp(const ir_node *cmp)
+static ir_tarval *compute_cmp(const ir_node *cmp)
 {
 	ir_node    *left     = get_Cmp_left(cmp);
 	ir_node    *right    = get_Cmp_right(cmp);
@@ -597,6 +591,21 @@ static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 		return tarval_b_true;
 
 	return computed_value_Cmp_Confirm(cmp, left, right, relation);
+}
+
+/**
+ * Return the value of a Cmp.
+ *
+ * The basic idea here is to determine which relations are possible and which
+ * one are definitely impossible.
+ */
+static ir_tarval *computed_value_Cmp(const ir_node *cmp)
+{
+	/* we can't construct Constb after lowering mode_b nodes */
+	if (is_irg_state(get_irn_irg(cmp), IR_GRAPH_STATE_MODEB_LOWERED))
+		return tarval_bad;
+
+	return compute_cmp(cmp);
 }
 
 /**
@@ -1450,6 +1459,12 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	ir_node   *oldn = n, *sel = get_Mux_sel(n);
 	ir_node   *n_t, *n_f;
 	ir_tarval *ts = value_of(sel);
+
+	if (ts == tarval_bad && is_Cmp(sel)) {
+		/* try again with a direct call to compute_cmp, as we don't care
+		 * about the MODEB_LOWERED flag here */
+		ts = compute_cmp(sel);
+	}
 
 	/* Mux(true, f, t) == t */
 	if (ts == tarval_b_true) {
@@ -2781,13 +2796,24 @@ static ir_node *transform_node_Cond(ir_node *n)
 {
 
 	ir_node   *a   = get_Cond_selector(n);
-	ir_tarval *ta  = value_of(a);
 	ir_graph  *irg = get_irn_irg(n);
+	ir_tarval *ta;
 	ir_node   *jmp;
 
 	/* we need block info which is not available in floating irgs */
 	if (get_irg_pinned(irg) == op_pin_state_floats)
 		return n;
+
+	/* we do not handle switches here */
+	if (get_irn_mode(a) != mode_b)
+		return n;
+
+	ta = value_of(a);
+	if (ta == tarval_bad && is_Cmp(a)) {
+		/* try again with a direct call to compute_cmp, as we don't care
+		 * about the MODEB_LOWERED flag here */
+		ta = compute_cmp(a);
+	}
 
 	if (ta != tarval_bad && get_irn_mode(a) == mode_b) {
 		/* It's a boolean Cond, branching on a boolean constant.
@@ -4207,7 +4233,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			}
 
 			/* for integer modes, we have more */
-			if (mode_is_int(mode)) {
+			if (mode_is_int(mode) && !is_Const(left)) {
 				/* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
 				if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
