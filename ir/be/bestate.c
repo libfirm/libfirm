@@ -529,10 +529,7 @@ void be_assure_state(ir_graph *irg, const arch_register_t *reg, void *func_env,
 	be_lv_t *lv = be_assure_liveness(irg);
 
 	be_liveness_assure_sets(lv);
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	obstack_init(&env.obst);
 	env.reg           = reg;

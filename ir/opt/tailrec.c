@@ -265,9 +265,9 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 
 	/* tail recursion was done, all info is invalid */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
 	set_trouts_inconsistent();
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 

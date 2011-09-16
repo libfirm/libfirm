@@ -169,7 +169,7 @@ FIRM_API int construct_cf_backedges(ir_graph *irg);
  *
  * @param irg  the graph
  */
-FIRM_API void assure_cf_loop(ir_graph *irg);
+FIRM_API void assure_loopinfo(ir_graph *irg);
 
 /**
  * Removes all loop information.

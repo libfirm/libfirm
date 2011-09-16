@@ -326,52 +326,6 @@ typedef enum {
 FIRM_API irg_extblk_info_state get_irg_extblk_state(const ir_graph *irg);
 FIRM_API void set_irg_extblk_inconsistent(ir_graph *irg);
 
-/** state: loopinfo_state
- *  Loop information describes the loops within the control and
- *  data flow of the procedure.
- */
-typedef enum {
-	loopinfo_none             = 0,       /**< No loop information is constructed. Default. */
-	loopinfo_constructed      = 1,       /**< Some kind of loop information is constructed. */
-	loopinfo_valid            = 2,       /**< Loop information is valid. */
-	loopinfo_cf               = 4,       /**< Loop information constructed for control flow only. */
-	loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
-
-	/** IntRAprocedural loop information constructed and valid. */
-	loopinfo_consistent         = loopinfo_constructed | loopinfo_valid,
-	/** IntRAprocedural loop information constructed and invalid. */
-	loopinfo_inconsistent       = loopinfo_constructed,
-
-	/** IntERprocedural loop information constructed and valid. */
-	loopinfo_ip_consistent      = loopinfo_constructed | loopinfo_inter | loopinfo_valid,
-	/** IntERprocedural loop information constructed and invalid. */
-	loopinfo_ip_inconsistent    = loopinfo_constructed | loopinfo_inter,
-
-	/** IntRAprocedural control loop information constructed and valid. */
-	loopinfo_cf_consistent      = loopinfo_constructed | loopinfo_cf | loopinfo_valid,
-	/** IntRAprocedural control loop information constructed and invalid. */
-	loopinfo_cf_inconsistent    = loopinfo_constructed | loopinfo_cf,
-
-	/** IntERprocedural control loop information constructed and valid. */
-	loopinfo_cf_ip_consistent   = loopinfo_constructed | loopinfo_cf | loopinfo_inter | loopinfo_valid,
-	/** IntERprocedural control loop information constructed and invalid. */
-	loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
-} irg_loopinfo_state;
-
-/** Return the current loop information state. */
-FIRM_API irg_loopinfo_state get_irg_loopinfo_state(const ir_graph *irg);
-
-/** Sets the current loop information state. */
-FIRM_API void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
-
-/** Sets the loop information state to the appropriate inconsistent state.
- *  If state is 'none' does not change. */
-FIRM_API void set_irg_loopinfo_inconsistent(ir_graph *irg);
-/** Sets the loop information state to the appropriate inconsistent state.
- *  If state is 'none' does not change.
- *  Does this for all irgs. */
-FIRM_API void set_irp_loopinfo_inconsistent(void);
-
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
  *  computed by an analysis.

@@ -253,8 +253,7 @@ void set_irn_in(ir_node *node, int arity, ir_node **in)
 	memcpy((*pOld_in) + 1, in, sizeof(ir_node *) * arity);
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
-	set_irg_loopinfo_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 }
 
 ir_node *(get_irn_n)(const ir_node *node, int n)
@@ -279,8 +278,7 @@ void set_irn_n(ir_node *node, int n, ir_node *in)
 	node->in[n + 1] = in;
 
 	/* update irg flags */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS);
-	set_irg_loopinfo_inconsistent(irg);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 }
 
 int add_irn_n(ir_node *node, ir_node *in)

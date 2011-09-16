@@ -1355,8 +1355,8 @@ static void loop_inversion(ir_graph *irg)
 		DEL_ARR_F(cur_head_outs);
 
 		/* Duplicated blocks changed doms */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-		set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 
 		++stats.inverted;
 	}

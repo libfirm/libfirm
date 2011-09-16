@@ -2296,7 +2296,7 @@ static ir_graph_state_t do_loadstore_opt(ir_graph *irg)
 	}
 
 	if (!(env.changes & CF_CHANGED)) {
-		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BAD_BLOCKS;
+		res |= IR_GRAPH_STATE_CONSISTENT_DOMINANCE | IR_GRAPH_STATE_NO_BADS;
 	}
 
 	return res;

@@ -925,7 +925,6 @@ static void reverse_rules(ir_node *node, void *env)
 int optimize_reassociation(ir_graph *irg)
 {
 	walker_t env;
-	irg_loopinfo_state state;
 
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) != op_pin_state_floats &&
@@ -942,13 +941,8 @@ int optimize_reassociation(ir_graph *irg)
 	/*
 	 * Calculate loop info, so we could identify loop-invariant
 	 * code and treat it like a constant.
-	 * We only need control flow loops here but can handle generic
-	 * INTRA info as well.
 	 */
-	state = get_irg_loopinfo_state(irg);
-	if ((state & loopinfo_inter) ||
-		(state & (loopinfo_constructed | loopinfo_valid)) != (loopinfo_constructed | loopinfo_valid))
-		construct_cf_backedges(irg);
+	assure_loopinfo(irg);
 
 	env.changes = 0;
 	env.irg     = irg;

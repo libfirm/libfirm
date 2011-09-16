@@ -238,12 +238,10 @@ static void fix_const_call_lists(ir_graph *irg, env_t *ctx)
 		}
 	}
 
-	/* changes were done ... */
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
-
 	if (exc_changed) {
 		/* ... including exception edges */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_const_call_list */
 
@@ -373,11 +371,10 @@ static void fix_nothrow_call_list(ir_graph *irg, ir_node *call_list, ir_node *pr
 	}
 
 	/* changes were done ... */
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
-
 	if (exc_changed) {
 		/* ... including exception edges */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 	}
 }  /* fix_nothrow_call_list */
 
@@ -985,7 +982,7 @@ static mtp_additional_properties check_nothrow_or_malloc(ir_graph *irg, int top)
 static void check_for_possible_endless_loops(ir_graph *irg)
 {
 	ir_loop *root_loop;
-	assure_cf_loop(irg);
+	assure_loopinfo(irg);
 
 	root_loop = get_irg_loop(irg);
 	if (root_loop->flags & loop_outer_loop)

@@ -189,7 +189,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->typeinfo_state      = ir_typeinfo_none;
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
-	res->loopinfo_state      = loopinfo_none;
 	res->class_cast_state    = ir_class_casts_transitive;
 	res->extblk_state        = ir_extblk_info_none;
 	res->execfreq_state      = exec_freq_none;
@@ -657,31 +656,6 @@ void (set_irg_extblk_inconsistent)(ir_graph *irg)
 {
 	_set_irg_extblk_inconsistent(irg);
 }
-
-irg_loopinfo_state (get_irg_loopinfo_state)(const ir_graph *irg)
-{
-	return _get_irg_loopinfo_state(irg);
-}
-
-void (set_irg_loopinfo_state)(ir_graph *irg, irg_loopinfo_state s)
-{
-	_set_irg_loopinfo_state(irg, s);
-}
-
-void (set_irg_loopinfo_inconsistent)(ir_graph *irg)
-{
-	_set_irg_loopinfo_inconsistent(irg);
-}
-
-void set_irp_loopinfo_inconsistent(void)
-{
-	size_t i, n;
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		set_irg_loopinfo_inconsistent(get_irp_irg(i));
-	}
-}
-
-
 
 void (set_irg_pinned)(ir_graph *irg, op_pin_state p)
 {

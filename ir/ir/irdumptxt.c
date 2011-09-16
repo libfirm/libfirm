@@ -123,7 +123,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	}
 
 	/* Loop node.   Someone else please tell me what's wrong ... */
-	if (get_irg_loopinfo_state(irg) & loopinfo_valid) {
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)) {
 		ir_loop *loop = get_irn_loop(n);
 		if (loop != NULL) {
 			fprintf(F, "  in loop %ld with depth %u\n",
