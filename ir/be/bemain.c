@@ -413,16 +413,16 @@ static void initialize_birg(be_irg_t *birg, ir_graph *irg, be_main_env_t *env)
 	/* set the current graph (this is important for several firm functions) */
 	current_ir_graph = irg;
 
-	/* For code generation all unreachable code and Bad nodes should be gone */
-	remove_unreachable_code(irg);
-	remove_bads(irg);
-
 	/* we do this before critical edge split. As this produces less returns,
 	   because sometimes (= 164.gzip) multiple returns are slower */
 	normalize_n_returns(irg);
 
 	/* Remove critical edges */
 	remove_critical_cf_edges_ex(irg, /*ignore_exception_edges=*/0);
+
+	/* For code generation all unreachable code and Bad nodes should be gone */
+	remove_unreachable_code(irg);
+	remove_bads(irg);
 
 	/* Ensure, that the ir_edges are computed. */
 	edges_assure(irg);
