@@ -54,6 +54,7 @@
 #include "besched.h"
 #include "benode.h"
 #include "belive.h"
+#include "beabihelper.h"
 
 static const arch_register_class_t *flag_class;
 static const arch_register_t       *flags_reg;
@@ -161,6 +162,7 @@ static void rematerialize_or_move(ir_node *flags_needed, ir_node *node,
 	if (get_irn_mode(copy) == mode_T) {
 		ir_mode *mode = flag_class->mode;
 		value = new_rd_Proj(NULL, copy, mode, pn);
+		be_add_missing_keeps_node(copy);
 	} else {
 		value = copy;
 	}
