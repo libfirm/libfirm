@@ -832,13 +832,13 @@ static void emit_sparc_Ba(const ir_node *node)
 		be_emit_cstring("\t/* fallthrough to ");
 		sparc_emit_cfop_target(node);
 		be_emit_cstring(" */");
+		be_emit_finish_line_gas(node);
 	} else {
 		be_emit_cstring("\tba ");
 		sparc_emit_cfop_target(node);
 		be_emit_finish_line_gas(node);
 		fill_delay_slot();
 	}
-	be_emit_finish_line_gas(node);
 }
 
 static void emit_sparc_SwitchJmp(const ir_node *node)
