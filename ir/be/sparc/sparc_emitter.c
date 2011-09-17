@@ -978,20 +978,43 @@ static ir_node *find_next_delay_slot(ir_node *from)
 	return schedpoint;
 }
 
+static bool block_needs_label(const ir_node *block, const ir_node *sched_prev)
+{
+	int n_cfgpreds;
+
+	if (has_Block_entity(block))
+		return true;
+
+	n_cfgpreds = get_Block_n_cfgpreds(block);
+	if (n_cfgpreds == 0) {
+		return false;
+	} else if (n_cfgpreds > 1) {
+		return true;
+	} else {
+		ir_node *cfgpred       = get_Block_cfgpred(block, 0);
+		ir_node *cfgpred_block = get_nodes_block(cfgpred);
+		if (is_Proj(cfgpred) && is_sparc_SwitchJmp(get_Proj_pred(cfgpred)))
+			return true;
+		return sched_prev != cfgpred_block || get_irn_link(cfgpred) != block;
+	}
+}
+
 /**
  * Walks over the nodes in a block connected by scheduling edges
  * and emits code for each node.
  */
-static void sparc_emit_block(ir_node *block)
+static void sparc_emit_block(ir_node *block, ir_node *prev)
 {
 	ir_node *node;
 	ir_node *next_delay_slot;
 
 	assert(is_Block(block));
 
-	be_gas_emit_block_name(block);
-	be_emit_cstring(":\n");
-	be_emit_write_line();
+	if (block_needs_label(block, prev)) {
+		be_gas_emit_block_name(block);
+		be_emit_cstring(":\n");
+		be_emit_write_line();
+	}
 
 	next_delay_slot = find_next_delay_slot(sched_first(block));
 	if (next_delay_slot != NULL)
@@ -1079,9 +1102,10 @@ void sparc_emit_routine(ir_graph *irg)
 
 	for (i = 0; i < n; ++i) {
 		ir_node *block = block_schedule[i];
+		ir_node *prev  = i>=1 ? block_schedule[i-1] : NULL;
 		if (block == get_irg_end_block(irg))
 			continue;
-		sparc_emit_block(block);
+		sparc_emit_block(block, prev);
 	}
 
 	/* emit function epilog */
