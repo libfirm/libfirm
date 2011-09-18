@@ -636,17 +636,6 @@ static void chain_types(ir_type *tp)
 	}
 }
 
-irg_outs_state get_trouts_state(void)
-{
-	return irp->trouts_state;
-}
-
-void set_trouts_inconsistent(void)
-{
-	if (irp->trouts_state == outs_consistent)
-		irp->trouts_state = outs_inconsistent;
-}
-
 /* compute the trouts data structures. */
 void compute_trouts(void)
 {
@@ -667,8 +656,6 @@ void compute_trouts(void)
 		ir_type *type = get_irp_type(--i);
 		chain_types(type);
 	}
-
-	irp->trouts_state = outs_consistent;
 }
 
 void free_trouts(void)
@@ -738,6 +725,4 @@ void free_trouts(void)
 		pmap_destroy(type_arraytype_map);
 		type_arraytype_map = NULL;
 	}
-
-	irp->trouts_state = outs_none;
 }

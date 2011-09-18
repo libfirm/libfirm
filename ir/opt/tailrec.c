@@ -155,9 +155,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
 	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
-	/* calls are removed */
-	set_trouts_inconsistent();
-
 	/* we must build some new nodes WITHOUT CSE */
 	set_optimize(0);
 
@@ -268,7 +265,6 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
 	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
 	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
-	set_trouts_inconsistent();
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	set_optimize(rem);

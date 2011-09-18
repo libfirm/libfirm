@@ -574,10 +574,8 @@ struct ir_prog {
 	/* -- states of and access to generated information -- */
 	irg_phase_state phase_state;    /**< The state of construction. */
 
-	irg_outs_state outs_state;    /**< The state of out edges of type information. */
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
 	                                     in interprocedural view. */
-	irg_outs_state trouts_state;    /**< The state of out edges of type information. */
 
 	irg_callee_info_state callee_info_state; /**< Validity of callee information.
 	                                              Contains the lowest value or all irgs.  */

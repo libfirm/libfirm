@@ -259,9 +259,6 @@ FIRM_API ir_graph *get_const_code_irg(void);
 FIRM_API irg_phase_state get_irp_phase_state(void);
 FIRM_API void            set_irp_phase_state(irg_phase_state s);
 
-FIRM_API irg_outs_state get_irp_ip_outs_state(void);
-FIRM_API void           set_irp_ip_outs_inconsistent(void);
-
 /**
  * Creates an ir_prog pass for set_irp_phase_state().
  *

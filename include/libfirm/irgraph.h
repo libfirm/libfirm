@@ -307,16 +307,6 @@ FIRM_API void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
    The enum op_pin_state is defined in irop.h. */
 FIRM_API op_pin_state get_irg_pinned(const ir_graph *irg);
 
-/** state: outs_state
- *  Outs are the back edges or def-use edges of ir nodes.
- *  Values:  outs_none, outs_consistent, outs_inconsistent */
-typedef enum {
-	outs_none,         /**< Outs are not computed, no memory is allocated. */
-	outs_consistent,   /**< Outs are computed and correct. */
-	outs_inconsistent  /**< Outs have been computed, memory is still allocated,
-	                        but the graph has been changed since. */
-} irg_outs_state;
-
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
  *  computed by an analysis.

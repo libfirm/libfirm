@@ -95,14 +95,6 @@ FIRM_API void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
 /* Building and Removing the trout datastructure                    */
 /*------------------------------------------------------------------*/
 
-/** The state of the tr_out datastructure.
- *
- *  We reuse the enum of irouts.
- *  @see irouts.h. */
-FIRM_API irg_outs_state get_trouts_state(void);
-/** Set the tr out state to inconsistent if it is consistent. */
-FIRM_API void           set_trouts_inconsistent(void);
-
 /** Compute the outs of types and entities.
  *
  *  Collects all reference from irnodes to types or entities in the

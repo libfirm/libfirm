@@ -145,9 +145,6 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
 			                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
-			/* Calls might be removed/added. */
-			set_trouts_inconsistent();
-
 			/* verify here */
 			irg_verify(irg, VERIFY_NORMAL);
 

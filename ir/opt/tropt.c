@@ -62,20 +62,9 @@ static gen_pointer_type_to_func gen_pointer_type_to = default_gen_pointer_type_t
  */
 static ir_type *default_gen_pointer_type_to(ir_type *tp)
 {
-	ir_type *res = NULL;
-	if (get_trouts_state() == outs_consistent) {
-		if (get_type_n_pointertypes_to(tp) > 0) {
-			res = get_type_pointertype_to(tp, 0);
-		} else {
-			res = new_type_pointer(tp);
-			/* Update trout for pointer types, so we can use it in next call. */
-			add_type_pointertype_to(tp, res);
-		}
-	} else {
-		res = find_pointer_type_to_type(tp);
-		if (res == firm_unknown_type)
-			res = new_type_pointer(tp);
-	}
+	ir_type *res = find_pointer_type_to_type(tp);
+	if (res == firm_unknown_type)
+		res = new_type_pointer(tp);
 
 	return res;
 }
@@ -136,7 +125,6 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			pred = new_cast;
 			++n_casts_normalized;
 			set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
-			if (get_trouts_state() != outs_none) add_type_cast(new_type, new_cast);
 		}
 	} else {
 		assert(is_SuperClass_of(totype, fromtype));
@@ -157,7 +145,6 @@ static ir_node *normalize_values_type(ir_type *totype, ir_node *pred)
 			pred = new_cast;
 			++n_casts_normalized;
 			set_irn_typeinfo_type(new_cast, new_type);  /* keep type information up to date. */
-			if (get_trouts_state() != outs_none) add_type_cast(new_type, new_cast);
 		}
 	}
 	return new_cast;
@@ -487,10 +474,6 @@ void optimize_class_casts(void)
 
 	changed = 0;
 	all_irg_walk(NULL, irn_optimize_class_cast, &changed);
-
-	if (changed) {
-		set_trouts_inconsistent();
-	}
 
 	DB((dbg, SET_LEVEL_1, " Cast optimization: %zu Casts removed, %zu Sels concretized.\n",
 		n_casts_removed, n_sels_concretized));
