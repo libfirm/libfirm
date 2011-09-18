@@ -6134,6 +6134,14 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
     in a graph. */
 #define N_IR_NODES 512
 
+/** Compares two exception attributes */
+static int node_cmp_exception(const ir_node *a, const ir_node *b)
+{
+	const except_attr *ea = &a->attr.except;
+	const except_attr *eb = &b->attr.except;
+	return ea->pin_state != eb->pin_state;
+}
+
 /** Compares the attributes of two Const nodes. */
 static int node_cmp_attr_Const(const ir_node *a, const ir_node *b)
 {
@@ -6151,7 +6159,9 @@ static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
 {
 	const alloc_attr *pa = &a->attr.alloc;
 	const alloc_attr *pb = &b->attr.alloc;
-	return (pa->where != pb->where) || (pa->type != pb->type);
+	if (pa->where != pb->where || pa->type != pb->type)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Free nodes. */
@@ -6176,8 +6186,9 @@ static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
 {
 	const call_attr *pa = &a->attr.call;
 	const call_attr *pb = &b->attr.call;
-	return (pa->type != pb->type)
-		|| (pa->tail_call != pb->tail_call);
+	if (pa->type != pb->type || pa->tail_call != pb->tail_call)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Sel nodes. */
@@ -6222,8 +6233,9 @@ static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
 	/* do not CSE Loads with different alignment. Be conservative. */
 	if (get_Load_unaligned(a) != get_Load_unaligned(b))
 		return 1;
-
-	return get_Load_mode(a) != get_Load_mode(b);
+	if (get_Load_mode(a) != get_Load_mode(b))
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Store nodes. */
@@ -6232,31 +6244,34 @@ static int node_cmp_attr_Store(const ir_node *a, const ir_node *b)
 	/* do not CSE Stores with different alignment. Be conservative. */
 	if (get_Store_unaligned(a) != get_Store_unaligned(b))
 		return 1;
-
 	/* NEVER do CSE on volatile Stores */
-	return (get_Store_volatility(a) == volatility_is_volatile ||
-	        get_Store_volatility(b) == volatility_is_volatile);
+	if (get_Store_volatility(a) == volatility_is_volatile ||
+	    get_Store_volatility(b) == volatility_is_volatile)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
-/** Compares two exception attributes */
-static int node_cmp_exception(const ir_node *a, const ir_node *b)
+static int node_cmp_attr_CopyB(const ir_node *a, const ir_node *b)
 {
-	const except_attr *ea = &a->attr.except;
-	const except_attr *eb = &b->attr.except;
+	if (get_CopyB_type(a) != get_CopyB_type(b))
+		return 1;
 
-	return ea->pin_state != eb->pin_state;
+	return node_cmp_exception(a, b);
 }
 
-#define node_cmp_attr_Bound  node_cmp_exception
+static int node_cmp_attr_Bound(const ir_node *a, const ir_node *b)
+{
+	return node_cmp_exception(a, b);
+}
 
 /** Compares the attributes of two Div nodes. */
 static int node_cmp_attr_Div(const ir_node *a, const ir_node *b)
 {
 	const div_attr *ma = &a->attr.div;
 	const div_attr *mb = &b->attr.div;
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode ||
-		   ma->no_remainder  != mb->no_remainder;
+	if (ma->resmode != mb->resmode || ma->no_remainder  != mb->no_remainder)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Mod nodes. */
@@ -6264,8 +6279,9 @@ static int node_cmp_attr_Mod(const ir_node *a, const ir_node *b)
 {
 	const mod_attr *ma = &a->attr.mod;
 	const mod_attr *mb = &b->attr.mod;
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode;
+	if (ma->resmode != mb->resmode)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 static int node_cmp_attr_Cmp(const ir_node *a, const ir_node *b)
@@ -6286,8 +6302,11 @@ static int node_cmp_attr_Confirm(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Builtin nodes. */
 static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
 {
-	/* no need to compare the type, equal kind means equal type */
-	return get_Builtin_kind(a) != get_Builtin_kind(b);
+	if (get_Builtin_kind(a) != get_Builtin_kind(b))
+		return 1;
+	if (get_Builtin_type(a) != get_Builtin_type(b))
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two ASM nodes. */
@@ -6336,7 +6355,8 @@ static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 		if (cla[i] != clb[i])
 			return 1;
 	}
-	return 0;
+
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the inexistent attributes of two Dummy nodes. */
@@ -6344,7 +6364,15 @@ static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;
+	/* Dummy nodes never equal by definition */
 	return 1;
+}
+
+static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
+{
+	if (get_InstOf_type(a) != get_InstOf_type(b))
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /**
@@ -6364,27 +6392,28 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 		break
 
 	switch (code) {
-	CASE(Const);
-	CASE(Proj);
-	CASE(Alloc);
-	CASE(Free);
-	CASE(SymConst);
-	CASE(Call);
-	CASE(Sel);
-	CASE(Phi);
-	CASE(Cmp);
-	CASE(Conv);
-	CASE(Cast);
-	CASE(Load);
-	CASE(Store);
-	CASE(Confirm);
 	CASE(ASM);
-	CASE(Div);
-	CASE(Mod);
+	CASE(Alloc);
 	CASE(Bound);
 	CASE(Builtin);
+	CASE(Call);
+	CASE(Cast);
+	CASE(Cmp);
+	CASE(Confirm);
+	CASE(Const);
+	CASE(Conv);
+	CASE(CopyB);
+	CASE(Div);
 	CASE(Dummy);
-	/* FIXME CopyB */
+	CASE(Free);
+	CASE(InstOf);
+	CASE(Load);
+	CASE(Mod);
+	CASE(Phi);
+	CASE(Proj);
+	CASE(Sel);
+	CASE(Store);
+	CASE(SymConst);
 	default:
 		/* leave NULL */
 		break;
