@@ -142,8 +142,8 @@ size_t lower_intrinsics(i_record *list, size_t length, int part_block_used)
 			set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 			/* Exception control flow might have changed / new block might have added. */
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-			set_irg_extblk_inconsistent(irg);
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+			                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
 			/* Calls might be removed/added. */
 			set_trouts_inconsistent();

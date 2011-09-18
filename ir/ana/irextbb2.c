@@ -243,5 +243,5 @@ void compute_extbb_execfreqs(ir_graph *irg, ir_exec_freq *execfreqs)
 		extbb->visited = 0;
 	}
 
-	irg->extblk_state = ir_extblk_info_valid;
+	set_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 }

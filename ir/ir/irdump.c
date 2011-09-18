@@ -2277,7 +2277,7 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 	size_t    i;
 	ir_entity *ent = get_irg_entity(irg);
 
-	if (get_irg_extblk_state(irg) != ir_extblk_info_valid)
+	if (!is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
 		compute_extbb(irg);
 
 	construct_extblock_lists(irg);

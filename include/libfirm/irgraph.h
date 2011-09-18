@@ -317,15 +317,6 @@ typedef enum {
 	                        but the graph has been changed since. */
 } irg_outs_state;
 
-/** state:  extended basic block state. */
-typedef enum {
-	ir_extblk_info_none    = 0,  /**< No extended basic block information is constructed. Default. */
-	ir_extblk_info_valid   = 1,  /**< Extended basic block information is valid. */
-	ir_extblk_info_invalid = 2   /**< Extended basic block information is constructed but invalid. */
-} irg_extblk_info_state;
-FIRM_API irg_extblk_info_state get_irg_extblk_state(const ir_graph *irg);
-FIRM_API void set_irg_extblk_inconsistent(ir_graph *irg);
-
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
  *  computed by an analysis.

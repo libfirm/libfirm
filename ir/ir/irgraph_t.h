@@ -240,17 +240,6 @@ static inline op_pin_state _get_irg_pinned(const ir_graph *irg)
 	return irg->irg_pinned_state;
 }
 
-static inline irg_extblk_info_state _get_irg_extblk_state(const ir_graph *irg)
-{
-	return irg->extblk_state;
-}
-
-static inline void _set_irg_extblk_inconsistent(ir_graph *irg)
-{
-	if (irg->extblk_state == ir_extblk_info_valid)
-		irg->extblk_state = ir_extblk_info_invalid;
-}
-
 static inline void _set_irg_pinned(ir_graph *irg, op_pin_state p)
 {
 	irg->irg_pinned_state = p;
@@ -487,8 +476,6 @@ static inline ir_phase *irg_get_phase(const ir_graph *irg, ir_phase_id id)
 #define get_irg_phase_state(irg)              _get_irg_phase_state(irg)
 #define set_irg_phase_state(irg, state)       _set_irg_phase_state(irg, state)
 #define get_irg_pinned(irg)                   _get_irg_pinned(irg)
-#define get_irg_extblk_state(irg)             _get_irg_extblk_state(irg)
-#define set_irg_extblk_inconsistent(irg)      _set_irg_extblk_inconsistent(irg)
 #define set_irg_pinned(irg, p)                _set_irg_pinned(irg, p)
 #define get_irg_callee_info_state(irg)        _get_irg_callee_info_state(irg)
 #define set_irg_callee_info_state(irg, s)     _set_irg_callee_info_state(irg, s)

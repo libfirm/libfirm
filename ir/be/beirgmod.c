@@ -263,8 +263,8 @@ int be_remove_empty_blocks(ir_graph *irg)
 
 	if (blocks_removed) {
 		/* invalidate analysis info */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-		set_irg_extblk_inconsistent(irg);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	}
 	return blocks_removed;
 }

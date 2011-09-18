@@ -905,9 +905,9 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 		if (!changed)
 			break;
 
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-		set_irg_extblk_inconsistent(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
+		                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	}
 
 	/* assert due to collect_nodes:

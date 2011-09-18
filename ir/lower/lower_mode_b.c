@@ -355,8 +355,8 @@ void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
 
 	if (n > 0) {
 		/* lowering might create new blocks, so be sure to handle this */
-		set_irg_extblk_inconsistent(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 		edges_deactivate(irg);
 	}
 }
