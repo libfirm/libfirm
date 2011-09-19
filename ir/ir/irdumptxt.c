@@ -314,6 +314,37 @@ void dump_graph_as_text(FILE *out, ir_graph *irg)
 
 static int need_nl = 1;
 
+static bool is_init_string(ir_initializer_t const* const init, ir_type *const type)
+{
+	ir_type *const element_type = get_array_element_type(type);
+	ir_mode *      mode;
+	size_t         n;
+	size_t         i;
+
+	if (!is_Primitive_type(element_type))
+		return false;
+
+	mode = get_type_mode(element_type);
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
+		return false;
+
+	n = get_initializer_compound_n_entries(init);
+	for (i = 0; i != n; ++i) {
+		ir_initializer_t const* const val = get_initializer_compound_value(init, i);
+		ir_tarval*              const tv  = get_initializer_tarval_value(val);
+		long                          v;
+
+		if (!tarval_is_constant(tv))
+			return false;
+
+		v = get_tarval_long(tv);
+		if (v != 0 && v != 0x09 && v != 0x0A && v != 0x0C && v != 0x0D && v != 0x1B && (v < 0x20 || 0x80 <= v) && (v < 0xA0 || 0x100 <= v))
+			return false;
+	}
+
+	return true;
+}
+
 /**
  * Dump initializers.
  */
@@ -342,18 +373,43 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 		break;
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
-			size_t i, n = get_initializer_compound_n_entries(initializer);
-			ir_type *element_type = get_array_element_type(type);
-			for (i = 0; i < n; ++i) {
-				ir_initializer_t *sub_initializer
-					= get_initializer_compound_value(initializer, i);
+			size_t const n = get_initializer_compound_n_entries(initializer);
+			size_t       i;
 
-				if (need_nl) {
-					fprintf(F, "\n%s    ", prefix);
-					need_nl = 0;
+			if (is_init_string(initializer, type)) {
+				fprintf(F, "\t[0...%u] = '", (unsigned)n - 1);
+				for (i = 0; i != n; ++i) {
+					ir_initializer_t const* const val = get_initializer_compound_value(initializer, i);
+					ir_tarval*              const tv  = get_initializer_tarval_value(val);
+					long                    const v   = get_tarval_long(tv);
+
+					switch (v) {
+						case 0x00: fprintf(F, "<NUL>");       break;
+						case 0x09: fprintf(F, "<HT>");        break;
+						case 0x0A: fprintf(F, "<NL>");        break;
+						case 0x0C: fprintf(F, "<FF>");        break;
+						case 0x0D: fprintf(F, "<CR>");        break;
+						case 0x1B: fprintf(F, "<ESC>");       break;
+						case 0x22: fprintf(F, "<QUOTE>");     break;
+						case 0x5C: fprintf(F, "<BACKSLASH>"); break;
+						default:   fprintf(F, "%c", (unsigned char)v); break;
+					}
 				}
-				fprintf(F, "[%d]", (int) i);
-				dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+				fprintf(F, "'");
+			} else {
+				ir_type *const element_type = get_array_element_type(type);
+
+				for (i = 0; i < n; ++i) {
+					ir_initializer_t *sub_initializer
+						= get_initializer_compound_value(initializer, i);
+
+					if (need_nl) {
+						fprintf(F, "\n%s    ", prefix);
+						need_nl = 0;
+					}
+					fprintf(F, "[%d]", (int) i);
+					dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+				}
 			}
 		} else {
 			size_t i, n;
