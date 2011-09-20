@@ -279,20 +279,20 @@ FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
 
 FIRM_API ir_mode *mode_M; /**< memory */
 
-/* -- A set of predefined, numerical modes according to Techreport 1999-44 -- */
-FIRM_API ir_mode *mode_F;   /**< signed float(32) */
-FIRM_API ir_mode *mode_D;   /**< signed double(64) */
-FIRM_API ir_mode *mode_E;   /**< signed extended(80) */
-FIRM_API ir_mode *mode_Bs;  /**< signed byte (former char) */
-FIRM_API ir_mode *mode_Bu;  /**< unsigned byte (former char) */
-FIRM_API ir_mode *mode_Hs;  /**< signed short integer */
-FIRM_API ir_mode *mode_Hu;  /**< unsigned short integer */
-FIRM_API ir_mode *mode_Is;  /**< signed integer */
-FIRM_API ir_mode *mode_Iu;  /**< unsigned integer */
-FIRM_API ir_mode *mode_Ls;  /**< signed long integer */
-FIRM_API ir_mode *mode_Lu;  /**< unsigned long integer */
-FIRM_API ir_mode *mode_LLs; /**< signed long long integer */
-FIRM_API ir_mode *mode_LLu; /**< unsigned long long integer */
+/* -- A set of predefined, numerical modes */
+FIRM_API ir_mode *mode_F;   /**< float (32) */
+FIRM_API ir_mode *mode_D;   /**< double (64) */
+FIRM_API ir_mode *mode_E;   /**< long double (80/128/...) */
+FIRM_API ir_mode *mode_Bs;  /**< int8 */
+FIRM_API ir_mode *mode_Bu;  /**< uint8 */
+FIRM_API ir_mode *mode_Hs;  /**< int16 */
+FIRM_API ir_mode *mode_Hu;  /**< uint16 */
+FIRM_API ir_mode *mode_Is;  /**< int32 */
+FIRM_API ir_mode *mode_Iu;  /**< uint32 */
+FIRM_API ir_mode *mode_Ls;  /**< int64 */
+FIRM_API ir_mode *mode_Lu;  /**< uint64 */
+FIRM_API ir_mode *mode_LLs; /**< int128 */
+FIRM_API ir_mode *mode_LLu; /**< uint128 */
 
 FIRM_API ir_mode *mode_P;   /**< pointer */
 FIRM_API ir_mode *mode_P_code; /**< A pointer mode that is set by the client of libfirm.  This mode

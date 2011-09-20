@@ -39,6 +39,7 @@
 #include "irdump.h"
 #include "lowering.h"
 #include "lower_dw.h"
+#include "lower_alloc.h"
 #include "lower_builtins.h"
 #include "lower_calls.h"
 #include "lower_softfloat.h"
@@ -356,7 +357,8 @@ static arch_env_t *sparc_init(FILE *outfile)
 	isa->constants = pmap_create();
 
 	be_gas_elf_type_char      = '#';
-	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF_SPARC;
+	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
+	be_gas_elf_variant        = ELF_VARIANT_SPARC;
 
 	be_emit_init(outfile);
 
@@ -420,6 +422,7 @@ static void sparc_lower_for_target(void)
 		sparc_create_set,
 		0,
 	};
+
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
 	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
@@ -433,6 +436,14 @@ static void sparc_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		ir_lower_mode_b(irg, &lower_mode_b_config);
 		lower_switch(irg, 4, 256, false);
+		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, -SPARC_MIN_STACKSIZE);
+	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 31, 32);
 	}
 }
 
@@ -495,15 +506,22 @@ static const backend_params *sparc_get_backend_params(void)
 		              irma_twos_complement, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
-	ir_mode *mode_long_double
-		= new_ir_mode("long double", irms_float_number, 128, 1,
-		              irma_ieee754, 0);
-	ir_type *type_long_double = new_type_primitive(mode_long_double);
 
-	set_type_alignment_bytes(type_long_double, 8);
-	p.type_long_double        = type_long_double;
 	p.type_long_long          = type_long_long;
 	p.type_unsigned_long_long = type_unsigned_long_long;
+
+	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT) {
+		p.mode_float_arithmetic = NULL;
+		p.type_long_double      = NULL;
+	} else {
+		ir_mode *mode_long_double
+			= new_ir_mode("long double", irms_float_number, 128, 1,
+						  irma_ieee754, 0);
+		ir_type *type_long_double = new_type_primitive(mode_long_double);
+
+		set_type_alignment_bytes(type_long_double, 8);
+		p.type_long_double        = type_long_double;
+	}
 	return &p;
 }
 

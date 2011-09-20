@@ -1292,6 +1292,13 @@ static void introduce_prolog_epilog(ir_graph *irg)
 		set_irn_n(push, n_ia32_Push_stack, initial_sp);
 		sched_add_after(curr_sp, incsp);
 
+		/* make sure the initial IncSP is really used by someone */
+		if (get_irn_n_edges(incsp) <= 1) {
+			ir_node *in[] = { incsp };
+			ir_node *keep = be_new_Keep(block, 1, in);
+			sched_add_after(incsp, keep);
+		}
+
 		layout->initial_bias = -4;
 	} else {
 		ir_node *incsp = be_new_IncSP(sp, block, curr_sp, frame_size, 0);
@@ -2024,8 +2031,14 @@ static void ia32_lower_for_target(void)
 		&intrinsic_env,
 	};
 
-	/* lower compound param handling */
-	lower_calls_with_compounds(LF_RETURN_HIDDEN);
+	/* lower compound param handling
+	 * Note: we lower compound arguments ourself, since on ia32 we don't
+	 * have hidden parameters but know where to find the structs on the stack.
+	 * (This also forces us to always allocate space for the compound arguments
+	 *  on the callframe and we can't just use an arbitrary position on the
+	 *  stackframe)
+	 */
+	lower_calls_with_compounds(LF_RETURN_HIDDEN | LF_DONT_LOWER_ARGUMENTS);
 
 	/* replace floating point operations by function calls */
 	if (ia32_cg_config.use_softfloat) {
@@ -2041,6 +2054,14 @@ static void ia32_lower_for_target(void)
 		ir_lower_mode_b(irg, &lower_mode_b_config);
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, false);
+	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
+		 * so we can generate rep movs later, and turn all big CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 64, 8193);
 	}
 }
 

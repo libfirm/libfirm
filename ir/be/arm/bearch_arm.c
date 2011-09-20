@@ -542,6 +542,14 @@ static void arm_lower_for_target(void)
 		ir_graph *irg = get_irp_irg(i);
 		lower_switch(irg, 4, 256, true);
 	}
+
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
+		 * memcpy calls.
+		 * TODO:  These constants need arm-specific tuning. */
+		lower_CopyB(irg, 31, 32);
+	}
 }
 
 /**

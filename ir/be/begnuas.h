@@ -53,17 +53,22 @@ typedef enum object_file_format_t {
 	OBJECT_FILE_FORMAT_ELF,    /**< Executable and Linkable Format (unixes) */
 	OBJECT_FILE_FORMAT_COFF,   /**< Common Object File Format (Windows) */
 	OBJECT_FILE_FORMAT_MACH_O, /**< Mach Object File Format (OS/X) */
-	OBJECT_FILE_FORMAT_ELF_SPARC, /**< Sparc variant of ELF */
-	OBJECT_FILE_FORMAT_LAST = OBJECT_FILE_FORMAT_ELF_SPARC
+	OBJECT_FILE_FORMAT_LAST = OBJECT_FILE_FORMAT_MACH_O
 } object_file_format_t;
+
+typedef enum elf_variant_t {
+	ELF_VARIANT_NORMAL,
+	ELF_VARIANT_SPARC
+} elf_variant_t;
 
 /** The variable where the GAS dialect is stored. */
 extern object_file_format_t be_gas_object_file_format;
 extern bool                 be_gas_emit_types;
+extern elf_variant_t        be_gas_elf_variant;
 
 /**
  * the .type directive needs to specify @function, #function or %function
- * depending on the target architecture (yay)
+ * depending on the target architecture
  */
 extern char                 be_gas_elf_type_char;
 

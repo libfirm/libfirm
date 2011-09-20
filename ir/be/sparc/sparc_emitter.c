@@ -74,7 +74,11 @@ void sparc_emit_immediate(const ir_node *node)
 		assert(sparc_is_value_imm_encodeable(value));
 		be_emit_irprintf("%d", value);
 	} else {
-		be_emit_cstring("%lo(");
+		if (get_entity_owner(entity) == get_tls_type()) {
+			be_emit_cstring("%tle_lox10(");
+		} else {
+			be_emit_cstring("%lo(");
+		}
 		be_gas_emit_entity(entity);
 		if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
@@ -88,17 +92,21 @@ void sparc_emit_high_immediate(const ir_node *node)
 	const sparc_attr_t *attr   = get_sparc_attr_const(node);
 	ir_entity          *entity = attr->immediate_value_entity;
 
-	be_emit_cstring("%hi(");
 	if (entity == NULL) {
 		uint32_t value = (uint32_t) attr->immediate_value;
-		be_emit_irprintf("0x%X", value);
+		be_emit_irprintf("%%hi(0x%X)", value);
 	} else {
+		if (get_entity_owner(entity) == get_tls_type()) {
+			be_emit_cstring("%tle_hix22(");
+		} else {
+			be_emit_cstring("%hi(");
+		}
 		be_gas_emit_entity(entity);
 		if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
 		}
+		be_emit_char(')');
 	}
-	be_emit_char(')');
 }
 
 void sparc_emit_source_register(const ir_node *node, int pos)
@@ -214,16 +222,6 @@ void sparc_emit_store_mode(const ir_node *node)
 	}
 }
 
-/**
- * emit integer signed/unsigned prefix char
- */
-void sparc_emit_mode_sign_prefix(const ir_node *node)
-{
-	ir_mode *mode      = get_irn_mode(node);
-	bool     is_signed = mode_is_signed(mode);
-	be_emit_string(is_signed ? "s" : "u");
-}
-
 static void emit_fp_suffix(const ir_mode *mode)
 {
 	unsigned bits = get_mode_size_bits(mode);
@@ -332,7 +330,8 @@ static bool emits_multiple_instructions(const ir_node *node)
 		return arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return;
 	}
 
-	return is_sparc_Mulh(node) || is_sparc_SDiv(node) || is_sparc_UDiv(node)
+	return is_sparc_SMulh(node) || is_sparc_UMulh(node)
+		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
 }
 
@@ -398,6 +397,11 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		if (emits_multiple_instructions(schedpoint))
 			continue;
 
+		/* if check and schedpoint are not in the same block, give up. */
+		if (check != NULL
+				&& get_nodes_block(check) != get_nodes_block(schedpoint))
+			break;
+
 		/* allowed for delayslot: any instruction which is not necessary to
 		 * compute an input to the branch. */
 		if (check != NULL
@@ -442,7 +446,12 @@ static void emit_be_IncSP(const ir_node *irn)
 static void emit_sparc_Mulh(const ir_node *irn)
 {
 	be_emit_cstring("\t");
-	sparc_emit_mode_sign_prefix(irn);
+	if (is_sparc_UMulh(irn)) {
+		be_emit_char('u');
+	} else {
+		assert(is_sparc_SMulh(irn));
+		be_emit_char('s');
+	}
 	be_emit_cstring("mul ");
 
 	sparc_emit_source_register(irn, 0);
@@ -636,7 +645,7 @@ static void emit_sparc_Return(const ir_node *node)
 	}
 	be_emit_cstring("\tjmp ");
 	be_emit_string(destreg);
-	if (type->attr.ma.has_compound_ret_parameter) {
+	if (get_method_calling_convention(type) & cc_compound_ret) {
 		be_emit_cstring("+12");
 	} else {
 		be_emit_cstring("+8");
@@ -917,7 +926,8 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_Call,      emit_sparc_Call);
 	set_emitter(op_sparc_fbfcc,     emit_sparc_fbfcc);
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
-	set_emitter(op_sparc_Mulh,      emit_sparc_Mulh);
+	set_emitter(op_sparc_SMulh,     emit_sparc_Mulh);
+	set_emitter(op_sparc_UMulh,     emit_sparc_Mulh);
 	set_emitter(op_sparc_Return,    emit_sparc_Return);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);

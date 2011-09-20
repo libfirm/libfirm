@@ -33,10 +33,24 @@
 #include "begin.h"
 
 /**
- * Lower CopyB nodes of size smaller that max_size into Loads/Stores
+ * Lower small CopyB nodes to Load/Store nodes, preserve medium-sized CopyB
+ * nodes and replace large CopyBs by a call to memcpy, depending on the given
+ * parameters.
+ *
+ * Small CopyB nodes (size <= max_small_size) are turned into a series of
+ * loads and stores.
+ * Medium-sized CopyB nodes (max_small_size < size < min_large_size) are
+ * left untouched.
+ * Large CopyB nodes (size >= min_large_size) are turned into a memcpy call.
+ *
+ * @param irg                 The graph to be lowered.
+ * @param max_small_size      The maximum number of bytes for a CopyB node so
+ *                            that it is still considered 'small'.
+ * @param min_large_size      The minimum number of bytes for a CopyB node so
+ *                            that it is regarded as 'large'.
  */
-FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_size,
-                          unsigned native_mode_bytes);
+FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_small_size,
+                          unsigned min_large_size);
 
 /**
  * Lowers all Switches (Cond nodes with non-boolean mode) depending on spare_size.

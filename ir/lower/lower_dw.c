@@ -284,6 +284,27 @@ static void prepare_links(ir_node *node)
 			env->flags |= MUST_BE_LOWERED;
 		}
 		return;
+	} else if (is_Call(node)) {
+		/* Special case:  If the result of the Call is never used, we won't
+		 * find a Proj with a mode that potentially triggers MUST_BE_LOWERED
+		 * to be set.  Thus, if we see a call, we check its result types and
+		 * decide whether MUST_BE_LOWERED has to be set.
+		 */
+		ir_type *tp = get_Call_type(node);
+		size_t   n_res, i;
+
+		n_res = get_method_n_ress(tp);
+		for (i = 0; i < n_res; ++i) {
+			ir_type *rtp = get_method_res_type(tp, i);
+
+			if (is_Primitive_type(rtp)) {
+				ir_mode *rmode = get_type_mode(rtp);
+
+				if (rmode == env->high_signed || rmode == env->high_unsigned) {
+					env->flags |= MUST_BE_LOWERED;
+				}
+			}
+		}
 	}
 }
 
@@ -1606,15 +1627,9 @@ static void fix_parameter_entities(ir_graph *irg)
 	ir_type   *orig_mtp = get_type_link(mtp);
 
 	size_t      orig_n_params      = get_method_n_params(orig_mtp);
-	size_t      orig_n_real_params = orig_n_params;
 	ir_entity **parameter_entities;
 
-	/* Allow selecting one past the last parameter to get the variadic
-	 * parameters. */
-	if (get_method_variadicity(orig_mtp) == variadicity_variadic)
-		++orig_n_real_params;
-
-	parameter_entities = ALLOCANZ(ir_entity*, orig_n_real_params);
+	parameter_entities = ALLOCANZ(ir_entity*, orig_n_params);
 
 	ir_type *frame_type = get_irg_frame_type(irg);
 	size_t   n          = get_compound_n_members(frame_type);
@@ -1628,22 +1643,21 @@ static void fix_parameter_entities(ir_graph *irg)
 		if (!is_parameter_entity(entity))
 			continue;
 		p = get_entity_parameter_number(entity);
-		assert(p < orig_n_real_params);
+		if (p == IR_VA_START_PARAMETER_NUMBER)
+			continue;
+		assert(p < orig_n_params);
 		assert(parameter_entities[p] == NULL);
 		parameter_entities[p] = entity;
 	}
 
 	/* adjust indices */
 	n_param = 0;
-	for (i = 0; i < orig_n_real_params; ++i, ++n_param) {
+	for (i = 0; i < orig_n_params; ++i, ++n_param) {
 		ir_entity *entity = parameter_entities[i];
 		ir_type   *tp;
 
 		if (entity != NULL)
 			set_entity_parameter_number(entity, n_param);
-
-		if (i == orig_n_params)
-			break;
 
 		tp = get_method_param_type(orig_mtp, i);
 		if (is_Primitive_type(tp)) {
@@ -1782,7 +1796,7 @@ static ir_type *lower_mtp(ir_type *mtp)
 	set_method_calling_convention(res, get_method_calling_convention(mtp));
 	set_method_additional_properties(res, get_method_additional_properties(mtp));
 
-	set_lowered_type(mtp, res);
+	set_higher_type(res, mtp);
 	set_type_link(res, mtp);
 
 	pmap_insert(lowered_type, mtp, res);

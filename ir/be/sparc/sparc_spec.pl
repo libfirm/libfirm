@@ -420,25 +420,27 @@ Restore => {
 },
 
 RestoreZero => {
-	emit => '. restore',
 	reg_req => { in => [ "frame_pointer" ], out => [ "sp:I|S" ] },
 	ins     => [ "frame_pointer" ],
 	outs    => [ "stack" ],
+	emit    => '. restore',
 	mode    => $mode_gp,
 },
 
 SubSP => {
-	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "gp", "none" ] },
-	ins       => [ "stack", "size", "mem" ],
-	outs      => [ "stack", "addr", "M" ],
-	emit      => ". sub %S0, %S1, %D0\n",
+	reg_req => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
+	ins     => [ "stack", "size" ],
+	outs    => [ "stack" ],
+	emit    => ". sub %S0, %S1, %D0\n",
+	mode    => $mode_gp,
 },
 
 AddSP => {
-	reg_req   => { in => [ "sp", "gp", "none" ], out => [ "sp:I|S", "none" ] },
-	ins       => [ "stack", "size", "mem" ],
-	outs      => [ "stack", "M" ],
-	emit      => ". add %S0, %S1, %D0\n",
+	reg_req => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
+	ins     => [ "stack", "size" ],
+	outs    => [ "stack" ],
+	emit    => ". add %S0, %S1, %D0\n",
+	mode    => $mode_gp,
 },
 
 FrameAddr => {
@@ -662,7 +664,13 @@ Mul => {
 	constructors => \%binop_operand_constructors,
 },
 
-Mulh => {
+SMulh => {
+	irn_flags    => [ "rematerializable" ],
+	outs         => [ "low", "high" ],
+	constructors => \%binop_operand_constructors,
+},
+
+UMulh => {
 	irn_flags    => [ "rematerializable" ],
 	outs         => [ "low", "high" ],
 	constructors => \%binop_operand_constructors,

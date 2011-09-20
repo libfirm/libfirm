@@ -75,6 +75,8 @@ static size_t                 start_mem_offset;
 static ir_node               *start_mem;
 static size_t                 start_g0_offset;
 static ir_node               *start_g0;
+static size_t                 start_g7_offset;
+static ir_node               *start_g7;
 static size_t                 start_sp_offset;
 static ir_node               *start_sp;
 static size_t                 start_fp_offset;
@@ -155,11 +157,86 @@ static ir_node *gen_sign_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
  * are 0 for unsigned and a copy of the last significant bit for signed
  * numbers.
  */
-static bool upper_bits_clean(ir_node *transformed_node, ir_mode *mode)
+static bool upper_bits_clean(ir_node *node, ir_mode *mode)
 {
-	(void) transformed_node;
-	(void) mode;
-	/* TODO */
+	switch ((ir_opcode)get_irn_opcode(node)) {
+	case iro_And:
+		if (!mode_is_signed(mode)) {
+			return upper_bits_clean(get_And_left(node), mode)
+			    || upper_bits_clean(get_And_right(node), mode);
+		}
+		/* FALLTHROUGH */
+	case iro_Or:
+	case iro_Eor:
+		return upper_bits_clean(get_binop_left(node), mode)
+		    && upper_bits_clean(get_binop_right(node), mode);
+
+	case iro_Shr:
+		if (mode_is_signed(mode)) {
+			return false; /* TODO */
+		} else {
+			ir_node *right = get_Shr_right(node);
+			if (is_Const(right)) {
+				ir_tarval *tv  = get_Const_tarval(right);
+				long       val = get_tarval_long(tv);
+				if (val >= 32 - (long)get_mode_size_bits(mode))
+					return true;
+			}
+			return upper_bits_clean(get_Shr_left(node), mode);
+		}
+
+	case iro_Shrs:
+		return upper_bits_clean(get_Shrs_left(node), mode);
+
+	case iro_Const: {
+		ir_tarval *tv  = get_Const_tarval(node);
+		long       val = get_tarval_long(tv);
+		if (mode_is_signed(mode)) {
+			long    shifted = val >> (get_mode_size_bits(mode)-1);
+			return shifted == 0 || shifted == -1;
+		} else {
+			unsigned long shifted = (unsigned long)val;
+			shifted >>= get_mode_size_bits(mode)-1;
+			shifted >>= 1;
+			return shifted == 0;
+		}
+	}
+
+	case iro_Conv: {
+		ir_mode *dest_mode = get_irn_mode(node);
+		ir_node *op        = get_Conv_op(node);
+		ir_mode *src_mode  = get_irn_mode(op);
+		unsigned src_bits  = get_mode_size_bits(src_mode);
+		unsigned dest_bits = get_mode_size_bits(dest_mode);
+		/* downconvs are a nop */
+		if (src_bits <= dest_bits)
+			return upper_bits_clean(op, mode);
+		if (dest_bits <= get_mode_size_bits(mode)
+		    && mode_is_signed(dest_mode) == mode_is_signed(mode))
+			return true;
+		return false;
+	}
+
+	case iro_Proj: {
+		ir_node *pred = get_Proj_pred(node);
+		switch (get_irn_opcode(pred)) {
+		case iro_Load: {
+			ir_mode *load_mode = get_Load_mode(pred);
+			unsigned load_bits = get_mode_size_bits(load_mode);
+			unsigned bits      = get_mode_size_bits(mode);
+			if (load_bits > bits)
+				return false;
+			if (mode_is_signed(mode) != mode_is_signed(load_mode))
+				return false;
+			return true;
+		}
+		default:
+			break;
+		}
+	}
+	default:
+		break;
+	}
 	return false;
 }
 
@@ -175,8 +252,7 @@ static ir_node *gen_extension(dbg_info *dbgi, ir_node *block, ir_node *op,
                               ir_mode *orig_mode)
 {
 	int bits = get_mode_size_bits(orig_mode);
-	if (bits == 32)
-		return op;
+	assert(bits < 32);
 
 	if (mode_is_signed(orig_mode)) {
 		return gen_sign_extension(dbgi, block, op, bits);
@@ -212,9 +288,12 @@ static bool is_imm_encodeable(const ir_node *node)
 	return sparc_is_value_imm_encodeable(value);
 }
 
-static bool needs_extension(ir_mode *mode)
+static bool needs_extension(ir_node *op)
 {
-	return get_mode_size_bits(mode) < get_mode_size_bits(mode_gp);
+	ir_mode *mode = get_irn_mode(op);
+	if (get_mode_size_bits(mode) >= get_mode_size_bits(mode_gp))
+		return false;
+	return !upper_bits_clean(op, mode);
 }
 
 /**
@@ -241,7 +320,7 @@ static bool is_downconv(const ir_node *node)
 		get_mode_size_bits(dest_mode) <= get_mode_size_bits(src_mode);
 }
 
-static ir_node *sparc_skip_downconv(ir_node *node)
+static ir_node *skip_downconv(ir_node *node)
 {
 	while (is_downconv(node)) {
 		node = get_Conv_op(node);
@@ -269,8 +348,8 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	ir_mode  *mode2;
 
 	if (flags & MATCH_MODE_NEUTRAL) {
-		op1 = sparc_skip_downconv(op1);
-		op2 = sparc_skip_downconv(op2);
+		op1 = skip_downconv(op1);
+		op2 = skip_downconv(op2);
 	}
 	mode1 = get_irn_mode(op1);
 	mode2 = get_irn_mode(op2);
@@ -281,13 +360,13 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	if (is_imm_encodeable(op2)) {
 		int32_t  immediate = get_tarval_long(get_Const_tarval(op2));
 		new_op1 = be_transform_node(op1);
-		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
+		if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
 			new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 		}
 		return new_imm(dbgi, block, new_op1, NULL, immediate);
 	}
 	new_op2 = be_transform_node(op2);
-	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode2)) {
+	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op2)) {
 		new_op2 = gen_extension(dbgi, block, new_op2, mode2);
 	}
 
@@ -297,7 +376,7 @@ static ir_node *gen_helper_binop_args(ir_node *node,
 	}
 
 	new_op1 = be_transform_node(op1);
-	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(mode1)) {
+	if (! (flags & MATCH_MODE_NEUTRAL) && needs_extension(op1)) {
 		new_op1 = gen_extension(dbgi, block, new_op1, mode1);
 	}
 	return new_reg(dbgi, block, new_op1, new_op2);
@@ -415,6 +494,40 @@ static ir_node *get_g0(ir_graph *irg)
 	return start_g0;
 }
 
+static ir_node *get_g7(ir_graph *irg)
+{
+	if (start_g7 == NULL) {
+		ir_node *start = get_irg_start(irg);
+		assert(is_sparc_Start(start));
+		start_g7 = new_r_Proj(start, mode_gp, start_g7_offset);
+	}
+	return start_g7;
+}
+
+static ir_node *make_tls_offset(dbg_info *dbgi, ir_node *block,
+                                ir_entity *entity, int32_t offset)
+{
+	ir_node  *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
+	ir_node  *low = new_bd_sparc_Xor_imm(dbgi, block, hi, entity, offset);
+	return low;
+}
+
+static ir_node *make_address(dbg_info *dbgi, ir_node *block, ir_entity *entity,
+                             int32_t offset)
+{
+	if (get_entity_owner(entity) == get_tls_type()) {
+		ir_graph *irg     = get_irn_irg(block);
+		ir_node  *g7      = get_g7(irg);
+		ir_node  *offsetn = make_tls_offset(dbgi, block, entity, offset);
+		ir_node  *add     = new_bd_sparc_Add_reg(dbgi, block, g7, offsetn);
+		return add;
+	} else {
+		ir_node *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
+		ir_node *low = new_bd_sparc_Or_imm(dbgi, block, hi, entity, offset);
+		return low;
+	}
+}
+
 typedef struct address_t {
 	ir_node   *ptr;
 	ir_node   *ptr2;
@@ -446,15 +559,28 @@ static void match_address(ir_node *ptr, address_t *address, bool use_ptr2)
 	 * won't save anything but produce multiple sethi+or combinations with
 	 * just different offsets */
 	if (is_SymConst(base) && get_irn_n_edges(base) == 1) {
-		dbg_info *dbgi      = get_irn_dbg_info(ptr);
-		ir_node  *block     = get_nodes_block(ptr);
-		ir_node  *new_block = be_transform_node(block);
-		entity = get_SymConst_entity(base);
-		base   = new_bd_sparc_SetHi(dbgi, new_block, entity, offset);
-	} else if (use_ptr2 && is_Add(base) && entity == NULL && offset == 0) {
+		ir_entity *sc_entity = get_SymConst_entity(base);
+		dbg_info  *dbgi      = get_irn_dbg_info(ptr);
+		ir_node   *block     = get_nodes_block(ptr);
+		ir_node   *new_block = be_transform_node(block);
+
+		if (get_entity_owner(sc_entity) == get_tls_type()) {
+			if (!use_ptr2) {
+				goto only_offset;
+			} else {
+				ptr2   = make_tls_offset(dbgi, new_block, sc_entity, offset);
+				offset = 0;
+				base   = get_g7(get_irn_irg(base));
+			}
+		} else {
+			entity = sc_entity;
+			base   = new_bd_sparc_SetHi(dbgi, new_block, entity, offset);
+		}
+	} else if (use_ptr2 && is_Add(base) && offset == 0) {
 		ptr2 = be_transform_node(get_Add_right(base));
 		base = be_transform_node(get_Add_left(base));
 	} else {
+only_offset:
 		if (sparc_is_value_imm_encodeable(offset)) {
 			base = be_transform_node(base);
 		} else {
@@ -689,7 +815,6 @@ static ir_node *gen_Store(ir_node *node)
 	ir_node  *mem      = get_Store_mem(node);
 	ir_node  *new_mem  = be_transform_node(mem);
 	ir_node  *val      = get_Store_value(node);
-	ir_node  *new_val  = be_transform_node(val);
 	ir_mode  *mode     = get_irn_mode(val);
 	dbg_info *dbgi     = get_irn_dbg_info(node);
 	ir_node  *new_store = NULL;
@@ -700,12 +825,21 @@ static ir_node *gen_Store(ir_node *node)
 	}
 
 	if (mode_is_float(mode)) {
+		ir_node *new_val = be_transform_node(val);
 		/* TODO: variants with reg+reg address mode */
 		match_address(ptr, &address, false);
 		new_store = create_stf(dbgi, block, new_val, address.ptr, new_mem,
 		                       mode, address.entity, address.offset, false);
 	} else {
-		assert(get_mode_size_bits(mode) <= 32);
+		ir_node *new_val;
+		unsigned dest_bits = get_mode_size_bits(mode);
+		while (is_downconv(node)
+		       && get_mode_size_bits(get_irn_mode(node)) >= dest_bits) {
+		    val = get_Conv_op(val);
+		}
+		new_val = be_transform_node(val);
+
+		assert(dest_bits <= 32);
 		match_address(ptr, &address, true);
 		if (address.ptr2 != NULL) {
 			assert(address.entity == NULL && address.offset == 0);
@@ -754,8 +888,13 @@ static ir_node *gen_Mulh(ir_node *node)
 	if (mode_is_float(mode))
 		panic("FP not supported yet");
 
-	mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_Mulh_reg, new_bd_sparc_Mulh_imm);
-	return new_r_Proj(mul, mode_gp, pn_sparc_Mulh_low);
+	if (mode_is_signed(mode)) {
+		mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_SMulh_reg, new_bd_sparc_SMulh_imm);
+		return new_r_Proj(mul, mode_gp, pn_sparc_SMulh_low);
+	} else {
+		mul = gen_helper_binop(node, MATCH_COMMUTATIVE, new_bd_sparc_UMulh_reg, new_bd_sparc_UMulh_imm);
+		return new_r_Proj(mul, mode_gp, pn_sparc_UMulh_low);
+	}
 }
 
 static ir_node *gen_sign_extension_value(ir_node *node)
@@ -844,22 +983,23 @@ static ir_node *gen_helper_bitop(ir_node *node,
                                  new_binop_reg_func new_reg,
                                  new_binop_imm_func new_imm,
                                  new_binop_reg_func new_not_reg,
-                                 new_binop_imm_func new_not_imm)
+                                 new_binop_imm_func new_not_imm,
+                                 match_flags_t flags)
 {
 	ir_node *op1 = get_binop_left(node);
 	ir_node *op2 = get_binop_right(node);
 	if (is_Not(op1)) {
 		return gen_helper_binop_args(node, op2, get_Not_op(op1),
-		                             MATCH_MODE_NEUTRAL,
+		                             flags,
 		                             new_not_reg, new_not_imm);
 	}
 	if (is_Not(op2)) {
 		return gen_helper_binop_args(node, op1, get_Not_op(op2),
-		                             MATCH_MODE_NEUTRAL,
+		                             flags,
 		                             new_not_reg, new_not_imm);
 	}
 	return gen_helper_binop_args(node, op1, op2,
-								 MATCH_MODE_NEUTRAL | MATCH_COMMUTATIVE,
+								 flags | MATCH_COMMUTATIVE,
 								 new_reg, new_imm);
 }
 
@@ -869,7 +1009,8 @@ static ir_node *gen_And(ir_node *node)
 	                        new_bd_sparc_And_reg,
 	                        new_bd_sparc_And_imm,
 	                        new_bd_sparc_AndN_reg,
-	                        new_bd_sparc_AndN_imm);
+	                        new_bd_sparc_AndN_imm,
+	                        MATCH_MODE_NEUTRAL);
 }
 
 static ir_node *gen_Or(ir_node *node)
@@ -878,7 +1019,8 @@ static ir_node *gen_Or(ir_node *node)
 	                        new_bd_sparc_Or_reg,
 	                        new_bd_sparc_Or_imm,
 	                        new_bd_sparc_OrN_reg,
-	                        new_bd_sparc_OrN_imm);
+	                        new_bd_sparc_OrN_imm,
+	                        MATCH_MODE_NEUTRAL);
 }
 
 static ir_node *gen_Eor(ir_node *node)
@@ -887,7 +1029,8 @@ static ir_node *gen_Eor(ir_node *node)
 	                        new_bd_sparc_Xor_reg,
 	                        new_bd_sparc_Xor_imm,
 	                        new_bd_sparc_XNor_reg,
-	                        new_bd_sparc_XNor_imm);
+	                        new_bd_sparc_XNor_imm,
+	                        MATCH_MODE_NEUTRAL);
 }
 
 static ir_node *gen_Shl(ir_node *node)
@@ -1020,17 +1163,6 @@ static ir_mode *get_cmp_mode(ir_node *b_value)
 	return get_irn_mode(op);
 }
 
-static ir_node *make_address(dbg_info *dbgi, ir_node *block, ir_entity *entity,
-                             int32_t offset)
-{
-	ir_node *hi  = new_bd_sparc_SetHi(dbgi, block, entity, offset);
-	ir_node *low = new_bd_sparc_Or_imm(dbgi, block, hi, entity, offset);
-
-	if (get_entity_owner(entity) == get_tls_type())
-		panic("thread local storage not supported yet in sparc backend");
-	return low;
-}
-
 static ir_node *gen_SwitchJmp(ir_node *node)
 {
 	dbg_info        *dbgi         = get_irn_dbg_info(node);
@@ -1150,19 +1282,22 @@ static ir_node *gen_Cmp(ir_node *node)
 			                        new_bd_sparc_AndCCZero_reg,
 			                        new_bd_sparc_AndCCZero_imm,
 			                        new_bd_sparc_AndNCCZero_reg,
-			                        new_bd_sparc_AndNCCZero_imm);
+			                        new_bd_sparc_AndNCCZero_imm,
+			                        MATCH_NONE);
 		} else if (is_Or(op1)) {
 			return gen_helper_bitop(op1,
 			                        new_bd_sparc_OrCCZero_reg,
 			                        new_bd_sparc_OrCCZero_imm,
 			                        new_bd_sparc_OrNCCZero_reg,
-			                        new_bd_sparc_OrNCCZero_imm);
+			                        new_bd_sparc_OrNCCZero_imm,
+			                        MATCH_NONE);
 		} else if (is_Eor(op1)) {
 			return gen_helper_bitop(op1,
 			                        new_bd_sparc_XorCCZero_reg,
 			                        new_bd_sparc_XorCCZero_imm,
 			                        new_bd_sparc_XNorCCZero_reg,
-			                        new_bd_sparc_XNorCCZero_imm);
+			                        new_bd_sparc_XNorCCZero_imm,
+			                        MATCH_NONE);
 		}
 	}
 
@@ -1282,13 +1417,13 @@ static ir_node *gen_Conv(ir_node *node)
 	if (src_mode == mode_b)
 		panic("ConvB not lowered %+F", node);
 
-	new_op = be_transform_node(op);
 	if (src_mode == dst_mode)
-		return new_op;
+		return be_transform_node(op);
 
 	if (mode_is_float(src_mode) || mode_is_float(dst_mode)) {
 		assert((src_bits <= 64 && dst_bits <= 64) && "quad FP not implemented");
 
+		new_op = be_transform_node(op);
 		if (mode_is_float(src_mode)) {
 			if (mode_is_float(dst_mode)) {
 				/* float -> float conv */
@@ -1308,20 +1443,13 @@ static ir_node *gen_Conv(ir_node *node)
 			}
 			return create_itof(dbgi, block, new_op, dst_mode);
 		}
-	} else if (src_mode == mode_b) {
-		panic("ConvB not lowered %+F", node);
 	} else { /* complete in gp registers */
 		int min_bits;
 		ir_mode *min_mode;
 
-		if (src_bits == dst_bits) {
+		if (src_bits == dst_bits || dst_mode == mode_b) {
 			/* kill unnecessary conv */
-			return new_op;
-		}
-
-		if (dst_mode == mode_b) {
-			/* mode_b lowering already took care that we only have 0/1 values */
-			return new_op;
+			return be_transform_node(op);
 		}
 
 		if (src_bits < dst_bits) {
@@ -1332,9 +1460,10 @@ static ir_node *gen_Conv(ir_node *node)
 			min_mode = dst_mode;
 		}
 
-		if (upper_bits_clean(new_op, min_mode)) {
-			return new_op;
+		if (upper_bits_clean(op, min_mode)) {
+			return be_transform_node(op);
 		}
+		new_op = be_transform_node(op);
 
 		if (mode_is_signed(min_mode)) {
 			return gen_sign_extension(dbgi, block, new_op, min_bits);
@@ -1381,7 +1510,7 @@ static ir_node *gen_Start(ir_node *node)
 	assert(obstack_object_size(obst) == 0);
 
 	/* calculate number of outputs */
-	n_outs = 3; /* memory, zero, sp */
+	n_outs = 4; /* memory, g0, g7, sp */
 	if (!current_cconv->omit_fp)
 		++n_outs; /* framepointer */
 	/* function parameters */
@@ -1406,6 +1535,14 @@ static ir_node *gen_Start(ir_node *node)
 	                        arch_register_req_type_ignore);
 	arch_set_irn_register_req_out(start, o, req);
 	arch_set_irn_register_out(start, o, &sparc_registers[REG_G0]);
+	++o;
+
+	/* g7 is used for TLS data */
+	start_g7_offset = o;
+	req = be_create_reg_req(obst, &sparc_registers[REG_G7],
+	                        arch_register_req_type_ignore);
+	arch_set_irn_register_req_out(start, o, req);
+	arch_set_irn_register_out(start, o, &sparc_registers[REG_G7]);
 	++o;
 
 	/* we need an output for the stackpointer */
@@ -1671,7 +1808,7 @@ static ir_node *gen_Call(ir_node *node)
 	ir_entity       *entity       = NULL;
 	ir_node         *new_frame    = get_stack_pointer_for(node);
 	bool             aggregate_return
-		= type->attr.ma.has_compound_ret_parameter;
+		= get_method_calling_convention(type) & cc_compound_ret;
 	ir_node         *incsp;
 	int              mem_pos;
 	ir_node         *res;
@@ -1843,6 +1980,102 @@ static ir_node *gen_Sel(ir_node *node)
 	assert(is_Proj(ptr) && is_Start(get_Proj_pred(ptr)));
 
 	return new_bd_sparc_FrameAddr(dbgi, new_block, new_ptr, entity, 0);
+}
+
+static ir_node *gen_Alloc(ir_node *node)
+{
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *block      = get_nodes_block(node);
+	ir_node  *new_block  = be_transform_node(block);
+	ir_type  *type       = get_Alloc_type(node);
+	ir_node  *size       = get_Alloc_count(node);
+	ir_node  *stack_pred = get_stack_pointer_for(node);
+	ir_node  *subsp;
+	if (get_Alloc_where(node) != stack_alloc)
+		panic("only stack-alloc supported in sparc backend (at %+F)", node);
+	/* lowerer should have transformed all allocas to byte size */
+	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+		panic("Found non-byte alloc in sparc backend (at %+F)", node);
+
+	if (is_Const(size)) {
+		ir_tarval *tv    = get_Const_tarval(size);
+		long       sizel = get_tarval_long(tv);
+		subsp = be_new_IncSP(sp_reg, new_block, stack_pred, sizel, 0);
+		set_irn_dbg_info(subsp, dbgi);
+	} else {
+		ir_node *new_size = be_transform_node(size);
+		subsp = new_bd_sparc_SubSP(dbgi, new_block, stack_pred, new_size);
+		arch_set_irn_register(subsp, sp_reg);
+	}
+
+	/* if we are the last IncSP producer in a block then we have to keep
+	 * the stack value.
+	 * Note: This here keeps all producers which is more than necessary */
+	keep_alive(subsp);
+
+	pmap_insert(node_to_stack, node, subsp);
+	/* the "result" is the unmodified sp value */
+	return stack_pred;
+}
+
+static ir_node *gen_Proj_Alloc(ir_node *node)
+{
+	ir_node *alloc = get_Proj_pred(node);
+	long     pn    = get_Proj_proj(node);
+
+	switch ((pn_Alloc)pn) {
+	case pn_Alloc_M: {
+		ir_node *alloc_mem = get_Alloc_mem(alloc);
+		return be_transform_node(alloc_mem);
+	}
+	case pn_Alloc_res: {
+		ir_node *new_alloc = be_transform_node(alloc);
+		return new_alloc;
+	}
+	case pn_Alloc_X_regular:
+	case pn_Alloc_X_except:
+		panic("sparc backend: exception output of alloc not supported (at %+F)",
+		      node);
+	}
+	panic("sparc backend: invalid Proj->Alloc");
+}
+
+static ir_node *gen_Free(ir_node *node)
+{
+	dbg_info *dbgi       = get_irn_dbg_info(node);
+	ir_node  *block      = get_nodes_block(node);
+	ir_node  *new_block  = be_transform_node(block);
+	ir_type  *type       = get_Free_type(node);
+	ir_node  *size       = get_Free_count(node);
+	ir_node  *mem        = get_Free_mem(node);
+	ir_node  *new_mem    = be_transform_node(mem);
+	ir_node  *stack_pred = get_stack_pointer_for(node);
+	ir_node  *addsp;
+	if (get_Alloc_where(node) != stack_alloc)
+		panic("only stack-alloc supported in sparc backend (at %+F)", node);
+	/* lowerer should have transformed all allocas to byte size */
+	if (type != get_unknown_type() && get_type_size_bytes(type) != 1)
+		panic("Found non-byte alloc in sparc backend (at %+F)", node);
+
+	if (is_Const(size)) {
+		ir_tarval *tv    = get_Const_tarval(size);
+		long       sizel = get_tarval_long(tv);
+		addsp = be_new_IncSP(sp_reg, new_block, stack_pred, -sizel, 0);
+		set_irn_dbg_info(addsp, dbgi);
+	} else {
+		ir_node *new_size = be_transform_node(size);
+		addsp = new_bd_sparc_AddSP(dbgi, new_block, stack_pred, new_size);
+		arch_set_irn_register(addsp, sp_reg);
+	}
+
+	/* if we are the last IncSP producer in a block then we have to keep
+	 * the stack value.
+	 * Note: This here keeps all producers which is more than necessary */
+	keep_alive(addsp);
+
+	pmap_insert(node_to_stack, node, addsp);
+	/* the "result" is the unmodified sp value */
+	return new_mem;
 }
 
 static const arch_register_req_t float1_req = {
@@ -2061,16 +2294,13 @@ static ir_node *gen_Proj_Start(ir_node *node)
 
 static ir_node *gen_Proj_Proj_Start(ir_node *node)
 {
-	long       pn          = get_Proj_proj(node);
-	ir_node   *block       = get_nodes_block(node);
-	ir_graph  *irg         = get_irn_irg(node);
-	ir_node   *new_block   = be_transform_node(block);
-	ir_entity *entity      = get_irg_entity(irg);
-	ir_type   *method_type = get_entity_type(entity);
-	ir_type   *param_type  = get_method_param_type(method_type, pn);
-	ir_node   *args        = get_Proj_pred(node);
-	ir_node   *start       = get_Proj_pred(args);
-	ir_node   *new_start   = be_transform_node(start);
+	long      pn        = get_Proj_proj(node);
+	ir_node  *block     = get_nodes_block(node);
+	ir_graph *irg       = get_irn_irg(node);
+	ir_node  *new_block = be_transform_node(block);
+	ir_node  *args      = get_Proj_pred(node);
+	ir_node  *start     = get_Proj_pred(args);
+	ir_node  *new_start = be_transform_node(start);
 	const reg_or_stackslot_t *param;
 
 	/* Proj->Proj->Start must be a method argument */
@@ -2080,22 +2310,32 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 
 	if (param->reg0 != NULL) {
 		/* argument transmitted in register */
-		ir_mode               *mode     = get_type_mode(param_type);
 		const arch_register_t *reg      = param->reg0;
 		ir_mode               *reg_mode = reg->reg_class->mode;
-		long                   pn       = param->reg_offset + start_params_offset;
-		ir_node               *value    = new_r_Proj(new_start, reg_mode, pn);
+		long                   new_pn   = param->reg_offset + start_params_offset;
+		ir_node               *value    = new_r_Proj(new_start, reg_mode, new_pn);
+		bool                   is_float = false;
 
-		if (mode_is_float(mode)) {
+		{
+			ir_entity *entity      = get_irg_entity(irg);
+			ir_type   *method_type = get_entity_type(entity);
+			if (pn < (long)get_method_n_params(method_type)) {
+				ir_type *param_type = get_method_param_type(method_type, pn);
+				ir_mode *mode       = get_type_mode(param_type);
+				is_float = mode_is_float(mode);
+			}
+		}
+
+		if (is_float) {
 			const arch_register_t *reg1 = param->reg1;
 			ir_node *value1 = NULL;
 
 			if (reg1 != NULL) {
 				ir_mode *reg1_mode = reg1->reg_class->mode;
-				value1 = new_r_Proj(new_start, reg1_mode, pn+1);
+				value1 = new_r_Proj(new_start, reg1_mode, new_pn+1);
 			} else if (param->entity != NULL) {
-				ir_node *fp      = get_initial_fp(irg);
-				ir_node *mem     = get_initial_mem(irg);
+				ir_node *fp  = get_initial_fp(irg);
+				ir_node *mem = get_initial_mem(irg);
 				ir_node *ld  = new_bd_sparc_Ld_imm(NULL, new_block, fp, mem,
 				                                   mode_gp, param->entity,
 				                                   0, true);
@@ -2108,11 +2348,11 @@ static ir_node *gen_Proj_Proj_Start(ir_node *node)
 		return value;
 	} else {
 		/* argument transmitted on stack */
-		ir_node  *mem     = get_initial_mem(irg);
-		ir_mode  *mode    = get_type_mode(param->type);
-		ir_node  *base    = get_frame_base(irg);
-		ir_node  *load;
-		ir_node  *value;
+		ir_node *mem  = get_initial_mem(irg);
+		ir_mode *mode = get_type_mode(param->type);
+		ir_node *base = get_frame_base(irg);
+		ir_node *load;
+		ir_node *value;
 
 		if (mode_is_float(mode)) {
 			load  = create_ldf(NULL, new_block, base, mem, mode,
@@ -2154,12 +2394,14 @@ static ir_node *gen_Proj_Proj_Call(ir_node *node)
 	ir_type              *function_type = get_Call_type(call);
 	calling_convention_t *cconv
 		= sparc_decide_calling_convention(function_type, NULL);
-	const reg_or_stackslot_t  *res = &cconv->results[pn];
-	ir_mode                   *mode;
+	const reg_or_stackslot_t  *res  = &cconv->results[pn];
+	ir_mode                   *mode = get_irn_mode(node);
 	long                       new_pn = 1 + res->reg_offset;
 
 	assert(res->req0 != NULL && res->req1 == NULL);
-	mode = res->req0->cls->mode;
+	if (mode_needs_gp_reg(mode)) {
+		mode = mode_gp;
+	}
 	sparc_free_calling_convention(cconv);
 
 	return new_r_Proj(new_call, mode, new_pn);
@@ -2173,6 +2415,8 @@ static ir_node *gen_Proj(ir_node *node)
 	ir_node *pred = get_Proj_pred(node);
 
 	switch (get_irn_opcode(pred)) {
+	case iro_Alloc:
+		return gen_Proj_Alloc(node);
 	case iro_Store:
 		return gen_Proj_Store(node);
 	case iro_Load:
@@ -2226,6 +2470,7 @@ static void sparc_register_transformers(void)
 	be_start_transform_setup();
 
 	be_set_transform_function(op_Add,          gen_Add);
+	be_set_transform_function(op_Alloc,        gen_Alloc);
 	be_set_transform_function(op_And,          gen_And);
 	be_set_transform_function(op_Call,         gen_Call);
 	be_set_transform_function(op_Cmp,          gen_Cmp);
@@ -2234,6 +2479,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Conv,         gen_Conv);
 	be_set_transform_function(op_Div,          gen_Div);
 	be_set_transform_function(op_Eor,          gen_Eor);
+	be_set_transform_function(op_Free,         gen_Free);
 	be_set_transform_function(op_Jmp,          gen_Jmp);
 	be_set_transform_function(op_Load,         gen_Load);
 	be_set_transform_function(op_Minus,        gen_Minus);
@@ -2281,6 +2527,7 @@ void sparc_transform_graph(ir_graph *irg)
 
 	start_mem  = NULL;
 	start_g0   = NULL;
+	start_g7   = NULL;
 	start_sp   = NULL;
 	start_fp   = NULL;
 	frame_base = NULL;
@@ -2288,6 +2535,11 @@ void sparc_transform_graph(ir_graph *irg)
 	stackorder = be_collect_stacknodes(irg);
 	current_cconv
 		= sparc_decide_calling_convention(get_entity_type(entity), irg);
+	if (sparc_variadic_fixups(irg, current_cconv)) {
+		sparc_free_calling_convention(current_cconv);
+		current_cconv
+			= sparc_decide_calling_convention(get_entity_type(entity), irg);
+	}
 	sparc_create_stacklayout(irg, current_cconv);
 	be_add_parameter_entity_stores(irg);
 

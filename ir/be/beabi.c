@@ -387,7 +387,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 	const ir_edge_t        *edge;
 	int                    *reg_param_idxs;
 	int                    *stack_param_idx;
-	int                     i, n, destroy_all_regs;
+	int                     i, n;
 	int                     throws_exception;
 	size_t                  s;
 	size_t                  p;
@@ -524,20 +524,6 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 		}
 	}
 
-	/* check for the return_twice property */
-	destroy_all_regs = 0;
-	if (is_SymConst_addr_ent(call_ptr)) {
-		ir_entity *ent = get_SymConst_entity(call_ptr);
-
-		if (get_entity_additional_properties(ent) & mtp_property_returns_twice)
-			destroy_all_regs = 1;
-	} else {
-		ir_type *call_tp = get_Call_type(irn);
-
-		if (get_method_additional_properties(call_tp) & mtp_property_returns_twice)
-			destroy_all_regs = 1;
-	}
-
 	/* Put caller save into the destroyed set and state registers in the states
 	 * set */
 	for (i = 0, n = arch_env->n_register_classes; i < n; ++i) {
@@ -558,7 +544,7 @@ static ir_node *adjust_call(be_abi_irg_t *env, ir_node *irn, ir_node *curr_sp)
 				 * checking */
 				continue;
 			}
-			if (destroy_all_regs || arch_register_is_caller_save(arch_env, reg)) {
+			if (arch_register_is_caller_save(arch_env, reg)) {
 				if (!(reg->type & arch_register_type_ignore)) {
 					ARR_APP1(const arch_register_t*, destroyed_regs, reg);
 				}
@@ -948,11 +934,11 @@ static ir_node *adjust_free(be_abi_irg_t *env, ir_node *free, ir_node *curr_sp)
 	if (type != firm_unknown_type && get_type_size_bytes(type) != 1) {
 		ir_tarval *tv   = new_tarval_from_long(get_type_size_bytes(type), mode_Iu);
 		ir_node   *cnst = new_rd_Const(dbg, irg, tv);
-		ir_node   *mul  = new_rd_Mul(dbg, block, get_Free_size(free),
+		ir_node   *mul  = new_rd_Mul(dbg, block, get_Free_count(free),
 		                             cnst, mode_Iu);
 		size = mul;
 	} else {
-		size = get_Free_size(free);
+		size = get_Free_count(free);
 	}
 
 	stack_alignment = 1 << arch_env->stack_alignment;
@@ -1166,10 +1152,10 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 								 ir_type *method_type, ir_entity ***param_map)
 {
 	struct obstack *obst = be_get_be_obst(irg);
-	ir_type *frame_type      = get_irg_frame_type(irg);
-	size_t   n_params        = get_method_n_params(method_type);
-	size_t   n_frame_members = get_compound_n_members(frame_type);
-	size_t   n_real_params   = n_params;
+	ir_type   *frame_type      = get_irg_frame_type(irg);
+	size_t     n_params        = get_method_n_params(method_type);
+	size_t     n_frame_members = get_compound_n_members(frame_type);
+	ir_entity *va_start_entity = NULL;
 	size_t   f;
 	int      ofs  = 0;
 
@@ -1177,12 +1163,7 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 	size_t i;
 	ir_entity **map;
 
-	/* Allow selecting one past the last parameter to get the variadic
-	 * parameters. */
-	if (get_method_variadicity(method_type) == variadicity_variadic)
-		++n_real_params;
-
-	*param_map = map = OALLOCNZ(obst, ir_entity*, n_real_params);
+	*param_map = map = OALLOCNZ(obst, ir_entity*, n_params);
 	res = new_type_struct(new_id_from_chars("arg_type", 8));
 
 	/* collect existing entities for value_param_types */
@@ -1194,7 +1175,13 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 		if (!is_parameter_entity(entity))
 			continue;
 		num = get_entity_parameter_number(entity);
-		assert(num < n_real_params);
+		if (num == IR_VA_START_PARAMETER_NUMBER) {
+			/* move entity to new arg_type */
+			set_entity_owner(entity, res);
+			va_start_entity = entity;
+			continue;
+		}
+		assert(num < n_params);
 		if (map[num] != NULL)
 			panic("multiple entities for parameter %u in %+F found", f, irg);
 
@@ -1228,12 +1215,11 @@ static ir_type *compute_arg_type(ir_graph *irg, be_abi_call_t *call,
 		ofs += get_type_size_bytes(param_type);
 		arg->stack_ent = entity;
 	}
+	if (va_start_entity != NULL) {
+		set_entity_offset(va_start_entity, ofs);
+	}
 	set_type_size_bytes(res, ofs);
 	set_type_state(res, layout_fixed);
-
-	if (n_params != n_real_params && map[n_params] != NULL) {
-		set_entity_offset(map[n_params], ofs);
-	}
 
 	return res;
 }
