@@ -575,68 +575,239 @@ static void emit_be_Perm(const ir_node *irn)
 
 /* The stack pointer must always be SPARC_STACK_ALIGNMENT bytes aligned, so get
  * the next bigger integer that's evenly divisible by it. */
-static unsigned get_aligned_sp_change(unsigned const memperm_arity)
+static unsigned get_aligned_sp_change(const unsigned num_regs)
 {
-	const unsigned bytes = memperm_arity * SPARC_REGISTER_SIZE;
+	const unsigned bytes = num_regs * SPARC_REGISTER_SIZE;
 	return round_up2(bytes, SPARC_STACK_ALIGNMENT);
 }
 
+/* Spill register l0 or both l0 and l1, depending on n_spilled and n_to_spill.*/
+static void memperm_emit_spill_registers(const ir_node *node, int n_spilled,
+                                         int n_to_spill)
+{
+	assert(n_spilled < n_to_spill);
+
+	if (n_spilled == 0) {
+		/* We always reserve stack space for two registers because during copy
+		 * processing we don't know yet if we also need to handle a cycle which
+		 * needs two registers.  More complicated code in emit_MemPerm would
+		 * prevent wasting SPARC_REGISTER_SIZE bytes of stack space but
+		 * it is not worth the worse readability of emit_MemPerm. */
+
+		/* Keep stack pointer aligned. */
+		unsigned sp_change = get_aligned_sp_change(2);
+		be_emit_irprintf("\tsub %%sp, %u, %%sp", sp_change);
+		be_emit_finish_line_gas(node);
+
+		/* Spill register l0. */
+		be_emit_irprintf("\tst %%l0, [%%sp%+d]", SPARC_MIN_STACKSIZE);
+		be_emit_finish_line_gas(node);
+	}
+
+	if (n_to_spill == 2) {
+		/* Spill register l1. */
+		be_emit_irprintf("\tst %%l1, [%%sp%+d]", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
+		be_emit_finish_line_gas(node);
+	}
+}
+
+/* Restore register l0 or both l0 and l1, depending on n_spilled. */
+static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
+{
+	unsigned sp_change;
+
+	if (n_spilled == 2) {
+		/* Restore register l1. */
+		be_emit_irprintf("\tld [%%sp%+d], %%l1", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
+		be_emit_finish_line_gas(node);
+	}
+
+	/* Restore register l0. */
+	be_emit_irprintf("\tld [%%sp%+d], %%l0", SPARC_MIN_STACKSIZE);
+	be_emit_finish_line_gas(node);
+
+	/* Restore stack pointer. */
+	sp_change = get_aligned_sp_change(2);
+	be_emit_irprintf("\tadd %%sp, %u, %%sp", sp_change);
+	be_emit_finish_line_gas(node);
+}
+
+/* Emit code to copy in_ent to out_ent.  Only uses l0. */
+static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
+                              ir_entity *out_ent)
+{
+	ir_graph          *irg     = get_irn_irg(node);
+	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
+	int                off_in  = be_get_stack_entity_offset(layout, in_ent, 0);
+	int                off_out = be_get_stack_entity_offset(layout, out_ent, 0);
+
+	/* Load from input entity. */
+	be_emit_irprintf("\tld [%%fp%+d], %%l0", off_in);
+	be_emit_finish_line_gas(node);
+
+	/* Store to output entity. */
+	be_emit_irprintf("\tst %%l0, [%%fp%+d]", off_out);
+	be_emit_finish_line_gas(node);
+}
+
+/* Emit code to swap ent1 and ent2.  Uses l0 and l1. */
+static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
+                              ir_entity *ent2)
+{
+	ir_graph          *irg     = get_irn_irg(node);
+	be_stack_layout_t *layout  = be_get_irg_stack_layout(irg);
+	int                off1    = be_get_stack_entity_offset(layout, ent1, 0);
+	int                off2    = be_get_stack_entity_offset(layout, ent2, 0);
+
+	/* Load from first input entity. */
+	be_emit_irprintf("\tld [%%fp%+d], %%l0", off1);
+	be_emit_finish_line_gas(node);
+
+	/* Load from second input entity. */
+	be_emit_irprintf("\tld [%%fp%+d], %%l1", off2);
+	be_emit_finish_line_gas(node);
+
+	/* Store first value to second output entity. */
+	be_emit_irprintf("\tst %%l0, [%%fp%+d]", off2);
+	be_emit_finish_line_gas(node);
+
+	/* Store second value to first output entity. */
+	be_emit_irprintf("\tst %%l1, [%%fp%+d]", off1);
+	be_emit_finish_line_gas(node);
+}
+
+/* Find the index of ent in ents or return -1 if not found. */
+static int get_index(ir_entity **ents, int n, ir_entity *ent)
+{
+	int i;
+
+	for (i = 0; i < n; ++i)
+		if (ents[i] == ent)
+			return i;
+
+	return -1;
+}
+
+/*
+ * Emit code for a MemPerm node.
+ *
+ * Analyze MemPerm for copy chains and cyclic swaps and resolve them using
+ * loads and stores.
+ * This function is conceptually very similar to permute_values in
+ * beprefalloc.c.
+ */
 static void emit_be_MemPerm(const ir_node *node)
 {
-	int      i;
-	int      memperm_arity;
-	unsigned aligned_sp_change;
-	int      sp_change = 0;
-	ir_graph          *irg    = get_irn_irg(node);
-	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+	int         memperm_arity = be_get_MemPerm_entity_arity(node);
+	/* Upper limit for the number of participating entities is twice the
+	 * arity, e.g., for a simple copying MemPerm node with one input/output. */
+	int         max_size      = 2 * memperm_arity;
+	ir_entity **entities      = ALLOCANZ(ir_entity *, max_size);
+	/* sourceof contains the input entity for each entity.  If an entity is
+	 * never used as an output, its entry in sourceof is a fix point. */
+	int        *sourceof      = ALLOCANZ(int,         max_size);
+	/* n_users counts how many output entities use this entity as their input.*/
+	int        *n_users       = ALLOCANZ(int,         max_size);
+	/* n_spilled records the number of spilled registers, either 1 or 2. */
+	int         n_spilled     = 0;
+	int         i, n, oidx;
 
-	/* this implementation only works with frame pointers currently */
-	assert(layout->sp_relative == false);
-
-	/* TODO: this implementation is slower than necessary.
-	   The longterm goal is however to avoid the memperm node completely */
-
-	memperm_arity = be_get_MemPerm_entity_arity(node);
-	// we use our local registers - so this is limited to 8 inputs !
-	if (memperm_arity > 8)
-		panic("memperm with more than 8 inputs not supported yet");
-
-	aligned_sp_change = get_aligned_sp_change(memperm_arity);
-	be_emit_irprintf("\tsub %%sp, %u, %%sp", aligned_sp_change);
-	be_emit_finish_line_gas(node);
-
-	for (i = 0; i < memperm_arity; ++i) {
-		ir_entity *entity = be_get_MemPerm_in_entity(node, i);
-		int        offset = be_get_stack_entity_offset(layout, entity, 0);
-
-		/* spill register */
-		be_emit_irprintf("\tst %%l%d, [%%sp%+d]", i, sp_change + SPARC_MIN_STACKSIZE);
-		be_emit_finish_line_gas(node);
-
-		/* load from entity */
-		be_emit_irprintf("\tld [%%fp%+d], %%l%d", offset, i);
-		be_emit_finish_line_gas(node);
-		sp_change += SPARC_REGISTER_SIZE;
+	for (i = 0; i < max_size; ++i) {
+		sourceof[i] = i;
 	}
 
-	for (i = memperm_arity-1; i >= 0; --i) {
-		ir_entity *entity = be_get_MemPerm_out_entity(node, i);
-		int        offset = be_get_stack_entity_offset(layout, entity, 0);
+	for (i = n = 0; i < memperm_arity; ++i) {
+		ir_entity *out  = be_get_MemPerm_out_entity(node, i);
+		ir_entity *in   = be_get_MemPerm_in_entity(node, i);
+		int              oidx; /* Out index */
+		int              iidx; /* In index */
 
-		sp_change -= SPARC_REGISTER_SIZE;
+		/* Insert into entities to be able to operate on unique indices. */
+		if (get_index(entities, n, out) == -1)
+			entities[n++] = out;
+		if (get_index(entities, n, in) == -1)
+			entities[n++] = in;
 
-		/* store to new entity */
-		be_emit_irprintf("\tst %%l%d, [%%fp%+d]", i, offset);
-		be_emit_finish_line_gas(node);
-		/* restore register */
-		be_emit_irprintf("\tld [%%sp%+d], %%l%d", sp_change + SPARC_MIN_STACKSIZE, i);
-		be_emit_finish_line_gas(node);
+		oidx = get_index(entities, n, out);
+		iidx = get_index(entities, n, in);
+
+		sourceof[oidx] = iidx; /* Remember the source. */
+		++n_users[iidx]; /* Increment number of users of this entity. */
 	}
 
-	be_emit_irprintf("\tadd %%sp, %u, %%sp", aligned_sp_change);
-	be_emit_finish_line_gas(node);
+	/* First do all the copies. */
+	for (oidx = 0; oidx < n; /* empty */) {
+		int iidx = sourceof[oidx];
 
-	assert(sp_change == 0);
+		/* Nothing to do for fix points.
+		 * Also, if entities[oidx] is used as an input by another copy, we
+		 * can't overwrite entities[oidx] yet.*/
+		if (iidx == oidx || n_users[oidx] > 0) {
+			++oidx;
+			continue;
+		}
+
+		/* We found the end of a 'chain', so do the copy. */
+		if (n_spilled == 0) {
+			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/1);
+			n_spilled = 1;
+		}
+		memperm_emit_copy(node, entities[iidx], entities[oidx]);
+
+		/* Mark as done. */
+		sourceof[oidx] = oidx;
+
+		assert(n_users[iidx] > 0);
+		/* Decrementing the number of users might enable us to do another
+		 * copy. */
+		--n_users[iidx];
+
+		if (iidx < oidx && n_users[iidx] == 0) {
+			oidx = iidx;
+		} else {
+			++oidx;
+		}
+	}
+
+	/* The rest are cycles. */
+	for (oidx = 0; oidx < n; /* empty */) {
+		int iidx = sourceof[oidx];
+		int tidx;
+
+		/* Nothing to do for fix points. */
+		if (iidx == oidx) {
+			++oidx;
+			continue;
+		}
+
+		assert(n_users[iidx] == 1);
+
+		/* Swap the two values to resolve the cycle. */
+		if (n_spilled < 2) {
+			memperm_emit_spill_registers(node, n_spilled, /*n_to_spill=*/2);
+			n_spilled = 2;
+		}
+		memperm_emit_swap(node, entities[iidx], entities[oidx]);
+
+		tidx = sourceof[iidx];
+		/* Mark as done. */
+		sourceof[iidx] = iidx;
+
+		/* The source of oidx is now the old source of iidx, because we swapped
+		 * the two entities. */
+		sourceof[oidx] = tidx;
+	}
+
+#ifdef DEBUG_libfirm
+	/* Only fix points should remain. */
+	for (i = 0; i < max_size; ++i) {
+		assert(sourceof[i] == i);
+	}
+#endif
+
+	assert(n_spilled > 0 && "Useless MemPerm node");
+
+	memperm_emit_restore_registers(node, n_spilled);
 }
 
 static void emit_sparc_Return(const ir_node *node)
