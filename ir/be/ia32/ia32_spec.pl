@@ -974,14 +974,6 @@ Test8Bit => {
 	modified_flags => $status_flags
 },
 
-l_Setcc => {
-	ins       => [ "cond" ],
-	outs      => [ "res" ],
-	mode      => "mode_Bu",
-	attr_type => "",
-	dump_func => "NULL",
-},
-
 Setcc => {
 	#irn_flags => [ "rematerializable" ],
 	reg_req   => { in => [ "eflags" ], out => [ "eax ebx ecx edx" ] },

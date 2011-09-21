@@ -411,18 +411,9 @@ static int sparc_get_reg_class_alignment(const arch_register_class_t *cls)
 	return get_mode_size_bytes(mode);
 }
 
-static ir_node *sparc_create_set(ir_node *cond)
-{
-	return ir_create_cond_set(cond, mode_Iu);
-}
-
 static void sparc_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
-	lower_mode_b_config_t lower_mode_b_config = {
-		mode_Iu,
-		sparc_create_set,
-	};
 
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
@@ -442,7 +433,7 @@ static void sparc_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		ir_lower_mode_b(irg, &lower_mode_b_config);
+		ir_lower_mode_b(irg, mode_Iu);
 		lower_switch(irg, 4, 256, false);
 		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, -SPARC_MIN_STACKSIZE);
 	}

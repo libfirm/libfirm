@@ -51,13 +51,13 @@ typedef struct needs_lowering_t {
 	int      input;
 } needs_lowering_t;
 
-static const lower_mode_b_config_t *config;
-static needs_lowering_t            *needs_lowering;
+static ir_mode          *lowered_mode;
+static needs_lowering_t *needs_lowering;
 
 static ir_node *create_not(dbg_info *dbgi, ir_node *node)
 {
 	ir_node   *block  = get_nodes_block(node);
-	ir_mode   *mode   = config->lowered_mode;
+	ir_mode   *mode   = lowered_mode;
 	ir_tarval *tv_one = get_mode_one(mode);
 	ir_graph  *irg    = get_irn_irg(node);
 	ir_node   *one    = new_rd_Const(dbgi, irg, tv_one);
@@ -69,14 +69,18 @@ static ir_node *convert_to_modeb(ir_node *node)
 {
 	ir_node   *block   = get_nodes_block(node);
 	ir_graph  *irg     = get_irn_irg(node);
-	ir_mode   *mode    = config->lowered_mode;
+	ir_mode   *mode    = lowered_mode;
 	ir_tarval *tv_zero = get_mode_null(mode);
 	ir_node   *zero    = new_r_Const(irg, tv_zero);
 	ir_node   *cmp     = new_r_Cmp(block, node, zero, ir_relation_less_greater);
 	return cmp;
 }
 
-ir_node *ir_create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
+/**
+ * implementation of create_set_func which produces a cond with control
+ * flow
+ */
+static ir_node *create_cond_set(ir_node *cond_value, ir_mode *dest_mode)
 {
 	ir_node  *lower_block = part_block_edges(cond_value);
 	ir_node  *upper_block = get_nodes_block(cond_value);
@@ -106,7 +110,7 @@ static ir_node *lower_node(ir_node *node)
 {
 	dbg_info *dbgi  = get_irn_dbg_info(node);
 	ir_node  *block = get_nodes_block(node);
-	ir_mode  *mode  = config->lowered_mode;
+	ir_mode  *mode  = lowered_mode;
 	ir_node  *res   = (ir_node*)get_irn_link(node);
 	ir_graph *irg;
 
@@ -245,7 +249,7 @@ static ir_node *lower_node(ir_node *node)
 		} else {
 			/* synthesize the 0/1 value */
 synth_zero_one:
-			res = config->create_set(node);
+			res = create_cond_set(node, mode);
 		}
 		break;
 	}
@@ -319,12 +323,12 @@ static void collect_needs_lowering(ir_node *node, void *env)
 	}
 }
 
-void ir_lower_mode_b(ir_graph *irg, const lower_mode_b_config_t *nconfig)
+void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 {
 	size_t i;
 	size_t n;
 
-	config = nconfig;
+	lowered_mode = nlowered_mode;
 
 	/* edges are used by part_block_edges in the ir_create_cond_set variant. */
 	edges_assure(irg);

@@ -2014,21 +2014,9 @@ static int ia32_is_valid_clobber(const char *clobber)
 	return ia32_get_clobber_register(clobber) != NULL;
 }
 
-static ir_node *ia32_create_set(ir_node *cond)
-{
-	ir_node  *block = get_nodes_block(cond);
-	ir_node  *set   = new_bd_ia32_l_Setcc(NULL, block, cond);
-	ir_node  *conv  = new_r_Conv(block, set, mode_Iu);
-	return conv;
-}
-
 static void ia32_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
-	lower_mode_b_config_t lower_mode_b_config = {
-		mode_Iu,  /* lowered mode */
-		ia32_create_set,
-	};
 
 	/* perform doubleword lowering */
 	lwrdw_param_t lower_dw_params = {
@@ -2060,7 +2048,7 @@ static void ia32_lower_for_target(void)
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
 		/* lower for mode_b stuff */
-		ir_lower_mode_b(irg, &lower_mode_b_config);
+		ir_lower_mode_b(irg, mode_Iu);
 		/* break up switches with wide ranges */
 		lower_switch(irg, 4, 256, false);
 	}
