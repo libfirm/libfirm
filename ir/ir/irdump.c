@@ -1608,7 +1608,8 @@ static void dump_block_graph(FILE *F, ir_graph *irg)
 			dump_ir_edges(node, F);
 	}
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+	if ((flags & ir_dump_flag_loops)
+	     && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
 		dump_loop_nodes_into_graph(F, irg);
 
 	current_ir_graph = rem;
