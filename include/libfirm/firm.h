@@ -105,7 +105,6 @@
 #include "irtypeinfo.h"
 #include "irverify.h"
 #include "lowering.h"
-#include "rta.h"
 #include "structure.h"
 #include "timing.h"
 #include "trouts.h"
