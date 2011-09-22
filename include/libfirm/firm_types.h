@@ -47,7 +47,6 @@ typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
 typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
 typedef struct ir_region            ir_region,           *ir_region_ptr;
-typedef struct ir_reg_tree          ir_reg_tree,         *ir_reg_tree_ptr;
 typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
 typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;

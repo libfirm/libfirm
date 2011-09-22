@@ -133,7 +133,6 @@ typedef enum {
 	k_ir_compound_graph_path, /**< A compound graph path, see entity.h. */
 	k_ir_extblk,              /**< An extended basic block. */
 	k_ir_prog,                /**< A program representation (irp). */
-	k_ir_region,              /**< A region. */
 	k_ir_graph_pass,          /**< An ir_graph pass. */
 	k_ir_prog_pass,           /**< An ir_prog pass. */
 	k_ir_graph_pass_mgr,      /**< An ir_graph pass manager. */

@@ -171,7 +171,6 @@ typedef struct block_attr {
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
 	bitset_t *cg_backedge;      /**< Bitfield n set to true if pred n is interprocedural backedge. */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
-	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 

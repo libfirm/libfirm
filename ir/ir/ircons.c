@@ -506,7 +506,6 @@ ir_node *new_rd_immBlock(dbg_info *dbgi, ir_graph *irg)
 	res->attr.block.in_cg       = NULL;
 	res->attr.block.cg_backedge = NULL;
 	res->attr.block.extblk      = NULL;
-	res->attr.block.region      = NULL;
 	res->attr.block.entity      = NULL;
 
 	set_Block_block_visited(res, 0);
