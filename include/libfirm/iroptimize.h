@@ -1082,6 +1082,29 @@ FIRM_API ir_value_classify_sign classify_value_sign(ir_node *n);
 FIRM_API ir_tarval *computed_value_Cmp_Confirm(
 	const ir_node *cmp, ir_node *left, ir_node *right, ir_relation relation);
 
+typedef ir_entity *(*compilerlib_entity_creator_t)(ident *id, ir_type *mt);
+/**
+ * Set the compilerlib entity creation callback that is used to create
+ * compilerlib function entities.
+ *
+ * @param cb  the new compilerlib entity creation callback
+ */
+FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t c);
+
+/**
+ * Get the compilerlib entity creation callback.
+ */
+FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator();
+
+/**
+ * Construct the entity for a given function using the current compilerlib
+ * entity creation callback.
+ *
+ * @param id  the identifier of the compilerlib function
+ * @param mt  the method type of the compilerlib function
+ */
+FIRM_API ir_entity *create_compilerlib_entity(ident *id, ir_type *mt);
+
 #include "end.h"
 
 #endif
