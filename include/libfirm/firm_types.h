@@ -53,7 +53,6 @@ typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
-typedef struct type_identify_if_t   type_identify_if_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
 typedef struct ir_prog_pass_t       ir_prog_pass_t;
 
