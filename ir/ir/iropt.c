@@ -4973,6 +4973,23 @@ static bool is_cmp_unequal(const ir_node *node)
 }
 
 /**
+ * returns true for Cmp(x == 0) or Cmp(x != 0)
+ */
+static bool is_cmp_equality_zero(const ir_node *node)
+{
+	ir_relation relation;
+	ir_node    *right    = get_Cmp_right(node);
+
+	if (!is_Const(right) || !is_Const_null(right))
+		return false;
+	relation = get_Cmp_relation(node);
+	return relation == ir_relation_equal
+		|| relation == ir_relation_less_greater
+		|| (!mode_is_signed(get_irn_mode(right))
+		    && relation == ir_relation_greater);
+}
+
+/**
  * Transform an Or.
  */
 static ir_node *transform_node_Or(ir_node *n)
@@ -5783,73 +5800,42 @@ static ir_node *transform_node_Mux(ir_node *n)
 		}
 	}
 
-	if (is_Cmp(sel)) {
+	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
+		ir_relation relation = get_Cmp_relation(sel);
 		ir_node    *cmp_r    = get_Cmp_right(sel);
-		if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
-			ir_node *block = get_nodes_block(n);
-			ir_node *cmp_l = get_Cmp_left(sel);
+		ir_node    *cmp_l    = get_Cmp_left(sel);
+		ir_node    *block    = get_nodes_block(n);
 
-			if (mode_is_int(mode)) {
-				ir_relation relation = get_Cmp_relation(sel);
-				/* integer only */
-				if ((relation == ir_relation_less_greater || relation == ir_relation_equal) && is_And(cmp_l)) {
-					/* Mux((a & b) != 0, c, 0) */
-					ir_node *and_r = get_And_right(cmp_l);
-					ir_node *and_l;
+		if (is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_r = get_And_right(cmp_l);
+			ir_node *and_l;
 
-					if (and_r == t && f == cmp_r) {
-						if (is_Const(t) && tarval_is_single_bit(get_Const_tarval(t))) {
-							if (relation == ir_relation_less_greater) {
-								/* Mux((a & 2^C) != 0, 2^C, 0) == a & 2^c */
-								n = cmp_l;
-								DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-							} else {
-								/* Mux((a & 2^C) == 0, 2^C, 0) == (a & 2^c) xor (2^c) */
-								n = new_rd_Eor(get_irn_dbg_info(n),
-									block, cmp_l, t, mode);
-								DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-							}
-							return n;
-						}
-					}
-					if (is_Shl(and_r)) {
-						ir_node *shl_l = get_Shl_left(and_r);
-						if (is_Const(shl_l) && is_Const_one(shl_l)) {
-							if (and_r == t && f == cmp_r) {
-								if (relation == ir_relation_less_greater) {
-									/* (a & (1 << n)) != 0, (1 << n), 0) == a & (1<<n) */
-									n = cmp_l;
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								} else {
-									/* (a & (1 << n)) == 0, (1 << n), 0) == (a & (1<<n)) xor (1<<n) */
-									n = new_rd_Eor(get_irn_dbg_info(n),
-										block, cmp_l, t, mode);
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								}
-								return n;
-							}
-						}
-					}
-					and_l = get_And_left(cmp_l);
-					if (is_Shl(and_l)) {
-						ir_node *shl_l = get_Shl_left(and_l);
-						if (is_Const(shl_l) && is_Const_one(shl_l)) {
-							if (and_l == t && f == cmp_r) {
-								if (relation == ir_relation_less_greater) {
-									/* ((1 << n) & a) != 0, (1 << n), 0) */
-									n = cmp_l;
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								} else {
-									/* ((1 << n) & a) == 0, (1 << n), 0) */
-									n = new_rd_Eor(get_irn_dbg_info(n),
-										block, cmp_l, t, mode);
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								}
-								return n;
-							}
-						}
-					}
+			if (and_r == t && is_single_bit(and_r)) {
+				if (relation == ir_relation_equal) {
+					/* Mux((a & (1<<n)) == 0, (1<<n), 0) == (a&(1<<n)) xor ((1<<n)) */
+					n = new_rd_Eor(get_irn_dbg_info(n),
+						block, cmp_l, t, mode);
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				} else {
+					/* Mux((a & (1<<n)) != 0, (1<<n), 0) == a & (1<<n) */
+					n = cmp_l;
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				}
+				return n;
+			}
+			and_l = get_And_left(cmp_l);
+			if (and_l == t && is_single_bit(and_l)) {
+				if (relation == ir_relation_equal) {
+					/* ((1 << n) & a) == 0, (1 << n), 0) */
+					n = new_rd_Eor(get_irn_dbg_info(n),
+						block, cmp_l, t, mode);
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				} else {
+					/* ((1 << n) & a) != 0, (1 << n), 0) */
+					n = cmp_l;
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				}
+				return n;
 			}
 		}
 	}
