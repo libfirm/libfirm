@@ -5567,8 +5567,8 @@ static const ir_node *skip_upconv(const ir_node *node)
 	return node;
 }
 
-int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_true,
-                  const ir_node *mux_false)
+int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_false,
+                  const ir_node *mux_true)
 {
 	ir_node    *cmp_left;
 	ir_node    *cmp_right;
@@ -5624,11 +5624,48 @@ int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_true,
 	return 0;
 }
 
-ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_true,
-                       ir_node *mux_false)
+ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
+                       ir_node *mux_true)
 {
 	ir_node *cmp_left = get_Cmp_left(sel);
 	return cmp_left == skip_upconv(mux_false) ? mux_false : mux_true;
+}
+
+bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
+                           const ir_node *mux_true)
+{
+	/* this code should return true each time transform_node_Mux would
+	 * optimize the Mux completely away */
+
+	ir_mode *mode = get_irn_mode(mux_false);
+	if (get_mode_arithmetic(mode) == irma_twos_complement
+	    && ir_mux_is_abs(sel, mux_false, mux_true))
+	    return true;
+
+	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
+		const ir_node *cmp_r = get_Cmp_right(sel);
+		const ir_node *cmp_l = get_Cmp_left(sel);
+		const ir_node *f     = mux_false;
+		const ir_node *t     = mux_true;
+
+		if (is_Const(t) && is_Const_null(t)) {
+			t = mux_false;
+			f = mux_true;
+		}
+
+		if (is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_r = get_And_right(cmp_l);
+			ir_node *and_l;
+
+			if (and_r == t && is_single_bit(and_r))
+				return true;
+			and_l = get_And_left(cmp_l);
+			if (and_l == t && is_single_bit(and_l))
+				return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -5645,11 +5682,11 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 	/* implement integer abs: abs(x) = x^(x >>s 31) - (x >>s 31) */
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
-		int abs = ir_mux_is_abs(sel, t, f);
+		int abs = ir_mux_is_abs(sel, f, t);
 		if (abs != 0) {
 			dbg_info *dbgi       = get_irn_dbg_info(n);
 			ir_node  *block      = get_nodes_block(n);
-			ir_node  *op         = ir_get_abs_op(sel, t, f);
+			ir_node  *op         = ir_get_abs_op(sel, f, t);
 			int       bits       = get_mode_size_bits(mode);
 			ir_node  *shiftconst = new_r_Const_long(irg, mode_Iu, bits-1);
 			ir_node  *sext       = new_rd_Shrs(dbgi, block, op, shiftconst, mode);

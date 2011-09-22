@@ -3433,13 +3433,13 @@ static ir_node *gen_Mux(ir_node *node)
 
 	assert(get_irn_mode(sel) == mode_b);
 
-	is_abs = ir_mux_is_abs(sel, mux_true, mux_false);
+	is_abs = ir_mux_is_abs(sel, mux_false, mux_true);
 	if (is_abs != 0) {
 		if (ia32_mode_needs_gp_reg(mode)) {
 			ir_fprintf(stderr, "Optimisation warning: Integer abs %+F not transformed\n",
 			           node);
 		} else {
-			ir_node *op = ir_get_abs_op(sel, mux_true, mux_false);
+			ir_node *op = ir_get_abs_op(sel, mux_false, mux_true);
 			return create_float_abs(dbgi, block, op, is_abs < 0, node);
 		}
 	}
