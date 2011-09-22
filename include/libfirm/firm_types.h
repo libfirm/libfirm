@@ -64,9 +64,6 @@ typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 typedef void irg_walk_func(ir_node *, void *);
 typedef void irg_reg_walk_func(ir_region *, void *);
 
-/* settings */
-typedef struct ir_settings_arch_dep_t ir_settings_arch_dep_t;
-
 /* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
 typedef const ir_node *ir_node_cnst_ptr;
 

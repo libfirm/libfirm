@@ -58,7 +58,7 @@ typedef int (*evaluate_costs_func)(insn_kind kind, const ir_mode *mode, ir_tarva
  * A parameter structure that drives the machine dependent Firm
  * optimizations.
  */
-struct ir_settings_arch_dep_t {
+typedef struct ir_settings_arch_dep_t {
 	/* Mul optimization */
 	unsigned also_use_subs : 1;    /**< Use also Subs when resolving Muls to shifts */
 	unsigned maximum_shifts;       /**< The maximum number of shifts that shall be inserted for a mul. */
@@ -72,7 +72,7 @@ struct ir_settings_arch_dep_t {
 	unsigned allow_mulhu   : 1;    /**< Use the Mulhu operation for division by constant */
 	unsigned max_bits_for_mulh;    /**< Maximum number of bits the Mulh operation can take.
 	                                    Modes with higher amount of bits will use Mulh */
-};
+} ir_settings_arch_dep_t;
 
 /**
  * A factory function, that provides architecture parameters for
