@@ -1008,9 +1008,6 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 	} /* end switch */
 }
 
-#include <math.h>
-#include "execution_frequency.h"
-
 static void dump_node_ana_vals(FILE *F, ir_node *n)
 {
 	(void) F;

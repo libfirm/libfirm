@@ -190,7 +190,6 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
 	res->class_cast_state    = ir_class_casts_transitive;
-	res->execfreq_state      = exec_freq_none;
 	res->fp_model            = fp_model_precise;
 	res->mem_disambig_opt    = aa_opt_inherited;
 

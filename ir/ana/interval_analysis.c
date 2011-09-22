@@ -28,7 +28,6 @@
 
 #include "debug.h"
 #include "interval_analysis.h"
-#include "execution_frequency.h"
 #include "set.h"
 #include "array.h"
 
@@ -158,7 +157,7 @@ static inline void add_loop_cfop(void *region, void *cfop)
  */
 static inline void exc_outs(void *reg, ir_node *cfop)
 {
-	if (is_fragile_op(cfop) || is_fragile_Proj(cfop))
+	if (is_fragile_op(cfop))
 		inc_region_n_exc_outs(reg);
 }
 
@@ -527,8 +526,6 @@ static void dump_region_edges(FILE *F, void *reg)
 	}
 }
 
-#include "execution_frequency.h"
-
 static void dump_interval_block(FILE *F, ir_node *block)
 {
 	int i, fl;
@@ -542,7 +539,7 @@ static void dump_interval_block(FILE *F, ir_node *block)
 
 	fprintf(F, "%s ", get_op_name(get_irn_op(block)));
 	PRINT_NODEID(block);
-	fprintf(F, " freq: %9.4lf", get_region_exec_freq(block));
+	//fprintf(F, " freq: %9.4lf", get_region_exec_freq(block));
 	fprintf(F, " n_outs: %d", get_region_n_outs(block));
 	fprintf(F, " n_exc_outs: %d", get_region_n_exc_outs(block));
 	fprintf(F, "\" ");
@@ -582,7 +579,7 @@ static void dump_interval_loop(FILE *F, ir_loop *l)
 	fprintf(F, "graph: { title: \"");
 	PRINT_LOOPID(l);
 	fprintf(F, "\" label: \"loop %ld", get_loop_loop_nr(l));
-	fprintf(F, " freq: %9.4lf", get_region_exec_freq(l));
+	//fprintf(F, " freq: %9.4lf", get_region_exec_freq(l));
 	fprintf(F, " n_outs: %d", get_region_n_outs(l));
 	fprintf(F, " n_exc_outs: %d", get_region_n_exc_outs(l));
 	fprintf(F, "\" status:clustered color:white \n");

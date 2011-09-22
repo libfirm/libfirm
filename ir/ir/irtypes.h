@@ -34,11 +34,9 @@
 #include "iredgekinds.h"
 #include "irtypeinfo.h"
 #include "irextbb.h"
-#include "execution_frequency.h"
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
-#include "field_temperature.h"
 #include "irphase.h"
 #include "bitset.h"
 
@@ -481,7 +479,6 @@ struct ir_graph {
 	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
 	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
-	exec_freq_state       execfreq_state;    /**< Execution frequency state. */
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 
@@ -588,8 +585,6 @@ struct ir_prog {
 	size_t max_callgraph_loop_depth;        /**< needed in callgraph. */
 	size_t max_callgraph_recursion_depth;   /**< needed in callgraph. */
 	double max_method_execution_frequency;  /**< needed in callgraph. */
-	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
-	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_entity_usage_computed_state globals_entity_usage_state;

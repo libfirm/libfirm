@@ -44,7 +44,6 @@
 #include "error.h"
 
 #include "irdom.h"
-#include "field_temperature.h"
 
 static ir_dump_verbosity_t  verbosity = dump_verbosity_max;
 
@@ -148,10 +147,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
 			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));
 		}
-
-		fprintf(F, "  Execution frequency statistics:\n");
-		if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
-			fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
 
 		/* not dumped: graph_arr */
 		/* not dumped: mature    */

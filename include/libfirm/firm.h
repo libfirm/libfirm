@@ -66,8 +66,6 @@
 #include "cgana.h"
 #include "dbginfo.h"
 #include "execfreq.h"
-#include "execution_frequency.h"
-#include "field_temperature.h"
 #include "firm_common.h"
 #include "firmstat.h"
 #include "firm_types.h"
