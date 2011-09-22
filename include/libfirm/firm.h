@@ -71,7 +71,6 @@
 #include "firm_types.h"
 #include "heights.h"
 #include "ident.h"
-#include "interval_analysis.h"
 #include "irarch.h"
 #include "ircgopt.h"
 #include "irconsconfirm.h"
