@@ -47,28 +47,31 @@ FIRM_API int get_region_n_ins(void *region);
 FIRM_API void *get_region_in(void *region, int pos);
 FIRM_API void add_region_in(void *region, void *in);
 
-
-/** The number of out edges of a region.
+/**
+ * The number of out edges of a region.
  *
- *  This number is useful for evaluation of execution frequencies.
+ * This number is useful for evaluation of execution frequencies.
  */
 FIRM_API int get_region_n_outs(void *region);
 
-/** The number of exception out edges of a region.
+/**
+ * The number of exception out edges of a region.
  *
- *  This number is useful for evaluation of execution frequencies.
+ * This number is useful for evaluation of execution frequencies.
  */
 FIRM_API int get_region_n_exc_outs(void *region);
 
-/** The control flow operation corresponding to the loop-region in at
- *  position pos.
+/**
+ * The control flow operation corresponding to the loop-region in at
+ * position pos.
  */
 FIRM_API void *get_loop_cfop(void *region, int pos);
 
 
-/** The algorithm to construct the interval graph.
+/**
+ * The algorithm to construct the interval graph.
  *
- *  Constructs the cf loop tree and leaves a valid version of it.
+ * Constructs the cf loop tree and leaves a valid version of it.
  */
 FIRM_API void construct_intervals(ir_graph *irg);
 

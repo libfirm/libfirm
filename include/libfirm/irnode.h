@@ -59,40 +59,37 @@
  */
 
 /**
- *   Checks whether a pointer points to a ir node.
+ * Checks whether a pointer points to a ir node. This is guessed by looking
+ * at the few bytes of the thing. Most things used in firm have a firm_kind
+ * attribute there. This function might falsely return true though for things
+ * without a firm_kind at the beginning.
  *
- *   @param thing   an arbitrary pointer
- *   @return        non-zero if the thing is a ir mode, else zero
+ * @param thing   an arbitrary pointer
+ * @return        non-zero if the thing is a ir mode, else zero
  */
-FIRM_API int is_ir_node (const void *thing);
+FIRM_API int is_ir_node(const void *thing);
 
 /**
  * Returns the number of predecessors without the block predecessor.
  *
  * @param node   the IR-node
  */
-FIRM_API int get_irn_arity      (const ir_node *node);
-
-/** Replaces the old in array by a new one that will contain the ins given in
-   the parameters.  Conserves the block predecessor.  It copies the array passed.
-   This function is necessary to adjust in arrays of blocks, calls and phis.
-   Assumes that current_ir_graph is set to the graph containing "node".
-   "in" must contain all predecessors except the block that are required for
-   the nodes opcode. */
-FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *in[]);
-
-/* to iterate through the predecessors without touching the array. No
-   order of predecessors guaranteed.
-   To iterate over the operands iterate from 0 to i < get_irn_arity(),
-   to iterate including the Block predecessor iterate from i = -1 to
-   i < get_irn_arity. */
-/* Access predecessor n */
+FIRM_API int get_irn_arity(const ir_node *node);
 
 /**
  * Get the n-th predecessor of a node.
  * This function removes Id predecessors.
  */
 FIRM_API ir_node *get_irn_n(const ir_node *node, int n);
+
+/**
+ * Replaces the old in array by a new one that will contain the ins given in
+ * the parameters. Conserves the block predecessor. It copies the array passed.
+ * This function is necessary to adjust in arrays of blocks, calls and phis.
+ * Assumes that current_ir_graph is set to the graph containing "node".
+ * "in" must contain all predecessors except the block that are required for
+ * the nodes opcode. */
+FIRM_API void set_irn_in(ir_node *node, int arity, ir_node *in[]);
 
 /**
  * Add a artificial dependency to the node.
@@ -146,9 +143,9 @@ FIRM_API void set_irn_n(ir_node *node, int n, ir_node *in);
  * @returns   the number of the new input
  */
 FIRM_API int add_irn_n(ir_node *node, ir_node *in);
-/* Remove predecessor i from Sync n */
+/** Remove predecessor i from Sync n */
 FIRM_API void del_Sync_n(ir_node *n, int i);
-/* Sets the mode struct of node.  */
+/** Sets the mode struct of node.  */
 FIRM_API void set_irn_mode(ir_node *node, ir_mode *mode);
 /** Gets the mode struct of a node.  */
 FIRM_API ir_mode *get_irn_mode(const ir_node *node);
@@ -242,10 +239,10 @@ FIRM_API ir_node *new_ir_node(dbg_info *db, ir_graph *irg, ir_node *block,
  * To express the difference to access routines that work for all
  * nodes we use infix "nodes" and do not name this function
  * get_irn_block(). */
-FIRM_API ir_node *get_nodes_block (const ir_node *node);
+FIRM_API ir_node *get_nodes_block(const ir_node *node);
 
 /** Sets the Block of a node. */
-FIRM_API void set_nodes_block (ir_node *node, ir_node *block);
+FIRM_API void set_nodes_block(ir_node *node, ir_node *block);
 
 /** Test whether arbitrary node is frame pointer.
  *
@@ -296,10 +293,12 @@ FIRM_API void set_Block_matured(ir_node *block, int matured);
 /** A visited flag only for block nodes.
  *  @see also: get_irn_visited() inc_irg_visited() inc_irg_block_visited()*/
 FIRM_API ir_visited_t get_Block_block_visited(const ir_node *block);
+/** set block visited flag */
 FIRM_API void set_Block_block_visited(ir_node *block, ir_visited_t visit);
 
-/* For this current_ir_graph must be set. */
+/** mark a block as visited by setting its visited counter */
 FIRM_API void mark_Block_block_visited(ir_node *node);
+/** returns 1 if a block is marked as visited */
 FIRM_API int Block_block_visited(const ir_node *node);
 
 /** Returns the extended basic block a block belongs to. */
@@ -346,7 +345,7 @@ FIRM_API void set_End_keepalives(ir_node *end, int n, ir_node *in[]);
 /** Remove irn from the keep-alive set. */
 FIRM_API void remove_End_keepalive(ir_node *end, ir_node *irn);
 
-/* Remove Bads, NoMem and doublets from the keep-alive set. */
+/** Remove Bads, NoMem and doublets from the keep-alive set. */
 FIRM_API void remove_End_Bads_and_doublets(ir_node *end);
 
 /** Some parts of the End node are allocated separately -- their memory
@@ -400,9 +399,6 @@ FIRM_API void       set_SymConst_entity(ir_node *node, ir_entity *ent);
 FIRM_API ir_enum_const *get_SymConst_enum(const ir_node *node);
 FIRM_API void           set_SymConst_enum(ir_node *node, ir_enum_const *ec);
 
-/** Sets both: type and ptrinfo.  Needed to treat the node independent of
-   its semantics.  Does a memcpy for the memory sym points to. */
-/* write 'union': firmjni then does not create a method... */
 FIRM_API union symconst_symbol get_SymConst_symbol(const ir_node *node);
 FIRM_API void                  set_SymConst_symbol(ir_node *node,
                                                    union symconst_symbol sym);
@@ -457,12 +453,6 @@ FIRM_API void            set_Builtin_param(ir_node *node, int pos, ir_node *para
 /** Returns a human readable string for the ir_builtin_kind. */
 FIRM_API const char *get_builtin_kind_name(ir_builtin_kind kind);
 
-/* For unary and binary arithmetic operations the access to the
-   operands can be factored out.  Left is the first, right the
-   second arithmetic value  as listed in tech report 1999-44.
-   unops are: Minus, Abs, Not, Conv, Cast
-   binops are: Add, Sub, Mul, Div, Mod, And, Or, Eor, Shl,
-   Shr, Shrs, Rotl, Cmp */
 FIRM_API int      is_unop(const ir_node *node);
 FIRM_API ir_node *get_unop_op(const ir_node *node);
 FIRM_API void     set_unop_op(ir_node *node, ir_node *op);
@@ -572,20 +562,13 @@ FIRM_API int get_ASM_n_output_constraints(const ir_node *node);
 /** Return the number of clobbered registers for an ASM node.  */
 FIRM_API int get_ASM_n_clobbers(const ir_node *node);
 
-/*
- *
- * NAME Auxiliary routines
- *
- */
-
 /** Returns operand of node if node is a Proj. */
 FIRM_API ir_node *skip_Proj(ir_node *node);
 /** Returns operand of node if node is a Proj. */
 FIRM_API const ir_node *skip_Proj_const(const ir_node *node);
 /** Returns operand of node if node is a Id. */
-FIRM_API ir_node *skip_Id(ir_node *node);   /* Old name is skip_nop(). */
-/** Returns corresponding operand of Tuple if node is a Proj from
-   a Tuple. */
+FIRM_API ir_node *skip_Id(ir_node *node);
+/** Returns corresponding operand of Tuple if node is a Proj from a Tuple. */
 FIRM_API ir_node *skip_Tuple(ir_node *node);
 /** Returns operand of node if node is a Cast. */
 FIRM_API ir_node *skip_Cast(ir_node *node);
@@ -596,16 +579,17 @@ FIRM_API ir_node *skip_Pin(ir_node *node);
 FIRM_API ir_node *skip_Confirm(ir_node *node);
 /** Skip all high-level Operations (including Cast, Confirm). */
 FIRM_API ir_node *skip_HighLevel_ops(ir_node *node);
-/** Returns true if the operation manipulates control flow:
-   Start, End, Jmp, Cond, Return, Raise, Bad */
+/** Returns true if the operation manipulates control flow */
 FIRM_API int is_cfop(const ir_node *node);
 /** returns true if the operation jumps to an unknown destination.
  * See irop_flag_unknown_jump for a detailed explanation */
 FIRM_API int is_unknown_jump(const ir_node *node);
 
-/** Returns true if the operation can change the control flow because
-    of an exception: Call, Div, Mod, Load, Store, Alloc,
-    Bad. Raise is not fragile, but a unconditional jump. */
+/**
+ * Returns true if the operation can change the control flow because
+ * of an exception: Call, Div, Mod, Load, Store, Alloc,
+ * Bad. Raise is not fragile, but a unconditional jump.
+ */
 FIRM_API int is_fragile_op(const ir_node *node);
 /** Returns the memory operand of fragile operations. */
 FIRM_API ir_node *get_fragile_op_mem(ir_node *node);
@@ -630,7 +614,7 @@ FIRM_API int is_irn_forking(const ir_node *node);
 FIRM_API void copy_node_attr(ir_graph *irg, const ir_node *old_node, ir_node *new_node);
 
 /** Return the type attribute of a node n (SymConst, Call, Alloc, Free,
-    Cast) or NULL.*/
+ *  Cast) or NULL.*/
 FIRM_API ir_type *get_irn_type_attr(ir_node *n);
 
 /** Return the entity attribute of a node n (SymConst, Sel) or NULL. */
@@ -676,7 +660,7 @@ FIRM_API const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
 /** Checks whether a node represents a global address. */
 FIRM_API int is_Global(const ir_node *node);
 
-/* Returns the entity of a global address. */
+/** Returns the entity of a global address. */
 FIRM_API ir_entity *get_Global_entity(const ir_node *node);
 
 /**
@@ -749,7 +733,7 @@ FIRM_API unsigned firm_default_hash(const ir_node *node);
  */
 FIRM_API const char *gdb_node_helper(void *firm_object);
 
-/*@}*/ /* end of ir_node group definition */
+/*@}*/
 
 #include "end.h"
 

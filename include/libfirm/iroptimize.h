@@ -175,13 +175,6 @@ FIRM_API void optimize_funccalls(void);
  * Creates an ir_prog pass for optimize_funccalls().
  *
  * @param name       the name of this pass or NULL
- * @param force_run  if non-zero, an optimization run is started even
- *                   if no const function graph was detected.
- *                   Else calls are only optimized if at least one
- *                   const function graph was detected.
- * @param callback   a callback function to check whether a
- *                   given entity is a allocation call
- *
  * @return  the newly created ir_prog pass
  */
 FIRM_API ir_prog_pass_t *optimize_funccalls_pass(const char *name);

@@ -39,7 +39,7 @@
 
 #include "begin.h"
 
-/* The number of array elements we assume if not both bounds are given. */
+/** The number of array elements we assume if not both bounds are given. */
 #define DEFAULT_N_ARRAY_ELEMENTS 1
 
 FIRM_API int get_irn_loop_call_depth(ir_node *n);
@@ -51,9 +51,11 @@ FIRM_API int get_irn_loop_call_depth(ir_node *n);
 FIRM_API int get_irn_cfloop_depth(ir_node *n);
 FIRM_API int get_irn_recursion_depth(ir_node *n);
 
-/** Get the weighted interprocedural loop depth of the node.
-    The depth is estimated by a heuristic. The heuristic considers
-    loop and recursion depth. */
+/**
+ * Get the weighted interprocedural loop depth of the node.
+ * The depth is estimated by a heuristic. The heuristic considers
+ * loop and recursion depth.
+ */
 FIRM_API int get_weighted_loop_depth(ir_node *n);
 
 /** Heuristic merging recursion and loop depth. */
@@ -78,11 +80,13 @@ FIRM_API double get_type_estimated_n_casts(ir_type *clss);
 FIRM_API double get_class_estimated_n_upcasts(ir_type *clss);
 FIRM_API double get_class_estimated_n_downcasts(ir_type *clss);
 
-/** Returns the number of accesses to the dispatch table.
+/**
+ * Returns the number of accesses to the dispatch table.
  *
- *  This includes the initialization of the pointer field, and accesses
- *  to virtual fields (as instance marker in Java).  Certainly this
- *  includes virtual method calls. */
+ * This includes the initialization of the pointer field, and accesses
+ * to virtual fields (as instance marker in Java).  Certainly this
+ * includes virtual method calls.
+ */
 FIRM_API double get_class_estimated_n_dyncalls(ir_type *clss);
 /** Returns the number of writes to the dispatch pointer.
  *  This is the same as the number of allocations. */
@@ -93,13 +97,12 @@ FIRM_API double get_class_estimated_dispatch_reads (ir_type *clss);
 FIRM_API double get_entity_estimated_n_loads(ir_entity *ent);
 FIRM_API double get_entity_estimated_n_stores(ir_entity *ent);
 FIRM_API double get_entity_estimated_n_calls(ir_entity *ent);
-/** The number of accesses to dynamically called methods and
- *  to other static fields that overwrite/are overwritten. */
-FIRM_API double get_entity_estimated_n_dyncalls(ir_entity *ent);
 
-/* ------------------------------------------------------------------------- */
-/* Accumulate information in the type hierarchy.                             */
-/* ------------------------------------------------------------------------- */
+/**
+ * The number of accesses to dynamically called methods and
+ * to other static fields that overwrite/are overwritten.
+ */
+FIRM_API double get_entity_estimated_n_dyncalls(ir_entity *ent);
 
 typedef enum {
   temperature_none,

@@ -37,7 +37,7 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/* A proj from a Cond that goes to an exception handler. */
+/** A proj from a Cond that goes to an exception handler. */
 FIRM_API int is_fragile_Proj(ir_node *n);
 
 /** Returns the number of times the block/region is executed according to
@@ -74,21 +74,27 @@ FIRM_API void free_execution_frequency(void);
  * The exec_freq_state in irp is consistent, if the state of all graphs is consistent.
  * It is none, if the state of all graphs is none.  Else it is inconsistent. */
 typedef enum {
-  exec_freq_none,             /**< Execution frequencies are not computed, no memory is
-				   allocated, access fails. */
-  exec_freq_consistent,       /**< Execution frequency information is computed and correct. */
-  exec_freq_inconsistent      /**< Execution frequency is computed but the graph has been
-				   changed since. */
+	exec_freq_none,        /**< Execution frequencies are not computed, no
+	                            memory is allocaaccess fails. */
+	exec_freq_consistent,  /**< Execution frequency information is computed and
+	                            correct. */
+	exec_freq_inconsistent /**< Execution frequency is computed but the graph
+	                            has been changed since. */
 } exec_freq_state;
 
 FIRM_API exec_freq_state get_irg_exec_freq_state(ir_graph *irg);
 FIRM_API void            set_irg_exec_freq_state(ir_graph *irg,
                                                  exec_freq_state s);
-/* Sets irg and irp exec freq state to inconsistent if it is set to consistent. */
+/**
+ * Sets irg and irp exec freq state to inconsistent if it is set to consistent.
+ */
 FIRM_API void set_irg_exec_freq_state_inconsistent(ir_graph *irg);
 
 FIRM_API exec_freq_state get_irp_exec_freq_state(void);
-/* Sets irp and all irg exec freq states to inconsistent if it is set to consistent. */
+/**
+ * Sets irp and all irg exec freq states to inconsistent if it is set to
+ * consistent.
+ */
 FIRM_API void set_irp_exec_freq_state_inconsistent(void);
 
 #include "end.h"

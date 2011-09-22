@@ -168,8 +168,6 @@ FIRM_API ir_graph *new_ir_graph(ir_entity *ent, int n_loc);
  */
 FIRM_API void free_ir_graph(ir_graph *irg);
 
-/* --- access routines for all ir_graph attributes --- */
-
 /**
  *   Checks whether a pointer points to a ir graph.
  *
@@ -258,14 +256,6 @@ FIRM_API size_t get_irg_idx(const ir_graph *irg);
  */
 FIRM_API ir_node *get_idx_irn(const ir_graph *irg, unsigned idx);
 
-
-/******************************************************************************/
-/* States of an ir_graph.                                                     */
-/******************************************************************************/
-
-/*
-   information associated with the graph.  Optimizations invalidate these
-   states.  */
 
 /** The states of an ir graph.
  *
@@ -388,7 +378,6 @@ FIRM_API void set_irg_block_visited(ir_graph *irg, ir_visited_t i);
  * if 2 parties try to use the flags.
  */
 typedef enum ir_resources_t {
-	/* local (irg) resources */
 	IR_RESOURCE_NONE          = 0,
 	IR_RESOURCE_BLOCK_VISITED = 1 << 0,  /**< Block visited flags are used. */
 	IR_RESOURCE_BLOCK_MARK    = 1 << 1,  /**< Block mark bits are used. */

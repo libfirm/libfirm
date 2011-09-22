@@ -73,6 +73,16 @@
  *
  * These fields can only be accessed via access functions.
  *
+ * Overwrites is a field that specifies that an access to the overwritten
+ * entity in the supertype must use this entity.  It's a list as with
+ * multiple inheritance several entities can be overwritten.  This field
+ * is mostly useful for method entities.
+ * If a Sel node selects an entity that is overwritten by other entities it
+ * must return a pointer to the entity of the dynamic type of the pointer
+ * that is passed to it.  Lowering of the Sel node must assure this.
+ * Overwrittenby is the inverse of overwrites.  Both add routines add
+ * both relations, they only differ in the order of arguments.
+ *
  * @see  ir_type, ir_entity
  */
 
@@ -350,9 +360,10 @@ FIRM_API void *get_entity_link(const ir_entity *ent);
 /** Stores new intermediate information. */
 FIRM_API void set_entity_link(ir_entity *ent, void *l);
 
-/* -- Fields of method entities -- */
-/** The entity knows the corresponding irg if the entity is a method.
-   This allows to get from a Call to the called irg. */
+/**
+ * The entity knows the corresponding irg if the entity is a method.
+ * This allows to get from a Call to the called irg.
+ */
 FIRM_API ir_graph *get_entity_irg(const ir_entity *ent);
 FIRM_API void set_entity_irg(ir_entity *ent, ir_graph *irg);
 
@@ -431,7 +442,6 @@ FIRM_API size_t get_entity_parameter_number(const ir_entity *entity);
  */
 FIRM_API void set_entity_parameter_number(ir_entity *entity, size_t n);
 
-/* -- Representation of constant values of entities -- */
 /**
  * Returns true if the the node is representable as code on
  * const_code_irg.
@@ -451,7 +461,6 @@ FIRM_API int is_irn_const_expression(ir_node *n);
  */
 FIRM_API ir_node *copy_const_value(dbg_info *dbg, ir_node *n, ir_node *to_block);
 
-/* Set has no effect for existent entities of type method. */
 FIRM_API ir_node *get_atomic_ent_value(ir_entity *ent);
 FIRM_API void set_atomic_ent_value(ir_entity *ent, ir_node *val);
 
@@ -517,16 +526,6 @@ FIRM_API int has_entity_initializer(const ir_entity *entity);
 /** Return the new style initializers of an entity. */
 FIRM_API ir_initializer_t *get_entity_initializer(const ir_entity *entity);
 
-/* --- Fields of entities with a class type as owner --- */
-/* Overwrites is a field that specifies that an access to the overwritten
-   entity in the supertype must use this entity.  It's a list as with
-   multiple inheritance several entities can be overwritten.  This field
-   is mostly useful for method entities.
-   If a Sel node selects an entity that is overwritten by other entities it
-   must return a pointer to the entity of the dynamic type of the pointer
-   that is passed to it.  Lowering of the Sel node must assure this.
-   Overwrittenby is the inverse of overwrites.  Both add routines add
-   both relations, they only differ in the order of arguments. */
 FIRM_API void add_entity_overwrites(ir_entity *ent, ir_entity *overwritten);
 FIRM_API size_t get_entity_n_overwrites(const ir_entity *ent);
 FIRM_API size_t get_entity_overwrites_index(const ir_entity *ent, ir_entity *overwritten);
@@ -831,10 +830,6 @@ FIRM_API const tp_op *get_tpop_none(void);
 FIRM_API const tp_op *tpop_unknown;
 FIRM_API const tp_op *get_tpop_unknown(void);
 
-/* ----------------------------------------------------------------------- */
-/* Classify pairs of types/entities in the inheritance relations.          */
-/* ----------------------------------------------------------------------- */
-
 /** Returns true if low is subclass of high.
  *
  *  Low is a subclass of high if low == high or if low is a subclass of
@@ -879,10 +874,6 @@ FIRM_API int is_overwritten_by(ir_entity *high, ir_entity *low);
  *  Searches downwards in overwritten tree. */
 FIRM_API ir_entity *resolve_ent_polymorphy(ir_type *dynamic_class,
                                            ir_entity* static_ent);
-
-/* ----------------------------------------------------------------------- */
-/* Resolve implicit inheritance.                                           */
-/* ----------------------------------------------------------------------- */
 
 /** Default name mangling for inherited entities.
  *
@@ -958,34 +949,24 @@ FIRM_API void compute_inh_transitive_closure(void);
 /** Free memory occupied by the transitive closure information. */
 FIRM_API void free_inh_transitive_closure(void);
 
-
-/* - subtype ------------------------------------------------------------- */
-
 /** Iterate over all transitive subtypes. */
 FIRM_API ir_type *get_class_trans_subtype_first(const ir_type *tp);
 FIRM_API ir_type *get_class_trans_subtype_next(const ir_type *tp);
 FIRM_API int is_class_trans_subtype(const ir_type *tp, const ir_type *subtp);
 
-/* - supertype ----------------------------------------------------------- */
-
 /** Iterate over all transitive supertypes. */
 FIRM_API ir_type *get_class_trans_supertype_first(const ir_type *tp);
 FIRM_API ir_type *get_class_trans_supertype_next(const ir_type *tp);
 
-/* - overwrittenby ------------------------------------------------------- */
-
 /** Iterate over all entities that transitive overwrite this entities. */
 FIRM_API ir_entity *get_entity_trans_overwrittenby_first(const ir_entity *ent);
 FIRM_API ir_entity *get_entity_trans_overwrittenby_next(const ir_entity *ent);
-
-/* - overwrites ---------------------------------------------------------- */
 
 /** Iterate over all transitive overwritten entities. */
 FIRM_API ir_entity *get_entity_trans_overwrites_first(const ir_entity *ent);
 FIRM_API ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
 
 
-/* ----------------------------------------------------------------------- */
 /** The state of Cast operations that cast class types or pointers to class
  *  types.
  *
@@ -1003,10 +984,8 @@ FIRM_API ir_entity *get_entity_trans_overwrites_next(const ir_entity *ent);
  *   relation. Example: (A)(new C()).
  * any:  Cast operations do not conform with the transitive inheritance
  *   relation.  Example: (B2)(new B1())
- */
-/* ----------------------------------------------------------------------- */
-
-/** Flags for class cast state.
+ *
+ * Flags for class cast state.
  *
  * The state in irp is always smaller or equal to the state of any
  * irg.
@@ -1384,8 +1363,6 @@ FIRM_API ir_type *new_type_class(ident *name);
 /** Creates a new class type with debug information. */
 FIRM_API ir_type *new_d_type_class(ident *name, type_dbg_info *db);
 
-/* --- manipulate private fields of class type  --- */
-
 /** return identifier of the class type */
 FIRM_API ident *get_class_ident(const ir_type *clss);
 
@@ -1434,7 +1411,6 @@ FIRM_API void set_class_subtype(ir_type *clss, ir_type *subtype, size_t pos);
 /** Finds subtype in the list of subtypes and removes it  */
 FIRM_API void remove_class_subtype(ir_type *clss, ir_type *subtype);
 
-/* Convenience macros */
 #define add_class_derived_type(clss, drvtype)       add_class_subtype(clss, drvtype)
 #define get_class_n_derived_types(clss)             get_class_n_subtypes(clss)
 #define get_class_derived_type(clss, pos)           get_class_subtype(clss, pos)
@@ -1531,8 +1507,6 @@ FIRM_API ir_type *new_type_struct(ident *name);
 /** Creates a new type struct with debug information. */
 FIRM_API ir_type *new_d_type_struct(ident *name, type_dbg_info* db);
 
-/* --- manipulate private fields of struct --- */
-
 /** return struct identifier */
 FIRM_API ident *get_struct_ident(const ir_type *strct);
 
@@ -1581,11 +1555,6 @@ FIRM_API int is_Struct_type(const ir_type *strct);
  *               Return nodes.  (See ircons.h for more information.)
  */
 
-/* These macros define the suffixes for the types and entities used
-   to represent value parameters / results. */
-#define VALUE_PARAMS_SUFFIX  "val_param"
-#define VALUE_RESS_SUFFIX    "val_res"
-
 /** Create a new method type.
  *
  * @param n_param   the number of parameters
@@ -1607,8 +1576,6 @@ FIRM_API ir_type *new_type_method(size_t n_param, size_t n_res);
  */
 FIRM_API ir_type *new_d_type_method(size_t n_param, size_t n_res,
                                     type_dbg_info *db);
-
-/* -- manipulate private fields of method. -- */
 
 /** Returns the number of parameters of this method. */
 FIRM_API size_t get_method_n_params(const ir_type *method);
@@ -1681,9 +1648,6 @@ typedef enum {
 	cc_bits                = (0xFF << 24)/**< The calling convention bits. */
 } calling_convention;
 
-/* some often used cases: made as defines because firmjni cannot handle two
-   equal enum values. */
-
 /** cdecl calling convention */
 #define cc_cdecl_set    (0)
 /** stdcall calling convention */
@@ -1754,7 +1718,6 @@ FIRM_API ir_type *new_type_union(ident *name);
 /** Creates a new type union with debug information. */
 FIRM_API ir_type *new_d_type_union(ident *name, type_dbg_info* db);
 
-/* --- manipulate private fields of struct --- */
 
 /** return union identifier */
 FIRM_API ident *get_union_ident(const ir_type *uni);
@@ -1809,7 +1772,6 @@ FIRM_API ir_type *new_type_array(size_t n_dims, ir_type *element_type);
 FIRM_API ir_type *new_d_type_array(size_t n_dims, ir_type *element_type,
                                    type_dbg_info* db);
 
-/* --- manipulate private fields of array type --- */
 
 /** Returns the number of array dimensions of this type. */
 FIRM_API size_t get_array_n_dimensions(const ir_type *array);
@@ -1901,7 +1863,6 @@ FIRM_API ir_type *new_type_enumeration(ident *name, size_t n_enums);
 FIRM_API ir_type *new_d_type_enumeration(ident *name, size_t n_enums,
                                          type_dbg_info *db);
 
-/* --- manipulate fields of enumeration type. --- */
 
 /** return enumeration identifier */
 FIRM_API ident *get_enumeration_ident(const ir_type *enumeration);
@@ -1954,7 +1915,6 @@ FIRM_API ir_type *new_type_pointer(ir_type *points_to);
 /** Creates a new type pointer with debug information. */
 FIRM_API ir_type *new_d_type_pointer(ir_type *points_to, type_dbg_info* db);
 
-/* --- manipulate fields of type_pointer --- */
 
 /** Sets the type to which a pointer points to. */
 FIRM_API void set_pointer_points_to_type(ir_type *pointer, ir_type *tp);
@@ -2051,7 +2011,6 @@ FIRM_API ir_type *get_unknown_type(void);
  */
 FIRM_API int is_atomic_type(const ir_type *tp);
 
-/* --- Support for compound types --- */
 
 /**
  * Gets the identifier of a compound type
@@ -2143,10 +2102,6 @@ FIRM_API ir_type *clone_frame_type(ir_type *type);
 FIRM_API ir_entity *frame_alloc_area(ir_type *frame_type, int size,
                                      unsigned alignment, int at_start);
 
-/*-----------------------------------------------------------------*/
-/** Debug aides                                                   **/
-/*-----------------------------------------------------------------*/
-
 /**
  *  Outputs a unique number for this type if libfirm is compiled for
  *  debugging, (configure with --enable-debug) else returns the address
@@ -2154,16 +2109,12 @@ FIRM_API ir_entity *frame_alloc_area(ir_type *frame_type, int size,
  */
 FIRM_API long get_type_nr(const ir_type *tp);
 
-/* ------------------------------------------------------------------------ */
-
 /**  Type for a function that compares two types.
  *
  *   @param tp1  The first type to compare.
  *   @param tp2  The second type to compare.
  */
 typedef int (compare_types_func_t)(const void *tp1, const void *tp2);
-
-/* ------------------------------------------------------------------------ */
 
 /** A data type to treat types and entities as the same. */
 typedef union {

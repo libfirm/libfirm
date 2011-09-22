@@ -54,8 +54,6 @@
 
 #include "begin.h"
 
-/* ************************ Constructors for tarvals ************************ */
-
 /**
  * Constructor function for new tarvals.
  *
@@ -234,32 +232,6 @@ FIRM_API long double get_tarval_long_double(ir_tarval *tv);
  */
 FIRM_API int tarval_is_double(ir_tarval *tv);
 
-
-/** ********** Access routines for tarval fields ********** **/
-
-/*
- * NAME
- *   get_tarval_mode
- *   get_tarval_ ...
- *
- * SYNOPSIS
- *   ir_mode *get_tarval_mode(tarval *tv)
- *   ...
- *
- * DESCRIPTION
- *    These are access function for tarval struct members. It is encouraged
- *   to use them instead of direct access to the struct fields.
- *
- * PARAMETERS
- *   tv - The tarval to access fields of
- *
- * RESULT
- *   get_tv_mode: The mode of the tarval
- *
- * SEE ALSO
- *   the struct tarval
- */
-
 /**
  * Returns the mode of the tarval.
  *
@@ -346,12 +318,6 @@ FIRM_API ir_tarval *get_tarval_reachable(void);
 /** Returns the 'bottom' tarval. */
 #define get_tarval_bottom() get_tarval_bad()
 
-/* These functions calculate and return a tarval representing the requested
- * value.
- * The functions get_mode_{Max,Min,...} return tarvals retrieved from these
- * functions, but these are stored on initialization of the irmode module and
- * therefore the irmode functions should be preferred to the functions below. */
-
 /** Returns the maximum value of a given mode. */
 FIRM_API ir_tarval *get_tarval_max(ir_mode *mode);
 
@@ -381,8 +347,6 @@ FIRM_API ir_tarval *get_tarval_plus_inf(ir_mode *mode);
 
 /** Return -inf for float_number modes. */
 FIRM_API ir_tarval *get_tarval_minus_inf(ir_mode *mode);
-
-/* ******************** Arithmetic operations on tarvals ******************** */
 
 typedef enum tarval_int_overflow_mode_t {
 	TV_OVERFLOW_BAD,      /**< tarval module will return tarval_bad if a overflow occurs */
@@ -638,8 +602,6 @@ FIRM_API ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b);
  */
 FIRM_API int tarval_carry(void);
 
-/* *********** Output of tarvals *********** */
-
 /**
  * The output mode for tarval values.
  *
@@ -649,13 +611,14 @@ FIRM_API int tarval_carry(void);
  * However, we can do this in the tarval much simpler...
  */
 typedef enum {
-	TVO_NATIVE,       /**< the default output mode, depends on the mode */
-	TVO_HEX,          /**< use hex representation, always possible */
-	TVO_DECIMAL,      /**< use decimal representation */
-	TVO_OCTAL,        /**< use octal representation */
-	TVO_BINARY,       /**< use binary representation */
-	TVO_FLOAT,        /**< use floating point representation (i.e 1.342e-2)*/
-	TVO_HEXFLOAT      /**< use hexadecimal floating point representation (i.e 0x1.ea32p-12)*/
+	TVO_NATIVE,  /**< the default output mode, depends on the mode */
+	TVO_HEX,     /**< use hex representation, always possible */
+	TVO_DECIMAL, /**< use decimal representation */
+	TVO_OCTAL,   /**< use octal representation */
+	TVO_BINARY,  /**< use binary representation */
+	TVO_FLOAT,   /**< use floating point representation (i.e 1.342e-2)*/
+	TVO_HEXFLOAT /**< use hexadecimal floating point representation
+	                  (i.e 0x1.ea32p-12)*/
 } tv_output_mode;
 
 /**
@@ -732,8 +695,8 @@ FIRM_API char *get_tarval_bitpattern(ir_tarval *tv);
  * val2 = tarval_sub_bits(tv, 2);
  * val3 = tarval_sub_bits(tv, 3);  <- highest bits
  *
- * Because this is the bit representation of the target machine, only the following
- * operations are legal on the result:
+ * Because this is the bit representation of the target machine, only the
+ * following operations are legal on the result:
  *
  * - concatenation (endian dependence MUST be handled by the CALLER)
  * - bitwise logical operations to select/mask bits
@@ -742,7 +705,8 @@ FIRM_API char *get_tarval_bitpattern(ir_tarval *tv);
  * @param byte_ofs  the byte offset from lower to higher
  *
  * @note
- *   The result of this function is undefined if the mode is neither integer nor float.
+ *   The result of this function is undefined if the mode is neither integer
+ *   nor float.
  */
 FIRM_API unsigned char get_tarval_sub_bits(ir_tarval *tv, unsigned byte_ofs);
 

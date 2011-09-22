@@ -207,10 +207,12 @@ typedef enum firm_verification_t {
   FIRM_VERIFICATION_ERROR_ONLY = 3  /**< do node verification, but NEVER do assert nor report */
 } firm_verification_t;
 
-/** Select verification of IR nodes and types.
+/**
+ * Select verification of IR nodes and types.
  *
- *  Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
- *  Turn the verification off during development to check partial implementations.
+ * Per default the  verification is in mode NODE_VERIFICATION_ASSERT.
+ * Turn the verification off during development to check partial
+ * implementations.
  */
 FIRM_API void do_node_verification(firm_verification_t mode);
 
