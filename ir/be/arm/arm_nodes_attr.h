@@ -28,7 +28,7 @@
 
 #include "firm_types.h"
 #include "irnode_t.h"
-#include "../bearch.h"
+#include "bearch.h"
 
 /**
  * Possible ARM "shifter operand" addressing mode types.

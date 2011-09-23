@@ -40,13 +40,13 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
+#include "bearch.h"
 
 #include "arm_nodes_attr.h"
 #include "arm_new_nodes.h"
 #include "arm_optimize.h"
 
-#include "../beabi.h"
+#include "beabi.h"
 #include "bearch_arm_t.h"
 
 const char *arm_get_fpa_imm_name(long imm_value)

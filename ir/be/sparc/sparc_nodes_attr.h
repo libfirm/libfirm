@@ -26,7 +26,7 @@
 #ifndef FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 #define FIRM_BE_SPARC_SPARC_NODES_ATTR_H
 
-#include "../bearch.h"
+#include "bearch.h"
 #include <stdint.h>
 
 typedef struct sparc_attr_t  sparc_attr_t;

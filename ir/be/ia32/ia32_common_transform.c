@@ -33,9 +33,9 @@
 #include "bitset.h"
 #include "heights.h"
 
-#include "../betranshlp.h"
-#include "../beirg.h"
-#include "../beabi.h"
+#include "betranshlp.h"
+#include "beirg.h"
+#include "beabi.h"
 
 #include "ia32_architecture.h"
 #include "ia32_common_transform.h"

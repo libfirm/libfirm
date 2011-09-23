@@ -40,15 +40,15 @@
 #include "tv.h"
 #include "array.h"
 
-#include "../beirgmod.h"
-#include "../bearch.h"
-#include "../besched.h"
-#include "../beabi.h"
-#include "../benode.h"
-#include "../bestate.h"
-#include "../beutil.h"
-#include "../bessaconstr.h"
-#include "../beirg.h"
+#include "beirgmod.h"
+#include "bearch.h"
+#include "besched.h"
+#include "beabi.h"
+#include "benode.h"
+#include "bestate.h"
+#include "beutil.h"
+#include "bessaconstr.h"
+#include "beirg.h"
 
 static ir_entity *fpcw_round    = NULL;
 static ir_entity *fpcw_truncate = NULL;

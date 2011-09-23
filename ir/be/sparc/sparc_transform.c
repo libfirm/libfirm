@@ -42,11 +42,11 @@
 #include "error.h"
 #include "util.h"
 
-#include "../benode.h"
-#include "../beirg.h"
-#include "../beutil.h"
-#include "../betranshlp.h"
-#include "../beabihelper.h"
+#include "benode.h"
+#include "beirg.h"
+#include "beutil.h"
+#include "betranshlp.h"
+#include "beabihelper.h"
 #include "bearch_sparc_t.h"
 
 #include "sparc_nodes_attr.h"

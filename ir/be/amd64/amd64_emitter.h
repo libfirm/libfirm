@@ -29,8 +29,8 @@
 #include "irnode.h"
 #include "debug.h"
 
-#include "../bearch.h"
-#include "../beemitter.h"
+#include "bearch.h"
+#include "beemitter.h"
 
 #include "bearch_amd64_t.h"
 

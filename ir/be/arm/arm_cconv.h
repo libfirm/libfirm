@@ -27,7 +27,7 @@
 #define FIRM_BE_ARM_ARM_CCONV_H
 
 #include "firm_types.h"
-#include "../be_types.h"
+#include "be_types.h"
 #include "gen_arm_regalloc_if.h"
 
 /** information about a single parameter or result */

@@ -40,11 +40,11 @@
 #include "irdump.h"
 #include "error.h"
 
-#include "../be_t.h"
-#include "../beabi.h"
-#include "../benode.h"
-#include "../besched.h"
-#include "../bepeephole.h"
+#include "be_t.h"
+#include "beabi.h"
+#include "benode.h"
+#include "besched.h"
+#include "bepeephole.h"
 
 #include "ia32_new_nodes.h"
 #include "ia32_optimize.h"

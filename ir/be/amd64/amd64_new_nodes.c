@@ -38,7 +38,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
+#include "bearch.h"
 
 #include "amd64_nodes_attr.h"
 #include "amd64_new_nodes.h"

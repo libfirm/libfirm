@@ -36,10 +36,10 @@
 #include "irargs_t.h"
 #include "irprog.h"
 
-#include "../besched.h"
-#include "../begnuas.h"
-#include "../beblocksched.h"
-#include "../benode.h"
+#include "besched.h"
+#include "begnuas.h"
+#include "beblocksched.h"
+#include "benode.h"
 
 #include "TEMPLATE_emitter.h"
 #include "gen_TEMPLATE_emitter.h"

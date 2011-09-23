@@ -31,9 +31,9 @@
 #include "sparc_new_nodes.h"
 #include "sparc_cconv.h"
 #include "bitfiddle.h"
-#include "../bearch.h"
-#include "../benode.h"
-#include "../besched.h"
+#include "bearch.h"
+#include "benode.h"
+#include "besched.h"
 
 static void set_irn_sp_bias(ir_node *node, int new_bias)
 {

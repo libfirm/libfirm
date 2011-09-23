@@ -24,6 +24,8 @@
  */
 #include "config.h"
 
+#include "bearch_TEMPLATE_t.h"
+
 #include "irgwalk.h"
 #include "irprog.h"
 #include "irprintf.h"
@@ -36,18 +38,16 @@
 #include "debug.h"
 
 #include "be.h"
-#include "../bearch.h"
-#include "../benode.h"
-#include "../belower.h"
-#include "../besched.h"
-#include "../beabi.h"
-#include "../bemodule.h"
-#include "../begnuas.h"
-#include "../belistsched.h"
-#include "../bestack.h"
-#include "../bespillutil.h"
-
-#include "bearch_TEMPLATE_t.h"
+#include "bearch.h"
+#include "benode.h"
+#include "belower.h"
+#include "besched.h"
+#include "beabi.h"
+#include "bemodule.h"
+#include "begnuas.h"
+#include "belistsched.h"
+#include "bestack.h"
+#include "bespillutil.h"
 
 #include "TEMPLATE_new_nodes.h"
 #include "gen_TEMPLATE_regalloc_if.h"

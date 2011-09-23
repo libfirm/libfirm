@@ -46,8 +46,8 @@
 #include "raw_bitset.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
-#include "../beinfo.h"
+#include "bearch.h"
+#include "beinfo.h"
 
 #include "bearch_ia32_t.h"
 #include "ia32_common_transform.h"

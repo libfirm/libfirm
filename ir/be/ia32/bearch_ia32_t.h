@@ -34,8 +34,8 @@
 #include "pdeq.h"
 
 #include "be.h"
-#include "../bemachine.h"
-#include "../beemitter.h"
+#include "bemachine.h"
+#include "beemitter.h"
 #include "gen_ia32_regalloc_if.h"
 
 #ifdef NDEBUG

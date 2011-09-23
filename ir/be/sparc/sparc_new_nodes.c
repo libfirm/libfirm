@@ -39,7 +39,7 @@
 #include "irprintf.h"
 #include "xmalloc.h"
 
-#include "../bearch.h"
+#include "bearch.h"
 
 #include "sparc_nodes_attr.h"
 #include "sparc_new_nodes.h"

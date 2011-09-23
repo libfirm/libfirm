@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "amd64_nodes_attr.h"
 #include "be.h"
-#include "../beemitter.h"
+#include "beemitter.h"
 #include "set.h"
 
 typedef struct amd64_isa_t            amd64_isa_t;
