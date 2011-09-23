@@ -32,6 +32,7 @@
 #include "irnode_t.h"
 #include "ircons.h"
 #include "irprog_t.h"
+#include "iroptimize.h"
 #include "lower_dw.h"
 #include "array.h"
 #include "error.h"
@@ -408,27 +409,6 @@ static int map_Abs(ir_node *call, void *ctx)
 
 #define ID(x) new_id_from_chars(x, sizeof(x)-1)
 
-static ir_entity *create_compiler_lib_entity(const char *name, ir_type *type)
-{
-	ir_type   *glob   = get_glob_type();
-	ident     *id     = new_id_from_str(name);
-	ir_entity *entity;
-
-	/* Hack: we need to know the type of runtime library we use. Strictly
-	   speaking it's not the same as the object-file-format. But in practice
-	   the following should be enough */
-	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O
-			|| be_gas_object_file_format == OBJECT_FILE_FORMAT_COFF) {
-		id = id_mangle3("___", id, "");
-	} else {
-		id = id_mangle3("__", id, "");
-	}
-	entity = new_entity(glob, id, type);
-	set_entity_visibility(entity, ir_visibility_external);
-	set_entity_ld_ident(entity, id);
-	return entity;
-}
-
 /**
  * Maps a Div. Change into a library call.
  */
@@ -446,14 +426,17 @@ static int map_Div(ir_node *call, void *ctx)
 		/* 64bit signed Division */
 		ent = env->divdi3;
 		if (ent == NULL) {
-			ent = env->divdi3 = create_compiler_lib_entity("divdi3", method);
+			/* create library entity */
+			ident *id = ID("__divdi3");
+			ent = env->divdi3 = create_compilerlib_entity(id, method);
 		}
 	} else {
 		/* 64bit unsigned Division */
 		ent = env->udivdi3;
 		if (ent == NULL) {
 			/* create library entity */
-			ent = env->udivdi3 = create_compiler_lib_entity("udivdi3", method);
+			ident *id = ID("__udivdi3");
+			ent = env->udivdi3 = create_compilerlib_entity(id, method);
 		}
 	}
 
@@ -483,14 +466,16 @@ static int map_Mod(ir_node *call, void *ctx)
 		ent = env->moddi3;
 		if (ent == NULL) {
 			/* create library entity */
-			ent = env->moddi3 = create_compiler_lib_entity("moddi3", method);
+			ident *id = ID("__moddi3");
+			ent = env->moddi3 = create_compilerlib_entity(id, method);
 		}
 	} else {
 		/* 64bit signed Modulo */
 		ent = env->umoddi3;
 		if (ent == NULL) {
 			/* create library entity */
-			ent = env->umoddi3 = create_compiler_lib_entity("umoddi3", method);
+			ident *id = ID("__umoddi3");
+			ent = env->umoddi3 = create_compilerlib_entity(id, method);
 		}
 	}
 

@@ -32,6 +32,7 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "iroptimize.h"
 #include "error.h"
 
 static pmap *entities;
@@ -100,9 +101,7 @@ static void replace_with_call(ir_node *node)
 
 	entity = pmap_get(entities, id);
 	if (entity == NULL) {
-		ir_type   *glob   = get_glob_type();
-		entity = new_entity(glob, id, mtp);
-		set_entity_visibility(entity, ir_visibility_external);
+		entity = create_compilerlib_entity(id, mtp);
 		pmap_insert(entities, id, entity);
 	}
 
