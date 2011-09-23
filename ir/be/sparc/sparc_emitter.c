@@ -307,13 +307,11 @@ static bool is_no_instruction(const ir_node *node)
 
 static bool has_delay_slot(const ir_node *node)
 {
-	if (is_sparc_Ba(node) && ba_is_fallthrough(node))
-		return false;
+	if (is_sparc_Ba(node)) {
+		return !ba_is_fallthrough(node);
+	}
 
-	return is_sparc_Bicc(node) || is_sparc_fbfcc(node) || is_sparc_Ba(node)
-		|| is_sparc_SwitchJmp(node) || is_sparc_Call(node)
-		|| is_sparc_SDiv(node) || is_sparc_UDiv(node)
-		|| is_sparc_Return(node);
+	return arch_get_irn_flags(node) & sparc_arch_irn_flag_has_delay_slot;
 }
 
 /** returns true if the emitter for this sparc node can produce more than one
