@@ -1094,7 +1094,7 @@ FIRM_API void set_compilerlib_entity_creator(compilerlib_entity_creator_t c);
 /**
  * Get the compilerlib entity creation callback.
  */
-FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator();
+FIRM_API compilerlib_entity_creator_t get_compilerlib_entity_creator(void);
 
 /**
  * Construct the entity for a given function using the current compilerlib
