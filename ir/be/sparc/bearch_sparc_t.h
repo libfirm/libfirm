@@ -74,13 +74,14 @@ extern const arch_irn_ops_t sparc_irn_ops;
  *            param 0-5 in this spaces and then handle va_next by simply
  *            incrementing the stack pointer
  */
-#define SPARC_IMMEDIATE_MIN -4096
-#define SPARC_IMMEDIATE_MAX  4095
-#define SPARC_MIN_STACKSIZE 92
-#define SPARC_AGGREGATE_RETURN_OFFSET 64
-#define SPARC_PARAMS_SPILL_OFFSET     68
-#define SPARC_N_PARAM_REGS            6
-#define SPARC_STACK_ALIGNMENT         8
+#define SPARC_IMMEDIATE_MIN           -4096
+#define SPARC_IMMEDIATE_MAX            4095
+#define SPARC_MIN_STACKSIZE              92
+#define SPARC_AGGREGATE_RETURN_OFFSET    64
+#define SPARC_PARAMS_SPILL_OFFSET        68
+#define SPARC_N_PARAM_REGS                6
+#define SPARC_STACK_ALIGNMENT             8
+#define SPARC_REGISTER_SIZE               4
 
 static inline bool sparc_is_value_imm_encodeable(int32_t value)
 {

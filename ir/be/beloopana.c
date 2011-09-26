@@ -166,10 +166,7 @@ be_loopana_t *be_new_loop_pressure_cls(ir_graph *irg,
 	DBG((dbg, LEVEL_1, " Computing register pressure for class %s:\n", cls->name));
 	DBG((dbg, LEVEL_1, "=====================================================\n", cls->name));
 
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	be_compute_loop_pressure(loop_ana, get_irg_loop(irg), cls);
 
@@ -192,10 +189,7 @@ be_loopana_t *be_new_loop_pressure(ir_graph *irg,
 	loop_ana->data = new_set(cmp_loop_info, 16);
 	loop_ana->irg  = irg;
 
-	/* construct control flow loop tree */
-	if (! (get_irg_loopinfo_state(irg) & loopinfo_cf_consistent)) {
-		construct_cf_backedges(irg);
-	}
+	assure_loopinfo(irg);
 
 	if (cls != NULL) {
 		be_compute_loop_pressure(loop_ana, irg_loop, cls);

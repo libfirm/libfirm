@@ -46,35 +46,32 @@ I_FLAG(global_cse                         , 2, OFF)
 /** Evaluate operations. */
 I_FLAG(constant_folding                   , 3, ON)
 
-/** Bad node propagation. */
-I_FLAG(unreachable_code                   , 4, ON)
-
 /** Algebraic simplifications. */
-I_FLAG(algebraic_simplification           , 5, ON)
+I_FLAG(algebraic_simplification           , 4, ON)
 
 /** Use Global Null Pointer Test elimination. */
-I_FLAG(global_null_ptr_elimination        , 6, ON)
+I_FLAG(global_null_ptr_elimination        , 5, ON)
 
 /** Remove dynamic method dispatch. */
-E_FLAG(dyn_meth_dispatch                  , 7, ON)
+E_FLAG(dyn_meth_dispatch                  , 6, ON)
 
 /** Optimize cast nodes. */
-E_FLAG(suppress_downcast_optimization     , 8, OFF)
+E_FLAG(suppress_downcast_optimization     , 7, OFF)
 
 /** Load and Store have only Null exceptions. */
-I_FLAG(ldst_only_null_ptr_exceptions      , 9, ON)
+I_FLAG(ldst_only_null_ptr_exceptions      , 8, ON)
 
 /** Sel-based Null-pointer check elimination. */
-I_FLAG(sel_based_null_check_elim          , 10, OFF)
+I_FLAG(sel_based_null_check_elim          , 9, OFF)
 
 /** Automatically create Sync node during construction. */
-I_FLAG(auto_create_sync                   , 11, OFF)
+I_FLAG(auto_create_sync                   , 10, OFF)
 
 /** Enable Alias-analysis. */
-I_FLAG(alias_analysis                     , 12, ON)
+I_FLAG(alias_analysis                     , 11, ON)
 
 /** Closed world assumption. */
-I_FLAG(closed_world                       , 13, OFF)
+I_FLAG(closed_world                       , 12, OFF)
 
 /* -------------------- RUNNING flags ------------------- */
 

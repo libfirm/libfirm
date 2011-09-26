@@ -59,22 +59,4 @@ typedef struct optdesc_t {
  */
 void perform_irg_optimization(ir_graph *irg, optdesc_t *opt);
 
-/** A list of all optimization descriptions
- * TODO We could put something like this into the API
- */
-extern optdesc_t opt_ifconv;
-extern optdesc_t opt_fpvrp;
-extern optdesc_t opt_cf;
-extern optdesc_t opt_deconv;
-extern optdesc_t opt_simplify_bool;
-extern optdesc_t opt_code_placement;
-extern optdesc_t opt_combo;
-extern optdesc_t opt_loadstore;
-extern optdesc_t opt_peel_loops;
-extern optdesc_t opt_unroll_loops;
-extern optdesc_t opt_invert_loops;
-extern optdesc_t opt_gcse;
-extern optdesc_t opt_parallel_mem;
-extern optdesc_t opt_jumpthread;
-
-#endif /* FIRM_OPT_MANAGE_H */
+#endif

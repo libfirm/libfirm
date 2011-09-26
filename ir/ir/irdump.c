@@ -1008,9 +1008,6 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 	} /* end switch */
 }
 
-#include <math.h>
-#include "execution_frequency.h"
-
 static void dump_node_ana_vals(FILE *F, ir_node *n)
 {
 	(void) F;
@@ -1608,7 +1605,8 @@ static void dump_block_graph(FILE *F, ir_graph *irg)
 			dump_ir_edges(node, F);
 	}
 
-	if ((flags & ir_dump_flag_loops) && (get_irg_loopinfo_state(irg) & loopinfo_valid))
+	if ((flags & ir_dump_flag_loops)
+	     && is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
 		dump_loop_nodes_into_graph(F, irg);
 
 	current_ir_graph = rem;
@@ -1622,6 +1620,42 @@ static void dump_graph_info(FILE *F, ir_graph *irg)
 {
 	fprintf(F, "info1: \"");
 	dump_entity_to_file(F, get_irg_entity(irg));
+	fprintf(F, "\n");
+
+	/* dump graph state */
+	fprintf(F, "state:");
+	if (is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP))
+		fprintf(F, " arch_dep");
+	if (is_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED))
+		fprintf(F, " modeb_lowered");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+		fprintf(F, " normalisation2");
+	if (is_irg_state(irg, IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING))
+		fprintf(F, " implicit_bitfield_masking");
+	if (is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
+		fprintf(F, " optimize_unreachable_code");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES))
+		fprintf(F, " no_critical_edges");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BADS))
+		fprintf(F, " no_bads");
+	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE))
+		fprintf(F, " no_unreachable_code");
+	if (is_irg_state(irg, IR_GRAPH_STATE_ONE_RETURN))
+		fprintf(F, " one_return");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE))
+		fprintf(F, " consistent_dominance");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE))
+		fprintf(F, " consistent_postdominance");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUT_EDGES))
+		fprintf(F, " consistent_out_edges");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_OUTS))
+		fprintf(F, " consistent_outs");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO))
+		fprintf(F, " consistent_loopinfo");
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE))
+		fprintf(F, " consistent_entity_usage");
+	if (is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
+		fprintf(F, " valid_exended_blocks");
 	fprintf(F, "\"\n");
 }
 
@@ -2229,7 +2263,7 @@ static void dump_extblock_graph(FILE *F, ir_graph *irg)
 	}
 
 	if ((flags & ir_dump_flag_loops)
-			&& (get_irg_loopinfo_state(irg) & loopinfo_valid))
+			&& (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)))
 		dump_loop_nodes_into_graph(F, irg);
 
 	current_ir_graph = rem;
@@ -2241,7 +2275,7 @@ static void dump_blocks_extbb_grouped(FILE *F, ir_graph *irg)
 	size_t    i;
 	ir_entity *ent = get_irg_entity(irg);
 
-	if (get_irg_extblk_state(irg) != ir_extblk_info_valid)
+	if (!is_irg_state(irg, IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS))
 		compute_extbb(irg);
 
 	construct_extblock_lists(irg);

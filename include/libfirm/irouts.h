@@ -30,16 +30,7 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/*------------------------------------------------------------------*/
-/* Accessing the out datastructures.                                */
-/* These routines only work properly if the ir_graph is in state    */
-/* outs_consistent or outs_inconsistent.                            */
-/*------------------------------------------------------------------*/
-
-/** To iterate through the successors iterate from 0 to i < get_irn_outs(). No
-   order of successors guaranteed.  Will return edges from block to floating
-   nodes even if irgraph is in state "op_pin_state_floats". */
-/* returns the number of successors of the node: */
+/** returns the number of successors of the node: */
 FIRM_API int get_irn_n_outs(const ir_node *node);
 
 /** Get the User of a node from the Def-Use edge at position pos. */
@@ -61,9 +52,6 @@ FIRM_API ir_node *get_irn_out_ex(const ir_node *def, int pos, int *in_pos);
  */
 FIRM_API void set_irn_out(ir_node *def, int pos, ir_node *use, int in_pos);
 
-/* Methods to iterate through the control flow graph. Iterate from 0 to
-   i < get_Block_cfg_outs(block). No order of successors guaranteed. */
-
 /** Return the number of control flow successors, ignore keep-alives. */
 FIRM_API int get_Block_n_cfg_outs(const ir_node *node);
 
@@ -76,32 +64,34 @@ FIRM_API ir_node *get_Block_cfg_out(const ir_node *node, int pos);
 /** Access predecessor n, honor keep-alives. */
 FIRM_API ir_node *get_Block_cfg_out_ka(const ir_node *node, int pos);
 
-/** Walks over the graph starting at node.  Walks also if graph is in state
-   "outs_inconsistent".  Assumes current_ir_graph is set properly. */
+/**
+ * Walks over the graph starting at node.  Walks also if graph is in state
+ * "outs_inconsistent".  Assumes current_ir_graph is set properly.
+ */
 FIRM_API void irg_out_walk(ir_node *node, irg_walk_func *pre,
                            irg_walk_func *post, void *env);
 
-/** Walks only over Block nodes in the graph.  Has its own visited
-   flag, so that it can be interleaved with the other walker.
-   node must be either op_Block or mode_X.  */
+/**
+ * Walks only over Block nodes in the graph.  Has its own visited
+ * flag, so that it can be interleaved with the other walker.
+ * node must be either op_Block or mode_X.
+ */
 FIRM_API void irg_out_block_walk(ir_node *node, irg_walk_func *pre,
                                  irg_walk_func *post, void *env);
 
 /**
  * returns 1 if outs have been computed for a node, 0 otherwise.
  *
- *  this is useful to detect newly created nodes that have no outs set yet
+ * this is useful to detect newly created nodes that have no outs set yet
  */
 FIRM_API int get_irn_outs_computed(const ir_node *node);
 
-/*------------------------------------------------------------------*/
-/* Building and Removing the out datastructure                      */
-/*------------------------------------------------------------------*/
-
-/** Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
-    graph is changed this flag must be set to "outs_inconsistent".  Computes
-    out edges from block to floating nodes even if graph is in state
-   "op_pin_state_floats".   Optimizes Tuple nodes. */
+/**
+ * Computes the out edges.  Sets a flag in irg to "outs_consistent".  If the
+ * graph is changed this flag must be set to "outs_inconsistent".  Computes
+ * out edges from block to floating nodes even if graph is in state
+ * "op_pin_state_floats".   Optimizes Tuple nodes.
+ */
 FIRM_API void compute_irg_outs(ir_graph *irg);
 FIRM_API void compute_irp_outs(void);
 

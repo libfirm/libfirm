@@ -781,9 +781,9 @@ static ir_graph_state_t do_jumpthread(ir_graph* irg)
 	return res;
 }
 
-optdesc_t opt_jumpthread = {
+static optdesc_t opt_jumpthread = {
 	"jumpthreading",
-	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES,
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE | IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_NO_CRITICAL_EDGES,
 	do_jumpthread,
 };
 

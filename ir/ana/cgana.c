@@ -36,7 +36,6 @@
 #include <string.h>
 
 #include "cgana.h"
-#include "rta.h"
 
 #include "xmalloc.h"
 #include "irnode_t.h"

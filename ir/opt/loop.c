@@ -1355,8 +1355,8 @@ static void loop_inversion(ir_graph *irg)
 		DEL_ARR_F(cur_head_outs);
 
 		/* Duplicated blocks changed doms */
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-		set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
 
 		++stats.inverted;
 	}
@@ -2738,19 +2738,19 @@ static ir_graph_state_t perform_loop_peeling(ir_graph *irg)
 	return 0;
 }
 
-optdesc_t opt_unroll_loops = {
+static optdesc_t opt_unroll_loops = {
 	"unroll-loops",
 	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
 	perform_loop_unrolling,
 };
 
-optdesc_t opt_invert_loops = {
+static optdesc_t opt_invert_loops = {
 	"invert-loops",
 	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
 	perform_loop_inversion,
 };
 
-optdesc_t opt_peel_loops = {
+static optdesc_t opt_peel_loops = {
 	"peel-loops",
 	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES | IR_GRAPH_STATE_CONSISTENT_OUTS | IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
 	perform_loop_peeling,

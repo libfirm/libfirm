@@ -33,8 +33,6 @@
 #include "irmemory.h"
 
 #include "callgraph.h"
-#include "field_temperature.h"
-#include "execution_frequency.h"
 
 #include "array.h"
 

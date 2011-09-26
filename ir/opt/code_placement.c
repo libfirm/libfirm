@@ -423,7 +423,7 @@ static ir_graph_state_t do_codeplacement(ir_graph *irg)
 	return 0;
 }
 
-optdesc_t opt_codeplacement = {
+static optdesc_t opt_codeplacement = {
 	"code-placement",
 	IR_GRAPH_STATE_NO_CRITICAL_EDGES |
 	IR_GRAPH_STATE_CONSISTENT_OUTS |
@@ -448,6 +448,7 @@ static void place_code_wrapper(ir_graph *irg)
 	set_opt_global_cse(0);
 }
 
+#if 0
 static ir_graph_state_t do_gcse(ir_graph *irg)
 {
 	set_opt_global_cse(1);
@@ -457,7 +458,7 @@ static ir_graph_state_t do_gcse(ir_graph *irg)
 	return 0;
 }
 
-optdesc_t opt_gcse = {
+static optdesc_t opt_gcse = {
 	"gcse",
 	IR_GRAPH_STATE_NO_CRITICAL_EDGES |
 	IR_GRAPH_STATE_CONSISTENT_OUTS |
@@ -465,6 +466,7 @@ optdesc_t opt_gcse = {
 	IR_GRAPH_STATE_CONSISTENT_LOOPINFO,
 	do_gcse,
 };
+#endif
 
 ir_graph_pass_t *place_code_pass(const char *name)
 {

@@ -135,23 +135,6 @@ FIRM_API void callgraph_walk(callgraph_walk_func *pre,
  */
 FIRM_API void find_callgraph_recursions(void);
 
-/** Compute interprocedural performance estimates.
- *
- *  Computes
- *   - the loop depth of the method.
- *     The loop depth of an edge between two methods is the
- *     maximal loop depth of the Call nodes that call along this edge.
- *     The loop depth of the method is the loop depth of the most expensive
- *     path from main().
- *   - The recursion depth.  The maximal number of recursions passed
- *     on all paths reaching this method.
- *   - The execution frequency.  As loop depth, but the edge weight is the sum
- *     of the execution frequencies of all Calls along the edge.
- *
- * Expects the main irg is set, see set_irp_main_irg();
- **/
-FIRM_API void compute_performance_estimates(void);
-
 /** Computes the interprocedural loop nesting information.
  *
  * Computes two numbers for each irg:  the depth it is called in 'normal'

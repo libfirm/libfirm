@@ -246,8 +246,8 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 		} else {
 			param->type   = param_type;
 			param->offset = stack_offset;
-			/* increase offset 4 bytes so everything is aligned */
-			stack_offset += bits > 32 ? bits/8 : 4;
+			/* increase offset by at least SPARC_REGISTER_SIZE bytes so everything is aligned */
+			stack_offset += bits > 8 * SPARC_REGISTER_SIZE ? bits / 8 : SPARC_REGISTER_SIZE;
 			continue;
 		}
 
@@ -269,7 +269,7 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 				param->type      = type;
 				param->offset    = stack_offset;
 				assert(get_mode_size_bits(regmode) == 32);
-				stack_offset += 4;
+				stack_offset += SPARC_REGISTER_SIZE;
 			}
 		}
 	}

@@ -347,8 +347,9 @@ int inline_method(ir_node *call, ir_graph *called_graph)
 	assert(get_irg_phase_state(irg) != phase_building);
 	assert(get_irg_pinned(irg) == op_pin_state_pinned);
 	assert(get_irg_pinned(called_graph) == op_pin_state_pinned);
-	set_irg_extblk_inconsistent(irg);
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS
+	                   | IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE);
 	edges_deactivate(irg);
@@ -989,7 +990,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 		assert(get_irg_phase_state(irg) != phase_building);
 		free_callee_info(irg);
 
-		assure_cf_loop(irg);
+		assure_loopinfo(irg);
 		wenv.x = (inline_irg_env*)get_irg_link(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
@@ -1116,7 +1117,7 @@ void inline_leave_functions(unsigned maxsize, unsigned leavesize,
 					callee_env = alloc_inline_irg_env();
 					set_irg_link(copy, callee_env);
 
-					assure_cf_loop(copy);
+					assure_loopinfo(copy);
 					wenv.x              = callee_env;
 					wenv.ignore_callers = 1;
 					irg_walk_graph(copy, NULL, collect_calls2, &wenv);
@@ -1652,7 +1653,7 @@ static void inline_into(ir_graph *irg, unsigned maxsize,
 			callee_env = alloc_inline_irg_env();
 			set_irg_link(copy, callee_env);
 
-			assure_cf_loop(copy);
+			assure_loopinfo(copy);
 			memset(&wenv, 0, sizeof(wenv));
 			wenv.x              = callee_env;
 			wenv.ignore_callers = 1;
@@ -1764,7 +1765,7 @@ void inline_functions(unsigned maxsize, int inline_threshold,
 		free_callee_info(irg);
 
 		wenv.x = (inline_irg_env*)get_irg_link(irg);
-		assure_cf_loop(irg);
+		assure_loopinfo(irg);
 		irg_walk_graph(irg, NULL, collect_calls2, &wenv);
 	}
 

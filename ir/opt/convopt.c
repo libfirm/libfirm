@@ -316,7 +316,6 @@ static void conv_opt_walker(ir_node *node, void *data)
 static ir_graph_state_t do_deconv(ir_graph *irg)
 {
 	bool changed;
-	bool invalidate = false;
 	FIRM_DBG_REGISTER(dbg, "firm.opt.conv");
 
 	DB((dbg, LEVEL_1, "===> Performing conversion optimization on %+F\n", irg));
@@ -325,13 +324,12 @@ static ir_graph_state_t do_deconv(ir_graph *irg)
 		changed = false;
 		irg_walk_graph(irg, NULL, conv_opt_walker, &changed);
 		local_optimize_graph(irg);
-		invalidate |= changed;
 	} while (changed);
 
 	return 0;
 }
 
-optdesc_t opt_deconv = {
+static optdesc_t opt_deconv = {
 	"deconv",
 	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,
 	do_deconv,

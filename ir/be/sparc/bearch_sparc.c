@@ -37,6 +37,7 @@
 #include "iroptimize.h"
 #include "irtools.h"
 #include "irdump.h"
+#include "iropt_t.h"
 #include "lowering.h"
 #include "lower_dw.h"
 #include "lower_alloc.h"
@@ -452,18 +453,7 @@ static void sparc_lower_for_target(void)
 static int sparc_is_mux_allowed(ir_node *sel, ir_node *mux_false,
                                 ir_node *mux_true)
 {
-	ir_graph *irg  = get_irn_irg(sel);
-	ir_mode  *mode = get_irn_mode(mux_true);
-
-	if (get_irg_phase_state(irg) == phase_low)
-		return false;
-
-	if (!mode_is_int(mode) && !mode_is_reference(mode) && mode != mode_b)
-		return false;
-	if (is_Const(mux_true) && is_Const_one(mux_true) &&
-			is_Const(mux_false) && is_Const_null(mux_false))
-		return true;
-	return false;
+	return ir_is_optimizable_mux(sel, mux_false, mux_true);
 }
 
 /**

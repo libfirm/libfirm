@@ -30,72 +30,9 @@
 #include "begin.h"
 
 /**
- * libFirm initialization parameters.
- * @deprecated
- */
-struct firm_parameter_t {
-	/**
-	 * The size of this structure. init_firm() will only initialize
-	 * this amount of data. This allows to add more fields to this structure
-	 * without breaking compatibility to older source.
-	 */
-	unsigned int size;
-
-	/**
-	 * Statistic options. If statistic function where enabled, these
-	 * flags configure it, see enum firmstat_options_t.
-	 * @deprecated  call firm_init_stat(options) instead
-	 */
-	unsigned enable_statistics;
-
-	/**
-	 * This function is called, whenever a local variable is
-	 * used before definition. The function should insert a default value,
-	 * and/or raise a compiler error/warning. Note that returning
-	 * an Unknown is allowed here.
-	 * @deprecated  call ir_set_uninitialized_local_variable_func() instead
-	 */
-	uninitialized_local_variable_func_t *initialize_local_func;
-
-	/**
-	 * The interface functions for the type identification module.
-	 * If not set, the default implementation with compare_strict() and
-	 * firm_hash_name() will be used.
-	 */
-	type_identify_if_t *ti_if;
-
-	/**
-	 * dummy parameter
-	 * (this used to hold an identifier module structure)
-	 */
-	void *id_if;
-
-	/**
-	 * dummy parameter
-	 * (this used to hold a default calling convention, but this concept is no
-	 *  more. You should always set the calling convention manually after
-	 *  creating the method entity if you need something else)
-	 */
-	unsigned cc_mask;
-
-	/**
-	 * dummy (here was dbg_info *builtin_dbg before)
-	 */
-	void *dummy;
-};
-
-typedef struct firm_parameter_t firm_parameter_t;
-
-/**
- * Initialize the firm library.
- *
  * Initializes the firm library.  Allocates default data structures.
- * Initializes configurable behavior of the library.
- *
- * @param params   should be NULL (you can pass a structure containing
- *                 initial parameters but this is deprecated)
  */
-FIRM_API void ir_init(const firm_parameter_t *params);
+FIRM_API void ir_init(void);
 
 /**
  * Frees all memory occupied by the firm library.
@@ -110,8 +47,6 @@ FIRM_API unsigned ir_get_version_minor(void);
 FIRM_API const char *ir_get_version_revision(void);
 /** returns string describing libFirm build */
 FIRM_API const char *ir_get_version_build(void);
-
-
 
 /**
  * a list of firm kinds
@@ -133,7 +68,6 @@ typedef enum {
 	k_ir_compound_graph_path, /**< A compound graph path, see entity.h. */
 	k_ir_extblk,              /**< An extended basic block. */
 	k_ir_prog,                /**< A program representation (irp). */
-	k_ir_region,              /**< A region. */
 	k_ir_graph_pass,          /**< An ir_graph pass. */
 	k_ir_prog_pass,           /**< An ir_prog pass. */
 	k_ir_graph_pass_mgr,      /**< An ir_graph pass manager. */

@@ -1261,11 +1261,8 @@ int shape_blocks(ir_graph *irg)
 
 	if (res) {
 		/* control flow changed */
-		set_irg_extblk_inconsistent(irg);
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-
-		/* Calls might be removed. */
-		set_trouts_inconsistent();
+		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	}
 
 	for (bl = env.all_blocks; bl != NULL; bl = bl->all_next) {

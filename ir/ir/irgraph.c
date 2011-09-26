@@ -189,10 +189,7 @@ ir_graph *new_r_ir_graph(ir_entity *ent, int n_loc)
 	res->typeinfo_state      = ir_typeinfo_none;
 	set_irp_typeinfo_inconsistent();           /* there is a new graph with typeinfo_none. */
 	res->callee_info_state   = irg_callee_info_none;
-	res->loopinfo_state      = loopinfo_none;
 	res->class_cast_state    = ir_class_casts_transitive;
-	res->extblk_state        = ir_extblk_info_none;
-	res->execfreq_state      = exec_freq_none;
 	res->fp_model            = fp_model_precise;
 	res->mem_disambig_opt    = aa_opt_inherited;
 
@@ -277,7 +274,6 @@ ir_graph *new_const_code_irg(void)
 
 	res->phase_state      = phase_building;
 	res->irg_pinned_state = op_pin_state_pinned;
-	res->extblk_state     = ir_extblk_info_none;
 	res->fp_model         = fp_model_precise;
 
 	/* value table for global value numbering for optimizing use in iropt.c */
@@ -386,7 +382,6 @@ ir_graph *create_irg_copy(ir_graph *irg)
 
 	res->phase_state      = irg->phase_state;
 	res->irg_pinned_state = irg->irg_pinned_state;
-	res->extblk_state     = ir_extblk_info_none;
 	res->fp_model         = irg->fp_model;
 
 	new_identities(res);
@@ -647,41 +642,6 @@ op_pin_state (get_irg_pinned)(const ir_graph *irg)
 {
 	return _get_irg_pinned(irg);
 }
-
-irg_extblk_info_state (get_irg_extblk_state)(const ir_graph *irg)
-{
-	return _get_irg_extblk_state(irg);
-}
-
-void (set_irg_extblk_inconsistent)(ir_graph *irg)
-{
-	_set_irg_extblk_inconsistent(irg);
-}
-
-irg_loopinfo_state (get_irg_loopinfo_state)(const ir_graph *irg)
-{
-	return _get_irg_loopinfo_state(irg);
-}
-
-void (set_irg_loopinfo_state)(ir_graph *irg, irg_loopinfo_state s)
-{
-	_set_irg_loopinfo_state(irg, s);
-}
-
-void (set_irg_loopinfo_inconsistent)(ir_graph *irg)
-{
-	_set_irg_loopinfo_inconsistent(irg);
-}
-
-void set_irp_loopinfo_inconsistent(void)
-{
-	size_t i, n;
-	for (i = 0, n = get_irp_n_irgs(); i < n; ++i) {
-		set_irg_loopinfo_inconsistent(get_irp_irg(i));
-	}
-}
-
-
 
 void (set_irg_pinned)(ir_graph *irg, op_pin_state p)
 {

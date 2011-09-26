@@ -65,34 +65,15 @@ lc_opt_entry_t *firm_opt_get_root(void)
 	return grp;
 }
 
-void ir_init(const firm_parameter_t *param)
+void ir_init(void)
 {
-	firm_parameter_t def_params;
-	unsigned int     size;
-
 	/* for historical reasons be_init must be run first */
 	firm_be_init();
-
-	memset(&def_params, 0, sizeof(def_params));
-
-	if (param) {
-		/* check for reasonable size */
-		assert(param->size <= sizeof(def_params) && (param->size & 3) == 0 &&
-				"parameter struct not initialized ???");
-		size = sizeof(def_params);
-		if (param->size < size)
-			size = param->size;
-
-		memcpy(&def_params, param, size);
-	}
 
 	/* initialize firm flags */
 	firm_init_flags();
 	/* initialize all ident stuff */
 	init_ident();
-	/* enhanced statistics, need idents and hooks */
-	if (def_params.enable_statistics != 0)
-		firm_init_stat(def_params.enable_statistics);
 	/* Edges need hooks. */
 	init_edges();
 	/* create the type kinds. */
@@ -111,10 +92,6 @@ void ir_init(const firm_parameter_t *param)
 	firm_init_mangle();
 	/* initialize all op codes an irnode can consist of */
 	init_op();
-	/* called once for each run of this library */
-	if (def_params.initialize_local_func != NULL)
-		ir_set_uninitialized_local_variable_func(
-				def_params.initialize_local_func);
 	/* initialize reassociation */
 	firm_init_reassociation();
 	/* initialize function call optimization */

@@ -152,11 +152,8 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	assert(env->n_tail_calls > 0);
 
 	/* we add new blocks and change the control flow */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-	set_irg_extblk_inconsistent(irg);
-
-	/* calls are removed */
-	set_trouts_inconsistent();
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 
 	/* we must build some new nodes WITHOUT CSE */
 	set_optimize(0);
@@ -265,10 +262,9 @@ static void do_opt_tail_rec(ir_graph *irg, tr_env *env)
 	}
 
 	/* tail recursion was done, all info is invalid */
-	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-	set_irg_extblk_inconsistent(irg);
-	set_irg_loopinfo_state(irg, loopinfo_cf_inconsistent);
-	set_trouts_inconsistent();
+	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+	                   | IR_GRAPH_STATE_CONSISTENT_LOOPINFO
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	set_irg_callee_info_state(irg, irg_callee_info_inconsistent);
 
 	set_optimize(rem);

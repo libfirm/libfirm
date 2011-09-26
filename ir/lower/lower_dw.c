@@ -1918,6 +1918,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 		ir_mode *mode_h;
 		ir_node *res_low;
 		ir_node *res_high;
+		int      old_cse;
 		dbg_info *dbg;
 
 		if (!is_Proj(proj))
@@ -1935,6 +1936,9 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 			continue;
 		}
 
+		/* Switch off CSE or we might get an already existing Proj. */
+		old_cse = get_opt_cse();
+		set_opt_cse(0);
 		dbg = get_irn_dbg_info(proj);
 		if (env->params->little_endian) {
 			res_low  = new_rd_Proj(dbg, pred, mode_l, new_projs[proj_nr]);
@@ -1943,6 +1947,7 @@ static void lower_Start(ir_node *node, ir_mode *high_mode)
 			res_high = new_rd_Proj(dbg, pred, mode_h, new_projs[proj_nr]);
 			res_low  = new_rd_Proj(dbg, pred, mode_l, new_projs[proj_nr] + 1);
 		}
+		set_opt_cse(old_cse);
 		ir_set_dw_lowered(proj, res_low, res_high);
 	}
 }
@@ -2580,8 +2585,8 @@ static void lower_irg(ir_graph *irg)
 
 		if (env->flags & CF_CHANGED) {
 			/* control flow changed, dominance info is invalid */
-			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
-			set_irg_extblk_inconsistent(irg);
+			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
+			                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 		}
 		edges_deactivate(irg);
 	}

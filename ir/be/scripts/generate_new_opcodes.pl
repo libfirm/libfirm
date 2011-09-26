@@ -669,7 +669,11 @@ EOF
 	}
 	my $copy_attr_func = $copy_attr{$attr_type};
 	if (!defined($copy_attr_func)) {
-		$copy_attr_func = $default_copy_attr;
+		if ($attr_type eq "") {
+			$copy_attr_func = "NULL";
+		} else {
+			$copy_attr_func = $default_copy_attr;
+		}
 	}
 	if (defined($copy_attr_func)) {
 		push(@obst_new_irop, "\tops.copy_attr = ${copy_attr_func};\n");

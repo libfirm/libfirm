@@ -38,8 +38,6 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/* ********** Predefined modes ********** */
-
 /** Helper values for ir_mode_sort. */
 enum ir_mode_sort_helper {
 	irmsh_is_num   = 0x10, /**< mode represents a number */
@@ -54,7 +52,6 @@ enum ir_mode_sort_helper {
  * the mode_is
  */
 typedef enum ir_mode_sort {
-	/* Predefined sorts of modes */
 	irms_auxiliary        = 0, /**< Only for Firm use. Not extensible. (irm_T) */
 	irms_control_flow     = 1, /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
 	irms_memory           = 2 | irmsh_is_dataM, /**< Marks the memory mode.  Not extensible. (irm_M) */
@@ -63,7 +60,6 @@ typedef enum ir_mode_sort {
 	     Storing to memory impossible, convert first. (irm_b) */
 	irms_internal_boolean = 3 | irmsh_is_datab,
 
-	/* user-extensible sorts of modes */
 	/** A mode to represent entities.
 	    Restricted int computations can be performed */
 	irms_reference        = 4 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM,
@@ -75,31 +71,37 @@ typedef enum ir_mode_sort {
 	irms_float_number     = 6 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
 } ir_mode_sort;
 
-/** These values represent the different arithmetic operations possible with a mode.
-    Further arithmetics can be defined, e.g., for @@@ modes.
+/**
+ * These values represent the different arithmetic operations possible with a
+ * mode.
  */
 typedef enum ir_mode_arithmetic {
 	irma_uninitialized = 0,
-	irma_none = 1,              /**< For modes for which no representation is specified.
-	                                 These are modes of sort auxiliary, internal_boolean and character. */
-	irma_twos_complement = 2,   /**< Values of the mode are represented as two's complement.
-                                     Only legal for modes of sort int_number and reference. */
-	irma_ones_complement,       /**< Values of the mode are represented  as one's complement.
-	                                 Only legal for modes of sort int_number and reference. */
-	irma_int_BCD,               /**< Values of the mode are represented as binary coded decimals.
-	                                 Only legal for modes of sort int_number and reference. */
-	irma_ieee754 = 256,         /**< Values of the mode are represented according to ieee754
-                                     floating point standard.  Only legal for modes of sort float_number. */
-	irma_float_BCD,             /**< Values of the mode are represented  as binary coded decimals
-	                                 according to @@@ which standards??? Only legal for modes of
-	                                 sort float_number. */
+	irma_none = 1,            /**< For modes for which no representation is
+	                               specified. These are modes of sort auxiliary,
+	                               internal_boolean and character. */
+	irma_twos_complement = 2, /**< Values of the mode are represented as two's
+	                               complement. Only legal for modes of sort
+	                               int_number and reference. */
+	irma_ones_complement,     /**< Values of the mode are represented  as one's
+	                               complement. Only legal for modes of sort
+	                               int_number and reference. */
+	irma_int_BCD,             /**< Values of the mode are represented as binary
+	                               coded decimals. Only legal for modes of sort
+	                               int_number and reference. */
+	irma_ieee754 = 256,       /**< Values of the mode are represented according
+	                               to ieee754 floating point standard.  Only
+	                               legal for modes of sort float_number. */
+	irma_float_BCD,           /**< Values of the mode are represented as binary
+	                               coded decimals according to @@@ which
+	                               standards??? Only legal for modes of sort
+	                               float_number. */
 	irma_max
 } ir_mode_arithmetic;
 
 /** Returns the name of the arithmetic type. */
 FIRM_API const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
 
-/* ********** Constructor for user defined modes **************** */
 /**
  * Creates a new mode.
  *
@@ -122,7 +124,8 @@ FIRM_API const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
  *
  * @note
  *   It is allowed to construct the default modes. So, a call
- *   new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will return mode_Is.
+ *   new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will
+ *   return mode_Is.
  */
 FIRM_API ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size,
                               int sign, ir_mode_arithmetic arithmetic,
@@ -162,8 +165,6 @@ FIRM_API ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort,
  *     true if the thing is a mode, else false
  */
 FIRM_API int is_mode(const void *thing);
-
-/* ********** Access methods to read mode information *********** */
 
 /** Returns the ident* of the mode */
 FIRM_API ident *get_mode_ident(const ir_mode *mode);
@@ -279,7 +280,6 @@ FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
 
 FIRM_API ir_mode *mode_M; /**< memory */
 
-/* -- A set of predefined, numerical modes */
 FIRM_API ir_mode *mode_F;   /**< float (32) */
 FIRM_API ir_mode *mode_D;   /**< double (64) */
 FIRM_API ir_mode *mode_E;   /**< long double (80/128/...) */
@@ -302,7 +302,6 @@ FIRM_API ir_mode *mode_P_data; /**< A pointer mode that is set by the client of 
                                   represents the pointer size of the target machine data addresses. Is initialized
                                   to mode_P. */
 
-/* -- Auxiliary modes necessary for the Firm representation -- */
 FIRM_API ir_mode *mode_b;  /**< internal boolean */
 
 FIRM_API ir_mode *mode_X;  /**< execution */
@@ -312,7 +311,6 @@ FIRM_API ir_mode *mode_T;  /**< tuple (none) */
 FIRM_API ir_mode *mode_ANY;/**< undefined mode */
 FIRM_API ir_mode *mode_BAD;/**< bad mode */
 
-/*@{*/
 FIRM_API ir_mode *get_modeF(void);
 FIRM_API ir_mode *get_modeD(void);
 FIRM_API ir_mode *get_modeE(void);
@@ -353,8 +351,7 @@ FIRM_API void set_modeP_code(ir_mode *p);
  */
 FIRM_API void set_modeP_data(ir_mode *p);
 
-/*@{*/
-/**
+/*@{
    Functions to check, whether a mode is signed, float, int, character,
    reference, num, data, datab or dataM.
 
@@ -384,7 +381,7 @@ FIRM_API void set_modeP_data(ir_mode *p);
 
    Vector "int" and "float" are defined by the arithmetic and vector_elem > 1.
 */
-/* Test for a certain class of modes. */
+
 FIRM_API int mode_is_signed (const ir_mode *mode);
 FIRM_API int mode_is_float (const ir_mode *mode);
 FIRM_API int mode_is_int (const ir_mode *mode);

@@ -168,8 +168,6 @@ FIRM_API ir_graph *new_ir_graph(ir_entity *ent, int n_loc);
  */
 FIRM_API void free_ir_graph(ir_graph *irg);
 
-/* --- access routines for all ir_graph attributes --- */
-
 /**
  *   Checks whether a pointer points to a ir graph.
  *
@@ -259,14 +257,6 @@ FIRM_API size_t get_irg_idx(const ir_graph *irg);
 FIRM_API ir_node *get_idx_irn(const ir_graph *irg, unsigned idx);
 
 
-/******************************************************************************/
-/* States of an ir_graph.                                                     */
-/******************************************************************************/
-
-/*
-   information associated with the graph.  Optimizations invalidate these
-   states.  */
-
 /** The states of an ir graph.
  *
  * state phase values: phase_building, phase_high, phase_low, phase_backend.
@@ -306,71 +296,6 @@ FIRM_API void set_irg_phase_state(ir_graph *irg, irg_phase_state state);
    the node.
    The enum op_pin_state is defined in irop.h. */
 FIRM_API op_pin_state get_irg_pinned(const ir_graph *irg);
-
-/** state: outs_state
- *  Outs are the back edges or def-use edges of ir nodes.
- *  Values:  outs_none, outs_consistent, outs_inconsistent */
-typedef enum {
-	outs_none,         /**< Outs are not computed, no memory is allocated. */
-	outs_consistent,   /**< Outs are computed and correct. */
-	outs_inconsistent  /**< Outs have been computed, memory is still allocated,
-	                        but the graph has been changed since. */
-} irg_outs_state;
-
-/** state:  extended basic block state. */
-typedef enum {
-	ir_extblk_info_none    = 0,  /**< No extended basic block information is constructed. Default. */
-	ir_extblk_info_valid   = 1,  /**< Extended basic block information is valid. */
-	ir_extblk_info_invalid = 2   /**< Extended basic block information is constructed but invalid. */
-} irg_extblk_info_state;
-FIRM_API irg_extblk_info_state get_irg_extblk_state(const ir_graph *irg);
-FIRM_API void set_irg_extblk_inconsistent(ir_graph *irg);
-
-/** state: loopinfo_state
- *  Loop information describes the loops within the control and
- *  data flow of the procedure.
- */
-typedef enum {
-	loopinfo_none             = 0,       /**< No loop information is constructed. Default. */
-	loopinfo_constructed      = 1,       /**< Some kind of loop information is constructed. */
-	loopinfo_valid            = 2,       /**< Loop information is valid. */
-	loopinfo_cf               = 4,       /**< Loop information constructed for control flow only. */
-	loopinfo_inter            = 8,       /**< Loop information for interprocedural view. */
-
-	/** IntRAprocedural loop information constructed and valid. */
-	loopinfo_consistent         = loopinfo_constructed | loopinfo_valid,
-	/** IntRAprocedural loop information constructed and invalid. */
-	loopinfo_inconsistent       = loopinfo_constructed,
-
-	/** IntERprocedural loop information constructed and valid. */
-	loopinfo_ip_consistent      = loopinfo_constructed | loopinfo_inter | loopinfo_valid,
-	/** IntERprocedural loop information constructed and invalid. */
-	loopinfo_ip_inconsistent    = loopinfo_constructed | loopinfo_inter,
-
-	/** IntRAprocedural control loop information constructed and valid. */
-	loopinfo_cf_consistent      = loopinfo_constructed | loopinfo_cf | loopinfo_valid,
-	/** IntRAprocedural control loop information constructed and invalid. */
-	loopinfo_cf_inconsistent    = loopinfo_constructed | loopinfo_cf,
-
-	/** IntERprocedural control loop information constructed and valid. */
-	loopinfo_cf_ip_consistent   = loopinfo_constructed | loopinfo_cf | loopinfo_inter | loopinfo_valid,
-	/** IntERprocedural control loop information constructed and invalid. */
-	loopinfo_cf_ip_inconsistent = loopinfo_constructed | loopinfo_cf | loopinfo_inter
-} irg_loopinfo_state;
-
-/** Return the current loop information state. */
-FIRM_API irg_loopinfo_state get_irg_loopinfo_state(const ir_graph *irg);
-
-/** Sets the current loop information state. */
-FIRM_API void set_irg_loopinfo_state(ir_graph *irg, irg_loopinfo_state s);
-
-/** Sets the loop information state to the appropriate inconsistent state.
- *  If state is 'none' does not change. */
-FIRM_API void set_irg_loopinfo_inconsistent(ir_graph *irg);
-/** Sets the loop information state to the appropriate inconsistent state.
- *  If state is 'none' does not change.
- *  Does this for all irgs. */
-FIRM_API void set_irp_loopinfo_inconsistent(void);
 
 /** state: callee_information_state
  *  Call nodes contain a list of possible callees.  This list must be
@@ -453,7 +378,6 @@ FIRM_API void set_irg_block_visited(ir_graph *irg, ir_visited_t i);
  * if 2 parties try to use the flags.
  */
 typedef enum ir_resources_t {
-	/* local (irg) resources */
 	IR_RESOURCE_NONE          = 0,
 	IR_RESOURCE_BLOCK_VISITED = 1 << 0,  /**< Block visited flags are used. */
 	IR_RESOURCE_BLOCK_MARK    = 1 << 1,  /**< Block mark bits are used. */
@@ -475,36 +399,69 @@ FIRM_API ir_resources_t ir_resources_reserved(const ir_graph *irg);
 #endif
 
 /**
- * Graph State
+ * graph state. This is used for 2 things:
+ * - stating properties about a graph
+ * - disallow certain transformations for the graph (typically highlevel
+ *   constructs are disallowed after lowering them)
  */
 typedef enum {
-	IR_GRAPH_STATE_ARCH_DEP      = 1U << 0,  /**< should not construct more nodes which irarch potentially breaks down */
-	IR_GRAPH_STATE_MODEB_LOWERED = 1U << 1,  /**< the only node which may produce mode_b is Cmp */
+	/**
+	 * Should not construct more nodes which irarch potentially breaks down
+	 */
+	IR_GRAPH_STATE_ARCH_DEP                  = 1U << 0,
+	/**
+	 * mode_b nodes have been lowered so you should not create any new nodes
+	 * with mode_b (except for Cmp)
+	 */
+	IR_GRAPH_STATE_MODEB_LOWERED             = 1U << 1,
 	/**
 	 * There are normalisations where there is no "best" representative.
 	 * In this case we first normalise into 1 direction (!NORMALISATION2) and
 	 * later in the other (NORMALISATION2).
 	 */
-	IR_GRAPH_STATE_NORMALISATION2        = 1U << 2,
+	IR_GRAPH_STATE_NORMALISATION2            = 1U << 2,
 	/**
 	 * Define the semantic of Load(Sel(x)), if x has a bit offset (Bitfields!).
 	 * Normally, the frontend is responsible for bitfield masking operations.
-	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking operations.
+	 * Set IMPLICIT_BITFIELD_MASKING, if the lowering phase must insert masking
+	 * operations.
 	 */
-	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING  = 1U << 3,
-
-	IR_GRAPH_STATE_NO_CRITICAL_EDGES        = 1U << 4,
-	IR_GRAPH_STATE_NO_BAD_BLOCKS            = 1U << 5,
-	IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS    = 1U << 6,
-	IR_GRAPH_STATE_ONE_RETURN               = 1U << 7,
-	IR_GRAPH_STATE_CONSISTENT_DOMINANCE     = 1U << 8,
-	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE = 1U << 9,
-	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES     = 1U << 10,
-	IR_GRAPH_STATE_CONSISTENT_OUTS          = 1U << 11,
-	IR_GRAPH_STATE_CONSISTENT_LOOPINFO      = 1U << 12,
-	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE  = 1U << 13,
-	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS    = 1U << 14,
-	IR_GRAPH_STATE_BROKEN_FOR_VERIFIER      = 1U << 15,
+	IR_GRAPH_STATE_IMPLICIT_BITFIELD_MASKING = 1U << 3,
+	/**
+	 * Allow localopts to remove edges to unreachable code.
+	 * Warning: It is only safe to enable this when you are sure that you
+	 * apply all localopts to the fixpunkt. (=in optimize_graph_df)
+	 */
+	IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE = 1U << 4,
+	/** graph contains no critical edges */
+	IR_GRAPH_STATE_NO_CRITICAL_EDGES         = 1U << 5,
+	/** graph contains no Bad nodes */
+	IR_GRAPH_STATE_NO_BADS                   = 1U << 6,
+	/**
+	 * there exists no (obviously) unreachable code in the graph.
+	 * Unreachable in this context is code that you can't reach by following
+	 * execution flow from the start block.
+	 */
+	IR_GRAPH_STATE_NO_UNREACHABLE_CODE       = 1U << 7,
+	/** graph contains at most one return */
+	IR_GRAPH_STATE_ONE_RETURN                = 1U << 8,
+	/** dominance information about the graph is valid */
+	IR_GRAPH_STATE_CONSISTENT_DOMINANCE      = 1U << 9,
+	/** postdominance information about the graph is valid */
+	IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE  = 1U << 10,
+	/**
+	 * out edges (=iredges) are enable and there is no dead code that can be
+	 * reached by following them
+	 */
+	IR_GRAPH_STATE_CONSISTENT_OUT_EDGES      = 1U << 11,
+	/** outs (irouts) are computed and up to date */
+	IR_GRAPH_STATE_CONSISTENT_OUTS           = 1U << 12,
+	/** loopinfo is computed and up to date */
+	IR_GRAPH_STATE_CONSISTENT_LOOPINFO       = 1U << 13,
+	/** entity usage information is computed and up to date */
+	IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE   = 1U << 14,
+	/** extended basic blocks have been formed and are up to date */
+	IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS     = 1U << 15,
 } ir_graph_state_t;
 ENUM_BITSET(ir_graph_state_t)
 

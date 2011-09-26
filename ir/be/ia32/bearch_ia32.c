@@ -692,6 +692,8 @@ static void ia32_prepare_graph(ir_graph *irg)
 
 	/* do local optimizations (mainly CSE) */
 	optimize_graph_df(irg);
+	/* backend code expects that outedges are always enabled */
+	edges_assure(irg);
 
 	if (irg_data->dump)
 		dump_ir_graph(irg, "transformed");
@@ -701,6 +703,8 @@ static void ia32_prepare_graph(ir_graph *irg)
 
 	/* do code placement, to optimize the position of constants */
 	place_code(irg);
+	/* backend code expects that outedges are always enabled */
+	edges_assure(irg);
 
 	if (irg_data->dump)
 		dump_ir_graph(irg, "place");
@@ -1941,6 +1945,9 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 {
 	ir_mode *mode;
 
+	/* middleend can handle some things */
+	if (ir_is_optimizable_mux(sel, mux_false, mux_true))
+		return true;
 	/* we can handle Set for all modes and compares */
 	if (mux_is_set(sel, mux_true, mux_false))
 		return true;
@@ -1965,7 +1972,7 @@ static int ia32_is_mux_allowed(ir_node *sel, ir_node *mux_false,
 	if (get_mode_size_bits(mode) > 32)
 		return false;
 	/* we can handle Abs for all modes and compares (except 64bit) */
-	if (ir_mux_is_abs(sel, mux_true, mux_false) != 0)
+	if (ir_mux_is_abs(sel, mux_false, mux_true) != 0)
 		return true;
 	/* we can't handle MuxF yet */
 	if (mode_is_float(mode))

@@ -37,6 +37,7 @@
 #include "irgwalk.h"
 #include "irmode.h"
 #include "iropt_dbg.h"
+#include "iroptimize.h"
 #include "irprog_t.h"
 #include "lower_softfloat.h"
 #include "lowering.h"
@@ -317,10 +318,8 @@ static ir_node *create_softfloat_symconst(const ir_node *n, const char *name)
 	else
 		snprintf(buf, sizeof(buf), "__%s%s%s%s", name, first_param, second_param, result);
 
-	id  = new_id_from_str(buf);
-	ent = new_entity(get_glob_type(), id, method);
-
-	set_entity_ld_ident(ent, get_entity_ident(ent));
+	id           = new_id_from_str(buf);
+	ent          = create_compilerlib_entity(id, method);
 	sym.entity_p = ent;
 
 	return new_r_SymConst(irg, mode_P_code, sym, symconst_addr_ent);

@@ -111,9 +111,6 @@ static ir_prog *complete_ir_prog(ir_prog *irp, const char *module_name)
 
 	irp->const_code_irg             = new_const_code_irg();
 	irp->phase_state                = phase_building;
-	irp->outs_state                 = outs_none;
-	irp->ip_outedges                = NULL;
-	irp->trouts_state               = outs_none;
 	irp->class_cast_state           = ir_class_casts_transitive;
 	irp->globals_entity_usage_state = ir_entity_usage_not_computed;
 
@@ -443,16 +440,6 @@ ir_prog_pass_t *set_irp_phase_state_pass(const char *name, irg_phase_state state
 	pass->pass.dump_irprog   = ir_prog_no_dump;
 
 	return &pass->pass;
-}
-
-irg_outs_state get_irp_ip_outs_state(void)
-{
-	return irp->outs_state;
-}
-
-void set_irp_ip_outs_inconsistent(void)
-{
-	irp->outs_state = outs_inconsistent;
 }
 
 void set_irp_ip_outedges(ir_node ** ip_outedges)

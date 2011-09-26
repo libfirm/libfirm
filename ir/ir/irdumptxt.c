@@ -44,7 +44,6 @@
 #include "error.h"
 
 #include "irdom.h"
-#include "field_temperature.h"
 
 static ir_dump_verbosity_t  verbosity = dump_verbosity_max;
 
@@ -123,7 +122,7 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 	}
 
 	/* Loop node.   Someone else please tell me what's wrong ... */
-	if (get_irg_loopinfo_state(irg) & loopinfo_valid) {
+	if (is_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO)) {
 		ir_loop *loop = get_irn_loop(n);
 		if (loop != NULL) {
 			fprintf(F, "  in loop %ld with depth %u\n",
@@ -148,10 +147,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			fprintf(F, "  pdomtree pre num %u\n", get_Block_pdom_tree_pre_num(n));
 			fprintf(F, "  max pdomsubtree pre num %u\n", get_Block_pdom_max_subtree_pre_num(n));
 		}
-
-		fprintf(F, "  Execution frequency statistics:\n");
-		if (get_irg_exec_freq_state(get_irn_irg(n)) != exec_freq_none)
-			fprintf(F, "    procedure local evaluation:   %8.2lf\n", get_irn_exec_freq(n));
 
 		/* not dumped: graph_arr */
 		/* not dumped: mature    */
@@ -322,59 +317,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 void dump_graph_as_text(FILE *out, ir_graph *irg)
 {
 	fprintf(out, "graph %s\n", get_irg_dump_name(irg));
-}
-
-/** dumps something like:
- *
- *  "prefix"  "Name" (x): node1, ... node7,\n
- *  "prefix"    node8, ... node15,\n
- *  "prefix"    node16, node17\n
- */
-static void dump_node_list(FILE *F, firm_kind *k, const char *prefix,
-                           size_t (*get_entity_n_nodes)(firm_kind *ent),
-                           ir_node *(*get_entity_node)(firm_kind *ent, size_t pos),
-                           const char *name)
-{
-	size_t i, n_nodes = get_entity_n_nodes(k);
-	const char *comma = "";
-
-	ir_fprintf(F, "%s  %s (%zu):", prefix, name, n_nodes);
-	for (i = 0; i < n_nodes; ++i) {
-		if (i > 7 && !(i & 7)) { /* line break every eight node. */
-			fprintf(F, ",\n%s   ", prefix);
-			comma = "";
-		}
-		fprintf(F, "%s ", comma);
-		dump_node_label(F, get_entity_node(k, i));
-		comma = ",";
-	}
-	fprintf(F, "\n");
-}
-
-/** dumps something like:
- *
- *  "prefix"  "Name" (x): node1, ... node7,\n
- *  "prefix"    node8, ... node15,\n
- *  "prefix"    node16, node17\n
- */
-static void dump_type_list(FILE *F, ir_type *tp, const char *prefix,
-                           size_t (*get_n_types)(const ir_type *tp),
-                           ir_type *(*get_type)(const ir_type *tp, size_t pos),
-                           const char *name)
-{
-	size_t i, n_nodes = get_n_types(tp);
-	const char *comma = "";
-
-	ir_fprintf(F, "%s  %s (%zu):", prefix, name, n_nodes);
-	for (i = 0; i < n_nodes; ++i) {
-		if (i > 7 && !(i & 7)) { /* line break every eight node. */
-			fprintf(F, ",\n%s   ", prefix);
-			comma = "";
-		}
-		ir_fprintf(F, "%s %+F", comma, get_type(tp, i));
-		comma = ",";
-	}
-	fprintf(F, "\n");
 }
 
 static int need_nl = 1;
@@ -632,14 +574,6 @@ static void dump_entity_to_file_prefix(FILE *F, ir_entity *ent, const char *pref
 		}
 		fputc('\n', F);
 	}
-
-	if (get_trouts_state()) {
-		fprintf(F, "%s  Entity outs:\n", prefix);
-		dump_node_list(F, (firm_kind *)ent, prefix, (size_t(*)(firm_kind *))get_entity_n_accesses,
-			(ir_node *(*)(firm_kind *, size_t))get_entity_access, "Accesses");
-		dump_node_list(F, (firm_kind *)ent, prefix, (size_t(*)(firm_kind *))get_entity_n_references,
-			(ir_node *(*)(firm_kind *, size_t))get_entity_reference, "References");
-	}
 }
 
 void dump_entity_to_file(FILE *out, ir_entity *ent)
@@ -871,15 +805,6 @@ void dump_type_to_file(FILE *F, ir_type *tp)
 	fprintf(F, "  alignment:  %2u Bytes,\n", get_type_alignment_bytes(tp));
 	if (is_atomic_type(tp) || is_Method_type(tp))
 		fprintf(F, "  mode:       %s,\n",  get_mode_name(get_type_mode(tp)));
-
-	if (get_trouts_state()) {
-		fprintf(F, "\n  Type outs:\n");
-		dump_node_list(F, (firm_kind *)tp, "  ", (size_t(*)(firm_kind *))get_type_n_allocs,
-			(ir_node *(*)(firm_kind *, size_t))get_type_alloc, "Allocations");
-		dump_node_list(F, (firm_kind *)tp, "  ", (size_t(*)(firm_kind *))get_type_n_casts,
-			(ir_node *(*)(firm_kind *, size_t))get_type_cast, "Casts");
-		dump_type_list(F, tp, "  ", get_type_n_pointertypes_to, get_type_pointertype_to, "PointerTpsTo");
-	}
 
 	fprintf(F, "\n\n");
 }

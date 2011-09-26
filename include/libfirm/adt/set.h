@@ -187,6 +187,7 @@ FIRM_API void set_break(set *set);
  * Iterates over an set.
  *
  * @param set    the set
+ * @param type   type of iterator variable
  * @param entry  the iterator
  */
 #define foreach_set(set, type, entry) for (entry = (type) set_first(set); entry; entry = (type) set_next(set))

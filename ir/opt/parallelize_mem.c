@@ -246,7 +246,7 @@ static ir_graph_state_t do_parallelize_mem(ir_graph *irg)
 	return 0;
 }
 
-optdesc_t opt_parallel_mem = {
+static optdesc_t opt_parallel_mem = {
 	"parallel-mem",
 	0,
 	do_parallelize_mem,

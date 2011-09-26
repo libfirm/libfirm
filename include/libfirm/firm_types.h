@@ -47,14 +47,12 @@ typedef struct ir_graph             ir_graph,            *ir_graph_ptr;
 typedef struct ir_prog              ir_prog,             *ir_prog_ptr;
 typedef struct ir_loop              ir_loop,             *ir_loop_ptr;
 typedef struct ir_region            ir_region,           *ir_region_ptr;
-typedef struct ir_reg_tree          ir_reg_tree,         *ir_reg_tree_ptr;
 typedef struct ir_entity            ir_entity,           *ir_entity_ptr;
 typedef struct ir_extblk            ir_extblk,           *ir_extblk_ptr;
 typedef struct ir_exec_freq         ir_exec_freq,        *ir_exec_freq_ptr;
 typedef struct ir_cdep              ir_cdep,             *ir_cdep_ptr;
 typedef struct sn_entry             *seqno_t;
 typedef struct arch_irn_ops_t       arch_irn_ops_t;
-typedef struct type_identify_if_t   type_identify_if_t;
 typedef struct ir_graph_pass_t      ir_graph_pass_t;
 typedef struct ir_prog_pass_t       ir_prog_pass_t;
 
@@ -65,9 +63,6 @@ typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 
 typedef void irg_walk_func(ir_node *, void *);
 typedef void irg_reg_walk_func(ir_region *, void *);
-
-/* settings */
-typedef struct ir_settings_arch_dep_t ir_settings_arch_dep_t;
 
 /* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
 typedef const ir_node *ir_node_cnst_ptr;

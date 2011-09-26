@@ -38,16 +38,6 @@
 
 #include "begin.h"
 
-/*-----------------------------------------------------------------*/
-/* Accessing the trout datastructures.                             */
-/* These routines only work properly if firm is in state           */
-/* trouts_consistent or trouts_inconsistent.                       */
-/*-----------------------------------------------------------------*/
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-/* entities                                                        */
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
 /** Number of Load/Store nodes that possibly access this entity. */
 FIRM_API size_t get_entity_n_accesses(const ir_entity *ent);
 /** Load/Store node that possibly access this entity. */
@@ -59,10 +49,6 @@ FIRM_API size_t get_entity_n_references(const ir_entity *ent);
 /** References to an entity, in form of SymConst/Sel
  *  Including references from constants. */
 FIRM_API ir_node *get_entity_reference(const ir_entity *ent, size_t pos);
-
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-/* types                                                           */
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
 /** Number of Alloc nodes that create an instance of this type. */
 FIRM_API size_t get_type_n_allocs(const ir_type *tp);
@@ -79,29 +65,13 @@ FIRM_API size_t get_class_n_upcasts(const ir_type *clss);
 /** Return number of downcasts. O(\#casts). */
 FIRM_API size_t get_class_n_downcasts(const ir_type *clss);
 
-/* Access all pointer types that point to tp. */
 FIRM_API size_t  get_type_n_pointertypes_to(const ir_type *tp);
 FIRM_API ir_type *get_type_pointertype_to(const ir_type *tp, size_t pos);
 FIRM_API void    add_type_pointertype_to(const ir_type *tp, ir_type *ptp);
 
-/* Access all array types that contain elements of type tp.
- * Does not find subarrays, e.g., int[] being element of int[][]
- * for multi dimensional arrays. */
 FIRM_API size_t  get_type_n_arraytypes_of(const ir_type *tp);
 FIRM_API ir_type *get_type_arraytype_of(const ir_type *tp, size_t pos);
 FIRM_API void    add_type_arraytype_of(const ir_type *tp, ir_type *atp);
-
-/*------------------------------------------------------------------*/
-/* Building and Removing the trout datastructure                    */
-/*------------------------------------------------------------------*/
-
-/** The state of the tr_out datastructure.
- *
- *  We reuse the enum of irouts.
- *  @see irouts.h. */
-FIRM_API irg_outs_state get_trouts_state(void);
-/** Set the tr out state to inconsistent if it is consistent. */
-FIRM_API void           set_trouts_inconsistent(void);
 
 /** Compute the outs of types and entities.
  *

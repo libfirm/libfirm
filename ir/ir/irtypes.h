@@ -34,11 +34,9 @@
 #include "iredgekinds.h"
 #include "irtypeinfo.h"
 #include "irextbb.h"
-#include "execution_frequency.h"
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
-#include "field_temperature.h"
 #include "irphase.h"
 #include "bitset.h"
 
@@ -171,7 +169,6 @@ typedef struct block_attr {
 	bitset_t *backedge;         /**< Bitfield n set to true if pred n is backedge.*/
 	bitset_t *cg_backedge;      /**< Bitfield n set to true if pred n is interprocedural backedge. */
 	ir_extblk *extblk;          /**< The extended basic block this block belongs to. */
-	ir_region *region;          /**< The immediate structural region this block belongs to. */
 	ir_entity *entity;          /**< entitiy representing this block */
 	ir_node  *phis;             /**< The list of Phi nodes in this block. */
 
@@ -481,10 +478,7 @@ struct ir_graph {
 	op_pin_state          irg_pinned_state;  /**< Flag for status of nodes. */
 	ir_typeinfo_state     typeinfo_state;    /**< Validity of type information. */
 	irg_callee_info_state callee_info_state; /**< Validity of callee information. */
-	irg_loopinfo_state    loopinfo_state;    /**< State of loop information. */
 	ir_class_cast_state   class_cast_state;  /**< Kind of cast operations in code. */
-	irg_extblk_info_state extblk_state;      /**< State of extended basic block info. */
-	exec_freq_state       execfreq_state;    /**< Execution frequency state. */
 	unsigned mem_disambig_opt;               /**< Options for the memory disambiguator. */
 	unsigned fp_model;                       /**< floating point model of the graph. */
 
@@ -576,10 +570,8 @@ struct ir_prog {
 	/* -- states of and access to generated information -- */
 	irg_phase_state phase_state;    /**< The state of construction. */
 
-	irg_outs_state outs_state;    /**< The state of out edges of type information. */
 	ir_node **ip_outedges;          /**< A huge Array that contains all out edges
 	                                     in interprocedural view. */
-	irg_outs_state trouts_state;    /**< The state of out edges of type information. */
 
 	irg_callee_info_state callee_info_state; /**< Validity of callee information.
 	                                              Contains the lowest value or all irgs.  */
@@ -593,8 +585,6 @@ struct ir_prog {
 	size_t max_callgraph_loop_depth;        /**< needed in callgraph. */
 	size_t max_callgraph_recursion_depth;   /**< needed in callgraph. */
 	double max_method_execution_frequency;  /**< needed in callgraph. */
-	irp_temperature_state temperature_state; /**< accumulated temperatures computed? */
-	exec_freq_state execfreq_state;      /**< The state of execution frequency information */
 	loop_nesting_depth_state lnd_state;  /**< The state of loop nesting depth information. */
 	ir_class_cast_state class_cast_state;    /**< The state of cast operations in code. */
 	ir_entity_usage_computed_state globals_entity_usage_state;

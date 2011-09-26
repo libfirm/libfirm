@@ -5,7 +5,7 @@
 
 #include "irgraph_t.h"
 #include "irprog_t.h"
-
+#include "irnode.h"
 #include "iroptimize.h"
 #include "irgopt.h"
 #include "irdom.h"
@@ -25,26 +25,17 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	ir_graph_state_t required = opt->requirements;
 	const bool dump = get_irp_optimization_dumps();
 
-	/* no bad block requires no unreachable code */
-	if (required & IR_GRAPH_STATE_NO_BAD_BLOCKS)
-		required |= IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS;
-
-	/** Some workarounds because information is currently duplicated */
-	// FIXME should not be necessary!
-	if (loopinfo_inconsistent == get_irg_loopinfo_state(irg))
-		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_LOOPINFO);
-
 	/* assure that all requirements for the optimization are fulfilled */
 #define PREPARE(st,func) if (st & (required ^ irg->state)) {func(irg); set_irg_state(irg,st);}
 	PREPARE(IR_GRAPH_STATE_ONE_RETURN,               normalize_one_return)
 	PREPARE(IR_GRAPH_STATE_NO_CRITICAL_EDGES,        remove_critical_cf_edges)
-	PREPARE(IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS,    remove_unreachable_blocks)
-	PREPARE(IR_GRAPH_STATE_NO_BAD_BLOCKS,            remove_bads)
+	PREPARE(IR_GRAPH_STATE_NO_UNREACHABLE_CODE,      remove_unreachable_code)
+	PREPARE(IR_GRAPH_STATE_NO_BADS,                  remove_bads)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_DOMINANCE,     assure_doms)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE, assure_postdoms)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,     edges_assure)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_OUTS,          assure_irg_outs)
-	PREPARE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      assure_cf_loop)
+	PREPARE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      assure_loopinfo)
 	PREPARE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  assure_irg_entity_usage_computed)
 	PREPARE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    compute_extbb)
 
@@ -63,19 +54,18 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	 */
 #define INVALIDATE(state,func) if (!(state & new_irg_state)) {clear_irg_state(irg,state); func(irg);}
 	INVALIDATE(IR_GRAPH_STATE_NO_CRITICAL_EDGES,        nop)
-	INVALIDATE(IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS,    nop)
-	INVALIDATE(IR_GRAPH_STATE_NO_BAD_BLOCKS,            nop)
+	INVALIDATE(IR_GRAPH_STATE_NO_UNREACHABLE_CODE,      nop)
+	INVALIDATE(IR_GRAPH_STATE_NO_BADS,                  nop)
 	INVALIDATE(IR_GRAPH_STATE_ONE_RETURN,               nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_DOMINANCE,     nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE, nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUTS,          nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUT_EDGES,     edges_deactivate)
-	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      set_irg_loopinfo_inconsistent)
+	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_LOOPINFO,      nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_ENTITY_USAGE,  nop)
-	INVALIDATE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    set_irg_extblk_inconsistent)
+	INVALIDATE(IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS,    nop)
 
-	if (!(new_irg_state & IR_GRAPH_STATE_BROKEN_FOR_VERIFIER)) {
-		irg_verify(irg, VERIFY_ENFORCE_SSA);
-	}
+	remove_End_Bads_and_doublets(get_irg_end(irg));
 
+	irg_verify(irg, VERIFY_ENFORCE_SSA);
 }

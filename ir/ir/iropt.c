@@ -576,13 +576,7 @@ ir_relation ir_get_possible_cmp_relations(const ir_node *left,
 	return possible;
 }
 
-/**
- * Return the value of a Cmp.
- *
- * The basic idea here is to determine which relations are possible and which
- * one are definitely impossible.
- */
-static ir_tarval *computed_value_Cmp(const ir_node *cmp)
+static ir_tarval *compute_cmp(const ir_node *cmp)
 {
 	ir_node    *left     = get_Cmp_left(cmp);
 	ir_node    *right    = get_Cmp_right(cmp);
@@ -597,6 +591,21 @@ static ir_tarval *computed_value_Cmp(const ir_node *cmp)
 		return tarval_b_true;
 
 	return computed_value_Cmp_Confirm(cmp, left, right, relation);
+}
+
+/**
+ * Return the value of a Cmp.
+ *
+ * The basic idea here is to determine which relations are possible and which
+ * one are definitely impossible.
+ */
+static ir_tarval *computed_value_Cmp(const ir_node *cmp)
+{
+	/* we can't construct Constb after lowering mode_b nodes */
+	if (is_irg_state(get_irn_irg(cmp), IR_GRAPH_STATE_MODEB_LOWERED))
+		return tarval_bad;
+
+	return compute_cmp(cmp);
 }
 
 /**
@@ -1450,6 +1459,12 @@ static ir_node *equivalent_node_Mux(ir_node *n)
 	ir_node   *oldn = n, *sel = get_Mux_sel(n);
 	ir_node   *n_t, *n_f;
 	ir_tarval *ts = value_of(sel);
+
+	if (ts == tarval_bad && is_Cmp(sel)) {
+		/* try again with a direct call to compute_cmp, as we don't care
+		 * about the MODEB_LOWERED flag here */
+		ts = compute_cmp(sel);
+	}
 
 	/* Mux(true, f, t) == t */
 	if (ts == tarval_b_true) {
@@ -2781,17 +2796,26 @@ static ir_node *transform_node_Cond(ir_node *n)
 {
 
 	ir_node   *a   = get_Cond_selector(n);
-	ir_tarval *ta  = value_of(a);
 	ir_graph  *irg = get_irn_irg(n);
+	ir_tarval *ta;
 	ir_node   *jmp;
 
 	/* we need block info which is not available in floating irgs */
 	if (get_irg_pinned(irg) == op_pin_state_floats)
 		return n;
 
-	if ((ta != tarval_bad) &&
-	    (get_irn_mode(a) == mode_b) &&
-	    (get_opt_unreachable_code())) {
+	/* we do not handle switches here */
+	if (get_irn_mode(a) != mode_b)
+		return n;
+
+	ta = value_of(a);
+	if (ta == tarval_bad && is_Cmp(a)) {
+		/* try again with a direct call to compute_cmp, as we don't care
+		 * about the MODEB_LOWERED flag here */
+		ta = compute_cmp(a);
+	}
+
+	if (ta != tarval_bad && get_irn_mode(a) == mode_b) {
 		/* It's a boolean Cond, branching on a boolean constant.
 		   Replace it by a tuple (Bad, Jmp) or (Jmp, Bad) */
 		ir_node *blk = get_nodes_block(n);
@@ -2806,6 +2830,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		}
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
+		clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 	}
 	return n;
 }  /* transform_node_Cond */
@@ -3731,9 +3756,6 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 	ir_node *n = get_Proj_pred(proj);
 	ir_node *b = get_Cond_selector(n);
 
-	if (!get_opt_unreachable_code())
-		return n;
-
 	if (mode_is_int(get_irn_mode(b))) {
 		ir_tarval *tb = value_of(b);
 
@@ -3749,6 +3771,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 				} else {
 					ir_graph *irg = get_irn_irg(proj);
 					/* this case will NEVER be taken, kill it */
+					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 					return new_r_Bad(irg, mode_X);
 				}
 			}
@@ -3766,6 +3789,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 					if ((cmp_result & ir_relation_greater) == cmp_result
 					    && (cmp_result2 & ir_relation_less) == cmp_result2) {
 						ir_graph *irg = get_irn_irg(proj);
+						clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 						return new_r_Bad(irg, mode_X);
 					}
 				} else if (b_vrp->range_type == VRP_ANTIRANGE) {
@@ -3775,6 +3799,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 					if ((cmp_result & ir_relation_less_equal) == cmp_result
 					     && (cmp_result2 & ir_relation_greater_equal) == cmp_result2) {
 						ir_graph *irg = get_irn_irg(proj);
+						clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 						return new_r_Bad(irg, mode_X);
 					}
 				}
@@ -3784,6 +3809,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 								b_vrp->bits_set
 								) == ir_relation_equal)) {
 					ir_graph *irg = get_irn_irg(proj);
+					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 					return new_r_Bad(irg, mode_X);
 				}
 
@@ -3794,6 +3820,7 @@ static ir_node *transform_node_Proj_Cond(ir_node *proj)
 								tarval_not(b_vrp->bits_not_set))
 								 == ir_relation_equal)) {
 					ir_graph *irg = get_irn_irg(proj);
+					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 					return new_r_Bad(irg, mode_X);
 				}
 			}
@@ -4206,7 +4233,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			}
 
 			/* for integer modes, we have more */
-			if (mode_is_int(mode)) {
+			if (mode_is_int(mode) && !is_Const(left)) {
 				/* c > 0 : a < c  ==>  a <= (c-1)    a >= c  ==>  a > (c-1) */
 				if ((relation == ir_relation_less || relation == ir_relation_greater_equal) &&
 					tarval_cmp(tv, get_mode_null(mode)) == ir_relation_greater) {
@@ -4595,10 +4622,21 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	return proj;
 }  /* transform_node_Proj */
 
+/**
+ * Test wether a block is unreachable
+ * Note: That this only returns true when
+ * IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE is set.
+ * This is important, as you easily end up producing invalid constructs in the
+ * unreachable code when optimizing away edges into the unreachable code.
+ * So only set this flag when you iterate localopts to the fixpoint.
+ * When you reach the fixpoint then all unreachable code is dead
+ * (= can't be reached by firm edges) and you won't see the invalid constructs
+ * anymore.
+ */
 static bool is_block_unreachable(const ir_node *block)
 {
 	const ir_graph *irg = get_irn_irg(block);
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
+	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
 		return false;
 	return get_Block_dom_depth(block) < 0;
 }
@@ -4610,15 +4648,12 @@ static ir_node *transform_node_Block(ir_node *block)
 	ir_node  *bad   = NULL;
 	int       i;
 
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_BAD_BLOCKS))
-		return block;
-	if (is_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_BLOCKS))
+	if (!is_irg_state(irg, IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE))
 		return block;
 
 	for (i = 0; i < arity; ++i) {
-		ir_node *pred       = get_Block_cfgpred(block, i);
-		ir_node *pred_block = get_nodes_block(pred);
-		if (!is_Bad(pred) && !is_block_unreachable(pred_block))
+		ir_node *const pred = get_Block_cfgpred(block, i);
+		if (is_Bad(pred) || !is_block_unreachable(get_nodes_block(pred)))
 			continue;
 		if (bad == NULL)
 			bad = new_r_Bad(irg, mode_X);
@@ -4639,11 +4674,13 @@ static ir_node *transform_node_Phi(ir_node *phi)
 
 	/* Set phi-operands for bad-block inputs to bad */
 	for (i = 0; i < n; ++i) {
-		ir_node *pred = get_Block_cfgpred(block, i);
-		if (is_Bad(pred) || is_block_unreachable(get_nodes_block(pred))) {
-			if (bad == NULL)
-				bad = new_r_Bad(irg, mode);
-			set_irn_n(phi, i, bad);
+		if (!is_Bad(get_Phi_pred(phi, i))) {
+			ir_node *pred = get_Block_cfgpred(block, i);
+			if (is_Bad(pred) || is_block_unreachable(get_nodes_block(pred))) {
+				if (bad == NULL)
+					bad = new_r_Bad(irg, mode);
+				set_irn_n(phi, i, bad);
+			}
 		}
 	}
 
@@ -4655,17 +4692,25 @@ static ir_node *transform_node_Phi(ir_node *phi)
 		if (n > 0) {
 			ir_node **in;
 			ir_node  *new_phi;
+			bool      has_pin = false;
 
 			NEW_ARR_A(ir_node *, in, n);
 
 			for (i = 0; i < n; ++i) {
 				ir_node *pred = get_irn_n(phi, i);
 
-				if (!is_Pin(pred))
+				if (is_Pin(pred)) {
+					in[i]   = get_Pin_op(pred);
+					has_pin = true;
+				} else if (is_Bad(pred)) {
+					in[i] = pred;
+				} else {
 					return phi;
-
-				in[i] = get_Pin_op(pred);
+				}
 			}
+
+			if (!has_pin)
+				return phi;
 
 			/* Move the Pin nodes "behind" the Phi. */
 			block   = get_irn_n(phi, -1);
@@ -4682,6 +4727,7 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			ir_node    *pred = get_irn_n(phi, 0);
 			ir_node    *bound, *new_phi, *block, **in;
 			ir_relation relation;
+			bool        has_confirm = false;
 
 			if (! is_Confirm(pred))
 				return phi;
@@ -4695,12 +4741,21 @@ static ir_node *transform_node_Phi(ir_node *phi)
 			for (i = 1; i < n; ++i) {
 				pred = get_irn_n(phi, i);
 
-				if (! is_Confirm(pred) ||
-					get_Confirm_bound(pred) != bound ||
-					get_Confirm_relation(pred) != relation)
+				if (is_Confirm(pred) &&
+						get_Confirm_bound(pred) == bound &&
+						get_Confirm_relation(pred) == relation) {
+					in[i]       = get_Confirm_value(pred);
+					has_confirm = true;
+				} else if (is_Bad(pred)) {
+					in[i] = pred;
+				} else {
 					return phi;
-				in[i] = get_Confirm_value(pred);
+				}
 			}
+
+			if (!has_confirm)
+				return phi;
+
 			/* move the Confirm nodes "behind" the Phi */
 			block = get_irn_n(phi, -1);
 			new_phi = new_r_Phi(block, n, in, get_irn_mode(phi));
@@ -4915,6 +4970,23 @@ static bool is_cmp_unequal(const ir_node *node)
 	if (!mode_is_signed(mode) && is_Const(right) && is_Const_null(right))
 		return relation == ir_relation_greater;
 	return false;
+}
+
+/**
+ * returns true for Cmp(x == 0) or Cmp(x != 0)
+ */
+static bool is_cmp_equality_zero(const ir_node *node)
+{
+	ir_relation relation;
+	ir_node    *right    = get_Cmp_right(node);
+
+	if (!is_Const(right) || !is_Const_null(right))
+		return false;
+	relation = get_Cmp_relation(node);
+	return relation == ir_relation_equal
+		|| relation == ir_relation_less_greater
+		|| (!mode_is_signed(get_irn_mode(right))
+		    && relation == ir_relation_greater);
 }
 
 /**
@@ -5495,8 +5567,8 @@ static const ir_node *skip_upconv(const ir_node *node)
 	return node;
 }
 
-int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_true,
-                  const ir_node *mux_false)
+int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_false,
+                  const ir_node *mux_true)
 {
 	ir_node    *cmp_left;
 	ir_node    *cmp_right;
@@ -5552,11 +5624,48 @@ int ir_mux_is_abs(const ir_node *sel, const ir_node *mux_true,
 	return 0;
 }
 
-ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_true,
-                       ir_node *mux_false)
+ir_node *ir_get_abs_op(const ir_node *sel, ir_node *mux_false,
+                       ir_node *mux_true)
 {
 	ir_node *cmp_left = get_Cmp_left(sel);
 	return cmp_left == skip_upconv(mux_false) ? mux_false : mux_true;
+}
+
+bool ir_is_optimizable_mux(const ir_node *sel, const ir_node *mux_false,
+                           const ir_node *mux_true)
+{
+	/* this code should return true each time transform_node_Mux would
+	 * optimize the Mux completely away */
+
+	ir_mode *mode = get_irn_mode(mux_false);
+	if (get_mode_arithmetic(mode) == irma_twos_complement
+	    && ir_mux_is_abs(sel, mux_false, mux_true))
+	    return true;
+
+	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
+		const ir_node *cmp_r = get_Cmp_right(sel);
+		const ir_node *cmp_l = get_Cmp_left(sel);
+		const ir_node *f     = mux_false;
+		const ir_node *t     = mux_true;
+
+		if (is_Const(t) && is_Const_null(t)) {
+			t = mux_false;
+			f = mux_true;
+		}
+
+		if (is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_r = get_And_right(cmp_l);
+			ir_node *and_l;
+
+			if (and_r == t && is_single_bit(and_r))
+				return true;
+			and_l = get_And_left(cmp_l);
+			if (and_l == t && is_single_bit(and_l))
+				return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -5573,11 +5682,11 @@ static ir_node *transform_node_Mux(ir_node *n)
 
 	/* implement integer abs: abs(x) = x^(x >>s 31) - (x >>s 31) */
 	if (get_mode_arithmetic(mode) == irma_twos_complement) {
-		int abs = ir_mux_is_abs(sel, t, f);
+		int abs = ir_mux_is_abs(sel, f, t);
 		if (abs != 0) {
 			dbg_info *dbgi       = get_irn_dbg_info(n);
 			ir_node  *block      = get_nodes_block(n);
-			ir_node  *op         = ir_get_abs_op(sel, t, f);
+			ir_node  *op         = ir_get_abs_op(sel, f, t);
 			int       bits       = get_mode_size_bits(mode);
 			ir_node  *shiftconst = new_r_Const_long(irg, mode_Iu, bits-1);
 			ir_node  *sext       = new_rd_Shrs(dbgi, block, op, shiftconst, mode);
@@ -5728,73 +5837,42 @@ static ir_node *transform_node_Mux(ir_node *n)
 		}
 	}
 
-	if (is_Cmp(sel)) {
+	if (is_Cmp(sel) && mode_is_int(mode) && is_cmp_equality_zero(sel)) {
+		ir_relation relation = get_Cmp_relation(sel);
 		ir_node    *cmp_r    = get_Cmp_right(sel);
-		if (is_Const(cmp_r) && is_Const_null(cmp_r)) {
-			ir_node *block = get_nodes_block(n);
-			ir_node *cmp_l = get_Cmp_left(sel);
+		ir_node    *cmp_l    = get_Cmp_left(sel);
+		ir_node    *block    = get_nodes_block(n);
 
-			if (mode_is_int(mode)) {
-				ir_relation relation = get_Cmp_relation(sel);
-				/* integer only */
-				if ((relation == ir_relation_less_greater || relation == ir_relation_equal) && is_And(cmp_l)) {
-					/* Mux((a & b) != 0, c, 0) */
-					ir_node *and_r = get_And_right(cmp_l);
-					ir_node *and_l;
+		if (is_And(cmp_l) && f == cmp_r) {
+			ir_node *and_r = get_And_right(cmp_l);
+			ir_node *and_l;
 
-					if (and_r == t && f == cmp_r) {
-						if (is_Const(t) && tarval_is_single_bit(get_Const_tarval(t))) {
-							if (relation == ir_relation_less_greater) {
-								/* Mux((a & 2^C) != 0, 2^C, 0) == a & 2^c */
-								n = cmp_l;
-								DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-							} else {
-								/* Mux((a & 2^C) == 0, 2^C, 0) == (a & 2^c) xor (2^c) */
-								n = new_rd_Eor(get_irn_dbg_info(n),
-									block, cmp_l, t, mode);
-								DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-							}
-							return n;
-						}
-					}
-					if (is_Shl(and_r)) {
-						ir_node *shl_l = get_Shl_left(and_r);
-						if (is_Const(shl_l) && is_Const_one(shl_l)) {
-							if (and_r == t && f == cmp_r) {
-								if (relation == ir_relation_less_greater) {
-									/* (a & (1 << n)) != 0, (1 << n), 0) == a & (1<<n) */
-									n = cmp_l;
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								} else {
-									/* (a & (1 << n)) == 0, (1 << n), 0) == (a & (1<<n)) xor (1<<n) */
-									n = new_rd_Eor(get_irn_dbg_info(n),
-										block, cmp_l, t, mode);
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								}
-								return n;
-							}
-						}
-					}
-					and_l = get_And_left(cmp_l);
-					if (is_Shl(and_l)) {
-						ir_node *shl_l = get_Shl_left(and_l);
-						if (is_Const(shl_l) && is_Const_one(shl_l)) {
-							if (and_l == t && f == cmp_r) {
-								if (relation == ir_relation_less_greater) {
-									/* ((1 << n) & a) != 0, (1 << n), 0) */
-									n = cmp_l;
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								} else {
-									/* ((1 << n) & a) == 0, (1 << n), 0) */
-									n = new_rd_Eor(get_irn_dbg_info(n),
-										block, cmp_l, t, mode);
-									DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
-								}
-								return n;
-							}
-						}
-					}
+			if (and_r == t && is_single_bit(and_r)) {
+				if (relation == ir_relation_equal) {
+					/* Mux((a & (1<<n)) == 0, (1<<n), 0) == (a&(1<<n)) xor ((1<<n)) */
+					n = new_rd_Eor(get_irn_dbg_info(n),
+						block, cmp_l, t, mode);
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				} else {
+					/* Mux((a & (1<<n)) != 0, (1<<n), 0) == a & (1<<n) */
+					n = cmp_l;
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
 				}
+				return n;
+			}
+			and_l = get_And_left(cmp_l);
+			if (and_l == t && is_single_bit(and_l)) {
+				if (relation == ir_relation_equal) {
+					/* ((1 << n) & a) == 0, (1 << n), 0) */
+					n = new_rd_Eor(get_irn_dbg_info(n),
+						block, cmp_l, t, mode);
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				} else {
+					/* ((1 << n) & a) != 0, (1 << n), 0) */
+					n = cmp_l;
+					DBG_OPT_ALGSIM1(oldn, sel, sel, n, FS_OPT_MUX_TO_BITOP);
+				}
+				return n;
 			}
 		}
 	}
@@ -6097,6 +6175,14 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
     in a graph. */
 #define N_IR_NODES 512
 
+/** Compares two exception attributes */
+static int node_cmp_exception(const ir_node *a, const ir_node *b)
+{
+	const except_attr *ea = &a->attr.except;
+	const except_attr *eb = &b->attr.except;
+	return ea->pin_state != eb->pin_state;
+}
+
 /** Compares the attributes of two Const nodes. */
 static int node_cmp_attr_Const(const ir_node *a, const ir_node *b)
 {
@@ -6114,7 +6200,9 @@ static int node_cmp_attr_Alloc(const ir_node *a, const ir_node *b)
 {
 	const alloc_attr *pa = &a->attr.alloc;
 	const alloc_attr *pb = &b->attr.alloc;
-	return (pa->where != pb->where) || (pa->type != pb->type);
+	if (pa->where != pb->where || pa->type != pb->type)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Free nodes. */
@@ -6139,8 +6227,9 @@ static int node_cmp_attr_Call(const ir_node *a, const ir_node *b)
 {
 	const call_attr *pa = &a->attr.call;
 	const call_attr *pb = &b->attr.call;
-	return (pa->type != pb->type)
-		|| (pa->tail_call != pb->tail_call);
+	if (pa->type != pb->type || pa->tail_call != pb->tail_call)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Sel nodes. */
@@ -6185,8 +6274,9 @@ static int node_cmp_attr_Load(const ir_node *a, const ir_node *b)
 	/* do not CSE Loads with different alignment. Be conservative. */
 	if (get_Load_unaligned(a) != get_Load_unaligned(b))
 		return 1;
-
-	return get_Load_mode(a) != get_Load_mode(b);
+	if (get_Load_mode(a) != get_Load_mode(b))
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Store nodes. */
@@ -6195,31 +6285,34 @@ static int node_cmp_attr_Store(const ir_node *a, const ir_node *b)
 	/* do not CSE Stores with different alignment. Be conservative. */
 	if (get_Store_unaligned(a) != get_Store_unaligned(b))
 		return 1;
-
 	/* NEVER do CSE on volatile Stores */
-	return (get_Store_volatility(a) == volatility_is_volatile ||
-	        get_Store_volatility(b) == volatility_is_volatile);
+	if (get_Store_volatility(a) == volatility_is_volatile ||
+	    get_Store_volatility(b) == volatility_is_volatile)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
-/** Compares two exception attributes */
-static int node_cmp_exception(const ir_node *a, const ir_node *b)
+static int node_cmp_attr_CopyB(const ir_node *a, const ir_node *b)
 {
-	const except_attr *ea = &a->attr.except;
-	const except_attr *eb = &b->attr.except;
+	if (get_CopyB_type(a) != get_CopyB_type(b))
+		return 1;
 
-	return ea->pin_state != eb->pin_state;
+	return node_cmp_exception(a, b);
 }
 
-#define node_cmp_attr_Bound  node_cmp_exception
+static int node_cmp_attr_Bound(const ir_node *a, const ir_node *b)
+{
+	return node_cmp_exception(a, b);
+}
 
 /** Compares the attributes of two Div nodes. */
 static int node_cmp_attr_Div(const ir_node *a, const ir_node *b)
 {
 	const div_attr *ma = &a->attr.div;
 	const div_attr *mb = &b->attr.div;
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode ||
-		   ma->no_remainder  != mb->no_remainder;
+	if (ma->resmode != mb->resmode || ma->no_remainder  != mb->no_remainder)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two Mod nodes. */
@@ -6227,8 +6320,9 @@ static int node_cmp_attr_Mod(const ir_node *a, const ir_node *b)
 {
 	const mod_attr *ma = &a->attr.mod;
 	const mod_attr *mb = &b->attr.mod;
-	return ma->exc.pin_state != mb->exc.pin_state ||
-		   ma->resmode       != mb->resmode;
+	if (ma->resmode != mb->resmode)
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 static int node_cmp_attr_Cmp(const ir_node *a, const ir_node *b)
@@ -6249,8 +6343,11 @@ static int node_cmp_attr_Confirm(const ir_node *a, const ir_node *b)
 /** Compares the attributes of two Builtin nodes. */
 static int node_cmp_attr_Builtin(const ir_node *a, const ir_node *b)
 {
-	/* no need to compare the type, equal kind means equal type */
-	return get_Builtin_kind(a) != get_Builtin_kind(b);
+	if (get_Builtin_kind(a) != get_Builtin_kind(b))
+		return 1;
+	if (get_Builtin_type(a) != get_Builtin_type(b))
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the attributes of two ASM nodes. */
@@ -6299,7 +6396,8 @@ static int node_cmp_attr_ASM(const ir_node *a, const ir_node *b)
 		if (cla[i] != clb[i])
 			return 1;
 	}
-	return 0;
+
+	return node_cmp_exception(a, b);
 }
 
 /** Compares the inexistent attributes of two Dummy nodes. */
@@ -6307,7 +6405,15 @@ static int node_cmp_attr_Dummy(const ir_node *a, const ir_node *b)
 {
 	(void) a;
 	(void) b;
+	/* Dummy nodes never equal by definition */
 	return 1;
+}
+
+static int node_cmp_attr_InstOf(const ir_node *a, const ir_node *b)
+{
+	if (get_InstOf_type(a) != get_InstOf_type(b))
+		return 1;
+	return node_cmp_exception(a, b);
 }
 
 /**
@@ -6327,27 +6433,28 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 		break
 
 	switch (code) {
-	CASE(Const);
-	CASE(Proj);
-	CASE(Alloc);
-	CASE(Free);
-	CASE(SymConst);
-	CASE(Call);
-	CASE(Sel);
-	CASE(Phi);
-	CASE(Cmp);
-	CASE(Conv);
-	CASE(Cast);
-	CASE(Load);
-	CASE(Store);
-	CASE(Confirm);
 	CASE(ASM);
-	CASE(Div);
-	CASE(Mod);
+	CASE(Alloc);
 	CASE(Bound);
 	CASE(Builtin);
+	CASE(Call);
+	CASE(Cast);
+	CASE(Cmp);
+	CASE(Confirm);
+	CASE(Const);
+	CASE(Conv);
+	CASE(CopyB);
+	CASE(Div);
 	CASE(Dummy);
-	/* FIXME CopyB */
+	CASE(Free);
+	CASE(InstOf);
+	CASE(Load);
+	CASE(Mod);
+	CASE(Phi);
+	CASE(Proj);
+	CASE(Sel);
+	CASE(Store);
+	CASE(SymConst);
 	default:
 		/* leave NULL */
 		break;
