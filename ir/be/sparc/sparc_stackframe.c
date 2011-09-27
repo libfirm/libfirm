@@ -89,12 +89,6 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		}
 	}
 
-#ifndef NDEBUG
-	if (block == get_irg_end_block(get_irn_irg(block))) {
-		assert(bias == 0);
-	}
-#endif
-
 	/* continue at the successor blocks */
 	foreach_block_succ(block, edge) {
 		ir_node *succ = get_edge_src_irn(edge);
@@ -259,7 +253,11 @@ void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)
 	memset(layout, 0, sizeof(*layout));
 
 	between_type = new_type_class(new_id_from_str("sparc_between_type"));
-	set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
+	if (cconv->omit_fp) {
+		set_type_size_bytes(between_type, 0);
+	} else {
+		set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
+	}
 
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = between_type;
@@ -313,12 +311,18 @@ static void process_frame_types(ir_graph *irg)
 
 void sparc_fix_stack_bias(ir_graph *irg)
 {
+	int initial_bias;
+	bool sp_relative = be_get_irg_stack_layout(irg)->sp_relative;
+
 	ir_node *start_block = get_irg_start_block(irg);
 
 	process_frame_types(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
-	process_bias(start_block, be_get_irg_stack_layout(irg)->sp_relative, 0, 0);
+	initial_bias = 0;
+	if (sp_relative)
+		initial_bias = SPARC_MIN_STACKSIZE;
+	process_bias(start_block, sp_relative, initial_bias, 0);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
