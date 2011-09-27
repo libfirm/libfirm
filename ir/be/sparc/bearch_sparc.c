@@ -426,6 +426,13 @@ static void sparc_lower_for_target(void)
 
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
+	for (i = 0; i < n_irgs; ++i) {
+		ir_graph *irg = get_irp_irg(i);
+		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
+		 * memcpy calls. */
+		lower_CopyB(irg, 31, 32, false);
+	}
+
 	if (sparc_isa_template.fpu_arch == SPARC_FPU_ARCH_SOFTFLOAT)
 		lower_floating_point();
 
@@ -438,13 +445,6 @@ static void sparc_lower_for_target(void)
 		ir_lower_mode_b(irg, &lower_mode_b_config);
 		lower_switch(irg, 4, 256, false);
 		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, -SPARC_MIN_STACKSIZE);
-	}
-
-	for (i = 0; i < n_irgs; ++i) {
-		ir_graph *irg = get_irp_irg(i);
-		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
-		 * memcpy calls. */
-		lower_CopyB(irg, 31, 32, false);
 	}
 }
 
