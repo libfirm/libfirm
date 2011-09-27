@@ -481,7 +481,7 @@ static void amd64_lower_for_target(void)
 		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes
 		 * during code generation yet.
 		 * TODO:  Adapt this once custom CopyB handling is implemented. */
-		lower_CopyB(irg, 64, 65);
+		lower_CopyB(irg, 64, 65, true);
 	}
 }
 

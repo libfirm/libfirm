@@ -48,9 +48,10 @@
  *                            that it is still considered 'small'.
  * @param min_large_size      The minimum number of bytes for a CopyB node so
  *                            that it is regarded as 'large'.
+ * @param allow_misalignments Backend can handle misaligned loads and stores.
  */
 FIRM_API void lower_CopyB(ir_graph *irg, unsigned max_small_size,
-                          unsigned min_large_size);
+                          unsigned min_large_size, int allow_misalignments);
 
 /**
  * Lowers all Switches (Cond nodes with non-boolean mode) depending on spare_size.

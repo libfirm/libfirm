@@ -548,7 +548,7 @@ static void arm_lower_for_target(void)
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls.
 		 * TODO:  These constants need arm-specific tuning. */
-		lower_CopyB(irg, 31, 32);
+		lower_CopyB(irg, 31, 32, false);
 	}
 }
 
