@@ -116,6 +116,8 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 	FCONVD => "${arch}_emit_fp_conv_destination(node);",
 	O1     => "${arch}_emit_offset(node, 1);",
 	O2     => "${arch}_emit_offset(node, 2);",
+	S0O1   => "${arch}_emit_source_reg_and_offset(node, 0, 1);",
+	S1O2   => "${arch}_emit_source_reg_and_offset(node, 1, 2);",
 );
 
 $default_attr_type = "sparc_attr_t";
@@ -348,7 +350,7 @@ Ld => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. ld%LM [%S0%O1], %D0'
+	emit      => '. ld%LM [%S0O1], %D0'
 },
 
 SetHi => {
@@ -382,7 +384,7 @@ St => {
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. st%SM %S0, [%S1%O2]'
+	emit      => '. st%SM %S0, [%S1O2]'
 },
 
 Save => {
