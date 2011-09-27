@@ -44,20 +44,20 @@
 #include "array_t.h"
 #include "irtools.h"
 
-#include "../bearch.h"
-#include "../benode.h"
-#include "../belower.h"
-#include "../besched.h"
+#include "bearch.h"
+#include "benode.h"
+#include "belower.h"
+#include "besched.h"
 #include "be.h"
-#include "../bemachine.h"
-#include "../bemodule.h"
-#include "../beirg.h"
-#include "../bespillslots.h"
-#include "../bespillutil.h"
-#include "../begnuas.h"
-#include "../belistsched.h"
-#include "../beflags.h"
-#include "../bestack.h"
+#include "bemachine.h"
+#include "bemodule.h"
+#include "beirg.h"
+#include "bespillslots.h"
+#include "bespillutil.h"
+#include "begnuas.h"
+#include "belistsched.h"
+#include "beflags.h"
+#include "bestack.h"
 
 #include "bearch_arm_t.h"
 
@@ -550,7 +550,7 @@ static void arm_lower_for_target(void)
 		/* Turn all small CopyBs into loads/stores and all bigger CopyBs into
 		 * memcpy calls.
 		 * TODO:  These constants need arm-specific tuning. */
-		lower_CopyB(irg, 31, 32);
+		lower_CopyB(irg, 31, 32, false);
 	}
 }
 

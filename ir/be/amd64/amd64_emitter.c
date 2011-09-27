@@ -36,10 +36,10 @@
 #include "irargs_t.h"
 #include "irprog.h"
 
-#include "../besched.h"
-#include "../begnuas.h"
-#include "../beblocksched.h"
-#include "../be_dbgout.h"
+#include "besched.h"
+#include "begnuas.h"
+#include "beblocksched.h"
+#include "be_dbgout.h"
 
 #include "amd64_emitter.h"
 #include "gen_amd64_emitter.h"
@@ -49,7 +49,7 @@
 
 #define SNPRINTF_BUF_LEN 128
 
-#include "../benode.h"
+#include "benode.h"
 
 /*************************************************************
  *             _       _    __   _          _

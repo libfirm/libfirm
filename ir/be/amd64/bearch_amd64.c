@@ -36,18 +36,18 @@
 #include "debug.h"
 
 #include "be.h"
-#include "../bearch.h"
-#include "../benode.h"
-#include "../belower.h"
-#include "../besched.h"
-#include "../beabi.h"
-#include "../bemodule.h"
-#include "../begnuas.h"
-#include "../belistsched.h"
-#include "../beflags.h"
-#include "../bespillslots.h"
-#include "../bespillutil.h"
-#include "../bestack.h"
+#include "bearch.h"
+#include "benode.h"
+#include "belower.h"
+#include "besched.h"
+#include "beabi.h"
+#include "bemodule.h"
+#include "begnuas.h"
+#include "belistsched.h"
+#include "beflags.h"
+#include "bespillslots.h"
+#include "bespillutil.h"
+#include "bestack.h"
 
 #include "bearch_amd64_t.h"
 
@@ -483,7 +483,7 @@ static void amd64_lower_for_target(void)
 		 * CopyBs into memcpy calls, because we cannot handle CopyB nodes
 		 * during code generation yet.
 		 * TODO:  Adapt this once custom CopyB handling is implemented. */
-		lower_CopyB(irg, 64, 65);
+		lower_CopyB(irg, 64, 65, true);
 	}
 }
 

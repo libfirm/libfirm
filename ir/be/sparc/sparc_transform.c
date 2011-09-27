@@ -42,11 +42,11 @@
 #include "error.h"
 #include "util.h"
 
-#include "../benode.h"
-#include "../beirg.h"
-#include "../beutil.h"
-#include "../betranshlp.h"
-#include "../beabihelper.h"
+#include "benode.h"
+#include "beirg.h"
+#include "beutil.h"
+#include "betranshlp.h"
+#include "beabihelper.h"
 #include "bearch_sparc_t.h"
 
 #include "sparc_nodes_attr.h"
@@ -2490,11 +2490,12 @@ void sparc_transform_graph(ir_graph *irg)
 
 	node_to_stack = pmap_create();
 
-	mode_gp    = mode_Iu;
-	mode_fp    = mode_F;
+	mode_gp    = sparc_reg_classes[CLASS_sparc_gp].mode;
+	mode_fp    = sparc_reg_classes[CLASS_sparc_fp].mode;
 	mode_fp2   = mode_D;
-	mode_flags = mode_Bu;
 	//mode_fp4 = ?
+	mode_flags = sparc_reg_classes[CLASS_sparc_flags_class].mode;
+	assert(sparc_reg_classes[CLASS_sparc_fpflags_class].mode == mode_flags);
 
 	start_mem  = NULL;
 	start_g0   = NULL;

@@ -42,11 +42,11 @@
 #include "raw_bitset.h"
 #include "dbginfo.h"
 
-#include "../besched.h"
-#include "../beblocksched.h"
-#include "../beirg.h"
-#include "../begnuas.h"
-#include "../be_dbgout.h"
+#include "besched.h"
+#include "beblocksched.h"
+#include "beirg.h"
+#include "begnuas.h"
+#include "be_dbgout.h"
 
 #include "arm_emitter.h"
 #include "arm_optimize.h"
@@ -56,7 +56,7 @@
 #include "arm_map_regs.h"
 #include "gen_arm_regalloc_if.h"
 
-#include "../benode.h"
+#include "benode.h"
 
 #define SNPRINTF_BUF_LEN 128
 

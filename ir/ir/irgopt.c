@@ -115,10 +115,21 @@ static void enqueue_users(ir_node *n, pdeq *waitq)
 	const ir_edge_t *edge;
 
 	foreach_out_edge(n, edge) {
-		ir_node *succ = get_edge_src_irn(edge);
+		ir_node         *succ  = get_edge_src_irn(edge);
+		const ir_edge_t *edge2;
 
 		enqueue_node(succ, waitq);
-		if (get_irn_mode(succ) == mode_T) {
+
+		/* Also enqueue Phis to prevent inconsistencies. */
+		if (is_Block(succ)) {
+			foreach_out_edge(succ, edge2) {
+				ir_node *succ2 = get_edge_src_irn(edge2);
+
+				if (is_Phi(succ2)) {
+					enqueue_node(succ2, waitq);
+				}
+			}
+		} else if (get_irn_mode(succ) == mode_T) {
 		/* A mode_T node has Proj's. Because most optimizations
 			run on the Proj's we have to enqueue them also. */
 			enqueue_users(succ, waitq);

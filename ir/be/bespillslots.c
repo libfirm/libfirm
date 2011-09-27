@@ -527,11 +527,6 @@ static ir_entity* create_stack_entity(be_fec_env_t *env, spill_slot_t *slot)
 	ir_type   *frame = get_irg_frame_type(irg);
 	ir_entity *res   = frame_alloc_area(frame, slot->size, slot->align,
 	                                    env->at_begin);
-
-	/* adjust size of the entity type... */
-	ir_type *enttype = get_entity_type(res);
-	set_type_size_bytes(enttype, slot->size);
-
 	slot->entity = res;
 
 	return res;

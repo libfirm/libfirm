@@ -119,11 +119,12 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 	FCONVD => "${arch}_emit_fp_conv_destination(node);",
 	O1     => "${arch}_emit_offset(node, 1);",
 	O2     => "${arch}_emit_offset(node, 2);",
+	S0O1   => "${arch}_emit_source_reg_and_offset(node, 0, 1);",
+	S1O2   => "${arch}_emit_source_reg_and_offset(node, 1, 2);",
 );
 
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
-
 
 %init_attr = (
 	sparc_attr_t             => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
@@ -149,6 +150,7 @@ $default_copy_attr = "sparc_copy_attr";
 %custom_irn_flags = (
 	modifies_flags    => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_flags",
 	modifies_fp_flags => "(arch_irn_flags_t)sparc_arch_irn_flag_modifies_fp_flags",
+	has_delay_slot    => "(arch_irn_flags_t)sparc_arch_irn_flag_has_delay_slot",
 );
 
 my %cmp_operand_constructors = (
@@ -351,7 +353,7 @@ Ld => {
 	ins       => [ "ptr", "mem" ],
 	outs      => [ "res", "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. ld%LM [%S0%O1], %D0'
+	emit      => '. ld%LM [%S0O1], %D0'
 },
 
 SetHi => {
@@ -385,7 +387,7 @@ St => {
 	ins       => [ "val", "ptr", "mem" ],
 	outs      => [ "M" ],
 	attr_type => "sparc_load_store_attr_t",
-	emit      => '. st%SM %S0, [%S1%O2]'
+	emit      => '. st%SM %S0, [%S1O2]'
 },
 
 Save => {
@@ -463,6 +465,7 @@ FrameAddr => {
 
 Bicc => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr_type => "sparc_jmp_cond_attr_t",
@@ -475,6 +478,7 @@ Bicc => {
 
 fbfcc => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
+	irn_flags => [ "has_delay_slot" ],
 	state     => "pinned",
 	mode      => "mode_T",
 	attr_type => "sparc_jmp_cond_attr_t",
@@ -486,6 +490,8 @@ fbfcc => {
 },
 
 Ba => {
+	# Note: has_delay_slot depends on wether it is a fallthrough or not, so we
+	# have special code for this in sparc_emitter
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
 	irn_flags => [ "simple_jump" ],
@@ -504,6 +510,7 @@ Start => {
 Return => {
 	state     => "pinned",
 	op_flags  => [ "cfopcode" ],
+	irn_flags => [ "has_delay_slot" ],
 	arity     => "variable",
 	mode      => "mode_X",
 	constructors => {
@@ -521,7 +528,7 @@ Return => {
 },
 
 Call => {
-	irn_flags => [ "modifies_flags", "modifies_fp_flags" ],
+	irn_flags => [ "modifies_flags", "modifies_fp_flags", "has_delay_slot" ],
 	state     => "exc_pinned",
 	arity     => "variable",
 	out_arity => "variable",
@@ -551,6 +558,7 @@ Cmp => {  # aka SubccZero
 
 SwitchJmp => {
 	op_flags     => [ "labeled", "cfopcode", "forking" ],
+	irn_flags    => [ "has_delay_slot" ],
 	state        => "pinned",
 	mode         => "mode_T",
 	reg_req      => { in => [ "gp" ], out => [ ] },
@@ -684,7 +692,7 @@ UMulh => {
 },
 
 SDiv => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "has_delay_slot" ],
 	state        => "exc_pinned",
 	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],
@@ -692,7 +700,7 @@ SDiv => {
 },
 
 UDiv => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "has_delay_slot" ],
 	state        => "exc_pinned",
 	ins          => [ "dividend_high", "dividend_low", "divisor" ],
 	outs         => [ "res", "M" ],

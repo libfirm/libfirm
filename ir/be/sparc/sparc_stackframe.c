@@ -31,9 +31,9 @@
 #include "sparc_new_nodes.h"
 #include "sparc_cconv.h"
 #include "bitfiddle.h"
-#include "../bearch.h"
-#include "../benode.h"
-#include "../besched.h"
+#include "bearch.h"
+#include "benode.h"
+#include "besched.h"
 
 static void set_irn_sp_bias(ir_node *node, int new_bias)
 {
@@ -65,7 +65,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		if (entity != NULL) {
 			int offset = get_entity_offset(entity);
 			if (sp_relative)
-				offset += bias;
+				offset += bias + SPARC_MIN_STACKSIZE;
 			arch_set_frame_offset(irn, offset);
 		}
 
@@ -259,7 +259,11 @@ void sparc_create_stacklayout(ir_graph *irg, calling_convention_t *cconv)
 	memset(layout, 0, sizeof(*layout));
 
 	between_type = new_type_class(new_id_from_str("sparc_between_type"));
-	set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
+	if (cconv->omit_fp) {
+		set_type_size_bytes(between_type, 0);
+	} else {
+		set_type_size_bytes(between_type, SPARC_MIN_STACKSIZE);
+	}
 
 	layout->frame_type     = get_irg_frame_type(irg);
 	layout->between_type   = between_type;
@@ -313,12 +317,14 @@ static void process_frame_types(ir_graph *irg)
 
 void sparc_fix_stack_bias(ir_graph *irg)
 {
+	bool sp_relative = be_get_irg_stack_layout(irg)->sp_relative;
+
 	ir_node *start_block = get_irg_start_block(irg);
 
 	process_frame_types(irg);
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
-	process_bias(start_block, be_get_irg_stack_layout(irg)->sp_relative, 0, 0);
+	process_bias(start_block, sp_relative, 0, 0);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }

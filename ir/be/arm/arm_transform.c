@@ -37,12 +37,12 @@
 #include "debug.h"
 #include "error.h"
 
-#include "../benode.h"
-#include "../beirg.h"
-#include "../beutil.h"
-#include "../betranshlp.h"
-#include "../beabihelper.h"
-#include "../beabi.h"
+#include "benode.h"
+#include "beirg.h"
+#include "beutil.h"
+#include "betranshlp.h"
+#include "beabihelper.h"
+#include "beabi.h"
 
 #include "bearch_arm_t.h"
 #include "arm_nodes_attr.h"

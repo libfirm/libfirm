@@ -4623,7 +4623,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 }  /* transform_node_Proj */
 
 /**
- * Test wether a block is unreachable
+ * Test whether a block is unreachable
  * Note: That this only returns true when
  * IR_GRAPH_STATE_OPTIMIZE_UNREACHABLE_CODE is set.
  * This is important, as you easily end up producing invalid constructs in the

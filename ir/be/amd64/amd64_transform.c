@@ -34,9 +34,9 @@
 #include "error.h"
 #include "debug.h"
 
-#include "../benode.h"
-#include "../betranshlp.h"
-#include "../beutil.h"
+#include "benode.h"
+#include "betranshlp.h"
+#include "beutil.h"
 #include "bearch_amd64_t.h"
 
 #include "amd64_nodes_attr.h"

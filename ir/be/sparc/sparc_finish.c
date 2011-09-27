@@ -50,13 +50,13 @@
 #include "ircons.h"
 #include "irgwalk.h"
 
-#include "../bepeephole.h"
-#include "../benode.h"
-#include "../besched.h"
-#include "../bespillslots.h"
-#include "../bestack.h"
-#include "../beirgmod.h"
-#include "../belower.h"
+#include "bepeephole.h"
+#include "benode.h"
+#include "besched.h"
+#include "bespillslots.h"
+#include "bestack.h"
+#include "beirgmod.h"
+#include "belower.h"
 
 static void kill_unused_stacknodes(ir_node *node)
 {

@@ -28,8 +28,8 @@
 
 #include "firm_types.h"
 #include "bearch_sparc_t.h"
-#include "../be_types.h"
-#include "../benode.h"
+#include "be_types.h"
+#include "benode.h"
 #include "gen_sparc_regalloc_if.h"
 
 /** information about a single parameter or result */

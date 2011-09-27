@@ -56,27 +56,27 @@
 #include "lower_mode_b.h"
 #include "lower_softfloat.h"
 
-#include "../beabi.h"
-#include "../beirg.h"
-#include "../benode.h"
-#include "../belower.h"
-#include "../besched.h"
+#include "beabi.h"
+#include "beirg.h"
+#include "benode.h"
+#include "belower.h"
+#include "besched.h"
 #include "be.h"
-#include "../be_t.h"
-#include "../beirgmod.h"
-#include "../be_dbgout.h"
-#include "../beblocksched.h"
-#include "../bemachine.h"
-#include "../bespillutil.h"
-#include "../bespillslots.h"
-#include "../bemodule.h"
-#include "../begnuas.h"
-#include "../bestate.h"
-#include "../beflags.h"
-#include "../betranshlp.h"
-#include "../belistsched.h"
-#include "../beabihelper.h"
-#include "../bestack.h"
+#include "be_t.h"
+#include "beirgmod.h"
+#include "be_dbgout.h"
+#include "beblocksched.h"
+#include "bemachine.h"
+#include "bespillutil.h"
+#include "bespillslots.h"
+#include "bemodule.h"
+#include "begnuas.h"
+#include "bestate.h"
+#include "beflags.h"
+#include "betranshlp.h"
+#include "belistsched.h"
+#include "beabihelper.h"
+#include "bestack.h"
 
 #include "bearch_ia32_t.h"
 
@@ -2072,7 +2072,7 @@ static void ia32_lower_for_target(void)
 		/* Turn all small CopyBs into loads/stores, keep medium-sized CopyBs,
 		 * so we can generate rep movs later, and turn all big CopyBs into
 		 * memcpy calls. */
-		lower_CopyB(irg, 64, 8193);
+		lower_CopyB(irg, 64, 8193, true);
 	}
 }
 

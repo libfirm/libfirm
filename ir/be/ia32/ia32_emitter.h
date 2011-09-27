@@ -28,7 +28,7 @@
 
 #include "irnode.h"
 
-#include "../bearch.h"
+#include "bearch.h"
 
 #include "bearch_ia32_t.h"
 
