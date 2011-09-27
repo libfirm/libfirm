@@ -65,7 +65,7 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 		if (entity != NULL) {
 			int offset = get_entity_offset(entity);
 			if (sp_relative)
-				offset += bias;
+				offset += bias + SPARC_MIN_STACKSIZE;
 			arch_set_frame_offset(irn, offset);
 		}
 
@@ -88,6 +88,12 @@ static void process_bias(ir_node *block, bool sp_relative, int bias,
 			bias = new_bias_aligned;
 		}
 	}
+
+#ifndef NDEBUG
+	if (block == get_irg_end_block(get_irn_irg(block))) {
+		assert(bias == 0);
+	}
+#endif
 
 	/* continue at the successor blocks */
 	foreach_block_succ(block, edge) {
@@ -311,7 +317,6 @@ static void process_frame_types(ir_graph *irg)
 
 void sparc_fix_stack_bias(ir_graph *irg)
 {
-	int initial_bias;
 	bool sp_relative = be_get_irg_stack_layout(irg)->sp_relative;
 
 	ir_node *start_block = get_irg_start_block(irg);
@@ -320,9 +325,6 @@ void sparc_fix_stack_bias(ir_graph *irg)
 
 	ir_reserve_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 	inc_irg_block_visited(irg);
-	initial_bias = 0;
-	if (sp_relative)
-		initial_bias = SPARC_MIN_STACKSIZE;
-	process_bias(start_block, sp_relative, initial_bias, 0);
+	process_bias(start_block, sp_relative, 0, 0);
 	ir_free_resources(irg, IR_RESOURCE_BLOCK_VISITED);
 }
