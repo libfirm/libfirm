@@ -196,7 +196,13 @@ calling_convention_t *sparc_decide_calling_convention(ir_type *function_type,
 	if (irg != NULL) {
 		const be_options_t *options = be_get_irg_options(irg);
 		omit_fp = options->omit_fp;
-		irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+		/* our current vaarg handling needs the standard space to store the
+		 * args 0-5 in it */
+		if (get_method_variadicity(function_type) == variadicity_variadic)
+			omit_fp = false;
+		if (omit_fp == true) {
+			irg_walk_graph(irg, check_omit_fp, NULL, &omit_fp);
+		}
 	}
 
 	caller_saves = rbitset_malloc(N_SPARC_REGISTERS);
