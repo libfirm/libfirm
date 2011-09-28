@@ -729,6 +729,11 @@ static void emit_be_MemPerm(const ir_node *node)
 	int         n_spilled     = 0;
 	int         i, n, oidx;
 
+	/* This implementation currently only works with frame pointers. */
+	ir_graph          *irg    = get_irn_irg(node);
+	be_stack_layout_t *layout = be_get_irg_stack_layout(irg);
+	assert(!layout->sp_relative && "MemPerms currently do not work without frame pointers");
+
 	for (i = 0; i < max_size; ++i) {
 		sourceof[i] = i;
 	}
