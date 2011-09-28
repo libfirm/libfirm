@@ -172,14 +172,16 @@ void sparc_emit_source_reg_and_offset(const ir_node *node, int regpos,
 	const arch_register_t *reg = arch_get_irn_register_in(node, regpos);
 	const sparc_load_store_attr_t *attr;
 
+#ifdef DEBUG_libfirm
 	if (reg == &sparc_registers[REG_SP]) {
 		attr = get_sparc_load_store_attr_const(node);
 		if (!attr->is_reg_reg
-		    && attr->base.immediate_value < SPARC_MIN_STACKSIZE) {
+		    && attr->base.immediate_value < SPARC_SAVE_AREA_SIZE) {
 
-			ir_fprintf(stderr, "warning: emitting stack pointer relative load/store with offset < %d\n", SPARC_MIN_STACKSIZE);
+			ir_fprintf(stderr, "warning: emitting stack pointer relative load/store with offset < %d\n", SPARC_SAVE_AREA_SIZE);
 		}
 	}
+#endif
 
 	sparc_emit_source_register(node, regpos);
 	sparc_emit_offset(node, offpos);
