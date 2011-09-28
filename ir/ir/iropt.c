@@ -3108,6 +3108,14 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 
 	if (is_Shl(left)) {
 		tv_bitop = tarval_shr(tv2, tv1);
+
+		/* Check whether we have lost some bits during the right shift. */
+		if (is_Or(n) || is_Eor(n)) {
+			ir_tarval *tv_back_again = tarval_shl(tv_bitop, tv1);
+
+			if (tarval_cmp(tv_back_again, tv2) != ir_relation_equal)
+				return n;
+		}
 	} else if (is_Shr(left)) {
 		if (is_Or(n) || is_Eor(n)) {
 			/*
