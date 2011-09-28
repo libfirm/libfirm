@@ -66,6 +66,7 @@ extern const arch_irn_ops_t sparc_irn_ops;
 #define SPARC_MIN_STACKSIZE              92
 #define SPARC_AGGREGATE_RETURN_OFFSET    64
 #define SPARC_PARAMS_SPILL_OFFSET        68
+#define SPARC_SAVE_AREA_SIZE             64
 #define SPARC_N_PARAM_REGS                6
 #define SPARC_STACK_ALIGNMENT             8
 #define SPARC_REGISTER_SIZE               4
