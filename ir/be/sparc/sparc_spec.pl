@@ -104,9 +104,11 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 # emit source reg or imm dep. on node's arity
 	RI  => "${arch}_emit_reg_or_imm(node, -1);",
 	R1I => "${arch}_emit_reg_or_imm(node, 1);",
+	R2I => "${arch}_emit_reg_or_imm(node, 2);",
 	S0  => "${arch}_emit_source_register(node, 0);",
 	S1  => "${arch}_emit_source_register(node, 1);",
 	D0  => "${arch}_emit_dest_register(node, 0);",
+	D1  => "${arch}_emit_dest_register(node, 1);",
 	HIM => "${arch}_emit_high_immediate(node);",
 	LM  => "${arch}_emit_load_mode(node);",
 	SM  => "${arch}_emit_store_mode(node);",
@@ -407,22 +409,19 @@ Save => {
 },
 
 Restore => {
-	emit => '. restore %S0, %R1I, %D0',
-	outs => [ "stack" ],
-	ins  => [ "stack" ],
+	outs => [ "stack", "res" ],
 	constructors => {
 		imm => {
 			attr       => "ir_entity *immediate_entity, int32_t immediate_value",
 			custominit => "sparc_set_attr_imm(res, immediate_entity, immediate_value);",
-			reg_req    => { in => [ "sp" ], out => [ "sp:I|S" ] },
-			ins        => [ "stack" ],
+			reg_req    => { in => [ "frame_pointer", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "frame_pointer", "left" ],
 		},
 		reg => {
-			reg_req    => { in => [ "sp", "gp" ], out => [ "sp:I|S" ] },
-			ins        => [ "stack", "increment" ],
+			reg_req    => { in => [ "frame_pointer", "gp", "gp" ], out => [ "sp:I|S", "gp" ] },
+			ins        => [ "frame_pointer", "left", "right" ],
 		}
 	},
-	mode => $mode_gp,
 },
 
 RestoreZero => {

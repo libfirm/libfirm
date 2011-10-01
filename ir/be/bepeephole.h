@@ -53,7 +53,10 @@ typedef void (*peephole_opt_func) (ir_node *node);
 /**
  * Notify the peephole phase about a newly added node, so it can update its
  * internal state.  This is not needed for the new node, when
- * be_peephole_exchange() is used. */
+ * be_peephole_exchange() is used.
+ * Note: Contrary to normal exchange you mustn't remove the node from the
+ * schedule either before exchange. Exchange will do that for you.
+ */
 void be_peephole_new_node(ir_node *nw);
 
 /**

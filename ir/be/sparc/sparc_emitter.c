@@ -860,6 +860,31 @@ static void emit_sparc_Return(const ir_node *node)
 	fill_delay_slot();
 }
 
+static const arch_register_t *map_i_to_o_reg(const arch_register_t *reg)
+{
+	unsigned idx = reg->global_index;
+	if (idx < REG_I0 || idx > REG_I7)
+		return reg;
+	idx += REG_O0 - REG_I0;
+	assert(REG_O0 <= idx && idx <= REG_O7);
+	return &sparc_registers[idx];
+}
+
+static void emit_sparc_Restore(const ir_node *node)
+{
+	const arch_register_t *destreg
+		= arch_get_irn_register_out(node, pn_sparc_Restore_res);
+	be_emit_cstring("\trestore ");
+	sparc_emit_source_register(node, 1);
+	be_emit_cstring(", ");
+	sparc_emit_reg_or_imm(node, 2);
+	be_emit_cstring(", ");
+	destreg = map_i_to_o_reg(destreg);
+	be_emit_char('%');
+	be_emit_string(arch_register_get_name(destreg));
+	be_emit_finish_line_gas(node);
+}
+
 static void emit_sparc_FrameAddr(const ir_node *node)
 {
 	const sparc_attr_t *attr   = get_sparc_attr_const(node);
@@ -1134,6 +1159,7 @@ static void sparc_register_emitters(void)
 	set_emitter(op_sparc_FrameAddr, emit_sparc_FrameAddr);
 	set_emitter(op_sparc_SMulh,     emit_sparc_Mulh);
 	set_emitter(op_sparc_UMulh,     emit_sparc_Mulh);
+	set_emitter(op_sparc_Restore,   emit_sparc_Restore);
 	set_emitter(op_sparc_Return,    emit_sparc_Return);
 	set_emitter(op_sparc_SDiv,      emit_sparc_SDiv);
 	set_emitter(op_sparc_SwitchJmp, emit_sparc_SwitchJmp);
