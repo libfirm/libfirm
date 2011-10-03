@@ -602,7 +602,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	 *   r1   r2   r3   r4   r0
 	 *
 	 * Therefore, the output register of successor node i must be
-	 * equal to the input register predecessor node i + 1.
+	 * equal to the input register of predecessor node i + 1.
 	 */
 #ifndef NDEBUG
 	for (i = 0; i < arity; ++i) {
@@ -631,7 +631,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
 	 */
 	while (regns[0] > regns[1]) {
-		/* Rotate until condition holds. */
+		/* Rotate until regns[0] <= regns[1] holds. */
 		int regn0 = regns[0];
 		for (i = 0; i < arity - 1; ++i)
 			regns[i] = regns[i + 1];
@@ -710,8 +710,8 @@ static void emit_icore_Permi23(const ir_node *irn)
 	 * but
 	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
 	 */
-	while (regns[0] < regns[1]) {
-		/* Rotate until condition holds. */
+	while (regns[0] <= regns[1]) {
+		/* Rotate until regns[0] > regns[1] holds. */
 		int regn0 = regns[0];
 		for (i = 0; i < arity - 1; ++i)
 			regns[i] = regns[i + 1];
@@ -719,16 +719,20 @@ static void emit_icore_Permi23(const ir_node *irn)
 	}
 
 	/*
-	 * The permi instruction always operates on five registers.  However,
-	 * it is allowed to supply the same register number multiple times.
-	 * Therefore, e.g., a swap operation on r0 and r1 can be expressed with:
-	 *   permi r0, r1, r1, r1, r1
-	 *
-	 * Hence, we fill the unused elements in regns (if there are any) with
-	 * the last register number we inserted.
+	 * The permi23 instruction always operates on five registers.  However,
+	 * if two two-cycles shall be encoded, we don't have enough register
+	 * numbers.  Therefore, we insert an additional register in the three cycle.
+	 * Example:
+	 * To encode swapping r0, r1 and swapping r2, r3, we would like to write
+	 *   permi23 r1, r0, r3, r2
+	 * which we can't do, because we have to provide five registers.
+	 * Because it's allowed to mention the same register multiple times, we can
+	 * write
+	 *   permi23 r1, r0, r3, r2, r2
+	 * instead.
 	 */
-	for (i = arity; i < 5; ++i) {
-		regns[i] = regns[arity - 1];
+	if (arity == 4) {
+		regns[4] = regns[3];
 	}
 
 	/* Print some information about the meaning of the following permi. */
