@@ -699,8 +699,10 @@ static void emit_icore_Permi23(const ir_node *irn)
 	 * Therefore, we reverse the order of the register numbers for
 	 * actual code generation.
 	 */
-	for (i = 0; i < arity; ++i) {
-		regns[i] = in_regs[arity - i - 1]->index;
+	regns[0] = in_regs[0]->index;
+	regns[1] = in_regs[1]->index;
+	for (i = 2; i < arity; ++i) {
+		regns[i] = in_regs[2 + arity - i - 1]->index;
 	}
 
 	/*
@@ -710,12 +712,11 @@ static void emit_icore_Permi23(const ir_node *irn)
 	 * but
 	 *   permi r4, r3, r2, r1, r0   encodes   r0->r1->r0  r2->r3->r4->r2
 	 */
-	while (regns[0] <= regns[1]) {
-		/* Rotate until regns[0] > regns[1] holds. */
+	if (regns[0] <= regns[1]) {
+		/* Swap regns[0] and regns[1]. */
 		int regn0 = regns[0];
-		for (i = 0; i < arity - 1; ++i)
-			regns[i] = regns[i + 1];
-		regns[arity - 1] = regn0;
+		regns[0] = regns[1];
+		regns[1] = regn0;
 	}
 
 	/*
