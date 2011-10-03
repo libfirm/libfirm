@@ -961,14 +961,14 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	 * (and can't handle anything else) */
 	if (modulo_shift != get_mode_size_bits(shr_mode)
 			|| modulo_shift2<<1 != modulo_shift) {
-		panic("Shr lowering only implemented for modulo shift shr operations");
+		panic("Shl lowering only implemented for modulo shift shr operations");
 	}
 	if (!is_po2(modulo_shift) || !is_po2(modulo_shift2)) {
-		panic("Shr lowering only implemented for power-of-2 modes");
+		panic("Shl lowering only implemented for power-of-2 modes");
 	}
 	/* without 2-complement the -x instead of (bit_width-x) trick won't work */
 	if (get_mode_arithmetic(shr_mode) != irma_twos_complement) {
-		panic("Shr lowering only implemented for two-complement modes");
+		panic("Shl lowering only implemented for two-complement modes");
 	}
 
 	/* if the right operand is a 64bit value, we're only interested in the
