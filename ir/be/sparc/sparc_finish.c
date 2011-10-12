@@ -420,6 +420,55 @@ static void peephole_sparc_FrameAddr(ir_node *node)
 	(void) node;
 }
 
+static bool is_restorezeroopt_reg(const arch_register_t *reg)
+{
+	unsigned index = reg->global_index;
+	return (index >= REG_G0 && index <= REG_G7)
+	    || (index >= REG_I0 && index <= REG_I7);
+}
+
+static void peephole_sparc_RestoreZero(ir_node *node)
+{
+	/* restore gives us a free "add" instruction, let's try to use that to fold
+	 * an instruction in */
+	ir_node *try = sched_prev(node);
+
+	/* output must not be local, or out reg (it would be strange though if
+	 * they were) */
+	if (be_is_Copy(try)) {
+		dbg_info *dbgi;
+		ir_node  *block;
+		ir_node  *new_restore;
+		ir_node  *op;
+		ir_node  *fp;
+		ir_node  *res;
+		ir_node  *stack;
+		ir_mode  *mode;
+
+		const arch_register_t *reg = arch_get_irn_register(try);
+		if (!is_restorezeroopt_reg(reg))
+			return;
+
+		op    = get_irn_n(try, n_be_Copy_op);
+		fp    = get_irn_n(node, n_sparc_RestoreZero_frame_pointer);
+		dbgi  = get_irn_dbg_info(node);
+		block = get_nodes_block(node);
+		new_restore = new_bd_sparc_Restore_imm(dbgi, block, fp, op, NULL, 0);
+		arch_set_irn_register_out(new_restore, pn_sparc_Restore_stack,
+		                          &sparc_registers[REG_SP]);
+		arch_set_irn_register_out(new_restore, pn_sparc_Restore_res,
+								  reg);
+
+		mode  = get_irn_mode(node);
+		stack = new_r_Proj(new_restore, mode, pn_sparc_Restore_stack);
+		res   = new_r_Proj(new_restore, mode, pn_sparc_Restore_res);
+
+		sched_add_before(node, new_restore);
+		be_peephole_exchange(node, stack);
+		be_peephole_exchange(try, res);
+	}
+}
+
 static void finish_sparc_Return(ir_node *node)
 {
 	ir_node *schedpoint = node;
@@ -520,6 +569,8 @@ void sparc_finish(ir_graph *irg)
 	clear_irp_opcodes_generic_func();
 	register_peephole_optimisation(op_be_IncSP,        peephole_be_IncSP);
 	register_peephole_optimisation(op_sparc_FrameAddr, peephole_sparc_FrameAddr);
+	register_peephole_optimisation(op_sparc_RestoreZero,
+	                               peephole_sparc_RestoreZero);
 	be_peephole_opt(irg);
 
 	/* perform legalizations (mostly fix nodes with too big immediates) */

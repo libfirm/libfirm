@@ -998,6 +998,24 @@ static ir_node *gen_helper_bitop(ir_node *node,
 		                             flags,
 		                             new_not_reg, new_not_imm);
 	}
+	if (is_Const(op2) && get_irn_n_edges(op2) == 1) {
+		ir_tarval *tv    = get_Const_tarval(op2);
+		long       value = get_tarval_long(tv);
+		if (!sparc_is_value_imm_encodeable(value)) {
+			long notvalue = ~value;
+			if ((notvalue & 0x3ff) == 0) {
+				ir_node  *block     = get_nodes_block(node);
+				ir_node  *new_block = be_transform_node(block);
+				dbg_info *dbgi      = get_irn_dbg_info(node);
+				ir_node  *new_op2
+					= new_bd_sparc_SetHi(NULL, new_block, NULL, notvalue);
+				ir_node  *new_op1   = be_transform_node(op1);
+				ir_node  *result
+					= new_not_reg(dbgi, new_block, new_op1, new_op2);
+				return result;
+			}
+		}
+	}
 	return gen_helper_binop_args(node, op1, op2,
 								 flags | MATCH_COMMUTATIVE,
 								 new_reg, new_imm);
