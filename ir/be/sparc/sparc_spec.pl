@@ -501,7 +501,7 @@ Start => {
 	ins       => [],
 },
 
-# This is a JumpLink instruction, but with the addition that you can add custom
+# This is a Jump instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {
 	state     => "pinned",
@@ -523,6 +523,8 @@ Return => {
 	},
 },
 
+# This is a JumpLink instruction, but with the addition that you can add custom
+# register constraints to model your calling conventions
 Call => {
 	irn_flags => [ "modifies_flags", "modifies_fp_flags", "has_delay_slot" ],
 	state     => "exc_pinned",

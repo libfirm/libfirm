@@ -295,8 +295,18 @@ static void sparc_emit_cfop_target(const ir_node *node)
 	be_gas_emit_block_name(block);
 }
 
+/**
+ * returns true if a sparc_call calls a register and not an immediate
+ */
+static bool is_sparc_reg_call(const ir_node *node)
+{
+	const sparc_attr_t *attr = get_sparc_attr_const(node);
+	return attr->immediate_value_entity == NULL;
+}
+
 static int get_sparc_Call_dest_addr_pos(const ir_node *node)
 {
+	assert(is_sparc_reg_call(node));
 	return get_irn_arity(node)-1;
 }
 
@@ -355,51 +365,127 @@ static bool emits_multiple_instructions(const ir_node *node)
 		|| be_is_MemPerm(node) || be_is_Perm(node);
 }
 
+static bool uses_reg(const ir_node *node, const arch_register_t *reg)
+{
+	int arity = get_irn_arity(node);
+	int i;
+
+	for (i = 0; i < arity; ++i) {
+		const arch_register_t *in_reg = arch_get_irn_register_in(node, i);
+		if (reg == in_reg)
+			return true;
+	}
+	return false;
+}
+
+static bool writes_reg(const ir_node *node, const arch_register_t *reg)
+{
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	unsigned o;
+	for (o = 0; o < n_outs; ++o) {
+		const arch_register_t *out_reg = arch_get_irn_register_out(node, o);
+		if (out_reg == reg)
+			return true;
+	}
+	return false;
+}
+
+static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
+{
+	int      node_arity = get_irn_arity(node);
+	ir_node *schedpoint = sched_next(node);
+
+	while (true) {
+		if (schedpoint != to) {
+			int      i;
+			int      arity  = get_irn_arity(schedpoint);
+			unsigned n_outs = arch_get_irn_n_outs(schedpoint);
+
+			/* the node must not use our computed values */
+			for (i = 0; i < arity; ++i) {
+				ir_node *in = get_irn_n(schedpoint, i);
+				if (skip_Proj(in) == node)
+					return false;
+			}
+
+			/* the node must not overwrite registers of our inputs */
+			for (i = 0; i < node_arity; ++i) {
+				ir_node                   *in  = get_irn_n(node, i);
+				const arch_register_t     *reg = arch_get_irn_register(in);
+				const arch_register_req_t *in_req
+					= arch_get_irn_register_req_in(node, i);
+				unsigned                   o;
+				if (reg == NULL)
+					continue;
+				for (o = 0; o < n_outs; ++o) {
+					const arch_register_t *outreg
+						= arch_get_irn_register_out(schedpoint, o);
+					const arch_register_req_t *outreq
+						= arch_get_irn_register_req_out(schedpoint, o);
+					if (outreg == NULL)
+						continue;
+					if (outreg->global_index >= reg->global_index
+						&& outreg->global_index
+					       < (unsigned)reg->global_index + in_req->width)
+						return false;
+					if (reg->global_index >= outreg->global_index
+						&& reg->global_index
+					       < (unsigned)outreg->global_index + outreq->width)
+						return false;
+				}
+			}
+		} else {
+			if (is_sparc_Call(to)) {
+				ir_node *check;
+				/** all deps are used after the delay slot so, we're fine */
+				if (!is_sparc_reg_call(to))
+					return true;
+
+				check = get_irn_n(to, get_sparc_Call_dest_addr_pos(to));
+				if (skip_Proj(check) == node)
+					return false;
+
+				/* the Call also destroys the value of %o7, but since this is
+				 * currently marked as ignore register in the backend, it
+				 * should never be used by the instruction in the delay slot. */
+				if (uses_reg(node, &sparc_registers[REG_O7]))
+					return false;
+				return true;
+			} else if (is_sparc_Return(to)) {
+				/* return uses the value of %o7, all other values are not
+				 * immediately used */
+				if (writes_reg(node, &sparc_registers[REG_O7]))
+					return false;
+				return true;
+			} else {
+				/* the node must not use our computed values */
+				int arity = get_irn_arity(to);
+				int i;
+				for (i = 0; i < arity; ++i) {
+					ir_node *in = get_irn_n(to, i);
+					if (skip_Proj(in) == node)
+						return false;
+				}
+				return true;
+			}
+		}
+
+		schedpoint = sched_next(schedpoint);
+	}
+}
+
 /**
  * search for an instruction that can fill the delay slot of @p node
  */
 static const ir_node *pick_delay_slot_for(const ir_node *node)
 {
-	const ir_node *check      = node;
 	const ir_node *schedpoint = node;
 	unsigned       tries      = 0;
 	/* currently we don't track which registers are still alive, so we can't
 	 * pick any other instructions other than the one directly preceding */
-	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 1;
+	static const unsigned PICK_DELAY_SLOT_MAX_DISTANCE = 10;
 
 	assert(has_delay_slot(node));
-
-	if (is_sparc_Call(node)) {
-		const sparc_attr_t *attr   = get_sparc_attr_const(node);
-		ir_entity          *entity = attr->immediate_value_entity;
-		if (entity != NULL) {
-			check = NULL; /* pick any instruction, dependencies on Call
-			                 don't matter */
-		} else {
-			/* we only need to check the value for the call destination */
-			check = get_irn_n(node, get_sparc_Call_dest_addr_pos(node));
-		}
-
-		/* the Call also destroys the value of %o7, but since this is currently
-		 * marked as ignore register in the backend, it should never be used by
-		 * the instruction in the delay slot. */
-	} else if (is_sparc_Return(node)) {
-		/* we only have to check the jump destination value */
-		int arity = get_irn_arity(node);
-		int i;
-
-		check = NULL;
-		for (i = 0; i < arity; ++i) {
-			ir_node               *in  = get_irn_n(node, i);
-			const arch_register_t *reg = arch_get_irn_register(in);
-			if (reg == &sparc_registers[REG_O7]) {
-				check = skip_Proj(in);
-				break;
-			}
-		}
-	} else {
-		check = node;
-	}
 
 	while (sched_has_prev(schedpoint)) {
 		schedpoint = sched_prev(schedpoint);
@@ -417,15 +503,7 @@ static const ir_node *pick_delay_slot_for(const ir_node *node)
 		if (emits_multiple_instructions(schedpoint))
 			continue;
 
-		/* if check and schedpoint are not in the same block, give up. */
-		if (check != NULL
-				&& get_nodes_block(check) != get_nodes_block(schedpoint))
-			break;
-
-		/* allowed for delayslot: any instruction which is not necessary to
-		 * compute an input to the branch. */
-		if (check != NULL
-				&& heights_reachable_in_block(heights, check, schedpoint))
+		if (!can_move_into_delayslot(schedpoint, node))
 			continue;
 
 		/* found something */
@@ -533,24 +611,20 @@ static void emit_sparc_UDiv(const ir_node *node)
 	emit_sparc_Div(node, false);
 }
 
-/**
- * Emits code for Call node
- */
 static void emit_sparc_Call(const ir_node *node)
 {
-	const sparc_attr_t *attr   = get_sparc_attr_const(node);
-	ir_entity          *entity = attr->immediate_value_entity;
-
 	be_emit_cstring("\tcall ");
-	if (entity != NULL) {
+	if (is_sparc_reg_call(node)) {
+		int dest_addr = get_sparc_Call_dest_addr_pos(node);
+		sparc_emit_source_register(node, dest_addr);
+	} else {
+		const sparc_attr_t *attr   = get_sparc_attr_const(node);
+		ir_entity          *entity = attr->immediate_value_entity;
 	    be_gas_emit_entity(entity);
 	    if (attr->immediate_value != 0) {
 			be_emit_irprintf("%+d", attr->immediate_value);
 		}
 		be_emit_cstring(", 0");
-	} else {
-		int dest_addr = get_sparc_Call_dest_addr_pos(node);
-		sparc_emit_source_register(node, dest_addr);
 	}
 	be_emit_finish_line_gas(node);
 
@@ -562,9 +636,6 @@ static void emit_sparc_Call(const ir_node *node)
 	}
 }
 
-/**
- * Emit code for Perm node
- */
 static void emit_be_Perm(const ir_node *irn)
 {
 	be_emit_cstring("\txor ");
