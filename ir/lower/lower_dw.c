@@ -970,7 +970,7 @@ static void lower_Shl(ir_node *node, ir_mode *mode)
 	 * (and can't handle anything else) */
 	if (modulo_shift != get_mode_size_bits(shr_mode)
 			|| modulo_shift2<<1 != modulo_shift) {
-		panic("Shl lowering only implemented for modulo shift shr operations");
+		panic("Shl lowering only implemented for modulo shift shl operations");
 	}
 	if (!is_po2(modulo_shift) || !is_po2(modulo_shift2)) {
 		panic("Shl lowering only implemented for power-of-2 modes");
