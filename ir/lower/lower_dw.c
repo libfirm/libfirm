@@ -2336,7 +2336,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 	ir_type *res;
 	size_t   i;
 	size_t   n_params;
-	size_t   n_res;
+	size_t   n_results;
 	bool     must_be_lowered;
 
 	res = (ir_type*)pmap_get(lowered_builtin_type_high, mtp);
@@ -2344,10 +2344,10 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 		return res;
 
 	n_params        = get_method_n_params(mtp);
-	n_res           = get_method_n_ress(mtp);
+	n_results       = get_method_n_ress(mtp);
 	must_be_lowered = false;
 
-	/* count new number of params */
+	/* check for double word parameter */
 	for (i = n_params; i > 0;) {
 		ir_type *tp = get_method_param_type(mtp, --i);
 
@@ -2366,7 +2366,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 		return mtp;
 	}
 
-	res = new_d_type_method(n_params, n_res, get_type_dbg_info(mtp));
+	res = new_d_type_method(n_params, n_results, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
 	for (i = 0; i < n_params; ++i) {
@@ -2390,7 +2390,7 @@ static ir_type *lower_Builtin_type_high(ir_type *mtp)
 			set_method_param_type(res, i, tp);
 		}
 	}
-	for (i = n_res = 0; i < n_res; ++i) {
+	for (i = n_results = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
 
 		set_method_res_type(res, i, tp);
@@ -2416,7 +2416,7 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 	ir_type *res;
 	size_t   i;
 	size_t   n_params;
-	size_t   n_ress;
+	size_t   n_results;
 	bool     must_be_lowered;
 
 	res = (ir_type*)pmap_get(lowered_builtin_type_low, mtp);
@@ -2424,10 +2424,10 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 		return res;
 
 	n_params        = get_method_n_params(mtp);
-	n_ress          = get_method_n_ress(mtp);
+	n_results       = get_method_n_ress(mtp);
 	must_be_lowered = false;
 
-	/* count new number of params */
+	/* check for double word parameter */
 	for (i = n_params; i > 0;) {
 		ir_type *tp = get_method_param_type(mtp, --i);
 
@@ -2441,24 +2441,12 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 		}
 	}
 
-	/* count new number of results */
-	for (i = n_ress; i > 0;) {
-		ir_type *tp = get_method_res_type(mtp, --i);
-
-		if (is_Primitive_type(tp)) {
-			ir_mode *mode = get_type_mode(tp);
-
-			if (mode == env->high_signed || mode == env->high_unsigned) {
-				must_be_lowered = true;
-			}
-		}
-	}
 	if (!must_be_lowered) {
 		set_type_link(mtp, NULL);
 		return mtp;
 	}
 
-	res = new_d_type_method(n_params, n_ress, get_type_dbg_info(mtp));
+	res = new_d_type_method(n_params, n_results, get_type_dbg_info(mtp));
 
 	/* set param types and result types */
 	for (i = 0; i < n_params; ++i) {
@@ -2482,7 +2470,7 @@ static ir_type *lower_Builtin_type_low(ir_type *mtp)
 			set_method_param_type(res, i, tp);
 		}
 	}
-	for (i = 0; i < n_ress; ++i) {
+	for (i = 0; i < n_results; ++i) {
 		ir_type *tp = get_method_res_type(mtp, i);
 
 		set_method_res_type(res, i, tp);
