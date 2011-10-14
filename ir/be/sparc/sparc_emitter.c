@@ -563,9 +563,46 @@ static void emit_sparc_Call(const ir_node *node)
 	}
 }
 
+static void verify_permi(int *regs)
+{
+	int i, j;
+
+	/* Generic checks */
+	for (i = 0; i < 5; ++i) {
+		assert(regs[i] >= 0 && regs[i] <= 31 && "Invalid regno in permi");
+	}
+
+	if (regs[0] <= regs[1]) {
+		/* Permi5 */
+		j = 4;
+		for (i = 0; i < 4; ++i) {
+			if (regs[i] == regs[i + 1]) {
+				j = i;
+				break;
+			}
+		}
+
+		for (i = j; i < 4; ++i) {
+			assert(regs[i] == regs[i + 1] && "Equal regnos not at end");
+		}
+	} else {
+		/* Permi23 */
+		assert(regs[0] != regs[1] && "No first cycle in Permi23");
+
+		for (i = 2; i < 5; ++i) {
+			assert(regs[0] != regs[i] && "Reg in first and second cycle");
+			assert(regs[1] != regs[i] && "Reg in first and second cycle");
+		}
+
+		assert(regs[2] != regs[3] && "Equal regnos not at end");
+	}
+}
+
 static int permi5(int *regs)
 {
-	return  (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
+	verify_permi(regs);
+
+	return (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
 }
 
 static void emit_icore_Permi(const ir_node *irn)
