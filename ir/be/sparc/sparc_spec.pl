@@ -269,10 +269,17 @@ Add => {
 },
 
 AddCC => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. addcc %S0, %R1I, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
+},
+
+AddCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. addcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 AddX => {
@@ -305,10 +312,17 @@ Sub => {
 },
 
 SubCC => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. subcc %S0, %R1I, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
+},
+
+SubCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. subcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 SubX => {
@@ -675,6 +689,13 @@ Mul => {
 	mode         => $mode_gp,
 	emit         => '. smul %S0, %R1I, %D0',
 	constructors => \%binop_operand_constructors,
+},
+
+MulCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. smulcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 SMulh => {

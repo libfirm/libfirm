@@ -1287,6 +1287,18 @@ static ir_node *gen_Cmp(ir_node *node)
 			                        new_bd_sparc_XNorCCZero_reg,
 			                        new_bd_sparc_XNorCCZero_imm,
 			                        MATCH_NONE);
+		} else if (is_Add(op1)) {
+			return gen_helper_binop(op1, MATCH_COMMUTATIVE,
+			                        new_bd_sparc_AddCCZero_reg,
+			                        new_bd_sparc_AddCCZero_imm);
+		} else if (is_Sub(op1)) {
+			return gen_helper_binop(op1, MATCH_NONE,
+			                        new_bd_sparc_SubCCZero_reg,
+			                        new_bd_sparc_SubCCZero_imm);
+		} else if (is_Mul(op1)) {
+			return gen_helper_binop(op1, MATCH_COMMUTATIVE,
+			                        new_bd_sparc_MulCCZero_reg,
+			                        new_bd_sparc_MulCCZero_imm);
 		}
 	}
 
