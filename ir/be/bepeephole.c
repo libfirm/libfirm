@@ -248,6 +248,55 @@ bool be_has_only_one_user(ir_node *node)
 	return n_users == 1;
 }
 
+bool be_can_move_before(const ir_node *node, const ir_node *before)
+{
+	int      node_arity = get_irn_arity(node);
+	ir_node *schedpoint = sched_next(node);
+
+	while (schedpoint != before) {
+		int      i;
+		int      arity  = get_irn_arity(schedpoint);
+		unsigned n_outs = arch_get_irn_n_outs(schedpoint);
+
+		/* the node must not use our computed values */
+		for (i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(schedpoint, i);
+			if (skip_Proj(in) == node)
+				return false;
+		}
+
+		/* the node must not overwrite registers of our inputs */
+		for (i = 0; i < node_arity; ++i) {
+			ir_node                   *in  = get_irn_n(node, i);
+			const arch_register_t     *reg = arch_get_irn_register(in);
+			const arch_register_req_t *in_req
+				= arch_get_irn_register_req_in(node, i);
+			unsigned                   o;
+			if (reg == NULL)
+				continue;
+			for (o = 0; o < n_outs; ++o) {
+				const arch_register_t *outreg
+					= arch_get_irn_register_out(schedpoint, o);
+				const arch_register_req_t *outreq
+					= arch_get_irn_register_req_out(schedpoint, o);
+				if (outreg == NULL)
+					continue;
+				if (outreg->global_index >= reg->global_index
+					&& outreg->global_index
+					   < (unsigned)reg->global_index + in_req->width)
+					return false;
+				if (reg->global_index >= outreg->global_index
+					&& reg->global_index
+					   < (unsigned)outreg->global_index + outreq->width)
+					return false;
+			}
+		}
+
+		schedpoint = sched_next(schedpoint);
+	}
+	return true;
+}
+
 /*
  * Tries to optimize a beIncSP node with its previous IncSP node.
  * Must be run from a be_peephole_opt() context.

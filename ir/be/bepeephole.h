@@ -74,6 +74,16 @@ ir_node *be_peephole_IncSP_IncSP(ir_node *node);
 bool be_has_only_one_user(ir_node *node);
 
 /**
+ * In a scheduled program with registers assigned,
+ * checks wether @p node can be moved before @p before without changing program
+ * semantics.
+ *
+ * Note: It is allowed to use this function without being in a peephole
+ * optimization phase.
+ */
+bool be_can_move_before(const ir_node *node, const ir_node *before);
+
+/**
  * Do peephole optimisations. It traverses the schedule of all blocks in
  * backward direction. The register_values variable indicates which (live)
  * values are stored in which register.

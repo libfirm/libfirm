@@ -50,6 +50,7 @@
 #include "be_dbgout.h"
 #include "benode.h"
 #include "bestack.h"
+#include "bepeephole.h"
 
 #include "sparc_emitter.h"
 #include "gen_sparc_emitter.h"
@@ -392,85 +393,41 @@ static bool writes_reg(const ir_node *node, const arch_register_t *reg)
 
 static bool can_move_into_delayslot(const ir_node *node, const ir_node *to)
 {
-	int      node_arity = get_irn_arity(node);
-	ir_node *schedpoint = sched_next(node);
+	if (!be_can_move_before(node, to))
+		return false;
 
-	while (true) {
-		if (schedpoint != to) {
-			int      i;
-			int      arity  = get_irn_arity(schedpoint);
-			unsigned n_outs = arch_get_irn_n_outs(schedpoint);
+	if (is_sparc_Call(to)) {
+		ir_node *check;
+		/** all deps are used after the delay slot so, we're fine */
+		if (!is_sparc_reg_call(to))
+			return true;
 
-			/* the node must not use our computed values */
-			for (i = 0; i < arity; ++i) {
-				ir_node *in = get_irn_n(schedpoint, i);
-				if (skip_Proj(in) == node)
-					return false;
-			}
+		check = get_irn_n(to, get_sparc_Call_dest_addr_pos(to));
+		if (skip_Proj(check) == node)
+			return false;
 
-			/* the node must not overwrite registers of our inputs */
-			for (i = 0; i < node_arity; ++i) {
-				ir_node                   *in  = get_irn_n(node, i);
-				const arch_register_t     *reg = arch_get_irn_register(in);
-				const arch_register_req_t *in_req
-					= arch_get_irn_register_req_in(node, i);
-				unsigned                   o;
-				if (reg == NULL)
-					continue;
-				for (o = 0; o < n_outs; ++o) {
-					const arch_register_t *outreg
-						= arch_get_irn_register_out(schedpoint, o);
-					const arch_register_req_t *outreq
-						= arch_get_irn_register_req_out(schedpoint, o);
-					if (outreg == NULL)
-						continue;
-					if (outreg->global_index >= reg->global_index
-						&& outreg->global_index
-					       < (unsigned)reg->global_index + in_req->width)
-						return false;
-					if (reg->global_index >= outreg->global_index
-						&& reg->global_index
-					       < (unsigned)outreg->global_index + outreq->width)
-						return false;
-				}
-			}
-		} else {
-			if (is_sparc_Call(to)) {
-				ir_node *check;
-				/** all deps are used after the delay slot so, we're fine */
-				if (!is_sparc_reg_call(to))
-					return true;
-
-				check = get_irn_n(to, get_sparc_Call_dest_addr_pos(to));
-				if (skip_Proj(check) == node)
-					return false;
-
-				/* the Call also destroys the value of %o7, but since this is
-				 * currently marked as ignore register in the backend, it
-				 * should never be used by the instruction in the delay slot. */
-				if (uses_reg(node, &sparc_registers[REG_O7]))
-					return false;
-				return true;
-			} else if (is_sparc_Return(to)) {
-				/* return uses the value of %o7, all other values are not
-				 * immediately used */
-				if (writes_reg(node, &sparc_registers[REG_O7]))
-					return false;
-				return true;
-			} else {
-				/* the node must not use our computed values */
-				int arity = get_irn_arity(to);
-				int i;
-				for (i = 0; i < arity; ++i) {
-					ir_node *in = get_irn_n(to, i);
-					if (skip_Proj(in) == node)
-						return false;
-				}
-				return true;
-			}
+		/* the Call also destroys the value of %o7, but since this is
+		 * currently marked as ignore register in the backend, it
+		 * should never be used by the instruction in the delay slot. */
+		if (uses_reg(node, &sparc_registers[REG_O7]))
+			return false;
+		return true;
+	} else if (is_sparc_Return(to)) {
+		/* return uses the value of %o7, all other values are not
+		 * immediately used */
+		if (writes_reg(node, &sparc_registers[REG_O7]))
+			return false;
+		return true;
+	} else {
+		/* the node must not use our computed values */
+		int arity = get_irn_arity(to);
+		int i;
+		for (i = 0; i < arity; ++i) {
+			ir_node *in = get_irn_n(to, i);
+			if (skip_Proj(in) == node)
+				return false;
 		}
-
-		schedpoint = sched_next(schedpoint);
+		return true;
 	}
 }
 
