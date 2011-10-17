@@ -5192,6 +5192,8 @@ static ir_node *gen_parity(ir_node *node)
 	ir_node *xor2 = new_bd_ia32_XorHighLow(dbgi, new_block, xor);
 	ir_node *flags;
 
+	set_ia32_commutative(xor);
+
 	set_irn_mode(xor2, mode_T);
 	flags = new_r_Proj(xor2, mode_Iu, pn_ia32_XorHighLow_flags);
 
