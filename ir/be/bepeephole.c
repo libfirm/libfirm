@@ -149,8 +149,8 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 
 	DB((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
 
-	assert(sched_is_scheduled(new_node));
-	assert(value_dominates(new_node, old_node));
+	assert(sched_is_scheduled(skip_Proj_const(old_node)));
+	assert(sched_is_scheduled(skip_Proj(new_node)));
 
 	if (current_node == old_node) {
 		old_is_current = true;
@@ -159,6 +159,10 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 		 * must be processed next. */
 		current_node = sched_next(current_node);
 		assert (!is_Bad(current_node));
+
+		/* we can't handle liveness updates correctly when exchange current node
+		 * with something behind it */
+		assert(value_dominates(skip_Proj(new_node), skip_Proj_const(old_node)));
 	}
 
 	if (!mode_is_data(get_irn_mode(old_node)))
