@@ -38,6 +38,7 @@
 #include "beirg.h"
 #include "belive_t.h"
 #include "bearch.h"
+#include "beintlive_t.h"
 #include "benode.h"
 #include "besched.h"
 #include "bemodule.h"
@@ -144,10 +145,16 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 	const arch_register_class_t *cls;
 	unsigned                     reg_idx;
 	unsigned                     cls_idx;
+	bool                         old_is_current = false;
 
 	DB((dbg, LEVEL_1, "About to exchange and kill %+F with %+F\n", old_node, new_node));
 
+	assert(sched_is_scheduled(new_node));
+	assert(value_dominates(new_node, old_node));
+
 	if (current_node == old_node) {
+		old_is_current = true;
+
 		/* next node to be processed will be killed. Its scheduling predecessor
 		 * must be processed next. */
 		current_node = sched_next(current_node);
@@ -168,7 +175,7 @@ static void be_peephole_before_exchange(const ir_node *old_node,
 	reg_idx = arch_register_get_index(reg);
 	cls_idx = arch_register_class_index(cls);
 
-	if (register_values[cls_idx][reg_idx] == old_node) {
+	if (register_values[cls_idx][reg_idx] == old_node || old_is_current) {
 		register_values[cls_idx][reg_idx] = new_node;
 	}
 
