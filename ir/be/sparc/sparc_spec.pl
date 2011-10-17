@@ -121,6 +121,7 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 	S0O1   => "${arch}_emit_source_reg_and_offset(node, 0, 1);",
 	S1O2   => "${arch}_emit_source_reg_and_offset(node, 1, 2);",
 );
+$indent_line_func = "sparc_emit_indent()";
 
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";

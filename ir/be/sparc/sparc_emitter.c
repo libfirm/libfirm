@@ -65,6 +65,14 @@ static const ir_node *delay_slot_filler; /**< this node has been choosen to fill
                                               the next delay slot */
 
 static void sparc_emit_node(const ir_node *node);
+static bool emitting_delay_slot;
+
+void sparc_emit_indent(void)
+{
+	be_emit_char('\t');
+	if (emitting_delay_slot)
+		be_emit_char(' ');
+}
 
 void sparc_emit_immediate(const ir_node *node)
 {
@@ -481,11 +489,12 @@ static void emit_be_IncSP(const ir_node *irn)
 		return;
 
 	/* SPARC stack grows downwards */
+	sparc_emit_indent();
 	if (offset < 0) {
-		be_emit_cstring("\tsub ");
+		be_emit_cstring("sub ");
 		offset = -offset;
 	} else {
-		be_emit_cstring("\tadd ");
+		be_emit_cstring("add ");
 	}
 
 	sparc_emit_source_register(irn, 0);
@@ -500,7 +509,7 @@ static void emit_be_IncSP(const ir_node *irn)
  */
 static void emit_sparc_Mulh(const ir_node *irn)
 {
-	be_emit_cstring("\t");
+	sparc_emit_indent();
 	if (is_sparc_UMulh(irn)) {
 		be_emit_char('u');
 	} else {
@@ -518,20 +527,24 @@ static void emit_sparc_Mulh(const ir_node *irn)
 
 	// our result is in the y register now
 	// we just copy it to the assigned target reg
-	be_emit_cstring("\tmov %y, ");
+	sparc_emit_indent();
+	be_emit_cstring("mov %y, ");
 	sparc_emit_dest_register(irn, 0);
 	be_emit_finish_line_gas(irn);
 }
 
 static void fill_delay_slot(void)
 {
+	emitting_delay_slot = true;
 	if (delay_slot_filler != NULL) {
 		sparc_emit_node(delay_slot_filler);
 		delay_slot_filler = NULL;
 	} else {
-		be_emit_cstring("\tnop\n");
+		sparc_emit_indent();
+		be_emit_cstring("nop\n");
 		be_emit_write_line();
 	}
+	emitting_delay_slot = false;
 }
 
 static void emit_sparc_Div(const ir_node *node, bool is_signed)
@@ -540,7 +553,8 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 	unsigned wry_delay_count = 3;
 	unsigned i;
 
-	be_emit_cstring("\twr ");
+	sparc_emit_indent();
+	be_emit_cstring("wr ");
 	sparc_emit_source_register(node, 0);
 	be_emit_cstring(", 0, %y");
 	be_emit_finish_line_gas(node);
@@ -549,7 +563,8 @@ static void emit_sparc_Div(const ir_node *node, bool is_signed)
 		fill_delay_slot();
 	}
 
-	be_emit_irprintf("\t%s ", is_signed ? "sdiv" : "udiv");
+	sparc_emit_indent();
+	be_emit_irprintf("%s ", is_signed ? "sdiv" : "udiv");
 	sparc_emit_source_register(node, 1);
 	be_emit_cstring(", ");
 	sparc_emit_reg_or_imm(node, 2);
@@ -570,7 +585,8 @@ static void emit_sparc_UDiv(const ir_node *node)
 
 static void emit_sparc_Call(const ir_node *node)
 {
-	be_emit_cstring("\tcall ");
+	sparc_emit_indent();
+	be_emit_cstring("call ");
 	if (is_sparc_reg_call(node)) {
 		int dest_addr = get_sparc_Call_dest_addr_pos(node);
 		sparc_emit_source_register(node, dest_addr);
@@ -588,14 +604,16 @@ static void emit_sparc_Call(const ir_node *node)
 	fill_delay_slot();
 
 	if (arch_get_irn_flags(node) & sparc_arch_irn_flag_aggregate_return) {
-		be_emit_cstring("\tunimp 8\n");
+		sparc_emit_indent();
+		be_emit_cstring("unimp 8\n");
 		be_emit_write_line();
 	}
 }
 
 static void emit_be_Perm(const ir_node *irn)
 {
-	be_emit_cstring("\txor ");
+	sparc_emit_indent();
+	be_emit_cstring("xor ");
 	sparc_emit_source_register(irn, 1);
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
@@ -603,7 +621,8 @@ static void emit_be_Perm(const ir_node *irn)
 	sparc_emit_source_register(irn, 0);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring("\txor ");
+	sparc_emit_indent();
+	be_emit_cstring("xor ");
 	sparc_emit_source_register(irn, 1);
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
@@ -611,7 +630,8 @@ static void emit_be_Perm(const ir_node *irn)
 	sparc_emit_source_register(irn, 1);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_cstring("\txor ");
+	sparc_emit_indent();
+	be_emit_cstring("xor ");
 	sparc_emit_source_register(irn, 1);
 	be_emit_cstring(", ");
 	sparc_emit_source_register(irn, 0);
@@ -643,17 +663,20 @@ static void memperm_emit_spill_registers(const ir_node *node, int n_spilled,
 
 		/* Keep stack pointer aligned. */
 		unsigned sp_change = get_aligned_sp_change(2);
-		be_emit_irprintf("\tsub %%sp, %u, %%sp", sp_change);
+		sparc_emit_indent();
+		be_emit_irprintf("sub %%sp, %u, %%sp", sp_change);
 		be_emit_finish_line_gas(node);
 
 		/* Spill register l0. */
-		be_emit_irprintf("\tst %%l0, [%%sp%+d]", SPARC_MIN_STACKSIZE);
+		sparc_emit_indent();
+		be_emit_irprintf("st %%l0, [%%sp%+d]", SPARC_MIN_STACKSIZE);
 		be_emit_finish_line_gas(node);
 	}
 
 	if (n_to_spill == 2) {
 		/* Spill register l1. */
-		be_emit_irprintf("\tst %%l1, [%%sp%+d]", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
+		sparc_emit_indent();
+		be_emit_irprintf("st %%l1, [%%sp%+d]", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
 		be_emit_finish_line_gas(node);
 	}
 }
@@ -665,17 +688,20 @@ static void memperm_emit_restore_registers(const ir_node *node, int n_spilled)
 
 	if (n_spilled == 2) {
 		/* Restore register l1. */
-		be_emit_irprintf("\tld [%%sp%+d], %%l1", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
+		sparc_emit_indent();
+		be_emit_irprintf("ld [%%sp%+d], %%l1", SPARC_MIN_STACKSIZE + SPARC_REGISTER_SIZE);
 		be_emit_finish_line_gas(node);
 	}
 
 	/* Restore register l0. */
-	be_emit_irprintf("\tld [%%sp%+d], %%l0", SPARC_MIN_STACKSIZE);
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%sp%+d], %%l0", SPARC_MIN_STACKSIZE);
 	be_emit_finish_line_gas(node);
 
 	/* Restore stack pointer. */
 	sp_change = get_aligned_sp_change(2);
-	be_emit_irprintf("\tadd %%sp, %u, %%sp", sp_change);
+	sparc_emit_indent();
+	be_emit_irprintf("add %%sp, %u, %%sp", sp_change);
 	be_emit_finish_line_gas(node);
 }
 
@@ -689,11 +715,13 @@ static void memperm_emit_copy(const ir_node *node, ir_entity *in_ent,
 	int                off_out = be_get_stack_entity_offset(layout, out_ent, 0);
 
 	/* Load from input entity. */
-	be_emit_irprintf("\tld [%%fp%+d], %%l0", off_in);
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%fp%+d], %%l0", off_in);
 	be_emit_finish_line_gas(node);
 
 	/* Store to output entity. */
-	be_emit_irprintf("\tst %%l0, [%%fp%+d]", off_out);
+	sparc_emit_indent();
+	be_emit_irprintf("st %%l0, [%%fp%+d]", off_out);
 	be_emit_finish_line_gas(node);
 }
 
@@ -707,19 +735,23 @@ static void memperm_emit_swap(const ir_node *node, ir_entity *ent1,
 	int                off2    = be_get_stack_entity_offset(layout, ent2, 0);
 
 	/* Load from first input entity. */
-	be_emit_irprintf("\tld [%%fp%+d], %%l0", off1);
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%fp%+d], %%l0", off1);
 	be_emit_finish_line_gas(node);
 
 	/* Load from second input entity. */
-	be_emit_irprintf("\tld [%%fp%+d], %%l1", off2);
+	sparc_emit_indent();
+	be_emit_irprintf("ld [%%fp%+d], %%l1", off2);
 	be_emit_finish_line_gas(node);
 
 	/* Store first value to second output entity. */
-	be_emit_irprintf("\tst %%l0, [%%fp%+d]", off2);
+	sparc_emit_indent();
+	be_emit_irprintf("st %%l0, [%%fp%+d]", off2);
 	be_emit_finish_line_gas(node);
 
 	/* Store second value to first output entity. */
-	be_emit_irprintf("\tst %%l1, [%%fp%+d]", off1);
+	sparc_emit_indent();
+	be_emit_irprintf("st %%l1, [%%fp%+d]", off1);
 	be_emit_finish_line_gas(node);
 }
 
@@ -877,7 +909,8 @@ static void emit_sparc_Return(const ir_node *node)
 			 || is_sparc_RestoreZero(delay_slot_filler))) {
 		destreg = "%i7";
 	}
-	be_emit_cstring("\tjmp ");
+	sparc_emit_indent();
+	be_emit_cstring("jmp ");
 	be_emit_string(destreg);
 	if (get_method_calling_convention(type) & cc_compound_ret) {
 		be_emit_cstring("+12");
@@ -902,7 +935,8 @@ static void emit_sparc_Restore(const ir_node *node)
 {
 	const arch_register_t *destreg
 		= arch_get_irn_register_out(node, pn_sparc_Restore_res);
-	be_emit_cstring("\trestore ");
+	sparc_emit_indent();
+	be_emit_cstring("restore ");
 	sparc_emit_source_register(node, 1);
 	be_emit_cstring(", ");
 	sparc_emit_reg_or_imm(node, 2);
@@ -918,14 +952,15 @@ static void emit_sparc_FrameAddr(const ir_node *node)
 	const sparc_attr_t *attr   = get_sparc_attr_const(node);
 	int32_t             offset = attr->immediate_value;
 
+	sparc_emit_indent();
 	if (offset < 0) {
-		be_emit_cstring("\tadd ");
+		be_emit_cstring("add ");
 		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
 		assert(sparc_is_value_imm_encodeable(offset));
 		be_emit_irprintf("%ld", offset);
 	} else {
-		be_emit_cstring("\tsub ");
+		be_emit_cstring("sub ");
 		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
 		assert(sparc_is_value_imm_encodeable(-offset));
@@ -1028,7 +1063,7 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 	}
 
 	/* emit the true proj */
-	be_emit_cstring("\t");
+	sparc_emit_indent();
 	be_emit_string(get_cc(relation));
 	be_emit_char(' ');
 	sparc_emit_cfop_target(proj_true);
@@ -1036,13 +1071,14 @@ static void emit_sparc_branch(const ir_node *node, get_cc_func get_cc)
 
 	fill_delay_slot();
 
+	sparc_emit_indent();
 	if (get_irn_link(proj_false) == next_block) {
-		be_emit_cstring("\t/* fallthrough to ");
+		be_emit_cstring("/* fallthrough to ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_cstring(" */");
 		be_emit_finish_line_gas(proj_false);
 	} else {
-		be_emit_cstring("\tba ");
+		be_emit_cstring("ba ");
 		sparc_emit_cfop_target(proj_false);
 		be_emit_finish_line_gas(proj_false);
 		fill_delay_slot();
@@ -1069,20 +1105,22 @@ static void emit_sparc_fbfcc(const ir_node *node)
 		panic("TODO: fbfcc flags come from other block");
 	}
 	if (skip_Proj(flags) == prev) {
-		be_emit_cstring("\tnop\n");
+		sparc_emit_indent();
+		be_emit_cstring("nop\n");
 	}
 	emit_sparc_branch(node, get_fcc);
 }
 
 static void emit_sparc_Ba(const ir_node *node)
 {
+	sparc_emit_indent();
 	if (ba_is_fallthrough(node)) {
-		be_emit_cstring("\t/* fallthrough to ");
+		be_emit_cstring("/* fallthrough to ");
 		sparc_emit_cfop_target(node);
 		be_emit_cstring(" */");
 		be_emit_finish_line_gas(node);
 	} else {
-		be_emit_cstring("\tba ");
+		be_emit_cstring("ba ");
 		sparc_emit_cfop_target(node);
 		be_emit_finish_line_gas(node);
 		fill_delay_slot();
@@ -1093,7 +1131,8 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 {
 	const sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr_const(node);
 
-	be_emit_cstring("\tjmp ");
+	sparc_emit_indent();
+	be_emit_cstring("jmp ");
 	sparc_emit_source_register(node, 0);
 	be_emit_finish_line_gas(node);
 	fill_delay_slot();
@@ -1105,7 +1144,8 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,
                       const arch_register_t *dst_reg)
 {
-	be_emit_cstring("\tfmovs %");
+	sparc_emit_indent();
+	be_emit_cstring("fmovs %");
 	be_emit_string(arch_register_get_name(src_reg));
 	be_emit_cstring(", %");
 	be_emit_string(arch_register_get_name(dst_reg));
@@ -1141,7 +1181,8 @@ static void emit_be_Copy(const ir_node *node)
 			emit_fmov(node, src_reg, dst_reg);
 		}
 	} else if (mode_is_data(mode)) {
-		be_emit_cstring("\tmov ");
+		sparc_emit_indent();
+		be_emit_cstring("mov ");
 		sparc_emit_source_register(node, 0);
 		be_emit_cstring(", ");
 		sparc_emit_dest_register(node, 0);

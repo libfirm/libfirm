@@ -35,6 +35,7 @@ our $arch;
 our %nodes;
 our %emit_templates;
 our $finish_line_template = "be_emit_finish_line_gas(node);";
+our $indent_line_func;
 
 my $target_c = $target_dir."/gen_".$arch."_emitter.c";
 my $target_h = $target_dir."/gen_".$arch."_emitter.h";
@@ -47,9 +48,15 @@ my $line;
 sub create_emitter {
 	my $result = shift;
 	my $indent = shift;
-	my $template = "\\t" . shift;
+	my $template = shift;
 	our %emit_templates;
 	our $arch;
+
+	if ($indent_line_func eq "") {
+		$template = "\\t" . $template;
+	} else {
+		push(@{$result}, "${indent}${indent_line_func};\n");
+	}
 
 	my @tokens = ($template =~ m/(?:[^%]|%%)+|\%[a-zA-Z_][a-zA-Z0-9_]*|%\./g);
 	for (@tokens) {

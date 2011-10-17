@@ -35,6 +35,12 @@
 
 #include "bearch_sparc_t.h"
 
+/**
+ * indent before instruction. (Adds additional indentation when emitting
+ * delay slots)
+ */
+void sparc_emit_indent(void);
+
 void sparc_emit_immediate(const ir_node *node);
 void sparc_emit_high_immediate(const ir_node *node);
 void sparc_emit_mode(const ir_node *node);
