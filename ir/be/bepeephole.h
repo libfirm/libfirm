@@ -29,20 +29,17 @@
 #include "beirg.h"
 #include "bearch.h"
 
-extern ir_node ***register_values;
+extern ir_node **register_values;
 
-static inline ir_node *be_peephole_get_value(unsigned regclass_idx,
-                                             unsigned register_idx)
+static inline ir_node *be_peephole_get_value(unsigned register_idx)
 {
-	return register_values[regclass_idx][register_idx];
+	return register_values[register_idx];
 }
 
 static inline ir_node *be_peephole_get_reg_value(const arch_register_t *reg)
 {
-	unsigned regclass_idx = arch_register_class_index(arch_register_get_class(reg));
-	unsigned register_idx = arch_register_get_index(reg);
-
-	return be_peephole_get_value(regclass_idx, register_idx);
+	unsigned register_idx = reg->global_index;
+	return be_peephole_get_value(register_idx);
 }
 
 /**
