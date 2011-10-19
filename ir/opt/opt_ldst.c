@@ -38,7 +38,7 @@
 #include "irgopt.h"
 #include "iropt.h"
 #include "iroptimize.h"
-#include "irnodemap.h"
+#include "irnodehashmap.h"
 #include "raw_bitset.h"
 #include "debug.h"
 #include "error.h"
@@ -115,8 +115,8 @@ struct block_t {
  * Metadata for this pass.
  */
 typedef struct ldst_env_t {
-	struct obstack  obst;              /**< obstack for temporary data */
-	ir_nodemap_t    adr_map;           /**< Map addresses to */
+	struct obstack   obst;             /**< obstack for temporary data */
+	ir_nodehashmap_t adr_map;          /**< Map addresses to */
 	block_t         *forward;          /**< Inverse post-order list of all blocks Start->End */
 	block_t         *backward;         /**< Inverse post-order list of all blocks End->Start */
 	ir_node         *start_bl;         /**< start block of the current graph */
@@ -312,14 +312,14 @@ restart:
 		goto restart;
 	}
 
-	entry = (address_entry*)ir_nodemap_get(&env.adr_map, adr);
+	entry = (address_entry*)ir_nodehashmap_get(&env.adr_map, adr);
 
 	if (entry == NULL) {
 		/* new address */
 		entry = OALLOC(&env.obst, address_entry);
 
 		entry->id = env.curr_adr_id++;
-		ir_nodemap_insert(&env.adr_map, adr, entry);
+		ir_nodehashmap_insert(&env.adr_map, adr, entry);
 
 		DB((dbg, LEVEL_3, "ADDRESS %+F has ID %u\n", adr, entry->id));
 #ifdef DEBUG_libfirm
@@ -2350,7 +2350,7 @@ int opt_ldst(ir_graph *irg)
 	}
 
 	obstack_init(&env.obst);
-	ir_nodemap_init(&env.adr_map);
+	ir_nodehashmap_init(&env.adr_map);
 
 	env.forward       = NULL;
 	env.backward      = NULL;
@@ -2465,7 +2465,7 @@ int opt_ldst(ir_graph *irg)
 end:
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK | IR_RESOURCE_BLOCK_MARK);
-	ir_nodemap_destroy(&env.adr_map);
+	ir_nodehashmap_destroy(&env.adr_map);
 	obstack_free(&env.obst, NULL);
 
 #ifdef DEBUG_libfirm
