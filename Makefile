@@ -25,10 +25,11 @@ RANLIB ?= ranlib
 DLLEXT ?= .so
 
 # Variants
-CFLAGS_debug      = -O0 -g3 -DDEBUG_libfirm
-CFLAGS_profile    = -O3 -pg -DNDEBUG -fno-inline
+CFLAGS_all        = -fPIC
+CFLAGS_debug      = $(CFLAGS_all) -O0 -g3 -DDEBUG_libfirm
+CFLAGS_profile    = $(CFLAGS_all) -O3 -pg -DNDEBUG -fno-inline
 LINKFLAGS_profile = -pg
-CFLAGS_optimize   = -O3 -DNDEBUG
+CFLAGS_optimize   = $(CFLAGS_all) -O3 -DNDEBUG
 
 # General flags
 CFLAGS    += $(CFLAGS_$(variant))
