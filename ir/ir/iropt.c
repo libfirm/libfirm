@@ -3140,6 +3140,20 @@ static ir_node *transform_node_bitop_shift(ir_node *n)
 	return new_shift;
 }
 
+static bool complement_values(const ir_node *a, const ir_node *b)
+{
+	if (is_Not(a) && get_Not_op(a) == b)
+		return true;
+	if (is_Not(b) && get_Not_op(b) == a)
+		return true;
+	if (is_Const(a) && is_Const(b)) {
+		ir_tarval *tv_a = get_Const_tarval(a);
+		ir_tarval *tv_b = get_Const_tarval(b);
+		return tarval_not(tv_a) == tv_b;
+	}
+	return false;
+}
+
 /**
  * Transform an And.
  */
@@ -3203,7 +3217,19 @@ static ir_node *transform_node_And(ir_node *n)
 	HANDLE_BINOP_PHI((eval_func) tarval_and, a, b, c, mode);
 
 	if (is_Or(a)) {
-		if (is_Not(b)) {
+		ir_node *or_left  = get_Or_left(a);
+		ir_node *or_right = get_Or_right(a);
+		if (complement_values(or_left, b)) {
+			/* (a|b) & ~a => b & ~a */
+			dbg_info *dbgi    = get_irn_dbg_info(n);
+			ir_node  *block   = get_nodes_block(n);
+			return new_rd_And(dbgi, block, or_right, b, mode);
+		} else if (complement_values(or_right, b)) {
+			/* (a|b) & ~b => a & ~b */
+			dbg_info *dbgi    = get_irn_dbg_info(n);
+			ir_node  *block   = get_nodes_block(n);
+			return new_rd_And(dbgi, block, or_left, b, mode);
+		} else if (is_Not(b)) {
 			ir_node *op = get_Not_op(b);
 			if (is_And(op)) {
 				ir_node *ba = get_And_left(op);
@@ -3222,7 +3248,19 @@ static ir_node *transform_node_And(ir_node *n)
 		}
 	}
 	if (is_Or(b)) {
-		if (is_Not(a)) {
+		ir_node *or_left  = get_Or_left(b);
+		ir_node *or_right = get_Or_right(b);
+		if (complement_values(or_left, a)) {
+			/* (a|b) & ~a => b & ~a */
+			dbg_info *dbgi    = get_irn_dbg_info(n);
+			ir_node  *block   = get_nodes_block(n);
+			return new_rd_And(dbgi, block, or_right, a, mode);
+		} else if (complement_values(or_right, a)) {
+			/* (a|b) & ~b => a & ~b */
+			dbg_info *dbgi    = get_irn_dbg_info(n);
+			ir_node  *block   = get_nodes_block(n);
+			return new_rd_And(dbgi, block, or_left, a, mode);
+		} else if (is_Not(a)) {
 			ir_node *op = get_Not_op(a);
 			if (is_And(op)) {
 				ir_node *aa = get_And_left(op);
