@@ -40,11 +40,12 @@ enum range_types {
 
 /** VRP information */
 typedef struct {
-	int valid;                   /**< This node has valid vrp information */
-	ir_tarval *bits_set;         /**< The bits which, by analysis, are  definitely set.
-	                                  0: may be not set, 1: definitely set*/
+	ir_tarval *bits_set;         /**< The bits which, by analysis, are
+	                                  definitely set:
+	                                  0: may be not set, 1: definitely set */
 	ir_tarval *bits_not_set;     /**< The bits which by analysis are definitely
-	                                  not set, 1 for may be set, 0: definitely not set  */
+	                                  not set:
+	                                  1 for may be set, 0: definitely not set */
 	enum range_types range_type; /**< The range represented by range_top, range_bottom */
 	ir_tarval *range_bottom;
 	ir_tarval *range_top;
@@ -57,6 +58,11 @@ typedef struct {
 FIRM_API void set_vrp_data(ir_graph *irg);
 
 /**
+ * free vrp infos in an irg
+ */
+FIRM_API void free_vrp_data(ir_graph *irg);
+
+/**
  * Test, if the two nodes can be compared with their vrp information
  *
  * @param left: the left node
@@ -67,9 +73,9 @@ FIRM_API ir_relation vrp_cmp(const ir_node *left, const ir_node *right);
 
 /*
  * Return the vrp data for this node
+ * Note: only allowed for nodes with an integer mode!
  *
  * @param n: the node for which to return the vrp information
- *
  * @return a pointer to the vrp data or NULL if there is none
  */
 FIRM_API vrp_attr *vrp_get_info(const ir_node *n);

@@ -63,7 +63,7 @@
 #include "irtools.h"
 #include "iropt_dbg.h"
 #include "irpass_t.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 

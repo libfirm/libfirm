@@ -37,23 +37,47 @@
 #include "tv.h"
 #include "irop.h"
 #include "pdeq.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "bitset.h"
 #include "debug.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
 typedef struct vrp_env_t {
-	waitq    *workqueue;
-	bitset_t *visited;
+	waitq       *workqueue;
+	bitset_t    *visited;
+	ir_vrp_info *info;
 } vrp_env_t;
 
-static vrp_attr *get_vrp_attr(const ir_node *node)
+static vrp_attr *vrp_get_or_set_info(ir_vrp_info *info, const ir_node *node)
 {
-	return (vrp_attr*) get_or_set_irn_phase_info(node, PHASE_VRP);
+	vrp_attr *attr = ir_nodemap_get(&info->infos, node);
+	if (attr == NULL) {
+		ir_mode *mode = get_irn_mode(node);
+		assert(mode_is_int(mode));
+
+		attr = obstack_alloc(&info->obst, sizeof(*attr));
+		memset(attr, 0, sizeof(*attr));
+		attr->range_type   = VRP_UNDEFINED;
+		attr->bits_set     = get_mode_null(mode);
+		attr->bits_not_set = get_mode_all_one(mode);
+		attr->range_bottom = get_tarval_top();
+		attr->range_top    = get_tarval_top();
+
+		ir_nodemap_insert(&info->infos, node, attr);
+	}
+	return attr;
 }
 
-static int vrp_update_node(ir_node *node)
+vrp_attr *vrp_get_info(const ir_node *node)
+{
+	ir_graph *irg = get_irn_irg(node);
+	if (irg->vrp.infos.data == NULL)
+		return NULL;
+	return (vrp_attr*) ir_nodemap_get(&irg->vrp.infos, node);
+}
+
+static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 {
 	ir_tarval *new_bits_set = get_tarval_bad();
 	ir_tarval *new_bits_not_set = get_tarval_bad();
@@ -67,7 +91,7 @@ static int vrp_update_node(ir_node *node)
 		return 0; /* we don't optimize for non-int-nodes*/
 	}
 
-	vrp = get_vrp_attr(node);
+	vrp = vrp_get_or_set_info(info, node);
 
 	/* TODO: Check if all predecessors have valid VRP information*/
 
@@ -87,8 +111,8 @@ static int vrp_update_node(ir_node *node)
 
 		left = get_And_left(node);
 		right = get_And_right(node);
-		vrp_left = get_vrp_attr(left);
-		vrp_right = get_vrp_attr(right);
+		vrp_left = vrp_get_or_set_info(info, left);
+		vrp_right = vrp_get_or_set_info(info, right);
 		new_bits_set = tarval_and(vrp_left->bits_set, vrp_right->bits_set);
 		new_bits_not_set = tarval_and(vrp_left->bits_not_set, vrp_right->bits_not_set);
 
@@ -99,8 +123,8 @@ static int vrp_update_node(ir_node *node)
 		int overflow_top, overflow_bottom;
 		ir_tarval *new_top, *new_bottom;
 		const vrp_attr *vrp_left, *vrp_right;
-		vrp_left = get_vrp_attr(get_Add_left(node));
-		vrp_right = get_vrp_attr(get_Add_right(node));
+		vrp_left = vrp_get_or_set_info(info, get_Add_left(node));
+		vrp_right = vrp_get_or_set_info(info, get_Add_right(node));
 
 		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
 				VRP_UNDEFINED || vrp_left->range_type == VRP_VARYING ||
@@ -128,11 +152,17 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Sub: {
+		ir_node *left  = get_Sub_left(node);
+		ir_node *right = get_Sub_right(node);
 		int overflow_top, overflow_bottom;
 		ir_tarval *new_top, *new_bottom;
 		const vrp_attr *vrp_left, *vrp_right;
-		vrp_left = get_vrp_attr(get_Sub_left(node));
-		vrp_right = get_vrp_attr(get_Sub_right(node));
+
+		if (!mode_is_int(get_irn_mode(left)))
+			return 0;
+
+		vrp_left  = vrp_get_or_set_info(info, left);
+		vrp_right = vrp_get_or_set_info(info, right);
 
 		if (vrp_left->range_type == VRP_UNDEFINED || vrp_right->range_type ==
 				VRP_UNDEFINED || vrp_left->range_type == VRP_VARYING ||
@@ -161,8 +191,8 @@ static int vrp_update_node(ir_node *node)
 	case iro_Or: {
 		const vrp_attr *vrp_left, *vrp_right;
 
-		vrp_left = get_vrp_attr(get_Or_left(node));
-		vrp_right = get_vrp_attr(get_Or_right(node));
+		vrp_left = vrp_get_or_set_info(info, get_Or_left(node));
+		vrp_right = vrp_get_or_set_info(info, get_Or_right(node));
 
 		new_bits_set = tarval_or(vrp_left->bits_set, vrp_right->bits_set);
 		new_bits_not_set = tarval_or(vrp_left->bits_not_set, vrp_right->bits_not_set);
@@ -174,7 +204,7 @@ static int vrp_update_node(ir_node *node)
 		const vrp_attr *vrp_left;
 		const ir_node *right = get_Rotl_right(node);
 
-		vrp_left = get_vrp_attr(get_Rotl_left(node));
+		vrp_left = vrp_get_or_set_info(info, get_Rotl_left(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -187,7 +217,7 @@ static int vrp_update_node(ir_node *node)
 	case iro_Shl: {
 		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shl_right(node);
-		vrp_left = get_vrp_attr(get_Shl_left(node));
+		vrp_left = vrp_get_or_set_info(info, get_Shl_left(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -201,7 +231,7 @@ static int vrp_update_node(ir_node *node)
 		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shr_right(node);
 
-		vrp_left = get_vrp_attr(get_Shr_left(node));
+		vrp_left = vrp_get_or_set_info(info, get_Shr_left(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -215,7 +245,7 @@ static int vrp_update_node(ir_node *node)
 		const vrp_attr *vrp_left;
 		const ir_node *right = get_Shrs_right(node);
 
-		vrp_left = get_vrp_attr(get_Shrs_left(node));
+		vrp_left = vrp_get_or_set_info(info, get_Shrs_left(node));
 
 		/* We can only compute this if the right value is a constant*/
 		if (is_Const(right)) {
@@ -228,8 +258,8 @@ static int vrp_update_node(ir_node *node)
 	case iro_Eor: {
 		const vrp_attr *vrp_left, *vrp_right;
 
-		vrp_left = get_vrp_attr(get_Eor_left(node));
-		vrp_right = get_vrp_attr(get_Eor_right(node));
+		vrp_left = vrp_get_or_set_info(info, get_Eor_left(node));
+		vrp_right = vrp_get_or_set_info(info, get_Eor_right(node));
 
 		new_bits_set = tarval_or(
 						tarval_and(vrp_left->bits_set, tarval_not(vrp_right->bits_not_set)),
@@ -244,7 +274,7 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Id: {
-		const vrp_attr *vrp_pred = get_vrp_attr(get_Id_pred(node));
+		const vrp_attr *vrp_pred = vrp_get_or_set_info(info, get_Id_pred(node));
 		new_bits_set = vrp_pred->bits_set;
 		new_bits_not_set = vrp_pred->bits_not_set;
 		new_range_top = vrp_pred->range_top;
@@ -254,7 +284,7 @@ static int vrp_update_node(ir_node *node)
 	}
 
 	case iro_Not: {
-		const vrp_attr *vrp_pred = get_vrp_attr(get_Not_op(node));
+		const vrp_attr *vrp_pred = vrp_get_or_set_info(info, get_Not_op(node));
 		new_bits_set = tarval_not(vrp_pred->bits_not_set);
 		new_bits_not_set = tarval_not(vrp_pred->bits_set);
 		break;
@@ -263,13 +293,14 @@ static int vrp_update_node(ir_node *node)
 	case iro_Conv: {
 		const ir_node *pred = get_Conv_op(node);
 		ir_mode *old_mode = get_irn_mode(pred);
-		const vrp_attr *vrp_pred = get_vrp_attr(pred);
+		const vrp_attr *vrp_pred;
 
 		ir_mode *new_mode;
 
 		if (!mode_is_int(old_mode))
 			return 0;
 
+		vrp_pred = vrp_get_or_set_info(info, pred);
 		new_mode = get_irn_mode(node);
 
 		/* The second and is needed if target type is smaller*/
@@ -320,7 +351,7 @@ static int vrp_update_node(ir_node *node)
 		int i;
 
 		const ir_node *pred = get_Phi_pred(node,0);
-		const vrp_attr *vrp_pred = get_vrp_attr(pred);
+		const vrp_attr *vrp_pred = vrp_get_or_set_info(info, pred);
 		new_range_top = vrp_pred->range_top;
 		new_range_bottom = vrp_pred->range_bottom;
 		new_range_type = vrp_pred->range_type;
@@ -331,7 +362,7 @@ static int vrp_update_node(ir_node *node)
 
 		for (i = 1; i < num; i++) {
 			pred = get_Phi_pred(node, i);
-			vrp_pred = get_vrp_attr(pred);
+			vrp_pred = vrp_get_or_set_info(info, pred);
 			if (new_range_type == VRP_RANGE && vrp_pred->range_type ==
 					VRP_RANGE) {
 				relation = tarval_cmp(new_range_top, vrp_pred->range_top);
@@ -482,7 +513,7 @@ static void vrp_first_pass(ir_node *n, void *e)
 
 	bitset_set(env->visited, get_irn_idx(n));
 
-	vrp_update_node(n);
+	vrp_update_node(env->info, n);
 
 	assure_irg_outs(get_current_ir_graph());
 	for (i = get_irn_n_outs(n) - 1; i >=0; --i) {
@@ -494,70 +525,26 @@ static void vrp_first_pass(ir_node *n, void *e)
 	}
 }
 
-static void *vrp_init_node(ir_phase *phase, const ir_node *n)
-{
-	ir_mode *mode;
-	vrp_attr *vrp;
-
-	DBG((dbg, LEVEL_2, "initialized node nr: %d\n", get_irn_node_nr(n)));
-	vrp = (vrp_attr*) phase_alloc(phase, sizeof(vrp_attr));
-
-	memset(vrp, 0, sizeof(vrp_attr));
-	/* Initialize the vrp information to default */
-
-	mode = get_irn_mode(n);
-
-	vrp->range_type = VRP_UNDEFINED;
-
-	/* TODO: We might be able to optimize space usage if we do not allocate
-	 * vrp space for non-int nodes. (currently caught by vrp_update_node)
-	 */
-	if (mode_is_int(mode)) {
-		/* We are assuming that 0 is always represented as this modes null */
-		vrp->valid = 1;
-		vrp->bits_set = get_mode_null(mode);
-		vrp->bits_not_set = get_mode_all_one(mode);
-		vrp->range_bottom = get_tarval_top();
-		vrp->range_top = get_tarval_top();
-	} else {
-		vrp->valid = 0;
-		vrp->bits_set = get_tarval_bad();
-		vrp->bits_not_set = get_tarval_bad();
-		vrp->range_bottom = get_tarval_bad();
-		vrp->range_top = get_tarval_bad();
-	}
-
-	/* TODO: We might be able to set better vrp info at this time, if this is
-	 * a node which is newly created in an already initialized irg
-	 *
-	 * maybe just call vrp_update_node and if it returns one, iterate over
-	 * successors
-	 */
-	return vrp;
-}
-
 void set_vrp_data(ir_graph *irg)
 {
 	ir_node *succ, *node;
 	int i;
 	vrp_env_t *env;
-	ir_phase *phase;
+	ir_vrp_info *info;
+
+	if (irg->vrp.infos.data != NULL)
+		free_vrp_data(irg);
 
 	FIRM_DBG_REGISTER(dbg, "ir.ana.vrp");
 
 	assure_irg_outs(irg); /* ensure that out edges are consistent*/
-	phase = irg_get_phase(irg, PHASE_VRP);
-	if (phase == NULL) {
-		/* this is our first run */
-		phase = new_phase(irg, vrp_init_node);
-		irg_register_phase(irg, PHASE_VRP, phase);
-		env = (vrp_env_t*) phase_alloc(phase, sizeof(*env));
-		phase->priv = env;
-	} else {
-		env = (vrp_env_t*) phase->priv;
-	}
+	ir_nodemap_init(&irg->vrp.infos, irg);
+	obstack_init(&irg->vrp.obst);
+	info = &irg->vrp;
 
+	env = obstack_alloc(&irg->vrp.obst, sizeof(*env));
 	env->workqueue = new_waitq();
+	env->info      = info;
 
 	env->visited = bitset_malloc(get_irg_last_idx(irg));
 	irg_walk_graph(irg, NULL, vrp_first_pass, env);
@@ -567,7 +554,7 @@ void set_vrp_data(ir_graph *irg)
 	while (!waitq_empty(env->workqueue)) {
 		node = (ir_node*) waitq_get(env->workqueue);
 
-		if (vrp_update_node(node)) {
+		if (vrp_update_node(info, node)) {
 			/* if something changed, add successors to worklist*/
 			for (i = get_irn_n_outs(node) - 1; i >= 0; --i) {
 				succ =  get_irn_out(node, i);
@@ -578,6 +565,14 @@ void set_vrp_data(ir_graph *irg)
 	del_waitq(env->workqueue);
 }
 
+void free_vrp_data(ir_graph *irg)
+{
+	if (irg->vrp.infos.data == NULL)
+		return;
+	obstack_free(&irg->vrp.obst, NULL);
+	ir_nodemap_destroy(&irg->vrp.infos);
+}
+
 ir_graph_pass_t *set_vrp_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "set_vrp", set_vrp_data);
@@ -586,6 +581,9 @@ ir_graph_pass_t *set_vrp_pass(const char *name)
 ir_relation vrp_cmp(const ir_node *left, const ir_node *right)
 {
 	vrp_attr *vrp_left, *vrp_right;
+
+	if (!mode_is_int(get_irn_mode(left)))
+		return ir_relation_true;
 
 	vrp_left = vrp_get_info(left);
 	vrp_right = vrp_get_info(right);
@@ -609,23 +607,4 @@ ir_relation vrp_cmp(const ir_node *left, const ir_node *right)
 
 	/* TODO: We can get way more information here*/
 	return ir_relation_true;
-}
-
-vrp_attr *vrp_get_info(const ir_node *node)
-{
-	const ir_graph *irg   = get_irn_irg(node);
-	const ir_phase *phase = irg_get_phase(irg, PHASE_VRP);
-	vrp_attr       *vrp;
-
-	if (phase == NULL) {
-		/* phase has not yet been initialized */
-		return NULL;
-	}
-
-	vrp = (vrp_attr*) phase_get_irn_data(phase, node);
-	if (vrp && vrp->valid) {
-		return vrp;
-	}
-
-	return NULL;
 }

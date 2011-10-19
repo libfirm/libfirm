@@ -39,12 +39,13 @@
 #include "irnode_t.h"
 #include "bitset.h"
 #include "raw_bitset.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "pqueue.h"
 #include "xmalloc.h"
 #include "pdeq.h"
 #include "irprintf.h"
 #include "irbitset.h"
+#include "irtools.h"
 #include "error.h"
 #include "list.h"
 #include "statev.h"
@@ -118,7 +119,8 @@ typedef struct co_mst_env_t {
 	int              n_regs;         /**< number of regs in class */
 	int              k;              /**< number of non-ignore registers in class */
 	bitset_t         *allocatable_regs; /**< set containing all global ignore registers */
-	ir_phase         ph;             /**< phase object holding data for nodes */
+	ir_nodemap        map;           /**< phase object holding data for nodes */
+	struct obstack    obst;
 	pqueue_t         *chunks;        /**< priority queue for chunks */
 	list_head         chunklist;     /**< list holding all chunks */
 	be_ifg_t         *ifg;           /**< the interference graph */
@@ -143,9 +145,71 @@ typedef struct co_mst_irn_t {
 	real_t           constr_factor;
 } co_mst_irn_t;
 
+/**
+ * In case there is no phase information for irn, initialize it.
+ */
+static co_mst_irn_t *co_mst_irn_init(co_mst_env_t *env, const ir_node *irn)
+{
+	co_mst_irn_t *res = OALLOC(&env->obst, co_mst_irn_t);
+
+	const arch_register_req_t *req;
+	neighbours_iter_t nodes_it;
+	ir_node  *neigh;
+	unsigned len;
+
+	res->irn           = irn;
+	res->chunk         = NULL;
+	res->fixed         = 0;
+	res->tmp_col       = -1;
+	res->int_neighs    = NULL;
+	res->int_aff_neigh = 0;
+	res->col           = arch_register_get_index(arch_get_irn_register(irn));
+	res->init_col      = res->col;
+	INIT_LIST_HEAD(&res->list);
+
+	DB((dbg, LEVEL_4, "Creating phase info for %+F\n", irn));
+
+	/* set admissible registers */
+	res->adm_colors = bitset_obstack_alloc(&env->obst, env->n_regs);
+
+	/* Exclude colors not assignable to the irn */
+	req = arch_get_irn_register_req(irn);
+	if (arch_register_req_is(req, limited)) {
+		rbitset_copy_to_bitset(req->limited, res->adm_colors);
+	} else {
+		bitset_set_all(res->adm_colors);
+	}
+
+	/* exclude global ignore registers as well */
+	bitset_and(res->adm_colors, env->allocatable_regs);
+
+	/* compute the constraint factor */
+	res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
+
+	/* set the number of interfering affinity neighbours to -1, they are calculated later */
+	res->int_aff_neigh = -1;
+
+	/* build list of interfering neighbours */
+	len = 0;
+	be_ifg_foreach_neighbour(env->ifg, &nodes_it, irn, neigh) {
+		if (!arch_irn_is_ignore(neigh)) {
+			obstack_ptr_grow(&env->obst, neigh);
+			++len;
+		}
+	}
+	res->int_neighs = (ir_node**)obstack_finish(&env->obst);
+	res->n_neighs   = len;
+	return res;
+}
+
 static co_mst_irn_t *get_co_mst_irn(co_mst_env_t *env, const ir_node *node)
 {
-	return (co_mst_irn_t*)phase_get_or_set_irn_data(&env->ph, node);
+	co_mst_irn_t *res = (co_mst_irn_t*)ir_nodemap_get(&env->map, node);
+	if (res == NULL) {
+		res = co_mst_irn_init(env, node);
+		ir_nodemap_insert(&env->map, node, res);
+	}
+	return res;
 }
 
 typedef int decide_func_t(const co_mst_irn_t *node, int col);
@@ -373,63 +437,6 @@ static inline void aff_chunk_add_node(aff_chunk_t *c, co_mst_irn_t *node)
 }
 
 /**
- * In case there is no phase information for irn, initialize it.
- */
-static void *co_mst_irn_init(ir_phase *ph, const ir_node *irn)
-{
-	co_mst_irn_t *res = (co_mst_irn_t*)phase_alloc(ph, sizeof(res[0]));
-	co_mst_env_t *env = (co_mst_env_t*)ph->priv;
-
-	const arch_register_req_t *req;
-	neighbours_iter_t nodes_it;
-	ir_node  *neigh;
-	unsigned len;
-
-	res->irn           = irn;
-	res->chunk         = NULL;
-	res->fixed         = 0;
-	res->tmp_col       = -1;
-	res->int_neighs    = NULL;
-	res->int_aff_neigh = 0;
-	res->col           = arch_register_get_index(arch_get_irn_register(irn));
-	res->init_col      = res->col;
-	INIT_LIST_HEAD(&res->list);
-
-	DB((dbg, LEVEL_4, "Creating phase info for %+F\n", irn));
-
-	/* set admissible registers */
-	res->adm_colors = bitset_obstack_alloc(phase_obst(ph), env->n_regs);
-
-	/* Exclude colors not assignable to the irn */
-	req = arch_get_irn_register_req(irn);
-	if (arch_register_req_is(req, limited))
-		rbitset_copy_to_bitset(req->limited, res->adm_colors);
-	else
-		bitset_set_all(res->adm_colors);
-
-	/* exclude global ignore registers as well */
-	bitset_and(res->adm_colors, env->allocatable_regs);
-
-	/* compute the constraint factor */
-	res->constr_factor = (real_t) (1 + env->n_regs - bitset_popcount(res->adm_colors)) / env->n_regs;
-
-	/* set the number of interfering affinity neighbours to -1, they are calculated later */
-	res->int_aff_neigh = -1;
-
-	/* build list of interfering neighbours */
-	len = 0;
-	be_ifg_foreach_neighbour(env->ifg, &nodes_it, irn, neigh) {
-		if (!arch_irn_is_ignore(neigh)) {
-			obstack_ptr_grow(phase_obst(ph), neigh);
-			++len;
-		}
-	}
-	res->int_neighs = (ir_node**)obstack_finish(phase_obst(ph));
-	res->n_neighs   = len;
-	return res;
-}
-
-/**
  * Check if affinity chunk @p chunk interferes with node @p irn.
  */
 static inline int aff_chunk_interferes(const aff_chunk_t *chunk, const ir_node *irn)
@@ -641,6 +648,7 @@ static void build_affinity_chunks(co_mst_env_t *env)
 	ir_node     *n;
 	int         i, len;
 	aff_chunk_t *curr_chunk;
+	size_t      pn;
 
 	/* at first we create the affinity edge objects */
 	be_ifg_foreach_node(env->ifg, &nodes_it, n) {
@@ -713,22 +721,24 @@ static void build_affinity_chunks(co_mst_env_t *env)
 		pqueue_put(env->chunks, curr_chunk, curr_chunk->weight);
 	}
 
-	foreach_phase_irn(&env->ph, n) {
-		co_mst_irn_t *mirn = get_co_mst_irn(env, n);
+	for (pn = 0; pn < ARR_LEN(env->map.data); ++pn) {
+		co_mst_irn_t *mirn = env->map.data[pn];
+		if (mirn == NULL)
+			continue;
+		if (mirn->chunk != NULL)
+			continue;
 
-		if (mirn->chunk == NULL) {
-			/* no chunk is allocated so far, do it now */
-			aff_chunk_t *curr_chunk = new_aff_chunk(env);
-			aff_chunk_add_node(curr_chunk, mirn);
+		/* no chunk is allocated so far, do it now */
+		aff_chunk_t *curr_chunk = new_aff_chunk(env);
+		aff_chunk_add_node(curr_chunk, mirn);
 
-			aff_chunk_assure_weight(env, curr_chunk);
+		aff_chunk_assure_weight(env, curr_chunk);
 
-			DBG((dbg, LEVEL_1, "entry #%u", curr_chunk->id));
-			DBG_AFF_CHUNK(env, LEVEL_1, curr_chunk);
-			DBG((dbg, LEVEL_1, "\n"));
+		DBG((dbg, LEVEL_1, "entry #%u", curr_chunk->id));
+		DBG_AFF_CHUNK(env, LEVEL_1, curr_chunk);
+		DBG((dbg, LEVEL_1, "\n"));
 
-			pqueue_put(env->chunks, curr_chunk, curr_chunk->weight);
-		}
+		pqueue_put(env->chunks, curr_chunk, curr_chunk->weight);
 	}
 
 	DEL_ARR_F(edges);
@@ -1427,6 +1437,7 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	bitset_t     *allocatable_regs = bitset_alloca(n_regs);
 	unsigned     i, j;
 	size_t       k;
+	size_t       pn;
 	ir_node      *irn;
 	co_mst_env_t mst_env;
 
@@ -1435,8 +1446,8 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	stat_ev_tim_push();
 
 	/* init phase */
-	phase_init(&mst_env.ph, co->irg, co_mst_irn_init);
-	phase_set_private(&mst_env.ph, &mst_env);
+	ir_nodemap_init(&mst_env.map, co->irg);
+	obstack_init(&mst_env.obst);
 
 	be_put_allocatable_regs(co->cenv->irg, co->cls, allocatable_regs);
 	k = bitset_popcount(allocatable_regs);
@@ -1449,10 +1460,10 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	mst_env.ifg              = co->cenv->ifg;
 	INIT_LIST_HEAD(&mst_env.chunklist);
 	mst_env.chunk_visited    = 0;
-	mst_env.single_cols      = (col_cost_t**)phase_alloc(&mst_env.ph, sizeof(*mst_env.single_cols) * n_regs);
+	mst_env.single_cols      = OALLOCN(&mst_env.obst, col_cost_t*, n_regs);
 
 	for (i = 0; i < n_regs; ++i) {
-		col_cost_t *vec = (col_cost_t*)phase_alloc(&mst_env.ph, sizeof(*vec) * n_regs);
+		col_cost_t *vec = OALLOCN(&mst_env.obst, col_cost_t, n_regs);
 
 		mst_env.single_cols[i] = vec;
 		for (j = 0; j < n_regs; ++j) {
@@ -1481,15 +1492,14 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 	}
 
 	/* apply coloring */
-	foreach_phase_irn(&mst_env.ph, irn) {
-		co_mst_irn_t          *mirn;
+	for (pn = 0; pn < ARR_LEN(mst_env.map.data); ++pn) {
+		co_mst_irn_t *mirn = mst_env.map.data[pn];
 		const arch_register_t *reg;
-
+		if (mirn == NULL)
+			continue;
+		irn = get_idx_irn(co->irg, pn);
 		if (arch_irn_is_ignore(irn))
 			continue;
-
-		mirn = get_co_mst_irn(&mst_env, irn);
-		// assert(mirn->fixed && "Node should have fixed color");
 
 		/* skip nodes where color hasn't changed */
 		if (mirn->init_col == mirn->col)
@@ -1502,7 +1512,8 @@ static int co_solve_heuristic_mst(copy_opt_t *co)
 
 	/* free allocated memory */
 	del_pqueue(mst_env.chunks);
-	phase_deinit(&mst_env.ph);
+	obstack_free(&mst_env.obst, NULL);
+	ir_nodemap_destroy(&mst_env.map);
 
 	stat_ev_tim_pop("heur4_total");
 

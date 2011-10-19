@@ -56,7 +56,8 @@
 #include "bitset.h"
 #include "beirg.h"
 #include "pdeq.h"
-#include "irphase.h"
+#include "irnodemap.h"
+#include "obst.h"
 
 typedef struct be_ssa_construction_env_t {
 	ir_graph                    *irg;
@@ -67,7 +68,8 @@ typedef struct be_ssa_construction_env_t {
 	const ir_nodeset_t          *ignore_uses;
 	ir_node                    **new_phis;
 	int                          iterated_domfront_calculated;
-	ir_phase                    *phase;
+	ir_nodemap                   infos;
+	struct obstack               obst;
 } be_ssa_construction_env_t;
 
 /**

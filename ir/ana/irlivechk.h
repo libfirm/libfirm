@@ -67,7 +67,7 @@ extern void lv_chk_free(lv_chk_t *lv);
  * @param irn  The node to check for.
  * @return     A bitmask of <code>lv_chk_state_t</code>.
  */
-extern unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *irn);
+extern unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *irn);
 
 #define lv_chk_bl_in(lv, bl, irn)  ((lv_chk_bl_xxx((lv), (bl), (irn)) & lv_chk_state_in)  != 0)
 #define lv_chk_bl_end(lv, bl, irn) ((lv_chk_bl_xxx((lv), (bl), (irn)) & lv_chk_state_end) != 0)

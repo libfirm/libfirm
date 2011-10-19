@@ -43,8 +43,8 @@
 #include "irloop_t.h"
 #include "iredges_t.h"
 #include "irbitset.h"
-#include "irphase_t.h"
 #include "irprintf_t.h"
+#include "irtools.h"
 
 #include "bemodule.h"
 #include "bearch.h"

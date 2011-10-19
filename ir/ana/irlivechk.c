@@ -43,7 +43,7 @@
 
 #include "irgraph_t.h"
 #include "irnode_t.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "iredges_t.h"
 
 #include "irprintf.h"
@@ -73,29 +73,30 @@ typedef struct bl_info_t {
 								 in the reduced graph. */
 } bl_info_t;
 
-#define get_block_info(lv, bl) ((bl_info_t *) phase_get_irn_data(&(lv)->ph, bl))
-
 struct lv_chk_t {
-	ir_phase     ph;
-	const dfs_t *dfs;
-	int          n_blocks;
-	bitset_t    *back_edge_src;
-	bitset_t    *back_edge_tgt;
-	bl_info_t  **map;
+	ir_nodemap     block_infos;
+	struct obstack obst;
+	const dfs_t   *dfs;
+	int            n_blocks;
+	bitset_t      *back_edge_src;
+	bitset_t      *back_edge_tgt;
+	bl_info_t    **map;
 	DEBUG_ONLY(firm_dbg_module_t *dbg;)
 };
 
-static void *init_block_data(ir_phase *ph, const ir_node *irn)
+static bl_info_t *get_block_info(lv_chk_t *lv, const ir_node *block)
 {
-	lv_chk_t *lv      = firm_container_of(ph, lv_chk_t, ph);
-	bl_info_t *bi     = (bl_info_t*) phase_alloc(ph, sizeof(bi[0]));
-
-	bi->id            = get_Block_dom_tree_pre_num(irn);
-	bi->block         = irn;
-	bi->red_reachable = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
-	bi->be_tgt_reach  = bitset_obstack_alloc(phase_obst(ph), lv->n_blocks);
-	bi->be_tgt_calc   = 0;
-	return bi;
+	bl_info_t *info = ir_nodemap_get(&lv->block_infos, block);
+	if (info == NULL) {
+		info                = obstack_alloc(&lv->obst, sizeof(*info));
+		info->id            = get_Block_dom_tree_pre_num(block);
+		info->block         = block;
+		info->red_reachable = bitset_obstack_alloc(&lv->obst, lv->n_blocks);
+		info->be_tgt_reach  = bitset_obstack_alloc(&lv->obst, lv->n_blocks);
+		info->be_tgt_calc   = 0;
+		ir_nodemap_insert(&lv->block_infos, block, info);
+	}
+	return info;
 }
 
 /**
@@ -243,27 +244,26 @@ static inline void compute_back_edge_chains(lv_chk_t *lv)
 lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 {
 	lv_chk_t *res = XMALLOC(lv_chk_t);
-	struct obstack *obst;
 	int i;
 
 	assure_doms(irg);
 
 	stat_ev_tim_push();
-	phase_init(&res->ph, irg, init_block_data);
-	obst = phase_obst(&res->ph);
+	ir_nodemap_init(&res->block_infos, irg);
+	obstack_init(&res->obst);
 
 	FIRM_DBG_REGISTER(res->dbg, "ir.ana.lvchk");
 
 	res->dfs           = dfs;
 	res->n_blocks      = dfs_get_n_nodes(res->dfs);
-	res->back_edge_src = bitset_obstack_alloc(obst, res->n_blocks);
-	res->back_edge_tgt = bitset_obstack_alloc(obst, res->n_blocks);
-	res->map           = OALLOCNZ(obst, bl_info_t*, res->n_blocks);
+	res->back_edge_src = bitset_obstack_alloc(&res->obst, res->n_blocks);
+	res->back_edge_tgt = bitset_obstack_alloc(&res->obst, res->n_blocks);
+	res->map           = OALLOCNZ(&res->obst, bl_info_t*, res->n_blocks);
 
 	/* fill the map which maps pre_num to block infos */
 	for (i = res->n_blocks - 1; i >= 0; --i) {
 		ir_node *irn  = (ir_node *) dfs_get_pre_num_node(res->dfs, i);
-		bl_info_t *bi = (bl_info_t*) phase_get_or_set_irn_data(&res->ph, irn);
+		bl_info_t *bi = get_block_info(res, irn);
 		assert(bi->id < res->n_blocks);
 		assert(res->map[bi->id] == NULL);
 		res->map[bi->id] = bi;
@@ -295,7 +295,8 @@ lv_chk_t *lv_chk_new(ir_graph *irg, const dfs_t *dfs)
 
 void lv_chk_free(lv_chk_t *lv)
 {
-	phase_deinit(&lv->ph);
+	obstack_free(&lv->obst, NULL);
+	ir_nodemap_destroy(&lv->block_infos);
 	xfree(lv);
 }
 
@@ -308,7 +309,7 @@ void lv_chk_free(lv_chk_t *lv)
  * @param var  The node to check for.
  * @return     A bitmask of lv_chk_state_XXX fields.
  */
-unsigned lv_chk_bl_xxx(const lv_chk_t *lv, const ir_node *bl, const ir_node *var)
+unsigned lv_chk_bl_xxx(lv_chk_t *lv, const ir_node *bl, const ir_node *var)
 {
 	int res  = 0;
 	ir_node *def_bl;

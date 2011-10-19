@@ -49,9 +49,8 @@
 
 #include <math.h>
 #include "irbackedge_t.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "irloop_t.h"
-
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -212,7 +211,8 @@ static entry_edge *loop_entries;
 /* Number of unrolls to perform */
 static int unroll_nr;
 /* Phase is used to keep copies of nodes. */
-static ir_phase *phase;
+static ir_nodemap     map;
+static struct obstack obst;
 
 /* Loop operations.  */
 typedef enum loop_op_t {
@@ -496,16 +496,14 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 	unrolling_node_info *info;
 	assert(nr != 0 && "0 reserved");
 
-	info = (unrolling_node_info *)phase_get_irn_data(phase, n);
+	info = (unrolling_node_info*)ir_nodemap_get(&map, n);
 	if (! info) {
-		ir_node **arr;
+		ir_node **arr = NEW_ARR_D(ir_node*, &obst, unroll_nr);
+		memset(arr, 0, unroll_nr * sizeof(ir_node*));
 
-		info = XMALLOCZ(unrolling_node_info);
-		arr = NEW_ARR_F(ir_node *, unroll_nr);
+		info = OALLOCZ(&obst, unrolling_node_info);
 		info->copies = arr;
-		memset(info->copies, 0, (unroll_nr) * sizeof(ir_node *));
-
-		phase_set_irn_data(phase, n, info);
+		ir_nodemap_insert(&map, n, info);
 	}
 	/* Original node */
 	info->copies[0] = n;
@@ -517,7 +515,7 @@ static void set_unroll_copy(ir_node *n, int nr, ir_node *cp)
 static ir_node *get_unroll_copy(ir_node *n, int nr)
 {
 	ir_node             *cp;
-	unrolling_node_info *info = (unrolling_node_info *)phase_get_irn_data(phase, n);
+	unrolling_node_info *info = (unrolling_node_info *)ir_nodemap_get(&map, n);
 	if (! info)
 		return NULL;
 
@@ -531,13 +529,13 @@ static ir_node *get_unroll_copy(ir_node *n, int nr)
 /* Sets copy cp of node n. */
 static void set_inversion_copy(ir_node *n, ir_node *cp)
 {
-	phase_set_irn_data(phase, n, cp);
+	ir_nodemap_insert(&map, n, cp);
 }
 
 /* Getter of copy of n for inversion */
 static ir_node *get_inversion_copy(ir_node *n)
 {
-	ir_node *cp = (ir_node *)phase_get_irn_data(phase, n);
+	ir_node *cp = (ir_node *)ir_nodemap_get(&map, n);
 	return cp;
 }
 
@@ -1310,7 +1308,8 @@ static void loop_inversion(ir_graph *irg)
 	inversion_blocks_in_cc = 0;
 
 	/* Use phase to keep copy of nodes from the condition chain. */
-	phase = new_phase(irg, phase_irn_init_default);
+	ir_nodemap_init(&map, irg);
+	obstack_init(&obst);
 
 	/* Search for condition chains and temporarily save the blocks in an array. */
 	cc_blocks = NEW_ARR_F(ir_node *, 0);
@@ -1362,7 +1361,8 @@ static void loop_inversion(ir_graph *irg)
 	}
 
 	/* free */
-	phase_free(phase);
+	obstack_free(&obst, NULL);
+	ir_nodemap_destroy(&map);
 	DEL_ARR_F(cond_chain_entries);
 	DEL_ARR_F(head_df_loop);
 
@@ -2555,7 +2555,8 @@ static void unroll_loop(void)
 		}
 
 		/* Use phase to keep copy of nodes from the condition chain. */
-		phase = new_phase(current_ir_graph, phase_irn_init_default);
+		ir_nodemap_init(&map, current_ir_graph);
+		obstack_init(&obst);
 
 		/* Copies the loop */
 		copy_loop(loop_entries, unroll_nr - 1);
@@ -2577,6 +2578,8 @@ static void unroll_loop(void)
 		clear_irg_state(current_ir_graph, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 
 		DEL_ARR_F(loop_entries);
+		obstack_free(&obst, NULL);
+		ir_nodemap_destroy(&map);
 	}
 
 }

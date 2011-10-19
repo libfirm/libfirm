@@ -35,6 +35,7 @@
 #include "ircons_t.h"
 #include "irgmod.h"
 #include "irgwalk.h"
+#include "irtools.h"
 #include "tv_t.h"
 #include "dbginfo_t.h"
 #include "iropt_dbg.h"
@@ -45,7 +46,7 @@
 #include "irpass.h"
 #include "opt_polymorphy.h"
 #include "irmemory.h"
-#include "irphase_t.h"
+#include "irnodehashmap.h"
 #include "irgopt.h"
 #include "set.h"
 #include "be.h"
@@ -1713,13 +1714,14 @@ typedef struct node_entry {
 
 /** A loop entry. */
 typedef struct loop_env {
-	ir_phase ph;           /**< the phase object */
-	ir_node  **stack;      /**< the node stack */
-	size_t   tos;          /**< tos index */
-	unsigned nextDFSnum;   /**< the current DFS number */
-	unsigned POnum;        /**< current post order number */
+	ir_nodehashmap_t map;
+	struct obstack   obst;
+	ir_node          **stack;      /**< the node stack */
+	size_t           tos;          /**< tos index */
+	unsigned         nextDFSnum;   /**< the current DFS number */
+	unsigned         POnum;        /**< current post order number */
 
-	unsigned changes;      /**< a bitmask of graph changes */
+	unsigned         changes;      /**< a bitmask of graph changes */
 } loop_env;
 
 /**
@@ -1727,13 +1729,12 @@ typedef struct loop_env {
 */
 static node_entry *get_irn_ne(ir_node *irn, loop_env *env)
 {
-	ir_phase   *ph = &env->ph;
-	node_entry *e  = (node_entry*)phase_get_irn_data(&env->ph, irn);
+	node_entry *e = (node_entry*)ir_nodehashmap_get(&env->map, irn);
 
-	if (! e) {
-		e = (node_entry*)phase_alloc(ph, sizeof(*e));
+	if (e == NULL) {
+		e = OALLOC(&env->obst, node_entry);
 		memset(e, 0, sizeof(*e));
-		phase_set_irn_data(ph, irn, e);
+		ir_nodehashmap_insert(&env->map, irn, e);
 	}
 	return e;
 }  /* get_irn_ne */
@@ -1856,7 +1857,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 
 			if (pe->pscc != ne->pscc) {
 				/* not in the same SCC, is region const */
-				phi_entry *pe = (phi_entry*)phase_alloc(&env->ph, sizeof(*pe));
+				phi_entry *pe = OALLOC(&env->obst, phi_entry);
 
 				pe->phi  = phi;
 				pe->pos  = j;
@@ -1933,7 +1934,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 						DB((dbg, LEVEL_1, "  Created %+F in %+F\n", irn, pred));
 					}
 					pe->load = irn;
-					ninfo = get_ldst_info(irn, phase_obst(&env->ph));
+					ninfo = get_ldst_info(irn, &env->obst);
 
 					ninfo->projs[pn_Load_M] = mem = new_r_Proj(irn, mode_M, pn_Load_M);
 					if (res == NULL) {
@@ -2173,7 +2174,7 @@ static void dfs(ir_node *irn, loop_env *env)
 	}
 
 	if (node->low == node->DFSnum) {
-		scc *pscc = (scc*)phase_alloc(&env->ph, sizeof(*pscc));
+		scc *pscc = OALLOC(&env->obst, scc);
 		ir_node *x;
 
 		pscc->head = NULL;
@@ -2247,13 +2248,15 @@ static int optimize_loops(ir_graph *irg)
 	env.nextDFSnum    = 0;
 	env.POnum         = 0;
 	env.changes       = 0;
-	phase_init(&env.ph, irg, phase_irn_init_default);
+	ir_nodehashmap_init(&env.map);
+	obstack_init(&env.obst);
 
 	/* calculate the SCC's and drive loop optimization. */
 	do_dfs(irg, &env);
 
 	DEL_ARR_F(env.stack);
-	phase_deinit(&env.ph);
+	obstack_free(&env.obst, NULL);
+	ir_nodehashmap_destroy(&env.map);
 
 	return env.changes;
 }  /* optimize_loops */

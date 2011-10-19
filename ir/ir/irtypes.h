@@ -37,7 +37,6 @@
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
-#include "irphase.h"
 #include "bitset.h"
 
 #include "pset.h"
@@ -46,16 +45,9 @@
 #include "obst.h"
 #include "vrp.h"
 
-/**
- * List of phases. (We will add a register/unregister interface if managing
- * this gets too tedious)
- */
-typedef enum ir_phase_id {
-	PHASE_FIRST,
-	PHASE_VRP = PHASE_FIRST,
-	PHASE_LAST = PHASE_VRP
-} ir_phase_id;
-ENUM_COUNTABLE(ir_phase_id)
+struct ir_nodemap {
+	void **data;  /**< maps node indices to void* */
+};
 
 /** The type of an ir_op. */
 struct ir_op {
@@ -451,6 +443,11 @@ typedef struct cg_callee_entry {
 	size_t     max_depth;  /**< Maximum depth of all Call nodes to irg. */
 } cg_callee_entry;
 
+typedef struct ir_vrp_info {
+	struct ir_nodemap infos;
+	struct obstack    obst;
+} ir_vrp_info;
+
 /**
  * An ir_graph holds all information for a procedure.
  */
@@ -491,6 +488,7 @@ struct ir_graph {
 	pset *value_table;                 /**< Hash table for global value numbering (cse)
 	                                        for optimizing use in iropt.c */
 	ir_def_use_edge *outs;             /**< Space for the Def-Use arrays. */
+	ir_vrp_info      vrp;              /**< vrp info */
 
 	ir_loop *loop;                     /**< The outermost loop for this graph. */
 	void *link;                        /**< A void* field to link any information to
@@ -521,7 +519,7 @@ struct ir_graph {
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 	size_t index;                      /**< a unique number for each graph */
-	ir_phase *phases[PHASE_LAST+1];    /**< Phase information. */
+	/** extra info which should survive accross multiple passes */
 	void     *be_data;                 /**< backend can put in private data here */
 
 	unsigned  dump_nr;                 /**< number of graph dumps */
