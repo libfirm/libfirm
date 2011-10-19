@@ -54,6 +54,7 @@
 #include "irnode_t.h"
 #include "irprintf.h"
 #include "irdump.h"
+#include "irtools.h"
 #include "obst.h"
 #include "raw_bitset.h"
 #include "unionfind.h"

@@ -97,7 +97,7 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 {
 	be_lv_info_t *payload = arr + 1;
 
-	unsigned n   = arr[0].u.head.n_members;
+	unsigned n   = arr[0].head.n_members;
 	unsigned res = 0;
 	int lo       = 0;
 	int hi       = n;
@@ -107,7 +107,7 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 
 	do {
 		int md          = lo + ((hi - lo) >> 1);
-		unsigned md_idx = payload[md].u.node.idx;
+		unsigned md_idx = payload[md].node.idx;
 
 		if (idx > md_idx)
 			lo = md + 1;
@@ -115,7 +115,7 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 			hi = md;
 		else {
 			res = md;
-			assert(payload[res].u.node.idx == idx);
+			assert(payload[res].node.idx == idx);
 			break;
 		}
 
@@ -126,10 +126,10 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 	{
 		unsigned i;
 		for (i = res; i < n; ++i)
-			assert(payload[i].u.node.idx >= idx);
+			assert(payload[i].node.idx >= idx);
 
 		for (i = 0; i < res; ++i)
-			assert(payload[i].u.node.idx < idx);
+			assert(payload[i].node.idx < idx);
 	}
 #endif
 
@@ -143,11 +143,11 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
  */
 static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 {
-	unsigned n  = arr[0].u.head.n_members;
+	unsigned n  = arr[0].head.n_members;
 	unsigned i;
 
 	for (i = 0; i < n; ++i) {
-		if (arr[i + 1].u.node.idx == idx)
+		if (arr[i + 1].node.idx == idx)
 			return i;
 	}
 
@@ -155,21 +155,22 @@ static inline unsigned _be_liveness_bsearch(be_lv_info_t *arr, unsigned idx)
 }
 #endif
 
-be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl, const ir_node *irn)
+be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl,
+                             const ir_node *irn)
 {
 	be_lv_info_t *irn_live;
 	be_lv_info_node_t *res = NULL;
 
 	stat_ev_tim_push();
-	irn_live = (be_lv_info_t*)phase_get_irn_data(&li->ph, bl);
-	if (irn_live) {
+	irn_live = (be_lv_info_t*)ir_nodehashmap_get(&li->map, bl);
+	if (irn_live != NULL) {
 		unsigned idx = get_irn_idx(irn);
 
 		/* Get the position of the index in the array. */
 		int pos = _be_liveness_bsearch(irn_live, idx);
 
 		/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
-		be_lv_info_node_t *rec = &irn_live[pos + 1].u.node;
+		be_lv_info_node_t *rec = &irn_live[pos + 1].node;
 
 		/* Check, if the irn is in deed in the array. */
 		if (rec->idx == idx)
@@ -180,9 +181,15 @@ be_lv_info_node_t *be_lv_get(const be_lv_t *li, const ir_node *bl, const ir_node
 	return res;
 }
 
-static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *irn)
+static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl,
+                                           ir_node *irn)
 {
-	be_lv_info_t *irn_live = (be_lv_info_t*)phase_get_or_set_irn_data(&li->ph, bl);
+	be_lv_info_t *irn_live = (be_lv_info_t*)ir_nodehashmap_get(&li->map, bl);
+	if (irn_live == NULL) {
+		irn_live = OALLOCNZ(&li->obst, be_lv_info_t, LV_STD_SIZE);
+		irn_live[0].head.n_size = LV_STD_SIZE-1;
+		ir_nodehashmap_insert(&li->map, bl, irn_live);
+	}
 
 	unsigned idx = get_irn_idx(irn);
 
@@ -190,13 +197,13 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 	unsigned pos = _be_liveness_bsearch(irn_live, idx);
 
 	/* Get the record in question. 1 must be added, since the first record contains information about the array and must be skipped. */
-	be_lv_info_node_t *res = &irn_live[pos + 1].u.node;
+	be_lv_info_node_t *res = &irn_live[pos + 1].node;
 
 	/* Check, if the irn is in deed in the array. */
 	if (res->idx != idx) {
 		be_lv_info_t *payload;
-		unsigned n_members = irn_live[0].u.head.n_members;
-		unsigned n_size    = irn_live[0].u.head.n_size;
+		unsigned n_members = irn_live[0].head.n_members;
+		unsigned n_size    = irn_live[0].head.n_size;
 		unsigned i;
 
 		if (n_members + 1 >= n_size) {
@@ -205,13 +212,13 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 			unsigned old_size_bytes  = (n_size + 1) * sizeof(irn_live[0]);
 			unsigned new_size        = (2 * n_size) + 1;
 			size_t   new_size_bytes  = new_size * sizeof(irn_live[0]);
-			be_lv_info_t *nw = (be_lv_info_t*)phase_alloc(&li->ph, new_size_bytes);
+			be_lv_info_t *nw = OALLOCN(&li->obst, be_lv_info_t, new_size);
 			memcpy(nw, irn_live, old_size_bytes);
 			memset(((char*) nw) + old_size_bytes, 0,
 			       new_size_bytes - old_size_bytes);
-			nw[0].u.head.n_size = new_size - 1;
+			nw[0].head.n_size = new_size - 1;
 			irn_live = nw;
-			phase_set_irn_data(&li->ph, bl, nw);
+			ir_nodehashmap_insert(&li->map, bl, nw);
 		}
 
 		payload = &irn_live[1];
@@ -219,9 +226,9 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 			payload[i] = payload[i - 1];
 		}
 
-		++irn_live[0].u.head.n_members;
+		++irn_live[0].head.n_members;
 
-		res = &payload[pos].u.node;
+		res = &payload[pos].node;
 		res->idx    = idx;
 		res->flags  = 0;
 	}
@@ -229,13 +236,13 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 #ifdef LV_INTESIVE_CHECKS
 	{
 		unsigned i;
-		unsigned n = irn_live[0].u.head.n_members;
+		unsigned n = irn_live[0].head.n_members;
 		unsigned last = 0;
 		be_lv_info_t *payload = &irn_live[1];
 
 		for (i = 0; i < n; ++i) {
-			assert(payload[i].u.node.idx >= last);
-			last = payload[i].u.node.idx;
+			assert(payload[i].node.idx >= last);
+			last = payload[i].node.idx;
 		}
 	}
 #endif
@@ -250,14 +257,14 @@ static be_lv_info_node_t *be_lv_get_or_set(be_lv_t *li, ir_node *bl, ir_node *ir
 static int be_lv_remove(be_lv_t *li, const ir_node *bl,
                         const ir_node *irn)
 {
-	be_lv_info_t *irn_live = (be_lv_info_t*)phase_get_irn_data(&li->ph, bl);
+	be_lv_info_t *irn_live = (be_lv_info_t*)ir_nodehashmap_get(&li->map, bl);
 
-	if (irn_live) {
-		unsigned n   = irn_live[0].u.head.n_members;
+	if (irn_live != NULL) {
+		unsigned n   = irn_live[0].head.n_members;
 		unsigned idx = get_irn_idx(irn);
 		unsigned pos = _be_liveness_bsearch(irn_live, idx);
 		be_lv_info_t *payload  = irn_live + 1;
-		be_lv_info_node_t *res = &payload[pos].u.node;
+		be_lv_info_node_t *res = &payload[pos].node;
 
 		/* The node is in deed in the block's array. Let's remove it. */
 		if (res->idx == idx) {
@@ -266,10 +273,10 @@ static int be_lv_remove(be_lv_t *li, const ir_node *bl,
 			for (i = pos + 1; i < n; ++i)
 				payload[i - 1] = payload[i];
 
-			payload[n - 1].u.node.idx   = 0;
-			payload[n - 1].u.node.flags = 0;
+			payload[n - 1].node.idx   = 0;
+			payload[n - 1].node.flags = 0;
 
-			--irn_live[0].u.head.n_members;
+			--irn_live[0].head.n_members;
 			DBG((dbg, LEVEL_3, "\tdeleting %+F from %+F at pos %d\n", irn, bl, pos));
 			return 1;
 		}
@@ -466,29 +473,19 @@ static void lv_dump_block(void *context, FILE *f, const ir_node *bl)
 {
 	if (is_Block(bl)) {
 		be_lv_t *lv = (be_lv_t*)context;
-		be_lv_info_t *info = (be_lv_info_t*)phase_get_irn_data(&lv->ph, bl);
+		be_lv_info_t *info = (be_lv_info_t*)ir_nodehashmap_get(&lv->map, bl);
 
 		fprintf(f, "liveness:\n");
-		if (info) {
-			unsigned n = info[0].u.head.n_members;
+		if (info != NULL) {
+			unsigned n = info[0].head.n_members;
 			unsigned i;
 
 			for (i = 0; i < n; ++i) {
-				be_lv_info_node_t *n = &info[i+1].u.node;
+				be_lv_info_node_t *n = &info[i+1].node;
 				ir_fprintf(f, "%s %+F\n", lv_flags_to_str(n->flags), get_idx_irn(lv->irg, n->idx));
 			}
 		}
 	}
-}
-
-static void *lv_phase_data_init(ir_phase *phase, const ir_node *irn)
-{
-	be_lv_info_t *info = (be_lv_info_t*)phase_alloc(phase, LV_STD_SIZE * sizeof(info[0]));
-	(void) irn;
-
-	memset(info, 0, LV_STD_SIZE * sizeof(info[0]));
-	info[0].u.head.n_size = LV_STD_SIZE - 1;
-	return info;
 }
 
 /**
@@ -539,7 +536,8 @@ void be_liveness_assure_sets(be_lv_t *lv)
 		be_timer_push(T_LIVE);
 
 		lv->nodes = bitset_malloc(2 * get_irg_last_idx(lv->irg));
-		phase_init(&lv->ph, lv->irg, lv_phase_data_init);
+		ir_nodehashmap_init(&lv->map);
+		obstack_init(&lv->obst);
 		compute_liveness(lv);
 		/* be_live_chk_compare(lv, lv->lvc); */
 
@@ -562,7 +560,8 @@ void be_liveness_invalidate(be_lv_t *lv)
 {
 	if (lv && lv->nodes) {
 		unregister_hook(hook_node_info, &lv->hook_info);
-		phase_deinit(&lv->ph);
+		obstack_free(&lv->obst, NULL);
+		ir_nodehashmap_destroy(&lv->map);
 		bitset_free(lv->nodes);
 		lv->nodes = NULL;
 	}
@@ -596,8 +595,11 @@ void be_liveness_recompute(be_lv_t *lv)
 	} else
 		bitset_clear_all(lv->nodes);
 
-	phase_deinit(&lv->ph);
-	phase_init(&lv->ph, lv->irg, lv_phase_data_init);
+	ir_nodehashmap_destroy(&lv->map);
+	obstack_free(&lv->obst, NULL);
+
+	ir_nodehashmap_init(&lv->map);
+	obstack_init(&lv->obst);
 	compute_liveness(lv);
 
 	be_timer_pop(T_LIVE);
@@ -656,21 +658,21 @@ static void lv_check_walker(ir_node *bl, void *data)
 	be_lv_t *lv    = w->lv;
 	be_lv_t *fresh = (be_lv_t*)w->data;
 
-	be_lv_info_t *curr = (be_lv_info_t*)phase_get_irn_data(&lv->ph, bl);
-	be_lv_info_t *fr   = (be_lv_info_t*)phase_get_irn_data(&fresh->ph, bl);
+	be_lv_info_t *curr = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
+	be_lv_info_t *fr   = (be_lv_info_t*)ir_nodehashmap_get(&fresh->map, bl);
 
-	if (!fr && curr && curr[0].u.head.n_members > 0) {
+	if (!fr && curr && curr[0].head.n_members > 0) {
 		unsigned i;
 
 		ir_fprintf(stderr, "%+F liveness should be empty but current liveness contains:\n", bl);
-		for (i = 0; i < curr[0].u.head.n_members; ++i) {
-			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].u.node.idx));
+		for (i = 0; i < curr[0].head.n_members; ++i) {
+			ir_fprintf(stderr, "\t%+F\n", get_idx_irn(lv->irg, curr[1 + i].node.idx));
 		}
 	}
 
 	else if (curr) {
-		unsigned n_curr  = curr[0].u.head.n_members;
-		unsigned n_fresh = fr[0].u.head.n_members;
+		unsigned n_curr  = curr[0].head.n_members;
+		unsigned n_fresh = fr[0].head.n_members;
 
 		unsigned i;
 
@@ -679,13 +681,13 @@ static void lv_check_walker(ir_node *bl, void *data)
 
 			ir_fprintf(stderr, "current:\n");
 			for (i = 0; i < n_curr; ++i) {
-				be_lv_info_node_t *n = &curr[1 + i].u.node;
+				be_lv_info_node_t *n = &curr[1 + i].node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
 
 			ir_fprintf(stderr, "correct:\n");
 			for (i = 0; i < n_fresh; ++i) {
-				be_lv_info_node_t *n = &fr[1 + i].u.node;
+				be_lv_info_node_t *n = &fr[1 + i].node;
 				ir_fprintf(stderr, "%+F %u %+F %s\n", bl, i, get_idx_irn(lv->irg, n->idx), lv_flags_to_str(n->flags));
 			}
 		}
@@ -874,27 +876,27 @@ void be_live_chk_compare(be_lv_t *lv, lv_chk_t *lvc)
 	stat_ev_ctx_push("be_lv_chk_compare");
 	for (j = 0; nodes[j]; ++j) {
 		ir_node *irn = nodes[j];
+		if (is_Block(irn))
+			continue;
+
 		for (i = 0; blocks[i]; ++i) {
 			ir_node *bl = blocks[i];
+			int lvr_in  = be_is_live_in (lv, bl, irn);
+			int lvr_out = be_is_live_out(lv, bl, irn);
+			int lvr_end = be_is_live_end(lv, bl, irn);
 
-			if (!is_Block(irn)) {
-				int lvr_in  = be_is_live_in (lv, bl, irn);
-				int lvr_out = be_is_live_out(lv, bl, irn);
-				int lvr_end = be_is_live_end(lv, bl, irn);
+			int lvc_in  = lv_chk_bl_in (lvc, bl, irn);
+			int lvc_out = lv_chk_bl_out(lvc, bl, irn);
+			int lvc_end = lv_chk_bl_end(lvc, bl, irn);
 
-				int lvc_in  = lv_chk_bl_in (lvc, bl, irn);
-				int lvc_out = lv_chk_bl_out(lvc, bl, irn);
-				int lvc_end = lv_chk_bl_end(lvc, bl, irn);
+			if (lvr_in - lvc_in != 0)
+				ir_fprintf(stderr, "live in  info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_in, lvc_in);
 
-				if (lvr_in - lvc_in != 0)
-					ir_fprintf(stderr, "live in  info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_in, lvc_in);
+			if (lvr_end - lvc_end != 0)
+				ir_fprintf(stderr, "live end info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_end, lvc_end);
 
-				if (lvr_end - lvc_end != 0)
-					ir_fprintf(stderr, "live end info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_end, lvc_end);
-
-				if (lvr_out - lvc_out != 0)
-					ir_fprintf(stderr, "live out info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_out, lvc_out);
-			}
+			if (lvr_out - lvc_out != 0)
+				ir_fprintf(stderr, "live out info for %+F at %+F differs: nml: %d, chk: %d\n", irn, bl, lvr_out, lvc_out);
 		}
 	}
 	stat_ev_ctx_pop("be_lv_chk_compare");

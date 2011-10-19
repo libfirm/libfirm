@@ -40,6 +40,7 @@
 #include "irgraph_t.h"
 #include "iredges_t.h"
 #include "irdom_t.h"
+#include "irtools.h"
 
 #include "be_t.h"
 #include "beutil.h"

@@ -39,6 +39,7 @@
 #include "ircons_t.h"
 #include "irprintf.h"
 #include "irnodeset.h"
+#include "irtools.h"
 
 #include "beutil.h"
 #include "bearch.h"

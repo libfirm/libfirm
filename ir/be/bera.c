@@ -34,6 +34,7 @@
 #include "irmode.h"
 #include "irdom.h"
 #include "iredges.h"
+#include "irtools.h"
 
 #include "bera.h"
 #include "beutil.h"
