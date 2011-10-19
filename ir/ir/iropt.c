@@ -1984,7 +1984,6 @@ static ir_node *transform_node_Add(ir_node *n)
 {
 	ir_mode *mode;
 	ir_node *a, *b, *c, *oldn = n;
-	vrp_attr *a_vrp, *b_vrp;
 
 	n = transform_node_AddSub(n);
 
@@ -2064,17 +2063,6 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
-	a_vrp = vrp_get_info(a);
-	b_vrp = vrp_get_info(b);
-
-	if (a_vrp && b_vrp) {
-		ir_tarval *vrp_val = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
-
-		if (tarval_is_null(vrp_val)) {
-			dbg_info *dbgi  = get_irn_dbg_info(n);
-			return new_rd_Or(dbgi, get_nodes_block(n), a, b, mode);
-		}
-	}
 	return n;
 }  /* transform_node_Add */
 
@@ -3415,6 +3403,19 @@ static ir_node *transform_node_Eor(ir_node *n)
 		n = new_r_Not(get_nodes_block(n), a, mode);
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
 		return n;
+	}
+
+	if (mode_is_int(mode)) {
+		vrp_attr *a_vrp = vrp_get_info(a);
+		vrp_attr *b_vrp = vrp_get_info(b);
+		if (a_vrp != NULL && b_vrp != NULL) {
+			ir_tarval *vrp_val = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
+
+			if (tarval_is_null(vrp_val)) {
+				dbg_info *dbgi = get_irn_dbg_info(n);
+				return new_rd_Add(dbgi, get_nodes_block(n), a, b, mode);
+			}
+		}
 	}
 
 	n = transform_bitwise_distributive(n, transform_node_Eor);
@@ -5078,6 +5079,21 @@ static ir_node *transform_node_Or(ir_node *n)
 	n = transform_bitwise_distributive(n, transform_node_Or);
 	if (is_Or(n))
 		n = transform_node_bitop_shift(n);
+	if (n != oldn)
+		return n;
+
+	if (mode_is_int(mode)) {
+		vrp_attr *a_vrp = vrp_get_info(a);
+		vrp_attr *b_vrp = vrp_get_info(b);
+		if (a_vrp != NULL && b_vrp != NULL) {
+			ir_tarval *vrp_val = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
+
+			if (tarval_is_null(vrp_val)) {
+				dbg_info *dbgi = get_irn_dbg_info(n);
+				return new_rd_Add(dbgi, get_nodes_block(n), a, b, mode);
+			}
+		}
+	}
 
 	return n;
 }  /* transform_node_Or */
