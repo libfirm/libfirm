@@ -52,7 +52,7 @@ sub create_emitter {
 	our %emit_templates;
 	our $arch;
 
-	if ($indent_line_func eq "") {
+	if (!defined($indent_line_func)) {
 		$template = "\\t" . $template;
 	} else {
 		push(@{$result}, "${indent}${indent_line_func};\n");
