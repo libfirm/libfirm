@@ -87,6 +87,7 @@ firm: $(libfirm_dll)
 backends = amd64 arm ia32 sparc TEMPLATE
 
 EMITTER_GENERATOR = $(srcdir)ir/be/scripts/generate_emitter.pl
+EMITTER_GENERATOR2 = $(srcdir)ir/be/scripts/generate_emitter_new.pl
 REGALLOC_IF_GENERATOR = $(srcdir)ir/be/scripts/generate_regalloc_if.pl
 OPCODES_GENERATOR = $(srcdir)ir/be/scripts/generate_new_opcodes.pl
 MACHINE_GENERATOR = $(srcdir)ir/be/scripts/generate_machine.pl
@@ -98,7 +99,7 @@ $(1)_GEN_HEADERS =
 
 $(1)_SPEC = ir/be/$(1)/$(1)_spec.pl
 
-$$(srcdir)ir/be/$(1)/gen_$(1)_emitter.h $$(srcdir)ir/be/$(1)/gen_$(1)_emitter.c: $$($(1)_SPEC) $$(EMITTER_GENERATOR)
+$$(srcdir)ir/be/$(1)/gen_$(1)_emitter.h $$(srcdir)ir/be/$(1)/gen_$(1)_emitter.c: $$($(1)_SPEC) $$(EMITTER_GENERATOR) $(EMITTER_GENERATOR2)
 	@echo GEN $$@
 	$(Q)$$(EMITTER_GENERATOR) $$($(1)_SPEC) $$(srcdir)ir/be/$(1)
 $(1)_SOURCES += ir/be/$(1)/gen_$(1)_emitter.c
