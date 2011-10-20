@@ -54,10 +54,7 @@ const char *get_mode_arithmetic_name(ir_mode_arithmetic ari)
 		X(irma_uninitialized);
 		X(irma_none);
 		X(irma_twos_complement);
-		X(irma_ones_complement);
-		X(irma_int_BCD);
 		X(irma_ieee754);
-		X(irma_float_BCD);
 		default: return "<unknown>";
 	}
 #undef X
@@ -931,7 +928,7 @@ int is_reinterpret_cast(const ir_mode *src, const ir_mode *dst)
 	if (ma != get_mode_arithmetic(dst))
 		return 0;
 
-	return ma == irma_twos_complement || ma == irma_ones_complement;
+	return ma == irma_twos_complement;
 }
 
 ir_type *(get_type_for_mode) (const ir_mode *mode)

@@ -247,10 +247,7 @@ static void symtbl_init(void)
 	INSERTENUM(tt_mode_arithmetic, irma_uninitialized);
 	INSERTENUM(tt_mode_arithmetic, irma_none);
 	INSERTENUM(tt_mode_arithmetic, irma_twos_complement);
-	INSERTENUM(tt_mode_arithmetic, irma_ones_complement);
-	INSERTENUM(tt_mode_arithmetic, irma_int_BCD);
 	INSERTENUM(tt_mode_arithmetic, irma_ieee754);
-	INSERTENUM(tt_mode_arithmetic, irma_float_BCD);
 
 	INSERTENUM(tt_pin_state, op_pin_state_floats);
 	INSERTENUM(tt_pin_state, op_pin_state_pinned);
