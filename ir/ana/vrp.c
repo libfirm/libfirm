@@ -38,6 +38,7 @@
 #include "irop.h"
 #include "pdeq.h"
 #include "irnodemap.h"
+#include "irhooks.h"
 #include "bitset.h"
 #include "debug.h"
 
@@ -525,6 +526,29 @@ static void vrp_first_pass(ir_node *n, void *e)
 	}
 }
 
+static void dump_vrp_info(void *ctx, FILE *F, const ir_node *node)
+{
+	vrp_attr *vrp;
+
+	(void) ctx;
+	if (!mode_is_int(get_irn_mode(node)))
+		return;
+
+	vrp = vrp_get_info(node);
+	if (vrp == NULL)
+		return;
+
+	fprintf(F, "vrp range type: %d\n", (int) vrp->range_type);
+	if (vrp->range_type == VRP_RANGE || vrp->range_type == VRP_ANTIRANGE) {
+		ir_fprintf(F, "vrp range bottom: %T\n",vrp->range_bottom);
+		ir_fprintf(F, "vrp range top: %T\n", vrp->range_top);
+	}
+	ir_fprintf(F, "vrp bits set: %T\n", vrp->bits_set);
+	ir_fprintf(F, "vrp bits not set: %T\n", vrp->bits_not_set);
+}
+
+static hook_entry_t dump_hook;
+
 void set_vrp_data(ir_graph *irg)
 {
 	ir_node *succ, *node;
@@ -541,6 +565,11 @@ void set_vrp_data(ir_graph *irg)
 	ir_nodemap_init(&irg->vrp.infos, irg);
 	obstack_init(&irg->vrp.obst);
 	info = &irg->vrp;
+
+	if (dump_hook.hook._hook_node_info == NULL) {
+		dump_hook.hook._hook_node_info = dump_vrp_info;
+		register_hook(hook_node_info, &dump_hook);
+	}
 
 	env = obstack_alloc(&irg->vrp.obst, sizeof(*env));
 	env->workqueue = new_waitq();

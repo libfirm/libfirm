@@ -39,7 +39,6 @@
 #include "trouts.h"
 #include "irgwalk.h"
 #include "tv_t.h"
-#include "vrp.h"
 #include "irprintf.h"
 #include "error.h"
 
@@ -62,7 +61,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 {
 	char     comma;
 	ir_graph *irg;
-	vrp_attr *vrp_info;
 
 	dump_node_opcode(F, n);
 	fprintf(F, " %ld\n", get_irn_node_nr(n));
@@ -301,11 +299,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 
 	default:
 		break;
-	}
-
-	vrp_info = vrp_get_info(n);
-	if (vrp_info) {
-		dump_vrp_info(F, n);
 	}
 
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
