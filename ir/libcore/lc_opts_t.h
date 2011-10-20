@@ -27,8 +27,6 @@
 #include "lc_opts.h"
 #include "list.h"
 
-#include "lc_defines.h"
-
 typedef struct {
 	struct list_head opts;
 	struct list_head grps;

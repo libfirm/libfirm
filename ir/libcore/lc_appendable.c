@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "lc_defines.h"
+#include "util.h"
 #include "lc_printf.h"
 
 /* Default appendable implementations */
@@ -109,7 +109,7 @@ static void str_init(lc_appendable_t *obj)
 
 static int str_snadd(lc_appendable_t *obj, const char *str, size_t n)
 {
-	size_t to_write = LC_MIN(obj->limit - obj->written - 1, n);
+	size_t to_write = MIN(obj->limit - obj->written - 1, n);
 	char *tgt = (char*)obj->obj;
 	strncpy(tgt + obj->written, str, to_write);
 	obj->written += to_write;
