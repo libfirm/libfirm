@@ -424,7 +424,7 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	/* Merge the newly calculated values with those that might already exist*/
 	if (new_bits_set != tarval_bad) {
 		new_bits_set = tarval_or(new_bits_set, vrp->bits_set);
-		if (tarval_cmp(new_bits_set, vrp->bits_set) != ir_relation_equal) {
+		if (new_bits_set != vrp->bits_set) {
 			something_changed = 1;
 			vrp->bits_set = new_bits_set;
 		}
@@ -432,7 +432,7 @@ static int vrp_update_node(ir_vrp_info *info, ir_node *node)
 	if (new_bits_not_set != tarval_bad) {
 		new_bits_not_set = tarval_and(new_bits_not_set, vrp->bits_not_set);
 
-		if (tarval_cmp(new_bits_not_set, vrp->bits_not_set) != ir_relation_equal) {
+		if (new_bits_not_set != vrp->bits_not_set) {
 			something_changed = 1;
 			vrp->bits_not_set = new_bits_not_set;
 		}
