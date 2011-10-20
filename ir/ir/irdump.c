@@ -1124,7 +1124,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 
 void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 {
-	hook_entry_t *info = XMALLOC(hook_entry_t);
+	hook_entry_t *info = XMALLOCZ(hook_entry_t);
 
 	info->hook._hook_node_info = cb;
 	info->context              = data;
