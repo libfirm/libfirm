@@ -36,19 +36,43 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "xmalloc.h"
 
-#ifdef _MSC_VER
-#include <float.h>
-#define isnan(x)   _isnan(x)
-static inline int isinf(double x)
+/*
+ * portability stuff (why do we even care about the msvc people with their C89?)
+ */
+
+
+static long double string_to_long_double(const char *str)
 {
-	return !_finite(x) && !_isnan(x);
-}
-#define strtold(s, e) strtod(s, e)
-#define SIZEOF_LONG_DOUBLE_8
+#if __STDC_VERSION__ >= 199901L || _POSIX_C_SOURCE >= 200112L
+	return strtold(str, NULL);
+#else
+	return strtod(str, NULL);
 #endif
+}
+
+static bool my_isnan(long double val)
+{
+#if __STDC_VERSION__ >= 199901L
+	return isnan(val);
+#else
+	/* hopefully the compiler does not optimize aggressively (=incorrect) */
+	return val != val;
+#endif
+}
+
+static bool my_isinf(long double val)
+{
+#if __STDC_VERSION__ >= 199901L
+	return isinf(val);
+#else
+	/* hopefully the compiler does not optimize aggressively (=incorrect) */
+	return my_isnan(val-val) && !my_isnan(val);
+#endif
+}
 
 /** The number of extra precision rounding bits */
 #define ROUNDING_BITS 2
@@ -60,15 +84,25 @@ typedef union {
 #else
 		uint32_t low;
 #endif
-#ifndef SIZEOF_LONG_DOUBLE_8
 		uint32_t mid;
+#ifdef WORDS_BIGENDIAN
+		uint32_t low;
+#else
+		uint32_t high;
+#endif
+	} val_ld12;
+	struct {
+#ifdef WORDS_BIGENDIAN
+		uint32_t high;
+#else
+		uint32_t low;
 #endif
 #ifdef WORDS_BIGENDIAN
 		uint32_t low;
 #else
 		uint32_t high;
 #endif
-	} val;
+	} val_ld8;
 	volatile long double d;
 } value_t;
 
@@ -817,7 +851,7 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
 	buffer = (char*) alloca(len+1);
 	memcpy(buffer, str, len);
 	buffer[len] = '\0';
-	val = strtold(buffer, NULL);
+	val = string_to_long_double(buffer);
 
 	DEBUGPRINTF(("val_from_str(%s)\n", str));
 	tmp_desc.exponent_size = 15;
@@ -836,25 +870,28 @@ fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc, fp_v
 	value_t  srcval;
 	char     sign;
 	uint32_t exponent, mantissa0, mantissa1;
+	size_t   long_double_size = sizeof(long double);
 
 	srcval.d = l;
 	bias_res = ((1 << (desc->exponent_size - 1)) - 1);
 
-#ifdef SIZEOF_LONG_DOUBLE_8
-	mant_val  = 52;
-	bias_val  = 0x3ff;
-	sign      = (srcval.val.high & 0x80000000) != 0;
-	exponent  = (srcval.val.high & 0x7FF00000) >> 20;
-	mantissa0 = srcval.val.high & 0x000FFFFF;
-	mantissa1 = srcval.val.low;
-#else
-	mant_val  = 63;
-	bias_val  = 0x3fff;
-	sign      = (srcval.val.high & 0x00008000) != 0;
-	exponent  = (srcval.val.high & 0x00007FFF) ;
-	mantissa0 = srcval.val.mid;
-	mantissa1 = srcval.val.low;
-#endif
+	if (long_double_size == 8) {
+		mant_val  = 52;
+		bias_val  = 0x3ff;
+		sign      = (srcval.val_ld8.high & 0x80000000) != 0;
+		exponent  = (srcval.val_ld8.high & 0x7FF00000) >> 20;
+		mantissa0 = srcval.val_ld8.high & 0x000FFFFF;
+		mantissa1 = srcval.val_ld8.low;
+	} else {
+		/* we assume an x86-like 80bit representation of the value... */
+		assert(sizeof(long double)==12 || sizeof(long double)==16);
+		mant_val  = 63;
+		bias_val  = 0x3fff;
+		sign      = (srcval.val_ld12.high & 0x00008000) != 0;
+		exponent  = (srcval.val_ld12.high & 0x00007FFF) ;
+		mantissa0 = srcval.val_ld12.mid;
+		mantissa1 = srcval.val_ld12.low;
+	}
 
 	if (result == NULL) result = calc_buffer;
 	temp = (char*) alloca(value_size);
@@ -871,11 +908,11 @@ fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc, fp_v
 
 	/* sign and flag suffice to identify NaN or inf, no exponent/mantissa
 	 * encoding is needed. the function can return immediately in these cases */
-	if (isnan(l)) {
+	if (my_isnan(l)) {
 		result->desc.clss = FC_NAN;
 		TRACEPRINTF(("val_from_float resulted in NAN\n"));
 		return result;
-	} else if (isinf(l)) {
+	} else if (my_isinf(l)) {
 		result->desc.clss = FC_INF;
 		TRACEPRINTF(("val_from_float resulted in %sINF\n", (result->sign == 1) ? "-" : ""));
 		return result;
@@ -942,17 +979,19 @@ long double fc_val_to_ieee754(const fp_value *val)
 	ieee_descriptor_t desc;
 	unsigned          mantissa_size;
 
-#ifdef SIZEOF_LONG_DOUBLE_8
-	desc.exponent_size = 11;
-	desc.mantissa_size = 52;
-	desc.explicit_one  = 0;
-	desc.clss          = FC_NORMAL;
-#else
-	desc.exponent_size = 15;
-	desc.mantissa_size = 63;
-	desc.explicit_one  = 1;
-	desc.clss          = FC_NORMAL;
-#endif
+	size_t            long_double_size = sizeof(long double);
+
+	if (long_double_size == 8) {
+		desc.exponent_size = 11;
+		desc.mantissa_size = 52;
+		desc.explicit_one  = 0;
+		desc.clss          = FC_NORMAL;
+	} else {
+		desc.exponent_size = 15;
+		desc.mantissa_size = 63;
+		desc.explicit_one  = 1;
+		desc.clss          = FC_NORMAL;
+	}
 	mantissa_size = desc.mantissa_size + desc.explicit_one;
 
 	temp = (fp_value*) alloca(calc_buffer_size);
@@ -976,18 +1015,18 @@ long double fc_val_to_ieee754(const fp_value *val)
 	for (; (byte_offset<<3) < desc.mantissa_size; byte_offset++)
 		mantissa0 |= sc_sub_bits(_mant(value), mantissa_size, byte_offset) << ((byte_offset - 4) << 3);
 
-#ifdef SIZEOF_LONG_DOUBLE_8
-	mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
-	buildval.val.high = sign << 31;
-	buildval.val.high |= exponent << 20;
-	buildval.val.high |= mantissa0;
-	buildval.val.low = mantissa1;
-#else
-	buildval.val.high = sign << 15;
-	buildval.val.high |= exponent;
-	buildval.val.mid = mantissa0;
-	buildval.val.low = mantissa1;
-#endif
+	if (long_double_size == 8) {
+		mantissa0 &= 0x000FFFFF;  /* get rid of garbage */
+		buildval.val_ld8.high = sign << 31;
+		buildval.val_ld8.high |= exponent << 20;
+		buildval.val_ld8.high |= mantissa0;
+		buildval.val_ld8.low = mantissa1;
+	} else {
+		buildval.val_ld12.high = sign << 15;
+		buildval.val_ld12.high |= exponent;
+		buildval.val_ld12.mid = mantissa0;
+		buildval.val_ld12.low = mantissa1;
+	}
 
 	TRACEPRINTF(("val_to_float: %d-%x-%x%x\n", sign, exponent, mantissa0, mantissa1));
 	return buildval.d;
