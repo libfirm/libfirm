@@ -51,11 +51,11 @@ typedef enum {
  * possible float states
  */
 typedef enum {
-	NORMAL,       /**< normal representation, implicit 1 */
-	ZERO,         /**< +/-0 */
-	SUBNORMAL,    /**< denormals, implicit 0 */
-	INF,          /**< +/-oo */
-	NAN,          /**< Not A Number */
+	FC_NORMAL,       /**< normal representation, implicit 1 */
+	FC_ZERO,         /**< +/-0 */
+	FC_SUBNORMAL,    /**< denormals, implicit 0 */
+	FC_INF,          /**< +/-oo */
+	FC_NAN,          /**< Not A Number */
 } value_class_t;
 
 /**
