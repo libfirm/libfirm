@@ -335,7 +335,7 @@ static char *strtolower(char *buf, size_t n, const char *str)
 {
 	unsigned i;
 	for (i = 0; i < n; ++i)
-		buf[i] = tolower(str[i]);
+		buf[i] = tolower((unsigned char)str[i]);
 	return buf;
 }
 

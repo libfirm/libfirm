@@ -104,11 +104,11 @@ int lc_arg_register(lc_arg_env_t *env, const char *name, char letter, const lc_a
 	arg.letter = letter;
 	arg.handler = handler;
 
-	if (isupper(letter)) {
+	if (isupper((unsigned char)letter)) {
 		map = env->upper;
 		base = 'A';
 	}
-	else if (islower(letter)) {
+	else if (islower((unsigned char)letter)) {
 		map = env->lower;
 		base = 'a';
 	}
@@ -462,12 +462,12 @@ int lc_evpprintf(const lc_arg_env_t *env, lc_appendable_t *app, const char *fmt,
 					const char *mod = s;
 
 					/* Read, as long there are letters */
-					while (isalpha(ch) && !arg) {
+					while (isalpha((unsigned char)ch) && !arg) {
 						int base = 'a';
 						lc_arg_t * const *map = env->lower;
 
 						/* If uppercase, select the uppercase map from the environment */
-						if (isupper(ch)) {
+						if (isupper((unsigned char)ch)) {
 							base = 'A';
 							map = env->upper;
 						}

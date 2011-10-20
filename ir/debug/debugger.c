@@ -974,10 +974,10 @@ static unsigned get_token(void)
 	/* skip white space */
 	do {
 		c = next_char();
-	} while (c != '\0' && isspace(c));
+	} while (c != '\0' && isspace((unsigned char)c));
 
 	lexer.tok_start = lexer.curr_pos - 1;
-	if (c == '.' || isalpha(c)) {
+	if (c == '.' || isalpha((unsigned char)c)) {
 		/* command begins here */
 		int         len = 0;
 		const char* tok_start;
@@ -985,7 +985,7 @@ static unsigned get_token(void)
 		do {
 			c = next_char();
 			++len;
-		} while (isgraph(c));
+		} while (isgraph((unsigned char)c));
 		unput();
 
 		tok_start = lexer.tok_start;
@@ -1002,7 +1002,7 @@ static unsigned get_token(void)
 		lexer.s   = lexer.tok_start;
 		lexer.len = lexer.curr_pos - lexer.s;
 		return tok_identifier;
-	} else if (isdigit(c) || c == '-') {
+	} else if (isdigit((unsigned char)c) || c == '-') {
 		unsigned number = 0;
 		unsigned sign   = 0;
 
@@ -1019,12 +1019,12 @@ static unsigned get_token(void)
 				for (;;) {
 					c = next_char();
 
-					if (! isxdigit(c))
+					if (! isxdigit((unsigned char)c))
 						break;
-					if (isdigit(c))
+					if (isdigit((unsigned char)c))
 						number = (number << 4) | (c - '0');
 					else
-						number = (number << 4) | (toupper(c) - 'A' + 10);
+						number = (number << 4) | (toupper((unsigned char)c) - 'A' + 10);
 				}
 				unput();
 				lexer.number = number;
@@ -1032,7 +1032,7 @@ static unsigned get_token(void)
 			}
 		}
 		for (;;) {
-			if (! isdigit(c))
+			if (! isdigit((unsigned char)c))
 				break;
 			number = number * 10 + (c - '0');
 			c = next_char();
