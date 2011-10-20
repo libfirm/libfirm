@@ -46,6 +46,7 @@
 #include "set.h"
 #include "tv.h"
 #include "hashptr.h"
+#include "util.h"
 #include "irtools.h"
 #include "irloop_t.h"
 #include "array.h"

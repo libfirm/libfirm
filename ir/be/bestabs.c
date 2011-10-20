@@ -37,7 +37,7 @@
 #include "xmalloc.h"
 #include "pmap.h"
 #include "pdeq.h"
-#include "irtools.h"
+#include "util.h"
 #include "obst.h"
 #include "array_t.h"
 #include "be_dbgout_t.h"

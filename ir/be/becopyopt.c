@@ -45,6 +45,7 @@
 #include "irbitset.h"
 #include "irprintf_t.h"
 #include "irtools.h"
+#include "util.h"
 
 #include "bemodule.h"
 #include "bearch.h"

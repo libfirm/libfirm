@@ -45,6 +45,7 @@
 #include "pdeq.h"
 #include "irprintf.h"
 #include "irbitset.h"
+#include "util.h"
 #include "irtools.h"
 #include "error.h"
 #include "list.h"

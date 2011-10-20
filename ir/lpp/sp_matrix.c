@@ -36,7 +36,7 @@
 
 #include "sp_matrix.h"
 
-#include "irtools.h"
+#include "util.h"
 #include "bitset.h"
 #include "xmalloc.h"
 

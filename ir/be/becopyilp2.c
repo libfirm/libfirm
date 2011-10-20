@@ -50,7 +50,7 @@
 #include "raw_bitset.h"
 #include "pdeq.h"
 
-#include "irtools.h"
+#include "util.h"
 #include "irgwalk.h"
 #include "becopyilp_t.h"
 #include "beifg.h"

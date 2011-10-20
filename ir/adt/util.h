@@ -21,7 +21,7 @@
  * @file
  * @date   31.05.2005
  * @author Sebastian Hack
- * @brief  Some utility macros.
+ * @brief  Miscelaneous utility macros.
  */
 #ifndef FIRM_ADT_UTIL_H
 #define FIRM_ADT_UTIL_H
@@ -45,5 +45,28 @@
  * @param a    static array
  */
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof((a)[0]))
+
+#undef MIN
+#undef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+
+/**
+ * Three valued compare as demanded by e.g. qsort(3)
+ * @param c A number.
+ * @param d Another number.
+ * @return 0 if c == d, -1 if c < d, 1 if c > d.
+ */
+#define QSORT_CMP(c, d) (((c) > (d)) - ((c) < (d)))
+
+/**
+ * convert an integer into pointer
+ */
+#define INT_TO_PTR(v)   ((void *)((char *)0 + (v)))
+
+/**
+ * convert a pointer into an integer
+ */
+#define PTR_TO_INT(v)   (((char *)(v) - (char *)0))
 
 #endif

@@ -32,12 +32,12 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "list.h"
 #include "irdump.h"
 #include "irgwalk.h"
-#include "irtools.h"
 #include "irnodemap.h"
 #include "iredges_t.h"
+#include "list.h"
+#include "util.h"
 
 struct ir_heights_t {
 	ir_nodemap      data;

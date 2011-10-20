@@ -52,6 +52,7 @@
 #include "execfreq.h"
 #include "irdump_t.h"
 #include "irtools.h"
+#include "util.h"
 #include "debug.h"
 #include "beirgmod.h"
 #include "bemodule.h"

@@ -31,10 +31,10 @@
 #include "belive_t.h"
 #include "beutil.h"
 #include "heights.h"
-#include "irtools.h"
 #include "irgwalk.h"
 #include "benode.h"
 #include "bemodule.h"
+#include "util.h"
 #include "array_t.h"
 
 // XXX there is no one time init for schedulers

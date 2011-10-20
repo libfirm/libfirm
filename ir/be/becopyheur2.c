@@ -43,6 +43,7 @@
 #include "irgraph_t.h"
 #include "irnode_t.h"
 #include "irprintf.h"
+#include "util.h"
 #include "irtools.h"
 #include "irnodemap.h"
 

@@ -40,7 +40,7 @@
 #include <arpa/inet.h>
 #endif
 
-#include "irtools.h"
+#include "util.h"
 #include "debug.h"
 
 #include "lpp_comm.h"

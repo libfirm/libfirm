@@ -47,7 +47,7 @@
 #include "irnode.h"
 #include "strcalc.h"
 #include "fltcalc.h"
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "firm_common.h"
 #include "error.h"

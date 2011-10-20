@@ -34,7 +34,7 @@
 #include "irgraph_t.h"
 #include "irprog_t.h"
 #include "irgwalk.h"
-#include "irtools.h"
+#include "util.h"
 #include "irprintf.h"
 #include "error.h"
 

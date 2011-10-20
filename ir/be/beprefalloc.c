@@ -55,6 +55,7 @@
 #include "irprintf.h"
 #include "irdump.h"
 #include "irtools.h"
+#include "util.h"
 #include "obst.h"
 #include "raw_bitset.h"
 #include "unionfind.h"

@@ -43,7 +43,7 @@
 #include "irgmod.h"
 #include "irnode_t.h"
 #include "irpass.h"
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
 #include "error.h"

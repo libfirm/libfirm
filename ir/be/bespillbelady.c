@@ -40,6 +40,7 @@
 #include "irprintf.h"
 #include "irnodeset.h"
 #include "irtools.h"
+#include "util.h"
 
 #include "beutil.h"
 #include "bearch.h"
