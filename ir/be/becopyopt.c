@@ -1211,16 +1211,16 @@ void co_driver(be_chordal_env_t *cenv)
 	co_complete_stats(co, &after);
 
 	if (do_stats) {
-		ulong64 optimizable_costs = after.max_costs - after.inevit_costs;
-		ulong64 evitable          = after.costs     - after.inevit_costs;
+		unsigned long long optimizable_costs = after.max_costs - after.inevit_costs;
+		unsigned long long evitable          = after.costs     - after.inevit_costs;
 
 		ir_printf("%30F ", cenv->irg);
-		printf("%10s %10" ULL_FMT "%10" ULL_FMT "%10" ULL_FMT, cenv->cls->name, after.max_costs, before.costs, after.inevit_costs);
+		printf("%10s %10llu%10llu%10llu", cenv->cls->name, after.max_costs, before.costs, after.inevit_costs);
 
 		if (optimizable_costs > 0)
-			printf("%10" ULL_FMT " %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
+			printf("%10llu %5.2f\n", after.costs, (evitable * 100.0) / optimizable_costs);
 		else
-			printf("%10" ULL_FMT " %5s\n", after.costs, "-");
+			printf("%10llu %5s\n", after.costs, "-");
 	}
 
 	/* Dump the interference graph in Appel's format. */
