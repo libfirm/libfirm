@@ -80,8 +80,8 @@ static ptr_access_kind analyze_arg(ir_node *arg, ptr_access_kind bits)
 			} else {
 				ir_entity *meth_ent;
 
-				if (is_Global(ptr)) {
-					meth_ent = get_Global_entity(ptr);
+				if (is_SymConst_addr_ent(ptr)) {
+					meth_ent = get_SymConst_entity(ptr);
 
 					for (p = get_Call_n_params(succ) - 1; p >= 0; --p) {
 						if (get_Call_param(succ, p) == arg) {

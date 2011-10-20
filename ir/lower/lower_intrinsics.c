@@ -67,10 +67,10 @@ static void call_mapper(ir_node *node, void *env)
 		ir_entity *ent;
 
 		symconst = get_Call_ptr(node);
-		if (! is_Global(symconst))
+		if (! is_SymConst_addr_ent(symconst))
 			return;
 
-		ent = get_Global_entity(symconst);
+		ent = get_SymConst_entity(symconst);
 		p   = pmap_find(wenv->c_map, ent);
 
 		if (p) {
@@ -605,8 +605,8 @@ int i_mapper_tanh(ir_node *call, void *ctx)
  */
 static ir_entity *get_const_entity(ir_node *ptr)
 {
-	if (is_Global(ptr)) {
-		ir_entity *ent = get_Global_entity(ptr);
+	if (is_SymConst_addr_ent(ptr)) {
+		ir_entity *ent = get_SymConst_entity(ptr);
 
 		if (get_entity_linkage(ent) & IR_LINKAGE_CONSTANT) {
 			/* a constant entity */

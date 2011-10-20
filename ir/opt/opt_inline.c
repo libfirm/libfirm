@@ -661,8 +661,8 @@ static ir_graph *get_call_called_irg(ir_node *call)
 	ir_node *addr;
 
 	addr = get_Call_ptr(call);
-	if (is_Global(addr)) {
-		ir_entity *ent = get_Global_entity(addr);
+	if (is_SymConst_addr_ent(addr)) {
+		ir_entity *ent = get_SymConst_entity(addr);
 		/* we don't know which function gets finally bound to a weak symbol */
 		if (get_entity_linkage(ent) & IR_LINKAGE_WEAK)
 			return NULL;
@@ -847,8 +847,8 @@ static void collect_calls2(ir_node *call, void *ctx)
 	if (env->ignore_runtime) {
 		ir_node *symc = get_Call_ptr(call);
 
-		if (is_Global(symc)) {
-			ir_entity *ent = get_Global_entity(symc);
+		if (is_SymConst_addr_ent(symc)) {
+			ir_entity *ent = get_SymConst_entity(symc);
 
 			if (get_entity_additional_properties(ent) & mtp_property_runtime)
 				return;

@@ -465,8 +465,8 @@ static void add_method_address_inititializer(ir_initializer_t *initializer,
 		n = initializer->consti.value;
 
 		/* let's check if it's the address of a function */
-		if (is_Global(n)) {
-			ir_entity *ent = get_Global_entity(n);
+		if (is_SymConst_addr_ent(n)) {
+			ir_entity *ent = get_SymConst_entity(n);
 
 			if (is_Method_type(get_entity_type(ent)))
 				eset_insert(set, ent);
@@ -516,8 +516,8 @@ static void add_method_address(ir_entity *ent, eset *set)
 			ir_node *irn = get_compound_ent_value(ent, i);
 
 			/* let's check if it's the address of a function */
-			if (is_Global(irn)) {
-				ir_entity *ent2 = get_Global_entity(irn);
+			if (is_SymConst_addr_ent(irn)) {
+				ir_entity *ent2 = get_SymConst_entity(irn);
 
 				if (is_Method_type(get_entity_type(ent2)))
 					eset_insert(set, ent2);

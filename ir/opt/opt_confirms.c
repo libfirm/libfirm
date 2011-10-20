@@ -198,7 +198,7 @@ FIRM_API int value_not_null(const ir_node *n, ir_node_cnst_ptr *confirm)
 		break;
 	}
 
-	if (is_Global(n)) {
+	if (is_SymConst_addr_ent(n)) {
 		/* global references are never NULL */
 		return 1;
 	} else if (n == get_irg_frame(get_irn_irg(n))) {

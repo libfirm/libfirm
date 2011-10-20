@@ -367,13 +367,13 @@ static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr
 {
 	ir_entity *ent1 = NULL, *ent2 = NULL;
 
-	if (is_Global(adr1))
-		ent1 = get_Global_entity(adr1);
+	if (is_SymConst_addr_ent(adr1))
+		ent1 = get_SymConst_entity(adr1);
 	else if (is_Sel(adr1))
 		ent1 = get_Sel_entity(adr1);
 
-	if (is_Global(adr2))
-		ent2 = get_Global_entity(adr2);
+	if (is_SymConst_addr_ent(adr2))
+		ent2 = get_SymConst_entity(adr2);
 	else if (is_Sel(adr2))
 		ent2 = get_Sel_entity(adr2);
 
@@ -420,8 +420,8 @@ static int is_malloc_Result(const ir_node *node)
 	if (! is_Call(node))
 		return 0;
 	node = get_Call_ptr(node);
-	if (is_Global(node)) {
-		ir_entity *ent = get_Global_entity(node);
+	if (is_SymConst_addr_ent(node)) {
+		ir_entity *ent = get_SymConst_entity(node);
 
 		if (get_entity_additional_properties(ent) & mtp_property_malloc)
 			return 1;
@@ -435,8 +435,8 @@ ir_storage_class_class_t classify_pointer(const ir_node *irn,
 {
 	ir_graph *irg = get_irn_irg(irn);
 	ir_storage_class_class_t res = ir_sc_pointer;
-	if (is_Global(irn)) {
-		ir_entity *entity = get_Global_entity(irn);
+	if (is_SymConst_addr_ent(irn)) {
+		ir_entity *entity = get_SymConst_entity(irn);
 		ir_type   *owner  = get_entity_owner(entity);
 		res = owner == get_tls_type() ? ir_sc_tls : ir_sc_globalvar;
 		if (! (get_entity_usage(entity) & ir_usage_address_taken))
@@ -1086,8 +1086,8 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 	case IR_INITIALIZER_CONST:
 		/* let's check if it's an address */
 		n = initializer->consti.value;
-		if (is_Global(n)) {
-			ir_entity *ent = get_Global_entity(n);
+		if (is_SymConst_addr_ent(n)) {
+			ir_entity *ent = get_SymConst_entity(n);
 			set_entity_usage(ent, ir_usage_unknown);
 		}
 		return;
@@ -1129,8 +1129,8 @@ static void check_initializer(ir_entity *ent)
 			ir_node *irn = get_compound_ent_value(ent, i);
 
 			/* let's check if it's an address */
-			if (is_Global(irn)) {
-				ir_entity *symconst_ent = get_Global_entity(irn);
+			if (is_SymConst_addr_ent(irn)) {
+				ir_entity *symconst_ent = get_SymConst_entity(irn);
 				set_entity_usage(symconst_ent, ir_usage_unknown);
 			}
 		}
@@ -1192,9 +1192,9 @@ static void check_global_address(ir_node *irn, void *data)
 	unsigned flags;
 	(void) data;
 
-	if (is_Global(irn)) {
+	if (is_SymConst_addr_ent(irn)) {
 		/* A global. */
-		ent = get_Global_entity(irn);
+		ent = get_SymConst_entity(irn);
 	} else
 		return;
 

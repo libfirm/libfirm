@@ -972,7 +972,7 @@ ir_node *ia32_try_create_Immediate(ir_node *node, char immediate_constraint_type
 			return NULL;
 		}
 
-		symconst_ent = get_Global_entity(symconst);
+		symconst_ent = get_SymConst_entity(symconst);
 	}
 	if (cnst == NULL && symconst == NULL)
 		return NULL;

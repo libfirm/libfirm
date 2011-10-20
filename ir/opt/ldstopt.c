@@ -782,8 +782,8 @@ static unsigned is_Call_pure(ir_node *call)
 		/* try the called entity */
 		ir_node *ptr = get_Call_ptr(call);
 
-		if (is_Global(ptr)) {
-			ir_entity *ent = get_Global_entity(ptr);
+		if (is_SymConst_addr_ent(ptr)) {
+			ir_entity *ent = get_SymConst_entity(ptr);
 
 			prop = get_entity_additional_properties(ent);
 		}
@@ -1887,7 +1887,7 @@ static void move_loads_out_of_loops(scc *pscc, loop_env *env)
 				continue;
 
 			/* for now, we can only move Load(Global) */
-			if (! is_Global(ptr))
+			if (! is_SymConst_addr_ent(ptr))
 				continue;
 			load_mode = get_Load_mode(load);
 			for (other = pscc->head; other != NULL; other = next_other) {

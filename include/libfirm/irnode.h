@@ -657,12 +657,6 @@ FIRM_API int is_irn_cse_neutral(const ir_node *node);
 /** Gets the string representation of the jump prediction. */
 FIRM_API const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
 
-/** Checks whether a node represents a global address. */
-FIRM_API int is_Global(const ir_node *node);
-
-/** Returns the entity of a global address. */
-FIRM_API ir_entity *get_Global_entity(const ir_node *node);
-
 /**
  * Access custom node data.
  * The data must have been registered with
