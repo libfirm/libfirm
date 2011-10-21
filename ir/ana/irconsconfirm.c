@@ -122,7 +122,7 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
 			env->num_consts += 1;
 		}
 	}
-}  /* handle_case */
+}
 
 /**
  * Handle a mode_b input of Cond nodes.
@@ -398,7 +398,7 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
 			}
 		}
 	}
-}  /* handle_if */
+}
 
 /**
  * Pre-block-walker: Called for every block to insert Confirm nodes
@@ -454,7 +454,7 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 
 		handle_case(block, get_Cond_selector(cond), proj_nr, env);
 	}
-}  /* insert_Confirm_in_block */
+}
 
 /**
  * Checks if a node is a non-null Confirm.
@@ -480,7 +480,7 @@ static int is_non_null_Confirm(const ir_node *ptr)
 	if (is_SymConst_addr_ent(ptr))
 		return 1;
 	return 0;
-}  /* is_non_null_Confirm */
+}
 
 /**
  * The given pointer will be dereferenced, add non-null Confirms.
@@ -527,7 +527,7 @@ static void insert_non_null(ir_node *ptr, ir_node *block, env_t *env)
 			env->num_confirms += 1;
 		}
 	}
-}  /* insert_non_null */
+}
 
 /**
  * Pre-walker: Called for every node to insert Confirm nodes
@@ -554,7 +554,7 @@ static void insert_Confirm(ir_node *node, void *data)
 	default:
 		break;
 	}
-}  /* insert_Confirm */
+}
 
 /*
  * Construct Confirm nodes
@@ -600,13 +600,13 @@ void construct_confirms(ir_graph *irg)
 	/* deactivate edges if they where off */
 	if (! edges_active)
 		edges_deactivate(irg);
-}  /* construct_confirms */
+}
 
 /* Construct a pass. */
 ir_graph_pass_t *construct_confirms_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "confirm", construct_confirms);
-}  /* construct_confirms_pass */
+}
 
 static void remove_confirm(ir_node *n, void *env)
 {
@@ -626,10 +626,10 @@ static void remove_confirm(ir_node *n, void *env)
 void remove_confirms(ir_graph *irg)
 {
 	irg_walk_graph(irg, NULL, remove_confirm, NULL);
-}  /* remove_confirms */
+}
 
 /* Construct a pass. */
 ir_graph_pass_t *remove_confirms_pass(const char *name)
 {
 	return def_graph_pass(name ? name : "rem_confirm", remove_confirms);
-}  /* remove_confirms_pass */
+}

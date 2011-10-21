@@ -1735,7 +1735,7 @@ unsigned firm_default_hash(const ir_node *node)
 	h = 9*h + HASH_PTR(get_irn_op(node));
 
 	return h;
-}  /* firm_default_hash */
+}
 
 /* include generated code */
 #include "gen_irnode.c.inl"

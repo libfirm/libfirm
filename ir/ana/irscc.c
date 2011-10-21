@@ -609,7 +609,9 @@ static ir_node *find_tail(ir_node *n)
 						res_index = largest_dfn_pred (m);
 					break;
 				}
-				if (m == n) { break; }  /* It's not an unreachable loop, either. */
+				/* It's not an unreachable loop, either. */
+				if (m == n)
+					break;
 			}
 			//assert(0 && "no head found on stack");
 		}

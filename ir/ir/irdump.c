@@ -1005,7 +1005,7 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 
 	default:
 		break;
-	} /* end switch */
+	}
 }
 
 static void dump_node_ana_vals(FILE *F, ir_node *n)
@@ -1743,7 +1743,7 @@ static void print_typespecific_info(FILE *F, ir_type *tp)
 		break;
 	default:
 		break;
-	} /* switch type */
+	}
 }
 #endif
 
@@ -1770,7 +1770,7 @@ static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
 		break;
 	default:
 		break;
-	} /* switch type */
+	}
 }
 
 void dump_type_node(FILE *F, ir_type *tp)
@@ -1953,12 +1953,12 @@ static void dump_type_info(type_or_ent tore, void *env)
 			break;
 		default:
 			break;
-		} /* switch type */
+		}
 		break; /* case k_type */
 	}
 	default:
 		printf(" *** irdump,  dump_type_info(l.%i), faulty type.\n", __LINE__);
-	} /* switch kind_or_entity */
+	}
 }
 
 /** For dumping class hierarchies.
@@ -2003,12 +2003,12 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 			}
 			break;
 		default: break;
-		} /* switch type */
+		}
 		break; /* case k_type */
 	}
 	default:
 		printf(" *** irdump,  dump_class_hierarchy_node(l.%i), faulty type.\n", __LINE__);
-	} /* switch kind_or_entity */
+	}
 }
 
 /*******************************************************************/

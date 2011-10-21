@@ -403,7 +403,7 @@ void edges_notify_edge_kind(ir_node *src, int pos, ir_node *tgt,
 		}
 
 		edge_change_cnt(tgt, kind, +1);
-	} /* else */
+	}
 
 #ifndef DEBUG_libfirm
 	/* verify list heads */

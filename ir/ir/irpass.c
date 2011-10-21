@@ -356,7 +356,7 @@ static int void_graph_wrapper(ir_graph *irg, void *context)
 	void_pass_func_irg function = (void_pass_func_irg)context;
 	function(irg);
 	return 0;
-}  /* void_graph_wrapper */
+}
 
 /* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass(
@@ -372,7 +372,7 @@ ir_graph_pass_t *def_graph_pass(
 	INIT_LIST_HEAD(&pass->list);
 
 	return pass;
-}  /* def_graph_pass */
+}
 
 /**
  * Wrapper for running int function(ir_graph *irg) as an ir_graph pass.
@@ -381,7 +381,7 @@ static int int_graph_wrapper(ir_graph *irg, void *context)
 {
 	int_pass_func_irg function = (int_pass_func_irg)context;
 	return function(irg);
-}  /* int_graph_wrapper */
+}
 
 /* Creates an ir_graph pass for running void function(ir_graph *irg). */
 ir_graph_pass_t *def_graph_pass_ret(
@@ -397,7 +397,7 @@ ir_graph_pass_t *def_graph_pass_ret(
 	INIT_LIST_HEAD(&pass->list);
 
 	return pass;
-}  /* def_graph_pass_ret */
+}
 
 /* constructor for a default graph pass */
 ir_graph_pass_t *def_graph_pass_constructor(
@@ -415,13 +415,13 @@ ir_graph_pass_t *def_graph_pass_constructor(
 	INIT_LIST_HEAD(&pass->list);
 
 	return pass;
-}  /* def_graph_pass_constructor */
+}
 
 /* set the run parallel property */
 void ir_graph_pass_set_parallel(ir_graph_pass_t *pass, int flag)
 {
 	pass->run_parallel = flag != 0;
-}  /* ir_graph_pass_set_parallel */
+}
 
 /**
  * Wrapper for running void function(void) as an ir_prog pass.
@@ -433,7 +433,7 @@ static int void_prog_wrapper(ir_prog *irp, void *context)
 	(void)irp;
 	function();
 	return 0;
-}  /* void_graph_wrapper */
+}
 
 /* Creates an ir_prog pass for running void function(void). */
 ir_prog_pass_t *def_prog_pass(
@@ -450,7 +450,7 @@ ir_prog_pass_t *def_prog_pass(
 	INIT_LIST_HEAD(&pass->list);
 
 	return pass;
-}  /* def_prog_pass */
+}
 
 /* Creates an ir_prog pass for running void function(void). */
 ir_prog_pass_t *def_prog_pass_constructor(
@@ -471,7 +471,7 @@ ir_prog_pass_t *def_prog_pass_constructor(
 	INIT_LIST_HEAD(&pass->list);
 
 	return pass;
-}  /* def_prog_pass_constructor */
+}
 
 typedef struct pass_t {
 	ir_prog_pass_t pass;
@@ -489,7 +489,7 @@ static int call_function_wrapper(ir_prog *irp, void *context)
 	(void)irp;
 	pass->function(pass->context);
 	return 0;
-}  /* call_function_wrapper */
+}
 
 ir_prog_pass_t *call_function_pass(
 	const char *name, void (*function)(void *context), void *context) {
@@ -506,4 +506,4 @@ ir_prog_pass_t *call_function_pass(
 	pass->context  = context;
 
 	return &pass->pass;
-}  /* call_function_pass */
+}

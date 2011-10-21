@@ -515,7 +515,7 @@ static inline unsigned _get_irn_idx(const ir_node *node) {
 
 static inline dbg_info *_get_irn_dbg_info(const ir_node *n) {
 	return n->dbi;
-}  /* get_irn_dbg_info */
+}
 
 static inline void _set_irn_dbg_info(ir_node *n, dbg_info *db) {
 	n->dbi = db;

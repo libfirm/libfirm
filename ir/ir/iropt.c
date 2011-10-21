@@ -84,7 +84,7 @@ void set_value_of_func(value_of_func func)
 static ir_tarval *computed_value_Const(const ir_node *n)
 {
 	return get_Const_tarval(n);
-}  /* computed_value_Const */
+}
 
 /**
  * Return the value of a 'sizeof', 'alignof' or 'offsetof' SymConst.
@@ -115,7 +115,7 @@ static ir_tarval *computed_value_SymConst(const ir_node *n)
 		break;
 	}
 	return tarval_bad;
-}  /* computed_value_SymConst */
+}
 
 /**
  * Return the value of an Add.
@@ -138,7 +138,7 @@ static ir_tarval *computed_value_Add(const ir_node *n)
 	}
 
 	return tarval_bad;
-}  /* computed_value_Add */
+}
 
 /**
  * Return the value of a Sub.
@@ -166,7 +166,7 @@ static ir_tarval *computed_value_Sub(const ir_node *n)
 		return tarval_sub(ta, tb, mode);
 
 	return tarval_bad;
-}  /* computed_value_Sub */
+}
 
 /**
  * Return the value of a Carry.
@@ -188,7 +188,7 @@ static ir_tarval *computed_value_Carry(const ir_node *n)
 			return get_mode_null(m);
 	}
 	return tarval_bad;
-}  /* computed_value_Carry */
+}
 
 /**
  * Return the value of a Borrow.
@@ -208,7 +208,7 @@ static ir_tarval *computed_value_Borrow(const ir_node *n)
 		return get_mode_null(m);
 	}
 	return tarval_bad;
-}  /* computed_value_Borrow */
+}
 
 /**
  * Return the value of an unary Minus.
@@ -222,7 +222,7 @@ static ir_tarval *computed_value_Minus(const ir_node *n)
 		return tarval_neg(ta);
 
 	return tarval_bad;
-}  /* computed_value_Minus */
+}
 
 /**
  * Return the value of a Mul.
@@ -255,7 +255,7 @@ static ir_tarval *computed_value_Mul(const ir_node *n)
 		}
 	}
 	return tarval_bad;
-}  /* computed_value_Mul */
+}
 
 /**
  * Return the value of an And.
@@ -282,7 +282,7 @@ static ir_tarval *computed_value_And(const ir_node *n)
 	}
 
 	return tarval_bad;
-}  /* computed_value_And */
+}
 
 /**
  * Return the value of an Or.
@@ -308,7 +308,7 @@ static ir_tarval *computed_value_Or(const ir_node *n)
 		return get_mode_all_one(get_irn_mode(n));
 	}
 	return tarval_bad;
-}  /* computed_value_Or */
+}
 
 /**
  * Return the value of an Eor.
@@ -335,7 +335,7 @@ static ir_tarval *computed_value_Eor(const ir_node *n)
 		return tarval_eor(ta, tb);
 	}
 	return tarval_bad;
-}  /* computed_value_Eor */
+}
 
 /**
  * Return the value of a Not.
@@ -349,7 +349,7 @@ static ir_tarval *computed_value_Not(const ir_node *n)
 		return tarval_not(ta);
 
 	return tarval_bad;
-}  /* computed_value_Not */
+}
 
 /**
  * Tests whether a shift shifts more bits than available in the mode
@@ -392,7 +392,7 @@ static ir_tarval *computed_value_Shl(const ir_node *n)
 		return get_mode_null(get_irn_mode(n));
 
 	return tarval_bad;
-}  /* computed_value_Shl */
+}
 
 /**
  * Return the value of a Shr.
@@ -412,7 +412,7 @@ static ir_tarval *computed_value_Shr(const ir_node *n)
 		return get_mode_null(get_irn_mode(n));
 
 	return tarval_bad;
-}  /* computed_value_Shr */
+}
 
 /**
  * Return the value of a Shrs.
@@ -429,7 +429,7 @@ static ir_tarval *computed_value_Shrs(const ir_node *n)
 		return tarval_shrs(ta, tb);
 	}
 	return tarval_bad;
-}  /* computed_value_Shrs */
+}
 
 /**
  * Return the value of a Rotl.
@@ -446,7 +446,7 @@ static ir_tarval *computed_value_Rotl(const ir_node *n)
 		return tarval_rotl(ta, tb);
 	}
 	return tarval_bad;
-}  /* computed_value_Rotl */
+}
 
 bool ir_zero_when_converted(const ir_node *node, ir_mode *dest_mode)
 {
@@ -495,7 +495,7 @@ static ir_tarval *computed_value_Conv(const ir_node *n)
 		return get_mode_null(mode);
 
 	return tarval_bad;
-}  /* computed_value_Conv */
+}
 
 /**
  * Calculate the value of a Mux: can be evaluated, if the
@@ -515,7 +515,7 @@ static ir_tarval *computed_value_Mux(const ir_node *n)
 		return value_of(v);
 	}
 	return tarval_bad;
-}  /* computed_value_Mux */
+}
 
 /**
  * Calculate the value of a Confirm: can be evaluated,
@@ -529,7 +529,7 @@ static ir_tarval *computed_value_Confirm(const ir_node *n)
 			return tv;
 	}
 	return value_of(get_Confirm_value(n));
-}  /* computed_value_Confirm */
+}
 
 /**
  * gives a (conservative) estimation of possible relation when comparing
@@ -630,7 +630,7 @@ static ir_tarval *do_computed_value_Div(const ir_node *div)
 	if (ta != tarval_bad && tb != tarval_bad)
 		return tarval_div(ta, tb);
 	return tarval_bad;
-}  /* do_computed_value_Div */
+}
 
 /**
  * Calculate the value of an integer Mod of two nodes.
@@ -647,7 +647,7 @@ static ir_tarval *do_computed_value_Mod(const ir_node *a, const ir_node *b)
 	if (ta != tarval_bad && tb != tarval_bad)
 		return tarval_mod(ta, tb);
 	return tarval_bad;
-}  /* do_computed_value_Mod */
+}
 
 /**
  * Return the value of a Proj(Div).
@@ -659,7 +659,7 @@ static ir_tarval *computed_value_Proj_Div(const ir_node *n)
 		return tarval_bad;
 
 	return do_computed_value_Div(get_Proj_pred(n));
-}  /* computed_value_Proj_Div */
+}
 
 /**
  * Return the value of a Proj(Mod).
@@ -673,7 +673,7 @@ static ir_tarval *computed_value_Proj_Mod(const ir_node *n)
 		return do_computed_value_Mod(get_Mod_left(mod), get_Mod_right(mod));
 	}
 	return tarval_bad;
-}  /* computed_value_Proj_Mod */
+}
 
 /**
  * Return the value of a Proj.
@@ -685,7 +685,7 @@ static ir_tarval *computed_value_Proj(const ir_node *proj)
 	if (n->op->ops.computed_value_Proj != NULL)
 		return n->op->ops.computed_value_Proj(proj);
 	return tarval_bad;
-}  /* computed_value_Proj */
+}
 
 /**
  * If the parameter n can be computed, return its value, else tarval_bad.
@@ -702,7 +702,7 @@ ir_tarval *computed_value(const ir_node *n)
 	if (n->op->ops.computed_value)
 		return n->op->ops.computed_value(n);
 	return tarval_bad;
-}  /* computed_value */
+}
 
 /**
  * Set the default computed_value evaluator in an ir_op_ops.
@@ -756,7 +756,7 @@ static ir_op_ops *firm_set_default_computed_value(ir_opcode code, ir_op_ops *ops
 	return ops;
 #undef CASE_PROJ
 #undef CASE
-}  /* firm_set_default_computed_value */
+}
 
 /**
  * Optimize operations that are commutative and have neutral 0,
@@ -795,7 +795,7 @@ static ir_node *equivalent_node_neutral_zero(ir_node *n)
 	}
 
 	return n;
-}  /* equivalent_node_neutral_zero */
+}
 
 /**
  * Eor is commutative and has neutral 0.
@@ -899,7 +899,7 @@ static ir_node *equivalent_node_Add(ir_node *n)
 		}
 	}
 	return n;
-}  /* equivalent_node_Add */
+}
 
 /**
  * optimize operations that are not commutative but have neutral 0 on left,
@@ -919,7 +919,7 @@ static ir_node *equivalent_node_left_zero(ir_node *n)
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_NEUTRAL_0);
 	}
 	return n;
-}  /* equivalent_node_left_zero */
+}
 
 #define equivalent_node_Shl   equivalent_node_left_zero
 #define equivalent_node_Shr   equivalent_node_left_zero
@@ -962,7 +962,7 @@ static ir_node *equivalent_node_Sub(ir_node *n)
 		}
 	}
 	return n;
-}  /* equivalent_node_Sub */
+}
 
 
 /**
@@ -984,7 +984,7 @@ static ir_node *equivalent_node_idempotent_unop(ir_node *n)
 		DBG_OPT_ALGSIM2(oldn, pred, n, FS_OPT_IDEM_UNARY);
 	}
 	return n;
-}  /* equivalent_node_idempotent_unop */
+}
 
 /** Optimize Not(Not(x)) == x. */
 #define equivalent_node_Not    equivalent_node_idempotent_unop
@@ -1023,7 +1023,7 @@ static ir_node *equivalent_node_Mul(ir_node *n)
 		}
 	}
 	return n;
-}  /* equivalent_node_Mul */
+}
 
 /**
  * Use algebraic simplification a | a = a | 0 = 0 | a = a.
@@ -1056,7 +1056,7 @@ static ir_node *equivalent_node_Or(ir_node *n)
 	}
 
 	return n;
-}  /* equivalent_node_Or */
+}
 
 /**
  * Optimize a & 0b1...1 = 0b1...1 & a = a & a = (a|X) & a = a.
@@ -1124,7 +1124,7 @@ static ir_node *equivalent_node_And(ir_node *n)
 		}
 	}
 	return n;
-}  /* equivalent_node_And */
+}
 
 /**
  * Try to remove useless Conv's:
@@ -1255,7 +1255,7 @@ restart:
 		}
 	}
 	return n;
-}  /* equivalent_node_Conv */
+}
 
 /**
  * - fold Phi-nodes, iff they have only one predecessor except
@@ -1303,7 +1303,7 @@ static ir_node *equivalent_node_Phi(ir_node *n)
 		DBG_OPT_PHI(oldn, n);
 	}
 	return n;
-}  /* equivalent_node_Phi */
+}
 
 /**
  * Optimize Proj(Tuple).
@@ -1318,7 +1318,7 @@ static ir_node *equivalent_node_Proj_Tuple(ir_node *proj)
 	DBG_OPT_TUPLE(oldn, tuple, proj);
 
 	return proj;
-}  /* equivalent_node_Proj_Tuple */
+}
 
 /**
  * Optimize a / 1 = a.
@@ -1350,7 +1350,7 @@ static ir_node *equivalent_node_Proj_Div(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* equivalent_node_Proj_Div */
+}
 
 /**
  * Optimize CopyB(mem, x, x) into a Nop.
@@ -1372,7 +1372,7 @@ static ir_node *equivalent_node_Proj_CopyB(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* equivalent_node_Proj_CopyB */
+}
 
 /**
  * Optimize Bounds(idx, idx, upper) into idx.
@@ -1422,7 +1422,7 @@ static ir_node *equivalent_node_Proj_Bound(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* equivalent_node_Proj_Bound */
+}
 
 /**
  * Does all optimizations on nodes that must be done on its Projs
@@ -1434,7 +1434,7 @@ static ir_node *equivalent_node_Proj(ir_node *proj)
 	if (n->op->ops.equivalent_node_Proj)
 		return n->op->ops.equivalent_node_Proj(proj);
 	return proj;
-}  /* equivalent_node_Proj */
+}
 
 /**
  * Remove Id's.
@@ -1449,7 +1449,7 @@ static ir_node *equivalent_node_Id(ir_node *n)
 
 	DBG_OPT_ID(oldn, n);
 	return n;
-}  /* equivalent_node_Id */
+}
 
 /**
  * Optimize a Mux.
@@ -1592,7 +1592,7 @@ ir_node *equivalent_node(ir_node *n)
 	if (n->op->ops.equivalent_node)
 		return n->op->ops.equivalent_node(n);
 	return n;
-}  /* equivalent_node */
+}
 
 /**
  * Sets the default equivalent node operation for an ir_op_ops.
@@ -1645,7 +1645,7 @@ static ir_op_ops *firm_set_default_equivalent_node(ir_opcode code, ir_op_ops *op
 	return ops;
 #undef CASE
 #undef CASE_PROJ
-}  /* firm_set_default_equivalent_node */
+}
 
 /**
  * Returns non-zero if a node is a Phi node
@@ -1662,7 +1662,7 @@ static int is_const_Phi(ir_node *n)
 			return 0;
 	}
 	return 1;
-}  /* is_const_Phi */
+}
 
 typedef ir_tarval *(*tarval_sub_type)(ir_tarval *a, ir_tarval *b, ir_mode *mode);
 typedef ir_tarval *(*tarval_binop_type)(ir_tarval *a, ir_tarval *b);
@@ -1740,7 +1740,7 @@ static ir_node *apply_binop_on_phi(ir_node *phi, ir_tarval *other, eval_func eva
 		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
-}  /* apply_binop_on_phi */
+}
 
 /**
  * Apply an evaluator on a binop with two constant Phi.
@@ -1785,7 +1785,7 @@ static ir_node *apply_binop_on_2_phis(ir_node *a, ir_node *b, eval_func eval, ir
 		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(a), n, (ir_node **)res, mode);
-}  /* apply_binop_on_2_phis */
+}
 
 /**
  * Apply an evaluator on a unop with a constant operator (a Phi).
@@ -1823,7 +1823,7 @@ static ir_node *apply_unop_on_phi(ir_node *phi, ir_tarval *(*eval)(ir_tarval *))
 		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
-}  /* apply_unop_on_phi */
+}
 
 /**
  * Apply a conversion on a constant operator (a Phi).
@@ -1858,7 +1858,7 @@ static ir_node *apply_conv_on_phi(ir_node *phi, ir_mode *mode)
 		res[i] = new_r_Const(irg, (ir_tarval*)res[i]);
 	}
 	return new_r_Phi(get_nodes_block(phi), n, (ir_node **)res, mode);
-}  /* apply_conv_on_phi */
+}
 
 /**
  * Transform AddP(P, ConvIs(Iu)), AddP(P, ConvIu(Is)) and
@@ -1935,7 +1935,7 @@ static ir_node *transform_node_AddSub(ir_node *n)
 	}
 
 	return n;
-}  /* transform_node_AddSub */
+}
 
 #define HANDLE_BINOP_PHI(eval, a, b, c, mode)                     \
   do {                                                            \
@@ -2064,7 +2064,7 @@ static ir_node *transform_node_Add(ir_node *n)
 	}
 
 	return n;
-}  /* transform_node_Add */
+}
 
 /**
  * returns -cnst or NULL if impossible
@@ -2404,7 +2404,7 @@ restart:
 		}
 	}
 	return n;
-}  /* transform_node_Sub */
+}
 
 /**
  * Several transformation done on n*n=2n bits mul.
@@ -2568,7 +2568,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		}
 	}
 	return arch_dep_replace_mul_with_shifts(n);
-}  /* transform_node_Mul */
+}
 
 /**
  * Transform a Div Node.
@@ -2680,7 +2680,7 @@ make_tuple:
 		set_Tuple_pred(n, pn_Div_res,       value);
 	}
 	return n;
-}  /* transform_node_Div */
+}
 
 /**
  * Transform a Mod node.
@@ -2772,7 +2772,7 @@ make_tuple:
 		set_Tuple_pred(n, pn_Mod_res,       value);
 	}
 	return n;
-}  /* transform_node_Mod */
+}
 
 /**
  * Transform a Cond node.
@@ -2821,7 +2821,7 @@ static ir_node *transform_node_Cond(ir_node *n)
 		clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
 	}
 	return n;
-}  /* transform_node_Cond */
+}
 
 /**
  * Prototype of a recursive transform function
@@ -3360,7 +3360,7 @@ static ir_node *transform_node_And(ir_node *n)
 		n = transform_node_bitop_shift(n);
 
 	return n;
-}  /* transform_node_And */
+}
 
 /* the order of the values is important! */
 typedef enum const_class {
@@ -3461,7 +3461,7 @@ static ir_node *transform_node_Eor(ir_node *n)
 		n = transform_node_bitop_shift(n);
 
 	return n;
-}  /* transform_node_Eor */
+}
 
 /**
  * Transform a Not.
@@ -3612,7 +3612,7 @@ static ir_node *transform_node_Minus(ir_node *n)
 	}
 
 	return n;
-}  /* transform_node_Minus */
+}
 
 /**
  * Transform a Proj(Load) with a non-null address.
@@ -3644,7 +3644,7 @@ static ir_node *transform_node_Proj_Load(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* transform_node_Proj_Load */
+}
 
 /**
  * Transform a Proj(Store) with a non-null address.
@@ -3676,7 +3676,7 @@ static ir_node *transform_node_Proj_Store(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* transform_node_Proj_Store */
+}
 
 /**
  * Transform a Proj(Div) with a non-zero value.
@@ -3729,7 +3729,7 @@ static ir_node *transform_node_Proj_Div(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* transform_node_Proj_Div */
+}
 
 /**
  * Transform a Proj(Mod) with a non-zero value.
@@ -3793,7 +3793,7 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* transform_node_Proj_Mod */
+}
 
 /**
  * Optimizes jump tables (CondIs or CondIu) by removing all impossible cases.
@@ -4141,7 +4141,7 @@ static ir_node *transform_node_Cmp(ir_node *n)
 				left  = get_Eor_left(left);
 				changed = true;
 			}
-		}  /* mode_is_int(...) */
+		}
 	}
 
 	/* Cmp(And(1bit, val), 1bit) "bit-testing" can be replaced
@@ -4361,8 +4361,8 @@ static ir_node *transform_node_Cmp(ir_node *n)
 							}
 						}
 					}
-				} /* == or != */
-			} /* mode_is_int */
+				}
+			}
 
 			if (relation == ir_relation_equal || relation == ir_relation_less_greater) {
 				switch (get_irn_opcode(left)) {
@@ -4523,9 +4523,9 @@ static ir_node *transform_node_Cmp(ir_node *n)
 						DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_SHF_TO_AND);
 					}
 					break;
-				}  /* switch */
+				}
 			}
-		} /* tarval != bad */
+		}
 	}
 
 	if (changedc) {     /* need a new Const */
@@ -4597,7 +4597,7 @@ static ir_node *transform_node_Proj_CopyB(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* transform_node_Proj_CopyB */
+}
 
 /**
  * Optimize Bounds(idx, idx, upper) into idx.
@@ -4654,7 +4654,7 @@ static ir_node *transform_node_Proj_Bound(ir_node *proj)
 		}
 	}
 	return proj;
-}  /* transform_node_Proj_Bound */
+}
 
 /**
  * Does all optimizations on nodes that must be done on its Projs
@@ -4667,7 +4667,7 @@ static ir_node *transform_node_Proj(ir_node *proj)
 	if (n->op->ops.transform_node_Proj)
 		return n->op->ops.transform_node_Proj(proj);
 	return proj;
-}  /* transform_node_Proj */
+}
 
 /**
  * Test whether a block is unreachable
@@ -4830,7 +4830,7 @@ static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
 		*a = op_a;
 		*c = op_b;
 	}
-}  /* get_comm_Binop_Ops */
+}
 
 /**
  * Optimize a Or(And(Or(And(v,c4),c3),c2),c1) pattern if possible.
@@ -4929,7 +4929,7 @@ static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
 
 		/* check for more */
 	}
-}  /* transform_node_Or_bf_store */
+}
 
 /**
  * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rotl
@@ -5002,7 +5002,7 @@ static ir_node *transform_node_Or_Rotl(ir_node *irn_or)
 	n = new_r_Rotl(block, x, c1, mode);
 	DBG_OPT_ALGSIM0(irn_or, n, FS_OPT_OR_SHFT_TO_ROTL);
 	return n;
-}  /* transform_node_Or_Rotl */
+}
 
 static bool is_cmp_unequal(const ir_node *node)
 {
@@ -5134,7 +5134,7 @@ static ir_node *transform_node_Or(ir_node *n)
 	}
 
 	return n;
-}  /* transform_node_Or */
+}
 
 
 /* forward */
@@ -5440,7 +5440,7 @@ static ir_node *transform_node_Shr(ir_node *n)
 		n = transform_node_shift_bitop(n);
 
 	return n;
-}  /* transform_node_Shr */
+}
 
 /**
  * Transform a Shrs.
@@ -5471,7 +5471,7 @@ static ir_node *transform_node_Shrs(ir_node *n)
 		n = transform_node_shift_bitop(n);
 
 	return n;
-}  /* transform_node_Shrs */
+}
 
 /**
  * Transform a Shl.
@@ -5494,7 +5494,7 @@ static ir_node *transform_node_Shl(ir_node *n)
 		n = transform_node_shift_bitop(n);
 
 	return n;
-}  /* transform_node_Shl */
+}
 
 /**
  * Transform a Rotl.
@@ -5513,7 +5513,7 @@ static ir_node *transform_node_Rotl(ir_node *n)
 		n = transform_node_shift_bitop(n);
 
 	return n;
-}  /* transform_node_Rotl */
+}
 
 /**
  * Transform a Conv.
@@ -5567,7 +5567,7 @@ static ir_node *transform_node_Conv(ir_node *n)
 	}
 
 	return n;
-}  /* transform_node_Conv */
+}
 
 /**
  * Remove dead blocks and nodes in dead blocks
@@ -5595,7 +5595,7 @@ static ir_node *transform_node_End(ir_node *n)
 	if (j != n_keepalives)
 		set_End_keepalives(n, j, in);
 	return n;
-}  /* transform_node_End */
+}
 
 int ir_is_negated_value(const ir_node *a, const ir_node *b)
 {
@@ -6139,7 +6139,7 @@ static ir_node *transform_node_Call(ir_node *call)
 	if (get_irn_pinned(call) == op_pin_state_floats)
 		set_irn_pinned(res, op_pin_state_floats);
 	return res;
-}  /* transform_node_Call */
+}
 
 /**
  * Tries several [inplace] [optimizing] transformations and returns an
@@ -6163,7 +6163,7 @@ static ir_node *transform_node(ir_node *n)
 	} while (oldn != n);
 
 	return n;
-}  /* transform_node */
+}
 
 /**
  * Sets the default transform node operation for an ir_op_ops.
@@ -6228,7 +6228,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 #undef CASE_PROJ_EX
 #undef CASE_PROJ
 #undef CASE
-}  /* firm_set_default_transform_node */
+}
 
 
 /* **************** Common Subexpression Elimination **************** */
@@ -6524,7 +6524,7 @@ static ir_op_ops *firm_set_default_node_cmp_attr(ir_opcode code, ir_op_ops *ops)
 
 	return ops;
 #undef CASE
-}  /* firm_set_default_node_cmp_attr */
+}
 
 /*
  * Compare function for two nodes in the value table. Gets two
@@ -6592,7 +6592,7 @@ int identities_cmp(const void *elt, const void *key)
 		return a->op->ops.node_cmp_attr(a, b);
 
 	return 0;
-}  /* identities_cmp */
+}
 
 /*
  * Calculate a hash value of a node.
@@ -6602,7 +6602,7 @@ int identities_cmp(const void *elt, const void *key)
 unsigned ir_node_hash(const ir_node *node)
 {
 	return node->op->ops.hash(node);
-}  /* ir_node_hash */
+}
 
 
 void new_identities(ir_graph *irg)
@@ -6610,13 +6610,13 @@ void new_identities(ir_graph *irg)
 	if (irg->value_table != NULL)
 		del_pset(irg->value_table);
 	irg->value_table = new_pset(identities_cmp, N_IR_NODES);
-}  /* new_identities */
+}
 
 void del_identities(ir_graph *irg)
 {
 	if (irg->value_table != NULL)
 		del_pset(irg->value_table);
-}  /* del_identities */
+}
 
 /* Normalize a node by putting constants (and operands with larger
  * node index) on the right (operator side). */
@@ -6636,7 +6636,7 @@ void ir_normalize_node(ir_node *n)
 			hook_normalize(n);
 		}
 	}
-}  /* ir_normalize_node */
+}
 
 /*
  * Return the canonical node computing the same value as n.
@@ -6667,7 +6667,7 @@ ir_node *identify_remember(ir_node *n)
 	}
 
 	return nn;
-}  /* identify_remember */
+}
 
 /**
  * During construction we set the op_pin_state_pinned flag in the graph right
@@ -6686,7 +6686,7 @@ static inline ir_node *identify_cons(ir_node *n)
 		set_irg_pinned(irg, op_pin_state_floats);
 	}
 	return n;
-}  /* identify_cons */
+}
 
 /* Add a node to the identities value table. */
 void add_identities(ir_node *node)
@@ -6710,7 +6710,7 @@ void visit_all_identities(ir_graph *irg, irg_walk_func visit, void *env)
 		visit(node, env);
 	}
 	current_ir_graph = rem;
-}  /* visit_all_identities */
+}
 
 /**
  * These optimizations deallocate nodes from the obstack.
@@ -6808,7 +6808,7 @@ ir_node *optimize_node(ir_node *n)
 	}
 
 	return n;
-}  /* optimize_node */
+}
 
 
 /**
@@ -6886,7 +6886,7 @@ ir_node *optimize_in_place_2(ir_node *n)
 	}
 
 	return n;
-}  /* optimize_in_place_2 */
+}
 
 /**
  * Wrapper for external use, set proper status bits after optimization.
@@ -6904,7 +6904,7 @@ ir_node *optimize_in_place(ir_node *n)
 	   change the control graph. */
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 	return optimize_in_place_2(n);
-}  /* optimize_in_place */
+}
 
 /**
  * Calculate a hash value of a Const node.
@@ -6917,7 +6917,7 @@ static unsigned hash_Const(const ir_node *node)
 	h = HASH_PTR(node->attr.con.tarval);
 
 	return h;
-}  /* hash_Const */
+}
 
 /**
  * Calculate a hash value of a SymConst node.
@@ -6930,7 +6930,7 @@ static unsigned hash_SymConst(const ir_node *node)
 	h = HASH_PTR(node->attr.symc.sym.type_p);
 
 	return h;
-}  /* hash_SymConst */
+}
 
 /**
  * Set the default hash operation in an ir_op_ops.
@@ -6978,4 +6978,4 @@ ir_op_ops *firm_set_default_operations(unsigned code, ir_op_ops *ops)
 	ops = firm_set_default_get_entity_attr(code, ops);
 
 	return ops;
-}  /* firm_set_default_operations */
+}
