@@ -86,6 +86,10 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_PIC_TRAMPOLINES: name = "section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5"; break;
 		case GAS_SECTION_PIC_SYMBOLS:     name = "section\t__IMPORT,__pointers,non_lazy_symbol_pointers"; break;
 		case GAS_SECTION_CSTRING:         name = "cstring";       break;
+		case GAS_SECTION_DEBUG_INFO:      name = "section __DWARF,__debug_info,regular,debug"; break;
+		case GAS_SECTION_DEBUG_ABBREV:    name = "section __DWARF,__debug_abbrev,regular,debug"; break;
+		case GAS_SECTION_DEBUG_LINE:      name = "section __DWARF,__debug_line,regular,debug"; break;
+		case GAS_SECTION_DEBUG_PUBNAMES:  name = "section __DWARF,__debug_pubnames,regular,debug"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
 		be_emit_irprintf("\t.%s\n", name);
@@ -108,8 +112,20 @@ static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	static const char *const basename[] = {
-		"text", "data", "rodata", "bss", "ctors", "dtors"
+	static const char *const basename[GAS_SECTION_LAST+1] = {
+		"text",
+		"data",
+		"rodata",
+		"bss",
+		"ctors",
+		"dtors",
+		NULL, /* cstring */
+		NULL, /* pic trampolines */
+		NULL, /* pic symbols */
+		"debug_info",
+		"debug_abbrev",
+		"debug_line",
+		"debug_pubnames"
 	};
 
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
@@ -162,19 +178,20 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		const char *name;
 		const char *type;
 		const char *flags;
-	} sectioninfos[] = {
-		{ "text",         "progbits", "ax" },
-		{ "data",         "progbits", "aw" },
-		{ "rodata",       "progbits", "a"  },
-		{ "bss",          "nobits",   "aw" },
-		{ "ctors",        "progbits", "aw" },
-		{ "dtors",        "progbits", "aw" },
-		{ NULL,           NULL,       NULL }, /* cstring */
-		{ NULL,           NULL,       NULL }, /* pic trampolines */
-		{ NULL,           NULL,       NULL }, /* pic symbols */
-		{ "debug_info",   "progbits", ""   },
-		{ "debug_abbrev", "progbits", ""   },
-		{ "debug_line",   "progbits", ""   },
+	} sectioninfos[GAS_SECTION_LAST+1] = {
+		{ "text",           "progbits", "ax" },
+		{ "data",           "progbits", "aw" },
+		{ "rodata",         "progbits", "a"  },
+		{ "bss",            "nobits",   "aw" },
+		{ "ctors",          "progbits", "aw" },
+		{ "dtors",          "progbits", "aw" },
+		{ NULL,             NULL,       NULL }, /* cstring */
+		{ NULL,             NULL,       NULL }, /* pic trampolines */
+		{ NULL,             NULL,       NULL }, /* pic symbols */
+		{ "debug_info",     "progbits", ""   },
+		{ "debug_abbrev",   "progbits", ""   },
+		{ "debug_line",     "progbits", ""   },
+		{ "debug_pubnames", "progbits", ""   },
 	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {

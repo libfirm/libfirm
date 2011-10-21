@@ -41,7 +41,11 @@ typedef enum {
 	GAS_SECTION_CSTRING,         /**< section for constant strings */
 	GAS_SECTION_PIC_TRAMPOLINES, /**< trampolines for pic codes */
 	GAS_SECTION_PIC_SYMBOLS,     /**< contains resolved pic symbols */
-	GAS_SECTION_LAST = GAS_SECTION_PIC_SYMBOLS,
+	GAS_SECTION_DEBUG_INFO,      /**< dwarf debug info */
+	GAS_SECTION_DEBUG_ABBREV,    /**< dwarf debug abbrev */
+	GAS_SECTION_DEBUG_LINE,      /**< dwarf debug line */
+	GAS_SECTION_DEBUG_PUBNAMES,  /**< dwarf pub names */
+	GAS_SECTION_LAST = GAS_SECTION_DEBUG_PUBNAMES,
 	GAS_SECTION_TYPE_MASK    = 0xFF,
 
 	GAS_SECTION_FLAG_TLS     = 1 << 8,  /**< thread local flag */
