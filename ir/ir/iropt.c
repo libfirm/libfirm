@@ -56,6 +56,22 @@
 /* Make types visible to allow most efficient access */
 #include "entity_t.h"
 
+static bool is_Or_Eor_Add(const ir_node *node)
+{
+	if (is_Or(node) || is_Eor(node) || is_Add(node)) {
+		ir_node  *left      = get_binop_left(node);
+		ir_node  *right     = get_binop_right(node);
+		vrp_attr *vrp_left  = vrp_get_info(left);
+		vrp_attr *vrp_right = vrp_get_info(right);
+		if (vrp_left != NULL && vrp_right != NULL) {
+			ir_tarval *vrp_val
+				= tarval_and(vrp_left->bits_not_set, vrp_right->bits_not_set);
+			return tarval_is_null(vrp_val);
+		}
+	}
+	return false;
+}
+
 /**
  * Returns the tarval of a Const node or tarval_bad for all other nodes.
  */
@@ -812,9 +828,9 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 	a = get_Eor_left(n);
 	b = get_Eor_right(n);
 
-	if (is_Eor(a)) {
-		ir_node *aa = get_Eor_left(a);
-		ir_node *ab = get_Eor_right(a);
+	if (is_Eor(a) || is_Or_Eor_Add(a)) {
+		ir_node *aa = get_binop_left(a);
+		ir_node *ab = get_binop_right(a);
 
 		if (aa == b) {
 			/* (a ^ b) ^ a -> b */
@@ -828,9 +844,9 @@ static ir_node *equivalent_node_Eor(ir_node *n)
 			return n;
 		}
 	}
-	if (is_Eor(b)) {
-		ir_node *ba = get_Eor_left(b);
-		ir_node *bb = get_Eor_right(b);
+	if (is_Eor(b) || is_Or_Eor_Add(b)) {
+		ir_node *ba = get_binop_left(b);
+		ir_node *bb = get_binop_right(b);
 
 		if (ba == a) {
 			/* a ^ (a ^ b) -> b */
@@ -1107,21 +1123,19 @@ static ir_node *equivalent_node_And(ir_node *n)
 		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
 		return n;
 	}
-	if (is_Or(a)) {
-		if (b == get_Or_left(a) || b == get_Or_right(a)) {
-			/* (a|X) & a */
-			n = b;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
-			return n;
-		}
+	/* (a|X) & a => a*/
+	if ((is_Or(a) || is_Or_Eor_Add(a))
+	    && (b == get_binop_left(a) || b == get_binop_right(a))) {
+		n = b;
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
+		return n;
 	}
-	if (is_Or(b)) {
-		if (a == get_Or_left(b) || a == get_Or_right(b)) {
-			/* a & (a|X) */
-			n = a;
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
-			return n;
-		}
+	/* a & (a|X) => a*/
+	if ((is_Or(b) || is_Or_Eor_Add(b))
+	    && (a == get_binop_left(b) || a == get_binop_right(b))) {
+		n = a;
+		DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_AND);
+		return n;
 	}
 	return n;
 }
@@ -1972,6 +1986,666 @@ static ir_node *transform_node_AddSub(ir_node *n)
   } while(0)
 
 /**
+ * Create a 0 constant of given mode.
+ */
+static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
+{
+	ir_tarval *tv   = get_mode_null(mode);
+	ir_node   *cnst = new_r_Const(irg, tv);
+
+	return cnst;
+}
+
+static bool is_shiftop(const ir_node *n)
+{
+	return is_Shl(n) || is_Shr(n) || is_Shrs(n) || is_Rotl(n);
+}
+
+/* the order of the values is important! */
+typedef enum const_class {
+	const_const = 0,
+	const_like  = 1,
+	const_other = 2
+} const_class;
+
+static const_class classify_const(const ir_node* n)
+{
+	if (is_Const(n))         return const_const;
+	if (is_irn_constlike(n)) return const_like;
+	return const_other;
+}
+
+/**
+ * Determines whether r is more constlike or has a larger index (in that order)
+ * than l.
+ */
+static bool operands_are_normalized(const ir_node *l, const ir_node *r)
+{
+	const const_class l_order = classify_const(l);
+	const const_class r_order = classify_const(r);
+	return
+		l_order > r_order ||
+		(l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
+}
+
+static bool is_cmp_unequal(const ir_node *node)
+{
+	ir_relation relation = get_Cmp_relation(node);
+	ir_node    *left     = get_Cmp_left(node);
+	ir_node    *right    = get_Cmp_right(node);
+	ir_mode    *mode     = get_irn_mode(left);
+
+	if (relation == ir_relation_less_greater)
+		return true;
+
+	if (!mode_is_signed(mode) && is_Const(right) && is_Const_null(right))
+		return relation == ir_relation_greater;
+	return false;
+}
+
+/**
+ * returns true for Cmp(x == 0) or Cmp(x != 0)
+ */
+static bool is_cmp_equality_zero(const ir_node *node)
+{
+	ir_relation relation;
+	ir_node    *right    = get_Cmp_right(node);
+
+	if (!is_Const(right) || !is_Const_null(right))
+		return false;
+	relation = get_Cmp_relation(node);
+	return relation == ir_relation_equal
+		|| relation == ir_relation_less_greater
+		|| (!mode_is_signed(get_irn_mode(right))
+		    && relation == ir_relation_greater);
+}
+
+/**
+ * Optimize a Or(And(Or(And(v,c4),c3),c2),c1) pattern if possible.
+ * Such pattern may arise in bitfield stores.
+ *
+ * value  c4                  value      c4 & c2
+ *    AND     c3                    AND           c1 | c3
+ *        OR     c2      ===>               OR
+ *           AND    c1
+ *               OR
+ *
+ *
+ * value  c2                 value  c1
+ *     AND   c1    ===>           OR     if (c1 | c2) == 0x111..11
+ *        OR
+ */
+static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
+{
+	ir_node *irn_and, *c1;
+	ir_node *or_l, *c2;
+	ir_node *and_l, *c3;
+	ir_node *value, *c4;
+	ir_node *new_and, *new_const, *block;
+	ir_mode *mode = get_irn_mode(irn_or);
+
+	ir_tarval *tv1, *tv2, *tv3, *tv4, *tv;
+
+	for (;;) {
+		ir_graph *irg;
+		irn_and = get_binop_left(irn_or);
+		c1      = get_binop_right(irn_or);
+		if (!is_Const(c1) || !is_And(irn_and))
+			return irn_or;
+
+		or_l = get_binop_left(irn_and);
+		c2   = get_binop_right(irn_and);
+		if (!is_Const(c2))
+			return irn_or;
+
+		tv1 = get_Const_tarval(c1);
+		tv2 = get_Const_tarval(c2);
+
+		tv = tarval_or(tv1, tv2);
+		if (tarval_is_all_one(tv)) {
+			/* the AND does NOT clear a bit with isn't set by the OR */
+			set_binop_left(irn_or, or_l);
+			set_binop_right(irn_or, c1);
+
+			/* check for more */
+			continue;
+		}
+
+		if (!is_Or(or_l) && !is_Or_Eor_Add(or_l))
+			return irn_or;
+
+		and_l = get_binop_left(or_l);
+		c3    = get_binop_right(or_l);
+		if (!is_Const(c3) || !is_And(and_l))
+			return irn_or;
+
+		value = get_binop_left(and_l);
+		c4    = get_binop_right(and_l);
+		if (!is_Const(c4))
+			return irn_or;
+
+		/* ok, found the pattern, check for conditions */
+		assert(mode == get_irn_mode(irn_and));
+		assert(mode == get_irn_mode(or_l));
+		assert(mode == get_irn_mode(and_l));
+
+		tv3 = get_Const_tarval(c3);
+		tv4 = get_Const_tarval(c4);
+
+		tv = tarval_or(tv4, tv2);
+		if (!tarval_is_all_one(tv)) {
+			/* have at least one 0 at the same bit position */
+			return irn_or;
+		}
+
+		if (tv3 != tarval_andnot(tv3, tv4)) {
+			/* bit in the or_mask is outside the and_mask */
+			return irn_or;
+		}
+
+		if (tv1 != tarval_andnot(tv1, tv2)) {
+			/* bit in the or_mask is outside the and_mask */
+			return irn_or;
+		}
+
+		/* ok, all conditions met */
+		block = get_irn_n(irn_or, -1);
+		irg   = get_irn_irg(block);
+
+		new_and = new_r_And(block, value, new_r_Const(irg, tarval_and(tv4, tv2)), mode);
+
+		new_const = new_r_Const(irg, tarval_or(tv3, tv1));
+
+		set_binop_left(irn_or, new_and);
+		set_binop_right(irn_or, new_const);
+
+		/* check for more */
+	}
+}
+
+/**
+ * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rotl
+ */
+static ir_node *transform_node_Or_Rotl(ir_node *irn_or)
+{
+	ir_mode *mode = get_irn_mode(irn_or);
+	ir_node *shl, *shr, *block;
+	ir_node *irn, *x, *c1, *c2, *n;
+	ir_tarval *tv1, *tv2;
+
+	/* some backends can't handle rotl */
+	if (!be_get_backend_param()->support_rotl)
+		return irn_or;
+
+	if (! mode_is_int(mode))
+		return irn_or;
+
+	shl = get_binop_left(irn_or);
+	shr = get_binop_right(irn_or);
+
+	if (is_Shr(shl)) {
+		if (!is_Shl(shr))
+			return irn_or;
+
+		irn = shl;
+		shl = shr;
+		shr = irn;
+	} else if (!is_Shl(shl)) {
+		return irn_or;
+	} else if (!is_Shr(shr)) {
+		return irn_or;
+	}
+	x = get_Shl_left(shl);
+	if (x != get_Shr_left(shr))
+		return irn_or;
+
+	c1 = get_Shl_right(shl);
+	c2 = get_Shr_right(shr);
+	if (is_Const(c1) && is_Const(c2)) {
+		tv1 = get_Const_tarval(c1);
+		if (! tarval_is_long(tv1))
+			return irn_or;
+
+		tv2 = get_Const_tarval(c2);
+		if (! tarval_is_long(tv2))
+			return irn_or;
+
+		if (get_tarval_long(tv1) + get_tarval_long(tv2)
+				!= (int) get_mode_size_bits(mode))
+			return irn_or;
+
+		/* yet, condition met */
+		block = get_nodes_block(irn_or);
+
+		n = new_r_Rotl(block, x, c1, mode);
+
+		DBG_OPT_ALGSIM1(irn_or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
+		return n;
+	}
+
+	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
+	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
+	if (!ir_is_negated_value(c1, c2)) {
+		return irn_or;
+	}
+
+	/* yet, condition met */
+	block = get_nodes_block(irn_or);
+	n = new_r_Rotl(block, x, c1, mode);
+	DBG_OPT_ALGSIM0(irn_or, n, FS_OPT_OR_SHFT_TO_ROTL);
+	return n;
+}
+
+/**
+ * Prototype of a recursive transform function
+ * for bitwise distributive transformations.
+ */
+typedef ir_node* (*recursive_transform)(ir_node *n);
+
+/**
+ * makes use of distributive laws for and, or, eor
+ *     and(a OP c, b OP c) -> and(a, b) OP c
+ * note, might return a different op than n
+ */
+static ir_node *transform_bitwise_distributive(ir_node *n,
+                                               recursive_transform trans_func)
+{
+	ir_node *oldn    = n;
+	ir_node *a       = get_binop_left(n);
+	ir_node *b       = get_binop_right(n);
+	ir_op   *op      = get_irn_op(a);
+	ir_op   *op_root = get_irn_op(n);
+
+	if (op != get_irn_op(b))
+		return n;
+
+	/* and(conv(a), conv(b)) -> conv(and(a,b)) */
+	if (op == op_Conv) {
+		ir_node *a_op   = get_Conv_op(a);
+		ir_node *b_op   = get_Conv_op(b);
+		ir_mode *a_mode = get_irn_mode(a_op);
+		ir_mode *b_mode = get_irn_mode(b_op);
+		if (a_mode == b_mode && (mode_is_int(a_mode) || a_mode == mode_b)) {
+			ir_node *blk = get_nodes_block(n);
+
+			n = exact_copy(n);
+			set_binop_left(n, a_op);
+			set_binop_right(n, b_op);
+			set_irn_mode(n, a_mode);
+			n = trans_func(n);
+			n = new_r_Conv(blk, n, get_irn_mode(oldn));
+
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
+			return n;
+		}
+	}
+
+	if (op == op_Eor) {
+		/* nothing to gain here */
+		return n;
+	}
+
+	if (op == op_Shrs || op == op_Shr || op == op_Shl
+			|| op == op_And || op == op_Or || op == op_Eor) {
+		ir_node *a_left  = get_binop_left(a);
+		ir_node *a_right = get_binop_right(a);
+		ir_node *b_left  = get_binop_left(b);
+		ir_node *b_right = get_binop_right(b);
+		ir_node *c       = NULL;
+		ir_node *op1     = NULL;
+		ir_node *op2     = NULL;
+
+		if (is_op_commutative(op)) {
+			if (a_left == b_left) {
+				c   = a_left;
+				op1 = a_right;
+				op2 = b_right;
+			} else if (a_left == b_right) {
+				c   = a_left;
+				op1 = a_right;
+				op2 = b_left;
+			} else if (a_right == b_left) {
+				c   = a_right;
+				op1 = a_left;
+				op2 = b_right;
+			}
+		}
+		if (a_right == b_right) {
+			c   = a_right;
+			op1 = a_left;
+			op2 = b_left;
+		}
+
+		if (c != NULL) {
+			/* (a sop c) & (b sop c) => (a & b) sop c */
+			ir_node *blk = get_nodes_block(n);
+
+			ir_node *new_n = exact_copy(n);
+			set_binop_left(new_n, op1);
+			set_binop_right(new_n, op2);
+			new_n = trans_func(new_n);
+
+			if (op_root == op_Eor && op == op_Or) {
+				dbg_info  *dbgi = get_irn_dbg_info(n);
+				ir_mode   *mode = get_irn_mode(c);
+
+				c = new_rd_Not(dbgi, blk, c, mode);
+				n = new_rd_And(dbgi, blk, new_n, c, mode);
+			} else {
+				n = exact_copy(a);
+				set_nodes_block(n, blk);
+				set_binop_left(n, new_n);
+				set_binop_right(n, c);
+				add_identities(n);
+			}
+
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
+			return n;
+		}
+	}
+
+	return n;
+}
+
+/**
+ * normalisation: (x >> c1) & c2   to   (x & (c2<<c1)) >> c1
+ *  (we can use:
+ *    - and, or, xor          instead of &
+ *    - Shl, Shr, Shrs, rotl  instead of >>
+ *    (with a special case for Or/Xor + Shrs)
+ *
+ * This normalisation is usually good for the backend since << C can often be
+ * matched as address-mode.
+ */
+static ir_node *transform_node_bitop_shift(ir_node *n)
+{
+	ir_graph  *irg   = get_irn_irg(n);
+	ir_node   *left  = get_binop_left(n);
+	ir_node   *right = get_binop_right(n);
+	ir_mode   *mode  = get_irn_mode(n);
+	ir_node   *shift_left;
+	ir_node   *shift_right;
+	ir_node   *block;
+	dbg_info  *dbg_bitop;
+	dbg_info  *dbg_shift;
+	ir_node   *new_bitop;
+	ir_node   *new_shift;
+	ir_node   *new_const;
+	ir_tarval *tv1;
+	ir_tarval *tv2;
+	ir_tarval *tv_bitop;
+
+	if (!is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
+		return n;
+
+	assert(is_And(n) || is_Or(n) || is_Eor(n) || is_Or_Eor_Add(n));
+	if (!is_Const(right) || !is_shiftop(left))
+		return n;
+
+	shift_left  = get_binop_left(left);
+	shift_right = get_binop_right(left);
+	if (!is_Const(shift_right))
+		return n;
+
+	/* doing it with Shrs is not legal if the Or/Eor affects the topmost bit */
+	if (is_Shrs(left)) {
+		/* TODO this could be improved */
+		return n;
+	}
+
+	irg       = get_irn_irg(n);
+	block     = get_nodes_block(n);
+	dbg_bitop = get_irn_dbg_info(n);
+	dbg_shift = get_irn_dbg_info(left);
+	tv1       = get_Const_tarval(shift_right);
+	tv2       = get_Const_tarval(right);
+	assert(get_tarval_mode(tv2) == mode);
+
+	if (is_Shl(left)) {
+		tv_bitop = tarval_shr(tv2, tv1);
+
+		/* Check whether we have lost some bits during the right shift. */
+		if (!is_And(n)) {
+			ir_tarval *tv_back_again = tarval_shl(tv_bitop, tv1);
+
+			if (tarval_cmp(tv_back_again, tv2) != ir_relation_equal)
+				return n;
+		}
+	} else if (is_Shr(left)) {
+		if (!is_And(n)) {
+			/*
+			 * TODO this can be improved by checking whether
+			 *      the left shift produces an overflow
+			 */
+			return n;
+		}
+		tv_bitop = tarval_shl(tv2, tv1);
+	} else {
+		assert(is_Rotl(left));
+		tv_bitop = tarval_rotl(tv2, tarval_neg(tv1));
+	}
+	new_const = new_r_Const(irg, tv_bitop);
+
+	if (is_And(n)) {
+		new_bitop = new_rd_And(dbg_bitop, block, shift_left, new_const, mode);
+	} else if (is_Or(n) || is_Or_Eor_Add(n)) {
+		new_bitop = new_rd_Or(dbg_bitop, block, shift_left, new_const, mode);
+	} else {
+		assert(is_Eor(n));
+		new_bitop = new_rd_Eor(dbg_bitop, block, shift_left, new_const, mode);
+	}
+
+	if (is_Shl(left)) {
+		new_shift = new_rd_Shl(dbg_shift, block, new_bitop, shift_right, mode);
+	} else if (is_Shr(left)) {
+		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right, mode);
+	} else {
+		assert(is_Rotl(left));
+		new_shift = new_rd_Rotl(dbg_shift, block, new_bitop, shift_right, mode);
+	}
+
+	return new_shift;
+}
+
+static bool complement_values(const ir_node *a, const ir_node *b)
+{
+	if (is_Not(a) && get_Not_op(a) == b)
+		return true;
+	if (is_Not(b) && get_Not_op(b) == a)
+		return true;
+	if (is_Const(a) && is_Const(b)) {
+		ir_tarval *tv_a = get_Const_tarval(a);
+		ir_tarval *tv_b = get_Const_tarval(b);
+		return tarval_not(tv_a) == tv_b;
+	}
+	return false;
+}
+
+/**
+ * Transform an Or.
+ */
+static ir_node *transform_node_Or_(ir_node *n)
+{
+	ir_node *oldn = n;
+	ir_node *a    = get_binop_left(n);
+	ir_node *b    = get_binop_right(n);
+	ir_node *c;
+	ir_mode *mode;
+
+	if (is_Not(a) && is_Not(b)) {
+		/* ~a | ~b = ~(a&b) */
+		ir_node *block = get_nodes_block(n);
+
+		mode = get_irn_mode(n);
+		a = get_Not_op(a);
+		b = get_Not_op(b);
+		n = new_rd_And(get_irn_dbg_info(n), block, a, b, mode);
+		n = new_rd_Not(get_irn_dbg_info(n), block, n, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
+		return n;
+	}
+
+	/* we can combine the relations of two compares with the same operands */
+	if (is_Cmp(a) && is_Cmp(b)) {
+		ir_node *a_left  = get_Cmp_left(a);
+		ir_node *a_right = get_Cmp_right(a);
+		ir_node *b_left  = get_Cmp_left(b);
+		ir_node *b_right = get_Cmp_right(b);
+		if (a_left == b_left && b_left == b_right) {
+			dbg_info   *dbgi         = get_irn_dbg_info(n);
+			ir_node    *block        = get_nodes_block(n);
+			ir_relation a_relation   = get_Cmp_relation(a);
+			ir_relation b_relation   = get_Cmp_relation(b);
+			ir_relation new_relation = a_relation | b_relation;
+			return new_rd_Cmp(dbgi, block, a_left, a_right, new_relation);
+		}
+		/* Cmp(a!=b) or Cmp(c!=d) => Cmp((a^b)|(c^d) != 0) */
+		if (is_cmp_unequal(a) && is_cmp_unequal(b)
+		    && !mode_is_float(get_irn_mode(a_left))
+		    && !mode_is_float(get_irn_mode(b_left))) {
+			if (values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
+				ir_graph *irg    = get_irn_irg(n);
+				dbg_info *dbgi   = get_irn_dbg_info(n);
+				ir_node  *block  = get_nodes_block(n);
+				ir_mode  *a_mode = get_irn_mode(a_left);
+				ir_mode  *b_mode = get_irn_mode(b_left);
+				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
+				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
+				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
+				ir_node  *or     = new_rd_Or(dbgi, block, conv, xorb, b_mode);
+				ir_node  *zero   = create_zero_const(irg, b_mode);
+				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_less_greater);
+			}
+			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
+				ir_graph *irg    = get_irn_irg(n);
+				dbg_info *dbgi   = get_irn_dbg_info(n);
+				ir_node  *block  = get_nodes_block(n);
+				ir_mode  *a_mode = get_irn_mode(a_left);
+				ir_mode  *b_mode = get_irn_mode(b_left);
+				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
+				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
+				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
+				ir_node  *or     = new_rd_Or(dbgi, block, xora, conv, a_mode);
+				ir_node  *zero   = create_zero_const(irg, a_mode);
+				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_less_greater);
+			}
+		}
+	}
+
+	mode = get_irn_mode(n);
+	HANDLE_BINOP_PHI((eval_func) tarval_or, a, b, c, mode);
+
+	n = transform_node_Or_bf_store(n);
+	if (n != oldn)
+		return n;
+	n = transform_node_Or_Rotl(n);
+	if (n != oldn)
+		return n;
+
+	n = transform_bitwise_distributive(n, transform_node_Or_);
+	if (n != oldn)
+		return n;
+	n = transform_node_bitop_shift(n);
+	if (n != oldn)
+		return n;
+
+	return n;
+}
+
+static ir_node *transform_node_Or(ir_node *n)
+{
+	if (is_Or_Eor_Add(n)) {
+		dbg_info *dbgi  = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		ir_node  *left  = get_Or_left(n);
+		ir_node  *right = get_Or_right(n);
+		ir_mode  *mode  = get_irn_mode(n);
+		return new_rd_Add(dbgi, block, left, right, mode);
+	}
+	return transform_node_Or_(n);
+}
+
+/**
+ * Transform an Eor.
+ */
+static ir_node *transform_node_Eor_(ir_node *n)
+{
+	ir_node *oldn = n;
+	ir_node *a    = get_binop_left(n);
+	ir_node *b    = get_binop_right(n);
+	ir_mode *mode = get_irn_mode(n);
+	ir_node *c;
+
+	/* we can combine the relations of two compares with the same operands */
+	if (is_Cmp(a) && is_Cmp(b)) {
+		ir_node *a_left  = get_Cmp_left(a);
+		ir_node *a_right = get_Cmp_left(a);
+		ir_node *b_left  = get_Cmp_left(b);
+		ir_node *b_right = get_Cmp_right(b);
+		if (a_left == b_left && b_left == b_right) {
+			dbg_info   *dbgi         = get_irn_dbg_info(n);
+			ir_node    *block        = get_nodes_block(n);
+			ir_relation a_relation   = get_Cmp_relation(a);
+			ir_relation b_relation   = get_Cmp_relation(b);
+			ir_relation new_relation = a_relation ^ b_relation;
+			return new_rd_Cmp(dbgi, block, a_left, a_right, new_relation);
+		}
+	}
+
+	HANDLE_BINOP_PHI((eval_func) tarval_eor, a, b, c, mode);
+
+	/* normalize not nodes... ~a ^ b <=> a ^ ~b */
+	if (is_Not(a) && operands_are_normalized(get_Not_op(a), b)) {
+		dbg_info *dbg      = get_irn_dbg_info(n);
+		ir_node  *block    = get_nodes_block(n);
+		ir_node  *new_not  = new_rd_Not(dbg, block, b, mode);
+		ir_node  *new_left = get_Not_op(a);
+		n = new_rd_Eor(dbg, block, new_left, new_not, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+		return n;
+	} else if (is_Not(b) && !operands_are_normalized(a, get_Not_op(b))) {
+		dbg_info *dbg       = get_irn_dbg_info(n);
+		ir_node  *block     = get_nodes_block(n);
+		ir_node  *new_not   = new_rd_Not(dbg, block, a, mode);
+		ir_node  *new_right = get_Not_op(b);
+		n = new_rd_Eor(dbg, block, new_not, new_right, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+		return n;
+	}
+
+	/* x ^ 1...1 -> ~1 */
+	if (is_Const(b) && is_Const_all_one(b)) {
+		n = new_r_Not(get_nodes_block(n), a, mode);
+		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
+		return n;
+	}
+
+	n = transform_bitwise_distributive(n, transform_node_Eor_);
+	if (n != oldn)
+		return n;
+	n = transform_node_bitop_shift(n);
+	if (n != oldn)
+		return n;
+
+	return n;
+}
+
+static ir_node *transform_node_Eor(ir_node *n)
+{
+	if (is_Or_Eor_Add(n)) {
+		dbg_info *dbgi  = get_irn_dbg_info(n);
+		ir_node  *block = get_nodes_block(n);
+		ir_node  *left  = get_Eor_left(n);
+		ir_node  *right = get_Eor_right(n);
+		ir_mode  *mode  = get_irn_mode(n);
+		return new_rd_Add(dbgi, block, left, right, mode);
+	}
+	return transform_node_Eor_(n);
+}
+
+
+
+/**
  * Do the AddSub optimization, then Transform
  *   Constant folding on Phi
  *   Add(a,a)          -> Mul(a, 2)
@@ -1983,13 +2657,17 @@ static ir_node *transform_node_AddSub(ir_node *n)
 static ir_node *transform_node_Add(ir_node *n)
 {
 	ir_mode *mode;
-	ir_node *a, *b, *c, *oldn = n;
+	ir_node *a;
+	ir_node *b;
+	ir_node *c;
+	ir_node *oldn = n;
 
 	n = transform_node_AddSub(n);
+	if (n != oldn)
+		return n;
 
-	a = get_Add_left(n);
-	b = get_Add_right(n);
-
+	a    = get_Add_left(n);
+	b    = get_Add_right(n);
 	mode = get_irn_mode(n);
 
 	if (mode_is_reference(mode)) {
@@ -2004,7 +2682,8 @@ static ir_node *transform_node_Add(ir_node *n)
 
 	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
 
-	/* for FP these optimizations are only allowed if fp_strict_algebraic is disabled */
+	/* for FP the following optimizations are only allowed if
+	 * fp_strict_algebraic is disabled */
 	if (mode_is_float(mode)) {
 		ir_graph *irg = get_irn_irg(n);
 		if (get_irg_fp_model(irg) & fp_strict_algebraic)
@@ -2013,7 +2692,8 @@ static ir_node *transform_node_Add(ir_node *n)
 
 	if (mode_is_num(mode)) {
 		ir_graph *irg = get_irn_irg(n);
-		/* the following code leads to endless recursion when Mul are replaced by a simple instruction chain */
+		/* the following code leads to endless recursion when Mul are replaced
+		 * by a simple instruction chain */
 		if (!is_irg_state(irg, IR_GRAPH_STATE_ARCH_DEP)
 				&& a == b && mode_is_int(mode)) {
 			ir_node *block = get_nodes_block(n);
@@ -2061,6 +2741,15 @@ static ir_node *transform_node_Add(ir_node *n)
 				}
 			}
 		}
+	}
+
+	if (is_Or_Eor_Add(n)) {
+		n = transform_node_Or_(n);
+		if (n != oldn)
+			return n;
+		n = transform_node_Eor_(n);
+		if (n != oldn)
+			return n;
 	}
 
 	return n;
@@ -2221,58 +2910,54 @@ restart:
 		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_SUB_0_A);
 		return n;
 	}
-	if (is_Add(a)) {
-		if (mode_wrap_around(mode)) {
-			ir_node *left  = get_Add_left(a);
-			ir_node *right = get_Add_right(a);
+	if ((is_Add(a) || is_Or_Eor_Add(a)) && mode_wrap_around(mode)) {
+		ir_node *left  = get_binop_left(a);
+		ir_node *right = get_binop_right(a);
 
-			/* FIXME: Does the Conv's work only for two complement or generally? */
-			if (left == b) {
-				if (mode != get_irn_mode(right)) {
-					/* This Sub is an effective Cast */
-					right = new_r_Conv(get_nodes_block(n), right, mode);
-				}
-				n = right;
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
-				return n;
-			} else if (right == b) {
-				if (mode != get_irn_mode(left)) {
-					/* This Sub is an effective Cast */
-					left = new_r_Conv(get_nodes_block(n), left, mode);
-				}
-				n = left;
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
-				return n;
+		/* FIXME: Does the Conv's work only for two complement or generally? */
+		if (left == b) {
+			if (mode != get_irn_mode(right)) {
+				/* This Sub is an effective Cast */
+				right = new_r_Conv(get_nodes_block(n), right, mode);
 			}
+			n = right;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			return n;
+		} else if (right == b) {
+			if (mode != get_irn_mode(left)) {
+				/* This Sub is an effective Cast */
+				left = new_r_Conv(get_nodes_block(n), left, mode);
+			}
+			n = left;
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			return n;
 		}
 	}
-	if (is_Add(b)) {
-		if (mode_wrap_around(mode)) {
-			ir_node *left  = get_Add_left(b);
-			ir_node *right = get_Add_right(b);
+	if ((is_Add(b) || is_Or_Eor_Add(b)) && mode_wrap_around(mode)) {
+		ir_node *left  = get_binop_left(b);
+		ir_node *right = get_binop_right(b);
 
-			/* FIXME: Does the Conv's work only for two complement or generally? */
-			if (left == a) {
-				ir_mode *r_mode = get_irn_mode(right);
+		/* FIXME: Does the Conv's work only for two complement or generally? */
+		if (left == a) {
+			ir_mode *r_mode = get_irn_mode(right);
 
-				n = new_r_Minus(get_nodes_block(n), right, r_mode);
-				if (mode != r_mode) {
-					/* This Sub is an effective Cast */
-					n = new_r_Conv(get_nodes_block(n), n, mode);
-				}
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
-				return n;
-			} else if (right == a) {
-				ir_mode *l_mode = get_irn_mode(left);
-
-				n = new_r_Minus(get_nodes_block(n), left, l_mode);
-				if (mode != l_mode) {
-					/* This Sub is an effective Cast */
-					n = new_r_Conv(get_nodes_block(n), n, mode);
-				}
-				DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
-				return n;
+			n = new_r_Minus(get_nodes_block(n), right, r_mode);
+			if (mode != r_mode) {
+				/* This Sub is an effective Cast */
+				n = new_r_Conv(get_nodes_block(n), n, mode);
 			}
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			return n;
+		} else if (right == a) {
+			ir_mode *l_mode = get_irn_mode(left);
+
+			n = new_r_Minus(get_nodes_block(n), left, l_mode);
+			if (mode != l_mode) {
+				/* This Sub is an effective Cast */
+				n = new_r_Conv(get_nodes_block(n), n, mode);
+			}
+			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_ADD_SUB);
+			return n;
 		}
 	}
 	if (mode_is_int(mode) && is_Conv(a) && is_Conv(b)) {
@@ -2824,133 +3509,6 @@ static ir_node *transform_node_Cond(ir_node *n)
 }
 
 /**
- * Prototype of a recursive transform function
- * for bitwise distributive transformations.
- */
-typedef ir_node* (*recursive_transform)(ir_node *n);
-
-/**
- * makes use of distributive laws for and, or, eor
- *     and(a OP c, b OP c) -> and(a, b) OP c
- * note, might return a different op than n
- */
-static ir_node *transform_bitwise_distributive(ir_node *n,
-                                               recursive_transform trans_func)
-{
-	ir_node *oldn    = n;
-	ir_node *a       = get_binop_left(n);
-	ir_node *b       = get_binop_right(n);
-	ir_op   *op      = get_irn_op(a);
-	ir_op   *op_root = get_irn_op(n);
-
-	if (op != get_irn_op(b))
-		return n;
-
-	/* and(conv(a), conv(b)) -> conv(and(a,b)) */
-	if (op == op_Conv) {
-		ir_node *a_op   = get_Conv_op(a);
-		ir_node *b_op   = get_Conv_op(b);
-		ir_mode *a_mode = get_irn_mode(a_op);
-		ir_mode *b_mode = get_irn_mode(b_op);
-		if (a_mode == b_mode && (mode_is_int(a_mode) || a_mode == mode_b)) {
-			ir_node *blk = get_nodes_block(n);
-
-			n = exact_copy(n);
-			set_binop_left(n, a_op);
-			set_binop_right(n, b_op);
-			set_irn_mode(n, a_mode);
-			n = trans_func(n);
-			n = new_r_Conv(blk, n, get_irn_mode(oldn));
-
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_CONV);
-			return n;
-		}
-	}
-
-	if (op == op_Eor) {
-		/* nothing to gain here */
-		return n;
-	}
-
-	if (op == op_Shrs || op == op_Shr || op == op_Shl
-			|| op == op_And || op == op_Or || op == op_Eor) {
-		ir_node *a_left  = get_binop_left(a);
-		ir_node *a_right = get_binop_right(a);
-		ir_node *b_left  = get_binop_left(b);
-		ir_node *b_right = get_binop_right(b);
-		ir_node *c       = NULL;
-		ir_node *op1     = NULL;
-		ir_node *op2     = NULL;
-
-		if (is_op_commutative(op)) {
-			if (a_left == b_left) {
-				c   = a_left;
-				op1 = a_right;
-				op2 = b_right;
-			} else if (a_left == b_right) {
-				c   = a_left;
-				op1 = a_right;
-				op2 = b_left;
-			} else if (a_right == b_left) {
-				c   = a_right;
-				op1 = a_left;
-				op2 = b_right;
-			}
-		}
-		if (a_right == b_right) {
-			c   = a_right;
-			op1 = a_left;
-			op2 = b_left;
-		}
-
-		if (c != NULL) {
-			/* (a sop c) & (b sop c) => (a & b) sop c */
-			ir_node *blk = get_nodes_block(n);
-
-			ir_node *new_n = exact_copy(n);
-			set_binop_left(new_n, op1);
-			set_binop_right(new_n, op2);
-			new_n = trans_func(new_n);
-
-			if (op_root == op_Eor && op == op_Or) {
-				dbg_info  *dbgi = get_irn_dbg_info(n);
-				ir_mode   *mode = get_irn_mode(c);
-
-				c = new_rd_Not(dbgi, blk, c, mode);
-				n = new_rd_And(dbgi, blk, new_n, c, mode);
-			} else {
-				n = exact_copy(a);
-				set_nodes_block(n, blk);
-				set_binop_left(n, new_n);
-				set_binop_right(n, c);
-				add_identities(n);
-			}
-
-			DBG_OPT_ALGSIM1(oldn, a, b, n, FS_OPT_SHIFT_AND);
-			return n;
-		}
-	}
-
-	return n;
-}
-
-/**
- * Create a 0 constant of given mode.
- */
-static ir_node *create_zero_const(ir_graph *irg, ir_mode *mode)
-{
-	ir_tarval *tv   = get_mode_null(mode);
-	ir_node   *cnst = new_r_Const(irg, tv);
-
-	return cnst;
-}
-
-static bool is_shiftop(const ir_node *n)
-{
-	return is_Shl(n) || is_Shr(n) || is_Shrs(n) || is_Rotl(n);
-}
-
-/**
  * normalisation: (x & c1) >> c2   to   (x >> c2) & (c1 >> c2)
  *  (we can use:
  *    - and, or, xor          instead of &
@@ -3041,120 +3599,6 @@ static ir_node *transform_node_shift_bitop(ir_node *n)
 }
 
 /**
- * normalisation: (x >> c1) & c2   to   (x & (c2<<c1)) >> c1
- *  (we can use:
- *    - and, or, xor          instead of &
- *    - Shl, Shr, Shrs, rotl  instead of >>
- *    (with a special case for Or/Xor + Shrs)
- *
- * This normalisation is usually good for the backend since << C can often be
- * matched as address-mode.
- */
-static ir_node *transform_node_bitop_shift(ir_node *n)
-{
-	ir_graph  *irg   = get_irn_irg(n);
-	ir_node   *left  = get_binop_left(n);
-	ir_node   *right = get_binop_right(n);
-	ir_mode   *mode  = get_irn_mode(n);
-	ir_node   *shift_left;
-	ir_node   *shift_right;
-	ir_node   *block;
-	dbg_info  *dbg_bitop;
-	dbg_info  *dbg_shift;
-	ir_node   *new_bitop;
-	ir_node   *new_shift;
-	ir_node   *new_const;
-	ir_tarval *tv1;
-	ir_tarval *tv2;
-	ir_tarval *tv_bitop;
-
-	if (!is_irg_state(irg, IR_GRAPH_STATE_NORMALISATION2))
-		return n;
-
-	assert(is_And(n) || is_Or(n) || is_Eor(n));
-	if (!is_Const(right) || !is_shiftop(left))
-		return n;
-
-	shift_left  = get_binop_left(left);
-	shift_right = get_binop_right(left);
-	if (!is_Const(shift_right))
-		return n;
-
-	/* doing it with Shrs is not legal if the Or/Eor affects the topmost bit */
-	if (is_Shrs(left)) {
-		/* TODO this could be improved */
-		return n;
-	}
-
-	irg       = get_irn_irg(n);
-	block     = get_nodes_block(n);
-	dbg_bitop = get_irn_dbg_info(n);
-	dbg_shift = get_irn_dbg_info(left);
-	tv1       = get_Const_tarval(shift_right);
-	tv2       = get_Const_tarval(right);
-	assert(get_tarval_mode(tv2) == mode);
-
-	if (is_Shl(left)) {
-		tv_bitop = tarval_shr(tv2, tv1);
-
-		/* Check whether we have lost some bits during the right shift. */
-		if (is_Or(n) || is_Eor(n)) {
-			ir_tarval *tv_back_again = tarval_shl(tv_bitop, tv1);
-
-			if (tarval_cmp(tv_back_again, tv2) != ir_relation_equal)
-				return n;
-		}
-	} else if (is_Shr(left)) {
-		if (is_Or(n) || is_Eor(n)) {
-			/*
-			 * TODO this can be improved by checking whether
-			 *      the left shift produces an overflow
-			 */
-			return n;
-		}
-		tv_bitop = tarval_shl(tv2, tv1);
-	} else {
-		assert(is_Rotl(left));
-		tv_bitop = tarval_rotl(tv2, tarval_neg(tv1));
-	}
-	new_const = new_r_Const(irg, tv_bitop);
-
-	if (is_And(n)) {
-		new_bitop = new_rd_And(dbg_bitop, block, shift_left, new_const, mode);
-	} else if (is_Or(n)) {
-		new_bitop = new_rd_Or(dbg_bitop, block, shift_left, new_const, mode);
-	} else {
-		assert(is_Eor(n));
-		new_bitop = new_rd_Eor(dbg_bitop, block, shift_left, new_const, mode);
-	}
-
-	if (is_Shl(left)) {
-		new_shift = new_rd_Shl(dbg_shift, block, new_bitop, shift_right, mode);
-	} else if (is_Shr(left)) {
-		new_shift = new_rd_Shr(dbg_shift, block, new_bitop, shift_right, mode);
-	} else {
-		assert(is_Rotl(left));
-		new_shift = new_rd_Rotl(dbg_shift, block, new_bitop, shift_right, mode);
-	}
-
-	return new_shift;
-}
-
-static bool complement_values(const ir_node *a, const ir_node *b)
-{
-	if (is_Not(a) && get_Not_op(a) == b)
-		return true;
-	if (is_Not(b) && get_Not_op(b) == a)
-		return true;
-	if (is_Const(a) && is_Const(b)) {
-		ir_tarval *tv_a = get_Const_tarval(a);
-		ir_tarval *tv_b = get_Const_tarval(b);
-		return tarval_not(tv_a) == tv_b;
-	}
-	return false;
-}
-
-/**
  * Transform an And.
  */
 static ir_node *transform_node_And(ir_node *n)
@@ -3163,7 +3607,6 @@ static ir_node *transform_node_And(ir_node *n)
 	ir_node *a = get_And_left(n);
 	ir_node *b = get_And_right(n);
 	ir_mode *mode;
-	vrp_attr *a_vrp, *b_vrp;
 
 	if (is_Cmp(a) && is_Cmp(b)) {
 		ir_node    *a_left     = get_Cmp_left(a);
@@ -3216,9 +3659,9 @@ static ir_node *transform_node_And(ir_node *n)
 	mode = get_irn_mode(n);
 	HANDLE_BINOP_PHI((eval_func) tarval_and, a, b, c, mode);
 
-	if (is_Or(a)) {
-		ir_node *or_left  = get_Or_left(a);
-		ir_node *or_right = get_Or_right(a);
+	if (is_Or(a) || is_Or_Eor_Add(a)) {
+		ir_node *or_left  = get_binop_left(a);
+		ir_node *or_right = get_binop_right(a);
 		if (complement_values(or_left, b)) {
 			/* (a|b) & ~a => b & ~a */
 			dbg_info *dbgi    = get_irn_dbg_info(n);
@@ -3236,7 +3679,7 @@ static ir_node *transform_node_And(ir_node *n)
 				ir_node *bb = get_And_right(op);
 
 				/* it's enough to test the following cases due to normalization! */
-				if (get_Or_left(a) == ba && get_Or_right(a) == bb) {
+				if (or_left == ba && or_right == bb) {
 					/* (a|b) & ~(a&b) = a^b */
 					ir_node *block = get_nodes_block(n);
 
@@ -3247,9 +3690,9 @@ static ir_node *transform_node_And(ir_node *n)
 			}
 		}
 	}
-	if (is_Or(b)) {
-		ir_node *or_left  = get_Or_left(b);
-		ir_node *or_right = get_Or_right(b);
+	if (is_Or(b) || is_Or_Eor_Add(b)) {
+		ir_node *or_left  = get_binop_left(b);
+		ir_node *or_right = get_binop_right(b);
 		if (complement_values(or_left, a)) {
 			/* (a|b) & ~a => b & ~a */
 			dbg_info *dbgi    = get_irn_dbg_info(n);
@@ -3267,7 +3710,7 @@ static ir_node *transform_node_And(ir_node *n)
 				ir_node *ab = get_And_right(op);
 
 				/* it's enough to test the following cases due to normalization! */
-				if (get_Or_left(b) == aa && get_Or_right(b) == ab) {
+				if (or_left == aa && or_right == ab) {
 					/* (a|b) & ~(a&b) = a^b */
 					ir_node *block = get_nodes_block(n);
 
@@ -3278,9 +3721,9 @@ static ir_node *transform_node_And(ir_node *n)
 			}
 		}
 	}
-	if (is_Eor(a)) {
-		ir_node *al = get_Eor_left(a);
-		ir_node *ar = get_Eor_right(a);
+	if (is_Eor(a) || is_Or_Eor_Add(a)) {
+		ir_node *al = get_binop_left(a);
+		ir_node *ar = get_binop_right(a);
 
 		if (al == b) {
 			/* (b ^ a) & b -> ~a & b */
@@ -3303,9 +3746,9 @@ static ir_node *transform_node_And(ir_node *n)
 			return n;
 		}
 	}
-	if (is_Eor(b)) {
-		ir_node *bl = get_Eor_left(b);
-		ir_node *br = get_Eor_right(b);
+	if (is_Eor(b) || is_Or_Eor_Add(b)) {
+		ir_node *bl = get_binop_left(b);
+		ir_node *br = get_binop_right(b);
 
 		if (bl == a) {
 			/* a & (a ^ b) -> a & ~b */
@@ -3341,123 +3784,24 @@ static ir_node *transform_node_And(ir_node *n)
 		return n;
 	}
 
-	b_vrp = vrp_get_info(b);
-	if (is_Const(a) && b_vrp && (tarval_cmp(tarval_or(get_Const_tarval(a),
-						b_vrp->bits_not_set), get_Const_tarval(a)) == ir_relation_equal)) {
-
-		return b;
-
+	if (is_Const(a)) {
+		vrp_attr  *b_vrp = vrp_get_info(b);
+		ir_tarval *a_val = get_Const_tarval(a);
+		if (b_vrp != NULL && tarval_or(a_val, b_vrp->bits_not_set) == a_val) {
+			return b;
+		}
 	}
 
-	a_vrp = vrp_get_info(a);
-	if (is_Const(b) && a_vrp && (tarval_cmp(tarval_or(get_Const_tarval(b),
-						a_vrp->bits_not_set), get_Const_tarval(b)) == ir_relation_equal)) {
-		return a;
+	if (is_Const(b)) {
+		vrp_attr  *a_vrp = vrp_get_info(a);
+		ir_tarval *b_val = get_Const_tarval(b);
+		if (a_vrp != NULL && tarval_or(b_val, a_vrp->bits_not_set) == b_val) {
+			return a;
+		}
 	}
 
 	n = transform_bitwise_distributive(n, transform_node_And);
 	if (is_And(n))
-		n = transform_node_bitop_shift(n);
-
-	return n;
-}
-
-/* the order of the values is important! */
-typedef enum const_class {
-	const_const = 0,
-	const_like  = 1,
-	const_other = 2
-} const_class;
-
-static const_class classify_const(const ir_node* n)
-{
-	if (is_Const(n))         return const_const;
-	if (is_irn_constlike(n)) return const_like;
-	return const_other;
-}
-
-/**
- * Determines whether r is more constlike or has a larger index (in that order)
- * than l.
- */
-static bool operands_are_normalized(const ir_node *l, const ir_node *r)
-{
-	const const_class l_order = classify_const(l);
-	const const_class r_order = classify_const(r);
-	return
-		l_order > r_order ||
-		(l_order == r_order && get_irn_idx(l) <= get_irn_idx(r));
-}
-
-/**
- * Transform an Eor.
- */
-static ir_node *transform_node_Eor(ir_node *n)
-{
-	ir_node *c, *oldn = n;
-	ir_node *a = get_Eor_left(n);
-	ir_node *b = get_Eor_right(n);
-	ir_mode *mode = get_irn_mode(n);
-
-	/* we can combine the relations of two compares with the same operands */
-	if (is_Cmp(a) && is_Cmp(b)) {
-		ir_node *a_left  = get_Cmp_left(a);
-		ir_node *a_right = get_Cmp_left(a);
-		ir_node *b_left  = get_Cmp_left(b);
-		ir_node *b_right = get_Cmp_right(b);
-		if (a_left == b_left && b_left == b_right) {
-			dbg_info   *dbgi         = get_irn_dbg_info(n);
-			ir_node    *block        = get_nodes_block(n);
-			ir_relation a_relation   = get_Cmp_relation(a);
-			ir_relation b_relation   = get_Cmp_relation(b);
-			ir_relation new_relation = a_relation ^ b_relation;
-			return new_rd_Cmp(dbgi, block, a_left, a_right, new_relation);
-		}
-	}
-
-	HANDLE_BINOP_PHI((eval_func) tarval_eor, a, b, c, mode);
-
-	/* normalize not nodes... ~a ^ b <=> a ^ ~b */
-	if (is_Not(a) && operands_are_normalized(get_Not_op(a), b)) {
-		dbg_info *dbg      = get_irn_dbg_info(n);
-		ir_node  *block    = get_nodes_block(n);
-		ir_node  *new_not  = new_rd_Not(dbg, block, b, mode);
-		ir_node  *new_left = get_Not_op(a);
-		n = new_rd_Eor(dbg, block, new_left, new_not, mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-		return n;
-	} else if (is_Not(b) && !operands_are_normalized(a, get_Not_op(b))) {
-		dbg_info *dbg       = get_irn_dbg_info(n);
-		ir_node  *block     = get_nodes_block(n);
-		ir_node  *new_not   = new_rd_Not(dbg, block, a, mode);
-		ir_node  *new_right = get_Not_op(b);
-		n = new_rd_Eor(dbg, block, new_not, new_right, mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-		return n;
-	}
-
-	/* x ^ 1...1 -> ~1 */
-	if (is_Const(b) && is_Const_all_one(b)) {
-		n = new_r_Not(get_nodes_block(n), a, mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_EOR_TO_NOT);
-		return n;
-	}
-
-	{
-	vrp_attr *a_vrp = vrp_get_info(a);
-	vrp_attr *b_vrp = vrp_get_info(b);
-	if (a_vrp != NULL && b_vrp != NULL) {
-		ir_tarval *vrp_val = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
-
-		if (tarval_is_null(vrp_val)) {
-			dbg_info *dbgi = get_irn_dbg_info(n);
-			return new_rd_Add(dbgi, get_nodes_block(n), a, b, mode);
-		}
-	}
-	}
-
-	n = transform_bitwise_distributive(n, transform_node_Eor);
-	if (is_Eor(n))
 		n = transform_node_bitop_shift(n);
 
 	return n;
@@ -3486,11 +3830,11 @@ static ir_node *transform_node_Not(ir_node *n)
 	}
 
 	/* normalize ~(a ^ b) => a ^ ~b */
-	if (is_Eor(a)) {
+	if (is_Eor(a) || is_Or_Eor_Add(a)) {
 		dbg_info *dbg       = get_irn_dbg_info(n);
 		ir_node  *block     = get_nodes_block(n);
-		ir_node  *eor_right = get_Eor_right(a);
-		ir_node  *eor_left  = get_Eor_left(a);
+		ir_node  *eor_right = get_binop_right(a);
+		ir_node  *eor_left  = get_binop_left(a);
 		eor_right = new_rd_Not(dbg, block, eor_right, mode);
 		n = new_rd_Eor(dbg, block, eor_left, eor_right, mode);
 		return n;
@@ -3504,11 +3848,11 @@ static ir_node *transform_node_Not(ir_node *n)
 			ir_node  *add_l = get_Minus_op(a);
 			ir_node  *add_r = new_rd_Const(dbg, irg, get_mode_minus_one(mode));
 			n = new_rd_Add(dbg, block, add_l, add_r, mode);
-		} else if (is_Add(a)) {
-			ir_node *add_r = get_Add_right(a);
+		} else if (is_Add(a) || is_Or_Eor_Add(a)) {
+			ir_node *add_r = get_binop_right(a);
 			if (is_Const(add_r) && is_Const_all_one(add_r)) {
 				/* ~(x + -1) = -x */
-				ir_node *op = get_Add_left(a);
+				ir_node *op  = get_binop_left(a);
 				ir_node *blk = get_nodes_block(n);
 				n = new_rd_Minus(get_irn_dbg_info(n), blk, op, get_irn_mode(n));
 				DBG_OPT_ALGSIM0(oldn, n, FS_OPT_NOT_MINUS_1);
@@ -4074,11 +4418,11 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			}
 
 			/* X+A == A, A+X == A, A-X == A -> X == 0 */
-			if (is_Add(left) || is_Sub(left)) {
+			if (is_Add(left) || is_Sub(left) || is_Or_Eor_Add(left)) {
 				ir_node *ll = get_binop_left(left);
 				ir_node *lr = get_binop_right(left);
 
-				if (lr == right && is_Add(left)) {
+				if (lr == right && (is_Add(left) || is_Or_Eor_Add(left))) {
 					ir_node *tmp = ll;
 					ll = lr;
 					lr = tmp;
@@ -4091,11 +4435,11 @@ static ir_node *transform_node_Cmp(ir_node *n)
 					DBG_OPT_ALGSIM0(n, n, FS_OPT_CMP_OP_OP);
 				}
 			}
-			if (is_Add(right) || is_Sub(right)) {
+			if (is_Add(right) || is_Sub(right) || is_Or_Eor_Add(right)) {
 				ir_node *rl = get_binop_left(right);
 				ir_node *rr = get_binop_right(right);
 
-				if (rr == left && is_Add(right)) {
+				if (rr == left && (is_Add(right) || is_Or_Eor_Add(right))) {
 					ir_node *tmp = rl;
 					rl = rr;
 					rr = tmp;
@@ -4136,7 +4480,8 @@ static ir_node *transform_node_Cmp(ir_node *n)
 			}
 			/* Cmp(Eor(x, y), 0) <=> Cmp(x, y) at least for the ==0,!=0
 			 * cases */
-			if (is_Const(right) && is_Const_null(right) && is_Eor(left)) {
+			if (is_Const(right) && is_Const_null(right) &&
+			    (is_Eor(left) || is_Or_Eor_Add(left))) {
 				right = get_Eor_right(left);
 				left  = get_Eor_left(left);
 				changed = true;
@@ -4324,9 +4669,9 @@ static ir_node *transform_node_Cmp(ir_node *n)
 							}
 						}
 						/* a+c1 == c2  ==>  a == c2-c1,  a+c1 != c2  ==>  a != c2-c1 */
-						else if (is_Add(left)) {
-							ir_node *a_l = get_Add_left(left);
-							ir_node *a_r = get_Add_right(left);
+						else if (is_Add(left) || is_Or_Eor_Add(left)) {
+							ir_node *a_l = get_binop_left(left);
+							ir_node *a_r = get_binop_right(left);
 							ir_node *a;
 							ir_tarval *tv2;
 
@@ -4812,331 +5157,6 @@ static ir_node *transform_node_Phi(ir_node *phi)
 	return phi;
 }
 
-/**
- * Returns the operands of a commutative bin-op, if one operand is
- * a const, it is returned as the second one.
- */
-static void get_comm_Binop_Ops(ir_node *binop, ir_node **a, ir_node **c)
-{
-	ir_node *op_a = get_binop_left(binop);
-	ir_node *op_b = get_binop_right(binop);
-
-	assert(is_op_commutative(get_irn_op(binop)));
-
-	if (is_Const(op_a)) {
-		*a = op_b;
-		*c = op_a;
-	} else {
-		*a = op_a;
-		*c = op_b;
-	}
-}
-
-/**
- * Optimize a Or(And(Or(And(v,c4),c3),c2),c1) pattern if possible.
- * Such pattern may arise in bitfield stores.
- *
- * value  c4                  value      c4 & c2
- *    AND     c3                    AND           c1 | c3
- *        OR     c2      ===>               OR
- *           AND    c1
- *               OR
- *
- *
- * value  c2                 value  c1
- *     AND   c1    ===>           OR     if (c1 | c2) == 0x111..11
- *        OR
- */
-static ir_node *transform_node_Or_bf_store(ir_node *irn_or)
-{
-	ir_node *irn_and, *c1;
-	ir_node *or_l, *c2;
-	ir_node *and_l, *c3;
-	ir_node *value, *c4;
-	ir_node *new_and, *new_const, *block;
-	ir_mode *mode = get_irn_mode(irn_or);
-
-	ir_tarval *tv1, *tv2, *tv3, *tv4, *tv;
-
-	for (;;) {
-		ir_graph *irg;
-		get_comm_Binop_Ops(irn_or, &irn_and, &c1);
-		if (!is_Const(c1) || !is_And(irn_and))
-			return irn_or;
-
-		get_comm_Binop_Ops(irn_and, &or_l, &c2);
-		if (!is_Const(c2))
-			return irn_or;
-
-		tv1 = get_Const_tarval(c1);
-		tv2 = get_Const_tarval(c2);
-
-		tv = tarval_or(tv1, tv2);
-		if (tarval_is_all_one(tv)) {
-			/* the AND does NOT clear a bit with isn't set by the OR */
-			set_Or_left(irn_or, or_l);
-			set_Or_right(irn_or, c1);
-
-			/* check for more */
-			continue;
-		}
-
-		if (!is_Or(or_l))
-			return irn_or;
-
-		get_comm_Binop_Ops(or_l, &and_l, &c3);
-		if (!is_Const(c3) || !is_And(and_l))
-			return irn_or;
-
-		get_comm_Binop_Ops(and_l, &value, &c4);
-		if (!is_Const(c4))
-			return irn_or;
-
-		/* ok, found the pattern, check for conditions */
-		assert(mode == get_irn_mode(irn_and));
-		assert(mode == get_irn_mode(or_l));
-		assert(mode == get_irn_mode(and_l));
-
-		tv3 = get_Const_tarval(c3);
-		tv4 = get_Const_tarval(c4);
-
-		tv = tarval_or(tv4, tv2);
-		if (!tarval_is_all_one(tv)) {
-			/* have at least one 0 at the same bit position */
-			return irn_or;
-		}
-
-		if (tv3 != tarval_andnot(tv3, tv4)) {
-			/* bit in the or_mask is outside the and_mask */
-			return irn_or;
-		}
-
-		if (tv1 != tarval_andnot(tv1, tv2)) {
-			/* bit in the or_mask is outside the and_mask */
-			return irn_or;
-		}
-
-		/* ok, all conditions met */
-		block = get_irn_n(irn_or, -1);
-		irg   = get_irn_irg(block);
-
-		new_and = new_r_And(block, value, new_r_Const(irg, tarval_and(tv4, tv2)), mode);
-
-		new_const = new_r_Const(irg, tarval_or(tv3, tv1));
-
-		set_Or_left(irn_or, new_and);
-		set_Or_right(irn_or, new_const);
-
-		/* check for more */
-	}
-}
-
-/**
- * Optimize an Or(shl(x, c), shr(x, bits - c)) into a Rotl
- */
-static ir_node *transform_node_Or_Rotl(ir_node *irn_or)
-{
-	ir_mode *mode = get_irn_mode(irn_or);
-	ir_node *shl, *shr, *block;
-	ir_node *irn, *x, *c1, *c2, *n;
-	ir_tarval *tv1, *tv2;
-
-	/* some backends can't handle rotl */
-	if (!be_get_backend_param()->support_rotl)
-		return irn_or;
-
-	if (! mode_is_int(mode))
-		return irn_or;
-
-	shl = get_binop_left(irn_or);
-	shr = get_binop_right(irn_or);
-
-	if (is_Shr(shl)) {
-		if (!is_Shl(shr))
-			return irn_or;
-
-		irn = shl;
-		shl = shr;
-		shr = irn;
-	} else if (!is_Shl(shl)) {
-		return irn_or;
-	} else if (!is_Shr(shr)) {
-		return irn_or;
-	}
-	x = get_Shl_left(shl);
-	if (x != get_Shr_left(shr))
-		return irn_or;
-
-	c1 = get_Shl_right(shl);
-	c2 = get_Shr_right(shr);
-	if (is_Const(c1) && is_Const(c2)) {
-		tv1 = get_Const_tarval(c1);
-		if (! tarval_is_long(tv1))
-			return irn_or;
-
-		tv2 = get_Const_tarval(c2);
-		if (! tarval_is_long(tv2))
-			return irn_or;
-
-		if (get_tarval_long(tv1) + get_tarval_long(tv2)
-				!= (int) get_mode_size_bits(mode))
-			return irn_or;
-
-		/* yet, condition met */
-		block = get_nodes_block(irn_or);
-
-		n = new_r_Rotl(block, x, c1, mode);
-
-		DBG_OPT_ALGSIM1(irn_or, shl, shr, n, FS_OPT_OR_SHFT_TO_ROTL);
-		return n;
-	}
-
-	/* Note: the obvious rot formulation (a << x) | (a >> (32-x)) gets
-	 * transformed to (a << x) | (a >> -x) by transform_node_shift_modulo() */
-	if (!ir_is_negated_value(c1, c2)) {
-		return irn_or;
-	}
-
-	/* yet, condition met */
-	block = get_nodes_block(irn_or);
-	n = new_r_Rotl(block, x, c1, mode);
-	DBG_OPT_ALGSIM0(irn_or, n, FS_OPT_OR_SHFT_TO_ROTL);
-	return n;
-}
-
-static bool is_cmp_unequal(const ir_node *node)
-{
-	ir_relation relation = get_Cmp_relation(node);
-	ir_node    *left     = get_Cmp_left(node);
-	ir_node    *right    = get_Cmp_right(node);
-	ir_mode    *mode     = get_irn_mode(left);
-
-	if (relation == ir_relation_less_greater)
-		return true;
-
-	if (!mode_is_signed(mode) && is_Const(right) && is_Const_null(right))
-		return relation == ir_relation_greater;
-	return false;
-}
-
-/**
- * returns true for Cmp(x == 0) or Cmp(x != 0)
- */
-static bool is_cmp_equality_zero(const ir_node *node)
-{
-	ir_relation relation;
-	ir_node    *right    = get_Cmp_right(node);
-
-	if (!is_Const(right) || !is_Const_null(right))
-		return false;
-	relation = get_Cmp_relation(node);
-	return relation == ir_relation_equal
-		|| relation == ir_relation_less_greater
-		|| (!mode_is_signed(get_irn_mode(right))
-		    && relation == ir_relation_greater);
-}
-
-/**
- * Transform an Or.
- */
-static ir_node *transform_node_Or(ir_node *n)
-{
-	ir_node *c, *oldn = n;
-	ir_node *a = get_Or_left(n);
-	ir_node *b = get_Or_right(n);
-	ir_mode *mode;
-
-	if (is_Not(a) && is_Not(b)) {
-		/* ~a | ~b = ~(a&b) */
-		ir_node *block = get_nodes_block(n);
-
-		mode = get_irn_mode(n);
-		a = get_Not_op(a);
-		b = get_Not_op(b);
-		n = new_rd_And(get_irn_dbg_info(n), block, a, b, mode);
-		n = new_rd_Not(get_irn_dbg_info(n), block, n, mode);
-		DBG_OPT_ALGSIM0(oldn, n, FS_OPT_DEMORGAN);
-		return n;
-	}
-
-	/* we can combine the relations of two compares with the same operands */
-	if (is_Cmp(a) && is_Cmp(b)) {
-		ir_node *a_left  = get_Cmp_left(a);
-		ir_node *a_right = get_Cmp_right(a);
-		ir_node *b_left  = get_Cmp_left(b);
-		ir_node *b_right = get_Cmp_right(b);
-		if (a_left == b_left && b_left == b_right) {
-			dbg_info   *dbgi         = get_irn_dbg_info(n);
-			ir_node    *block        = get_nodes_block(n);
-			ir_relation a_relation   = get_Cmp_relation(a);
-			ir_relation b_relation   = get_Cmp_relation(b);
-			ir_relation new_relation = a_relation | b_relation;
-			return new_rd_Cmp(dbgi, block, a_left, a_right, new_relation);
-		}
-		/* Cmp(a!=b) or Cmp(c!=d) => Cmp((a^b)|(c^d) != 0) */
-		if (is_cmp_unequal(a) && is_cmp_unequal(b)
-		    && !mode_is_float(get_irn_mode(a_left))
-		    && !mode_is_float(get_irn_mode(b_left))) {
-			if (values_in_mode(get_irn_mode(a_left), get_irn_mode(b_left))) {
-				ir_graph *irg    = get_irn_irg(n);
-				dbg_info *dbgi   = get_irn_dbg_info(n);
-				ir_node  *block  = get_nodes_block(n);
-				ir_mode  *a_mode = get_irn_mode(a_left);
-				ir_mode  *b_mode = get_irn_mode(b_left);
-				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
-				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
-				ir_node  *conv   = new_rd_Conv(dbgi, block, xora, b_mode);
-				ir_node  *or     = new_rd_Or(dbgi, block, conv, xorb, b_mode);
-				ir_node  *zero   = create_zero_const(irg, b_mode);
-				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_less_greater);
-			}
-			if (values_in_mode(get_irn_mode(b_left), get_irn_mode(a_left))) {
-				ir_graph *irg    = get_irn_irg(n);
-				dbg_info *dbgi   = get_irn_dbg_info(n);
-				ir_node  *block  = get_nodes_block(n);
-				ir_mode  *a_mode = get_irn_mode(a_left);
-				ir_mode  *b_mode = get_irn_mode(b_left);
-				ir_node  *xora   = new_rd_Eor(dbgi, block, a_left, a_right, a_mode);
-				ir_node  *xorb   = new_rd_Eor(dbgi, block, b_left, b_right, b_mode);
-				ir_node  *conv   = new_rd_Conv(dbgi, block, xorb, a_mode);
-				ir_node  *or     = new_rd_Or(dbgi, block, xora, conv, a_mode);
-				ir_node  *zero   = create_zero_const(irg, a_mode);
-				return new_rd_Cmp(dbgi, block, or, zero, ir_relation_less_greater);
-			}
-		}
-	}
-
-	mode = get_irn_mode(n);
-	HANDLE_BINOP_PHI((eval_func) tarval_or, a, b, c, mode);
-
-	n = transform_node_Or_bf_store(n);
-	n = transform_node_Or_Rotl(n);
-	if (n != oldn)
-		return n;
-
-	n = transform_bitwise_distributive(n, transform_node_Or);
-	if (is_Or(n))
-		n = transform_node_bitop_shift(n);
-	if (n != oldn)
-		return n;
-
-	{
-	vrp_attr *a_vrp = vrp_get_info(a);
-	vrp_attr *b_vrp = vrp_get_info(b);
-	if (a_vrp != NULL && b_vrp != NULL) {
-		ir_tarval *vrp_val = tarval_and(a_vrp->bits_not_set, b_vrp->bits_not_set);
-
-		if (tarval_is_null(vrp_val)) {
-			dbg_info *dbgi = get_irn_dbg_info(n);
-			return new_rd_Add(dbgi, get_nodes_block(n), a, b, mode);
-		}
-	}
-	}
-
-	return n;
-}
-
-
 /* forward */
 static ir_node *transform_node(ir_node *n);
 
@@ -5381,8 +5401,8 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 			return n;
 
 		newop = new_r_Const(irg, tv_mod);
-	} else if (is_Add(right)) {
-		ir_node *add_right = get_Add_right(right);
+	} else if (is_Add(right) || is_Or_Eor_Add(right)) {
+		ir_node *add_right = get_binop_right(right);
 		if (is_Const(add_right)) {
 			ir_tarval *tv     = get_Const_tarval(add_right);
 			ir_tarval *tv_mod = get_modulo_tv_value(tv, modulo);
@@ -5391,7 +5411,7 @@ static ir_node *transform_node_shift_modulo(ir_node *n,
 				return n;
 
 			newconst = new_r_Const(irg, tv_mod);
-			newop    = new_r_Add(block, get_Add_left(right), newconst,
+			newop    = new_r_Add(block, get_binop_left(right), newconst,
 			                     mode_right);
 		}
 	} else if (is_Sub(right)) {
@@ -5447,10 +5467,12 @@ static ir_node *transform_node_Shr(ir_node *n)
  */
 static ir_node *transform_node_Shrs(ir_node *n)
 {
-	ir_node *c, *oldn = n;
-	ir_node *a    = get_Shrs_left(n);
-	ir_node *b    = get_Shrs_right(n);
-	ir_mode *mode = get_irn_mode(n);
+	ir_node  *oldn = n;
+	ir_node  *a    = get_Shrs_left(n);
+	ir_node  *b    = get_Shrs_right(n);
+	ir_mode  *mode = get_irn_mode(n);
+	ir_node  *c;
+	vrp_attr *attr;
 
 	if (is_oversize_shift(n)) {
 		ir_node  *block = get_nodes_block(n);
@@ -5464,11 +5486,28 @@ static ir_node *transform_node_Shrs(ir_node *n)
 
 	HANDLE_BINOP_PHI((eval_func) tarval_shrs, a, b, c, mode);
 	n = transform_node_shift(n);
+	if (n != oldn)
+		return n;
 
-	if (is_Shrs(n))
-		n = transform_node_shift_modulo(n, new_rd_Shrs);
-	if (is_Shrs(n))
-		n = transform_node_shift_bitop(n);
+	n = transform_node_shift_modulo(n, new_rd_Shrs);
+	if (n != oldn)
+		return n;
+	n = transform_node_shift_bitop(n);
+	if (n != oldn)
+		return n;
+
+	/* normalisation: use Shr when sign bit is guaranteed to be cleared */
+	attr = vrp_get_info(a);
+	if (attr != NULL) {
+		unsigned   bits   = get_mode_size_bits(mode);
+		ir_tarval *scount = new_tarval_from_long(bits-1, mode_Iu);
+		ir_tarval *sign   = tarval_shl(get_mode_one(mode), scount);
+		if (tarval_is_null(tarval_and(attr->bits_not_set, sign))) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_node  *block = get_nodes_block(n);
+			return new_rd_Shr(dbgi, block, a, b, mode);
+		}
+	}
 
 	return n;
 }
