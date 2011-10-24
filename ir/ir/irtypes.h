@@ -107,9 +107,6 @@ struct ir_mode {
 	unsigned          size;          /**< size of the mode in Bits. */
 	unsigned          sign:1;        /**< signedness of this mode */
 	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
-	unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
-                                          vector_elem number of elements, size contains the size
-                                          of all bits and must be dividable by vector_elem */
 
 	/* ----------------------------------------------------------------------- */
 	ir_tarval         *min;         /**< the minimum value that can be expressed */

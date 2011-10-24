@@ -571,12 +571,6 @@ ir_tarval *get_tarval_max(ir_mode *mode)
 {
 	const ieee_descriptor_t *desc;
 
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
@@ -602,12 +596,6 @@ ir_tarval *get_tarval_max(ir_mode *mode)
 ir_tarval *get_tarval_min(ir_mode *mode)
 {
 	const ieee_descriptor_t *desc;
-
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
@@ -636,13 +624,6 @@ static long _null_value = 0;
 
 ir_tarval *get_tarval_null(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
@@ -664,11 +645,6 @@ ir_tarval *get_tarval_null(ir_mode *mode)
 
 ir_tarval *get_tarval_one(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
@@ -690,11 +666,6 @@ ir_tarval *get_tarval_one(ir_mode *mode)
 
 ir_tarval *get_tarval_all_one(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
@@ -724,11 +695,6 @@ int tarval_is_constant(ir_tarval *tv)
 
 ir_tarval *get_tarval_minus_one(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(mode)) {
 	case irms_control_flow:
 	case irms_memory:
@@ -752,10 +718,6 @@ ir_tarval *get_tarval_nan(ir_mode *mode)
 {
 	const ieee_descriptor_t *desc;
 
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	if (get_mode_sort(mode) == irms_float_number) {
 		desc = get_descriptor(mode);
 		fc_get_qnan(desc, NULL);
@@ -766,10 +728,6 @@ ir_tarval *get_tarval_nan(ir_mode *mode)
 
 ir_tarval *get_tarval_plus_inf(ir_mode *mode)
 {
-	assert(mode);
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	if (get_mode_sort(mode) == irms_float_number) {
 		const ieee_descriptor_t *desc = get_descriptor(mode);
 		fc_get_plusinf(desc, NULL);
@@ -780,11 +738,6 @@ ir_tarval *get_tarval_plus_inf(ir_mode *mode)
 
 ir_tarval *get_tarval_minus_inf(ir_mode *mode)
 {
-	assert(mode);
-
-	if (get_mode_n_vector_elems(mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	if (get_mode_sort(mode) == irms_float_number) {
 		const ieee_descriptor_t *desc = get_descriptor(mode);
 		fc_get_minusinf(desc, NULL);
@@ -802,9 +755,6 @@ ir_tarval *get_tarval_minus_inf(ir_mode *mode)
  */
 int tarval_is_negative(ir_tarval *a)
 {
-	if (get_mode_n_vector_elems(a->mode) > 1)
-		panic("vector arithmetic not implemented yet");
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		if (!mode_is_signed(a->mode)) return 0;
@@ -873,11 +823,6 @@ ir_relation tarval_cmp(ir_tarval *a, ir_tarval *b)
 	if (a->mode != b->mode)
 		return ir_relation_false;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		panic("cmp not implemented for vector modes");
-	}
-
 	/* Here the two tarvals are unequal and of the same mode */
 	switch (get_mode_sort(a->mode)) {
 	case irms_control_flow:
@@ -930,11 +875,6 @@ ir_tarval *tarval_convert_to(ir_tarval *src, ir_mode *dst_mode)
 
 	if (src->mode == dst_mode)
 		return src;
-
-	if (get_mode_n_vector_elems(src->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	switch (get_mode_sort(src->mode)) {
 	case irms_control_flow:
@@ -1066,11 +1006,6 @@ ir_tarval *tarval_neg(ir_tarval *a)
 
 	/* note: negation is allowed even for unsigned modes. */
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		buffer = (char*) alloca(sc_get_buffer_length());
@@ -1098,11 +1033,6 @@ ir_tarval *tarval_add(ir_tarval *a, ir_tarval *b)
 	char *buffer;
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (mode_is_reference(a->mode) && a->mode != b->mode) {
 		b = tarval_convert_to(b, a->mode);
@@ -1141,11 +1071,6 @@ ir_tarval *tarval_sub(ir_tarval *a, ir_tarval *b, ir_mode *dst_mode)
 	char    *buffer;
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(b->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (dst_mode != NULL) {
 		if (a->mode != dst_mode)
@@ -1187,11 +1112,6 @@ ir_tarval *tarval_mul(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
 		/* modes of a,b are equal */
@@ -1222,11 +1142,6 @@ ir_tarval *tarval_div(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	if (mode_is_int(mode)) {
 		/* x/0 error */
 		if (b == get_mode_null(mode))
@@ -1252,11 +1167,6 @@ ir_tarval *tarval_mod(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	/* x/0 error */
 	if (b == get_mode_null(b->mode)) return tarval_bad;
 	/* modes of a,b are equal */
@@ -1278,12 +1188,6 @@ ir_tarval *tarval_divmod(ir_tarval *a, ir_tarval *b, ir_tarval **mod)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
-
 	/* x/0 error */
 	if (b == get_mode_null(b->mode)) return tarval_bad;
 	/* modes of a,b are equal */
@@ -1301,11 +1205,6 @@ ir_tarval *tarval_abs(ir_tarval *a)
 
 	carry_flag = -1;
 	assert(mode_is_num(a->mode));
-
-	if (get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	switch (get_mode_sort(a->mode)) {
 	case irms_int_number:
@@ -1434,11 +1333,6 @@ ir_tarval *tarval_shl(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
 
@@ -1461,11 +1355,6 @@ ir_tarval *tarval_shr(ir_tarval *a, ir_tarval *b)
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
@@ -1490,11 +1379,6 @@ ir_tarval *tarval_shrs(ir_tarval *a, ir_tarval *b)
 
 	carry_flag = -1;
 
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
-
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());
 
@@ -1517,11 +1401,6 @@ ir_tarval *tarval_rotl(ir_tarval *a, ir_tarval *b)
 	assert(mode_is_int(a->mode) && mode_is_int(b->mode));
 
 	carry_flag = -1;
-
-	if (get_mode_n_vector_elems(a->mode) > 1 || get_mode_n_vector_elems(a->mode) > 1) {
-		/* vector arithmetic not implemented yet */
-		return tarval_bad;
-	}
 
 	if (get_mode_modulo_shift(a->mode) != 0) {
 		temp_val = (char*) alloca(sc_get_buffer_length());

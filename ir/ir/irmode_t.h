@@ -57,8 +57,6 @@ static inline ir_mode_arithmetic _get_mode_arithmetic(const ir_mode *mode) { ret
 
 static inline unsigned int _get_mode_modulo_shift(const ir_mode *mode) { return mode->modulo_shift; }
 
-static inline unsigned int _get_mode_vector_elems(const ir_mode *mode) { return mode->vector_elem; }
-
 static inline void * _get_mode_link(const ir_mode *mode) { return mode->link; }
 
 static inline void _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
@@ -140,16 +138,6 @@ static inline int _mode_is_dataM(const ir_mode *mode)
 	return (_get_mode_sort(mode) & irmsh_is_dataM);
 }
 
-static inline int _mode_is_float_vector(const ir_mode *mode)
-{
-	return (_get_mode_sort(mode) == irms_float_number) && (_get_mode_vector_elems(mode) > 1);
-}
-
-static inline int _mode_is_int_vector(const ir_mode *mode)
-{
-	return (_get_mode_sort(mode) == irms_int_number) && (_get_mode_vector_elems(mode) > 1);
-}
-
 static inline ir_type *get_type_for_mode_(const ir_mode *mode)
 {
 	return mode->type;
@@ -170,7 +158,6 @@ void finish_mode(void);
 #define get_mode_sign(mode)            _get_mode_sign(mode)
 #define get_mode_arithmetic(mode)      _get_mode_arithmetic(mode)
 #define get_mode_modulo_shift(mode)    _get_mode_modulo_shift(mode)
-#define get_mode_n_vector_elems(mode)  _get_mode_vector_elems(mode)
 #define get_mode_link(mode)            _get_mode_link(mode)
 #define set_mode_link(mode, l)         _set_mode_link(mode, l)
 #define mode_is_signed(mode)           _mode_is_signed(mode)
@@ -181,8 +168,6 @@ void finish_mode(void);
 #define mode_is_data(mode)             _mode_is_data(mode)
 #define mode_is_datab(mode)            _mode_is_datab(mode)
 #define mode_is_dataM(mode)            _mode_is_dataM(mode)
-#define mode_is_float_vector(mode)     _mode_is_float_vector(mode)
-#define mode_is_int_vector(mode)       _mode_is_int_vector(mode)
 #define get_type_for_mode(mode)        get_type_for_mode_(mode)
 
 #endif

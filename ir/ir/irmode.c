@@ -60,12 +60,6 @@ const char *get_mode_arithmetic_name(ir_mode_arithmetic ari)
 #undef X
 }
 
-/**
- * Compare modes that don't need to have their code field
- * correctly set
- *
- * TODO: Add other fields
- **/
 static inline int modes_are_equal(const ir_mode *m, const ir_mode *n)
 {
 	if (m == n) return 1;
@@ -73,8 +67,7 @@ static inline int modes_are_equal(const ir_mode *m, const ir_mode *n)
 		m->arithmetic   == n->arithmetic &&
 		m->size         == n->size &&
 		m->sign         == n->sign  &&
-		m->modulo_shift == n->modulo_shift &&
-		m->vector_elem  == n->vector_elem)
+		m->modulo_shift == n->modulo_shift)
 		return 1;
 
 	return 0;
@@ -268,7 +261,6 @@ ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign
 	mode_tmpl.sign         = sign ? 1 : 0;
 	mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number ||
 	                          mode_tmpl.sort == irms_reference) ? modulo_shift : 0;
-	mode_tmpl.vector_elem  = 1;
 	mode_tmpl.arithmetic   = arithmetic;
 	mode_tmpl.link         = NULL;
 	mode_tmpl.tv_priv      = NULL;
@@ -292,56 +284,6 @@ ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign
 	case irms_reference:
 		mode = register_mode(&mode_tmpl);
 		break;
-	}
-	assert(mode != NULL);
-	return mode;
-}
-
-/*
- * Creates a new vector mode.
- */
-ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort, int bit_size, unsigned num_of_elem, int sign,
-                            ir_mode_arithmetic arithmetic, unsigned int modulo_shift)
-{
-	ir_mode mode_tmpl;
-	ir_mode *mode = NULL;
-
-	mode_tmpl.name         = new_id_from_str(name);
-	mode_tmpl.sort         = sort;
-	mode_tmpl.size         = bit_size * num_of_elem;
-	mode_tmpl.sign         = sign ? 1 : 0;
-	mode_tmpl.modulo_shift = (mode_tmpl.sort == irms_int_number) ? modulo_shift : 0;
-	mode_tmpl.vector_elem  = num_of_elem;
-	mode_tmpl.arithmetic   = arithmetic;
-	mode_tmpl.link         = NULL;
-	mode_tmpl.tv_priv      = NULL;
-
-	mode = find_mode(&mode_tmpl);
-	if (mode) {
-		hook_new_mode(&mode_tmpl, mode);
-		return mode;
-	}
-
-	if (num_of_elem <= 1) {
-		panic("vector modes should have at least 2 elements");
-	}
-
-	/* sanity checks */
-	switch (sort) {
-	case irms_auxiliary:
-	case irms_control_flow:
-	case irms_memory:
-	case irms_internal_boolean:
-		panic("internal modes cannot be user defined");
-
-	case irms_reference:
-		panic("only integer and floating point modes can be vectorized");
-
-	case irms_float_number:
-		panic("not yet implemented");
-
-	case irms_int_number:
-		mode = register_mode(&mode_tmpl);
 	}
 	assert(mode != NULL);
 	return mode;
@@ -391,11 +333,6 @@ ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
 unsigned int (get_mode_modulo_shift)(const ir_mode *mode)
 {
 	return _get_mode_modulo_shift(mode);
-}
-
-unsigned int (get_mode_n_vector_elems)(const ir_mode *mode)
-{
-	return _get_mode_vector_elems(mode);
 }
 
 void *(get_mode_link)(const ir_mode *mode)
@@ -514,16 +451,6 @@ int (mode_is_datab)(const ir_mode *mode)
 int (mode_is_dataM)(const ir_mode *mode)
 {
 	return _mode_is_dataM(mode);
-}
-
-int (mode_is_float_vector)(const ir_mode *mode)
-{
-	return _mode_is_float_vector(mode);
-}
-
-int (mode_is_int_vector)(const ir_mode *mode)
-{
-	return _mode_is_int_vector(mode);
 }
 
 /* Returns true if sm can be converted to lm without loss. */
@@ -671,7 +598,6 @@ void init_mode(void)
 	newmode.size         = 0;
 	newmode.sign         = 0;
 	newmode.modulo_shift = 0;
-	newmode.vector_elem  = 0;
 	newmode.eq_signed    = NULL;
 	newmode.eq_unsigned  = NULL;
 	newmode.link         = NULL;
@@ -716,9 +642,6 @@ void init_mode(void)
 	/* boolean */
 	newmode.name    = new_id_from_chars("b", 1);
 	mode_b          = register_mode(&newmode);
-
-	/* Data Modes */
-	newmode.vector_elem = 1;
 
 	/* Float Number Modes */
 	newmode.sort       = irms_float_number;

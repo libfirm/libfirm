@@ -823,12 +823,11 @@ static void export_modes(io_env_t *env)
 
 		fprintf(env->file, "\tmode ");
 		write_string(env, get_mode_name(mode));
-		fprintf(env->file, "%s %u %d %s %u %u ",
+		fprintf(env->file, "%s %u %d %s %u ",
 		        get_mode_sort_name(get_mode_sort(mode)),
 		        get_mode_size_bits(mode), get_mode_sign(mode),
 		        get_mode_arithmetic_name(get_mode_arithmetic(mode)),
-		        get_mode_modulo_shift(mode),
-		        get_mode_n_vector_elems(mode));
+		        get_mode_modulo_shift(mode));
 		if (mode_is_reference(mode)) {
 			write_mode(env, get_reference_mode_signed_eq(mode));
 			write_mode(env, get_reference_mode_unsigned_eq(mode));

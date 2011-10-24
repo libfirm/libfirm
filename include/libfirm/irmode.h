@@ -122,31 +122,6 @@ FIRM_API ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size,
                               unsigned int modulo_shift);
 
 /**
- * Creates a new vector mode.
- *
- * @param name          the name of the mode to be created
- * @param sort          the ir_mode_sort of the mode to be created
- * @param bit_size      number of bits for one element of this mode
- * @param num_of_elem   number of elements in this vector mode
- * @param sign          non-zero if this is a signed mode
- * @param arithmetic    arithmetic operations possible with a mode
- * @param modulo_shift  Is ignored for modes other than integer.
- *
- * This function constructs a new vector mode given by the parameters.
- * If the parameters match an already defined mode, this mode is returned.
- * If the mode is newly allocated, a new unique mode_code is chosen.
- * Also, special value tarvals will be calculated such as null,
- * min, max and can be retrieved using the get_mode_* functions
- *
- * @return
- *   The new mode or NULL on error.
- */
-FIRM_API ir_mode *new_ir_vector_mode(const char *name, ir_mode_sort sort,
-                                     int bit_size, unsigned num_of_elem,
-                                     int sign, ir_mode_arithmetic arithmetic,
-                                     unsigned int modulo_shift);
-
-/**
  * Checks whether a pointer points to a mode.
  *
  * @param thing     an arbitrary pointer
@@ -187,14 +162,6 @@ FIRM_API ir_mode_arithmetic get_mode_arithmetic(const ir_mode *mode);
  *  modes that are not integer.
  */
 FIRM_API unsigned int get_mode_modulo_shift(const ir_mode *mode);
-
-/** Return the number of vector elements.
- *
- *  Attribute vector_elem specifies the number of vector elements of
- *  a vector mode. For non-vector modes it returns 1 for data and 0
- *  for all other modes
- */
-FIRM_API unsigned int get_mode_n_vector_elems(const ir_mode *mode);
 
 /** Returns the stored intermediate information. */
 FIRM_API void *get_mode_link(const ir_mode *mode);
@@ -368,8 +335,6 @@ FIRM_API void set_modeP_data(ir_mode *p);
 
    The set of "dataM" is defined as:
    dataM =  {data || irm_M}
-
-   Vector "int" and "float" are defined by the arithmetic and vector_elem > 1.
 */
 
 FIRM_API int mode_is_signed (const ir_mode *mode);
@@ -380,8 +345,6 @@ FIRM_API int mode_is_num (const ir_mode *mode);
 FIRM_API int mode_is_data (const ir_mode *mode);
 FIRM_API int mode_is_datab (const ir_mode *mode);
 FIRM_API int mode_is_dataM (const ir_mode *mode);
-FIRM_API int mode_is_float_vector (const ir_mode *mode);
-FIRM_API int mode_is_int_vector (const ir_mode *mode);
 /*@}*/
 
 /**
