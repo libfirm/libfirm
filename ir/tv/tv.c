@@ -101,16 +101,16 @@ static tarval_int_overflow_mode_t int_overflow_mode = TV_OVERFLOW_WRAP;
 static int no_float = 0;
 
 /** IEEE-754r half precision */
-static const ieee_descriptor_t half_desc     = {  5,  10, 0, FC_NORMAL };
+static const ieee_descriptor_t half_desc     = {  5,  10, 0 };
 /** IEEE-754 single precision */
-static const ieee_descriptor_t single_desc   = {  8,  23, 0, FC_NORMAL };
+static const ieee_descriptor_t single_desc   = {  8,  23, 0 };
 /** IEEE-754 double precision */
-static const ieee_descriptor_t double_desc   = { 11,  52, 0, FC_NORMAL };
+static const ieee_descriptor_t double_desc   = { 11,  52, 0 };
 /** Intel x87 extended precision */
-static const ieee_descriptor_t extended_desc = { 15,  63, 1, FC_NORMAL };
+static const ieee_descriptor_t extended_desc = { 15,  63, 1 };
 
 /** IEEE-754r quad precision */
-static const ieee_descriptor_t quad_desc     = { 15, 112, 0, FC_NORMAL };
+static const ieee_descriptor_t quad_desc     = { 15, 112, 0 };
 
 /****************************************************************************
  *   private functions

@@ -111,6 +111,7 @@ typedef union {
 /* our floating point value */
 struct fp_value {
 	ieee_descriptor_t desc;
+	unsigned char clss;
 	char sign;
 	char value[1];        /* exp[value_size] + mant[value_size] */
 };
@@ -162,7 +163,7 @@ static void *pack(const fp_value *int_float, void *packed)
 	temp      = (char*) alloca(value_size);
 	shift_val = (char*) alloca(value_size);
 
-	switch ((value_class_t)int_float->desc.clss) {
+	switch ((value_class_t)int_float->clss) {
 	case FC_NAN:
 		val_buffer = (fp_value*) alloca(calc_buffer_size);
 		fc_get_qnan(&int_float->desc, val_buffer);
@@ -231,7 +232,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 		out_val->desc = in_val->desc;
 	}
 
-	out_val->desc.clss = FC_NORMAL;
+	out_val->clss = FC_NORMAL;
 
 	/* mantissa all zeros, so zero exponent (because of explicit one) */
 	if (hsb == ROUNDING_BITS + in_val->desc.mantissa_size)   {
@@ -277,7 +278,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 		/* denormalized means exponent of zero */
 		sc_val_from_ulong(0, _exp(out_val));
 
-		out_val->desc.clss = FC_SUBNORMAL;
+		out_val->clss = FC_SUBNORMAL;
 	}
 
 	/* perform rounding by adding a value that clears the guard bit and the round bit
@@ -323,24 +324,24 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 	}
 
 	/* could have rounded down to zero */
-	if (sc_is_zero(_mant(out_val)) && (out_val->desc.clss == FC_SUBNORMAL))
-		out_val->desc.clss = FC_ZERO;
+	if (sc_is_zero(_mant(out_val)) && (out_val->clss == FC_SUBNORMAL))
+		out_val->clss = FC_ZERO;
 
 	/* check for rounding overflow */
 	hsb = ROUNDING_BITS + out_val->desc.mantissa_size - sc_get_highest_set_bit(_mant(out_val)) - 1;
-	if ((out_val->desc.clss != FC_SUBNORMAL) && (hsb < -1)) {
+	if ((out_val->clss != FC_SUBNORMAL) && (hsb < -1)) {
 		sc_val_from_ulong(1, temp);
 		_shift_right(_mant(out_val), temp, _mant(out_val));
 		if (exact && sc_had_carry())
 			exact = 0;
 		sc_add(_exp(out_val), temp, _exp(out_val));
-	} else if ((out_val->desc.clss == FC_SUBNORMAL) && (hsb == -1)) {
+	} else if ((out_val->clss == FC_SUBNORMAL) && (hsb == -1)) {
 		/* overflow caused the mantissa to be normal again,
 		 * so adapt the exponent accordingly */
 		sc_val_from_ulong(1, temp);
 		sc_add(_exp(out_val), temp, _exp(out_val));
 
-		out_val->desc.clss = FC_NORMAL;
+		out_val->clss = FC_NORMAL;
 	}
 	/* no further rounding is needed, because rounding overflow means
 	 * the carry of the original rounding was propagated all the way
@@ -372,7 +373,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 			switch (rounding_mode) {
 			case FC_TONEAREST:
 			case FC_TOPOSITIVE:
-				out_val->desc.clss = FC_INF;
+				out_val->clss = FC_INF;
 				break;
 
 			case FC_TONEGATIVE:
@@ -384,7 +385,7 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
 			switch (rounding_mode) {
 			case FC_TONEAREST:
 			case FC_TONEGATIVE:
-				out_val->desc.clss = FC_INF;
+				out_val->clss = FC_INF;
 				break;
 
 			case FC_TOPOSITIVE:
@@ -402,12 +403,12 @@ static int normalize(const fp_value *in_val, fp_value *out_val, int sticky)
  */
 #define handle_NAN(a, b, result) \
 do {                                                      \
-  if (a->desc.clss == FC_NAN) {                           \
+  if (a->clss == FC_NAN) {                                \
     if (a != result) memcpy(result, a, calc_buffer_size); \
     fc_exact = 0;                                         \
     return;                                               \
   }                                                       \
-  if (b->desc.clss == FC_NAN) {                           \
+  if (b->clss == FC_NAN) {                                \
     if (b != result) memcpy(result, b, calc_buffer_size); \
     fc_exact = 0;                                         \
     return;                                               \
@@ -438,7 +439,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	sign = a->sign ^ b->sign;
 
 	/* produce NaN on inf - inf */
-	if (sign && (a->desc.clss == FC_INF) && (b->desc.clss == FC_INF)) {
+	if (sign && (a->clss == FC_INF) && (b->clss == FC_INF)) {
 		fc_exact = 0;
 		fc_get_qnan(&a->desc, result);
 		return;
@@ -476,17 +477,17 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	result->sign = res_sign;
 
 	/* sign has been taken care of, check for special cases */
-	if (a->desc.clss == FC_ZERO || b->desc.clss == FC_INF) {
+	if (a->clss == FC_ZERO || b->clss == FC_INF) {
 		if (b != result)
 			memcpy(result, b, calc_buffer_size);
-		fc_exact = b->desc.clss == FC_NORMAL;
+		fc_exact = b->clss == FC_NORMAL;
 		result->sign = res_sign;
 		return;
 	}
-	if (b->desc.clss == FC_ZERO || a->desc.clss == FC_INF) {
+	if (b->clss == FC_ZERO || a->clss == FC_INF) {
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
-		fc_exact = a->desc.clss == FC_NORMAL;
+		fc_exact = a->clss == FC_NORMAL;
 		result->sign = res_sign;
 		return;
 	}
@@ -494,7 +495,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 	/* shift the smaller value to the right to align the radix point */
 	/* subnormals have their radix point shifted to the right,
 	 * take care of this first */
-	if ((b->desc.clss == FC_SUBNORMAL) && (a->desc.clss != FC_SUBNORMAL)) {
+	if ((b->clss == FC_SUBNORMAL) && (a->clss != FC_SUBNORMAL)) {
 		sc_val_from_ulong(1, temp);
 		sc_sub(exp_diff, temp, exp_diff);
 	}
@@ -523,7 +524,7 @@ static void _fadd(const fp_value *a, const fp_value *b, fp_value *result)
 
 	/* _normalize expects a 'normal' radix point, adding two subnormals
 	 * results in a subnormal radix point -> shifting before normalizing */
-	if ((a->desc.clss == FC_SUBNORMAL) && (b->desc.clss == FC_SUBNORMAL)) {
+	if ((a->clss == FC_SUBNORMAL) && (b->clss == FC_SUBNORMAL)) {
 		sc_val_from_ulong(1, NULL);
 		_shift_left(_mant(result), sc_get_buffer(), _mant(result));
 	}
@@ -555,8 +556,8 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	result->sign = res_sign = a->sign ^ b->sign;
 
 	/* produce NaN on 0 * inf */
-	if (a->desc.clss == FC_ZERO) {
-		if (b->desc.clss == FC_INF) {
+	if (a->clss == FC_ZERO) {
+		if (b->clss == FC_INF) {
 			fc_get_qnan(&a->desc, result);
 			fc_exact = 0;
 		} else {
@@ -566,8 +567,8 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 		}
 		return;
 	}
-	if (b->desc.clss == FC_ZERO) {
-		if (a->desc.clss == FC_INF) {
+	if (b->clss == FC_ZERO) {
+		if (a->clss == FC_INF) {
 			fc_get_qnan(&a->desc, result);
 			fc_exact = 0;
 		} else {
@@ -578,14 +579,14 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 		return;
 	}
 
-	if (a->desc.clss == FC_INF) {
+	if (a->clss == FC_INF) {
 		fc_exact = 0;
 		if (a != result)
 			memcpy(result, a, calc_buffer_size);
 		result->sign = res_sign;
 		return;
 	}
-	if (b->desc.clss == FC_INF) {
+	if (b->clss == FC_INF) {
 		fc_exact = 0;
 		if (b != result)
 			memcpy(result, b, calc_buffer_size);
@@ -600,7 +601,7 @@ static void _fmul(const fp_value *a, const fp_value *b, fp_value *result)
 	sc_sub(_exp(result), temp, _exp(result));
 
 	/* mixed normal, subnormal values introduce an error of 1, correct it */
-	if ((a->desc.clss == FC_SUBNORMAL) ^ (b->desc.clss == FC_SUBNORMAL)) {
+	if ((a->clss == FC_SUBNORMAL) ^ (b->clss == FC_SUBNORMAL)) {
 		sc_val_from_ulong(1, temp);
 		sc_add(_exp(result), temp, _exp(result));
 	}
@@ -643,8 +644,8 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	result->sign = res_sign = a->sign ^ b->sign;
 
 	/* produce FC_NAN on 0/0 and inf/inf */
-	if (a->desc.clss == FC_ZERO) {
-		if (b->desc.clss == FC_ZERO) {
+	if (a->clss == FC_ZERO) {
+		if (b->clss == FC_ZERO) {
 			/* 0/0 -> NaN */
 			fc_get_qnan(&a->desc, result);
 			fc_exact = 0;
@@ -657,9 +658,9 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 		return;
 	}
 
-	if (b->desc.clss == FC_INF) {
+	if (b->clss == FC_INF) {
 		fc_exact = 0;
-		if (a->desc.clss == FC_INF) {
+		if (a->clss == FC_INF) {
 			/* inf/inf -> NaN */
 			fc_get_qnan(&a->desc, result);
 		} else {
@@ -667,12 +668,12 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 			sc_val_from_ulong(0, NULL);
 			_save_result(_exp(result));
 			_save_result(_mant(result));
-			result->desc.clss = FC_ZERO;
+			result->clss = FC_ZERO;
 		}
 		return;
 	}
 
-	if (a->desc.clss == FC_INF) {
+	if (a->clss == FC_INF) {
 		fc_exact = 0;
 		/* inf/x -> inf */
 		if (a != result)
@@ -680,7 +681,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 		result->sign = res_sign;
 		return;
 	}
-	if (b->desc.clss == FC_ZERO) {
+	if (b->clss == FC_ZERO) {
 		fc_exact = 0;
 		/* division by zero */
 		if (result->sign)
@@ -696,7 +697,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 	sc_add(_exp(result), temp, _exp(result));
 
 	/* mixed normal, subnormal values introduce an error of 1, correct it */
-	if ((a->desc.clss == FC_SUBNORMAL) ^ (b->desc.clss == FC_SUBNORMAL)) {
+	if ((a->clss == FC_SUBNORMAL) ^ (b->clss == FC_SUBNORMAL)) {
 		sc_val_from_ulong(1, temp);
 		sc_add(_exp(result), temp, _exp(result));
 	}
@@ -799,7 +800,7 @@ static void _trunc(const fp_value *a, fp_value *result)
 		sc_val_from_ulong(0, NULL);
 		_save_result(_exp(result));
 		_save_result(_mant(result));
-		result->desc.clss = FC_ZERO;
+		result->clss = FC_ZERO;
 
 		return;
 	}
@@ -839,7 +840,8 @@ int fc_get_buffer_length(void)
 	return calc_buffer_size;
 }
 
-void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc, void *result)
+void *fc_val_from_str(const char *str, size_t len,
+                      const ieee_descriptor_t *desc, void *result)
 {
 	char *buffer;
 
@@ -857,13 +859,13 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
 	tmp_desc.exponent_size = 15;
 	tmp_desc.mantissa_size = 63;
 	tmp_desc.explicit_one  = 1;
-	tmp_desc.clss          = FC_NORMAL;
 	fc_val_from_ieee754(val, &tmp_desc, tmp);
 
 	return fc_cast(tmp, desc, (fp_value*) result);
 }
 
-fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc,
+                              fp_value *result)
 {
 	char    *temp;
 	int      bias_res, bias_val, mant_val;
@@ -893,27 +895,25 @@ fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc, fp_v
 		mantissa1 = srcval.val_ld12.low;
 	}
 
-	if (result == NULL) result = calc_buffer;
+	if (result == NULL)
+		result = calc_buffer;
 	temp = (char*) alloca(value_size);
 
 	/* CLEAR the buffer, else some bits might be uninitialized */
 	memset(result, 0, fc_get_buffer_length());
 
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-
-	/* extract sign */
+	result->desc = *desc;
+	result->clss = FC_NORMAL;
 	result->sign = sign;
 
 	/* sign and flag suffice to identify NaN or inf, no exponent/mantissa
 	 * encoding is needed. the function can return immediately in these cases */
 	if (my_isnan(l)) {
-		result->desc.clss = FC_NAN;
+		result->clss = FC_NAN;
 		TRACEPRINTF(("val_from_float resulted in NAN\n"));
 		return result;
 	} else if (my_isinf(l)) {
-		result->desc.clss = FC_INF;
+		result->clss = FC_INF;
 		TRACEPRINTF(("val_from_float resulted in %sINF\n", (result->sign == 1) ? "-" : ""));
 		return result;
 	}
@@ -985,12 +985,10 @@ long double fc_val_to_ieee754(const fp_value *val)
 		desc.exponent_size = 11;
 		desc.mantissa_size = 52;
 		desc.explicit_one  = 0;
-		desc.clss          = FC_NORMAL;
 	} else {
 		desc.exponent_size = 15;
 		desc.mantissa_size = 63;
 		desc.explicit_one  = 1;
-		desc.clss          = FC_NORMAL;
 	}
 	mantissa_size = desc.mantissa_size + desc.explicit_one;
 
@@ -1032,7 +1030,8 @@ long double fc_val_to_ieee754(const fp_value *val)
 	return buildval.d;
 }
 
-fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc,
+                  fp_value *result)
 {
 	char *temp;
 	int exp_offset, val_bias, res_bias;
@@ -1048,13 +1047,13 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 		return result;
 	}
 
-	if (value->desc.clss == FC_NAN) {
+	if (value->clss == FC_NAN) {
 		if (sc_get_highest_set_bit(_mant(value)) == value->desc.mantissa_size + 1)
 			return fc_get_qnan(desc, result);
 		else
 			return fc_get_snan(desc, result);
 	}
-	else if (value->desc.clss == FC_INF) {
+	else if (value->clss == FC_INF) {
 		if (value->sign == 0)
 			return fc_get_plusinf(desc, result);
 		else
@@ -1062,11 +1061,8 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 	}
 
 	/* set the descriptor of the new value */
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = value->desc.clss;
-
+	result->desc = *desc;
+	result->clss = value->clss;
 	result->sign = value->sign;
 
 	/* when the mantissa sizes differ normalizing has to shift to align it.
@@ -1080,7 +1076,7 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc, fp_value
 	sc_add(_exp(value), temp, _exp(result));
 
 	/* _normalize expects normalized radix point */
-	if (value->desc.clss == FC_SUBNORMAL) {
+	if (value->clss == FC_SUBNORMAL) {
 		sc_val_from_ulong(1, NULL);
 		_shift_left(_mant(value), sc_get_buffer(), _mant(result));
 	} else if (value != result) {
@@ -1098,11 +1094,8 @@ fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = FC_NORMAL;
-
+	result->desc = *desc;
+	result->clss = FC_NORMAL;
 	result->sign = 0;
 
 	sc_val_from_ulong((1 << desc->exponent_size) - 2, _exp(result));
@@ -1128,11 +1121,8 @@ fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = FC_NAN;
-
+	result->desc = *desc;
+	result->clss = FC_NAN;
 	result->sign = 0;
 
 	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
@@ -1147,11 +1137,8 @@ fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = FC_NAN;
-
+	result->desc = *desc;
+	result->clss = FC_NAN;
 	result->sign = 0;
 
 	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
@@ -1171,11 +1158,8 @@ fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result)
 
 	if (result == NULL) result = calc_buffer;
 
-	result->desc.exponent_size = desc->exponent_size;
-	result->desc.mantissa_size = desc->mantissa_size;
-	result->desc.explicit_one  = desc->explicit_one;
-	result->desc.clss          = FC_INF;
-
+	result->desc = *desc;
+	result->clss = FC_INF;
 	result->sign = 0;
 
 	sc_val_from_ulong((1 << desc->exponent_size) - 1, _exp(result));
@@ -1208,14 +1192,14 @@ int fc_comp(const fp_value *val_a, const fp_value *val_b)
 	 * Unordered if NaN or equal
 	 */
 	if (val_a == val_b)
-		return val_a->desc.clss == FC_NAN ? 2 : 0;
+		return val_a->clss == FC_NAN ? 2 : 0;
 
 	/* unordered if one is a NaN */
-	if (val_a->desc.clss == FC_NAN || val_b->desc.clss == FC_NAN)
+	if (val_a->clss == FC_NAN || val_b->clss == FC_NAN)
 		return 2;
 
 	/* zero is equal independent of sign */
-	if ((val_a->desc.clss == FC_ZERO) && (val_b->desc.clss == FC_ZERO))
+	if ((val_a->clss == FC_ZERO) && (val_b->clss == FC_ZERO))
 		return 0;
 
 	/* different signs make compare easy */
@@ -1225,13 +1209,13 @@ int fc_comp(const fp_value *val_a, const fp_value *val_b)
 	mul = val_a->sign ? -1 : 1;
 
 	/* both infinity means equality */
-	if ((val_a->desc.clss == FC_INF) && (val_b->desc.clss == FC_INF))
+	if ((val_a->clss == FC_INF) && (val_b->clss == FC_INF))
 		return 0;
 
 	/* infinity is bigger than the rest */
-	if (val_a->desc.clss == FC_INF)
+	if (val_a->clss == FC_INF)
 		return  1 * mul;
-	if (val_b->desc.clss == FC_INF)
+	if (val_b->clss == FC_INF)
 		return -1 * mul;
 
 	/* check first exponent, that mantissa if equal */
@@ -1249,7 +1233,7 @@ int fc_comp(const fp_value *val_a, const fp_value *val_b)
 
 int fc_is_zero(const fp_value *a)
 {
-	return a->desc.clss == FC_ZERO;
+	return a->clss == FC_ZERO;
 }
 
 int fc_is_negative(const fp_value *a)
@@ -1259,17 +1243,17 @@ int fc_is_negative(const fp_value *a)
 
 int fc_is_inf(const fp_value *a)
 {
-	return a->desc.clss == FC_INF;
+	return a->clss == FC_INF;
 }
 
 int fc_is_nan(const fp_value *a)
 {
-	return a->desc.clss == FC_NAN;
+	return a->clss == FC_NAN;
 }
 
 int fc_is_subnormal(const fp_value *a)
 {
-	return a->desc.clss == FC_SUBNORMAL;
+	return a->clss == FC_SUBNORMAL;
 }
 
 char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
@@ -1281,7 +1265,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 
 	switch (base) {
 	case FC_DEC:
-		switch ((value_class_t)val->desc.clss) {
+		switch ((value_class_t)val->clss) {
 		case FC_INF:
 			snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
 			break;
@@ -1299,7 +1283,7 @@ char *fc_print(const fp_value *val, char *buf, int buflen, unsigned base)
 		break;
 
 	case FC_HEX:
-		switch ((value_class_t)val->desc.clss) {
+		switch ((value_class_t)val->clss) {
 		case FC_INF:
 			snprintf(buf, buflen, "%cINF", val->sign ? '-' : '+');
 			break;
@@ -1357,7 +1341,7 @@ int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc
 	int exp_bias;
 
 	/* handle some special cases first */
-	switch (value->desc.clss) {
+	switch (value->clss) {
 	case FC_ZERO:
 	case FC_INF:
 	case FC_NAN:
@@ -1532,7 +1516,7 @@ fp_value *fc_rnd(const fp_value *a, fp_value *result)
  */
 int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 {
-	if (a->desc.clss == FC_NORMAL) {
+	if (a->clss == FC_NORMAL) {
 		int exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 		int exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
 		int shift, highest;
@@ -1587,8 +1571,7 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 			sc_neg(result, result);
 
 		return 1;
-	}
-	else if (a->desc.clss == FC_ZERO) {
+	} else if (a->clss == FC_ZERO) {
 		sc_zero(result);
 		return 1;
 	}

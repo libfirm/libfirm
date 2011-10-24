@@ -65,7 +65,6 @@ typedef struct ieee_descriptor_t {
 	unsigned char exponent_size;    /**< size of exponent in bits */
 	unsigned char mantissa_size;    /**< size of mantissa in bits */
 	unsigned char explicit_one;     /**< set if the leading one is explicit */
-	unsigned char clss;             /**< state of this float */
 } ieee_descriptor_t;
 
 struct fp_value;
