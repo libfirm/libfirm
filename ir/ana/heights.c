@@ -62,8 +62,7 @@ static irn_height_t *get_height_data(ir_heights_t *heights, const ir_node *node)
 {
 	irn_height_t *height = (irn_height_t*)ir_nodemap_get(&heights->data, node);
 	if (height == NULL) {
-		height = obstack_alloc(&heights->obst, sizeof(*height));
-		memset(height, 0, sizeof(*height));
+		height = OALLOCZ(&heights->obst, irn_height_t);
 		ir_nodemap_insert(&heights->data, node, height);
 	}
 	return height;
@@ -247,7 +246,7 @@ unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 
 ir_heights_t *heights_new(ir_graph *irg)
 {
-	ir_heights_t *res = XMALLOC(ir_heights_t);
+	ir_heights_t *res = XMALLOCZ(ir_heights_t);
 	ir_nodemap_init(&res->data, irg);
 	obstack_init(&res->obst);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
