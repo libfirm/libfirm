@@ -198,12 +198,12 @@ ir_mode *get_modeBAD(void) { return mode_BAD; }
 
 ir_mode *(get_modeP_code)(void)
 {
-	return _get_modeP_code();
+	return get_modeP_code_();
 }
 
 ir_mode *(get_modeP_data)(void)
 {
-	return _get_modeP_data();
+	return get_modeP_data_();
 }
 
 void set_modeP_code(ir_mode *p)
@@ -292,7 +292,7 @@ ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size, int sign
 /* Functions for the direct access to all attributes of an ir_mode */
 ident *(get_mode_ident)(const ir_mode *mode)
 {
-	return _get_mode_ident(mode);
+	return get_mode_ident_(mode);
 }
 
 const char *get_mode_name(const ir_mode *mode)
@@ -302,27 +302,27 @@ const char *get_mode_name(const ir_mode *mode)
 
 ir_mode_sort (get_mode_sort)(const ir_mode* mode)
 {
-	return _get_mode_sort(mode);
+	return get_mode_sort_(mode);
 }
 
 unsigned (get_mode_size_bits)(const ir_mode *mode)
 {
-	return _get_mode_size_bits(mode);
+	return get_mode_size_bits_(mode);
 }
 
 unsigned (get_mode_size_bytes)(const ir_mode *mode)
 {
-	return _get_mode_size_bytes(mode);
+	return get_mode_size_bytes_(mode);
 }
 
 int (get_mode_sign)(const ir_mode *mode)
 {
-	return _get_mode_sign(mode);
+	return get_mode_sign_(mode);
 }
 
 ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
 {
-	return get_mode_arithmetic(mode);
+	return get_mode_arithmetic_(mode);
 }
 
 
@@ -332,17 +332,17 @@ ir_mode_arithmetic (get_mode_arithmetic)(const ir_mode *mode)
  */
 unsigned int (get_mode_modulo_shift)(const ir_mode *mode)
 {
-	return _get_mode_modulo_shift(mode);
+	return get_mode_modulo_shift_(mode);
 }
 
 void *(get_mode_link)(const ir_mode *mode)
 {
-	return _get_mode_link(mode);
+	return get_mode_link_(mode);
 }
 
 void (set_mode_link)(ir_mode *mode, void *l)
 {
-	_set_mode_link(mode, l);
+	set_mode_link_(mode, l);
 }
 
 ir_tarval *get_mode_min(ir_mode *mode)
@@ -415,42 +415,42 @@ int is_mode(const void *thing)
 
 int (mode_is_signed)(const ir_mode *mode)
 {
-	return _mode_is_signed(mode);
+	return mode_is_signed_(mode);
 }
 
 int (mode_is_float)(const ir_mode *mode)
 {
-	return _mode_is_float(mode);
+	return mode_is_float_(mode);
 }
 
 int (mode_is_int)(const ir_mode *mode)
 {
-	return _mode_is_int(mode);
+	return mode_is_int_(mode);
 }
 
 int (mode_is_reference)(const ir_mode *mode)
 {
-	return _mode_is_reference(mode);
+	return mode_is_reference_(mode);
 }
 
 int (mode_is_num)(const ir_mode *mode)
 {
-	return _mode_is_num(mode);
+	return mode_is_num_(mode);
 }
 
 int (mode_is_data)(const ir_mode *mode)
 {
-	return _mode_is_data(mode);
+	return mode_is_data_(mode);
 }
 
 int (mode_is_datab)(const ir_mode *mode)
 {
-	return _mode_is_datab(mode);
+	return mode_is_datab_(mode);
 }
 
 int (mode_is_dataM)(const ir_mode *mode)
 {
-	return _mode_is_dataM(mode);
+	return mode_is_dataM_(mode);
 }
 
 /* Returns true if sm can be converted to lm without loss. */

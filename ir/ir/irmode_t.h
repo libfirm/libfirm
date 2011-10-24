@@ -34,32 +34,32 @@
 /* ------------------------------- *
  * inline functions                *
  * ------------------------------- */
-static inline ir_mode *_get_modeP_code(void) { return mode_P_code; }
+static inline ir_mode *get_modeP_code_(void) { return mode_P_code; }
 
-static inline ir_mode *_get_modeP_data(void) { return mode_P_data; }
+static inline ir_mode *get_modeP_data_(void) { return mode_P_data; }
 
-static inline ident *_get_mode_ident(const ir_mode *mode) { return mode->name; }
+static inline ident *get_mode_ident_(const ir_mode *mode) { return mode->name; }
 
-static inline ir_mode_sort _get_mode_sort(const ir_mode *mode) { return mode->sort; }
+static inline ir_mode_sort get_mode_sort_(const ir_mode *mode) { return mode->sort; }
 
-static inline unsigned _get_mode_size_bits(const ir_mode *mode) { return mode->size; }
+static inline unsigned get_mode_size_bits_(const ir_mode *mode) { return mode->size; }
 
-static inline unsigned _get_mode_size_bytes(const ir_mode *mode)
+static inline unsigned get_mode_size_bytes_(const ir_mode *mode)
 {
-	unsigned size = _get_mode_size_bits(mode);
+	unsigned size = get_mode_size_bits_(mode);
 	if ((size & 7) != 0) return (unsigned) -1;
 	return size >> 3;
 }
 
-static inline int _get_mode_sign(const ir_mode *mode) { return mode->sign; }
+static inline int get_mode_sign_(const ir_mode *mode) { return mode->sign; }
 
-static inline ir_mode_arithmetic _get_mode_arithmetic(const ir_mode *mode) { return mode->arithmetic; }
+static inline ir_mode_arithmetic get_mode_arithmetic_(const ir_mode *mode) { return mode->arithmetic; }
 
-static inline unsigned int _get_mode_modulo_shift(const ir_mode *mode) { return mode->modulo_shift; }
+static inline unsigned int get_mode_modulo_shift_(const ir_mode *mode) { return mode->modulo_shift; }
 
-static inline void * _get_mode_link(const ir_mode *mode) { return mode->link; }
+static inline void *get_mode_link_(const ir_mode *mode) { return mode->link; }
 
-static inline void _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
+static inline void set_mode_link_(ir_mode *mode, void *l) { mode->link = l; }
 
 /* Functions to check, whether a mode is signed, float, int, num, data,
    datab or dataM. For more exact definitions read the corresponding pages
@@ -98,44 +98,44 @@ static inline void _set_mode_link(ir_mode *mode, void *l) { mode->link = l; }
             = {data || irm_M}
 */
 
-static inline int _mode_is_signed(const ir_mode *mode)
+static inline int mode_is_signed_(const ir_mode *mode)
 {
 	return mode->sign;
 }
 
-static inline int _mode_is_float(const ir_mode *mode)
+static inline int mode_is_float_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) == irms_float_number);
+	return (get_mode_sort_(mode) == irms_float_number);
 }
 
-static inline int _mode_is_int(const ir_mode *mode)
+static inline int mode_is_int_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) == irms_int_number);
+	return (get_mode_sort_(mode) == irms_int_number);
 }
 
-static inline int _mode_is_reference(const ir_mode *mode)
+static inline int mode_is_reference_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) == irms_reference);
+	return (get_mode_sort_(mode) == irms_reference);
 }
 
-static inline int _mode_is_num(const ir_mode *mode)
+static inline int mode_is_num_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) & irmsh_is_num);
+	return (get_mode_sort_(mode) & irmsh_is_num);
 }
 
-static inline int _mode_is_data(const ir_mode *mode)
+static inline int mode_is_data_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) & irmsh_is_data);
+	return (get_mode_sort_(mode) & irmsh_is_data);
 }
 
-static inline int _mode_is_datab(const ir_mode *mode)
+static inline int mode_is_datab_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) & irmsh_is_datab);
+	return (get_mode_sort_(mode) & irmsh_is_datab);
 }
 
-static inline int _mode_is_dataM(const ir_mode *mode)
+static inline int mode_is_dataM_(const ir_mode *mode)
 {
-	return (_get_mode_sort(mode) & irmsh_is_dataM);
+	return (get_mode_sort_(mode) & irmsh_is_dataM);
 }
 
 static inline ir_type *get_type_for_mode_(const ir_mode *mode)
@@ -149,25 +149,25 @@ void init_mode(void);
 /** mode module finalization. frees all memory.  */
 void finish_mode(void);
 
-#define get_modeP_code()               _get_modeP_code()
-#define get_modeP_data()               _get_modeP_data()
-#define get_mode_ident(mode)           _get_mode_ident(mode)
-#define get_mode_sort(mode)            _get_mode_sort(mode)
-#define get_mode_size_bits(mode)       _get_mode_size_bits(mode)
-#define get_mode_size_bytes(mode)      _get_mode_size_bytes(mode)
-#define get_mode_sign(mode)            _get_mode_sign(mode)
-#define get_mode_arithmetic(mode)      _get_mode_arithmetic(mode)
-#define get_mode_modulo_shift(mode)    _get_mode_modulo_shift(mode)
-#define get_mode_link(mode)            _get_mode_link(mode)
-#define set_mode_link(mode, l)         _set_mode_link(mode, l)
-#define mode_is_signed(mode)           _mode_is_signed(mode)
-#define mode_is_float(mode)            _mode_is_float(mode)
-#define mode_is_int(mode)              _mode_is_int(mode)
-#define mode_is_reference(mode)        _mode_is_reference(mode)
-#define mode_is_num(mode)              _mode_is_num(mode)
-#define mode_is_data(mode)             _mode_is_data(mode)
-#define mode_is_datab(mode)            _mode_is_datab(mode)
-#define mode_is_dataM(mode)            _mode_is_dataM(mode)
+#define get_modeP_code()               get_modeP_code_()
+#define get_modeP_data()               get_modeP_data_()
+#define get_mode_ident(mode)           get_mode_ident_(mode)
+#define get_mode_sort(mode)            get_mode_sort_(mode)
+#define get_mode_size_bits(mode)       get_mode_size_bits_(mode)
+#define get_mode_size_bytes(mode)      get_mode_size_bytes_(mode)
+#define get_mode_sign(mode)            get_mode_sign_(mode)
+#define get_mode_arithmetic(mode)      get_mode_arithmetic_(mode)
+#define get_mode_modulo_shift(mode)    get_mode_modulo_shift_(mode)
+#define get_mode_link(mode)            get_mode_link_(mode)
+#define set_mode_link(mode, l)         set_mode_link_(mode, l)
+#define mode_is_signed(mode)           mode_is_signed_(mode)
+#define mode_is_float(mode)            mode_is_float_(mode)
+#define mode_is_int(mode)              mode_is_int_(mode)
+#define mode_is_reference(mode)        mode_is_reference_(mode)
+#define mode_is_num(mode)              mode_is_num_(mode)
+#define mode_is_data(mode)             mode_is_data_(mode)
+#define mode_is_datab(mode)            mode_is_datab_(mode)
+#define mode_is_dataM(mode)            mode_is_dataM_(mode)
 #define get_type_for_mode(mode)        get_type_for_mode_(mode)
 
 #endif
