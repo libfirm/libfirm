@@ -1685,12 +1685,6 @@ int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode)
 	return fc_can_lossless_conv_to((const fp_value*) tv->value, desc);
 }
 
-/* Set the immediate precision for IEEE-754 results. */
-unsigned tarval_ieee754_set_immediate_precision(unsigned bits)
-{
-	return fc_set_immediate_precision(bits);
-}
-
 /* Returns non-zero if the result of the last IEEE-754 operation was exact. */
 unsigned tarval_ieee754_get_exact(void)
 {

@@ -778,15 +778,6 @@ FIRM_API int tarval_ieee754_get_exponent(ir_tarval *tv);
 FIRM_API int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode);
 
 /**
- * Set the immediate precision for IEEE-754 results. Set this to
- * 0 to get the same precision as the operands.
- * For x87 compatibility, set this to 80.
- *
- * @return the old setting
- */
-FIRM_API unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
-
-/**
  *  Returns non-zero if the result of the last IEEE-754 operation was exact.
  */
 FIRM_API unsigned tarval_ieee754_get_exact(void);

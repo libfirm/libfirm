@@ -136,9 +136,6 @@ struct fp_value {
 #  define TRACEPRINTF(x) ((void)0)
 #endif
 
-/** The immediate precision. */
-static unsigned immediate_prec = 0;
-
 /** A temporal buffer. */
 static fp_value *calc_buffer = NULL;
 
@@ -1576,15 +1573,6 @@ int fc_flt2int(const fp_value *a, void *result, ir_mode *dst_mode)
 		return 1;
 	}
 	return 0;
-}
-
-
-unsigned fc_set_immediate_precision(unsigned bits)
-{
-	unsigned old = immediate_prec;
-
-	immediate_prec = bits;
-	return old;
 }
 
 int fc_is_exact(void)

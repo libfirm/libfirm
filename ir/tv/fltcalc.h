@@ -270,15 +270,6 @@ fc_rounding_mode_t fc_get_rounding_mode(void);
 unsigned char fc_sub_bits(const fp_value *val, unsigned num_bit, unsigned byte_ofs);
 
 /**
- * Set the immediate precision for IEEE-754 results. Set this to
- * 0 to get the same precision as the operands.
- * For x87 compatibility, set this to 80.
- *
- * @return the old setting
- */
-unsigned fc_set_immediate_precision(unsigned bits);
-
-/**
  * Returns non-zero if the result of the last operation was exact.
  */
 int fc_is_exact(void);
