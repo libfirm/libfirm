@@ -2622,17 +2622,27 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 	ir_node        *ins[4];
 	ia32_address_t  addr;
 
-	assert(size % 4 ==  0);
-	assert(size     <= 16);
-
 	build_address_ptr(&addr, ptr, mem);
 
 	do {
-		unsigned val =
-			 get_tarval_sub_bits(tv, ofs)            |
-			(get_tarval_sub_bits(tv, ofs + 1) <<  8) |
-			(get_tarval_sub_bits(tv, ofs + 2) << 16) |
-			(get_tarval_sub_bits(tv, ofs + 3) << 24);
+		unsigned val;
+		unsigned delta;
+		ir_mode *mode;
+		if (size >= 4) {
+			val= get_tarval_sub_bits(tv, ofs)            |
+			    (get_tarval_sub_bits(tv, ofs + 1) <<  8) |
+			    (get_tarval_sub_bits(tv, ofs + 2) << 16) |
+			    (get_tarval_sub_bits(tv, ofs + 3) << 24);
+			delta = 4;
+			mode  = mode_Iu;
+		} else if (size >= 2) {
+			val= get_tarval_sub_bits(tv, ofs)            |
+			    (get_tarval_sub_bits(tv, ofs + 1) <<  8);
+			delta = 2;
+			mode  = mode_Hu;
+		} else {
+			panic("invalid size of Store float to mem (%+F)", node);
+		}
 		ir_node *imm = ia32_create_Immediate(NULL, 0, val);
 
 		ir_node *new_node = new_bd_ia32_Store(dbgi, new_block, addr.base,
@@ -2642,16 +2652,16 @@ static ir_node *gen_float_const_Store(ir_node *node, ir_node *cns)
 		ir_set_throws_exception(new_node, throws_exception);
 		set_irn_pinned(new_node, get_irn_pinned(node));
 		set_ia32_op_type(new_node, ia32_AddrModeD);
-		set_ia32_ls_mode(new_node, mode_Iu);
+		set_ia32_ls_mode(new_node, mode);
 		set_address(new_node, &addr);
 		SET_IA32_ORIG_NODE(new_node, node);
 
 		assert(i < 4);
 		ins[i++] = new_mem;
 
-		size        -= 4;
-		ofs         += 4;
-		addr.offset += 4;
+		size -= delta;
+		ofs  += delta;
+		addr.offset += delta;
 	} while (size != 0);
 
 	if (i > 1) {
