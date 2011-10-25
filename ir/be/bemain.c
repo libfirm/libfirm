@@ -796,10 +796,10 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		stat_ev_ctx_pop("bemain_irg");
 	}
 
-	arch_env_done(arch_env);
-
 	be_dbg_unit_end();
 	be_dbg_close();
+
+	arch_env_done(arch_env);
 
 	ir_profile_free();
 	be_done_env(&env);
