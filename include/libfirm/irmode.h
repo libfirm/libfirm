@@ -38,39 +38,6 @@
 #include "firm_types.h"
 #include "begin.h"
 
-/** Helper values for ir_mode_sort. */
-enum ir_mode_sort_helper {
-	irmsh_is_num   = 0x10, /**< mode represents a number */
-	irmsh_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
-	irmsh_is_datab = 0x40, /**< mode represents data or is internal boolean */
-	irmsh_is_dataM = 0x80, /**< mode represents data or is memory */
-};
-
-/**
- * These values represent the different mode classes of value representations.
- * Beware: do not change the order of these values without checking
- * the mode_is
- */
-typedef enum ir_mode_sort {
-	irms_auxiliary        = 0, /**< Only for Firm use. Not extensible. (irm_T) */
-	irms_control_flow     = 1, /**< Marks all control flow modes. Not extensible. (irm_BB, irm_X) */
-	irms_memory           = 2 | irmsh_is_dataM, /**< Marks the memory mode.  Not extensible. (irm_M) */
-
-	/** Internal boolean representation.
-	     Storing to memory impossible, convert first. (irm_b) */
-	irms_internal_boolean = 3 | irmsh_is_datab,
-
-	/** A mode to represent entities.
-	    Restricted int computations can be performed */
-	irms_reference        = 4 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM,
-	/** A mode to represent int numbers.
-	    Integer computations can be performed. */
-	irms_int_number       = 5 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
-	/** A mode to represent float numbers.
-	    Floating point computations can be performed. */
-	irms_float_number     = 6 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
-} ir_mode_sort;
-
 /**
  * These values represent the different arithmetic operations possible with a
  * mode.
@@ -86,6 +53,7 @@ typedef enum ir_mode_arithmetic {
 	irma_ieee754 = 256,       /**< Values of the mode are represented according
 	                               to ieee754 floating point standard.  Only
 	                               legal for modes of sort float_number. */
+	irma_x86_extended_float,  /**< x86 extended floatingpoint values */
 	irma_max
 } ir_mode_arithmetic;
 
@@ -105,21 +73,38 @@ FIRM_API const char *get_mode_arithmetic_name(ir_mode_arithmetic ari);
  * This function constructs a new mode given by the parameters.
  * If the parameters match an already defined mode, this mode is returned
  * (including the default modes).
- * If the mode is newly allocated, a new unique mode_code is chosen.
- * Also, special value tarvals will be calculated such as null,
- * min, max and can be retrieved using the get_mode_* functions
  *
  * @return
  *   The new mode or NULL on error.
- *
- * @note
- *   It is allowed to construct the default modes. So, a call
- *   new_ir_mode("Is", irms_int_number, 32, 1, irma_twos_complement, 32) will
- *   return mode_Is.
  */
-FIRM_API ir_mode *new_ir_mode(const char *name, ir_mode_sort sort, int bit_size,
-                              int sign, ir_mode_arithmetic arithmetic,
-                              unsigned int modulo_shift);
+FIRM_API ir_mode *new_int_mode(const char *name,
+                               ir_mode_arithmetic arithmetic,
+                               unsigned bit_size, int sign,
+                               unsigned modulo_shift);
+
+/**
+ * Create a new reference mode.
+ *
+ * Reference modes are always unsigned.
+ */
+FIRM_API ir_mode *new_reference_mode(const char *name,
+                                     ir_mode_arithmetic arithmetic,
+                                     unsigned bit_size,
+                                     unsigned modulo_shift);
+
+/**
+ * Create a new ieee754 float mode.
+ *
+ * float-modes are always signed and have no modulo shift.
+ * @param name          the name of the mode to be created
+ * @param arithmetic    arithmetic/representation of the mode
+ * @param exponent_size size of exponent in bits
+ * @param mantissa_size size of mantissa in bits
+ */
+FIRM_API ir_mode *new_float_mode(const char *name,
+                                 ir_mode_arithmetic arithmetic,
+                                 unsigned exponent_size,
+                                 unsigned mantissa_size);
 
 /**
  * Checks whether a pointer points to a mode.
@@ -136,9 +121,6 @@ FIRM_API ident *get_mode_ident(const ir_mode *mode);
 
 /** Returns the null-terminated name of this mode. */
 FIRM_API const char *get_mode_name(const ir_mode *mode);
-
-/** Returns a coarse classification of the mode. */
-FIRM_API ir_mode_sort get_mode_sort(const ir_mode *mode);
 
 /** Returns the size of values of the mode in bits. */
 FIRM_API unsigned get_mode_size_bits(const ir_mode *mode);
@@ -237,9 +219,9 @@ FIRM_API ir_tarval *get_mode_NAN(ir_mode *mode);
 
 FIRM_API ir_mode *mode_M; /**< memory */
 
-FIRM_API ir_mode *mode_F;   /**< float (32) */
-FIRM_API ir_mode *mode_D;   /**< double (64) */
-FIRM_API ir_mode *mode_E;   /**< long double (80/128/...) */
+FIRM_API ir_mode *mode_F;   /**< ieee754 binary32 float (single precision) */
+FIRM_API ir_mode *mode_D;   /**< ieee754 binary64 float (double precision) */
+FIRM_API ir_mode *mode_Q;   /**< ieee754 binary128 float (quadruple precision)*/
 FIRM_API ir_mode *mode_Bs;  /**< int8 */
 FIRM_API ir_mode *mode_Bu;  /**< uint8 */
 FIRM_API ir_mode *mode_Hs;  /**< int16 */
@@ -270,7 +252,7 @@ FIRM_API ir_mode *mode_BAD;/**< bad mode */
 
 FIRM_API ir_mode *get_modeF(void);
 FIRM_API ir_mode *get_modeD(void);
-FIRM_API ir_mode *get_modeE(void);
+FIRM_API ir_mode *get_modeQ(void);
 FIRM_API ir_mode *get_modeBs(void);
 FIRM_API ir_mode *get_modeBu(void);
 FIRM_API ir_mode *get_modeHs(void);
@@ -423,6 +405,16 @@ FIRM_API ir_mode *get_reference_mode_unsigned_eq(ir_mode *mode);
  * Sets the unsigned integer equivalent mode for an reference mode.
  */
 FIRM_API void set_reference_mode_unsigned_eq(ir_mode *ref_mode, ir_mode *int_mode);
+
+/**
+ * Return size of mantissa in bits (for float modes)
+ */
+FIRM_API unsigned get_mode_mantissa_size(const ir_mode *mode);
+
+/**
+ * Return size of exponent in bits (for float modes)
+ */
+FIRM_API unsigned get_mode_exponent_size(const ir_mode *mode);
 
 /**
  * Returns non-zero if the cast from mode src to mode dst is a

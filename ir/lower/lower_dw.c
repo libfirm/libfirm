@@ -2758,10 +2758,10 @@ static void setup_modes(void)
 	/* produce lowered modes */
 	env->high_signed   = doubleword_signed;
 	env->high_unsigned = doubleword_unsigned;
-	env->low_signed    = new_ir_mode("WS", irms_int_number, size_bits, 1,
-	                                 arithmetic, modulo_shift);
-	env->low_unsigned  = new_ir_mode("WU", irms_int_number, size_bits, 0,
-	                                 arithmetic, modulo_shift);
+	env->low_signed    = new_int_mode("WS", arithmetic, size_bits, 1,
+	                                  modulo_shift);
+	env->low_unsigned  = new_int_mode("WU", arithmetic, size_bits, 0,
+	                                  modulo_shift);
 }
 
 static void enqueue_preds(ir_node *node)

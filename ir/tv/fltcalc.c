@@ -110,7 +110,7 @@ typedef union {
 
 /* our floating point value */
 struct fp_value {
-	ieee_descriptor_t desc;
+	float_descriptor_t desc;
 	unsigned char clss;
 	char sign;
 	char value[1];        /* exp[value_size] + mant[value_size] */
@@ -722,7 +722,7 @@ static void _fdiv(const fp_value *a, const fp_value *b, fp_value *result)
 }
 
 #if 0
-static void _power_of_ten(int exp, ieee_descriptor_t *desc, char *result)
+static void _power_of_ten(int exp, float_descriptor_t *desc, char *result)
 {
 	char *build;
 	char *temp;
@@ -838,14 +838,14 @@ int fc_get_buffer_length(void)
 }
 
 void *fc_val_from_str(const char *str, size_t len,
-                      const ieee_descriptor_t *desc, void *result)
+                      const float_descriptor_t *desc, void *result)
 {
 	char *buffer;
 
 	/* XXX excuse of an implementation to make things work */
 	long double        val;
 	fp_value          *tmp = (fp_value*) alloca(calc_buffer_size);
-	ieee_descriptor_t tmp_desc;
+	float_descriptor_t tmp_desc;
 
 	buffer = (char*) alloca(len+1);
 	memcpy(buffer, str, len);
@@ -861,7 +861,7 @@ void *fc_val_from_str(const char *str, size_t len,
 	return fc_cast(tmp, desc, (fp_value*) result);
 }
 
-fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc,
+fp_value *fc_val_from_ieee754(long double l, const float_descriptor_t *desc,
                               fp_value *result)
 {
 	char    *temp;
@@ -973,7 +973,7 @@ long double fc_val_to_ieee754(const fp_value *val)
 	uint32_t mantissa1;
 
 	value_t           buildval;
-	ieee_descriptor_t desc;
+	float_descriptor_t desc;
 	unsigned          mantissa_size;
 
 	size_t            long_double_size = sizeof(long double);
@@ -1027,7 +1027,7 @@ long double fc_val_to_ieee754(const fp_value *val)
 	return buildval.d;
 }
 
-fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc,
+fp_value *fc_cast(const fp_value *value, const float_descriptor_t *desc,
                   fp_value *result)
 {
 	char *temp;
@@ -1087,7 +1087,7 @@ fp_value *fc_cast(const fp_value *value, const ieee_descriptor_t *desc,
 	return result;
 }
 
-fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
@@ -1104,7 +1104,7 @@ fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_min(const float_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
@@ -1114,7 +1114,7 @@ fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
@@ -1130,7 +1130,7 @@ fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
@@ -1149,7 +1149,7 @@ fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result)
 {
 	char *mant;
 
@@ -1170,7 +1170,7 @@ fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result)
 	return result;
 }
 
-fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result)
+fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result)
 {
 	if (result == NULL) result = calc_buffer;
 
@@ -1332,7 +1332,7 @@ int fc_get_exponent(const fp_value *value)
 }
 
 /* Return non-zero if a given value can be converted lossless into another precision */
-int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc)
+int fc_can_lossless_conv_to(const fp_value *value, const float_descriptor_t *desc)
 {
 	int v;
 	int exp_bias;

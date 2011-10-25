@@ -479,12 +479,10 @@ static const backend_params *sparc_get_backend_params(void)
 	};
 
 	ir_mode *mode_long_long
-		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
-		              64);
+		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
 	ir_type *type_long_long = new_type_primitive(mode_long_long);
 	ir_mode *mode_unsigned_long_long
-		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
-		              irma_twos_complement, 64);
+		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
 
@@ -495,13 +493,11 @@ static const backend_params *sparc_get_backend_params(void)
 		p.mode_float_arithmetic = NULL;
 		p.type_long_double      = NULL;
 	} else {
-		ir_mode *mode_long_double
-			= new_ir_mode("long double", irms_float_number, 128, 1,
-						  irma_ieee754, 0);
-		ir_type *type_long_double = new_type_primitive(mode_long_double);
+		ir_type *type_long_double = new_type_primitive(mode_Q);
 
 		set_type_alignment_bytes(type_long_double, 8);
-		p.type_long_double        = type_long_double;
+		set_type_size_bytes(type_long_double, 16);
+		p.type_long_double = type_long_double;
 	}
 	return &p;
 }

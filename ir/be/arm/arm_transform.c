@@ -539,7 +539,6 @@ static ir_node *gen_Add(ir_node *node)
 		if (USE_FPA(isa)) {
 			return new_bd_arm_Adf(dbgi, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -586,7 +585,6 @@ static ir_node *gen_Mul(ir_node *node)
 		if (USE_FPA(isa)) {
 			return new_bd_arm_Muf(dbg, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -606,14 +604,12 @@ static ir_node *gen_Div(ir_node *node)
 	ir_mode  *mode    = get_Div_resmode(node);
 	dbg_info *dbg     = get_irn_dbg_info(node);
 
-	assert(mode != mode_E && "IEEE Extended FP not supported");
 	/* integer division should be replaced by builtin call */
 	assert(mode_is_float(mode));
 
 	if (USE_FPA(isa)) {
 		return new_bd_arm_Dvf(dbg, block, new_op1, new_op2, mode);
 	} else if (USE_VFP(isa)) {
-		assert(mode != mode_E && "IEEE Extended FP not supported");
 		panic("VFP not supported yet");
 	} else {
 		panic("Softfloat not supported yet");
@@ -700,7 +696,6 @@ static ir_node *gen_Sub(ir_node *node)
 		if (USE_FPA(isa)) {
 			return new_bd_arm_Suf(dbgi, block, new_op1, new_op2, mode);
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -926,7 +921,6 @@ static ir_node *gen_Minus(ir_node *node)
 		if (USE_FPA(isa)) {
 			return new_bd_arm_Mvf(dbgi, block, op, mode);
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -955,7 +949,6 @@ static ir_node *gen_Load(ir_node *node)
 			new_load = new_bd_arm_Ldf(dbgi, block, new_ptr, new_mem, mode,
 			                          NULL, 0, 0, false);
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -998,7 +991,6 @@ static ir_node *gen_Store(ir_node *node)
 			new_store = new_bd_arm_Stf(dbgi, block, new_ptr, new_val,
 			                           new_mem, mode, NULL, 0, 0, false);
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -1119,8 +1111,7 @@ static ir_node *gen_Cond(ir_node *node)
 enum fpa_imm_mode {
 	FPA_IMM_FLOAT    = 0,
 	FPA_IMM_DOUBLE   = 1,
-	FPA_IMM_EXTENDED = 2,
-	FPA_IMM_MAX = FPA_IMM_EXTENDED
+	FPA_IMM_MAX = FPA_IMM_DOUBLE
 };
 
 static ir_tarval *fpa_imm[FPA_IMM_MAX + 1][fpa_max];
@@ -1142,8 +1133,6 @@ static int is_fpa_immediate(tarval *tv)
 	case 64:
 		i = FPA_IMM_DOUBLE;
 		break;
-	default:
-		i = FPA_IMM_EXTENDED;
 	}
 
 	if (tarval_is_negative(tv)) {
@@ -1171,7 +1160,6 @@ static ir_node *gen_Const(ir_node *node)
 			node          = new_bd_arm_fConst(dbg, block, tv);
 			return node;
 		} else if (USE_VFP(isa)) {
-			assert(mode != mode_E && "IEEE Extended FP not supported");
 			panic("VFP not supported yet");
 		} else {
 			panic("Softfloat not supported yet");
@@ -2142,15 +2130,6 @@ static void arm_init_fpa_immediate(void)
 	fpa_imm[FPA_IMM_DOUBLE][fpa_five]  = new_tarval_from_str("5", 1, mode_D);
 	fpa_imm[FPA_IMM_DOUBLE][fpa_ten]   = new_tarval_from_str("10", 2, mode_D);
 	fpa_imm[FPA_IMM_DOUBLE][fpa_half]  = new_tarval_from_str("0.5", 3, mode_D);
-
-	fpa_imm[FPA_IMM_EXTENDED][fpa_null]  = get_mode_null(mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_one]   = get_mode_one(mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_two]   = new_tarval_from_str("2", 1, mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_three] = new_tarval_from_str("3", 1, mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_four]  = new_tarval_from_str("4", 1, mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_five]  = new_tarval_from_str("5", 1, mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_ten]   = new_tarval_from_str("10", 2, mode_E);
-	fpa_imm[FPA_IMM_EXTENDED][fpa_half]  = new_tarval_from_str("0.5", 3, mode_E);
 }
 
 /**
@@ -2164,7 +2143,7 @@ void arm_transform_graph(ir_graph *irg)
 	ir_type   *frame_type;
 
 	mode_gp = mode_Iu;
-	mode_fp = mode_E;
+	mode_fp = mode_F;
 
 	if (! imm_initialized) {
 		arm_init_fpa_immediate();

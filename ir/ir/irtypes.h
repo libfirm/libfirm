@@ -26,6 +26,8 @@
 #ifndef FIRM_IR_IRDEFS_H
 #define FIRM_IR_IRDEFS_H
 
+#include <stdbool.h>
+
 #include "firm_types.h"
 #include "irdom_t.h"
 #include "irmode.h"
@@ -72,6 +74,51 @@ struct ir_op {
 	ir_op_ops ops;            /**< The operations of the this op. */
 };
 
+/** Helper values for ir_mode_sort. */
+enum ir_mode_sort_helper {
+	irmsh_is_num   = 0x10, /**< mode represents a number */
+	irmsh_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
+	irmsh_is_datab = 0x40, /**< mode represents data or is internal boolean */
+	irmsh_is_dataM = 0x80, /**< mode represents data or is memory */
+};
+
+/**
+ * These values represent the different mode classes of value representations.
+ * Beware: do not change the order of these values without checking
+ * the mode_is
+ */
+typedef enum ir_mode_sort {
+	irms_control_flow     = 0, /**< Marks all control flow modes. */
+	irms_block            = 1,
+	irms_tuple            = 2,
+	irms_any              = 3,
+	irms_bad              = 4,
+	irms_memory           = 5 | irmsh_is_dataM, /**< Marks the memory mode.  Not extensible. (irm_M) */
+
+	/** Internal boolean representation.
+	     Storing to memory impossible, convert first. (irm_b) */
+	irms_internal_boolean = 6 | irmsh_is_datab,
+
+	/** A mode to represent entities.
+	    Restricted int computations can be performed */
+	irms_reference        = 7 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM,
+	/** A mode to represent int numbers.
+	    Integer computations can be performed. */
+	irms_int_number       = 8 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
+	/** A mode to represent float numbers.
+	    Floating point computations can be performed. */
+	irms_float_number     = 9 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
+} ir_mode_sort;
+
+/**
+ * A descriptor for an IEEE754 float value.
+ */
+typedef struct float_descriptor_t {
+	unsigned char exponent_size;    /**< size of exponent in bits */
+	unsigned char mantissa_size;    /**< size of mantissa in bits */
+	bool          explicit_one;     /**< set if the leading one is explicit */
+} float_descriptor_t;
+
 /**
  * Contains relevant information about a mode.
  *
@@ -97,18 +144,18 @@ struct ir_mode {
 	ident             *name;      /**< Name ident of this mode */
 	ir_type           *type;      /**< corresponding primitive type */
 
-	/* ----------------------------------------------------------------------- */
+	/* ---------------------------------------------------------------------- */
 	/* On changing this struct you have to evaluate the mode_are_equal function!*/
-	ir_mode_sort      sort;          /**< coarse classification of this mode:
-                                          int, float, reference ...
-                                          (see irmode.h) */
-	ir_mode_arithmetic
-	                  arithmetic;    /**< different arithmetic operations possible with a mode */
-	unsigned          size;          /**< size of the mode in Bits. */
-	unsigned          sign:1;        /**< signedness of this mode */
-	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
+	ir_mode_sort       sort;          /**< coarse classification of this mode:
+                                           int, float, reference ...
+                                           (see irmode.h) */
+	ir_mode_arithmetic arithmetic;    /**< different arithmetic operations possible with a mode */
+	unsigned           size;          /**< size of the mode in Bits. */
+	unsigned           sign:1;        /**< signedness of this mode */
+	unsigned int       modulo_shift;  /**< number of bits a values of this mode will be shifted */
+	float_descriptor_t float_desc;
 
-	/* ----------------------------------------------------------------------- */
+	/* ---------------------------------------------------------------------- */
 	ir_tarval         *min;         /**< the minimum value that can be expressed */
 	ir_tarval         *max;         /**< the maximum value that can be expressed */
 	ir_tarval         *null;        /**< the value 0 */

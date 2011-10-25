@@ -1364,11 +1364,7 @@ static void Copy_emitter(const ir_node *node, const ir_node *op)
 	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
-	if (get_irn_mode(node) == mode_E) {
-		ia32_emitf(node, "\tmovsd %R, %R\n", in, out);
-	} else {
-		ia32_emitf(node, "\tmovl %R, %R\n", in, out);
-	}
+	ia32_emitf(node, "\tmovl %R, %R\n", in, out);
 }
 
 static void emit_be_Copy(const ir_node *node)
@@ -2345,13 +2341,9 @@ static void bemit_copy(const ir_node *copy)
 	if (arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_vfp])
 		return;
 
-	if (get_irn_mode(copy) == mode_E) {
-		panic("NIY");
-	} else {
-		assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
-		bemit8(0x8B);
-		bemit_modrr(in, out);
-	}
+	assert(arch_register_get_class(in) == &ia32_reg_classes[CLASS_ia32_gp]);
+	bemit8(0x8B);
+	bemit_modrr(in, out);
 }
 
 static void bemit_perm(const ir_node *node)

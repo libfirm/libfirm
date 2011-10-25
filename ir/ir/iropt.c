@@ -1249,7 +1249,7 @@ restart:
 			if (mode_is_int(n_mode) && get_mode_arithmetic(a_mode) == irma_ieee754) {
 				/* ConvI(ConvF(I)) -> I, iff float mantissa >= int mode */
 				unsigned int_mantissa   = get_mode_size_bits(n_mode) - (mode_is_signed(n_mode) ? 1 : 0);
-				unsigned float_mantissa = tarval_ieee754_get_mantissa_size(a_mode);
+				unsigned float_mantissa = get_mode_mantissa_size(a_mode);
 
 				if (float_mantissa >= int_mantissa) {
 					n = b;
@@ -3230,10 +3230,11 @@ static ir_node *transform_node_Mul(ir_node *n)
 			return n;
 		}
 	}
-	if (get_mode_arithmetic(mode) == irma_ieee754) {
+	if (get_mode_arithmetic(mode) == irma_ieee754
+	    || get_mode_arithmetic(mode) == irma_x86_extended_float) {
 		if (is_Const(a)) {
 			ir_tarval *tv = get_Const_tarval(a);
-			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)
+			if (tarval_get_exponent(tv) == 1 && tarval_zero_mantissa(tv)
 					&& !tarval_is_negative(tv)) {
 				/* 2.0 * b = b + b */
 				n = new_rd_Add(get_irn_dbg_info(n), get_nodes_block(n), b, b, mode);
@@ -3243,7 +3244,7 @@ static ir_node *transform_node_Mul(ir_node *n)
 		}
 		else if (is_Const(b)) {
 			ir_tarval *tv = get_Const_tarval(b);
-			if (tarval_ieee754_get_exponent(tv) == 1 && tarval_ieee754_zero_mantissa(tv)
+			if (tarval_get_exponent(tv) == 1 && tarval_zero_mantissa(tv)
 					&& !tarval_is_negative(tv)) {
 				/* a * 2.0 = a + a */
 				n = new_rd_Add(get_irn_dbg_info(n), get_nodes_block(n), a, a, mode);

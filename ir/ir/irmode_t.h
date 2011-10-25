@@ -143,6 +143,16 @@ static inline ir_type *get_type_for_mode_(const ir_mode *mode)
 	return mode->type;
 }
 
+static inline unsigned get_mode_mantissa_size_(const ir_mode *mode)
+{
+	return mode->float_desc.mantissa_size;
+}
+
+static inline unsigned get_mode_exponent_size_(const ir_mode *mode)
+{
+	return mode->float_desc.exponent_size;
+}
+
 /** mode module initialization, call once before use of any other function **/
 void init_mode(void);
 
@@ -169,5 +179,7 @@ void finish_mode(void);
 #define mode_is_datab(mode)            mode_is_datab_(mode)
 #define mode_is_dataM(mode)            mode_is_dataM_(mode)
 #define get_type_for_mode(mode)        get_type_for_mode_(mode)
+#define get_mode_mantissa_size(mode)   get_mode_mantissa_size_(mode)
+#define get_mode_exponent_size(mode)   get_mode_exponent_size_(mode)
 
 #endif

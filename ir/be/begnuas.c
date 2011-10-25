@@ -577,7 +577,7 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
  * @param tv     the tarval
  * @param bytes  the width of the tarvals value in bytes
  */
-static void emit_arith_tarval(ir_tarval *tv, int bytes)
+static void emit_arith_tarval(ir_tarval *tv, unsigned bytes)
 {
 	switch (bytes) {
 	case 1:
@@ -585,53 +585,22 @@ static void emit_arith_tarval(ir_tarval *tv, int bytes)
 		return;
 
 	case 2:
-		be_emit_irprintf("0x%02x%02x", get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+		be_emit_irprintf("0x%02x%02x",
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		return;
 
 	case 4:
 		be_emit_irprintf("0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		return;
 
 	case 8:
 		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
-			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		return;
-
-	case 12:
-		/* Beware: Mixed endian output!  One little endian number emitted as
-		 * three longs.  Each long initializer is written in big endian. */
-		be_emit_irprintf(
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
-			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8)
-		);
-		return;
-
-	case 16:
-		/* Beware: Mixed endian output!  One little endian number emitted as
-		 * three longs.  Each long initializer is written in big endian. */
-		be_emit_irprintf(
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
-			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
-			get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
-			get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12)
-		);
+			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6),
+			get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
+			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		return;
 	}
 
@@ -701,7 +670,7 @@ static ir_tarval *get_atomic_init_tv(ir_node *init)
  * @param env   the gas output environment
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
+static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
@@ -712,11 +681,11 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 	switch (get_irn_opcode(init)) {
 	case iro_Cast:
-		do_emit_atomic_init(env, get_Cast_op(init));
+		emit_init_expression(env, get_Cast_op(init));
 		return;
 
 	case iro_Conv:
-		do_emit_atomic_init(env, get_Conv_op(init));
+		emit_init_expression(env, get_Conv_op(init));
 		return;
 
 	case iro_Const:
@@ -760,27 +729,27 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '+' to work");
 		}
-		do_emit_atomic_init(env, get_Add_left(init));
+		emit_init_expression(env, get_Add_left(init));
 		be_emit_cstring(" + ");
-		do_emit_atomic_init(env, get_Add_right(init));
+		emit_init_expression(env, get_Add_right(init));
 		return;
 
 	case iro_Sub:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '-' to work");
 		}
-		do_emit_atomic_init(env, get_Sub_left(init));
+		emit_init_expression(env, get_Sub_left(init));
 		be_emit_cstring(" - ");
-		do_emit_atomic_init(env, get_Sub_right(init));
+		emit_init_expression(env, get_Sub_right(init));
 		return;
 
 	case iro_Mul:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '*' to work");
 		}
-		do_emit_atomic_init(env, get_Mul_left(init));
+		emit_init_expression(env, get_Mul_left(init));
 		be_emit_cstring(" * ");
-		do_emit_atomic_init(env, get_Mul_right(init));
+		emit_init_expression(env, get_Mul_right(init));
 		return;
 
 	case iro_Unknown:
@@ -800,48 +769,14 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 static void emit_size_type(size_t size)
 {
 	switch (size) {
-	case 1:
-		be_emit_cstring("\t.byte\t");
-		break;
-
-	case 2:
-		be_emit_cstring("\t.short\t");
-		break;
-
-	case 4:
-		be_emit_cstring("\t.long\t");
-		break;
-
-	case 8:
-		be_emit_cstring("\t.quad\t");
-		break;
-
-	case 10:
-	case 12:
-	case 16: /* Note: .octa does not work on mac */
-		/* handled in arith */
-		break;
+	case 1: be_emit_cstring("\t.byte\t");  break;
+	case 2: be_emit_cstring("\t.short\t"); break;
+	case 4: be_emit_cstring("\t.long\t");  break;
+	case 8: be_emit_cstring("\t.quad\t");  break;
 
 	default:
 		panic("Try to dump a type with %u bytes", (unsigned)size);
 	}
-}
-
-/**
- * Emit an atomic value.
- *
- * @param env   the gas output environment
- * @param init  a node representing the atomic value (on the const code irg)
- */
-static void emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
-{
-	ir_mode *mode = get_irn_mode(init);
-	int bytes     = get_mode_size_bytes(mode);
-
-	emit_size_type(bytes);
-	do_emit_atomic_init(env, init);
-	be_emit_char('\n');
-	be_emit_write_line();
 }
 
 /**
@@ -948,6 +883,7 @@ typedef enum normal_or_bitfield_kind {
 
 typedef struct {
 	normal_or_bitfield_kind kind;
+	ir_type                *type;
 	union {
 		ir_node                *value;
 		ir_tarval              *tarval;
@@ -1099,10 +1035,12 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 
 		assert(vals->kind != BITFIELD);
 		vals->kind     = TARVAL;
+		vals->type     = type;
 		vals->v.tarval = get_initializer_tarval_value(initializer);
 		assert(get_type_mode(type) == get_tarval_mode(vals->v.tarval));
 		for (i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
+			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
 		}
 		return;
@@ -1112,9 +1050,11 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 
 		assert(vals->kind != BITFIELD);
 		vals->kind    = NORMAL;
+		vals->type    = type;
 		vals->v.value = get_initializer_const_value(initializer);
 		for (i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
+			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
 		}
 		return;
@@ -1179,6 +1119,97 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 	panic("invalid ir_initializer kind found");
 }
 
+static void emit_tarval_data(ir_type *type, ir_tarval *tv)
+{
+	size_t size = get_type_size_bytes(type);
+	if (size == 12) {
+		/* this should be an x86 extended float */
+		assert(be_get_backend_param()->byte_order_big_endian == 0);
+
+		/* Beware: Mixed endian output!  One little endian number emitted as
+		 * three longs.  Each long initializer is written in big endian. */
+		be_emit_irprintf(
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x\n",
+			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
+			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
+			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
+			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8)
+		);
+		be_emit_write_line();
+	} else if (size == 16) {
+		if (be_get_backend_param()->byte_order_big_endian) {
+			be_emit_irprintf(
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n",
+				get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
+				get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12),
+				get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+				get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
+				get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
+				get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
+				get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+				get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0)
+			);
+		} else {
+			/* Beware: Mixed endian output! One little endian number emitted as
+			 * three longs.  Each long initializer is written in big endian. */
+			be_emit_irprintf(
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n",
+				get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+				get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
+				get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
+				get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
+				get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+				get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
+				get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
+				get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12)
+			);
+		}
+		be_emit_write_line();
+		return;
+	} else {
+		/* default case */
+		emit_size_type(size);
+		emit_arith_tarval(tv, size);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
+}
+
+/**
+ * Emit an atomic value.
+ *
+ * @param env   the gas output environment
+ * @param init  a node representing the atomic value (on the const code irg)
+ */
+static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
+{
+	size_t size = get_type_size_bytes(type);
+	if (size == 12 || size == 16) {
+		ir_tarval *tv;
+		if (!is_Const(init)) {
+			panic("12/16byte initializers only support Const nodes yet");
+		}
+		tv = get_Const_tarval(init);
+		emit_tarval_data(type, tv);
+		return;
+	}
+
+	emit_size_type(size);
+	emit_init_expression(env, init);
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
 static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 {
 	const ir_initializer_t *initializer = entity->initializer;
@@ -1214,37 +1245,31 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	/* now write values sorted */
 	for (k = 0; k < size; ) {
 		int                     space     = 0;
-		int                     elem_size = 1;
 		normal_or_bitfield_kind kind      = vals[k].kind;
+		int                     elem_size;
 		switch (kind) {
 		case NORMAL:
 			if (vals[k].v.value != NULL) {
-				emit_atomic_init(env, vals[k].v.value);
-				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
+				emit_node_data(env, vals[k].v.value, vals[k].type);
+				elem_size = get_type_size_bytes(vals[k].type);
 			} else {
 				elem_size = 0;
 			}
 			break;
-		case TARVAL: {
-			ir_tarval *tv   = vals[k].v.tarval;
-			size_t     size = get_mode_size_bytes(get_tarval_mode(tv));
-
-			assert(tv != NULL);
-
-			elem_size = size;
-			emit_size_type(size);
-			emit_arith_tarval(tv, size);
-			be_emit_char('\n');
-			be_emit_write_line();
+		case TARVAL:
+			emit_tarval_data(vals[k].type, vals[k].v.tarval);
+			elem_size = get_type_size_bytes(vals[k].type);
 			break;
-		}
 		case STRING:
 			elem_size = emit_string_initializer(vals[k].v.string);
 			break;
 		case BITFIELD:
 			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
 			be_emit_write_line();
+			elem_size = 1;
 			break;
+		default:
+			panic("internal compiler error (invalid normal_or_bitfield_kind");
 		}
 
 		k += elem_size;
@@ -1346,7 +1371,7 @@ static void emit_compound_graph_init(be_gas_decl_env_t *env,
 		int space = 0, skip = 0;
 		if (vals[k].kind == NORMAL) {
 			if (vals[k].v.value != NULL) {
-				emit_atomic_init(env, vals[k].v.value);
+				emit_node_data(env, vals[k].v.value, vals[k].type);
 				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 			} else {
 				space = 1;

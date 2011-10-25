@@ -29,6 +29,7 @@
 
 #include <stdlib.h>
 #include "firm_types.h"
+#include "irtypes.h"
 
 enum {
 	FC_DEC,
@@ -58,15 +59,6 @@ typedef enum {
 	FC_NAN,          /**< Not A Number */
 } value_class_t;
 
-/**
- * A descriptor for an IEEE float value.
- */
-typedef struct ieee_descriptor_t {
-	unsigned char exponent_size;    /**< size of exponent in bits */
-	unsigned char mantissa_size;    /**< size of mantissa in bits */
-	unsigned char explicit_one;     /**< set if the leading one is explicit */
-} ieee_descriptor_t;
-
 struct fp_value;
 typedef struct fp_value fp_value;
 
@@ -81,7 +73,7 @@ const void *fc_get_buffer(void);
 int fc_get_buffer_length(void);
 /*}@*/
 
-void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc, void *result);
+void *fc_val_from_str(const char *str, size_t len, const float_descriptor_t *desc, void *result);
 
 /** get the representation of a floating point value
  * This function tries to builds a representation having the same value as the
@@ -100,7 +92,7 @@ void *fc_val_from_str(const char *str, size_t len, const ieee_descriptor_t *desc
  * @return  The result pointer passed to the function. If this was NULL this returns
  *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_val_from_ieee754(long double l, const ieee_descriptor_t *desc,
+fp_value *fc_val_from_ieee754(long double l, const float_descriptor_t *desc,
                               fp_value *result);
 
 /** retrieve the float value of an internal value
@@ -130,7 +122,7 @@ long double fc_val_to_ieee754(const fp_value *val);
  * @return  The result pointer passed to the function. If this was NULL this returns
  *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_cast(const fp_value *val, const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_cast(const fp_value *val, const float_descriptor_t *desc, fp_value *result);
 
 /*@{*/
 /** build a special float value
@@ -145,12 +137,12 @@ fp_value *fc_cast(const fp_value *val, const ieee_descriptor_t *desc, fp_value *
  * @return  The result pointer passed to the function. If this was NULL this returns
  *          a pointer to the internal accumulator buffer
  */
-fp_value *fc_get_min(const ieee_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_max(const ieee_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_snan(const ieee_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_qnan(const ieee_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_plusinf(const ieee_descriptor_t *desc, fp_value *result);
-fp_value *fc_get_minusinf(const ieee_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_min(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_max(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_snan(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_qnan(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_plusinf(const float_descriptor_t *desc, fp_value *result);
+fp_value *fc_get_minusinf(const float_descriptor_t *desc, fp_value *result);
 /*@}*/
 
 int fc_is_zero(const fp_value *a);
@@ -200,7 +192,7 @@ int fc_get_exponent(const fp_value *value);
 /**
  * Return non-zero if a given value can be converted lossless into another precision.
  */
-int fc_can_lossless_conv_to(const fp_value *value, const ieee_descriptor_t *desc);
+int fc_can_lossless_conv_to(const fp_value *value, const float_descriptor_t *desc);
 
 /** Set new rounding mode
  * This function sets the rounding mode to one of the following, returning

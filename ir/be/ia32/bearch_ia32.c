@@ -99,7 +99,9 @@
 transformer_t be_transformer = TRANSFORMER_DEFAULT;
 #endif
 
-ir_mode *ia32_mode_fpcw = NULL;
+ir_mode *ia32_mode_fpcw;
+ir_mode *ia32_mode_E;
+ir_type *ia32_type_E;
 
 /** The current omit-fp state */
 static ir_type *omit_fp_between_type   = NULL;
@@ -1466,7 +1468,6 @@ static ia32_isa_t ia32_isa_template = {
 		5,                       /* costs for a reload instruction */
 		false,                   /* no custom abi handling */
 	},
-	NULL,                    /* types */
 	NULL,                    /* tv_ents */
 	NULL,                    /* abstract machine */
 	IA32_FPU_ARCH_X87,       /* FPU architecture */
@@ -1531,14 +1532,13 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	*isa = ia32_isa_template;
 
 	if (ia32_mode_fpcw == NULL) {
-		ia32_mode_fpcw = new_ir_mode("Fpcw", irms_int_number, 16, 0, irma_none, 0);
+		ia32_mode_fpcw = new_int_mode("Fpcw", irma_twos_complement, 16, 0, 0);
 	}
 
 	ia32_register_init();
 	ia32_create_opcodes(&ia32_irn_ops);
 
 	be_emit_init(file_handle);
-	isa->types          = pmap_create();
 	isa->tv_ent         = pmap_create();
 	isa->cpu            = ia32_init_machine_description();
 
@@ -1561,7 +1561,6 @@ static void ia32_done(void *self)
 	be_gas_emit_decls(isa->base.main_env);
 
 	pmap_destroy(isa->tv_ent);
-	pmap_destroy(isa->types);
 
 	be_emit_exit();
 
@@ -2125,13 +2124,21 @@ static const backend_params *ia32_get_libfirm_params(void)
 		ia32_create_trampoline_fkt,
 		4      /* alignment of stack parameter */
 	};
+
+	if (ia32_mode_E == NULL) {
+		/* note mantissa is 64bit but with explicitely encoded 1 so the really
+		 * usable part as counted by firm is only 63 bits */
+		ia32_mode_E = new_float_mode("E", irma_x86_extended_float, 15, 63);
+		ia32_type_E = new_type_primitive(ia32_mode_E);
+		set_type_size_bytes(ia32_type_E, 12);
+		set_type_alignment_bytes(ia32_type_E, 16);
+	}
+
 	ir_mode *mode_long_long
-		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
-		              64);
+		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
 	ir_type *type_long_long = new_type_primitive(mode_long_long);
 	ir_mode *mode_unsigned_long_long
-		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
-		              irma_twos_complement, 64);
+		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
 
@@ -2148,13 +2155,8 @@ static const backend_params *ia32_get_libfirm_params(void)
 		p.mode_float_arithmetic = NULL;
 		p.type_long_double = NULL;
 	} else {
-		p.mode_float_arithmetic = mode_E;
-		ir_mode *mode = new_ir_mode("long double", irms_float_number, 80, 1,
-		                            irma_ieee754, 0);
-		ir_type *type = new_type_primitive(mode);
-		set_type_size_bytes(type, 12);
-		set_type_alignment_bytes(type, 4);
-		p.type_long_double = type;
+		p.mode_float_arithmetic = ia32_mode_E;
+		p.type_long_double      = ia32_type_E;
 	}
 	return &p;
 }
