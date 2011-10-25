@@ -352,7 +352,7 @@ static void sparc_handle_intrinsics(void)
 /**
  * Initializes the backend ISA
  */
-static arch_env_t *sparc_init(FILE *outfile)
+static arch_env_t *sparc_init(const be_main_env_t *env)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
 	*isa = sparc_isa_template;
@@ -362,12 +362,13 @@ static arch_env_t *sparc_init(FILE *outfile)
 	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
 	be_gas_elf_variant        = ELF_VARIANT_SPARC;
 
-	be_emit_init(outfile);
-
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_handle_intrinsics();
 	sparc_cconv_init();
+
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
@@ -380,7 +381,7 @@ static void sparc_done(void *self)
 	sparc_isa_t *isa = (sparc_isa_t*)self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->base.main_env);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	pmap_destroy(isa->constants);
 	be_emit_exit();

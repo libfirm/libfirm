@@ -56,9 +56,9 @@ static reg_out_info_t dummy_info = {
 };
 
 /* Initialize the architecture environment struct. */
-arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, FILE *file_handle, be_main_env_t *main_env)
+arch_env_t *arch_env_init(const arch_isa_if_t *isa_if, be_main_env_t *main_env)
 {
-	arch_env_t *arch_env = isa_if->init(file_handle);
+	arch_env_t *arch_env = isa_if->init(main_env);
 	arch_env->main_env   = main_env;
 	return arch_env;
 }

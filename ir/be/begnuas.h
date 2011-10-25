@@ -73,12 +73,6 @@ extern elf_variant_t        be_gas_elf_variant;
 extern char                 be_gas_elf_type_char;
 
 /**
- * Generate all entities.
- * @param main_env          the main backend environment
- */
-void be_gas_emit_decls(const be_main_env_t *main_env);
-
-/**
  * Switch the current output section to the given out.
  *
  * @param section  the new output section
@@ -106,6 +100,20 @@ void be_gas_emit_entity(const ir_entity *entity);
  * Emit (a private) symbol name for a firm block
  */
 void be_gas_emit_block_name(const ir_node *block);
+
+/**
+ * Starts emitting a compilation unit. This emits:
+ *  - global assembler snippets
+ *  - debug info
+ */
+void be_gas_begin_compilation_unit(const be_main_env_t *env);
+
+/**
+ * ends a compilation unit. This emits:
+ *  - global declarations/variables
+ *  - debug info
+ */
+void be_gas_end_compilation_unit(const be_main_env_t *env);
 
 /**
  * Return the label prefix for labeled instructions.

@@ -1523,7 +1523,7 @@ static void init_asm_constraints(void)
 /**
  * Initializes the backend ISA.
  */
-static arch_env_t *ia32_init(FILE *file_handle)
+static arch_env_t *ia32_init(const be_main_env_t *env)
 {
 	ia32_isa_t *isa = XMALLOC(ia32_isa_t);
 
@@ -1538,17 +1538,17 @@ static arch_env_t *ia32_init(FILE *file_handle)
 	ia32_register_init();
 	ia32_create_opcodes(&ia32_irn_ops);
 
-	be_emit_init(file_handle);
 	isa->tv_ent         = pmap_create();
 	isa->cpu            = ia32_init_machine_description();
 
 	/* enter the ISA object into the intrinsic environment */
 	intrinsic_env.isa = isa;
 
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
+
 	return &isa->base;
 }
-
-
 
 /**
  * Closes the output file and frees the ISA structure.
@@ -1558,12 +1558,11 @@ static void ia32_done(void *self)
 	ia32_isa_t *isa = (ia32_isa_t*)self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->base.main_env);
-
-	pmap_destroy(isa->tv_ent);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	be_emit_exit();
 
+	pmap_destroy(isa->tv_ent);
 	free(self);
 }
 

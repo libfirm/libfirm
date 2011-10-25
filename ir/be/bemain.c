@@ -345,21 +345,24 @@ const backend_params *be_get_backend_param(void)
  * @param env          an empty environment
  * @param file_handle  the file handle where the output will be written to
  */
-static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle)
+static be_main_env_t *be_init_env(be_main_env_t *env, FILE *file_handle,
+                                  const char *compilation_unit_name)
 {
 	memset(env, 0, sizeof(*env));
 	env->options              = &be_options;
+	env->file_handle          = file_handle;
 	env->ent_trampoline_map   = pmap_create();
 	env->pic_trampolines_type = new_type_class(NEW_ID("$PIC_TRAMPOLINE_TYPE"));
 	env->ent_pic_symbol_map   = pmap_create();
 	env->pic_symbols_type     = new_type_struct(NEW_ID("$PIC_SYMBOLS_TYPE"));
+	env->cup_name             = compilation_unit_name;
 
 	remove_irp_type(env->pic_trampolines_type);
 	remove_irp_type(env->pic_symbols_type);
 	set_class_final(env->pic_trampolines_type, 1);
 
 	memset(asm_constraint_flags, 0, sizeof(asm_constraint_flags));
-	env->arch_env = arch_env_init(isa_if, file_handle, env);
+	env->arch_env = arch_env_init(isa_if, env);
 
 	return env;
 }
@@ -479,17 +482,6 @@ void be_lower_for_target(void)
 	set_irp_phase_state(phase_low);
 }
 
-static void emit_global_asms(void)
-{
-	size_t n = get_irp_n_asms();
-	size_t i;
-	for (i = 0; i < n; ++i) {
-		be_emit_cstring("#APP\n");
-		be_emit_ident(get_irp_asm(i));
-		be_emit_cstring("\n#NO_APP\n");
-	}
-}
-
 /**
  * The Firm backend main loop.
  * Do architecture specific lowering for all graphs
@@ -517,14 +509,7 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		}
 	}
 
-	be_init_env(&env, file_handle);
-	env.cup_name = cup_name;
-
-	be_dbg_open();
-	be_dbg_unit_begin(cup_name);
-	be_dbg_types();
-
-	emit_global_asms();
+	be_init_env(&env, file_handle, cup_name);
 
 	arch_env = env.arch_env;
 
@@ -795,9 +780,6 @@ static void be_main_loop(FILE *file_handle, const char *cup_name)
 		be_free_birg(irg);
 		stat_ev_ctx_pop("bemain_irg");
 	}
-
-	be_dbg_unit_end();
-	be_dbg_close();
 
 	arch_env_done(arch_env);
 

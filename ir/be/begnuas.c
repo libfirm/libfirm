@@ -157,11 +157,24 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	static const char *const basename[] = {
-		"text", "data", "rodata", "bss", "ctors", "dtors"
-	};
-	static const char *const type[] = {
-		"progbits", "progbits", "progbits", "nobits", "progbits", "progbits"
+	const char *f;
+	static const struct {
+		const char *name;
+		const char *type;
+		const char *flags;
+	} sectioninfos[] = {
+		{ "text",         "progbits", "ax" },
+		{ "data",         "progbits", "aw" },
+		{ "rodata",       "progbits", "a"  },
+		{ "bss",          "nobits",   "aw" },
+		{ "ctors",        "progbits", "aw" },
+		{ "dtors",        "progbits", "aw" },
+		{ NULL,           NULL,       NULL }, /* cstring */
+		{ NULL,           NULL,       NULL }, /* pic trampolines */
+		{ NULL,           NULL,       NULL }, /* pic symbols */
+		{ "debug_info",   "progbits", ""   },
+		{ "debug_abbrev", "progbits", ""   },
+		{ "debug_line",   "progbits", ""   },
 	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
@@ -200,12 +213,12 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		}
 	}
 
-	assert(base < (be_gas_section_t) ARRAY_SIZE(basename));
+	assert(base < (be_gas_section_t) ARRAY_SIZE(sectioninfos));
 	be_emit_cstring("\t.section\t.");
 	/* section name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	be_emit_string(basename[base]);
+	be_emit_string(sectioninfos[base].name);
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
 		be_emit_char('.');
 		be_gas_emit_entity(entity);
@@ -213,21 +226,19 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 
 	/* section flags */
 	be_emit_cstring(",\"");
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF)
-		be_emit_char('a');
-	if (base == GAS_SECTION_TEXT)
-		be_emit_char('x');
-	if (base != GAS_SECTION_RODATA && base != GAS_SECTION_TEXT)
-		be_emit_char('w');
+	for (f = sectioninfos[base].flags; *f != '\0'; ++f) {
+		be_emit_char(*f);
+	}
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('T');
 	if (flags & GAS_SECTION_FLAG_COMDAT)
 		be_emit_char('G');
+
 	/* section type */
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF) {
 		be_emit_cstring("\",");
 		be_emit_char(be_gas_elf_type_char);
-		be_emit_string(type[base]);
+		be_emit_string(sectioninfos[base].type);
 	}
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
@@ -1654,7 +1665,7 @@ static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
 }
 
 /* Generate all entities. */
-void be_gas_emit_decls(const be_main_env_t *main_env)
+static void emit_global_decls(const be_main_env_t *main_env)
 {
 	be_gas_decl_env_t env;
 	memset(&env, 0, sizeof(env));
@@ -1743,4 +1754,40 @@ void emit_jump_table(const ir_node *node, long default_pn, ir_entity *entity,
 	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
 	xfree(table);
+}
+
+static void emit_global_asms(void)
+{
+	size_t n = get_irp_n_asms();
+	size_t i;
+
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	for (i = 0; i < n; ++i) {
+		ident *asmtext = get_irp_asm(i);
+
+		be_emit_cstring("#APP\n");
+		be_emit_write_line();
+		be_emit_ident(asmtext);
+		be_emit_char('\n');
+		be_emit_write_line();
+		be_emit_cstring("#NO_APP\n");
+		be_emit_write_line();
+	}
+}
+
+void be_gas_begin_compilation_unit(const be_main_env_t *env)
+{
+	be_dbg_open();
+	be_dbg_unit_begin(env->cup_name);
+	be_dbg_types();
+
+	emit_global_asms();
+}
+
+void be_gas_end_compilation_unit(const be_main_env_t *env)
+{
+	emit_global_decls(env);
+
+	be_dbg_unit_end();
+	be_dbg_close();
 }
