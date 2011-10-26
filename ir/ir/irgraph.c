@@ -41,6 +41,7 @@
 #include "irouts.h"
 #include "irhooks.h"
 #include "irtools.h"
+#include "util.h"
 #include "irgwalk.h"
 #include "irbackedge_t.h"
 #include "iredges_t.h"

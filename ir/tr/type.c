@@ -56,7 +56,7 @@
 #include "tpop_t.h"
 #include "tv_t.h"
 #include "irhooks.h"
-#include "irtools.h"
+#include "util.h"
 #include "entity_t.h"
 #include "error.h"
 #include "dbginfo.h"
