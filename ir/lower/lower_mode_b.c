@@ -45,6 +45,7 @@
 #include "irpass_t.h"
 #include "util.h"
 #include "array.h"
+#include "irgopt.h"
 
 typedef struct needs_lowering_t {
 	ir_node *node;
@@ -332,6 +333,8 @@ void ir_lower_mode_b(ir_graph *const irg, ir_mode *const nlowered_mode)
 
 	/* edges are used by part_block_edges in the ir_create_cond_set variant. */
 	edges_assure(irg);
+	/* part_block_edges can go wrong with tuples present */
+	remove_tuples(irg);
 
 	set_irg_state(irg, IR_GRAPH_STATE_MODEB_LOWERED);
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
