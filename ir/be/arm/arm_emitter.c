@@ -1020,8 +1020,6 @@ void arm_gen_routine(ir_graph *irg)
 
 	arm_register_emitters();
 
-	be_dbg_method_begin(entity);
-
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);
 
@@ -1083,7 +1081,6 @@ void arm_gen_routine(ir_graph *irg)
 	del_set(sym_or_tv);
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
 }
 
 void arm_init_emitter(void)

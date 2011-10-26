@@ -529,7 +529,11 @@ static void emit_visibility(const ir_entity *entity)
 
 void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 {
-	be_gas_section_t section = determine_section(NULL, entity);
+	be_gas_section_t section;
+
+	be_dbg_method_begin(entity);
+
+	section = determine_section(NULL, entity);
 	emit_section(section, entity);
 
 	/* write the begin line (makes the life easier for scripts parsing the
@@ -595,6 +599,11 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 
 	be_emit_cstring("# -- End  ");
 	be_gas_emit_entity(entity);
+	be_emit_char('\n');
+	be_emit_write_line();
+
+	be_dbg_method_end();
+
 	be_emit_char('\n');
 	be_emit_write_line();
 }

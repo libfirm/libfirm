@@ -1331,9 +1331,8 @@ static void sparc_emit_block(ir_node *block, ir_node *prev)
  */
 static void sparc_emit_func_prolog(ir_graph *irg)
 {
-	ir_entity *ent = get_irg_entity(irg);
-	be_gas_emit_function_prolog(ent, 4);
-	be_emit_write_line();
+	ir_entity *entity = get_irg_entity(irg);
+	be_gas_emit_function_prolog(entity, 4);
 }
 
 /**
@@ -1341,14 +1340,8 @@ static void sparc_emit_func_prolog(ir_graph *irg)
  */
 static void sparc_emit_func_epilog(ir_graph *irg)
 {
-	ir_entity *ent = get_irg_entity(irg);
-	const char *irg_name = get_entity_ld_name(ent);
-	be_emit_write_line();
-	be_emit_irprintf("\t.size  %s, .-%s\n", irg_name, irg_name);
-	be_emit_cstring("# -- End ");
-	be_emit_string(irg_name);
-	be_emit_cstring("\n");
-	be_emit_write_line();
+	ir_entity *entity = get_irg_entity(irg);
+	be_gas_emit_function_epilog(entity);
 }
 
 static void sparc_gen_labels(ir_node *block, void *env)
@@ -1365,16 +1358,14 @@ static void sparc_gen_labels(ir_node *block, void *env)
 
 void sparc_emit_routine(ir_graph *irg)
 {
-	ir_entity  *entity = get_irg_entity(irg);
-	ir_node   **block_schedule;
-	size_t      i;
-	size_t      n;
+	ir_node **block_schedule;
+	size_t    i;
+	size_t    n;
 
 	heights = heights_new(irg);
 
 	/* register all emitter functions */
 	sparc_register_emitters();
-	be_dbg_method_begin(entity);
 
 	/* create the block schedule. For now, we don't need it earlier. */
 	block_schedule = be_create_block_schedule(irg);

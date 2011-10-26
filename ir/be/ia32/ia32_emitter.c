@@ -1886,7 +1886,6 @@ void ia32_gen_routine(ir_graph *irg)
 
 	get_unique_label(pic_base_label, sizeof(pic_base_label), "PIC_BASE");
 
-	be_dbg_method_begin(entity);
 	be_gas_emit_function_prolog(entity, ia32_cg_config.function_alignment);
 
 	/* we use links to point to target blocks */
@@ -1909,9 +1908,6 @@ void ia32_gen_routine(ir_graph *irg)
 	}
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
-	be_emit_char('\n');
-	be_emit_write_line();
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 
@@ -3845,9 +3841,6 @@ void ia32_gen_binary_routine(ir_graph *irg)
 	}
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
-	be_emit_char('\n');
-	be_emit_write_line();
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 }
