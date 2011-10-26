@@ -112,10 +112,17 @@ static ir_node *get_block_n(const ir_node *block, int pos)
 	return NULL;
 }
 
+static ir_node *get_irn_safe_n(const ir_node *node, int n)
+{
+	if (n == -1 && is_Block(node))
+		return NULL;
+	return get_irn_n(node, n);
+}
+
 static const ir_edge_kind_info_t edge_kind_info[EDGE_KIND_LAST] = {
-	{ "normal"     , set_irn_n,   -1, get_irn_arity,  get_irn_n   },
-	{ "block succs", NULL,         0, get_irn_arity,  get_block_n },
-	{ "dependency",  set_irn_dep,  0, get_irn_deps,   get_irn_dep }
+	{ "normal"     , set_irn_n,   -1, get_irn_arity,  get_irn_safe_n },
+	{ "block succs", NULL,         0, get_irn_arity,  get_block_n    },
+	{ "dependency",  set_irn_dep,  0, get_irn_deps,   get_irn_dep    }
 };
 
 #define foreach_tgt(irn, i, n, kind) for (i = edge_kind_info[kind].first_idx, n = edge_kind_info[kind].get_arity(irn); i < n; ++i)

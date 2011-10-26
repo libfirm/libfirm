@@ -148,11 +148,6 @@ static inline ir_node *_get_irn_n(const ir_node *node, int n)
 	assert(-1 <= n && n < _get_irn_arity(node));
 
 	nn = node->in[n + 1];
-	if (nn == NULL) {
-		/* only block and Anchor inputs are allowed to be NULL */
-		assert((is_Anchor(node) || n == -1) && "NULL input of a node");
-		return NULL;
-	}
 	if (nn->op != op_Id) return nn;
 
 	return (node->in[n + 1] = skip_Id(nn));
