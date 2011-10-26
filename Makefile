@@ -37,6 +37,14 @@ CFLAGS    += -Wall -W -Wextra -Wstrict-prototypes -Wmissing-prototypes -Wwrite-s
 LINKFLAGS += $(LINKFLAGS_$(variant))
 VPATH = $(srcdir)
 
+REVISION ?= $(shell git describe --abbrev=40 --always --dirty --match '')
+
+# Update revision.h if necessary
+UNUSED := $(shell \
+	REV="\#define libfirm_VERSION_REVISION \"$(REVISION)\""; \
+	echo "$$REV" | cmp -s - firm_revision.h 2> /dev/null || echo "$$REV" > firm_revision.h \
+)
+
 .PHONY: all
 all: firm
 
