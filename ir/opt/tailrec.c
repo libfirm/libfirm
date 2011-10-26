@@ -46,6 +46,7 @@
 #include "irhooks.h"
 #include "ircons_t.h"
 #include "irpass.h"
+#include "opt_manage.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
 
@@ -561,7 +562,7 @@ static tail_rec_variants find_variant(ir_node *irn, ir_node *call)
 /*
  * convert simple tail-calls into loops
  */
-int opt_tail_rec_irg(ir_graph *irg)
+static ir_graph_state_t do_tailrec(ir_graph *irg)
 {
 	tr_env            env;
 	ir_node           *end_block;
@@ -572,8 +573,6 @@ int opt_tail_rec_irg(ir_graph *irg)
 	ir_graph          *rem;
 
 	FIRM_DBG_REGISTER(dbg, "firm.opt.tailrec");
-
-	assure_irg_outs(irg);
 
 	if (! check_lifetime_of_locals(irg))
 		return 0;
@@ -697,7 +696,18 @@ int opt_tail_rec_irg(ir_graph *irg)
 	}
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
 	current_ir_graph = rem;
-	return n_tail_calls;
+	return 0;
+}
+
+static optdesc_t opt_tailrec = {
+	"tail-recursion",
+	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	do_tailrec,
+};
+
+int opt_tail_rec_irg(ir_graph *irg) {
+	perform_irg_optimization(irg, &opt_tailrec);
+	return 1; /* conservatively report changes */
 }
 
 ir_graph_pass_t *opt_tail_rec_irg_pass(const char *name)
