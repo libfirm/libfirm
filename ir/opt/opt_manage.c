@@ -25,9 +25,13 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	ir_graph_state_t required = opt->requirements;
 	const bool dump = get_irp_optimization_dumps();
 
+	/* It does not make sense to require both: */
+	assert (!((required & IR_GRAPH_STATE_ONE_RETURN) && (required & IR_GRAPH_STATE_MANY_RETURNS)));
+
 	/* assure that all requirements for the optimization are fulfilled */
 #define PREPARE(st,func) if (st & (required ^ irg->state)) {func(irg); set_irg_state(irg,st);}
 	PREPARE(IR_GRAPH_STATE_ONE_RETURN,               normalize_one_return)
+	PREPARE(IR_GRAPH_STATE_MANY_RETURNS,             normalize_n_returns)
 	PREPARE(IR_GRAPH_STATE_NO_CRITICAL_EDGES,        remove_critical_cf_edges)
 	PREPARE(IR_GRAPH_STATE_NO_UNREACHABLE_CODE,      remove_unreachable_code)
 	PREPARE(IR_GRAPH_STATE_NO_BADS,                  remove_bads)
@@ -57,6 +61,7 @@ void perform_irg_optimization(ir_graph *irg, optdesc_t *opt)
 	INVALIDATE(IR_GRAPH_STATE_NO_UNREACHABLE_CODE,      nop)
 	INVALIDATE(IR_GRAPH_STATE_NO_BADS,                  nop)
 	INVALIDATE(IR_GRAPH_STATE_ONE_RETURN,               nop)
+	INVALIDATE(IR_GRAPH_STATE_MANY_RETURNS,             nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_DOMINANCE,     nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE, nop)
 	INVALIDATE(IR_GRAPH_STATE_CONSISTENT_OUTS,          nop)

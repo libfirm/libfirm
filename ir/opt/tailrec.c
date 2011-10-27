@@ -594,12 +594,6 @@ static ir_graph_state_t do_tailrec(ir_graph *irg)
 			env.variants[i] = TR_DIRECT;
 	}
 
-	/*
-	 * This tail recursion optimization works best
-	 * if the Returns are normalized.
-	 */
-	normalize_n_returns(irg);
-
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_LINK);
 
 	end_block = get_irg_end_block(irg);
@@ -661,7 +655,7 @@ static ir_graph_state_t do_tailrec(ir_graph *irg)
 				break;
 			}
 			if (var == TR_DIRECT)
-				var = env.variants[j];
+			var = env.variants[j];
 			else if (env.variants[j] == TR_DIRECT)
 				env.variants[j] = var;
 			if (env.variants[j] != var) {
@@ -699,9 +693,14 @@ static ir_graph_state_t do_tailrec(ir_graph *irg)
 	return 0;
 }
 
+
+/*
+ * This tail recursion optimization works best
+ * if the Returns are normalized.
+ */
 static optdesc_t opt_tailrec = {
 	"tail-recursion",
-	IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS,
+	IR_GRAPH_STATE_MANY_RETURNS | IR_GRAPH_STATE_NO_BADS | IR_GRAPH_STATE_CONSISTENT_OUTS,
 	do_tailrec,
 };
 
