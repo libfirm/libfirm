@@ -384,14 +384,14 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 					long                    const v   = get_tarval_long(tv);
 
 					switch (v) {
-						case 0x00: fprintf(F, "<NUL>");       break;
-						case 0x09: fprintf(F, "<HT>");        break;
-						case 0x0A: fprintf(F, "<NL>");        break;
-						case 0x0C: fprintf(F, "<FF>");        break;
-						case 0x0D: fprintf(F, "<CR>");        break;
-						case 0x1B: fprintf(F, "<ESC>");       break;
-						case 0x22: fprintf(F, "<QUOTE>");     break;
-						case 0x5C: fprintf(F, "<BACKSLASH>"); break;
+						case 0x00: fprintf(F, "\\\\000");  break;
+						case 0x09: fprintf(F, "\\\\t");    break;
+						case 0x0A: fprintf(F, "\\\\n");    break;
+						case 0x0C: fprintf(F, "\\\\f");    break;
+						case 0x0D: fprintf(F, "\\\\r");    break;
+						case 0x1B: fprintf(F, "\\\\033");  break;
+						case 0x22: fprintf(F, "\\\\\\\""); break;
+						case 0x5C: fprintf(F, "\\\\\\\\"); break;
 						default:   fprintf(F, "%c", (unsigned char)v); break;
 					}
 				}
