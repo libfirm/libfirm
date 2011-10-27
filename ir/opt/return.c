@@ -262,6 +262,8 @@ void normalize_n_returns(ir_graph *irg)
 	for (n_finals = n_rets = i = 0; i < n; ++i) {
 		ir_node *ret = get_Block_cfgpred(endbl, i);
 
+		if (is_Bad(ret)) continue;
+
 		if (is_Return(ret) && can_move_ret(ret)) {
 			/*
 			 * Ok, all conditions met, we can move this Return, put it
