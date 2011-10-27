@@ -338,7 +338,7 @@ static bool is_init_string(ir_initializer_t const* const init, ir_type *const ty
 			return false;
 
 		v = get_tarval_long(tv);
-		if (v != 0 && v != 0x09 && v != 0x0A && v != 0x0C && v != 0x0D && v != 0x1B && (v < 0x20 || 0x80 <= v) && (v < 0xA0 || 0x100 <= v))
+		if (v != 0 && (v < 0x07 || 0x0D < v) && v != 0x1B && (v < 0x20 || 0x80 <= v) && (v < 0xA0 || 0x100 <= v))
 			return false;
 	}
 
@@ -385,8 +385,11 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 
 					switch (v) {
 						case 0x00: fprintf(F, "\\\\000");  break;
+						case 0x07: fprintf(F, "\\\\a");    break;
+						case 0x08: fprintf(F, "\\\\b");    break;
 						case 0x09: fprintf(F, "\\\\t");    break;
 						case 0x0A: fprintf(F, "\\\\n");    break;
+						case 0x0B: fprintf(F, "\\\\v");    break;
 						case 0x0C: fprintf(F, "\\\\f");    break;
 						case 0x0D: fprintf(F, "\\\\r");    break;
 						case 0x1B: fprintf(F, "\\\\033");  break;
