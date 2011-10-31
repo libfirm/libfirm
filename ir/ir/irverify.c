@@ -1751,7 +1751,7 @@ int irn_verify_irg(const ir_node *n, ir_graph *irg)
 
 	op = get_irn_op(n);
 
-	if (_get_op_pinned(op) >= op_pin_state_exc_pinned) {
+	if (get_op_pinned(op) >= op_pin_state_exc_pinned) {
 		op_pin_state state = get_irn_pinned(n);
 		ASSERT_AND_RET_DBG(
 			state == op_pin_state_floats ||

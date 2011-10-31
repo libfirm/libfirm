@@ -180,7 +180,7 @@ void set_irp_main_irg(ir_graph *main_irg)
 
 ir_type *(get_segment_type)(ir_segment_t segment)
 {
-	return _get_segment_type(segment);
+	return get_segment_type_(segment);
 }
 
 void set_segment_type(ir_segment_t segment, ir_type *new_type)
@@ -193,12 +193,12 @@ void set_segment_type(ir_segment_t segment, ir_type *new_type)
 
 ir_type *(get_glob_type)(void)
 {
-	return _get_glob_type();
+	return get_glob_type_();
 }
 
 ir_type *(get_tls_type)(void)
 {
-	return _get_tls_type();
+	return get_tls_type_();
 }
 
 /* Adds irg to the list of ir graphs in irp. */
@@ -236,12 +236,12 @@ void remove_irp_irg(ir_graph *irg)
 
 size_t (get_irp_n_irgs)(void)
 {
-	return _get_irp_n_irgs();
+	return get_irp_n_irgs_();
 }
 
 ir_graph *(get_irp_irg)(size_t pos)
 {
-	return _get_irp_irg(pos);
+	return get_irp_irg_(pos);
 }
 
 size_t get_irp_last_idx(void)
@@ -284,12 +284,12 @@ void remove_irp_type(ir_type *typ)
 
 size_t (get_irp_n_types) (void)
 {
-	return _get_irp_n_types();
+	return get_irp_n_types_();
 }
 
 ir_type *(get_irp_type) (size_t pos)
 {
-	return _get_irp_type(pos);
+	return get_irp_type_(pos);
 }
 
 void set_irp_type(size_t pos, ir_type *typ)
@@ -302,13 +302,13 @@ void set_irp_type(size_t pos, ir_type *typ)
 /* Returns the number of all modes in the irp. */
 size_t (get_irp_n_modes)(void)
 {
-	return _get_irp_n_modes();
+	return get_irp_n_modes_();
 }
 
 /* Returns the mode at position pos in the irp. */
 ir_mode *(get_irp_mode)(size_t pos)
 {
-	return _get_irp_mode(pos);
+	return get_irp_mode_(pos);
 }
 
 /* Adds mode to the list of modes in irp. */
@@ -347,13 +347,13 @@ void remove_irp_opcode(ir_op *opcode)
 /* Returns the number of all opcodes in the irp. */
 size_t (get_irp_n_opcodes)(void)
 {
-	return _get_irp_n_opcodes();
+	return get_irp_n_opcodes_();
 }
 
 /* Returns the opcode at position pos in the irp. */
 ir_op *(get_irp_opcode)(size_t pos)
 {
-	return _get_irp_opcode(pos);
+	return get_irp_opcode_(pos);
 }
 
 /* Sets the generic function pointer of all opcodes to NULL */
@@ -388,7 +388,7 @@ const char  *get_irp_name(void)
 
 ir_graph *(get_const_code_irg)(void)
 {
-	return _get_const_code_irg();
+	return get_const_code_irg_();
 }
 
 irg_phase_state get_irp_phase_state(void)
@@ -465,13 +465,13 @@ void set_irp_callee_info_state(irg_callee_info_state s)
 /* Returns a new, unique exception region number. */
 ir_exc_region_t (get_irp_next_region_nr)(void)
 {
-	return _get_irp_next_region_nr();
+	return get_irp_next_region_nr_();
 }
 
 /* Returns a new, unique label number. */
 ir_label_t (get_irp_next_label_nr)(void)
 {
-	return _get_irp_next_label_nr();
+	return get_irp_next_label_nr_();
 }
 
 /* Add a new global asm include */

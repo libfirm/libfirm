@@ -205,12 +205,12 @@ const char *get_op_name (const ir_op *op)
 
 unsigned (get_op_code)(const ir_op *op)
 {
-  return _get_op_code(op);
+  return get_op_code_(op);
 }
 
 ident *(get_op_ident)(const ir_op *op)
 {
-  return _get_op_ident(op);
+  return get_op_ident_(op);
 }
 
 const char *get_op_pin_state_name(op_pin_state s)
@@ -228,7 +228,7 @@ const char *get_op_pin_state_name(op_pin_state s)
 
 op_pin_state (get_op_pinned)(const ir_op *op)
 {
-	return _get_op_pinned(op);
+	return get_op_pinned_(op);
 }
 
 /* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
@@ -256,19 +256,19 @@ unsigned get_next_ir_opcodes(unsigned num)
 /* Returns the generic function pointer from an ir operation. */
 op_func (get_generic_function_ptr)(const ir_op *op)
 {
-	return _get_generic_function_ptr(op);
+	return get_generic_function_ptr_(op);
 }
 
 /* Store a generic function pointer into an ir operation. */
 void (set_generic_function_ptr)(ir_op *op, op_func func)
 {
-	_set_generic_function_ptr(op, func);
+	set_generic_function_ptr_(op, func);
 }
 
 /* Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *(get_op_ops)(const ir_op *op)
 {
-	return _get_op_ops(op);
+	return get_op_ops_(op);
 }
 
 irop_flags get_op_flags(const ir_op *op)

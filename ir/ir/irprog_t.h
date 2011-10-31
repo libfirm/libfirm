@@ -40,41 +40,41 @@
 void add_irp_mode(ir_mode *mode);
 
 /* inline functions */
-static inline ir_type *_get_segment_type(ir_segment_t segment)
+static inline ir_type *get_segment_type_(ir_segment_t segment)
 {
 	assert(segment <= IR_SEGMENT_LAST);
 	return irp->segment_types[segment];
 }
 
-static inline ir_type *_get_glob_type(void)
+static inline ir_type *get_glob_type_(void)
 {
-	return _get_segment_type(IR_SEGMENT_GLOBAL);
+	return get_segment_type_(IR_SEGMENT_GLOBAL);
 }
 
-static inline ir_type *_get_tls_type(void)
+static inline ir_type *get_tls_type_(void)
 {
-	return _get_segment_type(IR_SEGMENT_THREAD_LOCAL);
+	return get_segment_type_(IR_SEGMENT_THREAD_LOCAL);
 }
 
-static inline size_t _get_irp_n_irgs(void)
+static inline size_t get_irp_n_irgs_(void)
 {
 	assert(irp && irp->graphs);
 	return ARR_LEN(irp->graphs);
 }
 
-static inline ir_graph *_get_irp_irg(size_t pos)
+static inline ir_graph *get_irp_irg_(size_t pos)
 {
 	assert(pos < ARR_LEN(irp->graphs));
 	return irp->graphs[pos];
 }
 
-static inline size_t _get_irp_n_types(void)
+static inline size_t get_irp_n_types_(void)
 {
 	assert(irp && irp->types);
 	return ARR_LEN(irp->types);
 }
 
-static inline ir_type *_get_irp_type(size_t pos)
+static inline ir_type *get_irp_type_(size_t pos)
 {
 	assert(irp->types);
 	assert(pos < ARR_LEN(irp->types));
@@ -82,25 +82,25 @@ static inline ir_type *_get_irp_type(size_t pos)
 	return irp->types[pos];
 }
 
-static inline size_t _get_irp_n_modes(void)
+static inline size_t get_irp_n_modes_(void)
 {
 	assert(irp->modes);
 	return ARR_LEN(irp->modes);
 }
 
-static inline ir_mode *_get_irp_mode(size_t pos)
+static inline ir_mode *get_irp_mode_(size_t pos)
 {
 	assert(irp && irp->modes);
 	return irp->modes[pos];
 }
 
-static inline size_t _get_irp_n_opcodes(void)
+static inline size_t get_irp_n_opcodes_(void)
 {
 	assert(irp && irp->opcodes);
 	return ARR_LEN(irp->opcodes);
 }
 
-static inline ir_op *_get_irp_opcode(size_t pos)
+static inline ir_op *get_irp_opcode_(size_t pos)
 {
 	assert(irp && irp->opcodes);
 	return irp->opcodes[pos];
@@ -119,41 +119,41 @@ static inline size_t get_irp_new_irg_idx(void)
 	return irp->max_irg_idx++;
 }
 
-static inline ir_graph *_get_const_code_irg(void)
+static inline ir_graph *get_const_code_irg_(void)
 {
 	return irp->const_code_irg;
 }
 
 /** Returns a new, unique exception region number. */
-static inline ir_exc_region_t _get_irp_next_region_nr(void)
+static inline ir_exc_region_t get_irp_next_region_nr_(void)
 {
 	assert(irp);
 	return ++irp->last_region_nr;
 }
 
 /** Returns a new, unique label number. */
-static inline ir_label_t _get_irp_next_label_nr(void)
+static inline ir_label_t get_irp_next_label_nr_(void)
 {
 	assert(irp);
 	return ++irp->last_label_nr;
 }
 
 /** Whether optimizations should dump irgs */
-static inline int _get_irp_optimization_dumps(void)
+static inline int get_irp_optimization_dumps_(void)
 {
 	assert(irp);
 	return irp->optimization_dumps;
 }
 
 /** Set optimizations to dump irgs */
-static inline void _enable_irp_optimization_dumps(void)
+static inline void enable_irp_optimization_dumps_(void)
 {
 	assert(irp);
 	irp->optimization_dumps = 1;
 }
 
-void           set_irp_ip_outedges(ir_node ** ip_outedges);
-ir_node**      get_irp_ip_outedges(void);
+void      set_irp_ip_outedges(ir_node ** ip_outedges);
+ir_node** get_irp_ip_outedges(void);
 
 /** initializes ir_prog. Constructs only the basic lists */
 void init_irprog_1(void);
@@ -162,21 +162,21 @@ void init_irprog_1(void);
 void init_irprog_2(void);
 
 /* Inline functions. */
-#define get_irp_n_irgs()          _get_irp_n_irgs()
-#define get_irp_irg(pos)          _get_irp_irg(pos)
-#define get_irp_n_types()         _get_irp_n_types()
-#define get_irp_type(pos)         _get_irp_type(pos)
-#define get_irp_n_modes()         _get_irp_n_modes()
-#define get_irp_mode(pos)         _get_irp_mode(pos)
-#define get_irp_n_opcodes()       _get_irp_n_opcodes()
-#define get_irp_opcode(pos)       _get_irp_opcode(pos)
-#define get_const_code_irg()      _get_const_code_irg()
-#define get_segment_type(s)       _get_segment_type(s)
-#define get_glob_type()           _get_glob_type()
-#define get_tls_type()            _get_tls_type()
-#define get_irp_next_region_nr()  _get_irp_next_region_nr()
-#define get_irp_next_label_nr()   _get_irp_next_label_nr()
-#define get_irp_optimization_dumps()     _get_irp_optimization_dumps()
-#define enable_irp_optimization_dumps()  _enable_irp_optimization_dumps()
+#define get_irp_n_irgs()                 get_irp_n_irgs_()
+#define get_irp_irg(pos)                 get_irp_irg_(pos)
+#define get_irp_n_types()                get_irp_n_types_()
+#define get_irp_type(pos)                get_irp_type_(pos)
+#define get_irp_n_modes()                get_irp_n_modes_()
+#define get_irp_mode(pos)                get_irp_mode_(pos)
+#define get_irp_n_opcodes()              get_irp_n_opcodes_()
+#define get_irp_opcode(pos)              get_irp_opcode_(pos)
+#define get_const_code_irg()             get_const_code_irg_()
+#define get_segment_type(s)              get_segment_type_(s)
+#define get_glob_type()                  get_glob_type_()
+#define get_tls_type()                   get_tls_type_()
+#define get_irp_next_region_nr()         get_irp_next_region_nr_()
+#define get_irp_next_label_nr()          get_irp_next_label_nr_()
+#define get_irp_optimization_dumps()     get_irp_optimization_dumps_()
+#define enable_irp_optimization_dumps()  enable_irp_optimization_dumps_()
 
 #endif
