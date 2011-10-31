@@ -275,7 +275,7 @@ int i_mapper_bswap(ir_node *call, void *ctx)
 
 	irn = new_rd_Builtin(dbg, block, get_irg_no_mem(current_ir_graph), 1, &op, ir_bk_bswap, tp);
 	set_irn_pinned(irn, op_pin_state_floats);
-	irn = new_r_Proj(irn, get_irn_mode(op), pn_Builtin_1_result);
+	irn = new_r_Proj(irn, get_irn_mode(op), pn_Builtin_max+1);
 	replace_call(irn, call, mem, NULL, NULL);
 	return 1;
 }  /* i_mapper_bswap */

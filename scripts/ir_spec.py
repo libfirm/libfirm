@@ -222,8 +222,8 @@ class Builtin(Op):
 	]
 	arity    = "variable"
 	outs     = [
-		("M",        "memory result"),
-		("1_result", "first result"),
+		("M", "memory result"),
+		# results follow here
 	]
 	flags    = [ "uses_memory" ]
 	attrs    = [

@@ -5471,7 +5471,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_parity:
 	case ir_bk_popcount:
 	case ir_bk_bswap:
-		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
+		assert(get_Proj_proj(proj) == pn_Builtin_max+1);
 		return new_node;
 	case ir_bk_trap:
 	case ir_bk_debugbreak:
@@ -5480,14 +5480,14 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 		assert(get_Proj_proj(proj) == pn_Builtin_M);
 		return new_node;
 	case ir_bk_inport:
-		if (get_Proj_proj(proj) == pn_Builtin_1_result) {
+		if (get_Proj_proj(proj) == pn_Builtin_max+1) {
 			return new_r_Proj(new_node, get_irn_mode(proj), pn_ia32_Inport_res);
 		} else {
 			assert(get_Proj_proj(proj) == pn_Builtin_M);
 			return new_r_Proj(new_node, mode_M, pn_ia32_Inport_M);
 		}
 	case ir_bk_inner_trampoline:
-		if (get_Proj_proj(proj) == pn_Builtin_1_result) {
+		if (get_Proj_proj(proj) == pn_Builtin_max+1) {
 			return get_Tuple_pred(new_node, 1);
 		} else {
 			assert(get_Proj_proj(proj) == pn_Builtin_M);

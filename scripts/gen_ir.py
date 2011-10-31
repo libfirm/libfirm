@@ -440,6 +440,27 @@ void (set_{{node.name}}_{{input[0]}})(ir_node *node, ir_node *{{input[0]|escape_
 {% endfor %}
 ''')
 
+irdump_template = env.from_string(
+'''/* Warning: automatically generated code */
+{% for node in nodes %}
+{%- if node.outs %}
+static const pns_lookup_t {{node.name}}_lut[] = {
+	{%- for out in node.outs %}
+	{ pn_{{node.name}}_{{out[0]}}, "{{out[0]}}" },
+	{%- endfor %}
+};
+{% endif -%}
+{%- endfor %}
+
+static const proj_lookup_t proj_lut[] = {
+	{%- for node in nodes -%}
+	{%- if node.outs %}
+	{ iro_{{node.name}}, ARRAY_SIZE({{node.name}}_lut), {{node.name}}_lut },
+	{%- endif %}
+	{%- endfor %}
+};
+''')
+
 irop_template = env.from_string(
 '''/* Warning: automatically generated code */
 {% for node in nodes %}
@@ -678,6 +699,10 @@ def main(argv):
 
 	file = open(gendir + "/gen_irop.c.inl", "w")
 	file.write(irop_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir + "/gen_irdump.c.inl", "w")
+	file.write(irdump_template.render(nodes = real_nodes))
 	file.close()
 
 	file = open(gendir2 + "/opcodes.h", "w")

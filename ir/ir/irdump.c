@@ -66,6 +66,19 @@
 #include "pset.h"
 #include "util.h"
 
+typedef struct pns_lookup {
+	long       nr;      /**< the proj number */
+	const char *name;   /**< the name of the Proj */
+} pns_lookup_t;
+
+typedef struct proj_lookup {
+	unsigned           code;      /**< the opcode of the Proj predecessor */
+	unsigned           num_data;  /**< number of data entries */
+	const pns_lookup_t *data;     /**< the data */
+} proj_lookup_t;
+
+#include "gen_irdump.c.inl"
+
 /** Dump only irgs with names that start with this prefix. */
 static ident *dump_file_filter_id = NULL;
 
@@ -788,149 +801,6 @@ static int dump_node_typeinfo(FILE *F, ir_node *n)
 	}
 	return bad;
 }
-
-typedef struct pns_lookup {
-	long       nr;      /**< the proj number */
-	const char *name;   /**< the name of the Proj */
-} pns_lookup_t;
-
-typedef struct proj_lookup {
-	unsigned           code;      /**< the opcode of the Proj predecessor */
-	unsigned           num_data;  /**< number of data entries */
-	const pns_lookup_t *data;     /**< the data */
-} proj_lookup_t;
-
-/** the lookup table for Proj(Start) names */
-static const pns_lookup_t start_lut[] = {
-#define X(a)    { pn_Start_##a, #a }
-	X(X_initial_exec),
-	X(M),
-	X(P_frame_base),
-	X(T_args),
-#undef X
-};
-
-/** the lookup table for Proj(Cond) names */
-static const pns_lookup_t cond_lut[] = {
-#define X(a)    { pn_Cond_##a, #a }
-	X(false),
-	X(true)
-#undef X
-};
-
-/** the lookup table for Proj(Call) names */
-static const pns_lookup_t call_lut[] = {
-#define X(a)    { pn_Call_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(T_result),
-#undef X
-};
-
-/** the lookup table for Proj(Div) names */
-static const pns_lookup_t div_lut[] = {
-#define X(a)    { pn_Div_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Mod) names */
-static const pns_lookup_t mod_lut[] = {
-#define X(a)    { pn_Mod_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Load) names */
-static const pns_lookup_t load_lut[] = {
-#define X(a)    { pn_Load_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Store) names */
-static const pns_lookup_t store_lut[] = {
-#define X(a)    { pn_Store_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except)
-#undef X
-};
-
-/** the lookup table for Proj(Alloc) names */
-static const pns_lookup_t alloc_lut[] = {
-#define X(a)    { pn_Alloc_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(CopyB) names */
-static const pns_lookup_t copyb_lut[] = {
-#define X(a)    { pn_CopyB_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-#undef X
-};
-
-/** the lookup table for Proj(InstOf) names */
-static const pns_lookup_t instof_lut[] = {
-#define X(a)    { pn_InstOf_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res),
-#undef X
-};
-
-/** the lookup table for Proj(Raise) names */
-static const pns_lookup_t raise_lut[] = {
-#define X(a)    { pn_Raise_##a, #a }
-	X(M),
-	X(X),
-#undef X
-};
-
-/** the lookup table for Proj(Bound) names */
-static const pns_lookup_t bound_lut[] = {
-#define X(a)    { pn_Bound_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res),
-#undef X
-};
-
-/** the Proj lookup table */
-static const proj_lookup_t proj_lut[] = {
-#define E(a)  ARRAY_SIZE(a), a
-	{ iro_Start,   E(start_lut) },
-	{ iro_Cond,    E(cond_lut) },
-	{ iro_Call,    E(call_lut) },
-	{ iro_Div,     E(div_lut) },
-	{ iro_Mod,     E(mod_lut) },
-	{ iro_Load,    E(load_lut) },
-	{ iro_Store,   E(store_lut) },
-	{ iro_Alloc,   E(alloc_lut) },
-	{ iro_CopyB,   E(copyb_lut) },
-	{ iro_InstOf,  E(instof_lut) },
-	{ iro_Raise,   E(raise_lut) },
-	{ iro_Bound,   E(bound_lut) }
-#undef E
-};
 
 /**
  * Dump additional node attributes of some nodes to a file F.

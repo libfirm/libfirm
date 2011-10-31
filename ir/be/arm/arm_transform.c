@@ -1341,7 +1341,7 @@ static ir_node *gen_Proj_Builtin(ir_node *proj)
 	case ir_bk_parity:
 	case ir_bk_popcount:
 	case ir_bk_bswap:
-		assert(get_Proj_proj(proj) == pn_Builtin_1_result);
+		assert(get_Proj_proj(proj) == pn_Builtin_max+1);
 		return new_node;
 	case ir_bk_trap:
 	case ir_bk_debugbreak:
