@@ -235,9 +235,9 @@ struct ia32_condcode_attr_t {
  */
 typedef struct ia32_switch_attr_t ia32_switch_attr_t;
 struct ia32_switch_attr_t {
-	ia32_attr_t  attr;        /**< generic attribute */
-	long         default_pn;
-	ir_entity   *jump_table;
+	ia32_attr_t            attr;        /**< generic attribute */
+	const ir_switch_table *table;
+	ir_entity             *jump_table;
 };
 
 /**

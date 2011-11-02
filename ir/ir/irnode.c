@@ -1709,6 +1709,58 @@ dbg_info *(get_irn_dbg_info)(const ir_node *n)
 	return get_irn_dbg_info_(n);
 }
 
+ir_switch_table *ir_new_switch_table(ir_graph *irg, size_t n_entries)
+{
+	struct obstack *obst = get_irg_obstack(irg);
+	ir_switch_table *res = OALLOCFZ(obst, ir_switch_table, entries, n_entries);
+	res->n_entries = n_entries;
+	return res;
+}
+
+void ir_switch_table_set(ir_switch_table *table, size_t n,
+                         ir_tarval *min, ir_tarval *max, long pn)
+{
+	ir_switch_table_entry *entry = ir_switch_table_get_entry(table, n);
+	entry->min = min;
+	entry->max = max;
+	entry->pn  = pn;
+}
+
+size_t (ir_switch_table_get_n_entries)(const ir_switch_table *table)
+{
+	return ir_switch_table_get_n_entries_(table);
+}
+
+ir_tarval *ir_switch_table_get_max(const ir_switch_table *table, size_t e)
+{
+	return ir_switch_table_get_entry_const(table, e)->max;
+}
+
+ir_tarval *ir_switch_table_get_min(const ir_switch_table *table, size_t e)
+{
+	return ir_switch_table_get_entry_const(table, e)->min;
+}
+
+long ir_switch_table_get_pn(const ir_switch_table *table, size_t e)
+{
+	return ir_switch_table_get_entry_const(table, e)->pn;
+}
+
+ir_switch_table *ir_switch_table_duplicate(ir_graph *irg,
+                                           const ir_switch_table *table)
+{
+	size_t n_entries = ir_switch_table_get_n_entries(table);
+	size_t e;
+	ir_switch_table *res = ir_new_switch_table(irg, n_entries);
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		ir_switch_table_entry *new_entry = ir_switch_table_get_entry(res, e);
+		*new_entry = *entry;
+	}
+	return res;
+}
+
 /*
  * Calculate a hash value of a node.
  */

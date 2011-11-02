@@ -116,11 +116,6 @@ static void sparc_dump_node(FILE *F, ir_node *n, dump_reason_t reason)
 			        get_relation_string(attr->relation));
 			fprintf(F, "unsigned: %s\n", attr->is_unsigned ? "true" : "false");
 		}
-		if (has_switch_jmp_attr(n)) {
-			const sparc_switch_jmp_attr_t *attr
-				= get_sparc_switch_jmp_attr_const(n);
-			fprintf(F, "default proj: %ld\n", attr->default_proj_num);
-		}
 		if (has_fp_attr(n)) {
 			const sparc_fp_attr_t *attr = get_sparc_fp_attr_const(n);
 			ir_fprintf(F, "fp_mode: %+F\n", attr->fp_mode);
@@ -274,12 +269,20 @@ static void init_sparc_fp_conv_attributes(ir_node *res, ir_mode *src_mode,
 	attr->dest_mode = dest_mode;
 }
 
-static void init_sparc_switch_jmp_attributes(ir_node *res, long default_pn,
-                                             ir_entity *jump_table)
+static void init_sparc_switch_jmp_attributes(ir_node *node,
+                                             const ir_switch_table *table,
+                                             ir_entity *table_entity)
 {
-	sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr(res);
-	attr->default_proj_num = default_pn;
-	attr->jump_table       = jump_table;
+	unsigned n_outs = arch_get_irn_n_outs(node);
+	unsigned o;
+
+	sparc_switch_jmp_attr_t *attr = get_sparc_switch_jmp_attr(node);
+	attr->table        = table;
+	attr->table_entity = table_entity;
+
+	for (o = 0; o < n_outs; ++o) {
+		arch_set_irn_register_req_out(node, o, arch_no_register_req);
+	}
 }
 
 /**
@@ -337,17 +340,6 @@ static int cmp_attr_sparc_jmp_cond(const ir_node *a, const ir_node *b)
 
 	return attr_a->relation != attr_b->relation
 	    || attr_a->is_unsigned != attr_b->is_unsigned;
-}
-
-static int cmp_attr_sparc_switch_jmp(const ir_node *a, const ir_node *b)
-{
-	const sparc_switch_jmp_attr_t *attr_a = get_sparc_switch_jmp_attr_const(a);
-	const sparc_switch_jmp_attr_t *attr_b = get_sparc_switch_jmp_attr_const(b);
-
-	if (cmp_attr_sparc(a, b))
-		return 1;
-
-	return attr_a->default_proj_num != attr_b->default_proj_num;
 }
 
 static int cmp_attr_sparc_fp(const ir_node *a, const ir_node *b)

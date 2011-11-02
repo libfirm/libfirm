@@ -1137,8 +1137,7 @@ static void emit_sparc_SwitchJmp(const ir_node *node)
 	be_emit_finish_line_gas(node);
 	fill_delay_slot();
 
-	emit_jump_table(node, attr->default_proj_num, attr->jump_table,
-	                get_jump_target);
+	be_emit_jump_table(node, attr->table, attr->table_entity, get_jump_target);
 }
 
 static void emit_fmov(const ir_node *node, const arch_register_t *src_reg,

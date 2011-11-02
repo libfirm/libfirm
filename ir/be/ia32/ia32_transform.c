@@ -2756,26 +2756,30 @@ static ir_node *gen_Store(ir_node *node)
  *
  * @return the created ia32 SwitchJmp node
  */
-static ir_node *create_Switch(ir_node *node)
+static ir_node *gen_Switch(ir_node *node)
 {
-	dbg_info  *dbgi       = get_irn_dbg_info(node);
-	ir_node   *block      = be_transform_node(get_nodes_block(node));
-	ir_node   *sel        = get_Cond_selector(node);
-	ir_node   *new_sel    = be_transform_node(sel);
-	long       default_pn = get_Cond_default_proj(node);
-	ir_node   *new_node;
-	ir_entity *entity;
+	dbg_info              *dbgi     = get_irn_dbg_info(node);
+	ir_graph              *irg      = get_irn_irg(node);
+	ir_node               *block    = be_transform_node(get_nodes_block(node));
+	ir_node               *sel      = get_Switch_selector(node);
+	ir_node               *new_sel  = be_transform_node(sel);
+	ir_mode               *sel_mode = get_irn_mode(sel);
+	const ir_switch_table *table    = get_Switch_table(node);
+	unsigned               n_outs   = get_Switch_n_outs(node);
+	ir_node               *new_node;
+	ir_entity             *entity;
 
-	assert(get_mode_size_bits(get_irn_mode(sel)) == 32);
+	assert(get_mode_size_bits(get_irn_mode(sel)) <= 32);
+	if (get_mode_size_bits(sel_mode) != 32)
+		new_sel = create_upconv(new_sel, sel);
 
 	entity = new_entity(NULL, id_unique("TBL%u"), get_unknown_type());
 	set_entity_visibility(entity, ir_visibility_private);
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
-	/* TODO: we could perform some more matching here to also use the base
-	 * register of the address mode */
-	new_node
-		= new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel, default_pn);
+	table = ir_switch_table_duplicate(irg, table);
+
+	new_node = new_bd_ia32_SwitchJmp(dbgi, block, noreg_GP, new_sel, n_outs, table);
 	set_ia32_am_scale(new_node, 2);
 	set_ia32_am_sc(new_node, entity);
 	set_ia32_op_type(new_node, ia32_AddrModeS);
@@ -2796,14 +2800,9 @@ static ir_node *gen_Cond(ir_node *node)
 	ir_node              *new_block = be_transform_node(block);
 	dbg_info             *dbgi      = get_irn_dbg_info(node);
 	ir_node              *sel       = get_Cond_selector(node);
-	ir_mode              *sel_mode  = get_irn_mode(sel);
 	ir_node              *flags     = NULL;
 	ir_node              *new_node;
 	ia32_condition_code_t cc;
-
-	if (sel_mode != mode_b) {
-		return create_Switch(node);
-	}
 
 	/* we get flags from a Cmp */
 	flags = get_flags_node(sel, &cc);
@@ -5731,6 +5730,7 @@ static void register_transformers(void)
 	be_set_transform_function(op_Shrs,             gen_Shrs);
 	be_set_transform_function(op_Store,            gen_Store);
 	be_set_transform_function(op_Sub,              gen_Sub);
+	be_set_transform_function(op_Switch,           gen_Switch);
 	be_set_transform_function(op_SymConst,         gen_SymConst);
 	be_set_transform_function(op_Unknown,          ia32_gen_Unknown);
 }

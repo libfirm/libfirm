@@ -117,6 +117,14 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_node->attr.assem.clobbers = DUP_ARR_D(ident*, irg->obst, old_node->attr.assem.clobbers);
 }
 
+static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,
+                             ir_node *new_node)
+{
+	const ir_switch_table *table = get_Switch_table(old_node);
+	new_node->attr.switcha.table = ir_switch_table_duplicate(irg, table);
+	new_node->attr.switcha.n_outs = old_node->attr.switcha.n_outs;
+}
+
 /**
  * Sets the default copy_attr operation for an ir_ops
  *
@@ -129,21 +137,13 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
 static ir_op_ops *firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
-	case iro_Call:
-		ops->copy_attr = call_copy_attr;
-		break;
-	case iro_Block:
-		ops->copy_attr = block_copy_attr;
-		break;
-	case iro_Phi:
-		ops->copy_attr = phi_copy_attr;
-		break;
-	case iro_ASM:
-		ops->copy_attr = ASM_copy_attr;
-		break;
+	case iro_Call:   ops->copy_attr = call_copy_attr;   break;
+	case iro_Block:  ops->copy_attr = block_copy_attr;  break;
+	case iro_Phi:    ops->copy_attr = phi_copy_attr;    break;
+	case iro_ASM:    ops->copy_attr = ASM_copy_attr;    break;
+	case iro_Switch: ops->copy_attr = switch_copy_attr; break;
 	default:
-		/* not allowed to be NULL */
-		if (! ops->copy_attr)
+		if (ops->copy_attr == NULL)
 			ops->copy_attr = default_copy_attr;
 	}
 	return ops;

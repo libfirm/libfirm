@@ -112,9 +112,8 @@ typedef struct arm_CondJmp_attr_t {
 
 /** Attributes for a SwitchJmp */
 typedef struct arm_SwitchJmp_attr_t {
-	arm_attr_t  base;
-	int         n_projs;
-	long        default_proj_num;
+	arm_attr_t             base;
+	const ir_switch_table *table;
 } arm_SwitchJmp_attr_t;
 
 /** CopyB attributes */

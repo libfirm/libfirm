@@ -3468,7 +3468,6 @@ make_tuple:
  */
 static ir_node *transform_node_Cond(ir_node *n)
 {
-
 	ir_node   *a   = get_Cond_selector(n);
 	ir_graph  *irg = get_irn_irg(n);
 	ir_tarval *ta;
@@ -3476,10 +3475,6 @@ static ir_node *transform_node_Cond(ir_node *n)
 
 	/* we need block info which is not available in floating irgs */
 	if (get_irg_pinned(irg) == op_pin_state_floats)
-		return n;
-
-	/* we do not handle switches here */
-	if (get_irn_mode(a) != mode_b)
 		return n;
 
 	ta = value_of(a);
@@ -3505,6 +3500,48 @@ static ir_node *transform_node_Cond(ir_node *n)
 		/* We might generate an endless loop, so keep it alive. */
 		add_End_keepalive(get_irg_end(irg), blk);
 		clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
+	}
+	return n;
+}
+
+static ir_node *transform_node_Switch(ir_node *n)
+{
+	ir_node   *op  = get_Switch_selector(n);
+	ir_tarval *val = value_of(op);
+	if (val != tarval_bad) {
+		dbg_info              *dbgi      = get_irn_dbg_info(n);
+		ir_graph              *irg       = get_irn_irg(n);
+		unsigned               n_outs    = get_Switch_n_outs(n);
+		ir_node               *block     = get_nodes_block(n);
+		ir_node               *bad       = new_r_Bad(irg, mode_X);
+		ir_node              **in        = XMALLOCN(ir_node*, n_outs);
+		const ir_switch_table *table     = get_Switch_table(n);
+		size_t                 n_entries = ir_switch_table_get_n_entries(table);
+		long                   jmp_pn    = 0;
+		size_t                 i;
+		unsigned               o;
+		for (i = 0; i < n_entries; ++i) {
+			const ir_switch_table_entry *entry
+				= ir_switch_table_get_entry_const(table, i);
+			ir_tarval *min = entry->min;
+			ir_tarval *max = entry->max;
+			if (entry->pn == 0)
+				continue;
+			if ((min == max && min == val)
+			    || (tarval_cmp(val, min) != ir_relation_less
+			        && tarval_cmp(val, max) != ir_relation_greater)) {
+			    jmp_pn = entry->pn;
+			    break;
+			}
+		}
+		for (o = 0; o < n_outs; ++o) {
+			if (o == (unsigned)jmp_pn) {
+				in[o] = new_rd_Jmp(dbgi, block);
+			} else {
+				in[o] = bad;
+			}
+		}
+		return new_r_Tuple(block, (int)n_outs, in);
 	}
 	return n;
 }
@@ -4134,87 +4171,6 @@ static ir_node *transform_node_Proj_Mod(ir_node *proj)
 
 				DBG_OPT_CSTEVAL(mod, res);
 				return res;
-			}
-		}
-	}
-	return proj;
-}
-
-/**
- * Optimizes jump tables (CondIs or CondIu) by removing all impossible cases.
- */
-static ir_node *transform_node_Proj_Cond(ir_node *proj)
-{
-	ir_node *n = get_Proj_pred(proj);
-	ir_node *b = get_Cond_selector(n);
-
-	if (mode_is_int(get_irn_mode(b))) {
-		ir_tarval *tb = value_of(b);
-
-		if (tb != tarval_bad) {
-			/* we have a constant switch */
-			long num = get_Proj_proj(proj);
-
-			if (num != get_Cond_default_proj(n)) { /* we cannot optimize default Proj's yet */
-				if (get_tarval_long(tb) == num) {
-					/* Do NOT create a jump here, or we will have 2 control flow ops
-					 * in a block. This case is optimized away in optimize_cf(). */
-					return proj;
-				} else {
-					ir_graph *irg = get_irn_irg(proj);
-					/* this case will NEVER be taken, kill it */
-					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
-					return new_r_Bad(irg, mode_X);
-				}
-			}
-		} else {
-			long num = get_Proj_proj(proj);
-			vrp_attr *b_vrp = vrp_get_info(b);
-			if (num != get_Cond_default_proj(n) && b_vrp) {
-				/* Try handling with vrp data. We only remove dead parts. */
-				ir_tarval *tp = new_tarval_from_long(num, get_irn_mode(b));
-
-				if (b_vrp->range_type == VRP_RANGE) {
-					ir_relation cmp_result = tarval_cmp(b_vrp->range_bottom, tp);
-					ir_relation cmp_result2 = tarval_cmp(b_vrp->range_top, tp);
-
-					if ((cmp_result & ir_relation_greater) == cmp_result
-					    && (cmp_result2 & ir_relation_less) == cmp_result2) {
-						ir_graph *irg = get_irn_irg(proj);
-						clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
-						return new_r_Bad(irg, mode_X);
-					}
-				} else if (b_vrp->range_type == VRP_ANTIRANGE) {
-					ir_relation cmp_result = tarval_cmp(b_vrp->range_bottom, tp);
-					ir_relation cmp_result2 = tarval_cmp(b_vrp->range_top, tp);
-
-					if ((cmp_result & ir_relation_less_equal) == cmp_result
-					     && (cmp_result2 & ir_relation_greater_equal) == cmp_result2) {
-						ir_graph *irg = get_irn_irg(proj);
-						clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
-						return new_r_Bad(irg, mode_X);
-					}
-				}
-
-				if (!(tarval_cmp(
-								tarval_and( b_vrp->bits_set, tp),
-								b_vrp->bits_set
-								) == ir_relation_equal)) {
-					ir_graph *irg = get_irn_irg(proj);
-					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
-					return new_r_Bad(irg, mode_X);
-				}
-
-				if (!(tarval_cmp(
-								tarval_and(
-									tarval_not(tp),
-									tarval_not(b_vrp->bits_not_set)),
-								tarval_not(b_vrp->bits_not_set))
-								 == ir_relation_equal)) {
-					ir_graph *irg = get_irn_irg(proj);
-					clear_irg_state(irg, IR_GRAPH_STATE_NO_UNREACHABLE_CODE);
-					return new_r_Bad(irg, mode_X);
-				}
 			}
 		}
 	}
@@ -6236,6 +6192,7 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Block);
 	CASE(Call);
 	CASE(Cmp);
+	CASE(Cond);
 	CASE(Conv);
 	CASE(End);
 	CASE(Eor);
@@ -6252,11 +6209,11 @@ static ir_op_ops *firm_set_default_transform_node(ir_opcode code, ir_op_ops *ops
 	CASE(Shr);
 	CASE(Shrs);
 	CASE(Sub);
+	CASE(Switch);
 	CASE(Sync);
 	CASE_PROJ(Bound);
 	CASE_PROJ(CopyB);
 	CASE_PROJ(Store);
-	CASE_PROJ_EX(Cond);
 	CASE_PROJ_EX(Div);
 	CASE_PROJ_EX(Load);
 	CASE_PROJ_EX(Mod);

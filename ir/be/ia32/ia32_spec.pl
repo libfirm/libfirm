@@ -185,7 +185,7 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 		"\tinit_ia32_condcode_attributes(res, condition_code);",
 	ia32_switch_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
-		"\tinit_ia32_switch_attributes(res, default_pn);",
+		"\tinit_ia32_switch_attributes(res, switch_table);",
 	ia32_copyb_attr_t =>
 		"\tinit_ia32_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 		"\tinit_ia32_copyb_attributes(res, size);",
@@ -205,8 +205,8 @@ $custom_init_attr_func = \&ia32_custom_init_attr;
 	ia32_attr_t            => "ia32_compare_nodes_attr",
 	ia32_call_attr_t       => "ia32_compare_call_attr",
 	ia32_condcode_attr_t   => "ia32_compare_condcode_attr",
-	ia32_switch_attr_t     => "ia32_compare_switch_attr",
 	ia32_copyb_attr_t      => "ia32_compare_copyb_attr",
+	ia32_switch_attr_t     => "ia32_compare_nodes_attr",
 	ia32_immediate_attr_t  => "ia32_compare_immediate_attr",
 	ia32_x87_attr_t        => "ia32_compare_x87_attr",
 	ia32_climbframe_attr_t => "ia32_compare_climbframe_attr",
@@ -1044,12 +1044,11 @@ SwitchJmp => {
 	op_flags  => [ "labeled", "cfopcode", "forking" ],
 	reg_req   => { in => [ "gp", "gp" ] },
 	ins       => [ "base", "index" ],
-	mode      => "mode_T",
+	out_arity => "variable",
 	attr_type => "ia32_switch_attr_t",
-	attr      => "long default_pn",
+	attr      => "const ir_switch_table *switch_table",
 	latency   => 2,
 	units     => [ "BRANCH" ],
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
 },
 
 Jmp => {

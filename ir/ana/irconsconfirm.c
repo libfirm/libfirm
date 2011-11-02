@@ -41,6 +41,7 @@
 #include "irtools.h"
 #include "array_t.h"
 #include "debug.h"
+#include "error.h"
 #include "irflag.h"
 
 /**
@@ -75,31 +76,52 @@ static ir_node *get_effective_use_block(ir_node *node, int pos)
 	return get_nodes_block(node);
 }
 
+static ir_node *get_case_value(ir_node *switchn, long pn)
+{
+	ir_graph              *irg       = get_irn_irg(switchn);
+	const ir_switch_table *table     = get_Switch_table(switchn);
+	size_t                 n_entries = ir_switch_table_get_n_entries(table);
+	ir_tarval             *val       = NULL;
+	size_t                 e;
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		if (entry->pn != pn)
+			continue;
+		/* multiple matching entries gets too complicated for a single
+		 * Confirm */
+		if (val != NULL)
+			return NULL;
+		/* case ranges are too complicated too */
+		if (entry->min != entry->max)
+			return NULL;
+		val = entry->min;
+	}
+	assert(val != NULL);
+	return new_r_Const(irg, val);
+}
+
 /**
  * Handle a CASE-branch.
- *
- * @param block   the block which is entered by the branch
- * @param irn     the node expressing the switch value
- * @param nr      the branch label
- * @param env     statistical environment
  *
  * Branch labels are a simple case. We can replace the value
  * by a Const with the branch label.
  */
-static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
+static void handle_case(ir_node *block, ir_node *switchn, long pn, env_t *env)
 {
-	const ir_edge_t *edge, *next;
-	ir_node *c = NULL;
+	ir_node         *c = NULL;
+	ir_node         *selector = get_Switch_selector(switchn);
+	const ir_edge_t *edge;
+	const ir_edge_t *next;
 
-	if (is_Bad(irn))
+	/* we can't do usefull things with the default label */
+	if (pn == pn_Switch_default)
 		return;
 
-	for (edge = get_irn_out_edge_first(irn); edge; edge = next) {
+	foreach_out_edge_safe(selector, edge, next) {
 		ir_node *succ = get_edge_src_irn(edge);
 		int     pos   = get_edge_src_pos(edge);
 		ir_node *blk  = get_effective_use_block(succ, pos);
-
-		next = get_irn_out_edge_next(irn, edge);
 
 		if (block_dominates(block, blk)) {
 			/*
@@ -108,15 +130,11 @@ static void handle_case(ir_node *block, ir_node *irn, long nr, env_t *env)
 			 * We can replace the input with the Constant
 			 * branch label.
 			 */
-
-			if (! c) {
-				ir_mode   *mode = get_irn_mode(irn);
-				ir_tarval *tv   = new_tarval_from_long(nr, mode);
-				c = new_r_Const(current_ir_graph, tv);
-			}
+			if (c == NULL)
+				c = get_case_value(switchn, pn);
 
 			set_irn_n(succ, pos, c);
-			DBG_OPT_CONFIRM_C(irn, c);
+			DBG_OPT_CONFIRM_C(selector, c);
 			DB((dbg, LEVEL_2, "Replacing input %d of node %+F with %+F\n", pos, succ, c));
 
 			env->num_consts += 1;
@@ -405,9 +423,9 @@ static void handle_if(ir_node *block, ir_node *cmp, ir_relation rel, env_t *env)
  */
 static void insert_Confirm_in_block(ir_node *block, void *data)
 {
-	ir_node *cond, *proj, *selector;
-	ir_mode *mode;
 	env_t   *env = (env_t*) data;
+	ir_node *cond;
+	ir_node *proj;
 
 	/*
 	 * we can only handle blocks with only ONE control flow
@@ -421,13 +439,11 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 		return;
 
 	cond = get_Proj_pred(proj);
-	if (! is_Cond(cond))
-		return;
-
-	selector = get_Cond_selector(cond);
-	mode = get_irn_mode(selector);
-
-	if (mode == mode_b) {
+	if (is_Switch(cond)) {
+		long proj_nr = get_Proj_proj(proj);
+		handle_case(block, cond, proj_nr, env);
+	} else if (is_Const(cond)) {
+		ir_node *selector = get_Cond_selector(cond);
 		ir_relation rel;
 
 		handle_modeb(block, selector, (pn_Cond) get_Proj_proj(proj), env);
@@ -439,20 +455,11 @@ static void insert_Confirm_in_block(ir_node *block, void *data)
 
 		if (get_Proj_proj(proj) != pn_Cond_true) {
 			/* it's the false branch */
-			mode = get_irn_mode(get_Cmp_left(selector));
 			rel = get_negated_relation(rel);
 		}
 		DB((dbg, LEVEL_2, "At %+F using %+F Confirm %=\n", block, selector, rel));
 
 		handle_if(block, selector, rel, env);
-	} else if (mode_is_int(mode)) {
-		long proj_nr = get_Proj_proj(proj);
-
-		/* this is a CASE, but we cannot handle the default case */
-		if (proj_nr == get_Cond_default_proj(cond))
-			return;
-
-		handle_case(block, get_Cond_selector(cond), proj_nr, env);
 	}
 }
 

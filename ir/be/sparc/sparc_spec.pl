@@ -131,7 +131,7 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
-	                            "\tinit_sparc_switch_jmp_attributes(res, default_pn, jump_table);\n",
+	                            "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
 	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);".
@@ -140,11 +140,11 @@ $default_copy_attr = "sparc_copy_attr";
 
 %compare_attr = (
 	sparc_attr_t            => "cmp_attr_sparc",
-	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
-	sparc_switch_jmp_attr_t	=> "cmp_attr_sparc_switch_jmp",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
+	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
+	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
+	sparc_switch_jmp_attr_t => "cmp_attr_sparc",
 );
 
 %custom_irn_flags = (
@@ -575,9 +575,9 @@ SwitchJmp => {
 	state        => "pinned",
 	mode         => "mode_T",
 	reg_req      => { in => [ "gp" ], out => [ ] },
+	out_arity    => "variable",
 	attr_type    => "sparc_switch_jmp_attr_t",
-	attr         => "long default_pn, ir_entity *jump_table",
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
+	attr         => "const ir_switch_table *table, ir_entity *jump_table",
 },
 
 Sll => {

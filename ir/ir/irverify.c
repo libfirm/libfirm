@@ -348,15 +348,24 @@ static int verify_node_Proj_Start(const ir_node *p)
 static int verify_node_Proj_Cond(const ir_node *p)
 {
 	ir_mode *mode = get_irn_mode(p);
-	ir_node *pred = get_Proj_pred(p);
-	long proj     = get_Proj_proj(p);
+	long     proj = get_Proj_proj(p);
 
 	ASSERT_AND_RET_DBG(
-		(
-			(proj >= 0 && mode == mode_X && get_irn_mode(get_Cond_selector(pred)) == mode_b) ||   /* compare */
-			(mode == mode_X && mode_is_int(get_irn_mode(get_Cond_selector(pred))))                /* switch */
-		),
+		mode == mode_X && (proj == pn_Cond_false || proj == pn_Cond_true),
 		"wrong Proj from Cond", 0,
+		show_proj_failure(p);
+	);
+	return 1;
+}
+
+static int verify_node_Proj_Switch(const ir_node *p)
+{
+	ir_mode *mode = get_irn_mode(p);
+	long     pn   = get_Proj_proj(p);
+	ir_node *pred = get_Proj_pred(p);
+	ASSERT_AND_RET_DBG(
+		mode == mode_X && (pn >= 0 && pn < (long)get_Switch_n_outs(pred)),
+		"wrong Proj from Switch", 0,
 		show_proj_failure(p);
 	);
 	return 1;
@@ -863,14 +872,42 @@ static int verify_node_Cond(const ir_node *n)
 	ir_mode *mymode  = get_irn_mode(n);
 	ir_mode *op1mode = get_irn_mode(get_Cond_selector(n));
 
-	ASSERT_AND_RET(
-		/* Cond: BB x b --> X x X */
-		(op1mode == mode_b ||
-		/* Cond: BB x int --> X^n */
-		mode_is_int(op1mode) ),  "Cond node", 0
-		);
+	ASSERT_AND_RET(op1mode == mode_b, "Cond operand not mode_b", 0);
 	ASSERT_AND_RET(mymode == mode_T, "Cond mode is not a tuple", 0);
+	return 1;
+}
 
+static int verify_switch_table(const ir_node *n)
+{
+	const ir_switch_table *table     = get_Switch_table(n);
+	size_t                 n_entries = ir_switch_table_get_n_entries(table);
+	unsigned               n_outs    = get_Switch_n_outs(n);
+	size_t                 e;
+
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		if (entry->pn == 0)
+			continue;
+		ASSERT_AND_RET(entry->min != NULL && entry->max != NULL,
+		               "switch table entry without min+max value", 0);
+		ASSERT_AND_RET(tarval_cmp(entry->min, entry->max) != ir_relation_greater,
+		               "switch table entry without min+max value", 0);
+		ASSERT_AND_RET(entry->pn >= 0 && entry->pn < (long)n_outs,
+					   "switch table entry with invalid proj number", 0);
+	}
+	return 1;
+}
+
+static int verify_node_Switch(const ir_node *n)
+{
+	ir_mode *mymode  = get_irn_mode(n);
+	ir_mode *op1mode = get_irn_mode(get_Switch_selector(n));
+	if (!verify_switch_table(n))
+		return 0;
+
+	ASSERT_AND_RET(mode_is_int(op1mode), "Switch operand not integer", 0);
+	ASSERT_AND_RET(mymode == mode_T, "Switch mode is not a tuple", 0);
 	return 1;
 }
 
@@ -1872,16 +1909,14 @@ static int check_block_cfg(const ir_node *block, check_cfg_env_t *env)
 
 		if (is_Cond(branch)) {
 			long pn = get_Proj_proj(branch_proj);
-			if (get_irn_mode(get_Cond_selector(branch)) == mode_b) {
-				if (pn == pn_Cond_true)
-					ir_nodeset_insert(&env->true_projs, branch);
-				if (pn == pn_Cond_false)
-					ir_nodeset_insert(&env->false_projs, branch);
-			} else {
-				long default_pn = get_Cond_default_proj(branch);
-				if (pn == default_pn)
-					ir_nodeset_insert(&env->true_projs, branch);
-			}
+			if (pn == pn_Cond_true)
+				ir_nodeset_insert(&env->true_projs, branch);
+			if (pn == pn_Cond_false)
+				ir_nodeset_insert(&env->false_projs, branch);
+		} else if (is_Switch(branch)) {
+			long pn = get_Proj_proj(branch_proj);
+			if (pn == pn_Switch_default)
+				ir_nodeset_insert(&env->true_projs, branch);
 		}
 	}
 
@@ -1910,21 +1945,23 @@ static int verify_block_branch(const ir_node *block, check_cfg_env_t *env)
 
 static int verify_cond_projs(const ir_node *cond, check_cfg_env_t *env)
 {
-	if (get_irn_mode(get_Cond_selector(cond)) == mode_b) {
-		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
-						   "Cond node lacks true proj", 0,
-						   ir_printf("Cond %+F\n", cond);
-		);
-		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->false_projs, cond),
-						   "Cond node lacks false proj", 0,
-						   ir_printf("Cond %+F\n", cond);
-		);
-	} else {
-		ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
-		                   "Cond node lacks default Proj", 0,
-		                   ir_printf("Cond %+F\n", cond);
-		);
-	}
+	ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, cond),
+					   "Cond node lacks true proj", 0,
+					   ir_printf("Cond %+F\n", cond);
+	);
+	ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->false_projs, cond),
+					   "Cond node lacks false proj", 0,
+					   ir_printf("Cond %+F\n", cond);
+	);
+	return 1;
+}
+
+static int verify_switch_projs(const ir_node *sw, check_cfg_env_t *env)
+{
+	ASSERT_AND_RET_DBG(ir_nodeset_contains(&env->true_projs, sw),
+					   "Switch node lacks default Proj", 0,
+					   ir_printf("Switch %+F\n", sw);
+	);
 	return 1;
 }
 
@@ -1935,6 +1972,8 @@ static void assert_branch(ir_node *node, void *data)
 		env->res &= verify_block_branch(node, env);
 	} else if (is_Cond(node)) {
 		env->res &= verify_cond_projs(node, env);
+	} else if (is_Switch(node)) {
+		env->res &= verify_switch_projs(node, env);
 	}
 }
 
@@ -2210,47 +2249,48 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
      break
 
 	switch (code) {
-	CASE(Proj);
-	CASE(Block);
-	CASE(Start);
-	CASE(Jmp);
-	CASE(IJmp);
-	CASE(Cond);
-	CASE(Return);
-	CASE(Raise);
-	CASE(Const);
-	CASE(SymConst);
-	CASE(Sel);
-	CASE(InstOf);
-	CASE(Call);
 	CASE(Add);
-	CASE(Sub);
+	CASE(Alloc);
+	CASE(And);
+	CASE(Block);
+	CASE(Bound);
+	CASE(Call);
+	CASE(Cast);
+	CASE(Cmp);
+	CASE(Cond);
+	CASE(Confirm);
+	CASE(Const);
+	CASE(Conv);
+	CASE(CopyB);
+	CASE(Div);
+	CASE(Eor);
+	CASE(Free);
+	CASE(IJmp);
+	CASE(InstOf);
+	CASE(Jmp);
+	CASE(Load);
 	CASE(Minus);
+	CASE(Mod);
 	CASE(Mul);
 	CASE(Mulh);
-	CASE(Div);
-	CASE(Mod);
-	CASE(And);
-	CASE(Or);
-	CASE(Eor);
+	CASE(Mux);
 	CASE(Not);
-	CASE(Cmp);
+	CASE(Or);
+	CASE(Phi);
+	CASE(Proj);
+	CASE(Raise);
+	CASE(Return);
+	CASE(Rotl);
+	CASE(Sel);
 	CASE(Shl);
 	CASE(Shr);
 	CASE(Shrs);
-	CASE(Rotl);
-	CASE(Conv);
-	CASE(Cast);
-	CASE(Phi);
-	CASE(Load);
+	CASE(Start);
 	CASE(Store);
-	CASE(Alloc);
-	CASE(Free);
+	CASE(Sub);
+	CASE(Switch);
+	CASE(SymConst);
 	CASE(Sync);
-	CASE(Confirm);
-	CASE(Mux);
-	CASE(CopyB);
-	CASE(Bound);
 	default:
 		break;
 	}
@@ -2262,20 +2302,21 @@ void firm_set_default_verifier(unsigned code, ir_op_ops *ops)
      break
 
 	switch (code) {
-	CASE(Start);
-	CASE(Cond);
-	CASE(Raise);
-	CASE(InstOf);
-	CASE(Call);
-	CASE(Div);
-	CASE(Mod);
-	CASE(Load);
-	CASE(Store);
 	CASE(Alloc);
-	CASE(Proj);
-	CASE(Tuple);
-	CASE(CopyB);
 	CASE(Bound);
+	CASE(Call);
+	CASE(Cond);
+	CASE(CopyB);
+	CASE(Div);
+	CASE(InstOf);
+	CASE(Load);
+	CASE(Mod);
+	CASE(Proj);
+	CASE(Raise);
+	CASE(Start);
+	CASE(Store);
+	CASE(Switch);
+	CASE(Tuple);
 	default:
 		break;
 	}

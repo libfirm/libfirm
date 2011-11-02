@@ -727,6 +727,23 @@ FIRM_API unsigned firm_default_hash(const ir_node *node);
  */
 FIRM_API const char *gdb_node_helper(void *firm_object);
 
+FIRM_API ir_switch_table *ir_new_switch_table(ir_graph *irg, size_t n_entries);
+
+FIRM_API size_t ir_switch_table_get_n_entries(const ir_switch_table *table);
+
+FIRM_API void ir_switch_table_set(ir_switch_table *table, size_t entry,
+                                  ir_tarval *min, ir_tarval *max, long pn);
+
+FIRM_API ir_tarval *ir_switch_table_get_max(const ir_switch_table *table,
+                                            size_t entry);
+
+FIRM_API ir_tarval *ir_switch_table_get_min(const ir_switch_table *table,
+                                            size_t entry);
+
+FIRM_API long ir_switch_table_get_pn(const ir_switch_table *table, size_t entry);
+
+FIRM_API ir_switch_table *ir_switch_table_duplicate(ir_graph *irg, const ir_switch_table *table);
+
 /*@}*/
 
 #include "end.h"

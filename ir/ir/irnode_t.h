@@ -604,6 +604,25 @@ static inline int is_arg_Proj_(const ir_node *node)
 	return pn_Start_T_args == get_Proj_proj(node) && is_Start(get_Proj_pred(node));
 }
 
+static inline size_t ir_switch_table_get_n_entries_(const ir_switch_table *table)
+{
+	return table->n_entries;
+}
+
+static inline ir_switch_table_entry *ir_switch_table_get_entry(
+		ir_switch_table *table, size_t entry)
+{
+	assert(entry < table->n_entries);
+	return &table->entries[entry];
+}
+
+static inline const ir_switch_table_entry *ir_switch_table_get_entry_const(
+		const ir_switch_table *table, size_t entry)
+{
+	assert(entry < table->n_entries);
+	return &table->entries[entry];
+}
+
 /** initialize ir_node module */
 void init_irnode(void);
 
@@ -684,5 +703,6 @@ void init_irnode(void);
 #define get_Phi_next(node)                    get_Phi_next_(node)
 
 #define is_arg_Proj(node)                     is_arg_Proj_(node)
+#define ir_switch_table_get_n_entries(table)  ir_switch_table_get_n_entries_(table)
 
 #endif

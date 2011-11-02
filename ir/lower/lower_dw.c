@@ -1228,6 +1228,18 @@ static ir_node *get_cfop_destination(const ir_node *cfop)
 	return get_edge_src_irn(first);
 }
 
+static void lower_Switch(ir_node *node, ir_mode *high_mode)
+{
+	ir_node *selector = get_Switch_selector(node);
+	ir_mode *mode     = get_irn_mode(selector);
+	(void)high_mode;
+	if (mode == env->high_signed || mode == env->high_unsigned) {
+		/* we can't really handle Switch with 64bit offsets */
+		panic("Switch with 64bit jumptable not supported");
+	}
+	lower_node(selector);
+}
+
 /**
  * Translate a Cond.
  */
@@ -1235,7 +1247,6 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 {
 	ir_node *left, *right, *block;
 	ir_node *sel = get_Cond_selector(node);
-	ir_mode *m = get_irn_mode(sel);
 	ir_mode *cmp_mode;
 	const lower64_entry_t *lentry, *rentry;
 	ir_node  *projT = NULL, *projF = NULL;
@@ -1249,15 +1260,6 @@ static void lower_Cond(ir_node *node, ir_mode *high_mode)
 	const ir_edge_t *next;
 
 	(void) high_mode;
-
-	if (m != mode_b) {
-		if (m == env->high_signed || m == env->high_unsigned) {
-			/* bad we can't really handle Switch with 64bit offsets */
-			panic("Cond with 64bit jumptable not supported");
-		}
-		lower_node(sel);
-		return;
-	}
 
 	if (!is_Cmp(sel)) {
 		lower_node(sel);
@@ -2957,6 +2959,7 @@ void ir_prepare_dw_lowering(const lwrdw_param_t *new_param)
 	ir_register_dw_lower_function(op_Start,   lower_Start);
 	ir_register_dw_lower_function(op_Store,   lower_Store);
 	ir_register_dw_lower_function(op_Sub,     lower_binop);
+	ir_register_dw_lower_function(op_Switch,  lower_Switch);
 	ir_register_dw_lower_function(op_Unknown, lower_Unknown);
 }
 

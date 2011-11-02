@@ -197,37 +197,24 @@ unreachable_X:
 				} else if (is_Cond(pred)) {
 					ir_node*   const selector = get_Cond_selector(pred);
 					bitinfo*   const b        = get_bitinfo(selector);
-					if (is_undefined(b)) {
+					if (is_undefined(b))
 						goto unreachable_X;
-					} else if (get_irn_mode(selector) == mode_b) {
-						if (b->z == b->o) {
-							if ((b->z == t) == get_Proj_proj(irn)) {
-								z = o = t;
-							} else {
-								z = o = f;
-							}
+					if (b->z == b->o) {
+						if ((b->z == t) == get_Proj_proj(irn)) {
+							z = o = t;
 						} else {
-							goto result_unknown_X;
+							z = o = f;
 						}
 					} else {
-						long const val = get_Proj_proj(irn);
-						if (val != get_Cond_default_proj(pred)) {
-							ir_tarval* const tv = new_tarval_from_long(val, get_irn_mode(selector));
-							if (!tarval_is_null(tarval_andnot(tv, b->z)) ||
-									!tarval_is_null(tarval_andnot(b->o, tv))) {
-								// At least one bit differs.
-								z = o = f;
-#if 0 // TODO must handle default Proj
-							} else if (b->z == b->o && b->z == tv) {
-								z = o = t;
-#endif
-							} else {
-								goto result_unknown_X;
-							}
-						} else {
-							goto cannot_analyse_X;
-						}
+						goto result_unknown_X;
 					}
+				} else if (is_Switch(pred)) {
+					ir_node* const selector = get_Switch_selector(pred);
+					bitinfo* const b        = get_bitinfo(selector);
+					if (is_undefined(b))
+						goto unreachable_X;
+					/* TODO */
+					goto cannot_analyse_X;
 				} else {
 					goto cannot_analyse_X;
 				}

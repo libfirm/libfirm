@@ -168,6 +168,18 @@ struct ir_mode {
 	const void        *tv_priv;     /**< tarval module will save private data here */
 };
 
+/* note: we use "long" here because that is the type used for Proj-Numbers */
+typedef struct ir_switch_table_entry {
+	ir_tarval *min;
+	ir_tarval *max;
+	long       pn;
+} ir_switch_table_entry;
+
+struct ir_switch_table {
+	size_t                n_entries;
+	ir_switch_table_entry entries[];
+};
+
 /* ir node attributes */
 
 /** first attribute of Bad, Block, Anchor nodes */
@@ -363,6 +375,11 @@ typedef struct proj_attr {
 	long  proj;           /**< position of tuple sub-value which is projected */
 } proj_attr;
 
+typedef struct switch_attr {
+	unsigned         n_outs;
+	ir_switch_table *table;
+} switch_attr;
+
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union ir_attr {
@@ -393,6 +410,7 @@ typedef union ir_attr {
 	div_attr       div;           /**< For Div operation */
 	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
+	switch_attr    switcha;       /**< For Switch operation. */
 } ir_attr;
 
 /**

@@ -33,6 +33,7 @@
 
 #include "irdump_t.h"
 #include "irgraph_t.h"
+#include "irnode_t.h"
 
 #include "irprog_t.h"
 #include "entity_t.h"
@@ -101,8 +102,29 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 
 	fprintf(F, "  Private Attributes:\n");
 
-	if (is_Proj(n))
-		fprintf(F, "  proj nr: %ld\n", get_Proj_proj(n));
+	if (is_Proj(n)) {
+		ir_node *pred = get_Proj_pred(n);
+		long     pn   = get_Proj_proj(n);
+		fprintf(F, "  proj nr: %ld\n", pn);
+		if (is_Switch(pred)) {
+			const ir_switch_table *table = get_Switch_table(pred);
+			size_t n_entries = ir_switch_table_get_n_entries(table);
+			size_t i;
+			for (i = 0; i < n_entries; ++i) {
+				const ir_switch_table_entry *entry
+					= ir_switch_table_get_entry_const(table, i);
+				if (entry->pn == pn && entry->min != NULL && entry->max != NULL) {
+					ir_tarval *min = entry->min;
+					ir_tarval *max = entry->max;
+					if (min != max) {
+						ir_fprintf(F, "  switch case %+F .. %+F\n", min, max);
+					} else {
+						ir_fprintf(F, "  switch case %+F\n", min);
+					}
+				}
+			}
+		}
+	}
 
 	if (is_fragile_op(n)) {
 		fprintf(F, "  pinned state: %s\n", get_op_pin_state_name(get_irn_pinned(n)));
@@ -157,7 +179,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 	} break;
 	case iro_Cond: {
-		fprintf(F, "  default ProjNr: %ld\n", get_Cond_default_proj(n));
 		if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE) {
 			fprintf(F, "  jump prediction: %s\n",
 			        get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));

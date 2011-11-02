@@ -1013,46 +1013,23 @@ static ir_node *gen_Jmp(ir_node *node)
 	return new_bd_arm_Jmp(dbgi, new_block);
 }
 
-static ir_node *gen_SwitchJmp(ir_node *node)
+static ir_node *gen_Switch(ir_node *node)
 {
-	ir_node  *block    = be_transform_node(get_nodes_block(node));
-	ir_node  *selector = get_Cond_selector(node);
-	dbg_info *dbgi     = get_irn_dbg_info(node);
-	ir_node *new_op = be_transform_node(selector);
-	ir_node *const_graph;
-	ir_node *sub;
+	ir_graph              *irg      = get_irn_irg(node);
+	ir_node               *block    = be_transform_node(get_nodes_block(node));
+	ir_node               *selector = get_Switch_selector(node);
+	dbg_info              *dbgi     = get_irn_dbg_info(node);
+	ir_node               *new_op   = be_transform_node(selector);
+	ir_mode               *mode     = get_irn_mode(selector);
+	const ir_switch_table *table    = get_Switch_table(node);
+	unsigned               n_outs   = get_Switch_n_outs(node);
 
-	ir_node *proj;
-	const ir_edge_t *edge;
-	int min = INT_MAX;
-	int max = INT_MIN;
-	int translation;
-	int pn;
-	int n_projs;
+	table = ir_switch_table_duplicate(irg, table);
 
-	foreach_out_edge(node, edge) {
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
+	/* switch with smaller modes not implemented yet */
+	assert(get_mode_size_bits(mode) == 32);
 
-		pn = get_Proj_proj(proj);
-
-		min = pn<min ? pn : min;
-		max = pn>max ? pn : max;
-	}
-	translation = min;
-	n_projs = max - translation + 1;
-
-	foreach_out_edge(node, edge) {
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-		pn = get_Proj_proj(proj) - translation;
-		set_Proj_proj(proj, pn);
-	}
-
-	const_graph = create_const_graph_value(dbgi, block, translation);
-	sub = new_bd_arm_Sub_reg(dbgi, block, new_op, const_graph);
-	return new_bd_arm_SwitchJmp(dbgi, block, sub, n_projs, get_Cond_default_proj(node) - translation);
+	return new_bd_arm_SwitchJmp(dbgi, block, new_op, n_outs, table);
 }
 
 static ir_node *gen_Cmp(ir_node *node)
@@ -1089,15 +1066,11 @@ static ir_node *gen_Cmp(ir_node *node)
 static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node    *selector = get_Cond_selector(node);
-	ir_mode    *mode     = get_irn_mode(selector);
 	ir_relation relation;
 	ir_node    *block;
 	ir_node    *flag_node;
 	dbg_info   *dbgi;
 
-	if (mode != mode_b) {
-		return gen_SwitchJmp(node);
-	}
 	assert(is_Cmp(selector));
 
 	block     = be_transform_node(get_nodes_block(node));
@@ -1612,6 +1585,7 @@ static ir_node *gen_Proj(ir_node *node)
 	case iro_Start:
 		return gen_Proj_Start(node);
 	case iro_Cond:
+	case iro_Switch:
 		/* nothing to do */
 		return be_duplicate_node(node);
 	case iro_Proj: {
@@ -2102,6 +2076,7 @@ static void arm_register_transformers(void)
 	be_set_transform_function(op_Start,    gen_Start);
 	be_set_transform_function(op_Store,    gen_Store);
 	be_set_transform_function(op_Sub,      gen_Sub);
+	be_set_transform_function(op_Switch,   gen_Switch);
 	be_set_transform_function(op_SymConst, gen_SymConst);
 	be_set_transform_function(op_Unknown,  gen_Unknown);
 	be_set_transform_function(op_Builtin,  gen_Builtin);

@@ -1171,18 +1171,23 @@ static ir_node *gen_Const(ir_node *node)
 	}
 }
 
-static ir_node *gen_SwitchJmp(ir_node *node)
+static ir_node *gen_Switch(ir_node *node)
 {
-	dbg_info        *dbgi         = get_irn_dbg_info(node);
-	ir_node         *block        = be_transform_node(get_nodes_block(node));
-	ir_node         *selector     = get_Cond_selector(node);
-	ir_node         *new_selector = be_transform_node(selector);
-	long             default_pn   = get_Cond_default_proj(node);
-	ir_entity       *entity;
-	ir_node         *table_address;
-	ir_node         *idx;
-	ir_node         *load;
-	ir_node         *address;
+	dbg_info              *dbgi         = get_irn_dbg_info(node);
+	ir_node               *block        = get_nodes_block(node);
+	ir_node               *new_block    = be_transform_node(block);
+	ir_graph              *irg          = get_irn_irg(block);
+	ir_node               *selector     = get_Switch_selector(node);
+	ir_node               *new_selector = be_transform_node(selector);
+	const ir_switch_table *table        = get_Switch_table(node);
+	unsigned               n_outs       = get_Switch_n_outs(node);
+	ir_entity             *entity;
+	ir_node               *table_address;
+	ir_node               *idx;
+	ir_node               *load;
+	ir_node               *address;
+
+	table = ir_switch_table_duplicate(irg, table);
 
 	/* switch with smaller mode not implemented yet */
 	assert(get_mode_size_bits(get_irn_mode(selector)) == 32);
@@ -1192,33 +1197,27 @@ static ir_node *gen_SwitchJmp(ir_node *node)
 	add_entity_linkage(entity, IR_LINKAGE_CONSTANT);
 
 	/* construct base address */
-	table_address = make_address(dbgi, block, entity, 0);
+	table_address = make_address(dbgi, new_block, entity, 0);
 	/* scale index */
-	idx = new_bd_sparc_Sll_imm(dbgi, block, new_selector, NULL, 2);
+	idx = new_bd_sparc_Sll_imm(dbgi, new_block, new_selector, NULL, 2);
 	/* load from jumptable */
-	load = new_bd_sparc_Ld_reg(dbgi, block, table_address, idx,
+	load = new_bd_sparc_Ld_reg(dbgi, new_block, table_address, idx,
 	                           get_irg_no_mem(current_ir_graph),
 	                           mode_gp);
 	address = new_r_Proj(load, mode_gp, pn_sparc_Ld_res);
 
-	return new_bd_sparc_SwitchJmp(dbgi, block, address, default_pn, entity);
+	return new_bd_sparc_SwitchJmp(dbgi, new_block, address, n_outs, table, entity);
 }
 
 static ir_node *gen_Cond(ir_node *node)
 {
 	ir_node    *selector = get_Cond_selector(node);
-	ir_mode    *mode     = get_irn_mode(selector);
 	ir_node    *cmp_left;
 	ir_mode    *cmp_mode;
 	ir_node    *block;
 	ir_node    *flag_node;
 	ir_relation relation;
 	dbg_info   *dbgi;
-
-	/* switch/case jumps */
-	if (mode != mode_b) {
-		return gen_SwitchJmp(node);
-	}
 
 	/* note: after lower_mode_b we are guaranteed to have a Cmp input */
 	block       = be_transform_node(get_nodes_block(node));
@@ -2426,6 +2425,7 @@ static ir_node *gen_Proj(ir_node *node)
 		return gen_Proj_Call(node);
 	case iro_Cmp:
 		return gen_Proj_Cmp(node);
+	case iro_Switch:
 	case iro_Cond:
 		return be_duplicate_node(node);
 	case iro_Div:
@@ -2498,6 +2498,7 @@ static void sparc_register_transformers(void)
 	be_set_transform_function(op_Start,        gen_Start);
 	be_set_transform_function(op_Store,        gen_Store);
 	be_set_transform_function(op_Sub,          gen_Sub);
+	be_set_transform_function(op_Switch,       gen_Switch);
 	be_set_transform_function(op_SymConst,     gen_SymConst);
 	be_set_transform_function(op_Unknown,      gen_Unknown);
 

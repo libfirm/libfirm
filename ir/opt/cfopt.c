@@ -109,8 +109,7 @@ static void clear_link_and_mark_blocks_removable(ir_node *node, void *ctx)
  */
 static void collect_nodes(ir_node *n, void *ctx)
 {
-	ir_node ***switch_conds = (ir_node***)ctx;
-
+	(void) ctx;
 	if (is_Phi(n)) {
 		/* Collect Phi nodes to compact ins along with block's ins. */
 		ir_node *block = get_nodes_block(n);
@@ -134,9 +133,6 @@ static void collect_nodes(ir_node *n, void *ctx)
 			ir_node *pred = get_Proj_pred(n);
 			set_irn_link(n, get_irn_link(pred));
 			set_irn_link(pred, n);
-		} else if (is_Cond(n) && is_switch_Cond(n)) {
-			/* found a switch-Cond, collect */
-			ARR_APP1(ir_node*, *switch_conds, n);
 		}
 	}
 }
@@ -514,77 +510,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 }
 
 /**
- * Optimize table-switch Conds.
- *
- * @param cond the switch-Cond
- * @return true if the switch-Cond was optimized
- */
-static bool handle_switch_cond(ir_node *cond)
-{
-	ir_node *sel   = get_Cond_selector(cond);
-	ir_node *proj1 = (ir_node*)get_irn_link(cond);
-	ir_node *proj2 = (ir_node*)get_irn_link(proj1);
-	ir_node *blk   = get_nodes_block(cond);
-
-	/* exactly 1 Proj on the Cond node: must be the defaultProj */
-	if (proj2 == NULL) {
-		ir_node *jmp = new_r_Jmp(blk);
-		assert(get_Cond_default_proj(cond) == get_Proj_proj(proj1));
-		/* convert it into a Jmp */
-		exchange(proj1, jmp);
-		return true;
-	}
-
-	/* handle Cond nodes with constant argument. In this case the localopt rules
-	 * should have killed all obviously impossible cases.
-	 * So the only case left to handle here is 1 defaultProj + 1 case
-	 * (this one case should be the one taken) */
-	if (get_irn_link(proj2) == NULL) {
-		ir_tarval *tv = value_of(sel);
-
-		if (tv != tarval_bad) {
-			/* we have a constant switch */
-			long      num     = get_tarval_long(tv);
-			long      def_num = get_Cond_default_proj(cond);
-			ir_graph *irg     = get_irn_irg(cond);
-			ir_node  *bad     = new_r_Bad(irg, mode_X);
-
-			if (def_num == get_Proj_proj(proj1)) {
-				/* first one is the defProj */
-				if (num == get_Proj_proj(proj2)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj2, jmp);
-					exchange(proj1, bad);
-					return true;
-				}
-			} else if (def_num == get_Proj_proj(proj2)) {
-				/* second one is the defProj */
-				if (num == get_Proj_proj(proj1)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj1, jmp);
-					exchange(proj2, bad);
-					return true;
-				}
-			} else {
-				/* neither: strange, Cond was not optimized so far */
-				if (num == get_Proj_proj(proj1)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj1, jmp);
-					exchange(proj2, bad);
-					return true;
-				} else if (num == get_Proj_proj(proj2)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj2, jmp);
-					exchange(proj1, bad);
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-
-/**
  * Optimize boolean Conds, where true and false jump to the same block into a Jmp
  * Block must contain no Phi nodes.
  *
@@ -900,8 +825,6 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 
 	/* The switch Cond optimization might expose unreachable code, so we loop */
 	for (;;) {
-		int length;
-		ir_node **switch_conds = NULL;
 		bool changed = false;
 
 		assure_doms(irg);
@@ -912,16 +835,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 		 * Finally it marks all blocks that do not contain useful
 		 * computations, i.e., these blocks might be removed.
 		 */
-		switch_conds = NEW_ARR_F(ir_node*, 0);
-		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, &switch_conds);
-
-		/* handle all collected switch-Conds */
-		length = ARR_LEN(switch_conds);
-		for (i = 0; i < length; ++i) {
-			ir_node *cond = switch_conds[i];
-			changed |= handle_switch_cond(cond);
-		}
-		DEL_ARR_F(switch_conds);
+		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
 
 		if (!changed)
 			break;

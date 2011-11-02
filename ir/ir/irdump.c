@@ -691,17 +691,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		}
 		break;
 
-	case iro_Proj: {
-		ir_node *pred = get_Proj_pred(n);
-
-		if (get_irn_opcode(pred) == iro_Cond
-			&& get_Proj_proj(n) == get_Cond_default_proj(pred)
-			&& get_irn_mode(get_Cond_selector(pred)) != mode_b)
-			fprintf(F, "defProj");
-		else
-			goto default_case;
-	} break;
-
 	case iro_Load:
 		if (get_Load_unaligned(n) == align_non_aligned)
 			fprintf(F, "ua");
@@ -739,7 +728,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		break;
 
 	default:
-default_case:
 		fprintf(F, "%s", get_irn_opname(n));
 	}
 }

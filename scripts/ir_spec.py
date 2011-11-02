@@ -213,7 +213,6 @@ class Bound(Op):
 	pinned_init = "op_pin_state_pinned"
 	throws_init = "false"
 	attr_struct = "bound_attr"
-	attrs_name  = "bound"
 
 class Builtin(Op):
 	"""performs a backend-specific builtin."""
@@ -317,18 +316,10 @@ class Cmp(Binop):
 	attr_struct = "cmp_attr"
 
 class Cond(Op):
-	"""Conditionally change control flow. There are two versions of this node:
-
-	Boolean Cond:
+	"""Conditionally change control flow.
 	Input:  A value of mode_b
 	Output: A tuple of two control flows. The first is taken if the input is
 	        false, the second if it is true.
-
-	Switch Cond:
-	Input:  A value of mode_Iu
-	Output: A tuple of n control flows. If the Cond's input is i, control flow
-	will proceed along output i. If the input is >= n control flow proceeds
-	along output def_proj.
 	"""
 	ins      = [
 		("selector",  "condition parameter"),
@@ -341,19 +332,40 @@ class Cond(Op):
 	pinned   = "yes"
 	attrs    = [
 		dict(
-			name    = "default_proj",
-			type    = "long",
-			init    = "0",
-			comment = "Proj-number of default case for switch-Cond",
-		),
-		dict(
 			name    = "jmp_pred",
 			type    = "cond_jmp_predicate",
 			init    = "COND_JMP_PRED_NONE",
 			comment = "can indicate the most likely jump",
-		)
+		),
 	]
 	attr_struct = "cond_attr"
+
+class Switch(Op):
+	"""Change control flow. The destination is choosen based on an integer input value which is looked up in a table.
+
+	Backends can implement this efficiently using a jump table."""
+	ins    = [
+		("selector", "input selector"),
+	]
+	outs   = [
+		("default", "control flow if no other case matches"),
+	]
+	flags  = [ "cfopcode", "forking" ]
+	pinned = "yes"
+	attrs  = [
+		dict(
+			name    = "n_outs",
+			type    = "unsigned",
+			comment = "number of outputs (including pn_Switch_default)",
+		),
+		dict(
+			name    = "table",
+			type    = "ir_switch_table*",
+			comment = "table describing mapping from input values to Proj numbers",
+		),
+	]
+	attr_struct = "switch_attr"
+	attrs_name  = "switcha"
 
 class Confirm(Op):
 	"""Specifies constraints for a value. This allows explicit representation
@@ -380,7 +392,6 @@ class Confirm(Op):
 		),
 	]
 	attr_struct = "confirm_attr"
-	attrs_name  = "confirm"
 
 class Const(Op):
 	"""Returns a constant value."""
@@ -411,7 +422,6 @@ class Conv(Unop):
 		)
 	]
 	attr_struct = "conv_attr"
-	attrs_name  = "conv"
 
 class CopyB(Op):
 	"""Copies a block of memory"""
@@ -434,7 +444,6 @@ class CopyB(Op):
 		)
 	]
 	attr_struct = "copyb_attr"
-	attrs_name  = "copyb"
 	pinned      = "memory"
 	pinned_init = "op_pin_state_pinned"
 	throws_init = "false"
@@ -453,7 +462,6 @@ class Div(Op):
 		("X_except",  "control flow when exception occured"),
 	]
 	flags = [ "fragile", "uses_memory" ]
-	attrs_name = "div"
 	attrs = [
 		dict(
 			type    = "ir_mode*",
@@ -641,7 +649,6 @@ class Mod(Op):
 		("X_except",  "control flow when exception occured"),
 	]
 	flags = [ "fragile", "uses_memory" ]
-	attrs_name = "mod"
 	attrs = [
 		dict(
 			type    = "ir_mode*",

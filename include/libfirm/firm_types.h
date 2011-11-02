@@ -64,6 +64,13 @@ typedef union  ir_initializer_t     ir_initializer_t,    *ir_initializer_ptr;
 typedef void irg_walk_func(ir_node *, void *);
 typedef void irg_reg_walk_func(ir_region *, void *);
 
+/**
+ * A switch table mapping integer numbers to proj-numbers of a Switch-node.
+ * Entries map a continuous range of integer numbers to a proj-number.
+ * There must never be two different entries matching the same integer number.
+ */
+typedef struct ir_switch_table  ir_switch_table;
+
 /* Needed for MSVC to suppress warnings because it doest NOT handle const right. */
 typedef const ir_node *ir_node_cnst_ptr;
 

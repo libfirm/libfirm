@@ -1720,66 +1720,101 @@ static void emit_global_decls(const be_main_env_t *main_env)
 	}
 }
 
-void emit_jump_table(const ir_node *node, long default_pn, ir_entity *entity,
-                     get_cfop_target_func get_cfop_target)
+void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
+                        ir_entity *entity, get_cfop_target_func get_cfop_target)
 {
-	long             switch_max    = LONG_MIN;
-	ir_node         *default_block = NULL;
-	unsigned long    length;
-	const ir_edge_t *edge;
-	unsigned         i;
-	ir_node        **table;
+	unsigned          n_outs    = arch_get_irn_n_outs(node);
+	const ir_node   **targets   = XMALLOCNZ(const ir_node*, n_outs);
+	size_t            n_entries = ir_switch_table_get_n_entries(table);
+	unsigned long     length    = 0;
+	size_t            e;
+	const ir_edge_t  *edge;
+	unsigned          i;
+	const ir_node   **labels;
 
-	/* go over all proj's and collect them */
+	/* go over all proj's and collect their jump targets */
 	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
+		ir_node *proj   = get_edge_src_irn(edge);
+		long     pn     = get_Proj_proj(proj);
+		ir_node *target = get_cfop_target(proj);
+		assert(targets[pn] == NULL);
+		targets[pn] = target;
+	}
 
-		/* check for default proj */
-		if (pn == default_pn) {
-			assert(default_block == NULL); /* more than 1 default_pn? */
-			default_block = get_cfop_target(proj);
-		} else {
-			switch_max = pn > switch_max ? pn : switch_max;
+	/* go over table to determine max value (note that we normalized the
+	 * ranges so that the minimum is 0) */
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		ir_tarval *max = entry->max;
+		unsigned long val;
+		if (entry->pn == 0)
+			continue;
+		if (!tarval_is_long(max))
+			panic("switch case overflow (%+F)", node);
+		val = (unsigned long) get_tarval_long(max);
+		if (val > length) {
+			length = val;
 		}
 	}
-	assert(switch_max > LONG_MIN);
 
-	length = (unsigned long) switch_max + 1;
 	/* the 16000 isn't a real limit of the architecture. But should protect us
 	 * from seamingly endless compiler runs */
 	if (length > 16000) {
 		/* switch lowerer should have broken this monster to pieces... */
-		panic("too large switch encountered");
+		panic("too large switch encountered (%+F)", node);
 	}
+	++length;
 
-	table = XMALLOCNZ(ir_node*, length);
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
-		if (pn == default_pn)
-			continue;
-
-		table[pn] = get_cfop_target(proj);
+	labels = XMALLOCNZ(const ir_node*, length);
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		ir_tarval     *min    = entry->min;
+		ir_tarval     *max    = entry->max;
+		const ir_node *target = targets[entry->pn];
+		assert(entry->pn < (long)n_outs);
+		if (min == max) {
+			unsigned long val = (unsigned long)get_tarval_long(max);
+			labels[val] = target;
+		} else {
+			unsigned long min_val;
+			unsigned long max_val;
+			unsigned long i;
+			if (!tarval_is_long(min))
+				panic("switch case overflow (%+F)", node);
+			min_val = (unsigned long)get_tarval_long(min);
+			max_val = (unsigned long)get_tarval_long(max);
+			assert(min_val <= max_val);
+			for (i = min_val; i <= max_val; ++i) {
+				labels[i] = target;
+			}
+		}
 	}
 
 	/* emit table */
-	be_gas_emit_switch_section(GAS_SECTION_RODATA);
-	be_emit_cstring("\t.align 4\n");
-	be_gas_emit_entity(entity);
-	be_emit_cstring(":\n");
+	if (entity != NULL) {
+		be_gas_emit_switch_section(GAS_SECTION_RODATA);
+		be_emit_cstring("\t.align 4\n");
+		be_gas_emit_entity(entity);
+		be_emit_cstring(":\n");
+	}
+
 	for (i = 0; i < length; ++i) {
-		ir_node *block = table[i];
+		const ir_node *block = labels[i];
 		if (block == NULL)
-			block = default_block;
+			block = targets[0];
 		be_emit_cstring("\t.long ");
 		be_gas_emit_block_name(block);
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
-	xfree(table);
+	if (entity != NULL)
+		be_gas_emit_switch_section(GAS_SECTION_TEXT);
+
+	xfree(labels);
+	xfree(targets);
 }
 
 static void emit_global_asms(void)

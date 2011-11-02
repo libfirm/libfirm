@@ -1066,11 +1066,11 @@ static void emit_ia32_CMovcc(const ir_node *node)
  */
 static void emit_ia32_SwitchJmp(const ir_node *node)
 {
-	ir_entity *jump_table = get_ia32_am_sc(node);
-	long       default_pn = get_ia32_default_pn(node);
+	ir_entity             *jump_table = get_ia32_am_sc(node);
+	const ir_switch_table *table      = get_ia32_switch_table(node);
 
 	ia32_emitf(node, "\tjmp %*AM\n");
-	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
+	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
 }
 
 /**
@@ -3220,13 +3220,13 @@ static void bemit_ia32_jcc(const ir_node *node)
 
 static void bemit_switchjmp(const ir_node *node)
 {
-	ir_entity *jump_table = get_ia32_am_sc(node);
-	long       default_pn = get_ia32_default_pn(node);
+	ir_entity             *jump_table = get_ia32_am_sc(node);
+	const ir_switch_table *table      = get_ia32_switch_table(node);
 
 	bemit8(0xFF); // jmp *tbl.label(,%in,4)
 	bemit_mod_am(0x05, node);
 
-	emit_jump_table(node, default_pn, jump_table, get_cfop_target_block);
+	be_emit_jump_table(node, table, jump_table, get_cfop_target_block);
 }
 
 /**
