@@ -108,6 +108,7 @@ void remove_critical_cf_edges_ex(ir_graph *irg, int ignore_exception_edges)
 		clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
 		                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 	}
+	set_irg_state(irg, IR_GRAPH_STATE_NO_CRITICAL_EDGES);
 }
 
 void remove_critical_cf_edges(ir_graph *irg)
