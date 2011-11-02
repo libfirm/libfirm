@@ -787,8 +787,10 @@ static void _trunc(const fp_value *a, fp_value *result)
 
 	temp = (char*) alloca(value_size);
 
-	if (a != result)
+	if (a != result) {
 		result->desc = a->desc;
+		result->clss = a->clss;
+	}
 
 	exp_bias = (1 << (a->desc.exponent_size - 1)) - 1;
 	exp_val  = sc_val_to_long(_exp(a)) - exp_bias;
