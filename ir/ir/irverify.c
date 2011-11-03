@@ -882,6 +882,8 @@ static int verify_switch_table(const ir_node *n)
 	const ir_switch_table *table     = get_Switch_table(n);
 	size_t                 n_entries = ir_switch_table_get_n_entries(table);
 	unsigned               n_outs    = get_Switch_n_outs(n);
+	ir_node               *selector  = get_Switch_selector(n);
+	ir_mode               *mode      = get_irn_mode(selector);
 	size_t                 e;
 
 	for (e = 0; e < n_entries; ++e) {
@@ -891,6 +893,9 @@ static int verify_switch_table(const ir_node *n)
 			continue;
 		ASSERT_AND_RET(entry->min != NULL && entry->max != NULL,
 		               "switch table entry without min+max value", 0);
+		ASSERT_AND_RET(get_tarval_mode(entry->min) == mode &&
+		               get_tarval_mode(entry->max) == mode,
+		               "switch table entry with wrong modes", 0);
 		ASSERT_AND_RET(tarval_cmp(entry->min, entry->max) != ir_relation_greater,
 		               "switch table entry without min+max value", 0);
 		ASSERT_AND_RET(entry->pn >= 0 && entry->pn < (long)n_outs,
