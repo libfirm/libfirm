@@ -229,8 +229,8 @@ static void normalize_switch(switch_info_t *info)
 		min_const = new_r_Const(irg, delta);
 		selector  = new_rd_Sub(dbgi, block, selector, min_const, mode);
 
-		info->switch_min  = 0;
 		info->switch_max -= info->switch_min;
+		info->switch_min  = 0;
 	}
 
 	if (delta != NULL || change_mode) {
