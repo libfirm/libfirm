@@ -563,13 +563,13 @@ static void emit_sparc_Call(const ir_node *node)
 	}
 }
 
-static void verify_permi(int *regs)
+static void verify_permi(unsigned *regs)
 {
 	int i, j;
 
 	/* Generic checks */
 	for (i = 0; i < 5; ++i) {
-		assert(regs[i] >= 0 && regs[i] <= 31 && "Invalid regno in permi");
+		assert(regs[i] <= 31 && "Invalid regno in permi");
 	}
 
 	if (regs[0] <= regs[1]) {
@@ -598,11 +598,29 @@ static void verify_permi(int *regs)
 	}
 }
 
-static int permi5(int *regs)
+static unsigned permi5(unsigned *regs)
 {
 	verify_permi(regs);
 
 	return (regs[0] << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
+}
+
+static void emit_permi(const ir_node *irn, unsigned *regs)
+{
+#if 1
+	be_emit_irprintf("\tpermi %u", permi5(regs));
+	be_emit_finish_line_gas(irn);
+#else
+	unsigned reg0 = regs[0];
+    unsigned opc  = 0;
+	unsigned rd   = 0x10 | (reg0 >> 2);
+	unsigned xop  = 0;
+	unsigned imm  = ((reg0 & 3) << 20) | (regs[1] << 15) | (regs[2] << 10) | (regs[3] << 5) | regs[4];
+	unsigned insn = (opc << 30) | (rd << 25) | (xop << 22) | imm;
+
+	be_emit_irprintf("\t.long %u", insn);
+	be_emit_finish_line_gas(irn);
+#endif
 }
 
 static void emit_icore_Permi(const ir_node *irn)
@@ -610,7 +628,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	const int MAX_CYCLE_SIZE = 5;
 	const arch_register_t *in_regs[MAX_CYCLE_SIZE];
 	const arch_register_t *out_regs[MAX_CYCLE_SIZE];
-	int regns[MAX_CYCLE_SIZE];
+	unsigned regns[MAX_CYCLE_SIZE];
 	int i;
 	const int arity = get_irn_arity(irn);
 
@@ -657,7 +675,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	 * actual code generation.
 	 */
 	for (i = 0; i < arity; ++i) {
-		regns[i] = in_regs[arity - i - 1]->index;
+		regns[i] = (unsigned) in_regs[arity - i - 1]->index;
 	}
 
 	/*
@@ -669,7 +687,7 @@ static void emit_icore_Permi(const ir_node *irn)
 	 */
 	while (regns[0] > regns[1]) {
 		/* Rotate until regns[0] <= regns[1] holds. */
-		int regn0 = regns[0];
+		unsigned regn0 = regns[0];
 		for (i = 0; i < arity - 1; ++i)
 			regns[i] = regns[i + 1];
 		regns[arity - 1] = regn0;
@@ -696,15 +714,14 @@ static void emit_icore_Permi(const ir_node *irn)
 	be_emit_irprintf("%s */", in_regs[0]->name);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_irprintf("\tpermi %d", permi5(regns));
-	be_emit_finish_line_gas(irn);
+	emit_permi(irn, regns);
 }
 
 static void emit_icore_Permi23(const ir_node *irn)
 {
 	const arch_register_t *in_regs[5];
 	const arch_register_t *out_regs[5];
-	int regns[5];
+	unsigned regns[5];
 	int i;
 	const int arity = get_irn_arity(irn);
 
@@ -736,10 +753,10 @@ static void emit_icore_Permi23(const ir_node *irn)
 	 * Therefore, we reverse the order of the register numbers for
 	 * actual code generation.
 	 */
-	regns[0] = in_regs[0]->index;
-	regns[1] = in_regs[1]->index;
+	regns[0] = (unsigned) in_regs[0]->index;
+	regns[1] = (unsigned) in_regs[1]->index;
 	for (i = 2; i < arity; ++i) {
-		regns[i] = in_regs[2 + arity - i - 1]->index;
+		regns[i] = (unsigned) in_regs[2 + arity - i - 1]->index;
 	}
 
 	/*
@@ -751,7 +768,7 @@ static void emit_icore_Permi23(const ir_node *irn)
 	 */
 	if (regns[0] <= regns[1]) {
 		/* Swap regns[0] and regns[1]. */
-		int regn0 = regns[0];
+		unsigned regn0 = regns[0];
 		regns[0] = regns[1];
 		regns[1] = regn0;
 	}
@@ -783,8 +800,7 @@ static void emit_icore_Permi23(const ir_node *irn)
 	be_emit_irprintf("%s */", in_regs[2]->name);
 	be_emit_finish_line_gas(NULL);
 
-	be_emit_irprintf("\tpermi %d", permi5(regns));
-	be_emit_finish_line_gas(irn);
+	emit_permi(irn, regns);
 }
 
 static void emit_be_Perm_xor(const ir_node *irn)
