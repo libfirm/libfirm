@@ -2739,6 +2739,21 @@ static ir_node *transform_node_Add(ir_node *n)
 		}
 	}
 
+	if (is_Const(b) && get_mode_arithmetic(mode) == irma_twos_complement) {
+		ir_tarval *tv  = get_Const_tarval(b);
+		ir_tarval *min = get_mode_min(mode);
+		/* if all bits are set, then this has the same effect as a Not.
+		 * Note that the following == gives false for different modes which
+		 * is exactly what we want */
+		if (tv == min) {
+			dbg_info *dbgi  = get_irn_dbg_info(n);
+			ir_graph *irg   = get_irn_irg(n);
+			ir_node  *block = get_nodes_block(n);
+			ir_node  *cnst  = new_r_Const(irg, min);
+			return new_rd_Eor(dbgi, block, a, cnst, mode);
+		}
+	}
+
 	HANDLE_BINOP_PHI((eval_func) tarval_add, a, b, c, mode);
 
 	/* for FP the following optimizations are only allowed if
