@@ -634,6 +634,8 @@ void init_mode(void)
 	mode_LLu = new_int_mode("LLu", irma_twos_complement, 128, 0, 128);
 
 	mode_P   = new_reference_mode("P", irma_twos_complement, 32, 32);
+	set_reference_mode_signed_eq(mode_P, mode_Is);
+	set_reference_mode_unsigned_eq(mode_P, mode_Iu);
 
 	/* set the machine specific modes to the predefined ones */
 	mode_P_code = mode_P;
