@@ -32,17 +32,18 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-#include "list.h"
 #include "irdump.h"
 #include "irgwalk.h"
-#include "irtools.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
 #include "iredges_t.h"
+#include "list.h"
+#include "util.h"
 
 struct ir_heights_t {
-	ir_phase  phase;
-	unsigned  visited;
-	void     *dump_handle;
+	ir_nodemap      data;
+	unsigned        visited;
+	void           *dump_handle;
+	struct obstack  obst;
 };
 
 typedef struct {
@@ -50,30 +51,28 @@ typedef struct {
 	unsigned visited;
 } irn_height_t;
 
-static void *irn_height_init(ir_phase *phase, const ir_node *node)
+static irn_height_t *maybe_get_height_data(const ir_heights_t *heights,
+                                           const ir_node *node)
 {
-	irn_height_t *h = (irn_height_t*) phase_alloc(phase, sizeof(*h));
-	(void) node;
-	memset(h, 0, sizeof(*h));
-	return h;
+	irn_height_t *height = (irn_height_t*)ir_nodemap_get(&heights->data, node);
+	return height;
 }
 
-static void *irn_height_reinit(ir_phase *phase, const ir_node *node,
-                               void *old_data)
+static irn_height_t *get_height_data(ir_heights_t *heights, const ir_node *node)
 {
-	irn_height_t *h = (irn_height_t*) old_data;
-	(void) node;
-	(void) phase;
-	memset(h, 0, sizeof(*h));
-	return h;
+	irn_height_t *height = (irn_height_t*)ir_nodemap_get(&heights->data, node);
+	if (height == NULL) {
+		height = OALLOCZ(&heights->obst, irn_height_t);
+		ir_nodemap_insert(&heights->data, node, height);
+	}
+	return height;
 }
 
 static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
 {
-	ir_heights_t *heights = (ir_heights_t*) data;
-	irn_height_t *h       = (irn_height_t*) phase_get_irn_data(&heights->phase, irn);
-
-	if (h)
+	const ir_heights_t *heights = (const ir_heights_t*) data;
+	const irn_height_t *h       = maybe_get_height_data(heights, irn);
+	if (h != NULL)
 		fprintf(f, "height: %u\n", h->height);
 }
 
@@ -84,8 +83,7 @@ static void height_dump_cb(void *data, FILE *f, const ir_node *irn)
  * @param tgt  The node we try to reach.
  * @return     1, one of tgt can be reached from curr, 0 else.
  */
-static bool search(const ir_heights_t *h, const ir_node *curr,
-                   const ir_node *tgt)
+static bool search(ir_heights_t *h, const ir_node *curr, const ir_node *tgt)
 {
 	irn_height_t *h_curr;
 	irn_height_t *h_tgt;
@@ -102,12 +100,12 @@ static bool search(const ir_heights_t *h, const ir_node *curr,
 		return false;
 
 	/* Check, if we have already been here. Coming more often won't help :-) */
-	h_curr = (irn_height_t*) phase_get_irn_data(&h->phase, curr);
+	h_curr = get_height_data(h, curr);
 	if (h_curr->visited >= h->visited)
 		return false;
 
 	/* If we are too deep into the DAG we won't find the target either. */
-	h_tgt = (irn_height_t*) phase_get_irn_data(&h->phase, tgt);
+	h_tgt = get_height_data(h, tgt);
 	if (h_curr->height > h_tgt->height)
 		return false;
 
@@ -132,8 +130,8 @@ int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
                                const ir_node *m)
 {
 	int res          = 0;
-	irn_height_t *hn = (irn_height_t*) phase_get_irn_data(&h->phase, n);
-	irn_height_t *hm = (irn_height_t*) phase_get_irn_data(&h->phase, m);
+	irn_height_t *hn = get_height_data(h, n);
+	irn_height_t *hm = get_height_data(h, m);
 
 	assert(get_nodes_block(n) == get_nodes_block(m));
 	assert(hn != NULL && hm != NULL);
@@ -154,7 +152,7 @@ int heights_reachable_in_block(ir_heights_t *h, const ir_node *n,
  */
 static unsigned compute_height(ir_heights_t *h, ir_node *irn, const ir_node *bl)
 {
-	irn_height_t *ih = (irn_height_t*) phase_get_or_set_irn_data(&h->phase, irn);
+	irn_height_t *ih = get_height_data(h, irn);
 
 	const ir_edge_t *edge;
 
@@ -223,21 +221,22 @@ static void compute_heights_in_block_walker(ir_node *block, void *data)
 
 unsigned get_irn_height(const ir_heights_t *heights, const ir_node *irn)
 {
-	const irn_height_t *h = (irn_height_t*) phase_get_irn_data(&heights->phase, irn);
-	assert(h && "No height information for node");
-	return h->height;
+	const irn_height_t *height = maybe_get_height_data(heights, irn);
+	assert(height != NULL && "No height information for node");
+	return height->height;
 }
 
 unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 {
+	ir_graph *irg = get_irn_irg(block);
 	const ir_edge_t *edge;
 
-	edges_assure(phase_get_irg(&h->phase));
+	edges_assure(irg);
 
 	/* reset phase data for all nodes in the block */
 	foreach_out_edge(block, edge) {
 		ir_node      *irn = get_edge_src_irn(edge);
-		irn_height_t *ih  = (irn_height_t*) phase_get_irn_data(&h->phase, irn);
+		irn_height_t *ih  = get_height_data(h, irn);
 		memset(ih, 0, sizeof(*ih));
 	}
 
@@ -245,29 +244,23 @@ unsigned heights_recompute_block(ir_heights_t *h, ir_node *block)
 	return compute_heights_in_block(block, h);
 }
 
-void heights_recompute(ir_heights_t *h)
-{
-	ir_graph *irg = phase_get_irg(&h->phase);
-
-	edges_assure(irg);
-	phase_reinit_irn_data(&h->phase, irn_height_reinit);
-	h->visited = 0;
-	irg_block_walk_graph(irg, compute_heights_in_block_walker, NULL, h);
-}
-
 ir_heights_t *heights_new(ir_graph *irg)
 {
-	ir_heights_t *res = XMALLOC(ir_heights_t);
-	phase_init(&res->phase, irg, irn_height_init);
+	ir_heights_t *res = XMALLOCZ(ir_heights_t);
+	ir_nodemap_init(&res->data, irg);
+	obstack_init(&res->obst);
 	res->dump_handle = dump_add_node_info_callback(height_dump_cb, res);
-	heights_recompute(res);
+
+	edges_assure(irg);
+	irg_block_walk_graph(irg, compute_heights_in_block_walker, NULL, res);
 
 	return res;
 }
 
 void heights_free(ir_heights_t *h)
 {
-	phase_deinit(&h->phase);
 	dump_remove_node_info_callback(h->dump_handle);
+	obstack_free(&h->obst, NULL);
+	ir_nodemap_destroy(&h->data);
 	xfree(h);
 }

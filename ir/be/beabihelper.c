@@ -33,7 +33,8 @@
 #include "ircons.h"
 #include "iredges.h"
 #include "irgwalk.h"
-#include "irphase_t.h"
+#include "irnodemap.h"
+#include "irtools.h"
 #include "heights.h"
 
 /**
@@ -599,11 +600,11 @@ static int cmp_call_dependency(const void *c1, const void *c2)
  */
 static void process_ops_in_block(ir_node *block, void *data)
 {
-	ir_phase *phase = (ir_phase*)data;
-	unsigned  n;
-	unsigned  n_nodes;
-	ir_node  *node;
-	ir_node **nodes;
+	ir_nodemap *map = (ir_nodemap*)data;
+	unsigned    n;
+	unsigned    n_nodes;
+	ir_node    *node;
+	ir_node   **nodes;
 
 	n_nodes = 0;
 	for (node = (ir_node*)get_irn_link(block); node != NULL;
@@ -630,7 +631,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 		ir_node *node = nodes[n];
 		ir_node *pred = nodes[n-1];
 
-		phase_set_irn_data(phase, node, pred);
+		ir_nodemap_insert(map, node, pred);
 	}
 	xfree(nodes);
 }
@@ -638,7 +639,7 @@ static void process_ops_in_block(ir_node *block, void *data)
 
 
 struct be_stackorder_t {
-	ir_phase *stack_order; /**< a phase to handle stack dependencies. */
+	ir_nodemap stack_order; /**< a phase to handle stack dependencies. */
 };
 
 be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
@@ -650,13 +651,12 @@ be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
 	/* collect all potential^stack accessing nodes */
 	irg_walk_graph(irg, firm_clear_link, link_ops_in_block_walker, NULL);
 
-	assert(env->stack_order == NULL);
-	env->stack_order = new_phase(irg, phase_irn_init_default);
+	ir_nodemap_init(&env->stack_order, irg);
 
 	/* use heights to create a total order for those nodes: this order is stored
 	 * in the created phase */
 	heights = heights_new(irg);
-	irg_block_walk_graph(irg, NULL, process_ops_in_block, env->stack_order);
+	irg_block_walk_graph(irg, NULL, process_ops_in_block, &env->stack_order);
 	heights_free(heights);
 
 	ir_free_resources(irg, IR_RESOURCE_IRN_LINK);
@@ -666,12 +666,12 @@ be_stackorder_t *be_collect_stacknodes(ir_graph *irg)
 
 ir_node *be_get_stack_pred(const be_stackorder_t *env, const ir_node *node)
 {
-	return (ir_node*)phase_get_irn_data(env->stack_order, node);
+	return (ir_node*)ir_nodemap_get(&env->stack_order, node);
 }
 
 void be_free_stackorder(be_stackorder_t *env)
 {
-	phase_free(env->stack_order);
+	ir_nodemap_destroy(&env->stack_order);
 	free(env);
 }
 

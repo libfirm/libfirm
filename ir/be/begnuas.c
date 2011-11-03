@@ -86,6 +86,10 @@ static void emit_section_macho(be_gas_section_t section)
 		case GAS_SECTION_PIC_TRAMPOLINES: name = "section\t__IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5"; break;
 		case GAS_SECTION_PIC_SYMBOLS:     name = "section\t__IMPORT,__pointers,non_lazy_symbol_pointers"; break;
 		case GAS_SECTION_CSTRING:         name = "cstring";       break;
+		case GAS_SECTION_DEBUG_INFO:      name = "section __DWARF,__debug_info,regular,debug"; break;
+		case GAS_SECTION_DEBUG_ABBREV:    name = "section __DWARF,__debug_abbrev,regular,debug"; break;
+		case GAS_SECTION_DEBUG_LINE:      name = "section __DWARF,__debug_line,regular,debug"; break;
+		case GAS_SECTION_DEBUG_PUBNAMES:  name = "section __DWARF,__debug_pubnames,regular,debug"; break;
 		default: panic("unsupported scetion type 0x%X", section);
 		}
 		be_emit_irprintf("\t.%s\n", name);
@@ -108,8 +112,20 @@ static void emit_section_sparc(be_gas_section_t section, const ir_entity *entity
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	static const char *const basename[] = {
-		"text", "data", "rodata", "bss", "ctors", "dtors"
+	static const char *const basename[GAS_SECTION_LAST+1] = {
+		"text",
+		"data",
+		"rodata",
+		"bss",
+		"ctors",
+		"dtors",
+		NULL, /* cstring */
+		NULL, /* pic trampolines */
+		NULL, /* pic symbols */
+		"debug_info",
+		"debug_abbrev",
+		"debug_line",
+		"debug_pubnames"
 	};
 
 	if (current_section == section && !(section & GAS_SECTION_FLAG_COMDAT))
@@ -157,11 +173,25 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 {
 	be_gas_section_t base = section & GAS_SECTION_TYPE_MASK;
 	be_gas_section_t flags = section & ~GAS_SECTION_TYPE_MASK;
-	static const char *const basename[] = {
-		"text", "data", "rodata", "bss", "ctors", "dtors"
-	};
-	static const char *const type[] = {
-		"progbits", "progbits", "progbits", "nobits", "progbits", "progbits"
+	const char *f;
+	static const struct {
+		const char *name;
+		const char *type;
+		const char *flags;
+	} sectioninfos[GAS_SECTION_LAST+1] = {
+		{ "text",           "progbits", "ax" },
+		{ "data",           "progbits", "aw" },
+		{ "rodata",         "progbits", "a"  },
+		{ "bss",            "nobits",   "aw" },
+		{ "ctors",          "progbits", "aw" },
+		{ "dtors",          "progbits", "aw" },
+		{ NULL,             NULL,       NULL }, /* cstring */
+		{ NULL,             NULL,       NULL }, /* pic trampolines */
+		{ NULL,             NULL,       NULL }, /* pic symbols */
+		{ "debug_info",     "progbits", ""   },
+		{ "debug_abbrev",   "progbits", ""   },
+		{ "debug_line",     "progbits", ""   },
+		{ "debug_pubnames", "progbits", ""   },
 	};
 
 	if (be_gas_object_file_format == OBJECT_FILE_FORMAT_MACH_O) {
@@ -200,12 +230,12 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 		}
 	}
 
-	assert(base < (be_gas_section_t) ARRAY_SIZE(basename));
+	assert(base < (be_gas_section_t) ARRAY_SIZE(sectioninfos));
 	be_emit_cstring("\t.section\t.");
 	/* section name */
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('t');
-	be_emit_string(basename[base]);
+	be_emit_string(sectioninfos[base].name);
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
 		be_emit_char('.');
 		be_gas_emit_entity(entity);
@@ -213,21 +243,19 @@ static void emit_section(be_gas_section_t section, const ir_entity *entity)
 
 	/* section flags */
 	be_emit_cstring(",\"");
-	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF)
-		be_emit_char('a');
-	if (base == GAS_SECTION_TEXT)
-		be_emit_char('x');
-	if (base != GAS_SECTION_RODATA && base != GAS_SECTION_TEXT)
-		be_emit_char('w');
+	for (f = sectioninfos[base].flags; *f != '\0'; ++f) {
+		be_emit_char(*f);
+	}
 	if (flags & GAS_SECTION_FLAG_TLS)
 		be_emit_char('T');
 	if (flags & GAS_SECTION_FLAG_COMDAT)
 		be_emit_char('G');
+
 	/* section type */
 	if (be_gas_object_file_format != OBJECT_FILE_FORMAT_COFF) {
 		be_emit_cstring("\",");
 		be_emit_char(be_gas_elf_type_char);
-		be_emit_string(type[base]);
+		be_emit_string(sectioninfos[base].type);
 	}
 
 	if (flags & GAS_SECTION_FLAG_COMDAT) {
@@ -501,7 +529,11 @@ static void emit_visibility(const ir_entity *entity)
 
 void be_gas_emit_function_prolog(const ir_entity *entity, unsigned po2alignment)
 {
-	be_gas_section_t section = determine_section(NULL, entity);
+	be_gas_section_t section;
+
+	be_dbg_method_begin(entity);
+
+	section = determine_section(NULL, entity);
 	emit_section(section, entity);
 
 	/* write the begin line (makes the life easier for scripts parsing the
@@ -569,6 +601,11 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
 	be_gas_emit_entity(entity);
 	be_emit_char('\n');
 	be_emit_write_line();
+
+	be_dbg_method_end();
+
+	be_emit_char('\n');
+	be_emit_write_line();
 }
 
 /**
@@ -577,7 +614,7 @@ void be_gas_emit_function_epilog(const ir_entity *entity)
  * @param tv     the tarval
  * @param bytes  the width of the tarvals value in bytes
  */
-static void emit_arith_tarval(ir_tarval *tv, int bytes)
+static void emit_arith_tarval(ir_tarval *tv, unsigned bytes)
 {
 	switch (bytes) {
 	case 1:
@@ -585,53 +622,22 @@ static void emit_arith_tarval(ir_tarval *tv, int bytes)
 		return;
 
 	case 2:
-		be_emit_irprintf("0x%02x%02x", get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+		be_emit_irprintf("0x%02x%02x",
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		return;
 
 	case 4:
 		be_emit_irprintf("0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
+			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		return;
 
 	case 8:
 		be_emit_irprintf("0x%02x%02x%02x%02x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6), get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
-			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2), get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
-		return;
-
-	case 12:
-		/* Beware: Mixed endian output!  One little endian number emitted as
-		 * three longs.  Each long initializer is written in big endian. */
-		be_emit_irprintf(
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
-			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8)
-		);
-		return;
-
-	case 16:
-		/* Beware: Mixed endian output!  One little endian number emitted as
-		 * three longs.  Each long initializer is written in big endian. */
-		be_emit_irprintf(
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x\n"
-			"\t.long\t0x%02x%02x%02x%02x",
-			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
-			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
-			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
-			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
-			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
-			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
-			get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
-			get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12)
-		);
+			get_tarval_sub_bits(tv, 7), get_tarval_sub_bits(tv, 6),
+			get_tarval_sub_bits(tv, 5), get_tarval_sub_bits(tv, 4),
+			get_tarval_sub_bits(tv, 3), get_tarval_sub_bits(tv, 2),
+			get_tarval_sub_bits(tv, 1), get_tarval_sub_bits(tv, 0));
 		return;
 	}
 
@@ -701,7 +707,7 @@ static ir_tarval *get_atomic_init_tv(ir_node *init)
  * @param env   the gas output environment
  * @param init  a node representing the atomic value (on the const code irg)
  */
-static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
+static void emit_init_expression(be_gas_decl_env_t *env, ir_node *init)
 {
 	ir_mode *mode = get_irn_mode(init);
 	int bytes     = get_mode_size_bytes(mode);
@@ -712,11 +718,11 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 
 	switch (get_irn_opcode(init)) {
 	case iro_Cast:
-		do_emit_atomic_init(env, get_Cast_op(init));
+		emit_init_expression(env, get_Cast_op(init));
 		return;
 
 	case iro_Conv:
-		do_emit_atomic_init(env, get_Conv_op(init));
+		emit_init_expression(env, get_Conv_op(init));
 		return;
 
 	case iro_Const:
@@ -760,27 +766,27 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '+' to work");
 		}
-		do_emit_atomic_init(env, get_Add_left(init));
+		emit_init_expression(env, get_Add_left(init));
 		be_emit_cstring(" + ");
-		do_emit_atomic_init(env, get_Add_right(init));
+		emit_init_expression(env, get_Add_right(init));
 		return;
 
 	case iro_Sub:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '-' to work");
 		}
-		do_emit_atomic_init(env, get_Sub_left(init));
+		emit_init_expression(env, get_Sub_left(init));
 		be_emit_cstring(" - ");
-		do_emit_atomic_init(env, get_Sub_right(init));
+		emit_init_expression(env, get_Sub_right(init));
 		return;
 
 	case iro_Mul:
 		if (!mode_is_int(mode) && !mode_is_reference(mode)) {
 			panic("Constant must be int or pointer for '*' to work");
 		}
-		do_emit_atomic_init(env, get_Mul_left(init));
+		emit_init_expression(env, get_Mul_left(init));
 		be_emit_cstring(" * ");
-		do_emit_atomic_init(env, get_Mul_right(init));
+		emit_init_expression(env, get_Mul_right(init));
 		return;
 
 	case iro_Unknown:
@@ -800,48 +806,14 @@ static void do_emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
 static void emit_size_type(size_t size)
 {
 	switch (size) {
-	case 1:
-		be_emit_cstring("\t.byte\t");
-		break;
-
-	case 2:
-		be_emit_cstring("\t.short\t");
-		break;
-
-	case 4:
-		be_emit_cstring("\t.long\t");
-		break;
-
-	case 8:
-		be_emit_cstring("\t.quad\t");
-		break;
-
-	case 10:
-	case 12:
-	case 16: /* Note: .octa does not work on mac */
-		/* handled in arith */
-		break;
+	case 1: be_emit_cstring("\t.byte\t");  break;
+	case 2: be_emit_cstring("\t.short\t"); break;
+	case 4: be_emit_cstring("\t.long\t");  break;
+	case 8: be_emit_cstring("\t.quad\t");  break;
 
 	default:
 		panic("Try to dump a type with %u bytes", (unsigned)size);
 	}
-}
-
-/**
- * Emit an atomic value.
- *
- * @param env   the gas output environment
- * @param init  a node representing the atomic value (on the const code irg)
- */
-static void emit_atomic_init(be_gas_decl_env_t *env, ir_node *init)
-{
-	ir_mode *mode = get_irn_mode(init);
-	int bytes     = get_mode_size_bytes(mode);
-
-	emit_size_type(bytes);
-	do_emit_atomic_init(env, init);
-	be_emit_char('\n');
-	be_emit_write_line();
 }
 
 /**
@@ -948,6 +920,7 @@ typedef enum normal_or_bitfield_kind {
 
 typedef struct {
 	normal_or_bitfield_kind kind;
+	ir_type                *type;
 	union {
 		ir_node                *value;
 		ir_tarval              *tarval;
@@ -1099,10 +1072,12 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 
 		assert(vals->kind != BITFIELD);
 		vals->kind     = TARVAL;
+		vals->type     = type;
 		vals->v.tarval = get_initializer_tarval_value(initializer);
 		assert(get_type_mode(type) == get_tarval_mode(vals->v.tarval));
 		for (i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
+			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
 		}
 		return;
@@ -1112,9 +1087,11 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 
 		assert(vals->kind != BITFIELD);
 		vals->kind    = NORMAL;
+		vals->type    = type;
 		vals->v.value = get_initializer_const_value(initializer);
 		for (i = 1; i < get_type_size_bytes(type); ++i) {
 			vals[i].kind    = NORMAL;
+			vals[i].type    = NULL;
 			vals[i].v.value = NULL;
 		}
 		return;
@@ -1179,6 +1156,97 @@ static void emit_ir_initializer(normal_or_bitfield *vals,
 	panic("invalid ir_initializer kind found");
 }
 
+static void emit_tarval_data(ir_type *type, ir_tarval *tv)
+{
+	size_t size = get_type_size_bytes(type);
+	if (size == 12) {
+		/* this should be an x86 extended float */
+		assert(be_get_backend_param()->byte_order_big_endian == 0);
+
+		/* Beware: Mixed endian output!  One little endian number emitted as
+		 * three longs.  Each long initializer is written in big endian. */
+		be_emit_irprintf(
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x\n"
+			"\t.long\t0x%02x%02x%02x%02x\n",
+			get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+			get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
+			get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
+			get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
+			get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+			get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8)
+		);
+		be_emit_write_line();
+	} else if (size == 16) {
+		if (be_get_backend_param()->byte_order_big_endian) {
+			be_emit_irprintf(
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n",
+				get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
+				get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12),
+				get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+				get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
+				get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
+				get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
+				get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+				get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0)
+			);
+		} else {
+			/* Beware: Mixed endian output! One little endian number emitted as
+			 * three longs.  Each long initializer is written in big endian. */
+			be_emit_irprintf(
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n"
+				"\t.long\t0x%02x%02x%02x%02x\n",
+				get_tarval_sub_bits(tv,  3), get_tarval_sub_bits(tv,  2),
+				get_tarval_sub_bits(tv,  1), get_tarval_sub_bits(tv,  0),
+				get_tarval_sub_bits(tv,  7), get_tarval_sub_bits(tv,  6),
+				get_tarval_sub_bits(tv,  5), get_tarval_sub_bits(tv,  4),
+				get_tarval_sub_bits(tv, 11), get_tarval_sub_bits(tv, 10),
+				get_tarval_sub_bits(tv,  9), get_tarval_sub_bits(tv,  8),
+				get_tarval_sub_bits(tv, 15), get_tarval_sub_bits(tv, 14),
+				get_tarval_sub_bits(tv, 13), get_tarval_sub_bits(tv, 12)
+			);
+		}
+		be_emit_write_line();
+		return;
+	} else {
+		/* default case */
+		emit_size_type(size);
+		emit_arith_tarval(tv, size);
+		be_emit_char('\n');
+		be_emit_write_line();
+	}
+}
+
+/**
+ * Emit an atomic value.
+ *
+ * @param env   the gas output environment
+ * @param init  a node representing the atomic value (on the const code irg)
+ */
+static void emit_node_data(be_gas_decl_env_t *env, ir_node *init, ir_type *type)
+{
+	size_t size = get_type_size_bytes(type);
+	if (size == 12 || size == 16) {
+		ir_tarval *tv;
+		if (!is_Const(init)) {
+			panic("12/16byte initializers only support Const nodes yet");
+		}
+		tv = get_Const_tarval(init);
+		emit_tarval_data(type, tv);
+		return;
+	}
+
+	emit_size_type(size);
+	emit_init_expression(env, init);
+	be_emit_char('\n');
+	be_emit_write_line();
+}
+
 static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 {
 	const ir_initializer_t *initializer = entity->initializer;
@@ -1214,37 +1282,31 @@ static void emit_initializer(be_gas_decl_env_t *env, const ir_entity *entity)
 	/* now write values sorted */
 	for (k = 0; k < size; ) {
 		int                     space     = 0;
-		int                     elem_size = 1;
 		normal_or_bitfield_kind kind      = vals[k].kind;
+		int                     elem_size;
 		switch (kind) {
 		case NORMAL:
 			if (vals[k].v.value != NULL) {
-				emit_atomic_init(env, vals[k].v.value);
-				elem_size = get_mode_size_bytes(get_irn_mode(vals[k].v.value));
+				emit_node_data(env, vals[k].v.value, vals[k].type);
+				elem_size = get_type_size_bytes(vals[k].type);
 			} else {
 				elem_size = 0;
 			}
 			break;
-		case TARVAL: {
-			ir_tarval *tv   = vals[k].v.tarval;
-			size_t     size = get_mode_size_bytes(get_tarval_mode(tv));
-
-			assert(tv != NULL);
-
-			elem_size = size;
-			emit_size_type(size);
-			emit_arith_tarval(tv, size);
-			be_emit_char('\n');
-			be_emit_write_line();
+		case TARVAL:
+			emit_tarval_data(vals[k].type, vals[k].v.tarval);
+			elem_size = get_type_size_bytes(vals[k].type);
 			break;
-		}
 		case STRING:
 			elem_size = emit_string_initializer(vals[k].v.string);
 			break;
 		case BITFIELD:
 			be_emit_irprintf("\t.byte\t%d\n", vals[k].v.bf_val);
 			be_emit_write_line();
+			elem_size = 1;
 			break;
+		default:
+			panic("internal compiler error (invalid normal_or_bitfield_kind");
 		}
 
 		k += elem_size;
@@ -1346,7 +1408,7 @@ static void emit_compound_graph_init(be_gas_decl_env_t *env,
 		int space = 0, skip = 0;
 		if (vals[k].kind == NORMAL) {
 			if (vals[k].v.value != NULL) {
-				emit_atomic_init(env, vals[k].v.value);
+				emit_node_data(env, vals[k].v.value, vals[k].type);
 				skip = get_mode_size_bytes(get_irn_mode(vals[k].v.value)) - 1;
 			} else {
 				space = 1;
@@ -1629,7 +1691,7 @@ static void be_gas_emit_globals(ir_type *gt, be_gas_decl_env_t *env)
 }
 
 /* Generate all entities. */
-void be_gas_emit_decls(const be_main_env_t *main_env)
+static void emit_global_decls(const be_main_env_t *main_env)
 {
 	be_gas_decl_env_t env;
 	memset(&env, 0, sizeof(env));
@@ -1658,64 +1720,135 @@ void be_gas_emit_decls(const be_main_env_t *main_env)
 	}
 }
 
-void emit_jump_table(const ir_node *node, long default_pn, ir_entity *entity,
-                     get_cfop_target_func get_cfop_target)
+void be_emit_jump_table(const ir_node *node, const ir_switch_table *table,
+                        ir_entity *entity, get_cfop_target_func get_cfop_target)
 {
-	long             switch_max    = LONG_MIN;
-	ir_node         *default_block = NULL;
-	unsigned long    length;
-	const ir_edge_t *edge;
-	unsigned         i;
-	ir_node        **table;
+	unsigned          n_outs    = arch_get_irn_n_outs(node);
+	const ir_node   **targets   = XMALLOCNZ(const ir_node*, n_outs);
+	size_t            n_entries = ir_switch_table_get_n_entries(table);
+	unsigned long     length    = 0;
+	size_t            e;
+	const ir_edge_t  *edge;
+	unsigned          i;
+	const ir_node   **labels;
 
-	/* go over all proj's and collect them */
+	/* go over all proj's and collect their jump targets */
 	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
+		ir_node *proj   = get_edge_src_irn(edge);
+		long     pn     = get_Proj_proj(proj);
+		ir_node *target = get_cfop_target(proj);
+		assert(targets[pn] == NULL);
+		targets[pn] = target;
+	}
 
-		/* check for default proj */
-		if (pn == default_pn) {
-			assert(default_block == NULL); /* more than 1 default_pn? */
-			default_block = get_cfop_target(proj);
-		} else {
-			switch_max = pn > switch_max ? pn : switch_max;
+	/* go over table to determine max value (note that we normalized the
+	 * ranges so that the minimum is 0) */
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		ir_tarval *max = entry->max;
+		unsigned long val;
+		if (entry->pn == 0)
+			continue;
+		if (!tarval_is_long(max))
+			panic("switch case overflow (%+F)", node);
+		val = (unsigned long) get_tarval_long(max);
+		if (val > length) {
+			length = val;
 		}
 	}
-	assert(switch_max > LONG_MIN);
 
-	length = (unsigned long) switch_max + 1;
 	/* the 16000 isn't a real limit of the architecture. But should protect us
 	 * from seamingly endless compiler runs */
 	if (length > 16000) {
 		/* switch lowerer should have broken this monster to pieces... */
-		panic("too large switch encountered");
+		panic("too large switch encountered (%+F)", node);
 	}
+	++length;
 
-	table = XMALLOCNZ(ir_node*, length);
-	foreach_out_edge(node, edge) {
-		ir_node *proj = get_edge_src_irn(edge);
-		long     pn   = get_Proj_proj(proj);
-		if (pn == default_pn)
-			continue;
-
-		table[pn] = get_cfop_target(proj);
+	labels = XMALLOCNZ(const ir_node*, length);
+	for (e = 0; e < n_entries; ++e) {
+		const ir_switch_table_entry *entry
+			= ir_switch_table_get_entry_const(table, e);
+		ir_tarval     *min    = entry->min;
+		ir_tarval     *max    = entry->max;
+		const ir_node *target = targets[entry->pn];
+		assert(entry->pn < (long)n_outs);
+		if (min == max) {
+			unsigned long val = (unsigned long)get_tarval_long(max);
+			labels[val] = target;
+		} else {
+			unsigned long min_val;
+			unsigned long max_val;
+			unsigned long i;
+			if (!tarval_is_long(min))
+				panic("switch case overflow (%+F)", node);
+			min_val = (unsigned long)get_tarval_long(min);
+			max_val = (unsigned long)get_tarval_long(max);
+			assert(min_val <= max_val);
+			for (i = min_val; i <= max_val; ++i) {
+				labels[i] = target;
+			}
+		}
 	}
 
 	/* emit table */
-	be_gas_emit_switch_section(GAS_SECTION_RODATA);
-	be_emit_cstring("\t.align 4\n");
-	be_gas_emit_entity(entity);
-	be_emit_cstring(":\n");
+	if (entity != NULL) {
+		be_gas_emit_switch_section(GAS_SECTION_RODATA);
+		be_emit_cstring("\t.align 4\n");
+		be_gas_emit_entity(entity);
+		be_emit_cstring(":\n");
+	}
+
 	for (i = 0; i < length; ++i) {
-		ir_node *block = table[i];
+		const ir_node *block = labels[i];
 		if (block == NULL)
-			block = default_block;
+			block = targets[0];
 		be_emit_cstring("\t.long ");
 		be_gas_emit_block_name(block);
 		be_emit_char('\n');
 		be_emit_write_line();
 	}
-	be_gas_emit_switch_section(GAS_SECTION_TEXT);
 
-	xfree(table);
+	if (entity != NULL)
+		be_gas_emit_switch_section(GAS_SECTION_TEXT);
+
+	xfree(labels);
+	xfree(targets);
+}
+
+static void emit_global_asms(void)
+{
+	size_t n = get_irp_n_asms();
+	size_t i;
+
+	be_gas_emit_switch_section(GAS_SECTION_TEXT);
+	for (i = 0; i < n; ++i) {
+		ident *asmtext = get_irp_asm(i);
+
+		be_emit_cstring("#APP\n");
+		be_emit_write_line();
+		be_emit_ident(asmtext);
+		be_emit_char('\n');
+		be_emit_write_line();
+		be_emit_cstring("#NO_APP\n");
+		be_emit_write_line();
+	}
+}
+
+void be_gas_begin_compilation_unit(const be_main_env_t *env)
+{
+	be_dbg_open();
+	be_dbg_unit_begin(env->cup_name);
+	be_dbg_types();
+
+	emit_global_asms();
+}
+
+void be_gas_end_compilation_unit(const be_main_env_t *env)
+{
+	emit_global_decls(env);
+
+	be_dbg_unit_end();
+	be_dbg_close();
 }

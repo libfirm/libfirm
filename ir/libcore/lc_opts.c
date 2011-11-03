@@ -28,6 +28,7 @@
 #include "lc_opts_enum.h"
 #include "hashptr.h"
 #include "lc_printf.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "obst.h"
 
@@ -335,7 +336,7 @@ static char *strtolower(char *buf, size_t n, const char *str)
 {
 	unsigned i;
 	for (i = 0; i < n; ++i)
-		buf[i] = tolower(str[i]);
+		buf[i] = tolower((unsigned char)str[i]);
 	return buf;
 }
 
@@ -504,7 +505,7 @@ int lc_opt_occurs(lc_opt_entry_t *opt, const char *value, lc_opt_err_info_t *err
 		case lc_opt_type_bit:
 		case lc_opt_type_negbit:
 				strtolower(buf, sizeof(buf), value);
-				for (i = 0; i < LC_ARRSIZE(bool_strings); ++i) {
+				for (i = 0; i < ARRAY_SIZE(bool_strings); ++i) {
 					if (strcmp(buf, bool_strings[i].str) == 0) {
 						val->integer = bool_strings[i].val;
 						error = lc_opt_err_none;

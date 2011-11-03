@@ -441,19 +441,20 @@ static arm_isa_t arm_isa_template = {
 /**
  * Initializes the backend ISA and opens the output file.
  */
-static arch_env_t *arm_init(FILE *file_handle)
+static arch_env_t *arm_init(const be_main_env_t *env)
 {
 	arm_isa_t *isa = XMALLOC(arm_isa_t);
 	*isa = arm_isa_template;
 
 	arm_register_init();
 
-	be_emit_init(file_handle);
-
 	arm_create_opcodes(&arm_irn_ops);
 	arm_handle_intrinsics();
 
 	be_gas_emit_types = false;
+
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
@@ -467,7 +468,7 @@ static void arm_done(void *self)
 {
 	arm_isa_t *isa = (arm_isa_t*)self;
 
-	be_gas_emit_decls(isa->base.main_env);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);
@@ -542,7 +543,7 @@ static void arm_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		lower_switch(irg, 4, 256, true);
+		lower_switch(irg, 4, 256, false);
 	}
 
 	for (i = 0; i < n_irgs; ++i) {

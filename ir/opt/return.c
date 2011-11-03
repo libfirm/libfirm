@@ -25,18 +25,16 @@
  */
 #include "config.h"
 
+#include <stdbool.h>
+
 #include "iroptimize.h"
 #include "irgraph_t.h"
 #include "ircons_t.h"
 #include "irnode_t.h"
 #include "irgmod.h"
 #include "irpass.h"
-
-#define set_bit(n)      (returns[(n) >> 3] |= 1 << ((n) & 7))
-#define get_bit(n)      (returns[(n) >> 3] & (1 << ((n) & 7)))
-
-#undef IMAX
-#define IMAX(a, b)       ((a) > (b) ? (a) : (b))
+#include "util.h"
+#include "raw_bitset.h"
 
 /*
  * Normalize the Returns of a graph by creating a new End block
@@ -60,13 +58,17 @@
  */
 void normalize_one_return(ir_graph *irg)
 {
-	ir_node *endbl = get_irg_end_block(irg);
-	int i, j, k, n, last_idx, n_rets, n_ret_vals = -1;
-	unsigned char *returns;
+	ir_node   *endbl         = get_irg_end_block(irg);
+	ir_entity *entity        = get_irg_entity(irg);
+	ir_type   *type          = get_entity_type(entity);
+	int        n_ret_vals    = get_method_n_ress(type) + 1;
+	int        n_rets        = 0;
+	bool       filter_dbgi   = false;
+	dbg_info  *combined_dbgi = NULL;
+	unsigned  *returns;
+	int i, j, k, n, last_idx;
 	ir_node **in, **retvals, **endbl_in;
 	ir_node *block;
-	int       filter_dbgi   = 0;
-	dbg_info *combined_dbgi = NULL;
 
 	/* look, if we have more than one return */
 	n = get_Block_n_cfgpreds(endbl);
@@ -76,9 +78,9 @@ void normalize_one_return(ir_graph *irg)
 		return;
 	}
 
-	returns = ALLOCANZ(unsigned char, (n + 7) >> 3);
+	rbitset_alloca(returns, n);
 
-	for (n_rets = i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		ir_node *node = get_Block_cfgpred(endbl, i);
 
 		if (is_Return(node)) {
@@ -89,32 +91,27 @@ void normalize_one_return(ir_graph *irg)
 					combined_dbgi = NULL;
 				} else {
 					combined_dbgi = dbgi;
-					filter_dbgi   = 1;
+					filter_dbgi   = true;
 				}
 			}
 
 			++n_rets;
-
-			set_bit(i);
-
-			if (n_ret_vals < 0)
-				n_ret_vals = get_irn_arity(node);
+			rbitset_set(returns, i);
 		}
 	}
 
-	/* there should be at least one Return node in Firm */
 	if (n_rets <= 1)
 		return;
 
-	in       = ALLOCAN(ir_node*,  IMAX(n_rets, n_ret_vals));
-	retvals  = ALLOCAN(ir_node*,  n_rets * n_ret_vals);
-	endbl_in = ALLOCAN(ir_node*,  n);
+	in       = ALLOCAN(ir_node*, MAX(n_rets, n_ret_vals));
+	retvals  = ALLOCAN(ir_node*, n_rets * n_ret_vals);
+	endbl_in = ALLOCAN(ir_node*, n);
 
 	last_idx = 0;
 	for (j = i = 0; i < n; ++i) {
 		ir_node *ret = get_Block_cfgpred(endbl, i);
 
-		if (get_bit(i)) {
+		if (rbitset_is_set(returns, i)) {
 			ir_node *block = get_nodes_block(ret);
 
 			/* create a new Jmp for every Ret and place the in in */
@@ -125,8 +122,9 @@ void normalize_one_return(ir_graph *irg)
 				retvals[j + k*n_rets] = get_irn_n(ret, k);
 
 			++j;
-		} else
+		} else {
 			endbl_in[last_idx++] = ret;
+		}
 	}
 
 	/* ok, create a new block with all created in's */
@@ -134,24 +132,8 @@ void normalize_one_return(ir_graph *irg)
 
 	/* now create the Phi nodes */
 	for (j = i = 0; i < n_ret_vals; ++i, j += n_rets) {
-		int k;
-		ir_node *first;
-		/* the return values are already shuffled */
-
-		/* Beware: normally the Phi constructor automatically replaces a Phi(a,...a) into a
-		   but NOT, if a is Unknown. Here, we known that this case can be optimize also,
-		   so do it here */
-		first = retvals[j + 0];
-		for (k = 1; k < n_rets; ++k) {
-			if (retvals[j + k] != first) {
-				first = NULL;
-				break;
-			}
-		}
-		if (first)
-			in[i] = first;
-		else
-			in[i] = new_r_Phi(block, n_rets, &retvals[j], get_irn_mode(retvals[j]));
+		ir_mode *mode = get_irn_mode(retvals[j]);
+		in[i] = new_r_Phi(block, n_rets, &retvals[j], mode);
 	}
 
 	endbl_in[last_idx++] = new_rd_Return(combined_dbgi, block, in[0], n_ret_vals-1, &in[1]);
@@ -188,7 +170,7 @@ ir_graph_pass_t *normalize_one_return_pass(const char *name)
  * All predecessors of the Return block must be Jmp's of course, or we
  * cannot move it up, so we add blocks if needed.
  */
-static int can_move_ret(ir_node *ret)
+static bool can_move_ret(ir_node *ret)
 {
 	ir_node *retbl = get_nodes_block(ret);
 	int i, n = get_irn_arity(ret);
@@ -199,7 +181,7 @@ static int can_move_ret(ir_node *ret)
 		if (! is_Phi(pred) && retbl == get_nodes_block(pred)) {
 			/* first condition failed, found a non-Phi predecessor
 			 * then is in the Return block */
-			return 0;
+			return false;
 		}
 	}
 
@@ -207,7 +189,7 @@ static int can_move_ret(ir_node *ret)
 	n = get_Block_n_cfgpreds(retbl);
 	/* we cannot move above a labeled block, as this might kill the block */
 	if (n <= 1 || has_Block_entity(retbl))
-		return 0;
+		return false;
 	for (i = 0; i < n; ++i) {
 		ir_node *pred = get_Block_cfgpred(retbl, i);
 
@@ -220,7 +202,7 @@ static int can_move_ret(ir_node *ret)
 			set_Block_cfgpred(retbl, i, jmp);
 		}
 	}
-	return 1;
+	return true;
 }
 
 /*
@@ -245,12 +227,15 @@ static int can_move_ret(ir_node *ret)
  */
 void normalize_n_returns(ir_graph *irg)
 {
-	int i, j, n, n_rets, n_finals, n_ret_vals;
-	ir_node *list  = NULL;
-	ir_node *final = NULL;
+	int i, j, n;
+	ir_node  *list     = NULL;
+	ir_node  *final    = NULL;
+	unsigned  n_rets   = 0;
+	unsigned  n_finals = 0;
+	ir_node  *endbl    = get_irg_end_block(irg);
+	int       n_ret_vals;
 	ir_node **in;
-	ir_node *endbl = get_irg_end_block(irg);
-	ir_node *end;
+	ir_node  *end;
 
 	/*
 	 * First, link all returns:
@@ -259,10 +244,12 @@ void normalize_n_returns(ir_graph *irg)
 	 * on final.
 	 */
 	n = get_Block_n_cfgpreds(endbl);
-	for (n_finals = n_rets = i = 0; i < n; ++i) {
+	for (i = 0; i < n; ++i) {
 		ir_node *ret = get_Block_cfgpred(endbl, i);
 
-		if (is_Return(ret) && can_move_ret(ret)) {
+		if (is_Bad(ret)) {
+			continue;
+		} else if (is_Return(ret) && can_move_ret(ret)) {
 			/*
 			 * Ok, all conditions met, we can move this Return, put it
 			 * on our work list.
@@ -278,18 +265,19 @@ void normalize_n_returns(ir_graph *irg)
 		}
 	}
 
-	if (n_rets <= 0)
+	if (n_rets == 0)
 		return;
 
 	/*
 	 * Now move the Returns upwards. We move always one block up (and create n
-	 * new Returns), than we check if a newly created Return can be moved even further.
-	 * If yes, we simply add it to our work list, else to the final list.
+	 * new Returns), than we check if a newly created Return can be moved even
+	 * further. If yes, we simply add it to our work list, else to the final
+	 * list.
 	 */
 	end        = get_irg_end(irg);
 	n_ret_vals = get_irn_arity(list);
 	in         = ALLOCAN(ir_node*, n_ret_vals);
-	while (list) {
+	while (list != NULL) {
 		ir_node  *ret   = list;
 		ir_node  *block = get_nodes_block(ret);
 		dbg_info *dbgi  = get_irn_dbg_info(ret);
@@ -316,7 +304,7 @@ void normalize_n_returns(ir_graph *irg)
 				in[j] = (is_Phi(pred) && get_nodes_block(pred) == block) ? get_Phi_pred(pred, i) : pred;
 			}
 
-			new_ret = new_rd_Return(dbgi, new_bl, in[0], n_ret_vals - 1, &in[1]);
+			new_ret = new_rd_Return(dbgi, new_bl, in[0], n_ret_vals-1, &in[1]);
 
 			if (! is_Bad(new_ret)) {
 				/*
@@ -359,30 +347,27 @@ void normalize_n_returns(ir_graph *irg)
 	}
 
 	/*
-	 * Last step: Create a new endblock, with all nodes on the final
-	 * list as predecessors.
+	 * Last step: Create a new endblock, with all nodes on the final list as
+	 * predecessors.
 	 */
 	in = ALLOCAN(ir_node*, n_finals);
 
-	for (i = 0; final != NULL; ++i, final = (ir_node*)get_irn_link(final))
+	for (i = 0; final != NULL; ++i, final = (ir_node*)get_irn_link(final)) {
 		in[i] = final;
+	}
 
 	exchange(endbl, new_r_Block(irg, n_finals, in));
 
-	/* the end block is not automatically skipped, so do it here */
-	set_irg_end_block(irg, skip_Id(get_irg_end_block(irg)));
-
 	/* Invalidate analysis information:
-	 * Blocks become dead and new Returns were deleted, so dominator, outs and loop are inconsistent,
-	 * trouts and callee-state should be still valid
-	 */
+	 * Blocks become dead and new Returns were deleted, so dominator, outs and
+	 * loop are inconsistent, trouts and callee-state should be still valid */
 	clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE
 	                   | IR_GRAPH_STATE_CONSISTENT_POSTDOMINANCE
 	                   | IR_GRAPH_STATE_ONE_RETURN
 	                   | IR_GRAPH_STATE_CONSISTENT_OUTS
 	                   | IR_GRAPH_STATE_NO_UNREACHABLE_CODE
 	                   | IR_GRAPH_STATE_NO_BADS
-					   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
+	                   | IR_GRAPH_STATE_VALID_EXTENDED_BLOCKS);
 }
 
 /* Create a graph pass. */

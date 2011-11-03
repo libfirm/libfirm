@@ -48,7 +48,7 @@
 #include "iredges.h"
 #include "irouts.h"
 #include "irprintf.h"
-#include "irtools.h"
+#include "util.h"
 #include "irhooks.h"
 
 #include "execfreq.h"

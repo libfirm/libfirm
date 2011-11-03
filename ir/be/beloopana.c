@@ -29,7 +29,7 @@
 #include "set.h"
 #include "pset.h"
 #include "irnode.h"
-#include "irtools.h"
+#include "util.h"
 #include "irloop_t.h"
 #include "error.h"
 #include "debug.h"

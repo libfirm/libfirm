@@ -183,10 +183,10 @@ static void collect_irg_calls(ir_node *call, void *env)
 	if (is_Call(call)) {
 		call_ptr = get_Call_ptr(call);
 
-		if (! is_Global(call_ptr))
+		if (! is_SymConst_addr_ent(call_ptr))
 			return;
 
-		callee = get_Global_entity(call_ptr);
+		callee = get_SymConst_entity(call_ptr);
 
 		/* we don't know which function gets finally bound to a weak symbol */
 		if (get_entity_linkage(callee) & IR_LINKAGE_WEAK)

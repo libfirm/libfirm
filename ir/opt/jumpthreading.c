@@ -295,7 +295,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		}
 		/* ignore control flow */
 		mode = get_irn_mode(node);
-		if (mode == mode_X || is_Cond(node))
+		if (mode == mode_X || is_Cond(node) || is_Switch(node))
 			continue;
 #ifdef AVOID_PHIB
 		/* we may not copy mode_b nodes, because this could produce Phi with
@@ -348,7 +348,7 @@ static void copy_and_fix(const jumpthreading_env_t *env, ir_node *block,
 		ir_mode *mode;
 
 		mode = get_irn_mode(node);
-		if (mode == mode_X || is_Cond(node))
+		if (mode == mode_X || is_Cond(node) || is_Switch(node))
 			continue;
 #ifdef AVOID_PHIB
 		if (mode == mode_b)
@@ -655,15 +655,12 @@ static void thread_jumps(ir_node* block, void* data)
 	assert(get_irn_mode(projx) == mode_X);
 
 	cond = get_Proj_pred(projx);
+	/* TODO handle switch Conds */
 	if (!is_Cond(cond))
 		return;
 
-	selector = get_Cond_selector(cond);
-	/* TODO handle switch Conds */
-	if (get_irn_mode(selector) != mode_b)
-		return;
-
 	/* handle cases that can be immediately evaluated */
+	selector = get_Cond_selector(cond);
 	selector_evaluated = -1;
 	if (is_Cmp(selector)) {
 		ir_node *left  = get_Cmp_left(selector);

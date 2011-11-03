@@ -76,7 +76,7 @@ static void do_finalization(type_or_ent tore, void *env)
 				get_compound_name(owner), get_entity_name(ent)));
 		}
 	}
-}  /* do_finalization */
+}
 
 /**
  * If we have the closed world assumption, we can calculate the

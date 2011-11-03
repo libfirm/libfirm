@@ -354,7 +354,7 @@ static void sparc_handle_intrinsics(void)
 /**
  * Initializes the backend ISA
  */
-static arch_env_t *sparc_init(FILE *outfile)
+static arch_env_t *sparc_init(const be_main_env_t *env)
 {
 	sparc_isa_t *isa = XMALLOC(sparc_isa_t);
 	*isa = sparc_isa_template;
@@ -364,12 +364,13 @@ static arch_env_t *sparc_init(FILE *outfile)
 	be_gas_object_file_format = OBJECT_FILE_FORMAT_ELF;
 	be_gas_elf_variant        = ELF_VARIANT_SPARC;
 
-	be_emit_init(outfile);
-
 	sparc_register_init();
 	sparc_create_opcodes(&sparc_irn_ops);
 	sparc_handle_intrinsics();
 	sparc_cconv_init();
+
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
@@ -382,7 +383,7 @@ static void sparc_done(void *self)
 	sparc_isa_t *isa = (sparc_isa_t*)self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->base.main_env);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	pmap_destroy(isa->constants);
 	be_emit_exit();
@@ -413,18 +414,9 @@ static int sparc_get_reg_class_alignment(const arch_register_class_t *cls)
 	return get_mode_size_bytes(mode);
 }
 
-static ir_node *sparc_create_set(ir_node *cond)
-{
-	return ir_create_cond_set(cond, mode_Iu);
-}
-
 static void sparc_lower_for_target(void)
 {
 	size_t i, n_irgs = get_irp_n_irgs();
-	lower_mode_b_config_t lower_mode_b_config = {
-		mode_Iu,
-		sparc_create_set,
-	};
 
 	lower_calls_with_compounds(LF_RETURN_HIDDEN);
 
@@ -444,9 +436,9 @@ static void sparc_lower_for_target(void)
 
 	for (i = 0; i < n_irgs; ++i) {
 		ir_graph *irg = get_irp_irg(i);
-		ir_lower_mode_b(irg, &lower_mode_b_config);
+		ir_lower_mode_b(irg, mode_Iu);
 		lower_switch(irg, 4, 256, false);
-		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, -SPARC_MIN_STACKSIZE);
+		lower_alloc(irg, SPARC_STACK_ALIGNMENT, false, SPARC_MIN_STACKSIZE);
 	}
 }
 
@@ -492,12 +484,10 @@ static const backend_params *sparc_get_backend_params(void)
 	sparc_setup_cg_config();
 
 	ir_mode *mode_long_long
-		= new_ir_mode("long long", irms_int_number, 64, 1, irma_twos_complement,
-		              64);
+		= new_int_mode("long long", irma_twos_complement, 64, 1, 64);
 	ir_type *type_long_long = new_type_primitive(mode_long_long);
 	ir_mode *mode_unsigned_long_long
-		= new_ir_mode("unsigned long long", irms_int_number, 64, 0,
-		              irma_twos_complement, 64);
+		= new_int_mode("unsigned long long", irma_twos_complement, 64, 0, 64);
 	ir_type *type_unsigned_long_long
 		= new_type_primitive(mode_unsigned_long_long);
 
@@ -508,13 +498,11 @@ static const backend_params *sparc_get_backend_params(void)
 		p.mode_float_arithmetic = NULL;
 		p.type_long_double      = NULL;
 	} else {
-		ir_mode *mode_long_double
-			= new_ir_mode("long double", irms_float_number, 128, 1,
-						  irma_ieee754, 0);
-		ir_type *type_long_double = new_type_primitive(mode_long_double);
+		ir_type *type_long_double = new_type_primitive(mode_Q);
 
 		set_type_alignment_bytes(type_long_double, 8);
-		p.type_long_double        = type_long_double;
+		set_type_size_bytes(type_long_double, 16);
+		p.type_long_double = type_long_double;
 	}
 	return &p;
 }

@@ -163,7 +163,7 @@ typedef struct hook_entry {
 		void (*_hook_arch_dep_replace_division_by_const)(void *context, ir_node *irn);
 
 		/** This hook is called after a new mode was registered. */
-		void (*_hook_new_mode)(void *context, const ir_mode *tmpl, ir_mode *mode);
+		void (*_hook_new_mode)(void *context, ir_mode *mode);
 
 		/** This hook is called after a new entity was created. */
 		void (*_hook_new_entity)(void *context, ir_entity *ent);
@@ -281,7 +281,7 @@ FIRM_API hook_entry_t *hooks[hook_last];
   hook_exec(hook_arch_dep_replace_mul_with_shifts, (hook_ctx_, irn))
 #define hook_arch_dep_replace_division_by_const(irn) \
   hook_exec(hook_arch_dep_replace_division_by_const, (hook_ctx_, irn))
-#define hook_new_mode(tmpl, mode)         hook_exec(hook_new_mode, (hook_ctx_, tmpl, mode))
+#define hook_new_mode(mode)               hook_exec(hook_new_mode, (hook_ctx_, mode))
 #define hook_new_entity(ent)              hook_exec(hook_new_entity, (hook_ctx_, ent))
 #define hook_new_type(tp)                 hook_exec(hook_new_type, (hook_ctx_, tp))
 #define hook_node_info(F, node)           hook_exec(hook_node_info, (hook_ctx_, F, node))

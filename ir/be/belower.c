@@ -19,7 +19,8 @@
 
 /**
  * @file
- * @brief       Performs lowering of perm nodes. Inserts copies to assure register constraints.
+ * @brief       Performs lowering of perm nodes. Inserts copies to assure
+ *              register constraints.
  * @author      Christian Wuerdig
  * @date        14.12.2005
  * @version     $Id$
@@ -32,7 +33,7 @@
 #include "debug.h"
 #include "xmalloc.h"
 #include "irnodeset.h"
-#include "irnodemap.h"
+#include "irnodehashmap.h"
 #include "irgmod.h"
 #include "iredges_t.h"
 #include "irgwalk.h"
@@ -64,9 +65,9 @@ typedef struct {
 
 /** Environment for constraints. */
 typedef struct {
-	ir_graph      *irg;
-	ir_nodemap_t   op_set;
-	struct obstack obst;
+	ir_graph        *irg;
+	ir_nodehashmap_t op_set;
+	struct obstack   obst;
 } constraint_env_t;
 
 /** Lowering walker environment. */
@@ -533,7 +534,7 @@ static ir_node *find_copy(ir_node *irn, ir_node *op)
 
 static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different, constraint_env_t *env)
 {
-	ir_nodemap_t                *op_set;
+	ir_nodehashmap_t            *op_set;
 	ir_node                     *block;
 	const arch_register_class_t *cls;
 	ir_node                     *keep, *cpy;
@@ -586,13 +587,13 @@ static void gen_assure_different_pattern(ir_node *irn, ir_node *other_different,
 	sched_add_after(skip_Proj(irn), keep);
 
 	/* insert the other different and its copies into the map */
-	entry = (op_copy_assoc_t*)ir_nodemap_get(op_set, other_different);
+	entry = (op_copy_assoc_t*)ir_nodehashmap_get(op_set, other_different);
 	if (! entry) {
 		entry      = OALLOC(&env->obst, op_copy_assoc_t);
 		entry->cls = cls;
 		ir_nodeset_init(&entry->copies);
 
-		ir_nodemap_insert(op_set, other_different, entry);
+		ir_nodehashmap_insert(op_set, other_different, entry);
 	}
 
 	/* insert copy */
@@ -680,11 +681,11 @@ static void assure_constraints_walker(ir_node *block, void *walk_env)
  */
 static void melt_copykeeps(constraint_env_t *cenv)
 {
-	ir_nodemap_iterator_t map_iter;
-	ir_nodemap_entry_t    map_entry;
+	ir_nodehashmap_iterator_t map_iter;
+	ir_nodehashmap_entry_t    map_entry;
 
 	/* for all */
-	foreach_ir_nodemap(&cenv->op_set, map_entry, map_iter) {
+	foreach_ir_nodehashmap(&cenv->op_set, map_entry, map_iter) {
 		op_copy_assoc_t *entry = (op_copy_assoc_t*)map_entry.data;
 		int     idx, num_ck;
 		ir_node *cp;
@@ -797,14 +798,14 @@ static void melt_copykeeps(constraint_env_t *cenv)
 
 void assure_constraints(ir_graph *irg)
 {
-	constraint_env_t      cenv;
-	ir_nodemap_iterator_t map_iter;
-	ir_nodemap_entry_t    map_entry;
+	constraint_env_t          cenv;
+	ir_nodehashmap_iterator_t map_iter;
+	ir_nodehashmap_entry_t    map_entry;
 
 	FIRM_DBG_REGISTER(dbg_constr, "firm.be.lower.constr");
 
 	cenv.irg = irg;
-	ir_nodemap_init(&cenv.op_set);
+	ir_nodehashmap_init(&cenv.op_set);
 	obstack_init(&cenv.obst);
 
 	irg_block_walk_graph(irg, NULL, assure_constraints_walker, &cenv);
@@ -815,7 +816,7 @@ void assure_constraints(ir_graph *irg)
 	melt_copykeeps(&cenv);
 
 	/* for all */
-	foreach_ir_nodemap(&cenv.op_set, map_entry, map_iter) {
+	foreach_ir_nodehashmap(&cenv.op_set, map_entry, map_iter) {
 		op_copy_assoc_t          *entry = (op_copy_assoc_t*)map_entry.data;
 		size_t                    n     = ir_nodeset_size(&entry->copies);
 		ir_node                 **nodes = ALLOCAN(ir_node*, n);
@@ -861,7 +862,7 @@ void assure_constraints(ir_graph *irg)
 		ir_nodeset_destroy(&entry->copies);
 	}
 
-	ir_nodemap_destroy(&cenv.op_set);
+	ir_nodehashmap_destroy(&cenv.op_set);
 	obstack_free(&cenv.obst, NULL);
 	be_liveness_invalidate(be_get_irg_liveness(irg));
 }

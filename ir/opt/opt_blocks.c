@@ -40,7 +40,7 @@
 #include "set.h"
 #include "irpass.h"
 #include "debug.h"
-#include "irtools.h"
+#include "util.h"
 
 /* define this for general block shaping: congruent blocks
    are found not only before the end block but anywhere in the graph */

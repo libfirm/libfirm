@@ -794,7 +794,9 @@ static ir_graph *find_tail(const ir_graph *n)
 						found = largest_dfn_pred(m, &res_index);
 					break;
 				}
-				if (m == n) { break; }  /* It's not an unreachable loop, either. */
+				/* It's not an unreachable loop, either. */
+				if (m == n)
+					break;
 			}
 			//assert(0 && "no head found on stack");
 		}

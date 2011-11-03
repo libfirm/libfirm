@@ -154,63 +154,63 @@ static inline bool is_op_machine_user(const ir_op *op, unsigned n)
 	return op->flags & (irop_flag_user << n);
 }
 
-static inline unsigned _get_op_code(const ir_op *op)
+static inline unsigned get_op_code_(const ir_op *op)
 {
 	return op->code;
 }
 
-static inline ident *_get_op_ident(const ir_op *op)
+static inline ident *get_op_ident_(const ir_op *op)
 {
 	return op->name;
 }
 
-static inline op_pin_state _get_op_pinned(const ir_op *op)
+static inline op_pin_state get_op_pinned_(const ir_op *op)
 {
 	return op->pin_state;
 }
 
-static inline void _set_generic_function_ptr(ir_op *op, op_func func)
+static inline void set_generic_function_ptr_(ir_op *op, op_func func)
 {
 	op->ops.generic = func;
 }
 
-static inline op_func _get_generic_function_ptr(const ir_op *op)
+static inline op_func get_generic_function_ptr_(const ir_op *op)
 {
 	return op->ops.generic;
 }
 
-static inline const ir_op_ops *_get_op_ops(const ir_op *op)
+static inline const ir_op_ops *get_op_ops_(const ir_op *op)
 {
 	return &op->ops;
 }
 
-static inline void _set_op_tag(ir_op *op, unsigned tag)
+static inline void set_op_tag_(ir_op *op, unsigned tag)
 {
 	op->tag = tag;
 }
 
-static inline unsigned _get_op_tag(const ir_op *op)
+static inline unsigned get_op_tag_(const ir_op *op)
 {
 	return op->tag;
 }
 
-static inline void _set_op_attr(ir_op *op, void *attr)
+static inline void set_op_attr_(ir_op *op, void *attr)
 {
 	op->attr = attr;
 }
 
-static inline void *_get_op_attr(const ir_op *op)
+static inline void *get_op_attr_(const ir_op *op)
 {
 	return op->attr;
 }
 
-#define get_op_code(op)         _get_op_code(op)
-#define get_op_ident(op)        _get_op_ident(op)
-#define get_op_pinned(op)       _get_op_pinned(op)
-#define get_op_ops(op)          _get_op_ops(op)
-#define set_op_tag(op, tag)     _set_op_tag((op), (tag))
-#define get_op_tag(op)          _get_op_tag(op)
-#define set_op_attr(op, attr)   _set_op_attr((op), (attr))
-#define get_op_attr(op)         _get_op_attr(op)
+#define get_op_code(op)         get_op_code_(op)
+#define get_op_ident(op)        get_op_ident_(op)
+#define get_op_pinned(op)       get_op_pinned_(op)
+#define get_op_ops(op)          get_op_ops_(op)
+#define set_op_tag(op, tag)     set_op_tag_((op), (tag))
+#define get_op_tag(op)          get_op_tag_(op)
+#define set_op_attr(op, attr)   set_op_attr_((op), (attr))
+#define get_op_attr(op)         get_op_attr_(op)
 
 #endif

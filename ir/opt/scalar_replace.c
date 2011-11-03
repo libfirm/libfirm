@@ -43,7 +43,7 @@
 #include "irgmod.h"
 #include "irnode_t.h"
 #include "irpass.h"
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
 #include "error.h"
@@ -174,7 +174,6 @@ static bool check_load_store_mode(ir_mode *mode, ir_mode *ent_mode)
 	if (ent_mode != mode) {
 		if (ent_mode == NULL ||
 		    get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
-		    get_mode_sort(ent_mode) != get_mode_sort(mode) ||
 		    get_mode_arithmetic(ent_mode) != irma_twos_complement ||
 		    get_mode_arithmetic(mode) != irma_twos_complement)
 			return false;

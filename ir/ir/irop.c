@@ -117,6 +117,14 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
 	new_node->attr.assem.clobbers = DUP_ARR_D(ident*, irg->obst, old_node->attr.assem.clobbers);
 }
 
+static void switch_copy_attr(ir_graph *irg, const ir_node *old_node,
+                             ir_node *new_node)
+{
+	const ir_switch_table *table = get_Switch_table(old_node);
+	new_node->attr.switcha.table = ir_switch_table_duplicate(irg, table);
+	new_node->attr.switcha.n_outs = old_node->attr.switcha.n_outs;
+}
+
 /**
  * Sets the default copy_attr operation for an ir_ops
  *
@@ -129,25 +137,17 @@ static void ASM_copy_attr(ir_graph *irg, const ir_node *old_node,
 static ir_op_ops *firm_set_default_copy_attr(unsigned code, ir_op_ops *ops)
 {
 	switch (code) {
-	case iro_Call:
-		ops->copy_attr = call_copy_attr;
-		break;
-	case iro_Block:
-		ops->copy_attr = block_copy_attr;
-		break;
-	case iro_Phi:
-		ops->copy_attr = phi_copy_attr;
-		break;
-	case iro_ASM:
-		ops->copy_attr = ASM_copy_attr;
-		break;
+	case iro_Call:   ops->copy_attr = call_copy_attr;   break;
+	case iro_Block:  ops->copy_attr = block_copy_attr;  break;
+	case iro_Phi:    ops->copy_attr = phi_copy_attr;    break;
+	case iro_ASM:    ops->copy_attr = ASM_copy_attr;    break;
+	case iro_Switch: ops->copy_attr = switch_copy_attr; break;
 	default:
-		/* not allowed to be NULL */
-		if (! ops->copy_attr)
+		if (ops->copy_attr == NULL)
 			ops->copy_attr = default_copy_attr;
 	}
 	return ops;
-}  /* firm_set_default_copy_attr */
+}
 
 /* Creates a new ir operation. */
 ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
@@ -179,7 +179,7 @@ ir_op *new_ir_op(unsigned code, const char *name, op_pin_state p,
 
 	hook_new_ir_op(res);
 	return res;
-}  /* new_ir_op */
+}
 
 void free_ir_op(ir_op *code)
 {
@@ -187,7 +187,7 @@ void free_ir_op(ir_op *code)
 
 	remove_irp_opcode(code);
 	free(code);
-}  /* free_ir_op */
+}
 
 void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
                                int pn_x_regular, int pn_x_except)
@@ -201,17 +201,17 @@ void ir_op_set_fragile_indices(ir_op *op, int fragile_mem_index,
 const char *get_op_name (const ir_op *op)
 {
 	return get_id_str(op->name);
-}  /* get_op_name */
+}
 
 unsigned (get_op_code)(const ir_op *op)
 {
-  return _get_op_code(op);
-}  /* get_op_code */
+  return get_op_code_(op);
+}
 
 ident *(get_op_ident)(const ir_op *op)
 {
-  return _get_op_ident(op);
-}  /* get_op_ident */
+  return get_op_ident_(op);
+}
 
 const char *get_op_pin_state_name(op_pin_state s)
 {
@@ -224,12 +224,12 @@ const char *get_op_pin_state_name(op_pin_state s)
 #undef XXX
 	}
 	return "<none>";
-}  /* get_op_pin_state_name */
+}
 
 op_pin_state (get_op_pinned)(const ir_op *op)
 {
-	return _get_op_pinned(op);
-}  /* get_op_pinned */
+	return get_op_pinned_(op);
+}
 
 /* Sets op_pin_state_pinned in the opcode.  Setting it to floating has no effect
    for Phi, Block and control flow nodes. */
@@ -237,13 +237,13 @@ void set_op_pinned(ir_op *op, op_pin_state pinned)
 {
 	if (op == op_Block || op == op_Phi || is_op_cfopcode(op)) return;
 	op->pin_state = pinned;
-}  /* set_op_pinned */
+}
 
 /* retrieve the next free opcode */
 unsigned get_next_ir_opcode(void)
 {
 	return next_iro++;
-}  /* get_next_ir_opcode */
+}
 
 /* Returns the next free n IR opcode number, allows to register a bunch of user ops */
 unsigned get_next_ir_opcodes(unsigned num)
@@ -251,25 +251,25 @@ unsigned get_next_ir_opcodes(unsigned num)
 	unsigned base = next_iro;
 	next_iro += num;
 	return base;
-}  /* get_next_ir_opcodes */
+}
 
 /* Returns the generic function pointer from an ir operation. */
 op_func (get_generic_function_ptr)(const ir_op *op)
 {
-	return _get_generic_function_ptr(op);
-}  /* get_generic_function_ptr */
+	return get_generic_function_ptr_(op);
+}
 
 /* Store a generic function pointer into an ir operation. */
 void (set_generic_function_ptr)(ir_op *op, op_func func)
 {
-	_set_generic_function_ptr(op, func);
-}  /* set_generic_function_ptr */
+	set_generic_function_ptr_(op, func);
+}
 
 /* Returns the ir_op_ops of an ir_op. */
 const ir_op_ops *(get_op_ops)(const ir_op *op)
 {
-	return _get_op_ops(op);
-}  /* get_op_ops */
+	return get_op_ops_(op);
+}
 
 irop_flags get_op_flags(const ir_op *op)
 {

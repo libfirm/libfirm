@@ -197,37 +197,24 @@ unreachable_X:
 				} else if (is_Cond(pred)) {
 					ir_node*   const selector = get_Cond_selector(pred);
 					bitinfo*   const b        = get_bitinfo(selector);
-					if (is_undefined(b)) {
+					if (is_undefined(b))
 						goto unreachable_X;
-					} else if (get_irn_mode(selector) == mode_b) {
-						if (b->z == b->o) {
-							if ((b->z == t) == get_Proj_proj(irn)) {
-								z = o = t;
-							} else {
-								z = o = f;
-							}
+					if (b->z == b->o) {
+						if ((b->z == t) == get_Proj_proj(irn)) {
+							z = o = t;
 						} else {
-							goto result_unknown_X;
+							z = o = f;
 						}
 					} else {
-						long const val = get_Proj_proj(irn);
-						if (val != get_Cond_default_proj(pred)) {
-							ir_tarval* const tv = new_tarval_from_long(val, get_irn_mode(selector));
-							if (!tarval_is_null(tarval_andnot(tv, b->z)) ||
-									!tarval_is_null(tarval_andnot(b->o, tv))) {
-								// At least one bit differs.
-								z = o = f;
-#if 0 // TODO must handle default Proj
-							} else if (b->z == b->o && b->z == tv) {
-								z = o = t;
-#endif
-							} else {
-								goto result_unknown_X;
-							}
-						} else {
-							goto cannot_analyse_X;
-						}
+						goto result_unknown_X;
 					}
+				} else if (is_Switch(pred)) {
+					ir_node* const selector = get_Switch_selector(pred);
+					bitinfo* const b        = get_bitinfo(selector);
+					if (is_undefined(b))
+						goto unreachable_X;
+					/* TODO */
+					goto cannot_analyse_X;
 				} else {
 					goto cannot_analyse_X;
 				}
@@ -745,6 +732,28 @@ exchange_only:
 			break;
 		}
 
+		case iro_Eor: {
+			ir_node*       const l  = get_Eor_left(irn);
+			ir_node*       const r  = get_Eor_right(irn);
+			bitinfo const* const bl = get_bitinfo(l);
+			bitinfo const* const br = get_bitinfo(r);
+			/* if each bit is guaranteed to be zero on either the left or right
+			 * then an Add will have the same effect as the Eor. Change it for
+			 * normalisation */
+			if (tarval_is_null(tarval_and(bl->z, br->z))) {
+				dbg_info      *dbgi     = get_irn_dbg_info(irn);
+				ir_node       *block    = get_nodes_block(irn);
+				ir_mode       *mode     = get_irn_mode(irn);
+				ir_node       *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				bitinfo const *bi       = get_bitinfo(irn);
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalised to Add\n", irn, l, r));
+				set_bitinfo(new_node, bi->z, bi->o);
+				exchange(irn, new_node);
+				env->modified = 1;
+			}
+			break;
+		}
+
 		case iro_Or: {
 			ir_node*       const l  = get_Or_left(irn);
 			ir_node*       const r  = get_Or_right(irn);
@@ -763,6 +772,22 @@ exchange_only:
 					env->modified = 1;
 				}
 			}
+
+			/* if each bit is guaranteed to be zero on either the left or right
+			 * then an Add will have the same effect as the Or. Change it for
+			 * normalisation */
+			if (tarval_is_null(tarval_and(bl->z, br->z))) {
+				dbg_info      *dbgi     = get_irn_dbg_info(irn);
+				ir_node       *block    = get_nodes_block(irn);
+				ir_mode       *mode     = get_irn_mode(irn);
+				ir_node       *new_node = new_rd_Add(dbgi, block, l, r, mode);
+				bitinfo const *bi       = get_bitinfo(irn);
+				DB((dbg, LEVEL_2, "%+F(%+F, %+F) normalised to Add\n", irn, l, r));
+				set_bitinfo(new_node, bi->z, bi->o);
+				exchange(irn, new_node);
+				env->modified = 1;
+			}
+
 			break;
 		}
 	}

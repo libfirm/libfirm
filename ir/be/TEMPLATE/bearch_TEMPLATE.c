@@ -159,15 +159,16 @@ static TEMPLATE_isa_t TEMPLATE_isa_template = {
 /**
  * Initializes the backend ISA
  */
-static arch_env_t *TEMPLATE_init(FILE *outfile)
+static arch_env_t *TEMPLATE_init(const be_main_env_t *env)
 {
 	TEMPLATE_isa_t *isa = XMALLOC(TEMPLATE_isa_t);
 	*isa = TEMPLATE_isa_template;
 
-	be_emit_init(outfile);
-
 	TEMPLATE_register_init();
 	TEMPLATE_create_opcodes(&TEMPLATE_irn_ops);
+
+	be_emit_init(env->file_handle);
+	be_gas_begin_compilation_unit(env);
 
 	return &isa->base;
 }
@@ -180,7 +181,7 @@ static void TEMPLATE_done(void *self)
 	TEMPLATE_isa_t *isa = (TEMPLATE_isa_t*)self;
 
 	/* emit now all global declarations */
-	be_gas_emit_decls(isa->base.main_env);
+	be_gas_end_compilation_unit(isa->base.main_env);
 
 	be_emit_exit();
 	free(self);

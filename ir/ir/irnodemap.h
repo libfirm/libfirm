@@ -19,128 +19,109 @@
 
 /**
  * @file
- * @author    Matthias Braun
- * @date      30.03.2007
- * @brief     A nodemap. This should be preferred over a simple pset, because it
- *            tries to guarantee deterministic behavior. (and is faster)
- * @version   $Id$
- * @note      Actually the bits to make the behavior deterministic are not
- *            implemented yet...
+ * @brief   A nodemap. This variant is a thin wrapper around an ARR_F which
+ *          uses node-indices for access. It is preferable over ir_nodehashmap
+ *          if the info is dense (i.e. something is mapped for most nodes in
+ *          the graph)
+ * @author  Matthias Braun
  */
-#ifndef _FIRM_IRNODEMAP_H_
-#define _FIRM_IRNODEMAP_H_
+#ifndef FIRM_IRNODEMAP_H
+#define FIRM_IRNODEMAP_H
 
-#include "irnode.h"
+#include "firm_types.h"
+#include "irgraph_t.h"
+#include "array.h"
 
-typedef struct ir_nodemap_entry_t {
-	ir_node *node;
-	void    *data;
-} ir_nodemap_entry_t;
-
-#define HashSet          ir_nodemap_t
-#define HashSetIterator  ir_nodemap_iterator_t
-#define ValueType        ir_nodemap_entry_t
-#define DO_REHASH
-#include "hashset.h"
-#undef DO_REHASH
-#undef ValueType
-#undef HashSetIterator
-#undef HashSet
-
-typedef struct ir_nodemap_t           ir_nodemap_t;
-typedef struct ir_nodemap_iterator_t  ir_nodemap_iterator_t;
+typedef struct ir_nodemap ir_nodemap;
 
 /**
- * Initializes a nodemap with default size.
+ * Allocate and initialize a new nodemap object
  *
- * @param nodemap      Pointer to allocated space for the nodemap
+ * @param irg           The graph the nodemap will run on.
+ * @return              A new nodemap object.
  */
-void ir_nodemap_init(ir_nodemap_t *nodemap);
+static inline void ir_nodemap_init(ir_nodemap *nodemap, const ir_graph *irg)
+{
+	unsigned max_idx = get_irg_last_idx(irg) + 32;
+	nodemap->data = NEW_ARR_F(void*, max_idx);
+	memset(nodemap->data, 0, max_idx * sizeof(nodemap->data[0]));
+}
 
 /**
- * Initializes a nodemap
- *
- * @param nodemap             Pointer to allocated space for the nodemap
- * @param expected_elements   Number of elements expected in the nodemap (roughly)
+ * frees all internal memory used by the nodemap but does not free the
+ * nodemap struct itself.
  */
-void ir_nodemap_init_size(ir_nodemap_t *nodemap, size_t expected_elements);
+static inline void ir_nodemap_destroy(ir_nodemap *nodemap)
+{
+	DEL_ARR_F(nodemap->data);
+	nodemap->data = NULL;
+}
 
 /**
- * Destroys a nodemap and frees the memory allocated for hashtable. The memory of
- * the nodemap itself is not freed.
- *
- * @param nodemap   Pointer to the nodemap
+ * Insert a mapping from @p node to @p data.
  */
-void ir_nodemap_destroy(ir_nodemap_t *nodemap);
+static inline void ir_nodemap_insert(ir_nodemap *nodemap, const ir_node *node,
+                                     void *data)
+{
+	unsigned idx = get_irn_idx(node);
+	size_t   len = ARR_LEN(nodemap->data);
+	if (idx >= len) {
+		ARR_RESIZE(void*, nodemap->data, idx+1);
+		memset(nodemap->data + len, 0, (idx-len) * sizeof(nodemap->data[0]));
+	}
+	nodemap->data[idx] = data;
+}
 
 /**
- * Inserts a node into a nodemap.
+ * Insert a mapping from @p node to @p data (fast version).
  *
- * @param nodemap   Pointer to the nodemap
- * @param node      node to insert into the nodemap
- * @param data      data to associate with the node
+ * @attention You must only use this version if you can be sure that the nodemap
+ * already has enough space to store the mapping. This is the case if @p node
+ * already existed at nodemap_init() time or ir_nodemap_insert() has been used
+ * for this node)
  */
-void ir_nodemap_insert(ir_nodemap_t *nodemap, ir_node *node, void *data);
+static inline void ir_nodemap_insert_fast(ir_nodemap *nodemap,
+                                          const ir_node *node, void *data)
+{
+	unsigned idx = get_irn_idx(node);
+	nodemap->data[idx] = data;
+}
 
 /**
- * Removes a node from a nodemap. Does nothing if the nodemap doesn't contain
- * the node.
+ * Removed mapping for @p node.
  *
- * @param nodemap  Pointer to the nodemap
- * @param node     Node to remove from the nodemap
+ * This is really a shorthand form for ir_nodemap_insert(nodemap, node, NULL);
  */
-void ir_nodemap_remove(ir_nodemap_t *nodemap, const ir_node *node);
+static inline void ir_nodemap_remove(ir_nodemap *nodemap, const ir_node *node)
+{
+	ir_nodemap_insert(nodemap, node, NULL);
+}
 
 /**
- * Tests whether a nodemap contains a specific node
- *
- * @param nodemap   Pointer to the nodemap
- * @param node      The pointer to find
- * @returns         the associated data of the node or NULL
+ * Get mapping for @p node. Returns NULL if nothing is mapped.
  */
-void *ir_nodemap_get(const ir_nodemap_t *nodemap, const ir_node *node);
+static inline void *ir_nodemap_get(const ir_nodemap *nodemap,
+                                   const ir_node *node)
+{
+	unsigned idx = get_irn_idx(node);
+	if (idx >= ARR_LEN(nodemap->data))
+		return NULL;
+	return nodemap->data[idx];
+}
 
 /**
- * Returns the number of pointers contained in the nodemap
+ * Get mapping for @p node (fast version). Returns NULL if nothing is mapped.
  *
- * @param nodemap   Pointer to the nodemap
- * @returns       Number of pointers contained in the nodemap
+ * @attention You must only use this function if you can be sure that the
+ * nodemap has enough space to potentially contain the mapping. This is the
+ * case if @p node already existed at nodemap_init() time or ir_nodemap_insert()
+ * has been used for this node)
  */
-size_t ir_nodemap_size(const ir_nodemap_t *nodemap);
-
-/**
- * Initializes a nodemap iterator. Sets the iterator before the first element in
- * the nodemap.
- *
- * @param iterator   Pointer to already allocated iterator memory
- * @param nodemap       Pointer to the nodemap
- */
-void ir_nodemap_iterator_init(ir_nodemap_iterator_t *iterator,
-                              const ir_nodemap_t *nodemap);
-
-/**
- * Advances the iterator and returns the current element or NULL if all elements
- * in the nodemap have been processed.
- * @attention It is not allowed to use nodemap_insert or nodemap_remove while
- *            iterating over a nodemap.
- *
- * @param iterator  Pointer to the nodemap iterator.
- * @returns         Next element in the nodemap or NULL
- */
-ir_nodemap_entry_t ir_nodemap_iterator_next(ir_nodemap_iterator_t *iterator);
-
-/**
- * Removes the element the iterator currently points to
- *
- * @param nodemap   Pointer to the nodemap
- * @param iterator  Pointer to the nodemap iterator.
- */
-void ir_nodemap_remove_iterator(ir_nodemap_t *nodemap,
-                                const ir_nodemap_iterator_t *iterator);
-
-#define foreach_ir_nodemap(nodemap, entry, iter) \
-	for (ir_nodemap_iterator_init(&iter, nodemap), \
-		entry = ir_nodemap_iterator_next(&iter);    \
-		entry.node != NULL; entry = ir_nodemap_iterator_next(&iter))
+static inline void *ir_nodemap_get_fast(const ir_nodemap *nodemap,
+                                        const ir_node *node)
+{
+	unsigned idx = get_irn_idx(node);
+	return nodemap->data[idx];
+}
 
 #endif

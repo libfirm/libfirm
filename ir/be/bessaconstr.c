@@ -69,7 +69,6 @@
 
 #include "ircons.h"
 #include "iredges_t.h"
-#include "irphase_t.h"
 
 DEBUG_ONLY(static firm_dbg_module_t *dbg = NULL;)
 
@@ -77,9 +76,9 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
                                         ir_node *block);
 
 struct constr_info {
-	bool is_definition;
-	bool is_use;
-	bool already_processed;
+	bool is_definition     : 1;
+	bool is_use            : 1;
+	bool already_processed : 1;
 	union {
 		/* Since we only consider scheduled nodes,
 		 * this points to the real definition (e.g. a Proj). */
@@ -95,11 +94,26 @@ typedef struct constr_info constr_info;
 /**
  * @return Whether the block contains a definition.
  */
-static inline bool has_definition(be_ssa_construction_env_t *env, ir_node *block)
+static bool has_definition(const ir_node *block)
 {
-	(void)env;
-
 	return irn_visited(block);
+}
+
+static constr_info *get_or_set_info(be_ssa_construction_env_t *env,
+                                    const ir_node *node)
+{
+	constr_info *info = ir_nodemap_get(&env->infos, node);
+	if (info == NULL) {
+		info = OALLOCZ(&env->obst, constr_info);
+		ir_nodemap_insert(&env->infos, node, info);
+	}
+	return info;
+}
+
+static constr_info *get_info(const be_ssa_construction_env_t *env,
+                             const ir_node *node)
+{
+	return (constr_info*)ir_nodemap_get(&env->infos, node);
 }
 
 /**
@@ -107,29 +121,26 @@ static inline bool has_definition(be_ssa_construction_env_t *env, ir_node *block
  */
 static inline bool has_use(be_ssa_construction_env_t *env, ir_node *block)
 {
-	constr_info *info = phase_get_or_set_irn_data(env->phase, block);
-
+	constr_info *info = get_or_set_info(env, block);
 	return info->is_use;
 }
 
 /**
  * @return Whether the node is a definition.
  */
-static inline bool is_definition(be_ssa_construction_env_t *env, ir_node *node)
+static bool is_definition(be_ssa_construction_env_t *env, ir_node *node)
 {
-	constr_info *info = phase_get_irn_data(env->phase, node);
-
-	return info && info->is_definition;
+	constr_info *info = get_info(env, node);
+	return info != NULL && info->is_definition;
 }
 
 /**
  * @return Whether the node is a use.
  */
-static inline bool is_use(const be_ssa_construction_env_t *env, ir_node *node)
+static bool is_use(const be_ssa_construction_env_t *env, ir_node *node)
 {
-	constr_info *info = phase_get_irn_data(env->phase, node);
-
-	return info && info->is_use;
+	constr_info *info = get_info(env, node);
+	return info != NULL && info->is_use;
 }
 
 /**
@@ -138,11 +149,10 @@ static inline bool is_use(const be_ssa_construction_env_t *env, ir_node *node)
 static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
 {
 	ir_node     *block      = get_nodes_block(def);
-	ir_phase    *phase      = env->phase;
-	constr_info *def_info   = phase_get_or_set_irn_data(phase, def);
+	constr_info *def_info   = get_or_set_info(env, def);
 	ir_node     *skip       = skip_Proj(def);
-	constr_info *skip_info  = phase_get_or_set_irn_data(phase, skip);
-	constr_info *block_info = phase_get_or_set_irn_data(phase, block);
+	constr_info *skip_info  = get_or_set_info(env, skip);
+	constr_info *block_info = get_or_set_info(env, block);
 
 	DBG((dbg, LEVEL_2, "\tintroducing definition %+F in %+F\n", def, block));
 
@@ -152,11 +162,10 @@ static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
 	skip_info->definition    = def;
 
 	// Set the last definition if we only introduce one definition for the block
-	if (has_definition(env, block)) {
+	if (has_definition(block)) {
 		assert(!block_info->already_processed);
 		block_info->last_definition = NULL;
-	}
-	else {
+	} else {
 		mark_irn_visited(block);
 		block_info->last_definition = def;
 	}
@@ -165,9 +174,8 @@ static void introduce_definition(be_ssa_construction_env_t *env, ir_node *def)
 static void introduce_use(be_ssa_construction_env_t *env, ir_node *use)
 {
 	ir_node     *block      = get_nodes_block(use);
-	ir_phase    *phase      = env->phase;
-	constr_info *info       = phase_get_or_set_irn_data(phase, use);
-	constr_info *block_info = phase_get_or_set_irn_data(phase, block);
+	constr_info *info       = get_or_set_info(env, use);
+	constr_info *block_info = get_or_set_info(env, block);
 
 	DBG((dbg, LEVEL_2, "\tintroducing use %+F in %+F\n", use, block));
 
@@ -183,7 +191,7 @@ static void introduce_use(be_ssa_construction_env_t *env, ir_node *use)
  * frontier to the block itself.
  */
 static void mark_iterated_dominance_frontiers(
-		const be_ssa_construction_env_t *env)
+                                           const be_ssa_construction_env_t *env)
 {
 	stat_ev_cnt_decl(blocks);
 	DBG((dbg, LEVEL_3, "Dominance Frontier:"));
@@ -269,7 +277,7 @@ static ir_node *get_def_at_idom(be_ssa_construction_env_t *env, ir_node *block)
  */
 static void set_operands(be_ssa_construction_env_t *env, ir_node *use, ir_node *def)
 {
-	constr_info *info  = phase_get_irn_data(env->phase, use);
+	constr_info *info  = get_info(env, use);
 	int          arity = get_irn_arity(use);
 	int          i;
 
@@ -292,9 +300,9 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 {
 	ir_node     *node;
 	ir_node     *def        = NULL;
-	constr_info *block_info = phase_get_or_set_irn_data(env->phase, block);
+	constr_info *block_info = get_or_set_info(env, block);
 
-	assert(has_definition(env, block));
+	assert(has_definition(block));
 	assert(!block_info->already_processed && "Block already processed");
 
 	DBG((dbg, LEVEL_3, "\tprocessing block  %+F\n", block));
@@ -317,7 +325,7 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 		}
 
 		if (is_definition(env, node)) {
-			constr_info *info = phase_get_irn_data(env->phase, node);
+			constr_info *info = get_info(env, node);
 			def = info->definition;
 			DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
 		}
@@ -333,13 +341,13 @@ static void process_block(be_ssa_construction_env_t *env, ir_node *block)
 static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
                                         ir_node *block)
 {
-	constr_info *block_info      = phase_get_or_set_irn_data(env->phase, block);
+	constr_info *block_info      = get_or_set_info(env, block);
 	ir_node     *last_definition = block_info->last_definition;
 
 	if (last_definition != NULL)
 		return last_definition;
 
-	if (has_definition(env, block)) {
+	if (has_definition(block)) {
 		if (has_use(env, block)) {
 			if (!block_info->already_processed) {
 				process_block(env, block);
@@ -351,7 +359,7 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 			/* Search the last definition of the block. */
 			sched_foreach_reverse(block, def) {
 				if (is_definition(env, def)) {
-					constr_info *info = phase_get_irn_data(env->phase, def);
+					constr_info *info = get_info(env, def);
 					def = info->definition;
 					DBG((dbg, LEVEL_3, "\t...found definition %+F\n", def));
 
@@ -386,12 +394,12 @@ static ir_node *search_def_end_of_block(be_ssa_construction_env_t *env,
 static void search_def_at_block(be_ssa_construction_env_t *env, ir_node *use)
 {
 	ir_node     *block      = get_nodes_block(use);
-	constr_info *block_info = phase_get_or_set_irn_data(env->phase, block);
+	constr_info *block_info = get_or_set_info(env, block);
 
 	if (block_info->already_processed)
 		return;
 
-	if (has_definition(env, block)) {
+	if (has_definition(block)) {
 		process_block(env, block);
 	} else if (Block_block_visited(block)) {
 		ir_node *phi = insert_dummy_phi(env, block);
@@ -402,19 +410,6 @@ static void search_def_at_block(be_ssa_construction_env_t *env, ir_node *use)
 
 		set_operands(env, use, def);
 	}
-}
-
-static void *init_constr_info(ir_phase *phase, const ir_node *node)
-{
-	constr_info *info = phase_alloc(phase, sizeof(constr_info));
-	(void)node;
-
-	info->is_definition     = false;
-	info->is_use            = false;
-	info->already_processed = false;
-	info->definition        = NULL;
-
-	return info;
 }
 
 void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
@@ -435,7 +430,8 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 	env->domfronts = be_get_irg_dom_front(irg);
 	env->new_phis  = NEW_ARR_F(ir_node*, 0);
 	env->worklist  = new_waitq();
-	env->phase     = new_phase(irg, init_constr_info);
+	ir_nodemap_init(&env->infos, irg);
+	obstack_init(&env->obst);
 
 	ir_reserve_resources(irg, IR_RESOURCE_IRN_VISITED
 			| IR_RESOURCE_BLOCK_VISITED | IR_RESOURCE_IRN_LINK);
@@ -451,7 +447,8 @@ void be_ssa_construction_init(be_ssa_construction_env_t *env, ir_graph *irg)
 void be_ssa_construction_destroy(be_ssa_construction_env_t *env)
 {
 	stat_ev_int("bessaconstr_phis", ARR_LEN(env->new_phis));
-	phase_free(env->phase);
+	obstack_free(&env->obst, NULL);
+	ir_nodemap_destroy(&env->infos);
 	del_waitq(env->worklist);
 	DEL_ARR_F(env->new_phis);
 
@@ -478,7 +475,7 @@ void be_ssa_construction_add_copy(be_ssa_construction_env_t *env,
 
 	block = get_nodes_block(copy);
 
-	if (!has_definition(env, block)) {
+	if (!has_definition(block)) {
 		waitq_put(env->worklist, block);
 	}
 	introduce_definition(env, copy);
@@ -501,7 +498,7 @@ void be_ssa_construction_add_copies(be_ssa_construction_env_t *env,
 		ir_node *block = get_nodes_block(copy);
 
 		assert(env->mode == get_irn_mode(copy));
-		if (!has_definition(env, block)) {
+		if (!has_definition(block)) {
 			waitq_put(env->worklist, block);
 		}
 		introduce_definition(env, copy);
@@ -526,7 +523,7 @@ ir_node **be_ssa_construction_get_new_phis(be_ssa_construction_env_t *env)
  */
 static void fix_phi_arguments(be_ssa_construction_env_t *env, ir_node *phi)
 {
-	constr_info *info    = phase_get_irn_data(env->phase, phi);
+	constr_info *info    = get_info(env, phi);
 	ir_node     *block   = get_nodes_block(phi);
 	int          i;
 	int          n_preds = get_Block_n_cfgpreds(block);
@@ -591,7 +588,7 @@ void be_ssa_construction_fix_users_array(be_ssa_construction_env_t *env,
 
 	while (!waitq_empty(env->worklist)) {
 		ir_node     *use  = (ir_node *)waitq_get(env->worklist);
-		constr_info *info = phase_get_irn_data(env->phase, use);
+		constr_info *info = get_info(env, use);
 
 		if (info->already_processed)
 			continue;

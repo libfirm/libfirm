@@ -827,9 +827,10 @@ static void add_to_cprop(node_t *y, environment_t *env)
 	if (y->on_cprop == 0) {
 		partition_t *Y = y->part;
 		ir_node *irn   = y->node;
+		ir_node *skipped = skip_Proj(irn);
 
 		/* place Conds and all its Projs on the cprop_X list */
-		if (is_Cond(skip_Proj(irn)))
+		if (is_Cond(skipped) || is_Switch(skipped))
 			list_add_tail(&y->cprop_list, &Y->cprop_X);
 		else
 			list_add_tail(&y->cprop_list, &Y->cprop);
@@ -2338,90 +2339,105 @@ static void compute_Proj_Cond(node_t *node, ir_node *cond)
 	if (node->type.tv == tarval_reachable)
 		return;
 
-	if (get_irn_mode(sel) == mode_b) {
-		/* an IF */
-		if (pnc == pn_Cond_true) {
-			if (selector->type.tv == tarval_b_false) {
-				node->type.tv = tarval_unreachable;
-			} else if (selector->type.tv == tarval_b_true) {
-				node->type.tv = tarval_reachable;
-			} else if (selector->type.tv == tarval_bottom) {
-				node->type.tv = tarval_reachable;
-			} else {
-				assert(selector->type.tv == tarval_top);
-				if (tarval_UNKNOWN == tarval_top) {
-					/* any condition based on Top is "!=" */
-					node->type.tv = tarval_unreachable;
-				} else {
-					node->type.tv = tarval_unreachable;
-				}
-			}
+	if (pnc == pn_Cond_true) {
+		if (selector->type.tv == tarval_b_false) {
+			node->type.tv = tarval_unreachable;
+		} else if (selector->type.tv == tarval_b_true) {
+			node->type.tv = tarval_reachable;
+		} else if (selector->type.tv == tarval_bottom) {
+			node->type.tv = tarval_reachable;
 		} else {
-			assert(pnc == pn_Cond_false);
-
-			if (selector->type.tv == tarval_b_false) {
-				node->type.tv = tarval_reachable;
-			} else if (selector->type.tv == tarval_b_true) {
+			assert(selector->type.tv == tarval_top);
+			if (tarval_UNKNOWN == tarval_top) {
+				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_unreachable;
-			} else if (selector->type.tv == tarval_bottom) {
-				node->type.tv = tarval_reachable;
 			} else {
-				assert(selector->type.tv == tarval_top);
-				if (tarval_UNKNOWN == tarval_top) {
-					/* any condition based on Top is "!=" */
-					node->type.tv = tarval_reachable;
-				} else {
-					node->type.tv = tarval_unreachable;
-				}
+				node->type.tv = tarval_unreachable;
 			}
 		}
 	} else {
-		/* an SWITCH */
-		if (selector->type.tv == tarval_bottom) {
+		assert(pnc == pn_Cond_false);
+
+		if (selector->type.tv == tarval_b_false) {
 			node->type.tv = tarval_reachable;
-		} else if (selector->type.tv == tarval_top) {
-			if (tarval_UNKNOWN == tarval_top &&
-			    pnc == get_Cond_default_proj(cond)) {
-				/* a switch based of Top is always "default" */
+		} else if (selector->type.tv == tarval_b_true) {
+			node->type.tv = tarval_unreachable;
+		} else if (selector->type.tv == tarval_bottom) {
+			node->type.tv = tarval_reachable;
+		} else {
+			assert(selector->type.tv == tarval_top);
+			if (tarval_UNKNOWN == tarval_top) {
+				/* any condition based on Top is "!=" */
 				node->type.tv = tarval_reachable;
 			} else {
 				node->type.tv = tarval_unreachable;
-			}
-		} else {
-			long value = get_tarval_long(selector->type.tv);
-			if (pnc == get_Cond_default_proj(cond)) {
-				/* default switch, have to check ALL other cases */
-				int i;
-
-				for (i = get_irn_n_outs(cond) - 1; i >= 0; --i) {
-					ir_node *succ = get_irn_out(cond, i);
-
-					if (succ == proj)
-						continue;
-					if (value == get_Proj_proj(succ)) {
-						/* we found a match, will NOT take the default case */
-						node->type.tv = tarval_unreachable;
-						return;
-					}
-				}
-				/* all cases checked, no match, will take default case */
-				node->type.tv = tarval_reachable;
-			} else {
-				/* normal case */
-				node->type.tv = value == pnc ? tarval_reachable : tarval_unreachable;
 			}
 		}
 	}
 }  /* compute_Proj_Cond */
 
+static void compute_Proj_Switch(node_t *node, ir_node *switchn)
+{
+	ir_node *proj     = node->node;
+	long     pnc      = get_Proj_proj(proj);
+	ir_node *sel      = get_Switch_selector(switchn);
+	node_t  *selector = get_irn_node(sel);
+
+	/* see long comment in compute_Proj_Cond */
+	if (node->type.tv == tarval_reachable)
+		return;
+
+	if (selector->type.tv == tarval_bottom) {
+		node->type.tv = tarval_reachable;
+	} else if (selector->type.tv == tarval_top) {
+		if (tarval_UNKNOWN == tarval_top && pnc == pn_Switch_default) {
+			/* a switch based of Top is always "default" */
+			node->type.tv = tarval_reachable;
+		} else {
+			node->type.tv = tarval_unreachable;
+		}
+	} else {
+		long                   value = get_tarval_long(selector->type.tv);
+		const ir_switch_table *table = get_Switch_table(switchn);
+		size_t                 n_entries = ir_switch_table_get_n_entries(table);
+		size_t                 e;
+
+		for (e = 0; e < n_entries; ++e) {
+			const ir_switch_table_entry *entry
+				= ir_switch_table_get_entry_const(table, e);
+			ir_tarval *min = entry->min;
+			ir_tarval *max = entry->max;
+			if (min == max) {
+				if (selector->type.tv == min) {
+					node->type.tv = entry->pn == pnc
+						? tarval_reachable : tarval_unreachable;
+					return;
+				}
+			} else {
+				long minval = get_tarval_long(min);
+				long maxval = get_tarval_long(max);
+				if (minval <= value && value <= maxval) {
+					node->type.tv = entry->pn == pnc
+						? tarval_reachable : tarval_unreachable;
+					return;
+				}
+			}
+		}
+
+		/* no entry matched: default */
+		node->type.tv
+			= pnc == pn_Switch_default ? tarval_reachable : tarval_unreachable;
+	}
+}
+
 /**
- * (Re-)compute the type for a Proj-Node.
- *
- * @param node  the node
- */
+* (Re-)compute the type for a Proj-Node.
+*
+* @param node  the node
+*/
 static void compute_Proj(node_t *node)
 {
-	ir_node *proj = node->node;
+ir_node *proj = node->node;
 	ir_mode *mode = get_irn_mode(proj);
 	node_t  *block = get_irn_node(get_nodes_block(skip_Proj(proj)));
 	ir_node *pred  = get_Proj_pred(proj);
@@ -2431,7 +2447,7 @@ static void compute_Proj(node_t *node)
 		node->type.tv = tarval_top;
 		return;
 	}
-	if (get_irn_node(pred)->type.tv == tarval_top && !is_Cond(pred)) {
+	if (get_irn_node(pred)->type.tv == tarval_top && !is_Cond(pred) && !is_Switch(pred)) {
 		/* if the predecessor is Top, its Proj follow */
 		node->type.tv = tarval_top;
 		return;
@@ -2451,6 +2467,9 @@ static void compute_Proj(node_t *node)
 			return;
 		case iro_Cond:
 			compute_Proj_Cond(node, pred);
+			return;
+		case iro_Switch:
+			compute_Proj_Switch(node, pred);
 			return;
 		default:
 			break;
@@ -3304,7 +3323,7 @@ static void apply_result(ir_node *irn, void *ctx)
 				/* leave or Jmp */
 				ir_node *cond = get_Proj_pred(irn);
 
-				if (is_Cond(cond)) {
+				if (is_Cond(cond) || is_Switch(cond)) {
 					if (only_one_reachable_proj(cond)) {
 						ir_node *jmp = new_r_Jmp(block->node);
 						set_irn_node(jmp, node);
@@ -3314,14 +3333,16 @@ static void apply_result(ir_node *irn, void *ctx)
 						exchange(irn, jmp);
 						env->modified = 1;
 					} else {
-						node_t    *sel = get_irn_node(get_Cond_selector(cond));
-						ir_tarval *tv  = sel->type.tv;
+						if (is_Switch(cond)) {
+							node_t    *sel = get_irn_node(get_Switch_selector(cond));
+							ir_tarval *tv  = sel->type.tv;
 
-						if (is_tarval(tv) && tarval_is_constant(tv)) {
-							/* The selector is a constant, but more
-							 * than one output is active: An unoptimized
-							 * case found. */
-							env->unopt_cf = 1;
+							if (is_tarval(tv) && tarval_is_constant(tv)) {
+								/* The selector is a constant, but more
+								 * than one output is active: An unoptimized
+								 * case found. */
+								env->unopt_cf = 1;
+							}
 						}
 					}
 				}

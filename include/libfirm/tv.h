@@ -753,12 +753,12 @@ FIRM_API int tarval_snprintf(char *buf, size_t buflen, ir_tarval *tv);
 FIRM_API int tarval_printf(ir_tarval *tv);
 
 /**
- * Returns non-zero if the mantissa of a floating point IEEE-754
- * tarval is zero (i.e. 1.0Exxx)
+ * Returns non-zero if the mantissa of a floating point tarval is zero
+ * (i.e. 1.0Exxx)
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_ieee754_zero_mantissa(ir_tarval *tv);
+FIRM_API int tarval_zero_mantissa(ir_tarval *tv);
 
 /**
  * Returns the exponent of a floating point IEEE-754
@@ -766,7 +766,7 @@ FIRM_API int tarval_ieee754_zero_mantissa(ir_tarval *tv);
  *
  * @param tv    the tarval
  */
-FIRM_API int tarval_ieee754_get_exponent(ir_tarval *tv);
+FIRM_API int tarval_get_exponent(ir_tarval *tv);
 
 /**
  * Check if the tarval can be converted to the given mode without
@@ -778,24 +778,9 @@ FIRM_API int tarval_ieee754_get_exponent(ir_tarval *tv);
 FIRM_API int tarval_ieee754_can_conv_lossless(ir_tarval *tv, ir_mode *mode);
 
 /**
- * Set the immediate precision for IEEE-754 results. Set this to
- * 0 to get the same precision as the operands.
- * For x87 compatibility, set this to 80.
- *
- * @return the old setting
- */
-FIRM_API unsigned tarval_ieee754_set_immediate_precision(unsigned bits);
-
-/**
- *  Returns non-zero if the result of the last IEEE-754 operation was exact.
+ * Returns non-zero if the result of the last IEEE-754 operation was exact.
  */
 FIRM_API unsigned tarval_ieee754_get_exact(void);
-
-/**
- * Return the size of the mantissa in bits (including possible
- * implicit bits) for the given mode.
- */
-FIRM_API unsigned tarval_ieee754_get_mantissa_size(const ir_mode *mode);
 
 /**
  * Enable/Disable floating point constant folding.

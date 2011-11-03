@@ -26,7 +26,7 @@
 #include "config.h"
 
 #include "hashptr.h"
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "firmstat_t.h"
 

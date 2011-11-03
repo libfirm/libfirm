@@ -41,12 +41,12 @@
 #include "irouts.h"
 #include "irhooks.h"
 #include "irtools.h"
+#include "util.h"
 #include "irgwalk.h"
 #include "irbackedge_t.h"
 #include "iredges_t.h"
 #include "type_t.h"
 #include "irmemory.h"
-#include "irphase.h"
 
 #define INITIAL_IDX_IRN_MAP_SIZE 1024
 
@@ -460,7 +460,7 @@ void free_ir_graph(ir_graph *irg)
 
 int (is_ir_graph)(const void *thing)
 {
-	return _is_ir_graph(thing);
+	return is_ir_graph_(thing);
 }
 
 #ifdef DEBUG_libfirm
@@ -483,117 +483,117 @@ size_t get_irg_idx(const ir_graph *irg)
 
 ir_node *(get_idx_irn)(const ir_graph *irg, unsigned idx)
 {
-	return _get_idx_irn(irg, idx);
+	return get_idx_irn_(irg, idx);
 }
 
 ir_node *(get_irg_start_block)(const ir_graph *irg)
 {
-	return _get_irg_start_block(irg);
+	return get_irg_start_block_(irg);
 }
 
 void (set_irg_start_block)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_start_block(irg, node);
+	set_irg_start_block_(irg, node);
 }
 
 ir_node *(get_irg_start)(const ir_graph *irg)
 {
-	return _get_irg_start(irg);
+	return get_irg_start_(irg);
 }
 
 void (set_irg_start)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_start(irg, node);
+	set_irg_start_(irg, node);
 }
 
 ir_node *(get_irg_end_block)(const ir_graph *irg)
 {
-	return _get_irg_end_block(irg);
+	return get_irg_end_block_(irg);
 }
 
 void (set_irg_end_block)(ir_graph *irg, ir_node *node)
 {
-  _set_irg_end_block(irg, node);
+	set_irg_end_block_(irg, node);
 }
 
 ir_node *(get_irg_end)(const ir_graph *irg)
 {
-	return _get_irg_end(irg);
+	return get_irg_end_(irg);
 }
 
 void (set_irg_end)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_end(irg, node);
+	set_irg_end_(irg, node);
 }
 
 ir_node *(get_irg_initial_exec)(const ir_graph *irg)
 {
-	return _get_irg_initial_exec(irg);
+	return get_irg_initial_exec_(irg);
 }
 
 void (set_irg_initial_exec)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_initial_exec(irg, node);
+	set_irg_initial_exec_(irg, node);
 }
 
 ir_node *(get_irg_frame)(const ir_graph *irg)
 {
-	return _get_irg_frame(irg);
+	return get_irg_frame_(irg);
 }
 
 void (set_irg_frame)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_frame(irg, node);
+	set_irg_frame_(irg, node);
 }
 
 ir_node *(get_irg_initial_mem)(const ir_graph *irg)
 {
-	return _get_irg_initial_mem(irg);
+	return get_irg_initial_mem_(irg);
 }
 
 void (set_irg_initial_mem)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_initial_mem(irg, node);
+	set_irg_initial_mem_(irg, node);
 }
 
 ir_node *(get_irg_args)(const ir_graph *irg)
 {
-	return _get_irg_args(irg);
+	return get_irg_args_(irg);
 }
 
 void (set_irg_args)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_args(irg, node);
+	set_irg_args_(irg, node);
 }
 
 ir_node *(get_irg_no_mem)(const ir_graph *irg)
 {
-	return _get_irg_no_mem(irg);
+	return get_irg_no_mem_(irg);
 }
 
 void (set_irg_no_mem)(ir_graph *irg, ir_node *node)
 {
-	_set_irg_no_mem(irg, node);
+	set_irg_no_mem_(irg, node);
 }
 
 ir_entity *(get_irg_entity)(const ir_graph *irg)
 {
-	return _get_irg_entity(irg);
+	return get_irg_entity_(irg);
 }
 
 void (set_irg_entity)(ir_graph *irg, ir_entity *ent)
 {
-	_set_irg_entity(irg, ent);
+	set_irg_entity_(irg, ent);
 }
 
 ir_type *(get_irg_frame_type)(ir_graph *irg)
 {
-	return _get_irg_frame_type(irg);
+	return get_irg_frame_type_(irg);
 }
 
 void (set_irg_frame_type)(ir_graph *irg, ir_type *ftp)
 {
-	_set_irg_frame_type(irg, ftp);
+	set_irg_frame_type_(irg, ftp);
 }
 
 int get_irg_n_locs(ir_graph *irg)
@@ -602,9 +602,9 @@ int get_irg_n_locs(ir_graph *irg)
 }
 
 /* Returns the obstack associated with the graph. */
-struct obstack *
-(get_irg_obstack)(const ir_graph *irg) {
-	return _get_irg_obstack(irg);
+struct obstack *(get_irg_obstack)(const ir_graph *irg)
+{
+	return get_irg_obstack_(irg);
 }
 
 /*
@@ -630,72 +630,72 @@ int node_is_in_irgs_storage(const ir_graph *irg, const ir_node *n)
 
 irg_phase_state (get_irg_phase_state)(const ir_graph *irg)
 {
-	return _get_irg_phase_state(irg);
+	return get_irg_phase_state_(irg);
 }
 
 void (set_irg_phase_state)(ir_graph *irg, irg_phase_state state)
 {
-	_set_irg_phase_state(irg, state);
+	set_irg_phase_state_(irg, state);
 }
 
 op_pin_state (get_irg_pinned)(const ir_graph *irg)
 {
-	return _get_irg_pinned(irg);
+	return get_irg_pinned_(irg);
 }
 
 void (set_irg_pinned)(ir_graph *irg, op_pin_state p)
 {
-	_set_irg_pinned(irg, p);
+	set_irg_pinned_(irg, p);
 }
 
 irg_callee_info_state (get_irg_callee_info_state)(const ir_graph *irg)
 {
-	return _get_irg_callee_info_state(irg);
+	return get_irg_callee_info_state_(irg);
 }
 
 void (set_irg_callee_info_state)(ir_graph *irg, irg_callee_info_state s)
 {
-	_set_irg_callee_info_state(irg, s);
+	set_irg_callee_info_state_(irg, s);
 }
 
 irg_inline_property (get_irg_inline_property)(const ir_graph *irg)
 {
-	return _get_irg_inline_property(irg);
+	return get_irg_inline_property_(irg);
 }
 
 void (set_irg_inline_property)(ir_graph *irg, irg_inline_property s)
 {
-	_set_irg_inline_property(irg, s);
+	set_irg_inline_property_(irg, s);
 }
 
 mtp_additional_properties (get_irg_additional_properties)(const ir_graph *irg)
 {
-	return _get_irg_additional_properties(irg);
+	return get_irg_additional_properties_(irg);
 }
 
 void (set_irg_additional_properties)(ir_graph *irg, mtp_additional_properties property_mask)
 {
-	_set_irg_additional_properties(irg, property_mask);
+	set_irg_additional_properties_(irg, property_mask);
 }
 
 void (add_irg_additional_properties)(ir_graph *irg, mtp_additional_properties flag)
 {
-	_add_irg_additional_properties(irg, flag);
+	add_irg_additional_properties_(irg, flag);
 }
 
 void (set_irg_link)(ir_graph *irg, void *thing)
 {
-	_set_irg_link(irg, thing);
+	set_irg_link_(irg, thing);
 }
 
 void *(get_irg_link)(const ir_graph *irg)
 {
-	return _get_irg_link(irg);
+	return get_irg_link_(irg);
 }
 
 ir_visited_t (get_irg_visited)(const ir_graph *irg)
 {
-	return _get_irg_visited(irg);
+	return get_irg_visited_(irg);
 }
 
 /** maximum visited flag content of all ir_graph visited fields. */
@@ -739,23 +739,23 @@ ir_visited_t inc_max_irg_visited(void)
 
 ir_visited_t (get_irg_block_visited)(const ir_graph *irg)
 {
-	return _get_irg_block_visited(irg);
+	return get_irg_block_visited_(irg);
 }
 
 void (set_irg_block_visited)(ir_graph *irg, ir_visited_t visited)
 {
-	_set_irg_block_visited(irg, visited);
+	set_irg_block_visited_(irg, visited);
 }
 
 void (inc_irg_block_visited)(ir_graph *irg)
 {
-  _inc_irg_block_visited(irg);
+  inc_irg_block_visited_(irg);
 }
 
 /* Return the floating point model of this graph. */
 unsigned (get_irg_fp_model)(const ir_graph *irg)
 {
-	return _get_irg_fp_model(irg);
+	return get_irg_fp_model_(irg);
 }
 
 /* Sets the floating point model for this graph. */
@@ -782,26 +782,6 @@ void *get_irg_loc_description(ir_graph *irg, int n)
 	return irg->loc_descriptions ? irg->loc_descriptions[n] : NULL;
 }
 
-void irg_register_phase(ir_graph *irg, ir_phase_id id, ir_phase *phase)
-{
-	assert(id <= PHASE_LAST);
-	assert(irg->phases[id] == NULL);
-	irg->phases[id] = phase;
-}
-
-void irg_invalidate_phases(ir_graph *irg)
-{
-	int p;
-	for (p = 0; p <= PHASE_LAST; ++p) {
-		ir_phase *phase = irg->phases[p];
-		if (phase == NULL)
-			continue;
-
-		phase_free(phase);
-		irg->phases[p] = NULL;
-	}
-}
-
 #ifndef NDEBUG
 void ir_reserve_resources(ir_graph *irg, ir_resources_t resources)
 {
@@ -824,7 +804,7 @@ ir_resources_t ir_resources_reserved(const ir_graph *irg)
 /* Returns a estimated node count of the irg. */
 unsigned (get_irg_estimated_node_cnt)(const ir_graph *irg)
 {
-	return _get_irg_estimated_node_cnt(irg);
+	return get_irg_estimated_node_cnt_(irg);
 }
 
 /* Returns the last irn index for this graph. */
@@ -846,15 +826,15 @@ size_t register_additional_graph_data(size_t size)
 
 void (set_irg_state)(ir_graph *irg, ir_graph_state_t state)
 {
-	_set_irg_state(irg, state);
+	set_irg_state_(irg, state);
 }
 
 void (clear_irg_state)(ir_graph *irg, ir_graph_state_t state)
 {
-	_clear_irg_state(irg, state);
+	clear_irg_state_(irg, state);
 }
 
 int (is_irg_state)(const ir_graph *irg, ir_graph_state_t state)
 {
-	return _is_irg_state(irg, state);
+	return is_irg_state_(irg, state);
 }

@@ -385,15 +385,15 @@ irnode_h_template = env.from_string(
 '''/* Warning: automatically generated code */
 
 {%- for node in nodes|isnot('custom_is') %}
-static inline int _is_{{node.name}}(const ir_node *node)
+static inline int is_{{node.name}}_(const ir_node *node)
 {
 	assert(node != NULL);
-	return _get_irn_op(node) == op_{{node.name}};
+	return get_irn_op_(node) == op_{{node.name}};
 }
 {%- endfor -%}
 
 {% for node in nodes %}
-#define is_{{node.name}}(node)    _is_{{node.name}}(node)
+#define is_{{node.name}}(node)    is_{{node.name}}_(node)
 {%- endfor %}
 
 ''')
@@ -403,7 +403,7 @@ irnode_template = env.from_string(
 {% for node in nodes %}
 int (is_{{node.name}})(const ir_node *node)
 {
-	return _is_{{node.name}}(node);
+	return is_{{node.name}}_(node);
 }
 {% endfor %}
 
@@ -438,6 +438,27 @@ void (set_{{node.name}}_{{input[0]}})(ir_node *node, ir_node *{{input[0]|escape_
 }
 {% endfor %}
 {% endfor %}
+''')
+
+irdump_template = env.from_string(
+'''/* Warning: automatically generated code */
+{% for node in nodes %}
+{%- if node.outs %}
+static const pns_lookup_t {{node.name}}_lut[] = {
+	{%- for out in node.outs %}
+	{ pn_{{node.name}}_{{out[0]}}, "{{out[0]}}" },
+	{%- endfor %}
+};
+{% endif -%}
+{%- endfor %}
+
+static const proj_lookup_t proj_lut[] = {
+	{%- for node in nodes -%}
+	{%- if node.outs %}
+	{ iro_{{node.name}}, ARRAY_SIZE({{node.name}}_lut), {{node.name}}_lut },
+	{%- endif %}
+	{%- endfor %}
+};
 ''')
 
 irop_template = env.from_string(
@@ -678,6 +699,10 @@ def main(argv):
 
 	file = open(gendir + "/gen_irop.c.inl", "w")
 	file.write(irop_template.render(nodes = real_nodes))
+	file.close()
+
+	file = open(gendir + "/gen_irdump.c.inl", "w")
+	file.write(irdump_template.render(nodes = real_nodes))
 	file.close()
 
 	file = open(gendir2 + "/opcodes.h", "w")

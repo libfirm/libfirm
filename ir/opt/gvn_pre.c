@@ -36,7 +36,7 @@
 #include "ircons.h"
 #include "irgmod.h"
 #include "valueset.h"
-#include "irnodemap.h"
+#include "irnodehashmap.h"
 #include "irnodeset.h"
 #include "iredges.h"
 #include "iropt_dbg.h"
@@ -83,7 +83,7 @@ typedef struct pre_env {
 	char first_iter;        /**< non-zero for first iteration */
 } pre_env;
 
-static ir_nodemap_t value_map;
+static ir_nodehashmap_t value_map;
 
 /** The debug module handle. */
 DEBUG_ONLY(static firm_dbg_module_t *dbg;)
@@ -124,7 +124,7 @@ static ir_node *add(ir_node *e, ir_node *v)
 		}
 	}
 	v = identify_remember(v);
-	ir_nodemap_insert(&value_map, e, v);
+	ir_nodehashmap_insert(&value_map, e, v);
 	return v;
 }  /* add */
 
@@ -138,7 +138,7 @@ static ir_node *add(ir_node *e, ir_node *v)
  */
 static ir_node *lookup(ir_node *e)
 {
-	ir_node *value = (ir_node*)ir_nodemap_get(&value_map, e);
+	ir_node *value = (ir_node*)ir_nodehashmap_get(&value_map, e);
 	if (value != NULL)
 		return identify_remember(value);
 	return NULL;
@@ -806,7 +806,7 @@ void do_gvn_pre(ir_graph *irg)
 	edges_deactivate(irg);
 
 	new_identities(irg);
-	ir_nodemap_init(&value_map);
+	ir_nodehashmap_init(&value_map);
 
 	obstack_init(&obst);
 	a_env.obst        = &obst;
@@ -885,7 +885,7 @@ void do_gvn_pre(ir_graph *irg)
 		if (bl_info->new_set)
 			ir_valueset_del(bl_info->new_set);
 	}
-	ir_nodemap_destroy(&value_map);
+	ir_nodehashmap_destroy(&value_map);
 	obstack_free(&obst, NULL);
 
 	/* pin the graph again: This is needed due to the use of set_opt_global_cse(1) */

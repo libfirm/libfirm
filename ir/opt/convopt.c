@@ -299,16 +299,7 @@ static void conv_opt_walker(ir_node *node, void *data)
 
 	transformed = conv_transform(pred, mode);
 	if (node != transformed) {
-		vrp_attr *vrp;
-
 		exchange(node, transformed);
-		vrp = vrp_get_info(transformed);
-		if (vrp && vrp->valid) {
-			vrp->range_type = VRP_VARYING;
-			vrp->bits_set = tarval_convert_to(vrp->bits_set, mode);
-			vrp->bits_not_set = tarval_convert_to(vrp->bits_not_set, mode);
-		}
-
 		*changed = true;
 	}
 }

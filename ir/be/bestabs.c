@@ -37,7 +37,7 @@
 #include "xmalloc.h"
 #include "pmap.h"
 #include "pdeq.h"
-#include "irtools.h"
+#include "util.h"
 #include "obst.h"
 #include "array_t.h"
 #include "be_dbgout_t.h"
@@ -146,7 +146,7 @@ static unsigned get_type_number(stabs_handle *h, ir_type *tp)
 		num = (unsigned)PTR_TO_INT(entry->value);
 	}
 	return num;
-}  /* get_type_number */
+}
 
 /**
  * Map a given Type to void by assigned the type number 0.
@@ -164,7 +164,7 @@ static void gen_void_type(stabs_handle *h)
 	(void) h;
 	be_emit_irprintf("\t.stabs\t\"void:t%u=%u\",%d,0,0,0\n", 0, 0, N_LSYM);
 	be_emit_write_line();
-}  /* gen_void_type */
+}
 
 typedef struct walker_env {
 	stabs_handle *h;
@@ -242,13 +242,13 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 		Ignore it here as it's name is remapped to "void". */
 		map_to_void(h, tp);
 		return;
-	}  /* if */
+	}
 
 #if 0
 	if (get_mode_size_bits(mode) & 7) {
 		/* this is a bitfield type, ignore it */
 		return;
-	}  /* if */
+	}
 #endif
 
 	type_num = get_type_number(h, tp);
@@ -269,7 +269,7 @@ static void gen_primitive_type(stabs_handle *h, ir_type *tp)
 		be_emit_irprintf(":t%u=r1;%d;0;\",%d,0,0,0\n", type_num, size, N_LSYM);
 		be_emit_write_line();
 	}
-}  /* gen_primitive_type */
+}
 
 /**
  * Generates an enum type
@@ -295,7 +295,7 @@ static void gen_enum_type(stabs_handle *h, ir_type *tp)
 	}
 	be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
-}  /* gen_enum_type */
+}
 
 /**
  * print a pointer type
@@ -330,7 +330,7 @@ static void gen_pointer_type(wenv_t *env, ir_type *tp)
 	print_pointer_type(h, tp, 0);
 	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
-}  /* gen_pointer_type */
+}
 
 /**
  * print an array type
@@ -387,7 +387,7 @@ static void gen_array_type(wenv_t *env, ir_type *tp)
 
 	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
-}  /* gen_array_type */
+}
 
 /**
  * Generates a struct/union type
@@ -465,7 +465,7 @@ static void gen_struct_union_type(wenv_t *env, ir_type *tp)
 	}
 	be_emit_irprintf(";\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
-}  /* gen_struct_type */
+}
 
 /**
  * Generates a method type
@@ -503,7 +503,7 @@ static void gen_method_type(wenv_t *env, ir_type *tp)
 	}
 	be_emit_irprintf("\",%d,0,0,0\n", N_LSYM);
 	be_emit_write_line();
-}  /* gen_method_type */
+}
 
 /**
  * type-walker: generate declaration for simple types,
@@ -522,7 +522,7 @@ static void walk_type(type_or_ent tore, void *ctx)
 			return;
 	} else {
 		return;
-	}  /* if */
+	}
 
 	switch (get_type_tpop_code(tp)) {
 	case tpo_class:
@@ -562,8 +562,8 @@ static void walk_type(type_or_ent tore, void *ctx)
 		break;
 	default:
 		assert(! "Unknown tpop code");
-	}  /* switch */
-}  /* walk_type */
+	}
+}
 
 /**
  * generate declaration for all types
@@ -604,9 +604,9 @@ static void finish_types(wenv_t *env)
 			break;
 		default:
 			assert(! "Unknown tpop code");
-		}  /* switch */
-	}  /* while */
-}  /* finish_types */
+		}
+	}
+}
 
 /**
  * generate all types.
@@ -625,7 +625,7 @@ static void gen_types(stabs_handle *h)
 	finish_types(&env);
 	del_waitq(env.wq);
 
-}  /* gen_types */
+}
 
 
 /* -------------------------- I/F ----------------------------- */
@@ -758,7 +758,7 @@ static void stabs_method_begin(dbg_handle *handle, const ir_entity *ent)
 		be_emit_irprintf("\",%d,0,0,%d\n", N_PSYM, ofs);
 		be_emit_write_line();
 	}
-}  /* stabs_method_begin */
+}
 
 /**
  * dump the stabs for a method end
@@ -806,7 +806,7 @@ static void stabs_method_end(dbg_handle *handle)
 
 	h->cur_ent = NULL;
 	h->layout  = NULL;
-}  /* stabs_method_end */
+}
 
 /**
  * dump types
@@ -819,7 +819,7 @@ static void stabs_types(dbg_handle *handle)
 	h->next_type_nr++;
 	gen_void_type(h);
 	gen_types(h);
-}  /* stabs_types */
+}
 
 /**
  * dump a variable in the global type
@@ -847,7 +847,7 @@ static void stabs_variable(dbg_handle *handle, const ir_entity *ent)
 	buf[sizeof(buf) - 1] = '\0';
 
 	be_emit_string(buf);
-}  /* stabs_variable */
+}
 
 /**
  * Close the stabs handler.
@@ -857,7 +857,7 @@ static void stabs_close(dbg_handle *handle)
 	stabs_handle *h = (stabs_handle *)handle;
 	pmap_destroy(h->type_map);
 	free(h);
-}  /* stabs_close */
+}
 
 /** The stabs operations. */
 static const debug_ops stabs_ops = {

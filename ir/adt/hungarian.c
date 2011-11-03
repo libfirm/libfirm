@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "irtools.h"
+#include "util.h"
 #include "xmalloc.h"
 #include "debug.h"
 #include "bitset.h"

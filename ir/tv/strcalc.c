@@ -878,7 +878,7 @@ int sc_val_from_str(char sign, unsigned base, const char *str,
 		/* get ready for the next letter */
 		str++;
 		len--;
-	} /* while (len > 0 ) */
+	}
 
 	if (sign < 0)
 		do_negate((const char*) buffer, (char*) buffer);

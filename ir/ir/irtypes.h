@@ -26,6 +26,8 @@
 #ifndef FIRM_IR_IRDEFS_H
 #define FIRM_IR_IRDEFS_H
 
+#include <stdbool.h>
+
 #include "firm_types.h"
 #include "irdom_t.h"
 #include "irmode.h"
@@ -37,7 +39,6 @@
 #include "irmemory.h"
 #include "callgraph.h"
 #include "irprog.h"
-#include "irphase.h"
 #include "bitset.h"
 
 #include "pset.h"
@@ -46,16 +47,9 @@
 #include "obst.h"
 #include "vrp.h"
 
-/**
- * List of phases. (We will add a register/unregister interface if managing
- * this gets too tedious)
- */
-typedef enum ir_phase_id {
-	PHASE_FIRST,
-	PHASE_VRP = PHASE_FIRST,
-	PHASE_LAST = PHASE_VRP
-} ir_phase_id;
-ENUM_COUNTABLE(ir_phase_id)
+struct ir_nodemap {
+	void **data;  /**< maps node indices to void* */
+};
 
 /** The type of an ir_op. */
 struct ir_op {
@@ -79,6 +73,51 @@ struct ir_op {
 	                               attribute stuff to. */
 	ir_op_ops ops;            /**< The operations of the this op. */
 };
+
+/** Helper values for ir_mode_sort. */
+enum ir_mode_sort_helper {
+	irmsh_is_num   = 0x10, /**< mode represents a number */
+	irmsh_is_data  = 0x20, /**< mode represents data (can be carried in registers) */
+	irmsh_is_datab = 0x40, /**< mode represents data or is internal boolean */
+	irmsh_is_dataM = 0x80, /**< mode represents data or is memory */
+};
+
+/**
+ * These values represent the different mode classes of value representations.
+ * Beware: do not change the order of these values without checking
+ * the mode_is
+ */
+typedef enum ir_mode_sort {
+	irms_control_flow     = 0, /**< Marks all control flow modes. */
+	irms_block            = 1,
+	irms_tuple            = 2,
+	irms_any              = 3,
+	irms_bad              = 4,
+	irms_memory           = 5 | irmsh_is_dataM, /**< Marks the memory mode.  Not extensible. (irm_M) */
+
+	/** Internal boolean representation.
+	     Storing to memory impossible, convert first. (irm_b) */
+	irms_internal_boolean = 6 | irmsh_is_datab,
+
+	/** A mode to represent entities.
+	    Restricted int computations can be performed */
+	irms_reference        = 7 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM,
+	/** A mode to represent int numbers.
+	    Integer computations can be performed. */
+	irms_int_number       = 8 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
+	/** A mode to represent float numbers.
+	    Floating point computations can be performed. */
+	irms_float_number     = 9 | irmsh_is_data | irmsh_is_datab | irmsh_is_dataM | irmsh_is_num,
+} ir_mode_sort;
+
+/**
+ * A descriptor for an IEEE754 float value.
+ */
+typedef struct float_descriptor_t {
+	unsigned char exponent_size;    /**< size of exponent in bits */
+	unsigned char mantissa_size;    /**< size of mantissa in bits */
+	bool          explicit_one;     /**< set if the leading one is explicit */
+} float_descriptor_t;
 
 /**
  * Contains relevant information about a mode.
@@ -105,21 +144,18 @@ struct ir_mode {
 	ident             *name;      /**< Name ident of this mode */
 	ir_type           *type;      /**< corresponding primitive type */
 
-	/* ----------------------------------------------------------------------- */
+	/* ---------------------------------------------------------------------- */
 	/* On changing this struct you have to evaluate the mode_are_equal function!*/
-	ir_mode_sort      sort;          /**< coarse classification of this mode:
-                                          int, float, reference ...
-                                          (see irmode.h) */
-	ir_mode_arithmetic
-	                  arithmetic;    /**< different arithmetic operations possible with a mode */
-	unsigned          size;          /**< size of the mode in Bits. */
-	unsigned          sign:1;        /**< signedness of this mode */
-	unsigned int      modulo_shift;  /**< number of bits a values of this mode will be shifted */
-	unsigned          vector_elem;   /**< if this is not equal 1, this is a vector mode with
-                                          vector_elem number of elements, size contains the size
-                                          of all bits and must be dividable by vector_elem */
+	ir_mode_sort       sort;          /**< coarse classification of this mode:
+                                           int, float, reference ...
+                                           (see irmode.h) */
+	ir_mode_arithmetic arithmetic;    /**< different arithmetic operations possible with a mode */
+	unsigned           size;          /**< size of the mode in Bits. */
+	unsigned           sign:1;        /**< signedness of this mode */
+	unsigned int       modulo_shift;  /**< number of bits a values of this mode will be shifted */
+	float_descriptor_t float_desc;
 
-	/* ----------------------------------------------------------------------- */
+	/* ---------------------------------------------------------------------- */
 	ir_tarval         *min;         /**< the minimum value that can be expressed */
 	ir_tarval         *max;         /**< the maximum value that can be expressed */
 	ir_tarval         *null;        /**< the value 0 */
@@ -130,6 +166,18 @@ struct ir_mode {
 	ir_mode           *eq_unsigned; /**< For pointer modes, the equivalent unsigned integer one. */
 	void              *link;        /**< To store some intermediate information */
 	const void        *tv_priv;     /**< tarval module will save private data here */
+};
+
+/* note: we use "long" here because that is the type used for Proj-Numbers */
+typedef struct ir_switch_table_entry {
+	ir_tarval *min;
+	ir_tarval *max;
+	long       pn;
+} ir_switch_table_entry;
+
+struct ir_switch_table {
+	size_t                n_entries;
+	ir_switch_table_entry entries[];
 };
 
 /* ir node attributes */
@@ -327,6 +375,11 @@ typedef struct proj_attr {
 	long  proj;           /**< position of tuple sub-value which is projected */
 } proj_attr;
 
+typedef struct switch_attr {
+	unsigned         n_outs;
+	ir_switch_table *table;
+} switch_attr;
+
 /** Some IR-nodes just have one attribute, these are stored here,
    some have more. Their name is 'irnodename_attr' */
 typedef union ir_attr {
@@ -357,6 +410,7 @@ typedef union ir_attr {
 	div_attr       div;           /**< For Div operation */
 	mod_attr       mod;           /**< For Mod operation */
 	asm_attr       assem;         /**< For ASM operation. */
+	switch_attr    switcha;       /**< For Switch operation. */
 } ir_attr;
 
 /**
@@ -451,6 +505,11 @@ typedef struct cg_callee_entry {
 	size_t     max_depth;  /**< Maximum depth of all Call nodes to irg. */
 } cg_callee_entry;
 
+typedef struct ir_vrp_info {
+	struct ir_nodemap infos;
+	struct obstack    obst;
+} ir_vrp_info;
+
 /**
  * An ir_graph holds all information for a procedure.
  */
@@ -491,6 +550,7 @@ struct ir_graph {
 	pset *value_table;                 /**< Hash table for global value numbering (cse)
 	                                        for optimizing use in iropt.c */
 	ir_def_use_edge *outs;             /**< Space for the Def-Use arrays. */
+	ir_vrp_info      vrp;              /**< vrp info */
 
 	ir_loop *loop;                     /**< The outermost loop for this graph. */
 	void *link;                        /**< A void* field to link any information to
@@ -521,7 +581,7 @@ struct ir_graph {
 	ir_node **idx_irn_map;             /**< Array mapping node indexes to nodes. */
 
 	size_t index;                      /**< a unique number for each graph */
-	ir_phase *phases[PHASE_LAST+1];    /**< Phase information. */
+	/** extra info which should survive accross multiple passes */
 	void     *be_data;                 /**< backend can put in private data here */
 
 	unsigned  dump_nr;                 /**< number of graph dumps */

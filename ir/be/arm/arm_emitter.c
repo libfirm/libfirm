@@ -579,80 +579,13 @@ static void emit_arm_CopyB(const ir_node *irn)
 
 static void emit_arm_SwitchJmp(const ir_node *irn)
 {
-	const ir_edge_t    *edge;
-	ir_node            *proj;
-	int i;
-	ir_node **projs;
-	int n_projs;
-	int block_nr;
-	ir_node *default_proj = NULL;
-
-	block_nr = get_irn_node_nr(irn);
-	n_projs = get_arm_SwitchJmp_n_projs(irn);
-
-	projs = XMALLOCNZ(ir_node*, n_projs);
-
-	foreach_out_edge(irn, edge) {
-		proj = get_edge_src_irn(edge);
-		assert(is_Proj(proj) && "Only proj allowed at SwitchJmp");
-
-		if (get_Proj_proj(proj) == get_arm_SwitchJmp_default_proj_num(irn))
-			default_proj = proj;
-
-		projs[get_Proj_proj(proj)] = proj;
-	}
-	assert(default_proj != NULL && "SwitchJmp should have a Default Proj");
-
-	/*
-	   CMP %1S, n_projs - 1
-	   BHI default
-	*/
-
-	be_emit_cstring("\tcmp ");
+	const arm_SwitchJmp_attr_t *attr = get_arm_SwitchJmp_attr_const(irn);
+	be_emit_cstring("\tldrls pc, [pc, ");
 	arm_emit_source_register(irn, 0);
-	be_emit_irprintf(", #%u", n_projs - 1);
+	be_emit_cstring(", asl #2]");
 	be_emit_finish_line_gas(irn);
 
-	be_emit_cstring("\tbhi ");
-	arm_emit_cfop_target(default_proj);
-	be_emit_finish_line_gas(default_proj);
-
-	/*
-	   LDR %r12, .TABLE_X_START
-	   ADD %r12, %r12, [%1S, LSL #2]
-	   LDR %r15, %r12
-	 */
-
-	be_emit_irprintf("\tldr %%r12, TABLE_%d_START", block_nr);
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_irprintf("\tadd %%r12, %%r12, ");
-	arm_emit_source_register(irn, 0);
-	be_emit_cstring(", LSL #2");
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_cstring("\tldr %r15, [%r12, #0]");
-	be_emit_finish_line_gas(NULL);
-
-	be_emit_irprintf("TABLE_%d_START:\n\t.word\tTABLE_%d", block_nr, block_nr);
-	be_emit_finish_line_gas(NULL);
-	be_emit_irprintf("\t.align 2");
-	be_emit_finish_line_gas(NULL);
-	be_emit_irprintf("TABLE_%d:", block_nr);
-	be_emit_finish_line_gas(NULL);
-
-	for (i = 0; i < n_projs; ++i) {
-		proj = projs[i];
-		if (proj == NULL) {
-			proj = projs[get_arm_SwitchJmp_default_proj_num(irn)];
-		}
-		be_emit_cstring("\t.word\t");
-		arm_emit_cfop_target(proj);
-		be_emit_finish_line_gas(proj);
-	}
-	be_emit_irprintf("\t.align 2\n");
-	be_emit_finish_line_gas(NULL);
-	xfree(projs);
+	be_emit_jump_table(irn, attr->table, NULL, get_cfop_target_block);
 }
 
 /** Emit an IncSP node */
@@ -1020,8 +953,6 @@ void arm_gen_routine(ir_graph *irg)
 
 	arm_register_emitters();
 
-	be_dbg_method_begin(entity);
-
 	/* create the block schedule */
 	blk_sched = be_create_block_schedule(irg);
 
@@ -1083,7 +1014,6 @@ void arm_gen_routine(ir_graph *irg)
 	del_set(sym_or_tv);
 
 	be_gas_emit_function_epilog(entity);
-	be_dbg_method_end();
 }
 
 void arm_init_emitter(void)

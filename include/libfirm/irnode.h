@@ -657,12 +657,6 @@ FIRM_API int is_irn_cse_neutral(const ir_node *node);
 /** Gets the string representation of the jump prediction. */
 FIRM_API const char *get_cond_jmp_predicate_name(cond_jmp_predicate pred);
 
-/** Checks whether a node represents a global address. */
-FIRM_API int is_Global(const ir_node *node);
-
-/** Returns the entity of a global address. */
-FIRM_API ir_entity *get_Global_entity(const ir_node *node);
-
 /**
  * Access custom node data.
  * The data must have been registered with
@@ -732,6 +726,23 @@ FIRM_API unsigned firm_default_hash(const ir_node *node);
  * returns a descriptive name of a node (containing type+number)
  */
 FIRM_API const char *gdb_node_helper(void *firm_object);
+
+FIRM_API ir_switch_table *ir_new_switch_table(ir_graph *irg, size_t n_entries);
+
+FIRM_API size_t ir_switch_table_get_n_entries(const ir_switch_table *table);
+
+FIRM_API void ir_switch_table_set(ir_switch_table *table, size_t entry,
+                                  ir_tarval *min, ir_tarval *max, long pn);
+
+FIRM_API ir_tarval *ir_switch_table_get_max(const ir_switch_table *table,
+                                            size_t entry);
+
+FIRM_API ir_tarval *ir_switch_table_get_min(const ir_switch_table *table,
+                                            size_t entry);
+
+FIRM_API long ir_switch_table_get_pn(const ir_switch_table *table, size_t entry);
+
+FIRM_API ir_switch_table *ir_switch_table_duplicate(ir_graph *irg, const ir_switch_table *table);
 
 /*@}*/
 

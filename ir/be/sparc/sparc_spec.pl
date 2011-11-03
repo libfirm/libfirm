@@ -8,7 +8,7 @@ $mode_flags   = "mode_Bu";
 $mode_fpflags = "mode_Bu";
 $mode_fp      = "mode_F";
 $mode_fp2     = "mode_D";
-$mode_fp4     = "mode_E"; # not correct, we need to register a new mode
+$mode_fp4     = "mode_Q";
 
 # available SPARC registers: 8 globals, 24 window regs (8 ins, 8 outs, 8 locals)
 %reg_classes = (
@@ -124,6 +124,7 @@ $mode_fp4     = "mode_E"; # not correct, we need to register a new mode
 	S0O1   => "${arch}_emit_source_reg_and_offset(node, 0, 1);",
 	S1O2   => "${arch}_emit_source_reg_and_offset(node, 1, 2);",
 );
+$indent_line_func = "sparc_emit_indent()";
 
 $default_attr_type = "sparc_attr_t";
 $default_copy_attr = "sparc_copy_attr";
@@ -133,7 +134,7 @@ $default_copy_attr = "sparc_copy_attr";
 	sparc_load_store_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_jmp_cond_attr_t    => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);",
 	sparc_switch_jmp_attr_t  => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
-	                            "\tinit_sparc_switch_jmp_attributes(res, default_pn, jump_table);\n",
+	                            "\tinit_sparc_switch_jmp_attributes(res, table, jump_table);\n",
 	sparc_fp_attr_t          => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);\n".
 	                            "\tinit_sparc_fp_attributes(res, fp_mode);\n",
 	sparc_fp_conv_attr_t     => "\tinit_sparc_attributes(res, irn_flags_, in_reqs, exec_units, n_res);".
@@ -142,11 +143,11 @@ $default_copy_attr = "sparc_copy_attr";
 
 %compare_attr = (
 	sparc_attr_t            => "cmp_attr_sparc",
-	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
-	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
-	sparc_switch_jmp_attr_t	=> "cmp_attr_sparc_switch_jmp",
 	sparc_fp_attr_t         => "cmp_attr_sparc_fp",
 	sparc_fp_conv_attr_t    => "cmp_attr_sparc_fp_conv",
+	sparc_jmp_cond_attr_t   => "cmp_attr_sparc_jmp_cond",
+	sparc_load_store_attr_t => "cmp_attr_sparc_load_store",
+	sparc_switch_jmp_attr_t => "cmp_attr_sparc",
 );
 
 %custom_irn_flags = (
@@ -272,10 +273,17 @@ Add => {
 },
 
 AddCC => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. addcc %S0, %R1I, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
+},
+
+AddCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. addcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 AddX => {
@@ -308,10 +316,17 @@ Sub => {
 },
 
 SubCC => {
-	irn_flags    => [ "rematerializable" ],
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
 	emit         => '. subcc %S0, %R1I, %D0',
 	outs         => [ "res", "flags" ],
 	constructors => \%binopcc_operand_constructors,
+},
+
+SubCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. subcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 SubX => {
@@ -504,7 +519,7 @@ Start => {
 	ins       => [],
 },
 
-# This is a JumpLink instruction, but with the addition that you can add custom
+# This is a Jump instruction, but with the addition that you can add custom
 # register constraints to model your calling conventions
 Return => {
 	state     => "pinned",
@@ -526,6 +541,8 @@ Return => {
 	},
 },
 
+# This is a JumpLink instruction, but with the addition that you can add custom
+# register constraints to model your calling conventions
 Call => {
 	irn_flags => [ "modifies_flags", "modifies_fp_flags", "has_delay_slot" ],
 	state     => "exc_pinned",
@@ -561,9 +578,9 @@ SwitchJmp => {
 	state        => "pinned",
 	mode         => "mode_T",
 	reg_req      => { in => [ "gp" ], out => [ ] },
+	out_arity    => "variable",
 	attr_type    => "sparc_switch_jmp_attr_t",
-	attr         => "long default_pn, ir_entity *jump_table",
-	init_attr => "info->out_infos = NULL;", # XXX ugly hack for out requirements
+	attr         => "const ir_switch_table *table, ir_entity *jump_table",
 },
 
 Sll => {
@@ -676,6 +693,13 @@ Mul => {
 	mode         => $mode_gp,
 	emit         => '. smul %S0, %R1I, %D0',
 	constructors => \%binop_operand_constructors,
+},
+
+MulCCZero => {
+	irn_flags    => [ "rematerializable", "modifies_flags" ],
+	emit         => '. smulcc %S0, %R1I, %%g0',
+	mode         => $mode_flags,
+	constructors => \%binopcczero_operand_constructors,
 },
 
 SMulh => {

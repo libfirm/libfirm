@@ -239,7 +239,7 @@ arch_irn_class_t arch_irn_classify(const ir_node *irn);
  * @return The environment.
  */
 extern arch_env_t *arch_env_init(const arch_isa_if_t *isa,
-                                 FILE *file_handle, be_main_env_t *main_env);
+                                 be_main_env_t *main_env);
 
 /**
  * Register an instruction set architecture
@@ -467,7 +467,7 @@ struct arch_isa_if_t {
 	 * @param file_handle  the file handle to write the output to
 	 * @return a new isa instance
 	 */
-	arch_env_t *(*init)(FILE *file_handle);
+	arch_env_t *(*init)(const be_main_env_t *env);
 
 	/**
 	 * lowers current program for target. See the documentation for

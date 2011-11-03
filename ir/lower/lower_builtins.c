@@ -114,7 +114,7 @@ static void replace_with_call(ir_node *node)
 
 	turn_into_tuple(node, 2);
 	set_irn_n(node, pn_Builtin_M, call_mem);
-	set_irn_n(node, pn_Builtin_1_result, call_res);
+	set_irn_n(node, pn_Builtin_max+1, call_res);
 }
 
 static void lower_builtin(ir_node *node, void *env)

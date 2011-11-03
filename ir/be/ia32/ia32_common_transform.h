@@ -46,13 +46,14 @@ struct constraint_t {
 extern ir_heights_t *ia32_heights;
 extern int           ia32_no_pic_adjust;
 
+ir_type *ia32_get_prim_type(const ir_mode *mode);
+
 /**
  * Get an atomic entity that is initialized with a tarval forming
  * a given constant.
- *
- * @param cnst             the node representing the constant
  */
-ir_entity *ia32_create_float_const_entity(ir_node *cnst);
+ir_entity *ia32_create_float_const_entity(ia32_isa_t *isa, ir_tarval *tv,
+                                          ident *name);
 
 /**
  * Creates an immediate.

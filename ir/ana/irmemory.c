@@ -77,25 +77,25 @@ unsigned get_irg_memory_disambiguator_options(const ir_graph *irg)
 	if (opt & aa_opt_inherited)
 		return global_mem_disamgig_opt;
 	return opt;
-}  /* get_irg_memory_disambiguator_options */
+}
 
 /*  Set the memory disambiguator options for a graph. */
 void set_irg_memory_disambiguator_options(ir_graph *irg, unsigned options)
 {
 	irg->mem_disambig_opt = options & ~aa_opt_inherited;
-}  /* set_irg_memory_disambiguator_options */
+}
 
 /* Set the global disambiguator options for all graphs not having local options. */
 void set_irp_memory_disambiguator_options(unsigned options)
 {
 	global_mem_disamgig_opt = options;
-}  /* set_irp_memory_disambiguator_options */
+}
 
 /* Get the base storage class (ignore modifier) */
 ir_storage_class_class_t get_base_sc(ir_storage_class_class_t x)
 {
 	return x & ~ir_sc_modifiers;
-}  /* get_base_sc */
+}
 
 /**
  * Find the base address and entity of an Sel node.
@@ -115,7 +115,7 @@ static ir_node *find_base_adr(const ir_node *sel, ir_entity **pEnt)
 	}
 	*pEnt = get_Sel_entity(sel);
 	return ptr;
-}  /* find_base_adr */
+}
 
 /**
  * Check if a given Const node is greater or equal a given size.
@@ -134,7 +134,7 @@ static ir_alias_relation check_const(const ir_node *cns, int size)
 		return tarval_is_null(tv) ? ir_may_alias : ir_no_alias;
 	tv_size = new_tarval_from_long(size, get_tarval_mode(tv));
 	return tarval_cmp(tv_size, tv) & (ir_relation_less_equal) ? ir_no_alias : ir_may_alias;
-}  /* check_const */
+}
 
 /**
  * Treat idx1 and idx2 as integer indexes and check if they differ always more than size.
@@ -298,7 +298,7 @@ static ir_alias_relation different_index(const ir_node *idx1, const ir_node *idx
 
 	}
 	return ir_may_alias;
-}  /* different_index */
+}
 
 /**
  * Two Sel addresses have the same base address, check if there offsets are
@@ -354,7 +354,7 @@ static ir_alias_relation different_sel_offsets(const ir_node *sel1, const ir_nod
 	(void) different_index;
 #endif
 	return ir_may_alias;
-}  /* different_sel_offsets */
+}
 
 /**
  * Determine the alias relation by checking if adr1 and adr2 are pointer
@@ -367,13 +367,13 @@ static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr
 {
 	ir_entity *ent1 = NULL, *ent2 = NULL;
 
-	if (is_Global(adr1))
-		ent1 = get_Global_entity(adr1);
+	if (is_SymConst_addr_ent(adr1))
+		ent1 = get_SymConst_entity(adr1);
 	else if (is_Sel(adr1))
 		ent1 = get_Sel_entity(adr1);
 
-	if (is_Global(adr2))
-		ent2 = get_Global_entity(adr2);
+	if (is_SymConst_addr_ent(adr2))
+		ent2 = get_SymConst_entity(adr2);
 	else if (is_Sel(adr2))
 		ent2 = get_Sel_entity(adr2);
 
@@ -404,7 +404,7 @@ static ir_alias_relation different_types(const ir_node *adr1, const ir_node *adr
 		}
 	}
 	return ir_may_alias;
-}  /* different_types */
+}
 
 /**
  * Returns non-zero if a node is a result on a malloc-like routine.
@@ -420,23 +420,23 @@ static int is_malloc_Result(const ir_node *node)
 	if (! is_Call(node))
 		return 0;
 	node = get_Call_ptr(node);
-	if (is_Global(node)) {
-		ir_entity *ent = get_Global_entity(node);
+	if (is_SymConst_addr_ent(node)) {
+		ir_entity *ent = get_SymConst_entity(node);
 
 		if (get_entity_additional_properties(ent) & mtp_property_malloc)
 			return 1;
 		return 0;
 	}
 	return 0;
-}  /* is_malloc_Result */
+}
 
 ir_storage_class_class_t classify_pointer(const ir_node *irn,
                                           const ir_entity *ent)
 {
 	ir_graph *irg = get_irn_irg(irn);
 	ir_storage_class_class_t res = ir_sc_pointer;
-	if (is_Global(irn)) {
-		ir_entity *entity = get_Global_entity(irn);
+	if (is_SymConst_addr_ent(irn)) {
+		ir_entity *entity = get_SymConst_entity(irn);
 		ir_type   *owner  = get_entity_owner(entity);
 		res = owner == get_tls_type() ? ir_sc_tls : ir_sc_globalvar;
 		if (! (get_entity_usage(entity) & ir_usage_address_taken))
@@ -695,7 +695,7 @@ leave_type_based_alias:;
 
 	/* access points-to information here */
 	return ir_may_alias;
-}  /* _get_alias_relation */
+}
 
 /*
  * Determine the alias relation between two addresses.
@@ -707,13 +707,13 @@ ir_alias_relation get_alias_relation(
 	ir_alias_relation rel = _get_alias_relation(adr1, mode1, adr2, mode2);
 	DB((dbg, LEVEL_1, "alias(%+F, %+F) = %s\n", adr1, adr2, get_ir_alias_relation_name(rel)));
 	return rel;
-}  /* get_alias_relation */
+}
 
 /* Set a source language specific memory disambiguator function. */
 void set_language_memory_disambiguator(DISAMBIGUATOR_FUNC func)
 {
 	language_disambuigator = func;
-}  /* set_language_memory_disambiguator */
+}
 
 /** The result cache for the memory disambiguator. */
 static set *result_cache = NULL;
@@ -740,7 +740,7 @@ static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 
 	return p1->adr1 == p2->adr1 && p1->adr2 == p2->adr2 &&
 	       p1->mode1 == p2->mode1 && p1->mode2 == p2->mode2;
-}  /* cmp_mem_disambig_entry */
+}
 
 /**
  * Initialize the relation cache.
@@ -748,7 +748,7 @@ static int cmp_mem_disambig_entry(const void *elt, const void *key, size_t size)
 void mem_disambig_init(void)
 {
 	result_cache = new_set(cmp_mem_disambig_entry, 8);
-}  /* mem_disambig_init */
+}
 
 /*
  * Determine the alias relation between two addresses.
@@ -782,7 +782,7 @@ ir_alias_relation get_alias_relation_ex(
 
 	set_insert(result_cache, &key, sizeof(key), HASH_ENTRY(adr1, adr2));
 	return key.result;
-}  /* get_alias_relation_ex */
+}
 
 /* Free the relation cache. */
 void mem_disambig_term(void)
@@ -791,7 +791,7 @@ void mem_disambig_term(void)
 		del_set(result_cache);
 		result_cache = NULL;
 	}
-}  /* mem_disambig_term */
+}
 
 /**
  * Check the mode of a Load/Store with the mode of the entity
@@ -820,13 +820,12 @@ static int is_hidden_cast(const ir_mode *mode, const ir_mode *ent_mode)
 	if (ent_mode != mode) {
 		if (ent_mode == NULL ||
 			get_mode_size_bits(ent_mode) != get_mode_size_bits(mode) ||
-			get_mode_sort(ent_mode) != get_mode_sort(mode) ||
 			get_mode_arithmetic(ent_mode) != irma_twos_complement ||
 			get_mode_arithmetic(mode) != irma_twos_complement)
 			return true;
 	}
 	return false;
-}  /* is_hidden_cast */
+}
 
 /**
  * Determine the usage state of a node (or its successor Sels).
@@ -1086,8 +1085,8 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 	case IR_INITIALIZER_CONST:
 		/* let's check if it's an address */
 		n = initializer->consti.value;
-		if (is_Global(n)) {
-			ir_entity *ent = get_Global_entity(n);
+		if (is_SymConst_addr_ent(n)) {
+			ir_entity *ent = get_SymConst_entity(n);
 			set_entity_usage(ent, ir_usage_unknown);
 		}
 		return;
@@ -1103,7 +1102,7 @@ static void check_initializer_nodes(ir_initializer_t *initializer)
 		return;
 	}
 	panic("invalid initializer found");
-}  /* check_initializer_nodes */
+}
 
 /**
  * Mark all entities used in the initializer for the given entity as unknown
@@ -1129,8 +1128,8 @@ static void check_initializer(ir_entity *ent)
 			ir_node *irn = get_compound_ent_value(ent, i);
 
 			/* let's check if it's an address */
-			if (is_Global(irn)) {
-				ir_entity *symconst_ent = get_Global_entity(irn);
+			if (is_SymConst_addr_ent(irn)) {
+				ir_entity *symconst_ent = get_SymConst_entity(irn);
 				set_entity_usage(symconst_ent, ir_usage_unknown);
 			}
 		}
@@ -1152,7 +1151,7 @@ static void check_initializers(ir_type *tp)
 
 		check_initializer(ent);
 	}
-}  /* check_initializers */
+}
 
 #ifdef DEBUG_libfirm
 /**
@@ -1192,16 +1191,16 @@ static void check_global_address(ir_node *irn, void *data)
 	unsigned flags;
 	(void) data;
 
-	if (is_Global(irn)) {
+	if (is_SymConst_addr_ent(irn)) {
 		/* A global. */
-		ent = get_Global_entity(irn);
+		ent = get_SymConst_entity(irn);
 	} else
 		return;
 
 	flags = get_entity_usage(ent);
 	flags |= determine_entity_usage(irn, ent);
 	set_entity_usage(ent, (ir_entity_usage) flags);
-}  /* check_global_address */
+}
 
 /**
  * Update the entity usage flags of all global entities.
@@ -1288,7 +1287,7 @@ static ir_type *clone_type_and_cache(ir_type *tp)
 	pmap_insert(mtp_map, tp, res);
 
 	return res;
-}  /* clone_type_and_cache */
+}
 
 /**
  * Walker: clone all call types of Calls to methods having the
@@ -1314,7 +1313,7 @@ static void update_calls_to_private(ir_node *call, void *env)
 			}
 		}
 	}
-}  /* update_calls_to_private */
+}
 
 /* Mark all private methods, i.e. those of which all call sites are known. */
 void mark_private_methods(void)
@@ -1352,10 +1351,10 @@ void mark_private_methods(void)
 		all_irg_walk(NULL, update_calls_to_private, NULL);
 
 	pmap_destroy(mtp_map);
-}  /* mark_private_methods */
+}
 
 /* create a pass for mark_private_methods() */
 ir_prog_pass_t *mark_private_methods_pass(const char *name)
 {
 	return def_prog_pass(name ? name : "mark_private_methods", mark_private_methods);
-}  /* mark_private_methods_pass */
+}

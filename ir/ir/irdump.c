@@ -66,6 +66,19 @@
 #include "pset.h"
 #include "util.h"
 
+typedef struct pns_lookup {
+	long       nr;      /**< the proj number */
+	const char *name;   /**< the name of the Proj */
+} pns_lookup_t;
+
+typedef struct proj_lookup {
+	unsigned           code;      /**< the opcode of the Proj predecessor */
+	unsigned           num_data;  /**< number of data entries */
+	const pns_lookup_t *data;     /**< the data */
+} proj_lookup_t;
+
+#include "gen_irdump.c.inl"
+
 /** Dump only irgs with names that start with this prefix. */
 static ident *dump_file_filter_id = NULL;
 
@@ -678,17 +691,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		}
 		break;
 
-	case iro_Proj: {
-		ir_node *pred = get_Proj_pred(n);
-
-		if (get_irn_opcode(pred) == iro_Cond
-			&& get_Proj_proj(n) == get_Cond_default_proj(pred)
-			&& get_irn_mode(get_Cond_selector(pred)) != mode_b)
-			fprintf(F, "defProj");
-		else
-			goto default_case;
-	} break;
-
 	case iro_Load:
 		if (get_Load_unaligned(n) == align_non_aligned)
 			fprintf(F, "ua");
@@ -726,7 +728,6 @@ void dump_node_opcode(FILE *F, ir_node *n)
 		break;
 
 	default:
-default_case:
 		fprintf(F, "%s", get_irn_opname(n));
 	}
 }
@@ -788,149 +789,6 @@ static int dump_node_typeinfo(FILE *F, ir_node *n)
 	}
 	return bad;
 }
-
-typedef struct pns_lookup {
-	long       nr;      /**< the proj number */
-	const char *name;   /**< the name of the Proj */
-} pns_lookup_t;
-
-typedef struct proj_lookup {
-	unsigned           code;      /**< the opcode of the Proj predecessor */
-	unsigned           num_data;  /**< number of data entries */
-	const pns_lookup_t *data;     /**< the data */
-} proj_lookup_t;
-
-/** the lookup table for Proj(Start) names */
-static const pns_lookup_t start_lut[] = {
-#define X(a)    { pn_Start_##a, #a }
-	X(X_initial_exec),
-	X(M),
-	X(P_frame_base),
-	X(T_args),
-#undef X
-};
-
-/** the lookup table for Proj(Cond) names */
-static const pns_lookup_t cond_lut[] = {
-#define X(a)    { pn_Cond_##a, #a }
-	X(false),
-	X(true)
-#undef X
-};
-
-/** the lookup table for Proj(Call) names */
-static const pns_lookup_t call_lut[] = {
-#define X(a)    { pn_Call_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(T_result),
-#undef X
-};
-
-/** the lookup table for Proj(Div) names */
-static const pns_lookup_t div_lut[] = {
-#define X(a)    { pn_Div_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Mod) names */
-static const pns_lookup_t mod_lut[] = {
-#define X(a)    { pn_Mod_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Load) names */
-static const pns_lookup_t load_lut[] = {
-#define X(a)    { pn_Load_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(Store) names */
-static const pns_lookup_t store_lut[] = {
-#define X(a)    { pn_Store_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except)
-#undef X
-};
-
-/** the lookup table for Proj(Alloc) names */
-static const pns_lookup_t alloc_lut[] = {
-#define X(a)    { pn_Alloc_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res)
-#undef X
-};
-
-/** the lookup table for Proj(CopyB) names */
-static const pns_lookup_t copyb_lut[] = {
-#define X(a)    { pn_CopyB_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-#undef X
-};
-
-/** the lookup table for Proj(InstOf) names */
-static const pns_lookup_t instof_lut[] = {
-#define X(a)    { pn_InstOf_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res),
-#undef X
-};
-
-/** the lookup table for Proj(Raise) names */
-static const pns_lookup_t raise_lut[] = {
-#define X(a)    { pn_Raise_##a, #a }
-	X(M),
-	X(X),
-#undef X
-};
-
-/** the lookup table for Proj(Bound) names */
-static const pns_lookup_t bound_lut[] = {
-#define X(a)    { pn_Bound_##a, #a }
-	X(M),
-	X(X_regular),
-	X(X_except),
-	X(res),
-#undef X
-};
-
-/** the Proj lookup table */
-static const proj_lookup_t proj_lut[] = {
-#define E(a)  ARRAY_SIZE(a), a
-	{ iro_Start,   E(start_lut) },
-	{ iro_Cond,    E(cond_lut) },
-	{ iro_Call,    E(call_lut) },
-	{ iro_Div,     E(div_lut) },
-	{ iro_Mod,     E(mod_lut) },
-	{ iro_Load,    E(load_lut) },
-	{ iro_Store,   E(store_lut) },
-	{ iro_Alloc,   E(alloc_lut) },
-	{ iro_CopyB,   E(copyb_lut) },
-	{ iro_InstOf,  E(instof_lut) },
-	{ iro_Raise,   E(raise_lut) },
-	{ iro_Bound,   E(bound_lut) }
-#undef E
-};
 
 /**
  * Dump additional node attributes of some nodes to a file F.
@@ -1005,7 +863,7 @@ static void dump_node_nodeattr(FILE *F, ir_node *n)
 
 	default:
 		break;
-	} /* end switch */
+	}
 }
 
 static void dump_node_ana_vals(FILE *F, ir_node *n)
@@ -1029,23 +887,6 @@ void dump_node_label(FILE *F, ir_node *n)
 	if (flags & ir_dump_flag_idx_label) {
 		fprintf(F, ":%u", get_irn_idx(n));
 	}
-}
-
-void dump_vrp_info(FILE *F, ir_node *n)
-{
-	vrp_attr *vrp = vrp_get_info(n);
-	if (n == NULL) {
-		return;
-	}
-
-	fprintf(F, "range_type: %d\n", (int) vrp->range_type);
-	if (vrp->range_type == VRP_RANGE || vrp->range_type ==
-			VRP_ANTIRANGE) {
-		ir_fprintf(F, "range_bottom: %F\n",vrp->range_bottom);
-		ir_fprintf(F, "range_top: %F\n", vrp->range_top);
-	}
-	ir_fprintf(F, "bits_set: %T\n", vrp->bits_set);
-	ir_fprintf(F, "bits_not_set: %T\n", vrp->bits_not_set);
 }
 
 /**
@@ -1124,7 +965,7 @@ static void dump_node_vcgattr(FILE *F, ir_node *node, ir_node *local, int bad)
 
 void *dump_add_node_info_callback(dump_node_info_cb_t *cb, void *data)
 {
-	hook_entry_t *info = XMALLOC(hook_entry_t);
+	hook_entry_t *info = XMALLOCZ(hook_entry_t);
 
 	info->hook._hook_node_info = cb;
 	info->context              = data;
@@ -1760,7 +1601,7 @@ static void print_typespecific_info(FILE *F, ir_type *tp)
 		break;
 	default:
 		break;
-	} /* switch type */
+	}
 }
 #endif
 
@@ -1787,7 +1628,7 @@ static void print_typespecific_vcgattr(FILE *F, ir_type *tp)
 		break;
 	default:
 		break;
-	} /* switch type */
+	}
 }
 
 void dump_type_node(FILE *F, ir_type *tp)
@@ -1970,12 +1811,12 @@ static void dump_type_info(type_or_ent tore, void *env)
 			break;
 		default:
 			break;
-		} /* switch type */
+		}
 		break; /* case k_type */
 	}
 	default:
 		printf(" *** irdump,  dump_type_info(l.%i), faulty type.\n", __LINE__);
-	} /* switch kind_or_entity */
+	}
 }
 
 /** For dumping class hierarchies.
@@ -2020,12 +1861,12 @@ static void dump_class_hierarchy_node(type_or_ent tore, void *ctx)
 			}
 			break;
 		default: break;
-		} /* switch type */
+		}
 		break; /* case k_type */
 	}
 	default:
 		printf(" *** irdump,  dump_class_hierarchy_node(l.%i), faulty type.\n", __LINE__);
-	} /* switch kind_or_entity */
+	}
 }
 
 /*******************************************************************/

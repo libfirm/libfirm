@@ -39,7 +39,6 @@
 #include "irtools.h"
 #include "irbitset.h"
 #include "beifg.h"
-#include "irphase_t.h"
 #include "error.h"
 #include "xmalloc.h"
 

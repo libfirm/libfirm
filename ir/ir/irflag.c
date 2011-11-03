@@ -68,7 +68,7 @@ void set_opt_##name(int flag) {            \
   else      libFIRM_opt &= ~irf_##name;    \
 }                                          \
 int (get_opt_##name)(void) {               \
-  return _get_opt_##name();                \
+  return get_opt_##name##_();              \
 }
 
 /* an internal flag can only be set from outside */

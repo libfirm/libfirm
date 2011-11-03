@@ -119,33 +119,17 @@ int co_get_costs_exec_freq(const copy_opt_t *co, ir_node *root, ir_node* arg, in
  */
 int co_get_costs_all_one(const copy_opt_t *co, ir_node *root, ir_node* arg, int pos);
 
-#ifdef _MSC_VER
-typedef          __int64 long64;
-typedef unsigned __int64 ulong64;
-
-#define LL_FMT   "i64"
-#define ULL_FMT  "ui64"
-
-#else
-typedef          long long long64;
-typedef unsigned long long ulong64;
-
-#define LL_FMT   "ll"
-#define ULL_FMT  "llu"
-
-#endif
-
 /**
  * Statistics over a copy optimization module.
  */
 typedef struct {
-	ulong64 aff_edges;            /**< number of affinity edges. */
-	ulong64 aff_nodes;            /**< number of nodes with incident affinity edges. */
-	ulong64 aff_int;              /**< number of affinity edges whose nodes also interfere. */
-	ulong64 inevit_costs;         /**< costs which cannot be evited (due to interfering affinities). */
-	ulong64 max_costs;            /**< all costs of the affinities. */
-	ulong64 costs;                /**< The costs of the current coloring. */
-	ulong64 unsatisfied_edges;    /**< The number of unequally colored affinity edges. */
+	unsigned long long aff_edges;            /**< number of affinity edges. */
+	unsigned long long aff_nodes;            /**< number of nodes with incident affinity edges. */
+	unsigned long long aff_int;              /**< number of affinity edges whose nodes also interfere. */
+	unsigned long long inevit_costs;         /**< costs which cannot be evited (due to interfering affinities). */
+	unsigned long long max_costs;            /**< all costs of the affinities. */
+	unsigned long long costs;                /**< The costs of the current coloring. */
+	unsigned long long unsatisfied_edges;    /**< The number of unequally colored affinity edges. */
 } co_complete_stats_t;
 
 /**

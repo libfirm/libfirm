@@ -57,7 +57,8 @@
 #include "irflag_t.h"
 #include "firmstat.h"
 #include "irpass.h"
-#include "irphase_t.h"
+#include "irnodehashmap.h"
+#include "irtools.h"
 
 #include "iropt_dbg.h"
 
@@ -108,8 +109,7 @@ static void clear_link_and_mark_blocks_removable(ir_node *node, void *ctx)
  */
 static void collect_nodes(ir_node *n, void *ctx)
 {
-	ir_node ***switch_conds = (ir_node***)ctx;
-
+	(void) ctx;
 	if (is_Phi(n)) {
 		/* Collect Phi nodes to compact ins along with block's ins. */
 		ir_node *block = get_nodes_block(n);
@@ -133,9 +133,6 @@ static void collect_nodes(ir_node *n, void *ctx)
 			ir_node *pred = get_Proj_pred(n);
 			set_irn_link(n, get_irn_link(pred));
 			set_irn_link(pred, n);
-		} else if (is_Cond(n) && is_switch_Cond(n)) {
-			/* found a switch-Cond, collect */
-			ARR_APP1(ir_node*, *switch_conds, n);
 		}
 	}
 }
@@ -513,77 +510,6 @@ static void optimize_blocks(ir_node *b, void *ctx)
 }
 
 /**
- * Optimize table-switch Conds.
- *
- * @param cond the switch-Cond
- * @return true if the switch-Cond was optimized
- */
-static bool handle_switch_cond(ir_node *cond)
-{
-	ir_node *sel   = get_Cond_selector(cond);
-	ir_node *proj1 = (ir_node*)get_irn_link(cond);
-	ir_node *proj2 = (ir_node*)get_irn_link(proj1);
-	ir_node *blk   = get_nodes_block(cond);
-
-	/* exactly 1 Proj on the Cond node: must be the defaultProj */
-	if (proj2 == NULL) {
-		ir_node *jmp = new_r_Jmp(blk);
-		assert(get_Cond_default_proj(cond) == get_Proj_proj(proj1));
-		/* convert it into a Jmp */
-		exchange(proj1, jmp);
-		return true;
-	}
-
-	/* handle Cond nodes with constant argument. In this case the localopt rules
-	 * should have killed all obviously impossible cases.
-	 * So the only case left to handle here is 1 defaultProj + 1 case
-	 * (this one case should be the one taken) */
-	if (get_irn_link(proj2) == NULL) {
-		ir_tarval *tv = value_of(sel);
-
-		if (tv != tarval_bad) {
-			/* we have a constant switch */
-			long      num     = get_tarval_long(tv);
-			long      def_num = get_Cond_default_proj(cond);
-			ir_graph *irg     = get_irn_irg(cond);
-			ir_node  *bad     = new_r_Bad(irg, mode_X);
-
-			if (def_num == get_Proj_proj(proj1)) {
-				/* first one is the defProj */
-				if (num == get_Proj_proj(proj2)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj2, jmp);
-					exchange(proj1, bad);
-					return true;
-				}
-			} else if (def_num == get_Proj_proj(proj2)) {
-				/* second one is the defProj */
-				if (num == get_Proj_proj(proj1)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj1, jmp);
-					exchange(proj2, bad);
-					return true;
-				}
-			} else {
-				/* neither: strange, Cond was not optimized so far */
-				if (num == get_Proj_proj(proj1)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj1, jmp);
-					exchange(proj2, bad);
-					return true;
-				} else if (num == get_Proj_proj(proj2)) {
-					ir_node *jmp = new_r_Jmp(blk);
-					exchange(proj2, jmp);
-					exchange(proj1, bad);
-					return true;
-				}
-			}
-		}
-	}
-	return false;
-}
-
-/**
  * Optimize boolean Conds, where true and false jump to the same block into a Jmp
  * Block must contain no Phi nodes.
  *
@@ -625,52 +551,53 @@ typedef enum block_flags_t {
 	BF_IS_UNKNOWN_JUMP_TARGET = 1 << 2,
 } block_flags_t;
 
-static bool get_phase_flag(ir_phase *block_info, ir_node *block, int flag)
+static bool get_block_flag(const ir_nodehashmap_t *infos, const ir_node *block,
+                           int flag)
 {
-	return PTR_TO_INT(phase_get_irn_data(block_info, block)) & flag;
+	return PTR_TO_INT(ir_nodehashmap_get(infos, block)) & flag;
 }
 
-static void set_phase_flag(ir_phase *block_info, ir_node *block,
+static void set_block_flag(ir_nodehashmap_t *infos, ir_node *block,
                            block_flags_t flag)
 {
-	int data = PTR_TO_INT(phase_get_irn_data(block_info, block));
+	int data = PTR_TO_INT(ir_nodehashmap_get(infos, block));
 	data |= flag;
-	phase_set_irn_data(block_info, block, INT_TO_PTR(data));
+	ir_nodehashmap_insert(infos, block, INT_TO_PTR(data));
 }
 
-static void clear_phase_flag(ir_phase *block_info, ir_node *block)
+static void clear_block_flag(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	phase_set_irn_data(block_info, block, NULL);
+	ir_nodehashmap_remove(infos, block);
 }
 
-static bool has_operations(ir_phase *block_info, ir_node *block)
+static bool has_operations(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	return get_phase_flag(block_info, block, BF_HAS_OPERATIONS);
+	return get_block_flag(infos, block, BF_HAS_OPERATIONS);
 }
 
-static void set_has_operations(ir_phase *block_info, ir_node *block)
+static void set_has_operations(ir_nodehashmap_t *infos, ir_node *block)
 {
-	set_phase_flag(block_info, block, BF_HAS_OPERATIONS);
+	set_block_flag(infos, block, BF_HAS_OPERATIONS);
 }
 
-static bool has_phis(ir_phase *block_info, ir_node *block)
+static bool has_phis(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	return get_phase_flag(block_info, block, BF_HAS_PHIS);
+	return get_block_flag(infos, block, BF_HAS_PHIS);
 }
 
-static void set_has_phis(ir_phase *block_info, ir_node *block)
+static void set_has_phis(ir_nodehashmap_t *infos, ir_node *block)
 {
-	set_phase_flag(block_info, block, BF_HAS_PHIS);
+	set_block_flag(infos, block, BF_HAS_PHIS);
 }
 
-static bool is_unknown_jump_target(ir_phase *block_info, ir_node *block)
+static bool is_unknown_jump_target(ir_nodehashmap_t *infos, const ir_node *block)
 {
-	return get_phase_flag(block_info, block, BF_IS_UNKNOWN_JUMP_TARGET);
+	return get_block_flag(infos, block, BF_IS_UNKNOWN_JUMP_TARGET);
 }
 
-static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block)
+static void set_is_unknown_jump_target(ir_nodehashmap_t *infos, ir_node *block)
 {
-	set_phase_flag(block_info, block, BF_IS_UNKNOWN_JUMP_TARGET);
+	set_block_flag(infos, block, BF_IS_UNKNOWN_JUMP_TARGET);
 }
 
 /**
@@ -678,36 +605,36 @@ static void set_is_unknown_jump_target(ir_phase *block_info, ir_node *block)
  */
 static void compute_block_info(ir_node *n, void *x)
 {
-	ir_phase *block_info = (ir_phase *)x;
+	ir_nodehashmap_t *infos = (ir_nodehashmap_t*)x;
 
 	if (is_Block(n)) {
 		int i, max = get_Block_n_cfgpreds(n);
 		for (i=0; i<max; i++) {
 			ir_node *pred = get_Block_cfgpred(n,i);
 			if (is_unknown_jump(pred)) {
-				set_is_unknown_jump_target(block_info, n);
+				set_is_unknown_jump_target(infos, n);
 			}
 		}
 	} else if (is_Phi(n)) {
 		ir_node *block = get_nodes_block(n);
-		set_has_phis(block_info, block);
+		set_has_phis(infos, block);
 	} else if (is_Jmp(n) || is_Cond(n) || is_Proj(n)) {
 		/* ignore */
 	} else {
 		ir_node *block = get_nodes_block(n);
-		set_has_operations(block_info, block);
+		set_has_operations(infos, block);
 	}
 }
 
 static void clear_block_info(ir_node *block, void *x)
 {
-	ir_phase *block_info = (ir_phase *)x;
-	clear_phase_flag(block_info, block);
+	ir_nodehashmap_t *infos = (ir_nodehashmap_t*)x;
+	clear_block_flag(infos, block);
 }
 
 typedef struct skip_env {
-	bool changed;
-	ir_phase *phase;
+	bool             changed;
+	ir_nodehashmap_t block_infos;
 } skip_env;
 
 /**
@@ -720,7 +647,7 @@ static void optimize_ifs(ir_node *block, void *x)
 	int i, j;
 	int n_preds = get_Block_n_cfgpreds(block);
 
-	if (has_phis(env->phase, block))
+	if (has_phis(&env->block_infos, block))
 		return;
 
 	/* optimize Cond predecessors (might produce Bad predecessors) */
@@ -751,11 +678,11 @@ static void remove_empty_blocks(ir_node *block, void *x)
 		jmp_block = get_nodes_block(jmp);
 		if (jmp_block == block)
 			continue; /* this infinite loop cannot be optimized any further */
-		if (is_unknown_jump_target(env->phase, jmp_block))
+		if (is_unknown_jump_target(&env->block_infos, jmp_block))
 			continue; /* unknown jump target must not be optimized */
-		if (has_operations(env->phase,jmp_block))
+		if (has_operations(&env->block_infos,jmp_block))
 			continue; /* this block contains operations and cannot be skipped */
-		if (has_phis(env->phase,jmp_block))
+		if (has_phis(&env->block_infos,jmp_block))
 			continue; /* this block contains Phis and is not skipped */
 		if (Block_block_visited(jmp_block)) {
 			continue;
@@ -796,7 +723,7 @@ static void remove_empty_blocks(ir_node *block, void *x)
 			pred_block = get_nodes_block(pred);
 			exchange(jmp_block, pred_block);
 			env->changed = true;
-		} else if (! has_phis(env->phase, block)) {
+		} else if (! has_phis(&env->block_infos, block)) {
 			/* all predecessors can skip the jmp block, so block gets some new
 			 * predecessors
 			 *
@@ -840,11 +767,13 @@ static void remove_empty_blocks(ir_node *block, void *x)
  */
 static void cfgopt_ignoring_phis(ir_graph *irg)
 {
-	ir_phase *block_info = new_phase(irg, NULL);
-	skip_env env = { true, block_info };
+	skip_env env;
+
+	env.changed = true;
+	ir_nodehashmap_init(&env.block_infos);
 
 	while (env.changed) {
-		irg_walk_graph(irg, compute_block_info, NULL, block_info);
+		irg_walk_graph(irg, compute_block_info, NULL, &env.block_infos);
 		env.changed = false;
 
 		/* Remove blocks, which only consist of a Jmp */
@@ -856,7 +785,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		if (env.changed) {
 			clear_irg_state(irg, IR_GRAPH_STATE_CONSISTENT_DOMINANCE);
 			/* clear block info, because it must be recomputed */
-			irg_block_walk_graph(irg, clear_block_info, NULL, block_info);
+			irg_block_walk_graph(irg, clear_block_info, NULL, &env.block_infos);
 			/* Removing blocks and Conds might enable more optimizations */
 			continue;
 		} else {
@@ -864,7 +793,7 @@ static void cfgopt_ignoring_phis(ir_graph *irg)
 		}
 	}
 
-	phase_free(block_info);
+	ir_nodehashmap_destroy(&env.block_infos);
 }
 
 /* Optimizations of the control flow that also require changes of Phi nodes.  */
@@ -896,8 +825,6 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 
 	/* The switch Cond optimization might expose unreachable code, so we loop */
 	for (;;) {
-		int length;
-		ir_node **switch_conds = NULL;
 		bool changed = false;
 
 		assure_doms(irg);
@@ -908,16 +835,7 @@ static ir_graph_state_t do_cfopt(ir_graph *irg)
 		 * Finally it marks all blocks that do not contain useful
 		 * computations, i.e., these blocks might be removed.
 		 */
-		switch_conds = NEW_ARR_F(ir_node*, 0);
-		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, &switch_conds);
-
-		/* handle all collected switch-Conds */
-		length = ARR_LEN(switch_conds);
-		for (i = 0; i < length; ++i) {
-			ir_node *cond = switch_conds[i];
-			changed |= handle_switch_cond(cond);
-		}
-		DEL_ARR_F(switch_conds);
+		irg_walk(end, clear_link_and_mark_blocks_removable, collect_nodes, NULL);
 
 		if (!changed)
 			break;

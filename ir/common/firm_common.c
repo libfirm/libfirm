@@ -38,4 +38,4 @@
 firm_kind get_kind(const void *firm_thing)
 {
 	return POINTER_READ(firm_thing, sizeof(firm_kind)) ? *(firm_kind *)firm_thing : k_BAD;
-}  /* get_kind */
+}

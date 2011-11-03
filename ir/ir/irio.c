@@ -71,7 +71,6 @@ typedef enum typetag_t
 	tt_initializer,
 	tt_iro,
 	tt_keyword,
-	tt_mode_sort,
 	tt_mode_arithmetic,
 	tt_pin_state,
 	tt_tpo,
@@ -87,7 +86,9 @@ typedef enum keyword_t
 	kw_constirg,
 	kw_entity,
 	kw_irg,
-	kw_mode,
+	kw_int_mode,
+	kw_reference_mode,
+	kw_float_mode,
 	kw_modes,
 	kw_type,
 	kw_typegraph,
@@ -181,14 +182,6 @@ static void symtbl_init(void)
 	INSERT(tt_tpo, "union", tpo_union);
 	INSERT(tt_tpo, "Unknown", tpo_unknown);
 
-	INSERT(tt_mode_sort, "auxiliary", irms_auxiliary);
-	INSERT(tt_mode_sort, "control_flow", irms_control_flow);
-	INSERT(tt_mode_sort, "memory", irms_memory);
-	INSERT(tt_mode_sort, "internal_boolean", irms_internal_boolean);
-	INSERT(tt_mode_sort, "reference", irms_reference);
-	INSERT(tt_mode_sort, "int_number", irms_int_number);
-	INSERT(tt_mode_sort, "float_number", irms_float_number);
-
 	INSERT(tt_segment, "global", IR_SEGMENT_GLOBAL);
 	INSERT(tt_segment, "thread_local", IR_SEGMENT_THREAD_LOCAL);
 	INSERT(tt_segment, "constructors", IR_SEGMENT_CONSTRUCTORS);
@@ -208,7 +201,9 @@ static void symtbl_init(void)
 	INSERTKEYWORD(constirg);
 	INSERTKEYWORD(entity);
 	INSERTKEYWORD(irg);
-	INSERTKEYWORD(mode);
+	INSERTKEYWORD(int_mode);
+	INSERTKEYWORD(float_mode);
+	INSERTKEYWORD(reference_mode);
 	INSERTKEYWORD(modes);
 	INSERTKEYWORD(type);
 	INSERTKEYWORD(typegraph);
@@ -247,10 +242,7 @@ static void symtbl_init(void)
 	INSERTENUM(tt_mode_arithmetic, irma_uninitialized);
 	INSERTENUM(tt_mode_arithmetic, irma_none);
 	INSERTENUM(tt_mode_arithmetic, irma_twos_complement);
-	INSERTENUM(tt_mode_arithmetic, irma_ones_complement);
-	INSERTENUM(tt_mode_arithmetic, irma_int_BCD);
 	INSERTENUM(tt_mode_arithmetic, irma_ieee754);
-	INSERTENUM(tt_mode_arithmetic, irma_float_BCD);
 
 	INSERTENUM(tt_pin_state, op_pin_state_floats);
 	INSERTENUM(tt_pin_state, op_pin_state_pinned);
@@ -791,20 +783,6 @@ static void export_node(ir_node *irn, void *ctx)
 	fputs("}\n", env->file);
 }
 
-static const char *get_mode_sort_name(ir_mode_sort sort)
-{
-	switch (sort) {
-	case irms_auxiliary:        return "auxiliary";
-	case irms_control_flow:     return "control_flow";
-	case irms_memory:           return "memory";
-	case irms_internal_boolean: return "internal_boolean";
-	case irms_reference:        return "reference";
-	case irms_int_number:       return "int_number";
-	case irms_float_number:     return "float_number";
-	}
-	panic("invalid mode sort found");
-}
-
 static void export_modes(io_env_t *env)
 {
 	size_t i, n_modes = get_irp_n_modes();
@@ -813,29 +791,33 @@ static void export_modes(io_env_t *env)
 
 	for (i = 0; i < n_modes; i++) {
 		ir_mode *mode = get_irp_mode(i);
-		switch (get_mode_sort(mode)) {
-		case irms_auxiliary:
-		case irms_control_flow:
-		case irms_memory:
-		case irms_internal_boolean:
-			/* skip "internal" modes, which may not be user defined */
-			continue;
-		default:
-			break;
-		}
 
-		fprintf(env->file, "\tmode ");
-		write_string(env, get_mode_name(mode));
-		fprintf(env->file, "%s %u %d %s %u %u ",
-		        get_mode_sort_name(get_mode_sort(mode)),
-		        get_mode_size_bits(mode), get_mode_sign(mode),
-		        get_mode_arithmetic_name(get_mode_arithmetic(mode)),
-		        get_mode_modulo_shift(mode),
-		        get_mode_n_vector_elems(mode));
-		if (mode_is_reference(mode)) {
+		if (mode_is_int(mode)) {
+			fprintf(env->file, "\tint_mode ");
+			write_string(env, get_mode_name(mode));
+			fprintf(env->file, "%s %u %d %u ",
+			        get_mode_arithmetic_name(get_mode_arithmetic(mode)),
+			        get_mode_size_bits(mode), get_mode_sign(mode),
+			        get_mode_modulo_shift(mode));
+		} else if (mode_is_reference(mode)) {
+			fprintf(env->file, "\treference_mode ");
+			write_string(env, get_mode_name(mode));
+			fprintf(env->file, "%s %u %u ",
+					get_mode_arithmetic_name(get_mode_arithmetic(mode)),
+					get_mode_size_bits(mode),
+					get_mode_modulo_shift(mode));
 			write_mode(env, get_reference_mode_signed_eq(mode));
 			write_mode(env, get_reference_mode_unsigned_eq(mode));
 			write_int(env, (mode == mode_P ? 1 : 0));
+		} else if (mode_is_float(mode)) {
+			fprintf(env->file, "\tfloat_mode ");
+			write_string(env, get_mode_name(mode));
+			fprintf(env->file, "%s %u %u ",
+			        get_mode_arithmetic_name(get_mode_arithmetic(mode)),
+			        get_mode_exponent_size(mode),
+			        get_mode_mantissa_size(mode));
+		} else {
+			/* skip "internal" modes */
 		}
 		fputc('\n', env->file);
 	}
@@ -1253,7 +1235,6 @@ static const char *get_typetag_name(typetag_t typetag)
 	case tt_keyword:            return "keyword";
 	case tt_linkage:            return "linkage";
 	case tt_mode_arithmetic:    return "mode_arithmetic";
-	case tt_mode_sort:          return "mode_sort";
 	case tt_pin_state:          return "pin state";
 	case tt_segment:            return "segment";
 	case tt_tpo:                return "type";
@@ -1758,30 +1739,36 @@ static int parse_modes(io_env_t *env)
 
 		kwkind = (keyword_t) read_enum(env, tt_keyword);
 		switch (kwkind) {
-		case kw_mode: {
+		case kw_int_mode: {
 			const char *name = read_string(env);
-			ir_mode_sort sort = (ir_mode_sort)read_enum(env, tt_mode_sort);
+			ir_mode_arithmetic arith = read_mode_arithmetic(env);
 			int size = read_long(env);
 			int sign = read_long(env);
-			ir_mode_arithmetic arith = read_mode_arithmetic(env);
 			unsigned modulo_shift = read_long(env);
-			int vector_elems = read_long(env);
-			ir_mode *mode;
-
-			if (vector_elems != 1) {
-				panic("no support for import of vector modes yes");
+			new_int_mode(name, arith, size, sign, modulo_shift);
+			break;
+		}
+		case kw_reference_mode: {
+			const char *name = read_string(env);
+			ir_mode_arithmetic arith = read_mode_arithmetic(env);
+			int size = read_long(env);
+			unsigned modulo_shift = read_long(env);
+			ir_mode *mode = new_reference_mode(name, arith, size, modulo_shift);
+			set_reference_mode_signed_eq(mode, read_mode(env));
+			set_reference_mode_unsigned_eq(mode, read_mode(env));
+			int is_mode_P = read_int(env);
+			if (is_mode_P) {
+				set_modeP_data(mode);
+				set_modeP_code(mode);
 			}
-
-			mode = new_ir_mode(name, sort, size, sign, arith, modulo_shift);
-			if (mode_is_reference(mode)) {
-				set_reference_mode_signed_eq(mode, read_mode(env));
-				set_reference_mode_unsigned_eq(mode, read_mode(env));
-				int is_mode_P = read_int(env);
-				if (is_mode_P) {
-					set_modeP_data(mode);
-					set_modeP_code(mode);
-				}
-			}
+			break;
+		}
+		case kw_float_mode: {
+			const char *name = read_string(env);
+			ir_mode_arithmetic arith = read_mode_arithmetic(env);
+			int exponent_size = read_long(env);
+			int mantissa_size = read_long(env);
+			new_float_mode(name, arith, exponent_size, mantissa_size);
 			break;
 		}
 

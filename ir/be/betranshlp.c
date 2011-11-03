@@ -399,10 +399,7 @@ void be_transform_graph(ir_graph *irg, arch_pretrans_nodes *func)
 	irg->obst = new_obst;
 	irg->last_node_idx = 0;
 
-	/* invalidate phase info as (at least vrp info) is used inside the
-	 * equivalent/compute_value functions and might replace our newly
-	 * created nodes with middleend nodes */
-	irg_invalidate_phases(irg);
+	free_vrp_data(irg);
 
 	/* create new value table for CSE */
 	new_identities(irg);

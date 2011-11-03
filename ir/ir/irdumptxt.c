@@ -33,13 +33,13 @@
 
 #include "irdump_t.h"
 #include "irgraph_t.h"
+#include "irnode_t.h"
 
 #include "irprog_t.h"
 #include "entity_t.h"
 #include "trouts.h"
 #include "irgwalk.h"
 #include "tv_t.h"
-#include "vrp.h"
 #include "irprintf.h"
 #include "error.h"
 
@@ -62,7 +62,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 {
 	char     comma;
 	ir_graph *irg;
-	vrp_attr *vrp_info;
 
 	dump_node_opcode(F, n);
 	fprintf(F, " %ld\n", get_irn_node_nr(n));
@@ -101,8 +100,29 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 
 	fprintf(F, "  Private Attributes:\n");
 
-	if (is_Proj(n))
-		fprintf(F, "  proj nr: %ld\n", get_Proj_proj(n));
+	if (is_Proj(n)) {
+		ir_node *pred = get_Proj_pred(n);
+		long     pn   = get_Proj_proj(n);
+		fprintf(F, "  proj nr: %ld\n", pn);
+		if (is_Switch(pred)) {
+			const ir_switch_table *table = get_Switch_table(pred);
+			size_t n_entries = ir_switch_table_get_n_entries(table);
+			size_t i;
+			for (i = 0; i < n_entries; ++i) {
+				const ir_switch_table_entry *entry
+					= ir_switch_table_get_entry_const(table, i);
+				if (entry->pn == pn && entry->min != NULL && entry->max != NULL) {
+					ir_tarval *min = entry->min;
+					ir_tarval *max = entry->max;
+					if (min != max) {
+						ir_fprintf(F, "  switch case %+F .. %+F\n", min, max);
+					} else {
+						ir_fprintf(F, "  switch case %+F\n", min);
+					}
+				}
+			}
+		}
+	}
 
 	if (is_fragile_op(n)) {
 		fprintf(F, "  pinned state: %s\n", get_op_pin_state_name(get_irn_pinned(n)));
@@ -157,7 +177,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 			ir_fprintf(F, "    param %d type: %+F\n", i, get_method_param_type(tp, i));
 	} break;
 	case iro_Cond: {
-		fprintf(F, "  default ProjNr: %ld\n", get_Cond_default_proj(n));
 		if (get_Cond_jmp_pred(n) != COND_JMP_PRED_NONE) {
 			fprintf(F, "  jump prediction: %s\n",
 			        get_cond_jmp_predicate_name(get_Cond_jmp_pred(n)));
@@ -301,11 +320,6 @@ void dump_irnode_to_file(FILE *F, ir_node *n)
 		break;
 	}
 
-	vrp_info = vrp_get_info(n);
-	if (vrp_info) {
-		dump_vrp_info(F, n);
-	}
-
 	if (get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_consistent  ||
 		get_irg_typeinfo_state(get_irn_irg(n)) == ir_typeinfo_inconsistent  )
 		if (get_irn_typeinfo_type(n) != firm_none_type)
@@ -318,6 +332,37 @@ void dump_graph_as_text(FILE *out, ir_graph *irg)
 }
 
 static int need_nl = 1;
+
+static bool is_init_string(ir_initializer_t const* const init, ir_type *const type)
+{
+	ir_type *const element_type = get_array_element_type(type);
+	ir_mode *      mode;
+	size_t         n;
+	size_t         i;
+
+	if (!is_Primitive_type(element_type))
+		return false;
+
+	mode = get_type_mode(element_type);
+	if (!mode_is_int(mode) || get_mode_size_bits(mode) != 8)
+		return false;
+
+	n = get_initializer_compound_n_entries(init);
+	for (i = 0; i != n; ++i) {
+		ir_initializer_t const* const val = get_initializer_compound_value(init, i);
+		ir_tarval*              const tv  = get_initializer_tarval_value(val);
+		long                          v;
+
+		if (!tarval_is_constant(tv))
+			return false;
+
+		v = get_tarval_long(tv);
+		if (v != 0 && (v < 0x07 || 0x0D < v) && v != 0x1B && (v < 0x20 || 0x80 <= v) && (v < 0xA0 || 0x100 <= v))
+			return false;
+	}
+
+	return true;
+}
 
 /**
  * Dump initializers.
@@ -347,18 +392,46 @@ static void dump_ir_initializers_to_file(FILE *F, const char *prefix,
 		break;
 	case IR_INITIALIZER_COMPOUND:
 		if (is_Array_type(type)) {
-			size_t i, n = get_initializer_compound_n_entries(initializer);
-			ir_type *element_type = get_array_element_type(type);
-			for (i = 0; i < n; ++i) {
-				ir_initializer_t *sub_initializer
-					= get_initializer_compound_value(initializer, i);
+			size_t const n = get_initializer_compound_n_entries(initializer);
+			size_t       i;
 
-				if (need_nl) {
-					fprintf(F, "\n%s    ", prefix);
-					need_nl = 0;
+			if (is_init_string(initializer, type)) {
+				fprintf(F, "\t[0...%u] = '", (unsigned)n - 1);
+				for (i = 0; i != n; ++i) {
+					ir_initializer_t const* const val = get_initializer_compound_value(initializer, i);
+					ir_tarval*              const tv  = get_initializer_tarval_value(val);
+					long                    const v   = get_tarval_long(tv);
+
+					switch (v) {
+						case 0x00: fprintf(F, "\\\\000");  break;
+						case 0x07: fprintf(F, "\\\\a");    break;
+						case 0x08: fprintf(F, "\\\\b");    break;
+						case 0x09: fprintf(F, "\\\\t");    break;
+						case 0x0A: fprintf(F, "\\\\n");    break;
+						case 0x0B: fprintf(F, "\\\\v");    break;
+						case 0x0C: fprintf(F, "\\\\f");    break;
+						case 0x0D: fprintf(F, "\\\\r");    break;
+						case 0x1B: fprintf(F, "\\\\033");  break;
+						case 0x22: fprintf(F, "\\\\\\\""); break;
+						case 0x5C: fprintf(F, "\\\\\\\\"); break;
+						default:   fprintf(F, "%c", (unsigned char)v); break;
+					}
 				}
-				fprintf(F, "[%d]", (int) i);
-				dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+				fprintf(F, "'");
+			} else {
+				ir_type *const element_type = get_array_element_type(type);
+
+				for (i = 0; i < n; ++i) {
+					ir_initializer_t *sub_initializer
+						= get_initializer_compound_value(initializer, i);
+
+					if (need_nl) {
+						fprintf(F, "\n%s    ", prefix);
+						need_nl = 0;
+					}
+					fprintf(F, "[%d]", (int) i);
+					dump_ir_initializers_to_file(F, prefix, sub_initializer, element_type);
+				}
 			}
 		} else {
 			size_t i, n;
